@@ -81,8 +81,8 @@ export const vietnameseCoverageC: Record<string, string> = {
    // src/views/lenderBenefits/sections/HowWeVerifySection.tsx
    'World ID verification': 'Xác minh World ID',
    'Verified humans, clearer lending signals.': 'Người thật đã xác minh, tín hiệu cho vay rõ ràng hơn.',
-   'Borrowers verify with World ID before they can request loans. That gives lenders a real-person signal without asking borrowers to hand over private documents to Moodeng.':
-      'Người vay xác minh bằng World ID trước khi có thể yêu cầu khoản vay. Nhờ đó, người cho vay biết đây là người thật mà người vay không phải nộp giấy tờ cá nhân cho Moodeng.',
+   'Borrowers verify with World ID before they can request loans. That gives moo-lenders a real-person signal without asking borrowers to hand over private documents to Moodeng.':
+      'Người vay xác minh bằng World ID trước khi có thể yêu cầu khoản vay. Nhờ đó, moo-lender biết đây là người thật mà người vay không phải nộp giấy tờ cá nhân cho Moodeng.',
    'Unique person': 'Người thật, không trùng lặp',
    'One account': 'Một tài khoản',
    'Less bot risk': 'Giảm rủi ro bot',
@@ -91,7 +91,7 @@ export const vietnameseCoverageC: Record<string, string> = {
       'Người vay chứng minh mình là người duy nhất qua World App và Orb tại những thị trường chúng tôi hỗ trợ đầu tiên.',
 
    // src/views/lenderBenefits/sections/LendingIncentivesSection.tsx
-   'Lender terms': 'Điều khoản cho người cho vay',
+   'Moo-lender terms': 'Điều khoản cho moo-lender',
 
    // src/views/lenderBenefits/sections/MeetYourFutureBorrowersSection.tsx
    'First borrower communities': 'Cộng đồng người vay đầu tiên',
@@ -116,14 +116,14 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Traditional credit: starts over at zero': 'Tín dụng truyền thống: bắt đầu lại từ con số 0',
    'The problem': 'Vấn đề',
    'Good repayment rarely travels.': 'Lịch sử trả nợ tốt hiếm khi đi theo bạn.',
-   'That creates a trust gap for borrowers and a missed opportunity for lenders.':
-      'Điều đó tạo ra khoảng trống niềm tin cho người vay và bỏ lỡ cơ hội của người cho vay.',
+   'That creates a trust gap for borrowers and a missed opportunity for moo-lenders.':
+      'Điều đó tạo ra khoảng trống niềm tin cho người vay và bỏ lỡ cơ hội của moo-lender.',
    'Credit gets reset': 'Tín dụng bị xóa trắng',
    'A Filipino or SEA worker can repay responsibly abroad and still have no useful credit record.':
       'Một người lao động Philippines hay Đông Nam Á có thể trả nợ đầy đủ ở nước ngoài mà vẫn không có hồ sơ tín dụng nào hữu ích.',
    'Good borrowers disappear': 'Người vay tốt bị bỏ qua',
-   'Lenders cannot easily see the trust signals that should matter for a small emergency loan.':
-      'Người cho vay khó thấy được những tín hiệu tin cậy quan trọng đối với một khoản vay khẩn cấp nhỏ.',
+   'Moo-lenders cannot easily see the trust signals that should matter for a small emergency loan.':
+      'Moo-lender khó thấy được những tín hiệu tin cậy quan trọng đối với một khoản vay khẩn cấp nhỏ.',
    'Bad options fill the gap': 'Lựa chọn tồi lấp chỗ trống',
    'Quick-loan apps step in with pressure, high costs, and little long-term upside.':
       'Các ứng dụng vay nhanh xuất hiện với áp lực, chi phí cao và gần như không có lợi ích lâu dài.',
@@ -138,8 +138,8 @@ export const vietnameseCoverageC: Record<string, string> = {
       'World ID giúp xác nhận mỗi tài khoản người vay thuộc về một người thật duy nhất.',
    'Moodeng can show verification status without storing passport-style documents.':
       'Moodeng có thể hiển thị trạng thái xác minh mà không lưu giấy tờ như hộ chiếu.',
-   'Lenders still evaluate loan terms, history, and repayment behavior before funding.':
-      'Người cho vay vẫn xem xét điều khoản, lịch sử và thói quen trả nợ trước khi cấp vốn.',
+   'Moo-lenders still evaluate loan terms, history, and repayment behavior before funding.':
+      'Moo-lender vẫn xem xét điều khoản, lịch sử và thói quen trả nợ trước khi cấp vốn.',
    'World ID first': 'Ưu tiên World ID',
 
    // src/views/lenderBenefits/sections/Web3WalletSection.tsx
@@ -151,8 +151,8 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Repayment activity can travel with overseas workers through their wallet.':
       'Lịch sử trả nợ có thể theo người lao động ở nước ngoài qua chiếc ví của họ.',
    'Transparent loan behavior': 'Hành vi vay minh bạch',
-   'Lenders can review onchain repayment signals instead of starting from zero.':
-      'Người cho vay có thể xem tín hiệu trả nợ onchain thay vì bắt đầu từ con số 0.',
+   'Moo-lenders can review onchain repayment signals instead of starting from zero.':
+      'Moo-lender có thể xem tín hiệu trả nợ onchain thay vì bắt đầu từ con số 0.',
    'Small loans, real signal': 'Khoản vay nhỏ, tín hiệu thật',
    'Microloans create a practical path for borrowers to build proof over time.':
       'Khoản vay vi mô tạo ra con đường thiết thực để người vay tích lũy bằng chứng uy tín theo thời gian.',
@@ -248,7 +248,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'This wallet is already linked to another Moodeng account. To keep lending fair and prevent self-lending, each wallet can belong to only one account.':
       'Ví này đã được liên kết với một tài khoản Moodeng khác. Để đảm bảo cho vay công bằng và ngăn việc tự cho mình vay, mỗi ví chỉ được thuộc về một tài khoản.',
    'What you can do': 'Bạn có thể làm gì',
-   'Connect a different wallet address to this lender account.': 'Kết nối một địa chỉ ví khác với tài khoản người cho vay này.',
+   'Connect a different wallet address to this moo-lender account.': 'Kết nối một địa chỉ ví khác với tài khoản moo-lender này.',
    'If you created a borrower account by mistake, remove this wallet from it first — or ask us to delete that account or switch its role.':
       'Nếu bạn lỡ tạo tài khoản người vay, hãy gỡ ví này khỏi tài khoản đó trước — hoặc nhờ chúng tôi xóa tài khoản đó hay đổi vai trò của nó.',
    "Not sure what happened? Message us and we'll help.": 'Không rõ chuyện gì đã xảy ra? Hãy nhắn cho chúng tôi để được hỗ trợ.',
@@ -402,7 +402,7 @@ export const vietnameseCoverageC: Record<string, string> = {
 
    // src/views/profile/components/tabs/DashboardTab.tsx
    'Loan Summary': 'Tổng quan khoản vay',
-   'Lender Diversity Score': 'Điểm đa dạng người cho vay',
+   'Moo-lender Diversity Score': 'Điểm đa dạng moo-lender',
    Points: 'điểm',
    'PAY LOANS NOW': 'TRẢ NỢ NGAY',
    Info: 'Thông tin',
@@ -438,8 +438,8 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Enter an amount greater than 0.': 'Nhập số tiền lớn hơn 0.',
    'Pay Now': 'Trả ngay',
    'Start Setup': 'Bắt đầu thiết lập',
-   'Verify yourself and set up your wallet (an Instant Wallet, or a Base Account if you prefer) before requesting loans. Repayments will show here after a lender funds your first loan.':
-      'Hãy xác minh danh tính và thiết lập ví (Instant Wallet, hoặc Base Account nếu bạn muốn) trước khi yêu cầu vay. Các khoản trả nợ sẽ hiển thị tại đây sau khi người cho vay cấp vốn cho khoản vay đầu tiên của bạn.',
+   'Verify yourself and set up your wallet (an Instant Wallet, or a Base Account if you prefer) before requesting loans. Repayments will show here after a moo-lender funds your first loan.':
+      'Hãy xác minh danh tính và thiết lập ví (Instant Wallet, hoặc Base Account nếu bạn muốn) trước khi yêu cầu vay. Các khoản trả nợ sẽ hiển thị tại đây sau khi moo-lender cấp vốn cho khoản vay đầu tiên của bạn.',
    'Finish setup to start borrowing': 'Hoàn tất thiết lập để bắt đầu vay',
    'Verify Yourself': 'Xác minh danh tính',
    'Your wallet is added. Complete verification before requesting loans. Repayments will show here after funding.':
@@ -450,8 +450,8 @@ export const vietnameseCoverageC: Record<string, string> = {
       'Bạn đã được xác minh. Hãy thiết lập Instant Wallet (hoặc kết nối Base Account) để các khoản vay và khoản trả nợ luôn gắn với tài khoản Moodeng của bạn.',
    'Add a wallet to borrow': 'Thêm ví để vay',
    'Request a loan': 'Yêu cầu vay',
-   'Your repayment activity will appear here once a lender funds your first loan.':
-      'Hoạt động trả nợ của bạn sẽ hiển thị tại đây khi người cho vay cấp vốn cho khoản vay đầu tiên của bạn.',
+   'Your repayment activity will appear here once a moo-lender funds your first loan.':
+      'Hoạt động trả nợ của bạn sẽ hiển thị tại đây khi moo-lender cấp vốn cho khoản vay đầu tiên của bạn.',
    'No repayments yet': 'Chưa có khoản trả nợ nào',
    'Copy failed': 'Sao chép thất bại',
    'Could not copy your wallet address. Copy it manually.': 'Không thể sao chép địa chỉ ví. Vui lòng sao chép thủ công.',
@@ -634,8 +634,8 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Most borrowers use both — trust loans to stay active, credit loans to climb.':
       'Hầu hết người vay dùng cả hai — Trust-Building Loan để duy trì hoạt động, Credit-Building Loan để nâng hạng.',
    'Trust is the currency before the credit.': 'Niềm tin là đồng tiền đi trước tín dụng.',
-   'Every loan you repay cleanly — even a small Trust-Building Loan — deposits reputation that lenders can see. That trust is what gets your next request funded faster.':
-      'Mỗi khoản vay bạn trả đầy đủ, đúng hạn — kể cả một Trust-Building Loan nhỏ — đều tích lũy uy tín mà người cho vay có thể thấy được. Chính niềm tin đó giúp yêu cầu tiếp theo của bạn được cấp vốn nhanh hơn.',
+   'Every loan you repay cleanly — even a small Trust-Building Loan — deposits reputation that moo-lenders can see. That trust is what gets your next request funded faster.':
+      'Mỗi khoản vay bạn trả đầy đủ, đúng hạn — kể cả một Trust-Building Loan nhỏ — đều tích lũy uy tín mà moo-lender có thể thấy được. Chính niềm tin đó giúp yêu cầu tiếp theo của bạn được cấp vốn nhanh hơn.',
    'Level up faster': 'Nâng hạng nhanh hơn',
    'Do this, not that': 'Nên và không nên',
    'A few habits keep your climb steady and protect the Pandesal points you are earning.':
@@ -693,20 +693,20 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment unlocks the next limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
       'Vay một Credit-Building Loan bằng toàn bộ hạn mức hiện tại và trả đầy đủ, đúng hạn. Mỗi lần trả nợ như vậy sẽ mở khóa hạn mức tiếp theo — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
    'Does borrowing a small amount level me up?': 'Vay một khoản nhỏ có giúp tôi lên hạng không?',
-   'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.':
-      'Không. Vay thấp hơn hạn mức của bạn là một Trust-Building Loan. Nó giúp cải thiện uy tín của bạn với người cho vay nhưng không nâng Hạng tín dụng của bạn. Chỉ một Credit-Building Loan bằng toàn bộ hạn mức mới giúp bạn tiến lên.',
+   'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with moo-lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.':
+      'Không. Vay thấp hơn hạn mức của bạn là một Trust-Building Loan. Nó giúp cải thiện uy tín của bạn với moo-lender nhưng không nâng Hạng tín dụng của bạn. Chỉ một Credit-Building Loan bằng toàn bộ hạn mức mới giúp bạn tiến lên.',
    'Can I skip levels by repaying early or paying extra?': 'Tôi có thể bỏ qua các hạng bằng cách trả sớm hoặc trả thêm không?',
    'No. Moodeng advances one level at a time. Paying extra or repaying early does not skip a step — each new limit is earned by repaying the level before it.':
       'Không. Moodeng chỉ cho lên từng hạng một. Trả thêm hay trả sớm không giúp bỏ qua bước nào — mỗi hạn mức mới đều phải đạt được bằng cách hoàn thành hạng trước đó.',
    'Why does the limit start at only $15?': 'Vì sao hạn mức chỉ bắt đầu ở $15?',
-   'Small starting limits keep risk low for the lenders funding someone with no track record yet. As you prove reliable repayment, your limit and lender confidence grow together.':
-      'Hạn mức khởi điểm nhỏ giúp giảm rủi ro cho người cho vay khi cấp vốn cho ai đó chưa có lịch sử vay. Khi bạn chứng minh được khả năng trả nợ đáng tin cậy, hạn mức của bạn và niềm tin của người cho vay sẽ cùng tăng lên.',
+   'Small starting limits keep risk low for the moo-lenders funding someone with no track record yet. As you prove reliable repayment, your limit and moo-lender confidence grow together.':
+      'Hạn mức khởi điểm nhỏ giúp giảm rủi ro cho moo-lender khi cấp vốn cho ai đó chưa có lịch sử vay. Khi bạn chứng minh được khả năng trả nợ đáng tin cậy, hạn mức của bạn và niềm tin của moo-lender sẽ cùng tăng lên.',
    'How long does it take to reach the $60 level?': 'Mất bao lâu để đạt đến hạng $60?',
    'There is no fixed timeline. Each level needs one full-limit loan repaid on time, so the pace depends on how quickly you borrow and repay. Borrowers who repay cleanly can climb in just a few loan cycles.':
       'Không có mốc thời gian cố định. Mỗi hạng cần một khoản vay bằng toàn bộ hạn mức được trả đúng hạn, nên tốc độ phụ thuộc vào việc bạn vay và trả nhanh thế nào. Người vay trả nợ đầy đủ, đúng hạn có thể lên hạng chỉ sau vài chu kỳ vay.',
    'What happens if I miss a repayment?': 'Điều gì xảy ra nếu tôi trễ hạn trả nợ?',
-   'A late or missed repayment reduces your Pandesal points and can pause your progress. Lenders weigh the missed repayment heavily, so keeping payments on time matters more than borrowing size.':
-      'Một lần trả trễ hoặc bỏ lỡ sẽ làm giảm điểm Pandesal của bạn và có thể làm tạm dừng tiến trình nâng hạng. Người cho vay rất coi trọng việc trễ hạn, vì vậy trả đúng hạn quan trọng hơn số tiền vay.',
+   'A late or missed repayment reduces your Pandesal points and can pause your progress. Moo-lenders weigh the missed repayment heavily, so keeping payments on time matters more than borrowing size.':
+      'Một lần trả trễ hoặc bỏ lỡ sẽ làm giảm điểm Pandesal của bạn và có thể làm tạm dừng tiến trình nâng hạng. Moo-lender rất coi trọng việc trễ hạn, vì vậy trả đúng hạn quan trọng hơn số tiền vay.',
    'Does my Credit Level ever reset?': 'Hạng tín dụng của tôi có bị đặt lại không?',
    'Your progress is tied to your wallet and repayment history, so it travels with you. Missed repayments do not erase your level, but they reduce your Pandesal points and can slow further growth.':
       'Tiến trình của bạn gắn liền với ví và lịch sử trả nợ, nên nó luôn theo bạn. Việc trễ hạn không xóa bỏ hạng của bạn, nhưng sẽ làm giảm điểm Pandesal và có thể làm chậm việc nâng hạng sau này.',
@@ -744,8 +744,8 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Credit limit growing from fifteen to sixty dollars': 'Hạn mức tín dụng tăng dần từ mười lăm lên sáu mươi đô la',
    'A borrower hippo at a Moodeng kiosk following the credit-building flow: request, repay on time, then level up':
       'Một chú hà mã người vay tại quầy Moodeng đang thực hiện quy trình xây dựng tín dụng: yêu cầu, trả nợ đúng hạn, rồi lên hạng',
-   'A borrower hippo and a squirrel building trust with a lender at the Moodeng lending desk':
-      'Một chú hà mã người vay và một chú sóc đang xây dựng niềm tin với người cho vay tại quầy cho vay Moodeng',
+   'A borrower hippo and a squirrel building trust with a moo-lender at the Moodeng lending desk':
+      'Một chú hà mã người vay và một chú sóc đang xây dựng niềm tin với moo-lender tại quầy cho vay Moodeng',
 
    // src/views/support/PublicGuide.tsx
    'More guides': 'Thêm hướng dẫn',
@@ -851,9 +851,9 @@ export const vietnameseCoverageC: Record<string, string> = {
    "This is a voluntary gift — once sent, it can't be reversed.": 'Đây là một món quà tự nguyện — một khi đã gửi, không thể hoàn lại.',
    'Hide — this keeps going on its own': 'Ẩn đi — giao dịch vẫn tiếp tục tự động',
    'Sent successfully!': 'Đã gửi thành công!',
-   'Waiting for lender acceptance': 'Đang chờ người cho vay chấp nhận',
-   'This loan is not funded yet. Repayment starts only after a lender accepts.':
-      'Khoản vay này chưa được cấp vốn. Việc trả nợ chỉ bắt đầu sau khi có người cho vay chấp nhận.',
+   'Waiting for moo-lender acceptance': 'Đang chờ moo-lender chấp nhận',
+   'This loan is not funded yet. Repayment starts only after a moo-lender accepts.':
+      'Khoản vay này chưa được cấp vốn. Việc trả nợ chỉ bắt đầu sau khi có moo-lender chấp nhận.',
    'View on explorer': 'Xem trên trình khám phá blockchain',
 
    // src/views/transactions/TransactionHistory.tsx
@@ -864,14 +864,14 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Search transaction history': 'Tìm kiếm lịch sử giao dịch',
 
    // src/views/user-profile/LenderDiversityHistory.tsx
-   'Lender Diversity': 'Đa dạng người cho vay',
+   'Moo-lender Diversity': 'Đa dạng moo-lender',
    'Need at least 2 funded loans': 'Cần ít nhất 2 khoản vay đã được cấp vốn',
-   'A lender diversity score appears once there is enough borrower history to compare.':
-      'Điểm đa dạng người cho vay sẽ xuất hiện khi có đủ lịch sử vay để so sánh.',
-   'Lender Distribution': 'Phân bổ người cho vay',
-   'No lender history yet': 'Chưa có lịch sử người cho vay',
-   'Once this borrower receives funded loans, the lender distribution will appear here.':
-      'Khi người vay này nhận được các khoản vay đã cấp vốn, phần phân bổ người cho vay sẽ hiện ở đây.',
+   'A moo-lender diversity score appears once there is enough borrower history to compare.':
+      'Điểm đa dạng moo-lender sẽ xuất hiện khi có đủ lịch sử vay để so sánh.',
+   'Moo-lender Distribution': 'Phân bổ moo-lender',
+   'No moo-lender history yet': 'Chưa có lịch sử moo-lender',
+   'Once this borrower receives funded loans, the moo-lender distribution will appear here.':
+      'Khi người vay này nhận được các khoản vay đã cấp vốn, phần phân bổ moo-lender sẽ hiện ở đây.',
 
    // src/views/user-profile/ProgressHistory.tsx
    'Progress History': 'Lịch sử tiến trình',
@@ -882,8 +882,8 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Identity verification completed.': 'Đã hoàn tất xác minh danh tính.',
    'No loan activity yet': 'Chưa có hoạt động vay nào',
    'No funded loans have been recorded for this borrower yet.': 'Chưa có khoản vay nào được cấp vốn cho người vay này.',
-   'Repeat Lender Relationship': 'Vay lại người cho vay cũ',
-   'Borrowed again from an existing lender.': 'Vay lại từ một người cho vay đã từng cấp vốn.',
+   'Repeat Moo-lender Relationship': 'Vay lại moo-lender cũ',
+   'Borrowed again from an existing moo-lender.': 'Vay lại từ một moo-lender đã từng cấp vốn.',
    'Partial Repayment Made': 'Đã trả một phần nợ',
    'Credit Limit Unlocked': 'Đã mở khóa hạn mức tín dụng',
    'Defaulted Loan': 'Khoản vay vỡ nợ',
@@ -894,67 +894,67 @@ export const vietnameseCoverageC: Record<string, string> = {
 
    // src/views/user-profile/UserProfile.tsx
    'Borrower context': 'Bối cảnh người vay',
-   'This account is a lender': 'Tài khoản này là người cho vay',
-   'Lenders fund loans rather than borrow, so there is no borrowing history to show here.':
-      'Người cho vay cấp vốn cho khoản vay chứ không đi vay, nên không có lịch sử vay để hiển thị ở đây.',
+   'This account is a moo-lender': 'Tài khoản này là moo-lender',
+   'Moo-lenders fund loans rather than borrow, so there is no borrowing history to show here.':
+      'Moo-lender cấp vốn cho khoản vay chứ không đi vay, nên không có lịch sử vay để hiển thị ở đây.',
    'Lending Summary': 'Tổng quan cho vay',
    'No Defaults': 'Không có khoản vỡ nợ',
    'Borrowers Backed': 'Người vay đã hỗ trợ',
    'No loans funded yet': 'Chưa cấp vốn cho khoản vay nào',
-   'This lender has not funded a loan yet, so there is nothing to summarise.':
-      'Người cho vay này chưa cấp vốn cho khoản vay nào, nên chưa có gì để tổng hợp.',
+   'This moo-lender has not funded a loan yet, so there is nothing to summarise.':
+      'Moo-lender này chưa cấp vốn cho khoản vay nào, nên chưa có gì để tổng hợp.',
    'Lending Patterns': 'Mô hình cho vay',
    'Loans Funded': 'Khoản vay đã cấp vốn',
-   'Who this lender has backed and the status of each loan.': 'Người mà người cho vay này đã hỗ trợ và trạng thái của từng khoản vay.',
+   'Who this moo-lender has backed and the status of each loan.': 'Người mà moo-lender này đã hỗ trợ và trạng thái của từng khoản vay.',
    'Loan / borrower': 'Khoản vay / người vay',
    'Verify to unlock LV.1': 'Xác minh để mở khóa Hạng 1',
    'Only you can see this': 'Chỉ mình bạn thấy được điều này',
    'Good standing': 'Uy tín tốt',
    'View loan mix': 'Xem cơ cấu khoản vay',
-   'Your score appears after at least 2 funded loans from different lenders.':
-      'Điểm số của bạn sẽ xuất hiện sau khi có ít nhất 2 khoản vay được cấp vốn từ những người cho vay khác nhau.',
+   'Your score appears after at least 2 funded loans from different moo-lenders.':
+      'Điểm số của bạn sẽ xuất hiện sau khi có ít nhất 2 khoản vay được cấp vốn từ những moo-lender khác nhau.',
    'Borrower patterns': 'Mô hình người vay',
    'Recent Loans': 'Khoản vay gần đây',
    'View who has funded this borrower and the status of each loan.':
       'Xem ai đã cấp vốn cho người vay này và trạng thái của từng khoản vay.',
-   'Loan / lender': 'Khoản vay / người cho vay',
+   'Loan / moo-lender': 'Khoản vay / moo-lender',
    'No funded loans yet': 'Chưa có khoản vay nào được cấp vốn',
    'Not enough loan history yet': 'Chưa đủ lịch sử vay',
-   "Once this borrower completes more loans, you'll see repayment timing, usual loan size, repeat lenders, and borrowing patterns here.":
-      'Khi người vay này hoàn tất thêm nhiều khoản vay, bạn sẽ thấy thời gian trả nợ, quy mô vay thông thường, những người cho vay lặp lại và mô hình vay ở đây.',
+   "Once this borrower completes more loans, you'll see repayment timing, usual loan size, repeat moo-lenders, and borrowing patterns here.":
+      'Khi người vay này hoàn tất thêm nhiều khoản vay, bạn sẽ thấy thời gian trả nợ, quy mô vay thông thường, những moo-lender lặp lại và mô hình vay ở đây.',
    'Default History': 'Lịch sử vỡ nợ',
    'Missed repayments on this borrower’s past loans.': 'Những lần trễ hạn trả nợ trên các khoản vay trước đây của người vay này.',
    'A default happens when a repayment deadline passes without full repayment.': 'Vỡ nợ xảy ra khi hạn trả nợ đã qua mà chưa trả đầy đủ.',
    'Loan defaulted': 'Khoản vay bị vỡ nợ',
    Unresolved: 'Chưa giải quyết',
-   'Defaults may signal repayment risk. Lenders should review the borrower’s full history, not just credit level.':
-      'Vỡ nợ có thể là dấu hiệu rủi ro trả nợ. Người cho vay nên xem toàn bộ lịch sử của người vay, không chỉ dựa vào hạng tín dụng.',
+   'Defaults may signal repayment risk. Moo-lenders should review the borrower’s full history, not just credit level.':
+      'Vỡ nợ có thể là dấu hiệu rủi ro trả nợ. Moo-lender nên xem toàn bộ lịch sử của người vay, không chỉ dựa vào hạng tín dụng.',
    'Repayment History': 'Lịch sử trả nợ',
    'Money this borrower has already paid back across funded loans.': 'Số tiền người vay này đã trả trên các khoản vay đã được cấp vốn.',
    'Fully repaid': 'Đã trả hết',
-   'Completed repayments show this borrower has returned funds before. Partial repayments can still be useful context, but lenders should compare them with due dates and remaining balances.':
-      'Các khoản trả nợ đã hoàn tất cho thấy người vay này từng hoàn trả tiền trước đây. Các khoản trả một phần vẫn có thể là thông tin hữu ích, nhưng người cho vay nên đối chiếu với ngày đến hạn và số dư còn lại.',
+   'Completed repayments show this borrower has returned funds before. Partial repayments can still be useful context, but moo-lenders should compare them with due dates and remaining balances.':
+      'Các khoản trả nợ đã hoàn tất cho thấy người vay này từng hoàn trả tiền trước đây. Các khoản trả một phần vẫn có thể là thông tin hữu ích, nhưng moo-lender nên đối chiếu với ngày đến hạn và số dư còn lại.',
    'How Credit Level Works': 'Hạng tín dụng hoạt động như thế nào',
    'Credit Level shows the borrower’s current borrowing tier.': 'Hạng tín dụng thể hiện bậc vay hiện tại của người vay.',
    'Borrowers level up by taking a Credit Building loan at their current limit and repaying it successfully.':
       'Người vay lên hạng bằng cách vay một Credit-Building Loan bằng toàn bộ hạn mức hiện tại và trả nợ thành công.',
    'Credit Levels': 'Hạng tín dụng',
    'Credit limit': 'Hạn mức tín dụng',
-   'How Lender Diversity Works': 'Đa dạng người cho vay hoạt động như thế nào',
+   'How Moo-lender Diversity Works': 'Đa dạng moo-lender hoạt động như thế nào',
    'This score belongs to the borrower. It measures the quality of the people who have lent to them.':
       'Điểm số này thuộc về người vay. Nó đo lường chất lượng của những người đã cho họ vay.',
    'What a high score means': 'Điểm số cao nghĩa là gì',
-   'Lenders look independent, established, and natural. They are not all new accounts, not all funding at once, and not overly concentrated in one lender.':
-      'Những người cho vay có vẻ độc lập, đã hoạt động lâu và tự nhiên. Họ không phải toàn bộ là tài khoản mới, không cấp vốn cùng một lúc, và không tập trung quá nhiều vào một người cho vay.',
+   'Moo-lenders look independent, established, and natural. They are not all new accounts, not all funding at once, and not overly concentrated in one moo-lender.':
+      'Những moo-lender có vẻ độc lập, đã hoạt động lâu và tự nhiên. Họ không phải toàn bộ là tài khoản mới, không cấp vốn cùng một lúc, và không tập trung quá nhiều vào một moo-lender.',
    'What it is trying to catch': 'Điều nó đang cố phát hiện',
-   'A borrower could look trustworthy by using fake lender accounts to fund small loans, then ask for a larger real loan. This score looks for that kind of coordinated lender history.':
-      'Một người vay có thể trông đáng tin bằng cách dùng các tài khoản cho vay giả để cấp vốn cho khoản vay nhỏ, rồi sau đó xin một khoản vay thật lớn hơn. Điểm số này tìm kiếm kiểu lịch sử người cho vay có phối hợp như vậy.',
+   'A borrower could look trustworthy by using fake moo-lender accounts to fund small loans, then ask for a larger real loan. This score looks for that kind of coordinated moo-lender history.':
+      'Một người vay có thể trông đáng tin bằng cách dùng các tài khoản moo-lender giả để cấp vốn cho khoản vay nhỏ, rồi sau đó xin một khoản vay thật lớn hơn. Điểm số này tìm kiếm kiểu lịch sử moo-lender có phối hợp như vậy.',
    'Score bands': 'Các mức điểm',
-   "This does not judge the borrower directly. It tells lenders whether the borrower's lender network looks organic or suspicious.":
-      'Điểm này không đánh giá trực tiếp người vay. Nó cho người cho vay biết liệu mạng lưới người cho vay của người vay này có tự nhiên hay đáng ngờ.',
+   "This does not judge the borrower directly. It tells moo-lenders whether the borrower's moo-lender network looks organic or suspicious.":
+      'Điểm này không đánh giá trực tiếp người vay. Nó cho moo-lender biết liệu mạng lưới moo-lender của người vay này có tự nhiên hay đáng ngờ.',
    'Read the full docs': 'Đọc tài liệu đầy đủ',
-   'Lender Diversity Score documentation': 'Tài liệu về Điểm đa dạng người cho vay',
-   'Why lenders care': 'Vì sao người cho vay quan tâm',
+   'Moo-lender Diversity Score documentation': 'Tài liệu về Điểm đa dạng moo-lender',
+   'Why moo-lenders care': 'Vì sao moo-lender quan tâm',
    'Loan mix shows whether this borrower is mostly building repayment history with smaller loans, or raising their credit level with full-limit repayments.':
       'Cơ cấu khoản vay cho thấy người vay này chủ yếu xây dựng lịch sử trả nợ bằng các khoản vay nhỏ, hay đang nâng hạng tín dụng bằng cách trả các khoản vay bằng toàn bộ hạn mức.',
    'A healthy borrower can have both: smaller loans for repayment history and full-limit loans for higher future limits.':
@@ -968,12 +968,12 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Read the loan summary': 'Xem tổng quan khoản vay',
    'Look at total borrowed, total loans, repayments, defaults, and standing. Good Standing means there are no unresolved defaults.':
       'Xem tổng số tiền đã vay, tổng số khoản vay, số lần trả nợ, số lần vỡ nợ, và tình trạng uy tín. Uy tín tốt nghĩa là không có khoản vỡ nợ nào chưa giải quyết.',
-   'Look at lender diversity': 'Xem mức độ đa dạng người cho vay',
-   'This shows whether the borrower has earned trust from multiple lenders, not just one repeated relationship.':
-      'Điều này cho thấy người vay đã tạo được niềm tin từ nhiều người cho vay khác nhau, không chỉ từ một mối quan hệ lặp đi lặp lại.',
+   'Look at moo-lender diversity': 'Xem mức độ đa dạng moo-lender',
+   'This shows whether the borrower has earned trust from multiple moo-lenders, not just one repeated relationship.':
+      'Điều này cho thấy người vay đã tạo được niềm tin từ nhiều moo-lender khác nhau, không chỉ từ một mối quan hệ lặp đi lặp lại.',
    'Use behavior patterns': 'Dùng các mô hình hành vi',
-   'These patterns help you judge risk: how often they borrow, how fast they usually repay, typical loan size, loan term, and repeat lenders.':
-      'Những mô hình này giúp bạn đánh giá rủi ro: họ vay thường xuyên như thế nào, họ thường trả nợ nhanh ra sao, quy mô khoản vay thông thường, kỳ hạn vay, và những người cho vay lặp lại.',
+   'These patterns help you judge risk: how often they borrow, how fast they usually repay, typical loan size, loan term, and repeat moo-lenders.':
+      'Những mô hình này giúp bạn đánh giá rủi ro: họ vay thường xuyên như thế nào, họ thường trả nợ nhanh ra sao, quy mô khoản vay thông thường, kỳ hạn vay, và những moo-lender lặp lại.',
    'Review recent loans': 'Xem lại các khoản vay gần đây',
    'Use the recent loan table to confirm the borrower has a repayment history that matches the request you are thinking about funding.':
       'Dùng bảng khoản vay gần đây để xác nhận người vay có lịch sử trả nợ phù hợp với yêu cầu mà bạn đang cân nhắc cấp vốn.',
@@ -989,13 +989,13 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Total Loans': 'Tổng số khoản vay',
    'Avg days between loans': 'Số ngày trung bình giữa các khoản vay',
    'Typical loan term': 'Kỳ hạn vay thông thường',
-   'Repeat lenders': 'Người cho vay lặp lại',
+   'Repeat moo-lenders': 'Moo-lender lặp lại',
    'Close default history': 'Đóng lịch sử vỡ nợ',
    'Close repayment history': 'Đóng lịch sử trả nợ',
    'Close credit level explanation': 'Đóng phần giải thích Hạng tín dụng',
-   'Close lender diversity explanation': 'Đóng phần giải thích Đa dạng người cho vay',
+   'Close moo-lender diversity explanation': 'Đóng phần giải thích Đa dạng moo-lender',
    'Amount concentration': 'Mức độ tập trung số tiền',
-   'Lender newness': 'Độ mới của người cho vay',
+   'Moo-lender newness': 'Độ mới của moo-lender',
    'New or inactive wallets count as riskier than established wallets with real on-chain activity.':
       'Ví mới hoặc không hoạt động được xem là rủi ro hơn so với ví đã hoạt động lâu và có hoạt động on-chain thực sự.',
    'Timing patterns': 'Mô hình thời điểm',
@@ -1004,8 +1004,8 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Recent suspicious patterns matter more. Older clean history fades over time.':
       'Các mô hình đáng ngờ gần đây có ảnh hưởng nhiều hơn. Lịch sử bình thường từ lâu sẽ giảm dần ảnh hưởng theo thời gian.',
    'Group coordination': 'Sự phối hợp theo nhóm',
-   'Checks whether many lenders appeared around the same time, which can suggest a recruited group.':
-      'Kiểm tra xem có nhiều người cho vay xuất hiện cùng một thời điểm hay không, điều này có thể gợi ý một nhóm được huy động.',
+   'Checks whether many moo-lenders appeared around the same time, which can suggest a recruited group.':
+      'Kiểm tra xem có nhiều moo-lender xuất hiện cùng một thời điểm hay không, điều này có thể gợi ý một nhóm được huy động.',
    Excellent: 'Xuất sắc',
    Good: 'Tốt',
    Fair: 'Khá',

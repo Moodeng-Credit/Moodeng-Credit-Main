@@ -82,7 +82,7 @@ export const vietnameseCoverageF: Record<string, string> = {
    'Wallet did not respond in time': 'Ví không phản hồi kịp thời',
 
    // src/lib/worldIdVerificationLabel.ts
-   'Verified Lender': 'Người cho vay đã xác minh',
+   'Verified Moo-lender': 'Moo-lender đã xác minh',
 
    // src/types/loanTypes.ts
    Unpaid: 'Chưa trả',
@@ -93,12 +93,12 @@ export const vietnameseCoverageF: Record<string, string> = {
       'Đúng từ 4 câu trở lên để nhận điểm Học viện. Mỗi câu trả lời đúng được 2 điểm.',
    'You scored 4 of 5. Log in and finish the borrower flow to keep going.':
       'Bạn trả lời đúng 4/5 câu. Đăng nhập và hoàn tất quy trình dành cho người vay để tiếp tục.',
-   'You scored 4 of 5. Log in and finish the lender flow to keep going.':
-      'Bạn trả lời đúng 4/5 câu. Đăng nhập và hoàn tất quy trình dành cho người cho vay để tiếp tục.',
+   'You scored 4 of 5. Log in and finish the moo-lender flow to keep going.':
+      'Bạn trả lời đúng 4/5 câu. Đăng nhập và hoàn tất quy trình dành cho moo-lender để tiếp tục.',
    'You scored 5 of 5. Log in and finish the borrower flow to keep going.':
       'Bạn trả lời đúng 5/5 câu. Đăng nhập và hoàn tất quy trình dành cho người vay để tiếp tục.',
-   'You scored 5 of 5. Log in and finish the lender flow to keep going.':
-      'Bạn trả lời đúng 5/5 câu. Đăng nhập và hoàn tất quy trình dành cho người cho vay để tiếp tục.',
+   'You scored 5 of 5. Log in and finish the moo-lender flow to keep going.':
+      'Bạn trả lời đúng 5/5 câu. Đăng nhập và hoàn tất quy trình dành cho moo-lender để tiếp tục.',
    'You scored 0 of 5. Score 4 of 5 to unlock Academy score.': 'Bạn trả lời đúng 0/5 câu. Cần đúng 4/5 câu để mở khóa điểm Học viện.',
    'You scored 1 of 5. Score 4 of 5 to unlock Academy score.': 'Bạn trả lời đúng 1/5 câu. Cần đúng 4/5 câu để mở khóa điểm Học viện.',
    'You scored 2 of 5. Score 4 of 5 to unlock Academy score.': 'Bạn trả lời đúng 2/5 câu. Cần đúng 4/5 câu để mở khóa điểm Học viện.',

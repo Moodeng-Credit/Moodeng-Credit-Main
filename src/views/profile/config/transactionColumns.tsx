@@ -50,7 +50,7 @@ export const getTransactionColumns = (isLender: boolean, userProfiles: Record<st
       mobileLabel: 'Date Returned'
    },
    {
-      header: `${isLender ? "Borrower's" : "Lender's"} Name`,
+      header: `${isLender ? "Borrower's" : "Moo-lender's"} Name`,
       accessor: (loan) => {
          const userId = isLender ? loan.borrowerUser : loan.lenderUser;
          return userId ? userProfiles[userId]?.username ?? userId : '';

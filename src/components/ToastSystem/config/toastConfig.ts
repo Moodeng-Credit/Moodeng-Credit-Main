@@ -80,7 +80,7 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
    loan_created: {
       toastType: TOAST_TYPES.SUCCESS,
       title: 'Loan Request Created!',
-      message: 'Your request is now live for lenders to review.',
+      message: 'Your request is now live for moo-lenders to review.',
       buttonText: 'View Active Loans',
       buttonAction: 'view_active_loans',
       route: '/dashboard'

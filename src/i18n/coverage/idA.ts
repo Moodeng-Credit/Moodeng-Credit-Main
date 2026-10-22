@@ -143,7 +143,7 @@ export const indonesianCoverageA: Record<string, string> = {
    'Send reset code': 'Kirim kode reset',
 
    // src/app/lender/request-board/page.tsx
-   'Lender Request Board': 'Papan Permintaan Pemberi Pinjaman',
+   'Moo-lender Request Board': 'Papan Permintaan Moo-lender',
 
    // src/app/mfa-challenge/page.tsx
    'That code did not work. Try again.': 'Kode itu tidak berhasil. Coba lagi.',
@@ -237,8 +237,8 @@ export const indonesianCoverageA: Record<string, string> = {
    'Meet the people building Moodeng Credit — co-founders George and Emma, the founding team, and advisors working on fair, portable credit.':
       'Kenali orang-orang di balik Moodeng Credit — co-founder George dan Emma, tim pendiri, serta para penasihat yang mengupayakan kredit yang adil dan portabel.',
    'Co-Founders': 'Co-Founder',
-   'Building a portable trust layer for borrowers who deserve fair credit and lenders who want transparent impact.':
-      'Membangun lapisan kepercayaan portabel untuk peminjam yang layak mendapat kredit adil dan pemberi pinjaman yang menginginkan dampak yang transparan.',
+   'Building a portable trust layer for borrowers who deserve fair credit and moo-lenders who want transparent impact.':
+      'Membangun lapisan kepercayaan portabel untuk peminjam yang layak mendapat kredit adil dan moo-lender yang menginginkan dampak yang transparan.',
    'Additional team members': 'Anggota tim lainnya',
    Website: 'Situs web',
    Advisors: 'Penasihat',
@@ -412,7 +412,7 @@ export const indonesianCoverageA: Record<string, string> = {
    'Coming soon': 'Segera hadir',
 
    // src/components/PowerLenderBadge.tsx
-   'Power Lender': 'Power Lender',
+   'Power Moo-lender': 'Power Moo-lender',
 
    // src/components/RepayInAppBrowserGate.tsx
    'Open Moodeng in your browser to repay': 'Buka Moodeng di browser kamu untuk membayar',
@@ -605,8 +605,8 @@ export const indonesianCoverageA: Record<string, string> = {
    'Support contacts': 'Kontak dukungan',
    'Here are support contacts. Choose a channel and we will help you with your Moodeng account.':
       'Berikut kontak dukungan kami. Pilih salurannya dan kami akan membantumu dengan akun Moodeng kamu.',
-   'Here are support contacts for your expired loan request. We can help you connect with a lender or decide whether to post again.':
-      'Berikut kontak dukungan untuk permintaan pinjamanmu yang sudah kedaluwarsa. Kami bisa membantumu terhubung dengan pemberi pinjaman atau memutuskan apakah perlu memasang permintaan lagi.',
+   'Here are support contacts for your expired loan request. We can help you connect with a moo-lender or decide whether to post again.':
+      'Berikut kontak dukungan untuk permintaan pinjamanmu yang sudah kedaluwarsa. Kami bisa membantumu terhubung dengan moo-lender atau memutuskan apakah perlu memasang permintaan lagi.',
    'Here are support contacts for World ID verification if your status did not update after completing World ID.':
       'Berikut kontak dukungan untuk verifikasi World ID jika statusmu tidak berubah setelah menyelesaikan World ID.',
    'Close support contacts': 'Tutup kontak dukungan',
@@ -641,10 +641,10 @@ export const indonesianCoverageA: Record<string, string> = {
    // src/components/verification/VerifiedCelebrationNotifier.tsx
    'Manual review complete — you’re verified!': 'Peninjauan manual selesai — kamu sudah terverifikasi!',
    'Your ID is verified!': 'ID kamu sudah terverifikasi!',
-   'Well done! Our reviewers confirmed your documents. You now have full access — start building trust with lenders.':
-      'Mantap! Tim peninjau kami sudah mengonfirmasi dokumenmu. Sekarang kamu punya akses penuh — mulai bangun kepercayaan dengan pemberi pinjaman.',
-   'Well done! Your identity is confirmed. You now have full access — start building trust with lenders.':
-      'Mantap! Identitasmu sudah dikonfirmasi. Sekarang kamu punya akses penuh — mulai bangun kepercayaan dengan pemberi pinjaman.',
+   'Well done! Our reviewers confirmed your documents. You now have full access — start building trust with moo-lenders.':
+      'Mantap! Tim peninjau kami sudah mengonfirmasi dokumenmu. Sekarang kamu punya akses penuh — mulai bangun kepercayaan dengan moo-lender.',
+   'Well done! Your identity is confirmed. You now have full access — start building trust with moo-lenders.':
+      'Mantap! Identitasmu sudah dikonfirmasi. Sekarang kamu punya akses penuh — mulai bangun kepercayaan dengan moo-lender.',
    'Request a loan': 'Ajukan pinjaman',
 
    // src/components/verification/VerifyYourselfModal.tsx
@@ -755,8 +755,8 @@ export const indonesianCoverageA: Record<string, string> = {
    'Repaying clearly and on time': 'Membayar kembali dengan jelas dan tepat waktu',
    'Nice practice request.': 'Latihan permintaan yang bagus.',
    'Strong repayment move.': 'Langkah pembayaran kembali yang kuat.',
-   'Nice! Repaying is super important on Moodeng. On-time repayment helps your trust record, keeps lenders confident, and can unlock better borrowing limits over time.':
-      'Bagus! Membayar kembali itu sangat penting di Moodeng. Pembayaran tepat waktu membantu rekam jejak kepercayaanmu, membuat pemberi pinjaman tetap yakin, dan bisa membuka limit pinjaman yang lebih baik seiring waktu.',
+   'Nice! Repaying is super important on Moodeng. On-time repayment helps your trust record, keeps moo-lenders confident, and can unlock better borrowing limits over time.':
+      'Bagus! Membayar kembali itu sangat penting di Moodeng. Pembayaran tepat waktu membantu rekam jejak kepercayaanmu, membuat moo-lender tetap yakin, dan bisa membuka limit pinjaman yang lebih baik seiring waktu.',
    'Mecha says: full-limit loans repaid on time are how borrowers build a stronger credit record. Keep repayment clean, and your next limit can grow.':
       'Kata Mecha: pinjaman limit penuh yang dibayar tepat waktu adalah cara peminjam membangun rekam jejak kredit yang lebih kuat. Jaga pembayaran tetap bersih, dan limit berikutnya bisa tumbuh.',
    'A step-by-step walkthrough of the Moodeng borrower flow — sign up, verify, set up your Instant Wallet (or connect a Base Account), request a loan, repay, and grow your credit limit.':
@@ -796,8 +796,8 @@ export const indonesianCoverageA: Record<string, string> = {
 
    // src/views/academy/VerifyGuide.tsx
    Money: 'Uang',
-   'To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts out of the community, and it is what lets lenders trust the requests they fund.':
-      'Untuk menjaga Moodeng tetap aman dan adil, setiap peminjam menyelesaikan satu pengecekan identitas singkat. Ini mencegah akun palsu dan duplikat masuk ke komunitas, dan inilah yang membuat pemberi pinjaman percaya pada permintaan yang mereka danai.',
+   'To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts out of the community, and it is what lets moo-lenders trust the requests they fund.':
+      'Untuk menjaga Moodeng tetap aman dan adil, setiap peminjam menyelesaikan satu pengecekan identitas singkat. Ini mencegah akun palsu dan duplikat masuk ke komunitas, dan inilah yang membuat moo-lender percaya pada permintaan yang mereka danai.',
    'The recommended route: Verify Your ID.': 'Cara yang direkomendasikan: Verifikasi ID Kamu.',
    'National ID verification is available for these countries.': 'Verifikasi KTP tersedia untuk negara-negara berikut.',
    'Pass on the first try': 'Lolos di percobaan pertama',
@@ -808,14 +808,14 @@ export const indonesianCoverageA: Record<string, string> = {
       'Pengecekan dijalankan oleh mitra verifikasi tepercaya kami. Moodeng hanya menerima hasilnya — lolos atau tidak — bukan salinan dokumenmu.',
    'Ready to verify?': 'Siap untuk verifikasi?',
    Read: 'Baca',
-   'Verification makes sure every request comes from a real, unique person. That is what keeps fake and duplicate accounts away from lenders.':
-      'Verifikasi memastikan setiap permintaan berasal dari orang sungguhan yang unik. Inilah yang menjauhkan akun palsu dan duplikat dari pemberi pinjaman.',
+   'Verification makes sure every request comes from a real, unique person. That is what keeps fake and duplicate accounts away from moo-lenders.':
+      'Verifikasi memastikan setiap permintaan berasal dari orang sungguhan yang unik. Inilah yang menjauhkan akun palsu dan duplikat dari moo-lender.',
    Access: 'Akses',
    'Finishing verification is what unlocks loan requests, and it is the point where you start earning Pandesal points.':
       'Menyelesaikan verifikasi adalah yang membuka permintaan pinjaman, dan di situlah kamu mulai mendapatkan poin Pandesal.',
    Trust: 'Kepercayaan',
-   'Lenders are funding real people, not anonymous accounts. That confidence is what gets requests on the board funded.':
-      'Pemberi pinjaman mendanai orang sungguhan, bukan akun anonim. Keyakinan itulah yang membuat permintaan di papan didanai.',
+   'Moo-lenders are funding real people, not anonymous accounts. That confidence is what gets requests on the board funded.':
+      'Moo-lender mendanai orang sungguhan, bukan akun anonim. Keyakinan itulah yang membuat permintaan di papan didanai.',
    'Your physical national ID': 'KTP fisik kamu',
    'The real card in hand, not a photocopy or a picture on another screen.':
       'Kartu asli di tangan, bukan fotokopi atau foto di layar lain.',
@@ -947,16 +947,16 @@ export const indonesianCoverageA: Record<string, string> = {
 
    // src/views/account/EditBioInfoModal.tsx
    'Change Bio Info': 'Ubah Info Bio',
-   'Update the details lenders see about your work, income, and what you typically need help with.':
-      'Perbarui detail yang dilihat pemberi pinjaman tentang pekerjaan, penghasilan, dan hal yang biasanya kamu butuh bantuan.',
+   'Update the details moo-lenders see about your work, income, and what you typically need help with.':
+      'Perbarui detail yang dilihat moo-lender tentang pekerjaan, penghasilan, dan hal yang biasanya kamu butuh bantuan.',
    'What do you do for work?': 'Apa pekerjaanmu?',
    'Any other income sources?': 'Ada sumber penghasilan lain?',
    'How would you describe your work?': 'Bagaimana kamu menggambarkan pekerjaanmu?',
-   'Helps lenders see that repayment timing makes sense.': 'Membantu pemberi pinjaman melihat bahwa waktu pembayaran kembali masuk akal.',
+   'Helps moo-lenders see that repayment timing makes sense.': 'Membantu moo-lender melihat bahwa waktu pembayaran kembali masuk akal.',
    'When do you usually get paid?': 'Kapan biasanya kamu menerima gaji?',
    'What is your approximate monthly income?': 'Berapa perkiraan penghasilan bulananmu?',
    'What do your recurring expenses cost per month?': 'Berapa pengeluaran rutin bulananmu?',
-   'Helps lenders understand your financial commitments.': 'Membantu pemberi pinjaman memahami komitmen keuanganmu.',
+   'Helps moo-lenders understand your financial commitments.': 'Membantu moo-lender memahami komitmen keuanganmu.',
    'Pick all that apply.': 'Pilih semua yang sesuai.',
    'What do you usually need short-term help with?': 'Untuk apa biasanya kamu butuh bantuan jangka pendek?',
 
@@ -1007,8 +1007,8 @@ export const indonesianCoverageA: Record<string, string> = {
    'Loading recent wallet activity': 'Memuat aktivitas dompet terbaru',
    'Wallet history': 'Riwayat dompet',
    // src/components/verification/VerifyYourselfModal.tsx (ID check is the last step of a request)
-   "A one-time ID check so lenders know you're a real person — it takes about 3 minutes.":
-      'Cek ID satu kali agar pemberi pinjaman tahu kamu orang sungguhan — hanya sekitar 3 menit.',
+   "A one-time ID check so moo-lenders know you're a real person — it takes about 3 minutes.":
+      'Cek ID satu kali agar moo-lender tahu kamu orang sungguhan — hanya sekitar 3 menit.',
 
    // Passwordless code login (sign-up/sign-in, code screen, password + email later), PR #1164
    'Sign up to Moodeng': 'Daftar di Moodeng',

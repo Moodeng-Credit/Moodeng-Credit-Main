@@ -14,8 +14,8 @@ export const indonesianCoverageD: Record<string, string> = {
    'Builds repayment history': 'Membangun riwayat pembayaran kembali',
    'Borrower Insights': 'Wawasan Peminjam',
    'How to use Moodeng Credit': 'Cara menggunakan Moodeng Credit',
-   'A simple walkthrough of the borrower flow. Start here if you want to know what to click, what lenders see, and how repayment grows your limit.':
-      'Panduan singkat langkah demi langkah untuk alur peminjam. Mulai di sini kalau kamu ingin tahu apa yang harus diklik, apa yang dilihat pemberi pinjaman, dan bagaimana pembayaran kembali membuat limitmu bertambah.',
+   'A simple walkthrough of the borrower flow. Start here if you want to know what to click, what moo-lenders see, and how repayment grows your limit.':
+      'Panduan singkat langkah demi langkah untuk alur peminjam. Mulai di sini kalau kamu ingin tahu apa yang harus diklik, apa yang dilihat moo-lender, dan bagaimana pembayaran kembali membuat limitmu bertambah.',
    'Tutorial Video': 'Video Tutorial',
    'Watch the quick Moodeng walkthrough.': 'Tonton panduan singkat Moodeng.',
    'I am Mecha. I will walk you through Moodeng step by step.': 'Aku Mecha. Aku akan memandumu menggunakan Moodeng langkah demi langkah.',
@@ -24,18 +24,18 @@ export const indonesianCoverageD: Record<string, string> = {
    'Create your account': 'Buat akunmu',
    'Sign up with email so Moodeng can save your borrower profile, loans, repayments, and credit progress.':
       'Daftar dengan email supaya Moodeng bisa menyimpan profil peminjam, pinjaman, pembayaran kembali, dan progres kreditmu.',
-   'Verify once to prove you are unique. After that, lenders can trust that your request is tied to one real borrower.':
-      'Verifikasi sekali untuk membuktikan kamu unik. Setelah itu, pemberi pinjaman bisa percaya bahwa permintaanmu terhubung dengan satu peminjam yang nyata.',
+   'Verify once to prove you are unique. After that, moo-lenders can trust that your request is tied to one real borrower.':
+      'Verifikasi sekali untuk membuktikan kamu unik. Setelah itu, moo-lender bisa percaya bahwa permintaanmu terhubung dengan satu peminjam yang nyata.',
    'Add your wallet': 'Tambahkan dompetmu',
-   'Set up your Instant Wallet from your Moodeng login (or connect a Base Account if you prefer), so lenders can fund loans directly there and Moodeng can track repayment history.':
-      'Siapkan Instant Wallet kamu dari login Moodeng-mu (atau hubungkan Base Account kalau kamu lebih suka), supaya pemberi pinjaman bisa langsung mendanai pinjaman ke sana dan Moodeng bisa melacak riwayat pembayaran kembalimu.',
+   'Set up your Instant Wallet from your Moodeng login (or connect a Base Account if you prefer), so moo-lenders can fund loans directly there and Moodeng can track repayment history.':
+      'Siapkan Instant Wallet kamu dari login Moodeng-mu (atau hubungkan Base Account kalau kamu lebih suka), supaya moo-lender bisa langsung mendanai pinjaman ke sana dan Moodeng bisa melacak riwayat pembayaran kembalimu.',
    'Your amount sets the loan type': 'Jumlahmu yang menentukan jenis pinjaman',
    'If your request is below your credit limit, it is trust-building. If it is for your full credit limit, it is credit-building.':
       'Kalau permintaanmu di bawah limit kreditmu, ini trust-building. Kalau untuk seluruh limit kreditmu, ini credit-building.',
-   'Pick your amount, choose when you will repay, and explain why you need support before posting to lenders.':
-      'Pilih jumlahnya, tentukan kapan kamu akan membayar kembali, dan jelaskan alasan kamu butuh dukungan sebelum memposting ke pemberi pinjaman.',
-   'Your request appears on the board where lenders can review the terms and decide whether to fund it.':
-      'Permintaanmu akan muncul di papan, tempat pemberi pinjaman bisa meninjau persyaratannya dan memutuskan apakah akan mendanainya.',
+   'Pick your amount, choose when you will repay, and explain why you need support before posting to moo-lenders.':
+      'Pilih jumlahnya, tentukan kapan kamu akan membayar kembali, dan jelaskan alasan kamu butuh dukungan sebelum memposting ke moo-lender.',
+   'Your request appears on the board where moo-lenders can review the terms and decide whether to fund it.':
+      'Permintaanmu akan muncul di papan, tempat moo-lender bisa meninjau persyaratannya dan memutuskan apakah akan mendanainya.',
    'Repay clearly': 'Bayar kembali dengan jelas',
    'Pay back the agreed amount on time. Moodeng tracks repayment progress clearly in your account.':
       'Bayar kembali jumlah yang disepakati tepat waktu. Moodeng melacak progres pembayaran kembali dengan jelas di akunmu.',
@@ -104,8 +104,8 @@ export const indonesianCoverageD: Record<string, string> = {
    'RULES OF REPAYING': 'ATURAN PEMBAYARAN KEMBALI',
    'Moodeng offers flexible, blockchain-based microloans. Repay responsibly to build your credit score.':
       'Moodeng menawarkan mikropinjaman berbasis blockchain yang fleksibel. Bayar kembali dengan bertanggung jawab untuk membangun skor kreditmu.',
-   'You must pay the lender directly by hitting the repay button.':
-      'Kamu harus membayar pemberi pinjaman secara langsung dengan menekan tombol bayar kembali.',
+   'You must pay the moo-lender directly by hitting the repay button.':
+      'Kamu harus membayar moo-lender secara langsung dengan menekan tombol bayar kembali.',
    'UP-TO-YOU': 'TERSERAH KAMU',
    'Flexible repayments: Any amount up to deadline': 'Pembayaran kembali fleksibel: Berapa pun jumlahnya sampai batas waktu',
    'Build credit score with each on-time payment': 'Bangun skor kredit dengan setiap pembayaran tepat waktu',

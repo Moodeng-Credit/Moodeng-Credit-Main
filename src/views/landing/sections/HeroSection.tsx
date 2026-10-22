@@ -19,7 +19,7 @@ const HeroSection: FC = () => {
 
                   <p className="[font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-[#171420] text-lg md:text-xl lg:text-[22.7px] tracking-[0] leading-8">
                      <span className="[font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-[#171420] text-lg md:text-xl lg:text-[22.7px] tracking-[0] leading-8">
-                        We created a new kind of Lender to Borrower experience. There is no escrow and no middle-man. You borrow
+                        We created a new kind of Moo-lender to Borrower experience. There is no escrow and no middle-man. You borrow
                      </span>
                      <span className="[font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-[#171420] text-lg md:text-xl lg:text-[22.7px] tracking-[0] leading-8">
                         {' '}

@@ -51,7 +51,7 @@ const steps: AcademyStep[] = [
       id: 'verify',
       eyebrow: 'Step 2',
       title: 'Verify with World ID',
-      body: 'Verify once to prove you are unique. After that, lenders can trust that your request is tied to one real borrower.',
+      body: 'Verify once to prove you are unique. After that, moo-lenders can trust that your request is tied to one real borrower.',
       action: 'Verify',
       screen: 'verify'
    },
@@ -59,7 +59,7 @@ const steps: AcademyStep[] = [
       id: 'wallet',
       eyebrow: 'Step 3',
       title: 'Add your wallet',
-      body: 'Set up your Instant Wallet from your Moodeng login (or connect a Base Account if you prefer), so lenders can fund loans directly there and Moodeng can track repayment history.',
+      body: 'Set up your Instant Wallet from your Moodeng login (or connect a Base Account if you prefer), so moo-lenders can fund loans directly there and Moodeng can track repayment history.',
       action: 'Set up wallet',
       screen: 'wallet'
    },
@@ -75,7 +75,7 @@ const steps: AcademyStep[] = [
       id: 'request',
       eyebrow: 'Step 5',
       title: 'Submit a loan request',
-      body: 'Pick your amount, choose when you will repay, and explain why you need support before posting to lenders.',
+      body: 'Pick your amount, choose when you will repay, and explain why you need support before posting to moo-lenders.',
       action: 'Request',
       screen: 'request'
    },
@@ -83,7 +83,7 @@ const steps: AcademyStep[] = [
       id: 'board',
       eyebrow: 'Step 6',
       title: 'Get matched on the request board',
-      body: 'Your request appears on the board where lenders can review the terms and decide whether to fund it.',
+      body: 'Your request appears on the board where moo-lenders can review the terms and decide whether to fund it.',
       action: 'Browse',
       screen: 'board'
    },
@@ -120,7 +120,7 @@ const quizQuestions: QuizQuestion[] = [
    {
       id: 'verify',
       question: 'Why do borrowers verify with World ID?',
-      options: ['To prove they are unique', 'To skip repayment', 'To hide from lenders'],
+      options: ['To prove they are unique', 'To skip repayment', 'To hide from moo-lenders'],
       answer: 'To prove they are unique'
    },
    {
@@ -132,7 +132,7 @@ const quizQuestions: QuizQuestion[] = [
    {
       id: 'loan-type',
       question: 'Your credit limit is $15. What is a $10 request?',
-      options: ['Trust-building', 'Credit-building', 'A lender loan'],
+      options: ['Trust-building', 'Credit-building', 'A moo-lender loan'],
       answer: 'Trust-building'
    },
    {
@@ -368,7 +368,7 @@ const RepayScreen = ({ onMechaAction }: { onMechaAction: (message: MechaMessage)
          onClick={() =>
             onMechaAction({
                title: 'Strong repayment move.',
-               body: 'Nice! Repaying is super important on Moodeng. On-time repayment helps your trust record, keeps lenders confident, and can unlock better borrowing limits over time.'
+               body: 'Nice! Repaying is super important on Moodeng. On-time repayment helps your trust record, keeps moo-lenders confident, and can unlock better borrowing limits over time.'
             })
          }
       >
@@ -673,7 +673,7 @@ export default function AcademyGuide(): JSX.Element {
                onClick={() =>
                   showMechaMessage({
                      title: 'Strong repayment move.',
-                     body: 'Nice! Repaying is super important on Moodeng. On-time repayment helps your trust record, keeps lenders confident, and can unlock better borrowing limits over time.'
+                     body: 'Nice! Repaying is super important on Moodeng. On-time repayment helps your trust record, keeps moo-lenders confident, and can unlock better borrowing limits over time.'
                   })
                }
             >
@@ -735,7 +735,7 @@ export default function AcademyGuide(): JSX.Element {
                <div className="academy-kicker">Moodeng Academy</div>
                <h1>How to use Moodeng Credit</h1>
                <p>
-                  A simple walkthrough of the borrower flow. Start here if you want to know what to click, what lenders see, and how
+                  A simple walkthrough of the borrower flow. Start here if you want to know what to click, what moo-lenders see, and how
                   repayment grows your limit.
                </p>
                <div className="academy-path" aria-label="Academy path">
@@ -851,7 +851,7 @@ export default function AcademyGuide(): JSX.Element {
                         type="button"
                         onClick={() => handleQuizRoleChange('lender')}
                      >
-                        Lender
+                        Moo-lender
                      </button>
                   </div>
                   <div className="academy-quiz__reward">

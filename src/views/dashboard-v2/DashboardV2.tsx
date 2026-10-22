@@ -61,7 +61,7 @@ const DASHBOARD_TOUR_STEPS = [
    {
       target: '[data-tour-target="dashboard-milestones-heading"]',
       title: 'Milestones',
-      body: 'Milestones are extra ways to earn Pandesal. Complete them to strengthen your profile and make lenders more confident in your requests.',
+      body: 'Milestones are extra ways to earn Pandesal. Complete them to strengthen your profile and make moo-lenders more confident in your requests.',
       durationMs: 7600
    }
 ];
@@ -74,7 +74,7 @@ const SAMPLE_STREAK: StreakMilestone[] = [
       points: 10,
       completedAt: new Date(Date.now() - 3 * 864e5).toISOString()
    },
-   { id: 'first-funded-loan', title: 'Get funded by a lender', points: 15, completedAt: new Date(Date.now() - 864e5).toISOString() }
+   { id: 'first-funded-loan', title: 'Get funded by a moo-lender', points: 15, completedAt: new Date(Date.now() - 864e5).toISOString() }
 ];
 
 const streakSeenKey = (userId: string) => `moodeng:milestone-streak-seen:${userId}`;

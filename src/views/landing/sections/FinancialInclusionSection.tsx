@@ -32,7 +32,7 @@ export default function FinancialInclusionSection(): JSX.Element {
                      </div>
                      <div className="absolute w-[341px] h-[210px] top-[88px] left-[30px]">
                         <p className="absolute w-[364px] h-[203px] top-0.5 left-0 [font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-[#171420] text-[40px] tracking-[0] leading-[42px]">
-                           Direct Lender-to-Borrower $15 microloans. Unlock more credit when you repay.
+                           Direct Moo-lender-to-Borrower $15 microloans. Unlock more credit when you repay.
                         </p>
                      </div>
                      <div className="absolute w-[341px] h-[324px] top-[314px] left-[30px]">

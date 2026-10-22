@@ -10,7 +10,7 @@ const listData = [
       title: 'Moodeng can show verification status without storing passport-style documents.'
    },
    {
-      title: 'Lenders still evaluate loan terms, history, and repayment behavior before funding.'
+      title: 'Moo-lenders still evaluate loan terms, history, and repayment behavior before funding.'
    }
 ];
 

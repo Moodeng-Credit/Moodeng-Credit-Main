@@ -79,9 +79,9 @@ export const indonesianCoverageC: Record<string, string> = {
    'Anonymous Lending': 'Pinjaman anonim',
    'Wallet-based lending with usernames keeps your real identity private.':
       'Pinjaman berbasis dompet dengan username menjaga identitas aslimu tetap privat.',
-   'No Fees for Lenders, Ever': 'Tanpa biaya untuk pemberi pinjaman, selamanya',
-   "Unlike other platforms, we don't charge lenders any commissions or monthly fees.":
-      'Tidak seperti platform lain, kami tidak memungut komisi atau biaya bulanan dari pemberi pinjaman.',
+   'No Fees for Moo-lenders, Ever': 'Tanpa biaya untuk moo-lender, selamanya',
+   "Unlike other platforms, we don't charge moo-lenders any commissions or monthly fees.":
+      'Tidak seperti platform lain, kami tidak memungut komisi atau biaya bulanan dari moo-lender.',
    'Advanced Security': 'Keamanan canggih',
    'Protection against VPN-users, scammers, and other malicious actors.':
       'Perlindungan dari pengguna VPN, penipu, dan pihak jahat lainnya.',
@@ -95,8 +95,8 @@ export const indonesianCoverageC: Record<string, string> = {
       'Pinjaman berbasis dompet Web3 menjaga privasimu: identitasmu tetap aman. Tanpa cookie, penjualan data, atau spam. Hanya transaksi anonim.',
 
    // src/views/lenderBenefits/sections/HowWeVerifySection.tsx
-   'Borrowers verify with World ID before they can request loans. That gives lenders a real-person signal without asking borrowers to hand over private documents to Moodeng.':
-      'Peminjam memverifikasi diri dengan World ID sebelum bisa mengajukan permintaan pinjaman. Dengan begitu, pemberi pinjaman tahu mereka orang sungguhan tanpa peminjam harus menyerahkan dokumen pribadi ke Moodeng.',
+   'Borrowers verify with World ID before they can request loans. That gives moo-lenders a real-person signal without asking borrowers to hand over private documents to Moodeng.':
+      'Peminjam memverifikasi diri dengan World ID sebelum bisa mengajukan permintaan pinjaman. Dengan begitu, moo-lender tahu mereka orang sungguhan tanpa peminjam harus menyerahkan dokumen pribadi ke Moodeng.',
    'Unique person': 'Orang unik',
    'One account': 'Satu akun',
    'Less bot risk': 'Risiko bot lebih kecil',
@@ -107,7 +107,7 @@ export const indonesianCoverageC: Record<string, string> = {
    'Verified humans, clearer lending signals.': 'Manusia terverifikasi, sinyal pinjaman lebih jelas.',
 
    // src/views/lenderBenefits/sections/LendingIncentivesSection.tsx (+ config/lendingIncentivesConfig.ts)
-   'Lender terms': 'Ketentuan pemberi pinjaman',
+   'Moo-lender terms': 'Ketentuan moo-lender',
    'Back real requests with USDC': 'Dukung permintaan nyata dengan USDC',
    'Every request is settled in USDC, so terms stay simple.':
       'Setiap permintaan diselesaikan dalam USDC, jadi ketentuannya tetap sederhana.',
@@ -158,7 +158,7 @@ export const indonesianCoverageC: Record<string, string> = {
    'Credit does not follow': 'Kredit tidak ikut pindah',
    'Repayment discipline abroad rarely becomes a portable credit record they can use later.':
       'Disiplin membayar di luar negeri jarang menjadi catatan kredit portabel yang bisa mereka pakai nanti.',
-   'What lenders fund': 'Yang didanai pemberi pinjaman',
+   'What moo-lenders fund': 'Yang didanai moo-lender',
    'Small amounts with transparent borrower-proposed terms.': 'Jumlah kecil dengan ketentuan transparan yang diusulkan peminjam.',
    'Real repayment history': 'Riwayat pembayaran kembali yang nyata',
    'Each repayment helps create a record the borrower can keep building.':
@@ -179,8 +179,8 @@ export const indonesianCoverageC: Record<string, string> = {
       'Ketersediaan Orb membantu kami memulai dengan pengguna yang bisa membuktikan bahwa mereka peminjam unik dan nyata.',
    'Why this matters': 'Kenapa ini penting',
    'Lower trust friction': 'Lebih mudah membangun kepercayaan',
-   'Verification helps lenders evaluate people they have never met.':
-      'Verifikasi membantu pemberi pinjaman menilai orang yang belum pernah mereka temui.',
+   'Verification helps moo-lenders evaluate people they have never met.':
+      'Verifikasi membantu moo-lender menilai orang yang belum pernah mereka temui.',
    'Better than quick-loan apps': 'Lebih baik dari aplikasi pinjaman kilat',
    'Transparent loans can help borrowers avoid predatory emergency options.':
       'Pinjaman yang transparan bisa membantu peminjam menghindari pilihan darurat yang menjerat.',
@@ -197,7 +197,7 @@ export const indonesianCoverageC: Record<string, string> = {
    'Independent credit': 'Kredit mandiri',
    'The long-term goal is credit the borrower owns, not a score trapped in one country.':
       'Tujuan jangka panjangnya adalah kredit milik peminjam sendiri, bukan skor yang terjebak di satu negara.',
-   'Lender upside': 'Keuntungan pemberi pinjaman',
+   'Moo-lender upside': 'Keuntungan moo-lender',
    'Fund useful moments': 'Danai momen yang berarti',
    'Support real needs without pretending every loan is life-changing.':
       'Bantu kebutuhan nyata tanpa berpura-pura setiap pinjaman bisa mengubah hidup.',
@@ -213,14 +213,14 @@ export const indonesianCoverageC: Record<string, string> = {
    'Traditional credit: starts over at zero': 'Kredit tradisional: mulai lagi dari nol',
    'The problem': 'Masalahnya',
    'Good repayment rarely travels.': 'Riwayat bayar yang baik jarang ikut pindah.',
-   'That creates a trust gap for borrowers and a missed opportunity for lenders.':
-      'Akibatnya, muncul kesenjangan kepercayaan bagi peminjam dan peluang yang terlewat bagi pemberi pinjaman.',
+   'That creates a trust gap for borrowers and a missed opportunity for moo-lenders.':
+      'Akibatnya, muncul kesenjangan kepercayaan bagi peminjam dan peluang yang terlewat bagi moo-lender.',
    'Credit gets reset': 'Kredit kembali ke nol',
    'A Filipino or SEA worker can repay responsibly abroad and still have no useful credit record.':
       'Pekerja Filipina atau Asia Tenggara bisa membayar dengan bertanggung jawab di luar negeri, tetapi tetap tidak punya catatan kredit yang berguna.',
    'Good borrowers disappear': 'Peminjam yang baik tidak terlihat',
-   'Lenders cannot easily see the trust signals that should matter for a small emergency loan.':
-      'Pemberi pinjaman sulit melihat sinyal kepercayaan yang seharusnya penting untuk pinjaman darurat kecil.',
+   'Moo-lenders cannot easily see the trust signals that should matter for a small emergency loan.':
+      'Moo-lender sulit melihat sinyal kepercayaan yang seharusnya penting untuk pinjaman darurat kecil.',
    'Bad options fill the gap': 'Pilihan buruk mengisi kekosongan',
    'Quick-loan apps step in with pressure, high costs, and little long-term upside.':
       'Aplikasi pinjaman kilat masuk dengan tekanan, biaya tinggi, dan sedikit manfaat jangka panjang.',
@@ -235,8 +235,8 @@ export const indonesianCoverageC: Record<string, string> = {
       'World ID membantu memastikan ada satu orang sungguhan di balik setiap akun peminjam.',
    'Moodeng can show verification status without storing passport-style documents.':
       'Moodeng bisa menampilkan status verifikasi tanpa menyimpan dokumen seperti paspor.',
-   'Lenders still evaluate loan terms, history, and repayment behavior before funding.':
-      'Pemberi pinjaman tetap menilai ketentuan pinjaman, riwayat, dan kebiasaan membayar sebelum mendanai.',
+   'Moo-lenders still evaluate loan terms, history, and repayment behavior before funding.':
+      'Moo-lender tetap menilai ketentuan pinjaman, riwayat, dan kebiasaan membayar sebelum mendanai.',
    'World ID first': 'Utamakan World ID',
 
    // src/views/lenderBenefits/sections/VerfiyStatsSection.tsx (config/verifyStatsConfig.ts)
@@ -262,8 +262,8 @@ export const indonesianCoverageC: Record<string, string> = {
    'Repayment activity can travel with overseas workers through their wallet.':
       'Aktivitas pembayaran kembali bisa ikut dibawa pekerja di luar negeri lewat dompet mereka.',
    'Transparent loan behavior': 'Perilaku pinjaman yang transparan',
-   'Lenders can review onchain repayment signals instead of starting from zero.':
-      'Pemberi pinjaman bisa meninjau sinyal pembayaran kembali on-chain, bukan mulai dari nol.',
+   'Moo-lenders can review onchain repayment signals instead of starting from zero.':
+      'Moo-lender bisa meninjau sinyal pembayaran kembali on-chain, bukan mulai dari nol.',
    'Small loans, real signal': 'Pinjaman kecil, sinyal nyata',
    'Microloans create a practical path for borrowers to build proof over time.':
       'Pinjaman mikro menjadi jalan praktis bagi peminjam untuk membangun bukti dari waktu ke waktu.',
@@ -374,7 +374,7 @@ export const indonesianCoverageC: Record<string, string> = {
    'This wallet is already linked to another Moodeng account. To keep lending fair and prevent self-lending, each wallet can belong to only one account.':
       'Dompet ini sudah terhubung ke akun Moodeng lain. Agar pinjaman tetap adil dan tidak ada yang meminjami dirinya sendiri, setiap dompet hanya boleh dimiliki satu akun.',
    'What you can do': 'Yang bisa kamu lakukan',
-   'Connect a different wallet address to this lender account.': 'Hubungkan alamat dompet lain ke akun pemberi pinjaman ini.',
+   'Connect a different wallet address to this moo-lender account.': 'Hubungkan alamat dompet lain ke akun moo-lender ini.',
    'If you created a borrower account by mistake, remove this wallet from it first — or ask us to delete that account or switch its role.':
       'Jika kamu tidak sengaja membuat akun peminjam, hapus dulu dompet ini dari akun tersebut — atau minta kami menghapus akun itu atau mengganti perannya.',
    "Not sure what happened? Message us and we'll help.": 'Bingung apa yang terjadi? Kirim pesan ke kami, kami akan bantu.',
@@ -547,8 +547,8 @@ export const indonesianCoverageC: Record<string, string> = {
    'Small fee': 'Biaya kecil',
    'Enter an amount greater than 0.': 'Masukkan jumlah lebih dari 0.',
    'Start Setup': 'Mulai penyiapan',
-   'Verify yourself and set up your wallet (an Instant Wallet, or a Base Account if you prefer) before requesting loans. Repayments will show here after a lender funds your first loan.':
-      'Verifikasi diri dan siapkan dompet kamu (Instant Wallet, atau Base Account jika kamu mau) sebelum mengajukan pinjaman. Pembayaran kembali akan muncul di sini setelah pemberi pinjaman mendanai pinjaman pertamamu.',
+   'Verify yourself and set up your wallet (an Instant Wallet, or a Base Account if you prefer) before requesting loans. Repayments will show here after a moo-lender funds your first loan.':
+      'Verifikasi diri dan siapkan dompet kamu (Instant Wallet, atau Base Account jika kamu mau) sebelum mengajukan pinjaman. Pembayaran kembali akan muncul di sini setelah moo-lender mendanai pinjaman pertamamu.',
    'Finish setup to start borrowing': 'Selesaikan penyiapan untuk mulai meminjam',
    'Your wallet is added. Complete verification before requesting loans. Repayments will show here after funding.':
       'Dompet kamu sudah ditambahkan. Selesaikan verifikasi sebelum mengajukan pinjaman. Pembayaran kembali akan muncul di sini setelah pinjaman didanai.',
@@ -557,8 +557,8 @@ export const indonesianCoverageC: Record<string, string> = {
    'You are verified. Set up your Instant Wallet (or connect a Base Account) so loans and repayments can stay tied to your Moodeng account.':
       'Kamu sudah terverifikasi. Siapkan Instant Wallet kamu (atau hubungkan Base Account) agar pinjaman dan pembayaran kembali tetap terhubung ke akun Moodeng kamu.',
    'Add a wallet to borrow': 'Tambahkan dompet untuk meminjam',
-   'Your repayment activity will appear here once a lender funds your first loan.':
-      'Aktivitas pembayaran kembali kamu akan muncul di sini setelah pemberi pinjaman mendanai pinjaman pertamamu.',
+   'Your repayment activity will appear here once a moo-lender funds your first loan.':
+      'Aktivitas pembayaran kembali kamu akan muncul di sini setelah moo-lender mendanai pinjaman pertamamu.',
    'No repayments yet': 'Belum ada pembayaran kembali',
    'Copy failed': 'Gagal menyalin',
    'Could not copy your wallet address. Copy it manually.': 'Tidak bisa menyalin alamat dompet kamu. Salin secara manual.',
@@ -711,8 +711,8 @@ export const indonesianCoverageC: Record<string, string> = {
    'Most borrowers use both — trust loans to stay active, credit loans to climb.':
       'Sebagian besar peminjam menggunakan keduanya — Trust-Building Loan untuk tetap aktif, Credit-Building Loan untuk naik level.',
    'Trust is the currency before the credit.': 'Kepercayaan adalah mata uang sebelum kredit.',
-   'Every loan you repay cleanly — even a small Trust-Building Loan — deposits reputation that lenders can see. That trust is what gets your next request funded faster.':
-      'Setiap pinjaman yang kamu bayar kembali dengan lancar — bahkan Trust-Building Loan yang kecil — menambah reputasi yang bisa dilihat pemberi pinjaman. Kepercayaan itulah yang membuat permintaanmu berikutnya lebih cepat didanai.',
+   'Every loan you repay cleanly — even a small Trust-Building Loan — deposits reputation that moo-lenders can see. That trust is what gets your next request funded faster.':
+      'Setiap pinjaman yang kamu bayar kembali dengan lancar — bahkan Trust-Building Loan yang kecil — menambah reputasi yang bisa dilihat moo-lender. Kepercayaan itulah yang membuat permintaanmu berikutnya lebih cepat didanai.',
    'Level up faster': 'Naik level lebih cepat',
    'Do this, not that': 'Lakukan ini, bukan itu',
    'A few habits keep your climb steady and protect the Pandesal points you are earning.':
@@ -770,20 +770,20 @@ export const indonesianCoverageC: Record<string, string> = {
    'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment unlocks the next limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
       'Ambil Credit-Building Loan senilai limit penuhmu saat ini dan bayar kembali secara penuh dan tepat waktu. Pembayaran yang lancar akan membuka limit berikutnya — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
    'Does borrowing a small amount level me up?': 'Apakah meminjam jumlah kecil bisa menaikkan levelku?',
-   'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.':
-      'Tidak. Meminjam di bawah limitmu disebut Trust-Building Loan. Ini meningkatkan reputasimu di mata pemberi pinjaman, tetapi tidak menaikkan Level Kredit-mu. Hanya Credit-Building Loan senilai limit penuh yang menaikkan levelmu.',
+   'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with moo-lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.':
+      'Tidak. Meminjam di bawah limitmu disebut Trust-Building Loan. Ini meningkatkan reputasimu di mata moo-lender, tetapi tidak menaikkan Level Kredit-mu. Hanya Credit-Building Loan senilai limit penuh yang menaikkan levelmu.',
    'Can I skip levels by repaying early or paying extra?': 'Bisakah aku melompati level dengan membayar lebih awal atau membayar ekstra?',
    'No. Moodeng advances one level at a time. Paying extra or repaying early does not skip a step — each new limit is earned by repaying the level before it.':
       'Tidak. Moodeng menaikkan level satu per satu. Membayar ekstra atau lebih awal tidak melompati satu langkah pun — setiap limit baru didapat dengan melunasi level sebelumnya.',
    'Why does the limit start at only $15?': 'Kenapa limitnya cuma mulai dari $15?',
-   'Small starting limits keep risk low for the lenders funding someone with no track record yet. As you prove reliable repayment, your limit and lender confidence grow together.':
-      'Limit awal yang kecil menjaga risiko tetap rendah bagi pemberi pinjaman yang mendanai seseorang tanpa riwayat sebelumnya. Seiring kamu membuktikan pembayaran yang bisa diandalkan, limitmu dan kepercayaan pemberi pinjaman tumbuh bersama.',
+   'Small starting limits keep risk low for the moo-lenders funding someone with no track record yet. As you prove reliable repayment, your limit and moo-lender confidence grow together.':
+      'Limit awal yang kecil menjaga risiko tetap rendah bagi moo-lender yang mendanai seseorang tanpa riwayat sebelumnya. Seiring kamu membuktikan pembayaran yang bisa diandalkan, limitmu dan kepercayaan moo-lender tumbuh bersama.',
    'How long does it take to reach the $60 level?': 'Berapa lama waktu yang dibutuhkan untuk mencapai level $60?',
    'There is no fixed timeline. Each level needs one full-limit loan repaid on time, so the pace depends on how quickly you borrow and repay. Borrowers who repay cleanly can climb in just a few loan cycles.':
       'Tidak ada jangka waktu yang pasti. Setiap level membutuhkan satu pinjaman senilai limit penuh yang dibayar tepat waktu, jadi kecepatannya tergantung seberapa cepat kamu meminjam dan membayar kembali. Peminjam yang membayar dengan lancar bisa naik level hanya dalam beberapa siklus pinjaman.',
    'What happens if I miss a repayment?': 'Apa yang terjadi kalau aku telat membayar?',
-   'A late or missed repayment reduces your Pandesal points and can pause your progress. Lenders weigh the missed repayment heavily, so keeping payments on time matters more than borrowing size.':
-      'Pembayaran yang telat atau terlewat mengurangi poin Pandesal kamu dan bisa menghentikan progresmu. Pemberi pinjaman sangat mempertimbangkan keterlambatan pembayaran, jadi membayar tepat waktu lebih penting daripada besarnya pinjaman.',
+   'A late or missed repayment reduces your Pandesal points and can pause your progress. Moo-lenders weigh the missed repayment heavily, so keeping payments on time matters more than borrowing size.':
+      'Pembayaran yang telat atau terlewat mengurangi poin Pandesal kamu dan bisa menghentikan progresmu. Moo-lender sangat mempertimbangkan keterlambatan pembayaran, jadi membayar tepat waktu lebih penting daripada besarnya pinjaman.',
    'Does my Credit Level ever reset?': 'Apakah Level Kredit-ku bisa direset?',
    'Your progress is tied to your wallet and repayment history, so it travels with you. Missed repayments do not erase your level, but they reduce your Pandesal points and can slow further growth.':
       'Progresmu terikat pada dompet dan riwayat pembayaranmu, jadi selalu ikut denganmu. Pembayaran yang terlewat tidak menghapus levelmu, tetapi mengurangi poin Pandesal dan bisa memperlambat kenaikan berikutnya.',
@@ -822,8 +822,8 @@ export const indonesianCoverageC: Record<string, string> = {
    'Credit limit growing from fifteen to sixty dollars': 'Limit kredit naik dari lima belas menjadi enam puluh dolar',
    'A borrower hippo at a Moodeng kiosk following the credit-building flow: request, repay on time, then level up':
       'Seekor hipopotamus peminjam di kios Moodeng mengikuti alur credit-building: mengajukan, membayar tepat waktu, lalu naik level',
-   'A borrower hippo and a squirrel building trust with a lender at the Moodeng lending desk':
-      'Seekor hipopotamus peminjam dan tupai membangun kepercayaan dengan pemberi pinjaman di meja pinjaman Moodeng',
+   'A borrower hippo and a squirrel building trust with a moo-lender at the Moodeng lending desk':
+      'Seekor hipopotamus peminjam dan tupai membangun kepercayaan dengan moo-lender di meja pinjaman Moodeng',
 
    // src/views/support/PublicGuide.tsx
    'More guides': 'Panduan lainnya',
@@ -930,9 +930,9 @@ export const indonesianCoverageC: Record<string, string> = {
    "This is a voluntary gift — once sent, it can't be reversed.": 'Ini hadiah sukarela — begitu dikirim, tidak bisa dibatalkan.',
    'Hide — this keeps going on its own': 'Sembunyikan — proses ini tetap berjalan sendiri',
    'Sent successfully!': 'Berhasil dikirim!',
-   'Waiting for lender acceptance': 'Menunggu persetujuan pemberi pinjaman',
-   'This loan is not funded yet. Repayment starts only after a lender accepts.':
-      'Pinjaman ini belum didanai. Pembayaran kembali dimulai setelah pemberi pinjaman menyetujui.',
+   'Waiting for moo-lender acceptance': 'Menunggu persetujuan moo-lender',
+   'This loan is not funded yet. Repayment starts only after a moo-lender accepts.':
+      'Pinjaman ini belum didanai. Pembayaran kembali dimulai setelah moo-lender menyetujui.',
    'View on explorer': 'Lihat di explorer',
 
    // src/views/transactions/TransactionHistory.tsx
@@ -943,14 +943,14 @@ export const indonesianCoverageC: Record<string, string> = {
    'Search transaction history': 'Cari riwayat transaksi',
 
    // src/views/user-profile/LenderDiversityHistory.tsx
-   'Lender Diversity': 'Keragaman Pemberi Pinjaman',
+   'Moo-lender Diversity': 'Keragaman Moo-lender',
    'Need at least 2 funded loans': 'Butuh minimal 2 pinjaman yang didanai',
-   'A lender diversity score appears once there is enough borrower history to compare.':
-      'Skor keragaman pemberi pinjaman akan muncul setelah ada cukup riwayat peminjam untuk dibandingkan.',
-   'Lender Distribution': 'Distribusi Pemberi Pinjaman',
-   'No lender history yet': 'Belum ada riwayat pemberi pinjaman',
-   'Once this borrower receives funded loans, the lender distribution will appear here.':
-      'Setelah peminjam ini menerima pinjaman yang didanai, distribusi pemberi pinjaman akan muncul di sini.',
+   'A moo-lender diversity score appears once there is enough borrower history to compare.':
+      'Skor keragaman moo-lender akan muncul setelah ada cukup riwayat peminjam untuk dibandingkan.',
+   'Moo-lender Distribution': 'Distribusi Moo-lender',
+   'No moo-lender history yet': 'Belum ada riwayat moo-lender',
+   'Once this borrower receives funded loans, the moo-lender distribution will appear here.':
+      'Setelah peminjam ini menerima pinjaman yang didanai, distribusi moo-lender akan muncul di sini.',
 
    // src/views/user-profile/ProgressHistory.tsx
    'Progress History': 'Riwayat Progres',
@@ -961,8 +961,8 @@ export const indonesianCoverageC: Record<string, string> = {
    'Identity verification completed.': 'Verifikasi identitas selesai.',
    'No loan activity yet': 'Belum ada aktivitas pinjaman',
    'No funded loans have been recorded for this borrower yet.': 'Belum ada pinjaman yang didanai tercatat untuk peminjam ini.',
-   'Repeat Lender Relationship': 'Hubungan Pemberi Pinjaman Berulang',
-   'Borrowed again from an existing lender.': 'Meminjam lagi dari pemberi pinjaman yang sama.',
+   'Repeat Moo-lender Relationship': 'Hubungan Moo-lender Berulang',
+   'Borrowed again from an existing moo-lender.': 'Meminjam lagi dari moo-lender yang sama.',
    'Partial Repayment Made': 'Pembayaran Sebagian Dilakukan',
    'Credit Limit Unlocked': 'Limit Kredit Terbuka',
    'Defaulted Loan': 'Pinjaman Gagal Bayar',
@@ -973,58 +973,58 @@ export const indonesianCoverageC: Record<string, string> = {
 
    // src/views/user-profile/UserProfile.tsx
    'Borrower context': 'Konteks peminjam',
-   'This account is a lender': 'Akun ini adalah pemberi pinjaman',
-   'Lenders fund loans rather than borrow, so there is no borrowing history to show here.':
-      'Pemberi pinjaman mendanai pinjaman, bukan meminjam, jadi tidak ada riwayat peminjaman untuk ditampilkan di sini.',
+   'This account is a moo-lender': 'Akun ini adalah moo-lender',
+   'Moo-lenders fund loans rather than borrow, so there is no borrowing history to show here.':
+      'Moo-lender mendanai pinjaman, bukan meminjam, jadi tidak ada riwayat peminjaman untuk ditampilkan di sini.',
    'Verify to unlock LV.1': 'Verifikasi untuk membuka LV.1',
    'Only you can see this': 'Hanya kamu yang bisa melihat ini',
    'Good standing': 'Status baik',
    'View loan mix': 'Lihat komposisi pinjaman',
-   'Your score appears after at least 2 funded loans from different lenders.':
-      'Skormu akan muncul setelah minimal 2 pinjaman didanai oleh pemberi pinjaman yang berbeda.',
+   'Your score appears after at least 2 funded loans from different moo-lenders.':
+      'Skormu akan muncul setelah minimal 2 pinjaman didanai oleh moo-lender yang berbeda.',
    'Borrower patterns': 'Pola peminjam',
    'Recent Loans': 'Pinjaman Terbaru',
    'View who has funded this borrower and the status of each loan.': 'Lihat siapa yang mendanai peminjam ini dan status setiap pinjaman.',
-   'Loan / lender': 'Pinjaman / pemberi pinjaman',
+   'Loan / moo-lender': 'Pinjaman / moo-lender',
    'No funded loans yet': 'Belum ada pinjaman yang didanai',
    'Not enough loan history yet': 'Riwayat pinjaman belum cukup',
-   "Once this borrower completes more loans, you'll see repayment timing, usual loan size, repeat lenders, and borrowing patterns here.":
-      'Setelah peminjam ini menyelesaikan lebih banyak pinjaman, kamu akan melihat waktu pembayaran, ukuran pinjaman yang umum, pemberi pinjaman berulang, dan pola peminjaman di sini.',
+   "Once this borrower completes more loans, you'll see repayment timing, usual loan size, repeat moo-lenders, and borrowing patterns here.":
+      'Setelah peminjam ini menyelesaikan lebih banyak pinjaman, kamu akan melihat waktu pembayaran, ukuran pinjaman yang umum, moo-lender berulang, dan pola peminjaman di sini.',
    'Default History': 'Riwayat Gagal Bayar',
    'Missed repayments on this borrower’s past loans.': 'Pembayaran yang terlewat pada pinjaman-pinjaman peminjam ini sebelumnya.',
    'A default happens when a repayment deadline passes without full repayment.':
       'Gagal bayar terjadi ketika batas waktu pembayaran lewat tanpa pelunasan penuh.',
    'Loan defaulted': 'Pinjaman gagal bayar',
    Unresolved: 'Belum terselesaikan',
-   'Defaults may signal repayment risk. Lenders should review the borrower’s full history, not just credit level.':
-      'Gagal bayar bisa menandakan risiko pembayaran. Pemberi pinjaman sebaiknya meninjau seluruh riwayat peminjam, bukan hanya Level Kredit-nya.',
+   'Defaults may signal repayment risk. Moo-lenders should review the borrower’s full history, not just credit level.':
+      'Gagal bayar bisa menandakan risiko pembayaran. Moo-lender sebaiknya meninjau seluruh riwayat peminjam, bukan hanya Level Kredit-nya.',
    'Repayment History': 'Riwayat Pembayaran',
    'Money this borrower has already paid back across funded loans.':
       'Uang yang sudah dibayar kembali oleh peminjam ini dari pinjaman-pinjaman yang didanai.',
    'Fully repaid': 'Lunas',
-   'Completed repayments show this borrower has returned funds before. Partial repayments can still be useful context, but lenders should compare them with due dates and remaining balances.':
-      'Pembayaran yang selesai menunjukkan peminjam ini pernah mengembalikan dana sebelumnya. Pembayaran sebagian tetap bisa jadi konteks yang berguna, tapi pemberi pinjaman sebaiknya membandingkannya dengan tanggal jatuh tempo dan sisa saldo.',
+   'Completed repayments show this borrower has returned funds before. Partial repayments can still be useful context, but moo-lenders should compare them with due dates and remaining balances.':
+      'Pembayaran yang selesai menunjukkan peminjam ini pernah mengembalikan dana sebelumnya. Pembayaran sebagian tetap bisa jadi konteks yang berguna, tapi moo-lender sebaiknya membandingkannya dengan tanggal jatuh tempo dan sisa saldo.',
    'How Credit Level Works': 'Cara Kerja Level Kredit',
    'Credit Level shows the borrower’s current borrowing tier.': 'Level Kredit menunjukkan tingkat pinjaman peminjam saat ini.',
    'Borrowers level up by taking a Credit Building loan at their current limit and repaying it successfully.':
       'Peminjam naik level dengan mengambil Credit-Building Loan sesuai limit mereka saat ini dan membayarnya kembali dengan berhasil.',
    'Credit Levels': 'Level Kredit',
    'Credit limit': 'Limit kredit',
-   'How Lender Diversity Works': 'Cara Kerja Keragaman Pemberi Pinjaman',
+   'How Moo-lender Diversity Works': 'Cara Kerja Keragaman Moo-lender',
    'This score belongs to the borrower. It measures the quality of the people who have lent to them.':
       'Skor ini milik peminjam. Skor ini mengukur kualitas orang-orang yang telah meminjamkan uang kepada mereka.',
    'What a high score means': 'Arti skor yang tinggi',
-   'Lenders look independent, established, and natural. They are not all new accounts, not all funding at once, and not overly concentrated in one lender.':
-      'Pemberi pinjaman terlihat independen, mapan, dan alami. Mereka tidak semuanya akun baru, tidak semuanya mendanai sekaligus, dan tidak terlalu terpusat pada satu pemberi pinjaman.',
+   'Moo-lenders look independent, established, and natural. They are not all new accounts, not all funding at once, and not overly concentrated in one moo-lender.':
+      'Moo-lender terlihat independen, mapan, dan alami. Mereka tidak semuanya akun baru, tidak semuanya mendanai sekaligus, dan tidak terlalu terpusat pada satu moo-lender.',
    'What it is trying to catch': 'Apa yang coba dideteksi',
-   'A borrower could look trustworthy by using fake lender accounts to fund small loans, then ask for a larger real loan. This score looks for that kind of coordinated lender history.':
-      'Seorang peminjam bisa terlihat tepercaya dengan memakai akun pemberi pinjaman palsu untuk mendanai pinjaman kecil, lalu meminta pinjaman asli yang lebih besar. Skor ini mendeteksi pola riwayat pemberi pinjaman yang terkoordinasi seperti itu.',
+   'A borrower could look trustworthy by using fake moo-lender accounts to fund small loans, then ask for a larger real loan. This score looks for that kind of coordinated moo-lender history.':
+      'Seorang peminjam bisa terlihat tepercaya dengan memakai akun moo-lender palsu untuk mendanai pinjaman kecil, lalu meminta pinjaman asli yang lebih besar. Skor ini mendeteksi pola riwayat moo-lender yang terkoordinasi seperti itu.',
    'Score bands': 'Rentang skor',
-   "This does not judge the borrower directly. It tells lenders whether the borrower's lender network looks organic or suspicious.":
-      'Ini tidak menilai peminjam secara langsung. Ini memberi tahu pemberi pinjaman apakah jaringan pemberi pinjaman milik peminjam terlihat alami atau mencurigakan.',
+   "This does not judge the borrower directly. It tells moo-lenders whether the borrower's moo-lender network looks organic or suspicious.":
+      'Ini tidak menilai peminjam secara langsung. Ini memberi tahu moo-lender apakah jaringan moo-lender milik peminjam terlihat alami atau mencurigakan.',
    'Read the full docs': 'Baca dokumentasi lengkap',
-   'Lender Diversity Score documentation': 'Dokumentasi Skor Keragaman Pemberi Pinjaman',
-   'Why lenders care': 'Kenapa ini penting bagi pemberi pinjaman',
+   'Moo-lender Diversity Score documentation': 'Dokumentasi Skor Keragaman Moo-lender',
+   'Why moo-lenders care': 'Kenapa ini penting bagi moo-lender',
    'Loan mix shows whether this borrower is mostly building repayment history with smaller loans, or raising their credit level with full-limit repayments.':
       'Komposisi pinjaman menunjukkan apakah peminjam ini lebih banyak membangun riwayat pembayaran dengan pinjaman kecil, atau menaikkan Level Kredit dengan pembayaran senilai limit penuh.',
    'A healthy borrower can have both: smaller loans for repayment history and full-limit loans for higher future limits.':
@@ -1038,12 +1038,12 @@ export const indonesianCoverageC: Record<string, string> = {
    'Read the loan summary': 'Baca ringkasan pinjaman',
    'Look at total borrowed, total loans, repayments, defaults, and standing. Good Standing means there are no unresolved defaults.':
       'Lihat total yang dipinjam, total pinjaman, pembayaran, gagal bayar, dan status. Status Baik berarti tidak ada gagal bayar yang belum terselesaikan.',
-   'Look at lender diversity': 'Lihat keragaman pemberi pinjaman',
-   'This shows whether the borrower has earned trust from multiple lenders, not just one repeated relationship.':
-      'Ini menunjukkan apakah peminjam sudah mendapatkan kepercayaan dari beberapa pemberi pinjaman, bukan hanya satu hubungan yang berulang.',
+   'Look at moo-lender diversity': 'Lihat keragaman moo-lender',
+   'This shows whether the borrower has earned trust from multiple moo-lenders, not just one repeated relationship.':
+      'Ini menunjukkan apakah peminjam sudah mendapatkan kepercayaan dari beberapa moo-lender, bukan hanya satu hubungan yang berulang.',
    'Use behavior patterns': 'Gunakan pola perilaku',
-   'These patterns help you judge risk: how often they borrow, how fast they usually repay, typical loan size, loan term, and repeat lenders.':
-      'Pola ini membantu kamu menilai risiko: seberapa sering mereka meminjam, seberapa cepat mereka biasanya membayar kembali, ukuran pinjaman yang umum, jangka waktu pinjaman, dan pemberi pinjaman berulang.',
+   'These patterns help you judge risk: how often they borrow, how fast they usually repay, typical loan size, loan term, and repeat moo-lenders.':
+      'Pola ini membantu kamu menilai risiko: seberapa sering mereka meminjam, seberapa cepat mereka biasanya membayar kembali, ukuran pinjaman yang umum, jangka waktu pinjaman, dan moo-lender berulang.',
    'Review recent loans': 'Tinjau pinjaman terbaru',
    'Use the recent loan table to confirm the borrower has a repayment history that matches the request you are thinking about funding.':
       'Gunakan tabel pinjaman terbaru untuk memastikan peminjam punya riwayat pembayaran yang cocok dengan permintaan yang sedang kamu pertimbangkan untuk didanai.',
@@ -1054,16 +1054,16 @@ export const indonesianCoverageC: Record<string, string> = {
    'How Credit Level works': 'Cara kerja Level Kredit',
    'Total Borrowed': 'Total Dipinjam',
    'Total Loans': 'Total Pinjaman',
-   'How Lender Diversity Score works': 'Cara kerja Skor Keragaman Pemberi Pinjaman',
+   'How Moo-lender Diversity Score works': 'Cara kerja Skor Keragaman Moo-lender',
    'Avg days between loans': 'Rata-rata hari antar-pinjaman',
    'Typical loan term': 'Jangka waktu pinjaman yang umum',
-   'Repeat lenders': 'Pemberi pinjaman berulang',
+   'Repeat moo-lenders': 'Moo-lender berulang',
    'Close default history': 'Tutup riwayat gagal bayar',
    'Close repayment history': 'Tutup riwayat pembayaran',
    'Close credit level explanation': 'Tutup penjelasan Level Kredit',
-   'Close lender diversity explanation': 'Tutup penjelasan keragaman pemberi pinjaman',
+   'Close moo-lender diversity explanation': 'Tutup penjelasan keragaman moo-lender',
    'Amount concentration': 'Konsentrasi jumlah',
-   'Lender newness': 'Kebaruan pemberi pinjaman',
+   'Moo-lender newness': 'Kebaruan moo-lender',
    'New or inactive wallets count as riskier than established wallets with real on-chain activity.':
       'Dompet yang baru atau tidak aktif dianggap lebih berisiko dibanding dompet mapan dengan aktivitas on-chain yang nyata.',
    'Timing patterns': 'Pola waktu',
@@ -1072,8 +1072,8 @@ export const indonesianCoverageC: Record<string, string> = {
    'Recent suspicious patterns matter more. Older clean history fades over time.':
       'Pola mencurigakan yang baru terjadi lebih berpengaruh. Riwayat bersih yang lama akan memudar seiring waktu.',
    'Group coordination': 'Koordinasi kelompok',
-   'Checks whether many lenders appeared around the same time, which can suggest a recruited group.':
-      'Memeriksa apakah banyak pemberi pinjaman muncul dalam waktu yang berdekatan, yang bisa menandakan kelompok yang direkrut.',
+   'Checks whether many moo-lenders appeared around the same time, which can suggest a recruited group.':
+      'Memeriksa apakah banyak moo-lender muncul dalam waktu yang berdekatan, yang bisa menandakan kelompok yang direkrut.',
    Excellent: 'Sangat baik',
    Good: 'Baik',
    Fair: 'Cukup',

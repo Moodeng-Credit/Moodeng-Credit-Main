@@ -2,20 +2,20 @@ import { type JSX, useState } from 'react';
 
 const accessItems = [
    {
-      title: 'Direct lender-to-borrower',
+      title: 'Direct moo-lender-to-borrower',
       description:
-         'A lender funds your request directly. Moodeng helps show the terms and record the repayment history without hiding the process behind a middle-man.',
+         'A moo-lender funds your request directly. Moodeng helps show the terms and record the repayment history without hiding the process behind a middle-man.',
       icon: 'https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/68b8a3d664d9cddfcaad323cdf8060b1cbc394035925642f7e3a3288ae711e2c?apiKey=e485b3dc4b924975b4554885e21242bb'
    },
    {
       title: 'Funded in your wallet',
       description:
-         'When a lender funds your request, USDC moves through your digital wallet so the money and repayment record are easier to track.',
+         'When a moo-lender funds your request, USDC moves through your digital wallet so the money and repayment record are easier to track.',
       icon: 'https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/a917966497141c5f35849f89593562ca146cb3abb3421a6d00b4e1466e8edcb9?apiKey=e485b3dc4b924975b4554885e21242bb'
    },
    {
       title: 'Terms shown upfront',
-      description: 'You choose the request amount, repayment amount, due date, and reason before a lender decides whether to fund it.',
+      description: 'You choose the request amount, repayment amount, due date, and reason before a moo-lender decides whether to fund it.',
       icon: 'https://cdn.builder.io/api/v1/image/assets/e485b3dc4b924975b4554885e21242bb/a917966497141c5f35849f89593562ca146cb3abb3421a6d00b4e1466e8edcb9?apiKey=e485b3dc4b924975b4554885e21242bb'
    }
 ];

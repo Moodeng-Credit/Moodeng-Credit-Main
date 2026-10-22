@@ -122,7 +122,7 @@ export const trustPointMilestoneRules: TrustPointMilestoneRule[] = [
    {
       id: 'first-funded-loan',
       pointSourceId: 'a030a2e0-3955-443a-b2c7-e1ac03f0319f',
-      title: 'Get funded by a lender',
+      title: 'Get funded by a moo-lender',
       points: 15,
       criteria: 'Borrower has at least one funded loan.',
       example: 'First funded loan = +15 Pandesal points'
@@ -154,10 +154,10 @@ export const trustPointMilestoneRules: TrustPointMilestoneRule[] = [
    {
       id: 'two-unique-lenders',
       pointSourceId: '05d358b1-ce9b-49ec-9fd6-61611c1e4e37',
-      title: 'Borrow from 2 different lenders',
+      title: 'Borrow from 2 different moo-lenders',
       points: 30,
-      criteria: 'Borrower has funded loans from at least two unique lenders.',
-      example: 'Second unique lender relationship = +30 Pandesal points'
+      criteria: 'Borrower has funded loans from at least two unique moo-lenders.',
+      example: 'Second unique moo-lender relationship = +30 Pandesal points'
    },
    {
       id: 'repay-100-total',
@@ -180,7 +180,7 @@ export const trustPointMilestoneRules: TrustPointMilestoneRule[] = [
       pointSourceId: '3d321dad-0854-4f4b-aa95-5441a8f77099',
       title: 'Become a trusted borrower candidate',
       points: 75,
-      criteria: 'Borrower has five on-time repayments, three unique lenders, and no unresolved defaults.',
+      criteria: 'Borrower has five on-time repayments, three unique moo-lenders, and no unresolved defaults.',
       example: 'Trusted borrower candidate criteria met = +75 Pandesal points'
    }
 ];
@@ -268,10 +268,10 @@ export const pointsAwardRules: PointsAwardRule[] = [
       action: 'Loan funded',
       eventType: 'funded',
       sourceType: 'loan',
-      actor: 'Lender',
+      actor: 'Moo-lender',
       points: `Year 1: ${loanFundingPointsPerUsdc} IOU point per 1 USDC funded + borrower-order bonus`,
       criteria:
-         'A requested loan is updated to Lent and has a lender user id. Borrower bonus is based on prior funded loans for that borrower.',
+         'A requested loan is updated to Lent and has a moo-lender user id. Borrower bonus is based on prior funded loans for that borrower.',
       sourceOfTruth: 'computeYearOneIouPointsDelta(), getYearOneIouBorrowerBonusPoints(), and award_points()',
       status: 'live',
       example: `$20 funded first-time borrower loan = ${formatPointsMajor(computeYearOneIouPointsDelta('20', 0))} IOU points`,
@@ -284,7 +284,7 @@ export const pointsAwardRules: PointsAwardRule[] = [
       action: 'Academy quiz',
       eventType: 'academy_quiz',
       sourceType: 'academy',
-      actor: 'Borrower or lender',
+      actor: 'Borrower or moo-lender',
       points: `${ACADEMY_QUIZ_POINTS_PER_CORRECT_ANSWER} points per correct answer shown in the Academy UI`,
       criteria: 'The visible Academy reward flow calculates the score, but no point event is written yet.',
       sourceOfTruth: 'computeAcademyQuizPoints()',

@@ -120,7 +120,7 @@ export const filipinoCoverageA: Record<string, string> = {
    'Send reset code': 'Ipadala ang reset code',
 
    // src/app/lender/request-board/page.tsx
-   'Lender Request Board': 'Request Board ng Lender',
+   'Moo-lender Request Board': 'Request Board ng Moo-lender',
 
    // src/app/mfa-challenge/page.tsx
    'Enter the 6-digit code from your authenticator app': 'Ilagay ang 6-digit code mula sa authenticator app mo',
@@ -176,8 +176,8 @@ export const filipinoCoverageA: Record<string, string> = {
    'Our Team | Moodeng Credit': 'Ang Aming Team | Moodeng Credit',
    'Meet the people building Moodeng Credit — co-founders George and Emma, the founding team, and advisors working on fair, portable credit.':
       'Kilalanin ang mga taong bumubuo ng Moodeng Credit — ang co-founders na sina George at Emma, ang founding team, at ang mga advisor na nagtatrabaho para sa patas at portable na credit.',
-   'Building a portable trust layer for borrowers who deserve fair credit and lenders who want transparent impact.':
-      'Bumubuo ng portable trust layer para sa mga borrower na karapat-dapat sa patas na credit at sa mga lender na gusto ng malinaw na impact.',
+   'Building a portable trust layer for borrowers who deserve fair credit and moo-lenders who want transparent impact.':
+      'Bumubuo ng portable trust layer para sa mga borrower na karapat-dapat sa patas na credit at sa mga moo-lender na gusto ng malinaw na impact.',
    'Additional team members': 'Iba pang miyembro ng team',
    Advisors: 'Mga advisor',
 
@@ -395,7 +395,7 @@ export const filipinoCoverageA: Record<string, string> = {
    'Open in Browser': 'Buksan sa browser',
 
    // src/components/PowerLenderBadge.tsx
-   'Power Lender': 'Power Lender',
+   'Power Moo-lender': 'Power Moo-lender',
 
    // src/components/UserPay.tsx
    Stablecoin: 'Stablecoin',
@@ -435,8 +435,8 @@ export const filipinoCoverageA: Record<string, string> = {
    'Support contacts': 'Mga contact ng support',
    'Here are support contacts. Choose a channel and we will help you with your Moodeng account.':
       'Narito ang mga contact ng support. Pumili ng channel at tutulungan ka namin sa Moodeng account mo.',
-   'Here are support contacts for your expired loan request. We can help you connect with a lender or decide whether to post again.':
-      'Narito ang mga contact ng support para sa expired mong loan request. Matutulungan ka naming kumonekta sa isang lender o magdesisyon kung mag-post ulit.',
+   'Here are support contacts for your expired loan request. We can help you connect with a moo-lender or decide whether to post again.':
+      'Narito ang mga contact ng support para sa expired mong loan request. Matutulungan ka naming kumonekta sa isang moo-lender o magdesisyon kung mag-post ulit.',
    'Here are support contacts for World ID verification if your status did not update after completing World ID.':
       'Narito ang mga contact ng support para sa World ID verification kung hindi na-update ang status mo pagkatapos tapusin ang World ID.',
    'Close support contacts': 'Isara ang mga contact ng support',
@@ -540,8 +540,8 @@ export const filipinoCoverageA: Record<string, string> = {
    'RULES OF REPAYING': 'MGA PATAKARAN SA PAGBABAYAD',
    'Moodeng offers flexible, blockchain-based microloans. Repay responsibly to build your credit score.':
       'Nag-aalok ang Moodeng ng flexible na microloan na nakabatay sa blockchain. Magbayad nang responsable para mabuo ang credit score mo.',
-   'You must pay the lender directly by hitting the repay button.':
-      'Kailangan mong bayaran nang direkta ang lender sa pamamagitan ng pag-tap sa repay button.',
+   'You must pay the moo-lender directly by hitting the repay button.':
+      'Kailangan mong bayaran nang direkta ang moo-lender sa pamamagitan ng pag-tap sa repay button.',
    'UP-TO-YOU': 'IKAW ANG BAHALA',
    'Flexible repayments: Any amount up to deadline': 'Flexible na pagbabayad: kahit anong halaga hanggang sa deadline',
    'Build credit score with each on-time payment': 'Bumuo ng credit score sa bawat on-time na bayad',
@@ -631,8 +631,8 @@ export const filipinoCoverageA: Record<string, string> = {
    'Repaying clearly and on time': 'Malinaw at on-time na pagbabayad',
    'Nice practice request.': 'Magandang practice request.',
    'Strong repayment move.': 'Magandang hakbang sa pagbabayad.',
-   'Nice! Repaying is super important on Moodeng. On-time repayment helps your trust record, keeps lenders confident, and can unlock better borrowing limits over time.':
-      'Ang galing! Sobrang importante ang pagbabayad sa Moodeng. Nakakatulong ang on-time na pagbabayad sa trust record mo, pinapanatiling kampante ang mga lender, at puwedeng mag-unlock ng mas mataas na borrowing limit habang tumatagal.',
+   'Nice! Repaying is super important on Moodeng. On-time repayment helps your trust record, keeps moo-lenders confident, and can unlock better borrowing limits over time.':
+      'Ang galing! Sobrang importante ang pagbabayad sa Moodeng. Nakakatulong ang on-time na pagbabayad sa trust record mo, pinapanatiling kampante ang mga moo-lender, at puwedeng mag-unlock ng mas mataas na borrowing limit habang tumatagal.',
    'Mecha says: full-limit loans repaid on time are how borrowers build a stronger credit record. Keep repayment clean, and your next limit can grow.':
       'Sabi ni Mecha: ang mga full-limit loan na binayaran on time ang paraan ng mga borrower para bumuo ng mas matibay na credit record. Panatilihing malinis ang pagbabayad, at puwedeng lumago ang susunod mong limit.',
    'Moodeng Academy | Moodeng Credit': 'Moodeng Academy | Moodeng Credit',
@@ -675,8 +675,8 @@ export const filipinoCoverageA: Record<string, string> = {
 
    // src/views/academy/VerifyGuide.tsx
    Money: 'Pera',
-   'To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts out of the community, and it is what lets lenders trust the requests they fund.':
-      'Para manatiling ligtas at patas ang Moodeng, dumadaan ang bawat borrower sa isang maikling identity check. Pinipigilan nito ang mga peke at dobleng account sa komunidad, at ito ang dahilan kung bakit makakapagtiwala ang mga lender sa mga request na pinopondohan nila.',
+   'To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts out of the community, and it is what lets moo-lenders trust the requests they fund.':
+      'Para manatiling ligtas at patas ang Moodeng, dumadaan ang bawat borrower sa isang maikling identity check. Pinipigilan nito ang mga peke at dobleng account sa komunidad, at ito ang dahilan kung bakit makakapagtiwala ang mga moo-lender sa mga request na pinopondohan nila.',
    'The recommended route: Verify Your ID.': 'Ang inirerekomendang paraan: Verify Your ID.',
    'National ID verification is available for these countries.': 'Available ang national ID verification sa mga bansang ito.',
    'Pass on the first try': 'Pumasa sa unang subok',
@@ -687,14 +687,14 @@ export const filipinoCoverageA: Record<string, string> = {
       'Ang secure na verification partner namin ang gumagawa ng check. Resulta lang ang natatanggap ng Moodeng — kung pumasa ka o hindi — hindi kopya ng dokumento mo.',
    'Ready to verify?': 'Handa ka na bang mag-verify?',
    Read: 'Basahin',
-   'Verification makes sure every request comes from a real, unique person. That is what keeps fake and duplicate accounts away from lenders.':
-      'Sinisiguro ng verification na galing sa totoo at natatanging tao ang bawat request. Ito ang naglalayo sa mga lender mula sa mga peke at dobleng account.',
+   'Verification makes sure every request comes from a real, unique person. That is what keeps fake and duplicate accounts away from moo-lenders.':
+      'Sinisiguro ng verification na galing sa totoo at natatanging tao ang bawat request. Ito ang naglalayo sa mga moo-lender mula sa mga peke at dobleng account.',
    Access: 'Access',
    'Finishing verification is what unlocks loan requests, and it is the point where you start earning Pandesal points.':
       'Ang pagtapos ng verification ang nag-a-unlock ng mga loan request, at dito ka rin magsisimulang kumita ng Pandesal points.',
    Trust: 'Tiwala',
-   'Lenders are funding real people, not anonymous accounts. That confidence is what gets requests on the board funded.':
-      'Totoong tao ang pinopondohan ng mga lender, hindi mga anonymous na account. Dahil sa kumpiyansang iyon, napopondohan ang mga request sa board.',
+   'Moo-lenders are funding real people, not anonymous accounts. That confidence is what gets requests on the board funded.':
+      'Totoong tao ang pinopondohan ng mga moo-lender, hindi mga anonymous na account. Dahil sa kumpiyansang iyon, napopondohan ang mga request sa board.',
    'Your physical national ID': 'Ang physical na national ID mo',
    'The real card in hand, not a photocopy or a picture on another screen.':
       'Ang totoong card sa kamay, hindi photocopy o larawan sa ibang screen.',
@@ -869,23 +869,23 @@ export const filipinoCoverageA: Record<string, string> = {
 
    // src/views/account/EditBioInfoModal.tsx
    'Change Bio Info': 'Baguhin ang bio info',
-   'Update the details lenders see about your work, income, and what you typically need help with.':
-      'I-update ang mga detalyeng nakikita ng mga lender tungkol sa trabaho mo, kita mo, at kung saan ka karaniwang nangangailangan ng tulong.',
+   'Update the details moo-lenders see about your work, income, and what you typically need help with.':
+      'I-update ang mga detalyeng nakikita ng mga moo-lender tungkol sa trabaho mo, kita mo, at kung saan ka karaniwang nangangailangan ng tulong.',
    'What do you do for work?': 'Ano ang trabaho mo?',
    'Any other income sources?': 'May iba ka pa bang pinagkukunan ng kita?',
    'How would you describe your work?': 'Paano mo ilalarawan ang trabaho mo?',
-   'Helps lenders see that repayment timing makes sense.':
-      'Nakakatulong ito sa mga lender na makita na makatuwiran ang timing ng pagbabayad.',
+   'Helps moo-lenders see that repayment timing makes sense.':
+      'Nakakatulong ito sa mga moo-lender na makita na makatuwiran ang timing ng pagbabayad.',
    'When do you usually get paid?': 'Kailan ka karaniwang nasusweldo?',
    'What is your approximate monthly income?': 'Ano ang tinatayang buwanang kita mo?',
    'What do your recurring expenses cost per month?': 'Magkano ang regular na gastusin mo kada buwan?',
-   'Helps lenders understand your financial commitments.':
-      'Nakakatulong ito sa mga lender na maintindihan ang mga financial commitment mo.',
+   'Helps moo-lenders understand your financial commitments.':
+      'Nakakatulong ito sa mga moo-lender na maintindihan ang mga financial commitment mo.',
    'Pick all that apply.': 'Piliin ang lahat ng naaangkop.',
    'What do you usually need short-term help with?': 'Saan ka karaniwang nangangailangan ng short-term na tulong?',
    // src/components/verification/VerifyYourselfModal.tsx (ID check is the last step of a request)
-   "A one-time ID check so lenders know you're a real person — it takes about 3 minutes.":
-      'Isang beses lang na ID check para malaman ng lenders na totoong tao ka — mga 3 minuto lang.',
+   "A one-time ID check so moo-lenders know you're a real person — it takes about 3 minutes.":
+      'Isang beses lang na ID check para malaman ng moo-lenders na totoong tao ka — mga 3 minuto lang.',
 
    // Passwordless code login (sign-up/sign-in, code screen, password + email later), PR #1164
    'Sign up to Moodeng': 'Mag-sign up sa Moodeng',

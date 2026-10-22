@@ -99,7 +99,7 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
             amount: Math.max(0, toNumber(loan.totalRepaymentAmount) - toNumber(loan.repaidAmount)),
             // Calendar days in the borrower's zone: 0 = due today, negative = overdue.
             daysRemaining: getDaysUntilDueDay(loan.dueDate, getLoanTimezone(loan)),
-            lenderName: lender?.displayName || lender?.username || 'a lender',
+            lenderName: lender?.displayName || lender?.username || 'a moo-lender',
             isOverdue
          };
       });

@@ -84,8 +84,8 @@ export const thaiCoverageC: Record<string, string> = {
    // src/views/lenderBenefits/sections/HowWeVerifySection.tsx
    'World ID verification': 'การยืนยันตัวตนด้วย World ID',
    'Verified humans, clearer lending signals.': 'ยืนยันว่าเป็นคนจริง สัญญาณการปล่อยกู้ก็ชัดเจนขึ้น',
-   'Borrowers verify with World ID before they can request loans. That gives lenders a real-person signal without asking borrowers to hand over private documents to Moodeng.':
-      'ผู้ยืมต้องยืนยันตัวตนด้วย World ID ก่อนจึงจะขอเงินกู้ได้ ผู้ให้กู้จึงมั่นใจได้ว่าเป็นคนจริง โดยที่ผู้ยืมไม่ต้องส่งเอกสารส่วนตัวให้ Moodeng',
+   'Borrowers verify with World ID before they can request loans. That gives moo-lenders a real-person signal without asking borrowers to hand over private documents to Moodeng.':
+      'ผู้ยืมต้องยืนยันตัวตนด้วย World ID ก่อนจึงจะขอเงินกู้ได้ Moo-lender จึงมั่นใจได้ว่าเป็นคนจริง โดยที่ผู้ยืมไม่ต้องส่งเอกสารส่วนตัวให้ Moodeng',
    'Unique person': 'หนึ่งคนจริง',
    'One account': 'หนึ่งบัญชี',
    'Less bot risk': 'ลดความเสี่ยงจากบอต',
@@ -94,7 +94,7 @@ export const thaiCoverageC: Record<string, string> = {
       'ผู้ยืมพิสูจน์ว่าเป็นบุคคลเพียงคนเดียวผ่าน World App และ Orb ที่มีให้บริการในตลาดแรกที่เรารองรับ',
 
    // src/views/lenderBenefits/sections/LendingIncentivesSection.tsx
-   'Lender terms': 'เงื่อนไขผู้ให้กู้',
+   'Moo-lender terms': 'เงื่อนไข Moo-lender',
 
    // src/views/lenderBenefits/sections/MeetYourFutureBorrowersSection.tsx
    'First borrower communities': 'ชุมชนผู้ยืมกลุ่มแรก',
@@ -119,14 +119,14 @@ export const thaiCoverageC: Record<string, string> = {
    'Traditional credit: starts over at zero': 'เครดิตแบบดั้งเดิม: ต้องเริ่มจากศูนย์ใหม่',
    'The problem': 'ปัญหา',
    'Good repayment rarely travels.': 'ประวัติชำระคืนที่ดีแทบไม่เคยติดตัวไปด้วย',
-   'That creates a trust gap for borrowers and a missed opportunity for lenders.':
-      'สิ่งนี้ทำให้ผู้ยืมขาดความน่าเชื่อถือ และผู้ให้กู้พลาดโอกาส',
+   'That creates a trust gap for borrowers and a missed opportunity for moo-lenders.':
+      'สิ่งนี้ทำให้ผู้ยืมขาดความน่าเชื่อถือ และ Moo-lender พลาดโอกาส',
    'Credit gets reset': 'เครดิตถูกรีเซ็ต',
    'A Filipino or SEA worker can repay responsibly abroad and still have no useful credit record.':
       'แรงงานฟิลิปปินส์หรือจากเอเชียตะวันออกเฉียงใต้อาจชำระคืนอย่างรับผิดชอบในต่างแดน แต่ก็ยังไม่มีประวัติเครดิตที่นำไปใช้ได้',
    'Good borrowers disappear': 'ผู้ยืมที่ดีถูกมองข้าม',
-   'Lenders cannot easily see the trust signals that should matter for a small emergency loan.':
-      'ผู้ให้กู้มองไม่เห็นสัญญาณความน่าเชื่อถือที่ควรใช้พิจารณาเงินกู้ฉุกเฉินจำนวนเล็กน้อยได้ง่าย ๆ',
+   'Moo-lenders cannot easily see the trust signals that should matter for a small emergency loan.':
+      'Moo-lender มองไม่เห็นสัญญาณความน่าเชื่อถือที่ควรใช้พิจารณาเงินกู้ฉุกเฉินจำนวนเล็กน้อยได้ง่าย ๆ',
    'Bad options fill the gap': 'ทางเลือกที่แย่เข้ามาแทนที่',
    'Quick-loan apps step in with pressure, high costs, and little long-term upside.':
       'แอปเงินกู้ด่วนเข้ามาพร้อมการกดดัน ค่าใช้จ่ายสูง และแทบไม่มีประโยชน์ในระยะยาว',
@@ -141,8 +141,8 @@ export const thaiCoverageC: Record<string, string> = {
       'World ID ช่วยยืนยันว่ามีคนจริงหนึ่งคนอยู่เบื้องหลังบัญชีผู้ยืมแต่ละบัญชี',
    'Moodeng can show verification status without storing passport-style documents.':
       'Moodeng แสดงสถานะการยืนยันตัวตนได้ โดยไม่ต้องจัดเก็บเอกสารอย่างหนังสือเดินทาง',
-   'Lenders still evaluate loan terms, history, and repayment behavior before funding.':
-      'ผู้ให้กู้ยังคงพิจารณาเงื่อนไขเงินกู้ ประวัติ และพฤติกรรมการชำระคืนก่อนปล่อยกู้',
+   'Moo-lenders still evaluate loan terms, history, and repayment behavior before funding.':
+      'Moo-lender ยังคงพิจารณาเงื่อนไขเงินกู้ ประวัติ และพฤติกรรมการชำระคืนก่อนปล่อยกู้',
    'World ID first': 'เริ่มจาก World ID',
 
    // src/views/lenderBenefits/sections/Web3WalletSection.tsx
@@ -154,8 +154,8 @@ export const thaiCoverageC: Record<string, string> = {
    'Repayment activity can travel with overseas workers through their wallet.':
       'ประวัติการชำระคืนติดตัวแรงงานในต่างแดนไปได้ผ่านกระเป๋าเงินของพวกเขา',
    'Transparent loan behavior': 'พฤติกรรมการกู้ที่โปร่งใส',
-   'Lenders can review onchain repayment signals instead of starting from zero.':
-      'ผู้ให้กู้ดูสัญญาณการชำระคืนแบบออนเชนได้ แทนที่จะต้องเริ่มจากศูนย์',
+   'Moo-lenders can review onchain repayment signals instead of starting from zero.':
+      'Moo-lender ดูสัญญาณการชำระคืนแบบออนเชนได้ แทนที่จะต้องเริ่มจากศูนย์',
    'Small loans, real signal': 'เงินกู้เล็ก สัญญาณจริง',
    'Microloans create a practical path for borrowers to build proof over time.':
       'สินเชื่อรายย่อยเป็นเส้นทางที่ใช้ได้จริง ให้ผู้ยืมสร้างหลักฐานความน่าเชื่อถือได้ทีละขั้น',
@@ -220,7 +220,7 @@ export const thaiCoverageC: Record<string, string> = {
    'This wallet is already linked to another Moodeng account. To keep lending fair and prevent self-lending, each wallet can belong to only one account.':
       'กระเป๋าเงินนี้ผูกกับบัญชี Moodeng อื่นอยู่แล้ว เพื่อให้การปล่อยกู้เป็นธรรมและป้องกันการปล่อยกู้ให้ตัวเอง กระเป๋าเงินแต่ละใบจึงผูกได้กับบัญชีเดียวเท่านั้น',
    'What you can do': 'สิ่งที่คุณทำได้',
-   'Connect a different wallet address to this lender account.': 'เชื่อมต่อที่อยู่กระเป๋าเงินอื่นกับบัญชีผู้ให้กู้นี้',
+   'Connect a different wallet address to this moo-lender account.': 'เชื่อมต่อที่อยู่กระเป๋าเงินอื่นกับบัญชี Moo-lender นี้',
    'If you created a borrower account by mistake, remove this wallet from it first — or ask us to delete that account or switch its role.':
       'หากคุณสร้างบัญชีผู้ยืมโดยไม่ตั้งใจ ให้นำกระเป๋าเงินนี้ออกจากบัญชีนั้นก่อน หรือแจ้งให้เราลบบัญชีนั้นหรือเปลี่ยนบทบาทให้',
    "Not sure what happened? Message us and we'll help.": 'ไม่แน่ใจว่าเกิดอะไรขึ้น? ส่งข้อความหาเรา แล้วเราจะช่วยคุณ',
@@ -413,8 +413,8 @@ export const thaiCoverageC: Record<string, string> = {
    'Detects automatically — usually under a minute': 'ตรวจพบโดยอัตโนมัติ ปกติใช้เวลาไม่ถึงหนึ่งนาที',
    "You're paying": 'คุณกำลังชำระ',
    'Clears this loan ✓': 'ปิดเงินกู้นี้ได้ ✓',
-   'Verify yourself and set up your wallet (an Instant Wallet, or a Base Account if you prefer) before requesting loans. Repayments will show here after a lender funds your first loan.':
-      'ยืนยันตัวตนและตั้งค่ากระเป๋าเงินของคุณ (Instant Wallet หรือ Base Account หากคุณต้องการ) ก่อนขอเงินกู้ การชำระคืนจะแสดงที่นี่หลังจากผู้ให้กู้ปล่อยกู้ครั้งแรกให้คุณ',
+   'Verify yourself and set up your wallet (an Instant Wallet, or a Base Account if you prefer) before requesting loans. Repayments will show here after a moo-lender funds your first loan.':
+      'ยืนยันตัวตนและตั้งค่ากระเป๋าเงินของคุณ (Instant Wallet หรือ Base Account หากคุณต้องการ) ก่อนขอเงินกู้ การชำระคืนจะแสดงที่นี่หลังจาก Moo-lender ปล่อยกู้ครั้งแรกให้คุณ',
    'Finish setup to start borrowing': 'ตั้งค่าให้เสร็จเพื่อเริ่มยืม',
    'Your wallet is added. Complete verification before requesting loans. Repayments will show here after funding.':
       'เพิ่มกระเป๋าเงินแล้ว โปรดยืนยันตัวตนให้เสร็จก่อนขอเงินกู้ การชำระคืนจะแสดงที่นี่หลังได้รับการปล่อยกู้',
@@ -422,8 +422,8 @@ export const thaiCoverageC: Record<string, string> = {
    'You are verified. Set up your Instant Wallet (or connect a Base Account) so loans and repayments can stay tied to your Moodeng account.':
       'คุณยืนยันตัวตนแล้ว โปรดตั้งค่า Instant Wallet (หรือเชื่อมต่อ Base Account) เพื่อให้เงินกู้และการชำระคืนผูกอยู่กับบัญชี Moodeng ของคุณ',
    'Add a wallet to borrow': 'เพิ่มกระเป๋าเงินเพื่อยืม',
-   'Your repayment activity will appear here once a lender funds your first loan.':
-      'กิจกรรมการชำระคืนของคุณจะแสดงที่นี่เมื่อผู้ให้กู้ปล่อยกู้ครั้งแรกให้คุณ',
+   'Your repayment activity will appear here once a moo-lender funds your first loan.':
+      'กิจกรรมการชำระคืนของคุณจะแสดงที่นี่เมื่อ Moo-lender ปล่อยกู้ครั้งแรกให้คุณ',
    'No repayments yet': 'ยังไม่มีการชำระคืน',
    'How to withdraw USDC from PDAX to your wallet': 'วิธีถอน USDC จาก PDAX เข้ากระเป๋าเงินของคุณ',
    'Repay amount': 'จำนวนเงินที่ชำระคืน',
@@ -616,8 +616,8 @@ export const thaiCoverageC: Record<string, string> = {
    'Most borrowers use both — trust loans to stay active, credit loans to climb.':
       'ผู้ยืมส่วนใหญ่ใช้ทั้งสองแบบ — ใช้เงินกู้สร้างความน่าเชื่อถือเพื่อคงความเคลื่อนไหว และใช้เงินกู้เพิ่มระดับเครดิตเพื่อไต่ระดับ',
    'Trust is the currency before the credit.': 'ความน่าเชื่อถือคือสิ่งที่ต้องมีก่อนเครดิต',
-   'Every loan you repay cleanly — even a small Trust-Building Loan — deposits reputation that lenders can see. That trust is what gets your next request funded faster.':
-      'ทุกเงินกู้ที่คุณชำระคืนอย่างราบรื่น แม้จะเป็น Trust-Building Loan จำนวนน้อย ก็สร้างความน่าเชื่อถือที่ผู้ให้กู้มองเห็นได้ ความน่าเชื่อถือนี้เองที่ทำให้คำขอครั้งถัดไปของคุณได้รับเงินกู้เร็วขึ้น',
+   'Every loan you repay cleanly — even a small Trust-Building Loan — deposits reputation that moo-lenders can see. That trust is what gets your next request funded faster.':
+      'ทุกเงินกู้ที่คุณชำระคืนอย่างราบรื่น แม้จะเป็น Trust-Building Loan จำนวนน้อย ก็สร้างความน่าเชื่อถือที่ Moo-lender มองเห็นได้ ความน่าเชื่อถือนี้เองที่ทำให้คำขอครั้งถัดไปของคุณได้รับเงินกู้เร็วขึ้น',
    'Level up faster': 'เพิ่มระดับได้เร็วขึ้น',
    'Do this, not that': 'ควรทำสิ่งนี้ ไม่ใช่สิ่งนั้น',
    'A few habits keep your climb steady and protect the Pandesal points you are earning.':
@@ -674,20 +674,20 @@ export const thaiCoverageC: Record<string, string> = {
    'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment unlocks the next limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
       'กู้ Credit-Building Loan เต็มวงเงินปัจจุบันของคุณ แล้วชำระคืนให้ครบและตรงเวลา การชำระคืนที่ราบรื่นจะปลดล็อกวงเงินถัดไป — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140',
    'Does borrowing a small amount level me up?': 'การยืมจำนวนน้อยจะทำให้ฉันเพิ่มระดับหรือไม่?',
-   'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.':
-      'ไม่ การยืมต่ำกว่าวงเงินของคุณคือ Trust-Building Loan ซึ่งช่วยเพิ่มความน่าเชื่อถือกับผู้ให้กู้ แต่ไม่เพิ่มระดับเครดิตของคุณ มีเพียง Credit-Building Loan แบบเต็มวงเงินเท่านั้นที่จะทำให้คุณก้าวหน้า',
+   'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with moo-lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.':
+      'ไม่ การยืมต่ำกว่าวงเงินของคุณคือ Trust-Building Loan ซึ่งช่วยเพิ่มความน่าเชื่อถือกับ Moo-lender แต่ไม่เพิ่มระดับเครดิตของคุณ มีเพียง Credit-Building Loan แบบเต็มวงเงินเท่านั้นที่จะทำให้คุณก้าวหน้า',
    'Can I skip levels by repaying early or paying extra?': 'ฉันสามารถข้ามระดับได้หรือไม่ด้วยการชำระคืนก่อนกำหนดหรือชำระเพิ่ม?',
    'No. Moodeng advances one level at a time. Paying extra or repaying early does not skip a step — each new limit is earned by repaying the level before it.':
       'ไม่ได้ Moodeng จะเพิ่มระดับทีละขั้นเท่านั้น การชำระเพิ่มหรือชำระก่อนกำหนดจะไม่ข้ามขั้นตอนใด ๆ — วงเงินใหม่แต่ละระดับต้องได้มาจากการชำระคืนระดับก่อนหน้า',
    'Why does the limit start at only $15?': 'ทำไมวงเงินเริ่มต้นเพียง $15?',
-   'Small starting limits keep risk low for the lenders funding someone with no track record yet. As you prove reliable repayment, your limit and lender confidence grow together.':
-      'วงเงินเริ่มต้นที่น้อยช่วยลดความเสี่ยงให้ผู้ให้กู้ที่ปล่อยกู้ให้กับผู้ที่ยังไม่มีประวัติ เมื่อคุณพิสูจน์ได้ว่าชำระคืนได้อย่างน่าเชื่อถือ วงเงินและความมั่นใจของผู้ให้กู้จะเพิ่มขึ้นไปพร้อมกัน',
+   'Small starting limits keep risk low for the moo-lenders funding someone with no track record yet. As you prove reliable repayment, your limit and moo-lender confidence grow together.':
+      'วงเงินเริ่มต้นที่น้อยช่วยลดความเสี่ยงให้ Moo-lender ที่ปล่อยกู้ให้กับผู้ที่ยังไม่มีประวัติ เมื่อคุณพิสูจน์ได้ว่าชำระคืนได้อย่างน่าเชื่อถือ วงเงินและความมั่นใจของ Moo-lender จะเพิ่มขึ้นไปพร้อมกัน',
    'How long does it take to reach the $60 level?': 'ต้องใช้เวลานานแค่ไหนถึงจะถึงระดับวงเงิน $60?',
    'There is no fixed timeline. Each level needs one full-limit loan repaid on time, so the pace depends on how quickly you borrow and repay. Borrowers who repay cleanly can climb in just a few loan cycles.':
       'ไม่มีระยะเวลาที่แน่นอน แต่ละระดับต้องการเงินกู้เต็มวงเงินที่ชำระคืนตรงเวลาหนึ่งครั้ง ดังนั้นความเร็วจึงขึ้นอยู่กับว่าคุณยืมและชำระคืนเร็วแค่ไหน ผู้ยืมที่ชำระคืนได้อย่างราบรื่นสามารถไต่ระดับได้ภายในไม่กี่รอบการกู้',
    'What happens if I miss a repayment?': 'จะเกิดอะไรขึ้นถ้าฉันพลาดการชำระคืน?',
-   'A late or missed repayment reduces your Pandesal points and can pause your progress. Lenders weigh the missed repayment heavily, so keeping payments on time matters more than borrowing size.':
-      'การชำระคืนล่าช้าหรือพลาดจะลดแต้ม Pandesal ของคุณ และอาจหยุดความก้าวหน้าของคุณ ผู้ให้กู้ให้ความสำคัญกับการชำระคืนที่พลาดค่อนข้างมาก ดังนั้นการชำระตรงเวลาจึงสำคัญกว่าจำนวนเงินที่ยืม',
+   'A late or missed repayment reduces your Pandesal points and can pause your progress. Moo-lenders weigh the missed repayment heavily, so keeping payments on time matters more than borrowing size.':
+      'การชำระคืนล่าช้าหรือพลาดจะลดแต้ม Pandesal ของคุณ และอาจหยุดความก้าวหน้าของคุณ Moo-lender ให้ความสำคัญกับการชำระคืนที่พลาดค่อนข้างมาก ดังนั้นการชำระตรงเวลาจึงสำคัญกว่าจำนวนเงินที่ยืม',
    'Does my Credit Level ever reset?': 'ระดับเครดิตของฉันจะรีเซ็ตหรือไม่?',
    'Your progress is tied to your wallet and repayment history, so it travels with you. Missed repayments do not erase your level, but they reduce your Pandesal points and can slow further growth.':
       'ความก้าวหน้าของคุณผูกติดกับกระเป๋าเงินและประวัติการชำระคืน จึงติดตัวคุณไปด้วยเสมอ การชำระคืนที่พลาดจะไม่ลบล้างระดับของคุณ แต่จะลดแต้ม Pandesal และอาจทำให้การเติบโตช้าลง',
@@ -723,8 +723,8 @@ export const thaiCoverageC: Record<string, string> = {
    'Credit limit growing from fifteen to sixty dollars': 'วงเงินกู้ที่เพิ่มขึ้นจากสิบห้าเป็นหกสิบดอลลาร์',
    'A borrower hippo at a Moodeng kiosk following the credit-building flow: request, repay on time, then level up':
       'ฮิปโปผู้ยืมที่คีออสก์ Moodeng ทำตามขั้นตอนการเพิ่มระดับเครดิต: ขอเงินกู้ ชำระคืนตรงเวลา แล้วเพิ่มระดับ',
-   'A borrower hippo and a squirrel building trust with a lender at the Moodeng lending desk':
-      'ฮิปโปผู้ยืมและกระรอกกำลังสร้างความน่าเชื่อถือกับผู้ให้กู้ที่เคาน์เตอร์ปล่อยกู้ของ Moodeng',
+   'A borrower hippo and a squirrel building trust with a moo-lender at the Moodeng lending desk':
+      'ฮิปโปผู้ยืมและกระรอกกำลังสร้างความน่าเชื่อถือกับ Moo-lender ที่เคาน์เตอร์ปล่อยกู้ของ Moodeng',
 
    // src/views/support/PublicGuide.tsx
    'More guides': 'คู่มือเพิ่มเติม',
@@ -832,9 +832,9 @@ export const thaiCoverageC: Record<string, string> = {
    "This is a voluntary gift — once sent, it can't be reversed.": 'นี่คือของขวัญโดยสมัครใจ เมื่อส่งแล้วจะไม่สามารถย้อนกลับได้',
    'Hide — this keeps going on its own': 'ซ่อน — รายการนี้จะดำเนินต่อไปเอง',
    'Sent successfully!': 'ส่งสำเร็จแล้ว!',
-   'Waiting for lender acceptance': 'รอผู้ให้กู้ยอมรับ',
-   'This loan is not funded yet. Repayment starts only after a lender accepts.':
-      'เงินกู้นี้ยังไม่ได้รับการปล่อยกู้ การชำระคืนจะเริ่มก็ต่อเมื่อผู้ให้กู้ยอมรับแล้วเท่านั้น',
+   'Waiting for moo-lender acceptance': 'รอ Moo-lender ยอมรับ',
+   'This loan is not funded yet. Repayment starts only after a moo-lender accepts.':
+      'เงินกู้นี้ยังไม่ได้รับการปล่อยกู้ การชำระคืนจะเริ่มก็ต่อเมื่อ Moo-lender ยอมรับแล้วเท่านั้น',
    'View on explorer': 'ดูบน explorer',
 
    // src/views/transactions/TransactionHistory.tsx
@@ -845,14 +845,14 @@ export const thaiCoverageC: Record<string, string> = {
    'Search transaction history': 'ค้นหาประวัติธุรกรรม',
 
    // src/views/user-profile/LenderDiversityHistory.tsx
-   'Lender Diversity': 'ความหลากหลายของผู้ให้กู้',
+   'Moo-lender Diversity': 'ความหลากหลายของ Moo-lender',
    'Need at least 2 funded loans': 'ต้องมีเงินกู้ที่ได้รับการปล่อยกู้อย่างน้อย 2 รายการ',
-   'A lender diversity score appears once there is enough borrower history to compare.':
-      'คะแนนความหลากหลายของผู้ให้กู้จะปรากฏเมื่อมีประวัติผู้ยืมเพียงพอสำหรับการเปรียบเทียบ',
-   'Lender Distribution': 'การกระจายตัวของผู้ให้กู้',
-   'No lender history yet': 'ยังไม่มีประวัติผู้ให้กู้',
-   'Once this borrower receives funded loans, the lender distribution will appear here.':
-      'เมื่อผู้ยืมรายนี้ได้รับเงินกู้ที่ปล่อยกู้แล้ว การกระจายตัวของผู้ให้กู้จะปรากฏที่นี่',
+   'A moo-lender diversity score appears once there is enough borrower history to compare.':
+      'คะแนนความหลากหลายของ Moo-lender จะปรากฏเมื่อมีประวัติผู้ยืมเพียงพอสำหรับการเปรียบเทียบ',
+   'Moo-lender Distribution': 'การกระจายตัวของ Moo-lender',
+   'No moo-lender history yet': 'ยังไม่มีประวัติ Moo-lender',
+   'Once this borrower receives funded loans, the moo-lender distribution will appear here.':
+      'เมื่อผู้ยืมรายนี้ได้รับเงินกู้ที่ปล่อยกู้แล้ว การกระจายตัวของ Moo-lender จะปรากฏที่นี่',
 
    // src/views/user-profile/ProgressHistory.tsx
    'Progress History': 'ประวัติความก้าวหน้า',
@@ -863,8 +863,8 @@ export const thaiCoverageC: Record<string, string> = {
    'Identity verification completed.': 'ยืนยันตัวตนเสร็จสมบูรณ์แล้ว',
    'No loan activity yet': 'ยังไม่มีกิจกรรมเงินกู้',
    'No funded loans have been recorded for this borrower yet.': 'ยังไม่มีการบันทึกเงินกู้ที่ปล่อยกู้ให้ผู้ยืมรายนี้',
-   'Repeat Lender Relationship': 'ความสัมพันธ์กับผู้ให้กู้ซ้ำ',
-   'Borrowed again from an existing lender.': 'ยืมอีกครั้งจากผู้ให้กู้รายเดิม',
+   'Repeat Moo-lender Relationship': 'ความสัมพันธ์กับ Moo-lender ซ้ำ',
+   'Borrowed again from an existing moo-lender.': 'ยืมอีกครั้งจาก Moo-lender รายเดิม',
    'Partial Repayment Made': 'ชำระคืนบางส่วนแล้ว',
    'Credit Limit Unlocked': 'ปลดล็อกวงเงินกู้แล้ว',
    'Defaulted Loan': 'เงินกู้ผิดนัดชำระ',
@@ -875,67 +875,68 @@ export const thaiCoverageC: Record<string, string> = {
 
    // src/views/user-profile/UserProfile.tsx
    'Borrower context': 'บริบทผู้ยืม',
-   'This account is a lender': 'บัญชีนี้คือผู้ให้กู้',
-   'Lenders fund loans rather than borrow, so there is no borrowing history to show here.':
-      'ผู้ให้กู้ปล่อยกู้แทนที่จะยืม จึงไม่มีประวัติการยืมให้แสดงที่นี่',
+   'This account is a moo-lender': 'บัญชีนี้คือ Moo-lender',
+   'Moo-lenders fund loans rather than borrow, so there is no borrowing history to show here.':
+      'Moo-lender ปล่อยกู้แทนที่จะยืม จึงไม่มีประวัติการยืมให้แสดงที่นี่',
    'Lending Summary': 'สรุปการปล่อยกู้',
    'No Defaults': 'ไม่มีการผิดนัดชำระ',
    'Borrowers Backed': 'ผู้ยืมที่สนับสนุน',
    'No loans funded yet': 'ยังไม่มีการปล่อยกู้',
-   'This lender has not funded a loan yet, so there is nothing to summarise.': 'ผู้ให้กู้รายนี้ยังไม่ได้ปล่อยกู้ จึงยังไม่มีข้อมูลให้สรุป',
+   'This moo-lender has not funded a loan yet, so there is nothing to summarise.':
+      'Moo-lender รายนี้ยังไม่ได้ปล่อยกู้ จึงยังไม่มีข้อมูลให้สรุป',
    'Lending Patterns': 'รูปแบบการปล่อยกู้',
    'Loans Funded': 'เงินกู้ที่ปล่อยแล้ว',
-   'Who this lender has backed and the status of each loan.': 'ผู้ที่ผู้ให้กู้รายนี้สนับสนุน และสถานะของแต่ละเงินกู้',
+   'Who this moo-lender has backed and the status of each loan.': 'ผู้ที่ Moo-lender รายนี้สนับสนุน และสถานะของแต่ละเงินกู้',
    'Loan / borrower': 'เงินกู้ / ผู้ยืม',
    'Verify to unlock LV.1': 'ยืนยันตัวตนเพื่อปลดล็อก LV.1',
    'Only you can see this': 'มีเพียงคุณเท่านั้นที่เห็นสิ่งนี้',
    'Good standing': 'สถานะดี',
    'View loan mix': 'ดูสัดส่วนเงินกู้',
-   'Your score appears after at least 2 funded loans from different lenders.':
-      'คะแนนของคุณจะปรากฏหลังจากมีเงินกู้ที่ได้รับการปล่อยกู้จากผู้ให้กู้ต่างรายอย่างน้อย 2 รายการ',
+   'Your score appears after at least 2 funded loans from different moo-lenders.':
+      'คะแนนของคุณจะปรากฏหลังจากมีเงินกู้ที่ได้รับการปล่อยกู้จาก Moo-lender ต่างรายอย่างน้อย 2 รายการ',
    'Borrower patterns': 'รูปแบบผู้ยืม',
    'Recent Loans': 'เงินกู้ล่าสุด',
    'View who has funded this borrower and the status of each loan.': 'ดูว่าใครปล่อยกู้ให้ผู้ยืมรายนี้ และสถานะของแต่ละเงินกู้',
-   'Loan / lender': 'เงินกู้ / ผู้ให้กู้',
+   'Loan / moo-lender': 'เงินกู้ / Moo-lender',
    'No funded loans yet': 'ยังไม่มีเงินกู้ที่ได้รับการปล่อยกู้',
    'Not enough loan history yet': 'ยังมีประวัติเงินกู้ไม่เพียงพอ',
-   "Once this borrower completes more loans, you'll see repayment timing, usual loan size, repeat lenders, and borrowing patterns here.":
-      'เมื่อผู้ยืมรายนี้ทำเงินกู้เสร็จสิ้นมากขึ้น คุณจะเห็นจังหวะการชำระคืน ขนาดเงินกู้ทั่วไป ผู้ให้กู้ที่ยืมซ้ำ และรูปแบบการยืมที่นี่',
+   "Once this borrower completes more loans, you'll see repayment timing, usual loan size, repeat moo-lenders, and borrowing patterns here.":
+      'เมื่อผู้ยืมรายนี้ทำเงินกู้เสร็จสิ้นมากขึ้น คุณจะเห็นจังหวะการชำระคืน ขนาดเงินกู้ทั่วไป Moo-lender ที่ยืมซ้ำ และรูปแบบการยืมที่นี่',
    'Default History': 'ประวัติการผิดนัดชำระ',
    'Missed repayments on this borrower’s past loans.': 'การชำระคืนที่พลาดในเงินกู้ที่ผ่านมาของผู้ยืมรายนี้',
    'A default happens when a repayment deadline passes without full repayment.':
       'การผิดนัดชำระเกิดขึ้นเมื่อกำหนดเวลาชำระคืนผ่านไปโดยยังไม่ได้ชำระคืนครบถ้วน',
    'Loan defaulted': 'เงินกู้ผิดนัดชำระ',
    Unresolved: 'ยังไม่ได้แก้ไข',
-   'Defaults may signal repayment risk. Lenders should review the borrower’s full history, not just credit level.':
-      'การผิดนัดชำระอาจบ่งชี้ความเสี่ยงในการชำระคืน ผู้ให้กู้ควรตรวจสอบประวัติทั้งหมดของผู้ยืม ไม่ใช่แค่ระดับเครดิตเท่านั้น',
+   'Defaults may signal repayment risk. Moo-lenders should review the borrower’s full history, not just credit level.':
+      'การผิดนัดชำระอาจบ่งชี้ความเสี่ยงในการชำระคืน Moo-lender ควรตรวจสอบประวัติทั้งหมดของผู้ยืม ไม่ใช่แค่ระดับเครดิตเท่านั้น',
    'Repayment History': 'ประวัติการชำระคืน',
    'Money this borrower has already paid back across funded loans.':
       'จำนวนเงินที่ผู้ยืมรายนี้ชำระคืนแล้วในเงินกู้ที่ได้รับการปล่อยกู้ทั้งหมด',
    'Fully repaid': 'ชำระคืนครบแล้ว',
-   'Completed repayments show this borrower has returned funds before. Partial repayments can still be useful context, but lenders should compare them with due dates and remaining balances.':
-      'การชำระคืนที่เสร็จสมบูรณ์แสดงว่าผู้ยืมรายนี้เคยคืนเงินมาก่อน การชำระคืนบางส่วนก็ยังเป็นข้อมูลที่เป็นประโยชน์ แต่ผู้ให้กู้ควรเปรียบเทียบกับวันครบกำหนดและยอดคงเหลือ',
+   'Completed repayments show this borrower has returned funds before. Partial repayments can still be useful context, but moo-lenders should compare them with due dates and remaining balances.':
+      'การชำระคืนที่เสร็จสมบูรณ์แสดงว่าผู้ยืมรายนี้เคยคืนเงินมาก่อน การชำระคืนบางส่วนก็ยังเป็นข้อมูลที่เป็นประโยชน์ แต่ Moo-lender ควรเปรียบเทียบกับวันครบกำหนดและยอดคงเหลือ',
    'How Credit Level Works': 'ระดับเครดิตทำงานอย่างไร',
    'Credit Level shows the borrower’s current borrowing tier.': 'ระดับเครดิตแสดงระดับการยืมปัจจุบันของผู้ยืม',
    'Borrowers level up by taking a Credit Building loan at their current limit and repaying it successfully.':
       'ผู้ยืมจะเพิ่มระดับได้โดยการกู้ Credit-Building Loan เต็มวงเงินปัจจุบัน แล้วชำระคืนสำเร็จ',
    'Credit Levels': 'ระดับเครดิต',
    'Credit limit': 'วงเงินกู้',
-   'How Lender Diversity Works': 'ความหลากหลายของผู้ให้กู้ทำงานอย่างไร',
+   'How Moo-lender Diversity Works': 'ความหลากหลายของ Moo-lender ทำงานอย่างไร',
    'This score belongs to the borrower. It measures the quality of the people who have lent to them.':
       'คะแนนนี้เป็นของผู้ยืม โดยวัดคุณภาพของผู้ที่ปล่อยกู้ให้พวกเขา',
    'What a high score means': 'คะแนนสูงหมายถึงอะไร',
-   'Lenders look independent, established, and natural. They are not all new accounts, not all funding at once, and not overly concentrated in one lender.':
-      'ผู้ให้กู้ดูเป็นอิสระ มีความน่าเชื่อถือ และเป็นธรรมชาติ ไม่ใช่บัญชีใหม่ทั้งหมด ไม่ได้ปล่อยกู้พร้อมกันทั้งหมด และไม่กระจุกตัวอยู่ที่ผู้ให้กู้รายเดียวมากเกินไป',
+   'Moo-lenders look independent, established, and natural. They are not all new accounts, not all funding at once, and not overly concentrated in one moo-lender.':
+      'Moo-lender ดูเป็นอิสระ มีความน่าเชื่อถือ และเป็นธรรมชาติ ไม่ใช่บัญชีใหม่ทั้งหมด ไม่ได้ปล่อยกู้พร้อมกันทั้งหมด และไม่กระจุกตัวอยู่ที่ Moo-lender รายเดียวมากเกินไป',
    'What it is trying to catch': 'สิ่งที่พยายามตรวจจับ',
-   'A borrower could look trustworthy by using fake lender accounts to fund small loans, then ask for a larger real loan. This score looks for that kind of coordinated lender history.':
-      'ผู้ยืมอาจดูน่าเชื่อถือได้โดยใช้บัญชีผู้ให้กู้ปลอมเพื่อปล่อยกู้จำนวนน้อย แล้วจึงขอเงินกู้จริงจำนวนมากขึ้น คะแนนนี้จะตรวจจับประวัติผู้ให้กู้ที่ร่วมมือกันในลักษณะนี้',
+   'A borrower could look trustworthy by using fake moo-lender accounts to fund small loans, then ask for a larger real loan. This score looks for that kind of coordinated moo-lender history.':
+      'ผู้ยืมอาจดูน่าเชื่อถือได้โดยใช้บัญชี Moo-lender ปลอมเพื่อปล่อยกู้จำนวนน้อย แล้วจึงขอเงินกู้จริงจำนวนมากขึ้น คะแนนนี้จะตรวจจับประวัติ Moo-lender ที่ร่วมมือกันในลักษณะนี้',
    'Score bands': 'ช่วงคะแนน',
-   "This does not judge the borrower directly. It tells lenders whether the borrower's lender network looks organic or suspicious.":
-      'คะแนนนี้ไม่ได้ตัดสินตัวผู้ยืมโดยตรง แต่บอกผู้ให้กู้ว่าเครือข่ายผู้ให้กู้ของผู้ยืมดูเป็นธรรมชาติหรือน่าสงสัย',
+   "This does not judge the borrower directly. It tells moo-lenders whether the borrower's moo-lender network looks organic or suspicious.":
+      'คะแนนนี้ไม่ได้ตัดสินตัวผู้ยืมโดยตรง แต่บอก Moo-lender ว่าเครือข่าย Moo-lender ของผู้ยืมดูเป็นธรรมชาติหรือน่าสงสัย',
    'Read the full docs': 'อ่านเอกสารฉบับเต็ม',
-   'Lender Diversity Score documentation': 'เอกสารคะแนนความหลากหลายของผู้ให้กู้',
-   'Why lenders care': 'ทำไมผู้ให้กู้ถึงให้ความสำคัญ',
+   'Moo-lender Diversity Score documentation': 'เอกสารคะแนนความหลากหลายของ Moo-lender',
+   'Why moo-lenders care': 'ทำไม Moo-lender ถึงให้ความสำคัญ',
    'Loan mix shows whether this borrower is mostly building repayment history with smaller loans, or raising their credit level with full-limit repayments.':
       'สัดส่วนเงินกู้แสดงว่าผู้ยืมรายนี้ส่วนใหญ่สร้างประวัติการชำระคืนด้วยเงินกู้จำนวนน้อย หรือเพิ่มระดับเครดิตด้วยการชำระคืนเต็มวงเงิน',
    'A healthy borrower can have both: smaller loans for repayment history and full-limit loans for higher future limits.':
@@ -949,12 +950,12 @@ export const thaiCoverageC: Record<string, string> = {
    'Read the loan summary': 'อ่านสรุปเงินกู้',
    'Look at total borrowed, total loans, repayments, defaults, and standing. Good Standing means there are no unresolved defaults.':
       'ดูยอดยืมทั้งหมด จำนวนเงินกู้ทั้งหมด การชำระคืน การผิดนัดชำระ และสถานะ สถานะดีหมายถึงไม่มีการผิดนัดชำระที่ยังไม่ได้แก้ไข',
-   'Look at lender diversity': 'ดูความหลากหลายของผู้ให้กู้',
-   'This shows whether the borrower has earned trust from multiple lenders, not just one repeated relationship.':
-      'สิ่งนี้แสดงว่าผู้ยืมได้รับความไว้วางใจจากผู้ให้กู้หลายรายหรือไม่ ไม่ใช่แค่ความสัมพันธ์ซ้ำกับรายเดียว',
+   'Look at moo-lender diversity': 'ดูความหลากหลายของ Moo-lender',
+   'This shows whether the borrower has earned trust from multiple moo-lenders, not just one repeated relationship.':
+      'สิ่งนี้แสดงว่าผู้ยืมได้รับความไว้วางใจจาก Moo-lender หลายรายหรือไม่ ไม่ใช่แค่ความสัมพันธ์ซ้ำกับรายเดียว',
    'Use behavior patterns': 'ใช้รูปแบบพฤติกรรม',
-   'These patterns help you judge risk: how often they borrow, how fast they usually repay, typical loan size, loan term, and repeat lenders.':
-      'รูปแบบเหล่านี้ช่วยให้คุณประเมินความเสี่ยง เช่น พวกเขายืมบ่อยแค่ไหน ชำระคืนเร็วแค่ไหนโดยทั่วไป ขนาดเงินกู้ทั่วไป ระยะเวลาเงินกู้ และผู้ให้กู้ที่ยืมซ้ำ',
+   'These patterns help you judge risk: how often they borrow, how fast they usually repay, typical loan size, loan term, and repeat moo-lenders.':
+      'รูปแบบเหล่านี้ช่วยให้คุณประเมินความเสี่ยง เช่น พวกเขายืมบ่อยแค่ไหน ชำระคืนเร็วแค่ไหนโดยทั่วไป ขนาดเงินกู้ทั่วไป ระยะเวลาเงินกู้ และ Moo-lender ที่ยืมซ้ำ',
    'Review recent loans': 'ตรวจสอบเงินกู้ล่าสุด',
    'Use the recent loan table to confirm the borrower has a repayment history that matches the request you are thinking about funding.':
       'ใช้ตารางเงินกู้ล่าสุดเพื่อยืนยันว่าผู้ยืมมีประวัติการชำระคืนที่สอดคล้องกับคำขอที่คุณกำลังพิจารณาปล่อยกู้',
@@ -969,16 +970,16 @@ export const thaiCoverageC: Record<string, string> = {
    'How Credit Level works': 'ระดับเครดิตทำงานอย่างไร',
    'Total Borrowed': 'ยอดที่ยืมทั้งหมด',
    'Total Loans': 'จำนวนเงินกู้ทั้งหมด',
-   'How Lender Diversity Score works': 'คะแนนความหลากหลายของผู้ให้กู้ทำงานอย่างไร',
+   'How Moo-lender Diversity Score works': 'คะแนนความหลากหลายของ Moo-lender ทำงานอย่างไร',
    'Avg days between loans': 'จำนวนวันเฉลี่ยระหว่างเงินกู้แต่ละครั้ง',
    'Typical loan term': 'ระยะเวลาเงินกู้ทั่วไป',
-   'Repeat lenders': 'ผู้ให้กู้ที่ยืมซ้ำ',
+   'Repeat moo-lenders': 'Moo-lender ที่ยืมซ้ำ',
    'Close default history': 'ปิดประวัติการผิดนัดชำระ',
    'Close repayment history': 'ปิดประวัติการชำระคืน',
    'Close credit level explanation': 'ปิดคำอธิบายระดับเครดิต',
-   'Close lender diversity explanation': 'ปิดคำอธิบายความหลากหลายของผู้ให้กู้',
+   'Close moo-lender diversity explanation': 'ปิดคำอธิบายความหลากหลายของ Moo-lender',
    'Amount concentration': 'ความกระจุกตัวของจำนวนเงิน',
-   'Lender newness': 'ความใหม่ของผู้ให้กู้',
+   'Moo-lender newness': 'ความใหม่ของ Moo-lender',
    'New or inactive wallets count as riskier than established wallets with real on-chain activity.':
       'กระเป๋าเงินใหม่หรือไม่มีความเคลื่อนไหวถือว่ามีความเสี่ยงมากกว่ากระเป๋าเงินที่มีกิจกรรมออนเชนจริงมาอย่างยาวนาน',
    'Timing patterns': 'รูปแบบช่วงเวลา',
@@ -987,8 +988,8 @@ export const thaiCoverageC: Record<string, string> = {
    'Recent suspicious patterns matter more. Older clean history fades over time.':
       'รูปแบบน่าสงสัยล่าสุดมีน้ำหนักมากกว่า ส่วนประวัติที่สะอาดในอดีตจะมีน้ำหนักลดลงตามเวลา',
    'Group coordination': 'การร่วมมือกันเป็นกลุ่ม',
-   'Checks whether many lenders appeared around the same time, which can suggest a recruited group.':
-      'ตรวจสอบว่ามีผู้ให้กู้จำนวนมากปรากฏขึ้นในช่วงเวลาใกล้เคียงกันหรือไม่ ซึ่งอาจบ่งชี้ถึงกลุ่มที่ถูกจัดตั้งขึ้น',
+   'Checks whether many moo-lenders appeared around the same time, which can suggest a recruited group.':
+      'ตรวจสอบว่ามี Moo-lender จำนวนมากปรากฏขึ้นในช่วงเวลาใกล้เคียงกันหรือไม่ ซึ่งอาจบ่งชี้ถึงกลุ่มที่ถูกจัดตั้งขึ้น',
    Excellent: 'ยอดเยี่ยม',
    Good: 'ดี',
    Fair: 'ปานกลาง',

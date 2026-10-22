@@ -39,7 +39,7 @@ export const vietnameseCoverageG: Record<string, string> = {
    'Repay a full-limit loan': 'Trả một khoản vay bằng toàn bộ hạn mức',
 
    // src/views/dashboard-v2/useDashboardV2Model.ts
-   'a lender': 'một người cho vay',
+   'a moo-lender': 'một moo-lender',
 
    // src/views/dashboard/RequestBoard.tsx
    'This looks low-effort. Requests that appear to have no real effort may be deleted — submit again to post anyway. Tap “Make Your Request” again to post it anyway.':
@@ -63,27 +63,27 @@ export const vietnameseCoverageG: Record<string, string> = {
    'Repay on time to reach Level 8 — up to $140.': 'Trả nợ đúng hạn để lên Hạng 8 — hạn mức tối đa $140.',
 
    // src/views/dashboard/components/LenderDiversitySection.tsx
-   '1 Unique Lender': '1 người cho vay khác nhau',
-   '0 Unique Lenders': '0 người cho vay khác nhau',
-   '2 Unique Lenders': '2 người cho vay khác nhau',
-   '3 Unique Lenders': '3 người cho vay khác nhau',
-   '4 Unique Lenders': '4 người cho vay khác nhau',
-   '5 Unique Lenders': '5 người cho vay khác nhau',
-   '6 Unique Lenders': '6 người cho vay khác nhau',
-   '7 Unique Lenders': '7 người cho vay khác nhau',
-   '8 Unique Lenders': '8 người cho vay khác nhau',
-   '9 Unique Lenders': '9 người cho vay khác nhau',
-   '10 Unique Lenders': '10 người cho vay khác nhau',
-   '11 Unique Lenders': '11 người cho vay khác nhau',
-   '12 Unique Lenders': '12 người cho vay khác nhau',
-   '13 Unique Lenders': '13 người cho vay khác nhau',
-   '14 Unique Lenders': '14 người cho vay khác nhau',
-   '15 Unique Lenders': '15 người cho vay khác nhau',
-   '16 Unique Lenders': '16 người cho vay khác nhau',
-   '17 Unique Lenders': '17 người cho vay khác nhau',
-   '18 Unique Lenders': '18 người cho vay khác nhau',
-   '19 Unique Lenders': '19 người cho vay khác nhau',
-   '20 Unique Lenders': '20 người cho vay khác nhau',
+   '1 Unique Moo-lender': '1 moo-lender khác nhau',
+   '0 Unique Moo-lenders': '0 moo-lender khác nhau',
+   '2 Unique Moo-lenders': '2 moo-lender khác nhau',
+   '3 Unique Moo-lenders': '3 moo-lender khác nhau',
+   '4 Unique Moo-lenders': '4 moo-lender khác nhau',
+   '5 Unique Moo-lenders': '5 moo-lender khác nhau',
+   '6 Unique Moo-lenders': '6 moo-lender khác nhau',
+   '7 Unique Moo-lenders': '7 moo-lender khác nhau',
+   '8 Unique Moo-lenders': '8 moo-lender khác nhau',
+   '9 Unique Moo-lenders': '9 moo-lender khác nhau',
+   '10 Unique Moo-lenders': '10 moo-lender khác nhau',
+   '11 Unique Moo-lenders': '11 moo-lender khác nhau',
+   '12 Unique Moo-lenders': '12 moo-lender khác nhau',
+   '13 Unique Moo-lenders': '13 moo-lender khác nhau',
+   '14 Unique Moo-lenders': '14 moo-lender khác nhau',
+   '15 Unique Moo-lenders': '15 moo-lender khác nhau',
+   '16 Unique Moo-lenders': '16 moo-lender khác nhau',
+   '17 Unique Moo-lenders': '17 moo-lender khác nhau',
+   '18 Unique Moo-lenders': '18 moo-lender khác nhau',
+   '19 Unique Moo-lenders': '19 moo-lender khác nhau',
+   '20 Unique Moo-lenders': '20 moo-lender khác nhau',
 
    // src/views/dashboard/components/LoanRequestModal.tsx
    'Please add a little more — at least': 'Vui lòng viết thêm một chút — tối thiểu',
@@ -298,7 +298,7 @@ export const vietnameseCoverageG: Record<string, string> = {
    'Date Borrowed': 'Ngày vay',
    'Date Funded': 'Ngày cấp vốn',
    "Borrower's Name": 'Tên người vay',
-   "Lender's Name": 'Tên người cho vay',
+   "Moo-lender's Name": 'Tên moo-lender',
 
    // src/views/repay/Repay.tsx
    'your loan': 'khoản vay của bạn',
@@ -332,13 +332,13 @@ export const vietnameseCoverageG: Record<string, string> = {
    'Cleaner IOU rules • Better account status and recovery controls':
       'Quy tắc IOU gọn gàng hơn • Kiểm soát trạng thái tài khoản và khôi phục tốt hơn',
    'May 20, 2026': '20 tháng 5, 2026',
-   'The trust layer behind Moodeng has been made more consistent. Lender IOU point rules are now easier to reason about, admin status controls are closer to the real account state, and recovery workflows have more reliable data to work from. Most of this work sits behind the scenes, but it matters: borrower records, lender incentives, overdue loans, and account restrictions need to line up before the product can scale safely.':
-      'Lớp niềm tin phía sau Moodeng đã được làm nhất quán hơn. Quy tắc điểm IOU của người cho vay giờ dễ hiểu hơn, các công cụ quản lý trạng thái của quản trị viên sát với trạng thái tài khoản thực tế hơn, và quy trình khôi phục có dữ liệu đáng tin cậy hơn để xử lý. Phần lớn công việc này diễn ra phía sau, nhưng rất quan trọng: hồ sơ người vay, ưu đãi cho người cho vay, khoản vay quá hạn và các hạn chế tài khoản cần khớp với nhau trước khi sản phẩm có thể mở rộng an toàn.',
+   'The trust layer behind Moodeng has been made more consistent. Moo-lender IOU point rules are now easier to reason about, admin status controls are closer to the real account state, and recovery workflows have more reliable data to work from. Most of this work sits behind the scenes, but it matters: borrower records, moo-lender incentives, overdue loans, and account restrictions need to line up before the product can scale safely.':
+      'Lớp niềm tin phía sau Moodeng đã được làm nhất quán hơn. Quy tắc điểm IOU của moo-lender giờ dễ hiểu hơn, các công cụ quản lý trạng thái của quản trị viên sát với trạng thái tài khoản thực tế hơn, và quy trình khôi phục có dữ liệu đáng tin cậy hơn để xử lý. Phần lớn công việc này diễn ra phía sau, nhưng rất quan trọng: hồ sơ người vay, ưu đãi cho moo-lender, khoản vay quá hạn và các hạn chế tài khoản cần khớp với nhau trước khi sản phẩm có thể mở rộng an toàn.',
    'Support Library & Credit Education': 'Thư viện hỗ trợ & kiến thức tín dụng',
    'Repayment guides • Credit leveling • Borrower safety content': 'Hướng dẫn trả nợ • Lên hạng tín dụng • Nội dung an toàn cho người vay',
    'May 16, 2026': '16 tháng 5, 2026',
-   'The support area has been refreshed around the questions borrowers and lenders actually ask. Guides now explain repayment, Pandesal points, credit leveling, World ID, Base Wallet setup, and borrower safety in clearer language. We also added more educational content around portable repayment history and safer alternatives to predatory lending, so new users can understand what Moodeng is building before they request or fund a loan.':
-      'Khu vực hỗ trợ đã được làm mới xoay quanh những câu hỏi mà người vay và người cho vay thực sự đặt ra. Các hướng dẫn giờ giải thích việc trả nợ, điểm Pandesal, cách lên hạng tín dụng, World ID, cách thiết lập Ví Base và an toàn cho người vay bằng ngôn ngữ dễ hiểu hơn. Chúng tôi cũng bổ sung thêm nội dung về lịch sử trả nợ mang theo được và những lựa chọn an toàn hơn thay cho cho vay nặng lãi, để người dùng mới hiểu Moodeng đang xây dựng điều gì trước khi yêu cầu vay hoặc cấp vốn cho một khoản vay.',
+   'The support area has been refreshed around the questions borrowers and moo-lenders actually ask. Guides now explain repayment, Pandesal points, credit leveling, World ID, Base Wallet setup, and borrower safety in clearer language. We also added more educational content around portable repayment history and safer alternatives to predatory lending, so new users can understand what Moodeng is building before they request or fund a loan.':
+      'Khu vực hỗ trợ đã được làm mới xoay quanh những câu hỏi mà người vay và moo-lender thực sự đặt ra. Các hướng dẫn giờ giải thích việc trả nợ, điểm Pandesal, cách lên hạng tín dụng, World ID, cách thiết lập Ví Base và an toàn cho người vay bằng ngôn ngữ dễ hiểu hơn. Chúng tôi cũng bổ sung thêm nội dung về lịch sử trả nợ mang theo được và những lựa chọn an toàn hơn thay cho cho vay nặng lãi, để người dùng mới hiểu Moodeng đang xây dựng điều gì trước khi yêu cầu vay hoặc cấp vốn cho một khoản vay.',
 
    // src/views/transactions/TransactionDetail.tsx
    Refunded: 'Đã hoàn tiền',
@@ -353,8 +353,8 @@ export const vietnameseCoverageG: Record<string, string> = {
    'Fair Diversity': 'Độ đa dạng khá',
    'Low Diversity': 'Độ đa dạng thấp',
    'Very Low Diversity': 'Độ đa dạng rất thấp',
-   lender: 'người cho vay',
-   lenders: 'người cho vay',
+   'moo-lender': 'moo-lender',
+   'moo-lenders': 'moo-lender',
 
    // src/views/user-profile/ProgressHistory.tsx
    Milestone: 'Cột mốc',
@@ -362,7 +362,7 @@ export const vietnameseCoverageG: Record<string, string> = {
    Insight: 'Nhận định',
    Late: 'Trễ hạn',
    'Loan received: $': 'Đã nhận khoản vay: $',
-   'from lender.': 'từ người cho vay.',
+   'from moo-lender.': 'từ moo-lender.',
    'Credit Building Loan Repaid': 'Credit-Building Loan đã được trả xong',
    'Trust Building Loan Repaid': 'Trust-Building Loan đã được trả xong',
    'Credit Building loan closed before due date.': 'Credit-Building Loan đã được trả xong trước ngày đến hạn.',
@@ -413,8 +413,8 @@ export const vietnameseCoverageG: Record<string, string> = {
    'milestones hit': 'cột mốc đã đạt',
    Defaults: 'khoản vỡ nợ',
    Level: 'Hạng',
-   "Checks whether one lender funded most of the borrower's history.":
-      'Kiểm tra xem có một người cho vay nào đã cấp vốn cho phần lớn lịch sử vay của người vay này hay không.',
+   "Checks whether one moo-lender funded most of the borrower's history.":
+      'Kiểm tra xem có một moo-lender nào đã cấp vốn cho phần lớn lịch sử vay của người vay này hay không.',
    'repays $': 'hoàn trả $',
    '1 loan repaid on time in a row': '1 khoản vay được trả đúng hạn liên tiếp',
    '2 loans repaid on time in a row': '2 khoản vay liên tiếp được trả đúng hạn',
@@ -539,7 +539,7 @@ export const vietnameseCoverageG: Record<string, string> = {
    "You’re booked! Tap “I’ll be there” so we keep your spot — you can apply right after the call.": "Bạn đã đặt lịch! Nhấn “I’ll be there” để giữ chỗ — bạn có thể đăng ký ngay sau cuộc gọi.",
    "Thank you for confirming! You can apply right after the call.": "Cảm ơn bạn đã xác nhận! Bạn có thể đăng ký ngay sau cuộc gọi.",
    "Look around first": "Xem qua trước",
-   "A little low for lenders": "Hơi thấp với người cho vay",
+   "A little low for moo-lenders": "Hơi thấp với moo-lender",
    "Questions? Message Moodeng Credit on Facebook or email support@moodeng.app — we usually reply within a day.": "Có câu hỏi? Nhắn Moodeng Credit trên Facebook hoặc email support@moodeng.app — chúng tôi thường trả lời trong một ngày.",
 
    // src/hooks/useWallet.ts (Instant Wallet send failures)

@@ -40,7 +40,7 @@ export const filipinoCoverageC: Record<string, string> = {
    'This wallet is already linked to another Moodeng account. To keep lending fair and prevent self-lending, each wallet can belong to only one account.':
       'Naka-link na ang wallet na ito sa ibang Moodeng account. Para manatiling patas ang pagpapahiram at maiwasan ang pagpapahiram sa sarili, isang account lang ang puwedeng may-ari ng bawat wallet.',
    'What you can do': 'Ano ang puwede mong gawin',
-   'Connect a different wallet address to this lender account.': 'Magkonekta ng ibang wallet address sa lender account na ito.',
+   'Connect a different wallet address to this moo-lender account.': 'Magkonekta ng ibang wallet address sa moo-lender account na ito.',
    'If you created a borrower account by mistake, remove this wallet from it first — or ask us to delete that account or switch its role.':
       'Kung hindi sinasadyang nakagawa ka ng borrower account, alisin muna roon ang wallet na ito — o hilingin sa amin na i-delete ang account na iyon o palitan ang role nito.',
    "Not sure what happened? Message us and we'll help.": 'Hindi sigurado kung ano ang nangyari? I-message kami at tutulungan ka namin.',
@@ -283,8 +283,8 @@ export const filipinoCoverageC: Record<string, string> = {
    'Open Binance': 'Buksan ang Binance',
    'Enter an amount greater than 0.': 'Maglagay ng halagang higit sa 0.',
    'Finish setup to start borrowing': 'Tapusin ang setup para makapagsimulang humiram',
-   'Verify yourself and set up your wallet (an Instant Wallet, or a Base Account if you prefer) before requesting loans. Repayments will show here after a lender funds your first loan.':
-      'Mag-verify at i-set up ang wallet mo (Instant Wallet, o Base Account kung mas gusto mo) bago mag-request ng loan. Lalabas dito ang mga bayad mo kapag napondohan na ng lender ang una mong loan.',
+   'Verify yourself and set up your wallet (an Instant Wallet, or a Base Account if you prefer) before requesting loans. Repayments will show here after a moo-lender funds your first loan.':
+      'Mag-verify at i-set up ang wallet mo (Instant Wallet, o Base Account kung mas gusto mo) bago mag-request ng loan. Lalabas dito ang mga bayad mo kapag napondohan na ng moo-lender ang una mong loan.',
    'Verify yourself to borrow': 'Mag-verify para makahiram',
    'Your wallet is added. Complete verification before requesting loans. Repayments will show here after funding.':
       'Naidagdag na ang wallet mo. Tapusin ang verification bago mag-request ng loan. Lalabas dito ang mga bayad mo kapag napondohan na.',
@@ -292,8 +292,8 @@ export const filipinoCoverageC: Record<string, string> = {
    'Add Wallet': 'Magdagdag ng wallet',
    'You are verified. Set up your Instant Wallet (or connect a Base Account) so loans and repayments can stay tied to your Moodeng account.':
       'Verified ka na. I-set up ang Instant Wallet mo (o ikonekta ang Base Account) para manatiling naka-link sa Moodeng account mo ang mga loan at bayad.',
-   'Your repayment activity will appear here once a lender funds your first loan.':
-      'Lalabas dito ang record ng pagbabayad mo kapag napondohan na ng lender ang una mong loan.',
+   'Your repayment activity will appear here once a moo-lender funds your first loan.':
+      'Lalabas dito ang record ng pagbabayad mo kapag napondohan na ng moo-lender ang una mong loan.',
    'No repayments yet': 'Wala pang bayad',
    'Copy failed': 'Hindi nakopya',
    'Could not copy your wallet address. Copy it manually.': 'Hindi makopya ang wallet address mo. Kopyahin ito nang mano-mano.',
@@ -370,8 +370,8 @@ export const filipinoCoverageC: Record<string, string> = {
    'Most borrowers use both — trust loans to stay active, credit loans to climb.':
       'Karamihan ng borrower ay gumagamit ng pareho — Trust-Building Loan para manatiling aktibo, Credit-Building Loan para umakyat.',
    'Trust is the currency before the credit.': 'Tiwala muna bago credit.',
-   'Every loan you repay cleanly — even a small Trust-Building Loan — deposits reputation that lenders can see. That trust is what gets your next request funded faster.':
-      'Bawat loan na malinis mong nababayaran — kahit maliit na Trust-Building Loan — ay nagdadagdag ng reputasyong nakikita ng mga lender. Ang tiwalang iyon ang nagpapabilis ng pagpopondo sa susunod mong request.',
+   'Every loan you repay cleanly — even a small Trust-Building Loan — deposits reputation that moo-lenders can see. That trust is what gets your next request funded faster.':
+      'Bawat loan na malinis mong nababayaran — kahit maliit na Trust-Building Loan — ay nagdadagdag ng reputasyong nakikita ng mga moo-lender. Ang tiwalang iyon ang nagpapabilis ng pagpopondo sa susunod mong request.',
    'Level up faster': 'Mag-level up nang mas mabilis',
    'Do this, not that': 'Gawin ito, huwag iyon',
    'A few habits keep your climb steady and protect the Pandesal points you are earning.':
@@ -430,21 +430,21 @@ export const filipinoCoverageC: Record<string, string> = {
    'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment unlocks the next limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
       'Kumuha ng Credit-Building Loan sa buo mong kasalukuyang limit at bayaran ito nang buo at on time. Ang malinis na bayad ang nag-a-unlock ng susunod na limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
    'Does borrowing a small amount level me up?': 'Puwede ba akong mag-level up sa paghiram ng maliit na halaga?',
-   'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.':
-      'Hindi. Trust-Building Loan ang paghiram nang mas mababa sa limit mo. Pinapaganda nito ang reputasyon mo sa mga lender pero hindi nito tinataas ang Credit Level mo. Full-limit na Credit-Building Loan lang ang nagpapaakyat sa iyo.',
+   'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with moo-lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.':
+      'Hindi. Trust-Building Loan ang paghiram nang mas mababa sa limit mo. Pinapaganda nito ang reputasyon mo sa mga moo-lender pero hindi nito tinataas ang Credit Level mo. Full-limit na Credit-Building Loan lang ang nagpapaakyat sa iyo.',
    'Can I skip levels by repaying early or paying extra?':
       'Puwede ba akong lumaktaw ng level sa pamamagitan ng maagang bayad o extra na bayad?',
    'No. Moodeng advances one level at a time. Paying extra or repaying early does not skip a step — each new limit is earned by repaying the level before it.':
       'Hindi. Paisa-isang level ang pag-akyat sa Moodeng. Hindi ka makakalaktaw ng hakbang dahil sa sobra o maagang bayad — nakukuha ang bawat bagong limit sa pagbabayad sa level bago nito.',
    'Why does the limit start at only $15?': 'Bakit $15 lang ang panimulang limit?',
-   'Small starting limits keep risk low for the lenders funding someone with no track record yet. As you prove reliable repayment, your limit and lender confidence grow together.':
-      'Pinapababa ng maliit na panimulang limit ang risk para sa mga lender na nagpopondo sa taong wala pang track record. Habang pinapatunayan mong maaasahan ka sa pagbabayad, sabay na lumalaki ang limit mo at ang tiwala ng mga lender.',
+   'Small starting limits keep risk low for the moo-lenders funding someone with no track record yet. As you prove reliable repayment, your limit and moo-lender confidence grow together.':
+      'Pinapababa ng maliit na panimulang limit ang risk para sa mga moo-lender na nagpopondo sa taong wala pang track record. Habang pinapatunayan mong maaasahan ka sa pagbabayad, sabay na lumalaki ang limit mo at ang tiwala ng mga moo-lender.',
    'How long does it take to reach the $60 level?': 'Gaano katagal bago maabot ang $60 na level?',
    'There is no fixed timeline. Each level needs one full-limit loan repaid on time, so the pace depends on how quickly you borrow and repay. Borrowers who repay cleanly can climb in just a few loan cycles.':
       'Walang takdang timeline. Isang full-limit loan na nabayaran on time ang kailangan sa bawat level, kaya nakadepende ang bilis sa kung gaano ka kabilis humiram at magbayad. Puwedeng makaakyat sa loob lang ng ilang loan cycle ang mga borrower na malinis magbayad.',
    'What happens if I miss a repayment?': 'Ano ang mangyayari kung ma-miss ko ang isang bayad?',
-   'A late or missed repayment reduces your Pandesal points and can pause your progress. Lenders weigh the missed repayment heavily, so keeping payments on time matters more than borrowing size.':
-      'Nababawasan ang Pandesal points mo at puwedeng mahinto ang progress mo kapag huli o na-miss ang bayad. Malaki ang timbang ng na-miss na bayad sa mga lender, kaya mas mahalaga ang pagbabayad on time kaysa sa laki ng hinihiram.',
+   'A late or missed repayment reduces your Pandesal points and can pause your progress. Moo-lenders weigh the missed repayment heavily, so keeping payments on time matters more than borrowing size.':
+      'Nababawasan ang Pandesal points mo at puwedeng mahinto ang progress mo kapag huli o na-miss ang bayad. Malaki ang timbang ng na-miss na bayad sa mga moo-lender, kaya mas mahalaga ang pagbabayad on time kaysa sa laki ng hinihiram.',
    'Does my Credit Level ever reset?': 'Nare-reset ba ang Credit Level ko?',
    'Your progress is tied to your wallet and repayment history, so it travels with you. Missed repayments do not erase your level, but they reduce your Pandesal points and can slow further growth.':
       'Nakatali ang progress mo sa wallet at history ng pagbabayad mo, kaya sumasama ito sa iyo. Hindi binubura ng mga na-miss na bayad ang level mo, pero binabawasan nito ang Pandesal points mo at puwedeng bumagal ang pag-akyat mo.',
@@ -481,8 +481,8 @@ export const filipinoCoverageC: Record<string, string> = {
    'Credit limit growing from fifteen to sixty dollars': 'Lumalaking credit limit mula labinlimang dolyar hanggang animnapung dolyar',
    'A borrower hippo at a Moodeng kiosk following the credit-building flow: request, repay on time, then level up':
       'Isang borrower hippo sa Moodeng kiosk na sumusunod sa credit-building flow: mag-request, magbayad on time, tapos mag-level up',
-   'A borrower hippo and a squirrel building trust with a lender at the Moodeng lending desk':
-      'Isang borrower hippo at isang squirrel na bumubuo ng tiwala kasama ang isang lender sa Moodeng lending desk',
+   'A borrower hippo and a squirrel building trust with a moo-lender at the Moodeng lending desk':
+      'Isang borrower hippo at isang squirrel na bumubuo ng tiwala kasama ang isang moo-lender sa Moodeng lending desk',
 
    // src/views/support/PublicGuide.tsx
    'More guides': 'Iba pang gabay',
@@ -516,9 +516,9 @@ export const filipinoCoverageC: Record<string, string> = {
    'Hide — this keeps going on its own': 'Itago — tuloy pa rin ito nang mag-isa',
    'Sent successfully!': 'Matagumpay na naipadala!',
    'Loan Details': 'Detalye ng loan',
-   'Waiting for lender acceptance': 'Naghihintay ng pag-accept ng lender',
-   'This loan is not funded yet. Repayment starts only after a lender accepts.':
-      'Hindi pa napopondohan ang loan na ito. Magsisimula lang ang pagbabayad kapag tinanggap na ito ng lender.',
+   'Waiting for moo-lender acceptance': 'Naghihintay ng pag-accept ng moo-lender',
+   'This loan is not funded yet. Repayment starts only after a moo-lender accepts.':
+      'Hindi pa napopondohan ang loan na ito. Magsisimula lang ang pagbabayad kapag tinanggap na ito ng moo-lender.',
    'Loan Amount': 'Halaga ng loan',
    Outstanding: 'Natitirang utang',
    'View on explorer': 'Tingnan sa explorer',
@@ -530,16 +530,16 @@ export const filipinoCoverageC: Record<string, string> = {
    Repaid: 'Nabayaran na',
 
    // src/views/user-profile/LenderDiversityHistory.tsx
-   'Lender Distribution': 'Distribusyon ng mga lender',
-   'No lender history yet': 'Wala pang lender history',
+   'Moo-lender Distribution': 'Distribusyon ng mga moo-lender',
+   'No moo-lender history yet': 'Wala pang moo-lender history',
 
    // src/views/user-profile/ProgressHistory.tsx
    'Started at Level 0': 'Nagsimula sa Level 0',
    'Borrower account created and credit journey started.': 'Nagawa ang borrower account at nagsimula ang credit journey.',
    'Identity verification completed.': 'Kumpleto na ang identity verification.',
    'No loan activity yet': 'Wala pang aktibidad ng loan',
-   'Repeat Lender Relationship': 'Umuulit na lender',
-   'Borrowed again from an existing lender.': 'Humiram ulit sa dating lender.',
+   'Repeat Moo-lender Relationship': 'Umuulit na moo-lender',
+   'Borrowed again from an existing moo-lender.': 'Humiram ulit sa dating moo-lender.',
    'Partial Repayment Made': 'May partial na bayad',
    'Credit Limit Unlocked': 'Na-unlock ang credit limit',
    'Defaulted Loan': 'Loan na nag-default',
@@ -658,18 +658,18 @@ export const filipinoCoverageC: Record<string, string> = {
 
    // src/views/user-profile/UserProfile.tsx
    'Borrower context': 'Konteksto ng borrower',
-   'This account is a lender': 'Isang lender ang account na ito',
-   'Lenders fund loans rather than borrow, so there is no borrowing history to show here.':
-      'Nagpopondo ng loan ang mga lender sa halip na humiram, kaya walang history ng paghiram na maipapakita rito.',
+   'This account is a moo-lender': 'Isang moo-lender ang account na ito',
+   'Moo-lenders fund loans rather than borrow, so there is no borrowing history to show here.':
+      'Nagpopondo ng loan ang mga moo-lender sa halip na humiram, kaya walang history ng paghiram na maipapakita rito.',
    'Verify to unlock LV.1': 'Mag-verify para ma-unlock ang LV.1',
    'Only you can see this': 'Ikaw lang ang makakakita nito',
    'Good standing': 'Maayos na standing',
    'View loan mix': 'Tingnan ang loan mix',
-   'Your score appears after at least 2 funded loans from different lenders.':
-      'Lalabas ang score mo pagkatapos ng hindi bababa sa 2 napondohang loan mula sa magkakaibang lender.',
+   'Your score appears after at least 2 funded loans from different moo-lenders.':
+      'Lalabas ang score mo pagkatapos ng hindi bababa sa 2 napondohang loan mula sa magkakaibang moo-lender.',
    'Borrower patterns': 'Mga pattern ng borrower',
    'Recent Loans': 'Mga kamakailang loan',
-   'Loan / lender': 'Loan / lender',
+   'Loan / moo-lender': 'Loan / moo-lender',
    'No funded loans yet': 'Wala pang napondohang loan',
    'Not enough loan history yet': 'Hindi pa sapat ang loan history',
    'Default History': 'History ng default',
@@ -678,34 +678,34 @@ export const filipinoCoverageC: Record<string, string> = {
       'May default kapag lumipas ang deadline ng bayad nang hindi kumpleto ang binayaran.',
    'Loan defaulted': 'Nag-default ang loan',
    Unresolved: 'Hindi pa naresolba',
-   'Defaults may signal repayment risk. Lenders should review the borrower’s full history, not just credit level.':
-      'Puwedeng magpahiwatig ng repayment risk ang mga default. Dapat suriin ng mga lender ang buong history ng borrower, hindi lang ang credit level.',
+   'Defaults may signal repayment risk. Moo-lenders should review the borrower’s full history, not just credit level.':
+      'Puwedeng magpahiwatig ng repayment risk ang mga default. Dapat suriin ng mga moo-lender ang buong history ng borrower, hindi lang ang credit level.',
    'Repayment History': 'History ng pagbabayad',
    'Money this borrower has already paid back across funded loans.': 'Perang naibalik na ng borrower na ito sa mga napondohang loan.',
    'Fully repaid': 'Bayad na nang buo',
-   'Completed repayments show this borrower has returned funds before. Partial repayments can still be useful context, but lenders should compare them with due dates and remaining balances.':
-      'Ipinapakita ng mga kumpletong bayad na nakapagbalik na ng pondo ang borrower na ito noon. Puwede pa ring maging kapaki-pakinabang na konteksto ang mga partial na bayad, pero dapat ikumpara ito ng mga lender sa mga due date at natitirang balanse.',
+   'Completed repayments show this borrower has returned funds before. Partial repayments can still be useful context, but moo-lenders should compare them with due dates and remaining balances.':
+      'Ipinapakita ng mga kumpletong bayad na nakapagbalik na ng pondo ang borrower na ito noon. Puwede pa ring maging kapaki-pakinabang na konteksto ang mga partial na bayad, pero dapat ikumpara ito ng mga moo-lender sa mga due date at natitirang balanse.',
    'How Credit Level Works': 'Paano gumagana ang Credit Level',
    'Credit Level shows the borrower’s current borrowing tier.': 'Ipinapakita ng Credit Level ang kasalukuyang borrowing tier ng borrower.',
    'Borrowers level up by taking a Credit Building loan at their current limit and repaying it successfully.':
       'Nagle-level up ang mga borrower kapag kumuha sila ng Credit-Building Loan na katumbas ng kasalukuyang limit nila at nabayaran ito nang maayos.',
    'Credit Levels': 'Mga Credit Level',
    'Credit limit': 'Credit limit',
-   'How Lender Diversity Works': 'Paano gumagana ang Lender Diversity',
+   'How Moo-lender Diversity Works': 'Paano gumagana ang Moo-lender Diversity',
    'This score belongs to the borrower. It measures the quality of the people who have lent to them.':
       'Sa borrower ang score na ito. Sinusukat nito ang kalidad ng mga taong nagpahiram sa kanila.',
    'What a high score means': 'Ano ang ibig sabihin ng mataas na score',
-   'Lenders look independent, established, and natural. They are not all new accounts, not all funding at once, and not overly concentrated in one lender.':
-      'Mukhang independent, established, at natural ang mga lender. Hindi lahat sila bagong account, hindi lahat sila sabay na nagpondo, at hindi masyadong nakakonsentra sa iisang lender.',
+   'Moo-lenders look independent, established, and natural. They are not all new accounts, not all funding at once, and not overly concentrated in one moo-lender.':
+      'Mukhang independent, established, at natural ang mga moo-lender. Hindi lahat sila bagong account, hindi lahat sila sabay na nagpondo, at hindi masyadong nakakonsentra sa iisang moo-lender.',
    'What it is trying to catch': 'Ano ang sinusubukan nitong mahuli',
-   'A borrower could look trustworthy by using fake lender accounts to fund small loans, then ask for a larger real loan. This score looks for that kind of coordinated lender history.':
-      'Puwedeng magmukhang mapagkakatiwalaan ang isang borrower sa paggamit ng pekeng lender account para pondohan ang maliliit na loan, tapos humingi ng mas malaking tunay na loan. Hinahanap ng score na ito ang ganitong uri ng coordinated na lender history.',
+   'A borrower could look trustworthy by using fake moo-lender accounts to fund small loans, then ask for a larger real loan. This score looks for that kind of coordinated moo-lender history.':
+      'Puwedeng magmukhang mapagkakatiwalaan ang isang borrower sa paggamit ng pekeng moo-lender account para pondohan ang maliliit na loan, tapos humingi ng mas malaking tunay na loan. Hinahanap ng score na ito ang ganitong uri ng coordinated na moo-lender history.',
    'Score bands': 'Mga score band',
-   "This does not judge the borrower directly. It tells lenders whether the borrower's lender network looks organic or suspicious.":
-      'Hindi nito direktang hinuhusgahan ang borrower. Sinasabi nito sa mga lender kung mukhang organic o kaduda-duda ang lender network ng borrower.',
+   "This does not judge the borrower directly. It tells moo-lenders whether the borrower's moo-lender network looks organic or suspicious.":
+      'Hindi nito direktang hinuhusgahan ang borrower. Sinasabi nito sa mga moo-lender kung mukhang organic o kaduda-duda ang moo-lender network ng borrower.',
    'Read the full docs': 'Basahin ang buong docs',
-   'Lender Diversity Score documentation': 'Dokumentasyon ng Lender Diversity Score',
-   'Why lenders care': 'Bakit mahalaga ito sa mga lender',
+   'Moo-lender Diversity Score documentation': 'Dokumentasyon ng Moo-lender Diversity Score',
+   'Why moo-lenders care': 'Bakit mahalaga ito sa mga moo-lender',
    'Loan mix shows whether this borrower is mostly building repayment history with smaller loans, or raising their credit level with full-limit repayments.':
       'Ipinapakita ng loan mix kung mas bumubuo ang borrower na ito ng history ng pagbabayad gamit ang maliliit na loan, o nagpapataas ng Credit Level gamit ang mga full-limit na bayad.',
    'A healthy borrower can have both: smaller loans for repayment history and full-limit loans for higher future limits.':
@@ -719,12 +719,12 @@ export const filipinoCoverageC: Record<string, string> = {
    'Read the loan summary': 'Basahin ang loan summary',
    'Look at total borrowed, total loans, repayments, defaults, and standing. Good Standing means there are no unresolved defaults.':
       'Tingnan ang kabuuang hiniram, kabuuang loan, mga bayad, mga default, at standing. Ibig sabihin ng Maayos na standing ay walang hindi pa naresolbang default.',
-   'Look at lender diversity': 'Tingnan ang lender diversity',
-   'This shows whether the borrower has earned trust from multiple lenders, not just one repeated relationship.':
-      'Ipinapakita nito kung nakakuha ang borrower ng tiwala mula sa maraming lender, hindi lang isang paulit-ulit na relasyon.',
+   'Look at moo-lender diversity': 'Tingnan ang moo-lender diversity',
+   'This shows whether the borrower has earned trust from multiple moo-lenders, not just one repeated relationship.':
+      'Ipinapakita nito kung nakakuha ang borrower ng tiwala mula sa maraming moo-lender, hindi lang isang paulit-ulit na relasyon.',
    'Use behavior patterns': 'Gamitin ang mga behavior pattern',
-   'These patterns help you judge risk: how often they borrow, how fast they usually repay, typical loan size, loan term, and repeat lenders.':
-      'Tinutulungan ka ng mga pattern na ito na tantyahin ang risk: gaano sila kadalas humiram, gaano sila kabilis karaniwang magbayad, karaniwang laki ng loan, loan term, at mga umuulit na lender.',
+   'These patterns help you judge risk: how often they borrow, how fast they usually repay, typical loan size, loan term, and repeat moo-lenders.':
+      'Tinutulungan ka ng mga pattern na ito na tantyahin ang risk: gaano sila kadalas humiram, gaano sila kabilis karaniwang magbayad, karaniwang laki ng loan, loan term, at mga umuulit na moo-lender.',
    'Review recent loans': 'Suriin ang mga kamakailang loan',
    'Use the recent loan table to confirm the borrower has a repayment history that matches the request you are thinking about funding.':
       'Gamitin ang talaan ng mga kamakailang loan para kumpirmahin na may history ng pagbabayad ang borrower na tugma sa request na iniisip mong pondohan.',
@@ -735,16 +735,16 @@ export const filipinoCoverageC: Record<string, string> = {
    'How Credit Level works': 'Paano gumagana ang Credit Level',
    'Total Borrowed': 'Kabuuang hiniram',
    'Total Loans': 'Kabuuang loan',
-   'How Lender Diversity Score works': 'Paano gumagana ang Lender Diversity Score',
+   'How Moo-lender Diversity Score works': 'Paano gumagana ang Moo-lender Diversity Score',
    'Avg days between loans': 'Average na araw sa pagitan ng mga loan',
    'Typical loan term': 'Karaniwang loan term',
-   'Repeat lenders': 'Mga umuulit na lender',
+   'Repeat moo-lenders': 'Mga umuulit na moo-lender',
    'Close default history': 'Isara ang default history',
    'Close repayment history': 'Isara ang repayment history',
    'Close credit level explanation': 'Isara ang paliwanag ng credit level',
-   'Close lender diversity explanation': 'Isara ang paliwanag ng lender diversity',
+   'Close moo-lender diversity explanation': 'Isara ang paliwanag ng moo-lender diversity',
    'Amount concentration': 'Konsentrasyon ng halaga',
-   'Lender newness': 'Gaano kabago ang lender',
+   'Moo-lender newness': 'Gaano kabago ang moo-lender',
    'New or inactive wallets count as riskier than established wallets with real on-chain activity.':
       'Mas risky ang bago o hindi aktibong wallet kumpara sa matagal nang wallet na may totoong on-chain na aktibidad.',
    'Timing patterns': 'Mga pattern sa timing',
@@ -753,8 +753,8 @@ export const filipinoCoverageC: Record<string, string> = {
    'Recent suspicious patterns matter more. Older clean history fades over time.':
       'Mas mahalaga ang mga kaduda-dudang pattern kamakailan lang. Unti-unting nawawalan ng bigat ang mas lumang malinis na history.',
    'Group coordination': 'Koordinasyon ng grupo',
-   'Checks whether many lenders appeared around the same time, which can suggest a recruited group.':
-      'Sinusuri kung maraming lender ang lumitaw nang halos magkasabay, na puwedeng magpahiwatig ng recruited na grupo.',
+   'Checks whether many moo-lenders appeared around the same time, which can suggest a recruited group.':
+      'Sinusuri kung maraming moo-lender ang lumitaw nang halos magkasabay, na puwedeng magpahiwatig ng recruited na grupo.',
    Excellent: 'Napakahusay',
    Good: 'Mahusay',
    Fair: 'Katamtaman',

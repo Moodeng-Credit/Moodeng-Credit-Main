@@ -55,7 +55,7 @@ export default function WalletAlreadyLinked() {
             <div className="mb-md-4 w-full rounded-[16px] border border-md-neutral-400 bg-white px-md-4 py-md-3 text-left">
                <p className="mb-md-2 text-md-h5 text-md-heading">What you can do</p>
                <ul className="flex flex-col gap-md-2 text-md-b2 font-medium leading-6 text-md-neutral-700">
-                  <li>Connect a different wallet address to this lender account.</li>
+                  <li>Connect a different wallet address to this moo-lender account.</li>
                   <li>
                      If you created a borrower account by mistake, remove this wallet from it first — or ask us to delete that
                      account or switch its role.

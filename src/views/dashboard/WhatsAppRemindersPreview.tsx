@@ -14,7 +14,11 @@ export default function WhatsAppRemindersPreview() {
    return (
       <div className="min-h-screen bg-md-neutral-300">
          <div className="mx-auto flex min-h-screen w-full max-w-[440px] flex-col gap-4 bg-white px-5 py-5 text-md-b2 text-md-heading">
-            <ConnectHero image={CONNECT_HIPPOS.hello} subtitle="Only Moodeng sees this — never lenders." title="How can we reach you?" />
+            <ConnectHero
+               image={CONNECT_HIPPOS.hello}
+               subtitle="Only Moodeng sees this — never moo-lenders."
+               title="How can we reach you?"
+            />
             <StepLabel done={facebookDone} n={1} text="Connect Facebook" />
             <OptionCard
                badge="1 min"

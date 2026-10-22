@@ -19,7 +19,7 @@ const borrowerBenefits = [
       eyebrow: '03 / Control',
       title: '100% borrower control',
       description:
-         'Set your amount, repayment date, and reason upfront so lenders see the same terms you agreed to before anyone funds the request.',
+         'Set your amount, repayment date, and reason upfront so moo-lenders see the same terms you agreed to before anyone funds the request.',
       color: 'bg-amber-300'
    },
    {

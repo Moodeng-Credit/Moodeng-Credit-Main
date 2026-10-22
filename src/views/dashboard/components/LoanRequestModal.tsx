@@ -768,7 +768,7 @@ export function BorrowerContextLoanStep({
                <div className="mb-3">
                   <p className="text-[12px] font-[590] leading-[18px] text-[#5d16c9]">Public borrower profile</p>
                   <p className="mt-0.5 text-[13px] font-normal leading-5 text-[#695b7b]">
-                     This is the identity lenders see beside your request.
+                     This is the identity moo-lenders see beside your request.
                   </p>
                </div>
                <button
@@ -792,7 +792,7 @@ export function BorrowerContextLoanStep({
 
                <label className="mt-4 flex flex-col gap-2">
                   <span className="flex items-center justify-between gap-md-2">
-                     <span className="text-[15px] font-[590] leading-5 text-[#26143f]">Name shown to lenders</span>
+                     <span className="text-[15px] font-[590] leading-5 text-[#26143f]">Name shown to moo-lenders</span>
                      <TrustBadge label="+10" earned={Boolean(profileName.trim())} />
                   </span>
                   <input
@@ -826,7 +826,7 @@ export function BorrowerContextLoanStep({
             {context.incomeSetup === 'contract' ? (
                <div className="flex flex-col gap-1.5">
                   <p className="text-md-b2 font-[590] text-md-heading">Describe your situation</p>
-                  <p className="text-md-b3 text-md-neutral-700">Tell lenders how you earn, in your own words.</p>
+                  <p className="text-md-b3 text-md-neutral-700">Tell moo-lenders how you earn, in your own words.</p>
                   <textarea
                      autoFocus
                      className="w-full resize-none rounded-md-input border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 shadow-md-card focus:border-md-primary-900 focus:outline-none focus:ring-2 focus:ring-md-primary-100"
@@ -866,7 +866,7 @@ export function BorrowerContextLoanStep({
          <BorrowerContextChipSection
             answered={Boolean(context.paydayWindow)}
             fieldId="paydayWindow"
-            helper="Helps lenders see that repayment timing makes sense."
+            helper="Helps moo-lenders see that repayment timing makes sense."
             label="When do you usually get paid?"
             missing={isMissing('paydayWindow')}
             onSelect={onPaydaySelect}
@@ -878,7 +878,7 @@ export function BorrowerContextLoanStep({
             answered={Boolean(monthlyIncome)}
             fieldId="monthlyIncome"
             label="What is your approximate monthly income?"
-            helper="Helps lenders gauge repayment capacity."
+            helper="Helps moo-lenders gauge repayment capacity."
             missing={isMissing('monthlyIncome')}
             onSelect={onMonthlyIncomeSelect}
             options={monthlyIncomeOptions}
@@ -889,7 +889,7 @@ export function BorrowerContextLoanStep({
             answered={Boolean(monthlyExpenses)}
             fieldId="monthlyExpenses"
             label="What do your recurring expenses cost per month?"
-            helper="Helps lenders understand your financial commitments."
+            helper="Helps moo-lenders understand your financial commitments."
             missing={isMissing('monthlyExpenses')}
             onSelect={onMonthlyExpensesSelect}
             options={monthlyExpensesOptions}
@@ -1705,7 +1705,7 @@ export default function LoanRequestModal({
       setIsCheckingBeforeVerify(false);
       if (verdict?.checked && !verdict.ok) {
          setLiveReasonCheck({ status: 'weak', hint: verdict.hint, suggestion: verdict.suggestion, category: verdict.category });
-         setTermErrors((prev) => ({ ...prev, reason: verdict.hint || 'Tell lenders what the money will be used for.' }));
+         setTermErrors((prev) => ({ ...prev, reason: verdict.hint || 'Tell moo-lenders what the money will be used for.' }));
          document.getElementById('reason')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
          return;
       }
@@ -2227,7 +2227,7 @@ export default function LoanRequestModal({
 
       const trimmedReason = reason.trim();
       if (!trimmedReason) {
-         errors.reason = 'Please add a reason so lenders know what the loan is for.';
+         errors.reason = 'Please add a reason so moo-lenders know what the loan is for.';
          rules.reason = 'missing';
       } else if (trimmedReason.length < REASON_MIN_LENGTH) {
          errors.reason = `Please add a little more — at least ${REASON_MIN_LENGTH} characters (${trimmedReason.length}/${REASON_MIN_LENGTH}).`;
@@ -2236,7 +2236,7 @@ export default function LoanRequestModal({
          // Lenders are in the US/EU: a request they can't read can't be funded. The AI's hint says it in
          // the borrower's language when it came back in time.
          errors.reason =
-            (liveReasonCheck.status === 'weak' && liveReasonCheck.hint) || 'Please write your reason in English so lenders can read it.';
+            (liveReasonCheck.status === 'weak' && liveReasonCheck.hint) || 'Please write your reason in English so moo-lenders can read it.';
          rules.reason = 'not_english_offline';
       } else if (liveReasonCheck.status === 'reviewing') {
          errors.reason = 'One moment, taking a closer look at your reason.';
@@ -2245,7 +2245,7 @@ export default function LoanRequestModal({
          // The check that ran while they typed already said this reason doesn't tell lenders what
          // the money is for. Stop here, on the step where they can fix it, not after the bio,
          // contacts and call steps. The hint and a ready rewrite show under the field.
-         errors.reason = liveReasonCheck.hint || 'Tell lenders what the money will be used for.';
+         errors.reason = liveReasonCheck.hint || 'Tell moo-lenders what the money will be used for.';
          rules.reason = `ai_${liveReasonCheck.category || 'weak'}`;
       }
 
@@ -2403,7 +2403,7 @@ export default function LoanRequestModal({
          showToast(
             TOAST_TYPES.WARNING,
             'Write this in English',
-            'Lenders reading your profile are in the US and Europe — please describe your situation in English.',
+            'Moo-lenders reading your profile are in the US and Europe — please describe your situation in English.',
             'OK',
             'acknowledge'
          );
@@ -2430,7 +2430,7 @@ export default function LoanRequestModal({
          showToast(
             TOAST_TYPES.WARNING,
             'Add more to your info',
-            hint || 'Some of your info looks too short for lenders to understand — tap again to continue anyway.',
+            hint || 'Some of your info looks too short for moo-lenders to understand — tap again to continue anyway.',
             'OK',
             'acknowledge'
          );
@@ -2716,7 +2716,7 @@ export default function LoanRequestModal({
                      </h2>
                   ) : showBorrowerContextStep ? (
                      <div className="min-w-0">
-                        <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">How lenders see you</h2>
+                        <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">How moo-lenders see you</h2>
                         <p className="mt-1 text-[13px] font-normal leading-[18px] text-md-neutral-1200">
                            Add practical context without sharing private details.
                         </p>
@@ -3079,7 +3079,7 @@ export default function LoanRequestModal({
                               return (
                                  <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
                                     You’ll repay <span className="font-semibold text-md-heading">${fmt(repayNum)}</span> — that’s{' '}
-                                    <span className="font-semibold text-md-primary-1200">${fmt(extra)}</span> to your lender.
+                                    <span className="font-semibold text-md-primary-1200">${fmt(extra)}</span> to your moo-lender.
                                  </p>
                               );
                            })()}
@@ -3105,7 +3105,7 @@ export default function LoanRequestModal({
                                     <div className="flex items-start gap-1.5 rounded-md-md bg-md-yellow-100 px-md-2 py-md-1 text-md-b3 font-normal leading-[18px] text-md-yellow-700">
                                        <Lightbulb className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
                                        <span>
-                                          For this date, lenders usually look for at least{' '}
+                                          For this date, moo-lenders usually look for at least{' '}
                                           <span className="font-semibold">${min.amount.toFixed(2)}</span> back (about 10% a month).
                                        </span>
                                     </div>
@@ -3244,7 +3244,7 @@ export default function LoanRequestModal({
                                              : !reasonQuality.ok
                                                ? reasonQuality.hint
                                                : liveReasonCheck.status === 'weak'
-                                                 ? 'Add a bit more detail so lenders understand the need.'
+                                                 ? 'Add a bit more detail so moo-lenders understand the need.'
                                                  : '';
                                        if (weakHint) {
                                           return (
@@ -3258,7 +3258,7 @@ export default function LoanRequestModal({
                                        // text nobody judged. Submit still works; the gate there
                                        // fails open too.
                                        if (liveReasonCheck.status === 'unavailable' || liveReasonCheck.status === 'pending') {
-                                          return <span>Short and specific helps lenders trust it.</span>;
+                                          return <span>Short and specific helps moo-lenders trust it.</span>;
                                        }
                                        if (liveReasonCheck.status === 'reviewing') {
                                           return <span className="font-medium text-md-neutral-1200">Taking a closer look…</span>;
@@ -3275,7 +3275,7 @@ export default function LoanRequestModal({
                                     }
                                     // Lenders are in the US and EU, so the ask is stated up front
                                     // rather than sprung on the borrower after 40 characters.
-                                    return <span>At least 40 characters, in English — short and specific helps lenders trust it.</span>;
+                                    return <span>At least 40 characters, in English — short and specific helps moo-lenders trust it.</span>;
                                  })()}
                                  <span className="shrink-0">{reason.length}/200</span>
                               </div>
@@ -3513,10 +3513,10 @@ export default function LoanRequestModal({
                <div className="flex w-full max-w-[380px] flex-col gap-4 rounded-[20px] bg-white p-5 text-center" onClick={(e) => e.stopPropagation()}>
                   <img alt="" aria-hidden="true" className="mx-auto size-20 object-contain" src="/hippos/thumb-up-right.png" />
                   <div className="flex flex-col gap-2">
-                     <p className="text-[19px] font-bold text-[#2d2438]">A little low for lenders</p>
+                     <p className="text-[19px] font-bold text-[#2d2438]">A little low for moo-lenders</p>
                      <p className="text-[15px] leading-[21px] text-[#594d65]">
                         For ${Number(loanAmount).toFixed(2)} over{' '}
-                        {returnNudge.months <= 1 ? 'a month or less' : `about ${Math.round(returnNudge.months * 10) / 10} months`}, lenders usually look for
+                        {returnNudge.months <= 1 ? 'a month or less' : `about ${Math.round(returnNudge.months * 10) / 10} months`}, moo-lenders usually look for
                         at least <b>${returnNudge.amount.toFixed(2)}</b> back — about 10% a month. Requests below that rarely get funded.
                      </p>
                   </div>

@@ -132,7 +132,7 @@ function BorrowerContextPanel({
                   🪙
                </span>
                <div className="min-w-0">
-                  <p className="text-[12px] font-[590] leading-[18px] text-[#8a5a00] dark:text-[#f5cb69]">Lender reward</p>
+                  <p className="text-[12px] font-[590] leading-[18px] text-[#8a5a00] dark:text-[#f5cb69]">Moo-lender reward</p>
                   <p className="text-[16px] font-[590] leading-6 tracking-[-0.32px] text-md-heading dark:text-md-neutral-100">
                      {iouData.base} IOU Points
                   </p>
@@ -617,7 +617,7 @@ export default function UserCard(loan: UserCardProps) {
       }
       try {
          await navigator.clipboard.writeText(shareRequestUrl);
-         showToast(TOAST_TYPES.SUCCESS, 'Link copied', 'Send it to a lender so they can fund this request.');
+         showToast(TOAST_TYPES.SUCCESS, 'Link copied', 'Send it to a moo-lender so they can fund this request.');
       } catch {
          showToast(TOAST_TYPES.ERROR, 'Could not copy link', shareRequestUrl);
       }
@@ -805,14 +805,14 @@ export default function UserCard(loan: UserCardProps) {
                         <>
                            <p className="text-md-b2 font-semibold text-[#8a5300]">Waiting for your video call</p>
                            <p className="text-md-b3 text-[#8a5300]">
-                              Lenders will see this request after your short video call with us. Haven&apos;t booked yet, or need a new time?
+                              Moo-lenders will see this request after your short video call with us. Haven&apos;t booked yet, or need a new time?
                            </p>
                         </>
                      ) : (
                         <>
                            <p className="text-md-b2 font-semibold text-[#8a5300]">On hold: book a new call to put it back</p>
                            <p className="text-md-b3 text-[#8a5300]">
-                              We missed you on your video call, so lenders can&apos;t see this request for now. It goes straight back on the board
+                              We missed you on your video call, so moo-lenders can&apos;t see this request for now. It goes straight back on the board
                               once you&apos;ve booked.
                            </p>
                         </>

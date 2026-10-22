@@ -151,11 +151,11 @@ export const thaiCoverageE: Record<string, string> = {
    'points toward your Academy score.': 'แต้มสำหรับคะแนนอะคาเดมีของคุณ',
    Question: 'คำถามที่',
    'To skip repayment': 'เพื่อจะได้ไม่ต้องชำระคืน',
-   'To hide from lenders': 'เพื่อซ่อนตัวจากผู้ให้กู้',
+   'To hide from moo-lenders': 'เพื่อซ่อนตัวจาก Moo-lender',
    'To hide repayment history': 'เพื่อซ่อนประวัติการชำระคืน',
    'To skip World ID': 'เพื่อข้ามการยืนยัน World ID',
    'Trust-building': 'การสร้างความน่าเชื่อถือ',
-   'A lender loan': 'เงินกู้ของผู้ให้กู้',
+   'A moo-lender loan': 'เงินกู้ของ Moo-lender',
    'Already repaid': 'ชำระคืนแล้ว',
    'Changing names often': 'เปลี่ยนชื่อบ่อย ๆ',
    'Ignoring the request board': 'ไม่สนใจกระดานคำขอ',
@@ -167,10 +167,10 @@ export const thaiCoverageE: Record<string, string> = {
       'คุณได้ 4 จาก 5 คะแนน เข้าสู่ระบบแล้วทำขั้นตอนสำหรับผู้ยืมให้เสร็จเพื่อไปต่อ',
    'You scored 5 of 5. Log in and finish the borrower flow to keep going.':
       'คุณได้ 5 จาก 5 คะแนน เข้าสู่ระบบแล้วทำขั้นตอนสำหรับผู้ยืมให้เสร็จเพื่อไปต่อ',
-   'You scored 4 of 5. Log in and finish the lender flow to keep going.':
-      'คุณได้ 4 จาก 5 คะแนน เข้าสู่ระบบแล้วทำขั้นตอนสำหรับผู้ให้กู้ให้เสร็จเพื่อไปต่อ',
-   'You scored 5 of 5. Log in and finish the lender flow to keep going.':
-      'คุณได้ 5 จาก 5 คะแนน เข้าสู่ระบบแล้วทำขั้นตอนสำหรับผู้ให้กู้ให้เสร็จเพื่อไปต่อ',
+   'You scored 4 of 5. Log in and finish the moo-lender flow to keep going.':
+      'คุณได้ 4 จาก 5 คะแนน เข้าสู่ระบบแล้วทำขั้นตอนสำหรับ Moo-lender ให้เสร็จเพื่อไปต่อ',
+   'You scored 5 of 5. Log in and finish the moo-lender flow to keep going.':
+      'คุณได้ 5 จาก 5 คะแนน เข้าสู่ระบบแล้วทำขั้นตอนสำหรับ Moo-lender ให้เสร็จเพื่อไปต่อ',
    'You scored 0 of 5. Score 4 of 5 to unlock Academy score.': 'คุณได้ 0 จาก 5 คะแนน ต้องได้ 4 จาก 5 เพื่อปลดล็อกคะแนนอะคาเดมี',
    'You scored 1 of 5. Score 4 of 5 to unlock Academy score.': 'คุณได้ 1 จาก 5 คะแนน ต้องได้ 4 จาก 5 เพื่อปลดล็อกคะแนนอะคาเดมี',
    'You scored 2 of 5. Score 4 of 5 to unlock Academy score.': 'คุณได้ 2 จาก 5 คะแนน ต้องได้ 4 จาก 5 เพื่อปลดล็อกคะแนนอะคาเดมี',
@@ -258,15 +258,15 @@ export const thaiCoverageE: Record<string, string> = {
    'Credit-building loans': 'เงินกู้เพิ่มระดับเครดิต',
 
    // src/views/help/helpTopics.ts
-   'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with lenders, but it does not raise your Credit Level. Most borrowers use both — Trust-Building Loans to keep their repayment record active, Credit-Building Loans to grow the limit.':
-      'มีเงินกู้อยู่สองแบบ Credit-Building Loan คือเงินกู้เต็มวงเงินปัจจุบันของคุณ — การชำระคืนตรงเวลาจะเพิ่มวงเงินและปลดล็อกระดับถัดไป ส่วน Trust-Building Loan คือเงินกู้จำนวนใดก็ได้ที่ต่ำกว่าวงเงินของคุณ ซึ่งยังคงช่วยสร้างประวัติการชำระคืนและความน่าเชื่อถือกับผู้ให้กู้ แต่ไม่ได้เพิ่มระดับเครดิตของคุณ ผู้ยืมส่วนใหญ่ใช้ทั้งสองแบบ — Trust-Building Loan เพื่อให้ประวัติการชำระคืนมีความต่อเนื่อง และ Credit-Building Loan เพื่อเพิ่มวงเงิน',
+   'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with moo-lenders, but it does not raise your Credit Level. Most borrowers use both — Trust-Building Loans to keep their repayment record active, Credit-Building Loans to grow the limit.':
+      'มีเงินกู้อยู่สองแบบ Credit-Building Loan คือเงินกู้เต็มวงเงินปัจจุบันของคุณ — การชำระคืนตรงเวลาจะเพิ่มวงเงินและปลดล็อกระดับถัดไป ส่วน Trust-Building Loan คือเงินกู้จำนวนใดก็ได้ที่ต่ำกว่าวงเงินของคุณ ซึ่งยังคงช่วยสร้างประวัติการชำระคืนและความน่าเชื่อถือกับ Moo-lender แต่ไม่ได้เพิ่มระดับเครดิตของคุณ ผู้ยืมส่วนใหญ่ใช้ทั้งสองแบบ — Trust-Building Loan เพื่อให้ประวัติการชำระคืนมีความต่อเนื่อง และ Credit-Building Loan เพื่อเพิ่มวงเงิน',
    // src/components/verification/VerifiedCelebrationNotifier.tsx
    'Manual review complete — you’re verified!': 'ตรวจสอบโดยเจ้าหน้าที่เสร็จแล้ว คุณยืนยันตัวตนเรียบร้อย!',
    'Your ID is verified!': 'ยืนยันบัตรประชาชนของคุณแล้ว!',
-   'Well done! Our reviewers confirmed your documents. You now have full access — start building trust with lenders.':
-      'เยี่ยมมาก! เจ้าหน้าที่ของเรายืนยันเอกสารของคุณแล้ว ตอนนี้คุณใช้งานได้เต็มรูปแบบ เริ่มสร้างความน่าเชื่อถือกับผู้ให้กู้ได้เลย',
-   'Well done! Your identity is confirmed. You now have full access — start building trust with lenders.':
-      'เยี่ยมมาก! ยืนยันตัวตนของคุณแล้ว ตอนนี้คุณใช้งานได้เต็มรูปแบบ เริ่มสร้างความน่าเชื่อถือกับผู้ให้กู้ได้เลย',
+   'Well done! Our reviewers confirmed your documents. You now have full access — start building trust with moo-lenders.':
+      'เยี่ยมมาก! เจ้าหน้าที่ของเรายืนยันเอกสารของคุณแล้ว ตอนนี้คุณใช้งานได้เต็มรูปแบบ เริ่มสร้างความน่าเชื่อถือกับ Moo-lender ได้เลย',
+   'Well done! Your identity is confirmed. You now have full access — start building trust with moo-lenders.':
+      'เยี่ยมมาก! ยืนยันตัวตนของคุณแล้ว ตอนนี้คุณใช้งานได้เต็มรูปแบบ เริ่มสร้างความน่าเชื่อถือกับ Moo-lender ได้เลย',
 
    // src/lib/web3/openfort/OpenfortContext.tsx
    'The Instant Wallet is not available right now.': 'Instant Wallet ยังไม่พร้อมใช้งานในขณะนี้',
@@ -365,14 +365,14 @@ export const thaiCoverageE: Record<string, string> = {
    "World ID verification isn't working right now. Please verify with your ID instead, or try again later.":
       'การยืนยันด้วย World ID ใช้งานไม่ได้ในขณะนี้ โปรดยืนยันด้วยบัตรประชาชนแทน หรือลองใหม่ภายหลัง',
    "World ID verification isn't working": 'การยืนยันด้วย World ID ใช้งานไม่ได้',
-   'Tell lenders what the money will be used for.': 'บอกผู้ให้กู้ว่าคุณจะนำเงินไปใช้ทำอะไร',
+   'Tell moo-lenders what the money will be used for.': 'บอก Moo-lender ว่าคุณจะนำเงินไปใช้ทำอะไร',
    'Please write it in English': 'โปรดเขียนเป็นภาษาอังกฤษ',
    'Improve your reason': 'ปรับปรุงเหตุผลของคุณ',
    'Update your reason, then tap “Make Your Request” again.': 'แก้ไขเหตุผลของคุณ แล้วแตะ “ส่งคำขอของคุณ” อีกครั้ง',
-   'Tell lenders what the money will be used for. Update your reason, then tap “Make Your Request” again.':
-      'บอกผู้ให้กู้ว่าคุณจะนำเงินไปใช้ทำอะไร แก้ไขเหตุผลของคุณ แล้วแตะ “ส่งคำขอของคุณ” อีกครั้ง',
-   'Please write your reason in English — the lenders reading it don’t speak Tagalog. Update your reason, then tap “Make Your Request” again.':
-      'โปรดเขียนเหตุผลเป็นภาษาอังกฤษ เพราะผู้ให้กู้ที่อ่านไม่เข้าใจภาษาตากาล็อก แก้ไขเหตุผลของคุณ แล้วแตะ “ส่งคำขอของคุณ” อีกครั้ง',
+   'Tell moo-lenders what the money will be used for. Update your reason, then tap “Make Your Request” again.':
+      'บอก Moo-lender ว่าคุณจะนำเงินไปใช้ทำอะไร แก้ไขเหตุผลของคุณ แล้วแตะ “ส่งคำขอของคุณ” อีกครั้ง',
+   'Please write your reason in English — the moo-lenders reading it don’t speak Tagalog. Update your reason, then tap “Make Your Request” again.':
+      'โปรดเขียนเหตุผลเป็นภาษาอังกฤษ เพราะ Moo-lender ที่อ่านไม่เข้าใจภาษาตากาล็อก แก้ไขเหตุผลของคุณ แล้วแตะ “ส่งคำขอของคุณ” อีกครั้ง',
    'Your info is missing': 'ข้อมูลของคุณยังไม่ครบ',
    'We need your "About you" details before posting. Close this and tap Request a loan again to fill them in — or tap Help and we\'ll sort it out.':
       'เราต้องการรายละเอียด "เกี่ยวกับคุณ" ก่อนโพสต์ ปิดหน้านี้แล้วแตะ ขอเงินกู้ อีกครั้งเพื่อกรอกข้อมูล หรือแตะ ช่วยเหลือ แล้วเราจะช่วยจัดการให้',

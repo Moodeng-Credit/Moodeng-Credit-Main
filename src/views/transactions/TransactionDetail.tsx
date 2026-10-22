@@ -217,7 +217,7 @@ function buildTimeline(loan: Loan): TimelineStep[] {
 
    const labelFor = (key: TimelineStep['key'], state: StepState): string => {
       if (key === 'repaid' && loan.refundedAt) return isOffPlatformSettledRefund(loan) ? 'Repaid' : 'Refunded';
-      if (key === 'funded' && state === 'active') return 'Waiting for lender';
+      if (key === 'funded' && state === 'active') return 'Waiting for moo-lender';
       if (key === 'repaid' && loan.loanStatus === 'Requested') return 'Repayment schedule';
       if (key === 'repaid' && state !== 'done') return 'Repayment due';
       const labels: Record<TimelineStep['key'], string> = {
@@ -515,7 +515,7 @@ interface InterestBannerProps {
 }
 
 function InterestBanner({ amount, coin, name, date, variant }: InterestBannerProps) {
-   const header = variant === 'lender' ? 'Interest returned' : 'Gift from your lender';
+   const header = variant === 'lender' ? 'Interest returned' : 'Gift from your moo-lender';
    const title = variant === 'lender' ? 'You returned the interest' : 'Interest returned!';
    const body =
       variant === 'lender'
@@ -659,7 +659,7 @@ export default function TransactionDetail() {
 
       if (isPreview) {
          setShowDeleteConfirm(false);
-         showToast(TOAST_TYPES.SUCCESS, 'Request deleted', 'Lenders will no longer see this request on the board.');
+         showToast(TOAST_TYPES.SUCCESS, 'Request deleted', 'Moo-lenders will no longer see this request on the board.');
          return;
       }
 
@@ -677,7 +677,7 @@ export default function TransactionDetail() {
             'Request deleted',
             repostStatus && !repostStatus.canCreate
                ? getLoanRequestCooldownMessage(repostStatus)
-               : 'Lenders will no longer see this request on the board.'
+               : 'Moo-lenders will no longer see this request on the board.'
          );
          navigate('/history', { replace: true });
       } catch (error) {
@@ -771,7 +771,7 @@ export default function TransactionDetail() {
                            {isLender
                               ? `Borrowed by ${counterpartyName}`
                               : isPendingFunding
-                                ? 'Lender has not accepted yet'
+                                ? 'Moo-lender has not accepted yet'
                                 : `Lent by ${counterpartyName}`}
                         </span>
                      </div>
@@ -783,9 +783,9 @@ export default function TransactionDetail() {
                      <div className="rounded-md-md border border-md-yellow-700/40 bg-md-yellow-700/10 px-md-3 py-md-2 flex gap-md-2">
                         <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-md-yellow-700" strokeWidth={2.3} />
                         <div className="flex flex-col gap-1">
-                           <span className="text-md-b3 font-semibold text-md-yellow-700">Waiting for lender acceptance</span>
+                           <span className="text-md-b3 font-semibold text-md-yellow-700">Waiting for moo-lender acceptance</span>
                            <span className="text-md-b4 text-md-neutral-1000">
-                              This loan is not funded yet. Repayment starts only after a lender accepts.
+                              This loan is not funded yet. Repayment starts only after a moo-lender accepts.
                            </span>
                         </div>
                      </div>
@@ -833,7 +833,7 @@ export default function TransactionDetail() {
                         <Trash2 className="h-4 w-4" strokeWidth={2.25} aria-hidden="true" />
                         Delete request
                      </button>
-                     <p className="text-center text-md-b4 text-md-neutral-1000">You can delete this request any time before a lender funds it.</p>
+                     <p className="text-center text-md-b4 text-md-neutral-1000">You can delete this request any time before a moo-lender funds it.</p>
                   </div>
                ) : null}
 

@@ -17,7 +17,7 @@ const problemPoints = [
    },
    {
       title: 'Good borrowers disappear',
-      body: 'Lenders cannot easily see the trust signals that should matter for a small emergency loan.',
+      body: 'Moo-lenders cannot easily see the trust signals that should matter for a small emergency loan.',
       tone: 'invisible'
    },
    {
@@ -74,7 +74,7 @@ export default function ProblemSection(): JSX.Element {
                Good repayment rarely travels.
             </h3>
             <p className="mt-3 text-lg leading-7 text-stone-600 max-md:text-base max-md:leading-6">
-               That creates a trust gap for borrowers and a missed opportunity for lenders.
+               That creates a trust gap for borrowers and a missed opportunity for moo-lenders.
             </p>
 
             <div className="mt-6 grid gap-3 max-md:mt-5">

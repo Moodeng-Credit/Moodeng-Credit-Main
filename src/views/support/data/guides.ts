@@ -33,7 +33,7 @@ Step 6: Submit Your Request
 Tap "Explore the Request Board" to set your specific loan terms. You will need to define:
 - The desired loan amount.
 - The repayment amount and date.
-- A clear reason for your borrowing request to help build trust with potential lenders.`
+- A clear reason for your borrowing request to help build trust with potential moo-lenders.`
    },
    {
       slug: 'understanding-your-trust-score',
@@ -41,7 +41,7 @@ Tap "Explore the Request Board" to set your specific loan terms. You will need t
       lastUpdated: 'Jun 9, 2026',
       body: `Your Pandesal points reflect how reliably you repay loans on Moodeng Credit.
 
-They rise with every on-time repayment and drop when you miss or default. Lenders use them as a quick signal to decide whether to fund your request.
+They rise with every on-time repayment and drop when you miss or default. Moo-lenders use them as a quick signal to decide whether to fund your request.
 
 Because your Pandesal points are tied to your wallet, they travel with you — they're not locked inside a single app.`
    },
@@ -81,7 +81,7 @@ Scoring Breakdown
 
 - Late Repayments: Any payment received after the agreed-upon deadline results in 0 points for that transaction.
 
-- Defaults: Unpaid loans leave a permanent mark on your profile that is visible to all future lenders.`
+- Defaults: Unpaid loans leave a permanent mark on your profile that is visible to all future moo-lenders.`
    },
    {
       slug: 'what-happens-when-you-repay-a-loan-on-time',
@@ -93,7 +93,7 @@ When you repay on time, the following benefits are applied to your profile:
 
 - More Pandesal Points: Your Pandesal points increase for either Credit-Building or Trust-Building loans, reflecting your reliability to the community.
 - Credit Limit Progression: For Credit-Building loans, your current borrowing limit increases, successfully unlocking the next credit level (e.g., advancing from $15 → $20).
-- Verified Lending History: Your successful repayment history becomes visible to potential lenders, significantly streamlining the funding process for your future requests.
+- Verified Lending History: Your successful repayment history becomes visible to potential moo-lenders, significantly streamlining the funding process for your future requests.
 
 Repayment Scoring Breakdown
 
@@ -196,7 +196,7 @@ Your Instant Wallet (or a Base Account, if you prefer) runs on Base, where USDC 
       slug: 'verification-and-why-its-required',
       title: 'Verification & Security',
       lastUpdated: 'Jun 9, 2026',
-      body: `To keep Moodeng safe and fair, all borrowers complete a short one-time identity verification. This protects the community from fake and duplicate accounts, and it's what lets lenders trust the requests they fund.
+      body: `To keep Moodeng safe and fair, all borrowers complete a short one-time identity verification. This protects the community from fake and duplicate accounts, and it's what lets moo-lenders trust the requests they fund.
 
 Why verify?
 - Security: ensures every request comes from a real, unique person, preventing fraud.
@@ -248,14 +248,14 @@ Hakbang 6: I-submit ang request mo
 I-tap ang "I-explore ang Request Board" para itakda ang loan terms mo. Kailangan mong ilagay ang:
 - Halaga ng loan na gusto mo.
 - Halagang babayaran at petsa ng pagbabayad.
-- Malinaw na dahilan ng paghiram mo, para makatulong na bumuo ng tiwala sa mga posibleng lender.`
+- Malinaw na dahilan ng paghiram mo, para makatulong na bumuo ng tiwala sa mga posibleng moo-lender.`
    },
    'understanding-your-trust-score': {
       title: 'Pag-unawa sa Pandesal points mo',
       lastUpdated: 'Hunyo 9, 2026',
       body: `Ipinapakita ng Pandesal points mo kung gaano ka maaasahan sa pagbabayad ng mga loan sa Moodeng Credit.
 
-Tumataas ito sa bawat on-time na bayad at bumababa kapag may hindi ka nabayaran o nag-default ka. Ginagamit ito ng mga lender bilang mabilis na senyales para magpasya kung popondohan nila ang request mo.
+Tumataas ito sa bawat on-time na bayad at bumababa kapag may hindi ka nabayaran o nag-default ka. Ginagamit ito ng mga moo-lender bilang mabilis na senyales para magpasya kung popondohan nila ang request mo.
 
 Dahil nakatali sa wallet mo ang Pandesal points mo, dala mo ito kahit saan — hindi ito nakakulong sa iisang app.`
    },
@@ -292,7 +292,7 @@ Paano binibilang ang points
 
 - Late na bayad: Anumang bayad na natanggap pagkatapos ng napagkasunduang deadline ay 0 points para sa transaksyong iyon.
 
-- Default: Nag-iiwan ang hindi nabayarang loan ng permanenteng marka sa profile mo na makikita ng lahat ng susunod na lender.`
+- Default: Nag-iiwan ang hindi nabayarang loan ng permanenteng marka sa profile mo na makikita ng lahat ng susunod na moo-lender.`
    },
    'what-happens-when-you-repay-a-loan-on-time': {
       title: 'Mga benepisyo ng on-time na pagbabayad',
@@ -303,7 +303,7 @@ Kapag nagbayad ka on time, ito ang mga benepisyong makukuha ng profile mo:
 
 - Mas maraming Pandesal points: Tumataas ang Pandesal points mo para sa Credit-Building o Trust-Building loan, na nagpapakita sa komunidad na maaasahan ka.
 - Pagtaas ng credit limit: Para sa Credit-Building Loan, tataas ang current borrowing limit mo at maa-unlock ang susunod na Credit Level (halimbawa, mula $15 → $20).
-- Verified na lending history: Makikita ng mga posibleng lender ang matagumpay mong repayment history, kaya mas mabilis mapondohan ang mga susunod mong request.
+- Verified na lending history: Makikita ng mga posibleng moo-lender ang matagumpay mong repayment history, kaya mas mabilis mapondohan ang mga susunod mong request.
 
 Paano binibilang ang points sa pagbabayad
 
@@ -401,7 +401,7 @@ Tumatakbo sa Base ang Instant Wallet mo (o ang Base Account mo, kung iyon ang gu
    'verification-and-why-its-required': {
       title: 'Verification at seguridad',
       lastUpdated: 'Hunyo 9, 2026',
-      body: `Para mapanatiling ligtas at patas ang Moodeng, lahat ng borrower ay dumadaan sa maikli at one-time na identity verification. Pinoprotektahan nito ang komunidad laban sa mga peke at dobleng account, at ito ang dahilan kung bakit napagkakatiwalaan ng mga lender ang mga request na pinopondohan nila.
+      body: `Para mapanatiling ligtas at patas ang Moodeng, lahat ng borrower ay dumadaan sa maikli at one-time na identity verification. Pinoprotektahan nito ang komunidad laban sa mga peke at dobleng account, at ito ang dahilan kung bakit napagkakatiwalaan ng mga moo-lender ang mga request na pinopondohan nila.
 
 Bakit kailangan mag-verify?
 - Seguridad: sinisiguro na galing sa totoo at iisang tao ang bawat request, para maiwasan ang fraud.

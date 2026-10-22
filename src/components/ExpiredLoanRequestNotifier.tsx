@@ -133,8 +133,8 @@ export function ExpiredLoanRequestNotifier() {
          const title = expiredCount === 1 ? 'Loan request expired' : 'Loan requests expired';
          const message =
             expiredCount === 1
-               ? `Your ${formatUsdcAmount(newestRequest.loan_amount)} request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.`
-               : `${expiredCount} loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.`;
+               ? `Your ${formatUsdcAmount(newestRequest.loan_amount)} request expired before it was funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.`
+               : `${expiredCount} loan requests expired before they were funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.`;
 
          showToast(TOAST_TYPES.WARNING, title, message, 'Contact support', 'open_support_contacts', {
             supportIssue: 'loan_request_expired'

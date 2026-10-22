@@ -5,11 +5,11 @@ import { Link } from 'react-router-dom';
 const creditSteps = [
    {
       title: 'Start with a small request',
-      description: 'Post a realistic amount and reason so lenders can understand what the loan is for.'
+      description: 'Post a realistic amount and reason so moo-lenders can understand what the loan is for.'
    },
    {
       title: 'Repay what you promised',
-      description: 'On-time repayment strengthens the record lenders see the next time you ask for support.'
+      description: 'On-time repayment strengthens the record moo-lenders see the next time you ask for support.'
    },
    {
       title: 'Unlock the next step',
@@ -31,7 +31,7 @@ export default function StartBuildingCreditSection(): JSX.Element {
                </h2>
                <p className="mt-5 max-w-[680px] text-xl leading-8 text-violet-100 max-md:text-md-b1">
                   The point is not to look rich on day one. Moodeng gives borrowers a way to start with small direct loans, prove repayment,
-                  and make future requests easier for lenders to understand.
+                  and make future requests easier for moo-lenders to understand.
                </p>
             </div>
 
@@ -73,8 +73,8 @@ export default function StartBuildingCreditSection(): JSX.Element {
             </div>
 
             <div className="mt-8 rounded-[24px] border border-md-primary-300/30 bg-md-primary-300/10 p-6 text-md-b1 leading-7 text-violet-100">
-               Keep it honest: only borrow what you can repay. Moodeng can make your record clearer and more useful, but every lender still
-               decides whether a request is worth funding.
+               Keep it honest: only borrow what you can repay. Moodeng can make your record clearer and more useful, but every moo-lender
+               still decides whether a request is worth funding.
             </div>
 
             <div className="mt-8 flex flex-wrap gap-3 max-md:flex-col">

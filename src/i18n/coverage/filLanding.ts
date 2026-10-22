@@ -70,16 +70,16 @@ export const filipinoCoverageLanding: Record<string, string> = {
    'Polygon Labs Logo': 'Logo ng Polygon Labs',
 
    // src/views/landing/sections/HeroSection.tsx
-   'We created a new kind of Lender to Borrower experience. There is no escrow and no middle-man. You borrow':
-      'Gumawa kami ng bagong klase ng lender-to-borrower na karanasan. Walang escrow at walang middleman. Humihiram ka',
+   'We created a new kind of Moo-lender to Borrower experience. There is no escrow and no middle-man. You borrow':
+      'Gumawa kami ng bagong klase ng moo-lender-to-borrower na karanasan. Walang escrow at walang middleman. Humihiram ka',
    'directly from other users and build your credit score in the process.':
       'nang direkta sa ibang user, at nabubuo pa ang credit score mo habang ginagawa ito.',
 
    // src/views/landing/sections/FinancialInclusionSection.tsx
    'POWER TOOLS FOR FINANCIAL INCLUSION': 'MGA POWER TOOL PARA SA FINANCIAL INCLUSION',
    'BEST WAY TO BUILD CREDIT': 'PINAKAMAHUSAY NA PARAAN PARA BUMUO NG CREDIT',
-   'Direct Lender-to-Borrower $15 microloans. Unlock more credit when you repay.':
-      '$15 na microloan, direkta mula lender papunta sa borrower. Mag-unlock ng mas malaking credit kapag nagbayad ka.',
+   'Direct Moo-lender-to-Borrower $15 microloans. Unlock more credit when you repay.':
+      '$15 na microloan, direkta mula moo-lender papunta sa borrower. Mag-unlock ng mas malaking credit kapag nagbayad ka.',
    'CHEAPER LOANS': 'MAS MURANG LOAN',
    'Enjoy lower rates as your credit score improves': 'Mas mababang rate habang gumaganda ang credit score mo',
    'MICRO-LOAN MANAGEMENT': 'PAG-MANAGE NG MICROLOAN',
@@ -137,7 +137,7 @@ export const filipinoCoverageLanding: Record<string, string> = {
    'Moodeng Loans': 'Mga loan sa Moodeng',
    'Competitive Rates': 'Competitive na rate',
    'No Collateral Needed': 'Hindi kailangan ng collateral',
-   'Access Lenders Globally in $': 'Mga lender mula sa buong mundo, sa $',
+   'Access Moo-lenders Globally in $': 'Mga moo-lender mula sa buong mundo, sa $',
    'Mdi cross circle': 'Icon na ekis',
 
    // src/views/landing/sections/WhyLendSection.tsx
@@ -180,7 +180,7 @@ export const filipinoCoverageLanding: Record<string, string> = {
       'Natulungan ako ng mga microloan ng Moodeng na simulan ang maliit kong negosyo. Swak sa akin ang unti-unting pagtaas ng credit limit. Hindi tumutulong ang mga bangko rito sa Rwanda!',
    'As a lender it is cool to see it’s on-chain only. I gave it a try and threw some money on some people with interesting stories. Happy to help them! Getting paid back is a plus too.':
       'Bilang lender, astig na on-chain lang ang lahat. Sinubukan ko at nagpahiram ako sa ilang taong may interesting na kuwento. Masaya akong nakatulong! Plus pa na nababayaran ako.',
-   'Active Lender': 'Aktibong lender',
+   'Active Moo-lender': 'Aktibong moo-lender',
    'I was worried if it was a meme. But, because there’s no middle-man I figured since they can’t touch the money, I will give it a try. Happy it works! Now I am building credit now.':
       'Nag-alala ako na baka meme lang ito. Pero dahil walang middleman, naisip ko na hindi nila magagalaw ang pera, kaya sinubukan ko. Buti gumagana! Ngayon, bumubuo na ako ng credit.',
    'It’s nice to know you’re helping real people. That’s what counts at the end of the day. There’s no skin off my back to lend a bit here or there.':
@@ -209,8 +209,8 @@ export const filipinoCoverageLanding: Record<string, string> = {
       'Tinutulungan ng identity verification na makumpirmang may isang totoong tao sa likod ng bawat borrower account.',
    'Verification is a trust signal, not a loan guarantee.': 'Senyales ng tiwala ang verification, hindi garantiya ng loan.',
    'Verified first': 'Verified muna',
-   'Borrowers complete a quick ID + selfie check, or verify with World ID, before they can request loans. That gives lenders a real-person signal, and the ID is checked by our verification partner, never stored by Moodeng.':
-      'Dumadaan ang mga borrower sa mabilis na ID + selfie check, o nagve-verify gamit ang World ID, bago sila makapag-request ng loan. Dahil dito, alam ng mga lender na totoong tao ang kausap nila, at ang verification partner namin ang nagche-check ng ID — hindi ito kailanman iniimbak ng Moodeng.',
+   'Borrowers complete a quick ID + selfie check, or verify with World ID, before they can request loans. That gives moo-lenders a real-person signal, and the ID is checked by our verification partner, never stored by Moodeng.':
+      'Dumadaan ang mga borrower sa mabilis na ID + selfie check, o nagve-verify gamit ang World ID, bago sila makapag-request ng loan. Dahil dito, alam ng mga moo-lender na totoong tao ang kausap nila, at ang verification partner namin ang nagche-check ng ID — hindi ito kailanman iniimbak ng Moodeng.',
    'Borrowers who already use World App can verify with World ID instead of the ID + selfie check.':
       'Puwedeng mag-verify gamit ang World ID ang mga borrower na gumagamit na ng World App, sa halip na mag-ID + selfie check.',
    'We are starting with Filipinos and Southeast Asians working overseas. Small loans can cover urgent gaps and help borrowers build credit independently.':

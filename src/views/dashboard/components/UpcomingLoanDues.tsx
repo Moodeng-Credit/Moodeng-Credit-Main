@@ -24,7 +24,7 @@ function LoanDueCard({ loan }: { loan: Loan & { isDefaulted: boolean } }) {
       locale === 'fil'
          ? {
               unknown: 'Hindi kilala',
-              lenderAlt: 'Lender',
+              lenderAlt: 'Moo-lender',
               default: 'Nag-default',
               dueIn: 'Due',
               today: 'ngayong araw',
@@ -43,7 +43,7 @@ function LoanDueCard({ loan }: { loan: Loan & { isDefaulted: boolean } }) {
              }
            : {
                 unknown: 'Unknown',
-                lenderAlt: 'Lender',
+                lenderAlt: 'Moo-lender',
                 default: 'Default',
                 dueIn: 'Due in',
                 today: 'today',

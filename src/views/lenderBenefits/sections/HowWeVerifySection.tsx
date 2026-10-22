@@ -15,8 +15,8 @@ export default function HowWeVerifySection(): JSX.Element {
                   Verified humans, clearer lending signals.
                </h2>
                <p className="mt-5 max-w-[760px] text-2xl leading-snug text-zinc-800 max-md:text-xl">
-                  Borrowers complete a quick ID + selfie check, or verify with World ID, before they can request loans. That gives lenders a
-                  real-person signal, and the ID is checked by our verification partner, never stored by Moodeng.
+                  Borrowers complete a quick ID + selfie check, or verify with World ID, before they can request loans. That gives
+                  moo-lenders a real-person signal, and the ID is checked by our verification partner, never stored by Moodeng.
                </p>
 
                <div className="mt-7 grid gap-3 sm:grid-cols-3">

@@ -51,7 +51,7 @@ const WALLET_COPY: Record<LocaleCode, WalletCopy> = {
    en: {
       availableBalance: 'Available balance',
       subtitle: 'Money you receive lands here.',
-      emptySubtitle: 'When a lender funds you, the money appears here.',
+      emptySubtitle: 'When a moo-lender funds you, the money appears here.',
       moneyArrivedTitle: 'Money arrived',
       moneyArrivedBody: 'landed in your wallet',
       cashOut: 'Cash out',
@@ -72,7 +72,7 @@ const WALLET_COPY: Record<LocaleCode, WalletCopy> = {
    fil: {
       availableBalance: 'Available na balance',
       subtitle: 'Dito napupunta ang perang natatanggap mo.',
-      emptySubtitle: 'Kapag pinondohan ka ng lender, dito lalabas ang pera.',
+      emptySubtitle: 'Kapag pinondohan ka ng moo-lender, dito lalabas ang pera.',
       moneyArrivedTitle: 'May dumating na pera',
       moneyArrivedBody: 'ay pumasok sa wallet mo',
       cashOut: 'Mag-cash out',

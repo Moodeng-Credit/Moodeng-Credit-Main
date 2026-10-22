@@ -39,7 +39,7 @@ export default function LocationPrimingModal({ open, onShare, onSkip }: Location
             </h2>
             <p className="mt-2 text-base font-bold leading-relaxed text-[#cfc6dd]">
                We check your location to keep lending safe and catch fraud. It&apos;s only used to verify your request — never shared with
-               lenders.
+               moo-lenders.
             </p>
 
             <button

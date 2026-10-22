@@ -45,7 +45,7 @@ export default function LenderDiversitySection({
    const hasEnoughHistory = lenderDiversity.hasEnoughHistory;
    const isEarlyScore = hasEnoughHistory && lenderDiversity.confidence < 1;
 
-   const linkLabel = `${lenderDiversity.uniqueLenders} Unique ${lenderDiversity.uniqueLenders === 1 ? 'Lender' : 'Lenders'}`;
+   const linkLabel = `${lenderDiversity.uniqueLenders} Unique ${lenderDiversity.uniqueLenders === 1 ? 'Moo-lender' : 'Moo-lenders'}`;
    const diversityHref = username ? `/user/${encodeURIComponent(username)}/lender-diversity${detailSearch}` : '/dashboard';
 
    return (
@@ -53,7 +53,7 @@ export default function LenderDiversitySection({
          <div className="absolute bottom-0 right-0 h-[128px] w-[128px] rounded-tl-[72px] bg-gradient-to-br from-[#f5f3ff] via-[#ede9fe] to-[#f8f5ff] dark:from-[#1f1435] dark:via-[#2a1740] dark:to-[#1f1435]" />
          <div className="relative z-10 flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-               <h2 className="mb-2 text-md-b1 font-semibold text-md-heading">Lender Diversity Score</h2>
+               <h2 className="mb-2 text-md-b1 font-semibold text-md-heading">Moo-lender Diversity Score</h2>
 
                {hasEnoughHistory ? (
                   <>
