@@ -7,11 +7,17 @@ import { useAccount } from 'wagmi';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
+import { holdAtFull, type PaymentStage } from '@/hooks/useStagedProgress';
+
 import { ensureUsdcAllowance, getLoanManagerService, getUsdcBalance } from '@/lib/web3/loanManager';
 import { recordLoanNotePurchase, usdcToBaseUnits } from '@/lib/loanNotes/api';
 import type { LoanNotePageData } from '@/lib/loanNotes/types';
 
-export type BuyStep = 'idle' | 'checking' | 'approving' | 'buying' | 'recording';
+export type BuyStep = 'idle' | 'checking' | 'approving' | 'buying' | 'recording' | 'done';
+
+/** Where each buy step sits on the funding progress ring (null = nothing in flight). */
+export const buyStepToPaymentStage = (step: BuyStep): PaymentStage | null =>
+   step === 'checking' || step === 'approving' ? 'signing' : step === 'buying' ? 'sent' : step === 'idle' ? null : step;
 
 export interface BuyResult {
    loanNoteId: string;
@@ -104,6 +110,10 @@ export function useBuyLoanNote() {
                synced = false;
             }
          }
+
+         // Let the progress ring reach 100% for a beat before the caller shows success.
+         setStep('done');
+         await holdAtFull();
 
          return {
             loanNoteId: data.onchainLoanId,

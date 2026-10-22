@@ -2,19 +2,21 @@ import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } fr
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { format, parseISO } from 'date-fns';
-import { BadgeCheck, ChevronRight, Clock, ExternalLink, Loader2, Send, Share2, Sparkles, Trash2 } from 'lucide-react';
+import { BadgeCheck, ChevronRight, Clock, ExternalLink, Send, Share2, Sparkles, Trash2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { useAccount, useSwitchChain } from 'wagmi';
 import { getAccount } from 'wagmi/actions';
 
 import FundingMethodModal, { type FundLoanTarget } from '@/components/funding/FundingMethodModal';
+import PaymentProgressRing from '@/components/loading/PaymentProgressRing';
 import { FlipFace, useFloatingParticles, useReplayClass, useTapFlip } from '@/components/motion/TapDelight';
 import LenderFundedPopup from '@/components/funding/LenderFundedPopup';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { useIsFundingAdmin } from '@/hooks/useIsFundingAdmin';
+import { holdAtFull, type PaymentStage, useStagedProgress } from '@/hooks/useStagedProgress';
 import useWallet, { type PaymentMethod, toSettlementMethod, useActivePaymentMethod } from '@/hooks/useWallet';
 
 import { formatCurrency, formatNumber } from '@/utils/decimalHelpers';
@@ -184,6 +186,9 @@ export default function UserCard(loan: UserCardProps) {
    // "Confirming" copy on the in-card processing overlay and the explorer link, mirroring
    // the repay flow's pattern so lenders get the same on-chain-progress feedback.
    const [pendingTxHash, setPendingTxHash] = useState<string | null>(null);
+   // Real stage of the payment (wallet approval → sent → recorded), driving the percent ring.
+   const [fundStage, setFundStage] = useState<PaymentStage | null>(null);
+   const fundPercent = useStagedProgress(isProcessing ? fundStage : null);
    // Set when the lender taps "Cancel" on the pre-broadcast overlay. The in-flight payUsdc
    // promise can't be aborted, so this lets executeLend bail out of the success UI if it
    // resolves after the user has already backed out. (A broadcast that still lands is left
@@ -247,6 +252,7 @@ export default function UserCard(loan: UserCardProps) {
       cancelledRef.current = true;
       setIsProcessing(false);
       setPendingTxHash(null);
+      setFundStage(null);
    };
 
    // While we're still pre-broadcast (no hash yet) and waiting on the wallet, arm a short
@@ -353,6 +359,7 @@ export default function UserCard(loan: UserCardProps) {
          setIsProcessing(true);
          setProcessingMethod(method);
          setPendingTxHash(null);
+         setFundStage('signing');
 
          try {
             const outcome = await payUsdc({
@@ -366,6 +373,7 @@ export default function UserCard(loan: UserCardProps) {
                // marked Lent later instead of stranding the money.
                onSubmitted: (id) => {
                   setPendingTxHash(id);
+                  setFundStage('sent');
                   registerPendingBasePayment({ kind: 'fund', id, loanId: loanData.id, userId });
                },
                // Approved in the wallet after we stopped waiting: still record the funding.
@@ -377,6 +385,9 @@ export default function UserCard(loan: UserCardProps) {
             if (outcome) {
                // Surface the hash so the overlay flips from "Sending" to "Confirming".
                setPendingTxHash(outcome.hash);
+               // Base Pay only resolves once the payment is confirmed on-chain; a wallet/Instant Wallet
+               // hash is just broadcast, and the server confirm below waits for it to land.
+               setFundStage(method === 'base' ? 'recording' : 'sent');
 
                // The wagmi path has no onSubmitted: the money is in flight from here, so arm
                // reconciliation now — a DB confirm that fails below gets retried instead of
@@ -408,6 +419,11 @@ export default function UserCard(loan: UserCardProps) {
                   // DB write landed — the reconciler has nothing left to finish for this payment.
                   clearPendingBasePayment(outcome.hash);
                   const sideEffectErrors = updateResult.meta.sideEffectErrors ?? [];
+                  // Recorded: let the ring reach 100% for a beat before the success screen.
+                  if (!cancelledRef.current) {
+                     setFundStage('done');
+                     await holdAtFull();
+                  }
                   // If they cancelled the overlay and moved on, don't slam a full-screen success
                   // modal over the request board — the toast below still confirms it went through.
                   if (!cancelledRef.current) setShowModal(true);
@@ -475,6 +491,7 @@ export default function UserCard(loan: UserCardProps) {
          } finally {
             setIsProcessing(false);
             setPendingTxHash(null);
+            setFundStage(null);
          }
          } finally {
             lendInFlightRef.current = false;
@@ -631,11 +648,11 @@ export default function UserCard(loan: UserCardProps) {
             data-highlighted-request={isHighlighted ? 'true' : undefined}
          >
             {isProcessing ? (
-               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 rounded-[24px] bg-white/85 px-6 text-center backdrop-blur-sm">
-                  <Loader2 className="h-8 w-8 animate-spin text-md-primary-1200" aria-hidden="true" />
+               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 rounded-[24px] bg-white/90 px-6 text-center backdrop-blur-sm dark:bg-[#1b1525]/90">
+                  <PaymentProgressRing percent={fundPercent} label={pendingTxHash ? 'Confirming' : 'Sending your help'} />
                   <div>
                      <p className="text-md-b1 font-semibold text-md-heading">
-                        {pendingTxHash ? 'Confirming on Base…' : 'Sending your help…'}
+                        {fundStage === 'done' ? 'Funded!' : pendingTxHash ? 'Confirming…' : 'Sending your help…'}
                      </p>
                      <p className="mt-1 text-md-b3 text-md-neutral-1200">
                         {pendingTxHash

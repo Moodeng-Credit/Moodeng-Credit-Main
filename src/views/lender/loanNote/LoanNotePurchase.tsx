@@ -10,6 +10,9 @@ import { useAccount } from 'wagmi';
 import { currentSentences } from '@/i18n/sentences';
 import Loading from '@/components/Loading';
 import UserAvatar from '@/components/UserAvatar';
+import { PaymentProgressOverlay } from '@/components/loading/PaymentProgressRing';
+
+import { useStagedProgress } from '@/hooks/useStagedProgress';
 
 import { txExplorerUrl } from '@/config/loanFundingConfig';
 import { getLoanNotePageData } from '@/lib/loanNotes/api';
@@ -17,7 +20,7 @@ import type { LoanNotePageData } from '@/lib/loanNotes/types';
 import type { RootState } from '@/store/store';
 import LendChecklistModal from '@/views/dashboard/components/LendChecklistModal';
 import { setPendingFundLoanId } from '@/views/lender/loanNote/fundingPopup';
-import { type BuyResult, useBuyLoanNote } from '@/views/lender/loanNote/useBuyLoanNote';
+import { type BuyResult, buyStepToPaymentStage, useBuyLoanNote } from '@/views/lender/loanNote/useBuyLoanNote';
 
 const usd = (n: number) => `${n.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC`;
 const fmtDate = (iso: string) => {
@@ -34,6 +37,7 @@ export default function LoanNotePurchase() {
    const { address } = useAccount();
    const { openConnectModal } = useConnectModal();
    const { buy, busy, step } = useBuyLoanNote();
+   const fundPercent = useStagedProgress(buyStepToPaymentStage(step));
 
    const userId = useSelector((state: RootState) => state.auth.user?.id);
    const username = useSelector((state: RootState) => state.auth.username);
@@ -133,6 +137,14 @@ export default function LoanNotePurchase() {
 
             {/* Request Card — matches the request-board card (rounded-24, amount box, Send CTA) */}
             <div className="relative mt-md-4 flex flex-col gap-4 rounded-[24px] border border-[#f0f0f0] bg-white p-md-4 shadow-[0px_11px_24px_0px_rgba(0,0,0,0.02)]">
+               {busy ? (
+                  <PaymentProgressOverlay
+                     percent={fundPercent}
+                     title={step === 'done' ? 'Funded!' : step === 'buying' || step === 'recording' ? 'Confirming…' : 'Sending your help…'}
+                     hint={step === 'recording' ? 'Recording your funding — hang tight.' : step === 'approving' ? 'Approve the transaction in your wallet.' : undefined}
+                  />
+               ) : null}
+
                <div className="flex gap-4 items-center">
                   <div className="flex-1 flex flex-col gap-2 min-w-0">
                      <div className="flex items-center gap-md-2">
