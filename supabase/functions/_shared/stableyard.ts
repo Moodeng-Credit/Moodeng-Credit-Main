@@ -191,6 +191,41 @@ export const stableyard = {
    getKyc: (accountId: string) => stableyardRequest('GET', `${accountPath(accountId)}/kyc`),
    startKycSession: (accountId: string) => stableyardRequest('POST', `${accountPath(accountId)}/kyc/session`),
 
+   // External QR payments (PH/VN merchant QR, paid in fiat, funded with USDC). There's no separate
+   // offramp API: decode the QR, then create a send Payment with destination type external_qr. Its
+   // nextAction carries escrow depositInstructions (the exact USDC to send); creating it moves no
+   // money. Send Payments can't be cancelled; an unfunded one just expires. Personal/P2P QRs are
+   // rejected (personal_qr_not_supported).
+   getAccountBundle: (accountId: string) =>
+      stableyardRequest<{ connectedWallets?: Array<{ id: string; chainId: number; address: string; status: string }> }>(
+         'GET',
+         accountPath(accountId)
+      ),
+   getPaymentSource: (accountId: string) => stableyardRequest('GET', `${accountPath(accountId)}/payment-source`),
+   setPaymentSource: (accountId: string, connectedWalletId: string) =>
+      stableyardRequest('PUT', `${accountPath(accountId)}/payment-source`, {
+         body: { type: 'connected_wallet', connectedWalletId, assetSymbol: 'USDC' }
+      }),
+   decodeQr: (accountId: string, country: string, qrPayload: string) =>
+      stableyardRequest('POST', '/v2/payments/decode-qr', { body: { sender: { accountId }, country, qrPayload } }),
+   createQrPayment: (
+      accountId: string,
+      payment: { country: string; qrPayload: string; amount: string; currency: string },
+      idempotencyKey: string
+   ) =>
+      stableyardRequest('POST', '/v2/payments', {
+         body: {
+            intent: 'send',
+            sender: { accountId },
+            destination: { type: 'external_qr', country: payment.country, qrPayload: payment.qrPayload },
+            amountMode: 'deliver_exact',
+            paymentAmount: { amount: payment.amount, assetType: 'fiat', assetCode: payment.currency },
+            description: 'Moodeng admin QR test'
+         },
+         idempotencyKey
+      }),
+   getPayment: (paymentId: string) => stableyardRequest('GET', `/v2/payments/${encodeURIComponent(paymentId)}`),
+
    getBalances: (accountId: string) => stableyardRequest('GET', `${accountPath(accountId)}/balances`),
    getTransactions: (accountId: string) => stableyardRequest('GET', `${accountPath(accountId)}/transactions`)
 };
