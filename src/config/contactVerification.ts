@@ -107,6 +107,11 @@ export const buildMessengerVerifyLink = (code: string) =>
 // so without the app this still lands somewhere they can message the Page.
 export const MESSENGER_PAGE_CHAT_LINK = `https://www.messenger.com/t/${MESSENGER_PAGE_ID}`;
 
+// Computers: the Page's chat on facebook.com, which uses the Facebook login people already have.
+// messenger.com now has its own sign-in page (seen 2026-10-23 while signed in to Facebook), so
+// sending computer users there made them log in again.
+export const MESSENGER_DESKTOP_CHAT_LINK = `https://www.facebook.com/messages/t/${MESSENGER_PAGE_ID}`;
+
 // What the Android button opens: Messenger's own app link to the Page's chat. On George's phone with
 // his personal account (2026-10-11) this was the only link that opened the chat; the messenger.com
 // link above had only been tried while Messenger was logged in as the Page itself. It can't carry

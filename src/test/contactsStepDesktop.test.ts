@@ -138,7 +138,7 @@ describe('ContactsStep on a computer', () => {
       expect(container.textContent).toContain('Scan with your phone');
       expect(container.textContent).toContain('MDNG-DESK12');
       const chat = Array.from(container.querySelectorAll('a')).find((a) => a.textContent?.includes('Copy code & open our chat'));
-      expect(chat?.getAttribute('href')).toContain('messenger.com/t/');
+      expect(chat?.getAttribute('href')).toContain('facebook.com/messages/t/');
       expect(chat?.getAttribute('target')).toBe('_blank');
    });
 });

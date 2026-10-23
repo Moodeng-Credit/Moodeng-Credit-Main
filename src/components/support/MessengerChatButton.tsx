@@ -2,7 +2,7 @@ import { type JSX, type MouseEvent } from 'react';
 
 import posthog from 'posthog-js';
 
-import { MESSENGER_APP_CHAT_LINK, MESSENGER_PAGE_CHAT_LINK, MESSENGER_PAGE_ID, isAndroidBrowser, isDesktopBrowser } from '@/config/contactVerification';
+import { MESSENGER_APP_CHAT_LINK, MESSENGER_DESKTOP_CHAT_LINK, MESSENGER_PAGE_ID, isAndroidBrowser, isDesktopBrowser } from '@/config/contactVerification';
 import { metaIosHost } from '@/lib/inAppBrowser';
 import { openSupportChat } from '@/lib/support/liveChat';
 
@@ -17,7 +17,7 @@ import { openSupportChat } from '@/lib/support/liveChat';
 //   iPhone, anywhere else           → m.me as a real link (Messenger's own browser opens the chat in place).
 //   Android                         → fb-messenger:// (m.me never opens Messenger from Chrome); if
 //                                      we're still on screen 1.5s later, it didn't open → web chat.
-//   Computer                        → messenger.com in a new tab.
+//   Computer                        → facebook.com/messages in a new tab (messenger.com asks to sign in again).
 
 const IOS_LINK = `https://m.me/${MESSENGER_PAGE_ID}`;
 const ANDROID_FALLBACK_MS = 1500;
@@ -32,7 +32,7 @@ const pickRoute = (): Route => {
 };
 
 const hrefFor = (route: Route) =>
-   route === 'android_app' ? MESSENGER_APP_CHAT_LINK : route === 'desktop' ? MESSENGER_PAGE_CHAT_LINK : IOS_LINK;
+   route === 'android_app' ? MESSENGER_APP_CHAT_LINK : route === 'desktop' ? MESSENGER_DESKTOP_CHAT_LINK : IOS_LINK;
 
 const MessengerGlyph = (): JSX.Element => (
    <svg viewBox="0 0 24 24" aria-hidden="true" className="block h-full w-full">
