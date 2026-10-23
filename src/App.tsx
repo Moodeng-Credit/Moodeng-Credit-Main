@@ -75,7 +75,7 @@ import WalletConnect from '@/app/onboarding/wallet/page';
 import OnboardingWelcome from '@/app/onboarding/welcome/page';
 // Import pages
 import Home from '@/app/page';
-import PayQrPage from '@/app/pay-qr/page';
+import PayQrPage from '@/app/testqr/page';
 import PrivacyPolicyPage from '@/app/privacy-policy/page';
 import PrivacyPage from '@/app/privacy/page';
 import Profile from '@/app/profile/page';
@@ -375,7 +375,7 @@ export default function App() {
 
             {/* Stableyard store-QR payment field test (admins + stableyard_qr_testers) */}
             <Route
-               path="/pay-qr"
+               path="/testqr"
                element={
                   <ProtectedRoute>
                      <PayQrPage />

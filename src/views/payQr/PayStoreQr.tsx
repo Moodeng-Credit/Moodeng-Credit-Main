@@ -8,7 +8,7 @@ import useWallet, { useActivePaymentMethod } from '@/hooks/useWallet';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 
-// /pay-qr: field test of Stableyard External QR payments for admins and the people in
+// /testqr: field test of Stableyard External QR payments for admins and the people in
 // stableyard_qr_testers. Pay a Philippine store's QR Ph in pesos with USDC from your Moodeng wallet.
 // Setup, scanning and the price quote move no money; only "Pay" does, after a confirm. Every quote is
 // logged with the market rate (stableyard_qr_quotes) so we can measure Stableyard's real spread.

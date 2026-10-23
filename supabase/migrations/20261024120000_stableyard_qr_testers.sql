@@ -1,5 +1,5 @@
 -- Stableyard "Pay a store QR" field test: a short list of people (e.g. our PH teammate) who may use
--- the /pay-qr screen before it's offered to borrowers, plus a log of every USDC quote it gets so we
+-- the /testqr screen before it's offered to borrowers, plus a log of every USDC quote it gets so we
 -- can measure Stableyard's real spread against the market rate at that moment.
 --
 -- Admins (admin_users owner/admin) can always use it. Add a tester by hand:
@@ -13,7 +13,7 @@ create table if not exists public.stableyard_qr_testers (
 );
 
 comment on table public.stableyard_qr_testers is
-   'Who may use the Pay a store QR test screen (/pay-qr) besides admins. Added by hand.';
+   'Who may use the Pay a store QR test screen (/testqr) besides admins. Added by hand.';
 
 create table if not exists public.stableyard_qr_quotes (
    id              bigint generated always as identity primary key,
@@ -31,7 +31,7 @@ create table if not exists public.stableyard_qr_quotes (
 );
 
 comment on table public.stableyard_qr_quotes is
-   'Every /pay-qr USDC quote. spread = usdc_amount / (fiat_amount / market_rate) - 1.';
+   'Every /testqr USDC quote. spread = usdc_amount / (fiat_amount / market_rate) - 1.';
 
 create index if not exists stableyard_qr_quotes_created_idx on public.stableyard_qr_quotes (created_at desc);
 
