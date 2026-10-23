@@ -46,11 +46,14 @@
       var style = document.createElement('style');
       style.textContent =
          '.md-messenger-chat{position:fixed;right:16px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:90;display:inline-flex;align-items:center;gap:8px;' +
-         'padding:12px 18px 12px 14px;border-radius:999px;background:linear-gradient(135deg,#00b2ff,#006aff);color:#fff;font-family:inherit;font-weight:600;font-size:15px;line-height:1.2;' +
+         'padding:6px 18px 6px 6px;border-radius:999px;background:linear-gradient(135deg,#00b2ff,#006aff);color:#fff;font-family:inherit;font-weight:600;font-size:15px;line-height:1.2;' +
          'text-decoration:none;box-shadow:0 8px 24px rgba(0,106,255,.35);transition:transform .15s ease}' +
          '.md-messenger-chat:hover{transform:translateY(-1px)}.md-messenger-chat:active{transform:scale(.96)}' +
-         '.md-messenger-chat svg{width:24px;height:24px;flex:none}' +
-         '@media (max-width:420px){.md-messenger-chat{padding:11px 15px 11px 12px;font-size:14px}}';
+         '.md-mc-avatar{position:relative;width:36px;height:36px;flex:none}' +
+         '.md-mc-avatar img{display:block;width:36px;height:36px;border-radius:50%;border:2px solid #fff;box-sizing:border-box;background:#f3eefe}' +
+         '.md-mc-badge{position:absolute;right:-3px;bottom:-3px;width:17px;height:17px;border-radius:50%;background:#fff;box-sizing:border-box;padding:1.5px}' +
+         '.md-mc-badge svg{display:block;width:100%;height:100%}' +
+         '@media (max-width:420px){.md-messenger-chat{padding:5px 15px 5px 5px;font-size:14px}}';
       document.head.appendChild(style);
 
       var a = document.createElement('a');
@@ -61,9 +64,11 @@
          a.target = '_blank';
          a.rel = 'noopener noreferrer';
       }
+      // The Moodeng hippo (the support "face") with a small Messenger badge: a person, in Messenger.
       a.innerHTML =
-         '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M12 2C6.36 2 2 6.13 2 11.7c0 2.91 1.19 5.44 3.14 7.17.16.15.26.35.27.57l.05 1.78a.8.8 0 0 0 1.12.71l1.98-.87a.8.8 0 0 1 .53-.04c.91.25 1.88.38 2.91.38 5.64 0 10-4.13 10-9.7S17.64 2 12 2Z"/>' +
-         '<path fill="#0a7cff" d="m5.99 14.54 2.94-4.66a1.5 1.5 0 0 1 2.17-.4l2.34 1.75a.6.6 0 0 0 .72 0l3.16-2.4c.42-.32.97.18.69.63l-2.94 4.66a1.5 1.5 0 0 1-2.17.4l-2.34-1.75a.6.6 0 0 0-.72 0l-3.16 2.4c-.42.32-.97-.18-.69-.63Z"/></svg>' +
+         '<span class="md-mc-avatar"><img src="/icons/hippo-support-avatar.png" alt="" width="36" height="36" />' +
+         '<span class="md-mc-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#0a7cff" d="M12 2C6.36 2 2 6.13 2 11.7c0 2.91 1.19 5.44 3.14 7.17.16.15.26.35.27.57l.05 1.78a.8.8 0 0 0 1.12.71l1.98-.87a.8.8 0 0 1 .53-.04c.91.25 1.88.38 2.91.38 5.64 0 10-4.13 10-9.7S17.64 2 12 2Z"/>' +
+         '<path fill="#fff" d="m5.99 14.54 2.94-4.66a1.5 1.5 0 0 1 2.17-.4l2.34 1.75a.6.6 0 0 0 .72 0l3.16-2.4c.42-.32.97.18.69.63l-2.94 4.66a1.5 1.5 0 0 1-2.17.4l-2.34-1.75a.6.6 0 0 0-.72 0l-3.16 2.4c-.42.32-.97-.18-.69-.63Z"/></svg></span></span>' +
          '<span>Chat on Messenger</span>';
       a.addEventListener('click', function (event) {
          track('support_messenger_tapped');
