@@ -1,7 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import { resolveDiscordWebhook } from '../_shared/discord.ts';
+import { isAutomatedEmail } from '../_shared/inboundEmailFilter.ts';
+import { alertTeam, postToTicket } from '../_shared/supportTickets.ts';
 
 // Inbound-email → support ticket.
 //
@@ -10,13 +11,14 @@ import { resolveDiscordWebhook } from '../_shared/discord.ts';
 // is *forwarded* into a webhook provider — Resend Inbound (MX on a reply subdomain) or a
 // Cloudflare Email Worker — which POSTs the parsed message here. We mirror it into the same
 // widget_conversations ticket model the live chat uses (a row + a Discord #web-support thread),
-// so email and in-app chat land in one place.
+// so email and in-app chat land in one place. The message goes through the widget API's /api/message
+// (_shared/supportTickets.ts), exactly like a website chat message: saved in widget_messages and posted
+// by the Discord bot into the ticket thread with Reply / Resolve / Quick reply. (It used to post with
+// a Discord webhook secret that was never set on this project, so no email ever reached Discord.)
 //
-// This function is the INBOUND half only. The OUTBOUND half — turning a team member's reply in
-// the Discord thread back into an email — lives in the widget backend repo (it owns the Discord
-// bot / reply relay). It reads reply_token + email_last_message_id from the row we write here to
-// address and thread the outgoing email. Until that ships, the team can still reply straight from
-// the PrivateEmail mailbox: the customer's address is shown on every Discord post.
+// Replies: a team member's Reply in Discord is saved as an 'agent' message, and the existing
+// nudge-away-replies sweep emails it to the sender (visitor_email). The team can also reply straight
+// from the mailbox: the sender's address is on the ticket.
 //
 // Auth: a shared secret in the query string (?secret=EMAIL_INBOUND_SECRET), set on the webhook
 // endpoint URL when you configure Resend/Cloudflare. Provider-agnostic and unguessable; combined
@@ -51,10 +53,6 @@ const timingSafeEqual = (a: string, b: string): boolean => {
    return diff === 0;
 };
 
-// Discord content is capped at 2000 chars and an embed description at 4096. Keep the body well
-// under the embed cap and leave room for the "… (truncated)" note.
-const DISCORD_DESC_MAX = 3800;
-
 const REPLY_SUBDOMAIN = Deno.env.get('EMAIL_REPLY_DOMAIN')?.trim() || 'reply.moodeng.app';
 
 type InboundEmail = {
@@ -68,19 +66,6 @@ type InboundEmail = {
    references: string[];
    /** Sent by a machine (no-reply sender, mailing list, auto-reply) rather than a person. */
    automated: boolean;
-};
-
-// support@ also receives service mail (Zoom meeting notices, billing, newsletters). Those are not
-// support requests, so they must never become Discord tickets.
-const AUTOMATED_SENDER = /^(no-?reply|do-?not-?reply|notifications?|notify|mailer-daemon|postmaster|bounces?|alerts?|news(letter)?|billing|receipts?)([@+._-]|$)/i;
-
-const isAutomated = (fromEmail: string, headers: unknown, readHeaderFn: (h: unknown, name: string) => string | null): boolean => {
-   if (AUTOMATED_SENDER.test(fromEmail)) return true;
-   const autoSubmitted = readHeaderFn(headers, 'auto-submitted');
-   if (autoSubmitted && autoSubmitted.toLowerCase() !== 'no') return true;
-   if (readHeaderFn(headers, 'list-unsubscribe') || readHeaderFn(headers, 'list-id')) return true;
-   const precedence = readHeaderFn(headers, 'precedence')?.toLowerCase();
-   return precedence === 'bulk' || precedence === 'list' || precedence === 'junk' || precedence === 'auto_reply';
 };
 
 // "Jane Doe <jane@example.com>" | "jane@example.com" -> { name, email }
@@ -216,7 +201,7 @@ const parseInbound = (payload: Record<string, unknown>): InboundEmail | null => 
    const inReplyTo = extractMessageIds(readHeader(headers, 'in-reply-to'))[0] ?? null;
    const references = extractMessageIds(readHeader(headers, 'references'));
 
-   const automated = isAutomated(fromEmail, headers, readHeader);
+   const automated = isAutomatedEmail(fromEmail, subject, (name) => readHeader(headers, name));
 
    return { fromEmail, fromName, toList, subject, body, messageId, inReplyTo, references, automated };
 };
@@ -230,67 +215,7 @@ const findReplyToken = (toList: string[]): string | null => {
    return null;
 };
 
-// "Re: Re: X" -> "X" (for a tidy thread name only; not used for matching).
-const cleanSubject = (s: string): string => s.replace(/^\s*(re|fwd?):\s*/i, '').trim() || s.trim();
-
-type Conversation = { id: string; discord_thread_id: string | null; reply_token: string; status: string };
-
-// Post to the #web-support forum webhook. On a forum channel, thread_name creates a new thread and
-// the ?wait=true response's channel_id is the new thread id. Subsequent posts pass thread_id.
-// Falls back to DISCORD_TEAM_WEBHOOK_URL (a text channel) where thread_name is ignored but the
-// message is still delivered — so a ticket is never silently lost.
-const postToDiscord = async (opts: {
-   description: string;
-   fromEmail: string;
-   fromName: string | null;
-   subject: string;
-   threadName?: string;
-   threadId?: string | null;
-}): Promise<string | null> => {
-   const base = resolveDiscordWebhook('DISCORD_WEBSUPPORT_WEBHOOK_URL');
-   if (!base) {
-      console.error('[email-inbound] no Discord webhook configured (DISCORD_WEBSUPPORT_WEBHOOK_URL / DISCORD_TEAM_WEBHOOK_URL)');
-      return null;
-   }
-
-   const embed = {
-      title: `📧 ${opts.subject}`.slice(0, 256),
-      description: opts.description,
-      color: 0x6c3fe0,
-      fields: [{ name: 'From', value: `${opts.fromName ? `${opts.fromName} · ` : ''}${opts.fromEmail}`.slice(0, 1024) }],
-      // The From address isn't authenticated (no SPF/DKIM check here), so anyone can claim to be a
-      // customer. Say so on every post, so "change my wallet" style requests get verified first.
-      footer: { text: 'Inbound email · sender NOT verified: confirm identity before any account change · reply in this thread to answer' },
-      timestamp: new Date().toISOString()
-   };
-
-   const url = new URL(base);
-   url.searchParams.set('wait', 'true');
-   if (opts.threadId) url.searchParams.set('thread_id', opts.threadId);
-
-   const payload: Record<string, unknown> = { embeds: [embed], allowed_mentions: { parse: [] } };
-   // thread_name only applies (and is only valid) when creating a new forum thread.
-   if (!opts.threadId && opts.threadName) payload.thread_name = opts.threadName.slice(0, 100);
-
-   try {
-      const res = await fetch(url.toString(), {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify(payload)
-      });
-      if (!res.ok) {
-         console.error(`[email-inbound] Discord post responded ${res.status}: ${(await res.text()).slice(0, 300)}`);
-         return null;
-      }
-      const msg = await res.json().catch(() => null);
-      // For a forum thread create, channel_id is the new thread. For a text-channel fallback it is
-      // the channel itself (not a real thread) — we still return it, and replies best-effort.
-      return msg?.channel_id ?? null;
-   } catch (err) {
-      console.error('[email-inbound] Discord post failed:', err instanceof Error ? err.message : err);
-      return null;
-   }
-};
+type Conversation = { id: string; token: string; discord_thread_id: string | null; reply_token: string; status: string };
 
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -351,7 +276,7 @@ serve(async (req) => {
    if (replyToken) {
       const { data } = await supabase
          .from('widget_conversations')
-         .select('id, discord_thread_id, reply_token, status')
+         .select('id, token, discord_thread_id, reply_token, status')
          .eq('reply_token', replyToken)
          .maybeSingle();
       conversation = (data as Conversation | null) ?? null;
@@ -362,7 +287,7 @@ serve(async (req) => {
       if (refIds.length > 0) {
          const { data } = await supabase
             .from('widget_conversations')
-            .select('id, discord_thread_id, reply_token, status, visitor_email')
+            .select('id, token, discord_thread_id, reply_token, status, visitor_email')
             .in('email_last_message_id', refIds)
             .order('last_message_at', { ascending: false })
             .limit(1)
@@ -376,8 +301,15 @@ serve(async (req) => {
       }
    }
 
-   const bodyForDiscord =
-      email.body.length > DISCORD_DESC_MAX ? `${email.body.slice(0, DISCORD_DESC_MAX)}\n\n… (truncated)` : email.body || '_(empty body)_';
+   // What lands in the ticket: subject first, then the body. The sender isn't verified, so say so.
+   const ticketText = `📧 ${email.subject}\n\n${email.body || '(empty email)'}`;
+   const postEmail = async (conv: Conversation) => {
+      if (await postToTicket(conv, ticketText)) return;
+      await alertTeam(
+         supabase,
+         `📧 An email to support@ from ${email.fromName ? `${email.fromName} <${email.fromEmail}>` : email.fromEmail} couldn't reach the Discord support ticket:\n"${email.subject}"\n> ${email.body.slice(0, 400)}`
+      );
+   };
 
    // --- New ticket ------------------------------------------------------------------------
    if (!conversation) {
@@ -390,10 +322,10 @@ serve(async (req) => {
             email_subject: email.subject,
             email_last_message_id: email.messageId,
             status: 'open',
-            bot_context: 'Inbound email',
+            bot_context: 'Email to support@ · sender NOT verified: confirm identity before any account change · replies are emailed to them',
             last_message_at: new Date().toISOString()
          })
-         .select('id, discord_thread_id, reply_token, status')
+         .select('id, token, discord_thread_id, reply_token, status')
          .single();
 
       if (insertErr || !inserted) {
@@ -402,56 +334,24 @@ serve(async (req) => {
          return jsonResponse({ error: 'db_insert_failed' }, 500);
       }
 
-      const threadId = await postToDiscord({
-         description: bodyForDiscord,
-         fromEmail: email.fromEmail,
-         fromName: email.fromName,
-         subject: email.subject,
-         threadName: `📧 ${cleanSubject(email.subject)} · ${email.fromEmail}`
-      });
-
-      if (threadId) {
-         await supabase.from('widget_conversations').update({ discord_thread_id: threadId }).eq('id', inserted.id);
-      }
+      await postEmail(inserted as Conversation);
 
       return jsonResponse({
          ok: true,
          conversation_id: inserted.id,
          created: true,
-         reply_to: `reply+${inserted.reply_token}@${REPLY_SUBDOMAIN}`,
-         discord_thread_id: threadId
+         reply_to: `reply+${inserted.reply_token}@${REPLY_SUBDOMAIN}`
       });
    }
 
-   // --- Reply on an existing ticket -------------------------------------------------------
-   await supabase
-      .from('widget_conversations')
-      .update({
-         status: 'open', // reopen if it had been resolved
-         email_last_message_id: email.messageId,
-         last_message_at: new Date().toISOString()
-      })
-      .eq('id', conversation.id);
-
-   const threadId = await postToDiscord({
-      description: bodyForDiscord,
-      fromEmail: email.fromEmail,
-      fromName: email.fromName,
-      subject: email.subject,
-      threadName: `📧 ${cleanSubject(email.subject)} · ${email.fromEmail}`,
-      threadId: conversation.discord_thread_id
-   });
-
-   // If we never had a thread (e.g. the first post failed), backfill whatever id we just got.
-   if (!conversation.discord_thread_id && threadId) {
-      await supabase.from('widget_conversations').update({ discord_thread_id: threadId }).eq('id', conversation.id);
-   }
+   // --- Reply on an existing ticket (the widget API reopens it and re-alerts if it was resolved) ---
+   await supabase.from('widget_conversations').update({ email_last_message_id: email.messageId }).eq('id', conversation.id);
+   await postEmail(conversation);
 
    return jsonResponse({
       ok: true,
       conversation_id: conversation.id,
       created: false,
-      reply_to: `reply+${conversation.reply_token}@${REPLY_SUBDOMAIN}`,
-      discord_thread_id: conversation.discord_thread_id ?? threadId
+      reply_to: `reply+${conversation.reply_token}@${REPLY_SUBDOMAIN}`
    });
 });
