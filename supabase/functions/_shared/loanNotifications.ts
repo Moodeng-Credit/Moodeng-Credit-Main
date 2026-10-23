@@ -593,7 +593,7 @@ For help, contact support@moodeng.app`);
       amountValue: formattedLoanAmount,
       details: [
          { label: 'Loan count', value: '1' },
-         { label: 'Loan status', value: 'Funded', icon: '&check;', tone: 'good' },
+         { label: 'Loan status', value: 'Funded', icon: '&#10003;', tone: 'good' },
          { label: 'Total to repay', value: formattedTotalRepayment },
          { label: 'Repayment due', value: formattedDueDate },
          { label: 'Funded on', value: formattedFundedDate }
@@ -638,7 +638,7 @@ For help, contact support@moodeng.app`);
          { label: 'Loans due', value: String(count) },
          { label: 'Due date', value: nextDueDate },
          { label: 'Due in', value: dueLabel },
-         { label: 'Repayment benefit', value: 'Good Standing', icon: '&check;', tone: 'good' }
+         { label: 'Repayment benefit', value: 'Good Standing', icon: '&#10003;', tone: 'good' }
       ],
       highlightTitle: trustPointHighlight.title,
       highlightCopy: trustPointHighlight.copy,
@@ -720,7 +720,7 @@ For help, contact support@moodeng.app`);
       details: [
          { label: 'Loans due', value: String(count) },
          { label: 'Due date', value: nextDueDate },
-         { label: 'Due', value: 'Today', icon: '&check;', tone: 'good' }
+         { label: 'Due', value: 'Today', icon: '&#10003;', tone: 'good' }
       ],
       highlightTitle: trustPointHighlight.title,
       highlightCopy: trustPointHighlight.copy,
@@ -814,8 +814,8 @@ For help, contact support@moodeng.app`);
       amountValue: amountRepaid,
       details: [
          { label: 'Loan count', value: '1' },
-         { label: 'Loan status', value: 'Paid', icon: '&check;', tone: 'good' },
-         { label: 'Paid on', value: formattedPaidDate, icon: '&check;', tone: 'good' },
+         { label: 'Loan status', value: 'Paid', icon: '&#10003;', tone: 'good' },
+         { label: 'Paid on', value: formattedPaidDate, icon: '&#10003;', tone: 'good' },
          { label: 'Original due date', value: formattedDueDate }
       ],
       highlightTitle: trustPointHighlight.title,
@@ -1124,7 +1124,7 @@ export const buildLenderRepaymentEmail = (
    const details: DetailRow[] = [
       { label: 'Loan', value: loan.tracking_id },
       { label: 'Borrower', value: borrowerName },
-      { label: 'Loan status', value: 'Repaid', icon: '&check;', tone: 'good' },
+      { label: 'Loan status', value: 'Repaid', icon: '&#10003;', tone: 'good' },
       { label: 'Paid on', value: formattedPaidDate }
    ];
    if (fundingWallet) {
