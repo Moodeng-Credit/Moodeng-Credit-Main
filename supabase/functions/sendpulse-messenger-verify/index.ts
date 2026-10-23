@@ -421,17 +421,19 @@ serve(async (req) => {
       return json({ ok: true });
    }
 
-   // Opening the confirm link twice sends the code twice. The first request uses it up, so the second
-   // used to find nothing and answer "that link didn't work or has expired" right after the success
-   // message. A code confirmed in the last few minutes is a repeat, not a failure.
-   const recentCutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+   // Opening the confirm link again sends the same code again. The first request used it up, so a repeat
+   // finds nothing pending. That is not a failure: the borrower is already confirmed, so say so. This
+   // used to be limited to 10 minutes, after which a borrower who re-tapped their old link (or "Open
+   // Messenger again") heard "that link didn't work or has expired" even though they were verified
+   // (iPhone test, 2026-10-16, 23:10 Bangkok: code verified 22:12, re-followed an hour later).
+   // Nothing is changed here, so a code confirmed at any time is safe to answer ok.
    for (const cand of codes) {
       const { data: repeat } = await svc
          .from('contact_verification_codes')
          .select('id')
          .eq('code', cand)
          .eq('channel', 'messenger')
-         .gte('verified_at', recentCutoff)
+         .not('verified_at', 'is', null)
          .limit(1);
       if (repeat?.length) return json({ ok: true, already: true });
    }
