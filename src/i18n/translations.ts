@@ -1,4 +1,9 @@
 export const LOCALE_STORAGE_KEY = 'md_locale';
+// When the person last picked a language here (ms). AccountLocaleSync compares it with the language
+// saved on their account (e.g. picked in the Messenger bot) to decide which choice is newer.
+export const LOCALE_CHOSEN_AT_STORAGE_KEY = 'md_locale_chosen_at';
+// Fired on every explicit language choice, so AccountLocaleSync can save it to the account.
+export const LOCALE_CHOSEN_EVENT = 'md:locale-chosen';
 
 export const SUPPORTED_LOCALES = [
    {

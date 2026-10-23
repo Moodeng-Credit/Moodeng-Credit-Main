@@ -64,7 +64,8 @@ const readMessage = (e: Json, contact: Json | null, incoming: boolean) => {
       asString(message?.text) ??
       (incoming && typeof lastMessage === 'string' ? asString(lastMessage) : null);
    const attachments = platform?.attachments ?? message?.attachments;
-   const isButtonTap = Boolean(platform?.quick_reply || channelData?.postback || message?.postback || info?.postback);
+   // A button or ☰ menu tap: Messenger puts it under channel_data.message.postback.
+   const isButtonTap = Boolean(platform?.quick_reply || platform?.postback || channelData?.postback || message?.postback || info?.postback);
    return { text, hasAttachment: Array.isArray(attachments) && attachments.length > 0, isButtonTap };
 };
 

@@ -306,6 +306,7 @@ serve(async (req) => {
    if (presented !== expected) return json({ ok: false, error: 'unauthorized' }, 401);
 
    const body = await req.json().catch(() => null);
+
    const events = parseSendPulseEvents(body).slice(0, MAX_EVENTS);
 
    for (const event of events) {

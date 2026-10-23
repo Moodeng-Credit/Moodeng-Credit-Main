@@ -10,7 +10,8 @@
 //     → trigger (migration 20261023140000) → sendpulse-events ?relay=1 → relayAgentReply() sends it
 //       on Messenger. A reply Meta refuses (outside its 24h window) is flagged in the admin Telegram chat.
 //
-// Facebook confirmation traffic (MDNG codes, Get Started, bot button taps) never becomes a ticket.
+// Facebook confirmation traffic (MDNG codes, Get Started, bot button taps) and the "menu" keyword
+// (the SendPulse bot menu answers it) never become a ticket.
 import { adminUserUrl } from './adminCards.ts';
 import { PAGE_INBOX_URL, SITE_URL } from './loanAccess.ts';
 import { type MessengerCard, sendMessengerMessage } from './sendpulse.ts';
@@ -27,7 +28,15 @@ const SIGNING_UP_WINDOW_MS = 30 * 60 * 1000;
 // A message after this long without one starts a new conversation (and a fresh automatic reply).
 const NEW_CONVERSATION_AFTER_MS = 12 * 60 * 60 * 1000;
 
-export const SIGN_UP_URL = `${SITE_URL}/request-board?utm_source=messenger&utm_medium=support`;
+// The bot speaks English or Filipino (chosen with 🌐 Language in the menu; saved by
+// sendpulse-messenger-verify action 'locale' on messenger_contacts.locale and the account).
+export type BotLocale = 'en' | 'fil';
+export const toBotLocale = (value: string | null | undefined): BotLocale => (value === 'fil' ? 'fil' : 'en');
+
+// Links carry the language so the page opens in it (the app reads ?lang=).
+export const signUpUrl = (locale: BotLocale) => `${SITE_URL}/request-board?lang=${locale}&utm_source=messenger&utm_medium=support`;
+// The step-by-step "How to borrow" card (scripts/cards/render-cards.mjs).
+export const borrowCardImage = (locale: BotLocale) => `${SITE_URL}/cards/how-to-borrow-${locale}.png`;
 
 export const bangkokHour = (at: number) =>
    Number(new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Bangkok', hour: 'numeric', hourCycle: 'h23' }).format(new Date(at)));
@@ -42,23 +51,72 @@ export const isSupportMessage = (event: { text: string | null; hasAttachment: bo
    if (event.codes.length || event.isButtonTap) return false;
    const text = event.text?.trim() ?? '';
    if (!text) return event.hasAttachment;
-   return !/^(get started|start|magsimula)$/i.test(text);
+   return !/^["']?(get started|start|magsimula|menu)[.!]?["']?$/i.test(text);
 };
 
 export type AutoReply = { text: string; card?: MessengerCard };
 
-export const buildAutoReply = (opts: { at: number; firstName: string | null; registered: boolean }): AutoReply => {
-   const hi = opts.firstName ? `Hi ${opts.firstName}! 👋` : 'Hi! 👋';
-   const status = isTeamOnline(opts.at)
-      ? "Thanks for your message — George or Emma from Moodeng will reply right here soon."
-      : "Thanks for your message! Our team is offline right now (10 PM – 10 AM Thai time). We'll reply right here after 10 AM Thai time (11 AM Philippine time).";
-   if (opts.registered) return { text: `${hi} ${status}` };
+// Save the language picked in the bot: on the contact, and on any account linked to it.
+export const saveBotLocale = async (svc: Svc, contactId: string, locale: BotLocale) => {
+   const now = new Date().toISOString();
+   await svc.from('messenger_contacts').upsert({ contact_id: contactId, locale, last_seen_at: now }, { onConflict: 'contact_id' });
+   const { error } = await svc.from('users').update({ preferred_locale: locale, preferred_locale_at: now }).eq('messenger_psid', contactId);
+   if (error) console.error('messengerSupport: save account locale failed', error.message);
+};
+
+const AUTO_REPLY: Record<BotLocale, { hi: (name: string | null) => string; online: string; offline: string; borrow: string; card: { title: string; subtitle: string; button: string } }> = {
+   en: {
+      hi: (name) => (name ? `Hi ${name}! 👋` : 'Hi! 👋'),
+      online: 'Thanks for your message — George or Emma from Moodeng will reply right here soon.',
+      offline:
+         "Thanks for your message! Our team is offline right now (10 PM – 10 AM Thai time). We'll reply right here after 10 AM Thai time (11 AM Philippine time).",
+      borrow: 'Interested in borrowing? Here is how your first loan works:',
+      card: { title: 'Your first loan in 6 steps', subtitle: 'Your first loan is $15. Moodeng adds $0.', button: 'Get your first loan' }
+   },
+   fil: {
+      hi: (name) => (name ? `Hi ${name}! 👋` : 'Hi! 👋'),
+      online: 'Salamat sa mensahe mo — sasagot dito si George o Emma ng Moodeng sa lalong madaling panahon.',
+      offline:
+         'Salamat sa mensahe mo! Offline ang team ngayon (10 PM – 10 AM oras sa Thailand). Sasagot kami dito pagkalipas ng 10 AM oras sa Thailand (11 AM oras sa Pilipinas).',
+      borrow: 'Gusto mo bang humiram? Ganito gumagana ang unang loan mo:',
+      card: { title: 'Unang loan mo sa 6 na hakbang', subtitle: '$15 ang unang loan mo. Walang dagdag na singil.', button: 'Kunin ang unang loan' }
+   }
+};
+
+// Messenger drops a card whose image doesn't load, so only use the card image once it's really
+// served (it ships with the website, which can deploy after this function).
+const imageReady = new Map<string, boolean>();
+export const cardImageAvailable = async (url: string): Promise<boolean> => {
+   if (imageReady.get(url)) return true;
+   try {
+      const res = await fetch(url, { method: 'HEAD' });
+      const ok = res.ok && (res.headers.get('content-type') ?? '').startsWith('image/');
+      if (ok) imageReady.set(url, true);
+      return ok;
+   } catch {
+      return false;
+   }
+};
+
+export const buildAutoReply = (opts: {
+   at: number;
+   firstName: string | null;
+   registered: boolean;
+   locale?: BotLocale;
+   withImage?: boolean;
+}): AutoReply => {
+   const copy = AUTO_REPLY[opts.locale ?? 'en'];
+   const status = isTeamOnline(opts.at) ? copy.online : copy.offline;
+   const text = `${copy.hi(opts.firstName)} ${status}`;
+   if (opts.registered) return { text };
+   const locale = opts.locale ?? 'en';
    return {
-      text: `${hi} ${status}\n\nInterested in borrowing? You can sign up and ask for your first loan here:`,
+      text: `${text}\n\n${copy.borrow}`,
       card: {
-         title: 'Small loans that treat you right',
-         subtitle: 'Your first loan is $15. Moodeng adds $0.',
-         button: { title: 'Get your first loan', url: SIGN_UP_URL }
+         title: copy.card.title,
+         subtitle: copy.card.subtitle,
+         ...(opts.withImage === false ? {} : { imageUrl: borrowCardImage(locale) }),
+         button: { title: copy.card.button, url: signUpUrl(locale) }
       }
    };
 };
@@ -165,7 +223,15 @@ export const openMessengerTicket = async (
               .select('id', { count: 'exact', head: true })
               .gte('created_at', new Date(input.at - SIGNING_UP_WINDOW_MS).toISOString());
       const registered = Boolean(borrower) || (recentAttempts ?? 0) > 0;
-      const reply = buildAutoReply({ at: input.at, firstName: input.facebookName?.split(' ')[0] ?? null, registered });
+      const { data: contactRow } = await svc.from('messenger_contacts').select('locale').eq('contact_id', input.contactId).maybeSingle();
+      const { data: accountRow } = borrower
+         ? await svc.from('users').select('preferred_locale').eq('id', borrower.id).maybeSingle()
+         : { data: null };
+      const locale = toBotLocale(
+         (contactRow as { locale?: string | null } | null)?.locale ?? (accountRow as { preferred_locale?: string | null } | null)?.preferred_locale
+      );
+      const withImage = registered ? false : await cardImageAvailable(borrowCardImage(locale));
+      const reply = buildAutoReply({ at: input.at, firstName: input.facebookName?.split(' ')[0] ?? null, registered, locale, withImage });
       const sent = await sendMessengerMessage(input.contactId, reply);
       if (sent.ok) {
          await svc.from('widget_messages').insert({ conversation_id: conversation.id, sender: 'system', body: reply.text, channel_delivered_at: new Date().toISOString() });
