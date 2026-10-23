@@ -1,7 +1,7 @@
 import { Facebook, Loader2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
-import { buildMessengerHandoffLink, MESSENGER_PAGE_CHAT_LINK, MESSENGER_PAGE_ID } from '@/config/contactVerification';
+import { buildMessengerHandoffLink, MESSENGER_DESKTOP_CHAT_LINK, MESSENGER_PAGE_ID } from '@/config/contactVerification';
 
 // ContactsStep on a computer: the m.me code never reaches our bot from a desktop browser, so the
 // borrower scans a QR with their phone (MessengerHandoff opens Messenger there), or pastes the code
@@ -74,7 +74,7 @@ export default function DesktopMessengerCard({
             </div>
             <a
                className="mt-2 flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[15px] font-bold text-white"
-               href={MESSENGER_PAGE_CHAT_LINK}
+               href={MESSENGER_DESKTOP_CHAT_LINK}
                onClick={onOpenChat}
                rel="noopener noreferrer"
                target="_blank"

@@ -8,7 +8,7 @@
 //   iPhone, Facebook app's browser → links to other apps are dropped there → the web chat
 //   Android                        → fb-messenger:// (m.me never opens Messenger from Chrome);
 //                                     still on this page 1.5s later → the web chat
-//   computer                       → messenger.com in a new tab
+//   computer                       → facebook.com/messages in a new tab (messenger.com asks to sign in again)
 //   everything else                → m.me (iPhone Safari/Chrome, Messenger's own browser)
 (function () {
    try {
@@ -24,7 +24,7 @@
          route === 'android_app'
             ? 'fb-messenger://user-thread/' + PAGE_ID
             : route === 'desktop'
-              ? 'https://www.messenger.com/t/' + PAGE_ID
+              ? 'https://www.facebook.com/messages/t/' + PAGE_ID
               : 'https://m.me/' + PAGE_ID;
 
       var openWebChat = function () {
