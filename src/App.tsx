@@ -75,6 +75,7 @@ import WalletConnect from '@/app/onboarding/wallet/page';
 import OnboardingWelcome from '@/app/onboarding/welcome/page';
 // Import pages
 import Home from '@/app/page';
+import PayQrPage from '@/app/testqr/page';
 import PrivacyPolicyPage from '@/app/privacy-policy/page';
 import PrivacyPage from '@/app/privacy/page';
 import Profile from '@/app/profile/page';
@@ -371,6 +372,16 @@ export default function App() {
             {import.meta.env.DEV ? <Route path="/whatsapp-reminders-preview" element={<WhatsAppRemindersPreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/admin/pricing-preview" element={<PricingHealthPreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/history-preview" element={<TransactionDetail />} /> : null}
+
+            {/* Stableyard store-QR payment field test (admins + stableyard_qr_testers) */}
+            <Route
+               path="/testqr"
+               element={
+                  <ProtectedRoute>
+                     <PayQrPage />
+                  </ProtectedRoute>
+               }
+            />
 
             {/* Verification */}
             <Route
