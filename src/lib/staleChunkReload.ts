@@ -1,3 +1,5 @@
+import { trackPaymentStep } from '@/lib/analytics/paymentSteps';
+
 const RELOAD_FLAG_KEY = 'moodeng_stale_chunk_reload';
 
 export const isStaleChunkError = (message: unknown): boolean => {
@@ -11,7 +13,10 @@ export const isStaleChunkError = (message: unknown): boolean => {
  * (shown as a normal error/toast) instead of looping.
  */
 export const reloadOnceForStaleChunk = () => {
-   if (window.sessionStorage.getItem(RELOAD_FLAG_KEY)) return;
+   const alreadyReloaded = Boolean(window.sessionStorage.getItem(RELOAD_FLAG_KEY));
+   // Logged so a payment that "just stopped" can be told apart from one that failed.
+   trackPaymentStep('stale_build_reload', { skipped: alreadyReloaded });
+   if (alreadyReloaded) return;
    window.sessionStorage.setItem(RELOAD_FLAG_KEY, '1');
    window.location.reload();
 };
