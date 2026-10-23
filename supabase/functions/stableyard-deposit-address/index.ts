@@ -20,7 +20,7 @@ import { handleStableyardWebhook, isStableyardWebhook } from '../_shared/stabley
 //                              Stableyard requires before QR payments. The email is always the
 //                              caller's sign-in email, never one from the client.
 // POST { qr: 'status' | 'use_wallet' | 'decode' | 'create' | 'get', ... }
-//                            → admin-only External QR payment test (see handleQr).
+//                            → External QR payment test for admins + stableyard_qr_testers (see handleQr).
 //
 // The account's settlement wallet is the user's own Moodeng wallet on Base (users.wallet_address),
 // so every deposit lands there as USDC and the existing repay flow picks it up. We never accept a
@@ -164,7 +164,7 @@ const handleOnboarding = async (
    return json({ ok: true, accountId, step: 'status', email: emailStatus.data, kyc: kyc.data });
 };
 
-const QR_ACTIONS = new Set(['status', 'use_wallet', 'decode', 'create', 'get']);
+const QR_ACTIONS = new Set(['setup', 'status', 'use_wallet', 'decode', 'create', 'get', 'sent']);
 
 // Fiat currency per supported QR country, with a test cap (~$35) so a typo can't pay a big bill.
 const QR_COUNTRIES: Record<string, { currency: string; max: number }> = {
@@ -173,22 +173,78 @@ const QR_COUNTRIES: Record<string, { currency: string; max: number }> = {
 };
 const FIAT_AMOUNT = /^(0|[1-9][0-9]*)(\.[0-9]{1,2})?$/;
 
+// Stableyard's email / KYC / payment-source bodies aren't documented to us, so read them loosely:
+// the first value under any of `keys`, at any depth.
+const findValue = (data: unknown, keys: string[], depth = 0): unknown => {
+   if (!data || typeof data !== 'object' || depth > 4) return undefined;
+   for (const key of keys) {
+      const value = (data as Record<string, unknown>)[key];
+      if (value !== undefined && value !== null && typeof value !== 'object') return value;
+   }
+   for (const value of Object.values(data as Record<string, unknown>)) {
+      const found = findValue(value, keys, depth + 1);
+      if (found !== undefined) return found;
+   }
+   return undefined;
+};
+const DONE_STATUSES = new Set(['verified', 'approved', 'completed', 'complete', 'passed', 'active']);
+const isDone = (data: unknown) => {
+   const verified = findValue(data, ['verified', 'isVerified', 'emailVerified']);
+   if (verified === true) return true;
+   if (findValue(data, ['verifiedAt'])) return true;
+   return DONE_STATUSES.has(String(findValue(data, ['status']) ?? '').toLowerCase());
+};
+
+/** Mid-market fiat per USD (open.er-api.com, free, daily). Null if it can't be read in 4s. */
+const marketRate = async (currency: string): Promise<{ rate: number; at: string } | null> => {
+   try {
+      const res = await fetch('https://open.er-api.com/v6/latest/USD', { signal: AbortSignal.timeout(4000) });
+      const data = (await res.json()) as { rates?: Record<string, number>; time_last_update_unix?: number };
+      const rate = Number(data.rates?.[currency]);
+      if (!res.ok || !Number.isFinite(rate) || rate <= 0) return null;
+      return { rate, at: new Date((data.time_last_update_unix ?? 0) * 1000).toISOString() };
+   } catch {
+      return null;
+   }
+};
+
 /**
- * External QR payment test for the caller's own Stableyard account (admin-only).
+ * External QR payment test for the caller's own Stableyard account (admins + stableyard_qr_testers).
+ *   setup      → create the account if needed, pay from the Moodeng wallet, report email + KYC
  *   status     → payment source + KYC
  *   use_wallet → make the linked Moodeng wallet (Base) the payment source
  *   decode     → read a merchant QR (no money moves)
  *   create     → create the Payment; returns the escrow depositInstructions (no money moves yet)
+ *                and logs the quote against the market rate in stableyard_qr_quotes
  *   get        → re-read a Payment
- * The money only moves when the admin sends the exact USDC to the escrow address from the app.
+ *   sent       → record the tx hash once the person paid
+ * The money only moves when the person sends the exact USDC to the escrow address from the app.
  * QR payloads and decoded account numbers are sensitive: never logged or stored here.
  */
 const handleQr = async (
    admin: SupabaseClient,
    userId: string,
    action: string,
-   body: { country?: unknown; qrPayload?: unknown; amount?: unknown; paymentId?: unknown; requestKey?: unknown }
+   body: {
+      country?: unknown;
+      qrPayload?: unknown;
+      amount?: unknown;
+      paymentId?: unknown;
+      requestKey?: unknown;
+      txHash?: unknown;
+      merchant?: unknown;
+   }
 ) => {
+   if (action === 'setup') {
+      const { data: profile } = await admin.from('users').select('wallet_address, wallet_chain_id').eq('id', userId).maybeSingle();
+      const wallet = String(profile?.wallet_address ?? '').trim();
+      if (!EVM_ADDRESS.test(wallet) || (profile?.wallet_chain_id && Number(profile.wallet_chain_id) !== BASE_CHAIN_ID)) {
+         return json({ ok: false, code: 'no_wallet', error: 'Set up your Moodeng wallet first.' }, 409);
+      }
+      const account = await ensureAccount(admin, userId, wallet);
+      if (!account.ok) return json({ ok: false, error: account.error }, account.status);
+   }
+
    const { data: row } = await admin
       .from('stableyard_accounts')
       .select('account_id, settlement_wallet')
@@ -217,16 +273,58 @@ const handleQr = async (
       return json({ ok: true, accountId, step: 'status', paymentSource: source.data, kyc: kyc.ok ? kyc.data : null });
    }
 
-   if (action === 'use_wallet') {
+   const useWallet = async () => {
       const bundle = await stableyard.getAccountBundle(accountId);
-      if (!bundle.ok) return fail(bundle);
+      if (!bundle.ok) return bundle;
       const wallet = String(row?.settlement_wallet ?? '').toLowerCase();
       const linked = (bundle.data.connectedWallets ?? []).find(
          (w) => w.chainId === BASE_CHAIN_ID && w.address.toLowerCase() === wallet && w.status !== 'disabled'
       );
-      if (!linked) return json({ ok: false, accountId, error: 'Your Moodeng wallet is not linked to this Stableyard account.' }, 409);
-      const result = await stableyard.setPaymentSource(accountId, linked.id);
+      if (!linked) return { ok: false as const, status: 409, error: 'Your Moodeng wallet is not linked to this Stableyard account.' };
+      return stableyard.setPaymentSource(accountId, linked.id);
+   };
+
+   if (action === 'use_wallet') {
+      const result = await useWallet();
       return result.ok ? json({ ok: true, accountId, step: 'use_wallet', result: result.data }) : fail(result);
+   }
+
+   if (action === 'setup') {
+      const [email, kyc, firstSource] = await Promise.all([
+         stableyard.getEmailStatus(accountId),
+         stableyard.getKyc(accountId),
+         stableyard.getPaymentSource(accountId)
+      ]);
+      let source = firstSource;
+      let sourceReady = source.ok && String(findValue(source.data, ['type']) ?? '') === 'connected_wallet';
+      if (!sourceReady && (await useWallet()).ok) {
+         source = await stableyard.getPaymentSource(accountId);
+         sourceReady = source.ok;
+      }
+      const kycStatus = kyc.ok ? String(findValue(kyc.data, ['status']) ?? 'not_started') : 'unknown';
+      return json({
+         ok: true,
+         accountId,
+         step: 'setup',
+         emailVerified: email.ok && isDone(email.data),
+         kycStatus,
+         kycApproved: kyc.ok && DONE_STATUSES.has(kycStatus.toLowerCase()),
+         kycUrl: kyc.ok ? (findValue(kyc.data, ['verificationUrl']) ?? null) : null,
+         sourceReady,
+         email: email.ok ? email.data : null,
+         kyc: kyc.ok ? kyc.data : null,
+         paymentSource: source.ok ? source.data : null
+      });
+   }
+
+   if (action === 'sent') {
+      const paymentId = String(body.paymentId ?? '').trim();
+      const txHash = String(body.txHash ?? '').trim();
+      if (!/^payment_[A-Za-z0-9_-]+$/.test(paymentId) || !/^0x[0-9a-fA-F]{64}$/.test(txHash)) {
+         return json({ error: 'Invalid payment ID or transaction.' }, 400);
+      }
+      await admin.from('stableyard_qr_quotes').update({ sent_tx_hash: txHash }).eq('user_id', userId).eq('payment_id', paymentId);
+      return json({ ok: true, accountId, step: 'sent' });
    }
 
    if (action === 'get') {
@@ -264,7 +362,37 @@ const handleQr = async (
       { country, qrPayload, amount, currency: rules.currency },
       `moodeng-qr:${accountId}:${requestKey}`
    );
-   return result.ok ? json({ ok: true, accountId, step: 'create', result: result.data }) : fail(result);
+   if (!result.ok) return fail(result);
+
+   // Log the quote next to the market rate so we can see Stableyard's real spread.
+   const data = result.data as {
+      payment?: { id?: string; destination?: { merchant?: { name?: string } | null } };
+      nextAction?: { depositInstructions?: { amount?: string; assetCode?: string } } | null;
+   };
+   const usdc = Number(data?.nextAction?.depositInstructions?.amount);
+   const market = await marketRate(rules.currency);
+   const fairUsdc = market ? Number(amount) / market.rate : null;
+   const quote = {
+      usdc: Number.isFinite(usdc) ? usdc : null,
+      marketRate: market?.rate ?? null,
+      marketRateAt: market?.at ?? null,
+      fairUsdc,
+      spreadPct: fairUsdc && Number.isFinite(usdc) ? (usdc / fairUsdc - 1) * 100 : null
+   };
+   const merchant = data?.payment?.destination?.merchant?.name ?? String(body.merchant ?? '').slice(0, 120);
+   const { error: logError } = await admin.from('stableyard_qr_quotes').insert({
+      user_id: userId,
+      payment_id: data?.payment?.id ?? null,
+      country,
+      fiat_currency: rules.currency,
+      fiat_amount: Number(amount),
+      usdc_amount: quote.usdc,
+      market_rate: quote.marketRate,
+      market_rate_at: quote.marketRateAt,
+      merchant_name: merchant || null
+   });
+   if (logError) console.error('[stableyard-deposit-address] log qr quote failed', logError.message);
+   return json({ ok: true, accountId, step: 'create', result: result.data, quote });
 };
 
 const loadNetworks = async (): Promise<StableyardDepositNetwork[]> => {
@@ -303,16 +431,26 @@ serve(async (req) => {
          .maybeSingle();
       return Boolean(adminRow);
    };
-   if (Deno.env.get('STABLEYARD_DEPOSITS_PUBLIC') !== 'true' && !(await isAdmin())) {
-      return json({ enabled: false, addresses: [], deposits: [] });
-   }
+   // QR payments (and the email + KYC they need) are for admins and the people in stableyard_qr_testers,
+   // even once deposits go public.
+   const isQrTester = async () => {
+      if (await isAdmin()) return true;
+      const { data: tester } = await admin.from('stableyard_qr_testers').select('user_id').eq('user_id', userId).maybeSingle();
+      return Boolean(tester);
+   };
 
    const body = await req.json().catch(() => ({}));
    const refresh = Boolean(body?.refresh);
+   const isQr = QR_ACTIONS.has(String(body?.qr ?? ''));
+   const isOnboarding = ONBOARDING_ACTIONS.has(String(body?.onboarding ?? ''));
 
-   // QR payments stay admin-only even once deposits go public.
-   if (QR_ACTIONS.has(String(body?.qr ?? ''))) {
-      if (!(await isAdmin())) return json({ error: 'Forbidden: admin account required' }, 403);
+   if (isQr || isOnboarding) {
+      if (!(await isQrTester())) return json({ error: 'Forbidden: not a QR payment tester', code: 'not_tester' }, 403);
+   } else if (Deno.env.get('STABLEYARD_DEPOSITS_PUBLIC') !== 'true' && !(await isAdmin())) {
+      return json({ enabled: false, addresses: [], deposits: [] });
+   }
+
+   if (isQr) {
       try {
          return await handleQr(admin, userId, String(body.qr), body);
       } catch (err) {
@@ -321,7 +459,7 @@ serve(async (req) => {
       }
    }
 
-   if (ONBOARDING_ACTIONS.has(String(body?.onboarding ?? ''))) {
+   if (isOnboarding) {
       try {
          return await handleOnboarding(admin, userId, String(userData.user?.email ?? '').trim(), String(body.onboarding), body);
       } catch (err) {

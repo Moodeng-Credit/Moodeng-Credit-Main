@@ -67,6 +67,7 @@
       "googleapis": "^169.0.0",
       "js-cookie": "^3.0.5",
       "jsonwebtoken": "^9.0.3",
+      "jsqr": "1.4.0",
       "jwt-decode": "^4.0.0",
       "leaflet": "^1.9.4",
       "lightgallery": "^2.9.0",
