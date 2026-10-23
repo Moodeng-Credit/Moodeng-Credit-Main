@@ -17,6 +17,7 @@ import {
    normalizeWhatsAppPhone,
    sendMessengerMessage
 } from '../_shared/sendpulse.ts';
+import { loadNextStep } from '../_shared/botNextStep.ts';
 import { saveBotLocale } from '../_shared/messengerSupport.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { testAccountRow } from '../_shared/testAccount.ts';
@@ -345,6 +346,24 @@ serve(async (req) => {
       if (!contactId || !locale) return json({ ok: false, error: 'bad_request' }, 400);
       await saveBotLocale(createClient(SUPABASE_URL, SERVICE_KEY), contactId, locale);
       return json({ ok: true, locale });
+   }
+
+   // The bot menu's ✅ How do I verify?: {"action":"next_step","psid":"{{contact_id}}","locale":"{{lang}}"}.
+   // Replies with the next step for this person's account (botNextStep.ts). `sent` false → the flow's
+   // Error branch shows the general text instead.
+   if (body.action === 'next_step') {
+      const contactId = body.psid ? String(body.psid).trim() : '';
+      if (!contactId) return json({ ok: false, error: 'bad_request' }, 400);
+      const flowLocale = body.locale === 'fil' || body.locale === 'en' ? body.locale : null;
+      const { stage, locale, reply } = await loadNextStep(createClient(SUPABASE_URL, SERVICE_KEY), contactId, flowLocale);
+      const [button, ...moreButtons] = reply.buttons;
+      const card = button ? { title: reply.cardTitle, button, moreButtons } : undefined;
+      const sent = await sendMessengerMessage(contactId, { text: reply.text, card });
+      if (!sent.ok) {
+         console.error(`[next_step] send failed for ${contactId} (${stage}): ${sent.reason}`);
+         return json({ ok: false, stage, error: sent.reason }, 502);
+      }
+      return json({ ok: true, stage, locale });
    }
 
    // Accept whichever field SendPulse is configured to send the code in.
