@@ -37,14 +37,14 @@ export const filipinoCoverageE: Record<string, string> = {
    "World ID verification isn't working right now. Please verify with your ID instead, or try again later.":
       'Hindi gumagana ang World ID verification ngayon. Mag-verify gamit ang ID mo sa halip, o subukan ulit mamaya.',
    "World ID verification isn't working": 'Hindi gumagana ang World ID verification',
-   'Tell lenders what the money will be used for.': 'Sabihin sa mga lender kung saan gagamitin ang pera.',
+   'Tell moo-lenders what the money will be used for.': 'Sabihin sa mga moo-lender kung saan gagamitin ang pera.',
    'Please write it in English': 'Pakisulat ito sa English',
    'Improve your reason': 'Ayusin ang dahilan mo',
    'Update your reason, then tap “Make Your Request” again.': 'I-update ang dahilan mo, tapos i-tap ulit ang “Make Your Request”.',
-   'Tell lenders what the money will be used for. Update your reason, then tap “Make Your Request” again.':
-      'Sabihin sa mga lender kung saan gagamitin ang pera. I-update ang dahilan mo, tapos i-tap ulit ang “Make Your Request”.',
-   'Please write your reason in English — the lenders reading it don’t speak Tagalog. Update your reason, then tap “Make Your Request” again.':
-      'Pakisulat sa English ang dahilan mo — hindi nagta-Tagalog ang mga lender na magbabasa nito. I-update ang dahilan mo, tapos i-tap ulit ang “Make Your Request”.',
+   'Tell moo-lenders what the money will be used for. Update your reason, then tap “Make Your Request” again.':
+      'Sabihin sa mga moo-lender kung saan gagamitin ang pera. I-update ang dahilan mo, tapos i-tap ulit ang “Make Your Request”.',
+   'Please write your reason in English — the moo-lenders reading it don’t speak Tagalog. Update your reason, then tap “Make Your Request” again.':
+      'Pakisulat sa English ang dahilan mo — hindi nagta-Tagalog ang mga moo-lender na magbabasa nito. I-update ang dahilan mo, tapos i-tap ulit ang “Make Your Request”.',
    'Your info is missing': 'Kulang ang info mo',
    'We need your "About you" details before posting. Close this and tap Request a loan again to fill them in — or tap Help and we\'ll sort it out.':
       'Kailangan namin ang mga detalye mo sa "About you" bago mag-post. Isara ito at i-tap ulit ang Mag-request ng loan para punan ang mga ito — o i-tap ang Tulong at aayusin namin.',

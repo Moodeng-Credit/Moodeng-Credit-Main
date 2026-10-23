@@ -113,11 +113,11 @@ export const getCreditLevelProgress = ({
 /** The designer's shorter titles for the shared milestones (same rules, same points). */
 const MILESTONE_TITLES: Record<string, string> = {
    'first-loan-request': 'Post your first loan request',
-   'first-funded-loan': 'Get funded by a lender',
+   'first-funded-loan': 'Get funded by a moo-lender',
    'first-on-time-repayment': 'Repay a loan on time',
    'two-on-time-streak': '2-loan on-time streak',
    'full-limit-credit-builder': 'Repay a full-limit loan',
-   'two-unique-lenders': 'Borrow from 2 lenders',
+   'two-unique-lenders': 'Borrow from 2 moo-lenders',
    'repay-100-total': 'Repay $100 total',
    'trusted-borrower-candidate': 'Become a trusted borrower'
 };

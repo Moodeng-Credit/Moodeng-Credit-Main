@@ -907,7 +907,7 @@ export default function ContactsStep({
    return (
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
          {hero ?? (
-            <ConnectHero image={stateHippo ?? CONNECT_HIPPOS.hello} subtitle="Only Moodeng sees this — never lenders." title="How can we reach you?" />
+            <ConnectHero image={stateHippo ?? CONNECT_HIPPOS.hello} subtitle="Only Moodeng sees this — never moo-lenders." title="How can we reach you?" />
          )}
 
          {hasReminderStep ? <StepLabel done={contactVerified} n={1} text="Connect Facebook" /> : null}

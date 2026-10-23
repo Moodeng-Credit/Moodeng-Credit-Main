@@ -72,7 +72,7 @@ const GETTING_STARTED_COPY = {
       heading: 'Learn the Moodeng Basics',
       latestVideo: 'Latest Video Guide',
       latestVideoTitle: 'Latest Video Guide',
-      lenderBenefitsTitle: 'Lender Benefits',
+      lenderBenefitsTitle: 'Moo-lender Benefits',
       lenderBenefitsDescription: 'See why lending matters',
       basics: [
          { title: 'Browse Guides', description: 'Quick Start for New Users' },
@@ -88,7 +88,7 @@ const GETTING_STARTED_COPY = {
       heading: 'Alamin ang basics ng Moodeng',
       latestVideo: 'Pinakabagong video na gabay',
       latestVideoTitle: 'Pinakabagong video na gabay',
-      lenderBenefitsTitle: 'Benepisyo ng lender',
+      lenderBenefitsTitle: 'Benepisyo ng moo-lender',
       lenderBenefitsDescription: 'Alamin kung bakit mahalaga ang pagpapahiram',
       basics: [
          { title: 'Tingnan ang mga gabay', description: 'Quick start para sa mga bagong user' },

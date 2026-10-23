@@ -24,7 +24,7 @@ const examples = [
       title: 'Trust-building loan',
       amount: '$10 of $15',
       result: 'Builds repayment history',
-      body: 'Useful when you need less than your full limit. It can help lenders trust you, but it does not raise your credit level.',
+      body: 'Useful when you need less than your full limit. It can help moo-lenders trust you, but it does not raise your credit level.',
       tone: 'trust'
    },
    {
@@ -38,7 +38,7 @@ const examples = [
       title: 'Late or missed repayment',
       amount: 'Past due',
       result: 'Can pause progress',
-      body: 'Your level does not become the main signal anymore. Lenders will care about the missed repayment first.',
+      body: 'Your level does not become the main signal anymore. Moo-lenders will care about the missed repayment first.',
       tone: 'risk'
    }
 ];

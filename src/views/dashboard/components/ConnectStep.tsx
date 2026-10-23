@@ -320,7 +320,7 @@ export default function ConnectStep({
                      advance('intro', {
                         key: 'about',
                         title: 'Saved to your profile!',
-                        subtitle: 'Great work — lenders will see it beside your request.',
+                        subtitle: 'Great work — moo-lenders will see it beside your request.',
                         done: 'Profile ✓'
                      })
                })}

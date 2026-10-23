@@ -64,8 +64,8 @@ export default function DeleteLoanRequestModal({
                   </p>
                </div>
                <p className="text-md-b2 font-medium leading-[1.45] text-md-neutral-900">
-                  Lenders will no longer see it. You can make a new request from the board, but repeated deletes pause new requests for a
-                  short time.
+                  Moo-lenders will no longer see it. You can make a new request from the board, but repeated deletes pause new requests for
+                  a short time.
                </p>
 
                <button

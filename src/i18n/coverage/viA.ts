@@ -134,7 +134,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Verify code': 'Xác minh mã',
    'Send reset code': 'Gửi mã đặt lại',
    // src/app/lender/request-board/page.tsx
-   'Lender Request Board': 'Bảng yêu cầu cho người cho vay',
+   'Moo-lender Request Board': 'Bảng yêu cầu cho moo-lender',
    'Coming soon': 'Sắp ra mắt',
    // src/app/mfa-challenge/page.tsx
    "Verify it's you": 'Xác nhận đây là bạn',
@@ -181,7 +181,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Failed to save your role. Please try again.': 'Không thể lưu vai trò của bạn. Vui lòng thử lại.',
    'I am a Borrower': 'Tôi là người vay',
    'Request USDC loans and build trust through on-time repayment.': 'Yêu cầu khoản vay USDC và xây dựng niềm tin qua việc trả nợ đúng hạn.',
-   'I am a Lender': 'Tôi là người cho vay',
+   'I am a Moo-lender': 'Tôi là moo-lender',
    'Fund loan requests and earn returns by supporting trusted borrowers.':
       'Cấp vốn cho các yêu cầu vay và nhận lợi nhuận khi hỗ trợ những người vay đáng tin cậy.',
    'Confirming...': 'Đang xác nhận...',
@@ -190,8 +190,8 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Simple Page - CSS and Navigation working!': 'Trang đơn giản - CSS và điều hướng đang hoạt động!',
    // src/app/team/page.tsx
    'Co-Founders': 'Đồng sáng lập',
-   'Building a portable trust layer for borrowers who deserve fair credit and lenders who want transparent impact.':
-      'Xây dựng một lớp uy tín có thể mang theo, dành cho người vay xứng đáng được tiếp cận tín dụng công bằng và người cho vay muốn tạo tác động minh bạch.',
+   'Building a portable trust layer for borrowers who deserve fair credit and moo-lenders who want transparent impact.':
+      'Xây dựng một lớp uy tín có thể mang theo, dành cho người vay xứng đáng được tiếp cận tín dụng công bằng và moo-lender muốn tạo tác động minh bạch.',
    'Project Co-Lead': 'Đồng trưởng dự án',
    'Repeat founder and product builder working to help people build credit through practical systems that are clear, fair, and useful in real life.':
       'Nhà sáng lập nhiều lần và người xây dựng sản phẩm, đang giúp mọi người xây dựng tín dụng bằng những hệ thống thiết thực, rõ ràng, công bằng và hữu ích trong đời sống.',
@@ -392,7 +392,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    // src/components/Loading.tsx
    'Loading Moodeng': 'Đang tải Moodeng',
    // src/components/PowerLenderBadge.tsx
-   'Power Lender': 'Người cho vay tích cực',
+   'Power Moo-lender': 'Moo-lender tích cực',
    // src/components/RepayInAppBrowserGate.tsx
    'Open Moodeng in your browser to repay': 'Mở Moodeng trong trình duyệt để trả nợ',
    'Finish repaying in your browser': 'Hoàn tất trả nợ trong trình duyệt',
@@ -554,8 +554,8 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Support contacts': 'Kênh hỗ trợ',
    'Here are support contacts. Choose a channel and we will help you with your Moodeng account.':
       'Đây là các kênh hỗ trợ. Hãy chọn một kênh và chúng tôi sẽ giúp bạn với tài khoản Moodeng.',
-   'Here are support contacts for your expired loan request. We can help you connect with a lender or decide whether to post again.':
-      'Đây là các kênh hỗ trợ cho yêu cầu vay đã hết hạn của bạn. Chúng tôi có thể giúp bạn kết nối với người cho vay hoặc quyết định có đăng lại hay không.',
+   'Here are support contacts for your expired loan request. We can help you connect with a moo-lender or decide whether to post again.':
+      'Đây là các kênh hỗ trợ cho yêu cầu vay đã hết hạn của bạn. Chúng tôi có thể giúp bạn kết nối với moo-lender hoặc quyết định có đăng lại hay không.',
    'Here are support contacts for World ID verification if your status did not update after completing World ID.':
       'Đây là các kênh hỗ trợ xác minh World ID, nếu trạng thái của bạn chưa cập nhật sau khi hoàn tất World ID.',
    'Close support contacts': 'Đóng kênh hỗ trợ',
@@ -585,10 +585,10 @@ export const vietnameseCoverageA: Record<string, string> = {
    // src/components/verification/VerifiedCelebrationNotifier.tsx
    'Manual review complete — you’re verified!': 'Đã xét duyệt thủ công xong — bạn đã được xác minh!',
    'Your ID is verified!': 'Giấy tờ tùy thân của bạn đã được xác minh!',
-   'Well done! Our reviewers confirmed your documents. You now have full access — start building trust with lenders.':
-      'Tuyệt vời! Đội ngũ xét duyệt đã xác nhận giấy tờ của bạn. Giờ bạn đã có toàn quyền truy cập — hãy bắt đầu xây dựng niềm tin với người cho vay.',
-   'Well done! Your identity is confirmed. You now have full access — start building trust with lenders.':
-      'Tuyệt vời! Danh tính của bạn đã được xác nhận. Giờ bạn đã có toàn quyền truy cập — hãy bắt đầu xây dựng niềm tin với người cho vay.',
+   'Well done! Our reviewers confirmed your documents. You now have full access — start building trust with moo-lenders.':
+      'Tuyệt vời! Đội ngũ xét duyệt đã xác nhận giấy tờ của bạn. Giờ bạn đã có toàn quyền truy cập — hãy bắt đầu xây dựng niềm tin với moo-lender.',
+   'Well done! Your identity is confirmed. You now have full access — start building trust with moo-lenders.':
+      'Tuyệt vời! Danh tính của bạn đã được xác nhận. Giờ bạn đã có toàn quyền truy cập — hãy bắt đầu xây dựng niềm tin với moo-lender.',
    // src/components/verification/VerifyYourselfModal.tsx
    '🇺🇸 United States': '🇺🇸 Hoa Kỳ',
    '🇬🇧 United Kingdom': '🇬🇧 Vương quốc Anh',
@@ -759,7 +759,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    'RULES OF REPAYING': 'QUY TẮC TRẢ NỢ',
    'Moodeng offers flexible, blockchain-based microloans. Repay responsibly to build your credit score.':
       'Moodeng cung cấp các khoản vay nhỏ linh hoạt dựa trên blockchain. Hãy trả nợ có trách nhiệm để xây dựng điểm tín dụng của bạn.',
-   'You must pay the lender directly by hitting the repay button.': 'Bạn phải trả trực tiếp cho người cho vay bằng cách nhấn nút trả nợ.',
+   'You must pay the moo-lender directly by hitting the repay button.': 'Bạn phải trả trực tiếp cho moo-lender bằng cách nhấn nút trả nợ.',
    'UP-TO-YOU': 'TÙY BẠN',
    'Flexible repayments: Any amount up to deadline': 'Trả nợ linh hoạt: bất kỳ số tiền nào, trước hạn chót',
    'Build credit score with each on-time payment': 'Xây dựng điểm tín dụng với mỗi lần thanh toán đúng hạn',
@@ -826,8 +826,8 @@ export const vietnameseCoverageA: Record<string, string> = {
    'See How Growth Works': 'Xem hạn mức tăng như thế nào',
    'Mecha says': 'Mecha nói',
    'How to use Moodeng Credit': 'Cách sử dụng Moodeng Credit',
-   'A simple walkthrough of the borrower flow. Start here if you want to know what to click, what lenders see, and how repayment grows your limit.':
-      'Hướng dẫn đơn giản về quy trình dành cho người vay. Bắt đầu từ đây nếu bạn muốn biết cần nhấn gì, người cho vay thấy gì, và việc trả nợ giúp tăng hạn mức của bạn như thế nào.',
+   'A simple walkthrough of the borrower flow. Start here if you want to know what to click, what moo-lenders see, and how repayment grows your limit.':
+      'Hướng dẫn đơn giản về quy trình dành cho người vay. Bắt đầu từ đây nếu bạn muốn biết cần nhấn gì, moo-lender thấy gì, và việc trả nợ giúp tăng hạn mức của bạn như thế nào.',
    'Tutorial Video': 'Video hướng dẫn',
    'Watch the quick Moodeng walkthrough.': 'Xem video hướng dẫn nhanh của Moodeng.',
    'I am Mecha. I will walk you through Moodeng step by step.': 'Mình là Mecha. Mình sẽ hướng dẫn bạn dùng Moodeng từng bước một.',
@@ -842,20 +842,20 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Create your account': 'Tạo tài khoản của bạn',
    'Sign up with email so Moodeng can save your borrower profile, loans, repayments, and credit progress.':
       'Đăng ký bằng email để Moodeng có thể lưu hồ sơ người vay, khoản vay, khoản trả nợ và tiến trình tín dụng của bạn.',
-   'Verify once to prove you are unique. After that, lenders can trust that your request is tied to one real borrower.':
-      'Xác minh một lần để chứng minh bạn là duy nhất. Sau đó, người cho vay có thể tin rằng yêu cầu của bạn gắn với một người vay thật.',
+   'Verify once to prove you are unique. After that, moo-lenders can trust that your request is tied to one real borrower.':
+      'Xác minh một lần để chứng minh bạn là duy nhất. Sau đó, moo-lender có thể tin rằng yêu cầu của bạn gắn với một người vay thật.',
    'Add your wallet': 'Thêm ví của bạn',
-   'Set up your Instant Wallet from your Moodeng login (or connect a Base Account if you prefer), so lenders can fund loans directly there and Moodeng can track repayment history.':
-      'Thiết lập Instant Wallet từ tài khoản đăng nhập Moodeng của bạn (hoặc kết nối Base Account nếu bạn thích), để người cho vay có thể cấp vốn trực tiếp vào đó và Moodeng có thể theo dõi lịch sử trả nợ.',
+   'Set up your Instant Wallet from your Moodeng login (or connect a Base Account if you prefer), so moo-lenders can fund loans directly there and Moodeng can track repayment history.':
+      'Thiết lập Instant Wallet từ tài khoản đăng nhập Moodeng của bạn (hoặc kết nối Base Account nếu bạn thích), để moo-lender có thể cấp vốn trực tiếp vào đó và Moodeng có thể theo dõi lịch sử trả nợ.',
    'Your amount sets the loan type': 'Số tiền của bạn quyết định loại khoản vay',
    'If your request is below your credit limit, it is trust-building. If it is for your full credit limit, it is credit-building.':
       'Nếu yêu cầu của bạn thấp hơn hạn mức tín dụng, đó là Trust-Building Loan. Nếu yêu cầu bằng toàn bộ hạn mức tín dụng, đó là Credit-Building Loan.',
    'Submit a loan request': 'Gửi yêu cầu vay',
-   'Pick your amount, choose when you will repay, and explain why you need support before posting to lenders.':
-      'Chọn số tiền, chọn thời điểm bạn sẽ trả nợ, và giải thích lý do bạn cần hỗ trợ trước khi đăng cho người cho vay xem.',
+   'Pick your amount, choose when you will repay, and explain why you need support before posting to moo-lenders.':
+      'Chọn số tiền, chọn thời điểm bạn sẽ trả nợ, và giải thích lý do bạn cần hỗ trợ trước khi đăng cho moo-lender xem.',
    'Get matched on the request board': 'Được ghép nối trên Bảng yêu cầu',
-   'Your request appears on the board where lenders can review the terms and decide whether to fund it.':
-      'Yêu cầu của bạn sẽ xuất hiện trên bảng, nơi người cho vay có thể xem xét điều khoản và quyết định có cấp vốn hay không.',
+   'Your request appears on the board where moo-lenders can review the terms and decide whether to fund it.':
+      'Yêu cầu của bạn sẽ xuất hiện trên bảng, nơi moo-lender có thể xem xét điều khoản và quyết định có cấp vốn hay không.',
    'Repay clearly': 'Trả nợ rõ ràng',
    'Pay back the agreed amount on time. Moodeng tracks repayment progress clearly in your account.':
       'Trả đúng hạn số tiền đã thỏa thuận. Moodeng theo dõi tiến trình trả nợ rõ ràng trong tài khoản của bạn.',
@@ -876,8 +876,8 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Repaying clearly and on time': 'Trả nợ rõ ràng và đúng hạn',
    'Nice practice request.': 'Yêu cầu luyện tập tốt đấy.',
    'Strong repayment move.': 'Bước trả nợ tốt đấy.',
-   'Nice! Repaying is super important on Moodeng. On-time repayment helps your trust record, keeps lenders confident, and can unlock better borrowing limits over time.':
-      'Tuyệt! Trả nợ là điều cực kỳ quan trọng trên Moodeng. Trả nợ đúng hạn giúp xây dựng uy tín của bạn, giữ cho người cho vay yên tâm, và có thể mở khóa hạn mức vay tốt hơn theo thời gian.',
+   'Nice! Repaying is super important on Moodeng. On-time repayment helps your trust record, keeps moo-lenders confident, and can unlock better borrowing limits over time.':
+      'Tuyệt! Trả nợ là điều cực kỳ quan trọng trên Moodeng. Trả nợ đúng hạn giúp xây dựng uy tín của bạn, giữ cho moo-lender yên tâm, và có thể mở khóa hạn mức vay tốt hơn theo thời gian.',
    'This is how you grow.': 'Đây là cách bạn phát triển.',
    'Mecha says: full-limit loans repaid on time are how borrowers build a stronger credit record. Keep repayment clean, and your next limit can grow.':
       'Mecha nói: các khoản vay bằng toàn bộ hạn mức được trả đúng hạn chính là cách người vay xây dựng lịch sử tín dụng vững chắc hơn. Hãy luôn trả nợ đầy đủ và đúng hạn, và hạn mức tiếp theo của bạn có thể tăng.',
@@ -917,8 +917,8 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Base network': 'Mạng Base',
    // src/views/academy/VerifyGuide.tsx
    Money: 'Tiền',
-   'To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts out of the community, and it is what lets lenders trust the requests they fund.':
-      'Để giữ Moodeng an toàn và công bằng, mỗi người vay hoàn thành một lượt kiểm tra danh tính ngắn. Điều này giúp loại bỏ tài khoản giả và trùng lặp khỏi cộng đồng, và đó là điều giúp người cho vay tin tưởng vào các yêu cầu mà họ cấp vốn.',
+   'To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts out of the community, and it is what lets moo-lenders trust the requests they fund.':
+      'Để giữ Moodeng an toàn và công bằng, mỗi người vay hoàn thành một lượt kiểm tra danh tính ngắn. Điều này giúp loại bỏ tài khoản giả và trùng lặp khỏi cộng đồng, và đó là điều giúp moo-lender tin tưởng vào các yêu cầu mà họ cấp vốn.',
    'The recommended route: Verify Your ID.': 'Cách được khuyên dùng: Xác minh bằng giấy tờ tùy thân.',
    'National ID verification is available for these countries.': 'Xác minh bằng thẻ căn cước hiện có tại các quốc gia sau.',
    'Pass on the first try': 'Vượt qua ngay lần đầu',
@@ -929,14 +929,14 @@ export const vietnameseCoverageA: Record<string, string> = {
       'Việc kiểm tra được thực hiện bởi đối tác xác minh bảo mật của chúng tôi. Moodeng chỉ nhận kết quả — bạn có đạt hay không — chứ không nhận bản sao giấy tờ của bạn.',
    'Ready to verify?': 'Sẵn sàng xác minh chưa?',
    Read: 'Đọc',
-   'Verification makes sure every request comes from a real, unique person. That is what keeps fake and duplicate accounts away from lenders.':
-      'Việc xác minh đảm bảo mọi yêu cầu đều đến từ một người thật, duy nhất. Đó là điều giữ cho tài khoản giả và trùng lặp tránh xa người cho vay.',
+   'Verification makes sure every request comes from a real, unique person. That is what keeps fake and duplicate accounts away from moo-lenders.':
+      'Việc xác minh đảm bảo mọi yêu cầu đều đến từ một người thật, duy nhất. Đó là điều giữ cho tài khoản giả và trùng lặp tránh xa moo-lender.',
    Access: 'Quyền truy cập',
    'Finishing verification is what unlocks loan requests, and it is the point where you start earning Pandesal points.':
       'Hoàn tất xác minh là điều mở khóa các yêu cầu vay, và đó cũng là lúc bạn bắt đầu tích điểm Pandesal.',
    Trust: 'Niềm tin',
-   'Lenders are funding real people, not anonymous accounts. That confidence is what gets requests on the board funded.':
-      'Người cho vay đang cấp vốn cho người thật, không phải tài khoản ẩn danh. Sự tin tưởng đó là điều giúp các yêu cầu trên bảng được cấp vốn.',
+   'Moo-lenders are funding real people, not anonymous accounts. That confidence is what gets requests on the board funded.':
+      'Moo-lender đang cấp vốn cho người thật, không phải tài khoản ẩn danh. Sự tin tưởng đó là điều giúp các yêu cầu trên bảng được cấp vốn.',
    'Your physical national ID': 'Thẻ căn cước bản gốc của bạn',
    'The real card in hand, not a photocopy or a picture on another screen.':
       'Thẻ thật cầm trên tay, không phải bản photocopy hay ảnh chụp từ màn hình khác.',
@@ -1095,16 +1095,16 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Close overlay': 'Đóng lớp phủ',
    // src/views/account/EditBioInfoModal.tsx
    'Change Bio Info': 'Đổi thông tin tiểu sử',
-   'Update the details lenders see about your work, income, and what you typically need help with.':
-      'Cập nhật thông tin mà người cho vay thấy về công việc, thu nhập và những gì bạn thường cần hỗ trợ.',
+   'Update the details moo-lenders see about your work, income, and what you typically need help with.':
+      'Cập nhật thông tin mà moo-lender thấy về công việc, thu nhập và những gì bạn thường cần hỗ trợ.',
    'What do you do for work?': 'Bạn làm công việc gì?',
    'Any other income sources?': 'Bạn có nguồn thu nhập nào khác không?',
    'How would you describe your work?': 'Bạn mô tả công việc của mình như thế nào?',
-   'Helps lenders see that repayment timing makes sense.': 'Giúp người cho vay thấy rằng thời điểm trả nợ hợp lý.',
+   'Helps moo-lenders see that repayment timing makes sense.': 'Giúp moo-lender thấy rằng thời điểm trả nợ hợp lý.',
    'When do you usually get paid?': 'Bạn thường được trả lương khi nào?',
    'What is your approximate monthly income?': 'Thu nhập hàng tháng ước tính của bạn là bao nhiêu?',
    'What do your recurring expenses cost per month?': 'Chi phí định kỳ hàng tháng của bạn là bao nhiêu?',
-   'Helps lenders understand your financial commitments.': 'Giúp người cho vay hiểu các nghĩa vụ tài chính của bạn.',
+   'Helps moo-lenders understand your financial commitments.': 'Giúp moo-lender hiểu các nghĩa vụ tài chính của bạn.',
    'Pick all that apply.': 'Chọn tất cả các mục phù hợp.',
    'What do you usually need short-term help with?': 'Bạn thường cần hỗ trợ ngắn hạn cho việc gì?',
    // src/views/account/ExportInstantWalletKey.tsx
@@ -1158,15 +1158,15 @@ export const vietnameseCoverageA: Record<string, string> = {
       'Vì sao người vay chọn Moodeng Credit: truy cập nhanh trên toàn cầu vào các khoản vay USDC nhỏ, sứ mệnh và lộ trình của chúng tôi, cùng việc xây dựng tín dụng có thể kiểm chứng khi bạn trả nợ.',
    // src/views/borrowerBenefits/sections/FastGlobalAccessSection.tsx
    'Why borrowing feels different': 'Vì sao vay ở đây lại khác biệt',
-   'Direct lender-to-borrower': 'Trực tiếp từ người cho vay đến người vay',
-   'A lender funds your request directly. Moodeng helps show the terms and record the repayment history without hiding the process behind a middle-man.':
-      'Người cho vay cấp vốn trực tiếp cho yêu cầu của bạn. Moodeng giúp hiển thị các điều khoản và ghi lại lịch sử trả nợ mà không che giấu quy trình sau một bên trung gian.',
+   'Direct moo-lender-to-borrower': 'Trực tiếp từ moo-lender đến người vay',
+   'A moo-lender funds your request directly. Moodeng helps show the terms and record the repayment history without hiding the process behind a middle-man.':
+      'Moo-lender cấp vốn trực tiếp cho yêu cầu của bạn. Moodeng giúp hiển thị các điều khoản và ghi lại lịch sử trả nợ mà không che giấu quy trình sau một bên trung gian.',
    'Funded in your wallet': 'Tiền về thẳng ví của bạn',
-   'When a lender funds your request, USDC moves through your digital wallet so the money and repayment record are easier to track.':
-      'Khi người cho vay cấp vốn cho yêu cầu của bạn, USDC di chuyển qua ví kỹ thuật số của bạn để tiền và lịch sử trả nợ dễ theo dõi hơn.',
+   'When a moo-lender funds your request, USDC moves through your digital wallet so the money and repayment record are easier to track.':
+      'Khi moo-lender cấp vốn cho yêu cầu của bạn, USDC di chuyển qua ví kỹ thuật số của bạn để tiền và lịch sử trả nợ dễ theo dõi hơn.',
    'Terms shown upfront': 'Điều khoản rõ ràng ngay từ đầu',
-   'You choose the request amount, repayment amount, due date, and reason before a lender decides whether to fund it.':
-      'Bạn chọn số tiền yêu cầu, số tiền trả nợ, ngày đến hạn và lý do trước khi người cho vay quyết định có cấp vốn hay không.',
+   'You choose the request amount, repayment amount, due date, and reason before a moo-lender decides whether to fund it.':
+      'Bạn chọn số tiền yêu cầu, số tiền trả nợ, ngày đến hạn và lý do trước khi moo-lender quyết định có cấp vốn hay không.',
    // src/views/borrowerBenefits/sections/HeroSection.tsx
    'Microloans with USDC to build your credit': 'Vay nhỏ bằng USDC để xây dựng tín dụng của bạn',
    // src/views/borrowerBenefits/sections/OurMissionSection.tsx
@@ -1195,12 +1195,12 @@ export const vietnameseCoverageA: Record<string, string> = {
    'On iPhone: tap': 'Trên iPhone: nhấn',
    'Add to Home Screen': 'Thêm vào Màn hình chính',
    'Turn on reminders to continue.': 'Bật nhắc nhở để tiếp tục.',
-   'Only Moodeng sees this — never lenders.': 'Chỉ Moodeng thấy thông tin này — người cho vay thì không.',
+   'Only Moodeng sees this — never moo-lenders.': 'Chỉ Moodeng thấy thông tin này — moo-lender thì không.',
    'How can we reach you?': 'Chúng tôi có thể liên hệ với bạn qua đâu?',
    'Open Messenger again': 'Mở lại Messenger',
    Required: 'Bắt buộc',
    'Turn on reminders': 'Bật nhắc nhở',
    // src/components/verification/VerifyYourselfModal.tsx (ID check is the last step of a request)
-   "A one-time ID check so lenders know you're a real person — it takes about 3 minutes.":
-      'Kiểm tra giấy tờ tùy thân một lần để người cho vay biết bạn là người thật — mất khoảng 3 phút.'
+   "A one-time ID check so moo-lenders know you're a real person — it takes about 3 minutes.":
+      'Kiểm tra giấy tờ tùy thân một lần để moo-lender biết bạn là người thật — mất khoảng 3 phút.'
 };

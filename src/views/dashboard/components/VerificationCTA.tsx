@@ -39,7 +39,7 @@ export default function VerificationCTA() {
                {isPending ? pendingTitle : 'One quick step to request a loan'}
             </p>
             <p className="text-md-neutral-700 text-md-b4 mb-3">
-               {isPending ? pendingBody : 'Complete a one-time verification to start building trust with lenders.'}
+               {isPending ? pendingBody : 'Complete a one-time verification to start building trust with moo-lenders.'}
             </p>
             <button
                type="button"

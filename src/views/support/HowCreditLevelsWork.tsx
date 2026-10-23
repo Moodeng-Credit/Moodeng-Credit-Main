@@ -89,7 +89,7 @@ const relatedGuides = [
    {
       slug: 'understanding-your-trust-score',
       title: 'Understanding your Pandesal points',
-      blurb: 'How reliable repayment becomes a portable reputation lenders trust.'
+      blurb: 'How reliable repayment becomes a portable reputation moo-lenders trust.'
    },
    {
       slug: 'trust-building-vs-credit-building-loans',
@@ -114,7 +114,7 @@ const faqs = [
    },
    {
       q: 'Does borrowing a small amount level me up?',
-      a: 'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.'
+      a: 'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with moo-lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.'
    },
    {
       q: 'Can I skip levels by repaying early or paying extra?',
@@ -122,7 +122,7 @@ const faqs = [
    },
    {
       q: 'Why does the limit start at only $15?',
-      a: 'Small starting limits keep risk low for the lenders funding someone with no track record yet. As you prove reliable repayment, your limit and lender confidence grow together.'
+      a: 'Small starting limits keep risk low for the moo-lenders funding someone with no track record yet. As you prove reliable repayment, your limit and moo-lender confidence grow together.'
    },
    {
       q: 'How long does it take to reach the $60 level?',
@@ -130,7 +130,7 @@ const faqs = [
    },
    {
       q: 'What happens if I miss a repayment?',
-      a: 'A late or missed repayment reduces your Pandesal points and can pause your progress. Lenders weigh the missed repayment heavily, so keeping payments on time matters more than borrowing size.'
+      a: 'A late or missed repayment reduces your Pandesal points and can pause your progress. Moo-lenders weigh the missed repayment heavily, so keeping payments on time matters more than borrowing size.'
    },
    {
       q: 'Does my Credit Level ever reset?',
@@ -709,11 +709,11 @@ export default function HowCreditLevelsWork({ variant = 'support' }: HowCreditLe
                <p className="hclw-scene__lead">Trust is the currency before the credit.</p>
                <img
                   src="/hippos/trust-building-scene.png"
-                  alt="A borrower hippo and a squirrel building trust with a lender at the Moodeng lending desk"
+                  alt="A borrower hippo and a squirrel building trust with a moo-lender at the Moodeng lending desk"
                   loading="lazy"
                />
                <figcaption>
-                  Every loan you repay cleanly — even a small Trust-Building Loan — deposits reputation that lenders can see. That trust is
+                  Every loan you repay cleanly — even a small Trust-Building Loan — deposits reputation that moo-lenders can see. That trust is
                   what gets your next request funded faster.
                </figcaption>
             </figure>

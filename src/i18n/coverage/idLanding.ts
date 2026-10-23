@@ -3,8 +3,8 @@
 export const indonesianCoverageLanding: Record<string, string> = {
    // src/views/borrowerBenefits/sections/HeroSection.tsx
    'Microloans with USDC to build your credit': 'Pinjaman mikro USDC untuk membangun kreditmu',
-   'connects borrowers directly with people willing to lend. There is no escrow desk and no middle-man setting the rules: you request, a lender funds, and your repayment record grows from there.':
-      'menghubungkan peminjam langsung dengan orang yang mau memberi pinjaman. Tidak ada meja escrow dan tidak ada perantara yang membuat aturan: kamu mengajukan, pemberi pinjaman mendanai, dan riwayat pembayaranmu tumbuh dari situ.',
+   'connects borrowers directly with people willing to lend. There is no escrow desk and no middle-man setting the rules: you request, a moo-lender funds, and your repayment record grows from there.':
+      'menghubungkan peminjam langsung dengan orang yang mau memberi pinjaman. Tidak ada meja escrow dan tidak ada perantara yang membuat aturan: kamu mengajukan, moo-lender mendanai, dan riwayat pembayaranmu tumbuh dari situ.',
 
    // src/views/borrowerBenefits/sections/OurMissionSection.tsx
    ", you're building a fairer financial world. Say goodbye to predatory apps that overcharge. We're restoring trust in personal finance, one transaction at a time.":
@@ -48,8 +48,8 @@ export const indonesianCoverageLanding: Record<string, string> = {
    'Moodeng offers flexible, blockchain-based microloans. Repay responsibly to build your credit score.':
       'Moodeng menawarkan pinjaman mikro berbasis blockchain yang fleksibel. Bayar kembali dengan bertanggung jawab untuk membangun skor kreditmu.',
    DIRECT: 'LANGSUNG',
-   'You must pay the lender directly by hitting the repay button.':
-      'Kamu harus membayar pemberi pinjaman secara langsung dengan menekan tombol Bayar.',
+   'You must pay the moo-lender directly by hitting the repay button.':
+      'Kamu harus membayar moo-lender secara langsung dengan menekan tombol Bayar.',
    RESPONSIBLE: 'BERTANGGUNG JAWAB',
    INTEGRITY: 'INTEGRITAS',
    TIMELY: 'TEPAT WAKTU',
@@ -75,16 +75,16 @@ export const indonesianCoverageLanding: Record<string, string> = {
 
    // src/views/landing/sections/HeroSection.tsx
    'Microloans with USDC to BUILD YOUR CREDIT': 'Pinjaman mikro USDC untuk MEMBANGUN KREDITMU',
-   'We created a new kind of Lender to Borrower experience. There is no escrow and no middle-man. You borrow':
-      'Kami menciptakan cara baru meminjam langsung dari pemberi pinjaman. Tanpa escrow dan tanpa perantara. Kamu meminjam',
+   'We created a new kind of Moo-lender to Borrower experience. There is no escrow and no middle-man. You borrow':
+      'Kami menciptakan cara baru meminjam langsung dari moo-lender. Tanpa escrow dan tanpa perantara. Kamu meminjam',
    'directly from other users and build your credit score in the process.': 'langsung dari pengguna lain sambil membangun skor kreditmu.',
    Background: 'Latar belakang',
 
    // src/views/landing/sections/FinancialInclusionSection.tsx
    'POWER TOOLS FOR FINANCIAL INCLUSION': 'ALAT ANDAL UNTUK INKLUSI KEUANGAN',
    'BEST WAY TO BUILD CREDIT': 'CARA TERBAIK MEMBANGUN KREDIT',
-   'Direct Lender-to-Borrower $15 microloans. Unlock more credit when you repay.':
-      'Pinjaman mikro $15 langsung dari pemberi pinjaman ke peminjam. Buka limit kredit lebih besar saat kamu membayar kembali.',
+   'Direct Moo-lender-to-Borrower $15 microloans. Unlock more credit when you repay.':
+      'Pinjaman mikro $15 langsung dari moo-lender ke peminjam. Buka limit kredit lebih besar saat kamu membayar kembali.',
    'CHEAPER LOANS': 'PINJAMAN LEBIH MURAH',
    'Enjoy lower rates as your credit score improves': 'Nikmati bunga lebih rendah seiring skor kreditmu membaik',
    'MICRO-LOAN MANAGEMENT': 'KELOLA PINJAMAN MIKRO',
@@ -143,7 +143,7 @@ export const indonesianCoverageLanding: Record<string, string> = {
    'Moodeng Loans': 'Pinjaman Moodeng',
    'Competitive Rates': 'Bunga kompetitif',
    'No Collateral Needed': 'Tanpa jaminan',
-   'Access Lenders Globally in $': 'Akses pemberi pinjaman global dalam $',
+   'Access Moo-lenders Globally in $': 'Akses moo-lender global dalam $',
    'Mdi cross circle': 'Ikon silang',
 
    // src/views/landing/sections/WhyLendSection.tsx
@@ -188,7 +188,7 @@ export const indonesianCoverageLanding: Record<string, string> = {
    'As a lender it is cool to see it’s on-chain only. I gave it a try and threw some money on some people with interesting stories. Happy to help them! Getting paid back is a plus too.':
       'Sebagai pemberi pinjaman, keren rasanya semuanya on-chain. Aku mencoba dan meminjamkan sedikit uang ke beberapa orang dengan cerita yang menarik. Senang bisa membantu! Uangnya kembali juga, itu bonus.',
    'Username: CryptoLendingPro18': 'Nama pengguna: CryptoLendingPro18',
-   'Active Lender': 'Pemberi Pinjaman Aktif',
+   'Active Moo-lender': 'Moo-lender Aktif',
    'I was worried if it was a meme. But, because there’s no middle-man I figured since they can’t touch the money, I will give it a try. Happy it works! Now I am building credit now.':
       'Awalnya aku khawatir ini cuma meme. Tapi karena tidak ada perantara, mereka tidak bisa menyentuh uangnya, jadi aku coba. Senang ternyata berhasil! Sekarang aku sedang membangun kredit.',
    'Username: GlobalStudentDreams2005': 'Nama pengguna: GlobalStudentDreams2005',
@@ -219,8 +219,8 @@ export const indonesianCoverageLanding: Record<string, string> = {
       'Verifikasi identitas membantu memastikan ada satu orang nyata di balik setiap akun peminjam.',
    'Verification is a trust signal, not a loan guarantee.': 'Verifikasi adalah sinyal kepercayaan, bukan jaminan pinjaman.',
    'Verified first': 'Terverifikasi dulu',
-   'Borrowers complete a quick ID + selfie check, or verify with World ID, before they can request loans. That gives lenders a real-person signal, and the ID is checked by our verification partner, never stored by Moodeng.':
-      'Peminjam menyelesaikan cek ID + selfie singkat, atau verifikasi dengan World ID, sebelum bisa mengajukan pinjaman. Pemberi pinjaman jadi tahu bahwa peminjamnya orang sungguhan, dan ID diperiksa oleh mitra verifikasi kami, tidak pernah disimpan oleh Moodeng.',
+   'Borrowers complete a quick ID + selfie check, or verify with World ID, before they can request loans. That gives moo-lenders a real-person signal, and the ID is checked by our verification partner, never stored by Moodeng.':
+      'Peminjam menyelesaikan cek ID + selfie singkat, atau verifikasi dengan World ID, sebelum bisa mengajukan pinjaman. Moo-lender jadi tahu bahwa peminjamnya orang sungguhan, dan ID diperiksa oleh mitra verifikasi kami, tidak pernah disimpan oleh Moodeng.',
    'Borrowers who already use World App can verify with World ID instead of the ID + selfie check.':
       'Peminjam yang sudah memakai World App bisa verifikasi dengan World ID sebagai pengganti cek ID + selfie.',
    'We are starting with Filipinos and Southeast Asians working overseas. Small loans can cover urgent gaps and help borrowers build credit independently.':

@@ -119,7 +119,7 @@ const looksLikeWord = (word: string): boolean => {
    return trigramVariety(letters.toLowerCase()) >= 0.5;
 };
 
-const NOT_ENGLISH_HINT = 'Please write your reason in English — the lenders reading it don’t speak Tagalog.';
+const NOT_ENGLISH_HINT = 'Please write your reason in English — the moo-lenders reading it don’t speak Tagalog.';
 
 /**
  * Language check on its own, for the other free text lenders read (the "describe your
@@ -175,13 +175,13 @@ export const checkReasonQuality = (rawReason: string): ReasonQuality => {
 
    const oddWords = words.filter((word) => !looksLikeWord(word)).length;
    if (oddWords / words.length > 0.34) {
-      return { ok: false, hint: "This doesn't look like real words yet — tell lenders what the loan is for.", code: 'not-words' };
+      return { ok: false, hint: "This doesn't look like real words yet — tell moo-lenders what the loan is for.", code: 'not-words' };
    }
 
    // "aaaa aaaa aaaa aaaa" and other filler that pads the counter without saying anything.
    const distinctWords = new Set(normalized).size;
    if (words.length >= 6 && distinctWords / words.length < 0.4) {
-      return { ok: false, hint: 'Try saying it once, clearly — repeating words does not help lenders.', code: 'repeated' };
+      return { ok: false, hint: 'Try saying it once, clearly — repeating words does not help moo-lenders.', code: 'repeated' };
    }
 
    // One unmistakable marker, or two that could each be an English accident. Taglish clears

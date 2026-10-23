@@ -254,7 +254,7 @@ export const privacySections: LegalSection[] = [
       bullets: [
          'to create and secure your account and let you sign in',
          'to verify your identity and prevent fraud, duplicate accounts, and money laundering',
-         'to review loan requests, set credit limits, and show lenders relevant borrower information',
+         'to review loan requests, set credit limits, and show moo-lenders relevant borrower information',
          'to send loans, process repayments, and send due-date reminders and account notices through email, SMS, push notifications, Messenger, Telegram, or WhatsApp',
          'to run lessons, quizzes, prizes, and referral programs',
          'to answer support requests',
@@ -275,7 +275,7 @@ export const privacySections: LegalSection[] = [
       title: 'How we share information',
       paragraphs: ['We do not sell your personal information, and we do not share it for third-party advertising. We share it only as follows:'],
       bullets: [
-         'Lenders: when you request a loan, lenders can see your display name, profile, loan request, and Moodeng repayment history. They do not see your ID documents or contact details.',
+         'Moo-lenders: when you request a loan, moo-lenders can see your display name, profile, loan request, and Moodeng repayment history. They do not see your ID documents or contact details.',
          'Service providers who work for us under contract, including cloud hosting and database providers, our wallet provider, identity verification and anti-fraud providers, payment, on-ramp, and exchange partners, analytics, email and SMS providers, messaging platforms (such as Meta Messenger, WhatsApp, and Telegram), video call and scheduling tools, and AI service providers. They may use the information only to provide their service to us.',
          'Sign-in providers, only to complete a sign-in you start.',
          'Authorities, when the law requires it or to protect the safety and rights of our users, the public, or Moodeng.',

@@ -13,7 +13,7 @@ const solutionPoints = [
    },
    {
       title: 'Transparent loan behavior',
-      body: 'Lenders can review onchain repayment signals instead of starting from zero.'
+      body: 'Moo-lenders can review onchain repayment signals instead of starting from zero.'
    },
    {
       title: 'Small loans, real signal',

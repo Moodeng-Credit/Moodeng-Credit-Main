@@ -710,7 +710,7 @@ export default function Repay() {
            // apply, with the ID check at the end of the request) — same as everywhere else.
            {
               actionLabel: journey.cta,
-              body: `${journey.body} Repayments will show here after a lender funds your first loan.`,
+              body: `${journey.body} Repayments will show here after a moo-lender funds your first loan.`,
               onAction: journey.go,
               title: journey.onboarding && journey.step ? `Step ${journey.step} of 3: ${journey.title}` : journey.title
            }
@@ -723,7 +723,7 @@ export default function Repay() {
                }
              : {
                   actionLabel: 'Request a loan',
-                  body: 'Your repayment activity will appear here once a lender funds your first loan.',
+                  body: 'Your repayment activity will appear here once a moo-lender funds your first loan.',
                   onAction: () => navigate('/request-board', { state: { openLoanRequest: true } }),
                   title: 'No repayments yet'
                }
@@ -989,7 +989,7 @@ export default function Repay() {
          if (!selectedLoan.lenderWallet?.trim()) {
             showToast(
                TOAST_TYPES.ERROR,
-               'Lender wallet missing',
+               'Moo-lender wallet missing',
                "We can't find where to send this repayment. Please contact support and we'll sort it out."
             );
             return;
@@ -2189,7 +2189,7 @@ export default function Repay() {
                <section className="flex min-h-[430px] flex-col items-center justify-center px-6 text-center">
                   <h2 className="text-md-h5 font-semibold text-[#040033]">{emptyRepayState?.title ?? 'No repayments yet'}</h2>
                   <p className="mt-3 max-w-[320px] text-md-b2 font-medium leading-[21px] text-md-neutral-1000">
-                     {emptyRepayState?.body ?? 'Your repayment activity will appear here once a lender funds your first loan.'}
+                     {emptyRepayState?.body ?? 'Your repayment activity will appear here once a moo-lender funds your first loan.'}
                   </p>
                   {emptyRepayState?.actionLabel && emptyRepayState.onAction ? (
                      <button

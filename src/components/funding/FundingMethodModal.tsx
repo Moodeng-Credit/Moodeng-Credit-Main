@@ -241,7 +241,7 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
                      </div>
                      <p className="mt-1 text-sm text-gray-600">
                         Fund through the LoanManager contract. This creates a Loan Note and lets Moodeng recover liquidity later when a
-                        lender funds this same loan.
+                        moo-lender funds this same loan.
                      </p>
                   </button>
 
@@ -290,10 +290,10 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
                   <div className="rounded-lg bg-[#0052FF]/5 p-3 text-xs text-gray-600">
                      <p>
                         A Loan Note (NFT) is minted to Moodeng and listed at the <strong>sale price (defaults to principal)</strong> so a
-                        lender can later refill this capital by buying the repayment rights from Moodeng.
+                        moo-lender can later refill this capital by buying the repayment rights from Moodeng.
                      </p>
                      <p className="mt-1">
-                        Expected future lender upside: <strong>{upside.toLocaleString()} USDC</strong> (total owed − sale price)
+                        Expected future moo-lender upside: <strong>{upside.toLocaleString()} USDC</strong> (total owed − sale price)
                      </p>
                   </div>
 

@@ -118,7 +118,7 @@ function TransactionRow({ loan, counterpartyName, counterpartyAvatar, variant, s
    const amountColor = showReceived ? (status === 'DEFAULT' ? 'text-md-red-500' : 'text-md-green-800') : 'text-md-primary-2000';
    const amountPrefix = showReceived ? '+' : '';
    const counterpartyLabel = isBorrower
-      ? (isFunded ? `Lent by ${counterpartyName}` : 'Awaiting lender')
+      ? (isFunded ? `Lent by ${counterpartyName}` : 'Awaiting moo-lender')
       : `Borrowed by ${counterpartyName}`;
 
    const Content = (

@@ -99,26 +99,26 @@ export const filipinoCoverageF: Record<string, string> = {
    // src/components/ExpiredLoanRequestNotifier.tsx
    'Loan request expired': 'Nag-expire ang loan request',
    'Loan requests expired': 'Nag-expire ang mga loan request',
-   'Your 15 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'Nag-expire ang 15 USDC na request mo bago ito napondohan. Makipag-ugnayan sa support kung kailangan mo ng tulong para makahanap ng lender o magpasya kung magpo-post ulit.',
-   'Your 20 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'Nag-expire ang 20 USDC na request mo bago ito napondohan. Makipag-ugnayan sa support kung kailangan mo ng tulong para makahanap ng lender o magpasya kung magpo-post ulit.',
-   'Your 40 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'Nag-expire ang 40 USDC na request mo bago ito napondohan. Makipag-ugnayan sa support kung kailangan mo ng tulong para makahanap ng lender o magpasya kung magpo-post ulit.',
-   'Your 60 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'Nag-expire ang 60 USDC na request mo bago ito napondohan. Makipag-ugnayan sa support kung kailangan mo ng tulong para makahanap ng lender o magpasya kung magpo-post ulit.',
-   'Your 80 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'Nag-expire ang 80 USDC na request mo bago ito napondohan. Makipag-ugnayan sa support kung kailangan mo ng tulong para makahanap ng lender o magpasya kung magpo-post ulit.',
-   'Your 100 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'Nag-expire ang 100 USDC na request mo bago ito napondohan. Makipag-ugnayan sa support kung kailangan mo ng tulong para makahanap ng lender o magpasya kung magpo-post ulit.',
-   'Your 120 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'Nag-expire ang 120 USDC na request mo bago ito napondohan. Makipag-ugnayan sa support kung kailangan mo ng tulong para makahanap ng lender o magpasya kung magpo-post ulit.',
-   'Your 140 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'Nag-expire ang 140 USDC na request mo bago ito napondohan. Makipag-ugnayan sa support kung kailangan mo ng tulong para makahanap ng lender o magpasya kung magpo-post ulit.',
-   '2 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      '2 loan request ang nag-expire bago napondohan. Makipag-ugnayan sa support kung kailangan mo ng tulong para makahanap ng lender o magpasya kung magpo-post ulit.',
-   '3 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      '3 loan request ang nag-expire bago napondohan. Makipag-ugnayan sa support kung kailangan mo ng tulong para makahanap ng lender o magpasya kung magpo-post ulit.',
+   'Your 15 USDC request expired before it was funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'Nag-expire ang 15 USDC na request mo bago ito napondohan. Makipag-ugnayan sa support kung kailangan mo ng tulong para makahanap ng moo-lender o magpasya kung magpo-post ulit.',
+   'Your 20 USDC request expired before it was funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'Nag-expire ang 20 USDC na request mo bago ito napondohan. Makipag-ugnayan sa support kung kailangan mo ng tulong para makahanap ng moo-lender o magpasya kung magpo-post ulit.',
+   'Your 40 USDC request expired before it was funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'Nag-expire ang 40 USDC na request mo bago ito napondohan. Makipag-ugnayan sa support kung kailangan mo ng tulong para makahanap ng moo-lender o magpasya kung magpo-post ulit.',
+   'Your 60 USDC request expired before it was funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'Nag-expire ang 60 USDC na request mo bago ito napondohan. Makipag-ugnayan sa support kung kailangan mo ng tulong para makahanap ng moo-lender o magpasya kung magpo-post ulit.',
+   'Your 80 USDC request expired before it was funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'Nag-expire ang 80 USDC na request mo bago ito napondohan. Makipag-ugnayan sa support kung kailangan mo ng tulong para makahanap ng moo-lender o magpasya kung magpo-post ulit.',
+   'Your 100 USDC request expired before it was funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'Nag-expire ang 100 USDC na request mo bago ito napondohan. Makipag-ugnayan sa support kung kailangan mo ng tulong para makahanap ng moo-lender o magpasya kung magpo-post ulit.',
+   'Your 120 USDC request expired before it was funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'Nag-expire ang 120 USDC na request mo bago ito napondohan. Makipag-ugnayan sa support kung kailangan mo ng tulong para makahanap ng moo-lender o magpasya kung magpo-post ulit.',
+   'Your 140 USDC request expired before it was funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'Nag-expire ang 140 USDC na request mo bago ito napondohan. Makipag-ugnayan sa support kung kailangan mo ng tulong para makahanap ng moo-lender o magpasya kung magpo-post ulit.',
+   '2 loan requests expired before they were funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      '2 loan request ang nag-expire bago napondohan. Makipag-ugnayan sa support kung kailangan mo ng tulong para makahanap ng moo-lender o magpasya kung magpo-post ulit.',
+   '3 loan requests expired before they were funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      '3 loan request ang nag-expire bago napondohan. Makipag-ugnayan sa support kung kailangan mo ng tulong para makahanap ng moo-lender o magpasya kung magpo-post ulit.',
 
    // src/components/LineLoginButton.tsx
    'Sign Up with LINE': 'Mag-sign up gamit ang LINE',
@@ -138,7 +138,7 @@ export const filipinoCoverageF: Record<string, string> = {
    'Review Repayment Details': 'Tingnan ang detalye ng bayad',
    'Congratulations for Verifying.': 'Congrats, verified ka na.',
    'Continue Loan Request': 'Ituloy ang loan request',
-   'Your request is now live for lenders to review.': 'Live na ang request mo para masuri ng mga lender.',
+   'Your request is now live for moo-lenders to review.': 'Live na ang request mo para masuri ng mga moo-lender.',
    'View Active Loans': 'Tingnan ang mga active loan',
    'We were unable to process payment for your funding.': 'Hindi namin ma-process ang bayad para sa pagpopondo mo.',
    'Try Again?': 'Subukan ulit?',
@@ -235,10 +235,10 @@ export const filipinoCoverageF: Record<string, string> = {
    // src/components/verification/VerifiedCelebrationNotifier.tsx
    'Manual review complete — you’re verified!': 'Tapos na ang manual review — verified ka na!',
    'Your ID is verified!': 'Verified na ang ID mo!',
-   'Well done! Our reviewers confirmed your documents. You now have full access — start building trust with lenders.':
-      'Galing! Kinumpirma ng mga reviewer namin ang mga dokumento mo. May full access ka na — simulan nang bumuo ng tiwala sa mga lender.',
-   'Well done! Your identity is confirmed. You now have full access — start building trust with lenders.':
-      'Galing! Kumpirmado na ang identity mo. May full access ka na — simulan nang bumuo ng tiwala sa mga lender.',
+   'Well done! Our reviewers confirmed your documents. You now have full access — start building trust with moo-lenders.':
+      'Galing! Kinumpirma ng mga reviewer namin ang mga dokumento mo. May full access ka na — simulan nang bumuo ng tiwala sa mga moo-lender.',
+   'Well done! Your identity is confirmed. You now have full access — start building trust with moo-lenders.':
+      'Galing! Kumpirmado na ang identity mo. May full access ka na — simulan nang bumuo ng tiwala sa mga moo-lender.',
 
    // src/components/verification/VerifyYourselfModal.tsx
    'NFC-enabled (biometric) passport': 'NFC-enabled (biometric) na passport',
@@ -388,14 +388,14 @@ export const filipinoCoverageF: Record<string, string> = {
    'You can make another loan request in about': 'Puwede kang gumawa ulit ng loan request sa loob ng mga',
 
    // src/lib/reasonQuality.ts
-   'Please write your reason in English — the lenders reading it don’t speak Tagalog.':
-      'Isulat ang dahilan mo sa English — hindi nakakaintindi ng Tagalog ang mga lender na nagbabasa nito.',
+   'Please write your reason in English — the moo-lenders reading it don’t speak Tagalog.':
+      'Isulat ang dahilan mo sa English — hindi nakakaintindi ng Tagalog ang mga moo-lender na nagbabasa nito.',
    'Write it as a sentence — what the money is for and when you get paid.':
       'Isulat ito bilang pangungusap — kung para saan ang pera at kailan ka sumasahod.',
-   "This doesn't look like real words yet — tell lenders what the loan is for.":
-      'Mukhang hindi pa ito totoong mga salita — sabihin sa mga lender kung para saan ang loan.',
-   'Try saying it once, clearly — repeating words does not help lenders.':
-      'Sabihin ito nang isang beses at malinaw — hindi nakakatulong sa mga lender ang paulit-ulit na salita.',
+   "This doesn't look like real words yet — tell moo-lenders what the loan is for.":
+      'Mukhang hindi pa ito totoong mga salita — sabihin sa mga moo-lender kung para saan ang loan.',
+   'Try saying it once, clearly — repeating words does not help moo-lenders.':
+      'Sabihin ito nang isang beses at malinaw — hindi nakakatulong sa mga moo-lender ang paulit-ulit na salita.',
 
    // src/lib/schemas/fields.ts
    'Username is required': 'Kailangan ang username',
@@ -489,7 +489,7 @@ export const filipinoCoverageF: Record<string, string> = {
    'Repay a loan on time': 'Magbayad ng loan on time',
    'Build a 2-loan on-time streak': 'Magbayad on time ng 2 loan nang sunod-sunod',
    'Repay a full-limit credit-builder': 'Bayaran ang isang full-limit na credit-building loan',
-   'Borrow from 2 different lenders': 'Humiram sa 2 magkaibang lender',
+   'Borrow from 2 different moo-lenders': 'Humiram sa 2 magkaibang moo-lender',
    'Repay $100 total': 'Magbayad ng $100 sa kabuuan',
    'Reach Credit Level 3': 'Umabot sa Credit Level 3',
    'Become a trusted borrower candidate': 'Maging kandidatong pinagkakatiwalaang borrower',
@@ -574,10 +574,10 @@ export const filipinoCoverageF: Record<string, string> = {
    'Amount decides': 'Halaga ang nagpapasya',
    Browse: 'Tumingin',
    'To skip repayment': 'Para hindi na magbayad',
-   'To hide from lenders': 'Para magtago sa mga lender',
+   'To hide from moo-lenders': 'Para magtago sa mga moo-lender',
    'To hide repayment history': 'Para itago ang history ng pagbabayad',
    'To skip World ID': 'Para laktawan ang World ID',
-   'A lender loan': 'Loan ng lender',
+   'A moo-lender loan': 'Loan ng moo-lender',
    'Already repaid': 'Bayad na',
    'Changing names often': 'Madalas na pagpapalit ng pangalan',
    'Ignoring the request board': 'Hindi pagpansin sa request board',
@@ -603,10 +603,10 @@ export const filipinoCoverageF: Record<string, string> = {
       'Nakakuha ka ng 4 sa 5. Mag-log in at tapusin ang borrower flow para magpatuloy.',
    'You scored 5 of 5. Log in and finish the borrower flow to keep going.':
       'Nakakuha ka ng 5 sa 5. Mag-log in at tapusin ang borrower flow para magpatuloy.',
-   'You scored 4 of 5. Log in and finish the lender flow to keep going.':
-      'Nakakuha ka ng 4 sa 5. Mag-log in at tapusin ang lender flow para magpatuloy.',
-   'You scored 5 of 5. Log in and finish the lender flow to keep going.':
-      'Nakakuha ka ng 5 sa 5. Mag-log in at tapusin ang lender flow para magpatuloy.',
+   'You scored 4 of 5. Log in and finish the moo-lender flow to keep going.':
+      'Nakakuha ka ng 4 sa 5. Mag-log in at tapusin ang moo-lender flow para magpatuloy.',
+   'You scored 5 of 5. Log in and finish the moo-lender flow to keep going.':
+      'Nakakuha ka ng 5 sa 5. Mag-log in at tapusin ang moo-lender flow para magpatuloy.',
    'You scored 0 of 5. Score 4 of 5 to unlock Academy score.': 'Nakakuha ka ng 0 sa 5. Kumuha ng 4 sa 5 para ma-unlock ang Academy score.',
    'You scored 1 of 5. Score 4 of 5 to unlock Academy score.': 'Nakakuha ka ng 1 sa 5. Kumuha ng 4 sa 5 para ma-unlock ang Academy score.',
    'You scored 2 of 5. Score 4 of 5 to unlock Academy score.': 'Nakakuha ka ng 2 sa 5. Kumuha ng 4 sa 5 para ma-unlock ang Academy score.',
@@ -788,7 +788,7 @@ export const filipinoCoverageF: Record<string, string> = {
    '· repay on time to resume': '· magbayad on time para magpatuloy',
    'left to LV.': 'na lang para sa LV.',
    'Repay a full-limit loan': 'Magbayad ng full-limit loan',
-   'Borrow from 2 lenders': 'Humiram sa 2 lender',
+   'Borrow from 2 moo-lenders': 'Humiram sa 2 moo-lender',
    'Become a trusted borrower': 'Maging trusted na borrower',
    // Added 2026-10-01: English that changed after the translation pass (full-limit rule, Coins.ph pause).
    "Repay a full-limit loan to unlock the next level.": "Bayaran nang buo ang full-limit loan para ma-unlock ang susunod na level.",

@@ -28,7 +28,7 @@ const SUPPORT_CONTACT_COPY: Record<SupportContactIssue, SupportContactConfig> = 
    loan_request_expired: {
       title: 'Support contacts',
       description:
-         'Here are support contacts for your expired loan request. We can help you connect with a lender or decide whether to post again.',
+         'Here are support contacts for your expired loan request. We can help you connect with a moo-lender or decide whether to post again.',
       telegramUrl: LOAN_REQUEST_EXPIRED_SUPPORT_URL
    },
    world_id_verification: {

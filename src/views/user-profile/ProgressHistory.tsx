@@ -327,7 +327,7 @@ export function buildBorrowerTimelineEvents(borrower: User, loans: Loan[]): Borr
          id: `${loan.id}-funded`,
          type: classification === 'credit' ? 'credit_building_loan_funded' : 'trust_building_loan_funded',
          title: classification === 'credit' ? 'Credit Building Loan Funded' : 'Trust Building Loan Funded',
-         description: `Loan received: $${formatNumber(loanAmount)}${loan.lenderUser ? ' from lender.' : '.'}`,
+         description: `Loan received: $${formatNumber(loanAmount)}${loan.lenderUser ? ' from moo-lender.' : '.'}`,
          date: fundedDate,
          amount: loanAmount,
          tone: 'blue'
@@ -337,8 +337,8 @@ export function buildBorrowerTimelineEvents(borrower: User, loans: Loan[]): Borr
          events.push({
             id: `${loan.id}-repeat-lender`,
             type: 'repeat_lender_relationship',
-            title: 'Repeat Lender Relationship',
-            description: 'Borrowed again from an existing lender.',
+            title: 'Repeat Moo-lender Relationship',
+            description: 'Borrowed again from an existing moo-lender.',
             date: fundedDate,
             badgeLabel: 'Activity',
             badgeTone: 'blue',

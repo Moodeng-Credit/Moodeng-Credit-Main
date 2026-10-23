@@ -170,7 +170,7 @@ export default function TeamPage() {
                      Co-Founders
                   </h1>
                   <p className="mx-auto mt-md-2 max-w-[660px] text-md-b2 font-medium leading-relaxed text-[#fff9e8] md:text-md-h5">
-                     Building a portable trust layer for borrowers who deserve fair credit and lenders who want transparent impact.
+                     Building a portable trust layer for borrowers who deserve fair credit and moo-lenders who want transparent impact.
                   </p>
                   <div className="mx-auto mt-md-4 h-2 w-full max-w-[720px] rounded-t-md-pill bg-[#f4d756]" />
                </header>

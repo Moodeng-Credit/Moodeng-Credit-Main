@@ -100,8 +100,8 @@ export function VerifiedCelebrationNotifier() {
                </p>
                <p className="text-md-neutral-700 text-md-b3">
                   {celebration === 'review'
-                     ? 'Well done! Our reviewers confirmed your documents. You now have full access — start building trust with lenders.'
-                     : 'Well done! Your identity is confirmed. You now have full access — start building trust with lenders.'}
+                     ? 'Well done! Our reviewers confirmed your documents. You now have full access — start building trust with moo-lenders.'
+                     : 'Well done! Your identity is confirmed. You now have full access — start building trust with moo-lenders.'}
                </p>
             </div>
             <div className="flex flex-col gap-2 w-full">

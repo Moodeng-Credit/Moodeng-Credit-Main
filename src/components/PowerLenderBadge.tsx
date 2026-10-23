@@ -24,7 +24,7 @@ export default function PowerLenderBadge({ className = '' }: { className?: strin
             }}
          />
          <span className="text-[11px] font-bold uppercase tracking-[0.06em] text-[#5a3a0a] whitespace-nowrap">
-            Power Lender
+            Power Moo-lender
          </span>
       </span>
    );

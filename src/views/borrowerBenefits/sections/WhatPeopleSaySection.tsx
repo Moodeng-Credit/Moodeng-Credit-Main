@@ -25,7 +25,9 @@ export default function WhatPeopleSaySection(): JSX.Element {
          <div className="flex flex-col max-md:max-w-full">
             <div className="flex flex-col max-w-[760px] text-neutral-100">
                <div className="text-md-b2 font-semibold uppercase tracking-[0.16em] text-md-primary-300">What people are saying</div>
-               <h2 className="mt-4 text-5xl font-semibold leading-tight max-md:text-4xl">Borrowers and lenders describe the difference</h2>
+               <h2 className="mt-4 text-5xl font-semibold leading-tight max-md:text-4xl">
+                  Borrowers and moo-lenders describe the difference
+               </h2>
                <p className="mt-5 text-xl leading-8 text-violet-100 max-md:text-md-b1">
                   Hear directly from borrowers who have used Moodeng when short-term support mattered.
                </p>

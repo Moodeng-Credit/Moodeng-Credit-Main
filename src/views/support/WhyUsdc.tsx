@@ -58,7 +58,7 @@ const useCases = [
       definition:
          'Using USDC the way you use cash or a bank transfer — paying people, sending money across borders, or cashing out to your local currency.',
       examples: ['Send money to family abroad in seconds', 'Pay a merchant that accepts stablecoins', 'Cash out to a bank or exchange'],
-      moodeng: 'On Moodeng, this is how loans work: a lender sends you USDC, and you repay in USDC.'
+      moodeng: 'On Moodeng, this is how loans work: a moo-lender sends you USDC, and you repay in USDC.'
    },
    {
       tone: 'defi',

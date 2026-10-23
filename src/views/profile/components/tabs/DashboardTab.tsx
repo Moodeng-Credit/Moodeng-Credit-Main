@@ -29,7 +29,7 @@ const DashboardTab = ({ onPayLoansNow }: DashboardTabProps) => {
 
                <div className="flex items-center justify-between gap-4 flex-wrap">
                   <div className="flex-1 max-w-[280px] min-w-[200px]">
-                     <div className="font-bold text-xs text-[#374151] select-none mb-2">Lender Diversity Score</div>
+                     <div className="font-bold text-xs text-[#374151] select-none mb-2">Moo-lender Diversity Score</div>
                      <div className="flex items-center space-x-3">
                         <div className="w-full h-5 rounded-md bg-[#d1d5db] overflow-hidden">
                            <div

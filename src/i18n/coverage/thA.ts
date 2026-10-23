@@ -141,7 +141,7 @@ export const thaiCoverageA: Record<string, string> = {
    'Send reset code': 'ส่งรหัสรีเซ็ต',
 
    // src/app/lender/request-board/page.tsx
-   'Lender Request Board': 'กระดานคำขอสำหรับผู้ให้กู้',
+   'Moo-lender Request Board': 'กระดานคำขอสำหรับ Moo-lender',
 
    // src/app/mfa-challenge/page.tsx
    "Verify it's you": 'ยืนยันว่าเป็นคุณ',
@@ -194,8 +194,8 @@ export const thaiCoverageA: Record<string, string> = {
 
    // src/app/team/page.tsx
    'Co-Founders': 'ผู้ร่วมก่อตั้ง',
-   'Building a portable trust layer for borrowers who deserve fair credit and lenders who want transparent impact.':
-      'เรากำลังสร้างเลเยอร์ความน่าเชื่อถือที่พกพาได้ สำหรับผู้ยืมที่ควรได้รับเครดิตอย่างเป็นธรรม และผู้ให้กู้ที่ต้องการเห็นผลลัพธ์อย่างโปร่งใส',
+   'Building a portable trust layer for borrowers who deserve fair credit and moo-lenders who want transparent impact.':
+      'เรากำลังสร้างเลเยอร์ความน่าเชื่อถือที่พกพาได้ สำหรับผู้ยืมที่ควรได้รับเครดิตอย่างเป็นธรรม และ Moo-lender ที่ต้องการเห็นผลลัพธ์อย่างโปร่งใส',
    'LinkedIn Profile': 'โปรไฟล์ LinkedIn',
    Website: 'เว็บไซต์',
    Advisors: 'ที่ปรึกษา',
@@ -410,7 +410,7 @@ export const thaiCoverageA: Record<string, string> = {
    'Coming soon': 'เร็ว ๆ นี้',
 
    // src/components/PowerLenderBadge.tsx
-   'Power Lender': 'ผู้ให้กู้ชั้นนำ',
+   'Power Moo-lender': 'Moo-lender ชั้นนำ',
 
    // src/components/RepayInAppBrowserGate.tsx
    'Open Moodeng in your browser to repay': 'เปิด Moodeng ในเบราว์เซอร์ของคุณเพื่อชำระคืน',
@@ -545,8 +545,8 @@ export const thaiCoverageA: Record<string, string> = {
    'Support contacts': 'ช่องทางติดต่อฝ่ายช่วยเหลือ',
    'Here are support contacts. Choose a channel and we will help you with your Moodeng account.':
       'นี่คือช่องทางติดต่อฝ่ายช่วยเหลือ เลือกช่องทางแล้วเราจะช่วยดูแลบัญชี Moodeng ของคุณ',
-   'Here are support contacts for your expired loan request. We can help you connect with a lender or decide whether to post again.':
-      'นี่คือช่องทางติดต่อฝ่ายช่วยเหลือสำหรับคำขอเงินกู้ที่หมดอายุของคุณ เราสามารถช่วยให้คุณติดต่อกับผู้ให้กู้หรือช่วยตัดสินใจว่าจะโพสต์คำขอใหม่หรือไม่',
+   'Here are support contacts for your expired loan request. We can help you connect with a moo-lender or decide whether to post again.':
+      'นี่คือช่องทางติดต่อฝ่ายช่วยเหลือสำหรับคำขอเงินกู้ที่หมดอายุของคุณ เราสามารถช่วยให้คุณติดต่อกับ Moo-lender หรือช่วยตัดสินใจว่าจะโพสต์คำขอใหม่หรือไม่',
    'Here are support contacts for World ID verification if your status did not update after completing World ID.':
       'นี่คือช่องทางติดต่อฝ่ายช่วยเหลือสำหรับการยืนยันตัวตนด้วย World ID หากสถานะของคุณไม่อัปเดตหลังจากทำ World ID เสร็จแล้ว',
    'Close support contacts': 'ปิดช่องทางติดต่อฝ่ายช่วยเหลือ',
@@ -652,7 +652,7 @@ export const thaiCoverageA: Record<string, string> = {
    'RULES OF REPAYING': 'กฎการชำระคืน',
    'Moodeng offers flexible, blockchain-based microloans. Repay responsibly to build your credit score.':
       'Moodeng มอบสินเชื่อรายย่อยบนบล็อกเชนที่ยืดหยุ่น ชำระคืนอย่างมีความรับผิดชอบเพื่อสร้างคะแนนเครดิตของคุณ',
-   'You must pay the lender directly by hitting the repay button.': 'คุณต้องชำระเงินให้ผู้ให้กู้โดยตรงด้วยการกดปุ่มชำระคืน',
+   'You must pay the moo-lender directly by hitting the repay button.': 'คุณต้องชำระเงินให้ Moo-lender โดยตรงด้วยการกดปุ่มชำระคืน',
    'UP-TO-YOU': 'ขึ้นอยู่กับคุณ',
    'Flexible repayments: Any amount up to deadline': 'ชำระคืนได้ยืดหยุ่น จำนวนเท่าไรก็ได้ก่อนถึงกำหนด',
    'Build credit score with each on-time payment': 'สร้างคะแนนเครดิตด้วยการชำระตรงเวลาทุกครั้ง',
@@ -719,8 +719,8 @@ export const thaiCoverageA: Record<string, string> = {
    'See How Growth Works': 'ดูวิธีการเติบโต',
    'Mecha says': 'Mecha พูดว่า',
    'How to use Moodeng Credit': 'วิธีใช้ Moodeng Credit',
-   'A simple walkthrough of the borrower flow. Start here if you want to know what to click, what lenders see, and how repayment grows your limit.':
-      'คำแนะนำทีละขั้นตอนสำหรับผู้ยืม เริ่มที่นี่หากคุณต้องการรู้ว่าต้องกดอะไร ผู้ให้กู้เห็นอะไรบ้าง และการชำระคืนช่วยเพิ่มวงเงินของคุณอย่างไร',
+   'A simple walkthrough of the borrower flow. Start here if you want to know what to click, what moo-lenders see, and how repayment grows your limit.':
+      'คำแนะนำทีละขั้นตอนสำหรับผู้ยืม เริ่มที่นี่หากคุณต้องการรู้ว่าต้องกดอะไร Moo-lender เห็นอะไรบ้าง และการชำระคืนช่วยเพิ่มวงเงินของคุณอย่างไร',
    'Tutorial Video': 'วิดีโอสอนการใช้งาน',
    'Watch the quick Moodeng walkthrough.': 'ดูวิดีโอแนะนำ Moodeng แบบย่อ',
    'I am Mecha. I will walk you through Moodeng step by step.': 'ฉันคือ Mecha ฉันจะแนะนำคุณเกี่ยวกับ Moodeng ทีละขั้นตอน',
@@ -735,20 +735,20 @@ export const thaiCoverageA: Record<string, string> = {
    'Create your account': 'สร้างบัญชีของคุณ',
    'Sign up with email so Moodeng can save your borrower profile, loans, repayments, and credit progress.':
       'สมัครด้วยอีเมลเพื่อให้ Moodeng บันทึกโปรไฟล์ผู้ยืม เงินกู้ การชำระคืน และความคืบหน้าด้านเครดิตของคุณ',
-   'Verify once to prove you are unique. After that, lenders can trust that your request is tied to one real borrower.':
-      'ยืนยันตัวตนเพียงครั้งเดียวเพื่อพิสูจน์ว่าคุณไม่ซ้ำใคร หลังจากนั้นผู้ให้กู้จะมั่นใจได้ว่าคำขอของคุณผูกกับผู้ยืมจริงเพียงคนเดียว',
+   'Verify once to prove you are unique. After that, moo-lenders can trust that your request is tied to one real borrower.':
+      'ยืนยันตัวตนเพียงครั้งเดียวเพื่อพิสูจน์ว่าคุณไม่ซ้ำใคร หลังจากนั้น Moo-lender จะมั่นใจได้ว่าคำขอของคุณผูกกับผู้ยืมจริงเพียงคนเดียว',
    'Add your wallet': 'เพิ่มกระเป๋าเงินของคุณ',
-   'Set up your Instant Wallet from your Moodeng login (or connect a Base Account if you prefer), so lenders can fund loans directly there and Moodeng can track repayment history.':
-      'ตั้งค่า Instant Wallet จากการเข้าสู่ระบบ Moodeng ของคุณ (หรือเชื่อมต่อ Base Account หากต้องการ) เพื่อให้ผู้ให้กู้ปล่อยกู้เข้าตรงนั้นได้ และ Moodeng สามารถติดตามประวัติการชำระคืนได้',
+   'Set up your Instant Wallet from your Moodeng login (or connect a Base Account if you prefer), so moo-lenders can fund loans directly there and Moodeng can track repayment history.':
+      'ตั้งค่า Instant Wallet จากการเข้าสู่ระบบ Moodeng ของคุณ (หรือเชื่อมต่อ Base Account หากต้องการ) เพื่อให้ Moo-lender ปล่อยกู้เข้าตรงนั้นได้ และ Moodeng สามารถติดตามประวัติการชำระคืนได้',
    'Your amount sets the loan type': 'จำนวนเงินของคุณเป็นตัวกำหนดประเภทเงินกู้',
    'If your request is below your credit limit, it is trust-building. If it is for your full credit limit, it is credit-building.':
       'หากคำขอของคุณต่ำกว่าวงเงินกู้ ถือเป็นการสร้างความน่าเชื่อถือ หากเป็นวงเงินกู้เต็มจำนวน ถือเป็นการสร้างเครดิต',
    'Submit a loan request': 'ส่งคำขอเงินกู้',
-   'Pick your amount, choose when you will repay, and explain why you need support before posting to lenders.':
-      'เลือกจำนวนเงิน กำหนดวันที่จะชำระคืน และอธิบายเหตุผลที่คุณต้องการความช่วยเหลือ ก่อนโพสต์ให้ผู้ให้กู้เห็น',
+   'Pick your amount, choose when you will repay, and explain why you need support before posting to moo-lenders.':
+      'เลือกจำนวนเงิน กำหนดวันที่จะชำระคืน และอธิบายเหตุผลที่คุณต้องการความช่วยเหลือ ก่อนโพสต์ให้ Moo-lender เห็น',
    'Get matched on the request board': 'จับคู่กับผู้ให้กู้บนกระดานคำขอ',
-   'Your request appears on the board where lenders can review the terms and decide whether to fund it.':
-      'คำขอของคุณจะปรากฏบนกระดานคำขอ ที่ผู้ให้กู้สามารถตรวจสอบเงื่อนไขและตัดสินใจว่าจะปล่อยกู้หรือไม่',
+   'Your request appears on the board where moo-lenders can review the terms and decide whether to fund it.':
+      'คำขอของคุณจะปรากฏบนกระดานคำขอ ที่ Moo-lender สามารถตรวจสอบเงื่อนไขและตัดสินใจว่าจะปล่อยกู้หรือไม่',
    'Repay clearly': 'ชำระคืนอย่างชัดเจน',
    'Pay back the agreed amount on time. Moodeng tracks repayment progress clearly in your account.':
       'ชำระเงินตามจำนวนที่ตกลงไว้ตรงเวลา Moodeng จะติดตามความคืบหน้าการชำระคืนอย่างชัดเจนในบัญชีของคุณ',
@@ -769,8 +769,8 @@ export const thaiCoverageA: Record<string, string> = {
    'Repaying clearly and on time': 'ชำระคืนอย่างชัดเจนและตรงเวลา',
    'Nice practice request.': 'ฝึกส่งคำขอได้ดี',
    'Strong repayment move.': 'การชำระคืนที่ยอดเยี่ยม',
-   'Nice! Repaying is super important on Moodeng. On-time repayment helps your trust record, keeps lenders confident, and can unlock better borrowing limits over time.':
-      'เยี่ยม! การชำระคืนสำคัญมากบน Moodeng การชำระตรงเวลาช่วยเสริมประวัติความน่าเชื่อถือของคุณ ทำให้ผู้ให้กู้มั่นใจ และสามารถปลดล็อกวงเงินกู้ที่ดีขึ้นเมื่อเวลาผ่านไป',
+   'Nice! Repaying is super important on Moodeng. On-time repayment helps your trust record, keeps moo-lenders confident, and can unlock better borrowing limits over time.':
+      'เยี่ยม! การชำระคืนสำคัญมากบน Moodeng การชำระตรงเวลาช่วยเสริมประวัติความน่าเชื่อถือของคุณ ทำให้ Moo-lender มั่นใจ และสามารถปลดล็อกวงเงินกู้ที่ดีขึ้นเมื่อเวลาผ่านไป',
    'This is how you grow.': 'นี่คือวิธีที่คุณจะเติบโต',
    'Mecha says: full-limit loans repaid on time are how borrowers build a stronger credit record. Keep repayment clean, and your next limit can grow.':
       'Mecha บอกว่า: เงินกู้เต็มวงเงินที่ชำระคืนตรงเวลาคือวิธีที่ผู้ยืมสร้างประวัติเครดิตที่แข็งแกร่งขึ้น รักษาการชำระคืนให้สะอาด แล้ววงเงินถัดไปของคุณจะเพิ่มขึ้นได้',
@@ -808,8 +808,8 @@ export const thaiCoverageA: Record<string, string> = {
    'How it works': 'วิธีการทำงาน',
    // src/views/academy/VerifyGuide.tsx
    Money: 'เงิน',
-   'To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts out of the community, and it is what lets lenders trust the requests they fund.':
-      'เพื่อให้ Moodeng ปลอดภัยและเป็นธรรม ผู้ยืมทุกคนต้องผ่านการตรวจสอบตัวตนสั้นๆ หนึ่งครั้ง วิธีนี้ช่วยป้องกันบัญชีปลอมและบัญชีซ้ำออกจากชุมชน และทำให้ผู้ให้กู้มั่นใจในคำขอที่พวกเขาสนับสนุน',
+   'To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts out of the community, and it is what lets moo-lenders trust the requests they fund.':
+      'เพื่อให้ Moodeng ปลอดภัยและเป็นธรรม ผู้ยืมทุกคนต้องผ่านการตรวจสอบตัวตนสั้นๆ หนึ่งครั้ง วิธีนี้ช่วยป้องกันบัญชีปลอมและบัญชีซ้ำออกจากชุมชน และทำให้ Moo-lender มั่นใจในคำขอที่พวกเขาสนับสนุน',
    'The recommended route: Verify Your ID.': 'เส้นทางที่แนะนำ: ยืนยันด้วยบัตรประชาชน',
    'National ID verification is available for these countries.': 'การยืนยันด้วยบัตรประชาชนพร้อมให้บริการในประเทศเหล่านี้',
    'Pass on the first try': 'ผ่านตั้งแต่ครั้งแรก',
@@ -820,14 +820,14 @@ export const thaiCoverageA: Record<string, string> = {
       'การตรวจสอบดำเนินการโดยพันธมิตรด้านการยืนยันตัวตนที่ปลอดภัยของเรา Moodeng ได้รับเพียงผลลัพธ์ว่าคุณผ่านหรือไม่ ไม่ใช่สำเนาเอกสารของคุณ',
    'Ready to verify?': 'พร้อมยืนยันตัวตนหรือยัง',
    Read: 'อ่าน',
-   'Verification makes sure every request comes from a real, unique person. That is what keeps fake and duplicate accounts away from lenders.':
-      'การยืนยันตัวตนช่วยให้มั่นใจว่าทุกคำขอมาจากบุคคลจริงที่ไม่ซ้ำใคร นี่คือสิ่งที่ป้องกันบัญชีปลอมและบัญชีซ้ำจากผู้ให้กู้',
+   'Verification makes sure every request comes from a real, unique person. That is what keeps fake and duplicate accounts away from moo-lenders.':
+      'การยืนยันตัวตนช่วยให้มั่นใจว่าทุกคำขอมาจากบุคคลจริงที่ไม่ซ้ำใคร นี่คือสิ่งที่ป้องกันบัญชีปลอมและบัญชีซ้ำจาก Moo-lender',
    Access: 'สิทธิ์การเข้าถึง',
    'Finishing verification is what unlocks loan requests, and it is the point where you start earning Pandesal points.':
       'การยืนยันตัวตนให้เสร็จสิ้นคือสิ่งที่ปลดล็อกการขอเงินกู้ และเป็นจุดที่คุณเริ่มได้รับแต้ม Pandesal',
    Trust: 'ความน่าเชื่อถือ',
-   'Lenders are funding real people, not anonymous accounts. That confidence is what gets requests on the board funded.':
-      'ผู้ให้กู้กำลังปล่อยกู้ให้บุคคลจริง ไม่ใช่บัญชีนิรนาม ความมั่นใจนี้เองที่ทำให้คำขอบนกระดานได้รับการปล่อยกู้',
+   'Moo-lenders are funding real people, not anonymous accounts. That confidence is what gets requests on the board funded.':
+      'Moo-lender กำลังปล่อยกู้ให้บุคคลจริง ไม่ใช่บัญชีนิรนาม ความมั่นใจนี้เองที่ทำให้คำขอบนกระดานได้รับการปล่อยกู้',
    'Your physical national ID': 'บัตรประชาชนตัวจริงของคุณ',
    'The real card in hand, not a photocopy or a picture on another screen.':
       'บัตรตัวจริงในมือ ไม่ใช่สำเนาถ่ายเอกสารหรือรูปถ่ายจากหน้าจออื่น',
@@ -966,6 +966,6 @@ export const thaiCoverageA: Record<string, string> = {
    'Loan activity notifications': 'การแจ้งเตือนกิจกรรมเงินกู้',
    'Moodeng news notifications': 'การแจ้งเตือนข่าวสาร Moodeng',
    // src/components/verification/VerifyYourselfModal.tsx (ID check is the last step of a request)
-   "A one-time ID check so lenders know you're a real person — it takes about 3 minutes.":
-      'ตรวจสอบบัตรประจำตัวครั้งเดียว เพื่อให้ผู้ให้กู้รู้ว่าคุณเป็นคนจริง — ใช้เวลาประมาณ 3 นาที'
+   "A one-time ID check so moo-lenders know you're a real person — it takes about 3 minutes.":
+      'ตรวจสอบบัตรประจำตัวครั้งเดียว เพื่อให้ Moo-lender รู้ว่าคุณเป็นคนจริง — ใช้เวลาประมาณ 3 นาที'
 };

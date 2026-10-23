@@ -79,7 +79,7 @@ const buildLenderDistribution = (loans: Loan[], userProfiles: Record<string, Use
          if (!acc[lenderId]) {
             acc[lenderId] = {
                id: lenderId,
-               name: lenderName === 'unknown' ? 'Unknown lender' : lenderName,
+               name: lenderName === 'unknown' ? 'Unknown moo-lender' : lenderName,
                avatarUrl: profile?.avatarUrl,
                count: 0,
                totalAmount: 0
@@ -303,13 +303,13 @@ export default function LenderDiversityHistory() {
                   >
                      <ChevronLeft className="h-5 w-5" strokeWidth={2.3} />
                   </button>
-                  <h1 className="text-[18px] font-semibold text-md-primary-2000">Lender Diversity</h1>
+                  <h1 className="text-[18px] font-semibold text-md-primary-2000">Moo-lender Diversity</h1>
                </div>
                <div className="flex items-center gap-2">
                   <button
                      type="button"
                      onClick={toggleMode}
-                     aria-label={isDarkMode ? 'Switch lender diversity to light mode' : 'Switch lender diversity to dark mode'}
+                     aria-label={isDarkMode ? 'Switch moo-lender diversity to light mode' : 'Switch moo-lender diversity to dark mode'}
                      aria-pressed={isDarkMode}
                      className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-md-primary-900 shadow-md-card active:scale-95"
                   >
@@ -337,7 +337,7 @@ export default function LenderDiversityHistory() {
                   <div className="absolute bottom-8 right-3 text-[18px] font-bold leading-none text-[#c4b5fd]">✦</div>
                   <div className="relative z-10 flex items-start justify-between gap-2">
                      <div className="min-w-0 flex-1 pt-1 pr-1">
-                        <p className="mb-1.5 text-[13px] font-semibold text-md-neutral-1400">Lender Diversity Score</p>
+                        <p className="mb-1.5 text-[13px] font-semibold text-md-neutral-1400">Moo-lender Diversity Score</p>
                         {hasEnoughLenderHistory ? (
                            <>
                               <div className="mb-3 flex items-end gap-2">
@@ -362,7 +362,7 @@ export default function LenderDiversityHistory() {
                                  Need at least 2 funded loans
                               </span>
                               <p className="mb-3 max-w-[190px] text-[13px] leading-5 text-md-neutral-1400">
-                                 A lender diversity score appears once there is enough borrower history to compare.
+                                 A moo-lender diversity score appears once there is enough borrower history to compare.
                               </p>
                            </>
                         )}
@@ -384,9 +384,9 @@ export default function LenderDiversityHistory() {
 
             <section className="px-4 pb-6">
                <div className="mb-3">
-                  <h2 className="text-[18px] font-semibold text-md-primary-2000">Lender Distribution</h2>
+                  <h2 className="text-[18px] font-semibold text-md-primary-2000">Moo-lender Distribution</h2>
                   <p className="mt-1 text-[13px] leading-5 text-md-neutral-1400">
-                     Shows how {borrowerName}&apos;s funded loan history is spread across lenders.
+                     Shows how {borrowerName}&apos;s funded loan history is spread across moo-lenders.
                   </p>
                </div>
 
@@ -510,9 +510,9 @@ export default function LenderDiversityHistory() {
                         <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#f5f3ff]">
                            <Users className="h-7 w-7 text-md-primary-900" strokeWidth={2.4} />
                         </div>
-                        <p className="text-[17px] font-semibold text-md-primary-2000">No lender history yet</p>
+                        <p className="text-[17px] font-semibold text-md-primary-2000">No moo-lender history yet</p>
                         <p className="mt-2 max-w-[280px] text-[14px] leading-5 text-md-neutral-1400">
-                           Once this borrower receives funded loans, the lender distribution will appear here.
+                           Once this borrower receives funded loans, the moo-lender distribution will appear here.
                         </p>
                      </div>
                   )}

@@ -131,10 +131,10 @@ export const filipinoCoverageB: Record<string, string> = {
       'Bakit Moodeng Credit ang pinipili ng mga borrower: mabilis na access sa maliliit na USDC loan saan ka man sa mundo, ang misyon at roadmap namin, at pagbuo ng verifiable na credit habang nagbabayad ka.',
 
    // src/views/borrowerBenefits/sections/FastGlobalAccessSection.tsx
-   'When a lender funds your request, USDC moves through your digital wallet so the money and repayment record are easier to track.':
-      'Kapag pinondohan ng lender ang request mo, dumadaan ang USDC sa digital wallet mo kaya mas madaling i-track ang pera at ang record ng pagbabayad.',
-   'You choose the request amount, repayment amount, due date, and reason before a lender decides whether to fund it.':
-      'Ikaw ang pipili ng halaga ng request, halaga ng babayaran, due date, at dahilan bago magdesisyon ang lender kung popondohan niya ito.',
+   'When a moo-lender funds your request, USDC moves through your digital wallet so the money and repayment record are easier to track.':
+      'Kapag pinondohan ng moo-lender ang request mo, dumadaan ang USDC sa digital wallet mo kaya mas madaling i-track ang pera at ang record ng pagbabayad.',
+   'You choose the request amount, repayment amount, due date, and reason before a moo-lender decides whether to fund it.':
+      'Ikaw ang pipili ng halaga ng request, halaga ng babayaran, due date, at dahilan bago magdesisyon ang moo-lender kung popondohan niya ito.',
 
    // src/views/borrowerBenefits/sections/WhatPeopleSaySection.tsx
    'Borrower testimonial': 'Testimonial ng borrower',
@@ -156,10 +156,10 @@ export const filipinoCoverageB: Record<string, string> = {
    // src/views/dashboard-v2/DashboardV2.tsx
    'Feed Moodeng Pandesal to grow your trust: verifying, repaying on time and milestones earn it, and Moodeng grows from Rookie to Apex.':
       'Pakainin si Moodeng ng Pandesal para lumago ang tiwala sa iyo: makakakuha ka nito sa pag-verify, sa pagbabayad on time, at sa mga milestone, at lalaki si Moodeng mula Rookie hanggang Apex.',
-   'Milestones are extra ways to earn Pandesal. Complete them to strengthen your profile and make lenders more confident in your requests.':
-      'Ang mga milestone ay dagdag na paraan para makakuha ng Pandesal. Tapusin ang mga ito para lumakas ang profile mo at mas magtiwala ang mga lender sa mga request mo.',
+   'Milestones are extra ways to earn Pandesal. Complete them to strengthen your profile and make moo-lenders more confident in your requests.':
+      'Ang mga milestone ay dagdag na paraan para makakuha ng Pandesal. Tapusin ang mga ito para lumakas ang profile mo at mas magtiwala ang mga moo-lender sa mga request mo.',
    'Post your first loan request': 'I-post ang una mong loan request',
-   'Get funded by a lender': 'Mapondohan ng lender',
+   'Get funded by a moo-lender': 'Mapondohan ng moo-lender',
    'Loading your dashboard': 'Naglo-load ang Dashboard mo',
    'Trust & Pandesal': 'Tiwala at Pandesal',
    'Credit Level is your borrowing tier. Trust is what you build; Credit Level is what that trust unlocks.':
@@ -298,15 +298,15 @@ export const filipinoCoverageB: Record<string, string> = {
    'Withdraw your USDC': 'I-withdraw ang USDC mo',
    'Cash out your funded loan to local currency.': 'I-cash out ang napondohan mong loan sa local currency.',
    'Pandesal points': 'Pandesal points',
-   'Pandesal points track your reputation on Moodeng. Verification, clean repayment, and healthy activity make lenders more confident in you.':
-      'Sinusukat ng Pandesal points ang reputasyon mo sa Moodeng. Sa verification, malinis na pagbabayad, at maayos na aktibidad, mas nagtitiwala sa iyo ang mga lender.',
-   'Milestones are extra ways to earn Pandesal points. Complete them to strengthen your profile and make lenders more confident in your requests.':
-      'Ang mga milestone ay dagdag na paraan para makakuha ng Pandesal points. Tapusin ang mga ito para lumakas ang profile mo at mas magtiwala ang mga lender sa mga request mo.',
+   'Pandesal points track your reputation on Moodeng. Verification, clean repayment, and healthy activity make moo-lenders more confident in you.':
+      'Sinusukat ng Pandesal points ang reputasyon mo sa Moodeng. Sa verification, malinis na pagbabayad, at maayos na aktibidad, mas nagtitiwala sa iyo ang mga moo-lender.',
+   'Milestones are extra ways to earn Pandesal points. Complete them to strengthen your profile and make moo-lenders more confident in your requests.':
+      'Ang mga milestone ay dagdag na paraan para makakuha ng Pandesal points. Tapusin ang mga ito para lumakas ang profile mo at mas magtiwala ang mga moo-lender sa mga request mo.',
 
    // src/views/dashboard/RequestBoard.tsx
    'Role not selected': 'Wala pang napiling role',
-   'Pick borrower or lender to unlock your dashboard, repayment, and history.':
-      'Pumili kung borrower o lender ka para ma-unlock ang Dashboard, pagbabayad, at history mo.',
+   'Pick borrower or moo-lender to unlock your dashboard, repayment, and history.':
+      'Pumili kung borrower o moo-lender ka para ma-unlock ang Dashboard, pagbabayad, at history mo.',
    'The team approved you — apply for your loan now.': 'Na-approve ka na ng team — mag-apply na ng loan mo ngayon.',
    'Borrow USDC to build trust and': 'Humiram ng USDC para bumuo ng tiwala at',
    'Apply For A Loan': 'Mag-apply ng loan',
@@ -318,14 +318,14 @@ export const filipinoCoverageB: Record<string, string> = {
    'See how requests, funding, repayment, and trust fit together.':
       'Tingnan kung paano magkakaugnay ang mga request, pagpopondo, pagbabayad, at tiwala.',
    'Start tour': 'Simulan ang tour',
-   "Once lenders have issued three loans, a fee will be charged to their accounts. This fee helps maintain the platform's operational costs and ensures continued support for all users.":
-      'Kapag nakapagbigay na ang lender ng tatlong loan, may sisingiling fee sa account nila. Tumutulong ang fee na ito na mapanatili ang operational costs ng platform at masiguro ang patuloy na suporta para sa lahat ng user.',
+   "Once moo-lenders have issued three loans, a fee will be charged to their accounts. This fee helps maintain the platform's operational costs and ensures continued support for all users.":
+      'Kapag nakapagbigay na ang moo-lender ng tatlong loan, may sisingiling fee sa account nila. Tumutulong ang fee na ito na mapanatili ang operational costs ng platform at masiguro ang patuloy na suporta para sa lahat ng user.',
    'No requests match your filters.': 'Walang request na tumutugma sa mga filter mo.',
    'Try widening your search or clearing your filters.': 'Subukang palawakin ang search mo o i-clear ang mga filter.',
    'Delete this request?': 'I-delete ang request na ito?',
    'This cannot be undone.': 'Hindi na ito puwedeng i-undo.',
-   'Lenders will no longer see it. You can make a new request from the board, but repeated deletes pause new requests for a short time.':
-      'Hindi na ito makikita ng mga lender. Puwede kang gumawa ng bagong request mula sa board, pero kapag paulit-ulit kang nag-delete, may pause muna sa bagong request sa loob ng maikling panahon.',
+   'Moo-lenders will no longer see it. You can make a new request from the board, but repeated deletes pause new requests for a short time.':
+      'Hindi na ito makikita ng mga moo-lender. Puwede kang gumawa ng bagong request mula sa board, pero kapag paulit-ulit kang nag-delete, may pause muna sa bagong request sa loob ng maikling panahon.',
    'Keep request': 'Panatilihin ang request',
    'World App users can verify with World ID instead.': 'Puwedeng mag-verify ang mga user ng World App gamit ang World ID.',
    'Quick answers before you sign up.': 'Mabibilis na sagot bago ka mag-sign up.',
@@ -341,25 +341,25 @@ export const filipinoCoverageB: Record<string, string> = {
    'Get a quick overview of how Moodeng works before deciding which side to explore.':
       'Silipin muna kung paano gumagana ang Moodeng bago magdesisyon kung aling side ang susubukan.',
    'The request board': 'Ang request board',
-   'This is where borrowers post short-term USDC loan requests and lenders browse them. Both sides of Moodeng meet here.':
-      'Dito nagpo-post ang mga borrower ng short-term USDC loan request at dito rin ito bini-browse ng mga lender. Dito nagtatagpo ang dalawang panig ng Moodeng.',
+   'This is where borrowers post short-term USDC loan requests and moo-lenders browse them. Both sides of Moodeng meet here.':
+      'Dito nagpo-post ang mga borrower ng short-term USDC loan request at dito rin ito bini-browse ng mga moo-lender. Dito nagtatagpo ang dalawang panig ng Moodeng.',
    'Borrowers apply here': 'Dito nag-a-apply ang mga borrower',
    'A borrower sets their loan amount, repayment date, and reason. Once verified, their request goes live on this board.':
       'Dito itinatakda ng borrower ang halaga ng loan, petsa ng pagbabayad, at dahilan. Kapag verified na siya, magiging live sa board na ito ang request niya.',
    'Ready to get started?': 'Handa ka na bang magsimula?',
-   'This is the marketplace. Once a request is live, lenders review the amount, repayment, and borrower before funding.':
-      'Ito ang marketplace. Kapag live na ang request, sinusuri ng mga lender ang halaga, bayad, at borrower bago ito pondohan.',
+   'This is the marketplace. Once a request is live, moo-lenders review the amount, repayment, and borrower before funding.':
+      'Ito ang marketplace. Kapag live na ang request, sinusuri ng mga moo-lender ang halaga, bayad, at borrower bago ito pondohan.',
    'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it for a higher starting limit.':
       'Kapag handa ka nang humiram, bubuksan ng card na ito ang loan request flow. May code ka ba mula sa kaibigan? Idagdag ito para sa mas mataas na starting limit.',
    'Verify first': 'Mag-verify muna',
-   'Borrowers complete a one-time identity check before requesting a loan. It helps lenders know they are funding a real person.':
-      'Kumukumpleto ang mga borrower ng one-time identity check bago mag-request ng loan. Nakakatulong ito para malaman ng lender na totoong tao ang pinopondohan nila.',
+   'Borrowers complete a one-time identity check before requesting a loan. It helps moo-lenders know they are funding a real person.':
+      'Kumukumpleto ang mga borrower ng one-time identity check bago mag-request ng loan. Nakakatulong ito para malaman ng moo-lender na totoong tao ang pinopondohan nila.',
    'Set your terms': 'Itakda ang terms mo',
    'After verification, this is where the borrower sets the amount, repayment, date, and reason for the request.':
       'Pagkatapos ng verification, dito itinatakda ng borrower ang halaga, bayad, petsa, at dahilan ng request.',
    'Get funded, then repay': 'Mapondohan, tapos magbayad',
-   'A lender funds your request and USDC lands in your wallet. Repay on time and your Pandesal points — and your next limit — grow. Miss a repayment and it shows on your public profile, so lenders lend on trust.':
-      'Pinopondohan ng lender ang request mo at pumapasok ang USDC sa wallet mo. Magbayad on time para tumaas ang Pandesal points mo — at ang susunod mong limit. Kapag na-miss ang bayad, makikita ito sa public profile mo, kaya nagpapahiram ang mga lender batay sa tiwala.',
+   'A moo-lender funds your request and USDC lands in your wallet. Repay on time and your Pandesal points — and your next limit — grow. Miss a repayment and it shows on your public profile, so moo-lenders lend on trust.':
+      'Pinopondohan ng moo-lender ang request mo at pumapasok ang USDC sa wallet mo. Magbayad on time para tumaas ang Pandesal points mo — at ang susunod mong limit. Kapag na-miss ang bayad, makikita ito sa public profile mo, kaya nagpapahiram ang mga moo-lender batay sa tiwala.',
    'Browse open requests': 'Tingnan ang mga bukas na request',
    'Look through open requests before signing up — each card shows the amount, repayment, borrower, and reason.':
       'Tingnan ang mga bukas na request bago mag-sign up — makikita sa bawat card ang halaga, bayad, borrower, at dahilan.',
@@ -368,8 +368,8 @@ export const filipinoCoverageB: Record<string, string> = {
    'Ready to build credit?': 'Handa ka na bang bumuo ng credit?',
    'Create your account to request your first loan — or sign in if you already have one.':
       'Gumawa ng account para ma-request ang una mong loan — o mag-sign in kung mayroon ka na.',
-   'This list is the marketplace. Once a request is live, lenders can review the amount, repayment, and borrower profile before funding.':
-      'Ang listahang ito ang marketplace. Kapag live na ang request, puwedeng suriin ng mga lender ang halaga, bayad, at profile ng borrower bago ito pondohan.',
+   'This list is the marketplace. Once a request is live, moo-lenders can review the amount, repayment, and borrower profile before funding.':
+      'Ang listahang ito ang marketplace. Kapag live na ang request, puwedeng suriin ng mga moo-lender ang halaga, bayad, at profile ng borrower bago ito pondohan.',
    'When you are ready to borrow, this card opens the loan request form.':
       'Kapag handa ka nang humiram, bubuksan ng card na ito ang loan request form.',
    'Before an unverified borrower can request a loan, Moodeng sends them through a quick identity verification screen.':
@@ -379,14 +379,14 @@ export const filipinoCoverageB: Record<string, string> = {
    'Borrowing below your limit can build trust history. Borrowing your full limit and repaying on time is what raises your Credit Level.':
       'Bumubuo ng trust history ang paghiram nang mas mababa sa limit mo. Ang paghiram ng buong limit mo at pagbabayad on time ang nagpapataas ng Credit Level mo.',
    'Set a clear repayment': 'Magtakda ng malinaw na halaga ng bayad',
-   'Your repayment must be at least $1 more than what you borrow. Lenders use this to decide if the request is worth funding.':
-      'Dapat hindi bababa sa $1 ang sobra ng babayaran mo kaysa sa hiniram mo. Ginagamit ito ng mga lender para magpasya kung sulit pondohan ang request.',
+   'Your repayment must be at least $1 more than what you borrow. Moo-lenders use this to decide if the request is worth funding.':
+      'Dapat hindi bababa sa $1 ang sobra ng babayaran mo kaysa sa hiniram mo. Ginagamit ito ng mga moo-lender para magpasya kung sulit pondohan ang request.',
    'Explain the reason': 'Ipaliwanag ang dahilan',
-   'A short, specific reason helps lenders understand the request and builds trust before they fund it.':
-      'Nakakatulong ang maikli at malinaw na dahilan para maintindihan ng mga lender ang request at magtiwala sila bago ito pondohan.',
+   'A short, specific reason helps moo-lenders understand the request and builds trust before they fund it.':
+      'Nakakatulong ang maikli at malinaw na dahilan para maintindihan ng mga moo-lender ang request at magtiwala sila bago ito pondohan.',
    'Find open requests': 'Maghanap ng mga bukas na request',
-   'As a lender, this board shows people asking for short-term USDC support. Start by comparing the amount, repayment, due date, and reason.':
-      'Bilang lender, makikita mo sa board na ito ang mga taong humihingi ng short-term na tulong sa USDC. Magsimula sa paghahambing ng halaga, bayad, due date, at dahilan.',
+   'As a moo-lender, this board shows people asking for short-term USDC support. Start by comparing the amount, repayment, due date, and reason.':
+      'Bilang moo-lender, makikita mo sa board na ito ang mga taong humihingi ng short-term na tulong sa USDC. Magsimula sa paghahambing ng halaga, bayad, due date, at dahilan.',
    'Review the request': 'Suriin ang request',
    'Each card shows what the borrower needs, what they plan to repay, and whether their account is in good standing.':
       'Makikita sa bawat card kung ano ang kailangan ng borrower, kung magkano ang babayaran nila, at kung maayos ang account nila.',
@@ -426,7 +426,7 @@ export const filipinoCoverageB: Record<string, string> = {
    Share: 'I-share',
    'Add to Home Screen': 'Idagdag sa Home Screen',
    'Turn on reminders to continue.': 'I-on ang mga reminder para magpatuloy.',
-   'Only Moodeng sees this — never lenders.': 'Moodeng lang ang nakakakita nito — hinding-hindi ang mga lender.',
+   'Only Moodeng sees this — never moo-lenders.': 'Moodeng lang ang nakakakita nito — hinding-hindi ang mga moo-lender.',
    'How can we reach you?': 'Paano ka namin makokontak?',
    'Open Messenger again': 'Buksan ulit ang Messenger',
    Required: 'Kailangan',
@@ -452,19 +452,19 @@ export const filipinoCoverageB: Record<string, string> = {
 
    // src/views/dashboard/components/LoanRequestModal.tsx
    'Public borrower profile': 'Pampublikong profile ng borrower',
-   'This is the identity lenders see beside your request.': 'Ito ang profile na nakikita ng mga lender sa tabi ng request mo.',
+   'This is the identity moo-lenders see beside your request.': 'Ito ang profile na nakikita ng mga moo-lender sa tabi ng request mo.',
    'Profile image': 'Larawan sa profile',
    'Tap to choose a photo or avatar.': 'I-tap para pumili ng larawan o avatar.',
-   'Name shown to lenders': 'Pangalang ipinapakita sa mga lender',
+   'Name shown to moo-lenders': 'Pangalang ipinapakita sa mga moo-lender',
    'Use a first name or friendly nickname.': 'Gumamit ng first name o friendly na palayaw.',
    'Describe your situation': 'Ilarawan ang sitwasyon mo',
-   'Tell lenders how you earn, in your own words.': 'Sabihin sa mga lender kung paano ka kumikita, sa sarili mong salita.',
+   'Tell moo-lenders how you earn, in your own words.': 'Sabihin sa mga moo-lender kung paano ka kumikita, sa sarili mong salita.',
    'Be specific, for example teacher or market vendor.': 'Maging specific, halimbawa teacher o market vendor.',
    'Still needed: how you describe your work.': 'Kailangan pa: kung paano mo ilalarawan ang trabaho mo.',
    'For example tutoring, delivery, or market trading.': 'Halimbawa tutoring, delivery, o pagtitinda sa market.',
    'Referral Boost': 'Referral Boost',
    'Schedule a video call': 'Mag-iskedyul ng video call',
-   'How lenders see you': 'Kung paano ka nakikita ng mga lender',
+   'How moo-lenders see you': 'Kung paano ka nakikita ng mga moo-lender',
    'Set your loan terms': 'Itakda ang mga terms ng loan mo',
    Optional: 'Optional',
    'Have a referral code?': 'May referral code ka ba?',
@@ -479,11 +479,11 @@ export const filipinoCoverageB: Record<string, string> = {
    'You’ll repay': 'Babayaran mo ang',
    'Set Repayment Date': 'Itakda ang petsa ng pagbabayad',
    'Reason for Borrowing': 'Dahilan ng paghiram',
-   'Short and specific helps lenders trust it.': 'Mas pinagkakatiwalaan ng mga lender ang maikli at malinaw na sagot.',
+   'Short and specific helps moo-lenders trust it.': 'Mas pinagkakatiwalaan ng mga moo-lender ang maikli at malinaw na sagot.',
    'Checking your reason…': 'Sinusuri ang dahilan mo…',
    'Looks good': 'Maayos na',
-   'At least 40 characters, in English — short and specific helps lenders trust it.':
-      'Hindi bababa sa 40 character, sa English — mas pinagkakatiwalaan ng mga lender ang maikli at malinaw na sagot.',
+   'At least 40 characters, in English — short and specific helps moo-lenders trust it.':
+      'Hindi bababa sa 40 character, sa English — mas pinagkakatiwalaan ng mga moo-lender ang maikli at malinaw na sagot.',
    'I have a regular job': 'May regular akong trabaho',
    'Full-time or part-time with a fixed employer': 'Full-time o part-time na may fixed na employer',
    'I work for myself': 'Nagtatrabaho ako para sa sarili ko',
@@ -540,17 +540,17 @@ export const filipinoCoverageB: Record<string, string> = {
 
    // src/views/dashboard/components/ReputationMilestones.tsx
    'Reputation Milestones': 'Mga milestone ng reputasyon',
-   'Milestones show what to do next to build trust with lenders.':
-      'Ipinapakita ng mga milestone kung ano ang susunod mong gagawin para bumuo ng tiwala sa mga lender.',
+   'Milestones show what to do next to build trust with moo-lenders.':
+      'Ipinapakita ng mga milestone kung ano ang susunod mong gagawin para bumuo ng tiwala sa mga moo-lender.',
    'Complete milestones to unlock higher loan levels.': 'Tapusin ang mga milestone para ma-unlock ang mas mataas na loan level.',
    'How milestones work': 'Paano gumagana ang mga milestone',
 
    // src/views/dashboard/components/SuccessModal.tsx
    'Loan request submitted': 'Naisumite na ang loan request',
-   'Your loan request is now live. Lenders can review it and fund your request.':
-      'Live na ang loan request mo. Puwede na itong suriin at pondohan ng mga lender.',
-   'Join the Moodeng borrower group on Facebook or Telegram so we can introduce you to great lenders.':
-      'Sumali sa Moodeng borrower group sa Facebook o Telegram para maipakilala ka namin sa mahuhusay na lender.',
+   'Your loan request is now live. Moo-lenders can review it and fund your request.':
+      'Live na ang loan request mo. Puwede na itong suriin at pondohan ng mga moo-lender.',
+   'Join the Moodeng borrower group on Facebook or Telegram so we can introduce you to great moo-lenders.':
+      'Sumali sa Moodeng borrower group sa Facebook o Telegram para maipakilala ka namin sa mahuhusay na moo-lender.',
    'Join on Telegram': 'Sumali sa Telegram',
    'Join on Facebook': 'Sumali sa Facebook',
 
@@ -585,7 +585,7 @@ export const filipinoCoverageB: Record<string, string> = {
 
    // src/views/dashboard/components/UserCard.tsx
    'Timing and borrower context': 'Timing at konteksto ng borrower',
-   'Lender reward': 'Reward ng lender',
+   'Moo-lender reward': 'Reward ng moo-lender',
    'Not seeing a prompt? Make sure your wallet app is open on this device — or reconnect it here.':
       'Walang lumalabas na prompt? Siguraduhing bukas ang wallet app mo sa device na ito — o mag-reconnect dito.',
    'Reconnect wallet': 'I-reconnect ang wallet',
@@ -726,8 +726,8 @@ export const filipinoCoverageB: Record<string, string> = {
    'Repayment destination': 'Saan mapupunta ang bayad',
    // src/views/dashboard/RequestBoard.tsx tour (apply, then ID check last)
    'Meet the team, then apply': 'Kilalanin ang team, tapos mag-apply',
-   'Borrowers set up a wallet, connect Messenger and have a short call with the team. Their ID is checked when they send their first request, so lenders know they are funding a real person.':
-      'Mag-se-set up ng wallet ang borrower, iko-connect ang Messenger, at may maikling call sa team. Iche-check ang ID nila pagpadala ng unang request, para alam ng lenders na totoong tao ang pinapahiram nila.',
+   'Borrowers set up a wallet, connect Messenger and have a short call with the team. Their ID is checked when they send their first request, so moo-lenders know they are funding a real person.':
+      'Mag-se-set up ng wallet ang borrower, iko-connect ang Messenger, at may maikling call sa team. Iche-check ang ID nila pagpadala ng unang request, para alam ng moo-lenders na totoong tao ang pinapahiram nila.',
    'This is where the borrower sets the amount, repayment, date, and reason. Sending it is when their ID gets checked.':
       'Dito ilalagay ng borrower ang amount, bayad, petsa, at dahilan. Pagpadala nito, saka iche-check ang ID nila.',
    'New borrowers set up, have a short call with the team, then fill in a request. A quick ID check is the last step of sending it.':

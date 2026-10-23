@@ -1146,7 +1146,7 @@ function RequestBoard$() {
          {
             target: '[data-tour-target="request-first-card"]',
             title: 'The request board',
-            body: 'This is where borrowers post short-term USDC loan requests and lenders browse them. Both sides of Moodeng meet here.',
+            body: 'This is where borrowers post short-term USDC loan requests and moo-lenders browse them. Both sides of Moodeng meet here.',
             durationMs: 6000
          },
          {
@@ -1157,8 +1157,8 @@ function RequestBoard$() {
          },
          {
             target: '[data-tour-target="request-latest-list"]',
-            title: 'Lenders browse & fund',
-            body: "Lenders scroll through open requests, check each borrower's repayment history and trust signals, then fund the ones they believe in.",
+            title: 'Moo-lenders browse & fund',
+            body: "Moo-lenders scroll through open requests, check each borrower's repayment history and trust signals, then fund the ones they believe in.",
             cardPlacement: 'bottom',
             durationMs: 6000
          },
@@ -1177,7 +1177,7 @@ function RequestBoard$() {
             {
                target: '[data-tour-target="request-first-card"]',
                title: 'Request Board',
-               body: 'This is the marketplace. Once a request is live, lenders review the amount, repayment, and borrower before funding.',
+               body: 'This is the marketplace. Once a request is live, moo-lenders review the amount, repayment, and borrower before funding.',
                durationMs: 5200
             },
             {
@@ -1189,7 +1189,7 @@ function RequestBoard$() {
             {
                target: '[data-tour-target="guest-world-id-preview"]',
                title: 'Meet the team, then apply',
-               body: 'Borrowers set up a wallet, connect Messenger and have a short call with the team. Their ID is checked when they send their first request, so lenders know they are funding a real person.',
+               body: 'Borrowers set up a wallet, connect Messenger and have a short call with the team. Their ID is checked when they send their first request, so moo-lenders know they are funding a real person.',
                cardPlacement: 'top',
                durationMs: 6500
             },
@@ -1202,7 +1202,7 @@ function RequestBoard$() {
             {
                target: '[data-tour-target="request-latest-list"]',
                title: 'Get funded, then repay',
-               body: 'A lender funds your request and USDC lands in your wallet. Repay on time and your Pandesal points — and your next limit — grow. Miss a repayment and it shows on your public profile, so lenders lend on trust.',
+               body: 'A moo-lender funds your request and USDC lands in your wallet. Repay on time and your Pandesal points — and your next limit — grow. Miss a repayment and it shows on your public profile, so moo-lenders lend on trust.',
                cardPlacement: 'bottom',
                durationMs: 7500
             },
@@ -1232,7 +1232,7 @@ function RequestBoard$() {
               {
                  target: '[data-tour-target="request-latest-list"]',
                  title: 'Request Board',
-                 body: 'This list is the marketplace. Once a request is live, lenders can review the amount, repayment, and borrower profile before funding.',
+                 body: 'This list is the marketplace. Once a request is live, moo-lenders can review the amount, repayment, and borrower profile before funding.',
                  cardPlacement: 'bottom',
                  durationMs: 6000
               },
@@ -1259,7 +1259,7 @@ function RequestBoard$() {
               {
                  target: '[data-tour-target="request-latest-list"]',
                  title: 'Request Board',
-                 body: 'This list is the marketplace. Once a request is live, lenders can review the amount, repayment, and borrower profile before funding.',
+                 body: 'This list is the marketplace. Once a request is live, moo-lenders can review the amount, repayment, and borrower profile before funding.',
                  cardPlacement: 'bottom',
                  durationMs: 6000
               },
@@ -1278,13 +1278,13 @@ function RequestBoard$() {
               {
                  target: '[data-tour-target="loan-repayment-amount"]',
                  title: 'Set a clear repayment',
-                 body: 'Your repayment must be at least $1 more than what you borrow. Lenders use this to decide if the request is worth funding.',
+                 body: 'Your repayment must be at least $1 more than what you borrow. Moo-lenders use this to decide if the request is worth funding.',
                  durationMs: 6400
               },
               {
                  target: '[data-tour-target="loan-reason"]',
                  title: 'Explain the reason',
-                 body: 'A short, specific reason helps lenders understand the request and builds trust before they fund it.',
+                 body: 'A short, specific reason helps moo-lenders understand the request and builds trust before they fund it.',
                  durationMs: 6000
               }
            ].map(slowTourStep);
@@ -1295,7 +1295,7 @@ function RequestBoard$() {
       {
          target: '[data-tour-target="request-latest-list"]',
          title: 'Find open requests',
-         body: 'As a lender, this board shows people asking for short-term USDC support. Start by comparing the amount, repayment, due date, and reason.',
+         body: 'As a moo-lender, this board shows people asking for short-term USDC support. Start by comparing the amount, repayment, due date, and reason.',
          cardPlacement: 'bottom',
          durationMs: 6500
       },
@@ -1513,7 +1513,7 @@ function RequestBoard$() {
             showToast(
                TOAST_TYPES.ERROR,
                'Reason required',
-               'Add a short reason so lenders know what the loan is for.',
+               'Add a short reason so moo-lenders know what the loan is for.',
                'OK',
                'acknowledge'
             );
@@ -1531,7 +1531,7 @@ function RequestBoard$() {
          setIsCheckingReason(false);
 
          if (!reasonOk) {
-            const warningText = reasonHint || 'Tell lenders what the money will be used for.';
+            const warningText = reasonHint || 'Tell moo-lenders what the money will be used for.';
             // Inline warning under the reason field stays put so the borrower can act on it.
             setReasonWarning(warningText);
             // The submit button sits at the bottom of a scrollable form, so the inline warning
@@ -1878,7 +1878,7 @@ function RequestBoard$() {
             'Request deleted',
             repostStatus && !repostStatus.canCreate
                ? getLoanRequestCooldownMessage(repostStatus)
-               : 'Lenders will no longer see this request on the board.'
+               : 'Moo-lenders will no longer see this request on the board.'
          );
 
          await Promise.all([
@@ -2155,7 +2155,7 @@ function RequestBoard$() {
                            <div className="flex max-w-[286px] flex-col gap-1 max-[374px]:max-w-[220px]">
                               <p className="text-md-h5 font-semibold text-md-heading">Choose how you’ll use Moodeng</p>
                               <p className="text-md-b2 font-medium text-md-neutral-800">
-                                 Pick borrower or lender to unlock your dashboard, repayment, and history.
+                                 Pick borrower or moo-lender to unlock your dashboard, repayment, and history.
                               </p>
                            </div>
                            <Link
@@ -2381,7 +2381,7 @@ function RequestBoard$() {
                            <div className="flex-1 flex flex-col gap-1">
                               <p className="text-md-b3 font-semibold text-[#ae8c00]">IMPORTANT NOTE</p>
                               <p className="text-md-b3 font-normal text-black leading-[1.3]">
-                                 Once lenders have issued three loans, a fee will be charged to their accounts. This fee helps maintain the
+                                 Once moo-lenders have issued three loans, a fee will be charged to their accounts. This fee helps maintain the
                                  platform's operational costs and ensures continued support for all users.
                               </p>
                            </div>
@@ -2619,7 +2619,7 @@ function GuestWorldIdTourPreview() {
             <div className="flex flex-col items-center gap-1 text-center">
                <h2 className="text-md-h4 font-semibold text-md-heading">Verify Yourself</h2>
                <p className="text-md-b2 text-md-neutral-1200">
-                  A one-time ID check so lenders know you're a real person — it takes about 3 minutes.
+                  A one-time ID check so moo-lenders know you're a real person — it takes about 3 minutes.
                </p>
             </div>
             <div className="w-full rounded-md-lg border-2 border-md-primary-1200 bg-md-primary-100 p-4 flex items-center gap-3">

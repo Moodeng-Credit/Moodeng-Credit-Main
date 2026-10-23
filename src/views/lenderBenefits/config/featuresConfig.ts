@@ -9,8 +9,8 @@ export const featuresConfig: FeaturesConfigProps[] = [
       description: 'Wallet-based lending with usernames keeps your real identity private.'
    },
    {
-      title: 'No Fees for Lenders, Ever',
-      description: "Unlike other platforms, we don't charge lenders any commissions or monthly fees."
+      title: 'No Fees for Moo-lenders, Ever',
+      description: "Unlike other platforms, we don't charge moo-lenders any commissions or monthly fees."
    },
    {
       title: 'Advanced Security',
