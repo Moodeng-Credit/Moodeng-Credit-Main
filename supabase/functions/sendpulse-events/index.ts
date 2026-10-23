@@ -6,8 +6,9 @@ import { postDiscord } from '../_shared/discord.ts';
 import { PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
 import { decideAutoMatch, MATCH_WINDOW_MS, type OpenAttempt } from '../_shared/messengerAutoMatch.ts';
 import { BORROW_POSTER_CARD, BORROW_POSTER_TEXT, type PosterCandidate, shouldSendBorrowPoster } from '../_shared/messengerBorrowPoster.ts';
-import { logMessengerContact, saveFacebookName } from '../_shared/messengerContactLog.ts';
+import { logMessengerContact, rememberMessengerContact, saveFacebookName } from '../_shared/messengerContactLog.ts';
 import { CONNECTED_BY_TIMING_TEXT } from '../_shared/messengerStatusFollowUp.ts';
+import { isSupportMessage, openMessengerTicket, relayAgentReply } from '../_shared/messengerSupport.ts';
 import { buildMatchSuggestionCard, messengerStuckKeyboard } from '../_shared/messengerStuckAlert.ts';
 import { decideTimingMatch, TIMING_WINDOW_MS, type TimingAttempt } from '../_shared/messengerTimingMatch.ts';
 import {
@@ -33,7 +34,12 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 // Fail-closed: no secret configured → nothing is accepted.
 //
 // For each subscribe / message FROM a person:
-//   0. Log it to messenger_contact_events (and fill in a known borrower's missing Facebook name).
+//   0. Log it to messenger_contact_events (and fill in a known borrower's missing Facebook name), and
+//      remember the person in messenger_contacts with their Facebook name — registered or not.
+//      Anything they write that isn't part of the Facebook step becomes a support ticket in Discord,
+//      with an automatic reply (_shared/messengerSupport.ts).
+// ?relay=1 (from the widget_messages trigger, header x-relay-secret): a team reply from Discord →
+// send it to the person on Messenger.
 //   1. It carries an MDNG code (typed in any form, or the mdng_code their link set) → hand it to
 //      sendpulse-messenger-verify, exactly as the SendPulse flows do. Catches typed codes the
 //      keyword trigger missed ("mdng 3d66ad"). Idempotent with the flows: whichever lands first wins.
@@ -281,6 +287,16 @@ serve(async (req) => {
    if (!SUPABASE_URL || !SERVICE_KEY) return json({ ok: false, error: 'not_configured' }, 503);
    const svc = createClient(SUPABASE_URL, SERVICE_KEY);
 
+   // A team reply from the Discord ticket, handed over by the widget_messages trigger.
+   if (new URL(req.url).searchParams.get('relay')) {
+      const { data: setting } = await svc.from('telegram_bot_settings').select('value').eq('key', 'sendpulse_events_secret').maybeSingle();
+      const relaySecret = ((setting as { value?: string } | null)?.value ?? '').trim();
+      if (!relaySecret || req.headers.get('x-relay-secret') !== relaySecret) return json({ ok: false, error: 'unauthorized' }, 401);
+      const relayBody = (await req.json().catch(() => null)) as { message_id?: string } | null;
+      if (!relayBody?.message_id) return json({ ok: false, error: 'no_message' }, 400);
+      return json(await relayAgentReply(svc, relayBody.message_id));
+   }
+
    const expected = await eventsSecret(svc);
    if (!expected) {
       console.error('sendpulse-events: no secret configured (SENDPULSE_EVENTS_SECRET or telegram_bot_settings.sendpulse_events_secret)');
@@ -304,9 +320,28 @@ serve(async (req) => {
          }
 
          // Every time someone contacts us, whoever they turn out to be (messenger_contact_events).
-         const known = await logMessengerContact(svc, event.contactId, /subscri/i.test(event.title) ? 'subscribe' : 'message', event.at);
+         const known = await logMessengerContact(svc, event.contactId, /subscri/i.test(event.title) ? 'subscribe' : 'message', event.at, event.payload);
          if (known && !known.facebookName) {
             await saveFacebookName(svc, known.userId, messengerDisplayName(await getMessengerContact(event.contactId)));
+         }
+         const contactId = event.contactId;
+         const remembered = await rememberMessengerContact(
+            svc,
+            contactId,
+            /subscri/i.test(event.title) ? 'subscribe' : 'message',
+            event.at,
+            known?.userId ?? null,
+            async () => messengerDisplayName(await getMessengerContact(contactId)) ?? event.contactName
+         );
+         if (isSupportMessage(event)) {
+            await openMessengerTicket(svc, {
+               contactId,
+               facebookName: remembered.facebookName,
+               userId: known?.userId ?? null,
+               text: event.text,
+               hasAttachment: event.hasAttachment,
+               at: event.at
+            });
          }
          if (known && !/subscri/i.test(event.title)) await maybeSendBorrowPoster(svc, known.userId, event.contactId, event.at);
 

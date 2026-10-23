@@ -21,6 +21,13 @@ export type SendPulseEvent = {
    at: number;
    // A subscribe or a message FROM the person — never the bot's own outgoing messages.
    fromPerson: boolean;
+   // What they typed (incoming messages only), whether they sent a photo/file, and whether it was a
+   // tap on a bot button (Get Started, a flow's button) rather than something they wrote.
+   text: string | null;
+   hasAttachment: boolean;
+   isButtonTap: boolean;
+   // The parts of the raw event worth keeping for debugging (info + contact.last_message), trimmed.
+   payload: Json | null;
 };
 
 type Json = Record<string, unknown>;
@@ -40,6 +47,33 @@ const eventTime = (v: unknown, now: number) => {
 const NOT_FROM_PERSON = /outgoing|outbound|operator|bot_message|unsubscri|block|redirect|chat_open|open_chat|live_chat/i;
 const FROM_PERSON = /subscri|incoming|message/i;
 
+const PAYLOAD_MAX_CHARS = 4000;
+
+// The person's message. SendPulse doesn't document Messenger's shape; its examples put the platform
+// message under info.message.channel_data.message (WhatsApp) and the latest text on
+// contact.last_message, so read those, most specific first.
+const readMessage = (e: Json, contact: Json | null, incoming: boolean) => {
+   const info = asObject(e.info);
+   const message = asObject(info?.message);
+   const channelData = asObject(message?.channel_data);
+   const platform = asObject(channelData?.message) ?? channelData;
+   const lastMessage = contact?.last_message;
+   const text =
+      asString(platform?.text) ??
+      asString(asObject(platform?.text)?.body) ??
+      asString(message?.text) ??
+      (incoming && typeof lastMessage === 'string' ? asString(lastMessage) : null);
+   const attachments = platform?.attachments ?? message?.attachments;
+   const isButtonTap = Boolean(platform?.quick_reply || channelData?.postback || message?.postback || info?.postback);
+   return { text, hasAttachment: Array.isArray(attachments) && attachments.length > 0, isButtonTap };
+};
+
+const trimPayload = (e: Json, contact: Json | null): Json | null => {
+   const kept = { info: e.info ?? null, last_message: contact?.last_message ?? null };
+   const raw = JSON.stringify(kept);
+   return raw.length <= PAYLOAD_MAX_CHARS ? kept : { truncated: raw.slice(0, PAYLOAD_MAX_CHARS) };
+};
+
 export const parseSendPulseEvents = (body: unknown, now = Date.now()): SendPulseEvent[] => {
    const list = Array.isArray(body) ? body : body ? [body] : [];
    return list.flatMap((raw) => {
@@ -53,6 +87,8 @@ export const parseSendPulseEvents = (body: unknown, now = Date.now()): SendPulse
       const variables = asObject(contact?.variables);
       const fromPerson = !NOT_FROM_PERSON.test(title) && (title === '' || FROM_PERSON.test(title));
       // Codes only count when the person sent them (or their link set mdng_code on the contact).
+      const incoming = fromPerson && /incoming|message/i.test(title) && !/subscri/i.test(title);
+      const message = incoming ? readMessage(e, contact, true) : { text: null, hasAttachment: false, isButtonTap: false };
       const codeSources = fromPerson
          ? [JSON.stringify(contact?.last_message ?? ''), JSON.stringify(e.info ?? ''), asString(variables?.mdng_code)]
          : [];
@@ -65,7 +101,9 @@ export const parseSendPulseEvents = (body: unknown, now = Date.now()): SendPulse
             contactName: asString(contact?.name),
             codes: [...new Set(codeSources.flatMap((s) => extractMessengerCodes(s)))],
             at: eventTime(e.date, now),
-            fromPerson
+            fromPerson,
+            ...message,
+            payload: incoming ? trimPayload(e, contact) : null
          }
       ];
    });
