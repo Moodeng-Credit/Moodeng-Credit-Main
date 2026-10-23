@@ -85,12 +85,12 @@ describe('LenderFundedPopup', () => {
 
    it('asks for push the first time, then never again on this device', async () => {
       await render();
-      expect(container.textContent).toContain('You funded Mimi!');
+      expect(container.textContent).toContain('Congrats, Moo-lender!');
       expect(container.textContent).toContain('Want to know when you’re repaid?');
-      expect(container.textContent).toContain('Mimi repays you $44.00 by Oct 12.');
+      expect(container.textContent).toContain('You funded Mimi! They repay you $44.00 by Oct 12.');
 
       await remount();
-      expect(container.textContent).toContain('Thanks for lending!');
+      expect(container.textContent).toContain('You’re officially a Moo‑lender!');
       expect(buttonByText(container, 'Done')).toBeTruthy();
       expect(buttonByText(container, 'Notify Me When Repaid')).toBeUndefined();
    });
@@ -151,7 +151,7 @@ describe('LenderFundedPopup', () => {
       env.needsHomeScreen = true;
       await render();
       expect(container.textContent).toContain('Want to know when you’re repaid?');
-      expect(container.textContent).toContain('Mimi repays you $44.00 by Oct 12.');
+      expect(container.textContent).toContain('You funded Mimi! They repay you $44.00 by Oct 12.');
       await act(async () => buttonByText(container, 'Notify Me When Repaid')?.click());
       expect(env.enable).not.toHaveBeenCalled();
       expect(onClose).not.toHaveBeenCalled();
