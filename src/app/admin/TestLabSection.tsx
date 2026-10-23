@@ -2,11 +2,14 @@
 
 import { useState } from 'react';
 
+import useWallet, { useActivePaymentMethod } from '@/hooks/useWallet';
+
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import AnyNetworkDeposit from '@/views/repay/AnyNetworkDeposit';
 
 // Admin → More → Test lab: a place to try things for real before people do. Tools: the Stableyard
-// credential check, email + KYC setup for your own Stableyard account, and a Stableyard deposit test. (The old Semaphore SMS tools were removed on
+// credential check, email + KYC setup for your own Stableyard account, a Stableyard External QR
+// payment test, and a Stableyard deposit test. (The old Semaphore SMS tools were removed on
 // 2026-10-20: Moodeng no longer uses Semaphore, and its error replies blanked this whole page.)
 
 const cardClass = 'space-y-3 rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4 sm:p-5';
@@ -159,11 +162,206 @@ function StableyardOnboardingCard() {
    );
 }
 
+type DepositInstructions = { address: string; chainId: number; tokenAddress: string; assetCode: string; decimals: number; amount: string };
+
+type QrResult = {
+   ok?: boolean;
+   step?: string;
+   error?: string;
+   stableyardStatus?: number;
+   code?: string | null;
+   requestId?: string | null;
+   result?: {
+      payment?: { id?: string; status?: string; destination?: { merchant?: { name?: string } | null } };
+      nextAction?: { type?: string; depositInstructions?: DepositInstructions } | null;
+      merchant?: { displayName?: string };
+   };
+   [key: string]: unknown;
+};
+
+const BASE_CHAIN_ID = 8453;
+const BASE_USDC = '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913';
+
+// Stableyard External QR payment test: pay a PH/VN merchant QR in pesos/dong with USDC from YOUR
+// Moodeng wallet. Decode and create move no money; only "Send" does, after a confirm. Personal QRs
+// (a friend's GCash) are rejected by Stableyard: use a store's QR Ph. Capped at ₱2,000 / ₫1,000,000.
+function StableyardQrCard() {
+   const { payUsdc } = useWallet();
+   const paymentMethod = useActivePaymentMethod();
+   const [busy, setBusy] = useState<string | null>(null);
+   const [result, setResult] = useState<QrResult | null>(null);
+   const [country, setCountry] = useState<'PH' | 'VN'>('PH');
+   const [qrPayload, setQrPayload] = useState('');
+   const [amount, setAmount] = useState('');
+   const [paymentId, setPaymentId] = useState('');
+   const [deposit, setDeposit] = useState<DepositInstructions | null>(null);
+   const [sentHash, setSentHash] = useState('');
+
+   const run = async (qr: string, extra: Record<string, string> = {}) => {
+      setBusy(qr);
+      const { data, error } = await getSupabaseBrowserClient().functions.invoke('stableyard-deposit-address', {
+         body: { qr, ...extra }
+      });
+      let next = data as QrResult | null;
+      if (error) {
+         const context = (error as { context?: { json?: () => Promise<QrResult> } }).context;
+         next = (await context?.json?.().catch(() => null)) ?? { ok: false, error: error.message };
+      }
+      const id = next?.result?.payment?.id;
+      if (id) setPaymentId(id);
+      const instructions = next?.result?.nextAction?.depositInstructions;
+      if (qr === 'create' || qr === 'get') setDeposit(instructions ?? null);
+      setResult(next ?? { ok: false, error: 'No response' });
+      setBusy(null);
+   };
+
+   // Only offer the in-app send for USDC on Base, which is what the Moodeng wallet holds.
+   const canSend =
+      deposit !== null &&
+      deposit.chainId === BASE_CHAIN_ID &&
+      deposit.tokenAddress.toLowerCase() === BASE_USDC &&
+      deposit.decimals === 6 &&
+      !sentHash;
+
+   const send = async () => {
+      if (!deposit) return;
+      const merchant = result?.result?.payment?.destination?.merchant?.name ?? 'the merchant';
+      if (
+         !window.confirm(
+            `Send ${deposit.amount} USDC from your Moodeng wallet to pay ${amount} ${country === 'PH' ? 'PHP' : 'VND'} to ${merchant}?`
+         )
+      ) {
+         return;
+      }
+      setBusy('send');
+      const outcome = await payUsdc({
+         method: paymentMethod,
+         to: deposit.address,
+         usdAmount: deposit.amount,
+         loanId: `stableyard-qr:${paymentId}`
+      });
+      if (outcome) setSentHash(outcome.hash);
+      setBusy(null);
+   };
+
+   const failed = result && !result.ok;
+   const qrReady = qrPayload.trim().length > 0;
+
+   return (
+      <div className={cardClass}>
+         <div className="flex items-center justify-between gap-3">
+            <p className="text-base font-bold text-white">Stableyard QR payment (test)</p>
+            <button type="button" onClick={() => void run('status')} disabled={busy !== null} className={smallButton}>
+               {busy === 'status' ? 'Checking…' : 'Check setup'}
+            </button>
+         </div>
+         <p className="text-sm text-[#a89bb8]">
+            Pay a store&apos;s QR Ph (or Vietnam QR) with USDC from YOUR Moodeng wallet. Personal QRs like a friend&apos;s GCash don&apos;t
+            work. Steps 1–3 move no money. Step 4 sends the USDC. Max ₱2,000 or ₫1,000,000.
+         </p>
+         <div className="flex flex-wrap items-center gap-2">
+            <button type="button" onClick={() => void run('use_wallet')} disabled={busy !== null} className={smallButton}>
+               {busy === 'use_wallet' ? 'Saving…' : '1. Pay from my Moodeng wallet'}
+            </button>
+            <select
+               value={country}
+               onChange={(event) => setCountry(event.target.value as 'PH' | 'VN')}
+               className="rounded-lg border border-[#2a1453] bg-[#1c0a3a] px-2 py-1.5 text-xs text-white"
+            >
+               <option value="PH">Philippines (PHP)</option>
+               <option value="VN">Vietnam (VND)</option>
+            </select>
+         </div>
+         <textarea
+            value={qrPayload}
+            onChange={(event) => setQrPayload(event.target.value)}
+            rows={3}
+            placeholder="Paste the QR's text (scan it with any QR reader app and copy the text, starts with 000201…)"
+            className="w-full rounded-lg border border-[#2a1453] bg-transparent px-3 py-2 font-mono text-xs text-white placeholder:text-[#a89bb8]"
+         />
+         <div className="flex flex-wrap items-center gap-2">
+            <button
+               type="button"
+               onClick={() => void run('decode', { country, qrPayload })}
+               disabled={busy !== null || !qrReady}
+               className={smallButton}
+            >
+               {busy === 'decode' ? 'Reading…' : '2. Read QR'}
+            </button>
+            <input
+               value={amount}
+               onChange={(event) => setAmount(event.target.value.replace(/[^\d.]/g, ''))}
+               inputMode="decimal"
+               placeholder={country === 'PH' ? 'Amount in PHP' : 'Amount in VND'}
+               className="w-32 rounded-lg border border-[#2a1453] bg-transparent px-3 py-1.5 text-xs text-white placeholder:text-[#a89bb8]"
+            />
+            <button
+               type="button"
+               onClick={() => {
+                  setSentHash('');
+                  void run('create', { country, qrPayload, amount, requestKey: crypto.randomUUID() });
+               }}
+               disabled={busy !== null || !qrReady || !amount}
+               className={smallButton}
+            >
+               {busy === 'create' ? 'Getting quote…' : '3. Get USDC quote'}
+            </button>
+         </div>
+         {deposit ? (
+            <div className="space-y-2 rounded-xl border border-[#2a1453] p-3 text-sm text-white">
+               <p>
+                  To pay, send exactly{' '}
+                  <span className="font-bold">
+                     {deposit.amount} {deposit.assetCode}
+                  </span>{' '}
+                  on {deposit.chainId === BASE_CHAIN_ID ? 'Base' : `chain ${deposit.chainId}`}.
+               </p>
+               {canSend ? (
+                  <button
+                     type="button"
+                     onClick={() => void send()}
+                     disabled={busy !== null}
+                     className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-bold text-[#1c0a3a] disabled:opacity-60"
+                  >
+                     {busy === 'send' ? 'Sending…' : `4. Send ${deposit.amount} USDC`}
+                  </button>
+               ) : sentHash ? null : (
+                  <p className="text-xs text-amber-300">Not USDC on Base, so this card can&apos;t send it. See the details below.</p>
+               )}
+            </div>
+         ) : null}
+         {sentHash ? <p className="break-all text-sm font-semibold text-emerald-300">Sent: {sentHash}</p> : null}
+         {paymentId ? (
+            <button type="button" onClick={() => void run('get', { paymentId })} disabled={busy !== null} className={smallButton}>
+               {busy === 'get' ? 'Checking…' : `Check payment ${paymentId}`}
+            </button>
+         ) : null}
+         {result ? (
+            <>
+               <p className={`text-sm font-semibold ${failed ? 'text-red-300' : 'text-emerald-300'}`}>
+                  {failed
+                     ? `Failed${result.stableyardStatus ? ` (HTTP ${result.stableyardStatus})` : ''}: ${result.error}${
+                          result.code ? ` · ${result.code}` : ''
+                       }${result.requestId ? ` · request ID ${result.requestId}` : ''}`
+                     : `Done: ${result.step}${result.result?.payment?.status ? ` · payment ${result.result.payment.status}` : ''}${
+                          result.result?.nextAction?.type ? ` · next: ${result.result.nextAction.type}` : ''
+                       }`}
+               </p>
+               <pre className="max-h-64 overflow-auto rounded-xl border border-[#2a1453] p-3 text-xs text-[#a89bb8]">
+                  {JSON.stringify(result, null, 2)}
+               </pre>
+            </>
+         ) : null}
+      </div>
+   );
+}
+
 export default function TestLabSection() {
    return (
       <div className="space-y-6">
          <StableyardCheckCard />
          <StableyardOnboardingCard />
+         <StableyardQrCard />
          <div className={cardClass}>
             <p className="text-base font-bold text-white">Stableyard deposits (test)</p>
             <p className="text-sm text-[#a89bb8]">

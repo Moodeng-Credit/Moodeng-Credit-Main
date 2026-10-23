@@ -19,6 +19,8 @@ import { handleStableyardWebhook, isStableyardWebhook } from '../_shared/stabley
 //                            → the caller's own account: verify its email and start KYC, which
 //                              Stableyard requires before QR payments. The email is always the
 //                              caller's sign-in email, never one from the client.
+// POST { qr: 'status' | 'use_wallet' | 'decode' | 'create' | 'get', ... }
+//                            → admin-only External QR payment test (see handleQr).
 //
 // The account's settlement wallet is the user's own Moodeng wallet on Base (users.wallet_address),
 // so every deposit lands there as USDC and the existing repay flow picks it up. We never accept a
@@ -162,6 +164,109 @@ const handleOnboarding = async (
    return json({ ok: true, accountId, step: 'status', email: emailStatus.data, kyc: kyc.data });
 };
 
+const QR_ACTIONS = new Set(['status', 'use_wallet', 'decode', 'create', 'get']);
+
+// Fiat currency per supported QR country, with a test cap (~$35) so a typo can't pay a big bill.
+const QR_COUNTRIES: Record<string, { currency: string; max: number }> = {
+   PH: { currency: 'PHP', max: 2000 },
+   VN: { currency: 'VND', max: 1_000_000 }
+};
+const FIAT_AMOUNT = /^(0|[1-9][0-9]*)(\.[0-9]{1,2})?$/;
+
+/**
+ * External QR payment test for the caller's own Stableyard account (admin-only).
+ *   status     → payment source + KYC
+ *   use_wallet → make the linked Moodeng wallet (Base) the payment source
+ *   decode     → read a merchant QR (no money moves)
+ *   create     → create the Payment; returns the escrow depositInstructions (no money moves yet)
+ *   get        → re-read a Payment
+ * The money only moves when the admin sends the exact USDC to the escrow address from the app.
+ * QR payloads and decoded account numbers are sensitive: never logged or stored here.
+ */
+const handleQr = async (
+   admin: SupabaseClient,
+   userId: string,
+   action: string,
+   body: { country?: unknown; qrPayload?: unknown; amount?: unknown; paymentId?: unknown; requestKey?: unknown }
+) => {
+   const { data: row } = await admin
+      .from('stableyard_accounts')
+      .select('account_id, settlement_wallet')
+      .eq('user_id', userId)
+      .maybeSingle();
+   const accountId = row?.account_id as string | undefined;
+   if (!accountId) return json({ error: 'No Stableyard account yet. Open the deposit test first to create one.' }, 409);
+
+   const fail = (result: { status: number; error: string; code?: string; requestId?: string; data?: unknown }) =>
+      json(
+         {
+            ok: false,
+            accountId,
+            stableyardStatus: result.status,
+            error: result.error,
+            code: result.code ?? null,
+            requestId: result.requestId ?? null,
+            response: result.data ?? null
+         },
+         502
+      );
+
+   if (action === 'status') {
+      const [source, kyc] = await Promise.all([stableyard.getPaymentSource(accountId), stableyard.getKyc(accountId)]);
+      if (!source.ok) return fail(source);
+      return json({ ok: true, accountId, step: 'status', paymentSource: source.data, kyc: kyc.ok ? kyc.data : null });
+   }
+
+   if (action === 'use_wallet') {
+      const bundle = await stableyard.getAccountBundle(accountId);
+      if (!bundle.ok) return fail(bundle);
+      const wallet = String(row?.settlement_wallet ?? '').toLowerCase();
+      const linked = (bundle.data.connectedWallets ?? []).find(
+         (w) => w.chainId === BASE_CHAIN_ID && w.address.toLowerCase() === wallet && w.status !== 'disabled'
+      );
+      if (!linked) return json({ ok: false, accountId, error: 'Your Moodeng wallet is not linked to this Stableyard account.' }, 409);
+      const result = await stableyard.setPaymentSource(accountId, linked.id);
+      return result.ok ? json({ ok: true, accountId, step: 'use_wallet', result: result.data }) : fail(result);
+   }
+
+   if (action === 'get') {
+      const paymentId = String(body.paymentId ?? '').trim();
+      if (!/^payment_[A-Za-z0-9_-]+$/.test(paymentId)) return json({ error: 'Invalid payment ID.' }, 400);
+      const result = await stableyard.getPayment(paymentId);
+      if (!result.ok) return fail(result);
+      // Only ever show the caller their own payments.
+      if (!JSON.stringify(result.data).includes(accountId)) return json({ error: 'Not your payment.' }, 403);
+      return json({ ok: true, accountId, step: 'get', result: result.data });
+   }
+
+   const country = String(body.country ?? '')
+      .trim()
+      .toUpperCase();
+   const rules = QR_COUNTRIES[country];
+   const qrPayload = String(body.qrPayload ?? '').trim();
+   if (!rules) return json({ error: 'Country must be PH or VN.' }, 400);
+   if (!qrPayload || qrPayload.length > 4096) return json({ error: 'Paste the QR text (1–4096 characters).' }, 400);
+
+   if (action === 'decode') {
+      const result = await stableyard.decodeQr(accountId, country, qrPayload);
+      return result.ok ? json({ ok: true, accountId, step: 'decode', result: result.data }) : fail(result);
+   }
+
+   // create
+   const amount = String(body.amount ?? '').trim();
+   if (!FIAT_AMOUNT.test(amount) || Number(amount) <= 0) return json({ error: 'Enter an amount like 100 or 100.50.' }, 400);
+   if (Number(amount) > rules.max) return json({ error: `Test payments are capped at ${rules.max} ${rules.currency}.` }, 400);
+   // One key per press from the client, so a double-tap can't create two Payments.
+   const requestKey = String(body.requestKey ?? '').trim();
+   if (!/^[A-Za-z0-9-]{8,64}$/.test(requestKey)) return json({ error: 'Missing request key.' }, 400);
+   const result = await stableyard.createQrPayment(
+      accountId,
+      { country, qrPayload, amount, currency: rules.currency },
+      `moodeng-qr:${accountId}:${requestKey}`
+   );
+   return result.ok ? json({ ok: true, accountId, step: 'create', result: result.data }) : fail(result);
+};
+
 const loadNetworks = async (): Promise<StableyardDepositNetwork[]> => {
    const result = await stableyard.depositNetworks();
    if (!result.ok) {
@@ -188,7 +293,7 @@ serve(async (req) => {
    const userId = userData?.user?.id;
    if (userError || !userId) return json({ error: 'Authentication required' }, 401);
 
-   if (Deno.env.get('STABLEYARD_DEPOSITS_PUBLIC') !== 'true') {
+   const isAdmin = async () => {
       const { data: adminRow } = await admin
          .from('admin_users')
          .select('user_id')
@@ -196,11 +301,25 @@ serve(async (req) => {
          .eq('active', true)
          .in('role', ['owner', 'admin'])
          .maybeSingle();
-      if (!adminRow) return json({ enabled: false, addresses: [], deposits: [] });
+      return Boolean(adminRow);
+   };
+   if (Deno.env.get('STABLEYARD_DEPOSITS_PUBLIC') !== 'true' && !(await isAdmin())) {
+      return json({ enabled: false, addresses: [], deposits: [] });
    }
 
    const body = await req.json().catch(() => ({}));
    const refresh = Boolean(body?.refresh);
+
+   // QR payments stay admin-only even once deposits go public.
+   if (QR_ACTIONS.has(String(body?.qr ?? ''))) {
+      if (!(await isAdmin())) return json({ error: 'Forbidden: admin account required' }, 403);
+      try {
+         return await handleQr(admin, userId, String(body.qr), body);
+      } catch (err) {
+         console.error('[stableyard-deposit-address] qr error', (err as Error).message);
+         return json({ error: 'Stableyard QR payments are unavailable right now.' }, 500);
+      }
+   }
 
    if (ONBOARDING_ACTIONS.has(String(body?.onboarding ?? ''))) {
       try {
