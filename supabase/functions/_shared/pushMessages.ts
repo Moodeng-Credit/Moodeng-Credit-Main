@@ -21,6 +21,7 @@ export type PushNotificationType =
    | 'overdue'
    | 'funded'
    | 'repayment_received'
+   | 'partial_repayment'
    | 'request_expired'
    | 'video_call_reminder'
    | 'loan_access_decision'
@@ -337,6 +338,26 @@ const buildRepaymentReceivedPush = (context: { amount: number }, locale: PushLoc
    };
 };
 
+// Borrower-facing: a repayment that left a balance. Says what was paid AND what's left, so someone
+// who tapped Repay by accident (or thought it was Cash out) finds out straight away.
+const buildPartialRepaymentPush = (context: { paid: number; left: number }, locale: PushLocale): PushPayload => {
+   const paid = formatUsdc(context.paid);
+   const left = formatUsdc(context.left);
+   const copy: Record<PushLocale, { title: string; body: string }> = {
+      en: { title: `We got your ${paid} payment`, body: `${left} left on your loan. Didn't mean to pay? Message us right away.` },
+      fil: { title: `Natanggap namin ang ${paid} mo`, body: `${left} pa ang natitira sa loan mo. Hindi sinasadya? I-message kami agad.` },
+      id: { title: `Pembayaran ${paid} diterima`, body: `Sisa pinjamanmu ${left}. Tidak sengaja bayar? Segera hubungi kami.` }
+   };
+
+   return {
+      type: 'partial_repayment',
+      title: copy[locale].title,
+      body: copy[locale].body,
+      url: buildAppUrl('/repay'),
+      tag: 'partial-repayment'
+   };
+};
+
 const buildRequestExpiredPush = (locale: PushLocale): PushPayload => {
    const copy: Record<PushLocale, { title: string; body: string }> = {
       en: { title: 'Your loan request expired', body: 'No lender funded it in time. Tap to post it again or talk to support.' },
@@ -451,4 +472,5 @@ export const buildVerificationDecisionPushPayload = buildVerificationDecisionPus
 export const buildDuePushPayload = buildDuePush;
 export const buildFundedPushPayload = buildFundedPush;
 export const buildRepaymentReceivedPushPayload = buildRepaymentReceivedPush;
+export const buildPartialRepaymentPushPayload = buildPartialRepaymentPush;
 export const buildRequestExpiredPushPayload = buildRequestExpiredPush;

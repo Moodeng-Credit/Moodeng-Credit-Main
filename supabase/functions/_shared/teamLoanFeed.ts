@@ -1,4 +1,4 @@
-// Team-facing "loan funded" / "loan repaid" posts, plus the daily "coming due" digest, for the #loans Discord channel (the same feed as
+// Team-facing "loan funded" / "partial repayment" / "loan repaid" posts, plus the daily "coming due" digest, for the #loans Discord channel (the same feed as
 // "New loan request") and, for funding, the admin Telegram channel. Each post goes out once per loan:
 // the loan_notifications row is claimed first (unique per loan + type), so the two callers of
 // loan-funded-notification (confirm-loan-payment and the app) can't both post it.
@@ -175,6 +175,73 @@ export const postLoanRepaidToTeam = async (svc: SupabaseClient, loanId: string):
       return ok;
    } catch (err) {
       console.error('teamLoanFeed: repaid post failed for', loanId, err instanceof Error ? err.message : err);
+      return false;
+   }
+};
+
+// A borrower who pays back within this long of being funded may have tapped Repay by mistake (or
+// thought it was Cash out): in Oct 2026 a borrower repaid her whole loan two days in, and nobody knew.
+const QUICK_REPAY_MS = 3 * 24 * 60 * 60 * 1000;
+
+/**
+ * "🟡 Partial repayment" → #loans Discord + the team Telegram group (the one "loan repaid" posts to).
+ * One post per payment, so no claim row: confirm-loan-payment runs once per payment hash. Never throws.
+ */
+export const postPartialRepaymentToTeam = async (svc: SupabaseClient, loanId: string, paidNow: number): Promise<boolean> => {
+   try {
+      const loan = await loadLoan(svc, loanId);
+      if (!loan?.borrower_user_id || loan.is_test || loan.repayment_status !== 'Partial') return false;
+
+      const { borrower, lender } = await loadPeople(svc, loan);
+      const total = Number(loan.total_repayment_amount ?? 0);
+      const repaid = Number(loan.repaid_amount ?? 0);
+      const zones = await loadBorrowerTimezones(svc, [loan.borrower_user_id]).catch(() => new Map<string, string>());
+      const zone = loanTimezone(loan, zones.get(loan.borrower_user_id) ?? 'Asia/Manila');
+      const due = loan.due_date ? formatDeadlineForTeam(loan.due_date, zone, await getTeamTimezone(svc)) : '—';
+      const quick = loan.funded_at ? Date.now() - new Date(loan.funded_at).getTime() < QUICK_REPAY_MS : false;
+      const tx = buildTxExplorerLink((loan.hash ?? []).at(-1));
+
+      const lines = [
+         `🟡 ${await borrowerLabel(borrower)} paid ${usdc(paidNow)} to ${handle(lender)} (partial)`,
+         `${loan.tracking_id ?? loan.id}`,
+         `💵 ${usdc(repaid)} of ${usdc(total)} paid · ${usdc(Math.max(total - repaid, 0))} left`,
+         `⏳ Due ${due}`,
+         quick ? '⚠️ Paid within 3 days of funding: may be an accidental tap. Check in with them.' : '',
+         tx ? `🔗 ${tx}` : ''
+      ].filter(Boolean);
+
+      const discordOk = await postDiscord(
+         {
+            embeds: [
+               {
+                  title: '🟡 Partial repayment',
+                  description: lines.join('\n'),
+                  url: adminUserUrl(loan.borrower_user_id, borrower?.username),
+                  color: quick ? 0xe67e22 : 0xf1c40f,
+                  timestamp: new Date().toISOString()
+               }
+            ]
+         },
+         { prefer: ['DISCORD_REQUESTS_WEBHOOK_URL'] }
+      );
+
+      let telegramOk = false;
+      const { data: feed } = await svc.from('telegram_bot_settings').select('value').eq('key', 'repayment_team_feed_enabled').maybeSingle();
+      const { data: chat } = await svc.from('telegram_bot_settings').select('value').eq('key', 'team_group_chat_id').maybeSingle();
+      const chatId = (chat?.value as string | undefined) ?? Deno.env.get('TEAM_TELEGRAM_CHAT_ID');
+      if (feed?.value === 'true' && chatId) {
+         telegramOk = await sendTelegramMessage(chatId, lines.join('\n'), {
+            inlineKeyboard: [[{ text: 'View borrower', url: adminUserUrl(loan.borrower_user_id, borrower?.username) }]]
+         })
+            .then(() => true)
+            .catch((err) => {
+               console.error('teamLoanFeed: partial-repayment Telegram failed:', err instanceof Error ? err.message : err);
+               return false;
+            });
+      }
+      return discordOk || telegramOk;
+   } catch (err) {
+      console.error('teamLoanFeed: partial-repayment post failed for', loanId, err instanceof Error ? err.message : err);
       return false;
    }
 };
