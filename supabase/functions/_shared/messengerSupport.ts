@@ -8,18 +8,16 @@
 //       card for people who aren't Moodeng users yet).
 //   Team taps Reply in Discord → discord-interactions saves it as an 'agent' widget_messages row
 //     → trigger (migration 20261023140000) → sendpulse-events ?relay=1 → relayAgentReply() sends it
-//       on Messenger. A reply Meta refuses (outside its 24h window) is flagged in Discord.
+//       on Messenger. A reply Meta refuses (outside its 24h window) is flagged in the admin Telegram chat.
 //
 // Facebook confirmation traffic (MDNG codes, Get Started, bot button taps) never becomes a ticket.
 import { adminUserUrl } from './adminCards.ts';
-import { postDiscord } from './discord.ts';
 import { PAGE_INBOX_URL, SITE_URL } from './loanAccess.ts';
 import { type MessengerCard, sendMessengerMessage } from './sendpulse.ts';
+import { alertTeam, postToTicket } from './supportTickets.ts';
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
-
-const WIDGET_API = (Deno.env.get('WEB_BASE_URL') || 'https://web-iota-sage-38.vercel.app').replace(/\/$/, '');
 
 // The team answers 10 AM – 10 PM Thai time (Bangkok, UTC+7).
 const OPEN_HOUR = 10;
@@ -129,22 +127,6 @@ const findOrCreateConversation = async (
    return { conversation: data as Conversation, created: true };
 };
 
-// Same path as a website chat message: saved, posted into the Discord ticket, board refreshed.
-const postToTicket = async (conversation: Conversation, body: string): Promise<boolean> => {
-   try {
-      const res = await fetch(`${WIDGET_API}/api/message`, {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ conversation_id: conversation.id, token: conversation.token, body })
-      });
-      if (!res.ok) console.error('messengerSupport: widget /api/message responded', res.status, (await res.text()).slice(0, 200));
-      return res.ok;
-   } catch (err) {
-      console.error('messengerSupport: widget /api/message failed', err instanceof Error ? err.message : err);
-      return false;
-   }
-};
-
 const ATTACHMENT_NOTE = '📎 Sent a photo or file on Messenger — open the Page inbox to see it.';
 
 export const openMessengerTicket = async (
@@ -167,9 +149,11 @@ export const openMessengerTicket = async (
    const posted = await postToTicket(conversation, body);
    if (!posted) {
       // The ticket couldn't be posted: still make sure someone sees it.
-      await postDiscord({
-         content: `💬 Messenger message from ${input.facebookName ?? 'someone'} couldn't reach the support ticket:\n> ${body.slice(0, 500)}\nAnswer in the Page inbox: <${PAGE_INBOX_URL}>`
-      });
+      await alertTeam(
+         svc,
+         `💬 Messenger message from ${input.facebookName ?? 'someone'} couldn't reach the Discord support ticket:\n> ${body.slice(0, 500)}\nAnswer in the Page inbox.`,
+         [[{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }]]
+      );
    }
 
    if (startsConversation) {
@@ -221,8 +205,10 @@ export const relayAgentReply = async (svc: Svc, messageId: string): Promise<{ ok
       sent.reason === 'send_failed'
          ? "Messenger refused it — most likely it's been more than 24 hours since they last wrote (Meta's rule)."
          : `SendPulse said: ${sent.reason}.`;
-   await postDiscord({
-      content: `⚠️ Your reply to ${who} was NOT delivered on Messenger. ${why}\nReply from the Page inbox instead: <${PAGE_INBOX_URL}>\n> ${message.body.slice(0, 300)}`
-   });
+   await alertTeam(
+      svc,
+      `⚠️ A Discord reply to ${who} was NOT delivered on Messenger. ${why}\nReply from the Page inbox instead.\n> ${message.body.slice(0, 300)}`,
+      [[{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }]]
+   );
    return { ok: false, reason: sent.reason };
 };
