@@ -18,6 +18,7 @@ import {
 import { autoMarkNoShow, closeReleasedCall, promptAdminsForAttendance } from '../_shared/videoCallOutcome.ts';
 import { RUNG, type Rung, shouldReleaseSlot, skipsDayBeforeReminder, skipsKeepSpot, targetRung } from './lib.ts';
 import { cancelCalBooking } from '../_shared/calcomCancel.ts';
+import { cancelCallButton } from '../_shared/callCancel.ts';
 import { isInternalRequest } from '../_shared/internalAuth.ts';
 import { postDiscord } from '../_shared/discord.ts';
 
@@ -320,6 +321,7 @@ const alertCallSheets = async (svc: any, now: number): Promise<number> => {
       const keyboard: TelegramInlineKeyboard = [
          [{ text: '📋 Open call sheet', url: sheetUrl }],
          ...(u.video_call_join_url ? [[{ text: '🎥 Join Zoom', url: u.video_call_join_url }]] : []),
+         [cancelCallButton(u.id)],
          ...testAccountRow(u.id, u.is_test)
       ];
       if (chatId) {
