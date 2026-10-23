@@ -70,7 +70,7 @@ type Borrower = { id: string; username: string | null; email: string | null; dis
 const ticketContext = (borrower: Borrower | null, facebookName: string | null) =>
    borrower
       ? [
-           `Messenger · Moodeng borrower ${borrower.display_name ?? ''}${borrower.username ? ` @${borrower.username}` : ''}`.trim(),
+           ['Messenger · Moodeng borrower', borrower.display_name?.trim(), borrower.username ? `@${borrower.username}` : null].filter(Boolean).join(' '),
            borrower.email ? `email ${borrower.email}` : null,
            borrower.cs !== null ? `credit level ${borrower.cs}` : null,
            `admin: ${adminUserUrl(borrower.id, borrower.username)}`
