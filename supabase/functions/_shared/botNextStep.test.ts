@@ -1,6 +1,6 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { type BotStage, type BotUserRow, botStage, nextStepReply } from './botNextStep.ts';
+import { type BotStage, type BotUserRow, borrowReply, borrowStep, botStage, type LoanState, NO_LOANS, nextStepReply } from './botNextStep.ts';
 
 const borrower = (over: Partial<BotUserRow> = {}): BotUserRow => ({
    user_role: 'borrower',
@@ -50,4 +50,42 @@ Deno.test('every reply fits Messenger limits, in both languages, with language l
 
 Deno.test('no greeting without a name', () => {
    assert(nextStepReply('apply', 'en').text.startsWith('🎉'));
+});
+
+const active: LoanState = { requested: false, active: { owed: 16.5, due: '2026-10-30T00:00:00Z', timeZone: 'Asia/Manila' }, repaidCount: 1 };
+
+Deno.test('borrow step skips what they have done', () => {
+   assertEquals(borrowStep('about', NO_LOANS), 2);
+   assertEquals(borrowStep('call_booked', NO_LOANS), 3);
+   assertEquals(borrowStep('id_review', NO_LOANS), 4);
+   assertEquals(borrowStep('verified', NO_LOANS), 4);
+   assertEquals(borrowStep('verified', { ...NO_LOANS, requested: true }), 5);
+   assertEquals(borrowStep('verified', active), 6);
+   assertEquals(borrowStep('verified', { ...NO_LOANS, repaidCount: 2 }), 7);
+});
+
+Deno.test('borrow checklist ticks done steps and points at the current one', () => {
+   const r = borrowReply('book_call', NO_LOANS, 'en', 'Maria');
+   assert(r.text.startsWith('Hi Maria! '));
+   assert(r.text.includes('✅ Sign up') && r.text.includes('👉 3. 15-min video call') && r.text.includes('▫️ 4.'));
+   assertEquals(r.buttons[0].title, 'Book your call');
+   const repay = borrowReply('verified', active, 'en', 'Maria');
+   assert(repay.text.includes('pay back $16.50 by Oct 30'), repay.text);
+   assert(repay.buttons[0].url.includes('/repay?lang=en'));
+   const fresh = borrowReply('unlinked', NO_LOANS, 'fil', 'Juan');
+   assert(fresh.imageUrl?.endsWith('how-to-borrow-fil.png'));
+});
+
+Deno.test('every borrow reply fits Messenger limits', () => {
+   const states: LoanState[] = [NO_LOANS, { ...NO_LOANS, requested: true }, active, { ...NO_LOANS, repaidCount: 3 }];
+   for (const stage of STAGES) {
+      for (const loans of states) {
+         for (const locale of ['en', 'fil'] as const) {
+            const r = borrowReply(stage, loans, locale, 'Maria', 2);
+            assert(r.text.length <= 640, `${stage}/${locale} borrow text is ${r.text.length} chars`);
+            assert(r.cardTitle.length <= 80);
+            for (const b of r.buttons) assert(b.title.length <= 20 && b.url.includes(`lang=${locale}`), `${stage}/${locale} ${b.title} ${b.url}`);
+         }
+      }
+   }
 });

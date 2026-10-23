@@ -8,7 +8,7 @@
 //   wallet → Messenger → about you → book call → call booked   (onboarding, the pre-KYC gate)
 //   apply → ID check (processing / review / unfinished / declined / duplicate) → verified
 import { APPLY_URL, CONNECT_URL, SITE_URL } from './loanAccess.ts';
-import { type BotLocale, signUpUrl, toBotLocale } from './messengerSupport.ts';
+import { type BotLocale, borrowCardImage, signUpUrl, toBotLocale } from './messengerSupport.ts';
 import { isKycVerified, kycTriesLeft, needsPreKycGate } from './preKycGate.ts';
 
 // deno-lint-ignore no-explicit-any
@@ -194,12 +194,19 @@ export const nextStepReply = (stage: BotStage, locale: BotLocale, firstName: str
 const USER_COLUMNS =
    'id, display_name, user_role, wallet_address, messenger_verified_at, whatsapp_verified_at, income_type, loan_access_status, is_didit, is_world_id, didit_id_status, didit_submitted_at, preferred_locale';
 
-// Loads the account linked to this Messenger contact (users.messenger_psid, or one claimed in
-// messenger_contacts) and builds their reply. `locale` from the flow wins; otherwise the saved one.
-export const loadNextStep = async (svc: Svc, contactId: string, flowLocale?: string | null) => {
+const firstWord = (name: string | null | undefined) => name?.trim().split(/\s+/)[0] || null;
+
+// The account linked to this Messenger contact (users.messenger_psid, or one claimed in
+// messenger_contacts), where they are, and what to call them: their name on Moodeng, else their
+// Facebook name (so people without an account are greeted too). `locale` from the flow wins.
+const loadPerson = async (svc: Svc, contactId: string, flowLocale?: string | null) => {
    const byPsid = await svc.from('users').select(USER_COLUMNS).eq('messenger_psid', contactId).limit(1).maybeSingle();
    let user = byPsid.data;
-   const { data: contact } = await svc.from('messenger_contacts').select('user_id, locale').eq('contact_id', contactId).maybeSingle();
+   const { data: contact } = await svc
+      .from('messenger_contacts')
+      .select('user_id, locale, facebook_name')
+      .eq('contact_id', contactId)
+      .maybeSingle();
    if (!user && contact?.user_id) {
       user = (await svc.from('users').select(USER_COLUMNS).eq('id', contact.user_id).maybeSingle()).data;
    }
@@ -208,6 +215,205 @@ export const loadNextStep = async (svc: Svc, contactId: string, flowLocale?: str
    const declined = user?.didit_id_status?.toLowerCase() === 'declined';
    const triesLeft = user && declined ? await kycTriesLeft(svc, user.id) : 0;
    const stage = botStage(user ?? null, gated, triesLeft);
-   const firstName = user?.display_name?.trim().split(/\s+/)[0] ?? null;
+   const firstName = firstWord(user?.display_name) ?? firstWord(contact?.facebook_name);
+   return { user, stage, locale, firstName, triesLeft };
+};
+
+export const loadNextStep = async (svc: Svc, contactId: string, flowLocale?: string | null) => {
+   const { stage, locale, firstName, triesLeft } = await loadPerson(svc, contactId, flowLocale);
    return { stage, locale, reply: nextStepReply(stage, locale, firstName, triesLeft) };
+};
+
+// ---------------------------------------------------------------------------------------------------
+// "📝 How to borrow": the six steps from the How-to-borrow card, ticked off for this person — ✅ done,
+// 👉 where they are (with what to do now), ▫️ still ahead — plus a button to their current step.
+// People without an account get the card image and a sign-up button instead.
+
+export type LoanState = {
+   /** A request on the board, not funded yet. */
+   requested: boolean;
+   /** The funded loan they're paying back now, if any. */
+   active: { owed: number; due: string | null; timeZone: string | null } | null;
+   /** Loans fully paid back. */
+   repaidCount: number;
+};
+
+export const NO_LOANS: LoanState = { requested: false, active: null, repaidCount: 0 };
+
+// 1 Sign up · 2 Wallet + Messenger + about you · 3 Video call · 4 Ask for a loan (ID last) ·
+// 5 A Moo-lender funds you · 6 Repay on time. Returns the step they're on (7 = all done).
+export const borrowStep = (stage: BotStage, loans: LoanState): number => {
+   if (loans.active) return 6;
+   if (loans.requested) return 5;
+   switch (stage) {
+      case 'wallet':
+      case 'messenger':
+      case 'about':
+         return 2;
+      case 'book_call':
+      case 'call_booked':
+         return 3;
+      case 'verified':
+         return loans.repaidCount > 0 ? 7 : 4;
+      default:
+         return 4;
+   }
+};
+
+const STEPS = {
+   en: [
+      'Sign up',
+      'Set up your wallet, connect Messenger, tell us about you',
+      '15-min video call with George or Emma',
+      'Ask for your first $15 (verify your ID as the last step)',
+      'A Moo-lender funds you',
+      'Repay on time, your limit grows'
+   ],
+   fil: [
+      'Mag-sign up',
+      'I-set up ang wallet, i-connect ang Messenger, magkuwento tungkol sa iyo',
+      '15-min video call kasama si George o Emma',
+      'Humiram ng unang $15 (i-verify ang ID sa huling hakbang)',
+      'Popondohan ka ng Moo-lender',
+      'Magbayad sa oras, tataas ang limit mo'
+   ]
+};
+
+const formatDue = (due: string | null, timeZone: string | null, locale: BotLocale) => {
+   if (!due) return null;
+   try {
+      return new Intl.DateTimeFormat(locale === 'fil' ? 'fil-PH' : 'en-US', {
+         month: 'short',
+         day: 'numeric',
+         timeZone: timeZone || 'Asia/Manila'
+      }).format(new Date(due));
+   } catch {
+      return null;
+   }
+};
+
+const money = (n: number) => `$${n.toFixed(2).replace(/\.00$/, '')}`;
+
+export type BorrowReply = NextStepReply & { imageUrl?: string };
+
+export const borrowReply = (
+   stage: BotStage,
+   loans: LoanState,
+   locale: BotLocale,
+   firstName: string | null = null,
+   triesLeft = 0
+): BorrowReply => {
+   const fil = locale === 'fil';
+   const say = (en: string, tl: string) => (fil ? tl : en);
+   const hi = firstName ? `Hi ${firstName}! ` : '';
+   const back = BACK[locale];
+   const cardTitle = say('👇 Your next step', '👇 Ang susunod mong hakbang');
+
+   if (stage === 'unlinked' || stage === 'lender') {
+      return {
+         text: `${hi}${say(
+            "📝 Here's how your first loan works, step by step. Sign up free and ask for your first $15 👇",
+            '📝 Ganito gumagana ang unang loan mo, hakbang-hakbang. Mag-sign up nang libre at humiram ng unang $15 mo 👇'
+         )}\n\n${back}`,
+         cardTitle: say('Your first loan in 6 steps', 'Unang loan mo sa 6 na hakbang'),
+         imageUrl: borrowCardImage(locale),
+         buttons: [{ title: say('Start now', 'Simulan na'), url: signUpUrl(locale) }]
+      };
+   }
+
+   const step = borrowStep(stage, loans);
+   const now = nextStepReply(stage, locale, null, triesLeft);
+   // What to do at their current step, in one line.
+   let doNow: string;
+   let buttons: Button[];
+   if (step === 6 && loans.active) {
+      const due = formatDue(loans.active.due, loans.active.timeZone, locale);
+      doNow = say(
+         `pay back ${money(loans.active.owed)}${due ? ` by ${due}` : ''}. On time = a higher limit next time.`,
+         `bayaran ang ${money(loans.active.owed)}${due ? ` bago mag-${due}` : ''}. Kapag on time, mas mataas ang limit mo sa susunod.`
+      );
+      buttons = [{ title: say('Repay', 'Magbayad'), url: withLang(`${SITE_URL}/repay`, locale) }];
+   } else if (step === 5) {
+      doNow = say(
+         "your request is on the board, waiting for a Moo-lender. We'll message you here when it's funded.",
+         'nasa board na ang request mo, naghihintay ng Moo-lender. Ime-message ka namin dito kapag napondohan na.'
+      );
+      buttons = [{ title: say('See my request', 'Tingnan ang request'), url: withLang(`${SITE_URL}/request-board`, locale) }];
+   } else {
+      // Onboarding and the ID check: the verify button's buttons, with a one-line summary here.
+      const NOW: Partial<Record<BotStage, [string, string]>> = {
+         wallet: ['set up your wallet. It takes a few seconds.', 'i-set up ang wallet mo. Ilang segundo lang.'],
+         messenger: ['connect Messenger in the app.', 'i-connect ang Messenger sa app.'],
+         about: ['tell us a little about your work and payday (about a minute).', 'magkuwento tungkol sa trabaho at sweldo mo (mga isang minuto).'],
+         book_call: ['book your 15-min video call.', 'mag-book ng 15-min video call.'],
+         call_booked: ["your call is booked. See you there! Right after it, you can ask for your loan.", 'naka-book na ang call mo. Kita tayo! Pagkatapos nito, puwede ka nang humiram.'],
+         apply: ['ask for your loan. The ID check (about 3 minutes) is the last step before it\'s sent. Use Chrome or Safari.', 'humiram ng loan mo. Ang ID check (mga 3 minuto) ang huling hakbang bago ipadala. Gamitin ang Chrome o Safari.'],
+         id_processing: ["we're checking your ID. Nothing to do, we'll message you here.", 'sinusuri namin ang ID mo. Wala ka nang gagawin, ime-message ka namin dito.'],
+         id_review: ["a person is reviewing your ID, usually within a few hours. We'll message you here.", 'may nagre-review ng ID mo, kadalasan ilang oras lang. Ime-message ka namin dito.'],
+         id_unfinished: ['finish your ID check (about 3 minutes). Use Chrome or Safari.', 'tapusin ang ID check mo (mga 3 minuto). Gamitin ang Chrome o Safari.'],
+         id_declined: [`try your ID check again (${triesLeft} left). Sharp photo, no glare, good light.`, `subukan ulit ang ID check (${triesLeft} pa). Malinaw na litrato, walang silaw, maliwanag.`],
+         id_no_tries: ['type your question here and the team will help with your ID.', 'i-type ang tanong mo dito at tutulungan ka ng team sa ID mo.'],
+         id_duplicate: ['type your question here and the team will help.', 'i-type ang tanong mo dito at tutulungan ka ng team.'],
+         verified: ["you're verified! Ask for your first loan.", 'verified ka na! Humiram ng unang loan mo.']
+      };
+      const line = NOW[stage] ?? NOW.apply!;
+      doNow = say(line[0], line[1]);
+      buttons = now.buttons;
+   }
+
+   if (step === 7) {
+      return {
+         text: `${hi}${say(
+            `🎉 You've done all 6 steps and repaid ${loans.repaidCount} ${loans.repaidCount === 1 ? 'loan' : 'loans'}. Ask for your next one anytime, your limit grows each time.`,
+            `🎉 Natapos mo na ang 6 na hakbang at nabayaran ang ${loans.repaidCount} loan. Humiram ulit kahit kailan, tumataas ang limit mo bawat beses.`
+         )}\n\n${back}`,
+         cardTitle,
+         buttons: [{ title: say('Ask for a loan', 'Humiram na'), url: withLang(APPLY_URL, locale) }]
+      };
+   }
+
+   const list = STEPS[locale]
+      .map((label, i) => {
+         const n = i + 1;
+         if (n < step) return `✅ ${label}`;
+         if (n === step) return `👉 ${n}. ${label}`;
+         return `▫️ ${n}. ${label}`;
+      })
+      .join('\n');
+   const header = say(`📝 Here's where you are (step ${step} of 6):`, `📝 Nandito ka na (hakbang ${step} sa 6):`);
+   const nowLine = say(`Now: ${doNow}`, `Ngayon: ${doNow}`);
+   return { text: `${hi}${header}\n\n${list}\n\n${nowLine}\n\n${back}`, cardTitle, buttons };
+};
+
+const loadLoanState = async (svc: Svc, userId: string): Promise<LoanState> => {
+   const { data, error } = await svc
+      .from('loans')
+      .select('loan_status, repayment_status, funded_at, repaid_at, refunded_at, total_repayment_amount, repaid_amount, due_date, due_timezone, created_at')
+      .eq('borrower_user_id', userId)
+      .or('is_test.is.null,is_test.eq.false')
+      .order('created_at', { ascending: false });
+   if (error || !data) {
+      if (error) console.error('[borrow] loans lookup failed', error.message);
+      return NO_LOANS;
+   }
+   const rows = data as Array<Record<string, unknown>>;
+   const live = rows.filter((l) => !l.refunded_at);
+   const active = live.find((l) => l.funded_at && !l.repaid_at && l.repayment_status !== 'Paid');
+   return {
+      requested: live.some((l) => !l.funded_at && l.loan_status === 'Requested'),
+      active: active
+         ? {
+              owed: Math.max(0, Number(active.total_repayment_amount ?? 0) - Number(active.repaid_amount ?? 0)),
+              due: (active.due_date as string | null) ?? null,
+              timeZone: (active.due_timezone as string | null) ?? null
+           }
+         : null,
+      repaidCount: live.filter((l) => l.repaid_at || l.repayment_status === 'Paid').length
+   };
+};
+
+export const loadBorrowSteps = async (svc: Svc, contactId: string, flowLocale?: string | null) => {
+   const { user, stage, locale, firstName, triesLeft } = await loadPerson(svc, contactId, flowLocale);
+   const loans = user ? await loadLoanState(svc, user.id) : NO_LOANS;
+   return { stage, locale, reply: borrowReply(stage, loans, locale, firstName, triesLeft) };
 };

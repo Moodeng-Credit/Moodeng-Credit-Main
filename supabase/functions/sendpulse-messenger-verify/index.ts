@@ -17,7 +17,7 @@ import {
    normalizeWhatsAppPhone,
    sendMessengerMessage
 } from '../_shared/sendpulse.ts';
-import { loadNextStep } from '../_shared/botNextStep.ts';
+import { loadBorrowSteps, loadNextStep } from '../_shared/botNextStep.ts';
 import { saveBotLocale } from '../_shared/messengerSupport.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { testAccountRow } from '../_shared/testAccount.ts';
@@ -361,6 +361,23 @@ serve(async (req) => {
       const sent = await sendMessengerMessage(contactId, { text: reply.text, card });
       if (!sent.ok) {
          console.error(`[next_step] send failed for ${contactId} (${stage}): ${sent.reason}`);
+         return json({ ok: false, stage, error: sent.reason }, 502);
+      }
+      return json({ ok: true, stage, locale });
+   }
+
+   // The bot menu's 📝 How to borrow: {"action":"how_to_borrow","psid":"{{contact_id}}","locale":"{{lang}}"}.
+   // The six steps ticked off for this person, or the step card + sign-up button if they have no account.
+   if (body.action === 'how_to_borrow') {
+      const contactId = body.psid ? String(body.psid).trim() : '';
+      if (!contactId) return json({ ok: false, error: 'bad_request' }, 400);
+      const flowLocale = body.locale === 'fil' || body.locale === 'en' ? body.locale : null;
+      const { stage, locale, reply } = await loadBorrowSteps(createClient(SUPABASE_URL, SERVICE_KEY), contactId, flowLocale);
+      const [button, ...moreButtons] = reply.buttons;
+      const card = button ? { title: reply.cardTitle, imageUrl: reply.imageUrl, button, moreButtons } : undefined;
+      const sent = await sendMessengerMessage(contactId, { text: reply.text, card });
+      if (!sent.ok) {
+         console.error(`[how_to_borrow] send failed for ${contactId} (${stage}): ${sent.reason}`);
          return json({ ok: false, stage, error: sent.reason }, 502);
       }
       return json({ ok: true, stage, locale });
