@@ -16,6 +16,7 @@ import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { useIsFundingAdmin } from '@/hooks/useIsFundingAdmin';
+import { trackPaymentStep } from '@/lib/analytics/paymentSteps';
 import { holdAtFull, type PaymentStage, useStagedProgress } from '@/hooks/useStagedProgress';
 import useWallet, { type PaymentMethod, toSettlementMethod, useActivePaymentMethod } from '@/hooks/useWallet';
 
@@ -249,6 +250,7 @@ export default function UserCard(loan: UserCardProps) {
    // phase; the underlying wallet promise can't be aborted, so cancelledRef guards the
    // success UI if it resolves late, and any payment that did broadcast is left to the reconciler.
    const handleCancelProcessing = () => {
+      trackPaymentStep('cancelled', { flow: 'lend', loan_id: loanData.id, had_tx: Boolean(pendingTxHash) });
       cancelledRef.current = true;
       setIsProcessing(false);
       setPendingTxHash(null);
@@ -272,6 +274,8 @@ export default function UserCard(loan: UserCardProps) {
       async (method: PaymentMethod) => {
          if (lendInFlightRef.current || isProcessing || loanData.loanStatus === 'Lent') return;
          lendInFlightRef.current = true;
+         const stepProps = { flow: 'lend', method, loan_id: loanData.id };
+         trackPaymentStep('tapped', stepProps);
          try {
 
          if (loanData.borrowerUser === userId) {
@@ -360,6 +364,7 @@ export default function UserCard(loan: UserCardProps) {
          setProcessingMethod(method);
          setPendingTxHash(null);
          setFundStage('signing');
+         trackPaymentStep('started', stepProps);
 
          try {
             const outcome = await payUsdc({
@@ -372,6 +377,7 @@ export default function UserCard(loan: UserCardProps) {
                // "Confirming" and arm reconciliation so an approved-but-unconfirmed fund still gets
                // marked Lent later instead of stranding the money.
                onSubmitted: (id) => {
+                  trackPaymentStep('approved', stepProps);
                   setPendingTxHash(id);
                   setFundStage('sent');
                   registerPendingBasePayment({ kind: 'fund', id, loanId: loanData.id, userId });
@@ -418,6 +424,7 @@ export default function UserCard(loan: UserCardProps) {
                if (confirmLoanPayment.fulfilled.match(updateResult)) {
                   // DB write landed — the reconciler has nothing left to finish for this payment.
                   clearPendingBasePayment(outcome.hash);
+                  trackPaymentStep('recorded', stepProps);
                   const sideEffectErrors = updateResult.meta.sideEffectErrors ?? [];
                   // Recorded: let the ring reach 100% for a beat before the success screen.
                   if (!cancelledRef.current) {
@@ -455,6 +462,7 @@ export default function UserCard(loan: UserCardProps) {
                   // lingering behind the success modal until the next poll.
                   void dispatch(fetchLoans());
                } else if (updateResult.error?.name === 'PaymentNotConfirmedError') {
+                  trackPaymentStep('still_confirming', stepProps);
                   // Payment sent but not yet confirmed on-chain — the reconciler (armed in
                   // onSubmitted) finishes the DB write once it settles. Not a failure.
                   showToast(
@@ -469,6 +477,7 @@ export default function UserCard(loan: UserCardProps) {
                } else {
                   const errorMessage = updateResult.error?.message ?? 'Unknown error';
                   console.error('[CRITICAL] Lending transaction succeeded but database update failed:', errorMessage);
+                  trackPaymentStep('record_failed', { ...stepProps, error: errorMessage.slice(0, 300) });
                   if (/contact support for a refund/i.test(errorMessage)) {
                      // Someone else funded it first (or it expired): retrying won't help, and the team
                      // has already been alerted to refund this payment.
@@ -483,10 +492,15 @@ export default function UserCard(loan: UserCardProps) {
                      `Your payment went through but we could not record the loan yet (${errorMessage}). We will keep retrying automatically — contact support if it doesn't update.`
                   );
                }
+            } else {
+               // No payment came back: payUsdc logged why (failed / stale build reload), or the
+               // person cancelled the overlay first.
+               trackPaymentStep('stopped', { ...stepProps, cancelled: cancelledRef.current });
             }
          } catch (transferError: unknown) {
             const errorMessage = transferError instanceof Error ? transferError.message : 'Unknown error';
             console.error('Transfer failed:', errorMessage);
+            trackPaymentStep('failed', { ...stepProps, error: errorMessage.slice(0, 300) });
             showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
          } finally {
             setIsProcessing(false);

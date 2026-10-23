@@ -6,6 +6,7 @@ import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { ALLOWED_CHAIN_DISPLAY_NAME, getAllowedChainTokenConfig } from '@/config/wagmiConfig';
+import { errorText, trackPaymentStep } from '@/lib/analytics/paymentSteps';
 import { BasePaymentError, startBasePayment, waitForBasePayment } from '@/lib/basePay';
 import { isStaleChunkError, reloadOnceForStaleChunk } from '@/lib/staleChunkReload';
 import { WALLET_RESPONSE_TIMEOUT_MS, WalletTimeoutError, withTimeout } from '@/lib/withTimeout';
@@ -192,6 +193,7 @@ const useWallet = () => {
             return null;
          }
          console.error('Tx failed:', err);
+         trackPaymentStep('failed', { method: 'wallet', loan_id: id, timed_out: err instanceof WalletTimeoutError, error: errorText(err) });
          toastTransferFailure(classifyTransferError(err));
          return null;
       }
@@ -247,6 +249,13 @@ const useWallet = () => {
                return null;
             }
             const paymentError = err instanceof BasePaymentError ? err : null;
+            trackPaymentStep('failed', {
+               method,
+               loan_id: loanId,
+               kind: paymentError?.kind ?? 'unknown',
+               submitted: Boolean(submittedId),
+               error: errorText(err)
+            });
             // Once startBasePayment resolved, onSubmitted armed the reconciler and the userOp is in
             // flight. A `timeout` (not confirmed in our window) or an `unknown` (pay() threw a
             // message we can't classify) does NOT prove the money stayed put — the reconciler owns
@@ -281,6 +290,7 @@ const useWallet = () => {
                return null;
             }
             console.error('[payUsdc:openfort] send failed', err);
+            trackPaymentStep('failed', { method, loan_id: loanId, error: errorText(err) });
             reportInstantWalletFailure('send', err);
             // The signer is still gone after an automatic reset (embeddedWallet.ts). Retrying in
             // this tab can't fix it, so say what does instead of the generic "Try again?".
