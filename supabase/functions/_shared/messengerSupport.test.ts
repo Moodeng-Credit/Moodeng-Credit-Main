@@ -1,6 +1,6 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { bangkokHour, buildAutoReply, isSupportMessage, isTeamOnline, SIGN_UP_URL } from './messengerSupport.ts';
+import { bangkokHour, borrowCardImage, buildAutoReply, isSupportMessage, isTeamOnline, signUpUrl } from './messengerSupport.ts';
 
 const msg = (text: string | null, extra: Partial<{ hasAttachment: boolean; isButtonTap: boolean; codes: string[] }> = {}) => ({
    text,
@@ -14,6 +14,9 @@ Deno.test('only real questions become tickets', () => {
    assert(isSupportMessage(msg('how do I repay?')));
    assert(isSupportMessage(msg(null, { hasAttachment: true })));
    assert(!isSupportMessage(msg('Get started')));
+   assert(!isSupportMessage(msg('Menu')));
+   assert(!isSupportMessage(msg('"menu"')));
+   assert(isSupportMessage(msg('menu for repaying?')));
    assert(!isSupportMessage(msg('  ')));
    assert(!isSupportMessage(msg('MDNG-3D66AD', { codes: ['MDNG-3D66AD'] })));
    assert(!isSupportMessage(msg("I'll be there", { isButtonTap: true })));
@@ -31,9 +34,18 @@ Deno.test('auto-reply: offline notice, and the sign-up card only for people with
    const night = buildAutoReply({ at: Date.parse('2026-10-23T17:00:00Z'), firstName: 'Ana', registered: false });
    assert(night.text.startsWith('Hi Ana! 👋'));
    assert(night.text.includes('offline right now'));
-   assertEquals(night.card?.button.url, SIGN_UP_URL);
+   assertEquals(night.card?.button.url, signUpUrl('en'));
+   assertEquals(night.card?.imageUrl, borrowCardImage('en'));
 
    const day = buildAutoReply({ at: Date.parse('2026-10-23T05:00:00Z'), firstName: null, registered: true });
    assert(day.text.includes('will reply right here soon'));
    assertEquals(day.card, undefined);
+});
+
+Deno.test('auto-reply in Filipino, with Filipino links', () => {
+   const fil = buildAutoReply({ at: Date.parse('2026-10-23T05:00:00Z'), firstName: 'Ana', registered: false, locale: 'fil' });
+   assert(fil.text.includes('Salamat sa mensahe mo'));
+   assert(fil.card?.button.url.includes('lang=fil'));
+   assert(fil.card!.button.title.length <= 20);
+   assertEquals(fil.card?.imageUrl, borrowCardImage('fil'));
 });

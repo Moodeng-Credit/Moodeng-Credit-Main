@@ -17,6 +17,7 @@ import {
    normalizeWhatsAppPhone,
    sendMessengerMessage
 } from '../_shared/sendpulse.ts';
+import { saveBotLocale } from '../_shared/messengerSupport.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { testAccountRow } from '../_shared/testAccount.ts';
 
@@ -226,6 +227,7 @@ type VerifyBody = {
    name?: string;
    channel?: string;
    action?: string;
+   locale?: string;
    // From sendpulse-events re-checking a message the SendPulse flow also handles: no "not yet" reply.
    quiet?: boolean;
    phone?: string;
@@ -334,6 +336,16 @@ serve(async (req) => {
    }
 
    if (body.channel === 'whatsapp') return await handleWhatsApp(createClient(SUPABASE_URL, SERVICE_KEY), body, new Date().toISOString());
+
+   // The bot menu's 🌐 Language buttons (a SendPulse "API request" step copied from the Confirm Facebook
+   // flow, so it carries this function's x-sendpulse-secret): {"action":"locale","locale":"fil","psid":"{{contact_id}}"}.
+   if (body.action === 'locale') {
+      const contactId = body.psid ? String(body.psid).trim() : '';
+      const locale = body.locale === 'fil' || body.locale === 'en' ? body.locale : null;
+      if (!contactId || !locale) return json({ ok: false, error: 'bad_request' }, 400);
+      await saveBotLocale(createClient(SUPABASE_URL, SERVICE_KEY), contactId, locale);
+      return json({ ok: true, locale });
+   }
 
    // Accept whichever field SendPulse is configured to send the code in.
    const raw = String(body.code ?? body.ref ?? body.message ?? '').trim();

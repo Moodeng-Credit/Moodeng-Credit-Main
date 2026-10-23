@@ -85,6 +85,12 @@ Deno.test('what the person wrote: platform text first, then last_message; attach
 
    const tap = { ...subscribe, title: 'incoming_message', info: { message: { channel_data: { postback: { payload: 'GET_STARTED' } } } } };
    assertEquals(parseSendPulseEvents([tap], NOW)[0].isButtonTap, true);
+   const menuTap = {
+      ...subscribe,
+      title: 'incoming_message',
+      info: { message: { channel_data: { message: { text: '📋 Menu / Help', postback: { title: '📋 Menu / Help', payload: 'eyJ9' } } } } }
+   };
+   assertEquals(parseSendPulseEvents([menuTap], NOW)[0].isButtonTap, true);
 
    // A subscribe never carries text, even though last_message is set.
    assertEquals(parseSendPulseEvents([subscribe], NOW)[0].text, null);

@@ -9,6 +9,7 @@ import { WagmiProvider } from 'wagmi';
 import { AuthInitializer } from '@/components/AuthInitializer';
 import BasePaymentReconciler from '@/components/BasePaymentReconciler';
 import Loading from '@/components/Loading';
+import AccountLocaleSync from '@/components/AccountLocaleSync';
 import LiveChatHost from '@/components/support/LiveChatHost';
 import { SupportContactsModalHost } from '@/components/support/SupportContactsModal';
 import { ThemeModeProvider } from '@/components/ThemeModeProvider';
@@ -69,6 +70,7 @@ export function Providers({ children }: { children: ReactNode }) {
                                unless configured; never touches the wagmi/Base stack above. */}
                            <OpenfortProvider>
                               <AuthInitializer />
+                              <AccountLocaleSync />
                               <ToastInitializer />
                               <WalletSyncInitializer />
                               <BasePaymentReconciler />
