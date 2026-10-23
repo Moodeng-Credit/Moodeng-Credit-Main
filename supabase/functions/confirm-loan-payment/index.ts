@@ -12,6 +12,8 @@ import {
    toNumber
 } from '../_shared/creditAndPoints.ts';
 import { DEFAULT_TIMEZONE, loanTimezone, pastDueAt } from '../_shared/loanDeadline.ts';
+import { notifyBorrowerPartialRepayment } from '../_shared/partialRepaymentNotice.ts';
+import { postPartialRepaymentToTeam } from '../_shared/teamLoanFeed.ts';
 import { PaymentNotConfirmedError, RPC_URL, rpcCall, type VerifiedTransfer, verifyPayment } from '../_shared/usdcTransfer.ts';
 
 // Server-side proof-of-payment gate for loan funding/repayment.
@@ -565,6 +567,14 @@ serve(async (req) => {
       creditLevelUp = progression.levelUp;
       const { error: notifyError } = await admin.functions.invoke('loan-repayment-received-notification', { body: { loanId } });
       if (notifyError) sideEffectErrors.push({ type: 'loan_notification', message: notifyError.message });
+   } else if (action === 'repay' && updatedLoan.repayment_status === 'Partial') {
+      // A payment that leaves a balance used to tell nobody. Tell the borrower what was paid and what's
+      // left (and how to reach us if it was a mistake), and post it to the team. Both never throw.
+      const paidNow = Number(transfer.micros) / 1e6;
+      await Promise.all([
+         notifyBorrowerPartialRepayment(admin, updatedLoan as Parameters<typeof notifyBorrowerPartialRepayment>[1], paidNow),
+         postPartialRepaymentToTeam(admin, loanId, paidNow)
+      ]);
    }
 
    // Repay browser feed → Discord. Fires on every repayment (partial or full), flags in-app
