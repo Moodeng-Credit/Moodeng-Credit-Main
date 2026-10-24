@@ -8,6 +8,7 @@ import { stableyard } from '../_shared/stableyard.ts';
 // "/v2/partners/me" in their onboarding email doesn't exist). An active admin calls this to confirm
 // STABLEYARD_APP_ID / STABLEYARD_APP_SECRET work against production, and to see which modules and
 // deposit networks are live for our app. Never returns the credentials.
+// POST { banks: 'PH' } lists the bank codes Stableyard accepts for a Philippine bank payout.
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -41,6 +42,16 @@ serve(async (req) => {
          .in('role', ['owner', 'admin'])
          .maybeSingle();
       if (!adminRow) return json({ error: 'Forbidden: admin account required' }, 403);
+   }
+
+   // ---- POST { banks: 'PH' | 'VN' } → the bank codes accepted for an external_bank payout -------
+   const body = await req.json().catch(() => ({}));
+   const banksCountry = String(body?.banks ?? '').toUpperCase();
+   if (banksCountry === 'PH' || banksCountry === 'VN') {
+      const banks = await stableyard.listBeneficiaryBanks(banksCountry);
+      return banks.ok
+         ? json({ ok: true, stableyardStatus: banks.status, country: banksCountry, banks: banks.data })
+         : json({ ok: false, stableyardStatus: banks.status, error: banks.error, code: banks.code ?? null }, 502);
    }
 
    // ---- GET /v2/partners/config -------------------------------------------------------------
