@@ -17,6 +17,12 @@ const REWARDED_ALL_MILESTONES = SAMPLE_ALL_MILESTONES.map((milestone, index) => 
    status: index < 3 ? ('unlocked' as const) : index === 3 ? ('next' as const) : ('locked' as const)
 }));
 
+// Emma's video demo: two loans funded, so "post a request" and "get funded" are done.
+const DEMO_ALL_MILESTONES = SAMPLE_ALL_MILESTONES.map((milestone, index) => ({
+   ...milestone,
+   status: index < 2 ? ('unlocked' as const) : index === 2 ? ('next' as const) : ('locked' as const)
+}));
+
 const SAMPLE_BASE: Omit<
    DashboardV2Model,
    'isVerified' | 'pandesal' | 'mood' | 'creditLevel' | 'creditLimit' | 'creditInUse' | 'creditHint' | 'dues' | 'summary' | 'hasOverdue'
@@ -109,5 +115,27 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
          ],
          claims: []
       }
+   },
+   // Not in the Figma: Emma's video demo (moodeng.app/borrower-demo) — a borrower with two active
+   // loans, $15 and $20, both on time.
+   demo: {
+      ...SAMPLE_BASE,
+      isVerified: true,
+      showConnectWallet: false,
+      showWithdraw: true,
+      pandesal: 45,
+      mood: 'loan',
+      milestones: DEMO_ALL_MILESTONES.slice(0, 3),
+      allMilestones: DEMO_ALL_MILESTONES,
+      creditLevel: 2,
+      creditLimit: 40,
+      creditInUse: 35,
+      creditHint: { highlight: '$40', rest: ' full-limit loan unlocks LV.3' },
+      summary: { repaymentsTotal: 0, active: 35, pending: 0, defaulted: 0 },
+      dues: [
+         { id: 'demo-due-1', amount: 15, daysRemaining: 4, lenderName: 'Maricar Cruz', isOverdue: false },
+         { id: 'demo-due-2', amount: 20, daysRemaining: 11, lenderName: 'Milagros Reyes', isOverdue: false }
+      ],
+      hasOverdue: false
    }
 };
