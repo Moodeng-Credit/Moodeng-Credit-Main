@@ -33,7 +33,7 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 //
 // And the onboarding friction digest (see _shared/clarityDigest.ts), internal callers only:
 // { action: 'clarity_digest', clarityToken, clarityProjectId, dryRun? } — pg_cron clarity-digest posts it
-// every 3 days at 08:00 Bangkok (01:00 UTC) to the team Telegram group + Discord, passing the token and project id from
+// every 3 days at 08:00 Bangkok (01:00 UTC) to the KYC / admin Telegram group + Discord #kyc, passing the token and project id from
 // the DB vault (CLARITY_API_TOKEN, CLARITY_PROJECT_ID). dryRun returns the text and the raw Clarity rows.
 
 const corsHeaders = {
@@ -288,18 +288,23 @@ async function clarityDigest(supabase: any, body: any): Promise<Response> {
 
    if (body?.dryRun) return json({ text, raw });
 
-   const { data: chats } = await supabase.from('telegram_bot_settings').select('value').eq('key', 'team_group_chat_id').maybeSingle();
+   // The KYC / admin group, with the other onboarding alerts: George keeps routine posts out of the team / fraud group.
+   const { data: chats } = await supabase.from('telegram_bot_settings').select('value').eq('key', 'kyc_alert_chat_id').maybeSingle();
    const chatId = chats?.value ?? Deno.env.get('TEAM_TELEGRAM_CHAT_ID');
    const telegramOk = chatId
       ? await sendTelegramMessage(chatId, text)
            .then(() => true)
            .catch((err) => (console.error('clarity digest: Telegram failed', err instanceof Error ? err.message : err), false))
       : false;
-   const discordOk = await postDiscord({
-      embeds: [
-         { title: '🔎 Onboarding friction', description: text.slice(0, 4000), color: 0x7c3aed, timestamp: new Date(now).toISOString() }
-      ]
-   });
+   // Discord #kyc: with no preferred key postDiscord falls back to DISCORD_TEAM_WEBHOOK_URL, which no longer exists.
+   const discordOk = await postDiscord(
+      {
+         embeds: [
+            { title: '🔎 Onboarding friction', description: text.slice(0, 4000), color: 0x7c3aed, timestamp: new Date(now).toISOString() }
+         ]
+      },
+      { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }
+   );
    return json({ posted: { telegram: telegramOk, discord: discordOk }, problems });
 }
 
