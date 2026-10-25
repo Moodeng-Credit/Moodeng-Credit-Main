@@ -76,3 +76,26 @@ describe('reason quality', () => {
       expect(checkReasonQuality('Rent balance of $80 due on 09/12, I get paid on the 15th').ok).toBe(true);
    });
 });
+
+describe('looksNotEnglish — Bahasa Indonesia (2026-10-25)', () => {
+   it('catches reasons written in Indonesian', () => {
+      for (const reason of [
+         'Saya butuh uang untuk bayar sekolah anak saya bulan ini',
+         'Untuk modal usaha warung kecil di rumah',
+         'Mau beli obat buat ibu yang sakit',
+         'Bayar kontrakan karena gaji telat'
+      ]) {
+         expect(looksNotEnglish(reason)).toBe(true);
+      }
+   });
+
+   it('lets English through, even with an Indonesian name or word in it', () => {
+      for (const reason of [
+         'I need money for my kids school fees this month',
+         'Dan my brother needs help paying rent this month',
+         'To restock my warung before payday next week'
+      ]) {
+         expect(looksNotEnglish(reason)).toBe(false);
+      }
+   });
+});

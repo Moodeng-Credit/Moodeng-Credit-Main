@@ -24,7 +24,7 @@ import { callTelegramApi, sendTelegramMessage } from '../_shared/telegram.ts';
 import { testAccountRow } from '../_shared/testAccount.ts';
 import { bookFromWindow, startWhatsAppBooking } from '../_shared/whatsappBooking.ts';
 import { whatsappContactCard } from '../_shared/whatsappContactCard.ts';
-import { sendFacebookConnectedOnWhatsApp, sendFacebookStepsOnWhatsApp } from '../_shared/whatsappFirst.ts';
+import { sendFacebookConnectedOnWhatsApp, sendFacebookStepsOnWhatsApp, setWhatsAppLocale } from '../_shared/whatsappFirst.ts';
 
 // SendPulse → Moodeng bridge for Facebook Messenger contact verification.
 //
@@ -280,6 +280,8 @@ const handleWhatsApp = async (svc: Svc, body: VerifyBody, nowIso: string): Promi
    if (!contactId) return json({ ok: false, error: 'no_contact' });
 
    // Indonesia's in-chat booking (whatsappBooking.ts): JADWAL, then the time window they tapped.
+   // 🇮🇩/🇬🇧 tapped in the JADWAL flow: {action:'wa_locale', locale:'id'|'en'}.
+   if (body.action === 'wa_locale') return json(await setWhatsAppLocale(svc, contactId, String(body.locale ?? '')));
    if (body.action === 'wa_booking_start') return json({ ok: true, ...(await startWhatsAppBooking(svc, contactId)) });
    if (body.action === 'wa_book') return json(await bookFromWindow(svc, contactId, String(body.window ?? '')));
 

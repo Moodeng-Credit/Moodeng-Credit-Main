@@ -1448,7 +1448,7 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Payment was not confirmed in time': 'Thanh toán chưa được xác nhận kịp thời',
 
    // src/lib/reasonQuality.ts
-   'Please write your reason in English — the moo-lenders reading it don’t speak Tagalog.':
+   'Please write your reason in English — the moo-lenders reading it only read English.':
       'Vui lòng viết lý do bằng tiếng Anh — moo-lender đọc lý do không biết tiếng Tagalog.',
    'Write it as a sentence — what the money is for and when you get paid.':
       'Hãy viết thành một câu — số tiền dùng để làm gì và khi nào bạn nhận lương.',
@@ -1511,7 +1511,7 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Update your reason, then tap “Make Your Request” again.': 'Cập nhật lý do của bạn, rồi nhấn “Gửi yêu cầu” lần nữa.',
    'Tell moo-lenders what the money will be used for. Update your reason, then tap “Make Your Request” again.':
       'Cho moo-lender biết bạn sẽ dùng tiền vào việc gì. Cập nhật lý do của bạn, rồi nhấn “Gửi yêu cầu” lần nữa.',
-   'Please write your reason in English — the moo-lenders reading it don’t speak Tagalog. Update your reason, then tap “Make Your Request” again.':
+   'Please write your reason in English — the moo-lenders reading it only read English. Update your reason, then tap “Make Your Request” again.':
       'Vui lòng viết lý do bằng tiếng Anh — moo-lender đọc nó không biết tiếng Tagalog. Cập nhật lý do của bạn, rồi nhấn “Gửi yêu cầu” lần nữa.',
    'Your info is missing': 'Thiếu thông tin của bạn',
    'We need your "About you" details before posting. Close this and tap Request a loan again to fill them in — or tap Help and we\'ll sort it out.':

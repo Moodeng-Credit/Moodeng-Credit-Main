@@ -371,7 +371,7 @@ export const thaiCoverageE: Record<string, string> = {
    'Update your reason, then tap “Make Your Request” again.': 'แก้ไขเหตุผลของคุณ แล้วแตะ “ส่งคำขอของคุณ” อีกครั้ง',
    'Tell moo-lenders what the money will be used for. Update your reason, then tap “Make Your Request” again.':
       'บอก Moo-lender ว่าคุณจะนำเงินไปใช้ทำอะไร แก้ไขเหตุผลของคุณ แล้วแตะ “ส่งคำขอของคุณ” อีกครั้ง',
-   'Please write your reason in English — the moo-lenders reading it don’t speak Tagalog. Update your reason, then tap “Make Your Request” again.':
+   'Please write your reason in English — the moo-lenders reading it only read English. Update your reason, then tap “Make Your Request” again.':
       'โปรดเขียนเหตุผลเป็นภาษาอังกฤษ เพราะ Moo-lender ที่อ่านไม่เข้าใจภาษาตากาล็อก แก้ไขเหตุผลของคุณ แล้วแตะ “ส่งคำขอของคุณ” อีกครั้ง',
    'Your info is missing': 'ข้อมูลของคุณยังไม่ครบ',
    'We need your "About you" details before posting. Close this and tap Request a loan again to fill them in — or tap Help and we\'ll sort it out.':

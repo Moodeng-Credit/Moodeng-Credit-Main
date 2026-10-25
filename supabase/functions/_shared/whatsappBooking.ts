@@ -8,7 +8,7 @@ import { botStage, type BotUserRow } from './botNextStep.ts';
 import { bookCall, listCallSlots } from './callBooking.ts';
 import { isKycVerified, needsPreKycGate } from './preKycGate.ts';
 import { sendWhatsAppText } from './sendpulse.ts';
-import { whatsappFirstApplies, whatsappFirstLocale, type WhatsAppFirstLocale } from './whatsappFirst.ts';
+import { ENGLISH_REQUEST_NOTE, whatsappFirstApplies, whatsappFirstLocale, type WhatsAppFirstLocale } from './whatsappFirst.ts';
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
@@ -52,6 +52,9 @@ const ROW_TITLES: Record<string, BookingWindow> = {
    'tomorrow morning': 'tomorrow_morning',
    'tomorrow afternoon': 'tomorrow_afternoon',
    'tomorrow evening': 'tomorrow_evening',
+   'in 2 days, morning': 'day2_morning',
+   'in 2 days, afternoon': 'day2_afternoon',
+   'in 2 days, evening': 'day2_evening',
    'other time': 'other'
 };
 export const toBookingWindow = (raw: string): BookingWindow => {
@@ -142,10 +145,12 @@ export const bookedText = (startIso: string, joinUrl: string | null, locale: Wha
    locale === 'id'
       ? `✅ Video call kamu sudah terjadwal:\n${formatCallTime(startIso, locale)} (15 menit)\n\n` +
         (joinUrl ? `Link Zoom:\n${joinUrl}\n\n` : '') +
-        'Siapkan KTP dan tempat yang tenang. Mau ganti waktu? Balas JADWAL.'
+        'Siapkan KTP dan tempat yang tenang. Mau ganti waktu? Balas JADWAL.\n\n' +
+        ENGLISH_REQUEST_NOTE.id
       : `✅ Your video call is booked:\n${formatCallTime(startIso, locale)} (15 minutes)\n\n` +
         (joinUrl ? `Zoom link:\n${joinUrl}\n\n` : '') +
-        'Have your ID ready and find a quiet spot. Need another time? Reply JADWAL.';
+        'Have your ID ready and find a quiet spot. Need another time? Reply JADWAL.\n\n' +
+        ENGLISH_REQUEST_NOTE.en;
 
 export const nearestText = (slots: string[], locale: WhatsAppFirstLocale) => {
    const list = slots.map((s) => `• ${formatCallTime(s, locale)}`).join('\n');
@@ -155,7 +160,7 @@ export const nearestText = (slots: string[], locale: WhatsAppFirstLocale) => {
 };
 
 const USER_COLUMNS =
-   'id, email, user_role, wallet_address, messenger_verified_at, whatsapp_verified_at, whatsapp_number, income_type, loan_access_status, is_didit, is_world_id, didit_id_status, didit_submitted_at, video_call_outcome, is_test';
+   'id, email, user_role, wallet_address, messenger_verified_at, whatsapp_verified_at, whatsapp_number, income_type, loan_access_status, is_didit, is_world_id, didit_id_status, didit_submitted_at, video_call_outcome, is_test, preferred_locale';
 
 type BookingUser = BotUserRow & {
    id: string;
@@ -163,6 +168,7 @@ type BookingUser = BotUserRow & {
    whatsapp_number: string | null;
    video_call_outcome: string | null;
    is_test: boolean | null;
+   preferred_locale: string | null;
 };
 
 /** Who this WhatsApp contact is, and whether they can book; null reason = they can. */
@@ -170,7 +176,7 @@ const whoCanBook = async (svc: Svc, contactId: string) => {
    const { data } = await svc.from('users').select(USER_COLUMNS).eq('whatsapp_contact_id', contactId).limit(1).maybeSingle();
    const user = data as BookingUser | null;
    if (!user) return { user: null, locale: 'id' as WhatsAppFirstLocale, reason: 'notLinked' as const };
-   const locale = whatsappFirstLocale(user.whatsapp_number);
+   const locale = whatsappFirstLocale(user.whatsapp_number, user.preferred_locale);
    if (!whatsappFirstApplies(user.whatsapp_number, user.is_test)) return { user, locale, reason: 'notIndonesia' as const };
    if (isKycVerified(user) || user.user_role === 'lender') return { user, locale, reason: 'noCallNeeded' as const };
    const gated = await needsPreKycGate(svc, user.id);

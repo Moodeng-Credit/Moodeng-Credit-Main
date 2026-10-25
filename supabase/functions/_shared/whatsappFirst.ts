@@ -20,8 +20,28 @@ export const isIndonesianPhone = (phone: string | null | undefined) =>
       .startsWith('62');
 export const whatsappFirstApplies = (phone: string | null | undefined, isTest: boolean | null | undefined) =>
    isIndonesianPhone(phone) || isTest === true;
-// +62 is Indonesia: Bahasa Indonesia. A tester elsewhere gets English.
-export const whatsappFirstLocale = (phone: string | null | undefined): WhatsAppFirstLocale => (isIndonesianPhone(phone) ? 'id' : 'en');
+// The language they picked on WhatsApp (🇮🇩/🇬🇧 in the JADWAL flow, saved as users.preferred_locale)
+// wins; otherwise +62 is Bahasa Indonesia and anyone else English.
+export const whatsappFirstLocale = (phone: string | null | undefined, preferred?: string | null): WhatsAppFirstLocale =>
+   preferred === 'id' || preferred === 'en' ? preferred : isIndonesianPhone(phone) ? 'id' : 'en';
+
+// Lenders only read English, so a loan request in Bahasa can't be funded (George, 2026-10-25).
+export const ENGLISH_REQUEST_NOTE: Record<WhatsAppFirstLocale, string> = {
+   id: '📝 Penting: nanti tulis permintaan pinjamanmu dalam bahasa Inggris. Pemberi pinjaman kami hanya bisa membaca bahasa Inggris, jadi permintaan dalam bahasa lain tidak bisa diterima.',
+   en: '📝 Important: write your loan request in English. Our lenders only read English, so requests in other languages can’t be accepted.'
+};
+
+/** 🇮🇩/🇬🇧 tapped in WhatsApp: remember it on their account (the site reads it too). */
+export const setWhatsAppLocale = async (svc: Svc, contactId: string, raw: string) => {
+   const locale = raw === 'id' || raw === 'en' ? raw : null;
+   if (!locale) return { ok: false, error: 'bad_locale' };
+   const { error } = await svc
+      .from('users')
+      .update({ preferred_locale: locale, preferred_locale_at: new Date().toISOString() })
+      .eq('whatsapp_contact_id', contactId);
+   if (error) console.error('[whatsapp-first] locale save failed', error.message);
+   return { ok: !error, locale };
+};
 
 const CONTINUE_URL = 'https://moodeng.app/continue?via=whatsapp';
 // The Facebook code they get on WhatsApp may be read later than the app's 30 minutes.
@@ -49,11 +69,13 @@ export const facebookConnectedText = (locale: WhatsAppFirstLocale) =>
       ? '✅ Facebook kamu sudah terhubung. Terima kasih!\n\n' +
         'Langkah berikutnya: ceritakan sedikit tentang dirimu di aplikasi (2 menit):\n' +
         CONTINUE_URL +
-        '\n\nSetelah itu, balas JADWAL di sini untuk memilih waktu video call 15 menit.'
+        '\n\nSetelah itu, balas JADWAL di sini untuk memilih waktu video call 15 menit.\n\n' +
+        ENGLISH_REQUEST_NOTE.id
       : '✅ Your Facebook is connected. Thank you!\n\n' +
         'Next: tell us a little about yourself in the app (2 minutes):\n' +
         CONTINUE_URL +
-        '\n\nThen reply JADWAL here to pick a time for the 15-minute video call.';
+        '\n\nThen reply JADWAL here to pick a time for the 15-minute video call.\n\n' +
+        ENGLISH_REQUEST_NOTE.en;
 
 const newCode = () => {
    const bytes = crypto.getRandomValues(new Uint8Array(3));
@@ -99,11 +121,11 @@ const facebookCodeFor = async (svc: Svc, userId: string): Promise<string | null>
 /** WhatsApp just confirmed: if Facebook isn't connected yet, send the Facebook steps and the code. */
 export const sendFacebookStepsOnWhatsApp = async (svc: Svc, userId: string, contactId: string, phone: string | null) => {
    try {
-      const { data: user } = await svc.from('users').select('messenger_verified_at, user_role, is_test').eq('id', userId).maybeSingle();
+      const { data: user } = await svc.from('users').select('messenger_verified_at, user_role, is_test, preferred_locale').eq('id', userId).maybeSingle();
       if (!user || user.messenger_verified_at || user.user_role === 'lender' || !whatsappFirstApplies(phone, user.is_test)) return;
       const code = await facebookCodeFor(svc, userId);
       if (!code) return;
-      const locale = whatsappFirstLocale(phone);
+      const locale = whatsappFirstLocale(phone, user.preferred_locale);
       const steps = await sendWhatsAppText(contactId, facebookStepsText(buildMessengerVerifyLink(code), locale));
       // The code on its own, so a long-press copies just the code.
       const codeSent = steps.ok ? await sendWhatsAppText(contactId, code) : steps;
@@ -118,14 +140,14 @@ export const sendFacebookConnectedOnWhatsApp = async (svc: Svc, userId: string) 
    try {
       const { data: user } = await svc
          .from('users')
-         .select('whatsapp_contact_id, whatsapp_verified_at, whatsapp_number, messenger_verified_at, is_test')
+         .select('whatsapp_contact_id, whatsapp_verified_at, whatsapp_number, messenger_verified_at, is_test, preferred_locale')
          .eq('id', userId)
          .maybeSingle();
       if (!user?.whatsapp_contact_id || !user.whatsapp_verified_at || !user.messenger_verified_at) return;
       if (!whatsappFirstApplies(user.whatsapp_number, user.is_test)) return;
       // WhatsApp first only (see the top of this file).
       if (new Date(user.whatsapp_verified_at).getTime() >= new Date(user.messenger_verified_at).getTime()) return;
-      const sent = await sendWhatsAppText(user.whatsapp_contact_id, facebookConnectedText(whatsappFirstLocale(user.whatsapp_number)));
+      const sent = await sendWhatsAppText(user.whatsapp_contact_id, facebookConnectedText(whatsappFirstLocale(user.whatsapp_number, user.preferred_locale)));
       console.log(`[whatsapp-first] Facebook connected note for ${userId.slice(0, 8)}: ${sent.ok ? 'sent' : sent.reason}`);
    } catch (err) {
       console.error('[whatsapp-first] connected note failed', err instanceof Error ? err.message : err);

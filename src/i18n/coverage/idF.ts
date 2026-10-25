@@ -393,8 +393,8 @@ export const indonesianCoverageF: Record<string, string> = {
    'You can make another loan request in about 30 minutes.': 'Kamu bisa membuat permintaan pinjaman lagi dalam sekitar 30 menit.',
 
    // src/lib/reasonQuality.ts
-   'Please write your reason in English — the moo-lenders reading it don’t speak Tagalog.':
-      'Tulis alasanmu dalam bahasa Inggris — moo-lender yang membacanya tidak bisa bahasa Tagalog.',
+   'Please write your reason in English — the moo-lenders reading it only read English.':
+      'Tulis alasanmu dalam bahasa Inggris — moo-lender yang membacanya hanya bisa membaca bahasa Inggris.',
    'Write it as a sentence — what the money is for and when you get paid.':
       'Tulis dalam bentuk kalimat — untuk apa uangnya dan kapan kamu gajian.',
    "This doesn't look like real words yet — tell moo-lenders what the loan is for.":

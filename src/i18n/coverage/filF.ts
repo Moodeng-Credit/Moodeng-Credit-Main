@@ -388,7 +388,7 @@ export const filipinoCoverageF: Record<string, string> = {
    'You can make another loan request in about': 'Puwede kang gumawa ulit ng loan request sa loob ng mga',
 
    // src/lib/reasonQuality.ts
-   'Please write your reason in English — the moo-lenders reading it don’t speak Tagalog.':
+   'Please write your reason in English — the moo-lenders reading it only read English.':
       'Isulat ang dahilan mo sa English — hindi nakakaintindi ng Tagalog ang mga moo-lender na nagbabasa nito.',
    'Write it as a sentence — what the money is for and when you get paid.':
       'Isulat ito bilang pangungusap — kung para saan ang pera at kailan ka sumasahod.',

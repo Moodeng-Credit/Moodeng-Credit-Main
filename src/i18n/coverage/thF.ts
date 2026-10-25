@@ -342,7 +342,7 @@ export const thaiCoverageF: Record<string, string> = {
    'You can make another loan request in about 30 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 30 นาที',
 
    // src/lib/reasonQuality.ts
-   'Please write your reason in English — the moo-lenders reading it don’t speak Tagalog.':
+   'Please write your reason in English — the moo-lenders reading it only read English.':
       'โปรดเขียนเหตุผลเป็นภาษาอังกฤษ — Moo-lender ที่อ่านไม่ได้ใช้ภาษาตากาล็อก',
    'Write it as a sentence — what the money is for and when you get paid.':
       'เขียนเป็นประโยค — บอกว่าจะใช้เงินทำอะไร และคุณจะได้รับเงินเมื่อไร',

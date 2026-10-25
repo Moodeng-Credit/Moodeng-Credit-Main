@@ -611,8 +611,8 @@ export const indonesianCoverageE: Record<string, string> = {
    'Update your reason, then tap “Make Your Request” again.': 'Perbarui alasanmu, lalu ketuk “Kirim permintaanmu” lagi.',
    'Tell moo-lenders what the money will be used for. Update your reason, then tap “Make Your Request” again.':
       'Beri tahu moo-lender untuk apa uang ini akan dipakai. Perbarui alasanmu, lalu ketuk “Kirim permintaanmu” lagi.',
-   'Please write your reason in English — the moo-lenders reading it don’t speak Tagalog. Update your reason, then tap “Make Your Request” again.':
-      'Tolong tulis alasanmu dalam bahasa Inggris — moo-lender yang membacanya tidak bisa bahasa Tagalog. Perbarui alasanmu, lalu ketuk “Kirim permintaanmu” lagi.',
+   'Please write your reason in English — the moo-lenders reading it only read English. Update your reason, then tap “Make Your Request” again.':
+      'Tolong tulis alasanmu dalam bahasa Inggris — moo-lender yang membacanya hanya bisa membaca bahasa Inggris. Perbarui alasanmu, lalu ketuk “Kirim permintaanmu” lagi.',
    'Your info is missing': 'Infomu belum lengkap',
    'We need your "About you" details before posting. Close this and tap Request a loan again to fill them in — or tap Help and we\'ll sort it out.':
       'Kami butuh detail "Tentang kamu" sebelum memposting. Tutup ini dan ketuk Ajukan pinjaman lagi untuk mengisinya — atau ketuk Bantuan dan kami akan membantu.',
