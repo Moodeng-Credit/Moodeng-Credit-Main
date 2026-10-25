@@ -43,7 +43,7 @@ export const filipinoCoverageE: Record<string, string> = {
    'Update your reason, then tap “Make Your Request” again.': 'I-update ang dahilan mo, tapos i-tap ulit ang “Make Your Request”.',
    'Tell moo-lenders what the money will be used for. Update your reason, then tap “Make Your Request” again.':
       'Sabihin sa mga moo-lender kung saan gagamitin ang pera. I-update ang dahilan mo, tapos i-tap ulit ang “Make Your Request”.',
-   'Please write your reason in English — the moo-lenders reading it don’t speak Tagalog. Update your reason, then tap “Make Your Request” again.':
+   'Please write your reason in English — the moo-lenders reading it only read English. Update your reason, then tap “Make Your Request” again.':
       'Pakisulat sa English ang dahilan mo — hindi nagta-Tagalog ang mga moo-lender na magbabasa nito. I-update ang dahilan mo, tapos i-tap ulit ang “Make Your Request”.',
    'Your info is missing': 'Kulang ang info mo',
    'We need your "About you" details before posting. Close this and tap Request a loan again to fill them in — or tap Help and we\'ll sort it out.':

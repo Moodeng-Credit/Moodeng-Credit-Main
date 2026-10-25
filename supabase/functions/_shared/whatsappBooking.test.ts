@@ -56,3 +56,12 @@ Deno.test('the tapped list row maps to its window', () => {
    assertEquals(toBookingWindow('Waktu lain'), 'other');
    assertEquals(toBookingWindow('something else'), 'other');
 });
+
+Deno.test('English list rows map too, and the confirmation asks for an English request', () => {
+   assertEquals(toBookingWindow('Tomorrow evening'), 'tomorrow_evening');
+   assertEquals(toBookingWindow('In 2 days, morning'), 'day2_morning');
+   assertEquals(toBookingWindow('In 2 days, afternoon'), 'day2_afternoon');
+   assertEquals(toBookingWindow('Other time'), 'other');
+   assert(bookedText(tomorrow10, null, 'en').includes('write your loan request in English'));
+   assert(bookedText(tomorrow10, null, 'id').includes('bahasa Inggris'));
+});

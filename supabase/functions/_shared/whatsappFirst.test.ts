@@ -82,3 +82,15 @@ Deno.test('no "Facebook connected" note when Facebook came first', async () => {
    // Returns without sending (SendPulse isn't configured here, so a send would only log a reason).
    await sendFacebookConnectedOnWhatsApp(svc, 'user-1');
 });
+
+Deno.test('the language they picked wins over the phone number', () => {
+   assertEquals(whatsappFirstLocale('6281234567890', 'en'), 'en');
+   assertEquals(whatsappFirstLocale('66951659077', 'id'), 'id');
+   assertEquals(whatsappFirstLocale('6281234567890', 'fil'), 'id');
+   assertEquals(whatsappFirstLocale('66951659077', null), 'en');
+});
+
+Deno.test('the Facebook-connected note says to write the loan request in English', () => {
+   assert(facebookConnectedText('id').includes('bahasa Inggris'));
+   assert(facebookConnectedText('en').includes('write your loan request in English'));
+});
