@@ -314,6 +314,59 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       }
    });
 
+   // Onboarding's Messenger card says "Connect Messenger".
+   const connectMessengerCard = () =>
+      Array.from(container.querySelectorAll('button')).find((b) => (b.textContent ?? '').trim().startsWith('Connect Messenger'));
+   const tapConnectMessenger = async () => {
+      await act(async () => {
+         connectMessengerCard()?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+         await Promise.resolve();
+      });
+   };
+
+   describe('Indonesia: WhatsApp first in onboarding, then Facebook', () => {
+      beforeEach(() => window.sessionStorage.setItem('moodeng.msgrCountry', 'ID'));
+
+      it('step 1 is WhatsApp; Facebook is locked until then', async () => {
+         await render('user-1', undefined, undefined, 'connect');
+         expect(container.textContent).toContain('Connect WhatsApp');
+         expect(container.textContent).toContain('Unlocks after step 1');
+         expect(connectMessengerCard()).toBeUndefined();
+         expect(container.textContent?.indexOf('Connect WhatsApp')).toBeLessThan(container.textContent?.indexOf('Connect Facebook') ?? -1);
+      });
+
+      it('"I don\'t have WhatsApp" unlocks Facebook', async () => {
+         await render('user-1', undefined, undefined, 'connect');
+         await act(async () => {
+            buttonByText(container, "I don't have WhatsApp")?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            await Promise.resolve();
+         });
+         expect(container.textContent).not.toContain('Unlocks after step 1');
+         expect(connectMessengerCard()).toBeTruthy();
+      });
+
+      it('WhatsApp connected: Facebook opens, says the steps are on WhatsApp too, and reuses the bot\'s code', async () => {
+         supa.state.usersRow.whatsapp_verified_at = '2026-10-25T14:00:00Z';
+         await render('user-1', undefined, undefined, 'connect');
+         expect(container.textContent).toContain('We also sent these steps to your WhatsApp.');
+         await tapConnectMessenger();
+         expect(supa.rpc).toHaveBeenCalledWith('start_or_reuse_messenger_code');
+         expect(supa.rpc).not.toHaveBeenCalledWith('start_contact_verification', { p_channel: 'messenger' });
+      });
+
+      it('outside onboarding (loan request) nothing changes', async () => {
+         await render();
+         expect(container.textContent).not.toContain('Connect WhatsApp');
+      });
+   });
+
+   it('outside Indonesia, onboarding keeps Facebook as step 1 with a fresh code', async () => {
+      await render('user-1', undefined, undefined, 'connect');
+      expect(container.textContent).not.toContain('Connect WhatsApp');
+      await tapConnectMessenger();
+      expect(supa.rpc).toHaveBeenCalledWith('start_contact_verification', { p_channel: 'messenger' });
+   });
+
    describe('Android in Indonesia: Chrome falls back to our page when Messenger is missing', () => {
       const androidChrome = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Mobile Safari/537.36';
       const chatLink = () => Array.from(container.querySelectorAll('a')).find((a) => a.textContent?.includes('Copy code & open Messenger'));

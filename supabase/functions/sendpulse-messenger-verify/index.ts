@@ -22,7 +22,9 @@ import { loadBorrowSteps, loadNextStep } from '../_shared/botNextStep.ts';
 import { saveBotLocale } from '../_shared/messengerSupport.ts';
 import { callTelegramApi, sendTelegramMessage } from '../_shared/telegram.ts';
 import { testAccountRow } from '../_shared/testAccount.ts';
+import { bookFromWindow, startWhatsAppBooking } from '../_shared/whatsappBooking.ts';
 import { whatsappContactCard } from '../_shared/whatsappContactCard.ts';
+import { sendFacebookConnectedOnWhatsApp, sendFacebookStepsOnWhatsApp } from '../_shared/whatsappFirst.ts';
 
 // SendPulse → Moodeng bridge for Facebook Messenger contact verification.
 //
@@ -269,11 +271,17 @@ type VerifyBody = {
    // From sendpulse-events re-checking a message the SendPulse flow also handles: no "not yet" reply.
    quiet?: boolean;
    phone?: string;
+   // wa_book: the time window the person tapped in the WhatsApp booking list.
+   window?: string;
 };
 
 const handleWhatsApp = async (svc: Svc, body: VerifyBody, nowIso: string): Promise<Response> => {
    const contactId = body.contact_id ? String(body.contact_id) : null;
    if (!contactId) return json({ ok: false, error: 'no_contact' });
+
+   // Indonesia's in-chat booking (whatsappBooking.ts): JADWAL, then the time window they tapped.
+   if (body.action === 'wa_booking_start') return json({ ok: true, ...(await startWhatsAppBooking(svc, contactId)) });
+   if (body.action === 'wa_book') return json(await bookFromWindow(svc, contactId, String(body.window ?? '')));
 
    if (body.action === 'opt_out') {
       const { error } = await svc.from('users').update({ notif_whatsapp: false }).eq('whatsapp_contact_id', contactId);
@@ -330,7 +338,11 @@ const handleWhatsApp = async (svc: Svc, body: VerifyBody, nowIso: string): Promi
          return json({ ok: false, error: 'update_failed' }, 500);
       }
       console.log(`sendpulse-messenger-verify: WhatsApp reminders on for ${String(pending.user_id).slice(0, 8)}${phone ? '' : ' (no phone from SendPulse)'}`);
-      const card = announceWhatsAppContact(svc, String(pending.user_id), phone);
+      const card = Promise.all([
+         announceWhatsAppContact(svc, String(pending.user_id), phone),
+         // Indonesia's WhatsApp-first sign-up: Facebook isn't connected yet, so send its steps here.
+         sendFacebookStepsOnWhatsApp(svc, String(pending.user_id), contactId, phone)
+      ]);
       if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(card);
       else await card;
       return json({ ok: true });
@@ -502,7 +514,11 @@ serve(async (req) => {
          console.error('sendpulse-messenger-verify: user update failed', userError.message);
       } else if (!(before as { messenger_verified_at?: string | null } | null)?.messenger_verified_at) {
          await announceConnected(svc, pending.user_id, contactId, body.name ? String(body.name) : null);
-         const followUp = followUpWithStatus(svc, pending.user_id, contactId);
+         const followUp = Promise.all([
+            followUpWithStatus(svc, pending.user_id, contactId),
+            // Indonesia's WhatsApp-first sign-up: say so on WhatsApp too, with the next step.
+            sendFacebookConnectedOnWhatsApp(svc, pending.user_id)
+         ]);
          if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(followUp);
       }
 
