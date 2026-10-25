@@ -37,6 +37,22 @@ const FRICTION_METRICS: Record<string, string> = {
 const TEAM_PAGE = /^\/(admin|testqr|test|team|dashboard-v2-preview|borrower-demo|design|repay-design-brief|ut)(\/|$)/;
 export const isTeamPage = (path: string) => TEAM_PAGE.test(path);
 
+/**
+ * What a page is for, so the AI only ties a borrower's stop to a page that's part of that step (2026-10-26
+ * it blamed a borrower's wallet on /creditline, which is a lender page). Paths are cleaned (no query).
+ */
+export const pageArea = (path: string): string => {
+   if (/^\/(creditline|lend|lender|whylend)(\/|$)/.test(path)) return 'lender page';
+   if (/^\/(sign-up|sign-in|auth|auth-success|continue)(\/|$)/.test(path)) return 'sign-up / sign-in';
+   if (/^\/onboarding\/(role|welcome)(\/|$)/.test(path)) return 'onboarding start';
+   if (/^\/onboarding\/wallet(\/|$)/.test(path)) return 'onboarding: connect wallet';
+   if (/^\/onboarding\/connect(\/|$)/.test(path)) return 'onboarding: connect Messenger/WhatsApp, bio, ask to borrow / book call';
+   if (/^\/request-board(\/|$)/.test(path)) return 'loan requests board (borrowers and lenders)';
+   if (/^\/(dashboard|repay|withdraw|history|account|onboarding\/congratulations)(\/|$)/.test(path)) return 'borrower app after onboarding';
+   return 'info page';
+};
+export const isLenderPage = (path: string) => pageArea(path) === 'lender page';
+
 export type ClarityMetric = { metricName: string; information: Record<string, unknown>[] };
 // sessions = visits that had the problem; total = all visits to that place; pct = sessions / total.
 export type FrictionRow = { metric: string; where: string; sessions: number; total: number; pct: number | null };
@@ -343,8 +359,12 @@ You get: how many new borrowers reached each step, who stopped partway, EACH PER
 Name the 3 places people most likely get stuck, biggest first. Each finding is 2 short sentences in plain English (8th-grade level):
 first the evidence with its numbers, naming the people (e.g. "B and D stopped after tapping Connect Messenger"), then one concrete
 fix or check for the team to try. Use the paths, not just the totals: never say two different people did something one person did.
-Connect a stop to a page's Clarity friction only when it fits; say "(guess)" when it's a guess. Numbers are small: never claim a
-trend from 1 or 2 people. No markdown, no headings.
+Each page has [what it's for] after it. Tie a person's stop to a page's Clarity friction ONLY when that page is part of the step
+they stopped at (e.g. stopped at Messenger → [onboarding: connect Messenger…]); never use lender pages or info pages to explain
+a borrower's stop. If you still connect something that isn't certain, end that finding with "(guess)".
+Check what the people who stopped have in common: sign-up method (Phone code, Google…) and browser (Facebook app = Facebook's
+own in-app browser, where many things break). Say so when they share one.
+Numbers are small: never claim a trend from 1 or 2 people. No markdown, no headings.
 Return JSON: {"findings": ["...", "...", "..."]}`;
 
 export const askDeepSeek = async (apiKey: string, data: string): Promise<string[]> => {
@@ -398,16 +418,22 @@ export const composeDigest = ({ now, days, people, clarity, prev }: DigestInput)
    const frictionPct: Record<string, number> = {};
    if (clarity) {
       const sessions = trafficSessions(clarity.byPage);
-      const pageRows = frictionRows(clarity.byPage, ['URL']).filter((r) => r.total >= MIN_VISITS);
+      const allPageRows = frictionRows(clarity.byPage, ['URL']).filter((r) => r.total >= MIN_VISITS);
+      const pageRows = allPageRows.filter((r) => !isLenderPage(r.where));
+      const lenderRows = allPageRows.filter((r) => isLenderPage(r.where));
       const deviceRows = notableDeviceRows(frictionRows(clarity.byDevice, ['Device', 'Browser']));
-      for (const r of [...pageRows, ...deviceRows]) if (r.pct !== null) frictionPct[frictionKey(r)] = Math.round(r.pct);
+      for (const r of [...allPageRows, ...deviceRows]) if (r.pct !== null) frictionPct[frictionKey(r)] = Math.round(r.pct);
       lines.push('', `Clarity · last ${CLARITY_DAYS} days${sessions !== null ? ` · ${fmt(sessions)} visits` : ''} (team pages left out)`);
       lines.push(...(pageRows.length ? frictionLines(pageRows, 3, prev) : ['• No rage/dead clicks, quick-backs or errors recorded']));
+      if (lenderRows.length) lines.push('Lender pages:', ...frictionLines(lenderRows, 2, prev));
       if (deviceRows.length) lines.push('Devices doing worse:', ...frictionLines(deviceRows, 2, prev));
    }
    // DeepSeek gets the same text without usernames, plus each person's path.
    const anonymous = people.map(({ username: _username, ...rest }) => rest);
-   const aiLines = lines.map((line) => line.replace(/ @[\w.-]+/g, ''));
+   // Each page also says what it's for ("/onboarding/connect [onboarding: connect Messenger/WhatsApp…]").
+   const aiLines = lines.map((line) =>
+      line.replace(/ @[\w.-]+/g, '').replace(/(^|[\s,:])(\/[\w/:.-]*)(?= \d+ of)/g, (_m, pre, path) => `${pre}${path} [${pageArea(path)}]`)
+   );
    const aiInput = [...aiLines, '', 'Each person (letters = different people):', ...pathLines(anonymous, now)].join('\n');
    return { lines, aiInput, stepPct: stepPct(people), frictionPct };
 };
