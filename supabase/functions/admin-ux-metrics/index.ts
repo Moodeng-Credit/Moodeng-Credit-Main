@@ -1,6 +1,20 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import {
+   askDeepSeek,
+   DIGEST_DAYS,
+   fetchClarity,
+   frictionLines,
+   frictionRows,
+   funnelLines,
+   loadFunnel,
+   trafficSessions
+} from '../_shared/clarityDigest.ts';
+import { postDiscord } from '../_shared/discord.ts';
+import { isInternalRequest } from '../_shared/internalAuth.ts';
+import { sendTelegramMessage } from '../_shared/telegram.ts';
+
 // Serves the /admin "UX Health" tiles. Pulls a handful of AGGREGATE friction numbers
 // from PostHog (sign-in conversion, onboarding drop-off, rage clicks, errors) over the
 // last 30 days. We run the exact same Funnels/Trends queries that back the PostHog
@@ -16,6 +30,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 // edge-function cap): { action: 'search', query, pages: [{ id, label, group, hint }] }
 //   → { results: [{ id, why }] } — up to 3 of the given tab ids DeepSeek thinks answer the question.
 //   Secret: DEEPSEEK_API_KEY.
+//
+// And the onboarding friction digest (see _shared/clarityDigest.ts), internal callers only:
+// { action: 'clarity_digest', clarityToken, clarityProjectId, dryRun? } — pg_cron clarity-digest posts it
+// every 3 days at 08:00 Bangkok (01:00 UTC) to the team Telegram group + Discord, passing the token and project id from
+// the DB vault (CLARITY_API_TOKEN, CLARITY_PROJECT_ID). dryRun returns the text and the raw Clarity rows.
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -213,11 +232,88 @@ async function aiSearch(body: any): Promise<Response> {
    return json({ results });
 }
 
+const DAY_MS = 86_400_000;
+const bangkokDay = (ms: number) => new Date(ms).toLocaleDateString('en-US', { timeZone: 'Asia/Bangkok', month: 'short', day: 'numeric' });
+
+async function clarityDigest(supabase: any, body: any): Promise<Response> {
+   const token = String(body?.clarityToken ?? '').trim();
+   const projectId = String(body?.clarityProjectId ?? '').trim();
+   const now = Date.now();
+   const lines = [`🔎 Onboarding friction · ${bangkokDay(now - DIGEST_DAYS * DAY_MS)} – ${bangkokDay(now)} (last ${DIGEST_DAYS} days)`];
+   const problems: string[] = [];
+
+   const funnel = await loadFunnel(supabase, now).catch((err) => {
+      problems.push(`Sign-up steps: ${err instanceof Error ? err.message : err}`);
+      return null;
+   });
+   if (funnel) lines.push('', ...funnelLines(funnel.signups, funnel.steps));
+
+   let raw: unknown = null;
+   if (!token) {
+      problems.push('Clarity: CLARITY_API_TOKEN is not in the vault yet');
+   } else {
+      try {
+         // 2 of Clarity's 10 calls a day: per page, and per device + browser (the Facebook app's browser shows here).
+         const [byPage, byDevice] = await Promise.all([fetchClarity(token, ['URL']), fetchClarity(token, ['Device', 'Browser'])]);
+         raw = { byPage, byDevice };
+         const sessions = trafficSessions(byPage);
+         const pageRows = frictionRows(byPage, ['URL']);
+         const deviceRows = frictionRows(byDevice, ['Device', 'Browser']);
+         lines.push('', `Clarity${sessions !== null ? ` · ${sessions.toLocaleString('en-US')} sessions` : ''}`);
+         lines.push(...(pageRows.length ? frictionLines(pageRows) : ['• No rage/dead clicks, quick-backs or errors recorded']));
+         if (deviceRows.length) lines.push('By device / browser:', ...frictionLines(deviceRows, 2));
+      } catch (err) {
+         problems.push(`Clarity: ${err instanceof Error ? err.message : err}`);
+      }
+   }
+
+   const apiKey = Deno.env.get('DEEPSEEK_API_KEY');
+   if (apiKey && funnel) {
+      const findings = await askDeepSeek(apiKey, lines.join('\n')).catch((err) => {
+         problems.push(`AI summary: ${err instanceof Error ? err.message : err}`);
+         return [] as string[];
+      });
+      if (findings.length)
+         lines.push('', '🤖 Where people get stuck (AI, check before acting)', ...findings.map((f, i) => `${i + 1}. ${f}`));
+   }
+
+   const clarityBase = projectId ? `https://clarity.microsoft.com/projects/view/${projectId}` : 'https://clarity.microsoft.com/projects';
+   lines.push(
+      '',
+      `🎥 Recordings: ${projectId ? `${clarityBase}/impressions` : clarityBase}`,
+      'Filter by Smart event (e.g. tapped_connect_messenger without messenger_connected) or Custom tag (browser, signup_method).'
+   );
+   if (problems.length) lines.push('', `⚠️ ${problems.join(' · ')}`);
+   const text = lines.join('\n');
+
+   if (body?.dryRun) return json({ text, raw });
+
+   const { data: chats } = await supabase.from('telegram_bot_settings').select('value').eq('key', 'team_group_chat_id').maybeSingle();
+   const chatId = chats?.value ?? Deno.env.get('TEAM_TELEGRAM_CHAT_ID');
+   const telegramOk = chatId
+      ? await sendTelegramMessage(chatId, text)
+           .then(() => true)
+           .catch((err) => (console.error('clarity digest: Telegram failed', err instanceof Error ? err.message : err), false))
+      : false;
+   const discordOk = await postDiscord({
+      embeds: [
+         { title: '🔎 Onboarding friction', description: text.slice(0, 4000), color: 0x7c3aed, timestamp: new Date(now).toISOString() }
+      ]
+   });
+   return json({ posted: { telegram: telegramOk, discord: discordOk }, problems });
+}
+
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+   const body = await req.json().catch(() => ({}));
+
+   if (body?.action === 'clarity_digest') {
+      if (!(await isInternalRequest(supabase, req))) return json({ error: 'Unauthorized' }, 401);
+      return clarityDigest(supabase, body);
+   }
 
    // --- Verify the caller is an active Moodeng admin (mirrors admin-loan-notify) ---
    const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
@@ -236,7 +332,6 @@ serve(async (req) => {
       .maybeSingle();
    if (!adminRow) return json({ error: 'Forbidden: admin account required' }, 403);
 
-   const body = await req.json().catch(() => ({}));
    if (body?.action === 'search') return aiSearch(body);
 
    const apiKey = Deno.env.get('POSTHOG_PERSONAL_API_KEY');
