@@ -3,8 +3,8 @@ import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 import { formatGap, signupLines, timelineLines } from './onboardingTimeline.ts';
 
 Deno.test('phone sign-up: method, phone and channels', () => {
-   assertEquals(signupLines({ method: 'Phone code', phone: '639173148740', channels: ['Messenger', 'WhatsApp'], steps: [] }), [
-      'Signed up with: Phone code (+639173148740)',
+   assertEquals(signupLines({ method: 'Phone code', phone: '639170000001', channels: ['Messenger', 'WhatsApp'], steps: [] }), [
+      'Signed up with: Phone code (+639170000001)',
       'Notifications on: Messenger, WhatsApp'
    ]);
    assertEquals(signupLines(null), []);
