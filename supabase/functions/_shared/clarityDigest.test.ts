@@ -98,7 +98,7 @@ const NOW = Date.parse('2026-10-25T20:44:16Z');
 const at = (iso: string) => `2026-10-25T${iso}Z`;
 const PEOPLE: Person[] = [
    {
-      username: 'luis',
+      username: 'borrower-one',
       method: 'Phone code',
       browser: 'Google app',
       os: 'ios',
@@ -114,7 +114,7 @@ const PEOPLE: Person[] = [
       request: { kind: 'call', status: 'pending', decided_by: null, decided_at: null, created_at: at('05:44:00') }
    },
    {
-      username: 'sandi',
+      username: 'borrower-two',
       method: 'Email + password',
       browser: 'Chrome',
       os: 'android',
@@ -141,14 +141,14 @@ Deno.test('funnelLines: share, how long the step took after their previous one, 
 Deno.test('stuckLines: newest first, with username and what they still need to do', () => {
    assertEquals(stuckLines(PEOPLE, NOW), [
       'Stopped partway: 1 of 3 (newest first, worth a message)',
-      '• B @sandi (Email + password · Chrome/android) · 4h 35m ago · hasn\'t: finish Messenger (sent no code), ask to borrow'
+      '• B @borrower-two (Email + password · Chrome/android) · 4h 35m ago · hasn\'t: finish Messenger (sent no code), ask to borrow'
    ]);
 });
 
 Deno.test('composeDigest: DeepSeek never sees usernames', () => {
    const d = composeDigest({ now: NOW, days: 3, people: PEOPLE, clarity: null, prev: null });
-   assertEquals(d.lines.some((l) => l.includes('@sandi')), true);
-   assertEquals(['@', 'sandi', 'luis'].some((u) => d.aiInput.includes(u)), false);
+   assertEquals(d.lines.some((l) => l.includes('@borrower-two')), true);
+   assertEquals(['@', 'borrower-two', 'borrower-one'].some((u) => d.aiInput.includes(u)), false);
    assertEquals(d.aiInput.includes('B (Email + password · Chrome/android): Signed up → Wallet connected +44s'), true);
 });
 
