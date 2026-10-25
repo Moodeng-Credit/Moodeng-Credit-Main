@@ -118,6 +118,16 @@ export const MESSENGER_DESKTOP_CHAT_LINK = `https://www.facebook.com/messages/t/
 // the code either, so the bot connects them by timing (sendpulse-events) or they paste the code.
 export const MESSENGER_APP_CHAT_LINK = `fb-messenger://user-thread/${MESSENGER_PAGE_ID}`;
 
+// Android, Indonesia only: the same chat link wrapped in an intent, so Chrome itself picks the way.
+// With the Messenger app installed it opens the chat exactly like the link above; without it, Chrome
+// loads `fallbackUrl` (our page with ?nomsgr=1) instead of doing nothing. Sandi, our first Indonesian
+// borrower (2026-10-25), tapped the plain link three times and nothing opened. Every Filipino Android
+// borrower so far had Messenger, so they keep the plain link (George: don't touch what works).
+export const NO_MESSENGER_PARAM = 'nomsgr';
+export const buildMessengerIntentLink = (fallbackUrl: string) =>
+   `intent://user-thread/${MESSENGER_PAGE_ID}#Intent;scheme=fb-messenger;package=com.facebook.orca;S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
+export const MESSENGER_PLAY_STORE_LINK = 'https://play.google.com/store/apps/details?id=com.facebook.orca';
+
 export const isAndroidBrowser = (userAgent: string = typeof navigator !== 'undefined' ? navigator.userAgent : '') =>
    /android/i.test(userAgent);
 

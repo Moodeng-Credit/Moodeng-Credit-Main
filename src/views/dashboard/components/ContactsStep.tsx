@@ -3,9 +3,11 @@ import { cloneElement, isValidElement, type MouseEvent, type ReactNode, useCallb
 import { BellRing, Facebook, Loader2, MessageSquareText } from 'lucide-react';
 import posthog from 'posthog-js';
 
+import { useGeoCheck } from '@/hooks/useGeoCheck';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 import {
+   buildMessengerIntentLink,
    buildMessengerVerifyLink,
    buildWhatsAppVerifyLink,
    isAndroidBrowser,
@@ -13,6 +15,8 @@ import {
    MESSENGER_APP_CHAT_LINK,
    MESSENGER_PAGE_CHAT_LINK,
    MESSENGER_PAGE_ID,
+   MESSENGER_PLAY_STORE_LINK,
+   NO_MESSENGER_PARAM,
    WHATSAPP_VERIFY_ENABLED
 } from '@/config/contactVerification';
 import MenuGuide from '@/components/MenuGuide';
@@ -77,6 +81,25 @@ const BOUNCE_MS = 1_500;
 const PUSH_FAILURES_BEFORE_OPTIONAL = 2;
 const NOT_OPENED_AFTER_MS = 3_000;
 const MOODENG_FACEBOOK_PAGE_URL = `https://www.facebook.com/${MESSENGER_PAGE_ID}`;
+
+// ?msgr_country=ID stands in for the IP country (kept for the tab), so the Indonesian card can be
+// tried from anywhere.
+const COUNTRY_OVERRIDE_KEY = 'moodeng.msgrCountry';
+const readCountryOverride = () => {
+   try {
+      const fromUrl = new URLSearchParams(window.location.search).get('msgr_country');
+      if (fromUrl) window.sessionStorage.setItem(COUNTRY_OVERRIDE_KEY, fromUrl.toUpperCase());
+      return window.sessionStorage.getItem(COUNTRY_OVERRIDE_KEY);
+   } catch {
+      return null;
+   }
+};
+// Where Chrome lands when the Messenger app isn't installed: this same page, marked.
+const noMessengerReturnUrl = () => {
+   const url = new URL(window.location.href);
+   url.searchParams.set(NO_MESSENGER_PARAM, '1');
+   return url.toString();
+};
 
 // On Android without the Messenger app, the chat link opens Facebook's messages page in this same tab,
 // so the borrower leaves the app. Remember the attempt so coming back lands on the same code instead
@@ -195,6 +218,15 @@ export default function ContactsStep({
    // sends us nothing when the chat opens, so "say hi and you're connected" left them waiting (George,
    // 2026-10-18). There, pasting the code is the main step. Chrome keeps the say-hi wording: it works.
    const androidInApp = androidMessenger && inAppInfo.isInApp;
+   // Android Chrome in Indonesia (IP country, see check-geo): the button is an intent that falls back
+   // to this page when Messenger isn't installed (see buildMessengerIntentLink). Everyone else keeps
+   // the plain app link.
+   const geo = useGeoCheck(!androidMessenger || androidInApp);
+   const countryOverride = useMemo(() => readCountryOverride(), []);
+   const noMessengerFallback = androidMessenger && !androidInApp && (countryOverride ?? geo.countryCode) === 'ID';
+   const androidChatLink = noMessengerFallback ? buildMessengerIntentLink(noMessengerReturnUrl()) : MESSENGER_APP_CHAT_LINK;
+   // Chrome came back with ?nomsgr=1: the Messenger app isn't on this phone.
+   const [noMessengerApp, setNoMessengerApp] = useState(false);
    // Either phone inside Facebook's / Messenger's browser: the short card.
    const inAppCard = androidInApp || iosInAppMessenger;
    // iPhone too: the Messenger link does open Messenger from there (George's iPhone, 2026-10-18); what
@@ -585,6 +617,17 @@ export default function ContactsStep({
       if (messengerVerified) writePending(null);
    }, [messengerVerified]);
 
+   // Chrome sent them back here because the Messenger app isn't installed (Indonesia only, see
+   // buildMessengerIntentLink). The attempt itself resumes above with the same code.
+   useEffect(() => {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get(NO_MESSENGER_PARAM) !== '1') return;
+      url.searchParams.delete(NO_MESSENGER_PARAM);
+      window.history.replaceState(window.history.state, '', url.toString());
+      setNoMessengerApp(true);
+      track('contact_verify_no_messenger_app', { source, channel: 'messenger' });
+   }, [source]);
+
    // Tapped, but the page never went to the background: Messenger didn't open at all.
    const armNotOpenedCheck = useCallback(() => {
       const openedAt = Date.now();
@@ -686,7 +729,14 @@ export default function ContactsStep({
    // link navigates by itself; this only copies the code and keeps the attempt for when they're back.
    const openMessengerChat = (event?: MouseEvent<HTMLAnchorElement>, link: string = MESSENGER_APP_CHAT_LINK, auto = false) => {
       if (!messengerCode) return;
-      track('contact_verify_open_chat_tapped', { source, channel: 'messenger', attempts: attemptsRef.current, desktop: desktopMessenger, auto });
+      track('contact_verify_open_chat_tapped', {
+         source,
+         channel: 'messenger',
+         attempts: attemptsRef.current,
+         desktop: desktopMessenger,
+         auto,
+         no_messenger_fallback: link.startsWith('intent://')
+      });
       setMessengerDidntOpen(false);
       // Copying needs a tap; the automatic open after the countdown relies on the earlier one. A tap
       // also ends the countdown (the automatic open keeps it at 0, so its "still here?" check runs).
@@ -1116,15 +1166,49 @@ export default function ContactsStep({
                         </button>
                      ) : (
                         <a
-                           href={MESSENGER_APP_CHAT_LINK}
-                           onClick={(event) => openMessengerChat(event)}
+                           href={androidChatLink}
+                           onClick={(event) => openMessengerChat(event, androidChatLink)}
                            className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
                         >
                            <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
                            Copy code & open Messenger
                         </a>
                      )}
-                     {messengerDidntOpen ? (
+                     {noMessengerApp ? (
+                        <div className="flex flex-col gap-2 rounded-2xl border-2 border-[#f0b44c] bg-[#fff8ec] px-4 py-3">
+                           <p className="text-[16px] font-extrabold leading-[21px] text-[#26143f]">
+                              This phone doesn&apos;t have the Messenger app.
+                           </p>
+                           <p className="text-[14px] font-semibold leading-[19px] text-[#594d65]">
+                              Get Messenger (free), come back here, and tap the blue button again.
+                           </p>
+                           <a
+                              href={MESSENGER_PLAY_STORE_LINK}
+                              onClick={() => track('contact_verify_get_messenger_tapped', { source, channel: 'messenger' })}
+                              className="flex min-h-[48px] items-center justify-center rounded-full border-2 border-[#0866FF] bg-white px-4 text-[15px] font-bold text-[#0866FF]"
+                           >
+                              Get Messenger
+                           </a>
+                           <p className="text-[13px] leading-[17px] text-[#594d65]">
+                              Or on Facebook: open{' '}
+                              <a
+                                 href={MOODENG_FACEBOOK_PAGE_URL}
+                                 onClick={() =>
+                                    track('contact_verify_page_link_tapped', {
+                                       source,
+                                       channel: 'messenger',
+                                       attempts: attemptsRef.current,
+                                       no_messenger: true
+                                    })
+                                 }
+                                 className="font-bold text-[#0866FF] underline underline-offset-2"
+                              >
+                                 our Facebook page
+                              </a>
+                              , tap Message, and send <b className="whitespace-nowrap">{messengerCode}</b>.
+                           </p>
+                        </div>
+                     ) : messengerDidntOpen ? (
                         <p className="rounded-xl bg-[#fff4e0] px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#9a5b00]">
                            Messenger didn&apos;t open? Open Facebook, search Moodeng Credit, tap Message, and say hi.
                         </p>
