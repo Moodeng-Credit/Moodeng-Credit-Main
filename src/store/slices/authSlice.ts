@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import type { User as SupabaseAuthUser } from '@supabase/supabase-js';
 
+import { clarityEvent } from '@/lib/analytics/clarity';
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { detachPushSubscriptionForSignOut } from '@/lib/push/webPushClient';
 import { clearClientAuthState } from '@/lib/authSessionCleanup';
@@ -916,6 +917,7 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
       throw updateError;
    }
 
+   if (userData.walletAddress) clarityEvent('wallet_connected');
    return await fetchCurrentUserProfile();
 });
 

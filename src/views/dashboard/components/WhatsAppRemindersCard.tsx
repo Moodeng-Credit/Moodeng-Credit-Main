@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import posthog from 'posthog-js';
 
+import { clarityEvent } from '@/lib/analytics/clarity';
 import { buildWhatsAppVerifyLink, WHATSAPP_BUSINESS_NUMBER_DISPLAY } from '@/config/contactVerification';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { OptionCard } from '@/views/dashboard/components/connectKit';
@@ -60,6 +61,7 @@ export default function WhatsAppRemindersCard({
       if (data?.whatsapp_verified_at && data.whatsapp_verified_at !== staleVerifiedAtRef.current) {
          stopPolling();
          track('contact_whatsapp_reminders_on', { source });
+         clarityEvent('whatsapp_connected');
          onVerified();
       }
    }, [userId, source, onVerified]);
@@ -83,6 +85,7 @@ export default function WhatsAppRemindersCard({
       setError('');
       setStarting(true);
       track('contact_whatsapp_reminders_tapped', { source });
+      clarityEvent('tapped_connect_whatsapp');
       try {
          if (required && staleVerifiedAtRef.current === null) {
             const { data: row } = await getSupabaseBrowserClient().from('users').select('whatsapp_verified_at').eq('id', userId).maybeSingle();

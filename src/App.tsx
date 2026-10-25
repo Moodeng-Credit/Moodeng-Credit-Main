@@ -105,8 +105,9 @@ import WhyLend from '@/app/whylend/page';
 import CreditLineLenderPage from '@/views/creditline/CreditLineLenderPage';
 import ContinuePage from '@/views/onboarding/ContinuePage';
 import MessengerHandoff from '@/views/onboarding/MessengerHandoff';
-import { identifyClarity } from '@/lib/analytics/clarity';
-import { recordSignupContext, recordSignupSource } from '@/lib/attribution';
+import { clarityEvent, clarityTag, identifyClarity, isClarityEnabled, signupMethodLabel } from '@/lib/analytics/clarity';
+import { describeBrowser, recordSignupContext, recordSignupSource } from '@/lib/attribution';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { trackNewAccount } from '@/lib/metaPixel';
 import { type RootState } from '@/store/store';
 import MoneyGuide from '@/views/academy/MoneyGuide';
@@ -162,6 +163,9 @@ const REPAY_CONTINUATION_ROUTES = [
    '/onboarding/wallet/face-check',
    '/verify-world-id'
 ];
+
+// An account this young when the app first sees it signed in is a fresh sign-up (same as the Meta pixel).
+const CLARITY_NEW_ACCOUNT_WINDOW_MS = 30 * 60 * 1000;
 
 const canShowPreviewRoutes = () => {
    if (import.meta.env.DEV) return true;
@@ -227,6 +231,31 @@ export default function App() {
          recordSignupContext(user.id);
          trackNewAccount(user.id, user.createdAt);
       }
+   }, [user?.id, user?.createdAt]);
+
+   // Clarity: which browser/app this session is in (Clarity can't tell the Facebook app from Chrome),
+   // and on the sign-up session, how they signed up — so recordings can be filtered by both.
+   useEffect(() => {
+      if (!isClarityEnabled) return;
+      const { browser, os } = describeBrowser();
+      clarityTag('browser', browser);
+      clarityTag('os', os);
+   }, []);
+
+   useEffect(() => {
+      if (!isClarityEnabled || !user?.id || !user.createdAt) return;
+      const created = new Date(user.createdAt).getTime();
+      if (Number.isNaN(created) || Date.now() - created > CLARITY_NEW_ACCOUNT_WINDOW_MS) return;
+      const { browser, os } = describeBrowser();
+      clarityTag('signup_browser', browser);
+      clarityTag('signup_os', os);
+      clarityEvent('signed_up');
+      void getSupabaseBrowserClient()
+         .auth.getSession()
+         .then(({ data }) => {
+            if (data.session?.user) clarityTag('signup_method', signupMethodLabel(data.session.user));
+         })
+         .catch(() => undefined);
    }, [user?.id, user?.createdAt]);
 
    useEffect(() => {

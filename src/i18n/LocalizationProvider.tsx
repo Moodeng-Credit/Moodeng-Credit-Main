@@ -1,5 +1,6 @@
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
+import { clarityTag } from '@/lib/analytics/clarity';
 import { LocalizationDomBridge } from '@/i18n/LocalizationDomBridge';
 import { readBrowserRegion, type RegionCode, suggestLocaleForRegion } from '@/i18n/region';
 import {
@@ -123,6 +124,7 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
       if (activeLocale && typeof document !== 'undefined') {
          document.documentElement.lang = activeLocale.htmlLang;
       }
+      clarityTag('locale', locale);
 
       try {
          window.localStorage?.setItem(LOCALE_STORAGE_KEY, locale);
