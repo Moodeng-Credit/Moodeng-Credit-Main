@@ -20,8 +20,9 @@ import {
 } from '../_shared/sendpulse.ts';
 import { loadBorrowSteps, loadNextStep } from '../_shared/botNextStep.ts';
 import { saveBotLocale } from '../_shared/messengerSupport.ts';
-import { sendTelegramMessage } from '../_shared/telegram.ts';
+import { callTelegramApi, sendTelegramMessage } from '../_shared/telegram.ts';
 import { testAccountRow } from '../_shared/testAccount.ts';
+import { whatsappContactCard } from '../_shared/whatsappContactCard.ts';
 
 // SendPulse → Moodeng bridge for Facebook Messenger contact verification.
 //
@@ -96,6 +97,39 @@ const announceConnected = async (svc: Svc, userId: string, contactId: string | n
       await postDiscord({ content: text }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
    } catch (err) {
       console.error('sendpulse-messenger-verify: announce failed', err instanceof Error ? err.message : err);
+   }
+};
+
+// WhatsApp connected → a one-line note plus a Telegram contact card in the KYC chat, so George can
+// tap "Add to contacts" and see who's messaging instead of a bare number. Best-effort.
+const announceWhatsAppContact = async (svc: Svc, userId: string, phone: string | null) => {
+   try {
+      if (!phone) return;
+      const [{ data: borrower }, { data: kyc }, { data: chatRow }] = await Promise.all([
+         svc.from('users').select('username, display_name, is_test').eq('id', userId).maybeSingle(),
+         svc
+            .from('kyc_identities')
+            .select('first_name, last_name')
+            .eq('user_id', userId)
+            .not('first_name', 'is', null)
+            .order('fetched_at', { ascending: false })
+            .limit(1),
+         svc.from('telegram_bot_settings').select('value').eq('key', 'kyc_alert_chat_id').maybeSingle()
+      ]);
+      const chat = (chatRow as { value?: string } | null)?.value;
+      if (!borrower || borrower.is_test || !chat) return;
+      const card = whatsappContactCard(phone, {
+         kycFirstName: kyc?.[0]?.first_name,
+         kycLastName: kyc?.[0]?.last_name,
+         displayName: borrower.display_name,
+         username: borrower.username
+      });
+      if (!card) return;
+      const who = borrower.username ? ` (@${borrower.username})` : '';
+      await sendTelegramMessage(chat, `💬 ${personName(borrower)}${who} connected WhatsApp: ${card.phone_number}\nTap the card → Add to contacts.`);
+      await callTelegramApi('sendContact', { chat_id: chat, ...card });
+   } catch (err) {
+      console.error('sendpulse-messenger-verify: whatsapp contact card failed', err instanceof Error ? err.message : err);
    }
 };
 
@@ -296,6 +330,9 @@ const handleWhatsApp = async (svc: Svc, body: VerifyBody, nowIso: string): Promi
          return json({ ok: false, error: 'update_failed' }, 500);
       }
       console.log(`sendpulse-messenger-verify: WhatsApp reminders on for ${String(pending.user_id).slice(0, 8)}${phone ? '' : ' (no phone from SendPulse)'}`);
+      const card = announceWhatsAppContact(svc, String(pending.user_id), phone);
+      if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(card);
+      else await card;
       return json({ ok: true });
    }
 
