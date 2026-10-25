@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useMemo, useState } from 'react';
 
 import { CalendarPlus, CheckCircle, Globe } from 'lucide-react';
 
+import { clarityEvent } from '@/lib/analytics/clarity';
 import { FlipFace, useFloatingParticles, useReplayClass, useTapFlip } from '@/components/motion/TapDelight';
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -145,6 +146,7 @@ export default function VideoCallStep({
       }
       setBookedStartsAt(result.start ?? start);
       setPhase('scheduled');
+      clarityEvent('call_booked');
       playDing();
       onBooked?.();
    };

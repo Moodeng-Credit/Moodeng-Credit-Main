@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { clarityEvent } from '@/lib/analytics/clarity';
 import { useLocalization } from '@/i18n';
 import {
    getPushPermission,
@@ -118,6 +119,7 @@ export function usePushNotifications(
       try {
          markPrompted();
          const outcome = await syncPushSubscription({ locale, promptIfNeeded: true });
+         if (outcome === 'subscribed') clarityEvent('push_turned_on');
          await refreshState();
          return outcome;
       } finally {

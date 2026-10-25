@@ -73,3 +73,57 @@ export function identifyClarity(userId?: string): void {
       window.clarity('identify', userId);
    }
 }
+
+// Clarity limits custom tag keys/values; keep well under it so nothing is dropped.
+const MAX_CLARITY_TEXT = 255;
+
+const clarityReady = () => isClarityEnabled && typeof window !== 'undefined' && typeof window.clarity === 'function';
+
+/**
+ * Marks an onboarding step on this session's recording ("signed_up", "wallet_connected"…), so
+ * recordings and heatmaps can be filtered to people who reached (or never reached) a step.
+ * No-op when Clarity is off; never throws.
+ */
+export function clarityEvent(name: string): void {
+   if (!clarityReady()) return;
+   try {
+      window.clarity!('event', name.slice(0, MAX_CLARITY_TEXT));
+   } catch {
+      // Analytics never blocks the flow.
+   }
+}
+
+/** Tags this session (e.g. signup_method = "Facebook"), filterable in Clarity. No-op when Clarity is off. */
+export function clarityTag(key: string, value: string | null | undefined): void {
+   if (!clarityReady() || !value) return;
+   try {
+      window.clarity!('set', key.slice(0, MAX_CLARITY_TEXT), value.slice(0, MAX_CLARITY_TEXT));
+   } catch {
+      // Analytics never blocks the flow.
+   }
+}
+
+type AuthUserLike = {
+   email?: string | null;
+   is_anonymous?: boolean;
+   app_metadata?: { provider?: string } | null;
+   user_metadata?: Record<string, unknown> | null;
+};
+
+/**
+ * How the account was created, with the same labels as app_private.signup_method (the team alerts
+ * and Admin → Sign-up sources), so a Clarity filter matches what the alert said.
+ */
+export function signupMethodLabel(user: AuthUserLike): string {
+   const provider = user.app_metadata?.provider;
+   const email = user.email ?? '';
+   if (user.is_anonymous || (user.user_metadata && 'guest_email' in user.user_metadata)) return 'Email (no code)';
+   if (provider === 'google') return 'Google';
+   if (provider === 'facebook') return 'Facebook';
+   if (provider === 'phone' || email.startsWith('phone_')) return 'Phone code';
+   if (email.startsWith('telegram_')) return 'Telegram';
+   if (email.startsWith('line_')) return 'LINE';
+   if (String(user.user_metadata?.passwordless) === 'true') return 'Email code';
+   if (provider === 'email') return 'Email + password';
+   return provider ?? 'Unknown';
+}
