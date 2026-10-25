@@ -64,6 +64,8 @@ export type Person = {
    os: string | null;
    locale: string | null;
    steps: { step: string; at: string }[];
+   /** Their latest ask-to-borrow / call request (loan_access_requests). */
+   request?: { kind: string | null; status: string; decided_by: string | null; decided_at: string | null; created_at: string } | null;
 };
 /** The last posted digest's numbers, for "what changed". */
 export type PrevRun = { step_pct: Record<string, number>; friction_pct: Record<string, number>; created_at: string } | null;
@@ -229,8 +231,30 @@ export const FUNNEL_STEPS = [
    'ID check submitted',
    'First loan funded'
 ];
-/** Steps after which nobody is "stuck" — the next move is ours (call, approval) or they're done. */
-const DONE_STEPS = new Set(['Asked to connect / booked call', 'Call booked', 'Approved to borrow', 'ID check submitted', 'First loan funded']);
+/** Steps after which nobody is "stuck": they're through, or the team turned them down. */
+const DONE_STEPS = new Set(['Approved to borrow', 'ID check submitted', 'First loan funded', 'Rejected by team']);
+/** How a request ended, as a step in their path. Cancelled requests are stored as expired; decided_by says who. */
+export const requestOutcome = (r: Person['request']): string | null => {
+   if (!r) return null;
+   if (r.status === 'rejected') return 'Rejected by team';
+   if (r.status === 'no_show') return 'Missed the call (no-show)';
+   if (r.status !== 'expired') return null; // pending = still open; approved = "Approved to borrow" step
+   if (r.decided_by?.startsWith('booking-cancelled')) return 'Cancelled their call';
+   if (r.decided_by?.startsWith('call-cancelled')) return 'Call cancelled by team';
+   return 'Request expired';
+};
+/** Outcomes after which the borrower has to book again. */
+const REBOOK = new Set(['Cancelled their call', 'Missed the call (no-show)', 'Request expired']);
+const isOpen = (p: Person) => p.request?.status === 'pending';
+
+/** Their steps with the request's outcome added in time order. */
+export const withOutcome = (p: Person): Person => {
+   const outcome = requestOutcome(p.request);
+   // Safe to apply twice: the lists below call it too.
+   if (!outcome || !p.request?.decided_at || p.steps.some((s) => s.step === outcome)) return p;
+   const steps = [...p.steps, { step: outcome, at: p.request.decided_at }].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+   return { ...p, steps };
+};
 const STUCK_AFTER_MS = 60 * 60_000;
 /** Not goals in themselves, so never listed under "Nobody yet". */
 const OPTIONAL_STEPS = new Set(['Opened Messenger chat', 'Skipped contact step', 'Tapped Connect WhatsApp', 'WhatsApp connected']);
@@ -297,7 +321,7 @@ const missingSteps = (p: Person): string[] => {
    return [
       did('Messenger connected') || did('WhatsApp connected') ? null : did('Tapped Connect Messenger') ? 'finish Messenger (sent no code)' : 'connect Messenger',
       did('Wallet connected') ? null : 'connect wallet',
-      'ask to borrow'
+      did('Asked to connect / booked call') ? (REBOOK.has(p.steps[p.steps.length - 1]?.step) ? 'book the call again' : null) : 'ask to borrow'
    ].filter(Boolean) as string[];
 };
 
@@ -307,8 +331,18 @@ const missingSteps = (p: Person): string[] => {
  */
 export const stuckLines = (people: Person[], now: number, max = 6): string[] => {
    const stuck = people
+      .map(withOutcome)
       .map((p, i) => ({ p, i, last: p.steps[p.steps.length - 1] }))
-      .filter(({ last }) => last && !DONE_STEPS.has(last.step) && now - Date.parse(last.at) >= STUCK_AFTER_MS)
+      .filter(
+         ({ p, last }) =>
+            last &&
+            !DONE_STEPS.has(last.step) &&
+            !isOpen(p) &&
+            last.step !== 'Call cancelled by team' &&
+            // Asked but no request record to say how it ended: don't guess.
+            !(!p.request && reachedAt(p, 'Asked to connect / booked call')) &&
+            now - Date.parse(last.at) >= STUCK_AFTER_MS
+      )
       .sort((a, b) => Date.parse(b.last.at) - Date.parse(a.last.at));
    if (!stuck.length) return [];
    return [
@@ -321,12 +355,57 @@ export const stuckLines = (people: Person[], now: number, max = 6): string[] => 
    ].filter(Boolean) as string[];
 };
 
+const WAITING_AFTER_MS = 24 * 60 * 60_000;
+
+/**
+ * People whose next move is ours: an ask-to-borrow / call request still open 24h+ later, or a call the
+ * team cancelled with no new booking. A borrower left waiting is friction too.
+ */
+export const waitingLines = (people: Person[], now: number, max = 6): string[] => {
+   const waiting = people
+      .map(withOutcome)
+      .map((p, i) => {
+         const last = p.steps[p.steps.length - 1];
+         if (isOpen(p) && now - Date.parse(p.request!.created_at) >= WAITING_AFTER_MS)
+            return { p, i, since: p.request!.created_at, why: `${p.request!.kind === 'call' ? 'call request' : 'request'} open` };
+         if (last?.step === 'Call cancelled by team') return { p, i, since: last.at, why: 'call cancelled by team, not rebooked' };
+         return null;
+      })
+      .filter((w): w is NonNullable<typeof w> => w !== null)
+      .sort((a, b) => Date.parse(a.since) - Date.parse(b.since));
+   if (!waiting.length) return [];
+   return [
+      `Waiting on the team: ${waiting.length} (longest first)`,
+      ...waiting.slice(0, max).map(({ p, i, since, why }) => {
+         const who = p.username ? `${letter(i)} @${p.username}` : letter(i);
+         return `• ${who} · ${why} · ${formatGap(now - Date.parse(since))}`;
+      }),
+      waiting.length > max ? `• …and ${waiting.length - max} more` : null
+   ].filter(Boolean) as string[];
+};
+
+/** "How asks ended: 1 cancelled their call · 1 call cancelled by team · 1 still open" */
+export const outcomeLine = (people: Person[]): string | null => {
+   const counts = new Map<string, number>();
+   for (const p of people) {
+      if (!p.request) continue;
+      const label = isOpen(p) ? 'still open' : p.request.status === 'approved' ? 'approved' : (requestOutcome(p.request) ?? p.request.status).toLowerCase();
+      counts.set(label, (counts.get(label) ?? 0) + 1);
+   }
+   if (!counts.size) return null;
+   return `• How asks ended: ${[...counts.entries()].map(([k, n]) => `${n} ${k}`).join(' · ')}`;
+};
+
 /** Each person's path for DeepSeek: "A (Google · Chrome/android): Signed up → Wallet connected +52s → …". No names or contact details. */
 export const pathLines = (people: Person[], now: number): string[] =>
-   people.map((p, i) => {
+   people.map(withOutcome).map((p, i) => {
       const steps = p.steps.map((s, j) => (j === 0 ? s.step : `${s.step} +${formatGap(Date.parse(s.at) - Date.parse(p.steps[j - 1].at))}`));
       const last = p.steps[p.steps.length - 1];
-      const tail = last && !DONE_STEPS.has(last.step) ? ` → (nothing since, ${formatGap(now - Date.parse(last.at))})` : '';
+      const tail = isOpen(p)
+         ? ` → (waiting on the team, ${formatGap(now - Date.parse(p.request!.created_at))})`
+         : last && !DONE_STEPS.has(last.step)
+           ? ` → (nothing since, ${formatGap(now - Date.parse(last.at))})`
+           : '';
       return `${letter(i)} (${device(p)}${p.locale ? ` · ${p.locale}` : ''}): ${steps.join(' → ')}${tail}`;
    });
 
@@ -364,6 +443,7 @@ they stopped at (e.g. stopped at Messenger → [onboarding: connect Messenger…
 a borrower's stop. If you still connect something that isn't certain, end that finding with "(guess)".
 Check what the people who stopped have in common: sign-up method (Phone code, Google…) and browser (Facebook app = Facebook's
 own in-app browser, where many things break). Say so when they share one.
+"Waiting on the team" are people the TEAM hasn't approved yet: if anyone waited days, make that one finding (the fix is ours).
 Numbers are small: never claim a trend from 1 or 2 people. No markdown, no headings.
 Return JSON: {"findings": ["...", "...", "..."]}`;
 
@@ -407,13 +487,18 @@ export type DigestInput = {
  * Everything above the AI section, plus the numbers saved for next time's "what changed".
  * `aiInput` is the same text plus each person's path, for DeepSeek.
  */
-export const composeDigest = ({ now, days, people, clarity, prev }: DigestInput) => {
+export const composeDigest = ({ now, days, people: raw, clarity, prev }: DigestInput) => {
+   const people = raw.map(withOutcome);
    const widened = days > WINDOWS[0] ? ` (widened from ${WINDOWS[0]}: too few sign-ups)` : '';
    const lines = [`🔎 Onboarding friction · ${bangkokDay(now - days * 86_400_000)} – ${bangkokDay(now)} · last ${days} days${widened}`];
    if (prev) lines.push(`Arrows = change since the last digest (${bangkokDay(Date.parse(prev.created_at))}).`);
    lines.push('', ...funnelLines(people, prev));
+   const outcomes = outcomeLine(people);
+   if (outcomes) lines.push(outcomes);
    const stuck = stuckLines(people, now);
    if (stuck.length) lines.push('', ...stuck);
+   const waiting = waitingLines(people, now);
+   if (waiting.length) lines.push('', ...waiting);
 
    const frictionPct: Record<string, number> = {};
    if (clarity) {
@@ -429,7 +514,11 @@ export const composeDigest = ({ now, days, people, clarity, prev }: DigestInput)
       if (deviceRows.length) lines.push('Devices doing worse:', ...frictionLines(deviceRows, 2, prev));
    }
    // DeepSeek gets the same text without usernames, plus each person's path.
-   const anonymous = people.map(({ username: _username, ...rest }) => rest);
+   // decided_by can carry a team member's handle ("call-cancelled by @…"): drop the handle, keep who-cancelled.
+   const anonymous = people.map(({ username: _username, ...rest }) => ({
+      ...rest,
+      request: rest.request ? { ...rest.request, decided_by: rest.request.decided_by?.replace(/\s*by @\S+/g, '') ?? null } : null
+   }));
    // Each page also says what it's for ("/onboarding/connect [onboarding: connect Messenger/WhatsApp…]").
    const aiLines = lines.map((line) =>
       line.replace(/ @[\w.-]+/g, '').replace(/(^|[\s,:])(\/[\w/:.-]*)(?= \d+ of)/g, (_m, pre, path) => `${pre}${path} [${pageArea(path)}]`)

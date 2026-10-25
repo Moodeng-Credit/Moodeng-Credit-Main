@@ -10,6 +10,7 @@ import {
    pageArea,
    type Person,
    stuckLines,
+   waitingLines,
    trafficSessions
 } from './clarityDigest.ts';
 
@@ -108,7 +109,9 @@ const PEOPLE: Person[] = [
          { step: 'Tapped Connect Messenger', at: at('05:34:29') },
          { step: 'Messenger connected', at: at('05:35:22') },
          { step: 'Asked to connect / booked call', at: at('05:44:00') }
-      ]
+      ],
+      // Asked 15h ago, still open: neither stuck nor waiting yet.
+      request: { kind: 'call', status: 'pending', decided_by: null, decided_at: null, created_at: at('05:44:00') }
    },
    {
       username: 'sandi',
@@ -199,4 +202,51 @@ Deno.test('pageArea: lender pages are kept apart, and the AI sees what each page
    assertEquals(d.lines.includes('Lender pages:'), true);
    assertEquals(d.lines.includes('• Dead clicks: /onboarding/connect 3 of 8 visits (38%)'), true);
    assertEquals(d.aiInput.includes('/creditline [lender page] 4 of 9 visits'), true);
+});
+
+Deno.test('request outcomes: who cancelled, open requests wait on the team, cancelled ones need rebooking', () => {
+   const asked = (username: string, request: Person['request']): Person => ({
+      username,
+      method: 'Google',
+      browser: 'Chrome',
+      os: 'android',
+      locale: null,
+      steps: [
+         { step: 'Signed up', at: '2026-10-22T14:23:57Z' },
+         { step: 'Wallet connected', at: '2026-10-22T14:24:10Z' },
+         { step: 'Messenger connected', at: '2026-10-22T14:24:56Z' },
+         { step: 'Asked to connect / booked call', at: '2026-10-22T14:27:12Z' }
+      ],
+      request
+   });
+   const open = asked('open', { kind: 'call', status: 'pending', decided_by: null, decided_at: null, created_at: '2026-10-22T14:27:12Z' });
+   const theyCancelled = asked('they', {
+      kind: 'call',
+      status: 'expired',
+      decided_by: 'booking-cancelled',
+      decided_at: '2026-10-22T16:11:26Z',
+      created_at: '2026-10-22T14:27:12Z'
+   });
+   const teamCancelled = asked('team', {
+      kind: 'call',
+      status: 'expired',
+      decided_by: 'call-cancelled by @someone',
+      decided_at: '2026-10-25T08:53:32Z',
+      created_at: '2026-10-25T05:44:00Z'
+   });
+   const d = composeDigest({ now: NOW, days: 7, people: [open, theyCancelled, teamCancelled], clarity: null, prev: null });
+   assertEquals(d.lines.includes('• How asks ended: 1 still open · 1 cancelled their call · 1 call cancelled by team'), true);
+   assertEquals(d.lines.includes('• B @they (Google · Chrome/android) · 3 days ago · hasn\'t: book the call again'), true);
+   assertEquals(d.lines.includes('Waiting on the team: 2 (longest first)'), true);
+   assertEquals(d.lines.includes('• A @open · call request open · 3 days'), true);
+   assertEquals(d.lines.includes('• C @team · call cancelled by team, not rebooked · 11h 51m'), true);
+   // The AI sees the outcome but no handles.
+   assertEquals(d.aiInput.includes('→ (waiting on the team, 3 days)'), true);
+   assertEquals(d.aiInput.includes('@'), false);
+   // Each outcome appears once: dropping the handle mustn't turn "cancelled by team" into "expired".
+   assertEquals(d.aiInput.includes('Request expired'), false);
+   assertEquals(d.aiInput.includes('Call cancelled by team'), true);
+   // Waiting people aren't also listed as "stopped partway".
+   assertEquals(stuckLines([open, teamCancelled].map((p) => p), NOW), []);
+   assertEquals(waitingLines([], NOW), []);
 });
