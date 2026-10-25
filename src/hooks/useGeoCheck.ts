@@ -22,14 +22,18 @@ export function useGeoCheck(skip = false): GeoState {
       let cancelled = false;
       const supabase = getSupabaseBrowserClient();
 
-      supabase.functions.invoke('check-geo').then(({ data, error }) => {
-         if (cancelled) return;
-         // Fail open: if the function errors, don't block the user
-         const allowed = error ? true : Boolean(data?.allowed);
-         const countryCode = !error && typeof data?.countryCode === 'string' && data.countryCode ? data.countryCode : null;
-         cachedResult = { allowed, countryCode };
-         setState({ allowed, countryCode, loading: false });
-      });
+      // No answer at all (or a throw) counts as a failed lookup: fail open, no country.
+      Promise.resolve(supabase.functions.invoke('check-geo'))
+         .catch((err: unknown) => ({ data: null, error: err }))
+         .then((res) => {
+            const { data, error } = res ?? { data: null, error: new Error('no response') };
+            if (cancelled) return;
+            // Fail open: if the function errors, don't block the user
+            const allowed = error ? true : Boolean(data?.allowed);
+            const countryCode = !error && typeof data?.countryCode === 'string' && data.countryCode ? data.countryCode : null;
+            cachedResult = { allowed, countryCode };
+            setState({ allowed, countryCode, loading: false });
+         });
 
       return () => {
          cancelled = true;

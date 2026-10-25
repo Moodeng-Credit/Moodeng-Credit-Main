@@ -21,6 +21,7 @@ import { loadBorrowSteps, loadNextStep } from '../_shared/botNextStep.ts';
 import { saveBotLocale } from '../_shared/messengerSupport.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { testAccountRow } from '../_shared/testAccount.ts';
+import { sendFacebookConnectedOnWhatsApp, sendFacebookStepsOnWhatsApp } from '../_shared/whatsappFirst.ts';
 
 // SendPulse → Moodeng bridge for Facebook Messenger contact verification.
 //
@@ -293,6 +294,10 @@ const handleWhatsApp = async (svc: Svc, body: VerifyBody, nowIso: string): Promi
          return json({ ok: false, error: 'update_failed' }, 500);
       }
       console.log(`sendpulse-messenger-verify: WhatsApp reminders on for ${String(pending.user_id).slice(0, 8)}${phone ? '' : ' (no phone from SendPulse)'}`);
+      // Indonesia's WhatsApp-first sign-up: Facebook isn't connected yet, so send its steps here.
+      const steps = sendFacebookStepsOnWhatsApp(svc, String(pending.user_id), contactId, phone);
+      if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(steps);
+      else await steps;
       return json({ ok: true });
    }
 
@@ -462,7 +467,11 @@ serve(async (req) => {
          console.error('sendpulse-messenger-verify: user update failed', userError.message);
       } else if (!(before as { messenger_verified_at?: string | null } | null)?.messenger_verified_at) {
          await announceConnected(svc, pending.user_id, contactId, body.name ? String(body.name) : null);
-         const followUp = followUpWithStatus(svc, pending.user_id, contactId);
+         const followUp = Promise.all([
+            followUpWithStatus(svc, pending.user_id, contactId),
+            // Indonesia's WhatsApp-first sign-up: say so on WhatsApp too, with the next step.
+            sendFacebookConnectedOnWhatsApp(svc, pending.user_id)
+         ]);
          if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(followUp);
       }
 

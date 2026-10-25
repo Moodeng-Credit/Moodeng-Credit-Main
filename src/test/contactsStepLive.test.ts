@@ -27,6 +27,8 @@ vi.mock('@/lib/supabase/client', () => ({
    getSupabaseBrowserClient: () => ({
       from: () => ({ select: () => ({ eq: () => ({ maybeSingle: supa.maybeSingle }) }) }),
       rpc: supa.rpc,
+      // check-geo (Indonesia's sign-up): no country here.
+      functions: { invoke: vi.fn(async () => ({ data: null, error: null })) },
       channel: () => {
          const channel = {
             on: (_type: string, _filter: unknown, handler: (payload: { new: Record<string, unknown> }) => void) => {

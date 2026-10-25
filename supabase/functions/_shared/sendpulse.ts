@@ -320,3 +320,30 @@ export const sendWhatsAppTemplate = async (contactId: string | null | undefined,
       return { ok: false, reason: 'send_failed' };
    }
 };
+
+/**
+ * Sends plain text to a SendPulse WhatsApp contact. Only works inside 24h of the person's last message
+ * to us (Meta rejects it otherwise), so use it for replies, never for reminders. Never throws.
+ */
+export const sendWhatsAppText = async (contactId: string | null | undefined, text: string): Promise<SendPulseResult> => {
+   if (!contactId) return { ok: false, reason: 'no_contact' };
+   if (!isSendPulseConfigured()) return { ok: false, reason: 'not_configured' };
+   try {
+      const token = await getToken();
+      if (!token) return { ok: false, reason: 'auth_failed' };
+      const res = await fetch(`${WHATSAPP_API}/contacts/send`, {
+         method: 'POST',
+         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+         body: JSON.stringify({ contact_id: contactId, message: { type: 'text', text: { body: text } } })
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || body?.success === false) {
+         console.error('[sendpulse] whatsapp send failed', res.status, JSON.stringify(body)?.slice(0, 300));
+         return { ok: false, reason: 'send_failed' };
+      }
+      return { ok: true };
+   } catch (err) {
+      console.error('[sendpulse] whatsapp send threw', err instanceof Error ? err.message : err);
+      return { ok: false, reason: 'send_failed' };
+   }
+};

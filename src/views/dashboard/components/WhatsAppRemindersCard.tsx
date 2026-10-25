@@ -29,7 +29,8 @@ export default function WhatsAppRemindersCard({
    source,
    verified,
    onVerified,
-   required = false
+   required = false,
+   variant = 'reminders'
 }: {
    userId: string;
    source: string;
@@ -37,7 +38,11 @@ export default function WhatsAppRemindersCard({
    onVerified: () => void;
    // Loan request for a borrower only email reaches: the card blocks Continue, so it says so.
    required?: boolean;
+   // 'connect': Indonesia's WhatsApp-first sign-up, where WhatsApp is step 1 and the bot then sends the
+   // Facebook steps there. Same code and confirmation, sign-up wording.
+   variant?: 'reminders' | 'connect';
 }) {
+   const connect = variant === 'connect';
    const [code, setCode] = useState<string | null>(null);
    const [starting, setStarting] = useState(false);
    const [error, setError] = useState('');
@@ -122,9 +127,9 @@ export default function WhatsAppRemindersCard({
       return (
          <OptionCard
             done
-            doneLabel="On"
+            doneLabel={connect ? 'Connected' : 'On'}
             icon={<i aria-hidden="true" className="fab fa-whatsapp text-[38px] leading-none text-[#25D366]" />}
-            title="WhatsApp reminders"
+            title={connect ? 'WhatsApp' : 'WhatsApp reminders'}
          />
       );
    }
@@ -137,8 +142,14 @@ export default function WhatsAppRemindersCard({
                disabled={starting}
                icon={<i aria-hidden="true" className="fab fa-whatsapp text-[38px] leading-none text-[#25D366]" />}
                onClick={() => void start()}
-               subtitle={starting ? 'Getting your code…' : 'Notifications can’t work here. Tap to get your code, then send it on WhatsApp.'}
-               title="Get reminders on WhatsApp"
+               subtitle={
+                  starting
+                     ? 'Getting your code…'
+                     : connect
+                       ? 'Tap, then hit send in WhatsApp. We’ll message you the next step there.'
+                       : 'Notifications can’t work here. Tap to get your code, then send it on WhatsApp.'
+               }
+               title={connect ? 'Connect WhatsApp' : 'Get reminders on WhatsApp'}
             />
             {error ? <p className="text-center text-md-b3 font-normal text-md-red-500">{error}</p> : null}
          </>
@@ -151,6 +162,7 @@ export default function WhatsAppRemindersCard({
          copied={copied}
          onCopy={() => void copyCode()}
          onOpenTap={() => track('contact_whatsapp_reminders_open_tapped', { source })}
+         title={connect ? 'Connect WhatsApp' : undefined}
       />
    );
 }
@@ -160,16 +172,18 @@ export function WhatsAppCodePanel({
    code,
    copied,
    onCopy,
-   onOpenTap
+   onOpenTap,
+   title = 'Turn on WhatsApp reminders'
 }: {
    code: string;
    copied: boolean;
    onCopy: () => void;
    onOpenTap?: () => void;
+   title?: string;
 }) {
    return (
       <div aria-live="polite" className="flex w-full flex-col gap-3 rounded-[18px] border-2 border-[#9fe3b4] bg-[#eefbf2] px-4 py-4 text-left">
-         <span className="text-[18px] font-bold leading-[22px] text-[#1f7a3d]">Turn on WhatsApp reminders</span>
+         <span className="text-[18px] font-bold leading-[22px] text-[#1f7a3d]">{title}</span>
          {/* A real link the borrower taps: from script, some in-app browsers never hand wa.me to WhatsApp. */}
          <a
             href={buildWhatsAppVerifyLink(code)}
