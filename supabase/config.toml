@@ -202,3 +202,7 @@ verify_jwt = false
 
 [functions.referral-payout-telegram-notification]
 verify_jwt = false
+
+[functions.admin-ux-metrics]
+# Checks every caller itself: an admin session, or the internal secret for the clarity-digest cron (an sb_secret key, not a JWT).
+verify_jwt = false
