@@ -7,6 +7,7 @@ import {
    frictionRows,
    funnelLines,
    notableDeviceRows,
+   pageArea,
    type Person,
    stuckLines,
    trafficSessions
@@ -176,4 +177,26 @@ Deno.test('notableDeviceRows keeps in-app browsers and clear outliers, drops tin
       notableDeviceRows(rows).map((r) => r.where),
       ['Mobile · ChromeMobile', 'Mobile · FacebookApp']
    );
+});
+
+Deno.test('pageArea: lender pages are kept apart, and the AI sees what each page is for', () => {
+   assertEquals(pageArea('/creditline'), 'lender page');
+   assertEquals(pageArea('/onboarding/connect'), 'onboarding: connect Messenger/WhatsApp, bio, ask to borrow / book call');
+   assertEquals(pageArea('/auth/verify-code'), 'sign-up / sign-in');
+   const clarity = {
+      byPage: [
+         {
+            metricName: 'DeadClickCount',
+            information: [
+               { Url: 'https://moodeng.app/creditline', sessionsCount: 9, sessionsWithMetricPercentage: 44.44 },
+               { Url: 'https://moodeng.app/onboarding/connect?step=about', sessionsCount: 8, sessionsWithMetricPercentage: 37.5 }
+            ]
+         }
+      ],
+      byDevice: []
+   };
+   const d = composeDigest({ now: NOW, days: 3, people: PEOPLE, clarity, prev: null });
+   assertEquals(d.lines.includes('Lender pages:'), true);
+   assertEquals(d.lines.includes('• Dead clicks: /onboarding/connect 3 of 8 visits (38%)'), true);
+   assertEquals(d.aiInput.includes('/creditline [lender page] 4 of 9 visits'), true);
 });
