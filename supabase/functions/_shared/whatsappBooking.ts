@@ -37,6 +37,29 @@ export const BOOKING_WINDOWS: BookingWindow[] = [
    'other'
 ];
 
+// The WhatsApp list rows (fixed text in the SendPulse flow): what the tapped row says → its window.
+// The flow saves the reply and sends it as `window`, so either the row title or the id works.
+const ROW_TITLES: Record<string, BookingWindow> = {
+   'hari ini': 'today',
+   'besok pagi': 'tomorrow_morning',
+   'besok siang': 'tomorrow_afternoon',
+   'besok malam': 'tomorrow_evening',
+   'lusa pagi': 'day2_morning',
+   'lusa siang': 'day2_afternoon',
+   'lusa malam': 'day2_evening',
+   'waktu lain': 'other',
+   today: 'today',
+   'tomorrow morning': 'tomorrow_morning',
+   'tomorrow afternoon': 'tomorrow_afternoon',
+   'tomorrow evening': 'tomorrow_evening',
+   'other time': 'other'
+};
+export const toBookingWindow = (raw: string): BookingWindow => {
+   const text = raw.trim().toLowerCase().replace(/\s+/g, ' ');
+   if ((BOOKING_WINDOWS as string[]).includes(text)) return text as BookingWindow;
+   return ROW_TITLES[text] ?? Object.entries(ROW_TITLES).find(([title]) => text.includes(title))?.[1] ?? 'other';
+};
+
 // Morning before 12:00, afternoon 12:00–17:00, evening from 17:00 (local time).
 const PARTS = { morning: [0, 12 * 60], afternoon: [12 * 60, 17 * 60], evening: [17 * 60, 24 * 60] } as const;
 
@@ -176,7 +199,7 @@ export const bookFromWindow = async (svc: Svc, contactId: string, rawWindow: str
       await sendWhatsAppText(contactId, TEXT[reason ?? 'notLinked'][locale]);
       return { ok: false, error: reason ?? 'not_linked' };
    }
-   const window = (BOOKING_WINDOWS as string[]).includes(rawWindow) ? (rawWindow as BookingWindow) : 'other';
+   const window = toBookingWindow(rawWindow);
    if (window === 'other') {
       await sendWhatsAppText(contactId, TEXT.other[locale]);
       return { ok: true, other: true };

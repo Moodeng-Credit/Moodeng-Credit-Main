@@ -1,6 +1,6 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { bookedText, formatCallTime, inWindow, nearestText, pickSlot } from './whatsappBooking.ts';
+import { bookedText, formatCallTime, inWindow, nearestText, pickSlot, toBookingWindow } from './whatsappBooking.ts';
 
 // Now: Monday 26 Oct 2026, 09:00 in Jakarta (02:00 UTC).
 const NOW = Date.parse('2026-10-26T02:00:00Z');
@@ -45,4 +45,14 @@ Deno.test('the confirmation carries the time and the Zoom link', () => {
    assert(text.includes('JADWAL'));
    assert(!bookedText(tomorrow10, null, 'en').includes('Zoom link'));
    assert(nearestText([tomorrow16], 'id').includes('16:00 WIB'));
+});
+
+Deno.test('the tapped list row maps to its window', () => {
+   assertEquals(toBookingWindow('Besok pagi'), 'tomorrow_morning');
+   assertEquals(toBookingWindow('  LUSA   malam '), 'day2_evening');
+   assertEquals(toBookingWindow('Hari ini'), 'today');
+   assertEquals(toBookingWindow('tomorrow_afternoon'), 'tomorrow_afternoon');
+   assertEquals(toBookingWindow('🕘 Besok siang (12–17)'), 'tomorrow_afternoon');
+   assertEquals(toBookingWindow('Waktu lain'), 'other');
+   assertEquals(toBookingWindow('something else'), 'other');
 });
