@@ -20,7 +20,9 @@ export const buildFacebookConnectedAlert = (
    loans: LoanRecord[],
    now = Date.now(),
    // Other Moodeng accounts already linked to this same Facebook — one person, several accounts.
-   alsoLinkedTo: string[] = []
+   alsoLinkedTo: string[] = [],
+   // Sign-up method, notification channels and the step-by-step timing (onboardingTimeline.ts).
+   onboarding: string[] = []
 ): string => {
    const funded = loans.filter((l) => l.funded_at && !l.is_test);
    const late = funded.filter((l) => l.due_date && l.repaid_at && Date.parse(l.repaid_at) > Date.parse(l.due_date)).length;
@@ -47,6 +49,7 @@ export const buildFacebookConnectedAlert = (
          ? `⚠️ Their ID check was DECLINED${borrower.didit_decline_reason ? ` (${borrower.didit_decline_reason})` : ''} — they connected to talk to us about it. Please message them.`
          : null,
       alsoLinkedTo.length ? `⚠️ Same Facebook is already linked to ${alsoLinkedTo.join(', ')}` : null,
+      ...onboarding,
       'Message them from Admin → Borrower contacts.'
    ]
       .filter(Boolean)

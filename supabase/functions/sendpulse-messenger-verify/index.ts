@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { personName, stampDecisionCards } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { buildFacebookConnectedAlert, type LoanRecord } from '../_shared/facebookConnectedAlert.ts';
+import { loadOnboardingTimeline, signupLines, timelineLines } from '../_shared/onboardingTimeline.ts';
 import { extractMessengerCodes } from '../_shared/messengerCodes.ts';
 import { decideTimingMatch, type TimingAttempt } from '../_shared/messengerTimingMatch.ts';
 import { claimContactRows } from '../_shared/messengerContactLog.ts';
@@ -56,7 +57,7 @@ type Svc = any;
 // repayment record. Best-effort: a failed ping must never fail the borrower's verification.
 const announceConnected = async (svc: Svc, userId: string, contactId: string | null, flowName: string | null) => {
    try {
-      const [{ data: borrower }, { data: loans }, { data: chatRow }, contact, { data: sharing }] = await Promise.all([
+      const [{ data: borrower }, { data: loans }, { data: chatRow }, contact, { data: sharing }, onboarding] = await Promise.all([
          svc
             .from('users')
             .select('username, display_name, email, is_didit, is_world_id, didit_id_status, didit_decline_reason, is_test')
@@ -65,7 +66,8 @@ const announceConnected = async (svc: Svc, userId: string, contactId: string | n
          svc.from('loans').select('funded_at, due_date, repaid_at, is_test').eq('borrower_user_id', userId),
          svc.from('telegram_bot_settings').select('value').eq('key', 'kyc_alert_chat_id').maybeSingle(),
          contactId ? getMessengerContact(contactId) : Promise.resolve(null),
-         contactId ? svc.from('users').select('username').eq('messenger_psid', contactId).neq('id', userId) : Promise.resolve({ data: [] })
+         contactId ? svc.from('users').select('username').eq('messenger_psid', contactId).neq('id', userId) : Promise.resolve({ data: [] }),
+         loadOnboardingTimeline(svc, userId)
       ]);
       if (!borrower) return;
       // Any "Facebook not confirmed" / "Is this them?" card about them is resolved now.
@@ -83,7 +85,8 @@ const announceConnected = async (svc: Svc, userId: string, contactId: string | n
          messengerDisplayName(contact) ?? flowName,
          (loans ?? []) as LoanRecord[],
          Date.now(),
-         alsoLinkedTo
+         alsoLinkedTo,
+         [...signupLines(onboarding), ...timelineLines(onboarding)]
       );
       const chat = (chatRow as { value?: string } | null)?.value;
       if (chat)

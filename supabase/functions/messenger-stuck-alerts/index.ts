@@ -22,6 +22,7 @@ import {
 import { handleRemindersStuck, REMINDERS_CORS } from '../_shared/remindersStuckHandler.ts';
 import { buildMessengerVerifyLink, MESSENGER_PAGE_URL } from '../_shared/sendpulse.ts';
 import { isInternalRequest } from '../_shared/internalAuth.ts';
+import { loadOnboardingTimeline, signupLines, timelineLines } from '../_shared/onboardingTimeline.ts';
 
 // Cron-driven (every 5 min): borrowers who tapped "Verify via Messenger" 10+ minutes ago and still
 // aren't confirmed.
@@ -137,7 +138,11 @@ serve(async (req) => {
          email = 'failed';
       }
 
-      const text = buildMessengerStuckAlert(borrower, code, now, email);
+      // How they signed up and where in onboarding they got stuck.
+      const onboarding = await loadOnboardingTimeline(svc, borrower.id);
+      const text = [buildMessengerStuckAlert(borrower, code, now, email), ...signupLines(onboarding), ...timelineLines(onboarding)].join(
+         '\n'
+      );
       if (kycChatId) {
          await sendAdminCard(svc, kycChatId, {
             kind: 'messenger',
