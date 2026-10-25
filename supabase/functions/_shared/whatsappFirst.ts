@@ -47,11 +47,13 @@ export const facebookStepsText = (link: string, locale: WhatsAppFirstLocale) =>
 export const facebookConnectedText = (locale: WhatsAppFirstLocale) =>
    locale === 'id'
       ? '✅ Facebook kamu sudah terhubung. Terima kasih!\n\n' +
-        'Lanjutkan di aplikasi Moodeng: ceritakan sedikit tentang dirimu, lalu pilih jadwal video call 15 menit.\n' +
-        CONTINUE_URL
+        'Langkah berikutnya: ceritakan sedikit tentang dirimu di aplikasi (2 menit):\n' +
+        CONTINUE_URL +
+        '\n\nSetelah itu, balas JADWAL di sini untuk memilih waktu video call 15 menit.'
       : '✅ Your Facebook is connected. Thank you!\n\n' +
-        'Continue in the Moodeng app: tell us a little about yourself, then book a 15-minute video call.\n' +
-        CONTINUE_URL;
+        'Next: tell us a little about yourself in the app (2 minutes):\n' +
+        CONTINUE_URL +
+        '\n\nThen reply JADWAL here to pick a time for the 15-minute video call.';
 
 const newCode = () => {
    const bytes = crypto.getRandomValues(new Uint8Array(3));

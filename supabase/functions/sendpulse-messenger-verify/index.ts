@@ -21,6 +21,7 @@ import { loadBorrowSteps, loadNextStep } from '../_shared/botNextStep.ts';
 import { saveBotLocale } from '../_shared/messengerSupport.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { testAccountRow } from '../_shared/testAccount.ts';
+import { bookFromWindow, startWhatsAppBooking } from '../_shared/whatsappBooking.ts';
 import { sendFacebookConnectedOnWhatsApp, sendFacebookStepsOnWhatsApp } from '../_shared/whatsappFirst.ts';
 
 // SendPulse → Moodeng bridge for Facebook Messenger contact verification.
@@ -233,11 +234,17 @@ type VerifyBody = {
    // From sendpulse-events re-checking a message the SendPulse flow also handles: no "not yet" reply.
    quiet?: boolean;
    phone?: string;
+   // wa_book: the time window the person tapped in the WhatsApp booking list.
+   window?: string;
 };
 
 const handleWhatsApp = async (svc: Svc, body: VerifyBody, nowIso: string): Promise<Response> => {
    const contactId = body.contact_id ? String(body.contact_id) : null;
    if (!contactId) return json({ ok: false, error: 'no_contact' });
+
+   // Indonesia's in-chat booking (whatsappBooking.ts): JADWAL, then the time window they tapped.
+   if (body.action === 'wa_booking_start') return json({ ok: true, ...(await startWhatsAppBooking(svc, contactId)) });
+   if (body.action === 'wa_book') return json(await bookFromWindow(svc, contactId, String(body.window ?? '')));
 
    if (body.action === 'opt_out') {
       const { error } = await svc.from('users').update({ notif_whatsapp: false }).eq('whatsapp_contact_id', contactId);
