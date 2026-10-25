@@ -4,6 +4,7 @@ import { BellRing, Facebook, Loader2, MessageSquareText } from 'lucide-react';
 import posthog from 'posthog-js';
 
 import { useGeoCheck } from '@/hooks/useGeoCheck';
+import { clarityEvent } from '@/lib/analytics/clarity';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 import {
@@ -525,6 +526,7 @@ export default function ContactsStep({
          });
          leftAtRef.current = null;
       }
+      clarityEvent(`${channel}_connected`);
       track('contact_verify_confirmed', {
          source,
          channel,
@@ -854,6 +856,7 @@ export default function ContactsStep({
          return;
       }
       track('contact_verify_tapped', { source, channel: 'messenger', attempt: attemptsRef.current + 1 });
+      clarityEvent('tapped_connect_messenger');
       setVerifyError('');
       beginMessengerWait(preparedMessenger.code, preparedMessenger.link, 'link_tap');
       setPreparedMessenger(null);
@@ -863,6 +866,7 @@ export default function ContactsStep({
    const handleVerify = async (channel: Channel) => {
       // The tap itself, before the code request: a slow or failed start would otherwise leave no trace.
       track('contact_verify_tapped', { source, channel, attempt: attemptsRef.current + 1 });
+      clarityEvent(`tapped_connect_${channel}`);
       setVerifyError('');
       setStartingChannel(channel);
       try {
@@ -1486,6 +1490,7 @@ export default function ContactsStep({
                className="self-center text-md-b3 font-[590] text-[#877897] underline"
                onClick={() => {
                   track('contact_whatsapp_reminders_skipped', { source, push_blocked: pushBlocked, push_failures: pushFailures });
+                  clarityEvent('contact_step_skipped');
                   setSkippedNoWhatsApp(true);
                }}
                type="button"

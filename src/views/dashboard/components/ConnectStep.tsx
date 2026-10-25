@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useMemo, useState } from 'react';
 
 import { Camera, Gift, IdCard, MessagesSquare, ShieldCheck, Sparkles, Unlock, Video, Wallet } from 'lucide-react';
 
+import { clarityEvent } from '@/lib/analytics/clarity';
 import { MoreCharactersLabel } from '@/i18n/SentenceLabels';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { LoanAccessStatus } from '@/types/authTypes';
@@ -187,6 +188,7 @@ export default function ConnectStep({
          } catch {
             // ignore
          }
+         clarityEvent('connect_request_sent');
          await onSubmitted(payload.status);
       } catch (err) {
          console.error('loan-access submit failed', err);
