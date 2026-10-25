@@ -3,13 +3,14 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import {
    askDeepSeek,
-   DIGEST_DAYS,
+   type ClarityMetric,
+   composeDigest,
    fetchClarity,
-   frictionLines,
-   frictionRows,
-   funnelLines,
-   loadFunnel,
-   trafficSessions
+   loadPeopleWindow,
+   MIN_PEOPLE_FOR_AI,
+   type Person,
+   type PrevRun,
+   WINDOWS
 } from '../_shared/clarityDigest.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { isInternalRequest } from '../_shared/internalAuth.ts';
@@ -32,9 +33,11 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 //   Secret: DEEPSEEK_API_KEY.
 //
 // And the onboarding friction digest (see _shared/clarityDigest.ts), internal callers only:
-// { action: 'clarity_digest', clarityToken, clarityProjectId, dryRun? } — pg_cron clarity-digest posts it
-// every 3 days at 08:00 Bangkok (01:00 UTC) to the KYC / admin Telegram group + Discord #kyc, passing the token and project id from
-// the DB vault (CLARITY_API_TOKEN, CLARITY_PROJECT_ID). dryRun returns the text and the raw Clarity rows.
+// { action: 'clarity_digest', clarityToken, clarityProjectId, dryRun?, reuseClarity? } — pg_cron clarity-digest posts it
+// every 3 days at 07:00 Bangkok (00:00 UTC, DeepSeek off-peak) to the KYC / admin Telegram group + Discord #kyc, passing the
+// token and project id from the DB vault (CLARITY_API_TOKEN, CLARITY_PROJECT_ID). Every run is saved to clarity_digest_runs.
+// dryRun returns the text and what DeepSeek saw, without posting; reuseClarity (dry runs only) reuses the last saved
+// Clarity export instead of spending 2 of Clarity's 10 daily calls.
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -232,49 +235,64 @@ async function aiSearch(body: any): Promise<Response> {
    return json({ results });
 }
 
-const DAY_MS = 86_400_000;
-const bangkokDay = (ms: number) => new Date(ms).toLocaleDateString('en-US', { timeZone: 'Asia/Bangkok', month: 'short', day: 'numeric' });
-
 async function clarityDigest(supabase: any, body: any): Promise<Response> {
    const token = String(body?.clarityToken ?? '').trim();
    const projectId = String(body?.clarityProjectId ?? '').trim();
+   const dryRun = Boolean(body?.dryRun);
    const now = Date.now();
-   const lines = [`🔎 Onboarding friction · ${bangkokDay(now - DIGEST_DAYS * DAY_MS)} – ${bangkokDay(now)} (last ${DIGEST_DAYS} days)`];
    const problems: string[] = [];
 
-   const funnel = await loadFunnel(supabase, now).catch((err) => {
+   const window = await loadPeopleWindow(supabase, now).catch((err) => {
       problems.push(`Sign-up steps: ${err instanceof Error ? err.message : err}`);
-      return null;
+      return { days: WINDOWS[0], people: [] as Person[] };
    });
-   if (funnel) lines.push('', ...funnelLines(funnel.signups, funnel.steps));
 
-   let raw: unknown = null;
-   if (!token) {
+   // The last posted digest, for "what changed".
+   const { data: prevRow } = await supabase
+      .from('clarity_digest_runs')
+      .select('step_pct, friction_pct, created_at')
+      .eq('dry_run', false)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+   const prev = (prevRow ?? null) as PrevRun;
+
+   // 2 of Clarity's 10 calls a day: per page, and per device + browser (the Facebook app's browser shows there).
+   // A dry run with reuseClarity reads the last saved export instead, so testing doesn't use up the day's calls.
+   let clarity: { byPage: ClarityMetric[]; byDevice: ClarityMetric[] } | null = null;
+   if (dryRun && body?.reuseClarity) {
+      const { data } = await supabase
+         .from('clarity_digest_runs')
+         .select('clarity_raw')
+         .not('clarity_raw', 'is', null)
+         .order('created_at', { ascending: false })
+         .limit(1)
+         .maybeSingle();
+      clarity = data?.clarity_raw ?? null;
+      if (!clarity) problems.push('Clarity: no saved export to reuse');
+   } else if (!token) {
       problems.push('Clarity: CLARITY_API_TOKEN is not in the vault yet');
    } else {
       try {
-         // 2 of Clarity's 10 calls a day: per page, and per device + browser (the Facebook app's browser shows here).
          const [byPage, byDevice] = await Promise.all([fetchClarity(token, ['URL']), fetchClarity(token, ['Device', 'Browser'])]);
-         raw = { byPage, byDevice };
-         const sessions = trafficSessions(byPage);
-         const pageRows = frictionRows(byPage, ['URL']);
-         const deviceRows = frictionRows(byDevice, ['Device', 'Browser']);
-         lines.push('', `Clarity${sessions !== null ? ` · ${sessions.toLocaleString('en-US')} sessions` : ''}`);
-         lines.push(...(pageRows.length ? frictionLines(pageRows) : ['• No rage/dead clicks, quick-backs or errors recorded']));
-         if (deviceRows.length) lines.push('By device / browser:', ...frictionLines(deviceRows, 2));
+         clarity = { byPage, byDevice };
       } catch (err) {
          problems.push(`Clarity: ${err instanceof Error ? err.message : err}`);
       }
    }
 
+   const digest = composeDigest({ now, days: window.days, people: window.people, clarity, prev });
+   const lines = [...digest.lines];
+
    const apiKey = Deno.env.get('DEEPSEEK_API_KEY');
-   if (apiKey && funnel) {
-      const findings = await askDeepSeek(apiKey, lines.join('\n')).catch((err) => {
+   if (window.people.length < MIN_PEOPLE_FOR_AI) {
+      lines.push('', `🤖 No AI summary: ${window.people.length} new borrower${window.people.length === 1 ? '' : 's'} is too few to read patterns.`);
+   } else if (apiKey) {
+      const findings = await askDeepSeek(apiKey, digest.aiInput).catch((err) => {
          problems.push(`AI summary: ${err instanceof Error ? err.message : err}`);
          return [] as string[];
       });
-      if (findings.length)
-         lines.push('', '🤖 Where people get stuck (AI, check before acting)', ...findings.map((f, i) => `${i + 1}. ${f}`));
+      if (findings.length) lines.push('', '🤖 Where people get stuck (AI, check before acting)', ...findings.map((f, i) => `${i + 1}. ${f}`));
    }
 
    const clarityBase = projectId ? `https://clarity.microsoft.com/projects/view/${projectId}` : 'https://clarity.microsoft.com/projects';
@@ -286,13 +304,28 @@ async function clarityDigest(supabase: any, body: any): Promise<Response> {
    if (problems.length) lines.push('', `⚠️ ${problems.join(' · ')}`);
    const text = lines.join('\n');
 
-   if (body?.dryRun) return json({ text, raw });
+   // Saved on every run: the next digest's "what changed", and the export a dry run can reuse.
+   await supabase
+      .from('clarity_digest_runs')
+      .insert({
+         dry_run: dryRun,
+         window_days: window.days,
+         signups: window.people.length,
+         step_pct: digest.stepPct,
+         friction_pct: digest.frictionPct,
+         clarity_raw: clarity,
+         text
+      })
+      .then(({ error }: { error: { message: string } | null }) => error && console.error('clarity digest: save failed', error.message));
+
+   if (dryRun) return json({ text, aiInput: digest.aiInput, problems });
 
    // The KYC / admin group, with the other onboarding alerts: George keeps routine posts out of the team / fraud group.
    const { data: chats } = await supabase.from('telegram_bot_settings').select('value').eq('key', 'kyc_alert_chat_id').maybeSingle();
    const chatId = chats?.value ?? Deno.env.get('TEAM_TELEGRAM_CHAT_ID');
+   // Telegram caps a message at 4,096 characters.
    const telegramOk = chatId
-      ? await sendTelegramMessage(chatId, text)
+      ? await sendTelegramMessage(chatId, text.length > 4000 ? `${text.slice(0, 3990)}\n…` : text)
            .then(() => true)
            .catch((err) => (console.error('clarity digest: Telegram failed', err instanceof Error ? err.message : err), false))
       : false;

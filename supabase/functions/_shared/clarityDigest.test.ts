@@ -1,6 +1,16 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { cleanPath, frictionLines, frictionRows, funnelLines, trafficSessions } from './clarityDigest.ts';
+import {
+   cleanPath,
+   composeDigest,
+   frictionLines,
+   frictionRows,
+   funnelLines,
+   notableDeviceRows,
+   type Person,
+   stuckLines,
+   trafficSessions
+} from './clarityDigest.ts';
 
 Deno.test('cleanPath drops query strings and ids', () => {
    assertEquals(cleanPath('https://moodeng.app/auth/verify-code?phone=639171234567'), '/auth/verify-code');
@@ -82,7 +92,88 @@ Deno.test('trafficSessions excludes bots', () => {
    assertEquals(trafficSessions([]), null);
 });
 
-Deno.test('funnelLines shows share of sign-ups', () => {
-   assertEquals(funnelLines(10, [{ step: 'Messenger connected', count: 4 }]), ['New sign-ups: 10', '• Messenger connected: 4 (40%)']);
-   assertEquals(funnelLines(0, [{ step: 'Messenger connected', count: 0 }]), ['New sign-ups: 0', '• Messenger connected: 0']);
+const NOW = Date.parse('2026-10-25T20:44:16Z');
+const at = (iso: string) => `2026-10-25T${iso}Z`;
+const PEOPLE: Person[] = [
+   {
+      username: 'luis',
+      method: 'Phone code',
+      browser: 'Google app',
+      os: 'ios',
+      locale: null,
+      steps: [
+         { step: 'Signed up', at: at('05:33:34') },
+         { step: 'Wallet connected', at: at('05:34:26') },
+         { step: 'Tapped Connect Messenger', at: at('05:34:29') },
+         { step: 'Messenger connected', at: at('05:35:22') },
+         { step: 'Asked to connect / booked call', at: at('05:44:00') }
+      ]
+   },
+   {
+      username: 'sandi',
+      method: 'Email + password',
+      browser: 'Chrome',
+      os: 'android',
+      locale: null,
+      steps: [
+         { step: 'Signed up', at: at('14:10:37') },
+         { step: 'Wallet connected', at: at('14:11:21') },
+         { step: 'Tapped Connect Messenger', at: at('15:55:27') },
+         { step: 'Opened Messenger chat', at: at('16:09:21') }
+      ]
+   },
+   // Signed up 30 minutes ago: not "stuck" yet.
+   { username: 'new', method: 'Google', browser: 'Facebook app', os: 'android', locale: null, steps: [{ step: 'Signed up', at: at('20:14:16') }] }
+];
+
+Deno.test('funnelLines: share, how long the step took after their previous one, and what changed', () => {
+   const lines = funnelLines(PEOPLE, { step_pct: { 'Messenger connected': 10 }, friction_pct: {}, created_at: at('00:00:00') });
+   assertEquals(lines[0], 'New borrowers: 3');
+   assertEquals(lines[1], '• Tapped Connect Messenger: 2 of 3 (67%) · took ~52 min');
+   assertEquals(lines[3], '• Messenger connected: 1 of 3 (33%) · took ~53s ↑ from 10%');
+   assertEquals(lines[lines.length - 1], '• Nobody yet: Turned on push, Call booked, Approved to borrow, ID check submitted, First loan funded');
+});
+
+Deno.test('stuckLines: newest first, with username and what they still need to do', () => {
+   assertEquals(stuckLines(PEOPLE, NOW), [
+      'Stopped partway: 1 of 3 (newest first, worth a message)',
+      '• B @sandi (Email + password · Chrome/android) · 4h 35m ago · hasn\'t: finish Messenger (sent no code), ask to borrow'
+   ]);
+});
+
+Deno.test('composeDigest: DeepSeek never sees usernames', () => {
+   const d = composeDigest({ now: NOW, days: 3, people: PEOPLE, clarity: null, prev: null });
+   assertEquals(d.lines.some((l) => l.includes('@sandi')), true);
+   assertEquals(['@', 'sandi', 'luis'].some((u) => d.aiInput.includes(u)), false);
+   assertEquals(d.aiInput.includes('B (Email + password · Chrome/android): Signed up → Wallet connected +44s'), true);
+});
+
+Deno.test('team pages are left out of friction and traffic', () => {
+   const byPage = [
+      { metricName: 'DeadClickCount', information: [{ Url: 'https://moodeng.app/admin/test-lab', sessionsCount: 5, sessionsWithMetricPercentage: 100 }] },
+      { metricName: 'Traffic', information: [{ Url: 'https://moodeng.app/admin', totalSessionCount: 9 }, { Url: '/repay', totalSessionCount: 4 }] }
+   ];
+   assertEquals(frictionRows(byPage, ['URL']), []);
+   assertEquals(trafficSessions(byPage), 4);
+});
+
+Deno.test('notableDeviceRows keeps in-app browsers and clear outliers, drops tiny samples', () => {
+   const rows = frictionRows(
+      [
+         {
+            metricName: 'DeadClickCount',
+            information: [
+               { Device: 'PC', Browser: 'Chrome', sessionsCount: 40, sessionsWithMetricPercentage: 10 },
+               { Device: 'Mobile', Browser: 'ChromeMobile', sessionsCount: 10, sessionsWithMetricPercentage: 50 },
+               { Device: 'Mobile', Browser: 'FacebookApp', sessionsCount: 4, sessionsWithMetricPercentage: 25 },
+               { Device: 'Mobile', Browser: 'InstagramApp', sessionsCount: 1, sessionsWithMetricPercentage: 100 }
+            ]
+         }
+      ],
+      ['Device', 'Browser']
+   );
+   assertEquals(
+      notableDeviceRows(rows).map((r) => r.where),
+      ['Mobile · ChromeMobile', 'Mobile · FacebookApp']
+   );
 });
