@@ -455,6 +455,8 @@ export default function App() {
                }
             />
             <Route path="/dashboard-v2-preview" element={<DashboardV2 />} />
+            {/* Mock borrower dashboard (two loans, $15 + $20) for Emma's video — sample data only, never writes. */}
+            <Route path="/borrower-demo" element={<Navigate to="/dashboard-v2-preview?state=demo" replace />} />
             <Route path="/dashboard-v2-preview/milestones" element={<DashboardV2Milestones />} />
             <Route path="/dashboard-v2-preview/refer" element={<DashboardV2Referral />} />
             <Route path="/dashboard-v2-preview/invite/:code" element={<DashboardV2InviteLanding />} />

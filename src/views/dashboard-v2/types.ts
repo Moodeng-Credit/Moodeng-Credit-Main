@@ -78,6 +78,6 @@ export interface DashboardV2Model {
    insightsHref: string;
 }
 
-export type DashboardV2PreviewState = 'real' | 'unverified' | 'verified' | 'defaulted' | 'rewarded';
+export type DashboardV2PreviewState = 'real' | 'unverified' | 'verified' | 'defaulted' | 'rewarded' | 'demo';
 
 export type DashboardV2Language = 'en' | 'fil';
