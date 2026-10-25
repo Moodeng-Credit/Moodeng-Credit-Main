@@ -22,6 +22,7 @@ import {
    stampDecisionCards
 } from './adminCards.ts';
 import { postDiscord } from './discord.ts';
+import { loadOnboardingTimeline, signupLines, timelineLines } from './onboardingTimeline.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import type { PushLocale, PushPayload } from './pushMessages.ts';
 import { getMessengerContact, messengerDisplayName, sendMessengerMessage } from './sendpulse.ts';
@@ -149,11 +150,13 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
    const kyc = borrower.is_didit ?? borrower.didit_id_status ?? 'unknown';
    // The Facebook profile name, straight from SendPulse — compare it with the KYC name.
    const fbName = borrower.messenger_psid ? messengerDisplayName(await getMessengerContact(borrower.messenger_psid)) : null;
-   const line = borrower.messenger_verified_at
-      ? `Messenger ✅${fbName ? ` — Facebook name: ${fbName}` : ''}`
-      : borrower.whatsapp_verified_at
-        ? 'WhatsApp ✅'
-        : 'no verified line';
+   // Every chat app they verified (not the LINE app — "Line" used to mean "contact line" here).
+   const verified = [
+      borrower.messenger_verified_at ? `Messenger ✅${fbName ? ` (Facebook name: ${fbName})` : ''}` : null,
+      borrower.whatsapp_verified_at ? 'WhatsApp ✅' : null
+   ].filter(Boolean);
+   const contact = verified.length ? verified.join(' · ') : 'no verified chat app';
+   const onboarding = await loadOnboardingTimeline(svc, borrower.id);
    // The bio they filled in the Connect filter — so you know their situation before the call.
    const { data: bio } = await svc
       .from('users')
@@ -189,12 +192,14 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
       preKyc ? '🪪 Not ID-verified yet — after you approve them they apply, and verify their ID as the last step.' : null,
       `Who: ${who(borrower, request.display_name)}`,
       `KYC: ${kyc}`,
-      `Line: ${line}`,
+      `Contact: ${contact}`,
+      ...signupLines(onboarding),
       work ? `Work: ${work}` : null,
       money ? `Money: ${money}` : null,
       isCall && borrower.video_call_starts_at ? `Call: ${formatCallTimeForTeam(borrower.video_call_starts_at, borrower.video_call_timezone)}` : null,
       referral ? `Referral: ${referral}` : null,
       `Why: ${request.reason?.trim() || '—'}`,
+      ...timelineLines(onboarding),
       '',
       isCall
          ? `After the call, tap Showed up (they can then apply) or No-show. Or type /approve ${shortId(request.id)} · /noshow ${shortId(request.id)}`
