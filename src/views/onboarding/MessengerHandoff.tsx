@@ -4,6 +4,7 @@ import { Facebook } from 'lucide-react';
 import posthog from 'posthog-js';
 import { useParams, useSearchParams } from 'react-router-dom';
 
+import { clarityEvent } from '@/lib/analytics/clarity';
 import { buildMessengerVerifyLink, isAndroidBrowser, MESSENGER_APP_CHAT_LINK, MESSENGER_CODE_PATTERN } from '@/config/contactVerification';
 import { copyTextFromTap } from '@/lib/inAppHandoff';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -67,6 +68,7 @@ export default function MessengerHandoff() {
          const { data } = await getSupabaseBrowserClient().rpc('messenger_code_verified', { p_code: code });
          if (!stopped && data === true) {
             setConnected(true);
+            clarityEvent('messenger_connected');
             track('messenger_handoff_connected', { phone, seconds_on_page: Math.round((Date.now() - startedAt) / 1000) });
          }
       };

@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import posthog from 'posthog-js';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+import { clarityEvent } from '@/lib/analytics/clarity';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 import { isAndroidDevice, isIOSDevice } from '@/components/worldId/worldIdLaunch';
 
@@ -421,6 +422,8 @@ export default function VerifyFlow() {
          if (error || !url) {
             throw new Error('Could not start verification. Please try again.');
          }
+         // The same moment the server stamps didit_submitted_at ("ID check submitted" in the team alerts).
+         clarityEvent('id_check_submitted');
          setKycUrl(url);
       } catch (err) {
          setErrorMessage(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
