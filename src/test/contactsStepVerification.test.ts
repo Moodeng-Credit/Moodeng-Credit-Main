@@ -3,7 +3,14 @@ import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { buildMessengerVerifyLink, buildWhatsAppVerifyLink, MESSENGER_APP_CHAT_LINK } from '@/config/contactVerification';
+import {
+   buildMessengerIntentLink,
+   buildMessengerVerifyLink,
+   buildWhatsAppVerifyLink,
+   MESSENGER_APP_CHAT_LINK,
+   MESSENGER_PAGE_ID,
+   MESSENGER_PLAY_STORE_LINK
+} from '@/config/contactVerification';
 
 type ReactActGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
 (globalThis as ReactActGlobal).IS_REACT_ACT_ENVIRONMENT = true;
@@ -305,6 +312,64 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       } finally {
          document.removeEventListener('click', blockNavigation, true);
       }
+   });
+
+   describe('Android in Indonesia: Chrome falls back to our page when Messenger is missing', () => {
+      const androidChrome = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Mobile Safari/537.36';
+      const chatLink = () => Array.from(container.querySelectorAll('a')).find((a) => a.textContent?.includes('Copy code & open Messenger'));
+
+      beforeEach(() => {
+         Object.defineProperty(navigator, 'userAgent', { value: androidChrome, configurable: true });
+         window.history.replaceState(null, '', '/onboarding/connect');
+      });
+      afterEach(() => window.history.replaceState(null, '', '/'));
+
+      it('the button is a Messenger intent whose fallback is this page marked ?nomsgr=1', async () => {
+         window.sessionStorage.setItem('moodeng.msgrCountry', 'ID');
+         const blockNavigation = (e: Event) => e.preventDefault();
+         document.addEventListener('click', blockNavigation, true);
+         try {
+            await render();
+            await tapMessengerCard();
+            const href = chatLink()?.getAttribute('href') ?? '';
+            const fallback = `${window.location.origin}/onboarding/connect?nomsgr=1`;
+            expect(href).toBe(buildMessengerIntentLink(fallback));
+            expect(href).toContain(`intent://user-thread/${MESSENGER_PAGE_ID}#Intent;scheme=fb-messenger;package=com.facebook.orca;`);
+            expect(href).toContain(`S.browser_fallback_url=${encodeURIComponent(fallback)};end`);
+
+            await act(async () => {
+               chatLink()?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+               await Promise.resolve();
+            });
+            expect(JSON.parse(window.sessionStorage.getItem('moodeng.messengerVerifyPending') ?? '{}')).toMatchObject({
+               code: 'MDNG-ABC123',
+               link: href
+            });
+         } finally {
+            document.removeEventListener('click', blockNavigation, true);
+         }
+      });
+
+      it('elsewhere (no Indonesian IP) the button stays the plain Messenger app link', async () => {
+         await render();
+         await tapMessengerCard();
+         expect(chatLink()?.getAttribute('href')).toBe(MESSENGER_APP_CHAT_LINK);
+      });
+
+      it('back from Chrome with ?nomsgr=1: says Messenger is missing, keeps the same code, offers the Play Store', async () => {
+         window.sessionStorage.setItem(
+            'moodeng.messengerVerifyPending',
+            JSON.stringify({ userId: 'user-1', code: 'MDNG-EB9C01', link: 'intent://x', at: Date.now() })
+         );
+         window.history.replaceState(null, '', '/onboarding/connect?nomsgr=1');
+         await render();
+         expect(container.textContent).toContain("This phone doesn't have the Messenger app.");
+         expect(container.textContent).toContain('MDNG-EB9C01');
+         const getMessenger = Array.from(container.querySelectorAll('a')).find((a) => a.textContent?.trim() === 'Get Messenger');
+         expect(getMessenger?.getAttribute('href')).toBe(MESSENGER_PLAY_STORE_LINK);
+         // The marker is gone, so a reload doesn't show the card again.
+         expect(window.location.search).toBe('');
+      });
    });
 
    it('iPhone in Facebook: the tap copies the code and shows how to paste it; Safari via ⋯ carries the code', async () => {
