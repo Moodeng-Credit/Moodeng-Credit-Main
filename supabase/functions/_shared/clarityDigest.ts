@@ -1,4 +1,4 @@
-// Onboarding friction digest, posted every 3 days to the team Telegram group (and Discord): how far the
+// Onboarding friction digest, posted every 3 days to the KYC / admin Telegram group (and Discord #kyc): how far the
 // last 3 days' sign-ups got through onboarding (our own timestamps, same steps as onboarding_timeline),
 // where Clarity saw friction (rage / dead clicks, quick-backs, JS errors per page and device), and
 // DeepSeek's read of where people get stuck.
@@ -24,7 +24,8 @@ const FRICTION_METRICS: Record<string, string> = {
 };
 
 export type ClarityMetric = { metricName: string; information: Record<string, unknown>[] };
-export type FrictionRow = { metric: string; where: string; sessions: number; pct: number | null };
+// sessions = visits that had the problem; total = all visits to that place; pct = sessions / total.
+export type FrictionRow = { metric: string; where: string; sessions: number; total: number; pct: number | null };
 export type StepCount = { step: string; count: number };
 
 const num = (value: unknown): number | null => {
@@ -61,15 +62,22 @@ export const cleanPath = (url: string): string => {
    );
 };
 
-/** Friction rows from one Clarity response, merged per place (page path, or device/browser), biggest first. */
+/**
+ * Friction rows from one Clarity response, merged per place (page path, or device/browser), most affected
+ * visits first. Clarity's sessionsCount is ALL visits to that place; the share that hit the problem is
+ * sessionsWithMetricPercentage, so a busy page with no problems is left out instead of topping every list.
+ */
 export const frictionRows = (metrics: ClarityMetric[], dimensions: string[]): FrictionRow[] => {
    const merged = new Map<string, FrictionRow>();
    for (const metric of Array.isArray(metrics) ? metrics : []) {
       const label = FRICTION_METRICS[metric?.metricName];
       if (!label) continue;
       for (const row of Array.isArray(metric.information) ? metric.information : []) {
-         const sessions = num(field(row, 'sessionsCount', 'subTotal', 'sessionCount')) ?? 0;
-         if (sessions <= 0) continue;
+         const total = num(field(row, 'sessionsCount', 'sessionCount')) ?? 0;
+         const share = num(field(row, 'sessionsWithMetricPercentage'));
+         // No share given: count the place only if Clarity recorded the problem there at all.
+         const sessions = share !== null ? Math.round((total * share) / 100) : (num(field(row, 'subTotal')) ?? 0) > 0 ? total : 0;
+         if (total <= 0 && sessions <= 0) continue;
          const where = dimensions
             .map((d) => {
                const value = String(field(row, d) ?? '').trim();
@@ -79,12 +87,13 @@ export const frictionRows = (metrics: ClarityMetric[], dimensions: string[]): Fr
             .join(' · ');
          if (!where) continue;
          const key = `${label}|${where}`;
-         const pct = num(field(row, 'sessionsWithMetricPercentage'));
          const prev = merged.get(key);
-         merged.set(key, prev ? { ...prev, sessions: prev.sessions + sessions, pct: null } : { metric: label, where, sessions, pct });
+         const next = { metric: label, where, sessions: (prev?.sessions ?? 0) + sessions, total: (prev?.total ?? 0) + total };
+         merged.set(key, { ...next, pct: next.total > 0 ? (next.sessions / next.total) * 100 : null });
       }
    }
-   return [...merged.values()].sort((a, b) => b.sessions - a.sessions);
+   // Clean visits count toward a page's total (all its URL variants), but only places with the problem are listed.
+   return [...merged.values()].filter((r) => r.sessions > 0).sort((a, b) => b.sessions - a.sessions);
 };
 
 /** Total real (non-bot) sessions from the Traffic metric. */
@@ -122,7 +131,7 @@ export const frictionLines = (rows: FrictionRow[], perMetric = 3): string[] => {
          ([metric, list]) =>
             `• ${metric}: ${list
                .slice(0, perMetric)
-               .map((r) => `${r.where} ${fmt(r.sessions)}${r.pct !== null ? ` (${r.pct.toFixed(r.pct < 10 ? 1 : 0)}%)` : ''}`)
+               .map((r) => `${r.where} ${fmt(r.sessions)} of ${fmt(r.total)} visits${r.pct !== null ? ` (${Math.round(r.pct)}%)` : ''}`)
                .join(', ')}`
       );
 };
