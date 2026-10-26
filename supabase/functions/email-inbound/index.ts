@@ -10,8 +10,10 @@ import { alertTeam, postToTicket } from '../_shared/supportTickets.ts';
 // than poll IMAP from an edge function (a bad fit for Deno Deploy's socket model), inbound mail
 // is *forwarded* into a webhook provider — Resend Inbound (MX on a reply subdomain) or a
 // Cloudflare Email Worker — which POSTs the parsed message here. We mirror it into the same
-// widget_conversations ticket model the live chat uses (a row + a Discord #web-support thread),
-// so email and in-app chat land in one place. The message goes through the widget API's /api/message
+// widget_conversations ticket model the live chat uses (a row + a Discord forum thread), so the
+// team replies to email the same way as to chat. The widget API opens channel 'email' threads in
+// their own forum (its SUPPORT_EMAIL_CHANNEL_ID env var on Vercel) so they don't mix with Messenger
+// and website chats in #web-support; without it they fall back to the shared forum. The message goes through the widget API's /api/message
 // (_shared/supportTickets.ts), exactly like a website chat message: saved in widget_messages and posted
 // by the Discord bot into the ticket thread with Reply / Resolve / Quick reply. (It used to post with
 // a Discord webhook secret that was never set on this project, so no email ever reached Discord.)
