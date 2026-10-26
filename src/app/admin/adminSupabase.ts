@@ -1885,6 +1885,8 @@ export interface AdminReferralCode {
    id: string;
    code: string;
    boost_amount: number;
+   /** What the owner earns per referred friend who takes a loan and repays it. */
+   payout_amount: number;
    is_active: boolean;
    max_uses: number | null;
    current_uses: number;
@@ -1895,14 +1897,18 @@ export interface AdminReferralCode {
 }
 
 const REFERRAL_CODE_SELECT =
-   'id, code, boost_amount, is_active, max_uses, current_uses, expires_at, created_at, owner_user_id, owner:users!referral_codes_owner_user_id_fkey(id, username, email)';
+   'id, code, boost_amount, payout_amount, is_active, max_uses, current_uses, expires_at, created_at, owner_user_id, owner:users!referral_codes_owner_user_id_fkey(id, username, email)';
 
 export async function listReferralCodes(): Promise<AdminReferralCode[]> {
    const supabase = getSupabaseBrowserClient();
    const data = (await requireOk(
       supabase.from('referral_codes').select(REFERRAL_CODE_SELECT).order('created_at', { ascending: false })
    )) as AnyRow[] | null;
-   return (data ?? []).map((row) => ({ ...row, boost_amount: toNumber(row.boost_amount) })) as AdminReferralCode[];
+   return (data ?? []).map((row) => ({
+      ...row,
+      boost_amount: toNumber(row.boost_amount),
+      payout_amount: toNumber(row.payout_amount)
+   })) as AdminReferralCode[];
 }
 
 export async function createReferralCode(input: {
@@ -1924,7 +1930,11 @@ export async function createReferralCode(input: {
          .select(REFERRAL_CODE_SELECT)
          .single()
    );
-   return { ...(data as AnyRow), boost_amount: toNumber((data as AnyRow).boost_amount) } as AdminReferralCode;
+   return {
+      ...(data as AnyRow),
+      boost_amount: toNumber((data as AnyRow).boost_amount),
+      payout_amount: toNumber((data as AnyRow).payout_amount)
+   } as AdminReferralCode;
 }
 
 export async function setReferralCodeActive(id: string, isActive: boolean): Promise<AdminReferralCode> {
@@ -1932,7 +1942,11 @@ export async function setReferralCodeActive(id: string, isActive: boolean): Prom
    const data = await requireOk(
       supabase.from('referral_codes').update({ is_active: isActive }).eq('id', id).select(REFERRAL_CODE_SELECT).single()
    );
-   return { ...(data as AnyRow), boost_amount: toNumber((data as AnyRow).boost_amount) } as AdminReferralCode;
+   return {
+      ...(data as AnyRow),
+      boost_amount: toNumber((data as AnyRow).boost_amount),
+      payout_amount: toNumber((data as AnyRow).payout_amount)
+   } as AdminReferralCode;
 }
 
 // Edit a live code's terms (boost, usage cap, expiry) without recreating it. The code string
@@ -1941,6 +1955,7 @@ export async function updateReferralCode(
    id: string,
    changes: {
       boost_amount?: number;
+      payout_amount?: number;
       max_uses?: number | null;
       expires_at?: string | null;
    }
@@ -1948,10 +1963,15 @@ export async function updateReferralCode(
    const supabase = getSupabaseBrowserClient();
    const patch: Record<string, unknown> = {};
    if (changes.boost_amount !== undefined) patch.boost_amount = changes.boost_amount;
+   if (changes.payout_amount !== undefined) patch.payout_amount = changes.payout_amount;
    if (changes.max_uses !== undefined) patch.max_uses = changes.max_uses;
    if (changes.expires_at !== undefined) patch.expires_at = changes.expires_at;
    const data = await requireOk(supabase.from('referral_codes').update(patch).eq('id', id).select(REFERRAL_CODE_SELECT).single());
-   return { ...(data as AnyRow), boost_amount: toNumber((data as AnyRow).boost_amount) } as AdminReferralCode;
+   return {
+      ...(data as AnyRow),
+      boost_amount: toNumber((data as AnyRow).boost_amount),
+      payout_amount: toNumber((data as AnyRow).payout_amount)
+   } as AdminReferralCode;
 }
 
 // Link (or unlink with null) the person behind a code.
@@ -1960,7 +1980,11 @@ export async function setReferralCodeOwner(id: string, ownerUserId: string | nul
    const data = await requireOk(
       supabase.from('referral_codes').update({ owner_user_id: ownerUserId }).eq('id', id).select(REFERRAL_CODE_SELECT).single()
    );
-   return { ...(data as AnyRow), boost_amount: toNumber((data as AnyRow).boost_amount) } as AdminReferralCode;
+   return {
+      ...(data as AnyRow),
+      boost_amount: toNumber((data as AnyRow).boost_amount),
+      payout_amount: toNumber((data as AnyRow).payout_amount)
+   } as AdminReferralCode;
 }
 
 // Referral code owner payouts (referral_code_payouts) — one row per redemption of an owned code.

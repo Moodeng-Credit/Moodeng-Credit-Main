@@ -240,6 +240,7 @@ export default function ReferralCodesSection() {
 
    const [editingId, setEditingId] = useState<string | null>(null);
    const [editBoost, setEditBoost] = useState('');
+   const [editPayout, setEditPayout] = useState('');
    const [editMaxUses, setEditMaxUses] = useState('');
    const [editExpiresAt, setEditExpiresAt] = useState('');
 
@@ -247,6 +248,7 @@ export default function ReferralCodesSection() {
       setError(null);
       setEditingId(c.id);
       setEditBoost(String(c.boost_amount));
+      setEditPayout(String(c.payout_amount));
       setEditMaxUses(c.max_uses != null ? String(c.max_uses) : '');
       setEditExpiresAt(isoToDateInput(c.expires_at));
    }, []);
@@ -258,6 +260,11 @@ export default function ReferralCodesSection() {
          const boost = Number(editBoost);
          if (!isValidReferralBoost(boost)) {
             setError(boostErrorMessage);
+            return;
+         }
+         const payout = Number(editPayout);
+         if (editPayout.trim() === '' || !Number.isFinite(payout) || payout < 0) {
+            setError('Pay per friend must be a dollar amount, 0 or more.');
             return;
          }
          const maxUses = editMaxUses.trim() === '' ? null : Number(editMaxUses);
@@ -274,12 +281,17 @@ export default function ReferralCodesSection() {
          setBusy(c.id);
          setError(null);
          try {
-            const updated = await updateReferralCode(c.id, { boost_amount: boost, max_uses: maxUses, expires_at: expiresAt });
+            const updated = await updateReferralCode(c.id, {
+               boost_amount: boost,
+               payout_amount: payout,
+               max_uses: maxUses,
+               expires_at: expiresAt
+            });
             await logAdminAction({
                action: 'referral_code_updated',
                target_table: 'referral_codes',
                target_id: c.id,
-               metadata: { code: c.code, boost_amount: boost, max_uses: maxUses, expires_at: expiresAt }
+               metadata: { code: c.code, boost_amount: boost, payout_amount: payout, max_uses: maxUses, expires_at: expiresAt }
             });
             setCodes((prev) => prev.map((row) => (row.id === c.id ? updated : row)));
             setEditingId(null);
@@ -289,7 +301,7 @@ export default function ReferralCodesSection() {
             setBusy(null);
          }
       },
-      [editBoost, editExpiresAt, editMaxUses]
+      [editBoost, editExpiresAt, editMaxUses, editPayout]
    );
 
    const shown = useMemo(() => {
@@ -483,6 +495,11 @@ export default function ReferralCodesSection() {
                                  <span className="rounded-full bg-emerald-900/50 px-2 py-0.5 text-sm font-black text-emerald-300">
                                     ${STARTING_CREDIT_LIMIT + Number(c.boost_amount)} total limit
                                  </span>
+                                 {c.owner ? (
+                                    <span className="rounded-full bg-amber-900/50 px-2 py-0.5 text-sm font-black text-amber-300">
+                                       pays ${c.payout_amount} / repaying friend
+                                    </span>
+                                 ) : null}
                               </div>
                               <p className="mt-1 text-lg font-bold text-[#cfc6dd]">
                                  {c.current_uses} used{c.max_uses != null ? ` of ${c.max_uses}` : ''}
@@ -585,6 +602,15 @@ export default function ReferralCodesSection() {
                                        className="rounded-xl border border-[#3d1f6e] bg-[#241044] px-3 py-2 text-base font-bold text-white"
                                     />
                                  </label>
+                                 <label className="flex w-36 flex-col gap-1 text-sm font-bold text-[#a89bb8]">
+                                    Pay per friend ($)
+                                    <input
+                                       value={editPayout}
+                                       onChange={(e) => setEditPayout(e.target.value)}
+                                       inputMode="decimal"
+                                       className="rounded-xl border border-[#3d1f6e] bg-[#241044] px-3 py-2 text-base font-bold text-white"
+                                    />
+                                 </label>
                                  <label className="flex w-32 flex-col gap-1 text-sm font-bold text-[#a89bb8]">
                                     Max uses
                                     <input
@@ -624,7 +650,8 @@ export default function ReferralCodesSection() {
                               </div>
                               <p className="mt-2 text-sm font-medium text-[#6f6385]">
                                  The code itself can&apos;t change. Empty max uses or expiry means unlimited / never expires. Expiry is end
-                                 of that day, your local time.
+                                 of that day, your local time. Pay per friend is what the owner earns when someone who used the code takes
+                                 a loan and repays it (shown on their /affiliate page); payouts already earned keep their old amount.
                               </p>
                            </div>
                         ) : null}

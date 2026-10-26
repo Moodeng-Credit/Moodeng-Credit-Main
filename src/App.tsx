@@ -37,6 +37,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import AccountRestrictedPage from '@/app/account-restricted/page';
 import AdminPanel from '@/app/admin/page';
 import PricingHealthPreview from '@/app/admin/PricingHealthPreview';
+import AffiliateDashboardPage from '@/app/affiliate/page';
 import AuthSuccess from '@/app/auth-success/page';
 import AuthConfirm from '@/app/auth/confirm/page';
 import LineCallback from '@/app/auth/line/callback/page';
@@ -483,6 +484,16 @@ export default function App() {
                   </ProtectedRoute>
                }
             />
+            {/* Referral code owners (affiliates, e.g. Belle): their own signups and payouts, no admin needed. */}
+            <Route
+               path="/affiliate"
+               element={
+                  <ProtectedRoute>
+                     <AffiliateDashboardPage />
+                  </ProtectedRoute>
+               }
+            />
+            {import.meta.env.DEV ? <Route path="/affiliate-preview" element={<AffiliateDashboardPage sample />} /> : null}
             <Route path="/dashboard-v2-preview" element={<DashboardV2 />} />
             {/* Mock borrower dashboard (two loans, $15 + $20) for Emma's video — sample data only, never writes. */}
             <Route path="/borrower-demo" element={<Navigate to="/dashboard-v2-preview?state=demo" replace />} />
