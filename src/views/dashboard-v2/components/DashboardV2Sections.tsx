@@ -23,7 +23,7 @@ function Divider() {
    return <div className="h-px w-full bg-[#ece9f1] dark:bg-[#2c2439]" aria-hidden="true" />;
 }
 
-/** Claim / Added / Pending / Sent pill for an earned voucher. */
+/** Claim / Pending / Sent pill for an earned voucher. */
 export function VoucherStatusPill({ state, onClaim }: { state: VoucherState; onClaim: () => void }) {
    if (state === 'claimable') return <ClaimVoucherButton onClaim={onClaim} />;
    if (state === 'loading')
@@ -35,9 +35,9 @@ export function VoucherStatusPill({ state, onClaim }: { state: VoucherState; onC
          </Link>
       );
    }
-   const label = state === 'sent' ? 'Sent' : state === 'banked' ? 'Added' : state === 'pending' ? 'Pending' : 'Done';
+   const label = state === 'sent' ? 'Sent' : state === 'pending' ? 'Pending' : 'Done';
    const tone =
-      state === 'sent' || state === 'banked' || state === 'none'
+      state === 'sent' || state === 'none'
          ? 'bg-[#e3f5e8] text-[#2f8a4a] dark:bg-[#113522] dark:text-[#70e4a6]'
          : 'bg-[#fff4cc] text-[#a06a00] dark:bg-[#3d2d12] dark:text-[#facc6b]';
    return <span className={clsx(PILL_BUTTON, tone)}>{label}</span>;
@@ -381,7 +381,7 @@ export function UpcomingDuesSection({ model }: { model: DashboardV2Model }) {
    );
 }
 
-/** "Moodeng grew to Rising!": shown on the dashboard while a tier's GrabMart reward is waiting to be claimed. */
+/** "Moodeng grew to Rising!": shown on the dashboard while a tier's food voucher is waiting to be claimed. */
 export function TierVoucherCard({ label, amountPhp, onClaim }: { label: string; amountPhp: number; onClaim: () => void }) {
    return (
       <section
@@ -392,7 +392,7 @@ export function TierVoucherCard({ label, amountPhp, onClaim }: { label: string; 
          <DesignImage src={DASHBOARD_V2_ASSETS.coupon} className="h-12 w-12 shrink-0 object-contain" />
          <div className="min-w-0 flex-1">
             <p className="text-[18px] font-black italic leading-6 text-[#3c8248]">Moodeng grew to {label}!</p>
-            <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">Claim your ₱{amountPhp} GrabMart voucher</p>
+            <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">Claim your ₱{amountPhp} food voucher</p>
          </div>
          <ClaimVoucherButton onClaim={onClaim} />
       </section>

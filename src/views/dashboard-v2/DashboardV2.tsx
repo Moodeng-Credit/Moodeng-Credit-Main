@@ -157,7 +157,7 @@ export default function DashboardV2() {
       Number.isInteger(tourStepsParam) && tourStepsParam > 0 ? tourStepsParam : REQUEST_BOARD_TOUR_STEP_COUNT;
    const showTour = searchParams.has('tour') && shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, userId, false);
    const ownVoucher = getVoucherState(model.rewards, OWN_VOUCHER, model.referralLoading);
-   // The lowest tier whose GrabMart reward is waiting to be claimed (one card at a time).
+   // The lowest tier whose food voucher is waiting to be claimed (one card at a time).
    const claimableTierVoucher = TIER_VOUCHERS.map((tier) => ({
       tier,
       claimable: model.rewards.claimable.find((item) => item.reward === tier.reward) ?? null
@@ -307,12 +307,7 @@ export default function DashboardV2() {
             />
          ) : null}
          {claimingVoucher ? (
-            <VoucherClaimPopup
-               voucher={claimingVoucher}
-               walletPhp={model.rewards.grabmartBalancePhp}
-               isPreview={!isReal}
-               onClose={() => setClaimingVoucher(null)}
-            />
+            <VoucherClaimPopup voucher={claimingVoucher} isPreview={!isReal} onClose={() => setClaimingVoucher(null)} />
          ) : null}
       </div>
    );

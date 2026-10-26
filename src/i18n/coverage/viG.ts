@@ -25,7 +25,7 @@ export const vietnameseCoverageG: Record<string, string> = {
    'passkey removed': 'Đã gỡ passkey',
 
    // src/views/dashboard-v2/components/DashboardV2Banners.tsx
-   '₱100 GrabMart Voucher: kumain kayong dalawa. Mag-refer.': 'Phiếu quà tặng GrabMart ₱100: cả hai cùng được ăn. Hãy giới thiệu bạn bè.',
+   '₱100 đồ ăn Voucher: kumain kayong dalawa. Mag-refer.': 'Phiếu quà tặng đồ ăn ₱100: cả hai cùng được ăn. Hãy giới thiệu bạn bè.',
 
    // src/views/dashboard-v2/components/DashboardV2Popups.tsx
    '& Feed Moodeng': '& cho Moodeng ăn',

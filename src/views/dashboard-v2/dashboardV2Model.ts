@@ -21,7 +21,7 @@ export const MOODENG_TIERS: { id: MoodengTierId; label: string; minPandesal: num
    { id: 'apex', label: 'Apex', minPandesal: 400 }
 ];
 
-/** The GrabMart reward each tier unlocks (validated and paid out by the database, not here). */
+/** The food voucher each tier unlocks (validated and paid out by the database, not here). */
 export const TIER_VOUCHERS: { reward: VoucherReward; tier: MoodengTierId; label: string; minPandesal: number; amountPhp: number }[] = [
    { reward: 'tier_rising', tier: 'rising', label: 'Rising', minPandesal: 60, amountPhp: 50 },
    { reward: 'tier_prime', tier: 'prime', label: 'Prime', minPandesal: 200, amountPhp: 100 },
@@ -33,11 +33,11 @@ export const TIER_VOUCHER_REWARDS: VoucherReward[] = TIER_VOUCHERS.map((voucher)
 const DASHBOARD_MILESTONE_IDS = ['first-loan-request', 'first-funded-loan', 'first-on-time-repayment'];
 
 /**
- * SAMPLE DATA: the design rewards the first on-time repayment with a GrabMart reward.
+ * SAMPLE DATA: the design rewards the first on-time repayment with a food voucher.
  * No voucher backend exists yet, so this label is design-only.
  */
 const VOUCHER_REWARD_OVERRIDES: Record<string, string> = {
-   'first-on-time-repayment': '₱50 GrabMart reward'
+   'first-on-time-repayment': '₱50 food voucher'
 };
 
 export const getMoodengTier = (pandesal: number): MoodengTierId => {
@@ -180,8 +180,7 @@ const PRODUCTION_ORIGIN = 'https://moodeng.app';
 export const buildInviteLink = (code: string, origin = typeof window === 'undefined' ? PRODUCTION_ORIGIN : window.location.origin) =>
    `${origin.startsWith('http') ? origin : PRODUCTION_ORIGIN}/invite/${encodeURIComponent(code)}`;
 
-// 'banked' = claimed and added to the GrabMart wallet (Bitrefill emails a ₱100 voucher once claimed rewards reach ₱100).
-export type VoucherState = 'claimable' | 'banked' | 'pending' | 'sent' | 'rejected' | 'none' | 'loading';
+export type VoucherState = 'claimable' | 'pending' | 'sent' | 'rejected' | 'none' | 'loading';
 
 /** Where a voucher stands, as reported by the database (the UI never decides eligibility itself). */
 export const getVoucherState = (

@@ -10,28 +10,35 @@ Deno.test('voucher card buttons round-trip', () => {
    assertEquals(parseVoucherCallback('vo:x:' + CLAIM_ID), null);
 });
 
-Deno.test('voucher email: first name, amount, how to use it and the code', () => {
-   const email = buildVoucherCodeEmail({ fullName: '  Maria  Santos ', amountPhp: 100, code: 'GRAB-1234-ABCD' });
-   assertEquals(email.subject, 'Your ₱100 GrabMart voucher from Moodeng Credit');
+Deno.test('voucher email: one ₱50 link is one button, with the brands and the reason', () => {
+   const email = buildVoucherCodeEmail({ fullName: '  Maria  Santos ', amountPhp: 50, reward: 'tier_rising', links: ['https://rewards.xoxoday.com/a'] });
+   assertEquals(email.subject, 'Your ₱50 food voucher from Moodeng Credit');
    assertStringIncludes(email.text, 'Hi Maria,');
-   assertStringIncludes(email.text, 'Grab → Mart');
-   assertStringIncludes(email.text, 'Your code: GRAB-1234-ABCD');
-   assertStringIncludes(email.html, 'GRAB-1234-ABCD');
+   assertStringIncludes(email.text, 'for growing your Moodeng to Rising');
+   assertStringIncludes(email.text, 'Your voucher: https://rewards.xoxoday.com/a');
+   assertStringIncludes(email.text, 'Jollibee');
+   assertStringIncludes(email.html, 'Open my food voucher');
 });
 
-Deno.test('voucher email escapes HTML in the name and code', () => {
-   const email = buildVoucherCodeEmail({ fullName: '<b>x</b>', amountPhp: 100, code: 'A&B<1>' });
+Deno.test('voucher email: ₱100 sends two ₱50 links', () => {
+   const email = buildVoucherCodeEmail({ fullName: 'Ana', amountPhp: 100, reward: 'referral_inviter', links: ['https://x/1', 'https://x/2'] });
+   assertStringIncludes(email.text, '₱50 voucher 1: https://x/1');
+   assertStringIncludes(email.text, '₱50 voucher 2: https://x/2');
+   assertStringIncludes(email.html, 'Open ₱50 voucher 2');
+});
+
+Deno.test('voucher email escapes HTML in the name and link', () => {
+   const email = buildVoucherCodeEmail({ fullName: '<b>x</b>', amountPhp: 50, reward: 'unknown', links: ['https://x/?a=1&b="2"'] });
    assert(!email.html.includes('<b>x</b>'));
-   assertStringIncludes(email.html, 'A&amp;B&lt;1&gt;');
+   assertStringIncludes(email.html, 'a=1&amp;b=&quot;2&quot;');
 });
 
 Deno.test('who decided, read from the admin note', () => {
    assertEquals(voucherDecidedBy('rejected by @george via Telegram'), '@george');
-   assertEquals(voucherDecidedBy('banked toward GrabMart ₱100 (2026-10-26) · rejected by @ann via Telegram'), '@ann');
-   assertEquals(voucherDecidedBy('Code sent by auto'), null);
+   assertEquals(voucherDecidedBy('Xoxo link sent by auto · rejected by @ann via Telegram'), '@ann');
+   assertEquals(voucherDecidedBy('Xoxo link sent by auto'), null);
 });
 
-Deno.test('stamp headers name GrabMart', () => {
-   assertStringIncludes(voucherStampHeader('sent', { full_name: 'Irish Cruz', amount_php: 100 }), '₱100 GrabMart code');
-   assertStringIncludes(voucherStampHeader('rejected', { full_name: 'Irish Cruz', amount_php: 100 }), 'GrabMart wallet');
+Deno.test('stamp headers say food voucher', () => {
+   assertStringIncludes(voucherStampHeader('sent', { full_name: 'Irish Cruz', amount_php: 100 }), '₱100 food voucher');
 });

@@ -1,8 +1,9 @@
-// GrabMart voucher payouts: send each new one straight away, and tell the admin Telegram channel.
+// Food voucher claims: send each new one straight away (Xoxo link, else Bitrefill), and tell the admin
+// Telegram channel.
 // Called by the notify_voucher_claim_telegram trigger on voucher_claims (service key as bearer), and by
 // the admin Vouchers page (admin's session token as bearer).
 //
-//   { claimId }                                  new payout → send its code (pool, else Bitrefill). Sent: post
+//   { claimId }                                  new claim → send it (Xoxo links, else Bitrefill). Sent: post
 //                                                an info card. Not sent: post the card with ✅ Send code /
 //                                                ❌ Reject and why (remembered in admin_telegram_cards).
 //   { claimId, event: 'decided', decidedBy? }    claim left 'pending' (notify_voucher_claim_decided) → stamp the

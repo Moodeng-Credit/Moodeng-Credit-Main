@@ -18,7 +18,7 @@
 // Where each card lives is saved in admin_message_refs (migration 20261011130000 — channel-agnostic,
 // so Discord messages can use it next) when it's posted, keyed by what decides it:
 //    loan_access  ref = user id   request cards (la:) + call-start / "Did they show up?" cards (la: / vc:)
-//    voucher      ref = claim id  GrabMart voucher payout cards (vo:)
+//    voucher      ref = claim id  food voucher claim cards (vo:)
 //    messenger    ref = user id   stuck-Facebook + "Is this them?" cards (mv:)
 //    kyc_review   ref = user id   Didit "in manual review" cards — stamped by the Didit verdict
 //    kyc_tries    ref = user id   "out of KYC tries" cards (kr:)

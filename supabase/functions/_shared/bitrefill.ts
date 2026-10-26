@@ -1,14 +1,18 @@
-// Bitrefill API (personal key, Account → Developers on bitrefill.com): buys GrabMart PH codes paid
-// from the account balance. https://docs.bitrefill.com/docs/quickstart-2
+// Bitrefill API (personal key, Account → Developers on bitrefill.com): the food voucher fallback when
+// the Xoxo link stock is empty. Buys a ₱50/₱100 voucher paid from the account balance (BTC) and has
+// Bitrefill email it to the borrower. https://docs.bitrefill.com/docs/quickstart-2
 //
 // The key lives in the DB vault as BITREFILL_API_KEY (edge function secrets are at their cap); the
 // BITREFILL_API_KEY env var wins when set.
 
 const BASE_URL = 'https://api.bitrefill.com/v2';
 
-// https://www.bitrefill.com/ph/en/gift-cards/grabmart-gift-card-philippines/ — ₱100 to ₱5,000, no
-// minimum basket, one code per order, Metro Manila and Cebu only. Paid in BTC from the balance.
-export const GRABMART_PRODUCT_ID = 'grabmart-gift-card-philippines';
+// Tried in order; both sell ₱50 and ₱100 and work nationwide (dine-in / take-out, one-time use).
+// Package ids look like 'greenwich-philippines<&>50' (checked 2026-10-26).
+export const FALLBACK_PRODUCTS = [
+   { id: 'greenwich-philippines', name: 'Greenwich' },
+   { id: 'red-ribbon-php', name: 'Red Ribbon' }
+] as const;
 
 type SupabaseClient = any;
 
@@ -34,32 +38,34 @@ const call = async (apiKey: string, path: string, init?: RequestInit) => {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** The package of a given ₱ value, e.g. "grabmart-gift-card-philippines<&>100". */
-const findPackageId = async (apiKey: string, amountPhp: number) => {
-   const product = await call(apiKey, `/products/${GRABMART_PRODUCT_ID}`);
-   // Packages look like { id: 'grabmart-gift-card-philippines<&>100', value: '100', amount: 100 } (checked 2026-10-26).
-   const match = (product?.packages ?? []).find((p: { value?: unknown }) => Number(p.value) === amountPhp);
-   const packageId = match?.package_id ?? match?.id;
-   if (!packageId) throw new Error(`no ₱${amountPhp} package for ${GRABMART_PRODUCT_ID}`);
-   return String(packageId);
+/** The first fallback product in stock with a package of this ₱ value. */
+const findPackage = async (apiKey: string, amountPhp: number) => {
+   for (const candidate of FALLBACK_PRODUCTS) {
+      const product = await call(apiKey, `/products/${candidate.id}`).catch(() => null);
+      if (!product || product.in_stock === false) continue;
+      const match = (product.packages ?? []).find((p: { value?: unknown }) => Number(p.value) === amountPhp);
+      const packageId = match?.package_id ?? match?.id;
+      if (packageId) return { productId: candidate.id, name: candidate.name, packageId: String(packageId) };
+   }
+   throw new Error(`no ₱${amountPhp} food voucher in stock on Bitrefill`);
 };
 
 const codeFromInvoice = async (apiKey: string, invoice: any): Promise<string | null> => {
    const orderId = invoice?.orders?.[0]?.id;
    if (!orderId) return null;
    const order = await call(apiKey, `/orders/${orderId}`);
-   // GrabMart eGifts come as a code or, when Grab has none, a link to add in the Grab app.
+   // An eGift comes as a code or, for some brands, a link.
    const code = order?.redemption_info?.code ?? order?.redemption_info?.pin ?? order?.redemption_info?.link;
    return typeof code === 'string' && code.trim() ? code.trim() : null;
 };
 
-export type BitrefillPurchase = { ok: true; code: string; invoiceId: string } | { ok: false; reason: string };
+export type BitrefillPurchase = { ok: true; code: string; invoiceId: string; product: string } | { ok: false; reason: string };
 
 /** Bitrefill emails the voucher straight to this person (its "gift" delivery). */
 export type BitrefillGift = { recipientName: string; recipientEmail: string; message?: string };
 
 /**
- * Buy one GrabMart PH voucher of `amountPhp` from the balance, delivered by Bitrefill to `gift`'s email,
+ * Buy one food voucher of `amountPhp` from the balance, delivered by Bitrefill to `gift`'s email,
  * or finish `existingInvoiceId` (a purchase started earlier that hadn't delivered yet). `onInvoice`
  * records a new invoice id before waiting, so a retry never pays twice. Waits up to ~20s for delivery.
  */
@@ -71,13 +77,15 @@ export const buyBitrefillCode = async (
    gift?: BitrefillGift
 ): Promise<BitrefillPurchase> => {
    try {
+      let product = 'food';
       let invoice = existingInvoiceId ? await call(apiKey, `/invoices/${existingInvoiceId}`) : null;
       if (!invoice || ['expired', 'failed', 'cancelled'].includes(String(invoice.status))) {
-         const packageId = await findPackageId(apiKey, amountPhp);
+         const pick = await findPackage(apiKey, amountPhp);
+         product = pick.name;
          invoice = await call(apiKey, '/invoices', {
             method: 'POST',
             body: JSON.stringify({
-               products: [{ product_id: GRABMART_PRODUCT_ID, package_id: packageId, quantity: 1 }],
+               products: [{ product_id: pick.productId, package_id: pick.packageId, quantity: 1 }],
                payment_method: 'balance',
                auto_pay: true,
                ...(gift
@@ -98,7 +106,7 @@ export const buyBitrefillCode = async (
 
       for (let attempt = 0; attempt < 6; attempt++) {
          const code = await codeFromInvoice(apiKey, invoice);
-         if (code) return { ok: true, code, invoiceId: String(invoice.id) };
+         if (code) return { ok: true, code, invoiceId: String(invoice.id), product };
          if (['expired', 'failed', 'cancelled'].includes(String(invoice.status))) {
             return { ok: false, reason: `invoice ${invoice.id} ${invoice.status} (balance too low?)` };
          }

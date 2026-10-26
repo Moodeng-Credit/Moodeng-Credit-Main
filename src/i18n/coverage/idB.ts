@@ -173,7 +173,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'Grow Moodeng, eat on us': 'Besarkan Moodeng, kami traktir makan',
    'Grow Moodeng to': 'Besarkan Moodeng ke',
    'Reward: ₱': 'Hadiah: ₱',
-   'GrabMart voucher': 'voucher GrabMart',
+   'food voucher': 'voucher makanan',
 
    // src/views/dashboard-v2/DashboardV2Preview.tsx
    Preview: 'Pratinjau',
@@ -183,7 +183,7 @@ export const indonesianCoverageB: Record<string, string> = {
 
    // src/views/dashboard-v2/DashboardV2Rewards.tsx
    'You repaid on time. Treat yourself!': 'Kamu bayar tepat waktu. Saatnya traktir diri sendiri!',
-   'Tell us where to send your GrabMart voucher code.': 'Beri tahu kami ke mana kode voucher GrabMart kamu harus dikirim.',
+   'Tell us where to send your food voucher.': 'Beri tahu kami ke mana kode voucher makanan kamu harus dikirim.',
    'Your friend repaid on time. Free meal!': 'Temanmu bayar tepat waktu. Makan gratis!',
    'Thanks for inviting them. Where should we send your voucher code?':
       'Terima kasih sudah mengajak temanmu. Ke mana kami harus mengirim kode vouchermu?',
@@ -199,7 +199,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'Voucher Unlocked!': 'Voucher terbuka!',
    'Salamat! We got it.': 'Terima kasih! Sudah kami terima.',
    "We'll send your ₱": 'Kami akan mengirim kode voucher ₱',
-   'GrabMart voucher code to your email within 2 business days.': 'GrabMart ke emailmu dalam 2 hari kerja.',
+   'makanan voucher code to your mobile within 2 business days.': 'makanan ke ponselmu dalam 2 hari kerja.',
    'Preview sample — nothing was sent.': 'Contoh pratinjau — tidak ada yang dikirim.',
    'Full name': 'Nama lengkap',
    'Mobile number (GCash)': 'Nomor ponsel (GCash)',
@@ -224,7 +224,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'Borrow small, build your credit': 'Pinjam kecil, bangun kreditmu',
    'Small person-to-person loans with one amount, one date, and no Moodeng fees.':
       'Pinjaman kecil antarpengguna dengan satu jumlah, satu tanggal, dan tanpa biaya Moodeng.',
-   '₱100 GrabMart voucher each': 'Masing-masing voucher GrabMart ₱100',
+   '₱100 food voucher each': 'Masing-masing voucher makanan ₱100',
    'When you repay your first loan on time, you and': 'Saat kamu membayar kembali pinjaman pertamamu tepat waktu, kamu dan',
    'your friend': 'temanmu',
    'both get one.': 'sama-sama dapat satu.',
@@ -272,7 +272,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'Verify to Start Feeding': 'Verifikasi untuk mulai memberi makan',
    'Repay on time, eat on us.': 'Bayar tepat waktu, kami traktir makan.',
    'Feed Moodeng to level up.': 'Beri makan Moodeng supaya naik level.',
-   'A GrabMart reward for your first on-time repayment!': 'Voucher GrabMart untuk pembayaran tepat waktu pertamamu!',
+   'A food voucher for your first on-time repayment!': 'Voucher makanan untuk pembayaran tepat waktu pertamamu!',
    'Bigger Moodeng = Higher cash limits!': 'Moodeng makin besar = limit makin tinggi!',
    'Verify My Identity': 'Verifikasi identitasku',
    'Verify to unlock your account — a one-time check that takes about 3 minutes.':

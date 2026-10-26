@@ -104,7 +104,7 @@ export function MilestonePopup({
                   {milestone.isVoucher ? 'Repay on time, eat on us.' : 'Feed Moodeng to level up.'}
                </p>
                <p className="mt-1 text-[20px] leading-6">
-                  {milestone.isVoucher ? 'A GrabMart reward for your first on-time repayment!' : 'Bigger Moodeng = Higher cash limits!'}
+                  {milestone.isVoucher ? 'A food voucher for your first on-time repayment!' : 'Bigger Moodeng = Higher cash limits!'}
                </p>
             </div>
             <div className="flex items-center gap-1.5">

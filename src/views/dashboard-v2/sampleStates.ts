@@ -11,7 +11,7 @@ const SAMPLE_ALL_MILESTONES = toDashboardV2MilestoneList(
 );
 const SAMPLE_MILESTONES = toDashboardV2Milestones(buildReputationMilestones({ creditLevels: [], borrowerLoans: [], isVerified: true }));
 
-// Not in the Figma: a borrower who repaid their first loan on time and can claim GrabMart rewards.
+// Not in the Figma: a borrower who repaid their first loan on time and can claim the food voucher.
 const REWARDED_ALL_MILESTONES = SAMPLE_ALL_MILESTONES.map((milestone, index) => ({
    ...milestone,
    status: index < 3 ? ('unlocked' as const) : index === 3 ? ('next' as const) : ('locked' as const)
@@ -113,9 +113,7 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
             { reward: 'referral_inviter', friendReferralId: 'sample-referral-1', amountPhp: 100 },
             { reward: 'tier_rising', friendReferralId: null, amountPhp: 50 }
          ],
-         claims: [],
-         grabmartBalancePhp: 50,
-         grabmartPayouts: [{ amountPhp: 100, status: 'sent', sentAt: '2026-10-20T09:00:00Z' }]
+         claims: []
       }
    },
    // Not in the Figma: Emma's video demo (moodeng.app/borrower-demo) — a borrower with two active

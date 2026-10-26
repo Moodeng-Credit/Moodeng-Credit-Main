@@ -305,7 +305,7 @@ export const indonesianCoverageE: Record<string, string> = {
    'Borrow from 2 moo-lenders': 'Pinjam dari 2 moo-lender',
    'Repay $100 total': 'Bayar kembali total $100',
    'Become a trusted borrower': 'Jadi peminjam tepercaya',
-   '₱50 GrabMart reward': 'Voucher GrabMart ₱50',
+   '₱50 food voucher': 'Voucher makanan ₱50',
    'to unlock LV.1': 'untuk membuka LV.1',
    Top: 'Level tertinggi',
    'level reached': 'tercapai',

@@ -357,7 +357,7 @@ const handleLoanAccessCommand = async (supabase: SupabaseClient, message: Telegr
 };
 
 // The inline buttons on admin cards: la: (loan-access Approve / Reject / Showed up / No-show),
-// vc: (open-flow call attendance), vo: (GrabMart voucher payout Send code / Reject), mv: (stuck
+// vc: (open-flow call attendance), vo: (food voucher claim Send code / Reject), mv: (stuck
 // Facebook confirmation → Mark Facebook verified), kr: (out of KYC tries → 3 more tries) and rp:
 // (referral code owner payout ✅ Paid / ⏳ Not paid yet).
 // Honored only when the card sits in an admin channel, so a forwarded card can't be tapped from

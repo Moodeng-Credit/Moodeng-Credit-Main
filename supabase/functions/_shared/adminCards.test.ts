@@ -135,7 +135,7 @@ Deno.test('every card type has a header that says what it means for the person',
    assertEquals(loanAccessStampHeader('no_show', 'Irish'), '❌ NO-SHOW — Irish was asked to book a new call');
    assertEquals(
       voucherStampHeader('sent', { full_name: 'Irish Cruz', amount_php: '150.00' }),
-      '🎟 VOUCHER SENT — Irish Cruz got their ₱150 GrabMart code'
+      '🎟 VOUCHER SENT — Irish Cruz got their ₱150 food voucher'
    );
    assertEquals(voucherDecidedBy('sent by @george via Telegram'), '@george');
    assertEquals(voucherDecidedBy('wrong number'), null);

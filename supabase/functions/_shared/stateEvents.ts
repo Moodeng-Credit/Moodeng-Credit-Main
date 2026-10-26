@@ -86,7 +86,6 @@ export const stateEventStamp = (event: StateEvent): EventStamp | null => {
          const voucher = { ...base, cardKind: 'voucher' as const };
          if (to === 'sent') return { ...voucher, header: '✅ VOUCHER SENT', final: true };
          if (to === 'rejected') return { ...voucher, header: '❌ VOUCHER REJECTED', final: true };
-         if (to === 'banked') return { ...voucher, header: '🏦 BANKED — added to their GrabMart wallet; a ₱100 code goes out automatically', final: true };
          return null;
       }
       case 'messenger':

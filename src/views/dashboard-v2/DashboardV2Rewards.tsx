@@ -9,7 +9,6 @@ import { useSubmitVoucherClaim } from '@/hooks/useFriendReferrals';
 import {
    type ClaimableVoucher,
    getInviteInviter,
-   GRABMART_PAYOUT_PHP,
    isValidInviteCode,
    normalizeInviteCode,
    rememberPendingInvite,
@@ -32,18 +31,18 @@ const FIELD =
    'h-12 w-full rounded-[12px] border-2 border-[#e8e4ff] bg-dv2-card px-3.5 text-[16px] text-[#0f172b] outline-none placeholder:text-[#c0b9c8] focus:border-[#7b67f9] dark:border-[#3a2f55] dark:bg-dv2-page dark:focus:border-[#7b67f9]';
 
 const CLAIM_COPY: Record<VoucherReward, { headline: string; body: string }> = {
-   first_on_time_repayment: { headline: 'You repaid on time. Treat yourself!', body: 'Tell us where to send your GrabMart voucher.' },
+   first_on_time_repayment: { headline: 'You repaid on time. Treat yourself!', body: 'Tell us where to send your food voucher.' },
    referral_inviter: {
       headline: 'Your friend repaid on time. Free meal!',
-      body: 'Thanks for inviting them. Where should we send your GrabMart voucher?'
+      body: 'Thanks for inviting them. Where should we send your voucher code?'
    },
    referral_invitee: {
       headline: 'You repaid on time. Free meal!',
-      body: 'Thanks for joining with a friend. Where should we send your GrabMart voucher?'
+      body: 'Thanks for joining with a friend. Where should we send your voucher code?'
    },
-   tier_rising: { headline: 'Moodeng grew to Rising. Treat yourself!', body: 'Tell us where to send your GrabMart voucher.' },
-   tier_prime: { headline: 'Moodeng grew to Prime. Treat yourself!', body: 'Tell us where to send your GrabMart voucher.' },
-   tier_apex: { headline: 'Moodeng reached Apex. Feast time!', body: 'Tell us where to send your GrabMart voucher.' }
+   tier_rising: { headline: 'Moodeng grew to Rising. Treat yourself!', body: 'Tell us where to send your food voucher.' },
+   tier_prime: { headline: 'Moodeng grew to Prime. Treat yourself!', body: 'Tell us where to send your food voucher.' },
+   tier_apex: { headline: 'Moodeng reached Apex. Feast time!', body: 'Tell us where to send your food voucher.' }
 };
 
 const describeClaimError = (error: unknown) => {
@@ -56,26 +55,11 @@ const describeClaimError = (error: unknown) => {
 };
 
 /**
- * "You earned a GrabMart voucher" — collects where to send it. Real claims are validated and stored by
- * submit_voucher_claim(); each full ₱100 of claimed rewards is bought on Bitrefill, which emails the
- * voucher to the borrower. `walletPhp` is what they had saved before this claim. Preview samples only
- * simulate the submission.
+ * "You earned a food voucher" — collects where to send the code. Real claims are validated and
+ * stored by submit_voucher_claim(); preview samples only simulate the submission.
  */
-export function VoucherClaimPopup({
-   voucher,
-   walletPhp = 0,
-   isPreview,
-   onClose
-}: {
-   voucher: ClaimableVoucher;
-   walletPhp?: number;
-   isPreview: boolean;
-   onClose: () => void;
-}) {
+export function VoucherClaimPopup({ voucher, isPreview, onClose }: { voucher: ClaimableVoucher; isPreview: boolean; onClose: () => void }) {
    const [isSubmitted, setIsSubmitted] = useState(false);
-   // Below ₱100 there is no GrabMart voucher to buy yet, so the reward waits for the next one.
-   const savedAfter = walletPhp + voucher.amountPhp;
-   const isSendingNow = savedAfter >= GRABMART_PAYOUT_PHP;
    const submitClaim = useSubmitVoucherClaim();
    const copy = CLAIM_COPY[voucher.reward];
 
@@ -120,16 +104,10 @@ export function VoucherClaimPopup({
                      <p id="dv2-voucher-title" className="text-[24px] font-bold leading-7 text-[#594d65] dark:text-[#e6def2]">
                         Salamat! We got it.
                      </p>
-                     {isSendingNow ? (
-                        <p className="text-[16px] leading-[22px] text-[#45556c]">
-                           Your ₱{GRABMART_PAYOUT_PHP} GrabMart voucher is on its way to your email from Bitrefill. Use it in Grab → Mart.
-                        </p>
-                     ) : (
-                        <p className="text-[16px] leading-[22px] text-[#45556c]">
-                           ₱{savedAfter} saved. GrabMart vouchers start at ₱{GRABMART_PAYOUT_PHP} — your next reward gets you there, and we
-                           email it to you.
-                        </p>
-                     )}
+                     <p className="text-[16px] leading-[22px] text-[#45556c]">
+                        Your ₱{voucher.amountPhp} food voucher is on its way to your email. Open it and pick Jollibee, Chowking,
+                        Greenwich, Mang Inasal or Red Ribbon.
+                     </p>
                      {isPreview ? (
                         <p className="text-[12px] text-[#c0b9c8] dark:text-[#8f819e]">Preview sample — nothing was sent.</p>
                      ) : null}
@@ -161,7 +139,7 @@ export function VoucherClaimPopup({
                         type="email"
                         required
                         autoComplete="email"
-                        placeholder="Email (your voucher is sent here)"
+                        placeholder="Email (we send your voucher here)"
                         aria-label="Email"
                      />
                      {submitClaim.error ? (
@@ -404,12 +382,7 @@ export function DashboardV2Referral() {
          </div>
 
          {claimingVoucher ? (
-            <VoucherClaimPopup
-               voucher={claimingVoucher}
-               walletPhp={model.rewards.grabmartBalancePhp}
-               isPreview={!isReal}
-               onClose={() => setClaimingVoucher(null)}
-            />
+            <VoucherClaimPopup voucher={claimingVoucher} isPreview={!isReal} onClose={() => setClaimingVoucher(null)} />
          ) : null}
          {isShareOpen && inviteLink ? (
             <ShareSheet
@@ -481,7 +454,7 @@ export function DashboardV2InviteLanding() {
                   src={DASHBOARD_V2_ASSETS.voucherBannerFood}
                   className="absolute -right-4 top-0 h-[90px] w-[160px] object-contain"
                />
-               <p className="relative max-w-[60%] text-[20px] font-black italic leading-6 text-[#3c8248]">₱100 GrabMart voucher each</p>
+               <p className="relative max-w-[60%] text-[20px] font-black italic leading-6 text-[#3c8248]">₱100 food voucher each</p>
                <p className="relative mt-1 max-w-[60%] text-[14px] font-medium leading-5 text-[#6f7d1d]">
                   When you repay your first loan on time, you and {inviter || 'your friend'} both get one.
                </p>

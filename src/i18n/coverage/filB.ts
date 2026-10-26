@@ -194,6 +194,7 @@ export const filipinoCoverageB: Record<string, string> = {
    'Small person-to-person loans with one amount, one date, and no Moodeng fees.':
       'Maliliit na loan mula tao sa tao: isang halaga, isang petsa, at walang fee mula sa Moodeng.',
    'Join Moodeng': 'Sumali sa Moodeng',
+   'Tell us where to send your food voucher.': 'Sabihin sa amin kung saan ipapadala ang food voucher code mo.',
    'Thanks for inviting them. Where should we send your voucher code?':
       'Salamat sa pag-invite sa kanila. Saan namin ipapadala ang voucher code mo?',
    'Thanks for joining with a friend. Where should we send your voucher code?':
@@ -216,6 +217,7 @@ export const filipinoCoverageB: Record<string, string> = {
    'Please check your name and mobile number.': 'Pakitingnan ulit ang pangalan at mobile number mo.',
    'Salamat! We got it.': 'Salamat! Natanggap na namin.',
    "We'll send your ₱": 'Ipapadala namin ang ₱',
+   'food voucher code to your mobile within 2 business days.': 'food voucher code mo sa mobile mo sa loob ng 2 business days.',
    'Preview sample — nothing was sent.': 'Preview sample lang — walang naipadala.',
    'Mobile number (GCash)': 'Mobile number (GCash)',
    'Email (optional)': 'Email (optional)',
@@ -227,7 +229,7 @@ export const filipinoCoverageB: Record<string, string> = {
    '· Repaid on time:': '· Nagbayad on time:',
    "You're invited by": 'Nag-imbita sa iyo:',
    'a friend': 'isang kaibigan',
-   '₱100 GrabMart voucher each': 'Tig-₱100 GrabMart voucher',
+   '₱100 food voucher each': 'Tig-₱100 food voucher',
    'When you repay your first loan on time, you and': 'Kapag nabayaran mo on time ang una mong loan, ikaw at',
    'your friend': 'ang kaibigan mo',
    'both get one.': 'ay parehong makakakuha nito.',
@@ -272,25 +274,14 @@ export const filipinoCoverageB: Record<string, string> = {
    'Verify to Start Feeding': 'Mag-verify para makapagpakain',
    'Repay on time, eat on us.': 'Magbayad on time, libre namin ang kain.',
    'Feed Moodeng to level up.': 'Pakainin si Moodeng para mag-level up.',
-   'A GrabMart reward for your first on-time repayment!': 'GrabMart reward para sa una mong on-time na bayad!',
+   'A food voucher for your first on-time repayment!': 'food voucher para sa una mong on-time na bayad!',
 
-   // GrabMart voucher claim (src/views/dashboard-v2/DashboardV2Rewards.tsx, DashboardV2Sections.tsx)
-   'Tell us where to send your GrabMart voucher.': 'Sabihin sa amin kung saan ipapadala ang GrabMart voucher mo.',
-   'Thanks for inviting them. Where should we send your GrabMart voucher?':
-      'Salamat sa pag-imbita sa kanila. Saan namin ipapadala ang GrabMart voucher mo?',
-   'Thanks for joining with a friend. Where should we send your GrabMart voucher?':
-      'Salamat sa pagsali kasama ang kaibigan mo. Saan namin ipapadala ang GrabMart voucher mo?',
-   'Email (your voucher is sent here)': 'Email (dito ipapadala ang voucher mo)',
-   'Please add your email — your voucher is sent there.': 'Ilagay ang email mo — doon ipapadala ang voucher mo.',
+   // Food voucher claim (src/views/dashboard-v2/DashboardV2Rewards.tsx)
+   'food voucher is on its way to your email. Open it and pick Jollibee, Chowking, Greenwich, Mang Inasal or Red Ribbon.':
+      'na food voucher mo ay papunta na sa email mo. Buksan ito at pumili ng Jollibee, Chowking, Greenwich, Mang Inasal o Red Ribbon.',
    'Your ₱': 'Ang ₱',
-   'GrabMart voucher is on its way to your email from Bitrefill. Use it in Grab → Mart.':
-      'GrabMart voucher mo ay papunta na sa email mo mula sa Bitrefill. Gamitin ito sa Grab → Mart.',
-   'saved. GrabMart vouchers start at ₱': 'naipon. Nagsisimula sa ₱',
-   '— your next reward gets you there, and we email it to you.':
-      'ang GrabMart vouchers — sa susunod mong reward, aabot ka na, at ie-email namin ito sa iyo.',
-   'GrabMart voucher': 'GrabMart voucher',
-   'for GrabMart': 'para sa GrabMart',
-   'Added': 'Naidagdag',
+   'Email (we send your voucher here)': 'Email (dito namin ipapadala ang voucher mo)',
+   'Please add your email — your voucher is sent there.': 'Ilagay ang email mo — doon ipapadala ang voucher mo.',
    'Bigger Moodeng = Higher cash limits!': 'Mas malaking Moodeng = mas mataas na cash limit!',
    'Quick national ID & selfie check. Available in VN, TW, KR, PH, MY, JP, ID, TH':
       'Mabilis na check ng national ID at selfie. Available sa VN, TW, KR, PH, MY, JP, ID, TH',

@@ -2035,8 +2035,7 @@ export async function deleteReferralCode(id: string): Promise<void> {
 // Friend-referral voucher claims (voucher_claims) — admins read all and update fulfilment only.
 // ---------------------------------------------------------------------------
 
-// 'banked' = a reward added to the borrower's GrabMart wallet; only 'grabmart_payout' rows get a code.
-export type AdminVoucherClaimStatus = 'banked' | 'pending' | 'sent' | 'rejected';
+export type AdminVoucherClaimStatus = 'pending' | 'sent' | 'rejected';
 
 export type AdminVoucherReward =
    | 'first_on_time_repayment'
@@ -2044,8 +2043,7 @@ export type AdminVoucherReward =
    | 'referral_invitee'
    | 'tier_rising'
    | 'tier_prime'
-   | 'tier_apex'
-   | 'grabmart_payout';
+   | 'tier_apex';
 
 export interface AdminVoucherClaim {
    id: string;
@@ -2119,6 +2117,36 @@ export async function listVoucherContacts(userIds: string[]): Promise<AdminVouch
    return (data ?? []).map((row) => ({ ...row, login_countries: row.login_countries ?? [] })) as AdminVoucherContact[];
 }
 
+// Food voucher link stock (voucher_codes). Links are never read back to the browser: admins add them
+// and see counts; voucher-claim-telegram-notification hands them to claims and emails them.
+export interface VoucherCodeStock {
+   amount_php: number;
+   available: number;
+   used: number;
+}
+
+export async function getVoucherCodeStock(): Promise<VoucherCodeStock[]> {
+   const data = (await requireOk(getSupabaseBrowserClient().rpc('admin_voucher_code_stock'))) as AnyRow[] | null;
+   return (data ?? []).map((row) => ({ amount_php: toNumber(row.amount_php), available: toNumber(row.available), used: toNumber(row.used) }));
+}
+
+export async function addVoucherCodes(amountPhp: number, codes: string[], source?: string | null): Promise<{ added: number; skipped: number }> {
+   const result = (await requireOk(
+      getSupabaseBrowserClient().rpc('admin_add_voucher_codes', { p_amount_php: amountPhp, p_codes: codes, p_source: source ?? null })
+   )) as AnyRow | null;
+   return { added: toNumber(result?.added), skipped: toNumber(result?.skipped) };
+}
+
+/** Send a pending claim now: Xoxo links from the stock, else Bitrefill. `retry` = nothing changed. */
+export async function sendVoucherCodeForClaim(claimId: string): Promise<{ ok: boolean; summary: string; retry?: boolean }> {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('voucher-claim-telegram-notification', {
+      body: { claimId, event: 'admin_send' }
+   });
+   if (error) throw new Error(error.message || 'Could not send the voucher.');
+   if (data?.error) throw new Error(String(data.error));
+   return data as { ok: boolean; summary: string; retry?: boolean };
+}
+
 export async function updateVoucherClaimStatus(id: string, status: AdminVoucherClaimStatus, adminNote?: string | null): Promise<void> {
    const supabase = getSupabaseBrowserClient();
    const { data, error } = await supabase
@@ -2129,43 +2157,6 @@ export async function updateVoucherClaimStatus(id: string, status: AdminVoucherC
    if (error) throw error;
    // RLS hides rows it refuses to update, so "no error" alone does not mean it worked.
    if (!data || data.length === 0) throw new Error('Claim was not updated (not found or not allowed).');
-}
-
-// GrabMart code pool (voucher_codes). Codes are never read back to the browser: admins add them and see
-// counts; voucher-claim-telegram-notification (event admin_send) hands the next one to a payout and emails it.
-export interface VoucherCodeStock {
-   amount_php: number;
-   available: number;
-   used: number;
-}
-
-export async function getVoucherCodeStock(): Promise<VoucherCodeStock[]> {
-   const { data, error } = await getSupabaseBrowserClient().rpc('admin_voucher_code_stock');
-   if (error) throw error;
-   return ((data ?? []) as AnyRow[]).map((row) => ({
-      amount_php: toNumber(row.amount_php),
-      available: toNumber(row.available),
-      used: toNumber(row.used)
-   }));
-}
-
-export async function addVoucherCodes(amountPhp: number, codes: string[], source?: string | null): Promise<{ added: number; skipped: number }> {
-   const { data, error } = await getSupabaseBrowserClient().rpc('admin_add_voucher_codes', {
-      p_amount_php: amountPhp,
-      p_codes: codes,
-      p_source: source ?? null
-   });
-   if (error) throw error;
-   const result = (data ?? {}) as AnyRow;
-   return { added: toNumber(result.added), skipped: toNumber(result.skipped) };
-}
-
-/** Send a pending payout: emails the next pool code of its value (or buys one on Bitrefill). `retry` = nothing changed, try again. */
-export async function sendVoucherCodeForClaim(claimId: string): Promise<{ ok: boolean; summary: string; retry?: boolean }> {
-   const { data, error } = await getSupabaseBrowserClient().functions.invoke('voucher-claim-telegram-notification', { body: { claimId, event: 'admin_send' } });
-   if (error) throw new Error(error.message || 'Could not send the code.');
-   if (data?.error) throw new Error(String(data.error));
-   return data as { ok: boolean; summary: string; retry?: boolean };
 }
 
 // ---------------------------------------------------------------------------

@@ -1,13 +1,15 @@
-// GrabMart vouchers: rewards bank into a balance, every ₱100 becomes a payout that gets a code.
+// Food voucher claims → sent automatically, with an admin Telegram card.
 //
-// Borrowers claim a reward in the app (public.submit_voucher_claim → voucher_claims, status 'banked').
-// Each full ₱100 of banked rewards creates a 'grabmart_payout' claim (status 'pending'), which the
-// notify_voucher_claim_telegram trigger hands to voucher-claim-telegram-notification. That sends it
-// straight away (sendVoucherCode): bought with the Bitrefill API as a gift, so Bitrefill emails the
-// voucher to the borrower; or, if Bitrefill can't (no key, empty balance), the next code from the pool
-// (public.voucher_codes, filled on the admin Vouchers page), emailed by us. If neither works, the admin
-// card keeps ✅ Send code / ❌ Reject so the team can top up and tap again. Deciding in the admin panel instead fires
-// notify_voucher_claim_decided, which stamps the card the same way (event 'decided').
+// Borrowers claim a reward in the app (public.submit_voucher_claim → voucher_claims, status 'pending').
+// The notify_voucher_claim_telegram trigger hands each new claim to voucher-claim-telegram-notification,
+// which sends it straight away (sendVoucherCode):
+//   1. one ₱50 Xoxoday reward link per ₱50 from the stock (public.voucher_codes, filled on the admin
+//      Vouchers page), emailed by us; the borrower opens it and picks Jollibee, Chowking, Greenwich,
+//      Mang Inasal or Red Ribbon
+//   2. if the stock is short: a Greenwich voucher bought on Bitrefill, which Bitrefill emails to them
+//   3. if neither works: the admin card keeps ✅ Send code / ❌ Reject to retry after restocking.
+// Deciding in the admin panel instead fires notify_voucher_claim_decided, which stamps the card the
+// same way (event 'decided').
 
 import { type CardStamp, stampDecisionCards } from './adminCards.ts';
 import { buyBitrefillCode, getBitrefillApiKey } from './bitrefill.ts';
@@ -33,12 +35,23 @@ export const VOUCHER_REWARD_LABELS: Record<string, string> = {
    referral_invitee: 'Referral (friend)',
    tier_rising: 'Moodeng reached Rising',
    tier_prime: 'Moodeng reached Prime',
-   tier_apex: 'Moodeng reached Apex',
-   grabmart_payout: 'GrabMart wallet reached ₱100'
+   tier_apex: 'Moodeng reached Apex'
 };
 
-/** Warn once a value has this many pool codes or fewer left. */
-export const LOW_STOCK = 3;
+// What the borrower reads in the email: why they got it.
+const REWARD_REASONS: Record<string, string> = {
+   first_on_time_repayment: 'for your first on-time repayment',
+   referral_inviter: 'for inviting a friend who repaid on time',
+   referral_invitee: 'for joining with a friend’s invite and repaying on time',
+   tier_rising: 'for growing your Moodeng to Rising',
+   tier_prime: 'for growing your Moodeng to Prime',
+   tier_apex: 'for growing your Moodeng to Apex'
+};
+
+export const FOOD_BRANDS = 'Jollibee, Chowking, Greenwich, Mang Inasal or Red Ribbon';
+
+/** Warn once this many ₱50 links or fewer are left. */
+export const LOW_STOCK = 5;
 
 export type VoucherClaimRow = {
    id: string;
@@ -56,10 +69,10 @@ const claimUsername = (claim: VoucherClaimRow) => (Array.isArray(claim.users) ? 
 
 const peso = (value: unknown) => `₱${Number(value)}`;
 
-/** Admin card for a payout that couldn't be sent automatically; `reason` says why. */
+/** Admin card for a claim that couldn't be sent automatically; `reason` says why. */
 export const buildVoucherClaimCard = (claim: VoucherClaimRow, reason?: string | null) =>
    [
-      `🎁 GrabMart voucher to send: ${peso(claim.amount_php)}`,
+      `🍔 Food voucher to send: ${peso(claim.amount_php)}`,
       `For: ${VOUCHER_REWARD_LABELS[claim.reward] ?? claim.reward}`,
       '',
       `Name: ${claim.full_name}`,
@@ -68,16 +81,16 @@ export const buildVoucherClaimCard = (claim: VoucherClaimRow, reason?: string | 
       claimUsername(claim) ? `User: @${claimUsername(claim)}` : null,
       '',
       reason ? `⚠️ Not sent automatically: ${reason}` : null,
-      `Top up the Bitrefill balance (or add ${peso(claim.amount_php)} GrabMart PH codes in Admin → Vouchers), then tap ✅ Send code.`
+      'Add ₱50 Xoxo links in Admin → Vouchers (Xoxoday → Send Reward Link → Moodeng food reward → Send to self), then tap ✅ Send code.'
    ]
       .filter((line) => line !== null)
       .join('\n');
 
-/** Info card for a payout that went out on its own (no buttons). */
+/** Info card for a claim that went out on its own (no buttons). */
 export const buildVoucherSentCard = (claim: VoucherClaimRow, summary: string) =>
    [
-      `🎁 GrabMart ${peso(claim.amount_php)} sent automatically`,
-      `To: ${claim.full_name}${claimUsername(claim) ? ` (@${claimUsername(claim)})` : ''}`,
+      `🍔 Food voucher sent automatically: ${peso(claim.amount_php)}`,
+      `To: ${claim.full_name}${claimUsername(claim) ? ` (@${claimUsername(claim)})` : ''} · ${VOUCHER_REWARD_LABELS[claim.reward] ?? claim.reward}`,
       summary
    ].join('\n');
 
@@ -87,8 +100,8 @@ type SupabaseClient = any;
 export const voucherStampHeader = (decision: VoucherDecision, claim: { full_name?: string | null; amount_php?: number | string | null }) => {
    const name = claim.full_name?.trim() || 'They';
    return decision === 'sent'
-      ? `🎟 VOUCHER SENT — ${name} got their ₱${Number(claim.amount_php ?? 0)} GrabMart code`
-      : `🚫 VOUCHER REJECTED — ${name}'s ₱${Number(claim.amount_php ?? 0)} went back to their GrabMart wallet`;
+      ? `🎟 VOUCHER SENT — ${name} got their ₱${Number(claim.amount_php ?? 0)} food voucher`
+      : `🚫 VOUCHER REJECTED — ${name}'s claim is closed (they can submit a new one)`;
 };
 
 // Who decided, from what's on the claim: "rejected by @george via Telegram" → "@george".
@@ -97,28 +110,37 @@ export const voucherDecidedBy = (adminNote: string | null | undefined) =>
 
 const escapeHtml = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-export const buildVoucherCodeEmail = (input: { fullName: string; amountPhp: number; code: string }) => {
+/** The borrower's email: one button per ₱50 link. */
+export const buildVoucherCodeEmail = (input: { fullName: string; amountPhp: number; reward: string; links: string[] }) => {
    const firstName = input.fullName.trim().split(/\s+/)[0] || 'there';
+   const reason = REWARD_REASONS[input.reward] ?? 'from Moodeng Credit';
    const amount = `₱${input.amountPhp}`;
-   const subject = `Your ${amount} GrabMart voucher from Moodeng Credit`;
-   const steps = 'Open Grab → Mart, fill your basket, then type the code in the "Offer" field at checkout. One code per order.';
+   const many = input.links.length > 1;
+   const subject = `Your ${amount} food voucher from Moodeng Credit`;
+   const how = `Open ${many ? 'each link' : 'the link'}, pick ${FOOD_BRANDS}, and you'll get a voucher code to show at the store.`;
    const text = [
       `Hi ${firstName},`,
       '',
-      `Your Moodeng rewards reached ${amount}, so here is your ${amount} GrabMart voucher. Salamat for repaying on time!`,
+      `Here is your ${amount} food voucher ${reason}. Salamat!`,
       '',
-      `Your code: ${input.code}`,
+      ...input.links.map((link, i) => (many ? `₱50 voucher ${i + 1}: ${link}` : `Your voucher: ${link}`)),
       '',
-      steps,
-      'You can also find this code on your Moodeng dashboard. If anything goes wrong, just reply to this email.',
+      how,
+      'If anything goes wrong, just reply to this email.',
       '',
       'Moodeng Credit'
    ].join('\n');
+   const buttons = input.links
+      .map(
+         (link, i) =>
+            `<p><a href="${escapeHtml(link)}" style="display:inline-block;padding:12px 20px;background:#6b55f7;color:#fff;border-radius:24px;text-decoration:none;font-weight:700">${many ? `Open ₱50 voucher ${i + 1}` : 'Open my food voucher'}</a></p>`
+      )
+      .join('\n');
    const html = `<p>Hi ${escapeHtml(firstName)},</p>
-<p>Your Moodeng rewards reached ${amount}, so here is your <b>${amount} GrabMart voucher</b>. Salamat for repaying on time!</p>
-<p style="font-size:20px;font-weight:700;letter-spacing:1px;padding:12px 16px;background:#f3ecff;border-radius:10px;display:inline-block">${escapeHtml(input.code)}</p>
-<p>${escapeHtml(steps)}</p>
-<p>You can also find this code on your Moodeng dashboard. If anything goes wrong, just reply to this email.</p>
+<p>Here is your <b>${amount} food voucher</b> ${escapeHtml(reason)}. Salamat!</p>
+${buttons}
+<p>${escapeHtml(how)}</p>
+<p>If anything goes wrong, just reply to this email.</p>
 <p>Moodeng Credit</p>`;
    return { subject, text, html };
 };
@@ -127,33 +149,37 @@ export type VoucherActionResult = {
    ok: boolean;
    summary: string;
    stamp?: CardStamp;
-   // true when nothing changed and the same tap can be tried again (pool empty, Bitrefill down), so the
-   // Telegram card keeps its buttons.
+   // true when nothing changed and the same tap can be tried again (stock empty, Bitrefill not ready),
+   // so the Telegram card keeps its buttons.
    retry?: boolean;
 };
 
-const GIFT_MESSAGE = 'Salamat for repaying on time! Use this in the Grab app: Mart → fill your basket → enter the code in "Offer". — Moodeng Credit';
+const GIFT_MESSAGE = 'Salamat for repaying on time! — Moodeng Credit';
 
-/**
- * Bitrefill path: buy the voucher with the borrower as the gift recipient, so Bitrefill emails it to
- * them. A purchase started for this claim earlier (bitrefill_invoice_id) is finished instead of buying
- * again. On success the claim is marked sent and the code kept in voucher_codes for the record.
- * Returns null when Bitrefill can't be used (no key, no real email) so the pool path runs instead.
- */
-const sendViaBitrefill = async (supabase: SupabaseClient, claimId: string, admin: string): Promise<VoucherActionResult | null> => {
-   const apiKey = await getBitrefillApiKey(supabase);
-   if (!apiKey) return null;
-
-   const { data: claim } = await supabase
+const loadClaim = async (supabase: SupabaseClient, claimId: string) => {
+   const { data } = await supabase
       .from('voucher_claims')
-      .select('id, status, amount_php, full_name, email, bitrefill_invoice_id, users(email)')
+      .select('id, status, reward, amount_php, full_name, email, bitrefill_invoice_id, users(email)')
       .eq('id', claimId)
       .maybeSingle();
-   if (!claim) return { ok: false, summary: 'Claim not found.' };
-   if (claim.status !== 'pending') return { ok: false, summary: `Already handled (${claim.status}).` };
-   const accountEmail = Array.isArray(claim.users) ? claim.users[0]?.email : claim.users?.email;
-   const email = String(claim.email ?? accountEmail ?? '').trim();
-   if (!email || isPlaceholderEmail(email)) return null;
+   return data;
+};
+
+const claimEmail = (claim: any) => {
+   const accountEmail = Array.isArray(claim?.users) ? claim.users[0]?.email : claim?.users?.email;
+   return String(claim?.email ?? accountEmail ?? '').trim();
+};
+
+/**
+ * Fallback: buy a Greenwich voucher of the claim's value on Bitrefill with the borrower as the gift
+ * recipient, so Bitrefill emails it. A purchase started for this claim earlier (bitrefill_invoice_id)
+ * is finished instead of buying again. Returns null when Bitrefill can't be used at all (no key, no
+ * real email).
+ */
+const sendViaBitrefill = async (supabase: SupabaseClient, claim: any, admin: string): Promise<VoucherActionResult | null> => {
+   const apiKey = await getBitrefillApiKey(supabase);
+   const email = claimEmail(claim);
+   if (!apiKey || !email || isPlaceholderEmail(email)) return null;
 
    const amountPhp = Number(claim.amount_php);
    const bought = await buyBitrefillCode(
@@ -161,7 +187,7 @@ const sendViaBitrefill = async (supabase: SupabaseClient, claimId: string, admin
       amountPhp,
       claim.bitrefill_invoice_id ?? null,
       async (invoiceId) => {
-         await supabase.from('voucher_claims').update({ bitrefill_invoice_id: invoiceId }).eq('id', claimId);
+         await supabase.from('voucher_claims').update({ bitrefill_invoice_id: invoiceId }).eq('id', claim.id);
       },
       { recipientName: String(claim.full_name ?? '').trim() || 'Moodeng borrower', recipientEmail: email, message: GIFT_MESSAGE }
    );
@@ -172,74 +198,69 @@ const sendViaBitrefill = async (supabase: SupabaseClient, claimId: string, admin
       .update({
          status: 'sent',
          sent_at: new Date().toISOString(),
-         admin_note: `Bitrefill emailed it (invoice ${bought.invoiceId}) · sent by ${admin}`,
+         admin_note: `Bitrefill ${bought.product} emailed by Bitrefill (invoice ${bought.invoiceId}) · sent by ${admin}`,
          updated_at: new Date().toISOString()
       })
-      .eq('id', claimId)
+      .eq('id', claim.id)
       .eq('status', 'pending')
       .select('id, full_name, amount_php')
       .maybeSingle();
-   await supabase
-      .from('voucher_codes')
-      .upsert(
-         { amount_php: amountPhp, code: bought.code, source: `bitrefill:${bought.invoiceId}`, claim_id: claimId, assigned_at: new Date().toISOString() },
-         { onConflict: 'code', ignoreDuplicates: true }
-      );
    if (!sent) return { ok: false, summary: 'Bought on Bitrefill, but the claim was already handled — check for a double send.' };
 
-   const summary = `✅ ${peso(amountPhp)} GrabMart voucher bought on Bitrefill and emailed by Bitrefill to ${email} · by ${admin}`;
+   const summary = `✅ ${peso(amountPhp)} ${bought.product} voucher (stock was empty) bought on Bitrefill and emailed by Bitrefill to ${email} · by ${admin}`;
    const stamp: CardStamp = { header: voucherStampHeader('sent', sent), detail: summary, by: admin };
-   await stampDecisionCards(supabase, 'voucher', claimId, stamp);
+   await stampDecisionCards(supabase, 'voucher', claim.id, stamp);
    return { ok: true, summary, stamp };
 };
 
 /**
- * Send a pending payout. Bitrefill first: it emails the voucher to the borrower. If Bitrefill isn't set
- * up or fails (e.g. balance empty), the next pool code (Admin → Vouchers) is emailed by us instead.
+ * Send a pending claim: Xoxo links from the stock first (emailed by us), Bitrefill as the fallback
+ * when the stock is short. A claim with a Bitrefill purchase already started stays on Bitrefill, so
+ * the borrower never gets both.
  */
 export const sendVoucherCode = async (supabase: SupabaseClient, claimId: string, admin: string): Promise<VoucherActionResult> => {
-   const viaBitrefill = await sendViaBitrefill(supabase, claimId, admin);
-   if (viaBitrefill && (viaBitrefill.ok || !viaBitrefill.retry)) return viaBitrefill;
-   if (viaBitrefill) {
-      // A Bitrefill invoice already exists for this claim (e.g. still processing): Bitrefill may still
-      // email it, so don't also send a pool code. Tapping again finishes that invoice.
-      const { data: started } = await supabase.from('voucher_claims').select('bitrefill_invoice_id').eq('id', claimId).maybeSingle();
-      if (started?.bitrefill_invoice_id) return viaBitrefill;
+   const claim = await loadClaim(supabase, claimId);
+   if (!claim) return { ok: false, summary: 'Claim not found.' };
+   if (claim.status !== 'pending') return { ok: false, summary: `Already handled (${claim.status}).` };
+
+   if (claim.bitrefill_invoice_id) {
+      return (await sendViaBitrefill(supabase, claim, admin)) ?? { ok: false, retry: true, summary: 'Bitrefill purchase in progress, but Bitrefill is not set up.' };
    }
 
-   const { data, error } = await supabase.rpc('assign_voucher_code', { p_claim_id: claimId, p_admin: admin });
+   const { data, error } = await supabase.rpc('assign_voucher_codes', { p_claim_id: claimId, p_admin: admin });
    if (error) return { ok: false, retry: true, summary: `Couldn't send: ${error.message}` };
    if (data?.error === 'not_found') return { ok: false, summary: 'Claim not found.' };
    if (data?.error === 'not_pending') return { ok: false, summary: `Already handled (${data.status}).` };
    if (data?.error === 'out_of_stock') {
-      const why = viaBitrefill ? `${viaBitrefill.summary}; ` : '';
-      return { ok: false, retry: true, summary: `${why}no ${peso(data.amount_php)} codes in the pool — top up Bitrefill or add codes in Admin → Vouchers.` };
+      const stock = `needs ${data.needed} ₱50 link${data.needed === 1 ? '' : 's'}, ${data.available} in stock`;
+      const fallback = await sendViaBitrefill(supabase, claim, admin);
+      if (fallback?.ok) return fallback;
+      const why = fallback ? `; ${fallback.summary}` : '; Bitrefill fallback not available';
+      return { ok: false, retry: true, summary: `Out of Xoxo links (${stock})${why}.` };
    }
-   if (data?.error || !data?.code) return { ok: false, retry: true, summary: `Couldn't send: ${data?.error ?? 'no code returned'}` };
+   const links: string[] = Array.isArray(data?.codes) ? data.codes.map(String) : [];
+   if (data?.error || !links.length) return { ok: false, retry: true, summary: `Couldn't send: ${data?.error ?? 'no link returned'}` };
 
    const email = typeof data.email === 'string' ? data.email.trim() : '';
-   let delivery: string;
-   if (!email || isPlaceholderEmail(email)) {
-      delivery = 'NOT emailed (no real email on file) — send it to them by hand';
-   } else {
-      try {
-         const message = buildVoucherCodeEmail({ fullName: String(data.full_name ?? ''), amountPhp: Number(data.amount_php), code: String(data.code) });
-         await sendEmail(email, message.subject, message.text, message.html);
-         delivery = `emailed to ${email}`;
-      } catch (err) {
-         delivery = `email failed (${(err instanceof Error ? err.message : String(err)).slice(0, 100)}) — send it to them by hand`;
-      }
+   try {
+      if (!email || isPlaceholderEmail(email)) throw new Error('no real email on the claim or account');
+      const message = buildVoucherCodeEmail({ fullName: String(data.full_name ?? ''), amountPhp: Number(data.amount_php), reward: String(data.reward), links });
+      await sendEmail(email, message.subject, message.text, message.html);
+   } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      await supabase.rpc('release_voucher_code', { p_claim_id: claimId, p_reason: reason.slice(0, 200) });
+      return { ok: false, retry: true, summary: `Email failed (${reason.slice(0, 120)}). Links returned to stock; claim still pending.` };
    }
 
    const remaining = Number(data.remaining ?? 0);
-   const stock = `${remaining} ${peso(data.amount_php)} code${remaining === 1 ? '' : 's'} left in the pool${remaining <= LOW_STOCK ? ' ⚠️' : ''}`;
-   const summary = `✅ ${peso(data.amount_php)} GrabMart pool code ${delivery} · by ${admin} · ${stock}`;
+   const stock = `${remaining} ₱50 link${remaining === 1 ? '' : 's'} left${remaining <= LOW_STOCK ? ' ⚠️ restock soon' : ''}`;
+   const summary = `✅ ${peso(data.amount_php)} food voucher (${links.length} Xoxo link${links.length === 1 ? '' : 's'}) emailed to ${email} · by ${admin} · ${stock}`;
    const stamp: CardStamp = { header: voucherStampHeader('sent', data), detail: summary, by: admin };
    await stampDecisionCards(supabase, 'voucher', claimId, stamp);
    return { ok: true, summary, stamp };
 };
 
-/** ✅ sends a code; ❌ rejects (the ₱ goes back to their GrabMart wallet). Stamps the admin card. */
+/** ✅ sends the voucher; ❌ rejects. Stamps the admin card. */
 export const decideVoucherClaim = async (
    supabase: SupabaseClient,
    claimId: string,

@@ -198,7 +198,7 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Borrow from 2 moo-lenders': 'Vay từ 2 moo-lender',
    'Repay $100 total': 'Trả tổng cộng $100',
    'Become a trusted borrower': 'Trở thành người vay đáng tin cậy',
-   '₱50 GrabMart reward': 'Phiếu quà tặng GrabMart ₱50',
+   '₱50 food voucher': 'Phiếu quà tặng đồ ăn ₱50',
    Verify: 'Xác minh',
    'to unlock LV.1': 'để mở khóa LV.1',
    Top: 'Đã đạt',
@@ -225,7 +225,7 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Grow Moodeng, eat on us': 'Nuôi Moodeng lớn, chúng tôi mời bạn ăn',
    'Grow Moodeng to': 'Nuôi Moodeng lên',
    'Reward: ₱': 'Phần thưởng: phiếu quà tặng trị giá ₱',
-   'GrabMart voucher': 'dùng trên GrabMart',
+   'food voucher': 'phiếu ăn uống',
    'Back to dashboard': 'Quay lại trang Tổng quan',
    'Loading milestones': 'Đang tải cột mốc',
 
@@ -243,7 +243,7 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Moodeng grew to Rising. Treat yourself!': 'Moodeng đã lên Rising. Tự thưởng cho mình nhé!',
    'Moodeng grew to Prime. Treat yourself!': 'Moodeng đã lên Prime. Tự thưởng cho mình nhé!',
    'Moodeng reached Apex. Feast time!': 'Moodeng đã đạt Apex. Ăn mừng thôi!',
-   'Tell us where to send your GrabMart voucher code.': 'Cho chúng tôi biết nơi gửi mã phiếu quà tặng GrabMart của bạn.',
+   'Tell us where to send your food voucher.': 'Cho chúng tôi biết nơi gửi mã phiếu ăn uống của bạn.',
    'Thanks for inviting them. Where should we send your voucher code?':
       'Cảm ơn bạn đã mời bạn bè. Chúng tôi nên gửi mã phiếu quà tặng đến đâu?',
    'Thanks for joining with a friend. Where should we send your voucher code?':
@@ -254,8 +254,8 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Something went wrong. Please try again.': 'Đã có lỗi xảy ra. Vui lòng thử lại.',
    'Salamat! We got it.': 'Cảm ơn bạn! Chúng tôi đã nhận được.',
    "We'll send your ₱": 'Chúng tôi sẽ gửi mã phiếu quà tặng trị giá ₱',
-   'GrabMart voucher code to your email within 2 business days.':
-      'dùng trên GrabMart đến email của bạn trong vòng 2 ngày làm việc.',
+   'đồ ăn voucher code to your mobile within 2 business days.':
+      'phiếu ăn uống đến số điện thoại của bạn trong vòng 2 ngày làm việc.',
    'Preview sample — nothing was sent.': 'Mẫu xem trước — không có gì được gửi.',
    'Full name': 'Họ và tên',
    'Mobile number (GCash)': 'Số điện thoại (GCash)',
@@ -286,7 +286,7 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Borrow small, build your credit': 'Vay nhỏ, xây dựng tín dụng',
    'Small person-to-person loans with one amount, one date, and no Moodeng fees.':
       'Khoản vay nhỏ giữa người với người, với một số tiền, một ngày trả và không mất phí Moodeng.',
-   '₱100 GrabMart voucher each': 'Mỗi người một phiếu quà tặng GrabMart ₱100',
+   '₱100 food voucher each': 'Mỗi người một phiếu ăn uống ₱100',
    'When you repay your first loan on time, you and': 'Khi bạn trả khoản vay đầu tiên đúng hạn, bạn và',
    'your friend': 'bạn bè của bạn',
    'both get one.': 'đều nhận được một phiếu.',
@@ -343,7 +343,7 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Verify to Start Feeding': 'Xác minh để bắt đầu cho ăn',
    'Repay on time, eat on us.': 'Trả đúng hạn, chúng tôi mời bạn ăn.',
    'Feed Moodeng to level up.': 'Cho Moodeng ăn để lên cấp.',
-   'A GrabMart reward for your first on-time repayment!': 'Một phiếu quà tặng GrabMart cho lần trả nợ đúng hạn đầu tiên!',
+   'A food voucher for your first on-time repayment!': 'Một phiếu ăn uống cho lần trả nợ đúng hạn đầu tiên!',
    'Bigger Moodeng = Higher cash limits!': 'Moodeng càng lớn = hạn mức càng cao!',
    'Verify My Identity': 'Xác minh danh tính',
    'Verify to unlock your account — a one-time check that takes about 3 minutes.':
