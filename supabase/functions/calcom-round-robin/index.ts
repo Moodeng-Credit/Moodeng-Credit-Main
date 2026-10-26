@@ -2,6 +2,8 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { bookCall, HOSTS, listCallSlots } from '../_shared/callBooking.ts';
+import { CRON_TOKEN_HEADER } from '../_shared/cronAuth.ts';
+import { syncEmmaCalendlyHours } from './calendlySync.ts';
 
 // Free round-robin booking for the no-referral video call — the paid Cal.com Teams feature, built
 // ourselves on the free API. The borrower sees one anonymous "Moodeng team" time list; we read each
@@ -15,6 +17,8 @@ import { bookCall, HOSTS, listCallSlots } from '../_shared/callBooking.ts';
 // verify_jwt is on, so only a signed-in borrower can call it; we take their identity from the JWT,
 // never from the body, so nobody can book as someone else. The host Cal.com API keys live only in
 // this function's env, never in the client.
+// A third action, { action: 'sync_calendly_hours', dryRun? }, is the daily pg_cron job that copies
+// Emma's Calendly hours onto her Cal.com schedule — X-Admin-Token only, never a borrower.
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
@@ -35,6 +39,21 @@ serve(async (req) => {
       return json({ error: 'not_configured' }, 500);
    }
 
+   let payload: { action?: string; start?: string; timeZone?: string; host?: string; dryRun?: boolean };
+   try {
+      payload = await req.json();
+   } catch {
+      return json({ error: 'bad_request' }, 400);
+   }
+
+   if (payload.action === 'sync_calendly_hours') {
+      // Fails closed (unlike checkCronAuth): no configured token, no sync.
+      const expected = (Deno.env.get('ADMIN_API_TOKEN') ?? '').trim();
+      if (!expected || (req.headers.get(CRON_TOKEN_HEADER) ?? '').trim() !== expected) return json({ error: 'unauthorized' }, 401);
+      const result = await syncEmmaCalendlyHours(createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY), payload.dryRun === true);
+      return json(result, result.ok ? 200 : 502);
+   }
+
    // Identity comes from the JWT, never the body.
    const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } }
@@ -43,12 +62,6 @@ serve(async (req) => {
    const user = auth?.user;
    if (!user) return json({ error: 'unauthorized' }, 401);
 
-   let payload: { action?: string; start?: string; timeZone?: string; host?: string };
-   try {
-      payload = await req.json();
-   } catch {
-      return json({ error: 'bad_request' }, 400);
-   }
    const timeZone = payload.timeZone || 'UTC';
 
    const svc = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);

@@ -86,3 +86,47 @@ export const bookingCooldownUntil = (noShowAtIsos: Array<string | null>, now: nu
    const until = Math.max(...times) + COOLDOWN_DAYS * 86400000;
    return until > now ? new Date(until).toISOString() : null;
 };
+
+// Emma's Calendly is where she keeps her hours; Cal.com (which actually takes the bookings) gets a
+// copy every day. Calendly's default availability schedule is a list of rules — 'wday' rules are the
+// weekly hours, 'date' rules are one-off days (no intervals = off that day) — and this turns them
+// into the body for Cal.com's PATCH /v2/schedules/{id}. Past one-off days are dropped.
+export type CalendlyRule = { type: string; wday?: string; date?: string; intervals?: Array<{ from: string; to: string }> };
+export type CalSchedule = {
+   timeZone: string;
+   availability: Array<{ days: string[]; startTime: string; endTime: string }>;
+   overrides: Array<{ date: string; startTime: string; endTime: string }>;
+};
+const calTime = (hhmm: string) => (hhmm === '24:00' ? '23:59' : hhmm);
+const capitalize = (day: string) => day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
+export const calendlyToCalSchedule = (rules: CalendlyRule[], timeZone: string, today: string): CalSchedule => {
+   const daysByWindow = new Map<string, string[]>();
+   const overrides: CalSchedule['overrides'] = [];
+   for (const rule of rules) {
+      const intervals = rule.intervals ?? [];
+      if (rule.type === 'wday' && rule.wday) {
+         for (const iv of intervals) {
+            const key = `${calTime(iv.from)}-${calTime(iv.to)}`;
+            daysByWindow.set(key, [...(daysByWindow.get(key) ?? []), capitalize(rule.wday)]);
+         }
+      } else if (rule.type === 'date' && rule.date && rule.date >= today) {
+         if (intervals.length === 0) overrides.push({ date: rule.date, startTime: '00:00', endTime: '00:00' });
+         for (const iv of intervals) overrides.push({ date: rule.date, startTime: calTime(iv.from), endTime: calTime(iv.to) });
+      }
+   }
+   const availability = [...daysByWindow.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, days]) => {
+         const [startTime, endTime] = key.split('-');
+         return { days, startTime, endTime };
+      });
+   return { timeZone, availability, overrides };
+};
+
+// George is invited to every call, so a slot that overlaps anything on his Google Calendar isn't offered.
+export const dropBusySlots = (slots: string[], busy: Array<{ start: string; end: string }>, callMinutes: number): string[] =>
+   slots.filter((s) => {
+      const from = Date.parse(s);
+      const to = from + callMinutes * 60000;
+      return !busy.some((b) => from < Date.parse(b.end) && to > Date.parse(b.start));
+   });
