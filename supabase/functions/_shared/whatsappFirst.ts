@@ -132,11 +132,31 @@ const facebookCodeFor = async (svc: Svc, userId: string): Promise<string | null>
    return code;
 };
 
+// deno-lint-ignore no-explicit-any
+const stepsUser = async (svc: Svc, userId: string, phone: string | null): Promise<any | null> => {
+   const { data: user } = await svc.from('users').select('messenger_verified_at, user_role, is_test, preferred_locale').eq('id', userId).maybeSingle();
+   if (!user || user.messenger_verified_at || user.user_role === 'lender' || !whatsappFirstApplies(phone, user.is_test)) return null;
+   return user;
+};
+
+/**
+ * Will WhatsApp confirming now send the Facebook steps? The "Confirm WhatsApp" SendPulse flow reads this
+ * (`wa_first` in the reply) and skips its own English "you're set, continue in the app" message, since
+ * our first step message already says WhatsApp is connected, in their language.
+ */
+export const facebookStepsDue = async (svc: Svc, userId: string, phone: string | null) => {
+   try {
+      return (await stepsUser(svc, userId, phone)) !== null;
+   } catch {
+      return false;
+   }
+};
+
 /** WhatsApp just confirmed: if Facebook isn't connected yet, send the Facebook steps and the code. */
 export const sendFacebookStepsOnWhatsApp = async (svc: Svc, userId: string, contactId: string, phone: string | null) => {
    try {
-      const { data: user } = await svc.from('users').select('messenger_verified_at, user_role, is_test, preferred_locale').eq('id', userId).maybeSingle();
-      if (!user || user.messenger_verified_at || user.user_role === 'lender' || !whatsappFirstApplies(phone, user.is_test)) return;
+      const user = await stepsUser(svc, userId, phone);
+      if (!user) return;
       const code = await facebookCodeFor(svc, userId);
       if (!code) return;
       const locale = whatsappFirstLocale(phone, user.preferred_locale);

@@ -2,6 +2,7 @@ import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asse
 
 import {
    facebookConnectedText,
+   facebookStepsDue,
    facebookStepsMessages,
    MESSENGER_CHAT_URL,
    isIndonesianPhone,
@@ -96,4 +97,14 @@ Deno.test('the language they picked wins over the phone number', () => {
 Deno.test('the Facebook-connected note says to write the loan request in English', () => {
    assert(facebookConnectedText('id').includes('bahasa Inggris'));
    assert(facebookConnectedText('en').includes('write your loan request in English'));
+});
+
+Deno.test('wa_first: only when the Facebook steps will be sent', async () => {
+   const fresh = fakeSvc({ messenger_verified_at: null, user_role: 'borrower', is_test: false }).svc;
+   assertEquals(await facebookStepsDue(fresh, 'user-1', '6281234567890'), true);
+   assertEquals(await facebookStepsDue(fresh, 'user-1', '639171234567'), false);
+   const done = fakeSvc({ messenger_verified_at: '2026-10-25T00:00:00Z', user_role: 'borrower', is_test: false }).svc;
+   assertEquals(await facebookStepsDue(done, 'user-1', '6281234567890'), false);
+   const lender = fakeSvc({ messenger_verified_at: null, user_role: 'lender', is_test: false }).svc;
+   assertEquals(await facebookStepsDue(lender, 'user-1', '6281234567890'), false);
 });

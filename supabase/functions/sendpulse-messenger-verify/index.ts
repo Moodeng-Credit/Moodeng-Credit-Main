@@ -24,7 +24,7 @@ import { callTelegramApi, sendTelegramMessage } from '../_shared/telegram.ts';
 import { testAccountRow } from '../_shared/testAccount.ts';
 import { bookFromWindow, startWhatsAppBooking } from '../_shared/whatsappBooking.ts';
 import { whatsappContactCard } from '../_shared/whatsappContactCard.ts';
-import { sendFacebookConnectedOnWhatsApp, sendFacebookStepsOnWhatsApp, setWhatsAppLocale } from '../_shared/whatsappFirst.ts';
+import { facebookStepsDue, sendFacebookConnectedOnWhatsApp, sendFacebookStepsOnWhatsApp, setWhatsAppLocale } from '../_shared/whatsappFirst.ts';
 
 // SendPulse → Moodeng bridge for Facebook Messenger contact verification.
 //
@@ -340,14 +340,16 @@ const handleWhatsApp = async (svc: Svc, body: VerifyBody, nowIso: string): Promi
          return json({ ok: false, error: 'update_failed' }, 500);
       }
       console.log(`sendpulse-messenger-verify: WhatsApp reminders on for ${String(pending.user_id).slice(0, 8)}${phone ? '' : ' (no phone from SendPulse)'}`);
+      // Indonesia's WhatsApp-first sign-up: Facebook isn't connected yet, so send its steps here. The
+      // flow skips its English "you're set" reply when wa_first is 1 (our steps say it in their language).
+      const stepsDue = await facebookStepsDue(svc, String(pending.user_id), phone);
       const card = Promise.all([
          announceWhatsAppContact(svc, String(pending.user_id), phone),
-         // Indonesia's WhatsApp-first sign-up: Facebook isn't connected yet, so send its steps here.
-         sendFacebookStepsOnWhatsApp(svc, String(pending.user_id), contactId, phone)
+         stepsDue ? sendFacebookStepsOnWhatsApp(svc, String(pending.user_id), contactId, phone) : null
       ]);
       if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(card);
       else await card;
-      return json({ ok: true });
+      return json({ ok: true, wa_first: stepsDue ? 1 : 0 });
    }
 
    // Sent twice (the pre-filled message, then the copied code): a code confirmed in the last few
