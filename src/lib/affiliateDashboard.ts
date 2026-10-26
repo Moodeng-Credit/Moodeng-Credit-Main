@@ -5,6 +5,9 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
  * public.my_affiliate_dashboard() (supabase/migrations/20261026150000_affiliate_dashboard.sql).
  * The owner earns a code's payout_amount once a referred friend takes a loan and repays it; the
  * team marks each payout Paid in Admin → Referral codes (or the Telegram card).
+ *
+ * Friends who never typed the code can be claimed (submitReferralClaim → Telegram → the team approves
+ * in Admin → Referral codes). Claimed friends are tracked only: `claimed`, no payout.
  */
 export interface AffiliateCode {
    code: string;
@@ -17,6 +20,8 @@ export interface AffiliateReferral {
    first_name: string;
    code: string;
    joined_at: string;
+   /** Added by a claim the team approved — tracking only, never paid. */
+   claimed?: boolean;
    borrowed: boolean;
    repaid: boolean;
    payout_amount: number;
@@ -24,14 +29,24 @@ export interface AffiliateReferral {
    paid_at: string | null;
 }
 
+/** A friend the owner added by name that the team hasn't approved (or turned down, last 30 days). */
+export interface AffiliateClaim {
+   id: string;
+   friend_name: string;
+   status: 'pending' | 'rejected';
+   created_at: string;
+}
+
 export interface AffiliateDashboardData {
    codes: AffiliateCode[];
    referrals: AffiliateReferral[];
+   claims: AffiliateClaim[];
 }
 
-export type AffiliateStage = 'paid' | 'owed' | 'borrowed' | 'signed_up';
+export type AffiliateStage = 'paid' | 'owed' | 'repaid' | 'borrowed' | 'signed_up';
 
 export function referralStage(r: AffiliateReferral): AffiliateStage {
+   if (r.repaid && r.claimed) return 'repaid';
    if (r.repaid) return r.payout_status === 'paid' ? 'paid' : 'owed';
    return r.borrowed ? 'borrowed' : 'signed_up';
 }
@@ -59,7 +74,7 @@ export function affiliateTotals(referrals: AffiliateReferral[]): AffiliateTotals
       }
       if (stage === 'paid') totals.paid += amount;
       if (stage === 'owed') totals.owed += amount;
-      if (stage === 'borrowed') totals.pending += amount;
+      if (stage === 'borrowed' && !r.claimed) totals.pending += amount;
    }
    return totals;
 }
@@ -70,14 +85,35 @@ export async function fetchAffiliateDashboard(): Promise<AffiliateDashboardData>
    const raw = (data ?? {}) as Partial<AffiliateDashboardData>;
    return {
       codes: (raw.codes ?? []).map((c) => ({ ...c, boost_amount: Number(c.boost_amount), payout_amount: Number(c.payout_amount) })),
-      referrals: (raw.referrals ?? []).map((r) => ({ ...r, payout_amount: Number(r.payout_amount) }))
+      referrals: (raw.referrals ?? []).map((r) => ({ ...r, payout_amount: Number(r.payout_amount) })),
+      claims: raw.claims ?? []
    };
+}
+
+export async function submitReferralClaim(friendName: string, friendContact: string): Promise<void> {
+   const { error } = await getSupabaseBrowserClient().rpc('submit_referral_claim', {
+      p_friend_name: friendName,
+      p_friend_contact: friendContact || null
+   });
+   if (error) throw error;
 }
 
 /** Made-up data for the dev-only /affiliate-preview route. */
 export const AFFILIATE_SAMPLE: AffiliateDashboardData = {
    codes: [{ code: 'BELLE', boost_amount: 5, payout_amount: 10, is_active: true }],
+   claims: [{ id: 'c1', friend_name: 'Lito', status: 'pending', created_at: '2026-10-26T03:00:00Z' }],
    referrals: [
+      {
+         first_name: 'Dan',
+         code: 'BELLE',
+         joined_at: '2026-10-01T03:00:00Z',
+         claimed: true,
+         borrowed: true,
+         repaid: true,
+         payout_amount: 0,
+         payout_status: null,
+         paid_at: null
+      },
       {
          first_name: 'Ana',
          code: 'BELLE',

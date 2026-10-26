@@ -30,4 +30,15 @@ describe('affiliate dashboard', () => {
       ]);
       expect(totals).toEqual({ signedUp: 4, borrowed: 3, repaid: 2, earned: 15, paid: 10, owed: 5, pending: 10 });
    });
+
+   it('tracks claimed friends without ever owing money for them', () => {
+      const claimed = { ...base, claimed: true, payout_amount: 0 };
+      expect(referralStage({ ...claimed, borrowed: true, repaid: true })).toBe('repaid');
+      expect(referralStage({ ...claimed, borrowed: true })).toBe('borrowed');
+      const totals = affiliateTotals([
+         { ...claimed, borrowed: true, repaid: true },
+         { ...claimed, borrowed: true }
+      ]);
+      expect(totals).toEqual({ signedUp: 2, borrowed: 2, repaid: 1, earned: 0, paid: 0, owed: 0, pending: 0 });
+   });
 });
