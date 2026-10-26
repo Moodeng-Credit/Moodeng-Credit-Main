@@ -271,7 +271,12 @@ export default function DashboardV2Milestones() {
             />
          ) : null}
          {claimingVoucher ? (
-            <VoucherClaimPopup voucher={claimingVoucher} isPreview={!isReal} onClose={() => setClaimingVoucher(null)} />
+            <VoucherClaimPopup
+               voucher={claimingVoucher}
+               walletPhp={model.rewards.grabmartBalancePhp}
+               isPreview={!isReal}
+               onClose={() => setClaimingVoucher(null)}
+            />
          ) : null}
          {/* Same "Verify Yourself" chooser as onboarding, Milestones, the loan form and Repay. */}
          <VerifyYourselfModal isOpen={isVerifyOpen} onClose={() => setIsVerifyOpen(false)} returnTo={`/dashboard/milestones${previewSearch}`} />

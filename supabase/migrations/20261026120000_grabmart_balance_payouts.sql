@@ -10,7 +10,7 @@
 --     (Bitrefill API, or the next code from public.voucher_codes); if it can't, the Telegram card
 --     keeps ✅ Send code / ❌ Reject as before
 --   * rejecting a payout puts its ₱100 back in the balance (and re-issues if still ≥ ₱100)
---   * the borrower sees their code in the app (get_my_rewards → grabmartPayouts) as well as by email
+--   * Bitrefill emails the voucher to the borrower (its gift delivery), so a claim now needs an email
 --
 -- Balance = banked reward claims − non-rejected payouts (a reward sent on its own, the old way,
 -- doesn't count). Keep GRABMART_PAYOUT_PHP in src/lib/friendReferrals.ts in sync.
@@ -258,6 +258,9 @@ begin
   if not v_eligible then
     raise exception 'not eligible for this voucher' using errcode = '42501';
   end if;
+  if nullif(trim(coalesce(p_email, '')), '') is null then
+    raise exception 'email required: the voucher is emailed' using errcode = '22023';
+  end if;
 
   insert into public.voucher_claims (user_id, reward, friend_referral_id, amount_php, full_name, mobile, email, status)
   values (v_user_id, p_reward, p_friend_referral_id, v_amount, trim(p_full_name), trim(p_mobile), nullif(trim(coalesce(p_email, '')), ''), 'banked')
@@ -269,7 +272,7 @@ exception
 end;
 $$;
 
--- Same as before, plus the GrabMart balance and payouts (with the code once sent). Payouts are
+-- Same as before, plus the GrabMart balance (₱ saved below ₱100) and payout statuses. Payouts are
 -- never "claimable" and don't appear in claims.
 create or replace function public.get_my_rewards()
 returns jsonb
@@ -292,10 +295,9 @@ as $$
     where c.user_id = me.id and c.reward <> 'grabmart_payout'
   ),
   payouts as (
-    select c.amount_php, c.status, c.sent_at, c.created_at, vc.code
+    select c.amount_php, c.status, c.sent_at, c.created_at
     from public.voucher_claims c
     join me on c.user_id = me.id
-    left join public.voucher_codes vc on vc.claim_id = c.id
     where c.reward = 'grabmart_payout' and c.status <> 'rejected'
   ),
   eligible as (
@@ -325,7 +327,7 @@ as $$
     ), '[]'::jsonb),
     'grabmartBalancePhp', app_private.grabmart_balance(me.id),
     'grabmartPayouts', coalesce((
-      select jsonb_agg(jsonb_build_object('amountPhp', amount_php, 'status', status, 'sentAt', sent_at, 'code', case when status = 'sent' then code end) order by created_at desc)
+      select jsonb_agg(jsonb_build_object('amountPhp', amount_php, 'status', status, 'sentAt', sent_at) order by created_at desc)
       from payouts
     ), '[]'::jsonb)
   )

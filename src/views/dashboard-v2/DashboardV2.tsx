@@ -33,7 +33,6 @@ import { MilestonePopup, MilestoneStreakPopup } from '@/views/dashboard-v2/compo
 import {
    LoanSummarySection,
    MilestonesSection,
-   GrabMartWalletCard,
    TierVoucherCard,
    UpcomingDuesSection
 } from '@/views/dashboard-v2/components/DashboardV2Sections';
@@ -252,7 +251,6 @@ export default function DashboardV2() {
                         onClaim={() => setClaimingVoucher(claimableTierVoucher.claimable)}
                      />
                   ) : null}
-                  <GrabMartWalletCard balancePhp={model.rewards.grabmartBalancePhp} payouts={model.rewards.grabmartPayouts} />
                   {milestonesAndVoucher}
                   <LoanSummarySection model={model} />
                   {!model.hasOverdue ? <UpcomingDuesSection model={model} /> : null}
@@ -309,7 +307,12 @@ export default function DashboardV2() {
             />
          ) : null}
          {claimingVoucher ? (
-            <VoucherClaimPopup voucher={claimingVoucher} isPreview={!isReal} onClose={() => setClaimingVoucher(null)} />
+            <VoucherClaimPopup
+               voucher={claimingVoucher}
+               walletPhp={model.rewards.grabmartBalancePhp}
+               isPreview={!isReal}
+               onClose={() => setClaimingVoucher(null)}
+            />
          ) : null}
       </div>
    );

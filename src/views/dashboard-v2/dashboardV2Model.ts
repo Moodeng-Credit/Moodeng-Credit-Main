@@ -180,7 +180,7 @@ const PRODUCTION_ORIGIN = 'https://moodeng.app';
 export const buildInviteLink = (code: string, origin = typeof window === 'undefined' ? PRODUCTION_ORIGIN : window.location.origin) =>
    `${origin.startsWith('http') ? origin : PRODUCTION_ORIGIN}/invite/${encodeURIComponent(code)}`;
 
-// 'banked' = claimed and added to the GrabMart wallet (the code comes once the wallet reaches ₱100).
+// 'banked' = claimed and added to the GrabMart wallet (Bitrefill emails a ₱100 voucher once claimed rewards reach ₱100).
 export type VoucherState = 'claimable' | 'banked' | 'pending' | 'sent' | 'rejected' | 'none' | 'loading';
 
 /** Where a voucher stands, as reported by the database (the UI never decides eligibility itself). */

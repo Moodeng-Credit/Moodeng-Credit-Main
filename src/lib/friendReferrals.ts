@@ -33,12 +33,11 @@ export interface VoucherClaimSummary {
    status: VoucherClaimStatus;
 }
 
-/** A ₱100 GrabMart code: 'pending' until it's sent, then `code` is filled in. */
+/** A ₱100 GrabMart voucher: 'pending' until Bitrefill (or the team) has emailed it. */
 export interface GrabMartPayout {
    amountPhp: number;
    status: 'pending' | 'sent';
    sentAt: string | null;
-   code: string | null;
 }
 
 export interface MyRewards {
@@ -113,8 +112,7 @@ export function parseMyRewards(raw: unknown): MyRewards {
       grabmartPayouts: list('grabmartPayouts').map((item) => ({
          amountPhp: toNumber(item.amountPhp),
          status: item.status === 'sent' ? 'sent' : 'pending',
-         sentAt: typeof item.sentAt === 'string' ? item.sentAt : null,
-         code: typeof item.code === 'string' && item.code ? item.code : null
+         sentAt: typeof item.sentAt === 'string' ? item.sentAt : null
       }))
    };
 }

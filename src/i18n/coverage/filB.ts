@@ -194,7 +194,6 @@ export const filipinoCoverageB: Record<string, string> = {
    'Small person-to-person loans with one amount, one date, and no Moodeng fees.':
       'Maliliit na loan mula tao sa tao: isang halaga, isang petsa, at walang fee mula sa Moodeng.',
    'Join Moodeng': 'Sumali sa Moodeng',
-   'It goes into your GrabMart wallet. Where should we send your code?': 'Mapupunta ito sa GrabMart wallet mo. Saan namin ipapadala ang code mo?',
    'Thanks for inviting them. Where should we send your voucher code?':
       'Salamat sa pag-invite sa kanila. Saan namin ipapadala ang voucher code mo?',
    'Thanks for joining with a friend. Where should we send your voucher code?':
@@ -275,29 +274,23 @@ export const filipinoCoverageB: Record<string, string> = {
    'Feed Moodeng to level up.': 'Pakainin si Moodeng para mag-level up.',
    'A GrabMart reward for your first on-time repayment!': 'GrabMart reward para sa una mong on-time na bayad!',
 
-   // GrabMart wallet (src/views/dashboard-v2/components/DashboardV2Sections.tsx, DashboardV2Rewards.tsx)
-   'Thanks for inviting them. It goes into your GrabMart wallet. Where should we send your code?':
-      'Salamat sa pag-imbita sa kanila. Mapupunta ito sa GrabMart wallet mo. Saan namin ipapadala ang code mo?',
-   'Thanks for joining with a friend. It goes into your GrabMart wallet. Where should we send your code?':
-      'Salamat sa pagsali kasama ang kaibigan. Mapupunta ito sa GrabMart wallet mo. Saan namin ipapadala ang code mo?',
-   '+₱': '+₱',
-   'added!': 'naidagdag!',
-   "It's in your GrabMart wallet. Every ₱": 'Nasa GrabMart wallet mo na. Bawat ₱',
-   'becomes a GrabMart code — we email it and show it on your dashboard. Use it in Grab → Mart.':
-      'ay magiging GrabMart code — ie-email namin at ipapakita sa dashboard mo. Gamitin ito sa Grab → Mart.',
-   'Claim ₱': 'I-claim ang ₱',
-   'for your GrabMart wallet': 'para sa GrabMart wallet mo',
+   // GrabMart voucher claim (src/views/dashboard-v2/DashboardV2Rewards.tsx, DashboardV2Sections.tsx)
+   'Tell us where to send your GrabMart voucher.': 'Sabihin sa amin kung saan ipapadala ang GrabMart voucher mo.',
+   'Thanks for inviting them. Where should we send your GrabMart voucher?':
+      'Salamat sa pag-imbita sa kanila. Saan namin ipapadala ang GrabMart voucher mo?',
+   'Thanks for joining with a friend. Where should we send your GrabMart voucher?':
+      'Salamat sa pagsali kasama ang kaibigan mo. Saan namin ipapadala ang GrabMart voucher mo?',
+   'Email (your voucher is sent here)': 'Email (dito ipapadala ang voucher mo)',
+   'Please add your email — your voucher is sent there.': 'Ilagay ang email mo — doon ipapadala ang voucher mo.',
+   'Your ₱': 'Ang ₱',
+   'GrabMart voucher is on its way to your email from Bitrefill. Use it in Grab → Mart.':
+      'GrabMart voucher mo ay papunta na sa email mo mula sa Bitrefill. Gamitin ito sa Grab → Mart.',
+   'saved. GrabMart vouchers start at ₱': 'naipon. Nagsisimula sa ₱',
+   '— your next reward gets you there, and we email it to you.':
+      'ang GrabMart vouchers — sa susunod mong reward, aabot ka na, at ie-email namin ito sa iyo.',
+   'GrabMart voucher': 'GrabMart voucher',
    'for GrabMart': 'para sa GrabMart',
    'Added': 'Naidagdag',
-   'Your ₱': 'Ang ₱',
-   'GrabMart code': 'GrabMart code mo',
-   'GrabMart code on its way!': 'GrabMart code, papunta na!',
-   "We'll email it and show it here.": 'Ie-email namin ito at ipapakita rito.',
-   'Open Grab → Mart, fill your basket, then type the code in "Offer" at checkout.':
-      'Buksan ang Grab → Mart, punuin ang basket mo, tapos i-type ang code sa "Offer" sa checkout.',
-   'GrabMart wallet:': 'GrabMart wallet:',
-   '· ₱': '· ₱',
-   'more for your next code': 'pa para sa susunod mong code',
    'Bigger Moodeng = Higher cash limits!': 'Mas malaking Moodeng = mas mataas na cash limit!',
    'Quick national ID & selfie check. Available in VN, TW, KR, PH, MY, JP, ID, TH':
       'Mabilis na check ng national ID at selfie. Available sa VN, TW, KR, PH, MY, JP, ID, TH',

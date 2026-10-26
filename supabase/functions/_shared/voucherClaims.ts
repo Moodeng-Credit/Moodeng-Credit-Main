@@ -3,10 +3,10 @@
 // Borrowers claim a reward in the app (public.submit_voucher_claim → voucher_claims, status 'banked').
 // Each full ₱100 of banked rewards creates a 'grabmart_payout' claim (status 'pending'), which the
 // notify_voucher_claim_telegram trigger hands to voucher-claim-telegram-notification. That sends it
-// straight away (sendVoucherCode): the next code from the pool (public.voucher_codes, filled on the
-// admin Vouchers page), or a fresh one bought with the Bitrefill API when the pool is empty. The code
-// is emailed and shown in the app. If neither works, the admin card keeps ✅ Send code / ❌ Reject so
-// the team can restock and tap again. Deciding in the admin panel instead fires
+// straight away (sendVoucherCode): bought with the Bitrefill API as a gift, so Bitrefill emails the
+// voucher to the borrower; or, if Bitrefill can't (no key, empty balance), the next code from the pool
+// (public.voucher_codes, filled on the admin Vouchers page), emailed by us. If neither works, the admin
+// card keeps ✅ Send code / ❌ Reject so the team can top up and tap again. Deciding in the admin panel instead fires
 // notify_voucher_claim_decided, which stamps the card the same way (event 'decided').
 
 import { type CardStamp, stampDecisionCards } from './adminCards.ts';
@@ -68,7 +68,7 @@ export const buildVoucherClaimCard = (claim: VoucherClaimRow, reason?: string | 
       claimUsername(claim) ? `User: @${claimUsername(claim)}` : null,
       '',
       reason ? `⚠️ Not sent automatically: ${reason}` : null,
-      `Buy ${peso(claim.amount_php)} GrabMart PH codes on bitrefill.com, add them in Admin → Vouchers, then tap ✅ Send code.`
+      `Top up the Bitrefill balance (or add ${peso(claim.amount_php)} GrabMart PH codes in Admin → Vouchers), then tap ✅ Send code.`
    ]
       .filter((line) => line !== null)
       .join('\n');
@@ -132,62 +132,108 @@ export type VoucherActionResult = {
    retry?: boolean;
 };
 
+const GIFT_MESSAGE = 'Salamat for repaying on time! Use this in the Grab app: Mart → fill your basket → enter the code in "Offer". — Moodeng Credit';
+
 /**
- * Pool empty: buy one code with the Bitrefill API and add it to the pool. A purchase started for this
- * claim earlier (bitrefill_invoice_id) is finished instead of buying again. Returns why it didn't work.
+ * Bitrefill path: buy the voucher with the borrower as the gift recipient, so Bitrefill emails it to
+ * them. A purchase started for this claim earlier (bitrefill_invoice_id) is finished instead of buying
+ * again. On success the claim is marked sent and the code kept in voucher_codes for the record.
+ * Returns null when Bitrefill can't be used (no key, no real email) so the pool path runs instead.
  */
-const restockFromBitrefill = async (supabase: SupabaseClient, claimId: string, amountPhp: number): Promise<string | null> => {
+const sendViaBitrefill = async (supabase: SupabaseClient, claimId: string, admin: string): Promise<VoucherActionResult | null> => {
    const apiKey = await getBitrefillApiKey(supabase);
-   if (!apiKey) return `no ${peso(amountPhp)} codes left in the pool, and no Bitrefill API key is set`;
+   if (!apiKey) return null;
 
-   const { data: claim } = await supabase.from('voucher_claims').select('bitrefill_invoice_id').eq('id', claimId).maybeSingle();
-   const bought = await buyBitrefillCode(apiKey, amountPhp, claim?.bitrefill_invoice_id ?? null, async (invoiceId) => {
-      await supabase.from('voucher_claims').update({ bitrefill_invoice_id: invoiceId }).eq('id', claimId);
-   });
-   if (!bought.ok) return `Bitrefill: ${bought.reason}`;
+   const { data: claim } = await supabase
+      .from('voucher_claims')
+      .select('id, status, amount_php, full_name, email, bitrefill_invoice_id, users(email)')
+      .eq('id', claimId)
+      .maybeSingle();
+   if (!claim) return { ok: false, summary: 'Claim not found.' };
+   if (claim.status !== 'pending') return { ok: false, summary: `Already handled (${claim.status}).` };
+   const accountEmail = Array.isArray(claim.users) ? claim.users[0]?.email : claim.users?.email;
+   const email = String(claim.email ?? accountEmail ?? '').trim();
+   if (!email || isPlaceholderEmail(email)) return null;
 
-   const { error } = await supabase
+   const amountPhp = Number(claim.amount_php);
+   const bought = await buyBitrefillCode(
+      apiKey,
+      amountPhp,
+      claim.bitrefill_invoice_id ?? null,
+      async (invoiceId) => {
+         await supabase.from('voucher_claims').update({ bitrefill_invoice_id: invoiceId }).eq('id', claimId);
+      },
+      { recipientName: String(claim.full_name ?? '').trim() || 'Moodeng borrower', recipientEmail: email, message: GIFT_MESSAGE }
+   );
+   if (!bought.ok) return { ok: false, retry: true, summary: `Bitrefill: ${bought.reason}` };
+
+   const { data: sent } = await supabase
+      .from('voucher_claims')
+      .update({
+         status: 'sent',
+         sent_at: new Date().toISOString(),
+         admin_note: `Bitrefill emailed it (invoice ${bought.invoiceId}) · sent by ${admin}`,
+         updated_at: new Date().toISOString()
+      })
+      .eq('id', claimId)
+      .eq('status', 'pending')
+      .select('id, full_name, amount_php')
+      .maybeSingle();
+   await supabase
       .from('voucher_codes')
-      .upsert({ amount_php: amountPhp, code: bought.code, source: `bitrefill:${bought.invoiceId}` }, { onConflict: 'code', ignoreDuplicates: true });
-   if (error) return `Bitrefill code bought (invoice ${bought.invoiceId}) but not saved: ${error.message}`;
-   return null;
+      .upsert(
+         { amount_php: amountPhp, code: bought.code, source: `bitrefill:${bought.invoiceId}`, claim_id: claimId, assigned_at: new Date().toISOString() },
+         { onConflict: 'code', ignoreDuplicates: true }
+      );
+   if (!sent) return { ok: false, summary: 'Bought on Bitrefill, but the claim was already handled — check for a double send.' };
+
+   const summary = `✅ ${peso(amountPhp)} GrabMart voucher bought on Bitrefill and emailed by Bitrefill to ${email} · by ${admin}`;
+   const stamp: CardStamp = { header: voucherStampHeader('sent', sent), detail: summary, by: admin };
+   await stampDecisionCards(supabase, 'voucher', claimId, stamp);
+   return { ok: true, summary, stamp };
 };
 
 /**
- * Send a pending payout: take the next pool code of its value (buying one from Bitrefill when the pool
- * is empty), email it and mark the claim sent. The borrower also sees the code in the app, so a missing
- * or failed email doesn't undo the send.
+ * Send a pending payout. Bitrefill first: it emails the voucher to the borrower. If Bitrefill isn't set
+ * up or fails (e.g. balance empty), the next pool code (Admin → Vouchers) is emailed by us instead.
  */
 export const sendVoucherCode = async (supabase: SupabaseClient, claimId: string, admin: string): Promise<VoucherActionResult> => {
-   let { data, error } = await supabase.rpc('assign_voucher_code', { p_claim_id: claimId, p_admin: admin });
-   if (!error && data?.error === 'out_of_stock') {
-      const problem = await restockFromBitrefill(supabase, claimId, Number(data.amount_php));
-      if (problem) return { ok: false, retry: true, summary: problem };
-      ({ data, error } = await supabase.rpc('assign_voucher_code', { p_claim_id: claimId, p_admin: admin }));
+   const viaBitrefill = await sendViaBitrefill(supabase, claimId, admin);
+   if (viaBitrefill && (viaBitrefill.ok || !viaBitrefill.retry)) return viaBitrefill;
+   if (viaBitrefill) {
+      // A Bitrefill invoice already exists for this claim (e.g. still processing): Bitrefill may still
+      // email it, so don't also send a pool code. Tapping again finishes that invoice.
+      const { data: started } = await supabase.from('voucher_claims').select('bitrefill_invoice_id').eq('id', claimId).maybeSingle();
+      if (started?.bitrefill_invoice_id) return viaBitrefill;
    }
+
+   const { data, error } = await supabase.rpc('assign_voucher_code', { p_claim_id: claimId, p_admin: admin });
    if (error) return { ok: false, retry: true, summary: `Couldn't send: ${error.message}` };
    if (data?.error === 'not_found') return { ok: false, summary: 'Claim not found.' };
    if (data?.error === 'not_pending') return { ok: false, summary: `Already handled (${data.status}).` };
-   if (data?.error === 'out_of_stock') return { ok: false, retry: true, summary: `No ${peso(data.amount_php)} codes left — add some in Admin → Vouchers.` };
+   if (data?.error === 'out_of_stock') {
+      const why = viaBitrefill ? `${viaBitrefill.summary}; ` : '';
+      return { ok: false, retry: true, summary: `${why}no ${peso(data.amount_php)} codes in the pool — top up Bitrefill or add codes in Admin → Vouchers.` };
+   }
    if (data?.error || !data?.code) return { ok: false, retry: true, summary: `Couldn't send: ${data?.error ?? 'no code returned'}` };
 
    const email = typeof data.email === 'string' ? data.email.trim() : '';
    let delivery: string;
    if (!email || isPlaceholderEmail(email)) {
-      delivery = 'no email on file — code is on their dashboard';
+      delivery = 'NOT emailed (no real email on file) — send it to them by hand';
    } else {
       try {
          const message = buildVoucherCodeEmail({ fullName: String(data.full_name ?? ''), amountPhp: Number(data.amount_php), code: String(data.code) });
          await sendEmail(email, message.subject, message.text, message.html);
          delivery = `emailed to ${email}`;
       } catch (err) {
-         delivery = `email failed (${(err instanceof Error ? err.message : String(err)).slice(0, 100)}) — code is on their dashboard`;
+         delivery = `email failed (${(err instanceof Error ? err.message : String(err)).slice(0, 100)}) — send it to them by hand`;
       }
    }
 
    const remaining = Number(data.remaining ?? 0);
    const stock = `${remaining} ${peso(data.amount_php)} code${remaining === 1 ? '' : 's'} left in the pool${remaining <= LOW_STOCK ? ' ⚠️' : ''}`;
-   const summary = `✅ ${peso(data.amount_php)} GrabMart code ${delivery} · by ${admin} · ${stock}`;
+   const summary = `✅ ${peso(data.amount_php)} GrabMart pool code ${delivery} · by ${admin} · ${stock}`;
    const stamp: CardStamp = { header: voucherStampHeader('sent', data), detail: summary, by: admin };
    await stampDecisionCards(supabase, 'voucher', claimId, stamp);
    return { ok: true, summary, stamp };

@@ -55,16 +55,20 @@ const codeFromInvoice = async (apiKey: string, invoice: any): Promise<string | n
 
 export type BitrefillPurchase = { ok: true; code: string; invoiceId: string } | { ok: false; reason: string };
 
+/** Bitrefill emails the voucher straight to this person (its "gift" delivery). */
+export type BitrefillGift = { recipientName: string; recipientEmail: string; message?: string };
+
 /**
- * Buy one GrabMart PH code of `amountPhp` from the balance, or finish `existingInvoiceId` (a purchase
- * started earlier that hadn't delivered yet). `onInvoice` records a new invoice id before waiting, so a
- * retry never pays twice. Waits up to ~20s for delivery.
+ * Buy one GrabMart PH voucher of `amountPhp` from the balance, delivered by Bitrefill to `gift`'s email,
+ * or finish `existingInvoiceId` (a purchase started earlier that hadn't delivered yet). `onInvoice`
+ * records a new invoice id before waiting, so a retry never pays twice. Waits up to ~20s for delivery.
  */
 export const buyBitrefillCode = async (
    apiKey: string,
    amountPhp: number,
    existingInvoiceId: string | null,
-   onInvoice: (invoiceId: string) => Promise<void>
+   onInvoice: (invoiceId: string) => Promise<void>,
+   gift?: BitrefillGift
 ): Promise<BitrefillPurchase> => {
    try {
       let invoice = existingInvoiceId ? await call(apiKey, `/invoices/${existingInvoiceId}`) : null;
@@ -75,7 +79,17 @@ export const buyBitrefillCode = async (
             body: JSON.stringify({
                products: [{ product_id: GRABMART_PRODUCT_ID, package_id: packageId, quantity: 1 }],
                payment_method: 'balance',
-               auto_pay: true
+               auto_pay: true,
+               ...(gift
+                  ? {
+                       gift: {
+                          recipient_name: gift.recipientName,
+                          recipient_email: gift.recipientEmail,
+                          sender_name: 'Moodeng Credit',
+                          ...(gift.message ? { message: gift.message } : {})
+                       }
+                    }
+                  : {})
             })
          });
          if (!invoice?.id) return { ok: false, reason: 'invoice not created' };

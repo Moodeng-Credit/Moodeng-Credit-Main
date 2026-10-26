@@ -1,4 +1,4 @@
-import { Fragment, useRef, useState } from 'react';
+import { Fragment, useRef } from 'react';
 
 import clsx from 'clsx';
 import { Link, useNavigate } from 'react-router-dom';
@@ -6,8 +6,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useFloatingParticles, useReplayClass } from '@/components/motion/TapDelight';
 
 import { formatCurrency } from '@/utils/decimalHelpers';
-
-import { GRABMART_PAYOUT_PHP, type GrabMartPayout } from '@/lib/friendReferrals';
 
 import { type LocaleCode, useLocalization } from '@/i18n';
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
@@ -394,78 +392,9 @@ export function TierVoucherCard({ label, amountPhp, onClaim }: { label: string; 
          <DesignImage src={DASHBOARD_V2_ASSETS.coupon} className="h-12 w-12 shrink-0 object-contain" />
          <div className="min-w-0 flex-1">
             <p className="text-[18px] font-black italic leading-6 text-[#3c8248]">Moodeng grew to {label}!</p>
-            <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">Claim ₱{amountPhp} for your GrabMart wallet</p>
+            <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">Claim your ₱{amountPhp} GrabMart voucher</p>
          </div>
          <ClaimVoucherButton onClaim={onClaim} />
-      </section>
-   );
-}
-
-/**
- * GrabMart wallet: claimed rewards add up here and every ₱100 is sent as a GrabMart code (by email and
- * shown here). Hidden until the borrower has claimed something.
- */
-export function GrabMartWalletCard({ balancePhp, payouts }: { balancePhp: number; payouts: GrabMartPayout[] }) {
-   const [copied, setCopied] = useState(false);
-   const latest = payouts[0] ?? null;
-   if (balancePhp <= 0 && !latest) return null;
-   const toNext = Math.max(GRABMART_PAYOUT_PHP - balancePhp, 0);
-
-   const copyCode = async (code: string) => {
-      try {
-         await navigator.clipboard.writeText(code);
-         setCopied(true);
-         window.setTimeout(() => setCopied(false), 2000);
-      } catch {
-         setCopied(false);
-      }
-   };
-
-   return (
-      <section
-         className="mx-5 flex flex-col gap-2.5 rounded-[8px] px-3 py-3"
-         style={{ backgroundImage: 'linear-gradient(90deg, #fff3a3 0%, #ffe27a 100%)' }}
-         aria-label="GrabMart wallet"
-      >
-         {latest?.status === 'sent' && latest.code ? (
-            <div className="flex items-center gap-3">
-               <DesignImage src={DASHBOARD_V2_ASSETS.coupon} className="h-12 w-12 shrink-0 object-contain" />
-               <div className="min-w-0 flex-1">
-                  <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">Your ₱{latest.amountPhp} GrabMart code</p>
-                  <p className="truncate font-mono text-[20px] font-black tracking-[1px] text-[#3c8248]">{latest.code}</p>
-               </div>
-               <button
-                  type="button"
-                  onClick={() => void copyCode(latest.code!)}
-                  className="flex h-[34px] w-[82px] shrink-0 items-center justify-center rounded-full bg-[#4aa256] text-[16px] font-semibold text-white"
-               >
-                  {copied ? 'Copied' : 'Copy'}
-               </button>
-            </div>
-         ) : latest?.status === 'pending' ? (
-            <div className="flex items-center gap-3">
-               <DesignImage src={DASHBOARD_V2_ASSETS.coupon} className="h-12 w-12 shrink-0 object-contain" />
-               <div className="min-w-0 flex-1">
-                  <p className="text-[18px] font-black italic leading-6 text-[#3c8248]">₱{latest.amountPhp} GrabMart code on its way!</p>
-                  <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">We&apos;ll email it and show it here.</p>
-               </div>
-            </div>
-         ) : null}
-         {latest?.status === 'sent' && latest.code ? (
-            <p className="text-[13px] leading-[17px] text-[#6f7d1d]">
-               Open Grab → Mart, fill your basket, then type the code in &quot;Offer&quot; at checkout.
-            </p>
-         ) : null}
-         {balancePhp > 0 ? (
-            <div>
-               <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">
-                  GrabMart wallet: <span className="font-black text-[#3c8248]">₱{balancePhp}</span> · ₱{toNext} more for your next code
-               </p>
-               <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-[#fff6c9]" aria-hidden="true">
-                  <div className="h-full rounded-full bg-[#4aa256]" style={{ width: `${Math.min((balancePhp / GRABMART_PAYOUT_PHP) * 100, 100)}%` }} />
-               </div>
-            </div>
-         ) : null}
       </section>
    );
 }

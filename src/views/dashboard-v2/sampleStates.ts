@@ -115,7 +115,7 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
          ],
          claims: [],
          grabmartBalancePhp: 50,
-         grabmartPayouts: [{ amountPhp: 100, status: 'sent', sentAt: '2026-10-20T09:00:00Z', code: 'GM7K2QX9' }]
+         grabmartPayouts: [{ amountPhp: 100, status: 'sent', sentAt: '2026-10-20T09:00:00Z' }]
       }
    },
    // Not in the Figma: Emma's video demo (moodeng.app/borrower-demo) — a borrower with two active
