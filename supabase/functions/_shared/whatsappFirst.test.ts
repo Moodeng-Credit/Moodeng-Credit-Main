@@ -2,7 +2,8 @@ import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asse
 
 import {
    facebookConnectedText,
-   facebookStepsText,
+   facebookStepsMessages,
+   MESSENGER_CHAT_URL,
    isIndonesianPhone,
    sendFacebookConnectedOnWhatsApp,
    sendFacebookStepsOnWhatsApp,
@@ -25,15 +26,17 @@ Deno.test('Bahasa Indonesia for +62, English for testers elsewhere', () => {
    assertEquals(whatsappFirstLocale('66951659077'), 'en');
 });
 
-Deno.test('the Facebook steps carry the chat link and the way round it', () => {
-   const link = 'https://m.me/1148756028310286?ref=flow__mdng_code=MDNG-ABC123';
-   const id = facebookStepsText(link, 'id');
-   assert(id.includes(link));
-   assert(id.includes('Moodeng Credit'));
-   assert(id.includes('Kirim Pesan'));
-   const en = facebookStepsText(link, 'en');
-   assert(en.includes(link));
-   assert(en.includes('Paste the code'));
+Deno.test('the Facebook steps come one at a time: code alone, then the chat link, then paste', () => {
+   const id = facebookStepsMessages('MDNG-ABC123', 'id');
+   assert(id.length >= 5);
+   assert(id.includes('MDNG-ABC123'));
+   const codeAt = id.indexOf('MDNG-ABC123');
+   assert(id[codeAt - 1].includes('Langkah 1 dari 3'));
+   assert(id[codeAt + 1].includes(MESSENGER_CHAT_URL));
+   assert(id[codeAt + 2].includes('Langkah 3 dari 3'));
+   assert(id.some((m) => m.includes('BANTUAN')));
+   const en = facebookStepsMessages('MDNG-ABC123', 'en');
+   assert(en.some((m) => m.includes('Step 2 of 3') && m.includes(MESSENGER_CHAT_URL)));
    assert(facebookConnectedText('id').includes('https://moodeng.app/continue?via=whatsapp'));
 });
 
