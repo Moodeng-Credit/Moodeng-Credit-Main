@@ -3,7 +3,9 @@
 // (messengerSupport.ts) and support@ email (email-inbound).
 //
 // Tickets are posted through the widget API's own /api/message, which saves the message and relays
-// it into the Discord forum thread with the Discord bot (Reply / ✅ Resolve / Quick reply). That needs
+// it into the Discord forum thread with the Discord bot (Reply / ✅ Resolve / Quick reply). The widget
+// picks the forum from the conversation's channel: 'email' → SUPPORT_EMAIL_CHANNEL_ID, everything else
+// (Messenger, website chat) → #web-support (SUPPORT_CHANNEL_ID). That needs
 // no Discord webhook secret here, unlike postDiscord(), whose fallback DISCORD_TEAM_WEBHOOK_URL isn't
 // set on this project.
 import { postDiscord } from './discord.ts';
