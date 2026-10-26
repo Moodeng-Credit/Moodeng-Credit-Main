@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
-import { Check } from 'lucide-react';
+import clsx from 'clsx';
 import { Link, useParams } from 'react-router-dom';
 
 import { useSubmitVoucherClaim } from '@/hooks/useFriendReferrals';
@@ -9,9 +9,11 @@ import { useSubmitVoucherClaim } from '@/hooks/useFriendReferrals';
 import {
    type ClaimableVoucher,
    getInviteInviter,
+   GRABMART_MIN_PHP,
    isValidInviteCode,
    normalizeInviteCode,
    rememberPendingInvite,
+   type VoucherBrand,
    type VoucherReward
 } from '@/lib/friendReferrals';
 import { isPreviewHost } from '@/lib/previewHost';
@@ -30,43 +32,71 @@ const PRIMARY_GRADIENT = 'linear-gradient(77.66deg, #9584ff 0.5%, #6b55f7 98.16%
 const FIELD =
    'h-12 w-full rounded-[12px] border-2 border-[#e8e4ff] bg-dv2-card px-3.5 text-[16px] text-[#0f172b] outline-none placeholder:text-[#c0b9c8] focus:border-[#7b67f9] dark:border-[#3a2f55] dark:bg-dv2-page dark:focus:border-[#7b67f9]';
 
-const CLAIM_COPY: Record<VoucherReward, { headline: string; body: string }> = {
-   first_on_time_repayment: { headline: 'You repaid on time. Treat yourself!', body: 'Tell us where to send your food voucher.' },
-   referral_inviter: {
-      headline: 'Your friend repaid on time. Free meal!',
-      body: 'Thanks for inviting them. Where should we send your voucher code?'
-   },
-   referral_invitee: {
-      headline: 'You repaid on time. Free meal!',
-      body: 'Thanks for joining with a friend. Where should we send your voucher code?'
-   },
-   tier_rising: { headline: 'Moodeng grew to Rising. Treat yourself!', body: 'Tell us where to send your food voucher.' },
-   tier_prime: { headline: 'Moodeng grew to Prime. Treat yourself!', body: 'Tell us where to send your food voucher.' },
-   tier_apex: { headline: 'Moodeng reached Apex. Feast time!', body: 'Tell us where to send your food voucher.' }
+const CLAIM_HEADLINE: Record<VoucherReward, string> = {
+   first_on_time_repayment: 'You repaid on time. Treat yourself!',
+   referral_inviter: 'Your friend repaid on time. Free meal!',
+   referral_invitee: 'You repaid on time. Free meal!',
+   tier_rising: 'Moodeng grew to Rising. Treat yourself!',
+   tier_prime: 'Moodeng grew to Prime. Treat yourself!',
+   tier_apex: 'Moodeng reached Apex. Feast time!'
 };
+
+/** The two Moo-Menu picks. GrabMart only comes from ₱100 (its smallest card). */
+const MOO_MENU: Array<{ brand: VoucherBrand; title: string; detail: string; where: string; art: string }> = [
+   {
+      brand: 'food',
+      title: 'Moo-fried chicken',
+      detail: 'Jollibee',
+      where: 'Any Jollibee in the Philippines',
+      art: DASHBOARD_V2_ASSETS.mooFriedChicken
+   },
+   {
+      brand: 'grabmart',
+      title: 'Moo-snacks',
+      detail: 'GrabMart',
+      where: 'Delivered in Metro Manila & Cebu',
+      art: DASHBOARD_V2_ASSETS.coupon
+   }
+];
 
 const describeClaimError = (error: unknown) => {
    const message = error instanceof Error ? error.message : String((error as { message?: string } | null)?.message ?? '');
    if (message.includes('already claimed')) return 'This voucher was already claimed.';
    if (message.includes('not eligible')) return "This voucher isn't unlocked yet.";
    if (message.includes('email required')) return 'Please add your email — your voucher is sent there.';
+   if (message.includes('grabmart needs 100')) return 'GrabMart starts at ₱100. Pick Moo-fried chicken for this one.';
    if (message.includes('check constraint')) return 'Please check your name and mobile number.';
    return 'Something went wrong. Please try again.';
 };
 
+type MooStep = 'pick' | 'details' | 'sent';
+
 /**
- * "You earned a food voucher" — collects where to send the code. Real claims are validated and
- * stored by submit_voucher_claim(); preview samples only simulate the submission.
+ * The Moo-Menu: "You earned a voucher" → pick Moo-fried chicken (Jollibee, Xoxo link) or Moo-snacks
+ * (GrabMart, ₱100+) → where to send it → on its way. Real claims are validated and stored by
+ * submit_voucher_claim() and sent automatically; preview samples only simulate the submission.
  */
-export function VoucherClaimPopup({ voucher, isPreview, onClose }: { voucher: ClaimableVoucher; isPreview: boolean; onClose: () => void }) {
-   const [isSubmitted, setIsSubmitted] = useState(false);
+export function VoucherClaimPopup({
+   voucher,
+   isPreview,
+   onClose,
+   initialStep = 'pick'
+}: {
+   voucher: ClaimableVoucher;
+   isPreview: boolean;
+   onClose: () => void;
+   initialStep?: MooStep;
+}) {
+   const [step, setStep] = useState<MooStep>(initialStep);
+   const [brand, setBrand] = useState<VoucherBrand>('food');
    const submitClaim = useSubmitVoucherClaim();
-   const copy = CLAIM_COPY[voucher.reward];
+   const canGrabMart = voucher.amountPhp >= GRABMART_MIN_PHP;
+   const picked = MOO_MENU.find((item) => item.brand === brand) ?? MOO_MENU[0];
 
    const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       if (isPreview) {
-         setIsSubmitted(true);
+         setStep('sent');
          return;
       }
       const form = new FormData(event.currentTarget);
@@ -76,9 +106,10 @@ export function VoucherClaimPopup({ voucher, isPreview, onClose }: { voucher: Cl
             friendReferralId: voucher.friendReferralId,
             fullName: String(form.get('name') ?? ''),
             mobile: String(form.get('mobile') ?? ''),
-            email: String(form.get('email') ?? '')
+            email: String(form.get('email') ?? ''),
+            brand
          },
-         { onSuccess: () => setIsSubmitted(true) }
+         { onSuccess: () => setStep('sent') }
       );
    };
 
@@ -93,35 +124,64 @@ export function VoucherClaimPopup({ voucher, isPreview, onClose }: { voucher: Cl
          {/* m-auto centres the popup when it fits and lets it scroll on short screens (small or landscape phones). */}
          <div className="m-auto flex w-full max-w-[400px] flex-col items-center" onClick={(event) => event.stopPropagation()}>
             <p className="mb-2 text-center text-[26px] font-black italic leading-7 text-[#3c8248] underline decoration-[#4aa256] decoration-4 underline-offset-8 dark:text-[#7fd68b]">
-               Voucher Unlocked!
+               {step === 'sent' ? 'Moo-redeemed!' : 'Moo-Menu'}
             </p>
             <div className="w-full rounded-[26px] bg-gradient-to-b from-[#fff6c2] via-white via-40% to-white px-5 pb-6 pt-5 text-center dark:from-[#3a3216] dark:via-dv2-card dark:to-dv2-card">
-               {isSubmitted ? (
-                  <div className="flex flex-col items-center gap-3 py-4">
-                     <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#4aa256]">
-                        <Check className="h-8 w-8 text-white" strokeWidth={3} aria-hidden="true" />
-                     </span>
-                     <p id="dv2-voucher-title" className="text-[24px] font-bold leading-7 text-[#594d65] dark:text-[#e6def2]">
-                        Salamat! We got it.
+               {step === 'pick' ? (
+                  <div className="flex flex-col items-center gap-3">
+                     <DesignImage src={DASHBOARD_V2_ASSETS.mooMenuChef} alt="" className="h-28 w-28 object-contain" />
+                     <p id="dv2-voucher-title" className="text-[22px] font-bold leading-6 text-[#594d65] dark:text-[#e6def2]">
+                        {CLAIM_HEADLINE[voucher.reward]}
                      </p>
-                     <p className="text-[16px] leading-[22px] text-[#45556c]">
-                        Your ₱{voucher.amountPhp} food voucher is on its way to your email. Open it and pick Jollibee, Chowking,
-                        Greenwich, Mang Inasal or Red Ribbon.
-                     </p>
-                     {isPreview ? (
-                        <p className="text-[12px] text-[#c0b9c8] dark:text-[#8f819e]">Preview sample — nothing was sent.</p>
-                     ) : null}
+                     <p className="text-[16px] leading-5 text-[#45556c]">Pick your ₱{voucher.amountPhp} treat</p>
+                     <div className="grid w-full grid-cols-2 gap-2.5">
+                        {MOO_MENU.map((item) => {
+                           const disabled = item.brand === 'grabmart' && !canGrabMart;
+                           const isPicked = brand === item.brand;
+                           return (
+                              <button
+                                 key={item.brand}
+                                 type="button"
+                                 disabled={disabled}
+                                 aria-pressed={isPicked}
+                                 onClick={() => setBrand(item.brand)}
+                                 className={clsx(
+                                    'flex flex-col items-center gap-1 rounded-[18px] border-2 bg-white px-2 pb-3 pt-2 text-center dark:bg-dv2-page',
+                                    isPicked && !disabled ? 'border-[#6b55f7] shadow-[0_0_0_3px_rgba(107,85,247,0.15)]' : 'border-[#e8e4ff] dark:border-[#3a2f55]',
+                                    disabled && 'opacity-50'
+                                 )}
+                              >
+                                 <DesignImage src={item.art} alt="" className="h-20 w-20 object-contain" />
+                                 <span className="text-[16px] font-black italic leading-5 text-[#3c8248] dark:text-[#7fd68b]">{item.title}</span>
+                                 <span className="text-[14px] font-semibold text-[#594d65] dark:text-[#e6def2]">{item.detail}</span>
+                                 <span className="text-[12px] leading-4 text-[#7b6b8c]">
+                                    {disabled ? `Needs a ₱${GRABMART_MIN_PHP} reward` : item.where}
+                                 </span>
+                              </button>
+                           );
+                        })}
+                     </div>
+                     <button
+                        type="button"
+                        onClick={() => setStep('details')}
+                        className="mt-1 flex h-[52px] w-full items-center justify-center rounded-[35px] text-[20px] font-semibold text-white"
+                        style={{ backgroundImage: PRIMARY_GRADIENT }}
+                     >
+                        Moo-redeem!
+                     </button>
                   </div>
-               ) : (
+               ) : step === 'details' ? (
                   <form onSubmit={handleSubmit} className="flex flex-col items-center gap-3">
                      <div className="flex items-center gap-2">
-                        <DesignImage src={DASHBOARD_V2_ASSETS.coupon} className="h-20 w-20 object-contain" />
-                        <span className="text-[34px] font-black text-[#3c8248] dark:text-[#7fd68b]">₱{voucher.amountPhp}</span>
+                        <DesignImage src={picked.art} alt="" className="h-20 w-20 object-contain" />
+                        <div className="text-left">
+                           <p className="text-[18px] font-black italic leading-5 text-[#3c8248] dark:text-[#7fd68b]">{picked.title}</p>
+                           <p className="text-[24px] font-black text-[#3c8248] dark:text-[#7fd68b]">₱{voucher.amountPhp}</p>
+                        </div>
                      </div>
-                     <p id="dv2-voucher-title" className="text-[22px] font-bold leading-6 text-[#594d65] dark:text-[#e6def2]">
-                        {copy.headline}
+                     <p id="dv2-voucher-title" className="text-[16px] leading-5 text-[#45556c]">
+                        Where should we send your {picked.detail} voucher?
                      </p>
-                     <p className="text-[16px] leading-5 text-[#45556c]">{copy.body}</p>
                      <input className={FIELD} name="name" required autoComplete="name" placeholder="Full name" aria-label="Full name" />
                      <input
                         className={FIELD}
@@ -155,7 +215,27 @@ export function VoucherClaimPopup({ voucher, isPreview, onClose }: { voucher: Cl
                      >
                         {submitClaim.isPending ? 'Sending…' : 'Send My Voucher'}
                      </button>
+                     <button type="button" onClick={() => setStep('pick')} className="text-[14px] font-semibold text-[#6b55f7]">
+                        Back to the Moo-Menu
+                     </button>
                   </form>
+               ) : (
+                  <div className="flex flex-col items-center gap-3 py-2">
+                     <DesignImage src={DASHBOARD_V2_ASSETS.mooMenuChef} alt="" className="h-32 w-32 object-contain" />
+                     <p id="dv2-voucher-title" className="text-[22px] font-bold leading-7 text-[#594d65] dark:text-[#e6def2]">
+                        Your treat is mooo-ving to your email!
+                     </p>
+                     <p className="text-[16px] leading-[22px] text-[#45556c]">
+                        Your ₱{voucher.amountPhp} {picked.detail} voucher is on its way.
+                        {brand === 'food'
+                           ? ' Open the email, tap the link and show the code at Jollibee.'
+                           : ' Open the email and use the code in the Grab app → Mart.'}
+                     </p>
+                     <p className="text-[14px] leading-5 text-[#7b6b8c]">We&apos;ll ask on your dashboard if it arrived.</p>
+                     {isPreview ? (
+                        <p className="text-[12px] text-[#c0b9c8] dark:text-[#8f819e]">Preview sample — nothing was sent.</p>
+                     ) : null}
+                  </div>
                )}
             </div>
             <button type="button" onClick={onClose} className="mt-14 h-[50px] w-[50px]" aria-label="Close">

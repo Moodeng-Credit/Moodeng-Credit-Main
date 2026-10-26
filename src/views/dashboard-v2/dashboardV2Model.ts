@@ -1,7 +1,7 @@
 import { formatCurrency, formatNumber, toNumber } from '@/utils/decimalHelpers';
 
 import { getCreditLevelNumber, MAX_CREDIT_LIMIT } from '@/config/creditTiers';
-import type { ClaimableVoucher, MyRewards, VoucherReward } from '@/lib/friendReferrals';
+import type { ClaimableVoucher, MyRewards, VoucherClaimSummary, VoucherReward } from '@/lib/friendReferrals';
 import { trustPointMilestoneRuleById } from '@/shared/points';
 import type { Loan } from '@/types/loanTypes';
 import type { CreditLevelHint, DashboardV2Milestone, MoodengMood, MoodengTierId } from '@/views/dashboard-v2/types';
@@ -195,6 +195,21 @@ export const getVoucherState = (
    const claim = rewards.claims.find((item) => rewardsFor.includes(item.reward));
    return { state: claim ? claim.status : 'none', voucher: null };
 };
+
+/** How long the "Enjoy your Moo-meal!" card stays after the borrower taps "I got it". */
+const ENJOY_CARD_MS = 3 * 24 * 60 * 60 * 1000;
+
+/**
+ * The claim the dashboard follows up on: the newest one being prepared, sent but not yet confirmed,
+ * flagged as not received, or confirmed in the last 3 days. Null when there's nothing to say.
+ */
+export const getVoucherFollowUp = (rewards: MyRewards, now = Date.now()): VoucherClaimSummary | null =>
+   rewards.claims.find((claim) => {
+      if (claim.status === 'pending') return true;
+      if (claim.status !== 'sent') return false;
+      if (!claim.receivedAt) return true;
+      return now - new Date(claim.receivedAt).getTime() < ENJOY_CARD_MS;
+   }) ?? null;
 
 export const OWN_VOUCHER: VoucherReward[] = ['first_on_time_repayment'];
 export const REFERRAL_VOUCHERS: VoucherReward[] = ['referral_invitee', 'referral_inviter'];

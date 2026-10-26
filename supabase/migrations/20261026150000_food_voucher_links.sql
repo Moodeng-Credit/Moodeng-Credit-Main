@@ -222,8 +222,43 @@ begin
 end;
 $$;
 
--- The voucher is emailed, so a claim needs an email. Otherwise as in 20260925090000.
-create or replace function public.submit_voucher_claim(p_reward text, p_friend_referral_id uuid, p_full_name text, p_mobile text, p_email text default null)
+-- ── Moo-Menu: what the borrower picks, and whether they got it ─────────────────────────────────
+-- 'food' = Xoxo link (Jollibee & co, anywhere in PH); 'grabmart' = Bitrefill GrabMart (₱100+, Metro
+-- Manila and Cebu only). received_at / receipt_issue_at come from the borrower's "I got it" /
+-- "Didn't get it" taps on the dashboard.
+alter table public.voucher_claims add column if not exists brand text not null default 'food';
+alter table public.voucher_claims drop constraint if exists voucher_claims_brand;
+alter table public.voucher_claims add constraint voucher_claims_brand check (brand in ('food', 'grabmart'));
+alter table public.voucher_claims add column if not exists received_at timestamptz;
+alter table public.voucher_claims add column if not exists receipt_issue_at timestamptz;
+
+-- The borrower confirms the voucher arrived (p_got_it true) or says it didn't (false).
+create or replace function public.confirm_voucher_received(p_claim_id uuid, p_got_it boolean)
+returns void
+language plpgsql
+security definer
+set search_path = 'public', 'pg_temp'
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'not authenticated' using errcode = '28000';
+  end if;
+  update public.voucher_claims
+     set received_at = case when p_got_it then now() else received_at end,
+         receipt_issue_at = case when p_got_it then null else now() end
+   where id = p_claim_id and user_id = auth.uid() and status = 'sent';
+  if not found then
+    raise exception 'voucher not found' using errcode = '42501';
+  end if;
+end;
+$$;
+revoke all on function public.confirm_voucher_received(uuid, boolean) from public, anon;
+grant execute on function public.confirm_voucher_received(uuid, boolean) to authenticated;
+
+-- The voucher is emailed, so a claim needs an email; GrabMart needs ₱100+ (its smallest card).
+-- Otherwise as in 20260925090000. The old five-argument version is replaced (brand is new).
+drop function if exists public.submit_voucher_claim(text, uuid, text, text, text);
+create or replace function public.submit_voucher_claim(p_reward text, p_friend_referral_id uuid, p_full_name text, p_mobile text, p_email text default null, p_brand text default 'food')
 returns uuid
 language plpgsql
 security definer
@@ -271,13 +306,76 @@ begin
   if nullif(trim(coalesce(p_email, '')), '') is null then
     raise exception 'email required: the voucher is emailed' using errcode = '22023';
   end if;
+  if coalesce(p_brand, 'food') not in ('food', 'grabmart') then
+    raise exception 'unknown brand %', p_brand using errcode = '22023';
+  end if;
+  if p_brand = 'grabmart' and v_amount < 100 then
+    raise exception 'grabmart needs 100: GrabMart vouchers start at PHP 100' using errcode = '22023';
+  end if;
 
-  insert into public.voucher_claims (user_id, reward, friend_referral_id, amount_php, full_name, mobile, email)
-  values (v_user_id, p_reward, p_friend_referral_id, v_amount, trim(p_full_name), trim(p_mobile), nullif(trim(coalesce(p_email, '')), ''))
+  insert into public.voucher_claims (user_id, reward, friend_referral_id, amount_php, full_name, mobile, email, brand)
+  values (v_user_id, p_reward, p_friend_referral_id, v_amount, trim(p_full_name), trim(p_mobile), nullif(trim(coalesce(p_email, '')), ''), coalesce(p_brand, 'food'))
   returning id into v_id;
   return v_id;
 exception
   when unique_violation then
     raise exception 'voucher already claimed' using errcode = '23505';
 end;
+$$;
+revoke all on function public.submit_voucher_claim(text, uuid, text, text, text, text) from public, anon;
+grant execute on function public.submit_voucher_claim(text, uuid, text, text, text, text) to authenticated;
+
+-- As in 20260925090000, plus each claim's id, brand, sent and received times (for the dashboard's
+-- "Did you get it?" card).
+create or replace function public.get_my_rewards()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = 'public', 'pg_temp'
+as $$
+  with me as (select auth.uid() as id),
+  invited as (
+    select r.id, r.created_at, app_private.has_on_time_repayment(r.referred_user_id, r.referrer_user_id) as qualified
+    from public.friend_referrals r, me
+    where r.referrer_user_id = me.id
+  ),
+  referred_by as (
+    select r.id, r.referrer_user_id from public.friend_referrals r, me where r.referred_user_id = me.id
+  ),
+  claims as (
+    select c.id, c.reward, c.friend_referral_id, c.status, c.brand, c.amount_php, c.sent_at, c.received_at, c.receipt_issue_at, c.created_at
+    from public.voucher_claims c, me where c.user_id = me.id
+  ),
+  eligible as (
+    select 'first_on_time_repayment'::text as reward, null::uuid as friend_referral_id, 50::numeric as amount_php
+    from me where app_private.has_on_time_repayment(me.id)
+    union all
+    select 'referral_invitee', rb.id, 100 from referred_by rb, me where app_private.has_on_time_repayment(me.id, rb.referrer_user_id)
+    union all
+    select 'referral_inviter', i.id, 100 from invited i where i.qualified
+    union all
+    select t.reward, null::uuid, (app_private.tier_voucher(t.reward)).amount_php
+    from me, unnest(array['tier_rising', 'tier_prime', 'tier_apex']) as t(reward)
+    where app_private.pandesal_total(me.id) >= (app_private.tier_voucher(t.reward)).min_pandesal
+  )
+  select jsonb_build_object(
+    'invitedCount', (select count(*) from invited),
+    'qualifiedCount', (select count(*) from invited where qualified),
+    'wasReferred', exists (select 1 from referred_by),
+    'claims', coalesce((select jsonb_agg(jsonb_build_object(
+        'id', id, 'reward', reward, 'friendReferralId', friend_referral_id, 'status', status, 'brand', brand,
+        'amountPhp', amount_php, 'sentAt', sent_at, 'receivedAt', received_at, 'receiptIssueAt', receipt_issue_at
+      ) order by created_at desc) from claims), '[]'::jsonb),
+    'claimable', coalesce((
+      select jsonb_agg(jsonb_build_object('reward', e.reward, 'friendReferralId', e.friend_referral_id, 'amountPhp', e.amount_php))
+      from eligible e
+      where not exists (
+        select 1 from claims c
+        where c.reward = e.reward and c.friend_referral_id is not distinct from e.friend_referral_id and c.status <> 'rejected'
+      )
+    ), '[]'::jsonb)
+  )
+  from me
+  where me.id is not null;
 $$;

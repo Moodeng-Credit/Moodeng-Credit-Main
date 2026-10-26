@@ -99,7 +99,7 @@ serve(async (req) => {
 
       const { data: claim, error } = await supabase
          .from('voucher_claims')
-         .select('id, user_id, reward, amount_php, full_name, mobile, email, status, admin_note, created_at, users(username)')
+         .select('id, user_id, reward, amount_php, brand, full_name, mobile, email, status, admin_note, created_at, users(username)')
          .eq('id', claimId)
          .maybeSingle();
       if (error) throw new Error(error.message);

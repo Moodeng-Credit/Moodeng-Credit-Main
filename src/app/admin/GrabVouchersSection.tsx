@@ -363,6 +363,14 @@ export default function GrabVouchersSection() {
                <span className="text-2xl font-black">{php(claim.amount_php)}</span>
                <span className="text-lg font-black">{claim.full_name}</span>
                <span className="font-bold text-[#a89bb8]">{REWARD_LABEL[claim.reward] ?? claim.reward}</span>
+               <span className="rounded-full bg-[#241044] px-2.5 py-0.5 text-sm font-black text-[#c4a2ff]">
+                  {claim.brand === 'grabmart' ? '🛒 GrabMart' : '🍗 Jollibee & co'}
+               </span>
+               {claim.received_at ? (
+                  <span className="rounded-full bg-[#123d2a] px-2.5 py-0.5 text-sm font-black text-[#6ee7a8]">Got it ✅</span>
+               ) : claim.receipt_issue_at ? (
+                  <span className="rounded-full bg-[#3d1220] px-2.5 py-0.5 text-sm font-black text-[#ff8fa3]">Didn&apos;t get it — resend</span>
+               ) : null}
                <LocationBadge contact={contacts[claim.user_id]} />
                {claim.status === 'sent' ? (
                   <span className="ml-auto rounded-full bg-[#123d2a] px-3 py-1 text-sm font-black text-[#6ee7a8]">

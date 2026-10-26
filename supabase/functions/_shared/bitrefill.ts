@@ -9,10 +9,15 @@ const BASE_URL = 'https://api.bitrefill.com/v2';
 
 // Tried in order; both sell ₱50 and ₱100 and work nationwide (dine-in / take-out, one-time use).
 // Package ids look like 'greenwich-philippines<&>50' (checked 2026-10-26).
-export const FALLBACK_PRODUCTS = [
+export type BitrefillProduct = { id: string; name: string };
+
+export const FALLBACK_PRODUCTS: BitrefillProduct[] = [
    { id: 'greenwich-philippines', name: 'Greenwich' },
    { id: 'red-ribbon-php', name: 'Red Ribbon' }
-] as const;
+];
+
+// Moo-Menu "Moo-snacks": ₱100–₱5,000, no minimum basket, Metro Manila and Cebu only (Bitrefill terms).
+export const GRABMART_PRODUCTS: BitrefillProduct[] = [{ id: 'grabmart-gift-card-philippines', name: 'GrabMart' }];
 
 type SupabaseClient = any;
 
@@ -38,16 +43,16 @@ const call = async (apiKey: string, path: string, init?: RequestInit) => {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** The first fallback product in stock with a package of this ₱ value. */
-const findPackage = async (apiKey: string, amountPhp: number) => {
-   for (const candidate of FALLBACK_PRODUCTS) {
+/** The first of `products` in stock with a package of this ₱ value. */
+const findPackage = async (apiKey: string, amountPhp: number, products: BitrefillProduct[]) => {
+   for (const candidate of products) {
       const product = await call(apiKey, `/products/${candidate.id}`).catch(() => null);
       if (!product || product.in_stock === false) continue;
       const match = (product.packages ?? []).find((p: { value?: unknown }) => Number(p.value) === amountPhp);
       const packageId = match?.package_id ?? match?.id;
       if (packageId) return { productId: candidate.id, name: candidate.name, packageId: String(packageId) };
    }
-   throw new Error(`no ₱${amountPhp} food voucher in stock on Bitrefill`);
+   throw new Error(`no ₱${amountPhp} ${products.map((p) => p.name).join('/')} voucher in stock on Bitrefill`);
 };
 
 const codeFromInvoice = async (apiKey: string, invoice: any): Promise<string | null> => {
@@ -74,13 +79,14 @@ export const buyBitrefillCode = async (
    amountPhp: number,
    existingInvoiceId: string | null,
    onInvoice: (invoiceId: string) => Promise<void>,
-   gift?: BitrefillGift
+   gift?: BitrefillGift,
+   products: BitrefillProduct[] = FALLBACK_PRODUCTS
 ): Promise<BitrefillPurchase> => {
    try {
       let product = 'food';
       let invoice = existingInvoiceId ? await call(apiKey, `/invoices/${existingInvoiceId}`) : null;
       if (!invoice || ['expired', 'failed', 'cancelled'].includes(String(invoice.status))) {
-         const pick = await findPackage(apiKey, amountPhp);
+         const pick = await findPackage(apiKey, amountPhp, products);
          product = pick.name;
          invoice = await call(apiKey, '/invoices', {
             method: 'POST',

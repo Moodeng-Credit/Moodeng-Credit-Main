@@ -2059,6 +2059,10 @@ export interface AdminVoucherClaim {
    status: AdminVoucherClaimStatus;
    admin_note: string | null;
    sent_at: string | null;
+   // Moo-Menu pick, and the borrower's "I got it" / "Didn't get it".
+   brand: 'food' | 'grabmart';
+   received_at: string | null;
+   receipt_issue_at: string | null;
    created_at: string;
 }
 
@@ -2067,7 +2071,7 @@ export async function listVoucherClaims(): Promise<AdminVoucherClaim[]> {
    const data = (await requireOk(
       supabase
          .from('voucher_claims')
-         .select('id, user_id, reward, amount_php, full_name, mobile, email, status, admin_note, sent_at, created_at, users(username, email)')
+         .select('id, user_id, reward, amount_php, brand, full_name, mobile, email, status, admin_note, sent_at, received_at, receipt_issue_at, created_at, users(username, email)')
          .order('created_at', { ascending: false })
    )) as AnyRow[] | null;
    return (data ?? []).map((row) => ({

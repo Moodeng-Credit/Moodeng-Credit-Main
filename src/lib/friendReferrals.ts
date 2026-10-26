@@ -14,6 +14,10 @@ export type VoucherReward =
    | 'tier_prime'
    | 'tier_apex';
 export type VoucherClaimStatus = 'pending' | 'sent' | 'rejected';
+/** Moo-Menu pick: 'food' = Xoxo link (Jollibee & co, anywhere in PH), 'grabmart' = GrabMart (₱100+, Metro Manila & Cebu). */
+export type VoucherBrand = 'food' | 'grabmart';
+/** GrabMart's smallest voucher. */
+export const GRABMART_MIN_PHP = 100;
 export type RedeemInviteResult = 'joined' | 'invalid_code' | 'self_referral' | 'already_referred' | 'not_a_new_account';
 
 export interface ClaimableVoucher {
@@ -23,9 +27,17 @@ export interface ClaimableVoucher {
 }
 
 export interface VoucherClaimSummary {
+   id: string;
    reward: VoucherReward;
    friendReferralId: string | null;
    status: VoucherClaimStatus;
+   brand: VoucherBrand;
+   amountPhp: number;
+   sentAt: string | null;
+   /** The borrower tapped "I got it". */
+   receivedAt: string | null;
+   /** The borrower tapped "Didn't get it". */
+   receiptIssueAt: string | null;
 }
 
 export interface MyRewards {
@@ -81,9 +93,15 @@ export function parseMyRewards(raw: unknown): MyRewards {
          amountPhp: toNumber(item.amountPhp)
       })),
       claims: list('claims').map((item) => ({
+         id: typeof item.id === 'string' ? item.id : '',
          reward: item.reward as VoucherReward,
          friendReferralId: typeof item.friendReferralId === 'string' ? item.friendReferralId : null,
-         status: item.status as VoucherClaimStatus
+         status: item.status as VoucherClaimStatus,
+         brand: item.brand === 'grabmart' ? 'grabmart' : 'food',
+         amountPhp: toNumber(item.amountPhp),
+         sentAt: typeof item.sentAt === 'string' ? item.sentAt : null,
+         receivedAt: typeof item.receivedAt === 'string' ? item.receivedAt : null,
+         receiptIssueAt: typeof item.receiptIssueAt === 'string' ? item.receiptIssueAt : null
       }))
    };
 }
@@ -100,16 +118,24 @@ export async function submitVoucherClaim(input: {
    fullName: string;
    mobile: string;
    email?: string;
+   brand?: VoucherBrand;
 }): Promise<string> {
    const { data, error } = await getSupabaseBrowserClient().rpc('submit_voucher_claim', {
       p_reward: input.reward,
       p_friend_referral_id: input.friendReferralId,
       p_full_name: input.fullName,
       p_mobile: input.mobile,
-      p_email: input.email || null
+      p_email: input.email || null,
+      p_brand: input.brand ?? 'food'
    });
    if (error) throw error;
    return String(data);
+}
+
+/** The borrower says their voucher arrived (true) or didn't (false). */
+export async function confirmVoucherReceived(claimId: string, gotIt: boolean): Promise<void> {
+   const { error } = await getSupabaseBrowserClient().rpc('confirm_voucher_received', { p_claim_id: claimId, p_got_it: gotIt });
+   if (error) throw error;
 }
 
 /** Invite codes arrive before sign-up, so the landing page parks the code until the user has an account. */

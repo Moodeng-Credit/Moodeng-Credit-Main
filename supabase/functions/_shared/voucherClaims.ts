@@ -12,7 +12,7 @@
 // same way (event 'decided').
 
 import { type CardStamp, stampDecisionCards } from './adminCards.ts';
-import { buyBitrefillCode, getBitrefillApiKey } from './bitrefill.ts';
+import { buyBitrefillCode, getBitrefillApiKey, GRABMART_PRODUCTS } from './bitrefill.ts';
 import { sendEmail } from './email.ts';
 import { isPlaceholderEmail } from './placeholderEmail.ts';
 
@@ -57,6 +57,7 @@ export type VoucherClaimRow = {
    id: string;
    reward: string;
    amount_php: number | string;
+   brand?: string | null;
    full_name: string;
    mobile: string;
    email: string | null;
@@ -72,7 +73,7 @@ const peso = (value: unknown) => `₱${Number(value)}`;
 /** Admin card for a claim that couldn't be sent automatically; `reason` says why. */
 export const buildVoucherClaimCard = (claim: VoucherClaimRow, reason?: string | null) =>
    [
-      `🍔 Food voucher to send: ${peso(claim.amount_php)}`,
+      `${claim.brand === 'grabmart' ? '🛒 GrabMart' : '🍗 Food'} voucher to send: ${peso(claim.amount_php)}`,
       `For: ${VOUCHER_REWARD_LABELS[claim.reward] ?? claim.reward}`,
       '',
       `Name: ${claim.full_name}`,
@@ -81,7 +82,9 @@ export const buildVoucherClaimCard = (claim: VoucherClaimRow, reason?: string | 
       claimUsername(claim) ? `User: @${claimUsername(claim)}` : null,
       '',
       reason ? `⚠️ Not sent automatically: ${reason}` : null,
-      'Add ₱50 Xoxo links in Admin → Vouchers (Xoxoday → Send Reward Link → Moodeng food reward → Send to self), then tap ✅ Send code.'
+      claim.brand === 'grabmart'
+         ? 'Top up the Bitrefill balance (bitrefill.com → Account), then tap ✅ Send code.'
+         : 'Add ₱50 Xoxo links in Admin → Vouchers (Xoxoday → Send Reward Link → Moodeng food reward → Send to self), then tap ✅ Send code.'
    ]
       .filter((line) => line !== null)
       .join('\n');
@@ -159,7 +162,7 @@ const GIFT_MESSAGE = 'Salamat for repaying on time! — Moodeng Credit';
 const loadClaim = async (supabase: SupabaseClient, claimId: string) => {
    const { data } = await supabase
       .from('voucher_claims')
-      .select('id, status, reward, amount_php, full_name, email, bitrefill_invoice_id, users(email)')
+      .select('id, status, reward, amount_php, brand, full_name, email, bitrefill_invoice_id, users(email)')
       .eq('id', claimId)
       .maybeSingle();
    return data;
@@ -171,8 +174,8 @@ const claimEmail = (claim: any) => {
 };
 
 /**
- * Fallback: buy a Greenwich voucher of the claim's value on Bitrefill with the borrower as the gift
- * recipient, so Bitrefill emails it. A purchase started for this claim earlier (bitrefill_invoice_id)
+ * Bitrefill: a GrabMart voucher (the borrower picked Moo-snacks) or, as the food fallback, a Greenwich
+ * voucher of the claim's value, with the borrower as the gift recipient so Bitrefill emails it. A purchase started for this claim earlier (bitrefill_invoice_id)
  * is finished instead of buying again. Returns null when Bitrefill can't be used at all (no key, no
  * real email).
  */
@@ -189,7 +192,8 @@ const sendViaBitrefill = async (supabase: SupabaseClient, claim: any, admin: str
       async (invoiceId) => {
          await supabase.from('voucher_claims').update({ bitrefill_invoice_id: invoiceId }).eq('id', claim.id);
       },
-      { recipientName: String(claim.full_name ?? '').trim() || 'Moodeng borrower', recipientEmail: email, message: GIFT_MESSAGE }
+      { recipientName: String(claim.full_name ?? '').trim() || 'Moodeng borrower', recipientEmail: email, message: GIFT_MESSAGE },
+      claim.brand === 'grabmart' ? GRABMART_PRODUCTS : undefined
    );
    if (!bought.ok) return { ok: false, retry: true, summary: `Bitrefill: ${bought.reason}` };
 
@@ -207,7 +211,8 @@ const sendViaBitrefill = async (supabase: SupabaseClient, claim: any, admin: str
       .maybeSingle();
    if (!sent) return { ok: false, summary: 'Bought on Bitrefill, but the claim was already handled — check for a double send.' };
 
-   const summary = `✅ ${peso(amountPhp)} ${bought.product} voucher (stock was empty) bought on Bitrefill and emailed by Bitrefill to ${email} · by ${admin}`;
+   const why = claim.brand === 'grabmart' ? 'they picked GrabMart' : 'Xoxo link stock was empty';
+   const summary = `✅ ${peso(amountPhp)} ${bought.product} voucher (${why}) bought on Bitrefill and emailed by Bitrefill to ${email} · by ${admin}`;
    const stamp: CardStamp = { header: voucherStampHeader('sent', sent), detail: summary, by: admin };
    await stampDecisionCards(supabase, 'voucher', claim.id, stamp);
    return { ok: true, summary, stamp };
@@ -223,8 +228,10 @@ export const sendVoucherCode = async (supabase: SupabaseClient, claimId: string,
    if (!claim) return { ok: false, summary: 'Claim not found.' };
    if (claim.status !== 'pending') return { ok: false, summary: `Already handled (${claim.status}).` };
 
-   if (claim.bitrefill_invoice_id) {
-      return (await sendViaBitrefill(supabase, claim, admin)) ?? { ok: false, retry: true, summary: 'Bitrefill purchase in progress, but Bitrefill is not set up.' };
+   if (claim.bitrefill_invoice_id || claim.brand === 'grabmart') {
+      const viaBitrefill = await sendViaBitrefill(supabase, claim, admin);
+      if (viaBitrefill) return viaBitrefill;
+      return { ok: false, retry: true, summary: claim.brand === 'grabmart' ? 'GrabMart needs Bitrefill (API key and a real email).' : 'Bitrefill purchase in progress, but Bitrefill is not set up.' };
    }
 
    const { data, error } = await supabase.rpc('assign_voucher_codes', { p_claim_id: claimId, p_admin: admin });

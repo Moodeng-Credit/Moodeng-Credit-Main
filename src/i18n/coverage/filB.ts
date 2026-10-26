@@ -276,6 +276,22 @@ export const filipinoCoverageB: Record<string, string> = {
    'Feed Moodeng to level up.': 'Pakainin si Moodeng para mag-level up.',
    'A food voucher for your first on-time repayment!': 'food voucher para sa una mong on-time na bayad!',
 
+   // Moo-Menu (src/views/dashboard-v2/DashboardV2Rewards.tsx, components/DashboardV2Sections.tsx)
+   "Any Jollibee in the Philippines": "Kahit anong Jollibee sa Pilipinas",
+   "Delivered in Metro Manila & Cebu": "Delivery sa Metro Manila at Cebu lang",
+   "Back to the Moo-Menu": "Balik sa Moo-Menu",
+   "Your treat is mooo-ving to your email!": "Papunta na ang treat mo sa email mo!",
+   "We'll ask on your dashboard if it arrived.": "Tatanungin ka namin sa dashboard kung dumating na.",
+   "Did your Moo-meal arrive?": "Dumating na ba ang Moo-meal mo?",
+   "I got it ✅": "Nakuha ko na ✅",
+   "Didn't get it": "Hindi dumating",
+   "Enjoy your Moo-meal!": "Kain na! Enjoy your Moo-meal!",
+   "Repay on time to earn your next treat.": "Magbayad on time para sa susunod mong treat.",
+   "Your Moo-meal is cooking!": "Niluluto na ang Moo-meal mo!",
+   "Sorry! We're on it.": "Pasensya na! Inaayos na namin.",
+   "GrabMart starts at ₱100. Pick Moo-fried chicken for this one.": "Nagsisimula ang GrabMart sa ₱100. Piliin ang Moo-fried chicken para dito.",
+   "Pick your ₱": "Pili ka ng ₱",
+
    // Food voucher claim (src/views/dashboard-v2/DashboardV2Rewards.tsx)
    'food voucher is on its way to your email. Open it and pick Jollibee, Chowking, Greenwich, Mang Inasal or Red Ribbon.':
       'na food voucher mo ay papunta na sa email mo. Buksan ito at pumili ng Jollibee, Chowking, Greenwich, Mang Inasal o Red Ribbon.',
