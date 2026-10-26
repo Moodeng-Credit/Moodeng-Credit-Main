@@ -73,7 +73,7 @@ const peso = (value: unknown) => `₱${Number(value)}`;
 /** Admin card for a claim that couldn't be sent automatically; `reason` says why. */
 export const buildVoucherClaimCard = (claim: VoucherClaimRow, reason?: string | null) =>
    [
-      `${claim.brand === 'grabmart' ? '🛒 GrabMart' : '🍗 Food'} voucher to send: ${peso(claim.amount_php)}`,
+      `${voucherPickLabel(claim.brand)} voucher to send: ${peso(claim.amount_php)}`,
       `For: ${VOUCHER_REWARD_LABELS[claim.reward] ?? claim.reward}`,
       '',
       `Name: ${claim.full_name}`,
@@ -89,15 +89,27 @@ export const buildVoucherClaimCard = (claim: VoucherClaimRow, reason?: string | 
       .filter((line) => line !== null)
       .join('\n');
 
+/** What the borrower picked on the Moo-Menu, for the admin cards. */
+export const voucherPickLabel = (brand?: string | null) => (brand === 'grabmart' ? '🛒 GrabMart' : '🍗 Jollibee (food link)');
+
 /** Info card for a claim that went out on its own (no buttons). */
 export const buildVoucherSentCard = (claim: VoucherClaimRow, summary: string) =>
    [
-      `🍔 Food voucher sent automatically: ${peso(claim.amount_php)}`,
+      `${voucherPickLabel(claim.brand)} voucher sent automatically: ${peso(claim.amount_php)}`,
       `To: ${claim.full_name}${claimUsername(claim) ? ` (@${claimUsername(claim)})` : ''} · ${VOUCHER_REWARD_LABELS[claim.reward] ?? claim.reward}`,
       summary
    ].join('\n');
 
 type SupabaseClient = any;
+
+/** Telegram line when the borrower answers "Did your Moo-meal arrive?". */
+export const buildVoucherReceiptMessage = (claim: VoucherClaimRow & { received_at?: string | null }) => {
+   const who = `${claim.full_name}${claimUsername(claim) ? ` (@${claimUsername(claim)})` : ''}`;
+   const what = `${peso(claim.amount_php)} ${voucherPickLabel(claim.brand)} voucher`;
+   return claim.received_at
+      ? `✅ ${who} got their ${what}.`
+      : `⚠️ ${who} says their ${what} didn't arrive.\nEmail: ${claim.email ?? '—'} · Mobile: ${claim.mobile}\nCheck the email, or resend from Admin → Food vouchers.`;
+};
 
 // The after-state header of a decided claim's card.
 export const voucherStampHeader = (decision: VoucherDecision, claim: { full_name?: string | null; amount_php?: number | string | null }) => {

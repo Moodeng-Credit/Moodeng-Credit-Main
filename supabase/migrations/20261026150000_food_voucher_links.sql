@@ -255,6 +255,39 @@ $$;
 revoke all on function public.confirm_voucher_received(uuid, boolean) from public, anon;
 grant execute on function public.confirm_voucher_received(uuid, boolean) to authenticated;
 
+-- Tell the admin Telegram channel when a borrower answers "Did your Moo-meal arrive?".
+create or replace function private.notify_voucher_receipt()
+returns trigger
+language plpgsql
+security definer
+set search_path = 'public', 'vault', 'net'
+as $$
+declare
+  project_url text;
+  service_key text;
+begin
+  select decrypted_secret into project_url from vault.decrypted_secrets where name = 'SUPABASE_PROJECT_URL' limit 1;
+  select decrypted_secret into service_key from vault.decrypted_secrets where name = 'SUPABASE_SECRET_KEY' limit 1;
+  if project_url is null or service_key is null then
+    return new;
+  end if;
+  perform net.http_post(
+    url := project_url || '/functions/v1/voucher-claim-telegram-notification',
+    headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization', 'Bearer ' || service_key),
+    body := jsonb_build_object('claimId', new.id, 'event', 'receipt')
+  );
+  return new;
+end;
+$$;
+revoke all on function private.notify_voucher_receipt() from public, anon, authenticated;
+
+drop trigger if exists notify_voucher_receipt on public.voucher_claims;
+create trigger notify_voucher_receipt
+  after update of received_at, receipt_issue_at on public.voucher_claims
+  for each row
+  when (new.received_at is distinct from old.received_at or new.receipt_issue_at is distinct from old.receipt_issue_at)
+  execute function private.notify_voucher_receipt();
+
 -- The voucher is emailed, so a claim needs an email; GrabMart needs ₱100+ (its smallest card).
 -- Otherwise as in 20260925090000. The old five-argument version is replaced (brand is new).
 drop function if exists public.submit_voucher_claim(text, uuid, text, text, text);
@@ -325,8 +358,9 @@ $$;
 revoke all on function public.submit_voucher_claim(text, uuid, text, text, text, text) from public, anon;
 grant execute on function public.submit_voucher_claim(text, uuid, text, text, text, text) to authenticated;
 
--- As in 20260925090000, plus each claim's id, brand, sent and received times (for the dashboard's
--- "Did you get it?" card).
+-- As in 20260925090000, plus each claim's id, brand, sent and received times and, once sent, its
+-- own voucher links/codes (for the dashboard's "Did you get it?" card and its Open my voucher button,
+-- so the borrower doesn't depend on the email). Only the caller's own claims are read.
 create or replace function public.get_my_rewards()
 returns jsonb
 language sql
@@ -344,7 +378,10 @@ as $$
     select r.id, r.referrer_user_id from public.friend_referrals r, me where r.referred_user_id = me.id
   ),
   claims as (
-    select c.id, c.reward, c.friend_referral_id, c.status, c.brand, c.amount_php, c.sent_at, c.received_at, c.receipt_issue_at, c.created_at
+    select c.id, c.reward, c.friend_referral_id, c.status, c.brand, c.amount_php, c.sent_at, c.received_at, c.receipt_issue_at, c.created_at,
+      case when c.status = 'sent' then (
+        select coalesce(jsonb_agg(vc.code order by vc.created_at), '[]'::jsonb) from public.voucher_codes vc where vc.claim_id = c.id
+      ) else '[]'::jsonb end as links
     from public.voucher_claims c, me where c.user_id = me.id
   ),
   eligible as (
@@ -365,7 +402,8 @@ as $$
     'wasReferred', exists (select 1 from referred_by),
     'claims', coalesce((select jsonb_agg(jsonb_build_object(
         'id', id, 'reward', reward, 'friendReferralId', friend_referral_id, 'status', status, 'brand', brand,
-        'amountPhp', amount_php, 'sentAt', sent_at, 'receivedAt', received_at, 'receiptIssueAt', receipt_issue_at
+        'amountPhp', amount_php, 'sentAt', sent_at, 'receivedAt', received_at, 'receiptIssueAt', receipt_issue_at,
+        'links', links
       ) order by created_at desc) from claims), '[]'::jsonb),
     'claimable', coalesce((
       select jsonb_agg(jsonb_build_object('reward', e.reward, 'friendReferralId', e.friend_referral_id, 'amountPhp', e.amount_php))

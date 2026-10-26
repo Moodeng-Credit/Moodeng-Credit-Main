@@ -9,15 +9,19 @@
 //   { claimId, event: 'decided', decidedBy? }    claim left 'pending' (notify_voucher_claim_decided) → stamp the
 //                                                card's after-state, e.g. when it was decided in the admin panel.
 //                                                A no-op if the Telegram button already stamped it.
+//   { claimId, event: 'receipt' }                borrower tapped I got it / Didn't get it (notify_voucher_receipt) →
+//                                                a one-line Telegram message.
 //   { claimId, event: 'admin_send' }             admin Vouchers page → Send code (admin session required).
 //                                                Lives here because the project is at its function limit.
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { openInAdminButton, sendAdminCard, stampDecisionCards } from '../_shared/adminCards.ts';
+import { sendTelegramMessage } from '../_shared/telegram.ts';
 import {
    buildVoucherCallback,
    buildVoucherClaimCard,
+   buildVoucherReceiptMessage,
    buildVoucherSentCard,
    sendVoucherCode,
    type VoucherClaimRow,
@@ -99,7 +103,7 @@ serve(async (req) => {
 
       const { data: claim, error } = await supabase
          .from('voucher_claims')
-         .select('id, user_id, reward, amount_php, brand, full_name, mobile, email, status, admin_note, created_at, users(username)')
+         .select('id, user_id, reward, amount_php, brand, full_name, mobile, email, status, admin_note, received_at, created_at, users(username)')
          .eq('id', claimId)
          .maybeSingle();
       if (error) throw new Error(error.message);
@@ -119,6 +123,11 @@ serve(async (req) => {
 
       const chatId = await getSetting(supabase, 'kyc_alert_chat_id');
       if (!chatId) return json({ error: 'kyc_alert_chat_id is not set' }, 500);
+
+      if (event === 'receipt') {
+         await sendTelegramMessage(chatId, buildVoucherReceiptMessage(claim as unknown as VoucherClaimRow & { received_at?: string | null }));
+         return json({ ok: true });
+      }
       const username = (Array.isArray(claim.users) ? claim.users[0]?.username : (claim.users as { username?: string | null } | null)?.username) ?? null;
       const row = claim as unknown as VoucherClaimRow;
 

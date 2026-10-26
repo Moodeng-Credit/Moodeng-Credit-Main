@@ -38,6 +38,8 @@ export interface VoucherClaimSummary {
    receivedAt: string | null;
    /** The borrower tapped "Didn't get it". */
    receiptIssueAt: string | null;
+   /** Once sent: the Xoxo links (food) or the GrabMart code, so the app can show them too. */
+   links: string[];
 }
 
 export interface MyRewards {
@@ -101,7 +103,8 @@ export function parseMyRewards(raw: unknown): MyRewards {
          amountPhp: toNumber(item.amountPhp),
          sentAt: typeof item.sentAt === 'string' ? item.sentAt : null,
          receivedAt: typeof item.receivedAt === 'string' ? item.receivedAt : null,
-         receiptIssueAt: typeof item.receiptIssueAt === 'string' ? item.receiptIssueAt : null
+         receiptIssueAt: typeof item.receiptIssueAt === 'string' ? item.receiptIssueAt : null,
+         links: Array.isArray(item.links) ? item.links.filter((link): link is string => typeof link === 'string' && link.length > 0) : []
       }))
    };
 }
