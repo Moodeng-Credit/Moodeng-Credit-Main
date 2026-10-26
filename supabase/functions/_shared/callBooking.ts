@@ -7,11 +7,12 @@ import { ATTENDANCE_RESET, meetingIdFromJoinUrl } from './attendance.ts';
 import { adminUserUrl, OPEN_IN_ADMIN_TEXT } from './adminCards.ts';
 import { postDiscord } from './discord.ts';
 import { formatCallTimeForTeam, newConfirmToken, sendBookedMessenger } from './videoCall.ts';
-import { bookingCooldownUntil, hostsFreeAt, mergeSlots, orderHostsToTry, preferSoonSlots, recheckRange, teamGuests } from '../calcom-round-robin/lib.ts';
+import { bookingCooldownUntil, dropBusySlots, hostsFreeAt, mergeSlots, orderHostsToTry, preferSoonSlots, recheckRange, teamGuests } from '../calcom-round-robin/lib.ts';
 import { cancelCalBooking } from './calcomCancel.ts';
 import { changeTimeButton } from './callReschedule.ts';
 import { testAccountRow } from './testAccount.ts';
-import { CAL_BASE, fetchAccountEmail, fetchSlots, resolveEventTypeId } from './calcomSlots.ts';
+import { CAL_BASE, CALL_MINUTES, fetchAccountEmail, fetchSlots, resolveEventTypeId } from './calcomSlots.ts';
+import { fetchGeorgeBusy } from './googleBusy.ts';
 import { needsPreKycGate } from './preKycGate.ts';
 
 // deno-lint-ignore no-explicit-any
@@ -174,8 +175,11 @@ export const listCallSlots = async (svc: Svc, user: CallUser, timeZone: string, 
    // never returns past times anyway — so this can't lose "later today" for anyone.
    const start = ymd(new Date(Date.now() - 86400000));
    const end = ymd(new Date(Date.now() + DAYS_AHEAD * 86400000));
-   const perHost = await Promise.all(resolved.map((h) => fetchSlots(h.apiKey, h.eventTypeId, start, end, timeZone)));
-   return reply({ slots: preferSoonSlots(mergeSlots(perHost), Date.now()) });
+   const [perHost, georgeBusy] = await Promise.all([
+      Promise.all(resolved.map((h) => fetchSlots(h.apiKey, h.eventTypeId, start, end, timeZone))),
+      fetchGeorgeBusy(svc, new Date().toISOString(), new Date(Date.now() + (DAYS_AHEAD + 1) * 86400000).toISOString())
+   ]);
+   return reply({ slots: preferSoonSlots(dropBusySlots(mergeSlots(perHost), georgeBusy, CALL_MINUTES), Date.now()) });
 };
 
 /** Books `startRaw` for this borrower and saves it on their account (see the comments inside). */
@@ -200,6 +204,8 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
    );
    const free = hostsFreeAt(start, perHostMap);
    if (free.length === 0) return reply({ ok: false, error: 'slot_taken' });
+   const georgeBusy = await fetchGeorgeBusy(svc, start, new Date(startMs + CALL_MINUTES * 60000).toISOString());
+   if (dropBusySlots([start], georgeBusy, CALL_MINUTES).length === 0) return reply({ ok: false, error: 'slot_taken' });
 
    const { data: prof } = await svc
       .from('users')
