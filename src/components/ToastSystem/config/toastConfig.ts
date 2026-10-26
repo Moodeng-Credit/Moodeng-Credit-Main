@@ -16,6 +16,8 @@ export type { ShowToast, Toast, ToastConfigKey, ToastData, ToastOverrides };
 
 export const TOAST_SETTINGS = {
    DEFAULT_DURATION: 5000,
+   // Errors usually carry a next step (and sometimes a button); 5s was too short to read on a phone.
+   ERROR_DURATION: 8000,
    MAX_TOASTS: 5,
    POSITION: 'bottom-right'
 } as const;
@@ -78,7 +80,7 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
    loan_created: {
       toastType: TOAST_TYPES.SUCCESS,
       title: 'Loan Request Created!',
-      message: 'Your request is now live for lenders to review.',
+      message: 'Your request is now live for moo-lenders to review.',
       buttonText: 'View Active Loans',
       buttonAction: 'view_active_loans',
       route: '/dashboard'

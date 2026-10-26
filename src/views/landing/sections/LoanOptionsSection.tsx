@@ -294,7 +294,7 @@ export default function LoanOptionsSection(): JSX.Element {
                                  <div className="h-[245px]">
                                     <div className="relative w-[252px] h-[234px] bg-[url(https://c.animaapp.com/VPWnEuWR/img/vector-63.svg)] bg-[100%_100%]">
                                        <p className="absolute w-[217px] h-[52px] top-7 left-6 [font-family:'Cabin_Condensed',Helvetica] font-bold text-black text-3xl tracking-[0] leading-[26px]">
-                                          Access Lenders Globally in $
+                                          Access Moo-lenders Globally in $
                                        </p>
                                        <img
                                           className="absolute w-[21px] h-[21px] top-[101px] left-[214px]"
@@ -431,7 +431,7 @@ export default function LoanOptionsSection(): JSX.Element {
                                  <div className="h-[245px]">
                                     <div className="relative w-[252px] h-[234px] bg-[url(https://c.animaapp.com/VPWnEuWR/img/vector-72.svg)] bg-[100%_100%]">
                                        <p className="absolute w-[217px] h-[52px] top-7 left-6 [font-family:'Cabin_Condensed',Helvetica] font-bold text-black text-3xl tracking-[0] leading-[26px]">
-                                          Access Lenders Globally in $
+                                          Access Moo-lenders Globally in $
                                        </p>
                                        <img
                                           className="absolute w-[21px] h-[21px] top-[101px] left-[214px]"

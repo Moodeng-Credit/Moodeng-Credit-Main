@@ -9,6 +9,7 @@ import { useSubmitVoucherClaim } from '@/hooks/useFriendReferrals';
 import {
    type ClaimableVoucher,
    getInviteInviter,
+   GRABMART_PAYOUT_PHP,
    isValidInviteCode,
    normalizeInviteCode,
    rememberPendingInvite,
@@ -28,21 +29,21 @@ import { useDashboardV2Preview } from '@/views/dashboard-v2/useDashboardV2Previe
 const PRIMARY_GRADIENT = 'linear-gradient(77.66deg, #9584ff 0.5%, #6b55f7 98.16%)';
 
 const FIELD =
-   'h-12 w-full rounded-[12px] border-2 border-[#e8e4ff] bg-white px-3.5 text-[16px] text-[#0f172b] outline-none placeholder:text-[#c0b9c8] focus:border-[#7b67f9]';
+   'h-12 w-full rounded-[12px] border-2 border-[#e8e4ff] bg-dv2-card px-3.5 text-[16px] text-[#0f172b] outline-none placeholder:text-[#c0b9c8] focus:border-[#7b67f9] dark:border-[#3a2f55] dark:bg-dv2-page dark:focus:border-[#7b67f9]';
 
 const CLAIM_COPY: Record<VoucherReward, { headline: string; body: string }> = {
-   first_on_time_repayment: { headline: 'You repaid on time. Treat yourself!', body: 'Tell us where to send your GrabFood voucher code.' },
+   first_on_time_repayment: { headline: 'You repaid on time. Treat yourself!', body: 'It goes into your GrabMart wallet. Where should we send your code?' },
    referral_inviter: {
       headline: 'Your friend repaid on time. Free meal!',
-      body: 'Thanks for inviting them. Where should we send your voucher code?'
+      body: 'Thanks for inviting them. It goes into your GrabMart wallet. Where should we send your code?'
    },
    referral_invitee: {
       headline: 'You repaid on time. Free meal!',
-      body: 'Thanks for joining with a friend. Where should we send your voucher code?'
+      body: 'Thanks for joining with a friend. It goes into your GrabMart wallet. Where should we send your code?'
    },
-   tier_rising: { headline: 'Moodeng grew to Rising. Treat yourself!', body: 'Tell us where to send your GrabFood voucher code.' },
-   tier_prime: { headline: 'Moodeng grew to Prime. Treat yourself!', body: 'Tell us where to send your GrabFood voucher code.' },
-   tier_apex: { headline: 'Moodeng reached Apex. Feast time!', body: 'Tell us where to send your GrabFood voucher code.' }
+   tier_rising: { headline: 'Moodeng grew to Rising. Treat yourself!', body: 'It goes into your GrabMart wallet. Where should we send your code?' },
+   tier_prime: { headline: 'Moodeng grew to Prime. Treat yourself!', body: 'It goes into your GrabMart wallet. Where should we send your code?' },
+   tier_apex: { headline: 'Moodeng reached Apex. Feast time!', body: 'It goes into your GrabMart wallet. Where should we send your code?' }
 };
 
 const describeClaimError = (error: unknown) => {
@@ -54,7 +55,7 @@ const describeClaimError = (error: unknown) => {
 };
 
 /**
- * "You earned a GrabFood voucher" — collects where to send the code. Real claims are validated and
+ * "You earned a GrabMart reward" — collects where to send the code (banked into the GrabMart wallet). Real claims are validated and
  * stored by submit_voucher_claim(); preview samples only simulate the submission.
  */
 export function VoucherClaimPopup({ voucher, isPreview, onClose }: { voucher: ClaimableVoucher; isPreview: boolean; onClose: () => void }) {
@@ -91,30 +92,33 @@ export function VoucherClaimPopup({ voucher, isPreview, onClose }: { voucher: Cl
       >
          {/* m-auto centres the popup when it fits and lets it scroll on short screens (small or landscape phones). */}
          <div className="m-auto flex w-full max-w-[400px] flex-col items-center" onClick={(event) => event.stopPropagation()}>
-            <p className="mb-2 text-center text-[26px] font-black italic leading-7 text-[#3c8248] underline decoration-[#4aa256] decoration-4 underline-offset-8">
+            <p className="mb-2 text-center text-[26px] font-black italic leading-7 text-[#3c8248] underline decoration-[#4aa256] decoration-4 underline-offset-8 dark:text-[#7fd68b]">
                Voucher Unlocked!
             </p>
-            <div className="w-full rounded-[26px] bg-gradient-to-b from-[#fff6c2] via-white via-40% to-white px-5 pb-6 pt-5 text-center">
+            <div className="w-full rounded-[26px] bg-gradient-to-b from-[#fff6c2] via-white via-40% to-white px-5 pb-6 pt-5 text-center dark:from-[#3a3216] dark:via-dv2-card dark:to-dv2-card">
                {isSubmitted ? (
                   <div className="flex flex-col items-center gap-3 py-4">
                      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#4aa256]">
                         <Check className="h-8 w-8 text-white" strokeWidth={3} aria-hidden="true" />
                      </span>
-                     <p id="dv2-voucher-title" className="text-[24px] font-bold leading-7 text-[#594d65]">
-                        Salamat! We got it.
+                     <p id="dv2-voucher-title" className="text-[24px] font-bold leading-7 text-[#594d65] dark:text-[#e6def2]">
+                        +₱{voucher.amountPhp} added!
                      </p>
                      <p className="text-[16px] leading-[22px] text-[#45556c]">
-                        We&apos;ll send your ₱{voucher.amountPhp} GrabFood voucher code to your email within 2 business days.
+                        It&apos;s in your GrabMart wallet. Every ₱{GRABMART_PAYOUT_PHP} becomes a GrabMart code — we email it and show it on
+                        your dashboard. Use it in Grab → Mart.
                      </p>
-                     {isPreview ? <p className="text-[12px] text-[#c0b9c8]">Preview sample — nothing was sent.</p> : null}
+                     {isPreview ? (
+                        <p className="text-[12px] text-[#c0b9c8] dark:text-[#8f819e]">Preview sample — nothing was sent.</p>
+                     ) : null}
                   </div>
                ) : (
                   <form onSubmit={handleSubmit} className="flex flex-col items-center gap-3">
                      <div className="flex items-center gap-2">
                         <DesignImage src={DASHBOARD_V2_ASSETS.coupon} className="h-20 w-20 object-contain" />
-                        <span className="text-[34px] font-black text-[#3c8248]">₱{voucher.amountPhp}</span>
+                        <span className="text-[34px] font-black text-[#3c8248] dark:text-[#7fd68b]">₱{voucher.amountPhp}</span>
                      </div>
-                     <p id="dv2-voucher-title" className="text-[22px] font-bold leading-6 text-[#594d65]">
+                     <p id="dv2-voucher-title" className="text-[22px] font-bold leading-6 text-[#594d65] dark:text-[#e6def2]">
                         {copy.headline}
                      </p>
                      <p className="text-[16px] leading-5 text-[#45556c]">{copy.body}</p>
@@ -138,7 +142,7 @@ export function VoucherClaimPopup({ voucher, isPreview, onClose }: { voucher: Cl
                         aria-label="Email"
                      />
                      {submitClaim.error ? (
-                        <p className="text-[14px] font-medium text-[#d51728]" role="alert">
+                        <p className="text-[14px] font-medium text-[#d51728] dark:text-[#ff8a96]" role="alert">
                            {describeClaimError(submitClaim.error)}
                         </p>
                      ) : null}
@@ -449,7 +453,7 @@ export function DashboardV2InviteLanding() {
                   src={DASHBOARD_V2_ASSETS.voucherBannerFood}
                   className="absolute -right-4 top-0 h-[90px] w-[160px] object-contain"
                />
-               <p className="relative max-w-[60%] text-[20px] font-black italic leading-6 text-[#3c8248]">₱100 GrabFood voucher each</p>
+               <p className="relative max-w-[60%] text-[20px] font-black italic leading-6 text-[#3c8248]">₱100 GrabMart voucher each</p>
                <p className="relative mt-1 max-w-[60%] text-[14px] font-medium leading-5 text-[#6f7d1d]">
                   When you repay your first loan on time, you and {inviter || 'your friend'} both get one.
                </p>

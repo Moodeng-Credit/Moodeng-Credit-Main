@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { adminUserUrl, OPEN_IN_ADMIN_TEXT } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import {
    computeYearOneIouPointsDelta,
@@ -11,6 +12,9 @@ import {
    toNumber
 } from '../_shared/creditAndPoints.ts';
 import { DEFAULT_TIMEZONE, loanTimezone, pastDueAt } from '../_shared/loanDeadline.ts';
+import { notifyBorrowerPartialRepayment } from '../_shared/partialRepaymentNotice.ts';
+import { postPartialRepaymentToTeam } from '../_shared/teamLoanFeed.ts';
+import { PaymentNotConfirmedError, RPC_URL, rpcCall, type VerifiedTransfer, verifyPayment } from '../_shared/usdcTransfer.ts';
 
 // Server-side proof-of-payment gate for loan funding/repayment.
 //
@@ -36,12 +40,6 @@ const corsHeaders = {
 const jsonResponse = (body: Record<string, unknown>, status = 200) =>
    new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-const USDC_ADDRESS = (Deno.env.get('BASE_USDC_ADDRESS') || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913').toLowerCase();
-const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
-// Same public bundler endpoint @base-org/account's own getPaymentStatus() calls — no secret needed.
-const BUNDLER_URL = 'https://api.developer.coinbase.com/rpc/v1/base/S-fOd2n2Oi4fl4e1Crm83XeDXZ7tkg8O';
-const ALCHEMY_ID = Deno.env.get('ALCHEMY_ID') ?? '';
-const RPC_URL = ALCHEMY_ID ? `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_ID}` : 'https://mainnet.base.org';
 const REQUEST_EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000;
 
 // --- Repayment browser feed (Discord) --------------------------------------------------------
@@ -112,117 +110,6 @@ const postRepayFeed = async (details: {
    } catch {
       // Best-effort — the repay feed must never affect the payment response.
    }
-};
-
-const topicToAddress = (topic: string) => `0x${topic.slice(-40)}`.toLowerCase();
-const hexToBigInt = (hex: string) => (hex && hex !== '0x' ? BigInt(hex) : 0n);
-
-interface RawLog {
-   address?: string;
-   topics?: string[];
-   data?: string;
-}
-
-interface DecodedTransfer {
-   from: string;
-   to: string;
-   value: bigint;
-}
-
-const decodeUsdcTransfers = (logs: RawLog[] | undefined): DecodedTransfer[] => {
-   const transfers: DecodedTransfer[] = [];
-   for (const log of logs ?? []) {
-      if ((log.address ?? '').toLowerCase() !== USDC_ADDRESS) continue;
-      const topics = log.topics ?? [];
-      if (topics[0]?.toLowerCase() !== TRANSFER_TOPIC || topics.length < 3) continue;
-      transfers.push({
-         from: topicToAddress(topics[1]),
-         to: topicToAddress(topics[2]),
-         value: hexToBigInt(log.data ?? '0x0')
-      });
-   }
-   return transfers;
-};
-
-const USER_OPERATION_EVENT_TOPIC = '0x49628fd1471006c1482da88028e9ce4dbb080b815c9b0344d39e5a8e6ec1419f';
-
-// The smart-account payments (ERC-4337 userOperations) inside a transaction, by sender.
-const decodeUserOpHashes = (logs: RawLog[] | undefined, sender: string): string[] =>
-   (logs ?? [])
-      .filter((log) => (log.topics ?? [])[0]?.toLowerCase() === USER_OPERATION_EVENT_TOPIC && (log.topics ?? []).length >= 3)
-      .filter((log) => topicToAddress((log.topics as string[])[2]) === sender)
-      .map((log) => (log.topics as string[])[1].toLowerCase());
-
-const rpcCall = async (url: string, method: string, params: unknown[]) => {
-   const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params })
-   });
-   const json = await res.json();
-   if (json.error) throw new Error(json.error.message || 'RPC error');
-   return json.result;
-};
-
-class PaymentNotConfirmedError extends Error {
-   constructor() {
-      super('Payment is not confirmed on-chain yet');
-   }
-}
-
-interface VerifiedTransfer {
-   from: string;
-   to: string;
-   micros: bigint;
-   blockNumber?: string;
-   // The real, Basescan-verifiable on-chain transaction hash. For 'wallet' payments this equals the
-   // input hash; for 'base' (ERC-4337) payments the input is a userOperation hash — which 404s on the
-   // explorer — so we surface the bundler's resolved transactionHash instead.
-   txHash?: string;
-   // Hashes this payment spends against replay. A Base Account payment spends only its userOp hash
-   // (a bundler can put several people's payments in one transaction, so the bundle tx hash isn't
-   // this payment's). A plain transaction spends its own hash plus any of the sender's userOps inside
-   // it, so resubmitting a Base payment's bundle tx as a 'wallet' payment can't count it twice.
-   spendHashes: string[];
-}
-
-// Confirms `hash` on-chain and returns the USDC transfer it produced. Throws
-// PaymentNotConfirmedError if it's simply not landed yet (caller should retry), or a plain
-// Error for anything short of "money definitely moved to someone" (failed tx, wrong token, no
-// USDC transfer in the receipt at all).
-const verifyPayment = async (method: 'wallet' | 'base', hash: string): Promise<VerifiedTransfer> => {
-   if (method === 'base') {
-      const result = await rpcCall(BUNDLER_URL, 'eth_getUserOperationReceipt', [hash]);
-      if (!result) throw new PaymentNotConfirmedError();
-      if (!result.success) throw new Error('Payment failed on-chain');
-      const transfers = decodeUsdcTransfers(result.receipt?.logs);
-      if (transfers.length === 0) throw new Error('No USDC transfer found in this payment');
-      const sender = (result.sender ?? '').toLowerCase();
-      const bySender = transfers.filter((t) => t.from === sender);
-      const chosen = bySender[0] ?? transfers[0];
-      return {
-         from: chosen.from,
-         to: chosen.to,
-         micros: chosen.value,
-         blockNumber: result.receipt?.blockNumber,
-         txHash: result.receipt?.transactionHash,
-         spendHashes: [hash.toLowerCase()]
-      };
-   }
-
-   const receipt = await rpcCall(RPC_URL, 'eth_getTransactionReceipt', [hash]);
-   if (!receipt) throw new PaymentNotConfirmedError();
-   if (receipt.status !== '0x1') throw new Error('Transaction failed on-chain');
-   const transfers = decodeUsdcTransfers(receipt.logs);
-   if (transfers.length === 0) throw new Error('No USDC transfer found in this transaction');
-   return {
-      from: transfers[0].from,
-      to: transfers[0].to,
-      micros: transfers[0].value,
-      blockNumber: receipt.blockNumber,
-      txHash: receipt.transactionHash ?? hash,
-      spendHashes: [...new Set([hash.toLowerCase(), ...decodeUserOpHashes(receipt.logs, transfers[0].from)])]
-   };
 };
 
 // Best-effort block timestamp (ms) for the freshness check. Fail-open: any RPC/parse problem returns
@@ -352,6 +239,17 @@ const applyCreditProgression = async (
    return { errors, levelUp: { fromLimit: getEffectiveCreditLimit(borrower.cs, true), toLimit: evaluation.nextLimit } };
 };
 
+// True when `wallet` is one the borrower is known to use: their profile wallet, or a wallet one of
+// their loans was paid out to. There is no record of past repayment senders to check against.
+const isKnownBorrowerWallet = async (admin: Admin, borrowerId: string | null, wallet: string): Promise<boolean> => {
+   if (!borrowerId) return false;
+   const target = wallet.toLowerCase();
+   const { data: user } = await admin.from('users').select('wallet_address').eq('id', borrowerId).maybeSingle();
+   if ((user?.wallet_address ?? '').toLowerCase() === target) return true;
+   const { data: loans } = await admin.from('loans').select('borrower_wallet').eq('borrower_user_id', borrowerId);
+   return ((loans ?? []) as { borrower_wallet: string | null }[]).some((row) => (row.borrower_wallet ?? '').toLowerCase() === target);
+};
+
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
    if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405);
@@ -394,16 +292,60 @@ serve(async (req) => {
 
    const admin = createClient(supabaseUrl, serviceRoleKey);
 
-   const { data: loan, error: loanError } = await admin.from('loans').select('*').eq('id', loanId).single();
-   if (loanError || !loan) {
-      return jsonResponse({ error: 'Loan not found' }, 404);
-   }
-
    // Every hash may only ever fund/repay ONE loan, ever — otherwise a single real payment could
    // be replayed across many loans to fake-fund/repay all of them.
    const { data: existingHash } = await admin.from('used_payment_hashes').select('hash').eq('hash', normalizedHash).maybeSingle();
    if (existingHash) {
       return jsonResponse({ error: 'This transaction has already been used to update a loan' }, 409);
+   }
+
+   const { data: loan, error: loanError } = await admin.from('loans').select('*').eq('id', loanId).maybeSingle();
+   if (loanError) {
+      return jsonResponse({ error: 'Failed to load loan' }, 500);
+   }
+   if (!loan) {
+      // The request was deleted (or never existed) but a lender may already have sent the USDC: if the
+      // payment verifies, tell the team so it can be refunded. Nothing is recorded.
+      if (action === 'fund') {
+         try {
+            const orphan = await verifyPayment(method, hash);
+            const from = (orphan.from ?? '').toLowerCase();
+            const to = (orphan.to ?? '').toLowerCase();
+            // Only alert for a payment the caller actually sent (from one of their wallets) to a Moodeng
+            // user's wallet; anything else is someone replaying an unrelated tx hash.
+            const [ownUser, ownUsage, ownGrants, toUsers, toUsage] = await Promise.all([
+               admin.from('users').select('wallet_address').eq('id', callerId).maybeSingle(),
+               admin.from('wallet_usage_log').select('wallet_address').eq('user_id', callerId),
+               admin.from('embedded_wallet_grants').select('wallet_address').eq('user_id', callerId),
+               admin.from('users').select('id').ilike('wallet_address', to).limit(1),
+               admin.from('wallet_usage_log').select('user_id').ilike('wallet_address', to).limit(1)
+            ]);
+            const callerWallets = new Set(
+               [ownUser.data?.wallet_address, ...(ownUsage.data ?? []).map((r) => r.wallet_address), ...(ownGrants.data ?? []).map((r) => r.wallet_address)]
+                  .filter((w): w is string => typeof w === 'string' && w.length > 0)
+                  .map((w) => w.toLowerCase())
+            );
+            const toIsMoodengUser = (toUsers.data?.length ?? 0) > 0 || (toUsage.data?.length ?? 0) > 0;
+            if (!/^0x[0-9a-f]{40}$/.test(to) || !callerWallets.has(from) || !toIsMoodengUser) {
+               return jsonResponse({ error: 'Loan not found' }, 404);
+            }
+            // Alert once per tx hash: the primary key rejects repeats.
+            const { error: dedupeError } = await admin.from('orphan_payment_alerts').insert({ tx_hash: normalizedHash });
+            if (dedupeError) {
+               return jsonResponse({ error: 'This request no longer exists. Contact support for a refund.' }, 409);
+            }
+            await postDiscord(
+               {
+                  content: `⚠️ Loan ${loanId} no longer exists, but a verified ${(Number(orphan.micros) / 1e6).toFixed(2)} USDC funding payment (${(orphan.txHash ?? hash).toLowerCase()}, from ${orphan.from} to ${orphan.to}, lender user ${callerId}) was sent for it. It was NOT recorded and needs refunding.`
+               },
+               { prefer: ['DISCORD_REPAY_WEBHOOK_URL'] }
+            );
+            return jsonResponse({ error: 'This request no longer exists. Contact support for a refund.' }, 409);
+         } catch (err) {
+            if (err instanceof PaymentNotConfirmedError) return jsonResponse({ error: err.message, retry: true }, 202);
+         }
+      }
+      return jsonResponse({ error: 'Loan not found' }, 404);
    }
 
    let expectedRecipient: string | null;
@@ -498,13 +440,15 @@ serve(async (req) => {
    }
 
    const recordHash = (transfer.txHash ?? hash).toLowerCase();
+   const adminLine = loan.borrower_user_id ? `\n${OPEN_IN_ADMIN_TEXT}: <${adminUserUrl(loan.borrower_user_id)}>` : '';
    const alertUnrecorded = async (what: string) => {
       console.error(`confirm-loan-payment: ${loan.tracking_id} unrecorded payment ${recordHash} from ${transfer.from}: ${what}`);
       await postDiscord(
          {
-            content: `⚠️ ${loan.tracking_id}: a verified ${(Number(transfer.micros) / 1e6).toFixed(2)} USDC payment (${recordHash}, from ${transfer.from}) was NOT recorded because ${what}. It needs refunding.`
+            content: `⚠️ ${loan.tracking_id}: a verified ${(Number(transfer.micros) / 1e6).toFixed(2)} USDC payment (${recordHash}, from ${transfer.from}) was NOT recorded because ${what}. It needs refunding.${adminLine}`
          },
-         { prefer: ['DISCORD_REPAY_WEBHOOK_URL'] }
+         // Remembered under the loan: edited when the loan is refunded / repaid / deleted.
+         { prefer: ['DISCORD_REPAY_WEBHOOK_URL'], ref: { svc: admin, kind: 'loan', refId: loan.id } }
       );
    };
 
@@ -558,12 +502,28 @@ serve(async (req) => {
       await alertUnrecorded(why);
       return jsonResponse({ error: `This payment couldn't be applied because ${why}. Contact support for a refund.` }, 409);
    }
-   // Paid more than was owed: the loan is closed at its total; the extra goes back to the payer.
-   const overpaidMicros = Number((recorded as { overpaid_micros?: number } | null)?.overpaid_micros ?? 0);
-   if (overpaidMicros > 5000) {
+   // A repayment from a wallet we don't know for this borrower is still recorded (borrowers often pay
+   // from an exchange), but the team should check it really came from them.
+   const senderIsKnown = action === 'repay' ? await isKnownBorrowerWallet(admin, loan.borrower_user_id, transfer.from) : true;
+   if (!senderIsKnown) {
       await postDiscord(
          {
-            content: `⚠️ ${loan.tracking_id}: the borrower paid ${(overpaidMicros / 1e6).toFixed(2)} USDC more than was left (${recordHash}). The loan is closed; the extra needs sending back to ${transfer.from}.`
+            content: `⚠️ ${loan.tracking_id}: repayment from unknown sender — check. ${(Number(transfer.micros) / 1e6).toFixed(2)} USDC (${recordHash}) came from ${transfer.from}, which isn't a wallet on file for this borrower. It was recorded.${adminLine}`
+         },
+         { prefer: ['DISCORD_REPAY_WEBHOOK_URL'], ref: { svc: admin, kind: 'loan', refId: loan.id } }
+      );
+   }
+   // Paid more than was owed: the loan is closed at its total; the extra goes back to the borrower.
+   const overpaidMicros = Number((recorded as { overpaid_micros?: number } | null)?.overpaid_micros ?? 0);
+   if (overpaidMicros > 5000) {
+      // Only name the sender as the refund address when it's one of the borrower's own wallets: an
+      // exchange hot wallet (or someone else's) is not where the borrower's money should go back to.
+      const refundTo = senderIsKnown
+         ? `the extra needs sending back to ${transfer.from}`
+         : `it came from an unknown sender (${transfer.from}), so confirm the borrower's own wallet before refunding the extra`;
+      await postDiscord(
+         {
+            content: `⚠️ ${loan.tracking_id}: the borrower paid ${(overpaidMicros / 1e6).toFixed(2)} USDC more than was left (${recordHash}). The loan is closed; ${refundTo}.`
          },
          { prefer: ['DISCORD_REPAY_WEBHOOK_URL'] }
       );
@@ -607,6 +567,14 @@ serve(async (req) => {
       creditLevelUp = progression.levelUp;
       const { error: notifyError } = await admin.functions.invoke('loan-repayment-received-notification', { body: { loanId } });
       if (notifyError) sideEffectErrors.push({ type: 'loan_notification', message: notifyError.message });
+   } else if (action === 'repay' && updatedLoan.repayment_status === 'Partial') {
+      // A payment that leaves a balance used to tell nobody. Tell the borrower what was paid and what's
+      // left (and how to reach us if it was a mistake), and post it to the team. Both never throw.
+      const paidNow = Number(transfer.micros) / 1e6;
+      await Promise.all([
+         notifyBorrowerPartialRepayment(admin, updatedLoan as Parameters<typeof notifyBorrowerPartialRepayment>[1], paidNow),
+         postPartialRepaymentToTeam(admin, loanId, paidNow)
+      ]);
    }
 
    // Repay browser feed → Discord. Fires on every repayment (partial or full), flags in-app

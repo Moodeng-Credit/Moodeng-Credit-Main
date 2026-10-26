@@ -5,23 +5,47 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import {
+   alreadyDecidedHeader,
+   type CardStamp,
+   claimCard,
+   findAdminCard,
+   linkRows,
+   personName,
+   stampCard,
+   stampDecisionCards,
+   withAdminLink
+} from '../_shared/adminCards.ts';
+import { parseKycRetryCallback, resetKycTries } from '../_shared/kycCards.ts';
+import {
    answerCallback,
    decideLoanAccess,
    escapeLike,
    findPendingRequest,
    parseDecisionCallback,
-   shortId,
-   stampAdminCard
+   setCardButtons,
+   shortId
 } from '../_shared/loanAccess.ts';
-import { markMessengerVerified, parseMessengerVerifyCallback } from '../_shared/messengerStuckAlert.ts';
+import { markMessengerVerified, messengerVerifiedStamp, parseMessengerVerifyCallback } from '../_shared/messengerStuckAlert.ts';
 import { formatCallTime } from '../_shared/videoCall.ts';
+import { handleRescheduleStep, parseRescheduleCallback, postReschedulePicker } from '../_shared/callReschedule.ts';
+import { handleCancelStep, parseCancelCallback } from '../_shared/callCancel.ts';
 import { parseOutcomeCallback, recordCallOutcome } from '../_shared/videoCallOutcome.ts';
+import { buildPayoutCallback, markPayoutPaid, parsePayoutCallback } from '../_shared/referralPayouts.ts';
 import { decideVoucherClaim, parseVoucherCallback } from '../_shared/voucherClaims.ts';
 import {
+   callTelegramApi,
    closeTelegramForumTopic,
    createTelegramForumTopic,
-   sendTelegramMessage
+   sendTelegramMessage,
+   type TelegramInlineKeyboard
 } from '../_shared/telegram.ts';
+import {
+   parseTestAccountCallback,
+   type TestAccountCallback,
+   testAccountConfirmKeyboard,
+   testAccountQuestion,
+   withoutTestAccountRow
+} from '../_shared/testAccount.ts';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -53,6 +77,8 @@ type TelegramMessage = {
    text?: string;
    chat: TelegramChat;
    from?: TelegramUser;
+   reply_markup?: { inline_keyboard?: TelegramInlineKeyboard };
+   reply_to_message?: TelegramMessage;
 };
 
 type TelegramCallbackQuery = {
@@ -246,8 +272,10 @@ const handleMessengerConfirmCommand = async (supabase: SupabaseClient, message: 
    const { error: userError } = await supabase.from('users').update({ messenger_verified_at: now }).eq('id', pending.user_id);
    if (userError) throw new Error(userError.message);
 
-   const { data: prof } = await supabase.from('users').select('username, email').eq('id', pending.user_id).maybeSingle();
+   const { data: prof } = await supabase.from('users').select('username, email, display_name').eq('id', pending.user_id).maybeSingle();
    const who = [prof?.username, prof?.email].filter(Boolean).join(' · ') || pending.user_id;
+   // Their "Facebook not confirmed" / "Is this them?" cards are resolved now.
+   await stampDecisionCards(supabase, 'messenger', pending.user_id, messengerVerifiedStamp(personName(prof), adminHandle(message.from)));
    await sendTelegramMessage(chatId, `✅ Messenger verified for ${who}. Their loan request can now continue.`);
    return true;
 };
@@ -329,15 +357,31 @@ const handleLoanAccessCommand = async (supabase: SupabaseClient, message: Telegr
 };
 
 // The inline buttons on admin cards: la: (loan-access Approve / Reject / Showed up / No-show),
-// vc: (open-flow call attendance), vo: (GrabFood voucher claim Mark sent / Reject) and mv: (stuck
-// Facebook confirmation → Mark Facebook verified). Honored only when the card sits in an admin
-// channel, so a forwarded card can't be tapped from anywhere else.
+// vc: (open-flow call attendance), vo: (GrabMart voucher payout Send code / Reject), mv: (stuck
+// Facebook confirmation → Mark Facebook verified), kr: (out of KYC tries → 3 more tries) and rp:
+// (referral code owner payout ✅ Paid / ⏳ Not paid yet).
+// Honored only when the card sits in an admin channel, so a forwarded card can't be tapped from
+// anywhere else.
+//
+// After the tap the card shows its after-state (adminCards.ts). Cards remembered in
+// admin_message_refs are stamped by the decision itself, together with the person's other cards;
+// older cards (posted before that table) and taps that changed nothing are stamped here.
+const SAVING_CALLBACK = 'busy';
+
+type ButtonResult = { ok: boolean; summary: string; stamp?: CardStamp; retry?: boolean };
+
 const handleAdminCallback = async (supabase: SupabaseClient, query: TelegramCallbackQuery, adminChatIds: string[]) => {
+   if (query.data === SAVING_CALLBACK) {
+      await answerCallback(query.id, '⏳ Still saving — one moment…');
+      return;
+   }
    const parsed = parseDecisionCallback(query.data);
    const outcome = parsed ? null : parseOutcomeCallback(query.data);
    const voucher = parsed || outcome ? null : parseVoucherCallback(query.data);
    const messenger = parsed || outcome || voucher ? null : parseMessengerVerifyCallback(query.data);
-   if (!parsed && !outcome && !voucher && !messenger) {
+   const kycRetry = parsed || outcome || voucher || messenger ? null : parseKycRetryCallback(query.data);
+   const payout = parsed || outcome || voucher || messenger || kycRetry ? null : parsePayoutCallback(query.data);
+   if (!parsed && !outcome && !voucher && !messenger && !kycRetry && !payout) {
       await answerCallback(query.id, 'Unknown action.');
       return;
    }
@@ -347,17 +391,79 @@ const handleAdminCallback = async (supabase: SupabaseClient, query: TelegramCall
       return;
    }
 
-   const result = parsed
-      ? await decideLoanAccess(supabase, parsed.requestId, parsed.decision, adminHandle(query.from))
-      : outcome
-        ? await recordCallOutcome(supabase, outcome.userId, outcome.outcome, adminHandle(query.from), outcome.callKey)
-        : voucher
-          ? await decideVoucherClaim(supabase, voucher.claimId, voucher.decision, adminHandle(query.from))
-          : await markMessengerVerified(supabase, messenger!.userId, adminHandle(query.from));
-   await answerCallback(query.id, result.summary);
-   // A voucher send that can be retried (pool empty, email failed) keeps its buttons.
-   const canRetry = 'retry' in result && result.retry === true;
-   if (query.message && !canRetry) await stampAdminCard(cardChatId, query.message.message_id, query.message.text ?? '', result.summary);
+   // ⏳ Not paid yet: nothing to save — it stays unpaid. Keep just ✅ Paid (+ links) on the card.
+   if (payout?.decision === 'unpaid') {
+      const card = query.message;
+      const links = (card?.reply_markup?.inline_keyboard ?? []).filter((row) => row.some((b) => 'url' in b));
+      await Promise.all([
+         answerCallback(query.id, "⏳ Left as not paid yet — tap ✅ Paid once they're paid."),
+         card
+            ? setCardButtons(cardChatId, card.message_id, [
+                 [{ text: '✅ Paid', callback_data: buildPayoutCallback('paid', payout.payoutId) }],
+                 ...links
+              ])
+            : null
+      ]);
+      return;
+   }
+
+   // Acknowledge the tap right away — the decision (database + Messenger / email / push to the
+   // borrower + Discord) takes a few seconds, and a silent button reads as "nothing happened".
+   const card = query.message;
+   const by = adminHandle(query.from);
+   const [, , remembered] = await Promise.all([
+      answerCallback(query.id, '⏳ Saving…'),
+      card ? setCardButtons(cardChatId, card.message_id, [[{ text: '⏳ Saving…', callback_data: SAVING_CALLBACK }]]) : null,
+      // Read before deciding: the decision deletes the ref when it stamps the card.
+      card ? findAdminCard(supabase, cardChatId, card.message_id) : null
+   ]);
+
+   try {
+      let userId: string | null = outcome?.userId ?? messenger?.userId ?? kycRetry?.userId ?? null;
+      let result: ButtonResult;
+      if (parsed) {
+         const decided = await decideLoanAccess(supabase, parsed.requestId, parsed.decision, by);
+         if (decided.ok) userId = decided.request.user_id;
+         result = decided;
+      } else if (outcome) {
+         result = await recordCallOutcome(supabase, outcome.userId, outcome.outcome, by, outcome.callKey);
+      } else if (voucher) {
+         result = await decideVoucherClaim(supabase, voucher.claimId, voucher.decision, by);
+      } else if (payout) {
+         result = await markPayoutPaid(supabase, payout.payoutId, by);
+      } else if (messenger) {
+         result = await markMessengerVerified(supabase, messenger.userId, by);
+      } else {
+         result = await resetKycTries(supabase, kycRetry!.userId, by);
+      }
+      // A voucher send that can be retried (pool empty, Bitrefill not ready) changed nothing: keep the buttons.
+      if (result.retry) {
+         if (card?.reply_markup?.inline_keyboard) await setCardButtons(cardChatId, card.message_id, card.reply_markup.inline_keyboard);
+         await sendTelegramMessage(cardChatId, `⚠️ Not sent: ${result.summary}`);
+         return;
+      }
+      if (card) {
+         const stamp: CardStamp =
+            result.stamp ?? (result.ok ? { header: result.summary, by } : { header: alreadyDecidedHeader(result.summary), by, verb: 'Tapped by' });
+         if (remembered) {
+            // Still remembered = the decision didn't stamp it (nothing changed): stamp it here. A
+            // no-show (stamp with buttons) did stamp it and keeps it remembered for ✅ Approve anyway.
+            if (!result.stamp?.buttons && (await claimCard(supabase, cardChatId, card.message_id))) {
+               await stampCard(cardChatId, card.message_id, remembered.text, remembered.links, stamp);
+            }
+         } else {
+            // Posted before admin_message_refs: stamp from the tapped message, keeping its links.
+            const links = withAdminLink(linkRows(card.reply_markup?.inline_keyboard), userId);
+            await stampCard(cardChatId, card.message_id, card.text ?? '', links, stamp);
+         }
+      }
+   } catch (error) {
+      // Put the buttons back so it can be tapped again, and say why it didn't save.
+      const reason = error instanceof Error ? error.message : String(error);
+      console.error('telegram-webhook: admin button failed', reason);
+      if (card?.reply_markup?.inline_keyboard) await setCardButtons(cardChatId, card.message_id, card.reply_markup.inline_keyboard);
+      await sendTelegramMessage(cardChatId, `⚠️ That didn't save — tap the button again. (${reason.slice(0, 200)})`);
+   }
 };
 
 // /pending — everyone waiting on a decision, oldest first, with the id for /approve etc. A safety
@@ -367,6 +473,7 @@ const handlePendingCommand = async (supabase: SupabaseClient, message: TelegramM
       .from('loan_access_requests')
       .select('id, user_id, kind, display_name, created_at, users!inner(username, email, video_call_starts_at)')
       .eq('status', 'pending')
+      .eq('users.is_test', false)
       .order('created_at', { ascending: true })
       .limit(30);
    if (error) throw new Error(error.message);
@@ -427,13 +534,190 @@ const handleLoanFlowCommand = async (supabase: SupabaseClient, message: Telegram
    return true;
 };
 
+// Pre-KYC gate (migration 20261009120000): new borrowers connect Messenger + book a call and are
+// approved after it before they can verify their ID.
+//   /kycgate          show whether it's on
+//   /kycgate on|off   switch — off = the old flow (KYC right after the wallet)
+const KYC_GATE_STATES: Record<string, string> = {
+   on: 'ON — new borrowers meet the team (Messenger + call, ✅ Showed up) before ID verification',
+   off: 'OFF — new borrowers verify their ID right after setting up their wallet (the old flow)'
+};
+
+const handleKycGateCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
+   const match = (message.text ?? '').trim().match(/^\/kycgate(?:@\w+)?(?:\s+(\S+))?/i);
+   if (!match) return false;
+   const chatId = message.chat.id;
+   const wanted = (match[1] ?? '').trim().toLowerCase();
+
+   if (!wanted) {
+      const current = (await getSetting(supabase, 'kyc_gate')) === 'off' ? 'off' : 'on';
+      await sendTelegramMessage(chatId, `Pre-KYC gate: ${KYC_GATE_STATES[current]}\n\nSwitch with /kycgate on · /kycgate off`);
+      return true;
+   }
+   if (!KYC_GATE_STATES[wanted]) {
+      await sendTelegramMessage(chatId, 'Usage: /kycgate on | off');
+      return true;
+   }
+
+   const { error } = await supabase
+      .from('telegram_bot_settings')
+      .upsert({ key: 'kyc_gate', value: wanted }, { onConflict: 'key' });
+   if (error) throw new Error(error.message);
+   await sendTelegramMessage(chatId, `✅ Pre-KYC gate switched ${KYC_GATE_STATES[wanted]} — by ${adminHandle(message.from)}`);
+   return true;
+};
+
+// KYC tries (kyc_declines): after 3 declines a borrower must message us before trying again.
+//   /kycretry @username   gives them 3 fresh tries (voids their counted declines)
+const handleKycRetryCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
+   const match = (message.text ?? '').trim().match(/^\/kycretry(?:@\w+)?(?:\s+(\S+))?/i);
+   if (!match) return false;
+   const chatId = message.chat.id;
+   const arg = (match[1] ?? '').trim().replace(/^@/, '');
+   if (!arg) {
+      await sendTelegramMessage(chatId, 'Usage: /kycretry @username — gives them 3 more ID verification tries');
+      return true;
+   }
+   const { data: user } = /^[0-9a-f-]{36}$/i.test(arg)
+      ? await supabase.from('users').select('id, username').eq('id', arg).maybeSingle()
+      : await supabase.from('users').select('id, username').ilike('username', escapeLike(arg)).maybeSingle();
+   if (!user) {
+      await sendTelegramMessage(chatId, `No user found for ${arg}.`);
+      return true;
+   }
+   // Same as the 🔁 button on the "Out of KYC tries" card, which it stamps.
+   const result = await resetKycTries(supabase, user.id, adminHandle(message.from));
+   await sendTelegramMessage(chatId, result.summary);
+   return true;
+};
+
+// Test accounts (users.is_test): left out of the ☀️ Onboarding check-in, /pending and the money
+// stats, so team test sign-ups don't read as real people to chase.
+//   /testaccount                      list them
+//   /testaccount @a @b …              mark as test
+//   /testaccount off @a …             mark as real again
+const handleTestAccountCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
+   const match = (message.text ?? '').trim().match(/^\/testaccount(?:@\w+)?(?:\s+([\s\S]+))?/i);
+   if (!match) return false;
+   const chatId = message.chat.id;
+   const words = (match[1] ?? '').trim().split(/\s+/).filter(Boolean);
+   const off = words[0]?.toLowerCase() === 'off';
+   const handles = (off ? words.slice(1) : words).map((w) => w.replace(/^@/, '').replace(/,$/, '')).filter(Boolean);
+
+   if (!handles.length) {
+      if (off) {
+         await sendTelegramMessage(chatId, 'Usage: /testaccount off @username');
+         return true;
+      }
+      const { data } = await supabase.from('users').select('username, email').eq('is_test', true).order('created_at', { ascending: false }).limit(50);
+      const rows = (data ?? []) as Array<{ username: string | null; email: string | null }>;
+      await sendTelegramMessage(
+         chatId,
+         rows.length
+            ? `🧪 Test accounts (${rows.length}):\n${rows.map((r, i) => `${i + 1}. ${r.username ? `@${r.username}` : r.email}`).join('\n')}\n\nAdd with /testaccount @username · undo with /testaccount off @username`
+            : 'No test accounts yet. Add with /testaccount @username'
+      );
+      return true;
+   }
+
+   const done: string[] = [];
+   const missing: string[] = [];
+   for (const handle of handles) {
+      const { data: user } = /^[0-9a-f-]{36}$/i.test(handle)
+         ? await supabase.from('users').select('id, username').eq('id', handle).maybeSingle()
+         : await supabase.from('users').select('id, username').ilike('username', escapeLike(handle)).maybeSingle();
+      if (!user) {
+         missing.push(handle);
+         continue;
+      }
+      const { error } = await supabase.from('users').update({ is_test: !off }).eq('id', user.id);
+      if (error) throw new Error(error.message);
+      done.push(user.username ? `@${user.username}` : user.id);
+   }
+   await sendTelegramMessage(
+      chatId,
+      [
+         done.length ? `🧪 ${off ? 'Marked real again' : 'Marked as test'}: ${done.join(', ')} — by ${adminHandle(message.from)}` : null,
+         missing.length ? `No user found for: ${missing.join(', ')}` : null
+      ]
+         .filter(Boolean)
+         .join('\n')
+   );
+   return true;
+};
+
+// 🧪 Test account? on a person card (_shared/testAccount.ts): ask → a confirm under the card;
+// ✅ Yes → users.is_test and the 🧪 row comes off the card; ✖ No → the confirm goes away.
+const handleTestAccountCallback = async (
+   supabase: SupabaseClient,
+   query: TelegramCallbackQuery,
+   step: TestAccountCallback,
+   allowedChatIds: string[]
+) => {
+   const msg = query.message;
+   if (!msg || !allowedChatIds.includes(String(msg.chat.id))) {
+      await answerCallback(query.id, 'Not allowed here.');
+      return;
+   }
+   const chatId = msg.chat.id;
+   if (step.step === 'no') {
+      await answerCallback(query.id, 'Left as a real account.');
+      await callTelegramApi('deleteMessage', { chat_id: chatId, message_id: msg.message_id }).catch(() =>
+         setCardButtons(chatId, msg.message_id, [])
+      );
+      return;
+   }
+
+   const { data: user } = await supabase.from('users').select('id, username, display_name, is_test').eq('id', step.userId).maybeSingle();
+   if (!user) {
+      await answerCallback(query.id, 'Account not found.');
+      return;
+   }
+   const name = [user.display_name?.trim(), user.username ? `@${user.username}` : null].filter(Boolean).join(' ') || personName(user);
+
+   if (step.step === 'ask') {
+      if (user.is_test) {
+         await answerCallback(query.id, `${name} is already a test account.`);
+         await setCardButtons(chatId, msg.message_id, withoutTestAccountRow(msg.reply_markup?.inline_keyboard));
+         return;
+      }
+      await answerCallback(query.id, 'Confirm below 👇');
+      await callTelegramApi('sendMessage', {
+         chat_id: chatId,
+         text: testAccountQuestion(name),
+         ...(msg.message_thread_id ? { message_thread_id: msg.message_thread_id } : {}),
+         reply_parameters: { message_id: msg.message_id, allow_sending_without_reply: true },
+         reply_markup: { inline_keyboard: testAccountConfirmKeyboard(user.id) }
+      });
+      return;
+   }
+
+   const { error } = await supabase.from('users').update({ is_test: true }).eq('id', user.id);
+   if (error) {
+      await answerCallback(query.id, `⚠️ Didn't save — tap again. (${error.message.slice(0, 120)})`);
+      return;
+   }
+   await answerCallback(query.id, '🧪 Marked as a test account.');
+   await callTelegramApi('editMessageText', {
+      chat_id: chatId,
+      message_id: msg.message_id,
+      text: `🧪 ${name} is now a test account — by ${adminHandle(query.from)}\nUndo with /testaccount off ${user.username ? `@${user.username}` : user.id}`,
+      reply_markup: { inline_keyboard: [] }
+   }).catch((err: unknown) => console.error('telegram-webhook: test confirm edit failed', err instanceof Error ? err.message : err));
+   const card = msg.reply_to_message;
+   if (card?.reply_markup?.inline_keyboard) await setCardButtons(chatId, card.message_id, withoutTestAccountRow(card.reply_markup.inline_keyboard));
+};
+
 const verifyTelegramSecret = (req: Request) => {
    const expectedSecret = Deno.env.get('TELEGRAM_WEBHOOK_SECRET');
    if (!expectedSecret) {
       return true;
    }
 
-   return req.headers.get('x-telegram-bot-api-secret-token') === expectedSecret;
+   // setWebhook only accepts A–Z a–z 0–9 _ - in secret_token, so the webhook is registered with the
+   // secret stripped to those characters (telegram-webhook-audit). Accept either form.
+   const header = req.headers.get('x-telegram-bot-api-secret-token');
+   return header === expectedSecret || header === expectedSecret.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 256);
 };
 
 const connectTelegramAlerts = async (supabase: SupabaseClient, message: TelegramMessage, userId: string) => {
@@ -635,6 +919,57 @@ serve(async (req) => {
       if (update.callback_query) {
          const teamChatId = await getTeamChatId(supabase);
          const kycChatId = await getSetting(supabase, 'kyc_alert_chat_id');
+         // 🔄 Change time picker: the admin chats and the call-changes group.
+         const reschedule = parseRescheduleCallback(update.callback_query.data);
+         if (reschedule) {
+            const query = update.callback_query;
+            const chatId = query.message?.chat.id;
+            const allowed = [teamChatId, kycChatId, await getSetting(supabase, 'call_changes_chat_id')].filter(Boolean).map(String);
+            if (!chatId || !query.message || !allowed.includes(String(chatId))) {
+               await answerCallback(query.id, 'Not allowed here.');
+            } else {
+               await answerCallback(query.id, '⏳ One moment…');
+               try {
+                  const toast = await handleRescheduleStep(supabase, reschedule, chatId, query.message.message_id, adminHandle(query.from));
+                  if (reschedule.step === 'open' && !toast.startsWith('Pick')) await sendTelegramMessage(chatId, toast);
+               } catch (error) {
+                  const reason = error instanceof Error ? error.message : String(error);
+                  console.error('telegram-webhook: change time failed', reason);
+                  await sendTelegramMessage(chatId, `⚠️ Change time failed — try again. (${reason.slice(0, 200)})`);
+               }
+            }
+            return jsonResponse({ message: 'Reschedule handled' });
+         }
+         // 🗑️ Cancel call: the admin chats, the team group (📋 Call in N min cards) and the call-changes group.
+         const cancel = parseCancelCallback(update.callback_query.data);
+         if (cancel) {
+            const query = update.callback_query;
+            const chatId = query.message?.chat.id;
+            const allowed = [teamChatId, kycChatId, await getSetting(supabase, 'team_group_chat_id'), await getSetting(supabase, 'call_changes_chat_id')]
+               .filter(Boolean)
+               .map(String);
+            if (!chatId || !query.message || !allowed.includes(String(chatId))) {
+               await answerCallback(query.id, 'Not allowed here.');
+            } else {
+               await answerCallback(query.id, '⏳ One moment…');
+               try {
+                  const toast = await handleCancelStep(supabase, cancel, chatId, query.message.message_id, adminHandle(query.from));
+                  if (cancel.step === 'open' && !toast.startsWith('Confirm')) await sendTelegramMessage(chatId, toast);
+               } catch (error) {
+                  const reason = error instanceof Error ? error.message : String(error);
+                  console.error('telegram-webhook: cancel call failed', reason);
+                  await sendTelegramMessage(chatId, `⚠️ Cancel call failed — try again. (${reason.slice(0, 200)})`);
+               }
+            }
+            return jsonResponse({ message: 'Cancel call handled' });
+         }
+         // 🧪 Test account?: the admin chats and the call-changes group (where the moved-call cards go).
+         const testAccount = parseTestAccountCallback(update.callback_query.data);
+         if (testAccount) {
+            const allowed = [teamChatId, kycChatId, await getSetting(supabase, 'call_changes_chat_id')].filter(Boolean).map(String);
+            await handleTestAccountCallback(supabase, update.callback_query, testAccount, allowed);
+            return jsonResponse({ message: 'Test account handled' });
+         }
          await handleAdminCallback(
             supabase,
             update.callback_query,
@@ -689,6 +1024,22 @@ serve(async (req) => {
          return jsonResponse({ message: 'Lender roster command handled' });
       }
 
+      // /move @username — the 🔄 Change time picker for their call. Admin chats + call-changes group.
+      if (/^\/move(?:@\w+)?\b/i.test(message.text ?? '')) {
+         const callChangesChatId = await getSetting(supabase, 'call_changes_chat_id');
+         if (isAdminChannel || (callChangesChatId && String(message.chat.id) === String(callChangesChatId))) {
+            const arg = (message.text ?? '').trim().split(/\s+/)[1]?.replace(/^@/, '') ?? '';
+            if (!arg) {
+               await sendTelegramMessage(message.chat.id, 'Usage: /move @username — then pick the new day and time.');
+            } else {
+               const { data: who } = await supabase.from('users').select('id').ilike('username', escapeLike(arg)).maybeSingle();
+               const reply = who ? await postReschedulePicker(supabase, message.chat.id, (who as { id: string }).id) : `No borrower called @${arg}.`;
+               if (!reply.startsWith('Pick')) await sendTelegramMessage(message.chat.id, reply);
+            }
+            return jsonResponse({ message: 'Move command handled' });
+         }
+      }
+
       // Manual Messenger verification confirm — either admin channel.
       if (isAdminChannel && /^\/confirm\b/i.test(message.text ?? '')) {
          await handleMessengerConfirmCommand(supabase, message);
@@ -711,6 +1062,24 @@ serve(async (req) => {
       if (isAdminChannel && /^\/loanflow\b/i.test(message.text ?? '')) {
          await handleLoanFlowCommand(supabase, message);
          return jsonResponse({ message: 'Loan flow command handled' });
+      }
+
+      // KYC tries reset — either admin channel.
+      if (isAdminChannel && /^\/kycretry\b/i.test(message.text ?? '')) {
+         await handleKycRetryCommand(supabase, message);
+         return jsonResponse({ message: 'KYC retry command handled' });
+      }
+
+      // Test-account flag — either admin channel.
+      if (isAdminChannel && /^\/testaccount\b/i.test(message.text ?? '')) {
+         await handleTestAccountCommand(supabase, message);
+         return jsonResponse({ message: 'Test account command handled' });
+      }
+
+      // Pre-KYC gate switch — either admin channel.
+      if (isAdminChannel && /^\/kycgate\b/i.test(message.text ?? '')) {
+         await handleKycGateCommand(supabase, message);
+         return jsonResponse({ message: 'KYC gate command handled' });
       }
 
       await handleSupportAgentMessage(supabase, message);

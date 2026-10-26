@@ -36,3 +36,26 @@ Deno.test('flags a Facebook that is already linked to other Moodeng accounts', (
    ]);
    assertEquals(text.includes('⚠️ Same Facebook is already linked to @jaja-reyes, @jaja2'), true);
 });
+
+Deno.test('a declined ID check is flagged so the team reaches out', () => {
+   const text = buildFacebookConnectedAlert(
+      { username: 'rae', display_name: 'Rae', email: null, is_didit: 'INACTIVE', didit_id_status: 'Declined', didit_decline_reason: 'Face mismatch' },
+      null,
+      [],
+      NOW
+   );
+   assertEquals(
+      text,
+      "✅ Facebook connected — Rae\n@rae\nNew borrower (no loans yet)\n⚠️ Their ID check was DECLINED (Face mismatch) — they connected to talk to us about it. Please message them.\nMessage them from Admin → Borrower contacts."
+   );
+});
+
+Deno.test('a decline that was later overridden (verified) is not flagged', () => {
+   const text = buildFacebookConnectedAlert(
+      { username: 'rae', display_name: 'Rae', email: null, is_didit: 'ACTIVE', didit_id_status: 'Declined' },
+      null,
+      [],
+      NOW
+   );
+   assertEquals(text.includes('DECLINED'), false);
+});

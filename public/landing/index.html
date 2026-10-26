@@ -3,6 +3,7 @@
    <head>
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+      <meta name="facebook-domain-verification" content="4leok4oo9s5xhew47tktikv4u7s58g" />
       <title>Moodeng Credit | Small loans with clear terms</title>
       <meta
          name="description"
@@ -81,7 +82,9 @@
 
             var mobileQuery = new URLSearchParams(window.location.search);
             if (window.matchMedia('(max-width: 699px)').matches && mobileQuery.get('desktop') !== '1') {
-               window.location.replace('/landing/old-mobile.html?theme=professional');
+               // Keep ?src= (Facebook post links) and the rest: the phone page records them.
+               mobileQuery.set('theme', 'professional');
+               window.location.replace('/landing/old-mobile.html?' + mobileQuery.toString() + window.location.hash);
             }
          })();
       </script>
@@ -117,6 +120,7 @@
          ]
          window.wireboard('trackPageView', null, customContext)
       </script>
+      <script src="/meta-pixel.js"></script>
    </head>
    <body>
       <svg class="site-icon-sprite" aria-hidden="true">
@@ -236,7 +240,6 @@
                      <a class="text-link hero-walkthrough hero-walkthrough-v2" href="/how-it-works"
                         >See how Moodeng works <span aria-hidden="true">→</span></a
                      >
-                     <p class="hero-note">About 2 minutes to ask &middot; funding is not guaranteed</p>
                   </div>
                </div>
                <figure class="tilt-hero-photo tilt-hero-photo-school">
@@ -837,13 +840,6 @@
                         >
                      </div>
                   </div>
-                  <div class="person-row">
-                     <div class="person">
-                        <img src="/team/celeste.jpeg" alt="Celeste from Moodeng" loading="lazy" width="800" height="953" /><span
-                           ><b>Celeste</b><small>Contract product designer</small></span
-                        >
-                     </div>
-                  </div>
                   <p class="lead">
                      Moodeng is small enough that the people building it still read support messages. If something is confusing, tell us.
                   </p>
@@ -957,7 +953,7 @@
                </div>
             </div>
             <p class="footer-fine">
-               © 2026 Moodeng Credit. Request funding is not guaranteed. Terms vary by request.
+               © 2026 Moodeng Credit, operated by Building Credit Asia LLC, a Colorado limited liability company. Request funding is not guaranteed. Terms vary by request.
                <a href="/privacy-policy">Privacy policy</a> · <a href="/terms">Terms of service</a>
             </p>
          </div>
@@ -965,7 +961,10 @@
 
       <script type="module" src="/landing/site.js?v=20260721-route-focus-2"></script>
       <!-- Moodeng support chat — Discord-backed live chat widget -->
-      <script src="https://web-iota-sage-38.vercel.app/widget.js" data-title="Moodeng Support" data-accent="#16a34a" defer></script>
+      <script src="https://web-iota-sage-38.vercel.app/widget.js" data-launcher="hidden" data-title="Moodeng Support" data-accent="#16a34a" defer></script>
+      <script src="/landing/messenger-chat.js?v=20261023-2" defer></script>
 
+      <script src="/landing/continue-banner.js?v=20261021-1" defer></script>
+      <script src="/landing/open-in-browser.js?v=20261018-7" defer></script>
    </body>
 </html>

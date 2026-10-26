@@ -29,6 +29,7 @@ import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 import { useLoanFlow } from '@/hooks/useLoanFlow';
+import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 import { usePagination } from '@/hooks/usePagination';
 import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
 
@@ -54,7 +55,7 @@ import {
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { isTransientNetworkError } from '@/lib/isTransientNetworkError';
 import { isUserVerified, isVerificationPending } from '@/lib/isUserVerified';
-import { checkLoanReason } from '@/lib/loanReasonCheck';
+import { checkLoanReason, type ReasonCheckLocale } from '@/lib/loanReasonCheck';
 import { getLoanRequestCooldownMessage, type LoanRequestRepostStatus } from '@/lib/loanRequestRepostStatus';
 import { setPendingSharedRequestId } from '@/lib/pendingSharedRequest';
 import { captureApplicationSignals, type CapturedSignals, sendApplicationSignals } from '@/lib/recordApplicationSignals';
@@ -81,7 +82,8 @@ import LoanRequestModal, {
    type LoanRequestResume,
    mapBorrowerContextForSave
 } from '@/views/dashboard/components/LoanRequestModal';
-import { CONNECT_HIPPOS } from '@/views/dashboard/components/connectKit';
+import { CONNECT_HIPPOS, markCelebrated, StepCelebration, StepTrail, wasCelebrated } from '@/views/dashboard/components/connectKit';
+import DeleteLoanRequestModal from '@/views/dashboard/components/DeleteLoanRequestModal';
 import LocationPrimingModal from '@/views/dashboard/components/LocationPrimingModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
@@ -540,7 +542,11 @@ function RequestBoard$() {
          clearVerifyFlow();
       }
    }, [isRealUserAuthenticated, user]);
-   const { open: openVerify, modal: verifyModal } = useVerifyYourself();
+   const { modal: verifyModal } = useVerifyYourself();
+   // Their next step on the way to a first loan (wallet → Messenger → bio → call → ✅ → apply): the
+   // header link and the apply card follow it. "Apply" here opens this board's own loan form.
+   const openLoanFormFromJourney = useCallback(() => setShowModal(true), []);
+   const journey = useVerificationJourney(openLoanFormFromJourney);
    // Keep the verification badge honest: pull the real Didit status for pending users.
    useVerificationStatusSync();
    const storeIsBorrower = useIsBorrower();
@@ -606,12 +612,25 @@ function RequestBoard$() {
    const [loanRequestResume, setLoanRequestResume] = useState<LoanRequestResume | null>(null);
    const [loanRequestFlowState, setLoanRequestFlowState] = useState<LoanRequestResume | null>(null);
    const didAttemptLoanRequestResumeRef = useRef(false);
+   // Back from "Verify ID & send request" and now verified: the modal sends the saved request itself.
+   const [autoSendLoanRequest, setAutoSendLoanRequest] = useState(false);
    const handleLoanRequestFlowStateChange = useCallback((state: LoanRequestResume) => {
       setLoanRequestFlowState(state);
    }, []);
    const [searchLoan, setSearchLoan] = useState('');
    const [appliedReferral, setAppliedReferral] = useState<AppliedReferralCode | null>(null);
-   const effectiveCreditLimit = isAuthenticated ? getEffectiveCreditLimit(effectiveUser.cs, isUserVerified(effectiveUser)) : 0;
+   // Through onboarding but not ID-checked yet ('apply'): they fill in the loan form first and verify
+   // as the last step of sending (verifyAtSubmit in LoanRequestModal). Size the form by the limit
+   // they'll have once verified — reading 0 here said "above your current limit of $0" and blocked
+   // every request. Creating the loan itself still requires verification.
+   // Also once they've opened the ID check and come back unverified (left Didit early, declined, in
+   // review — stage 'id_with_didit'): the form comes back with their saved terms and must still show
+   // their real limit, not $0. Not for a duplicate face: that account is blocked.
+   const isApplyingBeforeIdCheck =
+      !journey.onboarding && (journey.stage === 'apply' || (journey.stage === 'id_with_didit' && verifyUiState !== 'duplicate'));
+   const effectiveCreditLimit = isAuthenticated
+      ? getEffectiveCreditLimit(effectiveUser.cs, isUserVerified(effectiveUser) || isApplyingBeforeIdCheck)
+      : 0;
    const borrowerCreditLoans = useMemo(() => {
       if (!borrowerUserId) return [];
 
@@ -627,7 +646,9 @@ function RequestBoard$() {
       isReferralTestMode ||
       (isAuthenticated &&
          isBorrower &&
-         isUserVerified(effectiveUser) &&
+         // Approved borrowers fill in the form before their ID check, so they get the referral card
+         // there too — it was the only place to enter a code, and they never saw it.
+         (isUserVerified(effectiveUser) || isApplyingBeforeIdCheck) &&
          effectiveCreditLimit <= STARTING_CREDIT_LIMIT &&
          borrowerCreditLoans.length === 0);
    const hasBorrowerBaseWallet = !IS_BORROWER_BASE_WALLET_GATE_ENABLED || hasWalletAddressOnAccount(effectiveUser);
@@ -640,7 +661,9 @@ function RequestBoard$() {
       (location.state as { openLoanRequest?: boolean } | null)?.openLoanRequest === true ||
       new URLSearchParams(location.search).get('applyLoan') === '1';
 
-   const loanRequestModalRef = useClickOutside<HTMLDivElement>(() => setShowModal(false), showModal) as RefObject<HTMLDivElement>;
+   // Never active: the loan form closes from its own backdrop (onBackdropPress). A document-wide
+   // outside-click also caught taps on the form's popups, toasts and the location question.
+   const loanRequestModalRef = useClickOutside<HTMLDivElement>(() => setShowModal(false), false) as RefObject<HTMLDivElement>;
    const publicQuestionsRef = useClickOutside<HTMLDivElement>(
       () => setShowPublicQuestions(false),
       showPublicQuestions
@@ -710,8 +733,55 @@ function RequestBoard$() {
          borrowerContext: draft.borrowerContext,
          profileName: draft.profileName
       });
+      const isWaitingOnIdCheck = Boolean(draft.sendAfterVerify || draft.prefillOnly);
+      if (isWaitingOnIdCheck && !isUserVerified(effectiveUser)) {
+         // ID still with Didit (e.g. manual review): keep the terms ready for when they tap Apply,
+         // but don't pop the form open on every visit — there's nothing they can do until it clears.
+         return;
+      }
+      if (draft.sendAfterVerify) setAutoSendLoanRequest(true);
+      // Verified and shown the filled-in form once: that's what the kept terms were for. Use them up
+      // now, so dismissing the form any way (backdrop, leaving the page) doesn't reopen it on every
+      // visit for the next 3 days.
+      if (draft.prefillOnly) saveLoanRequestDraft(effectiveUser.id, { ...draft, prefillOnly: false });
       setShowModal(true);
+      // Resume once per load, against the profile as it is now.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [isAuthenticated, isBorrower, effectiveUser?.id]);
+
+   // "Verify ID & send request" leaves for /verify and Didit, which unmounts this page and the form.
+   // Save the terms now (the regular snapshot skips the terms screen) and mark them to be sent once
+   // the borrower is back verified — the form promises "What you typed is kept".
+   const handleVerifyToSend = useCallback(() => {
+      // Nothing typed yet (e.g. "View status" on an empty form): nothing to keep or send.
+      if (!effectiveUser?.id || (!loanAmount && !reason)) return;
+      saveLoanRequestDraft(effectiveUser.id, {
+         terms: { loanAmount, totalRepaymentAmount, reason, days },
+         referral: loanRequestFlowState?.referral ?? appliedReferral,
+         flow: loanRequestFlowState?.flow ?? {
+            showReferralStep: false,
+            showBorrowerContextStep: false,
+            bioPage: 1,
+            showContactsStep: false,
+            showVideoCallStep: false,
+            contactsStepDone: false,
+            videoCallStepDone: false,
+            borrowerContextPromptSeen: false
+         },
+         borrowerContext: loanRequestFlowState?.borrowerContext ?? { incomeSetup: '', paydayWindow: '', cashGaps: [] },
+         profileName: loanRequestFlowState?.profileName ?? '',
+         sendAfterVerify: true
+      });
+   }, [appliedReferral, days, effectiveUser?.id, loanAmount, loanRequestFlowState, reason, totalRepaymentAmount]);
+
+   // The auto-send fired: drop the "send after verify" mark so a failed send (reason check, cooldown)
+   // can't re-fire on every reload. The terms stay on the open form for them to fix and send.
+   const handleAutoSubmitStarted = useCallback(() => {
+      setAutoSendLoanRequest(false);
+      if (!effectiveUser?.id) return;
+      const draft = loadLoanRequestDraft(effectiveUser.id);
+      if (draft?.sendAfterVerify) saveLoanRequestDraft(effectiveUser.id, { ...draft, sendAfterVerify: false });
+   }, [effectiveUser?.id]);
 
    // Snapshot the in-progress request whenever the terms or the modal's step change, so a reload
    // mid-flow can resume. Only while the modal is open and only once the borrower is past the first
@@ -728,10 +798,12 @@ function RequestBoard$() {
       if (draftIsResumable(draft)) saveLoanRequestDraft(effectiveUser.id, draft);
    }, [showModal, effectiveUser?.id, loanRequestFlowState, loanAmount, totalRepaymentAmount, reason, days]);
 
+   // Straight to wallet setup, not Welcome: these borrowers already signed up and saw Welcome, and its
+   // "Explore Moodeng" sent them right back here — a loop that let people skip setup entirely.
    const goToBorrowerOnboardingStart = useCallback(
       (returnTo?: string) => {
          setShowModal(false);
-         navigate('/onboarding/welcome', returnTo ? { state: { returnTo } } : undefined);
+         navigate('/onboarding/wallet', returnTo ? { state: { returnTo } } : undefined);
       },
       [navigate]
    );
@@ -844,23 +916,27 @@ function RequestBoard$() {
       }
    };
 
+   const handleLoanModalBackdropPress = useCallback(() => setShowModal(false), []);
    const handleCloseModal = useCallback(() => {
       setShowModal(false);
       setShowBioStep(false);
       pendingLoanDataRef.current = null;
-      // Closing is a deliberate abandon — drop the resumable snapshot so it can't reopen later.
-      clearLoanRequestDraft();
       setLoanRequestResume(null);
       setLoanRequestFlowState(null);
-   }, []);
-   const handleVerifyHeaderClick = useCallback(() => {
-      if (!hasBorrowerBaseWallet) {
-         goToBorrowerOnboardingStart();
+      setAutoSendLoanRequest(false);
+      // Terms already sent off to the ID check, closed while the ID is still being checked: keep
+      // them so the form comes back filled in once verified — but no longer send it by itself.
+      const draft = effectiveUser?.id ? loadLoanRequestDraft(effectiveUser.id) : null;
+      if (draft && (draft.sendAfterVerify || draft.prefillOnly) && !isUserVerified(effectiveUser)) {
+         saveLoanRequestDraft(effectiveUser.id, { ...draft, sendAfterVerify: false, prefillOnly: true });
          return;
       }
-
-      openVerify();
-   }, [goToBorrowerOnboardingStart, hasBorrowerBaseWallet, openVerify]);
+      // Otherwise closing is a deliberate abandon — drop the resumable snapshot so it can't reopen later.
+      clearLoanRequestDraft();
+   }, [effectiveUser]);
+   const handleVerifyHeaderClick = useCallback(() => {
+      journey.go();
+   }, [journey]);
    const handleRequestBoardTourStepChange = useCallback(
       (index: number) => {
          if (!isAuthenticated) {
@@ -1070,7 +1146,7 @@ function RequestBoard$() {
          {
             target: '[data-tour-target="request-first-card"]',
             title: 'The request board',
-            body: 'This is where borrowers post short-term USDC loan requests and lenders browse them. Both sides of Moodeng meet here.',
+            body: 'This is where borrowers post short-term USDC loan requests and moo-lenders browse them. Both sides of Moodeng meet here.',
             durationMs: 6000
          },
          {
@@ -1081,8 +1157,8 @@ function RequestBoard$() {
          },
          {
             target: '[data-tour-target="request-latest-list"]',
-            title: 'Lenders browse & fund',
-            body: "Lenders scroll through open requests, check each borrower's repayment history and trust signals, then fund the ones they believe in.",
+            title: 'Moo-lenders browse & fund',
+            body: "Moo-lenders scroll through open requests, check each borrower's repayment history and trust signals, then fund the ones they believe in.",
             cardPlacement: 'bottom',
             durationMs: 6000
          },
@@ -1101,7 +1177,7 @@ function RequestBoard$() {
             {
                target: '[data-tour-target="request-first-card"]',
                title: 'Request Board',
-               body: 'This is the marketplace. Once a request is live, lenders review the amount, repayment, and borrower before funding.',
+               body: 'This is the marketplace. Once a request is live, moo-lenders review the amount, repayment, and borrower before funding.',
                durationMs: 5200
             },
             {
@@ -1112,21 +1188,21 @@ function RequestBoard$() {
             },
             {
                target: '[data-tour-target="guest-world-id-preview"]',
-               title: 'Verify first',
-               body: 'Borrowers complete a one-time identity check before requesting a loan. It helps lenders know they are funding a real person.',
+               title: 'Meet the team, then apply',
+               body: 'Borrowers set up a wallet, connect Messenger and have a short call with the team. Their ID is checked when they send their first request, so moo-lenders know they are funding a real person.',
                cardPlacement: 'top',
                durationMs: 6500
             },
             {
                target: '[data-tour-target="loan-borrow-amount"]',
                title: 'Set your terms',
-               body: 'After verification, this is where the borrower sets the amount, repayment, date, and reason for the request.',
+               body: 'This is where the borrower sets the amount, repayment, date, and reason. Sending it is when their ID gets checked.',
                durationMs: 6000
             },
             {
                target: '[data-tour-target="request-latest-list"]',
                title: 'Get funded, then repay',
-               body: 'A lender funds your request and USDC lands in your wallet. Repay on time and your Pandesal points — and your next limit — grow. Miss a repayment and it shows on your public profile, so lenders lend on trust.',
+               body: 'A moo-lender funds your request and USDC lands in your wallet. Repay on time and your Pandesal points — and your next limit — grow. Miss a repayment and it shows on your public profile, so moo-lenders lend on trust.',
                cardPlacement: 'bottom',
                durationMs: 7500
             },
@@ -1156,7 +1232,7 @@ function RequestBoard$() {
               {
                  target: '[data-tour-target="request-latest-list"]',
                  title: 'Request Board',
-                 body: 'This list is the marketplace. Once a request is live, lenders can review the amount, repayment, and borrower profile before funding.',
+                 body: 'This list is the marketplace. Once a request is live, moo-lenders can review the amount, repayment, and borrower profile before funding.',
                  cardPlacement: 'bottom',
                  durationMs: 6000
               },
@@ -1168,14 +1244,14 @@ function RequestBoard$() {
               },
               {
                  target: '[data-tour-target="request-verify-world-id-link"]',
-                 title: 'Verify first',
-                 body: 'Before an unverified borrower can request a loan, Moodeng sends them through a quick identity verification screen.',
+                 title: 'Meet the team, then apply',
+                 body: 'New borrowers set up, have a short call with the team, then fill in a request. A quick ID check is the last step of sending it.',
                  durationMs: 6500
               },
               {
                  target: '[data-tour-target="loan-borrow-amount"]',
                  title: 'Loan terms preview',
-                 body: 'After verification, this is where the borrower sets the amount, repayment, date, and reason for the request.',
+                 body: 'This is where the borrower sets the amount, repayment, date, and reason. Sending it is when their ID gets checked.',
                  durationMs: 6000
               }
            ].map(slowTourStep)
@@ -1183,7 +1259,7 @@ function RequestBoard$() {
               {
                  target: '[data-tour-target="request-latest-list"]',
                  title: 'Request Board',
-                 body: 'This list is the marketplace. Once a request is live, lenders can review the amount, repayment, and borrower profile before funding.',
+                 body: 'This list is the marketplace. Once a request is live, moo-lenders can review the amount, repayment, and borrower profile before funding.',
                  cardPlacement: 'bottom',
                  durationMs: 6000
               },
@@ -1202,13 +1278,13 @@ function RequestBoard$() {
               {
                  target: '[data-tour-target="loan-repayment-amount"]',
                  title: 'Set a clear repayment',
-                 body: 'Your repayment must be at least $1 more than what you borrow. Lenders use this to decide if the request is worth funding.',
+                 body: 'Your repayment must be at least $1 more than what you borrow. Moo-lenders use this to decide if the request is worth funding.',
                  durationMs: 6400
               },
               {
                  target: '[data-tour-target="loan-reason"]',
                  title: 'Explain the reason',
-                 body: 'A short, specific reason helps lenders understand the request and builds trust before they fund it.',
+                 body: 'A short, specific reason helps moo-lenders understand the request and builds trust before they fund it.',
                  durationMs: 6000
               }
            ].map(slowTourStep);
@@ -1219,7 +1295,7 @@ function RequestBoard$() {
       {
          target: '[data-tour-target="request-latest-list"]',
          title: 'Find open requests',
-         body: 'As a lender, this board shows people asking for short-term USDC support. Start by comparing the amount, repayment, due date, and reason.',
+         body: 'As a moo-lender, this board shows people asking for short-term USDC support. Start by comparing the amount, repayment, due date, and reason.',
          cardPlacement: 'bottom',
          durationMs: 6500
       },
@@ -1256,15 +1332,28 @@ function RequestBoard$() {
    const loanAccessStatus = effectiveUser?.loanAccessStatus;
    const isFreshlyApproved = isBorrower && loanAccessStatus === 'approved' && !effectiveUser?.loanAccessSeenAt;
    const isLoanAccessPending = isBorrower && loanFlow !== 'open' && loanAccessStatus === 'pending';
+   // The finish line of onboarding: the first time a freshly approved borrower opens the app, a
+   // full-screen "You're now a Moo-borrower!" before the loan form. Once per borrower (this device).
+   const mooBorrowerDue = useMemo(
+      () => isFreshlyApproved && Boolean(effectiveUser?.id) && !wasCelebrated(effectiveUser?.id ?? '', 'moo-borrower'),
+      [isFreshlyApproved, effectiveUser?.id]
+   );
+   const [mooBorrowerDone, setMooBorrowerDone] = useState(false);
+   // Latched: opening the loan form stamps the approval as seen, which must not pull this away mid-view.
+   const [mooBorrowerShowing, setMooBorrowerShowing] = useState(false);
+   if (mooBorrowerDue && !mooBorrowerShowing && !mooBorrowerDone) setMooBorrowerShowing(true);
+   const finishMooBorrower = () => {
+      if (effectiveUser?.id) markCelebrated(effectiveUser.id, 'moo-borrower');
+      setMooBorrowerDone(true);
+      setShowModal(true);
+   };
 
-   // While waiting for approval, re-check whenever they come back to the tab (after the call, or
-   // after tapping the approval notification in another app) so the "You're approved" glow appears.
+   // JourneyNudge (app-wide) watches for the approval while they wait and brings them here the moment
+   // it lands. Put the glowing "You're approved 🎉" Apply card in view so it's the first thing they see.
    useEffect(() => {
-      if (!isLoanAccessPending) return undefined;
-      const onFocus = () => void dispatch(fetchUser());
-      window.addEventListener('focus', onFocus);
-      return () => window.removeEventListener('focus', onFocus);
-   }, [dispatch, isLoanAccessPending]);
+      if (!isFreshlyApproved) return;
+      document.querySelector('[data-tour-target="request-apply-card"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+   }, [isFreshlyApproved]);
 
    // Landing here from the "✅ I'll be there" button in a Messenger call reminder
    // (video-call-confirm redirects to ?callConfirmed=yes|expired). Say thanks once, then tidy the URL.
@@ -1424,7 +1513,7 @@ function RequestBoard$() {
             showToast(
                TOAST_TYPES.ERROR,
                'Reason required',
-               'Add a short reason so lenders know what the loan is for.',
+               'Add a short reason so moo-lenders know what the loan is for.',
                'OK',
                'acknowledge'
             );
@@ -1438,11 +1527,11 @@ function RequestBoard$() {
          // field knocked on while they were typing, so the verdict is usually cached. Fails open
          // only when the check itself can't run.
          setIsCheckingReason(true);
-         const { ok: reasonOk, hint: reasonHint, category: reasonCategory } = await checkLoanReason(trimmedReason);
+         const { ok: reasonOk, hint: reasonHint, category: reasonCategory } = await checkLoanReason(trimmedReason, locale as ReasonCheckLocale);
          setIsCheckingReason(false);
 
          if (!reasonOk) {
-            const warningText = reasonHint || 'Tell lenders what the money will be used for.';
+            const warningText = reasonHint || 'Tell moo-lenders what the money will be used for.';
             // Inline warning under the reason field stays put so the borrower can act on it.
             setReasonWarning(warningText);
             // The submit button sits at the bottom of a scrollable form, so the inline warning
@@ -1656,8 +1745,14 @@ function RequestBoard$() {
          setDays('');
          return;
       }
-      const date = new Date(e.target.value);
-      const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0));
+      // Parse YYYY-MM-DD as calendar parts: new Date('YYYY-MM-DD') is UTC midnight, and reading
+      // its local fields shifts the day back by one west of UTC.
+      const [year, month, day] = e.target.value.split('-').map(Number);
+      if (!year || !month || !day) {
+         setDays('');
+         return;
+      }
+      const utcDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
       setDays(utcDate.toISOString());
    };
 
@@ -1783,7 +1878,7 @@ function RequestBoard$() {
             'Request deleted',
             repostStatus && !repostStatus.canCreate
                ? getLoanRequestCooldownMessage(repostStatus)
-               : 'Lenders will no longer see this request on the board.'
+               : 'Moo-lenders will no longer see this request on the board.'
          );
 
          await Promise.all([
@@ -1866,7 +1961,9 @@ function RequestBoard$() {
    // focused on that exact request: highlight it, scroll it into view, and open it fully (the
    // card mounts expanded via openByDefault) so they land on the ready-to-fund request.
    useEffect(() => {
-      const target = new URLSearchParams(location.search).get('highlight');
+      const params = new URLSearchParams(location.search);
+      // ?loan= is the older spelling, still in Telegram / team posts already sent.
+      const target = params.get('highlight') ?? params.get('loan');
       if (!target || highlightParamRef.current === target) return;
       if (!visibleLoans.some((loan) => loan.id === target)) return;
 
@@ -1880,12 +1977,33 @@ function RequestBoard$() {
    // the public board yet, so it survives a delayed or empty first load.
    useEffect(() => {
       if (isAuthenticated) return;
-      const target = new URLSearchParams(location.search).get('highlight');
+      const params = new URLSearchParams(location.search);
+      // ?loan= is the older spelling, still in Telegram / team posts already sent.
+      const target = params.get('highlight') ?? params.get('loan');
       if (target) setPendingSharedRequestId(target);
    }, [isAuthenticated, location.search]);
 
    return (
       <>
+         {mooBorrowerShowing && !mooBorrowerDone ? (
+            <div className="fixed inset-0 z-[100] overflow-y-auto bg-white">
+               <div className="mx-auto flex min-h-full w-full max-w-[440px] flex-col">
+                  <StepCelebration
+                     continueLabel="Apply for my first loan"
+                     image={CONNECT_HIPPOS.approved}
+                     onDone={finishMooBorrower}
+                     stats={[
+                        { label: 'Facebook', value: 'Done ✓', tone: 'green' },
+                        { label: 'Profile', value: 'Done ✓', tone: 'purple' },
+                        { label: 'Call', value: 'Done ✓', tone: 'amber' }
+                     ]}
+                     subtitle="Welcome to the herd! You're all set — apply for your first loan now."
+                     title="You’re now a Moo-borrower! 🎉"
+                     trail={<StepTrail current={4} steps={['Messenger', 'About you', 'Your goal', 'Book call']} />}
+                  />
+               </div>
+            </div>
+         ) : null}
          <div id="top" className="min-h-screen bg-md-neutral-200">
             <div className="max-w-[440px] mx-auto pb-28">
                {/* Header — authenticated vs public */}
@@ -1943,10 +2061,11 @@ function RequestBoard$() {
                                              <span className="w-3 h-3 rounded-full bg-md-red-800 flex items-center justify-center">
                                                 <span className="text-white text-[8px] font-bold">!</span>
                                              </span>
-                                             <span className="text-md-b3 font-semibold text-md-red-800">Not Verified</span>
+                                             <span className="whitespace-nowrap text-md-b3 font-semibold text-md-red-800">Not Verified</span>
                                           </span>
-                                          <span className="text-md-b3 font-semibold text-md-primary-900 underline">
-                                             {'Verify Yourself >'}
+                                          {/* Narrow phones: the journey card right below has the same action as a big button. */}
+                                          <span className="text-md-b3 font-semibold text-md-primary-900 underline max-[400px]:hidden">
+                                             <>{journey.cta}<span aria-hidden="true"> &gt;</span></>
                                           </span>
                                        </button>
                                     )
@@ -2036,7 +2155,7 @@ function RequestBoard$() {
                            <div className="flex max-w-[286px] flex-col gap-1 max-[374px]:max-w-[220px]">
                               <p className="text-md-h5 font-semibold text-md-heading">Choose how you’ll use Moodeng</p>
                               <p className="text-md-b2 font-medium text-md-neutral-800">
-                                 Pick borrower or lender to unlock your dashboard, repayment, and history.
+                                 Pick borrower or moo-lender to unlock your dashboard, repayment, and history.
                               </p>
                            </div>
                            <Link
@@ -2066,8 +2185,16 @@ function RequestBoard$() {
                         data-tour-target="request-apply-card"
                      >
                         <div className="flex flex-col gap-4 relative z-10">
-                           <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-[184px]">
-                              {isFreshlyApproved ? (
+                           <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-none max-[374px]:pr-[76px]">
+                              {journey.onboarding && journey.step ? (
+                                 <>
+                                    <p className="text-md-b3 font-semibold uppercase tracking-wide text-md-primary-1200">
+                                       {`Step ${journey.step} of 3 to your first loan`}
+                                    </p>
+                                    <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">{journey.title}</p>
+                                    <p className="text-md-b2 font-medium text-md-neutral-700">{journey.body}</p>
+                                 </>
+                              ) : isFreshlyApproved ? (
                                  <>
                                     <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">You&apos;re approved 🎉</p>
                                     <p className="text-md-b2 font-medium text-md-neutral-700">The team approved you — apply for your loan now.</p>
@@ -2098,7 +2225,7 @@ function RequestBoard$() {
                               )}
                            </div>
                            <button
-                              onClick={handleApplyLoanClick}
+                              onClick={journey.onboarding ? (e) => { e.preventDefault(); journey.go(); } : handleApplyLoanClick}
                               disabled={isOpeningLoanRequest}
                               aria-busy={isOpeningLoanRequest}
                               data-tour-target="request-apply-button"
@@ -2111,6 +2238,8 @@ function RequestBoard$() {
                                     <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
                                     Opening...
                                  </>
+                              ) : journey.onboarding ? (
+                                 <>{journey.cta}<span aria-hidden="true"> →</span></>
                               ) : (
                                  'Apply For A Loan'
                               )}
@@ -2119,7 +2248,7 @@ function RequestBoard$() {
                         <img
                            src={isFreshlyApproved ? CONNECT_HIPPOS.approved : '/hippos/thumb-up-right.png'}
                            alt=""
-                           className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:bottom-0 max-[374px]:right-[-42px] max-[374px]:top-auto max-[374px]:h-[76%]"
+                           className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:right-1 max-[374px]:top-2 max-[374px]:h-[92px]"
                         />
                      </div>
                   ) : !isAuthenticated ? (
@@ -2128,7 +2257,7 @@ function RequestBoard$() {
                         data-tour-target="request-apply-card"
                      >
                         <div className="flex flex-col gap-4 relative z-10">
-                           <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-[184px]">
+                           <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-none max-[374px]:pr-[76px]">
                               <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Need short-term support?</p>
                               <p className="text-md-b2 font-medium text-md-neutral-700">
                                  <span className="max-[374px]:hidden">
@@ -2149,7 +2278,7 @@ function RequestBoard$() {
                         <img
                            src="/hippos/thumb-up-right.png"
                            alt=""
-                           className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:bottom-0 max-[374px]:right-[-42px] max-[374px]:top-auto max-[374px]:h-[76%]"
+                           className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:right-1 max-[374px]:top-2 max-[374px]:h-[92px]"
                         />
                      </div>
                   ) : null}
@@ -2158,7 +2287,7 @@ function RequestBoard$() {
                   {isAuthenticated && !isBorrower && (
                      <div className="bg-md-primary-100 border border-[#f0f0f0] rounded-md-lg p-4 relative overflow-hidden max-[374px]:p-3">
                         <div className="flex flex-col gap-4 relative z-10">
-                           <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-[184px]">
+                           <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-none max-[374px]:pr-[76px]">
                               <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Need USDC on Base?</p>
                               <p className="text-md-b2 font-medium text-md-neutral-700">
                                  <span className="max-[374px]:hidden">
@@ -2179,7 +2308,7 @@ function RequestBoard$() {
                         <img
                            src="/hippos/thumb-up-right.png"
                            alt=""
-                           className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:bottom-0 max-[374px]:right-[-42px] max-[374px]:top-auto max-[374px]:h-[76%]"
+                           className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:right-1 max-[374px]:top-2 max-[374px]:h-[92px]"
                         />
                      </div>
                   )}
@@ -2252,7 +2381,7 @@ function RequestBoard$() {
                            <div className="flex-1 flex flex-col gap-1">
                               <p className="text-md-b3 font-semibold text-[#ae8c00]">IMPORTANT NOTE</p>
                               <p className="text-md-b3 font-normal text-black leading-[1.3]">
-                                 Once lenders have issued three loans, a fee will be charged to their accounts. This fee helps maintain the
+                                 Once moo-lenders have issued three loans, a fee will be charged to their accounts. This fee helps maintain the
                                  platform's operational costs and ensures continued support for all users.
                               </p>
                            </div>
@@ -2392,6 +2521,10 @@ function RequestBoard$() {
                   onBioSave={handleBioSave}
                   resume={loanRequestResume}
                   onFlowStateChange={handleLoanRequestFlowStateChange}
+                  onVerifyToSend={handleVerifyToSend}
+                  autoSubmit={autoSendLoanRequest}
+                  onAutoSubmitStarted={handleAutoSubmitStarted}
+                  onBackdropPress={handleLoanModalBackdropPress}
                   clickOutsideRef={loanRequestModalRef}
                />
                {/* No tap-outside dismiss: a stray tap where the borrower just tapped "Make Your
@@ -2473,88 +2606,6 @@ function RequestBoard$() {
    );
 }
 
-function DeleteLoanRequestModal({
-   loan,
-   clickOutsideRef,
-   isDeleting,
-   onClose,
-   onConfirm
-}: {
-   loan: Loan | null;
-   clickOutsideRef: RefObject<HTMLDivElement>;
-   isDeleting: boolean;
-   onClose: () => void;
-   onConfirm: () => void;
-}) {
-   if (!loan) return null;
-
-   const dueDate = new Date(loan.dueDate);
-   const dueDateLabel = Number.isNaN(dueDate.getTime())
-      ? 'the selected date'
-      : new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(dueDate);
-
-   return (
-      <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[#12071f]/45 px-md-3 py-md-4 sm:items-center">
-         <div
-            ref={clickOutsideRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="delete-loan-request-title"
-            className="w-full max-w-[408px] overflow-hidden rounded-t-[32px] bg-white shadow-md-overlay sm:rounded-[32px]"
-         >
-            <div className="flex items-center justify-between border-b border-md-neutral-400 px-md-4 py-md-3">
-               <div>
-                  <h2 id="delete-loan-request-title" className="text-md-h4 font-semibold text-md-heading">
-                     Delete this request?
-                  </h2>
-                  <p className="mt-1 text-md-b3 font-medium text-md-neutral-800">This cannot be undone.</p>
-               </div>
-               <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={isDeleting}
-                  aria-label="Close delete request confirmation"
-                  className="size-11 shrink-0 rounded-full text-md-heading inline-flex items-center justify-center active:bg-md-neutral-300 disabled:cursor-not-allowed disabled:opacity-50"
-               >
-                  <X className="size-7" strokeWidth={2.25} />
-               </button>
-            </div>
-
-            <div className="flex flex-col gap-md-4 px-md-4 py-md-5">
-               <div className="rounded-md-lg border border-red-100 bg-red-50 px-md-4 py-md-4">
-                  <p className="text-md-b1 font-semibold text-red-700">{loan.reason || 'Loan request'}</p>
-                  <p className="mt-2 text-md-b2 font-medium leading-[1.45] text-md-neutral-900">
-                     Borrowing ${formatCurrency(loan.loanAmount)} and repaying ${formatCurrency(loan.totalRepaymentAmount)} by{' '}
-                     {dueDateLabel}.
-                  </p>
-               </div>
-               <p className="text-md-b2 font-medium leading-[1.45] text-md-neutral-900">
-                  Lenders will no longer see it. You can make a new request from the board, but repeated deletes pause new requests for a
-                  short time.
-               </p>
-
-               <button
-                  type="button"
-                  onClick={onConfirm}
-                  disabled={isDeleting}
-                  className="w-full rounded-md-lg bg-red-600 px-md-4 py-md-3 text-md-b1 font-semibold text-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
-               >
-                  {isDeleting ? 'Deleting...' : 'Delete request'}
-               </button>
-               <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={isDeleting}
-                  className="w-full rounded-md-lg border border-md-neutral-500 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-1200 active:bg-md-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
-               >
-                  Keep request
-               </button>
-            </div>
-         </div>
-      </div>
-   );
-}
-
 // Inert preview of the real "Verify Yourself" chooser (see VerifyYourselfModal) for the
 // tour to spotlight — mirrors its current copy (ID + selfie primary, World ID secondary)
 // instead of rendering the legacy World-ID-only modal.
@@ -2568,7 +2619,7 @@ function GuestWorldIdTourPreview() {
             <div className="flex flex-col items-center gap-1 text-center">
                <h2 className="text-md-h4 font-semibold text-md-heading">Verify Yourself</h2>
                <p className="text-md-b2 text-md-neutral-1200">
-                  Confirm your identity to unlock your account — a one-time check that takes about 3 minutes.
+                  A one-time ID check so moo-lenders know you're a real person — it takes about 3 minutes.
                </p>
             </div>
             <div className="w-full rounded-md-lg border-2 border-md-primary-1200 bg-md-primary-100 p-4 flex items-center gap-3">

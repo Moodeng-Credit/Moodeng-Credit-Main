@@ -7,12 +7,16 @@
  * production Calendly links are ready — VITE_ vars take over here without a code change.
  */
 
-// digits-only, no '+', the format wa.me needs. Falls back to the current Meta test number.
-export const WHATSAPP_BUSINESS_NUMBER = import.meta.env.VITE_WHATSAPP_BUSINESS_NUMBER || '15551939271';
+// digits-only, no '+', the format wa.me needs. The real business number (George's +66, connected through
+// SendPulse on 2026-10-16), replacing Meta's test number.
+export const WHATSAPP_BUSINESS_NUMBER = import.meta.env.VITE_WHATSAPP_BUSINESS_NUMBER || '66951659077';
+// How the number reads on screen, for people who send their code by hand.
+export const WHATSAPP_BUSINESS_NUMBER_DISPLAY = import.meta.env.VITE_WHATSAPP_BUSINESS_NUMBER_DISPLAY || '+66 95 165 9077';
 
-// Facebook first: the WhatsApp option stays hidden until a real business number is connected (the
-// fallback above is Meta's sandbox number, not fit for real borrowers). Set
-// VITE_WHATSAPP_VERIFY_ENABLED=true to bring it back. Borrowers already WhatsApp-verified still pass.
+// Facebook is required (George): WhatsApp is not offered as a way to "reach you" instead of Messenger,
+// only as the reminders channel where notifications can't work (WhatsAppRemindersCard, switched on with
+// the borrower_whatsapp_card_enabled setting; sending is borrower_whatsapp_enabled). VITE_WHATSAPP_VERIFY_ENABLED=true would bring back the old
+// "WhatsApp instead of Messenger" card.
 export const WHATSAPP_VERIFY_ENABLED = import.meta.env.VITE_WHATSAPP_VERIFY_ENABLED === 'true';
 
 // Borrowers the team already knows well — they skip the "how can we reach you" (Facebook) card at
@@ -25,20 +29,32 @@ export const CONTACT_STEP_EXEMPT_USER_IDS: ReadonlySet<string> = new Set([
 // Which end-of-request steps a borrower gets:
 //   * brand-new borrower   → Facebook card + video call (unless they applied a referral code);
 //   * existing borrower    → Facebook card only (had a funded loan before — no call needed);
+//   * already had the call → Facebook card only (an admin marked them Showed up once; deleting a
+//                            request and making a new one never asks for another call);
 //   * exempt (Belle)       → neither.
 // ContactsStep skips itself with a checkmark when Facebook is already verified.
 export const requestContactSteps = ({
    userId,
    isExistingBorrower,
-   hasAppliedReferral
+   hasAppliedReferral,
+   hasAttendedCall = false
 }: {
    userId: string;
    isExistingBorrower: boolean;
    hasAppliedReferral: boolean;
+   hasAttendedCall?: boolean;
 }): { contacts: boolean; videoCall: boolean } => {
    if (CONTACT_STEP_EXEMPT_USER_IDS.has(userId)) return { contacts: false, videoCall: false };
-   return { contacts: true, videoCall: !isExistingBorrower && !hasAppliedReferral };
+   return { contacts: true, videoCall: !isExistingBorrower && !hasAppliedReferral && !hasAttendedCall };
 };
+
+// What get_my_reminder_reach() says about the signed-in borrower (George, 2026-10-18).
+export type ReminderReach = { push_working: boolean; messenger_reachable: boolean; whatsapp_reachable: boolean };
+
+// Only email reaches them: no working push, no Messenger link, no WhatsApp. Their next loan request
+// brings the contacts step back with reminders required. Unknown (null) → false, today's flow.
+export const onlyEmailReaches = (reach: ReminderReach | null | undefined): boolean =>
+   reach != null && !reach.push_working && !reach.messenger_reachable && !reach.whatsapp_reachable;
 
 // Cal.com replaces Calendly for the video-call gate: its free plan has signed webhooks, so the
 // calcom-webhook edge function can confirm a real booking server-side instead of trusting the
@@ -80,3 +96,66 @@ export const SENDPULSE_CONFIRM_FB_FLOW_ID = import.meta.env.VITE_SENDPULSE_CONFI
 
 export const buildMessengerVerifyLink = (code: string) =>
    `https://m.me/${MESSENGER_PAGE_ID}?ref=${SENDPULSE_CONFIRM_FB_FLOW_ID}__mdng_code=${code}`;
+
+// Android: m.me links never reach the Messenger app from Chrome. A test on George's Android phone
+// (moodeng.app/messenger-test.html, 2026-10-10) tried m.me in the same tab, in a new tab, and as an
+// intent to com.facebook.orca with and without a fallback: nothing opened, or a tab flashed shut. It
+// matches PostHog: no Android borrower on Chrome 154+ has got in through the link, while iPhones
+// always do. A direct link to the Page's chat does open Messenger there, but it can't carry the code,
+// so on Android the borrower pastes the code into the chat and the SendPulse "Confirm Facebook (typed
+// code)" flow confirms it. messenger.com itself redirects to facebook.com/messages since April 2026,
+// so without the app this still lands somewhere they can message the Page.
+export const MESSENGER_PAGE_CHAT_LINK = `https://www.messenger.com/t/${MESSENGER_PAGE_ID}`;
+
+// Computers: the Page's chat on facebook.com, which uses the Facebook login people already have.
+// messenger.com now has its own sign-in page (seen 2026-10-23 while signed in to Facebook), so
+// sending computer users there made them log in again.
+export const MESSENGER_DESKTOP_CHAT_LINK = `https://www.facebook.com/messages/t/${MESSENGER_PAGE_ID}`;
+
+// What the Android button opens: Messenger's own app link to the Page's chat. On George's phone with
+// his personal account (2026-10-11) this was the only link that opened the chat; the messenger.com
+// link above had only been tried while Messenger was logged in as the Page itself. It can't carry
+// the code either, so the bot connects them by timing (sendpulse-events) or they paste the code.
+export const MESSENGER_APP_CHAT_LINK = `fb-messenger://user-thread/${MESSENGER_PAGE_ID}`;
+
+// Android, Indonesia only: the same chat link wrapped in an intent, so Chrome itself picks the way.
+// With the Messenger app installed it opens the chat exactly like the link above; without it, Chrome
+// loads `fallbackUrl` (our page with ?nomsgr=1) instead of doing nothing. Sandi, our first Indonesian
+// borrower (2026-10-25), tapped the plain link three times and nothing opened. Every Filipino Android
+// borrower so far had Messenger, so they keep the plain link (George: don't touch what works).
+export const NO_MESSENGER_PARAM = 'nomsgr';
+export const buildMessengerIntentLink = (fallbackUrl: string) =>
+   `intent://user-thread/${MESSENGER_PAGE_ID}#Intent;scheme=fb-messenger;package=com.facebook.orca;S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
+export const MESSENGER_PLAY_STORE_LINK = 'https://play.google.com/store/apps/details?id=com.facebook.orca';
+
+export const isAndroidBrowser = (userAgent: string = typeof navigator !== 'undefined' ? navigator.userAgent : '') =>
+   /android/i.test(userAgent);
+
+// A computer (laptop/desktop), not a phone or tablet: no Android/iPhone/iPad user agent (iPads report
+// as Macs, so a touch Mac counts as an iPad) and a mouse or trackpad as the main pointer. On computers
+// the m.me code never reached our bot (0 of 4 attempts, Sep–Oct 2026: m.me bounces through
+// messenger.com to facebook.com/messages and loses it), so ContactsStep shows a QR for the phone
+// instead, plus copy-and-paste on the computer itself. Anything unsure stays on the phone flows.
+export const isDesktopBrowser = () => {
+   if (typeof navigator === 'undefined' || typeof window === 'undefined') return false;
+   const ua = navigator.userAgent;
+   if (/android|iphone|ipad|ipod|mobile/i.test(ua)) return false;
+   if (/macintosh|mac os x/i.test(ua) && navigator.maxTouchPoints > 1) return false;
+   return Boolean(window.matchMedia?.('(hover: hover) and (pointer: fine)').matches);
+};
+
+// What the desktop QR opens on the phone: our own page (MessengerHandoff), which gives each phone the
+// way into Messenger that works there — m.me with the code on iPhone, copy-and-paste on Android.
+export const MESSENGER_CODE_PATTERN = /^MDNG-[A-Z0-9]{4,12}$/;
+export const buildMessengerHandoffLink = (code: string, origin: string = window.location.origin) => `${origin}/fb/${code}`;
+
+// Support "Message us" links (EXTERNAL_LINKS.support) are m.me links too, so on Android they never
+// opened Messenger either. Android gets the app link to the Page's chat (the ref tag only rides along
+// elsewhere); custom schemes open in place, not in a new tab.
+export const messengerSupportLink = (link: string) => (isAndroidBrowser() ? MESSENGER_APP_CHAT_LINK : link);
+export const externalLinkTarget = (href: string) => (href.startsWith('https:') ? '_blank' : undefined);
+export const openMessengerSupport = (link: string) => {
+   const href = messengerSupportLink(link);
+   if (externalLinkTarget(href)) window.open(href, '_blank', 'noopener');
+   else window.location.href = href;
+};

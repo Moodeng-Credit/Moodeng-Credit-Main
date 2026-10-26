@@ -11,13 +11,29 @@
 // Every notification here is best-effort: the decision is persisted first, and a failed push,
 // Telegram or Discord ping is logged, never thrown.
 
+import {
+   adminUserUrl,
+   approveAnywayButtons,
+   type CardStamp,
+   OPEN_IN_ADMIN_TEXT,
+   openInAdminButton,
+   personName,
+   sendAdminCard,
+   stampDecisionCards
+} from './adminCards.ts';
 import { postDiscord } from './discord.ts';
+import { loadOnboardingTimeline, signupLines, timelineLines } from './onboardingTimeline.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import type { PushLocale, PushPayload } from './pushMessages.ts';
 import { getMessengerContact, messengerDisplayName, sendMessengerMessage } from './sendpulse.ts';
-import { callTelegramApi, sendTelegramMessage } from './telegram.ts';
+import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
+import { changeTimeButton } from './callReschedule.ts';
+import { cancelCallButton } from './callCancel.ts';
 import { formatCallTimeForTeam } from './videoCall.ts';
 import { describeHeldRequests } from './loanRequestHold.ts';
+import { sendEmail } from './email.ts';
+import { loadNeedsIdCheck } from './preKycGate.ts';
+import { testAccountRow } from './testAccount.ts';
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
@@ -30,6 +46,10 @@ export type LoanAccessDecision = 'approved' | 'rejected' | 'no_show';
 export const SITE_URL = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? Deno.env.get('SITE_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
 // Opens the loan-request flow straight away (RequestBoard reads ?applyLoan=1).
 export const APPLY_URL = `${SITE_URL}/request-board?applyLoan=1`;
+// Pre-KYC gate (preKycGate.ts): where an unverified borrower books / rebooks, and where approval
+// sends them next (ID verification).
+export const CONNECT_URL = `${SITE_URL}/onboarding/connect`;
+export const VERIFY_URL = `${SITE_URL}/verify-world-id`;
 // Where admins actually talk to the borrower: the Moodeng Credit Page inbox (SendPulse mirrors it).
 export const PAGE_INBOX_URL = 'https://business.facebook.com/latest/inbox/messenger?asset_id=1148756028310286';
 
@@ -73,6 +93,13 @@ export const getAdminChatId = async (svc: SupabaseClient): Promise<string | null
    return byKey.get('kyc_alert_chat_id') || Deno.env.get('TEAM_TELEGRAM_CHAT_ID') || byKey.get('team_group_chat_id') || null;
 };
 
+// Call changes (moved, cancelled, slot freed) go to their own group — setting call_changes_chat_id,
+// registered with /chatid — so the team sees every rearranged call in one place. Admin chat until set.
+export const getCallChangesChatId = async (svc: SupabaseClient): Promise<string | null> => {
+   const { data } = await svc.from('telegram_bot_settings').select('value').eq('key', 'call_changes_chat_id').maybeSingle();
+   return (data as { value?: string } | null)?.value || (await getAdminChatId(svc));
+};
+
 export type RequestRow = {
    id: string;
    user_id: string;
@@ -98,13 +125,16 @@ export type BorrowerRow = {
    messenger_verified_at: string | null;
    whatsapp_verified_at: string | null;
    loan_access_status: string | null;
+   is_world_id?: string | null;
    video_call_starts_at?: string | null;
    video_call_timezone?: string | null;
    video_call_confirmed_at?: string | null;
+   video_call_booking_uid?: string | null;
+   is_test?: boolean | null;
 };
 
 export const BORROWER_COLUMNS =
-   'id, username, email, display_name, chat_id, notif_account_activity, is_didit, didit_id_status, messenger_psid, messenger_verified_at, whatsapp_verified_at, loan_access_status, video_call_starts_at, video_call_timezone, video_call_confirmed_at';
+   'id, username, email, display_name, chat_id, notif_account_activity, is_didit, is_world_id, didit_id_status, messenger_psid, messenger_verified_at, whatsapp_verified_at, loan_access_status, video_call_starts_at, video_call_timezone, video_call_confirmed_at, video_call_booking_uid, is_test';
 export const REQUEST_COLUMNS = 'id, user_id, kind, display_name, reason, referral_code, channel, status, created_at';
 
 export const shortId = (id: string) => id.slice(0, 8);
@@ -120,11 +150,13 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
    const kyc = borrower.is_didit ?? borrower.didit_id_status ?? 'unknown';
    // The Facebook profile name, straight from SendPulse — compare it with the KYC name.
    const fbName = borrower.messenger_psid ? messengerDisplayName(await getMessengerContact(borrower.messenger_psid)) : null;
-   const line = borrower.messenger_verified_at
-      ? `Messenger ✅${fbName ? ` — Facebook name: ${fbName}` : ''}`
-      : borrower.whatsapp_verified_at
-        ? 'WhatsApp ✅'
-        : 'no verified line';
+   // Every chat app they verified (not the LINE app — "Line" used to mean "contact line" here).
+   const verified = [
+      borrower.messenger_verified_at ? `Messenger ✅${fbName ? ` (Facebook name: ${fbName})` : ''}` : null,
+      borrower.whatsapp_verified_at ? 'WhatsApp ✅' : null
+   ].filter(Boolean);
+   const contact = verified.length ? verified.join(' · ') : 'no verified chat app';
+   const onboarding = await loadOnboardingTimeline(svc, borrower.id);
    // The bio they filled in the Connect filter — so you know their situation before the call.
    const { data: bio } = await svc
       .from('users')
@@ -148,20 +180,26 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
    const referral = refCode?.code ?? request.referral_code ?? null;
 
    const isCall = request.kind === 'call';
+   // Not KYC'd yet → this is the pre-KYC gate: Showed up unlocks ID verification, not the loan.
+   const preKyc = await loadNeedsIdCheck(svc, borrower.id, borrower);
    const lines = [
       isCall
          ? referral
             ? '📞 Referred borrower booked their setup call with Emma'
             : '📞 New borrower booked their intro call'
          : '🤝 New borrower wants to connect',
+      borrower.is_test ? '🧪 Test account' : null,
+      preKyc ? '🪪 Not ID-verified yet — after you approve them they apply, and verify their ID as the last step.' : null,
       `Who: ${who(borrower, request.display_name)}`,
       `KYC: ${kyc}`,
-      `Line: ${line}`,
+      `Contact: ${contact}`,
+      ...signupLines(onboarding),
       work ? `Work: ${work}` : null,
       money ? `Money: ${money}` : null,
       isCall && borrower.video_call_starts_at ? `Call: ${formatCallTimeForTeam(borrower.video_call_starts_at, borrower.video_call_timezone)}` : null,
       referral ? `Referral: ${referral}` : null,
       `Why: ${request.reason?.trim() || '—'}`,
+      ...timelineLines(onboarding),
       '',
       isCall
          ? `After the call, tap Showed up (they can then apply) or No-show. Or type /approve ${shortId(request.id)} · /noshow ${shortId(request.id)}`
@@ -172,18 +210,32 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
    const adminChat = await getAdminChatId(svc);
    if (adminChat) {
       try {
-         await sendTelegramMessage(adminChat, text, {
-            inlineKeyboard: [...decisionKeyboard(request), [{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }]]
+         // Remembered as the borrower's loan_access card: whoever decides (here, /approve, the admin
+         // panel, the call cards, auto no-show) stamps its after-state.
+         await sendAdminCard(svc, adminChat, {
+            kind: 'loan_access',
+            refId: borrower.id,
+            text,
+            keyboard: [
+               ...decisionKeyboard(request),
+               [{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }, openInAdminButton(borrower.id, borrower.username)],
+               // Move or drop the call from right here (callReschedule.ts / callCancel.ts).
+               ...(isCall && borrower.video_call_booking_uid ? [[changeTimeButton(borrower.id), cancelCallButton(borrower.id)]] : []),
+               ...testAccountRow(borrower.id, borrower.is_test)
+            ]
          });
       } catch (err) {
          console.error('loanAccess: admin telegram ping failed', err instanceof Error ? err.message : err);
       }
    }
 
-   // Discord webhooks can't carry working buttons, so Discord is notify-only.
+   // Discord webhooks can't carry working buttons, so Discord is notify-only — remembered under the
+   // same loan_access ref, so the decision (from anywhere) edits it to APPROVED / REJECTED / NO-SHOW.
    await postDiscord(
-      { content: `${lines.slice(0, -2).join('\n')}\nDecide in the Telegram admin channel.` },
-      { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }
+      {
+         content: `${lines.slice(0, -2).join('\n')}\nDecide in the Telegram admin channel.\n${OPEN_IN_ADMIN_TEXT}: <${adminUserUrl(borrower.id, borrower.username)}>`
+      },
+      { prefer: ['DISCORD_KYC_WEBHOOK_URL'], ref: { svc, kind: 'loan_access', refId: borrower.id } }
    );
 };
 
@@ -252,8 +304,61 @@ const BORROWER_MESSAGES = {
    }
 } as const;
 
-export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow, kind: keyof typeof BORROWER_MESSAGES) => {
-   const msg = BORROWER_MESSAGES[kind];
+type BorrowerMessageKind = keyof typeof BORROWER_MESSAGES;
+type BorrowerMessage = { title: string; body: string; url: string };
+
+// Pre-KYC gate: the borrower isn't ID-verified yet, so approval unlocks ID verification (not the
+// loan), and anything that sends them back sends them to book again on /onboarding/connect.
+const PRE_KYC_MESSAGES: Partial<Record<BorrowerMessageKind, BorrowerMessage>> = {
+   approved: {
+      title: "You're approved 🎉 Apply for your loan",
+      body: "Great meeting you! Tap to fill in your loan request — the last step is a quick ID check (about 2 minutes). IMPORTANT: keeping your account active requires sticking to our repayment terms — loan defaults are flagged immediately and permanently banned across all affiliated platforms.",
+      url: APPLY_URL
+   },
+   no_show: {
+      title: 'We missed you on the call',
+      body: "We're sorry we missed you — we need to meet you before you can borrow. Tap to book a new time, or message us on Messenger.",
+      url: CONNECT_URL
+   },
+   call_cancelled: {
+      title: 'Your Moodeng call was cancelled',
+      body: 'No problem — tap to pick a new time for your 15-minute call. You can apply right after it.',
+      url: CONNECT_URL
+   },
+   spot_released: {
+      title: 'We freed up your call time',
+      body: "You didn't confirm your call, so we gave the slot to someone else. No problem — tap to pick a new time that works for you.",
+      url: CONNECT_URL
+   },
+   expired: {
+      title: 'Still want to borrow with Moodeng?',
+      body: "We didn't get to meet yet. Tap to book a 15-minute call with the team — it's the first step to your loan.",
+      url: CONNECT_URL
+   }
+};
+
+// The pre-KYC messages that matter enough to also email (Messenger only lands inside Meta's 24h
+// window, and the call can be days after they connected).
+const PRE_KYC_EMAIL: ReadonlySet<BorrowerMessageKind> = new Set(['approved', 'no_show']);
+
+// Sent on Messenger after the approval message. Titles from Moodeng Credit's YouTube channel.
+export const APPROVED_VIDEOS_TEXT =
+   '📺 3 quick videos before your first loan:\n\n' +
+   '1️⃣ How to get started on Moodeng (6 simple steps)\nhttps://www.youtube.com/shorts/G4hibvp-T9g\n\n' +
+   '2️⃣ How to cash out your loan via Coins.ph\nhttps://www.youtube.com/watch?v=SMasdjEpDkg\n\n' +
+   '3️⃣ How to repay your loan in 1 minute (Coins.ph)\nhttps://www.youtube.com/watch?v=Eu9JzDMOSmw\n\n' +
+   'Questions? Just reply here 🦛';
+
+export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow, kind: BorrowerMessageKind) => {
+   const preKycMsg = PRE_KYC_MESSAGES[kind] && (await loadNeedsIdCheck(svc, borrower.id, borrower)) ? PRE_KYC_MESSAGES[kind] : undefined;
+   const msg: BorrowerMessage = preKycMsg ?? BORROWER_MESSAGES[kind];
+   if (preKycMsg && PRE_KYC_EMAIL.has(kind) && borrower.email) {
+      try {
+         await sendEmail(borrower.email, msg.title, `${msg.body}\n\n${msg.url}`);
+      } catch (err) {
+         console.error('loanAccess: email failed for', borrower.id, err instanceof Error ? err.message : err);
+      }
+   }
    try {
       const buildPayload = (_locale: PushLocale): PushPayload => ({
          type: 'loan_access_decision',
@@ -271,11 +376,33 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
    // Messenger too (lands only inside Meta's 24h window — e.g. they chatted around the call).
    const messenger = await sendMessengerMessage(borrower.messenger_psid, { text: `${msg.title}\n\n${msg.body}\n\n${msg.url}` });
    if (!messenger.ok && messenger.reason !== 'no_contact') console.log('loanAccess: messenger skipped for', borrower.id, messenger.reason);
+   // Approved: the how-to videos right after, so they know how to get started, cash out and repay
+   // before their first loan (George, 2026-10-13).
+   if (kind === 'approved' && messenger.ok) {
+      const videos = await sendMessengerMessage(borrower.messenger_psid, { text: APPROVED_VIDEOS_TEXT });
+      if (!videos.ok) console.log('loanAccess: approval videos skipped for', borrower.id, videos.reason);
+   }
 
    if (borrower.chat_id && borrower.notif_account_activity !== false) {
       try {
          await sendTelegramMessage(borrower.chat_id, `${msg.title}\n\n${msg.body}`, {
-            inlineKeyboard: [[{ text: msg.url === APPLY_URL ? (kind === 'no_show' || kind === 'call_cancelled' || kind === 'spot_released' ? 'Book a new time' : 'Apply for a loan') : 'Open Moodeng', url: msg.url }]]
+            inlineKeyboard: [
+               [
+                  {
+                     text:
+                        msg.url === VERIFY_URL
+                           ? 'Verify my ID'
+                           : msg.url === CONNECT_URL
+                             ? 'Book a call'
+                             : msg.url === APPLY_URL
+                               ? kind === 'no_show' || kind === 'call_cancelled' || kind === 'spot_released'
+                                  ? 'Book a new time'
+                                  : 'Apply for a loan'
+                               : 'Open Moodeng',
+                     url: msg.url
+                  }
+               ]
+            ]
          });
       } catch (err) {
          console.error('loanAccess: telegram failed for', borrower.id, err instanceof Error ? err.message : err);
@@ -285,9 +412,26 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
 
 // ---- Decide (admin Approve / Reject) ----------------------------------------------------------
 
+// `stamp` is the after-state written on the person's admin cards (adminCards.ts).
 export type DecideResult =
-   | { ok: true; request: RequestRow; borrower: BorrowerRow; summary: string }
-   | { ok: false; summary: string };
+   | { ok: true; request: RequestRow; borrower: BorrowerRow; summary: string; stamp: CardStamp }
+   | { ok: false; summary: string; stamp?: CardStamp };
+
+// The header of a decided loan-access / call card: the decision, then what it means for the person.
+export const loanAccessStampHeader = (
+   decision: LoanAccessDecision | 'attended' | 'corrected',
+   name: string,
+   opts: { call?: boolean } = {}
+) =>
+   decision === 'approved'
+      ? `${opts.call ? '✅ SHOWED UP → APPROVED' : '✅ APPROVED'} — ${name} can now apply for a loan`
+      : decision === 'rejected'
+        ? `🚫 REJECTED — ${name}'s application is closed`
+        : decision === 'no_show'
+          ? `❌ NO-SHOW — ${name} was asked to book a new call`
+          : decision === 'corrected'
+            ? `✅ SHOWED UP — no-show corrected; ${name} was told to ignore the rebook message`
+            : `✅ SHOWED UP — ${name}'s attendance is recorded`;
 
 // Resolves "/approve <arg>" arguments: a request-id prefix (from the card) or the borrower's
 // @username. Only pending requests are considered.
@@ -356,6 +500,20 @@ export const decideLoanAccess = async (
    if (userError) throw new Error(userError.message);
    if (!borrower) return { ok: false, summary: 'Borrower account not found.' };
 
+   // A no-show parks any open request they have (database trigger); say which one.
+   const held = decision === 'no_show' ? await describeHeldRequests(svc, request.user_id) : '';
+
+   // Flip every card about this person (request card, call-start and "Did they show up?" cards) to
+   // its after-state before the slower borrower messages go out.
+   const stamp: CardStamp = {
+      header: loanAccessStampHeader(decision, personName(borrower, request.display_name), { call: request.kind === 'call' }),
+      detail: held || null,
+      by: decidedBy,
+      ...(decision === 'no_show' ? { buttons: approveAnywayButtons(request.user_id) } : {})
+   };
+   // A no-show keeps its cards remembered, so ✅ Approve anyway can stamp them all again later.
+   await stampDecisionCards(svc, 'loan_access', request.user_id, stamp, { final: decision !== 'no_show' });
+
    await notifyBorrower(svc, borrower, decision);
 
    const verb =
@@ -366,11 +524,9 @@ export const decideLoanAccess = async (
          : decision === 'no_show'
            ? '❌ No-show:'
            : '🚫 Rejected';
-   // A no-show parks any open request they have (database trigger); say which one.
-   const held = decision === 'no_show' ? await describeHeldRequests(svc, request.user_id) : '';
    const summary = `${verb} ${who(borrower, request.display_name)} — by ${decidedBy}${held ? `\n${held}` : ''}`;
    await postDiscord({ content: `🤝 Loan access ${summary}` }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
-   return { ok: true, request, borrower, summary };
+   return { ok: true, request, borrower, summary, stamp };
 };
 
 // ---- Telegram plumbing for the admin card -----------------------------------------------------
@@ -383,16 +539,12 @@ export const answerCallback = async (callbackQueryId: string, text: string) => {
    }
 };
 
-// Replace the card's buttons with the outcome so nobody taps a decided request again.
-export const stampAdminCard = async (chatId: number | string, messageId: number, originalText: string, summary: string) => {
+// Swap just the card's buttons — "⏳ Saving…" the moment one is tapped, or the original buttons back
+// if the decision failed — so the tap is visibly acknowledged before the slow work runs.
+export const setCardButtons = async (chatId: number | string, messageId: number, keyboard: TelegramInlineKeyboard) => {
    try {
-      await callTelegramApi('editMessageText', {
-         chat_id: chatId,
-         message_id: messageId,
-         text: `${originalText}\n\n${summary}`,
-         disable_web_page_preview: true
-      });
+      await callTelegramApi('editMessageReplyMarkup', { chat_id: chatId, message_id: messageId, reply_markup: { inline_keyboard: keyboard } });
    } catch (err) {
-      console.error('loanAccess: editMessageText failed', err instanceof Error ? err.message : err);
+      console.error('loanAccess: editMessageReplyMarkup failed', err instanceof Error ? err.message : err);
    }
 };

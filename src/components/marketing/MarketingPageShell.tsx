@@ -139,6 +139,9 @@ export default function MarketingPageShell({ children }: MarketingPageShellProps
                      Small USDC loans, quick identity verification, and portable repayment history for borrowers building credit abroad.
                   </p>
                   <p className="mt-md-3 text-md-b3 font-semibold uppercase tracking-[0.12em] text-md-neutral-700">© 2026 Moodeng Credit</p>
+                  <p className="mt-md-1 text-md-b3 font-medium text-md-neutral-700">
+                     Operated by Building Credit Asia LLC, a Colorado limited liability company.
+                  </p>
                </div>
 
                <div>

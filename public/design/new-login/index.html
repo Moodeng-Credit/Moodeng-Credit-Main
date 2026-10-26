@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<style>[hidden]{display:none!important} img{max-width:100%}</style>
+<title>Moodeng Sign-up Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: tabs switch between the flow live now, the flow once WhatsApp reminders are approved, and the
+   earlier (15 Oct) screens. Phone screenshots in a wrapping grid, captions under each phone. */
+:root {
+  --bg: #f7f4fc;
+  --surface: #ffffff;
+  --ink: #1b0a36;
+  --muted: #625a74;
+  --line: #e6def3;
+  --accent: #6010d2;
+  --accent-soft: #efe6fd;
+  --wa: #0b8f4d;
+  --wa-soft: #e3f6ea;
+  --bubble: #dcf8c6;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #110c1a; --surface: #1a1326; --ink: #f1eafd; --muted: #b1a6c4; --line: #33284a; --accent: #b88bff; --accent-soft: #2a1d45; --wa: #5fd394; --wa-soft: #12301f; --bubble: #1f4a32; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #110c1a; --surface: #1a1326; --ink: #f1eafd; --muted: #b1a6c4; --line: #33284a; --accent: #b88bff; --accent-soft: #2a1d45; --wa: #5fd394; --wa-soft: #12301f; --bubble: #1f4a32; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 17px; line-height: 1.5; margin: 0; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 80px; display: flex; flex-direction: column; gap: 36px; }
+header { display: flex; flex-direction: column; gap: 10px; max-width: 780px; }
+.eyebrow { font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(32px, 5vw, 48px); line-height: 1.05; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 26px; margin: 0; }
+p { margin: 0; }
+.lede { font-size: 19px; color: var(--muted); }
+.facts { display: flex; flex-wrap: wrap; gap: 8px; }
+.fact { background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 14px; padding: 6px 12px; border-radius: 999px; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--bg); padding-top: 8px; z-index: 2; }
+.tab { appearance: none; border: 0; background: none; font: inherit; font-weight: 700; color: var(--muted); padding: 10px 14px; border-bottom: 3px solid transparent; cursor: pointer; text-align: left; }
+.tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+.tab small { display: block; font-weight: 600; font-size: 12px; color: var(--muted); }
+.panel { display: flex; flex-direction: column; gap: 44px; }
+section { display: flex; flex-direction: column; gap: 18px; }
+.section-intro { color: var(--muted); max-width: 72ch; }
+.note { background: var(--accent-soft); border-radius: 16px; padding: 14px 16px; max-width: 80ch; }
+.note.wa { background: var(--wa-soft); }
+code { font-size: .9em; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 28px 22px; align-items: start; }
+figure { margin: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.phone { background: var(--surface); border: 1px solid var(--line); border-radius: 26px; padding: 8px; box-shadow: 0 10px 30px rgba(27, 10, 54, .08); }
+.phone img { display: block; width: 100%; height: auto; border-radius: 19px; }
+figcaption { display: flex; flex-direction: column; gap: 3px; }
+figcaption b { font-size: 16px; }
+figcaption span { font-size: 15px; color: var(--muted); }
+.n { font-family: var(--font-display); color: var(--accent); margin-right: 4px; }
+.steps { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-weight: 700; font-size: 15px; }
+.steps span { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; }
+.steps i { font-style: normal; color: var(--muted); }
+.chat { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.chat .who { font-size: 13px; font-weight: 700; color: var(--wa); }
+.bubble { background: var(--bubble); border-radius: 14px 14px 14px 4px; padding: 10px 12px; font-size: 15px; }
+.bubble .btn { margin-top: 8px; border-top: 1px solid rgba(0,0,0,.08); padding-top: 8px; text-align: center; font-weight: 700; color: var(--accent); }
+footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); padding-top: 16px; }
+/* "All flows" tab: one card per flow with why / where / Given-When-Then scenarios. */
+.flow { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+.why { border-left: 4px solid var(--accent); padding: 2px 0 2px 14px; max-width: 80ch; }
+.why b { color: var(--accent); }
+.where { display: flex; flex-wrap: wrap; gap: 6px; }
+.where span { font-size: 13px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.where span.no { background: transparent; border: 1px dashed var(--line); color: var(--muted); }
+.bdd { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.scenario { background: var(--bg); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; font-size: 15.5px; }
+.scenario .title { font-weight: 700; margin-bottom: 4px; }
+.scenario p { padding-left: 3.6em; text-indent: -3.6em; }
+.scenario p b { display: inline-block; width: 3.6em; text-indent: 0; color: var(--accent); font-weight: 700; }
+.matrix-wrap { overflow-x: auto; }
+.matrix { width: 100%; min-width: 560px; border-collapse: separate; border-spacing: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; font-size: 15.5px; }
+.matrix th, .matrix td { text-align: left; vertical-align: top; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.matrix tr:last-child td { border-bottom: 0; }
+.matrix thead th { background: var(--accent-soft); color: var(--accent); }
+.matrix td:first-child { font-weight: 700; }
+@media (max-width: 640px) { .flow { padding: 16px; } .scenario p { padding-left: 0; text-indent: 0; } .scenario p b { width: auto; margin-right: 6px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Moodeng · updated 20 Oct 2026</span>
+    <h1>How people sign up and get in</h1>
+    <p class="lede">Most borrowers arrive from a Facebook post and open Moodeng inside Facebook's or Messenger's own browser, where Google sign-in can't work. Filipinos there sign up with their mobile number and a text code that lands on the same phone (the keyboard offers it, so nobody leaves Facebook). Email sign-up still needs no code until they're approved, because reading an email does mean leaving Facebook. Each flow below is a scenario: <b>Given</b> the situation, <b>When</b> they do something, <b>Then</b> what they see, with why the flow exists and where it's offered.</p>
+    <div class="facts">
+      <span class="fact">Phone or email to start</span>
+      <span class="fact">Phone: one text code, right there</span>
+      <span class="fact">Email: no code until approved</span>
+      <span class="fact">Smart / TNT / Sun → email, for now</span>
+      <span class="fact">Codes come from "Unisoft"</span>
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Flow versions">
+    <button class="tab" role="tab" id="tab-flows" aria-controls="panel-flows" aria-selected="true">All flows · live now<small>20 Oct</small></button>
+    <button class="tab" role="tab" id="tab-browsers" aria-controls="panel-browsers" aria-selected="false" tabindex="-1">By browser<small>18 Oct</small></button>
+    <button class="tab" role="tab" id="tab-now" aria-controls="panel-now" aria-selected="false" tabindex="-1">Sign-up steps<small>16 Oct</small></button>
+    <button class="tab" role="tab" id="tab-whatsapp" aria-controls="panel-whatsapp" aria-selected="false" tabindex="-1">When WhatsApp is approved<small>Meta reviewing</small></button>
+    <button class="tab" role="tab" id="tab-before" aria-controls="panel-before" aria-selected="false" tabindex="-1">Earlier version<small>15 Oct</small></button>
+  </div>
+
+  <!-- ===================== ALL FLOWS (19 OCT) ===================== -->
+  <div class="panel" role="tabpanel" id="panel-flows" aria-labelledby="tab-flows">
+    <section>
+      <h2>Who sees what</h2>
+      <p class="section-intro">Two things decide the screens: where they opened Moodeng, and whether they look like a visitor in the Philippines (phone set to Manila time, a Philippine language or region, or Filipino picked in our language menu). Phone codes only work for Philippine numbers, so everyone else gets email.</p>
+      <div class="matrix-wrap">
+        <table class="matrix">
+          <thead><tr><th></th><th>Inside Facebook / Messenger</th><th>Chrome / Safari</th></tr></thead>
+          <tbody>
+            <tr><td>Visitor in the Philippines</td><td><b>Sign up:</b> mobile number first (a text code), email one tap away (no code yet).<br><b>Sign in:</b> text code or email code.</td><td><b>Sign up and sign in:</b> the 🇵🇭 +63 mobile number box first (a text code), then Google and Telegram under OR. Email is one tap away.</td></tr>
+            <tr><td>Everyone else</td><td><b>Sign up:</b> email, no code.<br><b>Sign in:</b> email code.</td><td>Unchanged: Google, email + password, "No password? Email me a code". Typing 09… or +63… still switches to phone.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="steps" aria-label="The steps in order">
+        <span>1 Sign up (phone or email)</span><i>→</i><span>2 Messenger</span><i>→</i><span>3 About you</span><i>→</i><span>4 Your goal</span><i>→</i><span>5 Video call</span><i>→</i><span>6 Approved: email + password</span><i>→</i><span>7 ID check</span><i>→</i><span>8 Loan + reminders</span>
+      </div>
+    </section>
+
+    <article class="flow">
+      <h2><span class="n">1</span>Sign up with a mobile number inside Facebook (text code)</h2>
+      <p class="why"><b>Why:</b> the email box was where people stopped. In the first days of email sign-up inside Facebook, 18 people saw it and only 10 sent it (team tests included, so a rough number). Everyone there has a phone number and types it faster than an email. A text code is fine here: it arrives on the same phone, the keyboard offers it (iPhone) or it pops up at the top (Android), so they never leave Facebook. It also proves the number is theirs and makes a normal account straight away. About ₱0.50 a sign-up.</p>
+      <div class="where"><span>Facebook + Messenger browsers</span><span>iPhone + Android</span><span>Visitors in the Philippines</span><span class="no">Not Chrome / Safari sign-up: Google and email work well there</span></div>
+      <div class="bdd">
+        <div class="scenario"><p class="title">Scenario: a Globe, TM or DITO number</p><p><b>Given</b> I opened Moodeng inside Facebook, in the Philippines</p><p><b>When</b> I type 0956 996 7993</p><p><b>Then</b> I see "✓ Globe or TM number · we'll text you a code"</p><p><b>When</b> I tap Continue</p><p><b>Then</b> a text from "Unisoft" brings a 6-digit code, my keyboard offers it, and onboarding starts</p></div>
+        <div class="scenario"><p class="title">Scenario: the number already has an account</p><p><b>Given</b> 0956 996 7993 already has a Moodeng account</p><p><b>When</b> I sign up with it and type the code</p><p><b>Then</b> I'm signed in to that account, not a second one</p></div>
+      </div>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/p-fb-signup-phone.png" alt="Sign up to Moodeng with a +63 mobile number field" loading="lazy"></div><figcaption><b>Sign up</b><span>Phone first, with the 🇵🇭 +63 pill. "Use email instead" is one tap.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/p-fb-signup-globe.png" alt="Green note: Globe or TM number, no code needed now" loading="lazy"></div><figcaption><b>A Globe number</b><span>The green note appears once the number is complete.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/p-code-unisoft.png" alt="Check your texts, look for a text from Unisoft" loading="lazy"></div><figcaption><b>The code</b><span>From "Unisoft". Typing it finishes sign-up.</span></figcaption></figure>
+      </div>
+    </article>
+
+    <article class="flow">
+      <h2><span class="n">2</span>Smart, TNT and Sun numbers go to email</h2>
+      <p class="why"><b>Why:</b> our texts go out through UniSMS on its shared "Unisoft" sender name. Semaphore banned our own names, and a sender name of our own needs Philippine business papers. That shared sender can't reach Smart, TNT or Sun, which is roughly half of the Philippines. Rather than let someone sign up with a number we can never text, we say so before they tap.</p>
+      <div class="where"><span>Everywhere a mobile number is typed</span></div>
+      <div class="bdd">
+        <div class="scenario"><p class="title">Scenario: a Smart number</p><p><b>Given</b> I type 0918 123 4567</p><p><b>Then</b> I see "✕ Smart number · we can't text Smart yet"</p><p><b>And</b> the button says "Sign up with email" ("Log in with email" on sign-in)</p><p><b>When</b> I tap it</p><p><b>Then</b> the email box opens, empty and ready</p></div>
+      </div>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/p-fb-signup-smart.png" alt="Orange note: Smart, TNT and Sun numbers can't get text codes yet" loading="lazy"></div><figcaption><b>A Smart number</b><span>One line, one button, one small link (simplified 20 Oct).</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/p-fb-signup-email.png" alt="Sign up with an email address field" loading="lazy"></div><figcaption><b>Email instead</b><span>The email sign-up from 16 Oct: no code now either.</span></figcaption></figure>
+      </div>
+      <p class="note">The network is guessed from the first four digits. Prefixes the sources disagree on are treated as unknown and never block anyone. If a Smart number still slips through, UniSMS refuses the text and the form moves them to email by itself.</p>
+    </article>
+
+    <article class="flow">
+      <h2><span class="n">3</span>Inside Facebook, only what works there</h2>
+      <p class="why"><b>Why:</b> Google sign-in can't work inside Facebook's browser, and the screen had grown long: a Telegram/LINE line, an "OR / Google works in Chrome" box, "Use password instead", "Take a tour first" and the company lines. Borrowers came for one thing, so it's now the form, the email/phone switch, Log in / Sign up, and a short footer. "How it works" goes to the borrower walkthrough on /academy instead of the GitBook docs.</p>
+      <div class="where"><span>Facebook + Messenger browsers</span><span class="no">Instagram, LINE, TikTok browsers keep the Telegram/LINE line</span><span class="no">Chrome / Safari unchanged</span></div>
+      <div class="bdd">
+        <div class="scenario"><p class="title">Scenario: the sign-up screen inside Facebook</p><p><b>Given</b> I opened sign-up inside Facebook</p><p><b>Then</b> I see the form and "Already have an account? Log In"</p><p><b>And</b> no Google button, Telegram/LINE line, tour link or company lines</p><p><b>And</b> the footer reads Privacy · Terms · How it works</p></div>
+      </div>
+    </article>
+
+    <article class="flow">
+      <h2><span class="n">4</span>Sign in with a mobile number</h2>
+      <p class="why"><b>Why:</b> returning borrowers who signed up by phone need a way back in without an email. A code every time is what proves the number is theirs, or anyone could type someone else's number.</p>
+      <div class="where"><span>Everywhere, for Philippine numbers</span><span class="no">Not Smart / TNT / Sun yet</span></div>
+      <div class="bdd">
+        <div class="scenario"><p class="title">Scenario: signing in by text</p><p><b>Given</b> my account uses 0956 996 7993</p><p><b>When</b> I type it and tap "Text me a code"</p><p><b>Then</b> a text arrives from "Unisoft": "Your Moodeng Credit sign-in code is 123456. Please do not share. Expires in 10 minutes."</p><p><b>And</b> the code screen tells me to look for a text from Unisoft</p></div>
+        <div class="scenario"><p class="title">Scenario: no account with that number</p><p><b>Given</b> no account uses the number</p><p><b>When</b> I ask for a code on the sign-in screen</p><p><b>Then</b> I see "No Moodeng account uses this number" with "Create account" or "Use email instead"</p></div>
+      </div>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/p-fb-signin-phone.png" alt="Welcome back, mobile number field, Text me a code" loading="lazy"></div><figcaption><b>Sign in inside Facebook</b><span>Phone or email code. No password link there.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/p-code-unisoft.png" alt="Check your texts, look for a text from Unisoft" loading="lazy"></div><figcaption><b>The code screen</b><span>"Look for a text from Unisoft", since the sender name isn't ours. The keyboard offers the code from the text.</span></figcaption></figure>
+      </div>
+      <p class="note">Why "Unisoft": the texts come from UniSMS's shared sender, so phones show "Unisoft" as the sender. The message itself starts with "Your Moodeng Credit sign-in code…", and UniSMS only accepts code messages in that form (brand, code, purpose, expiry).</p>
+    </article>
+
+    <article class="flow">
+      <h2><span class="n">5</span>Chrome / Safari in the Philippines: phone first, GCash-style</h2>
+      <p class="why"><b>Why:</b> Filipinos log in to GCash, Maya, Grab and Shopee with a mobile number box that already says +63. A phone tile next to Telegram wasn't clear enough (George, 2026-10-21), so the number box now leads the page, and Google and Telegram sit under OR. The "instead" links are one line per screen.</p>
+      <div class="where"><span>Chrome / Safari</span><span>Visitors in the Philippines (Manila time or a -PH language)</span><span class="no">Everyone else: Google first, then email + password, as before</span></div>
+      <div class="bdd">
+        <div class="scenario"><p class="title">Scenario: signing up</p><p><b>Given</b> I open sign-up in Chrome, in the Philippines</p><p><b>Then</b> I see the 🇵🇭 +63 mobile number box and Continue</p><p><b>And</b> "Use email instead", then Google and Telegram under OR</p></div>
+        <div class="scenario"><p class="title">Scenario: logging in</p><p><b>Given</b> I open log-in in Chrome, in the Philippines</p><p><b>Then</b> I see the +63 box and "Text me a code"</p><p><b>And</b> "Use email instead", then Google and Telegram under OR</p></div>
+        <div class="scenario"><p class="title">Scenario: I have a password</p><p><b>When</b> I tap "email" on the log-in page</p><p><b>Then</b> I see "Email me a code" and "Use phone number or password instead"</p><p><b>And</b> "password" opens the email + password form</p></div>
+        <div class="scenario"><p class="title">Scenario: a Smart number</p><p><b>When</b> I type a Smart, TNT or Sun number</p><p><b>Then</b> I see "we can't text Smart yet" and a button to use email</p></div>
+      </div>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/p-main-signup-phone-first.png" alt="Sign up with the +63 mobile number box first, Google and Telegram under OR" loading="lazy"></div><figcaption><b>Sign up</b><span>Where they land. Nothing to choose first.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/p-main-signup-email.png" alt="Sign up with the email box" loading="lazy"></div><figcaption><b>Sign up, "email" tapped</b><span>Same page, email box. "Use phone number instead" goes back.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/p-main-signin-phone-first.png" alt="Log in with the +63 box and Text me a code" loading="lazy"></div><figcaption><b>Log in</b><span>Text me a code, or Google and Telegram under OR.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/p-main-signin-email-code.png" alt="Log in with email, Use phone number or password instead" loading="lazy"></div><figcaption><b>Log in, "email" tapped</b><span>Email me a code. Password users tap "password".</span></figcaption></figure>
+      </div>
+    </article>
+
+    <article class="flow">
+      <h2><span class="n">6</span>Getting back in before approval</h2>
+      <p class="why"><b>Why:</b> Facebook's browser sometimes forgets people (the page reloads, or they open the link again from Messenger), and some people sign up a second time by mistake.</p>
+      <div class="where"><span>Anyone, any browser</span></div>
+      <div class="bdd">
+        <div class="scenario"><p class="title">Scenario: signed up with a number</p><p><b>Given</b> I signed up with 0956 996 7993 and Facebook lost my session</p><p><b>When</b> I sign in with that number</p><p><b>Then</b> I get a text code and I'm back in the same account, in any browser</p></div>
+        <div class="scenario"><p class="title">Scenario: signed up with email</p><p><b>Given</b> I signed up with email inside Facebook</p><p><b>When</b> I tap the link in the email we sent at sign-up</p><p><b>Then</b> I'm back in the same account, in any browser</p></div>
+        <div class="scenario"><p class="title">Scenario: I made a second account by mistake</p><p><b>Given</b> I just made a new account in the Philippines</p><p><b>When</b> I answer "I've used Moodeng before"</p><p><b>Then</b> one "Log in to my account" button signs this new one out and opens sign-in</p></div>
+      </div>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/p-returning.png" alt="Log in the way you did before, one Log in to my account button" loading="lazy"></div><figcaption><b>"I've used Moodeng before"</b><span>One button to the normal sign-in page (was three stacked buttons until 20 Oct).</span></figcaption></figure>
+      </div>
+    </article>
+
+    <article class="flow">
+      <h2><span class="n">7</span>After approval: finish your account</h2>
+      <p class="why"><b>Why:</b> before the ID check, everyone needs a way in that works in any phone or browser (email + password), and the button in our email moves them out of Facebook for the ID check, which works better in Safari or Chrome. Until this is done, the database refuses loans, payments and the ID check from guests.</p>
+      <div class="where"><span>Email sign-ups from inside Facebook</span><span>Covers every page once approved after the video call</span><span class="no">Phone sign-ups: already confirmed by their text code</span></div>
+      <div class="bdd">
+        <div class="scenario"><p class="title">Scenario: signed up with email, inside Facebook</p><p><b>Given</b> I'm approved after the call</p><p><b>Then</b> I see "You're approved 🎉" and three steps: open the email, tap Confirm, Moodeng opens in Safari/Chrome already signed in</p><p><b>Or</b> I type the 8-digit code from the email</p></div>
+        <div class="scenario"><p class="title">Scenario: wrong email</p><p><b>When</b> I tap "Wrong email? Change it" and fix the address</p><p><b>Then</b> a new link and code go to the new address</p></div>
+        <div class="scenario"><p class="title">Scenario: email confirmed</p><p><b>Given</b> I confirmed, here or in another browser</p><p><b>Then</b> I'm asked to set a password</p><p><b>And</b> from then on email + password works everywhere</p></div>
+      </div>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/p-gate-confirm-fb.png" alt="You're approved, three steps to confirm the email inside Facebook" loading="lazy"></div><figcaption><b>Confirm, inside Facebook</b><span>Tapping Confirm in the email is the main way.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/p-gate-confirm-chrome.png" alt="You're approved, code box only" loading="lazy"></div><figcaption><b>Confirm, in Chrome</b><span>Just the code box.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/p-gate-change-email.png" alt="Change the email address" loading="lazy"></div><figcaption><b>Wrong email? Change it</b><span>Sends a new link and code.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/p-gate-password.png" alt="Email confirmed, set a password" loading="lazy"></div><figcaption><b>Set a password</b><span>Wherever they confirmed.</span></figcaption></figure>
+      </div>
+    </article>
+
+    <article class="flow">
+      <h2><span class="n">8</span>Reminders, and what we fill in for them</h2>
+      <p class="why"><b>Why:</b> Messenger is how we reach borrowers, so it stays required. Phone notifications don't work inside Facebook's browser, so there they pick WhatsApp, or Viber or Telegram after "I don't have WhatsApp". SMS can't carry reminders yet: the shared Unisoft sender only sends sign-in codes. Anything we already know, we fill in, so there's less to type.</p>
+      <div class="where"><span>Onboarding and the loan request</span></div>
+      <div class="bdd">
+        <div class="scenario"><p class="title">Scenario: Viber reminders</p><p><b>Given</b> I signed up with my number</p><p><b>When</b> I tap "Viber reminders"</p><p><b>Then</b> my number is already filled in: "Is your Viber on this number? Change it if not."</p></div>
+        <div class="scenario"><p class="title">Scenario: the bio</p><p><b>Given</b> I connected Messenger, so Moodeng knows my Facebook name</p><p><b>When</b> I reach "How lenders see you"</p><p><b>Then</b> my name is already filled in with my Facebook name, and I can change it</p></div>
+        <div class="scenario"><p class="title">Scenario: WhatsApp reminders</p><p><b>When</b> I tap the WhatsApp card</p><p><b>Then</b> WhatsApp opens with the message typed for me: I only hit send</p></div>
+      </div>
+    </article>
+
+    <p class="note"><b>Switches, if something needs to go back:</b> phone sign-in everywhere: <code>SMS_LOGIN_ON</code> in <code>src/lib/phoneAuth.ts</code> (<code>?sms=0</code> turns it off in one browser for testing). No-code sign-up inside Facebook: <code>guest_signup_enabled</code>. The "open in Safari/Chrome" first screen: <code>iab_open_prompt_enabled</code>. Texts: Vault <code>UNISMS_SECRET_KEY</code> + <code>UNISMS_SENDER_ID</code> (without the key, the text hook falls back to Semaphore, which sends nothing).</p>
+    <p class="note">How these were made: the phone screens are moodeng.app's own code (PR #1226) at iPhone size, made to look like Facebook's iPhone browser or Android Chrome in the Philippines. The finish-your-account screens use sample data. Numbers and emails shown are samples.</p>
+  </div>
+
+  <!-- ===================== BY BROWSER (18 OCT) ===================== -->
+  <div class="panel" role="tabpanel" id="panel-browsers" aria-labelledby="tab-browsers" hidden>
+    <p class="note">18 Oct snapshot: the first screen and the Messenger step are still like this; the sign-up form itself is now phone-first (All flows tab).</p>
+    <p class="note">What people see on each phone and browser, live on moodeng.app since 18 Oct. Inside Facebook's and Messenger's own browsers, nothing on a web page can open Safari, and Chrome only sometimes. So the first screen offers the better browser with one tap and a <b>Continue here</b> for everyone else, and every step works in both.</p>
+
+    <section>
+      <h2>iPhone · inside Messenger</h2>
+      <p class="section-intro">The only way out to Safari is Messenger's own ⋯ menu, so "Open in Safari" shows exactly where to tap. The Messenger step copies the code and says, in big letters, to paste it.</p>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/b-ios-iab-1-first.png" alt="For the best experience, open Moodeng in Safari, with Open in Safari and Continue here" loading="lazy"></div><figcaption><b><span class="n">1</span>First screen</b><span>Signed-out visitors only. "Continue here" is remembered.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/b-ios-iab-2-guide.png" alt="Guide: tap the three dots, then Open in external browser" loading="lazy"></div><figcaption><b><span class="n">2</span>"Open in Safari"</b><span>Their tap already copied the link (step 1, or a Copy link button if the copy was blocked). Steps 2 and 3 are tagged pictures; the hippo points at the real ⋯. Safari then opens straight on sign-up.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/b-ios-iab-3-home.png" alt="Home page with a yellow Get your first loan button" loading="lazy"></div><figcaption><b><span class="n">3</span>"Continue here": home page</b><span>Phone home page with the yellow button.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/b-ios-iab-4-signup.png" alt="Sign up to Moodeng with an email field" loading="lazy"></div><figcaption><b><span class="n">4</span>Sign up</b><span>Email only. Its "Open in Safari" links show the same guide (they did nothing before).</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/b-ios-iab-5-card.png" alt="Connect on Messenger card with Copy code and open Messenger" loading="lazy"></div><figcaption><b><span class="n">5</span>Connect Facebook</b><span>"Copy code &amp; open Messenger". Steps lead with pasting.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/b-ios-iab-6-paste.png" alt="Code copied card with paste instructions and Open Messenger countdown" loading="lazy"></div><figcaption><b><span class="n">6</span>After the tap</b><span>"📋 Code copied: paste it, then Send", then Messenger opens. The bot's reply has a "Continue" link back.</span></figcaption></figure>
+      </div>
+    </section>
+
+    <section>
+      <h2>iPhone · inside the Facebook app</h2>
+      <p class="section-intro">Same screens as Messenger: on iPhone both apps' browsers look identical to us. The only difference: to reach our chat they switch to the Messenger app, then swipe back to Facebook, where the page has turned green.</p>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/b-ios-fbapp-guide.png" alt="Guide with the three dots ringed" loading="lazy"></div><figcaption><b><span class="n">1</span>"Open in Safari" from the home page</b><span>Same guide on the home page: copy step first, then the menu pictures.</span></figcaption></figure>
+      </div>
+    </section>
+
+    <section>
+      <h2>iPhone · Safari</h2>
+      <p class="section-intro">No first screen. Google sign-in works, and the Messenger step is one tap: the link carries the code and Messenger confirms by itself.</p>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/b-safari-1-signup.png" alt="Welcome to Moodeng Credit with Sign up with Google" loading="lazy"></div><figcaption><b><span class="n">1</span>Sign up</b><span>Where "Open in Safari" lands. Google, Telegram or email.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/b-safari-2-card.png" alt="Confirming on Messenger, keep this screen open" loading="lazy"></div><figcaption><b><span class="n">2</span>Connect Facebook: one tap</b><span>Messenger opens with the code and confirms; this turns green by itself.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/b-safari-3-code-page.png" alt="Connected! Go back to Moodeng in Facebook" loading="lazy"></div><figcaption><b><span class="n">3</span>Code page (from Facebook)</b><span>If they started inside Facebook: connected here, then back to Facebook.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/b-safari-4-continue.png" alt="Go back to where you started" loading="lazy"></div><figcaption><b><span class="n">4</span>Bot's "Continue" link, signed out</b><span>Shown in a browser where they aren't signed in.</span></figcaption></figure>
+      </div>
+    </section>
+
+    <section>
+      <h2>Android · inside Facebook / Messenger</h2>
+      <p class="section-intro">"Open in Chrome" tries to open Chrome directly; if Facebook blocks it, the ⋮ guide appears. The Messenger step is the same paste card as iPhone, and the bot also connects new chatters by timing.</p>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/b-and-iab-1-first.png" alt="For the best experience, open Moodeng in Chrome" loading="lazy"></div><figcaption><b><span class="n">1</span>First screen</b><span>Open in Chrome, or Continue here.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/b-and-iab-2-guide.png" alt="Chrome didn't open guide with the menu ringed" loading="lazy"></div><figcaption><b><span class="n">2</span>Chrome didn't open</b><span>The link is already copied. Tap ⋮, then Open in Chrome.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/b-and-iab-3-card.png" alt="Connect on Messenger card for Android in Facebook" loading="lazy"></div><figcaption><b><span class="n">3</span>Connect Facebook</b><span>Steps lead with pasting.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/b-and-iab-4-paste.png" alt="Code copied card with Open Messenger countdown" loading="lazy"></div><figcaption><b><span class="n">4</span>After the tap</b><span>Code copied, how to paste, then Messenger opens.</span></figcaption></figure>
+      </div>
+    </section>
+
+    <section>
+      <h2>Android · Chrome</h2>
+      <p class="section-intro">No first screen. Sign-up is the same page as Safari. Messenger: tap, then say hi or tap Get Started, and new chatters connect by timing; pasting the code always works.</p>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/b-and-chrome-1-card.png" alt="Connect on Messenger card in Chrome" loading="lazy"></div><figcaption><b><span class="n">1</span>Connect Facebook</b><span>Copy code &amp; open Messenger.</span></figcaption></figure>
+      </div>
+    </section>
+    <p class="note">How these were made: iPhone screens in the iOS Simulator (Messenger and Facebook screens in a stand-in that behaves like their browser); Android screens rendered with the same code as Android Facebook and Chrome, so the frame isn't Android's. The code shown is a sample.</p>
+  </div>
+
+  <!-- ===================== LIVE NOW ===================== -->
+  <div class="panel" role="tabpanel" id="panel-now" aria-labelledby="tab-now" hidden>
+    <p class="note">16 Oct snapshot, kept for history. Email sign-up still works this way; phone sign-up, the email-or-number sign-in and the "Add your email" step are in the All flows tab.</p>
+    <div class="steps" aria-label="The steps in order">
+      <span>1 Sign up (email)</span><i>→</i><span>2 Onboarding</span><i>→</i><span>3 Connect Facebook</span><i>→</i><span>4 Video call</span><i>→</i><span>5 Approved: confirm email + password</span><i>→</i><span>6 ID check in Chrome</span><i>→</i><span>7 Loan</span>
+    </div>
+
+    <section>
+      <h2>1 · Sign up inside Facebook</h2>
+      <p class="section-intro">One field, no code, no password. Behind the scenes it's a guest account that keeps the email they typed but can't sign in with it yet. Supabase emails them a confirmation link and code straight away, but they don't need to open it now.</p>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/n-fb-signup.png" alt="Sign up inside Facebook with only an email field and Continue" loading="lazy"></div><figcaption><b><span class="n">1</span>Type your email</b><span>Google is a small "open in Chrome" line, since it can't work here. If the email already has an account, it offers "Email me a code" to sign in instead.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/n-created.png" alt="Your account has been created" loading="lazy"></div><figcaption><b><span class="n">2</span>Straight in</b><span>No leaving Facebook to read a code. Onboarding starts right away.</span></figcaption></figure>
+      </div>
+    </section>
+
+    <section>
+      <h2>3 · Connect Facebook, then reminders</h2>
+      <p class="section-intro">Step 1 is required: Messenger is how we reach them, and anyone stuck later can message us. Step 2 is payment reminders: phone notifications where they work, otherwise the WhatsApp card. Confirming a WhatsApp number already works; the reminder messages start once Meta approves them (next tab).</p>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/15-whatsapp-reminders-locked.png" alt="Step 1 Connect Facebook, step 2 reminders locked" loading="lazy"></div><figcaption><b><span class="n">3</span>Step 1, then step 2</b><span>Reminders unlock after Facebook is connected.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/16-whatsapp-reminders-offer.png" alt="Card offering reminders on WhatsApp" loading="lazy"></div><figcaption><b><span class="n">4</span>WhatsApp, where notifications can't work</b><span>Facebook's browser, or iPhone Safari outside the Home Screen app. Recommended, never blocks Continue.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/17-whatsapp-reminders-code.png" alt="Open WhatsApp with the code typed" loading="lazy"></div><figcaption><b><span class="n">5</span>Hit send in WhatsApp</b><span>The code is typed for them. That confirms the number, with no Meta approval needed.</span></figcaption></figure>
+      </div>
+    </section>
+
+    <section>
+      <h2>5 · Approved after the call: confirm email, leave Facebook</h2>
+      <p class="section-intro">This screen covers the app once they're approved, before the ID check. Inside Facebook it tells them to tap the button in our email: that opens Moodeng in Chrome or Safari, already signed in to the same account, so the ID check runs outside Facebook. Typing the code also works.</p>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/n-approved-confirm.png" alt="You're approved. Steps to confirm the email, code box, Messenger help" loading="lazy"></div><figcaption><b><span class="n">6</span>"You're approved 🎉"</b><span>Three steps, a code box, "Send a new code", "Wrong email? Change it" and "Stuck? Message us on Messenger".</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/n-password.png" alt="Email confirmed, set a password" loading="lazy"></div><figcaption><b><span class="n">7</span>Set a password</b><span>Shown wherever they confirmed, usually Chrome. From then on it's a normal account: email + password, Google, or an email code.</span></figcaption></figure>
+      </div>
+      <p class="note">Until the email is confirmed, the database refuses loans and payments from guest accounts, and the ID check won't start. If Facebook's browser forgets them, the link in the email signs them back into the same account from any browser.</p>
+    </section>
+
+    <section>
+      <h2>Logging in</h2>
+      <p class="section-intro">On 16 Oct phone codes (SMS) were paused, so these screens were email only. Texts came back on 19 Oct through UniSMS (All flows tab).</p>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/n-fb-login.png" alt="Log in inside Facebook with an email code" loading="lazy"></div><figcaption><b><span class="n">8</span>Inside Facebook</b><span>"Email me a code", or "Use phone number instead" for a text code.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/n-chrome-login.png" alt="Log in in Chrome with Google, password and Email me a code" loading="lazy"></div><figcaption><b><span class="n">9</span>In Chrome</b><span>Google and password as before, plus "Email me a code".</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/n-chrome-signup.png" alt="Sign up in Chrome with Google or email and password" loading="lazy"></div><figcaption><b><span class="n">10</span>Sign up in Chrome</b><span>Unchanged: Google, or email + password with a confirmation email.</span></figcaption></figure>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================== WHEN WHATSAPP IS APPROVED ===================== -->
+  <div class="panel" role="tabpanel" id="panel-whatsapp" aria-labelledby="tab-whatsapp" hidden>
+    <p class="note wa"><b>What changes:</b> nothing on the screens people already see. Once Meta approves the three reminder messages and SendPulse has funds, one switch (<code>borrower_whatsapp_enabled</code>) starts sending them. Borrowers who confirmed WhatsApp get them; replying STOP turns them off.</p>
+
+    <section>
+      <h2>Reminders on</h2>
+      <p class="section-intro">Same card as today; once sending is on, it promises something that actually arrives.</p>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/18-whatsapp-reminders-on.png" alt="WhatsApp reminders card showing On" loading="lazy"></div><figcaption><b><span class="n">1</span>"Reminders on"</b><span>Turns green when their message arrives. Messenger and email reminders carry on as well.</span></figcaption></figure>
+      </div>
+    </section>
+
+    <section>
+      <h2>The three messages</h2>
+      <p class="section-intro">Utility messages in English, each with a "Repay now" button to moodeng.app/repay. "Due tomorrow" goes out only if no phone notification landed. Shown with sample values.</p>
+      <div class="grid">
+        <div class="chat"><span class="who">Due tomorrow · moodeng_due_tomorrow</span><div class="bubble">Hi Juan, your Moodeng loan of 20 USDC is due tomorrow, 8:00 AM. Repay on time to keep growing your credit level.<div class="btn">Repay now</div></div></div>
+        <div class="chat"><span class="who">Due today · moodeng_due_today</span><div class="bubble">Hi Juan, your Moodeng loan of 20 USDC is due today (8:00 AM). Tap below to repay.<div class="btn">Repay now</div></div></div>
+        <div class="chat"><span class="who">Overdue · moodeng_overdue</span><div class="bubble">Hi Juan, your Moodeng loan of 20 USDC is overdue. Repay now to protect your credit level, or reply here if you need help.<div class="btn">Repay now</div></div></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>To turn it on</h2>
+      <p class="section-intro">1. Meta approves the 3 messages (WhatsApp Manager → Message templates says Approved). 2. Add about $5 in SendPulse, with auto-recharge off. 3. Flip <code>borrower_whatsapp_enabled</code> to true. 4. Test from a second phone: send the code, receive a reminder, send STOP.</p>
+    </section>
+  </div>
+
+  <!-- ===================== EARLIER VERSION ===================== -->
+  <div class="panel" role="tabpanel" id="panel-before" aria-labelledby="tab-before" hidden>
+    <p class="note">The 15 Oct version, kept for reference. Sign-up needed a code before onboarding, and phone (SMS) codes were offered. SMS was paused from 16 to 19 Oct and is back through UniSMS; phone sign-ups now add their email after approval instead (All flows tab).</p>
+    <section>
+      <h2>Sign-up with a code (replaced)</h2>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/01-fb-signup-phone.png" alt="Sign up with a +63 phone number" loading="lazy"></div><figcaption><b>Sign up with phone</b><span>Paused until the SMS sender name is approved.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/02-fb-signup-email.png" alt="Sign up with email and a code" loading="lazy"></div><figcaption><b>Sign up with email + code</b><span>Replaced by email with no code (Live now, screen 1).</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/03-fb-non-ph-number.png" alt="Not a Philippine number notice" loading="lazy"></div><figcaption><b>Not a Philippine number</b><span>SMS only.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/04-code-screen-text.png" alt="Code screen for a text" loading="lazy"></div><figcaption><b>Check your texts</b><span>SMS only.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/05-code-screen-still-waiting.png" alt="Text didn't come tips" loading="lazy"></div><figcaption><b>Text didn't come</b><span>SMS only.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/06-code-screen-email.png" alt="Email code screen" loading="lazy"></div><figcaption><b>Email code</b><span>Still used for logging in with a code.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/07-fb-finish-logging-in.png" alt="Finish logging in banner" loading="lazy"></div><figcaption><b>Facebook closed the page?</b><span>Still live for code log-ins.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/08-fb-login.png" alt="Log in inside Facebook with phone" loading="lazy"></div><figcaption><b>Log in with phone</b><span>Now email only (Live now, screen 8).</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/09-chrome-login.png" alt="Chrome log in with text and email code buttons" loading="lazy"></div><figcaption><b>Chrome log in</b><span>"Text me a code" hidden while SMS is paused.</span></figcaption></figure>
+      </div>
+    </section>
+    <section>
+      <h2>After they're in (phone sign-ups)</h2>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/10-new-or-returning.png" alt="Have you used Moodeng before?" loading="lazy"></div><figcaption><b>"Have you used Moodeng before?"</b><span>Still asked of new accounts.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/11-add-email-card.png" alt="Add your email card" loading="lazy"></div><figcaption><b>Add your email, later</b><span>Phone sign-ups only.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/12-confirm-email-reminder.png" alt="Confirm your email card" loading="lazy"></div><figcaption><b>Confirm your email</b><span>Phone sign-ups only.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/13-optional-password.png" alt="Optional password card" loading="lazy"></div><figcaption><b>Password is optional</b><span>Code sign-ups.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/14-settings-add-phone.png" alt="Add a phone in settings" loading="lazy"></div><figcaption><b>Add a phone in Settings</b><span>Hidden while SMS is paused.</span></figcaption></figure>
+      </div>
+    </section>
+  </div>
+
+  <footer>All flows: 19 Oct 2026, from the code in PR #1226. Sign-up steps: 16 Oct, as Facebook's Android browser. By browser: 18 Oct. Earlier version: 15 Oct. Numbers and emails shown are samples.</footer>
+</div>
+<script>
+(function () {
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+  function show(tab) {
+    tabs.forEach(function (t) {
+      var on = t === tab;
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+    try { history.replaceState(null, '', '#' + tab.id.replace('tab-', '')); } catch (e) {}
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener('click', function () { show(t); });
+    t.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      var next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+      show(next); next.focus();
+    });
+  });
+  var start = document.getElementById('tab-' + (location.hash || '').slice(1));
+  if (start) show(start);
+})();
+</script>
+</body>
+</html>

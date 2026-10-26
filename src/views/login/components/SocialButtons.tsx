@@ -2,6 +2,7 @@ import { type JSX, useState } from 'react';
 
 import GoogleAuthButton from '@/components/GoogleAuthButton';
 import LineLoginButton from '@/components/LineLoginButton';
+import TikTokLoginButton from '@/components/TikTokLoginButton';
 import LastUsedBadge from '@/components/auth/LastUsedBadge';
 import TelegramLoginTile from '@/components/auth/TelegramLoginTile';
 
@@ -33,6 +34,10 @@ export default function SocialButtons({ onGoogleAuth, onOAuthError, isSignUp }: 
             <div className="relative">
                <LineLoginButton isSignUp={isSignUp} iconOnly />
                {lastUsed === 'line' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
+            </div>
+            <div className="relative">
+               <TikTokLoginButton isSignUp={isSignUp} iconOnly />
+               {lastUsed === 'tiktok' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
             </div>
          </div>
       </div>

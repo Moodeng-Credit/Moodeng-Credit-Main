@@ -27,7 +27,7 @@ export const STAT_CARDS_CONFIG: StatCardConfig[] = [
    },
    {
       key: 'pending',
-      label: 'Pending Loans',
+      label: 'Pending Request',
       bgColor: 'bg-[#ede0ff]',
       iconBg: 'bg-[#b18aff]',
       icon: 'fas fa-user-friends',

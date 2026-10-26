@@ -1,8 +1,8 @@
-import { type JSX, useState } from 'react';
+import { type JSX, useEffect, useRef, useState } from 'react';
 
 import AskSupportButton from '@/components/support/AskSupportButton';
 
-import { type InAppBrowserInfo, openInChrome, openInSafari } from '@/lib/inAppBrowser';
+import { type InAppBrowserInfo, openInChrome, openInSafari, watchForFailedHandOff } from '@/lib/inAppBrowser';
 
 // The canonical repay URL to hand to the real browser. Kept explicit (not window.location) so the
 // copied/opened link is always the clean repay page, even if the current URL carries query junk.
@@ -27,6 +27,11 @@ export default function RepayInAppBrowserGate({
    targetUrl?: string;
 }): JSX.Element {
    const [copied, setCopied] = useState(false);
+   // Facebook's Android in-app browser ignores the Chrome link; when the page is still here after the
+   // tap, put the manual "⋮ → Open in Chrome" steps front and centre instead of the small print.
+   const [chromeFailed, setChromeFailed] = useState(false);
+   const stopWatchingRef = useRef<(() => void) | null>(null);
+   useEffect(() => () => stopWatchingRef.current?.(), []);
    const appLabel = info.appName ?? 'this app';
    const showSafari = info.os === 'ios';
 
@@ -54,8 +59,8 @@ export default function RepayInAppBrowserGate({
             Finish repaying in your browser
          </h1>
          <p className="mt-3 text-center text-[15px] leading-6 text-[#5F536D] dark:text-[#B5ACBE]">
-            {appLabel}&apos;s in-app browser can&apos;t open your wallet, so a repayment gets stuck here. Open this page in
-            Chrome or Safari to pay — it only takes a few seconds.
+            {appLabel}&apos;s in-app browser can&apos;t open your wallet, so a repayment gets stuck here. Open this page in Chrome or Safari
+            to pay — it only takes a few seconds.
          </p>
 
          {/* Copy-link box — the always-works path: copy → open your browser → paste. */}
@@ -77,7 +82,13 @@ export default function RepayInAppBrowserGate({
          <div className="mt-4 flex flex-col gap-2">
             <button
                type="button"
-               onClick={() => openInChrome(targetUrl, info)}
+               onClick={() => {
+                  // Copy while we still have the tap, so the link is ready to paste if Chrome doesn't open.
+                  void navigator.clipboard?.writeText(targetUrl).catch(() => undefined);
+                  openInChrome(targetUrl, info);
+                  stopWatchingRef.current?.();
+                  stopWatchingRef.current = watchForFailedHandOff(() => setChromeFailed(true));
+               }}
                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#16A34A] px-4 text-base font-semibold text-white transition-opacity hover:opacity-95"
             >
                <i className="fab fa-chrome text-lg" aria-hidden="true" />
@@ -94,6 +105,23 @@ export default function RepayInAppBrowserGate({
                </button>
             )}
          </div>
+
+         {chromeFailed ? (
+            <div role="status" className="mt-4 rounded-2xl border-2 border-[#6c3fe0] bg-[#faf8ff] px-4 py-3 dark:bg-[#1f1830]">
+               <p className="text-[15px] font-semibold text-[#1b0a36] dark:text-[#F8F4FF]">
+                  {appLabel} blocked Chrome. Two taps to fix it:
+               </p>
+               <p className="mt-1.5 text-[14px] leading-snug text-[#3b3350] dark:text-[#D8CEE6]">
+                  1. Tap <span className="font-bold">⋮</span> at the top right of the screen
+                  <br />
+                  2. Choose <span className="font-semibold">Open in Chrome</span> or{' '}
+                  <span className="font-semibold">Open in external browser</span>
+               </p>
+               <p className="mt-1.5 text-[13px] text-[#5b5470] dark:text-[#B5ACBE]">
+                  Your repay link is copied, so you can also paste it into Chrome.
+               </p>
+            </div>
+         ) : null}
 
          <p className="mt-3 text-center text-[13px] leading-snug text-[#8a7fa0] dark:text-[#9a8fb0]">
             If a button doesn&apos;t open your browser, tap <span className="font-semibold">•••</span> at the top of {appLabel}

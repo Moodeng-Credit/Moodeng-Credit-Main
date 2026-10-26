@@ -29,6 +29,9 @@ const formatAmount = (amount: number) =>
 
 const shortRef = (hash: string) => (hash.length > 14 ? `${hash.slice(0, 8)}…${hash.slice(-6)}` : hash);
 
+const escapeHtml = (value: string) =>
+   value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
 const buildEmail = (amount: number, exchange: string, txHash: string) => {
    const amt = formatAmount(amount);
    const subject = `Your ${amt} USDC withdrawal is on its way`;
@@ -37,9 +40,9 @@ const buildEmail = (amount: number, exchange: string, txHash: string) => {
       `It usually arrives within a few minutes. ` +
       `If it hasn't arrived, contact support with this reference: ${txHash}.`;
    const html =
-      `<p>Your withdrawal of <strong>${amt} USDC</strong> to <strong>${exchange}</strong> has been sent and is on its way.</p>` +
+      `<p>Your withdrawal of <strong>${amt} USDC</strong> to <strong>${escapeHtml(exchange)}</strong> has been sent and is on its way.</p>` +
       `<p>It usually arrives within a few minutes.</p>` +
-      `<p style="color:#6b7280;font-size:13px">If it hasn't arrived, contact support with this reference:<br/><code>${txHash}</code></p>`;
+      `<p style="color:#6b7280;font-size:13px">If it hasn't arrived, contact support with this reference:<br/><code>${escapeHtml(txHash)}</code></p>`;
    return { subject, text, html };
 };
 

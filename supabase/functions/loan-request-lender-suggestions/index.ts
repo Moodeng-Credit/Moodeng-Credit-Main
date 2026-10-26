@@ -8,7 +8,9 @@ import {
    type LenderRow,
    type ProspectRow
 } from '../_shared/lenderSuggestions.ts';
-import { sendTelegramMessage } from '../_shared/telegram.ts';
+import { sendAdminCard } from '../_shared/adminCards.ts';
+import { formatDeadlineForTeam, formatInstantForTeam, loanTimezone } from '../_shared/loanDeadline.ts';
+import { getTeamTimezone, loadBorrowerTimezones } from '../_shared/loanDueTeamFeed.ts';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -62,7 +64,7 @@ const getTeamChatId = async (supabase: SupabaseClient) =>
 
 const buildLoanUrl = (loanId: string) => {
    const siteUrl = Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? Deno.env.get('SITE_URL') ?? 'https://moodeng.app';
-   return `${siteUrl.replace(/\/$/, '')}/request-board?loan=${loanId}`;
+   return `${siteUrl.replace(/\/$/, '')}/request-board?highlight=${loanId}`;
 };
 
 serve(async (req) => {
@@ -95,7 +97,10 @@ serve(async (req) => {
             { lender_user_id: 'l3', borrower_user_id: 'bX', loan_amount: 200, funded_at: new Date(Date.now() - 3 * 86400000).toISOString(), loan_status: 'Lent', repayment_status: 'Unpaid' }
          ];
          const mockProspects: ProspectRow[] = [{ id: 'p1', name: 'Maria', handle: '@maria_tg', note: 'referred by Emma' }];
-         const message = buildLenderSuggestionMessage(mockLoan, 'alex', rankLenders(mockLoan, mockLenders, mockLoans), mockProspects);
+         const message = buildLenderSuggestionMessage(mockLoan, 'alex', rankLenders(mockLoan, mockLenders, mockLoans), mockProspects, {
+            submitted: formatInstantForTeam(new Date(), 'Asia/Bangkok'),
+            due: formatDeadlineForTeam(new Date(Date.now() + 30 * 86400000), 'Asia/Manila', 'Asia/Bangkok')
+         });
          return json({ message });
       }
 
@@ -110,7 +115,7 @@ serve(async (req) => {
 
       const { data: loan, error: loanError } = await supabase
          .from('loans')
-         .select('id, loan_amount, coin, reason, borrower_user_id, loan_status, on_hold_since')
+         .select('id, loan_amount, coin, reason, borrower_user_id, loan_status, on_hold_since, created_at, due_date, due_timezone')
          .eq('id', loanId)
          .maybeSingle();
       if (loanError) throw new Error(loanError.message);
@@ -146,7 +151,16 @@ serve(async (req) => {
       if (prospectsError) throw new Error(prospectsError.message);
 
       const ranked = rankLenders(loan, (lenders ?? []) as LenderRow[], (lenderLoans ?? []) as LenderLoan[]);
-      const message = buildLenderSuggestionMessage(loan, borrower?.username, ranked, (prospects ?? []) as ProspectRow[]);
+      const teamZone = await getTeamTimezone(supabase);
+      const zones = loan.borrower_user_id
+         ? await loadBorrowerTimezones(supabase, [loan.borrower_user_id]).catch(() => new Map<string, string>())
+         : new Map<string, string>();
+      const borrowerZone = loanTimezone(loan, zones.get(loan.borrower_user_id ?? '') ?? 'Asia/Manila');
+      const timing = {
+         submitted: loan.created_at ? formatInstantForTeam(loan.created_at, teamZone) : null,
+         due: loan.due_date ? formatDeadlineForTeam(loan.due_date, borrowerZone, teamZone) : null
+      };
+      const message = buildLenderSuggestionMessage(loan, borrower?.username, ranked, (prospects ?? []) as ProspectRow[], timing);
 
       if (dryRun) {
          return json({ message });
@@ -157,8 +171,12 @@ serve(async (req) => {
          throw new Error('team_group_chat_id / TEAM_TELEGRAM_CHAT_ID is not configured.');
       }
 
-      await sendTelegramMessage(chatId, message, {
-         inlineKeyboard: [[{ text: 'View request', url: buildLoanUrl(loan.id) }]]
+      // Remembered as the loan's card, so funding (and later overdue / repaid) stamps it in place.
+      await sendAdminCard(supabase, chatId, {
+         kind: 'loan',
+         refId: loan.id,
+         text: message,
+         keyboard: [[{ text: 'View request', url: buildLoanUrl(loan.id) }]]
       });
 
       return json({ message: 'Lender suggestions sent', suggested: ranked.length });

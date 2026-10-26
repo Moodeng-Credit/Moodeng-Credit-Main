@@ -1,18 +1,38 @@
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { cloneElement, isValidElement, type MouseEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { BellRing, Facebook, Loader2, MessageCircle } from 'lucide-react';
+import { BellRing, Facebook, Loader2, MessageSquareText } from 'lucide-react';
 import posthog from 'posthog-js';
 
+import { useGeoCheck } from '@/hooks/useGeoCheck';
+import { clarityEvent } from '@/lib/analytics/clarity';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 import {
+   buildMessengerIntentLink,
    buildMessengerVerifyLink,
    buildWhatsAppVerifyLink,
+   isAndroidBrowser,
+   isDesktopBrowser,
+   MESSENGER_APP_CHAT_LINK,
+   MESSENGER_PAGE_CHAT_LINK,
    MESSENGER_PAGE_ID,
+   MESSENGER_PLAY_STORE_LINK,
+   NO_MESSENGER_PARAM,
    WHATSAPP_VERIFY_ENABLED
 } from '@/config/contactVerification';
+import MenuGuide from '@/components/MenuGuide';
+import MessengerSwitchGuide from '@/components/MessengerSwitchGuide';
+import { detectInAppBrowser, metaIosHost, setInAppNoticeHidden } from '@/lib/inAppBrowser';
+import { buildArmedUrl, copyTextFromTap, stripFbCode } from '@/lib/inAppHandoff';
+import { getLastPushFailure, type PushFailure } from '@/lib/push/webPushClient';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import { CONNECT_HIPPOS, ConnectHero, GhostButton, OptionCard, PrimaryButton } from '@/views/dashboard/components/connectKit';
+import { playSuccess } from '@/lib/uiSounds';
+import { CONNECT_HIPPOS, ConnectHero, GhostButton, LockedStepCard, OptionCard, PrimaryButton, StepLabel } from '@/views/dashboard/components/connectKit';
+import DesktopMessengerCard from '@/views/dashboard/components/DesktopMessengerCard';
+import NotificationsUnblockGuide from '@/views/dashboard/components/NotificationsUnblockGuide';
+import TelegramRemindersCard from '@/views/dashboard/components/TelegramRemindersCard';
+import ViberRemindersCard, { ComingSoonChannel } from '@/views/dashboard/components/ViberRemindersCard';
+import WhatsAppRemindersCard from '@/views/dashboard/components/WhatsAppRemindersCard';
 
 // End-of-application "how we reach you" step: a *verified* WhatsApp line OR a *verified* Facebook
 // Messenger line — either one is enough, since not everyone uses WhatsApp. Both are platform-only
@@ -24,13 +44,17 @@ import { CONNECT_HIPPOS, ConnectHero, GhostButton, OptionCard, PrimaryButton } f
 //   * WhatsApp — wa.me pre-fills the code; whatsapp-webhook matches it when they hit send.
 //   * Messenger — the m.me link launches SendPulse's "Confirm Facebook" flow with the code attached;
 //     the flow calls sendpulse-messenger-verify, which matches it. Just opening the link is enough
-//     (first-time chatters tap Facebook's own "Get Started" once).
+//     (first-time chatters tap Facebook's own "Get Started" once). Not on Android: Chrome there never
+//     opens m.me in Messenger (see MESSENGER_APP_CHAT_LINK), so Android borrowers get the code on
+//     screen, one tap copies it and opens our chat, and they paste and send it.
+//     Not on computers either (the code gets lost on the way to facebook.com/messages): they scan a QR
+//     with their phone (MessengerHandoff) or paste the code into our chat here (DesktopMessengerCard).
 // Both stamp the verified-at column plus an id we can message them on. This component polls those
 // columns rather than trusting anything the client says — the point is a line we can prove works.
 type Channel = 'whatsapp' | 'messenger';
 
 // Where this card is shown — sent with every analytics event so we can compare the flows.
-export type ContactsStepSource = 'verify_review' | 'loan_request' | 'connect';
+export type ContactsStepSource = 'verify_review' | 'verify_declined' | 'loan_request' | 'connect';
 
 // Every step of the "connect your Facebook" flow is logged to PostHog (contact_verify_*), so a stuck
 // borrower's story is one query instead of a reconstruction from page views and DB timestamps, and
@@ -50,7 +74,74 @@ const SHOW_TYPED_CODE_AFTER_MS = 60_000;
 // code arrives (a first-time "Get Started", some Android Messenger versions), and Aya on 2026-09-29
 // left without ever seeing the backups.
 const RETURN_GRACE_MS = 4_000;
+// Messenger didn't really open: the page was hidden for less than this (a tab or app flashing open
+// and shut — every failed Android attempt looked like this, 0.2–0.5s), or never hidden at all within
+// NOT_OPENED_AFTER_MS of the tap. Either way, go straight to the backups instead of "keep waiting".
+const BOUNCE_MS = 1_500;
+// Reminders that fail to turn on this many times (not blocked — broken) stop blocking Continue.
+const PUSH_FAILURES_BEFORE_OPTIONAL = 2;
+const NOT_OPENED_AFTER_MS = 3_000;
 const MOODENG_FACEBOOK_PAGE_URL = `https://www.facebook.com/${MESSENGER_PAGE_ID}`;
+
+// ?msgr_country=ID stands in for the IP country (kept for the tab), so the Indonesian card can be
+// tried from anywhere.
+const COUNTRY_OVERRIDE_KEY = 'moodeng.msgrCountry';
+const readCountryOverride = () => {
+   try {
+      const fromUrl = new URLSearchParams(window.location.search).get('msgr_country');
+      if (fromUrl) window.sessionStorage.setItem(COUNTRY_OVERRIDE_KEY, fromUrl.toUpperCase());
+      return window.sessionStorage.getItem(COUNTRY_OVERRIDE_KEY);
+   } catch {
+      return null;
+   }
+};
+// Where Chrome lands when the Messenger app isn't installed: this same page, marked.
+const noMessengerReturnUrl = () => {
+   const url = new URL(window.location.href);
+   url.searchParams.set(NO_MESSENGER_PARAM, '1');
+   return url.toString();
+};
+
+// On Android without the Messenger app, the chat link opens Facebook's messages page in this same tab,
+// so the borrower leaves the app. Remember the attempt so coming back lands on the same code instead
+// of a fresh card (and a new code they haven't sent). Codes live 30 minutes.
+const PENDING_KEY = 'moodeng.messengerVerifyPending';
+const PENDING_TTL_MS = 25 * 60 * 1000;
+type PendingMessenger = { userId: string; code: string; link: string; at: number };
+
+const readPending = (userId: string): PendingMessenger | null => {
+   try {
+      const raw = window.sessionStorage.getItem(PENDING_KEY);
+      const pending = raw ? (JSON.parse(raw) as PendingMessenger) : null;
+      return pending && pending.userId === userId && Date.now() - pending.at < PENDING_TTL_MS ? pending : null;
+   } catch {
+      return null;
+   }
+};
+const writePending = (pending: PendingMessenger | null) => {
+   try {
+      if (pending) window.sessionStorage.setItem(PENDING_KEY, JSON.stringify(pending));
+      else window.sessionStorage.removeItem(PENDING_KEY);
+   } catch {
+      // Storage blocked: they just get a fresh card if they leave and come back.
+   }
+};
+
+const openVerifyLink = (link: string) => {
+   window.open(link, '_blank', 'noopener,noreferrer');
+};
+
+// iPhone/iPad. Opening m.me from script (after the code request) puts it in a NEW Safari tab: Messenger
+// opens, but coming back to Safari lands on that leftover tab, and borrowers had to go "one step back"
+// to find Moodeng again (Emma, 2026-10-12). So on iOS the code is fetched as soon as the card shows and
+// the button is a real m.me link they tap: iOS hands it straight to Messenger and leaves this page as it
+// was. Without Messenger installed it opens m.me in this tab, and coming back resumes the same code.
+const isIOSBrowser = () =>
+   /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+// Codes live 30 minutes; a prepared one older than this is fetched fresh on the tap instead.
+const PREPARED_CODE_TTL_MS = 20 * 60 * 1000;
+// Onboarding: how long the green "Verified" shows before moving on to the success screen.
+const AUTO_CONTINUE_MS = 900;
 
 export default function ContactsStep({
    userId,
@@ -60,7 +151,8 @@ export default function ContactsStep({
    whatsappEnabled = WHATSAPP_VERIFY_ENABLED,
    isSubmitting = false,
    source,
-   backLabel = 'Back'
+   backLabel = 'Back',
+   requireReminders = false
 }: {
    userId: string;
    onBack: () => void;
@@ -77,8 +169,14 @@ export default function ContactsStep({
    // The secondary button's label. /verify shows this card before the manual-review screen, where
    // "Back" would read oddly, so it passes "Skip for now".
    backLabel?: string;
+   // Loan request for someone only email reaches (no working push, Messenger or WhatsApp): reminders
+   // are required even where push can't work — WhatsApp instead, or "I don't have WhatsApp".
+   requireReminders?: boolean;
 }) {
    const [whatsappVerified, setWhatsappVerified] = useState(false);
+   // No-WhatsApp reminders: a Viber number they haven't turned off, or a linked Telegram (chat_id).
+   const [viberVerified, setViberVerified] = useState(false);
+   const [telegramVerified, setTelegramVerified] = useState(false);
    const [messengerVerified, setMessengerVerified] = useState(false);
    const [startingChannel, setStartingChannel] = useState<Channel | null>(null);
    // The Messenger link we opened. Once set, the card shows a short "waiting" state with a button to
@@ -94,6 +192,84 @@ export default function ContactsStep({
    const [messengerCode, setMessengerCode] = useState<string | null>(null);
    const [showTypedCode, setShowTypedCode] = useState(false);
    const [codeCopied, setCodeCopied] = useState(false);
+   // The copy was refused (nothing copied): say so, and show how to copy it by hand.
+   const [copyFailed, setCopyFailed] = useState(false);
+   // iPhone in Facebook's browser: the "⋯ → Open in external browser" steps are showing.
+   const [externalHowTo, setExternalHowTo] = useState(false);
+   // Android: the app link did nothing (no Messenger app, or Messenger stuck) — say what to do instead.
+   const [messengerDidntOpen, setMessengerDidntOpen] = useState(false);
+   // Android: code first, then a direct tap on "Copy code & open Messenger" (see the comment at the top).
+   const androidMessenger = isAndroidBrowser();
+   // iPhone inside Facebook's / Instagram's own browser: the m.me link never reaches our bot there
+   // (userbuds, 2026-10-14: tapped, Messenger never came up, left). So it gets the Android card instead:
+   // the code first, then "Copy code & open Messenger", plus a way out to Safari, where m.me works.
+   const inAppInfo = useMemo(() => detectInAppBrowser(), []);
+   const iosInAppMessenger =
+      !androidMessenger && isIOSBrowser() && inAppInfo.isInApp && inAppInfo.appName !== null && inAppInfo.appName !== 'Messenger';
+   const codeFirstMessenger = androidMessenger || iosInAppMessenger;
+   // iPhone, the Facebook app itself (not Messenger, which says the same FBAN/FBIOS; see metaIosHost).
+   // There the Messenger app link does nothing: George, 2026-10-18, tapped "Open Messenger" 9 times and
+   // the page never left (auto-open ignored, contact_verify_not_opened each time); m.me didn't either
+   // (userbuds, 10-14). Copying does work there. So it gets copy → switch apps yourself → paste.
+   // Messenger's own browser keeps the card below unchanged: there the same link works.
+   const fbAppIos = iosInAppMessenger && metaIosHost() === 'facebook';
+   // Facebook app: the picture guide for getting to our chat by hand (opens on its own after Copy).
+   const [switchGuide, setSwitchGuide] = useState(false);
+   // Android inside Facebook's / Messenger's own browser: a borrower who has chatted with our Page before
+   // sends us nothing when the chat opens, so "say hi and you're connected" left them waiting (George,
+   // 2026-10-18). There, pasting the code is the main step. Chrome keeps the say-hi wording: it works.
+   const androidInApp = androidMessenger && inAppInfo.isInApp;
+   // Indonesia (IP country from check-geo, or ?msgr_country=ID): WhatsApp-first sign-up, and on Android
+   // Chrome the button is an intent that falls back to this page when Messenger isn't installed (see
+   // buildMessengerIntentLink). Everyone else keeps today's steps and the plain app link.
+   // Asked only where it changes something: onboarding, and Android Chrome's Messenger button.
+   const geo = useGeoCheck(source !== 'connect' && !(androidMessenger && !androidInApp));
+   const countryOverride = useMemo(() => readCountryOverride(), []);
+   const indoCountry = (countryOverride ?? geo.countryCode) === 'ID';
+   const noMessengerFallback = androidMessenger && !androidInApp && indoCountry;
+   // Indonesia: the bot may already have sent a Facebook code on WhatsApp, and a new code would cancel
+   // it, so reuse it (start_or_reuse_messenger_code). Everyone else: a fresh code, as before.
+   const requestMessengerCode = () =>
+      indoCountry
+         ? getSupabaseBrowserClient().rpc('start_or_reuse_messenger_code')
+         : getSupabaseBrowserClient().rpc('start_contact_verification', { p_channel: 'messenger' });
+   const androidChatLink = noMessengerFallback ? buildMessengerIntentLink(noMessengerReturnUrl()) : MESSENGER_APP_CHAT_LINK;
+   // Chrome came back with ?nomsgr=1: the Messenger app isn't on this phone.
+   const [noMessengerApp, setNoMessengerApp] = useState(false);
+   // Either phone inside Facebook's / Messenger's browser: the short card.
+   const inAppCard = androidInApp || iosInAppMessenger;
+   // iPhone too: the Messenger link does open Messenger from there (George's iPhone, 2026-10-18); what
+   // people miss is that they must paste the code. Both get the "📋 Code copied: paste it" card.
+   // Their tap on "Copy code & open Messenger" copies the code and shows how to paste it, then opens
+   // Messenger by itself after a short countdown (or at once if they tap). Facebook's Android browser
+   // sometimes ignores an app link the page opens without a tap, so if the page is still showing a
+   // moment later, the button asks for a tap instead.
+   const [pasteCard, setPasteCard] = useState(false);
+   const [pasteCountdown, setPasteCountdown] = useState<number | null>(null);
+   const [autoOpenStuck, setAutoOpenStuck] = useState(false);
+   const iosMessenger = !androidMessenger && !iosInAppMessenger && isIOSBrowser();
+   const iosInAppCardShown = iosInAppMessenger && Boolean(messengerLink) && !messengerVerified && Boolean(messengerCode);
+   // The card explains the in-app browser and offers Safari itself, so the global banner would only
+   // cover it (it hid the Safari button and the steps in the 2026-10-14 preview).
+   useEffect(() => {
+      if (!iosInAppCardShown) return;
+      setInAppNoticeHidden(true);
+      return () => setInAppNoticeHidden(false);
+   }, [iosInAppCardShown]);
+   // While the "⋯ → Open in external browser" steps show, the address carries the code (?fbcode=):
+   // Facebook's menu opens whatever address the page shows, and Safari, which can't see this browser's
+   // sign-in, then lands on the code's own page instead of the home page (src/main.tsx).
+   useEffect(() => {
+      if (!iosInAppCardShown || !externalHowTo || !messengerCode) return;
+      window.history.replaceState(window.history.state, '', buildArmedUrl(window.location.href, messengerCode));
+      track('contact_verify_external_howto_shown', { source, channel: 'messenger', app: inAppInfo.appName });
+      return () => window.history.replaceState(window.history.state, '', stripFbCode(window.location.href));
+   }, [iosInAppCardShown, externalHowTo, messengerCode, source, inAppInfo.appName]);
+   // Computers: a QR for the phone plus copy-and-paste here (see isDesktopBrowser, DesktopMessengerCard).
+   const desktopMessenger = !androidMessenger && !iosMessenger && isDesktopBrowser();
+   // iOS: a code + m.me link ready before the tap (see isIOSBrowser above).
+   const [preparedMessenger, setPreparedMessenger] = useState<{ code: string; link: string; at: number } | null>(null);
+   const [tapAgain, setTapAgain] = useState(false);
    // Set once the tab is hidden after we open Messenger — i.e. they actually went there. Tracked by a
    // listener that exists from mount: the tab can hide before React re-renders after the tap.
    const leftForMessengerRef = useRef(false);
@@ -103,8 +279,12 @@ export default function ContactsStep({
    const firstStartedAtRef = useRef<number | null>(null);
    const lastStartedAtRef = useRef<number | null>(null);
    const leftAtRef = useRef<number | null>(null);
+   const openedAtRef = useRef<number | null>(null);
+   const lastHiddenAtRef = useRef<number | null>(null);
    const lastChannelRef = useRef<Channel | null>(null);
    const confirmedTrackedRef = useRef(false);
+   // Confirmed while they're on this screen (not a line verified earlier): onboarding moves on by itself.
+   const [confirmedNow, setConfirmedNow] = useState(false);
    const backupTrackedRef = useRef(false);
 
    // Due-date reminders by push are required too, wherever the browser can do push. Some can't (an
@@ -113,25 +293,165 @@ export default function ContactsStep({
    const push = usePushNotifications(userId);
    const [pushError, setPushError] = useState('');
    const pushOn = push.isSupported && push.permission === 'granted' && push.isSubscribed;
-   const pushRequired = push.isSupported;
+   // Blocked in the browser (they tapped "Block" on Chrome's prompt, often the one that pops up on its
+   // own after sign-in): the site can't ask again, so a tap only ever said "blocked" and Continue stayed
+   // locked. A borrower on 2026-10-13 tapped ~30 times over 17 minutes. Reminders become optional
+   // here, the card says how to unblock, and Messenger and email still reach them.
+   const pushBlocked = push.isSupported && push.permission === 'denied';
+   // Allowed, but this phone can't actually subscribe (Chrome's push service unreachable — e.g. no
+   // working Google Play services). Every tap returns 'failed' before reaching our server, so
+   // Continue stayed locked: a borrower on 2026-10-15 tapped 22 times, gave up before booking her
+   // call, and messaged the Page "the reminder won't turn on". Two failures → reminders are optional.
+   const [pushFailures, setPushFailures] = useState(0);
+   // Why the last tap failed (Chrome refused vs. our save failed), for PostHog and the team alert.
+   const lastPushFailureRef = useRef<PushFailure | null>(null);
+   const pushUnavailable = pushFailures >= PUSH_FAILURES_BEFORE_OPTIONAL;
+   const pushRequired = push.isSupported && !pushBlocked && !pushUnavailable;
 
-   const contactVerified = whatsappVerified || messengerVerified;
-   const canContinue = contactVerified && (pushOn || !pushRequired);
+   // Facebook is the required contact line. A WhatsApp line only counts here when the old "WhatsApp
+   // instead of Messenger" card is switched on; otherwise WhatsApp is just the reminders channel below.
+   const contactVerified = messengerVerified || (whatsappEnabled && whatsappVerified);
+
+   // Where notifications can't work (no push at all here, blocked, or broken on this phone), offer
+   // WhatsApp reminders instead. Recommended, not required: someone without WhatsApp still gets
+   // Messenger and email. Off until the borrower_whatsapp_card_enabled setting is on (sending has its
+   // own switch, borrower_whatsapp_enabled).
+   const [whatsappRemindersEnabled, setWhatsappRemindersEnabled] = useState(false);
+   useEffect(() => {
+      let cancelled = false;
+      (async () => {
+         try {
+            const { data } = await getSupabaseBrowserClient().rpc('get_whatsapp_reminders_enabled');
+            if (!cancelled) setWhatsappRemindersEnabled(data === true);
+         } catch {
+            // Can't tell: leave WhatsApp reminders off, the step works as before.
+         }
+      })();
+      return () => {
+         cancelled = true;
+      };
+   }, []);
+   // Viber reminders, offered after "I don't have WhatsApp" (borrower_viber_card_enabled, off until the
+   // relay on George's Mac is running).
+   const [viberRemindersEnabled, setViberRemindersEnabled] = useState(false);
+   useEffect(() => {
+      let cancelled = false;
+      (async () => {
+         try {
+            const { data } = await getSupabaseBrowserClient().rpc('get_viber_reminders_enabled');
+            if (!cancelled) setViberRemindersEnabled(data === true);
+         } catch {
+            // Can't tell: no Viber card, the step works as before.
+         }
+      })();
+      return () => {
+         cancelled = true;
+      };
+   }, []);
+   const pushCantWork = !push.isSupported || pushBlocked || pushUnavailable;
+   const offerWhatsAppReminders = whatsappRemindersEnabled && pushCantWork;
+   // requireReminders: where push can't work, WhatsApp becomes required, with "I don't have WhatsApp" as
+   // the way out so nobody is locked in (2026-10-13: ~30 taps on a reminder that could never turn on).
+   // Without the WhatsApp card on, there's nothing else to ask for, so it's the old rule.
+   const [skippedNoWhatsApp, setSkippedNoWhatsApp] = useState(false);
+   // Onboarding (George, 18 Oct): we need one way to remind every borrower. Where notifications can't
+   // work (Facebook's / Messenger's browser), that's WhatsApp, required like at loan time, with the same
+   // "I don't have WhatsApp" way out. Confirming it also gives us their phone number.
+   const remindersMandatory = requireReminders || source === 'connect';
+   // Viber or Telegram on stands in for WhatsApp where notifications can't work.
+   const otherReminderOn = viberVerified || telegramVerified;
+   const whatsappRequired = remindersMandatory && offerWhatsAppReminders && !whatsappVerified && !otherReminderOn && !skippedNoWhatsApp;
+   const canContinue = contactVerified && (pushOn || !pushRequired) && !whatsappRequired;
+   // One way to remind them at a time (George, 18–19 Oct). Where notifications work: the bell card.
+   // Where they can't: WhatsApp; after "I don't have WhatsApp": Telegram, Viber (when its relay is on)
+   // and SMS greyed out as coming soon. A linked Viber or Telegram replaces the WhatsApp card.
+   const afterNoWhatsApp = offerWhatsAppReminders && skippedNoWhatsApp && !whatsappVerified;
+   const showPushCard = (pushRequired || pushBlocked || pushUnavailable) && contactVerified && !offerWhatsAppReminders;
+   // Indonesia's sign-up (George, 25 Oct): WhatsApp is step 1 (most have it; many lack the Messenger
+   // app), then the bot sends the Facebook steps on WhatsApp. Facebook stays required, and unlocks once
+   // WhatsApp is connected or they say they don't have it.
+   const indoWhatsAppFirst = indoCountry && source === 'connect';
+   const facebookLocked = indoWhatsAppFirst && !whatsappVerified && !skippedNoWhatsApp && !contactVerified;
+   const showWhatsAppCard = offerWhatsAppReminders && contactVerified && !otherReminderOn && !skippedNoWhatsApp && !indoWhatsAppFirst;
+   const showTelegramCard = offerWhatsAppReminders && contactVerified && (telegramVerified || (afterNoWhatsApp && !viberVerified));
+   const showViberCard =
+      offerWhatsAppReminders && contactVerified && (viberVerified || (afterNoWhatsApp && viberRemindersEnabled && !telegramVerified));
+   const showSmsComingSoon = afterNoWhatsApp && contactVerified && !otherReminderOn;
+   // Two numbered steps whenever there's a reminders step: 1 Connect Facebook, 2 Payment reminders.
+   // Step 2 stays locked until Facebook is connected, so nobody starts with reminders thinking that's
+   // the Facebook step (WhatsApp in particular looks like a way to "reach you").
+   const hasReminderStep = pushRequired || pushBlocked || pushUnavailable || offerWhatsAppReminders;
+
+   // Reminders can't turn on here — blocked, failing on this phone, or Facebook's browser on Android
+   // (no push at all, but Chrome has it). Once they've connected Facebook, the bot messages them how
+   // to fix it in Chrome/Safari and the team gets a heads-up (messenger-stuck-alerts, `reminders: true`), at most once a day.
+   const remindersStuckReason: 'failed' | 'blocked' | 'in_app' | null = !contactVerified || pushOn || whatsappVerified || otherReminderOn
+      ? null
+      : pushUnavailable
+        ? 'failed'
+        : pushBlocked
+          ? 'blocked'
+          : androidMessenger && inAppInfo.isInApp && !push.isSupported
+            ? 'in_app'
+            : null;
+   const remindersStuckReportedRef = useRef(false);
+   useEffect(() => {
+      if (!remindersStuckReason || remindersStuckReportedRef.current) return;
+      remindersStuckReportedRef.current = true;
+      const os = androidMessenger ? 'android' : isIOSBrowser() ? 'ios' : 'other';
+      track('contact_push_stuck_reported', { source, reason: remindersStuckReason, os });
+      void getSupabaseBrowserClient()
+         .functions.invoke('messenger-stuck-alerts', {
+            body: {
+               reminders: true,
+               reason: remindersStuckReason,
+               os,
+               failures: pushFailures || undefined,
+               failure: lastPushFailureRef.current ?? undefined
+            }
+         })
+         .catch(() => undefined);
+   }, [remindersStuckReason, androidMessenger, source, pushFailures]);
+
+   // Blocked: the card opens a picture guide to unblocking instead of a tap that can only fail.
+   const [showUnblockGuide, setShowUnblockGuide] = useState(false);
+   const [guideStillBlocked, setGuideStillBlocked] = useState(false);
+   useEffect(() => {
+      if (pushOn) setShowUnblockGuide(false);
+   }, [pushOn]);
 
    const handleEnablePush = async () => {
       setPushError('');
       const outcome = await push.enable();
+      const failure = outcome === 'failed' ? getLastPushFailure() : null;
+      if (failure) lastPushFailureRef.current = failure;
+      track('contact_push_outcome', {
+         source,
+         outcome,
+         ...(failure ? { failure_stage: failure.stage, error_name: failure.errorName, error_message: failure.errorMessage } : {})
+      });
       if (outcome === 'permission-denied') {
-         setPushError('Notifications are blocked. Allow them for moodeng.app in your browser settings, then tap again.');
+         // Blocked in the browser: show how to unblock (the card now opens the guide), Continue stays open.
+         setGuideStillBlocked(showUnblockGuide);
+         setShowUnblockGuide(true);
       } else if (outcome === 'permission-dismissed') {
          setPushError('Tap Allow when your phone asks, so we can remind you before your due date.');
       } else if (outcome === 'failed') {
-         setPushError("Couldn't turn on reminders — try again in a moment.");
+         const failures = pushFailures + 1;
+         setPushFailures(failures);
+         if (failures >= PUSH_FAILURES_BEFORE_OPTIONAL) {
+            track('contact_push_unavailable', { source, failures });
+            setPushError('');
+         } else {
+            setPushError("Couldn't turn on reminders — try once more.");
+         }
+      } else if (outcome === 'subscribed' || outcome === 'already-subscribed') {
+         setPushFailures(0);
       }
    };
-   // Still show WhatsApp to a returning borrower who verified it before, so they can see why
-   // Continue is already enabled.
-   const showWhatsApp = whatsappEnabled || whatsappVerified;
+   // The "WhatsApp instead of Messenger" card, only when that option is switched on (WhatsApp reminders
+   // have their own card below).
+   const showWhatsApp = whatsappEnabled;
 
    // Pick up an already-verified line from a previous application — this is an account-level fact,
    // not a per-loan one, so a returning borrower shouldn't have to re-verify every time.
@@ -140,21 +460,35 @@ export default function ContactsStep({
       (async () => {
          const { data } = await getSupabaseBrowserClient()
             .from('users')
-            .select('whatsapp_verified_at, messenger_verified_at')
+            .select('whatsapp_verified_at, messenger_verified_at, viber_verified_at, notif_viber, chat_id')
             .eq('id', userId)
             .maybeSingle();
          if (cancelled || !data) return;
-         if (data.whatsapp_verified_at) setWhatsappVerified(true);
-         if (data.messenger_verified_at) setMessengerVerified(true);
+         if (data.viber_verified_at && data.notif_viber !== false) setViberVerified(true);
+         if (data.chat_id) setTelegramVerified(true);
+         // requireReminders means WhatsApp can't reach them now (no linked contact, or they sent STOP), so
+         // an old confirmation doesn't count: they send a fresh code.
+         if (data.whatsapp_verified_at && !requireReminders) setWhatsappVerified(true);
+         if (data.messenger_verified_at) {
+            setMessengerVerified(true);
+            return;
+         }
+         if (!iosMessenger) return;
+         const { data: code, error } = await requestMessengerCode();
+         if (cancelled || error || !code) return;
+         setPreparedMessenger({ code: String(code), link: buildMessengerVerifyLink(String(code)), at: Date.now() });
       })();
       return () => {
          cancelled = true;
       };
-   }, [userId]);
+      // Runs once per account: requestMessengerCode only picks the RPC, from the country at that moment.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [userId, iosMessenger, requireReminders]);
 
    useEffect(() => {
       const onHide = () => {
          if (document.visibilityState !== 'hidden' || !awaitingMessengerRef.current) return;
+         lastHiddenAtRef.current = Date.now();
          leftForMessengerRef.current = true;
          if (leftAtRef.current === null) {
             leftAtRef.current = Date.now();
@@ -173,9 +507,10 @@ export default function ContactsStep({
    // Confirmed during this visit (not a line verified on an earlier application).
    useEffect(() => {
       if (confirmedTrackedRef.current || attemptsRef.current === 0) return;
-      const channel = messengerVerified ? 'messenger' : whatsappVerified ? 'whatsapp' : null;
+      const channel = messengerVerified ? 'messenger' : whatsappEnabled && whatsappVerified ? 'whatsapp' : null;
       if (!channel) return;
       confirmedTrackedRef.current = true;
+      setConfirmedNow(true);
       // Done waiting: a later app switch (e.g. to Settings for notifications) isn't a Messenger trip.
       awaitingMessengerRef.current = false;
       // Confirmed while they were still away (desktop tabs keep polling): log the return here, since
@@ -191,6 +526,7 @@ export default function ContactsStep({
          });
          leftAtRef.current = null;
       }
+      clarityEvent(`${channel}_connected`);
       track('contact_verify_confirmed', {
          source,
          channel,
@@ -199,10 +535,54 @@ export default function ContactsStep({
          seconds_since_last_start: secondsSince(lastStartedAtRef.current),
          left_app: leftForMessengerRef.current
       });
-   }, [messengerVerified, whatsappVerified, source]);
+   }, [messengerVerified, whatsappVerified, whatsappEnabled, source]);
+
+   // Live push from the database the moment the bot confirms (users is in the realtime publication,
+   // and RLS limits it to their own row). The 3s poll and the on-return re-check stay as backups.
+   useEffect(() => {
+      if (contactVerified) return undefined;
+      const client = getSupabaseBrowserClient();
+      const channel = client
+         .channel(`contact-verify:${userId}`)
+         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${userId}` }, (payload) => {
+            const row = payload.new as { messenger_verified_at?: string | null; whatsapp_verified_at?: string | null };
+            if (row.messenger_verified_at) setMessengerVerified(true);
+            // requireReminders: the WhatsApp card watches for its own fresh confirmation instead.
+            if (row.whatsapp_verified_at && !requireReminders) setWhatsappVerified(true);
+         })
+         .subscribe();
+      return () => {
+         void client.removeChannel(channel);
+      };
+   }, [userId, contactVerified, requireReminders]);
+
+   // Onboarding: confirmed while they're here → a beat to see the green check, then straight on to the
+   // "Facebook connected!" screen, no extra tap. If reminders are still required, the reminders card
+   // asks for that one tap first and this fires as soon as they're on.
+   const onContinueRef = useRef(onContinue);
+   useEffect(() => {
+      onContinueRef.current = onContinue;
+   }, [onContinue]);
+   const autoContinueTimerRef = useRef<number | null>(null);
+   useEffect(() => {
+      // Not while the WhatsApp reminders offer is up: moving on by itself would hide it before they see it.
+      if (source !== 'connect' || !confirmedNow || !canContinue || autoContinueTimerRef.current !== null) return;
+      if (offerWhatsAppReminders && !whatsappVerified && !otherReminderOn) return;
+      autoContinueTimerRef.current = window.setTimeout(() => {
+         track('contact_verify_auto_continue', { source, attempts: attemptsRef.current, push_on: pushOn });
+         onContinueRef.current();
+      }, AUTO_CONTINUE_MS);
+   }, [source, confirmedNow, canContinue, pushOn, offerWhatsAppReminders, whatsappVerified, otherReminderOn]);
+   useEffect(
+      () => () => {
+         if (autoContinueTimerRef.current !== null) window.clearTimeout(autoContinueTimerRef.current);
+      },
+      []
+   );
+   const nudgeReminders = source === 'connect' && confirmedNow && pushRequired && !pushOn;
 
    const showBackup = useCallback(
-      (reason: 'timeout' | 'returned_unconfirmed') => {
+      (reason: 'timeout' | 'returned_unconfirmed' | 'bounced' | 'not_opened' | 'resumed') => {
          setShowTypedCode(true);
          if (backupTrackedRef.current) return;
          backupTrackedRef.current = true;
@@ -218,6 +598,65 @@ export default function ContactsStep({
       }
    };
    useEffect(() => stopPolling, []);
+
+   // Poll rather than wait for a page-visibility event — the borrower may switch apps for a while
+   // before coming back, and we want the checkmark to appear the moment they do.
+   const startPolling = useCallback((channel: Channel) => {
+      stopPolling();
+      pollRef.current = window.setInterval(async () => {
+         const { data } = await getSupabaseBrowserClient()
+            .from('users')
+            .select('whatsapp_verified_at, messenger_verified_at')
+            .eq('id', userId)
+            .maybeSingle();
+         if (data?.whatsapp_verified_at) setWhatsappVerified(true);
+         if (data?.messenger_verified_at) setMessengerVerified(true);
+         const done = channel === 'whatsapp' ? data?.whatsapp_verified_at : data?.messenger_verified_at;
+         if (done) stopPolling();
+      }, 3000);
+   }, [userId]);
+
+   // Back from a page that replaced this tab (Android without the Messenger app lands on Facebook's
+   // messages page): pick the attempt back up with the same code showing, rather than a fresh card.
+   useEffect(() => {
+      const pending = readPending(userId);
+      if (!pending) return;
+      setMessengerLink(pending.link);
+      setMessengerCode(pending.code);
+      awaitingMessengerRef.current = true;
+      track('contact_verify_resumed', { source, channel: 'messenger', seconds_since_open: secondsSince(pending.at) });
+      showBackup('resumed');
+      startPolling('messenger');
+   }, [userId, source, showBackup, startPolling]);
+
+   // Verified (now or on an earlier application): nothing left to resume.
+   useEffect(() => {
+      if (messengerVerified) writePending(null);
+   }, [messengerVerified]);
+
+   // Chrome sent them back here because the Messenger app isn't installed (Indonesia only, see
+   // buildMessengerIntentLink). The attempt itself resumes above with the same code.
+   useEffect(() => {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get(NO_MESSENGER_PARAM) !== '1') return;
+      url.searchParams.delete(NO_MESSENGER_PARAM);
+      window.history.replaceState(window.history.state, '', url.toString());
+      setNoMessengerApp(true);
+      track('contact_verify_no_messenger_app', { source, channel: 'messenger' });
+   }, [source]);
+
+   // Tapped, but the page never went to the background: Messenger didn't open at all.
+   const armNotOpenedCheck = useCallback(() => {
+      const openedAt = Date.now();
+      openedAtRef.current = openedAt;
+      window.setTimeout(() => {
+         if (openedAtRef.current !== openedAt || document.visibilityState !== 'visible') return;
+         if (lastHiddenAtRef.current !== null && lastHiddenAtRef.current >= openedAt) return;
+         track('contact_verify_not_opened', { source, channel: 'messenger', attempt: attemptsRef.current, android: isAndroidBrowser() });
+         setMessengerDidntOpen(true);
+         showBackup('not_opened');
+      }, NOT_OPENED_AFTER_MS);
+   }, [source, showBackup]);
 
    useEffect(() => {
       if (!messengerLink || messengerVerified) return;
@@ -242,18 +681,29 @@ export default function ContactsStep({
             .eq('id', userId)
             .maybeSingle();
          if (data?.whatsapp_verified_at) setWhatsappVerified(true);
+         let bounced = false;
          if (leftAtRef.current !== null) {
+            const awayMs = Date.now() - leftAtRef.current;
+            bounced = awayMs < BOUNCE_MS;
             track('contact_verify_returned', {
                source,
                channel: 'messenger',
                attempt: attemptsRef.current,
                seconds_away: secondsSince(leftAtRef.current),
+               away_ms: awayMs,
+               bounced,
+               android: isAndroidBrowser(),
                confirmed: Boolean(data?.messenger_verified_at)
             });
             leftAtRef.current = null;
          }
          if (data?.messenger_verified_at) {
             setMessengerVerified(true);
+            playSuccess();
+            return;
+         }
+         if (bounced) {
+            showBackup('bounced');
             return;
          }
          if (leftForMessengerRef.current && graceTimer === null) {
@@ -272,36 +722,168 @@ export default function ContactsStep({
    const reopenMessenger = (location: 'card' | 'backup') => {
       if (!messengerLink) return;
       track('contact_verify_reopen_tapped', { source, channel: 'messenger', location, attempts: attemptsRef.current });
-      window.open(messengerLink, '_blank', 'noopener,noreferrer');
+      leftAtRef.current = null;
+      if (messengerCode) writePending({ userId, code: messengerCode, link: messengerLink, at: Date.now() });
+      armNotOpenedCheck();
+      // iOS: rendered as a real link, which opens Messenger by itself (see isIOSBrowser).
+      if (!iosMessenger) openVerifyLink(messengerLink);
    };
 
-   const copyMessengerCode = async () => {
+   const copyMessengerCode = async (via: 'copy_button' | 'open_chat') => {
       if (!messengerCode) return;
-      track('contact_verify_code_copied', { source, channel: 'messenger', attempts: attemptsRef.current });
-      try {
-         await navigator.clipboard.writeText(messengerCode);
+      // Straight from the tap: Facebook's iPhone browser refuses the modern copy call (Emma, 2026-10-17),
+      // so copyTextFromTap tries the old one first, and tells us whether anything was copied.
+      const result = await copyTextFromTap(messengerCode);
+      track('contact_verify_code_copied', { source, channel: 'messenger', attempts: attemptsRef.current, via, ok: result.ok, method: result.method });
+      setCopyFailed(!result.ok);
+      if (result.ok) {
          setCodeCopied(true);
          window.setTimeout(() => setCodeCopied(false), 2000);
-      } catch {
-         // Clipboard blocked: the code is on screen to type by hand.
       }
+   };
+
+   // Android: the borrower's own tap on the chat link, so copying is allowed and Messenger opens. The
+   // link navigates by itself; this only copies the code and keeps the attempt for when they're back.
+   const openMessengerChat = (event?: MouseEvent<HTMLAnchorElement>, link: string = MESSENGER_APP_CHAT_LINK, auto = false) => {
+      if (!messengerCode) return;
+      track('contact_verify_open_chat_tapped', {
+         source,
+         channel: 'messenger',
+         attempts: attemptsRef.current,
+         desktop: desktopMessenger,
+         auto,
+         no_messenger_fallback: link.startsWith('intent://')
+      });
+      setMessengerDidntOpen(false);
+      // Copying needs a tap; the automatic open after the countdown relies on the earlier one. A tap
+      // also ends the countdown (the automatic open keeps it at 0, so its "still here?" check runs).
+      if (!auto) {
+         setPasteCountdown(null);
+         void copyMessengerCode('open_chat');
+      }
+      // The tap time lets the bot connect them by timing (sendpulse-events) when they open the chat
+      // without sending the code. Best-effort: the code still works if this never lands.
+      void getSupabaseBrowserClient()
+         .rpc('mark_messenger_chat_opened')
+         .then(({ error }) => {
+            if (error) console.error('mark_messenger_chat_opened failed', error.message);
+         });
+      leftAtRef.current = null;
+      awaitingMessengerRef.current = true;
+      writePending({ userId, code: messengerCode, link, at: Date.now() });
+      armNotOpenedCheck();
+   };
+
+   // Android in Facebook's browser: the first tap copies the code and shows the paste card; Messenger
+   // opens on its own when the countdown ends.
+   const showPasteCard = () => {
+      if (!messengerCode) return;
+      void copyMessengerCode('open_chat');
+      track('contact_verify_paste_card_shown', { source, channel: 'messenger', attempts: attemptsRef.current });
+      setAutoOpenStuck(false);
+      setPasteCard(true);
+      setPasteCountdown(3);
+   };
+
+   // iPhone in the Facebook app: copy and show the "go to Messenger yourself" steps. Nothing opens (the
+   // app ignores it), so no countdown. The tap stamp still lets the bot connect them by timing
+   // (sendpulse-events) if they open our chat without sending the code.
+   const copyForFacebookApp = () => {
+      if (!messengerCode) return;
+      void copyMessengerCode('copy_button');
+      if (!pasteCard) {
+         track('contact_verify_paste_card_shown', { source, channel: 'messenger', attempts: attemptsRef.current, ios_host: 'facebook' });
+         void getSupabaseBrowserClient()
+            .rpc('mark_messenger_chat_opened')
+            .then(({ error }) => {
+               if (error) console.error('mark_messenger_chat_opened failed', error.message);
+            });
+      }
+      awaitingMessengerRef.current = true;
+      // Where Messenger's browser opens our chat after the tap, this shows how to get there.
+      if (!pasteCard) setSwitchGuide(true);
+      setPasteCard(true);
+   };
+   useEffect(() => {
+      if (pasteCountdown === null) return undefined;
+      if (pasteCountdown > 0) {
+         const timer = window.setTimeout(() => setPasteCountdown((n) => (n === null ? null : n - 1)), 1000);
+         return () => window.clearTimeout(timer);
+      }
+      openMessengerChat(undefined, MESSENGER_APP_CHAT_LINK, true);
+      window.location.href = MESSENGER_APP_CHAT_LINK;
+      const stuck = window.setTimeout(() => {
+         if (document.visibilityState === 'visible') {
+            track('contact_verify_auto_open_ignored', { source, channel: 'messenger' });
+            setAutoOpenStuck(true);
+         }
+      }, 2000);
+      return () => window.clearTimeout(stuck);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [pasteCountdown]);
+
+   // Messenger is opening (or about to): remember the attempt and start watching for the bot.
+   const beginMessengerWait = (code: string, link: string, flow: 'link' | 'link_tap') => {
+      attemptsRef.current += 1;
+      lastStartedAtRef.current = Date.now();
+      firstStartedAtRef.current ??= lastStartedAtRef.current;
+      lastChannelRef.current = 'messenger';
+      leftAtRef.current = null;
+      track('contact_verify_started', {
+         source,
+         channel: 'messenger',
+         attempt: attemptsRef.current,
+         is_android: false,
+         is_ios: iosMessenger,
+         in_app_browser: /FBAN|FBAV|FB_IAB|Instagram|Messenger/i.test(navigator.userAgent),
+         flow
+      });
+      setMessengerLink(link);
+      setMessengerCode(code);
+      leftForMessengerRef.current = false;
+      awaitingMessengerRef.current = true;
+      writePending({ userId, code, link, at: Date.now() });
+      armNotOpenedCheck();
+      startPolling('messenger');
+   };
+
+   // iOS: the tap on the prepared m.me link. The browser follows the link itself (straight into
+   // Messenger); a stale code falls back to the normal start.
+   const tapPreparedMessenger = (event: MouseEvent<HTMLElement>) => {
+      if (!preparedMessenger || Date.now() - preparedMessenger.at > PREPARED_CODE_TTL_MS) {
+         event.preventDefault();
+         void handleVerify('messenger');
+         return;
+      }
+      track('contact_verify_tapped', { source, channel: 'messenger', attempt: attemptsRef.current + 1 });
+      clarityEvent('tapped_connect_messenger');
+      setVerifyError('');
+      beginMessengerWait(preparedMessenger.code, preparedMessenger.link, 'link_tap');
+      setPreparedMessenger(null);
+      setTapAgain(false);
    };
 
    const handleVerify = async (channel: Channel) => {
       // The tap itself, before the code request: a slow or failed start would otherwise leave no trace.
       track('contact_verify_tapped', { source, channel, attempt: attemptsRef.current + 1 });
+      clarityEvent(`tapped_connect_${channel}`);
       setVerifyError('');
       setStartingChannel(channel);
       try {
          // WhatsApp keeps its original entry point (unchanged, already proven in prod); Messenger
          // uses the generic starter with its channel.
          const { data: code, error } =
-            channel === 'whatsapp'
-               ? await getSupabaseBrowserClient().rpc('start_whatsapp_verification')
-               : await getSupabaseBrowserClient().rpc('start_contact_verification', { p_channel: 'messenger' });
+            channel === 'whatsapp' ? await getSupabaseBrowserClient().rpc('start_whatsapp_verification') : await requestMessengerCode();
          if (error || !code) throw error ?? new Error('No code returned');
 
          const link = channel === 'whatsapp' ? buildWhatsAppVerifyLink(code) : buildMessengerVerifyLink(String(code));
+         if (channel === 'messenger' && iosMessenger) {
+            // iOS without a prepared code (it failed or went stale): opening now, from script, would land
+            // in a new tab. Make the card the real link instead and ask for one more tap.
+            setPreparedMessenger({ code: String(code), link, at: Date.now() });
+            setTapAgain(true);
+            return;
+         }
          attemptsRef.current += 1;
          lastStartedAtRef.current = Date.now();
          firstStartedAtRef.current ??= lastStartedAtRef.current;
@@ -313,30 +895,43 @@ export default function ContactsStep({
             attempt: attemptsRef.current,
             is_android: /android/i.test(navigator.userAgent),
             is_ios: /iphone|ipad|ipod/i.test(navigator.userAgent),
-            in_app_browser: /FBAN|FBAV|FB_IAB|Instagram|Messenger/i.test(navigator.userAgent)
+            in_app_browser: /FBAN|FBAV|FB_IAB|Instagram|Messenger/i.test(navigator.userAgent),
+            is_desktop: desktopMessenger,
+            ios_in_app: iosInAppMessenger ? inAppInfo.appName : null,
+            ios_host: metaIosHost(),
+            flow: channel === 'messenger' && codeFirstMessenger ? 'paste_code' : channel === 'messenger' && desktopMessenger ? 'qr' : 'link'
          });
+         if (channel === 'messenger' && desktopMessenger) {
+            // Nothing opens: the card shows the QR (for their phone) and the code to paste here.
+            setMessengerLink(MESSENGER_PAGE_CHAT_LINK);
+            setMessengerCode(String(code));
+            leftForMessengerRef.current = false;
+            awaitingMessengerRef.current = true;
+            writePending({ userId, code: String(code), link: MESSENGER_PAGE_CHAT_LINK, at: Date.now() });
+            track('contact_verify_qr_shown', { source, channel: 'messenger', attempt: attemptsRef.current });
+            startPolling(channel);
+            return;
+         }
+         if (channel === 'messenger' && codeFirstMessenger) {
+            // Nothing opens yet: the card now shows the code and the button that opens our chat.
+            setMessengerLink(MESSENGER_APP_CHAT_LINK);
+            setMessengerCode(String(code));
+            leftForMessengerRef.current = false;
+            awaitingMessengerRef.current = true;
+            writePending({ userId, code: String(code), link: MESSENGER_APP_CHAT_LINK, at: Date.now() });
+            startPolling(channel);
+            return;
+         }
          if (channel === 'messenger') {
             setMessengerLink(link);
             setMessengerCode(String(code));
             leftForMessengerRef.current = false;
             awaitingMessengerRef.current = true;
+            writePending({ userId, code: String(code), link, at: Date.now() });
+            armNotOpenedCheck();
          }
-         window.open(link, '_blank', 'noopener,noreferrer');
-
-         // Poll rather than wait for a page-visibility event — the borrower may switch apps for a
-         // while before coming back, and we want the checkmark to appear the moment they do.
-         stopPolling();
-         pollRef.current = window.setInterval(async () => {
-            const { data } = await getSupabaseBrowserClient()
-               .from('users')
-               .select('whatsapp_verified_at, messenger_verified_at')
-               .eq('id', userId)
-               .maybeSingle();
-            if (data?.whatsapp_verified_at) setWhatsappVerified(true);
-            if (data?.messenger_verified_at) setMessengerVerified(true);
-            const done = channel === 'whatsapp' ? data?.whatsapp_verified_at : data?.messenger_verified_at;
-            if (done) stopPolling();
-         }, 3000);
+         openVerifyLink(link);
+         startPolling(channel);
       } catch (err) {
          console.error(`start verification failed (${channel})`, err);
          track('contact_verify_start_failed', { source, channel });
@@ -357,126 +952,553 @@ export default function ContactsStep({
       onBack();
    };
 
+   // The hippo follows the step (George, 18 Oct): code copied → Facebook connected → turn on
+   // notifications, or WhatsApp reminders where notifications can't work.
+   const stateHippo = !contactVerified
+      ? pasteCard
+         ? CONNECT_HIPPOS.codeCopied
+         : null
+      : pushOn || whatsappVerified
+        ? CONNECT_HIPPOS.connected
+        : offerWhatsAppReminders
+          ? CONNECT_HIPPOS.whatsapp
+          : pushRequired
+            ? CONNECT_HIPPOS.notifications
+            : CONNECT_HIPPOS.connected;
+   // A caller's own hero (onboarding) keeps its words; only the default waving hippo is swapped.
+   const hero =
+      intro && isValidElement<{ image?: string }>(intro) && intro.type === ConnectHero && intro.props.image === CONNECT_HIPPOS.hello && stateHippo
+         ? cloneElement(intro, { image: stateHippo })
+         : intro;
+
    return (
-      <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
-         {intro ?? (
-            <ConnectHero image={CONNECT_HIPPOS.hello} subtitle="Only Moodeng sees this — never lenders." title="How can we reach you?" />
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
+         {hero ?? (
+            <ConnectHero image={stateHippo ?? CONNECT_HIPPOS.hello} subtitle="Only Moodeng sees this — never moo-lenders." title="How can we reach you?" />
          )}
 
-         {showWhatsApp ? (
-            <OptionCard
-               badge="1 tap"
-               disabled={startingChannel !== null}
-               done={whatsappVerified}
-               doneLabel="Verified"
-               icon={<MessageCircle aria-hidden="true" className="size-9 text-[#25D366]" strokeWidth={2} />}
-               onClick={() => handleVerify('whatsapp')}
-               subtitle={startingChannel === 'whatsapp' ? 'Opening WhatsApp…' : 'Just hit send — nothing to type'}
-               title="WhatsApp"
-            />
-         ) : null}
-
-         {messengerLink && !messengerVerified ? (
+         {indoWhatsAppFirst ? (
             <>
-               {/* A live "we're checking" state, like the wallet-creation step — a spinner + a "keep
-                   this open, it'll turn green on its own" reassurance so the wait doesn't look frozen.
-                   The poll (and the on-return re-check above) flip this whole card to the green
-                   Verified state the moment the bot confirms. */}
-               <div
-                  aria-live="polite"
-                  className="flex min-h-[88px] w-full items-center gap-3 rounded-[18px] border-2 border-[#c9bdf5] bg-[#f6f2ff] px-4 py-3"
-               >
-                  <span className="grid size-11 shrink-0 place-items-center">
-                     <Loader2 aria-hidden="true" className="size-7 animate-spin text-[#6b55f7]" strokeWidth={2.5} />
-                  </span>
-                  <div className="flex min-w-0 flex-col gap-0.5 text-left">
-                     <span className="text-[18px] font-bold leading-[22px] text-[#4c239f]">Confirming on Messenger…</span>
-                     <span className="text-[14px] leading-[18px] text-[#6b5b86]">
-                        Keep this screen open — it turns green on its own. Tap <b>Get Started</b> in Messenger if it asks.
-                     </span>
-                     <button
-                        type="button"
-                        onClick={() => reopenMessenger('card')}
-                        className="mt-1 w-fit text-[14px] font-semibold text-md-primary-1200 underline underline-offset-4"
-                     >
-                        Open Messenger again
-                     </button>
-                  </div>
-               </div>
-               {showTypedCode && messengerCode ? (
-                  <div className="rounded-[18px] border border-[#d9d2f7] bg-[#faf8ff] px-4 py-3 text-md-b3 text-[#594d65]">
-                     <p className="font-semibold text-[#4c239f]">Not confirmed yet?</p>
-                     <p className="mt-1">
-                        <b>1.</b> Tap{' '}
-                        <button
-                           type="button"
-                           onClick={() => reopenMessenger('backup')}
-                           className="font-semibold text-md-primary-1200 underline underline-offset-4"
-                        >
-                           Open Messenger again
-                        </button>
-                        . Now that our chat is open, the second try usually works.
-                     </p>
-                     <p className="mt-2">
-                        <b>2.</b> Or send this code to <b>Moodeng Credit</b> on Facebook Messenger, from any app or device. We confirm you
-                        automatically.
-                     </p>
-                     <div className="mt-2 flex items-center gap-2">
-                        <code className="flex-1 rounded-lg bg-white px-3 py-2 text-center text-[16px] font-bold tracking-wide text-md-heading">
-                           {messengerCode}
-                        </code>
-                        <button
-                           type="button"
-                           onClick={() => void copyMessengerCode()}
-                           className="rounded-lg bg-[#6b55f7] px-3 py-2 text-[13px] font-bold text-white"
-                        >
-                           {codeCopied ? 'Copied' : 'Copy'}
-                        </button>
-                     </div>
-                     <a
-                        href={MOODENG_FACEBOOK_PAGE_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() =>
-                           track('contact_verify_page_link_tapped', { source, channel: 'messenger', attempts: attemptsRef.current })
-                        }
-                        className="mt-2 inline-block font-semibold text-md-primary-1200 underline underline-offset-4"
-                     >
-                        Open our Facebook page
-                     </a>
-                     <p className="mt-2 text-[13px] text-[#877897]">
-                        Still stuck? We&apos;ll email you, and our team will help you finish.
-                     </p>
-                  </div>
+               <StepLabel done={whatsappVerified} n={1} text="Connect WhatsApp" />
+               <WhatsAppRemindersCard
+                  onVerified={() => setWhatsappVerified(true)}
+                  required
+                  source={source}
+                  userId={userId}
+                  variant="connect"
+                  verified={whatsappVerified}
+               />
+               {facebookLocked ? (
+                  <button
+                     className="self-center text-md-b3 font-[590] text-[#877897] underline"
+                     onClick={() => {
+                        track('contact_whatsapp_first_skipped', { source });
+                        setSkippedNoWhatsApp(true);
+                     }}
+                     type="button"
+                  >
+                     I don&apos;t have WhatsApp
+                  </button>
                ) : null}
             </>
-         ) : (
-            <OptionCard
-               badge="1 tap"
-               disabled={startingChannel !== null}
-               done={messengerVerified}
-               doneLabel="Verified"
+         ) : null}
+         {hasReminderStep || indoWhatsAppFirst ? (
+            <StepLabel done={contactVerified} n={indoWhatsAppFirst ? 2 : 1} text="Connect Facebook" />
+         ) : null}
+         {facebookLocked ? (
+            <LockedStepCard
+               hint="Unlocks after step 1"
                icon={<Facebook aria-hidden="true" className="size-9 text-[#0866FF]" strokeWidth={2} />}
-               onClick={() => handleVerify('messenger')}
-               subtitle={startingChannel === 'messenger' ? 'Opening Messenger…' : 'Confirms you automatically — nothing to type'}
-               title="Messenger"
+               title="Connect Facebook"
             />
+         ) : (
+            <>
+               {indoWhatsAppFirst && whatsappVerified && !contactVerified ? (
+                  <p className="rounded-xl bg-[#eefbf2] px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#1f7a3d]">
+                     We also sent these steps to your WhatsApp.
+                  </p>
+               ) : null}
+
+               {showWhatsApp ? (
+                  <OptionCard
+                     badge="1 tap"
+                     disabled={startingChannel !== null}
+                     done={whatsappVerified}
+                     doneLabel="Verified"
+                     icon={<i aria-hidden="true" className="fab fa-whatsapp text-[38px] leading-none text-[#25D366]" />}
+                     onClick={() => handleVerify('whatsapp')}
+                     subtitle={startingChannel === 'whatsapp' ? 'Opening WhatsApp…' : 'Just hit send — nothing to type'}
+                     title="WhatsApp"
+                  />
+               ) : null}
+
+               {messengerLink && !messengerVerified && codeFirstMessenger && messengerCode ? (
+                  <div
+                     aria-live="polite"
+                     className="flex w-full flex-col gap-3 rounded-[18px] border-2 border-[#c9bdf5] bg-[#f6f2ff] px-4 py-4 text-left"
+                  >
+                     <span className="text-[18px] font-bold leading-[22px] text-[#4c239f]">Connect on Messenger</span>
+                     {fbAppIos ? (
+                        <>
+                           {/* iPhone inside the Facebook app (not Messenger): nothing on the page can open Messenger
+                               from there, so there's no "open" button that does nothing. They copy, switch to the
+                               Messenger app themselves, paste, and come back: Facebook keeps this page meanwhile, and
+                               it turns green on its own (realtime + poll + the re-check when it's shown again). */}
+                           {pasteCard ? null : (
+                              <>
+                                 <p className="rounded-xl bg-white px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#594d65]">
+                                    Send this code to us on Messenger.
+                                 </p>
+                                 <code className="select-all rounded-lg bg-white px-3 py-3 text-center text-[24px] font-bold tracking-wide text-md-heading">
+                                    {messengerCode}
+                                 </code>
+                              </>
+                           )}
+                           {pasteCard ? (
+                              <div className="flex flex-col gap-3 rounded-2xl border-2 border-[#0866FF] bg-white px-4 py-4">
+                                 <p className="text-[18px] font-extrabold leading-[23px] text-[#26143f]">
+                                    {copyFailed ? 'Press and hold to copy: ' : '📋 Code copied: '}
+                                    <span className="select-all whitespace-nowrap">{messengerCode}</span>
+                                 </p>
+                                 <p className="text-[16px] font-semibold leading-[22px] text-[#26143f]">
+                                    <b>Paste</b> it in our chat, then <b>Send</b>.
+                                 </p>
+                                 <button
+                                    type="button"
+                                    onClick={() => {
+                                       track('contact_verify_switch_guide_shown', { source, channel: 'messenger', ios_host: 'facebook' });
+                                       setSwitchGuide(true);
+                                    }}
+                                    className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
+                                 >
+                                    <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                                    How to open Messenger
+                                 </button>
+                              </div>
+                           ) : (
+                              <button
+                                 type="button"
+                                 onClick={copyForFacebookApp}
+                                 className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
+                              >
+                                 <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                                 Copy code
+                              </button>
+                           )}
+                           {switchGuide ? <MessengerSwitchGuide code={messengerCode} onClose={() => setSwitchGuide(false)} /> : null}
+                           {copyFailed ? (
+                              <p className="rounded-xl bg-[#fff4e0] px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#9a5b00]">
+                                 Copy didn&apos;t work here. Press and hold the code above, then tap Copy.
+                              </p>
+                           ) : null}
+                           {externalHowTo ? (
+                              <MenuGuide onClose={() => setExternalHowTo(false)} os="ios" />
+                           ) : (
+                              <button
+                                 type="button"
+                                 onClick={() => {
+                                    track('contact_verify_open_in_safari_tapped', { source, channel: 'messenger', app: inAppInfo.appName, ios_host: 'facebook' });
+                                    setExternalHowTo(true);
+                                 }}
+                                 className="flex min-h-[44px] items-center justify-center rounded-full border-2 border-[#0866FF] bg-white px-4 text-[15px] font-bold text-[#0866FF]"
+                              >
+                                 Or open in Safari
+                              </button>
+                           )}
+                        </>
+                     ) : iosInAppMessenger ? (
+                        <>
+                           {/* iPhone inside Facebook's / Messenger's own browser: copy the code, open our chat, paste it
+                               (the paste card says so in big letters). The bot confirms it, and this card turns green
+                               on its own (realtime + poll) whenever they come back. Same words for both apps: on
+                               iPhone both say FBAN/FBIOS, so we can't tell which one this is. */}
+                           {pasteCard ? null : (
+                              <>
+                                 <p className="rounded-xl bg-white px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#594d65]">
+                                    Send this code to us on Messenger.
+                                 </p>
+                                 <code className="select-all rounded-lg bg-white px-3 py-3 text-center text-[24px] font-bold tracking-wide text-md-heading">
+                                    {messengerCode}
+                                 </code>
+                              </>
+                           )}
+                           {pasteCard ? (
+                              <div className="flex flex-col gap-3 rounded-2xl border-2 border-[#0866FF] bg-white px-4 py-4">
+                                 <p className="text-[18px] font-extrabold leading-[23px] text-[#26143f]">
+                                    {copyFailed ? 'Press and hold to copy: ' : '📋 Code copied: '}
+                                    <span className="whitespace-nowrap">{messengerCode}</span>
+                                 </p>
+                                 <p className="text-[16px] font-semibold leading-[22px] text-[#26143f]">
+                                    <b>Paste</b> it in our chat, then <b>Send</b>.
+                                 </p>
+                                 <a
+                                    href={MESSENGER_APP_CHAT_LINK}
+                                    onClick={(event) => openMessengerChat(event)}
+                                    className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
+                                 >
+                                    <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                                    {autoOpenStuck
+                                       ? 'Tap to open Messenger'
+                                       : pasteCountdown !== null && pasteCountdown > 0
+                                         ? `Open Messenger (${pasteCountdown})`
+                                         : 'Open Messenger'}
+                                 </a>
+                              </div>
+                           ) : (
+                              <button
+                                 type="button"
+                                 onClick={showPasteCard}
+                                 className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
+                              >
+                                 <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                                 Copy code & open Messenger
+                              </button>
+                           )}
+                           {copyFailed ? (
+                              <p className="rounded-xl bg-[#fff4e0] px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#9a5b00]">
+                                 Copy didn&apos;t work here. Press and hold the code above, then tap Copy.
+                              </p>
+                           ) : null}
+                           {externalHowTo ? (
+                              <MenuGuide onClose={() => setExternalHowTo(false)} os="ios" />
+                           ) : (
+                              <button
+                                 type="button"
+                                 onClick={() => {
+                                    track('contact_verify_open_in_safari_tapped', { source, channel: 'messenger', app: inAppInfo.appName });
+                                    setExternalHowTo(true);
+                                 }}
+                                 className="flex min-h-[44px] items-center justify-center rounded-full border-2 border-[#0866FF] bg-white px-4 text-[15px] font-bold text-[#0866FF]"
+                              >
+                                 Or open in Safari
+                              </button>
+                           )}
+                        </>
+                     ) : (
+                        <>
+                           <div className={androidInApp && pasteCard ? 'hidden' : 'flex items-center gap-2'}>
+                              <code className="flex-1 rounded-lg bg-white px-3 py-2 text-center text-[20px] font-bold tracking-wide text-md-heading">
+                                 {messengerCode}
+                              </code>
+                              <button
+                                 type="button"
+                                 onClick={() => void copyMessengerCode('copy_button')}
+                                 className="rounded-lg border border-[#c9bdf5] bg-white px-3 py-2 text-[13px] font-bold text-[#6b55f7]"
+                              >
+                                 {codeCopied ? 'Copied' : 'Copy'}
+                              </button>
+                           </div>
+                           {/* A plain link the borrower taps, as in the Android test: opened from script after the
+                               code request, or as m.me, Messenger never comes up. */}
+                           {androidInApp && pasteCard ? (
+                              <div className="flex flex-col gap-3 rounded-2xl border-2 border-[#0866FF] bg-white px-4 py-4">
+                                 <p className="text-[18px] font-extrabold leading-[23px] text-[#26143f]">
+                                    {copyFailed ? 'Press and hold to copy: ' : '📋 Code copied: '}
+                                    <span className="whitespace-nowrap">{messengerCode}</span>
+                                 </p>
+                                 <p className="text-[16px] font-semibold leading-[22px] text-[#26143f]">
+                                    <b>Paste</b> it in our chat, then <b>Send</b>.
+                                 </p>
+                                 <a
+                                    href={MESSENGER_APP_CHAT_LINK}
+                                    onClick={(event) => openMessengerChat(event)}
+                                    className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
+                                 >
+                                    <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                                    {autoOpenStuck
+                                       ? 'Tap to open Messenger'
+                                       : pasteCountdown !== null && pasteCountdown > 0
+                                         ? `Open Messenger (${pasteCountdown})`
+                                         : 'Open Messenger'}
+                                 </a>
+                              </div>
+                           ) : androidInApp ? (
+                              <button
+                                 type="button"
+                                 onClick={showPasteCard}
+                                 className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
+                              >
+                                 <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                                 Copy code & open Messenger
+                              </button>
+                           ) : (
+                              <a
+                                 href={androidChatLink}
+                                 onClick={(event) => openMessengerChat(event, androidChatLink)}
+                                 className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
+                              >
+                                 <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                                 Copy code & open Messenger
+                              </a>
+                           )}
+                           {noMessengerApp ? (
+                              <div className="flex flex-col gap-2 rounded-2xl border-2 border-[#f0b44c] bg-[#fff8ec] px-4 py-3">
+                                 <p className="text-[16px] font-extrabold leading-[21px] text-[#26143f]">
+                                    This phone doesn&apos;t have the Messenger app.
+                                 </p>
+                                 <p className="text-[14px] font-semibold leading-[19px] text-[#594d65]">
+                                    Get Messenger (free), come back here, and tap the blue button again.
+                                 </p>
+                                 <a
+                                    href={MESSENGER_PLAY_STORE_LINK}
+                                    onClick={() => track('contact_verify_get_messenger_tapped', { source, channel: 'messenger' })}
+                                    className="flex min-h-[48px] items-center justify-center rounded-full border-2 border-[#0866FF] bg-white px-4 text-[15px] font-bold text-[#0866FF]"
+                                 >
+                                    Get Messenger
+                                 </a>
+                                 <p className="text-[13px] leading-[17px] text-[#594d65]">
+                                    Or on Facebook: open{' '}
+                                    <a
+                                       href={MOODENG_FACEBOOK_PAGE_URL}
+                                       onClick={() =>
+                                          track('contact_verify_page_link_tapped', {
+                                             source,
+                                             channel: 'messenger',
+                                             attempts: attemptsRef.current,
+                                             no_messenger: true
+                                          })
+                                       }
+                                       className="font-bold text-[#0866FF] underline underline-offset-2"
+                                    >
+                                       our Facebook page
+                                    </a>
+                                    , tap Message, and send <b className="whitespace-nowrap">{messengerCode}</b>.
+                                 </p>
+                              </div>
+                           ) : messengerDidntOpen ? (
+                              <p className="rounded-xl bg-[#fff4e0] px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#9a5b00]">
+                                 Messenger didn&apos;t open? Open Facebook, search Moodeng Credit, tap Message, and say hi.
+                              </p>
+                           ) : null}
+                           {androidInApp ? null : (
+                              <ol className="flex flex-col gap-1.5 text-[14px] leading-[19px] text-[#594d65]">
+                                 <li className="flex gap-2">
+                                    <b>1.</b>
+                                    <span>Tap the blue button. Our chat opens in Messenger.</span>
+                                 </li>
+                                 <li className="flex gap-2">
+                                    <b>2.</b>
+                                    <span>Tap Get Started, or send us a message. We connect you automatically.</span>
+                                 </li>
+                                 <li className="flex gap-2">
+                                    <b>3.</b>
+                                    <span>Not green after a minute? Paste the code (already copied) and send it.</span>
+                                 </li>
+                              </ol>
+                           )}
+                        </>
+                     )}
+                     <div className="flex items-center gap-2 text-[14px] leading-[18px] text-[#6b5b86]">
+                        <Loader2 aria-hidden="true" className="size-5 shrink-0 animate-spin text-[#6b55f7]" strokeWidth={2.5} />
+                        <span>{inAppCard ? 'Waiting for your code…' : 'Waiting for your message. This turns green on its own.'}</span>
+                     </div>
+                     {/* Inside Facebook's browser: as little reading as possible (George, 18 Oct). */}
+                     {inAppCard ? null : (
+                        <>
+                           <p className="text-[13px] leading-[17px] text-[#877897]">
+                              No Messenger app? Open Facebook, search Moodeng Credit, tap Message, and send the code there.
+                           </p>
+                           <p className="text-[13px] leading-[17px] text-[#877897]">
+                              Still stuck? We&apos;ll email you, and our team will help you finish.
+                           </p>
+                        </>
+                     )}
+                  </div>
+               ) : messengerLink && !messengerVerified && desktopMessenger && messengerCode ? (
+                  <DesktopMessengerCard
+                     code={messengerCode}
+                     codeCopied={codeCopied}
+                     onCopy={() => void copyMessengerCode('copy_button')}
+                     onOpenChat={() => openMessengerChat(undefined, MESSENGER_PAGE_CHAT_LINK)}
+                     onPageLink={() => track('contact_verify_page_link_tapped', { source, channel: 'messenger', attempts: attemptsRef.current, desktop: true })}
+                  />
+               ) : messengerLink && !messengerVerified ? (
+                  <>
+                     {/* A live "we're checking" state, like the wallet-creation step — a spinner + a "keep
+                         this open, it'll turn green on its own" reassurance so the wait doesn't look frozen.
+                         The poll (and the on-return re-check above) flip this whole card to the green
+                         Verified state the moment the bot confirms. */}
+                     <div
+                        aria-live="polite"
+                        className="flex min-h-[88px] w-full items-center gap-3 rounded-[18px] border-2 border-[#c9bdf5] bg-[#f6f2ff] px-4 py-3"
+                     >
+                        <span className="grid size-11 shrink-0 place-items-center">
+                           <Loader2 aria-hidden="true" className="size-7 animate-spin text-[#6b55f7]" strokeWidth={2.5} />
+                        </span>
+                        <div className="flex min-w-0 flex-col gap-0.5 text-left">
+                           <span className="text-[18px] font-bold leading-[22px] text-[#4c239f]">Confirming on Messenger…</span>
+                           <span className="text-[14px] leading-[18px] text-[#6b5b86]">
+                              Keep this screen open — it turns green on its own. Tap <b>Get Started</b> in Messenger if it asks.
+                           </span>
+                           <ReopenMessengerLink
+                              className="mt-1 w-fit text-[14px] font-semibold text-md-primary-1200 underline underline-offset-4"
+                              href={iosMessenger ? messengerLink : undefined}
+                              onClick={() => reopenMessenger('card')}
+                           />
+                        </div>
+                     </div>
+                     {showTypedCode && messengerCode ? (
+                        <div className="rounded-[18px] border border-[#d9d2f7] bg-[#faf8ff] px-4 py-3 text-md-b3 text-[#594d65]">
+                           <p className="font-semibold text-[#4c239f]">Not confirmed yet?</p>
+                           <p className="mt-1">
+                              <b>1.</b> Tap{' '}
+                              <ReopenMessengerLink
+                                 className="font-semibold text-md-primary-1200 underline underline-offset-4"
+                                 href={iosMessenger ? messengerLink : undefined}
+                                 onClick={() => reopenMessenger('backup')}
+                              />
+                              . Now that our chat is open, the second try usually works.
+                           </p>
+                           <p className="mt-2">
+                              <b>2.</b> Or send this code to <b>Moodeng Credit</b> on Facebook Messenger, from any app or device. We confirm you
+                              automatically.
+                              {' '}No Messenger app? Open our Facebook page below in your browser, tap <b>Message</b> and paste the code.
+                           </p>
+                           <div className="mt-2 flex items-center gap-2">
+                              <code className="flex-1 rounded-lg bg-white px-3 py-2 text-center text-[16px] font-bold tracking-wide text-md-heading">
+                                 {messengerCode}
+                              </code>
+                              <button
+                                 type="button"
+                                 onClick={() => void copyMessengerCode('copy_button')}
+                                 className="rounded-lg bg-[#6b55f7] px-3 py-2 text-[13px] font-bold text-white"
+                              >
+                                 {codeCopied ? 'Copied' : 'Copy'}
+                              </button>
+                           </div>
+                           <a
+                              href={MOODENG_FACEBOOK_PAGE_URL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() =>
+                                 track('contact_verify_page_link_tapped', { source, channel: 'messenger', attempts: attemptsRef.current })
+                              }
+                              className="mt-2 inline-block font-semibold text-md-primary-1200 underline underline-offset-4"
+                           >
+                              Open our Facebook page
+                           </a>
+                           <p className="mt-2 text-[13px] text-[#877897]">
+                              Still stuck? We&apos;ll email you, and our team will help you finish.
+                           </p>
+                        </div>
+                     ) : null}
+                  </>
+               ) : (
+                  <OptionCard
+                     badge={codeFirstMessenger || desktopMessenger ? '1 min' : '1 tap'}
+                     disabled={startingChannel !== null}
+                     done={messengerVerified}
+                     doneLabel="Verified"
+                     href={iosMessenger && preparedMessenger ? preparedMessenger.link : undefined}
+                     icon={<Facebook aria-hidden="true" className="size-9 text-[#0866FF]" strokeWidth={2} />}
+                     onClick={iosMessenger && preparedMessenger ? tapPreparedMessenger : () => void handleVerify('messenger')}
+                     subtitle={
+                        tapAgain && preparedMessenger
+                           ? 'Ready — tap again to open Messenger.'
+                           : startingChannel === 'messenger'
+                           ? codeFirstMessenger || desktopMessenger
+                              ? 'Getting your code…'
+                              : 'Opening Messenger…'
+                           : androidInApp || iosInAppMessenger
+                             ? 'Copy your code and send it to us on Messenger.'
+                             : codeFirstMessenger
+                             ? 'Opens our chat. Say hi and you’re connected.'
+                             : desktopMessenger
+                               ? 'Scan a code with your phone, or chat with us here.'
+                             : source === 'connect'
+                               ? 'Opens Messenger — tap Get Started there. Confirms you automatically.'
+                               : 'Confirms you automatically — nothing to type'
+                     }
+                     title={source === 'connect' ? 'Connect Messenger' : 'Messenger'}
+                  />
+               )}
+
+            </>
          )}
 
          {verifyError ? <p className="text-center text-md-b3 font-normal text-md-red-500">{verifyError}</p> : null}
 
-         {pushRequired ? (
-            <OptionCard
-               badge="Required"
-               disabled={push.isBusy}
-               done={pushOn}
-               doneLabel="On"
-               icon={<BellRing aria-hidden="true" className="size-9 text-[#6b55f7]" strokeWidth={2} />}
-               onClick={() => void handleEnablePush()}
-               subtitle={push.isBusy ? 'Turning on…' : 'We remind you before your due date'}
-               title="Turn on reminders"
+         {hasReminderStep ? <StepLabel done={pushOn || whatsappVerified} n={indoWhatsAppFirst ? 3 : 2} text="Payment reminders" /> : null}
+         {/* One thing at a time: reminders unlock once Facebook is connected. */}
+         {hasReminderStep && !contactVerified ? (
+            <LockedStepCard
+               hint={indoWhatsAppFirst ? 'Unlocks after step 2' : 'Unlocks after step 1'}
+               icon={
+                  offerWhatsAppReminders ? (
+                     <i aria-hidden="true" className="fab fa-whatsapp text-[38px] leading-none text-[#25D366]" />
+                  ) : (
+                     <BellRing aria-hidden="true" className="size-9 text-[#6b55f7]" strokeWidth={2} />
+                  )
+               }
+               title={offerWhatsAppReminders ? 'Get reminders on WhatsApp' : 'Turn on reminders'}
             />
          ) : null}
+         {showPushCard ? (
+            // Just confirmed Facebook in onboarding: this is the one tap left, so it shakes and says so.
+            <div className={nudgeReminders ? 'connect-shake' : undefined}>
+               <OptionCard
+                  badge={pushBlocked || pushUnavailable ? 'Optional' : 'Required'}
+                  disabled={push.isBusy}
+                  done={pushOn}
+                  doneLabel="On"
+                  icon={<BellRing aria-hidden="true" className="size-9 text-[#6b55f7]" strokeWidth={2} />}
+                  onClick={() => {
+                     if (pushBlocked) {
+                        track('contact_push_guide_opened', { source });
+                        setGuideStillBlocked(false);
+                        setShowUnblockGuide(true);
+                        return;
+                     }
+                     void handleEnablePush();
+                  }}
+                  subtitle={
+                     push.isBusy
+                        ? 'Turning on…'
+                        : pushBlocked
+                          ? 'Blocked in your browser. Tap to see how to turn it on.'
+                          : pushUnavailable
+                          ? requireReminders
+                             ? 'Not working on this phone.'
+                             : 'Not working on this phone. You can continue — we’ll remind you on Messenger and email.'
+                          : nudgeReminders
+                          ? 'One more tap — turn on reminders and you’re through.'
+                          : 'We remind you before your due date'
+                  }
+                  title="Turn on reminders"
+               />
+            </div>
+         ) : null}
+         {showWhatsAppCard ? (
+            <WhatsAppRemindersCard
+               onVerified={() => setWhatsappVerified(true)}
+               required={remindersMandatory && !skippedNoWhatsApp}
+               source={source}
+               userId={userId}
+               verified={whatsappVerified}
+            />
+         ) : null}
+         {/* Viber first: far more used in the Philippines than Telegram. */}
+         {showViberCard ? <ViberRemindersCard onVerified={() => setViberVerified(true)} source={source} verified={viberVerified} /> : null}
+         {showTelegramCard ? (
+            <TelegramRemindersCard onVerified={() => setTelegramVerified(true)} source={source} userId={userId} verified={telegramVerified} />
+         ) : null}
+         {showSmsComingSoon ? (
+            <ComingSoonChannel icon={<MessageSquareText aria-hidden="true" className="size-8" strokeWidth={2} />} title="SMS reminders" />
+         ) : null}
+         {remindersMandatory && offerWhatsAppReminders && contactVerified && !whatsappVerified && !otherReminderOn && !skippedNoWhatsApp ? (
+            <button
+               className="self-center text-md-b3 font-[590] text-[#877897] underline"
+               onClick={() => {
+                  track('contact_whatsapp_reminders_skipped', { source, push_blocked: pushBlocked, push_failures: pushFailures });
+                  clarityEvent('contact_step_skipped');
+                  setSkippedNoWhatsApp(true);
+               }}
+               type="button"
+            >
+               I don&apos;t have WhatsApp
+            </button>
+         ) : null}
+
          {/* Where push can't run (iPhone not on the Home Screen, Facebook's in-app browser) we used
              to show "In Safari, tap Share → Add to Home Screen…" here. It read like a scam and
              confused people into stopping, and it never blocked Continue — Messenger and email
@@ -484,15 +1506,52 @@ export default function ContactsStep({
 
          {pushError ? <p className="text-center text-md-b3 font-normal text-md-red-500">{pushError}</p> : null}
 
+         <NotificationsUnblockGuide
+            open={showUnblockGuide}
+            isChecking={push.isBusy}
+            stillBlocked={guideStillBlocked}
+            onCheckAgain={() => void handleEnablePush()}
+            onClose={() => setShowUnblockGuide(false)}
+         />
+
          <div className="mt-auto flex flex-col gap-1 pt-2">
+            {/* Onboarding: someone who comes back here (e.g. the phone's back button from About you)
+                should see at a glance that this step is done, not think they have to connect again. */}
+            {source === 'connect' && canContinue ? (
+               <p className="mb-1 text-center text-md-b2 font-[590] text-[#1f7a3d]">
+                  You&apos;re connected ✓ Tap Continue for the next step.
+               </p>
+            ) : null}
             <PrimaryButton disabled={!canContinue || isSubmitting} onClick={handleContinue}>
                {isSubmitting ? 'Submitting…' : 'Continue'}
             </PrimaryButton>
+            {!contactVerified && hasReminderStep ? (
+               <p className="text-center text-md-b3 text-[#877897]">Connect Facebook to continue.</p>
+            ) : null}
             {contactVerified && pushRequired && !pushOn ? (
                <p className="text-center text-md-b3 text-[#877897]">Turn on reminders to continue.</p>
+            ) : null}
+            {contactVerified && whatsappRequired ? (
+               <p className="text-center text-md-b3 text-[#877897]">Turn on WhatsApp reminders to continue.</p>
             ) : null}
             <GhostButton onClick={handleBack}>{backLabel}</GhostButton>
          </div>
       </div>
+   );
+}
+
+// "Open Messenger again": a real link on iPhone (opens Messenger in place), a button elsewhere.
+function ReopenMessengerLink({ href, onClick, className }: { href?: string; onClick: () => void; className: string }) {
+   if (href) {
+      return (
+         <a className={className} href={href} onClick={onClick}>
+            Open Messenger again
+         </a>
+      );
+   }
+   return (
+      <button className={className} onClick={onClick} type="button">
+         Open Messenger again
+      </button>
    );
 }

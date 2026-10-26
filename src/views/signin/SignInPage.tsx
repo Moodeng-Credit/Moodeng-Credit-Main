@@ -1,42 +1,26 @@
-import { type ChangeEvent, type FormEvent, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from 'react';
+
+import posthog from 'posthog-js';
 import { useDispatch } from 'react-redux';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
+import { AuthErrorAlert, AuthFooter, AuthInputField, DividerWithText, PasswordlessAuthForm, SocialAuthButtons } from '@/components/auth';
 import Loading from '@/components/Loading';
-import {
-   AuthErrorAlert,
-   AuthFooter,
-   AuthInputField,
-   DividerWithText,
-   SocialAuthButtons
-} from '@/components/auth';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
-import { fetchDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
+
+import { useSignedInRedirect } from '@/hooks/useSignedInRedirect';
+
+import { rememberNextPath } from '@/lib/authNext';
+import { detectInAppBrowser, isFacebookInApp } from '@/lib/inAppBrowser';
+import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
+import { getPostSignInPath } from '@/lib/postSignInPath';
+import { BANNED_MESSAGE } from '@/lib/otpErrors';
+import { isSmsLoginEnabled, showPasswordlessSignup, showPhoneFirst } from '@/lib/phoneAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import { clearPendingSharedRequestId, getPendingSharedRequestId } from '@/lib/pendingSharedRequest';
-import { Icons } from '@/views/login/components/Icons';
-import { loginUser, loginWithGoogle, loginWithTelegram } from '@/store/slices/authSlice';
+import { loginUser, loginWithGoogle, loginWithTelegram, type OtpChannel } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
+import { Icons } from '@/views/login/components/Icons';
 import '@/views/signup/styles/signup.css';
-
-const getPostSignInPath = async (user: { id: string; accountStatus?: string }) => {
-   if (user.accountStatus === 'blocked' || user.accountStatus === 'banned') {
-      return '/account-restricted';
-   }
-
-   const defaultedBorrower = await fetchDefaultedBorrowerSupport(user.id);
-   if (defaultedBorrower.overdueAmount > 0) return '/account-restricted';
-
-   // If they arrived via a shared request link before signing in, return them to that exact
-   // request (opened on the board) instead of the generic dashboard.
-   const sharedRequestId = getPendingSharedRequestId();
-   if (sharedRequestId) {
-      clearPendingSharedRequestId();
-      return `/request-board?highlight=${encodeURIComponent(sharedRequestId)}`;
-   }
-
-   return '/dashboard';
-};
 
 // Supabase Auth refuses banned accounts with "User is banned" (code user_banned); the Google and
 // Telegram edge functions pass that through. Show it plainly instead of a credentials error.
@@ -45,10 +29,14 @@ const isBannedError = (err: unknown) => {
    return e?.code === 'user_banned' || /\bbanned\b/i.test(e?.message ?? '');
 };
 
-const BANNED_MESSAGE = 'This account has been closed. If you think this is a mistake, contact support on Telegram.';
+// Someone typing a Philippine mobile number into the email box: 09…, +63… or 63…
+const startsLikePhMobile = (value: string) => /^(\+63|63|09)/.test(value.replace(/[\s\-().]/g, ''));
+
 
 export default function SignInPage() {
    const navigate = useNavigate();
+   const location = useLocation();
+   const [searchParams] = useSearchParams();
    const dispatch = useDispatch<AppDispatch>();
    const toast = useToast();
    const [email, setEmail] = useState('');
@@ -62,6 +50,54 @@ export default function SignInPage() {
    const [errorProvider, setErrorProvider] = useState<string | null>(null);
    const [attemptsRemaining, setAttemptsRemaining] = useState(5);
    const [rememberMe, setRememberMe] = useState(true);
+   const [identifierError, setIdentifierError] = useState<string | null>(null);
+   // Facebook/Messenger's browser: Google can't sign in there, so the email form comes first.
+   const inApp = useMemo(() => detectInAppBrowser(), []);
+   const facebookInApp = isFacebookInApp(inApp);
+   // Where sign-up is passwordless (any in-app browser), sign-in opens on the code form too.
+   // Everywhere else the password form stays first, with "Email me a code" / "Text me a code".
+   // In the Philippines the +63 number box comes first (GCash-style), with Google/Telegram under it.
+   const phoneFirst = useMemo(() => showPhoneFirst(inApp.isInApp), [inApp.isInApp]);
+   const [usePassword, setUsePassword] = useState(() => !phoneFirst && !showPasswordlessSignup(inApp.isInApp));
+   const [codeChannel, setCodeChannel] = useState<OtpChannel | undefined>(phoneFirst ? 'sms' : undefined);
+   const [codePhone, setCodePhone] = useState('');
+   const smsEnabled = useMemo(() => isSmsLoginEnabled(), []);
+   // Visitors in the Philippines get one "Email or mobile number" box, like Google's sign-in: a
+   // number moves them to the text-code form, an email brings up the password. Everyone else keeps
+   // email + password (typing 09…/+63… still switches to phone, for Filipinos abroad).
+   const emailOrPhone = useMemo(() => smsEnabled && isLikelyPhilippines(), [smsEnabled]);
+   const showPasswordFields = !emailOrPhone || email.includes('@') || password.length > 0;
+   // Already signed in (often a guest whose Facebook page reloaded): straight to their next step.
+   const redirectingSignedIn = useSignedInRedirect();
+   const switchToCode = (channel: OtpChannel, phone = '') => {
+      handleRetry();
+      setCodePhone(phone);
+      setCodeChannel(channel);
+      setUsePassword(false);
+   };
+
+   const handleEmailChange = (e: ChangeEvent<HTMLInputElement>) => {
+      const next = e.target.value;
+      if (smsEnabled && startsLikePhMobile(next)) {
+         setEmail('');
+         switchToCode('sms', next);
+         return;
+      }
+      setEmail(next);
+   };
+
+   // Came here from a protected page (or ?next=): go back there after signing in, whichever way
+   // they sign in (password, Google, Telegram, a code, the email link). See lib/authNext.
+   useEffect(() => {
+      const from = (location.state as { from?: { pathname?: string; search?: string } } | null)?.from;
+      if (from?.pathname) rememberNextPath(`${from.pathname}${from.search ?? ''}`);
+      else if (searchParams.get('next')) rememberNextPath(searchParams.get('next'));
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
+
+   useEffect(() => {
+      if (import.meta.env.PROD && facebookInApp) posthog.capture('signin_inapp_email_shown', { app: inApp.appName, os: inApp.os });
+   }, [facebookInApp, inApp]);
 
    const getEmailHasProfile = async (value: string) => {
       const supabase = getSupabaseBrowserClient();
@@ -76,7 +112,13 @@ export default function SignInPage() {
       setShowAccount(false);
       setErrorType(null);
       setErrorProvider(null);
+      setIdentifierError(null);
+      if (emailOrPhone && !email.includes('@')) {
+         setIdentifierError(email.trim() ? 'Type your full email' : 'Enter your email or number');
+         return;
+      }
       if (!email || !password) return;
+      if (import.meta.env.PROD && facebookInApp) posthog.capture('signin_inapp_email_submitted', { app: inApp.appName, os: inApp.os });
 
       setIsLoading(true);
       try {
@@ -92,15 +134,11 @@ export default function SignInPage() {
             return;
          }
          const errObj = err as { status?: number; message?: string };
-         const msg =
-            typeof errObj?.message === 'string' && errObj.message.length > 0
-               ? errObj.message
-               : 'Authentication failed';
+         const msg = typeof errObj?.message === 'string' && errObj.message.length > 0 ? errObj.message : 'Authentication failed';
          const status = errObj?.status ?? 0;
          const lower = msg.toLowerCase();
 
-         const isEmailError =
-            lower.includes('verify') || lower.includes('email') || lower.includes('confirm');
+         const isEmailError = lower.includes('verify') || lower.includes('email') || lower.includes('confirm');
          if (isEmailError) {
             toast.showToastByConfig('login_error', { error: msg });
             return;
@@ -114,8 +152,7 @@ export default function SignInPage() {
             lower.includes('locked out') ||
             lower.includes('multiple failed') ||
             /\b0\s+attempts?\s+remaining\b/.test(lower);
-         const isEmailNotFound =
-            lower.includes('user not found') || lower.includes('email not found') || lower.includes('no user');
+         const isEmailNotFound = lower.includes('user not found') || lower.includes('email not found') || lower.includes('no user');
          if (isRateLimited) {
             setErrorType('too_many_attempts');
          } else if (isEmailNotFound) {
@@ -164,9 +201,7 @@ export default function SignInPage() {
    const handleTelegramAuth = async (authData: Record<string, string>) => {
       setIsLoading(true);
       try {
-         const result = await dispatch(
-            loginWithTelegram({ telegramAuthData: JSON.stringify(authData) })
-         ).unwrap();
+         const result = await dispatch(loginWithTelegram({ telegramAuthData: JSON.stringify(authData) })).unwrap();
          const nextPath = await getPostSignInPath(result.user);
          navigate(nextPath, { replace: true });
       } catch (err) {
@@ -183,7 +218,17 @@ export default function SignInPage() {
       }
    };
 
-   if (isLoading) return <Loading />;
+   if (isLoading || redirectingSignedIn) return <Loading />;
+
+   const socialAuth = (
+      <SocialAuthButtons
+         isSignUp={false}
+         onGoogleSuccess={handleGoogleAuth}
+         onGoogleError={() => setShowAccount(true)}
+         onTelegramAuth={handleTelegramAuth}
+      />
+   );
+   const orDivider = <DividerWithText text="OR" lineColor="#9285A0" textColor="#877897" />;
 
    return (
       <div className="flex justify-center items-center min-h-screen py-6 sm:py-12 px-4">
@@ -196,143 +241,174 @@ export default function SignInPage() {
          >
             <div className="flex flex-1 flex-col items-center justify-center w-full px-5 py-6 sm:py-10">
                {/* Mascot - 110x96 per design */}
-               <img
-                  src="/auth-screen.png"
-                  alt="Moodeng Mascot"
-                  className="w-[88px] h-[77px] object-contain mb-5"
-               />
+               <img src="/auth-screen.png" alt="Moodeng Mascot" className="w-[88px] h-[77px] object-contain mb-5" />
                <h1 className="text-[34px] font-semibold leading-[1.2] tracking-[-0.04em] text-[#040033] text-center mb-1">
                   Welcome back to Moodeng
                </h1>
                <p className="text-base font-medium leading-6 tracking-[-0.02em] text-[#6D6D6D] text-center mb-5">
-                  Sign in to access your account.
+                  {usePassword ? 'Sign in to access your account.' : "We'll send you a code. No password needed."}
                </p>
 
-               {/* Social auth */}
+               {/* Social auth (below the email form inside Facebook/Messenger) */}
                <div className="w-full flex flex-col gap-4">
-                  <SocialAuthButtons
-                     isSignUp={false}
-                     onGoogleSuccess={handleGoogleAuth}
-                     onGoogleError={() => setShowAccount(true)}
-                     onTelegramAuth={handleTelegramAuth}
-                  />
+                  {inApp.isInApp || phoneFirst ? null : socialAuth}
+                  {inApp.isInApp || phoneFirst ? null : orDivider}
 
-                  <DividerWithText text="OR" lineColor="#9285A0" textColor="#877897" />
-
-                  {/* Email / Password form */}
-                  <form onSubmit={handleLogin} className="flex flex-col gap-5">
-                     <div className="flex flex-col gap-5">
-                        <AuthInputField
-                           label="Email Address"
-                           type="email"
-                           placeholder="Enter your email address"
-                           value={email}
-                           onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                           error={showAccount && errorType !== 'provider_failed'}
-                           errorMessage={
-                              showAccount && errorType === 'too_many_attempts'
-                                 ? 'Too many attempts detected'
-                                 : showAccount && errorType === 'new_user'
-                                   ? 'New account needed'
-                                 : showAccount && errorType === 'email_not_found'
-                                   ? 'Email not found'
-                                   : showAccount && errorType === 'incorrect_credentials'
-                                     ? 'Incorrect credentials'
-                                     : undefined
-                           }
-                           icon={<Icons.email />}
+                  {usePassword ? null : (
+                     <div className="flex justify-center">
+                        <PasswordlessAuthForm
+                           key={`${codeChannel ?? 'default'}-${codePhone}`}
+                           mode="signin"
+                           inApp={inApp}
+                           initialChannel={codeChannel}
+                           initialPhone={codePhone}
+                           // Facebook/Messenger: kept short; anyone with a password can still use a code.
+                           onUsePassword={facebookInApp ? undefined : () => setUsePassword(true)}
                         />
-                        <div className="flex flex-col gap-2">
+                     </div>
+                  )}
+
+                  {/* Email / Password form (for people who set a password) */}
+                  {usePassword ? (
+                     <form onSubmit={handleLogin} className="flex flex-col gap-5">
+                        <div className="flex flex-col gap-5">
                            <AuthInputField
-                              label="Password"
-                              type="password"
-                              placeholder="Enter your password"
-                              value={password}
-                              onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-                              error={showAccount && errorType !== 'provider_failed'}
-                              icon={<Icons.lock />}
-                              showEyeToggle
+                              label={emailOrPhone ? 'Email or mobile number' : 'Email Address'}
+                              type={emailOrPhone ? 'text' : 'email'}
+                              placeholder={emailOrPhone ? 'Email or 0917 123 4567' : 'Enter your email address'}
+                              value={email}
+                              onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                                 setIdentifierError(null);
+                                 handleEmailChange(e);
+                              }}
+                              error={Boolean(identifierError) || (showAccount && errorType !== 'provider_failed')}
+                              errorMessage={
+                                 identifierError ??
+                                 (showAccount && errorType === 'too_many_attempts'
+                                    ? 'Too many tries'
+                                    : showAccount && errorType === 'new_user'
+                                      ? 'No account with this email'
+                                      : showAccount && errorType === 'email_not_found'
+                                        ? 'No account with this email'
+                                        : showAccount && errorType === 'incorrect_credentials'
+                                          ? 'Wrong email or password'
+                                          : undefined)
+                              }
+                              icon={<Icons.email />}
+                              autoComplete={emailOrPhone ? 'username' : 'email'}
                            />
-                           <Link
-                              to="/forgot-password"
-                              className="self-end text-sm font-medium leading-5 tracking-[-0.02em] text-[#70617F] underline-offset-4 hover:text-[#6010D2] hover:underline"
-                           >
-                              Forgot password?
-                           </Link>
-                        </div>
-                     </div>
-
-                     {showAccount && errorType && (
-                        <AuthErrorAlert
-                           type={errorType}
-                           provider={errorProvider ?? undefined}
-                           onRetry={
-                              errorType === 'incorrect_credentials' ||
-                              errorType === 'email_not_found' ||
-                              errorType === 'new_user' ||
-                              errorType === 'provider_failed'
-                                 ? handleRetry
-                                 : undefined
-                           }
-                           signupHref={`/sign-up?email=${encodeURIComponent(email.trim())}`}
-                           resetPasswordHref={`/forgot-password?email=${encodeURIComponent(email.trim())}`}
-                        />
-                     )}
-
-                     <div className="flex flex-row items-center gap-2 w-full max-w-[400px] h-6">
-                        <label className="flex flex-row items-center gap-2 cursor-pointer shrink-0">
-                           <span className="relative flex size-6 shrink-0">
-                              <input
-                                 type="checkbox"
-                                 checked={rememberMe}
-                                 onChange={(e) => setRememberMe(e.target.checked)}
-                                 className="peer absolute inset-0 z-10 cursor-pointer appearance-none rounded-lg"
+                           {/* Email-or-number box: the password shows once it's clearly an email. Kept on the
+                               page (just out of sight) so saved passwords still fill in. */}
+                           <div className={showPasswordFields ? 'flex flex-col gap-2' : 'sr-only'} aria-hidden={!showPasswordFields}>
+                              <AuthInputField
+                                 label="Password"
+                                 type="password"
+                                 placeholder="Enter your password"
+                                 value={password}
+                                 onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+                                 error={showAccount && errorType !== 'provider_failed'}
+                                 icon={<Icons.lock />}
+                                 showEyeToggle
+                                 autoComplete="current-password"
                               />
-                              <span className="pointer-events-none absolute inset-0 rounded-lg border border-[#B5ACBE] bg-white peer-checked:border-[#8336F0] peer-checked:bg-[#8336F0]" />
-                              <svg
-                                 className="pointer-events-none absolute inset-0 m-auto size-3.5 text-white opacity-0 peer-checked:opacity-100"
-                                 fill="none"
-                                 stroke="currentColor"
-                                 strokeWidth="2.5"
-                                 viewBox="0 0 24 24"
+                              <Link
+                                 to="/forgot-password"
+                                 className="self-end text-sm font-medium leading-5 tracking-[-0.02em] text-[#70617F] underline-offset-4 hover:text-[#6010D2] hover:underline"
                               >
-                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                              </svg>
-                           </span>
-                           <span className="text-base font-normal leading-6 text-[#4D4359] tracking-[-0.02em]">
-                              Remember Me
-                           </span>
-                        </label>
-                     </div>
+                                 Forgot password?
+                              </Link>
+                           </div>
+                        </div>
 
-                     <button
-                        type="submit"
-                        className="w-full h-14 rounded-2xl font-semibold text-[#FDFCFD] text-base tracking-[-0.02em] transition-opacity hover:opacity-95"
-                        style={{ backgroundColor: '#6010D2' }}
-                     >
-                        Sign In to Moodeng
-                     </button>
+                        {showAccount && errorType && (
+                           <AuthErrorAlert
+                              type={errorType}
+                              provider={errorProvider ?? undefined}
+                              onRetry={
+                                 errorType === 'incorrect_credentials' ||
+                                 errorType === 'email_not_found' ||
+                                 errorType === 'new_user' ||
+                                 errorType === 'provider_failed'
+                                    ? handleRetry
+                                    : undefined
+                              }
+                              signupHref={`/sign-up?email=${encodeURIComponent(email.trim())}`}
+                              resetPasswordHref={`/forgot-password?email=${encodeURIComponent(email.trim())}`}
+                           />
+                        )}
 
-                     <p className="text-center text-sm text-[#70617F] tracking-[-0.02em]">
-                        Don&apos;t have an account?{' '}
-                        <Link
-                           to="/sign-up"
-                           className="font-semibold text-[#6010D2] underline-offset-4 hover:underline"
+                        <div className={`flex flex-row items-center gap-2 w-full max-w-[400px] h-6 ${showPasswordFields ? '' : 'hidden'}`}>
+                           <label className="flex flex-row items-center gap-2 cursor-pointer shrink-0">
+                              <span className="relative flex size-6 shrink-0">
+                                 <input
+                                    type="checkbox"
+                                    checked={rememberMe}
+                                    onChange={(e) => setRememberMe(e.target.checked)}
+                                    className="peer absolute inset-0 z-10 cursor-pointer appearance-none rounded-lg"
+                                 />
+                                 <span className="pointer-events-none absolute inset-0 rounded-lg border border-[#B5ACBE] bg-white peer-checked:border-[#8336F0] peer-checked:bg-[#8336F0]" />
+                                 <svg
+                                    className="pointer-events-none absolute inset-0 m-auto size-3.5 text-white opacity-0 peer-checked:opacity-100"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.5"
+                                    viewBox="0 0 24 24"
+                                 >
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                 </svg>
+                              </span>
+                              <span className="text-base font-normal leading-6 text-[#4D4359] tracking-[-0.02em]">Remember Me</span>
+                           </label>
+                        </div>
+
+                        <button
+                           type="submit"
+                           className="w-full h-14 rounded-2xl font-semibold text-[#FDFCFD] text-base tracking-[-0.02em] transition-opacity hover:opacity-95"
+                           style={{ backgroundColor: '#6010D2' }}
                         >
-                           Sign Up
-                        </Link>
-                     </p>
+                           {showPasswordFields ? 'Sign In to Moodeng' : 'Continue'}
+                        </button>
+
+                        {/* Passwordless accounts (made in Facebook's browser) sign in here from any browser. A
+                            number typed in the box above goes to the text-code form by itself. */}
+                        <p className="text-center text-sm text-[#70617F] tracking-[-0.02em]">
+                           No password?{' '}
+                           <button
+                              type="button"
+                              onClick={() => switchToCode('email')}
+                              className="font-semibold text-[#6010D2] underline underline-offset-4 dark:text-[#C084FC]"
+                           >
+                              Email me a code
+                           </button>
+                        </p>
+                     </form>
+                  ) : null}
+
+                  {phoneFirst ? orDivider : null}
+                  {phoneFirst ? socialAuth : null}
+
+                  <p className="text-center text-sm text-[#70617F] tracking-[-0.02em]">
+                     Don&apos;t have an account?{' '}
+                     <Link to="/sign-up" className="font-semibold text-[#6010D2] underline-offset-4 hover:underline">
+                        Sign Up
+                     </Link>
+                  </p>
+                  {facebookInApp ? null : (
                      <Link
                         to="/request-board?tour=1"
                         className="text-center text-sm font-medium tracking-[-0.02em] text-[#70617F] underline-offset-4 hover:text-[#6010D2] hover:underline"
                      >
                         Take a tour first
                      </Link>
-                  </form>
+                  )}
+
+                  {/* Google and Telegram can't sign in inside Facebook/Messenger: left out there. */}
+                  {inApp.isInApp && !facebookInApp ? orDivider : null}
+                  {inApp.isInApp && !facebookInApp ? socialAuth : null}
                </div>
             </div>
 
-            <AuthFooter />
+            <AuthFooter short={facebookInApp} />
          </div>
       </div>
    );

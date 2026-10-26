@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
 
+import { PRE_KYC_CONNECT_PATH } from '@/hooks/usePreKycGate';
 import { handleApiError, isApiError } from '@/lib/apiHandler';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { openSupportChat } from '@/lib/support/liveChat';
@@ -121,6 +122,11 @@ export function useWorldIdVerification({
    const showFaceCheckFirst = useCallback(() => {
       showToast(TOAST_TYPES.INFO, 'Face check first', 'Do the quick face check on the Verify page, then connect World ID.');
       navigate('/verify');
+   }, [navigate, showToast]);
+   // Not met the team yet (pre-KYC gate, enforced by verify-worldid): Messenger + intro call first.
+   const showMeetTeamFirst = useCallback(() => {
+      showToast(TOAST_TYPES.INFO, 'Meet the team first', 'Connect Messenger and book your quick call — then you can verify.');
+      navigate(PRE_KYC_CONNECT_PATH);
    }, [navigate, showToast]);
    const [showAlreadyUsedModal, setShowAlreadyUsedModal] = useState(false);
    const [verificationLaunchState, setVerificationLaunchState] = useState<VerificationLaunchState>('idle');
@@ -247,6 +253,9 @@ export function useWorldIdVerification({
          if (isApiError(result) && result.errorCode === 'LIVENESS_REQUIRED') {
             throw new Error('LIVENESS_REQUIRED');
          }
+         if (isApiError(result) && result.errorCode === 'APPROVAL_REQUIRED') {
+            throw new Error('APPROVAL_REQUIRED');
+         }
          const error = new Error(isApiError(result) ? result.error : 'Failed to prepare World ID verification.') as Error & {
             toastKey?: ReturnType<typeof handleApiError>;
          };
@@ -269,11 +278,15 @@ export function useWorldIdVerification({
             if (presentation !== 'quiet') showFaceCheckFirst();
             return;
          }
+         if (error instanceof Error && error.message === 'APPROVAL_REQUIRED') {
+            if (presentation !== 'quiet') showMeetTeamFirst();
+            return;
+         }
          if (presentation === 'quiet') return;
          const toastKey = error instanceof Error ? (error as Error & { toastKey?: Parameters<typeof showToastByConfig>[0] }).toastKey : undefined;
          showToastByConfig(toastKey ?? 'server_error');
       },
-      [showAlreadyUsedWarning, showFaceCheckFirst, showToastByConfig]
+      [showAlreadyUsedWarning, showFaceCheckFirst, showMeetTeamFirst, showToastByConfig]
    );
 
    const createWorldIdRequest = useCallback(async (): Promise<PreparedWorldIdRequest> => {
@@ -415,6 +428,11 @@ export function useWorldIdVerification({
                   showFaceCheckFirst();
                   throw new Error('LIVENESS_REQUIRED');
                }
+               if (isApiError(result) && result.errorCode === 'APPROVAL_REQUIRED') {
+                  setVerificationFeedbackState('idle');
+                  showMeetTeamFirst();
+                  throw new Error('APPROVAL_REQUIRED');
+               }
                showToastByConfig(handleApiError(result));
                // A genuine verification failure — proactively open support with context.
                openSupportChat('I had a problem with verification');
@@ -424,7 +442,7 @@ export function useWorldIdVerification({
             setVerificationProcessingStep('syncing');
             await refreshUserUntilVerificationActive();
          } catch (error) {
-            if (!(error instanceof Error && (error.message === 'WORLDID_ALREADY_USED' || error.message === 'LIVENESS_REQUIRED'))) {
+            if (!(error instanceof Error && (error.message === 'WORLDID_ALREADY_USED' || error.message === 'LIVENESS_REQUIRED' || error.message === 'APPROVAL_REQUIRED'))) {
                setShowVerificationHelp(false);
                setVerificationFeedbackState('error');
             }
@@ -432,7 +450,7 @@ export function useWorldIdVerification({
             throw error;
          }
       },
-      [apiUrl, clearLaunchFallbackTimer, getSessionAccessToken, logTag, refreshUserUntilVerificationActive, showAlreadyUsedWarning, showFaceCheckFirst, showToastByConfig, verifyExtraBody]
+      [apiUrl, clearLaunchFallbackTimer, getSessionAccessToken, logTag, refreshUserUntilVerificationActive, showAlreadyUsedWarning, showFaceCheckFirst, showMeetTeamFirst, showToastByConfig, verifyExtraBody]
    );
 
    const handleSuccess = useCallback(() => {

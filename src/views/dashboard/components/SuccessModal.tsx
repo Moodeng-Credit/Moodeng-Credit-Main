@@ -73,11 +73,11 @@ export default function SuccessModal({ clickOutsideRef, isOpen, onClose }: Succe
                <img alt="" aria-hidden="true" className="h-[124px] w-[124px] object-contain" src="/confirm-image.png" />
                <h2 className="w-full text-md-h3 font-semibold text-md-heading">Loan request submitted</h2>
                <p className="w-full text-md-b1 font-medium text-md-neutral-700">
-                  Your loan request is now live. Lenders can review it and fund your request.
+                  Your loan request is now live. Moo-lenders can review it and fund your request.
                </p>
                <div className="flex w-full flex-col gap-3 rounded-md-lg border border-md-neutral-400 bg-md-neutral-200 p-4 text-left">
                   <p className="text-md-b2 font-medium text-md-neutral-700">
-                     Join the Moodeng borrower group on Facebook or Telegram so we can introduce you to great lenders.
+                     Join the Moodeng borrower group on Facebook or Telegram so we can introduce you to great moo-lenders.
                   </p>
                   <div className="flex flex-col gap-2">
                      <a

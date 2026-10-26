@@ -1,5 +1,7 @@
 import clsx from 'clsx';
-import { ArrowUpRight, Bell, BellOff, Facebook, Share, Wallet } from 'lucide-react';
+import { ArrowUpRight, Bell, BellOff, Facebook, Share, Video, Wallet } from 'lucide-react';
+
+import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
@@ -9,14 +11,41 @@ import type { DashboardV2Language } from '@/views/dashboard-v2/types';
 // so each renders full width at its native aspect ratio.
 const BANNER_BUTTON = 'block w-full transition active:scale-[0.99]';
 
+// Not verified yet: the banner shows their actual next step on the way to a first loan (wallet →
+// Messenger → bio → call → apply, with the ID check at the end of the request — see
+// src/lib/verificationJourney.ts). The wallet step has its own ConnectWalletBanner, so it's skipped
+// here; only an ID check already with Didit keeps the old "Verify My Identity" banner (it shows status).
 export function VerifyIdentityBanner({ onVerify }: { onVerify: () => void }) {
+   const journey = useVerificationJourney();
+   if (journey.isLoading || journey.stage === 'wallet' || journey.stage === 'verified') return null;
+   if (journey.stage === 'id_with_didit') {
+      return (
+         <button type="button" onClick={onVerify} className={BANNER_BUTTON}>
+            <DesignImage
+               src={DASHBOARD_V2_ASSETS.verifyBanner}
+               alt="Verify My Identity: +10 Pandesal. Unlock borrowing and feeding Moodeng pandesal."
+               className="aspect-[880/128] h-auto w-full"
+            />
+         </button>
+      );
+   }
    return (
-      <button type="button" onClick={onVerify} className={BANNER_BUTTON}>
-         <DesignImage
-            src={DASHBOARD_V2_ASSETS.verifyBanner}
-            alt="Verify My Identity: +10 Pandesal. Unlock borrowing and feeding Moodeng pandesal."
-            className="aspect-[880/128] h-auto w-full"
-         />
+      <button
+         type="button"
+         onClick={journey.go}
+         className="mx-5 flex w-[calc(100%-40px)] items-center gap-3 rounded-[8px] bg-white px-3 py-3.5 text-left shadow-[0_1px_2px_rgba(28,5,61,0.06)] active:scale-[0.99] dark:bg-dv2-card"
+      >
+         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#efeaff] dark:bg-dv2-tab">
+            <Video className="h-5 w-5 text-[#6b55f7] dark:text-[#b3a6ff]" aria-hidden="true" />
+         </span>
+         <span className="min-w-0 flex-1">
+            {journey.onboarding && journey.step ? (
+               <span className="block text-[12px] font-semibold uppercase tracking-wide text-[#6b55f7]">{`Step ${journey.step} of 3 to your first loan`}</span>
+            ) : null}
+            <span className="block text-[18px] font-medium leading-6 text-[#0f172b] dark:text-[#d9cfe6]">{journey.title}</span>
+            <span className="block text-[14px] leading-[18px] text-[#45556c] dark:text-[#8f819e]">{journey.body}</span>
+         </span>
+         <span className="shrink-0 rounded-full bg-[#6b55f7] px-3 py-1.5 text-[13px] font-bold text-white">{journey.cta}</span>
       </button>
    );
 }
@@ -27,8 +56,18 @@ export function ConnectWalletBanner({ onConnect }: { onConnect: () => void }) {
          <DesignImage
             src={DASHBOARD_V2_ASSETS.connectWalletBanner}
             alt="Connect Wallet: +10 Pandesal. Receive USDC loans."
-            className="aspect-[878/128] h-auto w-full"
+            className="aspect-[878/128] h-auto w-full dark:hidden"
          />
+         {/* The exported banner has a white card baked in, so dark mode re-sets it in code. */}
+         <span className="mx-5 my-0.5 hidden h-[60px] items-center justify-between gap-2 rounded-[8px] border-2 border-dv2-tab bg-dv2-card px-2.5 text-left dark:flex">
+            <span className="flex min-w-0 flex-col">
+               <span className="truncate text-[clamp(17px,5.6vw,24px)] font-black italic leading-6 text-[#d9cfe6]">Connect Wallet</span>
+               <span className="truncate text-[clamp(12px,3.7vw,14px)] leading-[18px] text-[#8f819e]">Receive USDC loans</span>
+            </span>
+            <span className="shrink-0 rounded-full bg-[#6b55f7] px-[clamp(10px,3.7vw,16px)] py-1.5 text-[clamp(13px,4.2vw,16px)] font-bold leading-5 text-white">
+               +10Pandesal
+            </span>
+         </span>
       </button>
    );
 }
@@ -43,7 +82,7 @@ export function VoucherReferralBanner({ language, onRefer }: { language: Dashboa
          <button type="button" onClick={onRefer} className={BANNER_BUTTON}>
             <DesignImage
                src={DASHBOARD_V2_ASSETS.voucherBanner}
-               alt="₱100 GrabFood Voucher: kumain kayong dalawa. Mag-refer."
+               alt="₱100 GrabMart Voucher: kumain kayong dalawa. Mag-refer."
                className="aspect-[880/162] h-auto w-full"
             />
          </button>
@@ -89,20 +128,43 @@ const CONNECT_FACEBOOK_COPY = {
    }
 } as const;
 
+// A declined ID check: they can't fix it alone, so the card asks for the line we'll help them on.
+const DECLINED_CONNECT_COPY = {
+   en: {
+      title: "Your ID check didn't go through",
+      body: "Let's sort it out together. Connect Messenger and the team will message you to help.",
+      cta: 'Connect'
+   },
+   fil: {
+      title: 'Hindi pumasa ang ID check mo',
+      body: 'Ayusin natin nang magkasama. I-connect ang Messenger at imemessage ka ng team para tumulong.',
+      cta: 'I-connect'
+   }
+} as const;
+
 /**
- * Shown while a borrower's ID is in manual review and they haven't connected Facebook yet, so they
- * don't drift off to the request board without the line we'll tell them on. Opens /verify, which
- * lands on the Facebook step.
+ * Shown while a borrower's ID is in manual review — or was declined — and they haven't connected
+ * Facebook yet, so we have a line to tell them on (review) or talk them through it (declined).
+ * Opens /verify, which lands on the Facebook step.
  */
-export function ConnectFacebookBanner({ language, onConnect }: { language: DashboardV2Language; onConnect: () => void }) {
-   const copy = CONNECT_FACEBOOK_COPY[language];
+export function ConnectFacebookBanner({
+   language,
+   onConnect,
+   declined = false
+}: {
+   language: DashboardV2Language;
+   onConnect: () => void;
+   // ID check declined (not in review): "let's talk" copy instead of "almost done".
+   declined?: boolean;
+}) {
+   const copy = (declined ? DECLINED_CONNECT_COPY : CONNECT_FACEBOOK_COPY)[language];
    return (
       <button
          type="button"
          onClick={onConnect}
          className="mx-5 flex items-center gap-3 rounded-[8px] bg-white px-3 py-3.5 text-left shadow-[0_1px_2px_rgba(28,5,61,0.06)] active:scale-[0.99]"
       >
-         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#e7f0ff]">
+         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#e7f0ff] dark:bg-[#102a3f]">
             <Facebook className="h-5 w-5 text-[#0866FF]" aria-hidden="true" />
          </span>
          <span className="min-w-0 flex-1">
@@ -122,14 +184,14 @@ export function WithdrawBanner({ onWithdraw }: { onWithdraw: () => void }) {
          onClick={onWithdraw}
          className="mx-5 flex items-center gap-3 rounded-[8px] bg-white px-3 py-3.5 text-left shadow-[0_1px_2px_rgba(28,5,61,0.06)] active:scale-[0.99]"
       >
-         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#efeaff]">
-            <Wallet className="h-5 w-5 text-[#6b55f7]" aria-hidden="true" />
+         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#efeaff] dark:bg-dv2-tab">
+            <Wallet className="h-5 w-5 text-[#6b55f7] dark:text-[#b3a6ff]" aria-hidden="true" />
          </span>
          <span className="min-w-0 flex-1">
             <span className="block text-[18px] font-medium leading-6 text-[#0f172b]">Withdraw your USDC</span>
             <span className="block text-[14px] leading-[18px] text-[#45556c]">Cash out your funded loan to local currency.</span>
          </span>
-         <ArrowUpRight className="h-5 w-5 shrink-0 text-[#6b55f7]" aria-hidden="true" />
+         <ArrowUpRight className="h-5 w-5 shrink-0 text-[#6b55f7] dark:text-[#b3a6ff]" aria-hidden="true" />
       </button>
    );
 }
@@ -176,8 +238,8 @@ export function TurnOnRemindersBanner({
    const body = variant === 'blocked' ? copy.blockedBody : variant === 'home-screen' ? copy.homeScreenBody : copy.body;
    const content = (
       <>
-         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#efeaff]">
-            <Icon className="h-5 w-5 text-[#6b55f7]" aria-hidden="true" />
+         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#efeaff] dark:bg-dv2-tab">
+            <Icon className="h-5 w-5 text-[#6b55f7] dark:text-[#b3a6ff]" aria-hidden="true" />
          </span>
          <span className="min-w-0 flex-1">
             <span className="block text-[18px] font-medium leading-6 text-[#0f172b]">{title}</span>

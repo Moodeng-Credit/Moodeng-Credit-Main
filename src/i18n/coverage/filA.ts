@@ -120,7 +120,7 @@ export const filipinoCoverageA: Record<string, string> = {
    'Send reset code': 'Ipadala ang reset code',
 
    // src/app/lender/request-board/page.tsx
-   'Lender Request Board': 'Request Board ng Lender',
+   'Moo-lender Request Board': 'Request Board ng Moo-lender',
 
    // src/app/mfa-challenge/page.tsx
    'Enter the 6-digit code from your authenticator app': 'Ilagay ang 6-digit code mula sa authenticator app mo',
@@ -176,8 +176,8 @@ export const filipinoCoverageA: Record<string, string> = {
    'Our Team | Moodeng Credit': 'Ang Aming Team | Moodeng Credit',
    'Meet the people building Moodeng Credit — co-founders George and Emma, the founding team, and advisors working on fair, portable credit.':
       'Kilalanin ang mga taong bumubuo ng Moodeng Credit — ang co-founders na sina George at Emma, ang founding team, at ang mga advisor na nagtatrabaho para sa patas at portable na credit.',
-   'Building a portable trust layer for borrowers who deserve fair credit and lenders who want transparent impact.':
-      'Bumubuo ng portable trust layer para sa mga borrower na karapat-dapat sa patas na credit at sa mga lender na gusto ng malinaw na impact.',
+   'Building a portable trust layer for borrowers who deserve fair credit and moo-lenders who want transparent impact.':
+      'Bumubuo ng portable trust layer para sa mga borrower na karapat-dapat sa patas na credit at sa mga moo-lender na gusto ng malinaw na impact.',
    'Additional team members': 'Iba pang miyembro ng team',
    Advisors: 'Mga advisor',
 
@@ -216,7 +216,8 @@ export const filipinoCoverageA: Record<string, string> = {
    'Copy link': 'Kopyahin ang link',
    'Open in your browser': 'Buksan sa browser mo',
    'Open Moodeng in your browser': 'Buksan ang Moodeng sa browser mo',
-   "Sign-in and wallet payments don't work inside": 'Hindi gumagana ang sign-in at wallet payments sa loob ng',
+   "Google sign-in and wallet payments don't work inside": 'Hindi gumagana ang Google sign-in at wallet payments sa loob ng',
+   "Your wallet doesn't work inside": 'Hindi gumagana ang wallet mo sa loob ng',
    '. Tap below to continue in Chrome.': '. I-tap sa ibaba para magpatuloy sa Chrome.',
    '. Tap': '. I-tap ang',
    'at the top, choose': 'sa itaas, piliin ang',
@@ -394,7 +395,7 @@ export const filipinoCoverageA: Record<string, string> = {
    'Open in Browser': 'Buksan sa browser',
 
    // src/components/PowerLenderBadge.tsx
-   'Power Lender': 'Power Lender',
+   'Power Moo-lender': 'Power Moo-lender',
 
    // src/components/UserPay.tsx
    Stablecoin: 'Stablecoin',
@@ -434,8 +435,8 @@ export const filipinoCoverageA: Record<string, string> = {
    'Support contacts': 'Mga contact ng support',
    'Here are support contacts. Choose a channel and we will help you with your Moodeng account.':
       'Narito ang mga contact ng support. Pumili ng channel at tutulungan ka namin sa Moodeng account mo.',
-   'Here are support contacts for your expired loan request. We can help you connect with a lender or decide whether to post again.':
-      'Narito ang mga contact ng support para sa expired mong loan request. Matutulungan ka naming kumonekta sa isang lender o magdesisyon kung mag-post ulit.',
+   'Here are support contacts for your expired loan request. We can help you connect with a moo-lender or decide whether to post again.':
+      'Narito ang mga contact ng support para sa expired mong loan request. Matutulungan ka naming kumonekta sa isang moo-lender o magdesisyon kung mag-post ulit.',
    'Here are support contacts for World ID verification if your status did not update after completing World ID.':
       'Narito ang mga contact ng support para sa World ID verification kung hindi na-update ang status mo pagkatapos tapusin ang World ID.',
    'Close support contacts': 'Isara ang mga contact ng support',
@@ -539,8 +540,8 @@ export const filipinoCoverageA: Record<string, string> = {
    'RULES OF REPAYING': 'MGA PATAKARAN SA PAGBABAYAD',
    'Moodeng offers flexible, blockchain-based microloans. Repay responsibly to build your credit score.':
       'Nag-aalok ang Moodeng ng flexible na microloan na nakabatay sa blockchain. Magbayad nang responsable para mabuo ang credit score mo.',
-   'You must pay the lender directly by hitting the repay button.':
-      'Kailangan mong bayaran nang direkta ang lender sa pamamagitan ng pag-tap sa repay button.',
+   'You must pay the moo-lender directly by hitting the repay button.':
+      'Kailangan mong bayaran nang direkta ang moo-lender sa pamamagitan ng pag-tap sa repay button.',
    'UP-TO-YOU': 'IKAW ANG BAHALA',
    'Flexible repayments: Any amount up to deadline': 'Flexible na pagbabayad: kahit anong halaga hanggang sa deadline',
    'Build credit score with each on-time payment': 'Bumuo ng credit score sa bawat on-time na bayad',
@@ -630,8 +631,8 @@ export const filipinoCoverageA: Record<string, string> = {
    'Repaying clearly and on time': 'Malinaw at on-time na pagbabayad',
    'Nice practice request.': 'Magandang practice request.',
    'Strong repayment move.': 'Magandang hakbang sa pagbabayad.',
-   'Nice! Repaying is super important on Moodeng. On-time repayment helps your trust record, keeps lenders confident, and can unlock better borrowing limits over time.':
-      'Ang galing! Sobrang importante ang pagbabayad sa Moodeng. Nakakatulong ang on-time na pagbabayad sa trust record mo, pinapanatiling kampante ang mga lender, at puwedeng mag-unlock ng mas mataas na borrowing limit habang tumatagal.',
+   'Nice! Repaying is super important on Moodeng. On-time repayment helps your trust record, keeps moo-lenders confident, and can unlock better borrowing limits over time.':
+      'Ang galing! Sobrang importante ang pagbabayad sa Moodeng. Nakakatulong ang on-time na pagbabayad sa trust record mo, pinapanatiling kampante ang mga moo-lender, at puwedeng mag-unlock ng mas mataas na borrowing limit habang tumatagal.',
    'Mecha says: full-limit loans repaid on time are how borrowers build a stronger credit record. Keep repayment clean, and your next limit can grow.':
       'Sabi ni Mecha: ang mga full-limit loan na binayaran on time ang paraan ng mga borrower para bumuo ng mas matibay na credit record. Panatilihing malinis ang pagbabayad, at puwedeng lumago ang susunod mong limit.',
    'Moodeng Academy | Moodeng Credit': 'Moodeng Academy | Moodeng Credit',
@@ -674,8 +675,8 @@ export const filipinoCoverageA: Record<string, string> = {
 
    // src/views/academy/VerifyGuide.tsx
    Money: 'Pera',
-   'To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts out of the community, and it is what lets lenders trust the requests they fund.':
-      'Para manatiling ligtas at patas ang Moodeng, dumadaan ang bawat borrower sa isang maikling identity check. Pinipigilan nito ang mga peke at dobleng account sa komunidad, at ito ang dahilan kung bakit makakapagtiwala ang mga lender sa mga request na pinopondohan nila.',
+   'To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts out of the community, and it is what lets moo-lenders trust the requests they fund.':
+      'Para manatiling ligtas at patas ang Moodeng, dumadaan ang bawat borrower sa isang maikling identity check. Pinipigilan nito ang mga peke at dobleng account sa komunidad, at ito ang dahilan kung bakit makakapagtiwala ang mga moo-lender sa mga request na pinopondohan nila.',
    'The recommended route: Verify Your ID.': 'Ang inirerekomendang paraan: Verify Your ID.',
    'National ID verification is available for these countries.': 'Available ang national ID verification sa mga bansang ito.',
    'Pass on the first try': 'Pumasa sa unang subok',
@@ -686,14 +687,14 @@ export const filipinoCoverageA: Record<string, string> = {
       'Ang secure na verification partner namin ang gumagawa ng check. Resulta lang ang natatanggap ng Moodeng — kung pumasa ka o hindi — hindi kopya ng dokumento mo.',
    'Ready to verify?': 'Handa ka na bang mag-verify?',
    Read: 'Basahin',
-   'Verification makes sure every request comes from a real, unique person. That is what keeps fake and duplicate accounts away from lenders.':
-      'Sinisiguro ng verification na galing sa totoo at natatanging tao ang bawat request. Ito ang naglalayo sa mga lender mula sa mga peke at dobleng account.',
+   'Verification makes sure every request comes from a real, unique person. That is what keeps fake and duplicate accounts away from moo-lenders.':
+      'Sinisiguro ng verification na galing sa totoo at natatanging tao ang bawat request. Ito ang naglalayo sa mga moo-lender mula sa mga peke at dobleng account.',
    Access: 'Access',
    'Finishing verification is what unlocks loan requests, and it is the point where you start earning Pandesal points.':
       'Ang pagtapos ng verification ang nag-a-unlock ng mga loan request, at dito ka rin magsisimulang kumita ng Pandesal points.',
    Trust: 'Tiwala',
-   'Lenders are funding real people, not anonymous accounts. That confidence is what gets requests on the board funded.':
-      'Totoong tao ang pinopondohan ng mga lender, hindi mga anonymous na account. Dahil sa kumpiyansang iyon, napopondohan ang mga request sa board.',
+   'Moo-lenders are funding real people, not anonymous accounts. That confidence is what gets requests on the board funded.':
+      'Totoong tao ang pinopondohan ng mga moo-lender, hindi mga anonymous na account. Dahil sa kumpiyansang iyon, napopondohan ang mga request sa board.',
    'Your physical national ID': 'Ang physical na national ID mo',
    'The real card in hand, not a photocopy or a picture on another screen.':
       'Ang totoong card sa kamay, hindi photocopy o larawan sa ibang screen.',
@@ -868,18 +869,160 @@ export const filipinoCoverageA: Record<string, string> = {
 
    // src/views/account/EditBioInfoModal.tsx
    'Change Bio Info': 'Baguhin ang bio info',
-   'Update the details lenders see about your work, income, and what you typically need help with.':
-      'I-update ang mga detalyeng nakikita ng mga lender tungkol sa trabaho mo, kita mo, at kung saan ka karaniwang nangangailangan ng tulong.',
+   'Update the details moo-lenders see about your work, income, and what you typically need help with.':
+      'I-update ang mga detalyeng nakikita ng mga moo-lender tungkol sa trabaho mo, kita mo, at kung saan ka karaniwang nangangailangan ng tulong.',
    'What do you do for work?': 'Ano ang trabaho mo?',
    'Any other income sources?': 'May iba ka pa bang pinagkukunan ng kita?',
    'How would you describe your work?': 'Paano mo ilalarawan ang trabaho mo?',
-   'Helps lenders see that repayment timing makes sense.':
-      'Nakakatulong ito sa mga lender na makita na makatuwiran ang timing ng pagbabayad.',
+   'Helps moo-lenders see that repayment timing makes sense.':
+      'Nakakatulong ito sa mga moo-lender na makita na makatuwiran ang timing ng pagbabayad.',
    'When do you usually get paid?': 'Kailan ka karaniwang nasusweldo?',
    'What is your approximate monthly income?': 'Ano ang tinatayang buwanang kita mo?',
    'What do your recurring expenses cost per month?': 'Magkano ang regular na gastusin mo kada buwan?',
-   'Helps lenders understand your financial commitments.':
-      'Nakakatulong ito sa mga lender na maintindihan ang mga financial commitment mo.',
+   'Helps moo-lenders understand your financial commitments.':
+      'Nakakatulong ito sa mga moo-lender na maintindihan ang mga financial commitment mo.',
    'Pick all that apply.': 'Piliin ang lahat ng naaangkop.',
-   'What do you usually need short-term help with?': 'Saan ka karaniwang nangangailangan ng short-term na tulong?'
+   'What do you usually need short-term help with?': 'Saan ka karaniwang nangangailangan ng short-term na tulong?',
+   // src/components/verification/VerifyYourselfModal.tsx (ID check is the last step of a request)
+   "A one-time ID check so moo-lenders know you're a real person — it takes about 3 minutes.":
+      'Isang beses lang na ID check para malaman ng moo-lenders na totoong tao ka — mga 3 minuto lang.',
+
+   // Passwordless code login (sign-up/sign-in, code screen, password + email later), PR #1164
+   'Sign up to Moodeng': 'Mag-sign up sa Moodeng',
+   'No password needed.': 'Walang password.',
+   'Used Google before? Type the same Gmail. No code needed now.':
+      'Nag-Google ka na dati? I-type ang parehong Gmail. Walang code na kailangan ngayon.',
+   "No password needed. We'll send you a code.": 'Walang password. Padadalhan ka namin ng code.',
+   "We'll send you a code. No password needed.": 'Padadalhan ka namin ng code. Walang password.',
+   'Philippine numbers only.': 'Philippine numbers lang.',
+   "Philippine numbers only. We'll text you a code. No password.": 'Philippine numbers lang. Ite-text namin ang code. Walang password.',
+   "Used Google before? Type your Gmail and we'll email you a code.":
+      'Google ang gamit mo dati? I-type ang Gmail mo at i-email namin ang code.',
+   "We'll email you a code.": "I-email namin sa'yo ang code.",
+   'Use email instead': 'Email na lang',
+   'Use phone number instead': 'Phone number na lang',
+   'Use phone instead': 'Phone na lang',
+   'Text me a code': 'I-text ang code',
+   'Email me a code': 'I-email ang code',
+   'Use password instead': 'Password na lang',
+   'Signed up with Telegram or LINE?': 'Nag-sign up gamit ang Telegram o LINE?',
+   'Enter a Philippine mobile number, like 0917 123 4567.': 'Maglagay ng Philippine mobile number, gaya ng 0917 123 4567.',
+   // Phone-first sign-up and the email-or-number sign-in box (UniSMS), 2026-10-19
+   'Globe, TM or DITO number. No code needed now.': 'Globe, TM o DITO number. Walang code na kailangan ngayon.',
+   "Globe, TM or DITO number. We'll text you a code.": 'Globe, TM o DITO number. Ite-text namin ang code.',
+   'Globe or TM number. No code needed now.': 'Globe o TM number. Walang code na kailangan ngayon.',
+   "Globe or TM number · we'll text you a code": 'Globe o TM number · ite-text namin ang code',
+   'DITO number. No code needed now.': 'DITO number. Walang code na kailangan ngayon.',
+   "DITO number · we'll text you a code": 'DITO number · ite-text namin ang code',
+   "Smart, TNT and Sun numbers can't get text codes yet.": 'Hindi pa makakatanggap ng text code ang Smart, TNT at Sun numbers.',
+   'Use your email, or a Globe, TM or DITO number if you have one.': 'Gamitin ang email mo, o Globe, TM o DITO number kung meron ka.',
+   'My number is on Globe, TM or DITO': 'Globe, TM o DITO ang number ko',
+   'This number already has a Moodeng account. We can text you a code to sign in.':
+      'May Moodeng account na ang number na ito. Ite-text namin ang code para makapag-sign in ka.',
+   'Add your email': 'Idagdag ang email mo',
+   'One last step before your ID check: add your email, so you can sign in from any phone or browser.':
+      'Isang huling hakbang bago ang ID check: idagdag ang email mo para makapag-sign in ka sa kahit anong phone o browser.',
+   'Email or mobile number': 'Email o mobile number',
+   'Type your full email': 'I-type ang buong email mo',
+   'Enter your email or number': 'Ilagay ang email o number mo',
+   'No password?': 'Walang password?',
+   'Copy the link': 'Kopyahin ang link',
+   'Picture': 'Larawan',
+   'Then use the menu at the very top of your screen ↑': 'Tapos gamitin ang menu sa pinakataas ng screen mo ↑',
+   "The pictures below only show what to tap. They aren't buttons.": 'Larawan lang ang nasa ibaba para makita mo kung ano ang ita-tap. Hindi sila mga button.',
+   'If Chrome opens without Moodeng, paste it in the address bar.':
+      'Kung bumukas ang Chrome nang walang Moodeng, i-paste ito sa address bar.',
+   'If Safari opens without Moodeng, paste it in the address bar.':
+      'Kung bumukas ang Safari nang walang Moodeng, i-paste ito sa address bar.',
+   'So you can paste it if Chrome opens without Moodeng.':
+      'Para ma-paste mo kung bumukas ang Chrome nang walang Moodeng.',
+   'So you can paste it if Safari opens without Moodeng.':
+      'Para ma-paste mo kung bumukas ang Safari nang walang Moodeng.',
+   "Couldn't copy. Press and hold the link, then tap Copy.": 'Hindi nakopya. Pindutin nang matagal ang link, tapos i-tap ang Copy.',
+   "Smart number · we can't text Smart yet": 'Smart number · hindi pa namin ma-text ang Smart',
+   'Sign up with email': 'Mag-sign up gamit ang email',
+   'Log in with email': 'Mag-log in gamit ang email',
+   'Log in to my account': 'Mag-log in sa account ko',
+   'Enter your email address.': 'Ilagay ang email address mo.',
+   'No Moodeng account uses this number.': 'Walang Moodeng account na gumagamit ng number na ito.',
+   'No Moodeng account uses this email.': 'Walang Moodeng account na gumagamit ng email na ito.',
+   'SMS codes work for Philippine numbers only. Use your email instead':
+      'Sa Philippine numbers lang gumagana ang SMS code. Email na lang ang gamitin mo',
+   'Please wait a minute before asking for another code.': 'Maghintay muna ng isang minuto bago humingi ulit ng code.',
+   'Wait a minute before asking for another code.': 'Maghintay ng isang minuto bago humingi ulit ng code.',
+   "We couldn't send a text right now. Use your email instead.": 'Hindi kami makapag-text ngayon. Email na lang ang gamitin mo.',
+   'Too many codes today. Use email, or try tomorrow.': 'Sobrang dami nang code ngayong araw. Email na lang, o subukan bukas.',
+   'Text codes are busy right now. Use your email instead, or try again later.':
+      'Busy ang text codes ngayon. Email na lang, o subukan ulit mamaya.',
+   'Text codes are not available right now. Use your email instead.':
+      'Hindi available ang text codes ngayon. Email na lang ang gamitin mo.',
+   'This account has been closed. If you think this is a mistake, message us on Messenger.':
+      'Sarado na ang account na ito. Kung sa tingin mo ay mali ito, i-message kami sa Messenger.',
+   'Sign in to access your account.': 'Mag-sign in para mabuksan ang account mo.',
+   'Wrong email or password': 'Mali ang email o password',
+   'Wrong email or password.': 'Mali ang email o password.',
+   'No account with this email': 'Walang account sa email na ito',
+   'Too many tries': 'Sobrang daming try',
+   'Create one with a code. No password needed.': 'Gumawa gamit ang code. Walang password.',
+   'Check your texts': 'Tingnan ang texts mo',
+   'Look for a text from Unisoft.': 'Hanapin ang text galing sa Unisoft.',
+   "That's the company that sends our codes, so it's safe to type the code here. Never share it with anyone.":
+      'Sila ang nagpapadala ng mga code namin, kaya ligtas i-type ang code dito. Huwag itong ibigay kahit kanino.',
+   'Type the 8-digit code below, or tap Confirm Email in the latest Moodeng email.':
+      'I-type ang 8-digit code sa ibaba, o i-tap ang Confirm Email sa pinakabagong email ng Moodeng.',
+   'Code from the text': 'Code mula sa text',
+   'Code from the email': 'Code mula sa email',
+   'Usually under a minute.': 'Kadalasan wala pang isang minuto.',
+   'Not here yet? Look for a text from Unisoft, check your signal and Messages › Spam.':
+      'Wala pa? Hanapin ang text galing sa Unisoft, at tingnan ang signal mo at ang Messages › Spam.',
+   'Not here yet? Check Spam and Promotions.': 'Wala pa? Tingnan ang Spam at Promotions.',
+   'That code is wrong. Check the latest text from Moodeng.': 'Mali ang code. Tingnan ang pinakabagong text mula sa Moodeng.',
+   'That code is wrong. Check the latest email from Moodeng.': 'Mali ang code. Tingnan ang pinakabagong email mula sa Moodeng.',
+   'This code expired. Tap Resend for a new one.': 'Expired na ang code. I-tap ang Resend para sa bago.',
+   'Resend code': 'I-resend ang code',
+   'Use phone or password': 'Phone o password na lang',
+   'Still no code?': 'Wala pa ring code?',
+   'Get the code by email instead': 'Sa email na lang kunin ang code',
+   'New code sent. Use the latest text from Moodeng.': 'Naipadala na ang bagong code. Gamitin ang pinakabagong text mula sa Moodeng.',
+   'New code sent. Use the latest email from Moodeng.': 'Naipadala na ang bagong code. Gamitin ang pinakabagong email mula sa Moodeng.',
+   'Already tapped Confirm Email in the email? Your account is ready.': 'Na-tap mo na ang Confirm Email sa email? Ready na ang account mo.',
+   'Log in': 'Mag-log in',
+   'Finish logging in: enter your code': 'Tapusin ang pag-log in: ilagay ang code mo',
+   'Have you used Moodeng before?': 'Nagamit mo na ba ang Moodeng dati?',
+   'New to Moodeng': 'Bago sa Moodeng',
+   "I've used Moodeng before": 'Nagamit ko na ang Moodeng dati',
+   'Log in the way you did before': 'Mag-log in gaya ng dati',
+   'Log in with the phone, email or Google you used before. Your loans and points are there.':
+      'Mag-log in gamit ang phone, email o Google na ginamit mo dati. Nandoon ang loans at points mo.',
+   'Log in with my phone number': 'Mag-log in gamit ang phone number ko',
+   'Log in with my email': 'Mag-log in gamit ang email ko',
+   'Log in with Google': 'Mag-log in gamit ang Google',
+   "I'm new after all": 'Bago pala ako',
+   'Add a password (optional)': 'Magdagdag ng password (optional)',
+   'You can always sign in with a code instead.': 'Puwede ka pa ring mag-sign in gamit ang code.',
+   'New password': 'Bagong password',
+   'Save password': 'I-save ang password',
+   'Saving…': 'Sine-save…',
+   'Password saved. You can still log in with a code.': 'Na-save ang password. Puwede ka pa ring mag-log in gamit ang code.',
+   'Set a password (optional)': 'Maglagay ng password (optional)',
+   'A backup way in. Codes keep working.': 'Backup na paraan ng pag-login. Gumagana pa rin ang codes.',
+   'Set a password': 'Maglagay ng password',
+   'Optional. You can keep logging in with a code; a password is a backup.':
+      'Optional. Puwede kang mag-log in gamit ang code; backup lang ang password.',
+   'Your email (for your wallet and receipts)': 'Email mo (para sa wallet at resibo mo)',
+   "We'll ask you to confirm it later.": 'Ipapa-confirm namin ito mamaya.',
+   Confirm: 'I-confirm',
+   Resend: 'I-resend',
+   'Send code': 'Ipadala ang code',
+   'This email already has a Moodeng account. Log in with it instead?':
+      'May Moodeng account na ang email na ito. Mag-log in na lang gamit ito?',
+   'Phone number': 'Phone number',
+   'No phone added': 'Wala pang phone',
+   'Add a phone number': 'Magdagdag ng phone number',
+   'Log in with a text code too. Philippine mobile numbers only.':
+      'Puwede ring mag-log in gamit ang text code. Philippine mobile numbers lang.',
+   'Add phone': 'Idagdag ang phone',
+   'This number already has a Moodeng account.': 'May Moodeng account na ang number na ito.',
+   'Sign in with a code': 'Mag-sign in gamit ang code',
+   'You log in with a code sent to your phone or email.': 'Nagla-log in ka gamit ang code na pinapadala sa phone o email mo.'
 };

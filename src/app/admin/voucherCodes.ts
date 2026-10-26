@@ -1,5 +1,5 @@
-/** GrabFood voucher values the rewards hand out (see app_private.tier_voucher and get_my_rewards). */
-export const VOUCHER_VALUES_PHP = [50, 100, 150] as const;
+/** GrabMart code values in the pool: every payout is ₱100 (see private.issue_grabmart_payouts). */
+export const VOUCHER_VALUES_PHP = [100] as const;
 
 /**
  * Codes pasted on the admin Vouchers page: one per line (commas and tabs also split, so a column

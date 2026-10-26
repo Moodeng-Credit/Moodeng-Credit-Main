@@ -19,8 +19,9 @@ const CONSONANT_RUN = /[^aeiouyà-ü\W\d]{5,}/i;
 
 /**
  * Reasons must be written in English: the lenders reading them are in the US and EU, and a
- * request they can't read doesn't get funded. This catches the two languages borrowers
- * actually write in — Tagalog and Cebuano — by their function words.
+ * request they can't read doesn't get funded. This catches the languages borrowers actually
+ * write in — Tagalog, Cebuano and (since Indonesian sign-ups, 2026-10-25) Bahasa Indonesia —
+ * by their function words.
  *
  * Content words (gamot, tuition, sahod, palengke) are deliberately absent: they turn up
  * inside otherwise-English sentences and one borrowed noun must not fail an English reason.
@@ -67,9 +68,38 @@ const DECISIVE_MARKERS = new Set([
    'kwarta',
    'nako',
    'namo',
-   'nimo'
+   'nimo',
+   // Bahasa Indonesia
+   'adalah',
+   'akan',
+   'atau',
+   'belum',
+   'bisa',
+   'butuh',
+   'dengan',
+   'harus',
+   'juga',
+   'kalau',
+   'karena',
+   'kepada',
+   'saya',
+   'sekarang',
+   'sudah',
+   'supaya',
+   'tidak',
+   'untuk'
 ]);
 const WEAK_MARKERS = new Set([
+   // Bahasa Indonesia: also names, abbreviations or English words ("dan", "ini", "agar").
+   'agar',
+   'aku',
+   'buat',
+   'dan',
+   'dari',
+   'ini',
+   'itu',
+   'mau',
+   'yang',
    'ay',
    'hindi',
    'ito',
@@ -119,7 +149,7 @@ const looksLikeWord = (word: string): boolean => {
    return trigramVariety(letters.toLowerCase()) >= 0.5;
 };
 
-const NOT_ENGLISH_HINT = 'Please write your reason in English — the lenders reading it don’t speak Tagalog.';
+const NOT_ENGLISH_HINT = 'Please write your reason in English — the moo-lenders reading it only read English.';
 
 /**
  * Language check on its own, for the other free text lenders read (the "describe your
@@ -175,13 +205,13 @@ export const checkReasonQuality = (rawReason: string): ReasonQuality => {
 
    const oddWords = words.filter((word) => !looksLikeWord(word)).length;
    if (oddWords / words.length > 0.34) {
-      return { ok: false, hint: "This doesn't look like real words yet — tell lenders what the loan is for.", code: 'not-words' };
+      return { ok: false, hint: "This doesn't look like real words yet — tell moo-lenders what the loan is for.", code: 'not-words' };
    }
 
    // "aaaa aaaa aaaa aaaa" and other filler that pads the counter without saying anything.
    const distinctWords = new Set(normalized).size;
    if (words.length >= 6 && distinctWords / words.length < 0.4) {
-      return { ok: false, hint: 'Try saying it once, clearly — repeating words does not help lenders.', code: 'repeated' };
+      return { ok: false, hint: 'Try saying it once, clearly — repeating words does not help moo-lenders.', code: 'repeated' };
    }
 
    // One unmistakable marker, or two that could each be an English accident. Taglish clears

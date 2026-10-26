@@ -5,7 +5,7 @@
 
 export const EXTERNAL_LINKS = {
    telegram: {
-      bot: `https://t.me/${"moodengnewbranchbot"}`,
+      bot: `https://t.me/${'moodengnewbranchbot'}`,
       channel: `https://t.me/${import.meta.env.VITE_TELEGRAM_CHANNEL_USERNAME}`
    },
    worldcoin: {
@@ -22,7 +22,11 @@ export const EXTERNAL_LINKS = {
    },
    support: {
       messenger: 'https://m.me/61589106561061?ref=blocked_account',
-      messengerDefaulted: 'https://m.me/61589106561061?ref=defaulted_loan'
+      messengerDefaulted: 'https://m.me/61589106561061?ref=defaulted_loan',
+      messengerKycTries: 'https://m.me/61589106561061?ref=kyc_tries_used',
+      // Code never arrived (login). Android Chrome can't open m.me links, so Android uses messenger.com/t.
+      messengerLoginCode: 'https://m.me/61589106561061?ref=login_code',
+      messengerLoginCodeAndroid: 'https://www.messenger.com/t/61589106561061'
    },
    fund: {
       coinbaseOnramp: 'https://pay.coinbase.com/buy/select-asset',

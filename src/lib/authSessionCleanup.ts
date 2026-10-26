@@ -1,8 +1,12 @@
 import { THEME_MODE_STORAGE_KEY } from '@/lib/themeMode';
 
+// Device preferences, not account data: survive sign-out so the next visitor on this device
+// keeps the language they picked and a "Turn off" on push stays off.
+const PRESERVED_LOCAL_KEYS = [THEME_MODE_STORAGE_KEY, 'md_locale', 'md_locale_chosen', 'moodeng-push-opted-out', 'moodeng-push-prompted'];
+
 /**
  * Wipes browser-persisted auth + app state back to a clean slate, preserving only
- * pure-UI preferences (currently the theme mode).
+ * device-level preferences (theme mode, chosen language, push opt-out / prompt-seen flags).
  *
  * Supabase's own auth token is removed by `supabase.auth.signOut()`, but the app
  * also caches the signed-in user in redux-persist (`persist:root`) plus assorted
@@ -11,10 +15,13 @@ import { THEME_MODE_STORAGE_KEY } from '@/lib/themeMode';
  * which is exactly the onboarding loop this clears. Used on sign out and before a new
  * signup attempt.
  */
-export const clearClientAuthState = (): void => {
+export const clearClientAuthState = (options: { keepLocal?: string[]; keepSession?: string[] } = {}): void => {
    if (typeof window === 'undefined') return;
 
-   const preservedTheme = safeGet(window.localStorage, THEME_MODE_STORAGE_KEY);
+   const preserved = [...PRESERVED_LOCAL_KEYS, ...(options.keepLocal ?? [])].map(
+      (key) => [key, safeGet(window.localStorage, key)] as const
+   );
+   const preservedSession = (options.keepSession ?? []).map((key) => [key, safeGet(window.sessionStorage, key)] as const);
 
    try {
       window.localStorage.clear();
@@ -23,11 +30,20 @@ export const clearClientAuthState = (): void => {
       // Storage can be unavailable (private mode, blocked cookies) — nothing to clear.
    }
 
-   if (preservedTheme !== null) {
+   for (const [key, value] of preserved) {
+      if (value === null) continue;
       try {
-         window.localStorage.setItem(THEME_MODE_STORAGE_KEY, preservedTheme);
+         window.localStorage.setItem(key, value);
       } catch {
-         // Ignore — losing the theme preference is harmless next to a clean auth slate.
+         // Ignore — losing a UI preference is harmless next to a clean auth slate.
+      }
+   }
+   for (const [key, value] of preservedSession) {
+      if (value === null) continue;
+      try {
+         window.sessionStorage.setItem(key, value);
+      } catch {
+         // Ignore.
       }
    }
 };

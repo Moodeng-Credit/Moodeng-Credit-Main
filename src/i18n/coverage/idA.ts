@@ -143,7 +143,7 @@ export const indonesianCoverageA: Record<string, string> = {
    'Send reset code': 'Kirim kode reset',
 
    // src/app/lender/request-board/page.tsx
-   'Lender Request Board': 'Papan Permintaan Pemberi Pinjaman',
+   'Moo-lender Request Board': 'Papan Permintaan Moo-lender',
 
    // src/app/mfa-challenge/page.tsx
    'That code did not work. Try again.': 'Kode itu tidak berhasil. Coba lagi.',
@@ -237,8 +237,8 @@ export const indonesianCoverageA: Record<string, string> = {
    'Meet the people building Moodeng Credit — co-founders George and Emma, the founding team, and advisors working on fair, portable credit.':
       'Kenali orang-orang di balik Moodeng Credit — co-founder George dan Emma, tim pendiri, serta para penasihat yang mengupayakan kredit yang adil dan portabel.',
    'Co-Founders': 'Co-Founder',
-   'Building a portable trust layer for borrowers who deserve fair credit and lenders who want transparent impact.':
-      'Membangun lapisan kepercayaan portabel untuk peminjam yang layak mendapat kredit adil dan pemberi pinjaman yang menginginkan dampak yang transparan.',
+   'Building a portable trust layer for borrowers who deserve fair credit and moo-lenders who want transparent impact.':
+      'Membangun lapisan kepercayaan portabel untuk peminjam yang layak mendapat kredit adil dan moo-lender yang menginginkan dampak yang transparan.',
    'Additional team members': 'Anggota tim lainnya',
    Website: 'Situs web',
    Advisors: 'Penasihat',
@@ -387,7 +387,8 @@ export const indonesianCoverageA: Record<string, string> = {
    'Copy link': 'Salin link',
    'Open in your browser': 'Buka di browser kamu',
    'Open Moodeng in your browser': 'Buka Moodeng di browser kamu',
-   "Sign-in and wallet payments don't work inside": 'Login dan pembayaran lewat dompet tidak berfungsi di dalam',
+   "Google sign-in and wallet payments don't work inside": 'Login dengan Google dan pembayaran lewat dompet tidak berfungsi di dalam',
+   "Your wallet doesn't work inside": 'Dompetmu tidak berfungsi di dalam',
    '. Tap below to continue in Chrome.': '. Ketuk di bawah untuk lanjut di Chrome.',
    '. Tap': '. Ketuk',
    'at the top, choose': 'di bagian atas, pilih',
@@ -411,7 +412,7 @@ export const indonesianCoverageA: Record<string, string> = {
    'Coming soon': 'Segera hadir',
 
    // src/components/PowerLenderBadge.tsx
-   'Power Lender': 'Power Lender',
+   'Power Moo-lender': 'Power Moo-lender',
 
    // src/components/RepayInAppBrowserGate.tsx
    'Open Moodeng in your browser to repay': 'Buka Moodeng di browser kamu untuk membayar',
@@ -604,8 +605,8 @@ export const indonesianCoverageA: Record<string, string> = {
    'Support contacts': 'Kontak dukungan',
    'Here are support contacts. Choose a channel and we will help you with your Moodeng account.':
       'Berikut kontak dukungan kami. Pilih salurannya dan kami akan membantumu dengan akun Moodeng kamu.',
-   'Here are support contacts for your expired loan request. We can help you connect with a lender or decide whether to post again.':
-      'Berikut kontak dukungan untuk permintaan pinjamanmu yang sudah kedaluwarsa. Kami bisa membantumu terhubung dengan pemberi pinjaman atau memutuskan apakah perlu memasang permintaan lagi.',
+   'Here are support contacts for your expired loan request. We can help you connect with a moo-lender or decide whether to post again.':
+      'Berikut kontak dukungan untuk permintaan pinjamanmu yang sudah kedaluwarsa. Kami bisa membantumu terhubung dengan moo-lender atau memutuskan apakah perlu memasang permintaan lagi.',
    'Here are support contacts for World ID verification if your status did not update after completing World ID.':
       'Berikut kontak dukungan untuk verifikasi World ID jika statusmu tidak berubah setelah menyelesaikan World ID.',
    'Close support contacts': 'Tutup kontak dukungan',
@@ -640,10 +641,10 @@ export const indonesianCoverageA: Record<string, string> = {
    // src/components/verification/VerifiedCelebrationNotifier.tsx
    'Manual review complete — you’re verified!': 'Peninjauan manual selesai — kamu sudah terverifikasi!',
    'Your ID is verified!': 'ID kamu sudah terverifikasi!',
-   'Well done! Our reviewers confirmed your documents. You now have full access — start building trust with lenders.':
-      'Mantap! Tim peninjau kami sudah mengonfirmasi dokumenmu. Sekarang kamu punya akses penuh — mulai bangun kepercayaan dengan pemberi pinjaman.',
-   'Well done! Your identity is confirmed. You now have full access — start building trust with lenders.':
-      'Mantap! Identitasmu sudah dikonfirmasi. Sekarang kamu punya akses penuh — mulai bangun kepercayaan dengan pemberi pinjaman.',
+   'Well done! Our reviewers confirmed your documents. You now have full access — start building trust with moo-lenders.':
+      'Mantap! Tim peninjau kami sudah mengonfirmasi dokumenmu. Sekarang kamu punya akses penuh — mulai bangun kepercayaan dengan moo-lender.',
+   'Well done! Your identity is confirmed. You now have full access — start building trust with moo-lenders.':
+      'Mantap! Identitasmu sudah dikonfirmasi. Sekarang kamu punya akses penuh — mulai bangun kepercayaan dengan moo-lender.',
    'Request a loan': 'Ajukan pinjaman',
 
    // src/components/verification/VerifyYourselfModal.tsx
@@ -754,8 +755,8 @@ export const indonesianCoverageA: Record<string, string> = {
    'Repaying clearly and on time': 'Membayar kembali dengan jelas dan tepat waktu',
    'Nice practice request.': 'Latihan permintaan yang bagus.',
    'Strong repayment move.': 'Langkah pembayaran kembali yang kuat.',
-   'Nice! Repaying is super important on Moodeng. On-time repayment helps your trust record, keeps lenders confident, and can unlock better borrowing limits over time.':
-      'Bagus! Membayar kembali itu sangat penting di Moodeng. Pembayaran tepat waktu membantu rekam jejak kepercayaanmu, membuat pemberi pinjaman tetap yakin, dan bisa membuka limit pinjaman yang lebih baik seiring waktu.',
+   'Nice! Repaying is super important on Moodeng. On-time repayment helps your trust record, keeps moo-lenders confident, and can unlock better borrowing limits over time.':
+      'Bagus! Membayar kembali itu sangat penting di Moodeng. Pembayaran tepat waktu membantu rekam jejak kepercayaanmu, membuat moo-lender tetap yakin, dan bisa membuka limit pinjaman yang lebih baik seiring waktu.',
    'Mecha says: full-limit loans repaid on time are how borrowers build a stronger credit record. Keep repayment clean, and your next limit can grow.':
       'Kata Mecha: pinjaman limit penuh yang dibayar tepat waktu adalah cara peminjam membangun rekam jejak kredit yang lebih kuat. Jaga pembayaran tetap bersih, dan limit berikutnya bisa tumbuh.',
    'A step-by-step walkthrough of the Moodeng borrower flow — sign up, verify, set up your Instant Wallet (or connect a Base Account), request a loan, repay, and grow your credit limit.':
@@ -795,8 +796,8 @@ export const indonesianCoverageA: Record<string, string> = {
 
    // src/views/academy/VerifyGuide.tsx
    Money: 'Uang',
-   'To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts out of the community, and it is what lets lenders trust the requests they fund.':
-      'Untuk menjaga Moodeng tetap aman dan adil, setiap peminjam menyelesaikan satu pengecekan identitas singkat. Ini mencegah akun palsu dan duplikat masuk ke komunitas, dan inilah yang membuat pemberi pinjaman percaya pada permintaan yang mereka danai.',
+   'To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts out of the community, and it is what lets moo-lenders trust the requests they fund.':
+      'Untuk menjaga Moodeng tetap aman dan adil, setiap peminjam menyelesaikan satu pengecekan identitas singkat. Ini mencegah akun palsu dan duplikat masuk ke komunitas, dan inilah yang membuat moo-lender percaya pada permintaan yang mereka danai.',
    'The recommended route: Verify Your ID.': 'Cara yang direkomendasikan: Verifikasi ID Kamu.',
    'National ID verification is available for these countries.': 'Verifikasi KTP tersedia untuk negara-negara berikut.',
    'Pass on the first try': 'Lolos di percobaan pertama',
@@ -807,14 +808,14 @@ export const indonesianCoverageA: Record<string, string> = {
       'Pengecekan dijalankan oleh mitra verifikasi tepercaya kami. Moodeng hanya menerima hasilnya — lolos atau tidak — bukan salinan dokumenmu.',
    'Ready to verify?': 'Siap untuk verifikasi?',
    Read: 'Baca',
-   'Verification makes sure every request comes from a real, unique person. That is what keeps fake and duplicate accounts away from lenders.':
-      'Verifikasi memastikan setiap permintaan berasal dari orang sungguhan yang unik. Inilah yang menjauhkan akun palsu dan duplikat dari pemberi pinjaman.',
+   'Verification makes sure every request comes from a real, unique person. That is what keeps fake and duplicate accounts away from moo-lenders.':
+      'Verifikasi memastikan setiap permintaan berasal dari orang sungguhan yang unik. Inilah yang menjauhkan akun palsu dan duplikat dari moo-lender.',
    Access: 'Akses',
    'Finishing verification is what unlocks loan requests, and it is the point where you start earning Pandesal points.':
       'Menyelesaikan verifikasi adalah yang membuka permintaan pinjaman, dan di situlah kamu mulai mendapatkan poin Pandesal.',
    Trust: 'Kepercayaan',
-   'Lenders are funding real people, not anonymous accounts. That confidence is what gets requests on the board funded.':
-      'Pemberi pinjaman mendanai orang sungguhan, bukan akun anonim. Keyakinan itulah yang membuat permintaan di papan didanai.',
+   'Moo-lenders are funding real people, not anonymous accounts. That confidence is what gets requests on the board funded.':
+      'Moo-lender mendanai orang sungguhan, bukan akun anonim. Keyakinan itulah yang membuat permintaan di papan didanai.',
    'Your physical national ID': 'KTP fisik kamu',
    'The real card in hand, not a photocopy or a picture on another screen.':
       'Kartu asli di tangan, bukan fotokopi atau foto di layar lain.',
@@ -946,16 +947,16 @@ export const indonesianCoverageA: Record<string, string> = {
 
    // src/views/account/EditBioInfoModal.tsx
    'Change Bio Info': 'Ubah Info Bio',
-   'Update the details lenders see about your work, income, and what you typically need help with.':
-      'Perbarui detail yang dilihat pemberi pinjaman tentang pekerjaan, penghasilan, dan hal yang biasanya kamu butuh bantuan.',
+   'Update the details moo-lenders see about your work, income, and what you typically need help with.':
+      'Perbarui detail yang dilihat moo-lender tentang pekerjaan, penghasilan, dan hal yang biasanya kamu butuh bantuan.',
    'What do you do for work?': 'Apa pekerjaanmu?',
    'Any other income sources?': 'Ada sumber penghasilan lain?',
    'How would you describe your work?': 'Bagaimana kamu menggambarkan pekerjaanmu?',
-   'Helps lenders see that repayment timing makes sense.': 'Membantu pemberi pinjaman melihat bahwa waktu pembayaran kembali masuk akal.',
+   'Helps moo-lenders see that repayment timing makes sense.': 'Membantu moo-lender melihat bahwa waktu pembayaran kembali masuk akal.',
    'When do you usually get paid?': 'Kapan biasanya kamu menerima gaji?',
    'What is your approximate monthly income?': 'Berapa perkiraan penghasilan bulananmu?',
    'What do your recurring expenses cost per month?': 'Berapa pengeluaran rutin bulananmu?',
-   'Helps lenders understand your financial commitments.': 'Membantu pemberi pinjaman memahami komitmen keuanganmu.',
+   'Helps moo-lenders understand your financial commitments.': 'Membantu moo-lender memahami komitmen keuanganmu.',
    'Pick all that apply.': 'Pilih semua yang sesuai.',
    'What do you usually need short-term help with?': 'Untuk apa biasanya kamu butuh bantuan jangka pendek?',
 
@@ -1004,5 +1005,136 @@ export const indonesianCoverageA: Record<string, string> = {
    'Loading USDC balance': 'Memuat saldo USDC',
    'Recent activity': 'Aktivitas terbaru',
    'Loading recent wallet activity': 'Memuat aktivitas dompet terbaru',
-   'Wallet history': 'Riwayat dompet'
+   'Wallet history': 'Riwayat dompet',
+   // src/components/verification/VerifyYourselfModal.tsx (ID check is the last step of a request)
+   "A one-time ID check so moo-lenders know you're a real person — it takes about 3 minutes.":
+      'Cek ID satu kali agar moo-lender tahu kamu orang sungguhan — hanya sekitar 3 menit.',
+
+   // Passwordless code login (sign-up/sign-in, code screen, password + email later), PR #1164
+   'Sign up to Moodeng': 'Daftar di Moodeng',
+   'No password needed.': 'Tanpa kata sandi.',
+   'Used Google before? Type the same Gmail. No code needed now.': 'Dulu pakai Google? Ketik Gmail yang sama. Belum perlu kode sekarang.',
+   "No password needed. We'll send you a code.": 'Tanpa kata sandi. Kami kirim kode.',
+   "We'll send you a code. No password needed.": 'Kami kirim kode. Tanpa kata sandi.',
+   'Philippine numbers only.': 'Hanya nomor Filipina.',
+   "Philippine numbers only. We'll text you a code. No password.": 'Hanya nomor Filipina. Kami kirim kode lewat SMS. Tanpa kata sandi.',
+   "Used Google before? Type your Gmail and we'll email you a code.": 'Dulu pakai Google? Ketik Gmail kamu, kami kirim kode lewat email.',
+   "We'll email you a code.": 'Kami kirim kode lewat email.',
+   'Use email instead': 'Pakai email saja',
+   'Use phone number instead': 'Pakai nomor HP saja',
+   'Use phone instead': 'Pakai HP saja',
+   'Text me a code': 'Kirim kode lewat SMS',
+   'Email me a code': 'Kirim kode lewat email',
+   'Use password instead': 'Pakai kata sandi saja',
+   'Signed up with Telegram or LINE?': 'Daftar pakai Telegram atau LINE?',
+   'Enter a Philippine mobile number, like 0917 123 4567.': 'Masukkan nomor HP Filipina, contoh 0917 123 4567.',
+   // Phone-first sign-up and the email-or-number sign-in box (UniSMS), 2026-10-19
+   'Globe, TM or DITO number. No code needed now.': 'Nomor Globe, TM, atau DITO. Belum perlu kode sekarang.',
+   "Globe, TM or DITO number. We'll text you a code.": 'Nomor Globe, TM, atau DITO. Kami kirim kode lewat SMS.',
+   'Globe or TM number. No code needed now.': 'Nomor Globe atau TM. Belum perlu kode sekarang.',
+   "Globe or TM number · we'll text you a code": 'Nomor Globe atau TM · kami kirim kode lewat SMS',
+   'DITO number. No code needed now.': 'Nomor DITO. Belum perlu kode sekarang.',
+   "DITO number · we'll text you a code": 'Nomor DITO · kami kirim kode lewat SMS',
+   "Smart, TNT and Sun numbers can't get text codes yet.": 'Nomor Smart, TNT, dan Sun belum bisa menerima kode SMS.',
+   'Use your email, or a Globe, TM or DITO number if you have one.': 'Pakai email kamu, atau nomor Globe, TM, atau DITO kalau ada.',
+   'My number is on Globe, TM or DITO': 'Nomor saya Globe, TM, atau DITO',
+   'This number already has a Moodeng account. We can text you a code to sign in.':
+      'Nomor ini sudah punya akun Moodeng. Kami bisa kirim kode lewat SMS untuk masuk.',
+   'Add your email': 'Tambahkan email kamu',
+   'One last step before your ID check: add your email, so you can sign in from any phone or browser.':
+      'Satu langkah terakhir sebelum cek ID: tambahkan email kamu, supaya bisa masuk dari HP atau browser mana pun.',
+   'Email or mobile number': 'Email atau nomor HP',
+   'Type your full email': 'Ketik email lengkap kamu',
+   'Enter your email or number': 'Masukkan email atau nomor kamu',
+   'No password?': 'Tidak punya kata sandi?',
+   'Copy the link': 'Salin link-nya',
+   'Picture': 'Gambar',
+   'Then use the menu at the very top of your screen ↑': 'Lalu pakai menu di bagian paling atas layarmu ↑',
+   "The pictures below only show what to tap. They aren't buttons.": 'Gambar di bawah hanya menunjukkan apa yang perlu diketuk. Itu bukan tombol.',
+   'If Chrome opens without Moodeng, paste it in the address bar.':
+      'Kalau Chrome terbuka tanpa Moodeng, tempel di kolom alamat.',
+   'If Safari opens without Moodeng, paste it in the address bar.':
+      'Kalau Safari terbuka tanpa Moodeng, tempel di kolom alamat.',
+   'So you can paste it if Chrome opens without Moodeng.':
+      'Supaya bisa kamu tempel kalau Chrome terbuka tanpa Moodeng.',
+   'So you can paste it if Safari opens without Moodeng.':
+      'Supaya bisa kamu tempel kalau Safari terbuka tanpa Moodeng.',
+   "Couldn't copy. Press and hold the link, then tap Copy.": 'Gagal menyalin. Tekan lama link-nya, lalu ketuk Salin.',
+   "Smart number · we can't text Smart yet": 'Nomor Smart · kami belum bisa kirim SMS ke Smart',
+   'Sign up with email': 'Daftar dengan email',
+   'Log in with email': 'Masuk dengan email',
+   'Log in to my account': 'Masuk ke akun saya',
+   'Enter your email address.': 'Masukkan alamat email kamu.',
+   'No Moodeng account uses this number.': 'Belum ada akun Moodeng dengan nomor ini.',
+   'No Moodeng account uses this email.': 'Belum ada akun Moodeng dengan email ini.',
+   'SMS codes work for Philippine numbers only. Use your email instead': 'Kode SMS hanya untuk nomor Filipina. Pakai email kamu saja',
+   'Please wait a minute before asking for another code.': 'Tunggu satu menit sebelum minta kode lagi.',
+   'Wait a minute before asking for another code.': 'Tunggu satu menit sebelum minta kode lagi.',
+   "We couldn't send a text right now. Use your email instead.": 'Kami belum bisa kirim SMS sekarang. Pakai email saja.',
+   'Too many codes today. Use email, or try tomorrow.': 'Terlalu banyak kode hari ini. Pakai email, atau coba besok.',
+   'Text codes are busy right now. Use your email instead, or try again later.':
+      'Kode SMS sedang sibuk. Pakai email, atau coba lagi nanti.',
+   'Text codes are not available right now. Use your email instead.': 'Kode SMS sedang tidak tersedia. Pakai email saja.',
+   'This account has been closed. If you think this is a mistake, message us on Messenger.':
+      'Akun ini sudah ditutup. Kalau menurut kamu ini salah, kirim pesan ke kami di Messenger.',
+   'Wrong email or password': 'Email atau kata sandi salah',
+   'Wrong email or password.': 'Email atau kata sandi salah.',
+   'No account with this email': 'Tidak ada akun dengan email ini',
+   'Too many tries': 'Terlalu banyak percobaan',
+   'Create one with a code. No password needed.': 'Buat dengan kode. Tanpa kata sandi.',
+   'Check your texts': 'Cek SMS kamu',
+   'Look for a text from Unisoft.': 'Cari SMS dari Unisoft.',
+   "That's the company that sends our codes, so it's safe to type the code here. Never share it with anyone.":
+      'Mereka yang mengirim kode kami, jadi aman mengetik kodenya di sini. Jangan berikan ke siapa pun.',
+   'Type the 8-digit code below, or tap Confirm Email in the latest Moodeng email.':
+      'Ketik kode 8 angka di bawah, atau ketuk Confirm Email di email Moodeng terbaru.',
+   'Code from the text': 'Kode dari SMS',
+   'Code from the email': 'Kode dari email',
+   'Usually under a minute.': 'Biasanya kurang dari satu menit.',
+   'Not here yet? Look for a text from Unisoft, check your signal and Messages › Spam.':
+      'Belum masuk? Cari SMS dari Unisoft, cek sinyal dan Pesan › Spam.',
+   'Not here yet? Check Spam and Promotions.': 'Belum masuk? Cek Spam dan Promosi.',
+   'That code is wrong. Check the latest text from Moodeng.': 'Kode salah. Cek SMS terbaru dari Moodeng.',
+   'That code is wrong. Check the latest email from Moodeng.': 'Kode salah. Cek email terbaru dari Moodeng.',
+   'This code expired. Tap Resend for a new one.': 'Kode sudah kedaluwarsa. Ketuk Kirim ulang untuk kode baru.',
+   'Use phone or password': 'Pakai HP atau kata sandi',
+   'Still no code?': 'Masih belum ada kode?',
+   'Get the code by email instead': 'Ambil kode lewat email saja',
+   'New code sent. Use the latest text from Moodeng.': 'Kode baru terkirim. Pakai SMS terbaru dari Moodeng.',
+   'Already tapped Confirm Email in the email? Your account is ready.': 'Sudah ketuk Confirm Email di email? Akun kamu sudah siap.',
+   'Log in': 'Masuk',
+   'Finish logging in: enter your code': 'Selesaikan masuk: masukkan kode kamu',
+   'Have you used Moodeng before?': 'Pernah pakai Moodeng sebelumnya?',
+   'New to Moodeng': 'Baru di Moodeng',
+   "I've used Moodeng before": 'Saya pernah pakai Moodeng',
+   'Log in the way you did before': 'Masuk seperti sebelumnya',
+   'Log in with the phone, email or Google you used before. Your loans and points are there.':
+      'Masuk pakai HP, email, atau Google yang dulu kamu pakai. Pinjaman dan poin kamu ada di sana.',
+   'Log in with my phone number': 'Masuk pakai nomor HP saya',
+   'Log in with my email': 'Masuk pakai email saya',
+   'Log in with Google': 'Masuk pakai Google',
+   "I'm new after all": 'Ternyata saya baru',
+   'Add a password (optional)': 'Tambah kata sandi (opsional)',
+   'You can always sign in with a code instead.': 'Kamu tetap bisa masuk pakai kode.',
+   'Save password': 'Simpan kata sandi',
+   'Password saved. You can still log in with a code.': 'Kata sandi tersimpan. Kamu tetap bisa masuk pakai kode.',
+   'Set a password (optional)': 'Atur kata sandi (opsional)',
+   'A backup way in. Codes keep working.': 'Cara masuk cadangan. Kode tetap bisa dipakai.',
+   'Set a password': 'Atur kata sandi',
+   'Optional. You can keep logging in with a code; a password is a backup.':
+      'Opsional. Kamu tetap bisa masuk pakai kode; kata sandi hanya cadangan.',
+   'Your email (for your wallet and receipts)': 'Email kamu (untuk dompet dan struk)',
+   "We'll ask you to confirm it later.": 'Nanti kami minta kamu konfirmasi.',
+   Confirm: 'Konfirmasi',
+   Resend: 'Kirim ulang',
+   'Send code': 'Kirim kode',
+   'This email already has a Moodeng account. Log in with it instead?': 'Email ini sudah punya akun Moodeng. Masuk pakai email ini saja?',
+   'Phone number': 'Nomor HP',
+   'No phone added': 'Belum ada nomor HP',
+   'Add a phone number': 'Tambah nomor HP',
+   'Log in with a text code too. Philippine mobile numbers only.': 'Bisa juga masuk pakai kode SMS. Hanya nomor HP Filipina.',
+   'Add phone': 'Tambah HP',
+   'This number already has a Moodeng account.': 'Nomor ini sudah punya akun Moodeng.',
+   'Sign in with a code': 'Masuk pakai kode',
+   'You log in with a code sent to your phone or email.': 'Kamu masuk pakai kode yang dikirim ke HP atau email kamu.'
 };

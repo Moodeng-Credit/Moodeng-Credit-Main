@@ -57,3 +57,27 @@ export function classifyOffer(loanAmount: number, totalRepayment: number): Offer
    if (offer > range.hi) return 'above';
    return 'in';
 }
+
+// ---- Minimum return: 10% a month ----------------------------------------------------------------
+// Lenders expect at least ~10% a month. "Borrow $15, repay $16 in 3 months" never gets funded, so the
+// loan form suggests (doesn't force) at least this much: 10% for anything up to a month, prorated by
+// day after that. Rounded up to the next $0.50 so the suggestion is a friendly number.
+
+export const MIN_MONTHLY_RETURN = 0.1;
+
+export interface MinimumRepayment {
+   /** Suggested minimum total repayment (principal + return), in USDC. */
+   amount: number;
+   /** Loan length in months used for it (at least 1). */
+   months: number;
+}
+
+export function minimumRepayment(principal: number, dueDate: string | Date | null | undefined, now: Date = new Date()): MinimumRepayment | null {
+   if (!Number.isFinite(principal) || principal <= 0 || !dueDate) return null;
+   const due = dueDate instanceof Date ? dueDate : new Date(dueDate);
+   if (Number.isNaN(due.getTime())) return null;
+   const days = Math.max(0, Math.ceil((due.getTime() - now.getTime()) / 86400000));
+   const months = Math.max(1, days / 30);
+   const amount = Math.ceil(principal * (1 + MIN_MONTHLY_RETURN * months) * 2) / 2;
+   return { amount, months };
+}

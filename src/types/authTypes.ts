@@ -3,6 +3,8 @@ export interface AuthState {
    username: string | null;
    isLoading: boolean;
    isAuthChecked: boolean;
+   /** A sign-out is in progress (its network calls run before the session is gone). */
+   isSigningOut?: boolean;
    error: string | null;
    isWorldId?: WorldIdStatus;
    cs?: number;
@@ -35,6 +37,8 @@ export interface User {
    avatarBackground?: string;
    /** User-facing name shown across profile surfaces. Falls back to username when unset. */
    displayName?: string;
+   /** Their Facebook name, stored when they connect Messenger (server-written, read-only here). */
+   facebookName?: string;
    googleId?: string;
    walletAddress?: string;
    walletChainId?: number;
@@ -88,9 +92,11 @@ export interface User {
    loanAccessSeenAt?: string;
    /** An admin marked their last video call a no-show — the Connect screen says "we missed you". */
    missedLastCall?: boolean;
+   /** An admin marked them Showed up — the call is a one-time thing, so they never book another. */
+   attendedCall?: boolean;
    /** True once the borrower has proven a contact line (Messenger or WhatsApp verification). */
    hasVerifiedContact?: boolean;
-   /** True once the borrower redeemed a referral code — referred borrowers skip the Connect gate. */
+   /** True once the borrower redeemed a referral code — their intro call is Emma's setup call. */
    hasReferral?: boolean;
    incomeType?: string;
    paydayType?: string;
@@ -109,6 +115,8 @@ export interface User {
    notifTransactionActivity: boolean;
    /** Whether the user wants blog/news/weekly digest notifications */
    notifBlogs: boolean;
+   /** Account-level push switch (per-device opt-out lives in localStorage) */
+   notifPush?: boolean;
    createdAt: string;
    updatedAt: string;
 }

@@ -1,10 +1,16 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { openInAdminButton, personName, stampDecisionCards } from '../_shared/adminCards.ts';
 import { ATTENDANCE_RESET, meetingIdFromJoinUrl } from '../_shared/attendance.ts';
 import { postDiscord } from '../_shared/discord.ts';
-import { BORROWER_COLUMNS, getAdminChatId, notifyBorrower, who } from '../_shared/loanAccess.ts';
+import { BORROWER_COLUMNS, type BorrowerRow, getCallChangesChatId, notifyBorrower, PAGE_INBOX_URL, who } from '../_shared/loanAccess.ts';
+import { needsPreKycGate } from '../_shared/preKycGate.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
+import { changeTimeButton } from '../_shared/callReschedule.ts';
+import { cancelCallButton } from '../_shared/callCancel.ts';
+import { testAccountRow } from '../_shared/testAccount.ts';
+import { formatCallTimeForTeam, sendMovedMessenger } from '../_shared/videoCall.ts';
 import { extractBooking, verifySignature, type CalcomWebhookBody } from './parse.ts';
 
 // Cal.com webhook — the server-side "did they actually book it" gate for the no-referral video
@@ -71,7 +77,7 @@ serve(async (req) => {
       // ladder and clears the old "I'll be there" / attendance; an echo must not re-send reminders.
       const { data: current } = await supabase
          .from('users')
-         .select('video_call_starts_at, video_call_booking_uid')
+         .select('video_call_starts_at, video_call_booking_uid, video_call_outcome')
          .eq('id', booking.userId)
          .maybeSingle();
       // moodeng_user_id comes from the booking link, which anyone could forge (an email isn't a
@@ -88,6 +94,11 @@ serve(async (req) => {
       }
       const currentMs = Date.parse((current as { video_call_starts_at?: string | null } | null)?.video_call_starts_at ?? '');
       const timeMoved = !booking.startsAt || currentMs !== Date.parse(booking.startsAt);
+      // "Attended" sticks, except for a borrower the pre-KYC gate is holding — they have to attend
+      // this call (see calcom-round-robin).
+      const keepAttended =
+         (current as { video_call_outcome?: string | null } | null)?.video_call_outcome === 'attended' &&
+         !(timeMoved && (await needsPreKycGate(supabase, booking.userId)));
       const { error } = await supabase
          .from('users')
          .update({
@@ -99,8 +110,8 @@ serve(async (req) => {
                     video_call_scheduled_at: new Date().toISOString(),
                     video_call_reminder_stage: 0,
                     video_call_confirmed_at: null,
-                    video_call_outcome: null,
-                    video_call_outcome_at: null,
+                    // "Attended" sticks: one call is all a borrower ever needs (see calcom-round-robin).
+                    ...(keepAttended ? {} : { video_call_outcome: null, video_call_outcome_at: null }),
                     ...ATTENDANCE_RESET
                  }
                : {}),
@@ -110,6 +121,46 @@ serve(async (req) => {
          })
          .eq('id', booking.userId);
       if (error) console.error('calcom-webhook: mark scheduled failed', error);
+
+      // Moved (by the borrower or by us, via 🔄 Change time or Cal.com): tell the call-changes group.
+      const previousStart = (current as { video_call_starts_at?: string | null } | null)?.video_call_starts_at ?? null;
+      if (!error && rescheduleOfCurrent && timeMoved && previousStart && booking.startsAt) {
+         const { data: borrower } = await supabase.from('users').select(BORROWER_COLUMNS).eq('id', booking.userId).maybeSingle();
+         if (borrower) {
+            const b = borrower as BorrowerRow;
+            const text = [
+               `🔄 Call moved: ${who(b)}`,
+               `Was: ${formatCallTimeForTeam(previousStart, b.video_call_timezone)}`,
+               `Now: ${formatCallTimeForTeam(booking.startsAt, b.video_call_timezone)}`,
+               'Reminders restart for the new time, and they’re asked to confirm again.'
+            ].join('\n');
+            try {
+               const chat = await getCallChangesChatId(supabase);
+               if (chat) {
+                  await sendTelegramMessage(chat, text, {
+                     inlineKeyboard: [
+                        [changeTimeButton(b.id), cancelCallButton(b.id)],
+                        [{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }, openInAdminButton(b.id, b.username)],
+                        ...testAccountRow(b.id, b.is_test)
+                     ]
+                  });
+               }
+            } catch (err) {
+               console.error('calcom-webhook: call-moved telegram failed', err instanceof Error ? err.message : err);
+            }
+            await postDiscord({ content: text }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
+         }
+         // Tell the borrower too — whether they moved it or we did (🔄 Change time in Telegram).
+         const { data: moved } = await supabase
+            .from('users')
+            .select('messenger_psid, video_call_starts_at, video_call_timezone, video_call_join_url, video_call_confirm_token, video_call_confirmed_at, video_call_booking_uid')
+            .eq('id', booking.userId)
+            .maybeSingle();
+         if (moved) {
+            const sent = await sendMovedMessenger(moved);
+            if (!sent.ok) console.log('calcom-webhook: moved messenger skipped:', sent.reason);
+         }
+      }
 
       // A pending call request stays open until a week after the call — follow the new time.
       if (booking.startsAt) {
@@ -166,10 +217,13 @@ serve(async (req) => {
             .select(BORROWER_COLUMNS)
             .maybeSingle();
          if (!borrower) continue;
+         await stampDecisionCards(supabase, 'loan_access', row.id, `🗓️ CALL CANCELLED — ${personName(borrower)} was asked to book a new time`, {
+            by: 'the borrower (cancelled on Cal.com)'
+         });
          await notifyBorrower(supabase, borrower, 'call_cancelled');
          const text = `🗓️ ${who(borrower)} cancelled their call — their request is closed and they've been asked to rebook.`;
          try {
-            const chat = await getAdminChatId(supabase);
+            const chat = await getCallChangesChatId(supabase);
             if (chat) await sendTelegramMessage(chat, text);
          } catch (err) {
             console.error('calcom-webhook: admin telegram failed', err instanceof Error ? err.message : err);

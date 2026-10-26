@@ -1,7 +1,10 @@
+import { adminUserUrl, openInAdminButton, personName, sendAdminCard, stampDecisionCards } from './adminCards.ts';
 import { postDiscord } from './discord.ts';
+import { classifyKycOutcome, diditConsoleButton, kycTriesKeyboard, kycVerdictStamp } from './kycCards.ts';
 import { sendEmail } from './email.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import { buildVerificationDecisionPushPayload, type PushLocale } from './pushMessages.ts';
+import { kycTriesLeft } from './preKycGate.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
 import { sendTelegramMessage } from './telegram.ts';
 
@@ -78,18 +81,55 @@ export const notifyAdmins = async (
 
       const { data: profile } = await adminSupabase
          .from('users')
-         .select('email, username')
+         .select('email, username, display_name')
          .eq('id', userId)
          .maybeSingle();
-      const p = profile as { email?: string; username?: string } | null;
+      const p = profile as { email?: string; username?: string; display_name?: string | null } | null;
       const who = [p?.username, p?.email].filter(Boolean).join(' · ') || userId;
+
+      // A decline uses one of their 3 KYC tries (kyc_declines, counted by the time this runs).
+      // Out of tries → they're asked to message us; claim the "out of tries" alert so
+      // create-didit-session doesn't repeat it.
+      let triesLine = '';
+      let outOfTries = false;
+      if (/declined/i.test(outcome)) {
+         const { data: left } = await adminSupabase.rpc('kyc_tries_left', { p_user_id: userId });
+         if (typeof left === 'number') {
+            if (left <= 0) {
+               outOfTries = true;
+               await adminSupabase
+                  .from('kyc_declines')
+                  .update({ cap_alerted_at: new Date().toISOString() })
+                  .eq('user_id', userId)
+                  .is('voided_at', null)
+                  .is('cap_alerted_at', null);
+               triesLine = `\n⚠️ Out of KYC tries — they're asked to message us. Talk to them, then /kycretry ${p?.username ? `@${p.username}` : userId}`;
+            } else {
+               triesLine = `\nKYC tries left: ${left} of 3`;
+            }
+         }
+      }
 
       // Telegram (kyc_alert_chat_id) and Discord are independent best-effort channels: a missing
       // chat id or a failed Telegram send must not stop the Discord alert, and vice-versa.
+      // A verdict resolves any open "in manual review" card for them (adminCards.ts).
+      const verdictStamp = kycVerdictStamp(outcome, personName(p));
+      if (verdictStamp) await stampDecisionCards(adminSupabase, 'kyc_review', userId, verdictStamp);
+
       if (chatId) {
-         await sendTelegramMessage(
-            chatId,
-            `🪪 Didit KYC — ${outcome}\nUser: ${who}\nUser ID: ${userId}${sessionId ? `\nSession: ${sessionId}` : ''}`
+         const text = `🪪 Didit KYC — ${outcome}\nUser: ${who}\nUser ID: ${userId}${sessionId ? `\nSession: ${sessionId}` : ''}${triesLine}`;
+         const links = [diditConsoleButton(sessionId), openInAdminButton(userId, p?.username)];
+         // Manual review waits on the Didit verdict; out of tries waits on 🔁 / /kycretry — both are
+         // remembered so they get stamped. Other outcomes are news, not a to-do.
+         const kind = outOfTries ? 'kyc_tries' : classifyKycOutcome(outcome) === 'review' ? 'kyc_review' : null;
+         await (kind
+            ? sendAdminCard(adminSupabase, chatId, {
+                 kind,
+                 refId: userId,
+                 text,
+                 keyboard: kind === 'kyc_tries' ? kycTriesKeyboard(userId, p?.username, sessionId) : [links]
+              })
+            : sendTelegramMessage(chatId, text, { inlineKeyboard: [links] })
          ).catch((err: unknown) => console.error('[diditNotifications] Telegram admin alert failed:', err instanceof Error ? err.message : err));
       }
 
@@ -105,17 +145,23 @@ export const notifyAdmins = async (
             embeds: [
                {
                   title: `🪪 Didit KYC — ${outcome}`,
+                  url: adminUserUrl(userId, p?.username),
                   color: outcomeColor[outcome.toLowerCase()] ?? 0x5865f2,
                   fields: [
                      { name: 'User', value: who, inline: true },
                      { name: 'User ID', value: userId, inline: true },
-                     ...(sessionId ? [{ name: 'Session', value: sessionId, inline: false }] : [])
+                     ...(sessionId ? [{ name: 'Session', value: sessionId, inline: false }] : []),
+                     ...(triesLine ? [{ name: 'KYC tries', value: triesLine.trim(), inline: false }] : [])
                   ],
                   timestamp: new Date().toISOString()
                }
             ]
          },
-         { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }
+         {
+            prefer: ['DISCORD_KYC_WEBHOOK_URL'],
+            // Manual review is remembered (kyc_review): the Didit verdict edits it to APPROVED / DECLINED.
+            ...(classifyKycOutcome(outcome) === 'review' ? { ref: { svc: adminSupabase, kind: 'kyc_review', refId: userId } } : {})
+         }
       );
    } catch (err) {
       console.error('[diditNotifications] Admin alert failed:', err instanceof Error ? err.message : err);
@@ -134,9 +180,11 @@ export type UserNotifyOutcome = 'approved' | 'review' | 'declined' | 'abandoned'
 export const USER_NOTIFY_COPY: Record<UserNotifyOutcome, { subject: string; body: (reason?: string) => string; cta: string }> = {
    approved: {
       subject: 'You’re verified on Moodeng! 🎉',
+      // The ID check is the last step of sending a loan request, so point them at finishing it — the
+      // link (/verify) takes a verified borrower straight to the loan form.
       body: () =>
-         'Great news — your identity verification is complete and your Moodeng account is fully unlocked. You can now request loans and start building trust with lenders.',
-      cta: 'Open Moodeng'
+         'Your ID check is complete. Tap below to send your loan request. If it already went out, you’ll see it on the Request Board.',
+      cta: 'Send my loan request'
    },
    review: {
       subject: 'Your Moodeng verification is in manual review',
@@ -158,6 +206,22 @@ export const USER_NOTIFY_COPY: Record<UserNotifyOutcome, { subject: string; body
    }
 };
 
+// The decline that used their last try: another attempt is refused (create-didit-session →
+// KYC_TRIES_USED) until an admin gives more with /kycretry, so "try again any time" was wrong.
+const DECLINED_NO_TRIES_COPY = {
+   subject: 'Your Moodeng verification didn’t pass',
+   body: (reason?: string) =>
+      `We couldn’t verify your identity this time.${reason ? ` Reason: ${reason}.` : ''} You’ve used all your tries, so please message our team and we’ll help you sort it out.`,
+   cta: 'See next steps'
+};
+
+// Lenders verify too, but have no loan request to send.
+const LENDER_APPROVED_COPY = {
+   subject: 'You’re verified on Moodeng! 🎉',
+   body: () => 'Your ID check is complete and your Moodeng account is fully unlocked.',
+   cta: 'Open Moodeng'
+};
+
 export const notifyUser = async (
    adminSupabase: AdminSupabase,
    userId: string,
@@ -167,7 +231,7 @@ export const notifyUser = async (
    try {
       const { data } = await adminSupabase
          .from('users')
-         .select('email, chat_id, messenger_psid, notif_account_activity, notif_push')
+         .select('email, chat_id, messenger_psid, notif_account_activity, notif_push, user_role')
          .eq('id', userId)
          .maybeSingle();
       const user = data as {
@@ -176,10 +240,16 @@ export const notifyUser = async (
          messenger_psid?: string | null;
          notif_account_activity?: boolean | null;
          notif_push?: boolean | null;
+         user_role?: string | null;
       } | null;
       if (!user || user.notif_account_activity === false) return;
 
-      const copy = USER_NOTIFY_COPY[outcome];
+      const copy =
+         outcome === 'approved' && user.user_role === 'lender'
+            ? LENDER_APPROVED_COPY
+            : outcome === 'declined' && (await kycTriesLeft(adminSupabase, userId)) <= 0
+              ? DECLINED_NO_TRIES_COPY
+              : USER_NOTIFY_COPY[outcome];
       const siteUrl = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
       const verifyUrl = `${siteUrl}/verify`;
       const text = `${copy.body(reason)}\n\n${copy.cta}: ${verifyUrl}`;

@@ -230,8 +230,10 @@ export default function CalendarSection() {
             availability: fromWeekHours(draft.week),
             overrides: fromDateOverrides(draft.overrides)
          });
-         setDraftKey(''); // re-seed the editor from what Cal.com saved
          await load(monday);
+         // Re-seed the editor from what Cal.com saved — only after the reload, or the editor re-seeds
+         // from the stale schedule and shows the old hours as "unsaved" (saving again would revert).
+         setDraftKey('');
          setNotice(`Saved to ${hostName(host.id)}'s Cal.com — borrowers now see these hours.`);
       } catch (caught) {
          setError(caught instanceof Error ? caught.message : 'Could not save to Cal.com.');

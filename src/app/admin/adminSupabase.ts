@@ -1,4 +1,5 @@
 import type { CalAvailability, CalOverride, CalSchedule } from '@/app/admin/calendarModel';
+import type { FormCheck } from '@/app/admin/callFormCheck';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 import { DEFAULT_LOAN_TIMEZONE, getDaysUntilDueDay, getLoanTimezone, isPastDueDay } from '@/lib/loanDeadline';
 
@@ -73,6 +74,13 @@ export interface AdminDirectoryUser {
    messenger_verified_at: string | null;
    messenger_psid: string | null;
    whatsapp_verified_at: string | null;
+   // Connect → Approve → Apply gate (approved by an admin after the video call) and their latest call.
+   loan_access_status: 'none' | 'pending' | 'approved' | 'rejected' | null;
+   video_call_starts_at: string | null;
+   video_call_outcome: 'attended' | 'no_show' | null;
+   // Didit session state, for the shared status badge (see adminStatus.ts).
+   didit_id_status: string | null;
+   didit_submitted_at: string | null;
    cs: number | null;
    mal: number | null;
    nal: number | null;
@@ -365,7 +373,7 @@ async function fetchUsersByIds(userIds: string[]): Promise<Map<string, AdminDire
       getSupabaseBrowserClient()
          .from('users')
          .select(
-            'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,is_didit,messenger_verified_at,messenger_psid,whatsapp_verified_at,cs,mal,nal,created_at,updated_at'
+            'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,is_didit,messenger_verified_at,messenger_psid,whatsapp_verified_at,loan_access_status,video_call_starts_at,video_call_outcome,didit_id_status,didit_submitted_at,cs,mal,nal,created_at,updated_at'
          )
          .in('id', uniqueIds)
    );
@@ -449,6 +457,11 @@ async function buildDirectoryRows(
          messenger_verified_at: row.messenger_verified_at ?? null,
          messenger_psid: row.messenger_psid ?? null,
          whatsapp_verified_at: row.whatsapp_verified_at ?? null,
+         loan_access_status: row.loan_access_status ?? null,
+         video_call_starts_at: row.video_call_starts_at ?? null,
+         video_call_outcome: row.video_call_outcome ?? null,
+         didit_id_status: row.didit_id_status ?? null,
+         didit_submitted_at: row.didit_submitted_at ?? null,
          cs: row.cs ?? null,
          mal: row.mal ?? null,
          nal: row.nal ?? null,
@@ -589,7 +602,7 @@ export async function listAdminDirectoryUsers(search?: string): Promise<AdminDir
    let query = supabase
       .from('users')
       .select(
-         'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,is_didit,messenger_verified_at,messenger_psid,whatsapp_verified_at,cs,mal,nal,created_at,updated_at'
+         'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,is_didit,messenger_verified_at,messenger_psid,whatsapp_verified_at,loan_access_status,video_call_starts_at,video_call_outcome,didit_id_status,didit_submitted_at,cs,mal,nal,created_at,updated_at'
       )
       .order('created_at', { ascending: false })
       .limit(2000);
@@ -755,6 +768,8 @@ export interface ComingDueLoan {
    is_test: boolean;
    borrower: ComingDueParty | null;
    lender: ComingDueParty | null;
+   /** The wallet the loan was funded from: where a refund must go (what admin-refund-loan checks). */
+   lender_wallet: string | null;
 }
 
 // Whole calendar days between today and the due date ON THE BORROWER'S CALENDAR, so a loan due later
@@ -780,7 +795,7 @@ export async function listComingDueLoans({ includeTest = false, limit = 500 }: {
    let query = supabase
       .from('loans')
       .select(
-         'id,tracking_id,borrower_user_id,lender_user_id,loan_amount,total_repayment_amount,repaid_amount,due_date,due_timezone,funded_at,created_at,reason,coin,repayment_status,is_test'
+         'id,tracking_id,borrower_user_id,lender_user_id,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,due_timezone,funded_at,created_at,reason,coin,repayment_status,is_test'
       )
       .eq('loan_status', 'Lent')
       .in('repayment_status', ['Unpaid', 'Partial'])
@@ -831,6 +846,7 @@ export async function listComingDueLoans({ includeTest = false, limit = 500 }: {
          repayment_status: row.repayment_status ?? null,
          is_test: Boolean(row.is_test),
          borrower: row.borrower_user_id ? (contactsById.get(row.borrower_user_id) ?? null) : null,
+         lender_wallet: row.lender_wallet ?? null,
          lender: row.lender_user_id ? (contactsById.get(row.lender_user_id) ?? null) : null
       };
    });
@@ -1874,15 +1890,17 @@ export interface AdminReferralCode {
    current_uses: number;
    expires_at: string | null;
    created_at: string;
+   owner_user_id: string | null;
+   owner: { id: string; username: string | null; email: string | null } | null;
 }
+
+const REFERRAL_CODE_SELECT =
+   'id, code, boost_amount, is_active, max_uses, current_uses, expires_at, created_at, owner_user_id, owner:users!referral_codes_owner_user_id_fkey(id, username, email)';
 
 export async function listReferralCodes(): Promise<AdminReferralCode[]> {
    const supabase = getSupabaseBrowserClient();
    const data = (await requireOk(
-      supabase
-         .from('referral_codes')
-         .select('id, code, boost_amount, is_active, max_uses, current_uses, expires_at, created_at')
-         .order('created_at', { ascending: false })
+      supabase.from('referral_codes').select(REFERRAL_CODE_SELECT).order('created_at', { ascending: false })
    )) as AnyRow[] | null;
    return (data ?? []).map((row) => ({ ...row, boost_amount: toNumber(row.boost_amount) })) as AdminReferralCode[];
 }
@@ -1903,7 +1921,7 @@ export async function createReferralCode(input: {
             max_uses: input.max_uses ?? null,
             expires_at: input.expires_at ?? null
          })
-         .select('id, code, boost_amount, is_active, max_uses, current_uses, expires_at, created_at')
+         .select(REFERRAL_CODE_SELECT)
          .single()
    );
    return { ...(data as AnyRow), boost_amount: toNumber((data as AnyRow).boost_amount) } as AdminReferralCode;
@@ -1912,12 +1930,7 @@ export async function createReferralCode(input: {
 export async function setReferralCodeActive(id: string, isActive: boolean): Promise<AdminReferralCode> {
    const supabase = getSupabaseBrowserClient();
    const data = await requireOk(
-      supabase
-         .from('referral_codes')
-         .update({ is_active: isActive })
-         .eq('id', id)
-         .select('id, code, boost_amount, is_active, max_uses, current_uses, expires_at, created_at')
-         .single()
+      supabase.from('referral_codes').update({ is_active: isActive }).eq('id', id).select(REFERRAL_CODE_SELECT).single()
    );
    return { ...(data as AnyRow), boost_amount: toNumber((data as AnyRow).boost_amount) } as AdminReferralCode;
 }
@@ -1937,15 +1950,78 @@ export async function updateReferralCode(
    if (changes.boost_amount !== undefined) patch.boost_amount = changes.boost_amount;
    if (changes.max_uses !== undefined) patch.max_uses = changes.max_uses;
    if (changes.expires_at !== undefined) patch.expires_at = changes.expires_at;
+   const data = await requireOk(supabase.from('referral_codes').update(patch).eq('id', id).select(REFERRAL_CODE_SELECT).single());
+   return { ...(data as AnyRow), boost_amount: toNumber((data as AnyRow).boost_amount) } as AdminReferralCode;
+}
+
+// Link (or unlink with null) the person behind a code.
+export async function setReferralCodeOwner(id: string, ownerUserId: string | null): Promise<AdminReferralCode> {
+   const supabase = getSupabaseBrowserClient();
    const data = await requireOk(
-      supabase
-         .from('referral_codes')
-         .update(patch)
-         .eq('id', id)
-         .select('id, code, boost_amount, is_active, max_uses, current_uses, expires_at, created_at')
-         .single()
+      supabase.from('referral_codes').update({ owner_user_id: ownerUserId }).eq('id', id).select(REFERRAL_CODE_SELECT).single()
    );
    return { ...(data as AnyRow), boost_amount: toNumber((data as AnyRow).boost_amount) } as AdminReferralCode;
+}
+
+// Referral code owner payouts (referral_code_payouts) — one row per redemption of an owned code.
+export interface AdminReferralPayout {
+   id: string;
+   referral_code_id: string;
+   code: string;
+   status: 'unpaid' | 'paid';
+   paid_at: string | null;
+   paid_by: string | null;
+   created_at: string;
+   owner: { id: string; username: string | null; display_name: string | null; email: string | null } | null;
+   referred: { id: string; username: string | null; display_name: string | null; email: string | null } | null;
+}
+
+const REFERRAL_PAYOUT_SELECT =
+   'id, referral_code_id, code, status, paid_at, paid_by, created_at, owner:users!referral_code_payouts_owner_user_id_fkey(id, username, display_name, email), referred:users!referral_code_payouts_referred_user_id_fkey(id, username, display_name, email)';
+
+export async function listReferralPayouts(): Promise<AdminReferralPayout[]> {
+   const supabase = getSupabaseBrowserClient();
+   const data = await requireOk(
+      supabase.from('referral_code_payouts').select(REFERRAL_PAYOUT_SELECT).order('created_at', { ascending: false }).limit(200)
+   );
+   return (data ?? []) as unknown as AdminReferralPayout[];
+}
+
+export async function setReferralPayoutStatus(
+   id: string,
+   status: 'unpaid' | 'paid',
+   paidBy: string | null
+): Promise<AdminReferralPayout> {
+   const supabase = getSupabaseBrowserClient();
+   const data = await requireOk(
+      supabase
+         .from('referral_code_payouts')
+         .update(
+            status === 'paid'
+               ? { status, paid_at: new Date().toISOString(), paid_by: paidBy }
+               : { status, paid_at: null, paid_by: null }
+         )
+         .eq('id', id)
+         .select(REFERRAL_PAYOUT_SELECT)
+         .single()
+   );
+   return data as unknown as AdminReferralPayout;
+}
+
+export interface AdminUserOption {
+   id: string;
+   username: string | null;
+   email: string | null;
+}
+
+// Username/email substring search for the owner picker.
+export async function searchUsersForPicker(search: string, limit = 20): Promise<AdminUserOption[]> {
+   const supabase = getSupabaseBrowserClient();
+   const term = search.trim().replace(/[%,()]/g, '');
+   let query = supabase.from('users').select('id, username, email').order('username', { ascending: true }).limit(limit);
+   if (term) query = query.or(`username.ilike.%${term}%,email.ilike.%${term}%`);
+   const data = (await requireOk(query)) as AdminUserOption[] | null;
+   return data ?? [];
 }
 
 // Only for codes with current_uses === 0 — FK refs from users/loans block redeemed codes.
@@ -1959,17 +2035,29 @@ export async function deleteReferralCode(id: string): Promise<void> {
 // Friend-referral voucher claims (voucher_claims) — admins read all and update fulfilment only.
 // ---------------------------------------------------------------------------
 
-export type AdminVoucherClaimStatus = 'pending' | 'sent' | 'rejected';
+// 'banked' = a reward added to the borrower's GrabMart wallet; only 'grabmart_payout' rows get a code.
+export type AdminVoucherClaimStatus = 'banked' | 'pending' | 'sent' | 'rejected';
+
+export type AdminVoucherReward =
+   | 'first_on_time_repayment'
+   | 'referral_inviter'
+   | 'referral_invitee'
+   | 'tier_rising'
+   | 'tier_prime'
+   | 'tier_apex'
+   | 'grabmart_payout';
 
 export interface AdminVoucherClaim {
    id: string;
    user_id: string;
    username: string | null;
-   reward: 'first_on_time_repayment' | 'referral_inviter' | 'referral_invitee' | 'tier_rising' | 'tier_prime' | 'tier_apex';
+   reward: AdminVoucherReward;
    amount_php: number;
    full_name: string;
    mobile: string;
    email: string | null;
+   // The borrower's account email — a fallback when they left the claim's email blank.
+   account_email: string | null;
    status: AdminVoucherClaimStatus;
    admin_note: string | null;
    sent_at: string | null;
@@ -1981,14 +2069,54 @@ export async function listVoucherClaims(): Promise<AdminVoucherClaim[]> {
    const data = (await requireOk(
       supabase
          .from('voucher_claims')
-         .select('id, user_id, reward, amount_php, full_name, mobile, email, status, admin_note, sent_at, created_at, users(username)')
+         .select('id, user_id, reward, amount_php, full_name, mobile, email, status, admin_note, sent_at, created_at, users(username, email)')
          .order('created_at', { ascending: false })
    )) as AnyRow[] | null;
    return (data ?? []).map((row) => ({
       ...row,
       amount_php: toNumber(row.amount_php),
-      username: (Array.isArray(row.users) ? row.users[0]?.username : row.users?.username) ?? null
+      username: (Array.isArray(row.users) ? row.users[0]?.username : row.users?.username) ?? null,
+      account_email: (Array.isArray(row.users) ? row.users[0]?.email : row.users?.email) ?? null
    })) as AdminVoucherClaim[];
+}
+
+// Vouchers a borrower has earned but not claimed yet (admin_unclaimed_vouchers RPC).
+export interface AdminUnclaimedVoucher {
+   user_id: string;
+   username: string | null;
+   display_name: string | null;
+   email: string | null;
+   reward: AdminVoucherReward;
+   friend_referral_id: string | null;
+   amount_php: number;
+}
+
+export async function listUnclaimedVouchers(): Promise<AdminUnclaimedVoucher[]> {
+   const supabase = getSupabaseBrowserClient();
+   const data = (await requireOk(supabase.rpc('admin_unclaimed_vouchers'))) as AnyRow[] | null;
+   return (data ?? []).map((row) => ({ ...row, amount_php: toNumber(row.amount_php) })) as AdminUnclaimedVoucher[];
+}
+
+// Where a voucher borrower is (KYC + recent logins) and their Facebook (admin_voucher_contacts RPC).
+// A GrabFood PH voucher is useless outside the Philippines, so the tab flags anyone logging in abroad.
+export interface AdminVoucherContact {
+   user_id: string;
+   kyc_country: string | null;
+   kyc_area: string | null;
+   login_city: string | null;
+   login_country: string | null;
+   login_at: string | null;
+   login_countries: string[];
+   facebook_name: string | null;
+   facebook_contact: string | null;
+   messenger_verified: boolean;
+}
+
+export async function listVoucherContacts(userIds: string[]): Promise<AdminVoucherContact[]> {
+   if (userIds.length === 0) return [];
+   const supabase = getSupabaseBrowserClient();
+   const data = (await requireOk(supabase.rpc('admin_voucher_contacts', { p_user_ids: userIds }))) as AnyRow[] | null;
+   return (data ?? []).map((row) => ({ ...row, login_countries: row.login_countries ?? [] })) as AdminVoucherContact[];
 }
 
 export async function updateVoucherClaimStatus(id: string, status: AdminVoucherClaimStatus, adminNote?: string | null): Promise<void> {
@@ -2003,8 +2131,8 @@ export async function updateVoucherClaimStatus(id: string, status: AdminVoucherC
    if (!data || data.length === 0) throw new Error('Claim was not updated (not found or not allowed).');
 }
 
-// GrabFood code pool (voucher_codes). Codes are never read back to the browser: admins add them and see
-// counts; admin-voucher-send hands the next one to a claim and emails it.
+// GrabMart code pool (voucher_codes). Codes are never read back to the browser: admins add them and see
+// counts; voucher-claim-telegram-notification (event admin_send) hands the next one to a payout and emails it.
 export interface VoucherCodeStock {
    amount_php: number;
    available: number;
@@ -2032,9 +2160,9 @@ export async function addVoucherCodes(amountPhp: number, codes: string[], source
    return { added: toNumber(result.added), skipped: toNumber(result.skipped) };
 }
 
-/** Approve a pending claim: emails the next pool code of its value. `retry` = nothing changed, try again. */
+/** Send a pending payout: emails the next pool code of its value (or buys one on Bitrefill). `retry` = nothing changed, try again. */
 export async function sendVoucherCodeForClaim(claimId: string): Promise<{ ok: boolean; summary: string; retry?: boolean }> {
-   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-voucher-send', { body: { claimId } });
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('voucher-claim-telegram-notification', { body: { claimId, event: 'admin_send' } });
    if (error) throw new Error(error.message || 'Could not send the code.');
    if (data?.error) throw new Error(String(data.error));
    return data as { ok: boolean; summary: string; retry?: boolean };
@@ -2149,6 +2277,26 @@ export async function getUxMetrics(): Promise<UxMetrics> {
    const result = data as Partial<UxMetrics> & { error?: string };
    if (result?.error) throw new Error(result.error);
    return result as UxMetrics;
+}
+
+// Admin search bar's AI answer: DeepSeek (server-side, in admin-ux-metrics) picks the tabs that answer a
+// plain-words question, each with a short reason.
+export interface AdminSearchAiPick {
+   id: string;
+   why: string;
+}
+
+export async function askAdminSearchAi(
+   query: string,
+   pages: Array<{ id: string; label: string; group: string; hint?: string }>
+): Promise<AdminSearchAiPick[]> {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-ux-metrics', {
+      body: { action: 'search', query, pages }
+   });
+   if (error) throw new Error(error.message || 'AI search failed.');
+   const result = data as { results?: AdminSearchAiPick[]; error?: string };
+   if (result?.error) throw new Error(result.error);
+   return result?.results ?? [];
 }
 
 // ---------------------------------------------------------------------------
@@ -2372,6 +2520,10 @@ export interface BorrowerContactRow {
    kycName: string | null;
    email: string | null;
    messengerVerifiedAt: string | null;
+   // Facebook profile name SendPulse reported (users.facebook_name).
+   facebookName: string | null;
+   // Every time they messaged the Page, newest first (messenger_contact_events).
+   messengerContactDates: string[];
    facebookContact: string | null;
    whatsappNumber: string | null;
    whatsappVerifiedAt: string | null;
@@ -2382,7 +2534,25 @@ export interface BorrowerContactRow {
    overdueNowCount: number;
    createdAt: string | null;
    accountStatus: string | null;
+   // How due-date reminders reach them (admin_reminder_reach); undefined until loaded.
+   reminders?: AdminReminderReach;
 }
+
+export interface AdminReminderReach {
+   pushDevices: number;
+   pushOff: boolean;
+   messenger: boolean;
+   whatsappOn: boolean;
+   whatsappStopped: boolean;
+   viberNumber: string | null;
+   viberOn: boolean;
+   telegramOn: boolean;
+   emailOk: boolean;
+}
+
+/** Reminders that arrive any day: phone notifications, WhatsApp, Viber or Telegram (not Messenger's 24h, not email). */
+export const canRemind = (r: AdminReminderReach | undefined) =>
+   Boolean(r && ((r.pushDevices > 0 && !r.pushOff) || r.whatsappOn || r.viberOn || r.telegramOn));
 
 const clean = (value: unknown): string | null => {
    const text = typeof value === 'string' ? value.trim() : '';
@@ -2416,6 +2586,8 @@ export function buildBorrowerContactRows(users: AnyRow[], loans: AnyRow[], kyc: 
          kycName: kycName.get(u.id) ?? null,
          email: clean(u.email),
          messengerVerifiedAt: u.messenger_verified_at ?? null,
+         facebookName: clean(u.facebook_name),
+         messengerContactDates: [],
          facebookContact: clean(u.facebook_contact),
          whatsappNumber: clean(u.whatsapp_number),
          whatsappVerifiedAt: u.whatsapp_verified_at ?? null,
@@ -2436,7 +2608,7 @@ export async function listBorrowerContacts(): Promise<BorrowerContactRow[]> {
       supabase
          .from('users')
          .select(
-            'id,username,display_name,email,messenger_verified_at,facebook_contact,whatsapp_number,whatsapp_verified_at,telegram_username,line_id,created_at,account_status,is_test'
+            'id,username,display_name,email,messenger_verified_at,facebook_name,facebook_contact,whatsapp_number,whatsapp_verified_at,telegram_username,line_id,created_at,account_status,is_test'
          )
          .eq('user_role', 'borrower')
          .order('created_at', { ascending: false })
@@ -2444,7 +2616,7 @@ export async function listBorrowerContacts(): Promise<BorrowerContactRow[]> {
    );
    const borrowers = users.filter((u) => !u.is_test);
    const ids = borrowers.map((u) => u.id);
-   const [loans, kyc] = await Promise.all([
+   const [loans, kyc, contacts, reach] = await Promise.all([
       queryByIdChunks(ids, (chunk) =>
          requireOk<AnyRow[]>(
             supabase
@@ -2455,9 +2627,41 @@ export async function listBorrowerContacts(): Promise<BorrowerContactRow[]> {
       ),
       queryByIdChunks(ids, (chunk) =>
          optionalOk<AnyRow[]>(supabase.from('kyc_identities').select('user_id,full_name,first_name,last_name').in('user_id', chunk), [])
-      )
+      ),
+      queryByIdChunks(ids, (chunk) =>
+         optionalOk<AnyRow[]>(
+            supabase
+               .from('messenger_contact_events')
+               .select('user_id,occurred_at')
+               .in('user_id', chunk)
+               .order('occurred_at', { ascending: false })
+               .limit(5000),
+            []
+         )
+      ),
+      optionalOk<AnyRow[]>(supabase.rpc('admin_reminder_reach'), [])
    ]);
-   return buildBorrowerContactRows(borrowers, loans, kyc);
+   const reachByUser = new Map<string, AdminReminderReach>();
+   for (const x of reach) {
+      reachByUser.set(x.user_id, {
+         pushDevices: Number(x.push_devices ?? 0),
+         pushOff: Boolean(x.push_off),
+         messenger: Boolean(x.messenger),
+         whatsappOn: Boolean(x.whatsapp_on),
+         whatsappStopped: Boolean(x.whatsapp_stopped),
+         viberNumber: x.viber_number ?? null,
+         viberOn: Boolean(x.viber_on),
+         telegramOn: Boolean(x.telegram_on),
+         emailOk: Boolean(x.email_ok)
+      });
+   }
+   const datesByUser = new Map<string, string[]>();
+   for (const c of contacts) datesByUser.set(c.user_id, [...(datesByUser.get(c.user_id) ?? []), c.occurred_at]);
+   return buildBorrowerContactRows(borrowers, loans, kyc).map((r) => ({
+      ...r,
+      messengerContactDates: datesByUser.get(r.id) ?? [],
+      reminders: reachByUser.get(r.id)
+   }));
 }
 
 export interface MessengerProfile {
@@ -2580,6 +2784,131 @@ export async function sendAdminEmail(input: {
 }
 
 // ---------------------------------------------------------------------------
+// Campaigns — re-engagement messages to ready-made audiences (admin-campaigns edge function).
+// Messenger when their 24h window is open, otherwise email (unless unsubscribed) + app push.
+// ---------------------------------------------------------------------------
+
+export type CampaignAudience = 'past_idle' | 'fb_not_borrowing';
+export type CampaignChannel = 'messenger' | 'email' | 'push';
+
+export interface CampaignPerson {
+   userId: string;
+   firstName: string;
+   displayName: string | null;
+   username: string | null;
+   email: string | null;
+   hasMessenger: boolean;
+   messengerOpen: boolean;
+   unsubscribed: boolean;
+   channels: CampaignChannel[];
+   fundedLoans: number;
+   lastFundedAt: string | null;
+   lastRepaidAt: string | null;
+   lastContactedAt: string | null;
+}
+
+export interface CampaignSendResult {
+   campaignId: string;
+   reached: number;
+   messenger: number;
+   email: number;
+   push: number;
+   failed: number;
+   outcomes: Array<{ userId: string; channel: CampaignChannel | null; status: 'sent' | 'failed' | 'skipped'; detail?: string }>;
+}
+
+export interface CampaignSummary {
+   id: string;
+   name: string;
+   audience: CampaignAudience;
+   audience_params: { idleDays?: number } | null;
+   subject: string;
+   created_at: string;
+   reached: number;
+   messenger: number;
+   email: number;
+   push: number;
+   failed: number;
+}
+
+export interface CampaignRecipient {
+   user_id: string;
+   channel: CampaignChannel;
+   status: 'pending' | 'sent' | 'failed' | 'skipped';
+   detail: string | null;
+   created_at: string;
+   users: { username: string | null; email: string | null; display_name: string | null } | null;
+}
+
+async function invokeCampaigns<T>(body: Record<string, unknown>, fallback: string): Promise<T> {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-campaigns', { body });
+   if (error) throw new Error((await readFunctionError(error)) || error.message || fallback);
+   return data as T;
+}
+
+export const getCampaignAudience = (audience: CampaignAudience, idleDays: number) =>
+   invokeCampaigns<{ people: CampaignPerson[] }>({ action: 'audience', audience, idleDays }, 'Could not load the audience.');
+
+export const sendCampaign = (input: {
+   campaignId: string;
+   name: string;
+   audience: CampaignAudience;
+   idleDays: number;
+   subject: string;
+   message: string;
+   userIds: string[];
+}) => invokeCampaigns<CampaignSendResult>({ action: 'send', ...input }, 'Could not send the campaign.');
+
+export const listCampaigns = () => invokeCampaigns<{ campaigns: CampaignSummary[] }>({ action: 'history' }, 'Could not load campaigns.');
+
+export const listCampaignRecipients = (campaignId: string) =>
+   invokeCampaigns<{ sends: CampaignRecipient[] }>({ action: 'recipients', campaignId }, 'Could not load recipients.');
+
+// Automatic journeys (campaign-automations runs them daily; admin-campaigns shows and edits them).
+export interface AutomationStep {
+   step: number;
+   delay_days: number;
+   subject: string;
+   message: string;
+}
+
+export interface AutomationPersonDue {
+   userId: string;
+   name: string;
+   step: number;
+   daysSinceRepaid: number;
+}
+
+export interface Automation {
+   id: string;
+   name: string;
+   enabled: boolean;
+   updated_at: string;
+   stepWindowDays: number;
+   capDays: number;
+   steps: AutomationStep[];
+   dueToday: AutomationPersonDue[];
+   waitingForLimit: AutomationPersonDue[];
+   recentSends: Array<{
+      user_id: string;
+      step: number;
+      channel: CampaignChannel;
+      status: 'pending' | 'sent' | 'failed' | 'skipped';
+      detail: string | null;
+      created_at: string;
+      users: { username: string | null; email: string | null; display_name: string | null } | null;
+   }>;
+}
+
+export const listAutomations = () => invokeCampaigns<{ automations: Automation[] }>({ action: 'automations' }, 'Could not load automations.');
+
+export const saveAutomation = (input: {
+   id: string;
+   enabled?: boolean;
+   steps?: Array<{ step: number; delayDays: number; subject: string; message: string }>;
+}) => invokeCampaigns<{ automations: Automation[] }>({ action: 'save_automation', ...input }, 'Could not save the automation.');
+
+// ---------------------------------------------------------------------------
 // Calendar — the team's Cal.com availability and bookings (admin-calendar edge function).
 // ---------------------------------------------------------------------------
 
@@ -2627,4 +2956,56 @@ export async function updateAdminCalendarSchedule(input: {
 }): Promise<CalSchedule | null> {
    const result = await invokeAdminCalendar<{ schedule: CalSchedule | null }>({ action: 'update_schedule', ...input });
    return result.schedule;
+}
+
+// ---- Call approvals (admin-call-approvals edge function) ------------------------------------------
+
+export interface AdminCallApprovalRow {
+   userId: string;
+   name: string;
+   username: string | null;
+   loanAccessStatus: string | null;
+   callStartsAt: string | null;
+   host: string | null;
+   joinUrl: string | null;
+   attendance: string | null;
+   outcome: 'attended' | 'no_show' | null;
+   outcomeAt: string | null;
+   request: { id: string; kind: string; reason: string | null; createdAt: string } | null;
+}
+
+export type AdminCallDecision =
+   | { userId: string; decision: 'attended' | 'no_show' }
+   | { requestId: string; decision: 'approved' | 'rejected' };
+
+async function invokeAdminCallApprovals<T>(body: Record<string, unknown>): Promise<T> {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-call-approvals', { body });
+   if (error) {
+      const ctx = (error as { context?: Response }).context;
+      const payload = ctx && typeof ctx.json === 'function' ? await ctx.json().catch(() => null) : null;
+      throw new Error((payload as { error?: string } | null)?.error ?? error.message ?? 'Call approvals request failed.');
+   }
+   const result = data as T & { error?: string };
+   if (result?.error) throw new Error(result.error);
+   return result;
+}
+
+export async function getAdminCallApprovals(): Promise<AdminCallApprovalRow[]> {
+   const result = await invokeAdminCallApprovals<{ rows: AdminCallApprovalRow[] }>({ action: 'list' });
+   return result.rows ?? [];
+}
+
+export async function decideAdminCall(input: AdminCallDecision): Promise<{ ok: boolean; summary: string }> {
+   return invokeAdminCallApprovals<{ ok: boolean; summary: string }>({ action: 'decide', ...input });
+}
+
+// Approve from the Directory, with or without a call (decides a pending request if there is one).
+export async function approveAdminUser(userId: string): Promise<{ ok: boolean; summary: string }> {
+   return invokeAdminCallApprovals<{ ok: boolean; summary: string }>({ action: 'approve_user', userId });
+}
+
+// Re-run the AI form check on the borrower's latest call transcript (after the host edits the sheet).
+export async function recheckAdminCallForm(userId: string): Promise<FormCheck> {
+   const result = await invokeAdminCallApprovals<{ ok: boolean; check: FormCheck }>({ action: 'check_form', userId });
+   return result.check;
 }

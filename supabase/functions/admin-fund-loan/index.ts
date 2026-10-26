@@ -68,6 +68,23 @@ serve(async (req) => {
       return json({ error: 'Invalid fundingMethod' }, 400)
     }
 
+    // Only an open request can be funded. A retry of the same recording (same tx hash) is a no-op
+    // success, so the modal's silent retry after a lost response doesn't report a failure.
+    const { data: current, error: currentError } = await supabase
+      .from('loans')
+      .select('loan_status, lender_user_id, funded_at, hash')
+      .eq('id', loanId)
+      .maybeSingle()
+    if (currentError) return json({ error: 'Failed to load loan', details: currentError.message }, 500)
+    if (!current) return json({ error: 'Loan not found' }, 404)
+    if (current.loan_status !== 'Requested' || current.lender_user_id || current.funded_at) {
+      const existingHashes: string[] = Array.isArray(current.hash) ? current.hash : []
+      if (txHash && current.loan_status === 'Lent' && existingHashes.includes(txHash)) {
+        return json({ message: 'Loan funding already recorded' }, 200)
+      }
+      return json({ error: 'This loan is not an open request (already funded or closed)' }, 409)
+    }
+
     const isSmart = fundingMethod === 'smart_contract'
 
     const updates: Record<string, unknown> = {
@@ -82,7 +99,13 @@ serve(async (req) => {
     if (borrowerWallet) updates.borrower_wallet = borrowerWallet
     if (principal != null) updates.loan_amount = Number(principal)
     if (totalOwed != null) updates.total_repayment_amount = Number(totalOwed)
-    if (dueDate) updates.due_date = dueDate
+    // Stored as midnight UTC on the due day, like every other loan (see src/lib/loanDeadline.ts);
+    // the client sends `${date}T23:59:59Z`, which would push the deadline a day late.
+    if (dueDate) {
+      const day = String(dueDate).slice(0, 10)
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return json({ error: 'Invalid dueDate' }, 400)
+      updates.due_date = `${day}T00:00:00.000Z`
+    }
 
     if (isSmart) {
       updates.onchain_loan_id = onchainLoanId ? String(onchainLoanId) : null
@@ -102,22 +125,29 @@ serve(async (req) => {
 
     // Append tx hash to the loan's hash[] array.
     if (txHash) {
-      const { data: existing } = await supabase.from('loans').select('hash').eq('id', loanId).maybeSingle()
-      const existingHashes: string[] = Array.isArray(existing?.hash) ? existing!.hash : []
+      const existingHashes: string[] = Array.isArray(current.hash) ? current.hash : []
       updates.hash = [...existingHashes, txHash]
     }
 
+    // Conditional on the request still being open, so a lender funding it at the same moment can't
+    // be overwritten.
     const { data, error } = await supabase
       .from('loans')
       .update(updates)
       .eq('id', loanId)
+      .eq('loan_status', 'Requested')
+      .is('lender_user_id', null)
       .select()
-      .single()
+      .maybeSingle()
 
     if (error) return json({ error: 'Failed to record funding', details: error.message }, 500)
+    if (!data) return json({ error: 'This loan was funded by someone else a moment ago' }, 409)
 
     // #loans / admin channel "Loan funded" post, same as a lender funding it (once per loan).
     await postLoanFundedToTeam(supabase, loanId)
+    // Tell the borrower, same as a lender funding it (deduped per loan inside the function).
+    const { error: notifyError } = await supabase.functions.invoke('loan-funded-notification', { body: { loanId } })
+    if (notifyError) console.error(`admin-fund-loan: borrower notification failed for ${loanId}: ${notifyError.message}`)
 
     return json({ data, message: 'Loan funding recorded' }, 200)
   } catch (error) {

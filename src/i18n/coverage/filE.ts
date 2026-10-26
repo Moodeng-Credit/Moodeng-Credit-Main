@@ -37,14 +37,14 @@ export const filipinoCoverageE: Record<string, string> = {
    "World ID verification isn't working right now. Please verify with your ID instead, or try again later.":
       'Hindi gumagana ang World ID verification ngayon. Mag-verify gamit ang ID mo sa halip, o subukan ulit mamaya.',
    "World ID verification isn't working": 'Hindi gumagana ang World ID verification',
-   'Tell lenders what the money will be used for.': 'Sabihin sa mga lender kung saan gagamitin ang pera.',
+   'Tell moo-lenders what the money will be used for.': 'Sabihin sa mga moo-lender kung saan gagamitin ang pera.',
    'Please write it in English': 'Pakisulat ito sa English',
    'Improve your reason': 'Ayusin ang dahilan mo',
    'Update your reason, then tap “Make Your Request” again.': 'I-update ang dahilan mo, tapos i-tap ulit ang “Make Your Request”.',
-   'Tell lenders what the money will be used for. Update your reason, then tap “Make Your Request” again.':
-      'Sabihin sa mga lender kung saan gagamitin ang pera. I-update ang dahilan mo, tapos i-tap ulit ang “Make Your Request”.',
-   'Please write your reason in English — the lenders reading it don’t speak Tagalog. Update your reason, then tap “Make Your Request” again.':
-      'Pakisulat sa English ang dahilan mo — hindi nagta-Tagalog ang mga lender na magbabasa nito. I-update ang dahilan mo, tapos i-tap ulit ang “Make Your Request”.',
+   'Tell moo-lenders what the money will be used for. Update your reason, then tap “Make Your Request” again.':
+      'Sabihin sa mga moo-lender kung saan gagamitin ang pera. I-update ang dahilan mo, tapos i-tap ulit ang “Make Your Request”.',
+   'Please write your reason in English — the moo-lenders reading it only read English. Update your reason, then tap “Make Your Request” again.':
+      'Pakisulat sa English ang dahilan mo — hindi nagta-Tagalog ang mga moo-lender na magbabasa nito. I-update ang dahilan mo, tapos i-tap ulit ang “Make Your Request”.',
    'Your info is missing': 'Kulang ang info mo',
    'We need your "About you" details before posting. Close this and tap Request a loan again to fill them in — or tap Help and we\'ll sort it out.':
       'Kailangan namin ang mga detalye mo sa "About you" bago mag-post. Isara ito at i-tap ulit ang Mag-request ng loan para punan ang mga ito — o i-tap ang Tulong at aayusin namin.',
@@ -73,5 +73,29 @@ export const filipinoCoverageE: Record<string, string> = {
    'Try this:': 'Subukan ito:',
    'Use this': 'Gamitin ito',
    'Message us to help write this in English': 'Mag-message sa amin para tulungan kang isulat ito sa English',
-   'Message us for help wording this': 'Mag-message sa amin para tulungan kang isulat ito'
+   'Message us for help wording this': 'Mag-message sa amin para tulungan kang isulat ito',
+   // ContactsStep Android Messenger flow (copy code & open chat)
+   'Send us your code on Messenger': 'I-send sa amin ang code mo sa Messenger',
+   'Copy code & open Messenger': 'I-copy ang code at buksan ang Messenger',
+   'Tap the blue button. It copies your code and opens our chat.':
+      'I-tap ang blue na button. Kokopyahin nito ang code mo at bubuksan ang chat namin.',
+   'Tap Get Started if Messenger asks.': 'I-tap ang Get Started kung hihingin ng Messenger.',
+   'Paste the code and send it.': 'I-paste ang code at i-send.',
+   'Waiting for your message. This turns green on its own.': 'Hinihintay ang message mo. Kusa itong magiging green.',
+   'No Messenger app? Open Facebook, search Moodeng Credit, tap Message, and send the code there.':
+      'Walang Messenger app? Buksan ang Facebook, i-search ang Moodeng Credit, i-tap ang Message, at doon i-send ang code.',
+   '1 min': '1 minuto',
+   'Getting your code…': 'Kinukuha ang code mo…',
+   'We give you a short code to send us on Messenger': 'Bibigyan ka namin ng maikling code na ise-send mo sa amin sa Messenger',
+   // ContactsStep Android Messenger timing match
+   'Connect on Messenger': 'Mag-connect sa Messenger',
+   'Tap the blue button. Our chat opens in Messenger.': 'I-tap ang blue na button. Magbubukas ang chat namin sa Messenger.',
+   'Tap Get Started, or send us a message. We connect you automatically.':
+      'I-tap ang Get Started, o mag-send ng message sa amin. Awtomatiko ka naming iko-connect.',
+   'Not green after a minute? Paste the code (already copied) and send it.':
+      'Hindi pa green pagkalipas ng isang minuto? I-paste ang code (nakakopya na) at i-send.',
+   // ContactsStep Android Messenger hints
+   "Messenger didn't open? Open Facebook, search Moodeng Credit, tap Message, and say hi.":
+      'Hindi bumukas ang Messenger? Buksan ang Facebook, i-search ang Moodeng Credit, i-tap ang Message, at mag-hi.',
+   'Opens our chat. Say hi and you’re connected.': 'Bubuksan ang chat namin. Mag-hi at connected ka na.'
 };

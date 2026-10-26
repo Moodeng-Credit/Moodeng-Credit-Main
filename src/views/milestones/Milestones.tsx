@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
+import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
 import { useRecordedMilestones } from '@/hooks/useRecordedMilestones';
 
@@ -412,28 +413,20 @@ export default function Milestones() {
    const baseWalletLock = getBaseWalletLockStatus(user);
    const hasCompletedBaseWalletSetup = isPreview || baseWalletLock.isConfirmedBorrowerWallet;
    const hasFinishedBorrowerSetup = isVerified && hasCompletedBaseWalletSetup;
-   const { open: openVerify, modal: verifyModal } = useVerifyYourself('milestones');
-   const setupCtaLabel =
-      !isVerified && !hasCompletedBaseWalletSetup ? 'Start setup' : !hasCompletedBaseWalletSetup ? 'Add a wallet' : 'Verify Yourself';
-   const setupEmptyCopy =
-      !isVerified && !hasCompletedBaseWalletSetup
-         ? 'Finish setup with identity verification and your wallet (an Instant Wallet, or a Base Account if you prefer) to unlock borrowing and start building your public trust record.'
-         : !hasCompletedBaseWalletSetup
-           ? 'Set up your Instant Wallet (or connect a Base Account) to unlock borrowing and start building your public trust record.'
-           : 'Verify your identity to unlock borrowing and start building your public trust record.';
+   const { modal: verifyModal } = useVerifyYourself('milestones');
+   // Not verified yet: their next step on the way to a first loan, same as everywhere else.
+   const journey = useVerificationJourney();
+   const setupCtaLabel = !isVerified ? journey.cta : 'Add a wallet';
+   const setupEmptyCopy = !isVerified
+      ? `${journey.body} Then you start building your public trust record.`
+      : 'Set up your Instant Wallet (or connect a Base Account) to unlock borrowing and start building your public trust record.';
    const handleSetupCtaClick = useCallback(() => {
-      if (!isVerified && !hasCompletedBaseWalletSetup) {
-         navigate('/onboarding/welcome', { state: { returnTo: 'milestones' } });
+      if (!isVerified) {
+         journey.go();
          return;
       }
-
-      if (!hasCompletedBaseWalletSetup) {
-         navigate('/onboarding/wallet', { state: { returnTo: 'milestones' } });
-         return;
-      }
-
-      openVerify();
-   }, [hasCompletedBaseWalletSetup, isVerified, navigate, openVerify]);
+      navigate('/onboarding/wallet', { state: { returnTo: 'milestones' } });
+   }, [isVerified, journey, navigate]);
 
    return (
       <div className="min-h-screen bg-md-neutral-200 [font-family:'SF_Pro_Display','SF_Pro',ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',sans-serif]">

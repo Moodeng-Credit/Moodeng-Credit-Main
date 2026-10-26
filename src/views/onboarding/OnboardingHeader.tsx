@@ -1,8 +1,10 @@
 import { useState } from 'react';
 
+import { Volume2, VolumeX } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import { useLocalization } from '@/i18n/LocalizationProvider';
+import { playDing, setSoundsEnabled, useSoundsEnabled } from '@/lib/uiSounds';
 import type { LocaleCode } from '@/i18n/translations';
 
 type OnboardingHeaderProps = {
@@ -11,6 +13,8 @@ type OnboardingHeaderProps = {
    hideBack?: boolean;
    /** When provided, the help button shows this text in an inline tooltip instead of navigating to /support. */
    tooltip?: string;
+   /** Shows a speaker button that turns onboarding sounds on/off (off by default). */
+   soundToggle?: boolean;
 };
 
 const HEADER_COPY = {
@@ -36,7 +40,8 @@ const HEADER_COPY = {
    }
 } satisfies Record<LocaleCode, { goBack: string; help: string }>;
 
-export function OnboardingHeader({ title, onBack, hideBack = false, tooltip }: OnboardingHeaderProps) {
+export function OnboardingHeader({ title, onBack, hideBack = false, tooltip, soundToggle = false }: OnboardingHeaderProps) {
+   const soundOn = useSoundsEnabled();
    const navigate = useNavigate();
    const { locale } = useLocalization();
    const copy = HEADER_COPY[locale] ?? HEADER_COPY.en;
@@ -89,6 +94,20 @@ export function OnboardingHeader({ title, onBack, hideBack = false, tooltip }: O
                </h1>
             ) : null}
          </div>
+         {soundToggle ? (
+            <button
+               aria-label={soundOn ? 'Turn sounds off' : 'Turn sounds on'}
+               aria-pressed={soundOn}
+               className="mr-2 inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-md-pill bg-white text-md-primary-1200 shadow-md-card dark:border dark:border-md-primary-900/40 dark:bg-[#191023] dark:text-md-primary-900"
+               onClick={() => {
+                  setSoundsEnabled(!soundOn);
+                  if (!soundOn) playDing(true);
+               }}
+               type="button"
+            >
+               {soundOn ? <Volume2 className="size-6" strokeWidth={2.2} /> : <VolumeX className="size-6" strokeWidth={2.2} />}
+            </button>
+         ) : null}
          <button
             type="button"
             aria-label={copy.help}

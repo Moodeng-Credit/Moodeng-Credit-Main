@@ -106,7 +106,47 @@ const removeStoredSubscription = async (endpoint: string) => {
    }
 };
 
+// Per-device opt-out. Set when the user taps "Turn off" so the silent re-sync on the next page load
+// can never bring the subscription back; cleared only by a deliberate "Turn on".
+const OPT_OUT_STORAGE_KEY = 'moodeng-push-opted-out';
+
+export const isPushOptedOut = (): boolean => {
+   try {
+      return window.localStorage.getItem(OPT_OUT_STORAGE_KEY) === '1';
+   } catch {
+      return false;
+   }
+};
+
+const setPushOptedOut = (optedOut: boolean) => {
+   try {
+      if (optedOut) {
+         window.localStorage.setItem(OPT_OUT_STORAGE_KEY, '1');
+      } else {
+         window.localStorage.removeItem(OPT_OUT_STORAGE_KEY);
+      }
+   } catch {
+      // Storage blocked: the silent sync below still never creates a new subscription.
+   }
+};
+
 let registrationPromise: Promise<ServiceWorkerRegistration | null> | null = null;
+
+/**
+ * Why the last sync came back 'failed', so the caller can tell a phone that can't do push (Chrome
+ * refused to subscribe) from our own bug (the save to Supabase failed). A borrower on 2026-10-15
+ * got 'failed' 22 times and we couldn't tell which it was.
+ */
+export type PushFailure = { stage: 'service-worker' | 'subscribe' | 'save'; errorName?: string; errorMessage?: string };
+
+let lastPushFailure: PushFailure | null = null;
+
+export const getLastPushFailure = (): PushFailure | null => lastPushFailure;
+
+const describeError = (error: unknown): Pick<PushFailure, 'errorName' | 'errorMessage'> =>
+   error instanceof Error
+      ? { errorName: error.name, errorMessage: error.message.slice(0, 200) }
+      : { errorMessage: String(error).slice(0, 200) };
 
 export const registerPushServiceWorker = async (): Promise<ServiceWorkerRegistration | null> => {
    if (!isPushSupported()) {
@@ -121,6 +161,7 @@ export const registerPushServiceWorker = async (): Promise<ServiceWorkerRegistra
          .then((registration) => navigator.serviceWorker.ready.then(() => registration))
          .catch((error) => {
             console.warn('Push service worker registration failed', error);
+            lastPushFailure = { stage: 'service-worker', ...describeError(error) };
             registrationPromise = null;
             return null;
          });
@@ -131,6 +172,7 @@ export const registerPushServiceWorker = async (): Promise<ServiceWorkerRegistra
 
 const persistSubscription = async (subscription: PushSubscription, locale: string): Promise<boolean> => {
    if (!isSupabaseBrowserConfigured()) {
+      lastPushFailure = { stage: 'save', errorMessage: 'supabase not configured' };
       return false;
    }
 
@@ -139,6 +181,7 @@ const persistSubscription = async (subscription: PushSubscription, locale: strin
    const auth = json.keys?.auth ?? arrayBufferToBase64Url(subscription.getKey('auth'));
 
    if (!p256dh || !auth) {
+      lastPushFailure = { stage: 'save', errorMessage: 'subscription has no keys' };
       return false;
    }
 
@@ -154,6 +197,7 @@ const persistSubscription = async (subscription: PushSubscription, locale: strin
 
    if (error) {
       console.warn('Failed to store push subscription', error.message);
+      lastPushFailure = { stage: 'save', errorName: error.code, errorMessage: error.message.slice(0, 200) };
       return false;
    }
 
@@ -190,6 +234,7 @@ export const syncPushSubscription = (options: { locale?: string; promptIfNeeded?
 };
 
 const runPushSync = async (options: { locale?: string; promptIfNeeded?: boolean }): Promise<PushRegistrationOutcome> => {
+   lastPushFailure = null;
    const { locale = 'en', promptIfNeeded = false } = options;
 
    if (!isPushSupported()) {
@@ -198,6 +243,13 @@ const runPushSync = async (options: { locale?: string; promptIfNeeded?: boolean 
 
    if (!isPushConfigured()) {
       return 'not-configured';
+   }
+
+   if (promptIfNeeded) {
+      // A deliberate "Turn on" overrides any earlier opt-out on this device.
+      setPushOptedOut(false);
+   } else if (isPushOptedOut()) {
+      return 'permission-dismissed';
    }
 
    if (Notification.permission === 'denied') {
@@ -217,6 +269,7 @@ const runPushSync = async (options: { locale?: string; promptIfNeeded?: boolean 
 
    const registration = await registerPushServiceWorker();
    if (!registration) {
+      lastPushFailure ??= { stage: 'service-worker' };
       return 'failed';
    }
 
@@ -228,6 +281,12 @@ const runPushSync = async (options: { locale?: string; promptIfNeeded?: boolean 
          // may be missing (new account on this device) or hold a stale locale.
          const stored = await persistSubscription(existing, locale);
          return stored ? 'already-subscribed' : 'failed';
+      }
+
+      if (!promptIfNeeded && !existing) {
+         // Silent sync only re-saves (or re-keys) a subscription that already exists. Creating one
+         // here would undo a "Turn off" behind the user's back.
+         return 'permission-dismissed';
       }
 
       if (existing) {
@@ -255,6 +314,7 @@ const runPushSync = async (options: { locale?: string; promptIfNeeded?: boolean 
       return 'subscribed';
    } catch (error) {
       console.warn('Push subscription failed', error);
+      lastPushFailure = { stage: 'subscribe', ...describeError(error) };
       return 'failed';
    }
 };
@@ -264,6 +324,8 @@ export const unsubscribeFromPush = async (): Promise<boolean> => {
    if (!isPushSupported()) {
       return false;
    }
+
+   setPushOptedOut(true);
 
    const registration = await registerPushServiceWorker();
    const subscription = await registration?.pushManager.getSubscription();
@@ -275,6 +337,23 @@ export const unsubscribeFromPush = async (): Promise<boolean> => {
    await removeStoredSubscription(subscription.endpoint);
 
    return subscription.unsubscribe();
+};
+
+/**
+ * Detaches this device from the signed-in account (call before sign-out, while the session can
+ * still delete its own row). The browser subscription itself is kept, so whoever signs in next on
+ * this device is re-attached by the silent sync without a new permission prompt.
+ */
+export const detachPushSubscriptionForSignOut = async (): Promise<void> => {
+   if (!isPushSupported() || Notification.permission !== 'granted') {
+      return;
+   }
+
+   const registration = await registerPushServiceWorker();
+   const subscription = await registration?.pushManager.getSubscription();
+   if (subscription) {
+      await removeStoredSubscription(subscription.endpoint);
+   }
 };
 
 /** True when this device currently holds a live push subscription. */

@@ -4,16 +4,40 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
    type AdminSearchResult,
+   meaningfulWords,
    type SearchablePage,
    type SearchableRequest,
    type SearchableUser,
    searchAdmin
 } from '@/app/admin/adminSearchModel';
+import { type AdminSearchAiPick, askAdminSearchAi } from '@/app/admin/adminSupabase';
 
 // Global admin search: jump to any page, user (username / email / wallet) or loan request.
 // Focus with ⌘K / Ctrl+K or "/" from anywhere in the panel; ↑ ↓ to move, Enter to open, Esc to close.
+// Local matches show instantly; for a plain-words question ("who's late this week") DeepSeek also picks
+// the tabs that answer it, each with a short reason. Enter with nothing found asks DeepSeek right away.
 
-const KIND_LABEL: Record<AdminSearchResult['kind'], string> = { page: 'Pages', user: 'Users', request: 'Loan requests' };
+const KIND_LABEL: Record<AdminSearchResult['kind'], string> = {
+   page: 'Pages',
+   ai: 'AI suggestions',
+   user: 'Users',
+   request: 'Loan requests'
+};
+
+const AI_DEBOUNCE_MS = 500;
+
+type AiAnswer = { status: 'loading' } | { status: 'done'; picks: AdminSearchAiPick[] } | { status: 'error'; message: string };
+
+const aiKey = (query: string) => query.trim().toLowerCase().replace(/\s+/g, ' ');
+
+// Ask DeepSeek for questions, not lookups: two or more real words, or one word nothing matched locally.
+// Emails, wallets and numbers are user / request lookups, so they never go to the AI.
+function wantsAi(query: string, localCount: number): boolean {
+   const trimmed = query.trim();
+   if (trimmed.length < 3 || /@|^0x|^[0-9\s+()-]+$/i.test(trimmed)) return false;
+   const words = meaningfulWords(trimmed);
+   return words.length >= 2 || (words.length === 1 && localCount === 0);
+}
 
 interface AdminSearchProps {
    pages: SearchablePage[];
@@ -32,7 +56,50 @@ export default function AdminSearch({ pages, users, requests, onSelect }: AdminS
    const inputRef = useRef<HTMLInputElement>(null);
    const wrapperRef = useRef<HTMLDivElement>(null);
 
-   const results = useMemo(() => searchAdmin(query, { pages, users, requests }), [query, pages, users, requests]);
+   const [aiAnswers, setAiAnswers] = useState<Record<string, AiAnswer>>({});
+   const aiAnswersRef = useRef(aiAnswers);
+   aiAnswersRef.current = aiAnswers;
+
+   const local = useMemo(() => searchAdmin(query, { pages, users, requests }), [query, pages, users, requests]);
+   const aiAnswer: AiAnswer | undefined = aiAnswers[aiKey(query)];
+
+   // AI picks go right after the local page matches. A page already matched locally keeps its place and
+   // gains the AI's reason; only new pages get their own row, so arrow positions don't jump around.
+   const results = useMemo(() => {
+      if (aiAnswer?.status !== 'done' || aiAnswer.picks.length === 0) return local;
+      const why = new Map(aiAnswer.picks.map((pick) => [pick.id, pick.why]));
+      const localPages = local
+         .filter((r) => r.kind === 'page')
+         .map((r) => (why.has(r.id) ? { ...r, detail: `${r.detail} · ${why.get(r.id)}` } : r));
+      const localPageIds = new Set(localPages.map((r) => r.id));
+      const aiRows = aiAnswer.picks.flatMap<AdminSearchResult>((pick) => {
+         const page = pages.find((p) => p.id === pick.id);
+         return page && !localPageIds.has(page.id) ? [{ kind: 'ai', id: page.id, title: page.label, detail: pick.why || page.group }] : [];
+      });
+      return [...localPages, ...aiRows, ...local.filter((r) => r.kind !== 'page')];
+   }, [local, aiAnswer, pages]);
+
+   const askAi = (raw: string) => {
+      const key = aiKey(raw);
+      if (!key || aiAnswersRef.current[key]) return;
+      setAiAnswers((prev) => ({ ...prev, [key]: { status: 'loading' } }));
+      askAdminSearchAi(raw.trim(), pages)
+         .then((picks) => setAiAnswers((prev) => ({ ...prev, [key]: { status: 'done', picks } })))
+         .catch((err: unknown) =>
+            setAiAnswers((prev) => ({
+               ...prev,
+               [key]: { status: 'error', message: err instanceof Error ? err.message : 'AI search failed.' }
+            }))
+         );
+   };
+
+   useEffect(() => {
+      if (!wantsAi(query, local.length)) return;
+      const timer = window.setTimeout(() => askAi(query), AI_DEBOUNCE_MS);
+      return () => window.clearTimeout(timer);
+      // askAi only reads refs and props that local already depends on.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [query, local.length]);
    const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
    useEffect(() => setActive(0), [query]);
@@ -76,6 +143,9 @@ export default function AdminSearch({ pages, users, requests, onSelect }: AdminS
       } else if (event.key === 'Enter' && results[active]) {
          event.preventDefault();
          choose(results[active]);
+      } else if (event.key === 'Enter' && query.trim().length >= 2) {
+         event.preventDefault();
+         askAi(query);
       } else if (event.key === 'Escape') {
          setOpen(false);
          inputRef.current?.blur();
@@ -104,7 +174,7 @@ export default function AdminSearch({ pages, users, requests, onSelect }: AdminS
                aria-expanded={showPanel}
                aria-controls="admin-search-results"
                aria-label="Search the admin panel"
-               placeholder="Search users, wallets, emails, loan requests, pages…"
+               placeholder="Search or ask in plain words — “who's late this week”, a user, email, wallet…"
                className="min-w-0 flex-1 bg-transparent text-base text-white placeholder:text-[#a89bb8] focus:outline-none"
             />
             <kbd className="hidden shrink-0 rounded-md border border-[#3d1f6e] px-1.5 py-0.5 text-[11px] font-bold text-[#a89bb8] sm:block">
@@ -118,7 +188,11 @@ export default function AdminSearch({ pages, users, requests, onSelect }: AdminS
                role="listbox"
                className="absolute inset-x-0 top-full z-40 mt-2 max-h-[70vh] overflow-y-auto rounded-xl border border-[#3d1f6e] bg-[#1c0a3a] p-1.5 shadow-2xl"
             >
-               {results.length === 0 ? <p className="px-3 py-4 text-sm text-[#a89bb8]">No matches for “{query.trim()}”.</p> : null}
+               {results.length === 0 && aiAnswer?.status !== 'loading' ? (
+                  <p className="px-3 py-4 text-sm text-[#a89bb8]">
+                     No matches for “{query.trim()}”.{aiAnswer ? null : ' Press Enter to ask AI.'}
+                  </p>
+               ) : null}
                {results.map((result, index) => {
                   const firstOfKind = index === 0 || results[index - 1].kind !== result.kind;
                   return (
@@ -137,11 +211,25 @@ export default function AdminSearch({ pages, users, requests, onSelect }: AdminS
                            className={`flex w-full min-w-0 items-baseline gap-3 rounded-lg px-3 py-2 text-left ${index === active ? 'bg-[#2a1453]' : ''}`}
                         >
                            <span className="shrink-0 text-sm font-black text-white">{result.title}</span>
-                           <span className="min-w-0 truncate text-xs text-[#a89bb8]">{result.detail}</span>
+                           <span className={`min-w-0 text-xs text-[#a89bb8] ${result.kind === 'ai' ? '' : 'truncate'}`}>
+                              {result.detail}
+                           </span>
                         </button>
                      </div>
                   );
                })}
+               {aiAnswer?.status === 'loading' ? (
+                  <p className="flex items-center gap-2 px-3 py-2.5 text-xs font-bold text-[#a89bb8]">
+                     <span
+                        aria-hidden="true"
+                        className="h-3 w-3 animate-spin rounded-full border-2 border-[#8336f0] border-t-transparent"
+                     />
+                     Asking AI which page fits…
+                  </p>
+               ) : null}
+               {aiAnswer?.status === 'error' ? (
+                  <p className="px-3 py-2.5 text-xs text-[#a89bb8]">AI search unavailable: {aiAnswer.message}</p>
+               ) : null}
             </div>
          ) : null}
       </div>

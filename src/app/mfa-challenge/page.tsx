@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
+import { externalLinkTarget, messengerSupportLink } from '@/config/contactVerification';
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { useMfa } from '@/hooks/useMfa';
 import { safeMfaReturnPath } from '@/lib/mfaReturnPath';
@@ -131,7 +132,12 @@ export default function MfaChallengePage() {
                </form>
 
                <div className="mt-6 flex flex-col items-center gap-2 text-center text-sm font-medium text-[#70617F] dark:text-[#A89BB8]">
-                  <a href={EXTERNAL_LINKS.support.messenger} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                  <a
+                     href={messengerSupportLink(EXTERNAL_LINKS.support.messenger)}
+                     target={externalLinkTarget(messengerSupportLink(EXTERNAL_LINKS.support.messenger))}
+                     rel="noopener noreferrer"
+                     className="hover:underline"
+                  >
                      Lost access to your authenticator app? Contact support
                   </a>
                   <button type="button" onClick={() => void handleSignOut()} disabled={isSigningOut} className="hover:underline">

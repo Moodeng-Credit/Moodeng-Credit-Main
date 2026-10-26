@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { AdminLiveRow, useAdminLiveReload } from '@/app/admin/useAdminLive';
+
 import AdminDeadline from './AdminDeadline';
 import { type ComingDueLoan, connectBorrower, listComingDueLoans, nudgeBorrower } from './adminSupabase';
 
@@ -84,6 +86,7 @@ export default function ComingDueSection({
       if (initialLoans) return; // preview/tests inject data and skip the live fetch
       void load(!hideTest);
    }, [hideTest, load, initialLoans]);
+   useAdminLiveReload(['loans'], () => (initialLoans ? undefined : load(!hideTest)));
 
    const handleNudge = useCallback(async (loan: ComingDueLoan) => {
       setNudging(loan.id);
@@ -248,11 +251,13 @@ export default function ComingDueSection({
                      {shown.map((l) => (
                         <tr key={l.id} className="border-t border-[#241044] bg-[#150730] align-top">
                            <td className="px-4 py-3">
-                              <span
-                                 className={`inline-flex rounded-full px-3 py-1 text-xs font-black uppercase ${countdownClass(l.days_until_due)}`}
-                              >
-                                 {countdownLabel(l.days_until_due)}
-                              </span>
+                              <AdminLiveRow ids={[l.id]}>
+                                 <span
+                                    className={`inline-flex rounded-full px-3 py-1 text-xs font-black uppercase ${countdownClass(l.days_until_due)}`}
+                                 >
+                                    {countdownLabel(l.days_until_due)}
+                                 </span>
+                              </AdminLiveRow>
                            </td>
                            <td className="px-4 py-3 text-sm font-medium text-[#a89bb8]">
                               <AdminDeadline dueDate={l.due_date} dueTimezone={l.due_timezone} />

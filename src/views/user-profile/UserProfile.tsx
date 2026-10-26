@@ -107,7 +107,7 @@ const UserProfile = () => {
         ? DEMO_BORROWER_INSIGHTS_USER
         : (profileUser ?? (username === user.username ? user : null));
    const isRealUserAuthenticated = Boolean(user?.id && user?.username);
-   // GrabFood voucher rewards are per signed-in user (RLS: read your own), so the Milestones &
+   // GrabMart voucher rewards are per signed-in user (RLS: read your own), so the Milestones &
    // Rewards card only renders on a borrower's own insights (isOwnInsights, computed below).
    const { rewards: friendRewards, isLoading: friendRewardsLoading } = useFriendReferrals();
    // The signed-in borrower's own pandesal (RLS: read your own), shown only on their own insights.
@@ -401,14 +401,14 @@ const UserProfile = () => {
       },
       {
          target: '[data-tour-target="borrower-diversity-score"]',
-         title: 'Look at lender diversity',
-         body: 'This shows whether the borrower has earned trust from multiple lenders, not just one repeated relationship.',
+         title: 'Look at moo-lender diversity',
+         body: 'This shows whether the borrower has earned trust from multiple moo-lenders, not just one repeated relationship.',
          durationMs: 6800
       },
       {
          target: '[data-tour-target="borrower-insights"]',
          title: 'Use behavior patterns',
-         body: 'These patterns help you judge risk: how often they borrow, how fast they usually repay, typical loan size, loan term, and repeat lenders.',
+         body: 'These patterns help you judge risk: how often they borrow, how fast they usually repay, typical loan size, loan term, and repeat moo-lenders.',
          durationMs: 8200
       },
       {
@@ -637,7 +637,7 @@ const UserProfile = () => {
                      <ChevronLeft className="h-6 w-6 text-md-primary-2000" />
                   </button>
                   <h1 className="min-w-0 text-[26px] font-[590] leading-[1.1] tracking-[-0.52px] text-md-primary-2000">
-                     {canSeeLenderInsights ? 'Lender Insights' : isLenderProfile ? 'Lender Account' : 'Borrower Insights'}
+                     {canSeeLenderInsights ? 'Moo-lender Insights' : isLenderProfile ? 'Moo-lender Account' : 'Borrower Insights'}
                   </h1>
                </div>
                <div className="flex shrink-0 items-center gap-2">
@@ -750,9 +750,9 @@ const UserProfile = () => {
                      <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f3ff]">
                         <ShieldCheck className="h-6 w-6 text-[#8b5cf6]" strokeWidth={2.2} />
                      </span>
-                     <p className="text-[17px] font-bold leading-tight text-md-primary-2000">This account is a lender</p>
+                     <p className="text-[17px] font-bold leading-tight text-md-primary-2000">This account is a moo-lender</p>
                      <p className="mx-auto mt-2 max-w-[280px] text-[14px] leading-5 text-md-neutral-1400">
-                        Lenders fund loans rather than borrow, so there is no borrowing history to show here.
+                        Moo-lenders fund loans rather than borrow, so there is no borrowing history to show here.
                      </p>
                   </div>
                ) : canSeeLenderInsights ? (
@@ -836,7 +836,7 @@ const UserProfile = () => {
                                              <span className="text-[15px] font-bold leading-none text-[#8b5cf6]">No loans funded yet</span>
                                           </span>
                                           <p className="text-[14px] leading-5 text-[#6b7280]">
-                                             This lender has not funded a loan yet, so there is nothing to summarise.
+                                             This moo-lender has not funded a loan yet, so there is nothing to summarise.
                                           </p>
                                        </div>
                                     )}
@@ -904,7 +904,7 @@ const UserProfile = () => {
                         <div className="flex flex-col gap-2">
                            <span className="text-md-h5 font-semibold text-md-heading">Loans Funded</span>
                            <p className="text-md-b3 font-normal text-md-neutral-1500">
-                              Who this lender has backed and the status of each loan.
+                              Who this moo-lender has backed and the status of each loan.
                            </p>
                         </div>
                         <div className="overflow-hidden rounded-[18px] border border-[#ece7f4] bg-white shadow-[0_4px_16px_rgba(48,24,92,0.06)]">
@@ -1064,7 +1064,7 @@ const UserProfile = () => {
                               ) : null}
                            </div>
 
-                           {/* GrabFood voucher, in the dashboard's yellow voucher style */}
+                           {/* GrabMart reward, in the dashboard's yellow voucher style */}
                            {ownVoucherState === 'loading' ? (
                               <div className="h-14 animate-pulse rounded-[12px] bg-[#fff8dc]" />
                            ) : (
@@ -1074,7 +1074,7 @@ const UserProfile = () => {
                               >
                                  <DesignImage src={DASHBOARD_V2_ASSETS.coupon} className="h-11 w-11 shrink-0 object-contain" />
                                  <div className="min-w-0 flex-1">
-                                    <p className="text-[16px] font-black italic leading-5 text-[#3c8248]">₱50 GrabFood voucher</p>
+                                    <p className="text-[16px] font-black italic leading-5 text-[#3c8248]">₱50 GrabMart reward</p>
                                     <p className="text-[13px] font-medium leading-[18px] text-[#6f7d1d]">
                                        {ownVoucherState === 'claimable'
                                           ? 'Earned from your first on-time repayment'
@@ -1201,12 +1201,12 @@ const UserProfile = () => {
                                  <div className="min-w-0 flex-1">
                                     <div className="mb-3 flex items-center gap-1.5">
                                        <p className="text-[20px] font-black italic leading-6 text-white [text-shadow:0_1px_0_#4c239f]">
-                                          Lender Diversity
+                                          Moo-lender Diversity
                                        </p>
                                        <button
                                           type="button"
                                           onClick={() => setIsLenderDiversitySheetOpen(true)}
-                                          aria-label="How Lender Diversity Score works"
+                                          aria-label="How Moo-lender Diversity Score works"
                                           className="flex h-6 w-6 items-center justify-center rounded-full text-white/80 transition hover:text-white active:scale-95"
                                        >
                                           <HelpCircle className="h-4 w-4" strokeWidth={2.2} />
@@ -1258,7 +1258,7 @@ const UserProfile = () => {
                                              Not enough history
                                           </span>
                                           <p className="text-[14px] leading-5 text-white/80">
-                                             Your score appears after at least 2 funded loans from different lenders.
+                                             Your score appears after at least 2 funded loans from different moo-lenders.
                                           </p>
                                        </div>
                                     )}
@@ -1316,7 +1316,7 @@ const UserProfile = () => {
                               <InsightRow
                                  icon={<RefreshCcw className="h-4 w-4 text-[#ef4444]" strokeWidth={2.5} />}
                                  iconClassName="bg-[#fee2e2]"
-                                 label="Repeat lenders"
+                                 label="Repeat moo-lenders"
                                  value={`${repeatLenderCount} of ${totalUniqueLenders}`}
                                  valueColor="text-[#ef4444]"
                               />
@@ -1341,7 +1341,7 @@ const UserProfile = () => {
                         <div className="overflow-hidden rounded-[18px] border border-[#ece7f4] bg-white shadow-[0_4px_16px_rgba(48,24,92,0.06)]">
                            <div className="hidden border-b border-[#ece7f4] bg-[#fbfafc] px-4 py-3 sm:block">
                               <div className="grid grid-cols-[minmax(0,1.45fr)_72px_86px] items-center gap-3 text-[11px] font-bold uppercase tracking-[0.04em] text-[#7c6f91]">
-                                 <span>Loan / lender</span>
+                                 <span>Loan / moo-lender</span>
                                  <span className="text-right">Amount</span>
                                  <span className="text-right">Status</span>
                               </div>
@@ -1498,7 +1498,7 @@ const NewBorrowerInsightsCard = () => (
       <div className="min-w-0 flex-1">
          <p className="text-[15px] font-[590] leading-5 text-md-heading">Not enough loan history yet</p>
          <p className="mt-1 text-[13px] leading-5 text-md-neutral-1200">
-            Once this borrower completes more loans, you'll see repayment timing, usual loan size, repeat lenders, and borrowing patterns
+            Once this borrower completes more loans, you'll see repayment timing, usual loan size, repeat moo-lenders, and borrowing patterns
             here.
          </p>
       </div>
@@ -1617,7 +1617,7 @@ const DefaultHistoryBottomSheet = ({
                   <div>
                      <p className="text-[16px] font-bold leading-tight text-[#1f2937]">Why it matters</p>
                      <p className="mt-2 text-[15px] leading-5 text-[#4b5563]">
-                        Defaults may signal repayment risk. Lenders should review the borrower’s full history, not just credit level.
+                        Defaults may signal repayment risk. Moo-lenders should review the borrower’s full history, not just credit level.
                      </p>
                   </div>
                </div>
@@ -1779,7 +1779,7 @@ const RepaymentHistoryBottomSheet = ({
                      <p className="text-[16px] font-bold leading-tight text-[#1f2937]">Why it matters</p>
                      <p className="mt-2 text-[15px] leading-5 text-[#4b5563]">
                         Completed repayments show this borrower has returned funds before. Partial repayments can still be useful context,
-                        but lenders should compare them with due dates and remaining balances.
+                        but moo-lenders should compare them with due dates and remaining balances.
                      </p>
                   </div>
                </div>
@@ -1937,7 +1937,7 @@ const LenderDiversityBottomSheet = ({ isOpen, onClose, onOpenDocs }: { isOpen: b
       <div className="fixed inset-0 z-[80] flex items-end">
          <button
             type="button"
-            aria-label="Close lender diversity explanation"
+            aria-label="Close moo-lender diversity explanation"
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={onClose}
          />
@@ -1957,7 +1957,7 @@ const LenderDiversityBottomSheet = ({ isOpen, onClose, onOpenDocs }: { isOpen: b
             <div className="shrink-0 border-b border-[#f1edf8] px-6 pb-4 pt-2">
                <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                     <h3 className="text-[24px] font-bold leading-tight tracking-[-0.02em] text-[#1f2937]">How Lender Diversity Works</h3>
+                     <h3 className="text-[24px] font-bold leading-tight tracking-[-0.02em] text-[#1f2937]">How Moo-lender Diversity Works</h3>
                      <p className="mt-2 text-[15px] leading-6 text-[#4b5563]">
                         This score belongs to the borrower. It measures the quality of the people who have lent to them.
                      </p>
@@ -1976,26 +1976,26 @@ const LenderDiversityBottomSheet = ({ isOpen, onClose, onOpenDocs }: { isOpen: b
                <div className="rounded-[18px] border border-[#eadfff] bg-[#fbfaff] p-4">
                   <p className="text-[14px] font-bold uppercase tracking-[0.02em] text-[#8b5cf6]">What a high score means</p>
                   <p className="mt-2 text-[15px] leading-6 text-[#4b5563]">
-                     Lenders look independent, established, and natural. They are not all new accounts, not all funding at once, and not
-                     overly concentrated in one lender.
+                     Moo-lenders look independent, established, and natural. They are not all new accounts, not all funding at once, and not
+                     overly concentrated in one moo-lender.
                   </p>
                </div>
 
                <div className="mt-4 rounded-[18px] border border-[#fee2e2] bg-[#fef2f2] p-4">
                   <p className="text-[14px] font-bold uppercase tracking-[0.02em] text-[#ef4444]">What it is trying to catch</p>
                   <p className="mt-2 text-[15px] leading-6 text-[#4b5563]">
-                     A borrower could look trustworthy by using fake lender accounts to fund small loans, then ask for a larger real loan.
-                     This score looks for that kind of coordinated lender history.
+                     A borrower could look trustworthy by using fake moo-lender accounts to fund small loans, then ask for a larger real loan.
+                     This score looks for that kind of coordinated moo-lender history.
                   </p>
                </div>
 
                <div className="mt-5 space-y-3">
                   <LenderDiversitySignal
                      title="Amount concentration"
-                     description="Checks whether one lender funded most of the borrower's history."
+                     description="Checks whether one moo-lender funded most of the borrower's history."
                   />
                   <LenderDiversitySignal
-                     title="Lender newness"
+                     title="Moo-lender newness"
                      description="New or inactive wallets count as riskier than established wallets with real on-chain activity."
                   />
                   <LenderDiversitySignal
@@ -2008,7 +2008,7 @@ const LenderDiversityBottomSheet = ({ isOpen, onClose, onOpenDocs }: { isOpen: b
                   />
                   <LenderDiversitySignal
                      title="Group coordination"
-                     description="Checks whether many lenders appeared around the same time, which can suggest a recruited group."
+                     description="Checks whether many moo-lenders appeared around the same time, which can suggest a recruited group."
                   />
                </div>
 
@@ -2026,7 +2026,7 @@ const LenderDiversityBottomSheet = ({ isOpen, onClose, onOpenDocs }: { isOpen: b
                <div className="mt-5 flex gap-3 rounded-[18px] border border-[#dbeafe] bg-[#eff6ff] p-4">
                   <Users className="mt-1 h-5 w-5 shrink-0 text-[#2563eb]" strokeWidth={2.5} />
                   <p className="text-[14px] leading-6 text-[#4b5563]">
-                     This does not judge the borrower directly. It tells lenders whether the borrower's lender network looks organic or
+                     This does not judge the borrower directly. It tells moo-lenders whether the borrower's moo-lender network looks organic or
                      suspicious.
                   </p>
                </div>
@@ -2043,7 +2043,7 @@ const LenderDiversityBottomSheet = ({ isOpen, onClose, onOpenDocs }: { isOpen: b
                      <span className="min-w-0">
                         <span className="block text-[15px] font-bold leading-tight">Read the full docs</span>
                         <span className="mt-1 block text-[12px] font-medium leading-tight text-white/75">
-                           Lender Diversity Score documentation
+                           Moo-lender Diversity Score documentation
                         </span>
                      </span>
                   </span>
@@ -2160,7 +2160,7 @@ const LoanMixBottomSheet = ({
                </div>
 
                <div className="mt-5 rounded-[18px] bg-[#f9fafb] p-4">
-                  <p className="mb-2 text-[14px] font-bold text-[#8b5cf6]">Why lenders care</p>
+                  <p className="mb-2 text-[14px] font-bold text-[#8b5cf6]">Why moo-lenders care</p>
                   <p className="text-[14px] leading-6 text-[#6b7280]">
                      Loan mix shows whether this borrower is mostly building repayment history with smaller loans, or raising their credit
                      level with full-limit repayments.

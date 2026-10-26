@@ -3,7 +3,14 @@ import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { buildMessengerVerifyLink, buildWhatsAppVerifyLink } from '@/config/contactVerification';
+import {
+   buildMessengerIntentLink,
+   buildMessengerVerifyLink,
+   buildWhatsAppVerifyLink,
+   MESSENGER_APP_CHAT_LINK,
+   MESSENGER_PAGE_ID,
+   MESSENGER_PLAY_STORE_LINK
+} from '@/config/contactVerification';
 
 type ReactActGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
 (globalThis as ReactActGlobal).IS_REACT_ACT_ENVIRONMENT = true;
@@ -12,13 +19,14 @@ type ReactActGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 // component reads on load and on every poll, and the code start_*_verification hands back.
 const supa = vi.hoisted(() => {
    const state = {
-      usersRow: { whatsapp_verified_at: null as string | null, messenger_verified_at: null as string | null },
+      usersRow: { whatsapp_verified_at: null as string | null, messenger_verified_at: null as string | null, viber_verified_at: null as string | null },
       rpcResult: { data: 'MDNG-ABC123' as unknown, error: null as unknown }
    };
    return {
       state,
       rpc: vi.fn(async () => state.rpcResult),
-      maybeSingle: vi.fn(async () => ({ data: state.usersRow }))
+      maybeSingle: vi.fn(async () => ({ data: state.usersRow })),
+      invoke: vi.fn(async () => ({ data: { ok: true }, error: null }))
    };
 });
 
@@ -42,8 +50,26 @@ vi.mock('@/hooks/usePushNotifications', () => ({
 vi.mock('@/lib/supabase/client', () => ({
    getSupabaseBrowserClient: () => ({
       from: () => ({ select: () => ({ eq: () => ({ maybeSingle: supa.maybeSingle }) }) }),
-      rpc: supa.rpc
+      rpc: supa.rpc,
+      functions: { invoke: supa.invoke },
+      // ContactsStep's live subscription (Supabase Realtime): a no-op channel here.
+      channel: () => ({
+         on(this: object) {
+            return this;
+         },
+         subscribe(this: object) {
+            return this;
+         }
+      }),
+      removeChannel: vi.fn(async () => 'ok')
    })
+}));
+
+// Records where "Or open Moodeng in Safari instead" sends them (jsdom can't follow x-safari- links).
+const safari = vi.hoisted(() => ({ open: vi.fn(() => true) }));
+vi.mock('@/lib/inAppBrowser', async (importOriginal) => ({
+   ...(await importOriginal<Record<string, unknown>>()),
+   openInSafari: safari.open
 }));
 
 // Imported after the mock is registered so the component picks up the mocked client.
@@ -53,7 +79,7 @@ const buttonByText = (container: HTMLElement, text: string) =>
    Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim() === text);
 
 // The channels are big option cards now (title + badge + subtitle in one button).
-const channelCard = (container: HTMLElement, channel: 'Messenger' | 'WhatsApp') =>
+const channelCard = (container: HTMLElement, channel: 'Messenger' | 'WhatsApp' | 'Get reminders on WhatsApp' | 'Turn on reminders' | 'Viber reminders' | 'Telegram reminders') =>
    Array.from(container.querySelectorAll('button')).find((b) => (b.textContent ?? '').trim().startsWith(channel));
 
 const continueButton = (container: HTMLElement) => {
@@ -71,9 +97,11 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
 
    beforeEach(() => {
       vi.useFakeTimers();
-      supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: null };
+      window.sessionStorage.clear();
+      supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: null, viber_verified_at: null };
       supa.state.rpcResult = { data: 'MDNG-ABC123', error: null };
       supa.rpc.mockClear();
+      supa.invoke.mockClear();
       push.state.isSupported = false;
       push.state.permission = 'unsupported';
       push.state.isSubscribed = false;
@@ -94,9 +122,9 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       Object.defineProperty(navigator, 'userAgent', { value: originalUserAgent, configurable: true });
    });
 
-   const render = async (userId = 'user-1', whatsappEnabled?: boolean) => {
+   const render = async (userId = 'user-1', whatsappEnabled?: boolean, requireReminders?: boolean, source?: 'connect') => {
       await act(async () => {
-         root.render(createElement(ContactsStep, { userId, onBack: vi.fn(), onContinue, whatsappEnabled }));
+         root.render(createElement(ContactsStep, { userId, onBack: vi.fn(), onContinue, whatsappEnabled, requireReminders, source }));
       });
       // Flush the initial "already verified?" load.
       await act(async () => {
@@ -172,15 +200,18 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
          await Promise.resolve();
       });
 
-      // A focus/visibility blip without actually leaving for Messenger doesn't count.
+      // A focus/visibility blip while Messenger is opening doesn't count as a trip.
       await setVisibility('visible');
       await act(async () => {
-         await vi.advanceTimersByTimeAsync(5_000);
+         await vi.advanceTimersByTimeAsync(1_000);
       });
       expect(container.textContent).not.toContain('Not confirmed yet?');
 
-      // Off to Messenger and back, still unconfirmed → backups after the short grace.
+      // Off to Messenger for a real visit and back, still unconfirmed → backups after the short grace.
       await setVisibility('hidden');
+      await act(async () => {
+         await vi.advanceTimersByTimeAsync(5_000);
+      });
       await setVisibility('visible');
       expect(container.textContent).not.toContain('Not confirmed yet?');
       await act(async () => {
@@ -199,6 +230,312 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       });
       expect(openSpy.mock.calls[0][0]).toContain('__mdng_code=MDNG-ABC123');
       Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+   });
+
+   const setVisibilityState = async (state: 'hidden' | 'visible') => {
+      Object.defineProperty(document, 'visibilityState', { value: state, configurable: true });
+      await act(async () => {
+         document.dispatchEvent(new Event('visibilitychange'));
+         await Promise.resolve();
+      });
+   };
+   const tapMessengerCard = async () => {
+      await act(async () => {
+         channelCard(container, 'Messenger')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+         await Promise.resolve();
+      });
+   };
+
+   it('shows the backups right away when Messenger never opens (the page never leaves)', async () => {
+      await render();
+      await tapMessengerCard();
+      expect(container.textContent).not.toContain('Not confirmed yet?');
+      await act(async () => {
+         await vi.advanceTimersByTimeAsync(3_100);
+      });
+      expect(container.textContent).toContain('Not confirmed yet?');
+      expect(container.textContent).toContain('MDNG-ABC123');
+   });
+
+   it('shows the backups right away when Messenger flashes open and shut (the Android failure)', async () => {
+      await render();
+      await tapMessengerCard();
+      await setVisibilityState('hidden');
+      await act(async () => {
+         await vi.advanceTimersByTimeAsync(300);
+      });
+      await setVisibilityState('visible');
+      expect(container.textContent).toContain('Not confirmed yet?');
+      Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+   });
+
+   it('on Android, shows the code and a direct link to our chat instead of opening m.me', async () => {
+      Object.defineProperty(navigator, 'userAgent', {
+         value: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Mobile Safari/537.36',
+         configurable: true
+      });
+      const writeText = vi.fn(async () => undefined);
+      vi.stubGlobal('navigator', Object.assign(Object.create(navigator), { clipboard: { writeText } }));
+      // jsdom can't navigate; the real link opens Messenger by itself.
+      const blockNavigation = (e: Event) => e.preventDefault();
+      document.addEventListener('click', blockNavigation, true);
+      try {
+         await render();
+         await tapMessengerCard();
+         // Nothing opens on the first tap: m.me never reaches Messenger from Android Chrome.
+         expect(openSpy).not.toHaveBeenCalled();
+         expect(container.textContent).toContain('MDNG-ABC123');
+         const chatLink = Array.from(container.querySelectorAll('a')).find((a) => a.textContent?.includes('Copy code & open Messenger'));
+         expect(chatLink?.getAttribute('href')).toBe(MESSENGER_APP_CHAT_LINK);
+         expect(chatLink?.getAttribute('target')).toBeNull();
+         expect(container.textContent).not.toContain('Open Messenger again');
+
+         await act(async () => {
+            chatLink?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+            await Promise.resolve();
+         });
+         expect(writeText).toHaveBeenCalledWith('MDNG-ABC123');
+         // The tap time is recorded so the bot can connect them by timing.
+         expect(supa.rpc).toHaveBeenCalledWith('mark_messenger_chat_opened');
+         expect(JSON.parse(window.sessionStorage.getItem('moodeng.messengerVerifyPending') ?? '{}')).toMatchObject({
+            code: 'MDNG-ABC123',
+            link: MESSENGER_APP_CHAT_LINK
+         });
+
+         // The bot confirms the pasted code → the card flips to Verified.
+         supa.state.usersRow.messenger_verified_at = '2026-10-11T03:00:00Z';
+         await act(async () => {
+            await vi.advanceTimersByTimeAsync(3_100);
+         });
+         expect(container.textContent).not.toContain('Copy code & open Messenger');
+         expect(continueButton(container).disabled).toBe(false);
+      } finally {
+         document.removeEventListener('click', blockNavigation, true);
+      }
+   });
+
+   // Onboarding's Messenger card says "Connect Messenger".
+   const connectMessengerCard = () =>
+      Array.from(container.querySelectorAll('button')).find((b) => (b.textContent ?? '').trim().startsWith('Connect Messenger'));
+   const tapConnectMessenger = async () => {
+      await act(async () => {
+         connectMessengerCard()?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+         await Promise.resolve();
+      });
+   };
+
+   describe('Indonesia: WhatsApp first in onboarding, then Facebook', () => {
+      beforeEach(() => window.sessionStorage.setItem('moodeng.msgrCountry', 'ID'));
+
+      it('step 1 is WhatsApp; Facebook is locked until then', async () => {
+         await render('user-1', undefined, undefined, 'connect');
+         expect(container.textContent).toContain('Connect WhatsApp');
+         expect(container.textContent).toContain('Unlocks after step 1');
+         expect(connectMessengerCard()).toBeUndefined();
+         expect(container.textContent?.indexOf('Connect WhatsApp')).toBeLessThan(container.textContent?.indexOf('Connect Facebook') ?? -1);
+      });
+
+      it('"I don\'t have WhatsApp" unlocks Facebook', async () => {
+         await render('user-1', undefined, undefined, 'connect');
+         await act(async () => {
+            buttonByText(container, "I don't have WhatsApp")?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            await Promise.resolve();
+         });
+         expect(container.textContent).not.toContain('Unlocks after step 1');
+         expect(connectMessengerCard()).toBeTruthy();
+      });
+
+      it('WhatsApp connected: Facebook opens, says the steps are on WhatsApp too, and reuses the bot\'s code', async () => {
+         supa.state.usersRow.whatsapp_verified_at = '2026-10-25T14:00:00Z';
+         await render('user-1', undefined, undefined, 'connect');
+         expect(container.textContent).toContain('We also sent these steps to your WhatsApp.');
+         await tapConnectMessenger();
+         expect(supa.rpc).toHaveBeenCalledWith('start_or_reuse_messenger_code');
+         expect(supa.rpc).not.toHaveBeenCalledWith('start_contact_verification', { p_channel: 'messenger' });
+      });
+
+      it('outside onboarding (loan request) nothing changes', async () => {
+         await render();
+         expect(container.textContent).not.toContain('Connect WhatsApp');
+      });
+   });
+
+   it('outside Indonesia, onboarding keeps Facebook as step 1 with a fresh code', async () => {
+      await render('user-1', undefined, undefined, 'connect');
+      expect(container.textContent).not.toContain('Connect WhatsApp');
+      await tapConnectMessenger();
+      expect(supa.rpc).toHaveBeenCalledWith('start_contact_verification', { p_channel: 'messenger' });
+   });
+
+   describe('Android in Indonesia: Chrome falls back to our page when Messenger is missing', () => {
+      const androidChrome = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Mobile Safari/537.36';
+      const chatLink = () => Array.from(container.querySelectorAll('a')).find((a) => a.textContent?.includes('Copy code & open Messenger'));
+
+      beforeEach(() => {
+         Object.defineProperty(navigator, 'userAgent', { value: androidChrome, configurable: true });
+         window.history.replaceState(null, '', '/onboarding/connect');
+      });
+      afterEach(() => window.history.replaceState(null, '', '/'));
+
+      it('the button is a Messenger intent whose fallback is this page marked ?nomsgr=1', async () => {
+         window.sessionStorage.setItem('moodeng.msgrCountry', 'ID');
+         const blockNavigation = (e: Event) => e.preventDefault();
+         document.addEventListener('click', blockNavigation, true);
+         try {
+            await render();
+            await tapMessengerCard();
+            const href = chatLink()?.getAttribute('href') ?? '';
+            const fallback = `${window.location.origin}/onboarding/connect?nomsgr=1`;
+            expect(href).toBe(buildMessengerIntentLink(fallback));
+            expect(href).toContain(`intent://user-thread/${MESSENGER_PAGE_ID}#Intent;scheme=fb-messenger;package=com.facebook.orca;`);
+            expect(href).toContain(`S.browser_fallback_url=${encodeURIComponent(fallback)};end`);
+
+            await act(async () => {
+               chatLink()?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+               await Promise.resolve();
+            });
+            expect(JSON.parse(window.sessionStorage.getItem('moodeng.messengerVerifyPending') ?? '{}')).toMatchObject({
+               code: 'MDNG-ABC123',
+               link: href
+            });
+         } finally {
+            document.removeEventListener('click', blockNavigation, true);
+         }
+      });
+
+      it('elsewhere (no Indonesian IP) the button stays the plain Messenger app link', async () => {
+         await render();
+         await tapMessengerCard();
+         expect(chatLink()?.getAttribute('href')).toBe(MESSENGER_APP_CHAT_LINK);
+      });
+
+      it('back from Chrome with ?nomsgr=1: says Messenger is missing, keeps the same code, offers the Play Store', async () => {
+         window.sessionStorage.setItem(
+            'moodeng.messengerVerifyPending',
+            JSON.stringify({ userId: 'user-1', code: 'MDNG-EB9C01', link: 'intent://x', at: Date.now() })
+         );
+         window.history.replaceState(null, '', '/onboarding/connect?nomsgr=1');
+         await render();
+         expect(container.textContent).toContain("This phone doesn't have the Messenger app.");
+         expect(container.textContent).toContain('MDNG-EB9C01');
+         const getMessenger = Array.from(container.querySelectorAll('a')).find((a) => a.textContent?.trim() === 'Get Messenger');
+         expect(getMessenger?.getAttribute('href')).toBe(MESSENGER_PLAY_STORE_LINK);
+         // The marker is gone, so a reload doesn't show the card again.
+         expect(window.location.search).toBe('');
+      });
+   });
+
+   it('iPhone in Facebook: the tap copies the code and shows how to paste it; Safari via ⋯ carries the code', async () => {
+      Object.defineProperty(navigator, 'userAgent', {
+         value:
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/23G83 [FBAN/FBIOS;FBAV/582.0.0.26.106;FBSN/iOS]',
+         configurable: true
+      });
+      // Facebook's iPhone browser refuses the modern copy call; the old command still copies.
+      vi.stubGlobal('navigator', Object.assign(Object.create(navigator), { clipboard: { writeText: vi.fn(async () => Promise.reject(new Error('NotAllowedError'))) } }));
+      const exec = document.execCommand;
+      document.execCommand = vi.fn(() => true);
+      safari.open.mockClear();
+      await render();
+      await tapMessengerCard();
+
+      // No x-safari link (dropped there). Paste is the main step.
+      const safariLinks = Array.from(container.querySelectorAll('a')).filter((a) => /^x-safari/.test(a.getAttribute('href') ?? ''));
+      expect(safariLinks).toHaveLength(0);
+      expect(container.textContent).toContain('MDNG-ABC123');
+      // Short card inside Facebook's browser: no step list (George, 18 Oct).
+      expect(container.textContent).not.toContain('Tap the blue button');
+
+      await act(async () => {
+         buttonByText(container, 'Copy code & open Messenger')?.click();
+         await Promise.resolve();
+      });
+      expect(document.execCommand).toHaveBeenCalledWith('copy');
+      // The paste card: what to do once Messenger opens, then it opens our chat.
+      expect(container.textContent).toContain('📋 Code copied: MDNG-ABC123');
+      const openLink = Array.from(container.querySelectorAll('a')).find((a) => a.textContent?.includes('Open Messenger'));
+      expect(openLink?.getAttribute('href')).toBe(MESSENGER_APP_CHAT_LINK);
+
+      // "Open in Safari" shows the ⋯ steps and puts the code in the address Facebook's menu will open.
+      await act(async () => {
+         buttonByText(container, 'Or open in Safari')?.click();
+      });
+      expect(safari.open).not.toHaveBeenCalled();
+      expect(container.textContent).toContain('Open in external browser');
+      expect(new URL(window.location.href).searchParams.get('fbcode')).toBe('MDNG-ABC123');
+      document.execCommand = exec;
+   });
+
+   it('iPhone in Facebook: says so when the code could not be copied', async () => {
+      Object.defineProperty(navigator, 'userAgent', {
+         value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/23G83 [FBAN/FBIOS;FBSN/iOS]',
+         configurable: true
+      });
+      vi.stubGlobal('navigator', Object.assign(Object.create(navigator), { clipboard: { writeText: vi.fn(async () => Promise.reject(new Error('NotAllowedError'))) } }));
+      const exec = document.execCommand;
+      document.execCommand = vi.fn(() => false);
+      await render();
+      await tapMessengerCard();
+      await act(async () => {
+         buttonByText(container, 'Copy code & open Messenger')?.click();
+         await Promise.resolve();
+         await Promise.resolve();
+      });
+      expect(container.textContent).toContain("Copy didn't work here");
+      document.execCommand = exec;
+   });
+
+   it('Android in Facebook\'s browser: the tap copies the code, shows how to paste it, then opens Messenger', async () => {
+      Object.defineProperty(navigator, 'userAgent', {
+         value:
+            'Mozilla/5.0 (Linux; Android 15; Pixel 7 Build/AP4A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/155.0.0.0 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/540.0.0.0;]',
+         configurable: true
+      });
+      const writeText = vi.fn(async () => undefined);
+      vi.stubGlobal('navigator', Object.assign(Object.create(navigator), { clipboard: { writeText } }));
+      await render();
+      await tapMessengerCard();
+      // Paste is the main step here (a returning chatter sends us nothing when the chat opens).
+      // Short card inside Facebook's browser: no step list (George, 18 Oct).
+      expect(container.textContent).not.toContain('Tap the blue button');
+
+      {
+         await act(async () => {
+            buttonByText(container, 'Copy code & open Messenger')?.click();
+            await Promise.resolve();
+         });
+         expect(writeText).toHaveBeenCalledWith('MDNG-ABC123');
+         expect(container.textContent).toContain('📋 Code copied: MDNG-ABC123');
+         expect(container.textContent).toContain('Open Messenger (3)');
+         expect(supa.rpc).not.toHaveBeenCalledWith('mark_messenger_chat_opened');
+
+         // The countdown ends → Messenger opens by itself, and the tap time is recorded for the bot.
+         for (let i = 0; i < 3; i += 1) {
+            await act(async () => {
+               vi.advanceTimersByTime(1000);
+            });
+         }
+         expect(supa.rpc).toHaveBeenCalledWith('mark_messenger_chat_opened');
+         const openLink = Array.from(container.querySelectorAll('a')).find((a) => a.textContent?.includes('Open Messenger'));
+         expect(openLink?.getAttribute('href')).toBe(MESSENGER_APP_CHAT_LINK);
+
+         // Still on the page 2s later: Facebook ignored it, so ask for a tap.
+         await act(async () => {
+            vi.advanceTimersByTime(2100);
+            await Promise.resolve();
+         });
+         expect(container.textContent).toContain('Tap to open Messenger');
+      }
+   });
+
+   it('picks the attempt back up, with the code showing, after an Android fallback left the page', async () => {
+      window.sessionStorage.setItem(
+         'moodeng.messengerVerifyPending',
+         JSON.stringify({ userId: 'user-1', code: 'MDNG-ABC123', link: buildMessengerVerifyLink('MDNG-ABC123'), at: Date.now() })
+      );
+      await render();
+      expect(container.textContent).toContain('Not confirmed yet?');
+      expect(container.textContent).toContain('MDNG-ABC123');
    });
 
    it('does not show the backups when the bot confirms them while they were away', async () => {
@@ -224,10 +561,10 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(continueButton(container).disabled).toBe(false);
    });
 
-   it('enables Continue immediately for a returning borrower whose WhatsApp is already verified', async () => {
+   it('does not let a verified WhatsApp stand in for Facebook (Facebook is required)', async () => {
       supa.state.usersRow.whatsapp_verified_at = '2026-09-01T00:00:00Z';
       await render();
-      expect(continueButton(container).disabled).toBe(false);
+      expect(continueButton(container).disabled).toBe(true);
    });
 
    it('calls onContinue when Continue is clicked after a channel is verified', async () => {
@@ -237,6 +574,30 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
          continueButton(container).dispatchEvent(new MouseEvent('click', { bubbles: true }));
       });
       expect(onContinue).toHaveBeenCalledTimes(1);
+   });
+
+   it('lets them continue when notifications are blocked in the browser, and says how to unblock', async () => {
+      // Chrome won't ask again once someone tapped Block, so requiring reminders was a dead end.
+      push.state.isSupported = true;
+      push.state.permission = 'denied';
+      supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: '2026-10-13T00:00:00Z' };
+      await render();
+      expect(continueButton(container).disabled).toBe(false);
+      expect(container.textContent).not.toContain('Turn on reminders to continue.');
+      expect(container.textContent).toContain('Blocked in your browser');
+      expect(container.textContent).toContain('Optional');
+
+      // Tapping the card opens the picture guide instead of a tap that can only fail.
+      const remindersCard = Array.from(container.querySelectorAll('button')).find((b) =>
+         (b.textContent ?? '').includes('Turn on reminders')
+      );
+      await act(async () => {
+         remindersCard?.click();
+      });
+      expect(container.querySelector('[aria-labelledby="unblock-guide-title"]')).not.toBeNull();
+      expect(container.textContent).toContain('Switch it to Allow');
+      expect(push.enable).not.toHaveBeenCalled();
+      expect(supa.invoke).toHaveBeenCalledWith('messenger-stuck-alerts', { body: expect.objectContaining({ reminders: true, reason: 'blocked' }) });
    });
 
    it('requires reminders on a push-capable device: Continue stays off until they are turned on', async () => {
@@ -256,6 +617,32 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(push.enable).toHaveBeenCalledTimes(1);
       await render();
       expect(continueButton(container).disabled).toBe(false);
+   });
+
+   it('stops requiring reminders after they fail twice on a phone that cannot subscribe', async () => {
+      push.state.isSupported = true;
+      push.state.permission = 'granted';
+      push.enable.mockImplementationOnce(async () => 'failed').mockImplementationOnce(async () => 'failed');
+      supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: '2026-09-25T00:00:00Z' };
+      await render();
+      const remindersCard = () =>
+         Array.from(container.querySelectorAll('button')).find((b) => (b.textContent ?? '').includes('Turn on reminders'));
+
+      await act(async () => {
+         remindersCard()?.click();
+      });
+      expect(continueButton(container).disabled).toBe(true);
+      expect(container.textContent).toContain("Couldn't turn on reminders");
+
+      await act(async () => {
+         remindersCard()?.click();
+      });
+      expect(push.enable).toHaveBeenCalledTimes(2);
+      expect(continueButton(container).disabled).toBe(false);
+      expect(container.textContent).toContain('Not working on this phone');
+      expect(container.textContent).not.toContain('Turn on reminders to continue.');
+      // The bot tells them how to fix it in Chrome/Safari, and the team hears about it.
+      expect(supa.invoke).toHaveBeenCalledWith('messenger-stuck-alerts', { body: expect.objectContaining({ reminders: true, reason: 'failed', failures: 2 }) });
    });
 
    it('does not block an iPhone-Safari borrower, and shows no Home Screen instructions', async () => {
@@ -286,11 +673,246 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(container.textContent).not.toContain('(one option)');
    });
 
-   it('still shows WhatsApp to a returning borrower who already verified it', async () => {
+   it('does not show the old WhatsApp contact card to a borrower who verified WhatsApp before', async () => {
       supa.state.usersRow.whatsapp_verified_at = '2026-09-01T00:00:00Z';
       await render();
-      expect(container.textContent).toContain('WhatsApp');
-      expect(container.textContent).toContain('Verified');
+      expect(channelCard(container, 'WhatsApp')).toBeUndefined();
+   });
+
+   it('locks "Turn on reminders" as step 2 until Facebook is connected, then unlocks it', async () => {
+      push.state.isSupported = true;
+      push.state.permission = 'default';
+      await render();
+      expect(container.textContent).toContain('Step 2 · Payment reminders');
+      expect(container.textContent).toContain('Unlocks after step 1');
+      expect(Array.from(container.querySelectorAll('button')).some((b) => b.textContent?.includes('Turn on reminders'))).toBe(false);
+   });
+
+   it('shows the reminders button itself once Facebook is connected', async () => {
+      push.state.isSupported = true;
+      push.state.permission = 'default';
+      supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+      await render();
+      expect(container.textContent).toContain('Step 1 ✓ · Connect Facebook');
+      expect(container.textContent).not.toContain('Unlocks after step 1');
+      expect(container.textContent).toContain('Turn on reminders');
+   });
+
+   it('shows no step numbers when there is no reminders step', async () => {
+      await render();
+      expect(container.textContent).not.toContain('Step 1');
+   });
+
+   describe('WhatsApp reminders (where notifications can\'t work)', () => {
+      const remindersOn = () =>
+         supa.rpc.mockImplementation(async (name: string) =>
+            name === 'get_whatsapp_reminders_enabled' ? { data: true, error: null } : supa.state.rpcResult
+         );
+      afterEach(() => supa.rpc.mockImplementation(async () => supa.state.rpcResult));
+
+      it('offers WhatsApp reminders when the switch is on and push is unsupported', async () => {
+         remindersOn();
+         supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+         await render();
+         expect(container.textContent).toContain('Get reminders on WhatsApp');
+         // Recommended, not required: Facebook alone still lets them through.
+         expect(continueButton(container).disabled).toBe(false);
+      });
+
+      it('shows Step 1 / Step 2 with WhatsApp locked until Facebook is connected', async () => {
+         remindersOn();
+         await render();
+         expect(container.textContent).toContain('Step 1 · Connect Facebook');
+         expect(container.textContent).toContain('Step 2 · Payment reminders');
+         expect(container.textContent).toContain('Unlocks after step 1');
+         expect(channelCard(container, 'Get reminders on WhatsApp')).toBeUndefined();
+         expect(container.textContent).toContain('Connect Facebook to continue.');
+      });
+
+      it('shows nothing about WhatsApp reminders while the switch is off', async () => {
+         supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+         await render();
+         expect(container.textContent).not.toContain('Get reminders on WhatsApp');
+      });
+
+      it('does not offer WhatsApp when push works', async () => {
+         remindersOn();
+         push.state.isSupported = true;
+         push.state.permission = 'granted';
+         push.state.isSubscribed = true;
+         supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+         await render();
+         expect(container.textContent).not.toContain('Get reminders on WhatsApp');
+      });
+
+      it('tapping it starts a WhatsApp code and shows it with an Open WhatsApp link (nothing opens by itself)', async () => {
+         remindersOn();
+         supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+         await render();
+         const card = channelCard(container, 'Get reminders on WhatsApp');
+         await act(async () => {
+            card?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            await Promise.resolve();
+            await Promise.resolve();
+         });
+         expect(supa.rpc).toHaveBeenCalledWith('start_whatsapp_verification');
+         // Nothing opens by itself (Facebook's browser shows the wa.me web page instead of the app):
+         // the panel's button is a real link they tap.
+         expect(openSpy.mock.calls.some((call) => String(call[0]).includes('wa.me'))).toBe(false);
+         const waLink = Array.from(container.querySelectorAll('a')).find((a) => a.textContent?.includes('Open WhatsApp and hit send'));
+         expect(waLink?.getAttribute('href')).toContain('wa.me/66951659077');
+         expect(container.textContent).toContain('MDNG-ABC123');
+         expect(container.textContent).toContain('+66 95 165 9077');
+      });
+
+      describe('required (only email reaches them)', () => {
+         it('push can’t work: Continue stays locked until WhatsApp is on, and the card says Required', async () => {
+            remindersOn();
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            await render('user-1', undefined, true);
+            expect(continueButton(container).disabled).toBe(true);
+            expect(channelCard(container, 'Get reminders on WhatsApp')?.textContent).toContain('Required');
+            expect(container.textContent).toContain('Turn on WhatsApp reminders to continue.');
+         });
+
+         it('onboarding (connect): WhatsApp is required where notifications can’t work, too', async () => {
+            remindersOn();
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            await render('user-1', undefined, false, 'connect');
+            expect(continueButton(container).disabled).toBe(true);
+            expect(channelCard(container, 'Get reminders on WhatsApp')?.textContent).toContain('Required');
+            expect(buttonByText(container, 'I don’t have WhatsApp'.replace('’', "'"))).toBeTruthy();
+         });
+
+         it('no WhatsApp: Telegram instead (Viber off), SMS greyed out, never the bell; Telegram linked turns it on', async () => {
+            remindersOn();
+            push.state.isSupported = true;
+            push.state.permission = 'denied';
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            await render('user-1', undefined, false, 'connect');
+            expect(channelCard(container, 'Get reminders on WhatsApp')).toBeTruthy();
+            expect(channelCard(container, 'Turn on reminders')).toBeFalsy();
+            await act(async () => {
+               buttonByText(container, "I don't have WhatsApp")?.click();
+            });
+            expect(channelCard(container, 'Get reminders on WhatsApp')).toBeFalsy();
+            expect(channelCard(container, 'Turn on reminders')).toBeFalsy();
+            expect(channelCard(container, 'Telegram reminders')).toBeTruthy();
+            expect(channelCard(container, 'Viber reminders')).toBeFalsy();
+            expect(container.textContent).toContain('SMS reminders');
+            expect(container.textContent).toContain('Coming soon');
+            expect(continueButton(container).disabled).toBe(false);
+         });
+
+         it('a linked Telegram stands in for WhatsApp', async () => {
+            remindersOn();
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            (supa.state.usersRow as Record<string, unknown>).chat_id = 123456;
+            await render('user-1', undefined, false, 'connect');
+            expect(channelCard(container, 'Get reminders on WhatsApp')).toBeFalsy();
+            expect(container.textContent).toContain('Telegram reminders');
+            expect(continueButton(container).disabled).toBe(false);
+         });
+
+         it('Viber on: "I don’t have WhatsApp" swaps WhatsApp for the Viber card; their number turns it on', async () => {
+            supa.rpc.mockImplementation(async (name: string) => {
+               if (name === 'get_whatsapp_reminders_enabled' || name === 'get_viber_reminders_enabled') return { data: true, error: null };
+               if (name === 'set_my_viber_number') return { data: 'ok', error: null };
+               return supa.state.rpcResult;
+            });
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            await render('user-1', undefined, false, 'connect');
+            await act(async () => {
+               buttonByText(container, "I don't have WhatsApp")?.click();
+            });
+            expect(channelCard(container, 'Get reminders on WhatsApp')).toBeFalsy();
+            expect(continueButton(container).disabled).toBe(false);
+            await act(async () => {
+               channelCard(container, 'Viber reminders')?.click();
+            });
+            const phoneInput = container.querySelector<HTMLInputElement>('#viber-number')!;
+            await act(async () => {
+               const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+               setter.call(phoneInput, '09171234567');
+               phoneInput.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+            await act(async () => {
+               buttonByText(container, 'Turn on Viber reminders')?.click();
+            });
+            expect(supa.rpc).toHaveBeenCalledWith('set_my_viber_number', { p_phone: '09171234567' });
+            expect(container.textContent).toContain('Viber reminders');
+            expect(container.textContent).toContain('On');
+         });
+
+         it('a confirmed Viber number stands in for WhatsApp', async () => {
+            remindersOn();
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            supa.state.usersRow.viber_verified_at = '2026-10-19T00:00:00Z';
+            await render('user-1', undefined, false, 'connect');
+            expect(channelCard(container, 'Get reminders on WhatsApp')).toBeFalsy();
+            expect(continueButton(container).disabled).toBe(false);
+         });
+
+         it('Viber added elsewhere doesn’t hide the bell where notifications work', async () => {
+            supa.rpc.mockImplementation(async (name: string) =>
+               name === 'get_whatsapp_reminders_enabled' || name === 'get_viber_reminders_enabled' ? { data: true, error: null } : supa.state.rpcResult
+            );
+            push.state.isSupported = true;
+            push.state.permission = 'default';
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            supa.state.usersRow.viber_verified_at = '2026-10-19T00:00:00Z';
+            await render('user-1', undefined, false, 'connect');
+            expect(channelCard(container, 'Turn on reminders')).toBeTruthy();
+            expect(container.textContent).not.toContain('Viber reminders');
+            expect(continueButton(container).disabled).toBe(true);
+         });
+
+         it('"I don’t have WhatsApp" lets them through', async () => {
+            remindersOn();
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            await render('user-1', undefined, true);
+            await act(async () => {
+               buttonByText(container, "I don't have WhatsApp")?.click();
+            });
+            expect(continueButton(container).disabled).toBe(false);
+            expect(container.textContent).not.toContain('Turn on WhatsApp reminders to continue.');
+         });
+
+         it('an old WhatsApp confirmation (sent STOP, or never linked) doesn’t count', async () => {
+            remindersOn();
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            supa.state.usersRow.whatsapp_verified_at = '2026-09-21T00:00:00Z';
+            await render('user-1', undefined, true);
+            expect(continueButton(container).disabled).toBe(true);
+            expect(container.textContent).toContain('Get reminders on WhatsApp');
+         });
+
+         it('push works on this phone: push is required as before, no WhatsApp', async () => {
+            remindersOn();
+            push.state.isSupported = true;
+            push.state.permission = 'default';
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            await render('user-1', undefined, true);
+            expect(continueButton(container).disabled).toBe(true);
+            expect(container.textContent).toContain('Turn on reminders to continue.');
+            expect(container.textContent).not.toContain('Get reminders on WhatsApp');
+         });
+
+         it('WhatsApp card switched off: nothing to require, Facebook is enough', async () => {
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            await render('user-1', undefined, true);
+            expect(continueButton(container).disabled).toBe(false);
+         });
+      });
+
+      it('shows WhatsApp reminders as on once verified', async () => {
+         remindersOn();
+         supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+         supa.state.usersRow.whatsapp_verified_at = '2026-10-16T00:00:00Z';
+         await render();
+         expect(container.textContent).toContain('WhatsApp reminders');
+         expect(container.textContent).not.toContain('Get reminders on WhatsApp');
+      });
    });
 
    it('WhatsApp button keeps the original RPC entry point and opens a wa.me link', async () => {

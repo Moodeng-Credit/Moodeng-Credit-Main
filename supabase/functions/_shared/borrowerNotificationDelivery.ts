@@ -16,18 +16,86 @@ import {
    type PushLocale,
    type PushPayload
 } from './pushMessages.ts';
-import { type MessengerCard, sendMessengerMessage } from './sendpulse.ts';
+import { type MessengerCard, sendMessengerMessage, sendWhatsAppTemplate, type WhatsAppTemplate } from './sendpulse.ts';
 import { sendTelegramMessage } from './telegram.ts';
 
-/** Telegram/LINE sign-ups get a placeholder address nobody reads (telegram_<id>@moodeng.app, line_<id>@…). */
+// WhatsApp reminders: the Meta-approved Utility templates (created in SendPulse → WhatsApp bot →
+// Templates). Every template takes the same three body variables: {{1}} name, {{2}} amount in USDC,
+// {{3}} when: "tomorrow" / "today" for the due ones, how late for overdue ("2 days", read as
+// "… is overdue (2 days late)"), and has a static "Repay now" URL button to https://moodeng.app/repay.
+// "Due in 3 days" gets no WhatsApp: push, email and Messenger cover it, and every message costs money.
+export const WHATSAPP_REMINDER_TEMPLATES: Partial<Record<LoanNotificationType, string>> = {
+   final_reminder: 'moodeng_due_tomorrow',
+   due_today: 'moodeng_due_today',
+   overdue: 'moodeng_overdue'
+};
+
+// Kill switch, starts 'false': WhatsApp only goes out once the templates are approved and someone turns
+// it on (telegram_bot_settings, like the Telegram one).
+export const BORROWER_WHATSAPP_SETTING_KEY = 'borrower_whatsapp_enabled';
+
+export const buildWhatsAppReminderTemplate = (
+   type: LoanNotificationType,
+   recipient: LoanNotificationRecipient,
+   aggregate: LoanNotificationAggregate | undefined
+): WhatsAppTemplate | null => {
+   const name = WHATSAPP_REMINDER_TEMPLATES[type];
+   if (!name || !aggregate) return null;
+   // The overdue job's label is "N day(s)", or "overdue" when it has no deadline to measure from.
+   const lateBy = aggregate.dueLabel && aggregate.dueLabel !== 'overdue' ? aggregate.dueLabel : 'a little';
+   const when = type === 'due_today' ? 'today' : type === 'final_reminder' ? 'tomorrow' : lateBy;
+   return {
+      name,
+      language: { code: 'en' },
+      components: [
+         {
+            type: 'body',
+            parameters: [
+               { type: 'text', text: recipient.username?.trim() || 'there' },
+               { type: 'text', text: formatUsdcAmount(aggregate.totalAmount) },
+               { type: 'text', text: when }
+            ]
+         }
+      ]
+   };
+};
+
+// Viber reminders (no WhatsApp): queued in viber_outbox for the relay on George's Mac, which types
+// them into an ordinary Viber account (supabase/migrations/20261019090000_viber_reminders.sql). Plain
+// text, so the same types as WhatsApp; free per message, but each one is a tap on a real account, so
+// "due in 3 days" stays on the other channels.
+export const VIBER_REMINDER_TYPES: LoanNotificationType[] = ['final_reminder', 'due_today', 'overdue'];
+export const BORROWER_VIBER_SETTING_KEY = 'borrower_viber_enabled';
+
+export const buildViberReminderText = (
+   type: LoanNotificationType,
+   recipient: LoanNotificationRecipient,
+   aggregate: LoanNotificationAggregate | undefined
+): string | null => {
+   if (!VIBER_REMINDER_TYPES.includes(type) || !aggregate) return null;
+   const name = recipient.username?.trim() || 'there';
+   const amount = `${formatUsdcAmount(aggregate.totalAmount)} USDC`;
+   const lateBy = aggregate.dueLabel && aggregate.dueLabel !== 'overdue' ? aggregate.dueLabel : null;
+   const line =
+      type === 'final_reminder'
+         ? `your Moodeng Credit payment of ${amount} is due tomorrow.`
+         : type === 'due_today'
+           ? `your Moodeng Credit payment of ${amount} is due today.`
+           : `your Moodeng Credit payment of ${amount} is overdue${lateBy ? ` (${lateBy} late)` : ''}. Paying now protects your credit level.`;
+   return `Hi ${name}, ${line}\n\nRepay here: https://moodeng.app/repay`;
+};
+
+/** Telegram/LINE/phone sign-ups get a placeholder address nobody reads (telegram_<id>@moodeng.app, line_<id>@…, phone_<id>@…). */
 export const isPlaceholderEmail = (email: string | null | undefined): boolean =>
-   /^(telegram|line)_[^@]+@moodeng\.(app|credit)$/i.test((email ?? '').trim());
+   /^(telegram|line|phone)_[^@]+@moodeng\.(app|credit)$/i.test((email ?? '').trim());
 
 export type BorrowerNotificationDeliveryResult = {
    emailSent: boolean;
    telegramSent: boolean;
    pushSent: boolean;
    messengerSent: boolean;
+   whatsappSent: boolean;
+   viberQueued: boolean;
 };
 
 const REMINDER_TYPES: LoanNotificationType[] = ['urgent_reminder', 'final_reminder', 'due_today', 'overdue'];
@@ -38,16 +106,34 @@ const formatUsdcAmount = (value: number | string | null | undefined) =>
 const formatDueDate = (value: string | null | undefined) =>
    value ? new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : null;
 
+// The "Welcome to the community, Moo-borrower!" poster, sent with a borrower's FIRST funded loan (George,
+// 2026-10-13). Served from the app's public folder; square so Messenger's card doesn't crop it.
+export const MOO_BORROWER_POSTER_URL = `${(Deno.env.get('SITE_URL') ?? 'https://moodeng.app').replace(/\/$/, '')}/messenger/moo-borrower-welcome.jpg`;
+
 /** What goes to Messenger for this notification type, or null for the types we don't send there. */
 export const buildMessengerContent = (
    type: LoanNotificationType,
    loan: LoanNotificationLoan | null,
-   aggregate: LoanNotificationAggregate | undefined
+   aggregate: LoanNotificationAggregate | undefined,
+   { firstLoan = false }: { firstLoan?: boolean } = {}
 ): { text: string; card?: MessengerCard } | null => {
    if (type === 'funded' && loan) {
       const dashboardUrl = buildPushPayloadForType('funded', loan, aggregate, 'en')?.url;
       const due = formatDueDate(loan.due_date);
       const repay = toNumber(loan.total_repayment_amount) > 0 ? `Repay ${formatUsdcAmount(loan.total_repayment_amount)} USDC` : 'Repay on time';
+      if (firstLoan) {
+         return {
+            text:
+               `🎉 Welcome to the community, Moo-borrower! Your first loan is funded: ${formatUsdcAmount(loan.loan_amount)} USDC has been sent to your wallet.\n\n` +
+               `${repay}${due ? ` by ${due}` : ''} to build your record and level up to bigger loans. We're cheering for you! 🦛`,
+            card: {
+               title: 'Welcome, Moo-borrower! 🎉',
+               subtitle: 'Your first loan is funded. Repay on time to level up.',
+               imageUrl: MOO_BORROWER_POSTER_URL,
+               button: { title: 'Open Moodeng', url: dashboardUrl ?? 'https://moodeng.app' }
+            }
+         };
+      }
       return {
          text:
             `🎉 Great news, your loan is funded! ${formatUsdcAmount(loan.loan_amount)} USDC has been sent to your wallet.\n\n` +
@@ -64,6 +150,20 @@ export const buildMessengerContent = (
    }
 
    return null;
+};
+
+/** True when no earlier funded (non-test) loan exists for this borrower. */
+export const isFirstFundedLoan = async (supabase: any, loan: LoanNotificationLoan): Promise<boolean> => {
+   if (!loan.borrower_user_id || !loan.funded_at) return false;
+   const { count, error } = await supabase
+      .from('loans')
+      .select('id', { count: 'exact', head: true })
+      .eq('borrower_user_id', loan.borrower_user_id)
+      .eq('loan_status', 'Lent')
+      .eq('is_test', false)
+      .lt('funded_at', loan.funded_at);
+   if (error) throw error;
+   return (count ?? 0) === 0;
 };
 
 const toNumber = (value: number | string | null | undefined) => {
@@ -145,9 +245,11 @@ export const sendBorrowerLoanNotification = async (
 ): Promise<BorrowerNotificationDeliveryResult> => {
    // If the user has opted out of this notification category, skip silently
    if (options.notifEnabled === false) {
-      return { emailSent: false, telegramSent: false, pushSent: false, messengerSent: false };
+      return { emailSent: false, telegramSent: false, pushSent: false, messengerSent: false, whatsappSent: false, viberQueued: false };
    }
 
+   let whatsappSent = false;
+   let viberQueued = false;
    let emailSent = false;
    let telegramSent = false;
    let pushSent = false;
@@ -233,7 +335,12 @@ export const sendBorrowerLoanNotification = async (
    // free-form messages within 24h of the borrower's last message to the Page, so this lands only
    // for someone who wrote to us recently (sendMessengerMessage checks and skips otherwise). Like
    // push, it's additive and never fails the other channels.
-   const messengerContent = recipient.messenger_psid ? buildMessengerContent(type, loan, aggregate) : null;
+   // First funded loan → the Moo-borrower welcome (poster card) instead of the plain funded message.
+   const firstLoan =
+      type === 'funded' && recipient.messenger_psid && options.push?.supabase && loan
+         ? await isFirstFundedLoan(options.push.supabase, loan).catch(() => false)
+         : false;
+   const messengerContent = recipient.messenger_psid ? buildMessengerContent(type, loan, aggregate, { firstLoan }) : null;
    if (recipient.messenger_psid && messengerContent) {
       const result = await sendMessengerMessage(recipient.messenger_psid, messengerContent);
       messengerSent = result.ok;
@@ -244,9 +351,45 @@ export const sendBorrowerLoanNotification = async (
       console.log(`[borrowerNotification] Messenger "${type}" for ${loan?.tracking_id ?? '?'} → not sent (no Facebook connected)`);
    }
 
-   if (firstError && !emailSent && !telegramSent && !pushSent && !messengerSent) {
+   // WhatsApp, for borrowers who opted in by sending their code to our business number (usually because
+   // notifications can't work on their phone, e.g. Facebook's in-app browser). Push goes first: "due
+   // tomorrow" only goes to WhatsApp when no push landed; "due today" and "overdue" go to both, since
+   // those are the ones that matter. Off until the kill switch is on (templates approved). Additive,
+   // like push and Messenger: never fails the other channels.
+   const whatsappTemplate =
+      recipient.whatsapp_contact_id && recipient.notif_whatsapp !== false && options.push?.supabase
+         ? buildWhatsAppReminderTemplate(type, recipient, aggregate)
+         : null;
+   if (whatsappTemplate && !(type === 'final_reminder' && pushSent)) {
+      const enabled = await getTelegramBotSettingEnabled(options.push!.supabase, BORROWER_WHATSAPP_SETTING_KEY).catch(() => false);
+      if (enabled) {
+         const result = await sendWhatsAppTemplate(recipient.whatsapp_contact_id, whatsappTemplate);
+         whatsappSent = result.ok;
+         console.log(`[borrowerNotification] WhatsApp "${type}" (${whatsappTemplate.name}) → ${result.ok ? 'sent' : `not sent (${result.reason})`}`);
+      }
+   }
+
+   // Viber, for borrowers who confirmed a Viber number (no WhatsApp). Same push-first rule as WhatsApp.
+   // Queued, not sent: the relay picks it up within a minute while it runs, and the watchdog tells the
+   // team if it doesn't. Off until borrower_viber_enabled is on.
+   const viberText =
+      recipient.viber_number && recipient.notif_viber !== false && options.push?.supabase
+         ? buildViberReminderText(type, recipient, aggregate)
+         : null;
+   if (viberText && !(type === 'final_reminder' && pushSent)) {
+      const enabled = await getTelegramBotSettingEnabled(options.push!.supabase, BORROWER_VIBER_SETTING_KEY).catch(() => false);
+      if (enabled) {
+         const { error } = await options.push!.supabase
+            .from('viber_outbox')
+            .insert({ user_id: options.push!.userId, phone: recipient.viber_number, body: viberText, kind: 'reminder' });
+         viberQueued = !error;
+         console.log(`[borrowerNotification] Viber "${type}" → ${error ? `not queued (${error.message})` : 'queued'}`);
+      }
+   }
+
+   if (firstError && !emailSent && !telegramSent && !pushSent && !messengerSent && !whatsappSent && !viberQueued) {
       throw firstError;
    }
 
-   return { emailSent, telegramSent, pushSent, messengerSent };
+   return { emailSent, telegramSent, pushSent, messengerSent, whatsappSent, viberQueued };
 };

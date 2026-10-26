@@ -15,14 +15,14 @@ export const SHARED_FAQS: AccountFAQItem[] = [
       question: 'Does Moodeng touch my money?',
       answer: `No. Moodeng does not hold, custody, or move user funds for you.
 
-Loans go directly from the lender's wallet to the borrower's wallet. Repayments go directly from the borrower's wallet back to the lender's wallet. Moodeng helps with the request board, verification, repayment status, and record keeping so both sides can see what happened clearly.`
+Loans go directly from the moo-lender's wallet to the borrower's wallet. Repayments go directly from the borrower's wallet back to the moo-lender's wallet. Moodeng helps with the request board, verification, repayment status, and record keeping so both sides can see what happened clearly.`
    },
    {
       id: 'why-usdc',
       question: 'Why does Moodeng use USDC?',
-      answer: `USDC is a stablecoin pegged 1:1 to the US dollar. Issued by Circle, a regulated US financial company, it keeps loan values predictable — a $20 loan today is still $20 at repayment, not $15 or $30. Lenders and borrowers don't take on currency risk just by participating.
+      answer: `USDC is a stablecoin pegged 1:1 to the US dollar. Issued by Circle, a regulated US financial company, it keeps loan values predictable — a $20 loan today is still $20 at repayment, not $15 or $30. Moo-lenders and borrowers don't take on currency risk just by participating.
 
-USDC is also fast to send globally and, when used on Base with your Instant Wallet or a Base Account, is completely gasless. That means no network fees eat into your repayment — 100% of what you send reaches your lender.
+USDC is also fast to send globally and, when used on Base with your Instant Wallet or a Base Account, is completely gasless. That means no network fees eat into your repayment — 100% of what you send reaches your moo-lender.
 
 It's also widely accepted: every major crypto exchange supports USDC deposits, and you can convert it to fiat (US dollars, pesos, naira, etc.) almost anywhere. So when you receive a loan or get repaid, you can spend it on-chain, hold it, or cash it out — your choice.`
    },
@@ -82,11 +82,11 @@ export const LENDER_FAQS: AccountFAQItem[] = [
    {
       id: 'what-are-iou-points',
       question: 'What are IOU Points?',
-      answer: `IOU Points are reputation points earned by lenders. In the Year 1 model, each funded loan earns base IOU points for the amount funded plus a borrower-stage bonus. They track who's actively supporting the community.
+      answer: `IOU Points are reputation points earned by moo-lenders. In the Year 1 model, each funded loan earns base IOU points for the amount funded plus a borrower-stage bonus. They track who's actively supporting the community.
 
 Right now IOU is just points. Down the line, we'll launch a token also called IOU, and your accumulated points will convert via an airdrop. Holding IOU will unlock additional benefits tied to the platform.
 
-IOU is for lenders only — borrowers build their Pandesal points and Credit Level instead. So if you want to earn IOU, fund a loan request from the Request Board.`
+IOU is for moo-lenders only — borrowers build their Pandesal points and Credit Level instead. So if you want to earn IOU, fund a loan request from the Request Board.`
    },
    {
       id: 'how-borrowers-verify',
@@ -111,14 +111,14 @@ If they borrow below their limit, it is a Trust-Building Loan instead. That does
 
 When you find one you want to fund, tap Fund and confirm. The USDC leaves your wallet (usually your Base Account, or your Instant Wallet if you use one) immediately and goes directly to the borrower's wallet — no middleman, no delay.
 
-You can track all your active loans and repayment statuses from your Lender Dashboard.`
+You can track all your active loans and repayment statuses from your Moo-lender Dashboard.`
    },
    {
       id: 'when-do-i-get-repaid',
       question: 'When do I get repaid?',
       answer: `The due date is set by the borrower when they post their request — you'll see it clearly on the loan card before you fund, so you always know the timeline upfront.
 
-Once the loan is due, the borrower repays directly to your wallet — usually your Base Account (or your Instant Wallet, if you use one). You can track the status of all your active loans on your Lender Dashboard.`
+Once the loan is due, the borrower repays directly to your wallet — usually your Base Account (or your Instant Wallet, if you use one). You can track the status of all your active loans on your Moo-lender Dashboard.`
    }
 ];
 
@@ -128,14 +128,14 @@ const FILIPINO_SHARED_FAQS: AccountFAQItem[] = [
       question: 'Hinahawakan ba ng Moodeng ang pera ko?',
       answer: `Hindi. Hindi hinahawakan, iniingatan, o inililipat ng Moodeng ang pera ng mga user.
 
-Diretso ang loan mula sa wallet ng lender papunta sa wallet ng borrower. Diretso rin ang bayad mula sa wallet ng borrower pabalik sa wallet ng lender. Tumutulong ang Moodeng sa Request Board, verification, status ng bayad, at pagtatala, para malinaw na makita ng magkabilang panig kung ano ang nangyari.`
+Diretso ang loan mula sa wallet ng moo-lender papunta sa wallet ng borrower. Diretso rin ang bayad mula sa wallet ng borrower pabalik sa wallet ng moo-lender. Tumutulong ang Moodeng sa Request Board, verification, status ng bayad, at pagtatala, para malinaw na makita ng magkabilang panig kung ano ang nangyari.`
    },
    {
       id: 'why-usdc',
       question: 'Bakit USDC ang ginagamit ng Moodeng?',
-      answer: `Ang USDC ay stablecoin na naka-peg 1:1 sa US dollar. Ini-issue ito ng Circle, isang regulated na financial company sa US, kaya hindi nagbabago ang halaga ng loan — ang $20 loan ngayon ay $20 pa rin pagdating ng bayaran, hindi biglang $15 o $30. Walang currency risk ang mga lender at borrower dahil lang sa pagsali nila.
+      answer: `Ang USDC ay stablecoin na naka-peg 1:1 sa US dollar. Ini-issue ito ng Circle, isang regulated na financial company sa US, kaya hindi nagbabago ang halaga ng loan — ang $20 loan ngayon ay $20 pa rin pagdating ng bayaran, hindi biglang $15 o $30. Walang currency risk ang mga moo-lender at borrower dahil lang sa pagsali nila.
 
-Mabilis ding maipadala ang USDC kahit saan sa mundo, at kapag ginamit sa Base gamit ang Instant Wallet mo o ang Base Account, wala itong gas fee. Ibig sabihin, walang network fee na babawas sa bayad mo — 100% ng ipinadala mo ang makakarating sa lender mo.
+Mabilis ding maipadala ang USDC kahit saan sa mundo, at kapag ginamit sa Base gamit ang Instant Wallet mo o ang Base Account, wala itong gas fee. Ibig sabihin, walang network fee na babawas sa bayad mo — 100% ng ipinadala mo ang makakarating sa moo-lender mo.
 
 Malawak din itong tinatanggap: lahat ng malalaking crypto exchange ay tumatanggap ng USDC deposit, at puwede mo itong i-convert sa fiat (US dollars, piso, naira, at iba pa) halos kahit saan. Kaya kapag nakatanggap ka ng loan o nabayaran ka, puwede mo itong gastusin on-chain, itabi, o i-cash out — ikaw ang bahala.`
    },
@@ -193,11 +193,11 @@ const FILIPINO_LENDER_FAQS: AccountFAQItem[] = [
    {
       id: 'what-are-iou-points',
       question: 'Ano ang IOU points?',
-      answer: `Ang IOU points ay reputation points na kinikita ng mga lender. Sa Year 1 model, bawat napondohang loan ay may base IOU points batay sa halagang pinondohan, dagdag pa ang borrower-stage bonus. Ipinapakita nito kung sino ang aktibong sumusuporta sa komunidad.
+      answer: `Ang IOU points ay reputation points na kinikita ng mga moo-lender. Sa Year 1 model, bawat napondohang loan ay may base IOU points batay sa halagang pinondohan, dagdag pa ang borrower-stage bonus. Ipinapakita nito kung sino ang aktibong sumusuporta sa komunidad.
 
 Sa ngayon, points pa lang ang IOU. Sa hinaharap, maglulunsad kami ng token na IOU rin ang pangalan, at iko-convert ang naipon mong points sa pamamagitan ng airdrop. Kapag may hawak kang IOU, maa-unlock mo ang iba pang benepisyo sa platform.
 
-Para sa mga lender lang ang IOU — ang mga borrower naman ay bumubuo ng Pandesal points at Credit Level nila. Kaya kung gusto mong kumita ng IOU, pondohan ang isang loan request sa Request Board.`
+Para sa mga moo-lender lang ang IOU — ang mga borrower naman ay bumubuo ng Pandesal points at Credit Level nila. Kaya kung gusto mong kumita ng IOU, pondohan ang isang loan request sa Request Board.`
    },
    {
       id: 'how-borrowers-verify',
@@ -222,14 +222,14 @@ Kung mas mababa sa limit nila ang hiniram nila, Trust-Building Loan iyon. Hindi 
 
 Kapag may nakita kang gusto mong pondohan, i-tap ang "Fund" at i-confirm. Agad na aalis ang USDC sa wallet mo (kadalasan ang Base Account mo, o ang Instant Wallet mo kung iyon ang gamit mo) at diretsong mapupunta sa wallet ng borrower — walang middleman, walang delay.
 
-Masusubaybayan mo ang lahat ng aktibong loan mo at ang status ng mga bayad sa Lender Dashboard mo.`
+Masusubaybayan mo ang lahat ng aktibong loan mo at ang status ng mga bayad sa Moo-lender Dashboard mo.`
    },
    {
       id: 'when-do-i-get-repaid',
       question: 'Kailan ako mababayaran?',
       answer: `Ang borrower ang nagtatakda ng due date kapag nag-post siya ng request — makikita mo ito nang malinaw sa loan card bago ka magpondo, kaya alam mo agad ang timeline.
 
-Pagdating ng due date, diretsong magbabayad ang borrower sa wallet mo — kadalasan ang Base Account mo (o ang Instant Wallet mo, kung iyon ang gamit mo). Masusubaybayan mo ang status ng lahat ng aktibong loan mo sa Lender Dashboard mo.`
+Pagdating ng due date, diretsong magbabayad ang borrower sa wallet mo — kadalasan ang Base Account mo (o ang Instant Wallet mo, kung iyon ang gamit mo). Masusubaybayan mo ang status ng lahat ng aktibong loan mo sa Moo-lender Dashboard mo.`
    }
 ];
 

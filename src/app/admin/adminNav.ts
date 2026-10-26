@@ -3,6 +3,14 @@
 
 export type AdminTab =
    | 'users'
+   | 'credit-line'
+   | 'real-cost'
+   | 'credit-line-cost'
+   | 'marketing'
+   | 'signups'
+   | 'post-links'
+   | 'calls'
+   | 'fillout'
    | 'calendar'
    | 'analytics'
    | 'ux-health'
@@ -20,11 +28,14 @@ export type AdminTab =
    | 'self-lending'
    | 'mule-risk'
    | 'referrals'
+   | 'grab-vouchers'
    | 'borrower-contacts'
    | 'email'
+   | 'campaigns'
    | 'notifications'
    | 'chat'
    | 'relay'
+   | 'test-lab'
    | 'demo-platform'
    | 'demo-b2c-dashboard'
    | 'demo-b2c-assets'
@@ -35,7 +46,7 @@ export type AdminTab =
 
 export type NavGroup = { id: string; label: string; items: Array<{ id: AdminTab; label: string }> };
 
-// Six areas in the sidebar; each area's tools are sub-tabs along the top of the page (Stripe-style).
+// Seven areas in the sidebar; each area's tools are sub-tabs along the top of the page (Stripe-style).
 // Tab ids — and so /admin/:tab URLs — are unchanged, so old links still land on the right tool.
 export const navGroups: NavGroup[] = [
    {
@@ -43,8 +54,11 @@ export const navGroups: NavGroup[] = [
       label: 'People',
       items: [
          { id: 'users', label: 'Directory' },
+         { id: 'calls', label: 'Call approvals' },
+         { id: 'fillout', label: 'Fillout' },
          { id: 'borrower-contacts', label: 'Borrower contacts' },
-         { id: 'email', label: 'Email users' }
+         { id: 'email', label: 'Email users' },
+         { id: 'campaigns', label: 'Campaigns' }
       ]
    },
    {
@@ -61,6 +75,15 @@ export const navGroups: NavGroup[] = [
       ]
    },
    {
+      id: 'finance',
+      label: 'Finance',
+      items: [
+         { id: 'credit-line', label: 'Credit line' },
+         { id: 'real-cost', label: 'Borrower real cost' },
+         { id: 'credit-line-cost', label: 'Credit line real cost' }
+      ]
+   },
+   {
       id: 'risk',
       label: 'Risk',
       items: [
@@ -73,10 +96,14 @@ export const navGroups: NavGroup[] = [
       id: 'growth',
       label: 'Growth',
       items: [
+         { id: 'marketing', label: 'Marketing' },
+         { id: 'signups', label: 'Sign-up sources' },
+         { id: 'post-links', label: 'Post links' },
          { id: 'analytics', label: 'Analytics' },
          { id: 'ux-health', label: 'UX health' },
          { id: 'on-chain', label: 'On-chain' },
          { id: 'referrals', label: 'Referrals' },
+         { id: 'grab-vouchers', label: 'GrabMart vouchers' },
          { id: 'notifications', label: 'Notifications' },
          { id: 'points', label: 'IOU points' },
          { id: 'trust-points', label: 'Pandesal points' }
@@ -94,6 +121,7 @@ export const navGroups: NavGroup[] = [
       id: 'more',
       label: 'More',
       items: [
+         { id: 'test-lab', label: 'Test lab' },
          { id: 'relay', label: 'Liquidity Relay' },
          { id: 'demo-platform', label: 'B2B demo' },
          { id: 'demo-b2c-dashboard', label: 'B2C dashboard demo' },
@@ -108,7 +136,15 @@ export const navGroups: NavGroup[] = [
 
 export const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'users',
+   'credit-line',
+   'real-cost',
+   'credit-line-cost',
+   'marketing',
+   'calls',
+   'fillout',
    'calendar',
+   'signups',
+   'post-links',
    'analytics',
    'ux-health',
    'on-chain',
@@ -125,11 +161,14 @@ export const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'self-lending',
    'mule-risk',
    'referrals',
+   'grab-vouchers',
    'borrower-contacts',
    'email',
+   'campaigns',
    'notifications',
    'chat',
    'relay',
+   'test-lab',
    'demo-platform',
    'demo-b2c-dashboard',
    'demo-b2c-assets',

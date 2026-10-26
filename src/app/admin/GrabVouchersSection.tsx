@@ -1,0 +1,642 @@
+'use client';
+
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+
+import {
+   type AdminUnclaimedVoucher,
+   type AdminVoucherClaim,
+   type AdminVoucherClaimStatus,
+   type AdminVoucherContact,
+   type AdminVoucherReward,
+   addVoucherCodes,
+   getVoucherCodeStock,
+   listUnclaimedVouchers,
+   listVoucherClaims,
+   listVoucherContacts,
+   logAdminAction,
+   sendVoucherCodeForClaim,
+   updateVoucherClaimStatus,
+   type VoucherCodeStock
+} from '@/app/admin/adminSupabase';
+import { AdminLiveRow, useAdminLiveReload } from '@/app/admin/useAdminLive';
+import { parseVoucherCodes } from '@/app/admin/voucherCodes';
+
+type View = 'to-send' | 'sent' | 'unclaimed' | 'rejected';
+
+const REWARD_LABEL: Record<AdminVoucherReward, string> = {
+   first_on_time_repayment: 'First on-time repayment',
+   referral_inviter: 'Referral — inviter',
+   referral_invitee: 'Referral — invited friend',
+   tier_rising: 'Reached Rising',
+   tier_prime: 'Reached Prime',
+   tier_apex: 'Reached Apex',
+   grabmart_payout: 'GrabMart wallet reached ₱100'
+};
+
+// Every payout is one ₱100 GrabMart code (private.issue_grabmart_payouts).
+const PAYOUT_PHP = 100;
+
+const EMAIL_SUBJECT = 'Your Moodeng GrabMart voucher';
+
+const php = (amount: number) => `₱${amount.toLocaleString()}`;
+const sum = (rows: Array<{ amount_php: number }>) => rows.reduce((total, row) => total + row.amount_php, 0);
+const claimEmail = (claim: AdminVoucherClaim) => claim.email ?? claim.account_email;
+
+function formatDate(value: string | null) {
+   if (!value) return '—';
+   return new Date(value).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
+// KYC returns ISO-3 issuing countries; logins return ISO-2.
+const ISO3_TO_ISO2: Record<string, string> = {
+   PHL: 'PH',
+   IDN: 'ID',
+   MYS: 'MY',
+   SGP: 'SG',
+   THA: 'TH',
+   VNM: 'VN',
+   QAT: 'QA',
+   ARE: 'AE',
+   SAU: 'SA',
+   KWT: 'KW',
+   JPN: 'JP',
+   HKG: 'HK',
+   MAC: 'MO',
+   TWN: 'TW',
+   KOR: 'KR',
+   USA: 'US',
+   CAN: 'CA',
+   GBR: 'GB',
+   AUS: 'AU'
+};
+
+const regionNames = typeof Intl.DisplayNames === 'function' ? new Intl.DisplayNames(['en'], { type: 'region' }) : null;
+const countryName = (iso2: string) => regionNames?.of(iso2) ?? iso2;
+const flag = (iso2: string) =>
+   /^[A-Z]{2}$/.test(iso2) ? String.fromCodePoint(...[...iso2].map((char) => 127397 + char.charCodeAt(0))) : '';
+
+type Whereabouts = { tone: 'ph' | 'abroad' | 'unknown'; country: string | null; kycCountry: string | null };
+
+// Where the borrower is now: latest real (non-VPN) login, falling back to their ID's country.
+function whereabouts(contact: AdminVoucherContact | undefined): Whereabouts {
+   const kycCountry = contact?.kyc_country ? (ISO3_TO_ISO2[contact.kyc_country] ?? contact.kyc_country) : null;
+   const country = contact?.login_country ?? kycCountry;
+   if (!country) return { tone: 'unknown', country: null, kycCountry };
+   return { tone: country === 'PH' ? 'ph' : 'abroad', country, kycCountry };
+}
+
+const locationText = (contact: AdminVoucherContact | undefined) => {
+   const where = whereabouts(contact);
+   if (!where.country) return '';
+   const city = contact?.login_country ? contact.login_city : null;
+   return [city, countryName(where.country)].filter(Boolean).join(', ');
+};
+
+function LocationBadge({ contact }: { contact: AdminVoucherContact | undefined }) {
+   const where = whereabouts(contact);
+   if (where.tone === 'unknown') {
+      return <span className="rounded-full bg-[#241044] px-3 py-1 text-sm font-black text-[#a89bb8]">📍 Location unknown</span>;
+   }
+   if (where.tone === 'ph') {
+      return <span className="rounded-full bg-[#123d2a] px-3 py-1 text-sm font-black text-[#6ee7a8]">{flag('PH')} In the Philippines</span>;
+   }
+   return (
+      <span className="rounded-full bg-[#3d2d12] px-3 py-1 text-sm font-black text-[#facc6b]">
+         ⚠ {flag(where.country!)} In {countryName(where.country!)} — Grab PH may not work
+      </span>
+   );
+}
+
+function LocationDetails({ contact }: { contact: AdminVoucherContact | undefined }) {
+   if (!contact) return <span className="text-[#6f6385]">—</span>;
+   const where = whereabouts(contact);
+   const others = contact.login_countries.filter((iso2) => iso2 !== contact.login_country);
+   return (
+      <span className="block space-y-0.5">
+         {contact.login_country ? (
+            <span className="block">
+               Logs in from {flag(contact.login_country)} {locationText(contact)}
+               {contact.login_at ? <span className="text-[#6f6385]"> · last {formatDate(contact.login_at)}</span> : null}
+            </span>
+         ) : (
+            <span className="block text-[#6f6385]">No login location yet</span>
+         )}
+         {where.kycCountry ? (
+            <span className="block text-sm text-[#a89bb8]">
+               ID: {flag(where.kycCountry)} {countryName(where.kycCountry)}
+               {contact.kyc_area ? ` · address in ${contact.kyc_area}` : ''}
+            </span>
+         ) : null}
+         {others.length > 0 ? (
+            <span className="block text-sm text-[#a89bb8]">
+               Also seen in: {others.map((iso2) => `${flag(iso2)} ${countryName(iso2)}`).join(', ')}
+            </span>
+         ) : null}
+      </span>
+   );
+}
+
+function FacebookDetails({ contact }: { contact: AdminVoucherContact | undefined }) {
+   const link = contact?.facebook_contact && /^https?:\/\//i.test(contact.facebook_contact) ? contact.facebook_contact : null;
+   if (!contact?.facebook_name && !contact?.facebook_contact && !contact?.messenger_verified) {
+      return <span className="text-[#6f6385]">Not connected</span>;
+   }
+   return (
+      <span className="inline-flex flex-wrap items-center gap-2">
+         {link ? (
+            <a className="font-bold text-[#c4a2ff] underline" href={link} target="_blank" rel="noreferrer">
+               {contact.facebook_name ?? 'Profile'}
+            </a>
+         ) : (
+            <span>{contact.facebook_name ?? contact.facebook_contact ?? 'Name not saved'}</span>
+         )}
+         {contact.messenger_verified ? (
+            <span className="rounded-lg bg-[#123d2a] px-2 py-0.5 text-xs font-black text-[#6ee7a8]">Messenger ✓</span>
+         ) : null}
+      </span>
+   );
+}
+
+function downloadCsv(filename: string, header: string[], rows: Array<Array<string | number | null>>) {
+   const cell = (value: string | number | null) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+   const csv = [header, ...rows].map((row) => row.map(cell).join(',')).join('\n');
+   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+   const link = document.createElement('a');
+   link.href = url;
+   link.download = filename;
+   link.click();
+   URL.revokeObjectURL(url);
+}
+
+function Stat({ label, value, note, tone }: { label: string; value: string; note: string; tone?: 'owe' | 'done' }) {
+   const border =
+      tone === 'owe'
+         ? 'border-[#8a6a1f] bg-[#2a2010]'
+         : tone === 'done'
+           ? 'border-[#1f6b48] bg-[#0f2a1e]'
+           : 'border-[#2a1453] bg-[#1c0a3a]';
+   return (
+      <div className={`rounded-2xl border p-5 ${border}`}>
+         <p className="text-xs font-black uppercase tracking-wide text-[#a89bb8]">{label}</p>
+         <strong className="mt-2 block text-4xl font-black text-white">{value}</strong>
+         <p className="mt-1 text-sm font-bold text-[#a89bb8]">{note}</p>
+      </div>
+   );
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+   return (
+      <div className="min-w-0">
+         <dt className="text-xs font-black uppercase tracking-wide text-[#6f6385]">{label}</dt>
+         <dd className="break-words text-base">{children}</dd>
+      </div>
+   );
+}
+
+/**
+ * Admin "GrabMart vouchers" tab. Borrowers claim rewards from the dashboard (public.submit_voucher_claim);
+ * each claim is banked into their GrabMart wallet, and every ₱100 becomes a payout that is sent on its
+ * own (pool code, else Bitrefill). This tab shows payouts that still need a code (Send code here or on
+ * the Telegram card), the ₱100 code pool, what's sitting in wallets, and who earned but hasn't claimed.
+ */
+export default function GrabVouchersSection() {
+   const [claims, setClaims] = useState<AdminVoucherClaim[]>([]);
+   const [unclaimed, setUnclaimed] = useState<AdminUnclaimedVoucher[]>([]);
+   const [contacts, setContacts] = useState<Record<string, AdminVoucherContact>>({});
+   const [view, setView] = useState<View>('to-send');
+   const [isLoading, setIsLoading] = useState(true);
+   const [error, setError] = useState<string | null>(null);
+   const [busyId, setBusyId] = useState<string | null>(null);
+   const [copied, setCopied] = useState<string | null>(null);
+   const [stock, setStock] = useState<VoucherCodeStock[]>([]);
+   const [codesInput, setCodesInput] = useState('');
+   const [notice, setNotice] = useState<string | null>(null);
+
+   const refresh = useCallback(async () => {
+      setError(null);
+      try {
+         const [claimRows, unclaimedRows, stockRows] = await Promise.all([
+            listVoucherClaims(),
+            listUnclaimedVouchers(),
+            getVoucherCodeStock().catch(() => [])
+         ]);
+         setClaims(claimRows);
+         setUnclaimed(unclaimedRows);
+         setStock(stockRows);
+         const userIds = [...new Set([...claimRows, ...unclaimedRows].map((row) => row.user_id))];
+         // Location/Facebook are extras: if they fail to load, the voucher list still works.
+         const contactRows = await listVoucherContacts(userIds).catch(() => []);
+         setContacts(Object.fromEntries(contactRows.map((row) => [row.user_id, row])));
+      } catch (err) {
+         setError(err instanceof Error ? err.message : 'Could not load vouchers.');
+      } finally {
+         setIsLoading(false);
+      }
+   }, []);
+
+   useEffect(() => {
+      void refresh();
+   }, [refresh]);
+   useAdminLiveReload(['voucher_claims', 'loans'], refresh);
+
+   const pending = useMemo(() => claims.filter((claim) => claim.status === 'pending'), [claims]);
+   const sent = useMemo(
+      () => claims.filter((claim) => claim.status === 'sent').sort((a, b) => (b.sent_at ?? '').localeCompare(a.sent_at ?? '')),
+      [claims]
+   );
+   const rejected = useMemo(() => claims.filter((claim) => claim.status === 'rejected'), [claims]);
+   // ₱ sitting in wallets below ₱100: banked rewards minus payouts issued, per borrower.
+   const inWallets = useMemo(() => {
+      const balances = new Map<string, number>();
+      for (const claim of claims) {
+         const delta =
+            claim.reward === 'grabmart_payout' ? (claim.status === 'rejected' ? 0 : -claim.amount_php) : claim.status === 'banked' ? claim.amount_php : 0;
+         balances.set(claim.user_id, (balances.get(claim.user_id) ?? 0) + delta);
+      }
+      const positive = [...balances.values()].filter((value) => value > 0);
+      return { total: positive.reduce((a, b) => a + b, 0), people: positive.length };
+   }, [claims]);
+   const codesLeft = stock.find((row) => row.amount_php === PAYOUT_PHP)?.available ?? 0;
+   // Oldest first, so whoever has waited longest is at the top.
+   const toSend = useMemo(() => [...pending].reverse(), [pending]);
+   const waitingPeople = useMemo(() => [...new Map(pending.map((claim) => [claim.user_id, claim.full_name])).entries()], [pending]);
+   const waitingAbroad = waitingPeople.filter(([userId]) => whereabouts(contacts[userId]).tone === 'abroad');
+
+   const copy = async (key: string, text: string) => {
+      await navigator.clipboard.writeText(text);
+      setCopied(key);
+      window.setTimeout(() => setCopied((current) => (current === key ? null : current)), 1500);
+   };
+
+   const uniqueEmails = (emails: Array<string | null>) =>
+      [...new Set(emails.filter((email): email is string => Boolean(email)))].join(', ');
+
+   const setStatus = async (claim: AdminVoucherClaim, status: AdminVoucherClaimStatus) => {
+      let note: string | null = 'Sent from admin panel';
+      if (status === 'rejected') {
+         note = window.prompt('Reason for rejecting (team only):', claim.admin_note ?? '');
+         if (note === null) return;
+      } else if (status === 'pending') {
+         if (!window.confirm(`Move ${claim.full_name}'s ${php(claim.amount_php)} voucher back to "to send"?`)) return;
+         note = null;
+      }
+      setBusyId(claim.id);
+      try {
+         await updateVoucherClaimStatus(claim.id, status, note);
+         await logAdminAction({
+            action: `voucher_claim_${status}`,
+            target_table: 'voucher_claims',
+            target_id: claim.id,
+            target_user_id: claim.user_id,
+            metadata: { reward: claim.reward, amount_php: claim.amount_php }
+         }).catch(() => undefined);
+         await refresh();
+      } catch (err) {
+         setError(err instanceof Error ? err.message : 'Could not update the claim.');
+      } finally {
+         setBusyId(null);
+      }
+   };
+
+   const sendCode = async (claim: AdminVoucherClaim) => {
+      setBusyId(claim.id);
+      setNotice(null);
+      try {
+         const result = await sendVoucherCodeForClaim(claim.id);
+         setNotice(result.summary);
+         await refresh();
+      } catch (err) {
+         setError(err instanceof Error ? err.message : 'Could not send the code.');
+      } finally {
+         setBusyId(null);
+      }
+   };
+
+   const addCodes = async () => {
+      const codes = parseVoucherCodes(codesInput);
+      if (codes.length === 0) return;
+      setNotice(null);
+      try {
+         const result = await addVoucherCodes(PAYOUT_PHP, codes, 'bitrefill.com');
+         setCodesInput('');
+         setNotice(`Added ${result.added} ₱${PAYOUT_PHP} code${result.added === 1 ? '' : 's'}${result.skipped ? ` (${result.skipped} already in the pool)` : ''}.`);
+         await refresh();
+      } catch (err) {
+         setError(err instanceof Error ? err.message : 'Could not add the codes.');
+      }
+   };
+
+   const exportClaims = () =>
+      downloadCsv(
+         `grab-vouchers-${new Date().toISOString().slice(0, 10)}.csv`,
+         [
+            'Status',
+            'Name',
+            'Email',
+            'Mobile',
+            'Location now',
+            'ID country',
+            'Facebook',
+            'Username',
+            'Reward',
+            'Amount PHP',
+            'Claimed',
+            'Sent',
+            'Note'
+         ],
+         claims.map((claim) => [
+            claim.status,
+            claim.full_name,
+            claimEmail(claim),
+            claim.mobile,
+            locationText(contacts[claim.user_id]),
+            whereabouts(contacts[claim.user_id]).kycCountry,
+            contacts[claim.user_id]?.facebook_name ?? contacts[claim.user_id]?.facebook_contact ?? null,
+            claim.username,
+            REWARD_LABEL[claim.reward] ?? claim.reward,
+            claim.amount_php,
+            claim.created_at,
+            claim.sent_at,
+            claim.admin_note
+         ])
+      );
+
+   const views: Array<{ id: View; label: string; count: number }> = [
+      { id: 'to-send', label: 'To send', count: pending.length },
+      { id: 'sent', label: 'Sent', count: sent.length },
+      { id: 'unclaimed', label: 'Earned, not claimed', count: unclaimed.length },
+      { id: 'rejected', label: 'Rejected', count: rejected.length }
+   ];
+
+   const claimCard = (claim: AdminVoucherClaim) => {
+      const email = claimEmail(claim);
+      return (
+         <AdminLiveRow key={claim.id} ids={[claim.id]} className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
+            <div className="flex flex-wrap items-center gap-3">
+               <span className="text-2xl font-black">{php(claim.amount_php)}</span>
+               <span className="text-lg font-black">{claim.full_name}</span>
+               <span className="font-bold text-[#a89bb8]">{REWARD_LABEL[claim.reward] ?? claim.reward}</span>
+               <LocationBadge contact={contacts[claim.user_id]} />
+               {claim.status === 'sent' ? (
+                  <span className="ml-auto rounded-full bg-[#123d2a] px-3 py-1 text-sm font-black text-[#6ee7a8]">
+                     ✓ Sent {formatDate(claim.sent_at)}
+                  </span>
+               ) : (
+                  <span className="ml-auto text-sm text-[#6f6385]">Claimed {formatDate(claim.created_at)}</span>
+               )}
+            </div>
+            <dl className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-3">
+               <Field label="Email">
+                  {email ? (
+                     <span className="inline-flex flex-wrap items-center gap-2">
+                        <a
+                           className="font-bold text-[#c4a2ff] underline"
+                           href={`mailto:${email}?subject=${encodeURIComponent(EMAIL_SUBJECT)}`}
+                        >
+                           {email}
+                        </a>
+                        <button
+                           type="button"
+                           onClick={() => void copy(`email-${claim.id}`, email)}
+                           className="rounded-lg bg-[#241044] px-2 py-0.5 text-xs font-black text-[#a89bb8]"
+                        >
+                           {copied === `email-${claim.id}` ? 'Copied' : 'Copy'}
+                        </button>
+                        {!claim.email ? <span className="text-xs text-[#6f6385]">(account email)</span> : null}
+                     </span>
+                  ) : (
+                     <span className="text-[#ff8fa3]">No email — use mobile</span>
+                  )}
+               </Field>
+               <Field label="Mobile (GCash)">{claim.mobile}</Field>
+               <Field label="User">{claim.username ? `@${claim.username}` : claim.user_id}</Field>
+               <div className="sm:col-span-2">
+                  <Field label="Location">
+                     <LocationDetails contact={contacts[claim.user_id]} />
+                  </Field>
+               </div>
+               <Field label="Facebook">
+                  <FacebookDetails contact={contacts[claim.user_id]} />
+               </Field>
+               {claim.admin_note ? <Field label="Note">{claim.admin_note}</Field> : null}
+            </dl>
+            <div className="mt-4 flex flex-wrap gap-2">
+               {claim.status === 'pending' ? (
+                  <>
+                     <button
+                        type="button"
+                        disabled={busyId === claim.id}
+                        onClick={() => void sendCode(claim)}
+                        className="rounded-xl bg-[#8336f0] px-5 py-2 text-base font-black text-white disabled:opacity-50"
+                     >
+                        {busyId === claim.id ? 'Sending…' : '✅ Send code'}
+                     </button>
+                     <button
+                        type="button"
+                        disabled={busyId === claim.id}
+                        onClick={() => void setStatus(claim, 'sent')}
+                        className="rounded-xl bg-[#241044] px-5 py-2 text-base font-black text-white disabled:opacity-50"
+                     >
+                        Mark sent by hand
+                     </button>
+                     <button
+                        type="button"
+                        disabled={busyId === claim.id}
+                        onClick={() => void setStatus(claim, 'rejected')}
+                        className="rounded-xl bg-[#34234f] px-5 py-2 text-base font-black text-white disabled:opacity-50"
+                     >
+                        Reject
+                     </button>
+                  </>
+               ) : claim.status === 'rejected' ? (
+                  <button
+                     type="button"
+                     disabled={busyId === claim.id}
+                     onClick={() => void setStatus(claim, 'pending')}
+                     className="rounded-xl bg-[#241044] px-4 py-1.5 text-sm font-black text-[#a89bb8] disabled:opacity-50"
+                  >
+                     Undo — back to “to send”
+                  </button>
+               ) : null}
+            </div>
+         </AdminLiveRow>
+      );
+   };
+
+   const listFor: Record<Exclude<View, 'unclaimed'>, AdminVoucherClaim[]> = { 'to-send': toSend, sent, rejected };
+   const emailsForView =
+      view === 'unclaimed' ? uniqueEmails(unclaimed.map((row) => row.email)) : uniqueEmails(listFor[view].map(claimEmail));
+
+   return (
+      <section className="space-y-6">
+         <div>
+            <h2 className="break-words text-2xl font-black sm:text-3xl">GrabMart vouchers</h2>
+            <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+               Rewards (₱50 / ₱100) go into each borrower’s GrabMart wallet. Every ₱100 is sent as one GrabMart code by email and on their
+               dashboard — automatically from the code pool below, or bought on Bitrefill once its API key is in the vault. Payouts listed
+               under “To send” didn’t go out on their own: add codes, then tap Send code.
+            </p>
+         </div>
+
+         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Stat label="To send now" value={php(sum(pending))} note={`${pending.length} ₱100 ${pending.length === 1 ? 'code' : 'codes'} not sent yet`} tone="owe" />
+            <Stat
+               label="Sent"
+               value={php(sum(sent))}
+               note={`${sent.length} ${sent.length === 1 ? 'voucher' : 'vouchers'} delivered`}
+               tone="done"
+            />
+            <Stat
+               label="Earned, not claimed"
+               value={php(sum(unclaimed))}
+               note={`${unclaimed.length} ${unclaimed.length === 1 ? 'voucher' : 'vouchers'} could still be claimed`}
+            />
+            <Stat label="In wallets" value={php(inWallets.total)} note={`${inWallets.people} ${inWallets.people === 1 ? 'person' : 'people'} saving toward ₱100`} />
+         </div>
+
+         <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
+            <div className="flex flex-wrap items-baseline gap-3">
+               <h3 className="text-lg font-black">₱{PAYOUT_PHP} GrabMart code pool</h3>
+               <span className={`font-black ${codesLeft <= 3 ? 'text-[#facc6b]' : 'text-[#6ee7a8]'}`}>
+                  {codesLeft} left{codesLeft <= 3 ? ' — restock soon' : ''}
+               </span>
+            </div>
+            <p className="mt-1 text-sm text-[#a89bb8]">
+               Buy ₱{PAYOUT_PHP} GrabMart PH codes on bitrefill.com and paste them here, one per line. Codes are never shown back here.
+            </p>
+            <textarea
+               value={codesInput}
+               onChange={(event) => setCodesInput(event.target.value)}
+               rows={3}
+               placeholder="ABCD1234"
+               className="mt-3 w-full rounded-xl border border-[#2a1453] bg-[#120626] p-3 font-mono text-sm text-white"
+            />
+            <button
+               type="button"
+               disabled={parseVoucherCodes(codesInput).length === 0}
+               onClick={() => void addCodes()}
+               className="mt-2 rounded-xl bg-[#8336f0] px-5 py-2 text-base font-black text-white disabled:opacity-40"
+            >
+               Add {parseVoucherCodes(codesInput).length || ''} code{parseVoucherCodes(codesInput).length === 1 ? '' : 's'}
+            </button>
+         </div>
+
+         {notice ? <p className="rounded-xl bg-[#123d2a] px-4 py-3 font-bold text-[#6ee7a8]">{notice}</p> : null}
+
+         {waitingAbroad.length > 0 ? (
+            <p className="rounded-xl border border-[#8a6a1f] bg-[#2a2010] px-4 py-3 font-bold text-[#facc6b]">
+               ⚠ {waitingAbroad.length} of {waitingPeople.length} people waiting are outside the Philippines right now (
+               {waitingAbroad.map(([userId, name]) => `${name} — ${countryName(whereabouts(contacts[userId]).country!)}`).join(', ')}). A
+               GrabMart PH voucher may not work for them — check before buying.
+            </p>
+         ) : null}
+
+         <div className="flex flex-wrap items-center gap-2">
+            {views.map((item) => (
+               <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setView(item.id)}
+                  className={`rounded-full px-4 py-1.5 text-sm font-black ${view === item.id ? 'bg-[#8336f0] text-white' : 'bg-[#241044] text-[#a89bb8]'}`}
+               >
+                  {item.label} ({item.count})
+               </button>
+            ))}
+            <div className="ml-auto flex gap-2">
+               <button
+                  type="button"
+                  disabled={!emailsForView}
+                  onClick={() => void copy('all-emails', emailsForView)}
+                  className="rounded-xl bg-[#241044] px-4 py-1.5 text-sm font-black text-white disabled:opacity-40"
+               >
+                  {copied === 'all-emails' ? 'Copied' : 'Copy emails in this list'}
+               </button>
+               <button
+                  type="button"
+                  disabled={claims.length === 0}
+                  onClick={exportClaims}
+                  className="rounded-xl bg-[#241044] px-4 py-1.5 text-sm font-black text-white disabled:opacity-40"
+               >
+                  Download CSV
+               </button>
+            </div>
+         </div>
+
+         {error ? <p className="rounded-xl bg-[#3d1220] px-4 py-3 font-bold text-[#ff8fa3]">{error}</p> : null}
+         {isLoading ? <p className="text-[#a89bb8]">Loading…</p> : null}
+
+         {!isLoading && view !== 'unclaimed' ? (
+            <div className="space-y-3">
+               {listFor[view].length === 0 ? (
+                  <p className="text-[#6f6385]">{view === 'to-send' ? 'Nothing to send — all caught up.' : `No ${view} vouchers.`}</p>
+               ) : (
+                  listFor[view].map(claimCard)
+               )}
+            </div>
+         ) : null}
+
+         {!isLoading && view === 'unclaimed' ? (
+            <div className="space-y-3">
+               <p className="text-sm text-[#a89bb8]">
+                  These borrowers earned a voucher but haven’t tapped Claim in the app yet. Nudge them to claim it there — the claim form
+                  collects their name and number.
+               </p>
+               {unclaimed.length === 0 ? (
+                  <p className="text-[#6f6385]">Everyone who earned a voucher has claimed it.</p>
+               ) : (
+                  <div className="overflow-x-auto rounded-2xl border border-[#2a1453]">
+                     <table className="w-full min-w-[960px] text-left">
+                        <thead className="bg-[#1c0a3a] text-xs font-black uppercase tracking-wide text-[#a89bb8]">
+                           <tr>
+                              <th className="px-4 py-3">Borrower</th>
+                              <th className="px-4 py-3">Email</th>
+                              <th className="px-4 py-3">Location</th>
+                              <th className="px-4 py-3">Facebook</th>
+                              <th className="px-4 py-3">Earned for</th>
+                              <th className="px-4 py-3 text-right">Amount</th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           {unclaimed.map((row) => (
+                              <tr
+                                 key={`${row.user_id}-${row.reward}-${row.friend_referral_id ?? ''}`}
+                                 className="border-t border-[#2a1453]"
+                              >
+                                 <td className="px-4 py-3 font-bold">
+                                    {row.display_name || (row.username ? `@${row.username}` : row.user_id.slice(0, 8))}
+                                 </td>
+                                 <td className="px-4 py-3">
+                                    {row.email ? (
+                                       <a className="text-[#c4a2ff] underline" href={`mailto:${row.email}`}>
+                                          {row.email}
+                                       </a>
+                                    ) : (
+                                       <span className="text-[#6f6385]">—</span>
+                                    )}
+                                 </td>
+                                 <td className="px-4 py-3">
+                                    <span className="block">
+                                       {whereabouts(contacts[row.user_id]).country
+                                          ? `${flag(whereabouts(contacts[row.user_id]).country!)} ${locationText(contacts[row.user_id])}`
+                                          : '—'}
+                                    </span>
+                                    {whereabouts(contacts[row.user_id]).tone === 'abroad' ? (
+                                       <span className="text-xs font-black text-[#facc6b]">⚠ Outside the Philippines</span>
+                                    ) : null}
+                                 </td>
+                                 <td className="px-4 py-3 text-sm">
+                                    <FacebookDetails contact={contacts[row.user_id]} />
+                                 </td>
+                                 <td className="px-4 py-3 text-[#a89bb8]">{REWARD_LABEL[row.reward] ?? row.reward}</td>
+                                 <td className="px-4 py-3 text-right font-black">{php(row.amount_php)}</td>
+                              </tr>
+                           ))}
+                        </tbody>
+                     </table>
+                  </div>
+               )}
+            </div>
+         ) : null}
+      </section>
+   );
+}

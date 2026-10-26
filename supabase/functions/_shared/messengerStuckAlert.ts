@@ -1,11 +1,15 @@
+import { type CardStamp, openInAdminButton, stampDecisionCards } from './adminCards.ts';
 import { postDiscord } from './discord.ts';
 import type { TelegramInlineKeyboard } from './telegram.ts';
+import { testAccountRow } from './testAccount.ts';
 
 // When a borrower's Facebook (Messenger) confirmation stalls:
 //   * the messenger-stuck-alerts cron emails the borrower a fresh way through (link + code) and posts
 //     a card to the KYC Telegram group (with a "Mark Facebook verified" button) and Discord #kyc;
 //   * sendpulse-events posts an "Is this them?" card when a Facebook chat arrives without a code but
 //     with a name close to a borrower who just tapped Verify.
+// Both are remembered as the borrower's 'messenger' cards (adminCards.ts): the ✅ button, /confirm,
+// or the bot getting their code after all stamps them "✔️ MESSENGER VERIFIED".
 //
 // Why: Meta doesn't guarantee the m.me ref reaches the bot (first-time "Get Started", some Android
 // Messenger versions, Facebook Lite, no Messenger app). The borrower is stuck on the contact step
@@ -102,20 +106,22 @@ export const buildStuckEmail = (
 ) => {
    const first = borrower.display_name?.trim().split(/\s+/)[0] || 'there';
    const subject = 'Finish connecting your Facebook to Moodeng';
+   // Code first: it works on every phone. The m.me one-tap link never opens Messenger from Android
+   // Chrome (2026-10-10 tests), and most stuck borrowers are on Android, so it's only an extra.
    const text = [
       `Hi ${first},`,
       '',
-      "Your Facebook isn't connected to Moodeng yet. It usually takes one tap:",
+      "Your Facebook isn't connected to Moodeng yet. Two quick steps:",
       '',
-      `1. On your phone, open this link: ${links.messenger}`,
-      '   Messenger opens our chat and confirms you automatically. If it shows "Get Started", tap it.',
+      `1. Open Messenger or Facebook, search for Moodeng Credit and open our chat: ${links.page}`,
+      `2. Send us this code: ${code}`,
+      '   We confirm you automatically. If the chat shows "Get Started", tap it first.',
       '',
-      `2. If that doesn't work, send this code to Moodeng Credit on Messenger: ${code}`,
-      `   Our Facebook page: ${links.page}`,
+      `On an iPhone or a computer you can also just open this link: ${links.messenger}`,
       '',
       `Then continue your loan application: ${links.apply}`,
       '',
-      'The link and the code work for 24 hours. Stuck? Just reply to this email and we will help.',
+      'The code works for 24 hours. Stuck? Just reply to this email and we will help.',
       '',
       'The Moodeng Credit team'
    ].join('\n');
@@ -123,14 +129,15 @@ export const buildStuckEmail = (
       `<a href="${escapeHtml(href)}" style="display:inline-block;background:#6b55f7;color:#fff;text-decoration:none;font-weight:bold;padding:12px 20px;border-radius:10px">${label}</a>`;
    const html = `<div style="font-family:Arial,sans-serif;font-size:16px;line-height:1.5;color:#2d2340;max-width:520px">
 <p>Hi ${escapeHtml(first)},</p>
-<p>Your Facebook isn't connected to Moodeng yet. It usually takes one tap:</p>
-<p><b>1.</b> On your phone, tap the button. Messenger opens our chat and confirms you automatically. If it shows <b>Get Started</b>, tap it.</p>
-<p>${button(links.messenger, 'Connect Facebook')}</p>
-<p><b>2.</b> If that doesn't work, send this code to <a href="${escapeHtml(links.page)}">Moodeng Credit</a> on Messenger:</p>
+<p>Your Facebook isn't connected to Moodeng yet. Two quick steps:</p>
+<p><b>1.</b> Open Messenger or Facebook, search for <b>Moodeng Credit</b> and open our chat.</p>
+<p>${button(links.page, 'Open Moodeng Credit')}</p>
+<p><b>2.</b> Send us this code. We confirm you automatically. If the chat shows <b>Get Started</b>, tap it first.</p>
 <p style="font-size:22px;font-weight:bold;letter-spacing:2px">${escapeHtml(code)}</p>
+<p style="color:#6b5b86">On an iPhone or a computer you can also just <a href="${escapeHtml(links.messenger)}">tap here</a> instead.</p>
 <p>Then continue your loan application:</p>
 <p>${button(links.apply, 'Continue my application')}</p>
-<p style="color:#6b5b86">The link and the code work for 24 hours. Stuck? Just reply to this email and we will help.</p>
+<p style="color:#6b5b86">The code works for 24 hours. Stuck? Just reply to this email and we will help.</p>
 <p>The Moodeng Credit team</p>
 </div>`;
    return { subject, text, html };
@@ -147,11 +154,20 @@ export const parseMessengerVerifyCallback = (data?: string | null): { userId: st
 export const messengerStuckKeyboard = (
    userId: string,
    pageInboxUrl: string,
-   label = '✅ Mark Facebook verified'
+   label = '✅ Mark Facebook verified',
+   username?: string | null
 ): TelegramInlineKeyboard => [
    [{ text: label, callback_data: buildMessengerVerifyCallback(userId) }],
-   [{ text: '💬 Open Page inbox', url: pageInboxUrl }]
+   [{ text: '💬 Open Page inbox', url: pageInboxUrl }, openInAdminButton(userId, username)],
+   ...testAccountRow(userId)
 ];
+
+// The after-state of a borrower's Messenger cards, whoever verified them.
+export const messengerVerifiedStamp = (name: string, by: string, facebookName?: string | null): CardStamp => ({
+   header: `✔️ MESSENGER VERIFIED — ${name} can continue their application`,
+   detail: facebookName ? `Facebook: ${facebookName}` : null,
+   by
+});
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
@@ -162,7 +178,11 @@ type SupabaseClient = any;
  * id is saved too, so reminders can reach them. Their open code is left alone on purpose — if the
  * bot does get through before it expires, sendpulse-messenger-verify still stores the contact id.
  */
-export const markMessengerVerified = async (supabase: SupabaseClient, userId: string, admin: string) => {
+export const markMessengerVerified = async (
+   supabase: SupabaseClient,
+   userId: string,
+   admin: string
+): Promise<{ ok: boolean; summary: string; stamp?: CardStamp }> => {
    const { data: openCode } = await supabase
       .from('contact_verification_codes')
       .select('suggested_contact_id, suggested_contact_name')
@@ -184,11 +204,15 @@ export const markMessengerVerified = async (supabase: SupabaseClient, userId: st
    if (!updated) {
       const { data: existing } = await supabase.from('users').select('username, display_name').eq('id', userId).maybeSingle();
       if (!existing) return { ok: false, summary: 'Borrower not found.' };
-      return { ok: true, summary: `Facebook already verified for ${borrowerName(existing)}. Nothing to do.` };
+      // Verified meanwhile (the bot got their code, /confirm, another card): close this card as such.
+      const summary = `Facebook already verified for ${borrowerName(existing)}. Nothing to do.`;
+      return { ok: true, summary, stamp: { header: `ℹ️ Already decided — Facebook already verified for ${borrowerName(existing)}`, by: admin, verb: 'Tapped by' } };
    }
 
    const matched = (openCode as { suggested_contact_name?: string | null } | null)?.suggested_contact_name;
+   const stamp = messengerVerifiedStamp(borrowerName(updated), admin, matched);
+   await stampDecisionCards(supabase, 'messenger', userId, stamp);
    const summary = `✅ Facebook marked verified for ${borrowerName(updated)}${matched ? ` (Facebook: ${matched})` : ''} — by ${admin}`;
    await postDiscord({ content: summary }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
-   return { ok: true, summary };
+   return { ok: true, summary, stamp };
 };

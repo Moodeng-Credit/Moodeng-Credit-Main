@@ -1,5 +1,6 @@
 import { useSelector } from 'react-redux';
 
+import { type NotificationPrefs, useNotificationPrefs } from '@/hooks/useNotificationPrefs';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 import { type LocaleCode, useLocalization } from '@/i18n';
@@ -122,12 +123,19 @@ const NOTIFICATION_SETTINGS_COPY: Record<LocaleCode, { title: string; body: stri
    }
 };
 
+const OPTION_PREF_KEYS: Record<string, keyof NotificationPrefs> = {
+   'account-activity': 'accountActivity',
+   'transaction-activity': 'transactionActivity',
+   'moodeng-blogs': 'moodengBlogs'
+};
+
 export default function NotificationSettings() {
    const { locale } = useLocalization();
    const copy = NOTIFICATION_SETTINGS_COPY[locale] ?? NOTIFICATION_SETTINGS_COPY.en;
    const pushCopy = PUSH_COPY[locale] ?? PUSH_COPY.en;
    const userId = useSelector((state: RootState) => state.auth.user?.id);
-   const push = usePushNotifications(userId ?? null);
+   const push = usePushNotifications(userId ?? null, { autoPrompt: false });
+   const notif = useNotificationPrefs();
 
    // A blocked permission can only be lifted from browser settings, so the
    // control is replaced with an explanation rather than a button that would
@@ -149,6 +157,9 @@ export default function NotificationSettings() {
                      <label className="flex items-center gap-2 text-[10px] font-semibold text-[#0a1a5f] leading-[12px] select-none">
                         <input
                            type="checkbox"
+                           checked={notif.prefs[OPTION_PREF_KEYS[option.id]]}
+                           disabled={notif.savingKey === OPTION_PREF_KEYS[option.id]}
+                           onChange={() => void notif.toggle(OPTION_PREF_KEYS[option.id])}
                            className="w-3 h-3 text-[#1e40af] bg-gray-100 border-gray-300 rounded focus:ring-[#1e40af] focus:ring-1"
                         />
                         {option.label}
@@ -156,6 +167,7 @@ export default function NotificationSettings() {
                      <p className="text-[8px] text-[#4a4a4a] font-normal leading-[10px] ml-5">{option.description}</p>
                   </div>
                ))}
+               {notif.error ? <p className="text-[8px] text-[#b4291f] font-normal leading-[10px]">{notif.error}</p> : null}
             </div>
 
             {/* Push is per-device, not per-account: this reflects whether *this*

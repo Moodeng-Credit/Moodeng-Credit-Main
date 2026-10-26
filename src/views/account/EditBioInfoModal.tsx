@@ -51,7 +51,9 @@ function buildContextFromUser(user: User | null | undefined): BorrowerContextSta
       monthlyIncome: user.monthlyIncome ?? '',
       monthlyExpenses: user.monthlyExpenses ?? '',
       otherIncome: user.otherIncome ?? '',
-      profession: user.profession ?? ''
+      profession: user.profession ?? '',
+      // Not editable here, but must round-trip: the save writes income_description and would null it.
+      incomeDescription: user.incomeDescription ?? ''
    };
 }
 
@@ -124,7 +126,7 @@ export default function EditBioInfoModal({ isOpen, onClose, user }: EditBioInfoM
             <div className="flex flex-col gap-2 text-center">
                <h2 className="text-md-h4 font-semibold text-md-heading">Change Bio Info</h2>
                <p className="text-md-b1 text-md-neutral-1200">
-                  Update the details lenders see about your work, income, and what you typically need help with.
+                  Update the details moo-lenders see about your work, income, and what you typically need help with.
                </p>
             </div>
 
@@ -149,7 +151,7 @@ export default function EditBioInfoModal({ isOpen, onClose, user }: EditBioInfoM
             />
 
             <BorrowerContextChipSection
-               helper="Helps lenders see that repayment timing makes sense."
+               helper="Helps moo-lenders see that repayment timing makes sense."
                label="When do you usually get paid?"
                onSelect={(value) => setContext((current) => ({ ...current, paydayWindow: value }))}
                options={paydayWindowOptions}
@@ -158,7 +160,7 @@ export default function EditBioInfoModal({ isOpen, onClose, user }: EditBioInfoM
 
             <BorrowerContextChipSection
                label="What is your approximate monthly income?"
-               helper="Helps lenders gauge repayment capacity."
+               helper="Helps moo-lenders gauge repayment capacity."
                onSelect={(value) => setContext((current) => ({ ...current, monthlyIncome: value }))}
                options={monthlyIncomeOptions}
                selectedValues={[context.monthlyIncome ?? '']}
@@ -166,7 +168,7 @@ export default function EditBioInfoModal({ isOpen, onClose, user }: EditBioInfoM
 
             <BorrowerContextChipSection
                label="What do your recurring expenses cost per month?"
-               helper="Helps lenders understand your financial commitments."
+               helper="Helps moo-lenders understand your financial commitments."
                onSelect={(value) => setContext((current) => ({ ...current, monthlyExpenses: value }))}
                options={monthlyExpensesOptions}
                selectedValues={[context.monthlyExpenses ?? '']}

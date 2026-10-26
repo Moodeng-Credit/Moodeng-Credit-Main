@@ -34,6 +34,11 @@ verify_jwt = false
 [functions.zoom-webhook]
 verify_jwt = false
 
+# Unsubscribe link in Admin → Campaigns emails (and the one-click List-Unsubscribe POST from mail
+# apps) — opened with no Supabase session. Gated by an HMAC of the user id (_shared/unsubscribe.ts).
+[functions.email-unsubscribe]
+verify_jwt = false
+
 [functions.check-loan-input]
 verify_jwt = true
 
@@ -88,16 +93,19 @@ verify_jwt = false
 [functions.voucher-claim-telegram-notification]
 verify_jwt = false
 
+[functions.state-events-dispatch]
+verify_jwt = false
+
+# Scheduler-only (pg_cron with the secret key); fx-daily checks isInternalRequest itself.
+[functions.fx-daily]
+verify_jwt = false
+
 [functions.loan-request-lender-suggestions]
 verify_jwt = false
 
 # Internal only: called by the voucher_claims insert trigger with the vault secret key.
 [functions.voucher-claim-notification]
 verify_jwt = false
-
-# Admin Vouchers page → Send code (admin JWT checked in the function).
-[functions.admin-voucher-send]
-verify_jwt = true
 
 [functions.telegram-webhook]
 verify_jwt = false
@@ -110,6 +118,17 @@ verify_jwt = true
 
 [functions.admin-fund-loan]
 verify_jwt = true
+
+# Stableyard credential check (GET /v2/partners/config). Re-checks the caller is an active admin inside
+# the function; Stableyard's Basic-auth credentials stay server-side.
+[functions.stableyard-partner-check]
+verify_jwt = true
+
+# Stableyard deposit addresses for the signed-in user AND Stableyard's webhook receiver (one function:
+# the project is at its edge-function cap). verify_jwt is off because webhook deliveries carry no JWT;
+# user requests are checked with getUser() inside, webhooks by HMAC (STABLEYARD_WEBHOOK_SECRET).
+[functions.stableyard-deposit-address]
+verify_jwt = false
 
 [functions.buy-loan-note]
 verify_jwt = true
@@ -165,3 +184,25 @@ verify_jwt = false
 
 [functions.admin-ban-user]
 verify_jwt = true
+
+# Public prize-wheel claim from moodeng.app/stocks (no login; validated + posted to Discord).
+[functions.stocks-claim]
+verify_jwt = false
+
+# TikTok Login Kit callback exchange (public: called from the browser before a session exists).
+[functions.tiktok-login]
+verify_jwt = false
+
+[functions.record-withdrawal]
+verify_jwt = true
+
+# Scheduler-only (pg_cron with the secret key); checks isInternalRequest itself.
+[functions.social-weekly-recap]
+verify_jwt = false
+
+[functions.referral-payout-telegram-notification]
+verify_jwt = false
+
+[functions.admin-ux-metrics]
+# Checks every caller itself: an admin session, or the internal secret for the clarity-digest cron (an sb_secret key, not a JWT).
+verify_jwt = false

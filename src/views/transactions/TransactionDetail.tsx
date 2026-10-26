@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { AlertCircle, ChevronLeft, Clock3, Gift, X } from 'lucide-react';
+import { AlertCircle, ChevronLeft, Clock3, Gift, Trash2, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAccount } from 'wagmi';
@@ -9,14 +9,17 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
 import UserAvatar from '@/components/UserAvatar';
 
+import { useClickOutside } from '@/hooks/useClickOutside';
 import useWallet, { type PaymentMethod } from '@/hooks/useWallet';
 
 import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
+import { getLoanRequestCooldownMessage } from '@/lib/loanRequestRepostStatus';
 import { fetchUserProfiles } from '@/store/slices/authSlice';
-import { confirmLoanPayment, getUserLoans } from '@/store/slices/loanSlice';
+import { confirmLoanPayment, deleteLoan, fetchLoanRequestRepostStatus, getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { Loan } from '@/types/loanTypes';
 import { isOffPlatformSettledRefund, LoanStatus as LoanStatusValue, RepaymentStatus } from '@/types/loanTypes';
+import DeleteLoanRequestModal from '@/views/dashboard/components/DeleteLoanRequestModal';
 import { getTransactionLoanStatus, type TransactionLoanStatus } from '@/views/transactions/transactionHistoryFilters';
 import { currentDateLocale } from '@/utils/dateFormatters';
 
@@ -40,6 +43,21 @@ function buildPreviewLoan(): Loan {
       createdAt: '2026-05-05T00:00:00.000Z',
       updatedAt: '2026-05-05T00:00:00.000Z',
       fundedAt: '2026-05-05T00:00:00.000Z'
+   };
+}
+
+// Dev-only: the borrower's own unfunded request (?mockData=rich&status=pending), to review the delete button.
+function buildPreviewPendingLoan(): Loan {
+   return {
+      ...buildPreviewLoan(),
+      id: 'preview-pending-request',
+      trackingId: 'preview-pending-request',
+      lenderWallet: '',
+      loanStatus: LoanStatusValue.REQUESTED,
+      dueDate: '2026-11-14T00:00:00.000Z',
+      createdAt: '2026-10-14T03:29:56.000Z',
+      updatedAt: '2026-10-14T03:29:56.000Z',
+      fundedAt: undefined
    };
 }
 
@@ -199,7 +217,7 @@ function buildTimeline(loan: Loan): TimelineStep[] {
 
    const labelFor = (key: TimelineStep['key'], state: StepState): string => {
       if (key === 'repaid' && loan.refundedAt) return isOffPlatformSettledRefund(loan) ? 'Repaid' : 'Refunded';
-      if (key === 'funded' && state === 'active') return 'Waiting for lender';
+      if (key === 'funded' && state === 'active') return 'Waiting for moo-lender';
       if (key === 'repaid' && loan.loanStatus === 'Requested') return 'Repayment schedule';
       if (key === 'repaid' && state !== 'done') return 'Repayment due';
       const labels: Record<TimelineStep['key'], string> = {
@@ -497,7 +515,7 @@ interface InterestBannerProps {
 }
 
 function InterestBanner({ amount, coin, name, date, variant }: InterestBannerProps) {
-   const header = variant === 'lender' ? 'Interest returned' : 'Gift from your lender';
+   const header = variant === 'lender' ? 'Interest returned' : 'Gift from your moo-lender';
    const title = variant === 'lender' ? 'You returned the interest' : 'Interest returned!';
    const body =
       variant === 'lender'
@@ -534,7 +552,10 @@ export default function TransactionDetail() {
    const isLoansLoading = useSelector((state: RootState) => state.loans.isLoading);
    const isPreview = import.meta.env.DEV && searchParams.get('mockData') === 'rich';
    const previewAsLender = isPreview && searchParams.get('role') === 'lender';
+   const previewPending = isPreview && searchParams.get('status') === 'pending';
    const [modalOpen, setModalOpen] = useState(false);
+   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+   const [isDeletingRequest, setIsDeletingRequest] = useState(false);
    const [returnedTxHash, setReturnedTxHash] = useState<string | null>(null);
    const returnInFlightRef = useRef(false);
    const { payUsdc } = useWallet();
@@ -545,8 +566,9 @@ export default function TransactionDetail() {
       const foundLoan = gloans.find((l) => l.id === loanId);
       if (foundLoan) return foundLoan;
       if (previewAsLender) return buildPreviewLenderLoan();
+      if (previewPending) return buildPreviewPendingLoan();
       return isPreview ? buildPreviewLoan() : undefined;
-   }, [gloans, isPreview, previewAsLender, loanId]);
+   }, [gloans, isPreview, previewAsLender, previewPending, loanId]);
 
    useEffect(() => {
       if (!user?.id || isPreview) return;
@@ -626,6 +648,58 @@ export default function TransactionDetail() {
       }
    }, [loan, account.isConnected, isPreview, payUsdc, dispatch, showToast]);
 
+   const deleteConfirmRef = useClickOutside<HTMLDivElement>(() => {
+      if (!isDeletingRequest) setShowDeleteConfirm(false);
+   }, showDeleteConfirm) as RefObject<HTMLDivElement>;
+
+   // Borrowers look for "cancel" here (History → their PENDING request), not on the Request Board card,
+   // so the delete lives on this page too. Same rules as the board: own request, still unfunded.
+   const handleConfirmDeleteRequest = useCallback(async () => {
+      if (!loan || isDeletingRequest) return;
+
+      if (isPreview) {
+         setShowDeleteConfirm(false);
+         showToast(TOAST_TYPES.SUCCESS, 'Request deleted', 'Moo-lenders will no longer see this request on the board.');
+         return;
+      }
+
+      setIsDeletingRequest(true);
+      try {
+         await dispatch(deleteLoan(loan.id)).unwrap();
+         setShowDeleteConfirm(false);
+
+         const repostStatus = await dispatch(fetchLoanRequestRepostStatus())
+            .unwrap()
+            .catch(() => null);
+
+         showToast(
+            TOAST_TYPES.SUCCESS,
+            'Request deleted',
+            repostStatus && !repostStatus.canCreate
+               ? getLoanRequestCooldownMessage(repostStatus)
+               : 'Moo-lenders will no longer see this request on the board.'
+         );
+         navigate('/history', { replace: true });
+      } catch (error) {
+         console.error('Error deleting loan request:', (error as Error).message || error);
+         setShowDeleteConfirm(false);
+         showToast(
+            TOAST_TYPES.ERROR,
+            "Request wasn't deleted",
+            'It may already be funded or unavailable. Refreshing now.',
+            'OK',
+            'acknowledge'
+         );
+         if (user?.id) {
+            dispatch(getUserLoans({ userId: user.id }))
+               .unwrap()
+               .catch((err: Error) => console.error('Error refreshing loan after delete failure:', err.message));
+         }
+      } finally {
+         setIsDeletingRequest(false);
+      }
+   }, [dispatch, isDeletingRequest, isPreview, loan, navigate, showToast, user?.id]);
+
    if (isLoansLoading && !loan) {
       return (
          <div className="min-h-screen bg-md-neutral-200 flex justify-center items-center">
@@ -641,6 +715,8 @@ export default function TransactionDetail() {
    const status = getTransactionLoanStatus(loan, new Date());
    const isPendingFunding = status === 'PENDING';
    const isLender = previewAsLender || (!!user?.id && loan.lenderUser === user.id);
+   const canDeleteRequest =
+      loan.loanStatus === LoanStatusValue.REQUESTED && (previewPending || (!!user?.id && loan.borrowerUser === user.id));
    const counterpartyId = isLender ? loan.borrowerUser : loan.lenderUser;
    const counterpartyProfile = counterpartyId ? userProfiles[counterpartyId] : undefined;
    const counterpartyName = counterpartyProfile?.username ?? 'Unknown';
@@ -695,7 +771,7 @@ export default function TransactionDetail() {
                            {isLender
                               ? `Borrowed by ${counterpartyName}`
                               : isPendingFunding
-                                ? 'Lender has not accepted yet'
+                                ? 'Moo-lender has not accepted yet'
                                 : `Lent by ${counterpartyName}`}
                         </span>
                      </div>
@@ -707,9 +783,9 @@ export default function TransactionDetail() {
                      <div className="rounded-md-md border border-md-yellow-700/40 bg-md-yellow-700/10 px-md-3 py-md-2 flex gap-md-2">
                         <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-md-yellow-700" strokeWidth={2.3} />
                         <div className="flex flex-col gap-1">
-                           <span className="text-md-b3 font-semibold text-md-yellow-700">Waiting for lender acceptance</span>
+                           <span className="text-md-b3 font-semibold text-md-yellow-700">Waiting for moo-lender acceptance</span>
                            <span className="text-md-b4 text-md-neutral-1000">
-                              This loan is not funded yet. Repayment starts only after a lender accepts.
+                              This loan is not funded yet. Repayment starts only after a moo-lender accepts.
                            </span>
                         </div>
                      </div>
@@ -746,6 +822,20 @@ export default function TransactionDetail() {
                      </div>
                   </div>
                </div>
+
+               {canDeleteRequest ? (
+                  <div className="flex flex-col gap-md-2">
+                     <button
+                        type="button"
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="w-full inline-flex items-center justify-center gap-2 rounded-md-lg border border-md-red-500/40 bg-white py-md-3 text-md-b1 font-semibold text-md-red-500 active:scale-[0.99] active:bg-md-red-500/5"
+                     >
+                        <Trash2 className="h-4 w-4" strokeWidth={2.25} aria-hidden="true" />
+                        Delete request
+                     </button>
+                     <p className="text-center text-md-b4 text-md-neutral-1000">You can delete this request any time before a moo-lender funds it.</p>
+                  </div>
+               ) : null}
 
                {/* Repayment destination card — lender-facing transparency about where money returns */}
                {showRepaymentDestination ? (
@@ -834,6 +924,15 @@ export default function TransactionDetail() {
             </div>
          </div>
 
+         <DeleteLoanRequestModal
+            loan={showDeleteConfirm ? loan : null}
+            clickOutsideRef={deleteConfirmRef}
+            isDeleting={isDeletingRequest}
+            onClose={() => {
+               if (!isDeletingRequest) setShowDeleteConfirm(false);
+            }}
+            onConfirm={handleConfirmDeleteRequest}
+         />
          <ReturnInterestSheet
             open={modalOpen}
             name={counterpartyName}

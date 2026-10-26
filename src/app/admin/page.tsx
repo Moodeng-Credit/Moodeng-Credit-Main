@@ -12,8 +12,17 @@ import AdminSearch from '@/app/admin/AdminSearch';
 import AdminShell from '@/app/admin/AdminShell';
 import { type AdminTab, isAdminTab, navGroups } from '@/app/admin/adminNav';
 import CalendarSection from '@/app/admin/CalendarSection';
+import CallApprovalsSection from '@/app/admin/CallApprovalsSection';
+import FilloutSection from '@/app/admin/FilloutSection';
+import { groupCallApprovals } from '@/app/admin/callApprovalsModel';
+import DirectoryApprovalControl from '@/app/admin/DirectoryApprovalControl';
+import { TAB_HINTS } from '@/app/admin/adminSearchHints';
 import type { AdminSearchResult } from '@/app/admin/adminSearchModel';
-import VoucherClaimsSection from '@/app/admin/VoucherClaimsSection';
+import GrabVouchersSection from '@/app/admin/GrabVouchersSection';
+import { BorrowerTimeline, RecentChangesFeed } from '@/app/admin/AdminHistory';
+import { deriveBorrowerStatus } from '@/app/admin/adminStatus';
+import AdminStatusBadge from '@/app/admin/AdminStatusBadge';
+import { AdminLiveProvider, AdminLiveRow, useAdminLiveReload } from '@/app/admin/useAdminLive';
 import { formatPointsMajor, iouPointsAwardRules, loanFundingPointsPerUsdc, pointsAwardRules, trustPointsAwardRules } from '@/shared/points';
 import type { RootState } from '@/store/store';
 
@@ -25,6 +34,7 @@ import {
    type AdminOverview,
    type AdminUser,
    banUser,
+   getAdminCallApprovals,
    getAdminOverview,
    getCurrentAdmin,
    getLatestAdminIntegrityRun,
@@ -41,11 +51,17 @@ import {
    upsertLoanRequestReview
 } from './adminSupabase';
 import BorrowerContactsSection from './BorrowerContactsSection';
+import BorrowerCostSection from './BorrowerCostSection';
+import CreditLineSection from './CreditLineSection';
+import MarketingSection from './MarketingSection';
+import CampaignsSection from './CampaignsSection';
 import ComingDueSection from './ComingDueSection';
 import DemoB2BSection from './DemoB2BSection';
 import DemoB2CSection from './DemoB2CSection';
 import EmailUsersSection from './EmailUsersSection';
 import GrowthAnalyticsSection from './GrowthAnalyticsSection';
+import PostLinksSection from './PostLinksSection';
+import SignupSourcesSection from './SignupSourcesSection';
 import LoanExplorerSection from './LoanExplorerSection';
 import LoanExtensionSection from './LoanExtensionSection';
 import MuleRiskSection from './MuleRiskSection';
@@ -57,6 +73,7 @@ import RelayLinksSection from './RelayLinksSection';
 import RiskAssessmentSection from './RiskAssessmentSection';
 import SelfLendingSection from './SelfLendingSection';
 import SupportChatSection from './SupportChatSection';
+import TestLabSection from './TestLabSection';
 import UxHealthSection from './UxHealthSection';
 
 type PersonRole = 'all' | 'borrower' | 'lender' | 'unset';
@@ -286,7 +303,15 @@ function legacyQueryTab(): AdminTab {
    return 'users';
 }
 
-export default function AdminPanel() {
+export default function AdminPanelPage() {
+   return (
+      <AdminLiveProvider>
+         <AdminPanel />
+      </AdminLiveProvider>
+   );
+}
+
+function AdminPanel() {
    const reduxUser = useSelector((state: RootState) => state.auth.user);
    // The Liquidity Relay share panel is gated to the two Moodeng funding admins (George/Emma).
    const isFundingAdmin = useIsFundingAdmin();
@@ -301,6 +326,8 @@ export default function AdminPanel() {
    const setActiveTab = (tab: AdminTab) => navigate(tab === 'users' ? '/admin' : `/admin/${tab}`);
    // When the team clicks "Extend" on a coming-due loan, jump to the extensions tab with it preselected.
    const [extensionLoanId, setExtensionLoanId] = useState<string | null>(null);
+   // People waiting on a call decision — reported by the Call approvals tab once it has loaded.
+   const [callApprovalCount, setCallApprovalCount] = useState(0);
    const [admin, setAdmin] = useState<AdminUser | null>(null);
    const [overview, setOverview] = useState<AdminOverview | null>(null);
    const [integrityRun, setIntegrityRun] = useState<AdminIntegrityRun | null>(null);
@@ -351,12 +378,12 @@ export default function AdminPanel() {
    };
    // Global search bar: pages, users and loan requests, jumping straight to the match.
    const searchPages = useMemo(
-      () => visibleNavGroups.flatMap((group) => group.items.map((item) => ({ id: item.id, label: item.label, group: group.label }))),
+      () => visibleNavGroups.flatMap((group) => group.items.map((item) => ({ id: item.id, label: item.label, group: group.label, hint: TAB_HINTS[item.id] }))),
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [isFundingAdmin]
    );
    function handleSearchSelect(result: AdminSearchResult) {
-      if (result.kind === 'page') {
+      if (result.kind === 'page' || result.kind === 'ai') {
          setActiveTab(result.id as AdminTab);
       } else if (result.kind === 'user') {
          clearDirectoryFilters();
@@ -427,6 +454,10 @@ export default function AdminPanel() {
          setAdminDataLoaded(true);
          setSelectedDefaultCaseId((current) => current || nextDefaults[0]?.id || '');
          setSelectedRequestId((current) => current || nextLoanRequests[0]?.id || '');
+         // Badge count for people waiting on a call decision, before either tab that lists them is opened.
+         void getAdminCallApprovals()
+            .then((rows) => setCallApprovalCount(groupCallApprovals(rows, Date.now()).needsDecision.length))
+            .catch(() => undefined);
       } catch (caught) {
          setError(caught instanceof Error ? caught.message : 'Could not load live admin data.');
       } finally {
@@ -446,7 +477,20 @@ export default function AdminPanel() {
             setAdmin(currentAdmin);
             setLoading(false);
             if (currentAdmin) {
-               await refresh('', { showLoading: true });
+               // Deep links from the Telegram admin cards ("👤 Open in admin"): ?q= searches the
+               // directory for them, ?user= opens their card and scrolls to it.
+               const params = new URLSearchParams(window.location.search);
+               const linkedQuery = params.get('q')?.trim() ?? '';
+               const linkedUserId = params.get('user');
+               if (linkedQuery) setSearch(linkedQuery);
+               await refresh(linkedQuery, { showLoading: true });
+               if (alive && linkedUserId) {
+                  setSelectedUserId(linkedUserId);
+                  window.setTimeout(
+                     () => document.getElementById(`admin-user-${linkedUserId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+                     80
+                  );
+               }
             }
          } catch (caught) {
             if (alive) setError(caught instanceof Error ? caught.message : 'Could not load admin panel.');
@@ -460,6 +504,11 @@ export default function AdminPanel() {
          alive = false;
       };
    }, [reduxUser?.id]);
+
+   // Directory / Requests / overview counts are page state — reload them quietly on live changes.
+   useAdminLiveReload(['users', 'loans', 'loan_access_requests', 'admin_account_restrictions', 'account_status_audit_logs'], () =>
+      admin ? refresh(search) : undefined
+   );
 
    async function handleSearch(event: FormEvent<HTMLFormElement>) {
       event.preventDefault();
@@ -671,7 +720,8 @@ export default function AdminPanel() {
          adminInitial={adminInitial}
          groups={visibleNavGroups}
          counts={{
-            requests: overview?.loanRequestReviewCount ?? 0,
+            calls: callApprovalCount,
+            requests: (overview?.loanRequestReviewCount ?? 0) + callApprovalCount,
             defaults: overview?.defaultedLoanCount ?? 0,
             risk: overview?.highRiskProfileCount ?? 0
          }}
@@ -701,6 +751,7 @@ export default function AdminPanel() {
 
          {activeTab === 'users' ? (
             <section className="space-y-6">
+               <RecentChangesFeed />
                <div>
                   <h2 className="break-words text-2xl font-black sm:text-3xl">User directory</h2>
                   <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
@@ -790,7 +841,7 @@ export default function AdminPanel() {
                   {adminDataLoaded
                      ? filteredDirectory.map((user) => (
                           <article key={user.id} id={`admin-user-${user.id}`} className="scroll-mt-32 border-b border-[#2a1453] last:border-b-0">
-                             <div className="grid gap-5 p-6">
+                             <AdminLiveRow ids={[user.id]} className="grid gap-5 p-6">
                                 <div className="flex flex-wrap items-start justify-between gap-4">
                                    <div className="flex min-w-0 gap-4">
                                       <button
@@ -812,9 +863,7 @@ export default function AdminPanel() {
                                             <Badge tone={user.user_role}>{roleLabel(user.user_role)}</Badge>
                                             <Badge tone={user.account_status}>{user.account_status}</Badge>
                                             <Badge tone={riskTone(user)}>{riskTone(user)} risk</Badge>
-                                            <Badge tone={isUserVerified(user) ? 'ACTIVE' : 'INACTIVE'}>
-                                               {isUserVerified(user) ? 'verified' : 'not verified'}
-                                            </Badge>
+                                            <AdminStatusBadge status={deriveBorrowerStatus(user)} />
                                             <Badge tone={user.messenger_verified_at ? 'ACTIVE' : 'INACTIVE'}>
                                                {user.messenger_verified_at ? 'facebook linked' : 'no facebook'}
                                             </Badge>
@@ -828,6 +877,7 @@ export default function AdminPanel() {
                                                ? ` · ${countryLabel(user.countryIso)}${user.city ? ` (${user.city})` : ''}`
                                                : ''}
                                          </p>
+                                         <DirectoryApprovalControl user={user} />
                                       </div>
                                    </div>
                                    <button
@@ -889,7 +939,7 @@ export default function AdminPanel() {
                                       value={formatDate(user.lastLoanAt ?? user.updated_at)}
                                    />
                                 </div>
-                             </div>
+                             </AdminLiveRow>
                              {selectedUser?.id === user.id ? (
                                 <div className="border-t border-[#2a1453] bg-[#241044] p-6">
                                    <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1010,6 +1060,7 @@ export default function AdminPanel() {
                                       Ban is the one-step ban: account, Didit block, KYC blacklist, open requests deleted, and a message to the user. Flag ban review does not ban anyone. It records an admin review item only. Reset 2FA removes
                                       every authenticator/passkey factor this user has enrolled — use it when they're locked out.
                                    </p>
+                                   <BorrowerTimeline userId={user.id} />
                                 </div>
                              ) : null}
                           </article>
@@ -1429,7 +1480,11 @@ export default function AdminPanel() {
          ) : null}
 
          {activeTab === 'requests' ? (
-            <section className="space-y-6">
+            <CallApprovalsSection variant="waiting" onCountChange={setCallApprovalCount} onOpenCalls={() => setActiveTab('calls')} />
+         ) : null}
+
+         {activeTab === 'requests' ? (
+            <section className="mt-10 space-y-6">
                <div>
                   <h2 className="break-words text-2xl font-black sm:text-3xl">Loan request review</h2>
                   <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
@@ -1458,9 +1513,7 @@ export default function AdminPanel() {
                                     {request.borrower?.user_role ?? 'borrower'}
                                  </Badge>
                                  <Badge tone={requestStatus(request)}>{requestStatus(request).replace('_', ' ')}</Badge>
-                                 <Badge tone={isUserVerified(request.borrower) ? 'ACTIVE' : 'INACTIVE'}>
-                                    {isUserVerified(request.borrower) ? 'verified' : 'not verified'}
-                                 </Badge>
+                                 <AdminStatusBadge status={deriveBorrowerStatus(request.borrower ?? {})} />
                               </div>
                               <p className="mt-3 text-xl text-[#a89bb8]">{request.reason}</p>
                            </button>
@@ -1569,6 +1622,42 @@ export default function AdminPanel() {
             </section>
          ) : null}
 
+         {activeTab === 'test-lab' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Test lab</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Try things for real before people do. Sends here are real and cost credits.
+                  </p>
+               </div>
+               <TestLabSection />
+            </section>
+         ) : null}
+
+         {activeTab === 'post-links' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Post links</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     A tracked link for each Facebook post, and how many clicks, sign-ups and borrowers each one brought.
+                  </p>
+               </div>
+               <PostLinksSection />
+            </section>
+         ) : null}
+
+         {activeTab === 'signups' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Sign-up sources</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Where new accounts came from, which browser or app they signed up in, how, and how far they got.
+                  </p>
+               </div>
+               <SignupSourcesSection />
+            </section>
+         ) : null}
+
          {activeTab === 'on-chain' ? (
             <section className="space-y-6">
                <div>
@@ -1651,7 +1740,57 @@ export default function AdminPanel() {
                   <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">Create codes, deactivate old ones, and track redemptions.</p>
                </div>
                <ReferralCodesSection />
-               <VoucherClaimsSection />
+            </section>
+         ) : null}
+
+         {activeTab === 'grab-vouchers' ? <GrabVouchersSection /> : null}
+
+         {activeTab === 'credit-line' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Credit line</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Balances, interest owed, every loan with its transactions and approval reason, and the money trail, for the lender&apos;s monthly report.
+                  </p>
+               </div>
+               <CreditLineSection />
+            </section>
+         ) : null}
+
+         {activeTab === 'credit-line-cost' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Credit line real cost</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Team only. The same real-cost analytics for the loans funded from the credit line (BitRepo) only, since it started: our fee, the
+                     exchange-rate move and exchange fees.
+                  </p>
+               </div>
+               <BorrowerCostSection scope="credit_line" />
+            </section>
+         ) : null}
+
+         {activeTab === 'real-cost' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Borrower real cost</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Team only. What loans really cost borrowers in pesos and rupiah: our fee, plus the exchange-rate move between cashing out and buying USDC back, plus exchange fees.
+                  </p>
+               </div>
+               <BorrowerCostSection />
+            </section>
+         ) : null}
+
+         {activeTab === 'marketing' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Marketing</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     How close we are to this month&apos;s lending goal, what each week needs, what marketing costs per real borrower, and who to contact.
+                  </p>
+               </div>
+               <MarketingSection />
             </section>
          ) : null}
 
@@ -1678,6 +1817,23 @@ export default function AdminPanel() {
                <EmailUsersSection />
             </section>
          ) : null}
+
+         {activeTab === 'campaigns' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Campaigns</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Bring borrowers back — automatically after they repay, or with a one-off message to an audience. Each person
+                     gets it on Messenger if they&apos;ve messaged us in the last day, otherwise by email and app notification.
+                  </p>
+               </div>
+               <CampaignsSection />
+            </section>
+         ) : null}
+
+         {activeTab === 'calls' ? <CallApprovalsSection onCountChange={setCallApprovalCount} /> : null}
+
+         {activeTab === 'fillout' ? <FilloutSection /> : null}
 
          {activeTab === 'calendar' ? <CalendarSection /> : null}
 

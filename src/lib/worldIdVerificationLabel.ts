@@ -11,6 +11,6 @@ export const getWorldIdVerificationLabel = ({
 }) => {
    if (isWorldId !== 'ACTIVE') return 'Not Verified';
    if (userRole === 'borrower') return 'Verified Borrower';
-   if (userRole === 'lender') return 'Verified Lender';
+   if (userRole === 'lender') return 'Verified Moo-lender';
    return 'Verified';
 };

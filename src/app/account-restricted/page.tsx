@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 
+import { externalLinkTarget, messengerSupportLink } from '@/config/contactVerification';
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { useDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
@@ -41,14 +42,17 @@ export default function AccountRestrictedPage() {
    const isRestricted = status === 'blocked' || status === 'banned';
    const defaultedBorrower = useDefaultedBorrowerSupport(!mockStatus && isAuthChecked ? user?.id : null, userLoansFetchedAt);
    const isDefaultedBorrower = defaultedBorrower.support.overdueAmount > 0;
+   // A blocked (watchlisted) borrower can still repay any open loan.
+   const canRepay = isDefaultedBorrower || (status === 'blocked' && (defaultedBorrower.support.openAmount ?? 0) > 0);
    const hasProfileSession = Boolean(user?.id && username);
    const isCheckingAuth = !mockStatus && (!isAuthChecked || isRecoveringSession);
    const isMissingSession = !mockStatus && isAuthChecked && !isRecoveringSession && !hasProfileSession;
    const isCheckingDefaultedLoans = !mockStatus && Boolean(user?.id) && defaultedBorrower.isLoading;
    const hasDefaultedCheckError = !mockStatus && Boolean(user?.id) && Boolean(defaultedBorrower.error);
-   const supportLink = isDefaultedBorrower
-      ? EXTERNAL_LINKS.support.messengerDefaulted
-      : EXTERNAL_LINKS.support.messenger;
+   // m.me never opens Messenger from Android Chrome, so Android gets the app link to our chat.
+   const supportLink = messengerSupportLink(
+      isDefaultedBorrower ? EXTERNAL_LINKS.support.messengerDefaulted : EXTERNAL_LINKS.support.messenger
+   );
 
    const handleSignOut = async () => {
       if (isSigningOut) return;
@@ -157,7 +161,7 @@ export default function AccountRestrictedPage() {
             </div>
 
             <div className="mt-7 flex flex-col gap-3">
-               {isDefaultedBorrower && (
+               {canRepay && (
                   <Link
                      to="/repay"
                      className="inline-flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#16A34A] px-4 text-base font-semibold tracking-[-0.02em] text-white transition-opacity hover:opacity-95"
@@ -176,7 +180,7 @@ export default function AccountRestrictedPage() {
                )}
                <a
                   href={supportLink}
-                  target="_blank"
+                  target={externalLinkTarget(supportLink)}
                   rel="noopener noreferrer"
                   className={`inline-flex h-14 w-full items-center justify-center gap-3 rounded-2xl px-4 text-base font-semibold tracking-[-0.02em] text-white transition-opacity hover:opacity-95 ${isMissingSession ? 'bg-[#16A34A]' : 'bg-[#6010D2]'}`}
                >

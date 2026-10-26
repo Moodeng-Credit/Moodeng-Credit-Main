@@ -27,7 +27,7 @@ export const useToast = () => {
             buttonAction,
             customData,
             customIcon,
-            duration: TOAST_SETTINGS.DEFAULT_DURATION,
+            duration: toastType === TOAST_TYPES.ERROR ? TOAST_SETTINGS.ERROR_DURATION : TOAST_SETTINGS.DEFAULT_DURATION,
             autoClose: true
          };
 
@@ -55,7 +55,7 @@ export const useToast = () => {
             buttonAction: config.buttonAction,
             customIcon: config.customIcon,
             customData,
-            duration: TOAST_SETTINGS.DEFAULT_DURATION,
+            duration: config.toastType === TOAST_TYPES.ERROR ? TOAST_SETTINGS.ERROR_DURATION : TOAST_SETTINGS.DEFAULT_DURATION,
             autoClose: true,
             ...overrides
          };

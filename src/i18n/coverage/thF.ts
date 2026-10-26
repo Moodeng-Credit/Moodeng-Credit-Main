@@ -52,7 +52,7 @@ export const thaiCoverageF: Record<string, string> = {
    'Congratulations for Verifying.': 'ยินดีด้วย คุณยืนยันตัวตนเรียบร้อยแล้ว',
    'Continue Loan Request': 'ส่งคำขอเงินกู้ต่อ',
    'Loan Request Created!': 'สร้างคำขอเงินกู้แล้ว!',
-   'Your request is now live for lenders to review.': 'คำขอของคุณเผยแพร่แล้ว ผู้ให้กู้สามารถเข้ามาดูได้',
+   'Your request is now live for moo-lenders to review.': 'คำขอของคุณเผยแพร่แล้ว Moo-lender สามารถเข้ามาดูได้',
    'View Active Loans': 'ดูเงินกู้ที่กำลังดำเนินอยู่',
    "It's awkward 😅": 'อุ๊ย ขออภัย 😅',
    'We were unable to process payment for your funding.': 'เราไม่สามารถดำเนินการชำระเงินสำหรับการปล่อยกู้ของคุณได้',
@@ -342,14 +342,14 @@ export const thaiCoverageF: Record<string, string> = {
    'You can make another loan request in about 30 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 30 นาที',
 
    // src/lib/reasonQuality.ts
-   'Please write your reason in English — the lenders reading it don’t speak Tagalog.':
-      'โปรดเขียนเหตุผลเป็นภาษาอังกฤษ — ผู้ให้กู้ที่อ่านไม่ได้ใช้ภาษาตากาล็อก',
+   'Please write your reason in English — the moo-lenders reading it only read English.':
+      'โปรดเขียนเหตุผลเป็นภาษาอังกฤษ — Moo-lender ที่อ่านไม่ได้ใช้ภาษาตากาล็อก',
    'Write it as a sentence — what the money is for and when you get paid.':
       'เขียนเป็นประโยค — บอกว่าจะใช้เงินทำอะไร และคุณจะได้รับเงินเมื่อไร',
-   "This doesn't look like real words yet — tell lenders what the loan is for.":
-      'ข้อความนี้ยังดูไม่เป็นคำที่มีความหมาย — บอกผู้ให้กู้ว่าคุณกู้เงินไปใช้ทำอะไร',
-   'Try saying it once, clearly — repeating words does not help lenders.':
-      'ลองเขียนครั้งเดียวให้ชัดเจน — การพิมพ์คำซ้ำไม่ได้ช่วยให้ผู้ให้กู้เข้าใจ',
+   "This doesn't look like real words yet — tell moo-lenders what the loan is for.":
+      'ข้อความนี้ยังดูไม่เป็นคำที่มีความหมาย — บอก Moo-lender ว่าคุณกู้เงินไปใช้ทำอะไร',
+   'Try saying it once, clearly — repeating words does not help moo-lenders.':
+      'ลองเขียนครั้งเดียวให้ชัดเจน — การพิมพ์คำซ้ำไม่ได้ช่วยให้ Moo-lender เข้าใจ',
 
    // src/lib/supabase/avatarStorage.ts
    'You must be signed in to upload an avatar.': 'คุณต้องเข้าสู่ระบบก่อนจึงจะอัปโหลดรูปโปรไฟล์ได้',
@@ -406,7 +406,7 @@ export const thaiCoverageF: Record<string, string> = {
    // src/shared/points.ts
    'Build a 2-loan on-time streak': 'ชำระคืนตรงเวลาติดต่อกัน 2 รายการ',
    'Repay a full-limit credit-builder': 'ชำระคืนเงินกู้สร้างเครดิตแบบเต็มวงเงิน',
-   'Borrow from 2 different lenders': 'กู้จากผู้ให้กู้ 2 รายที่ต่างกัน',
+   'Borrow from 2 different moo-lenders': 'กู้จาก Moo-lender 2 รายที่ต่างกัน',
    'Reach Credit Level 3': 'ไปถึงระดับเครดิต 3',
    'Become a trusted borrower candidate': 'ก้าวสู่การเป็นผู้ยืมที่น่าเชื่อถือ',
    'Loan funded': 'ปล่อยกู้แล้ว',
@@ -576,40 +576,40 @@ export const thaiCoverageF: Record<string, string> = {
    '. A few things that usually fix it:': ' วิธีต่อไปนี้มักช่วยแก้ปัญหาได้:',
 
    // src/components/ExpiredLoanRequestNotifier.tsx
-   'Your 15 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'คำขอ 15 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
-   'Your 20 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'คำขอ 20 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
-   'Your 40 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'คำขอ 40 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
-   'Your 60 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'คำขอ 60 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
-   'Your 80 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'คำขอ 80 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
-   'Your 100 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'คำขอ 100 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
-   'Your 120 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'คำขอ 120 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
-   'Your 140 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'คำขอ 140 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
-   '2 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'คำขอเงินกู้ 2 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
-   '3 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'คำขอเงินกู้ 3 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
-   '4 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'คำขอเงินกู้ 4 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
-   '5 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'คำขอเงินกู้ 5 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
-   '6 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'คำขอเงินกู้ 6 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
-   '7 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'คำขอเงินกู้ 7 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
-   '8 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'คำขอเงินกู้ 8 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
-   '9 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'คำขอเงินกู้ 9 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
-   '10 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'คำขอเงินกู้ 10 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   'Your 15 USDC request expired before it was funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'คำขอ 15 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหา Moo-lender หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   'Your 20 USDC request expired before it was funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'คำขอ 20 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหา Moo-lender หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   'Your 40 USDC request expired before it was funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'คำขอ 40 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหา Moo-lender หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   'Your 60 USDC request expired before it was funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'คำขอ 60 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหา Moo-lender หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   'Your 80 USDC request expired before it was funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'คำขอ 80 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหา Moo-lender หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   'Your 100 USDC request expired before it was funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'คำขอ 100 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหา Moo-lender หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   'Your 120 USDC request expired before it was funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'คำขอ 120 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหา Moo-lender หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   'Your 140 USDC request expired before it was funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'คำขอ 140 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหา Moo-lender หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '2 loan requests expired before they were funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'คำขอเงินกู้ 2 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหา Moo-lender หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '3 loan requests expired before they were funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'คำขอเงินกู้ 3 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหา Moo-lender หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '4 loan requests expired before they were funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'คำขอเงินกู้ 4 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหา Moo-lender หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '5 loan requests expired before they were funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'คำขอเงินกู้ 5 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหา Moo-lender หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '6 loan requests expired before they were funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'คำขอเงินกู้ 6 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหา Moo-lender หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '7 loan requests expired before they were funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'คำขอเงินกู้ 7 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหา Moo-lender หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '8 loan requests expired before they were funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'คำขอเงินกู้ 8 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหา Moo-lender หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '9 loan requests expired before they were funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'คำขอเงินกู้ 9 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหา Moo-lender หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '10 loan requests expired before they were funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'คำขอเงินกู้ 10 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหา Moo-lender หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
 
    // src/components/filters/DatePicker.tsx
    Su: 'อา',
@@ -769,7 +769,7 @@ export const thaiCoverageF: Record<string, string> = {
    '7 days left on the board': 'เหลือเวลาบนกระดานอีก 7 วัน',
 
    // src/lib/worldIdVerificationLabel.ts
-   'Verified Lender': 'ผู้ให้กู้ที่ยืนยันแล้ว',
+   'Verified Moo-lender': 'Moo-lender ที่ยืนยันแล้ว',
 
    // src/store/slices/authSlice.ts
    'Failed to ensure user profile': 'โหลดโปรไฟล์ผู้ใช้ไม่สำเร็จ',

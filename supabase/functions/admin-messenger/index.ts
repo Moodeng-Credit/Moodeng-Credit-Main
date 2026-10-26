@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { saveFacebookName, syncMessengerHistory } from '../_shared/messengerContactLog.ts';
 import {
    findMessengerContactIdByCode,
    getMessengerContact,
@@ -15,11 +16,14 @@ import {
 //   { action: 'profiles', userIds }  → each verified borrower's Facebook name + whether we're inside
 //                                      Messenger's 24h window (i.e. whether "Message" can send now).
 //   { action: 'send', userId, text } → sends the admin's message to that borrower on Messenger.
-// Active admins only — re-checked here against admin_users, like the other admin-* functions.
+//   { action: 'sync_history', userIds? } → saves Facebook names + backfills messenger_contact_events
+//                                      from SendPulse's chat log (_shared/messengerContactLog.ts).
+// Active admins only — re-checked here against admin_users, like the other admin-* functions — or
+// X-Admin-Token for server-side calls (pg_net), like admin-send-email.
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
-   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-admin-token',
    'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 const json = (body: unknown, status = 200) =>
@@ -63,19 +67,26 @@ serve(async (req) => {
 
    const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 
-   const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
-   if (!token) return json({ error: 'Missing authorization token' }, 401);
-   const { data: userData, error: userError } = await svc.auth.getUser(token);
-   const callerId = userData?.user?.id;
-   if (userError || !callerId) return json({ error: 'Invalid session' }, 401);
-   const { data: adminRow } = await svc
-      .from('admin_users')
-      .select('user_id')
-      .eq('user_id', callerId)
-      .eq('active', true)
-      .in('role', ['owner', 'admin', 'support'])
-      .maybeSingle();
-   if (!adminRow) return json({ error: 'Forbidden: admin account required' }, 403);
+   // Auth: server-side token (X-Admin-Token = ADMIN_API_TOKEN, fail-closed), or an active admin's session.
+   const adminToken = (Deno.env.get('ADMIN_API_TOKEN') ?? '').trim();
+   const presentedToken = (req.headers.get('X-Admin-Token') ?? '').trim();
+   if (presentedToken) {
+      if (!adminToken || presentedToken !== adminToken) return json({ error: 'unauthorized' }, 401);
+   } else {
+      const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
+      if (!token) return json({ error: 'Missing authorization token' }, 401);
+      const { data: userData, error: userError } = await svc.auth.getUser(token);
+      const callerId = userData?.user?.id;
+      if (userError || !callerId) return json({ error: 'Invalid session' }, 401);
+      const { data: adminRow } = await svc
+         .from('admin_users')
+         .select('user_id')
+         .eq('user_id', callerId)
+         .eq('active', true)
+         .in('role', ['owner', 'admin', 'support'])
+         .maybeSingle();
+      if (!adminRow) return json({ error: 'Forbidden: admin account required' }, 403);
+   }
 
    if (!isSendPulseConfigured()) return json({ error: 'sendpulse_not_configured' }, 503);
 
@@ -86,15 +97,18 @@ serve(async (req) => {
       if (!ids.length) return json({ profiles: [] });
       const { data: users } = await svc
          .from('users')
-         .select('id, messenger_psid, messenger_verified_at')
+         .select('id, messenger_psid, messenger_verified_at, facebook_name')
          .in('id', ids)
          .not('messenger_verified_at', 'is', null);
       const profiles = await Promise.all(
-         ((users ?? []) as Array<{ id: string; messenger_psid: string | null }>).map(async (u) => {
+         ((users ?? []) as Array<{ id: string; messenger_psid: string | null; facebook_name: string | null }>).map(async (u) => {
             const resolved = await resolveContact(svc, u.id, u.messenger_psid);
+            const name = resolved ? messengerDisplayName(resolved.contact) : null;
+            // Keep the stored name current (it can change on Facebook).
+            await saveFacebookName(svc, u.id, name, u.facebook_name);
             return {
                userId: u.id,
-               name: resolved ? messengerDisplayName(resolved.contact) : null,
+               name: name ?? u.facebook_name,
                canMessageNow: resolved ? isInsideMessagingWindow(resolved.contact) : false,
                lastActivityAt: resolved?.contact.last_activity_at ?? null,
                found: Boolean(resolved)
@@ -102,6 +116,31 @@ serve(async (req) => {
          })
       );
       return json({ profiles });
+   }
+
+   if (body.action === 'sync_history') {
+      // Backfill Facebook names + every message each borrower sent us, from SendPulse's chat log.
+      // userIds omitted → every borrower with a Messenger contact. Safe to re-run: logged messages are skipped.
+      // Verified without a stored contact id too: resolveContact finds them by their verification code.
+      let query = svc
+         .from('users')
+         .select('id, messenger_psid, facebook_name')
+         .or('messenger_psid.not.is.null,messenger_verified_at.not.is.null');
+      if (Array.isArray(body.userIds) && body.userIds.length) {
+         query = query.in('id', body.userIds.filter((id: unknown) => typeof id === 'string').slice(0, MAX_PROFILES));
+      }
+      const { data: users, error } = await query.limit(MAX_PROFILES);
+      if (error) return json({ error: error.message }, 500);
+      const results = [];
+      for (const u of (users ?? []) as Array<{ id: string; messenger_psid: string | null; facebook_name: string | null }>) {
+         const resolved = await resolveContact(svc, u.id, u.messenger_psid);
+         results.push(
+            resolved
+               ? await syncMessengerHistory(svc, u.id, resolved.id, u.facebook_name)
+               : { userId: u.id, found: false, facebookName: null, added: 0, inbound: 0 }
+         );
+      }
+      return json({ results });
    }
 
    if (body.action === 'send') {

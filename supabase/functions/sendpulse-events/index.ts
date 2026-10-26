@@ -1,10 +1,16 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { adminUserUrl, OPEN_IN_ADMIN_TEXT, sendAdminCard } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
 import { decideAutoMatch, MATCH_WINDOW_MS, type OpenAttempt } from '../_shared/messengerAutoMatch.ts';
+import { BORROW_POSTER_CARD, BORROW_POSTER_TEXT, type PosterCandidate, shouldSendBorrowPoster } from '../_shared/messengerBorrowPoster.ts';
+import { logMessengerContact, rememberMessengerContact, saveFacebookName } from '../_shared/messengerContactLog.ts';
+import { CONNECTED_BY_TIMING_TEXT } from '../_shared/messengerStatusFollowUp.ts';
+import { isSupportMessage, openMessengerTicket, relayAgentReply } from '../_shared/messengerSupport.ts';
 import { buildMatchSuggestionCard, messengerStuckKeyboard } from '../_shared/messengerStuckAlert.ts';
+import { decideTimingMatch, TIMING_WINDOW_MS, type TimingAttempt } from '../_shared/messengerTimingMatch.ts';
 import {
    getMessengerContact,
    MESSENGER_PAGE_ID,
@@ -28,10 +34,18 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 // Fail-closed: no secret configured → nothing is accepted.
 //
 // For each subscribe / message FROM a person:
+//   0. Log it to messenger_contact_events (and fill in a known borrower's missing Facebook name), and
+//      remember the person in messenger_contacts with their Facebook name — registered or not.
+//      Anything they write that isn't part of the Facebook step becomes a support ticket in Discord,
+//      with an automatic reply (_shared/messengerSupport.ts).
+// ?relay=1 (from the widget_messages trigger, header x-relay-secret): a team reply from Discord →
+// send it to the person on Messenger.
 //   1. It carries an MDNG code (typed in any form, or the mdng_code their link set) → hand it to
 //      sendpulse-messenger-verify, exactly as the SendPulse flows do. Catches typed codes the
 //      keyword trigger missed ("mdng 3d66ad"). Idempotent with the flows: whichever lands first wins.
-//   2. No code → compare the Facebook name (read back from SendPulse's API, never trusted from the
+//   2. No code, and exactly one borrower tapped "Open Messenger" on Android in the last minute →
+//      connect them by timing (_shared/messengerTimingMatch.ts): Android Messenger won't take our code.
+//   3. Otherwise compare the Facebook name (read back from SendPulse's API, never trusted from the
 //      payload) with borrowers who tapped "Verify via Messenger" in the last 30 minutes
 //      (_shared/messengerAutoMatch.ts). One strong match → confirm through the same endpoint and tell
 //      the person in Messenger; anything less certain → an "Is this them?" card for the team.
@@ -60,7 +74,8 @@ const confirmCode = async (code: string, contactId: string, name: string | null)
       const res = await fetch(`${SUPABASE_URL}/functions/v1/sendpulse-messenger-verify`, {
          method: 'POST',
          headers: { 'Content-Type': 'application/json', 'x-sendpulse-secret': VERIFY_SECRET },
-         body: JSON.stringify({ code, contact_id: contactId, name })
+         // quiet: the SendPulse flow handling the same message already tells them if it didn't work.
+         body: JSON.stringify({ code, contact_id: contactId, name, quiet: true })
       });
       return ((await res.json().catch(() => null)) as VerifyResult | null) ?? { ok: false, error: `http_${res.status}` };
    } catch (err) {
@@ -86,6 +101,57 @@ type Borrower = {
 type Kyc = { user_id: string; full_name: string | null; first_name: string | null; last_name: string | null };
 type OpenCode = { id: string; code: string; user_id: string; created_at: string; suggested_contact_id: string | null };
 
+// Android: the borrower tapped "Open Messenger" (stamping chat_opened_at) and this chat opened within
+// the minute. Returns true when it connected someone.
+const matchByTiming = async (svc: Svc, event: SendPulseEvent, contactId: string, facebookName: string | null): Promise<boolean> => {
+   const since = new Date(event.at - TIMING_WINDOW_MS - 60 * 1000).toISOString();
+   const { data: rows } = await svc
+      .from('contact_verification_codes')
+      .select('code, user_id, chat_opened_at, expires_at')
+      .eq('channel', 'messenger')
+      .is('verified_at', null)
+      .gt('chat_opened_at', since);
+   const live = ((rows ?? []) as Array<TimingAttempt & { expires_at: string }>).filter((r) => Date.parse(r.expires_at) > Date.now());
+   if (!live.length) return false;
+
+   // Only borrowers who can still be connected (same rules as name matching).
+   const { data: users } = await svc
+      .from('users')
+      .select('id, username, display_name, email, user_role, account_status, messenger_verified_at')
+      .in('id', [...new Set(live.map((r) => r.user_id))]);
+   const eligible = new Map(
+      ((users ?? []) as Borrower[])
+         .filter((u) => !u.messenger_verified_at && u.user_role !== 'lender' && (!u.account_status || u.account_status === 'active'))
+         .map((u) => [u.id, u])
+   );
+   const decision = decideTimingMatch(
+      event.at,
+      live.filter((r) => eligible.has(r.user_id))
+   );
+   if (decision.kind === 'ambiguous') {
+      console.log(`sendpulse-events: timing match skipped, ${decision.userIds.length} borrowers tapped in the same minute`);
+      return false;
+   }
+   if (decision.kind !== 'auto') return false;
+
+   const borrower = eligible.get(decision.attempt.user_id)!;
+   const result = await confirmCode(decision.attempt.code, contactId, facebookName);
+   if (!result.ok || result.already) {
+      if (!result.ok) console.error('sendpulse-events: timing confirm refused', decision.attempt.code, result.error);
+      return Boolean(result.already);
+   }
+   const seconds = Math.max(0, Math.round((event.at - Date.parse(decision.attempt.chat_opened_at)) / 1000));
+   const who = `${borrower.display_name || borrower.username || 'borrower'}${borrower.username ? ` (@${borrower.username})` : ''}`;
+   const note =
+      `⏱️ Matched by timing: Facebook "${facebookName ?? 'unknown name'}" opened our chat ${seconds}s after ${who} tapped ` +
+      `Open Messenger (Android, no code). If the name doesn't fit, ask tech to reset their Facebook link.`;
+   const chat = await kycChat(svc);
+   if (chat) await sendTelegramMessage(chat, note).catch((err: unknown) => console.error('sendpulse-events: telegram note failed', err));
+   await postDiscord({ content: note }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
+   await sendMessengerMessage(contactId, { text: CONNECTED_BY_TIMING_TEXT });
+   return true;
+};
+
 const matchByName = async (svc: Svc, event: SendPulseEvent, contactId: string) => {
    // Already someone's Messenger line → a known borrower chatting, not a lost confirmation.
    const { data: known } = await svc.from('users').select('id').eq('messenger_psid', contactId).limit(1);
@@ -94,6 +160,8 @@ const matchByName = async (svc: Svc, event: SendPulseEvent, contactId: string) =
    // The name comes from SendPulse's API, so a forged webhook can't pick whose name to match.
    const contact = await getMessengerContact(contactId);
    const facebookName = messengerDisplayName(contact);
+
+   if (await matchByTiming(svc, event, contactId, facebookName)) return;
    if (!facebookName) return;
 
    const since = new Date(event.at - MATCH_WINDOW_MS - 5 * 60 * 1000).toISOString();
@@ -163,14 +231,49 @@ const matchByName = async (svc: Svc, event: SendPulseEvent, contactId: string) =
          .update({ suggested_contact_id: contactId, suggested_contact_name: facebookName, suggested_at: new Date().toISOString() })
          .eq('id', attempt.row.id)
          .is('verified_at', null);
-      const text = buildMatchSuggestionCard(attempt.user, attempt.names.slice(0, 3), facebookName, attempt, event.at);
+      const text = buildMatchSuggestionCard(attempt.user, attempt.names.slice(0, 3).filter((n): n is string => Boolean(n)), facebookName, attempt, event.at);
       if (chat) {
-         await sendTelegramMessage(chat, text, {
-            inlineKeyboard: messengerStuckKeyboard(attempt.user.id, PAGE_INBOX_URL, "✅ Yes, it's them")
+         await sendAdminCard(svc, chat, {
+            kind: 'messenger',
+            refId: attempt.user.id,
+            text,
+            keyboard: messengerStuckKeyboard(attempt.user.id, PAGE_INBOX_URL, "✅ Yes, it's them", attempt.user.username)
          }).catch((err: unknown) => console.error('sendpulse-events: telegram card failed', err));
       }
-      await postDiscord({ content: `${text}\n(Answer on the card in the Telegram KYC group.)` }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
+      await postDiscord(
+         { content: `${text}\n(Answer on the card in the Telegram KYC group.)\n${OPEN_IN_ADMIN_TEXT}: <${adminUserUrl(attempt.user.id, attempt.user.username)}>` },
+         // Remembered: edited to MESSENGER VERIFIED once they're verified, from any path.
+         { prefer: ['DISCORD_KYC_WEBHOOK_URL'], ref: { svc, kind: 'messenger', refId: attempt.user.id } }
+      );
    }
+};
+
+// The first message a connected borrower writes after their MDNG code → the "6 things you need to know
+// before borrow" poster, once (_shared/messengerBorrowPoster.ts). Skipped once they've had a funded loan.
+const maybeSendBorrowPoster = async (svc: Svc, userId: string, contactId: string, at: number) => {
+   const [{ data: user }, { count }] = await Promise.all([
+      svc.from('users').select('messenger_verified_at, borrow_poster_sent_at, user_role').eq('id', userId).maybeSingle(),
+      svc
+         .from('loans')
+         .select('id', { count: 'exact', head: true })
+         .eq('borrower_user_id', userId)
+         .eq('is_test', false)
+         .not('funded_at', 'is', null)
+   ]);
+   if (!shouldSendBorrowPoster(user as PosterCandidate | null, at, (count ?? 0) > 0)) return;
+   // Claim it first: two messages can arrive together, and only one of them should send the poster.
+   const { data: claimed } = await svc
+      .from('users')
+      .update({ borrow_poster_sent_at: new Date().toISOString() })
+      .eq('id', userId)
+      .is('borrow_poster_sent_at', null)
+      .select('id')
+      .maybeSingle();
+   if (!claimed) return;
+   const result = await sendMessengerMessage(contactId, { text: BORROW_POSTER_TEXT, card: BORROW_POSTER_CARD });
+   console.log(`sendpulse-events: borrow poster for ${userId.slice(0, 8)} → ${result.ok ? 'sent' : `not sent (${result.reason})`}`);
+   // Not sent → unclaim, so their next message tries again.
+   if (!result.ok) await svc.from('users').update({ borrow_poster_sent_at: null }).eq('id', userId);
 };
 
 const eventsSecret = async (svc: Svc) => {
@@ -184,6 +287,16 @@ serve(async (req) => {
    if (!SUPABASE_URL || !SERVICE_KEY) return json({ ok: false, error: 'not_configured' }, 503);
    const svc = createClient(SUPABASE_URL, SERVICE_KEY);
 
+   // A team reply from the Discord ticket, handed over by the widget_messages trigger.
+   if (new URL(req.url).searchParams.get('relay')) {
+      const { data: setting } = await svc.from('telegram_bot_settings').select('value').eq('key', 'sendpulse_events_secret').maybeSingle();
+      const relaySecret = ((setting as { value?: string } | null)?.value ?? '').trim();
+      if (!relaySecret || req.headers.get('x-relay-secret') !== relaySecret) return json({ ok: false, error: 'unauthorized' }, 401);
+      const relayBody = (await req.json().catch(() => null)) as { message_id?: string } | null;
+      if (!relayBody?.message_id) return json({ ok: false, error: 'no_message' }, 400);
+      return json(await relayAgentReply(svc, relayBody.message_id));
+   }
+
    const expected = await eventsSecret(svc);
    if (!expected) {
       console.error('sendpulse-events: no secret configured (SENDPULSE_EVENTS_SECRET or telegram_bot_settings.sendpulse_events_secret)');
@@ -193,6 +306,7 @@ serve(async (req) => {
    if (presented !== expected) return json({ ok: false, error: 'unauthorized' }, 401);
 
    const body = await req.json().catch(() => null);
+
    const events = parseSendPulseEvents(body).slice(0, MAX_EVENTS);
 
    for (const event of events) {
@@ -205,6 +319,32 @@ serve(async (req) => {
             console.warn('sendpulse-events: skipped an event from another bot', event.botId, event.pageId);
             continue;
          }
+
+         // Every time someone contacts us, whoever they turn out to be (messenger_contact_events).
+         const known = await logMessengerContact(svc, event.contactId, /subscri/i.test(event.title) ? 'subscribe' : 'message', event.at, event.payload);
+         if (known && !known.facebookName) {
+            await saveFacebookName(svc, known.userId, messengerDisplayName(await getMessengerContact(event.contactId)));
+         }
+         const contactId = event.contactId;
+         const remembered = await rememberMessengerContact(
+            svc,
+            contactId,
+            /subscri/i.test(event.title) ? 'subscribe' : 'message',
+            event.at,
+            known?.userId ?? null,
+            async () => messengerDisplayName(await getMessengerContact(contactId)) ?? event.contactName
+         );
+         if (isSupportMessage(event)) {
+            await openMessengerTicket(svc, {
+               contactId,
+               facebookName: remembered.facebookName,
+               userId: known?.userId ?? null,
+               text: event.text,
+               hasAttachment: event.hasAttachment,
+               at: event.at
+            });
+         }
+         if (known && !/subscri/i.test(event.title)) await maybeSendBorrowPoster(svc, known.userId, event.contactId, event.at);
 
          if (event.codes.length) {
             for (const code of event.codes) await confirmCode(code, event.contactId, event.contactName);

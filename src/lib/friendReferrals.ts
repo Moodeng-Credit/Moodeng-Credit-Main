@@ -1,14 +1,24 @@
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 /**
- * Friend referrals ("FREE MEAL for both of you") and GrabFood voucher claims.
- * Every rule is enforced in the database (migration 20260924160000_friend_referrals_and_vouchers);
- * these helpers only call its functions.
+ * Friend referrals ("FREE MEAL for both of you") and GrabMart voucher rewards.
+ * Every rule is enforced in the database (migrations 20260924160000_friend_referrals_and_vouchers and
+ * 20261026120000_grabmart_balance_payouts); these helpers only call its functions.
+ *
+ * Claimed rewards are banked into a GrabMart wallet; every GRABMART_PAYOUT_PHP becomes one code.
  */
 
+/** Value of one GrabMart code (private.issue_grabmart_payouts). */
+export const GRABMART_PAYOUT_PHP = 100;
+
 export type VoucherReward =
-   'first_on_time_repayment' | 'referral_inviter' | 'referral_invitee' | 'tier_rising' | 'tier_prime' | 'tier_apex';
-export type VoucherClaimStatus = 'pending' | 'sent' | 'rejected';
+   | 'first_on_time_repayment'
+   | 'referral_inviter'
+   | 'referral_invitee'
+   | 'tier_rising'
+   | 'tier_prime'
+   | 'tier_apex';
+export type VoucherClaimStatus = 'banked' | 'pending' | 'sent' | 'rejected';
 export type RedeemInviteResult = 'joined' | 'invalid_code' | 'self_referral' | 'already_referred' | 'not_a_new_account';
 
 export interface ClaimableVoucher {
@@ -23,17 +33,37 @@ export interface VoucherClaimSummary {
    status: VoucherClaimStatus;
 }
 
+/** A ₱100 GrabMart code: 'pending' until it's sent, then `code` is filled in. */
+export interface GrabMartPayout {
+   amountPhp: number;
+   status: 'pending' | 'sent';
+   sentAt: string | null;
+   code: string | null;
+}
+
 export interface MyRewards {
    invitedCount: number;
    qualifiedCount: number;
    wasReferred: boolean;
    claimable: ClaimableVoucher[];
    claims: VoucherClaimSummary[];
+   /** ₱ saved toward the next code (always below GRABMART_PAYOUT_PHP once payouts are issued). */
+   grabmartBalancePhp: number;
+   grabmartPayouts: GrabMartPayout[];
 }
 
-export const EMPTY_REWARDS: MyRewards = { invitedCount: 0, qualifiedCount: 0, wasReferred: false, claimable: [], claims: [] };
+export const EMPTY_REWARDS: MyRewards = {
+   invitedCount: 0,
+   qualifiedCount: 0,
+   wasReferred: false,
+   claimable: [],
+   claims: [],
+   grabmartBalancePhp: 0,
+   grabmartPayouts: []
+};
 
 const PENDING_INVITE_KEY = 'moodeng.pendingInviteCode';
+export const PENDING_INVITE_STORAGE_KEY = PENDING_INVITE_KEY;
 const INVITE_CODE_PATTERN = /^[A-Z]{6}[0-9]{5}$/;
 
 export const normalizeInviteCode = (code: string) => code.trim().toUpperCase();
@@ -78,6 +108,13 @@ export function parseMyRewards(raw: unknown): MyRewards {
          reward: item.reward as VoucherReward,
          friendReferralId: typeof item.friendReferralId === 'string' ? item.friendReferralId : null,
          status: item.status as VoucherClaimStatus
+      })),
+      grabmartBalancePhp: toNumber(value.grabmartBalancePhp),
+      grabmartPayouts: list('grabmartPayouts').map((item) => ({
+         amountPhp: toNumber(item.amountPhp),
+         status: item.status === 'sent' ? 'sent' : 'pending',
+         sentAt: typeof item.sentAt === 'string' ? item.sentAt : null,
+         code: typeof item.code === 'string' && item.code ? item.code : null
       }))
    };
 }

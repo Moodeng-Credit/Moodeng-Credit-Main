@@ -9,8 +9,8 @@ export const thaiCoverageLanding: Record<string, string> = {
 
    // src/views/borrowerBenefits/sections/HeroSection.tsx
    // Rendered as "<b>Moodeng</b> connects ..."; the text node keeps its own leading space.
-   'connects borrowers directly with people willing to lend. There is no escrow desk and no middle-man setting the rules: you request, a lender funds, and your repayment record grows from there.':
-      'เชื่อมผู้ยืมเข้ากับผู้ที่พร้อมให้กู้โดยตรง ไม่มีโต๊ะ escrow และไม่มีคนกลางคอยตั้งกฎ คุณส่งคำขอ ผู้ให้กู้ปล่อยกู้ แล้วประวัติการชำระคืนของคุณก็จะเติบโตต่อจากตรงนั้น',
+   'connects borrowers directly with people willing to lend. There is no escrow desk and no middle-man setting the rules: you request, a moo-lender funds, and your repayment record grows from there.':
+      'เชื่อมผู้ยืมเข้ากับผู้ที่พร้อมให้กู้โดยตรง ไม่มีโต๊ะ escrow และไม่มีคนกลางคอยตั้งกฎ คุณส่งคำขอ Moo-lender ปล่อยกู้ แล้วประวัติการชำระคืนของคุณก็จะเติบโตต่อจากตรงนั้น',
 
    // src/views/borrowerBenefits/sections/FastGlobalAccessSection.tsx
    'Funded in your wallet': 'รับเงินเข้ากระเป๋าเงินของคุณ',
@@ -56,7 +56,7 @@ export const thaiCoverageLanding: Record<string, string> = {
    'Credit does not follow': 'เครดิตไม่ติดตัวไปด้วย',
    'Repayment discipline abroad rarely becomes a portable credit record they can use later.':
       'วินัยการชำระคืนในต่างแดนแทบไม่เคยกลายเป็นประวัติเครดิตที่พกติดตัวไปใช้ต่อได้',
-   'What lenders fund': 'สิ่งที่ผู้ให้กู้ปล่อยกู้',
+   'What moo-lenders fund': 'สิ่งที่ Moo-lender ปล่อยกู้',
    'Small amounts with transparent borrower-proposed terms.': 'จำนวนเงินไม่มาก พร้อมเงื่อนไขโปร่งใสที่ผู้ยืมเสนอเอง',
    'Real repayment history': 'ประวัติการชำระคืนจริง',
    'Each repayment helps create a record the borrower can keep building.': 'การชำระคืนแต่ละครั้งช่วยสร้างประวัติที่ผู้ยืมต่อยอดได้เรื่อย ๆ',
@@ -72,7 +72,7 @@ export const thaiCoverageLanding: Record<string, string> = {
       'การมี Orb ให้บริการช่วยให้เราเริ่มต้นกับผู้ใช้ที่พิสูจน์ได้ว่าเป็นผู้ยืมตัวจริงและไม่ซ้ำกับใคร',
    'Why this matters': 'ทำไมเรื่องนี้จึงสำคัญ',
    'Lower trust friction': 'สร้างความไว้วางใจได้ง่ายขึ้น',
-   'Verification helps lenders evaluate people they have never met.': 'การยืนยันตัวตนช่วยให้ผู้ให้กู้ประเมินคนที่ไม่เคยพบหน้ากันได้',
+   'Verification helps moo-lenders evaluate people they have never met.': 'การยืนยันตัวตนช่วยให้ Moo-lender ประเมินคนที่ไม่เคยพบหน้ากันได้',
    'Better than quick-loan apps': 'ดีกว่าแอปเงินกู้ด่วน',
    'Transparent loans can help borrowers avoid predatory emergency options.':
       'เงินกู้ที่โปร่งใสช่วยให้ผู้ยืมไม่ต้องพึ่งทางเลือกฉุกเฉินที่เอาเปรียบ',
@@ -89,7 +89,7 @@ export const thaiCoverageLanding: Record<string, string> = {
    'Independent credit': 'เครดิตที่เป็นของตัวเอง',
    'The long-term goal is credit the borrower owns, not a score trapped in one country.':
       'เป้าหมายระยะยาวคือเครดิตที่ผู้ยืมเป็นเจ้าของเอง ไม่ใช่คะแนนที่ติดอยู่ในประเทศเดียว',
-   'Lender upside': 'ประโยชน์สำหรับผู้ให้กู้',
+   'Moo-lender upside': 'ประโยชน์สำหรับ Moo-lender',
    'Fund useful moments': 'ปล่อยกู้ในจังหวะที่มีความหมาย',
    'Support real needs without pretending every loan is life-changing.':
       'ช่วยตอบความต้องการจริง โดยไม่ต้องทำเหมือนว่าเงินกู้ทุกก้อนจะเปลี่ยนชีวิต',
@@ -117,9 +117,9 @@ export const thaiCoverageLanding: Record<string, string> = {
    'Anonymous Lending': 'ปล่อยกู้แบบไม่เปิดเผยตัวตน',
    'Wallet-based lending with usernames keeps your real identity private.':
       'การปล่อยกู้ผ่านกระเป๋าเงินและชื่อผู้ใช้ช่วยให้ตัวตนจริงของคุณเป็นความลับ',
-   'No Fees for Lenders, Ever': 'ผู้ให้กู้ไม่มีค่าธรรมเนียม ตลอดไป',
-   "Unlike other platforms, we don't charge lenders any commissions or monthly fees.":
-      'ต่างจากแพลตฟอร์มอื่น เราไม่เก็บค่าคอมมิชชันหรือค่าธรรมเนียมรายเดือนจากผู้ให้กู้',
+   'No Fees for Moo-lenders, Ever': 'Moo-lender ไม่มีค่าธรรมเนียม ตลอดไป',
+   "Unlike other platforms, we don't charge moo-lenders any commissions or monthly fees.":
+      'ต่างจากแพลตฟอร์มอื่น เราไม่เก็บค่าคอมมิชชันหรือค่าธรรมเนียมรายเดือนจาก Moo-lender',
    'Advanced Security': 'ความปลอดภัยขั้นสูง',
    'Protection against VPN-users, scammers, and other malicious actors.': 'ป้องกันผู้ใช้ VPN มิจฉาชีพ และผู้ไม่หวังดีอื่น ๆ',
    'Borrower Transaction History 100% Transparent': 'ประวัติธุรกรรมของผู้ยืมโปร่งใส 100%',
@@ -146,8 +146,8 @@ export const thaiCoverageLanding: Record<string, string> = {
       'การยืนยันตัวตนช่วยยืนยันว่ามีคนจริงเพียงหนึ่งคนอยู่เบื้องหลังบัญชีผู้ยืมแต่ละบัญชี',
    'Verification is a trust signal, not a loan guarantee.': 'การยืนยันตัวตนคือสัญญาณความน่าเชื่อถือ ไม่ใช่การรับประกันเงินกู้',
    'Verified first': 'ยืนยันตัวตนก่อน',
-   'Borrowers complete a quick ID + selfie check, or verify with World ID, before they can request loans. That gives lenders a real-person signal, and the ID is checked by our verification partner, never stored by Moodeng.':
-      'ผู้ยืมต้องผ่านการตรวจบัตรประชาชนและเซลฟี่อย่างรวดเร็ว หรือยืนยันด้วย World ID ก่อนจึงจะขอเงินกู้ได้ ผู้ให้กู้จึงมั่นใจได้ว่าเป็นคนจริง โดยบัตรจะได้รับการตรวจสอบจากพาร์ทเนอร์ด้านการยืนยันตัวตนของเรา และ Moodeng จะไม่จัดเก็บไว้',
+   'Borrowers complete a quick ID + selfie check, or verify with World ID, before they can request loans. That gives moo-lenders a real-person signal, and the ID is checked by our verification partner, never stored by Moodeng.':
+      'ผู้ยืมต้องผ่านการตรวจบัตรประชาชนและเซลฟี่อย่างรวดเร็ว หรือยืนยันด้วย World ID ก่อนจึงจะขอเงินกู้ได้ Moo-lender จึงมั่นใจได้ว่าเป็นคนจริง โดยบัตรจะได้รับการตรวจสอบจากพาร์ทเนอร์ด้านการยืนยันตัวตนของเรา และ Moodeng จะไม่จัดเก็บไว้',
    'Borrowers who already use World App can verify with World ID instead of the ID + selfie check.':
       'ผู้ยืมที่ใช้ World App อยู่แล้วสามารถยืนยันด้วย World ID แทนการตรวจบัตรประชาชนและเซลฟี่ได้',
    'We are starting with Filipinos and Southeast Asians working overseas. Small loans can cover urgent gaps and help borrowers build credit independently.':

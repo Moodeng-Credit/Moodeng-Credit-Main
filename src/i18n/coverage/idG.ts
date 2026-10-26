@@ -80,7 +80,7 @@ export const indonesianCoverageG: Record<string, string> = {
    'Previously used': 'Pernah dipakai',
    'will keep sending repayments to': 'akan tetap mengirim pembayaran kembali ke',
    // src/views/dashboard-v2/components/DashboardV2Banners.tsx
-   '₱100 GrabFood Voucher: kumain kayong dalawa. Mag-refer.': 'Voucher GrabFood ₱100: makan berdua. Ajak temanmu.',
+   '₱100 GrabMart Voucher: kumain kayong dalawa. Mag-refer.': 'Voucher GrabMart ₱100: makan berdua. Ajak temanmu.',
    // src/views/dashboard-v2/components/DashboardV2Hero.tsx
    'Rising Moodeng (not reached yet)': 'Moodeng Rising (belum tercapai)',
    'Prime Moodeng (not reached yet)': 'Moodeng Prime (belum tercapai)',
@@ -93,7 +93,7 @@ export const indonesianCoverageG: Record<string, string> = {
    'left to LV.1': 'lagi menuju LV.1',
    'Repay a full-limit loan': 'Lunasi pinjaman senilai limit penuh',
    // src/views/dashboard-v2/useDashboardV2Model.ts
-   'a lender': 'pemberi pinjaman',
+   'a moo-lender': 'moo-lender',
    // src/views/dashboard/components/connectKit.tsx
    Confirmed: 'Terkonfirmasi',
    // src/views/dashboard/dashboardHelpers.ts
@@ -163,26 +163,26 @@ export const indonesianCoverageG: Record<string, string> = {
    'Verify now': 'Verifikasi sekarang',
    'Account ready': 'Akun siap',
    'Ask for a small amount with a clear reason and due date.': 'Ajukan jumlah kecil dengan alasan dan jatuh tempo yang jelas.',
-   'Visible to lenders': 'Terlihat oleh pemberi pinjaman',
-   'A lender accepts your request and trusts you with your first loan.':
-      'Pemberi pinjaman menerima permintaanmu dan memercayakan pinjaman pertamamu.',
-   'First lender signal': 'Sinyal pertama dari pemberi pinjaman',
-   'Lender signal gained': 'Dapat sinyal dari pemberi pinjaman',
+   'Visible to moo-lenders': 'Terlihat oleh moo-lender',
+   'A moo-lender accepts your request and trusts you with your first loan.':
+      'Moo-lender menerima permintaanmu dan memercayakan pinjaman pertamamu.',
+   'First moo-lender signal': 'Sinyal pertama dari moo-lender',
+   'Moo-lender signal gained': 'Dapat sinyal dari moo-lender',
    'View requests': 'Lihat permintaan',
    'Pay the full amount before the due date to start your repayment record.':
       'Bayar penuh sebelum jatuh tempo untuk memulai catatan pembayaran kembalimu.',
    'Pay loans': 'Bayar pinjaman',
-   'Show lenders that your repayment reliability is repeatable.':
-      'Tunjukkan ke pemberi pinjaman bahwa kamu konsisten membayar kembali tepat waktu.',
-   'Stronger lender confidence': 'Kepercayaan pemberi pinjaman makin kuat',
+   'Show moo-lenders that your repayment reliability is repeatable.':
+      'Tunjukkan ke moo-lender bahwa kamu konsisten membayar kembali tepat waktu.',
+   'Stronger moo-lender confidence': 'Kepercayaan moo-lender makin kuat',
    'Reliability improved': 'Keandalan meningkat',
    'Use your current Credit Level amount and repay it on time.':
       'Pinjam sebesar limit Level Kredit kamu saat ini dan bayar kembali tepat waktu.',
    'Credit Level progress': 'Progres Level Kredit',
    'Level progress': 'Progres level',
    'Learn levels': 'Pelajari level',
-   'Build a reputation that does not depend on just one lender.': 'Bangun reputasi yang tidak bergantung pada satu pemberi pinjaman saja.',
-   'Lender diversity signal': 'Sinyal keragaman pemberi pinjaman',
+   'Build a reputation that does not depend on just one moo-lender.': 'Bangun reputasi yang tidak bergantung pada satu moo-lender saja.',
+   'Moo-lender diversity signal': 'Sinyal keragaman moo-lender',
    'Diversity improved': 'Keragaman meningkat',
    'Grow from starter loans into a real repayment history.': 'Berkembang dari pinjaman awal menjadi riwayat pembayaran kembali yang nyata.',
    'Volume trust signal': 'Sinyal kepercayaan dari volume',
@@ -192,8 +192,8 @@ export const indonesianCoverageG: Record<string, string> = {
    'Higher borrowing power': 'Daya pinjam lebih besar',
    'Higher limit unlocked': 'Limit lebih tinggi terbuka',
    'View guide': 'Lihat panduan',
-   'Complete 5 on-time repayments, use 3 lenders, and keep defaults resolved.':
-      'Selesaikan 5 pembayaran kembali tepat waktu, pinjam dari 3 pemberi pinjaman, dan pastikan tidak ada gagal bayar yang belum selesai.',
+   'Complete 5 on-time repayments, use 3 moo-lenders, and keep defaults resolved.':
+      'Selesaikan 5 pembayaran kembali tepat waktu, pinjam dari 3 moo-lender, dan pastikan tidak ada gagal bayar yang belum selesai.',
    'Future top-user perks': 'Keuntungan pengguna teratas nanti',
    'Priority signal': 'Sinyal prioritas',
    'Top milestone': 'Pencapaian tertinggi',
@@ -270,7 +270,7 @@ export const indonesianCoverageG: Record<string, string> = {
    Returned: 'Dikembalikan',
    'Date Returned': 'Tanggal Dikembalikan',
    "Borrower's Name": 'Nama Peminjam',
-   "Lender's Name": 'Nama Pemberi Pinjaman',
+   "Moo-lender's Name": 'Nama Moo-lender',
    Name: 'Nama',
    // src/views/repay/Repay.tsx
    'your loan': 'pinjamanmu',
@@ -292,8 +292,8 @@ export const indonesianCoverageG: Record<string, string> = {
    'also called a Credit Growth Loan': 'disebut juga Credit Growth Loan',
    'you’re ready to grow your limit and sure you can repay on time.':
       'kamu siap menaikkan limit dan yakin bisa membayar kembali tepat waktu.',
-   'How reliable repayment becomes a portable reputation lenders trust.':
-      'Bagaimana pembayaran kembali yang andal menjadi reputasi portabel yang dipercaya pemberi pinjaman.',
+   'How reliable repayment becomes a portable reputation moo-lenders trust.':
+      'Bagaimana pembayaran kembali yang andal menjadi reputasi portabel yang dipercaya moo-lender.',
    'The difference between the two loan types and when to use each.': 'Perbedaan kedua jenis pinjaman dan kapan memakai masing-masing.',
    'Exactly how on-time, partial, and late repayments are scored.':
       'Cara persis pembayaran kembali tepat waktu, sebagian, dan terlambat dinilai.',
@@ -348,22 +348,22 @@ export const indonesianCoverageG: Record<string, string> = {
    'Cleaner IOU rules • Better account status and recovery controls':
       'Aturan IOU lebih rapi • Kontrol status akun dan pemulihan lebih baik',
    'May 20, 2026': '20 Mei 2026',
-   'The trust layer behind Moodeng has been made more consistent. Lender IOU point rules are now easier to reason about, admin status controls are closer to the real account state, and recovery workflows have more reliable data to work from. Most of this work sits behind the scenes, but it matters: borrower records, lender incentives, overdue loans, and account restrictions need to line up before the product can scale safely.':
-      'Lapisan kepercayaan di balik Moodeng kini lebih konsisten.\n\nAturan poin IOU untuk pemberi pinjaman kini lebih mudah dipahami, kontrol status admin lebih sesuai dengan kondisi akun yang sebenarnya, dan alur pemulihan punya data yang lebih andal.\n\nSebagian besar pekerjaan ini terjadi di balik layar, tapi tetap penting: catatan peminjam, insentif pemberi pinjaman, pinjaman terlambat, dan pembatasan akun harus selaras sebelum produk bisa berkembang dengan aman.',
+   'The trust layer behind Moodeng has been made more consistent. Moo-lender IOU point rules are now easier to reason about, admin status controls are closer to the real account state, and recovery workflows have more reliable data to work from. Most of this work sits behind the scenes, but it matters: borrower records, moo-lender incentives, overdue loans, and account restrictions need to line up before the product can scale safely.':
+      'Lapisan kepercayaan di balik Moodeng kini lebih konsisten.\n\nAturan poin IOU untuk moo-lender kini lebih mudah dipahami, kontrol status admin lebih sesuai dengan kondisi akun yang sebenarnya, dan alur pemulihan punya data yang lebih andal.\n\nSebagian besar pekerjaan ini terjadi di balik layar, tapi tetap penting: catatan peminjam, insentif moo-lender, pinjaman terlambat, dan pembatasan akun harus selaras sebelum produk bisa berkembang dengan aman.',
    'Support Library & Credit Education': 'Pusat Bantuan & Edukasi Kredit',
    'Repayment guides • Credit leveling • Borrower safety content':
       'Panduan pembayaran kembali • Kenaikan Level Kredit • Konten keamanan peminjam',
    'May 16, 2026': '16 Mei 2026',
-   'The support area has been refreshed around the questions borrowers and lenders actually ask. Guides now explain repayment, Pandesal points, credit leveling, World ID, Base Wallet setup, and borrower safety in clearer language. We also added more educational content around portable repayment history and safer alternatives to predatory lending, so new users can understand what Moodeng is building before they request or fund a loan.':
-      'Area bantuan telah diperbarui berdasarkan pertanyaan yang benar-benar diajukan peminjam dan pemberi pinjaman.\n\nPanduan kini menjelaskan pembayaran kembali, poin Pandesal, kenaikan Level Kredit, World ID, pengaturan Base Wallet, dan keamanan peminjam dengan bahasa yang lebih jelas.\n\nKami juga menambahkan lebih banyak konten edukasi tentang riwayat pembayaran kembali yang portabel dan alternatif yang lebih aman dari pinjaman predator, supaya pengguna baru bisa memahami apa yang sedang dibangun Moodeng sebelum mengajukan atau mendanai pinjaman.',
+   'The support area has been refreshed around the questions borrowers and moo-lenders actually ask. Guides now explain repayment, Pandesal points, credit leveling, World ID, Base Wallet setup, and borrower safety in clearer language. We also added more educational content around portable repayment history and safer alternatives to predatory lending, so new users can understand what Moodeng is building before they request or fund a loan.':
+      'Area bantuan telah diperbarui berdasarkan pertanyaan yang benar-benar diajukan peminjam dan moo-lender.\n\nPanduan kini menjelaskan pembayaran kembali, poin Pandesal, kenaikan Level Kredit, World ID, pengaturan Base Wallet, dan keamanan peminjam dengan bahasa yang lebih jelas.\n\nKami juga menambahkan lebih banyak konten edukasi tentang riwayat pembayaran kembali yang portabel dan alternatif yang lebih aman dari pinjaman predator, supaya pengguna baru bisa memahami apa yang sedang dibangun Moodeng sebelum mengajukan atau mendanai pinjaman.',
    // src/views/support/WhyUsdc.tsx
    'Real-world use': 'Penggunaan sehari-hari',
    'Payments & money movement': 'Pembayaran & perpindahan uang',
    'Send money to family abroad in seconds': 'Kirim uang ke keluarga di luar negeri dalam hitungan detik',
    'Pay a merchant that accepts stablecoins': 'Bayar ke pedagang yang menerima stablecoin',
    'Cash out to a bank or exchange': 'Cairkan dana ke bank atau exchange',
-   'On Moodeng, this is how loans work: a lender sends you USDC, and you repay in USDC.':
-      'Di Moodeng, beginilah cara pinjaman bekerja: pemberi pinjaman mengirimimu USDC, dan kamu membayar kembali dengan USDC.',
+   'On Moodeng, this is how loans work: a moo-lender sends you USDC, and you repay in USDC.':
+      'Di Moodeng, beginilah cara pinjaman bekerja: moo-lender mengirimimu USDC, dan kamu membayar kembali dengan USDC.',
    'DeFi use': 'Penggunaan DeFi',
    'DeFi means "decentralized finance" — financial apps that run on smart contracts instead of a bank. You can lend, borrow, or swap USDC directly from your wallet.':
       'DeFi artinya "decentralized finance" (keuangan terdesentralisasi) — aplikasi keuangan yang berjalan di smart contract, bukan di bank. Kamu bisa meminjamkan, meminjam, atau menukar USDC langsung dari dompetmu.',
@@ -409,7 +409,7 @@ export const indonesianCoverageG: Record<string, string> = {
    'If applicable': 'Jika ada',
    'Available after funding': 'Tersedia setelah didanai',
    Refunded: 'Dana dikembalikan',
-   'Waiting for lender': 'Menunggu pemberi pinjaman',
+   'Waiting for moo-lender': 'Menunggu moo-lender',
    'Repayment schedule': 'Jadwal pembayaran kembali',
    'Partial repayment': 'Pembayaran kembali sebagian',
    'Interest returned': 'Bunga dikembalikan',
@@ -419,12 +419,12 @@ export const indonesianCoverageG: Record<string, string> = {
    'Recording your gift — hang tight.': 'Hadiahmu sedang dicatat — tunggu sebentar.',
    'You returned': 'Kamu mengembalikan',
    '. That was kind of you.': '. Baik sekali kamu.',
-   'Gift from your lender': 'Hadiah dari pemberi pinjamanmu',
+   'Gift from your moo-lender': 'Hadiah dari moo-lendermu',
    'You returned the interest': 'Kamu sudah mengembalikan bunganya',
    'Interest returned!': 'Bunga dikembalikan!',
    'Cannot return interest': 'Tidak bisa mengembalikan bunga',
    'Borrower wallet address is unavailable.': 'Alamat dompet peminjam tidak tersedia.',
-   'Lender has not accepted yet': 'Pemberi pinjaman belum menyetujui',
+   'Moo-lender has not accepted yet': 'Moo-lender belum menyetujui',
    'Not active': 'Belum aktif',
    'Requested on': 'Diajukan pada',
    'This repayment was sent to the wallet you funded this loan from:':
@@ -436,7 +436,7 @@ export const indonesianCoverageG: Record<string, string> = {
       '). Ini wajar — pembayaran kembali masuk ke dompet yang dipakai untuk mendanai tiap pinjaman, bukan dompetmu saat ini. Buka',
    'to find these funds.': 'untuk menemukan dana ini.',
    // src/views/transactions/TransactionHistory.tsx
-   'Awaiting lender': 'Menunggu pemberi pinjaman',
+   'Awaiting moo-lender': 'Menunggu moo-lender',
    'out of': 'dari',
    // src/views/user-profile/ProgressHistory.tsx
    'Unlocked Level 1 with full level credit available.': 'Membuka Level 1 dengan limit kredit penuh untuk level ini.',
@@ -467,17 +467,17 @@ export const indonesianCoverageG: Record<string, string> = {
    'Switch progress history to dark mode': 'Ganti riwayat progres ke mode gelap',
    'Defaults Present': 'Ada Gagal Bayar',
    // src/views/user-profile/LenderDiversityHistory.tsx
-   'Unknown lender': 'Pemberi pinjaman tidak dikenal',
-   'Switch lender diversity to light mode': 'Ganti keragaman pemberi pinjaman ke mode terang',
-   'Switch lender diversity to dark mode': 'Ganti keragaman pemberi pinjaman ke mode gelap',
+   'Unknown moo-lender': 'Moo-lender tidak dikenal',
+   'Switch moo-lender diversity to light mode': 'Ganti keragaman moo-lender ke mode terang',
+   'Switch moo-lender diversity to dark mode': 'Ganti keragaman moo-lender ke mode gelap',
    'Shows how': 'Menunjukkan bagaimana riwayat pinjaman yang didanai milik',
-   "'s funded loan history is spread across lenders.": 'tersebar di antara para pemberi pinjaman.',
+   "'s funded loan history is spread across moo-lenders.": 'tersebar di antara para moo-lender.',
    // src/views/user-profile/UserProfile.tsx
    'No loan mix yet': 'Belum ada campuran pinjaman',
    'More Credit-Building Loans': 'Lebih Banyak Credit-Building Loan',
    'Balanced Loan Mix': 'Campuran Pinjaman Seimbang',
-   'Lender Insights': 'Wawasan Pemberi Pinjaman',
-   'Lender Account': 'Akun Pemberi Pinjaman',
+   'Moo-lender Insights': 'Wawasan Moo-lender',
+   'Moo-lender Account': 'Akun Moo-lender',
    'Switch borrower insights to light mode': 'Ganti wawasan peminjam ke mode terang',
    'Switch borrower insights to dark mode': 'Ganti wawasan peminjam ke mode gelap',
    'Verified borrower': 'Peminjam terverifikasi',
@@ -500,8 +500,8 @@ export const indonesianCoverageG: Record<string, string> = {
    'Loan fully repaid': 'Pinjaman lunas',
    'Partial repayment made': 'Pembayaran sebagian dilakukan',
    'Repaid: $': 'Dibayar kembali: $',
-   "Checks whether one lender funded most of the borrower's history.":
-      'Memeriksa apakah satu pemberi pinjaman mendanai sebagian besar riwayat peminjam.',
+   "Checks whether one moo-lender funded most of the borrower's history.":
+      'Memeriksa apakah satu moo-lender mendanai sebagian besar riwayat peminjam.',
    'This borrower does not have enough loan history for a loan mix yet.':
       'Peminjam ini belum punya cukup riwayat pinjaman untuk menilai campuran pinjamannya.',
    'Repayment-history signal': 'Sinyal riwayat pembayaran kembali',
@@ -529,17 +529,17 @@ export const indonesianCoverageG: Record<string, string> = {
    "I've completed Moneybees KYC": 'Aku sudah menyelesaikan KYC Moneybees',
    'I already have Moneybees KYC': 'Aku sudah punya KYC Moneybees',
    // src/views/dashboard/components/LenderDiversitySection.tsx
-   '1 Unique Lender': '1 pemberi pinjaman berbeda',
-   '0 Unique Lenders': '0 pemberi pinjaman berbeda',
-   '2 Unique Lenders': '2 pemberi pinjaman berbeda',
-   '3 Unique Lenders': '3 pemberi pinjaman berbeda',
-   '4 Unique Lenders': '4 pemberi pinjaman berbeda',
-   '5 Unique Lenders': '5 pemberi pinjaman berbeda',
-   '6 Unique Lenders': '6 pemberi pinjaman berbeda',
-   '7 Unique Lenders': '7 pemberi pinjaman berbeda',
-   '8 Unique Lenders': '8 pemberi pinjaman berbeda',
-   '9 Unique Lenders': '9 pemberi pinjaman berbeda',
-   '10 Unique Lenders': '10 pemberi pinjaman berbeda',
+   '1 Unique Moo-lender': '1 moo-lender berbeda',
+   '0 Unique Moo-lenders': '0 moo-lender berbeda',
+   '2 Unique Moo-lenders': '2 moo-lender berbeda',
+   '3 Unique Moo-lenders': '3 moo-lender berbeda',
+   '4 Unique Moo-lenders': '4 moo-lender berbeda',
+   '5 Unique Moo-lenders': '5 moo-lender berbeda',
+   '6 Unique Moo-lenders': '6 moo-lender berbeda',
+   '7 Unique Moo-lenders': '7 moo-lender berbeda',
+   '8 Unique Moo-lenders': '8 moo-lender berbeda',
+   '9 Unique Moo-lenders': '9 moo-lender berbeda',
+   '10 Unique Moo-lenders': '10 moo-lender berbeda',
    // src/views/user-profile/UserProfile.tsx
    '1 loan repaid on time in a row': '1 pinjaman dibayar kembali tepat waktu berturut-turut',
    '2 loans repaid on time in a row': '2 pinjaman dibayar kembali tepat waktu berturut-turut',
@@ -579,5 +579,78 @@ export const indonesianCoverageG: Record<string, string> = {
    "Coins.ph (temporarily paused)": "Coins.ph (dijeda sementara)",
    "Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Buy USDC with PHP, then Send Crypto → External Wallet → Base network.": "Dihentikan sementara oleh pemerintah Filipina — gunakan PDAX atau GCrypto dulu. Beli USDC dengan PHP, lalu Send Crypto → External Wallet → jaringan Base.",
    "Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Deposit USDC, convert to PHP, and cash out to your bank or GCash.": "Dihentikan sementara oleh pemerintah Filipina — gunakan PDAX atau GCrypto dulu. Setor USDC, tukar ke PHP, lalu tarik ke rekening bank atau GCash kamu.",
-   "Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Buy USDC with PHP, then use Send Crypto → External Wallet → Base network.": "Dihentikan sementara oleh pemerintah Filipina — gunakan PDAX atau GCrypto dulu. Beli USDC dengan PHP, lalu gunakan Send Crypto → External Wallet → jaringan Base."
+   "Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Buy USDC with PHP, then use Send Crypto → External Wallet → Base network.": "Dihentikan sementara oleh pemerintah Filipina — gunakan PDAX atau GCrypto dulu. Beli USDC dengan PHP, lalu gunakan Send Crypto → External Wallet → jaringan Base.",
+
+   // Pre-KYC gate + KYC tries (ConnectStep kyc copy, KycDeclinedNotifier, /verify, dashboard banners)
+   "Before you verify your ID, we meet every borrower on a quick 15-min video call.": "Sebelum verifikasi ID, kami bertemu setiap peminjam lewat video call singkat 15 menit.",
+   "Verify your ID right after the call": "Verifikasi ID kamu tepat setelah panggilan",
+   "The team is unlocking your ID verification — we’ll message you the moment it’s ready.": "Tim sedang membuka verifikasi ID kamu — kami akan mengabari kamu begitu siap.",
+   "You’re booked! Tap “I’ll be there” so we keep your spot — you can verify your ID right after the call.": "Jadwal kamu sudah dipesan! Ketuk “I’ll be there” agar slot kamu aman — kamu bisa verifikasi ID tepat setelah panggilan.",
+   "Thank you for confirming! You can verify your ID right after the call.": "Terima kasih sudah konfirmasi! Kamu bisa verifikasi ID tepat setelah panggilan.",
+   "Look around meanwhile": "Lihat-lihat dulu",
+   "Your ID check didn't go through": "Pemeriksaan ID kamu tidak lolos",
+   "That happens — let's sort it out together. Connect Messenger and the team will message you to help.": "Itu bisa terjadi — ayo selesaikan bersama. Hubungkan Messenger dan tim akan mengirim pesan untuk membantu.",
+   "Let's sort it out together. Connect Messenger and the team will message you to help.": "Ayo selesaikan bersama. Hubungkan Messenger dan tim akan mengirim pesan untuk membantu.",
+   "Connect Messenger": "Hubungkan Messenger",
+   "Later": "Nanti",
+   "Let's verify you together": "Ayo verifikasi bersama",
+   "Your ID check didn't pass 3 times, so the team will help you directly. Message us on Messenger and we'll sort it out with you.": "Pemeriksaan ID kamu tidak lolos 3 kali, jadi tim akan membantu langsung. Kirim pesan ke kami di Messenger dan kami akan menyelesaikannya bersama kamu.",
+   "Message us on Messenger": "Kirim pesan di Messenger",
+   "1 of 3 tries left": "Sisa 1 dari 3 percobaan",
+   "2 of 3 tries left": "Sisa 2 dari 3 percobaan",
+   "Meet the team": "Kenalan dengan tim",
+   "A quick 15-min call, then you can verify your ID and borrow.": "Panggilan singkat 15 menit, lalu kamu bisa verifikasi ID dan meminjam.",
+   "Right after it, you can verify your ID and borrow.": "Setelahnya, kamu bisa langsung verifikasi ID dan meminjam.",
+   "Book": "Pesan",
+   "View": "Lihat",
+   "Connect": "Hubungkan",
+   "Meet the team >": "Kenalan dengan tim >",
+
+   // Onboarding steps + loan form (src/lib/verificationJourney.ts, LoanRequestModal, ConnectStep)
+   "Set up your wallet": "Siapkan dompetmu",
+   "Your loans arrive here — it takes a few seconds.": "Pinjamanmu masuk ke sini — hanya beberapa detik.",
+   "See call details": "Lihat detail panggilan",
+   "Right after your 15-min call, you can apply for your loan.": "Setelah panggilan 15 menit, kamu bisa mengajukan pinjaman.",
+   "So the team can reach you — we only use it to message you about your loan.": "Agar tim bisa menghubungimu — kami hanya memakainya untuk mengirim pesan soal pinjamanmu.",
+   "Tell us about you": "Ceritakan tentang dirimu",
+   "A few quick questions about your work and payday.": "Beberapa pertanyaan singkat soal pekerjaan dan hari gajian.",
+   "Book your call": "Pesan jadwal panggilan",
+   "Book your 15-min call": "Pesan panggilan 15 menit",
+   "Meet the team on a quick video call — then you can apply for your loan.": "Kenalan dengan tim lewat video call singkat — lalu kamu bisa mengajukan pinjaman.",
+   "Apply for a loan": "Ajukan pinjaman",
+   "Ready to apply": "Siap mengajukan",
+   "Apply for a loan — you'll verify your ID (about 2 minutes, one time) when you send your request.": "Ajukan pinjaman — kamu akan verifikasi ID (sekitar 2 menit, sekali saja) saat mengirim permintaan.",
+   "View ID check": "Lihat cek ID",
+   "Your ID check": "Cek ID kamu",
+   "See where your ID verification stands.": "Lihat status verifikasi ID kamu.",
+   "You're verified": "Kamu sudah terverifikasi",
+   "You can request loans.": "Kamu bisa mengajukan pinjaman.",
+   "Step 1 of 3 to your first loan": "Langkah 1 dari 3 menuju pinjaman pertamamu",
+   "Step 2 of 3 to your first loan": "Langkah 2 dari 3 menuju pinjaman pertamamu",
+   "Step 3 of 3 to your first loan": "Langkah 3 dari 3 menuju pinjaman pertamamu",
+   "Finish setting up · Step 1 of 3": "Selesaikan pendaftaran · Langkah 1 dari 3",
+   "Finish setting up · Step 2 of 3": "Selesaikan pendaftaran · Langkah 2 dari 3",
+   "Finish setting up · Step 3 of 3": "Selesaikan pendaftaran · Langkah 3 dari 3",
+   "Last step: verify your ID": "Langkah terakhir: verifikasi ID",
+   "Fill in your request below. When you send it, you'll verify your ID — about 2 minutes, one time only.": "Isi permintaanmu di bawah. Saat dikirim, kamu akan verifikasi ID — sekitar 2 menit, sekali saja.",
+   "When you send this, you'll verify your ID (about 2 minutes). What you typed is kept.": "Saat mengirim ini, kamu akan verifikasi ID (sekitar 2 menit). Isianmu tetap tersimpan.",
+   "Verify ID & send request": "Verifikasi ID & kirim permintaan",
+   "Finish setting up first to send a request — you're on step 1 of 3.": "Selesaikan pendaftaran dulu untuk mengirim permintaan — kamu di langkah 1 dari 3.",
+   "Finish setting up first to send a request — you're on step 2 of 3.": "Selesaikan pendaftaran dulu untuk mengirim permintaan — kamu di langkah 2 dari 3.",
+   "Finish setting up first to send a request — you're on step 3 of 3.": "Selesaikan pendaftaran dulu untuk mengirim permintaan — kamu di langkah 3 dari 3.",
+   "Connect Facebook so we can reach you": "Hubungkan Facebook agar kami bisa menghubungimu",
+   "We only use it to message you about your loan — we never post, and we can't see your friends or messages.": "Kami hanya memakainya untuk mengirim pesan soal pinjamanmu — kami tidak pernah memposting, dan tidak bisa melihat teman atau pesanmu.",
+   "Opens Messenger — tap Get Started there. Confirms you automatically.": "Messenger akan terbuka — ketuk Get Started di sana. Kamu terkonfirmasi otomatis.",
+   "The team is approving you — we’ll message you the moment you can apply.": "Tim sedang menyetujuimu — kami akan mengabari begitu kamu bisa mengajukan.",
+   "You’re booked! Tap “I’ll be there” so we keep your spot — you can apply right after the call.": "Jadwal kamu sudah dipesan! Ketuk “I’ll be there” agar slot kamu aman — kamu bisa mengajukan tepat setelah panggilan.",
+   "Thank you for confirming! You can apply right after the call.": "Terima kasih sudah konfirmasi! Kamu bisa mengajukan tepat setelah panggilan.",
+   "Look around first": "Lihat-lihat dulu",
+   "A little low for moo-lenders": "Sedikit rendah untuk moo-lender",
+   "Questions? Message Moodeng Credit on Facebook or email support@moodeng.app — we usually reply within a day.": "Ada pertanyaan? Kirim pesan ke Moodeng Credit di Facebook atau email support@moodeng.app — biasanya kami balas dalam sehari.",
+
+   // src/hooks/useWallet.ts (Instant Wallet send failures)
+   "Your Instant Wallet needs to reconnect": "Instant Wallet Anda perlu dihubungkan ulang",
+   "Nothing was sent. Sign out and sign back in, or open Moodeng in another browser like Chrome, then try again.": "Tidak ada yang terkirim. Keluar lalu masuk lagi, atau buka Moodeng di browser lain seperti Chrome, lalu coba lagi.",
+   "Your payment didn't go through": "Pembayaran Anda tidak berhasil",
+   "My Instant Wallet payment failed": "Pembayaran dari Instant Wallet saya gagal"
 };

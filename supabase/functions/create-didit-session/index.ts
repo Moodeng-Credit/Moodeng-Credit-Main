@@ -1,7 +1,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { sendAdminCard } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
+import { kycTriesKeyboard } from '../_shared/kycCards.ts';
+import { getAdminChatId } from '../_shared/loanAccess.ts';
+import { KYC_TRIES, kycTriesLeft, needsPreKycGate } from '../_shared/preKycGate.ts';
 
 // Creates a Didit verification session for the authenticated caller and returns
 // the hosted verification URL to redirect them to.
@@ -151,6 +155,84 @@ const alertStartFailure = async (supabase: any, userId: string | null, kind: str
    }
 };
 
+// Out of KYC tries: tell the admins once (per run of 3), so they can reach out and /kycretry.
+// deno-lint-ignore no-explicit-any
+const alertTriesUsed = async (supabase: any, userId: string) => {
+   try {
+      const { data: claimed } = await supabase
+         .from('kyc_declines')
+         .update({ cap_alerted_at: new Date().toISOString() })
+         .eq('user_id', userId)
+         .is('voided_at', null)
+         .is('cap_alerted_at', null)
+         .select('id');
+      if (!claimed?.length) return;
+      const { data: u } = await supabase.from('users').select('username, email, display_name, didit_decline_reason').eq('id', userId).maybeSingle();
+      const handle = u?.username ? `@${u.username}` : userId;
+      const text = [
+         `🪪 Out of KYC tries — ${u?.display_name || handle}`,
+         [u?.username ? `@${u.username}` : null, u?.email].filter(Boolean).join(' · ') || null,
+         u?.didit_decline_reason ? `Last decline: ${u.didit_decline_reason}` : null,
+         `They've been declined ${KYC_TRIES} times and were asked to message us. Talk to them, then tap 🔁 (or /kycretry ${handle}) for ${KYC_TRIES} more tries.`
+      ]
+         .filter(Boolean)
+         .join('\n');
+      const chat = await getAdminChatId(supabase);
+      if (chat) await sendAdminCard(supabase, chat, { kind: 'kyc_tries', refId: userId, text, keyboard: kycTriesKeyboard(userId, u?.username) });
+      await postDiscord({ content: text }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
+   } catch (err) {
+      console.error('[create-didit-session] tries-used alert failed', err instanceof Error ? err.message : err);
+   }
+};
+
+type PinnedIdSession = {
+   didit_id_status?: string | null;
+   didit_session_id?: string | null;
+   didit_session_url?: string | null;
+   didit_submitted_at?: string | null;
+};
+
+// How long a stored, unfinished ID session is offered again. Didit doesn't document a fixed link
+// lifetime we rely on; an hour covers a borrower who steps away mid-flow, and Didit's own
+// status check below catches an earlier expiry.
+const ID_SESSION_REUSE_MS = 60 * 60 * 1000;
+const REUSABLE_DIDIT_STATUSES = new Set(['not started', 'in progress']);
+
+// Returns the stored ID session when it's safe to send the borrower back into it: recent, no
+// verdict yet on our side, and Didit still reports it Not Started / In Progress for the same
+// workflow. Anything else (declined, abandoned, expired, finished, unreachable) → null, so a
+// new session is created as before.
+const reusableIdSession = async (
+   pinned: PinnedIdSession,
+   workflowId: string,
+   apiKey: string
+): Promise<{ url: string; sessionId: string } | null> => {
+   const sessionId = pinned.didit_session_id;
+   const url = pinned.didit_session_url;
+   if (!sessionId || !url || !pinned.didit_submitted_at) return null;
+   const startedAt = Date.parse(pinned.didit_submitted_at);
+   if (!Number.isFinite(startedAt) || Date.now() - startedAt > ID_SESSION_REUSE_MS) return null;
+   const ourStatus = String(pinned.didit_id_status ?? '').toLowerCase();
+   if (ourStatus && !REUSABLE_DIDIT_STATUSES.has(ourStatus)) return null;
+
+   const apiBase = (Deno.env.get('DIDIT_API_BASE')?.trim() || 'https://verification.didit.me/v3').replace(/\/$/, '');
+   try {
+      const res = await fetch(`${apiBase}/session/${encodeURIComponent(sessionId)}/decision/`, {
+         method: 'GET',
+         headers: { 'x-api-key': apiKey, Accept: 'application/json' }
+      });
+      if (!res.ok) return null;
+      const body = (await res.json().catch(() => null)) as { status?: string; workflow_id?: string } | null;
+      if (!REUSABLE_DIDIT_STATUSES.has(String(body?.status ?? '').toLowerCase())) return null;
+      // The borrower may have switched flows (combined <-> id); only reuse the same workflow.
+      if (body?.workflow_id && body.workflow_id !== workflowId) return null;
+      return { url, sessionId };
+   } catch (error) {
+      console.error('[create-didit-session] Could not check the stored ID session:', error instanceof Error ? error.message : error);
+      return null;
+   }
+};
+
 serve(async (req) => {
    if (req.method === 'OPTIONS') {
       return new Response('ok', { headers: corsHeaders });
@@ -186,6 +268,11 @@ serve(async (req) => {
 
       if (userError || !user) {
          return jsonResponse({ error: 'Invalid authorization token' }, 401);
+      }
+
+      // Guest accounts (email-first sign-up) confirm their email before any ID check.
+      if (user.is_anonymous) {
+         return jsonResponse({ error: 'Confirm your email first.', code: 'guest_email_unconfirmed' }, 403);
       }
 
       let returnTo: string | undefined;
@@ -251,6 +338,44 @@ serve(async (req) => {
          if ((profile as { liveness_status?: string } | null)?.liveness_status !== 'APPROVED') {
             return jsonResponse({ error: 'Liveness check required', code: 'LIVENESS_REQUIRED' }, 409);
          }
+      }
+
+      // Pre-KYC gate: a new borrower meets the team (Messenger + intro call, approved after it)
+      // before we pay Didit for their KYC. Checked before the session is created.
+      if ((kind === 'liveness' || kind === 'combined' || kind === 'id') && (await needsPreKycGate(supabase, user.id))) {
+         return jsonResponse({ error: 'Please meet the team before verifying your ID.', code: 'APPROVAL_REQUIRED' }, 409);
+      }
+
+      // An ID already in Didit's manual review: a new session would cost another check and reset
+      // didit_id_status, wiping the "in review" state the borrower and the team rely on. Refuse;
+      // /verify shows the review screen instead.
+      let pinnedIdSession: PinnedIdSession | null = null;
+      if (kind === 'combined' || kind === 'id') {
+         const { data: idRow } = await supabase
+            .from('users')
+            .select('didit_id_status, didit_session_id, didit_session_url, didit_submitted_at')
+            .eq('id', user.id)
+            .maybeSingle();
+         pinnedIdSession = (idRow as PinnedIdSession | null) ?? null;
+         const idStatus = String(pinnedIdSession?.didit_id_status ?? '').toLowerCase();
+         if (idStatus.includes('review')) {
+            return jsonResponse({ error: 'Your ID is already being reviewed.', code: 'ID_IN_REVIEW' }, 409);
+         }
+      }
+
+      // 3 declined KYC attempts, then they talk to us first (admin /kycretry gives 3 more).
+      if ((kind === 'liveness' || kind === 'combined' || kind === 'id') && (await kycTriesLeft(supabase, user.id)) <= 0) {
+         await alertTriesUsed(supabase, user.id);
+         return jsonResponse({ error: 'Please message us before trying again.', code: 'KYC_TRIES_USED' }, 409);
+      }
+
+      // Reuse the borrower's unfinished ID session instead of paying for a new one. Every Verify
+      // tap used to create a fresh session and re-pin didit_session_id, so a finished-but-still-
+      // processing session's In Review / Declined verdict was then dropped by didit-webhook as
+      // stale. Runs after the gate / in-review / tries checks above, so those still apply.
+      if ((kind === 'combined' || kind === 'id') && pinnedIdSession) {
+         const reusable = await reusableIdSession(pinnedIdSession, workflowId, apiKey);
+         if (reusable) return jsonResponse({ url: reusable.url, sessionId: reusable.sessionId });
       }
 
       // A face scan is only worth paying Didit for when the caller could actually use it.
@@ -384,7 +509,8 @@ serve(async (req) => {
       // verification" on /verify), and clear any stale verdict from a previous attempt so
       // an old Declined/Abandoned status can't mask this fresh session.
       if (kind === 'id' || kind === 'combined') {
-         await supabase
+         // didit-webhook matches ID results to this session id, so a failed write is worth a log line.
+         const { error: pinError } = await supabase
             .from('users')
             .update({
                didit_submitted_at: new Date().toISOString(),
@@ -393,6 +519,7 @@ serve(async (req) => {
                didit_id_status: null
             })
             .eq('id', user.id);
+         if (pinError) console.error('[create-didit-session] Failed to pin the ID session:', pinError.message);
       }
 
       // The cash-out gate has no `users` column to pin to (a scan is per-attempt, bound to one

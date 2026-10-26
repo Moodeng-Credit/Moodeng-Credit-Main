@@ -158,3 +158,56 @@ export const pickBooking = <T extends { video_call_starts_at: string | null }>(r
    }
    return best;
 };
+
+// ---- Transcripts --------------------------------------------------------------------------------
+
+export type TranscriptEvent = { meetingId: string; meetingUuid: string; startTime: string | null; downloadUrl: string; downloadToken: string | null };
+
+type TranscriptBody = {
+   event?: string;
+   download_token?: string;
+   payload?: {
+      object?: {
+         id?: string | number;
+         uuid?: string;
+         start_time?: string;
+         recording_files?: Array<{ file_type?: string; recording_type?: string; download_url?: string; status?: string }>;
+      };
+   };
+};
+
+/** "recording.transcript_completed" → where to download the audio transcript, or null for anything else. */
+export const classifyTranscriptEvent = (body: TranscriptBody): TranscriptEvent | null => {
+   if (body?.event !== 'recording.transcript_completed') return null;
+   const object = body.payload?.object;
+   const file = (object?.recording_files ?? []).find((f) => f.file_type === 'TRANSCRIPT' || f.recording_type === 'audio_transcript');
+   if (!object?.id || !object.uuid || !file?.download_url) return null;
+   return {
+      meetingId: String(object.id),
+      meetingUuid: object.uuid,
+      startTime: object.start_time ?? null,
+      downloadUrl: file.download_url,
+      downloadToken: body.download_token ?? null
+   };
+};
+
+/** Zoom's WebVTT transcript → "Speaker: words" lines, merging a speaker's consecutive cues. */
+export const vttToText = (vtt: string): string => {
+   const lines: string[] = [];
+   let lastSpeaker: string | null = null;
+   for (const block of vtt.replace(/\r/g, '').split(/\n\n+/)) {
+      const text = block
+         .split('\n')
+         .filter((l) => l.trim() && l.trim() !== 'WEBVTT' && !/^\d+$/.test(l.trim()) && !/-->/.test(l))
+         .join(' ')
+         .trim();
+      if (!text) continue;
+      const match = text.match(/^([^:]{1,60}):\s*(.*)$/);
+      const speaker = match ? match[1].trim() : null;
+      const words = match ? match[2] : text;
+      if (speaker && speaker === lastSpeaker && lines.length) lines[lines.length - 1] += ` ${words}`;
+      else lines.push(speaker ? `${speaker}: ${words}` : words);
+      lastSpeaker = speaker;
+   }
+   return lines.join('\n');
+};

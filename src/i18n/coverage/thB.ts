@@ -27,30 +27,30 @@ export const thaiCoverageB: Record<string, string> = {
    // src/views/borrowerBenefits/sections/StartBuildingCreditSection.tsx
    'Borrower credit': 'เครดิตของผู้ยืม',
    'Borrow, repay, and unlock more room over time': 'ยืม ชำระคืน และปลดล็อกวงเงินที่มากขึ้นเมื่อเวลาผ่านไป',
-   'The point is not to look rich on day one. Moodeng gives borrowers a way to start with small direct loans, prove repayment, and make future requests easier for lenders to understand.':
-      'คุณไม่จำเป็นต้องดูมีฐานะตั้งแต่วันแรก Moodeng ให้ผู้ยืมเริ่มต้นด้วยเงินกู้ขนาดเล็กโดยตรงจากผู้ให้กู้ พิสูจน์การชำระคืน และทำให้ผู้ให้กู้เข้าใจคำขอครั้งต่อไปได้ง่ายขึ้น',
+   'The point is not to look rich on day one. Moodeng gives borrowers a way to start with small direct loans, prove repayment, and make future requests easier for moo-lenders to understand.':
+      'คุณไม่จำเป็นต้องดูมีฐานะตั้งแต่วันแรก Moodeng ให้ผู้ยืมเริ่มต้นด้วยเงินกู้ขนาดเล็กโดยตรงจาก Moo-lender พิสูจน์การชำระคืน และทำให้ Moo-lender เข้าใจคำขอครั้งต่อไปได้ง่ายขึ้น',
    'Video walkthrough': 'วิดีโอแนะนำ',
    'How to request your first loan': 'วิธีขอเงินกู้ครั้งแรก',
    'Watch the blackboard walkthrough before you post. It explains what to enter, how terms work, and what happens after your request appears on the board.':
       'ดูวิดีโออธิบายบนกระดานดำก่อนโพสต์คำขอ วิดีโอนี้อธิบายว่าต้องกรอกอะไร เงื่อนไขทำงานอย่างไร และจะเกิดอะไรขึ้นหลังคำขอของคุณขึ้นบนกระดาน',
    'Open on YouTube': 'เปิดใน YouTube',
-   'Keep it honest: only borrow what you can repay. Moodeng can make your record clearer and more useful, but every lender still decides whether a request is worth funding.':
-      'ซื่อสัตย์กับตัวเอง: ยืมเท่าที่คุณชำระคืนได้เท่านั้น Moodeng ช่วยให้ประวัติของคุณชัดเจนและมีประโยชน์มากขึ้น แต่ผู้ให้กู้แต่ละคนยังตัดสินใจเองว่าคำขอนั้นควรได้รับการปล่อยกู้หรือไม่',
+   'Keep it honest: only borrow what you can repay. Moodeng can make your record clearer and more useful, but every moo-lender still decides whether a request is worth funding.':
+      'ซื่อสัตย์กับตัวเอง: ยืมเท่าที่คุณชำระคืนได้เท่านั้น Moodeng ช่วยให้ประวัติของคุณชัดเจนและมีประโยชน์มากขึ้น แต่ Moo-lender แต่ละคนยังตัดสินใจเองว่าคำขอนั้นควรได้รับการปล่อยกู้หรือไม่',
    'Explore loans': 'สำรวจเงินกู้',
    'Read the guide': 'อ่านคู่มือ',
    'Start with a small request': 'เริ่มจากคำขอเล็ก ๆ',
-   'Post a realistic amount and reason so lenders can understand what the loan is for.':
-      'ระบุจำนวนเงินและเหตุผลที่สมเหตุสมผล เพื่อให้ผู้ให้กู้เข้าใจว่าคุณจะนำเงินกู้ไปใช้ทำอะไร',
+   'Post a realistic amount and reason so moo-lenders can understand what the loan is for.':
+      'ระบุจำนวนเงินและเหตุผลที่สมเหตุสมผล เพื่อให้ Moo-lender เข้าใจว่าคุณจะนำเงินกู้ไปใช้ทำอะไร',
    'Repay what you promised': 'ชำระคืนตามที่สัญญาไว้',
-   'On-time repayment strengthens the record lenders see the next time you ask for support.':
-      'การชำระคืนตรงเวลาช่วยเสริมประวัติที่ผู้ให้กู้จะเห็นเมื่อคุณขอความช่วยเหลือครั้งถัดไป',
+   'On-time repayment strengthens the record moo-lenders see the next time you ask for support.':
+      'การชำระคืนตรงเวลาช่วยเสริมประวัติที่ Moo-lender จะเห็นเมื่อคุณขอความช่วยเหลือครั้งถัดไป',
    'Unlock the next step': 'ปลดล็อกขั้นต่อไป',
    'Credit-building loans can raise your limit after full repayment, while smaller loans still help build trust.':
       'Credit-Building Loan ช่วยเพิ่มวงเงินได้หลังชำระคืนครบ ส่วนเงินกู้ที่ต่ำกว่าวงเงินก็ยังช่วยสร้างความน่าเชื่อถือได้',
 
    // src/views/borrowerBenefits/sections/WhatPeopleSaySection.tsx
    'What people are saying': 'เสียงจากผู้ใช้',
-   'Borrowers and lenders describe the difference': 'ผู้ยืมและผู้ให้กู้เล่าถึงความแตกต่าง',
+   'Borrowers and moo-lenders describe the difference': 'ผู้ยืมและ Moo-lender เล่าถึงความแตกต่าง',
    'Hear directly from borrowers who have used Moodeng when short-term support mattered.':
       'ฟังโดยตรงจากผู้ยืมที่เคยใช้ Moodeng ในยามที่ต้องการความช่วยเหลือระยะสั้น',
    'Borrower testimonial': 'เรื่องเล่าจากผู้ยืม',
@@ -77,8 +77,8 @@ export const thaiCoverageB: Record<string, string> = {
       'สถานะของคุณมาจากเงินกู้ที่คุณชำระคืนใน Moodeng ไม่ใช่การทวงหนี้ผ่านรายชื่อผู้ติดต่อ การแอบเก็บข้อมูลในโทรศัพท์ หรือเส้นสายที่คุณมี',
    '03 / Control': '03 / การควบคุม',
    '100% borrower control': 'ผู้ยืมควบคุมได้ 100%',
-   'Set your amount, repayment date, and reason upfront so lenders see the same terms you agreed to before anyone funds the request.':
-      'กำหนดจำนวนเงิน วันชำระคืน และเหตุผลไว้ล่วงหน้า เพื่อให้ผู้ให้กู้เห็นเงื่อนไขเดียวกับที่คุณตกลงไว้ ก่อนที่จะมีใครปล่อยกู้ให้คำขอนั้น',
+   'Set your amount, repayment date, and reason upfront so moo-lenders see the same terms you agreed to before anyone funds the request.':
+      'กำหนดจำนวนเงิน วันชำระคืน และเหตุผลไว้ล่วงหน้า เพื่อให้ Moo-lender เห็นเงื่อนไขเดียวกับที่คุณตกลงไว้ ก่อนที่จะมีใครปล่อยกู้ให้คำขอนั้น',
    '04 / Portability': '04 / พกพาได้',
    '100% portable credit history': 'ประวัติเครดิตพกพาได้ 100%',
    'Build a wallet-based repayment record you can keep using, instead of rebuilding your credit story from zero with each new lender.':
@@ -135,16 +135,16 @@ export const thaiCoverageB: Record<string, string> = {
    'Borrow $100 and repay funded terms on time': 'ยืม $100 และชำระคืนตามเงื่อนไขให้ตรงเวลา',
    'Borrow $120 and repay funded terms on time': 'ยืม $120 และชำระคืนตามเงื่อนไขให้ตรงเวลา',
    '$10 of $15': '$10 จาก $15',
-   'Useful when you need less than your full limit. It can help lenders trust you, but it does not raise your credit level.':
-      'เหมาะเมื่อคุณต้องการเงินน้อยกว่าวงเงินเต็ม ช่วยให้ผู้ให้กู้ไว้วางใจคุณมากขึ้น แต่ไม่ได้เพิ่มระดับเครดิตของคุณ',
+   'Useful when you need less than your full limit. It can help moo-lenders trust you, but it does not raise your credit level.':
+      'เหมาะเมื่อคุณต้องการเงินน้อยกว่าวงเงินเต็ม ช่วยให้ Moo-lender ไว้วางใจคุณมากขึ้น แต่ไม่ได้เพิ่มระดับเครดิตของคุณ',
    '$15 of $15': '$15 จาก $15',
    'Can unlock $20': 'ปลดล็อก $20 ได้',
    'This is the level-up loan. You borrow your full current limit and repay the funded terms on time.':
       'นี่คือเงินกู้สำหรับเพิ่มระดับ คุณยืมเต็มวงเงินปัจจุบันและชำระคืนตามเงื่อนไขของเงินกู้ที่ได้รับให้ตรงเวลา',
    'Late or missed repayment': 'ชำระคืนล่าช้าหรือไม่ได้ชำระ',
    'Can pause progress': 'อาจทำให้ความคืบหน้าหยุดชะงัก',
-   'Your level does not become the main signal anymore. Lenders will care about the missed repayment first.':
-      'ระดับของคุณจะไม่ใช่สิ่งที่ผู้ให้กู้ดูเป็นหลักอีกต่อไป ผู้ให้กู้จะให้ความสำคัญกับการชำระคืนที่พลาดไปก่อน',
+   'Your level does not become the main signal anymore. Moo-lenders will care about the missed repayment first.':
+      'ระดับของคุณจะไม่ใช่สิ่งที่ Moo-lender ดูเป็นหลักอีกต่อไป Moo-lender จะให้ความสำคัญกับการชำระคืนที่พลาดไปก่อน',
    'Borrowing below your limit builds trust, not your next level.':
       'การยืมต่ำกว่าวงเงินช่วยสร้างความน่าเชื่อถือ แต่ไม่ได้พาคุณไปสู่ระดับถัดไป',
    'Borrowing your full current limit is what can unlock the next level.': 'การยืมเต็มวงเงินปัจจุบันคือสิ่งที่ปลดล็อกระดับถัดไปได้',
@@ -173,10 +173,10 @@ export const thaiCoverageB: Record<string, string> = {
       'ป้อน Pandesal ให้ Moodeng เพื่อเพิ่มความน่าเชื่อถือของคุณ: คุณได้รับ Pandesal จากการยืนยันตัวตน การชำระคืนตรงเวลา และการทำหมุดหมายสำเร็จ แล้ว Moodeng จะเติบโตจาก Rookie สู่ Apex',
    'Credit Level is your borrowing tier. Trust is what you build; Credit Level is what that trust unlocks.':
       'ระดับเครดิตคือขั้นการกู้ยืมของคุณ ความน่าเชื่อถือคือสิ่งที่คุณสร้าง ส่วนระดับเครดิตคือสิ่งที่ความน่าเชื่อถือนั้นปลดล็อกให้',
-   'Milestones are extra ways to earn Pandesal. Complete them to strengthen your profile and make lenders more confident in your requests.':
-      'หมุดหมายเป็นอีกช่องทางในการรับ Pandesal ทำให้สำเร็จเพื่อเสริมโปรไฟล์ของคุณ และทำให้ผู้ให้กู้มั่นใจในคำขอของคุณมากขึ้น',
+   'Milestones are extra ways to earn Pandesal. Complete them to strengthen your profile and make moo-lenders more confident in your requests.':
+      'หมุดหมายเป็นอีกช่องทางในการรับ Pandesal ทำให้สำเร็จเพื่อเสริมโปรไฟล์ของคุณ และทำให้ Moo-lender มั่นใจในคำขอของคุณมากขึ้น',
    'Post your first loan request': 'โพสต์คำขอเงินกู้ครั้งแรก',
-   'Get funded by a lender': 'ได้รับการปล่อยกู้จากผู้ให้กู้',
+   'Get funded by a moo-lender': 'ได้รับการปล่อยกู้จาก Moo-lender',
    'Loading your dashboard': 'กำลังโหลดแดชบอร์ดของคุณ',
 
    // src/views/dashboard-v2/DashboardV2Milestones.tsx
@@ -190,16 +190,16 @@ export const thaiCoverageB: Record<string, string> = {
    'Grow Moodeng, eat on us': 'เลี้ยง Moodeng ให้โต มื้อนี้เราเลี้ยงเอง',
    'Grow Moodeng to': 'เลี้ยง Moodeng จนถึงระดับ',
    'Reward: ₱': 'รางวัล: ₱',
-   'GrabFood voucher': 'บัตรกำนัล GrabFood',
+   'GrabMart voucher': 'บัตรกำนัล GrabMart',
    'Back to dashboard': 'กลับไปที่แดชบอร์ด',
    'Loading milestones': 'กำลังโหลดหมุดหมาย',
    'Repay a loan on time': 'ชำระคืนเงินกู้ตรงเวลา',
    '2-loan on-time streak': 'ชำระคืนตรงเวลาติดต่อกัน 2 ครั้ง',
    'Repay a full-limit credit': 'ชำระคืนเงินกู้เต็มวงเงิน',
-   'Borrow from 2 lenders': 'ยืมจากผู้ให้กู้ 2 ราย',
+   'Borrow from 2 moo-lenders': 'ยืมจาก Moo-lender 2 ราย',
    'Repay $100 total': 'ชำระคืนรวม $100',
    'Become a trusted borrower': 'เป็นผู้ยืมที่น่าเชื่อถือ',
-   '₱50 GrabFood voucher': 'บัตรกำนัล GrabFood ₱50',
+   '₱50 GrabMart reward': 'บัตรกำนัล GrabMart ₱50',
    'to unlock LV.1': 'เพื่อปลดล็อก LV.1',
    Top: 'ถึงระดับสูงสุด',
    'level reached': 'แล้ว',
@@ -233,8 +233,8 @@ export const thaiCoverageB: Record<string, string> = {
    'Please check your name and mobile number.': 'โปรดตรวจสอบชื่อและเบอร์มือถือของคุณ',
    'Voucher Unlocked!': 'ปลดล็อกบัตรกำนัลแล้ว!',
    'Salamat! We got it.': 'ขอบคุณ! เราได้รับข้อมูลแล้ว',
-   "We'll send your ₱": 'เราจะส่งโค้ดบัตรกำนัล GrabFood มูลค่า ₱',
-   'GrabFood voucher code to your email within 2 business days.': 'ไปยังอีเมลของคุณภายใน 2 วันทำการ',
+   "We'll send your ₱": 'เราจะส่งโค้ดบัตรกำนัล GrabMart มูลค่า ₱',
+   'GrabMart voucher code to your email within 2 business days.': 'ไปยังอีเมลของคุณภายใน 2 วันทำการ',
    'Preview sample — nothing was sent.': 'ตัวอย่างเท่านั้น — ไม่มีการส่งข้อมูลใด ๆ',
    'Full name': 'ชื่อ-นามสกุล',
    'Mobile number (GCash)': 'เบอร์มือถือ (GCash)',
@@ -254,11 +254,11 @@ export const thaiCoverageB: Record<string, string> = {
    'Borrow small, build your credit': 'ยืมทีละน้อย สร้างเครดิตของคุณ',
    'Small person-to-person loans with one amount, one date, and no Moodeng fees.':
       'เงินกู้ขนาดเล็กระหว่างบุคคล จำนวนเงินเดียว วันชำระเดียว และไม่มีค่าธรรมเนียมจาก Moodeng',
-   '₱100 GrabFood voucher each': 'รับบัตรกำนัล GrabFood ₱100 คนละใบ',
+   '₱100 GrabMart voucher each': 'รับบัตรกำนัล GrabMart ₱100 คนละใบ',
    'When you repay your first loan on time, you and': 'เมื่อคุณชำระคืนเงินกู้ครั้งแรกตรงเวลา คุณและ',
    'both get one.': 'จะได้รับคนละใบ',
    'Join Moodeng': 'เข้าร่วม Moodeng',
-   'Tell us where to send your GrabFood voucher code.': 'บอกเราว่าจะให้ส่งโค้ดบัตรกำนัล GrabFood ไปที่ใด',
+   'Tell us where to send your GrabMart voucher code.': 'บอกเราว่าจะให้ส่งโค้ดบัตรกำนัล GrabMart ไปที่ใด',
    'Thanks for inviting them. Where should we send your voucher code?': 'ขอบคุณที่ชวนเพื่อนมา จะให้เราส่งโค้ดบัตรกำนัลของคุณไปที่ใด?',
    'Thanks for joining with a friend. Where should we send your voucher code?':
       'ขอบคุณที่เข้าร่วมพร้อมเพื่อน จะให้เราส่งโค้ดบัตรกำนัลของคุณไปที่ใด?',
@@ -306,7 +306,7 @@ export const thaiCoverageB: Record<string, string> = {
    'Verify to Start Feeding': 'ยืนยันตัวตนเพื่อเริ่มป้อน',
    'Repay on time, eat on us.': 'ชำระคืนตรงเวลา มื้อนี้เราเลี้ยง',
    'Feed Moodeng to level up.': 'ป้อน Moodeng เพื่อเลื่อนระดับ',
-   'A GrabFood voucher for your first on-time repayment!': 'รับบัตรกำนัล GrabFood เมื่อชำระคืนตรงเวลาครั้งแรก!',
+   'A GrabMart reward for your first on-time repayment!': 'รับบัตรกำนัล GrabMart เมื่อชำระคืนตรงเวลาครั้งแรก!',
    'Bigger Moodeng = Higher cash limits!': 'Moodeng ยิ่งโต = วงเงินยิ่งสูง!',
    'Verify My Identity': 'ยืนยันตัวตนของฉัน',
    'Verify to unlock your account — a one-time check that takes about 3 minutes.':
@@ -325,7 +325,7 @@ export const thaiCoverageB: Record<string, string> = {
 
    // src/views/dashboard-v2/components/DashboardV2Sections.tsx
    'Active Loans($)': 'เงินกู้ที่กำลังดำเนินอยู่ ($)',
-   'Pending Loans($)': 'เงินกู้ที่รอดำเนินการ ($)',
+   'Pending Request($)': 'คำขอที่รอดำเนินการ ($)',
    'Defaulted($)': 'ผิดนัดชำระ ($)',
    'Due today': 'ครบกำหนดวันนี้',
    'Pay Now': 'ชำระเลย',
@@ -337,10 +337,10 @@ export const thaiCoverageB: Record<string, string> = {
    // src/views/dashboard/Dashboard.tsx
    'Withdraw your USDC': 'ถอน USDC ของคุณ',
    'Cash out your funded loan to local currency.': 'ถอนเงินกู้ที่ได้รับเป็นเงินสกุลท้องถิ่น',
-   'Pandesal points track your reputation on Moodeng. Verification, clean repayment, and healthy activity make lenders more confident in you.':
-      'แต้ม Pandesal บันทึกความน่าเชื่อถือของคุณบน Moodeng การยืนยันตัวตน การชำระคืนที่ครบถ้วนตรงเวลา และการใช้งานที่ดี ช่วยให้ผู้ให้กู้มั่นใจในตัวคุณมากขึ้น',
-   'Milestones are extra ways to earn Pandesal points. Complete them to strengthen your profile and make lenders more confident in your requests.':
-      'หมุดหมายเป็นอีกช่องทางในการรับแต้ม Pandesal ทำให้สำเร็จเพื่อเสริมโปรไฟล์ของคุณ และทำให้ผู้ให้กู้มั่นใจในคำขอของคุณมากขึ้น',
+   'Pandesal points track your reputation on Moodeng. Verification, clean repayment, and healthy activity make moo-lenders more confident in you.':
+      'แต้ม Pandesal บันทึกความน่าเชื่อถือของคุณบน Moodeng การยืนยันตัวตน การชำระคืนที่ครบถ้วนตรงเวลา และการใช้งานที่ดี ช่วยให้ Moo-lender มั่นใจในตัวคุณมากขึ้น',
+   'Milestones are extra ways to earn Pandesal points. Complete them to strengthen your profile and make moo-lenders more confident in your requests.':
+      'หมุดหมายเป็นอีกช่องทางในการรับแต้ม Pandesal ทำให้สำเร็จเพื่อเสริมโปรไฟล์ของคุณ และทำให้ Moo-lender มั่นใจในคำขอของคุณมากขึ้น',
 
    // src/views/dashboard/RequestBoard.tsx
    'Edit display name': 'แก้ไขชื่อที่แสดง',
@@ -353,8 +353,8 @@ export const thaiCoverageB: Record<string, string> = {
    'View details >': 'ดูรายละเอียด >',
    'Browse requests now. Choose a role when you are ready to borrow or lend.': 'ดูคำขอได้เลย แล้วเลือกบทบาทเมื่อคุณพร้อมจะยืมหรือให้กู้',
    'Browse requests publicly.': 'ดูคำขอแบบสาธารณะ',
-   'Pick borrower or lender to unlock your dashboard, repayment, and history.':
-      'เลือกเป็นผู้ยืมหรือผู้ให้กู้ เพื่อปลดล็อกแดชบอร์ด การชำระคืน และประวัติของคุณ',
+   'Pick borrower or moo-lender to unlock your dashboard, repayment, and history.':
+      'เลือกเป็นผู้ยืมหรือ Moo-lender เพื่อปลดล็อกแดชบอร์ด การชำระคืน และประวัติของคุณ',
    "You're approved 🎉": 'คุณได้รับการอนุมัติแล้ว 🎉',
    'The team approved you — apply for your loan now.': 'ทีมงานอนุมัติคุณแล้ว — ขอเงินกู้ได้เลย',
    'See you on the call': 'แล้วพบกันในวิดีโอคอล',
@@ -376,8 +376,8 @@ export const thaiCoverageB: Record<string, string> = {
    'Start tour': 'เริ่มทัวร์',
    'Open filters': 'เปิดตัวกรอง',
    'IMPORTANT NOTE': 'หมายเหตุสำคัญ',
-   "Once lenders have issued three loans, a fee will be charged to their accounts. This fee helps maintain the platform's operational costs and ensures continued support for all users.":
-      'เมื่อผู้ให้กู้ปล่อยกู้ครบสามครั้ง จะมีการเรียกเก็บค่าธรรมเนียมจากบัญชี ค่าธรรมเนียมนี้ช่วยครอบคลุมค่าใช้จ่ายในการดำเนินงานของแพลตฟอร์ม และช่วยให้เราดูแลผู้ใช้ทุกคนได้อย่างต่อเนื่อง',
+   "Once moo-lenders have issued three loans, a fee will be charged to their accounts. This fee helps maintain the platform's operational costs and ensures continued support for all users.":
+      'เมื่อ Moo-lender ปล่อยกู้ครบสามครั้ง จะมีการเรียกเก็บค่าธรรมเนียมจากบัญชี ค่าธรรมเนียมนี้ช่วยครอบคลุมค่าใช้จ่ายในการดำเนินงานของแพลตฟอร์ม และช่วยให้เราดูแลผู้ใช้ทุกคนได้อย่างต่อเนื่อง',
    'No requests match your filters.': 'ไม่มีคำขอที่ตรงกับตัวกรองของคุณ',
    'Try widening your search or clearing your filters.': 'ลองขยายการค้นหาหรือล้างตัวกรอง',
    'Clear filters': 'ล้างตัวกรอง',
@@ -389,8 +389,8 @@ export const thaiCoverageB: Record<string, string> = {
    'Borrowing $': 'ยืม $',
    'and repaying $': 'และชำระคืน $',
    'the selected date': 'วันที่เลือกไว้',
-   'Lenders will no longer see it. You can make a new request from the board, but repeated deletes pause new requests for a short time.':
-      'ผู้ให้กู้จะไม่เห็นคำขอนี้อีก คุณสร้างคำขอใหม่จากกระดานได้ แต่หากลบบ่อยครั้ง ระบบจะระงับการสร้างคำขอใหม่ชั่วคราว',
+   'Moo-lenders will no longer see it. You can make a new request from the board, but repeated deletes pause new requests for a short time.':
+      'Moo-lender จะไม่เห็นคำขอนี้อีก คุณสร้างคำขอใหม่จากกระดานได้ แต่หากลบบ่อยครั้ง ระบบจะระงับการสร้างคำขอใหม่ชั่วคราว',
    'Deleting...': 'กำลังลบ...',
    'Keep request': 'เก็บคำขอไว้',
    'Quick national ID & selfie check — available in select countries.': 'ตรวจสอบบัตรประชาชนและเซลฟี่อย่างรวดเร็ว — ใช้ได้ในบางประเทศ',
@@ -409,30 +409,30 @@ export const thaiCoverageB: Record<string, string> = {
    'Get a quick overview of how Moodeng works before deciding which side to explore.':
       'ดูภาพรวมสั้น ๆ ว่า Moodeng ทำงานอย่างไร ก่อนตัดสินใจว่าจะเริ่มจากฝั่งไหน',
    'The request board': 'กระดานคำขอ',
-   'This is where borrowers post short-term USDC loan requests and lenders browse them. Both sides of Moodeng meet here.':
-      'ที่นี่คือที่ที่ผู้ยืมโพสต์คำขอเงินกู้ USDC ระยะสั้น และผู้ให้กู้เข้ามาดูคำขอ ทั้งสองฝั่งของ Moodeng มาพบกันที่นี่',
+   'This is where borrowers post short-term USDC loan requests and moo-lenders browse them. Both sides of Moodeng meet here.':
+      'ที่นี่คือที่ที่ผู้ยืมโพสต์คำขอเงินกู้ USDC ระยะสั้น และ Moo-lender เข้ามาดูคำขอ ทั้งสองฝั่งของ Moodeng มาพบกันที่นี่',
    'Borrowers apply here': 'ผู้ยืมส่งคำขอที่นี่',
    'A borrower sets their loan amount, repayment date, and reason. Once verified, their request goes live on this board.':
       'ผู้ยืมกำหนดจำนวนเงินกู้ วันชำระคืน และเหตุผล เมื่อยืนยันตัวตนแล้ว คำขอจะแสดงบนกระดานนี้',
-   'Lenders browse & fund': 'ผู้ให้กู้ดูคำขอและปล่อยกู้',
-   "Lenders scroll through open requests, check each borrower's repayment history and trust signals, then fund the ones they believe in.":
-      'ผู้ให้กู้เลื่อนดูคำขอที่เปิดอยู่ ตรวจสอบประวัติการชำระคืนและสัญญาณความน่าเชื่อถือของผู้ยืมแต่ละคน แล้วปล่อยกู้ให้คนที่ตนเชื่อมั่น',
+   'Moo-lenders browse & fund': 'Moo-lender ดูคำขอและปล่อยกู้',
+   "Moo-lenders scroll through open requests, check each borrower's repayment history and trust signals, then fund the ones they believe in.":
+      'Moo-lender เลื่อนดูคำขอที่เปิดอยู่ ตรวจสอบประวัติการชำระคืนและสัญญาณความน่าเชื่อถือของผู้ยืมแต่ละคน แล้วปล่อยกู้ให้คนที่ตนเชื่อมั่น',
    'Ready to get started?': 'พร้อมเริ่มต้นหรือยัง?',
    "Create a free account to borrow or lend. Pick your role after signing up and we'll walk you through the rest.":
       'สร้างบัญชีฟรีเพื่อยืมหรือให้กู้ เลือกบทบาทหลังสมัครสมาชิก แล้วเราจะแนะนำขั้นตอนที่เหลือให้',
-   'This is the marketplace. Once a request is live, lenders review the amount, repayment, and borrower before funding.':
-      'ที่นี่คือตลาดกลาง เมื่อคำขอแสดงบนกระดานแล้ว ผู้ให้กู้จะตรวจดูจำนวนเงิน ยอดชำระคืน และผู้ยืมก่อนปล่อยกู้',
+   'This is the marketplace. Once a request is live, moo-lenders review the amount, repayment, and borrower before funding.':
+      'ที่นี่คือตลาดกลาง เมื่อคำขอแสดงบนกระดานแล้ว Moo-lender จะตรวจดูจำนวนเงิน ยอดชำระคืน และผู้ยืมก่อนปล่อยกู้',
    'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it for a higher starting limit.':
       'เมื่อคุณพร้อมจะยืม การ์ดนี้จะเปิดขั้นตอนการขอเงินกู้ ได้รับโค้ดจากเพื่อนใช่ไหม? ใส่โค้ดเพื่อรับวงเงินเริ่มต้นที่สูงขึ้น',
    'Verify first': 'ยืนยันตัวตนก่อน',
-   'Borrowers complete a one-time identity check before requesting a loan. It helps lenders know they are funding a real person.':
-      'ผู้ยืมต้องยืนยันตัวตนครั้งเดียวก่อนขอเงินกู้ เพื่อให้ผู้ให้กู้มั่นใจว่ากำลังปล่อยกู้ให้คนจริง',
+   'Borrowers complete a one-time identity check before requesting a loan. It helps moo-lenders know they are funding a real person.':
+      'ผู้ยืมต้องยืนยันตัวตนครั้งเดียวก่อนขอเงินกู้ เพื่อให้ Moo-lender มั่นใจว่ากำลังปล่อยกู้ให้คนจริง',
    'Set your terms': 'กำหนดเงื่อนไขของคุณ',
    'After verification, this is where the borrower sets the amount, repayment, date, and reason for the request.':
       'หลังยืนยันตัวตน ผู้ยืมจะกำหนดจำนวนเงิน ยอดชำระคืน วันที่ และเหตุผลของคำขอได้ที่นี่',
    'Get funded, then repay': 'รับเงินกู้ แล้วชำระคืน',
-   'A lender funds your request and USDC lands in your wallet. Repay on time and your Pandesal points — and your next limit — grow. Miss a repayment and it shows on your public profile, so lenders lend on trust.':
-      'ผู้ให้กู้ปล่อยกู้ให้คำขอของคุณ แล้ว USDC จะเข้ากระเป๋าเงินของคุณ ชำระคืนตรงเวลาแล้วแต้ม Pandesal และวงเงินถัดไปของคุณจะเพิ่มขึ้น หากพลาดการชำระคืน ข้อมูลจะแสดงในโปรไฟล์สาธารณะของคุณ ผู้ให้กู้จึงปล่อยกู้ได้อย่างไว้วางใจ',
+   'A moo-lender funds your request and USDC lands in your wallet. Repay on time and your Pandesal points — and your next limit — grow. Miss a repayment and it shows on your public profile, so moo-lenders lend on trust.':
+      'Moo-lender ปล่อยกู้ให้คำขอของคุณ แล้ว USDC จะเข้ากระเป๋าเงินของคุณ ชำระคืนตรงเวลาแล้วแต้ม Pandesal และวงเงินถัดไปของคุณจะเพิ่มขึ้น หากพลาดการชำระคืน ข้อมูลจะแสดงในโปรไฟล์สาธารณะของคุณ Moo-lender จึงปล่อยกู้ได้อย่างไว้วางใจ',
    'Browse open requests': 'ดูคำขอที่เปิดอยู่',
    'Look through open requests before signing up — each card shows the amount, repayment, borrower, and reason.':
       'ดูคำขอที่เปิดอยู่ก่อนสมัครสมาชิก — การ์ดแต่ละใบแสดงจำนวนเงิน ยอดชำระคืน ผู้ยืม และเหตุผล',
@@ -441,8 +441,8 @@ export const thaiCoverageB: Record<string, string> = {
    'Ready to build credit?': 'พร้อมสร้างเครดิตหรือยัง?',
    'Create your account to request your first loan — or sign in if you already have one.':
       'สร้างบัญชีเพื่อขอเงินกู้ครั้งแรก — หรือเข้าสู่ระบบหากคุณมีบัญชีอยู่แล้ว',
-   'This list is the marketplace. Once a request is live, lenders can review the amount, repayment, and borrower profile before funding.':
-      'รายการนี้คือตลาดกลาง เมื่อคำขอแสดงบนกระดานแล้ว ผู้ให้กู้สามารถตรวจดูจำนวนเงิน ยอดชำระคืน และโปรไฟล์ผู้ยืมก่อนปล่อยกู้',
+   'This list is the marketplace. Once a request is live, moo-lenders can review the amount, repayment, and borrower profile before funding.':
+      'รายการนี้คือตลาดกลาง เมื่อคำขอแสดงบนกระดานแล้ว Moo-lender สามารถตรวจดูจำนวนเงิน ยอดชำระคืน และโปรไฟล์ผู้ยืมก่อนปล่อยกู้',
    'When you are ready to borrow, this card opens the loan request form.': 'เมื่อคุณพร้อมจะยืม การ์ดนี้จะเปิดแบบฟอร์มขอเงินกู้',
    'Before an unverified borrower can request a loan, Moodeng sends them through a quick identity verification screen.':
       'ก่อนที่ผู้ยืมที่ยังไม่ได้ยืนยันตัวตนจะขอเงินกู้ได้ Moodeng จะพาไปยังหน้ายืนยันตัวตนแบบรวดเร็ว',
@@ -451,14 +451,14 @@ export const thaiCoverageB: Record<string, string> = {
    'Borrowing below your limit can build trust history. Borrowing your full limit and repaying on time is what raises your Credit Level.':
       'การยืมต่ำกว่าวงเงินช่วยสร้างประวัติความน่าเชื่อถือได้ ส่วนการยืมเต็มวงเงินและชำระคืนตรงเวลาคือสิ่งที่เพิ่มระดับเครดิตของคุณ',
    'Set a clear repayment': 'กำหนดยอดชำระคืนให้ชัดเจน',
-   'Your repayment must be at least $1 more than what you borrow. Lenders use this to decide if the request is worth funding.':
-      'ยอดชำระคืนต้องมากกว่าจำนวนที่ยืมอย่างน้อย $1 ผู้ให้กู้ใช้ข้อมูลนี้ตัดสินใจว่าคำขอนั้นน่าปล่อยกู้หรือไม่',
+   'Your repayment must be at least $1 more than what you borrow. Moo-lenders use this to decide if the request is worth funding.':
+      'ยอดชำระคืนต้องมากกว่าจำนวนที่ยืมอย่างน้อย $1 Moo-lender ใช้ข้อมูลนี้ตัดสินใจว่าคำขอนั้นน่าปล่อยกู้หรือไม่',
    'Explain the reason': 'อธิบายเหตุผล',
-   'A short, specific reason helps lenders understand the request and builds trust before they fund it.':
-      'เหตุผลที่สั้นและเจาะจงช่วยให้ผู้ให้กู้เข้าใจคำขอ และสร้างความน่าเชื่อถือก่อนที่เขาจะปล่อยกู้',
+   'A short, specific reason helps moo-lenders understand the request and builds trust before they fund it.':
+      'เหตุผลที่สั้นและเจาะจงช่วยให้ Moo-lender เข้าใจคำขอ และสร้างความน่าเชื่อถือก่อนที่เขาจะปล่อยกู้',
    'Find open requests': 'ค้นหาคำขอที่เปิดอยู่',
-   'As a lender, this board shows people asking for short-term USDC support. Start by comparing the amount, repayment, due date, and reason.':
-      'สำหรับผู้ให้กู้ กระดานนี้แสดงคนที่ต้องการความช่วยเหลือเป็น USDC ระยะสั้น เริ่มจากเปรียบเทียบจำนวนเงิน ยอดชำระคืน วันครบกำหนด และเหตุผล',
+   'As a moo-lender, this board shows people asking for short-term USDC support. Start by comparing the amount, repayment, due date, and reason.':
+      'สำหรับ Moo-lender กระดานนี้แสดงคนที่ต้องการความช่วยเหลือเป็น USDC ระยะสั้น เริ่มจากเปรียบเทียบจำนวนเงิน ยอดชำระคืน วันครบกำหนด และเหตุผล',
    'Review the request': 'ตรวจดูคำขอ',
    'Each card shows what the borrower needs, what they plan to repay, and whether their account is in good standing.':
       'การ์ดแต่ละใบแสดงสิ่งที่ผู้ยืมต้องการ ยอดที่เขาวางแผนจะชำระคืน และสถานะบัญชีว่าดีหรือไม่',
@@ -489,7 +489,7 @@ export const thaiCoverageB: Record<string, string> = {
    'Repayment date required': 'ต้องระบุวันชำระคืน',
    'Choose a repayment date before making your request.': 'เลือกวันชำระคืนก่อนส่งคำขอ',
    'Reason required': 'ต้องระบุเหตุผล',
-   'Add a short reason so lenders know what the loan is for.': 'เพิ่มเหตุผลสั้น ๆ เพื่อให้ผู้ให้กู้รู้ว่าคุณจะนำเงินกู้ไปใช้ทำอะไร',
+   'Add a short reason so moo-lenders know what the loan is for.': 'เพิ่มเหตุผลสั้น ๆ เพื่อให้ Moo-lender รู้ว่าคุณจะนำเงินกู้ไปใช้ทำอะไร',
    'This looks low-effort. Requests that appear to have no real effort may be deleted — submit again to post anyway.':
       'เหตุผลนี้ดูเขียนอย่างลวก ๆ คำขอที่ดูไม่ตั้งใจอาจถูกลบ — ส่งอีกครั้งหากต้องการโพสต์ต่อ',
    'Check your reason': 'ตรวจสอบเหตุผลของคุณ',
@@ -502,7 +502,7 @@ export const thaiCoverageB: Record<string, string> = {
    "Request wasn't deleted": 'ยังไม่ได้ลบคำขอ',
    'Only the borrower who made a pending request can delete it.': 'เฉพาะผู้ยืมที่สร้างคำขอที่รอดำเนินการเท่านั้นที่ลบคำขอได้',
    'Request deleted': 'ลบคำขอแล้ว',
-   'Lenders will no longer see this request on the board.': 'ผู้ให้กู้จะไม่เห็นคำขอนี้บนกระดานอีกต่อไป',
+   'Moo-lenders will no longer see this request on the board.': 'Moo-lender จะไม่เห็นคำขอนี้บนกระดานอีกต่อไป',
    'It may already be funded or unavailable. Refreshing the board now.':
       'คำขอนี้อาจได้รับการปล่อยกู้แล้วหรือไม่มีอยู่แล้ว กำลังรีเฟรชกระดาน',
 
@@ -595,7 +595,7 @@ export const thaiCoverageB: Record<string, string> = {
       'แตะ อนุญาต เมื่อโทรศัพท์ถาม เพื่อให้เราแจ้งเตือนคุณก่อนวันครบกำหนดได้',
    "Couldn't turn on reminders — try again in a moment.": 'เปิดการแจ้งเตือนไม่ได้ — โปรดลองอีกครั้งในอีกสักครู่',
    "Couldn't start verification — try again in a moment.": 'เริ่มการยืนยันไม่ได้ — โปรดลองอีกครั้งในอีกสักครู่',
-   'Only Moodeng sees this — never lenders.': 'มีเพียง Moodeng ที่เห็นข้อมูลนี้ — ผู้ให้กู้จะไม่เห็น',
+   'Only Moodeng sees this — never moo-lenders.': 'มีเพียง Moodeng ที่เห็นข้อมูลนี้ — Moo-lender จะไม่เห็น',
    'How can we reach you?': 'เราจะติดต่อคุณได้ทางไหน?',
    '1 tap': 'แตะครั้งเดียว',
    'Opening WhatsApp…': 'กำลังเปิด WhatsApp…',
@@ -628,6 +628,7 @@ export const thaiCoverageB: Record<string, string> = {
    "Couldn't book that time. Try again, or contact support.": 'จองเวลานั้นไม่ได้ ลองอีกครั้ง หรือติดต่อฝ่ายช่วยเหลือ',
    "You're booked with": 'คุณนัดหมายกับ',
    'the Moodeng team': 'ทีม Moodeng',
+   'George or Emma': 'George หรือ Emma',
    'Zoom link by email · reminder on Messenger': 'ลิงก์ Zoom ส่งทางอีเมล · แจ้งเตือนทาง Messenger',
    'Google Calendar': 'Google ปฏิทิน',
    'Finding open times…': 'กำลังค้นหาเวลาที่ว่าง…',
@@ -669,23 +670,23 @@ export const thaiCoverageB: Record<string, string> = {
    'Base Account does both steps in one tap.': 'Base Account ทำทั้งสองขั้นตอนได้ในแตะเดียว',
 
    // src/views/dashboard/components/LenderDiversitySection.tsx
-   'Lender Diversity Score': 'คะแนนความหลากหลายของผู้ให้กู้',
+   'Moo-lender Diversity Score': 'คะแนนความหลากหลายของ Moo-lender',
    'Early Score': 'คะแนนเบื้องต้น',
    'Early estimate: needs 8 funded loans before the score is fully weighted.':
       'ค่าประมาณเบื้องต้น: ต้องได้รับการปล่อยกู้ 8 ครั้งก่อนคะแนนจะคำนวณได้เต็มที่',
    'Not enough history': 'ประวัติยังไม่เพียงพอ',
    'This score appears after at least 2 funded loans.': 'คะแนนนี้จะแสดงหลังได้รับการปล่อยกู้อย่างน้อย 2 ครั้ง',
-   '0 Unique Lenders': 'ผู้ให้กู้ที่ไม่ซ้ำกัน 0 ราย',
-   '1 Unique Lender': 'ผู้ให้กู้ที่ไม่ซ้ำกัน 1 ราย',
-   '2 Unique Lenders': 'ผู้ให้กู้ที่ไม่ซ้ำกัน 2 ราย',
-   '3 Unique Lenders': 'ผู้ให้กู้ที่ไม่ซ้ำกัน 3 ราย',
-   '4 Unique Lenders': 'ผู้ให้กู้ที่ไม่ซ้ำกัน 4 ราย',
-   '5 Unique Lenders': 'ผู้ให้กู้ที่ไม่ซ้ำกัน 5 ราย',
-   '6 Unique Lenders': 'ผู้ให้กู้ที่ไม่ซ้ำกัน 6 ราย',
-   '7 Unique Lenders': 'ผู้ให้กู้ที่ไม่ซ้ำกัน 7 ราย',
-   '8 Unique Lenders': 'ผู้ให้กู้ที่ไม่ซ้ำกัน 8 ราย',
-   '9 Unique Lenders': 'ผู้ให้กู้ที่ไม่ซ้ำกัน 9 ราย',
-   '10 Unique Lenders': 'ผู้ให้กู้ที่ไม่ซ้ำกัน 10 ราย',
+   '0 Unique Moo-lenders': 'Moo-lender ที่ไม่ซ้ำกัน 0 ราย',
+   '1 Unique Moo-lender': 'Moo-lender ที่ไม่ซ้ำกัน 1 ราย',
+   '2 Unique Moo-lenders': 'Moo-lender ที่ไม่ซ้ำกัน 2 ราย',
+   '3 Unique Moo-lenders': 'Moo-lender ที่ไม่ซ้ำกัน 3 ราย',
+   '4 Unique Moo-lenders': 'Moo-lender ที่ไม่ซ้ำกัน 4 ราย',
+   '5 Unique Moo-lenders': 'Moo-lender ที่ไม่ซ้ำกัน 5 ราย',
+   '6 Unique Moo-lenders': 'Moo-lender ที่ไม่ซ้ำกัน 6 ราย',
+   '7 Unique Moo-lenders': 'Moo-lender ที่ไม่ซ้ำกัน 7 ราย',
+   '8 Unique Moo-lenders': 'Moo-lender ที่ไม่ซ้ำกัน 8 ราย',
+   '9 Unique Moo-lenders': 'Moo-lender ที่ไม่ซ้ำกัน 9 ราย',
+   '10 Unique Moo-lenders': 'Moo-lender ที่ไม่ซ้ำกัน 10 ราย',
    'Pay Loans': 'ชำระเงินกู้',
 
    // src/views/dashboard/components/LoanRequestModal.tsx
@@ -721,27 +722,27 @@ export const thaiCoverageB: Record<string, string> = {
       'USDC คือดอลลาร์ดิจิทัลที่แพลตฟอร์มแลกเปลี่ยนคริปโตรายใหญ่รองรับ ทำให้การยืมและให้กู้ข้ามประเทศง่ายขึ้น',
    'Submit request': 'ส่งคำขอ',
    'Public borrower profile': 'โปรไฟล์ผู้ยืมแบบสาธารณะ',
-   'This is the identity lenders see beside your request.': 'นี่คือข้อมูลตัวตนที่ผู้ให้กู้จะเห็นข้างคำขอของคุณ',
+   'This is the identity moo-lenders see beside your request.': 'นี่คือข้อมูลตัวตนที่ Moo-lender จะเห็นข้างคำขอของคุณ',
    'Profile image': 'รูปโปรไฟล์',
    'Tap to choose a photo or avatar.': 'แตะเพื่อเลือกรูปภาพหรืออวตาร',
-   'Name shown to lenders': 'ชื่อที่ผู้ให้กู้จะเห็น',
+   'Name shown to moo-lenders': 'ชื่อที่ Moo-lender จะเห็น',
    'e.g. Maya, Jay, or a friendly nickname': 'เช่น Maya, Jay หรือชื่อเล่นที่เป็นกันเอง',
    'Use a first name or friendly nickname.': 'ใช้ชื่อจริงหรือชื่อเล่นที่เป็นกันเอง',
    'How would you describe your work?': 'คุณจะอธิบายงานของคุณอย่างไร?',
    'Describe your situation': 'อธิบายสถานการณ์ของคุณ',
-   'Tell lenders how you earn, in your own words.': 'บอกผู้ให้กู้ด้วยคำพูดของคุณเองว่าคุณหารายได้อย่างไร',
+   'Tell moo-lenders how you earn, in your own words.': 'บอก Moo-lender ด้วยคำพูดของคุณเองว่าคุณหารายได้อย่างไร',
    'e.g. I run a small online shop and income changes month to month': 'เช่น ฉันมีร้านค้าออนไลน์เล็ก ๆ และรายได้เปลี่ยนไปในแต่ละเดือน',
    'What do you do for work?': 'คุณทำงานอะไร?',
    'Be specific, for example teacher or market vendor.': 'ระบุให้ชัดเจน เช่น ครู หรือแม่ค้าในตลาด',
    'e.g. teacher': 'เช่น ครู',
    'Still needed: how you describe your work.': 'ยังขาด: คำอธิบายงานของคุณ',
    'Checking…': 'กำลังตรวจสอบ…',
-   'Helps lenders see that repayment timing makes sense.': 'ช่วยให้ผู้ให้กู้เห็นว่ากำหนดการชำระคืนสมเหตุสมผล',
+   'Helps moo-lenders see that repayment timing makes sense.': 'ช่วยให้ Moo-lender เห็นว่ากำหนดการชำระคืนสมเหตุสมผล',
    'When do you usually get paid?': 'ปกติคุณได้รับเงินเมื่อไร?',
    'What is your approximate monthly income?': 'รายได้ต่อเดือนของคุณประมาณเท่าไร?',
-   'Helps lenders gauge repayment capacity.': 'ช่วยให้ผู้ให้กู้ประเมินความสามารถในการชำระคืน',
+   'Helps moo-lenders gauge repayment capacity.': 'ช่วยให้ Moo-lender ประเมินความสามารถในการชำระคืน',
    'What do your recurring expenses cost per month?': 'ค่าใช้จ่ายประจำของคุณต่อเดือนประมาณเท่าไร?',
-   'Helps lenders understand your financial commitments.': 'ช่วยให้ผู้ให้กู้เข้าใจภาระทางการเงินของคุณ',
+   'Helps moo-lenders understand your financial commitments.': 'ช่วยให้ Moo-lender เข้าใจภาระทางการเงินของคุณ',
    'Any other income sources?': 'มีแหล่งรายได้อื่นไหม?',
    'For example tutoring, delivery, or market trading.': 'เช่น สอนพิเศษ ส่งของ หรือค้าขายในตลาด',
    No: 'ไม่มี',
@@ -784,6 +785,7 @@ export const thaiCoverageB: Record<string, string> = {
    'Referral code incorrect. If you have issues, contact support.': 'โค้ดแนะนำไม่ถูกต้อง หากพบปัญหา โปรดติดต่อฝ่ายช่วยเหลือ',
    "We couldn't check that code. Please try again.": 'เราตรวจสอบโค้ดนั้นไม่ได้ โปรดลองอีกครั้ง',
    'Failed to save profile name.': 'บันทึกชื่อโปรไฟล์ไม่สำเร็จ',
+   'Failed to save your name.': 'บันทึกชื่อของคุณไม่สำเร็จ',
    'Failed to update profile image.': 'อัปเดตรูปโปรไฟล์ไม่สำเร็จ',
    'Enter how much you want to borrow.': 'ระบุจำนวนเงินที่คุณต้องการยืม',
    "That's above your current limit of $15.": 'จำนวนนี้เกินวงเงินปัจจุบันของคุณที่ $15',
@@ -798,14 +800,14 @@ export const thaiCoverageB: Record<string, string> = {
    'Enter the amount you will repay.': 'ระบุจำนวนเงินที่คุณจะชำระคืน',
    'Repayment must be at least $1 more than you borrow.': 'ยอดชำระคืนต้องมากกว่าจำนวนที่ยืมอย่างน้อย $1',
    'Choose when you will repay.': 'เลือกวันที่คุณจะชำระคืน',
-   'Please add a reason so lenders know what the loan is for.': 'โปรดเพิ่มเหตุผลเพื่อให้ผู้ให้กู้รู้ว่าคุณจะนำเงินกู้ไปใช้ทำอะไร',
-   'Please write your reason in English so lenders can read it.': 'โปรดเขียนเหตุผลเป็นภาษาอังกฤษเพื่อให้ผู้ให้กู้อ่านได้',
+   'Please add a reason so moo-lenders know what the loan is for.': 'โปรดเพิ่มเหตุผลเพื่อให้ Moo-lender รู้ว่าคุณจะนำเงินกู้ไปใช้ทำอะไร',
+   'Please write your reason in English so moo-lenders can read it.': 'โปรดเขียนเหตุผลเป็นภาษาอังกฤษเพื่อให้ Moo-lender อ่านได้',
    'Write this in English': 'เขียนเป็นภาษาอังกฤษ',
-   'Lenders reading your profile are in the US and Europe — please describe your situation in English.':
-      'ผู้ให้กู้ที่อ่านโปรไฟล์ของคุณอยู่ในสหรัฐฯ และยุโรป — โปรดอธิบายสถานการณ์ของคุณเป็นภาษาอังกฤษ',
+   'Moo-lenders reading your profile are in the US and Europe — please describe your situation in English.':
+      'Moo-lender ที่อ่านโปรไฟล์ของคุณอยู่ในสหรัฐฯ และยุโรป — โปรดอธิบายสถานการณ์ของคุณเป็นภาษาอังกฤษ',
    'Add more to your info': 'เพิ่มรายละเอียดข้อมูลของคุณ',
-   'Some of your info looks too short for lenders to understand — tap again to continue anyway.':
-      'ข้อมูลบางส่วนของคุณสั้นเกินไปจนผู้ให้กู้อาจไม่เข้าใจ — แตะอีกครั้งหากต้องการดำเนินการต่อ',
+   'Some of your info looks too short for moo-lenders to understand — tap again to continue anyway.':
+      'ข้อมูลบางส่วนของคุณสั้นเกินไปจน Moo-lender อาจไม่เข้าใจ — แตะอีกครั้งหากต้องการดำเนินการต่อ',
    "Couldn't save — please try again.": 'บันทึกไม่ได้ — โปรดลองอีกครั้ง',
    'Swipe right to close loan form': 'ปัดไปทางขวาเพื่อปิดแบบฟอร์มขอเงินกู้',
    'Referral Boost': 'สิทธิ์เพิ่มวงเงินจากโค้ดแนะนำ',
@@ -814,7 +816,7 @@ export const thaiCoverageB: Record<string, string> = {
    'How can we reach you': 'เราจะติดต่อคุณได้ทางไหน',
    "Let's connect": 'มาทำความรู้จักกัน',
    'Schedule a video call': 'นัดวิดีโอคอล',
-   'How lenders see you': 'ผู้ให้กู้เห็นคุณอย่างไร',
+   'How moo-lenders see you': 'Moo-lender เห็นคุณอย่างไร',
    'Add practical context without sharing private details.': 'เพิ่มข้อมูลที่เป็นประโยชน์โดยไม่ต้องเปิดเผยรายละเอียดส่วนตัว',
    'Set your loan terms': 'กำหนดเงื่อนไขเงินกู้ของคุณ',
    'Explain setting loan terms': 'คำอธิบายการกำหนดเงื่อนไขเงินกู้',
@@ -835,8 +837,8 @@ export const thaiCoverageB: Record<string, string> = {
    "we'd love to tell you about!": 'ที่อยากเล่าให้คุณฟังด้วย!',
    'So we can help you more 💜': 'เพื่อให้เราช่วยคุณได้มากขึ้น 💜',
    'One quick step to request a loan': 'อีกหนึ่งขั้นตอนสั้น ๆ ก่อนขอเงินกู้',
-   'Complete a one-time verification to start building trust with lenders.':
-      'ยืนยันตัวตนครั้งเดียวเพื่อเริ่มสร้างความน่าเชื่อถือกับผู้ให้กู้',
+   'Complete a one-time verification to start building trust with moo-lenders.':
+      'ยืนยันตัวตนครั้งเดียวเพื่อเริ่มสร้างความน่าเชื่อถือกับ Moo-lender',
    'Borrow Amount': 'จำนวนเงินที่ยืม',
    'Current Limit: $': 'วงเงินปัจจุบัน: $',
    'Explain current borrow limit': 'คำอธิบายวงเงินยืมปัจจุบัน',
@@ -847,7 +849,7 @@ export const thaiCoverageB: Record<string, string> = {
    'Must be more than the borrowed amount': 'ต้องมากกว่าจำนวนที่ยืม',
    'You’ll repay': 'คุณจะชำระคืน',
    '— that’s': '— ในจำนวนนี้มี',
-   'to your lender.': 'เป็นผลตอบแทนให้ผู้ให้กู้',
+   'to your moo-lender.': 'เป็นผลตอบแทนให้ Moo-lender',
    'Set Repayment Date': 'กำหนดวันชำระคืน',
    'Selected repayment date': 'วันชำระคืนที่เลือก',
    'Open repayment date calendar': 'เปิดปฏิทินวันชำระคืน',
@@ -856,12 +858,12 @@ export const thaiCoverageB: Record<string, string> = {
    '2 months': '2 เดือน',
    'Reason for Borrowing': 'เหตุผลในการยืม',
    'Why do you need this loan? Write in English.': 'ทำไมคุณจึงต้องการเงินกู้นี้? โปรดเขียนเป็นภาษาอังกฤษ',
-   'Add a bit more detail so lenders understand the need.': 'เพิ่มรายละเอียดอีกนิดเพื่อให้ผู้ให้กู้เข้าใจความจำเป็น',
-   'Short and specific helps lenders trust it.': 'สั้นและเจาะจงช่วยให้ผู้ให้กู้เชื่อถือได้มากขึ้น',
+   'Add a bit more detail so moo-lenders understand the need.': 'เพิ่มรายละเอียดอีกนิดเพื่อให้ Moo-lender เข้าใจความจำเป็น',
+   'Short and specific helps moo-lenders trust it.': 'สั้นและเจาะจงช่วยให้ Moo-lender เชื่อถือได้มากขึ้น',
    'Checking your reason…': 'กำลังตรวจสอบเหตุผลของคุณ…',
    'Looks good': 'ดูดีแล้ว',
-   'At least 40 characters, in English — short and specific helps lenders trust it.':
-      'อย่างน้อย 40 ตัวอักษรเป็นภาษาอังกฤษ — สั้นและเจาะจงช่วยให้ผู้ให้กู้เชื่อถือได้มากขึ้น',
+   'At least 40 characters, in English — short and specific helps moo-lenders trust it.':
+      'อย่างน้อย 40 ตัวอักษรเป็นภาษาอังกฤษ — สั้นและเจาะจงช่วยให้ Moo-lender เชื่อถือได้มากขึ้น',
    'Ask Mecha to help me word this': 'ให้ Mecha ช่วยเรียบเรียงข้อความนี้',
    'Ask Mecha to write this in English': 'ให้ Mecha ช่วยเขียนเป็นภาษาอังกฤษ',
    'Your verification is still being checked — you can send this request once it clears.':
@@ -879,8 +881,8 @@ export const thaiCoverageB: Record<string, string> = {
 
    // src/views/dashboard/components/LocationPrimingModal.tsx
    'One last step': 'อีกขั้นตอนสุดท้าย',
-   "We check your location to keep lending safe and catch fraud. It's only used to verify your request — never shared with lenders.":
-      'เราตรวจสอบตำแหน่งของคุณเพื่อให้การกู้ยืมปลอดภัยและป้องกันการฉ้อโกง ข้อมูลนี้ใช้เพื่อยืนยันคำขอของคุณเท่านั้น — ไม่มีการแชร์ให้ผู้ให้กู้',
+   "We check your location to keep lending safe and catch fraud. It's only used to verify your request — never shared with moo-lenders.":
+      'เราตรวจสอบตำแหน่งของคุณเพื่อให้การกู้ยืมปลอดภัยและป้องกันการฉ้อโกง ข้อมูลนี้ใช้เพื่อยืนยันคำขอของคุณเท่านั้น — ไม่มีการแชร์ให้ Moo-lender',
    'Share location': 'แชร์ตำแหน่ง',
 
    // src/views/dashboard/components/MilestoneSheets.tsx
@@ -905,15 +907,16 @@ export const thaiCoverageB: Record<string, string> = {
    'These become available after earlier steps are complete.': 'หมุดหมายเหล่านี้จะเปิดให้ทำหลังจากทำขั้นตอนก่อนหน้าสำเร็จ',
 
    // src/views/dashboard/components/ReputationMilestones.tsx
-   'Milestones show what to do next to build trust with lenders.': 'หมุดหมายบอกว่าคุณควรทำอะไรต่อไปเพื่อสร้างความน่าเชื่อถือกับผู้ให้กู้',
+   'Milestones show what to do next to build trust with moo-lenders.':
+      'หมุดหมายบอกว่าคุณควรทำอะไรต่อไปเพื่อสร้างความน่าเชื่อถือกับ Moo-lender',
    'How milestones work': 'หมุดหมายทำงานอย่างไร',
 
    // src/views/dashboard/components/SuccessModal.tsx
    'Loan request submitted': 'ส่งคำขอเงินกู้แล้ว',
-   'Your loan request is now live. Lenders can review it and fund your request.':
-      'คำขอเงินกู้ของคุณแสดงบนกระดานแล้ว ผู้ให้กู้สามารถตรวจดูและปล่อยกู้ให้คำขอของคุณได้',
-   'Join the Moodeng borrower group on Facebook or Telegram so we can introduce you to great lenders.':
-      'เข้าร่วมกลุ่มผู้ยืมของ Moodeng บน Facebook หรือ Telegram เพื่อให้เราแนะนำคุณให้รู้จักกับผู้ให้กู้ดี ๆ',
+   'Your loan request is now live. Moo-lenders can review it and fund your request.':
+      'คำขอเงินกู้ของคุณแสดงบนกระดานแล้ว Moo-lender สามารถตรวจดูและปล่อยกู้ให้คำขอของคุณได้',
+   'Join the Moodeng borrower group on Facebook or Telegram so we can introduce you to great moo-lenders.':
+      'เข้าร่วมกลุ่มผู้ยืมของ Moodeng บน Facebook หรือ Telegram เพื่อให้เราแนะนำคุณให้รู้จักกับ Moo-lender ดี ๆ',
    'Join on Telegram': 'เข้าร่วมทาง Telegram',
    'Join on Facebook': 'เข้าร่วมทาง Facebook',
 
@@ -969,14 +972,14 @@ export const thaiCoverageB: Record<string, string> = {
    '3rd-loan borrower bonus': 'โบนัสผู้ยืมครั้งที่ 3',
    '4th+ loan borrower bonus': 'โบนัสผู้ยืมครั้งที่ 4 ขึ้นไป',
    'Timing and borrower context': 'ช่วงเวลาและข้อมูลของผู้ยืม',
-   'Lender reward': 'รางวัลผู้ให้กู้',
+   'Moo-lender reward': 'รางวัล Moo-lender',
    'IOU Points': 'แต้ม IOU',
    'for funding, plus': 'จากการปล่อยกู้ บวกอีก',
    'Unknown user': 'ผู้ใช้ที่ไม่ทราบชื่อ',
    'Thank You!': 'ขอบคุณ!',
    'Unknown Reason': 'ไม่ระบุเหตุผล',
    'Link copied': 'คัดลอกลิงก์แล้ว',
-   'Send it to a lender so they can fund this request.': 'ส่งลิงก์ให้ผู้ให้กู้เพื่อให้ปล่อยกู้ให้คำขอนี้',
+   'Send it to a moo-lender so they can fund this request.': 'ส่งลิงก์ให้ Moo-lender เพื่อให้ปล่อยกู้ให้คำขอนี้',
    'Could not copy link': 'คัดลอกลิงก์ไม่ได้',
    'Sending your help…': 'กำลังส่งความช่วยเหลือ…',
    'Recording your funding — hang tight.': 'กำลังบันทึกการปล่อยกู้ของคุณ — รอสักครู่',
@@ -1136,8 +1139,8 @@ export const thaiCoverageB: Record<string, string> = {
    'What is Moodeng Credit?': 'Moodeng Credit คืออะไร?',
    'Small USDC loans that build your credit': 'เงินกู้ USDC จำนวนน้อยที่ช่วยสร้างเครดิตของคุณ',
    'What is Moodeng Credit and how does it work?': 'Moodeng Credit คืออะไร และทำงานอย่างไร?',
-   'Moodeng Credit lets you request short-term loans in USDC while earning Pandesal points linked to your wallet. You post a request, a lender funds it directly to your wallet, and you repay on or before the date you set. Every on-time repayment earns Pandesal points, and repaying a loan at your full limit on time unlocks a higher credit limit — so you start small and grow as you prove reliable. Your reputation is tied to your wallet, so it travels with you rather than being locked inside one app.':
-      'Moodeng Credit ให้คุณขอเงินกู้ระยะสั้นเป็น USDC พร้อมสะสมแต้ม Pandesal ที่ผูกกับกระเป๋าเงินของคุณ คุณโพสต์คำขอ ผู้ให้กู้ปล่อยกู้เข้ากระเป๋าเงินของคุณโดยตรง แล้วคุณชำระคืนภายในวันที่คุณกำหนดหรือก่อนหน้านั้น การชำระคืนตรงเวลาทุกครั้งจะได้รับแต้ม Pandesal และการชำระคืนเงินกู้เต็มวงเงินตรงเวลาจะปลดล็อกวงเงินที่สูงขึ้น คุณจึงเริ่มจากจำนวนน้อยแล้วค่อย ๆ เติบโตเมื่อพิสูจน์ได้ว่าเชื่อถือได้ ความน่าเชื่อถือของคุณผูกกับกระเป๋าเงิน จึงติดตัวคุณไปทุกที่ ไม่ได้ถูกล็อกไว้ในแอปใดแอปหนึ่ง',
+   'Moodeng Credit lets you request short-term loans in USDC while earning Pandesal points linked to your wallet. You post a request, a moo-lender funds it directly to your wallet, and you repay on or before the date you set. Every on-time repayment earns Pandesal points, and repaying a loan at your full limit on time unlocks a higher credit limit — so you start small and grow as you prove reliable. Your reputation is tied to your wallet, so it travels with you rather than being locked inside one app.':
+      'Moodeng Credit ให้คุณขอเงินกู้ระยะสั้นเป็น USDC พร้อมสะสมแต้ม Pandesal ที่ผูกกับกระเป๋าเงินของคุณ คุณโพสต์คำขอ Moo-lender ปล่อยกู้เข้ากระเป๋าเงินของคุณโดยตรง แล้วคุณชำระคืนภายในวันที่คุณกำหนดหรือก่อนหน้านั้น การชำระคืนตรงเวลาทุกครั้งจะได้รับแต้ม Pandesal และการชำระคืนเงินกู้เต็มวงเงินตรงเวลาจะปลดล็อกวงเงินที่สูงขึ้น คุณจึงเริ่มจากจำนวนน้อยแล้วค่อย ๆ เติบโตเมื่อพิสูจน์ได้ว่าเชื่อถือได้ ความน่าเชื่อถือของคุณผูกกับกระเป๋าเงิน จึงติดตัวคุณไปทุกที่ ไม่ได้ถูกล็อกไว้ในแอปใดแอปหนึ่ง',
    'Request your first loan': 'ขอเงินกู้ครั้งแรกของคุณ',
    'Account → wallet → verify → request': 'บัญชี → กระเป๋าเงิน → ยืนยันตัวตน → ส่งคำขอ',
    'How do I request my first loan?': 'ฉันจะขอเงินกู้ครั้งแรกได้อย่างไร?',
@@ -1155,13 +1158,13 @@ export const thaiCoverageB: Record<string, string> = {
    'Does Moodeng charge fees?': 'Moodeng เก็บค่าธรรมเนียมไหม?',
    'No platform fees, no gas on Base': 'ไม่มีค่าธรรมเนียมแพลตฟอร์ม ไม่มีค่า gas บน Base',
    'Does Moodeng charge any fees?': 'Moodeng เก็บค่าธรรมเนียมใด ๆ หรือไม่?',
-   'No. Moodeng is free to use — no platform fees on borrowing or lending, no subscriptions, no setup costs. 100% of what a lender funds reaches you, and 100% of your repayment reaches the lender. Network fees (gas) are also zero when you use your Instant Wallet or a Base Account on Base. The only cost is the interest rate the borrower offers, and that goes entirely to the lender, not to us.':
-      'ไม่เก็บ Moodeng ใช้งานได้ฟรี — ไม่มีค่าธรรมเนียมแพลตฟอร์มทั้งการยืมและการให้กู้ ไม่มีค่าสมาชิก และไม่มีค่าธรรมเนียมแรกเข้า เงินที่ผู้ให้กู้ปล่อยกู้ถึงมือคุณครบ 100% และเงินที่คุณชำระคืนก็ถึงผู้ให้กู้ครบ 100% ค่าธรรมเนียมเครือข่าย (ค่า gas) ก็เป็นศูนย์เช่นกันเมื่อคุณใช้ Instant Wallet หรือ Base Account บน Base ค่าใช้จ่ายเดียวคืออัตราดอกเบี้ยที่ผู้ยืมเสนอ ซึ่งตกเป็นของผู้ให้กู้ทั้งหมด ไม่ใช่ของเรา',
+   'No. Moodeng is free to use — no platform fees on borrowing or lending, no subscriptions, no setup costs. 100% of what a moo-lender funds reaches you, and 100% of your repayment reaches the moo-lender. Network fees (gas) are also zero when you use your Instant Wallet or a Base Account on Base. The only cost is the interest rate the borrower offers, and that goes entirely to the moo-lender, not to us.':
+      'ไม่เก็บ Moodeng ใช้งานได้ฟรี — ไม่มีค่าธรรมเนียมแพลตฟอร์มทั้งการยืมและการให้กู้ ไม่มีค่าสมาชิก และไม่มีค่าธรรมเนียมแรกเข้า เงินที่ Moo-lender ปล่อยกู้ถึงมือคุณครบ 100% และเงินที่คุณชำระคืนก็ถึง Moo-lender ครบ 100% ค่าธรรมเนียมเครือข่าย (ค่า gas) ก็เป็นศูนย์เช่นกันเมื่อคุณใช้ Instant Wallet หรือ Base Account บน Base ค่าใช้จ่ายเดียวคืออัตราดอกเบี้ยที่ผู้ยืมเสนอ ซึ่งตกเป็นของ Moo-lender ทั้งหมด ไม่ใช่ของเรา',
    'Can I get a small loan?': 'ขอเงินกู้จำนวนน้อยได้ไหม?',
    'Yes — this is built for small loans': 'ได้ — เราสร้างมาเพื่อเงินกู้จำนวนน้อยโดยเฉพาะ',
    'Can I get a small loan with Moodeng?': 'ฉันขอเงินกู้จำนวนน้อยกับ Moodeng ได้ไหม?',
-   'Yes — small loans are exactly what Moodeng is for. New borrowers start at a $15 limit, with no minimum amount, no subscription, and no fees. You request what you need up to your current limit, set the date and interest, and lenders decide whether to fund you. Each full-limit loan you repay on time grows your limit one step, from $15 up to a $140 maximum, so you can start small and grow into larger loans only when you are ready.':
-      'ได้ — Moodeng สร้างมาเพื่อเงินกู้จำนวนน้อยโดยเฉพาะ ผู้ยืมใหม่เริ่มต้นที่วงเงิน $15 โดยไม่มีจำนวนขั้นต่ำ ไม่มีค่าสมาชิก และไม่มีค่าธรรมเนียม คุณขอเท่าที่ต้องการได้ไม่เกินวงเงินปัจจุบัน กำหนดวันชำระและดอกเบี้ยเอง แล้วผู้ให้กู้จะตัดสินใจว่าจะปล่อยกู้ให้คุณหรือไม่ เงินกู้เต็มวงเงินแต่ละครั้งที่คุณชำระคืนตรงเวลาจะเพิ่มวงเงินของคุณหนึ่งขั้น จาก $15 จนถึงสูงสุด $140 คุณจึงเริ่มจากจำนวนน้อย แล้วค่อยขยับไปสู่เงินกู้ที่มากขึ้นเมื่อพร้อมเท่านั้น',
+   'Yes — small loans are exactly what Moodeng is for. New borrowers start at a $15 limit, with no minimum amount, no subscription, and no fees. You request what you need up to your current limit, set the date and interest, and moo-lenders decide whether to fund you. Each full-limit loan you repay on time grows your limit one step, from $15 up to a $140 maximum, so you can start small and grow into larger loans only when you are ready.':
+      'ได้ — Moodeng สร้างมาเพื่อเงินกู้จำนวนน้อยโดยเฉพาะ ผู้ยืมใหม่เริ่มต้นที่วงเงิน $15 โดยไม่มีจำนวนขั้นต่ำ ไม่มีค่าสมาชิก และไม่มีค่าธรรมเนียม คุณขอเท่าที่ต้องการได้ไม่เกินวงเงินปัจจุบัน กำหนดวันชำระและดอกเบี้ยเอง แล้ว Moo-lender จะตัดสินใจว่าจะปล่อยกู้ให้คุณหรือไม่ เงินกู้เต็มวงเงินแต่ละครั้งที่คุณชำระคืนตรงเวลาจะเพิ่มวงเงินของคุณหนึ่งขั้น จาก $15 จนถึงสูงสุด $140 คุณจึงเริ่มจากจำนวนน้อย แล้วค่อยขยับไปสู่เงินกู้ที่มากขึ้นเมื่อพร้อมเท่านั้น',
    'The quick 3-minute check': 'การตรวจสอบสั้น ๆ 3 นาที',
    'How do I verify my ID?': 'ฉันจะยืนยันตัวตนด้วยบัตรประชาชนได้อย่างไร?',
    'In the app, tap "Verify Yourself".': 'ในแอป แตะ "ยืนยันตัวตน"',
@@ -1187,8 +1190,8 @@ export const thaiCoverageB: Record<string, string> = {
       'การสมัครอย่างเดียวยังไม่พอ — การยืนยันตัวตนคือขั้นตอนสุดท้ายก่อนที่คุณจะส่งคำขอได้',
    'Your default wallet — no app, no seed phrase': 'กระเป๋าเงินเริ่มต้นของคุณ — ไม่ต้องใช้แอป ไม่มี seed phrase',
    'What is the Instant Wallet and is it safe?': 'Instant Wallet คืออะไร และปลอดภัยไหม?',
-   "The Instant Wallet is Moodeng's default wallet for borrowers: a real, self-custodial wallet set up for you straight from your Moodeng login — no app to download and no seed phrase to write down. Borrowers receive USDC loans in it. (Lenders: we recommend a Base Account, but you can use an Instant Wallet too.) It earns Pandesal points exactly like any other wallet, it works even when Base Account sign-in is blocked (like the PLDT / Smart block), and it is gasless — Moodeng covers the network fees, so you don't need ETH to repay or cash out. Prefer a Base Account? You can connect one instead.":
-      'Instant Wallet คือกระเป๋าเงินเริ่มต้นของ Moodeng สำหรับผู้ยืม: กระเป๋าเงินแบบดูแลสินทรัพย์ด้วยตัวเอง (self-custodial) ของจริง ที่ตั้งค่าให้คุณจากการเข้าสู่ระบบ Moodeng โดยตรง — ไม่ต้องดาวน์โหลดแอป และไม่ต้องจด seed phrase ผู้ยืมรับเงินกู้ USDC เข้ากระเป๋านี้ (สำหรับผู้ให้กู้: เราแนะนำ Base Account แต่คุณก็ใช้ Instant Wallet ได้เช่นกัน) กระเป๋านี้ได้รับแต้ม Pandesal เหมือนกระเป๋าเงินอื่นทุกประการ ใช้งานได้แม้การเข้าสู่ระบบ Base Account ถูกบล็อก (เช่น กรณีที่ PLDT / Smart บล็อก) และไม่มีค่า gas — Moodeng ออกค่าธรรมเนียมเครือข่ายให้ คุณจึงไม่ต้องมี ETH เพื่อชำระคืนหรือถอนเป็นเงินสด อยากใช้ Base Account มากกว่าใช่ไหม? คุณเชื่อมต่อแทนได้',
+   "The Instant Wallet is Moodeng's default wallet for borrowers: a real, self-custodial wallet set up for you straight from your Moodeng login — no app to download and no seed phrase to write down. Borrowers receive USDC loans in it. (Moo-lenders: we recommend a Base Account, but you can use an Instant Wallet too.) It earns Pandesal points exactly like any other wallet, it works even when Base Account sign-in is blocked (like the PLDT / Smart block), and it is gasless — Moodeng covers the network fees, so you don't need ETH to repay or cash out. Prefer a Base Account? You can connect one instead.":
+      'Instant Wallet คือกระเป๋าเงินเริ่มต้นของ Moodeng สำหรับผู้ยืม: กระเป๋าเงินแบบดูแลสินทรัพย์ด้วยตัวเอง (self-custodial) ของจริง ที่ตั้งค่าให้คุณจากการเข้าสู่ระบบ Moodeng โดยตรง — ไม่ต้องดาวน์โหลดแอป และไม่ต้องจด seed phrase ผู้ยืมรับเงินกู้ USDC เข้ากระเป๋านี้ (สำหรับ Moo-lender: เราแนะนำ Base Account แต่คุณก็ใช้ Instant Wallet ได้เช่นกัน) กระเป๋านี้ได้รับแต้ม Pandesal เหมือนกระเป๋าเงินอื่นทุกประการ ใช้งานได้แม้การเข้าสู่ระบบ Base Account ถูกบล็อก (เช่น กรณีที่ PLDT / Smart บล็อก) และไม่มีค่า gas — Moodeng ออกค่าธรรมเนียมเครือข่ายให้ คุณจึงไม่ต้องมี ETH เพื่อชำระคืนหรือถอนเป็นเงินสด อยากใช้ Base Account มากกว่าใช่ไหม? คุณเชื่อมต่อแทนได้',
    'You fully own it. You can export its private key anytime from Account → Account Settings → Wallet → "Export wallet key" and import it into MetaMask, Trust, or any wallet — then you\'re free to leave Moodeng entirely.':
       'คุณเป็นเจ้าของกระเป๋านี้อย่างสมบูรณ์ คุณส่งออกคีย์ส่วนตัว (private key) ได้ทุกเมื่อจาก บัญชี → การตั้งค่าบัญชี → กระเป๋าเงิน → "ส่งออกคีย์กระเป๋าเงิน" แล้วนำเข้าไปใน MetaMask หรือ Trust หรือกระเป๋าเงินอื่นใดก็ได้ — จากนั้นคุณจะเลิกใช้ Moodeng ไปเลยก็ได้',
    'Coinbase app vs Base Account': 'แอป Coinbase กับ Base Account',
@@ -1284,8 +1287,8 @@ export const thaiCoverageB: Record<string, string> = {
 
    // src/views/account/EditBioInfoModal.tsx
    'Change Bio Info': 'แก้ไขข้อมูลส่วนตัว',
-   'Update the details lenders see about your work, income, and what you typically need help with.':
-      'อัปเดตรายละเอียดที่ผู้ให้กู้เห็นเกี่ยวกับงาน รายได้ และสิ่งที่คุณมักต้องการความช่วยเหลือ',
+   'Update the details moo-lenders see about your work, income, and what you typically need help with.':
+      'อัปเดตรายละเอียดที่ Moo-lender เห็นเกี่ยวกับงาน รายได้ และสิ่งที่คุณมักต้องการความช่วยเหลือ',
 
    // src/views/account/ExportInstantWalletKey.tsx
    'Export wallet key': 'ส่งออกคีย์กระเป๋าเงิน',
@@ -1340,15 +1343,15 @@ export const thaiCoverageB: Record<string, string> = {
 
    // src/views/borrowerBenefits/sections/FastGlobalAccessSection.tsx
    'Why borrowing feels different': 'ทำไมการยืมเงินที่นี่ถึงต่างออกไป',
-   'Direct lender-to-borrower': 'จากผู้ให้กู้ถึงผู้ยืมโดยตรง',
-   'A lender funds your request directly. Moodeng helps show the terms and record the repayment history without hiding the process behind a middle-man.':
-      'ผู้ให้กู้ปล่อยกู้ให้คำขอของคุณโดยตรง Moodeng ช่วยแสดงเงื่อนไขและบันทึกประวัติการชำระคืน โดยไม่ซ่อนขั้นตอนไว้หลังคนกลาง',
+   'Direct moo-lender-to-borrower': 'จาก Moo-lender ถึงผู้ยืมโดยตรง',
+   'A moo-lender funds your request directly. Moodeng helps show the terms and record the repayment history without hiding the process behind a middle-man.':
+      'Moo-lender ปล่อยกู้ให้คำขอของคุณโดยตรง Moodeng ช่วยแสดงเงื่อนไขและบันทึกประวัติการชำระคืน โดยไม่ซ่อนขั้นตอนไว้หลังคนกลาง',
    'Funded in your wallet': 'ปล่อยกู้เข้ากระเป๋าเงินของคุณ',
-   'When a lender funds your request, USDC moves through your digital wallet so the money and repayment record are easier to track.':
-      'เมื่อผู้ให้กู้ปล่อยกู้ตามคำขอของคุณ USDC จะเคลื่อนผ่านกระเป๋าเงินดิจิทัลของคุณ ทำให้ติดตามเงินและประวัติการชำระคืนได้ง่ายขึ้น',
+   'When a moo-lender funds your request, USDC moves through your digital wallet so the money and repayment record are easier to track.':
+      'เมื่อ Moo-lender ปล่อยกู้ตามคำขอของคุณ USDC จะเคลื่อนผ่านกระเป๋าเงินดิจิทัลของคุณ ทำให้ติดตามเงินและประวัติการชำระคืนได้ง่ายขึ้น',
    'Terms shown upfront': 'แสดงเงื่อนไขให้เห็นตั้งแต่แรก',
-   'You choose the request amount, repayment amount, due date, and reason before a lender decides whether to fund it.':
-      'คุณเป็นผู้กำหนดจำนวนเงินที่ขอ จำนวนที่ต้องชำระคืน วันครบกำหนด และเหตุผล ก่อนที่ผู้ให้กู้จะตัดสินใจว่าจะปล่อยกู้หรือไม่',
+   'You choose the request amount, repayment amount, due date, and reason before a moo-lender decides whether to fund it.':
+      'คุณเป็นผู้กำหนดจำนวนเงินที่ขอ จำนวนที่ต้องชำระคืน วันครบกำหนด และเหตุผล ก่อนที่ Moo-lender จะตัดสินใจว่าจะปล่อยกู้หรือไม่',
 
    // src/views/borrowerBenefits/sections/HeroSection.tsx
    'Microloans with USDC to build your credit': 'สินเชื่อรายย่อยด้วย USDC เพื่อสร้างเครดิตของคุณ',
@@ -1411,8 +1414,8 @@ export const thaiCoverageB: Record<string, string> = {
    'What are Pandesal points?': 'แต้ม Pandesal คืออะไร',
    'Your repayment reputation': 'ความน่าเชื่อถือด้านการชำระคืนของคุณ',
    'What are Pandesal points and how are they calculated?': 'แต้ม Pandesal คืออะไร และคำนวณอย่างไร',
-   'Your Pandesal points reflect how reliably you repay loans. They rise with on-time, in-full repayments and drop with late payments or defaults. Lenders use them to gauge risk when deciding whether to fund your requests. Because they are tied to your wallet, they travel with you — they are not locked inside one app.':
-      'แต้ม Pandesal ของคุณสะท้อนว่าคุณชำระคืนเงินกู้ได้น่าเชื่อถือแค่ไหน แต้มจะเพิ่มขึ้นเมื่อชำระคืนตรงเวลาและครบเต็มจำนวน และลดลงเมื่อชำระล่าช้าหรือผิดนัดชำระ ผู้ให้กู้ใช้แต้มนี้เพื่อประเมินความเสี่ยงเมื่อตัดสินใจว่าจะปล่อยกู้ตามคำขอของคุณหรือไม่ เนื่องจากแต้มนี้ผูกกับกระเป๋าเงินของคุณ จึงติดตัวคุณไปทุกที่ — ไม่ได้ถูกล็อกไว้ในแอปใดแอปหนึ่ง',
+   'Your Pandesal points reflect how reliably you repay loans. They rise with on-time, in-full repayments and drop with late payments or defaults. Moo-lenders use them to gauge risk when deciding whether to fund your requests. Because they are tied to your wallet, they travel with you — they are not locked inside one app.':
+      'แต้ม Pandesal ของคุณสะท้อนว่าคุณชำระคืนเงินกู้ได้น่าเชื่อถือแค่ไหน แต้มจะเพิ่มขึ้นเมื่อชำระคืนตรงเวลาและครบเต็มจำนวน และลดลงเมื่อชำระล่าช้าหรือผิดนัดชำระ Moo-lender ใช้แต้มนี้เพื่อประเมินความเสี่ยงเมื่อตัดสินใจว่าจะปล่อยกู้ตามคำขอของคุณหรือไม่ เนื่องจากแต้มนี้ผูกกับกระเป๋าเงินของคุณ จึงติดตัวคุณไปทุกที่ — ไม่ได้ถูกล็อกไว้ในแอปใดแอปหนึ่ง',
    'What is a Credit Level?': 'ระดับเครดิตคืออะไร',
    '$15 up to $140, step by step': '$15 ถึง $140 ทีละขั้น',
    'What is a Credit Level and how do I move up?': 'ระดับเครดิตคืออะไร และจะเลื่อนระดับได้อย่างไร',
@@ -1425,13 +1428,13 @@ export const thaiCoverageB: Record<string, string> = {
    'Credit-Building vs Trust-Building loans': 'Credit-Building Loan กับ Trust-Building Loan',
    'Which one raises your limit': 'แบบไหนที่เพิ่มวงเงินของคุณ',
    "What's the difference between Credit-Building and Trust-Building loans?": 'Credit-Building Loan กับ Trust-Building Loan ต่างกันอย่างไร',
-   'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with lenders, but it does not raise your Credit Level. Most borrowers use both — trust loans to keep activity healthy, credit loans to grow the limit.':
-      'มีเงินกู้อยู่สองแบบ Credit-Building Loan คือเงินกู้เต็มวงเงินปัจจุบันของคุณ — การชำระคืนตรงเวลาจะเพิ่มวงเงินและปลดล็อกระดับถัดไป ส่วน Trust-Building Loan คือเงินกู้จำนวนใดก็ได้ที่ต่ำกว่าวงเงินของคุณ ซึ่งยังคงช่วยสร้างประวัติการชำระคืนและความน่าเชื่อถือกับผู้ให้กู้ แต่ไม่ได้เพิ่มระดับเครดิตของคุณ ผู้ยืมส่วนใหญ่ใช้ทั้งสองแบบ — Trust-Building Loan เพื่อให้กิจกรรมของบัญชียังคงดีอยู่ และ Credit-Building Loan เพื่อเพิ่มวงเงิน',
+   'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with moo-lenders, but it does not raise your Credit Level. Most borrowers use both — trust loans to keep activity healthy, credit loans to grow the limit.':
+      'มีเงินกู้อยู่สองแบบ Credit-Building Loan คือเงินกู้เต็มวงเงินปัจจุบันของคุณ — การชำระคืนตรงเวลาจะเพิ่มวงเงินและปลดล็อกระดับถัดไป ส่วน Trust-Building Loan คือเงินกู้จำนวนใดก็ได้ที่ต่ำกว่าวงเงินของคุณ ซึ่งยังคงช่วยสร้างประวัติการชำระคืนและความน่าเชื่อถือกับ Moo-lender แต่ไม่ได้เพิ่มระดับเครดิตของคุณ ผู้ยืมส่วนใหญ่ใช้ทั้งสองแบบ — Trust-Building Loan เพื่อให้กิจกรรมของบัญชียังคงดีอยู่ และ Credit-Building Loan เพื่อเพิ่มวงเงิน',
    'How repayments affect your points': 'การชำระคืนส่งผลต่อแต้มของคุณอย่างไร',
    'On-time full = the most points': 'ชำระเต็มจำนวนตรงเวลา = แต้มมากที่สุด',
    'How do repayments affect my Pandesal points?': 'การชำระคืนส่งผลต่อแต้ม Pandesal ของฉันอย่างไร',
-   'Every repayment affects your Pandesal points, and small loans repaid cleanly are worth more than large loans repaid sloppily. On-time, full repayment earns the maximum 10 points. Partial repayments earn proportionally — 75% = 7, 50% = 5, 25% = 3. Any payment after the deadline earns 0 for that transaction. A default leaves a permanent mark on your public profile, visible to all future lenders.':
-      'การชำระคืนทุกครั้งส่งผลต่อแต้ม Pandesal ของคุณ และเงินกู้จำนวนน้อยที่ชำระคืนอย่างเรียบร้อยมีค่ามากกว่าเงินกู้จำนวนมากที่ชำระคืนไม่เรียบร้อย การชำระคืนเต็มจำนวนตรงเวลาจะได้แต้มสูงสุด 10 แต้ม การชำระคืนบางส่วนจะได้แต้มตามสัดส่วน — 75% = 7 แต้ม, 50% = 5 แต้ม, 25% = 3 แต้ม การชำระใด ๆ หลังกำหนดเวลาจะได้ 0 แต้มสำหรับรายการนั้น การผิดนัดชำระจะทิ้งรอยถาวรไว้บนโปรไฟล์สาธารณะของคุณ ซึ่งผู้ให้กู้ทุกคนในอนาคตจะมองเห็นได้',
+   'Every repayment affects your Pandesal points, and small loans repaid cleanly are worth more than large loans repaid sloppily. On-time, full repayment earns the maximum 10 points. Partial repayments earn proportionally — 75% = 7, 50% = 5, 25% = 3. Any payment after the deadline earns 0 for that transaction. A default leaves a permanent mark on your public profile, visible to all future moo-lenders.':
+      'การชำระคืนทุกครั้งส่งผลต่อแต้ม Pandesal ของคุณ และเงินกู้จำนวนน้อยที่ชำระคืนอย่างเรียบร้อยมีค่ามากกว่าเงินกู้จำนวนมากที่ชำระคืนไม่เรียบร้อย การชำระคืนเต็มจำนวนตรงเวลาจะได้แต้มสูงสุด 10 แต้ม การชำระคืนบางส่วนจะได้แต้มตามสัดส่วน — 75% = 7 แต้ม, 50% = 5 แต้ม, 25% = 3 แต้ม การชำระใด ๆ หลังกำหนดเวลาจะได้ 0 แต้มสำหรับรายการนั้น การผิดนัดชำระจะทิ้งรอยถาวรไว้บนโปรไฟล์สาธารณะของคุณ ซึ่ง Moo-lender ทุกคนในอนาคตจะมองเห็นได้',
    'Where do I put a referral code?': 'ฉันจะใส่โค้ดแนะนำเพื่อนได้ที่ไหน',
    '+$5 to your starting limit': '+$5 เข้าวงเงินเริ่มต้นของคุณ',
    'Where do I enter a referral code?': 'ฉันจะกรอกโค้ดแนะนำเพื่อนได้ที่ไหน',
@@ -1441,8 +1444,8 @@ export const thaiCoverageB: Record<string, string> = {
    'It says "write it in English"': '"write it in English" ขึ้นเตือน',
    'Why, and how to fix it': 'ทำไม และแก้ไขอย่างไร',
    'My loan reason says to write it in English — what should I do?': 'เหตุผลการขอกู้ของฉันบอกให้เขียนเป็นภาษาอังกฤษ — ฉันควรทำอย่างไร',
-   'Lenders on Moodeng are in the US and Europe, so a loan reason has to be in English — a request they can\'t read doesn\'t get funded. Tagalog, Taglish, and Bisaya are the usual cause; the form stops there until it\'s rewritten. A borrowed word inside an English sentence is fine ("buying gamot for my mother") — it\'s whole sentences in another language that stop the form. The same applies to "Describe your situation" in the bio step, though the job title itself can stay local ("sari-sari store owner", "jeepney driver").':
-      'ผู้ให้กู้บน Moodeng อยู่ในสหรัฐฯ และยุโรป ดังนั้นเหตุผลการขอกู้ต้องเป็นภาษาอังกฤษ — คำขอที่พวกเขาอ่านไม่ออกจะไม่ได้รับการปล่อยกู้ ภาษาตากาล็อก ทากลิช และบิซายา มักเป็นสาเหตุ ทำให้ฟอร์มค้างอยู่จนกว่าจะเขียนใหม่ คำยืมจากภาษาอื่นที่แทรกอยู่ในประโยคภาษาอังกฤษไม่มีปัญหา (เช่น "buying gamot for my mother") — สิ่งที่ทำให้ฟอร์มค้างคือทั้งประโยคที่เป็นภาษาอื่น กฎเดียวกันนี้ใช้กับ "Describe your situation" ในขั้นตอนข้อมูลส่วนตัว แม้ว่าชื่อตำแหน่งงานเองจะยังเป็นภาษาท้องถิ่นได้ (เช่น "sari-sari store owner", "jeepney driver")',
+   'Moo-lenders on Moodeng are in the US and Europe, so a loan reason has to be in English — a request they can\'t read doesn\'t get funded. Tagalog, Taglish, and Bisaya are the usual cause; the form stops there until it\'s rewritten. A borrowed word inside an English sentence is fine ("buying gamot for my mother") — it\'s whole sentences in another language that stop the form. The same applies to "Describe your situation" in the bio step, though the job title itself can stay local ("sari-sari store owner", "jeepney driver").':
+      'Moo-lender บน Moodeng อยู่ในสหรัฐฯ และยุโรป ดังนั้นเหตุผลการขอกู้ต้องเป็นภาษาอังกฤษ — คำขอที่พวกเขาอ่านไม่ออกจะไม่ได้รับการปล่อยกู้ ภาษาตากาล็อก ทากลิช และบิซายา มักเป็นสาเหตุ ทำให้ฟอร์มค้างอยู่จนกว่าจะเขียนใหม่ คำยืมจากภาษาอื่นที่แทรกอยู่ในประโยคภาษาอังกฤษไม่มีปัญหา (เช่น "buying gamot for my mother") — สิ่งที่ทำให้ฟอร์มค้างคือทั้งประโยคที่เป็นภาษาอื่น กฎเดียวกันนี้ใช้กับ "Describe your situation" ในขั้นตอนข้อมูลส่วนตัว แม้ว่าชื่อตำแหน่งงานเองจะยังเป็นภาษาท้องถิ่นได้ (เช่น "sari-sari store owner", "jeepney driver")',
    'My reason is "too vague"': 'เหตุผลของฉัน "คลุมเครือเกินไป"',
    "It's a nudge, not a block": 'แค่การเตือน ไม่ใช่การปิดกั้น',
    "My reason is in English but it still says it's too vague — what do I do?":
@@ -1462,8 +1465,8 @@ export const thaiCoverageB: Record<string, string> = {
    'Staying safe on Moodeng': 'การรักษาความปลอดภัยบน Moodeng',
    'The rules that are always true': 'กฎที่เป็นจริงเสมอ',
    'How do I stay safe and avoid scams?': 'ฉันจะรักษาความปลอดภัยและหลีกเลี่ยงการหลอกลวงได้อย่างไร',
-   'A few things are always true. Moodeng never holds or moves your money — loans go wallet-to-wallet directly between lender and borrower. Always send USDC on the Base network; the wrong network means lost funds. The Instant Wallet and a Base Account are both seedless, so Moodeng will never ask for a "seed phrase" or "recovery phrase" — and no legitimate helper ever will. When you\'re unsure, it\'s always safe to wait and ask rather than guess, especially before sending funds.':
-      'มีบางสิ่งที่เป็นจริงเสมอ Moodeng ไม่เคยถือหรือโอนเงินของคุณ — เงินกู้เคลื่อนจากกระเป๋าเงินสู่กระเป๋าเงินโดยตรงระหว่างผู้ให้กู้และผู้ยืม ส่ง USDC บนเครือข่าย Base เสมอ เครือข่ายที่ผิดหมายถึงเงินสูญหาย Instant Wallet และ Base Account ต่างก็ไม่มี seed phrase ดังนั้น Moodeng จะไม่มีวันขอ "seed phrase" หรือ "recovery phrase" จากคุณ — และไม่มีผู้ช่วยเหลือที่แท้จริงคนใดจะขอเช่นกัน เมื่อคุณไม่แน่ใจ การรอและสอบถามก่อนย่อมปลอดภัยกว่าการเดาเสมอ โดยเฉพาะก่อนส่งเงิน',
+   'A few things are always true. Moodeng never holds or moves your money — loans go wallet-to-wallet directly between moo-lender and borrower. Always send USDC on the Base network; the wrong network means lost funds. The Instant Wallet and a Base Account are both seedless, so Moodeng will never ask for a "seed phrase" or "recovery phrase" — and no legitimate helper ever will. When you\'re unsure, it\'s always safe to wait and ask rather than guess, especially before sending funds.':
+      'มีบางสิ่งที่เป็นจริงเสมอ Moodeng ไม่เคยถือหรือโอนเงินของคุณ — เงินกู้เคลื่อนจากกระเป๋าเงินสู่กระเป๋าเงินโดยตรงระหว่าง Moo-lender และผู้ยืม ส่ง USDC บนเครือข่าย Base เสมอ เครือข่ายที่ผิดหมายถึงเงินสูญหาย Instant Wallet และ Base Account ต่างก็ไม่มี seed phrase ดังนั้น Moodeng จะไม่มีวันขอ "seed phrase" หรือ "recovery phrase" จากคุณ — และไม่มีผู้ช่วยเหลือที่แท้จริงคนใดจะขอเช่นกัน เมื่อคุณไม่แน่ใจ การรอและสอบถามก่อนย่อมปลอดภัยกว่าการเดาเสมอ โดยเฉพาะก่อนส่งเงิน',
    'Manage your account': 'จัดการบัญชีของคุณ',
    'Name, email, password, sign out': 'ชื่อ อีเมล รหัสผ่าน ออกจากระบบ',
    'How do I manage my account and security settings?': 'ฉันจะจัดการบัญชีและการตั้งค่าความปลอดภัยของฉันได้อย่างไร',
@@ -1512,5 +1515,13 @@ export const thaiCoverageB: Record<string, string> = {
       'แต้ม Pandesal ใช้ปลดล็อกรางวัลโปรไฟล์ แต่ไม่ได้รับประกันว่าจะได้รับการปล่อยกู้',
    'How rewards work': 'รางวัลทำงานอย่างไร',
    'Next reward': 'รางวัลถัดไป',
-   Collectibles: 'ของสะสม'
+   Collectibles: 'ของสะสม',
+   // src/views/dashboard/RequestBoard.tsx tour (apply, then ID check last)
+   'Meet the team, then apply': 'พบทีมงาน แล้วค่อยสมัคร',
+   'Borrowers set up a wallet, connect Messenger and have a short call with the team. Their ID is checked when they send their first request, so moo-lenders know they are funding a real person.':
+      'ผู้ยืมตั้งค่ากระเป๋าเงิน เชื่อมต่อ Messenger และคุยสั้นๆ กับทีมงาน บัตรประจำตัวจะถูกตรวจสอบเมื่อส่งคำขอแรก เพื่อให้ Moo-lender รู้ว่ากำลังให้คนจริงยืม',
+   'This is where the borrower sets the amount, repayment, date, and reason. Sending it is when their ID gets checked.':
+      'ตรงนี้ผู้ยืมกำหนดจำนวนเงิน ยอดชำระคืน วันที่ และเหตุผล เมื่อส่งคำขอ บัตรประจำตัวจะถูกตรวจสอบ',
+   'New borrowers set up, have a short call with the team, then fill in a request. A quick ID check is the last step of sending it.':
+      'ผู้ยืมใหม่ตั้งค่า คุยสั้นๆ กับทีมงาน แล้วกรอกคำขอ การตรวจสอบบัตรประจำตัวอย่างรวดเร็วคือขั้นตอนสุดท้ายของการส่ง'
 };

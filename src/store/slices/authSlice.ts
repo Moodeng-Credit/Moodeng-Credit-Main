@@ -1,12 +1,21 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import type { User as SupabaseAuthUser } from '@supabase/supabase-js';
 
+import { clarityEvent } from '@/lib/analytics/clarity';
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
+import { detachPushSubscriptionForSignOut } from '@/lib/push/webPushClient';
 import { clearClientAuthState } from '@/lib/authSessionCleanup';
 import { setLastUsedAuth } from '@/lib/lastUsedAuth';
+import { FIRST_TOUCH_STORAGE_KEY } from '@/lib/attribution';
+import { AUTH_NEXT_STORAGE_KEY } from '@/lib/authNext';
+import { PENDING_INVITE_STORAGE_KEY } from '@/lib/friendReferrals';
+import { LAST_USED_AUTH_STORAGE_KEY } from '@/lib/lastUsedAuth';
+import { PENDING_SHARED_REQUEST_KEY } from '@/lib/pendingSharedRequest';
+import { generatePhoneUsername, guestPlaceholderEmail, phonePlaceholderEmail, SMS_TEST_FLAG_KEY } from '@/lib/phoneAuth';
 import { recordSessionIp } from '@/lib/recordSessionIp';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
+import { clearLandingSessionCookie } from '@/lib/landingSessionCookie';
 import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
 import {
    type AccountStatus,
@@ -70,7 +79,11 @@ const getTelegramProfileUpdates = (authData?: TelegramAuthData): Database['publi
       }
    }
 
-   if (authData?.username) {
+   // Only a real Telegram login (it carries a Telegram id). Email, guest and phone sign-ups also put a
+   // `username` in their metadata (the part before the @); copying that here made a fake, unique
+   // Telegram username, so the next person with the same email start couldn't sign up at all
+   // ("users_telegram_username_key", George 2026-10-18), and admin showed them as on Telegram.
+   if (telegramId !== undefined && authData?.username) {
       updates.telegram_username = authData.username;
    }
 
@@ -143,7 +156,13 @@ const ensureUserProfileRow = async (
    authUser: SupabaseAuthUser,
    overrides?: { username?: string; email?: string; isWorldId?: string | WorldIdStatus }
 ): Promise<UserRow> => {
-   const email = overrides?.email ?? authUser.email;
+   // Phone-only and guest accounts have no (confirmed) email; public.users.email is NOT NULL, so
+   // they get a placeholder. A guest's typed email stays pending in Supabase Auth until confirmed.
+   // Guest first: a phone guest has a (still unconfirmed) phone but is a guest all the same.
+   const email =
+      overrides?.email ??
+      (authUser.email ||
+         (authUser.is_anonymous ? guestPlaceholderEmail(authUser.id) : authUser.phone ? phonePlaceholderEmail(authUser.id) : undefined));
 
    if (!email) {
       throw new Error('Email is required to seed user profile');
@@ -171,11 +190,33 @@ const ensureUserProfileRow = async (
 
    const { data, error } = await supabase.from('users').insert(payload).select('*').single();
 
-   if (error || !data) {
-      throw error ?? new Error('Failed to ensure user profile');
+   if (!error && data) {
+      return data;
    }
 
-   return data;
+   // 23505 = unique violation. Either the row was created concurrently (another tab / the auth
+   // listener) or the chosen username is taken. Without a retry the user is left with no profile row.
+   if (error?.code === '23505') {
+      const { data: raced } = await supabase.from('users').select('*').eq('id', authUser.id).maybeSingle();
+      if (raced) {
+         return raced;
+      }
+
+      const base = payload.username.replace(new RegExp(`-${authUser.id.slice(0, 6)}$`), '');
+      const { data: retried, error: retryError } = await supabase
+         .from('users')
+         .insert({ ...payload, username: `${base}-${authUser.id.slice(0, 6)}` })
+         .select('*')
+         .single();
+
+      if (!retryError && retried) {
+         return retried;
+      }
+
+      throw retryError ?? new Error('Failed to ensure user profile');
+   }
+
+   throw error ?? new Error('Failed to ensure user profile');
 };
 
 const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: string, avatarBackground?: string): User => ({
@@ -185,6 +226,7 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    avatarUrl,
    avatarBackground,
    displayName: displayName ?? row.display_name ?? undefined,
+   facebookName: (row as UserRow & { facebook_name?: string | null }).facebook_name?.trim() || undefined,
    googleId: row.google_id ?? undefined,
    walletAddress: row.wallet_address ?? undefined,
    walletChainId: (row as UserRow & { wallet_chain_id?: number | null }).wallet_chain_id ?? undefined,
@@ -216,6 +258,7 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    loanAccessStatus: (row as UserRow & { loan_access_status?: LoanAccessStatus | null }).loan_access_status ?? undefined,
    loanAccessSeenAt: (row as UserRow & { loan_access_seen_at?: string | null }).loan_access_seen_at ?? undefined,
    missedLastCall: (row as UserRow & { video_call_outcome?: string | null }).video_call_outcome === 'no_show',
+   attendedCall: (row as UserRow & { video_call_outcome?: string | null }).video_call_outcome === 'attended',
    hasReferral: Boolean(row.redeemed_referral_code_id),
    hasVerifiedContact: Boolean(
       (row as UserRow & { messenger_verified_at?: string | null }).messenger_verified_at ||
@@ -234,6 +277,7 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    notifAccountActivity: (row as UserRow & { notif_account_activity?: boolean | null }).notif_account_activity ?? true,
    notifTransactionActivity: (row as UserRow & { notif_transaction_activity?: boolean | null }).notif_transaction_activity ?? true,
    notifBlogs: (row as UserRow & { notif_blogs?: boolean | null }).notif_blogs ?? false,
+   notifPush: (row as UserRow & { notif_push?: boolean | null }).notif_push ?? true,
    createdAt: row.created_at,
    updatedAt: row.updated_at
 });
@@ -272,7 +316,9 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
       return mapSupabaseRowToUser(ensuredProfile, avatarUrl, displayName, avatarBackground);
    }
 
-   if (displayName && profile.display_name !== displayName) {
+   // Seed the display name from the sign-in provider only when the user has none; never overwrite a
+   // name they chose with whatever Google/Telegram reports on each login.
+   if (displayName && !profile.display_name?.trim()) {
       const { data: syncedProfile, error: syncError } = await supabase
          .from('users')
          .update({ display_name: displayName })
@@ -285,7 +331,7 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
       }
    }
 
-   return mapSupabaseRowToUser(profile, avatarUrl, displayName, avatarBackground);
+   return mapSupabaseRowToUser(profile, avatarUrl, profile.display_name?.trim() || displayName, avatarBackground);
 };
 
 const fetchUserProfileByUsername = async (username: string): Promise<User> => {
@@ -387,6 +433,7 @@ const initialState: AuthState = {
    username: null,
    isLoading: false,
    isAuthChecked: false,
+   isSigningOut: false,
    error: null,
    userProfiles: {}
 };
@@ -453,6 +500,34 @@ export const loginWithTelegram = createAsyncThunk('auth/loginWithTelegram', asyn
    };
 });
 
+/**
+ * Frees an email held by a sign-up that was started over 2 minutes ago and never finished (never
+ * confirmed, never signed in, no profile), so starting again with that email works. Supabase would
+ * otherwise refuse the email forever ("already registered"). Never blocks sign-up: a failed call is
+ * ignored and the normal checks decide.
+ */
+const releaseUnfinishedSignup = async (email: string): Promise<void> => {
+   try {
+      await supabaseClient().rpc('release_unfinished_signup', { p_email: email });
+   } catch {
+      // Best effort only.
+   }
+};
+
+/**
+ * Undoes a guest sign-up that failed after signing in anonymously: deletes that empty guest login
+ * (the database only allows it while it has no email and no profile), then drops the session.
+ */
+const discardEmptyGuest = async (): Promise<void> => {
+   const supabase = supabaseClient();
+   try {
+      await supabase.rpc('discard_empty_guest');
+   } catch {
+      // Best effort only: the sign-out below still runs.
+   }
+   await supabase.auth.signOut({ scope: 'local' });
+};
+
 export const registerUser = createAsyncThunk(
    'auth/register',
    async (userData: { username: string; isWorldId: string; password: string; email: string }) => {
@@ -469,6 +544,9 @@ export const registerUser = createAsyncThunk(
          await supabase.auth.signOut();
          clearClientAuthState();
       }
+
+      // A sign-up with this email they started earlier and never finished must not block this one.
+      await releaseUnfinishedSignup(userData.email);
 
       // Check if email already exists (via a scoped RPC, not a broad users read).
       // If it does, attempt an implicit login with the password they just typed.
@@ -525,6 +603,196 @@ export const registerUser = createAsyncThunk(
       };
    }
 );
+
+export type OtpChannel = 'sms' | 'email';
+export type OtpTarget = { channel: 'sms'; phone: string } | { channel: 'email'; email: string };
+export type OtpMode = 'signin' | 'signup';
+
+// What a stale-session cleanup before a code sign-in must NOT wipe: an invite code or shared
+// request they arrived with, attribution, where to go after signing in, testing flags.
+const KEEP_THROUGH_OTP_LOCAL = [PENDING_INVITE_STORAGE_KEY, FIRST_TOUCH_STORAGE_KEY, AUTH_NEXT_STORAGE_KEY, LAST_USED_AUTH_STORAGE_KEY, SMS_TEST_FLAG_KEY, 'force_ph'];
+const KEEP_THROUGH_OTP_SESSION = [PENDING_SHARED_REQUEST_KEY];
+
+/**
+ * Sends a one-time sign-in code by SMS (PH numbers, through the Send SMS hook and UniSMS) or email.
+ * Sign-up creates the account on first use; sign-in never does (Supabase then answers "Signups
+ * not allowed for otp", shown as "No Moodeng account uses this number/email").
+ */
+export const requestOtpCode = createAsyncThunk('auth/requestOtpCode', async (params: OtpTarget & { mode: OtpMode }) => {
+   const supabase = supabaseClient();
+   const { mode, ...target } = params;
+   const shouldCreateUser = mode === 'signup';
+
+   const {
+      data: { session: staleSession }
+   } = await supabase.auth.getSession();
+
+   // user_metadata is only applied when the account is created. `passwordless` tells Account
+   // settings and onboarding that this account has no password yet.
+   const { error } =
+      target.channel === 'sms'
+         ? await supabase.auth.signInWithOtp({
+              phone: target.phone,
+              options: { shouldCreateUser, data: { username: generatePhoneUsername(), passwordless: true } }
+           })
+         : await supabase.auth.signInWithOtp({
+              email: target.email,
+              options: {
+                 shouldCreateUser,
+                 emailRedirectTo: getAuthRedirectUrl(),
+                 data: { username: target.email.split('@')[0], passwordless: true }
+              }
+           });
+
+   // Nothing is signed out until the code is on its way: a refused request (no account for that
+   // email, rate limit) must never cost the session they're in.
+   if (error) throw error;
+
+   // Same reason as registerUser: a leftover session from another account must not be refreshed
+   // mid-sign-in and route them back into that old account. Local only: don't sign that account
+   // out on its other devices. A guest (anonymous) session stays until the code is checked
+   // (verifyOtpCode): it's their only way back in, and the code may never arrive.
+   if (staleSession && !staleSession.user?.is_anonymous) {
+      await supabase.auth.signOut({ scope: 'local' });
+      clearClientAuthState({ keepLocal: KEEP_THROUGH_OTP_LOCAL, keepSession: KEEP_THROUGH_OTP_SESSION });
+   }
+   return { channel: target.channel };
+});
+
+export class GuestEmailTakenError extends Error {
+   constructor() {
+      super('This email already has a Moodeng account.');
+      this.name = 'GuestEmailTakenError';
+   }
+}
+
+/**
+ * Email-first sign-up (Facebook/Messenger browsers, guest_signup_enabled): no code now. Creates a
+ * guest (anonymous) account and attaches the email as a pending change, which mails a link + code.
+ * They confirm it and set a password after connecting Facebook (GuestAccountGate); the link also
+ * signs them back in from any browser if this one loses its session.
+ */
+export const startGuestSignup = createAsyncThunk('auth/startGuestSignup', async ({ email }: { email: string }) => {
+   const supabase = supabaseClient();
+
+   const { data: taken } = await supabase.rpc('email_exists', { p_email: email });
+   if (taken === true) throw new GuestEmailTakenError();
+
+   const {
+      data: { session: staleSession }
+   } = await supabase.auth.getSession();
+
+   // Already a guest on this browser (tapped again, or back after Facebook reloaded the page): keep
+   // that account and its progress. Signing it out would lose it, since its email isn't confirmed.
+   if (staleSession?.user?.is_anonymous) {
+      const pendingEmail = staleSession.user.new_email || (staleSession.user.user_metadata?.guest_email as string | undefined);
+      if (pendingEmail?.toLowerCase() !== email.toLowerCase()) await resendGuestEmail(email);
+      const user = await fetchCurrentUserProfile();
+      setLastUsedAuth('email');
+      return { username: user.username, user };
+   }
+
+   // Same reason as requestOtpCode: never continue inside a leftover session from another account.
+   if (staleSession) {
+      await supabase.auth.signOut({ scope: 'local' });
+      clearClientAuthState({ keepLocal: KEEP_THROUGH_OTP_LOCAL, keepSession: KEEP_THROUGH_OTP_SESSION });
+   }
+
+   // An unfinished sign-up with this email (e.g. a code never entered) would make Supabase refuse it.
+   await releaseUnfinishedSignup(email);
+
+   const { error: guestError } = await supabase.auth.signInAnonymously({
+      options: { data: { username: email.split('@')[0], passwordless: true, guest_email: email } }
+   });
+   if (guestError) throw guestError;
+
+   const { error: emailError } = await supabase.auth.updateUser({ email }, { emailRedirectTo: getAuthRedirectUrl() });
+   if (emailError) {
+      await discardEmptyGuest();
+      if (emailError.code === 'email_exists' || /already been registered|already exists/i.test(emailError.message)) {
+         throw new GuestEmailTakenError();
+      }
+      throw emailError;
+   }
+
+   const user = await fetchCurrentUserProfile();
+   setLastUsedAuth('email');
+   return { username: user.username, user };
+});
+
+/** The email a guest typed at sign-up (pending until they confirm it). */
+export const getGuestPendingEmail = async (): Promise<string | null> => {
+   const {
+      data: { user }
+   } = await supabaseClient().auth.getUser();
+   if (!user?.is_anonymous) return null;
+   return user.new_email || (user.user_metadata?.guest_email as string | undefined) || null;
+};
+
+/**
+ * A former guest who confirmed their email (often by the emailed link, in another browser) but
+ * hasn't set a password yet.
+ */
+export const convertedGuestNeedsPassword = async (): Promise<boolean> => {
+   const {
+      data: { user }
+   } = await supabaseClient().auth.getUser();
+   return Boolean(user && !user.is_anonymous && user.user_metadata?.guest_email && user.user_metadata?.passwordless === true);
+};
+
+/**
+ * Mails the guest's confirmation link + code again (optionally to a corrected address). Also how a
+ * phone guest adds their first email. guest_email marks them as a converted guest, so they're asked
+ * for a password after confirming, wherever they confirm.
+ */
+export const resendGuestEmail = async (email: string): Promise<void> => {
+   await releaseUnfinishedSignup(email);
+   const { error } = await supabaseClient().auth.updateUser({ email, data: { guest_email: email } }, { emailRedirectTo: getAuthRedirectUrl() });
+   if (error) {
+      if (error.code === 'email_exists' || /already been registered|already exists/i.test(error.message)) {
+         throw new GuestEmailTakenError();
+      }
+      throw error;
+   }
+};
+
+/** Last step for a guest whose email is confirmed: set a password, so they can sign in anywhere. */
+export const setGuestPassword = createAsyncThunk('auth/setGuestPassword', async ({ password }: { password: string }) => {
+   const { error } = await supabaseClient().auth.updateUser({ password, data: { passwordless: false } });
+   if (error) throw error;
+   return await fetchCurrentUserProfile();
+});
+
+/** Checks the code from requestOtpCode and signs the person in. */
+export const verifyOtpCode = createAsyncThunk('auth/verifyOtpCode', async (params: OtpTarget & { token: string }) => {
+   const supabase = supabaseClient();
+   const {
+      data: { session: priorSession }
+   } = await supabase.auth.getSession();
+   const { data, error } =
+      params.channel === 'sms'
+         ? await supabase.auth.verifyOtp({ phone: params.phone, token: params.token, type: 'sms' })
+         : await supabase.auth.verifyOtp({ email: params.email, token: params.token, type: 'email' });
+
+   if (error) throw error;
+
+   // A guest session that requestOtpCode kept: the code worked, so drop that guest's cached data
+   // now (the new session is in cookies, which this doesn't touch).
+   if (priorSession?.user?.is_anonymous && priorSession.user.id !== data.user?.id) {
+      clearClientAuthState({ keepLocal: KEEP_THROUGH_OTP_LOCAL, keepSession: KEEP_THROUGH_OTP_SESSION });
+   }
+
+   // New account = no profile row yet (fetchCurrentUserProfile creates it just below).
+   let isNewUser = false;
+   if (data.user?.id) {
+      const { data: existingProfile } = await supabase.from('users').select('id').eq('id', data.user.id).maybeSingle();
+      isNewUser = !existingProfile;
+   }
+
+   const user = await fetchCurrentUserProfile();
+   setLastUsedAuth(params.channel === 'sms' ? 'phone' : 'email');
+   return { username: user.username, user, isNewUser };
+});
 
 export const registerWithGoogle = createAsyncThunk(
    'auth/registerWithGoogle',
@@ -649,6 +917,7 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
       throw updateError;
    }
 
+   if (userData.walletAddress) clarityEvent('wallet_connected');
    return await fetchCurrentUserProfile();
 });
 
@@ -765,6 +1034,9 @@ export const updateUserRole = createAsyncThunk('auth/updateUserRole', async (rol
 
 export const logoutUser = createAsyncThunk('auth/logout', async () => {
    const supabase = supabaseClient();
+   // Detach this device's push row while the session can still delete it, so a signed-out phone
+   // stops receiving the previous account's loan alerts. Never blocks sign-out.
+   await detachPushSubscriptionForSignOut().catch((error) => console.warn('Push detach on sign-out failed', error));
    const { error } = await supabase.auth.signOut();
 
    if (error) {
@@ -772,6 +1044,7 @@ export const logoutUser = createAsyncThunk('auth/logout', async () => {
    }
 
    clearAuthCookieClient();
+   clearLandingSessionCookie();
    // Wipe persisted redux + per-user cache so the next login/signup starts on a
    // clean slate and never shows the previous account's data.
    clearClientAuthState();
@@ -890,6 +1163,26 @@ const authSlice = createSlice({
             state.isLoading = false;
             state.error = (action.error.message as string) || null;
          })
+         .addCase(verifyOtpCode.pending, (state) => {
+            state.isLoading = true;
+            state.error = null;
+         })
+         .addCase(verifyOtpCode.fulfilled, (state, action) => {
+            state.isLoading = false;
+            state.username = action.payload.username;
+            state.user = action.payload.user;
+         })
+         .addCase(startGuestSignup.fulfilled, (state, action) => {
+            state.username = action.payload.username;
+            state.user = action.payload.user;
+         })
+         .addCase(setGuestPassword.fulfilled, (state, action) => {
+            state.user = action.payload;
+         })
+         .addCase(verifyOtpCode.rejected, (state, action) => {
+            state.isLoading = false;
+            state.error = (action.error.message as string) || null;
+         })
          .addCase(registerWithGoogle.pending, (state) => {
             state.isLoading = true;
             state.error = null;
@@ -955,7 +1248,14 @@ const authSlice = createSlice({
                state.userProfiles[user.id] = user;
             }
          })
+         .addCase(logoutUser.pending, (state) => {
+            state.isSigningOut = true;
+         })
+         .addCase(logoutUser.rejected, (state) => {
+            state.isSigningOut = false;
+         })
          .addCase(logoutUser.fulfilled, (state) => {
+            state.isSigningOut = false;
             state.user = defaultUser;
             state.username = null;
             state.error = null;
@@ -969,6 +1269,7 @@ const authSlice = createSlice({
                // does not flash back to the public state while Supabase confirms auth.
                // AuthInitializer still clears it when Supabase confirms there is no session.
                state.isAuthChecked = false;
+               state.isSigningOut = false;
             }
          );
    }

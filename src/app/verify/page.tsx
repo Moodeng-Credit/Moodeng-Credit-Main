@@ -4,9 +4,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import posthog from 'posthog-js';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+import { clarityEvent } from '@/lib/analytics/clarity';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 import { isAndroidDevice, isIOSDevice } from '@/components/worldId/worldIdLaunch';
 
+import { PRE_KYC_CONNECT_PATH } from '@/hooks/usePreKycGate';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import {
@@ -18,6 +20,8 @@ import {
 } from '@/lib/verifyFlow';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
+import { openMessengerSupport } from '@/config/contactVerification';
+import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { CONNECT_HIPPOS, ConnectHero } from '@/views/dashboard/components/connectKit';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
 
@@ -25,6 +29,19 @@ const STATUS_REFRESH_RETRIES = 40;
 const STATUS_REFRESH_DELAY_MS = 3000;
 // Sync against Didit's API every Nth poll attempt (~30s at 3s per attempt).
 const SYNC_EVERY_N_ATTEMPTS = 10;
+
+// create-didit-session refuses, before any paid session is created, a borrower who hasn't met the
+// team yet (409 APPROVAL_REQUIRED — pre-KYC gate) or who has used their 3 KYC tries (409
+// KYC_TRIES_USED — they message us; an admin gives more with /kycretry), or whose ID is already in
+// manual review (409 ID_IN_REVIEW — shown the review screen; a new session would cost another check).
+const refusalCode = async (error: unknown): Promise<string | null> => {
+   const ctx = (error as { context?: Response } | null)?.context;
+   if (!ctx || typeof ctx.clone !== 'function') return null;
+   const body = (await ctx.clone().json().catch(() => null)) as { code?: string } | null;
+   return body?.code ?? null;
+};
+
+const KYC_TRIES = 3;
 
 const wait = (ms: number) => new Promise<void>((resolve) => { window.setTimeout(resolve, ms); });
 
@@ -106,6 +123,8 @@ type Step =
    // notify them on the moment the review clears.
    | 'id-review-contacts'
    | 'id-declined'
+   // Declined 3 times: no more self-serve tries until they message us (admin /kycretry).
+   | 'tries-used'
    | 'id-abandoned'
    | 'duplicate'
    | 'declined'
@@ -115,7 +134,7 @@ type Step =
 // Steps a poll must never overwrite back to a "pending" screen. Guarding the
 // initial setStep against these prevents the confirm/success screen from
 // flickering back to a button-less waiting screen when a poll (re)starts.
-const TERMINAL_STEPS = new Set<Step>(['confirm', 'duplicate', 'declined', 'success', 'id-review', 'id-review-contacts', 'id-declined', 'id-abandoned', 'liveness-unfinished']);
+const TERMINAL_STEPS = new Set<Step>(['confirm', 'duplicate', 'declined', 'success', 'id-review', 'id-review-contacts', 'id-declined', 'tries-used', 'id-abandoned', 'liveness-unfinished']);
 
 // Flow persistence lives in a shared module so the request board can read the
 // same "started verifying but never finished" signal to show its support modal.
@@ -158,11 +177,35 @@ export default function VerifyFlow() {
    // leave and come back unconnected, and the Facebook step is what they land on again.
    const [contactsGate, setContactsGate] = useState<'unknown' | 'show' | 'done'>('unknown');
    const hasVerifiedContact = Boolean(user?.hasVerifiedContact);
+   // Same for a declined ID check: the borrower can't fix it alone, so Messenger comes first —
+   // that's the line the team uses to talk them through it (the admin alert flags the decline).
    const showContactsFirst =
-      step === 'id-review' && Boolean(user) && contactsGate !== 'done' && (contactsGate === 'show' || !hasVerifiedContact);
+      (step === 'id-review' || step === 'id-declined' || step === 'tries-used') &&
+      Boolean(user) &&
+      contactsGate !== 'done' &&
+      (contactsGate === 'show' || !hasVerifiedContact);
    useEffect(() => {
       if (showContactsFirst && contactsGate === 'unknown') setContactsGate('show');
    }, [showContactsFirst, contactsGate]);
+
+   // On a declined screen: how many of the 3 KYC tries are left. None left → the "message us" screen
+   // instead of a Try again that the server would refuse anyway.
+   const [triesLeft, setTriesLeft] = useState<number | null>(null);
+   useEffect(() => {
+      if (step !== 'id-declined' && step !== 'declined') return undefined;
+      let cancelled = false;
+      void getSupabaseBrowserClient()
+         .rpc('my_kyc_tries_left')
+         .then(({ data, error }) => {
+            if (cancelled || error || typeof data !== 'number') return;
+            if (data <= 0) setStep('tries-used');
+            else setTriesLeft(data);
+         });
+      return () => {
+         cancelled = true;
+      };
+   }, [step]);
+   const triesLabel = triesLeft !== null && triesLeft < KYC_TRIES ? `${triesLeft} of ${KYC_TRIES} tries left` : undefined;
 
    const isLivenessPoll = step === 'liveness-pending';
    const isIdPoll = step === 'id-pending';
@@ -200,6 +243,7 @@ export default function VerifyFlow() {
       return () => window.clearInterval(id);
    }, [step, dispatch]);
 
+   const isLender = user?.userRole === 'lender';
    const navigateAfterVerified = useCallback(
       (returnTo?: string) => {
          clearFlow();
@@ -224,10 +268,14 @@ export default function VerifyFlow() {
                   navigate(returnTo, { replace: true });
                   return;
                }
-               navigate('/onboarding/congratulations', { replace: true });
+               // The ID check is the last step of sending a loan request now, so a borrower with no
+               // known destination goes to the loan form (it reopens any request they'd saved) —
+               // the onboarding "Congratulations" page was a dead end. Lenders keep it.
+               if (isLender) navigate('/onboarding/congratulations', { replace: true });
+               else navigate('/request-board', { replace: true, state: { openLoanRequest: true } });
          }
       },
-      [navigate]
+      [isLender, navigate]
    );
 
    // --- Liveness ----------------------------------------------------------------
@@ -244,6 +292,15 @@ export default function VerifyFlow() {
          const { data, error } = await supabase.functions.invoke('create-didit-session', {
             body: { kind: 'liveness', ...(flow.returnTo ? { returnTo: flow.returnTo } : {}) }
          });
+         const refusal = error ? await refusalCode(error) : null;
+         if (refusal === 'APPROVAL_REQUIRED') {
+            navigate(PRE_KYC_CONNECT_PATH, { replace: true, state: { returnTo: flow.returnTo } });
+            return;
+         }
+         if (refusal === 'KYC_TRIES_USED') {
+            setStep('tries-used');
+            return;
+         }
          const url = (data as { url?: string; sessionId?: string } | null)?.url;
          const sessionId = (data as { sessionId?: string } | null)?.sessionId;
          if (error || !url) {
@@ -255,7 +312,7 @@ export default function VerifyFlow() {
          setErrorMessage(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
          setStep('error');
       }
-   }, []);
+   }, [navigate]);
 
    const pollLiveness = useCallback(
       async (flow: FlowState, promptIfUnfinished = false) => {
@@ -348,16 +405,31 @@ export default function VerifyFlow() {
          const { data, error } = await supabase.functions.invoke('create-didit-session', {
             body: { kind: 'combined', ...(flow.returnTo ? { returnTo: flow.returnTo } : {}) }
          });
+         const refusal = error ? await refusalCode(error) : null;
+         if (refusal === 'APPROVAL_REQUIRED') {
+            navigate(PRE_KYC_CONNECT_PATH, { replace: true, state: { returnTo: flow.returnTo } });
+            return;
+         }
+         if (refusal === 'KYC_TRIES_USED') {
+            setStep('tries-used');
+            return;
+         }
+         if (refusal === 'ID_IN_REVIEW') {
+            setStep('id-review');
+            return;
+         }
          const url = (data as { url?: string } | null)?.url;
          if (error || !url) {
             throw new Error('Could not start verification. Please try again.');
          }
+         // The same moment the server stamps didit_submitted_at ("ID check submitted" in the team alerts).
+         clarityEvent('id_check_submitted');
          setKycUrl(url);
       } catch (err) {
          setErrorMessage(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
          setStep('error');
       }
-   }, []);
+   }, [navigate]);
 
    const pollDidit = useCallback(async (retries: number = STATUS_REFRESH_RETRIES, syncFirst = false) => {
       const runId = (pollRunRef.current += 1);
@@ -547,7 +619,10 @@ export default function VerifyFlow() {
       startedRef.current = true;
 
       if (isUserVerified(user)) {
-         const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
+         // Already verified — e.g. opened from the "You're verified" Messenger/email/push link, or
+         // back from Didit after the approval landed. Honour where they came from: the route state,
+         // or the saved flow when Didit's redirect dropped the route state.
+         const returnTo = (location.state as { returnTo?: string } | null)?.returnTo ?? readFlow()?.returnTo;
          navigateAfterVerified(returnTo);
          return;
       }
@@ -844,25 +919,34 @@ export default function VerifyFlow() {
       // always leads on to the review screen, so a borrower who can't finish is never
       // trapped here. Both refresh the user so the review screen knows whether the line
       // is connected (it may be even when they skip: confirmed Facebook but no push).
+      const isDeclined = step === 'id-declined' || step === 'tries-used';
       const leaveContacts = () => {
          setContactsGate('done');
-         setStep('id-review');
+         setStep(step === 'tries-used' ? 'tries-used' : isDeclined ? 'id-declined' : 'id-review');
          void dispatch(fetchUser());
       };
       return (
          <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white dark:from-[#08040f] dark:via-[#12091f] dark:to-[#08040f] flex flex-col max-w-modal mx-auto w-full">
             <ContactsStep
                userId={user.id}
-               source="verify_review"
+               source={isDeclined ? 'verify_declined' : 'verify_review'}
                backLabel={showContactsFirst ? 'Skip for now' : 'Back'}
                onBack={leaveContacts}
                onContinue={leaveContacts}
                intro={
-                  <ConnectHero
-                     image={CONNECT_HIPPOS.hello}
-                     subtitle="Your ID is in. Add your Facebook and turn on notifications so we can message you the moment your verification is complete."
-                     title="Almost done 💜"
-                  />
+                  isDeclined ? (
+                     <ConnectHero
+                        image={CONNECT_HIPPOS.missed}
+                        subtitle="That happens — let's sort it out together. Connect Messenger and the team will message you to help."
+                        title="Your ID check didn't go through"
+                     />
+                  ) : (
+                     <ConnectHero
+                        image={CONNECT_HIPPOS.hello}
+                        subtitle="Your ID is in. Add your Facebook and turn on notifications so we can message you the moment your verification is complete."
+                        title="Almost done 💜"
+                     />
+                  )
                }
             />
          </div>
@@ -891,9 +975,22 @@ export default function VerifyFlow() {
       );
    }
 
+   if (step === 'tries-used') {
+      return (
+         <StatusScreen
+            title="Let's verify you together"
+            body="Your ID check didn't pass 3 times, so the team will help you directly. Message us on Messenger and we'll sort it out with you."
+            action={{ label: 'Message us on Messenger', onClick: () => openMessengerSupport(EXTERNAL_LINKS.support.messengerKycTries) }}
+            secondaryAction={{ label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
+            supportLink
+         />
+      );
+   }
+
    if (step === 'id-declined') {
       return (
          <StatusScreen
+            stepLabel={triesLabel}
             title="Verification didn't pass"
             body={
                user?.diditDeclineReason
@@ -969,7 +1066,7 @@ export default function VerifyFlow() {
    if (step === 'declined') {
       return (
          <StatusScreen
-            stepLabel="Step 1 of 2"
+            stepLabel={triesLabel ?? 'Step 1 of 2'}
             title="Face scan didn't pass"
             body="The scan didn't finish successfully — either it was closed early or we couldn't confirm a live person. Tap Try again for a fresh scan. A few things that help:"
             tips={[

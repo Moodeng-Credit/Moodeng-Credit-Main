@@ -72,6 +72,40 @@ export const getMessengerContact = async (contactId: string): Promise<SendPulseC
    }
 };
 
+// One message in a contact's chat log. direction 1 = from the person, 2 = from us (bot or operator).
+export type SendPulseChatMessage = { id?: string; direction?: number; created_at?: string };
+
+const CHAT_PAGE_SIZE = 100;
+const MAX_CHAT_PAGES = 20;
+
+// The contact's whole chat log, oldest first. null when SendPulse can't be reached (vs [] for no messages).
+export const getMessengerChatMessages = async (contactId: string): Promise<SendPulseChatMessage[] | null> => {
+   try {
+      const token = await getToken();
+      if (!token) return null;
+      const all: SendPulseChatMessage[] = [];
+      for (let page = 0; page < MAX_CHAT_PAGES; page++) {
+         const url =
+            `${API}/messenger/chats/messages?contact_id=${encodeURIComponent(contactId)}` +
+            `&order=asc&size=${CHAT_PAGE_SIZE}&skip=${page * CHAT_PAGE_SIZE}`;
+         const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+         const body = await res.json().catch(() => null);
+         if (!res.ok) {
+            console.error('[sendpulse] chats/messages failed', res.status, JSON.stringify(body)?.slice(0, 300));
+            return null;
+         }
+         const data = body?.data;
+         const batch = (Array.isArray(data) ? data : data ? [data] : []) as SendPulseChatMessage[];
+         all.push(...batch);
+         if (batch.length < CHAT_PAGE_SIZE) break;
+      }
+      return all;
+   } catch (err) {
+      console.error('[sendpulse] chats/messages threw', err instanceof Error ? err.message : err);
+      return null;
+   }
+};
+
 // The bot behind the "Confirm Facebook" flow (Moodeng Credit Page).
 export const SENDPULSE_BOT_ID = Deno.env.get('SENDPULSE_BOT_ID')?.trim() || '81acb48b-e32c-4c85-b29f-0efae2ca2716';
 
@@ -122,7 +156,15 @@ export const isInsideMessagingWindow = (contact: SendPulseContact | null, now = 
    return now - last < WINDOW_MS;
 };
 
-export type MessengerCard = { title: string; subtitle?: string; button: { title: string; url: string } };
+// imageUrl: a public JPG/PNG (≤5 MB) shown on top of the card, square so a poster isn't cropped.
+// `moreButtons`: up to two more link buttons under the first (Messenger allows three per card).
+export type MessengerCard = {
+   title: string;
+   subtitle?: string;
+   imageUrl?: string;
+   button: { title: string; url: string };
+   moreButtons?: Array<{ title: string; url: string }>;
+};
 
 // /contacts/send bodies: a plain text message, or a one-card template carrying a link button.
 // Messenger caps card titles and subtitles at 80 chars and button titles at 20.
@@ -141,11 +183,15 @@ export const buildCardPayload = (contactId: string, card: MessengerCard) => ({
             type: 'template',
             payload: {
                template_type: 'generic',
+               ...(card.imageUrl ? { image_aspect_ratio: 'square' } : {}),
                elements: [
                   {
                      title: card.title.slice(0, 80),
+                     ...(card.imageUrl ? { image_url: card.imageUrl } : {}),
                      ...(card.subtitle ? { subtitle: card.subtitle.slice(0, 80) } : {}),
-                     buttons: [{ type: 'web_url', title: card.button.title.slice(0, 20), url: card.button.url }]
+                     buttons: [card.button, ...(card.moreButtons ?? [])]
+                        .slice(0, 3)
+                        .map((b) => ({ type: 'web_url', title: b.title.slice(0, 20), url: b.url }))
                   }
                ]
             }
@@ -201,6 +247,103 @@ export const sendMessengerMessage = async (
       return { ok: true };
    } catch (err) {
       console.error('[sendpulse] send threw', err instanceof Error ? err.message : err);
+      return { ok: false, reason: 'send_failed' };
+   }
+};
+
+// ---------------------------------------------------------------------------------------------------
+// WhatsApp (same SendPulse account and credentials, separate API under /whatsapp).
+//
+// The business number +66 95 165 9077 is connected through SendPulse (coexistence with the WhatsApp
+// Business app), so Meta delivers its messages to SendPulse, not to our whatsapp-webhook (that one only
+// ever served Meta's test number). Borrowers opt in by sending their one-time code to the number; the
+// SendPulse "Confirm WhatsApp" flow posts it to sendpulse-messenger-verify (channel 'whatsapp'), which
+// stores the SendPulse contact id in users.whatsapp_contact_id.
+//
+// A reminder days after the borrower last wrote to us is business-initiated, so it has to be a template
+// Meta approved (category Utility). Free text would only work inside 24h of their last message.
+const WHATSAPP_API = `${API}/whatsapp`;
+
+export type SendPulseWhatsAppContact = {
+   id: string;
+   status?: number; // 1 active, 2 unsubscribed
+   channel_data?: { name?: string; first_name?: string; last_name?: string | null; phone?: string | number | null };
+};
+
+export const getWhatsAppContact = async (contactId: string): Promise<SendPulseWhatsAppContact | null> => {
+   try {
+      const token = await getToken();
+      if (!token) return null;
+      const res = await fetch(`${WHATSAPP_API}/contacts/get?id=${encodeURIComponent(contactId)}`, {
+         headers: { Authorization: `Bearer ${token}` }
+      });
+      const body = await res.json().catch(() => null);
+      return res.ok && body?.data ? (body.data as SendPulseWhatsAppContact) : null;
+   } catch (err) {
+      console.error('[sendpulse] whatsapp contacts/get failed', err instanceof Error ? err.message : err);
+      return null;
+   }
+};
+
+/** Digits only (E.164 without '+'), or null. SendPulse may hand the phone back as a number. */
+export const normalizeWhatsAppPhone = (raw: unknown): string | null => {
+   const digits = String(raw ?? '').replace(/\D/g, '');
+   return digits.length >= 8 && digits.length <= 15 ? digits : null;
+};
+
+export type WhatsAppTemplate = {
+   name: string;
+   language: { code: string };
+   components?: Array<{ type: 'header' | 'body' | 'button'; parameters: Array<{ type: 'text'; text: string }> }>;
+};
+
+/** Sends an approved template to a SendPulse WhatsApp contact. Never throws. */
+export const sendWhatsAppTemplate = async (contactId: string | null | undefined, template: WhatsAppTemplate): Promise<SendPulseResult> => {
+   if (!contactId) return { ok: false, reason: 'no_contact' };
+   if (!isSendPulseConfigured()) return { ok: false, reason: 'not_configured' };
+   try {
+      const token = await getToken();
+      if (!token) return { ok: false, reason: 'auth_failed' };
+      const res = await fetch(`${WHATSAPP_API}/contacts/sendTemplate`, {
+         method: 'POST',
+         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+         body: JSON.stringify({ contact_id: contactId, template })
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || body?.success === false) {
+         console.error('[sendpulse] whatsapp sendTemplate failed', res.status, JSON.stringify(body)?.slice(0, 300));
+         return { ok: false, reason: 'send_failed' };
+      }
+      return { ok: true };
+   } catch (err) {
+      console.error('[sendpulse] whatsapp sendTemplate threw', err instanceof Error ? err.message : err);
+      return { ok: false, reason: 'send_failed' };
+   }
+};
+
+/**
+ * Sends plain text to a SendPulse WhatsApp contact. Only works inside 24h of the person's last message
+ * to us (Meta rejects it otherwise), so use it for replies, never for reminders. Never throws.
+ */
+export const sendWhatsAppText = async (contactId: string | null | undefined, text: string): Promise<SendPulseResult> => {
+   if (!contactId) return { ok: false, reason: 'no_contact' };
+   if (!isSendPulseConfigured()) return { ok: false, reason: 'not_configured' };
+   try {
+      const token = await getToken();
+      if (!token) return { ok: false, reason: 'auth_failed' };
+      const res = await fetch(`${WHATSAPP_API}/contacts/send`, {
+         method: 'POST',
+         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+         body: JSON.stringify({ contact_id: contactId, message: { type: 'text', text: { body: text } } })
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || body?.success === false) {
+         console.error('[sendpulse] whatsapp send failed', res.status, JSON.stringify(body)?.slice(0, 300));
+         return { ok: false, reason: 'send_failed' };
+      }
+      return { ok: true };
+   } catch (err) {
+      console.error('[sendpulse] whatsapp send threw', err instanceof Error ? err.message : err);
       return { ok: false, reason: 'send_failed' };
    }
 };

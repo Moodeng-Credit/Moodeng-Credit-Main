@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { adminUserUrl, OPEN_IN_ADMIN_TEXT, sendAdminCard } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { sendEmail } from '../_shared/email.ts';
 import { APPLY_URL, PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
@@ -18,9 +19,10 @@ import {
    type StuckBorrower,
    type StuckCode
 } from '../_shared/messengerStuckAlert.ts';
+import { handleRemindersStuck, REMINDERS_CORS } from '../_shared/remindersStuckHandler.ts';
 import { buildMessengerVerifyLink, MESSENGER_PAGE_URL } from '../_shared/sendpulse.ts';
-import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { isInternalRequest } from '../_shared/internalAuth.ts';
+import { loadOnboardingTimeline, signupLines, timelineLines } from '../_shared/onboardingTimeline.ts';
 
 // Cron-driven (every 5 min): borrowers who tapped "Verify via Messenger" 10+ minutes ago and still
 // aren't confirmed.
@@ -35,6 +37,10 @@ import { isInternalRequest } from '../_shared/internalAuth.ts';
 // code here is that borrower's latest attempt. users.messenger_stuck_alerted_at keeps it to one
 // email + one ping per borrower per day.
 //
+// Also serves "reminders couldn't turn on" (body `reminders: true`), from the onboarding app and a
+// daily pg_cron health check: see _shared/remindersStuckHandler.ts. It lives here because the
+// project is at Supabase's edge-function limit.
+//
 // verify_jwt stays on (no config.toml entry → project default), and the pg_cron job calls it with
 // the service key, so only a valid project token reaches it.
 
@@ -45,10 +51,14 @@ const json = (body: Record<string, unknown>, status = 200) =>
    new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
 serve(async (req) => {
+   // The browser preflights the app's reminders report; the cron job never sends OPTIONS.
+   if (req.method === 'OPTIONS') return new Response('ok', { headers: REMINDERS_CORS });
    if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
    if (!SUPABASE_URL || !SERVICE_KEY) return json({ error: 'not_configured' }, 500);
 
    const svc = createClient(SUPABASE_URL, SERVICE_KEY);
+   const body = await req.json().catch(() => ({}));
+   if (body?.reminders === true) return handleRemindersStuck(req, body, svc);
    if (!(await isInternalRequest(svc, req))) return json({ error: 'unauthorized' }, 401);
    const now = Date.now();
 
@@ -68,6 +78,8 @@ serve(async (req) => {
    const { data: borrowers, error: usersError } = await svc
       .from('users')
       .select('id, username, display_name, email, user_role, account_status, messenger_verified_at, messenger_stuck_alerted_at')
+      // Test accounts (users.is_test) are never "stuck".
+      .eq('is_test', false)
       .in(
          'id',
          (codes as StuckCode[]).map((c) => c.user_id)
@@ -126,15 +138,25 @@ serve(async (req) => {
          email = 'failed';
       }
 
-      const text = buildMessengerStuckAlert(borrower, code, now, email);
+      // How they signed up and where in onboarding they got stuck.
+      const onboarding = await loadOnboardingTimeline(svc, borrower.id);
+      const text = [buildMessengerStuckAlert(borrower, code, now, email), ...signupLines(onboarding), ...timelineLines(onboarding)].join(
+         '\n'
+      );
       if (kycChatId) {
-         await sendTelegramMessage(kycChatId, text, { inlineKeyboard: messengerStuckKeyboard(borrower.id, PAGE_INBOX_URL) }).catch(
-            (err: unknown) => console.error('messenger-stuck-alerts: telegram send failed', err instanceof Error ? err.message : err)
-         );
+         await sendAdminCard(svc, kycChatId, {
+            kind: 'messenger',
+            refId: borrower.id,
+            text,
+            keyboard: messengerStuckKeyboard(borrower.id, PAGE_INBOX_URL, undefined, borrower.username)
+         }).catch((err: unknown) => console.error('messenger-stuck-alerts: telegram send failed', err instanceof Error ? err.message : err));
       }
       await postDiscord(
-         { content: `${text}\n(The button is on the card in the Telegram KYC group.)` },
-         { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }
+         {
+            content: `${text}\n(The button is on the card in the Telegram KYC group.)\n${OPEN_IN_ADMIN_TEXT}: <${adminUserUrl(borrower.id, borrower.username)}>`
+         },
+         // Remembered: edited to MESSENGER VERIFIED once they're verified, from any path.
+         { prefer: ['DISCORD_KYC_WEBHOOK_URL'], ref: { svc, kind: 'messenger', refId: borrower.id } }
       );
       alerted += 1;
    }

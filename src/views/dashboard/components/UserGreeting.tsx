@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import BorrowerVerificationBadge from '@/components/BorrowerVerificationBadge';
 import UserAvatar from '@/components/UserAvatar';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
+import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 import { getMemberSinceText } from '@/utils/dateFormatters';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getVerificationUiState, VERIFICATION_STATE_CTA } from '@/lib/verificationUiState';
@@ -19,6 +20,8 @@ export default function UserGreeting({ user }: UserGreetingProps) {
    const isVerified = isUserVerified(user);
    const uiState = getVerificationUiState(user);
    const { open: openVerify, modal: verifyModal } = useVerifyYourself();
+   // Their next step toward "Verified" (meet the team → verify ID): this link's label and target.
+   const journey = useVerificationJourney(openVerify);
    const memberSince = user.createdAt ? getMemberSinceText(user.createdAt) : '';
    const accountEditPath = (edit: 'avatar' | 'name') => {
       const params = new URLSearchParams(location.search);
@@ -57,8 +60,8 @@ export default function UserGreeting({ user }: UserGreetingProps) {
                         {VERIFICATION_STATE_CTA[uiState]} &gt;
                      </button>
                   ) : (
-                     <button type="button" onClick={openVerify} className="text-md-b4 font-medium text-md-primary-900">
-                        Verify Yourself &gt;
+                     <button type="button" onClick={journey.go} className="text-md-b4 font-medium text-md-primary-900">
+                        <>{journey.cta}<span aria-hidden="true"> &gt;</span></>
                      </button>
                   )
                ) : null}

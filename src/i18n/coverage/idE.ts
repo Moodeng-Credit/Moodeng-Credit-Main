@@ -156,10 +156,10 @@ export const indonesianCoverageE: Record<string, string> = {
    'points toward your Academy score.': 'poin untuk skor Academy kamu.',
    Question: 'Pertanyaan',
    'To skip repayment': 'Supaya tidak perlu bayar kembali',
-   'To hide from lenders': 'Supaya bisa bersembunyi dari pemberi pinjaman',
+   'To hide from moo-lenders': 'Supaya bisa bersembunyi dari moo-lender',
    'To hide repayment history': 'Supaya riwayat pembayaran kembali tersembunyi',
    'To skip World ID': 'Supaya bisa melewati World ID',
-   'A lender loan': 'Pinjaman dari pemberi pinjaman',
+   'A moo-lender loan': 'Pinjaman dari moo-lender',
    'Already repaid': 'Sudah dibayar kembali',
    'Changing names often': 'Sering ganti nama',
    'Ignoring the request board': 'Mengabaikan papan permintaan',
@@ -171,10 +171,10 @@ export const indonesianCoverageE: Record<string, string> = {
       'Skormu 4 dari 5. Masuk dan selesaikan alur peminjam untuk lanjut.',
    'You scored 5 of 5. Log in and finish the borrower flow to keep going.':
       'Skormu 5 dari 5. Masuk dan selesaikan alur peminjam untuk lanjut.',
-   'You scored 4 of 5. Log in and finish the lender flow to keep going.':
-      'Skormu 4 dari 5. Masuk dan selesaikan alur pemberi pinjaman untuk lanjut.',
-   'You scored 5 of 5. Log in and finish the lender flow to keep going.':
-      'Skormu 5 dari 5. Masuk dan selesaikan alur pemberi pinjaman untuk lanjut.',
+   'You scored 4 of 5. Log in and finish the moo-lender flow to keep going.':
+      'Skormu 4 dari 5. Masuk dan selesaikan alur moo-lender untuk lanjut.',
+   'You scored 5 of 5. Log in and finish the moo-lender flow to keep going.':
+      'Skormu 5 dari 5. Masuk dan selesaikan alur moo-lender untuk lanjut.',
    'You scored 0 of 5. Score 4 of 5 to unlock Academy score.': 'Skormu 0 dari 5. Raih 4 dari 5 untuk membuka skor Academy.',
    'You scored 1 of 5. Score 4 of 5 to unlock Academy score.': 'Skormu 1 dari 5. Raih 4 dari 5 untuk membuka skor Academy.',
    'You scored 2 of 5. Score 4 of 5 to unlock Academy score.': 'Skormu 2 dari 5. Raih 4 dari 5 untuk membuka skor Academy.',
@@ -302,10 +302,10 @@ export const indonesianCoverageE: Record<string, string> = {
    'Repay a loan on time': 'Bayar pinjaman tepat waktu',
    '2-loan on-time streak': '2 pinjaman beruntun dibayar tepat waktu',
    'Repay a full-limit credit': 'Bayar pinjaman senilai limit penuh',
-   'Borrow from 2 lenders': 'Pinjam dari 2 pemberi pinjaman',
+   'Borrow from 2 moo-lenders': 'Pinjam dari 2 moo-lender',
    'Repay $100 total': 'Bayar kembali total $100',
    'Become a trusted borrower': 'Jadi peminjam tepercaya',
-   '₱50 GrabFood voucher': 'Voucher GrabFood ₱50',
+   '₱50 GrabMart reward': 'Voucher GrabMart ₱50',
    'to unlock LV.1': 'untuk membuka LV.1',
    Top: 'Level tertinggi',
    'level reached': 'tercapai',
@@ -452,12 +452,11 @@ export const indonesianCoverageE: Record<string, string> = {
    'No Defaults': 'Tanpa Gagal Bayar',
    'Borrowers Backed': 'Peminjam yang Didukung',
    'No loans funded yet': 'Belum ada pinjaman yang didanai',
-   'This lender has not funded a loan yet, so there is nothing to summarise.':
-      'Pemberi pinjaman ini belum mendanai pinjaman apa pun, jadi belum ada yang bisa diringkas.',
+   'This moo-lender has not funded a loan yet, so there is nothing to summarise.':
+      'Moo-lender ini belum mendanai pinjaman apa pun, jadi belum ada yang bisa diringkas.',
    'Lending Patterns': 'Pola Pendanaan',
    'Loans Funded': 'Pinjaman yang Didanai',
-   'Who this lender has backed and the status of each loan.':
-      'Siapa saja yang didukung pemberi pinjaman ini dan status setiap pinjamannya.',
+   'Who this moo-lender has backed and the status of each loan.': 'Siapa saja yang didukung moo-lender ini dan status setiap pinjamannya.',
    'Loan / borrower': 'Pinjaman / peminjam',
    'Usual amount funded': 'Jumlah dana biasanya',
    'Typical time to be repaid': 'Waktu biasanya hingga dibayar kembali',
@@ -526,8 +525,8 @@ export const indonesianCoverageE: Record<string, string> = {
       'Kirim USDC kamu ke exchange atau layanan — GCrypto (GCash), Coins.ph, PDAX, atau Binance P2P.',
    "Moodeng itself charges $0 — the only cost is the exchange's conversion fee. Coins.ph is the cheapest route we've found in the Philippines: about 0.70% for a full round trip. For a $15 loan taken out and repaid, the all-in cost through Coins.ph is roughly ₱6.50 (about $0.10) — a small trading fee each way, a free PESONet bank cash-out, and the tiny network fee. If you want the pesos instantly, InstaPay adds a flat ₱5 (round trip ≈ ₱11.50, about $0.19). Other services build their margin into the rate, so they usually cost more.":
       'Moodeng sendiri tidak memungut biaya ($0) — satu-satunya biaya adalah biaya konversi di exchange. Coins.ph adalah rute termurah yang kami temukan di Filipina: sekitar 0.70% untuk satu kali pulang-pergi. Untuk pinjaman $15 yang dicairkan lalu dibayar kembali, total biayanya lewat Coins.ph kira-kira ₱6.50 (sekitar $0.10) — biaya trading kecil di tiap arah, pencairan ke bank lewat PESONet yang gratis, dan biaya jaringan yang sangat kecil. Kalau ingin pesonya masuk seketika, InstaPay menambah biaya tetap ₱5 (pulang-pergi ≈ ₱11.50, sekitar $0.19). Layanan lain menyelipkan margin mereka di kurs, jadi biasanya lebih mahal.',
-   'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with lenders, but it does not raise your Credit Level. Most borrowers use both — Trust-Building Loans to keep their repayment record active, Credit-Building Loans to grow the limit.':
-      'Ada dua jenis pinjaman. Credit-Building Loan adalah pinjaman senilai seluruh limitmu saat ini — membayarnya tepat waktu akan menaikkan limitmu dan membuka level berikutnya. Trust-Building Loan adalah pinjaman apa pun yang lebih kecil dari limitmu; pinjaman ini tetap menambah riwayat pembayaran kembali dan reputasimu di mata pemberi pinjaman, tapi tidak menaikkan Level Kredit kamu. Sebagian besar peminjam memakai keduanya — Trust-Building Loan agar riwayat pembayaran kembali tetap aktif, Credit-Building Loan untuk menaikkan limit.',
+   'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with moo-lenders, but it does not raise your Credit Level. Most borrowers use both — Trust-Building Loans to keep their repayment record active, Credit-Building Loans to grow the limit.':
+      'Ada dua jenis pinjaman. Credit-Building Loan adalah pinjaman senilai seluruh limitmu saat ini — membayarnya tepat waktu akan menaikkan limitmu dan membuka level berikutnya. Trust-Building Loan adalah pinjaman apa pun yang lebih kecil dari limitmu; pinjaman ini tetap menambah riwayat pembayaran kembali dan reputasimu di mata moo-lender, tapi tidak menaikkan Level Kredit kamu. Sebagian besar peminjam memakai keduanya — Trust-Building Loan agar riwayat pembayaran kembali tetap aktif, Credit-Building Loan untuk menaikkan limit.',
    // src/components/worldId/WorldIdVerificationOverlays.tsx
    'Getting World ID ready...': 'Menyiapkan World ID...',
    'Continue in World App': 'Lanjutkan di World App',
@@ -606,14 +605,14 @@ export const indonesianCoverageE: Record<string, string> = {
    "World ID verification isn't working right now. Please verify with your ID instead, or try again later.":
       'Verifikasi World ID sedang tidak berfungsi. Silakan verifikasi dengan ID kamu saja, atau coba lagi nanti.',
    "World ID verification isn't working": 'Verifikasi World ID tidak berfungsi',
-   'Tell lenders what the money will be used for.': 'Beri tahu pemberi pinjaman untuk apa uang ini akan dipakai.',
+   'Tell moo-lenders what the money will be used for.': 'Beri tahu moo-lender untuk apa uang ini akan dipakai.',
    'Please write it in English': 'Tolong tulis dalam bahasa Inggris',
    'Improve your reason': 'Perbaiki alasanmu',
    'Update your reason, then tap “Make Your Request” again.': 'Perbarui alasanmu, lalu ketuk “Kirim permintaanmu” lagi.',
-   'Tell lenders what the money will be used for. Update your reason, then tap “Make Your Request” again.':
-      'Beri tahu pemberi pinjaman untuk apa uang ini akan dipakai. Perbarui alasanmu, lalu ketuk “Kirim permintaanmu” lagi.',
-   'Please write your reason in English — the lenders reading it don’t speak Tagalog. Update your reason, then tap “Make Your Request” again.':
-      'Tolong tulis alasanmu dalam bahasa Inggris — pemberi pinjaman yang membacanya tidak bisa bahasa Tagalog. Perbarui alasanmu, lalu ketuk “Kirim permintaanmu” lagi.',
+   'Tell moo-lenders what the money will be used for. Update your reason, then tap “Make Your Request” again.':
+      'Beri tahu moo-lender untuk apa uang ini akan dipakai. Perbarui alasanmu, lalu ketuk “Kirim permintaanmu” lagi.',
+   'Please write your reason in English — the moo-lenders reading it only read English. Update your reason, then tap “Make Your Request” again.':
+      'Tolong tulis alasanmu dalam bahasa Inggris — moo-lender yang membacanya hanya bisa membaca bahasa Inggris. Perbarui alasanmu, lalu ketuk “Kirim permintaanmu” lagi.',
    'Your info is missing': 'Infomu belum lengkap',
    'We need your "About you" details before posting. Close this and tap Request a loan again to fill them in — or tap Help and we\'ll sort it out.':
       'Kami butuh detail "Tentang kamu" sebelum memposting. Tutup ini dan ketuk Ajukan pinjaman lagi untuk mengisinya — atau ketuk Bantuan dan kami akan membantu.',
@@ -642,5 +641,28 @@ export const indonesianCoverageE: Record<string, string> = {
    'Try this:': 'Coba ini:',
    'Use this': 'Pakai ini',
    'Message us to help write this in English': 'Kirim pesan ke kami untuk bantuan menulis ini dalam bahasa Inggris',
-   'Message us for help wording this': 'Kirim pesan ke kami untuk bantuan menyusun kalimatnya'
+   'Message us for help wording this': 'Kirim pesan ke kami untuk bantuan menyusun kalimatnya',
+   // ContactsStep Android Messenger flow (copy code & open chat)
+   'Send us your code on Messenger': 'Kirim kode kamu ke kami lewat Messenger',
+   'Copy code & open Messenger': 'Salin kode & buka Messenger',
+   'Tap the blue button. It copies your code and opens our chat.': 'Ketuk tombol biru. Kode kamu akan tersalin dan chat kami terbuka.',
+   'Tap Get Started if Messenger asks.': 'Ketuk Get Started (Mulai) jika Messenger memintanya.',
+   'Paste the code and send it.': 'Tempel kodenya lalu kirim.',
+   'Waiting for your message. This turns green on its own.': 'Menunggu pesan kamu. Ini akan berubah hijau dengan sendirinya.',
+   'No Messenger app? Open Facebook, search Moodeng Credit, tap Message, and send the code there.':
+      'Tidak punya aplikasi Messenger? Buka Facebook, cari Moodeng Credit, ketuk Kirim Pesan, lalu kirim kodenya di sana.',
+   '1 min': '1 menit',
+   'Getting your code…': 'Mengambil kode kamu…',
+   'We give you a short code to send us on Messenger': 'Kami beri kode singkat untuk kamu kirim ke kami lewat Messenger',
+   // ContactsStep Android Messenger timing match
+   'Connect on Messenger': 'Hubungkan di Messenger',
+   'Tap the blue button. Our chat opens in Messenger.': 'Ketuk tombol biru. Chat kami terbuka di Messenger.',
+   'Tap Get Started, or send us a message. We connect you automatically.':
+      'Ketuk Get Started (Mulai), atau kirim pesan ke kami. Kami hubungkan kamu otomatis.',
+   'Not green after a minute? Paste the code (already copied) and send it.':
+      'Belum hijau setelah satu menit? Tempel kodenya (sudah tersalin) lalu kirim.',
+   // ContactsStep Android Messenger hints
+   "Messenger didn't open? Open Facebook, search Moodeng Credit, tap Message, and say hi.":
+      'Messenger tidak terbuka? Buka Facebook, cari Moodeng Credit, ketuk Kirim Pesan, lalu sapa kami.',
+   'Opens our chat. Say hi and you’re connected.': 'Membuka chat kami. Sapa kami dan kamu langsung terhubung.'
 };

@@ -1,10 +1,11 @@
 import { ArrowLeft, ArrowRight, ChevronDown, Download, MapPin } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
 import { SUPPORTED_DIDIT_COUNTRIES } from '@/components/verification/CountryFlags';
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
+import { PRE_KYC_CONNECT_PATH, usePreKycGate } from '@/hooks/usePreKycGate';
 import { clearVerifyFlow, type VerifyMethod } from '@/lib/verifyFlow';
 
 type VerifyYourselfModalProps = {
@@ -61,10 +62,24 @@ export const WorldIdOrb = ({ size = 22 }: { size?: number }) => (
    </svg>
 );
 
-export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: VerifyYourselfModalProps) {
+export default function VerifyYourselfModal(props: VerifyYourselfModalProps) {
+   // Mounted only while open, so pages that keep a closed modal around never run its checks.
+   return props.isOpen ? <OpenVerifyYourselfModal {...props} /> : null;
+}
+
+function OpenVerifyYourselfModal({ isOpen, onClose, returnTo }: VerifyYourselfModalProps) {
    const navigate = useNavigate();
    const [step, setStep] = useState<'choose' | 'orb-info' | 'passport-info'>('choose');
    const [showCountries, setShowCountries] = useState(false);
+   const preKycGate = usePreKycGate();
+
+   // Not met the team yet (pre-KYC gate): every "Verify" button leads to Messenger + the intro call
+   // first, so the chooser never opens — /onboarding/connect sends them on to KYC once approved.
+   useEffect(() => {
+      if (!isOpen || !preKycGate.isGated) return;
+      onClose();
+      navigate(PRE_KYC_CONNECT_PATH, { state: { returnTo } });
+   }, [isOpen, preKycGate.isGated, onClose, navigate, returnTo]);
 
    const start = useCallback(
       (method: VerifyMethod) => {
@@ -86,7 +101,7 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: Verif
       onClose();
    }, [onClose]);
 
-   if (!isOpen) {
+   if (!isOpen || preKycGate.isGated) {
       return null;
    }
 
@@ -277,7 +292,7 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: Verif
             <div className="flex flex-col gap-2 items-center text-center">
                <h2 className="text-md-h4 font-semibold text-md-heading">Verify Yourself</h2>
                <p className="text-md-b1 text-md-neutral-1200">
-                  Confirm your identity to unlock your account — a one-time check that takes about 3 minutes.
+                  A one-time ID check so moo-lenders know you're a real person — it takes about 3 minutes.
                </p>
             </div>
 

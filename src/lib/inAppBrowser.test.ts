@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { buildAndroidIntentUrl, detectInAppBrowser } from '@/lib/inAppBrowser';
+import { buildAndroidIntentUrl, detectInAppBrowser, metaIosHost, watchForFailedHandOff } from '@/lib/inAppBrowser';
 
 // Real-world user-agent strings captured from the various in-app browsers.
 const UA = {
@@ -23,6 +23,33 @@ const UA = {
 };
 
 describe('detectInAppBrowser', () => {
+   it('recognizes the iPhone Facebook app browser (userbuds, 2026-10-14)', () => {
+      const ua =
+         'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/23G71 [FBAN/FBIOS;FBAV/579.0.0.23.106;FBBV/0;FBDV/iPhone15,2;FBMD/iPhone;FBSN/iOS;FBSV/26.6;FBSS/3;FBCR/;FBID/phone;FBLC/en_US;FBOP/5]';
+      expect(detectInAppBrowser(ua, { standalone: false })).toMatchObject({ isInApp: true, os: 'ios', appName: 'Facebook' });
+   });
+
+   // An iOS email app opening a sign-in link (captured from a borrower's logins, 2026-09-22).
+   const iosAppWebView =
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148';
+
+   it('treats an unnamed iOS app webview (e.g. an email app) as in-app', () => {
+      const info = detectInAppBrowser(iosAppWebView, { standalone: false });
+      expect(info.isInApp).toBe(true);
+      expect(info.appName).toBeNull();
+      expect(info.canBreakOut).toBe(false);
+   });
+
+   it('does not flag the Home Screen web app, which has the same user agent', () => {
+      expect(detectInAppBrowser(iosAppWebView, { standalone: true }).isInApp).toBe(false);
+   });
+
+   it('does not flag Chrome on iOS', () => {
+      const chromeIos =
+         'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/155.0.8059.37 Mobile/15E148 Safari/604.1';
+      expect(detectInAppBrowser(chromeIos, { standalone: false }).isInApp).toBe(false);
+   });
+
    it('names Messenger on iOS and cannot force a break-out', () => {
       const info = detectInAppBrowser(UA.messengerIos);
       expect(info.isInApp).toBe(true);
@@ -63,6 +90,37 @@ describe('detectInAppBrowser', () => {
    });
 });
 
+// Real iPhone user agents from PostHog pageviews (2026-10-18): same FBAN/FBIOS, different apps.
+const META_IOS = {
+   facebookApp:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/23G83 Safari/604.1 [FBAN/FBIOS;FBAV/582.0.0.37.71;FBBV/1084662387;FBDV/iPhone12,8;FBMD/iPhone;FBSN/iOS;FBSV/26.6.1;FBSS/2;FBID/phone;FBLC/en_TH;FBOP/5;FBRV/1092614939;IABMV/1]',
+   facebookAppOld:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/23G71 [FBAN/FBIOS;FBAV/579.0.0.23.106;FBBV/0;FBDV/iPhone15,2;FBMD/iPhone;FBSN/iOS;FBSV/26.6;FBSS/3;FBCR/;FBID/phone;FBLC/en_US;FBOP/5]',
+   messenger:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/23G83 [FBAN/FBIOS;FBAV/582.0.0.26.106;FBBV/1084662339;FBDV/iPhone12,8;FBMD/iPhone;FBSN/iOS;FBSV/26.6.1;FBSS/2;FBCR/;FBID/phone;FBLC/en_TH;FBOP/80]'
+};
+
+describe('metaIosHost', () => {
+   it('tells the Facebook app from Messenger on iPhone', () => {
+      expect(metaIosHost(META_IOS.facebookApp)).toBe('facebook');
+      expect(metaIosHost(META_IOS.facebookAppOld)).toBe('facebook');
+      expect(metaIosHost(META_IOS.messenger)).toBe('messenger');
+   });
+
+   it('both still count as the Facebook in-app browser', () => {
+      for (const ua of Object.values(META_IOS)) {
+         expect(detectInAppBrowser(ua, { standalone: false })).toMatchObject({ isInApp: true, os: 'ios', appName: 'Facebook' });
+      }
+   });
+
+   it('says nothing for other browsers or an unknown format', () => {
+      expect(metaIosHost(UA.safariIos)).toBeNull();
+      expect(metaIosHost(UA.facebookAndroid)).toBeNull();
+      expect(metaIosHost(UA.messengerIos)).toBeNull();
+      expect(metaIosHost(META_IOS.messenger.replace('FBOP/80', 'FBOP/9'))).toBeNull();
+   });
+});
+
 describe('buildAndroidIntentUrl', () => {
    it('wraps an https URL in a Chrome intent with an https fallback', () => {
       const intent = buildAndroidIntentUrl('https://moodeng.app/lend/loan/42?ref=fb');
@@ -71,5 +129,39 @@ describe('buildAndroidIntentUrl', () => {
       expect(intent).toContain('package=com.android.chrome');
       expect(intent).toContain(`S.browser_fallback_url=${encodeURIComponent('https://moodeng.app/lend/loan/42?ref=fb')}`);
       expect(intent.endsWith(';end')).toBe(true);
+   });
+});
+
+describe('watchForFailedHandOff', () => {
+   afterEach(() => {
+      vi.useRealTimers();
+   });
+
+   it('reports a failed hand-off when the page is still visible after the delay', () => {
+      vi.useFakeTimers();
+      const onStillHere = vi.fn();
+      watchForFailedHandOff(onStillHere, 1500);
+      vi.advanceTimersByTime(1499);
+      expect(onStillHere).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1);
+      expect(onStillHere).toHaveBeenCalledTimes(1);
+   });
+
+   it('stays quiet when the page loses focus (the other browser opened)', () => {
+      vi.useFakeTimers();
+      const onStillHere = vi.fn();
+      watchForFailedHandOff(onStillHere, 1500);
+      window.dispatchEvent(new Event('blur'));
+      vi.advanceTimersByTime(2000);
+      expect(onStillHere).not.toHaveBeenCalled();
+   });
+
+   it('stays quiet after cleanup', () => {
+      vi.useFakeTimers();
+      const onStillHere = vi.fn();
+      const stop = watchForFailedHandOff(onStillHere, 1500);
+      stop();
+      vi.advanceTimersByTime(2000);
+      expect(onStillHere).not.toHaveBeenCalled();
    });
 });

@@ -13,7 +13,7 @@ function LendingIncentiveCard({ item }: LendingIncentiveCardProps): JSX.Element 
       <article className="lender-incentive-card mt-4 w-full max-w-[1064px] rounded-[28px] bg-white p-8 shadow-sm max-md:p-5">
          <div className={`grid gap-8 md:grid-cols-[0.95fr_1.05fr] md:items-center ${isImageLeft ? 'md:[&>*:first-child]:order-2' : ''}`}>
             <div className="lender-incentive-copy">
-               <p className="text-md-b2 font-semibold uppercase tracking-[0.14em] text-stone-500">Lender terms</p>
+               <p className="text-md-b2 font-semibold uppercase tracking-[0.14em] text-stone-500">Moo-lender terms</p>
                <h2 className="mt-4 text-4xl font-semibold leading-tight tracking-normal text-neutral-950 max-md:text-3xl">
                   {item.titleHighlight ? (
                      <>

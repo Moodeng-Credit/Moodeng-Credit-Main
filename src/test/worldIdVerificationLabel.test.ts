@@ -8,7 +8,7 @@ describe('getWorldIdVerificationLabel', () => {
    });
 
    it('shows lender-specific text for active lender accounts', () => {
-      expect(getWorldIdVerificationLabel({ isWorldId: 'ACTIVE', userRole: 'lender' })).toBe('Verified Lender');
+      expect(getWorldIdVerificationLabel({ isWorldId: 'ACTIVE', userRole: 'lender' })).toBe('Verified Moo-lender');
    });
 
    it('falls back when an active account has no role yet', () => {

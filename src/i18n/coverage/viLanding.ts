@@ -6,8 +6,8 @@ export const vietnameseCoverageLanding: Record<string, string> = {
 
    // src/views/borrowerBenefits/sections/HeroSection.tsx
    // Rendered as "<b>Moodeng</b> connects ..."; the text node keeps its own leading space.
-   'connects borrowers directly with people willing to lend. There is no escrow desk and no middle-man setting the rules: you request, a lender funds, and your repayment record grows from there.':
-      'kết nối trực tiếp người vay với những người sẵn sàng cho vay. Không có bàn ký quỹ, không có bên trung gian đặt luật: bạn gửi yêu cầu, người cho vay cấp vốn, và hồ sơ trả nợ của bạn lớn dần từ đó.',
+   'connects borrowers directly with people willing to lend. There is no escrow desk and no middle-man setting the rules: you request, a moo-lender funds, and your repayment record grows from there.':
+      'kết nối trực tiếp người vay với những người sẵn sàng cho vay. Không có bàn ký quỹ, không có bên trung gian đặt luật: bạn gửi yêu cầu, moo-lender cấp vốn, và hồ sơ trả nợ của bạn lớn dần từ đó.',
 
    // src/views/borrowerBenefits/sections/FastGlobalAccessSection.tsx
    'Why borrowing feels different': 'Vì sao vay ở đây lại khác biệt',
@@ -58,7 +58,7 @@ export const vietnameseCoverageLanding: Record<string, string> = {
    'Credit does not follow': 'Tín dụng không theo họ',
    'Repayment discipline abroad rarely becomes a portable credit record they can use later.':
       'Việc trả nợ đều đặn ở nước ngoài hiếm khi trở thành hồ sơ tín dụng mà họ mang theo và dùng lại được sau này.',
-   'What lenders fund': 'Người cho vay cấp vốn cho gì',
+   'What moo-lenders fund': 'Moo-lender cấp vốn cho gì',
    'Small amounts with transparent borrower-proposed terms.': 'Số tiền nhỏ, với điều khoản minh bạch do người vay đề xuất.',
    'Real repayment history': 'Lịch sử trả nợ thật',
    'Each repayment helps create a record the borrower can keep building.':
@@ -75,7 +75,7 @@ export const vietnameseCoverageLanding: Record<string, string> = {
       'Nhờ có Orb, chúng tôi có thể bắt đầu với những người dùng chứng minh được mình là người vay thật và không trùng lặp.',
    'Why this matters': 'Vì sao điều này quan trọng',
    'Lower trust friction': 'Dễ tin nhau hơn',
-   'Verification helps lenders evaluate people they have never met.': 'Xác minh giúp người cho vay đánh giá những người họ chưa từng gặp.',
+   'Verification helps moo-lenders evaluate people they have never met.': 'Xác minh giúp moo-lender đánh giá những người họ chưa từng gặp.',
    'Better than quick-loan apps': 'Tốt hơn ứng dụng vay nhanh',
    'Transparent loans can help borrowers avoid predatory emergency options.':
       'Khoản vay minh bạch giúp người vay tránh những lựa chọn cho vay nặng lãi lúc khẩn cấp.',
@@ -92,7 +92,7 @@ export const vietnameseCoverageLanding: Record<string, string> = {
    'Independent credit': 'Tín dụng độc lập',
    'The long-term goal is credit the borrower owns, not a score trapped in one country.':
       'Mục tiêu lâu dài là tín dụng thuộc về chính người vay, không phải một điểm số bị kẹt ở một quốc gia.',
-   'Lender upside': 'Lợi ích cho người cho vay',
+   'Moo-lender upside': 'Lợi ích cho moo-lender',
    'Fund useful moments': 'Cấp vốn cho những lúc thật sự cần',
    'Support real needs without pretending every loan is life-changing.':
       'Hỗ trợ nhu cầu thật mà không cần tô vẽ rằng khoản vay nào cũng thay đổi cuộc đời.',
@@ -124,9 +124,9 @@ export const vietnameseCoverageLanding: Record<string, string> = {
    'Anonymous Lending': 'Cho vay ẩn danh',
    'Wallet-based lending with usernames keeps your real identity private.':
       'Cho vay qua ví với tên người dùng giúp giữ kín danh tính thật của bạn.',
-   'No Fees for Lenders, Ever': 'Người cho vay không bao giờ mất phí',
-   "Unlike other platforms, we don't charge lenders any commissions or monthly fees.":
-      'Khác với các nền tảng khác, chúng tôi không thu hoa hồng hay phí hằng tháng của người cho vay.',
+   'No Fees for Moo-lenders, Ever': 'Moo-lender không bao giờ mất phí',
+   "Unlike other platforms, we don't charge moo-lenders any commissions or monthly fees.":
+      'Khác với các nền tảng khác, chúng tôi không thu hoa hồng hay phí hằng tháng của moo-lender.',
    'Advanced Security': 'Bảo mật nâng cao',
    'Protection against VPN-users, scammers, and other malicious actors.':
       'Bảo vệ trước người dùng VPN, kẻ lừa đảo và các đối tượng xấu khác.',
@@ -155,8 +155,8 @@ export const vietnameseCoverageLanding: Record<string, string> = {
       'Xác minh danh tính giúp đảm bảo mỗi tài khoản người vay thuộc về đúng một người thật.',
    'Verification is a trust signal, not a loan guarantee.': 'Xác minh là tín hiệu tin cậy, không phải bảo đảm khoản vay.',
    'Verified first': 'Xác minh trước',
-   'Borrowers complete a quick ID + selfie check, or verify with World ID, before they can request loans. That gives lenders a real-person signal, and the ID is checked by our verification partner, never stored by Moodeng.':
-      'Người vay hoàn tất bước kiểm tra giấy tờ tùy thân + ảnh selfie nhanh, hoặc xác minh bằng World ID, trước khi có thể yêu cầu vay. Nhờ đó người cho vay biết đây là người thật, còn giấy tờ được đối tác xác minh của chúng tôi kiểm tra và Moodeng không bao giờ lưu trữ.',
+   'Borrowers complete a quick ID + selfie check, or verify with World ID, before they can request loans. That gives moo-lenders a real-person signal, and the ID is checked by our verification partner, never stored by Moodeng.':
+      'Người vay hoàn tất bước kiểm tra giấy tờ tùy thân + ảnh selfie nhanh, hoặc xác minh bằng World ID, trước khi có thể yêu cầu vay. Nhờ đó moo-lender biết đây là người thật, còn giấy tờ được đối tác xác minh của chúng tôi kiểm tra và Moodeng không bao giờ lưu trữ.',
    'Borrowers who already use World App can verify with World ID instead of the ID + selfie check.':
       'Người vay đã dùng World App có thể xác minh bằng World ID thay cho bước kiểm tra giấy tờ tùy thân + ảnh selfie.',
    'We are starting with Filipinos and Southeast Asians working overseas. Small loans can cover urgent gaps and help borrowers build credit independently.':

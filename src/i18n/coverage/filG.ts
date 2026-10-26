@@ -12,15 +12,15 @@ export const filipinoCoverageG: Record<string, string> = {
    'left to LV.8': 'na lang para sa LV.8',
 
    // src/views/dashboard-v2/useDashboardV2Model.ts
-   'a lender': 'isang lender',
+   'a moo-lender': 'isang moo-lender',
 
    // src/views/dashboard/RequestBoard.tsx
    'New request paused': 'Naka-pause ang bagong request',
    'Request limit unavailable': 'Hindi ma-check ang request limit',
    'We could not check your request limit. Please try again.': 'Hindi namin ma-check ang request limit mo. Pakisubukan ulit.',
-   'Lenders browse & fund': 'Nagba-browse at nagpopondo ang mga lender',
-   "Lenders scroll through open requests, check each borrower's repayment history and trust signals, then fund the ones they believe in.":
-      'Tinitingnan ng mga lender ang mga bukas na request, sinusuri ang repayment history at mga senyales ng tiwala ng bawat borrower, saka pinopondohan ang mga pinagkakatiwalaan nila.',
+   'Moo-lenders browse & fund': 'Nagba-browse at nagpopondo ang mga moo-lender',
+   "Moo-lenders scroll through open requests, check each borrower's repayment history and trust signals, then fund the ones they believe in.":
+      'Tinitingnan ng mga moo-lender ang mga bukas na request, sinusuri ang repayment history at mga senyales ng tiwala ng bawat borrower, saka pinopondohan ang mga pinagkakatiwalaan nila.',
    "Create a free account to borrow or lend. Pick your role after signing up and we'll walk you through the rest.":
       'Gumawa ng libreng account para humiram o magpahiram. Piliin ang role mo pagkatapos mag-sign up at gagabayan ka namin sa susunod.',
    'Thanks — see you on the call!': 'Salamat — kita tayo sa call!',
@@ -31,8 +31,8 @@ export const filipinoCoverageG: Record<string, string> = {
    'Repayment date required': 'Kailangan ang repayment date',
    'Choose a repayment date before making your request.': 'Pumili ng repayment date bago gawin ang request mo.',
    'Reason required': 'Kailangan ang dahilan',
-   'Add a short reason so lenders know what the loan is for.':
-      'Maglagay ng maikling dahilan para malaman ng mga lender kung para saan ang loan.',
+   'Add a short reason so moo-lenders know what the loan is for.':
+      'Maglagay ng maikling dahilan para malaman ng mga moo-lender kung para saan ang loan.',
    'This looks low-effort. Requests that appear to have no real effort may be deleted — submit again to post anyway.':
       'Mukhang minadali ito. Puwedeng ma-delete ang mga request na mukhang walang tunay na effort — i-submit ulit para i-post pa rin.',
    'This looks low-effort. Requests that appear to have no real effort may be deleted — submit again to post anyway. Tap “Make Your Request” again to post it anyway.':
@@ -48,7 +48,7 @@ export const filipinoCoverageG: Record<string, string> = {
    'Only the borrower who made a pending request can delete it.':
       'Ang borrower lang na gumawa ng pending na request ang puwedeng mag-delete nito.',
    'Request deleted': 'Na-delete ang request',
-   'Lenders will no longer see this request on the board.': 'Hindi na makikita ng mga lender ang request na ito sa board.',
+   'Moo-lenders will no longer see this request on the board.': 'Hindi na makikita ng mga moo-lender ang request na ito sa board.',
    'It may already be funded or unavailable. Refreshing the board now.':
       'Baka napondohan na ito o hindi na available. Nire-refresh na ang board.',
    'See you on the call': 'Kita tayo sa call',
@@ -169,16 +169,16 @@ export const filipinoCoverageG: Record<string, string> = {
    'in your wallet': 'sa wallet mo',
 
    // src/views/dashboard/components/LenderDiversitySection.tsx
-   '1 Unique Lender': '1 natatanging lender',
-   '2 Unique Lenders': '2 natatanging lender',
-   '3 Unique Lenders': '3 natatanging lender',
-   '4 Unique Lenders': '4 na natatanging lender',
-   '5 Unique Lenders': '5 natatanging lender',
-   '6 Unique Lenders': '6 na natatanging lender',
-   '7 Unique Lenders': '7 natatanging lender',
-   '8 Unique Lenders': '8 natatanging lender',
-   '9 Unique Lenders': '9 na natatanging lender',
-   '10 Unique Lenders': '10 natatanging lender',
+   '1 Unique Moo-lender': '1 natatanging moo-lender',
+   '2 Unique Moo-lenders': '2 natatanging moo-lender',
+   '3 Unique Moo-lenders': '3 natatanging moo-lender',
+   '4 Unique Moo-lenders': '4 na natatanging moo-lender',
+   '5 Unique Moo-lenders': '5 natatanging moo-lender',
+   '6 Unique Moo-lenders': '6 na natatanging moo-lender',
+   '7 Unique Moo-lenders': '7 natatanging moo-lender',
+   '8 Unique Moo-lenders': '8 natatanging moo-lender',
+   '9 Unique Moo-lenders': '9 na natatanging moo-lender',
+   '10 Unique Moo-lenders': '10 natatanging moo-lender',
    'Early Score': 'Maagang score',
 
    // src/views/dashboard/components/LoanRequestModal.tsx
@@ -290,14 +290,14 @@ export const filipinoCoverageG: Record<string, string> = {
    'Enter the amount you will repay.': 'Ilagay ang halagang babayaran mo.',
    'Repayment must be at least $1 more than you borrow.': 'Dapat mas mataas nang kahit $1 ang bayad kaysa sa hiniram mo.',
    'Choose when you will repay.': 'Piliin kung kailan ka magbabayad.',
-   'Please add a reason so lenders know what the loan is for.': 'Maglagay ng dahilan para malaman ng mga lender kung para saan ang loan.',
-   'Please write your reason in English so lenders can read it.': 'Isulat ang dahilan mo sa English para mabasa ito ng mga lender.',
+   'Please add a reason so moo-lenders know what the loan is for.': 'Maglagay ng dahilan para malaman ng mga moo-lender kung para saan ang loan.',
+   'Please write your reason in English so moo-lenders can read it.': 'Isulat ang dahilan mo sa English para mabasa ito ng mga moo-lender.',
    'Write this in English': 'Isulat ito sa English',
-   'Lenders reading your profile are in the US and Europe — please describe your situation in English.':
-      'Nasa US at Europe ang mga lender na nagbabasa ng profile mo — ilarawan ang sitwasyon mo sa English.',
+   'Moo-lenders reading your profile are in the US and Europe — please describe your situation in English.':
+      'Nasa US at Europe ang mga moo-lender na nagbabasa ng profile mo — ilarawan ang sitwasyon mo sa English.',
    'Add more to your info': 'Dagdagan pa ang info mo',
-   'Some of your info looks too short for lenders to understand — tap again to continue anyway.':
-      'Mukhang masyadong maikli ang ilan sa info mo para maintindihan ng mga lender — i-tap ulit para magpatuloy pa rin.',
+   'Some of your info looks too short for moo-lenders to understand — tap again to continue anyway.':
+      'Mukhang masyadong maikli ang ilan sa info mo para maintindihan ng mga moo-lender — i-tap ulit para magpatuloy pa rin.',
    "Couldn't save — please try again.": 'Hindi ma-save — pakisubukan ulit.',
    'Add your Facebook': 'Idagdag ang Facebook mo',
    'How can we reach you': 'Paano ka namin makokontak',
@@ -310,18 +310,18 @@ export const filipinoCoverageG: Record<string, string> = {
    'Checking code...': 'Chine-check ang code...',
    "we'd love to tell you about!": 'na gusto naming ikuwento sa iyo!',
    'One quick step to request a loan': 'Isang mabilis na hakbang para mag-request ng loan',
-   'Complete a one-time verification to start building trust with lenders.':
-      'Tapusin ang one-time verification para magsimulang bumuo ng tiwala sa mga lender.',
+   'Complete a one-time verification to start building trust with moo-lenders.':
+      'Tapusin ang one-time verification para magsimulang bumuo ng tiwala sa mga moo-lender.',
    'Current Limit: $': 'Kasalukuyang limit: $',
    '— that’s': '— ibig sabihin,',
-   'to your lender.': 'ang mapupunta sa lender mo.',
+   'to your moo-lender.': 'ang mapupunta sa moo-lender mo.',
    '4 weeks': '4 na linggo',
    '1 month': '1 buwan',
    '2 months': '2 buwan',
    'more character': 'pang character',
    'to go': 'ang kailangan',
-   'Add a bit more detail so lenders understand the need.':
-      'Magdagdag pa ng kaunting detalye para maintindihan ng mga lender ang pangangailangan.',
+   'Add a bit more detail so moo-lenders understand the need.':
+      'Magdagdag pa ng kaunting detalye para maintindihan ng mga moo-lender ang pangangailangan.',
    'Your verification is still being checked — you can send this request once it clears.':
       'Chine-check pa ang verification mo — maipapadala mo ang request na ito kapag na-clear na.',
    "You're not verified yet. Verification is the last step before you can send this request.":
@@ -331,8 +331,8 @@ export const filipinoCoverageG: Record<string, string> = {
    "You're approved 🎉": 'Approved ka na 🎉',
 
    // src/views/dashboard/components/LocationPrimingModal.tsx
-   "We check your location to keep lending safe and catch fraud. It's only used to verify your request — never shared with lenders.":
-      'Chine-check namin ang location mo para mapanatiling ligtas ang pagpapahiram at mahuli ang panloloko. Ginagamit lang ito para i-verify ang request mo — hindi kailanman ibinabahagi sa mga lender.',
+   "We check your location to keep lending safe and catch fraud. It's only used to verify your request — never shared with moo-lenders.":
+      'Chine-check namin ang location mo para mapanatiling ligtas ang pagpapahiram at mahuli ang panloloko. Ginagamit lang ito para i-verify ang request mo — hindi kailanman ibinabahagi sa mga moo-lender.',
 
    // src/views/dashboard/components/MilestoneSheets.tsx
    'Pandesal points earned': 'Mga Pandesal point na nakuha',
@@ -357,7 +357,7 @@ export const filipinoCoverageG: Record<string, string> = {
    'Unknown user': 'Hindi kilalang user',
    'Unknown Reason': 'Walang nakasaad na dahilan',
    'Link copied': 'Nakopya ang link',
-   'Send it to a lender so they can fund this request.': 'Ipadala ito sa isang lender para mapondohan nila ang request na ito.',
+   'Send it to a moo-lender so they can fund this request.': 'Ipadala ito sa isang moo-lender para mapondohan nila ang request na ito.',
    'Could not copy link': 'Hindi makopya ang link',
    'Sending your help…': 'Ipinapadala ang tulong mo…',
    'Recording your funding — hang tight.': 'Nire-record ang pagpopondo mo — sandali lang.',
@@ -370,6 +370,7 @@ export const filipinoCoverageG: Record<string, string> = {
    "Couldn't book that time. Try again, or contact support.": 'Hindi ma-book ang oras na iyan. Subukan ulit, o makipag-ugnayan sa support.',
    "You're booked with": 'Naka-book ka na kasama',
    'the Moodeng team': 'ang Moodeng team',
+   'George or Emma': 'George o Emma',
    "You've missed two calls, so booking is paused for a week.":
       'Dalawang call na ang na-miss mo, kaya naka-pause ang booking nang isang linggo.',
    'You can pick a new time from': 'Puwede kang pumili ng bagong oras simula',
@@ -393,12 +394,12 @@ export const filipinoCoverageG: Record<string, string> = {
    'Verify now': 'Mag-verify na',
    'Account ready': 'Handa na ang account',
    'Ask for a small amount with a clear reason and due date.': 'Humingi ng maliit na halaga na may malinaw na dahilan at due date.',
-   'Visible to lenders': 'Nakikita ng mga lender',
+   'Visible to moo-lenders': 'Nakikita ng mga moo-lender',
    'Request live': 'Live na ang request',
-   'A lender accepts your request and trusts you with your first loan.':
-      'Tinatanggap ng isang lender ang request mo at pinagkakatiwalaan ka sa una mong loan.',
-   'First lender signal': 'Unang senyales mula sa lender',
-   'Lender signal gained': 'May senyales na mula sa lender',
+   'A moo-lender accepts your request and trusts you with your first loan.':
+      'Tinatanggap ng isang moo-lender ang request mo at pinagkakatiwalaan ka sa una mong loan.',
+   'First moo-lender signal': 'Unang senyales mula sa moo-lender',
+   'Moo-lender signal gained': 'May senyales na mula sa moo-lender',
    'History started': 'Nagsimula na ang history',
    'View requests': 'Tingnan ang mga request',
    'Pay the full amount before the due date to start your repayment record.':
@@ -421,9 +422,9 @@ export const filipinoCoverageG: Record<string, string> = {
    'Up to $140': 'Hanggang $140',
    'Limit progress': 'Progreso ng limit',
    'Pay loans': 'Bayaran ang mga loan',
-   'Show lenders that your repayment reliability is repeatable.':
-      'Ipakita sa mga lender na tuloy-tuloy ang pagiging maaasahan mo sa pagbabayad.',
-   'Stronger lender confidence': 'Mas matibay na tiwala ng lender',
+   'Show moo-lenders that your repayment reliability is repeatable.':
+      'Ipakita sa mga moo-lender na tuloy-tuloy ang pagiging maaasahan mo sa pagbabayad.',
+   'Stronger moo-lender confidence': 'Mas matibay na tiwala ng moo-lender',
    'Reliability improved': 'Mas naging maaasahan',
    'Stronger profile': 'Mas matibay na profile',
    'Use your current Credit Level amount and repay it on time.':
@@ -432,8 +433,8 @@ export const filipinoCoverageG: Record<string, string> = {
    'Level progress': 'Progreso sa level',
    'Higher limit path': 'Daan papunta sa mas mataas na limit',
    'Learn levels': 'Alamin ang mga level',
-   'Build a reputation that does not depend on just one lender.': 'Bumuo ng reputasyon na hindi nakasalalay sa iisang lender lang.',
-   'Lender diversity signal': 'Senyales ng dami ng lender',
+   'Build a reputation that does not depend on just one moo-lender.': 'Bumuo ng reputasyon na hindi nakasalalay sa iisang moo-lender lang.',
+   'Moo-lender diversity signal': 'Senyales ng dami ng moo-lender',
    'Diversity improved': 'Dumami ang iba’t ibang lender',
    'Broader trust': 'Mas malawak na tiwala',
    'Grow from starter loans into a real repayment history.': 'Mula sa mga starter loan, bumuo ng tunay na repayment history.',
@@ -445,8 +446,8 @@ export const filipinoCoverageG: Record<string, string> = {
    'Higher borrowing power': 'Mas malaking kakayahang humiram',
    'Higher limit unlocked': 'Na-unlock ang mas mataas na limit',
    'View guide': 'Tingnan ang gabay',
-   'Complete 5 on-time repayments, use 3 lenders, and keep defaults resolved.':
-      'Makumpleto ang 5 on-time na pagbabayad, gumamit ng 3 lender, at siguraduhing resolbado ang anumang default.',
+   'Complete 5 on-time repayments, use 3 moo-lenders, and keep defaults resolved.':
+      'Makumpleto ang 5 on-time na pagbabayad, gumamit ng 3 moo-lender, at siguraduhing resolbado ang anumang default.',
    'Future top-user perks': 'Mga perk sa hinaharap para sa mga top user',
    'Priority signal': 'Senyales ng priority',
    'Review ready': 'Handa na para sa review',
@@ -632,13 +633,13 @@ export const filipinoCoverageG: Record<string, string> = {
    'Trust System & Admin Readiness': 'Trust system at kahandaan ng admin',
    'Cleaner IOU rules • Better account status and recovery controls':
       'Mas malinis na IOU rules • Mas mahusay na account status at recovery controls',
-   'The trust layer behind Moodeng has been made more consistent. Lender IOU point rules are now easier to reason about, admin status controls are closer to the real account state, and recovery workflows have more reliable data to work from. Most of this work sits behind the scenes, but it matters: borrower records, lender incentives, overdue loans, and account restrictions need to line up before the product can scale safely.':
-      'Ginawang mas pare-pareho ang trust layer sa likod ng Moodeng.\n\nMas madali nang intindihin ang mga patakaran sa IOU points ng lender, mas tugma na sa totoong estado ng account ang mga admin status control, at mas maaasahan na ang data na ginagamit ng mga recovery workflow.\n\nKaramihan sa trabahong ito ay nasa likod ng eksena, pero mahalaga ito: kailangang magtugma ang mga record ng borrower, insentibo ng lender, mga overdue na loan, at mga restriction sa account bago ligtas na mapalaki ang produkto.',
+   'The trust layer behind Moodeng has been made more consistent. Moo-lender IOU point rules are now easier to reason about, admin status controls are closer to the real account state, and recovery workflows have more reliable data to work from. Most of this work sits behind the scenes, but it matters: borrower records, moo-lender incentives, overdue loans, and account restrictions need to line up before the product can scale safely.':
+      'Ginawang mas pare-pareho ang trust layer sa likod ng Moodeng.\n\nMas madali nang intindihin ang mga patakaran sa IOU points ng moo-lender, mas tugma na sa totoong estado ng account ang mga admin status control, at mas maaasahan na ang data na ginagamit ng mga recovery workflow.\n\nKaramihan sa trabahong ito ay nasa likod ng eksena, pero mahalaga ito: kailangang magtugma ang mga record ng borrower, insentibo ng moo-lender, mga overdue na loan, at mga restriction sa account bago ligtas na mapalaki ang produkto.',
    'Support Library & Credit Education': 'Support library at edukasyon sa credit',
    'Repayment guides • Credit leveling • Borrower safety content':
       'Mga gabay sa pagbabayad • Credit leveling • Content para sa kaligtasan ng borrower',
-   'The support area has been refreshed around the questions borrowers and lenders actually ask. Guides now explain repayment, Pandesal points, credit leveling, World ID, Base Wallet setup, and borrower safety in clearer language. We also added more educational content around portable repayment history and safer alternatives to predatory lending, so new users can understand what Moodeng is building before they request or fund a loan.':
-      'Ni-refresh ang support area batay sa mga tanong na talagang itinatanong ng mga borrower at lender.\n\nMas malinaw nang ipinapaliwanag ng mga gabay ang pagbabayad, Pandesal points, credit leveling, World ID, pag-set up ng Base Wallet, at kaligtasan ng borrower.\n\nNagdagdag din kami ng mas maraming educational content tungkol sa portable na repayment history at mas ligtas na alternatibo sa mapang-abusong pagpapautang, para maintindihan ng mga bagong user kung ano ang binubuo ng Moodeng bago sila mag-request o magpondo ng loan.',
+   'The support area has been refreshed around the questions borrowers and moo-lenders actually ask. Guides now explain repayment, Pandesal points, credit leveling, World ID, Base Wallet setup, and borrower safety in clearer language. We also added more educational content around portable repayment history and safer alternatives to predatory lending, so new users can understand what Moodeng is building before they request or fund a loan.':
+      'Ni-refresh ang support area batay sa mga tanong na talagang itinatanong ng mga borrower at moo-lender.\n\nMas malinaw nang ipinapaliwanag ng mga gabay ang pagbabayad, Pandesal points, credit leveling, World ID, pag-set up ng Base Wallet, at kaligtasan ng borrower.\n\nNagdagdag din kami ng mas maraming educational content tungkol sa portable na repayment history at mas ligtas na alternatibo sa mapang-abusong pagpapautang, para maintindihan ng mga bagong user kung ano ang binubuo ng Moodeng bago sila mag-request o magpondo ng loan.',
 
    // src/views/support/HowCreditLevelsWork.tsx
    'Verify, then make your first request': 'Mag-verify, saka gawin ang una mong request',
@@ -655,8 +656,8 @@ export const filipinoCoverageG: Record<string, string> = {
    'also called a Credit Growth Loan': 'tinatawag ding Credit Growth Loan',
    'you’re ready to grow your limit and sure you can repay on time.':
       'handa ka nang palakihin ang limit mo at sigurado kang makakabayad on time.',
-   'How reliable repayment becomes a portable reputation lenders trust.':
-      'Paano nagiging portable na reputasyon na pinagkakatiwalaan ng mga lender ang maaasahang pagbabayad.',
+   'How reliable repayment becomes a portable reputation moo-lenders trust.':
+      'Paano nagiging portable na reputasyon na pinagkakatiwalaan ng mga moo-lender ang maaasahang pagbabayad.',
    'The difference between the two loan types and when to use each.':
       'Ang pagkakaiba ng dalawang uri ng loan at kung kailan gagamitin ang bawat isa.',
    'Exactly how on-time, partial, and late repayments are scored.':
@@ -689,8 +690,8 @@ export const filipinoCoverageG: Record<string, string> = {
    'Send money to family abroad in seconds': 'Magpadala ng pera sa pamilya sa abroad sa loob ng ilang segundo',
    'Pay a merchant that accepts stablecoins': 'Magbayad sa merchant na tumatanggap ng stablecoin',
    'Cash out to a bank or exchange': 'Mag-cash out sa bank o exchange',
-   'On Moodeng, this is how loans work: a lender sends you USDC, and you repay in USDC.':
-      'Sa Moodeng, ganito gumagana ang mga loan: pinapadalhan ka ng lender ng USDC, at magbabayad ka rin sa USDC.',
+   'On Moodeng, this is how loans work: a moo-lender sends you USDC, and you repay in USDC.':
+      'Sa Moodeng, ganito gumagana ang mga loan: pinapadalhan ka ng moo-lender ng USDC, at magbabayad ka rin sa USDC.',
    'DeFi use': 'Gamit sa DeFi',
    'DeFi means "decentralized finance" — financial apps that run on smart contracts instead of a bank. You can lend, borrow, or swap USDC directly from your wallet.':
       'Ang ibig sabihin ng DeFi ay "decentralized finance" — mga financial app na tumatakbo sa smart contract sa halip na sa bangko. Puwede kang magpahiram, humiram, o mag-swap ng USDC diretso mula sa wallet mo.',
@@ -737,7 +738,7 @@ export const filipinoCoverageG: Record<string, string> = {
    'If applicable': 'Kung naaangkop',
    'Available after funding': 'Available pagkatapos mapondohan',
    Refunded: 'Na-refund',
-   'Waiting for lender': 'Naghihintay ng lender',
+   'Waiting for moo-lender': 'Naghihintay ng moo-lender',
    'Repayment schedule': 'Iskedyul ng pagbabayad',
    'Repayment due': 'Due na ang bayad',
    'Partial repayment': 'Partial na bayad',
@@ -749,12 +750,12 @@ export const filipinoCoverageG: Record<string, string> = {
    'Recording your gift — hang tight.': 'Nire-record ang regalo mo — sandali lang.',
    'You returned': 'Ibinalik mo ang',
    '. That was kind of you.': '. Ang bait mo.',
-   'Gift from your lender': 'Regalo mula sa lender mo',
+   'Gift from your moo-lender': 'Regalo mula sa moo-lender mo',
    'You returned the interest': 'Ibinalik mo ang interest',
    'Interest returned!': 'Naibalik ang interest!',
    'Cannot return interest': 'Hindi maibalik ang interest',
    'Borrower wallet address is unavailable.': 'Hindi available ang wallet address ng borrower.',
-   'Lender has not accepted yet': 'Hindi pa tinatanggap ng lender',
+   'Moo-lender has not accepted yet': 'Hindi pa tinatanggap ng moo-lender',
    'Not active': 'Hindi aktibo',
    'Requested on': 'Ni-request noong',
    'This repayment was sent to the wallet you funded this loan from:':
@@ -767,16 +768,16 @@ export const filipinoCoverageG: Record<string, string> = {
    'to find these funds.': 'para makita ang mga pondong ito.',
 
    // src/views/transactions/TransactionHistory.tsx
-   'Awaiting lender': 'Naghihintay ng lender',
+   'Awaiting moo-lender': 'Naghihintay ng moo-lender',
    Returned: 'Naibalik ang',
 
    // src/views/user-profile/LenderDiversityHistory.tsx
-   'Unknown lender': 'Hindi kilalang lender',
-   'Switch lender diversity to light mode': 'Ilipat sa light mode ang lender diversity',
-   'Switch lender diversity to dark mode': 'Ilipat sa dark mode ang lender diversity',
+   'Unknown moo-lender': 'Hindi kilalang moo-lender',
+   'Switch moo-lender diversity to light mode': 'Ilipat sa light mode ang moo-lender diversity',
+   'Switch moo-lender diversity to dark mode': 'Ilipat sa dark mode ang moo-lender diversity',
    Unique: 'natatanging',
    'Shows how': 'Ipinapakita kung paano nahahati sa mga lender ang funded loan history ni',
-   "'s funded loan history is spread across lenders.": '.',
+   "'s funded loan history is spread across moo-lenders.": '.',
 
    // src/views/user-profile/ProgressHistory.tsx
    'New borrower': 'Bagong borrower',
@@ -807,8 +808,8 @@ export const filipinoCoverageG: Record<string, string> = {
    'No loan mix yet': 'Wala pang loan mix',
    'More Credit-Building Loans': 'Mas maraming Credit-Building Loan',
    'Balanced Loan Mix': 'Balanseng loan mix',
-   'Lender Insights': 'Insights ng lender',
-   'Lender Account': 'Lender account',
+   'Moo-lender Insights': 'Insights ng moo-lender',
+   'Moo-lender Account': 'Moo-lender account',
    'Switch borrower insights to light mode': 'Ilipat sa light mode ang borrower insights',
    'Switch borrower insights to dark mode': 'Ilipat sa dark mode ang borrower insights',
    'Verified borrower': 'Verified na borrower',
@@ -820,15 +821,15 @@ export const filipinoCoverageG: Record<string, string> = {
    'Borrowers Backed': 'Mga borrower na sinuportahan',
    'funded more than once': 'ang napondohan nang higit sa isang beses',
    'No loans funded yet': 'Wala pang napopondohang loan',
-   'This lender has not funded a loan yet, so there is nothing to summarise.':
-      'Wala pang napopondohang loan ang lender na ito, kaya wala pang maibubuod.',
+   'This moo-lender has not funded a loan yet, so there is nothing to summarise.':
+      'Wala pang napopondohang loan ang moo-lender na ito, kaya wala pang maibubuod.',
    'Lending Patterns': 'Mga pattern ng pagpapahiram',
    'Usual amount funded': 'Karaniwang halagang pinopondohan',
    'Typical time to be repaid': 'Karaniwang tagal bago mabayaran',
    'Repeat borrowers': 'Mga umuulit na borrower',
    'Overdue against them': 'Mga overdue sa kanila',
-   'Who this lender has backed and the status of each loan.':
-      'Kung sino ang mga sinuportahan ng lender na ito at ang status ng bawat loan.',
+   'Who this moo-lender has backed and the status of each loan.':
+      'Kung sino ang mga sinuportahan ng moo-lender na ito at ang status ng bawat loan.',
    'milestones hit': 'milestone ang naabot',
    'View all ›': 'Tingnan lahat ›',
    '1 loan repaid on time in a row': '1 loan na sunod-sunod na nabayaran on time',
@@ -842,7 +843,7 @@ export const filipinoCoverageG: Record<string, string> = {
    '9 loans repaid on time in a row': '9 loan na sunod-sunod na nabayaran on time',
    '10 loans repaid on time in a row': '10 loan na sunod-sunod na nabayaran on time',
    'Repay a loan on time to start a streak': 'Magbayad ng loan on time para magsimula ng streak',
-   '₱50 GrabFood voucher': '₱50 na GrabFood voucher',
+   '₱50 GrabMart reward': '₱50 na GrabMart reward',
    'Earned from your first on-time repayment': 'Nakuha mula sa una mong on-time na bayad',
    'Claimed: we’re sending your code': 'Na-claim na: ipinapadala na namin ang code mo',
    'Sent to your mobile': 'Naipadala na sa mobile mo',
@@ -853,8 +854,8 @@ export const filipinoCoverageG: Record<string, string> = {
    'Loan fully repaid': 'Buong nabayaran ang loan',
    'Partial repayment made': 'May partial na bayad',
    'Repaid: $': 'Nabayaran: $',
-   "Checks whether one lender funded most of the borrower's history.":
-      'Tinitingnan kung iisang lender ang nagpondo sa karamihan ng history ng borrower.',
+   "Checks whether one moo-lender funded most of the borrower's history.":
+      'Tinitingnan kung iisang moo-lender ang nagpondo sa karamihan ng history ng borrower.',
    'This borrower does not have enough loan history for a loan mix yet.':
       'Wala pang sapat na loan history ang borrower na ito para sa loan mix.',
    'Repayment-history signal': 'Senyales ng repayment history',
@@ -998,5 +999,76 @@ export const filipinoCoverageG: Record<string, string> = {
       '. Ngayong bukas na ang chat namin, karaniwang gumagana na ang pangalawang subok.',
    'Or send this code to': 'O ipadala ang code na ito sa',
    "Still stuck? We'll email you, and our team will help you finish.":
-      'Naiipit pa rin? Iee-email ka namin, at tutulungan ka ng team namin na matapos ito.'
+      'Naiipit pa rin? Iee-email ka namin, at tutulungan ka ng team namin na matapos ito.',
+   // Pre-KYC gate: src/views/dashboard/components/ConnectStep.tsx (context='kyc'),
+   // src/views/onboarding/ConnectBeforeKyc.tsx, src/components/verification/KycDeclinedNotifier.tsx,
+   // src/app/verify/page.tsx (declined → Messenger first)
+   'Before you verify your ID, we meet every borrower on a quick 15-min video call.':
+      'Bago mo i-verify ang ID mo, kinakausap muna namin ang bawat borrower sa mabilis na 15-min video call.',
+   'Verify your ID right after the call': 'I-verify ang ID mo kaagad pagkatapos ng call',
+   'The team is unlocking your ID verification — we’ll message you the moment it’s ready.':
+      'Binubuksan na ng team ang ID verification mo — imemessage ka namin agad kapag handa na.',
+   'You’re booked! Tap “I’ll be there” so we keep your spot — you can verify your ID right after the call.':
+      'Naka-book ka na! I-tap ang “I’ll be there” para maitabi namin ang slot mo — puwede mong i-verify ang ID mo pagkatapos agad ng call.',
+   'Thank you for confirming! You can verify your ID right after the call.':
+      'Salamat sa pagkumpirma! Puwede mong i-verify ang ID mo pagkatapos agad ng call.',
+   'Look around meanwhile': 'Mag-ikot-ikot muna',
+   "Your ID check didn't go through": 'Hindi pumasa ang ID check mo',
+   "That happens — let's sort it out together. Connect Messenger and the team will message you to help.":
+      'Nangyayari talaga ’yan — ayusin natin nang magkasama. I-connect ang Messenger at imemessage ka ng team para tumulong.',
+   'Connect Messenger': 'I-connect ang Messenger',
+   Later: 'Mamaya na',
+
+   // Pre-KYC gate + KYC tries (ConnectStep kyc copy, KycDeclinedNotifier, /verify, dashboard banners)
+   "Let's verify you together": "Sabay nating i-verify ka",
+   "Your ID check didn't pass 3 times, so the team will help you directly. Message us on Messenger and we'll sort it out with you.": "Tatlong beses nang hindi pumasa ang ID check mo, kaya direkta ka nang tutulungan ng team. Mag-message sa amin sa Messenger at aayusin natin ito nang magkasama.",
+   "Message us on Messenger": "Mag-message sa amin sa Messenger",
+   "1 of 3 tries left": "1 sa 3 subok na lang",
+   "2 of 3 tries left": "2 sa 3 subok na lang",
+   "Meet the team >": "Kilalanin ang team >",
+
+   // Onboarding steps + loan form (src/lib/verificationJourney.ts, LoanRequestModal, ConnectStep)
+   "Set up your wallet": "I-set up ang wallet mo",
+   "Your loans arrive here — it takes a few seconds.": "Dito papasok ang mga loan mo — ilang segundo lang.",
+   "See call details": "Tingnan ang detalye ng call",
+   "Right after your 15-min call, you can apply for your loan.": "Pagkatapos ng 15-min call mo, puwede ka nang mag-apply ng loan.",
+   "So the team can reach you — we only use it to message you about your loan.": "Para maabot ka ng team — ginagamit lang namin ito para i-message ka tungkol sa loan mo.",
+   "Tell us about you": "Sabihin sa amin ang tungkol sa iyo",
+   "A few quick questions about your work and payday.": "Ilang mabilis na tanong tungkol sa trabaho at sweldo mo.",
+   "Book your call": "I-book ang call mo",
+   "Meet the team on a quick video call — then you can apply for your loan.": "Kilalanin ang team sa mabilis na video call — tapos puwede ka nang mag-apply ng loan.",
+   "Apply for a loan": "Mag-apply ng loan",
+   "Ready to apply": "Handa nang mag-apply",
+   "Apply for a loan — you'll verify your ID (about 2 minutes, one time) when you send your request.": "Mag-apply ng loan — ive-verify mo ang ID mo (mga 2 minuto, isang beses lang) kapag ipinadala mo ang request.",
+   "View ID check": "Tingnan ang ID check",
+   "Your ID check": "Ang ID check mo",
+   "See where your ID verification stands.": "Tingnan kung nasaan na ang ID verification mo.",
+   "You're verified": "Verified ka na",
+   "You can request loans.": "Puwede ka nang humiling ng loan.",
+   "Step 1 of 3 to your first loan": "Hakbang 1 sa 3 papunta sa una mong loan",
+   "Step 2 of 3 to your first loan": "Hakbang 2 sa 3 papunta sa una mong loan",
+   "Step 3 of 3 to your first loan": "Hakbang 3 sa 3 papunta sa una mong loan",
+   "Finish setting up · Step 1 of 3": "Tapusin ang setup · Hakbang 1 sa 3",
+   "Finish setting up · Step 2 of 3": "Tapusin ang setup · Hakbang 2 sa 3",
+   "Finish setting up · Step 3 of 3": "Tapusin ang setup · Hakbang 3 sa 3",
+   "Last step: verify your ID": "Huling hakbang: i-verify ang ID mo",
+   "Fill in your request below. When you send it, you'll verify your ID — about 2 minutes, one time only.": "Punan ang request mo sa ibaba. Kapag ipinadala mo, ive-verify mo ang ID mo — mga 2 minuto, isang beses lang.",
+   "When you send this, you'll verify your ID (about 2 minutes). What you typed is kept.": "Kapag ipinadala mo ito, ive-verify mo ang ID mo (mga 2 minuto). Naka-save ang tinype mo.",
+   "Verify ID & send request": "I-verify ang ID at ipadala",
+   "Finish setting up first to send a request — you're on step 1 of 3.": "Tapusin muna ang setup bago magpadala ng request — nasa hakbang 1 sa 3 ka.",
+   "Finish setting up first to send a request — you're on step 2 of 3.": "Tapusin muna ang setup bago magpadala ng request — nasa hakbang 2 sa 3 ka.",
+   "Finish setting up first to send a request — you're on step 3 of 3.": "Tapusin muna ang setup bago magpadala ng request — nasa hakbang 3 sa 3 ka.",
+   "Connect Facebook so we can reach you": "I-connect ang Facebook para maabot ka namin",
+   "We only use it to message you about your loan — we never post, and we can't see your friends or messages.": "Ginagamit lang namin ito para i-message ka tungkol sa loan mo — hindi kami nagpo-post, at hindi namin nakikita ang mga kaibigan o message mo.",
+   "Opens Messenger — tap Get Started there. Confirms you automatically.": "Bubukas ang Messenger — i-tap ang Get Started doon. Awtomatiko kang makukumpirma.",
+   "The team is approving you — we’ll message you the moment you can apply.": "Ina-approve ka na ng team — imemessage ka namin agad kapag puwede ka nang mag-apply.",
+   "Look around first": "Mag-ikot-ikot muna",
+   "A little low for moo-lenders": "Medyo mababa para sa mga moo-lender",
+   "Questions? Message Moodeng Credit on Facebook or email support@moodeng.app — we usually reply within a day.": "May tanong? I-message ang Moodeng Credit sa Facebook o mag-email sa support@moodeng.app — karaniwang sumasagot kami sa loob ng isang araw.",
+
+   // src/hooks/useWallet.ts (Instant Wallet send failures)
+   "Your Instant Wallet needs to reconnect": "Kailangang ikonekta ulit ang Instant Wallet mo",
+   "Nothing was sent. Sign out and sign back in, or open Moodeng in another browser like Chrome, then try again.": "Walang naipadala. Mag-sign out at mag-sign in ulit, o buksan ang Moodeng sa ibang browser tulad ng Chrome, saka subukan ulit.",
+   "Your payment didn't go through": "Hindi natuloy ang bayad mo",
+   "My Instant Wallet payment failed": "Pumalya ang bayad mula sa Instant Wallet ko"
 };

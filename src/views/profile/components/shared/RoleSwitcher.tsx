@@ -22,7 +22,7 @@ export default function RoleSwitcher({ currentRole, onRoleChange }: RoleSwitcher
             className={`${isLender ? 'bg-white text-[#2a56f4]' : 'bg-[#a7b9f9] text-white'} font-semibold rounded-md px-3 md:px-6 py-2 text-xs md:text-sm`}
             type="button"
          >
-            Lender
+            Moo-lender
          </button>
       </div>
    );

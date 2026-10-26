@@ -60,7 +60,7 @@ export const mostNeededCards: CardData[] = [
          }
       ],
       opportunitySection: {
-         title: 'What lenders fund',
+         title: 'What moo-lenders fund',
          titleColor: 'text-emerald-500',
          items: [
             {
@@ -111,7 +111,7 @@ export const mostNeededCards: CardData[] = [
          items: [
             {
                title: 'Lower trust friction',
-               description: 'Verification helps lenders evaluate people they have never met.'
+               description: 'Verification helps moo-lenders evaluate people they have never met.'
             },
             {
                title: 'Better than quick-loan apps',
@@ -148,7 +148,7 @@ export const mostNeededCards: CardData[] = [
          }
       ],
       opportunitySection: {
-         title: 'Lender upside',
+         title: 'Moo-lender upside',
          titleColor: 'text-amber-500',
          items: [
             {

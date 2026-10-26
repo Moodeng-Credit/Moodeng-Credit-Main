@@ -8,13 +8,20 @@ import { AdminGuard } from '@/components/AdminGuard';
 import BottomNav from '@/components/BottomNav';
 import { BottomNavActionProvider } from '@/components/BottomNavActionContext';
 import { ExpiredLoanRequestNotifier } from '@/components/ExpiredLoanRequestNotifier';
+import { JourneyNudge } from '@/components/onboarding/JourneyNudge';
 import { SocialContactRequiredNotifier } from '@/components/SocialContactRequiredNotifier';
+import { KycDeclinedNotifier } from '@/components/verification/KycDeclinedNotifier';
 import { VerifiedCelebrationNotifier } from '@/components/verification/VerifiedCelebrationNotifier';
 import Footer from '@/components/Footer';
 import { LenderFundingPrompt } from '@/components/funding/LenderFundingPrompt';
 import LenderHomeScreenPushPrompt from '@/components/funding/LenderHomeScreenPushPrompt';
 import Header from '@/components/Header/Header';
+import { PendingCodeBanner } from '@/components/auth/PendingCodeBanner';
+import { LandingSessionCookie } from '@/components/landing/LandingSessionCookie';
+import { GuestAccountGate } from '@/components/GuestAccountGate';
 import InAppBrowserNotice from '@/components/InAppBrowserNotice';
+import OpenInBrowserPrompt from '@/components/OpenInBrowserPrompt';
+import SafariHelpSheet from '@/components/SafariHelpSheet';
 import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay';
 import MarketingPageShell from '@/components/marketing/MarketingPageShell';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -33,6 +40,8 @@ import PricingHealthPreview from '@/app/admin/PricingHealthPreview';
 import AuthSuccess from '@/app/auth-success/page';
 import AuthConfirm from '@/app/auth/confirm/page';
 import LineCallback from '@/app/auth/line/callback/page';
+import AuthStartPage from '@/app/auth/start/page';
+import TikTokCallback from '@/app/auth/tiktok/callback/page';
 import TelegramCallback from '@/app/auth/telegram/callback/page';
 import AuthVerifyCode from '@/app/auth/verify-code/page';
 import Benefits from '@/app/benefits/page';
@@ -54,9 +63,11 @@ import LenderPerformance from '@/app/lender/performance/page';
 import LenderRequestBoard from '@/app/lender/request-board/page';
 import LenderSupportedPage from '@/app/lender/supported/page';
 import Login from '@/app/login/page';
+import SignOutPage from '@/app/sign-out/page';
 import MfaChallengePage from '@/app/mfa-challenge/page';
 import MilestonesPage from '@/app/milestones/page';
 import CongratulationsPage from '@/app/onboarding/congratulations/page';
+import ConnectBeforeKycPage from '@/app/onboarding/connect/page';
 import WalletBlocked from '@/app/onboarding/wallet/blocked/page';
 import WalletConnected from '@/app/onboarding/wallet/connected/page';
 import WalletFaceCheckPage from '@/app/onboarding/wallet/face-check/page';
@@ -64,6 +75,7 @@ import WalletConnect from '@/app/onboarding/wallet/page';
 import OnboardingWelcome from '@/app/onboarding/welcome/page';
 // Import pages
 import Home from '@/app/page';
+import PayQrPage from '@/app/testqr/page';
 import PrivacyPolicyPage from '@/app/privacy-policy/page';
 import PrivacyPage from '@/app/privacy/page';
 import Profile from '@/app/profile/page';
@@ -80,6 +92,7 @@ import SupportUpdateDetailPage from '@/app/support/updates/[slug]/page';
 import SupportUpdatesPage from '@/app/support/updates/page';
 import TeamPage from '@/app/team/page';
 import TermsPage from '@/app/terms/page';
+import UnsubscribePage from '@/app/unsubscribe/page';
 import Test from '@/app/test/page';
 import UserLenderDiversityPage from '@/app/user/[username]/lender-diversity/page';
 import UserProfile from '@/app/user/[username]/page';
@@ -89,7 +102,13 @@ import DiditVerification from '@/app/verify-didit/page';
 import WorldIdVerification from '@/app/verify-world-id/page';
 import VerifyFlow from '@/app/verify/page';
 import WhyLend from '@/app/whylend/page';
-import { identifyClarity } from '@/lib/analytics/clarity';
+import CreditLineLenderPage from '@/views/creditline/CreditLineLenderPage';
+import ContinuePage from '@/views/onboarding/ContinuePage';
+import MessengerHandoff from '@/views/onboarding/MessengerHandoff';
+import { clarityEvent, clarityTag, identifyClarity, isClarityEnabled, signupMethodLabel } from '@/lib/analytics/clarity';
+import { describeBrowser, recordSignupContext, recordSignupSource } from '@/lib/attribution';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { trackNewAccount } from '@/lib/metaPixel';
 import { type RootState } from '@/store/store';
 import MoneyGuide from '@/views/academy/MoneyGuide';
 import MoneyGuideTopic from '@/views/academy/MoneyGuideTopic';
@@ -102,6 +121,7 @@ import DashboardV2 from '@/views/dashboard-v2/DashboardV2';
 import DashboardV2Milestones from '@/views/dashboard-v2/DashboardV2Milestones';
 import { DashboardV2InviteLanding, DashboardV2Referral } from '@/views/dashboard-v2/DashboardV2Rewards';
 import LoanRequestPreview from '@/views/dashboard/LoanRequestPreview';
+import WhatsAppRemindersPreview from '@/views/dashboard/WhatsAppRemindersPreview';
 import RequestBoard from '@/views/dashboard/RequestBoard';
 import FundWalletPreview from '@/views/fund/FundWalletPreview';
 import Repay from '@/views/repay/Repay';
@@ -144,6 +164,9 @@ const REPAY_CONTINUATION_ROUTES = [
    '/verify-world-id'
 ];
 
+// An account this young when the app first sees it signed in is a fresh sign-up (same as the Meta pixel).
+const CLARITY_NEW_ACCOUNT_WINDOW_MS = 30 * 60 * 1000;
+
 const canShowPreviewRoutes = () => {
    if (import.meta.env.DEV) return true;
    if (typeof window === 'undefined') return false;
@@ -166,12 +189,15 @@ export default function App() {
    // Registers this device for push and keeps the stored subscription current.
    // No-ops on every browser that can't do push, and while signed out.
    // Lenders skip the on-load prompt: they're asked right after funding instead (RepaidPushCard).
-   usePushNotifications(shouldCheckDefaultedBorrower ? user.id : null, { autoPrompt: user?.userRole !== 'lender' });
+   usePushNotifications(shouldCheckDefaultedBorrower ? user.id : null, { autoPrompt: user?.userRole === 'borrower' });
    const isAccountRestricted = user?.accountStatus === 'blocked' || user?.accountStatus === 'banned';
    const isDefaultedBorrower = defaultedBorrower.support.overdueAmount > 0;
    const repayReturnTo = (location.state as { returnTo?: string } | null)?.returnTo === 'repay';
-   const canRepayWhileDefaulted =
-      isDefaultedBorrower && (location.pathname === '/repay' || (repayReturnTo && REPAY_CONTINUATION_ROUTES.includes(location.pathname)));
+   const isOnRepayRoute = location.pathname === '/repay' || (repayReturnTo && REPAY_CONTINUATION_ROUTES.includes(location.pathname));
+   const canRepayWhileDefaulted = isDefaultedBorrower && isOnRepayRoute;
+   // A watchlisted (blocked) borrower still owes their lender: let them reach /repay for any open loan.
+   const canRepayWhileBlocked =
+      user?.accountStatus === 'blocked' && (defaultedBorrower.support.openAmount ?? 0) > 0 && isOnRepayRoute;
    const shouldShowAccountSupport = isAccountRestricted || isDefaultedBorrower;
    const isUserDetailRoute = location.pathname.includes('/progress-history') || location.pathname.includes('/lender-diversity');
    const accountSettingsParams = new URLSearchParams(location.search);
@@ -181,7 +207,7 @@ export default function App() {
    const showBottomNav =
       Boolean(user?.id) &&
       !isAccountSettingsDetail &&
-      (!shouldShowAccountSupport || canRepayWhileDefaulted) &&
+      (!shouldShowAccountSupport || canRepayWhileDefaulted || canRepayWhileBlocked) &&
       (BOTTOM_NAV_ROUTES.includes(location.pathname) ||
          (location.pathname.startsWith('/user/') && !isUserDetailRoute) ||
          location.pathname.startsWith('/support') ||
@@ -197,6 +223,40 @@ export default function App() {
          $current_url: window.location.href
       });
    }, [isPosthogEnabled, location]);
+
+   // A brand-new account: save where they came from (once; see lib/attribution).
+   useEffect(() => {
+      if (user?.id) {
+         recordSignupSource(user.id);
+         recordSignupContext(user.id);
+         trackNewAccount(user.id, user.createdAt);
+      }
+   }, [user?.id, user?.createdAt]);
+
+   // Clarity: which browser/app this session is in (Clarity can't tell the Facebook app from Chrome),
+   // and on the sign-up session, how they signed up — so recordings can be filtered by both.
+   useEffect(() => {
+      if (!isClarityEnabled) return;
+      const { browser, os } = describeBrowser();
+      clarityTag('browser', browser);
+      clarityTag('os', os);
+   }, []);
+
+   useEffect(() => {
+      if (!isClarityEnabled || !user?.id || !user.createdAt) return;
+      const created = new Date(user.createdAt).getTime();
+      if (Number.isNaN(created) || Date.now() - created > CLARITY_NEW_ACCOUNT_WINDOW_MS) return;
+      const { browser, os } = describeBrowser();
+      clarityTag('signup_browser', browser);
+      clarityTag('signup_os', os);
+      clarityEvent('signed_up');
+      void getSupabaseBrowserClient()
+         .auth.getSession()
+         .then(({ data }) => {
+            if (data.session?.user) clarityTag('signup_method', signupMethodLabel(data.session.user));
+         })
+         .catch(() => undefined);
+   }, [user?.id, user?.createdAt]);
 
    useEffect(() => {
       if (!isPosthogEnabled) {
@@ -223,21 +283,32 @@ export default function App() {
       posthog.reset();
    }, [isPosthogEnabled, user?.email, user?.id, user?.username, username]);
 
-   if (isAccountRestricted && location.pathname !== '/account-restricted') {
+   if (isAccountRestricted && !canRepayWhileBlocked && location.pathname !== '/account-restricted') {
       return <Navigate to="/account-restricted" replace />;
    }
 
-   if (shouldShowAccountSupport && !canRepayWhileDefaulted && location.pathname !== '/account-restricted') {
+   if (shouldShowAccountSupport && !canRepayWhileDefaulted && !canRepayWhileBlocked && location.pathname !== '/account-restricted') {
       return <Navigate to="/account-restricted" replace />;
    }
 
    return (
       <BottomNavActionProvider key={location.pathname}>
          <InAppBrowserNotice />
+         {/* Inside Facebook's / Messenger's browser, before sign-up: open in Chrome / Safari, or continue. */}
+         <OpenInBrowserPrompt />
+         {/* "Open in Safari" inside Facebook's iPhone browser: the ⋯ steps (the Safari link is dropped there). */}
+         <SafariHelpSheet />
+         {/* Guests (email-first sign-up) confirm their email + set a password after connecting Facebook. */}
+         <GuestAccountGate />
+         {/* Back after Facebook killed the page mid-sign-in: one tap to the code screen. */}
+         <PendingCodeBanner />
+         {/* Tells the static home page whether to show "Continue where you left off" or "Sign out". */}
+         <LandingSessionCookie />
          <WalletLoadingOverlay />
          <ExpiredLoanRequestNotifier />
          <SocialContactRequiredNotifier />
          <VerifiedCelebrationNotifier />
+         <KycDeclinedNotifier />
          <LenderFundingPrompt />
          {/* iPhone lenders who followed the Add to Home Screen guide: one tap to turn push on. */}
          {shouldCheckDefaultedBorrower && user.userRole === 'lender' ? <LenderHomeScreenPushPrompt userId={user.id} /> : null}
@@ -246,6 +317,13 @@ export default function App() {
 
             {/* Auth */}
             <Route path="/sign-in" element={<Login />} />
+            <Route path="/sign-out" element={<SignOutPage />} />
+            {/* Facility lender's report (BitRepo): password-protected, no account needed. */}
+            <Route path="/creditline" element={<CreditLineLenderPage />} />
+            {/* Desktop Messenger QR lands here on the phone (no sign-in; the code is the key). */}
+            <Route path="/fb/:code" element={<MessengerHandoff />} />
+            {/* "Pick up where you left off": the Messenger bot's link back, and the home page's. */}
+            <Route path="/continue" element={<ContinuePage />} />
             <Route path="/sign-up" element={<SignUp />} />
             <Route path="/account-restricted" element={<AccountRestrictedPage />} />
             <Route path="/mfa-challenge" element={<MfaChallengePage />} />
@@ -293,6 +371,16 @@ export default function App() {
                }
             />
             <Route
+               path="/onboarding/connect"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <ConnectBeforeKycPage />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
+            <Route
                path="/onboarding/congratulations"
                element={
                   <ProtectedRoute>
@@ -305,12 +393,24 @@ export default function App() {
             {import.meta.env.DEV ? <Route path="/onboarding/wallet-connected-preview" element={<WalletConnected />} /> : null}
             {import.meta.env.DEV ? <Route path="/onboarding/wallet-blocked-preview" element={<WalletBlocked />} /> : null}
             {import.meta.env.DEV ? <Route path="/onboarding/congratulations-preview" element={<CongratulationsPage />} /> : null}
+            {import.meta.env.DEV ? <Route path="/onboarding/connect-preview" element={<ConnectBeforeKycPage />} /> : null}
             {import.meta.env.DEV ? <Route path="/account-wallet-preview" element={<AccountWalletPreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/account-settings-preview" element={<SettingsStylePreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/fund-wallet-preview" element={<FundWalletPreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/loan-request-preview" element={<LoanRequestPreview />} /> : null}
+            {import.meta.env.DEV ? <Route path="/whatsapp-reminders-preview" element={<WhatsAppRemindersPreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/admin/pricing-preview" element={<PricingHealthPreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/history-preview" element={<TransactionDetail />} /> : null}
+
+            {/* Stableyard store-QR payment field test (admins + stableyard_qr_testers) */}
+            <Route
+               path="/testqr"
+               element={
+                  <ProtectedRoute>
+                     <PayQrPage />
+                  </ProtectedRoute>
+               }
+            />
 
             {/* Verification */}
             <Route
@@ -384,6 +484,8 @@ export default function App() {
                }
             />
             <Route path="/dashboard-v2-preview" element={<DashboardV2 />} />
+            {/* Mock borrower dashboard (two loans, $15 + $20) for Emma's video — sample data only, never writes. */}
+            <Route path="/borrower-demo" element={<Navigate to="/dashboard-v2-preview?state=demo" replace />} />
             <Route path="/dashboard-v2-preview/milestones" element={<DashboardV2Milestones />} />
             <Route path="/dashboard-v2-preview/refer" element={<DashboardV2Referral />} />
             <Route path="/dashboard-v2-preview/invite/:code" element={<DashboardV2InviteLanding />} />
@@ -573,6 +675,8 @@ export default function App() {
             <Route path="/auth/verify-code" element={<AuthVerifyCode />} />
             <Route path="/auth/telegram/callback" element={<TelegramCallback />} />
             <Route path="/auth/line/callback" element={<LineCallback />} />
+            <Route path="/auth/tiktok/callback" element={<TikTokCallback />} />
+            <Route path="/auth/start/:provider" element={<AuthStartPage />} />
 
             {/* Help & Support */}
             {/* Public, shareable chat-first hub (Mecha). Coexists with /help/:loanId
@@ -626,6 +730,7 @@ export default function App() {
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
             <Route path="/data-deletion" element={<DataDeletionPage />} />
+            <Route path="/unsubscribe" element={<UnsubscribePage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route
                path="/academy"
@@ -775,6 +880,7 @@ export default function App() {
             {/* Fallback */}
             <Route path="*" element={<Navigate to={user?.id && username ? '/' : '/request-board'} replace />} />
          </Routes>
+         <JourneyNudge bottomNavVisible={showBottomNav} />
          {showBottomNav ? <BottomNav /> : null}
       </BottomNavActionProvider>
    );

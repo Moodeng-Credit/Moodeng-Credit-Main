@@ -4,30 +4,30 @@ export const indonesianCoverageB: Record<string, string> = {
    // src/views/borrowerBenefits/sections/StartBuildingCreditSection.tsx
    'Borrower credit': 'Kredit peminjam',
    'Borrow, repay, and unlock more room over time': 'Pinjam, bayar kembali, dan buka limit lebih besar seiring waktu',
-   'The point is not to look rich on day one. Moodeng gives borrowers a way to start with small direct loans, prove repayment, and make future requests easier for lenders to understand.':
-      'Intinya bukan terlihat kaya sejak hari pertama. Moodeng memberi peminjam cara untuk mulai dengan pinjaman langsung yang kecil, membuktikan pembayaran kembali, dan membuat permintaan berikutnya lebih mudah dipahami pemberi pinjaman.',
+   'The point is not to look rich on day one. Moodeng gives borrowers a way to start with small direct loans, prove repayment, and make future requests easier for moo-lenders to understand.':
+      'Intinya bukan terlihat kaya sejak hari pertama. Moodeng memberi peminjam cara untuk mulai dengan pinjaman langsung yang kecil, membuktikan pembayaran kembali, dan membuat permintaan berikutnya lebih mudah dipahami moo-lender.',
    'Video walkthrough': 'Video panduan',
    'How to request your first loan': 'Cara mengajukan pinjaman pertamamu',
    'Watch the blackboard walkthrough before you post. It explains what to enter, how terms work, and what happens after your request appears on the board.':
       'Tonton video panduan papan tulis ini sebelum kamu memposting. Video ini menjelaskan apa yang perlu diisi, cara kerja ketentuan pinjaman, dan apa yang terjadi setelah permintaanmu muncul di papan.',
    'Open on YouTube': 'Buka di YouTube',
-   'Keep it honest: only borrow what you can repay. Moodeng can make your record clearer and more useful, but every lender still decides whether a request is worth funding.':
-      'Tetap jujur: pinjam hanya sebanyak yang bisa kamu bayar kembali. Moodeng bisa membuat riwayatmu lebih jelas dan berguna, tetapi setiap pemberi pinjaman tetap memutuskan sendiri apakah sebuah permintaan layak didanai.',
+   'Keep it honest: only borrow what you can repay. Moodeng can make your record clearer and more useful, but every moo-lender still decides whether a request is worth funding.':
+      'Tetap jujur: pinjam hanya sebanyak yang bisa kamu bayar kembali. Moodeng bisa membuat riwayatmu lebih jelas dan berguna, tetapi setiap moo-lender tetap memutuskan sendiri apakah sebuah permintaan layak didanai.',
    'Explore loans': 'Lihat pinjaman',
    'Read the guide': 'Baca panduan',
    'Start with a small request': 'Mulai dengan permintaan kecil',
-   'Post a realistic amount and reason so lenders can understand what the loan is for.':
-      'Posting jumlah dan alasan yang realistis agar pemberi pinjaman paham untuk apa pinjaman itu.',
+   'Post a realistic amount and reason so moo-lenders can understand what the loan is for.':
+      'Posting jumlah dan alasan yang realistis agar moo-lender paham untuk apa pinjaman itu.',
    'Repay what you promised': 'Bayar kembali sesuai janji',
-   'On-time repayment strengthens the record lenders see the next time you ask for support.':
-      'Pembayaran kembali tepat waktu memperkuat riwayat yang dilihat pemberi pinjaman saat kamu butuh dana lagi.',
+   'On-time repayment strengthens the record moo-lenders see the next time you ask for support.':
+      'Pembayaran kembali tepat waktu memperkuat riwayat yang dilihat moo-lender saat kamu butuh dana lagi.',
    'Unlock the next step': 'Buka langkah berikutnya',
    'Credit-building loans can raise your limit after full repayment, while smaller loans still help build trust.':
       'Credit-Building Loan bisa menaikkan limit kamu setelah dibayar lunas, sementara pinjaman yang lebih kecil tetap membantu membangun kepercayaan.',
 
    // src/views/borrowerBenefits/sections/WhatPeopleSaySection.tsx
    'What people are saying': 'Kata mereka',
-   'Borrowers and lenders describe the difference': 'Peminjam dan pemberi pinjaman menceritakan bedanya',
+   'Borrowers and moo-lenders describe the difference': 'Peminjam dan moo-lender menceritakan bedanya',
    'Hear directly from borrowers who have used Moodeng when short-term support mattered.':
       'Dengar langsung dari peminjam yang memakai Moodeng saat mereka butuh dana jangka pendek.',
    'Borrower testimonial': 'Testimoni peminjam',
@@ -54,8 +54,8 @@ export const indonesianCoverageB: Record<string, string> = {
       'Reputasimu berasal dari pinjaman yang kamu bayar kembali di Moodeng, bukan dari tekanan lewat daftar kontak, data ponsel yang diambil diam-diam, atau siapa yang sudah kamu kenal.',
    '03 / Control': '03 / Kendali',
    '100% borrower control': '100% kendali peminjam',
-   'Set your amount, repayment date, and reason upfront so lenders see the same terms you agreed to before anyone funds the request.':
-      'Tentukan jumlah, tanggal pembayaran kembali, dan alasanmu sejak awal, agar pemberi pinjaman melihat ketentuan yang sama dengan yang kamu setujui sebelum ada yang mendanai permintaanmu.',
+   'Set your amount, repayment date, and reason upfront so moo-lenders see the same terms you agreed to before anyone funds the request.':
+      'Tentukan jumlah, tanggal pembayaran kembali, dan alasanmu sejak awal, agar moo-lender melihat ketentuan yang sama dengan yang kamu setujui sebelum ada yang mendanai permintaanmu.',
    '04 / Portability': '04 / Portabilitas',
    '100% portable credit history': '100% riwayat kredit portabel',
    'Build a wallet-based repayment record you can keep using, instead of rebuilding your credit story from zero with each new lender.':
@@ -87,8 +87,8 @@ export const indonesianCoverageB: Record<string, string> = {
    'Borrow $120 and repay funded terms on time': 'Pinjam $120 dan bayar kembali sesuai ketentuan tepat waktu',
    'Trust-building loan': 'Trust-Building Loan',
    '$10 of $15': '$10 dari $15',
-   'Useful when you need less than your full limit. It can help lenders trust you, but it does not raise your credit level.':
-      'Berguna saat kamu butuh kurang dari limit penuhmu. Pinjaman ini bisa membantu pemberi pinjaman percaya padamu, tetapi tidak menaikkan Level Kredit kamu.',
+   'Useful when you need less than your full limit. It can help moo-lenders trust you, but it does not raise your credit level.':
+      'Berguna saat kamu butuh kurang dari limit penuhmu. Pinjaman ini bisa membantu moo-lender percaya padamu, tetapi tidak menaikkan Level Kredit kamu.',
    'Credit-building loan': 'Credit-Building Loan',
    '$15 of $15': '$15 dari $15',
    'Can unlock $20': 'Bisa membuka $20',
@@ -96,8 +96,8 @@ export const indonesianCoverageB: Record<string, string> = {
       'Inilah pinjaman untuk naik level. Kamu meminjam sebesar limit penuhmu saat ini dan membayar kembali sesuai ketentuan tepat waktu.',
    'Late or missed repayment': 'Pembayaran terlambat atau terlewat',
    'Can pause progress': 'Bisa menunda kemajuan',
-   'Your level does not become the main signal anymore. Lenders will care about the missed repayment first.':
-      'Level kamu tidak lagi jadi pertimbangan utama. Pemberi pinjaman akan lebih dulu memperhatikan pembayaran yang terlewat.',
+   'Your level does not become the main signal anymore. Moo-lenders will care about the missed repayment first.':
+      'Level kamu tidak lagi jadi pertimbangan utama. Moo-lender akan lebih dulu memperhatikan pembayaran yang terlewat.',
    'Borrowing below your limit builds trust, not your next level.':
       'Meminjam di bawah limit membangun kepercayaan, bukan menaikkan level kamu.',
    'Borrowing your full current limit is what can unlock the next level.':
@@ -154,10 +154,10 @@ export const indonesianCoverageB: Record<string, string> = {
       'Beri Moodeng Pandesal untuk menumbuhkan kepercayaan: kamu mendapatkannya dari verifikasi, pembayaran kembali tepat waktu, dan pencapaian, lalu Moodeng tumbuh dari Rookie hingga Apex.',
    'Credit Level is your borrowing tier. Trust is what you build; Credit Level is what that trust unlocks.':
       'Level Kredit adalah tingkat pinjamanmu. Kepercayaan adalah yang kamu bangun; Level Kredit adalah yang dibuka oleh kepercayaan itu.',
-   'Milestones are extra ways to earn Pandesal. Complete them to strengthen your profile and make lenders more confident in your requests.':
-      'Pencapaian adalah cara tambahan untuk mendapatkan Pandesal. Selesaikan untuk memperkuat profilmu dan membuat pemberi pinjaman lebih yakin dengan permintaanmu.',
+   'Milestones are extra ways to earn Pandesal. Complete them to strengthen your profile and make moo-lenders more confident in your requests.':
+      'Pencapaian adalah cara tambahan untuk mendapatkan Pandesal. Selesaikan untuk memperkuat profilmu dan membuat moo-lender lebih yakin dengan permintaanmu.',
    'Post your first loan request': 'Posting permintaan pinjaman pertamamu',
-   'Get funded by a lender': 'Didanai oleh pemberi pinjaman',
+   'Get funded by a moo-lender': 'Didanai oleh moo-lender',
    'Loading your dashboard': 'Memuat dasbor kamu',
 
    // src/views/dashboard-v2/DashboardV2Milestones.tsx
@@ -173,7 +173,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'Grow Moodeng, eat on us': 'Besarkan Moodeng, kami traktir makan',
    'Grow Moodeng to': 'Besarkan Moodeng ke',
    'Reward: ₱': 'Hadiah: ₱',
-   'GrabFood voucher': 'voucher GrabFood',
+   'GrabMart voucher': 'voucher GrabMart',
 
    // src/views/dashboard-v2/DashboardV2Preview.tsx
    Preview: 'Pratinjau',
@@ -183,7 +183,7 @@ export const indonesianCoverageB: Record<string, string> = {
 
    // src/views/dashboard-v2/DashboardV2Rewards.tsx
    'You repaid on time. Treat yourself!': 'Kamu bayar tepat waktu. Saatnya traktir diri sendiri!',
-   'Tell us where to send your GrabFood voucher code.': 'Beri tahu kami ke mana kode voucher GrabFood kamu harus dikirim.',
+   'Tell us where to send your GrabMart voucher code.': 'Beri tahu kami ke mana kode voucher GrabMart kamu harus dikirim.',
    'Your friend repaid on time. Free meal!': 'Temanmu bayar tepat waktu. Makan gratis!',
    'Thanks for inviting them. Where should we send your voucher code?':
       'Terima kasih sudah mengajak temanmu. Ke mana kami harus mengirim kode vouchermu?',
@@ -199,7 +199,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'Voucher Unlocked!': 'Voucher terbuka!',
    'Salamat! We got it.': 'Terima kasih! Sudah kami terima.',
    "We'll send your ₱": 'Kami akan mengirim kode voucher ₱',
-   'GrabFood voucher code to your email within 2 business days.': 'GrabFood ke emailmu dalam 2 hari kerja.',
+   'GrabMart voucher code to your email within 2 business days.': 'GrabMart ke emailmu dalam 2 hari kerja.',
    'Preview sample — nothing was sent.': 'Contoh pratinjau — tidak ada yang dikirim.',
    'Full name': 'Nama lengkap',
    'Mobile number (GCash)': 'Nomor ponsel (GCash)',
@@ -224,7 +224,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'Borrow small, build your credit': 'Pinjam kecil, bangun kreditmu',
    'Small person-to-person loans with one amount, one date, and no Moodeng fees.':
       'Pinjaman kecil antarpengguna dengan satu jumlah, satu tanggal, dan tanpa biaya Moodeng.',
-   '₱100 GrabFood voucher each': 'Masing-masing voucher GrabFood ₱100',
+   '₱100 GrabMart voucher each': 'Masing-masing voucher GrabMart ₱100',
    'When you repay your first loan on time, you and': 'Saat kamu membayar kembali pinjaman pertamamu tepat waktu, kamu dan',
    'your friend': 'temanmu',
    'both get one.': 'sama-sama dapat satu.',
@@ -272,7 +272,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'Verify to Start Feeding': 'Verifikasi untuk mulai memberi makan',
    'Repay on time, eat on us.': 'Bayar tepat waktu, kami traktir makan.',
    'Feed Moodeng to level up.': 'Beri makan Moodeng supaya naik level.',
-   'A GrabFood voucher for your first on-time repayment!': 'Voucher GrabFood untuk pembayaran tepat waktu pertamamu!',
+   'A GrabMart reward for your first on-time repayment!': 'Voucher GrabMart untuk pembayaran tepat waktu pertamamu!',
    'Bigger Moodeng = Higher cash limits!': 'Moodeng makin besar = limit makin tinggi!',
    'Verify My Identity': 'Verifikasi identitasku',
    'Verify to unlock your account — a one-time check that takes about 3 minutes.':
@@ -292,7 +292,7 @@ export const indonesianCoverageB: Record<string, string> = {
    // src/views/dashboard-v2/components/DashboardV2Sections.tsx
    'Loading voucher': 'Memuat voucher',
    'Active Loans($)': 'Pinjaman aktif($)',
-   'Pending Loans($)': 'Pinjaman menunggu($)',
+   'Pending Request($)': 'Pengajuan menunggu($)',
    'Defaulted($)': 'Gagal bayar($)',
    'Due today': 'Jatuh tempo hari ini',
    'Pay Now': 'Bayar sekarang',
@@ -303,10 +303,10 @@ export const indonesianCoverageB: Record<string, string> = {
    // src/views/dashboard/Dashboard.tsx
    'Withdraw your USDC': 'Tarik USDC kamu',
    'Cash out your funded loan to local currency.': 'Cairkan dana pinjamanmu ke mata uang lokal.',
-   'Pandesal points track your reputation on Moodeng. Verification, clean repayment, and healthy activity make lenders more confident in you.':
-      'Poin Pandesal mencatat reputasimu di Moodeng. Verifikasi, pembayaran kembali yang lancar, dan aktivitas yang sehat membuat pemberi pinjaman lebih yakin padamu.',
-   'Milestones are extra ways to earn Pandesal points. Complete them to strengthen your profile and make lenders more confident in your requests.':
-      'Pencapaian adalah cara tambahan untuk mendapatkan poin Pandesal. Selesaikan untuk memperkuat profilmu dan membuat pemberi pinjaman lebih yakin dengan permintaanmu.',
+   'Pandesal points track your reputation on Moodeng. Verification, clean repayment, and healthy activity make moo-lenders more confident in you.':
+      'Poin Pandesal mencatat reputasimu di Moodeng. Verifikasi, pembayaran kembali yang lancar, dan aktivitas yang sehat membuat moo-lender lebih yakin padamu.',
+   'Milestones are extra ways to earn Pandesal points. Complete them to strengthen your profile and make moo-lenders more confident in your requests.':
+      'Pencapaian adalah cara tambahan untuk mendapatkan poin Pandesal. Selesaikan untuk memperkuat profilmu dan membuat moo-lender lebih yakin dengan permintaanmu.',
 
    // src/views/dashboard/RequestBoard.tsx
    'Groceries and transport for the week': 'Belanja kebutuhan dan ongkos transportasi minggu ini',
@@ -329,30 +329,30 @@ export const indonesianCoverageB: Record<string, string> = {
    'Get a quick overview of how Moodeng works before deciding which side to explore.':
       'Lihat gambaran singkat cara kerja Moodeng sebelum memutuskan sisi mana yang ingin kamu jelajahi.',
    'The request board': 'Papan Permintaan',
-   'This is where borrowers post short-term USDC loan requests and lenders browse them. Both sides of Moodeng meet here.':
-      'Di sinilah peminjam memposting permintaan pinjaman USDC jangka pendek dan pemberi pinjaman melihat-lihatnya. Kedua sisi Moodeng bertemu di sini.',
+   'This is where borrowers post short-term USDC loan requests and moo-lenders browse them. Both sides of Moodeng meet here.':
+      'Di sinilah peminjam memposting permintaan pinjaman USDC jangka pendek dan moo-lender melihat-lihatnya. Kedua sisi Moodeng bertemu di sini.',
    'Borrowers apply here': 'Peminjam mengajukan di sini',
    'A borrower sets their loan amount, repayment date, and reason. Once verified, their request goes live on this board.':
       'Peminjam menentukan jumlah pinjaman, tanggal pembayaran kembali, dan alasannya. Setelah terverifikasi, permintaannya tayang di papan ini.',
-   'Lenders browse & fund': 'Pemberi pinjaman memilih & mendanai',
-   "Lenders scroll through open requests, check each borrower's repayment history and trust signals, then fund the ones they believe in.":
-      'Pemberi pinjaman menelusuri permintaan yang terbuka, mengecek riwayat pembayaran kembali dan tanda kepercayaan setiap peminjam, lalu mendanai yang mereka percaya.',
+   'Moo-lenders browse & fund': 'Moo-lender memilih & mendanai',
+   "Moo-lenders scroll through open requests, check each borrower's repayment history and trust signals, then fund the ones they believe in.":
+      'Moo-lender menelusuri permintaan yang terbuka, mengecek riwayat pembayaran kembali dan tanda kepercayaan setiap peminjam, lalu mendanai yang mereka percaya.',
    'Ready to get started?': 'Siap memulai?',
    "Create a free account to borrow or lend. Pick your role after signing up and we'll walk you through the rest.":
       'Buat akun gratis untuk meminjam atau memberi pinjaman. Pilih peranmu setelah mendaftar, dan kami akan memandumu untuk langkah selanjutnya.',
-   'This is the marketplace. Once a request is live, lenders review the amount, repayment, and borrower before funding.':
-      'Inilah pasarnya. Setelah permintaan tayang, pemberi pinjaman menilai jumlah, pembayaran kembali, dan peminjamnya sebelum mendanai.',
+   'This is the marketplace. Once a request is live, moo-lenders review the amount, repayment, and borrower before funding.':
+      'Inilah pasarnya. Setelah permintaan tayang, moo-lender menilai jumlah, pembayaran kembali, dan peminjamnya sebelum mendanai.',
    'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it for a higher starting limit.':
       'Saat kamu siap meminjam, kartu ini membuka alur permintaan pinjaman. Punya kode dari teman? Masukkan untuk limit awal yang lebih tinggi.',
    'Verify first': 'Verifikasi dulu',
-   'Borrowers complete a one-time identity check before requesting a loan. It helps lenders know they are funding a real person.':
-      'Peminjam menjalani pemeriksaan identitas satu kali sebelum mengajukan pinjaman. Ini membantu pemberi pinjaman tahu bahwa mereka mendanai orang sungguhan.',
+   'Borrowers complete a one-time identity check before requesting a loan. It helps moo-lenders know they are funding a real person.':
+      'Peminjam menjalani pemeriksaan identitas satu kali sebelum mengajukan pinjaman. Ini membantu moo-lender tahu bahwa mereka mendanai orang sungguhan.',
    'Set your terms': 'Atur ketentuanmu',
    'After verification, this is where the borrower sets the amount, repayment, date, and reason for the request.':
       'Setelah verifikasi, di sinilah peminjam menentukan jumlah, pembayaran kembali, tanggal, dan alasan permintaannya.',
    'Get funded, then repay': 'Didanai, lalu bayar kembali',
-   'A lender funds your request and USDC lands in your wallet. Repay on time and your Pandesal points — and your next limit — grow. Miss a repayment and it shows on your public profile, so lenders lend on trust.':
-      'Pemberi pinjaman mendanai permintaanmu dan USDC masuk ke dompetmu. Bayar kembali tepat waktu, maka poin Pandesal — dan limit berikutnya — akan bertambah. Jika kamu melewatkan pembayaran, itu akan terlihat di profil publikmu, karena pemberi pinjaman meminjamkan atas dasar kepercayaan.',
+   'A moo-lender funds your request and USDC lands in your wallet. Repay on time and your Pandesal points — and your next limit — grow. Miss a repayment and it shows on your public profile, so moo-lenders lend on trust.':
+      'Moo-lender mendanai permintaanmu dan USDC masuk ke dompetmu. Bayar kembali tepat waktu, maka poin Pandesal — dan limit berikutnya — akan bertambah. Jika kamu melewatkan pembayaran, itu akan terlihat di profil publikmu, karena moo-lender meminjamkan atas dasar kepercayaan.',
    'Browse open requests': 'Lihat permintaan yang terbuka',
    'Look through open requests before signing up — each card shows the amount, repayment, borrower, and reason.':
       'Lihat permintaan yang terbuka sebelum mendaftar — setiap kartu menampilkan jumlah, pembayaran kembali, peminjam, dan alasannya.',
@@ -361,8 +361,8 @@ export const indonesianCoverageB: Record<string, string> = {
    'Ready to build credit?': 'Siap membangun kredit?',
    'Create your account to request your first loan — or sign in if you already have one.':
       'Buat akunmu untuk mengajukan pinjaman pertama — atau masuk jika kamu sudah punya akun.',
-   'This list is the marketplace. Once a request is live, lenders can review the amount, repayment, and borrower profile before funding.':
-      'Daftar ini adalah pasarnya. Setelah permintaan tayang, pemberi pinjaman bisa menilai jumlah, pembayaran kembali, dan profil peminjam sebelum mendanai.',
+   'This list is the marketplace. Once a request is live, moo-lenders can review the amount, repayment, and borrower profile before funding.':
+      'Daftar ini adalah pasarnya. Setelah permintaan tayang, moo-lender bisa menilai jumlah, pembayaran kembali, dan profil peminjam sebelum mendanai.',
    'When you are ready to borrow, this card opens the loan request form.':
       'Saat kamu siap meminjam, kartu ini membuka formulir permintaan pinjaman.',
    'Before an unverified borrower can request a loan, Moodeng sends them through a quick identity verification screen.':
@@ -372,14 +372,14 @@ export const indonesianCoverageB: Record<string, string> = {
    'Borrowing below your limit can build trust history. Borrowing your full limit and repaying on time is what raises your Credit Level.':
       'Meminjam di bawah limit bisa membangun riwayat kepercayaan. Meminjam sebesar limit penuh dan membayar kembali tepat waktu yang menaikkan Level Kredit kamu.',
    'Set a clear repayment': 'Tentukan pembayaran kembali yang jelas',
-   'Your repayment must be at least $1 more than what you borrow. Lenders use this to decide if the request is worth funding.':
-      'Pembayaran kembalimu harus minimal $1 lebih besar dari jumlah yang kamu pinjam. Pemberi pinjaman memakai ini untuk menilai apakah permintaan itu layak didanai.',
+   'Your repayment must be at least $1 more than what you borrow. Moo-lenders use this to decide if the request is worth funding.':
+      'Pembayaran kembalimu harus minimal $1 lebih besar dari jumlah yang kamu pinjam. Moo-lender memakai ini untuk menilai apakah permintaan itu layak didanai.',
    'Explain the reason': 'Jelaskan alasannya',
-   'A short, specific reason helps lenders understand the request and builds trust before they fund it.':
-      'Alasan yang singkat dan spesifik membantu pemberi pinjaman memahami permintaanmu dan membangun kepercayaan sebelum mereka mendanainya.',
+   'A short, specific reason helps moo-lenders understand the request and builds trust before they fund it.':
+      'Alasan yang singkat dan spesifik membantu moo-lender memahami permintaanmu dan membangun kepercayaan sebelum mereka mendanainya.',
    'Find open requests': 'Temukan permintaan yang terbuka',
-   'As a lender, this board shows people asking for short-term USDC support. Start by comparing the amount, repayment, due date, and reason.':
-      'Sebagai pemberi pinjaman, papan ini menampilkan orang-orang yang butuh dana USDC jangka pendek. Mulailah dengan membandingkan jumlah, pembayaran kembali, jatuh tempo, dan alasannya.',
+   'As a moo-lender, this board shows people asking for short-term USDC support. Start by comparing the amount, repayment, due date, and reason.':
+      'Sebagai moo-lender, papan ini menampilkan orang-orang yang butuh dana USDC jangka pendek. Mulailah dengan membandingkan jumlah, pembayaran kembali, jatuh tempo, dan alasannya.',
    'Review the request': 'Tinjau permintaannya',
    'Each card shows what the borrower needs, what they plan to repay, and whether their account is in good standing.':
       'Setiap kartu menunjukkan kebutuhan peminjam, jumlah yang akan mereka bayar kembali, dan apakah akun mereka dalam kondisi baik.',
@@ -401,7 +401,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'Repayment date required': 'Tanggal pembayaran kembali wajib diisi',
    'Choose a repayment date before making your request.': 'Pilih tanggal pembayaran kembali sebelum membuat permintaan.',
    'Reason required': 'Alasan wajib diisi',
-   'Add a short reason so lenders know what the loan is for.': 'Tambahkan alasan singkat agar pemberi pinjaman tahu untuk apa pinjamannya.',
+   'Add a short reason so moo-lenders know what the loan is for.': 'Tambahkan alasan singkat agar moo-lender tahu untuk apa pinjamannya.',
    'This looks low-effort. Requests that appear to have no real effort may be deleted — submit again to post anyway.':
       'Alasan ini terlihat asal-asalan. Permintaan yang tampak dibuat tanpa usaha bisa dihapus — kirim lagi jika tetap ingin memposting.',
    'Check your reason': 'Cek alasanmu',
@@ -415,7 +415,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'Only the borrower who made a pending request can delete it.':
       'Hanya peminjam yang membuat permintaan yang masih menunggu yang bisa menghapusnya.',
    'Request deleted': 'Permintaan dihapus',
-   'Lenders will no longer see this request on the board.': 'Pemberi pinjaman tidak akan lagi melihat permintaan ini di papan.',
+   'Moo-lenders will no longer see this request on the board.': 'Moo-lender tidak akan lagi melihat permintaan ini di papan.',
    'It may already be funded or unavailable. Refreshing the board now.':
       'Mungkin permintaan ini sudah didanai atau tidak tersedia. Memuat ulang papan sekarang.',
    'Edit display name': 'Ubah nama tampilan',
@@ -423,8 +423,8 @@ export const indonesianCoverageB: Record<string, string> = {
    'Verification in progress': 'Verifikasi sedang berlangsung',
    'Verify Yourself >': 'Verifikasi Diri >',
    'Browse requests publicly.': 'Lihat permintaan secara publik.',
-   'Pick borrower or lender to unlock your dashboard, repayment, and history.':
-      'Pilih peminjam atau pemberi pinjaman untuk membuka dasbor, pembayaran kembali, dan riwayatmu.',
+   'Pick borrower or moo-lender to unlock your dashboard, repayment, and history.':
+      'Pilih peminjam atau moo-lender untuk membuka dasbor, pembayaran kembali, dan riwayatmu.',
    "You're approved 🎉": 'Kamu disetujui 🎉',
    'The team approved you — apply for your loan now.': 'Tim sudah menyetujuimu — ajukan pinjamanmu sekarang.',
    'See you on the call': 'Sampai jumpa di panggilan',
@@ -448,8 +448,8 @@ export const indonesianCoverageB: Record<string, string> = {
    'Clear filters': 'Hapus filter',
    'Open filters': 'Buka filter',
    'IMPORTANT NOTE': 'CATATAN PENTING',
-   "Once lenders have issued three loans, a fee will be charged to their accounts. This fee helps maintain the platform's operational costs and ensures continued support for all users.":
-      'Setelah pemberi pinjaman memberikan tiga pinjaman, biaya akan dikenakan ke akun mereka. Biaya ini membantu menutup biaya operasional platform dan memastikan dukungan berkelanjutan untuk semua pengguna.',
+   "Once moo-lenders have issued three loans, a fee will be charged to their accounts. This fee helps maintain the platform's operational costs and ensures continued support for all users.":
+      'Setelah moo-lender memberikan tiga pinjaman, biaya akan dikenakan ke akun mereka. Biaya ini membantu menutup biaya operasional platform dan memastikan dukungan berkelanjutan untuk semua pengguna.',
    'No requests match your filters.': 'Tidak ada permintaan yang cocok dengan filtermu.',
    'Try widening your search or clearing your filters.': 'Coba perluas pencarian atau hapus filtermu.',
    'Sign Up': 'Daftar',
@@ -461,8 +461,8 @@ export const indonesianCoverageB: Record<string, string> = {
    'Borrowing $': 'Meminjam $',
    'and repaying $': 'dan membayar kembali $',
    by: 'paling lambat',
-   'Lenders will no longer see it. You can make a new request from the board, but repeated deletes pause new requests for a short time.':
-      'Pemberi pinjaman tidak akan lagi melihatnya. Kamu bisa membuat permintaan baru dari papan, tetapi menghapus berulang kali akan menjeda permintaan baru untuk sementara.',
+   'Moo-lenders will no longer see it. You can make a new request from the board, but repeated deletes pause new requests for a short time.':
+      'Moo-lender tidak akan lagi melihatnya. Kamu bisa membuat permintaan baru dari papan, tetapi menghapus berulang kali akan menjeda permintaan baru untuk sementara.',
    'Deleting...': 'Menghapus...',
    'Keep request': 'Simpan permintaan',
    'Quick national ID & selfie check — available in select countries.': 'Cek cepat kartu identitas & selfie — tersedia di negara tertentu.',
@@ -552,7 +552,7 @@ export const indonesianCoverageB: Record<string, string> = {
       'Ketuk Izinkan saat ponselmu meminta, agar kami bisa mengingatkanmu sebelum jatuh tempo.',
    "Couldn't turn on reminders — try again in a moment.": 'Gagal menyalakan pengingat — coba lagi sebentar lagi.',
    "Couldn't start verification — try again in a moment.": 'Gagal memulai verifikasi — coba lagi sebentar lagi.',
-   'Only Moodeng sees this — never lenders.': 'Hanya Moodeng yang melihat ini — tidak pernah pemberi pinjaman.',
+   'Only Moodeng sees this — never moo-lenders.': 'Hanya Moodeng yang melihat ini — tidak pernah moo-lender.',
    'How can we reach you?': 'Bagaimana kami bisa menghubungimu?',
    '1 tap': '1 ketuk',
    'Opening WhatsApp…': 'Membuka WhatsApp…',
@@ -610,7 +610,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'Base Account does both steps in one tap.': 'Base Account menyelesaikan kedua langkah dengan sekali ketuk.',
 
    // src/views/dashboard/components/LenderDiversitySection.tsx
-   'Lender Diversity Score': 'Skor keragaman pemberi pinjaman',
+   'Moo-lender Diversity Score': 'Skor keragaman moo-lender',
    points: 'poin',
    'Early Score': 'Skor awal',
    'Early estimate: needs 8 funded loans before the score is fully weighted.':
@@ -625,8 +625,8 @@ export const indonesianCoverageB: Record<string, string> = {
 
    // src/views/dashboard/components/LocationPrimingModal.tsx
    'One last step': 'Satu langkah terakhir',
-   "We check your location to keep lending safe and catch fraud. It's only used to verify your request — never shared with lenders.":
-      'Kami mengecek lokasimu untuk menjaga keamanan pinjaman dan mencegah penipuan. Lokasimu hanya dipakai untuk memverifikasi permintaanmu — tidak pernah dibagikan ke pemberi pinjaman.',
+   "We check your location to keep lending safe and catch fraud. It's only used to verify your request — never shared with moo-lenders.":
+      'Kami mengecek lokasimu untuk menjaga keamanan pinjaman dan mencegah penipuan. Lokasimu hanya dipakai untuk memverifikasi permintaanmu — tidak pernah dibagikan ke moo-lender.',
    'Share location': 'Bagikan lokasi',
 
    // src/views/dashboard/components/LoanRequestModal.tsx
@@ -658,22 +658,22 @@ export const indonesianCoverageB: Record<string, string> = {
       'USDC adalah dolar digital yang diterima di exchange besar, sehingga meminjam dan memberi pinjaman antarnegara jadi lebih mudah.',
    'Submit request': 'Kirim permintaan',
    'Public borrower profile': 'Profil publik peminjam',
-   'This is the identity lenders see beside your request.': 'Inilah identitas yang dilihat pemberi pinjaman di samping permintaanmu.',
+   'This is the identity moo-lenders see beside your request.': 'Inilah identitas yang dilihat moo-lender di samping permintaanmu.',
    'Profile image': 'Foto profil',
    'Tap to choose a photo or avatar.': 'Ketuk untuk memilih foto atau avatar.',
-   'Name shown to lenders': 'Nama yang dilihat pemberi pinjaman',
+   'Name shown to moo-lenders': 'Nama yang dilihat moo-lender',
    'e.g. Maya, Jay, or a friendly nickname': 'mis. Maya, Jay, atau nama panggilan',
    'Use a first name or friendly nickname.': 'Gunakan nama depan atau nama panggilan.',
    'Describe your situation': 'Jelaskan situasimu',
-   'Tell lenders how you earn, in your own words.':
-      'Ceritakan ke pemberi pinjaman bagaimana kamu mendapat penghasilan, dengan kata-katamu sendiri.',
+   'Tell moo-lenders how you earn, in your own words.':
+      'Ceritakan ke moo-lender bagaimana kamu mendapat penghasilan, dengan kata-katamu sendiri.',
    'e.g. I run a small online shop and income changes month to month':
       'mis. Saya punya toko online kecil dan penghasilannya berubah-ubah tiap bulan',
    'Be specific, for example teacher or market vendor.': 'Sebutkan dengan jelas, misalnya guru atau pedagang pasar.',
    'e.g. teacher': 'mis. guru',
    'Still needed: how you describe your work.': 'Masih perlu diisi: penjelasan tentang pekerjaanmu.',
    'Checking…': 'Mengecek…',
-   'Helps lenders gauge repayment capacity.': 'Membantu pemberi pinjaman menilai kemampuan bayarmu.',
+   'Helps moo-lenders gauge repayment capacity.': 'Membantu moo-lender menilai kemampuan bayarmu.',
    'For example tutoring, delivery, or market trading.': 'Misalnya les privat, jasa antar, atau berdagang di pasar.',
    No: 'Tidak',
    Yes: 'Ya',
@@ -726,20 +726,21 @@ export const indonesianCoverageB: Record<string, string> = {
    'Referral code': 'Kode referal',
    "We couldn't check that code. Please try again.": 'Kami tidak bisa mengecek kode itu. Silakan coba lagi.',
    'Failed to save profile name.': 'Gagal menyimpan nama profil.',
+   'Failed to save your name.': 'Gagal menyimpan nama Anda.',
    'Failed to update profile image.': 'Gagal memperbarui foto profil.',
    'Enter how much you want to borrow.': 'Masukkan jumlah yang ingin kamu pinjam.',
    'Enter the amount you will repay.': 'Masukkan jumlah yang akan kamu bayar kembali.',
    'Repayment must be at least $1 more than you borrow.': 'Pembayaran kembali harus minimal $1 lebih besar dari jumlah pinjaman.',
    'Choose when you will repay.': 'Pilih kapan kamu akan membayar kembali.',
-   'Please add a reason so lenders know what the loan is for.': 'Tambahkan alasan agar pemberi pinjaman tahu untuk apa pinjamannya.',
-   'Please write your reason in English so lenders can read it.':
-      'Tulis alasanmu dalam bahasa Inggris agar pemberi pinjaman bisa membacanya.',
+   'Please add a reason so moo-lenders know what the loan is for.': 'Tambahkan alasan agar moo-lender tahu untuk apa pinjamannya.',
+   'Please write your reason in English so moo-lenders can read it.':
+      'Tulis alasanmu dalam bahasa Inggris agar moo-lender bisa membacanya.',
    'Write this in English': 'Tulis dalam bahasa Inggris',
-   'Lenders reading your profile are in the US and Europe — please describe your situation in English.':
-      'Pemberi pinjaman yang membaca profilmu ada di AS dan Eropa — jelaskan situasimu dalam bahasa Inggris.',
+   'Moo-lenders reading your profile are in the US and Europe — please describe your situation in English.':
+      'Moo-lender yang membaca profilmu ada di AS dan Eropa — jelaskan situasimu dalam bahasa Inggris.',
    'Add more to your info': 'Lengkapi infomu',
-   'Some of your info looks too short for lenders to understand — tap again to continue anyway.':
-      'Sebagian infomu terlalu singkat untuk dipahami pemberi pinjaman — ketuk lagi jika tetap ingin lanjut.',
+   'Some of your info looks too short for moo-lenders to understand — tap again to continue anyway.':
+      'Sebagian infomu terlalu singkat untuk dipahami moo-lender — ketuk lagi jika tetap ingin lanjut.',
    "Couldn't save — please try again.": 'Gagal menyimpan — silakan coba lagi.',
    'Swipe right to close loan form': 'Geser ke kanan untuk menutup formulir pinjaman',
    'Referral Boost': 'Bonus referal',
@@ -747,7 +748,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'How can we reach you': 'Bagaimana kami bisa menghubungimu',
    "Let's connect": 'Yuk, terhubung',
    'Schedule a video call': 'Jadwalkan panggilan video',
-   'How lenders see you': 'Cara pemberi pinjaman melihatmu',
+   'How moo-lenders see you': 'Cara moo-lender melihatmu',
    'Add practical context without sharing private details.': 'Tambahkan konteks praktis tanpa membagikan detail pribadi.',
    'Set your loan terms': 'Atur ketentuan pinjamanmu',
    'Explain setting loan terms': 'Penjelasan tentang ketentuan pinjaman',
@@ -768,8 +769,8 @@ export const indonesianCoverageB: Record<string, string> = {
    "we'd love to tell you about!": 'yang ingin kami ceritakan!',
    'So we can help you more 💜': 'Agar kami bisa lebih membantumu 💜',
    'One quick step to request a loan': 'Satu langkah singkat untuk mengajukan pinjaman',
-   'Complete a one-time verification to start building trust with lenders.':
-      'Selesaikan verifikasi satu kali untuk mulai membangun kepercayaan dengan pemberi pinjaman.',
+   'Complete a one-time verification to start building trust with moo-lenders.':
+      'Selesaikan verifikasi satu kali untuk mulai membangun kepercayaan dengan moo-lender.',
    'Borrow Amount': 'Jumlah pinjaman',
    'Current Limit: $': 'Limit saat ini: $',
    'Explain current borrow limit': 'Penjelasan limit pinjaman saat ini',
@@ -780,7 +781,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'Must be more than the borrowed amount': 'Harus lebih besar dari jumlah pinjaman',
    'You’ll repay': 'Kamu akan membayar kembali',
    '— that’s': '— artinya',
-   'to your lender.': 'untuk pemberi pinjamanmu.',
+   'to your moo-lender.': 'untuk moo-lendermu.',
    'Set Repayment Date': 'Atur tanggal pembayaran kembali',
    'Selected repayment date': 'Tanggal pembayaran kembali yang dipilih',
    'Open repayment date calendar': 'Buka kalender tanggal pembayaran kembali',
@@ -789,12 +790,12 @@ export const indonesianCoverageB: Record<string, string> = {
    '2 months': '2 bulan',
    'Reason for Borrowing': 'Alasan meminjam',
    'Why do you need this loan? Write in English.': 'Kenapa kamu butuh pinjaman ini? Tulis dalam bahasa Inggris.',
-   'Add a bit more detail so lenders understand the need.': 'Tambahkan sedikit detail agar pemberi pinjaman memahami kebutuhanmu.',
-   'Short and specific helps lenders trust it.': 'Singkat dan spesifik membuat pemberi pinjaman lebih percaya.',
+   'Add a bit more detail so moo-lenders understand the need.': 'Tambahkan sedikit detail agar moo-lender memahami kebutuhanmu.',
+   'Short and specific helps moo-lenders trust it.': 'Singkat dan spesifik membuat moo-lender lebih percaya.',
    'Checking your reason…': 'Mengecek alasanmu…',
    'Looks good': 'Sudah bagus',
-   'At least 40 characters, in English — short and specific helps lenders trust it.':
-      'Minimal 40 karakter, dalam bahasa Inggris — singkat dan spesifik membuat pemberi pinjaman lebih percaya.',
+   'At least 40 characters, in English — short and specific helps moo-lenders trust it.':
+      'Minimal 40 karakter, dalam bahasa Inggris — singkat dan spesifik membuat moo-lender lebih percaya.',
    'Ask Mecha to help me word this': 'Minta Mecha membantu merangkainya',
    'Ask Mecha to write this in English': 'Minta Mecha menuliskannya dalam bahasa Inggris',
    'Your verification is still being checked — you can send this request once it clears.':
@@ -831,16 +832,16 @@ export const indonesianCoverageB: Record<string, string> = {
 
    // src/views/dashboard/components/ReputationMilestones.tsx
    'How milestones work': 'Cara kerja pencapaian',
-   'Milestones show what to do next to build trust with lenders.':
-      'Pencapaian menunjukkan langkah berikutnya untuk membangun kepercayaan dengan pemberi pinjaman.',
+   'Milestones show what to do next to build trust with moo-lenders.':
+      'Pencapaian menunjukkan langkah berikutnya untuk membangun kepercayaan dengan moo-lender.',
    'View all ›': 'Lihat semua ›',
 
    // src/views/dashboard/components/SuccessModal.tsx
    'Loan request submitted': 'Permintaan pinjaman terkirim',
-   'Your loan request is now live. Lenders can review it and fund your request.':
-      'Permintaan pinjamanmu sudah tayang. Pemberi pinjaman bisa meninjau dan mendanai permintaanmu.',
-   'Join the Moodeng borrower group on Facebook or Telegram so we can introduce you to great lenders.':
-      'Gabung ke grup peminjam Moodeng di Facebook atau Telegram agar kami bisa mengenalkanmu ke pemberi pinjaman yang tepat.',
+   'Your loan request is now live. Moo-lenders can review it and fund your request.':
+      'Permintaan pinjamanmu sudah tayang. Moo-lender bisa meninjau dan mendanai permintaanmu.',
+   'Join the Moodeng borrower group on Facebook or Telegram so we can introduce you to great moo-lenders.':
+      'Gabung ke grup peminjam Moodeng di Facebook atau Telegram agar kami bisa mengenalkanmu ke moo-lender yang tepat.',
    'Join on Telegram': 'Gabung di Telegram',
    'Join on Facebook': 'Gabung di Facebook',
 
@@ -861,7 +862,7 @@ export const indonesianCoverageB: Record<string, string> = {
    '3rd-loan borrower bonus': 'bonus pinjaman ke-3 peminjam',
    '4th+ loan borrower bonus': 'bonus pinjaman ke-4+ peminjam',
    'Timing and borrower context': 'Waktu dan konteks peminjam',
-   'Lender reward': 'Hadiah pemberi pinjaman',
+   'Moo-lender reward': 'Hadiah moo-lender',
    'IOU Points': 'poin IOU',
    'for funding, plus': 'untuk mendanai, ditambah',
    'for the': 'untuk',
@@ -870,7 +871,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'Unknown Reason': 'Alasan tidak diketahui',
    'Moodeng loan request': 'Permintaan pinjaman Moodeng',
    'Link copied': 'Tautan disalin',
-   'Send it to a lender so they can fund this request.': 'Kirim ke pemberi pinjaman agar mereka bisa mendanai permintaan ini.',
+   'Send it to a moo-lender so they can fund this request.': 'Kirim ke moo-lender agar mereka bisa mendanai permintaan ini.',
    'Could not copy link': 'Gagal menyalin tautan',
    'Sending your help…': 'Mengirim bantuanmu…',
    'Recording your funding — hang tight.': 'Mencatat pendanaanmu — tunggu sebentar.',
@@ -905,6 +906,7 @@ export const indonesianCoverageB: Record<string, string> = {
       'Sapa singkat lewat video dengan tim Moodeng — lihat cara kerja Moodeng dan tanyakan apa saja.',
    "You're booked with": 'Jadwalmu sudah terpesan dengan',
    'the Moodeng team': 'tim Moodeng',
+   'George or Emma': 'George atau Emma',
    'Zoom link by email · reminder on Messenger': 'Tautan Zoom lewat email · pengingat di Messenger',
    'Google Calendar': 'Google Kalender',
    'Finding open times…': 'Mencari waktu yang tersedia…',
@@ -926,15 +928,15 @@ export const indonesianCoverageB: Record<string, string> = {
 
    // src/views/borrowerBenefits/sections/FastGlobalAccessSection.tsx
    'Why borrowing feels different': 'Kenapa meminjam di sini terasa berbeda',
-   'Direct lender-to-borrower': 'Langsung dari pemberi pinjaman ke peminjam',
-   'A lender funds your request directly. Moodeng helps show the terms and record the repayment history without hiding the process behind a middle-man.':
-      'Pemberi pinjaman mendanai permintaanmu secara langsung. Moodeng membantu menampilkan ketentuan dan mencatat riwayat pembayaran kembali tanpa menyembunyikan prosesnya di balik perantara.',
+   'Direct moo-lender-to-borrower': 'Langsung dari moo-lender ke peminjam',
+   'A moo-lender funds your request directly. Moodeng helps show the terms and record the repayment history without hiding the process behind a middle-man.':
+      'Moo-lender mendanai permintaanmu secara langsung. Moodeng membantu menampilkan ketentuan dan mencatat riwayat pembayaran kembali tanpa menyembunyikan prosesnya di balik perantara.',
    'Funded in your wallet': 'Didanai langsung ke dompetmu',
-   'When a lender funds your request, USDC moves through your digital wallet so the money and repayment record are easier to track.':
-      'Saat pemberi pinjaman mendanai permintaanmu, USDC bergerak melalui dompet digitalmu sehingga uang dan riwayat pembayaran kembali lebih mudah dilacak.',
+   'When a moo-lender funds your request, USDC moves through your digital wallet so the money and repayment record are easier to track.':
+      'Saat moo-lender mendanai permintaanmu, USDC bergerak melalui dompet digitalmu sehingga uang dan riwayat pembayaran kembali lebih mudah dilacak.',
    'Terms shown upfront': 'Ketentuan ditampilkan sejak awal',
-   'You choose the request amount, repayment amount, due date, and reason before a lender decides whether to fund it.':
-      'Kamu memilih jumlah permintaan, jumlah pembayaran kembali, tanggal jatuh tempo, dan alasannya sebelum pemberi pinjaman memutuskan untuk mendanainya.',
+   'You choose the request amount, repayment amount, due date, and reason before a moo-lender decides whether to fund it.':
+      'Kamu memilih jumlah permintaan, jumlah pembayaran kembali, tanggal jatuh tempo, dan alasannya sebelum moo-lender memutuskan untuk mendanainya.',
 
    // src/views/borrowerBenefits/sections/HeroSection.tsx
    'Microloans with USDC to build your credit': 'Pinjaman mikro dengan USDC untuk membangun kreditmu',
@@ -1063,8 +1065,8 @@ export const indonesianCoverageB: Record<string, string> = {
    'What is Moodeng Credit?': 'Apa itu Moodeng Credit?',
    'Small USDC loans that build your credit': 'Pinjaman USDC kecil yang membangun kreditmu',
    'What is Moodeng Credit and how does it work?': 'Apa itu Moodeng Credit dan bagaimana cara kerjanya?',
-   'Moodeng Credit lets you request short-term loans in USDC while earning Pandesal points linked to your wallet. You post a request, a lender funds it directly to your wallet, and you repay on or before the date you set. Every on-time repayment earns Pandesal points, and repaying a loan at your full limit on time unlocks a higher credit limit — so you start small and grow as you prove reliable. Your reputation is tied to your wallet, so it travels with you rather than being locked inside one app.':
-      'Dengan Moodeng Credit, kamu bisa mengajukan pinjaman jangka pendek dalam USDC sambil mengumpulkan poin Pandesal yang terhubung ke dompetmu. Kamu memposting permintaan, seorang pemberi pinjaman mendanainya langsung ke dompetmu, dan kamu membayar kembali pada atau sebelum tanggal yang kamu tentukan. Setiap pembayaran kembali tepat waktu menghasilkan poin Pandesal, dan membayar kembali pinjaman sebesar limit penuhmu tepat waktu membuka limit kredit yang lebih tinggi — jadi kamu mulai dari kecil dan tumbuh seiring kamu membuktikan bisa diandalkan. Reputasimu terhubung ke dompetmu, sehingga ia ikut ke mana pun kamu pergi, bukan terkunci di dalam satu aplikasi saja.',
+   'Moodeng Credit lets you request short-term loans in USDC while earning Pandesal points linked to your wallet. You post a request, a moo-lender funds it directly to your wallet, and you repay on or before the date you set. Every on-time repayment earns Pandesal points, and repaying a loan at your full limit on time unlocks a higher credit limit — so you start small and grow as you prove reliable. Your reputation is tied to your wallet, so it travels with you rather than being locked inside one app.':
+      'Dengan Moodeng Credit, kamu bisa mengajukan pinjaman jangka pendek dalam USDC sambil mengumpulkan poin Pandesal yang terhubung ke dompetmu. Kamu memposting permintaan, seorang moo-lender mendanainya langsung ke dompetmu, dan kamu membayar kembali pada atau sebelum tanggal yang kamu tentukan. Setiap pembayaran kembali tepat waktu menghasilkan poin Pandesal, dan membayar kembali pinjaman sebesar limit penuhmu tepat waktu membuka limit kredit yang lebih tinggi — jadi kamu mulai dari kecil dan tumbuh seiring kamu membuktikan bisa diandalkan. Reputasimu terhubung ke dompetmu, sehingga ia ikut ke mana pun kamu pergi, bukan terkunci di dalam satu aplikasi saja.',
    'Request your first loan': 'Ajukan pinjaman pertamamu',
    'Account → wallet → verify → request': 'Akun → dompet → verifikasi → permintaan',
    'How do I request my first loan?': 'Bagaimana cara mengajukan pinjaman pertamaku?',
@@ -1075,13 +1077,13 @@ export const indonesianCoverageB: Record<string, string> = {
    'Does Moodeng charge fees?': 'Apakah Moodeng mengenakan biaya?',
    'No platform fees, no gas on Base': 'Tanpa biaya platform, tanpa biaya gas di Base',
    'Does Moodeng charge any fees?': 'Apakah Moodeng mengenakan biaya apa pun?',
-   'No. Moodeng is free to use — no platform fees on borrowing or lending, no subscriptions, no setup costs. 100% of what a lender funds reaches you, and 100% of your repayment reaches the lender. Network fees (gas) are also zero when you use your Instant Wallet or a Base Account on Base. The only cost is the interest rate the borrower offers, and that goes entirely to the lender, not to us.':
-      'Tidak. Moodeng gratis digunakan — tanpa biaya platform untuk meminjam atau memberi pinjaman, tanpa biaya langganan, tanpa biaya pengaturan. 100% dana yang didanai pemberi pinjaman sampai ke kamu, dan 100% pembayaran kembalimu sampai ke pemberi pinjaman. Biaya jaringan (gas) juga nol saat kamu memakai Instant Wallet atau Base Account di Base. Satu-satunya biaya adalah suku bunga yang ditawarkan peminjam, dan itu sepenuhnya menjadi milik pemberi pinjaman, bukan kami.',
+   'No. Moodeng is free to use — no platform fees on borrowing or lending, no subscriptions, no setup costs. 100% of what a moo-lender funds reaches you, and 100% of your repayment reaches the moo-lender. Network fees (gas) are also zero when you use your Instant Wallet or a Base Account on Base. The only cost is the interest rate the borrower offers, and that goes entirely to the moo-lender, not to us.':
+      'Tidak. Moodeng gratis digunakan — tanpa biaya platform untuk meminjam atau memberi pinjaman, tanpa biaya langganan, tanpa biaya pengaturan. 100% dana yang didanai moo-lender sampai ke kamu, dan 100% pembayaran kembalimu sampai ke moo-lender. Biaya jaringan (gas) juga nol saat kamu memakai Instant Wallet atau Base Account di Base. Satu-satunya biaya adalah suku bunga yang ditawarkan peminjam, dan itu sepenuhnya menjadi milik moo-lender, bukan kami.',
    'Can I get a small loan?': 'Bisakah aku mendapatkan pinjaman kecil?',
    'Yes — this is built for small loans': 'Bisa — ini memang dibuat untuk pinjaman kecil',
    'Can I get a small loan with Moodeng?': 'Bisakah aku mendapatkan pinjaman kecil dengan Moodeng?',
-   'Yes — small loans are exactly what Moodeng is for. New borrowers start at a $15 limit, with no minimum amount, no subscription, and no fees. You request what you need up to your current limit, set the date and interest, and lenders decide whether to fund you. Each full-limit loan you repay on time grows your limit one step, from $15 up to a $140 maximum, so you can start small and grow into larger loans only when you are ready.':
-      'Bisa — pinjaman kecil justru inti dari Moodeng. Peminjam baru mulai dengan limit $15, tanpa jumlah minimum, tanpa langganan, dan tanpa biaya. Kamu mengajukan sesuai kebutuhanmu hingga limit saat ini, menentukan tanggal dan suku bunga, dan pemberi pinjaman memutuskan apakah akan mendanaimu. Setiap pinjaman sebesar limit penuh yang kamu bayar kembali tepat waktu menaikkan limitmu satu tingkat, dari $15 hingga maksimum $140, jadi kamu bisa mulai dari kecil dan tumbuh ke pinjaman yang lebih besar hanya saat kamu sudah siap.',
+   'Yes — small loans are exactly what Moodeng is for. New borrowers start at a $15 limit, with no minimum amount, no subscription, and no fees. You request what you need up to your current limit, set the date and interest, and moo-lenders decide whether to fund you. Each full-limit loan you repay on time grows your limit one step, from $15 up to a $140 maximum, so you can start small and grow into larger loans only when you are ready.':
+      'Bisa — pinjaman kecil justru inti dari Moodeng. Peminjam baru mulai dengan limit $15, tanpa jumlah minimum, tanpa langganan, dan tanpa biaya. Kamu mengajukan sesuai kebutuhanmu hingga limit saat ini, menentukan tanggal dan suku bunga, dan moo-lender memutuskan apakah akan mendanaimu. Setiap pinjaman sebesar limit penuh yang kamu bayar kembali tepat waktu menaikkan limitmu satu tingkat, dari $15 hingga maksimum $140, jadi kamu bisa mulai dari kecil dan tumbuh ke pinjaman yang lebih besar hanya saat kamu sudah siap.',
    'The quick 3-minute check': 'Pengecekan cepat 3 menit',
    'In the app, tap "Verify Yourself".': 'Di dalam aplikasi, ketuk "Verifikasi Diri".',
    'Your ID is checked by our secure verification partner and is never stored by Moodeng. If it gets stuck, retry in Chrome or Safari — not a browser inside Facebook or Messenger — with a clear, well-lit photo.':
@@ -1096,8 +1098,8 @@ export const indonesianCoverageB: Record<string, string> = {
    'The Instant Wallet': 'Instant Wallet',
    'Your default wallet — no app, no seed phrase': 'Dompet bawaanmu — tanpa aplikasi, tanpa seed phrase',
    'What is the Instant Wallet and is it safe?': 'Apa itu Instant Wallet dan apakah aman?',
-   "The Instant Wallet is Moodeng's default wallet for borrowers: a real, self-custodial wallet set up for you straight from your Moodeng login — no app to download and no seed phrase to write down. Borrowers receive USDC loans in it. (Lenders: we recommend a Base Account, but you can use an Instant Wallet too.) It earns Pandesal points exactly like any other wallet, it works even when Base Account sign-in is blocked (like the PLDT / Smart block), and it is gasless — Moodeng covers the network fees, so you don't need ETH to repay or cash out. Prefer a Base Account? You can connect one instead.":
-      'Instant Wallet adalah dompet bawaan Moodeng untuk peminjam: dompet self-custodial sungguhan yang disiapkan untukmu langsung dari login Moodeng-mu — tanpa aplikasi yang perlu diunduh dan tanpa seed phrase yang perlu dicatat. Peminjam menerima pinjaman USDC di dalamnya. (Pemberi pinjaman: kami menyarankan Base Account, tapi kamu juga bisa memakai Instant Wallet.) Dompet ini menghasilkan poin Pandesal sama seperti dompet lain, tetap berfungsi bahkan saat sign-in Base Account terblokir (seperti blokir PLDT / Smart), dan bebas biaya gas — Moodeng menanggung biaya jaringannya, jadi kamu tidak perlu ETH untuk membayar kembali atau mencairkan dana. Lebih suka Base Account? Kamu bisa menghubungkannya sebagai gantinya.',
+   "The Instant Wallet is Moodeng's default wallet for borrowers: a real, self-custodial wallet set up for you straight from your Moodeng login — no app to download and no seed phrase to write down. Borrowers receive USDC loans in it. (Moo-lenders: we recommend a Base Account, but you can use an Instant Wallet too.) It earns Pandesal points exactly like any other wallet, it works even when Base Account sign-in is blocked (like the PLDT / Smart block), and it is gasless — Moodeng covers the network fees, so you don't need ETH to repay or cash out. Prefer a Base Account? You can connect one instead.":
+      'Instant Wallet adalah dompet bawaan Moodeng untuk peminjam: dompet self-custodial sungguhan yang disiapkan untukmu langsung dari login Moodeng-mu — tanpa aplikasi yang perlu diunduh dan tanpa seed phrase yang perlu dicatat. Peminjam menerima pinjaman USDC di dalamnya. (Moo-lender: kami menyarankan Base Account, tapi kamu juga bisa memakai Instant Wallet.) Dompet ini menghasilkan poin Pandesal sama seperti dompet lain, tetap berfungsi bahkan saat sign-in Base Account terblokir (seperti blokir PLDT / Smart), dan bebas biaya gas — Moodeng menanggung biaya jaringannya, jadi kamu tidak perlu ETH untuk membayar kembali atau mencairkan dana. Lebih suka Base Account? Kamu bisa menghubungkannya sebagai gantinya.',
    'You fully own it. You can export its private key anytime from Account → Account Settings → Wallet → "Export wallet key" and import it into MetaMask, Trust, or any wallet — then you\'re free to leave Moodeng entirely.':
       'Dompet ini sepenuhnya milikmu. Kamu bisa mengekspor private key-nya kapan saja dari Akun → Pengaturan Akun → Dompet → "Ekspor kunci dompet" dan mengimpornya ke MetaMask, Trust, atau dompet apa pun — setelah itu kamu bebas meninggalkan Moodeng sepenuhnya.',
    'Coinbase app vs Base Account': 'Aplikasi Coinbase vs Base Account',
@@ -1178,8 +1180,8 @@ export const indonesianCoverageB: Record<string, string> = {
    'How much does it cost to cash out?': 'Berapa biaya untuk mencairkan dana?',
    'Your repayment reputation': 'Reputasi pembayaran kembalimu',
    'What are Pandesal points and how are they calculated?': 'Apa itu poin Pandesal dan bagaimana cara menghitungnya?',
-   'Your Pandesal points reflect how reliably you repay loans. They rise with on-time, in-full repayments and drop with late payments or defaults. Lenders use them to gauge risk when deciding whether to fund your requests. Because they are tied to your wallet, they travel with you — they are not locked inside one app.':
-      'Poin Pandesal-mu mencerminkan seberapa bisa diandalkan kamu dalam membayar kembali pinjaman. Poin ini naik saat kamu membayar kembali tepat waktu dan lunas, dan turun saat pembayaran terlambat atau gagal bayar. Pemberi pinjaman memakainya untuk menilai risiko saat memutuskan apakah akan mendanai permintaanmu. Karena terhubung ke dompetmu, poin ini ikut ke mana pun kamu pergi — tidak terkunci di dalam satu aplikasi saja.',
+   'Your Pandesal points reflect how reliably you repay loans. They rise with on-time, in-full repayments and drop with late payments or defaults. Moo-lenders use them to gauge risk when deciding whether to fund your requests. Because they are tied to your wallet, they travel with you — they are not locked inside one app.':
+      'Poin Pandesal-mu mencerminkan seberapa bisa diandalkan kamu dalam membayar kembali pinjaman. Poin ini naik saat kamu membayar kembali tepat waktu dan lunas, dan turun saat pembayaran terlambat atau gagal bayar. Moo-lender memakainya untuk menilai risiko saat memutuskan apakah akan mendanai permintaanmu. Karena terhubung ke dompetmu, poin ini ikut ke mana pun kamu pergi — tidak terkunci di dalam satu aplikasi saja.',
    'What is a Credit Level?': 'Apa itu Level Kredit?',
    '$15 up to $140, step by step': '$15 hingga $140, langkah demi langkah',
    'What is a Credit Level and how do I move up?': 'Apa itu Level Kredit dan bagaimana cara naik level?',
@@ -1192,13 +1194,13 @@ export const indonesianCoverageB: Record<string, string> = {
    'Credit-Building vs Trust-Building loans': 'Credit-Building Loan vs Trust-Building Loan',
    'Which one raises your limit': 'Mana yang menaikkan limitmu',
    "What's the difference between Credit-Building and Trust-Building loans?": 'Apa bedanya Credit-Building Loan dan Trust-Building Loan?',
-   'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with lenders, but it does not raise your Credit Level. Most borrowers use both — trust loans to keep activity healthy, credit loans to grow the limit.':
-      'Ada dua jenis pinjaman. Credit-Building Loan adalah pinjaman sebesar limit penuhmu saat ini — membayar kembali tepat waktu menaikkan limitmu dan membuka level berikutnya. Trust-Building Loan adalah pinjaman lebih kecil di bawah limitmu; pinjaman ini tetap membangun riwayat pembayaran dan reputasimu di mata pemberi pinjaman, tetapi tidak menaikkan Level Kredit-mu. Kebanyakan peminjam memakai keduanya — Trust-Building Loan untuk menjaga aktivitas tetap sehat, Credit-Building Loan untuk menaikkan limit.',
+   'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with moo-lenders, but it does not raise your Credit Level. Most borrowers use both — trust loans to keep activity healthy, credit loans to grow the limit.':
+      'Ada dua jenis pinjaman. Credit-Building Loan adalah pinjaman sebesar limit penuhmu saat ini — membayar kembali tepat waktu menaikkan limitmu dan membuka level berikutnya. Trust-Building Loan adalah pinjaman lebih kecil di bawah limitmu; pinjaman ini tetap membangun riwayat pembayaran dan reputasimu di mata moo-lender, tetapi tidak menaikkan Level Kredit-mu. Kebanyakan peminjam memakai keduanya — Trust-Building Loan untuk menjaga aktivitas tetap sehat, Credit-Building Loan untuk menaikkan limit.',
    'How repayments affect your points': 'Bagaimana pembayaran kembali memengaruhi poinmu',
    'On-time full = the most points': 'Lunas tepat waktu = poin paling banyak',
    'How do repayments affect my Pandesal points?': 'Bagaimana pembayaran kembali memengaruhi poin Pandesal-ku?',
-   'Every repayment affects your Pandesal points, and small loans repaid cleanly are worth more than large loans repaid sloppily. On-time, full repayment earns the maximum 10 points. Partial repayments earn proportionally — 75% = 7, 50% = 5, 25% = 3. Any payment after the deadline earns 0 for that transaction. A default leaves a permanent mark on your public profile, visible to all future lenders.':
-      'Setiap pembayaran kembali memengaruhi poin Pandesal-mu, dan pinjaman kecil yang dibayar dengan rapi lebih berharga daripada pinjaman besar yang dibayar sembarangan. Pembayaran lunas tepat waktu menghasilkan poin maksimum, 10. Pembayaran sebagian menghasilkan poin secara proporsional — 75% = 7, 50% = 5, 25% = 3. Pembayaran apa pun setelah tenggat menghasilkan 0 poin untuk transaksi itu. Gagal bayar meninggalkan tanda permanen di profil publikmu, yang terlihat oleh semua calon pemberi pinjaman di masa depan.',
+   'Every repayment affects your Pandesal points, and small loans repaid cleanly are worth more than large loans repaid sloppily. On-time, full repayment earns the maximum 10 points. Partial repayments earn proportionally — 75% = 7, 50% = 5, 25% = 3. Any payment after the deadline earns 0 for that transaction. A default leaves a permanent mark on your public profile, visible to all future moo-lenders.':
+      'Setiap pembayaran kembali memengaruhi poin Pandesal-mu, dan pinjaman kecil yang dibayar dengan rapi lebih berharga daripada pinjaman besar yang dibayar sembarangan. Pembayaran lunas tepat waktu menghasilkan poin maksimum, 10. Pembayaran sebagian menghasilkan poin secara proporsional — 75% = 7, 50% = 5, 25% = 3. Pembayaran apa pun setelah tenggat menghasilkan 0 poin untuk transaksi itu. Gagal bayar meninggalkan tanda permanen di profil publikmu, yang terlihat oleh semua calon moo-lender di masa depan.',
    'Where do I put a referral code?': 'Di mana aku memasukkan kode referal?',
    '+$5 to your starting limit': '+$5 untuk limit awalmu',
    'Where do I enter a referral code?': 'Di mana aku memasukkan kode referal?',
@@ -1209,8 +1211,8 @@ export const indonesianCoverageB: Record<string, string> = {
    'Why, and how to fix it': 'Kenapa, dan cara memperbaikinya',
    'My loan reason says to write it in English — what should I do?':
       'Alasan pinjamanku diminta ditulis dalam bahasa Inggris — apa yang harus kulakukan?',
-   'Lenders on Moodeng are in the US and Europe, so a loan reason has to be in English — a request they can\'t read doesn\'t get funded. Tagalog, Taglish, and Bisaya are the usual cause; the form stops there until it\'s rewritten. A borrowed word inside an English sentence is fine ("buying gamot for my mother") — it\'s whole sentences in another language that stop the form. The same applies to "Describe your situation" in the bio step, though the job title itself can stay local ("sari-sari store owner", "jeepney driver").':
-      'Pemberi pinjaman di Moodeng berada di AS dan Eropa, jadi alasan pinjaman harus ditulis dalam bahasa Inggris — permintaan yang tidak bisa mereka baca tidak akan didanai. Tagalog, Taglish, dan Bisaya biasanya jadi penyebabnya; formulir akan berhenti di sana sampai ditulis ulang. Kata pinjaman di dalam kalimat bahasa Inggris tidak masalah ("buying gamot for my mother") — yang menghentikan formulir adalah kalimat penuh dalam bahasa lain. Hal yang sama berlaku untuk "Describe your situation" di langkah bio, meskipun nama pekerjaan itu sendiri boleh tetap lokal ("sari-sari store owner", "jeepney driver").',
+   'Moo-lenders on Moodeng are in the US and Europe, so a loan reason has to be in English — a request they can\'t read doesn\'t get funded. Tagalog, Taglish, and Bisaya are the usual cause; the form stops there until it\'s rewritten. A borrowed word inside an English sentence is fine ("buying gamot for my mother") — it\'s whole sentences in another language that stop the form. The same applies to "Describe your situation" in the bio step, though the job title itself can stay local ("sari-sari store owner", "jeepney driver").':
+      'Moo-lender di Moodeng berada di AS dan Eropa, jadi alasan pinjaman harus ditulis dalam bahasa Inggris — permintaan yang tidak bisa mereka baca tidak akan didanai. Tagalog, Taglish, dan Bisaya biasanya jadi penyebabnya; formulir akan berhenti di sana sampai ditulis ulang. Kata pinjaman di dalam kalimat bahasa Inggris tidak masalah ("buying gamot for my mother") — yang menghentikan formulir adalah kalimat penuh dalam bahasa lain. Hal yang sama berlaku untuk "Describe your situation" di langkah bio, meskipun nama pekerjaan itu sendiri boleh tetap lokal ("sari-sari store owner", "jeepney driver").',
    'My reason is "too vague"': 'Alasanku dibilang "terlalu tidak jelas"',
    "It's a nudge, not a block": 'Ini cuma pengingat, bukan penghalang',
    "My reason is in English but it still says it's too vague — what do I do?":
@@ -1230,8 +1232,8 @@ export const indonesianCoverageB: Record<string, string> = {
    'Staying safe on Moodeng': 'Tetap aman di Moodeng',
    'The rules that are always true': 'Aturan yang selalu berlaku',
    'How do I stay safe and avoid scams?': 'Bagaimana cara tetap aman dan menghindari penipuan?',
-   'A few things are always true. Moodeng never holds or moves your money — loans go wallet-to-wallet directly between lender and borrower. Always send USDC on the Base network; the wrong network means lost funds. The Instant Wallet and a Base Account are both seedless, so Moodeng will never ask for a "seed phrase" or "recovery phrase" — and no legitimate helper ever will. When you\'re unsure, it\'s always safe to wait and ask rather than guess, especially before sending funds.':
-      'Beberapa hal ini selalu berlaku. Moodeng tidak pernah memegang atau memindahkan uangmu — pinjaman berpindah langsung dari dompet ke dompet antara pemberi pinjaman dan peminjam. Selalu kirim USDC di jaringan Base; jaringan yang salah berarti dananya hilang. Instant Wallet dan Base Account sama-sama tanpa seed, jadi Moodeng tidak akan pernah meminta "seed phrase" atau "recovery phrase" — dan tidak ada pihak resmi yang akan pernah memintanya. Kalau kamu ragu, selalu aman untuk menunggu dan bertanya dulu daripada menebak-nebak, apalagi sebelum mengirim dana.',
+   'A few things are always true. Moodeng never holds or moves your money — loans go wallet-to-wallet directly between moo-lender and borrower. Always send USDC on the Base network; the wrong network means lost funds. The Instant Wallet and a Base Account are both seedless, so Moodeng will never ask for a "seed phrase" or "recovery phrase" — and no legitimate helper ever will. When you\'re unsure, it\'s always safe to wait and ask rather than guess, especially before sending funds.':
+      'Beberapa hal ini selalu berlaku. Moodeng tidak pernah memegang atau memindahkan uangmu — pinjaman berpindah langsung dari dompet ke dompet antara moo-lender dan peminjam. Selalu kirim USDC di jaringan Base; jaringan yang salah berarti dananya hilang. Instant Wallet dan Base Account sama-sama tanpa seed, jadi Moodeng tidak akan pernah meminta "seed phrase" atau "recovery phrase" — dan tidak ada pihak resmi yang akan pernah memintanya. Kalau kamu ragu, selalu aman untuk menunggu dan bertanya dulu daripada menebak-nebak, apalagi sebelum mengirim dana.',
    'Manage your account': 'Kelola akunmu',
    'Name, email, password, sign out': 'Nama, email, kata sandi, keluar akun',
    'How do I manage my account and security settings?': 'Bagaimana cara mengelola akun dan pengaturan keamananku?',
@@ -1292,5 +1294,13 @@ export const indonesianCoverageB: Record<string, string> = {
    // src/views/support/FAQ.tsx
    'Frequently Asked Questions | Moodeng Credit': 'Pertanyaan yang Sering Diajukan | Moodeng Credit',
    'Answers about how Moodeng Credit works — borrowing in USDC, Pandesal points, Credit Levels, the Instant Wallet (and Base Accounts), fees, and staying safe from loan sharks.':
-      'Jawaban tentang cara kerja Moodeng Credit — meminjam dalam USDC, poin Pandesal, Level Kredit, Instant Wallet (dan Base Account), biaya, dan cara tetap aman dari rentenir.'
+      'Jawaban tentang cara kerja Moodeng Credit — meminjam dalam USDC, poin Pandesal, Level Kredit, Instant Wallet (dan Base Account), biaya, dan cara tetap aman dari rentenir.',
+   // src/views/dashboard/RequestBoard.tsx tour (apply, then ID check last)
+   'Meet the team, then apply': 'Kenalan dengan tim, lalu ajukan',
+   'Borrowers set up a wallet, connect Messenger and have a short call with the team. Their ID is checked when they send their first request, so moo-lenders know they are funding a real person.':
+      'Peminjam menyiapkan dompet, menghubungkan Messenger, dan melakukan panggilan singkat dengan tim. ID mereka dicek saat mengirim permintaan pertama, agar moo-lender tahu mereka mendanai orang sungguhan.',
+   'This is where the borrower sets the amount, repayment, date, and reason. Sending it is when their ID gets checked.':
+      'Di sini peminjam mengatur jumlah, pembayaran kembali, tanggal, dan alasan. Saat dikirim, ID mereka akan dicek.',
+   'New borrowers set up, have a short call with the team, then fill in a request. A quick ID check is the last step of sending it.':
+      'Peminjam baru menyiapkan akun, melakukan panggilan singkat dengan tim, lalu mengisi permintaan. Cek ID singkat adalah langkah terakhir saat mengirimnya.'
 };

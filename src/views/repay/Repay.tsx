@@ -28,6 +28,7 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
 import UserAvatar from '@/components/UserAvatar';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
+import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
 import { useGeoCheck } from '@/hooks/useGeoCheck';
 import { useLoanData } from '@/hooks/useLoanData';
@@ -46,7 +47,7 @@ import { detectInAppBrowser, shouldBlockRepayForInAppBrowser } from '@/lib/inApp
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getDueDayEnd, getLoanTimezone, isPastDueDay } from '@/lib/loanDeadline';
 import { areWalletAddressesEqual, formatWalletAddressShort, getBaseWalletLockStatus, isBaseWalletProvider } from '@/lib/walletProvider';
-import { confirmLoanPayment, getUserLoans, PaymentNotConfirmedError } from '@/store/slices/loanSlice';
+import { confirmLoanPayment, getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
@@ -330,13 +331,20 @@ const isLoanDueSoon = (loan: Loan): boolean => {
    return totalHours > 0 && totalHours < 24;
 };
 
+// Round down to whole cents (with a tiny epsilon so 5.00 stays 5.00 despite float noise).
+const floorToCents = (value: number): number => Math.floor(value * 100 + 1e-6) / 100;
+
 const getEstimatedTrustPoints = (loan: Loan, repaymentAmount: number): number => {
    if (repaymentAmount <= 0) return 0;
 
    const remainingAmount = getRemainingAmount(loan);
    if (remainingAmount <= 0) return 0;
 
-   return Math.max(1, Math.round((Math.min(repaymentAmount, remainingAmount) / remainingAmount) * 10));
+   // Mirrors private.award_repayment_pandesal: only a full, on-time payoff earns points
+   // (10). Partial payments and late payoffs earn nothing, so never promise them.
+   if (repaymentAmount < remainingAmount - 0.005) return 0;
+   if (isLoanOverdue(loan)) return 0;
+   return 10;
 };
 
 const createPreviewLoan = (overrides: Partial<Loan>): Loan => ({
@@ -693,23 +701,19 @@ export default function Repay() {
       isProcessing || connectStatus === 'pending' || !repaymentAmount || Boolean(amountError) || parsedRepaymentAmount <= 0;
    const baseWalletLock = getBaseWalletLockStatus(user);
    const isWorldIdVerified = isUserVerified(user);
-   const { open: openVerify, modal: verifyModal } = useVerifyYourself('repay');
+   const { modal: verifyModal } = useVerifyYourself('repay');
+   const journey = useVerificationJourney();
    const hasCompletedBaseWalletSetup = baseWalletLock.isConfirmedBorrowerWallet;
    const emptyRepayState = !selectedLoan
-      ? !isWorldIdVerified && !hasCompletedBaseWalletSetup
-         ? {
-              actionLabel: 'Start Setup',
-              body: 'Verify yourself and set up your wallet (an Instant Wallet, or a Base Account if you prefer) before requesting loans. Repayments will show here after a lender funds your first loan.',
-              onAction: () => navigate('/onboarding/welcome', { state: { returnTo: 'repay' } }),
-              title: 'Finish setup to start borrowing'
+      ? !isWorldIdVerified
+         ? // Not verified: their next step on the way to a first loan (wallet → Messenger → bio → call →
+           // apply, with the ID check at the end of the request) — same as everywhere else.
+           {
+              actionLabel: journey.cta,
+              body: `${journey.body} Repayments will show here after a moo-lender funds your first loan.`,
+              onAction: journey.go,
+              title: journey.onboarding && journey.step ? `Step ${journey.step} of 3: ${journey.title}` : journey.title
            }
-         : !isWorldIdVerified
-           ? {
-                actionLabel: 'Verify Yourself',
-                body: 'Your wallet is added. Complete verification before requesting loans. Repayments will show here after funding.',
-                onAction: openVerify,
-                title: 'Verify yourself to borrow'
-             }
            : !hasCompletedBaseWalletSetup
              ? {
                   actionLabel: 'Add Wallet',
@@ -719,7 +723,7 @@ export default function Repay() {
                }
              : {
                   actionLabel: 'Request a loan',
-                  body: 'Your repayment activity will appear here once a lender funds your first loan.',
+                  body: 'Your repayment activity will appear here once a moo-lender funds your first loan.',
                   onAction: () => navigate('/request-board', { state: { openLoanRequest: true } }),
                   title: 'No repayments yet'
                }
@@ -886,7 +890,8 @@ export default function Repay() {
       if (hasEnoughToRepay) {
          setRepaymentAmount(formatCurrency(selectedRemaining));
       } else if (hasPartialFunds && usdcBalance !== null) {
-         setRepaymentAmount(formatCurrency(usdcBalance));
+         // Round down: toFixed(2) can round a 4.996 balance up to 5.00, which exceeds it.
+         setRepaymentAmount(formatCurrency(floorToCents(usdcBalance)));
       }
    }, [showAddFunds, hasEnoughToRepay, hasPartialFunds, usdcBalance, repaymentAmount, selectedRemaining]);
 
@@ -984,7 +989,7 @@ export default function Repay() {
          if (!selectedLoan.lenderWallet?.trim()) {
             showToast(
                TOAST_TYPES.ERROR,
-               'Lender wallet missing',
+               'Moo-lender wallet missing',
                "We can't find where to send this repayment. Please contact support and we'll sort it out."
             );
             return;
@@ -1116,7 +1121,7 @@ export default function Repay() {
       } catch (error) {
          // A 202 = payment sent but not yet confirmed on-chain. Don't cry failure: the reconciler
          // (armed in onSubmitted / after the wagmi hash) will finish the DB write once it settles.
-         if (error instanceof PaymentNotConfirmedError) {
+         if ((error as { name?: string } | null)?.name === 'PaymentNotConfirmedError') {
             showToast(
                TOAST_TYPES.INFO,
                'Still confirming',
@@ -2184,7 +2189,7 @@ export default function Repay() {
                <section className="flex min-h-[430px] flex-col items-center justify-center px-6 text-center">
                   <h2 className="text-md-h5 font-semibold text-[#040033]">{emptyRepayState?.title ?? 'No repayments yet'}</h2>
                   <p className="mt-3 max-w-[320px] text-md-b2 font-medium leading-[21px] text-md-neutral-1000">
-                     {emptyRepayState?.body ?? 'Your repayment activity will appear here once a lender funds your first loan.'}
+                     {emptyRepayState?.body ?? 'Your repayment activity will appear here once a moo-lender funds your first loan.'}
                   </p>
                   {emptyRepayState?.actionLabel && emptyRepayState.onAction ? (
                      <button

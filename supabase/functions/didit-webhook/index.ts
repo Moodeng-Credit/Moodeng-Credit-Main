@@ -8,6 +8,7 @@ import { claimDiditNotification, notifyAdmins, notifyUser } from '../_shared/did
 // The wallet face verdict is shared with check-didit-status so the push and pull paths can
 // never disagree. It is deliberately NOT hasDuplicateFace() — see that module's header.
 import { extractPortraitUrl, resolveCashoutFaceOutcome, resolveWalletFaceOutcome } from '../_shared/diditFaceSearch.ts';
+import { recordLivenessDecline } from '../_shared/preKycGate.ts';
 
 // Didit webhook receiver.
 // Verifies the HMAC-SHA256 signature over the raw request body (X-Signature),
@@ -623,6 +624,9 @@ serve(async (req) => {
 
          // Only resolve the attempt this webhook belongs to, so a late event from a previous
          // session can't overwrite a newer PENDING attempt.
+         // A real decline (not abandoned / expired) uses one of the borrower's 3 KYC tries. Recorded
+         // before the status write, so the app's "tries left" is current once it sees DECLINED.
+         if (status === 'Declined' && livenessStatus === 'DECLINED') await recordLivenessDecline(adminSupabase, vendorData, sessionId ?? null);
          let query = adminSupabase.from('users').update({ liveness_status: livenessStatus }).eq('id', vendorData);
          if (sessionId) query = query.eq('liveness_session_id', sessionId);
          const { error: livenessError } = await query;
@@ -725,17 +729,28 @@ serve(async (req) => {
             declineReason = extractDeclineReason(decision);
          }
 
-         const { error: statusError } = await adminSupabase
+         // Scoped to the session this webhook is about (like check-didit-status): a late or retried
+         // event for an old session must not overwrite a newer attempt — nor, via
+         // trg_record_kyc_decline, count one decline as two KYC tries.
+         let statusQuery = adminSupabase
             .from('users')
             .update({
                didit_id_status: status,
                ...(normalized === 'declined' ? { didit_decline_reason: declineReason ?? null } : {})
             })
             .eq('id', vendorData);
+         if (sessionId) statusQuery = statusQuery.eq('didit_session_id', sessionId);
+         const { data: statusRows, error: statusError } = await statusQuery.select('id');
 
          if (statusError) {
             console.error('[didit-webhook] Failed to write didit_id_status:', statusError.message);
             return jsonResponse({ success: false, error: 'Database error' }, 500);
+         }
+         // An event for an older session (they've started a new one since): nothing to record, and
+         // telling them "declined" / "in review" now would describe the wrong attempt.
+         if (!statusRows?.length) {
+            console.log(`[didit-webhook] Ignored ID status="${status}" for stale session ${sessionId} (user ${vendorData})`);
+            return jsonResponse({ success: true });
          }
 
          console.log(`[didit-webhook] ID status="${status}" for user ${vendorData} (${kind}, session ${sessionId ?? 'unknown'})`);

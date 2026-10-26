@@ -32,23 +32,29 @@ const PICKER_COPY: Record<LocaleCode, { title: string; body: string; suggested: 
 
 // First onboarding screen: every language in its own script, the visitor's likely language
 // (browser region / time zone) marked "Suggested". Picking one switches the whole app at once.
-export function OnboardingLanguagePicker() {
+// `compact`: no card, smaller chips, for the open space beside the hippo, so "Get started" fits on
+// a phone screen without scrolling (George, 2026-10-18).
+export function OnboardingLanguagePicker({ compact = false }: { compact?: boolean }) {
    const { chooseLocale, locale, locales, suggestedLocale } = useLocalization();
    const copy = PICKER_COPY[locale] ?? PICKER_COPY.en;
 
    return (
       <section
          aria-labelledby="onboarding-language-title"
-         className="flex flex-col gap-md-2 w-full rounded-[12px] border border-md-neutral-300 bg-white dark:bg-white/5 p-md-4"
+         className={
+            compact
+               ? 'flex flex-col gap-md-1 min-w-0 flex-1'
+               : 'flex flex-col gap-md-2 w-full rounded-[12px] border border-md-neutral-300 bg-white dark:bg-white/5 p-md-4'
+         }
          data-i18n-skip
       >
          <div className="flex flex-col gap-md-0">
-            <h3 id="onboarding-language-title" className="text-md-h5 text-md-heading">
+            <h3 id="onboarding-language-title" className={compact ? 'text-md-b2 font-semibold text-md-heading' : 'text-md-h5 text-md-heading'}>
                {copy.title}
             </h3>
-            <p className="text-md-b2 text-md-neutral-700">{copy.body}</p>
+            {compact ? null : <p className="text-md-b2 text-md-neutral-700">{copy.body}</p>}
          </div>
-         <div className="flex flex-wrap gap-md-1" role="group" aria-labelledby="onboarding-language-title">
+         <div className={compact ? 'flex flex-wrap gap-1.5' : 'flex flex-wrap gap-md-1'} role="group" aria-labelledby="onboarding-language-title">
             {locales.map((language) => {
                const isActive = language.code === locale;
                const isSuggested = language.code === suggestedLocale && !isActive;
@@ -59,7 +65,7 @@ export function OnboardingLanguagePicker() {
                      lang={language.htmlLang}
                      aria-pressed={isActive}
                      onClick={() => chooseLocale(language.code)}
-                     className={`inline-flex items-center gap-1 rounded-md-pill px-md-3 py-md-1 text-md-b2 font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-300 ${
+                     className={`inline-flex items-center gap-1 rounded-md-pill ${compact ? 'px-2.5 py-1 text-md-b3' : 'px-md-3 py-md-1 text-md-b2'} font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-300 ${
                         isActive
                            ? 'bg-md-primary-1200 text-white'
                            : 'border border-md-neutral-600 bg-white text-md-neutral-1400 hover:border-md-primary-900 dark:bg-transparent dark:text-md-neutral-300'

@@ -5,6 +5,8 @@ export interface SearchablePage {
    id: string;
    label: string;
    group: string;
+   /** What the tab is for, in plain words (adminSearchHints.ts). */
+   hint?: string;
 }
 
 export interface SearchableUser {
@@ -28,7 +30,9 @@ export interface SearchableRequest {
 export type AdminSearchResult =
    | { kind: 'page'; id: string; title: string; detail: string }
    | { kind: 'user'; id: string; title: string; detail: string }
-   | { kind: 'request'; id: string; title: string; detail: string };
+   | { kind: 'request'; id: string; title: string; detail: string }
+   // A tab DeepSeek picked for a plain-words question, with its one-line reason.
+   | { kind: 'ai'; id: string; title: string; detail: string };
 
 const LIMITS = { page: 5, user: 8, request: 5 };
 
@@ -46,9 +50,60 @@ function score(query: string, fields: Array<string | null | undefined>): number 
    return best;
 }
 
+const STOP_WORDS = new Set([
+   'the',
+   'and',
+   'for',
+   'who',
+   'whos',
+   'what',
+   'where',
+   'how',
+   'can',
+   'see',
+   'show',
+   'find',
+   'this',
+   'that',
+   'with',
+   'from',
+   'want',
+   'need',
+   'page',
+   'tab'
+]);
+
+// Words worth matching in a plain-words query: 3+ letters, not filler. "who's late this week" → late, week.
+export const meaningfulWords = (query: string) =>
+   query
+      .toLowerCase()
+      .replace(/['’]/g, '')
+      .split(/[^a-z0-9]+/)
+      .filter((word) => word.length >= 3 && !STOP_WORDS.has(word));
+
+// Pages also match on their hint, ranked after any name match: the whole query inside the hint (3),
+// else the share of meaningful query words that start a word in the hint (between 3 and 4).
+function pageScore(query: string, page: SearchablePage): number {
+   const byName = score(query, [page.label, page.group, page.id]);
+   if (byName !== -1 || !page.hint) return byName;
+   const hint = page.hint.toLowerCase();
+   if (hint.includes(query)) return 3;
+   const words = meaningfulWords(query);
+   if (words.length === 0) return -1;
+   const hintWords = hint.split(/[^a-z0-9]+/);
+   const hits = words.filter((word) => hintWords.some((h) => h.startsWith(word))).length;
+   // One word has to hit; longer questions need at least half their words to hit.
+   if (hits === 0 || (words.length > 2 && hits * 2 < words.length)) return -1;
+   return 4 - hits / words.length;
+}
+
 function ranked<T>(items: T[], query: string, fields: (item: T) => Array<string | null | undefined>, limit: number): T[] {
+   return rankedBy(items, (item) => score(query, fields(item)), limit);
+}
+
+function rankedBy<T>(items: T[], rankOf: (item: T) => number, limit: number): T[] {
    return items
-      .map((item, index) => ({ item, index, rank: score(query, fields(item)) }))
+      .map((item, index) => ({ item, index, rank: rankOf(item) }))
       .filter((entry) => entry.rank !== -1)
       .sort((a, b) => a.rank - b.rank || a.index - b.index)
       .slice(0, limit)
@@ -62,7 +117,7 @@ export function searchAdmin(
    const query = rawQuery.trim().toLowerCase().replace(/^@/, '');
    if (!query) return [];
 
-   const pages = ranked(sources.pages, query, (p) => [p.label, p.group, p.id], LIMITS.page).map<AdminSearchResult>((p) => ({
+   const pages = rankedBy(sources.pages, (p) => pageScore(query, p), LIMITS.page).map<AdminSearchResult>((p) => ({
       kind: 'page',
       id: p.id,
       title: p.label,

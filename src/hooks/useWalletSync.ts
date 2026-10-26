@@ -18,7 +18,8 @@ import {
    areWalletAddressesEqual,
    formatWalletAddressShort,
    getWalletProviderFromConnector,
-   isBaseWalletProvider
+   isBaseWalletProvider,
+   isOpenfortWalletProvider
 } from '@/lib/walletProvider';
 import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -108,6 +109,12 @@ export function useWalletSync() {
          role: userRole
       });
 
+      // The Instant Wallet is driven directly through the Openfort SDK, never through wagmi. If it
+      // ever shows up here anyway, it's the borrower's own wallet — not a wrong one to reject.
+      if (isOpenfortWalletProvider(walletProvider)) {
+         return;
+      }
+
       if (userRole === 'borrower' && !isBaseWalletProvider(walletProvider)) {
          showToast(
             TOAST_TYPES.ERROR,
@@ -193,6 +200,12 @@ export function useWalletSync() {
          role: userRole
       });
       const isExplicitWalletChange = walletChangeDisposition === 'explicit-change';
+
+      // The Instant Wallet is driven directly through the Openfort SDK, never through wagmi. If it
+      // ever shows up here anyway, it's the borrower's own wallet — not a wrong one to reject.
+      if (isOpenfortWalletProvider(walletProvider)) {
+         return;
+      }
 
       if (userRole === 'borrower' && !isBaseWalletProvider(walletProvider)) {
          return;

@@ -38,7 +38,17 @@ vi.mock('@/hooks/usePushNotifications', () => ({
 vi.mock('@/lib/supabase/client', () => ({
    getSupabaseBrowserClient: () => ({
       from: () => ({ select: () => ({ eq: () => ({ maybeSingle: supa.maybeSingle }) }) }),
-      rpc: supa.rpc
+      rpc: supa.rpc,
+      // ContactsStep's live subscription (Supabase Realtime): a no-op channel here.
+      channel: () => ({
+         on(this: object) {
+            return this;
+         },
+         subscribe(this: object) {
+            return this;
+         }
+      }),
+      removeChannel: vi.fn(async () => 'ok')
    })
 }));
 
@@ -82,6 +92,7 @@ describe('ContactsStep analytics trail', () => {
 
    beforeEach(() => {
       vi.useFakeTimers();
+      window.sessionStorage.clear();
       supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: null };
       analytics.capture.mockClear();
       onBack = vi.fn();
@@ -104,8 +115,11 @@ describe('ContactsStep analytics trail', () => {
       await tapMessenger();
       expect(eventProps('contact_verify_started')).toMatchObject({ source: 'verify_review', channel: 'messenger', attempt: 1 });
 
-      // Off to Messenger, back unconfirmed, backups appear after the short grace.
+      // Off to Messenger for a real visit, back unconfirmed, backups appear after the short grace.
       await setVisibility('hidden');
+      await act(async () => {
+         await vi.advanceTimersByTimeAsync(5_000);
+      });
       await setVisibility('visible');
       await act(async () => {
          await vi.advanceTimersByTimeAsync(4_100);
@@ -120,6 +134,8 @@ describe('ContactsStep analytics trail', () => {
          again[1].click();
       });
       expect(eventProps('contact_verify_reopen_tapped')).toMatchObject({ location: 'backup' });
+      // This time Messenger opens, and the bot confirms while they're there.
+      await setVisibility('hidden');
 
       supa.state.usersRow.messenger_verified_at = '2026-10-01T07:57:40Z';
       await act(async () => {
@@ -139,6 +155,8 @@ describe('ContactsStep analytics trail', () => {
          'contact_verify_returned',
          'contact_verify_backup_shown',
          'contact_verify_reopen_tapped',
+         'contact_verify_left_app',
+         'contact_verify_returned',
          'contact_verify_confirmed'
       ]);
    });

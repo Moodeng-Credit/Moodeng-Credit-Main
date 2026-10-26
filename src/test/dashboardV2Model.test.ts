@@ -137,7 +137,7 @@ describe('dashboard v2 milestones', () => {
       expect(milestones.map((milestone) => [milestone.id, milestone.status, milestone.reward])).toEqual([
          ['first-loan-request', 'next', '+10 Pandesal'],
          ['first-funded-loan', 'locked', '+15 Pandesal'],
-         ['first-on-time-repayment', 'locked', '₱50 GrabFood voucher']
+         ['first-on-time-repayment', 'locked', '₱50 GrabMart reward']
       ]);
    });
 

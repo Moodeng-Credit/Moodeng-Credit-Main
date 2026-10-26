@@ -852,6 +852,19 @@ export type Database = {
             Args: { p_email: string };
             Returns: boolean;
          };
+         auth_email_exists: {
+            Args: { p_email: string };
+            Returns: boolean;
+         };
+         // Abandoned sign-ups (migration 20261018150000_release_unfinished_signup).
+         release_unfinished_signup: {
+            Args: { p_email: string };
+            Returns: boolean;
+         };
+         discard_empty_guest: {
+            Args: Record<PropertyKey, never>;
+            Returns: boolean;
+         };
          get_user_id_by_username: {
             Args: { p_username: string };
             Returns: string;

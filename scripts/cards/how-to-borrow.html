@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<!-- The "How to borrow" card the Messenger bot sends (square, 1080×1080). Rendered to
+     public/cards/how-to-borrow-{en,fil}.png by scripts/cards/render-cards.mjs; ?lang=fil for Filipino. -->
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Archivo+Black&display=swap" rel="stylesheet" />
+<style>
+   :root {
+      --ink: oklch(18% 0.055 292);
+      --muted: oklch(40% 0.03 298);
+      --purple: oklch(49% 0.245 298);
+      --lavender: oklch(96.2% 0.028 305);
+      --lavender-100: oklch(92.5% 0.055 305);
+      --butter: oklch(86% 0.145 83);
+      --night: oklch(17% 0.05 296);
+   }
+   * { box-sizing: border-box; margin: 0; }
+   html, body { width: 1080px; height: 1080px; }
+   body {
+      font-family: 'Archivo', sans-serif;
+      background: var(--lavender);
+      color: var(--ink);
+      display: flex;
+      flex-direction: column;
+   }
+   header {
+      background: var(--night);
+      color: #fff;
+      padding: 34px 64px 30px;
+      display: flex;
+      align-items: center;
+      gap: 28px;
+   }
+   header img { width: 112px; height: 112px; border-radius: 50%; border: 5px solid #fff; background: #f3eefe; }
+   header .kicker { font-weight: 800; font-size: 26px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--butter); }
+   header h1 { font-family: 'Archivo Black', sans-serif; font-size: 58px; line-height: 1.02; margin-top: 4px; }
+   ol { list-style: none; padding: 30px 64px 0; display: flex; flex-direction: column; justify-content: space-between; flex: 1; }
+   li {
+      display: flex; align-items: center; gap: 26px;
+      background: #fff; border-radius: 28px; padding: 18px 28px;
+      box-shadow: 0 2px 0 var(--lavender-100);
+   }
+   .n {
+      flex: none; width: 64px; height: 64px; border-radius: 50%;
+      background: var(--purple); color: #fff;
+      font-family: 'Archivo Black', sans-serif; font-size: 32px;
+      display: flex; align-items: center; justify-content: center;
+   }
+   li:last-child .n { background: var(--butter); color: var(--ink); }
+   .t { font-size: 33px; font-weight: 800; line-height: 1.12; }
+   .s { font-size: 24px; font-weight: 500; color: var(--muted); margin-top: 4px; line-height: 1.2; }
+   footer { padding: 18px 64px 30px; display: flex; justify-content: space-between; align-items: center; font-size: 27px; font-weight: 700; color: var(--muted); }
+   footer b { color: var(--purple); font-family: 'Archivo Black', sans-serif; font-size: 32px; }
+</style>
+</head>
+<body>
+<header>
+   <img src="../../public/icons/hippo-support-avatar.png" alt="" />
+   <div>
+      <div class="kicker" data-t="kicker"></div>
+      <h1 data-t="title"></h1>
+   </div>
+</header>
+<ol id="steps"></ol>
+<footer><span data-t="free"></span><b>moodeng.app</b></footer>
+<script>
+   const COPY = {
+      en: {
+         kicker: 'Moodeng Credit',
+         title: 'Your first loan in 6 steps',
+         free: 'Free to join · Moodeng adds $0',
+         steps: [
+            ['Sign up', 'Free, at moodeng.app'],
+            ['Connect your Facebook', 'Then tell us a little about you'],
+            ['Quick video call', '15 minutes with George or Emma'],
+            ['Ask for your first $15', 'Verify your ID as the last step'],
+            ['A Moo-lender funds you', 'The money lands in your wallet — cash out anytime'],
+            ['Repay on time', 'Your limit grows with every loan']
+         ]
+      },
+      fil: {
+         kicker: 'Moodeng Credit',
+         title: 'Unang loan mo sa 6 na hakbang',
+         free: 'Libreng sumali · Walang dagdag na singil ang Moodeng',
+         steps: [
+            ['Mag-sign up', 'Libre, sa moodeng.app'],
+            ['I-connect ang Facebook mo', 'Tapos magkuwento nang kaunti tungkol sa iyo'],
+            ['Mabilis na video call', '15 minuto kasama si George o Emma'],
+            ['Humiram ng unang $15', 'I-verify ang ID mo sa huling hakbang'],
+            ['Popondohan ka ng Moo-lender', 'Papasok ang pera sa wallet mo — i-cash out kahit kailan'],
+            ['Magbayad sa oras', 'Tataas ang limit mo sa bawat loan']
+         ]
+      }
+   };
+   const lang = new URLSearchParams(location.search).get('lang') === 'fil' ? 'fil' : 'en';
+   const c = COPY[lang];
+   document.documentElement.lang = lang;
+   document.querySelectorAll('[data-t]').forEach((el) => (el.textContent = c[el.dataset.t]));
+   document.getElementById('steps').innerHTML = c.steps
+      .map(([t, s], i) => `<li><div class="n">${i + 1}</div><div><div class="t">${t}</div><div class="s">${s}</div></div></li>`)
+      .join('');
+</script>
+</body>
+</html>

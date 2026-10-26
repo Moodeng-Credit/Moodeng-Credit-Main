@@ -13,6 +13,8 @@ export type DefaultableLoan = {
 export type DefaultedBorrowerSupport = {
    count: number;
    overdueAmount: number;
+   /** Unpaid balance on every funded loan, overdue or not: a restricted borrower can still repay it. */
+   openAmount?: number;
 };
 
 export const EMPTY_DEFAULTED_BORROWER_SUPPORT: DefaultedBorrowerSupport = {
@@ -29,14 +31,6 @@ export function calculateDefaultedBorrowerSupport(
          return summary;
       }
 
-      // A loan whose repayment is merely due (the borrower's due day isn't over yet) is NOT a default.
-      // Use the shared graced check so the borrower side matches the lender side (PR #872/#873) and
-      // the backend loan-overdue-notifications job — otherwise a borrower repaying ON their due date
-      // is wrongly flagged overdue and bounced to /account-restricted, unable to reach /repay.
-      if (!isLoanPastDue(loan.due_date, now, loan.due_timezone)) {
-         return summary;
-      }
-
       const remainingAmount = Math.max(
          0,
          toNumber(loan.total_repayment_amount ?? 0) - toNumber(loan.repaid_amount ?? 0)
@@ -44,8 +38,18 @@ export function calculateDefaultedBorrowerSupport(
       if (remainingAmount <= 0) {
          return summary;
       }
+      const withOpen = { ...summary, openAmount: (summary.openAmount ?? 0) + remainingAmount };
+
+      // A loan whose repayment is merely due (the borrower's due day isn't over yet) is NOT a default.
+      // Use the shared graced check so the borrower side matches the lender side (PR #872/#873) and
+      // the backend loan-overdue-notifications job — otherwise a borrower repaying ON their due date
+      // is wrongly flagged overdue and bounced to /account-restricted, unable to reach /repay.
+      if (!isLoanPastDue(loan.due_date, now, loan.due_timezone)) {
+         return withOpen;
+      }
 
       return {
+         ...withOpen,
          count: summary.count + 1,
          overdueAmount: summary.overdueAmount + remainingAmount
       };

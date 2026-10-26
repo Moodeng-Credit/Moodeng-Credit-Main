@@ -29,6 +29,10 @@ const SCHEMA_VERSION = 1;
 // Long enough to hop to Messenger, tap around, maybe reinstall the app, and come back; short enough
 // that a draft from a much earlier session (with stale terms) never silently reopens.
 export const LOAN_REQUEST_DRAFT_TTL_MS = 30 * 60 * 1000;
+// A request waiting on the ID check ("Verify ID & send request") can sit through a Didit manual
+// review, which takes hours — over a weekend, days. Keep it 3 days; the send re-validates the terms
+// (e.g. a due date that has since passed) before anything is created.
+export const SEND_AFTER_VERIFY_TTL_MS = 3 * 24 * 60 * 60 * 1000;
 
 // Which screen of the request flow the borrower was on. Mirrors the boolean step flags inside
 // LoanRequestModal so restoring is a straight assignment, not a re-derivation.
@@ -56,6 +60,13 @@ export interface LoanRequestDraft {
    flow: LoanRequestFlowState;
    borrowerContext: BorrowerContextState;
    profileName: string;
+   /** Set when the borrower tapped "Verify ID & send request": send it once they're back verified. */
+   sendAfterVerify?: boolean;
+   /**
+    * Terms waiting on the ID check that the borrower closed the form on: keep them so the form comes
+    * back filled in once they're verified, but let them tap send themselves.
+    */
+   prefillOnly?: boolean;
 }
 
 interface StoredDraft extends LoanRequestDraft {
@@ -110,7 +121,8 @@ export function loadLoanRequestDraft(userId: string): LoanRequestDraft | null {
       return null;
    }
 
-   const isStale = typeof record?.savedAt !== 'number' || Date.now() - record.savedAt > LOAN_REQUEST_DRAFT_TTL_MS;
+   const ttl = record?.sendAfterVerify || record?.prefillOnly ? SEND_AFTER_VERIFY_TTL_MS : LOAN_REQUEST_DRAFT_TTL_MS;
+   const isStale = typeof record?.savedAt !== 'number' || Date.now() - record.savedAt > ttl;
    if (!record || record.v !== SCHEMA_VERSION || record.userId !== userId || isStale || !record.flow || !record.terms) {
       // A mismatch on account or version is a good moment to drop the dead record; a fresh draft for
       // a *different* signed-in user shouldn't be wiped, so only clear when it isn't a live one.
@@ -123,7 +135,9 @@ export function loadLoanRequestDraft(userId: string): LoanRequestDraft | null {
       referral: record.referral ?? null,
       flow: record.flow,
       borrowerContext: record.borrowerContext ?? { incomeSetup: '', paydayWindow: '', cashGaps: [] },
-      profileName: record.profileName ?? ''
+      profileName: record.profileName ?? '',
+      ...(record.sendAfterVerify ? { sendAfterVerify: true } : {}),
+      ...(record.prefillOnly ? { prefillOnly: true } : {})
    };
 }
 
@@ -142,9 +156,9 @@ export function clearLoanRequestDraft(): void {
  * True when a draft is worth reopening the modal for: the borrower had actually stepped past the
  * first screen (into bio, contacts, or the video call). A draft that only ever saw the terms screen
  * isn't resumed — reopening the whole modal for an untouched form would be more surprising than
- * helpful.
+ * helpful — except a request already sent off to the ID check, which must come back to be sent.
  */
 export function draftIsResumable(draft: LoanRequestDraft): boolean {
    const { flow } = draft;
-   return flow.showBorrowerContextStep || flow.showContactsStep || flow.showVideoCallStep || flow.contactsStepDone;
+   return draft.sendAfterVerify === true || draft.prefillOnly === true || flow.showBorrowerContextStep || flow.showContactsStep || flow.showVideoCallStep || flow.contactsStepDone;
 }

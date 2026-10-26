@@ -2,18 +2,22 @@ import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } fr
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { format, parseISO } from 'date-fns';
-import { ChevronRight, Clock, ExternalLink, Loader2, Send, Share2, Trash2 } from 'lucide-react';
+import { BadgeCheck, ChevronRight, Clock, ExternalLink, Send, Share2, Sparkles, Trash2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { useAccount, useSwitchChain } from 'wagmi';
 import { getAccount } from 'wagmi/actions';
 
 import FundingMethodModal, { type FundLoanTarget } from '@/components/funding/FundingMethodModal';
+import PaymentProgressRing from '@/components/loading/PaymentProgressRing';
+import { FlipFace, useFloatingParticles, useReplayClass, useTapFlip } from '@/components/motion/TapDelight';
 import LenderFundedPopup from '@/components/funding/LenderFundedPopup';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { useIsFundingAdmin } from '@/hooks/useIsFundingAdmin';
+import { trackPaymentStep } from '@/lib/analytics/paymentSteps';
+import { holdAtFull, type PaymentStage, useStagedProgress } from '@/hooks/useStagedProgress';
 import useWallet, { type PaymentMethod, toSettlementMethod, useActivePaymentMethod } from '@/hooks/useWallet';
 
 import { formatCurrency, formatNumber } from '@/utils/decimalHelpers';
@@ -37,7 +41,7 @@ import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { isBaseWalletProvider, isOpenfortWalletProvider } from '@/lib/walletProvider';
-import { computePointsDelta, computeYearOneIouPointsDelta, formatPointsMajor, getYearOneIouBorrowerBonusPoints } from '@/shared/points';
+import { computePointsDelta, formatPointsMajor } from '@/shared/points';
 import { confirmLoanPayment, fetchLoans, type LoanSideEffectError } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -64,7 +68,9 @@ type UserCardProps = Loan & {
 
 const getSafeProfileText = (value: unknown) => (typeof value === 'string' && value.trim() ? value : undefined);
 
-type LenderIouInfo = { loanAmount: number; borrowerFundedLoanCount: number };
+// The borrower's prior-loan count isn't available to lenders (their loan list is RLS-limited to
+// their own loans), so the first/2nd/3rd-loan bonus can't be known here — show only the base.
+type LenderIouInfo = { loanAmount: number };
 
 function BorrowerContextPanel({
    context,
@@ -77,19 +83,8 @@ function BorrowerContextPanel({
 }) {
    const iouData = lenderIouInfo
       ? (() => {
-           const prior = lenderIouInfo.borrowerFundedLoanCount;
-           const bonus = getYearOneIouBorrowerBonusPoints(prior);
-           const total = formatPointsMajor(computeYearOneIouPointsDelta(lenderIouInfo.loanAmount, prior));
            const base = formatPointsMajor(computePointsDelta(lenderIouInfo.loanAmount));
-           const bonusLabel =
-              prior === 0
-                 ? '1st-time borrower bonus'
-                 : prior === 1
-                   ? '2nd-loan borrower bonus'
-                   : prior === 2
-                     ? '3rd-loan borrower bonus'
-                     : '4th+ loan borrower bonus';
-           return { total, base, bonus, bonusLabel };
+           return { base };
         })()
       : null;
    const [profileSummary = context.paragraphText, trustSummary = ''] = context.paragraphText.split(/\n+/);
@@ -140,12 +135,12 @@ function BorrowerContextPanel({
                   🪙
                </span>
                <div className="min-w-0">
-                  <p className="text-[12px] font-[590] leading-[18px] text-[#8a5a00] dark:text-[#f5cb69]">Lender reward</p>
+                  <p className="text-[12px] font-[590] leading-[18px] text-[#8a5a00] dark:text-[#f5cb69]">Moo-lender reward</p>
                   <p className="text-[16px] font-[590] leading-6 tracking-[-0.32px] text-md-heading dark:text-md-neutral-100">
-                     {iouData.total} IOU Points
+                     {iouData.base} IOU Points
                   </p>
                   <p className="mt-0.5 text-[12px] font-normal leading-[18px] text-md-neutral-1200 dark:text-md-neutral-400">
-                     {iouData.base} for funding, plus {iouData.bonus} for the {iouData.bonusLabel}.
+                     For funding this loan. Newer borrowers can add a bonus on top.
                   </p>
                </div>
             </div>
@@ -192,6 +187,9 @@ export default function UserCard(loan: UserCardProps) {
    // "Confirming" copy on the in-card processing overlay and the explorer link, mirroring
    // the repay flow's pattern so lenders get the same on-chain-progress feedback.
    const [pendingTxHash, setPendingTxHash] = useState<string | null>(null);
+   // Real stage of the payment (wallet approval → sent → recorded), driving the percent ring.
+   const [fundStage, setFundStage] = useState<PaymentStage | null>(null);
+   const fundPercent = useStagedProgress(isProcessing ? fundStage : null);
    // Set when the lender taps "Cancel" on the pre-broadcast overlay. The in-flight payUsdc
    // promise can't be aborted, so this lets executeLend bail out of the success UI if it
    // resolves after the user has already backed out. (A broadcast that still lands is left
@@ -221,14 +219,11 @@ export default function UserCard(loan: UserCardProps) {
       Boolean(savedWalletAddress) && !isBaseWalletProvider(savedWalletProvider) && !isOpenfortWalletProvider(savedWalletProvider);
    const userId = currentUserId || storeUserId;
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
-   const allLoans = useSelector((state: RootState) => state.loans.loans.floans);
    const borrowerProfile = borrowerUserId ? userProfiles[borrowerUserId] : undefined;
-   const borrowerFundedLoanCount = borrowerUserId
-      ? allLoans.filter((l) => l.borrowerUser === borrowerUserId && l.loanStatus === 'Lent').length
-      : undefined;
-   const borrowerRepaidLoanCount = borrowerUserId
-      ? allLoans.filter((l) => l.borrowerUser === borrowerUserId && l.repaymentStatus === 'Paid' && !l.refundedAt).length
-      : undefined;
+   // Unknown on the lender side: the loan list here is RLS-limited to the viewer's own loans, so
+   // counting it made repeat borrowers look like first-timers. No server source exposes these yet.
+   const borrowerFundedLoanCount: number | undefined = undefined;
+   const borrowerRepaidLoanCount: number | undefined = undefined;
    const borrowerGoodStanding = borrowerProfile ? (borrowerProfile.cs ?? 0) > 0 : undefined;
    const borrowerIsVerified = borrowerProfile ? isUserVerified(borrowerProfile) : undefined;
    const borrowerUsername = getSafeProfileText(borrowerProfile?.username) ?? getSafeProfileText(tourBorrowerUsername) ?? '';
@@ -255,9 +250,11 @@ export default function UserCard(loan: UserCardProps) {
    // phase; the underlying wallet promise can't be aborted, so cancelledRef guards the
    // success UI if it resolves late, and any payment that did broadcast is left to the reconciler.
    const handleCancelProcessing = () => {
+      trackPaymentStep('cancelled', { flow: 'lend', loan_id: loanData.id, had_tx: Boolean(pendingTxHash) });
       cancelledRef.current = true;
       setIsProcessing(false);
       setPendingTxHash(null);
+      setFundStage(null);
    };
 
    // While we're still pre-broadcast (no hash yet) and waiting on the wallet, arm a short
@@ -277,6 +274,8 @@ export default function UserCard(loan: UserCardProps) {
       async (method: PaymentMethod) => {
          if (lendInFlightRef.current || isProcessing || loanData.loanStatus === 'Lent') return;
          lendInFlightRef.current = true;
+         const stepProps = { flow: 'lend', method, loan_id: loanData.id };
+         trackPaymentStep('tapped', stepProps);
          try {
 
          if (loanData.borrowerUser === userId) {
@@ -293,11 +292,18 @@ export default function UserCard(loan: UserCardProps) {
             showToast(TOAST_TYPES.INFO, 'Payment still confirming', 'Your last payment for this loan is still confirming. It will update here shortly. Please don’t pay again.');
             return;
          }
-         const { data: liveLoan } = await getSupabaseBrowserClient()
+         const { data: liveLoan, error: liveLoanError } = await getSupabaseBrowserClient()
             .from('loans')
             .select('loan_status, lender_user_id, on_hold_since, created_at, due_date, due_timezone')
             .eq('id', loanData.id)
             .maybeSingle();
+         // The read worked but returned nothing: lenders can't see a request once someone else funded
+         // it (or the borrower deleted it), so it's gone. Stop here rather than skip every check and pay.
+         if (!liveLoanError && !liveLoan) {
+            showToast(TOAST_TYPES.WARNING, 'No longer available', 'This request was just funded or removed.');
+            void dispatch(fetchLoans());
+            return;
+         }
          // Requests expire after 7 days; the board only refreshes every minute, so check right now.
          if (liveLoan?.created_at && isExpiredUnfundedRequest({ createdAt: liveLoan.created_at, loanStatus: liveLoan.loan_status })) {
             showToast(TOAST_TYPES.WARNING, 'This request has expired', 'The borrower needs to post a new request.');
@@ -357,6 +363,8 @@ export default function UserCard(loan: UserCardProps) {
          setIsProcessing(true);
          setProcessingMethod(method);
          setPendingTxHash(null);
+         setFundStage('signing');
+         trackPaymentStep('started', stepProps);
 
          try {
             const outcome = await payUsdc({
@@ -369,7 +377,9 @@ export default function UserCard(loan: UserCardProps) {
                // "Confirming" and arm reconciliation so an approved-but-unconfirmed fund still gets
                // marked Lent later instead of stranding the money.
                onSubmitted: (id) => {
+                  trackPaymentStep('approved', stepProps);
                   setPendingTxHash(id);
+                  setFundStage('sent');
                   registerPendingBasePayment({ kind: 'fund', id, loanId: loanData.id, userId });
                },
                // Approved in the wallet after we stopped waiting: still record the funding.
@@ -381,6 +391,9 @@ export default function UserCard(loan: UserCardProps) {
             if (outcome) {
                // Surface the hash so the overlay flips from "Sending" to "Confirming".
                setPendingTxHash(outcome.hash);
+               // Base Pay only resolves once the payment is confirmed on-chain; a wallet/Instant Wallet
+               // hash is just broadcast, and the server confirm below waits for it to land.
+               setFundStage(method === 'base' ? 'recording' : 'sent');
 
                // The wagmi path has no onSubmitted: the money is in flight from here, so arm
                // reconciliation now — a DB confirm that fails below gets retried instead of
@@ -411,7 +424,13 @@ export default function UserCard(loan: UserCardProps) {
                if (confirmLoanPayment.fulfilled.match(updateResult)) {
                   // DB write landed — the reconciler has nothing left to finish for this payment.
                   clearPendingBasePayment(outcome.hash);
+                  trackPaymentStep('recorded', stepProps);
                   const sideEffectErrors = updateResult.meta.sideEffectErrors ?? [];
+                  // Recorded: let the ring reach 100% for a beat before the success screen.
+                  if (!cancelledRef.current) {
+                     setFundStage('done');
+                     await holdAtFull();
+                  }
                   // If they cancelled the overlay and moved on, don't slam a full-screen success
                   // modal over the request board — the toast below still confirms it went through.
                   if (!cancelledRef.current) setShowModal(true);
@@ -443,6 +462,7 @@ export default function UserCard(loan: UserCardProps) {
                   // lingering behind the success modal until the next poll.
                   void dispatch(fetchLoans());
                } else if (updateResult.error?.name === 'PaymentNotConfirmedError') {
+                  trackPaymentStep('still_confirming', stepProps);
                   // Payment sent but not yet confirmed on-chain — the reconciler (armed in
                   // onSubmitted) finishes the DB write once it settles. Not a failure.
                   showToast(
@@ -457,6 +477,7 @@ export default function UserCard(loan: UserCardProps) {
                } else {
                   const errorMessage = updateResult.error?.message ?? 'Unknown error';
                   console.error('[CRITICAL] Lending transaction succeeded but database update failed:', errorMessage);
+                  trackPaymentStep('record_failed', { ...stepProps, error: errorMessage.slice(0, 300) });
                   if (/contact support for a refund/i.test(errorMessage)) {
                      // Someone else funded it first (or it expired): retrying won't help, and the team
                      // has already been alerted to refund this payment.
@@ -471,14 +492,20 @@ export default function UserCard(loan: UserCardProps) {
                      `Your payment went through but we could not record the loan yet (${errorMessage}). We will keep retrying automatically — contact support if it doesn't update.`
                   );
                }
+            } else {
+               // No payment came back: payUsdc logged why (failed / stale build reload), or the
+               // person cancelled the overlay first.
+               trackPaymentStep('stopped', { ...stepProps, cancelled: cancelledRef.current });
             }
          } catch (transferError: unknown) {
             const errorMessage = transferError instanceof Error ? transferError.message : 'Unknown error';
             console.error('Transfer failed:', errorMessage);
+            trackPaymentStep('failed', { ...stepProps, error: errorMessage.slice(0, 300) });
             showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.TRANSACTION_FAILED));
          } finally {
             setIsProcessing(false);
             setPendingTxHash(null);
+            setFundStage(null);
          }
          } finally {
             lendInFlightRef.current = false;
@@ -621,7 +648,7 @@ export default function UserCard(loan: UserCardProps) {
       }
       try {
          await navigator.clipboard.writeText(shareRequestUrl);
-         showToast(TOAST_TYPES.SUCCESS, 'Link copied', 'Send it to a lender so they can fund this request.');
+         showToast(TOAST_TYPES.SUCCESS, 'Link copied', 'Send it to a moo-lender so they can fund this request.');
       } catch {
          showToast(TOAST_TYPES.ERROR, 'Could not copy link', shareRequestUrl);
       }
@@ -635,11 +662,11 @@ export default function UserCard(loan: UserCardProps) {
             data-highlighted-request={isHighlighted ? 'true' : undefined}
          >
             {isProcessing ? (
-               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 rounded-[24px] bg-white/85 px-6 text-center backdrop-blur-sm">
-                  <Loader2 className="h-8 w-8 animate-spin text-md-primary-1200" aria-hidden="true" />
+               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 rounded-[24px] bg-white/90 px-6 text-center backdrop-blur-sm dark:bg-[#1b1525]/90">
+                  <PaymentProgressRing percent={fundPercent} label={pendingTxHash ? 'Confirming' : 'Sending your help'} />
                   <div>
                      <p className="text-md-b1 font-semibold text-md-heading">
-                        {pendingTxHash ? 'Confirming on Base…' : 'Sending your help…'}
+                        {fundStage === 'done' ? 'Funded!' : pendingTxHash ? 'Confirming…' : 'Sending your help…'}
                      </p>
                      <p className="mt-1 text-md-b3 text-md-neutral-1200">
                         {pendingTxHash
@@ -747,9 +774,7 @@ export default function UserCard(loan: UserCardProps) {
                            <span className="text-md-neutral-700">{borrowerDisplayName}</span>
                         )}
                      </p>
-                     <span className="inline-flex items-center justify-center px-md-1 py-md-0 rounded-[30px] border border-md-green-600 bg-[rgba(0,134,36,0.05)]">
-                        <span className="text-md-b4 font-semibold text-md-green-600">Good Standing</span>
-                     </span>
+                     <GoodStandingBadge isVerified={borrowerIsVerified === true} />
                   </div>
                   {/* Network Badge */}
                   <img src="/icons/base-account.svg" alt="Base" className="w-6 h-6 rounded-[3.4px]" />
@@ -768,12 +793,7 @@ export default function UserCard(loan: UserCardProps) {
                         ${formatCurrency(loanData.loanAmount)}
                      </p>
                   </div>
-                  <div className="flex flex-col gap-1">
-                     <p className="text-md-b3 font-medium text-[#585858]">Get back USDC</p>
-                     <p className="text-[20px] leading-[1.2] tracking-[-0.04em] font-semibold text-md-green-600">
-                        ${formatCurrency(loanData.totalRepaymentAmount)}
-                     </p>
-                  </div>
+                  <GetBackAmount loanAmount={loanData.loanAmount} totalRepaymentAmount={loanData.totalRepaymentAmount} />
                </div>
             </div>
 
@@ -792,7 +812,7 @@ export default function UserCard(loan: UserCardProps) {
                   context={borrowerContext}
                   lenderIouInfo={
                      !isBorrower && !isOwnLoan && !isLent && (showDetails || isPreviewRequest)
-                        ? { loanAmount: loanData.loanAmount, borrowerFundedLoanCount: borrowerFundedLoanCount ?? 0 }
+                        ? { loanAmount: loanData.loanAmount }
                         : undefined
                   }
                   boardExpiry={!isBorrower && !isOwnLoan && !isLent && (showDetails || isPreviewRequest) ? boardExpiry : undefined}
@@ -816,14 +836,14 @@ export default function UserCard(loan: UserCardProps) {
                         <>
                            <p className="text-md-b2 font-semibold text-[#8a5300]">Waiting for your video call</p>
                            <p className="text-md-b3 text-[#8a5300]">
-                              Lenders will see this request after your short video call with us. Haven&apos;t booked yet, or need a new time?
+                              Moo-lenders will see this request after your short video call with us. Haven&apos;t booked yet, or need a new time?
                            </p>
                         </>
                      ) : (
                         <>
                            <p className="text-md-b2 font-semibold text-[#8a5300]">On hold: book a new call to put it back</p>
                            <p className="text-md-b3 text-[#8a5300]">
-                              We missed you on your video call, so lenders can&apos;t see this request for now. It goes straight back on the board
+                              We missed you on your video call, so moo-lenders can&apos;t see this request for now. It goes straight back on the board
                               once you&apos;ve booked.
                            </p>
                         </>
@@ -981,5 +1001,83 @@ export default function UserCard(loan: UserCardProps) {
             />
          ) : null}
       </>
+   );
+}
+
+/**
+ * Lenders tapped "Good Standing" (4 people) with nothing happening. It now sparkles, and for a
+ * verified borrower flips in place to "ID verified" for 3s. No extra text stays on the card.
+ */
+function GoodStandingBadge({ isVerified }: { isVerified: boolean }) {
+   const { flipped, flip } = useTapFlip(3000);
+   const { ref, play } = useReplayClass<HTMLButtonElement>();
+   const { burst, layer } = useFloatingParticles();
+
+   const handleTap = (e: MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      play('tap-wiggle');
+      burst(() => <Sparkles className="size-4 text-[#f5b301]" strokeWidth={2} />, { count: 3, spreadX: 50, rise: 34, originY: '20%' });
+      if (isVerified) flip();
+   };
+
+   return (
+      <button
+         ref={ref}
+         type="button"
+         onClick={handleTap}
+         className="relative inline-flex items-center justify-center px-md-1 py-md-0 rounded-[30px] border border-md-green-600 bg-[rgba(0,134,36,0.05)] [perspective:300px]"
+      >
+         <FlipFace
+            flipped={flipped}
+            front={<span className="text-md-b4 font-semibold text-md-green-600">Good Standing</span>}
+            back={
+               <span className="inline-flex items-center gap-0.5 text-md-b4 font-semibold text-md-green-600">
+                  <BadgeCheck className="size-3.5" strokeWidth={2.25} aria-hidden="true" />
+                  ID verified
+               </span>
+            }
+         />
+         {layer}
+      </button>
+   );
+}
+
+/** "Get back USDC" flips in place to the lender's profit for 3s, then back (2 people tapped it). */
+function GetBackAmount({ loanAmount, totalRepaymentAmount }: { loanAmount: number; totalRepaymentAmount: number }) {
+   const { flipped, flip } = useTapFlip(3000);
+   const profit = Math.max(totalRepaymentAmount - loanAmount, 0);
+   const percent = loanAmount > 0 ? Math.round((profit / loanAmount) * 100) : 0;
+
+   return (
+      <button
+         type="button"
+         onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            flip();
+         }}
+         className="flex flex-col gap-1 text-left [perspective:300px]"
+      >
+         <FlipFace
+            flipped={flipped}
+            front={
+               <span className="flex flex-col gap-1">
+                  <span className="text-md-b3 font-medium text-[#585858]">Get back USDC</span>
+                  <span className="text-[20px] leading-[1.2] tracking-[-0.04em] font-semibold text-md-green-600">
+                     ${formatCurrency(totalRepaymentAmount)}
+                  </span>
+               </span>
+            }
+            back={
+               <span className="flex flex-col gap-1">
+                  <span className="text-md-b3 font-medium text-[#585858]">Your profit {percent}%</span>
+                  <span className="text-[20px] leading-[1.2] tracking-[-0.04em] font-semibold text-md-green-600">
+                     +${formatCurrency(profit)}
+                  </span>
+               </span>
+            }
+         />
+      </button>
    );
 }

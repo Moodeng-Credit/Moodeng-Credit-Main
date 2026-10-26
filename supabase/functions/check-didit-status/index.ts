@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { notifyCashoutFaceBlocked, notifyCashoutFaceMismatch } from '../_shared/cashoutFaceNotify.ts';
 import { claimDiditNotification, notifyAdmins, notifyUser } from '../_shared/diditNotifications.ts';
 import { extractPortraitUrl, resolveCashoutFaceOutcome, resolveWalletFaceOutcome } from '../_shared/diditFaceSearch.ts';
+import { recordLivenessDecline } from '../_shared/preKycGate.ts';
 
 // On-demand Didit status sync for the authenticated caller.
 //
@@ -464,6 +465,9 @@ serve(async (req) => {
             livenessStatus = 'DECLINED';
          }
 
+         // A real decline (not abandoned / expired) uses one of the borrower's 3 KYC tries — recorded
+         // before the status write (idempotent per session).
+         if (status === 'Declined' && livenessStatus === 'DECLINED') await recordLivenessDecline(supabase, user.id, sessionId ?? null);
          if (livenessStatus && row.liveness_status !== livenessStatus) {
             // Guard on the session id so a sync for an old attempt can't overwrite a newer one.
             const { error: updateError } = await supabase

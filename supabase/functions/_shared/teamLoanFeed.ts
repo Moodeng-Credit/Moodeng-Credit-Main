@@ -1,12 +1,14 @@
-// Team-facing "loan funded" / "loan repaid" posts, plus the daily "coming due" digest, for the #loans Discord channel (the same feed as
+// Team-facing "loan funded" / "partial repayment" / "loan repaid" posts, plus the daily "coming due" digest, for the #loans Discord channel (the same feed as
 // "New loan request") and, for funding, the admin Telegram channel. Each post goes out once per loan:
 // the loan_notifications row is claimed first (unique per loan + type), so the two callers of
 // loan-funded-notification (confirm-loan-payment and the app) can't both post it.
 
+import { adminUserUrl } from './adminCards.ts';
 import { postDiscord } from './discord.ts';
 import { dueDayBounds, formatDeadlineForTeam, localHour, loanTimezone } from './loanDeadline.ts';
 import { describeOwed, getTeamTimezone, loadBorrowerTimezones } from './loanDueTeamFeed.ts';
 import { buildTxExplorerLink, getLoanOutstandingAmount } from './loanNotifications.ts';
+import { getMessengerContact, messengerDisplayName } from './sendpulse.ts';
 import { sendTelegramMessage } from './telegram.ts';
 
 // deno-lint-ignore no-explicit-any
@@ -43,6 +45,20 @@ const handle = (u?: { username?: string | null; telegram_username?: string | nul
    return u?.username?.trim() || 'someone';
 };
 
+type FeedPerson = { id: string; username: string | null; telegram_username: string | null; messenger_psid?: string | null };
+const PEOPLE_COLUMNS = 'id, username, telegram_username, messenger_psid';
+
+// Borrower handle plus who they are on Facebook, so the team knows whom to message:
+// "kiddo.lepalam-c01c66 (FB: Kiddo Lepalam)", or "(no Facebook)" when Messenger isn't connected.
+// The name is the one SendPulse holds for their Messenger contact; a failed lookup says "FB connected".
+const facebookLabel = async (person: FeedPerson | null | undefined): Promise<string> => {
+   if (!person?.messenger_psid) return '(no Facebook)';
+   const name = messengerDisplayName(await getMessengerContact(person.messenger_psid).catch(() => null));
+   return name ? `(FB: ${name})` : '(FB connected)';
+};
+
+const borrowerLabel = async (person: FeedPerson | null | undefined) => `${handle(person)} ${await facebookLabel(person)}`;
+
 /** Claims the one post for this loan + type. False when it was already claimed (or claiming failed). */
 const claim = async (svc: SupabaseClient, loanId: string, userId: string, type: TeamFeedType): Promise<boolean> => {
    const { error } = await svc.from('loan_notifications').insert({ loan_id: loanId, user_id: userId, notification_type: type });
@@ -58,8 +74,8 @@ const unclaim = async (svc: SupabaseClient, loanId: string, type: TeamFeedType) 
 
 const loadPeople = async (svc: SupabaseClient, loan: TeamFeedLoan) => {
    const ids = [loan.borrower_user_id, loan.lender_user_id].filter(Boolean) as string[];
-   const { data } = await svc.from('users').select('id, username, telegram_username').in('id', ids);
-   const rows = (data ?? []) as Array<{ id: string; username: string | null; telegram_username: string | null }>;
+   const { data } = await svc.from('users').select(PEOPLE_COLUMNS).in('id', ids);
+   const rows = (data ?? []) as FeedPerson[];
    return {
       borrower: rows.find((row) => row.id === loan.borrower_user_id) ?? null,
       lender: rows.find((row) => row.id === loan.lender_user_id) ?? null
@@ -84,10 +100,10 @@ export const postLoanFundedToTeam = async (svc: SupabaseClient, loanId: string):
       const zone = loanTimezone(loan, zones.get(loan.borrower_user_id) ?? 'Asia/Manila');
       const due = loan.due_date ? formatDeadlineForTeam(loan.due_date, zone, await getTeamTimezone(svc)) : '—';
       const tx = buildTxExplorerLink(loan.hash?.[0]);
-      const url = `${siteUrl()}/request-board?loan=${loan.id}`;
+      const url = `${siteUrl()}/request-board?highlight=${loan.id}`;
 
       const lines = [
-         `💰 ${handle(borrower)} was funded ${usdc(loan.loan_amount)} by ${handle(lender)}`,
+         `💰 ${await borrowerLabel(borrower)} was funded ${usdc(loan.loan_amount)} by ${handle(lender)}`,
          `${loan.tracking_id ?? loan.id}`,
          `↩️ Repays ${usdc(loan.total_repayment_amount)}`,
          `⏳ Due ${due}`,
@@ -100,12 +116,14 @@ export const postLoanFundedToTeam = async (svc: SupabaseClient, loanId: string):
                {
                   title: '💰 Loan funded',
                   description: [...lines, url].join('\n'),
+                  url: adminUserUrl(loan.borrower_user_id, borrower?.username),
                   color: 0x57f287,
                   timestamp: new Date().toISOString()
                }
             ]
          },
-         { prefer: ['DISCORD_REQUESTS_WEBHOOK_URL'] }
+         // Remembered: edited to OVERDUE / REPAID / REFUNDED (state-events-dispatch).
+         { prefer: ['DISCORD_REQUESTS_WEBHOOK_URL'], ref: { svc, kind: 'loan', refId: loan.id } }
       );
 
       let telegramOk = false;
@@ -142,7 +160,7 @@ export const postLoanRepaidToTeam = async (svc: SupabaseClient, loanId: string):
       const hashes = loan.hash ?? [];
       const tx = buildTxExplorerLink(hashes.at(-1));
       const description = [
-         `✅ ${handle(borrower)} repaid ${usdc(loan.repaid_amount ?? loan.total_repayment_amount)} to ${handle(lender)}`,
+         `✅ ${await borrowerLabel(borrower)} repaid ${usdc(loan.repaid_amount ?? loan.total_repayment_amount)} to ${handle(lender)}`,
          `${loan.tracking_id ?? loan.id}`,
          tx ? `🔗 ${tx}` : ''
       ]
@@ -157,6 +175,73 @@ export const postLoanRepaidToTeam = async (svc: SupabaseClient, loanId: string):
       return ok;
    } catch (err) {
       console.error('teamLoanFeed: repaid post failed for', loanId, err instanceof Error ? err.message : err);
+      return false;
+   }
+};
+
+// A borrower who pays back within this long of being funded may have tapped Repay by mistake (or
+// thought it was Cash out): in Oct 2026 a borrower repaid her whole loan two days in, and nobody knew.
+const QUICK_REPAY_MS = 3 * 24 * 60 * 60 * 1000;
+
+/**
+ * "🟡 Partial repayment" → #loans Discord + the team Telegram group (the one "loan repaid" posts to).
+ * One post per payment, so no claim row: confirm-loan-payment runs once per payment hash. Never throws.
+ */
+export const postPartialRepaymentToTeam = async (svc: SupabaseClient, loanId: string, paidNow: number): Promise<boolean> => {
+   try {
+      const loan = await loadLoan(svc, loanId);
+      if (!loan?.borrower_user_id || loan.is_test || loan.repayment_status !== 'Partial') return false;
+
+      const { borrower, lender } = await loadPeople(svc, loan);
+      const total = Number(loan.total_repayment_amount ?? 0);
+      const repaid = Number(loan.repaid_amount ?? 0);
+      const zones = await loadBorrowerTimezones(svc, [loan.borrower_user_id]).catch(() => new Map<string, string>());
+      const zone = loanTimezone(loan, zones.get(loan.borrower_user_id) ?? 'Asia/Manila');
+      const due = loan.due_date ? formatDeadlineForTeam(loan.due_date, zone, await getTeamTimezone(svc)) : '—';
+      const quick = loan.funded_at ? Date.now() - new Date(loan.funded_at).getTime() < QUICK_REPAY_MS : false;
+      const tx = buildTxExplorerLink((loan.hash ?? []).at(-1));
+
+      const lines = [
+         `🟡 ${await borrowerLabel(borrower)} paid ${usdc(paidNow)} to ${handle(lender)} (partial)`,
+         `${loan.tracking_id ?? loan.id}`,
+         `💵 ${usdc(repaid)} of ${usdc(total)} paid · ${usdc(Math.max(total - repaid, 0))} left`,
+         `⏳ Due ${due}`,
+         quick ? '⚠️ Paid within 3 days of funding: may be an accidental tap. Check in with them.' : '',
+         tx ? `🔗 ${tx}` : ''
+      ].filter(Boolean);
+
+      const discordOk = await postDiscord(
+         {
+            embeds: [
+               {
+                  title: '🟡 Partial repayment',
+                  description: lines.join('\n'),
+                  url: adminUserUrl(loan.borrower_user_id, borrower?.username),
+                  color: quick ? 0xe67e22 : 0xf1c40f,
+                  timestamp: new Date().toISOString()
+               }
+            ]
+         },
+         { prefer: ['DISCORD_REQUESTS_WEBHOOK_URL'] }
+      );
+
+      let telegramOk = false;
+      const { data: feed } = await svc.from('telegram_bot_settings').select('value').eq('key', 'repayment_team_feed_enabled').maybeSingle();
+      const { data: chat } = await svc.from('telegram_bot_settings').select('value').eq('key', 'team_group_chat_id').maybeSingle();
+      const chatId = (chat?.value as string | undefined) ?? Deno.env.get('TEAM_TELEGRAM_CHAT_ID');
+      if (feed?.value === 'true' && chatId) {
+         telegramOk = await sendTelegramMessage(chatId, lines.join('\n'), {
+            inlineKeyboard: [[{ text: 'View borrower', url: adminUserUrl(loan.borrower_user_id, borrower?.username) }]]
+         })
+            .then(() => true)
+            .catch((err) => {
+               console.error('teamLoanFeed: partial-repayment Telegram failed:', err instanceof Error ? err.message : err);
+               return false;
+            });
+      }
+      return discordOk || telegramOk;
+   } catch (err) {
+      console.error('teamLoanFeed: partial-repayment post failed for', loanId, err instanceof Error ? err.message : err);
       return false;
    }
 };
@@ -229,14 +314,14 @@ export const postUpcomingDueDigest = async (svc: SupabaseClient, now: Date = new
       if (!upcoming.length) return 0;
 
       const ids = Array.from(new Set(upcoming.flatMap(({ loan }) => [loan.borrower_user_id, loan.lender_user_id]).filter(Boolean))) as string[];
-      const { data: people } = await svc.from('users').select('id, username, telegram_username').in('id', ids);
-      const byId = new Map(((people ?? []) as Array<{ id: string; username: string | null; telegram_username: string | null }>).map((u) => [u.id, u]));
+      const { data: people } = await svc.from('users').select(PEOPLE_COLUMNS).in('id', ids);
+      const byId = new Map(((people ?? []) as FeedPerson[]).map((u) => [u.id, u]));
 
-      const lines = upcoming.slice(0, MAX_DIGEST_LINES).map(({ loan, zone, days }) => {
+      const lines = await Promise.all(upcoming.slice(0, MAX_DIGEST_LINES).map(async ({ loan, zone, days }) => {
          const owed = describeOwed(loan);
          const lender = loan.lender_user_id ? handle(byId.get(loan.lender_user_id)) : 'unknown';
-         return `• **${whenLabel(days)}**: ${handle(byId.get(loan.borrower_user_id as string))} owes ${owed} (lender ${lender}, ${loan.tracking_id})\n   due by ${formatDeadlineForTeam(loan.due_date as string, zone, teamZone)}`;
-      });
+         return `• **${whenLabel(days)}**: ${await borrowerLabel(byId.get(loan.borrower_user_id as string))} owes ${owed} (lender ${lender}, ${loan.tracking_id})\n   due by ${formatDeadlineForTeam(loan.due_date as string, zone, teamZone)}`;
+      }));
       if (upcoming.length > MAX_DIGEST_LINES) lines.push(`…and ${upcoming.length - MAX_DIGEST_LINES} more`);
 
       const posted = await postDiscord(

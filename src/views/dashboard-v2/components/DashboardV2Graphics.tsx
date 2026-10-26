@@ -32,7 +32,7 @@ export function TabbedCard({
       <section className={clsx('relative mx-5', className)} aria-labelledby={titleId}>
          <div
             className={clsx(
-               'absolute right-0 flex h-10 items-start rounded-t-[12px] bg-gradient-to-b from-[#efeaff] to-[#f8f6ff] pl-2.5 pt-1.5',
+               'absolute right-0 flex h-10 items-start rounded-t-[12px] bg-gradient-to-b from-dv2-tab to-dv2-card-tint pl-2.5 pt-1.5',
                overlapTitle ? 'top-0' : '-top-0.5'
             )}
             style={{ width: tabWidth }}
@@ -41,20 +41,20 @@ export function TabbedCard({
          </div>
          <h2
             id={titleId}
-            className="relative whitespace-nowrap text-[clamp(18px,5.6vw,22px)] font-black italic leading-[18px] text-[#594d65]"
+            className="relative whitespace-nowrap text-[clamp(18px,5.6vw,22px)] font-black italic leading-[18px] text-[#594d65] dark:text-[#d9cfe6]"
          >
             {title}
          </h2>
          <div
             className={clsx(
-               'relative rounded-[8px] rounded-tr-none bg-white bg-gradient-to-b from-[#f8f6ff] to-white to-[48px]',
+               'relative rounded-[8px] rounded-tr-none bg-dv2-card bg-gradient-to-b from-dv2-card-tint to-dv2-card to-[48px]',
                overlapTitle ? 'mt-2.5' : 'mt-4'
             )}
          >
             {/* Concave corner where the tab meets the card, so tab + card read as one shape (Figma "Rectangle 3467568"). */}
             <span
                className="pointer-events-none absolute -top-3 h-3 w-3"
-               style={{ right: tabWidth, background: 'radial-gradient(circle at 0 0, transparent 11.5px, #f8f6ff 12px)' }}
+               style={{ right: tabWidth, background: 'radial-gradient(circle at 0 0, transparent 11.5px, var(--dv2-card-tint) 12px)' }}
                aria-hidden="true"
             />
             {children}

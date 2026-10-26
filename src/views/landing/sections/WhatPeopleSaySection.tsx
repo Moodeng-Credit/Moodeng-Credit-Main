@@ -73,12 +73,12 @@ export default function WhatPeopleSaySection(): JSX.Element {
                               </div>
                               <div className="flex flex-col w-[548px] items-start pt-0 pb-px px-0 absolute top-[225px] left-6">
                                  <div className="relative w-fit mt-[-1.00px] [font-family:'Fira_Code',Helvetica] font-normal text-[#cbd5e0] text-base tracking-[0] leading-[normal]">
-                                    Active Lender
+                                    Active Moo-lender
                                  </div>
                               </div>
                               <div className="flex flex-col w-[548px] items-start pt-0 pb-px px-0 absolute top-[193px] left-[-600px]">
                                  <div className="relative w-fit mt-[-1.00px] [font-family:'Fira_Code',Helvetica] font-normal text-[#cbd5e0] text-base tracking-[0] leading-[normal]">
-                                    Active Lender
+                                    Active Moo-lender
                                  </div>
                               </div>
                            </div>
@@ -128,10 +128,10 @@ export default function WhatPeopleSaySection(): JSX.Element {
                                     </div>
                                  </div>
                                  <div className="absolute h-[21px] top-[180px] left-0 [font-family:'Fira_Code',Helvetica] font-normal text-[#cbd5e0] text-base tracking-[0] leading-[normal]">
-                                    Active Lender
+                                    Active Moo-lender
                                  </div>
                                  <div className="absolute h-[21px] top-[154px] left-[-622px] [font-family:'Fira_Code',Helvetica] font-normal text-[#cbd5e0] text-base tracking-[0] leading-[normal]">
-                                    Active Lender
+                                    Active Moo-lender
                                  </div>
                               </div>
                            </div>

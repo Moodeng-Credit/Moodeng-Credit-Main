@@ -55,16 +55,16 @@ These changes are designed to make the app feel calmer when money is involved: t
       publishedAt: 'May 20, 2026',
       body: `The trust layer behind Moodeng has been made more consistent.
 
-Lender IOU point rules are now easier to reason about, admin status controls are closer to the real account state, and recovery workflows have more reliable data to work from.
+Moo-lender IOU point rules are now easier to reason about, admin status controls are closer to the real account state, and recovery workflows have more reliable data to work from.
 
-Most of this work sits behind the scenes, but it matters: borrower records, lender incentives, overdue loans, and account restrictions need to line up before the product can scale safely.`
+Most of this work sits behind the scenes, but it matters: borrower records, moo-lender incentives, overdue loans, and account restrictions need to line up before the product can scale safely.`
    },
    {
       slug: 'may-2026-support-credit-education',
       title: 'Support Library & Credit Education',
       subtitle: 'Repayment guides • Credit leveling • Borrower safety content',
       publishedAt: 'May 16, 2026',
-      body: `The support area has been refreshed around the questions borrowers and lenders actually ask.
+      body: `The support area has been refreshed around the questions borrowers and moo-lenders actually ask.
 
 Guides now explain repayment, Pandesal points, credit leveling, World ID, Base Wallet setup, and borrower safety in clearer language.
 

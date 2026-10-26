@@ -10,13 +10,16 @@ import { useAccount } from 'wagmi';
 import { FundedLoanBody, FundLoanTitle } from '@/i18n/SentenceLabels';
 import Loading from '@/components/Loading';
 import UserAvatar from '@/components/UserAvatar';
+import { PaymentProgressOverlay } from '@/components/loading/PaymentProgressRing';
+
+import { useStagedProgress } from '@/hooks/useStagedProgress';
 
 import { txExplorerUrl } from '@/config/loanFundingConfig';
 import { getLoanNotePageData } from '@/lib/loanNotes/api';
 import type { LoanNotePageData } from '@/lib/loanNotes/types';
 import type { RootState } from '@/store/store';
 import LendChecklistModal from '@/views/dashboard/components/LendChecklistModal';
-import { type BuyResult, useBuyLoanNote } from '@/views/lender/loanNote/useBuyLoanNote';
+import { type BuyResult, buyStepToPaymentStage, useBuyLoanNote } from '@/views/lender/loanNote/useBuyLoanNote';
 
 const usd = (n: number) => `${n.toLocaleString(undefined, { maximumFractionDigits: 2 })} USDC`;
 
@@ -35,6 +38,7 @@ export default function LenderFundLoanModal({ loanId, onClose }: Props) {
    const { address } = useAccount();
    const { openConnectModal } = useConnectModal();
    const { buy, busy, step } = useBuyLoanNote();
+   const fundPercent = useStagedProgress(buyStepToPaymentStage(step));
    const userId = useSelector((state: RootState) => state.auth.user?.id);
    const [success, setSuccess] = useState<BuyResult | null>(null);
    // Buying a Loan Note is a two-call contract flow (approve + buyLoanNote) — there's no
@@ -69,10 +73,18 @@ export default function LenderFundLoanModal({ loanId, onClose }: Props) {
 
    return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" onClick={busy ? undefined : onClose}>
-         <div className="w-full max-w-md rounded-[24px] border border-[#f0f0f0] bg-white p-md-4 shadow-[0px_11px_24px_0px_rgba(0,0,0,0.02)]" onClick={(e) => e.stopPropagation()}>
+         <div className="relative w-full max-w-md rounded-[24px] border border-[#f0f0f0] bg-white p-md-4 shadow-[0px_11px_24px_0px_rgba(0,0,0,0.02)]" onClick={(e) => e.stopPropagation()}>
             <button type="button" onClick={onClose} disabled={busy} className="float-right text-md-neutral-1000 hover:text-md-neutral-1700" aria-label="Close">
                <X className="h-5 w-5" aria-hidden="true" />
             </button>
+
+            {busy ? (
+               <PaymentProgressOverlay
+                  percent={fundPercent}
+                  title={step === 'done' ? 'Funded!' : step === 'buying' || step === 'recording' ? 'Confirming…' : 'Sending your help…'}
+                  hint={step === 'recording' ? 'Recording your funding — hang tight.' : step === 'approving' ? 'Approve the transaction in your wallet.' : undefined}
+               />
+            ) : null}
 
             {isLoading ? (
                <Loading />

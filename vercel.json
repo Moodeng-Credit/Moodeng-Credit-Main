@@ -6,6 +6,7 @@
     { "src": "^/how-to-cash-out/?$", "dest": "/landing/how-to-cash-out.html" },
     { "src": "^/how-to-repay/?$", "dest": "/landing/how-to-repay.html" },
     { "src": "^/credit-levels/?$", "dest": "/landing/credit-levels.html" },
+    { "src": "^/stocks/?$", "dest": "/landing/stocks.html" },
     { "src": "^/about/?$", "dest": "/landing/about.html" },
     { "src": "^/for-lenders/?$", "dest": "/landing/for-lenders.html" },
     { "src": "^/token2049/?$", "dest": "/landing/token2049.html" },
@@ -19,6 +20,9 @@
     { "src": "^/b2c-dashboard-mockup-assets/?$", "dest": "/demo-b2c/assets.html" },
 
     { "src": "^/repay-design-brief/?$", "dest": "/design/repay-brief/index.html" },
+    { "src": "^/repay-design-brief-2/?$", "dest": "/design/repay-round2/index.html" },
+    { "src": "^/new-login-screens/?$", "dest": "/design/new-login/index.html" },
+    { "src": "^/login-test/?$", "dest": "/login-test/index.html" },
 
     { "src": "^/blogs/?$", "dest": "/blogs/index.html" },
     { "src": "^/blogs/([^/]+)/?$", "dest": "/blogs/$1/index.html" },

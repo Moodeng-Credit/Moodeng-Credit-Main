@@ -126,11 +126,11 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'IOU points': 'IOU points',
    "It's awkward 😅": 'Medyo awkward 😅',
    Lend: 'Magpahiram',
-   Lender: 'Lender',
-   'Lender Dashboard': 'Lender Dashboard',
+   'Moo-lender': 'Moo-lender',
+   'Moo-lender Dashboard': 'Moo-lender Dashboard',
    'Performance Insights': 'Mga insight sa performance',
-   'Lenders can review onchain repayment signals instead of starting from zero.':
-      'Puwedeng tingnan ng mga lender ang onchain na record ng pagbabayad imbes na magsimula sa wala.',
+   'Moo-lenders can review onchain repayment signals instead of starting from zero.':
+      'Puwedeng tingnan ng mga moo-lender ang onchain na record ng pagbabayad imbes na magsimula sa wala.',
    'Lend to real people and help them build credit.': 'Magpahiram sa totoong tao at tulungan silang bumuo ng credit.',
    Loading: 'Naglo-load',
    'Loan amount': 'Halaga ng loan',
@@ -178,7 +178,7 @@ export const filipinoScreenTranslations: Record<string, string> = {
    Paying: 'Nagbabayad',
    PENDING: 'PENDING',
    Pending: 'Pending',
-   'Pending Loans': 'Mga pending na loan',
+   'Pending Request': 'Pending na request',
    Platform: 'Platform',
    Popular: 'Popular',
    Privacy: 'Privacy',
@@ -325,8 +325,8 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Member since': 'Miyembro mula',
    'Credit Level': 'Credit Level',
    'Progress history ›': 'History ng progress ›',
-   'Lender Diversity': 'Diversity ng mga lender',
-   'Lender Diversity Score': 'Score ng lender diversity',
+   'Moo-lender Diversity': 'Diversity ng mga moo-lender',
+   'Moo-lender Diversity Score': 'Score ng moo-lender diversity',
    'Not enough history': 'Kulang pa ang history',
    'Need at least 2 funded loans': 'Kailangan ng hindi bababa sa 2 napondohang loan',
    'Progress History': 'History ng progress',
@@ -414,8 +414,8 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Repay amount': 'Halagang babayaran',
    'Repayment Progress': 'Progreso ng pagbabayad',
    'How to use Moodeng Credit': 'Paano gamitin ang Moodeng Credit',
-   'A simple walkthrough of the borrower flow. Start here if you want to know what to click, what lenders see, and how repayment grows your limit.':
-      'Simpleng walkthrough ng borrower flow. Magsimula rito kung gusto mong malaman kung ano ang ita-tap, ano ang nakikita ng mga lender, at paano pinapalaki ng pagbabayad ang limit mo.',
+   'A simple walkthrough of the borrower flow. Start here if you want to know what to click, what moo-lenders see, and how repayment grows your limit.':
+      'Simpleng walkthrough ng borrower flow. Magsimula rito kung gusto mong malaman kung ano ang ita-tap, ano ang nakikita ng mga moo-lender, at paano pinapalaki ng pagbabayad ang limit mo.',
    'Tutorial Video': 'Tutorial Video',
    'Watch the quick Moodeng walkthrough.': 'Panoorin ang mabilis na Moodeng walkthrough.',
    'I am Mecha. I will walk you through Moodeng step by step.': 'Ako si Mecha. Gagabayan kita sa Moodeng, hakbang-hakbang.',
@@ -426,8 +426,8 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Enter the same email you will use for your borrower account.': 'Ilagay ang parehong email na gagamitin mo para sa borrower account.',
    'Create your password': 'Gumawa ng password',
    'Create An Account': 'Gumawa ng account',
-   'Verify once to prove you are unique. After that, lenders can trust that your request is tied to one real borrower.':
-      'Mag-verify nang isang beses para mapatunayang unique ka. Pagkatapos noon, makakasiguro ang mga lender na nakatali ang request mo sa iisang totoong borrower.',
+   'Verify once to prove you are unique. After that, moo-lenders can trust that your request is tied to one real borrower.':
+      'Mag-verify nang isang beses para mapatunayang unique ka. Pagkatapos noon, makakasiguro ang mga moo-lender na nakatali ang request mo sa iisang totoong borrower.',
    'Wallet Not Added': 'Hindi pa naidagdag ang wallet',
    'Change wallet': 'Palitan ang wallet',
    'Connection Failed': 'Hindi nakakonekta',
@@ -456,8 +456,8 @@ export const filipinoScreenTranslations: Record<string, string> = {
       'Magsimula nang walang deposit, collateral, o hinihinging bank records. Ang verification at ang paraan mo ng pagbabayad ang magpapaangat sa iyo.',
    'Your standing comes from loans you repay in Moodeng, not contact-list pressure, hidden phone data, or who you already know.':
       'Nakabatay ang standing mo sa mga loan na binabayaran mo sa Moodeng — hindi sa pananakot sa contact list, nakatagong data sa phone, o kung sino ang kilala mo.',
-   'Set your amount, repayment date, and reason upfront so lenders see the same terms you agreed to before anyone funds the request.':
-      'Itakda agad ang halaga, repayment date, at dahilan para makita ng mga lender ang parehong terms na sinang-ayunan mo bago may magpondo sa request.',
+   'Set your amount, repayment date, and reason upfront so moo-lenders see the same terms you agreed to before anyone funds the request.':
+      'Itakda agad ang halaga, repayment date, at dahilan para makita ng mga moo-lender ang parehong terms na sinang-ayunan mo bago may magpondo sa request.',
    'Frequently Asked Questions': 'Mga Madalas Itanong',
    'What is Moodeng Credit?': 'Ano ang Moodeng Credit?',
    'How does borrowing on Moodeng work?': 'Paano gumagana ang paghiram sa Moodeng?',
@@ -509,7 +509,7 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Learn how USDC works': 'Alamin kung paano gumagana ang USDC',
    'Learn more at the Academy': 'Matuto pa sa Academy',
    'Learn the Moodeng Basics': 'Alamin ang basics ng Moodeng',
-   'Lender Benefits': 'Benepisyo ng lender',
+   'Moo-lender Benefits': 'Benepisyo ng moo-lender',
    'Lent by': 'Pinahiram ng',
    'Low to High': 'Mababa hanggang mataas',
    'Need more help?': 'Kailangan pa ng tulong?',
@@ -536,7 +536,7 @@ export const filipinoScreenTranslations: Record<string, string> = {
    today: 'ngayong araw',
    Unknown: 'Hindi alam',
    'Verified Borrower': 'Verified na borrower',
-   'Verified Lender': 'Verified na lender',
+   'Verified Moo-lender': 'Verified na moo-lender',
    'View Loan Transaction History': 'Tingnan ang loan transaction history',
    'View More': 'Tingnan pa',
    'Watch our Credit Levelling Guide': 'Panoorin ang gabay namin sa Credit Leveling',
@@ -597,16 +597,16 @@ export const filipinoScreenTranslations: Record<string, string> = {
    '$15 of $15': '$15 sa $15',
    'Trust-building loan': 'Trust-building loan',
    'Builds repayment history': 'Bumubuo ng repayment history',
-   'Useful when you need less than your full limit. It can help lenders trust you, but it does not raise your credit level.':
-      'Magagamit ito kapag mas mababa sa buong limit mo ang kailangan mo. Makakatulong ito para magtiwala sa iyo ang mga lender, pero hindi nito tinataas ang Credit Level mo.',
+   'Useful when you need less than your full limit. It can help moo-lenders trust you, but it does not raise your credit level.':
+      'Magagamit ito kapag mas mababa sa buong limit mo ang kailangan mo. Makakatulong ito para magtiwala sa iyo ang mga moo-lender, pero hindi nito tinataas ang Credit Level mo.',
    'Credit-building loan': 'Credit-building loan',
    'Can unlock $20': 'Puwedeng mag-unlock ng $20',
    'This is the level-up loan. You borrow your full current limit and repay the funded terms on time.':
       'Ito ang level-up loan. Hihiramin mo ang buong current limit mo at babayaran on time ang napondohang terms.',
    'Late or missed repayment': 'Huli o hindi nagawang bayad',
    'Can pause progress': 'Puwedeng mahinto ang progress',
-   'Your level does not become the main signal anymore. Lenders will care about the missed repayment first.':
-      'Hindi na level mo ang magiging pangunahing senyales. Ang na-miss na bayad ang unang titingnan ng mga lender.',
+   'Your level does not become the main signal anymore. Moo-lenders will care about the missed repayment first.':
+      'Hindi na level mo ang magiging pangunahing senyales. Ang na-miss na bayad ang unang titingnan ng mga moo-lender.',
    'What counts': 'Ano ang mahalaga',
    'The clean version': 'Ang maikling bersyon',
    'Borrowing below your limit builds trust, not your next level.':
@@ -625,17 +625,17 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Build a wallet-based repayment record you can keep using, instead of rebuilding your credit story from zero with each new lender.':
       'Bumuo ng wallet-based na record ng pagbabayad na patuloy mong magagamit, sa halip na magsimula ulit sa wala sa bawat bagong lender.',
    'Microloans with USDC to build your credit': 'Microloan sa USDC para bumuo ng credit mo',
-   'connects borrowers directly with people willing to lend. There is no escrow desk and no middle-man setting the rules: you request, a lender funds, and your repayment record grows from there.':
-      'ay direktang nagkokonekta sa mga borrower at sa mga taong handang magpahiram. Walang escrow desk at walang middleman na nagtatakda ng rules: ikaw ang magre-request, lender ang magpopondo, at mula roon lalago ang repayment record mo.',
+   'connects borrowers directly with people willing to lend. There is no escrow desk and no middle-man setting the rules: you request, a moo-lender funds, and your repayment record grows from there.':
+      'ay direktang nagkokonekta sa mga borrower at sa mga taong handang magpahiram. Walang escrow desk at walang middleman na nagtatakda ng rules: ikaw ang magre-request, moo-lender ang magpopondo, at mula roon lalago ang repayment record mo.',
    '01 / No collateral': '01 / Walang collateral',
    '02 / Reputation': '02 / Reputasyon',
    '03 / Control': '03 / Kontrol',
    '04 / Portability': '04 / Portability',
    "This is Moodeng's friend Mecha, taking down a loan shark!": 'Ito si Mecha, kaibigan ng Moodeng, habang pinapabagsak ang loan shark!',
    'Why borrowing feels different': 'Bakit iba ang pakiramdam ng paghiram',
-   'Direct lender-to-borrower': 'Direkta mula lender papunta sa borrower',
-   'A lender funds your request directly. Moodeng helps show the terms and record the repayment history without hiding the process behind a middle-man.':
-      'Direktang pinopondohan ng lender ang request mo. Tinutulungan ng Moodeng na ipakita ang terms at i-record ang repayment history nang hindi itinatago ang proseso sa likod ng middleman.',
+   'Direct moo-lender-to-borrower': 'Direkta mula moo-lender papunta sa borrower',
+   'A moo-lender funds your request directly. Moodeng helps show the terms and record the repayment history without hiding the process behind a middle-man.':
+      'Direktang pinopondohan ng moo-lender ang request mo. Tinutulungan ng Moodeng na ipakita ang terms at i-record ang repayment history nang hindi itinatago ang proseso sa likod ng middleman.',
    'Funded in your wallet': 'Napondohan sa wallet mo',
    'Learn more': 'Matuto pa',
    'Terms shown upfront': 'Kita agad ang terms',
@@ -655,26 +655,26 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Get started': 'Magsimula',
    'Borrower credit': 'Credit ng borrower',
    'Borrow, repay, and unlock more room over time': 'Humiram, magbayad, at mag-unlock ng mas malaking limit habang tumatagal',
-   'The point is not to look rich on day one. Moodeng gives borrowers a way to start with small direct loans, prove repayment, and make future requests easier for lenders to understand.':
-      'Hindi mo kailangang magmukhang mayaman sa unang araw. Binibigyan ng Moodeng ang mga borrower ng paraan para magsimula sa maliliit na direct loan, patunayang nagbabayad sila, at gawing mas madaling maintindihan ng mga lender ang mga susunod nilang request.',
+   'The point is not to look rich on day one. Moodeng gives borrowers a way to start with small direct loans, prove repayment, and make future requests easier for moo-lenders to understand.':
+      'Hindi mo kailangang magmukhang mayaman sa unang araw. Binibigyan ng Moodeng ang mga borrower ng paraan para magsimula sa maliliit na direct loan, patunayang nagbabayad sila, at gawing mas madaling maintindihan ng mga moo-lender ang mga susunod nilang request.',
    'Video walkthrough': 'Video walkthrough',
    'How to request your first loan': 'Paano mag-request ng unang loan',
    'Watch the blackboard walkthrough before you post. It explains what to enter, how terms work, and what happens after your request appears on the board.':
       'Panoorin ang blackboard walkthrough bago ka mag-post. Ipinapaliwanag nito kung ano ang ilalagay, paano gumagana ang terms, at ano ang mangyayari pagkatapos lumabas ang request mo sa board.',
    'Open on YouTube': 'Buksan sa YouTube',
-   'Post a realistic amount and reason so lenders can understand what the loan is for.':
-      'Mag-post ng makatotohanang halaga at dahilan para maintindihan ng mga lender kung para saan ang loan.',
+   'Post a realistic amount and reason so moo-lenders can understand what the loan is for.':
+      'Mag-post ng makatotohanang halaga at dahilan para maintindihan ng mga moo-lender kung para saan ang loan.',
    'Repay what you promised': 'Bayaran ang ipinangako mo',
-   'On-time repayment strengthens the record lenders see the next time you ask for support.':
-      'Pinapalakas ng on-time na pagbabayad ang record na makikita ng mga lender sa susunod mong paghingi ng tulong.',
+   'On-time repayment strengthens the record moo-lenders see the next time you ask for support.':
+      'Pinapalakas ng on-time na pagbabayad ang record na makikita ng mga moo-lender sa susunod mong paghingi ng tulong.',
    'Unlock the next step': 'I-unlock ang susunod na hakbang',
    'Credit-building loans can raise your limit after full repayment, while smaller loans still help build trust.':
       'Puwedeng itaas ng credit-building loan ang limit mo pagkatapos ng buong pagbabayad, habang nakakatulong pa rin sa pagbuo ng tiwala ang mas maliliit na loan.',
-   'Keep it honest: only borrow what you can repay. Moodeng can make your record clearer and more useful, but every lender still decides whether a request is worth funding.':
-      'Maging tapat: humiram lang ng kaya mong bayaran. Kayang gawing mas malinaw at mas useful ng Moodeng ang record mo, pero bawat lender pa rin ang magpapasya kung sulit pondohan ang isang request.',
+   'Keep it honest: only borrow what you can repay. Moodeng can make your record clearer and more useful, but every moo-lender still decides whether a request is worth funding.':
+      'Maging tapat: humiram lang ng kaya mong bayaran. Kayang gawing mas malinaw at mas useful ng Moodeng ang record mo, pero bawat moo-lender pa rin ang magpapasya kung sulit pondohan ang isang request.',
    'Read the guide': 'Basahin ang gabay',
    'What people are saying': 'Ang sinasabi ng mga tao',
-   'Borrowers and lenders describe the difference': 'Ikinukuwento ng mga borrower at lender ang pagkakaiba',
+   'Borrowers and moo-lenders describe the difference': 'Ikinukuwento ng mga borrower at moo-lender ang pagkakaiba',
    'Hear directly from borrowers who have used Moodeng when short-term support mattered.':
       'Pakinggan mismo ang mga borrower na gumamit ng Moodeng noong kailangan nila ng short-term na tulong.',
    'Real testimonial': 'Totoong testimonial',
@@ -699,13 +699,13 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Traditional credit: starts over at zero': 'Traditional credit: nagsisimula ulit sa wala',
    'The problem': 'Ang problema',
    'Good repayment rarely travels.': 'Bihirang madala sa ibang bansa ang magandang record ng pagbabayad.',
-   'That creates a trust gap for borrowers and a missed opportunity for lenders.':
-      'Nagdudulot iyon ng kakulangan sa tiwala para sa mga borrower at nasasayang na oportunidad para sa mga lender.',
+   'That creates a trust gap for borrowers and a missed opportunity for moo-lenders.':
+      'Nagdudulot iyon ng kakulangan sa tiwala para sa mga borrower at nasasayang na oportunidad para sa mga moo-lender.',
    'A Filipino or SEA worker can repay responsibly abroad and still have no useful credit record.':
       'Puwedeng magbayad nang responsable sa abroad ang isang Pilipino o SEA worker pero wala pa ring magagamit na credit record.',
    'Good borrowers disappear': 'Nawawala sa paningin ang mabubuting borrower',
-   'Lenders cannot easily see the trust signals that should matter for a small emergency loan.':
-      'Hindi madaling makita ng mga lender ang mga senyales ng tiwala na dapat mahalaga para sa maliit na emergency loan.',
+   'Moo-lenders cannot easily see the trust signals that should matter for a small emergency loan.':
+      'Hindi madaling makita ng mga moo-lender ang mga senyales ng tiwala na dapat mahalaga para sa maliit na emergency loan.',
    'Quick-loan apps step in with pressure, high costs, and little long-term upside.':
       'Pumapasok ang mga quick-loan app na may pananakot, mataas na singil, at halos walang pangmatagalang pakinabang.',
    'Our solution': 'Solusyon namin',
@@ -718,7 +718,7 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Transparent loan behavior': 'Transparent na pag-loan',
    'Microloans create a practical path for borrowers to build proof over time.':
       'Nagbibigay ang mga microloan ng praktikal na paraan para unti-unting makabuo ng patunay ang mga borrower.',
-   'Lender terms': 'Terms para sa lender',
+   'Moo-lender terms': 'Terms para sa moo-lender',
    'Back real requests with USDC': 'Suportahan ang mga totoong request gamit ang USDC',
    'Every request is settled in USDC, so terms stay simple.': 'Nase-settle ang bawat request sa USDC kaya simple ang terms.',
    'Borrowers set the repayment offer before posting.': 'Itinatakda ng mga borrower ang alok nilang bayad bago mag-post.',
@@ -757,7 +757,7 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Credit does not follow': 'Hindi sumasama ang credit',
    'Repayment discipline abroad rarely becomes a portable credit record they can use later.':
       'Bihirang maging portable credit record ang disiplina nila sa pagbabayad sa abroad na magagamit nila sa susunod.',
-   'What lenders fund': 'Ano ang pinopondohan ng mga lender',
+   'What moo-lenders fund': 'Ano ang pinopondohan ng mga moo-lender',
    'Small amounts with transparent borrower-proposed terms.': 'Maliliit na halaga na may malinaw na terms na iminungkahi ng borrower.',
    'Real repayment history': 'Totoong repayment history',
    'Each repayment helps create a record the borrower can keep building.':
@@ -774,8 +774,8 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Orb availability helps us start with users who can prove they are unique, real borrowers.':
       'Dahil may Orb sa mga lugar na ito, makakapagsimula kami sa mga user na kayang patunayang natatangi at totoong borrower sila.',
    'Lower trust friction': 'Mas madaling magtiwala',
-   'Verification helps lenders evaluate people they have never met.':
-      'Tinutulungan ng verification ang mga lender na suriin ang mga taong hindi pa nila nakikilala.',
+   'Verification helps moo-lenders evaluate people they have never met.':
+      'Tinutulungan ng verification ang mga moo-lender na suriin ang mga taong hindi pa nila nakikilala.',
    'Better than quick-loan apps': 'Mas mabuti kaysa sa mga quick-loan app',
    'Transparent loans can help borrowers avoid predatory emergency options.':
       'Makakatulong ang mga transparent na loan para maiwasan ng mga borrower ang mapang-abusong emergency na opsyon.',
@@ -792,7 +792,7 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Independent credit': 'Sariling credit',
    'The long-term goal is credit the borrower owns, not a score trapped in one country.':
       'Ang pangmatagalang layunin ay credit na pag-aari ng borrower, hindi score na nakakulong sa iisang bansa.',
-   'Lender upside': 'Upside para sa lender',
+   'Moo-lender upside': 'Upside para sa moo-lender',
    'Fund useful moments': 'Pondohan ang mahahalagang sandali',
    'Support real needs without pretending every loan is life-changing.':
       'Suportahan ang mga totoong pangangailangan nang hindi nagkukunwaring life-changing ang bawat loan.',
@@ -801,8 +801,8 @@ export const filipinoScreenTranslations: Record<string, string> = {
       'Puwedeng maging senyales ang magandang pagbabayad para sa mas magandang access sa hinaharap.',
    'World ID verification': 'World ID verification',
    'Verified humans, clearer lending signals.': 'Verified na tao, mas malinaw na senyales para sa pagpapahiram.',
-   'Borrowers verify with World ID before they can request loans. That gives lenders a real-person signal without asking borrowers to hand over private documents to Moodeng.':
-      'Nagve-verify ang mga borrower gamit ang World ID bago sila makapag-request ng loan. Dahil dito, alam ng mga lender na totoong tao ang kausap nila, nang hindi kailangang ibigay ng mga borrower ang mga pribadong dokumento nila sa Moodeng.',
+   'Borrowers verify with World ID before they can request loans. That gives moo-lenders a real-person signal without asking borrowers to hand over private documents to Moodeng.':
+      'Nagve-verify ang mga borrower gamit ang World ID bago sila makapag-request ng loan. Dahil dito, alam ng mga moo-lender na totoong tao ang kausap nila, nang hindi kailangang ibigay ng mga borrower ang mga pribadong dokumento nila sa Moodeng.',
    'Unique person': 'Natatanging tao',
    'One account': 'Isang account',
    'Less bot risk': 'Mas mababang risk ng bot',
@@ -829,8 +829,8 @@ export const filipinoScreenTranslations: Record<string, string> = {
       'Tinutulungan ng World ID na i-confirm na may isang totoong tao sa likod ng bawat borrower account.',
    'Moodeng can show verification status without storing passport-style documents.':
       'Kayang ipakita ng Moodeng ang verification status nang hindi nag-iimbak ng mga dokumentong tulad ng passport.',
-   'Lenders still evaluate loan terms, history, and repayment behavior before funding.':
-      'Sinusuri pa rin ng mga lender ang loan terms, history, at paraan ng pagbabayad bago magpondo.',
+   'Moo-lenders still evaluate loan terms, history, and repayment behavior before funding.':
+      'Sinusuri pa rin ng mga moo-lender ang loan terms, history, at paraan ng pagbabayad bago magpondo.',
    'World ID first': 'World ID muna',
    'Moodeng vs. TradFi lending': 'Moodeng vs. TradFi lending',
    Features: 'Mga feature',
@@ -838,9 +838,9 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Anonymous Lending': 'Anonymous lending',
    'Wallet-based lending with usernames keeps your real identity private.':
       'Dahil wallet-based ang lending at username ang gamit, nananatiling private ang totoong identity mo.',
-   'No Fees for Lenders, Ever': 'Walang fee para sa mga lender, kailanman',
-   "Unlike other platforms, we don't charge lenders any commissions or monthly fees.":
-      'Hindi tulad ng ibang platform, hindi kami naniningil sa mga lender ng commission o monthly fee.',
+   'No Fees for Moo-lenders, Ever': 'Walang fee para sa mga moo-lender, kailanman',
+   "Unlike other platforms, we don't charge moo-lenders any commissions or monthly fees.":
+      'Hindi tulad ng ibang platform, hindi kami naniningil sa mga moo-lender ng commission o monthly fee.',
    'Advanced Security': 'Advanced security',
    'Protection against VPN-users, scammers, and other malicious actors.':
       'Proteksyon laban sa mga VPN user, scammer, at iba pang may masamang balak.',
@@ -900,7 +900,7 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Loan sharks do not need a car title when they can threaten your mother, coworkers, customers, or group chat.':
       'Hindi na kailangan ng mga loan shark ng titulo ng kotse kung kaya naman nilang takutin ang nanay mo, mga katrabaho, mga customer, o group chat mo.',
    'Lender judgment': 'Paghuhusga ng lender',
-   Lenders: 'Mga lender',
+   'Moo-lenders': 'Mga moo-lender',
    'Borrower context should feel like a work rhythm, not a confession':
       'Dapat parang kuwento ng trabaho ang konteksto ng borrower, hindi pag-amin ng kasalanan',
    'Lenders need enough humanity to understand a request. Borrowers should not have to turn their private life into content to deserve a small loan.':
@@ -929,16 +929,16 @@ export const filipinoScreenTranslations: Record<string, string> = {
 
    'Prove you are a real person. This is a one-time step before larger borrowing limits.':
       'Patunayan na totoong tao ka. Isang beses lang ito gagawin bago ang mas malalaking borrowing limit.',
-   'Set up your Instant Wallet from your Moodeng login (or connect a Base Account if you prefer), so lenders can fund loans directly there and Moodeng can track repayment history.':
-      'I-set up ang Instant Wallet mo mula sa Moodeng login mo (o magkonekta ng Base Account kung mas gusto mo), para direktang makapagpondo roon ang mga lender at ma-track ng Moodeng ang repayment history.',
+   'Set up your Instant Wallet from your Moodeng login (or connect a Base Account if you prefer), so moo-lenders can fund loans directly there and Moodeng can track repayment history.':
+      'I-set up ang Instant Wallet mo mula sa Moodeng login mo (o magkonekta ng Base Account kung mas gusto mo), para direktang makapagpondo roon ang mga moo-lender at ma-track ng Moodeng ang repayment history.',
    'Your Instant Wallet is created from your Moodeng login — no app and no seed phrase. Prefer a Base Account? You can connect one instead. Moodeng keeps the flow inside the app.':
       'Ginagawa ang Instant Wallet mo mula sa Moodeng login mo — walang app at walang seed phrase. Mas gusto mo ng Base Account? Puwede mo rin itong ikonekta. Nasa loob lang ng app ang buong proseso.',
    'If your request is below your credit limit, it is trust-building. If it is for your full credit limit, it is credit-building.':
       'Kung mas mababa sa credit limit mo ang request, trust-building loan ito. Kung para sa buong credit limit mo, credit-building loan ito.',
-   'Pick your amount, choose when you will repay, and explain why you need support before posting to lenders.':
-      'Piliin ang halaga, kung kailan ka magbabayad, at ipaliwanag kung bakit mo kailangan ng tulong bago mag-post para sa mga lender.',
-   'Your request appears on the board where lenders can review the terms and decide whether to fund it.':
-      'Lalabas ang request mo sa board kung saan puwedeng i-review ng mga lender ang terms at magpasya kung popondohan ito.',
+   'Pick your amount, choose when you will repay, and explain why you need support before posting to moo-lenders.':
+      'Piliin ang halaga, kung kailan ka magbabayad, at ipaliwanag kung bakit mo kailangan ng tulong bago mag-post para sa mga moo-lender.',
+   'Your request appears on the board where moo-lenders can review the terms and decide whether to fund it.':
+      'Lalabas ang request mo sa board kung saan puwedeng i-review ng mga moo-lender ang terms at magpasya kung popondohan ito.',
    'Pay back the agreed amount on time. Moodeng tracks repayment progress clearly in your account.':
       'Bayaran on time ang napagkasunduang halaga. Malinaw na makikita sa account mo ang progress ng pagbabayad.',
    'Final quiz': 'Huling quiz',
@@ -948,14 +948,14 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'or better to pass. This is a learning score today, not a live IOU or Pandesal points balance.':
       'o mas mataas para pumasa. Learning score lang ito ngayon, hindi live na IOU o Pandesal points balance.',
 
-   "Once this borrower completes more loans, you'll see repayment timing, usual loan size, repeat lenders, and borrowing patterns here.":
-      'Kapag nakakumpleto na ng mas maraming loan ang borrower na ito, makikita rito ang timing ng pagbabayad, karaniwang laki ng loan, mga umuulit na lender, at pattern ng paghiram.',
+   "Once this borrower completes more loans, you'll see repayment timing, usual loan size, repeat moo-lenders, and borrowing patterns here.":
+      'Kapag nakakumpleto na ng mas maraming loan ang borrower na ito, makikita rito ang timing ng pagbabayad, karaniwang laki ng loan, mga umuulit na moo-lender, at pattern ng paghiram.',
    'View who has funded this borrower and the status of each loan.':
       'Tingnan kung sino ang nagpondo sa borrower na ito at ang status ng bawat loan.',
-   'A lender diversity score appears once there is enough borrower history to compare.':
-      'Lalabas ang lender diversity score kapag may sapat nang borrower history para ikumpara.',
-   'Once this borrower receives funded loans, the lender distribution will appear here.':
-      'Kapag may napondohan nang loan ang borrower na ito, lalabas dito ang distribusyon ng mga lender.',
+   'A moo-lender diversity score appears once there is enough borrower history to compare.':
+      'Lalabas ang moo-lender diversity score kapag may sapat nang borrower history para ikumpara.',
+   'Once this borrower receives funded loans, the moo-lender distribution will appear here.':
+      'Kapag may napondohan nang loan ang borrower na ito, lalabas dito ang distribusyon ng mga moo-lender.',
    'No funded loans have been recorded for this borrower yet.': 'Wala pang napondohang loan na naka-record para sa borrower na ito.'
 };
 
@@ -1029,7 +1029,7 @@ export const indonesianScreenTranslations: Record<string, string> = {
    Information: 'Informasi',
    'Identity verified': 'Identitas terverifikasi',
    Lend: 'Beri pinjaman',
-   Lender: 'Pemberi pinjaman',
+   'Moo-lender': 'Moo-lender',
    'Lent by': 'Dipinjamkan oleh',
    Loading: 'Memuat',
    'Loan amount': 'Jumlah pinjaman',
@@ -1059,7 +1059,7 @@ export const indonesianScreenTranslations: Record<string, string> = {
    'Payback Amount': 'Total yang harus dibayar',
    PENDING: 'MENUNGGU',
    Pending: 'Menunggu',
-   'Pending Loans': 'Pinjaman menunggu',
+   'Pending Request': 'Pengajuan menunggu',
    Platform: 'Platform',
    Privacy: 'Privasi',
    'Privacy Policy': 'Kebijakan Privasi',
@@ -1182,7 +1182,7 @@ export const thaiScreenTranslations: Record<string, string> = {
    Information: 'ข้อมูล',
    'Identity verified': 'ยืนยันตัวตนแล้ว',
    Lend: 'ปล่อยกู้',
-   Lender: 'ผู้ให้กู้',
+   'Moo-lender': 'Moo-lender',
    'Lent by': 'ปล่อยกู้โดย',
    Loading: 'กำลังโหลด',
    'Loan amount': 'จำนวนเงินกู้',
@@ -1212,7 +1212,7 @@ export const thaiScreenTranslations: Record<string, string> = {
    'Payback Amount': 'ยอดที่ต้องชำระคืน',
    PENDING: 'รอดำเนินการ',
    Pending: 'รอดำเนินการ',
-   'Pending Loans': 'เงินกู้ที่รอดำเนินการ',
+   'Pending Request': 'คำขอที่รอดำเนินการ',
    Platform: 'แพลตฟอร์ม',
    Privacy: 'ความเป็นส่วนตัว',
    'Privacy Policy': 'นโยบายความเป็นส่วนตัว',
@@ -1335,7 +1335,7 @@ export const vietnameseScreenTranslations: Record<string, string> = {
    Information: 'Thông tin',
    'Identity verified': 'Đã xác minh danh tính',
    Lend: 'Cho vay',
-   Lender: 'Người cho vay',
+   'Moo-lender': 'Moo-lender',
    'Lent by': 'Người cho vay:',
    Loading: 'Đang tải',
    'Loan amount': 'Số tiền vay',
@@ -1365,7 +1365,7 @@ export const vietnameseScreenTranslations: Record<string, string> = {
    'Payback Amount': 'Số tiền hoàn trả',
    PENDING: 'ĐANG CHỜ',
    Pending: 'Đang chờ',
-   'Pending Loans': 'Khoản vay đang chờ',
+   'Pending Request': 'Yêu cầu đang chờ',
    Platform: 'Nền tảng',
    Privacy: 'Quyền riêng tư',
    'Privacy Policy': 'Chính sách quyền riêng tư',

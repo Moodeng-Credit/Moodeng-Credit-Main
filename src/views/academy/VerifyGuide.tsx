@@ -34,7 +34,7 @@ const REASONS: { Icon: ComponentType<{ className?: string; strokeWidth?: number 
    {
       Icon: ShieldCheck,
       title: 'Security',
-      body: 'Verification makes sure every request comes from a real, unique person. That is what keeps fake and duplicate accounts away from lenders.'
+      body: 'Verification makes sure every request comes from a real, unique person. That is what keeps fake and duplicate accounts away from moo-lenders.'
    },
    {
       Icon: Lock,
@@ -44,7 +44,7 @@ const REASONS: { Icon: ComponentType<{ className?: string; strokeWidth?: number 
    {
       Icon: Users,
       title: 'Trust',
-      body: 'Lenders are funding real people, not anonymous accounts. That confidence is what gets requests on the board funded.'
+      body: 'Moo-lenders are funding real people, not anonymous accounts. That confidence is what gets requests on the board funded.'
    }
 ];
 
@@ -203,7 +203,7 @@ export default function VerifyGuide() {
 
                <p className="mt-md-3 max-w-2xl text-md-b2 font-normal leading-[1.6] text-md-neutral-1200 md:text-md-b1">
                   To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts out
-                  of the community, and it is what lets lenders trust the requests they fund.
+                  of the community, and it is what lets moo-lenders trust the requests they fund.
                </p>
             </div>
 

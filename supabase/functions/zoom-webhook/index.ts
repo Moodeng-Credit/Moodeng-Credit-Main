@@ -6,7 +6,20 @@ import { postDiscord } from '../_shared/discord.ts';
 import { BORROWER_COLUMNS, type BorrowerRow, getAdminChatId, who } from '../_shared/loanAccess.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { formatCallTimeForTeam } from '../_shared/videoCall.ts';
-import { classifyParticipant, classifyZoomEvent, hmacSha256Hex, pickBooking, verifyZoomSignature } from './lib.ts';
+import { alertCallCheck, checkCallForm } from '../_shared/callFormCheck.ts';
+import { summarizeCallTranscript } from '../_shared/callRiskSummary.ts';
+import {
+   classifyParticipant,
+   classifyTranscriptEvent,
+   classifyZoomEvent,
+   hmacSha256Hex,
+   pickBooking,
+   type TranscriptEvent,
+   verifyZoomSignature,
+   vttToText
+} from './lib.ts';
+
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void } | undefined;
 
 // Zoom → "is the borrower actually here?", so hosts stop sitting in empty rooms.
 //
@@ -42,6 +55,61 @@ type BookingRow = BorrowerRow & {
    video_call_joined_at: string | null;
 };
 
+// A recorded call's transcript is ready: download it (Zoom's one-day download token, sent because the
+// app's "Recording transcript completed" subscription has "include download token" ticked), match it to
+// the borrower whose call it was, save it, then ask for the AI risk summary. Runs after we've answered
+// Zoom (it wants a reply within seconds).
+// deno-lint-ignore no-explicit-any
+const saveTranscript = async (svc: any, host: string, event: TranscriptEvent) => {
+   if (!event.downloadToken) {
+      console.error('zoom-webhook: transcript event without a download token — tick "include download token" on the subscription');
+      return;
+   }
+   const url = `${event.downloadUrl}${event.downloadUrl.includes('?') ? '&' : '?'}access_token=${encodeURIComponent(event.downloadToken)}`;
+   const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+   if (!res.ok) {
+      console.error(`zoom-webhook: transcript download failed ${res.status}`);
+      return;
+   }
+   const transcript = vttToText(await res.text());
+   if (!transcript.trim()) return;
+
+   const atMs = event.startTime ? Date.parse(event.startTime) : Date.now();
+   const { data: rows } = await svc
+      .from('users')
+      .select('id, video_call_starts_at, video_call_host')
+      .eq('video_call_meeting_id', event.meetingId)
+      .gt('video_call_starts_at', new Date(atMs - 4 * 60 * 60 * 1000).toISOString())
+      .lt('video_call_starts_at', new Date(atMs + 4 * 60 * 60 * 1000).toISOString());
+   const booking = pickBooking((rows ?? []) as Array<{ id: string; video_call_starts_at: string | null; video_call_host: string | null }>, atMs);
+
+   const { data: saved, error } = await svc
+      .from('call_transcripts')
+      .upsert(
+         {
+            user_id: booking?.id ?? null,
+            meeting_id: event.meetingId,
+            meeting_uuid: event.meetingUuid,
+            call_started_at: event.startTime,
+            host: booking?.video_call_host ?? host,
+            transcript
+         },
+         { onConflict: 'meeting_uuid', ignoreDuplicates: true }
+      )
+      .select('id')
+      .maybeSingle();
+   if (error) {
+      console.error('zoom-webhook: saving transcript failed', error.message);
+      return;
+   }
+   console.log(`zoom-webhook: transcript saved for meeting ${event.meetingId} → ${booking ? `borrower ${booking.id.slice(0, 8)}` : 'no matching booking'}`);
+   if (!saved?.id) return;
+   // Both AI passes at once (each can take a minute, and this runs on the edge function's clock), then one
+   // team alert with the form check and the risk level.
+   await Promise.all([checkCallForm(svc, saved.id), summarizeCallTranscript(svc, saved.id)]);
+   await alertCallCheck(svc, saved.id);
+};
+
 serve(async (req) => {
    if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
    const host = (new URL(req.url).searchParams.get('host') ?? '').toLowerCase();
@@ -73,6 +141,16 @@ serve(async (req) => {
 
    const svc = createClient(SUPABASE_URL, SERVICE_KEY);
    await markZoomSeen(svc, host);
+
+   const transcriptEvent = classifyTranscriptEvent(body as never);
+   if (transcriptEvent) {
+      const job = saveTranscript(svc, host, transcriptEvent).catch((err) =>
+         console.error('zoom-webhook: transcript failed', err instanceof Error ? err.message : err)
+      );
+      if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(job);
+      else await job;
+      return json({ ok: true, transcript: true });
+   }
    if (event.kind === 'ignore') return json({ ok: true });
 
    const atMs = Date.parse(event.at);

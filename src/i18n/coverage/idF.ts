@@ -47,10 +47,10 @@ export const indonesianCoverageF: Record<string, string> = {
    // src/components/ExpiredLoanRequestNotifier.tsx
    'Loan request expired': 'Permintaan pinjaman kedaluwarsa',
    'Loan requests expired': 'Permintaan pinjaman kedaluwarsa',
-   'request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'kamu kedaluwarsa sebelum didanai. Hubungi dukungan jika kamu butuh bantuan untuk terhubung dengan pemberi pinjaman atau memutuskan apakah akan memposting lagi.',
-   'loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
-      'permintaan pinjaman kedaluwarsa sebelum didanai. Hubungi dukungan jika kamu butuh bantuan untuk terhubung dengan pemberi pinjaman atau memutuskan apakah akan memposting lagi.',
+   'request expired before it was funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'kamu kedaluwarsa sebelum didanai. Hubungi dukungan jika kamu butuh bantuan untuk terhubung dengan moo-lender atau memutuskan apakah akan memposting lagi.',
+   'loan requests expired before they were funded. Contact support if you need help connecting with a moo-lender or deciding whether to post again.':
+      'permintaan pinjaman kedaluwarsa sebelum didanai. Hubungi dukungan jika kamu butuh bantuan untuk terhubung dengan moo-lender atau memutuskan apakah akan memposting lagi.',
 
    // src/components/InAppBrowserNotice.tsx
    'Opened Moodeng inside': 'Membuka Moodeng di dalam',
@@ -80,7 +80,7 @@ export const indonesianCoverageF: Record<string, string> = {
    'Congratulations for Verifying.': 'Selamat, kamu sudah terverifikasi.',
    'Continue Loan Request': 'Lanjutkan Permintaan Pinjaman',
    'Loan Request Created!': 'Permintaan Pinjaman Dibuat!',
-   'Your request is now live for lenders to review.': 'Permintaanmu sekarang sudah tayang dan bisa ditinjau pemberi pinjaman.',
+   'Your request is now live for moo-lenders to review.': 'Permintaanmu sekarang sudah tayang dan bisa ditinjau moo-lender.',
    'View Active Loans': 'Lihat Pinjaman Aktif',
    "It's awkward 😅": 'Waduh, canggung nih 😅',
    'We were unable to process payment for your funding.': 'Kami tidak bisa memproses pembayaran untuk pendanaanmu.',
@@ -393,14 +393,14 @@ export const indonesianCoverageF: Record<string, string> = {
    'You can make another loan request in about 30 minutes.': 'Kamu bisa membuat permintaan pinjaman lagi dalam sekitar 30 menit.',
 
    // src/lib/reasonQuality.ts
-   'Please write your reason in English — the lenders reading it don’t speak Tagalog.':
-      'Tulis alasanmu dalam bahasa Inggris — pemberi pinjaman yang membacanya tidak bisa bahasa Tagalog.',
+   'Please write your reason in English — the moo-lenders reading it only read English.':
+      'Tulis alasanmu dalam bahasa Inggris — moo-lender yang membacanya hanya bisa membaca bahasa Inggris.',
    'Write it as a sentence — what the money is for and when you get paid.':
       'Tulis dalam bentuk kalimat — untuk apa uangnya dan kapan kamu gajian.',
-   "This doesn't look like real words yet — tell lenders what the loan is for.":
-      'Ini belum terlihat seperti kata-kata yang jelas — beri tahu pemberi pinjaman untuk apa pinjamannya.',
-   'Try saying it once, clearly — repeating words does not help lenders.':
-      'Coba sampaikan sekali saja dengan jelas — mengulang kata tidak membantu pemberi pinjaman.',
+   "This doesn't look like real words yet — tell moo-lenders what the loan is for.":
+      'Ini belum terlihat seperti kata-kata yang jelas — beri tahu moo-lender untuk apa pinjamannya.',
+   'Try saying it once, clearly — repeating words does not help moo-lenders.':
+      'Coba sampaikan sekali saja dengan jelas — mengulang kata tidak membantu moo-lender.',
 
    // src/lib/supabase/avatarStorage.ts
    'You must be signed in to upload an avatar.': 'Kamu harus masuk dulu untuk mengunggah avatar.',
@@ -453,12 +453,12 @@ export const indonesianCoverageF: Record<string, string> = {
       'Karena ini pencairan dana pertamamu, kami perlu pemeriksaan wajah singkat untuk memastikan ini benar-benar kamu. Hanya sekitar sepuluh detik.',
 
    // src/lib/worldIdVerificationLabel.ts
-   'Verified Lender': 'Pemberi pinjaman terverifikasi',
+   'Verified Moo-lender': 'Moo-lender terverifikasi',
 
    // src/shared/points.ts (milestone and point-event titles in the points history)
    'Build a 2-loan on-time streak': 'Lunasi 2 pinjaman tepat waktu berturut-turut',
    'Repay a full-limit credit-builder': 'Lunasi Credit-Building Loan senilai limit penuh',
-   'Borrow from 2 different lenders': 'Pinjam dari 2 pemberi pinjaman berbeda',
+   'Borrow from 2 different moo-lenders': 'Pinjam dari 2 moo-lender berbeda',
    'Reach Credit Level 3': 'Capai Level Kredit 3',
    'Become a trusted borrower candidate': 'Jadi kandidat peminjam tepercaya',
    'Loan funded': 'Pinjaman didanai',

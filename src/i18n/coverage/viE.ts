@@ -18,11 +18,11 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Amount decides': 'Số tiền quyết định',
    Browse: 'Xem bảng',
    'To skip repayment': 'Để khỏi phải trả nợ',
-   'To hide from lenders': 'Để trốn tránh người cho vay',
+   'To hide from moo-lenders': 'Để trốn tránh moo-lender',
    'To hide repayment history': 'Để che giấu lịch sử trả nợ',
    'To skip World ID': 'Để bỏ qua World ID',
    'Trust-building': 'Trust-Building',
-   'A lender loan': 'Khoản vay của người cho vay',
+   'A moo-lender loan': 'Khoản vay của moo-lender',
    'Already repaid': 'Đã trả xong',
    'Changing names often': 'Thường xuyên đổi tên',
    'Ignoring the request board': 'Phớt lờ bảng yêu cầu',
@@ -155,8 +155,8 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Repay your $100 loan on time': 'Trả khoản vay $100 đúng hạn',
    'Repay your $120 loan on time': 'Trả khoản vay $120 đúng hạn',
    'Limits step up $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.': 'Hạn mức tăng dần $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
-   'How reliable repayment becomes a portable reputation lenders trust.':
-      'Việc trả nợ đáng tin cậy trở thành uy tín mang theo được mà người cho vay tin tưởng như thế nào.',
+   'How reliable repayment becomes a portable reputation moo-lenders trust.':
+      'Việc trả nợ đáng tin cậy trở thành uy tín mang theo được mà moo-lender tin tưởng như thế nào.',
    'The difference between the two loan types and when to use each.': 'Sự khác nhau giữa hai loại khoản vay và khi nào nên dùng từng loại.',
    'Exactly how on-time, partial, and late repayments are scored.':
       'Cách chính xác tính điểm cho các lần trả nợ đúng hạn, trả một phần và trả muộn.',
@@ -185,14 +185,14 @@ export const vietnameseCoverageE: Record<string, string> = {
 
    // src/views/user-profile/UserProfile.tsx
    'How Credit Level works': 'Hạng tín dụng hoạt động như thế nào',
-   'How Lender Diversity Score works': 'Điểm đa dạng người cho vay hoạt động như thế nào',
+   'How Moo-lender Diversity Score works': 'Điểm đa dạng moo-lender hoạt động như thế nào',
    'Trust-building loans': 'Trust-Building Loan',
    'Credit-building loans': 'Credit-Building Loan',
    'No loan mix yet': 'Chưa có cơ cấu khoản vay',
    'More Credit-Building Loans': 'Nhiều khoản Credit-Building Loan hơn',
    'Balanced Loan Mix': 'Cơ cấu khoản vay cân bằng',
-   'Lender Insights': 'Thông tin người cho vay',
-   'Lender Account': 'Tài khoản người cho vay',
+   'Moo-lender Insights': 'Thông tin moo-lender',
+   'Moo-lender Account': 'Tài khoản moo-lender',
    'Switch borrower insights to light mode': 'Chuyển thông tin người vay sang chế độ sáng',
    'Switch borrower insights to dark mode': 'Chuyển thông tin người vay sang chế độ tối',
    'Verified borrower': 'Người vay đã xác minh',
@@ -249,8 +249,8 @@ export const vietnameseCoverageE: Record<string, string> = {
    // src/views/help/helpTopics.ts
    "Moodeng itself charges $0 — the only cost is the exchange's conversion fee. Coins.ph is the cheapest route we've found in the Philippines: about 0.70% for a full round trip. For a $15 loan taken out and repaid, the all-in cost through Coins.ph is roughly ₱6.50 (about $0.10) — a small trading fee each way, a free PESONet bank cash-out, and the tiny network fee. If you want the pesos instantly, InstaPay adds a flat ₱5 (round trip ≈ ₱11.50, about $0.19). Other services build their margin into the rate, so they usually cost more.":
       'Bản thân Moodeng thu phí $0 — chi phí duy nhất là phí quy đổi của sàn giao dịch. Coins.ph là cách rẻ nhất chúng tôi tìm được ở Philippines: khoảng 0.70% cho cả chiều đi lẫn chiều về. Với một khoản vay $15 được nhận rồi trả lại, tổng chi phí qua Coins.ph vào khoảng ₱6.50 (khoảng $0.10) — gồm một khoản phí giao dịch nhỏ mỗi chiều, phí rút về ngân hàng qua PESONet miễn phí và phí mạng rất nhỏ. Nếu bạn muốn nhận peso ngay lập tức, InstaPay tính thêm cố định ₱5 (cả đi lẫn về ≈ ₱11.50, khoảng $0.19). Các dịch vụ khác cộng phần lời của họ vào tỷ giá, nên thường tốn hơn.',
-   'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with lenders, but it does not raise your Credit Level. Most borrowers use both — Trust-Building Loans to keep their repayment record active, Credit-Building Loans to grow the limit.':
-      'Có hai loại khoản vay. Credit-Building Loan là khoản vay bằng toàn bộ hạn mức hiện tại của bạn — trả đúng hạn sẽ nâng hạn mức và mở khóa hạng tiếp theo. Trust-Building Loan là bất kỳ khoản vay nhỏ hơn nào dưới hạn mức của bạn; nó vẫn giúp xây dựng lịch sử trả nợ và uy tín với người cho vay, nhưng không nâng Hạng tín dụng của bạn. Hầu hết người vay dùng cả hai — Trust-Building Loan để lịch sử trả nợ luôn được cập nhật, Credit-Building Loan để tăng hạn mức.',
+   'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with moo-lenders, but it does not raise your Credit Level. Most borrowers use both — Trust-Building Loans to keep their repayment record active, Credit-Building Loans to grow the limit.':
+      'Có hai loại khoản vay. Credit-Building Loan là khoản vay bằng toàn bộ hạn mức hiện tại của bạn — trả đúng hạn sẽ nâng hạn mức và mở khóa hạng tiếp theo. Trust-Building Loan là bất kỳ khoản vay nhỏ hơn nào dưới hạn mức của bạn; nó vẫn giúp xây dựng lịch sử trả nợ và uy tín với moo-lender, nhưng không nâng Hạng tín dụng của bạn. Hầu hết người vay dùng cả hai — Trust-Building Loan để lịch sử trả nợ luôn được cập nhật, Credit-Building Loan để tăng hạn mức.',
    'A Base Account is passwordless and seedless — you sign in with email or a passkey.':
       'Base Account không cần mật khẩu và không có seed phrase — bạn đăng nhập bằng email hoặc passkey.',
    'Already a World App user? Choose "Verify with World ID" instead.': 'Đã dùng World App? Hãy chọn "Xác minh bằng World ID".',
@@ -389,7 +389,7 @@ export const vietnameseCoverageE: Record<string, string> = {
    'e.g. Maya, Jay, or a friendly nickname': 'VD: Maya, Jay hoặc một biệt danh thân thiện',
    'e.g. I run a small online shop and income changes month to month': 'VD: Tôi bán hàng online nhỏ và thu nhập thay đổi theo từng tháng',
    'e.g. teacher': 'VD: giáo viên',
-   'Helps lenders gauge repayment capacity.': 'Giúp người cho vay đánh giá khả năng trả nợ.',
+   'Helps moo-lenders gauge repayment capacity.': 'Giúp moo-lender đánh giá khả năng trả nợ.',
    No: 'Không',
    Yes: 'Có',
    'e.g. tutoring on weekends': 'VD: dạy kèm vào cuối tuần',
@@ -421,19 +421,19 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Enter the amount you will repay.': 'Nhập số tiền bạn sẽ trả.',
    'Repayment must be at least $1 more than you borrow.': 'Số tiền trả phải lớn hơn số tiền vay ít nhất $1.',
    'Choose when you will repay.': 'Chọn thời điểm bạn sẽ trả nợ.',
-   'Please add a reason so lenders know what the loan is for.': 'Vui lòng thêm lý do để người cho vay biết bạn vay để làm gì.',
-   'Add a bit more detail so lenders understand the need.': 'Hãy thêm một chút chi tiết để người cho vay hiểu nhu cầu của bạn.',
-   'Please write your reason in English so lenders can read it.': 'Vui lòng viết lý do bằng tiếng Anh để người cho vay có thể đọc được.',
+   'Please add a reason so moo-lenders know what the loan is for.': 'Vui lòng thêm lý do để moo-lender biết bạn vay để làm gì.',
+   'Add a bit more detail so moo-lenders understand the need.': 'Hãy thêm một chút chi tiết để moo-lender hiểu nhu cầu của bạn.',
+   'Please write your reason in English so moo-lenders can read it.': 'Vui lòng viết lý do bằng tiếng Anh để moo-lender có thể đọc được.',
    'Referral code incorrect. If you have issues, contact support.': 'Mã giới thiệu không đúng. Nếu gặp vấn đề, hãy liên hệ bộ phận hỗ trợ.',
    "We couldn't check that code. Please try again.": 'Chúng tôi chưa kiểm tra được mã này. Vui lòng thử lại.',
    'Failed to update profile image.': 'Cập nhật ảnh đại diện không thành công.',
    "Couldn't save — please try again.": 'Chưa lưu được — vui lòng thử lại.',
    'Write this in English': 'Hãy viết bằng tiếng Anh',
-   'Lenders reading your profile are in the US and Europe — please describe your situation in English.':
-      'Người cho vay đọc hồ sơ của bạn ở Mỹ và châu Âu — vui lòng mô tả tình huống của bạn bằng tiếng Anh.',
+   'Moo-lenders reading your profile are in the US and Europe — please describe your situation in English.':
+      'Moo-lender đọc hồ sơ của bạn ở Mỹ và châu Âu — vui lòng mô tả tình huống của bạn bằng tiếng Anh.',
    'Add more to your info': 'Bổ sung thêm thông tin',
-   'Some of your info looks too short for lenders to understand — tap again to continue anyway.':
-      'Một số thông tin của bạn có vẻ quá ngắn để người cho vay hiểu — nhấn lại để vẫn tiếp tục.',
+   'Some of your info looks too short for moo-lenders to understand — tap again to continue anyway.':
+      'Một số thông tin của bạn có vẻ quá ngắn để moo-lender hiểu — nhấn lại để vẫn tiếp tục.',
    "You're not verified yet. Verification is the last step before you can send this request.":
       'Bạn chưa được xác minh. Xác minh là bước cuối cùng trước khi bạn có thể gửi yêu cầu này.',
    'Your verification is still being checked — you can send this request once it clears.':
@@ -448,15 +448,15 @@ export const vietnameseCoverageE: Record<string, string> = {
    'starting limit': 'hạn mức khởi điểm',
    'Checking code...': 'Đang kiểm tra mã...',
    'One quick step to request a loan': 'Một bước nhanh để yêu cầu vay',
-   'Complete a one-time verification to start building trust with lenders.':
-      'Hoàn tất xác minh một lần để bắt đầu xây dựng niềm tin với người cho vay.',
+   'Complete a one-time verification to start building trust with moo-lenders.':
+      'Hoàn tất xác minh một lần để bắt đầu xây dựng niềm tin với moo-lender.',
    'Current Limit: $': 'Hạn mức hiện tại: $',
    'Your current maximum borrow amount. Repaying loans on time can help increase this limit.':
       'Số tiền tối đa bạn có thể vay hiện tại. Trả nợ đúng hạn có thể giúp tăng hạn mức này.',
    'USDC is digital dollars accepted by major exchanges, making borrowing and lending easier across countries.':
       'USDC là đô la kỹ thuật số được các sàn giao dịch lớn chấp nhận, giúp việc vay và cho vay giữa các quốc gia dễ dàng hơn.',
    '— that’s': '— tức là thêm',
-   'to your lender.': 'cho người cho vay của bạn.',
+   'to your moo-lender.': 'cho moo-lender của bạn.',
    '4 weeks': '4 tuần',
    '1 month': '1 tháng',
    '2 months': '2 tháng',
@@ -483,7 +483,7 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Unknown user': 'Người dùng không xác định',
    'Unknown Reason': 'Không rõ lý do',
    'Link copied': 'Đã sao chép liên kết',
-   'Send it to a lender so they can fund this request.': 'Gửi cho người cho vay để họ có thể cấp vốn cho yêu cầu này.',
+   'Send it to a moo-lender so they can fund this request.': 'Gửi cho moo-lender để họ có thể cấp vốn cho yêu cầu này.',
    'Could not copy link': 'Không sao chép được liên kết',
    'Approve in the Coinbase window. It may be behind this one.':
       'Hãy chấp thuận trong cửa sổ Coinbase. Cửa sổ đó có thể đang nằm phía sau cửa sổ này.',
@@ -507,6 +507,7 @@ export const vietnameseCoverageE: Record<string, string> = {
    "Couldn't book that time. Try again, or contact support.": 'Không đặt được khung giờ đó. Hãy thử lại hoặc liên hệ bộ phận hỗ trợ.',
    "You're booked with": 'Bạn đã đặt lịch với',
    'the Moodeng team': 'đội ngũ Moodeng',
+   'George or Emma': 'George hoặc Emma',
    'Google Calendar': 'Google Lịch',
    "You've missed two calls, so booking is paused for a week.": 'Bạn đã lỡ hai cuộc gọi, nên việc đặt lịch tạm dừng trong một tuần.',
    'You can pick a new time from': 'Bạn có thể chọn giờ mới từ',
@@ -754,7 +755,7 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Congratulations for Verifying.': 'Chúc mừng bạn đã xác minh thành công.',
    'Continue Loan Request': 'Tiếp tục yêu cầu vay',
    'Loan Request Created!': 'Đã tạo yêu cầu vay!',
-   'Your request is now live for lenders to review.': 'Yêu cầu của bạn đã được đăng để người cho vay xem xét.',
+   'Your request is now live for moo-lenders to review.': 'Yêu cầu của bạn đã được đăng để moo-lender xem xét.',
    'View Active Loans': 'Xem khoản vay đang hoạt động',
    "It's awkward 😅": 'Hơi ngại một chút 😅',
    'We were unable to process payment for your funding.': 'Chúng tôi chưa xử lý được thanh toán cho khoản cấp vốn của bạn.',
@@ -1032,7 +1033,7 @@ export const vietnameseCoverageE: Record<string, string> = {
    // src/shared/points.ts
    'Build a 2-loan on-time streak': 'Trả đúng hạn 2 khoản vay liên tiếp',
    'Repay a full-limit credit-builder': 'Trả một khoản vay bằng toàn bộ hạn mức',
-   'Borrow from 2 different lenders': 'Vay từ 2 người cho vay khác nhau',
+   'Borrow from 2 different moo-lenders': 'Vay từ 2 moo-lender khác nhau',
    'Reach Credit Level 3': 'Đạt Hạng tín dụng 3',
    'Become a trusted borrower candidate': 'Trở thành ứng viên người vay đáng tin cậy',
    'Academy quiz': 'Bài kiểm tra Học viện',
@@ -1046,12 +1047,12 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Verify now': 'Xác minh ngay',
    'Account ready': 'Tài khoản đã sẵn sàng',
    'Ask for a small amount with a clear reason and due date.': 'Yêu cầu một số tiền nhỏ với lý do và ngày đến hạn rõ ràng.',
-   'Visible to lenders': 'Người cho vay có thể thấy',
+   'Visible to moo-lenders': 'Moo-lender có thể thấy',
    'Request live': 'Yêu cầu đã đăng',
-   'A lender accepts your request and trusts you with your first loan.':
-      'Một người cho vay chấp nhận yêu cầu và tin tưởng giao cho bạn khoản vay đầu tiên.',
-   'First lender signal': 'Tín hiệu đầu tiên từ người cho vay',
-   'Lender signal gained': 'Đã có tín hiệu từ người cho vay',
+   'A moo-lender accepts your request and trusts you with your first loan.':
+      'Một moo-lender chấp nhận yêu cầu và tin tưởng giao cho bạn khoản vay đầu tiên.',
+   'First moo-lender signal': 'Tín hiệu đầu tiên từ moo-lender',
+   'Moo-lender signal gained': 'Đã có tín hiệu từ moo-lender',
    'History started': 'Đã bắt đầu lịch sử',
    'View requests': 'Xem các yêu cầu',
    'Pay the full amount before the due date to start your repayment record.':
@@ -1060,8 +1061,9 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Up to $': 'Tối đa $',
    'Limit progress': 'Tiến độ hạn mức',
    'Pay loans': 'Trả khoản vay',
-   'Show lenders that your repayment reliability is repeatable.': 'Cho người cho vay thấy bạn luôn trả nợ đáng tin cậy, không chỉ một lần.',
-   'Stronger lender confidence': 'Người cho vay tin tưởng hơn',
+   'Show moo-lenders that your repayment reliability is repeatable.':
+      'Cho moo-lender thấy bạn luôn trả nợ đáng tin cậy, không chỉ một lần.',
+   'Stronger moo-lender confidence': 'Moo-lender tin tưởng hơn',
    'Reliability improved': 'Độ tin cậy đã tăng',
    'Stronger profile': 'Hồ sơ vững hơn',
    'Use your current Credit Level amount and repay it on time.': 'Vay đúng bằng hạn mức của Hạng tín dụng hiện tại và trả đúng hạn.',
@@ -1069,8 +1071,8 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Level progress': 'Tiến độ hạng',
    'Higher limit path': 'Con đường tới hạn mức cao hơn',
    'Learn levels': 'Tìm hiểu các hạng',
-   'Build a reputation that does not depend on just one lender.': 'Xây dựng uy tín không phụ thuộc vào chỉ một người cho vay.',
-   'Lender diversity signal': 'Tín hiệu đa dạng người cho vay',
+   'Build a reputation that does not depend on just one moo-lender.': 'Xây dựng uy tín không phụ thuộc vào chỉ một moo-lender.',
+   'Moo-lender diversity signal': 'Tín hiệu đa dạng moo-lender',
    'Diversity improved': 'Đa dạng hơn',
    'Broader trust': 'Niềm tin rộng hơn',
    'Grow from starter loans into a real repayment history.': 'Phát triển từ những khoản vay đầu tiên thành một lịch sử trả nợ thực sự.',
@@ -1082,8 +1084,8 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Higher borrowing power': 'Khả năng vay cao hơn',
    'Higher limit unlocked': 'Đã mở khóa hạn mức cao hơn',
    'View guide': 'Xem hướng dẫn',
-   'Complete 5 on-time repayments, use 3 lenders, and keep defaults resolved.':
-      'Hoàn thành 5 lần trả nợ đúng hạn, vay từ 3 người cho vay và không để khoản vỡ nợ nào chưa giải quyết.',
+   'Complete 5 on-time repayments, use 3 moo-lenders, and keep defaults resolved.':
+      'Hoàn thành 5 lần trả nợ đúng hạn, vay từ 3 moo-lender và không để khoản vỡ nợ nào chưa giải quyết.',
    'Future top-user perks': 'Đặc quyền cho người dùng hàng đầu trong tương lai',
    'Priority signal': 'Tín hiệu ưu tiên',
    'Review ready': 'Sẵn sàng xét duyệt',
@@ -1143,11 +1145,11 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Defaults Present': 'Có khoản vỡ nợ',
 
    // src/views/user-profile/LenderDiversityHistory.tsx
-   'Unknown lender': 'Người cho vay không xác định',
-   'Switch lender diversity to light mode': 'Chuyển mức đa dạng người cho vay sang chế độ sáng',
-   'Switch lender diversity to dark mode': 'Chuyển mức đa dạng người cho vay sang chế độ tối',
+   'Unknown moo-lender': 'Moo-lender không xác định',
+   'Switch moo-lender diversity to light mode': 'Chuyển mức đa dạng moo-lender sang chế độ sáng',
+   'Switch moo-lender diversity to dark mode': 'Chuyển mức đa dạng moo-lender sang chế độ tối',
    'Shows how': 'Cho thấy lịch sử vay được cấp vốn của',
-   "'s funded loan history is spread across lenders.": 'được phân bổ thế nào giữa các người cho vay.',
+   "'s funded loan history is spread across moo-lenders.": 'được phân bổ thế nào giữa các moo-lender.',
 
    // src/views/support/WhyUsdc.tsx
    'Why Moodeng Uses USDC': 'Vì sao Moodeng dùng USDC',
@@ -1156,8 +1158,8 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Send money to family abroad in seconds': 'Gửi tiền cho gia đình ở nước ngoài chỉ trong vài giây',
    'Pay a merchant that accepts stablecoins': 'Thanh toán cho cửa hàng chấp nhận stablecoin',
    'Cash out to a bank or exchange': 'Rút về ngân hàng hoặc sàn giao dịch',
-   'On Moodeng, this is how loans work: a lender sends you USDC, and you repay in USDC.':
-      'Trên Moodeng, khoản vay hoạt động như vậy: người cho vay gửi USDC cho bạn, và bạn trả nợ bằng USDC.',
+   'On Moodeng, this is how loans work: a moo-lender sends you USDC, and you repay in USDC.':
+      'Trên Moodeng, khoản vay hoạt động như vậy: moo-lender gửi USDC cho bạn, và bạn trả nợ bằng USDC.',
    'DeFi use': 'Sử dụng trong DeFi',
    'DeFi means "decentralized finance" — financial apps that run on smart contracts instead of a bank. You can lend, borrow, or swap USDC directly from your wallet.':
       'DeFi là "tài chính phi tập trung" — các ứng dụng tài chính chạy trên hợp đồng thông minh thay vì ngân hàng. Bạn có thể cho vay, vay hoặc hoán đổi USDC ngay từ ví của mình.',
@@ -1207,20 +1209,20 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Not funded yet': 'Chưa được cấp vốn',
    'If applicable': 'Nếu có',
    'Available after funding': 'Có sau khi được cấp vốn',
-   'Waiting for lender': 'Đang chờ người cho vay',
+   'Waiting for moo-lender': 'Đang chờ moo-lender',
    'Repayment schedule': 'Lịch trả nợ',
    'Interest returned': 'Đã hoàn lại tiền lãi',
    'Returning to': 'Đang gửi lại cho',
    'Recording your gift — hang tight.': 'Đang ghi nhận món quà của bạn — chờ chút nhé.',
    'You returned': 'Bạn đã gửi lại',
    '. That was kind of you.': '. Bạn thật tốt bụng.',
-   'Gift from your lender': 'Quà từ người cho vay của bạn',
+   'Gift from your moo-lender': 'Quà từ moo-lender của bạn',
    'You returned the interest': 'Bạn đã hoàn lại tiền lãi',
    'Interest returned!': 'Đã hoàn lại tiền lãi!',
    'Cannot return interest': 'Không thể hoàn lại tiền lãi',
    'Borrower wallet address is unavailable.': 'Không có địa chỉ ví của người vay.',
    'Borrowed by': 'Người vay:',
-   'Lender has not accepted yet': 'Người cho vay chưa chấp nhận',
+   'Moo-lender has not accepted yet': 'Moo-lender chưa chấp nhận',
    'Not active': 'Chưa hoạt động',
    'Requested on': 'Yêu cầu vào ngày',
    'This repayment was sent to the wallet you funded this loan from:':
@@ -1336,7 +1338,7 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Go to Dashboard': 'Đến trang Tổng quan',
 
    // src/views/transactions/TransactionHistory.tsx
-   'Awaiting lender': 'Đang chờ người cho vay',
+   'Awaiting moo-lender': 'Đang chờ moo-lender',
    Returned: 'Đã hoàn lại',
 
    // src/views/profile/components/tabs/useDashboardData.ts
@@ -1387,8 +1389,8 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Help hub': 'Trung tâm trợ giúp',
 
    // src/views/dashboard/components/LocationPrimingModal.tsx
-   "We check your location to keep lending safe and catch fraud. It's only used to verify your request — never shared with lenders.":
-      'Chúng tôi kiểm tra vị trí của bạn để giữ an toàn cho việc cho vay và phát hiện gian lận. Thông tin này chỉ dùng để xác minh yêu cầu của bạn — không bao giờ được chia sẻ với người cho vay.',
+   "We check your location to keep lending safe and catch fraud. It's only used to verify your request — never shared with moo-lenders.":
+      'Chúng tôi kiểm tra vị trí của bạn để giữ an toàn cho việc cho vay và phát hiện gian lận. Thông tin này chỉ dùng để xác minh yêu cầu của bạn — không bao giờ được chia sẻ với moo-lender.',
 
    // src/components/BorrowerVerificationBadge.tsx
    'In review': 'Đang xem xét',
@@ -1446,14 +1448,14 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Payment was not confirmed in time': 'Thanh toán chưa được xác nhận kịp thời',
 
    // src/lib/reasonQuality.ts
-   'Please write your reason in English — the lenders reading it don’t speak Tagalog.':
-      'Vui lòng viết lý do bằng tiếng Anh — người cho vay đọc lý do không biết tiếng Tagalog.',
+   'Please write your reason in English — the moo-lenders reading it only read English.':
+      'Vui lòng viết lý do bằng tiếng Anh — moo-lender đọc lý do không biết tiếng Tagalog.',
    'Write it as a sentence — what the money is for and when you get paid.':
       'Hãy viết thành một câu — số tiền dùng để làm gì và khi nào bạn nhận lương.',
-   "This doesn't look like real words yet — tell lenders what the loan is for.":
-      'Nội dung này chưa giống từ ngữ thật — hãy cho người cho vay biết khoản vay dùng để làm gì.',
-   'Try saying it once, clearly — repeating words does not help lenders.':
-      'Hãy nói rõ một lần — lặp lại từ ngữ không giúp ích cho người cho vay.',
+   "This doesn't look like real words yet — tell moo-lenders what the loan is for.":
+      'Nội dung này chưa giống từ ngữ thật — hãy cho moo-lender biết khoản vay dùng để làm gì.',
+   'Try saying it once, clearly — repeating words does not help moo-lenders.':
+      'Hãy nói rõ một lần — lặp lại từ ngữ không giúp ích cho moo-lender.',
 
    // src/lib/withdraw/cashoutFaceGate.ts
    "This doesn't match the account holder": 'Khuôn mặt không khớp với chủ tài khoản',
@@ -1503,14 +1505,14 @@ export const vietnameseCoverageE: Record<string, string> = {
    "World ID verification isn't working right now. Please verify with your ID instead, or try again later.":
       'Tính năng xác minh World ID hiện không hoạt động. Vui lòng xác minh bằng thẻ căn cước thay thế, hoặc thử lại sau.',
    "World ID verification isn't working": 'Xác minh World ID không hoạt động',
-   'Tell lenders what the money will be used for.': 'Cho người cho vay biết bạn sẽ dùng tiền vào việc gì.',
+   'Tell moo-lenders what the money will be used for.': 'Cho moo-lender biết bạn sẽ dùng tiền vào việc gì.',
    'Please write it in English': 'Vui lòng viết bằng tiếng Anh',
    'Improve your reason': 'Chỉnh sửa lý do',
    'Update your reason, then tap “Make Your Request” again.': 'Cập nhật lý do của bạn, rồi nhấn “Gửi yêu cầu” lần nữa.',
-   'Tell lenders what the money will be used for. Update your reason, then tap “Make Your Request” again.':
-      'Cho người cho vay biết bạn sẽ dùng tiền vào việc gì. Cập nhật lý do của bạn, rồi nhấn “Gửi yêu cầu” lần nữa.',
-   'Please write your reason in English — the lenders reading it don’t speak Tagalog. Update your reason, then tap “Make Your Request” again.':
-      'Vui lòng viết lý do bằng tiếng Anh — người cho vay đọc nó không biết tiếng Tagalog. Cập nhật lý do của bạn, rồi nhấn “Gửi yêu cầu” lần nữa.',
+   'Tell moo-lenders what the money will be used for. Update your reason, then tap “Make Your Request” again.':
+      'Cho moo-lender biết bạn sẽ dùng tiền vào việc gì. Cập nhật lý do của bạn, rồi nhấn “Gửi yêu cầu” lần nữa.',
+   'Please write your reason in English — the moo-lenders reading it only read English. Update your reason, then tap “Make Your Request” again.':
+      'Vui lòng viết lý do bằng tiếng Anh — moo-lender đọc nó không biết tiếng Tagalog. Cập nhật lý do của bạn, rồi nhấn “Gửi yêu cầu” lần nữa.',
    'Your info is missing': 'Thiếu thông tin của bạn',
    'We need your "About you" details before posting. Close this and tap Request a loan again to fill them in — or tap Help and we\'ll sort it out.':
       'Chúng tôi cần thông tin "Về bạn" trước khi đăng. Đóng mục này và nhấn Yêu cầu vay lần nữa để điền — hoặc nhấn Trợ giúp để chúng tôi hỗ trợ.',
@@ -1539,5 +1541,29 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Try this:': 'Thử cách này:',
    'Use this': 'Dùng câu này',
    'Message us to help write this in English': 'Nhắn tin cho chúng tôi để được giúp viết bằng tiếng Anh',
-   'Message us for help wording this': 'Nhắn tin cho chúng tôi để được giúp diễn đạt'
+   'Message us for help wording this': 'Nhắn tin cho chúng tôi để được giúp diễn đạt',
+   // ContactsStep Android Messenger flow (copy code & open chat)
+   'Send us your code on Messenger': 'Gửi mã của bạn cho chúng tôi qua Messenger',
+   'Copy code & open Messenger': 'Sao chép mã và mở Messenger',
+   'Tap the blue button. It copies your code and opens our chat.':
+      'Nhấn nút màu xanh. Mã của bạn sẽ được sao chép và cuộc trò chuyện với chúng tôi sẽ mở ra.',
+   'Tap Get Started if Messenger asks.': 'Nhấn Get Started (Bắt đầu) nếu Messenger yêu cầu.',
+   'Paste the code and send it.': 'Dán mã và gửi đi.',
+   'Waiting for your message. This turns green on its own.': 'Đang chờ tin nhắn của bạn. Mục này sẽ tự chuyển sang màu xanh.',
+   'No Messenger app? Open Facebook, search Moodeng Credit, tap Message, and send the code there.':
+      'Không có ứng dụng Messenger? Mở Facebook, tìm Moodeng Credit, nhấn Nhắn tin và gửi mã ở đó.',
+   '1 min': '1 phút',
+   'Getting your code…': 'Đang lấy mã của bạn…',
+   'We give you a short code to send us on Messenger': 'Chúng tôi gửi bạn một mã ngắn để gửi cho chúng tôi qua Messenger',
+   // ContactsStep Android Messenger timing match
+   'Connect on Messenger': 'Kết nối qua Messenger',
+   'Tap the blue button. Our chat opens in Messenger.': 'Nhấn nút màu xanh. Cuộc trò chuyện với chúng tôi sẽ mở trong Messenger.',
+   'Tap Get Started, or send us a message. We connect you automatically.':
+      'Nhấn Get Started (Bắt đầu) hoặc gửi tin nhắn cho chúng tôi. Chúng tôi sẽ tự động kết nối bạn.',
+   'Not green after a minute? Paste the code (already copied) and send it.':
+      'Sau một phút vẫn chưa chuyển xanh? Dán mã (đã sao chép sẵn) và gửi đi.',
+   // ContactsStep Android Messenger hints
+   "Messenger didn't open? Open Facebook, search Moodeng Credit, tap Message, and say hi.":
+      'Messenger không mở? Mở Facebook, tìm Moodeng Credit, nhấn Nhắn tin và chào chúng tôi.',
+   'Opens our chat. Say hi and you’re connected.': 'Mở cuộc trò chuyện với chúng tôi. Gửi lời chào là bạn đã được kết nối.'
 };

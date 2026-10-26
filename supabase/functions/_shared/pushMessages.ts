@@ -21,10 +21,13 @@ export type PushNotificationType =
    | 'overdue'
    | 'funded'
    | 'repayment_received'
+   | 'partial_repayment'
    | 'request_expired'
    | 'video_call_reminder'
    | 'loan_access_decision'
-   | 'verification_decision';
+   | 'verification_decision'
+   // Admin → Campaigns re-engagement message.
+   | 'campaign';
 
 export type PushLocale = 'en' | 'fil' | 'id';
 
@@ -183,7 +186,7 @@ const buildRepeatBorrowerPush = (context: RepeatBorrowerPushContext, locale: Pus
       type: 'repeat_borrower_request',
       title: copy[locale].title,
       body: copy[locale].body,
-      url: buildAppUrl(`/lend/loan/${context.loanId}`),
+      url: buildAppUrl(`/request-board?highlight=${context.loanId}`),
       // One notification per request per lender; a re-fire replaces it.
       tag: `repeat-borrower:${context.loanId}`
    };
@@ -212,8 +215,8 @@ const buildDuePush = (
          final_reminder: {
             title: `${amount} USDC due tomorrow`,
             body: isMulti
-               ? `${context.loanCount} repayments are due within ${dueLabel}. Pay on time to stay in good standing.`
-               : `Your repayment is due within ${dueLabel}. Pay on time to stay in good standing.`
+               ? `${context.loanCount} repayments are due tomorrow. Pay on time to stay in good standing.`
+               : `Your repayment is due tomorrow. Pay on time to stay in good standing.`
          },
          urgent_reminder: {
             title: `${amount} USDC due soon`,
@@ -238,8 +241,8 @@ const buildDuePush = (
          final_reminder: {
             title: `${amount} USDC, due bukas`,
             body: isMulti
-               ? `May ${context.loanCount} bayarin sa loob ng ${dueLabel}. Magbayad on time para manatiling good standing.`
-               : `Due na sa loob ng ${dueLabel}. Magbayad on time para manatiling good standing.`
+               ? `May ${context.loanCount} bayarin na due bukas. Magbayad on time para manatiling good standing.`
+               : `Due na bukas. Magbayad on time para manatiling good standing.`
          },
          urgent_reminder: {
             title: `${amount} USDC, malapit nang due`,
@@ -264,8 +267,8 @@ const buildDuePush = (
          final_reminder: {
             title: `${amount} USDC jatuh tempo besok`,
             body: isMulti
-               ? `${context.loanCount} pembayaran jatuh tempo dalam ${dueLabel}. Bayar tepat waktu agar tetap good standing.`
-               : `Jatuh tempo dalam ${dueLabel}. Bayar tepat waktu agar tetap good standing.`
+               ? `${context.loanCount} pembayaran jatuh tempo besok. Bayar tepat waktu agar tetap good standing.`
+               : `Jatuh tempo besok. Bayar tepat waktu agar tetap good standing.`
          },
          urgent_reminder: {
             title: `${amount} USDC segera jatuh tempo`,
@@ -332,6 +335,26 @@ const buildRepaymentReceivedPush = (context: { amount: number }, locale: PushLoc
       body: copy[locale].body,
       url: buildAppUrl('/dashboard'),
       tag: 'repayment-received'
+   };
+};
+
+// Borrower-facing: a repayment that left a balance. Says what was paid AND what's left, so someone
+// who tapped Repay by accident (or thought it was Cash out) finds out straight away.
+const buildPartialRepaymentPush = (context: { paid: number; left: number }, locale: PushLocale): PushPayload => {
+   const paid = formatUsdc(context.paid);
+   const left = formatUsdc(context.left);
+   const copy: Record<PushLocale, { title: string; body: string }> = {
+      en: { title: `We got your ${paid} payment`, body: `${left} left on your loan. Didn't mean to pay? Message us right away.` },
+      fil: { title: `Natanggap namin ang ${paid} mo`, body: `${left} pa ang natitira sa loan mo. Hindi sinasadya? I-message kami agad.` },
+      id: { title: `Pembayaran ${paid} diterima`, body: `Sisa pinjamanmu ${left}. Tidak sengaja bayar? Segera hubungi kami.` }
+   };
+
+   return {
+      type: 'partial_repayment',
+      title: copy[locale].title,
+      body: copy[locale].body,
+      url: buildAppUrl('/repay'),
+      tag: 'partial-repayment'
    };
 };
 
@@ -449,4 +472,5 @@ export const buildVerificationDecisionPushPayload = buildVerificationDecisionPus
 export const buildDuePushPayload = buildDuePush;
 export const buildFundedPushPayload = buildFundedPush;
 export const buildRepaymentReceivedPushPayload = buildRepaymentReceivedPush;
+export const buildPartialRepaymentPushPayload = buildPartialRepaymentPush;
 export const buildRequestExpiredPushPayload = buildRequestExpiredPush;

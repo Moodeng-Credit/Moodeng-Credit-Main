@@ -1,9 +1,13 @@
+import { isPlaceholderEmail, PlaceholderEmailError } from './placeholderEmail.ts';
+
 export const sendEmail = async (
    recipientEmail: string,
    subject: string,
    message: string,
    html?: string,
-   cc?: string | string[]
+   cc?: string | string[],
+   // Extra MIME headers, e.g. List-Unsubscribe on campaign emails.
+   headers?: Record<string, string>
 ) => {
    const resendApiKey = Deno.env.get('RESEND_API_KEY');
    const configuredFrom = Deno.env.get('RESEND_FROM')?.trim() || 'support@moodeng.app';
@@ -14,7 +18,13 @@ export const sendEmail = async (
       throw new Error('Missing RESEND_API_KEY environment variable');
    }
 
-   const ccList = cc ? (Array.isArray(cc) ? cc : [cc]).filter((addr) => addr?.trim()) : [];
+   // Telegram/LINE/phone accounts have a made-up address nobody reads. Callers catch this like any
+   // failed send, so nothing is counted as delivered and their other channels still go out.
+   if (isPlaceholderEmail(recipientEmail)) {
+      throw new PlaceholderEmailError();
+   }
+
+   const ccList = cc ? (Array.isArray(cc) ? cc : [cc]).filter((addr) => addr?.trim() && !isPlaceholderEmail(addr)) : [];
 
    const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -30,7 +40,8 @@ export const sendEmail = async (
          subject: subject,
          text: message,
          ...(html ? { html } : {}),
-         ...(ccList.length ? { cc: ccList } : {})
+         ...(ccList.length ? { cc: ccList } : {}),
+         ...(headers && Object.keys(headers).length ? { headers } : {})
       })
    });
 

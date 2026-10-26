@@ -1,3 +1,5 @@
+import { copyTextFromTap } from '@/lib/inAppHandoff';
+
 // Detects when the app is running inside a social/messaging in-app browser (a WebView),
 // e.g. the browser embedded in Facebook, Messenger, Instagram, LINE or TikTok.
 //
@@ -22,6 +24,17 @@ export interface InAppBrowserInfo {
    canBreakOut: boolean;
 }
 
+// The Home Screen web app (iOS `navigator.standalone`, or display-mode standalone elsewhere).
+function isStandaloneDisplay(): boolean {
+   if (typeof window === 'undefined') return false;
+   try {
+      if ((window.navigator as Navigator & { standalone?: boolean }).standalone === true) return true;
+      return window.matchMedia?.('(display-mode: standalone)').matches ?? false;
+   } catch {
+      return false;
+   }
+}
+
 function detectOs(ua: string): MobileOs {
    if (/iPhone|iPad|iPod/i.test(ua)) return 'ios';
    if (/Android/i.test(ua)) return 'android';
@@ -35,7 +48,8 @@ function detectAppName(ua: string): string | null {
    if (/\bFBAN|\bFBAV|FB_IAB|FB4A|FBIOS/i.test(ua)) return 'Facebook';
    if (/Instagram/i.test(ua)) return 'Instagram';
    if (/\bLine\//i.test(ua)) return 'LINE';
-   if (/musical_ly|Bytedance|TikTok|BytedanceWebview/i.test(ua)) return 'TikTok';
+   // TikTok's in-app browser often only says "trill" (AppName/trill).
+   if (/musical_ly|Bytedance|TikTok|BytedanceWebview|\btrill_|AppName\/trill/i.test(ua)) return 'TikTok';
    if (/Twitter/i.test(ua)) return 'X (Twitter)';
    if (/Snapchat/i.test(ua)) return 'Snapchat';
    if (/KAKAOTALK/i.test(ua)) return 'KakaoTalk';
@@ -46,7 +60,7 @@ function detectAppName(ua: string): string | null {
  * Inspect a user-agent string and decide whether we're in an in-app browser.
  * Accepts an explicit `userAgent` for testing; defaults to `navigator.userAgent`.
  */
-export function detectInAppBrowser(userAgent?: string): InAppBrowserInfo {
+export function detectInAppBrowser(userAgent?: string, options: { standalone?: boolean } = {}): InAppBrowserInfo {
    const ua = userAgent ?? (typeof navigator !== 'undefined' ? navigator.userAgent : '');
    const os = detectOs(ua);
    const appName = detectAppName(ua);
@@ -54,7 +68,15 @@ export function detectInAppBrowser(userAgent?: string): InAppBrowserInfo {
    // A named social app is a definite in-app browser. As a fallback, the Android WebView
    // marker "; wv" also indicates an embedded browser even when the host app isn't named.
    const isAndroidWebView = os === 'android' && /;\s*wv\b/i.test(ua);
-   const isInApp = appName !== null || isAndroidWebView;
+   // iOS equivalent: a WebKit view with no "Safari/" token and no other browser's marker is an
+   // app's embedded browser — typically an email app opening a sign-in link. Those don't keep you
+   // signed in, so a borrower who always signed in from email links (Lo Rraine, 8 email-link logins
+   // on 2026-09-22/24) had to log in again on every visit. The Home Screen app (standalone) has the
+   // same UA shape, so it is excluded.
+   const isStandalone = options.standalone ?? isStandaloneDisplay();
+   const isIosWebView =
+      os === 'ios' && /AppleWebKit/i.test(ua) && !/Safari\//i.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/i.test(ua) && !isStandalone;
+   const isInApp = appName !== null || isAndroidWebView || isIosWebView;
 
    return {
       isInApp,
@@ -94,6 +116,41 @@ export function openInSystemBrowser(url: string, info?: InAppBrowserInfo): boole
    }
 
    return false;
+}
+
+// A screen that already shows its own in-app-browser help (the Messenger step's code card on an
+// iPhone inside Facebook) hides the global InAppBrowserNotice, which would otherwise slide over it.
+const NOTICE_HIDDEN_EVENT = 'moodeng:inapp-notice-hidden';
+let noticeHidden = false;
+
+export function setInAppNoticeHidden(hidden: boolean): void {
+   noticeHidden = hidden;
+   if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(NOTICE_HIDDEN_EVENT, { detail: hidden }));
+}
+
+/** Calls `onChange` with the current hidden state now and on every change; returns an unsubscribe. */
+export function watchInAppNoticeHidden(onChange: (hidden: boolean) => void): () => void {
+   onChange(noticeHidden);
+   if (typeof window === 'undefined') return () => {};
+   const listener = (event: Event) => onChange(Boolean((event as CustomEvent<boolean>).detail));
+   window.addEventListener(NOTICE_HIDDEN_EVENT, listener);
+   return () => window.removeEventListener(NOTICE_HIDDEN_EVENT, listener);
+}
+
+/**
+ * iPhone only: which Meta app's browser this is. Both say FBAN/FBIOS (so appName is 'Facebook' for
+ * both), but PostHog pageviews from Sept–Oct 2026 split cleanly on two more markers:
+ * - The Facebook app: FBOP/5, and on current versions also "Safari/604.1" + IABMV/1. Arrives from
+ *   facebook.com with ?fbclid (posts and ads). userbuds' 10-14 sign-up was this one.
+ * - Messenger: FBOP/80, no Safari/ token. Arrives direct (links in our chat, the bot's /continue).
+ * Anything else (unknown FBOP, a future format) returns null, and callers keep today's behaviour.
+ */
+export function metaIosHost(userAgent?: string): 'facebook' | 'messenger' | null {
+   const ua = userAgent ?? (typeof navigator !== 'undefined' ? navigator.userAgent : '');
+   if (detectOs(ua) !== 'ios' || !/\bFBAN\/FBIOS\b/.test(ua)) return null;
+   if (/\bIABMV\//.test(ua) || /\bFBOP\/5\b/.test(ua)) return 'facebook';
+   if (/\bFBOP\/80\b/.test(ua)) return 'messenger';
+   return null;
 }
 
 /** True when the in-app browser is Facebook's own (the Facebook app or Messenger). */
@@ -139,10 +196,57 @@ export function openInChrome(url: string, info?: InAppBrowserInfo): boolean {
    }
 }
 
-/** Attempt to open `url` in Safari (iOS best-effort). Returns true when a hand-off was attempted. */
+/**
+ * Call `onStillHere` if the page is still on screen `delayMs` after a hand-off attempt, i.e. the
+ * other browser never opened. Facebook's Android in-app browser silently ignores our `intent://`
+ * link: in Sept–Oct 2026, 11 of 30 Android Facebook visitors tapped "Open in Chrome" and only
+ * 1 ever reached a real browser. When the hand-off works the page is hidden (or blurred) almost
+ * immediately, so "still visible after 1.5s" means it failed. Returns a cleanup function.
+ */
+export function watchForFailedHandOff(onStillHere: () => void, delayMs = 1500): () => void {
+   if (typeof window === 'undefined' || typeof document === 'undefined') return () => {};
+   let left = false;
+   const markLeft = () => {
+      left = true;
+   };
+   const onVisibility = () => {
+      if (document.visibilityState === 'hidden') left = true;
+   };
+   const cleanup = () => {
+      window.clearTimeout(timer);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', markLeft);
+      window.removeEventListener('blur', markLeft);
+   };
+   document.addEventListener('visibilitychange', onVisibility);
+   window.addEventListener('pagehide', markLeft);
+   window.addEventListener('blur', markLeft);
+   const timer = window.setTimeout(() => {
+      cleanup();
+      if (!left && document.visibilityState === 'visible') onStillHere();
+   }, delayMs);
+   return cleanup;
+}
+
+/** Event the app listens for to show "how to open it in Safari" (SafariHelpSheet). Detail: { url, copied }. */
+export const SAFARI_HELP_EVENT = 'moodeng:safari-help';
+
+/**
+ * Attempt to open `url` in Safari (iOS best-effort). Returns true when a hand-off was attempted.
+ * Inside Facebook's / Messenger's / Instagram's iPhone browser the x-safari link is dropped (it did
+ * nothing for Emma, 2026-10-17), so there it copies the link (call it straight from the tap) and asks
+ * the app to show the ⋯ → "Open in external browser" steps instead. Returns false then.
+ */
 export function openInSafari(url: string, info?: InAppBrowserInfo): boolean {
    if (typeof window === 'undefined') return false;
-   const target = buildSafariUrl(url, info);
+   const detected = info ?? detectInAppBrowser();
+   if (detected.os === 'ios' && detected.isInApp && ['Facebook', 'Messenger', 'Instagram'].includes(detected.appName ?? '')) {
+      void copyTextFromTap(url).then((result) => {
+         window.dispatchEvent(new CustomEvent(SAFARI_HELP_EVENT, { detail: { url, copied: result.ok } }));
+      });
+      return false;
+   }
+   const target = buildSafariUrl(url, detected);
    if (!target) return false;
    try {
       window.location.href = target;

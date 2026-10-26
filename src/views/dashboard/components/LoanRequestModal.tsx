@@ -6,6 +6,7 @@ import {
    type KeyboardEvent,
    type PointerEvent,
    type RefObject,
+   useCallback,
    useEffect,
    useRef,
    useState
@@ -29,29 +30,39 @@ import {
    Ticket,
    TriangleAlert,
    Users,
+   Volume2,
+   VolumeX,
    WalletCards,
    X
 } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
+import posthog from 'posthog-js';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
+import { FlipFace, useTapFlip } from '@/components/motion/TapDelight';
 import AskSupportButton from '@/components/support/AskSupportButton';
+import { useOptionalLocalization } from '@/i18n/LocalizationProvider';
 import { MoreCharactersLabel } from '@/i18n/SentenceLabels';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import UserAvatar, { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
+import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
 import type { LoanFlow } from '@/hooks/useLoanFlow';
 
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import type { LoanRequestFlowState } from '@/lib/loanRequestDraft';
-import { suggestedReturnRange } from '@/lib/loanPricing';
-import { checkLoanReason, getCachedReasonVerdict, type ReasonCategory } from '@/lib/loanReasonCheck';
+import { minimumRepayment, suggestedReturnRange } from '@/lib/loanPricing';
+import { checkLoanReason, getCachedReasonVerdict, type ReasonAttempt, type ReasonCategory, type ReasonCheckLocale } from '@/lib/loanReasonCheck';
+import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
+import { getPushPermission, hasActivePushSubscription, isPushConfigured, isPushSupported } from '@/lib/push/webPushClient';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
-import { requestContactSteps } from '@/config/contactVerification';
+import { useUsdcRate } from '@/lib/useUsdcRate';
+import { playDing, playSuccess, setSoundsEnabled, useSoundsEnabled } from '@/lib/uiSounds';
+import { onlyEmailReaches, type ReminderReach, requestContactSteps } from '@/config/contactVerification';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getVerificationUiState, VERIFICATION_STATE_CTA } from '@/lib/verificationUiState';
 import { fetchUser, updateBorrowerContext, updateUser } from '@/store/slices/authSlice';
@@ -59,7 +70,7 @@ import type { AppDispatch } from '@/store/store';
 import { type User } from '@/types/authTypes';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
 import ConnectStep, { LoanAccessPendingCard } from '@/views/dashboard/components/ConnectStep';
-import { CONNECT_HIPPOS, ConnectHero } from '@/views/dashboard/components/connectKit';
+import { CONNECT_HIPPOS, ConnectHero, stepAnimationClass, useStepDirection } from '@/views/dashboard/components/connectKit';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
 import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
 
@@ -104,6 +115,17 @@ interface LoanRequestModalProps {
     * resumable draft. Should be a stable callback so it doesn't re-fire on every parent render.
     */
    onFlowStateChange?: (state: LoanRequestResume) => void;
+   /**
+    * Called right before "Verify ID & send request" leaves for the ID check, so the parent can save
+    * the terms and send them once the borrower comes back verified.
+    */
+   onVerifyToSend?: () => void;
+   /** Back from the ID check, verified, with saved terms: send the request without another tap. */
+   autoSubmit?: boolean;
+   /** Fired once when the auto-submit is triggered, so the parent can stop asking for it. */
+   onAutoSubmitStarted?: () => void;
+   /** A tap on the dimmed backdrop itself (not the form, its popups, toasts or other dialogs). */
+   onBackdropPress?: () => void;
 }
 
 // Everything the modal owns that a resume needs: which screen the borrower is on, the referral they
@@ -418,7 +440,64 @@ const UsdcIcon = () => (
    </svg>
 );
 
-function BorrowerContextLoanStep({
+// Words a sentence doesn't end on. The reason check used to fire 0.9s after the 40th character, so
+// "I am building a good credit history and I" came back "vague — what is the money for?" while the
+// borrower was still typing it (most "vague" verdicts in Oct 2026 were cut off like that).
+const DANGLING_WORDS = new Set([
+   'a', 'an', 'the', 'and', 'or', 'but', 'so', 'for', 'to', 'of', 'in', 'on', 'at', 'by', 'from', 'with', 'as',
+   'because', 'that', 'which', 'my', 'our', 'your', 'his', 'her', 'their', 'i', 'im', "i'm", 'is', 'am', 'are',
+   'was', 'will', 'have', 'has', 'need', 'buy', 'pay', 'use', 'some'
+]);
+
+const looksUnfinished = (text: string) => {
+   const trimmed = text.trim();
+   if (/[.!?…)"']$/.test(trimmed)) return false;
+   const lastWord = trimmed.split(/\s+/).pop()?.toLowerCase().replace(/[^a-z']/g, '') ?? '';
+   return DANGLING_WORDS.has(lastWord);
+};
+
+/** Which loan-form rule stopped a submit, so PostHog shows what trips borrowers (8 of 16 needed 3+ taps). */
+const trackLoanFormRule = (event: string, properties: Record<string, unknown>) => {
+   if (!import.meta.env.PROD) return;
+   posthog.capture(event, properties);
+};
+
+/**
+ * The USDC chip on the amount field. 5 people tapped it expecting something; now it flips in place
+ * to the amount in pesos (or "1 USDC = $1" outside the Philippines) and flips back after 3s.
+ */
+function UsdcAmountChip({ amount }: { amount: string }) {
+   const { flipped, flip } = useTapFlip(3000);
+   const phpRate = useUsdcRate('php');
+   const [inPhilippines] = useState(() => isLikelyPhilippines());
+   const value = Number(amount);
+   const pesos = Math.round((Number.isFinite(value) && value > 0 ? value : 1) * phpRate.value).toLocaleString();
+   const back = inPhilippines ? (Number.isFinite(value) && value > 0 ? `≈ ₱${pesos}` : `$1 ≈ ₱${pesos}`) : '1 USDC = $1';
+
+   return (
+      <button
+         type="button"
+         onClick={flip}
+         aria-label={flipped ? back : 'USDC'}
+         className="flex min-w-[112px] items-center justify-center self-stretch border-r border-md-neutral-600 bg-[#2775ca] px-md-3 py-md-2 text-md-b1 font-normal text-md-neutral-100 [perspective:400px] active:brightness-95"
+      >
+         <FlipFace
+            flipped={flipped}
+            front={
+               <span className="flex items-center gap-md-1">
+                  <UsdcIcon />
+                  USDC
+               </span>
+            }
+            back={<span className="whitespace-nowrap font-semibold">{back}</span>}
+         />
+      </button>
+   );
+}
+
+const PRAISE_WORDS = ['Nice!', 'Great pick!', 'Awesome!', "You're on a roll!", 'Looking good!'];
+
+export function BorrowerContextLoanStep({
    page,
    context,
    currentAvatarBackground,
@@ -472,14 +551,110 @@ function BorrowerContextLoanStep({
    profileSaveError: string;
 }) {
    const [hasOtherIncome, setHasOtherIncome] = useState<boolean>(Boolean(context.otherIncome));
-   // Page 1 needs the "how do you work?" choice; page 2 needs payday + at least one help reason.
+   // Page 1 needs the "how do you work?" choice; page 2 needs payday, income, expenses + at least one help reason.
    const page1Complete = Boolean(context.incomeSetup);
-   const page2Complete = Boolean(context.paydayWindow && monthlyIncome && monthlyExpenses && context.cashGaps.length > 0);
    const isBusy = isSubmitting || isSavingProfile;
+   const rootRef = useRef<HTMLDivElement | null>(null);
+   const pageDirection = useStepDirection(page);
+   // The unanswered questions on this page, in screen order (data-bio-field marks each section).
+   const missing = (
+      page === 1
+         ? [!page1Complete ? { field: 'incomeSetup', label: 'how you describe your work' } : null]
+         : [
+              !context.paydayWindow ? { field: 'paydayWindow', label: 'when you get paid' } : null,
+              !monthlyIncome ? { field: 'monthlyIncome', label: 'your monthly income' } : null,
+              !monthlyExpenses ? { field: 'monthlyExpenses', label: 'your monthly expenses' } : null,
+              context.cashGaps.length === 0 ? { field: 'cashGaps', label: 'what you need help with' } : null
+           ]
+   ).filter((item): item is { field: string; label: string } => item !== null);
+   const requiredCount = page === 1 ? 1 : 4;
+   const answeredCount = requiredCount - missing.length;
+   const progress = answeredCount / requiredCount;
+   const hippoPose = progress >= 1 ? 'finish' : missing.length === 1 && answeredCount > 0 ? 'sprint' : 'jog';
+   // Duolingo-style reward for each answer: a word of praise in the footer for a moment, a tiny
+   // buzz (Android), and a glow on the progress bar. Only when the count goes UP.
+   const [lastAnswered, setLastAnswered] = useState({ page, count: answeredCount });
+   const [praise, setPraise] = useState<{ id: number; word: string; done: boolean } | null>(null);
+   if (lastAnswered.page !== page || lastAnswered.count !== answeredCount) {
+      const wentUp = lastAnswered.page === page && answeredCount > lastAnswered.count;
+      setLastAnswered({ page, count: answeredCount });
+      setPraise(
+         wentUp ? { id: Date.now(), word: PRAISE_WORDS[answeredCount % PRAISE_WORDS.length], done: answeredCount === requiredCount } : null
+      );
+   }
+   // Answer chimes (off until they tap the speaker): a ding per answer, a little fanfare when done.
+   const soundOn = useSoundsEnabled();
+   const toggleSound = () => {
+      setSoundsEnabled(!soundOn);
+      if (!soundOn) playDing(true);
+   };
+   useEffect(() => {
+      if (!praise) return undefined;
+      try {
+         navigator.vibrate?.(12);
+      } catch {
+         // ignore
+      }
+      if (praise.done) playSuccess();
+      else playDing();
+      const timer = window.setTimeout(() => setPraise(null), 1800);
+      return () => window.clearTimeout(timer);
+   }, [praise]);
+   // Continue stays tappable: a tap with something unanswered marks those questions in red and
+   // scrolls to the first, instead of a disabled button that silently does nothing (Oct 2026 replay).
+   const [showMissing, setShowMissing] = useState(false);
+   const isMissing = (field: string) => showMissing && missing.some((item) => item.field === field);
+
+   // A new page starts at its top, not wherever the last one was scrolled to.
+   const isFirstPageRenderRef = useRef(true);
+   useEffect(() => {
+      if (isFirstPageRenderRef.current) {
+         isFirstPageRenderRef.current = false;
+         return;
+      }
+      setShowMissing(false);
+      rootRef.current?.scrollIntoView({ block: 'start' });
+   }, [page]);
+
+   const primaryRef = useRef<HTMLButtonElement | null>(null);
+   // Restart the shake on every tap (removing and re-adding the class replays the animation).
+   const shake = (el: Element | null | undefined) => {
+      if (!el) return;
+      el.classList.remove('connect-shake');
+      void (el as HTMLElement).offsetWidth;
+      el.classList.add('connect-shake');
+   };
+
+   const handlePrimary = () => {
+      if (isBusy) return;
+      if (missing.length > 0) {
+         setShowMissing(true);
+         // "Not yet": the button shakes and the phone buzzes (Android — iPhone browsers can't vibrate),
+         // then we scroll to the first unanswered question and shake it once it's in view.
+         shake(primaryRef.current);
+         try {
+            navigator.vibrate?.([40, 40, 40]);
+         } catch {
+            // Vibration blocked — the shake is enough.
+         }
+         const firstMissing = rootRef.current?.querySelector(`[data-bio-field="${missing[0].field}"]`);
+         firstMissing?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         window.setTimeout(() => {
+            // Some browsers skip smooth scrolling (power saving, reduced motion): if it's still hidden
+            // (off screen or under the pinned footer), jump there.
+            const box = firstMissing?.getBoundingClientRect();
+            if (box && (box.top < 0 || box.bottom > window.innerHeight - 150)) firstMissing?.scrollIntoView({ block: 'center' });
+            shake(firstMissing);
+         }, 380);
+         return;
+      }
+      if (page === 1) onNextPage();
+      else onContinue();
+   };
 
    const backButton = (
       <button
-         className="inline-flex min-h-[52px] items-center justify-center gap-md-1 rounded-[16px] border border-[#ded6e8] bg-[#f8f4fc] text-md-b1 font-[590] text-md-heading transition hover:bg-[#f3ecfa] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+         className="inline-flex min-h-[52px] items-center justify-center gap-md-1 rounded-[16px] border-2 border-b-4 border-[#e5ddf0] bg-white text-md-b1 font-bold text-md-heading transition duration-100 hover:bg-[#faf8fd] active:translate-y-[2px] active:border-b-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
          onClick={onBack}
          type="button"
       >
@@ -488,14 +663,112 @@ function BorrowerContextLoanStep({
       </button>
    );
 
+   // Pinned to the bottom of the screen (onboarding) or the sheet (loan form), so Continue is always
+   // in view — on page 2 it used to sit below the fold on phones and borrowers never found it.
+   const footer = (
+      <div className="sticky bottom-0 z-10 -mx-5 -mb-5 mt-auto flex flex-col gap-2 border-t border-[#f0ecf5] bg-white px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+         {/* Where they are, always: "2 of 4 answered" + a bar, then a green "all done". */}
+         <div aria-live="polite" className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between gap-2 text-md-b3 font-bold leading-[18px]">
+               {praise && !showMissing ? (
+                  <span className="connect-praise text-[15px] text-[#1f7a3d]" key={praise.id}>
+                     {praise.word}{' '}
+                     {missing.length > 0 ? `${missing.length} to go.` : `All done ✓ Tap ${page === 1 ? 'Continue' : submitLabel}.`}
+                  </span>
+               ) : missing.length > 0 ? (
+                  <span className={showMissing ? 'text-md-red-500' : 'text-md-primary-1200'}>
+                     Still needed: {missing.map((item) => item.label).join(', ')}.
+                  </span>
+               ) : (
+                  <span className="text-[#1f7a3d]">All done ✓ Tap {page === 1 ? 'Continue' : submitLabel}.</span>
+               )}
+               <span className="flex shrink-0 items-center gap-1.5 text-[#8a7c9c]">
+                  {answeredCount} of {requiredCount}
+                  <button
+                     aria-label={soundOn ? 'Turn sounds off' : 'Turn sounds on'}
+                     aria-pressed={soundOn}
+                     className="grid size-7 place-items-center rounded-full text-[#8a7c9c] transition hover:bg-[#f3ecff] hover:text-[#6b55f7]"
+                     onClick={toggleSound}
+                     type="button"
+                  >
+                     {soundOn ? <Volume2 className="size-4" strokeWidth={2.4} /> : <VolumeX className="size-4" strokeWidth={2.4} />}
+                  </button>
+               </span>
+            </div>
+            {/* The race: the hippo runs along the bar toward the finish flag as answers come in —
+                jogging, sprinting on the last one, jumping when it reaches the flag. */}
+            <div className="relative h-[46px]">
+               <div className="absolute inset-x-0 bottom-0 h-2.5 overflow-hidden rounded-full bg-[#ede8f3]">
+                  <div
+                     className={`h-full rounded-full bg-[#22a35a] transition-[width] duration-500 ease-out ${praise ? 'connect-bar-glow' : ''}`}
+                     key={praise?.id ?? 'bar'}
+                     style={{ width: `${progress * 100}%` }}
+                  />
+               </div>
+               <img
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute bottom-[6px] right-0 h-8 w-auto select-none"
+                  draggable={false}
+                  src="/hippos/progress/finish-flag.png"
+               />
+               <div className="absolute bottom-[6px] left-0 right-[24px] top-0">
+                  <img
+                     alt=""
+                     aria-hidden="true"
+                     className={`absolute bottom-0 h-10 w-auto select-none transition-[left,transform] duration-500 ease-out ${
+                        progress >= 1 ? (praise ? 'connect-hippo-jump' : '') : praise ? 'connect-hippo-run' : ''
+                     }`}
+                     draggable={false}
+                     src={`/hippos/progress/hippo-${hippoPose}.png`}
+                     style={{ left: `${progress * 100}%`, transform: `translateX(-${progress * 100}%)` }}
+                  />
+               </div>
+            </div>
+         </div>
+         <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-3">
+            {backButton}
+            <button
+               ref={primaryRef}
+               aria-disabled={missing.length > 0}
+               className={`inline-flex min-h-[52px] items-center justify-center gap-md-1 rounded-[16px] px-md-4 py-md-3 text-md-b1 font-bold transition duration-100 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 ${
+                  missing.length > 0
+                     ? 'bg-[#e8e3ef] text-[#a99fb6] shadow-[0_4px_0_#d6cfe0]'
+                     : 'bg-[#6b55f7] text-white shadow-[0_4px_0_#4a35c9] hover:brightness-110 active:translate-y-[4px] active:shadow-none'
+               }`}
+               disabled={isBusy}
+               onClick={handlePrimary}
+               type="button"
+            >
+               {page === 1 ? (
+                  isBusy ? (
+                     'Checking…'
+                  ) : (
+                     <>
+                        Continue
+                        <ChevronRight className="size-5" strokeWidth={2} />
+                     </>
+                  )
+               ) : isSavingProfile ? (
+                  'Saving profile...'
+               ) : isSubmitting ? (
+                  'Submitting...'
+               ) : (
+                  submitLabel
+               )}
+            </button>
+         </div>
+      </div>
+   );
+
    if (page === 1) {
       return (
-         <div className="flex min-h-0 flex-col gap-5">
+         <div key="bio-1" ref={rootRef} className={`connect-ui flex min-h-0 flex-col gap-5 ${stepAnimationClass(pageDirection)}`}>
             <section className="rounded-[20px] border border-[#e7d8ff] bg-[#f8f4fc] p-4">
                <div className="mb-3">
                   <p className="text-[12px] font-[590] leading-[18px] text-[#5d16c9]">Public borrower profile</p>
                   <p className="mt-0.5 text-[13px] font-normal leading-5 text-[#695b7b]">
-                     This is the identity lenders see beside your request.
+                     This is the identity moo-lenders see beside your request.
                   </p>
                </div>
                <button
@@ -519,7 +792,7 @@ function BorrowerContextLoanStep({
 
                <label className="mt-4 flex flex-col gap-2">
                   <span className="flex items-center justify-between gap-md-2">
-                     <span className="text-[15px] font-[590] leading-5 text-[#26143f]">Name shown to lenders</span>
+                     <span className="text-[15px] font-[590] leading-5 text-[#26143f]">Name shown to moo-lenders</span>
                      <TrustBadge label="+10" earned={Boolean(profileName.trim())} />
                   </span>
                   <input
@@ -541,7 +814,10 @@ function BorrowerContextLoanStep({
             </section>
 
             <BorrowerContextRadioSection
+               answered={Boolean(context.incomeSetup)}
+               fieldId="incomeSetup"
                label="How would you describe your work?"
+               missing={isMissing('incomeSetup')}
                onSelect={onIncomeSelect}
                options={incomeSetupOptions}
                selectedValue={context.incomeSetup}
@@ -550,7 +826,7 @@ function BorrowerContextLoanStep({
             {context.incomeSetup === 'contract' ? (
                <div className="flex flex-col gap-1.5">
                   <p className="text-md-b2 font-[590] text-md-heading">Describe your situation</p>
-                  <p className="text-md-b3 text-md-neutral-700">Tell lenders how you earn, in your own words.</p>
+                  <p className="text-md-b3 text-md-neutral-700">Tell moo-lenders how you earn, in your own words.</p>
                   <textarea
                      autoFocus
                      className="w-full resize-none rounded-md-input border border-md-neutral-600 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 shadow-md-card focus:border-md-primary-900 focus:outline-none focus:ring-2 focus:ring-md-primary-100"
@@ -580,53 +856,41 @@ function BorrowerContextLoanStep({
                />
             </div>
 
-            {!page1Complete ? (
-               <p className="text-md-b3 font-medium leading-[18px] text-md-primary-1200">Still needed: how you describe your work.</p>
-            ) : null}
-
-            <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-3">
-               {backButton}
-               <button
-                  className="inline-flex min-h-[52px] items-center justify-center gap-md-1 rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-[590] text-md-neutral-100 transition hover:bg-[#5200c8] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-md-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-                  disabled={!page1Complete || isBusy}
-                  onClick={onNextPage}
-                  type="button"
-               >
-                  {isBusy ? (
-                     'Checking…'
-                  ) : (
-                     <>
-                        Continue
-                        <ChevronRight className="size-5" strokeWidth={2} />
-                     </>
-                  )}
-               </button>
-            </div>
+            {footer}
          </div>
       );
    }
 
    return (
-      <div className="flex min-h-0 flex-col gap-5">
+      <div key="bio-2" ref={rootRef} className={`connect-ui flex min-h-0 flex-col gap-5 ${stepAnimationClass(pageDirection)}`}>
          <BorrowerContextChipSection
-            helper="Helps lenders see that repayment timing makes sense."
+            answered={Boolean(context.paydayWindow)}
+            fieldId="paydayWindow"
+            helper="Helps moo-lenders see that repayment timing makes sense."
             label="When do you usually get paid?"
+            missing={isMissing('paydayWindow')}
             onSelect={onPaydaySelect}
             options={paydayWindowOptions}
             selectedValues={[context.paydayWindow]}
          />
 
          <BorrowerContextChipSection
+            answered={Boolean(monthlyIncome)}
+            fieldId="monthlyIncome"
             label="What is your approximate monthly income?"
-            helper="Helps lenders gauge repayment capacity."
+            helper="Helps moo-lenders gauge repayment capacity."
+            missing={isMissing('monthlyIncome')}
             onSelect={onMonthlyIncomeSelect}
             options={monthlyIncomeOptions}
             selectedValues={[monthlyIncome]}
          />
 
          <BorrowerContextChipSection
+            answered={Boolean(monthlyExpenses)}
+            fieldId="monthlyExpenses"
             label="What do your recurring expenses cost per month?"
-            helper="Helps lenders understand your financial commitments."
+            helper="Helps moo-lenders understand your financial commitments."
+            missing={isMissing('monthlyExpenses')}
             onSelect={onMonthlyExpensesSelect}
             options={monthlyExpensesOptions}
             selectedValues={[monthlyExpenses]}
@@ -676,39 +940,17 @@ function BorrowerContextLoanStep({
 
          <BorrowerContextChipSection
             caption="Pick all that apply."
+            answered={context.cashGaps.length > 0}
+            fieldId="cashGaps"
             label="What do you usually need short-term help with?"
+            missing={isMissing('cashGaps')}
             multi
             onSelect={onCashGapToggle}
             options={cashGapOptions}
             selectedValues={context.cashGaps}
          />
 
-         {!page2Complete ? (
-            <p className="text-md-b3 font-medium leading-[18px] text-md-primary-1200">
-               Still needed:{' '}
-               {[
-                  !context.paydayWindow ? 'when you get paid' : null,
-                  !monthlyIncome ? 'your monthly income' : null,
-                  !monthlyExpenses ? 'your monthly expenses' : null,
-                  context.cashGaps.length === 0 ? 'what you need help with' : null
-               ]
-                  .filter(Boolean)
-                  .join(', ')}
-               .
-            </p>
-         ) : null}
-
-         <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-3">
-            {backButton}
-            <button
-               className="inline-flex min-h-[52px] items-center justify-center gap-md-1 rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-[590] text-md-neutral-100 transition hover:bg-[#5200c8] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-md-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-               disabled={!page2Complete || isBusy}
-               onClick={onContinue}
-               type="button"
-            >
-               {isSavingProfile ? 'Saving profile...' : isSubmitting ? 'Submitting...' : submitLabel}
-            </button>
-         </div>
+         {footer}
       </div>
    );
 }
@@ -826,20 +1068,45 @@ function StepDots({ steps, current }: { steps: RequestStepKey[]; current: number
    );
 }
 
+// Green check that pops in beside a bio question once it's answered — instant "that one's done".
+function AnsweredCheck() {
+   return (
+      <span
+         aria-label="Answered"
+         className="connect-celebrate-pop grid size-6 shrink-0 place-items-center rounded-full bg-[#22a35a] text-white shadow-[0_2px_0_#1a7f45]"
+         role="img"
+      >
+         <Check aria-hidden="true" className="size-4" strokeWidth={3} />
+      </span>
+   );
+}
+
 export function BorrowerContextRadioSection({
+   answered = false,
+   fieldId,
    label,
+   missing = false,
    onSelect,
    options,
    selectedValue
 }: {
+   // The bio shows a green check beside the question once it's answered.
+   answered?: boolean;
+   // data-bio-field, so the bio's Continue can scroll to it when it's unanswered.
+   fieldId?: string;
    label: string;
+   missing?: boolean;
    onSelect: (value: string) => void;
    options: BorrowerContextOption[];
    selectedValue: string;
 }) {
    return (
-      <fieldset className="flex flex-col gap-3">
-         <legend className="text-[15px] font-[590] leading-5 text-md-heading">{label}</legend>
+      <fieldset className="flex scroll-mt-24 flex-col gap-3" data-bio-field={fieldId}>
+         <legend className="flex w-full items-center justify-between gap-2">
+            <span className={`text-[15px] font-[590] leading-5 ${missing ? 'text-md-red-500' : 'text-md-heading'}`}>{label}</span>
+            {answered ? <AnsweredCheck /> : null}
+         </legend>
+         {missing ? <span className="-mt-1 text-[12px] font-[590] leading-[18px] text-md-red-500">Choose one to continue.</span> : null}
          <div className="grid grid-cols-1 gap-2">
             {options.map((option) => (
                <BorrowerContextRadioCard
@@ -866,10 +1133,10 @@ function BorrowerContextRadioCard({
    return (
       <button
          aria-pressed={isSelected}
-         className={`grid min-h-[64px] w-full grid-cols-[minmax(0,1fr)_22px] items-center gap-3 rounded-[16px] border px-4 py-3 text-left transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
+         className={`grid min-h-[64px] w-full grid-cols-[minmax(0,1fr)_22px] items-center gap-3 rounded-[16px] border-2 border-b-4 px-4 py-3 text-left transition duration-100 active:translate-y-[2px] active:border-b-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
             isSelected
-               ? 'border-md-primary-900 bg-[#f3e8ff] text-md-primary-1200 shadow-[0_6px_16px_rgba(96,16,210,0.08)]'
-               : 'border-[#ded6e8] bg-white text-md-neutral-1200 hover:border-[#cbbce0]'
+               ? 'connect-pick border-md-primary-900 border-b-[#4a35c9] bg-[#f3e8ff] text-md-primary-1200'
+               : 'border-[#e5ddf0] bg-white text-md-neutral-1200 hover:bg-[#faf8fd]'
          }`}
          onClick={onClick}
          type="button"
@@ -894,27 +1161,43 @@ function BorrowerContextRadioCard({
 }
 
 export function BorrowerContextChipSection({
+   answered = false,
    caption,
+   fieldId,
    helper,
    label,
+   missing = false,
    multi = false,
    onSelect,
    options,
    selectedValues
 }: {
+   // The bio shows a green check beside the question once it's answered.
+   answered?: boolean;
    caption?: string;
+   // data-bio-field, so the bio's Continue can scroll to it when it's unanswered.
+   fieldId?: string;
    helper?: string;
    label: string;
+   missing?: boolean;
    multi?: boolean;
    onSelect: (value: string) => void;
    options: BorrowerContextOption[];
    selectedValues: string[];
 }) {
    return (
-      <fieldset className="flex flex-col gap-3 border-t border-[#e7e0ec] pt-4">
+      <fieldset className="flex scroll-mt-24 flex-col gap-3 border-t border-[#e7e0ec] pt-4" data-bio-field={fieldId}>
          <legend className="sr-only">{label}</legend>
          <div className="flex flex-col gap-0.5">
-            <span className="text-[15px] font-[590] leading-5 text-md-heading">{label}</span>
+            <span className="flex items-center justify-between gap-2">
+               <span className={`text-[15px] font-[590] leading-5 ${missing ? 'text-md-red-500' : 'text-md-heading'}`}>{label}</span>
+               {answered ? <AnsweredCheck /> : null}
+            </span>
+            {missing ? (
+               <span className="text-[12px] font-[590] leading-[18px] text-md-red-500">
+                  {multi ? 'Pick at least one to continue.' : 'Choose one to continue.'}
+               </span>
+            ) : null}
             {caption ? <span className="text-[12px] font-normal leading-[18px] text-md-neutral-1200">{caption}</span> : null}
             {helper ? <span className="text-[12px] font-normal leading-[18px] text-md-neutral-1200">{helper}</span> : null}
          </div>
@@ -947,10 +1230,10 @@ function BorrowerContextChoiceChip({
    return (
       <button
          aria-pressed={isSelected}
-         className={`inline-flex min-h-[38px] items-center justify-center gap-[6px] rounded-md-pill border px-3 py-2 text-[13px] font-[590] leading-[18px] transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
+         className={`inline-flex min-h-[42px] items-center justify-center gap-[6px] rounded-[14px] border-2 border-b-4 px-3 py-2 text-[14px] font-bold leading-[18px] transition duration-100 active:translate-y-[2px] active:border-b-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
             isSelected
-               ? 'border-md-primary-900 bg-[#f3e8ff] text-md-primary-1200 shadow-[0_4px_10px_rgba(96,16,210,0.08)]'
-               : 'border-[#d8d0e2] bg-white text-md-neutral-1400 hover:border-[#bfaed5]'
+               ? 'connect-pick border-md-primary-900 border-b-[#4a35c9] bg-[#f3e8ff] text-md-primary-1200'
+               : 'border-[#e5ddf0] bg-white text-md-neutral-1400 hover:bg-[#faf8fd]'
          }`}
          onClick={onClick}
          type="button"
@@ -989,12 +1272,35 @@ export default function LoanRequestModal({
    startOnReferralStep = true,
    loanFlow = 'open',
    resume = null,
-   onFlowStateChange
+   onFlowStateChange,
+   onVerifyToSend,
+   autoSubmit = false,
+   onAutoSubmitStarted,
+   onBackdropPress
 }: LoanRequestModalProps) {
    const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
    const { showToast } = useToast();
-   const { open: openVerify, modal: verifyModal } = useVerifyYourself();
+   // After the ID check, come back to this form (the draft keeps what they typed — loanRequestDraft).
+   const { open: openVerify, modal: verifyModal } = useVerifyYourself('loan-request');
+   // "Verify ID & send request": save what they typed first — the ID check leaves this page.
+   const verifyToSend = () => {
+      onVerifyToSend?.();
+      openVerify();
+   };
+   // "Continue verification" / "Try again" / "View status": keep what they typed (including edits
+   // since the first tap) for when they come back verified.
+   const goToVerifyStatus = () => {
+      onVerifyToSend?.();
+      navigate('/verify');
+   };
+   // Where they are on the way to their first loan (wallet → Messenger → bio → call → ✅, then apply
+   // with the ID check as the last step of sending) and what their next button does.
+   const journey = useVerificationJourney(openVerify, user);
+   // Still onboarding: the form is shown locked. Through onboarding but not ID-verified: the form is
+   // open and "Make your request" leads into the ID check.
+   const formLocked = !isPending && journey.onboarding;
+   const verifyAtSubmit = !isPending && !journey.onboarding && journey.stage === 'apply';
    const formRef = useRef<HTMLFormElement | null>(null);
    const dateInputRef = useRef<HTMLInputElement | null>(null);
    const reasonTextareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -1035,6 +1341,44 @@ export default function LoanRequestModal({
          cancelled = true;
       };
    }, [user.id]);
+   // No working push, no Messenger link and no WhatsApp → only email reaches them, so the contacts step
+   // comes back with reminders required (George, 2026-10-18). Unknown (RPC failed) → today's flow.
+   // Only for those who already confirmed a line: anyone else connects Facebook in the step, and that
+   // gives Messenger, so they're reachable (2026-10-18: 7 past borrowers, all without Facebook yet).
+   const [onlyEmail, setOnlyEmail] = useState(false);
+   // Notifications can work in this browser (e.g. they came back in Chrome) but aren't on for this
+   // device: require them here too, whatever else reaches them (George, 2026-10-19). Blocked ones aren't
+   // asked again (the step makes them optional), and Facebook's browser / iPhone Safari can't show them.
+   const [pushOffHere, setPushOffHere] = useState(false);
+   useEffect(() => {
+      if (!isPushSupported() || !isPushConfigured() || getPushPermission() === 'denied') return undefined;
+      let cancelled = false;
+      hasActivePushSubscription()
+         .then((on) => {
+            if (!cancelled) setPushOffHere(!on);
+         })
+         .catch(() => undefined);
+      return () => {
+         cancelled = true;
+      };
+   }, [user.id]);
+   const needsReminders = (onlyEmail || pushOffHere) && Boolean(user.hasVerifiedContact);
+   useEffect(() => {
+      let cancelled = false;
+      (async () => {
+         try {
+            const { data, error } = await getSupabaseBrowserClient().rpc('get_my_reminder_reach');
+            const reach = (Array.isArray(data) ? data[0] : data) as ReminderReach | null;
+            if (cancelled || error) return;
+            setOnlyEmail(onlyEmailReaches(reach));
+         } catch {
+            // Can't tell: leave the step as it was.
+         }
+      })();
+      return () => {
+         cancelled = true;
+      };
+   }, [user.id]);
    const [contactsStepDone, setContactsStepDone] = useState(false);
    // Open flow only: the no-referral video call, booked (not attended) before the request posts.
    const [showVideoCallStep, setShowVideoCallStep] = useState(false);
@@ -1055,18 +1399,54 @@ export default function LoanRequestModal({
    const [isSavingBorrowerAvatar, setIsSavingBorrowerAvatar] = useState(false);
    // Momentary — drives the shake when an unverified borrower taps "Make Your Request".
    const [verifyNudge, setVerifyNudge] = useState(false);
+   // Not verified: the form is shown greyed out and locked. A tap on it answers with the card that
+   // says why and what's next, instead of letting them fill in a request they can't send.
+   // 10%-a-month check on the repayment (a suggestion, not a rule): "borrow $15, repay $16 in three
+   // months" never gets funded. On send, a too-low offer opens a popup with a one-tap fix; "Keep mine"
+   // goes ahead. Remembered per amount/repayment/date, so it asks once.
+   const [returnNudge, setReturnNudge] = useState<{ amount: number; months: number; key: string } | null>(null);
+   const returnAckRef = useRef('');
+   const lowRepaymentCheck = () => {
+      const min = minimumRepayment(Number(loanAmount), days);
+      const repay = Number(totalRepaymentAmount);
+      if (!min || !Number.isFinite(repay) || repay >= min.amount) return null;
+      const key = `${loanAmount}|${totalRepaymentAmount}|${days}`;
+      return returnAckRef.current === key ? null : { ...min, key };
+   };
+   const nudgeLockedForm = () => {
+      setVerifyNudge(true);
+      window.setTimeout(() => setVerifyNudge(false), 1200);
+      document.getElementById('loan-verify-top')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+   };
    // Live verdict from the DeepSeek effort check on the reason field. 'idle' = nothing worth
    // checking yet, 'checking' = call in flight, 'weak' = it came back with a hint,
    // 'unavailable' = the check couldn't run, so we stay silent rather than praise unchecked text.
    // `suggestion` is a ready-to-post English rewrite built from their text (the translation when
    // it wasn't in English); `category` says why it was flagged, or 'tip' for a pass with advice.
+   const reasonLocale = (useOptionalLocalization()?.locale ?? 'en') as ReasonCheckLocale;
    const [liveReasonCheck, setLiveReasonCheck] = useState<{
-      status: 'idle' | 'checking' | 'ok' | 'weak' | 'unavailable';
+      // 'pending' = waiting for typing to settle before asking; nothing judged yet.
+      // 'reviewing' = the second opinion is thinking it over (see isStuck).
+      status: 'idle' | 'pending' | 'checking' | 'reviewing' | 'ok' | 'weak' | 'unavailable';
       hint: string;
       suggestion: string;
       category: ReasonCategory | '';
+      escalated?: boolean;
    }>({ status: 'idle', hint: '', suggestion: '', category: '' });
    const liveChecksUsedRef = useRef(0);
+   // Second opinion. Once a borrower is stuck — two different reasons flagged, or stopped on submit by
+   // the reason twice — the check goes to the slower reasoning reviewer with their earlier attempts. It
+   // lets a reason through that really is fine, or explains exactly what's still missing.
+   const flaggedAttemptsRef = useRef<ReasonAttempt[]>([]);
+   const blockedReasonSubmitsRef = useRef(0);
+   const currentReasonRef = useRef('');
+   const noteFlagged = useCallback((text: string, hint: string) => {
+      const trimmed = text.trim();
+      if (!trimmed || flaggedAttemptsRef.current.some((a) => a.text === trimmed)) return;
+      flaggedAttemptsRef.current = [...flaggedAttemptsRef.current, { text: trimmed, hint }].slice(-5);
+   }, []);
+   const isStuck = useCallback(() => flaggedAttemptsRef.current.length >= 2 || blockedReasonSubmitsRef.current >= 2, []);
+   const historyExcluding = useCallback((text: string) => flaggedAttemptsRef.current.filter((a) => a.text !== text.trim()), []);
 
    const isVerified = !showVerify;
    const verifyUiState = getVerificationUiState(user);
@@ -1077,7 +1457,9 @@ export default function LoanRequestModal({
            ? 'Verification not finished'
            : verifyUiState === 'declined'
              ? "Verification didn't pass"
-             : 'Verification in progress';
+             : verifyUiState === 'duplicate'
+               ? 'This ID is on another account'
+               : 'Verification in progress';
    const verifyPendingBody =
       verifyUiState === 'review'
          ? 'A human reviewer is double-checking your documents — this can take up to 1 business day.'
@@ -1085,8 +1467,20 @@ export default function LoanRequestModal({
            ? 'You left before finishing all the steps. Tap below to continue or start over.'
            : verifyUiState === 'declined'
              ? "We couldn't verify your identity. Tap below to try again or contact us."
-             : "Your documents are being reviewed. We'll notify you once confirmed.";
+             : verifyUiState === 'duplicate'
+               ? 'Your ID check matched a Moodeng account that already exists. Message us and we’ll help you sort it out.'
+               : "Your documents are being reviewed. We'll notify you once confirmed.";
    const verifyPendingCta = `${VERIFICATION_STATE_CTA[verifyUiState]} →`;
+   // The note by the send button, worded by where the ID check actually is — "still being checked"
+   // was shown to people whose check was declined or never finished, too.
+   const verifyPendingNote =
+      verifyUiState === 'declined'
+         ? "Your ID check didn't pass — try again to send this request. What you typed is kept."
+         : verifyUiState === 'unfinished'
+           ? 'Finish your ID check to send this request. What you typed is kept.'
+           : verifyUiState === 'duplicate'
+             ? 'This ID is already on another Moodeng account — message us to sort it out.'
+             : 'Your verification is still being checked — you can send this request once it clears.';
    const limitAmount = Math.max(availableCreditLimit, 0);
    const selectedDate = days ? days.slice(0, 10) : '';
    const selectedCalendarDate = parseIsoDate(selectedDate);
@@ -1113,7 +1507,9 @@ export default function LoanRequestModal({
          : 'Continue to application';
    const referralPrimaryActionText =
       hasAppliedReferralCode || !hasReferralCode ? referralContinueText : hasReferralCodeError ? 'Try again' : 'Apply code';
-   const shouldShowReferralStep = showReferralStep && isVerified && canUseReferralBoost;
+   // Before the ID check too (verifyAtSubmit): the referral card is where a code gets entered.
+   const canOfferReferral = (isVerified || verifyAtSubmit) && canUseReferralBoost;
+   const shouldShowReferralStep = showReferralStep && canOfferReferral;
    const canContinueBorrowerContext = Boolean(
       borrowerContext.incomeSetup &&
       borrowerContext.paydayWindow &&
@@ -1152,8 +1548,13 @@ export default function LoanRequestModal({
       void dispatch(fetchUser());
       // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [isOpen]);
-   const contactSteps = requestContactSteps({ userId: user.id, isExistingBorrower, hasAppliedReferral: hasReferral });
-   const needsContactsStep = contactSteps.contacts && !user.hasVerifiedContact;
+   const contactSteps = requestContactSteps({
+      userId: user.id,
+      isExistingBorrower,
+      hasAppliedReferral: hasReferral,
+      hasAttendedCall: Boolean(user.attendedCall)
+   });
+   const needsContactsStep = contactSteps.contacts && (!user.hasVerifiedContact || needsReminders);
 
    // The real, path-aware list of steps for THIS borrower — drives the progress rail so the dot
    // count and "Step X of Y" match exactly what they'll go through.
@@ -1204,6 +1605,8 @@ export default function LoanRequestModal({
       }
       if (wasOpenRef.current) return;
       wasOpenRef.current = true;
+      // A popup left up when the form last closed must not greet them on the next open.
+      setReturnNudge(null);
 
       // Resuming after a reload (typically back from the Messenger hop, which reloaded our app in
       // the same tab): drop the borrower exactly where they were instead of resetting to step 1.
@@ -1234,7 +1637,7 @@ export default function LoanRequestModal({
       // A borrower already waiting on the team (gated flows) goes straight to their "reviewing"
       // card — not back through the referral card first.
       const isWaitingOnTeam = loanFlow !== 'open' && user.loanAccessStatus === 'pending';
-      setShowReferralStep(startOnReferralStep && isVerified && canUseReferralBoost && !isWaitingOnTeam);
+      setShowReferralStep(startOnReferralStep && canOfferReferral && !isWaitingOnTeam);
       setShowBorrowerContextStep(startOnBorrowerContextStep);
       setBioPage(1);
       setTermErrors({});
@@ -1249,6 +1652,7 @@ export default function LoanRequestModal({
       setIsApplyingReferralCode(false);
       onReferralApplied?.(null);
    }, [
+      canOfferReferral,
       canUseReferralBoost,
       isOpen,
       isVerified,
@@ -1261,6 +1665,52 @@ export default function LoanRequestModal({
       loanFlow,
       user.loanAccessStatus
    ]);
+
+   // Back from the ID check with the terms they'd already sent off: send them now, through the same
+   // submit path as a tap (so every check — limit, reason, bio, location — still runs and can stop it
+   // on screen). Once per open; waits a frame so the restored terms are on the form first.
+   const autoSubmittedRef = useRef(false);
+   // Always the newest submit handler: the one captured by the effect's render can carry stale
+   // derived state (the typed date is synced from `days` by an effect, one render later).
+   const submitHandlerRef = useRef<((event: FormEvent<HTMLFormElement>) => void) | null>(null);
+   useEffect(() => {
+      if (!isOpen) {
+         autoSubmittedRef.current = false;
+         return;
+      }
+      if (!autoSubmit || !isVerified || autoSubmittedRef.current) return;
+      if (!loanAmount || !totalRepaymentAmount || !reason) return;
+      // Wait until the restored date is on the form, or validation says "Choose when you will repay."
+      if (!isRepaymentDateFilled) return;
+      autoSubmittedRef.current = true;
+      onAutoSubmitStarted?.();
+      // They answered the "a little low" question before the ID check (or weren't asked) — don't
+      // ask again. And call the submit handler directly: requestSubmit() isn't on older iOS Safari.
+      returnAckRef.current = `${loanAmount}|${totalRepaymentAmount}|${days}`;
+      window.requestAnimationFrame(() => submitHandlerRef.current?.({ preventDefault: () => {} } as FormEvent<HTMLFormElement>));
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [autoSubmit, isOpen, isRepaymentDateFilled, isVerified, loanAmount, onAutoSubmitStarted, reason, totalRepaymentAmount]);
+
+   // Before leaving for the ID check, get a real verdict on the reason. The live check may still be
+   // running (or have failed) — then the request went to Didit and the automatic send afterwards
+   // stopped on "Improve your reason". Capped so a slow check never strands them; fails open.
+   const [isCheckingBeforeVerify, setIsCheckingBeforeVerify] = useState(false);
+   const verifyToSendAfterChecks = async () => {
+      if (isCheckingBeforeVerify) return;
+      setIsCheckingBeforeVerify(true);
+      const verdict = await Promise.race([
+         checkLoanReason(reason.trim(), reasonLocale),
+         new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 8000))
+      ]);
+      setIsCheckingBeforeVerify(false);
+      if (verdict?.checked && !verdict.ok) {
+         setLiveReasonCheck({ status: 'weak', hint: verdict.hint, suggestion: verdict.suggestion, category: verdict.category });
+         setTermErrors((prev) => ({ ...prev, reason: verdict.hint || 'Tell moo-lenders what the money will be used for.' }));
+         document.getElementById('reason')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         return;
+      }
+      verifyToSend();
+   };
 
    // Report the live step + bio + referral up so RequestBoard can snapshot a resumable draft. Runs
    // only while open; the parent decides whether the snapshot is far enough along to keep.
@@ -1635,6 +2085,17 @@ export default function LoanRequestModal({
    //   2. check-loan-input (DeepSeek) — the same judge that runs on submit, pulled forward so
    //      the tick means what it says instead of appearing and then being contradicted.
    // Both only withhold the tick; neither blocks. The submit gate stays the enforcement point.
+   // What to put in the empty repayment field: the typical return for this size (and at least the
+   // 10%-a-month minimum once a date is picked), so the first try is one lenders will fund instead
+   // of "$16 back on $15", which opened the low-return popup. Shown as the placeholder only.
+   const suggestedRepayment = (() => {
+      const borrow = Number(loanAmount);
+      if (!loanAmount || !Number.isFinite(borrow) || borrow <= 0) return null;
+      const range = suggestedReturnRange(borrow);
+      const typical = borrow + Math.max(range?.lo ?? 1, 1);
+      const min = minimumRepayment(borrow, days)?.amount ?? 0;
+      return Math.ceil(Math.max(typical, min) * 2) / 2;
+   })();
    const reasonMeetsLength = reason.trim().length >= REASON_MIN_LENGTH;
    const reasonQuality = checkReasonQuality(reason);
    const reasonShapeOk = reasonMeetsLength && reasonQuality.ok;
@@ -1653,13 +2114,15 @@ export default function LoanRequestModal({
          return;
       }
 
-      const cached = getCachedReasonVerdict(trimmed);
-      if (cached) {
+      const cached = getCachedReasonVerdict(trimmed, reasonLocale);
+      // A quick "weak" verdict isn't the last word for a stuck borrower: ask for the second opinion.
+      if (cached && (cached.ok || cached.escalated || !isStuck())) {
          setLiveReasonCheck({
             status: cached.ok ? 'ok' : 'weak',
             hint: cached.hint,
             suggestion: cached.suggestion,
-            category: cached.category
+            category: cached.category,
+            escalated: cached.escalated
          });
          return;
       }
@@ -1672,65 +2135,129 @@ export default function LoanRequestModal({
       }
 
       let cancelled = false;
-      setLiveReasonCheck({ status: 'checking', hint: '', suggestion: '', category: '' });
+      setLiveReasonCheck({ status: 'pending', hint: '', suggestion: '', category: '' });
+      // Give a half-written sentence time to be finished before judging it.
+      const settleMs = looksUnfinished(trimmed) ? 4000 : 1500;
       const timer = window.setTimeout(async () => {
          liveChecksUsedRef.current += 1;
-         const verdict = await checkLoanReason(trimmed);
+         const stuck = isStuck();
+         setLiveReasonCheck({ status: stuck ? 'reviewing' : 'checking', hint: '', suggestion: '', category: '' });
+         const verdict = await checkLoanReason(trimmed, reasonLocale, stuck ? { history: historyExcluding(trimmed) } : undefined);
          if (cancelled) return;
          if (!verdict.checked) {
             setLiveReasonCheck({ status: 'unavailable', hint: '', suggestion: '', category: '' });
             return;
          }
+         if (!verdict.ok) noteFlagged(trimmed, verdict.hint);
+         if (verdict.escalated) {
+            trackLoanFormRule('loan_reason_second_opinion', {
+               passed: verdict.ok,
+               category: verdict.category,
+               attempts: flaggedAttemptsRef.current.length,
+               from: 'typing'
+            });
+         }
          setLiveReasonCheck({
             status: verdict.ok ? 'ok' : 'weak',
             hint: verdict.hint,
             suggestion: verdict.suggestion,
-            category: verdict.category
+            category: verdict.category,
+            escalated: verdict.escalated
          });
-      }, 900);
+      }, settleMs);
 
       return () => {
          cancelled = true;
          window.clearTimeout(timer);
       };
-   }, [reason, reasonShapeOk, reasonMeetsLength, reasonQuality.code]);
+   }, [reason, reasonShapeOk, reasonMeetsLength, reasonQuality.code, reasonLocale, isStuck, historyExcluding, noteFlagged]);
+   currentReasonRef.current = reason.trim();
+
+   // Stopped on submit again by the reason: get the second opinion on this same text right away.
+   const runSecondOpinion = async (text: string) => {
+      setLiveReasonCheck((prev) => ({ ...prev, status: 'reviewing' }));
+      const verdict = await checkLoanReason(text, reasonLocale, { history: historyExcluding(text) });
+      if (currentReasonRef.current !== text) return; // they've edited it since; the live check takes over
+      if (!verdict.checked) {
+         setLiveReasonCheck((prev) => ({ ...prev, status: 'weak' }));
+         return;
+      }
+      trackLoanFormRule('loan_reason_second_opinion', {
+         passed: verdict.ok,
+         category: verdict.category,
+         attempts: flaggedAttemptsRef.current.length,
+         from: 'submit'
+      });
+      setLiveReasonCheck({
+         status: verdict.ok ? 'ok' : 'weak',
+         hint: verdict.hint,
+         suggestion: verdict.suggestion,
+         category: verdict.category,
+         escalated: verdict.escalated
+      });
+      // Passed: clear the red message so the next tap goes through. Still weak: show the clearer hint.
+      setTermErrors((prev) => ({ ...prev, reason: verdict.ok ? undefined : verdict.hint || prev.reason }));
+   };
    const validateTerms = (): boolean => {
       const errors: typeof termErrors = {};
+      const rules: Record<string, string> = {};
 
       const amount = Number(loanAmount);
       if (!loanAmount || Number.isNaN(amount) || amount <= 0) {
          errors.amount = 'Enter how much you want to borrow.';
+         rules.amount = 'missing';
       } else if (amount > limitAmount) {
          errors.amount = `That's above your current limit of $${limitAmount}.`;
+         rules.amount = 'over_limit';
       }
 
       const repayment = Number(totalRepaymentAmount);
       if (!totalRepaymentAmount || Number.isNaN(repayment)) {
          errors.repayment = 'Enter the amount you will repay.';
+         rules.repayment = 'missing';
       } else if (!Number.isNaN(amount) && repayment < amount + 1) {
          errors.repayment = 'Repayment must be at least $1 more than you borrow.';
+         rules.repayment = 'below_borrow_plus_1';
       }
 
       if (!isRepaymentDateFilled) {
          errors.date = 'Choose when you will repay.';
+         rules.date = 'missing';
       }
 
       const trimmedReason = reason.trim();
       if (!trimmedReason) {
-         errors.reason = 'Please add a reason so lenders know what the loan is for.';
+         errors.reason = 'Please add a reason so moo-lenders know what the loan is for.';
+         rules.reason = 'missing';
       } else if (trimmedReason.length < REASON_MIN_LENGTH) {
          errors.reason = `Please add a little more — at least ${REASON_MIN_LENGTH} characters (${trimmedReason.length}/${REASON_MIN_LENGTH}).`;
+         rules.reason = 'too_short';
       } else if (reasonQuality.code === 'not-english') {
-         // Lenders are in the US/EU: a request they can't read can't be funded.
-         errors.reason = 'Please write your reason in English so lenders can read it.';
+         // Lenders are in the US/EU: a request they can't read can't be funded. The AI's hint says it in
+         // the borrower's language when it came back in time.
+         errors.reason =
+            (liveReasonCheck.status === 'weak' && liveReasonCheck.hint) || 'Please write your reason in English so moo-lenders can read it.';
+         rules.reason = 'not_english_offline';
+      } else if (liveReasonCheck.status === 'reviewing') {
+         errors.reason = 'One moment, taking a closer look at your reason.';
+         rules.reason = 'reviewing';
       } else if (liveReasonCheck.status === 'weak') {
          // The check that ran while they typed already said this reason doesn't tell lenders what
          // the money is for. Stop here, on the step where they can fix it, not after the bio,
          // contacts and call steps. The hint and a ready rewrite show under the field.
-         errors.reason = liveReasonCheck.hint || 'Tell lenders what the money will be used for.';
+         errors.reason = liveReasonCheck.hint || 'Tell moo-lenders what the money will be used for.';
+         rules.reason = `ai_${liveReasonCheck.category || 'weak'}`;
       }
 
       setTermErrors(errors);
+      if (rules.reason && rules.reason !== 'reviewing' && rules.reason !== 'missing' && rules.reason !== 'too_short') {
+         blockedReasonSubmitsRef.current += 1;
+         noteFlagged(trimmedReason, errors.reason ?? '');
+         if (isStuck() && !liveReasonCheck.escalated) void runSecondOpinion(trimmedReason);
+      }
+      if (Object.keys(rules).length > 0) {
+         trackLoanFormRule('loan_form_validation_error', { ...rules, fields: Object.keys(rules), locale: reasonLocale });
+      }
 
       // Make sure the first problem is actually seen: if the borrower tapped submit from the
       // bottom of the form, scroll the first invalid field into view (the error is inline, not
@@ -1759,6 +2286,19 @@ export default function LoanRequestModal({
       // straight on top of the "Verify Yourself" button we're sending them to.
       if (!isVerified) {
          event.preventDefault();
+         // Through onboarding: the ID check is the last step of sending. Check the terms first so
+         // what comes back after the check is a complete request.
+         if (verifyAtSubmit) {
+            if (!showBorrowerContextStep && !validateTerms()) return;
+            const low = !showBorrowerContextStep ? lowRepaymentCheck() : null;
+            if (low) {
+               trackLoanFormRule('loan_form_low_return_nudge', { amount: Number(loanAmount), repay: Number(totalRepaymentAmount) });
+               setReturnNudge(low);
+               return;
+            }
+            void verifyToSendAfterChecks();
+            return;
+         }
          setVerifyNudge(true);
          window.setTimeout(() => setVerifyNudge(false), 1200);
          document.getElementById('loan-verify-blocker')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1770,6 +2310,16 @@ export default function LoanRequestModal({
       if (!showBorrowerContextStep && !validateTerms()) {
          event.preventDefault();
          return;
+      }
+
+      if (!showBorrowerContextStep) {
+         const low = lowRepaymentCheck();
+         if (low) {
+            event.preventDefault();
+            trackLoanFormRule('loan_form_low_return_nudge', { amount: Number(loanAmount), repay: Number(totalRepaymentAmount) });
+            setReturnNudge(low);
+            return;
+         }
       }
 
       // Borrowers who already saved their bio context (income/payday/etc.) shouldn't be
@@ -1809,6 +2359,7 @@ export default function LoanRequestModal({
       // video-call steps come after it, so by submit time the bio step is no longer on screen.
       handleSubmit(event, showBorrowerContextStep || borrowerContextPromptSeen ? borrowerContext : undefined);
    };
+   submitHandlerRef.current = handleLoanFormSubmit;
 
    // Synchronous guard — prevents double-tap on "Save bio info" from firing twice
    // before isSavingProfile state has a chance to re-render and disable the button.
@@ -1852,7 +2403,7 @@ export default function LoanRequestModal({
          showToast(
             TOAST_TYPES.WARNING,
             'Write this in English',
-            'Lenders reading your profile are in the US and Europe — please describe your situation in English.',
+            'Moo-lenders reading your profile are in the US and Europe — please describe your situation in English.',
             'OK',
             'acknowledge'
          );
@@ -1879,7 +2430,7 @@ export default function LoanRequestModal({
          showToast(
             TOAST_TYPES.WARNING,
             'Add more to your info',
-            hint || 'Some of your info looks too short for lenders to understand — tap again to continue anyway.',
+            hint || 'Some of your info looks too short for moo-lenders to understand — tap again to continue anyway.',
             'OK',
             'acknowledge'
          );
@@ -1995,7 +2546,7 @@ export default function LoanRequestModal({
 
    // Back from the Connect step returns to the referral card when there is one, else closes.
    const handleConnectBack = () => {
-      if (isVerified && canUseReferralBoost) {
+      if (canOfferReferral) {
          setShowReferralStep(true);
          return;
       }
@@ -2115,7 +2666,16 @@ export default function LoanRequestModal({
    };
 
    return (
-      <div className="fixed inset-0 z-[70] flex items-end justify-center overflow-hidden overscroll-contain bg-[#1f1b29]/32 sm:items-center sm:px-5 sm:py-6">
+      <div
+         className="fixed inset-0 z-[70] flex items-end justify-center overflow-hidden overscroll-contain bg-[#1f1b29]/32 sm:items-center sm:px-5 sm:py-6"
+         // Close only on a tap on the dimmed backdrop itself. A document-wide "outside the form"
+         // listener also fired on the form's own popups ("A little low for lenders"), toasts and the
+         // location question — phones send a mousedown on every tap, so their buttons closed the
+         // whole form instead of doing what they say.
+         onMouseDown={(event) => {
+            if (event.target === event.currentTarget) onBackdropPress?.();
+         }}
+      >
          <section
             ref={clickOutsideRef}
             className="relative mx-auto flex max-h-[94dvh] w-full max-w-[440px] flex-col overflow-hidden rounded-t-[28px] border border-[#e7e0ec] bg-[#fdfcfd] shadow-[0_24px_80px_rgba(44,19,82,0.18)] transition-transform duration-150 ease-out sm:max-h-[calc(100dvh-48px)] sm:rounded-[24px]"
@@ -2156,7 +2716,7 @@ export default function LoanRequestModal({
                      </h2>
                   ) : showBorrowerContextStep ? (
                      <div className="min-w-0">
-                        <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">How lenders see you</h2>
+                        <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">How moo-lenders see you</h2>
                         <p className="mt-1 text-[13px] font-normal leading-[18px] text-md-neutral-1200">
                            Add practical context without sharing private details.
                         </p>
@@ -2306,8 +2866,15 @@ export default function LoanRequestModal({
                   onBack={handleContactsStepBack}
                   onContinue={handleContactsStepContinue}
                   isSubmitting={isSubmitting}
+                  requireReminders={needsReminders}
                   intro={
-                     isExistingBorrower ? (
+                     needsReminders ? (
+                        <ConnectHero
+                           image={CONNECT_HIPPOS.hello}
+                           subtitle="Turn on payment reminders so you never miss a due date."
+                           title="One quick thing 💜"
+                        />
+                     ) : isExistingBorrower ? (
                         <ConnectHero
                            image={CONNECT_HIPPOS.hello}
                            subtitle={
@@ -2342,27 +2909,39 @@ export default function LoanRequestModal({
                      <>
                         {showVerify ? (
                            <div
-                              className="flex items-center gap-md-2 overflow-hidden rounded-md-lg border border-md-neutral-400 bg-[#fff6d0] px-md-3 py-md-2"
+                              className={`flex items-center gap-md-2 overflow-hidden rounded-md-lg border border-md-neutral-400 bg-[#fff6d0] px-md-3 py-md-2 ${
+                                 verifyNudge ? 'blocked-tap-attention' : ''
+                              }`}
                               data-tour-target="loan-verification-card"
+                              id="loan-verify-top"
                            >
                               <div className="flex min-w-0 max-w-[220px] flex-1 flex-col gap-md-1">
                                  <div className="flex flex-col gap-md-0">
-                                    <p className="whitespace-nowrap text-md-b2 font-medium text-md-primary-2000">
-                                       {isPending ? verifyPendingTitle : 'One quick step to request a loan'}
+                                    {formLocked && journey.step ? (
+                                       <p className="text-md-b3 font-semibold uppercase tracking-wide text-[#92400e]">
+                                          {`Finish setting up · Step ${journey.step} of 3`}
+                                       </p>
+                                    ) : null}
+                                    <p className="text-md-b2 font-medium text-md-primary-2000">
+                                       {isPending ? verifyPendingTitle : verifyAtSubmit ? 'Last step: verify your ID' : journey.title}
                                     </p>
                                     <p className="text-md-b3 font-normal text-md-neutral-1400">
                                        {isPending
                                           ? verifyPendingBody
-                                          : 'Complete a one-time verification to start building trust with lenders.'}
+                                          : verifyAtSubmit
+                                            ? "Fill in your request below. When you send it, you'll verify your ID — about 2 minutes, one time only."
+                                            : journey.body}
                                     </p>
                                  </div>
+                                 {verifyAtSubmit ? null : (
                                  <button
-                                    onClick={isPending ? () => navigate('/verify') : openVerify}
+                                    onClick={isPending ? goToVerifyStatus : journey.go}
                                     className="w-fit rounded-[12px] bg-md-primary-1200 px-md-2 py-md-1 text-md-b2 font-semibold text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
                                     type="button"
                                  >
-                                    {isPending ? verifyPendingCta : 'Verify Yourself'}
+                                    {isPending ? verifyPendingCta : <>{journey.cta}<span aria-hidden="true"> →</span></>}
                                  </button>
+                                 )}
                               </div>
                               <img
                                  alt=""
@@ -2374,6 +2953,14 @@ export default function LoanRequestModal({
                         ) : null}
                         {!isPending && verifyModal}
 
+                        {/* Locked until verified: visible (so they see what they're working toward) but
+                            greyed out; a tap anywhere on it points them at the card above. */}
+                        <div className="relative">
+                        <div
+                           aria-disabled={formLocked || undefined}
+                           className={formLocked ? 'pointer-events-none flex select-none flex-col gap-5 opacity-50 grayscale' : 'flex flex-col gap-5'}
+                           inert={formLocked || undefined}
+                        >
                         <div className="flex flex-col gap-md-1" data-tour-target="loan-borrow-amount">
                            <div className="flex items-center justify-between gap-md-2">
                               <label className="text-md-b2 font-[590] text-md-heading" htmlFor="borrow-amount">
@@ -2395,13 +2982,7 @@ export default function LoanRequestModal({
                            <div
                               className={`flex items-center ${inputShellClass} ${termErrors.amount ? '!border-md-red-500' : amountValid ? '!border-md-primary-900' : ''}`}
                            >
-                              <span
-                                 aria-hidden="true"
-                                 className="flex min-w-[112px] items-center justify-center gap-md-1 self-stretch border-r border-md-neutral-600 bg-[#2775ca] px-md-3 py-md-2 text-md-b1 font-normal text-md-neutral-100"
-                              >
-                                 <UsdcIcon />
-                                 USDC
-                              </span>
+                              <UsdcAmountChip amount={loanAmount} />
                               <input
                                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
                                     // Whole cents only: a lender's wallet sends 2-decimal amounts, so a
@@ -2413,6 +2994,18 @@ export default function LoanRequestModal({
                                     if (termErrors.amount) setTermErrors((prev) => ({ ...prev, amount: undefined }));
                                  }}
                                  onFocus={scrollFieldIntoView}
+                                 onBlur={() => {
+                                    // Say it when they leave the field, not after they tap Make Your Request.
+                                    // Deferred: blur fires before the tap that caused it lands, and the
+                                    // message pushing the form down would make that tap miss its button.
+                                    const value = Number(loanAmount);
+                                    if (loanAmount && Number.isFinite(value) && value > limitAmount) {
+                                       window.setTimeout(
+                                          () => setTermErrors((prev) => ({ ...prev, amount: `That's above your current limit of $${limitAmount}.` })),
+                                          250
+                                       );
+                                    }
+                                 }}
                                  className="min-w-0 flex-1 bg-transparent px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
                                  id="borrow-amount"
                                  inputMode="decimal"
@@ -2448,12 +3041,27 @@ export default function LoanRequestModal({
                                  if (termErrors.repayment) setTermErrors((prev) => ({ ...prev, repayment: undefined }));
                               }}
                               onFocus={scrollFieldIntoView}
+                              onBlur={() => {
+                                 const borrow = Number(loanAmount);
+                                 const repay = Number(totalRepaymentAmount);
+                                 if (totalRepaymentAmount && Number.isFinite(borrow) && Number.isFinite(repay) && borrow > 0 && repay < borrow + 1) {
+                                    // Deferred so the tap that left the field still lands where it was aimed.
+                                    window.setTimeout(
+                                       () => setTermErrors((prev) => ({ ...prev, repayment: 'Repayment must be at least $1 more than you borrow.' })),
+                                       250
+                                    );
+                                 }
+                              }}
                               className={`${inputShellClass} px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none ${
                                  termErrors.repayment ? '!border-md-red-500' : repaymentValid ? '!border-md-primary-900' : ''
                               }`}
                               id="repayment-amount"
                               inputMode="decimal"
-                              placeholder="Must be more than the borrowed amount"
+                              placeholder={
+                                 suggestedRepayment
+                                    ? `Suggested: $${Number.isInteger(suggestedRepayment) ? suggestedRepayment : suggestedRepayment.toFixed(2)}`
+                                    : 'Must be more than the borrowed amount'
+                              }
                               type="text"
                               value={totalRepaymentAmount}
                            />
@@ -2471,7 +3079,7 @@ export default function LoanRequestModal({
                               return (
                                  <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
                                     You’ll repay <span className="font-semibold text-md-heading">${fmt(repayNum)}</span> — that’s{' '}
-                                    <span className="font-semibold text-md-primary-1200">${fmt(extra)}</span> to your lender.
+                                    <span className="font-semibold text-md-primary-1200">${fmt(extra)}</span> to your moo-lender.
                                  </p>
                               );
                            })()}
@@ -2491,6 +3099,18 @@ export default function LoanRequestModal({
                                  offer >= 1 &&
                                  range !== null &&
                                  offer < range.lo;
+                              const min = minimumRepayment(borrowNum, days);
+                              if (!termErrors.repayment && Boolean(totalRepaymentAmount) && min && Number.isFinite(repayNum) && repayNum < min.amount) {
+                                 return (
+                                    <div className="flex items-start gap-1.5 rounded-md-md bg-md-yellow-100 px-md-2 py-md-1 text-md-b3 font-normal leading-[18px] text-md-yellow-700">
+                                       <Lightbulb className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
+                                       <span>
+                                          For this date, moo-lenders usually look for at least{' '}
+                                          <span className="font-semibold">${min.amount.toFixed(2)}</span> back (about 10% a month).
+                                       </span>
+                                    </div>
+                                 );
+                              }
                               return show && range ? <ReturnHint lo={range.lo} hi={range.hi} /> : null;
                            })()}
                         </div>
@@ -2544,7 +3164,7 @@ export default function LoanRequestModal({
                                Each fills a valid future date via the same handler the calendar uses. */}
                            <div className="mt-md-0 flex flex-wrap gap-md-1">
                               {[
-                                 { label: '4 weeks', days: 28 },
+                                 { label: '2 weeks', days: 14 },
                                  { label: '1 month', days: 30 },
                                  { label: '2 months', days: 60 }
                               ].map(({ label, days: offset }) => {
@@ -2616,11 +3236,16 @@ export default function LoanRequestModal({
                                        // Offline shape check first (instant), then whatever the
                                        // effort check came back with. The tick only appears once
                                        // both have actually passed it.
-                                       const weakHint = !reasonQuality.ok
-                                          ? reasonQuality.hint
-                                          : liveReasonCheck.status === 'weak'
-                                            ? liveReasonCheck.hint || 'Add a bit more detail so lenders understand the need.'
-                                            : '';
+                                       // The AI's hint, when it has one, explains in the borrower's app
+                                       // language; prefer it over the offline check's English line.
+                                       const weakHint =
+                                          liveReasonCheck.status === 'weak' && liveReasonCheck.hint
+                                             ? liveReasonCheck.hint
+                                             : !reasonQuality.ok
+                                               ? reasonQuality.hint
+                                               : liveReasonCheck.status === 'weak'
+                                                 ? 'Add a bit more detail so moo-lenders understand the need.'
+                                                 : '';
                                        if (weakHint) {
                                           return (
                                              <span className="inline-flex items-start gap-1.5 font-medium text-[#92400e]">
@@ -2632,8 +3257,11 @@ export default function LoanRequestModal({
                                        // Couldn't reach the check — say nothing rather than tick
                                        // text nobody judged. Submit still works; the gate there
                                        // fails open too.
-                                       if (liveReasonCheck.status === 'unavailable') {
-                                          return <span>Short and specific helps lenders trust it.</span>;
+                                       if (liveReasonCheck.status === 'unavailable' || liveReasonCheck.status === 'pending') {
+                                          return <span>Short and specific helps moo-lenders trust it.</span>;
+                                       }
+                                       if (liveReasonCheck.status === 'reviewing') {
+                                          return <span className="font-medium text-md-neutral-1200">Taking a closer look…</span>;
                                        }
                                        if (liveReasonCheck.status !== 'ok') {
                                           return <span className="font-medium text-md-neutral-1200">Checking your reason…</span>;
@@ -2647,7 +3275,7 @@ export default function LoanRequestModal({
                                     }
                                     // Lenders are in the US and EU, so the ask is stated up front
                                     // rather than sprung on the borrower after 40 characters.
-                                    return <span>At least 40 characters, in English — short and specific helps lenders trust it.</span>;
+                                    return <span>At least 40 characters, in English — short and specific helps moo-lenders trust it.</span>;
                                  })()}
                                  <span className="shrink-0">{reason.length}/200</span>
                               </div>
@@ -2661,18 +3289,20 @@ export default function LoanRequestModal({
                                  </div>
                               ) : null}
                               {(() => {
-                                 // A ready-to-post rewrite built from their own words (the English
-                                 // translation when they wrote in another language). One tap uses it.
+                                 // A ready-to-post rewrite built from their own words. One tap uses it.
+                                 // Never the English translation of a non-English reason: writing it in
+                                 // English themselves is part of the screening (lenders only read English),
+                                 // and a one-tap translation let someone who can't write English through.
                                  const suggestion =
-                                    liveReasonCheck.suggestion && liveReasonCheck.suggestion.trim() !== reason.trim()
+                                    liveReasonCheck.category !== 'not_english' &&
+                                    liveReasonCheck.suggestion &&
+                                    liveReasonCheck.suggestion.trim() !== reason.trim()
                                        ? liveReasonCheck.suggestion
                                        : '';
                                  const suggestionRow = suggestion ? (
                                     <div className="mt-1.5 flex items-start justify-between gap-md-2 rounded-md-md bg-md-primary-100 px-md-2 py-md-1 dark:bg-[#281b35]">
                                        <p className="min-w-0 text-md-b3 leading-[18px] text-md-heading">
-                                          <span className="font-semibold text-md-primary-1200">
-                                             {liveReasonCheck.category === 'not_english' ? 'In English: ' : 'Try this: '}
-                                          </span>
+                                          <span className="font-semibold text-md-primary-1200">Try this: </span>
                                           {suggestion}
                                        </p>
                                        <button
@@ -2742,6 +3372,17 @@ export default function LoanRequestModal({
                            </div>
                         </div>
 
+                        </div>
+                        {formLocked ? (
+                           <button
+                              aria-label="Finish setting up first to request a loan"
+                              className="absolute inset-0 z-10 cursor-not-allowed rounded-md-lg"
+                              onClick={nudgeLockedForm}
+                              type="button"
+                           />
+                        ) : null}
+                        </div>
+
                         {/* Unverified borrowers used to meet a grey button that did nothing when
                             tapped — the only explanation was the yellow card scrolled far above.
                             Say it here, where the tap happens, with the way out attached. */}
@@ -2756,17 +3397,21 @@ export default function LoanRequestModal({
                                  <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
                                  <span>
                                     {isPending
-                                       ? 'Your verification is still being checked — you can send this request once it clears.'
-                                       : "You're not verified yet. Verification is the last step before you can send this request."}
+                                       ? verifyPendingNote
+                                       : verifyAtSubmit
+                                         ? "When you send this, you'll verify your ID (about 2 minutes). What you typed is kept."
+                                         : `Finish setting up first to send a request — you're on step ${journey.step} of 3.`}
                                  </span>
                               </div>
+                              {verifyAtSubmit ? null : (
                               <button
                                  className="w-fit rounded-[12px] bg-md-primary-1200 px-md-2 py-md-1 text-md-b2 font-semibold text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-                                 onClick={isPending ? () => navigate('/verify') : openVerify}
+                                 onClick={isPending ? goToVerifyStatus : journey.go}
                                  type="button"
                               >
-                                 {isPending ? verifyPendingCta : 'Verify Yourself'}
+                                 {isPending ? verifyPendingCta : <>{journey.cta}<span aria-hidden="true"> →</span></>}
                               </button>
+                              )}
                            </div>
                         ) : null}
                         {/* Deliberately not aria-disabled: the button *does* act — it explains why it
@@ -2774,14 +3419,14 @@ export default function LoanRequestModal({
                         <button
                            aria-describedby={isVerified ? undefined : 'loan-verify-blocker'}
                            className={`w-full rounded-md-lg px-md-4 py-md-3 text-md-b1 font-medium text-md-neutral-100 ${
-                              isVerified && !isSubmitting
+                              (isVerified || verifyAtSubmit) && !isSubmitting
                                  ? 'bg-md-primary-1200 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2'
                                  : 'bg-md-neutral-600'
                            } ${verifyNudge ? 'blocked-tap-shake' : ''}`}
                            type="submit"
                            disabled={isSubmitting}
                         >
-                           {isSubmitting ? 'Submitting...' : 'Make Your Request'}
+                           {isSubmitting ? 'Submitting...' : isCheckingBeforeVerify ? 'Checking...' : verifyAtSubmit ? 'Verify ID & send request' : 'Make Your Request'}
                         </button>
                      </>
                   )}
@@ -2855,6 +3500,48 @@ export default function LoanRequestModal({
                         disabled: '[&>button]:cursor-not-allowed [&>button]:text-md-neutral-600 [&>button]:opacity-40'
                      }}
                   />
+               </div>
+            </div>
+         ) : null}
+         {returnNudge ? (
+            <div
+               aria-modal="true"
+               className="fixed inset-0 z-[70] flex items-center justify-center bg-[#12071f]/50 px-5 backdrop-blur-[2px]"
+               onClick={() => setReturnNudge(null)}
+               role="dialog"
+            >
+               <div className="flex w-full max-w-[380px] flex-col gap-4 rounded-[20px] bg-white p-5 text-center" onClick={(e) => e.stopPropagation()}>
+                  <img alt="" aria-hidden="true" className="mx-auto size-20 object-contain" src="/hippos/thumb-up-right.png" />
+                  <div className="flex flex-col gap-2">
+                     <p className="text-[19px] font-bold text-[#2d2438]">A little low for moo-lenders</p>
+                     <p className="text-[15px] leading-[21px] text-[#594d65]">
+                        For ${Number(loanAmount).toFixed(2)} over{' '}
+                        {returnNudge.months <= 1 ? 'a month or less' : `about ${Math.round(returnNudge.months * 10) / 10} months`}, moo-lenders usually look for
+                        at least <b>${returnNudge.amount.toFixed(2)}</b> back — about 10% a month. Requests below that rarely get funded.
+                     </p>
+                  </div>
+                  <button
+                     className="w-full rounded-full bg-[#6b55f7] px-4 py-3 text-[16px] font-semibold text-white"
+                     onClick={() => {
+                        setTotalRepaymentAmount(String(returnNudge.amount));
+                        setReturnNudge(null);
+                     }}
+                     type="button"
+                  >
+                     Use ${returnNudge.amount.toFixed(2)}
+                  </button>
+                  <button
+                     className="w-full rounded-full px-4 py-2 text-[15px] font-semibold text-[#6b55f7]"
+                     onClick={() => {
+                        returnAckRef.current = returnNudge.key;
+                        setReturnNudge(null);
+                        if (verifyAtSubmit) void verifyToSendAfterChecks();
+                        else handleLoanFormSubmit({ preventDefault: () => {} } as FormEvent<HTMLFormElement>);
+                     }}
+                     type="button"
+                  >
+                     Keep ${Number(totalRepaymentAmount).toFixed(2)} and send
+                  </button>
                </div>
             </div>
          ) : null}

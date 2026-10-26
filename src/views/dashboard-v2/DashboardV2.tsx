@@ -3,11 +3,14 @@ import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
+import { AddEmailCard } from '@/components/account/AddEmailCard';
+import { ConfirmEmailReminder } from '@/components/account/ConfirmEmailReminder';
 import GuidedTourPreview from '@/components/GuidedTourPreview';
 import VerifyYourselfModal from '@/components/verification/VerifyYourselfModal';
 
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
 import type { ClaimableVoucher } from '@/lib/friendReferrals';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
@@ -30,6 +33,7 @@ import { MilestonePopup, MilestoneStreakPopup } from '@/views/dashboard-v2/compo
 import {
    LoanSummarySection,
    MilestonesSection,
+   GrabMartWalletCard,
    TierVoucherCard,
    UpcomingDuesSection
 } from '@/views/dashboard-v2/components/DashboardV2Sections';
@@ -58,7 +62,7 @@ const DASHBOARD_TOUR_STEPS = [
    {
       target: '[data-tour-target="dashboard-milestones-heading"]',
       title: 'Milestones',
-      body: 'Milestones are extra ways to earn Pandesal. Complete them to strengthen your profile and make lenders more confident in your requests.',
+      body: 'Milestones are extra ways to earn Pandesal. Complete them to strengthen your profile and make moo-lenders more confident in your requests.',
       durationMs: 7600
    }
 ];
@@ -71,7 +75,7 @@ const SAMPLE_STREAK: StreakMilestone[] = [
       points: 10,
       completedAt: new Date(Date.now() - 3 * 864e5).toISOString()
    },
-   { id: 'first-funded-loan', title: 'Get funded by a lender', points: 15, completedAt: new Date(Date.now() - 864e5).toISOString() }
+   { id: 'first-funded-loan', title: 'Get funded by a moo-lender', points: 15, completedAt: new Date(Date.now() - 864e5).toISOString() }
 ];
 
 const streakSeenKey = (userId: string) => `moodeng:milestone-streak-seen:${userId}`;
@@ -97,7 +101,7 @@ function DashboardV2Skeleton() {
    return (
       <div className="mt-[30px] flex flex-col gap-[30px] px-5" aria-busy="true" aria-label="Loading your dashboard">
          {SKELETON_BLOCKS.map(({ id, height }) => (
-            <div key={id} className="animate-pulse rounded-[8px] bg-[#ece9f1]" style={{ height }} />
+            <div key={id} className="animate-pulse rounded-[8px] bg-[#ece9f1] dark:bg-dv2-card" style={{ height }} />
          ))}
       </div>
    );
@@ -112,6 +116,13 @@ export default function DashboardV2() {
    const { model, previewState, isReal, isSignedIn, isReady, language, previewSearch } = useDashboardV2Preview();
    const [openMilestone, setOpenMilestone] = useState<DashboardV2Milestone | null>(null);
    const [isVerifyOpen, setIsVerifyOpen] = useState(false);
+   // An ID already with Didit (in review, processing, unfinished, declined) goes to its status page:
+   // the chooser starts a new paid Didit session, which also wipes the "in review" status.
+   const verifyJourney = useVerificationJourney();
+   const handleVerify = () => {
+      if (verifyJourney.stage === 'id_with_didit') verifyJourney.go();
+      else setIsVerifyOpen(true);
+   };
    // Snapshot of the voucher being claimed: the rewards refetch after submitting removes it from `claimable`,
    // and the popup must stay open to show its thank-you screen.
    const [claimingVoucher, setClaimingVoucher] = useState<ClaimableVoucher | null>(null);
@@ -119,8 +130,15 @@ export default function DashboardV2() {
    const isBorrower = useIsBorrower();
    const userId = useSelector((state: RootState) => state.auth.user?.id) ?? '';
    const authUser = useSelector((state: RootState) => state.auth.user);
-   // In manual review without a confirmed Facebook/WhatsApp line: point them back to the Facebook step.
-   const showConnectFacebook = isReal && getVerificationUiState(authUser) === 'review' && !authUser?.hasVerifiedContact;
+   // Phone sign-ups are asked for an email only after their first loan request, so nothing slows
+   // them down on the way there (they often do the whole thing inside Facebook's browser).
+   const hasRequestedLoan = useSelector((state: RootState) =>
+      (state.loans.loans.gloans || []).some((loan) => loan.borrowerUser === userId)
+   );
+   // In manual review — or declined — without a confirmed Facebook/WhatsApp line: point them to the
+   // Facebook step, so the team can tell them the result (review) or talk them through it (declined).
+   const verificationState = getVerificationUiState(authUser);
+   const showConnectFacebook = isReal && (verificationState === 'review' || verificationState === 'declined') && !authUser?.hasVerifiedContact;
    const push = usePushNotifications(isReal ? userId : null);
    // Borrowers with something to repay who haven't allowed push. Only permission is checked (not the
    // subscription, which resolves asynchronously) so the card never flashes for someone who has it on.
@@ -140,7 +158,7 @@ export default function DashboardV2() {
       Number.isInteger(tourStepsParam) && tourStepsParam > 0 ? tourStepsParam : REQUEST_BOARD_TOUR_STEP_COUNT;
    const showTour = searchParams.has('tour') && shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, userId, false);
    const ownVoucher = getVoucherState(model.rewards, OWN_VOUCHER, model.referralLoading);
-   // The lowest tier whose GrabFood voucher is waiting to be claimed (one card at a time).
+   // The lowest tier whose GrabMart reward is waiting to be claimed (one card at a time).
    const claimableTierVoucher = TIER_VOUCHERS.map((tier) => ({
       tier,
       claimable: model.rewards.claimable.find((item) => item.reward === tier.reward) ?? null
@@ -191,7 +209,7 @@ export default function DashboardV2() {
    );
 
    return (
-      <div className="min-h-screen bg-[#f7f7f7]">
+      <div className="min-h-screen bg-dv2-page">
          <div className="mx-auto max-w-[440px] pb-28">
             {isPreviewHost() ? <DashboardV2PreviewBar previewState={previewState} isSignedIn={isSignedIn} language={language} /> : null}
 
@@ -211,9 +229,12 @@ export default function DashboardV2() {
                         <WalletBalanceCard />
                      </div>
                   ) : null}
+                  {/* Phone sign-ups: add an email after the first loan request, then confirm it with a code. */}
+                  {isReal && hasRequestedLoan ? <AddEmailCard /> : null}
+                  {isReal ? <ConfirmEmailReminder placement="dashboard" /> : null}
                   {model.showWithdraw ? <WithdrawBanner onWithdraw={() => navigate('/withdraw')} /> : null}
-                  {showConnectFacebook ? <ConnectFacebookBanner language={language} onConnect={() => navigate('/verify')} /> : null}
-                  {!model.isVerified ? <VerifyIdentityBanner onVerify={() => setIsVerifyOpen(true)} /> : null}
+                  {showConnectFacebook ? <ConnectFacebookBanner declined={verificationState === 'declined'} language={language} onConnect={() => navigate('/verify')} /> : null}
+                  {!model.isVerified ? <VerifyIdentityBanner onVerify={handleVerify} /> : null}
                   {model.showConnectWallet ? <ConnectWalletBanner onConnect={() => navigate('/onboarding/wallet')} /> : null}
                   {showRemindersBanner ? (
                      <TurnOnRemindersBanner
@@ -231,6 +252,7 @@ export default function DashboardV2() {
                         onClaim={() => setClaimingVoucher(claimableTierVoucher.claimable)}
                      />
                   ) : null}
+                  <GrabMartWalletCard balancePhp={model.rewards.grabmartBalancePhp} payouts={model.rewards.grabmartPayouts} />
                   {milestonesAndVoucher}
                   <LoanSummarySection model={model} />
                   {!model.hasOverdue ? <UpcomingDuesSection model={model} /> : null}
@@ -243,7 +265,7 @@ export default function DashboardV2() {
                milestone={openMilestone}
                isVerified={model.isVerified}
                onClose={() => setOpenMilestone(null)}
-               onVerify={() => setIsVerifyOpen(true)}
+               onVerify={handleVerify}
             />
          ) : null}
          {/* Same "Verify Yourself" chooser as onboarding, Milestones, the loan form and Repay. */}

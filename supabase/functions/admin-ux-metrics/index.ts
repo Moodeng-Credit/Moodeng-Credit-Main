@@ -1,6 +1,21 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import {
+   askDeepSeek,
+   type ClarityMetric,
+   composeDigest,
+   fetchClarity,
+   loadPeopleWindow,
+   MIN_PEOPLE_FOR_AI,
+   type Person,
+   type PrevRun,
+   WINDOWS
+} from '../_shared/clarityDigest.ts';
+import { postDiscord } from '../_shared/discord.ts';
+import { isInternalRequest } from '../_shared/internalAuth.ts';
+import { sendTelegramMessage } from '../_shared/telegram.ts';
+
 // Serves the /admin "UX Health" tiles. Pulls a handful of AGGREGATE friction numbers
 // from PostHog (sign-in conversion, onboarding drop-off, rage clicks, errors) over the
 // last 30 days. We run the exact same Funnels/Trends queries that back the PostHog
@@ -11,6 +26,18 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 // personal key with read scope is required.
 //   Secrets: POSTHOG_PERSONAL_API_KEY (required), POSTHOG_PROJECT_ID (default 492261),
 //            POSTHOG_HOST (default https://us.posthog.com)
+//
+// Also serves the admin search bar's AI answer (it rides along here because the project is at its
+// edge-function cap): { action: 'search', query, pages: [{ id, label, group, hint }] }
+//   → { results: [{ id, why }] } — up to 3 of the given tab ids DeepSeek thinks answer the question.
+//   Secret: DEEPSEEK_API_KEY.
+//
+// And the onboarding friction digest (see _shared/clarityDigest.ts), internal callers only:
+// { action: 'clarity_digest', clarityToken, clarityProjectId, dryRun?, reuseClarity? } — pg_cron clarity-digest posts it
+// every 3 days at 07:00 Bangkok (00:00 UTC, DeepSeek off-peak) to the KYC / admin Telegram group + Discord #kyc, passing the
+// token and project id from the DB vault (CLARITY_API_TOKEN, CLARITY_PROJECT_ID). Every run is saved to clarity_digest_runs.
+// dryRun returns the text and what DeepSeek saw, without posting; reuseClarity (dry runs only) reuses the last saved
+// Clarity export instead of spending 2 of Clarity's 10 daily calls.
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -136,11 +163,195 @@ function trendTotal(result: any, seriesIndex = 0): number {
    return data.reduce((sum: number, n: number) => sum + Number(n || 0), 0);
 }
 
+// --- Admin search: DeepSeek picks the tabs that answer a plain-words question -------------
+const SEARCH_MODEL = 'deepseek-v4-flash';
+const SEARCH_PROMPT = `You help a lending company's admin find the right page in their admin panel.
+You get the admin's question and a list of pages (id, name, area, what it is for).
+Pick up to 3 pages that best answer the question, best first. Only use ids from the list.
+For each, write "why": one short plain sentence (max 12 words) saying what they can do there for this question.
+If no page fits, return an empty list.
+Reply as JSON: {"results":[{"id":"...","why":"..."}]}`;
+
+type SearchPage = { id: string; label: string; group: string; hint: string };
+
+const clipText = (value: unknown, max: number) => String(value ?? '').slice(0, max);
+
+async function aiSearch(body: any): Promise<Response> {
+   const apiKey = Deno.env.get('DEEPSEEK_API_KEY');
+   if (!apiKey) return json({ error: 'DEEPSEEK_API_KEY secret is not set on this project.' }, 503);
+
+   const query = clipText(body?.query, 200).trim();
+   const pages: SearchPage[] = (Array.isArray(body?.pages) ? body.pages : []).slice(0, 80).map((p: any) => ({
+      id: clipText(p?.id, 40),
+      label: clipText(p?.label, 60),
+      group: clipText(p?.group, 30),
+      hint: clipText(p?.hint, 200)
+   }));
+   if (!query || pages.length === 0) return json({ results: [] });
+
+   const ctrl = new AbortController();
+   const timer = setTimeout(() => ctrl.abort(), 15_000);
+   let res: Response;
+   try {
+      res = await fetch('https://api.deepseek.com/chat/completions', {
+         method: 'POST',
+         signal: ctrl.signal,
+         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+         body: JSON.stringify({
+            model: SEARCH_MODEL,
+            thinking: { type: 'disabled' },
+            temperature: 0,
+            max_tokens: 300,
+            response_format: { type: 'json_object' },
+            messages: [
+               { role: 'system', content: SEARCH_PROMPT },
+               {
+                  role: 'user',
+                  content: `PAGES:\n${pages.map((p) => `${p.id} | ${p.label} | ${p.group} | ${p.hint}`).join('\n')}\n\nQUESTION: ${query}`
+               }
+            ]
+         })
+      });
+   } catch (err) {
+      return json({ error: err instanceof Error && err.name === 'AbortError' ? 'DeepSeek took too long.' : 'DeepSeek is unreachable.' }, 502);
+   } finally {
+      clearTimeout(timer);
+   }
+   if (!res.ok) return json({ error: `DeepSeek ${res.status}` }, 502);
+
+   let parsed: any = {};
+   try {
+      const reply = await res.json();
+      parsed = JSON.parse(reply?.choices?.[0]?.message?.content ?? '{}');
+   } catch {
+      return json({ error: 'DeepSeek sent an unreadable answer.' }, 502);
+   }
+   const known = new Set(pages.map((p) => p.id));
+   const seen = new Set<string>();
+   const results = (Array.isArray(parsed?.results) ? parsed.results : [])
+      .map((r: any) => ({ id: String(r?.id ?? ''), why: clipText(r?.why, 140).trim() }))
+      .filter((r: { id: string }) => known.has(r.id) && !seen.has(r.id) && seen.add(r.id))
+      .slice(0, 3);
+   return json({ results });
+}
+
+async function clarityDigest(supabase: any, body: any): Promise<Response> {
+   const token = String(body?.clarityToken ?? '').trim();
+   const projectId = String(body?.clarityProjectId ?? '').trim();
+   const dryRun = Boolean(body?.dryRun);
+   const now = Date.now();
+   const problems: string[] = [];
+
+   const window = await loadPeopleWindow(supabase, now).catch((err) => {
+      problems.push(`Sign-up steps: ${err instanceof Error ? err.message : err}`);
+      return { days: WINDOWS[0], people: [] as Person[] };
+   });
+
+   // The last posted digest, for "what changed".
+   const { data: prevRow } = await supabase
+      .from('clarity_digest_runs')
+      .select('step_pct, friction_pct, created_at')
+      .eq('dry_run', false)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+   const prev = (prevRow ?? null) as PrevRun;
+
+   // 2 of Clarity's 10 calls a day: per page, and per device + browser (the Facebook app's browser shows there).
+   // A dry run with reuseClarity reads the last saved export instead, so testing doesn't use up the day's calls.
+   let clarity: { byPage: ClarityMetric[]; byDevice: ClarityMetric[] } | null = null;
+   if (dryRun && body?.reuseClarity) {
+      const { data } = await supabase
+         .from('clarity_digest_runs')
+         .select('clarity_raw')
+         .not('clarity_raw', 'is', null)
+         .order('created_at', { ascending: false })
+         .limit(1)
+         .maybeSingle();
+      clarity = data?.clarity_raw ?? null;
+      if (!clarity) problems.push('Clarity: no saved export to reuse');
+   } else if (!token) {
+      problems.push('Clarity: CLARITY_API_TOKEN is not in the vault yet');
+   } else {
+      try {
+         const [byPage, byDevice] = await Promise.all([fetchClarity(token, ['URL']), fetchClarity(token, ['Device', 'Browser'])]);
+         clarity = { byPage, byDevice };
+      } catch (err) {
+         problems.push(`Clarity: ${err instanceof Error ? err.message : err}`);
+      }
+   }
+
+   const digest = composeDigest({ now, days: window.days, people: window.people, clarity, prev });
+   const lines = [...digest.lines];
+
+   const apiKey = Deno.env.get('DEEPSEEK_API_KEY');
+   if (window.people.length < MIN_PEOPLE_FOR_AI) {
+      lines.push('', `🤖 No AI summary: ${window.people.length} new borrower${window.people.length === 1 ? '' : 's'} is too few to read patterns.`);
+   } else if (apiKey) {
+      const findings = await askDeepSeek(apiKey, digest.aiInput).catch((err) => {
+         problems.push(`AI summary: ${err instanceof Error ? err.message : err}`);
+         return [] as string[];
+      });
+      if (findings.length) lines.push('', '🤖 Where people get stuck (AI, check before acting)', ...findings.map((f, i) => `${i + 1}. ${f}`));
+   }
+
+   const clarityBase = projectId ? `https://clarity.microsoft.com/projects/view/${projectId}` : 'https://clarity.microsoft.com/projects';
+   lines.push(
+      '',
+      `🎥 Recordings: ${projectId ? `${clarityBase}/impressions` : clarityBase}`,
+      'Filter by Smart event (e.g. tapped_connect_messenger without messenger_connected) or Custom tag (browser, signup_method).'
+   );
+   if (problems.length) lines.push('', `⚠️ ${problems.join(' · ')}`);
+   const text = lines.join('\n');
+
+   // Saved on every run: the next digest's "what changed", and the export a dry run can reuse.
+   await supabase
+      .from('clarity_digest_runs')
+      .insert({
+         dry_run: dryRun,
+         window_days: window.days,
+         signups: window.people.length,
+         step_pct: digest.stepPct,
+         friction_pct: digest.frictionPct,
+         clarity_raw: clarity,
+         text
+      })
+      .then(({ error }: { error: { message: string } | null }) => error && console.error('clarity digest: save failed', error.message));
+
+   if (dryRun) return json({ text, aiInput: digest.aiInput, problems });
+
+   // The KYC / admin group, with the other onboarding alerts: George keeps routine posts out of the team / fraud group.
+   const { data: chats } = await supabase.from('telegram_bot_settings').select('value').eq('key', 'kyc_alert_chat_id').maybeSingle();
+   const chatId = chats?.value ?? Deno.env.get('TEAM_TELEGRAM_CHAT_ID');
+   // Telegram caps a message at 4,096 characters.
+   const telegramOk = chatId
+      ? await sendTelegramMessage(chatId, text.length > 4000 ? `${text.slice(0, 3990)}\n…` : text)
+           .then(() => true)
+           .catch((err) => (console.error('clarity digest: Telegram failed', err instanceof Error ? err.message : err), false))
+      : false;
+   // Discord #kyc: with no preferred key postDiscord falls back to DISCORD_TEAM_WEBHOOK_URL, which no longer exists.
+   const discordOk = await postDiscord(
+      {
+         embeds: [
+            { title: '🔎 Onboarding friction', description: text.slice(0, 4000), color: 0x7c3aed, timestamp: new Date(now).toISOString() }
+         ]
+      },
+      { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }
+   );
+   return json({ posted: { telegram: telegramOk, discord: discordOk }, problems });
+}
+
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+   const body = await req.json().catch(() => ({}));
+
+   if (body?.action === 'clarity_digest') {
+      if (!(await isInternalRequest(supabase, req))) return json({ error: 'Unauthorized' }, 401);
+      return clarityDigest(supabase, body);
+   }
 
    // --- Verify the caller is an active Moodeng admin (mirrors admin-loan-notify) ---
    const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
@@ -158,6 +369,8 @@ serve(async (req) => {
       .in('role', ['owner', 'admin', 'support'])
       .maybeSingle();
    if (!adminRow) return json({ error: 'Forbidden: admin account required' }, 403);
+
+   if (body?.action === 'search') return aiSearch(body);
 
    const apiKey = Deno.env.get('POSTHOG_PERSONAL_API_KEY');
    if (!apiKey) {

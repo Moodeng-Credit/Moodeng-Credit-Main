@@ -1,6 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { classifyParticipant, classifyZoomEvent, hmacSha256Hex, pickBooking, verifyZoomSignature } from './lib.ts';
+import { classifyParticipant, classifyTranscriptEvent, classifyZoomEvent, hmacSha256Hex, pickBooking, verifyZoomSignature, vttToText } from './lib.ts';
 
 const SECRET = 'test-secret-token';
 
@@ -121,4 +121,29 @@ Deno.test('a teammate is not mistaken for a borrower who shares their first name
    assertEquals(classifyParticipant({ name: 'George Jimmy', email: '' }, georgeJimmy), 'borrower');
    // A bare shared first name can't be told apart: a maybe, decided by a human.
    assertEquals(classifyParticipant({ name: 'Emma', email: '' }, { display_name: 'EMMA', username: 'emma1', email: null }), 'unknown');
+});
+
+Deno.test('classifyTranscriptEvent: finds the audio transcript file and download token', () => {
+   const event = classifyTranscriptEvent({
+      event: 'recording.transcript_completed',
+      download_token: 'tok',
+      payload: {
+         object: {
+            id: 81234567890,
+            uuid: 'abc==',
+            start_time: '2026-10-14T07:00:00Z',
+            recording_files: [
+               { file_type: 'MP4', download_url: 'https://zoom.us/rec/mp4' },
+               { file_type: 'TRANSCRIPT', recording_type: 'audio_transcript', download_url: 'https://zoom.us/rec/vtt' }
+            ]
+         }
+      }
+   });
+   assertEquals(event, { meetingId: '81234567890', meetingUuid: 'abc==', startTime: '2026-10-14T07:00:00Z', downloadUrl: 'https://zoom.us/rec/vtt', downloadToken: 'tok' });
+   assertEquals(classifyTranscriptEvent({ event: 'meeting.participant_joined' }), null);
+});
+
+Deno.test('vttToText: speaker lines, merged per speaker', () => {
+   const vtt = 'WEBVTT\n\n1\n00:00:01.000 --> 00:00:03.000\nEmma Moodeng: Hi Alvin!\n\n2\n00:00:03.000 --> 00:00:05.000\nEmma Moodeng: How are you?\n\n3\n00:00:05.000 --> 00:00:08.000\nAlvin Noe: Good, I work as a healthcare assistant.';
+   assertEquals(vttToText(vtt), 'Emma Moodeng: Hi Alvin! How are you?\nAlvin Noe: Good, I work as a healthcare assistant.');
 });

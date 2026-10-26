@@ -17,6 +17,7 @@ import type { AppDispatch, RootState } from '@/store/store';
 import type { Loan } from '@/types/loanTypes';
 import { isLoanPastDue } from '@/utils/loanOverdue';
 import { currentDateLocale } from '@/utils/dateFormatters';
+import { sumInterestEarned } from '@/utils/lenderEarnings';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -129,20 +130,18 @@ function computeStats(loans: Loan[]) {
    const thirtyDaysAgo = new Date(now.getTime() - thirtyDaysMs);
    const sixtyDaysAgo = new Date(now.getTime() - 2 * thirtyDaysMs);
 
-   // Total Earnings = all repayments actually received across all loans
-   const total = loans.reduce((sum, l) => sum + (l.repaidAmount ?? 0), 0);
+   // Total Earnings = interest earned on fully repaid, non-refunded loans (shared with the dashboard).
+   const total = sumInterestEarned(loans);
 
    // Badge: current 30-day window vs previous 30-day window
-   const current30 = loans
-      .filter((l) => new Date(l.updatedAt ?? l.createdAt) >= thirtyDaysAgo)
-      .reduce((sum, l) => sum + (l.repaidAmount ?? 0), 0);
+   const current30 = sumInterestEarned(loans.filter((l) => new Date(l.updatedAt ?? l.createdAt) >= thirtyDaysAgo));
 
-   const prev30 = loans
-      .filter((l) => {
+   const prev30 = sumInterestEarned(
+      loans.filter((l) => {
          const d = new Date(l.updatedAt ?? l.createdAt);
          return d >= sixtyDaysAgo && d < thirtyDaysAgo;
       })
-      .reduce((sum, l) => sum + (l.repaidAmount ?? 0), 0);
+   );
 
    const changePercent = prev30 > 0 ? ((current30 - prev30) / prev30) * 100 : 0;
 

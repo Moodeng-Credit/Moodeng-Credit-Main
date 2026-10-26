@@ -184,11 +184,17 @@ export const rankLenders = (
 
 const formatAmount = (value: number | string | null | undefined) => toAmount(value).toFixed(2);
 
+// When the request went in and when it's due, already worded for the team (formatInstantForTeam /
+// formatDeadlineForTeam). Funding isn't known yet: the posted message is remembered as a 'loan' card,
+// so state-events-dispatch stamps it "✅ FUNDED by …" with the time once a lender funds it.
+export type RequestTiming = { submitted?: string | null; due?: string | null };
+
 export const buildLenderSuggestionMessage = (
    loan: LoanForMatch,
    borrowerUsername: string | null | undefined,
    ranked: RankedLender[],
-   prospects: ProspectRow[]
+   prospects: ProspectRow[],
+   timing: RequestTiming = {}
 ): string => {
    const lines: string[] = [];
    const coin = loan.coin || 'USDC';
@@ -196,6 +202,8 @@ export const buildLenderSuggestionMessage = (
    lines.push('💸 New loan request');
    lines.push(`$${formatAmount(loan.loan_amount)} ${coin}${loan.reason ? ` — "${loan.reason}"` : ''}`);
    lines.push(`Borrower: ${borrowerUsername ? `@${borrowerUsername}` : 'unknown'}`);
+   if (timing.submitted) lines.push(`🕒 Submitted ${timing.submitted}`);
+   if (timing.due) lines.push(`⏳ Due ${timing.due}`);
    lines.push('');
 
    if (ranked.length) {
