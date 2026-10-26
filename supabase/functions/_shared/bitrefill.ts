@@ -7,7 +7,7 @@
 const BASE_URL = 'https://api.bitrefill.com/v2';
 
 // https://www.bitrefill.com/ph/en/gift-cards/grabmart-gift-card-philippines/ — ₱100 to ₱5,000, no
-// minimum basket, one code per order.
+// minimum basket, one code per order, Metro Manila and Cebu only. Paid in BTC from the balance.
 export const GRABMART_PRODUCT_ID = 'grabmart-gift-card-philippines';
 
 type SupabaseClient = any;
@@ -37,16 +37,19 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 /** The package of a given ₱ value, e.g. "grabmart-gift-card-philippines<&>100". */
 const findPackageId = async (apiKey: string, amountPhp: number) => {
    const product = await call(apiKey, `/products/${GRABMART_PRODUCT_ID}`);
+   // Packages look like { id: 'grabmart-gift-card-philippines<&>100', value: '100', amount: 100 } (checked 2026-10-26).
    const match = (product?.packages ?? []).find((p: { value?: unknown }) => Number(p.value) === amountPhp);
-   if (!match?.package_id) throw new Error(`no ₱${amountPhp} package for ${GRABMART_PRODUCT_ID}`);
-   return String(match.package_id);
+   const packageId = match?.package_id ?? match?.id;
+   if (!packageId) throw new Error(`no ₱${amountPhp} package for ${GRABMART_PRODUCT_ID}`);
+   return String(packageId);
 };
 
 const codeFromInvoice = async (apiKey: string, invoice: any): Promise<string | null> => {
    const orderId = invoice?.orders?.[0]?.id;
    if (!orderId) return null;
    const order = await call(apiKey, `/orders/${orderId}`);
-   const code = order?.redemption_info?.code ?? order?.redemption_info?.pin;
+   // GrabMart eGifts come as a code or, when Grab has none, a link to add in the Grab app.
+   const code = order?.redemption_info?.code ?? order?.redemption_info?.pin ?? order?.redemption_info?.link;
    return typeof code === 'string' && code.trim() ? code.trim() : null;
 };
 
