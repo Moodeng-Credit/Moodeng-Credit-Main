@@ -345,12 +345,12 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
          expect(connectMessengerCard()).toBeTruthy();
       });
 
-      it('WhatsApp connected: Facebook opens, says the steps are on WhatsApp too, and reuses the bot\'s code', async () => {
+      it('WhatsApp connected: no Messenger card, just "continue on WhatsApp" with a link to our chat', async () => {
          supa.state.usersRow.whatsapp_verified_at = '2026-10-25T14:00:00Z';
          await render('user-1', undefined, undefined, 'connect');
-         expect(container.textContent).toContain('We also sent these steps to your WhatsApp.');
-         await tapConnectMessenger();
-         expect(supa.rpc).toHaveBeenCalledWith('start_or_reuse_messenger_code');
+         expect(container.textContent).toContain('Continue on WhatsApp');
+         expect(connectMessengerCard()).toBeFalsy();
+         expect(container.querySelector('a[href*="wa.me/66951659077"]')).toBeTruthy();
          expect(supa.rpc).not.toHaveBeenCalledWith('start_contact_verification', { p_channel: 'messenger' });
       });
 

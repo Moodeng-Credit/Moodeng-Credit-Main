@@ -1,13 +1,13 @@
 // Indonesia's WhatsApp-first sign-up (George, 2026-10-25). Many Indonesians have WhatsApp but not the
 // Messenger app, so the app asks for WhatsApp first (the wa.me link carries the code, which Messenger's
-// links can't). Once WhatsApp is confirmed, the bot sends the Facebook steps there: a code, a link to
-// our chat, and what to do if the link doesn't open. Facebook stays required. When Facebook connects,
+// links can't). Once WhatsApp is confirmed, the bot walks them through Facebook there, one short message
+// per step (code, link to our chat, paste), and the app just says "continue on WhatsApp". Facebook stays required. When Facebook connects,
 // the bot says so on WhatsApp and points to the next step in the app.
 //
 // Indonesia only (George): an Indonesian (+62) WhatsApp number, or a test account so the team can try it
 // from anywhere. And only people who confirm WhatsApp BEFORE Facebook: everyone else connects Facebook
 // first (WhatsApp is locked until then), so nothing changes for them.
-import { buildMessengerVerifyLink, sendWhatsAppText } from './sendpulse.ts';
+import { MESSENGER_PAGE_ID, type SendPulseResult, sendWhatsAppText } from './sendpulse.ts';
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
@@ -47,22 +47,36 @@ const CONTINUE_URL = 'https://moodeng.app/continue?via=whatsapp';
 // The Facebook code they get on WhatsApp may be read later than the app's 30 minutes.
 const CODE_TTL_MS = 24 * 60 * 60 * 1000;
 
-export const facebookStepsText = (link: string, locale: WhatsAppFirstLocale) =>
+// Messenger's web address: from Android Chrome (where WhatsApp opens links) it's the one link that reaches
+// our chat; m.me does nothing there (2026-10-10 tests). It carries no code, so they paste it.
+export const MESSENGER_CHAT_URL = `https://www.messenger.com/t/${MESSENGER_PAGE_ID}`;
+
+// The Facebook steps as a short chat, one small message per step (George, 2026-10-27: a single long
+// message left an Indonesian borrower stuck). The code goes alone so a long-press copies just the code.
+export const facebookStepsMessages = (code: string, locale: WhatsAppFirstLocale): string[] =>
    locale === 'id'
-      ? '✅ WhatsApp kamu sudah terhubung!\n\n' +
-        'Langkah berikutnya: hubungkan Facebook. Kami perlu ini untuk verifikasi akunmu.\n\n' +
-        '1. Salin kode di pesan berikutnya.\n' +
-        `2. Ketuk link ini untuk membuka chat Moodeng Credit:\n${link}\n` +
-        '3. Tempel kodenya di chat, lalu Kirim.\n\n' +
-        'Link tidak terbuka? Buka aplikasi Facebook, cari "Moodeng Credit", ketuk Kirim Pesan, lalu kirim kodenya.\n\n' +
-        'Butuh bantuan? Balas pesan ini.'
-      : '✅ Your WhatsApp is connected!\n\n' +
-        'Next: connect Facebook. We need it to verify your account.\n\n' +
-        '1. Copy the code in the next message.\n' +
-        `2. Tap this link to open our Moodeng Credit chat:\n${link}\n` +
-        '3. Paste the code in the chat, then Send.\n\n' +
-        'Link doesn’t open? Open the Facebook app, search "Moodeng Credit", tap Message, and send the code.\n\n' +
-        'Need help? Reply to this message.';
+      ? [
+           '✅ WhatsApp kamu sudah terhubung!\n\nMulai sekarang kami pandu kamu di sini, langkah demi langkah. Kamu tidak perlu kembali ke aplikasi.',
+           '⏳ Tunggu sebentar, kami siapkan kode Facebook-mu…',
+           'Kami perlu menghubungkan Facebook-mu untuk verifikasi akun.\n\n*Langkah 1 dari 3*\nTekan lama kode di bawah ini, lalu ketuk *Salin* 👇',
+           code,
+           `*Langkah 2 dari 3*\nKetuk link ini. Chat Moodeng Credit di Messenger akan terbuka:\n${MESSENGER_CHAT_URL}`,
+           '*Langkah 3 dari 3*\nTempel kodenya di chat itu, lalu ketuk *Kirim*.\n\nSelesai! Kami akan mengabarimu di sini begitu Facebook-mu terhubung ✅',
+           'Tidak punya aplikasi Messenger, atau link-nya tidak terbuka? Balas *BANTUAN* di sini, tim kami akan membantumu.'
+        ]
+      : [
+           '✅ Your WhatsApp is connected!\n\nFrom now on we’ll guide you here, step by step. You don’t need to go back to the app.',
+           '⏳ One moment, getting your Facebook code ready…',
+           'We need to connect your Facebook to verify your account.\n\n*Step 1 of 3*\nPress and hold the code below, then tap *Copy* 👇',
+           code,
+           `*Step 2 of 3*\nTap this link. Our Moodeng Credit chat opens in Messenger:\n${MESSENGER_CHAT_URL}`,
+           '*Step 3 of 3*\nPaste the code in that chat, then tap *Send*.\n\nThat’s it! We’ll tell you here as soon as your Facebook is connected ✅',
+           'No Messenger app, or the link doesn’t open? Reply *HELP* here and our team will help you.'
+        ];
+
+// A beat between messages so they arrive in order and read like someone typing.
+const STEP_PAUSE_MS = 1500;
+const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const facebookConnectedText = (locale: WhatsAppFirstLocale) =>
    locale === 'id'
@@ -126,10 +140,14 @@ export const sendFacebookStepsOnWhatsApp = async (svc: Svc, userId: string, cont
       const code = await facebookCodeFor(svc, userId);
       if (!code) return;
       const locale = whatsappFirstLocale(phone, user.preferred_locale);
-      const steps = await sendWhatsAppText(contactId, facebookStepsText(buildMessengerVerifyLink(code), locale));
-      // The code on its own, so a long-press copies just the code.
-      const codeSent = steps.ok ? await sendWhatsAppText(contactId, code) : steps;
-      console.log(`[whatsapp-first] Facebook steps for ${userId.slice(0, 8)} (${locale}): ${codeSent.ok ? 'sent' : codeSent.reason}`);
+      const messages = facebookStepsMessages(code, locale);
+      let result: SendPulseResult = { ok: true };
+      for (const [i, text] of messages.entries()) {
+         if (i > 0) await pause(STEP_PAUSE_MS);
+         result = await sendWhatsAppText(contactId, text);
+         if (!result.ok) break;
+      }
+      console.log(`[whatsapp-first] Facebook steps for ${userId.slice(0, 8)} (${locale}): ${result.ok ? 'sent' : (result as { reason: string }).reason}`);
    } catch (err) {
       console.error('[whatsapp-first] steps failed', err instanceof Error ? err.message : err);
    }

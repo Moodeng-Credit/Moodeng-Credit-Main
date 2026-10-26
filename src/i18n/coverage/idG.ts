@@ -652,5 +652,18 @@ export const indonesianCoverageG: Record<string, string> = {
    "Your Instant Wallet needs to reconnect": "Instant Wallet Anda perlu dihubungkan ulang",
    "Nothing was sent. Sign out and sign back in, or open Moodeng in another browser like Chrome, then try again.": "Tidak ada yang terkirim. Keluar lalu masuk lagi, atau buka Moodeng di browser lain seperti Chrome, lalu coba lagi.",
    "Your payment didn't go through": "Pembayaran Anda tidak berhasil",
-   "My Instant Wallet payment failed": "Pembayaran dari Instant Wallet saya gagal"
+   "My Instant Wallet payment failed": "Pembayaran dari Instant Wallet saya gagal",
+   // src/views/dashboard/components/ContactsStep.tsx (Indonesia: stay on WhatsApp, 2026-10-27)
+   'Connect WhatsApp': 'Hubungkan WhatsApp',
+   'Connect Facebook on WhatsApp': 'Hubungkan Facebook lewat WhatsApp',
+   'Connect WhatsApp to get started': 'Hubungkan WhatsApp untuk mulai',
+   'We’ll guide you through everything on WhatsApp, step by step.': 'Kami akan memandumu di WhatsApp, langkah demi langkah.',
+   'Keep going on WhatsApp': 'Lanjutkan di WhatsApp',
+   'We’re sending you each step there. Stay in WhatsApp and follow along.':
+      'Kami mengirim setiap langkah ke sana. Tetap di WhatsApp dan ikuti langkahnya.',
+   'Continue on WhatsApp': 'Lanjutkan di WhatsApp',
+   'We sent you a message on WhatsApp. Open it and follow the steps one by one. You don’t need to do anything here.':
+      'Kami sudah mengirim pesan ke WhatsApp-mu. Buka dan ikuti langkahnya satu per satu. Kamu tidak perlu melakukan apa pun di sini.',
+   'Open WhatsApp': 'Buka WhatsApp',
+   'This page moves on by itself when you’re done.': 'Halaman ini akan lanjut sendiri setelah kamu selesai.',
 };

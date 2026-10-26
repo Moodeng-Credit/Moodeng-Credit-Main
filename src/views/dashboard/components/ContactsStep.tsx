@@ -1,4 +1,4 @@
-import { cloneElement, isValidElement, type MouseEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { cloneElement, isValidElement, type MouseEvent, type ReactElement, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { BellRing, Facebook, Loader2, MessageSquareText } from 'lucide-react';
 import posthog from 'posthog-js';
@@ -18,6 +18,7 @@ import {
    MESSENGER_PAGE_ID,
    MESSENGER_PLAY_STORE_LINK,
    NO_MESSENGER_PARAM,
+   WHATSAPP_BUSINESS_NUMBER,
    WHATSAPP_VERIFY_ENABLED
 } from '@/config/contactVerification';
 import MenuGuide from '@/components/MenuGuide';
@@ -372,6 +373,10 @@ export default function ContactsStep({
    // WhatsApp is connected or they say they don't have it.
    const indoWhatsAppFirst = indoCountry && source === 'connect';
    const facebookLocked = indoWhatsAppFirst && !whatsappVerified && !skippedNoWhatsApp && !contactVerified;
+   // Once WhatsApp is connected, the bot walks them through Facebook there, one message at a time
+   // (whatsappFirst.ts), so the app shows no Messenger card that can't open without the Messenger app
+   // (an Indonesian borrower got stuck there, 2026-10-26). It turns green on its own when the bot confirms Facebook (realtime below).
+   const facebookOnWhatsApp = indoWhatsAppFirst && whatsappVerified && !skippedNoWhatsApp && !contactVerified;
    const showWhatsAppCard = offerWhatsAppReminders && contactVerified && !otherReminderOn && !skippedNoWhatsApp && !indoWhatsAppFirst;
    const showTelegramCard = offerWhatsAppReminders && contactVerified && (telegramVerified || (afterNoWhatsApp && !viberVerified));
    const showViberCard =
@@ -966,10 +971,19 @@ export default function ContactsStep({
             ? CONNECT_HIPPOS.notifications
             : CONNECT_HIPPOS.connected;
    // A caller's own hero (onboarding) keeps its words; only the default waving hippo is swapped.
+   const defaultHero = Boolean(intro && isValidElement<{ image?: string }>(intro) && intro.type === ConnectHero && intro.props.image === CONNECT_HIPPOS.hello);
    const hero =
-      intro && isValidElement<{ image?: string }>(intro) && intro.type === ConnectHero && intro.props.image === CONNECT_HIPPOS.hello && stateHippo
-         ? cloneElement(intro, { image: stateHippo })
-         : intro;
+      indoWhatsAppFirst && !skippedNoWhatsApp && !contactVerified && defaultHero && isValidElement(intro)
+         ? cloneElement(intro as ReactElement<{ image?: string; title?: string; subtitle?: string }>, {
+              image: CONNECT_HIPPOS.whatsapp,
+              title: whatsappVerified ? 'Keep going on WhatsApp' : 'Connect WhatsApp to get started',
+              subtitle: whatsappVerified
+                 ? 'We’re sending you each step there. Stay in WhatsApp and follow along.'
+                 : 'We’ll guide you through everything on WhatsApp, step by step.'
+           })
+         : defaultHero && stateHippo && isValidElement(intro)
+           ? cloneElement(intro as ReactElement<{ image?: string }>, { image: stateHippo })
+           : intro;
 
    return (
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
@@ -1003,7 +1017,11 @@ export default function ContactsStep({
             </>
          ) : null}
          {hasReminderStep || indoWhatsAppFirst ? (
-            <StepLabel done={contactVerified} n={indoWhatsAppFirst ? 2 : 1} text="Connect Facebook" />
+            <StepLabel
+               done={contactVerified}
+               n={indoWhatsAppFirst ? 2 : 1}
+               text={indoWhatsAppFirst && !skippedNoWhatsApp ? 'Connect Facebook on WhatsApp' : 'Connect Facebook'}
+            />
          ) : null}
          {facebookLocked ? (
             <LockedStepCard
@@ -1011,13 +1029,31 @@ export default function ContactsStep({
                icon={<Facebook aria-hidden="true" className="size-9 text-[#0866FF]" strokeWidth={2} />}
                title="Connect Facebook"
             />
+         ) : facebookOnWhatsApp ? (
+            <div aria-live="polite" className="flex w-full flex-col gap-3 rounded-[18px] border-2 border-[#25D366] bg-[#eefbf2] px-4 py-4 text-left">
+               <span className="flex items-center gap-2 text-[18px] font-bold leading-[22px] text-[#1f7a3d]">
+                  <i aria-hidden="true" className="fab fa-whatsapp text-[26px] leading-none text-[#25D366]" />
+                  Continue on WhatsApp
+               </span>
+               <p className="text-[15px] leading-[21px] text-[#2f4a37]">
+                  We sent you a message on WhatsApp. Open it and follow the steps one by one. You don’t need to do anything here.
+               </p>
+               <a
+                  className="flex h-12 items-center justify-center rounded-full bg-[#25D366] text-[16px] font-bold text-white"
+                  href={`https://wa.me/${WHATSAPP_BUSINESS_NUMBER}`}
+                  onClick={() => track('contact_whatsapp_first_open_chat', { source })}
+                  rel="noreferrer"
+                  target="_blank"
+               >
+                  Open WhatsApp
+               </a>
+               <p className="flex items-center gap-2 text-[13px] leading-[18px] text-[#5b6b60]">
+                  <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+                  This page moves on by itself when you’re done.
+               </p>
+            </div>
          ) : (
             <>
-               {indoWhatsAppFirst && whatsappVerified && !contactVerified ? (
-                  <p className="rounded-xl bg-[#eefbf2] px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#1f7a3d]">
-                     We also sent these steps to your WhatsApp.
-                  </p>
-               ) : null}
 
                {showWhatsApp ? (
                   <OptionCard
