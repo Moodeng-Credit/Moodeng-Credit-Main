@@ -4,7 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/components/LineLoginButton', () => ({ default: () => null }));
+vi.mock('@/components/LineLoginButton', () => ({ default: () => createElement('div', { 'data-line': '1' }) }));
 vi.mock('@/components/auth/TelegramLoginTile', () => ({ default: () => null }));
 // Stand-in that shows which variant was rendered: the full-width bar or the small icon tile.
 vi.mock('@/components/TikTokLoginButton', () => ({
@@ -20,7 +20,7 @@ const FB_ANDROID_UA =
    'Mozilla/5.0 (Linux; Android 13; SM-A145F Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/125.0.6422.165 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/470.0.0.40.82;]';
 const CHROME_ANDROID_UA = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Mobile Safari/537.36';
 
-describe("TikTok login inside TikTok's browser", () => {
+describe("TikTok tile inside TikTok's browser", () => {
    let container: HTMLDivElement;
    let root: Root;
    const originalUA = navigator.userAgent;
@@ -33,6 +33,7 @@ describe("TikTok login inside TikTok's browser", () => {
       });
    };
    const fullTikTok = () => container.querySelector('[data-tiktok="full"]');
+   const tikTokTile = () => container.querySelector('[data-tiktok="tile"]');
 
    beforeEach(() => {
       vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'test-client-id');
@@ -51,21 +52,23 @@ describe("TikTok login inside TikTok's browser", () => {
    it.each([
       ['Android', TIKTOK_ANDROID_UA],
       ['iPhone', TIKTOK_IOS_UA]
-   ])('TikTok on %s: TikTok is the main button, first on the page', async (_name, ua) => {
+   ])('TikTok on %s: the small TikTok tile shows on its own (no Telegram/LINE)', async (_name, ua) => {
       await renderWith(ua);
-      expect(fullTikTok()).not.toBeNull();
-      expect(container.querySelector('[data-tiktok]')).toBe(fullTikTok());
+      expect(fullTikTok()).toBeNull();
+      expect(tikTokTile()?.closest('.hidden')).toBeNull();
+      expect(container.querySelector('[data-line]')).toBeNull();
       expect(container.textContent).toContain('TikTok and email work here.');
    });
 
-   it('Facebook browser: no big TikTok button', async () => {
+   it('Facebook browser: the tile row stays hidden', async () => {
       await renderWith(FB_ANDROID_UA);
-      expect(fullTikTok()).toBeNull();
+      expect(tikTokTile()?.closest('.hidden')).not.toBeNull();
    });
 
    it('normal browser: TikTok stays a small tile', async () => {
       await renderWith(CHROME_ANDROID_UA);
       expect(fullTikTok()).toBeNull();
-      expect(container.querySelector('[data-tiktok="tile"]')).not.toBeNull();
+      expect(tikTokTile()?.closest('.hidden')).toBeNull();
+      expect(container.querySelector('[data-line]')).not.toBeNull();
    });
 });
