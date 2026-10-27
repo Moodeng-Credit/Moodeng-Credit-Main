@@ -12,6 +12,7 @@ import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { isFacebookFamilyApp, isFacebookLoginEnabled } from '@/lib/facebookAuth';
 import { buildAndroidIntentUrl, detectInAppBrowser, isFacebookInApp, openInSafari, watchForFailedHandOff } from '@/lib/inAppBrowser';
 import { getLastUsedAuth, setLastUsedAuth } from '@/lib/lastUsedAuth';
+import { isTikTokButtonVisible } from '@/lib/tiktokAuth';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 
 interface SocialAuthButtonsProps {
@@ -172,6 +173,8 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
    const handOffBrowser = inApp.os === 'ios' ? 'Safari' : 'Chrome';
    const facebookEnabled = useMemo(() => isFacebookLoginEnabled(), []);
    const facebookPrimary = facebookEnabled && isFacebookFamilyApp(inApp);
+   // TikTok's own browser: the person is already signed in to TikTok, so TikTok leads (like Facebook above).
+   const tiktokPrimary = useMemo(() => inApp.appName === 'TikTok' && isTikTokButtonVisible(), [inApp]);
 
    const googleLabel = googleInApp
       ? `Google: open in ${inApp.os === 'ios' ? 'Safari' : 'Chrome'}`
@@ -243,6 +246,14 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
          {/* Facebook's own browser: the person is already signed in to Facebook, so it leads */}
          {facebookPrimary && !hideFacebook ? <FacebookAuthButton isSignUp={isSignUp} variant="full" /> : null}
 
+         {/* TikTok's own browser: same idea, TikTok is the main button */}
+         {tiktokPrimary ? (
+            <div className="relative w-full">
+               <TikTokLoginButton isSignUp={isSignUp} />
+               {lastUsed === 'tiktok' && <LastUsedBadge className="-top-2 right-3" />}
+            </div>
+         ) : null}
+
          {/* Google inside an app's browser: hand off to Chrome/Safari, where Google sign-in works */}
          {clientId && googleInApp && !googleAsLine ? (
             <div className="w-full">
@@ -274,7 +285,7 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
                   ) : (
                      <>
                         Google sign-in doesn&apos;t work inside {inApp.appName ?? 'this app'}.{' '}
-                        {facebookPrimary ? 'Facebook and email work here.' : 'Email works here.'}
+                        {facebookPrimary ? 'Facebook and email work here.' : tiktokPrimary ? 'TikTok and email work here.' : 'Email works here.'}
                      </>
                   )}
                </p>
