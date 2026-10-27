@@ -2130,6 +2130,8 @@ export interface AdminVoucherClaim {
    received_at: string | null;
    receipt_issue_at: string | null;
    created_at: string;
+   // The Xoxo links / Bitrefill codes this claim got (who got what).
+   links: string[];
 }
 
 export async function listVoucherClaims(): Promise<AdminVoucherClaim[]> {
@@ -2138,7 +2140,7 @@ export async function listVoucherClaims(): Promise<AdminVoucherClaim[]> {
       supabase
          .from('voucher_claims')
          .select(
-            'id, user_id, reward, amount_php, brand, full_name, mobile, email, status, admin_note, sent_at, received_at, receipt_issue_at, created_at, users(username, email)'
+            'id, user_id, reward, amount_php, brand, full_name, mobile, email, status, admin_note, sent_at, received_at, receipt_issue_at, created_at, users(username, email), voucher_codes(code, assigned_at)'
          )
          .order('created_at', { ascending: false })
    )) as AnyRow[] | null;
@@ -2146,7 +2148,10 @@ export async function listVoucherClaims(): Promise<AdminVoucherClaim[]> {
       ...row,
       amount_php: toNumber(row.amount_php),
       username: (Array.isArray(row.users) ? row.users[0]?.username : row.users?.username) ?? null,
-      account_email: (Array.isArray(row.users) ? row.users[0]?.email : row.users?.email) ?? null
+      account_email: (Array.isArray(row.users) ? row.users[0]?.email : row.users?.email) ?? null,
+      links: ((row.voucher_codes ?? []) as Array<{ code: string; assigned_at: string | null }>)
+         .sort((a, b) => (a.assigned_at ?? '').localeCompare(b.assigned_at ?? ''))
+         .map((code) => code.code)
    })) as AdminVoucherClaim[];
 }
 
