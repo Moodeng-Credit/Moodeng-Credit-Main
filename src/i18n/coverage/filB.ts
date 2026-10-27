@@ -303,7 +303,8 @@ export const filipinoCoverageB: Record<string, string> = {
    "GrabMart only delivers there.": "Doon lang nagde-deliver ang GrabMart.",
    "Yes, I'm there": "Oo, nandoon ako",
    "No, give me Moo-food": "Hindi, Moo-food na lang",
-   "Moo-food works anywhere in the Philippines 🍗": "Gumagana ang Moo-food kahit saan sa Pilipinas 🍗",
+   "Anywhere in PH": "Kahit saan sa PH",
+   "Manila & Cebu only": "Manila at Cebu lang",
    // Food voucher claim (src/views/dashboard-v2/DashboardV2Rewards.tsx)
    'food voucher is on its way to your email. Open it and pick Jollibee, Chowking, Greenwich, Mang Inasal or Red Ribbon.':
       'na food voucher mo ay papunta na sa email mo. Buksan ito at pumili ng Jollibee, Chowking, Greenwich, Mang Inasal o Red Ribbon.',

@@ -47,14 +47,14 @@ const MOO_MENU: Array<{ brand: VoucherBrand; title: string; detail: string; wher
       brand: 'food',
       title: 'Moo-food',
       detail: 'Jollibee + 4 more',
-      where: 'Any branch in the Philippines',
+      where: 'Anywhere in PH',
       art: DASHBOARD_V2_ASSETS.foodJollibee
    },
    {
       brand: 'grabmart',
       title: 'Moo-snacks',
       detail: 'GrabMart',
-      where: 'Delivered in Metro Manila & Cebu',
+      where: 'Manila & Cebu only',
       art: DASHBOARD_V2_ASSETS.foodGrabMart
    }
 ];
@@ -113,7 +113,6 @@ export function VoucherClaimPopup({
 }) {
    const [step, setStep] = useState<MooStep>(initialStep);
    const [brand, setBrand] = useState<VoucherBrand>('food');
-   const [switchedToFood, setSwitchedToFood] = useState(false);
    const submitClaim = useSubmitVoucherClaim();
    const canGrabMart = voucher.amountPhp >= GRABMART_MIN_PHP;
    const picked = MOO_MENU.find((item) => item.brand === brand) ?? MOO_MENU[0];
@@ -169,10 +168,7 @@ export function VoucherClaimPopup({
                                  type="button"
                                  disabled={disabled}
                                  aria-pressed={isPicked}
-                                 onClick={() => {
-                                    setBrand(item.brand);
-                                    setSwitchedToFood(false);
-                                 }}
+                                 onClick={() => setBrand(item.brand)}
                                  className={clsx(
                                     'flex flex-col items-center gap-1 rounded-[18px] border-2 bg-white px-2 pb-3 pt-2 text-center dark:bg-dv2-page',
                                     isPicked && !disabled ? 'border-[#6b55f7] shadow-[0_0_0_3px_rgba(107,85,247,0.15)]' : 'border-[#e8e4ff] dark:border-[#3a2f55]',
@@ -198,14 +194,6 @@ export function VoucherClaimPopup({
                            );
                         })}
                      </div>
-                     {switchedToFood ? (
-                        <p className="w-full rounded-[12px] bg-[#eaf6ec] px-3 py-2 text-[14px] font-semibold leading-5 text-[#3c8248] dark:bg-[#1f3323] dark:text-[#7fd68b]">
-                           Moo-food works anywhere in the Philippines 🍗
-                        </p>
-                     ) : null}
-                     <p className="text-[13px] leading-[18px] text-[#7b6b8c]">
-                        Moo-food: you pick Jollibee, Chowking, Greenwich, Mang Inasal or Red Ribbon when you open your voucher.
-                     </p>
                      <button
                         type="button"
                         onClick={() => setStep(brand === 'grabmart' ? 'area' : 'details')}
@@ -234,7 +222,6 @@ export function VoucherClaimPopup({
                         type="button"
                         onClick={() => {
                            setBrand('food');
-                           setSwitchedToFood(true);
                            setStep('pick');
                         }}
                         className="flex h-[52px] w-full items-center justify-center rounded-[35px] border-2 border-[#e8e4ff] bg-white text-[18px] font-semibold text-[#6b55f7] dark:border-[#3a2f55] dark:bg-dv2-page dark:text-[#9b8bff]"
@@ -293,7 +280,7 @@ export function VoucherClaimPopup({
                   </form>
                ) : (
                   <div className="flex flex-col items-center gap-3 py-2">
-                     <DesignImage src={DASHBOARD_V2_ASSETS.mooMenuChef} alt="" className="h-32 w-32 object-contain" />
+                     <DesignImage src={DASHBOARD_V2_ASSETS.mooEnvelope} alt="" className="h-32 w-32 object-contain" />
                      <p id="dv2-voucher-title" className="text-[22px] font-bold leading-7 text-[#594d65] dark:text-[#e6def2]">
                         Your treat is mooo-ving to your email!
                      </p>
