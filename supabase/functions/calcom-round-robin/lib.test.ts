@@ -1,6 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { hostsFreeAt, mergeSlots, orderHostsToTry, bookingCooldownUntil, preferSoonSlots, recheckRange, teamGuests } from './lib.ts';
+import { bookingCooldownUntil, calendlyToCalSchedule, dropBusySlots, hostsFreeAt, mergeSlots, orderHostsToTry, preferSoonSlots, recheckRange, teamGuests } from './lib.ts';
 
 Deno.test('mergeSlots unions hosts, de-dupes by instant, and sorts', () => {
    const george = ['2026-09-22T19:00:00.000+07:00', '2026-09-22T20:00:00.000+07:00'];
@@ -69,4 +69,33 @@ Deno.test('teamGuests invites every other cofounder, never the host or the borro
    assertEquals(teamGuests('emma', emails, 'GEORGE@example.com'), []); // borrower is a cofounder testing
    assertEquals(teamGuests('emma', { george: null, emma: 'emma@example.com' }, 'b@example.com'), []); // /me failed
    assertEquals(teamGuests('emma', { george: 'emma@example.com', emma: 'emma@example.com' }, 'b@example.com'), []); // shared login
+});
+
+Deno.test('calendlyToCalSchedule groups weekly hours and keeps only upcoming one-off days', () => {
+   const rules = [
+      { type: 'wday', wday: 'sunday', intervals: [{ from: '20:00', to: '23:00' }] },
+      { type: 'wday', wday: 'monday', intervals: [{ from: '10:00', to: '15:00' }, { from: '20:00', to: '23:00' }] },
+      { type: 'wday', wday: 'friday', intervals: [{ from: '10:00', to: '15:00' }, { from: '21:30', to: '24:00' }] },
+      { type: 'date', date: '2026-10-01', intervals: [] },
+      { type: 'date', date: '2026-11-02', intervals: [] },
+      { type: 'date', date: '2026-11-03', intervals: [{ from: '12:00', to: '13:00' }] }
+   ];
+   assertEquals(calendlyToCalSchedule(rules, 'Asia/Bangkok', '2026-10-27'), {
+      timeZone: 'Asia/Bangkok',
+      availability: [
+         { days: ['Monday', 'Friday'], startTime: '10:00', endTime: '15:00' },
+         { days: ['Sunday', 'Monday'], startTime: '20:00', endTime: '23:00' },
+         { days: ['Friday'], startTime: '21:30', endTime: '23:59' }
+      ],
+      overrides: [
+         { date: '2026-11-02', startTime: '00:00', endTime: '00:00' },
+         { date: '2026-11-03', startTime: '12:00', endTime: '13:00' }
+      ]
+   });
+});
+
+Deno.test('dropBusySlots removes any call that would overlap a busy block', () => {
+   const slots = ['2026-10-27T10:45:00+07:00', '2026-10-27T11:00:00+07:00', '2026-10-27T11:45:00+07:00', '2026-10-27T12:00:00+07:00'];
+   const busy = [{ start: '2026-10-27T04:00:00Z', end: '2026-10-27T05:00:00Z' }]; // 11:00–12:00 Bangkok
+   assertEquals(dropBusySlots(slots, busy, 15), ['2026-10-27T10:45:00+07:00', '2026-10-27T12:00:00+07:00']);
 });

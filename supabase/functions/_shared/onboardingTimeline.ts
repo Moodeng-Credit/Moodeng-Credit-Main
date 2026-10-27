@@ -6,6 +6,8 @@ export type OnboardingTimeline = {
    method: string | null;
    phone: string | null;
    channels: string[] | null;
+   location?: { city: string | null; country: string | null; hosting: boolean } | null;
+   timezone?: string | null;
    steps: { step: string; at: string }[];
 };
 
@@ -36,6 +38,26 @@ export const formatGap = (ms: number): string => {
 const bkkTime = (iso: string) =>
    new Date(iso).toLocaleString('en-US', { timeZone: 'Asia/Bangkok', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 
+const countryName = (iso: string) => {
+   try {
+      return new Intl.DisplayNames(['en'], { type: 'region' }).of(iso.toUpperCase()) ?? iso;
+   } catch {
+      return iso;
+   }
+};
+
+// Where they signed up from: first IP's city + country, else the phone's clock ("Asia/Dhaka" → Dhaka).
+// The team alert clock is always Bangkok time, so without this a Dhaka sign-up reads like Bangkok.
+export const locationLine = (t: OnboardingTimeline | null): string | null => {
+   const loc = t?.location;
+   if (loc?.country) {
+      const place = [loc.city, countryName(loc.country)].filter(Boolean).join(', ');
+      return `Location: ${place}${loc.hosting ? ' (VPN/hosting IP — may not be real)' : ''}`;
+   }
+   const city = t?.timezone?.split('/').pop()?.replace(/_/g, ' ');
+   return city ? `Location: ${city} area (phone time zone, no IP yet)` : null;
+};
+
 // "Signed up with: Phone code (+639…)" + "Notifications: Messenger, WhatsApp" — the two facts the team
 // kept asking about.
 export const signupLines = (t: OnboardingTimeline | null): string[] => {
@@ -43,15 +65,16 @@ export const signupLines = (t: OnboardingTimeline | null): string[] => {
    const phone = t.phone ? ` (+${t.phone.replace(/^\+/, '')})` : '';
    return [
       `Signed up with: ${t.method ?? 'unknown'}${phone}`,
+      locationLine(t),
       `Notifications on: ${t.channels?.length ? t.channels.join(', ') : 'none yet'}`
-   ];
+   ].filter(Boolean) as string[];
 };
 
 export const timelineLines = (t: OnboardingTimeline | null): string[] => {
    if (!t?.steps.length) return [];
    const first = Date.parse(t.steps[0].at);
    const lines = t.steps.map((s, i) =>
-      i === 0 ? `• ${s.step} — ${bkkTime(s.at)} Bangkok` : `• ${s.step} — +${formatGap(Date.parse(s.at) - Date.parse(t.steps[i - 1].at))}`
+      i === 0 ? `• ${s.step} — ${bkkTime(s.at)} (Bangkok time, GMT+7)` : `• ${s.step} — +${formatGap(Date.parse(s.at) - Date.parse(t.steps[i - 1].at))}`
    );
    const total = Date.parse(t.steps[t.steps.length - 1].at) - first;
    return ['Onboarding:', ...lines, t.steps.length > 1 ? `Total so far: ${formatGap(total)}` : null].filter(Boolean) as string[];

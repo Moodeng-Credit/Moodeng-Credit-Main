@@ -36,7 +36,7 @@ type SupabaseClient = any;
 
 //    loan         ref = loan id   (Discord) new request / funded / unknown-sender + needs-refund alerts —
 //                                 multi-step: funded → overdue → repaid, stamped by state-events-dispatch
-export type AdminCardKind = 'loan_access' | 'voucher' | 'messenger' | 'kyc_review' | 'kyc_tries' | 'loan' | 'referral_payout';
+export type AdminCardKind = 'loan_access' | 'voucher' | 'messenger' | 'kyc_review' | 'kyc_tries' | 'loan' | 'referral_payout' | 'referral_claim';
 
 export type CardLink = { text: string; url: string };
 

@@ -12,6 +12,7 @@ import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { isFacebookFamilyApp, isFacebookLoginEnabled } from '@/lib/facebookAuth';
 import { buildAndroidIntentUrl, detectInAppBrowser, isFacebookInApp, openInSafari, watchForFailedHandOff } from '@/lib/inAppBrowser';
 import { getLastUsedAuth, setLastUsedAuth } from '@/lib/lastUsedAuth';
+import { isTikTokButtonVisible } from '@/lib/tiktokAuth';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 
 interface SocialAuthButtonsProps {
@@ -172,6 +173,8 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
    const handOffBrowser = inApp.os === 'ios' ? 'Safari' : 'Chrome';
    const facebookEnabled = useMemo(() => isFacebookLoginEnabled(), []);
    const facebookPrimary = facebookEnabled && isFacebookFamilyApp(inApp);
+   // TikTok's own browser: the person is already signed in to TikTok, so its tile stays (Telegram/LINE don't).
+   const tiktokInApp = useMemo(() => inApp.appName === 'TikTok' && isTikTokButtonVisible(), [inApp]);
 
    const googleLabel = googleInApp
       ? `Google: open in ${inApp.os === 'ios' ? 'Safari' : 'Chrome'}`
@@ -274,7 +277,7 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
                   ) : (
                      <>
                         Google sign-in doesn&apos;t work inside {inApp.appName ?? 'this app'}.{' '}
-                        {facebookPrimary ? 'Facebook and email work here.' : 'Email works here.'}
+                        {facebookPrimary ? 'Facebook and email work here.' : tiktokInApp ? 'TikTok and email work here.' : 'Email works here.'}
                      </>
                   )}
                </p>
@@ -307,19 +310,24 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
 
          {/* Secondary providers as small logo-square tiles, left-aligned under the Google button. Not inside
              an app's browser (Facebook, Messenger, Instagram…): there it's phone or email only, and the
-             form says "Signed up with Telegram or LINE? Open in Chrome" (George, 2026-10-15). */}
-         <div className={inApp.isInApp ? 'hidden' : 'flex w-full min-w-0 items-center justify-start gap-3'}>
-            {/* Telegram: plain icon tile that redirects to Telegram OAuth (no embedded widget) */}
-            <div className="relative">
-               <TelegramLoginTile />
-               {lastUsed === 'telegram' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
-            </div>
+             form says "Signed up with Telegram or LINE? Open in Chrome" (George, 2026-10-15).
+             Exception: inside TikTok's browser the TikTok tile still shows, on its own. */}
+         <div className={inApp.isInApp && !tiktokInApp ? 'hidden' : 'flex w-full min-w-0 items-center justify-start gap-3'}>
+            {inApp.isInApp ? null : (
+               <>
+                  {/* Telegram: plain icon tile that redirects to Telegram OAuth (no embedded widget) */}
+                  <div className="relative">
+                     <TelegramLoginTile />
+                     {lastUsed === 'telegram' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
+                  </div>
 
-            {/* LINE: redirects to LINE Login OAuth, handled by the line-login edge fn */}
-            <div className="relative">
-               <LineLoginButton isSignUp={isSignUp} iconOnly />
-               {lastUsed === 'line' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
-            </div>
+                  {/* LINE: redirects to LINE Login OAuth, handled by the line-login edge fn */}
+                  <div className="relative">
+                     <LineLoginButton isSignUp={isSignUp} iconOnly />
+                     {lastUsed === 'line' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
+                  </div>
+               </>
+            )}
 
             {/* TikTok: redirects to TikTok Login Kit, handled by the tiktok-login edge fn (hidden until the app is approved / ?tiktok=1) */}
             <div className="relative">

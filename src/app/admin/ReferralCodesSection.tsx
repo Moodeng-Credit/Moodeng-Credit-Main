@@ -4,10 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { isValidReferralBoost, REFERRAL_BOOST_OPTIONS, STARTING_CREDIT_LIMIT } from '../../config/creditTiers';
 import {
+   type AdminReferralClaim,
    type AdminReferralCode,
    type AdminReferralPayout,
    createReferralCode,
+   decideReferralClaim,
    deleteReferralCode,
+   listReferralClaims,
    listReferralCodes,
    listReferralPayouts,
    logAdminAction,
@@ -67,6 +70,8 @@ function errorMessage(err: unknown): string {
 export default function ReferralCodesSection() {
    const [codes, setCodes] = useState<AdminReferralCode[]>([]);
    const [payouts, setPayouts] = useState<AdminReferralPayout[]>([]);
+   const [claims, setClaims] = useState<AdminReferralClaim[]>([]);
+   const [pickingClaim, setPickingClaim] = useState<string | null>(null);
    const [showPaid, setShowPaid] = useState(false);
    const [loading, setLoading] = useState(false);
    const [busy, setBusy] = useState<string | null>(null);
@@ -83,9 +88,10 @@ export default function ReferralCodesSection() {
       setLoading(true);
       setError(null);
       try {
-         const [codeRows, payoutRows] = await Promise.all([listReferralCodes(), listReferralPayouts()]);
+         const [codeRows, payoutRows, claimRows] = await Promise.all([listReferralCodes(), listReferralPayouts(), listReferralClaims()]);
          setCodes(codeRows);
          setPayouts(payoutRows);
+         setClaims(claimRows);
       } catch (err) {
          setError(errorMessage(err));
       } finally {
@@ -184,6 +190,23 @@ export default function ReferralCodesSection() {
       }
    }, []);
 
+   const decideClaim = useCallback(
+      async (c: AdminReferralClaim, approve: boolean, userId?: string) => {
+         setBusy(c.id);
+         setError(null);
+         try {
+            await decideReferralClaim(c.id, approve, userId);
+            setPickingClaim(null);
+            await load();
+         } catch (err) {
+            setError(errorMessage(err));
+         } finally {
+            setBusy(null);
+         }
+      },
+      [load]
+   );
+
    const setPayoutStatus = useCallback(async (p: AdminReferralPayout, status: 'unpaid' | 'paid') => {
       setBusy(p.id);
       setError(null);
@@ -240,6 +263,7 @@ export default function ReferralCodesSection() {
 
    const [editingId, setEditingId] = useState<string | null>(null);
    const [editBoost, setEditBoost] = useState('');
+   const [editPayout, setEditPayout] = useState('');
    const [editMaxUses, setEditMaxUses] = useState('');
    const [editExpiresAt, setEditExpiresAt] = useState('');
 
@@ -247,6 +271,7 @@ export default function ReferralCodesSection() {
       setError(null);
       setEditingId(c.id);
       setEditBoost(String(c.boost_amount));
+      setEditPayout(String(c.payout_amount));
       setEditMaxUses(c.max_uses != null ? String(c.max_uses) : '');
       setEditExpiresAt(isoToDateInput(c.expires_at));
    }, []);
@@ -258,6 +283,11 @@ export default function ReferralCodesSection() {
          const boost = Number(editBoost);
          if (!isValidReferralBoost(boost)) {
             setError(boostErrorMessage);
+            return;
+         }
+         const payout = Number(editPayout);
+         if (editPayout.trim() === '' || !Number.isFinite(payout) || payout < 0) {
+            setError('Pay per friend must be a dollar amount, 0 or more.');
             return;
          }
          const maxUses = editMaxUses.trim() === '' ? null : Number(editMaxUses);
@@ -274,12 +304,17 @@ export default function ReferralCodesSection() {
          setBusy(c.id);
          setError(null);
          try {
-            const updated = await updateReferralCode(c.id, { boost_amount: boost, max_uses: maxUses, expires_at: expiresAt });
+            const updated = await updateReferralCode(c.id, {
+               boost_amount: boost,
+               payout_amount: payout,
+               max_uses: maxUses,
+               expires_at: expiresAt
+            });
             await logAdminAction({
                action: 'referral_code_updated',
                target_table: 'referral_codes',
                target_id: c.id,
-               metadata: { code: c.code, boost_amount: boost, max_uses: maxUses, expires_at: expiresAt }
+               metadata: { code: c.code, boost_amount: boost, payout_amount: payout, max_uses: maxUses, expires_at: expiresAt }
             });
             setCodes((prev) => prev.map((row) => (row.id === c.id ? updated : row)));
             setEditingId(null);
@@ -289,7 +324,7 @@ export default function ReferralCodesSection() {
             setBusy(null);
          }
       },
-      [editBoost, editExpiresAt, editMaxUses]
+      [editBoost, editExpiresAt, editMaxUses, editPayout]
    );
 
    const shown = useMemo(() => {
@@ -335,6 +370,67 @@ export default function ReferralCodesSection() {
          </div>
 
          {error ? <div className="rounded-2xl border border-red-900 bg-red-950/40 p-4 text-lg font-bold text-red-300">{error}</div> : null}
+
+         {claims.some((c) => c.status === 'pending') ? (
+            <article className="rounded-2xl border border-[#8336f0]/60 bg-[#1c0a3a] p-5">
+               <h4 className="text-xl font-black">
+                  Friends to check{' '}
+                  <span className="text-base font-bold text-[#c9a7ff]">
+                     ({claims.filter((c) => c.status === 'pending').length} waiting)
+                  </span>
+               </h4>
+               <p className="mt-1 text-sm font-medium text-[#a89bb8]">
+                  Code owners say they referred these people. Find the account and approve — it only adds them to the owner&apos;s
+                  /affiliate list (tracking, no payout).
+               </p>
+               <ul className="mt-3 space-y-2">
+                  {claims
+                     .filter((c) => c.status === 'pending')
+                     .map((c) => (
+                        <li key={c.id} className="rounded-xl bg-[#241044] px-4 py-3">
+                           <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                 <p className="text-base font-black text-white">
+                                    🙋 {c.friend_name}
+                                    {c.friend_contact ? <span className="font-medium text-[#cfc6dd]"> · {c.friend_contact}</span> : null}
+                                 </p>
+                                 <p className="text-sm font-medium text-[#a89bb8]">
+                                    claimed by {c.owner?.display_name?.trim() || c.owner?.username || 'owner'} ·{' '}
+                                    <span className="font-mono font-black text-[#cfc6dd]">{c.code?.code}</span> ·{' '}
+                                    {new Date(c.created_at).toLocaleDateString()}
+                                 </p>
+                              </div>
+                              <div className="flex gap-2">
+                                 <button
+                                    type="button"
+                                    onClick={() => setPickingClaim(pickingClaim === c.id ? null : c.id)}
+                                    disabled={busy === c.id}
+                                    className="rounded-xl bg-[#8336f0] px-4 py-2 text-base font-black text-white disabled:opacity-50"
+                                 >
+                                    ✅ Find &amp; approve
+                                 </button>
+                                 <button
+                                    type="button"
+                                    onClick={() => decideClaim(c, false)}
+                                    disabled={busy === c.id}
+                                    className="rounded-xl bg-[#34234f] px-4 py-2 text-base font-black text-white disabled:opacity-50"
+                                 >
+                                    ✖ Can&apos;t find
+                                 </button>
+                              </div>
+                           </div>
+                           {pickingClaim === c.id ? (
+                              <UserPicker
+                                 disabled={busy === c.id}
+                                 onPick={(u) => decideClaim(c, true, u.id)}
+                                 onCancel={() => setPickingClaim(null)}
+                              />
+                           ) : null}
+                        </li>
+                     ))}
+               </ul>
+            </article>
+         ) : null}
 
          <article className="rounded-2xl border border-amber-700/60 bg-[#1c0a3a] p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -398,7 +494,9 @@ export default function ReferralCodesSection() {
                </ul>
             ) : (
                <p className="mt-2 text-base font-bold text-[#6f6385]">
-                  {loading ? 'Loading…' : 'Nobody is owed right now. When someone who used an owned code repays a loan, the owner shows up here and in Telegram.'}
+                  {loading
+                     ? 'Loading…'
+                     : 'Nobody is owed right now. When someone who used an owned code repays a loan, the owner shows up here and in Telegram.'}
                </p>
             )}
          </article>
@@ -483,6 +581,11 @@ export default function ReferralCodesSection() {
                                  <span className="rounded-full bg-emerald-900/50 px-2 py-0.5 text-sm font-black text-emerald-300">
                                     ${STARTING_CREDIT_LIMIT + Number(c.boost_amount)} total limit
                                  </span>
+                                 {c.owner ? (
+                                    <span className="rounded-full bg-amber-900/50 px-2 py-0.5 text-sm font-black text-amber-300">
+                                       pays ${c.payout_amount} / repaying friend
+                                    </span>
+                                 ) : null}
                               </div>
                               <p className="mt-1 text-lg font-bold text-[#cfc6dd]">
                                  {c.current_uses} used{c.max_uses != null ? ` of ${c.max_uses}` : ''}
@@ -585,6 +688,15 @@ export default function ReferralCodesSection() {
                                        className="rounded-xl border border-[#3d1f6e] bg-[#241044] px-3 py-2 text-base font-bold text-white"
                                     />
                                  </label>
+                                 <label className="flex w-36 flex-col gap-1 text-sm font-bold text-[#a89bb8]">
+                                    Pay per friend ($)
+                                    <input
+                                       value={editPayout}
+                                       onChange={(e) => setEditPayout(e.target.value)}
+                                       inputMode="decimal"
+                                       className="rounded-xl border border-[#3d1f6e] bg-[#241044] px-3 py-2 text-base font-bold text-white"
+                                    />
+                                 </label>
                                  <label className="flex w-32 flex-col gap-1 text-sm font-bold text-[#a89bb8]">
                                     Max uses
                                     <input
@@ -624,7 +736,8 @@ export default function ReferralCodesSection() {
                               </div>
                               <p className="mt-2 text-sm font-medium text-[#6f6385]">
                                  The code itself can&apos;t change. Empty max uses or expiry means unlimited / never expires. Expiry is end
-                                 of that day, your local time.
+                                 of that day, your local time. Pay per friend is what the owner earns when someone who used the code takes a
+                                 loan and repays it (shown on their /affiliate page); payouts already earned keep their old amount.
                               </p>
                            </div>
                         ) : null}

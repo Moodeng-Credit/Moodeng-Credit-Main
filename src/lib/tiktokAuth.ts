@@ -7,17 +7,16 @@ const MAX_TRACKED_STATES = 10;
 
 /**
  * Public TikTok Login Kit client key (safe to expose to the browser; the client SECRET stays server-side in the
- * tiktok-login edge function). Currently the Sandbox app's key: it only works for the Sandbox target users until
- * TikTok approves the Production app, then swap in the Production key (and TIKTOK_CLIENT_KEY/SECRET in Supabase).
+ * tiktok-login edge function). Production app key (approved 2026-10-27); must match TIKTOK_CLIENT_KEY in Supabase.
  */
-const TIKTOK_CLIENT_KEY = 'sbaww8ikhon8a2tvwm';
+const TIKTOK_CLIENT_KEY = 'awxoi5wm2irjkju3';
 
 /**
- * Show TikTok buttons to everyone. Keep false while on the Sandbox key (other people's logins would fail);
- * until then the buttons only appear after visiting any page with ?tiktok=1 (cleared with ?tiktok=0).
+ * Show TikTok buttons to everyone. When false, the buttons only appear after visiting any page with ?tiktok=1
+ * (cleared with ?tiktok=0).
  * Keep in sync with public/landing/auth-providers.json.
  */
-const TIKTOK_PUBLIC = false;
+const TIKTOK_PUBLIC = true;
 export const TIKTOK_TEST_FLAG_KEY = 'moodeng:tiktok-test';
 
 export function getTikTokClientKey(): string {

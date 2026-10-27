@@ -4,12 +4,14 @@
 //   { payoutId }                                  new payout → post the card (remembered in admin_message_refs)
 //   { payoutId, event: 'decided', decidedBy? }    status changed (e.g. Paid in the admin panel) → stamp the card.
 //                                                 A no-op if the Telegram button already stamped it.
+//   { claimId }                                   an affiliate added a friend they referred (submit_referral_claim)
+//                                                 → card asking the team to find them in Admin → Referral codes.
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { openInAdminButton, sendAdminCard, stampDecisionCards } from '../_shared/adminCards.ts';
-import type { TelegramInlineKeyboard } from '../_shared/telegram.ts';
 import { buildPayoutCallback, buildPayoutCard, type PayoutRow, payoutSelect, payoutStampHeader } from '../_shared/referralPayouts.ts';
+import type { TelegramInlineKeyboard } from '../_shared/telegram.ts';
 
 type SupabaseClient = ReturnType<typeof createClient<any>>;
 
@@ -32,6 +34,43 @@ const isAuthorized = async (supabase: SupabaseClient, req: Request) => {
    return data === true;
 };
 
+// Tracking only — approving a claim adds the friend to the owner's /affiliate list, no payout.
+const postClaimCard = async (supabase: SupabaseClient, claimId: string) => {
+   const { data: claim, error } = await supabase
+      .from('referral_claims')
+      .select(
+         'id, friend_name, friend_contact, owner_user_id, code:referral_codes(code), owner:users!referral_claims_owner_user_id_fkey(username, display_name)'
+      )
+      .eq('id', claimId)
+      .maybeSingle();
+   if (error) throw new Error(error.message);
+   if (!claim) return json({ error: 'Claim not found' }, 404);
+   const chatId = await getSetting(supabase, 'kyc_alert_chat_id');
+   if (!chatId) return json({ error: 'kyc_alert_chat_id is not set' }, 500);
+
+   const c = claim as unknown as {
+      id: string;
+      friend_name: string;
+      friend_contact: string | null;
+      owner_user_id: string;
+      code: { code: string } | null;
+      owner: { username: string | null; display_name: string | null } | null;
+   };
+   const owner = c.owner?.display_name?.trim() || (c.owner?.username ? `@${c.owner.username}` : 'An affiliate');
+   const text = [
+      `🙋 ${owner} says they referred someone`,
+      '',
+      `Friend: ${c.friend_name}${c.friend_contact ? ` · ${c.friend_contact}` : ''}`,
+      `Code: ${c.code?.code ?? '—'}`,
+      '',
+      'Find them in Admin → Referral codes → Friends to check, then ✅ Approve. Tracking only, no payout.'
+   ].join('\n');
+   const siteUrl = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('SITE_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
+   const keyboard: TelegramInlineKeyboard = [[{ text: '🔎 Check in admin', url: `${siteUrl}/admin/referrals` }]];
+   await sendAdminCard(supabase, chatId, { kind: 'referral_claim', refId: c.id, text, keyboard });
+   return json({ ok: true });
+};
+
 serve(async (req) => {
    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
@@ -39,11 +78,13 @@ serve(async (req) => {
    if (!(await isAuthorized(supabase, req))) return json({ error: 'Unauthorized' }, 401);
 
    try {
-      const { payoutId, event, decidedBy } = (await req.json().catch(() => ({}))) as {
+      const { payoutId, event, decidedBy, claimId } = (await req.json().catch(() => ({}))) as {
          payoutId?: string;
          event?: string;
          decidedBy?: string | null;
+         claimId?: string;
       };
+      if (claimId) return await postClaimCard(supabase, claimId);
       if (!payoutId) return json({ error: 'payoutId is required' }, 400);
 
       const { data, error } = await supabase.from('referral_code_payouts').select(payoutSelect).eq('id', payoutId).maybeSingle();

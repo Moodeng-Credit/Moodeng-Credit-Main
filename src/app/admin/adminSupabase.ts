@@ -1,7 +1,7 @@
 import type { CalAvailability, CalOverride, CalSchedule } from '@/app/admin/calendarModel';
 import type { FormCheck } from '@/app/admin/callFormCheck';
-import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 import { DEFAULT_LOAN_TIMEZONE, getDaysUntilDueDay, getLoanTimezone, isPastDueDay } from '@/lib/loanDeadline';
+import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 
 export type AdminRole = 'owner' | 'admin' | 'support';
 export type NoticeAudience = 'borrower' | 'lender' | 'candidate_lender' | 'admin';
@@ -621,11 +621,16 @@ export async function listAdminDirectoryUsers(search?: string): Promise<AdminDir
    const [loans, restrictions, riskProfiles, points, pointEvents, trustPoints, trustPointEvents, ipLog] = await Promise.all([
       queryByIdChunks(userIds, async (ids) => {
          const rows = await requireOk<AnyRow[]>(
-            supabase.from('loans').select(loanSelect).or(`borrower_user_id.in.(${ids.join(',')}),lender_user_id.in.(${ids.join(',')})`)
+            supabase
+               .from('loans')
+               .select(loanSelect)
+               .or(`borrower_user_id.in.(${ids.join(',')}),lender_user_id.in.(${ids.join(',')})`)
          );
          return rows;
       }).then((rows) => [...new Map(rows.map((loan) => [loan.id, loan])).values()]),
-      queryByIdChunks(userIds, (ids) => optionalOk<AnyRow[]>(supabase.from('admin_account_restrictions').select('*').in('user_id', ids), [])),
+      queryByIdChunks(userIds, (ids) =>
+         optionalOk<AnyRow[]>(supabase.from('admin_account_restrictions').select('*').in('user_id', ids), [])
+      ),
       queryByIdChunks(userIds, (ids) => optionalOk<AnyRow[]>(supabase.from('admin_risk_profiles').select('*').in('user_id', ids), [])),
       queryByIdChunks(userIds, (ids) =>
          optionalOk<AnyRow[]>(supabase.from('user_points').select('user_id,points_total,updated_at,last_event_id').in('user_id', ids), [])
@@ -655,7 +660,11 @@ export async function listAdminDirectoryUsers(search?: string): Promise<AdminDir
       ),
       queryByIdChunks(userIds, (ids) =>
          optionalOk<AnyRow[]>(
-            supabase.from('auth_ip_log').select('user_id,country_iso,city_name,last_seen_at').in('user_id', ids).order('last_seen_at', { ascending: false }),
+            supabase
+               .from('auth_ip_log')
+               .select('user_id,country_iso,city_name,last_seen_at')
+               .in('user_id', ids)
+               .order('last_seen_at', { ascending: false }),
             []
          )
       )
@@ -726,7 +735,8 @@ export async function listAdminLoans(
 
 /** Overdue once the due day has ended in the borrower's zone (not at midnight UTC). */
 export const isAdminLoanOverdue = (loan: { due_date: string | null; due_timezone?: string | null }): boolean =>
-   Boolean(loan.due_date) && isPastDueDay(loan.due_date as string, getLoanTimezone({ dueTimezone: loan.due_timezone }, DEFAULT_LOAN_TIMEZONE));
+   Boolean(loan.due_date) &&
+   isPastDueDay(loan.due_date as string, getLoanTimezone({ dueTimezone: loan.due_timezone }, DEFAULT_LOAN_TIMEZONE));
 
 // Mark a user or loan as test / real (admin-only, via the gated RPC). Lets admins fix
 // misclassifications or flag new test data straight from the panel.
@@ -1885,6 +1895,8 @@ export interface AdminReferralCode {
    id: string;
    code: string;
    boost_amount: number;
+   /** What the owner earns per referred friend who takes a loan and repays it. */
+   payout_amount: number;
    is_active: boolean;
    max_uses: number | null;
    current_uses: number;
@@ -1895,14 +1907,18 @@ export interface AdminReferralCode {
 }
 
 const REFERRAL_CODE_SELECT =
-   'id, code, boost_amount, is_active, max_uses, current_uses, expires_at, created_at, owner_user_id, owner:users!referral_codes_owner_user_id_fkey(id, username, email)';
+   'id, code, boost_amount, payout_amount, is_active, max_uses, current_uses, expires_at, created_at, owner_user_id, owner:users!referral_codes_owner_user_id_fkey(id, username, email)';
 
 export async function listReferralCodes(): Promise<AdminReferralCode[]> {
    const supabase = getSupabaseBrowserClient();
    const data = (await requireOk(
       supabase.from('referral_codes').select(REFERRAL_CODE_SELECT).order('created_at', { ascending: false })
    )) as AnyRow[] | null;
-   return (data ?? []).map((row) => ({ ...row, boost_amount: toNumber(row.boost_amount) })) as AdminReferralCode[];
+   return (data ?? []).map((row) => ({
+      ...row,
+      boost_amount: toNumber(row.boost_amount),
+      payout_amount: toNumber(row.payout_amount)
+   })) as AdminReferralCode[];
 }
 
 export async function createReferralCode(input: {
@@ -1924,7 +1940,11 @@ export async function createReferralCode(input: {
          .select(REFERRAL_CODE_SELECT)
          .single()
    );
-   return { ...(data as AnyRow), boost_amount: toNumber((data as AnyRow).boost_amount) } as AdminReferralCode;
+   return {
+      ...(data as AnyRow),
+      boost_amount: toNumber((data as AnyRow).boost_amount),
+      payout_amount: toNumber((data as AnyRow).payout_amount)
+   } as AdminReferralCode;
 }
 
 export async function setReferralCodeActive(id: string, isActive: boolean): Promise<AdminReferralCode> {
@@ -1932,7 +1952,11 @@ export async function setReferralCodeActive(id: string, isActive: boolean): Prom
    const data = await requireOk(
       supabase.from('referral_codes').update({ is_active: isActive }).eq('id', id).select(REFERRAL_CODE_SELECT).single()
    );
-   return { ...(data as AnyRow), boost_amount: toNumber((data as AnyRow).boost_amount) } as AdminReferralCode;
+   return {
+      ...(data as AnyRow),
+      boost_amount: toNumber((data as AnyRow).boost_amount),
+      payout_amount: toNumber((data as AnyRow).payout_amount)
+   } as AdminReferralCode;
 }
 
 // Edit a live code's terms (boost, usage cap, expiry) without recreating it. The code string
@@ -1941,6 +1965,7 @@ export async function updateReferralCode(
    id: string,
    changes: {
       boost_amount?: number;
+      payout_amount?: number;
       max_uses?: number | null;
       expires_at?: string | null;
    }
@@ -1948,10 +1973,15 @@ export async function updateReferralCode(
    const supabase = getSupabaseBrowserClient();
    const patch: Record<string, unknown> = {};
    if (changes.boost_amount !== undefined) patch.boost_amount = changes.boost_amount;
+   if (changes.payout_amount !== undefined) patch.payout_amount = changes.payout_amount;
    if (changes.max_uses !== undefined) patch.max_uses = changes.max_uses;
    if (changes.expires_at !== undefined) patch.expires_at = changes.expires_at;
    const data = await requireOk(supabase.from('referral_codes').update(patch).eq('id', id).select(REFERRAL_CODE_SELECT).single());
-   return { ...(data as AnyRow), boost_amount: toNumber((data as AnyRow).boost_amount) } as AdminReferralCode;
+   return {
+      ...(data as AnyRow),
+      boost_amount: toNumber((data as AnyRow).boost_amount),
+      payout_amount: toNumber((data as AnyRow).payout_amount)
+   } as AdminReferralCode;
 }
 
 // Link (or unlink with null) the person behind a code.
@@ -1960,7 +1990,11 @@ export async function setReferralCodeOwner(id: string, ownerUserId: string | nul
    const data = await requireOk(
       supabase.from('referral_codes').update({ owner_user_id: ownerUserId }).eq('id', id).select(REFERRAL_CODE_SELECT).single()
    );
-   return { ...(data as AnyRow), boost_amount: toNumber((data as AnyRow).boost_amount) } as AdminReferralCode;
+   return {
+      ...(data as AnyRow),
+      boost_amount: toNumber((data as AnyRow).boost_amount),
+      payout_amount: toNumber((data as AnyRow).payout_amount)
+   } as AdminReferralCode;
 }
 
 // Referral code owner payouts (referral_code_payouts) — one row per redemption of an owned code.
@@ -1987,25 +2021,57 @@ export async function listReferralPayouts(): Promise<AdminReferralPayout[]> {
    return (data ?? []) as unknown as AdminReferralPayout[];
 }
 
-export async function setReferralPayoutStatus(
-   id: string,
-   status: 'unpaid' | 'paid',
-   paidBy: string | null
-): Promise<AdminReferralPayout> {
+export async function setReferralPayoutStatus(id: string, status: 'unpaid' | 'paid', paidBy: string | null): Promise<AdminReferralPayout> {
    const supabase = getSupabaseBrowserClient();
    const data = await requireOk(
       supabase
          .from('referral_code_payouts')
          .update(
-            status === 'paid'
-               ? { status, paid_at: new Date().toISOString(), paid_by: paidBy }
-               : { status, paid_at: null, paid_by: null }
+            status === 'paid' ? { status, paid_at: new Date().toISOString(), paid_by: paidBy } : { status, paid_at: null, paid_by: null }
          )
          .eq('id', id)
          .select(REFERRAL_PAYOUT_SELECT)
          .single()
    );
    return data as unknown as AdminReferralPayout;
+}
+
+// Affiliate claims: friends a code owner added by name on /affiliate (tracking only, no payout).
+export interface AdminReferralClaim {
+   id: string;
+   friend_name: string;
+   friend_contact: string | null;
+   status: 'pending' | 'approved' | 'rejected';
+   created_at: string;
+   decided_at: string | null;
+   decided_by: string | null;
+   code: { code: string } | null;
+   owner: { username: string | null; display_name: string | null } | null;
+   matched: { username: string | null; display_name: string | null } | null;
+}
+
+export async function listReferralClaims(): Promise<AdminReferralClaim[]> {
+   const supabase = getSupabaseBrowserClient();
+   const data = await requireOk(
+      supabase
+         .from('referral_claims')
+         .select(
+            'id, friend_name, friend_contact, status, created_at, decided_at, decided_by, code:referral_codes(code), owner:users!referral_claims_owner_user_id_fkey(username, display_name), matched:users!referral_claims_matched_user_id_fkey(username, display_name)'
+         )
+         .order('created_at', { ascending: false })
+         .limit(200)
+   );
+   return (data ?? []) as unknown as AdminReferralClaim[];
+}
+
+export async function decideReferralClaim(claimId: string, approve: boolean, userId?: string): Promise<void> {
+   const supabase = getSupabaseBrowserClient();
+   const { error } = await supabase.rpc('admin_decide_referral_claim', {
+      p_claim_id: claimId,
+      p_approve: approve,
+      p_user_id: userId ?? null
+   });
+   if (error) throw error;
 }
 
 export interface AdminUserOption {
@@ -2071,7 +2137,9 @@ export async function listVoucherClaims(): Promise<AdminVoucherClaim[]> {
    const data = (await requireOk(
       supabase
          .from('voucher_claims')
-         .select('id, user_id, reward, amount_php, brand, full_name, mobile, email, status, admin_note, sent_at, received_at, receipt_issue_at, created_at, users(username, email)')
+         .select(
+            'id, user_id, reward, amount_php, brand, full_name, mobile, email, status, admin_note, sent_at, received_at, receipt_issue_at, created_at, users(username, email)'
+         )
          .order('created_at', { ascending: false })
    )) as AnyRow[] | null;
    return (data ?? []).map((row) => ({
@@ -2895,7 +2963,8 @@ export interface Automation {
    }>;
 }
 
-export const listAutomations = () => invokeCampaigns<{ automations: Automation[] }>({ action: 'automations' }, 'Could not load automations.');
+export const listAutomations = () =>
+   invokeCampaigns<{ automations: Automation[] }>({ action: 'automations' }, 'Could not load automations.');
 
 export const saveAutomation = (input: {
    id: string;
@@ -2938,7 +3007,11 @@ async function invokeAdminCalendar<T>(body: Record<string, unknown>): Promise<T>
 }
 
 export async function getAdminCalendar(from: Date, to: Date): Promise<AdminCalendarHost[]> {
-   const result = await invokeAdminCalendar<{ hosts: AdminCalendarHost[] }>({ action: 'overview', from: from.toISOString(), to: to.toISOString() });
+   const result = await invokeAdminCalendar<{ hosts: AdminCalendarHost[] }>({
+      action: 'overview',
+      from: from.toISOString(),
+      to: to.toISOString()
+   });
    return result.hosts ?? [];
 }
 

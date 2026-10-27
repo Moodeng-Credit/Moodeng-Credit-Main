@@ -1,5 +1,8 @@
 import { type JSX, useState } from 'react';
 
+import posthog from 'posthog-js';
+
+import { detectInAppBrowser } from '@/lib/inAppBrowser';
 import { isTikTokButtonVisible, isTikTokConfigured, startTikTokLogin } from '@/lib/tiktokAuth';
 
 interface TikTokLoginButtonProps {
@@ -42,6 +45,10 @@ export default function TikTokLoginButton({ isSignUp = false, iconOnly = false }
       if (isLoading) return;
       // Paint the loading state first, then redirect on the next frame.
       setIsLoading(true);
+      if (import.meta.env.PROD) {
+         const inApp = detectInAppBrowser();
+         posthog.capture('tiktok_login_tapped', { app: inApp.appName ?? 'browser', os: inApp.os, sign_up: isSignUp, variant: iconOnly ? 'tile' : 'full' });
+      }
       requestAnimationFrame(() => requestAnimationFrame(() => startTikTokLogin()));
    };
 
