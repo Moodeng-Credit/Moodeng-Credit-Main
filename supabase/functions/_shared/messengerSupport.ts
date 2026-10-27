@@ -195,7 +195,9 @@ export const buildMessengerPing = (opts: { facebookName: string | null; borrower
            .join(' ')
       : `${opts.facebookName ?? 'Someone'} (no Moodeng account yet)`;
    const head = opts.startsConversation ? `💬 New Messenger chat from ${who}` : `💬 ${who} on Messenger`;
-   const text = `${head}:\n> ${opts.body.slice(0, 800)}\nReply from the Discord ticket or the Page inbox.`;
+   // A photo arrives as a long Facebook CDN link; the 📎 line already says there's one.
+   const body = opts.body.replace(/https:\/\/\S*fbcdn\.net\S*/g, '').replace(/\n{2,}/g, '\n').trim();
+   const text = `${head}:\n> ${body.slice(0, 800)}\nReply from the Discord ticket or the Page inbox.`;
    const keyboard: TelegramInlineKeyboard = [[{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }]];
    if (opts.borrower) keyboard.push([{ text: '👤 Borrower in admin', url: adminUserUrl(opts.borrower.id, opts.borrower.username) }]);
    return { text, keyboard };
@@ -230,7 +232,7 @@ export const openMessengerTicket = async (
       );
    } else {
       const ping = buildMessengerPing({ facebookName: input.facebookName, borrower, body, startsConversation });
-      await pingTeam(svc, ping.text, ping.keyboard);
+      await pingTeam(svc, ping.text, ping.keyboard, 'messenger_alert_chat_id');
    }
 
    if (startsConversation) {

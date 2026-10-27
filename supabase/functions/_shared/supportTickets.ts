@@ -39,10 +39,14 @@ export const postToTicket = async (conversation: TicketConversation, body: strin
    }
 };
 
-// A heads-up to the admin Telegram chat only (the Discord ticket already shows the message).
-export const pingTeam = async (svc: Svc, text: string, keyboard?: TelegramInlineKeyboard) => {
+// A heads-up to Telegram only (the Discord ticket already shows the message): the chat saved under
+// `settingKey` in telegram_bot_settings, else the admin chat.
+export const pingTeam = async (svc: Svc, text: string, keyboard?: TelegramInlineKeyboard, settingKey?: string) => {
    try {
-      const chat = await getAdminChatId(svc);
+      const { data } = settingKey
+         ? await svc.from('telegram_bot_settings').select('value').eq('key', settingKey).maybeSingle()
+         : { data: null };
+      const chat = (data as { value?: string | null } | null)?.value?.trim() || (await getAdminChatId(svc));
       if (chat) await sendTelegramMessage(chat, text, keyboard ? { inlineKeyboard: keyboard } : {});
    } catch (err) {
       console.error('supportTickets: telegram ping failed', err instanceof Error ? err.message : err);
