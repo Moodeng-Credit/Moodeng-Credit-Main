@@ -65,3 +65,14 @@ Deno.test('Telegram ping names the sender and links the inbox', () => {
    assert(borrower.text.startsWith('💬 Ana @ana on Messenger:'));
    assertEquals(borrower.keyboard.length, 2);
 });
+
+Deno.test('Telegram ping drops Facebook photo links', () => {
+   const ping = buildMessengerPing({
+      facebookName: 'Ana',
+      borrower: null,
+      body: 'https://scontent.xx.fbcdn.net/v/t1.15752-9/1_n.jpg?_nc_cat=108\n📎 Sent a photo or file on Messenger — open the Page inbox to see it.',
+      startsConversation: false
+   });
+   assert(!ping.text.includes('fbcdn'));
+   assert(ping.text.includes('> 📎 Sent a photo'));
+});
