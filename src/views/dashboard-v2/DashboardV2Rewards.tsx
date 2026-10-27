@@ -45,26 +45,49 @@ const CLAIM_HEADLINE: Record<VoucherReward, string> = {
 const MOO_MENU: Array<{ brand: VoucherBrand; title: string; detail: string; where: string; art: string }> = [
    {
       brand: 'food',
-      title: 'Moo-fried chicken',
-      detail: 'Jollibee',
-      where: 'Any Jollibee in the Philippines',
-      art: DASHBOARD_V2_ASSETS.mooFriedChicken
+      title: 'Moo-food',
+      detail: 'Jollibee + 4 more',
+      where: 'Any branch in the Philippines',
+      art: DASHBOARD_V2_ASSETS.foodJollibee
    },
    {
       brand: 'grabmart',
       title: 'Moo-snacks',
       detail: 'GrabMart',
       where: 'Delivered in Metro Manila & Cebu',
-      art: DASHBOARD_V2_ASSETS.coupon
+      art: DASHBOARD_V2_ASSETS.foodGrabMart
    }
 ];
+
+/** The other restaurants on the Xoxo link, shown small under Jollibee. */
+const MORE_RESTAURANTS = [
+   { name: 'Chowking', art: DASHBOARD_V2_ASSETS.foodChowking },
+   { name: 'Greenwich', art: DASHBOARD_V2_ASSETS.foodGreenwich },
+   { name: 'Mang Inasal', art: DASHBOARD_V2_ASSETS.foodMangInasal },
+   { name: 'Red Ribbon', art: DASHBOARD_V2_ASSETS.foodRedRibbon }
+];
+
+/** A food icon on a small white plate (the icons carry a soft shadow that needs a light ground). */
+function FoodIcon({ src, label, size }: { src: string; label: string; size: 'lg' | 'sm' }) {
+   return (
+      <span
+         className={clsx(
+            'flex shrink-0 items-center justify-center rounded-full bg-white shadow-[0_1px_3px_rgba(80,60,120,0.18)]',
+            size === 'lg' ? 'h-[72px] w-[72px]' : 'h-7 w-7'
+         )}
+         title={label}
+      >
+         <DesignImage src={src} alt={label} className={size === 'lg' ? 'h-[60px] w-[60px] object-contain' : 'h-6 w-6 object-contain'} />
+      </span>
+   );
+}
 
 const describeClaimError = (error: unknown) => {
    const message = error instanceof Error ? error.message : String((error as { message?: string } | null)?.message ?? '');
    if (message.includes('already claimed')) return 'This voucher was already claimed.';
    if (message.includes('not eligible')) return "This voucher isn't unlocked yet.";
    if (message.includes('email required')) return 'Please add your email — your voucher is sent there.';
-   if (message.includes('grabmart needs 100')) return 'GrabMart starts at ₱100. Pick Moo-fried chicken for this one.';
+   if (message.includes('grabmart needs 100')) return 'GrabMart starts at ₱100. Pick Moo-food for this one.';
    if (message.includes('check constraint')) return 'Please check your name and mobile number.';
    return 'Something went wrong. Please try again.';
 };
@@ -72,7 +95,7 @@ const describeClaimError = (error: unknown) => {
 type MooStep = 'pick' | 'details' | 'sent';
 
 /**
- * The Moo-Menu: "You earned a voucher" → pick Moo-fried chicken (Jollibee, Xoxo link) or Moo-snacks
+ * The Moo-Menu: "You earned a voucher" → pick Moo-food (Jollibee & 4 more restaurants, Xoxo link) or Moo-snacks
  * (GrabMart, ₱100+) → where to send it → on its way. Real claims are validated and stored by
  * submit_voucher_claim() and sent automatically; preview samples only simulate the submission.
  */
@@ -151,7 +174,16 @@ export function VoucherClaimPopup({
                                     disabled && 'opacity-50'
                                  )}
                               >
-                                 <DesignImage src={item.art} alt="" className="h-20 w-20 object-contain" />
+                                 <FoodIcon src={item.art} label={item.brand === 'food' ? 'Jollibee' : 'GrabMart'} size="lg" />
+                                 {item.brand === 'food' ? (
+                                    <span className="-mt-1 flex justify-center gap-0.5" aria-label="Also Chowking, Greenwich, Mang Inasal and Red Ribbon">
+                                       {MORE_RESTAURANTS.map((place) => (
+                                          <FoodIcon key={place.name} src={place.art} label={place.name} size="sm" />
+                                       ))}
+                                    </span>
+                                 ) : (
+                                    <span className="h-6" aria-hidden="true" />
+                                 )}
                                  <span className="text-[16px] font-black italic leading-5 text-[#3c8248] dark:text-[#7fd68b]">{item.title}</span>
                                  <span className="text-[14px] font-semibold text-[#594d65] dark:text-[#e6def2]">{item.detail}</span>
                                  <span className="text-[12px] leading-4 text-[#7b6b8c]">
@@ -161,6 +193,9 @@ export function VoucherClaimPopup({
                            );
                         })}
                      </div>
+                     <p className="text-[13px] leading-[18px] text-[#7b6b8c]">
+                        Moo-food: you pick Jollibee, Chowking, Greenwich, Mang Inasal or Red Ribbon when you open your voucher.
+                     </p>
                      <button
                         type="button"
                         onClick={() => setStep('details')}
@@ -173,14 +208,14 @@ export function VoucherClaimPopup({
                ) : step === 'details' ? (
                   <form onSubmit={handleSubmit} className="flex flex-col items-center gap-3">
                      <div className="flex items-center gap-2">
-                        <DesignImage src={picked.art} alt="" className="h-20 w-20 object-contain" />
+                        <FoodIcon src={picked.art} label={picked.detail} size="lg" />
                         <div className="text-left">
                            <p className="text-[18px] font-black italic leading-5 text-[#3c8248] dark:text-[#7fd68b]">{picked.title}</p>
                            <p className="text-[24px] font-black text-[#3c8248] dark:text-[#7fd68b]">₱{voucher.amountPhp}</p>
                         </div>
                      </div>
                      <p id="dv2-voucher-title" className="text-[16px] leading-5 text-[#45556c]">
-                        Where should we send your {picked.detail} voucher?
+                        Where should we send your {brand === 'food' ? 'food' : 'GrabMart'} voucher?
                      </p>
                      <input className={FIELD} name="name" required autoComplete="name" placeholder="Full name" aria-label="Full name" />
                      <input
@@ -226,9 +261,9 @@ export function VoucherClaimPopup({
                         Your treat is mooo-ving to your email!
                      </p>
                      <p className="text-[16px] leading-[22px] text-[#45556c]">
-                        Your ₱{voucher.amountPhp} {picked.detail} voucher is on its way.
+                        Your ₱{voucher.amountPhp} {brand === 'food' ? 'food' : 'GrabMart'} voucher is on its way.
                         {brand === 'food'
-                           ? ' Open the email, tap the link and show the code at Jollibee.'
+                           ? ' Open it, pick your restaurant and show the code at the counter.'
                            : ' Open the email and use the code in the Grab app → Mart.'}
                      </p>
                      <p className="text-[14px] leading-5 text-[#7b6b8c]">We&apos;ll ask on your dashboard if it arrived.</p>

@@ -90,7 +90,7 @@ export const buildVoucherClaimCard = (claim: VoucherClaimRow, reason?: string | 
       .join('\n');
 
 /** What the borrower picked on the Moo-Menu, for the admin cards. */
-export const voucherPickLabel = (brand?: string | null) => (brand === 'grabmart' ? '🛒 GrabMart' : '🍗 Jollibee (food link)');
+export const voucherPickLabel = (brand?: string | null) => (brand === 'grabmart' ? '🛒 GrabMart' : '🍗 Food link (Jollibee & 4 more)');
 
 /** Info card for a claim that went out on its own (no buttons). */
 export const buildVoucherSentCard = (claim: VoucherClaimRow, summary: string) =>

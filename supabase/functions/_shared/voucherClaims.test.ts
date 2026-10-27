@@ -46,7 +46,7 @@ Deno.test('stamp headers say food voucher', () => {
 Deno.test('receipt message: got it vs didn’t arrive, naming the pick', async () => {
    const { buildVoucherReceiptMessage } = await import('./voucherClaims.ts');
    const base = { id: CLAIM_ID, reward: 'tier_rising', amount_php: '50', full_name: 'Maria Santos', mobile: '0917', email: 'm@x.ph', status: 'sent', created_at: '' };
-   assertStringIncludes(buildVoucherReceiptMessage({ ...base, brand: 'food', received_at: '2026-10-27' }), '✅ Maria Santos got their ₱50 🍗 Jollibee');
+   assertStringIncludes(buildVoucherReceiptMessage({ ...base, brand: 'food', received_at: '2026-10-27' }), '✅ Maria Santos got their ₱50 🍗 Food link');
    const issue = buildVoucherReceiptMessage({ ...base, brand: 'grabmart', received_at: null });
    assertStringIncludes(issue, "didn't arrive");
    assertStringIncludes(issue, '🛒 GrabMart');

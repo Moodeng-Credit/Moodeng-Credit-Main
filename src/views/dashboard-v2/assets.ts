@@ -50,6 +50,13 @@ export const DASHBOARD_V2_ASSETS = {
    mooMenuChef: `${BASE}/moo-menu-chef.png`,
    mooFriedChicken: `${BASE}/moo-fried-chicken.png`,
    mooEnjoy: `${BASE}/moo-enjoy.png`,
+   // Moo-Menu food icons (generated art; brand names are shown as text, never as logos).
+   foodJollibee: `${BASE}/food-jollibee.png`,
+   foodChowking: `${BASE}/food-chowking.png`,
+   foodGreenwich: `${BASE}/food-greenwich.png`,
+   foodMangInasal: `${BASE}/food-manginasal.png`,
+   foodRedRibbon: `${BASE}/food-redribbon.png`,
+   foodGrabMart: `${BASE}/food-grabmart.png`,
    voucherBannerFood: `${BASE}/banner-voucher-food.png` // right side of banner_3 (no copy), for the English banner
 } as const;
 

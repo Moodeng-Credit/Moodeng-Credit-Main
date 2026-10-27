@@ -454,7 +454,7 @@ export function VoucherFollowUpCard({
    onAnswer: (gotIt: boolean) => void;
    isAnswering?: boolean;
 }) {
-   const brandName = claim.brand === 'grabmart' ? 'GrabMart' : 'Jollibee';
+   const brandName = claim.brand === 'grabmart' ? 'GrabMart' : 'food';
    const surface = 'mx-5 flex items-center gap-3 rounded-[8px] px-3 py-3';
    const yellow = { backgroundImage: 'linear-gradient(90deg, #fff3a3 0%, #ffe27a 100%)' };
 

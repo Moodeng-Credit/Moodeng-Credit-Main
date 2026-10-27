@@ -364,7 +364,7 @@ export default function GrabVouchersSection() {
                <span className="text-lg font-black">{claim.full_name}</span>
                <span className="font-bold text-[#a89bb8]">{REWARD_LABEL[claim.reward] ?? claim.reward}</span>
                <span className="rounded-full bg-[#241044] px-2.5 py-0.5 text-sm font-black text-[#c4a2ff]">
-                  {claim.brand === 'grabmart' ? '🛒 GrabMart' : '🍗 Jollibee & co'}
+                  {claim.brand === 'grabmart' ? '🛒 GrabMart' : '🍗 Food link'}
                </span>
                {claim.received_at ? (
                   <span className="rounded-full bg-[#123d2a] px-2.5 py-0.5 text-sm font-black text-[#6ee7a8]">Got it ✅</span>

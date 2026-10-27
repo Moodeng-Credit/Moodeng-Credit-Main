@@ -295,6 +295,10 @@ export const filipinoCoverageB: Record<string, string> = {
    "Open my voucher": "Buksan ang voucher ko",
    "Show my GrabMart code": "Ipakita ang GrabMart code ko",
    "voucher. You can also open it here.": "voucher mo. Puwede mo rin itong buksan dito.",
+   "Any branch in the Philippines": "Kahit anong branch sa Pilipinas",
+   "Moo-food: you pick Jollibee, Chowking, Greenwich, Mang Inasal or Red Ribbon when you open your voucher.": "Moo-food: pipili ka ng Jollibee, Chowking, Greenwich, Mang Inasal o Red Ribbon pag binuksan mo ang voucher.",
+   "GrabMart starts at ₱100. Pick Moo-food for this one.": "Nagsisimula ang GrabMart sa ₱100. Piliin ang Moo-food para dito.",
+   "Open it, pick your restaurant and show the code at the counter.": "Buksan ito, pumili ng restaurant at ipakita ang code sa counter.",
    // Food voucher claim (src/views/dashboard-v2/DashboardV2Rewards.tsx)
    'food voucher is on its way to your email. Open it and pick Jollibee, Chowking, Greenwich, Mang Inasal or Red Ribbon.':
       'na food voucher mo ay papunta na sa email mo. Buksan ito at pumili ng Jollibee, Chowking, Greenwich, Mang Inasal o Red Ribbon.',
