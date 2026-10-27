@@ -15,7 +15,8 @@
 import { adminUserUrl } from './adminCards.ts';
 import { PAGE_INBOX_URL, SITE_URL } from './loanAccess.ts';
 import { type MessengerCard, sendMessengerMessage } from './sendpulse.ts';
-import { alertTeam, postToTicket } from './supportTickets.ts';
+import type { TelegramInlineKeyboard } from './telegram.ts';
+import { alertTeam, pingTeam, postToTicket } from './supportTickets.ts';
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
@@ -185,6 +186,21 @@ const findOrCreateConversation = async (
    return { conversation: data as Conversation, created: true };
 };
 
+// The Telegram ping for each new Page message: the team isn't signed in to the Page on their phones, so
+// Facebook never notifies them.
+export const buildMessengerPing = (opts: { facebookName: string | null; borrower: Borrower | null; body: string; startsConversation: boolean }) => {
+   const who = opts.borrower
+      ? [opts.borrower.display_name?.trim() || opts.facebookName || 'A borrower', opts.borrower.username ? `@${opts.borrower.username}` : null]
+           .filter(Boolean)
+           .join(' ')
+      : `${opts.facebookName ?? 'Someone'} (no Moodeng account yet)`;
+   const head = opts.startsConversation ? `💬 New Messenger chat from ${who}` : `💬 ${who} on Messenger`;
+   const text = `${head}:\n> ${opts.body.slice(0, 800)}\nReply from the Discord ticket or the Page inbox.`;
+   const keyboard: TelegramInlineKeyboard = [[{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }]];
+   if (opts.borrower) keyboard.push([{ text: '👤 Borrower in admin', url: adminUserUrl(opts.borrower.id, opts.borrower.username) }]);
+   return { text, keyboard };
+};
+
 const ATTACHMENT_NOTE = '📎 Sent a photo or file on Messenger — open the Page inbox to see it.';
 
 export const openMessengerTicket = async (
@@ -212,6 +228,9 @@ export const openMessengerTicket = async (
          `💬 Messenger message from ${input.facebookName ?? 'someone'} couldn't reach the Discord support ticket:\n> ${body.slice(0, 500)}\nAnswer in the Page inbox.`,
          [[{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }]]
       );
+   } else {
+      const ping = buildMessengerPing({ facebookName: input.facebookName, borrower, body, startsConversation });
+      await pingTeam(svc, ping.text, ping.keyboard);
    }
 
    if (startsConversation) {
