@@ -7,6 +7,7 @@ import {
    generatePhoneUsername,
    isPlaceholderEmail,
    isSmsLoginEnabled,
+   isTikTokAccountEmail,
    phNetwork,
    phonePlaceholderEmail,
    showPasswordlessSignup,
@@ -74,6 +75,14 @@ describe('phone account details', () => {
       expect(isPlaceholderEmail('line_u655@moodeng.app')).toBe(true);
       expect(isPlaceholderEmail('maria@gmail.com')).toBe(false);
       expect(isPlaceholderEmail(null)).toBe(false);
+   });
+
+   it('recognises TikTok sign-ups (tiktok-login gives them a made-up tiktok_ address)', () => {
+      const email = 'tiktok_0f3a9c1d2b4e5f60718293a4b5c6d7e8@moodeng.app';
+      expect(isPlaceholderEmail(email)).toBe(true);
+      expect(isTikTokAccountEmail(email)).toBe(true);
+      expect(isTikTokAccountEmail('line_u655@moodeng.app')).toBe(false);
+      expect(isTikTokAccountEmail('tiktok_fan@gmail.com')).toBe(false);
    });
 });
 

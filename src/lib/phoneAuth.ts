@@ -151,9 +151,14 @@ export function isGuestEmail(email?: string | null): boolean {
    return /^guest_[^@]+@moodeng\.app$/i.test((email ?? '').trim());
 }
 
-/** Placeholder addresses for accounts that signed up without an email (Telegram, LINE, phone, guests). */
+/** Placeholder addresses for accounts that signed up without an email (Telegram, LINE, TikTok, phone, guests). */
 export function isPlaceholderEmail(email?: string | null): boolean {
-   return /^(telegram|line|phone|guest)_[^@]+@moodeng\.(app|credit)$/i.test((email ?? '').trim());
+   return /^(telegram|line|tiktok|phone|guest)_[^@]+@moodeng\.(app|credit)$/i.test((email ?? '').trim());
+}
+
+/** TikTok sign-ups: the tiktok-login edge fn gives them tiktok_<hash>@moodeng.app (TikTok shares no email). */
+export function isTikTokAccountEmail(email?: string | null): boolean {
+   return /^tiktok_[^@]+@moodeng\.app$/i.test((email ?? '').trim());
 }
 
 export const SMS_TEST_FLAG_KEY = 'moodeng:sms-login-test';
