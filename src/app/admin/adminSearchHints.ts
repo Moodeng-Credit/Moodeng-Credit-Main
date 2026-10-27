@@ -30,7 +30,7 @@ export const TAB_HINTS: Record<AdminTab, string> = {
    'ux-health': 'UX health: PostHog funnels, rage clicks, errors, Clarity session recordings',
    'on-chain': 'On-chain activity of the LoanManager contract and admin wallet on Base (Dune)',
    referrals: 'Referral codes and who referred whom; invite rewards',
-   'grab-vouchers': 'GrabFood vouchers earned by borrowers; send or claim a voucher code',
+   'grab-vouchers': 'Food vouchers earned by borrowers; Xoxo link stock; send or claim a voucher',
    notifications: 'Send an in-app notice to users; announcement inside the app',
    points: 'IOU points for lenders: balances and point events',
    'trust-points': 'Pandesal points for borrowers: balances and point events',

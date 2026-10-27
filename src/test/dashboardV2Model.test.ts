@@ -137,7 +137,7 @@ describe('dashboard v2 milestones', () => {
       expect(milestones.map((milestone) => [milestone.id, milestone.status, milestone.reward])).toEqual([
          ['first-loan-request', 'next', '+10 Pandesal'],
          ['first-funded-loan', 'locked', '+15 Pandesal'],
-         ['first-on-time-repayment', 'locked', '₱50 GrabFood voucher']
+         ['first-on-time-repayment', 'locked', '₱50 food voucher']
       ]);
    });
 
@@ -244,7 +244,7 @@ describe('friend referrals client', () => {
          qualifiedCount: 1,
          wasReferred: true,
          claimable: [{ reward: 'referral_inviter', friendReferralId: 'r1', amountPhp: '100' }],
-         claims: [{ reward: 'first_on_time_repayment', friendReferralId: null, status: 'pending' }]
+         claims: [{ id: 'c1', reward: 'first_on_time_repayment', friendReferralId: null, status: 'pending', brand: 'food' as const, amountPhp: 50, sentAt: null, receivedAt: null, receiptIssueAt: null, links: [] }]
       });
       expect(parsed.invitedCount).toBe(2);
       expect(parsed.claimable[0]).toEqual({ reward: 'referral_inviter', friendReferralId: 'r1', amountPhp: 100 });
@@ -254,7 +254,7 @@ describe('friend referrals client', () => {
    it('reports voucher state from the server data', () => {
       const rewards = parseMyRewards({
          claimable: [{ reward: 'referral_inviter', friendReferralId: 'r1', amountPhp: 100 }],
-         claims: [{ reward: 'first_on_time_repayment', friendReferralId: null, status: 'sent' }]
+         claims: [{ id: 'c1', reward: 'first_on_time_repayment', friendReferralId: null, status: 'sent', brand: 'food' as const, amountPhp: 50, sentAt: null, receivedAt: null, receiptIssueAt: null, links: [] }]
       });
       expect(getVoucherState(rewards, OWN_VOUCHER).state).toBe('sent');
       expect(getVoucherState(rewards, REFERRAL_VOUCHERS)).toEqual({

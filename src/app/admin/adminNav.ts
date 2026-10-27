@@ -103,7 +103,7 @@ export const navGroups: NavGroup[] = [
          { id: 'ux-health', label: 'UX health' },
          { id: 'on-chain', label: 'On-chain' },
          { id: 'referrals', label: 'Referrals' },
-         { id: 'grab-vouchers', label: 'GrabFood vouchers' },
+         { id: 'grab-vouchers', label: 'Food vouchers' },
          { id: 'notifications', label: 'Notifications' },
          { id: 'points', label: 'IOU points' },
          { id: 'trust-points', label: 'Pandesal points' }

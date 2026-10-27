@@ -1,4 +1,4 @@
-import { Fragment, useRef } from 'react';
+import { Fragment, useRef, useState } from 'react';
 
 import clsx from 'clsx';
 import { Link, useNavigate } from 'react-router-dom';
@@ -6,6 +6,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useFloatingParticles, useReplayClass } from '@/components/motion/TapDelight';
 
 import { formatCurrency } from '@/utils/decimalHelpers';
+
+import type { VoucherClaimSummary } from '@/lib/friendReferrals';
 
 import { type LocaleCode, useLocalization } from '@/i18n';
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
@@ -381,7 +383,164 @@ export function UpcomingDuesSection({ model }: { model: DashboardV2Model }) {
    );
 }
 
-/** "Moodeng grew to Rising!": shown on the dashboard while a tier's GrabFood voucher is waiting to be claimed. */
+/**
+ * The voucher itself, in the app: Open my voucher (each Xoxo link) for food, or the GrabMart code with
+ * Copy. Lets the borrower redeem without finding the email.
+ */
+function VoucherLinks({ claim }: { claim: VoucherClaimSummary }) {
+   const [isShown, setIsShown] = useState(false);
+   const [copied, setCopied] = useState(false);
+   if (!claim.links.length) return null;
+
+   if (claim.brand === 'grabmart') {
+      const code = claim.links[0];
+      return isShown ? (
+         <div className="flex items-center gap-2 rounded-[10px] bg-white/80 px-3 py-2">
+            <span className="min-w-0 flex-1 truncate font-mono text-[16px] font-bold tracking-[1px] text-[#3c8248]">{code}</span>
+            <button
+               type="button"
+               onClick={() => {
+                  void navigator.clipboard?.writeText(code).then(
+                     () => {
+                        setCopied(true);
+                        window.setTimeout(() => setCopied(false), 2000);
+                     },
+                     () => undefined
+                  );
+               }}
+               className="shrink-0 rounded-full bg-[#4aa256] px-3 py-1 text-[13px] font-bold text-white"
+            >
+               {copied ? 'Copied' : 'Copy'}
+            </button>
+         </div>
+      ) : (
+         <button
+            type="button"
+            onClick={() => setIsShown(true)}
+            className="flex h-[38px] w-full items-center justify-center rounded-full bg-[#6b55f7] text-[15px] font-bold text-white"
+         >
+            Show my GrabMart code
+         </button>
+      );
+   }
+
+   return (
+      <div className="flex gap-2">
+         {claim.links.map((link, index) => (
+            <a
+               key={link}
+               href={link}
+               target="_blank"
+               rel="noreferrer"
+               className="flex h-[38px] flex-1 items-center justify-center rounded-full bg-[#6b55f7] text-[15px] font-bold text-white"
+            >
+               {claim.links.length > 1 ? `Open voucher ${index + 1}` : 'Open my voucher'}
+            </a>
+         ))}
+      </div>
+   );
+}
+
+/**
+ * After a Moo-Menu claim: "cooking" while it's pending, then "Did it arrive?" with I got it /
+ * Didn't get it, then "Enjoy your Moo-meal!" (or a help line if it didn't arrive).
+ */
+export function VoucherFollowUpCard({
+   claim,
+   onAnswer,
+   isAnswering = false
+}: {
+   claim: VoucherClaimSummary;
+   onAnswer: (gotIt: boolean) => void;
+   isAnswering?: boolean;
+}) {
+   const brandName = claim.brand === 'grabmart' ? 'GrabMart' : 'food';
+   const surface = 'mx-5 flex items-center gap-3 rounded-[8px] px-3 py-3';
+   const yellow = { backgroundImage: 'linear-gradient(90deg, #fff3a3 0%, #ffe27a 100%)' };
+
+   if (claim.status === 'pending') {
+      return (
+         <section className={surface} style={yellow} aria-label="Your voucher">
+            <DesignImage src={DASHBOARD_V2_ASSETS.mooMenuChef} className="h-14 w-14 shrink-0 object-contain" />
+            <div className="min-w-0 flex-1">
+               <p className="text-[18px] font-black italic leading-6 text-[#3c8248]">Your Moo-meal is cooking!</p>
+               <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">
+                  ₱{claim.amountPhp} {brandName} voucher · we&apos;ll email it to you soon
+               </p>
+            </div>
+         </section>
+      );
+   }
+
+   if (claim.receivedAt) {
+      return (
+         <section className={surface} style={yellow} aria-label="Your voucher">
+            <DesignImage src={DASHBOARD_V2_ASSETS.mooEnjoy} className="h-16 w-16 shrink-0 object-contain" />
+            <div className="min-w-0 flex-1">
+               <p className="text-[18px] font-black italic leading-6 text-[#3c8248]">Enjoy your Moo-meal!</p>
+               <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">Repay on time to earn your next treat.</p>
+            </div>
+         </section>
+      );
+   }
+
+   if (claim.receiptIssueAt) {
+      return (
+         <section className={clsx(surface, 'flex-wrap')} style={yellow} aria-label="Your voucher">
+            <DesignImage src={DASHBOARD_V2_ASSETS.mooMenuChef} className="h-14 w-14 shrink-0 object-contain" />
+            <div className="min-w-0 flex-1">
+               <p className="text-[18px] font-black italic leading-6 text-[#3c8248]">Sorry! We&apos;re on it.</p>
+               <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">
+                  We&apos;ll resend your {brandName} voucher. Check spam too.
+               </p>
+            </div>
+            <Link to="/help" className={clsx(PILL_BUTTON, 'bg-[#4aa256] text-white')}>
+               Help
+            </Link>
+            {claim.links.length ? (
+               <div className="w-full">
+                  <VoucherLinks claim={claim} />
+               </div>
+            ) : null}
+         </section>
+      );
+   }
+
+   return (
+      <section className={clsx(surface, 'flex-col items-stretch')} style={yellow} aria-label="Your voucher">
+         <div className="flex items-center gap-3">
+            <DesignImage src={DASHBOARD_V2_ASSETS.mooMenuChef} className="h-14 w-14 shrink-0 object-contain" />
+            <div className="min-w-0 flex-1">
+               <p className="text-[18px] font-black italic leading-6 text-[#3c8248]">Did your Moo-meal arrive?</p>
+               <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">
+                  We emailed your ₱{claim.amountPhp} {brandName} voucher. You can also open it here.
+               </p>
+            </div>
+         </div>
+         <VoucherLinks claim={claim} />
+         <div className="flex gap-2">
+            <button
+               type="button"
+               disabled={isAnswering}
+               onClick={() => onAnswer(true)}
+               className="flex h-[38px] flex-1 items-center justify-center rounded-full bg-[#4aa256] text-[15px] font-bold text-white disabled:opacity-60"
+            >
+               I got it ✅
+            </button>
+            <button
+               type="button"
+               disabled={isAnswering}
+               onClick={() => onAnswer(false)}
+               className="flex h-[38px] flex-1 items-center justify-center rounded-full bg-white/70 text-[15px] font-bold text-[#6f7d1d] disabled:opacity-60"
+            >
+               Didn&apos;t get it
+            </button>
+         </div>
+      </section>
+   );
+}
+
+/** "Moodeng grew to Rising!": shown on the dashboard while a tier's food voucher is waiting to be claimed. */
 export function TierVoucherCard({ label, amountPhp, onClaim }: { label: string; amountPhp: number; onClaim: () => void }) {
    return (
       <section
@@ -392,7 +551,7 @@ export function TierVoucherCard({ label, amountPhp, onClaim }: { label: string; 
          <DesignImage src={DASHBOARD_V2_ASSETS.coupon} className="h-12 w-12 shrink-0 object-contain" />
          <div className="min-w-0 flex-1">
             <p className="text-[18px] font-black italic leading-6 text-[#3c8248]">Moodeng grew to {label}!</p>
-            <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">Claim your ₱{amountPhp} GrabFood voucher</p>
+            <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">Claim your ₱{amountPhp} food voucher</p>
          </div>
          <ClaimVoucherButton onClaim={onClaim} />
       </section>

@@ -8,13 +8,18 @@ import {
    type AdminVoucherClaimStatus,
    type AdminVoucherContact,
    type AdminVoucherReward,
+   addVoucherCodes,
+   getVoucherCodeStock,
    listUnclaimedVouchers,
    listVoucherClaims,
    listVoucherContacts,
    logAdminAction,
-   updateVoucherClaimStatus
+   sendVoucherCodeForClaim,
+   updateVoucherClaimStatus,
+   type VoucherCodeStock
 } from '@/app/admin/adminSupabase';
 import { AdminLiveRow, useAdminLiveReload } from '@/app/admin/useAdminLive';
+import { parseVoucherCodes, VOUCHER_LINK_PHP } from '@/app/admin/voucherCodes';
 
 type View = 'to-send' | 'sent' | 'unclaimed' | 'rejected';
 
@@ -27,7 +32,7 @@ const REWARD_LABEL: Record<AdminVoucherReward, string> = {
    tier_apex: 'Reached Apex'
 };
 
-const EMAIL_SUBJECT = 'Your Moodeng GrabFood voucher';
+const EMAIL_SUBJECT = 'Your Moodeng food voucher';
 
 const php = (amount: number) => `₱${amount.toLocaleString()}`;
 const sum = (rows: Array<{ amount_php: number }>) => rows.reduce((total, row) => total + row.amount_php, 0);
@@ -185,10 +190,10 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 }
 
 /**
- * Admin "GrabFood vouchers" tab: everyone who claimed a voucher, what we still owe, their email to
- * send it to, a sent confirmation (time + who), and borrowers who earned one but haven't claimed yet.
- * Borrowers claim from the dashboard (public.submit_voucher_claim); the Telegram card's "Mark sent"
- * and the button here both flip the same voucher_claims row.
+ * Admin "Food vouchers" tab: the Xoxo link stock (paste links bought with Xoxoday → Send to self),
+ * everyone who claimed a voucher, what we still owe, a sent confirmation (time + who), and borrowers
+ * who earned one but haven't claimed yet. Claims are sent automatically on claim; "Send code" here and
+ * on the Telegram card retries one (Xoxo links, else Bitrefill).
  */
 export default function GrabVouchersSection() {
    const [claims, setClaims] = useState<AdminVoucherClaim[]>([]);
@@ -199,13 +204,21 @@ export default function GrabVouchersSection() {
    const [error, setError] = useState<string | null>(null);
    const [busyId, setBusyId] = useState<string | null>(null);
    const [copied, setCopied] = useState<string | null>(null);
+   const [stock, setStock] = useState<VoucherCodeStock[]>([]);
+   const [linksInput, setLinksInput] = useState('');
+   const [notice, setNotice] = useState<string | null>(null);
 
    const refresh = useCallback(async () => {
       setError(null);
       try {
-         const [claimRows, unclaimedRows] = await Promise.all([listVoucherClaims(), listUnclaimedVouchers()]);
+         const [claimRows, unclaimedRows, stockRows] = await Promise.all([
+            listVoucherClaims(),
+            listUnclaimedVouchers(),
+            getVoucherCodeStock().catch(() => [])
+         ]);
          setClaims(claimRows);
          setUnclaimed(unclaimedRows);
+         setStock(stockRows);
          const userIds = [...new Set([...claimRows, ...unclaimedRows].map((row) => row.user_id))];
          // Location/Facebook are extras: if they fail to load, the voucher list still works.
          const contactRows = await listVoucherContacts(userIds).catch(() => []);
@@ -232,6 +245,37 @@ export default function GrabVouchersSection() {
    const toSend = useMemo(() => [...pending].reverse(), [pending]);
    const waitingPeople = useMemo(() => [...new Map(pending.map((claim) => [claim.user_id, claim.full_name])).entries()], [pending]);
    const waitingAbroad = waitingPeople.filter(([userId]) => whereabouts(contacts[userId]).tone === 'abroad');
+
+   const linksLeft = stock.find((row) => row.amount_php === VOUCHER_LINK_PHP)?.available ?? 0;
+   const linksOwed = pending.reduce((total, claim) => total + Math.max(Math.ceil(claim.amount_php / VOUCHER_LINK_PHP), 1), 0);
+   const pastedLinks = parseVoucherCodes(linksInput);
+
+   const sendCode = async (claim: AdminVoucherClaim) => {
+      setBusyId(claim.id);
+      setNotice(null);
+      try {
+         const result = await sendVoucherCodeForClaim(claim.id);
+         setNotice(result.summary);
+         await refresh();
+      } catch (err) {
+         setError(err instanceof Error ? err.message : 'Could not send the voucher.');
+      } finally {
+         setBusyId(null);
+      }
+   };
+
+   const addLinks = async () => {
+      if (pastedLinks.length === 0) return;
+      setNotice(null);
+      try {
+         const result = await addVoucherCodes(VOUCHER_LINK_PHP, pastedLinks, 'xoxoday');
+         setLinksInput('');
+         setNotice(`Added ${result.added} ₱${VOUCHER_LINK_PHP} link${result.added === 1 ? '' : 's'}${result.skipped ? ` (${result.skipped} already in stock)` : ''}.`);
+         await refresh();
+      } catch (err) {
+         setError(err instanceof Error ? err.message : 'Could not add the links.');
+      }
+   };
 
    const copy = async (key: string, text: string) => {
       await navigator.clipboard.writeText(text);
@@ -319,6 +363,14 @@ export default function GrabVouchersSection() {
                <span className="text-2xl font-black">{php(claim.amount_php)}</span>
                <span className="text-lg font-black">{claim.full_name}</span>
                <span className="font-bold text-[#a89bb8]">{REWARD_LABEL[claim.reward] ?? claim.reward}</span>
+               <span className="rounded-full bg-[#241044] px-2.5 py-0.5 text-sm font-black text-[#c4a2ff]">
+                  {claim.brand === 'grabmart' ? '🛒 GrabMart' : '🍗 Food link'}
+               </span>
+               {claim.received_at ? (
+                  <span className="rounded-full bg-[#123d2a] px-2.5 py-0.5 text-sm font-black text-[#6ee7a8]">Got it ✅</span>
+               ) : claim.receipt_issue_at ? (
+                  <span className="rounded-full bg-[#3d1220] px-2.5 py-0.5 text-sm font-black text-[#ff8fa3]">Didn&apos;t get it — resend</span>
+               ) : null}
                <LocationBadge contact={contacts[claim.user_id]} />
                {claim.status === 'sent' ? (
                   <span className="ml-auto rounded-full bg-[#123d2a] px-3 py-1 text-sm font-black text-[#6ee7a8]">
@@ -369,10 +421,18 @@ export default function GrabVouchersSection() {
                      <button
                         type="button"
                         disabled={busyId === claim.id}
-                        onClick={() => void setStatus(claim, 'sent')}
+                        onClick={() => void sendCode(claim)}
                         className="rounded-xl bg-[#8336f0] px-5 py-2 text-base font-black text-white disabled:opacity-50"
                      >
-                        ✓ Mark sent
+                        {busyId === claim.id ? 'Sending…' : '✅ Send code'}
+                     </button>
+                     <button
+                        type="button"
+                        disabled={busyId === claim.id}
+                        onClick={() => void setStatus(claim, 'sent')}
+                        className="rounded-xl bg-[#241044] px-5 py-2 text-base font-black text-white disabled:opacity-50"
+                     >
+                        Mark sent by hand
                      </button>
                      <button
                         type="button"
@@ -405,10 +465,11 @@ export default function GrabVouchersSection() {
    return (
       <section className="space-y-6">
          <div>
-            <h2 className="break-words text-2xl font-black sm:text-3xl">GrabFood vouchers</h2>
+            <h2 className="break-words text-2xl font-black sm:text-3xl">Food vouchers</h2>
             <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
-               Who claimed a voucher, what we still owe, and where to send it. Buy a GrabFood e-gift (gifted.ph or udialpinoy.com), send it
-               to their email, then tap Mark sent — the borrower sees “Sent” in the app.
+               Claims are emailed automatically: one ₱50 Xoxo link per ₱50 from the stock below (the borrower picks Jollibee, Chowking,
+               Greenwich, Mang Inasal or Red Ribbon), or a Greenwich voucher from Bitrefill when the stock is empty. Anything under “To
+               send” didn’t go out on its own: add links, then tap Send code.
             </p>
          </div>
 
@@ -428,11 +489,43 @@ export default function GrabVouchersSection() {
             <Stat label="Total if all claimed" value={php(sum(pending) + sum(unclaimed))} note="Owed now + earned, not claimed" />
          </div>
 
+         <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
+            <div className="flex flex-wrap items-baseline gap-3">
+               <h3 className="text-lg font-black">₱{VOUCHER_LINK_PHP} Xoxo link stock</h3>
+               <span className={`font-black ${linksLeft <= 5 ? 'text-[#facc6b]' : 'text-[#6ee7a8]'}`}>
+                  {linksLeft} left{linksLeft <= 5 ? ' — restock soon' : ''}
+               </span>
+               {linksOwed > 0 ? <span className="text-sm text-[#a89bb8]">{linksOwed} needed for claims waiting now</span> : null}
+            </div>
+            <p className="mt-1 text-sm text-[#a89bb8]">
+               Xoxoday → Send Reward Link → Moodeng food reward → Send to self → quantity. Paste the links from that email here, one per
+               line. Links are never shown back here.
+            </p>
+            <textarea
+               id="voucher-links-input"
+               value={linksInput}
+               onChange={(event) => setLinksInput(event.target.value)}
+               rows={3}
+               placeholder="https://rewards.xoxoday.com/…"
+               className="mt-3 w-full rounded-xl border border-[#2a1453] bg-[#120626] p-3 font-mono text-sm text-white"
+            />
+            <button
+               type="button"
+               disabled={pastedLinks.length === 0}
+               onClick={() => void addLinks()}
+               className="mt-2 rounded-xl bg-[#8336f0] px-5 py-2 text-base font-black text-white disabled:opacity-40"
+            >
+               Add {pastedLinks.length || ''} link{pastedLinks.length === 1 ? '' : 's'}
+            </button>
+         </div>
+
+         {notice ? <p className="rounded-xl bg-[#123d2a] px-4 py-3 font-bold text-[#6ee7a8]">{notice}</p> : null}
+
          {waitingAbroad.length > 0 ? (
             <p className="rounded-xl border border-[#8a6a1f] bg-[#2a2010] px-4 py-3 font-bold text-[#facc6b]">
                ⚠ {waitingAbroad.length} of {waitingPeople.length} people waiting are outside the Philippines right now (
                {waitingAbroad.map(([userId, name]) => `${name} — ${countryName(whereabouts(contacts[userId]).country!)}`).join(', ')}). A
-               GrabFood PH voucher may not work for them — check before buying.
+               Philippine food voucher may not work for them — message them before sending.
             </p>
          ) : null}
 

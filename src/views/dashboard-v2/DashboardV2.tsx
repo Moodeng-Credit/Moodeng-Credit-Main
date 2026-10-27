@@ -34,9 +34,11 @@ import {
    LoanSummarySection,
    MilestonesSection,
    TierVoucherCard,
+   VoucherFollowUpCard,
    UpcomingDuesSection
 } from '@/views/dashboard-v2/components/DashboardV2Sections';
-import { getVoucherState, OWN_VOUCHER, TIER_VOUCHERS } from '@/views/dashboard-v2/dashboardV2Model';
+import { useConfirmVoucherReceived } from '@/hooks/useFriendReferrals';
+import { getVoucherFollowUp, getVoucherState, OWN_VOUCHER, TIER_VOUCHERS } from '@/views/dashboard-v2/dashboardV2Model';
 import DashboardV2PreviewBar from '@/views/dashboard-v2/DashboardV2Preview';
 import { VoucherClaimPopup } from '@/views/dashboard-v2/DashboardV2Rewards';
 import type { DashboardV2Milestone } from '@/views/dashboard-v2/types';
@@ -157,7 +159,9 @@ export default function DashboardV2() {
       Number.isInteger(tourStepsParam) && tourStepsParam > 0 ? tourStepsParam : REQUEST_BOARD_TOUR_STEP_COUNT;
    const showTour = searchParams.has('tour') && shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, userId, false);
    const ownVoucher = getVoucherState(model.rewards, OWN_VOUCHER, model.referralLoading);
-   // The lowest tier whose GrabFood voucher is waiting to be claimed (one card at a time).
+   const voucherFollowUp = getVoucherFollowUp(model.rewards);
+   const confirmVoucher = useConfirmVoucherReceived();
+   // The lowest tier whose food voucher is waiting to be claimed (one card at a time).
    const claimableTierVoucher = TIER_VOUCHERS.map((tier) => ({
       tier,
       claimable: model.rewards.claimable.find((item) => item.reward === tier.reward) ?? null
@@ -244,6 +248,15 @@ export default function DashboardV2() {
                      />
                   ) : null}
                   {model.hasOverdue ? <UpcomingDuesSection model={model} /> : null}
+                  {voucherFollowUp ? (
+                     <VoucherFollowUpCard
+                        claim={voucherFollowUp}
+                        isAnswering={confirmVoucher.isPending}
+                        onAnswer={(gotIt) => {
+                           if (isReal) confirmVoucher.mutate({ claimId: voucherFollowUp.id, gotIt });
+                        }}
+                     />
+                  ) : null}
                   {claimableTierVoucher ? (
                      <TierVoucherCard
                         label={claimableTierVoucher.tier.label}

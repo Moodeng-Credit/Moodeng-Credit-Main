@@ -357,7 +357,7 @@ const handleLoanAccessCommand = async (supabase: SupabaseClient, message: Telegr
 };
 
 // The inline buttons on admin cards: la: (loan-access Approve / Reject / Showed up / No-show),
-// vc: (open-flow call attendance), vo: (GrabFood voucher claim Mark sent / Reject), mv: (stuck
+// vc: (open-flow call attendance), vo: (food voucher claim Send code / Reject), mv: (stuck
 // Facebook confirmation → Mark Facebook verified), kr: (out of KYC tries → 3 more tries) and rp:
 // (referral code owner payout ✅ Paid / ⏳ Not paid yet).
 // Honored only when the card sits in an admin channel, so a forwarded card can't be tapped from
@@ -368,7 +368,7 @@ const handleLoanAccessCommand = async (supabase: SupabaseClient, message: Telegr
 // older cards (posted before that table) and taps that changed nothing are stamped here.
 const SAVING_CALLBACK = 'busy';
 
-type ButtonResult = { ok: boolean; summary: string; stamp?: CardStamp };
+type ButtonResult = { ok: boolean; summary: string; stamp?: CardStamp; retry?: boolean };
 
 const handleAdminCallback = async (supabase: SupabaseClient, query: TelegramCallbackQuery, adminChatIds: string[]) => {
    if (query.data === SAVING_CALLBACK) {
@@ -435,6 +435,12 @@ const handleAdminCallback = async (supabase: SupabaseClient, query: TelegramCall
          result = await markMessengerVerified(supabase, messenger.userId, by);
       } else {
          result = await resetKycTries(supabase, kycRetry!.userId, by);
+      }
+      // A voucher send that can be retried (pool empty, Bitrefill not ready) changed nothing: keep the buttons.
+      if (result.retry) {
+         if (card?.reply_markup?.inline_keyboard) await setCardButtons(cardChatId, card.message_id, card.reply_markup.inline_keyboard);
+         await sendTelegramMessage(cardChatId, `⚠️ Not sent: ${result.summary}`);
+         return;
       }
       if (card) {
          const stamp: CardStamp =

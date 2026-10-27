@@ -11,7 +11,7 @@ const SAMPLE_ALL_MILESTONES = toDashboardV2MilestoneList(
 );
 const SAMPLE_MILESTONES = toDashboardV2Milestones(buildReputationMilestones({ creditLevels: [], borrowerLoans: [], isVerified: true }));
 
-// Not in the Figma: a borrower who repaid their first loan on time and can claim the GrabFood voucher.
+// Not in the Figma: a borrower who repaid their first loan on time and can claim the food voucher.
 const REWARDED_ALL_MILESTONES = SAMPLE_ALL_MILESTONES.map((milestone, index) => ({
    ...milestone,
    status: index < 3 ? ('unlocked' as const) : index === 3 ? ('next' as const) : ('locked' as const)

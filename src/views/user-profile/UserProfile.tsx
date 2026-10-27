@@ -107,7 +107,7 @@ const UserProfile = () => {
         ? DEMO_BORROWER_INSIGHTS_USER
         : (profileUser ?? (username === user.username ? user : null));
    const isRealUserAuthenticated = Boolean(user?.id && user?.username);
-   // GrabFood voucher rewards are per signed-in user (RLS: read your own), so the Milestones &
+   // food voucher rewards are per signed-in user (RLS: read your own), so the Milestones &
    // Rewards card only renders on a borrower's own insights (isOwnInsights, computed below).
    const { rewards: friendRewards, isLoading: friendRewardsLoading } = useFriendReferrals();
    // The signed-in borrower's own pandesal (RLS: read your own), shown only on their own insights.
@@ -1064,7 +1064,7 @@ const UserProfile = () => {
                               ) : null}
                            </div>
 
-                           {/* GrabFood voucher, in the dashboard's yellow voucher style */}
+                           {/* food voucher, in the dashboard's yellow voucher style */}
                            {ownVoucherState === 'loading' ? (
                               <div className="h-14 animate-pulse rounded-[12px] bg-[#fff8dc]" />
                            ) : (
@@ -1074,7 +1074,7 @@ const UserProfile = () => {
                               >
                                  <DesignImage src={DASHBOARD_V2_ASSETS.coupon} className="h-11 w-11 shrink-0 object-contain" />
                                  <div className="min-w-0 flex-1">
-                                    <p className="text-[16px] font-black italic leading-5 text-[#3c8248]">₱50 GrabFood voucher</p>
+                                    <p className="text-[16px] font-black italic leading-5 text-[#3c8248]">₱50 food voucher</p>
                                     <p className="text-[13px] font-medium leading-[18px] text-[#6f7d1d]">
                                        {ownVoucherState === 'claimable'
                                           ? 'Earned from your first on-time repayment'

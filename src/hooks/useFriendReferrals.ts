@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 
 import {
    clearPendingInvite,
+   confirmVoucherReceived,
    EMPTY_REWARDS,
    getMyInviteCode,
    getMyRewards,
@@ -12,6 +13,7 @@ import {
    readPendingInvite,
    redeemFriendInvite,
    submitVoucherClaim,
+   type VoucherBrand,
    type VoucherReward
 } from '@/lib/friendReferrals';
 import { isSupabaseBrowserConfigured } from '@/lib/supabase/client';
@@ -52,8 +54,25 @@ export function useSubmitVoucherClaim() {
    const userId = useSelector((state: RootState) => state.auth.user?.id) ?? '';
 
    return useMutation({
-      mutationFn: (input: { reward: VoucherReward; friendReferralId: string | null; fullName: string; mobile: string; email?: string }) =>
-         submitVoucherClaim(input),
+      mutationFn: (input: {
+         reward: VoucherReward;
+         friendReferralId: string | null;
+         fullName: string;
+         mobile: string;
+         email?: string;
+         brand?: VoucherBrand;
+      }) => submitVoucherClaim(input),
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: rewardsKey(userId) })
+   });
+}
+
+/** "I got it" / "Didn't get it" on a sent voucher. */
+export function useConfirmVoucherReceived() {
+   const queryClient = useQueryClient();
+   const userId = useSelector((state: RootState) => state.auth.user?.id) ?? '';
+
+   return useMutation({
+      mutationFn: (input: { claimId: string; gotIt: boolean }) => confirmVoucherReceived(input.claimId, input.gotIt),
       onSuccess: () => queryClient.invalidateQueries({ queryKey: rewardsKey(userId) })
    });
 }

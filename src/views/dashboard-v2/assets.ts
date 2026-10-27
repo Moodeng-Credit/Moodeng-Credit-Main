@@ -46,6 +46,18 @@ export const DASHBOARD_V2_ASSETS = {
    verifyBanner: `${BASE}/banner-verify.png`, // banner_1
    connectWalletBanner: `${BASE}/banner-connect-wallet.png`, // banner_2
    voucherBanner: `${BASE}/banner-voucher.png`, // banner_3
+   // Moo-Menu hippos (generated art, cut out to transparent PNG). Basket and envelope still to come.
+   mooMenuChef: `${BASE}/moo-menu-chef.png`,
+   mooFriedChicken: `${BASE}/moo-fried-chicken.png`,
+   mooEnjoy: `${BASE}/moo-enjoy.png`,
+   mooEnvelope: `${BASE}/moo-envelope.png`,
+   // Moo-Menu food icons (generated art; brand names are shown as text, never as logos).
+   foodJollibee: `${BASE}/food-jollibee.png`,
+   foodChowking: `${BASE}/food-chowking.png`,
+   foodGreenwich: `${BASE}/food-greenwich.png`,
+   foodMangInasal: `${BASE}/food-manginasal.png`,
+   foodRedRibbon: `${BASE}/food-redribbon.png`,
+   foodGrabMart: `${BASE}/food-grabmart.png`,
    voucherBannerFood: `${BASE}/banner-voucher-food.png` // right side of banner_3 (no copy), for the English banner
 } as const;
 

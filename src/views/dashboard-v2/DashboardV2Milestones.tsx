@@ -221,7 +221,7 @@ export default function DashboardV2Milestones() {
                      ))}
                   </div>
 
-                  {/* A GrabFood voucher for each Moodeng tier (Rising / Prime / Apex). */}
+                  {/* A food voucher for each Moodeng tier (Rising / Prime / Apex). */}
                   <h2 className="mt-8 text-[20px] font-bold italic leading-6 text-[#594d65] dark:text-[#d9cfe6]">
                      Grow Moodeng, eat on us
                   </h2>
@@ -243,7 +243,7 @@ export default function DashboardV2Milestones() {
                                     <p className="text-[18px] font-medium leading-6 text-[#833000] dark:text-[#ffc46b]">
                                        Grow Moodeng to {tier.label}
                                     </p>
-                                    <p className="text-[16px] leading-[18px] text-[#f90]">Reward: ₱{tier.amountPhp} GrabFood voucher</p>
+                                    <p className="text-[16px] leading-[18px] text-[#f90]">Reward: ₱{tier.amountPhp} food voucher</p>
                                  </div>
                                  {tierVoucher.state !== 'none' ? (
                                     <VoucherStatusPill state={tierVoucher.state} onClaim={() => setClaimingVoucher(tierVoucher.voucher)} />

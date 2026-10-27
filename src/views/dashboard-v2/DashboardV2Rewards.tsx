@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
-import { Check } from 'lucide-react';
+import clsx from 'clsx';
 import { Link, useParams } from 'react-router-dom';
 
 import { useSubmitVoucherClaim } from '@/hooks/useFriendReferrals';
@@ -9,9 +9,11 @@ import { useSubmitVoucherClaim } from '@/hooks/useFriendReferrals';
 import {
    type ClaimableVoucher,
    getInviteInviter,
+   GRABMART_MIN_PHP,
    isValidInviteCode,
    normalizeInviteCode,
    rememberPendingInvite,
+   type VoucherBrand,
    type VoucherReward
 } from '@/lib/friendReferrals';
 import { isPreviewHost } from '@/lib/previewHost';
@@ -30,42 +32,103 @@ const PRIMARY_GRADIENT = 'linear-gradient(77.66deg, #9584ff 0.5%, #6b55f7 98.16%
 const FIELD =
    'h-12 w-full rounded-[12px] border-2 border-[#e8e4ff] bg-dv2-card px-3.5 text-[16px] text-[#0f172b] outline-none placeholder:text-[#c0b9c8] focus:border-[#7b67f9] dark:border-[#3a2f55] dark:bg-dv2-page dark:focus:border-[#7b67f9]';
 
-const CLAIM_COPY: Record<VoucherReward, { headline: string; body: string }> = {
-   first_on_time_repayment: { headline: 'You repaid on time. Treat yourself!', body: 'Tell us where to send your GrabFood voucher code.' },
-   referral_inviter: {
-      headline: 'Your friend repaid on time. Free meal!',
-      body: 'Thanks for inviting them. Where should we send your voucher code?'
-   },
-   referral_invitee: {
-      headline: 'You repaid on time. Free meal!',
-      body: 'Thanks for joining with a friend. Where should we send your voucher code?'
-   },
-   tier_rising: { headline: 'Moodeng grew to Rising. Treat yourself!', body: 'Tell us where to send your GrabFood voucher code.' },
-   tier_prime: { headline: 'Moodeng grew to Prime. Treat yourself!', body: 'Tell us where to send your GrabFood voucher code.' },
-   tier_apex: { headline: 'Moodeng reached Apex. Feast time!', body: 'Tell us where to send your GrabFood voucher code.' }
+const CLAIM_HEADLINE: Record<VoucherReward, string> = {
+   first_on_time_repayment: 'You repaid on time. Treat yourself!',
+   referral_inviter: 'Your friend repaid on time. Free meal!',
+   referral_invitee: 'You repaid on time. Free meal!',
+   tier_rising: 'Moodeng grew to Rising. Treat yourself!',
+   tier_prime: 'Moodeng grew to Prime. Treat yourself!',
+   tier_apex: 'Moodeng reached Apex. Feast time!'
 };
+
+/** The two Moo-Menu picks, drawn as the designer's referral voucher tickets. GrabMart only comes from ₱100 (its smallest card). */
+const MOO_MENU: Array<{ brand: VoucherBrand; title: string; detail: string; where: string; art: string; ticket: string; tag: string }> = [
+   {
+      brand: 'food',
+      title: 'Moo-food',
+      detail: 'Jollibee + 4 more',
+      where: 'Anywhere in PH',
+      art: DASHBOARD_V2_ASSETS.foodJollibee,
+      ticket: 'linear-gradient(180deg, #ffffff 0%, #ebe7ff 55%, #dcd5ff 100%)',
+      tag: 'bg-[#f1ccfd] text-[#6b55f7]'
+   },
+   {
+      brand: 'grabmart',
+      title: 'Moo-snacks',
+      detail: 'GrabMart',
+      where: 'Manila & Cebu only',
+      art: DASHBOARD_V2_ASSETS.foodGrabMart,
+      ticket: 'linear-gradient(180deg, #fff9c4 0%, #fff087 55%, #ffea62 100%)',
+      tag: 'bg-[#faf173] text-[#5a3a12]'
+   }
+];
+
+/** The other restaurants on the Xoxo link, shown small under Jollibee. */
+const MORE_RESTAURANTS = [
+   { name: 'Chowking', art: DASHBOARD_V2_ASSETS.foodChowking },
+   { name: 'Greenwich', art: DASHBOARD_V2_ASSETS.foodGreenwich },
+   { name: 'Mang Inasal', art: DASHBOARD_V2_ASSETS.foodMangInasal },
+   { name: 'Red Ribbon', art: DASHBOARD_V2_ASSETS.foodRedRibbon }
+];
+
+/** A food icon on a small white plate (the icons carry a soft shadow that needs a light ground). */
+function FoodIcon({ src, label, size }: { src: string; label: string; size: 'lg' | 'md' | 'sm' }) {
+   return (
+      <span
+         className={clsx(
+            'flex shrink-0 items-center justify-center rounded-full bg-white shadow-[0_1px_3px_rgba(80,60,120,0.18)]',
+            size === 'lg' ? 'h-[72px] w-[72px]' : size === 'md' ? 'h-14 w-14' : 'h-7 w-7'
+         )}
+         title={label}
+      >
+         <DesignImage
+            src={src}
+            alt={label}
+            className={size === 'lg' ? 'h-[60px] w-[60px] object-contain' : size === 'md' ? 'h-12 w-12 object-contain' : 'h-6 w-6 object-contain'}
+         />
+      </span>
+   );
+}
 
 const describeClaimError = (error: unknown) => {
    const message = error instanceof Error ? error.message : String((error as { message?: string } | null)?.message ?? '');
    if (message.includes('already claimed')) return 'This voucher was already claimed.';
    if (message.includes('not eligible')) return "This voucher isn't unlocked yet.";
+   if (message.includes('email required')) return 'Please add your email — your voucher is sent there.';
+   if (message.includes('grabmart needs 100')) return 'GrabMart starts at ₱100. Pick Moo-food for this one.';
    if (message.includes('check constraint')) return 'Please check your name and mobile number.';
    return 'Something went wrong. Please try again.';
 };
 
+type MooStep = 'pick' | 'area' | 'details' | 'sent';
+
 /**
- * "You earned a GrabFood voucher" — collects where to send the code. Real claims are validated and
- * stored by submit_voucher_claim(); preview samples only simulate the submission.
+ * The Moo-Menu: "You earned a voucher" → pick Moo-food (Jollibee & 4 more restaurants, Xoxo link) or Moo-snacks
+ * (GrabMart, ₱100+) → for GrabMart, "are you in Metro Manila or Cebu?" (a No switches them to Moo-food; IP location
+ * can't tell, since Philippine mobile data mostly exits in Manila) → where to send it → on its way. Real claims are validated and stored by
+ * submit_voucher_claim() and sent automatically; preview samples only simulate the submission.
  */
-export function VoucherClaimPopup({ voucher, isPreview, onClose }: { voucher: ClaimableVoucher; isPreview: boolean; onClose: () => void }) {
-   const [isSubmitted, setIsSubmitted] = useState(false);
+export function VoucherClaimPopup({
+   voucher,
+   isPreview,
+   onClose,
+   initialStep = 'pick'
+}: {
+   voucher: ClaimableVoucher;
+   isPreview: boolean;
+   onClose: () => void;
+   initialStep?: MooStep;
+}) {
+   const [step, setStep] = useState<MooStep>(initialStep);
+   const [brand, setBrand] = useState<VoucherBrand>('food');
    const submitClaim = useSubmitVoucherClaim();
-   const copy = CLAIM_COPY[voucher.reward];
+   const canGrabMart = voucher.amountPhp >= GRABMART_MIN_PHP;
+   const picked = MOO_MENU.find((item) => item.brand === brand) ?? MOO_MENU[0];
 
    const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       if (isPreview) {
-         setIsSubmitted(true);
+         setStep('sent');
          return;
       }
       const form = new FormData(event.currentTarget);
@@ -75,9 +138,10 @@ export function VoucherClaimPopup({ voucher, isPreview, onClose }: { voucher: Cl
             friendReferralId: voucher.friendReferralId,
             fullName: String(form.get('name') ?? ''),
             mobile: String(form.get('mobile') ?? ''),
-            email: String(form.get('email') ?? '')
+            email: String(form.get('email') ?? ''),
+            brand
          },
-         { onSuccess: () => setIsSubmitted(true) }
+         { onSuccess: () => setStep('sent') }
       );
    };
 
@@ -92,34 +156,124 @@ export function VoucherClaimPopup({ voucher, isPreview, onClose }: { voucher: Cl
          {/* m-auto centres the popup when it fits and lets it scroll on short screens (small or landscape phones). */}
          <div className="m-auto flex w-full max-w-[400px] flex-col items-center" onClick={(event) => event.stopPropagation()}>
             <p className="mb-2 text-center text-[26px] font-black italic leading-7 text-[#3c8248] underline decoration-[#4aa256] decoration-4 underline-offset-8 dark:text-[#7fd68b]">
-               Voucher Unlocked!
+               {step === 'sent' ? 'Moo-redeemed!' : 'Moo-Menu'}
             </p>
             <div className="w-full rounded-[26px] bg-gradient-to-b from-[#fff6c2] via-white via-40% to-white px-5 pb-6 pt-5 text-center dark:from-[#3a3216] dark:via-dv2-card dark:to-dv2-card">
-               {isSubmitted ? (
-                  <div className="flex flex-col items-center gap-3 py-4">
-                     <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#4aa256]">
-                        <Check className="h-8 w-8 text-white" strokeWidth={3} aria-hidden="true" />
-                     </span>
-                     <p id="dv2-voucher-title" className="text-[24px] font-bold leading-7 text-[#594d65] dark:text-[#e6def2]">
-                        Salamat! We got it.
+               {step === 'pick' ? (
+                  <div className="flex flex-col items-center gap-3">
+                     <DesignImage src={DASHBOARD_V2_ASSETS.mooMenuChef} alt="" className="h-28 w-28 object-contain" />
+                     <p id="dv2-voucher-title" className="text-[22px] font-bold leading-6 text-[#594d65] dark:text-[#e6def2]">
+                        {CLAIM_HEADLINE[voucher.reward]}
                      </p>
-                     <p className="text-[16px] leading-[22px] text-[#45556c]">
-                        We&apos;ll send your ₱{voucher.amountPhp} GrabFood voucher code to your mobile within 2 business days.
-                     </p>
-                     {isPreview ? (
-                        <p className="text-[12px] text-[#c0b9c8] dark:text-[#8f819e]">Preview sample — nothing was sent.</p>
-                     ) : null}
+                     <p className="text-[16px] leading-5 text-[#45556c]">Pick your treat</p>
+                     <div className="grid w-full grid-cols-2 gap-2.5">
+                        {MOO_MENU.map((item) => {
+                           const disabled = item.brand === 'grabmart' && !canGrabMart;
+                           const isPicked = brand === item.brand;
+                           return (
+                              <button
+                                 key={item.brand}
+                                 type="button"
+                                 disabled={disabled}
+                                 aria-pressed={isPicked}
+                                 onClick={() => setBrand(item.brand)}
+                                 className={clsx(
+                                    'relative mt-3 flex flex-col items-center rounded-[14px] px-2 pb-3 pt-6 text-center',
+                                    isPicked && !disabled ? 'shadow-[0_0_0_3px_#6b55f7]' : 'shadow-[0_1px_4px_rgba(80,60,120,0.15)]',
+                                    disabled && 'opacity-50'
+                                 )}
+                                 style={{ backgroundImage: item.ticket }}
+                              >
+                                 {/* Tag on the corner, like the designer's "For You" / "For Friend" tickets. */}
+                                 <span
+                                    className={clsx(
+                                       'absolute -left-1.5 -top-3 -rotate-6 rounded-[8px] rounded-bl-none px-2 py-0.5 text-[12px] font-bold shadow-sm',
+                                       item.tag
+                                    )}
+                                 >
+                                    {item.where}
+                                 </span>
+                                 <FoodIcon src={item.art} label={item.brand === 'food' ? 'Jollibee' : 'GrabMart'} size="md" />
+                                 {item.brand === 'food' ? (
+                                    <span className="mt-1 flex justify-center gap-0.5" aria-label="Also Chowking, Greenwich, Mang Inasal and Red Ribbon">
+                                       {MORE_RESTAURANTS.map((place) => (
+                                          <FoodIcon key={place.name} src={place.art} label={place.name} size="sm" />
+                                       ))}
+                                    </span>
+                                 ) : (
+                                    <span className="mt-1 h-7" aria-hidden="true" />
+                                 )}
+                                 <span className="mt-1 text-[36px] font-black italic leading-[40px] text-[#745ff8]">
+                                    <span className="text-[26px]">₱</span>
+                                    {disabled ? GRABMART_MIN_PHP : voucher.amountPhp}
+                                 </span>
+                                 <span className="text-[15px] font-black italic leading-5 text-[#745ff8]">{item.title}</span>
+                                 <span className="text-[12px] font-semibold leading-4 text-[#7b6b8c]">{item.detail}</span>
+                                 {/* Tear line with notches at both edges. */}
+                                 <span className="relative my-2.5 w-full border-t-2 border-dashed border-[#745ff8]/30" aria-hidden="true">
+                                    <span className="absolute -left-[17px] -top-[9px] h-4 w-4 rounded-full bg-white dark:bg-dv2-card" />
+                                    <span className="absolute -right-[17px] -top-[9px] h-4 w-4 rounded-full bg-white dark:bg-dv2-card" />
+                                 </span>
+                                 <span
+                                    className={clsx(
+                                       'flex h-9 w-full items-center justify-center rounded-full text-[15px] font-semibold text-white',
+                                       !(isPicked && !disabled) && 'bg-gradient-to-r from-[#b4b1c4] to-[#7d7a8e]'
+                                    )}
+                                    style={isPicked && !disabled ? { backgroundImage: PRIMARY_GRADIENT } : undefined}
+                                 >
+                                    {disabled ? `Needs ₱${GRABMART_MIN_PHP}` : isPicked ? 'Picked ✓' : 'Pick'}
+                                 </span>
+                              </button>
+                           );
+                        })}
+                     </div>
+                     <button
+                        type="button"
+                        onClick={() => setStep(brand === 'grabmart' ? 'area' : 'details')}
+                        className="mt-1 flex h-[52px] w-full items-center justify-center rounded-[35px] text-[20px] font-semibold text-white"
+                        style={{ backgroundImage: PRIMARY_GRADIENT }}
+                     >
+                        Moo-redeem!
+                     </button>
                   </div>
-               ) : (
+               ) : step === 'area' ? (
+                  <div className="flex flex-col items-center gap-3 py-1">
+                     <FoodIcon src={DASHBOARD_V2_ASSETS.foodGrabMart} label="GrabMart" size="lg" />
+                     <p id="dv2-voucher-title" className="text-[22px] font-bold leading-7 text-[#594d65] dark:text-[#e6def2]">
+                        Are you in Metro Manila or Cebu?
+                     </p>
+                     <p className="text-[16px] leading-[22px] text-[#45556c]">GrabMart only delivers there.</p>
+                     <button
+                        type="button"
+                        onClick={() => setStep('details')}
+                        className="mt-1 flex h-[52px] w-full items-center justify-center rounded-[35px] text-[18px] font-semibold text-white"
+                        style={{ backgroundImage: PRIMARY_GRADIENT }}
+                     >
+                        Yes, I&apos;m there
+                     </button>
+                     <button
+                        type="button"
+                        onClick={() => {
+                           setBrand('food');
+                           setStep('pick');
+                        }}
+                        className="flex h-[52px] w-full items-center justify-center rounded-[35px] border-2 border-[#e8e4ff] bg-white text-[18px] font-semibold text-[#6b55f7] dark:border-[#3a2f55] dark:bg-dv2-page dark:text-[#9b8bff]"
+                     >
+                        No, give me Moo-food
+                     </button>
+                  </div>
+               ) : step === 'details' ? (
                   <form onSubmit={handleSubmit} className="flex flex-col items-center gap-3">
                      <div className="flex items-center gap-2">
-                        <DesignImage src={DASHBOARD_V2_ASSETS.coupon} className="h-20 w-20 object-contain" />
-                        <span className="text-[34px] font-black text-[#3c8248] dark:text-[#7fd68b]">₱{voucher.amountPhp}</span>
+                        <FoodIcon src={picked.art} label={picked.detail} size="lg" />
+                        <div className="text-left">
+                           <p className="text-[18px] font-black italic leading-5 text-[#3c8248] dark:text-[#7fd68b]">{picked.title}</p>
+                           <p className="text-[24px] font-black text-[#3c8248] dark:text-[#7fd68b]">₱{voucher.amountPhp}</p>
+                        </div>
                      </div>
-                     <p id="dv2-voucher-title" className="text-[22px] font-bold leading-6 text-[#594d65] dark:text-[#e6def2]">
-                        {copy.headline}
+                     <p id="dv2-voucher-title" className="text-[16px] leading-5 text-[#45556c]">
+                        Where should we send your {brand === 'food' ? 'food' : 'GrabMart'} voucher?
                      </p>
-                     <p className="text-[16px] leading-5 text-[#45556c]">{copy.body}</p>
                      <input className={FIELD} name="name" required autoComplete="name" placeholder="Full name" aria-label="Full name" />
                      <input
                         className={FIELD}
@@ -135,8 +289,9 @@ export function VoucherClaimPopup({ voucher, isPreview, onClose }: { voucher: Cl
                         className={FIELD}
                         name="email"
                         type="email"
+                        required
                         autoComplete="email"
-                        placeholder="Email (optional)"
+                        placeholder="Email (we send your voucher here)"
                         aria-label="Email"
                      />
                      {submitClaim.error ? (
@@ -152,7 +307,27 @@ export function VoucherClaimPopup({ voucher, isPreview, onClose }: { voucher: Cl
                      >
                         {submitClaim.isPending ? 'Sending…' : 'Send My Voucher'}
                      </button>
+                     <button type="button" onClick={() => setStep('pick')} className="text-[14px] font-semibold text-[#6b55f7]">
+                        Back to the Moo-Menu
+                     </button>
                   </form>
+               ) : (
+                  <div className="flex flex-col items-center gap-3 py-2">
+                     <DesignImage src={DASHBOARD_V2_ASSETS.mooEnvelope} alt="" className="h-32 w-32 object-contain" />
+                     <p id="dv2-voucher-title" className="text-[22px] font-bold leading-7 text-[#594d65] dark:text-[#e6def2]">
+                        Your treat is mooo-ving to your email!
+                     </p>
+                     <p className="text-[16px] leading-[22px] text-[#45556c]">
+                        Your ₱{voucher.amountPhp} {brand === 'food' ? 'food' : 'GrabMart'} voucher is on its way.
+                        {brand === 'food'
+                           ? ' Open it, pick your restaurant and show the code at the counter.'
+                           : ' Open the email and use the code in the Grab app → Mart.'}
+                     </p>
+                     <p className="text-[14px] leading-5 text-[#7b6b8c]">We&apos;ll ask on your dashboard if it arrived.</p>
+                     {isPreview ? (
+                        <p className="text-[12px] text-[#c0b9c8] dark:text-[#8f819e]">Preview sample — nothing was sent.</p>
+                     ) : null}
+                  </div>
                )}
             </div>
             <button type="button" onClick={onClose} className="mt-14 h-[50px] w-[50px]" aria-label="Close">
@@ -451,7 +626,7 @@ export function DashboardV2InviteLanding() {
                   src={DASHBOARD_V2_ASSETS.voucherBannerFood}
                   className="absolute -right-4 top-0 h-[90px] w-[160px] object-contain"
                />
-               <p className="relative max-w-[60%] text-[20px] font-black italic leading-6 text-[#3c8248]">₱100 GrabFood voucher each</p>
+               <p className="relative max-w-[60%] text-[20px] font-black italic leading-6 text-[#3c8248]">₱100 food voucher each</p>
                <p className="relative mt-1 max-w-[60%] text-[14px] font-medium leading-5 text-[#6f7d1d]">
                   When you repay your first loan on time, you and {inviter || 'your friend'} both get one.
                </p>

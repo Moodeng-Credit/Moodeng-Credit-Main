@@ -80,7 +80,7 @@ export const indonesianCoverageG: Record<string, string> = {
    'Previously used': 'Pernah dipakai',
    'will keep sending repayments to': 'akan tetap mengirim pembayaran kembali ke',
    // src/views/dashboard-v2/components/DashboardV2Banners.tsx
-   '₱100 GrabFood Voucher: kumain kayong dalawa. Mag-refer.': 'Voucher GrabFood ₱100: makan berdua. Ajak temanmu.',
+   '₱100 makanan Voucher: kumain kayong dalawa. Mag-refer.': 'Voucher makanan ₱100: makan berdua. Ajak temanmu.',
    // src/views/dashboard-v2/components/DashboardV2Hero.tsx
    'Rising Moodeng (not reached yet)': 'Moodeng Rising (belum tercapai)',
    'Prime Moodeng (not reached yet)': 'Moodeng Prime (belum tercapai)',

@@ -73,22 +73,17 @@ export function ConnectWalletBanner({ onConnect }: { onConnect: () => void }) {
 }
 
 /**
- * Referral entry point. Filipino uses the designer's exported banner as-is; English re-sets the copy
- * over the same yellow card and the text-free food art cut from that banner.
+ * Referral entry point: the copy set over the designer's yellow card and the text-free food art cut
+ * from her banner. Filipino used her exported banner, but that image says "GrabFood" and the reward is
+ * now a food voucher the borrower picks (Jollibee, Chowking, Greenwich, Mang Inasal, Red Ribbon).
  */
-export function VoucherReferralBanner({ language, onRefer }: { language: DashboardV2Language; onRefer: () => void }) {
-   if (language === 'fil') {
-      return (
-         <button type="button" onClick={onRefer} className={BANNER_BUTTON}>
-            <DesignImage
-               src={DASHBOARD_V2_ASSETS.voucherBanner}
-               alt="₱100 GrabFood Voucher: kumain kayong dalawa. Mag-refer."
-               className="aspect-[880/162] h-auto w-full"
-            />
-         </button>
-      );
-   }
+const REFERRAL_BANNER_COPY: Record<DashboardV2Language, { lead: string; rest: string; sub: string; cta: string }> = {
+   en: { lead: 'FREE', rest: 'meal for both of you', sub: 'Feast with friend', cta: 'Grab Now' },
+   fil: { lead: '₱100', rest: 'Food Voucher', sub: 'kumain kayong dalawa', cta: 'Mag-refer' }
+};
 
+export function VoucherReferralBanner({ language, onRefer }: { language: DashboardV2Language; onRefer: () => void }) {
+   const copy = REFERRAL_BANNER_COPY[language] ?? REFERRAL_BANNER_COPY.en;
    return (
       <button type="button" onClick={onRefer} className={clsx(BANNER_BUTTON, 'relative h-[81px] text-left')}>
          {/* Figma "banner_4" (9.23 file). */}
@@ -102,13 +97,13 @@ export function VoucherReferralBanner({ language, onRefer }: { language: Dashboa
             className="absolute right-0 top-0 h-[81px] w-[clamp(100px,32.7vw,144px)] object-contain object-right"
          />
          <span className="absolute left-[34px] top-[22px] flex items-baseline gap-1.5 font-black italic leading-none text-[#3c8248]">
-            <span className="text-[clamp(20px,6.4vw,28px)]">FREE</span>
-            <span className="text-[clamp(13px,4.5vw,20px)]">meal for both of you</span>
+            <span className="text-[clamp(20px,6.4vw,28px)]">{copy.lead}</span>
+            <span className="text-[clamp(13px,4.5vw,20px)]">{copy.rest}</span>
          </span>
          <span className="absolute left-[34px] top-[52px] flex items-center gap-2">
-            <span className="text-[14px] font-medium tracking-[-0.28px] text-[#96aa26]">Feast with friend</span>
+            <span className="text-[14px] font-medium tracking-[-0.28px] text-[#96aa26]">{copy.sub}</span>
             <span className="flex h-5 items-center rounded-full bg-[#4aa256] px-3 text-[12px] font-bold tracking-[-0.24px] text-white shadow-[0_1px_1px_rgba(0,0,0,0.3),0_-1px_1px_rgba(255,255,255,0.2)]">
-               Grab Now
+               {copy.cta}
             </span>
          </span>
       </button>

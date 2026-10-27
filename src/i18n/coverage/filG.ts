@@ -843,7 +843,7 @@ export const filipinoCoverageG: Record<string, string> = {
    '9 loans repaid on time in a row': '9 loan na sunod-sunod na nabayaran on time',
    '10 loans repaid on time in a row': '10 loan na sunod-sunod na nabayaran on time',
    'Repay a loan on time to start a streak': 'Magbayad ng loan on time para magsimula ng streak',
-   '₱50 GrabFood voucher': '₱50 na GrabFood voucher',
+   '₱50 food voucher': '₱50 na food voucher',
    'Earned from your first on-time repayment': 'Nakuha mula sa una mong on-time na bayad',
    'Claimed: we’re sending your code': 'Na-claim na: ipinapadala na namin ang code mo',
    'Sent to your mobile': 'Naipadala na sa mobile mo',

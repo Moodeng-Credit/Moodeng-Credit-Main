@@ -2125,6 +2125,10 @@ export interface AdminVoucherClaim {
    status: AdminVoucherClaimStatus;
    admin_note: string | null;
    sent_at: string | null;
+   // Moo-Menu pick, and the borrower's "I got it" / "Didn't get it".
+   brand: 'food' | 'grabmart';
+   received_at: string | null;
+   receipt_issue_at: string | null;
    created_at: string;
 }
 
@@ -2134,7 +2138,7 @@ export async function listVoucherClaims(): Promise<AdminVoucherClaim[]> {
       supabase
          .from('voucher_claims')
          .select(
-            'id, user_id, reward, amount_php, full_name, mobile, email, status, admin_note, sent_at, created_at, users(username, email)'
+            'id, user_id, reward, amount_php, brand, full_name, mobile, email, status, admin_note, sent_at, received_at, receipt_issue_at, created_at, users(username, email)'
          )
          .order('created_at', { ascending: false })
    )) as AnyRow[] | null;
@@ -2183,6 +2187,36 @@ export async function listVoucherContacts(userIds: string[]): Promise<AdminVouch
    const supabase = getSupabaseBrowserClient();
    const data = (await requireOk(supabase.rpc('admin_voucher_contacts', { p_user_ids: userIds }))) as AnyRow[] | null;
    return (data ?? []).map((row) => ({ ...row, login_countries: row.login_countries ?? [] })) as AdminVoucherContact[];
+}
+
+// Food voucher link stock (voucher_codes). Links are never read back to the browser: admins add them
+// and see counts; voucher-claim-telegram-notification hands them to claims and emails them.
+export interface VoucherCodeStock {
+   amount_php: number;
+   available: number;
+   used: number;
+}
+
+export async function getVoucherCodeStock(): Promise<VoucherCodeStock[]> {
+   const data = (await requireOk(getSupabaseBrowserClient().rpc('admin_voucher_code_stock'))) as AnyRow[] | null;
+   return (data ?? []).map((row) => ({ amount_php: toNumber(row.amount_php), available: toNumber(row.available), used: toNumber(row.used) }));
+}
+
+export async function addVoucherCodes(amountPhp: number, codes: string[], source?: string | null): Promise<{ added: number; skipped: number }> {
+   const result = (await requireOk(
+      getSupabaseBrowserClient().rpc('admin_add_voucher_codes', { p_amount_php: amountPhp, p_codes: codes, p_source: source ?? null })
+   )) as AnyRow | null;
+   return { added: toNumber(result?.added), skipped: toNumber(result?.skipped) };
+}
+
+/** Send a pending claim now: Xoxo links from the stock, else Bitrefill. `retry` = nothing changed. */
+export async function sendVoucherCodeForClaim(claimId: string): Promise<{ ok: boolean; summary: string; retry?: boolean }> {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('voucher-claim-telegram-notification', {
+      body: { claimId, event: 'admin_send' }
+   });
+   if (error) throw new Error(error.message || 'Could not send the voucher.');
+   if (data?.error) throw new Error(String(data.error));
+   return data as { ok: boolean; summary: string; retry?: boolean };
 }
 
 export async function updateVoucherClaimStatus(id: string, status: AdminVoucherClaimStatus, adminNote?: string | null): Promise<void> {

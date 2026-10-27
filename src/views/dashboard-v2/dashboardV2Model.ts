@@ -1,7 +1,7 @@
 import { formatCurrency, formatNumber, toNumber } from '@/utils/decimalHelpers';
 
 import { getCreditLevelNumber, MAX_CREDIT_LIMIT } from '@/config/creditTiers';
-import type { ClaimableVoucher, MyRewards, VoucherReward } from '@/lib/friendReferrals';
+import type { ClaimableVoucher, MyRewards, VoucherClaimSummary, VoucherReward } from '@/lib/friendReferrals';
 import { trustPointMilestoneRuleById } from '@/shared/points';
 import type { Loan } from '@/types/loanTypes';
 import type { CreditLevelHint, DashboardV2Milestone, MoodengMood, MoodengTierId } from '@/views/dashboard-v2/types';
@@ -21,7 +21,7 @@ export const MOODENG_TIERS: { id: MoodengTierId; label: string; minPandesal: num
    { id: 'apex', label: 'Apex', minPandesal: 400 }
 ];
 
-/** The GrabFood voucher each tier unlocks (validated and paid out by the database, not here). */
+/** The food voucher each tier unlocks (validated and paid out by the database, not here). */
 export const TIER_VOUCHERS: { reward: VoucherReward; tier: MoodengTierId; label: string; minPandesal: number; amountPhp: number }[] = [
    { reward: 'tier_rising', tier: 'rising', label: 'Rising', minPandesal: 60, amountPhp: 50 },
    { reward: 'tier_prime', tier: 'prime', label: 'Prime', minPandesal: 200, amountPhp: 100 },
@@ -33,11 +33,11 @@ export const TIER_VOUCHER_REWARDS: VoucherReward[] = TIER_VOUCHERS.map((voucher)
 const DASHBOARD_MILESTONE_IDS = ['first-loan-request', 'first-funded-loan', 'first-on-time-repayment'];
 
 /**
- * SAMPLE DATA: the design rewards the first on-time repayment with a GrabFood voucher.
+ * SAMPLE DATA: the design rewards the first on-time repayment with a food voucher.
  * No voucher backend exists yet, so this label is design-only.
  */
 const VOUCHER_REWARD_OVERRIDES: Record<string, string> = {
-   'first-on-time-repayment': '₱50 GrabFood voucher'
+   'first-on-time-repayment': '₱50 food voucher'
 };
 
 export const getMoodengTier = (pandesal: number): MoodengTierId => {
@@ -195,6 +195,21 @@ export const getVoucherState = (
    const claim = rewards.claims.find((item) => rewardsFor.includes(item.reward));
    return { state: claim ? claim.status : 'none', voucher: null };
 };
+
+/** How long the "Enjoy your Moo-meal!" card stays after the borrower taps "I got it". */
+const ENJOY_CARD_MS = 3 * 24 * 60 * 60 * 1000;
+
+/**
+ * The claim the dashboard follows up on: the newest one being prepared, sent but not yet confirmed,
+ * flagged as not received, or confirmed in the last 3 days. Null when there's nothing to say.
+ */
+export const getVoucherFollowUp = (rewards: MyRewards, now = Date.now()): VoucherClaimSummary | null =>
+   rewards.claims.find((claim) => {
+      if (claim.status === 'pending') return true;
+      if (claim.status !== 'sent') return false;
+      if (!claim.receivedAt) return true;
+      return now - new Date(claim.receivedAt).getTime() < ENJOY_CARD_MS;
+   }) ?? null;
 
 export const OWN_VOUCHER: VoucherReward[] = ['first_on_time_repayment'];
 export const REFERRAL_VOUCHERS: VoucherReward[] = ['referral_invitee', 'referral_inviter'];
