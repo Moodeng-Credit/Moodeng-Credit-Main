@@ -92,11 +92,12 @@ const describeClaimError = (error: unknown) => {
    return 'Something went wrong. Please try again.';
 };
 
-type MooStep = 'pick' | 'details' | 'sent';
+type MooStep = 'pick' | 'area' | 'details' | 'sent';
 
 /**
  * The Moo-Menu: "You earned a voucher" → pick Moo-food (Jollibee & 4 more restaurants, Xoxo link) or Moo-snacks
- * (GrabMart, ₱100+) → where to send it → on its way. Real claims are validated and stored by
+ * (GrabMart, ₱100+) → for GrabMart, "are you in Metro Manila or Cebu?" (a No switches them to Moo-food; IP location
+ * can't tell, since Philippine mobile data mostly exits in Manila) → where to send it → on its way. Real claims are validated and stored by
  * submit_voucher_claim() and sent automatically; preview samples only simulate the submission.
  */
 export function VoucherClaimPopup({
@@ -112,6 +113,7 @@ export function VoucherClaimPopup({
 }) {
    const [step, setStep] = useState<MooStep>(initialStep);
    const [brand, setBrand] = useState<VoucherBrand>('food');
+   const [switchedToFood, setSwitchedToFood] = useState(false);
    const submitClaim = useSubmitVoucherClaim();
    const canGrabMart = voucher.amountPhp >= GRABMART_MIN_PHP;
    const picked = MOO_MENU.find((item) => item.brand === brand) ?? MOO_MENU[0];
@@ -167,7 +169,10 @@ export function VoucherClaimPopup({
                                  type="button"
                                  disabled={disabled}
                                  aria-pressed={isPicked}
-                                 onClick={() => setBrand(item.brand)}
+                                 onClick={() => {
+                                    setBrand(item.brand);
+                                    setSwitchedToFood(false);
+                                 }}
                                  className={clsx(
                                     'flex flex-col items-center gap-1 rounded-[18px] border-2 bg-white px-2 pb-3 pt-2 text-center dark:bg-dv2-page',
                                     isPicked && !disabled ? 'border-[#6b55f7] shadow-[0_0_0_3px_rgba(107,85,247,0.15)]' : 'border-[#e8e4ff] dark:border-[#3a2f55]',
@@ -193,16 +198,48 @@ export function VoucherClaimPopup({
                            );
                         })}
                      </div>
+                     {switchedToFood ? (
+                        <p className="w-full rounded-[12px] bg-[#eaf6ec] px-3 py-2 text-[14px] font-semibold leading-5 text-[#3c8248] dark:bg-[#1f3323] dark:text-[#7fd68b]">
+                           Moo-food works anywhere in the Philippines 🍗
+                        </p>
+                     ) : null}
                      <p className="text-[13px] leading-[18px] text-[#7b6b8c]">
                         Moo-food: you pick Jollibee, Chowking, Greenwich, Mang Inasal or Red Ribbon when you open your voucher.
                      </p>
                      <button
                         type="button"
-                        onClick={() => setStep('details')}
+                        onClick={() => setStep(brand === 'grabmart' ? 'area' : 'details')}
                         className="mt-1 flex h-[52px] w-full items-center justify-center rounded-[35px] text-[20px] font-semibold text-white"
                         style={{ backgroundImage: PRIMARY_GRADIENT }}
                      >
                         Moo-redeem!
+                     </button>
+                  </div>
+               ) : step === 'area' ? (
+                  <div className="flex flex-col items-center gap-3 py-1">
+                     <FoodIcon src={DASHBOARD_V2_ASSETS.foodGrabMart} label="GrabMart" size="lg" />
+                     <p id="dv2-voucher-title" className="text-[22px] font-bold leading-7 text-[#594d65] dark:text-[#e6def2]">
+                        Are you in Metro Manila or Cebu?
+                     </p>
+                     <p className="text-[16px] leading-[22px] text-[#45556c]">GrabMart only delivers there.</p>
+                     <button
+                        type="button"
+                        onClick={() => setStep('details')}
+                        className="mt-1 flex h-[52px] w-full items-center justify-center rounded-[35px] text-[18px] font-semibold text-white"
+                        style={{ backgroundImage: PRIMARY_GRADIENT }}
+                     >
+                        Yes, I&apos;m there
+                     </button>
+                     <button
+                        type="button"
+                        onClick={() => {
+                           setBrand('food');
+                           setSwitchedToFood(true);
+                           setStep('pick');
+                        }}
+                        className="flex h-[52px] w-full items-center justify-center rounded-[35px] border-2 border-[#e8e4ff] bg-white text-[18px] font-semibold text-[#6b55f7] dark:border-[#3a2f55] dark:bg-dv2-page dark:text-[#9b8bff]"
+                     >
+                        No, give me Moo-food
                      </button>
                   </div>
                ) : step === 'details' ? (
