@@ -95,6 +95,7 @@
         "npm:js-cookie@^3.0.5",
         "npm:jsdom@^26.1.0",
         "npm:jsonwebtoken@^9.0.3",
+        "npm:jsqr@1.4.0",
         "npm:jwt-decode@4",
         "npm:leaflet@^1.9.4",
         "npm:lightgallery@^2.9.0",
