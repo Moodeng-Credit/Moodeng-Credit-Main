@@ -1,6 +1,6 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { bangkokHour, borrowCardImage, buildAutoReply, isSupportMessage, isTeamOnline, signUpUrl } from './messengerSupport.ts';
+import { bangkokHour, borrowCardImage, buildAutoReply, buildMessengerPing, isSupportMessage, isTeamOnline, signUpUrl } from './messengerSupport.ts';
 
 const msg = (text: string | null, extra: Partial<{ hasAttachment: boolean; isButtonTap: boolean; codes: string[] }> = {}) => ({
    text,
@@ -48,4 +48,20 @@ Deno.test('auto-reply in Filipino, with Filipino links', () => {
    assert(fil.card?.button.url.includes('lang=fil'));
    assert(fil.card!.button.title.length <= 20);
    assertEquals(fil.card?.imageUrl, borrowCardImage('fil'));
+});
+
+Deno.test('Telegram ping names the sender and links the inbox', () => {
+   const guest = buildMessengerPing({ facebookName: 'Ana Cruz', borrower: null, body: 'how do I borrow?', startsConversation: true });
+   assert(guest.text.startsWith('💬 New Messenger chat from Ana Cruz (no Moodeng account yet):'));
+   assert(guest.text.includes('> how do I borrow?'));
+   assertEquals(guest.keyboard.length, 1);
+
+   const borrower = buildMessengerPing({
+      facebookName: 'Ana Cruz',
+      borrower: { id: 'u1', username: 'ana', email: null, display_name: 'Ana', cs: 2 },
+      body: 'paid already',
+      startsConversation: false
+   });
+   assert(borrower.text.startsWith('💬 Ana @ana on Messenger:'));
+   assertEquals(borrower.keyboard.length, 2);
 });

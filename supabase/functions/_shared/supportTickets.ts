@@ -39,6 +39,16 @@ export const postToTicket = async (conversation: TicketConversation, body: strin
    }
 };
 
+// A heads-up to the admin Telegram chat only (the Discord ticket already shows the message).
+export const pingTeam = async (svc: Svc, text: string, keyboard?: TelegramInlineKeyboard) => {
+   try {
+      const chat = await getAdminChatId(svc);
+      if (chat) await sendTelegramMessage(chat, text, keyboard ? { inlineKeyboard: keyboard } : {});
+   } catch (err) {
+      console.error('supportTickets: telegram ping failed', err instanceof Error ? err.message : err);
+   }
+};
+
 // Something the team must see (a ticket that couldn't be posted, a reply that wasn't delivered): the
 // admin Telegram chat, and Discord too where a webhook is configured.
 export const alertTeam = async (svc: Svc, text: string, keyboard?: TelegramInlineKeyboard) => {
