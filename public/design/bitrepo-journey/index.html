@@ -95,6 +95,8 @@ dialog::backdrop{background:rgba(38,20,63,.45)}
 .shot img{display:block;height:min(62vh,560px);width:auto;max-width:none;border-radius:14px;border:1px solid var(--border);background:#fff}
 .shot.wide img{height:auto;width:min(860px,80vw);max-height:62vh;object-fit:contain}
 .shot figcaption{font-size:12px;font-weight:600;color:var(--sub);max-width:300px}
+.step.optional{border-style:dashed;background:#fdfbff}
+.step.optional .n b{background:#f59e0b}
 .lend .n{background:#fff6f6;border-color:#f3c3c7}
 .lend .n b{background:var(--carmine)}
 .section.lender{border-color:#f3c3c7}
@@ -169,6 +171,8 @@ dialog::backdrop{background:rgba(38,20,63,.45)}
         <button class="box step" data-k="s6"><span class="n"><img src="img/h-call.png" alt=""><b>6</b></span><span class="txt"><h4>Video call with our team</h4><p>They show proof of income on camera and we talk through the loan. No call, no next step.</p><span class="tag">Team marks them approved</span><span class="see">See screen →</span></span></button>
 
         <div class="phase"><div class="drop"></div><p>Apply</p><div class="drop"></div></div>
+        <button class="box step optional" data-k="ref"><span class="n"><img src="img/h-referral-boost.png" alt=""><b>+</b></span><span class="txt"><h4>Referred by someone? Add the code</h4><p>Optional. A friend's or partner's referral code adds $5 to the starting limit, and their intro call is a setup call with Emma.</p><span class="tag">$15 → $20 first limit</span><span class="see">Details →</span></span></button>
+        <div class="drop"></div>
         <button class="box step" data-k="s7"><span class="n"><img src="img/h-code-copied.png" alt=""><b>7</b></span><span class="txt"><h4>Fill in the loan request</h4><p>Amount and repayment date. The form stays locked until the call is done.</p><span class="see">See screen →</span></span></button>
         <div class="drop"></div>
         <button class="box step nopic" data-k="s8"><span class="n"><img src="img/h-hippo-with-id-card.png" alt=""><b>8</b></span><span class="txt"><h4>ID check with Didit</h4><p>Government ID plus a face scan, as the last step before the request goes out. We only pay for KYC on people who already showed up.</p><span class="see">Details →</span></span></button>
@@ -242,6 +246,7 @@ const D = {
     ["ob-about","About you: profile picture, name shown to lenders, work"],["ob-goal","What the loan is for"]]},
   s5:{k:"Step 5",t:"Book a 15-minute video call",d:"On Zoom, at a time they pick.",s:[["ob-book","Pick a time"]]},
   s6:{k:"Step 6",t:"Video call with our team",d:"They show proof of income on camera. After the call the team marks them approved.",s:[["ob-waiting","See you on the call: what to have ready"]]},
+  ref:{k:"Optional",t:"Referred by someone? Add the code",d:"The loan form asks \"Have a referral code?\". A valid code adds $5 to a new borrower's starting limit ($15 becomes $20). Referred borrowers have their intro call with Emma, and the person who referred them can track it on their own referral dashboard.",s:[]},
   s7:{k:"Step 7",t:"Fill in the loan request",d:"Unlocked after the call. Amount, repayment date and reason.",s:[["loan-form","Set your loan terms"]]},
   s8:{k:"Step 8",t:"ID check with Didit",d:"Didit's own screens: photo of a government ID, then a face scan. The loan request sends automatically once they pass, and they get 3 tries.",s:[]},
   l1:{k:"Lender · step 1",t:"A new request comes in",d:"Our team is alerted on Telegram the moment a request is sent. Anyone can also see open requests on moodeng.app/request-board.",s:[]},
@@ -265,7 +270,7 @@ const D = {
   l6:{k:"Lender · step 6",t:"Borrower repays",d:"Borrowers get reminders on Messenger and WhatsApp before the due date. Repaid USDC returns to the lender wallet and can fund the next request. A borrower who repays a full-limit loan moves up to a higher limit.",s:[]},
   l7:{k:"Lender · step 7",t:"Monthly report for BitRepo",d:"Password-protected page with loan activity, repayments, balances and the reason each loan was approved, plus a 5-tab Excel download. Periods run from the 17th to the 16th.",s:[["ln-creditline","moodeng.app/creditline"]]}
 };
-const order = ["fb","ms","and","ios","s1","s2","s3","s4","s5","s6","s7","s8","l1","l2","l3","l4","l5","l6","l7"];
+const order = ["fb","ms","and","ios","s1","s2","s3","s4","s5","s6","ref","s7","s8","l1","l2","l3","l4","l5","l6","l7"];
 const dlg = document.getElementById("viewer"), shots = document.getElementById("v-shots");
 let cur = 0;
 function show(i){
@@ -275,7 +280,7 @@ function show(i){
   document.getElementById("v-desc").textContent = c.d;
   shots.innerHTML = "";
   if(c.h){ const m = document.createElement("div"); m.className = "mock"; m.innerHTML = c.h; shots.append(m); }
-  else if(!c.s.length){ shots.innerHTML = '<div class="empty">' + (order[i] === "s8" ? "No screenshot here: this step runs on Didit's own pages." : "No screen for this step: it happens in the background.") + '</div>'; }
+  else if(!c.s.length){ shots.innerHTML = '<div class="empty">' + (order[i] === "s8" ? "No screenshot here: this step runs on Didit's own pages." : order[i] === "ref" ? "Shown as a card inside the loan request form." : "No screen for this step: it happens in the background.") + '</div>'; }
   c.s.forEach(([f,cap,wide])=>{
     const fig = document.createElement("figure"); fig.className = "shot" + (wide ? " wide" : "");
     const img = document.createElement("img"); img.src = "img/" + f + ".jpg"; img.alt = cap; img.loading = "lazy";
@@ -286,7 +291,7 @@ function show(i){
   document.getElementById("v-prev").disabled = i === 0;
   const nx = document.getElementById("v-next");
   nx.disabled = i === order.length - 1;
-  nx.textContent = i < 3 ? "Next entry point →" : i === 3 ? "Start the steps →" : i === 11 ? "Lender side →" : "Next step →";
+  nx.textContent = i < 3 ? "Next entry point →" : i === 3 ? "Start the steps →" : order[i] === "s8" ? "Lender side →" : "Next step →";
 }
 document.querySelectorAll("[data-k]").forEach(b => b.addEventListener("click", () => { show(order.indexOf(b.dataset.k)); dlg.showModal(); }));
 document.getElementById("v-close").onclick = () => dlg.close();
