@@ -22,6 +22,8 @@ interface SocialAuthButtonsProps {
    onTelegramAuth: (authData: Record<string, string>) => void;
    /** The page already shows the big Facebook button elsewhere (sign-up puts it above email). */
    hideFacebook?: boolean;
+   /** The page already shows the big TikTok button elsewhere (sign-up puts it first inside TikTok). */
+   hideTikTok?: boolean;
 }
 
 const btnBase =
@@ -56,6 +58,11 @@ const GoogleLogo = () => (
       />
    </svg>
 );
+
+/** True inside TikTok's own browser (once TikTok login is on): sign-up leads with the big TikTok button. */
+export function useTikTokPrimary(): boolean {
+   return useMemo(() => detectInAppBrowser().appName === 'TikTok' && isTikTokButtonVisible(), []);
+}
 
 /** True when "Continue with Facebook" should be the main button on this page (Facebook/Messenger/Instagram's browser). */
 export function useFacebookPrimary(): boolean {
@@ -155,7 +162,7 @@ export function FacebookAuthButton({ isSignUp, variant }: { isSignUp: boolean; v
    );
 }
 
-export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuthButtonsProps) {
+export function SocialAuthButtons({ isSignUp, hideFacebook = false, hideTikTok = false }: SocialAuthButtonsProps) {
    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
    const [googleError, setGoogleError] = useState('');
@@ -174,7 +181,7 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
    const facebookEnabled = useMemo(() => isFacebookLoginEnabled(), []);
    const facebookPrimary = facebookEnabled && isFacebookFamilyApp(inApp);
    // TikTok's own browser: the person is already signed in to TikTok, so its tile stays (Telegram/LINE don't).
-   const tiktokInApp = useMemo(() => inApp.appName === 'TikTok' && isTikTokButtonVisible(), [inApp]);
+   const tiktokInApp = useTikTokPrimary();
 
    const googleLabel = googleInApp
       ? `Google: open in ${inApp.os === 'ios' ? 'Safari' : 'Chrome'}`
@@ -312,7 +319,7 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
              an app's browser (Facebook, Messenger, Instagram…): there it's phone or email only, and the
              form says "Signed up with Telegram or LINE? Open in Chrome" (George, 2026-10-15).
              Exception: inside TikTok's browser the TikTok tile still shows, on its own. */}
-         <div className={inApp.isInApp && !tiktokInApp ? 'hidden' : 'flex w-full min-w-0 items-center justify-start gap-3'}>
+         <div className={inApp.isInApp && !(tiktokInApp && !hideTikTok) ? 'hidden' : 'flex w-full min-w-0 items-center justify-start gap-3'}>
             {inApp.isInApp ? null : (
                <>
                   {/* Telegram: plain icon tile that redirects to Telegram OAuth (no embedded widget) */}

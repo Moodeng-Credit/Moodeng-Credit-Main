@@ -25,11 +25,11 @@ describe("TikTok tile inside TikTok's browser", () => {
    let root: Root;
    const originalUA = navigator.userAgent;
 
-   const renderWith = async (ua: string) => {
+   const renderWith = async (ua: string, hideTikTok = false) => {
       Object.defineProperty(window.navigator, 'userAgent', { value: ua, configurable: true });
       const { SocialAuthButtons } = await import('@/components/auth/SocialAuthButtons');
       await act(async () => {
-         root.render(createElement(MemoryRouter, null, createElement(SocialAuthButtons, { isSignUp: true })));
+         root.render(createElement(MemoryRouter, null, createElement(SocialAuthButtons, { isSignUp: true, hideTikTok })));
       });
    };
    const fullTikTok = () => container.querySelector('[data-tiktok="full"]');
@@ -58,6 +58,11 @@ describe("TikTok tile inside TikTok's browser", () => {
       expect(tikTokTile()?.closest('.hidden')).toBeNull();
       expect(container.querySelector('[data-line]')).toBeNull();
       expect(container.textContent).toContain('TikTok and email work here.');
+   });
+
+   it('TikTok with the big button already on the page: no second TikTok tile', async () => {
+      await renderWith(TIKTOK_ANDROID_UA, true);
+      expect(tikTokTile()?.closest('.hidden')).not.toBeNull();
    });
 
    it('Facebook browser: the tile row stays hidden', async () => {
