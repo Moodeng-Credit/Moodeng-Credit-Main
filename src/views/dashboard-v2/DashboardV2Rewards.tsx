@@ -41,21 +41,25 @@ const CLAIM_HEADLINE: Record<VoucherReward, string> = {
    tier_apex: 'Moodeng reached Apex. Feast time!'
 };
 
-/** The two Moo-Menu picks. GrabMart only comes from ₱100 (its smallest card). */
-const MOO_MENU: Array<{ brand: VoucherBrand; title: string; detail: string; where: string; art: string }> = [
+/** The two Moo-Menu picks, drawn as the designer's referral voucher tickets. GrabMart only comes from ₱100 (its smallest card). */
+const MOO_MENU: Array<{ brand: VoucherBrand; title: string; detail: string; where: string; art: string; ticket: string; tag: string }> = [
    {
       brand: 'food',
       title: 'Moo-food',
       detail: 'Jollibee + 4 more',
       where: 'Anywhere in PH',
-      art: DASHBOARD_V2_ASSETS.foodJollibee
+      art: DASHBOARD_V2_ASSETS.foodJollibee,
+      ticket: 'linear-gradient(180deg, #ffffff 0%, #ebe7ff 55%, #dcd5ff 100%)',
+      tag: 'bg-[#f1ccfd] text-[#6b55f7]'
    },
    {
       brand: 'grabmart',
       title: 'Moo-snacks',
       detail: 'GrabMart',
       where: 'Manila & Cebu only',
-      art: DASHBOARD_V2_ASSETS.foodGrabMart
+      art: DASHBOARD_V2_ASSETS.foodGrabMart,
+      ticket: 'linear-gradient(180deg, #fff9c4 0%, #fff087 55%, #ffea62 100%)',
+      tag: 'bg-[#faf173] text-[#5a3a12]'
    }
 ];
 
@@ -68,16 +72,20 @@ const MORE_RESTAURANTS = [
 ];
 
 /** A food icon on a small white plate (the icons carry a soft shadow that needs a light ground). */
-function FoodIcon({ src, label, size }: { src: string; label: string; size: 'lg' | 'sm' }) {
+function FoodIcon({ src, label, size }: { src: string; label: string; size: 'lg' | 'md' | 'sm' }) {
    return (
       <span
          className={clsx(
             'flex shrink-0 items-center justify-center rounded-full bg-white shadow-[0_1px_3px_rgba(80,60,120,0.18)]',
-            size === 'lg' ? 'h-[72px] w-[72px]' : 'h-7 w-7'
+            size === 'lg' ? 'h-[72px] w-[72px]' : size === 'md' ? 'h-14 w-14' : 'h-7 w-7'
          )}
          title={label}
       >
-         <DesignImage src={src} alt={label} className={size === 'lg' ? 'h-[60px] w-[60px] object-contain' : 'h-6 w-6 object-contain'} />
+         <DesignImage
+            src={src}
+            alt={label}
+            className={size === 'lg' ? 'h-[60px] w-[60px] object-contain' : size === 'md' ? 'h-12 w-12 object-contain' : 'h-6 w-6 object-contain'}
+         />
       </span>
    );
 }
@@ -157,7 +165,7 @@ export function VoucherClaimPopup({
                      <p id="dv2-voucher-title" className="text-[22px] font-bold leading-6 text-[#594d65] dark:text-[#e6def2]">
                         {CLAIM_HEADLINE[voucher.reward]}
                      </p>
-                     <p className="text-[16px] leading-5 text-[#45556c]">Pick your ₱{voucher.amountPhp} treat</p>
+                     <p className="text-[16px] leading-5 text-[#45556c]">Pick your treat</p>
                      <div className="grid w-full grid-cols-2 gap-2.5">
                         {MOO_MENU.map((item) => {
                            const disabled = item.brand === 'grabmart' && !canGrabMart;
@@ -170,25 +178,50 @@ export function VoucherClaimPopup({
                                  aria-pressed={isPicked}
                                  onClick={() => setBrand(item.brand)}
                                  className={clsx(
-                                    'flex flex-col items-center gap-1 rounded-[18px] border-2 bg-white px-2 pb-3 pt-2 text-center dark:bg-dv2-page',
-                                    isPicked && !disabled ? 'border-[#6b55f7] shadow-[0_0_0_3px_rgba(107,85,247,0.15)]' : 'border-[#e8e4ff] dark:border-[#3a2f55]',
+                                    'relative mt-3 flex flex-col items-center rounded-[14px] px-2 pb-3 pt-6 text-center',
+                                    isPicked && !disabled ? 'shadow-[0_0_0_3px_#6b55f7]' : 'shadow-[0_1px_4px_rgba(80,60,120,0.15)]',
                                     disabled && 'opacity-50'
                                  )}
+                                 style={{ backgroundImage: item.ticket }}
                               >
-                                 <FoodIcon src={item.art} label={item.brand === 'food' ? 'Jollibee' : 'GrabMart'} size="lg" />
+                                 {/* Tag on the corner, like the designer's "For You" / "For Friend" tickets. */}
+                                 <span
+                                    className={clsx(
+                                       'absolute -left-1.5 -top-3 -rotate-6 rounded-[8px] rounded-bl-none px-2 py-0.5 text-[12px] font-bold shadow-sm',
+                                       item.tag
+                                    )}
+                                 >
+                                    {item.where}
+                                 </span>
+                                 <FoodIcon src={item.art} label={item.brand === 'food' ? 'Jollibee' : 'GrabMart'} size="md" />
                                  {item.brand === 'food' ? (
-                                    <span className="-mt-1 flex justify-center gap-0.5" aria-label="Also Chowking, Greenwich, Mang Inasal and Red Ribbon">
+                                    <span className="mt-1 flex justify-center gap-0.5" aria-label="Also Chowking, Greenwich, Mang Inasal and Red Ribbon">
                                        {MORE_RESTAURANTS.map((place) => (
                                           <FoodIcon key={place.name} src={place.art} label={place.name} size="sm" />
                                        ))}
                                     </span>
                                  ) : (
-                                    <span className="h-6" aria-hidden="true" />
+                                    <span className="mt-1 h-7" aria-hidden="true" />
                                  )}
-                                 <span className="text-[16px] font-black italic leading-5 text-[#3c8248] dark:text-[#7fd68b]">{item.title}</span>
-                                 <span className="text-[14px] font-semibold text-[#594d65] dark:text-[#e6def2]">{item.detail}</span>
-                                 <span className="text-[12px] leading-4 text-[#7b6b8c]">
-                                    {disabled ? `Needs a ₱${GRABMART_MIN_PHP} reward` : item.where}
+                                 <span className="mt-1 text-[36px] font-black italic leading-[40px] text-[#745ff8]">
+                                    <span className="text-[26px]">₱</span>
+                                    {disabled ? GRABMART_MIN_PHP : voucher.amountPhp}
+                                 </span>
+                                 <span className="text-[15px] font-black italic leading-5 text-[#745ff8]">{item.title}</span>
+                                 <span className="text-[12px] font-semibold leading-4 text-[#7b6b8c]">{item.detail}</span>
+                                 {/* Tear line with notches at both edges. */}
+                                 <span className="relative my-2.5 w-full border-t-2 border-dashed border-[#745ff8]/30" aria-hidden="true">
+                                    <span className="absolute -left-[17px] -top-[9px] h-4 w-4 rounded-full bg-white dark:bg-dv2-card" />
+                                    <span className="absolute -right-[17px] -top-[9px] h-4 w-4 rounded-full bg-white dark:bg-dv2-card" />
+                                 </span>
+                                 <span
+                                    className={clsx(
+                                       'flex h-9 w-full items-center justify-center rounded-full text-[15px] font-semibold text-white',
+                                       !(isPicked && !disabled) && 'bg-gradient-to-r from-[#b4b1c4] to-[#7d7a8e]'
+                                    )}
+                                    style={isPicked && !disabled ? { backgroundImage: PRIMARY_GRADIENT } : undefined}
+                                 >
+                                    {disabled ? `Needs ₱${GRABMART_MIN_PHP}` : isPicked ? 'Picked ✓' : 'Pick'}
                                  </span>
                               </button>
                            );

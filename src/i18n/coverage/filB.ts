@@ -304,6 +304,10 @@ export const filipinoCoverageB: Record<string, string> = {
    "Yes, I'm there": "Oo, nandoon ako",
    "No, give me Moo-food": "Hindi, Moo-food na lang",
    "Anywhere in PH": "Kahit saan sa PH",
+   "Pick your treat": "Pili ka ng treat mo",
+   "Picked ✓": "Napili ✓",
+   "Pick": "Piliin",
+   "Needs ₱": "Kailangan ng ₱",
    "Manila & Cebu only": "Manila at Cebu lang",
    // Food voucher claim (src/views/dashboard-v2/DashboardV2Rewards.tsx)
    'food voucher is on its way to your email. Open it and pick Jollibee, Chowking, Greenwich, Mang Inasal or Red Ribbon.':
