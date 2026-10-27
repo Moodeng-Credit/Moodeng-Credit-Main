@@ -51,7 +51,7 @@ export const timelineLines = (t: OnboardingTimeline | null): string[] => {
    if (!t?.steps.length) return [];
    const first = Date.parse(t.steps[0].at);
    const lines = t.steps.map((s, i) =>
-      i === 0 ? `• ${s.step} — ${bkkTime(s.at)} Bangkok` : `• ${s.step} — +${formatGap(Date.parse(s.at) - Date.parse(t.steps[i - 1].at))}`
+      i === 0 ? `• ${s.step} — ${bkkTime(s.at)} (Bangkok time, GMT+7)` : `• ${s.step} — +${formatGap(Date.parse(s.at) - Date.parse(t.steps[i - 1].at))}`
    );
    const total = Date.parse(t.steps[t.steps.length - 1].at) - first;
    return ['Onboarding:', ...lines, t.steps.length > 1 ? `Total so far: ${formatGap(total)}` : null].filter(Boolean) as string[];

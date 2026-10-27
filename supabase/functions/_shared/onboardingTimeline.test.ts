@@ -23,7 +23,7 @@ Deno.test('timeline shows the gap since the previous step and the total', () => 
    });
    assertEquals(lines, [
       'Onboarding:',
-      '• Signed up — Oct 25, 12:33 PM Bangkok',
+      '• Signed up — Oct 25, 12:33 PM (Bangkok time, GMT+7)',
       '• Messenger connected — +2 min',
       '• Asked to connect / booked call — +9 min',
       'Total so far: 10 min'
