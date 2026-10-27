@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import posthog from 'posthog-js';
 import { useDispatch, useSelector, useStore } from 'react-redux';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { erc20Abi } from 'viem';
 import { useAccount, useConnect, useReadContract, useSwitchChain, useWatchContractEvent } from 'wagmi';
 
@@ -488,9 +488,11 @@ export default function Repay() {
    const activeLoans = useMemo(
       () =>
          repayLoans
+            // gloans also holds loans this user funded as lender — only their own borrowed loans are repayable
+            .filter((loan) => usePreviewLoans || loan.borrowerUser === user.id)
             .filter((loan) => loan.loanStatus === 'Lent' && loan.repaymentStatus !== 'Paid' && getRemainingAmount(loan) > 0)
             .sort((a, b) => parseDateSafely(a.dueDate).getTime() - parseDateSafely(b.dueDate).getTime()),
-      [repayLoans]
+      [repayLoans, usePreviewLoans, user.id]
    );
 
    const [selectedLoanId, setSelectedLoanId] = useState<string | null>(null);
@@ -1220,6 +1222,11 @@ export default function Repay() {
             </div>
          </main>
       );
+   }
+
+   // A lender with nothing of their own to repay (e.g. typed /repay) goes back to their dashboard
+   if (!usePreviewLoans && user.userRole === 'lender' && activeLoans.length === 0 && !completion) {
+      return <Navigate to="/lender/dashboard" replace />;
    }
 
    // In Facebook's in-app browser a Base-Account borrower can't complete the wallet handshake, so
