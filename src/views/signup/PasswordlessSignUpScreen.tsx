@@ -10,9 +10,11 @@ import {
    FacebookAuthButton,
    PasswordlessAuthForm,
    SocialAuthButtons,
-   useFacebookPrimary
+   useFacebookPrimary,
+   useTikTokPrimary
 } from '@/components/auth';
 import Loading from '@/components/Loading';
+import TikTokLoginButton from '@/components/TikTokLoginButton';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { detectInAppBrowser, isFacebookInApp } from '@/lib/inAppBrowser';
@@ -53,6 +55,8 @@ export default function PasswordlessSignUpScreen({ initialChannel, phoneFirst = 
    const facebookInApp = isFacebookInApp(inApp);
    // Inside Facebook/Messenger/Instagram (once Facebook login is on) "Continue with Facebook" leads, above the code form.
    const facebookPrimary = useFacebookPrimary();
+   // Inside TikTok's browser the person is already signed in to TikTok: sign-up is TikTok only (no email/phone form).
+   const tiktokPrimary = useTikTokPrimary();
    const [isLoading, setIsLoading] = useState(false);
 
    useEffect(() => {
@@ -129,7 +133,11 @@ export default function PasswordlessSignUpScreen({ initialChannel, phoneFirst = 
                   No password needed.
                </p>
 
-               {inAppBrowser || phoneFirst ? (
+               {tiktokPrimary ? (
+                  <div className="mb-6 w-full max-w-[400px]">
+                     <TikTokLoginButton isSignUp />
+                  </div>
+               ) : inAppBrowser || phoneFirst ? (
                   <>
                      {facebookPrimary ? (
                         <>

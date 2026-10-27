@@ -57,6 +57,11 @@ const GoogleLogo = () => (
    </svg>
 );
 
+/** True inside TikTok's own browser (once TikTok login is on): sign-up there is TikTok only. */
+export function useTikTokPrimary(): boolean {
+   return useMemo(() => detectInAppBrowser().appName === 'TikTok' && isTikTokButtonVisible(), []);
+}
+
 /** True when "Continue with Facebook" should be the main button on this page (Facebook/Messenger/Instagram's browser). */
 export function useFacebookPrimary(): boolean {
    return useMemo(() => isFacebookLoginEnabled() && isFacebookFamilyApp(detectInAppBrowser()), []);
@@ -174,7 +179,7 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
    const facebookEnabled = useMemo(() => isFacebookLoginEnabled(), []);
    const facebookPrimary = facebookEnabled && isFacebookFamilyApp(inApp);
    // TikTok's own browser: the person is already signed in to TikTok, so its tile stays (Telegram/LINE don't).
-   const tiktokInApp = useMemo(() => inApp.appName === 'TikTok' && isTikTokButtonVisible(), [inApp]);
+   const tiktokInApp = useTikTokPrimary();
 
    const googleLabel = googleInApp
       ? `Google: open in ${inApp.os === 'ios' ? 'Safari' : 'Chrome'}`

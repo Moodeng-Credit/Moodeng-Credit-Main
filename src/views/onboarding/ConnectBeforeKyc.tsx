@@ -4,6 +4,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { usePreKycGate } from '@/hooks/usePreKycGate';
+import { isTikTokAccountEmail } from '@/lib/phoneAuth';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { WalletSetupPhase } from '@/lib/web3/openfort';
 
 import { fetchUser } from '@/store/slices/authSlice';
@@ -14,6 +16,7 @@ import ConnectStep, { type ConnectPage, LoanAccessPendingCard } from '@/views/da
 import GrowingWalletHippo from '@/views/onboarding/GrowingWalletHippo';
 import OnboardingBio from '@/views/onboarding/OnboardingBio';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
+import TikTokPhoneStep, { wasTikTokPhoneSkipped } from '@/views/onboarding/TikTokPhoneStep';
 
 // /onboarding/connect — the pre-KYC gate (src/hooks/usePreKycGate.ts). After the wallet, a new
 // borrower connects Messenger, fills in their bio (work, payday, income — shown to the team on the
@@ -55,12 +58,31 @@ export default function ConnectBeforeKyc() {
    const page: ConnectPage = stepParam === 'about' || stepParam === 'intro' || stepParam === 'call' ? stepParam : 'contact';
    const setPage = useCallback((next: ConnectPage) => navigate(next === 'contact' ? '?' : `?step=${next}`), [navigate]);
 
+   // TikTok sign-ups (no email or phone from TikTok) add a phone for texts before Messenger: TikTokPhoneStep.
+   const isTikTok = isPreview ? new URLSearchParams(location.search).get('view') === 'tiktok-phone' : isTikTokAccountEmail(user?.email);
+   const [phoneState, setPhoneState] = useState<'checking' | 'needed' | 'done'>('checking');
+   useEffect(() => {
+      if (!isTikTok || !user) return;
+      if (isPreview) return setPhoneState('needed');
+      if (wasTikTokPhoneSkipped(user.id)) return setPhoneState('done');
+      let cancelled = false;
+      void getSupabaseBrowserClient()
+         .auth.getUser()
+         .then(({ data }) => {
+            if (!cancelled) setPhoneState(data.user?.phone ? 'done' : 'needed');
+         });
+      return () => {
+         cancelled = true;
+      };
+   }, [isTikTok, isPreview, user]);
+
    if (!user) return null;
    if (!user.userRole) return <Navigate replace to="/onboarding/role" />;
    if (isLoading) return null;
    // Through onboarding (the team approved them, or the gate is off): straight to the loan form —
    // the ID check is the last step of sending their first request.
    if (!isGated) return <Navigate replace state={{ openLoanRequest: true }} to="/request-board" />;
+   if (isTikTok && phoneState === 'checking') return null;
 
    return (
       <div className="connect-ui mx-auto flex min-h-screen w-full max-w-[440px] flex-col bg-white dark:bg-[#100d17]">
@@ -69,7 +91,9 @@ export default function ConnectBeforeKyc() {
             soundToggle
             tooltip="Questions? Message Moodeng Credit on Facebook or email support@moodeng.app — we usually reply within a day."
          />
-         {isPreview && new URLSearchParams(location.search).get('view') === 'wallet-grow' ? (
+         {isTikTok && phoneState === 'needed' && !isPending && page === 'contact' ? (
+            <TikTokPhoneStep onDone={() => setPhoneState('done')} preview={isPreview} userId={user.id} />
+         ) : isPreview && new URLSearchParams(location.search).get('view') === 'wallet-grow' ? (
             <WalletGrowPreview />
          ) : isPreview && new URLSearchParams(location.search).get('view') === 'celebrate' ? (
             <StepCelebration

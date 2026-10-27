@@ -54,6 +54,25 @@ import WhatsAppRemindersCard from '@/views/dashboard/components/WhatsAppReminder
 // columns rather than trusting anything the client says — the point is a line we can prove works.
 type Channel = 'whatsapp' | 'messenger';
 
+// Inside TikTok's browser the Messenger button may not switch apps at all, so the paste card also
+// spells out doing it by hand. The code is already copied; the card turns green once it's sent.
+function TikTokMessengerSteps() {
+   return (
+      <div className="rounded-xl bg-[#f3f7ff] px-3 py-3 text-[14px] leading-[20px] text-[#26143f]">
+         <p className="font-bold">Messenger didn&apos;t open?</p>
+         <ol className="mt-1 list-decimal pl-5">
+            <li>Leave TikTok and open the <b>Messenger</b> app</li>
+            <li>
+               Search <b>Moodeng Credit</b>
+            </li>
+            <li>
+               <b>Paste</b> the code and tap <b>Send</b>, then come back here
+            </li>
+         </ol>
+      </div>
+   );
+}
+
 // Where this card is shown — sent with every analytics event so we can compare the flows.
 export type ContactsStepSource = 'verify_review' | 'verify_declined' | 'loan_request' | 'connect';
 
@@ -1179,6 +1198,7 @@ export default function ContactsStep({
                                          ? `Open Messenger (${pasteCountdown})`
                                          : 'Open Messenger'}
                                  </a>
+                                 {inAppInfo.appName === 'TikTok' ? <TikTokMessengerSteps /> : null}
                               </div>
                            ) : (
                               <button
@@ -1247,6 +1267,7 @@ export default function ContactsStep({
                                          ? `Open Messenger (${pasteCountdown})`
                                          : 'Open Messenger'}
                                  </a>
+                                 {inAppInfo.appName === 'TikTok' ? <TikTokMessengerSteps /> : null}
                               </div>
                            ) : androidInApp ? (
                               <button
