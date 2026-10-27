@@ -7,51 +7,10 @@ export const EVENT_SLUG = '15min'; // both hosts' "Video interview" events use t
 
 export const hostApiKey = (host: string | null | undefined) => (host ? Deno.env.get(`CALCOM_API_KEY_${host.toUpperCase()}`) ?? '' : '');
 
-// When the team takes calls, whatever Cal.com says (George, 2026-10-13, both hosts). Local wall-clock time
-// in CALL_TIME_ZONE, by weekday (0 = Sunday). A slot is offered only if the whole call fits inside a
-// window, so a 15-minute call can start at 11:45 but not 12:00, and the last one of the night is 22:45.
+// Open hours come from each host's Cal.com schedule alone — Emma's is copied from her Calendly every
+// night (calcom-round-robin sync_calendly_hours), so there's no second, hard-coded list here.
 export const CALL_MINUTES = 15;
 export const CALL_TIME_ZONE = 'Asia/Bangkok';
-type Window = { from: string; to: string };
-const WEEKDAY_HOURS: Window[] = [
-   { from: '10:00', to: '12:00' },
-   { from: '16:00', to: '23:00' }
-];
-const OPEN_HOURS: Record<number, Window[]> = {
-   0: [{ from: '13:00', to: '23:00' }],
-   1: WEEKDAY_HOURS,
-   2: WEEKDAY_HOURS,
-   3: WEEKDAY_HOURS,
-   4: WEEKDAY_HOURS,
-   5: WEEKDAY_HOURS,
-   6: [
-      { from: '09:00', to: '12:00' },
-      { from: '13:00', to: '18:00' },
-      { from: '21:00', to: '23:00' }
-   ]
-};
-
-const toMinutes = (hhmm: string) => {
-   const [h, m] = hhmm.split(':').map(Number);
-   return h * 60 + m;
-};
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const localTime = (iso: string) => {
-   const parts = new Intl.DateTimeFormat('en-GB', {
-      timeZone: CALL_TIME_ZONE,
-      weekday: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-      hourCycle: 'h23'
-   }).formatToParts(new Date(iso));
-   const value = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
-   return { weekday: WEEKDAYS.indexOf(value('weekday')), minutes: Number(value('hour')) * 60 + Number(value('minute')) };
-};
-export const isOpenSlot = (iso: string) => {
-   const { weekday, minutes } = localTime(iso);
-   const end = minutes + CALL_MINUTES;
-   return (OPEN_HOURS[weekday] ?? []).some((w) => minutes >= toMinutes(w.from) && end <= toMinutes(w.to));
-};
 
 // Resolve a host's "Video interview" event type id (slug EVENT_SLUG) from their account.
 export const resolveEventTypeId = async (apiKey: string): Promise<number | null> => {
@@ -75,7 +34,7 @@ export const fetchSlots = async (apiKey: string, eventTypeId: number, start: str
    const days = body?.data ?? {};
    const out: string[] = [];
    for (const list of Object.values(days) as Array<Array<{ start?: string }>>) {
-      for (const slot of list) if (slot?.start && isOpenSlot(slot.start)) out.push(slot.start);
+      for (const slot of list) if (slot?.start) out.push(slot.start);
    }
    return out;
 };
