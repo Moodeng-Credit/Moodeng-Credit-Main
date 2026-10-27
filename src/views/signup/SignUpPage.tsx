@@ -13,11 +13,9 @@ import {
    SignUpFormErrorAlert,
    SocialAuthButtons,
    SocialButton,
-   useFacebookPrimary,
-   useTikTokPrimary
+   useFacebookPrimary
 } from '@/components/auth';
 import Loading from '@/components/Loading';
-import TikTokLoginButton from '@/components/TikTokLoginButton';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
@@ -89,7 +87,6 @@ function PasswordSignUpPage() {
    const facebookInApp = isFacebookInApp(inApp);
    // Inside Facebook/Messenger/Instagram (once Facebook login is on) "Continue with Facebook" leads, above email.
    const facebookPrimary = useFacebookPrimary();
-   const tiktokPrimary = useTikTokPrimary();
    const [username, setUsername] = useState('');
    const [email, setEmail] = useState(initialEmail);
    const [password, setPassword] = useState('');
@@ -273,20 +270,7 @@ function PasswordSignUpPage() {
                      </p>
                      {inAppBrowser ? (
                         <>
-                           {tiktokPrimary ? (
-                              <>
-                                 <div className="w-full max-w-[400px]">
-                                    <TikTokLoginButton isSignUp />
-                                 </div>
-                                 <SocialButton
-                                    icon={<Mail className="w-5 h-5 text-[#250650] dark:text-[#F8F4FF]" />}
-                                    text="Sign Up with Email"
-                                    variant="outline"
-                                    onClick={() => setShowEmailForm(true)}
-                                    className="mt-4 max-w-[400px] min-h-[56px] border-[#B5ACBE]"
-                                 />
-                              </>
-                           ) : facebookPrimary ? (
+                           {facebookPrimary ? (
                               <>
                                  <FacebookAuthButton isSignUp variant="full" />
                                  <SocialButton
@@ -316,7 +300,6 @@ function PasswordSignUpPage() {
                            <SocialAuthButtons
                               isSignUp
                               hideFacebook
-                              hideTikTok={tiktokPrimary}
                               onGoogleSuccess={handleGoogleAuth}
                               onGoogleError={handleOAuthError}
                               onTelegramAuth={handleTelegramAuth}

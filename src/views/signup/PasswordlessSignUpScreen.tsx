@@ -55,7 +55,7 @@ export default function PasswordlessSignUpScreen({ initialChannel, phoneFirst = 
    const facebookInApp = isFacebookInApp(inApp);
    // Inside Facebook/Messenger/Instagram (once Facebook login is on) "Continue with Facebook" leads, above the code form.
    const facebookPrimary = useFacebookPrimary();
-   // Inside TikTok's browser the person is already signed in to TikTok, so "Sign Up with TikTok" leads the same way.
+   // Inside TikTok's browser the person is already signed in to TikTok: sign-up is TikTok only (no email/phone form).
    const tiktokPrimary = useTikTokPrimary();
    const [isLoading, setIsLoading] = useState(false);
 
@@ -133,19 +133,15 @@ export default function PasswordlessSignUpScreen({ initialChannel, phoneFirst = 
                   No password needed.
                </p>
 
-               {inAppBrowser || phoneFirst ? (
+               {tiktokPrimary ? (
+                  <div className="mb-6 w-full max-w-[400px]">
+                     <TikTokLoginButton isSignUp />
+                  </div>
+               ) : inAppBrowser || phoneFirst ? (
                   <>
                      {facebookPrimary ? (
                         <>
                            <FacebookAuthButton isSignUp variant="full" />
-                           {orDivider}
-                        </>
-                     ) : null}
-                     {tiktokPrimary ? (
-                        <>
-                           <div className="w-full max-w-[400px]">
-                              <TikTokLoginButton isSignUp />
-                           </div>
                            {orDivider}
                         </>
                      ) : null}
@@ -157,7 +153,6 @@ export default function PasswordlessSignUpScreen({ initialChannel, phoneFirst = 
                            <SocialAuthButtons
                               isSignUp
                               hideFacebook
-                              hideTikTok={tiktokPrimary}
                               onGoogleSuccess={handleGoogleAuth}
                               onGoogleError={handleOAuthError}
                               onTelegramAuth={handleTelegramAuth}

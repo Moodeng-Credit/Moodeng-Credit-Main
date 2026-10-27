@@ -22,8 +22,6 @@ interface SocialAuthButtonsProps {
    onTelegramAuth: (authData: Record<string, string>) => void;
    /** The page already shows the big Facebook button elsewhere (sign-up puts it above email). */
    hideFacebook?: boolean;
-   /** The page already shows the big TikTok button elsewhere (sign-up puts it first inside TikTok). */
-   hideTikTok?: boolean;
 }
 
 const btnBase =
@@ -59,7 +57,7 @@ const GoogleLogo = () => (
    </svg>
 );
 
-/** True inside TikTok's own browser (once TikTok login is on): sign-up leads with the big TikTok button. */
+/** True inside TikTok's own browser (once TikTok login is on): sign-up there is TikTok only. */
 export function useTikTokPrimary(): boolean {
    return useMemo(() => detectInAppBrowser().appName === 'TikTok' && isTikTokButtonVisible(), []);
 }
@@ -162,7 +160,7 @@ export function FacebookAuthButton({ isSignUp, variant }: { isSignUp: boolean; v
    );
 }
 
-export function SocialAuthButtons({ isSignUp, hideFacebook = false, hideTikTok = false }: SocialAuthButtonsProps) {
+export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuthButtonsProps) {
    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
    const [googleError, setGoogleError] = useState('');
@@ -319,7 +317,7 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false, hideTikTok =
              an app's browser (Facebook, Messenger, Instagram…): there it's phone or email only, and the
              form says "Signed up with Telegram or LINE? Open in Chrome" (George, 2026-10-15).
              Exception: inside TikTok's browser the TikTok tile still shows, on its own. */}
-         <div className={inApp.isInApp && !(tiktokInApp && !hideTikTok) ? 'hidden' : 'flex w-full min-w-0 items-center justify-start gap-3'}>
+         <div className={inApp.isInApp && !tiktokInApp ? 'hidden' : 'flex w-full min-w-0 items-center justify-start gap-3'}>
             {inApp.isInApp ? null : (
                <>
                   {/* Telegram: plain icon tile that redirects to Telegram OAuth (no embedded widget) */}
