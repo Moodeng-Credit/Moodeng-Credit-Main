@@ -8,6 +8,7 @@ import {
    buildVoucherDigest,
    buildVoucherDigestKeyboard,
    buildVoucherReceiptMessage,
+   buildNudgeDraft,
    messengerChatButton,
    messengerOutcomeLine,
    parseVoucherCallback,
@@ -127,13 +128,14 @@ Deno.test('digest: bot nudge marks and one 💬 button per Messenger person', ()
    };
    const text = buildVoucherDigest(digest, 6);
    assertStringIncludes(text, '🤖 bot nudged');
-   assertStringIncludes(text, '💬 = their Messenger chat');
+   assertStringIncludes(text, '📋 copies a ready message');
    const keyboard = buildVoucherDigestKeyboard(digest);
    assertEquals(keyboard.length, 3);
    assertEquals(keyboard[0].map((b) => b.text), ['📥 Open the Moodeng Page inbox']);
-   assertEquals(keyboard[1].map((b) => b.text), ['💬 Ana Cruz', '🔎 Facebook', '👤']);
-   assertEquals(keyboard[1][1].url, 'https://www.facebook.com/search/people/?q=Ana%20Cruz');
-   assertEquals(keyboard[2].map((b) => b.text), ['👤 Ben']);
+   assertEquals(keyboard[1].map((b) => b.text), ['💬 Ana Cruz', '📋 Copy message', '👤']);
+   const copy = keyboard[1][1] as { copy_text: { text: string } };
+   assertStringIncludes(copy.copy_text.text, 'Hi Ana! 🎁 You have ₱50 in food rewards');
+   assertEquals(keyboard[2].map((b) => b.text), ['📋 Copy message · Ben', '👤']);
    assertEquals(buildVoucherDigestKeyboard({ unclaimed: [], pending: [], not_arrived: [], no_answer: [] }), []);
 
    const reach = buildVoucherDigest(digest, 6);
@@ -164,7 +166,7 @@ Deno.test('digest: says what each person is owed and how to reach them', () => {
    const text = buildVoucherDigest({ unclaimed: [person], pending: [], not_arrived: [], no_answer: [] }, 6);
    assertStringIncludes(text, '↳ First on-time ₱50 + Rising ₱50');
    assertStringIncludes(text, '↳ 📞 09171234567 · ✉️ ana@example.com');
-   assertStringIncludes(text, '👤 = their account in admin');
+   assertStringIncludes(text, '👤 = their account.');
    const noContact = buildVoucherDigest({ unclaimed: [{ ...person, phone: null, email: null, rewards: [] }], pending: [], not_arrived: [], no_answer: [] }, 6);
    assertEquals(noContact.includes('↳'), false);
 });
@@ -194,4 +196,14 @@ Deno.test('digest shows Giftaway credits', () => {
    assertStringIncludes(buildVoucherDigest(empty, 6, 320), 'Giftaway credits: ₱320.00 — top up soon');
    assertStringIncludes(buildVoucherDigest(empty, null, 1200), '\n\nGiftaway credits: ₱1200.00');
    assert(!buildVoucherDigest(empty, 6).includes('Giftaway'));
+});
+
+Deno.test('nudge drafts fit Telegram and match the situation', () => {
+   const person = { name: 'Ana Cruz', username: null, facebook: 'Ana C', messenger: true, amountPhp: '100.00', vouchers: 2, days: 1, email: 'ana@example.com' };
+   assertStringIncludes(buildNudgeDraft('unclaimed', person), 'Hi Ana! 🎁 You have ₱100 in food rewards');
+   assertStringIncludes(buildNudgeDraft('no_answer', person), 'sent your ₱100 food voucher to ana@example.com');
+   assertStringIncludes(buildNudgeDraft('not_arrived', person), "didn't arrive");
+   assertStringIncludes(buildNudgeDraft('pending', { ...person, facebook: null }), 'Hi Ana!');
+   const long = buildNudgeDraft('no_answer', { ...person, email: `${'x'.repeat(240)}@example.com` });
+   assert(long.length <= 256);
 });
