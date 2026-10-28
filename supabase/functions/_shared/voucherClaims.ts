@@ -111,6 +111,48 @@ export const buildVoucherReceiptMessage = (claim: VoucherClaimRow & { received_a
       : `⚠️ ${who} says their ${what} didn't arrive.\nEmail: ${claim.email ?? '—'} · Mobile: ${claim.mobile}\nCheck the email, or resend from Admin → Food vouchers.`;
 };
 
+export type VoucherDigestPerson = {
+   name: string;
+   username: string | null;
+   facebook: string | null;
+   messenger: boolean;
+   amountPhp: number | string;
+   vouchers: number;
+   days: number | null;
+};
+export type VoucherDigest = Record<'unclaimed' | 'pending' | 'not_arrived' | 'no_answer', VoucherDigestPerson[]>;
+
+const DIGEST_LIMIT = 25;
+
+const digestLine = (person: VoucherDigestPerson) => {
+   const who = `${person.name}${person.username ? ` (@${person.username})` : ''}`;
+   const fb = person.facebook ? `FB: ${person.facebook}` : person.messenger ? 'Messenger ✓' : 'no FB';
+   const count = person.vouchers > 1 ? ` (${person.vouchers})` : '';
+   const days = person.days === null ? '' : ` · ${person.days === 0 ? 'today' : `${person.days}d`}`;
+   return `• ${who} · ${peso(person.amountPhp)}${count} · ${fb}${days}`;
+};
+
+const digestSection = (title: string, people: VoucherDigestPerson[]) => {
+   if (!people.length) return null;
+   const total = people.reduce((sum, person) => sum + Number(person.amountPhp), 0);
+   const lines = people.slice(0, DIGEST_LIMIT).map(digestLine);
+   if (people.length > DIGEST_LIMIT) lines.push(`…and ${people.length - DIGEST_LIMIT} more (Admin → Food vouchers)`);
+   return `${title} — ${people.length} ${people.length === 1 ? 'person' : 'people'}, ${peso(total)}\n${lines.join('\n')}`;
+};
+
+/** The daily rewards-group check: who to nudge to claim, what's stuck, and who hasn't confirmed. */
+export const buildVoucherDigest = (digest: VoucherDigest, linksLeft: number | null) => {
+   const sections = [
+      digestSection('🎁 Earned, not claimed yet (nudge them to claim)', digest.unclaimed ?? []),
+      digestSection('⏳ Claimed, not sent yet', digest.pending ?? []),
+      digestSection("⚠️ Said it didn't arrive (resend)", digest.not_arrived ?? []),
+      digestSection('📭 Sent, no "I got it" yet', digest.no_answer ?? [])
+   ].filter(Boolean);
+   const stock = linksLeft === null ? '' : `\n\n₱50 Xoxo links left: ${linksLeft}${linksLeft <= 5 ? ' — restock soon' : ''}`;
+   if (!sections.length) return `🧾 Daily rewards check: nothing waiting — everyone has claimed and confirmed. 🎉${stock}`;
+   return `🧾 Daily rewards check\n\n${sections.join('\n\n')}${stock}`;
+};
+
 // The after-state header of a decided claim's card.
 export const voucherStampHeader = (decision: VoucherDecision, claim: { full_name?: string | null; amount_php?: number | string | null }) => {
    const name = claim.full_name?.trim() || 'They';

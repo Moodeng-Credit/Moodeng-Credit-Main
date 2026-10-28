@@ -11,6 +11,8 @@
 //                                                A no-op if the Telegram button already stamped it.
 //   { claimId, event: 'receipt' }                borrower tapped I got it / Didn't get it (notify_voucher_receipt) →
 //                                                a one-line Telegram message.
+//   { event: 'digest' }                          daily 10:00 Bangkok (voucher-daily-digest cron): who earned but
+//                                                hasn't claimed, what's stuck, who hasn't confirmed.
 //   { claimId, event: 'admin_send' }             admin Vouchers page → Send code (admin session required).
 //                                                Lives here because the project is at its function limit.
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -21,10 +23,12 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 import {
    buildVoucherCallback,
    buildVoucherClaimCard,
+   buildVoucherDigest,
    buildVoucherReceiptMessage,
    buildVoucherSentCard,
    sendVoucherCode,
    type VoucherClaimRow,
+   type VoucherDigest,
    voucherDecidedBy,
    voucherStampHeader
 } from '../_shared/voucherClaims.ts';
@@ -91,6 +95,21 @@ serve(async (req) => {
          event?: string;
          decidedBy?: string | null;
       };
+      if (event === 'digest') {
+         if (!(await isAuthorized(supabase, req))) return json({ error: 'Unauthorized' }, 401);
+         const chatId = (await getSetting(supabase, 'voucher_alert_chat_id')) ?? (await getSetting(supabase, 'kyc_alert_chat_id'));
+         if (!chatId) return json({ error: 'voucher_alert_chat_id / kyc_alert_chat_id is not set' }, 500);
+         const { data: digest, error: digestError } = await supabase.rpc('voucher_daily_digest');
+         if (digestError) throw new Error(digestError.message);
+         const { count: linksLeft } = await supabase
+            .from('voucher_codes')
+            .select('id', { count: 'exact', head: true })
+            .is('assigned_at', null)
+            .eq('amount_php', 50);
+         await sendTelegramMessage(chatId, buildVoucherDigest(digest as VoucherDigest, linksLeft ?? null));
+         return json({ ok: true });
+      }
+
       if (!claimId || !/^[0-9a-f-]{36}$/i.test(claimId)) return json({ error: 'claimId is required' }, 400);
 
       if (event === 'admin_send') {
