@@ -55,7 +55,7 @@ serve(async (req) => {
       // Read-only: the free times a borrower with no call and no strikes would see right now (for
       // testing the Messenger booking bot against the real calendar). Books nothing.
       if (payload.action === 'preview_slots') {
-         const result = await listCallSlots(adminSvc, { id: '00000000-0000-0000-0000-000000000000', email: null }, payload.timeZone || 'Asia/Manila', payload.host);
+         const result = await listCallSlots(adminSvc, { id: '00000000-0000-0000-0000-000000000000', email: null }, payload.timeZone || 'Asia/Manila', payload.host, true);
          return json(result.body, result.status);
       }
       const result = await syncEmmaCalendlyHours(adminSvc, payload.dryRun === true);

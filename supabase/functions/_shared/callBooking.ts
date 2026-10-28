@@ -196,7 +196,7 @@ const prepare = async (svc: Svc, user: CallUser, pin?: string | null): Promise<C
 };
 
 /** Free call times for this borrower (empty during a no-show cooldown). */
-export const listCallSlots = async (svc: Svc, user: CallUser, timeZone: string, pin?: string | null): Promise<CallBookingReply> => {
+export const listCallSlots = async (svc: Svc, user: CallUser, timeZone: string, pin?: string | null, includeAll = false): Promise<CallBookingReply> => {
    const prepared = await prepare(svc, user, pin);
    if ('status' in prepared) return prepared;
    const { resolved } = prepared;
@@ -216,7 +216,8 @@ export const listCallSlots = async (svc: Svc, user: CallUser, timeZone: string, 
    const clustered = clusterSlots(free, booked, emmaIndex >= 0 ? perHost[emmaIndex] : []);
    const slots = preferSoonSlots(clustered.slots, Date.now());
    const offered = new Set(slots);
-   return reply({ slots, recommended: clustered.recommended.filter((s) => offered.has(s)) });
+   // includeAll (admin preview only): also every free time over the next two weeks, before the soonest-first cut.
+   return reply({ slots, recommended: clustered.recommended.filter((s) => offered.has(s)), ...(includeAll ? { all: clustered.slots } : {}) });
 };
 
 /** Books `startRaw` for this borrower and saves it on their account (see the comments inside). */
