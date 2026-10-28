@@ -56,13 +56,13 @@ Deno.test('who decided, read from the admin note', () => {
 });
 
 Deno.test('stamp headers say food voucher', () => {
-   assertStringIncludes(voucherStampHeader('sent', { full_name: 'Irish Cruz', amount_php: 100 }), '₱100 food voucher');
+   assertStringIncludes(voucherStampHeader('sent', { full_name: 'Irish Cruz', amount_php: 100 }), '₱100 (~$1.56) food voucher');
 });
 
 Deno.test('receipt message: got it vs didn’t arrive, naming the pick', async () => {
    const { buildVoucherReceiptMessage } = await import('./voucherClaims.ts');
    const base = { id: CLAIM_ID, reward: 'tier_rising', amount_php: '50', full_name: 'Maria Santos', mobile: '0917', email: 'm@x.ph', status: 'sent', created_at: '' };
-   assertStringIncludes(buildVoucherReceiptMessage({ ...base, brand: 'food', received_at: '2026-10-27' }), '✅ Maria Santos got their ₱50 🍗 Food link');
+   assertStringIncludes(buildVoucherReceiptMessage({ ...base, brand: 'food', received_at: '2026-10-27' }), '✅ Maria Santos got their ₱50 (~$0.78) 🍗 Food link');
    const issue = buildVoucherReceiptMessage({ ...base, brand: 'grabmart', received_at: null });
    assertStringIncludes(issue, "didn't arrive");
    assertStringIncludes(issue, '🛒 GrabMart');
@@ -78,9 +78,9 @@ Deno.test('daily digest: sections, Facebook, days, stock and the all-clear', () 
    assertEquals(text.includes('Not claimed'), false);
    assertEquals(text.includes('• Ana Cruz'), false);
    assertStringIncludes(text, '❌ CLAIMED, but has NOT GOTTEN the voucher: nobody ✅');
-   assertStringIncludes(text, '📬 GOT the voucher (link sent) — but has NOT opened / used it yet (no "I got it") — 1 person, ₱50');
-   assertStringIncludes(text, '• Jun · ₱50 · Messenger ✓ · sent 3d ago');
-   assertStringIncludes(text, '₱50 Xoxo links left: 4 — restock soon');
+   assertStringIncludes(text, '📬 GOT the voucher (link sent) — but has NOT opened / used it yet (no "I got it") — 1 person, ₱50 (~$0.78)');
+   assertStringIncludes(text, '• Jun · ₱50 (~$0.78) · Messenger ✓ · sent 3d ago');
+   assertStringIncludes(text, '₱50 Xoxo links left: 4 = ₱200 (~$3.13) — restock soon');
    assertStringIncludes(buildVoucherDigest({ unclaimed: [], pending: [], not_arrived: [], no_answer: [] }, 20), 'everyone who claimed has their voucher');
    const onlyUnclaimed = buildVoucherDigest({ unclaimed: [person], pending: [], not_arrived: [], no_answer: [] }, 20);
    assertStringIncludes(onlyUnclaimed, 'everyone who claimed has their voucher');
@@ -180,7 +180,7 @@ Deno.test('digest: says what each person is owed and how to reach them', () => {
       email: 'ana@example.com'
    };
    const text = buildVoucherDigest({ unclaimed: [], pending: [], not_arrived: [], no_answer: [person] }, 6);
-   assertStringIncludes(text, '↳ First on-time ₱50 + Rising ₱50');
+   assertStringIncludes(text, '↳ First on-time ₱50 (~$0.78) + Rising ₱50 (~$0.78)');
    assertStringIncludes(text, '↳ 📞 09171234567 · ✉️ ana@example.com');
    assertStringIncludes(text, '📋 copies the message');
    const noContact = buildVoucherDigest({ unclaimed: [], pending: [], not_arrived: [], no_answer: [{ ...person, phone: null, email: null, rewards: [] }] }, 6);
@@ -209,8 +209,8 @@ Deno.test('receipt message says whether Giftaway resent it', () => {
 
 Deno.test('digest shows Giftaway credits', () => {
    const empty = { unclaimed: [], pending: [], not_arrived: [], no_answer: [] };
-   assertStringIncludes(buildVoucherDigest(empty, 6, 320), 'Giftaway credits: ₱320.00 — top up soon');
-   assertStringIncludes(buildVoucherDigest(empty, null, 1200), '\n\nGiftaway credits: ₱1200.00');
+   assertStringIncludes(buildVoucherDigest(empty, 6, 320), 'Giftaway credits: ₱320 (~$5.00) — top up soon');
+   assertStringIncludes(buildVoucherDigest(empty, null, 1200), '\n\nGiftaway credits: ₱1200 (~$18.75)');
    assert(!buildVoucherDigest(empty, 6).includes('Giftaway'));
 });
 
@@ -248,4 +248,12 @@ Deno.test('📤 Send on Messenger button round-trips', () => {
    assertEquals(parseMessengerNudgeCallback(buildMessengerNudgeCallback(id)), { userId: id });
    assert(buildMessengerNudgeCallback(id).length <= 64);
    assertEquals(parseMessengerNudgeCallback('vo:s:' + id), null);
+});
+
+Deno.test('team amounts show dollars next to pesos; borrower drafts stay in pesos', async () => {
+   const { pesoUsd } = await import('./voucherClaims.ts');
+   assertEquals(pesoUsd(600), '₱600 (~$9.38)');
+   assertEquals(pesoUsd('50.00'), '₱50 (~$0.78)');
+   const draft = buildNudgeDraft('unclaimed', { name: 'Ana', username: null, facebook: null, messenger: false, amountPhp: 100, vouchers: 1, days: null });
+   assert(!draft.includes('$'));
 });
