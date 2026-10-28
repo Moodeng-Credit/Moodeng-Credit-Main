@@ -130,6 +130,27 @@ export function generatePhoneUsername(random: () => number = Math.random): strin
    return `moodeng-${suffix}`;
 }
 
+/** True while the account still has the made-up phone sign-up handle, i.e. they never got a real one. */
+export function hasGeneratedUsername(username: string | null | undefined): boolean {
+   return Boolean(username?.startsWith('moodeng-'));
+}
+
+/**
+ * Phone sign-ups aren't asked for a username: once they give a name (onboarding bio, loan form,
+ * settings), their made-up handle is swapped for one built from it — "María Santos" → mariasantos,
+ * then mariasantos2, mariasantos3… if taken. Empty when the name has nothing usable (e.g. "Jo", 김).
+ */
+export function usernameCandidatesFromName(name: string, count = 8): string[] {
+   const base = name
+      .normalize('NFD')
+      .replace(/\p{M}/gu, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .slice(0, 18);
+   if (base.length < 3 || hasGeneratedUsername(base)) return [];
+   return [base, ...Array.from({ length: count - 1 }, (_, i) => `${base}${i + 2}`)];
+}
+
 /**
  * public.users.email is NOT NULL, so phone-only accounts get a placeholder nobody reads, like
  * Telegram's telegram_<id>@moodeng.app. Built from the account id, never the phone number.
