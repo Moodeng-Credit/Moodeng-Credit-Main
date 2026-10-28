@@ -130,3 +130,77 @@ export const dropBusySlots = (slots: string[], busy: Array<{ start: string; end:
       const to = from + callMinutes * 60000;
       return !busy.some((b) => from < Date.parse(b.end) && to > Date.parse(b.start));
    });
+
+// Onboarding calls per Bangkok day, across both hosts. Once a day has this many, it's full.
+export const DAILY_CALL_CAP = 4;
+// Clustering: on a day that already has calls, free times within CLUSTER_NEAR_MINUTES of one are
+// "⭐ Recommended", and times further than CLUSTER_MAX_MINUTES from every call are not offered, so
+// a day's calls land in one block instead of scattered from morning to night.
+export const CLUSTER_NEAR_MINUTES = 45;
+export const CLUSTER_MAX_MINUTES = 120;
+// If nothing that day is within CLUSTER_MAX_MINUTES (the block's hours have passed), offer this
+// many of the closest times instead of emptying the day.
+const CLUSTER_FALLBACK_COUNT = 3;
+
+const BANGKOK_OFFSET_MS = 7 * 3600000;
+/** The Bangkok calendar day (YYYY-MM-DD) an instant falls on. */
+export const bangkokDay = (iso: string): string => new Date(Date.parse(iso) + BANGKOK_OFFSET_MS).toISOString().slice(0, 10);
+
+/** True when the Bangkok day of `start` already holds DAILY_CALL_CAP calls (the borrower's own excluded by the caller). */
+export const dayIsFull = (start: string, bookedStarts: string[]): boolean =>
+   bookedStarts.filter((b) => bangkokDay(b) === bangkokDay(start)).length >= DAILY_CALL_CAP;
+
+/**
+ * Applies the daily cap and the clustering to the free times. `bookedStarts` are the calls already
+ * booked (never returned — only the free times next to them). `preferredSlots` are the preferred
+ * host's (Emma's) own free times: on a day with no calls yet they're the recommended ones, unless
+ * every time that day is hers (then a star on everything means nothing, so none is starred).
+ * Returns the slots to offer (chronological) and the recommended subset.
+ */
+export const clusterSlots = (
+   slots: string[],
+   bookedStarts: string[],
+   preferredSlots: string[] = []
+): { slots: string[]; recommended: string[] } => {
+   const bookedByDay = new Map<string, number[]>();
+   for (const b of bookedStarts) {
+      const t = Date.parse(b);
+      if (Number.isNaN(t)) continue;
+      const day = bangkokDay(b);
+      bookedByDay.set(day, [...(bookedByDay.get(day) ?? []), t]);
+   }
+   const preferred = new Set(preferredSlots.map((s) => Date.parse(s)));
+
+   const slotsByDay = new Map<string, string[]>();
+   for (const s of slots) {
+      if (Number.isNaN(Date.parse(s))) continue;
+      const day = bangkokDay(s);
+      slotsByDay.set(day, [...(slotsByDay.get(day) ?? []), s]);
+   }
+
+   const offered: string[] = [];
+   const recommended: string[] = [];
+   for (const [day, daySlots] of slotsByDay) {
+      const booked = bookedByDay.get(day) ?? [];
+      if (booked.length >= DAILY_CALL_CAP) continue;
+      if (booked.length === 0) {
+         offered.push(...daySlots);
+         const hers = daySlots.filter((s) => preferred.has(Date.parse(s)));
+         if (hers.length < daySlots.length) recommended.push(...hers);
+         continue;
+      }
+      const gap = (s: string) => Math.min(...booked.map((b) => Math.abs(Date.parse(s) - b))) / 60000;
+      let kept = daySlots.filter((s) => gap(s) <= CLUSTER_MAX_MINUTES);
+      if (kept.length === 0) kept = [...daySlots].sort((a, b) => gap(a) - gap(b)).slice(0, CLUSTER_FALLBACK_COUNT);
+      const near = kept.filter((s) => gap(s) <= CLUSTER_NEAR_MINUTES);
+      offered.push(...kept);
+      recommended.push(...(near.length ? near : kept));
+   }
+   const byTime = (a: string, b: string) => Date.parse(a) - Date.parse(b);
+   return { slots: offered.sort(byTime), recommended: recommended.sort(byTime) };
+};
+
+/** Emma first: when she's free she's tried before anyone else; the others keep their seeded order. */
+export const PREFERRED_HOST = 'emma';
+export const preferHost = (order: string[], preferred = PREFERRED_HOST): string[] =>
+   order.includes(preferred) ? [preferred, ...order.filter((h) => h !== preferred)] : order;

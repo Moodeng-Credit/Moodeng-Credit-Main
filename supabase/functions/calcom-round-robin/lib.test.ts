@@ -1,6 +1,20 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { bookingCooldownUntil, calendlyToCalSchedule, dropBusySlots, hostsFreeAt, mergeSlots, orderHostsToTry, preferSoonSlots, recheckRange, teamGuests } from './lib.ts';
+import {
+   bangkokDay,
+   bookingCooldownUntil,
+   calendlyToCalSchedule,
+   clusterSlots,
+   dayIsFull,
+   dropBusySlots,
+   hostsFreeAt,
+   mergeSlots,
+   orderHostsToTry,
+   preferHost,
+   preferSoonSlots,
+   recheckRange,
+   teamGuests
+} from './lib.ts';
 
 Deno.test('mergeSlots unions hosts, de-dupes by instant, and sorts', () => {
    const george = ['2026-09-22T19:00:00.000+07:00', '2026-09-22T20:00:00.000+07:00'];
@@ -98,4 +112,69 @@ Deno.test('dropBusySlots removes any call that would overlap a busy block', () =
    const slots = ['2026-10-27T10:45:00+07:00', '2026-10-27T11:00:00+07:00', '2026-10-27T11:45:00+07:00', '2026-10-27T12:00:00+07:00'];
    const busy = [{ start: '2026-10-27T04:00:00Z', end: '2026-10-27T05:00:00Z' }]; // 11:00–12:00 Bangkok
    assertEquals(dropBusySlots(slots, busy, 15), ['2026-10-27T10:45:00+07:00', '2026-10-27T12:00:00+07:00']);
+});
+
+Deno.test('bangkokDay counts days in Bangkok time, not UTC', () => {
+   assertEquals(bangkokDay('2026-10-28T16:59:00Z'), '2026-10-28'); // 23:59 Bangkok
+   assertEquals(bangkokDay('2026-10-28T17:00:00Z'), '2026-10-29'); // 00:00 Bangkok next day
+});
+
+// Free times every 15 min, 10:00–17:45 Bangkok on Oct 29.
+const dayOfSlots = (day = '2026-10-29', from = 10, to = 18) => {
+   const out: string[] = [];
+   for (let h = from; h < to; h += 1) for (const m of ['00', '15', '30', '45']) out.push(`${day}T${String(h).padStart(2, '0')}:${m}:00+07:00`);
+   return out;
+};
+
+Deno.test('a day with 4 calls is full: no times offered, and booking it is refused', () => {
+   const booked = ['2026-10-29T10:00:00+07:00', '2026-10-29T10:30:00+07:00', '2026-10-29T11:00:00+07:00', '2026-10-29T11:30:00+07:00'];
+   const next = dayOfSlots('2026-10-30');
+   const out = clusterSlots([...dayOfSlots(), ...next], booked);
+   assertEquals(out.slots, next);
+   assertEquals(dayIsFull('2026-10-29T15:00:00+07:00', booked), true);
+   assertEquals(dayIsFull('2026-10-29T15:00:00+07:00', booked.slice(1)), false);
+   // 06:00 Bangkok on Oct 30 is 23:00 UTC on Oct 29 — still a different Bangkok day, so not full.
+   assertEquals(dayIsFull('2026-10-29T23:00:00Z', booked), false);
+});
+
+Deno.test('after the first call of a day, only times within 2h are offered and the nearest are recommended', () => {
+   // Cal.com no longer lists 14:00 — that's the booked call.
+   const out = clusterSlots(dayOfSlots().filter((s) => s !== '2026-10-29T14:00:00+07:00'), ['2026-10-29T14:00:00+07:00']);
+   assertEquals(out.slots[0], '2026-10-29T12:00:00+07:00');
+   assertEquals(out.slots[out.slots.length - 1], '2026-10-29T16:00:00+07:00');
+   assertEquals(out.recommended, [
+      '2026-10-29T13:15:00+07:00',
+      '2026-10-29T13:30:00+07:00',
+      '2026-10-29T13:45:00+07:00',
+      '2026-10-29T14:15:00+07:00',
+      '2026-10-29T14:30:00+07:00',
+      '2026-10-29T14:45:00+07:00'
+   ]);
+});
+
+Deno.test('the booked calls themselves are never returned, only the free times Cal.com gave', () => {
+   const free = dayOfSlots().filter((s) => s !== '2026-10-29T14:00:00+07:00');
+   const out = clusterSlots(free, ['2026-10-29T14:00:00+07:00']);
+   assertEquals(out.slots.includes('2026-10-29T14:00:00+07:00'), false);
+   assertEquals(out.recommended.includes('2026-10-29T14:00:00+07:00'), false);
+});
+
+Deno.test('when the block has passed, the closest few times are kept instead of emptying the day', () => {
+   const evening = ['2026-10-29T20:00:00+07:00', '2026-10-29T20:15:00+07:00', '2026-10-29T21:00:00+07:00', '2026-10-29T22:00:00+07:00'];
+   const out = clusterSlots(evening, ['2026-10-29T10:00:00+07:00']);
+   assertEquals(out.slots, evening.slice(0, 3));
+   assertEquals(out.recommended, evening.slice(0, 3));
+});
+
+Deno.test("a day with no calls yet: Emma's times are recommended, unless every time is hers", () => {
+   const all = dayOfSlots('2026-10-29', 10, 12);
+   const emma = all.slice(0, 4);
+   assertEquals(clusterSlots(all, [], emma), { slots: all, recommended: emma });
+   assertEquals(clusterSlots(all, [], all), { slots: all, recommended: [] });
+});
+
+Deno.test('preferHost puts Emma first whenever she is free', () => {
+   assertEquals(preferHost(['george', 'emma']), ['emma', 'george']);
+   assertEquals(preferHost(['emma', 'george']), ['emma', 'george']);
+   assertEquals(preferHost(['george']), ['george']);
 });

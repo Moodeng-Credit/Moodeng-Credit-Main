@@ -319,9 +319,28 @@ describe('ConnectStep — call mode (request unlocks only after the call)', () =
       expect(container.textContent).toContain('Say hi to Emma on Facebook');
       const join = Array.from(container.querySelectorAll('a')).find((a) => a.textContent === 'Join the meeting');
       expect(join?.getAttribute('href')).toBe('https://us06web.zoom.us/j/123');
-      // Not confirmed yet → the in-app "I'll be there" hits the same confirm endpoint as Messenger.
+      // 2h out: no button yet, just the "confirm 1 hour before" reminder.
+      expect(Array.from(container.querySelectorAll('a')).some((a) => a.textContent?.includes("I'll be there"))).toBe(false);
+      expect(container.textContent).toContain('Confirm 1 hour before your call');
+   });
+
+   it('shows "I\u2019ll be there" in the hour before the call, hitting the same endpoint as Messenger', async () => {
+      supa.state.usersRow = {
+         ...supa.state.usersRow,
+         video_call_starts_at: new Date(Date.now() + 50 * 60 * 1000).toISOString(),
+         video_call_join_url: 'https://us06web.zoom.us/j/123',
+         video_call_confirm_token: 'abc123',
+         video_call_confirmed_at: null
+      } as typeof supa.state.usersRow;
+      await act(async () => {
+         root.render(createElement(LoanAccessPendingCard, { onClose: vi.fn(), mode: 'call', withEmma: true, userId: 'user-1' }));
+      });
+      await act(async () => {
+         await Promise.resolve();
+      });
       const confirm = Array.from(container.querySelectorAll('a')).find((a) => a.textContent?.includes("I'll be there"));
       expect(confirm?.getAttribute('href')).toContain('/functions/v1/video-call-confirm?t=abc123');
+      expect(container.textContent).not.toContain('Confirm 1 hour before your call');
    });
 
    it('flips to "thanks for joining" (no Join button) once the call is over', async () => {
