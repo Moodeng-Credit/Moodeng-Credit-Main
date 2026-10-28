@@ -10,6 +10,7 @@ const supa = vi.hoisted(() => {
    const state = {
       usersRow: { video_call_scheduled_at: null as string | null, video_call_starts_at: null as string | null },
       slots: [] as string[],
+      recommended: [] as string[],
       bookResult: { ok: true, start: '' } as { ok: boolean; start?: string; error?: string }
    };
    return {
@@ -17,7 +18,7 @@ const supa = vi.hoisted(() => {
       maybeSingle: vi.fn(async () => ({ data: state.usersRow })),
       invoke: vi.fn(async (_fn: string, opts: { body?: { action?: string; start?: string } }) => {
          const action = opts?.body?.action;
-         if (action === 'slots') return { data: { slots: state.slots }, error: null };
+         if (action === 'slots') return { data: { slots: state.slots, recommended: state.recommended }, error: null };
          if (action === 'book') return { data: state.bookResult, error: null };
          return { data: null, error: null };
       })
@@ -46,6 +47,7 @@ describe('VideoCallStep — free round-robin anonymous booking', () => {
    beforeEach(() => {
       supa.state.usersRow = { video_call_scheduled_at: null, video_call_starts_at: null };
       supa.state.slots = ['2026-10-01T09:00:00.000Z', '2026-10-01T09:30:00.000Z'];
+      supa.state.recommended = [];
       supa.state.bookResult = { ok: true, start: '2026-10-01T09:00:00.000Z' };
       supa.invoke.mockClear();
       onContinue = vi.fn();
@@ -117,6 +119,36 @@ describe('VideoCallStep — free round-robin anonymous booking', () => {
       });
       expect(continueButton(container).disabled).toBe(true);
       expect(container.textContent).toContain('just taken');
+   });
+
+   it('leads with the ⭐ recommended times and stars them in the day list', async () => {
+      const day = Date.now() + 2 * 86400000;
+      const iso = (min: number) => new Date(day + min * 60000).toISOString();
+      supa.state.slots = [iso(0), iso(15), iso(240)];
+      supa.state.recommended = [iso(15)];
+      supa.state.bookResult = { ok: true, start: iso(15) };
+      await render();
+      expect(container.textContent).toContain('Recommended times');
+      const starred = timeButtons(container).filter((b) => b.textContent?.startsWith('⭐'));
+      expect(starred).toHaveLength(1);
+      // The first time button is the recommended pick at the top, and it books that time.
+      await act(async () => {
+         timeButtons(container)[0].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+         await new Promise((r) => setTimeout(r, 0));
+      });
+      const bookCall = supa.invoke.mock.calls.find((c) => (c[1] as { body?: { action?: string } })?.body?.action === 'book');
+      expect((bookCall?.[1] as { body?: { start?: string } })?.body?.start).toBe(iso(15));
+   });
+
+   it('asks for another day when that day just filled up', async () => {
+      supa.state.bookResult = { ok: false, error: 'day_full' };
+      await render();
+      await act(async () => {
+         timeButtons(container)[0].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+         await new Promise((r) => setTimeout(r, 0));
+      });
+      expect(continueButton(container).disabled).toBe(true);
+      expect(container.textContent).toContain('That day just filled up');
    });
 
    it('calls onContinue once the call is booked', async () => {

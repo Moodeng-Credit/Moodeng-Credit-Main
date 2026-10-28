@@ -17,6 +17,10 @@ import { GhostButton, PrimaryButton } from '@/views/dashboard/components/connect
 // merges them, and books whoever's free — so this screen shows ONE anonymous "Moodeng team" time
 // list, never an individual. The booking is created and confirmed server-side (the function stamps
 // users.video_call_scheduled_at), so the client can't fake it.
+//
+// The function also sends `recommended`: free times next to calls already booked that day (never
+// the calls themselves), so new borrowers book in one block instead of across the whole day. They
+// lead the list under "⭐ Recommended" and are highlighted in the day grid.
 
 type Phase = 'loading' | 'picking' | 'scheduled' | 'error' | 'cooldown';
 
@@ -76,6 +80,7 @@ export default function VideoCallStep({
 
    const [phase, setPhase] = useState<Phase>('loading');
    const [slots, setSlots] = useState<string[]>([]);
+   const [recommended, setRecommended] = useState<string[]>([]);
    const [bookingStart, setBookingStart] = useState<string | null>(null);
    const [bookedStartsAt, setBookedStartsAt] = useState<string | null>(null);
    const [notice, setNotice] = useState('');
@@ -94,6 +99,7 @@ export default function VideoCallStep({
          return;
       }
       setSlots((data as { slots?: string[] }).slots ?? []);
+      setRecommended((data as { recommended?: string[] }).recommended ?? []);
       setPhase('picking');
    };
 
@@ -136,8 +142,8 @@ export default function VideoCallStep({
             setPhase('cooldown');
          } else if (result?.error === 'too_fast') {
             setNotice('You just booked a call — give it a minute before changing the time.');
-         } else if (result?.error === 'slot_taken') {
-            setNotice('That time was just taken — pick another, please.');
+         } else if (result?.error === 'slot_taken' || result?.error === 'day_full') {
+            setNotice(result.error === 'day_full' ? 'That day just filled up — pick another, please.' : 'That time was just taken — pick another, please.');
             await loadSlots();
          } else {
             setNotice("Couldn't book that time. Try again, or contact support.");
@@ -160,6 +166,12 @@ export default function VideoCallStep({
       }
       return [...map.entries()];
    }, [slots, timeZone]);
+
+   // The soonest few recommended times, shown first with their day.
+   const recommendedSet = useMemo(() => new Set(recommended), [recommended]);
+   const topPicks = useMemo(() => recommended.filter((s) => Date.parse(s) > Date.now()).slice(0, 6), [recommended]);
+   const pickLabel = (iso: string) =>
+      new Date(iso).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit', timeZone });
 
    const timeLabel = (iso: string) => new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', timeZone });
    const formattedBooked = bookedStartsAt
@@ -248,19 +260,41 @@ export default function VideoCallStep({
                   <span>Your time zone · {tzLabel}</span>
                </div>
                {notice ? <p className="text-center text-md-b3 font-normal text-md-red-500">{notice}</p> : null}
+               {topPicks.length > 0 ? (
+                  <div className="flex flex-col gap-2 rounded-[18px] border-2 border-[#f2c94c] bg-[#fff8e1] p-3">
+                     <span className="text-[14px] font-bold text-[#8a6100]">⭐ Recommended times</span>
+                     <div className="grid grid-cols-2 gap-2">
+                        {topPicks.map((s) => (
+                           <button
+                              className="min-h-[44px] rounded-full border-2 border-[#f2c94c] bg-white px-2 text-[14px] font-semibold text-[#594d65] transition hover:border-[#e0a800] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
+                              disabled={bookingStart !== null}
+                              key={s}
+                              onClick={() => book(s)}
+                              type="button"
+                           >
+                              {bookingStart === s ? 'Booking…' : pickLabel(s)}
+                           </button>
+                        ))}
+                     </div>
+                  </div>
+               ) : null}
                {dayGroups.map(([day, daySlots]) => (
                   <div className="flex flex-col gap-2" key={day}>
                      <span className="text-[14px] font-bold text-[#594d65]">{day}</span>
                      <div className="grid grid-cols-3 gap-2">
                         {daySlots.map((s) => (
                            <button
-                              className="min-h-[44px] rounded-full border-2 border-[#e2dcee] bg-white px-2 text-[14px] font-semibold text-[#594d65] transition hover:border-[#7661f9] hover:bg-[#f8f1ff] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
+                              className={`min-h-[44px] rounded-full border-2 px-2 text-[14px] font-semibold text-[#594d65] transition active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 ${
+                                 recommendedSet.has(s)
+                                    ? 'border-[#f2c94c] bg-[#fff8e1] hover:border-[#e0a800]'
+                                    : 'border-[#e2dcee] bg-white hover:border-[#7661f9] hover:bg-[#f8f1ff]'
+                              }`}
                               disabled={bookingStart !== null}
                               key={s}
                               onClick={() => book(s)}
                               type="button"
                            >
-                              {bookingStart === s ? 'Booking…' : timeLabel(s)}
+                              {bookingStart === s ? 'Booking…' : recommendedSet.has(s) ? `⭐ ${timeLabel(s)}` : timeLabel(s)}
                            </button>
                         ))}
                      </div>

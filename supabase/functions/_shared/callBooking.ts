@@ -7,7 +7,20 @@ import { ATTENDANCE_RESET, meetingIdFromJoinUrl } from './attendance.ts';
 import { adminUserUrl, OPEN_IN_ADMIN_TEXT } from './adminCards.ts';
 import { postDiscord } from './discord.ts';
 import { formatCallTimeForTeam, newConfirmToken, sendBookedMessenger } from './videoCall.ts';
-import { bookingCooldownUntil, dropBusySlots, hostsFreeAt, mergeSlots, orderHostsToTry, preferSoonSlots, recheckRange, teamGuests } from '../calcom-round-robin/lib.ts';
+import {
+   bookingCooldownUntil,
+   clusterSlots,
+   dayIsFull,
+   dropBusySlots,
+   hostsFreeAt,
+   mergeSlots,
+   orderHostsToTry,
+   preferHost,
+   PREFERRED_HOST,
+   preferSoonSlots,
+   recheckRange,
+   teamGuests
+} from '../calcom-round-robin/lib.ts';
 import { cancelCalBooking } from './calcomCancel.ts';
 import { changeTimeButton } from './callReschedule.ts';
 import { testAccountRow } from './testAccount.ts';
@@ -124,6 +137,22 @@ const notifyTeamBooking = async (
 };
 
 
+// Start times of everyone else's booked calls between `from` and `to` (test accounts and the
+// borrower's own booking left out — a rebook replaces theirs). Feeds the daily cap and clustering;
+// never sent to the borrower.
+const bookedCallStarts = async (svc: Svc, userId: string, from: string, to: string): Promise<string[]> => {
+   const { data, error } = await svc
+      .from('users')
+      .select('video_call_starts_at')
+      .not('video_call_booking_uid', 'is', null)
+      .gte('video_call_starts_at', from)
+      .lt('video_call_starts_at', to)
+      .or('is_test.is.null,is_test.eq.false')
+      .neq('id', userId);
+   if (error) console.error('calcom-round-robin: could not read booked calls', error.message);
+   return ((data ?? []) as Array<{ video_call_starts_at: string | null }>).map((r) => r.video_call_starts_at).filter((s): s is string => Boolean(s));
+};
+
 type Resolved = Array<{ id: string; apiKey: string; eventTypeId: number }>;
 
 // Each host's event type, the pinned host, and the no-show cooldown: a reply to send back, or the hosts.
@@ -175,11 +204,19 @@ export const listCallSlots = async (svc: Svc, user: CallUser, timeZone: string, 
    // never returns past times anyway — so this can't lose "later today" for anyone.
    const start = ymd(new Date(Date.now() - 86400000));
    const end = ymd(new Date(Date.now() + DAYS_AHEAD * 86400000));
-   const [perHost, georgeBusy] = await Promise.all([
+   const [perHost, georgeBusy, booked] = await Promise.all([
       Promise.all(resolved.map((h) => fetchSlots(h.apiKey, h.eventTypeId, start, end, timeZone))),
-      fetchGeorgeBusy(svc, new Date().toISOString(), new Date(Date.now() + (DAYS_AHEAD + 1) * 86400000).toISOString())
+      fetchGeorgeBusy(svc, new Date().toISOString(), new Date(Date.now() + (DAYS_AHEAD + 1) * 86400000).toISOString()),
+      bookedCallStarts(svc, user.id, new Date(Date.now() - 86400000).toISOString(), new Date(Date.now() + (DAYS_AHEAD + 2) * 86400000).toISOString())
    ]);
-   return reply({ slots: preferSoonSlots(dropBusySlots(mergeSlots(perHost), georgeBusy, CALL_MINUTES), Date.now()) });
+   // Max 4 calls a Bangkok day, and on a day that has calls only the times around them (the
+   // nearest ones ⭐ recommended), so calls come in one block. `recommended` is a subset of `slots`.
+   const free = dropBusySlots(mergeSlots(perHost), georgeBusy, CALL_MINUTES);
+   const emmaIndex = resolved.findIndex((h) => h.id === PREFERRED_HOST);
+   const clustered = clusterSlots(free, booked, emmaIndex >= 0 ? perHost[emmaIndex] : []);
+   const slots = preferSoonSlots(clustered.slots, Date.now());
+   const offered = new Set(slots);
+   return reply({ slots, recommended: clustered.recommended.filter((s) => offered.has(s)) });
 };
 
 /** Books `startRaw` for this borrower and saves it on their account (see the comments inside). */
@@ -193,6 +230,10 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
    if (Number.isNaN(startMs)) return reply({ error: 'missing_start' }, 400);
    if (startMs <= Date.now()) return reply({ ok: false, error: 'slot_taken' });
    const start = new Date(startMs).toISOString();
+
+   // The daily cap, again here: the list may be stale, or the request made by hand.
+   const dayCalls = await bookedCallStarts(svc, user.id, new Date(startMs - 86400000).toISOString(), new Date(startMs + 86400000).toISOString());
+   if (dayIsFull(start, dayCalls)) return reply({ ok: false, error: 'day_full' });
 
    // Re-check who's actually free at this instant right now (availability may have moved).
    const range = recheckRange(start);
@@ -233,8 +274,8 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
       })
    );
 
-   // Try the seeded host first, then the other(s) if the first races and loses the slot.
-   for (const hostId of orderHostsToTry(free, `${user.id}:${start}`)) {
+   // Emma first when she's free, then the seeded order; the next one is tried if the first races and loses the slot.
+   for (const hostId of preferHost(orderHostsToTry(free, `${user.id}:${start}`))) {
       const host = resolved.find((h) => h.id === hostId);
       if (!host) continue;
       const metadata = { moodeng_user_id: user.id, moodeng_host: hostId };
