@@ -388,21 +388,30 @@ const reachSection = (digest: VoucherDigest) => {
    return parts.length ? `\n\n👋 HOW TO REACH THEM\n${parts.join('\n\n')}` : '';
 };
 
-/** The daily rewards-group check: who to nudge to claim, what's stuck, and who hasn't confirmed. */
+/**
+ * The daily rewards-group check: only people who CLAIMED (stuck, didn't arrive, no "I got it" yet),
+ * with how to reach them. Earned-but-unclaimed is one count line — the dashboard card and the bot
+ * remind those people; the team doesn't chase them.
+ */
 export const buildVoucherDigest = (digest: VoucherDigest, linksLeft: number | null, giftawayCredits: number | null = null) => {
+   const unclaimed = digest.unclaimed ?? [];
+   const claimed: VoucherDigest = { ...digest, unclaimed: [] };
+   const unclaimedTotal = unclaimed.reduce((sum, person) => sum + Number(person.amountPhp), 0);
+   const unclaimedLine = unclaimed.length
+      ? `\n\n🎁 Not claimed yet: ${unclaimed.length} ${unclaimed.length === 1 ? 'person' : 'people'}, ${peso(unclaimedTotal)} — the app card and the bot remind them (not listed here).`
+      : '';
    const sections = [
-      digestSection('🎁 Earned, not claimed yet (nudge them to claim)', digest.unclaimed ?? []),
       digestSection('⏳ Claimed, not sent yet', digest.pending ?? []),
       digestSection("⚠️ Said it didn't arrive (resend)", digest.not_arrived ?? []),
       digestSection('📭 Sent, no "I got it" yet', digest.no_answer ?? [])
    ].filter(Boolean);
    const credits = giftawayCredits === null ? '' : `${linksLeft === null ? '\n\n' : '\n'}Giftaway credits: ₱${giftawayCredits.toFixed(2)}${giftawayCredits < 500 ? ' — top up soon' : ''}`;
    const stock = `${linksLeft === null ? '' : `\n\n₱50 Xoxo links left: ${linksLeft}${linksLeft <= 5 ? ' — restock soon' : ''}`}${credits}`;
-   if (!sections.length) return `🧾 Daily rewards check: nothing waiting — everyone has claimed and confirmed. 🎉${stock}`;
-   const tap = Object.values(digest).some((people) => (people ?? []).length)
+   if (!sections.length) return `🧾 Daily rewards check: nobody who claimed is waiting — all confirmed. 🎉${unclaimedLine}${stock}`;
+   const tap = Object.values(claimed).some((people) => (people ?? []).length)
       ? '\n\nButtons below: 📋 copies a ready message for that person → tap 💬 to open their Messenger chat (SendPulse), paste, send. No 💬? Paste it into an email or text. 📥 = Page inbox · 👤 = their account.'
       : '';
-   const text = `🧾 Daily rewards check\n\n${sections.join('\n\n')}${reachSection(digest)}${stock}${tap}`;
+   const text = `🧾 Daily rewards check — people who claimed\n\n${sections.join('\n\n')}${reachSection(claimed)}${unclaimedLine}${stock}${tap}`;
    // Telegram's limit is 4096 characters.
    return text.length > 4000 ? `${text.slice(0, 3900).replace(/\n[^\n]*$/, '')}\n…more in Admin → Food vouchers${stock}` : text;
 };
@@ -429,16 +438,16 @@ export const buildNudgeDraft = (bucket: keyof VoucherDigest, person: VoucherDige
 };
 
 /**
- * Buttons under the digest: 📥 the Page inbox, then one row per person (most urgent first) —
+ * Buttons under the digest: 📥 the Page inbox, then one row per person who claimed (most urgent first) —
  * 💬 their Messenger chat in SendPulse (people who linked Messenger), 📋 copies a ready message for
  * them, 👤 their account in admin.
  */
 export const buildVoucherDigestKeyboard = (digest: VoucherDigest): TelegramInlineKeyboard => {
    const seen = new Set<string>();
-   const anyone = Object.values(digest).some((people) => (people ?? []).length);
+   const anyone = [digest.not_arrived, digest.pending, digest.no_answer].some((people) => (people ?? []).length);
    const rows: TelegramInlineKeyboard = anyone ? [[{ text: '📥 Open the Moodeng Page inbox', url: PAGE_INBOX_URL }]] : [];
    let count = rows.length;
-   for (const bucket of ['not_arrived', 'pending', 'unclaimed', 'no_answer'] as const) {
+   for (const bucket of ['not_arrived', 'pending', 'no_answer'] as const) {
       for (const person of digest[bucket] ?? []) {
          const key = person.userId ?? person.messengerContactId ?? person.name;
          if (seen.has(key)) continue;
