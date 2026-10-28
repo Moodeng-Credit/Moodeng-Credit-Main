@@ -9,6 +9,8 @@ import {
    buildVoucherDigestKeyboard,
    buildVoucherReceiptMessage,
    buildNudgeDraft,
+   buildMessengerNudgeCallback,
+   parseMessengerNudgeCallback,
    messengerChatButton,
    messengerOutcomeLine,
    parseVoucherCallback,
@@ -138,14 +140,16 @@ Deno.test('digest: bot nudge marks and one 💬 button per Messenger person', ()
    };
    const text = buildVoucherDigest(digest, 6);
    assertStringIncludes(text, '🤖 bot nudged');
-   assertStringIncludes(text, '🟢 WhatsApp opens a chat with the message already typed');
+   assertStringIncludes(text, '📤 sends them the ready message on Messenger');
    const keyboard = buildVoucherDigestKeyboard(digest);
    assertEquals(keyboard.length, 3);
    assertEquals(keyboard[0].map((b) => b.text), ['📥 Open the Moodeng Page inbox']);
-   assertEquals(keyboard[1].map((b) => b.text), ['💬 Ana Cruz', '📋', '👤']);
-   const copy = keyboard[1][1] as { copy_text: { text: string } };
+   assertEquals(keyboard[1].map((b) => b.text), ['💬 Ana Cruz', '📤 Send on Messenger']);
+   assertEquals((keyboard[1][1] as { callback_data: string }).callback_data, 'vm:u1');
+   assertEquals(keyboard[2].map((b) => b.text), ['📋 Copy message · Ben']);
+   const copy = keyboard[2][0] as { copy_text: { text: string } };
    assertStringIncludes(copy.copy_text.text, 'We sent your ₱50 food voucher');
-   assertEquals(keyboard[2].map((b) => b.text), ['📋 Copy message · Ben', '👤']);
+   assert(!keyboard.flat().some((b) => b.text.includes('👤')));
    assertEquals(buildVoucherDigestKeyboard({ unclaimed: [], pending: [], not_arrived: [], no_answer: [] }), []);
    // Unclaimed people get no buttons.
    assertEquals(buildVoucherDigestKeyboard({ ...digest, no_answer: [] }), []);
@@ -178,7 +182,7 @@ Deno.test('digest: says what each person is owed and how to reach them', () => {
    const text = buildVoucherDigest({ unclaimed: [], pending: [], not_arrived: [], no_answer: [person] }, 6);
    assertStringIncludes(text, '↳ First on-time ₱50 + Rising ₱50');
    assertStringIncludes(text, '↳ 📞 09171234567 · ✉️ ana@example.com');
-   assertStringIncludes(text, '👤 = their account.');
+   assertStringIncludes(text, '📋 copies the message');
    const noContact = buildVoucherDigest({ unclaimed: [], pending: [], not_arrived: [], no_answer: [{ ...person, phone: null, email: null, rewards: [] }] }, 6);
    assertEquals(noContact.includes('↳'), false);
 });
@@ -233,6 +237,15 @@ Deno.test('WhatsApp links: PH and Indonesian numbers, message already typed', as
 Deno.test('digest keyboard: WhatsApp button for people with a phone', () => {
    const person = { name: 'Nina Cruz', username: null, facebook: null, messenger: false, amountPhp: 100, vouchers: 2, days: 1, userId: 'u9', phone: '09171234567' };
    const keyboard = buildVoucherDigestKeyboard({ unclaimed: [], pending: [], not_arrived: [], no_answer: [person] });
-   assertEquals(keyboard[1].map((b) => b.text), ['🟢 WhatsApp · Nina Cruz', '📋', '👤']);
+   assertEquals(keyboard[1].map((b) => b.text), ['🟢 WhatsApp · Nina Cruz', '📋']);
+   const both = buildVoucherDigestKeyboard({ unclaimed: [], pending: [], not_arrived: [], no_answer: [{ ...person, messengerContactId: 'c9', facebook: 'Nina C' }] });
+   assertEquals(both[1].map((b) => b.text), ['💬 Nina C', '📤 Send', '🟢 WhatsApp']);
    assertStringIncludes((keyboard[1][0] as { url: string }).url, 'https://wa.me/639171234567?text=Hi%20Nina!');
+});
+
+Deno.test('📤 Send on Messenger button round-trips', () => {
+   const id = '5f266893-85db-4970-9832-cb6f192f7d7e';
+   assertEquals(parseMessengerNudgeCallback(buildMessengerNudgeCallback(id)), { userId: id });
+   assert(buildMessengerNudgeCallback(id).length <= 64);
+   assertEquals(parseMessengerNudgeCallback('vo:s:' + id), null);
 });

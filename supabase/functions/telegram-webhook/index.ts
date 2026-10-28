@@ -31,7 +31,7 @@ import { handleRescheduleStep, parseRescheduleCallback, postReschedulePicker } f
 import { handleCancelStep, parseCancelCallback } from '../_shared/callCancel.ts';
 import { parseOutcomeCallback, recordCallOutcome } from '../_shared/videoCallOutcome.ts';
 import { buildPayoutCallback, markPayoutPaid, parsePayoutCallback } from '../_shared/referralPayouts.ts';
-import { decideVoucherClaim, parseVoucherCallback } from '../_shared/voucherClaims.ts';
+import { decideVoucherClaim, parseMessengerNudgeCallback, parseVoucherCallback, sendNudgeOnMessenger } from '../_shared/voucherClaims.ts';
 import {
    callTelegramApi,
    closeTelegramForumTopic,
@@ -969,6 +969,20 @@ serve(async (req) => {
             const allowed = [teamChatId, kycChatId, await getSetting(supabase, 'call_changes_chat_id')].filter(Boolean).map(String);
             await handleTestAccountCallback(supabase, update.callback_query, testAccount, allowed);
             return jsonResponse({ message: 'Test account handled' });
+         }
+         // 📤 Send on Messenger, under the daily rewards check (voucher_alert_chat_id).
+         const nudge = parseMessengerNudgeCallback(update.callback_query.data);
+         if (nudge) {
+            const query = update.callback_query;
+            const chatId = query.message?.chat.id;
+            const allowed = [teamChatId, kycChatId, await getSetting(supabase, 'voucher_alert_chat_id')].filter(Boolean).map(String);
+            if (!chatId || !allowed.includes(String(chatId))) {
+               await answerCallback(query.id, 'Not allowed here.');
+            } else {
+               await answerCallback(query.id, '⏳ Sending on Messenger…');
+               await sendTelegramMessage(chatId, await sendNudgeOnMessenger(supabase, nudge.userId, adminHandle(query.from)));
+            }
+            return jsonResponse({ message: 'Messenger nudge handled' });
          }
          // Food voucher cards live in their own group (voucher_alert_chat_id).
          await handleAdminCallback(
