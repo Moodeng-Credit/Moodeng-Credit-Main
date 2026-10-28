@@ -15,7 +15,7 @@
 // Deciding in the admin panel instead fires notify_voucher_claim_decided, which stamps the card the
 // same way (event 'decided').
 
-import { type CardStamp, stampDecisionCards } from './adminCards.ts';
+import { adminUserUrl, type CardStamp, stampDecisionCards } from './adminCards.ts';
 import { buyBitrefillCode, getBitrefillApiKey, GRABMART_PRODUCTS } from './bitrefill.ts';
 import { sendEmail } from './email.ts';
 import { getGiftawayConfig, giftawaySource, type GiftawayBrand, orderGiftawayEgift, toPhilippineMobile } from './giftaway.ts';
@@ -308,10 +308,33 @@ export type VoucherDigestPerson = {
    amountPhp: number | string;
    vouchers: number;
    days: number | null;
+   // What they're owed and how to reach them (voucher_daily_digest from 20261028200000).
+   rewards?: Array<{ reward: string; amountPhp: number | string }>;
+   phone?: string | null;
+   email?: string | null;
 };
 export type VoucherDigest = Record<'unclaimed' | 'pending' | 'not_arrived' | 'no_answer', VoucherDigestPerson[]>;
 
 const DIGEST_LIMIT = 25;
+
+// Short names for the digest: "Rising ₱50 + First on-time ₱50".
+const REWARD_SHORT: Record<string, string> = {
+   first_on_time_repayment: 'First on-time',
+   referral_inviter: 'Invited a friend',
+   referral_invitee: 'Joined by invite',
+   tier_rising: 'Rising',
+   tier_prime: 'Prime',
+   tier_apex: 'Apex'
+};
+
+const digestDetails = (person: VoucherDigestPerson) => {
+   const lines: string[] = [];
+   if (person.rewards?.length) lines.push(`   ↳ ${person.rewards.map((r) => `${REWARD_SHORT[r.reward] ?? r.reward} ${peso(r.amountPhp)}`).join(' + ')}`);
+   const email = person.email && !isPlaceholderEmail(person.email) ? person.email : null;
+   const contact = [person.phone ? `📞 ${person.phone}` : null, email ? `✉️ ${email}` : null].filter(Boolean).join(' · ');
+   if (contact) lines.push(`   ↳ ${contact}`);
+   return lines.length ? `\n${lines.join('\n')}` : '';
+};
 
 const digestLine = (person: VoucherDigestPerson) => {
    const who = `${person.name}${person.username ? ` (@${person.username})` : ''}`;
@@ -319,7 +342,7 @@ const digestLine = (person: VoucherDigestPerson) => {
    const count = person.vouchers > 1 ? ` (${person.vouchers})` : '';
    const days = person.days === null ? '' : ` · ${person.days === 0 ? 'today' : `${person.days}d`}`;
    const nudge = person.nudge === 'sent' ? ' · 🤖 bot nudged' : person.nudge === 'failed' ? " · 🤖 bot couldn't reach" : '';
-   return `• ${who} · ${peso(person.amountPhp)}${count} · ${fb}${days}${nudge}`;
+   return `• ${who} · ${peso(person.amountPhp)}${count} · ${fb}${days}${nudge}${digestDetails(person)}`;
 };
 
 const digestSection = (title: string, people: VoucherDigestPerson[]) => {
@@ -341,27 +364,40 @@ export const buildVoucherDigest = (digest: VoucherDigest, linksLeft: number | nu
    const credits = giftawayCredits === null ? '' : `${linksLeft === null ? '\n\n' : '\n'}Giftaway credits: ₱${giftawayCredits.toFixed(2)}${giftawayCredits < 500 ? ' — top up soon' : ''}`;
    const stock = `${linksLeft === null ? '' : `\n\n₱50 Xoxo links left: ${linksLeft}${linksLeft <= 5 ? ' — restock soon' : ''}`}${credits}`;
    if (!sections.length) return `🧾 Daily rewards check: nothing waiting — everyone has claimed and confirmed. 🎉${stock}`;
-   const tap = Object.values(digest).some((people) => (people ?? []).some((p) => p.messengerContactId)) ? '\n\nTap 💬 below to message someone yourself.' : '';
-   return `🧾 Daily rewards check\n\n${sections.join('\n\n')}${stock}${tap}`;
+   const tap = Object.values(digest).some((people) => (people ?? []).length)
+      ? `\n\n${Object.values(digest).some((people) => (people ?? []).some((p) => p.messengerContactId)) ? 'Tap 💬 below to message someone yourself, ' : 'Tap '}👤 to open their account.`
+      : '';
+   const text = `🧾 Daily rewards check\n\n${sections.join('\n\n')}${stock}${tap}`;
+   // Telegram's limit is 4096 characters.
+   return text.length > 4000 ? `${text.slice(0, 3900).replace(/\n[^\n]*$/, '')}\n…more in Admin → Food vouchers${stock}` : text;
 };
 
 const DIGEST_BUTTONS = 40;
 
-/** 💬 buttons under the digest, two per row: one per person with Messenger, most urgent first. */
+/**
+ * Buttons under the digest, one row per person, most urgent first: 💬 opens their Messenger chat in
+ * SendPulse (only people who linked Messenger), 👤 opens their account in admin.
+ */
 export const buildVoucherDigestKeyboard = (digest: VoucherDigest) => {
    const seen = new Set<string>();
-   const buttons: Array<{ text: string; url: string }> = [];
+   const rows: Array<Array<{ text: string; url: string }>> = [];
+   let count = 0;
    for (const bucket of ['not_arrived', 'pending', 'unclaimed', 'no_answer'] as const) {
       for (const person of digest[bucket] ?? []) {
-         const id = person.messengerContactId;
-         if (!id || seen.has(id) || buttons.length >= DIGEST_BUTTONS) continue;
-         seen.add(id);
-         const label = (person.facebook ?? person.name).split(/\s+/).slice(0, 2).join(' ');
-         buttons.push({ text: `💬 ${label}`, url: messengerChatUrl(id) });
+         const key = person.userId ?? person.messengerContactId ?? person.name;
+         if (seen.has(key)) continue;
+         seen.add(key);
+         const row: Array<{ text: string; url: string }> = [];
+         if (person.messengerContactId) {
+            const label = (person.facebook ?? person.name).split(/\s+/).slice(0, 2).join(' ');
+            row.push({ text: `💬 ${label}`, url: messengerChatUrl(person.messengerContactId) });
+         }
+         if (person.userId) row.push({ text: `👤 ${person.name.split(/\s+/).slice(0, 2).join(' ')}`, url: adminUserUrl(person.userId, person.username) });
+         if (!row.length || count + row.length > DIGEST_BUTTONS) continue;
+         count += row.length;
+         rows.push(row);
       }
    }
-   const rows: Array<Array<{ text: string; url: string }>> = [];
-   for (let i = 0; i < buttons.length; i += 2) rows.push(buttons.slice(i, i + 2));
    return rows;
 };
 

@@ -11,10 +11,11 @@
 //                                                A no-op if the Telegram button already stamped it.
 //   { claimId, event: 'receipt' }                borrower tapped I got it / Didn't get it (notify_voucher_receipt) →
 //                                                a one-line Telegram message.
-//   { event: 'digest' }                          daily 10:00 Bangkok (voucher-daily-digest cron): who earned but
+//   { event: 'digest', nudge? }                  daily 10:00 Bangkok (voucher-daily-digest cron): who earned but
 //                                                hasn't claimed, what's stuck, who hasn't confirmed. First nudges
 //                                                the unclaimed / unconfirmed on Messenger (once per amount, see
-//                                                voucher_messenger_nudges), then posts the digest with 💬 buttons.
+//                                                voucher_messenger_nudges), then posts the digest with 💬 / 👤 buttons.
+//                                                nudge: false skips the Messenger nudges (list only).
 //   { event: 'announce', text }                  internal: post a team notice to the rewards group (e.g. how a new
 //                                                rewards feature works), from the same bot as the cards.
 //   { claimId, event: 'admin_send' }             admin Vouchers page → Send code (admin session required).
@@ -127,11 +128,13 @@ serve(async (req) => {
    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 
    try {
-      const { claimId, event, decidedBy, text } = (await req.json().catch(() => ({}))) as {
+      const { claimId, event, decidedBy, text, nudge } = (await req.json().catch(() => ({}))) as {
          claimId?: string;
          event?: string;
          decidedBy?: string | null;
          text?: string;
+         // digest: false = just post the list, no Messenger nudges (e.g. an extra run outside 10:00).
+         nudge?: boolean;
       };
       if (event === 'announce') {
          if (!(await isAuthorized(supabase, req))) return json({ error: 'Unauthorized' }, 401);
@@ -155,7 +158,7 @@ serve(async (req) => {
             .eq('amount_php', 50);
          const giftaway = await getGiftawayConfig(supabase);
          const giftawayCredits = giftaway ? await getGiftawayBalance(giftaway) : null;
-         await nudgeOnMessenger(supabase, digest as VoucherDigest);
+         if (nudge !== false) await nudgeOnMessenger(supabase, digest as VoucherDigest);
          const keyboard = buildVoucherDigestKeyboard(digest as VoucherDigest);
          await sendTelegramMessage(
             chatId,
