@@ -219,6 +219,28 @@ const postSend = async (token: string, payload: unknown) => {
 };
 
 // Sends `text` (if any) and then `card` (if any) — only inside the 24h window.
+/**
+ * When anything (bot or a team member typing in SendPulse) was last sent to this Messenger contact,
+ * from SendPulse's chat history. Null when unknown. Never throws.
+ */
+export const lastOutgoingMessengerAt = async (contactId: string): Promise<number | null> => {
+   if (!isSendPulseConfigured()) return null;
+   try {
+      const token = await getToken();
+      if (!token) return null;
+      const res = await fetch(`${API}/messenger/chats/messages?contact_id=${encodeURIComponent(contactId)}&size=20&order=desc`, {
+         headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) return null;
+      const body = await res.json().catch(() => null);
+      const list = (Array.isArray(body?.data) ? body.data : []) as Array<{ direction?: number; created_at?: string }>;
+      const times = list.filter((m) => m.direction === 2 && m.created_at).map((m) => Date.parse(String(m.created_at))).filter((t) => !Number.isNaN(t));
+      return times.length ? Math.max(...times) : null;
+   } catch {
+      return null;
+   }
+};
+
 export const sendMessengerMessage = async (
    contactId: string | null | undefined,
    content: { text?: string; card?: MessengerCard }
