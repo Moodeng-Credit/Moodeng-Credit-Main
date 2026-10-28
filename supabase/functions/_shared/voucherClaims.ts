@@ -21,6 +21,7 @@ import { sendEmail } from './email.ts';
 import { getGiftawayConfig, giftawaySource, type GiftawayBrand, orderGiftawayEgift, toPhilippineMobile } from './giftaway.ts';
 import { isPlaceholderEmail } from './placeholderEmail.ts';
 import { type MessengerCard, messengerChatUrl, sendMessengerMessage } from './sendpulse.ts';
+import type { TelegramInlineKeyboard } from './telegram.ts';
 
 // Telegram callback_data for the card buttons: "vo:<s|r>:<claim uuid>" (≤64 bytes).
 export type VoucherDecision = 'sent' | 'rejected';
@@ -399,7 +400,7 @@ export const buildVoucherDigest = (digest: VoucherDigest, linksLeft: number | nu
    const stock = `${linksLeft === null ? '' : `\n\n₱50 Xoxo links left: ${linksLeft}${linksLeft <= 5 ? ' — restock soon' : ''}`}${credits}`;
    if (!sections.length) return `🧾 Daily rewards check: nothing waiting — everyone has claimed and confirmed. 🎉${stock}`;
    const tap = Object.values(digest).some((people) => (people ?? []).length)
-      ? '\n\nButtons below: 📥 = Moodeng Page inbox · 💬 = their Messenger chat (SendPulse) · 🔎 = Facebook search by name · 👤 = their account in admin.'
+      ? '\n\nButtons below: 📋 copies a ready message for that person → tap 💬 to open their Messenger chat (SendPulse), paste, send. No 💬? Paste it into an email or text. 📥 = Page inbox · 👤 = their account.'
       : '';
    const text = `🧾 Daily rewards check\n\n${sections.join('\n\n')}${reachSection(digest)}${stock}${tap}`;
    // Telegram's limit is 4096 characters.
@@ -408,20 +409,34 @@ export const buildVoucherDigest = (digest: VoucherDigest, linksLeft: number | nu
 
 const DIGEST_BUTTONS = 40;
 
-/** Facebook search for their Facebook name (we only know the name, not their profile link). */
-export const facebookSearchUrl = (name: string) => `https://www.facebook.com/search/people/?q=${encodeURIComponent(name)}`;
-
 const firstTwoWords = (value: string) => value.split(/\s+/).slice(0, 2).join(' ');
 
 /**
- * Buttons under the digest, one row per person, most urgent first, the person's name on the first:
- * 💬 their Messenger chat in SendPulse (people who linked Messenger), 🔎 Facebook search for their
- * Facebook name, 👤 their account in admin.
+ * A ready-to-send message for one person, for the 📋 button: the team copies it, opens their chat
+ * (💬, or email / text) and pastes. Worded for where they are; Telegram allows 256 characters.
  */
-export const buildVoucherDigestKeyboard = (digest: VoucherDigest) => {
+export const buildNudgeDraft = (bucket: keyof VoucherDigest, person: VoucherDigestPerson) => {
+   const first = (person.facebook ?? person.name).trim().split(/\s+/)[0] || 'there';
+   const amount = peso(person.amountPhp);
+   const email = person.email && !isPlaceholderEmail(person.email) ? person.email : null;
+   const text = {
+      unclaimed: `Hi ${first}! 🎁 You have ${amount} in food rewards from Moodeng (Jollibee, Chowking & more). Open moodeng.app and tap "Claim my reward" — it takes 1 minute. Salamat!`,
+      pending: `Hi ${first}! Your ${amount} food voucher from Moodeng is being prepared — we'll send it to you very soon. Salamat for waiting!`,
+      no_answer: `Hi ${first}! We sent your ${amount} food voucher${email ? ` to ${email}` : ''}. Open moodeng.app to see it, then tap "I got it" ✅. If something went wrong, just reply here!`,
+      not_arrived: `Hi ${first}! Sorry your ${amount} voucher didn't arrive. We're sending it again — please check your email (and Spam). Reply here if you still don't see it.`
+   }[bucket];
+   return text.length > 256 ? `${text.slice(0, 255)}…` : text;
+};
+
+/**
+ * Buttons under the digest: 📥 the Page inbox, then one row per person (most urgent first) —
+ * 💬 their Messenger chat in SendPulse (people who linked Messenger), 📋 copies a ready message for
+ * them, 👤 their account in admin.
+ */
+export const buildVoucherDigestKeyboard = (digest: VoucherDigest): TelegramInlineKeyboard => {
    const seen = new Set<string>();
    const anyone = Object.values(digest).some((people) => (people ?? []).length);
-   const rows: Array<Array<{ text: string; url: string }>> = anyone ? [[{ text: '📥 Open the Moodeng Page inbox', url: PAGE_INBOX_URL }]] : [];
+   const rows: TelegramInlineKeyboard = anyone ? [[{ text: '📥 Open the Moodeng Page inbox', url: PAGE_INBOX_URL }]] : [];
    let count = rows.length;
    for (const bucket of ['not_arrived', 'pending', 'unclaimed', 'no_answer'] as const) {
       for (const person of digest[bucket] ?? []) {
@@ -429,11 +444,11 @@ export const buildVoucherDigestKeyboard = (digest: VoucherDigest) => {
          if (seen.has(key)) continue;
          seen.add(key);
          const label = firstTwoWords(person.facebook ?? person.name);
-         const row: Array<{ text: string; url: string }> = [];
+         const row: TelegramInlineKeyboard[number] = [];
          if (person.messengerContactId) row.push({ text: `💬 ${label}`, url: messengerChatUrl(person.messengerContactId) });
-         if (person.facebook) row.push({ text: row.length ? '🔎 Facebook' : `🔎 ${label} (Facebook)`, url: facebookSearchUrl(person.facebook) });
-         if (person.userId) row.push({ text: row.length ? '👤' : `👤 ${firstTwoWords(person.name)}`, url: adminUserUrl(person.userId, person.username) });
-         if (!row.length || count + row.length > DIGEST_BUTTONS) continue;
+         row.push({ text: row.length ? '📋 Copy message' : `📋 Copy message · ${firstTwoWords(person.name)}`, copy_text: { text: buildNudgeDraft(bucket, person) } });
+         if (person.userId) row.push({ text: '👤', url: adminUserUrl(person.userId, person.username) });
+         if (count + row.length > DIGEST_BUTTONS) continue;
          count += row.length;
          rows.push(row);
       }

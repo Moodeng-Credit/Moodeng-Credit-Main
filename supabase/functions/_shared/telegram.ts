@@ -1,5 +1,7 @@
-// A button either opens a link (url) or calls back into telegram-webhook (callback_data, ≤64 bytes).
-export type TelegramInlineKeyboard = Array<Array<{ text: string; url: string } | { text: string; callback_data: string }>>;
+// A button opens a link (url), calls back into telegram-webhook (callback_data, ≤64 bytes), or copies
+// text to the tapper's clipboard (copy_text, ≤256 characters).
+export type TelegramButton = { text: string; url: string } | { text: string; callback_data: string } | { text: string; copy_text: { text: string } };
+export type TelegramInlineKeyboard = Array<Array<TelegramButton>>;
 
 type TelegramApiResult<T> = {
    ok: boolean;
