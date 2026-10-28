@@ -7,7 +7,7 @@ import { useFloatingParticles, useReplayClass } from '@/components/motion/TapDel
 
 import { formatCurrency } from '@/utils/decimalHelpers';
 
-import type { VoucherClaimSummary } from '@/lib/friendReferrals';
+import type { ClaimableVoucher, VoucherClaimSummary } from '@/lib/friendReferrals';
 
 import { type LocaleCode, useLocalization } from '@/i18n';
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
@@ -577,11 +577,15 @@ const VOUCHER_STEPS: Record<VoucherClaimSummary['brand'], string[]> = {
 
 /** "How to use it": numbered steps for first-timers who've never redeemed a voucher link. */
 export function VoucherHowTo({ brand, giftaway = false }: { brand: VoucherClaimSummary['brand']; giftaway?: boolean }) {
+   return <StepsBox title="How to use it" steps={(giftaway ? GIFTAWAY_STEPS : VOUCHER_STEPS)[brand]} />;
+}
+
+function StepsBox({ title, steps }: { title: string; steps: string[] }) {
    return (
       <div className="rounded-[10px] bg-white/70 px-3 py-2.5">
-         <p className="text-[14px] font-bold leading-[18px] text-[#3c8248]">How to use it</p>
+         <p className="text-[14px] font-bold leading-[18px] text-[#3c8248]">{title}</p>
          <ol className="mt-1.5 flex flex-col gap-1.5">
-            {(giftaway ? GIFTAWAY_STEPS : VOUCHER_STEPS)[brand].map((step, index) => (
+            {steps.map((step, index) => (
                <li key={step} className="flex items-start gap-2 text-[14px] font-medium leading-[18px] text-[#594d65]">
                   <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#4aa256] text-[11px] font-bold text-white">
                      {index + 1}
@@ -594,20 +598,47 @@ export function VoucherHowTo({ brand, giftaway = false }: { brand: VoucherClaimS
    );
 }
 
-/** "Moodeng grew to Rising!": shown on the dashboard while a tier's food voucher is waiting to be claimed. */
-export function TierVoucherCard({ label, amountPhp, onClaim }: { label: string; amountPhp: number; onClaim: () => void }) {
+// One plain sentence per step so each translates as its own phrase.
+const CLAIM_STEPS = [
+   'Tap "Claim my reward" below.',
+   'Pick your treat: Jollibee & more, or GrabMart.',
+   'We send the voucher to your email and Messenger. Show the code at the store.'
+];
+
+/**
+ * "You have ₱200 in rewards!": every reward waiting to be claimed, with how to claim. Claim opens the
+ * Moo-Menu for the first one; the card stays until all are claimed.
+ */
+export function RewardsWaitingCard({ claimable, onClaim }: { claimable: ClaimableVoucher[]; onClaim: () => void }) {
+   const total = claimable.reduce((sum, voucher) => sum + voucher.amountPhp, 0);
    return (
       <section
-         className="mx-5 flex items-center gap-3 rounded-[8px] px-3 py-3"
+         className="mx-5 flex flex-col gap-3 rounded-[8px] px-3 py-3"
          style={{ backgroundImage: 'linear-gradient(90deg, #fff3a3 0%, #ffe27a 100%)' }}
-         aria-label={`${label} tier voucher`}
+         aria-label="Rewards waiting"
       >
-         <DesignImage src={DASHBOARD_V2_ASSETS.coupon} className="h-12 w-12 shrink-0 object-contain" />
-         <div className="min-w-0 flex-1">
-            <p className="text-[18px] font-black italic leading-6 text-[#3c8248]">Moodeng grew to {label}!</p>
-            <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">Claim your ₱{amountPhp} food voucher</p>
+         <div className="flex items-center gap-3">
+            <DesignImage src={DASHBOARD_V2_ASSETS.coupon} className="h-12 w-12 shrink-0 object-contain" />
+            <div className="min-w-0 flex-1">
+               <p className="text-[18px] font-black italic leading-6 text-[#3c8248]">
+                  You have ₱{total} in rewards!
+               </p>
+               <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">
+                  {claimable.length} {claimable.length === 1 ? 'food voucher is waiting for you' : 'food vouchers are waiting for you'}
+               </p>
+            </div>
          </div>
-         <ClaimVoucherButton onClaim={onClaim} />
+         <StepsBox title="How to claim" steps={CLAIM_STEPS} />
+         <button
+            type="button"
+            onClick={onClaim}
+            className="flex h-[38px] w-full items-center justify-center rounded-full bg-[#ffce1b] text-[15px] font-bold text-[#704518] shadow-[0_-2px_1px_rgba(255,255,255,0.3),0_2px_1px_rgba(63,89,79,0.4)]"
+         >
+            Claim my reward
+         </button>
+         {claimable.length > 1 ? (
+            <p className="-mt-1 text-center text-[13px] font-medium leading-[16px] text-[#6f7d1d]">Claim them one at a time.</p>
+         ) : null}
       </section>
    );
 }

@@ -10,7 +10,7 @@ import { EMPTY_REWARDS, isValidInviteCode, normalizeInviteCode, parseMyRewards }
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 import DashboardV2Hero from '@/views/dashboard-v2/components/DashboardV2Hero';
 import { MilestonePopup } from '@/views/dashboard-v2/components/DashboardV2Popups';
-import { LoanSummarySection, MilestonesSection, UpcomingDuesSection, VoucherFollowUpCard } from '@/views/dashboard-v2/components/DashboardV2Sections';
+import { LoanSummarySection, MilestonesSection, RewardsWaitingCard, UpcomingDuesSection, VoucherFollowUpCard } from '@/views/dashboard-v2/components/DashboardV2Sections';
 import {
    buildInviteLink,
    getCreditLevelProgress,
@@ -220,6 +220,18 @@ describe('dashboard v2 sample states render', () => {
       expect(enjoyed).not.toContain('How to use it');
    });
 
+   it('shows every waiting reward with how to claim', () => {
+      const card = render(createElement(RewardsWaitingCard, { claimable: SAMPLE_STATES.rewarded.rewards.claimable, onClaim: () => undefined }));
+      expect(card.replace(/<!-- -->/g, '')).toContain('You have ₱200 in rewards!');
+      expect(card).toContain('food vouchers are waiting for you');
+      expect(card).toContain('How to claim');
+      expect(card).toContain('Claim my reward');
+      expect(card).toContain('Claim them one at a time.');
+      const one = render(createElement(RewardsWaitingCard, { claimable: SAMPLE_STATES.rewarded.rewards.claimable.slice(0, 1), onClaim: () => undefined }));
+      expect(one).toContain('food voucher is waiting for you');
+      expect(one).not.toContain('one at a time');
+   });
+
    it('has Filipino copy for every voucher how-to line', () => {
       for (const phrase of [
          'Your Moo-meal is here!',
@@ -237,7 +249,14 @@ describe('dashboard v2 sample states render', () => {
          'Show the code to the cashier at any Jollibee, Chowking, Mang Inasal, Greenwich, Red Ribbon, Burger King, Yoshinoya or Panda Express.',
          'Enjoy! Use it all in one order.',
          'Save the voucher in your Grab app on your phone.',
-         'Use it on GrabMart, GrabFood or GrabCar, all in one order.'
+         'Use it on GrabMart, GrabFood or GrabCar, all in one order.',
+         'You have ₱',
+         'in rewards!',
+         'How to claim',
+         'Tap "Claim my reward" below.',
+         'Pick your treat: Jollibee & more, or GrabMart.',
+         'We send the voucher to your email and Messenger. Show the code at the store.',
+         'Claim my reward'
       ]) {
          expect(screenCoverage[phrase], phrase).toBeTruthy();
       }
