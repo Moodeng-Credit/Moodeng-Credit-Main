@@ -130,35 +130,25 @@ export function generatePhoneUsername(random: () => number = Math.random): strin
    return `moodeng-${suffix}`;
 }
 
-/** True while the account still has the made-up phone sign-up handle, i.e. they never picked one. */
+/** True while the account still has the made-up phone sign-up handle, i.e. they never got a real one. */
 export function hasGeneratedUsername(username: string | null | undefined): boolean {
    return Boolean(username?.startsWith('moodeng-'));
 }
 
-export const USERNAME_MIN_LENGTH = 3;
-export const USERNAME_MAX_LENGTH = 20;
-
-/** What the username box keeps as they type: lowercase letters, digits, - and _ (it's a URL part). */
-export function cleanUsernameInput(raw: string): string {
-   return raw
+/**
+ * Phone sign-ups aren't asked for a username: once they give a name (onboarding bio, loan form,
+ * settings), their made-up handle is swapped for one built from it — "María Santos" → mariasantos,
+ * then mariasantos2, mariasantos3… if taken. Empty when the name has nothing usable (e.g. "Jo", 김).
+ */
+export function usernameCandidatesFromName(name: string, count = 8): string[] {
+   const base = name
+      .normalize('NFD')
+      .replace(/\p{M}/gu, '')
       .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9_-]/g, '')
-      .slice(0, USERNAME_MAX_LENGTH);
-}
-
-/** A starting suggestion from their name: "María Santos" → "mariasantos". Empty if nothing usable. */
-export function suggestUsername(name: string): string {
-   const base = cleanUsernameInput(name.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '')).replace(/^[-_]+|[-_]+$/g, '');
-   return base.length >= USERNAME_MIN_LENGTH && !hasGeneratedUsername(base) ? base : '';
-}
-
-/** Why a typed username can't be used, or null if it can (whether it's taken is checked separately). */
-export function usernameProblem(username: string): string | null {
-   if (username.length < USERNAME_MIN_LENGTH) return `Use at least ${USERNAME_MIN_LENGTH} letters or numbers.`;
-   if (!/^[a-z0-9]/.test(username) || /[-_]$/.test(username)) return 'Start and end with a letter or number.';
-   if (hasGeneratedUsername(username)) return 'Pick something of your own.';
-   return null;
+      .replace(/[^a-z0-9]/g, '')
+      .slice(0, 18);
+   if (base.length < 3 || hasGeneratedUsername(base)) return [];
+   return [base, ...Array.from({ length: count - 1 }, (_, i) => `${base}${i + 2}`)];
 }
 
 /**
