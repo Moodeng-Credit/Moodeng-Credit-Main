@@ -115,6 +115,10 @@ export const MESSENGER_PAGE_ID = Deno.env.get('MESSENGER_PAGE_ID')?.trim() || '1
 const CONFIRM_FB_FLOW_ID = Deno.env.get('SENDPULSE_CONFIRM_FB_FLOW_ID')?.trim() || '3598d58c-7ade-4b7c-9f12-7ed39350fe41';
 export const MESSENGER_PAGE_URL = `https://www.facebook.com/${MESSENGER_PAGE_ID}`;
 export const buildMessengerVerifyLink = (code: string) => `https://m.me/${MESSENGER_PAGE_ID}?ref=${CONFIRM_FB_FLOW_ID}__mdng_code=${code}`;
+// The person's chat in SendPulse (team side): read the thread and reply as the Page. Takes the
+// SendPulse contact id we keep in users.messenger_psid.
+export const messengerChatUrl = (contactId: string) =>
+   `https://login.sendpulse.com/chatbots/chats?contact_id=${encodeURIComponent(contactId)}&channel=messenger`;
 
 // The flow stores the borrower's one-time code on their SendPulse contact as the `mdng_code`
 // variable. Looking the contact up by that code gives the SendPulse contact id — the only id the

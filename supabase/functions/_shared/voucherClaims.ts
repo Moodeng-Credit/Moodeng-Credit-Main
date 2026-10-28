@@ -1,4 +1,6 @@
 // Food voucher claims → sent automatically, with an admin Telegram card.
+// Every send also goes to the borrower on Messenger (when they linked it), and the cards carry a
+// 💬 button to their SendPulse chat so the team can follow up by hand.
 //
 // Borrowers claim a reward in the app (public.submit_voucher_claim → voucher_claims, status 'pending').
 // The notify_voucher_claim_telegram trigger hands each new claim to voucher-claim-telegram-notification,
@@ -15,6 +17,7 @@ import { type CardStamp, stampDecisionCards } from './adminCards.ts';
 import { buyBitrefillCode, getBitrefillApiKey, GRABMART_PRODUCTS } from './bitrefill.ts';
 import { sendEmail } from './email.ts';
 import { isPlaceholderEmail } from './placeholderEmail.ts';
+import { type MessengerCard, messengerChatUrl, sendMessengerMessage } from './sendpulse.ts';
 
 // Telegram callback_data for the card buttons: "vo:<s|r>:<claim uuid>" (≤64 bytes).
 export type VoucherDecision = 'sent' | 'rejected';
@@ -55,6 +58,7 @@ export const LOW_STOCK = 5;
 
 export type VoucherClaimRow = {
    id: string;
+   user_id?: string;
    reward: string;
    amount_php: number | string;
    brand?: string | null;
@@ -71,7 +75,7 @@ const claimUsername = (claim: VoucherClaimRow) => (Array.isArray(claim.users) ? 
 const peso = (value: unknown) => `₱${Number(value)}`;
 
 /** Admin card for a claim that couldn't be sent automatically; `reason` says why. */
-export const buildVoucherClaimCard = (claim: VoucherClaimRow, reason?: string | null) =>
+export const buildVoucherClaimCard = (claim: VoucherClaimRow, reason?: string | null, facebook?: MessengerContact | null) =>
    [
       `${voucherPickLabel(claim.brand)} voucher to send: ${peso(claim.amount_php)}`,
       `For: ${VOUCHER_REWARD_LABELS[claim.reward] ?? claim.reward}`,
@@ -80,6 +84,7 @@ export const buildVoucherClaimCard = (claim: VoucherClaimRow, reason?: string | 
       `Mobile (GCash): ${claim.mobile}`,
       claim.email ? `Email: ${claim.email}` : null,
       claimUsername(claim) ? `User: @${claimUsername(claim)}` : null,
+      facebookLine(facebook),
       '',
       reason ? `⚠️ Not sent automatically: ${reason}` : null,
       claim.brand === 'grabmart'
@@ -93,14 +98,160 @@ export const buildVoucherClaimCard = (claim: VoucherClaimRow, reason?: string | 
 export const voucherPickLabel = (brand?: string | null) => (brand === 'grabmart' ? '🛒 GrabMart' : '🍗 Food link (Jollibee & 4 more)');
 
 /** Info card for a claim that went out on its own (no buttons). */
-export const buildVoucherSentCard = (claim: VoucherClaimRow, summary: string) =>
+export const buildVoucherSentCard = (claim: VoucherClaimRow, summary: string, facebook?: MessengerContact | null) =>
    [
       `${voucherPickLabel(claim.brand)} voucher sent automatically: ${peso(claim.amount_php)}`,
       `To: ${claim.full_name}${claimUsername(claim) ? ` (@${claimUsername(claim)})` : ''} · ${VOUCHER_REWARD_LABELS[claim.reward] ?? claim.reward}`,
+      facebookLine(facebook),
       summary
-   ].join('\n');
+   ]
+      .filter((line) => line !== null)
+      .join('\n');
 
 type SupabaseClient = any;
+
+// ---- Messenger: tell the borrower, and give the team a 💬 button to their chat ----------------
+
+const SITE_URL = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? Deno.env.get('SITE_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
+const DASHBOARD_URL = `${SITE_URL}/dashboard`;
+
+/** Who to message: their SendPulse contact (users.messenger_psid), Facebook name and bot language. */
+export type MessengerContact = { contactId: string | null; facebookName: string | null; firstName: string | null; locale: 'en' | 'fil' };
+
+export const loadMessengerContact = async (supabase: SupabaseClient, userId: string | null | undefined): Promise<MessengerContact | null> => {
+   if (!userId) return null;
+   const { data: user } = await supabase
+      .from('users')
+      .select('messenger_psid, facebook_name, display_name, preferred_locale')
+      .eq('id', userId)
+      .maybeSingle();
+   if (!user) return null;
+   const contactId = (user.messenger_psid as string | null) ?? null;
+   const { data: contact } = contactId
+      ? await supabase.from('messenger_contacts').select('facebook_name, locale').eq('contact_id', contactId).maybeSingle()
+      : { data: null };
+   const facebookName = String(user.facebook_name ?? contact?.facebook_name ?? '').trim() || null;
+   const firstWord = (value: unknown) => String(value ?? '').trim().split(/\s+/)[0] || null;
+   return {
+      contactId,
+      facebookName,
+      firstName: firstWord(user.display_name) ?? firstWord(facebookName),
+      locale: (contact?.locale ?? user.preferred_locale) === 'fil' ? 'fil' : 'en'
+   };
+};
+
+const facebookLine = (facebook?: MessengerContact | null) => {
+   if (!facebook) return null;
+   if (facebook.contactId) return `Facebook: ${facebook.facebookName ?? 'name not saved'} · tap 💬 to message them`;
+   return facebook.facebookName ? `Facebook: ${facebook.facebookName} (Messenger not linked)` : 'Facebook: not linked';
+};
+
+/** The 💬 button under an admin card: opens their SendPulse chat. Null when they never linked Messenger. */
+export const messengerChatButton = (facebook?: MessengerContact | null, name?: string | null) =>
+   facebook?.contactId
+      ? { text: `💬 Message ${(facebook.facebookName ?? name ?? 'them').split(/\s+/)[0]} on Messenger`, url: messengerChatUrl(facebook.contactId) }
+      : null;
+
+export type RewardMessengerContent = { text: string; card: MessengerCard };
+
+// Why they got it, in Filipino (REWARD_REASONS is the English).
+const REWARD_REASONS_FIL: Record<string, string> = {
+   first_on_time_repayment: 'dahil on time ang una mong bayad',
+   referral_inviter: 'dahil nag-invite ka ng friend na nagbayad on time',
+   referral_invitee: 'dahil sumali ka gamit ang invite ng friend at nagbayad on time',
+   tier_rising: 'dahil umabot na sa Rising ang Moodeng mo',
+   tier_prime: 'dahil umabot na sa Prime ang Moodeng mo',
+   tier_apex: 'dahil umabot na sa Apex ang Moodeng mo'
+};
+
+/** "Your reward is here": the Xoxo links as card buttons, or (Bitrefill) where to find the email. */
+export const buildRewardSentMessage = (input: {
+   firstName: string | null;
+   locale: 'en' | 'fil';
+   amountPhp: number;
+   reward: string;
+   links: string[];
+   product?: string | null;
+}): RewardMessengerContent => {
+   const fil = input.locale === 'fil';
+   const hi = input.firstName ? ` ${input.firstName}` : '';
+   const amount = `₱${input.amountPhp}`;
+   const reason = (fil ? REWARD_REASONS_FIL : REWARD_REASONS)[input.reward];
+   const many = input.links.length > 1;
+   if (!input.links.length) {
+      const what = input.product ?? 'voucher';
+      return {
+         text: fil
+            ? `🎉 Hi${hi}! Nandito na ang ${amount} ${what} reward mo${reason ? ` ${reason}` : ''}. Salamat! Na-email ito sa iyo ng Bitrefill — tingnan ang inbox mo (pati Spam).`
+            : `🎉 Hi${hi}! Your ${amount} ${what} reward is here${reason ? ` ${reason}` : ''}. Salamat! Bitrefill emailed it to you — check your inbox (and Spam).`,
+         card: {
+            title: fil ? `Ang ${amount} reward mo` : `Your ${amount} reward`,
+            subtitle: fil ? 'Pindutin ang "I got it" pag natanggap mo na' : 'Tap "I got it" once it arrives',
+            button: { title: fil ? 'Buksan ang Moodeng' : 'Open Moodeng', url: DASHBOARD_URL }
+         }
+      };
+   }
+   return {
+      text: fil
+         ? `🎉 Hi${hi}! Nandito na ang ${amount} food reward mo${reason ? ` ${reason}` : ''}. Salamat!\n\nPindutin ang ${many ? 'bawat button' : 'button'} sa baba, pumili ng ${FOOD_BRANDS.replace(' or ', ' o ')}, at ipakita ang code sa store. (Na-email din namin.)`
+         : `🎉 Hi${hi}! Your ${amount} food reward is here${reason ? ` ${reason}` : ''}. Salamat!\n\nTap ${many ? 'each button' : 'the button'} below, pick ${FOOD_BRANDS}, and show the code at the store. (We emailed it too.)`,
+      card: {
+         title: fil ? `Ang ${amount} food reward mo 🍗` : `Your ${amount} food reward 🍗`,
+         subtitle: fil ? 'Valid nang 1 taon' : 'Valid for 1 year',
+         button: { title: many ? (fil ? 'Buksan voucher 1' : 'Open ₱50 voucher 1') : fil ? 'Buksan ang voucher' : 'Open my voucher', url: input.links[0] },
+         moreButtons: input.links.slice(1, 3).map((url, i) => ({ title: fil ? `Buksan voucher ${i + 2}` : `Open ₱50 voucher ${i + 2}`, url }))
+      }
+   };
+};
+
+/** Daily nudges: earned but not claimed, or sent but no "I got it". */
+export const buildRewardNudgeMessage = (input: {
+   kind: 'unclaimed' | 'no_answer';
+   firstName: string | null;
+   locale: 'en' | 'fil';
+   amountPhp: number;
+}): RewardMessengerContent => {
+   const fil = input.locale === 'fil';
+   const hi = input.firstName ? ` ${input.firstName}` : '';
+   const amount = `₱${input.amountPhp}`;
+   if (input.kind === 'unclaimed') {
+      return {
+         text: fil
+            ? `🎁 Hi${hi}! May ${amount} food reward ka mula sa Moodeng (Jollibee, Chowking at iba pa). I-claim mo na sa app — 1 minuto lang.`
+            : `🎁 Hi${hi}! You earned a ${amount} food reward from Moodeng (Jollibee, Chowking and more). Claim it in the app — it takes 1 minute.`,
+         card: {
+            title: fil ? `May ${amount} reward ka! 🎁` : `You have a ${amount} reward! 🎁`,
+            subtitle: fil ? 'Buksan ang Moodeng para i-claim' : 'Open Moodeng to claim it',
+            button: { title: fil ? 'I-claim ang reward' : 'Claim my reward', url: DASHBOARD_URL }
+         }
+      };
+   }
+   return {
+      text: fil
+         ? `👋 Hi${hi}! Natanggap mo na ba ang ${amount} food voucher mo? Pindutin ang "I got it" sa app — o sabihin mo lang dito kung may problema.`
+         : `👋 Hi${hi}! Did your ${amount} food voucher arrive? Tap "I got it" in the app — or just tell us here if something went wrong.`,
+      card: {
+         title: fil ? 'Natanggap mo na ba?' : 'Did it arrive?',
+         subtitle: fil ? `Ang ${amount} food voucher mo` : `Your ${amount} food voucher`,
+         button: { title: fil ? 'Buksan ang Moodeng' : 'Open Moodeng', url: DASHBOARD_URL }
+      }
+   };
+};
+
+/** Send it on Messenger. Never throws; 'sent' or why not ('no_contact' = never linked Messenger). */
+export const messageBorrower = async (facebook: MessengerContact | null, content: RewardMessengerContent): Promise<'sent' | string> => {
+   if (!facebook?.contactId) return 'no_contact';
+   const result = await sendMessengerMessage(facebook.contactId, content);
+   return result.ok ? 'sent' : (result.reason ?? 'send_failed');
+};
+
+/** One line for the admin card: did the bot reach them? */
+export const messengerOutcomeLine = (outcome: 'sent' | string) =>
+   outcome === 'sent'
+      ? '💬 Messenger: told them ✓'
+      : outcome === 'no_contact'
+        ? '💬 Messenger: not linked — only the email went out'
+        : `💬 Messenger: didn't go through (${outcome === 'send_failed' ? 'likely outside the 24h window' : outcome}) — tap 💬 to message them`;
 
 /** Telegram line when the borrower answers "Did your Moo-meal arrive?". */
 export const buildVoucherReceiptMessage = (claim: VoucherClaimRow & { received_at?: string | null }) => {
@@ -112,6 +263,10 @@ export const buildVoucherReceiptMessage = (claim: VoucherClaimRow & { received_a
 };
 
 export type VoucherDigestPerson = {
+   userId?: string;
+   messengerContactId?: string | null;
+   // Set by the digest run: what the bot's Messenger nudge did today.
+   nudge?: 'sent' | 'failed' | null;
    name: string;
    username: string | null;
    facebook: string | null;
@@ -129,7 +284,8 @@ const digestLine = (person: VoucherDigestPerson) => {
    const fb = person.facebook ? `FB: ${person.facebook}` : person.messenger ? 'Messenger ✓' : 'no FB';
    const count = person.vouchers > 1 ? ` (${person.vouchers})` : '';
    const days = person.days === null ? '' : ` · ${person.days === 0 ? 'today' : `${person.days}d`}`;
-   return `• ${who} · ${peso(person.amountPhp)}${count} · ${fb}${days}`;
+   const nudge = person.nudge === 'sent' ? ' · 🤖 bot nudged' : person.nudge === 'failed' ? " · 🤖 bot couldn't reach" : '';
+   return `• ${who} · ${peso(person.amountPhp)}${count} · ${fb}${days}${nudge}`;
 };
 
 const digestSection = (title: string, people: VoucherDigestPerson[]) => {
@@ -150,7 +306,28 @@ export const buildVoucherDigest = (digest: VoucherDigest, linksLeft: number | nu
    ].filter(Boolean);
    const stock = linksLeft === null ? '' : `\n\n₱50 Xoxo links left: ${linksLeft}${linksLeft <= 5 ? ' — restock soon' : ''}`;
    if (!sections.length) return `🧾 Daily rewards check: nothing waiting — everyone has claimed and confirmed. 🎉${stock}`;
-   return `🧾 Daily rewards check\n\n${sections.join('\n\n')}${stock}`;
+   const tap = Object.values(digest).some((people) => (people ?? []).some((p) => p.messengerContactId)) ? '\n\nTap 💬 below to message someone yourself.' : '';
+   return `🧾 Daily rewards check\n\n${sections.join('\n\n')}${stock}${tap}`;
+};
+
+const DIGEST_BUTTONS = 40;
+
+/** 💬 buttons under the digest, two per row: one per person with Messenger, most urgent first. */
+export const buildVoucherDigestKeyboard = (digest: VoucherDigest) => {
+   const seen = new Set<string>();
+   const buttons: Array<{ text: string; url: string }> = [];
+   for (const bucket of ['not_arrived', 'pending', 'unclaimed', 'no_answer'] as const) {
+      for (const person of digest[bucket] ?? []) {
+         const id = person.messengerContactId;
+         if (!id || seen.has(id) || buttons.length >= DIGEST_BUTTONS) continue;
+         seen.add(id);
+         const label = (person.facebook ?? person.name).split(/\s+/).slice(0, 2).join(' ');
+         buttons.push({ text: `💬 ${label}`, url: messengerChatUrl(id) });
+      }
+   }
+   const rows: Array<Array<{ text: string; url: string }>> = [];
+   for (let i = 0; i < buttons.length; i += 2) rows.push(buttons.slice(i, i + 2));
+   return rows;
 };
 
 // The after-state header of a decided claim's card.
@@ -216,7 +393,7 @@ const GIFT_MESSAGE = 'Salamat for repaying on time! — Moodeng Credit';
 const loadClaim = async (supabase: SupabaseClient, claimId: string) => {
    const { data } = await supabase
       .from('voucher_claims')
-      .select('id, status, reward, amount_php, brand, full_name, email, bitrefill_invoice_id, users(email)')
+      .select('id, user_id, status, reward, amount_php, brand, full_name, email, bitrefill_invoice_id, users(email)')
       .eq('id', claimId)
       .maybeSingle();
    return data;
@@ -275,7 +452,12 @@ const sendViaBitrefill = async (supabase: SupabaseClient, claim: any, admin: str
    if (codeError) console.error('voucher code not recorded', claim.id, codeError.message);
 
    const why = claim.brand === 'grabmart' ? 'they picked GrabMart' : 'Xoxo link stock was empty';
-   const summary = `✅ ${peso(amountPhp)} ${bought.product} voucher (${why}) bought on Bitrefill and emailed by Bitrefill to ${email} · by ${admin}`;
+   const facebook = await loadMessengerContact(supabase, claim.user_id);
+   const told = await messageBorrower(
+      facebook,
+      buildRewardSentMessage({ firstName: facebook?.firstName ?? null, locale: facebook?.locale ?? 'en', amountPhp, reward: claim.reward, links: [], product: bought.product })
+   );
+   const summary = `✅ ${peso(amountPhp)} ${bought.product} voucher (${why}) bought on Bitrefill and emailed by Bitrefill to ${email} · by ${admin}\n${messengerOutcomeLine(told)}`;
    const stamp: CardStamp = { header: voucherStampHeader('sent', sent), detail: summary, by: admin };
    await stampDecisionCards(supabase, 'voucher', claim.id, stamp);
    return { ok: true, summary, stamp };
@@ -324,7 +506,12 @@ export const sendVoucherCode = async (supabase: SupabaseClient, claimId: string,
 
    const remaining = Number(data.remaining ?? 0);
    const stock = `${remaining} ₱50 link${remaining === 1 ? '' : 's'} left${remaining <= LOW_STOCK ? ' ⚠️ restock soon' : ''}`;
-   const summary = `✅ ${peso(data.amount_php)} food voucher (${links.length} Xoxo link${links.length === 1 ? '' : 's'}) emailed to ${email} · by ${admin} · ${stock}`;
+   const facebook = await loadMessengerContact(supabase, claim.user_id);
+   const told = await messageBorrower(
+      facebook,
+      buildRewardSentMessage({ firstName: facebook?.firstName ?? null, locale: facebook?.locale ?? 'en', amountPhp: Number(data.amount_php), reward: String(data.reward), links })
+   );
+   const summary = `✅ ${peso(data.amount_php)} food voucher (${links.length} Xoxo link${links.length === 1 ? '' : 's'}) emailed to ${email} · by ${admin} · ${stock}\n${messengerOutcomeLine(told)}`;
    const stamp: CardStamp = { header: voucherStampHeader('sent', data), detail: summary, by: admin };
    await stampDecisionCards(supabase, 'voucher', claimId, stamp);
    return { ok: true, summary, stamp };
