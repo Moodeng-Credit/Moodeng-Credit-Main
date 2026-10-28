@@ -7,6 +7,7 @@ import {
    buildRewardSentMessage,
    buildVoucherDigest,
    buildVoucherDigestKeyboard,
+   buildVoucherReceiptMessage,
    messengerChatButton,
    messengerOutcomeLine,
    parseVoucherCallback,
@@ -130,4 +131,31 @@ Deno.test('digest: bot nudge marks and one 💬 button per Messenger person', ()
    const keyboard = buildVoucherDigestKeyboard(digest);
    assertEquals(keyboard.length, 1);
    assertEquals(keyboard[0].map((b) => b.text), ['💬 Ana Cruz']);
+});
+
+Deno.test('reward message: a Giftaway food eGift is one button and says where it works', () => {
+   const msg = buildRewardSentMessage({ firstName: 'Ana', locale: 'en', amountPhp: 100, reward: 'tier_rising', links: ['https://gft.ph/x'], product: 'Jollibee Group', provider: 'giftaway' });
+   assertStringIncludes(msg.text, 'Your ₱100 food reward is here');
+   assertStringIncludes(msg.text, 'Burger King');
+   assertStringIncludes(msg.text, 'Giftaway also texted and emailed it');
+   assertEquals(msg.card.button.url, 'https://gft.ph/x');
+   assertEquals(msg.card.moreButtons, undefined);
+
+   const grab = buildRewardSentMessage({ firstName: null, locale: 'fil', amountPhp: 50, reward: 'tier_rising', links: ['https://gft.ph/g'], product: 'Grab', provider: 'giftaway' });
+   assertStringIncludes(grab.text, 'Grab app');
+   assertStringIncludes(grab.text, 'Na-text at na-email');
+});
+
+Deno.test('receipt message says whether Giftaway resent it', () => {
+   const claim = { id: CLAIM_ID, reward: 'tier_rising', amount_php: 50, brand: 'food', full_name: 'Ana Cruz', mobile: '09171234567', email: 'a@b.co', status: 'sent', created_at: '', received_at: null };
+   assertStringIncludes(buildVoucherReceiptMessage(claim, true), 'Giftaway resent the eGift');
+   assertStringIncludes(buildVoucherReceiptMessage(claim, false), "Giftaway resend didn't go through");
+   assertStringIncludes(buildVoucherReceiptMessage(claim), 'resend from Admin');
+});
+
+Deno.test('digest shows Giftaway credits', () => {
+   const empty = { unclaimed: [], pending: [], not_arrived: [], no_answer: [] };
+   assertStringIncludes(buildVoucherDigest(empty, 6, 320), 'Giftaway credits: ₱320.00 — top up soon');
+   assertStringIncludes(buildVoucherDigest(empty, null, 1200), '\n\nGiftaway credits: ₱1200.00');
+   assert(!buildVoucherDigest(empty, 6).includes('Giftaway'));
 });

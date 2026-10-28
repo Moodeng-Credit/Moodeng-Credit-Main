@@ -23,6 +23,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { openInAdminButton, sendAdminCard, stampDecisionCards } from '../_shared/adminCards.ts';
+import { getGiftawayBalance, getGiftawayConfig, parseGiftawaySource, resendGiftawayOrder } from '../_shared/giftaway.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import {
    buildVoucherCallback,
@@ -152,9 +153,15 @@ serve(async (req) => {
             .select('id', { count: 'exact', head: true })
             .is('assigned_at', null)
             .eq('amount_php', 50);
+         const giftaway = await getGiftawayConfig(supabase);
+         const giftawayCredits = giftaway ? await getGiftawayBalance(giftaway) : null;
          await nudgeOnMessenger(supabase, digest as VoucherDigest);
          const keyboard = buildVoucherDigestKeyboard(digest as VoucherDigest);
-         await sendTelegramMessage(chatId, buildVoucherDigest(digest as VoucherDigest, linksLeft ?? null), keyboard.length ? { inlineKeyboard: keyboard } : {});
+         await sendTelegramMessage(
+            chatId,
+            buildVoucherDigest(digest as VoucherDigest, linksLeft ?? null, giftawayCredits),
+            keyboard.length ? { inlineKeyboard: keyboard } : {}
+         );
          return json({ ok: true });
       }
 
@@ -194,9 +201,17 @@ serve(async (req) => {
 
       if (event === 'receipt') {
          const chatButton = claim.received_at ? null : messengerChatButton(await loadMessengerContact(supabase, claim.user_id), claim.full_name);
+         // "Didn't get it" on a Giftaway eGift: have Giftaway send it again straight away.
+         let resent: boolean | null = null;
+         if (!claim.received_at) {
+            const { data: codes } = await supabase.from('voucher_codes').select('source').eq('claim_id', claim.id).like('source', 'giftaway %').limit(1);
+            const order = parseGiftawaySource(codes?.[0]?.source);
+            const giftaway = order ? await getGiftawayConfig(supabase) : null;
+            if (order && giftaway) resent = await resendGiftawayOrder(giftaway, order.referenceNo, order.orderId);
+         }
          await sendTelegramMessage(
             chatId,
-            buildVoucherReceiptMessage(claim as unknown as VoucherClaimRow & { received_at?: string | null }),
+            buildVoucherReceiptMessage(claim as unknown as VoucherClaimRow & { received_at?: string | null }, resent),
             chatButton ? { inlineKeyboard: [[chatButton]] } : {}
          );
          return json({ ok: true });
