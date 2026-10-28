@@ -298,7 +298,8 @@ export const normalizeWhatsAppPhone = (raw: unknown): string | null => {
 export type WhatsAppTemplate = {
    name: string;
    language: { code: string };
-   components?: Array<{ type: 'header' | 'body' | 'button'; parameters: Array<{ type: 'text'; text: string }> }>;
+   // A URL button's dynamic suffix goes in a 'button' component with sub_type 'url' and its index.
+   components?: Array<{ type: 'header' | 'body' | 'button'; sub_type?: 'url'; index?: string; parameters: Array<{ type: 'text'; text: string }> }>;
 };
 
 /** Sends an approved template to a SendPulse WhatsApp contact. Never throws. */
