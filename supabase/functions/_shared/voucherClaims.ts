@@ -360,25 +360,42 @@ export const PAGE_INBOX_URL = 'https://business.facebook.com/latest/inbox/all?as
 /**
  * "How to reach them": everyone in the check, once, split into people we can message on Facebook
  * (they messaged our Page, so their chat is in the Page inbox under their Facebook name) and people
- * who never connected Facebook (email / phone only).
+ * who never connected Facebook (email / phone only). Each line ends with what they're still owed:
+ * claimed but not received (not sent yet, or said it didn't arrive), else sent but not confirmed.
  */
 const reachSection = (digest: VoucherDigest) => {
+   const keyOf = (person: VoucherDigestPerson) => person.userId ?? person.name;
+   const notReceived = new Map<string, number>();
+   const unconfirmed = new Map<string, number>();
+   for (const person of [...(digest.pending ?? []), ...(digest.not_arrived ?? [])]) {
+      notReceived.set(keyOf(person), (notReceived.get(keyOf(person)) ?? 0) + Number(person.amountPhp));
+   }
+   for (const person of digest.no_answer ?? []) {
+      unconfirmed.set(keyOf(person), (unconfirmed.get(keyOf(person)) ?? 0) + Number(person.amountPhp));
+   }
+   const owed = (key: string) => {
+      const parts = [
+         notReceived.get(key) ? `${peso(notReceived.get(key))} claimed, NOT received yet` : null,
+         unconfirmed.get(key) ? `${peso(unconfirmed.get(key))} sent, not confirmed` : null
+      ].filter(Boolean);
+      return parts.length ? ` · ${parts.join(' + ')}` : '';
+   };
    const seen = new Set<string>();
    const onFacebook: string[] = [];
    const offFacebook: string[] = [];
    for (const bucket of ['not_arrived', 'pending', 'unclaimed', 'no_answer'] as const) {
       for (const person of digest[bucket] ?? []) {
-         const key = person.userId ?? person.name;
+         const key = keyOf(person);
          if (seen.has(key)) continue;
          seen.add(key);
          const email = person.email && !isPlaceholderEmail(person.email) ? person.email : null;
          if (person.facebook) {
-            onFacebook.push(`• Type "${person.facebook}" — that's ${person.name}`);
+            onFacebook.push(`• Type "${person.facebook}" — that's ${person.name}${owed(key)}`);
          } else if (person.messenger) {
-            onFacebook.push(`• ${person.name} — on Messenger, name not saved: tap their 💬 below`);
+            onFacebook.push(`• ${person.name} — on Messenger, name not saved: tap their 💬 below${owed(key)}`);
          } else {
             const how = [person.phone ? `📞 ${person.phone}` : null, email ? `✉️ ${email}` : null].filter(Boolean).join(' · ') || 'no contact saved — open 👤';
-            offFacebook.push(`• ${person.name} — ${how}`);
+            offFacebook.push(`• ${person.name} — ${how}${owed(key)}`);
          }
       }
    }
