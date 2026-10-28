@@ -3,7 +3,8 @@
 //   writePrepNote: the "get to know you" answers → a short prep note for the call host
 // Both are help, never decisions: nothing here scores a borrower or books anything.
 
-const MODEL = 'deepseek-v4-flash';
+// DeepSeek's current name for Flash (2026-08); 'deepseek-v4-flash' is a retired alias billed the same.
+const MODEL = 'deepseek-flash';
 const TIMEOUT_MS = 8_000;
 
 const ask = async (system: string, user: string, maxTokens: number): Promise<{ data: Record<string, unknown> | null; ms: number; error?: string }> => {
