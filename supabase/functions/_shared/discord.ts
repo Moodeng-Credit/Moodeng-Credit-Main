@@ -184,3 +184,68 @@ export const renderDiscordStamped = (original: DiscordPayload, stamp: DiscordSta
    const body = room > 0 ? cut((original.content ?? '').trim(), room) : '';
    return { content: cut([head, body, foot].filter(Boolean).join('\n\n'), DISCORD_CONTENT_LIMIT) };
 };
+
+// ---- Mirroring a Telegram post -----------------------------------------------------------------
+
+type MirrorButton = { text: string; url?: string; callback_data?: string; copy_text?: { text: string } };
+
+/**
+ * A Telegram message + its inline keyboard as Discord markdown: one line per button row, link
+ * buttons as [label](<url>) (angle brackets stop link previews), copy buttons as the text itself,
+ * callback buttons (✅ Send code …) left out — those only work in Telegram.
+ */
+export const telegramToDiscordContent = (text: string, keyboard: MirrorButton[][] = []) => {
+   const rows = keyboard
+      .map((row) =>
+         row
+            .map((button) => {
+               if (button.url) return `[${button.text}](<${button.url}>)`;
+               if (button.copy_text) return `📋 “${button.copy_text.text}”`;
+               return null;
+            })
+            .filter(Boolean)
+            .join(' · ')
+      )
+      .filter(Boolean);
+   return rows.length ? `${text}\n\n${rows.join('\n')}` : text;
+};
+
+/** Split into ≤2000-character messages at line breaks (a single over-long line is cut). */
+export const splitDiscordContent = (content: string, limit = DISCORD_CONTENT_LIMIT): string[] => {
+   const chunks: string[] = [];
+   let current = '';
+   for (const line of content.split('\n')) {
+      const piece = line.length > limit ? cut(line, limit) : line;
+      if (current && current.length + 1 + piece.length > limit) {
+         chunks.push(current);
+         current = piece;
+      } else {
+         current = current ? `${current}\n${piece}` : piece;
+      }
+   }
+   if (current) chunks.push(current);
+   return chunks;
+};
+
+/** Post a Telegram message (and keyboard) to a Discord webhook. Never throws. */
+export const mirrorToDiscord = async (webhookUrl: string | null | undefined, text: string, keyboard?: MirrorButton[][]): Promise<boolean> => {
+   if (!webhookUrl) return false;
+   try {
+      for (const content of splitDiscordContent(telegramToDiscordContent(text, keyboard))) {
+         const res = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            // flags 4 = no link previews.
+            body: JSON.stringify({ content, flags: 4, ...NO_MENTIONS })
+         });
+         if (!res.ok) {
+            console.error(`[discord] mirror responded ${res.status}`);
+            return false;
+         }
+      }
+      return true;
+   } catch (err) {
+      console.error('[discord] mirror failed', err instanceof Error ? err.message : err);
+      return false;
+   }
+};

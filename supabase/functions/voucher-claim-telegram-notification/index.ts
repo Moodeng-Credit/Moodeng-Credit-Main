@@ -16,6 +16,7 @@
 //                                                the unclaimed / unconfirmed on Messenger (once per amount, see
 //                                                voucher_messenger_nudges), then posts the digest with 💬 / 👤 buttons.
 //                                                nudge: false skips the Messenger nudges (list only).
+// Every post to the rewards group is also mirrored to Discord #rewards (toDiscord).
 //   { event: 'announce', text }                  internal: post a team notice to the rewards group (e.g. how a new
 //                                                rewards feature works), from the same bot as the cards.
 //   { claimId, event: 'admin_send' }             admin Vouchers page → Send code (admin session required).
@@ -24,6 +25,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { openInAdminButton, sendAdminCard, stampDecisionCards } from '../_shared/adminCards.ts';
+import { mirrorToDiscord } from '../_shared/discord.ts';
 import { getGiftawayBalance, getGiftawayConfig, parseGiftawaySource, resendGiftawayOrder } from '../_shared/giftaway.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import {
@@ -60,6 +62,13 @@ const getSetting = async (supabase: SupabaseClient, key: string) => {
    const { data, error } = await supabase.from('telegram_bot_settings').select('value').eq('key', key).maybeSingle();
    if (error) throw new Error(error.message);
    return data?.value as string | undefined;
+};
+
+// Everything posted to the Telegram rewards group is mirrored to Discord #rewards
+// (vault DISCORD_REWARDS_WEBHOOK_URL via discord_rewards_webhook()); unset = Telegram only.
+const toDiscord = async (supabase: SupabaseClient, text: string, keyboard?: Parameters<typeof mirrorToDiscord>[2]) => {
+   const { data } = await supabase.rpc('discord_rewards_webhook');
+   await mirrorToDiscord(typeof data === 'string' ? data : null, text, keyboard);
 };
 
 const bearer = (req: Request) => {
@@ -142,6 +151,7 @@ serve(async (req) => {
          const chatId = (await getSetting(supabase, 'voucher_alert_chat_id')) ?? (await getSetting(supabase, 'kyc_alert_chat_id'));
          if (!chatId) return json({ error: 'voucher_alert_chat_id / kyc_alert_chat_id is not set' }, 500);
          const sent = (await sendTelegramMessage(chatId, text.trim())) as { message_id?: number } | undefined;
+         await toDiscord(supabase, text.trim());
          return json({ ok: true, messageId: sent?.message_id ?? null });
       }
 
@@ -160,11 +170,9 @@ serve(async (req) => {
          const giftawayCredits = giftaway ? await getGiftawayBalance(giftaway) : null;
          if (nudge !== false) await nudgeOnMessenger(supabase, digest as VoucherDigest);
          const keyboard = buildVoucherDigestKeyboard(digest as VoucherDigest);
-         await sendTelegramMessage(
-            chatId,
-            buildVoucherDigest(digest as VoucherDigest, linksLeft ?? null, giftawayCredits),
-            keyboard.length ? { inlineKeyboard: keyboard } : {}
-         );
+         const digestText = buildVoucherDigest(digest as VoucherDigest, linksLeft ?? null, giftawayCredits);
+         await sendTelegramMessage(chatId, digestText, keyboard.length ? { inlineKeyboard: keyboard } : {});
+         await toDiscord(supabase, digestText, keyboard);
          return json({ ok: true });
       }
 
@@ -212,11 +220,9 @@ serve(async (req) => {
             const giftaway = order ? await getGiftawayConfig(supabase) : null;
             if (order && giftaway) resent = await resendGiftawayOrder(giftaway, order.referenceNo, order.orderId);
          }
-         await sendTelegramMessage(
-            chatId,
-            buildVoucherReceiptMessage(claim as unknown as VoucherClaimRow & { received_at?: string | null }, resent),
-            chatButton ? { inlineKeyboard: [[chatButton]] } : {}
-         );
+         const receiptText = buildVoucherReceiptMessage(claim as unknown as VoucherClaimRow & { received_at?: string | null }, resent);
+         await sendTelegramMessage(chatId, receiptText, chatButton ? { inlineKeyboard: [[chatButton]] } : {});
+         await toDiscord(supabase, receiptText, chatButton ? [[chatButton]] : []);
          return json({ ok: true });
       }
       const username = (Array.isArray(claim.users) ? claim.users[0]?.username : (claim.users as { username?: string | null } | null)?.username) ?? null;
@@ -227,28 +233,27 @@ serve(async (req) => {
       // Send it now; the card only asks for a tap when that didn't work.
       const sent = claim.status === 'pending' ? await sendVoucherCode(supabase, claim.id, 'auto') : null;
       if (sent?.ok) {
-         await sendAdminCard(supabase, chatId, {
-            kind: 'voucher',
-            refId: claim.id,
-            text: buildVoucherSentCard(row, sent.summary, facebook),
-            keyboard: [...(chatButton ? [[chatButton]] : []), [openInAdminButton(claim.user_id, username)]]
-         });
+         const sentCard = { text: buildVoucherSentCard(row, sent.summary, facebook), keyboard: [...(chatButton ? [[chatButton]] : []), [openInAdminButton(claim.user_id, username)]] };
+         await sendAdminCard(supabase, chatId, { kind: 'voucher', refId: claim.id, ...sentCard });
+         await toDiscord(supabase, sentCard.text, sentCard.keyboard);
          return json({ ok: true, sent: true });
       }
 
+      const claimCard = buildVoucherClaimCard(row, sent?.summary ?? null, facebook);
+      const links = [...(chatButton ? [[chatButton]] : []), [openInAdminButton(claim.user_id, username)]];
       await sendAdminCard(supabase, chatId, {
          kind: 'voucher',
          refId: claim.id,
-         text: buildVoucherClaimCard(row, sent?.summary ?? null, facebook),
+         text: claimCard,
          keyboard: [
             [
                { text: '✅ Send code', callback_data: buildVoucherCallback('sent', claim.id) },
                { text: '❌ Reject', callback_data: buildVoucherCallback('rejected', claim.id) }
             ],
-            ...(chatButton ? [[chatButton]] : []),
-            [openInAdminButton(claim.user_id, username)]
+            ...links
          ]
       });
+      await toDiscord(supabase, `${claimCard}\n\n→ Send or reject it in the Telegram rewards group (✅ Send code / ❌ Reject) or Admin → Food vouchers.`, links);
       return json({ ok: true, sent: false });
    } catch (err) {
       console.error('voucher-claim-telegram-notification failed', err instanceof Error ? err.message : err);
