@@ -21,6 +21,8 @@ import type {
 } from '../_shared/trustPointRewards.ts';
 
 import { isInternalRequest } from '../_shared/internalAuth.ts';
+import { sendTelegramMessage } from '../_shared/telegram.ts';
+import { bangkokWeek, buildTeamLoansDue, type TeamDueLoan } from '../_shared/teamLoansDue.ts';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -38,6 +40,53 @@ type TrustPointRewardContext = {
    loansByBorrowerId: Map<string, TrustPointRewardLoan[]>;
    completedMilestoneIdsByBorrowerId: Map<string, Set<string>>;
    milestoneDefinitions: TrustPointMilestoneDefinition[];
+};
+
+// { event: 'team_due', force? }: the weekly team list of unpaid loans due this week + still overdue,
+// to telegram_bot_settings.loans_due_chat_id (cron Mondays 09:00 Bangkok). Once per week: the week
+// sent is remembered in loans_due_last_week, so a repeat call that week does nothing unless forced.
+const sendTeamLoansDue = async (supabase: SupabaseClient, force: boolean) => {
+   const now = new Date();
+   const week = bangkokWeek(now);
+   const { data: settings } = await supabase.from('telegram_bot_settings').select('key, value').in('key', ['loans_due_chat_id', 'loans_due_last_week']);
+   const setting = (key: string) => (settings ?? []).find((row: { key: string }) => row.key === key)?.value as string | undefined;
+   const chatId = setting('loans_due_chat_id');
+   if (!chatId) return { ok: false, error: 'loans_due_chat_id is not set' };
+   if (!force && setting('loans_due_last_week') === week.key) return { ok: true, skipped: 'already sent this week' };
+
+   const { data: loans, error } = await supabase
+      .from('loans')
+      .select('due_date, total_repayment_amount, repaid_amount, on_hold_since, borrower_user_id')
+      .eq('loan_status', 'Lent')
+      .eq('repayment_status', 'Unpaid')
+      .not('is_test', 'is', true)
+      .is('refunded_at', null)
+      .is('offplatform_settled_at', null)
+      .not('due_date', 'is', null)
+      .lt('due_date', week.end.toISOString());
+   if (error) throw new Error(error.message);
+   const ids = [...new Set((loans ?? []).map((loan: { borrower_user_id: string | null }) => loan.borrower_user_id).filter(Boolean))];
+   const { data: users } = ids.length
+      ? await supabase.from('users').select('id, display_name, username, facebook_name, messenger_psid').in('id', ids)
+      : { data: [] };
+   const byId = new Map((users ?? []).map((user: { id: string }) => [user.id, user]));
+   const rows: TeamDueLoan[] = (loans ?? []).map((loan: any) => {
+      const user: any = byId.get(loan.borrower_user_id) ?? {};
+      return {
+         dueDate: loan.due_date,
+         owedUsd: getLoanOutstandingAmount(loan),
+         name: String(user.display_name ?? '').trim() || user.username || 'Someone',
+         username: user.username ?? null,
+         facebookName: user.facebook_name ?? null,
+         messengerContactId: user.messenger_psid ?? null,
+         onHold: Boolean(loan.on_hold_since)
+      };
+   });
+
+   const { text, keyboard } = buildTeamLoansDue(rows, now);
+   await sendTelegramMessage(chatId, text, keyboard.length ? { inlineKeyboard: keyboard } : {});
+   await supabase.from('telegram_bot_settings').upsert({ key: 'loans_due_last_week', value: week.key }, { onConflict: 'key' });
+   return { ok: true, week: week.key, loans: rows.length };
 };
 
 const loadBorrowers = async (supabase: SupabaseClient, userIds: string[]): Promise<Map<string, BorrowerRecord>> => {
@@ -201,6 +250,15 @@ serve(async (req) => {
    }
 
    const body = await req.json().catch(() => ({}));
+   if (body.event === 'team_due') {
+      const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+      try {
+         return new Response(JSON.stringify(await sendTeamLoansDue(svc, body.force === true)), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      } catch (err) {
+         console.error('team_due failed', err instanceof Error ? err.message : err);
+         return new Response(JSON.stringify({ error: err instanceof Error ? err.message : 'failed' }), { status: 500, headers: corsHeaders });
+      }
+   }
    const referenceDate = body.referenceDate ? new Date(body.referenceDate) : new Date();
    const lookbackDays = Number.parseInt(Deno.env.get('WEEKLY_DIGEST_LOOKBACK_DAYS') ?? `${body.lookbackDays ?? 7}`, 10);
    const sentAfter = new Date(referenceDate);
