@@ -22,7 +22,7 @@ import {
    wasCelebrated
 } from '@/views/dashboard/components/connectKit';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
-import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
+import VideoCallStep, { ConfirmLaterNotice } from '@/views/dashboard/components/VideoCallStep';
 
 // PART 1 of Connect → Approve → Apply (docs/HANDOFF_BORROWER_VERIFICATION.md §13) — shown in the
 // 'approval' and 'call' borrower flows (never in 'open').
@@ -46,6 +46,9 @@ import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
 const MIN_REASON = 10;
 // The call is 15 min; after start + 30 the waiting screen stops saying "see you on the call".
 const CALL_OVER_AFTER_MS = 30 * 60 * 1000;
+// Mirrors video-call-reminders: the "I'll be there" button opens 1h before the call (plus a cron
+// tick); unconfirmed calls are cancelled 30 min before.
+const CONFIRM_OPENS_MS = 65 * 60 * 1000;
 const MAX_REASON = 500;
 
 // Tap to start the sentence — most borrowers need one of these, and typing on a phone is friction.
@@ -531,6 +534,8 @@ export function LoanAccessPendingCard({
    }, []);
    const startsMs = meeting?.startsAt ? Date.parse(meeting.startsAt) : NaN;
    const callOver = mode === 'call' && !Number.isNaN(startsMs) && now > startsMs + CALL_OVER_AFTER_MS;
+   const needsConfirm = Boolean(meeting?.confirmToken) && !meeting?.confirmed && !callOver;
+   const confirmOpen = needsConfirm && !Number.isNaN(startsMs) && now >= startsMs - CONFIRM_OPENS_MS;
 
    return (
       <div className="connect-ui flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-center text-md-b2 text-md-heading">
@@ -543,12 +548,10 @@ export function LoanAccessPendingCard({
                      ? 'The team is approving you — we’ll message you the moment you can apply.'
                      : 'The team is unlocking your loan request — we’ll message you the moment it’s ready.'
                   : mode === 'call'
-                    ? meeting?.confirmToken && !meeting.confirmed
-                       ? context === 'kyc'
-                          ? 'You’re booked! Tap “I’ll be there” so we keep your spot — you can apply right after the call.'
-                          : 'You’re booked! Tap “I’ll be there” so we keep your spot — you can apply right after the call.'
-                       : context === 'kyc'
-                         ? 'Thank you for confirming! You can apply right after the call.'
+                    ? confirmOpen
+                       ? 'Your call is in under an hour — tap “I’ll be there” now to keep it.'
+                       : needsConfirm
+                         ? 'You’re booked! You can apply right after the call.'
                          : 'Thank you for confirming! You can apply right after the call.'
                     : 'Thanks for reaching out! We usually reply within a day on Messenger.'
             }
@@ -581,14 +584,17 @@ export function LoanAccessPendingCard({
                      <span className="text-[15px] text-[#7b6b8c]">Your time is in your email</span>
                   )}
                   {/* Same "I'll be there" as the Messenger button (video-call-confirm) — so confirming,
-                      and keeping the slot from being released, never depends on Messenger alone. */}
-                  {meeting?.confirmToken && !meeting.confirmed && !callOver ? (
+                      and keeping the call from being cancelled, never depends on Messenger alone.
+                      It only appears in the hour before; until then, the reminder to come back. */}
+                  {confirmOpen && meeting?.confirmToken ? (
                      <a
-                        className="flex min-h-[44px] w-full items-center justify-center rounded-full border-2 border-[#6b55f7] bg-white text-[16px] font-semibold text-[#6b55f7] active:scale-[0.98]"
+                        className="flex min-h-[48px] w-full items-center justify-center rounded-full bg-[#2f9e44] text-[17px] font-bold text-white shadow-[0_6px_16px_rgba(47,158,68,0.35)] active:scale-[0.98]"
                         href={`${(import.meta.env.VITE_SUPABASE_URL ?? '').trim().replace(/\/$/, '')}/functions/v1/video-call-confirm?t=${encodeURIComponent(meeting.confirmToken)}`}
                      >
                         ✅ I&apos;ll be there
                      </a>
+                  ) : needsConfirm ? (
+                     <ConfirmLaterNotice />
                   ) : meeting?.confirmed && !callOver ? (
                      <span className="text-[14px] font-semibold text-[#2f7a3a]">✅ You confirmed — see you there!</span>
                   ) : null}

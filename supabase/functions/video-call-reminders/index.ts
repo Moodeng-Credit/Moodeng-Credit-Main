@@ -10,20 +10,20 @@ import {
    buildConfirmUrl,
    formatCallTime,
    formatCallTimeForTeam,
-   sendKeepSpotMessenger,
+   sendConfirmAskMessenger,
    sendReminderMessenger,
    sendStartingMessenger,
    sendWaitingMessenger
 } from '../_shared/videoCall.ts';
 import { autoMarkNoShow, closeReleasedCall, promptAdminsForAttendance } from '../_shared/videoCallOutcome.ts';
-import { RUNG, type Rung, shouldReleaseSlot, skipsDayBeforeReminder, skipsKeepSpot, targetRung } from './lib.ts';
+import { CONFIRM_CLOSES_MIN, RUNG, type Rung, shouldReleaseSlot, skipsConfirmAsk, skipsDayBeforeReminder, targetRung } from './lib.ts';
 import { cancelCalBooking } from '../_shared/calcomCancel.ts';
 import { cancelCallButton } from '../_shared/callCancel.ts';
 import { isInternalRequest } from '../_shared/internalAuth.ts';
 import { postDiscord } from '../_shared/discord.ts';
 
 // Cron-driven (every 5 min) no-show defence for booked video calls. The full ladder — day-before,
-// keep-your-spot, hour-before / slot release, starting now, we're waiting, admin prompt, auto
+// confirm-or-cancel (1h before) / cancel unconfirmed (30 min before), starting now, we're waiting, admin prompt, auto
 // no-show — and its timing rules live in ./lib.ts. Channels: web push, Telegram (when connected +
 // account-activity on) and Messenger (SendPulse, only inside Meta's 24h window).
 //
@@ -72,7 +72,8 @@ const COLUMNS =
 // deno-lint-ignore no-explicit-any
 type Svc = any;
 
-const push = async (svc: Svc, u: ReminderUser, title: string, body: string, url: string) => {
+// Returns true when at least one device accepted it.
+const push = async (svc: Svc, u: ReminderUser, title: string, body: string, url: string): Promise<boolean> => {
    try {
       const buildPayload = (_locale: PushLocale): PushPayload => ({
          type: 'video_call_reminder',
@@ -82,9 +83,10 @@ const push = async (svc: Svc, u: ReminderUser, title: string, body: string, url:
          tag: 'video-call-reminder',
          requireInteraction: true
       });
-      await sendPushToUser(svc, u.id, buildPayload, { urgency: 'high' });
+      return (await sendPushToUser(svc, u.id, buildPayload, { urgency: 'high' })).sent > 0;
    } catch (err) {
       console.error('video-call-reminders: push failed for', u.id, err instanceof Error ? err.message : err);
+      return false;
    }
 };
 
@@ -108,7 +110,7 @@ const joinButton = (u: ReminderUser): TelegramInlineKeyboard | undefined =>
    u.video_call_join_url ? [[{ text: '🎥 Join the call', url: u.video_call_join_url }]] : undefined;
 
 const cancelSlot = (host: string | null, uid: string) =>
-   cancelCalBooking(host, uid, 'Not confirmed — the slot was released so another borrower can book it.');
+   cancelCalBooking(host, uid, 'Not confirmed in the hour before — the call was cancelled and the slot released.');
 
 const BOOKING_FIELDS = ['video_call_scheduled_at', 'video_call_starts_at', 'video_call_host', 'video_call_booking_uid', 'video_call_join_url', 'video_call_meeting_id'] as const;
 
@@ -159,24 +161,27 @@ const runRung = async (svc: Svc, u: ReminderUser, rung: Rung, zoomActive: boolea
          logMessenger(u, await sendReminderMessenger(u, 1));
          return 'day';
       }
-      case RUNG.KEEP_SPOT: {
-         if (u.video_call_confirmed_at || skipsKeepSpot(u.video_call_scheduled_at, startsAt) || !u.video_call_confirm_token) return null;
+      case RUNG.CONFIRM: {
+         // Already confirmed, or booked so late the booking counts as the confirmation: plain reminder.
+         if (u.video_call_confirmed_at || skipsConfirmAsk(u.video_call_scheduled_at, startsAt) || !u.video_call_confirm_token) {
+            await hourBefore(svc, u);
+            return 'hour';
+         }
          const confirmUrl = buildConfirmUrl(u.video_call_confirm_token);
-         const body = `Still coming at ${at}? Tap to keep your spot — unconfirmed spots are released 1 hour before.`;
-         await push(svc, u, 'Keep your Moodeng call?', body, confirmUrl);
-         const viaTelegram = await telegram(u, `Keep your Moodeng call?\n\n${body}`, [[{ text: "✅ I'll be there", url: confirmUrl }]]);
-         const viaMessenger = await sendKeepSpotMessenger(u);
+         const body = `Your call is in 1 hour — ${at}. Tap ✅ I'll be there within ${60 - CONFIRM_CLOSES_MIN} minutes, or the call is cancelled automatically.`;
+         const viaPush = await push(svc, u, 'Confirm your Moodeng call ✅', body, confirmUrl);
+         const viaTelegram = await telegram(u, `Confirm your Moodeng call ✅\n\n${body}`, [[{ text: "✅ I'll be there", url: confirmUrl }]]);
+         const viaMessenger = await sendConfirmAskMessenger(u);
          logMessenger(u, viaMessenger);
-         // Only a message that verifiably landed makes the slot releasable later.
-         if (viaMessenger.ok || viaTelegram) {
+         // Only an ask that verifiably landed somewhere makes the call cancellable at the deadline.
+         if (viaMessenger.ok || viaTelegram || viaPush) {
             await svc.from('users').update({ video_call_keep_spot_asked_at: new Date().toISOString() }).eq('id', u.id);
          }
-         return 'keep_spot';
+         return 'confirm_ask';
       }
-      case RUNG.HOUR: {
+      case RUNG.RELEASE: {
          if (shouldReleaseSlot(u) && (await releaseSlot(svc, u))) return 'released';
-         await hourBefore(svc, u);
-         return 'hour';
+         return null;
       }
       case RUNG.STARTING: {
          // The admins' Showed up / No-show card goes out now, not 20 min in, so a borrower can be

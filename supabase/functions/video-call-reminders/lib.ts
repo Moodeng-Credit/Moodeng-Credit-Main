@@ -4,9 +4,10 @@
 //
 //   DAY          ≤ 24h before   "coming up" nudge (skipped if booked < 20h ahead — the booking
 //                               confirmation just went out)
-//   KEEP_SPOT    ≤ 2h before    unconfirmed only: "Still coming? Tap to keep your spot"
-//   HOUR         ≤ ~1h before   unconfirmed + asked above → slot released; otherwise "starts in
-//                               under an hour"
+//   CONFIRM      ≤ 1h before    unconfirmed: "Tap ✅ I'll be there in the next 30 min or the call is
+//                               cancelled" (the booking confirmation + page told them to expect it);
+//                               already confirmed / booked under 75 min ahead: "starts in under an hour"
+//   RELEASE      ≤ 30 min before still unconfirmed after that ask → call cancelled, slot freed
 //   STARTING     ≤ 5 min before "Starting now 👋 tap to join" (skipped if Zoom already saw them);
 //                               admins get the Showed up / No-show card now, to decide right after
 //   WAITING      ≥ 3 min after  Zoom wired up and hasn't seen them: "We're ready for you!"
@@ -19,8 +20,8 @@
 export const RUNG = {
    NONE: 0,
    DAY: 1,
-   KEEP_SPOT: 2,
-   HOUR: 3,
+   CONFIRM: 2,
+   RELEASE: 3,
    STARTING: 4,
    WAITING: 5,
    PROMPT: 6,
@@ -28,15 +29,20 @@ export const RUNG = {
 } as const;
 export type Rung = (typeof RUNG)[keyof typeof RUNG];
 
+// The confirm window: the ✅ button goes out 1h before; no tap by 30 min before → cancelled.
+// The borrower page (ConnectStep) mirrors these numbers.
+export const CONFIRM_OPENS_MIN = 60;
+export const CONFIRM_CLOSES_MIN = 30;
+
 // minutesUntil: minutes from now to the call's start (negative once it has started).
 export const targetRung = (minutesUntil: number): Rung => {
    if (minutesUntil <= -60) return RUNG.AUTO_NO_SHOW;
    if (minutesUntil <= -20) return RUNG.PROMPT;
    if (minutesUntil <= -3) return RUNG.WAITING;
    if (minutesUntil <= 5) return RUNG.STARTING;
-   // 70 = the 60-min target plus a cron tick of slack, so "under an hour" is never skipped.
-   if (minutesUntil <= 70) return RUNG.HOUR;
-   if (minutesUntil <= 125) return RUNG.KEEP_SPOT;
+   if (minutesUntil <= CONFIRM_CLOSES_MIN) return RUNG.RELEASE;
+   // 65 = the 60-min target plus a cron tick of slack, so the ask is never skipped.
+   if (minutesUntil <= CONFIRM_OPENS_MIN + 5) return RUNG.CONFIRM;
    if (minutesUntil <= 24 * 60) return RUNG.DAY;
    return RUNG.NONE;
 };
@@ -55,12 +61,12 @@ export const DAY_BEFORE_MIN_LEAD_HOURS = 20;
 export const skipsDayBeforeReminder = (scheduledAtIso: string | null, startsAtMs: number): boolean =>
    leadMs(scheduledAtIso, startsAtMs) < DAY_BEFORE_MIN_LEAD_HOURS * 60 * 60 * 1000;
 
-// Booked less than 3h ahead: they only just saw the "Will you make it?" button in the booking
-// confirmation — asking again (and releasing the slot over it) would be pushy.
-export const skipsKeepSpot = (scheduledAtIso: string | null, startsAtMs: number): boolean =>
-   leadMs(scheduledAtIso, startsAtMs) < 3 * 60 * 60 * 1000;
+// Booked under 75 min ahead: they booked inside (or right before) the confirm window, so the
+// booking itself is the confirmation — no ask, and nothing to cancel.
+export const skipsConfirmAsk = (scheduledAtIso: string | null, startsAtMs: number): boolean =>
+   leadMs(scheduledAtIso, startsAtMs) < 75 * 60 * 1000;
 
-// Release an unconfirmed slot only when the "keep your spot" ask verifiably reached them.
+// Release an unconfirmed slot only when the confirm ask was made (video_call_keep_spot_asked_at).
 export const shouldReleaseSlot = (u: {
    video_call_confirmed_at: string | null;
    video_call_keep_spot_asked_at: string | null;

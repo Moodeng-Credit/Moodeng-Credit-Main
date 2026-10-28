@@ -336,7 +336,7 @@ export const closeReleasedCall = async (svc: SupabaseClient, userId: string, whe
    });
    await notifyBorrower(svc, borrower as BorrowerRow, 'spot_released');
 
-   const text = `🗓️ Freed ${who(borrower as BorrowerRow)}'s slot (${whenForTeam}) — they never confirmed after two asks. They've been asked to pick a new time.`;
+   const text = `🗓️ Freed ${who(borrower as BorrowerRow)}'s slot (${whenForTeam}) — they didn't confirm in the hour before, so the call was cancelled. They've been asked to pick a new time.`;
    try {
       const chat = await getCallChangesChatId(svc);
       if (chat) await sendTelegramMessage(chat, text);

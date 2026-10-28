@@ -546,5 +546,10 @@ export const vietnameseCoverageG: Record<string, string> = {
    "Your Instant Wallet needs to reconnect": "Instant Wallet của bạn cần kết nối lại",
    "Nothing was sent. Sign out and sign back in, or open Moodeng in another browser like Chrome, then try again.": "Chưa có khoản nào được gửi. Hãy đăng xuất rồi đăng nhập lại, hoặc mở Moodeng bằng trình duyệt khác như Chrome, rồi thử lại.",
    "Your payment didn't go through": "Thanh toán của bạn chưa thành công",
-   "My Instant Wallet payment failed": "Thanh toán từ Instant Wallet của tôi bị lỗi"
+   "My Instant Wallet payment failed": "Thanh toán từ Instant Wallet của tôi bị lỗi",
+   // VideoCallStep / ConnectStep: confirm the call 1 hour before
+   "Confirm 1 hour before your call": "Xác nhận 1 giờ trước cuộc gọi",
+   "We'll send you an “I'll be there” button on Messenger, and it shows up right here. Tap it, or the call is cancelled automatically.": "Chúng tôi sẽ gửi nút “I'll be there” qua Messenger, và nút cũng hiện ngay tại đây. Hãy nhấn nút, nếu không cuộc gọi sẽ tự động bị hủy.",
+   "Your call is in under an hour — tap “I’ll be there” now to keep it.": "Còn chưa đầy một giờ nữa là đến cuộc gọi — nhấn “I’ll be there” ngay để giữ cuộc gọi.",
+   "You’re booked! You can apply right after the call.": "Bạn đã đặt lịch! Bạn có thể đăng ký ngay sau cuộc gọi."
 };

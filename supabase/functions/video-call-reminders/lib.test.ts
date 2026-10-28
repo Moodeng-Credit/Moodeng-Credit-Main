@@ -1,6 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { RUNG, shouldReleaseSlot, skipsDayBeforeReminder, skipsKeepSpot, targetRung } from './lib.ts';
+import { RUNG, shouldReleaseSlot, skipsDayBeforeReminder, skipsConfirmAsk, targetRung } from './lib.ts';
 
 const H = 60 * 60 * 1000;
 const start = Date.parse('2026-09-25T08:00:00Z');
@@ -21,8 +21,11 @@ Deno.test('an unknown booking time never suppresses a reminder', () => {
 Deno.test('the ladder: each window maps to its rung', () => {
    assertEquals(targetRung(30 * 60), RUNG.NONE);
    assertEquals(targetRung(20 * 60), RUNG.DAY);
-   assertEquals(targetRung(120), RUNG.KEEP_SPOT);
-   assertEquals(targetRung(65), RUNG.HOUR);
+   assertEquals(targetRung(120), RUNG.DAY);
+   assertEquals(targetRung(65), RUNG.CONFIRM);
+   assertEquals(targetRung(45), RUNG.CONFIRM);
+   assertEquals(targetRung(30), RUNG.RELEASE);
+   assertEquals(targetRung(10), RUNG.RELEASE);
    assertEquals(targetRung(4), RUNG.STARTING);
    assertEquals(targetRung(-2), RUNG.STARTING);
    assertEquals(targetRung(-5), RUNG.WAITING);
@@ -30,9 +33,9 @@ Deno.test('the ladder: each window maps to its rung', () => {
    assertEquals(targetRung(-61), RUNG.AUTO_NO_SHOW);
 });
 
-Deno.test('no "keep your spot" ask when they booked under 3h ago', () => {
-   assertEquals(skipsKeepSpot(new Date(start - 2 * H).toISOString(), start), true);
-   assertEquals(skipsKeepSpot(new Date(start - 5 * H).toISOString(), start), false);
+Deno.test('no confirm ask when they booked inside the last 75 minutes before the call', () => {
+   assertEquals(skipsConfirmAsk(new Date(start - 0.5 * H).toISOString(), start), true);
+   assertEquals(skipsConfirmAsk(new Date(start - 2 * H).toISOString(), start), false);
 });
 
 Deno.test('a slot is released only if unconfirmed AND the ask verifiably reached them', () => {
