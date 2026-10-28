@@ -5,11 +5,12 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 
 import { LocalizationProvider } from '@/i18n';
+import { screenCoverage } from '@/i18n/coverage/fil';
 import { EMPTY_REWARDS, isValidInviteCode, normalizeInviteCode, parseMyRewards } from '@/lib/friendReferrals';
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 import DashboardV2Hero from '@/views/dashboard-v2/components/DashboardV2Hero';
 import { MilestonePopup } from '@/views/dashboard-v2/components/DashboardV2Popups';
-import { LoanSummarySection, MilestonesSection, UpcomingDuesSection } from '@/views/dashboard-v2/components/DashboardV2Sections';
+import { LoanSummarySection, MilestonesSection, UpcomingDuesSection, VoucherFollowUpCard } from '@/views/dashboard-v2/components/DashboardV2Sections';
 import {
    buildInviteLink,
    getCreditLevelProgress,
@@ -185,6 +186,44 @@ describe('dashboard v2 sample states render', () => {
          )
       ).toContain('Post your first loan request');
       expect(render(createElement(LoanSummarySection, { model: SAMPLE_STATES.defaulted }))).toContain('3.00');
+   });
+
+   it('shows how to use a sent voucher, then asks if it worked', () => {
+      const claim = SAMPLE_STATES.voucherSent.rewards.claims[0];
+      const food = render(createElement(VoucherFollowUpCard, { claim, onAnswer: () => undefined }));
+      expect(food).toContain('Your Moo-meal is here!');
+      expect(food).toContain('How to use it');
+      expect(food).toContain('Show the code at the counter. Enjoy!');
+      expect(food).toContain('Open my voucher');
+      expect(food).toContain('I got it ✅');
+
+      const grab = render(createElement(VoucherFollowUpCard, { claim: { ...claim, brand: 'grabmart' as const }, onAnswer: () => undefined }));
+      expect(grab).toContain('Open the Grab app and go to Mart.');
+      expect(grab).not.toContain('Show the code at the counter');
+
+      // Once confirmed, the steps go away.
+      const enjoyed = render(
+         createElement(VoucherFollowUpCard, { claim: { ...claim, receivedAt: new Date().toISOString() }, onAnswer: () => undefined })
+      );
+      expect(enjoyed).toContain('Enjoy your Moo-meal!');
+      expect(enjoyed).not.toContain('How to use it');
+   });
+
+   it('has Filipino copy for every voucher how-to line', () => {
+      for (const phrase of [
+         'Your Moo-meal is here!',
+         'How to use it',
+         'Tap "Open my voucher" below.',
+         'Pick Jollibee, Chowking, Greenwich, Mang Inasal or Red Ribbon.',
+         'Your code shows up on the screen.',
+         'Show the code at the counter. Enjoy!',
+         'Tap "Show my GrabMart code" below, then Copy.',
+         'Open the Grab app and go to Mart.',
+         'Use the code at checkout. Your email has the exact steps.',
+         'Did it work?'
+      ]) {
+         expect(screenCoverage[phrase], phrase).toBeTruthy();
+      }
    });
 });
 

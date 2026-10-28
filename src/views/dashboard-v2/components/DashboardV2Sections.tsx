@@ -442,8 +442,8 @@ function VoucherLinks({ claim }: { claim: VoucherClaimSummary }) {
 }
 
 /**
- * After a Moo-Menu claim: "cooking" while it's pending, then "Did it arrive?" with I got it /
- * Didn't get it, then "Enjoy your Moo-meal!" (or a help line if it didn't arrive).
+ * After a Moo-Menu claim: "cooking" while it's pending, then "Your Moo-meal is here!" with how-to steps,
+ * the voucher and I got it / Didn't get it, then "Enjoy your Moo-meal!" (or a help line if it didn't arrive).
  */
 export function VoucherFollowUpCard({
    claim,
@@ -509,15 +509,17 @@ export function VoucherFollowUpCard({
    return (
       <section className={clsx(surface, 'flex-col items-stretch')} style={yellow} aria-label="Your voucher">
          <div className="flex items-center gap-3">
-            <DesignImage src={DASHBOARD_V2_ASSETS.mooMenuChef} className="h-14 w-14 shrink-0 object-contain" />
+            <DesignImage src={DASHBOARD_V2_ASSETS.mooEnjoy} className="h-14 w-14 shrink-0 object-contain" />
             <div className="min-w-0 flex-1">
-               <p className="text-[18px] font-black italic leading-6 text-[#3c8248]">Did your Moo-meal arrive?</p>
+               <p className="text-[18px] font-black italic leading-6 text-[#3c8248]">Your Moo-meal is here!</p>
                <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">
-                  We emailed your ₱{claim.amountPhp} {brandName} voucher. You can also open it here.
+                  ₱{claim.amountPhp} {brandName} voucher · we emailed it too
                </p>
             </div>
          </div>
+         <VoucherHowTo brand={claim.brand} />
          <VoucherLinks claim={claim} />
+         <p className="pt-1 text-center text-[14px] font-bold leading-[18px] text-[#6f7d1d]">Did it work?</p>
          <div className="flex gap-2">
             <button
                type="button"
@@ -537,6 +539,40 @@ export function VoucherFollowUpCard({
             </button>
          </div>
       </section>
+   );
+}
+
+// One plain sentence per step so each translates as its own phrase.
+const VOUCHER_STEPS: Record<VoucherClaimSummary['brand'], string[]> = {
+   food: [
+      'Tap "Open my voucher" below.',
+      'Pick Jollibee, Chowking, Greenwich, Mang Inasal or Red Ribbon.',
+      'Your code shows up on the screen.',
+      'Show the code at the counter. Enjoy!'
+   ],
+   grabmart: [
+      'Tap "Show my GrabMart code" below, then Copy.',
+      'Open the Grab app and go to Mart.',
+      'Use the code at checkout. Your email has the exact steps.'
+   ]
+};
+
+/** "How to use it": numbered steps for first-timers who've never redeemed a voucher link. */
+export function VoucherHowTo({ brand }: { brand: VoucherClaimSummary['brand'] }) {
+   return (
+      <div className="rounded-[10px] bg-white/70 px-3 py-2.5">
+         <p className="text-[14px] font-bold leading-[18px] text-[#3c8248]">How to use it</p>
+         <ol className="mt-1.5 flex flex-col gap-1.5">
+            {VOUCHER_STEPS[brand].map((step, index) => (
+               <li key={step} className="flex items-start gap-2 text-[14px] font-medium leading-[18px] text-[#594d65]">
+                  <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#4aa256] text-[11px] font-bold text-white">
+                     {index + 1}
+                  </span>
+                  <span className="min-w-0 flex-1">{step}</span>
+               </li>
+            ))}
+         </ol>
+      </div>
    );
 }
 
