@@ -72,16 +72,22 @@ Deno.test('daily digest: sections, Facebook, days, stock and the all-clear', () 
       { unclaimed: [person], pending: [], not_arrived: [], no_answer: [{ ...person, name: 'Jun', username: null, facebook: null, amountPhp: '50.00', vouchers: 1, days: 3 }] },
       4
    );
-   // Only people who claimed are listed; the unclaimed are one count line.
-   assertStringIncludes(text, '🎁 Not claimed yet: 1 person, ₱100');
+   // Only people who claimed are listed; the unclaimed are left out entirely.
+   assertEquals(text.includes('Not claimed'), false);
    assertEquals(text.includes('• Ana Cruz'), false);
-   assertStringIncludes(text, '• Jun · ₱50 · Messenger ✓ · 3d');
+   assertStringIncludes(text, '❌ CLAIMED, but has NOT GOTTEN the voucher: nobody ✅');
+   assertStringIncludes(text, '📬 GOT the voucher (link sent) — but has NOT opened / used it yet (no "I got it") — 1 person, ₱50');
+   assertStringIncludes(text, '• Jun · ₱50 · Messenger ✓ · sent 3d ago');
    assertStringIncludes(text, '₱50 Xoxo links left: 4 — restock soon');
-   assertEquals(text.includes('Claimed, not sent'), false);
-   assertStringIncludes(buildVoucherDigest({ unclaimed: [], pending: [], not_arrived: [], no_answer: [] }, 20), 'all confirmed');
+   assertStringIncludes(buildVoucherDigest({ unclaimed: [], pending: [], not_arrived: [], no_answer: [] }, 20), 'everyone who claimed has their voucher');
    const onlyUnclaimed = buildVoucherDigest({ unclaimed: [person], pending: [], not_arrived: [], no_answer: [] }, 20);
-   assertStringIncludes(onlyUnclaimed, 'all confirmed');
-   assertStringIncludes(onlyUnclaimed, 'Not claimed yet: 1 person');
+   assertStringIncludes(onlyUnclaimed, 'everyone who claimed has their voucher');
+   assertEquals(onlyUnclaimed.includes('Ana'), false);
+   const owed = buildVoucherDigest({ unclaimed: [], pending: [{ ...person, days: 2 }], not_arrived: [], no_answer: [] }, 20);
+   assertStringIncludes(owed, '❌ CLAIMED, but has NOT GOTTEN the voucher — 1 person, ₱100');
+   assertStringIncludes(owed, 'claimed 2d ago · NOT SENT YET');
+   const lost = buildVoucherDigest({ unclaimed: [], pending: [], not_arrived: [{ ...person, days: 1 }], no_answer: [] }, 20);
+   assertStringIncludes(lost, "sent 1d ago · SAID IT DIDN'T ARRIVE — resend");
 });
 
 
@@ -132,11 +138,11 @@ Deno.test('digest: bot nudge marks and one 💬 button per Messenger person', ()
    };
    const text = buildVoucherDigest(digest, 6);
    assertStringIncludes(text, '🤖 bot nudged');
-   assertStringIncludes(text, '📋 copies a ready message');
+   assertStringIncludes(text, '🟢 WhatsApp opens a chat with the message already typed');
    const keyboard = buildVoucherDigestKeyboard(digest);
    assertEquals(keyboard.length, 3);
    assertEquals(keyboard[0].map((b) => b.text), ['📥 Open the Moodeng Page inbox']);
-   assertEquals(keyboard[1].map((b) => b.text), ['💬 Ana Cruz', '📋 Copy message', '👤']);
+   assertEquals(keyboard[1].map((b) => b.text), ['💬 Ana Cruz', '📋', '👤']);
    const copy = keyboard[1][1] as { copy_text: { text: string } };
    assertStringIncludes(copy.copy_text.text, 'We sent your ₱50 food voucher');
    assertEquals(keyboard[2].map((b) => b.text), ['📋 Copy message · Ben', '👤']);
@@ -212,4 +218,21 @@ Deno.test('nudge drafts fit Telegram and match the situation', () => {
    assertStringIncludes(buildNudgeDraft('pending', { ...person, facebook: null }), 'Hi Ana!');
    const long = buildNudgeDraft('no_answer', { ...person, email: `${'x'.repeat(240)}@example.com` });
    assert(long.length <= 256);
+});
+
+Deno.test('WhatsApp links: PH and Indonesian numbers, message already typed', async () => {
+   const { whatsappUrl } = await import('./voucherClaims.ts');
+   assertEquals(whatsappUrl('09173197764', 'Hi!'), 'https://wa.me/639173197764?text=Hi!');
+   assertEquals(whatsappUrl('+63 991 362 3059', 'Hi'), 'https://wa.me/639913623059?text=Hi');
+   assertEquals(whatsappUrl('081910649183', 'Hi'), 'https://wa.me/6281910649183?text=Hi');
+   assertEquals(whatsappUrl('+62 895636700137', 'a b'), 'https://wa.me/62895636700137?text=a%20b');
+   assertEquals(whatsappUrl(null, 'Hi'), null);
+   assertEquals(whatsappUrl('12', 'Hi'), null);
+});
+
+Deno.test('digest keyboard: WhatsApp button for people with a phone', () => {
+   const person = { name: 'Nina Cruz', username: null, facebook: null, messenger: false, amountPhp: 100, vouchers: 2, days: 1, userId: 'u9', phone: '09171234567' };
+   const keyboard = buildVoucherDigestKeyboard({ unclaimed: [], pending: [], not_arrived: [], no_answer: [person] });
+   assertEquals(keyboard[1].map((b) => b.text), ['🟢 WhatsApp · Nina Cruz', '📋', '👤']);
+   assertStringIncludes((keyboard[1][0] as { url: string }).url, 'https://wa.me/639171234567?text=Hi%20Nina!');
 });
