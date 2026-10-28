@@ -416,7 +416,7 @@ export const buildVoucherDigest = (digest: VoucherDigest, linksLeft: number | nu
    const stock = `${linksLeft === null ? '' : `\n\n₱50 Xoxo links left: ${linksLeft}${linksLeft <= 5 ? ' — restock soon' : ''}`}${credits}`;
    if (!notGotten.length && !sent.length) return `🧾 Daily rewards check: everyone who claimed has their voucher and confirmed it. 🎉${stock}`;
    const tap = Object.values(claimed).some((people) => (people ?? []).length)
-      ? '\n\nButtons below: 🟢 WhatsApp opens a chat with the message already typed — just tap Send. 💬 opens their Messenger chat (SendPulse): tap 📋 first to copy the message, then paste. 📥 = Page inbox · 👤 = their account.'
+      ? '\n\nButtons below: 📤 sends them the ready message on Messenger (from the Moodeng Page) in one tap · 💬 opens their Messenger chat in SendPulse · 🟢 WhatsApp opens a chat with the message already typed — just tap Send · 📋 copies the message (no Messenger: paste into an email or text).'
       : '';
    const text = `🧾 Daily rewards check — people who claimed\n\n${sections.join('\n\n')}${reachSection(claimed)}${stock}${tap}`;
    // Telegram's limit is 4096 characters.
@@ -444,6 +444,38 @@ export const buildNudgeDraft = (bucket: keyof VoucherDigest, person: VoucherDige
    return text.length > 256 ? `${text.slice(0, 255)}…` : text;
 };
 
+// 📤 Send on Messenger: "vm:<user uuid>" (≤64 bytes), handled by telegram-webhook → sendNudgeOnMessenger.
+export const buildMessengerNudgeCallback = (userId: string) => `vm:${userId}`;
+
+export const parseMessengerNudgeCallback = (data?: string): { userId: string } | null => {
+   const match = (data ?? '').match(/^vm:([0-9a-f-]{36})$/i);
+   return match ? { userId: match[1] } : null;
+};
+
+/**
+ * 📤: send the person their ready message (the same one 📋 copies) on Messenger through SendPulse,
+ * worded from where they stand in today's check. Returns the line the team sees in Telegram.
+ */
+export const sendNudgeOnMessenger = async (supabase: SupabaseClient, userId: string, by: string): Promise<string> => {
+   const { data, error } = await supabase.rpc('voucher_daily_digest');
+   if (error) return `⚠️ Couldn't load the rewards list: ${error.message}`;
+   const digest = data as VoucherDigest;
+   for (const bucket of ['not_arrived', 'pending', 'no_answer'] as const) {
+      const person = (digest[bucket] ?? []).find((p) => p.userId === userId);
+      if (!person) continue;
+      const who = person.facebook ?? person.name;
+      if (!person.messengerContactId) return `⚠️ ${who} isn't on Messenger — use 🟢 WhatsApp or 📋.`;
+      const result = await sendMessengerMessage(person.messengerContactId, {
+         text: buildNudgeDraft(bucket, person),
+         card: { title: 'Your Moodeng reward 🎁', subtitle: 'Open Moodeng to see it', button: { title: 'Open Moodeng', url: DASHBOARD_URL } }
+      });
+      return result.ok
+         ? `✅ Sent on Messenger to ${who} · by ${by}`
+         : `⚠️ Couldn't send to ${who} on Messenger (${result.reason === 'send_failed' ? "they haven't messaged the Page in 24h" : result.reason}) — try 🟢 WhatsApp or 📋.`;
+   }
+   return '✅ Nothing to send — they already got their voucher and confirmed it.';
+};
+
 /**
  * wa.me link that opens a WhatsApp chat with this number and the message already typed. PH 09… → 639…,
  * Indonesian 08… → 628…; null when it doesn't look like a phone number.
@@ -461,8 +493,9 @@ export const whatsappUrl = (phone: string | null | undefined, text: string) => {
 
 /**
  * Buttons under the digest: 📥 the Page inbox, then one row per person who claimed (most urgent first) —
- * 💬 their Messenger chat in SendPulse (people who linked Messenger), 🟢 WhatsApp with the message
- * already typed (people with a phone), 📋 copies the ready message, 👤 their account in admin.
+ * 💬 their Messenger chat in SendPulse and 📤 sends them the ready message there in one tap (people
+ * who linked Messenger), 🟢 WhatsApp with the message already typed (people with a phone), 📋 copies
+ * the message for everyone else (email / text).
  */
 export const buildVoucherDigestKeyboard = (digest: VoucherDigest): TelegramInlineKeyboard => {
    const seen = new Set<string>();
@@ -477,11 +510,14 @@ export const buildVoucherDigestKeyboard = (digest: VoucherDigest): TelegramInlin
          const label = firstTwoWords(person.facebook ?? person.name);
          const row: TelegramInlineKeyboard[number] = [];
          const draft = buildNudgeDraft(bucket, person);
-         if (person.messengerContactId) row.push({ text: `💬 ${label}`, url: messengerChatUrl(person.messengerContactId) });
          const wa = whatsappUrl(person.phone, draft);
-         if (wa) row.push({ text: row.length ? '🟢 WhatsApp' : `🟢 WhatsApp · ${firstTwoWords(person.name)}`, url: wa });
-         row.push({ text: row.length ? '📋' : `📋 Copy message · ${firstTwoWords(person.name)}`, copy_text: { text: draft } });
-         if (person.userId) row.push({ text: '👤', url: adminUserUrl(person.userId, person.username) });
+         if (person.messengerContactId && person.userId) {
+            row.push({ text: `💬 ${label}`, url: messengerChatUrl(person.messengerContactId) });
+            row.push({ text: wa ? '📤 Send' : '📤 Send on Messenger', callback_data: buildMessengerNudgeCallback(person.userId) });
+         }
+         if (wa) row.push({ text: row.length ? '🟢 WhatsApp' : `🟢 WhatsApp · ${label}`, url: wa });
+         // No Messenger: the ready message to paste into an email or text.
+         if (!person.messengerContactId) row.push({ text: row.length ? '📋' : `📋 Copy message · ${label}`, copy_text: { text: draft } });
          if (count + row.length > DIGEST_BUTTONS) continue;
          count += row.length;
          rows.push(row);
