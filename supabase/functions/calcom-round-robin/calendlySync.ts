@@ -29,10 +29,22 @@ const run = async (svc: any, dryRun: boolean, host: SyncHost): Promise<SyncResul
    const me = await getJson(`${CALENDLY_BASE}/users/me`, calendly);
    const userUri = me.body?.resource?.uri;
    if (!userUri) return { ok: false, error: `calendly_me_${me.status}` };
-   const schedules = await getJson(`${CALENDLY_BASE}/user_availability_schedules?user=${encodeURIComponent(userUri)}`, calendly);
-   const list = (schedules.body?.collection ?? []) as Array<{ default?: boolean; timezone?: string; rules?: CalendlyRule[] }>;
-   const source = list.find((s) => s.default) ?? list[0];
-   if (!source?.rules?.length) return { ok: false, error: `calendly_schedule_${schedules.status}` };
+   // The hours of the host's bookable call event (its own schedule when it has one — George's
+   // "Video Interview" does), else their default schedule.
+   const types = await getJson(`${CALENDLY_BASE}/event_types?active=true&user=${encodeURIComponent(userUri)}`, calendly);
+   const typeList = (types.body?.collection ?? []) as Array<{ uri?: string; duration?: number }>;
+   const callType = typeList.find((t) => Number(t.duration) === 15) ?? typeList[0];
+   let source: { timezone?: string; rules?: CalendlyRule[] } | undefined;
+   if (callType?.uri) {
+      const own = await getJson(`${CALENDLY_BASE}/event_type_availability_schedules?event_type=${encodeURIComponent(callType.uri)}`, calendly);
+      source = own.body?.collection?.[0]?.availability_rule;
+   }
+   if (!source?.rules?.length) {
+      const schedules = await getJson(`${CALENDLY_BASE}/user_availability_schedules?user=${encodeURIComponent(userUri)}`, calendly);
+      const list = (schedules.body?.collection ?? []) as Array<{ default?: boolean; timezone?: string; rules?: CalendlyRule[] }>;
+      source = list.find((s) => s.default) ?? list[0];
+      if (!source?.rules?.length) return { ok: false, error: `calendly_schedule_${schedules.status}` };
+   }
 
    // The schedule the host's call event uses — its own, or their default when it has none.
    const eventTypeId = await resolveEventTypeId(calKey);

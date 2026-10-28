@@ -113,7 +113,8 @@ export const calendlyToCalSchedule = (rules: CalendlyRule[], timeZone: string, t
       const intervals = rule.intervals ?? [];
       if (rule.type === 'wday' && rule.wday) {
          for (const iv of intervals) {
-            const key = `${calTime(iv.from)}-${calTime(iv.to)}`;
+            // A window that runs to midnight ends at "00:00" in Calendly; Cal.com needs 23:59.
+            const key = `${calTime(iv.from)}-${iv.to === '00:00' ? '23:59' : calTime(iv.to)}`;
             daysByWindow.set(key, [...(daysByWindow.get(key) ?? []), capitalize(rule.wday)]);
          }
       } else if (rule.type === 'date' && rule.date && rule.date >= today) {
