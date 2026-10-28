@@ -4,9 +4,7 @@ import { Check } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
-import { saveChosenUsername, UsernameField, useUsernameStatus } from '@/components/onboarding/UsernameField';
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
-import { hasGeneratedUsername, suggestUsername } from '@/lib/phoneAuth';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { updateBorrowerContext, updateUser } from '@/store/slices/authSlice';
@@ -24,7 +22,7 @@ import { BorrowerContextLoanStep, emptyBorrowerContext, mapBorrowerContextForSav
 // Android back swipe on page 2 used to drop them on the Messenger step with every answer wiped, and
 // one borrower refilled the bio three times before giving up (Oct 2026 replay).
 
-type BioDraft = { context: BorrowerContextState; profileName: string; username?: string };
+type BioDraft = { context: BorrowerContextState; profileName: string };
 
 const draftKey = (userId: string) => `md_onboarding_bio:${userId}`;
 
@@ -36,8 +34,7 @@ const readDraft = (userId: string): BioDraft | null => {
       if (!parsed.context) return null;
       return {
          context: { ...emptyBorrowerContext, ...parsed.context, cashGaps: parsed.context.cashGaps ?? [] },
-         profileName: parsed.profileName ?? '',
-         username: parsed.username
+         profileName: parsed.profileName ?? ''
       };
    } catch {
       return null;
@@ -68,14 +65,6 @@ export default function OnboardingBio({ user, onBack, onDone }: { user: User; on
    const [profileName, setProfileName] = useState(
       draft?.profileName || user.displayName || user.facebookName || (user.username?.startsWith('moodeng-') ? '' : user.username) || ''
    );
-   // Phone sign-ups still on their made-up moodeng-ab12cd handle also pick a username here, on page 1.
-   // It follows their name until they type in it, and is saved before page 2.
-   const needsUsername = hasGeneratedUsername(user.username);
-   const [usernameInput, setUsernameInput] = useState<string | null>(draft?.username ?? null);
-   const username = usernameInput ?? suggestUsername(profileName);
-   const { status: usernameStatus, problem: usernameProblemText } = useUsernameStatus(needsUsername ? username : '', user.id);
-   const [usernameError, setUsernameError] = useState('');
-   const [isSavingUsername, setIsSavingUsername] = useState(false);
    // Page 2 needs page 1's answer — a reload or shared link on &bio=2 without it starts at page 1.
    const page: 1 | 2 = searchParams.get('bio') === '2' && context.incomeSetup ? 2 : 1;
    const goToPage2 = () => {
@@ -96,11 +85,11 @@ export default function OnboardingBio({ user, onBack, onDone }: { user: User; on
 
    useEffect(() => {
       try {
-         window.localStorage.setItem(draftKey(user.id), JSON.stringify({ context, profileName, username: usernameInput ?? undefined } satisfies BioDraft));
+         window.localStorage.setItem(draftKey(user.id), JSON.stringify({ context, profileName } satisfies BioDraft));
       } catch {
          // Storage blocked — the answers just won't survive leaving the page.
       }
-   }, [context, profileName, usernameInput, user.id]);
+   }, [context, profileName, user.id]);
    const [error, setError] = useState('');
    const [isSaving, setIsSaving] = useState(false);
    const [showAvatarModal, setShowAvatarModal] = useState(false);
@@ -111,25 +100,6 @@ export default function OnboardingBio({ user, onBack, onDone }: { user: User; on
    const canFinish = Boolean(
       context.incomeSetup && context.paydayWindow && context.monthlyIncome && context.monthlyExpenses && context.cashGaps.length > 0
    );
-
-   // Page 1 → 2. An empty username box keeps the made-up handle (they can change it later).
-   const handleNextPage = async () => {
-      if (!context.incomeSetup || isSavingUsername) return;
-      if (needsUsername && username) {
-         if (usernameStatus === 'invalid' || usernameStatus === 'taken' || usernameStatus === 'checking') {
-            setUsernameError(usernameStatus === 'checking' ? 'One moment — still checking that username.' : 'Pick a different username first.');
-            return;
-         }
-         setIsSavingUsername(true);
-         const saveError = await saveChosenUsername(dispatch, username);
-         setIsSavingUsername(false);
-         if (saveError) {
-            setUsernameError(saveError);
-            return;
-         }
-      }
-      goToPage2();
-   };
 
    const handleFinish = async () => {
       if (!canFinish || savingRef.current) return;
@@ -185,7 +155,7 @@ export default function OnboardingBio({ user, onBack, onDone }: { user: User; on
             context={context}
             currentAvatarBackground={user.avatarBackground}
             currentAvatarUrl={user.avatarUrl}
-            isSavingProfile={isSaving || isSavingUsername}
+            isSavingProfile={isSaving}
             isSubmitting={false}
             monthlyExpenses={context.monthlyExpenses ?? ''}
             monthlyIncome={context.monthlyIncome ?? ''}
@@ -208,7 +178,9 @@ export default function OnboardingBio({ user, onBack, onDone }: { user: User; on
             }
             onMonthlyExpensesSelect={(v) => setContext((prev) => ({ ...prev, monthlyExpenses: v }))}
             onMonthlyIncomeSelect={(v) => setContext((prev) => ({ ...prev, monthlyIncome: v }))}
-            onNextPage={() => void handleNextPage()}
+            onNextPage={() => {
+               if (context.incomeSetup) goToPage2();
+            }}
             onOtherIncomeChange={(v) => setContext((prev) => ({ ...prev, otherIncome: v }))}
             onPaydaySelect={(value) => setContext((current) => ({ ...current, paydayWindow: value }))}
             onProfessionChange={(v) => setContext((prev) => ({ ...prev, profession: v }))}
@@ -221,20 +193,6 @@ export default function OnboardingBio({ user, onBack, onDone }: { user: User; on
             profileName={profileName}
             profileSaveError={error}
             submitLabel="Continue"
-            usernameSlot={
-               needsUsername ? (
-                  <UsernameField
-                     onChange={(value) => {
-                        setUsernameInput(value);
-                        setUsernameError('');
-                     }}
-                     problem={usernameProblemText}
-                     saveError={usernameError}
-                     status={usernameStatus}
-                     value={username}
-                  />
-               ) : null
-            }
          />
          <AvatarUploadModal
             currentAvatar={user.avatarUrl}

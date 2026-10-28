@@ -11,7 +11,14 @@ import { AUTH_NEXT_STORAGE_KEY } from '@/lib/authNext';
 import { PENDING_INVITE_STORAGE_KEY } from '@/lib/friendReferrals';
 import { LAST_USED_AUTH_STORAGE_KEY } from '@/lib/lastUsedAuth';
 import { PENDING_SHARED_REQUEST_KEY } from '@/lib/pendingSharedRequest';
-import { generatePhoneUsername, guestPlaceholderEmail, phonePlaceholderEmail, SMS_TEST_FLAG_KEY } from '@/lib/phoneAuth';
+import {
+   generatePhoneUsername,
+   guestPlaceholderEmail,
+   hasGeneratedUsername,
+   phonePlaceholderEmail,
+   SMS_TEST_FLAG_KEY,
+   usernameCandidatesFromName
+} from '@/lib/phoneAuth';
 import { recordSessionIp } from '@/lib/recordSessionIp';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
@@ -840,6 +847,22 @@ export const fetchUserProfiles = createAsyncThunk('auth/fetchUserProfiles', asyn
    return { users: (profiles || []).map((profile) => mapSupabaseRowToUser(profile)) };
 });
 
+/**
+ * Phone sign-ups start on a made-up moodeng-ab12cd handle and are never asked for a username; the
+ * first time they save a name, swap it for one built from the name (mariasantos, mariasantos2…).
+ * Best effort: on any failure they keep the handle and the next name save tries again.
+ */
+const replaceGeneratedUsername = async (userId: string, displayName: string) => {
+   const supabase = supabaseClient();
+   const { data: row } = await supabase.from('users').select('username').eq('id', userId).maybeSingle();
+   if (!hasGeneratedUsername(row?.username)) return;
+   for (const candidate of usernameCandidatesFromName(displayName)) {
+      const { error } = await supabase.from('users').update({ username: candidate }).eq('id', userId).like('username', 'moodeng-%');
+      // 23505 = users.username UNIQUE: taken, try the next one.
+      if (error?.code !== '23505') return;
+   }
+};
+
 export const updateUser = createAsyncThunk('auth/updateUser', async (userData: UpdateUserPayload) => {
    const supabase = supabaseClient();
    const {
@@ -917,6 +940,7 @@ export const updateUser = createAsyncThunk('auth/updateUser', async (userData: U
       throw updateError;
    }
 
+   if (userData.displayName && !userData.username) await replaceGeneratedUsername(user.id, userData.displayName);
    if (userData.walletAddress) clarityEvent('wallet_connected');
    return await fetchCurrentUserProfile();
 });
