@@ -1,6 +1,13 @@
 import { assert, assertEquals, assertStringIncludes } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { buildVoucherCallback, buildVoucherCodeEmail, parseVoucherCallback, voucherDecidedBy, voucherStampHeader } from './voucherClaims.ts';
+import {
+   buildVoucherCallback,
+   buildVoucherCodeEmail,
+   buildVoucherDigest,
+   parseVoucherCallback,
+   voucherDecidedBy,
+   voucherStampHeader
+} from './voucherClaims.ts';
 
 const CLAIM_ID = '0274e575-7921-4a25-b4f3-722fba3c2da6';
 
@@ -51,3 +58,18 @@ Deno.test('receipt message: got it vs didn’t arrive, naming the pick', async (
    assertStringIncludes(issue, "didn't arrive");
    assertStringIncludes(issue, '🛒 GrabMart');
 });
+
+Deno.test('daily digest: sections, Facebook, days, stock and the all-clear', () => {
+   const person = { name: 'Ana Cruz', username: 'ana.c', facebook: 'Ana C', messenger: true, amountPhp: 100, vouchers: 2, days: null };
+   const text = buildVoucherDigest(
+      { unclaimed: [person], pending: [], not_arrived: [], no_answer: [{ ...person, name: 'Jun', username: null, facebook: null, amountPhp: '50.00', vouchers: 1, days: 3 }] },
+      4
+   );
+   assertStringIncludes(text, '🎁 Earned, not claimed yet (nudge them to claim) — 1 person, ₱100');
+   assertStringIncludes(text, '• Ana Cruz (@ana.c) · ₱100 (2) · FB: Ana C');
+   assertStringIncludes(text, '• Jun · ₱50 · Messenger ✓ · 3d');
+   assertStringIncludes(text, '₱50 Xoxo links left: 4 — restock soon');
+   assertEquals(text.includes('Claimed, not sent'), false);
+   assertStringIncludes(buildVoucherDigest({ unclaimed: [], pending: [], not_arrived: [], no_answer: [] }, 20), 'nothing waiting');
+});
+
