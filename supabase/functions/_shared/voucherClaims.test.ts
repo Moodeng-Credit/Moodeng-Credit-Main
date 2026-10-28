@@ -127,12 +127,22 @@ Deno.test('digest: bot nudge marks and one 💬 button per Messenger person', ()
    };
    const text = buildVoucherDigest(digest, 6);
    assertStringIncludes(text, '🤖 bot nudged');
-   assertStringIncludes(text, '💬 = message them on Messenger');
+   assertStringIncludes(text, '💬 = their Messenger chat');
    const keyboard = buildVoucherDigestKeyboard(digest);
-   assertEquals(keyboard.length, 2);
-   assertEquals(keyboard[0].map((b) => b.text), ['💬 Ana Cruz', '🔎 Facebook', '👤']);
-   assertEquals(keyboard[0][1].url, 'https://www.facebook.com/search/people/?q=Ana%20Cruz');
-   assertEquals(keyboard[1].map((b) => b.text), ['👤 Ben']);
+   assertEquals(keyboard.length, 3);
+   assertEquals(keyboard[0].map((b) => b.text), ['📥 Open the Moodeng Page inbox']);
+   assertEquals(keyboard[1].map((b) => b.text), ['💬 Ana Cruz', '🔎 Facebook', '👤']);
+   assertEquals(keyboard[1][1].url, 'https://www.facebook.com/search/people/?q=Ana%20Cruz');
+   assertEquals(keyboard[2].map((b) => b.text), ['👤 Ben']);
+   assertEquals(buildVoucherDigestKeyboard({ unclaimed: [], pending: [], not_arrived: [], no_answer: [] }), []);
+
+   const reach = buildVoucherDigest(digest, 6);
+   assertStringIncludes(reach, '👋 HOW TO REACH THEM');
+   assertStringIncludes(reach, '📘 On Facebook Messenger (2)');
+   assertStringIncludes(reach, '• Type "Ana Cruz" — that\'s Ana');
+   assertStringIncludes(reach, '• Ben — on Messenger, name not saved: tap their 💬 below');
+   const offline = buildVoucherDigest({ unclaimed: [{ ...base, name: 'Cy', facebook: null, messenger: false, email: 'cy@example.com' }], pending: [], not_arrived: [], no_answer: [] }, 6);
+   assertStringIncludes(offline, '📵 Not on Facebook (1): email or text them\n• Cy — ✉️ cy@example.com');
 });
 
 Deno.test('digest: says what each person is owed and how to reach them', () => {

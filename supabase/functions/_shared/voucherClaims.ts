@@ -353,6 +353,40 @@ const digestSection = (title: string, people: VoucherDigestPerson[]) => {
    return `${title} — ${people.length} ${people.length === 1 ? 'person' : 'people'}, ${peso(total)}\n${lines.join('\n')}`;
 };
 
+/** The Moodeng Credit Page's inbox in Meta Business Suite: search a Facebook name there to open their chat. */
+export const PAGE_INBOX_URL = 'https://business.facebook.com/latest/inbox/all?asset_id=1148756028310286';
+
+/**
+ * "How to reach them": everyone in the check, once, split into people we can message on Facebook
+ * (they messaged our Page, so their chat is in the Page inbox under their Facebook name) and people
+ * who never connected Facebook (email / phone only).
+ */
+const reachSection = (digest: VoucherDigest) => {
+   const seen = new Set<string>();
+   const onFacebook: string[] = [];
+   const offFacebook: string[] = [];
+   for (const bucket of ['not_arrived', 'pending', 'unclaimed', 'no_answer'] as const) {
+      for (const person of digest[bucket] ?? []) {
+         const key = person.userId ?? person.name;
+         if (seen.has(key)) continue;
+         seen.add(key);
+         const email = person.email && !isPlaceholderEmail(person.email) ? person.email : null;
+         if (person.facebook) {
+            onFacebook.push(`• Type "${person.facebook}" — that's ${person.name}`);
+         } else if (person.messenger) {
+            onFacebook.push(`• ${person.name} — on Messenger, name not saved: tap their 💬 below`);
+         } else {
+            const how = [person.phone ? `📞 ${person.phone}` : null, email ? `✉️ ${email}` : null].filter(Boolean).join(' · ') || 'no contact saved — open 👤';
+            offFacebook.push(`• ${person.name} — ${how}`);
+         }
+      }
+   }
+   const parts: string[] = [];
+   if (onFacebook.length) parts.push(`📘 On Facebook Messenger (${onFacebook.length}): open the Page inbox (📥 button) and search the name\n${onFacebook.join('\n')}`);
+   if (offFacebook.length) parts.push(`📵 Not on Facebook (${offFacebook.length}): email or text them\n${offFacebook.join('\n')}`);
+   return parts.length ? `\n\n👋 HOW TO REACH THEM\n${parts.join('\n\n')}` : '';
+};
+
 /** The daily rewards-group check: who to nudge to claim, what's stuck, and who hasn't confirmed. */
 export const buildVoucherDigest = (digest: VoucherDigest, linksLeft: number | null, giftawayCredits: number | null = null) => {
    const sections = [
@@ -365,9 +399,9 @@ export const buildVoucherDigest = (digest: VoucherDigest, linksLeft: number | nu
    const stock = `${linksLeft === null ? '' : `\n\n₱50 Xoxo links left: ${linksLeft}${linksLeft <= 5 ? ' — restock soon' : ''}`}${credits}`;
    if (!sections.length) return `🧾 Daily rewards check: nothing waiting — everyone has claimed and confirmed. 🎉${stock}`;
    const tap = Object.values(digest).some((people) => (people ?? []).length)
-      ? '\n\nButtons below: 💬 = message them on Messenger (from the Moodeng Page) · 🔎 = find them on Facebook by name · 👤 = their account in admin.'
+      ? '\n\nButtons below: 📥 = Moodeng Page inbox · 💬 = their Messenger chat (SendPulse) · 🔎 = Facebook search by name · 👤 = their account in admin.'
       : '';
-   const text = `🧾 Daily rewards check\n\n${sections.join('\n\n')}${stock}${tap}`;
+   const text = `🧾 Daily rewards check\n\n${sections.join('\n\n')}${reachSection(digest)}${stock}${tap}`;
    // Telegram's limit is 4096 characters.
    return text.length > 4000 ? `${text.slice(0, 3900).replace(/\n[^\n]*$/, '')}\n…more in Admin → Food vouchers${stock}` : text;
 };
@@ -386,8 +420,9 @@ const firstTwoWords = (value: string) => value.split(/\s+/).slice(0, 2).join(' '
  */
 export const buildVoucherDigestKeyboard = (digest: VoucherDigest) => {
    const seen = new Set<string>();
-   const rows: Array<Array<{ text: string; url: string }>> = [];
-   let count = 0;
+   const anyone = Object.values(digest).some((people) => (people ?? []).length);
+   const rows: Array<Array<{ text: string; url: string }>> = anyone ? [[{ text: '📥 Open the Moodeng Page inbox', url: PAGE_INBOX_URL }]] : [];
+   let count = rows.length;
    for (const bucket of ['not_arrived', 'pending', 'unclaimed', 'no_answer'] as const) {
       for (const person of digest[bucket] ?? []) {
          const key = person.userId ?? person.messengerContactId ?? person.name;
