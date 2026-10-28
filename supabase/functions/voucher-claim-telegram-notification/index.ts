@@ -15,6 +15,8 @@
 //                                                hasn't claimed, what's stuck, who hasn't confirmed. First nudges
 //                                                the unclaimed / unconfirmed on Messenger (once per amount, see
 //                                                voucher_messenger_nudges), then posts the digest with 💬 buttons.
+//   { event: 'announce', text }                  internal: post a team notice to the rewards group (e.g. how a new
+//                                                rewards feature works), from the same bot as the cards.
 //   { claimId, event: 'admin_send' }             admin Vouchers page → Send code (admin session required).
 //                                                Lives here because the project is at its function limit.
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -124,11 +126,21 @@ serve(async (req) => {
    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 
    try {
-      const { claimId, event, decidedBy } = (await req.json().catch(() => ({}))) as {
+      const { claimId, event, decidedBy, text } = (await req.json().catch(() => ({}))) as {
          claimId?: string;
          event?: string;
          decidedBy?: string | null;
+         text?: string;
       };
+      if (event === 'announce') {
+         if (!(await isAuthorized(supabase, req))) return json({ error: 'Unauthorized' }, 401);
+         if (typeof text !== 'string' || !text.trim() || text.length > 4000) return json({ error: 'text is required (≤4000 chars)' }, 400);
+         const chatId = (await getSetting(supabase, 'voucher_alert_chat_id')) ?? (await getSetting(supabase, 'kyc_alert_chat_id'));
+         if (!chatId) return json({ error: 'voucher_alert_chat_id / kyc_alert_chat_id is not set' }, 500);
+         const sent = (await sendTelegramMessage(chatId, text.trim())) as { message_id?: number } | undefined;
+         return json({ ok: true, messageId: sent?.message_id ?? null });
+      }
+
       if (event === 'digest') {
          if (!(await isAuthorized(supabase, req))) return json({ error: 'Unauthorized' }, 401);
          const chatId = (await getSetting(supabase, 'voucher_alert_chat_id')) ?? (await getSetting(supabase, 'kyc_alert_chat_id'));
