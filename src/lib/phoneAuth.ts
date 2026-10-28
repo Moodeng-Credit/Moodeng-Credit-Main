@@ -130,6 +130,37 @@ export function generatePhoneUsername(random: () => number = Math.random): strin
    return `moodeng-${suffix}`;
 }
 
+/** True while the account still has the made-up phone sign-up handle, i.e. they never picked one. */
+export function hasGeneratedUsername(username: string | null | undefined): boolean {
+   return Boolean(username?.startsWith('moodeng-'));
+}
+
+export const USERNAME_MIN_LENGTH = 3;
+export const USERNAME_MAX_LENGTH = 20;
+
+/** What the username box keeps as they type: lowercase letters, digits, - and _ (it's a URL part). */
+export function cleanUsernameInput(raw: string): string {
+   return raw
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9_-]/g, '')
+      .slice(0, USERNAME_MAX_LENGTH);
+}
+
+/** A starting suggestion from their name: "María Santos" → "mariasantos". Empty if nothing usable. */
+export function suggestUsername(name: string): string {
+   const base = cleanUsernameInput(name.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '')).replace(/^[-_]+|[-_]+$/g, '');
+   return base.length >= USERNAME_MIN_LENGTH && !hasGeneratedUsername(base) ? base : '';
+}
+
+/** Why a typed username can't be used, or null if it can (whether it's taken is checked separately). */
+export function usernameProblem(username: string): string | null {
+   if (username.length < USERNAME_MIN_LENGTH) return `Use at least ${USERNAME_MIN_LENGTH} letters or numbers.`;
+   if (!/^[a-z0-9]/.test(username) || /[-_]$/.test(username)) return 'Start and end with a letter or number.';
+   if (hasGeneratedUsername(username)) return 'Pick something of your own.';
+   return null;
+}
+
 /**
  * public.users.email is NOT NULL, so phone-only accounts get a placeholder nobody reads, like
  * Telegram's telegram_<id>@moodeng.app. Built from the account id, never the phone number.

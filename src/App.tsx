@@ -8,6 +8,7 @@ import { AdminGuard } from '@/components/AdminGuard';
 import BottomNav from '@/components/BottomNav';
 import { BottomNavActionProvider } from '@/components/BottomNavActionContext';
 import { ExpiredLoanRequestNotifier } from '@/components/ExpiredLoanRequestNotifier';
+import { ChooseUsernameNotifier } from '@/components/onboarding/ChooseUsernameNotifier';
 import { JourneyNudge } from '@/components/onboarding/JourneyNudge';
 import { SocialContactRequiredNotifier } from '@/components/SocialContactRequiredNotifier';
 import { KycDeclinedNotifier } from '@/components/verification/KycDeclinedNotifier';
@@ -310,6 +311,8 @@ export default function App() {
          <SocialContactRequiredNotifier />
          <VerifiedCelebrationNotifier />
          <KycDeclinedNotifier />
+         {/* Phone sign-ups still on a made-up moodeng-ab12cd handle: pick a username, once per session. */}
+         <ChooseUsernameNotifier />
          <LenderFundingPrompt />
          {/* iPhone lenders who followed the Add to Home Screen guide: one tap to turn push on. */}
          {shouldCheckDefaultedBorrower && user.userRole === 'lender' ? <LenderHomeScreenPushPrompt userId={user.id} /> : null}

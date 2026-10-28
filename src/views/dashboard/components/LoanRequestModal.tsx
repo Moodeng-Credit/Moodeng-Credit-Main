@@ -5,6 +5,7 @@ import {
    type FormEvent,
    type KeyboardEvent,
    type PointerEvent,
+   type ReactNode,
    type RefObject,
    useCallback,
    useEffect,
@@ -521,6 +522,7 @@ export function BorrowerContextLoanStep({
    onProfileNameChange,
    profileName,
    profileSaveError,
+   usernameSlot,
    submitLabel = 'Submit request'
 }: {
    // Last-page button: "Submit request" in the application; "Continue" when the bio is part of the
@@ -549,6 +551,8 @@ export function BorrowerContextLoanStep({
    onProfileNameChange: (value: string) => void;
    profileName: string;
    profileSaveError: string;
+   // The "Choose a username" box, under the name — only for phone sign-ups still on a made-up handle.
+   usernameSlot?: ReactNode;
 }) {
    const [hasOtherIncome, setHasOtherIncome] = useState<boolean>(Boolean(context.otherIncome));
    // Page 1 needs the "how do you work?" choice; page 2 needs payday, income, expenses + at least one help reason.
@@ -811,6 +815,7 @@ export function BorrowerContextLoanStep({
                      <span className="text-md-b3 font-medium leading-[18px] text-md-red-500">{profileSaveError}</span>
                   ) : null}
                </label>
+               {usernameSlot ? <div className="mt-4">{usernameSlot}</div> : null}
             </section>
 
             <BorrowerContextRadioSection
