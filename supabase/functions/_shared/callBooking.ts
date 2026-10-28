@@ -46,8 +46,6 @@ export const HOSTS = [
 ].filter((h) => h.apiKey);
 
 
-// Whose calendar (open hours + Zoom) every call is booked on unless the request pins another host.
-const CALL_HOST = 'emma';
 
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
 
@@ -155,6 +153,11 @@ const bookedCallStarts = async (svc: Svc, userId: string, from: string, to: stri
 
 type Resolved = Array<{ id: string; apiKey: string; eventTypeId: number }>;
 
+const eitherHostOn = async (svc: Svc): Promise<boolean> => {
+   const { data } = await svc.from('telegram_bot_settings').select('value').eq('key', 'calls_either_host').maybeSingle();
+   return String((data as { value?: unknown } | null)?.value ?? '').toLowerCase() === 'true';
+};
+
 // Each host's event type, the pinned host, and the no-show cooldown: a reply to send back, or the hosts.
 const prepare = async (svc: Svc, user: CallUser, pin?: string | null): Promise<CallBookingReply | { resolved: Resolved }> => {
    // Resolve each host's event type id once per request.
@@ -165,14 +168,17 @@ const prepare = async (svc: Svc, user: CallUser, pin?: string | null): Promise<C
    }
    if (resolved.length === 0) return reply({ error: 'no_events' }, 500);
 
-   // Every call goes on one host's calendar — Emma's by default, whose Cal.com makes the calls on the
-   // shared support@ Zoom (George's made Cal Video links) — and the other cofounder is invited as a
-   // guest, so whoever's free joins. If that host isn't configured (no API key / event type), fall
-   // back to the whole team rather than leave the borrower unable to book — and log it to get fixed.
-   const bookingHost = pin || CALL_HOST;
-   const pinned = resolved.filter((h) => h.id === bookingHost);
-   if (pinned.length > 0) resolved.splice(0, resolved.length, ...pinned);
-   else console.error(`calcom-round-robin: host '${bookingHost}' not configured — falling back to round-robin`);
+   // Either cofounder (George, 2026-10-29): a time is offered when Emma OR George is free in their
+   // own Cal.com (each copied nightly from their Calendly), and booked on Emma's when both are
+   // (preferHost). The other cofounder is still invited as a guest. A request can pin one host.
+   // Until telegram_bot_settings `calls_either_host` is 'true' (George's Cal.com needs Zoom first,
+   // or his calls get Cal Video links), every call stays on Emma's calendar as before.
+   if (!pin && !(await eitherHostOn(svc))) pin = 'emma';
+   if (pin) {
+      const pinned = resolved.filter((h) => h.id === pin);
+      if (pinned.length > 0) resolved.splice(0, resolved.length, ...pinned);
+      else console.error(`calcom-round-robin: host '${pin}' not configured — using every host`);
+   }
 
    // Two strikes: repeat no-shows wait a week before they can take another slot from the hosts.
    // Gated flows record a no-show on the access request; the open flow only on the user, so both
@@ -211,13 +217,18 @@ export const listCallSlots = async (svc: Svc, user: CallUser, timeZone: string, 
    ]);
    // Max 4 calls a Bangkok day, and on a day that has calls only the times around them (the
    // nearest ones ⭐ recommended), so calls come in one block. `recommended` is a subset of `slots`.
-   const free = dropBusySlots(mergeSlots(perHost), georgeBusy, CALL_MINUTES);
+   // George's own Google busy times only take away George's times; Emma's stand on their own.
+   const hostSlots = perHost.map((slots, i) => (resolved[i].id === 'george' ? dropBusySlots(slots, georgeBusy, CALL_MINUTES) : slots));
+   const free = mergeSlots(hostSlots);
    const emmaIndex = resolved.findIndex((h) => h.id === PREFERRED_HOST);
-   const clustered = clusterSlots(free, booked, emmaIndex >= 0 ? perHost[emmaIndex] : []);
+   const clustered = clusterSlots(free, booked, emmaIndex >= 0 ? hostSlots[emmaIndex] : []);
    const slots = preferSoonSlots(clustered.slots, Date.now());
    const offered = new Set(slots);
    // includeAll (admin preview only): also every free time over the next two weeks, before the soonest-first cut.
-   return reply({ slots, recommended: clustered.recommended.filter((s) => offered.has(s)), ...(includeAll ? { all: clustered.slots } : {}) });
+   // Who would take each time (Emma when both are free), for "with Emma" / "with George" labels.
+   const byHost = Object.fromEntries(resolved.map((h, i) => [h.id, hostSlots[i]]));
+   const hosts = Object.fromEntries(slots.map((s) => [s, preferHost(hostsFreeAt(s, byHost))[0] ?? null]));
+   return reply({ slots, recommended: clustered.recommended.filter((s) => offered.has(s)), hosts, ...(includeAll ? { all: clustered.slots } : {}) });
 };
 
 /** Books `startRaw` for this borrower and saves it on their account (see the comments inside). */
@@ -244,10 +255,13 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
          perHostMap[h.id] = await fetchSlots(h.apiKey, h.eventTypeId, range.from, range.to, timeZone);
       })
    );
-   const free = hostsFreeAt(start, perHostMap);
+   let free = hostsFreeAt(start, perHostMap);
+   // George only counts as free when his Google Calendar is clear too.
+   if (free.includes('george')) {
+      const georgeBusy = await fetchGeorgeBusy(svc, start, new Date(startMs + CALL_MINUTES * 60000).toISOString());
+      if (dropBusySlots([start], georgeBusy, CALL_MINUTES).length === 0) free = free.filter((h) => h !== 'george');
+   }
    if (free.length === 0) return reply({ ok: false, error: 'slot_taken' });
-   const georgeBusy = await fetchGeorgeBusy(svc, start, new Date(startMs + CALL_MINUTES * 60000).toISOString());
-   if (dropBusySlots([start], georgeBusy, CALL_MINUTES).length === 0) return reply({ ok: false, error: 'slot_taken' });
 
    const { data: prof } = await svc
       .from('users')
