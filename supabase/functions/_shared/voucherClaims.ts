@@ -81,10 +81,15 @@ const claimUsername = (claim: VoucherClaimRow) => (Array.isArray(claim.users) ? 
 
 const peso = (value: unknown) => `₱${Number(value)}`;
 
+// Team posts show dollars too, so amounts read at a glance: "₱600 (~$9.38)". Approximate rate
+// (1 USD ≈ ₱64, 28 Oct 2026). Borrower-facing text stays in pesos only (peso()).
+const PHP_PER_USD = 64;
+export const pesoUsd = (value: unknown) => `${peso(value)} (~$${(Number(value) / PHP_PER_USD).toFixed(2)})`;
+
 /** Admin card for a claim that couldn't be sent automatically; `reason` says why. */
 export const buildVoucherClaimCard = (claim: VoucherClaimRow, reason?: string | null, facebook?: MessengerContact | null) =>
    [
-      `${voucherPickLabel(claim.brand)} voucher to send: ${peso(claim.amount_php)}`,
+      `${voucherPickLabel(claim.brand)} voucher to send: ${pesoUsd(claim.amount_php)}`,
       `For: ${VOUCHER_REWARD_LABELS[claim.reward] ?? claim.reward}`,
       '',
       `Name: ${claim.full_name}`,
@@ -107,7 +112,7 @@ export const voucherPickLabel = (brand?: string | null) => (brand === 'grabmart'
 /** Info card for a claim that went out on its own (no buttons). */
 export const buildVoucherSentCard = (claim: VoucherClaimRow, summary: string, facebook?: MessengerContact | null) =>
    [
-      `${voucherPickLabel(claim.brand)} voucher sent automatically: ${peso(claim.amount_php)}`,
+      `${voucherPickLabel(claim.brand)} voucher sent automatically: ${pesoUsd(claim.amount_php)}`,
       `To: ${claim.full_name}${claimUsername(claim) ? ` (@${claimUsername(claim)})` : ''} · ${VOUCHER_REWARD_LABELS[claim.reward] ?? claim.reward}`,
       facebookLine(facebook),
       summary
@@ -285,7 +290,7 @@ export const messengerOutcomeLine = (outcome: 'sent' | string) =>
 /** Telegram line when the borrower answers "Did your Moo-meal arrive?". */
 export const buildVoucherReceiptMessage = (claim: VoucherClaimRow & { received_at?: string | null }, giftawayResent: boolean | null = null) => {
    const who = `${claim.full_name}${claimUsername(claim) ? ` (@${claimUsername(claim)})` : ''}`;
-   const what = `${peso(claim.amount_php)} ${voucherPickLabel(claim.brand)} voucher`;
+   const what = `${pesoUsd(claim.amount_php)} ${voucherPickLabel(claim.brand)} voucher`;
    return claim.received_at
       ? `✅ ${who} got their ${what}.`
       : `⚠️ ${who} says their ${what} didn't arrive.\nEmail: ${claim.email ?? '—'} · Mobile: ${claim.mobile}\n${
@@ -330,7 +335,7 @@ const REWARD_SHORT: Record<string, string> = {
 
 const digestDetails = (person: VoucherDigestPerson) => {
    const lines: string[] = [];
-   if (person.rewards?.length) lines.push(`   ↳ ${person.rewards.map((r) => `${REWARD_SHORT[r.reward] ?? r.reward} ${peso(r.amountPhp)}`).join(' + ')}`);
+   if (person.rewards?.length) lines.push(`   ↳ ${person.rewards.map((r) => `${REWARD_SHORT[r.reward] ?? r.reward} ${pesoUsd(r.amountPhp)}`).join(' + ')}`);
    const email = person.email && !isPlaceholderEmail(person.email) ? person.email : null;
    const contact = [person.phone ? `📞 ${person.phone}` : null, email ? `✉️ ${email}` : null].filter(Boolean).join(' · ');
    if (contact) lines.push(`   ↳ ${contact}`);
@@ -343,7 +348,7 @@ const digestLine = (person: VoucherDigestPerson, when = '') => {
    const count = person.vouchers > 1 ? ` (${person.vouchers})` : '';
    const days = person.days === null ? '' : ` · ${when ? `${when} ` : ''}${person.days === 0 ? 'today' : `${person.days}d ago`}`;
    const nudge = person.nudge === 'sent' ? ' · 🤖 bot nudged' : person.nudge === 'failed' ? " · 🤖 bot couldn't reach" : '';
-   return `• ${who} · ${peso(person.amountPhp)}${count} · ${fb}${days}${nudge}${digestDetails(person)}`;
+   return `• ${who} · ${pesoUsd(person.amountPhp)}${count} · ${fb}${days}${nudge}${digestDetails(person)}`;
 };
 
 const digestSection = (title: string, people: VoucherDigestPerson[], when = '') => {
@@ -351,7 +356,7 @@ const digestSection = (title: string, people: VoucherDigestPerson[], when = '') 
    const total = people.reduce((sum, person) => sum + Number(person.amountPhp), 0);
    const lines = people.slice(0, DIGEST_LIMIT).map((person) => digestLine(person, when));
    if (people.length > DIGEST_LIMIT) lines.push(`…and ${people.length - DIGEST_LIMIT} more (Admin → Food vouchers)`);
-   return `${title} — ${people.length} ${people.length === 1 ? 'person' : 'people'}, ${peso(total)}\n${lines.join('\n')}`;
+   return `${title} — ${people.length} ${people.length === 1 ? 'person' : 'people'}, ${pesoUsd(total)}\n${lines.join('\n')}`;
 };
 
 /** The Moodeng Credit Page's inbox in Meta Business Suite: search a Facebook name there to open their chat. */
@@ -400,7 +405,7 @@ export const buildVoucherDigest = (digest: VoucherDigest, linksLeft: number | nu
    const notGotten = [...pending, ...notArrived];
    const notGottenTotal = notGotten.reduce((sum, person) => sum + Number(person.amountPhp), 0);
    const notGottenSection = notGotten.length
-      ? `❌ CLAIMED, but has NOT GOTTEN the voucher — ${notGotten.length} ${notGotten.length === 1 ? 'person' : 'people'}, ${peso(notGottenTotal)}\n${[
+      ? `❌ CLAIMED, but has NOT GOTTEN the voucher — ${notGotten.length} ${notGotten.length === 1 ? 'person' : 'people'}, ${pesoUsd(notGottenTotal)}\n${[
            ...pending.slice(0, DIGEST_LIMIT).map((person) => `${digestLine(person, 'claimed')} · NOT SENT YET`),
            ...notArrived.slice(0, DIGEST_LIMIT).map((person) => `${digestLine(person, 'sent')} · SAID IT DIDN'T ARRIVE — resend`)
         ].join('\n')}`
@@ -412,8 +417,8 @@ export const buildVoucherDigest = (digest: VoucherDigest, linksLeft: number | nu
    );
    const sent = gotSection ? [gotSection] : [];
    const sections = [notGottenSection, ...sent];
-   const credits = giftawayCredits === null ? '' : `${linksLeft === null ? '\n\n' : '\n'}Giftaway credits: ₱${giftawayCredits.toFixed(2)}${giftawayCredits < 500 ? ' — top up soon' : ''}`;
-   const stock = `${linksLeft === null ? '' : `\n\n₱50 Xoxo links left: ${linksLeft}${linksLeft <= 5 ? ' — restock soon' : ''}`}${credits}`;
+   const credits = giftawayCredits === null ? '' : `${linksLeft === null ? '\n\n' : '\n'}Giftaway credits: ${pesoUsd(giftawayCredits.toFixed(2))}${giftawayCredits < 500 ? ' — top up soon' : ''}`;
+   const stock = `${linksLeft === null ? '' : `\n\n₱50 Xoxo links left: ${linksLeft} = ${pesoUsd(linksLeft * 50)}${linksLeft <= 5 ? ' — restock soon' : ''}`}${credits}`;
    if (!notGotten.length && !sent.length) return `🧾 Daily rewards check: everyone who claimed has their voucher and confirmed it. 🎉${stock}`;
    const tap = Object.values(claimed).some((people) => (people ?? []).length)
       ? '\n\nButtons below: 📤 sends them the ready message on Messenger (from the Moodeng Page) in one tap · 💬 opens their Messenger chat in SendPulse · 🟢 WhatsApp opens a chat with the message already typed — just tap Send · 📋 copies the message (no Messenger: paste into an email or text).'
@@ -530,7 +535,7 @@ export const buildVoucherDigestKeyboard = (digest: VoucherDigest): TelegramInlin
 export const voucherStampHeader = (decision: VoucherDecision, claim: { full_name?: string | null; amount_php?: number | string | null }) => {
    const name = claim.full_name?.trim() || 'They';
    return decision === 'sent'
-      ? `🎟 VOUCHER SENT — ${name} got their ₱${Number(claim.amount_php ?? 0)} food voucher`
+      ? `🎟 VOUCHER SENT — ${name} got their ${pesoUsd(Number(claim.amount_php ?? 0))} food voucher`
       : `🚫 VOUCHER REJECTED — ${name}'s claim is closed (they can submit a new one)`;
 };
 
@@ -669,8 +674,8 @@ const sendViaGiftaway = async (supabase: SupabaseClient, claim: any, admin: stri
       })
    );
    const to = [toPhilippineMobile(claim.mobile), email && !isPlaceholderEmail(email) ? email : null].filter(Boolean).join(' + ');
-   const credits = order.creditsLeft === null ? '' : ` · ₱${order.creditsLeft.toFixed(2)} Giftaway credits left${order.creditsLeft < 500 ? ' ⚠️ top up soon' : ''}`;
-   const summary = `✅ ${peso(amountPhp)} ${order.product} eGift ordered on Giftaway (order ${order.orderId}) and sent by Giftaway to ${to} · by ${admin}${credits}\n${messengerOutcomeLine(told)}`;
+   const credits = order.creditsLeft === null ? '' : ` · ${pesoUsd(order.creditsLeft.toFixed(2))} Giftaway credits left${order.creditsLeft < 500 ? ' ⚠️ top up soon' : ''}`;
+   const summary = `✅ ${pesoUsd(amountPhp)} ${order.product} eGift ordered on Giftaway (order ${order.orderId}) and sent by Giftaway to ${to} · by ${admin}${credits}\n${messengerOutcomeLine(told)}`;
    const stamp: CardStamp = { header: voucherStampHeader('sent', sent), detail: summary, by: admin };
    await stampDecisionCards(supabase, 'voucher', claim.id, stamp);
    return { ok: true, summary, stamp };
@@ -729,7 +734,7 @@ const sendViaBitrefill = async (supabase: SupabaseClient, claim: any, admin: str
       facebook,
       buildRewardSentMessage({ firstName: facebook?.firstName ?? null, locale: facebook?.locale ?? 'en', amountPhp, reward: claim.reward, links: [], product: bought.product })
    );
-   const summary = `✅ ${peso(amountPhp)} ${bought.product} voucher (${why}) bought on Bitrefill and emailed by Bitrefill to ${email} · by ${admin}\n${messengerOutcomeLine(told)}`;
+   const summary = `✅ ${pesoUsd(amountPhp)} ${bought.product} voucher (${why}) bought on Bitrefill and emailed by Bitrefill to ${email} · by ${admin}\n${messengerOutcomeLine(told)}`;
    const stamp: CardStamp = { header: voucherStampHeader('sent', sent), detail: summary, by: admin };
    await stampDecisionCards(supabase, 'voucher', claim.id, stamp);
    return { ok: true, summary, stamp };
@@ -787,7 +792,7 @@ export const sendVoucherCode = async (supabase: SupabaseClient, claimId: string,
       facebook,
       buildRewardSentMessage({ firstName: facebook?.firstName ?? null, locale: facebook?.locale ?? 'en', amountPhp: Number(data.amount_php), reward: String(data.reward), links })
    );
-   const summary = `✅ ${peso(data.amount_php)} food voucher (${links.length} Xoxo link${links.length === 1 ? '' : 's'}) emailed to ${email} · by ${admin} · ${stock}\n${messengerOutcomeLine(told)}`;
+   const summary = `✅ ${pesoUsd(data.amount_php)} food voucher (${links.length} Xoxo link${links.length === 1 ? '' : 's'}) emailed to ${email} · by ${admin} · ${stock}\n${messengerOutcomeLine(told)}`;
    const stamp: CardStamp = { header: voucherStampHeader('sent', data), detail: summary, by: admin };
    await stampDecisionCards(supabase, 'voucher', claimId, stamp);
    return { ok: true, summary, stamp };
