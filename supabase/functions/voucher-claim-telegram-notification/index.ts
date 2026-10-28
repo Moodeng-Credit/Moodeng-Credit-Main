@@ -121,8 +121,9 @@ serve(async (req) => {
          return json({ ok: true, stamped });
       }
 
-      const chatId = await getSetting(supabase, 'kyc_alert_chat_id');
-      if (!chatId) return json({ error: 'kyc_alert_chat_id is not set' }, 500);
+      // Voucher cards go to their own group (voucher_alert_chat_id), else the admin/KYC chat.
+      const chatId = (await getSetting(supabase, 'voucher_alert_chat_id')) ?? (await getSetting(supabase, 'kyc_alert_chat_id'));
+      if (!chatId) return json({ error: 'voucher_alert_chat_id / kyc_alert_chat_id is not set' }, 500);
 
       if (event === 'receipt') {
          await sendTelegramMessage(chatId, buildVoucherReceiptMessage(claim as unknown as VoucherClaimRow & { received_at?: string | null }));

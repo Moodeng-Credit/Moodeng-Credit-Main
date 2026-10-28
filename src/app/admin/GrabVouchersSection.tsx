@@ -195,6 +195,99 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
  * who earned one but haven't claimed yet. Claims are sent automatically on claim; "Send code" here and
  * on the Telegram card retries one (Xoxo links, else Bitrefill).
  */
+/** The links / codes a claim got: Xoxo links open, Bitrefill codes are copied. */
+function VoucherLinks({
+   claim,
+   copied,
+   onCopy
+}: {
+   claim: AdminVoucherClaim;
+   copied: string | null;
+   onCopy: (key: string, text: string) => Promise<void>;
+}) {
+   return (
+      <span className="flex flex-wrap items-center gap-2">
+         {claim.links.map((link, index) => {
+            const key = `link-${claim.id}-${index}`;
+            return (
+               <span key={link} className="inline-flex items-center gap-1.5">
+                  {/^https?:\/\//.test(link) ? (
+                     <a className="font-mono text-sm font-bold text-[#c4a2ff] underline" href={link} target="_blank" rel="noreferrer">
+                        {link.replace(/^https?:\/\//, '')}
+                     </a>
+                  ) : (
+                     <span className="font-mono text-sm font-bold">{link}</span>
+                  )}
+                  <button
+                     type="button"
+                     onClick={() => void onCopy(key, link)}
+                     className="rounded-lg bg-[#241044] px-2 py-0.5 text-xs font-black text-[#a89bb8]"
+                  >
+                     {copied === key ? 'Copied' : 'Copy'}
+                  </button>
+               </span>
+            );
+         })}
+      </span>
+   );
+}
+
+/** Sent tab: one line per voucher — who, how much, what they picked, when, and whether it arrived. */
+function WhoGotWhat({ claims, contacts }: { claims: AdminVoucherClaim[]; contacts: Record<string, AdminVoucherContact> }) {
+   return (
+      <div className="overflow-x-auto rounded-2xl border border-[#2a1453]">
+         <table className="w-full min-w-[760px] text-left text-sm">
+            <thead className="bg-[#1c0a3a] text-xs font-black uppercase tracking-wide text-[#a89bb8]">
+               <tr>
+                  <th className="px-4 py-3">Who</th>
+                  <th className="px-4 py-3">Facebook</th>
+                  <th className="px-4 py-3 text-right">Amount</th>
+                  <th className="px-4 py-3">Got</th>
+                  <th className="px-4 py-3">Sent</th>
+                  <th className="px-4 py-3">Arrived?</th>
+               </tr>
+            </thead>
+            <tbody>
+               {claims.map((claim) => (
+                  <tr key={claim.id} className="border-t border-[#2a1453]">
+                     <td className="px-4 py-2.5 font-bold">
+                        {claim.full_name}
+                        {claim.username ? <span className="ml-1.5 font-normal text-[#6f6385]">@{claim.username}</span> : null}
+                     </td>
+                     <td className="px-4 py-2.5">
+                        {contacts[claim.user_id]?.facebook_name ?? contacts[claim.user_id]?.facebook_contact ?? (
+                           <span className="text-[#6f6385]">{contacts[claim.user_id]?.messenger_verified ? 'Messenger ✓, no name' : '—'}</span>
+                        )}
+                     </td>
+                     <td className="px-4 py-2.5 text-right font-black">{php(claim.amount_php)}</td>
+                     <td className="px-4 py-2.5">
+                        {claim.brand === 'grabmart' ? '🛒 GrabMart' : '🍗 Food'}
+                        {claim.links.length ? (
+                           <span className="ml-1.5 text-[#6f6385]">
+                              · {claim.links.length} {claim.links.length === 1 ? 'link' : 'links'}
+                           </span>
+                        ) : (
+                           <span className="ml-1.5 text-[#6f6385]">· by hand</span>
+                        )}
+                     </td>
+                     <td className="px-4 py-2.5 text-[#a89bb8]">{formatDate(claim.sent_at)}</td>
+                     <td className="px-4 py-2.5">
+                        {claim.received_at ? (
+                           <span className="font-black text-[#6ee7a8]">Got it ✅</span>
+                        ) : claim.receipt_issue_at ? (
+                           <span className="font-black text-[#ff8fa3]">Didn&apos;t get it</span>
+                        ) : (
+                           <span className="text-[#6f6385]">No answer yet</span>
+                        )}
+                     </td>
+                  </tr>
+               ))}
+            </tbody>
+         </table>
+      </div>
+   );
+}
+
 export default function GrabVouchersSection() {
    const [claims, setClaims] = useState<AdminVoucherClaim[]>([]);
    const [unclaimed, setUnclaimed] = useState<AdminUnclaimedVoucher[]>([]);
@@ -329,6 +422,8 @@ export default function GrabVouchersSection() {
             'Amount PHP',
             'Claimed',
             'Sent',
+            'Got it',
+            'Voucher',
             'Note'
          ],
          claims.map((claim) => [
@@ -344,6 +439,8 @@ export default function GrabVouchersSection() {
             claim.amount_php,
             claim.created_at,
             claim.sent_at,
+            claim.received_at ? 'yes' : claim.receipt_issue_at ? 'no' : null,
+            claim.links.join(' '),
             claim.admin_note
          ])
       );
@@ -413,6 +510,13 @@ export default function GrabVouchersSection() {
                <Field label="Facebook">
                   <FacebookDetails contact={contacts[claim.user_id]} />
                </Field>
+               {claim.links.length ? (
+                  <div className="sm:col-span-3">
+                     <Field label={claim.links.length === 1 ? 'Voucher' : 'Vouchers'}>
+                        <VoucherLinks claim={claim} copied={copied} onCopy={copy} />
+                     </Field>
+                  </div>
+               ) : null}
                {claim.admin_note ? <Field label="Note">{claim.admin_note}</Field> : null}
             </dl>
             <div className="mt-4 flex flex-wrap gap-2">
@@ -467,9 +571,9 @@ export default function GrabVouchersSection() {
          <div>
             <h2 className="break-words text-2xl font-black sm:text-3xl">Food vouchers</h2>
             <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
-               Claims are emailed automatically: one ₱50 Xoxo link per ₱50 from the stock below (the borrower picks Jollibee, Chowking,
-               Greenwich, Mang Inasal or Red Ribbon), or a Greenwich voucher from Bitrefill when the stock is empty. Anything under “To
-               send” didn’t go out on its own: add links, then tap Send code.
+               Claims are emailed automatically: Moo-food gets one ₱50 Xoxo link per ₱50 from the stock below (the borrower picks Jollibee,
+               Chowking, Greenwich, Mang Inasal or Red Ribbon); Moo-snacks gets a GrabMart code from Bitrefill, which also covers food when
+               the stock is empty. Anything under “To send” didn’t go out on its own: add links, then tap Send code.
             </p>
          </div>
 
@@ -499,14 +603,14 @@ export default function GrabVouchersSection() {
             </div>
             <p className="mt-1 text-sm text-[#a89bb8]">
                Xoxoday → Send Reward Link → Moodeng food reward → Send to self → quantity. Paste the links from that email here, one per
-               line. Links are never shown back here.
+               line. Each link shows on the claim it went to (Sent → who got what).
             </p>
             <textarea
                id="voucher-links-input"
                value={linksInput}
                onChange={(event) => setLinksInput(event.target.value)}
                rows={3}
-               placeholder="https://rewards.xoxoday.com/…"
+               placeholder="https://plum.gift/…"
                className="mt-3 w-full rounded-xl border border-[#2a1453] bg-[#120626] p-3 font-mono text-sm text-white"
             />
             <button
@@ -562,6 +666,8 @@ export default function GrabVouchersSection() {
 
          {error ? <p className="rounded-xl bg-[#3d1220] px-4 py-3 font-bold text-[#ff8fa3]">{error}</p> : null}
          {isLoading ? <p className="text-[#a89bb8]">Loading…</p> : null}
+
+         {!isLoading && view === 'sent' && sent.length > 0 ? <WhoGotWhat claims={sent} contacts={contacts} /> : null}
 
          {!isLoading && view !== 'unclaimed' ? (
             <div className="space-y-3">

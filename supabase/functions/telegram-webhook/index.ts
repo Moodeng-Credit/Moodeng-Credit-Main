@@ -970,10 +970,11 @@ serve(async (req) => {
             await handleTestAccountCallback(supabase, update.callback_query, testAccount, allowed);
             return jsonResponse({ message: 'Test account handled' });
          }
+         // Food voucher cards live in their own group (voucher_alert_chat_id).
          await handleAdminCallback(
             supabase,
             update.callback_query,
-            [teamChatId, kycChatId].filter(Boolean).map(String)
+            [teamChatId, kycChatId, await getSetting(supabase, 'voucher_alert_chat_id')].filter(Boolean).map(String)
          );
          return jsonResponse({ message: 'Callback handled' });
       }

@@ -222,6 +222,15 @@ const sendViaBitrefill = async (supabase: SupabaseClient, claim: any, admin: str
       .select('id, full_name, amount_php')
       .maybeSingle();
    if (!sent) return { ok: false, summary: 'Bought on Bitrefill, but the claim was already handled — check for a double send.' };
+   // Keep the code with the claim, so the dashboard can show it (Show my GrabMart code) and admin sees who got what.
+   const { error: codeError } = await supabase.from('voucher_codes').insert({
+      amount_php: amountPhp,
+      code: bought.code,
+      source: `bitrefill ${bought.product} ${bought.invoiceId}`,
+      claim_id: claim.id,
+      assigned_at: new Date().toISOString()
+   });
+   if (codeError) console.error('voucher code not recorded', claim.id, codeError.message);
 
    const why = claim.brand === 'grabmart' ? 'they picked GrabMart' : 'Xoxo link stock was empty';
    const summary = `✅ ${peso(amountPhp)} ${bought.product} voucher (${why}) bought on Bitrefill and emailed by Bitrefill to ${email} · by ${admin}`;
