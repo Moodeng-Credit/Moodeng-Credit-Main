@@ -127,10 +127,11 @@ Deno.test('digest: bot nudge marks and one 💬 button per Messenger person', ()
    };
    const text = buildVoucherDigest(digest, 6);
    assertStringIncludes(text, '🤖 bot nudged');
-   assertStringIncludes(text, 'Tap 💬 below');
+   assertStringIncludes(text, '💬 = message them on Messenger');
    const keyboard = buildVoucherDigestKeyboard(digest);
    assertEquals(keyboard.length, 2);
-   assertEquals(keyboard[0].map((b) => b.text), ['💬 Ana Cruz', '👤 Ana']);
+   assertEquals(keyboard[0].map((b) => b.text), ['💬 Ana Cruz', '🔎 Facebook', '👤']);
+   assertEquals(keyboard[0][1].url, 'https://www.facebook.com/search/people/?q=Ana%20Cruz');
    assertEquals(keyboard[1].map((b) => b.text), ['👤 Ben']);
 });
 
@@ -153,7 +154,7 @@ Deno.test('digest: says what each person is owed and how to reach them', () => {
    const text = buildVoucherDigest({ unclaimed: [person], pending: [], not_arrived: [], no_answer: [] }, 6);
    assertStringIncludes(text, '↳ First on-time ₱50 + Rising ₱50');
    assertStringIncludes(text, '↳ 📞 09171234567 · ✉️ ana@example.com');
-   assertStringIncludes(text, 'Tap 👤 to open their account.');
+   assertStringIncludes(text, '👤 = their account in admin');
    const noContact = buildVoucherDigest({ unclaimed: [{ ...person, phone: null, email: null, rewards: [] }], pending: [], not_arrived: [], no_answer: [] }, 6);
    assertEquals(noContact.includes('↳'), false);
 });

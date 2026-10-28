@@ -365,7 +365,7 @@ export const buildVoucherDigest = (digest: VoucherDigest, linksLeft: number | nu
    const stock = `${linksLeft === null ? '' : `\n\n₱50 Xoxo links left: ${linksLeft}${linksLeft <= 5 ? ' — restock soon' : ''}`}${credits}`;
    if (!sections.length) return `🧾 Daily rewards check: nothing waiting — everyone has claimed and confirmed. 🎉${stock}`;
    const tap = Object.values(digest).some((people) => (people ?? []).length)
-      ? `\n\n${Object.values(digest).some((people) => (people ?? []).some((p) => p.messengerContactId)) ? 'Tap 💬 below to message someone yourself, ' : 'Tap '}👤 to open their account.`
+      ? '\n\nButtons below: 💬 = message them on Messenger (from the Moodeng Page) · 🔎 = find them on Facebook by name · 👤 = their account in admin.'
       : '';
    const text = `🧾 Daily rewards check\n\n${sections.join('\n\n')}${stock}${tap}`;
    // Telegram's limit is 4096 characters.
@@ -374,9 +374,15 @@ export const buildVoucherDigest = (digest: VoucherDigest, linksLeft: number | nu
 
 const DIGEST_BUTTONS = 40;
 
+/** Facebook search for their Facebook name (we only know the name, not their profile link). */
+export const facebookSearchUrl = (name: string) => `https://www.facebook.com/search/people/?q=${encodeURIComponent(name)}`;
+
+const firstTwoWords = (value: string) => value.split(/\s+/).slice(0, 2).join(' ');
+
 /**
- * Buttons under the digest, one row per person, most urgent first: 💬 opens their Messenger chat in
- * SendPulse (only people who linked Messenger), 👤 opens their account in admin.
+ * Buttons under the digest, one row per person, most urgent first, the person's name on the first:
+ * 💬 their Messenger chat in SendPulse (people who linked Messenger), 🔎 Facebook search for their
+ * Facebook name, 👤 their account in admin.
  */
 export const buildVoucherDigestKeyboard = (digest: VoucherDigest) => {
    const seen = new Set<string>();
@@ -387,12 +393,11 @@ export const buildVoucherDigestKeyboard = (digest: VoucherDigest) => {
          const key = person.userId ?? person.messengerContactId ?? person.name;
          if (seen.has(key)) continue;
          seen.add(key);
+         const label = firstTwoWords(person.facebook ?? person.name);
          const row: Array<{ text: string; url: string }> = [];
-         if (person.messengerContactId) {
-            const label = (person.facebook ?? person.name).split(/\s+/).slice(0, 2).join(' ');
-            row.push({ text: `💬 ${label}`, url: messengerChatUrl(person.messengerContactId) });
-         }
-         if (person.userId) row.push({ text: `👤 ${person.name.split(/\s+/).slice(0, 2).join(' ')}`, url: adminUserUrl(person.userId, person.username) });
+         if (person.messengerContactId) row.push({ text: `💬 ${label}`, url: messengerChatUrl(person.messengerContactId) });
+         if (person.facebook) row.push({ text: row.length ? '🔎 Facebook' : `🔎 ${label} (Facebook)`, url: facebookSearchUrl(person.facebook) });
+         if (person.userId) row.push({ text: row.length ? '👤' : `👤 ${firstTwoWords(person.name)}`, url: adminUserUrl(person.userId, person.username) });
          if (!row.length || count + row.length > DIGEST_BUTTONS) continue;
          count += row.length;
          rows.push(row);
