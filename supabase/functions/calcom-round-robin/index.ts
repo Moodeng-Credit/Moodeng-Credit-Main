@@ -19,6 +19,7 @@ import { syncEmmaCalendlyHours } from './calendlySync.ts';
 // this function's env, never in the client.
 // A third action, { action: 'sync_calendly_hours', dryRun? }, is the daily pg_cron job that copies
 // Emma's Calendly hours onto her Cal.com schedule — X-Admin-Token only, never a borrower.
+// { action: 'preview_slots', timeZone? } (X-Admin-Token only) returns the free times a fresh borrower would see.
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
@@ -46,11 +47,18 @@ serve(async (req) => {
       return json({ error: 'bad_request' }, 400);
    }
 
-   if (payload.action === 'sync_calendly_hours') {
+   if (payload.action === 'sync_calendly_hours' || payload.action === 'preview_slots') {
       // Fails closed (unlike checkCronAuth): no configured token, no sync.
       const expected = (Deno.env.get('ADMIN_API_TOKEN') ?? '').trim();
       if (!expected || (req.headers.get(CRON_TOKEN_HEADER) ?? '').trim() !== expected) return json({ error: 'unauthorized' }, 401);
-      const result = await syncEmmaCalendlyHours(createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY), payload.dryRun === true);
+      const adminSvc = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      // Read-only: the free times a borrower with no call and no strikes would see right now (for
+      // testing the Messenger booking bot against the real calendar). Books nothing.
+      if (payload.action === 'preview_slots') {
+         const result = await listCallSlots(adminSvc, { id: '00000000-0000-0000-0000-000000000000', email: null }, payload.timeZone || 'Asia/Manila', payload.host);
+         return json(result.body, result.status);
+      }
+      const result = await syncEmmaCalendlyHours(adminSvc, payload.dryRun === true);
       return json(result, result.ok ? 200 : 502);
    }
 
