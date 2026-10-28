@@ -392,7 +392,8 @@ function VoucherLinks({ claim }: { claim: VoucherClaimSummary }) {
    const [copied, setCopied] = useState(false);
    if (!claim.links.length) return null;
 
-   if (claim.brand === 'grabmart') {
+   // A Bitrefill GrabMart code to copy; a Giftaway eGift is a link like the food ones.
+   if (claim.brand === 'grabmart' && !isGiftawayClaim(claim)) {
       const code = claim.links[0];
       return isShown ? (
          <div className="flex items-center gap-2 rounded-[10px] bg-white/80 px-3 py-2">
@@ -517,7 +518,7 @@ export function VoucherFollowUpCard({
                </p>
             </div>
          </div>
-         <VoucherHowTo brand={claim.brand} />
+         <VoucherHowTo brand={claim.brand} giftaway={isGiftawayClaim(claim)} />
          <VoucherLinks claim={claim} />
          <p className="pt-1 text-center text-[14px] font-bold leading-[18px] text-[#6f7d1d]">Did it work?</p>
          <div className="flex gap-2">
@@ -542,6 +543,22 @@ export function VoucherFollowUpCard({
    );
 }
 
+/** Sent as a Giftaway eGift (gft.ph link): one code that works at the counter, no brand to pick. */
+const isGiftawayClaim = (claim: VoucherClaimSummary) => claim.links.some((link) => /^https?:\/\/(www\.)?gft\.ph\//i.test(link));
+
+const GIFTAWAY_STEPS: Record<VoucherClaimSummary['brand'], string[]> = {
+   food: [
+      'Tap "Open my voucher" below. It was also sent to your phone or email.',
+      'Show the code to the cashier at any Jollibee, Chowking, Mang Inasal, Greenwich, Red Ribbon, Burger King, Yoshinoya or Panda Express.',
+      'Enjoy! Use it all in one order.'
+   ],
+   grabmart: [
+      'Tap "Open my voucher" below. It was also sent to your phone or email.',
+      'Save the voucher in your Grab app on your phone.',
+      'Use it on GrabMart, GrabFood or GrabCar, all in one order.'
+   ]
+};
+
 // One plain sentence per step so each translates as its own phrase.
 const VOUCHER_STEPS: Record<VoucherClaimSummary['brand'], string[]> = {
    food: [
@@ -559,12 +576,12 @@ const VOUCHER_STEPS: Record<VoucherClaimSummary['brand'], string[]> = {
 };
 
 /** "How to use it": numbered steps for first-timers who've never redeemed a voucher link. */
-export function VoucherHowTo({ brand }: { brand: VoucherClaimSummary['brand'] }) {
+export function VoucherHowTo({ brand, giftaway = false }: { brand: VoucherClaimSummary['brand']; giftaway?: boolean }) {
    return (
       <div className="rounded-[10px] bg-white/70 px-3 py-2.5">
          <p className="text-[14px] font-bold leading-[18px] text-[#3c8248]">How to use it</p>
          <ol className="mt-1.5 flex flex-col gap-1.5">
-            {VOUCHER_STEPS[brand].map((step, index) => (
+            {(giftaway ? GIFTAWAY_STEPS : VOUCHER_STEPS)[brand].map((step, index) => (
                <li key={step} className="flex items-start gap-2 text-[14px] font-medium leading-[18px] text-[#594d65]">
                   <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#4aa256] text-[11px] font-bold text-white">
                      {index + 1}

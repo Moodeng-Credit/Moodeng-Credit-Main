@@ -201,6 +201,17 @@ describe('dashboard v2 sample states render', () => {
       expect(grab).toContain('Open the Grab app and go to Mart.');
       expect(grab).not.toContain('Show the code at the counter');
 
+      // A Giftaway eGift (gft.ph): show-the-code steps, and Grab gets a link, not a code to copy.
+      const giftaway = render(createElement(VoucherFollowUpCard, { claim: { ...claim, links: ['https://gft.ph/abc'] }, onAnswer: () => undefined }));
+      expect(giftaway).toContain('Burger King');
+      expect(giftaway).not.toContain('Collect the voucher');
+      const giftawayGrab = render(
+         createElement(VoucherFollowUpCard, { claim: { ...claim, brand: 'grabmart' as const, links: ['https://gft.ph/g'] }, onAnswer: () => undefined })
+      );
+      expect(giftawayGrab).toContain('Save the voucher in your Grab app on your phone.');
+      expect(giftawayGrab).toContain('Open my voucher');
+      expect(giftawayGrab).not.toContain('Show my GrabMart code');
+
       // Once confirmed, the steps go away.
       const enjoyed = render(
          createElement(VoucherFollowUpCard, { claim: { ...claim, receivedAt: new Date().toISOString() }, onAnswer: () => undefined })
@@ -221,7 +232,12 @@ describe('dashboard v2 sample states render', () => {
          'Tap "Show my GrabMart code" below, then Copy.',
          'Open the Grab app and go to Mart.',
          'Use the code at checkout. Your email has the exact steps.',
-         'Did it work?'
+         'Did it work?',
+         'Tap "Open my voucher" below. It was also sent to your phone or email.',
+         'Show the code to the cashier at any Jollibee, Chowking, Mang Inasal, Greenwich, Red Ribbon, Burger King, Yoshinoya or Panda Express.',
+         'Enjoy! Use it all in one order.',
+         'Save the voucher in your Grab app on your phone.',
+         'Use it on GrabMart, GrabFood or GrabCar, all in one order.'
       ]) {
          expect(screenCoverage[phrase], phrase).toBeTruthy();
       }
