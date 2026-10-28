@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { bookCall, HOSTS, listCallSlots } from '../_shared/callBooking.ts';
 import { CRON_TOKEN_HEADER } from '../_shared/cronAuth.ts';
 import { syncAllCalendlyHours } from './calendlySync.ts';
+import { readCallTime, writePrepNote } from '../_shared/bookingAi.ts';
 
 // Free round-robin booking for the no-referral video call — the paid Cal.com Teams feature, built
 // ourselves on the free API. The borrower sees one anonymous "Moodeng team" time list; we read each
@@ -45,6 +46,19 @@ serve(async (req) => {
       payload = await req.json();
    } catch {
       return json({ error: 'bad_request' }, 400);
+   }
+
+   // Admin-only trial of the booking bot's two AI steps (DeepSeek), for testing before the bot ships:
+   // { action: 'ai_preview', texts: [...], now: {weekday,date,time} } and/or { prep: {name, host, answers} }.
+   if (payload.action === 'ai_preview') {
+      const expected = (Deno.env.get('ADMIN_API_TOKEN') ?? '').trim();
+      if (!expected || (req.headers.get(CRON_TOKEN_HEADER) ?? '').trim() !== expected) return json({ error: 'unauthorized' }, 401);
+      // deno-lint-ignore no-explicit-any
+      const p = payload as any;
+      const now = p.now ?? { weekday: 'Thursday', date: '2026-10-29', time: '09:00' };
+      const times = await Promise.all(((p.texts ?? []) as string[]).slice(0, 12).map(async (text) => ({ text, ...(await readCallTime(String(text), now)) })));
+      const prep = p.prep ? await writePrepNote(String(p.prep.name ?? ''), String(p.prep.host ?? 'Emma'), p.prep.answers ?? {}) : null;
+      return json({ times, prep });
    }
 
    if (payload.action === 'sync_calendly_hours' || payload.action === 'preview_slots') {
