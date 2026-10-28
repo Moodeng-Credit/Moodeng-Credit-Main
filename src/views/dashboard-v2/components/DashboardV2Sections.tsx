@@ -546,8 +546,9 @@ export function VoucherFollowUpCard({
 const VOUCHER_STEPS: Record<VoucherClaimSummary['brand'], string[]> = {
    food: [
       'Tap "Open my voucher" below.',
-      'Pick Jollibee, Chowking, Greenwich, Mang Inasal or Red Ribbon.',
-      'Your code shows up on the screen.',
+      'Pick Jollibee, Chowking, Greenwich, Mang Inasal or Red Ribbon, then tap "Collect the voucher".',
+      'If it asks, enter your phone or email and the one-time code they send you.',
+      'Your code shows up. Tap "Send me a copy" to keep it.',
       'Show the code at the counter. Enjoy!'
    ],
    grabmart: [
