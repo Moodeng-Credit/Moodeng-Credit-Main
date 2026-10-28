@@ -4,7 +4,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { postDiscord } from '../_shared/discord.ts';
 import { getAdminChatId } from '../_shared/loanAccess.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
-import { formatCallTime } from '../_shared/videoCall.ts';
+import { buildCallIcs, CALENDAR_CONFIRM_OPENS_MIN, googleCalendarUrl, isAndroid } from '../_shared/callCalendar.ts';
+import { buildCalendarConfirmUrl, formatCallTime } from '../_shared/videoCall.ts';
 
 // Target of the "✅ I'll be there" button in the Messenger booking confirmation / reminders.
 //
@@ -12,16 +13,43 @@ import { formatCallTime } from '../_shared/videoCall.ts';
 // browser with no Supabase session; the per-booking random token (users.video_call_confirm_token,
 // reset on every new booking) is the only credential, and all it can do is stamp
 // video_call_confirmed_at. Always answers with a redirect into the app, never an error page.
+//
+// GET ?ics=<token>: "📅 Add to my calendar" (callCalendar.ts) — an .ics with 1h + 15m alarms, or on
+// Android a redirect to Google Calendar. Its ✅ link carries &src=cal and only counts in the last 2h
+// before the call; an earlier tap lands on ?callConfirmed=early ("come back 1 hour before").
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const SITE_URL = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? Deno.env.get('SITE_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
 
-const redirect = (result: 'yes' | 'expired') =>
+const redirect = (result: 'yes' | 'expired' | 'early') =>
    new Response(null, { status: 302, headers: { Location: `${SITE_URL}/request-board?callConfirmed=${result}` } });
 
+const addToCalendar = async (req: Request, token: string): Promise<Response> => {
+   if (!/^[0-9a-f]{32}$/i.test(token) || !SUPABASE_URL || !SERVICE_KEY) return redirect('expired');
+   const { data: user } = await createClient(SUPABASE_URL, SERVICE_KEY)
+      .from('users')
+      .select('video_call_starts_at, video_call_join_url, video_call_booking_uid')
+      .eq('video_call_confirm_token', token)
+      .maybeSingle();
+   if (!user?.video_call_starts_at || Date.parse(user.video_call_starts_at) < Date.now()) return redirect('expired');
+   const event = {
+      uid: user.video_call_booking_uid ?? token,
+      startsAt: user.video_call_starts_at,
+      joinUrl: user.video_call_join_url,
+      confirmUrl: buildCalendarConfirmUrl(token)
+   };
+   if (isAndroid(req.headers.get('user-agent'))) return new Response(null, { status: 302, headers: { Location: googleCalendarUrl(event) } });
+   return new Response(buildCallIcs(event), {
+      headers: { 'Content-Type': 'text/calendar; charset=utf-8', 'Content-Disposition': 'inline; filename="moodeng-call.ics"' }
+   });
+};
+
 serve(async (req) => {
-   const token = new URL(req.url).searchParams.get('t')?.trim() ?? '';
+   const params = new URL(req.url).searchParams;
+   const icsToken = params.get('ics')?.trim();
+   if (icsToken) return await addToCalendar(req, icsToken);
+   const token = params.get('t')?.trim() ?? '';
    if (!/^[0-9a-f]{32}$/i.test(token) || !SUPABASE_URL || !SERVICE_KEY) return redirect('expired');
 
    const svc = createClient(SUPABASE_URL, SERVICE_KEY);
@@ -34,6 +62,10 @@ serve(async (req) => {
 
    // A token for a call that's long over is stale — don't stamp it.
    if (Date.parse(user.video_call_starts_at) < Date.now() - 60 * 60 * 1000) return redirect('expired');
+   // From the calendar event: too early to count as "I'll be there" — they'll tap again at the alarm.
+   if (params.get('src') === 'cal' && !user.video_call_confirmed_at && Date.parse(user.video_call_starts_at) - Date.now() > CALENDAR_CONFIRM_OPENS_MIN * 60_000) {
+      return redirect('early');
+   }
 
    // First tap only: stamp + tell the team. Repeat taps just land back in the app.
    if (!user.video_call_confirmed_at) {

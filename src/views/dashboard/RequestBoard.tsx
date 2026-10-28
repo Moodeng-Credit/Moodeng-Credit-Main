@@ -1356,12 +1356,15 @@ function RequestBoard$() {
    }, [isFreshlyApproved]);
 
    // Landing here from the "✅ I'll be there" button in a Messenger call reminder
-   // (video-call-confirm redirects to ?callConfirmed=yes|expired). Say thanks once, then tidy the URL.
+   // (video-call-confirm redirects to ?callConfirmed=yes|early|expired). Say thanks once, then tidy the URL.
    const callConfirmedParam = new URLSearchParams(location.search).get('callConfirmed');
    useEffect(() => {
       if (!callConfirmedParam) return;
       if (callConfirmedParam === 'yes') {
          showToast(TOAST_TYPES.SUCCESS, "Thanks — see you on the call!", "The team knows you're coming. The join link is in your email.", 'OK', 'acknowledge');
+      } else if (callConfirmedParam === 'early') {
+         // From the calendar event, tapped before the last 2 hours (video-call-confirm).
+         showToast(TOAST_TYPES.INFO, 'A little early!', "Tap ✅ again 1 hour before your call — your calendar will remind you.", 'OK', 'acknowledge');
       } else {
          showToast(TOAST_TYPES.INFO, 'That link has expired', 'That call reminder is for an older booking. Check your latest message from Moodeng.', 'OK', 'acknowledge');
       }
