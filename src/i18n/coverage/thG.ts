@@ -682,5 +682,10 @@ export const thaiCoverageG: Record<string, string> = {
    "Your Instant Wallet needs to reconnect": "Instant Wallet ของคุณต้องเชื่อมต่อใหม่",
    "Nothing was sent. Sign out and sign back in, or open Moodeng in another browser like Chrome, then try again.": "ยังไม่มีการส่งเงิน ออกจากระบบแล้วเข้าสู่ระบบใหม่ หรือเปิด Moodeng ในเบราว์เซอร์อื่น เช่น Chrome แล้วลองอีกครั้ง",
    "Your payment didn't go through": "การชำระเงินของคุณไม่สำเร็จ",
-   "My Instant Wallet payment failed": "การชำระเงินจาก Instant Wallet ของฉันไม่สำเร็จ"
+   "My Instant Wallet payment failed": "การชำระเงินจาก Instant Wallet ของฉันไม่สำเร็จ",
+   // VideoCallStep / ConnectStep: confirm the call 1 hour before
+   "Confirm 1 hour before your call": "ยืนยัน 1 ชั่วโมงก่อนคอล",
+   "We'll send you an “I'll be there” button on Messenger, and it shows up right here. Tap it, or the call is cancelled automatically.": "เราจะส่งปุ่ม “I'll be there” ให้ทาง Messenger และปุ่มจะขึ้นที่หน้านี้ด้วย แตะปุ่มนั้น ไม่เช่นนั้นคอลจะถูกยกเลิกอัตโนมัติ",
+   "Your call is in under an hour — tap “I’ll be there” now to keep it.": "อีกไม่ถึงชั่วโมงจะถึงเวลาคอล — แตะ “I’ll be there” ตอนนี้เพื่อเก็บคอลไว้",
+   "You’re booked! You can apply right after the call.": "จองแล้ว! คุณสมัครได้ทันทีหลังคอล"
 };

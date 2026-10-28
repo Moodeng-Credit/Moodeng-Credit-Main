@@ -1070,5 +1070,10 @@ export const filipinoCoverageG: Record<string, string> = {
    "Your Instant Wallet needs to reconnect": "Kailangang ikonekta ulit ang Instant Wallet mo",
    "Nothing was sent. Sign out and sign back in, or open Moodeng in another browser like Chrome, then try again.": "Walang naipadala. Mag-sign out at mag-sign in ulit, o buksan ang Moodeng sa ibang browser tulad ng Chrome, saka subukan ulit.",
    "Your payment didn't go through": "Hindi natuloy ang bayad mo",
-   "My Instant Wallet payment failed": "Pumalya ang bayad mula sa Instant Wallet ko"
+   "My Instant Wallet payment failed": "Pumalya ang bayad mula sa Instant Wallet ko",
+   // VideoCallStep / ConnectStep: confirm the call 1 hour before
+   "Confirm 1 hour before your call": "Kumpirmahin 1 oras bago ang call mo",
+   "We'll send you an “I'll be there” button on Messenger, and it shows up right here. Tap it, or the call is cancelled automatically.": "Magpapadala kami ng “I'll be there” button sa Messenger, at lalabas din ito dito mismo. I-tap ito, kung hindi ay awtomatikong makakansela ang call.",
+   "Your call is in under an hour — tap “I’ll be there” now to keep it.": "Wala nang isang oras bago ang call mo — i-tap ang “I’ll be there” ngayon para manatili ito.",
+   "You’re booked! You can apply right after the call.": "Naka-book ka na! Puwede kang mag-apply pagkatapos ng call."
 };

@@ -267,10 +267,10 @@ const BORROWER_MESSAGES = {
       body: 'No problem — tap to pick a new time for your 15-minute call. Your application continues right after it.',
       url: APPLY_URL
    },
-   // They never tapped "I'll be there" (asked twice), so the slot went back to the calendar.
+   // They never tapped "I'll be there" in the hour before, so the call was cancelled.
    spot_released: {
-      title: 'We freed up your call time',
-      body: "You didn't confirm your call, so we gave the slot to someone else. No problem — tap to pick a new time that works for you.",
+      title: 'Your Moodeng call was cancelled',
+      body: "You didn't confirm your call in the hour before, so it was cancelled. No problem — tap to pick a new time that works for you.",
       url: APPLY_URL
    },
    // Open flow: their request is already on the board, so this is just "please talk to us".
@@ -326,8 +326,8 @@ const PRE_KYC_MESSAGES: Partial<Record<BorrowerMessageKind, BorrowerMessage>> = 
       url: CONNECT_URL
    },
    spot_released: {
-      title: 'We freed up your call time',
-      body: "You didn't confirm your call, so we gave the slot to someone else. No problem — tap to pick a new time that works for you.",
+      title: 'Your Moodeng call was cancelled',
+      body: "You didn't confirm your call in the hour before, so it was cancelled. No problem — tap to pick a new time that works for you.",
       url: CONNECT_URL
    },
    expired: {

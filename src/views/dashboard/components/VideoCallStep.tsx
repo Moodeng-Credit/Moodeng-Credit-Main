@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 
-import { CalendarPlus, CheckCircle, Globe } from 'lucide-react';
+import { AlarmClock, CalendarPlus, CheckCircle, Globe } from 'lucide-react';
 
 import { clarityEvent } from '@/lib/analytics/clarity';
 import { FlipFace, useFloatingParticles, useReplayClass, useTapFlip } from '@/components/motion/TapDelight';
@@ -207,6 +207,7 @@ export default function VideoCallStep({
          {isScheduled ? (
             <div className="flex flex-col gap-3">
                <BookedCallCard host={host} bookedStartsAt={bookedStartsAt} formattedBooked={formattedBooked} />
+               <ConfirmLaterNotice />
                {calendarLinks ? (
                   <div className="grid grid-cols-2 gap-2">
                      <a
@@ -309,6 +310,22 @@ export default function VideoCallStep({
             </PrimaryButton>
             <GhostButton onClick={onBack}>Back</GhostButton>
          </div>
+      </div>
+   );
+}
+
+// "Come back 1h before and confirm, or the call is cancelled" — on the booked screens until the
+// confirm button opens. Also on ConnectStep's "See you on the call" screen.
+export function ConfirmLaterNotice() {
+   return (
+      <div className="flex w-full items-start gap-2.5 rounded-[14px] border-2 border-[#f5b83d] bg-[#fff8e6] px-3 py-3 text-left">
+         <AlarmClock aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-[#c27c00]" strokeWidth={2.2} />
+         <span className="flex flex-col gap-0.5">
+            <b className="text-[14px] leading-[19px] text-[#7a4b00]">Confirm 1 hour before your call</b>
+            <span className="text-[13px] leading-[18px] text-[#7a4b00]">
+               We&apos;ll send you an “I&apos;ll be there” button on Messenger, and it shows up right here. Tap it, or the call is cancelled automatically.
+            </span>
+         </span>
       </div>
    );
 }
