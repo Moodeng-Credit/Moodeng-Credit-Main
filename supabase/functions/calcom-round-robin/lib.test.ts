@@ -188,3 +188,11 @@ Deno.test('preferHost puts Emma first whenever she is free', () => {
    assertEquals(preferHost(['emma', 'george']), ['emma', 'george']);
    assertEquals(preferHost(['george']), ['george']);
 });
+
+Deno.test('calendlyToCalSchedule: a window ending at midnight ("00:00") becomes 23:59', () => {
+   const s = calendlyToCalSchedule([{ type: 'wday', wday: 'sunday', intervals: [{ from: '00:00', to: '02:00' }, { from: '16:00', to: '00:00' }] }], 'Asia/Bangkok', '2026-10-29');
+   assertEquals(s.availability, [
+      { days: ['Sunday'], startTime: '00:00', endTime: '02:00' },
+      { days: ['Sunday'], startTime: '16:00', endTime: '23:59' }
+   ]);
+});

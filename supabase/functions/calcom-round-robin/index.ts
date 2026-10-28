@@ -3,7 +3,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { bookCall, HOSTS, listCallSlots } from '../_shared/callBooking.ts';
 import { CRON_TOKEN_HEADER } from '../_shared/cronAuth.ts';
-import { syncEmmaCalendlyHours } from './calendlySync.ts';
+import { syncAllCalendlyHours } from './calendlySync.ts';
+import { readCallTime, writePrepNote } from '../_shared/bookingAi.ts';
 
 // Free round-robin booking for the no-referral video call — the paid Cal.com Teams feature, built
 // ourselves on the free API. The borrower sees one anonymous "Moodeng team" time list; we read each
@@ -12,13 +13,13 @@ import { syncEmmaCalendlyHours } from './calendlySync.ts';
 //
 // Two actions (POST JSON): { action: 'slots', timeZone } returns the merged available start times;
 // { action: 'book', start, timeZone } books the slot and stamps users.video_call_scheduled_at.
-// Calls are booked on CALL_HOST's calendar (Emma, 2026-10-14) with the other cofounder as a guest;
+// Calls are booked on Emma's calendar, or on George's when only he is free and calls_either_host is on, with the other cofounder as a guest;
 // optional { host: 'emma' | 'george' } on both pins a different host.
 // verify_jwt is on, so only a signed-in borrower can call it; we take their identity from the JWT,
 // never from the body, so nobody can book as someone else. The host Cal.com API keys live only in
 // this function's env, never in the client.
 // A third action, { action: 'sync_calendly_hours', dryRun? }, is the daily pg_cron job that copies
-// Emma's Calendly hours onto her Cal.com schedule — X-Admin-Token only, never a borrower.
+// each host's Calendly hours onto their Cal.com schedule — X-Admin-Token only, never a borrower.
 // { action: 'preview_slots', timeZone? } (X-Admin-Token only) returns the free times a fresh borrower would see.
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
@@ -47,6 +48,19 @@ serve(async (req) => {
       return json({ error: 'bad_request' }, 400);
    }
 
+   // Admin-only trial of the booking bot's two AI steps (DeepSeek), for testing before the bot ships:
+   // { action: 'ai_preview', texts: [...], now: {weekday,date,time} } and/or { prep: {name, host, answers} }.
+   if (payload.action === 'ai_preview') {
+      const expected = (Deno.env.get('ADMIN_API_TOKEN') ?? '').trim();
+      if (!expected || (req.headers.get(CRON_TOKEN_HEADER) ?? '').trim() !== expected) return json({ error: 'unauthorized' }, 401);
+      // deno-lint-ignore no-explicit-any
+      const p = payload as any;
+      const now = p.now ?? { weekday: 'Thursday', date: '2026-10-29', time: '09:00' };
+      const times = await Promise.all(((p.texts ?? []) as string[]).slice(0, 12).map(async (text) => ({ text, ...(await readCallTime(String(text), now)) })));
+      const prep = p.prep ? await writePrepNote(String(p.prep.name ?? ''), String(p.prep.host ?? 'Emma'), p.prep.answers ?? {}) : null;
+      return json({ times, prep });
+   }
+
    if (payload.action === 'sync_calendly_hours' || payload.action === 'preview_slots') {
       // Fails closed (unlike checkCronAuth): no configured token, no sync.
       const expected = (Deno.env.get('ADMIN_API_TOKEN') ?? '').trim();
@@ -58,7 +72,7 @@ serve(async (req) => {
          const result = await listCallSlots(adminSvc, { id: '00000000-0000-0000-0000-000000000000', email: null }, payload.timeZone || 'Asia/Manila', payload.host, true);
          return json(result.body, result.status);
       }
-      const result = await syncEmmaCalendlyHours(adminSvc, payload.dryRun === true);
+      const result = await syncAllCalendlyHours(adminSvc, payload.dryRun === true);
       return json(result, result.ok ? 200 : 502);
    }
 
