@@ -12,7 +12,9 @@
 //   { claimId, event: 'receipt' }                borrower tapped I got it / Didn't get it (notify_voucher_receipt) →
 //                                                a one-line Telegram message.
 //   { event: 'digest' }                          daily 10:00 Bangkok (voucher-daily-digest cron): who earned but
-//                                                hasn't claimed, what's stuck, who hasn't confirmed.
+//                                                hasn't claimed, what's stuck, who hasn't confirmed. First nudges
+//                                                the unclaimed / unconfirmed on Messenger (once per amount, see
+//                                                voucher_messenger_nudges), then posts the digest with 💬 buttons.
 //   { claimId, event: 'admin_send' }             admin Vouchers page → Send code (admin session required).
 //                                                Lives here because the project is at its function limit.
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -23,12 +25,18 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 import {
    buildVoucherCallback,
    buildVoucherClaimCard,
+   buildRewardNudgeMessage,
    buildVoucherDigest,
+   buildVoucherDigestKeyboard,
    buildVoucherReceiptMessage,
    buildVoucherSentCard,
+   loadMessengerContact,
+   messageBorrower,
+   messengerChatButton,
    sendVoucherCode,
    type VoucherClaimRow,
    type VoucherDigest,
+   type VoucherDigestPerson,
    voucherDecidedBy,
    voucherStampHeader
 } from '../_shared/voucherClaims.ts';
@@ -62,6 +70,32 @@ const isAuthorized = async (supabase: SupabaseClient, req: Request) => {
    if (expected && secret === expected) return true;
    const { data } = await supabase.rpc('verify_internal_notification_secret', { candidate: secret });
    return data === true;
+};
+
+// Nudge on Messenger: earned-not-claimed, and sent-but-no-"I got it" after a day. Each person once per
+// amount (a new reward raises the amount and nudges again). Only remembered when it went through, so
+// someone outside Meta's 24h window is tried again tomorrow.
+const NUDGE_KINDS = ['unclaimed', 'no_answer'] as const;
+
+const nudgeOnMessenger = async (supabase: SupabaseClient, digest: VoucherDigest) => {
+   const { data: past } = await supabase.from('voucher_messenger_nudges').select('user_id, kind, amount_php');
+   const last = new Map(((past ?? []) as Array<{ user_id: string; kind: string; amount_php: number | string }>).map((r) => [`${r.user_id}:${r.kind}`, Number(r.amount_php)]));
+   for (const kind of NUDGE_KINDS) {
+      for (const person of (digest[kind] ?? []) as VoucherDigestPerson[]) {
+         const amountPhp = Number(person.amountPhp);
+         if (!person.userId || !person.messengerContactId) continue;
+         if (kind === 'no_answer' && (person.days ?? 0) < 1) continue;
+         if ((last.get(`${person.userId}:${kind}`) ?? 0) >= amountPhp) continue;
+         const facebook = await loadMessengerContact(supabase, person.userId);
+         const outcome = await messageBorrower(facebook, buildRewardNudgeMessage({ kind, firstName: facebook?.firstName ?? null, locale: facebook?.locale ?? 'en', amountPhp }));
+         person.nudge = outcome === 'sent' ? 'sent' : 'failed';
+         if (outcome === 'sent') {
+            await supabase
+               .from('voucher_messenger_nudges')
+               .upsert({ user_id: person.userId, kind, amount_php: amountPhp, nudged_at: new Date().toISOString() }, { onConflict: 'user_id,kind' });
+         }
+      }
+   }
 };
 
 /** The calling admin's handle, or null when the bearer isn't an active admin's session. Mirrors admin-loan-notify. */
@@ -106,7 +140,9 @@ serve(async (req) => {
             .select('id', { count: 'exact', head: true })
             .is('assigned_at', null)
             .eq('amount_php', 50);
-         await sendTelegramMessage(chatId, buildVoucherDigest(digest as VoucherDigest, linksLeft ?? null));
+         await nudgeOnMessenger(supabase, digest as VoucherDigest);
+         const keyboard = buildVoucherDigestKeyboard(digest as VoucherDigest);
+         await sendTelegramMessage(chatId, buildVoucherDigest(digest as VoucherDigest, linksLeft ?? null), keyboard.length ? { inlineKeyboard: keyboard } : {});
          return json({ ok: true });
       }
 
@@ -145,11 +181,18 @@ serve(async (req) => {
       if (!chatId) return json({ error: 'voucher_alert_chat_id / kyc_alert_chat_id is not set' }, 500);
 
       if (event === 'receipt') {
-         await sendTelegramMessage(chatId, buildVoucherReceiptMessage(claim as unknown as VoucherClaimRow & { received_at?: string | null }));
+         const chatButton = claim.received_at ? null : messengerChatButton(await loadMessengerContact(supabase, claim.user_id), claim.full_name);
+         await sendTelegramMessage(
+            chatId,
+            buildVoucherReceiptMessage(claim as unknown as VoucherClaimRow & { received_at?: string | null }),
+            chatButton ? { inlineKeyboard: [[chatButton]] } : {}
+         );
          return json({ ok: true });
       }
       const username = (Array.isArray(claim.users) ? claim.users[0]?.username : (claim.users as { username?: string | null } | null)?.username) ?? null;
       const row = claim as unknown as VoucherClaimRow;
+      const facebook = await loadMessengerContact(supabase, claim.user_id);
+      const chatButton = messengerChatButton(facebook, claim.full_name);
 
       // Send it now; the card only asks for a tap when that didn't work.
       const sent = claim.status === 'pending' ? await sendVoucherCode(supabase, claim.id, 'auto') : null;
@@ -157,8 +200,8 @@ serve(async (req) => {
          await sendAdminCard(supabase, chatId, {
             kind: 'voucher',
             refId: claim.id,
-            text: buildVoucherSentCard(row, sent.summary),
-            keyboard: [[openInAdminButton(claim.user_id, username)]]
+            text: buildVoucherSentCard(row, sent.summary, facebook),
+            keyboard: [...(chatButton ? [[chatButton]] : []), [openInAdminButton(claim.user_id, username)]]
          });
          return json({ ok: true, sent: true });
       }
@@ -166,12 +209,13 @@ serve(async (req) => {
       await sendAdminCard(supabase, chatId, {
          kind: 'voucher',
          refId: claim.id,
-         text: buildVoucherClaimCard(row, sent?.summary ?? null),
+         text: buildVoucherClaimCard(row, sent?.summary ?? null, facebook),
          keyboard: [
             [
                { text: '✅ Send code', callback_data: buildVoucherCallback('sent', claim.id) },
                { text: '❌ Reject', callback_data: buildVoucherCallback('rejected', claim.id) }
             ],
+            ...(chatButton ? [[chatButton]] : []),
             [openInAdminButton(claim.user_id, username)]
          ]
       });

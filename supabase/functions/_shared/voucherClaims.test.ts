@@ -3,7 +3,12 @@ import { assert, assertEquals, assertStringIncludes } from 'https://deno.land/st
 import {
    buildVoucherCallback,
    buildVoucherCodeEmail,
+   buildRewardNudgeMessage,
+   buildRewardSentMessage,
    buildVoucherDigest,
+   buildVoucherDigestKeyboard,
+   messengerChatButton,
+   messengerOutcomeLine,
    parseVoucherCallback,
    voucherDecidedBy,
    voucherStampHeader
@@ -73,3 +78,56 @@ Deno.test('daily digest: sections, Facebook, days, stock and the all-clear', () 
    assertStringIncludes(buildVoucherDigest({ unclaimed: [], pending: [], not_arrived: [], no_answer: [] }, 20), 'nothing waiting');
 });
 
+
+Deno.test('reward on Messenger: ₱100 is two link buttons, in the bot language', () => {
+   const en = buildRewardSentMessage({ firstName: 'Ana', locale: 'en', amountPhp: 100, reward: 'referral_inviter', links: ['https://plum.gift/a', 'https://plum.gift/b'] });
+   assertStringIncludes(en.text, 'Hi Ana! Your ₱100 food reward is here for inviting a friend');
+   assertEquals(en.card.button, { title: 'Open ₱50 voucher 1', url: 'https://plum.gift/a' });
+   assertEquals(en.card.moreButtons, [{ title: 'Open ₱50 voucher 2', url: 'https://plum.gift/b' }]);
+   const fil = buildRewardSentMessage({ firstName: null, locale: 'fil', amountPhp: 50, reward: 'tier_rising', links: ['https://plum.gift/a'] });
+   assertStringIncludes(fil.text, 'Nandito na ang ₱50 food reward mo dahil umabot na sa Rising');
+   assertStringIncludes(fil.text, 'Mang Inasal o Red Ribbon');
+   assertEquals(fil.card.button.title, 'Buksan ang voucher');
+   for (const msg of [en, fil]) for (const b of [msg.card.button, ...(msg.card.moreButtons ?? [])]) assert(b.title.length <= 20, b.title);
+});
+
+Deno.test('reward on Messenger: Bitrefill send points to the email; nudges link to the app', () => {
+   const bitrefill = buildRewardSentMessage({ firstName: 'Ana', locale: 'en', amountPhp: 100, reward: 'tier_prime', links: [], product: 'GrabMart' });
+   assertStringIncludes(bitrefill.text, 'Bitrefill emailed it to you');
+   assertStringIncludes(bitrefill.card.button.url, '/dashboard');
+   const nudge = buildRewardNudgeMessage({ kind: 'unclaimed', firstName: 'Ana', locale: 'fil', amountPhp: 150 });
+   assertStringIncludes(nudge.text, 'May ₱150 food reward ka');
+   assertEquals(nudge.card.button.title, 'I-claim ang reward');
+   assertStringIncludes(buildRewardNudgeMessage({ kind: 'no_answer', firstName: null, locale: 'en', amountPhp: 50 }).text, 'Did your ₱50 food voucher arrive?');
+});
+
+Deno.test('admin side: 💬 button opens their SendPulse chat; outcome line says what happened', () => {
+   const facebook = { contactId: 'c0ffee00-0000-4000-8000-000000000001', facebookName: 'Ana Cruz', firstName: 'Ana', locale: 'en' as const };
+   assertEquals(messengerChatButton(facebook), {
+      text: '💬 Message Ana on Messenger',
+      url: 'https://login.sendpulse.com/chatbots/chats?contact_id=c0ffee00-0000-4000-8000-000000000001&channel=messenger'
+   });
+   assertEquals(messengerChatButton({ ...facebook, contactId: null }), null);
+   assertStringIncludes(messengerOutcomeLine('sent'), 'told them ✓');
+   assertStringIncludes(messengerOutcomeLine('send_failed'), 'outside the 24h window');
+   assertStringIncludes(messengerOutcomeLine('no_contact'), 'not linked');
+});
+
+Deno.test('digest: bot nudge marks and one 💬 button per Messenger person', () => {
+   const base = { username: null, facebook: 'Ana Cruz', messenger: true, amountPhp: 50, vouchers: 1, days: 2 };
+   const digest = {
+      unclaimed: [{ ...base, name: 'Ana', userId: 'u1', messengerContactId: 'c1', nudge: 'sent' as const }],
+      pending: [],
+      not_arrived: [],
+      no_answer: [
+         { ...base, name: 'Ana', userId: 'u1', messengerContactId: 'c1', nudge: null },
+         { ...base, name: 'Ben', facebook: null, userId: 'u2', messengerContactId: null, nudge: null }
+      ]
+   };
+   const text = buildVoucherDigest(digest, 6);
+   assertStringIncludes(text, '🤖 bot nudged');
+   assertStringIncludes(text, 'Tap 💬 below');
+   const keyboard = buildVoucherDigestKeyboard(digest);
+   assertEquals(keyboard.length, 1);
+   assertEquals(keyboard[0].map((b) => b.text), ['💬 Ana Cruz']);
+});
