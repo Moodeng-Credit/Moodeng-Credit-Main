@@ -72,12 +72,16 @@ Deno.test('daily digest: sections, Facebook, days, stock and the all-clear', () 
       { unclaimed: [person], pending: [], not_arrived: [], no_answer: [{ ...person, name: 'Jun', username: null, facebook: null, amountPhp: '50.00', vouchers: 1, days: 3 }] },
       4
    );
-   assertStringIncludes(text, '🎁 Earned, not claimed yet (nudge them to claim) — 1 person, ₱100');
-   assertStringIncludes(text, '• Ana Cruz (@ana.c) · ₱100 (2) · FB: Ana C');
+   // Only people who claimed are listed; the unclaimed are one count line.
+   assertStringIncludes(text, '🎁 Not claimed yet: 1 person, ₱100');
+   assertEquals(text.includes('• Ana Cruz'), false);
    assertStringIncludes(text, '• Jun · ₱50 · Messenger ✓ · 3d');
    assertStringIncludes(text, '₱50 Xoxo links left: 4 — restock soon');
    assertEquals(text.includes('Claimed, not sent'), false);
-   assertStringIncludes(buildVoucherDigest({ unclaimed: [], pending: [], not_arrived: [], no_answer: [] }, 20), 'nothing waiting');
+   assertStringIncludes(buildVoucherDigest({ unclaimed: [], pending: [], not_arrived: [], no_answer: [] }, 20), 'all confirmed');
+   const onlyUnclaimed = buildVoucherDigest({ unclaimed: [person], pending: [], not_arrived: [], no_answer: [] }, 20);
+   assertStringIncludes(onlyUnclaimed, 'all confirmed');
+   assertStringIncludes(onlyUnclaimed, 'Not claimed yet: 1 person');
 });
 
 
@@ -122,7 +126,7 @@ Deno.test('digest: bot nudge marks and one 💬 button per Messenger person', ()
       pending: [],
       not_arrived: [],
       no_answer: [
-         { ...base, name: 'Ana', userId: 'u1', messengerContactId: 'c1', nudge: null },
+         { ...base, name: 'Ana', userId: 'u1', messengerContactId: 'c1', nudge: 'sent' as const },
          { ...base, name: 'Ben', facebook: null, userId: 'u2', messengerContactId: null, nudge: null }
       ]
    };
@@ -134,16 +138,18 @@ Deno.test('digest: bot nudge marks and one 💬 button per Messenger person', ()
    assertEquals(keyboard[0].map((b) => b.text), ['📥 Open the Moodeng Page inbox']);
    assertEquals(keyboard[1].map((b) => b.text), ['💬 Ana Cruz', '📋 Copy message', '👤']);
    const copy = keyboard[1][1] as { copy_text: { text: string } };
-   assertStringIncludes(copy.copy_text.text, 'Hi Ana! 🎁 You have ₱50 in food rewards');
+   assertStringIncludes(copy.copy_text.text, 'We sent your ₱50 food voucher');
    assertEquals(keyboard[2].map((b) => b.text), ['📋 Copy message · Ben', '👤']);
    assertEquals(buildVoucherDigestKeyboard({ unclaimed: [], pending: [], not_arrived: [], no_answer: [] }), []);
+   // Unclaimed people get no buttons.
+   assertEquals(buildVoucherDigestKeyboard({ ...digest, no_answer: [] }), []);
 
    const reach = buildVoucherDigest(digest, 6);
    assertStringIncludes(reach, '👋 HOW TO REACH THEM');
    assertStringIncludes(reach, '📘 On Facebook Messenger (2)');
    assertStringIncludes(reach, '• Type "Ana Cruz" — that\'s Ana');
    assertStringIncludes(reach, '• Ben — on Messenger, name not saved: tap their 💬 below');
-   const offline = buildVoucherDigest({ unclaimed: [{ ...base, name: 'Cy', facebook: null, messenger: false, email: 'cy@example.com' }], pending: [], not_arrived: [], no_answer: [] }, 6);
+   const offline = buildVoucherDigest({ unclaimed: [], pending: [], not_arrived: [], no_answer: [{ ...base, name: 'Cy', facebook: null, messenger: false, email: 'cy@example.com' }] }, 6);
    assertStringIncludes(offline, '📵 Not on Facebook (1): email or text them\n• Cy — ✉️ cy@example.com');
 });
 
@@ -163,11 +169,11 @@ Deno.test('digest: says what each person is owed and how to reach them', () => {
       phone: '09171234567',
       email: 'ana@example.com'
    };
-   const text = buildVoucherDigest({ unclaimed: [person], pending: [], not_arrived: [], no_answer: [] }, 6);
+   const text = buildVoucherDigest({ unclaimed: [], pending: [], not_arrived: [], no_answer: [person] }, 6);
    assertStringIncludes(text, '↳ First on-time ₱50 + Rising ₱50');
    assertStringIncludes(text, '↳ 📞 09171234567 · ✉️ ana@example.com');
    assertStringIncludes(text, '👤 = their account.');
-   const noContact = buildVoucherDigest({ unclaimed: [{ ...person, phone: null, email: null, rewards: [] }], pending: [], not_arrived: [], no_answer: [] }, 6);
+   const noContact = buildVoucherDigest({ unclaimed: [], pending: [], not_arrived: [], no_answer: [{ ...person, phone: null, email: null, rewards: [] }] }, 6);
    assertEquals(noContact.includes('↳'), false);
 });
 
