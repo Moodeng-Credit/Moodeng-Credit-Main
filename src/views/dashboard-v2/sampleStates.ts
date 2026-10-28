@@ -116,6 +116,31 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
          claims: []
       }
    },
+   // Not in the Figma: the same borrower after their food voucher was sent — the "Your Moo-meal is
+   // here!" card with how-to steps.
+   get voucherSent(): DashboardV2Model {
+      return {
+         ...SAMPLE_STATES.rewarded,
+         rewards: {
+            ...SAMPLE_STATES.rewarded.rewards,
+            claimable: [],
+            claims: [
+               {
+                  id: 'sample-claim-1',
+                  reward: 'first_on_time_repayment',
+                  friendReferralId: null,
+                  status: 'sent',
+                  brand: 'food',
+                  amountPhp: 50,
+                  sentAt: '2026-10-28T02:00:00Z',
+                  receivedAt: null,
+                  receiptIssueAt: null,
+                  links: ['https://plum.gift/sample']
+               }
+            ]
+         }
+      };
+   },
    // Not in the Figma: Emma's video demo (moodeng.app/borrower-demo) — a borrower with two active
    // loans, $15 and $20, both on time.
    demo: {

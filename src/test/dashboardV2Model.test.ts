@@ -5,11 +5,12 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 
 import { LocalizationProvider } from '@/i18n';
+import { screenCoverage } from '@/i18n/coverage/fil';
 import { EMPTY_REWARDS, isValidInviteCode, normalizeInviteCode, parseMyRewards } from '@/lib/friendReferrals';
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 import DashboardV2Hero from '@/views/dashboard-v2/components/DashboardV2Hero';
 import { MilestonePopup } from '@/views/dashboard-v2/components/DashboardV2Popups';
-import { LoanSummarySection, MilestonesSection, UpcomingDuesSection } from '@/views/dashboard-v2/components/DashboardV2Sections';
+import { LoanSummarySection, MilestonesSection, RewardsWaitingCard, UpcomingDuesSection, VoucherFollowUpCard } from '@/views/dashboard-v2/components/DashboardV2Sections';
 import {
    buildInviteLink,
    getCreditLevelProgress,
@@ -185,6 +186,80 @@ describe('dashboard v2 sample states render', () => {
          )
       ).toContain('Post your first loan request');
       expect(render(createElement(LoanSummarySection, { model: SAMPLE_STATES.defaulted }))).toContain('3.00');
+   });
+
+   it('shows how to use a sent voucher, then asks if it worked', () => {
+      const claim = SAMPLE_STATES.voucherSent.rewards.claims[0];
+      const food = render(createElement(VoucherFollowUpCard, { claim, onAnswer: () => undefined }));
+      expect(food).toContain('Your Moo-meal is here!');
+      expect(food).toContain('How to use it');
+      expect(food).toContain('Show the code at the counter. Enjoy!');
+      expect(food).toContain('Open my voucher');
+      expect(food).toContain('I got it ✅');
+
+      const grab = render(createElement(VoucherFollowUpCard, { claim: { ...claim, brand: 'grabmart' as const }, onAnswer: () => undefined }));
+      expect(grab).toContain('Open the Grab app and go to Mart.');
+      expect(grab).not.toContain('Show the code at the counter');
+
+      // A Giftaway eGift (gft.ph): show-the-code steps, and Grab gets a link, not a code to copy.
+      const giftaway = render(createElement(VoucherFollowUpCard, { claim: { ...claim, links: ['https://gft.ph/abc'] }, onAnswer: () => undefined }));
+      expect(giftaway).toContain('Burger King');
+      expect(giftaway).not.toContain('Collect the voucher');
+      const giftawayGrab = render(
+         createElement(VoucherFollowUpCard, { claim: { ...claim, brand: 'grabmart' as const, links: ['https://gft.ph/g'] }, onAnswer: () => undefined })
+      );
+      expect(giftawayGrab).toContain('Save the voucher in your Grab app on your phone.');
+      expect(giftawayGrab).toContain('Open my voucher');
+      expect(giftawayGrab).not.toContain('Show my GrabMart code');
+
+      // Once confirmed, the steps go away.
+      const enjoyed = render(
+         createElement(VoucherFollowUpCard, { claim: { ...claim, receivedAt: new Date().toISOString() }, onAnswer: () => undefined })
+      );
+      expect(enjoyed).toContain('Enjoy your Moo-meal!');
+      expect(enjoyed).not.toContain('How to use it');
+   });
+
+   it('shows every waiting reward with how to claim', () => {
+      const card = render(createElement(RewardsWaitingCard, { claimable: SAMPLE_STATES.rewarded.rewards.claimable, onClaim: () => undefined }));
+      expect(card.replace(/<!-- -->/g, '')).toContain('You have ₱200 in rewards!');
+      expect(card).toContain('food vouchers are waiting for you');
+      expect(card).toContain('How to claim');
+      expect(card).toContain('Claim my reward');
+      expect(card).toContain('Claim them one at a time.');
+      const one = render(createElement(RewardsWaitingCard, { claimable: SAMPLE_STATES.rewarded.rewards.claimable.slice(0, 1), onClaim: () => undefined }));
+      expect(one).toContain('food voucher is waiting for you');
+      expect(one).not.toContain('one at a time');
+   });
+
+   it('has Filipino copy for every voucher how-to line', () => {
+      for (const phrase of [
+         'Your Moo-meal is here!',
+         'How to use it',
+         'Tap "Open my voucher" below.',
+         'Pick Jollibee, Chowking, Greenwich, Mang Inasal or Red Ribbon, then tap "Collect the voucher".',
+         'If it asks, enter your phone or email and the one-time code they send you.',
+         'Your code shows up. Tap "Send me a copy" to keep it.',
+         'Show the code at the counter. Enjoy!',
+         'Tap "Show my GrabMart code" below, then Copy.',
+         'Open the Grab app and go to Mart.',
+         'Use the code at checkout. Your email has the exact steps.',
+         'Did it work?',
+         'Tap "Open my voucher" below. It was also sent to your phone or email.',
+         'Show the code to the cashier at any Jollibee, Chowking, Mang Inasal, Greenwich, Red Ribbon, Burger King, Yoshinoya or Panda Express.',
+         'Enjoy! Use it all in one order.',
+         'Save the voucher in your Grab app on your phone.',
+         'Use it on GrabMart, GrabFood or GrabCar, all in one order.',
+         'You have ₱',
+         'in rewards!',
+         'How to claim',
+         'Tap "Claim my reward" below.',
+         'Pick your treat: Jollibee & more, or GrabMart.',
+         'We send the voucher to your email and Messenger. Show the code at the store.',
+         'Claim my reward'
+      ]) {
+         expect(screenCoverage[phrase], phrase).toBeTruthy();
+      }
    });
 });
 

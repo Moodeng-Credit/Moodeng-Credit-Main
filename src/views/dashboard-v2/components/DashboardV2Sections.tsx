@@ -7,7 +7,7 @@ import { useFloatingParticles, useReplayClass } from '@/components/motion/TapDel
 
 import { formatCurrency } from '@/utils/decimalHelpers';
 
-import type { VoucherClaimSummary } from '@/lib/friendReferrals';
+import type { ClaimableVoucher, VoucherClaimSummary } from '@/lib/friendReferrals';
 
 import { type LocaleCode, useLocalization } from '@/i18n';
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
@@ -392,7 +392,8 @@ function VoucherLinks({ claim }: { claim: VoucherClaimSummary }) {
    const [copied, setCopied] = useState(false);
    if (!claim.links.length) return null;
 
-   if (claim.brand === 'grabmart') {
+   // A Bitrefill GrabMart code to copy; a Giftaway eGift is a link like the food ones.
+   if (claim.brand === 'grabmart' && !isGiftawayClaim(claim)) {
       const code = claim.links[0];
       return isShown ? (
          <div className="flex items-center gap-2 rounded-[10px] bg-white/80 px-3 py-2">
@@ -442,8 +443,8 @@ function VoucherLinks({ claim }: { claim: VoucherClaimSummary }) {
 }
 
 /**
- * After a Moo-Menu claim: "cooking" while it's pending, then "Did it arrive?" with I got it /
- * Didn't get it, then "Enjoy your Moo-meal!" (or a help line if it didn't arrive).
+ * After a Moo-Menu claim: "cooking" while it's pending, then "Your Moo-meal is here!" with how-to steps,
+ * the voucher and I got it / Didn't get it, then "Enjoy your Moo-meal!" (or a help line if it didn't arrive).
  */
 export function VoucherFollowUpCard({
    claim,
@@ -509,15 +510,17 @@ export function VoucherFollowUpCard({
    return (
       <section className={clsx(surface, 'flex-col items-stretch')} style={yellow} aria-label="Your voucher">
          <div className="flex items-center gap-3">
-            <DesignImage src={DASHBOARD_V2_ASSETS.mooMenuChef} className="h-14 w-14 shrink-0 object-contain" />
+            <DesignImage src={DASHBOARD_V2_ASSETS.mooEnjoy} className="h-14 w-14 shrink-0 object-contain" />
             <div className="min-w-0 flex-1">
-               <p className="text-[18px] font-black italic leading-6 text-[#3c8248]">Did your Moo-meal arrive?</p>
+               <p className="text-[18px] font-black italic leading-6 text-[#3c8248]">Your Moo-meal is here!</p>
                <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">
-                  We emailed your ₱{claim.amountPhp} {brandName} voucher. You can also open it here.
+                  ₱{claim.amountPhp} {brandName} voucher · we emailed it too
                </p>
             </div>
          </div>
+         <VoucherHowTo brand={claim.brand} giftaway={isGiftawayClaim(claim)} />
          <VoucherLinks claim={claim} />
+         <p className="pt-1 text-center text-[14px] font-bold leading-[18px] text-[#6f7d1d]">Did it work?</p>
          <div className="flex gap-2">
             <button
                type="button"
@@ -540,20 +543,102 @@ export function VoucherFollowUpCard({
    );
 }
 
-/** "Moodeng grew to Rising!": shown on the dashboard while a tier's food voucher is waiting to be claimed. */
-export function TierVoucherCard({ label, amountPhp, onClaim }: { label: string; amountPhp: number; onClaim: () => void }) {
+/** Sent as a Giftaway eGift (gft.ph link): one code that works at the counter, no brand to pick. */
+const isGiftawayClaim = (claim: VoucherClaimSummary) => claim.links.some((link) => /^https?:\/\/(www\.)?gft\.ph\//i.test(link));
+
+const GIFTAWAY_STEPS: Record<VoucherClaimSummary['brand'], string[]> = {
+   food: [
+      'Tap "Open my voucher" below. It was also sent to your phone or email.',
+      'Show the code to the cashier at any Jollibee, Chowking, Mang Inasal, Greenwich, Red Ribbon, Burger King, Yoshinoya or Panda Express.',
+      'Enjoy! Use it all in one order.'
+   ],
+   grabmart: [
+      'Tap "Open my voucher" below. It was also sent to your phone or email.',
+      'Save the voucher in your Grab app on your phone.',
+      'Use it on GrabMart, GrabFood or GrabCar, all in one order.'
+   ]
+};
+
+// One plain sentence per step so each translates as its own phrase.
+const VOUCHER_STEPS: Record<VoucherClaimSummary['brand'], string[]> = {
+   food: [
+      'Tap "Open my voucher" below.',
+      'Pick Jollibee, Chowking, Greenwich, Mang Inasal or Red Ribbon, then tap "Collect the voucher".',
+      'If it asks, enter your phone or email and the one-time code they send you.',
+      'Your code shows up. Tap "Send me a copy" to keep it.',
+      'Show the code at the counter. Enjoy!'
+   ],
+   grabmart: [
+      'Tap "Show my GrabMart code" below, then Copy.',
+      'Open the Grab app and go to Mart.',
+      'Use the code at checkout. Your email has the exact steps.'
+   ]
+};
+
+/** "How to use it": numbered steps for first-timers who've never redeemed a voucher link. */
+export function VoucherHowTo({ brand, giftaway = false }: { brand: VoucherClaimSummary['brand']; giftaway?: boolean }) {
+   return <StepsBox title="How to use it" steps={(giftaway ? GIFTAWAY_STEPS : VOUCHER_STEPS)[brand]} />;
+}
+
+function StepsBox({ title, steps }: { title: string; steps: string[] }) {
+   return (
+      <div className="rounded-[10px] bg-white/70 px-3 py-2.5">
+         <p className="text-[14px] font-bold leading-[18px] text-[#3c8248]">{title}</p>
+         <ol className="mt-1.5 flex flex-col gap-1.5">
+            {steps.map((step, index) => (
+               <li key={step} className="flex items-start gap-2 text-[14px] font-medium leading-[18px] text-[#594d65]">
+                  <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#4aa256] text-[11px] font-bold text-white">
+                     {index + 1}
+                  </span>
+                  <span className="min-w-0 flex-1">{step}</span>
+               </li>
+            ))}
+         </ol>
+      </div>
+   );
+}
+
+// One plain sentence per step so each translates as its own phrase.
+const CLAIM_STEPS = [
+   'Tap "Claim my reward" below.',
+   'Pick your treat: Jollibee & more, or GrabMart.',
+   'We send the voucher to your email and Messenger. Show the code at the store.'
+];
+
+/**
+ * "You have ₱200 in rewards!": every reward waiting to be claimed, with how to claim. Claim opens the
+ * Moo-Menu for the first one; the card stays until all are claimed.
+ */
+export function RewardsWaitingCard({ claimable, onClaim }: { claimable: ClaimableVoucher[]; onClaim: () => void }) {
+   const total = claimable.reduce((sum, voucher) => sum + voucher.amountPhp, 0);
    return (
       <section
-         className="mx-5 flex items-center gap-3 rounded-[8px] px-3 py-3"
+         className="mx-5 flex flex-col gap-3 rounded-[8px] px-3 py-3"
          style={{ backgroundImage: 'linear-gradient(90deg, #fff3a3 0%, #ffe27a 100%)' }}
-         aria-label={`${label} tier voucher`}
+         aria-label="Rewards waiting"
       >
-         <DesignImage src={DASHBOARD_V2_ASSETS.coupon} className="h-12 w-12 shrink-0 object-contain" />
-         <div className="min-w-0 flex-1">
-            <p className="text-[18px] font-black italic leading-6 text-[#3c8248]">Moodeng grew to {label}!</p>
-            <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">Claim your ₱{amountPhp} food voucher</p>
+         <div className="flex items-center gap-3">
+            <DesignImage src={DASHBOARD_V2_ASSETS.coupon} className="h-12 w-12 shrink-0 object-contain" />
+            <div className="min-w-0 flex-1">
+               <p className="text-[18px] font-black italic leading-6 text-[#3c8248]">
+                  You have ₱{total} in rewards!
+               </p>
+               <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">
+                  {claimable.length} {claimable.length === 1 ? 'food voucher is waiting for you' : 'food vouchers are waiting for you'}
+               </p>
+            </div>
          </div>
-         <ClaimVoucherButton onClaim={onClaim} />
+         <StepsBox title="How to claim" steps={CLAIM_STEPS} />
+         <button
+            type="button"
+            onClick={onClaim}
+            className="flex h-[38px] w-full items-center justify-center rounded-full bg-[#ffce1b] text-[15px] font-bold text-[#704518] shadow-[0_-2px_1px_rgba(255,255,255,0.3),0_2px_1px_rgba(63,89,79,0.4)]"
+         >
+            Claim my reward
+         </button>
+         {claimable.length > 1 ? (
+            <p className="-mt-1 text-center text-[13px] font-medium leading-[16px] text-[#6f7d1d]">Claim them one at a time.</p>
+         ) : null}
       </section>
    );
 }

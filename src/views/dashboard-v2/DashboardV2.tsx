@@ -33,12 +33,12 @@ import { MilestonePopup, MilestoneStreakPopup } from '@/views/dashboard-v2/compo
 import {
    LoanSummarySection,
    MilestonesSection,
-   TierVoucherCard,
+   RewardsWaitingCard,
    VoucherFollowUpCard,
    UpcomingDuesSection
 } from '@/views/dashboard-v2/components/DashboardV2Sections';
 import { useConfirmVoucherReceived } from '@/hooks/useFriendReferrals';
-import { getVoucherFollowUp, getVoucherState, OWN_VOUCHER, TIER_VOUCHERS } from '@/views/dashboard-v2/dashboardV2Model';
+import { getVoucherFollowUp, getVoucherState, OWN_VOUCHER } from '@/views/dashboard-v2/dashboardV2Model';
 import DashboardV2PreviewBar from '@/views/dashboard-v2/DashboardV2Preview';
 import { VoucherClaimPopup } from '@/views/dashboard-v2/DashboardV2Rewards';
 import type { DashboardV2Milestone } from '@/views/dashboard-v2/types';
@@ -161,11 +161,7 @@ export default function DashboardV2() {
    const ownVoucher = getVoucherState(model.rewards, OWN_VOUCHER, model.referralLoading);
    const voucherFollowUp = getVoucherFollowUp(model.rewards);
    const confirmVoucher = useConfirmVoucherReceived();
-   // The lowest tier whose food voucher is waiting to be claimed (one card at a time).
-   const claimableTierVoucher = TIER_VOUCHERS.map((tier) => ({
-      tier,
-      claimable: model.rewards.claimable.find((item) => item.reward === tier.reward) ?? null
-   })).find((entry) => entry.claimable);
+   const waitingRewards = model.rewards.claimable;
 
    // Milestone streak: 2+ milestones in the last 7 days. Shown once per new set of milestones (so the
    // next milestone inside the week celebrates again), remembered per device.
@@ -237,6 +233,9 @@ export default function DashboardV2() {
                   {isReal ? <ConfirmEmailReminder placement="dashboard" /> : null}
                   {model.showWithdraw ? <WithdrawBanner onWithdraw={() => navigate('/withdraw')} /> : null}
                   {showConnectFacebook ? <ConnectFacebookBanner declined={verificationState === 'declined'} language={language} onConnect={() => navigate('/verify')} /> : null}
+                  {waitingRewards.length ? (
+                     <RewardsWaitingCard claimable={waitingRewards} onClaim={() => setClaimingVoucher(waitingRewards[0])} />
+                  ) : null}
                   {!model.isVerified ? <VerifyIdentityBanner onVerify={handleVerify} /> : null}
                   {model.showConnectWallet ? <ConnectWalletBanner onConnect={() => navigate('/onboarding/wallet')} /> : null}
                   {showRemindersBanner ? (
@@ -255,13 +254,6 @@ export default function DashboardV2() {
                         onAnswer={(gotIt) => {
                            if (isReal) confirmVoucher.mutate({ claimId: voucherFollowUp.id, gotIt });
                         }}
-                     />
-                  ) : null}
-                  {claimableTierVoucher ? (
-                     <TierVoucherCard
-                        label={claimableTierVoucher.tier.label}
-                        amountPhp={claimableTierVoucher.tier.amountPhp}
-                        onClaim={() => setClaimingVoucher(claimableTierVoucher.claimable)}
                      />
                   ) : null}
                   {milestonesAndVoucher}
