@@ -76,6 +76,16 @@ Deno.test('two strikes: a second no-show blocks booking for 7 days after the lat
    assertEquals(bookingCooldownUntil([null, '2026-09-22T00:00:00Z'], now), null);
 });
 
+Deno.test('one missed call logged in both tables is one strike, not two', () => {
+   const now = Date.parse('2026-10-28T08:00:00Z');
+   assertEquals(bookingCooldownUntil(['2026-10-28T06:06:37.257Z', '2026-10-28T06:06:37.851Z'], now), null);
+   // ...but a second missed call (logged twice too) still pauses booking.
+   assertEquals(
+      bookingCooldownUntil(['2026-10-20T06:00:00.1Z', '2026-10-20T06:00:00.7Z', '2026-10-28T06:06:37.2Z', '2026-10-28T06:06:37.8Z'], now),
+      '2026-11-04T06:06:37.200Z'
+   );
+});
+
 Deno.test('teamGuests invites every other cofounder, never the host or the borrower', () => {
    const emails = { george: 'George@example.com', emma: 'emma@example.com' };
    assertEquals(teamGuests('emma', emails, 'borrower@example.com'), ['george@example.com']);

@@ -80,8 +80,15 @@ export const recheckRange = (start: string): { from: string; to: string } => {
 // they can book again, or null when they can book now.
 export const NO_SHOW_STRIKES = 2;
 export const COOLDOWN_DAYS = 7;
+// One missed call is logged in both loan_access_requests and video_call_no_shows (gated flows), a
+// split second apart — records this close together are the same call, one strike.
+const SAME_CALL_MS = 2 * 60 * 60 * 1000;
 export const bookingCooldownUntil = (noShowAtIsos: Array<string | null>, now: number): string | null => {
-   const times = noShowAtIsos.map((iso) => (iso ? Date.parse(iso) : NaN)).filter((t) => !Number.isNaN(t));
+   const sorted = noShowAtIsos
+      .map((iso) => (iso ? Date.parse(iso) : NaN))
+      .filter((t) => !Number.isNaN(t))
+      .sort((x, y) => x - y);
+   const times = sorted.filter((t, i) => i === 0 || t - sorted[i - 1] > SAME_CALL_MS);
    if (times.length < NO_SHOW_STRIKES) return null;
    const until = Math.max(...times) + COOLDOWN_DAYS * 86400000;
    return until > now ? new Date(until).toISOString() : null;
