@@ -396,14 +396,25 @@ const reachSection = (digest: VoucherDigest) => {
 export const buildVoucherDigest = (digest: VoucherDigest, linksLeft: number | null, giftawayCredits: number | null = null) => {
    const claimed: VoucherDigest = { ...digest, unclaimed: [] };
    const pending = digest.pending ?? [];
-   const sent = [digestSection("⚠️ SENT, but they said it DIDN'T ARRIVE — resend", digest.not_arrived ?? [], 'sent'), digestSection('📬 SENT — they have their links, waiting for "I got it"', digest.no_answer ?? [], 'sent')].filter(Boolean);
-   const sections = [
-      digestSection('⏳ CLAIMED, NOT SENT YET — we still owe them a voucher', pending, 'claimed') ?? '⏳ CLAIMED, NOT SENT YET: nobody ✅',
-      ...sent
-   ];
+   const notArrived = digest.not_arrived ?? [];
+   const notGotten = [...pending, ...notArrived];
+   const notGottenTotal = notGotten.reduce((sum, person) => sum + Number(person.amountPhp), 0);
+   const notGottenSection = notGotten.length
+      ? `❌ CLAIMED, but has NOT GOTTEN the voucher — ${notGotten.length} ${notGotten.length === 1 ? 'person' : 'people'}, ${peso(notGottenTotal)}\n${[
+           ...pending.slice(0, DIGEST_LIMIT).map((person) => `${digestLine(person, 'claimed')} · NOT SENT YET`),
+           ...notArrived.slice(0, DIGEST_LIMIT).map((person) => `${digestLine(person, 'sent')} · SAID IT DIDN'T ARRIVE — resend`)
+        ].join('\n')}`
+      : '❌ CLAIMED, but has NOT GOTTEN the voucher: nobody ✅';
+   const gotSection = digestSection(
+      '📬 GOT the voucher (link sent) — but has NOT opened / used it yet (no "I got it")',
+      digest.no_answer ?? [],
+      'sent'
+   );
+   const sent = gotSection ? [gotSection] : [];
+   const sections = [notGottenSection, ...sent];
    const credits = giftawayCredits === null ? '' : `${linksLeft === null ? '\n\n' : '\n'}Giftaway credits: ₱${giftawayCredits.toFixed(2)}${giftawayCredits < 500 ? ' — top up soon' : ''}`;
    const stock = `${linksLeft === null ? '' : `\n\n₱50 Xoxo links left: ${linksLeft}${linksLeft <= 5 ? ' — restock soon' : ''}`}${credits}`;
-   if (!pending.length && !sent.length) return `🧾 Daily rewards check: everyone who claimed has their voucher and confirmed it. 🎉${stock}`;
+   if (!notGotten.length && !sent.length) return `🧾 Daily rewards check: everyone who claimed has their voucher and confirmed it. 🎉${stock}`;
    const tap = Object.values(claimed).some((people) => (people ?? []).length)
       ? '\n\nButtons below: 🟢 WhatsApp opens a chat with the message already typed — just tap Send. 💬 opens their Messenger chat (SendPulse): tap 📋 first to copy the message, then paste. 📥 = Page inbox · 👤 = their account.'
       : '';

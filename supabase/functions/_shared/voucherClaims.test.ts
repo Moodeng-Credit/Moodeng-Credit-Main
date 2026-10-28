@@ -75,8 +75,8 @@ Deno.test('daily digest: sections, Facebook, days, stock and the all-clear', () 
    // Only people who claimed are listed; the unclaimed are left out entirely.
    assertEquals(text.includes('Not claimed'), false);
    assertEquals(text.includes('• Ana Cruz'), false);
-   assertStringIncludes(text, '⏳ CLAIMED, NOT SENT YET: nobody ✅');
-   assertStringIncludes(text, '📬 SENT — they have their links, waiting for "I got it" — 1 person, ₱50');
+   assertStringIncludes(text, '❌ CLAIMED, but has NOT GOTTEN the voucher: nobody ✅');
+   assertStringIncludes(text, '📬 GOT the voucher (link sent) — but has NOT opened / used it yet (no "I got it") — 1 person, ₱50');
    assertStringIncludes(text, '• Jun · ₱50 · Messenger ✓ · sent 3d ago');
    assertStringIncludes(text, '₱50 Xoxo links left: 4 — restock soon');
    assertStringIncludes(buildVoucherDigest({ unclaimed: [], pending: [], not_arrived: [], no_answer: [] }, 20), 'everyone who claimed has their voucher');
@@ -84,8 +84,10 @@ Deno.test('daily digest: sections, Facebook, days, stock and the all-clear', () 
    assertStringIncludes(onlyUnclaimed, 'everyone who claimed has their voucher');
    assertEquals(onlyUnclaimed.includes('Ana'), false);
    const owed = buildVoucherDigest({ unclaimed: [], pending: [{ ...person, days: 2 }], not_arrived: [], no_answer: [] }, 20);
-   assertStringIncludes(owed, '⏳ CLAIMED, NOT SENT YET — we still owe them a voucher — 1 person, ₱100');
-   assertStringIncludes(owed, 'claimed 2d ago');
+   assertStringIncludes(owed, '❌ CLAIMED, but has NOT GOTTEN the voucher — 1 person, ₱100');
+   assertStringIncludes(owed, 'claimed 2d ago · NOT SENT YET');
+   const lost = buildVoucherDigest({ unclaimed: [], pending: [], not_arrived: [{ ...person, days: 1 }], no_answer: [] }, 20);
+   assertStringIncludes(lost, "sent 1d ago · SAID IT DIDN'T ARRIVE — resend");
 });
 
 
