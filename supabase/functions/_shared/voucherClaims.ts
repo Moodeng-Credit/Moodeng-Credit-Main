@@ -337,19 +337,19 @@ const digestDetails = (person: VoucherDigestPerson) => {
    return lines.length ? `\n${lines.join('\n')}` : '';
 };
 
-const digestLine = (person: VoucherDigestPerson) => {
+const digestLine = (person: VoucherDigestPerson, when = '') => {
    const who = `${person.name}${person.username ? ` (@${person.username})` : ''}`;
    const fb = person.facebook ? `FB: ${person.facebook}` : person.messenger ? 'Messenger ✓' : 'no FB';
    const count = person.vouchers > 1 ? ` (${person.vouchers})` : '';
-   const days = person.days === null ? '' : ` · ${person.days === 0 ? 'today' : `${person.days}d`}`;
+   const days = person.days === null ? '' : ` · ${when ? `${when} ` : ''}${person.days === 0 ? 'today' : `${person.days}d ago`}`;
    const nudge = person.nudge === 'sent' ? ' · 🤖 bot nudged' : person.nudge === 'failed' ? " · 🤖 bot couldn't reach" : '';
    return `• ${who} · ${peso(person.amountPhp)}${count} · ${fb}${days}${nudge}${digestDetails(person)}`;
 };
 
-const digestSection = (title: string, people: VoucherDigestPerson[]) => {
+const digestSection = (title: string, people: VoucherDigestPerson[], when = '') => {
    if (!people.length) return null;
    const total = people.reduce((sum, person) => sum + Number(person.amountPhp), 0);
-   const lines = people.slice(0, DIGEST_LIMIT).map(digestLine);
+   const lines = people.slice(0, DIGEST_LIMIT).map((person) => digestLine(person, when));
    if (people.length > DIGEST_LIMIT) lines.push(`…and ${people.length - DIGEST_LIMIT} more (Admin → Food vouchers)`);
    return `${title} — ${people.length} ${people.length === 1 ? 'person' : 'people'}, ${peso(total)}\n${lines.join('\n')}`;
 };
@@ -389,29 +389,25 @@ const reachSection = (digest: VoucherDigest) => {
 };
 
 /**
- * The daily rewards-group check: only people who CLAIMED (stuck, didn't arrive, no "I got it" yet),
- * with how to reach them. Earned-but-unclaimed is one count line — the dashboard card and the bot
- * remind those people; the team doesn't chase them.
+ * The daily rewards-group check: only people who CLAIMED, split into "not sent yet" (we owe them a
+ * voucher) and "sent" (they have their links; waiting for "I got it", or they said it didn't
+ * arrive). People who haven't claimed are left out entirely.
  */
 export const buildVoucherDigest = (digest: VoucherDigest, linksLeft: number | null, giftawayCredits: number | null = null) => {
-   const unclaimed = digest.unclaimed ?? [];
    const claimed: VoucherDigest = { ...digest, unclaimed: [] };
-   const unclaimedTotal = unclaimed.reduce((sum, person) => sum + Number(person.amountPhp), 0);
-   const unclaimedLine = unclaimed.length
-      ? `\n\n🎁 Not claimed yet: ${unclaimed.length} ${unclaimed.length === 1 ? 'person' : 'people'}, ${peso(unclaimedTotal)} — the app card and the bot remind them (not listed here).`
-      : '';
+   const pending = digest.pending ?? [];
+   const sent = [digestSection("⚠️ SENT, but they said it DIDN'T ARRIVE — resend", digest.not_arrived ?? [], 'sent'), digestSection('📬 SENT — they have their links, waiting for "I got it"', digest.no_answer ?? [], 'sent')].filter(Boolean);
    const sections = [
-      digestSection('⏳ Claimed, not sent yet', digest.pending ?? []),
-      digestSection("⚠️ Said it didn't arrive (resend)", digest.not_arrived ?? []),
-      digestSection('📭 Sent, no "I got it" yet', digest.no_answer ?? [])
-   ].filter(Boolean);
+      digestSection('⏳ CLAIMED, NOT SENT YET — we still owe them a voucher', pending, 'claimed') ?? '⏳ CLAIMED, NOT SENT YET: nobody ✅',
+      ...sent
+   ];
    const credits = giftawayCredits === null ? '' : `${linksLeft === null ? '\n\n' : '\n'}Giftaway credits: ₱${giftawayCredits.toFixed(2)}${giftawayCredits < 500 ? ' — top up soon' : ''}`;
    const stock = `${linksLeft === null ? '' : `\n\n₱50 Xoxo links left: ${linksLeft}${linksLeft <= 5 ? ' — restock soon' : ''}`}${credits}`;
-   if (!sections.length) return `🧾 Daily rewards check: nobody who claimed is waiting — all confirmed. 🎉${unclaimedLine}${stock}`;
+   if (!pending.length && !sent.length) return `🧾 Daily rewards check: everyone who claimed has their voucher and confirmed it. 🎉${stock}`;
    const tap = Object.values(claimed).some((people) => (people ?? []).length)
-      ? '\n\nButtons below: 📋 copies a ready message for that person → tap 💬 to open their Messenger chat (SendPulse), paste, send. No 💬? Paste it into an email or text. 📥 = Page inbox · 👤 = their account.'
+      ? '\n\nButtons below: 🟢 WhatsApp opens a chat with the message already typed — just tap Send. 💬 opens their Messenger chat (SendPulse): tap 📋 first to copy the message, then paste. 📥 = Page inbox · 👤 = their account.'
       : '';
-   const text = `🧾 Daily rewards check — people who claimed\n\n${sections.join('\n\n')}${reachSection(claimed)}${unclaimedLine}${stock}${tap}`;
+   const text = `🧾 Daily rewards check — people who claimed\n\n${sections.join('\n\n')}${reachSection(claimed)}${stock}${tap}`;
    // Telegram's limit is 4096 characters.
    return text.length > 4000 ? `${text.slice(0, 3900).replace(/\n[^\n]*$/, '')}\n…more in Admin → Food vouchers${stock}` : text;
 };
@@ -438,9 +434,24 @@ export const buildNudgeDraft = (bucket: keyof VoucherDigest, person: VoucherDige
 };
 
 /**
+ * wa.me link that opens a WhatsApp chat with this number and the message already typed. PH 09… → 639…,
+ * Indonesian 08… → 628…; null when it doesn't look like a phone number.
+ */
+export const whatsappUrl = (phone: string | null | undefined, text: string) => {
+   const raw = String(phone ?? '').trim();
+   let digits = raw.replace(/\D/g, '');
+   if (!raw.startsWith('+')) {
+      if (/^09\d{9}$/.test(digits)) digits = `63${digits.slice(1)}`;
+      else if (/^08\d{8,11}$/.test(digits)) digits = `62${digits.slice(1)}`;
+      else if (/^9\d{9}$/.test(digits)) digits = `63${digits}`;
+   }
+   return /^\d{10,15}$/.test(digits) ? `https://wa.me/${digits}?text=${encodeURIComponent(text)}` : null;
+};
+
+/**
  * Buttons under the digest: 📥 the Page inbox, then one row per person who claimed (most urgent first) —
- * 💬 their Messenger chat in SendPulse (people who linked Messenger), 📋 copies a ready message for
- * them, 👤 their account in admin.
+ * 💬 their Messenger chat in SendPulse (people who linked Messenger), 🟢 WhatsApp with the message
+ * already typed (people with a phone), 📋 copies the ready message, 👤 their account in admin.
  */
 export const buildVoucherDigestKeyboard = (digest: VoucherDigest): TelegramInlineKeyboard => {
    const seen = new Set<string>();
@@ -454,8 +465,11 @@ export const buildVoucherDigestKeyboard = (digest: VoucherDigest): TelegramInlin
          seen.add(key);
          const label = firstTwoWords(person.facebook ?? person.name);
          const row: TelegramInlineKeyboard[number] = [];
+         const draft = buildNudgeDraft(bucket, person);
          if (person.messengerContactId) row.push({ text: `💬 ${label}`, url: messengerChatUrl(person.messengerContactId) });
-         row.push({ text: row.length ? '📋 Copy message' : `📋 Copy message · ${firstTwoWords(person.name)}`, copy_text: { text: buildNudgeDraft(bucket, person) } });
+         const wa = whatsappUrl(person.phone, draft);
+         if (wa) row.push({ text: row.length ? '🟢 WhatsApp' : `🟢 WhatsApp · ${firstTwoWords(person.name)}`, url: wa });
+         row.push({ text: row.length ? '📋' : `📋 Copy message · ${firstTwoWords(person.name)}`, copy_text: { text: draft } });
          if (person.userId) row.push({ text: '👤', url: adminUserUrl(person.userId, person.username) });
          if (count + row.length > DIGEST_BUTTONS) continue;
          count += row.length;
