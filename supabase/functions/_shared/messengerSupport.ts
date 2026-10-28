@@ -14,7 +14,7 @@
 // (the SendPulse bot menu answers it) never become a ticket.
 import { adminUserUrl } from './adminCards.ts';
 import { PAGE_INBOX_URL, SITE_URL } from './loanAccess.ts';
-import { type MessengerCard, sendMessengerMessage } from './sendpulse.ts';
+import { lastOutgoingMessengerAt, type MessengerCard, sendMessengerMessage } from './sendpulse.ts';
 import type { TelegramInlineKeyboard } from './telegram.ts';
 import { alertTeam, pingTeam, postToTicket } from './supportTickets.ts';
 
@@ -203,6 +203,8 @@ export const buildMessengerPing = (opts: { facebookName: string | null; borrower
    return { text, keyboard };
 };
 
+const RECENT_REPLY_MS = 30 * 60 * 1000;
+
 const ATTACHMENT_NOTE = '📎 Sent a photo or file on Messenger — open the Page inbox to see it.';
 
 export const openMessengerTicket = async (
@@ -235,7 +237,14 @@ export const openMessengerTicket = async (
       await pingTeam(svc, ping.text, ping.keyboard, 'messenger_alert_chat_id');
    }
 
-   if (startsConversation) {
+   // No "we're offline" auto-reply while someone is mid-chat with them: a team member typing in
+   // SendPulse never touches our conversation row, so check what was actually sent (Oct 28: the
+   // offline reply went out twice while George was replying).
+   const lastOut = startsConversation ? await lastOutgoingMessengerAt(input.contactId) : null;
+   const recentlyAnswered = lastOut !== null && input.at - lastOut < RECENT_REPLY_MS;
+   if (recentlyAnswered) console.log('messengerSupport: auto-reply skipped, they were messaged in the last 30 min');
+
+   if (startsConversation && !recentlyAnswered) {
       // Someone mid-way through the Facebook step isn't linked yet but has an account: no sign-up card.
       const { count: recentAttempts } = borrower
          ? { count: 0 }

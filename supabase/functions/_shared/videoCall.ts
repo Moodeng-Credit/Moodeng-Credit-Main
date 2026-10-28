@@ -92,8 +92,7 @@ type CallUser = {
 
 // Told at booking (and when the call moves): the ✅ button only comes 1h before, and skipping it
 // cancels the call. The borrower page (ConnectStep) says the same.
-const CONFIRM_NOTICE =
-   "⚠️ IMPORTANT: 1 hour before the meeting, we'll send you a ✅ I'll be there button here on Messenger (it's also on the Moodeng page where you booked). Please come back and tap it to confirm you're coming — if you don't confirm, the meeting is cancelled automatically.";
+const CONFIRM_NOTICE = "⚠️ 1 hour before, we'll message you here with a ✅ I'll be there button. Tap it, or the call is cancelled.";
 
 // Right after booking — the borrower just tapped through Messenger, so the 24h window is open.
 export const sendBookedMessenger = (u: CallUser) => {
@@ -102,16 +101,14 @@ export const sendBookedMessenger = (u: CallUser) => {
    // Emma's "Confirm the initial meeting" script, with this booking's own join link.
    // Every call sits on Emma's calendar with George invited, and whoever's free takes it.
    const withWhom = 'George or Emma from Moodeng';
-   const link = u.video_call_join_url
-      ? `You can join from your computer, tablet or phone:\n${u.video_call_join_url}`
-      : 'The join link is in your email.';
+   const link = u.video_call_join_url ? `Join on Zoom: ${u.video_call_join_url}` : 'The Zoom link is in your email.';
+   // Short and friendly (George, 2026-10-29): the old version read like a compliance notice.
    return sendMessengerMessage(u.messenger_psid, {
       text:
-         `📅 Thank you for confirming! Your meeting with ${withWhom} is on ${when} via Zoom.\n${link}\n\n` +
-         'To make it smooth, please have ready:\n1. Your original physical ID or passport — account approval depends on passing this compliance check (legal, financial and GDPR rules)\n' +
-         '2. Camera on, a well-lit room, and your phone nearby\n\n' +
-         'To get funded after the meeting, connect with Emma Moodeng on Facebook: https://www.facebook.com/emmamoodengcredit\n\n' +
-         CONFIRM_NOTICE,
+         `📅 You're booked! 15-min video call with ${withWhom}\n🗓️ ${when}\n${link}\n\n` +
+         'Bring 🪪 your original ID or passport and 📷 camera on. That\'s it!\n\n' +
+         `${CONFIRM_NOTICE}\n\n` +
+         'After the call, add Emma on Facebook so we can fund you: https://www.facebook.com/emmamoodengcredit',
       card: callCard('Will you make it?', u)
    });
 };

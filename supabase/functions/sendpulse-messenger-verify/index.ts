@@ -214,7 +214,9 @@ const connectByTiming = async (svc: Svc, contactId: string, at: number): Promise
    const result = ((await res.json().catch(() => null)) as { ok?: boolean; already?: boolean } | null) ?? {};
    const seconds = Math.max(0, Math.round((at - Date.parse(decision.attempt.chat_opened_at)) / 1000));
    console.log(`sendpulse-messenger-verify: no code → matched by timing (${seconds}s after the tap): ${result.ok ? (result.already ? 'already' : 'connected') : 'refused'}`);
-   return Boolean(result.ok);
+   // "already": the code they pasted connected them first, and the flow already said so (Oct 28: two
+   // "connected" messages in a row). Only a fresh timing connection gets our own reply.
+   return Boolean(result.ok) && !result.already;
 };
 
 const replyNotYet = (svc: Svc, contactId: string | null, reason: NotYetReason) => {
