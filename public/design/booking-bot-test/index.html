@@ -151,10 +151,10 @@ header p { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
     <details class="checklist" open>
       <summary>What to try (about 10 minutes)</summary>
       <ol>
-        <li><b>A normal booking:</b> type "tomorrow 4 pm", tap the ⭐ time, answer as a working parent with a small business, then type YES and a first name. Check the "Before the call" box on the right.</li>
+        <li><b>A normal booking:</b> type "tomorrow 4 pm", tap the ⭐ time, answer as a working parent with a small business, tap 👍 Got it on the "$15 first loan" message, then type YES and a first name. Check the "Before the call" box on the right.</li>
         <li><b>Messy typing:</b> "bukas after 6pm", "pwede po ba sa Lunes ng hapon?", "kahit kailan basta gabi", "ok". Does it understand, or ask again?</li>
         <li><b>A taken or full time:</b> "saturday 2pm". Is it clear the time is taken and which times are closest?</li>
-        <li><b>Someone we can't help yet:</b> answer "Between jobs", "Just myself", "None right now". You should see "our team reviews every booking", then a kind decline.</li>
+        <li><b>Someone in a tough spot:</b> answer "Between jobs" and "None right now". They still book; the box on the right says ❗ Needs a closer look. Single people ("Just myself") are never marked down.</li>
         <li><b>Tight money:</b> answer "I run short", "5-6 or a lending app", "Not sure". It should still book, but the box says ⚠️ Talk first.</li>
         <li><b>Filipino:</b> tap FIL at the top of the chat and do one booking in Filipino.</li>
       </ol>
@@ -614,15 +614,15 @@ Ito ang pinakamalapit na bakanteng oras:` },
   };
 
   // ---- Fit check (team-only): mission rule + "will $15 actually help?" ----
+  // Team-only, never a rejection (George, 2026-10-29: "let's not deny people anything"). Being single
+  // or supporting nobody never counts against anyone.
   const fitCheck = (a) => {
     const noIncome = is(a.work, 'between', 'walang') && (is(a.moneyNow, 'none', 'wala') || !a.moneyNow);
-    const supportsNoOne = is(a.support, 'just myself', 'sarili ko lang');
     const deepTrouble = is(a.leftover, 'short', 'kulang') && is(a.debt, 'several', 'maraming') && is(a.repay, 'not sure', 'hindi sigurado');
-    if (noIncome) return { verdict: 'decline', reason: 'no current work or income', kind: 'income' };
-    if (supportsNoOne) return { verdict: 'decline', reason: "doesn't support any family members (program rule)", kind: 'mission' };
-    if (deepTrouble) return { verdict: 'decline', reason: "runs short, owes several places, unsure when they'd repay — $15 likely won't help", kind: 'help' };
+    if (noIncome) return { verdict: 'review', reason: 'no current work or income — ask how they would repay' };
+    if (deepTrouble) return { verdict: 'review', reason: "runs short, owes several places, unsure when they'd repay — check $15 really helps" };
     const talk = is(a.leftover, 'short', 'kulang') || is(a.debt, '5-6', 'lending app', 'several', 'maraming') || is(a.billTrouble, 'most', 'halos') || Object.values(a).some((v) => v === PNS.en || v === PNS.fil);
-    return talk ? { verdict: 'talk', reason: 'tight money or existing debts — ask how they would repay' } : { verdict: 'good', reason: 'has income, supports family, a small gap a $15 loan can cover' };
+    return talk ? { verdict: 'talk', reason: 'tight money or existing debts — ask how they would repay' } : { verdict: 'good', reason: 'has income and a small gap a $15 loan can cover' };
   };
   const PRETEND_BIO = { work: 'Full-time employee', payday: '15th & 30th' };
   const crossCheck = (a) => {
@@ -635,29 +635,18 @@ Ito ang pinakamalapit na bakanteng oras:` },
   const finishQuiz = () => {
     const fit = fitCheck(prepAnswers);
     log(`<span class="tag">Answers</span>${Object.entries(prepAnswers).map(([k, v]) => `${k}: <code>${esc(v)}</code>`).join(' · ') || 'all skipped'}`);
-    log(`<span class="tag">Fit check</span>${fit.verdict === 'good' ? '✅ Good fit' : fit.verdict === 'talk' ? '⚠️ Talk first' : '❌ Not eligible'} — ${esc(fit.reason)}. Team-only, never shown to the borrower. Family answers are not used for scoring.`);
+    log(`<span class="tag">Fit check</span>${fit.verdict === 'good' ? '✅ Good fit' : fit.verdict === 'talk' ? '⚠️ Talk first' : '❗ Needs a closer look'} — ${esc(fit.reason)}. Team-only, never shown to the borrower, never a rejection. Family answers are not used for scoring.`);
     writePrepNote(fit);
-    if (fit.verdict === 'decline') return underReview(fit);
-    askFinalConfirm(quizSlot);
+    showExpectations();
   };
 
-  const underReview = (fit) => {
-    releaseBooking();
-    botSay(lang === 'fil' ? 'Salamat! 🙏 Nire-review ng team namin ang bawat booking. Magme-message kami dito sa loob ng ilang oras.' : "Thanks! 🙏 Our team reviews every booking. We'll message you here within a few hours.");
-    log('<span class="tag">Team card</span>"AI suggests: not eligible right now (' + esc(fit.reason) + ')" with <b>[Decline]</b> <b>[Book them anyway]</b>. If nobody taps within a few hours, the kind decline goes out automatically.');
-    step = 'busy';
-    setTimeout(() => {
-      const d = document.createElement('div'); d.className = 'divider'; d.textContent = '⏩ A few hours later (nobody tapped "Book anyway")'; chat.append(d);
-      const why = {
-        income: { en: 'Moodeng loans need money coming in to repay.', fil: 'Kailangan ng Moodeng loan na may pumapasok na pera para makabayad.' },
-        mission: { en: 'Right now our program is for people who support family members.', fil: 'Sa ngayon, para ang programa namin sa mga sumusuporta sa pamilya.' },
-        help: { en: "We don't want a loan to add to the pressure you're under right now.", fil: 'Ayaw naming dumagdag pa ang loan sa bigat na dinadala mo ngayon.' }
-      }[fit.kind];
-      botSay(lang === 'fil'
-        ? `Hi! Salamat sa paghihintay. Sa ngayon, hindi pa kami makakapag-alok ng call. ${why.fil}\n\nKapag nagbago ang sitwasyon mo, i-message lang kami ng "ready" at titingnan namin ulit 🙂`
-        : `Hi! Thanks for waiting. For now we can't offer a call. ${why.en}\n\nWhen things change, just message us "ready" and we'll look again 🙂`);
-      step = 'ask';
-    }, 1800);
+  // Before the YES: what the first loan really is, so nobody books expecting more.
+  const showExpectations = () => {
+    botSay(lang === 'fil'
+      ? 'Salamat! 🙏 Bago mo i-confirm, para malinaw 👇\n\n• Maliit ang unang loan: $15 (mga ₱870).\n• Tumataas ang limit mo nang paunti-unti: bawat loan na nabayaran sa oras, may susunod na level. Ilang loan ito, hindi ilang araw.\n• Hindi ito mapapabilis, pero kapag on time ka, lalaki kasama mo ang Moodeng 🦛'
+      : "Thanks! 🙏 Before you confirm, so it's clear 👇\n\n• Your first loan is small: $15 (about ₱870).\n• Your limit grows step by step: each loan repaid on time unlocks the next level. It takes a few loans, not a few days.\n• It can't be rushed, but if you pay on time, Moodeng grows with you 🦛");
+    quick([[lang === 'fil' ? '👍 Naiintindihan ko' : '👍 Got it', (l) => { meSay(l); log('<span class="tag">Expectations</span>They acknowledged: first loan $15, limit grows step by step.'); askFinalConfirm(quizSlot); }]]);
+    step = 'expect';
   };
 
   // ---- The host's prep note (real bot: DeepSeek). Conversation help + the team-only fit check. ----
@@ -673,7 +662,7 @@ Ito ang pinakamalapit na bakanteng oras:` },
       if (Array.isArray(content)) { const ul = document.createElement('ul'); for (const c of content) { const li = document.createElement('li'); li.textContent = c; ul.append(li); } body.append(ul); } else body.textContent = content;
       div.append(body); box.append(div);
     };
-    add(fit.verdict === 'good' ? 'opener' : 'care', 'Fit check (team only)', `${fit.verdict === 'good' ? '✅ Good fit' : fit.verdict === 'talk' ? '⚠️ Talk first' : '❌ Not eligible'}: ${fit.reason}`);
+    add(fit.verdict === 'good' ? 'opener' : 'care', 'Fit check (team only)', `${fit.verdict === 'good' ? '✅ Good fit' : fit.verdict === 'talk' ? '⚠️ Talk first' : '❗ Needs a closer look'}: ${fit.reason}`);
     add('who', 'Who they are', n.who || '—');
     add('opener', 'Suggested opener', n.opener || '—');
     if (checks.length) add('care', 'Check against bio', checks);
@@ -734,6 +723,7 @@ ${say('tzNote')}`);
     // A reply of 1/2/3 while times are on screen picks that time.
     if (step === 'offered' && /^\s*[1-3]\s*$/.test(text) && offered[Number(text) - 1]) { clearQuick(); hold(offered[Number(text) - 1]); return; }
     if (step === 'busy') return;
+    if (step === 'expect') { clearQuick(); askFinalConfirm(quizSlot); return; }
     if (step === 'held' && mine) {
       if (isYes(text)) {
         clearQuick();
