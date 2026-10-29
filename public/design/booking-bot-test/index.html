@@ -156,7 +156,7 @@ header p { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
         <li><b>A taken or full time:</b> "saturday 2pm". Is it clear the time is taken and which times are closest?</li>
         <li><b>Someone in a tough spot:</b> answer "Between jobs" and "None right now". They still book; the box on the right says ❗ Needs a closer look. Single people ("Just myself") are never marked down.</li>
         <li><b>Tight money:</b> answer "I run short" and "5-6 or a lending app". It should still book, but the box says ⚠️ Talk first.</li>
-        <li><b>Dodging:</b> tap "Prefer not to say" or "Not sure". The bot asks once more for a rough guess. Tap it again: it still books, but the box says ❗ Needs a closer look.</li>
+        <li><b>Dodging:</b> tap "Other" (first question), "Prefer not to say", "Not sure", or Skip on a type-it question. The bot asks once more. Do it again: the bot says sorry, we work with people who know their situation, and books no call. Typing a day and time starts again.</li>
         <li><b>After booking:</b> type "ok" or "thanks". The bot says you're all set and keeps the booking. Typing a new day and time moves it.</li>
         <li><b>Filipino:</b> tap FIL at the top of the chat and do one booking in Filipino.</li>
       </ol>
@@ -441,6 +441,19 @@ Ito ang pinakamalapit na bakanteng oras:` },
     reask: {
       en: "That's OK 🙂 A rough guess is fine.\nWe lend to people who keep track of their money, so an estimate really helps us.",
       fil: 'Okay lang 🙂 Kahit tantya lang.\nNagpapautang kami sa mga taong alam kung saan napupunta ang pera nila, kaya malaking tulong ang tantya.'
+    },
+    reaskType: {
+      en: "That's OK 🙂 Just a few words is fine.\nIt helps us understand your situation before the call.",
+      fil: 'Okay lang 🙂 Kahit ilang salita lang.\nNakakatulong ito para maintindihan namin ang sitwasyon mo bago ang call.'
+    },
+    reaskOther: {
+      en: 'Could you pick the closest one? 🙂 It helps us understand your situation.',
+      fil: 'Pwede mo bang piliin ang pinakamalapit? 🙂 Nakakatulong ito para maintindihan namin ang sitwasyon mo.'
+    },
+    // Still dodging after the re-ask (Emma + George, 2026-10-30): no call booked for now.
+    heldOff: {
+      en: "Sorry 🙏 We can't book your call just yet.\nWe work with people who are well aware of their current situation and manage their finances responsibly.\nWhen you're ready to share a rough picture, just tell me a day and time and we'll start again.",
+      fil: 'Pasensya 🙏 Hindi pa namin ma-book ang call mo.\nNakikipagtulungan kami sa mga taong alam ang kasalukuyang sitwasyon nila at responsable sa pera.\nKapag handa ka nang magbahagi kahit tantya lang, sabihin lang ang araw at oras at magsisimula ulit tayo.'
     }
   };
   const say = (k, ...a) => { const v = T[k][lang]; return typeof v === 'function' ? v(...a) : v; };
@@ -594,7 +607,10 @@ Ito ang pinakamalapit na bakanteng oras:` },
 
   let prepName = '', prepHost = 'Emma', prepAnswers = {}, prepList = [], prepI = 0, asked = [], quizSlot = null, reasked = [];
   const NOT_SURE = ['Not sure', 'Hindi sigurado'];
+  const OTHER = ['Other', 'Iba pa'];
+  const OPTIONAL = ['prevJob'];
   const dodged = (v) => v === PNS.en || v === PNS.fil || NOT_SURE.includes(v);
+  const isDodge = (key, value) => (value == null ? Q[key].free && !OPTIONAL.includes(key) : dodged(value) || (key === 'work' && OTHER.includes(value)));
   const nextKey = () => {
     if (asked.length >= MAX_Q) return null;
     const order = [...BASE, ...followUps(prepAnswers)];
@@ -624,19 +640,30 @@ Ito ang pinakamalapit na bakanteng oras:` },
   const skipLabel = () => (lang === 'fil' ? 'Laktawan' : 'Skip');
   const answerPrep = (value) => {
     const key = asked[asked.length - 1];
-    // First dodge on this question: ask again, kindly, same buttons.
-    if (dodged(value) && !reasked.includes(key)) {
+    if (isDodge(key, value)) {
+      // Second dodge on the same question: hold off, kindly (Emma + George, 2026-10-30).
+      if (reasked.includes(key)) return holdOff(key, value);
+      // First dodge: ask once more, same buttons.
       reasked.push(key);
-      log(`<span class="tag">Re-ask</span><code>${esc(key)}</code>: they tapped "${esc(value)}" — asking once more for a rough guess.`);
-      botSay(say('reask'));
+      log(`<span class="tag">Re-ask</span><code>${esc(key)}</code>: they answered "${esc(value ?? 'Skip')}" — asking once more.`);
       const q = Q[key];
+      botSay(say(q.free ? 'reaskType' : key === 'work' ? 'reaskOther' : 'reask'));
       const buttons = (q.opts ? q.opts[lang] : []).map((o) => [o, (l) => { meSay(l); answerPrep(l); }]);
       if (q.money) buttons.push([PNS[lang], (l) => { meSay(l); answerPrep(l); }]);
+      if (q.free) buttons.push([skipLabel(), (l) => { meSay(l); answerPrep(null); }]);
       quick(buttons);
       return;
     }
     if (value) prepAnswers[key] = value;
     askNext();
+  };
+
+  const holdOff = (key, value) => {
+    log(`<span class="tag">Held off</span>No call booked: still "${esc(value ?? 'Skip')}" on <code>${esc(key)}</code> after being asked twice. The time is freed. Real bot: a "⏸ Held off" line to the team, nothing else. They can start again any time.`);
+    releaseBooking();
+    quizSlot = null;
+    botSay(say('heldOff'));
+    step = 'ask';
   };
 
   // ---- Fit check (team-only): mission rule + "will $15 actually help?" ----
@@ -646,9 +673,6 @@ Ito ang pinakamalapit na bakanteng oras:` },
     const noIncome = is(a.work, 'between', 'walang') && (is(a.moneyNow, 'none', 'wala') || !a.moneyNow);
     const deepTrouble = is(a.leftover, 'short', 'kulang') && is(a.debt, 'several', 'maraming') && is(a.repay, 'not sure', 'hindi sigurado');
     if (noIncome) return { verdict: 'review', reason: 'no current work or income — ask how they would repay' };
-    // Still "Prefer not to say" / "Not sure" after being asked twice (Emma, 2026-10-30).
-    const held = Object.entries(a).filter(([, v]) => dodged(v)).map(([k]) => k);
-    if (held.length) return { verdict: 'review', reason: `wouldn't give a rough answer on ${held.join(', ')}, even when asked twice — check they know their own finances before approving` };
     if (deepTrouble) return { verdict: 'review', reason: "runs short, owes several places, unsure when they'd repay — check $15 really helps" };
     const talk = is(a.leftover, 'short', 'kulang') || is(a.debt, '5-6', 'lending app', 'several', 'maraming') || is(a.billTrouble, 'most', 'halos') ;
     return talk ? { verdict: 'talk', reason: 'tight money or existing debts — ask how they would repay' } : { verdict: 'good', reason: 'has income and a small gap a $15 loan can cover' };
