@@ -1,0 +1,832 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Booking Bot Test</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a phone-sized chat on the left (what the borrower sees), the team's calendar + a log of what the bot did on the right. */
+:root {
+  --bg: #f4f2f7;
+  --panel: #ffffff;
+  --ink: #1f1a2b;
+  --muted: #6c6479;
+  --line: #e2dde9;
+  --accent: #7b4fd6;
+  --accent-ink: #ffffff;
+  --bubble-bot: #ece8f3;
+  --chip: #f6f3fb;
+  --free: #1f9d6b;
+  --free-bg: #e3f5ec;
+  --busy-bg: #eeecf1;
+  --call-bg: #fde9d6;
+  --call: #b5621b;
+  --offer-bg: #efe6ff;
+  --yours: #ffffff;
+  --yours-bg: #7b4fd6;
+  --font-display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15121c; --panel: #1e1a28; --ink: #ece8f4; --muted: #a39cb2; --line: #332d40;
+    --accent: #a07cf0; --accent-ink: #15121c; --bubble-bot: #2a2437; --chip: #26202f;
+    --free: #5fd3a2; --free-bg: #173328; --busy-bg: #241f2d; --call-bg: #3a2717; --call: #f0a865;
+    --offer-bg: #352a52; --yours: #15121c; --yours-bg: #a07cf0; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15121c; --panel: #1e1a28; --ink: #ece8f4; --muted: #a39cb2; --line: #332d40;
+  --accent: #a07cf0; --accent-ink: #15121c; --bubble-bot: #2a2437; --chip: #26202f;
+  --free: #5fd3a2; --free-bg: #173328; --busy-bg: #241f2d; --call-bg: #3a2717; --call: #f0a865;
+  --offer-bg: #352a52; --yours: #15121c; --yours-bg: #a07cf0; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 32px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+header h1 { font-family: var(--font-display); font-size: clamp(22px, 3vw, 30px); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
+.grid { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 880px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* Phone */
+.phone { background: var(--panel); border: 1px solid var(--line); border-radius: 28px; overflow: hidden; display: flex; flex-direction: column; height: min(720px, 82vh); min-height: 520px; }
+.phone-top { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; flex: none; }
+.phone-top .who { font-weight: 600; line-height: 1.2; }
+.phone-top .who small { display: block; color: var(--muted); font-weight: 400; font-size: 12px; }
+.lang { margin-left: auto; display: flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.lang button { border: 0; background: transparent; color: var(--muted); font: 600 12px var(--font-body); padding: 5px 10px; cursor: pointer; }
+.lang button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.chat { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.row { display: flex; gap: 8px; align-items: flex-end; }
+.row.me { justify-content: flex-end; }
+.row .avatar { width: 26px; height: 26px; font-size: 12px; }
+.bubble { max-width: 82%; padding: 9px 13px; border-radius: 18px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.bot .bubble { background: var(--bubble-bot); border-bottom-left-radius: 6px; }
+.me .bubble { background: var(--accent); color: var(--accent-ink); border-bottom-right-radius: 6px; }
+.typing { display: inline-flex; gap: 4px; padding: 12px 14px; }
+.typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: blink 1s infinite; }
+.typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .typing i { animation: none; opacity: .6; } }
+.quick { display: flex; flex-wrap: wrap; gap: 6px; padding-left: 34px; }
+.quick button { border: 1.5px solid var(--accent); background: var(--panel); color: var(--accent); border-radius: 999px; padding: 6px 12px; font: 600 13px var(--font-body); cursor: pointer; }
+.quick button:hover { background: var(--offer-bg); }
+.card { margin-left: 34px; max-width: 80%; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--panel); }
+.card .c-body { padding: 10px 13px; }
+.card .c-title { font-weight: 600; }
+.card .c-sub { color: var(--muted); font-size: 13px; }
+.card button { display: block; width: 100%; border: 0; border-top: 1px solid var(--line); background: transparent; color: var(--accent); font: 600 14px var(--font-body); padding: 10px; cursor: pointer; }
+.composer { border-top: 1px solid var(--line); padding: 10px; display: grid; gap: 8px; }
+.composer form { display: flex; gap: 8px; }
+.composer input { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--chip); color: var(--ink); border-radius: 999px; padding: 10px 14px; font: 15px var(--font-body); }
+.composer input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.send { border: 0; background: var(--accent); color: var(--accent-ink); border-radius: 999px; padding: 0 16px; font: 600 14px var(--font-body); cursor: pointer; }
+.send:disabled { opacity: .5; cursor: default; }
+.tries { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+.tries button { flex: none; border: 1px dashed var(--line); background: transparent; color: var(--muted); border-radius: 999px; padding: 4px 10px; font: 12px var(--font-body); cursor: pointer; }
+.tries button:hover { color: var(--ink); border-color: var(--muted); }
+
+/* Team side */
+.side { display: grid; gap: 18px; min-width: 0; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 16px; min-width: 0; }
+.panel h2 { font-family: var(--font-display); font-size: 18px; margin: 0 0 2px; }
+.panel .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px 14px; font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend b { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
+.days { display: grid; gap: 10px; }
+.day { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 10px; align-items: start; }
+@media (max-width: 520px) { .day { grid-template-columns: minmax(0, 1fr); gap: 4px; } }
+.day-name { font-weight: 600; font-size: 13px; line-height: 1.25; }
+.day-name small { display: block; color: var(--muted); font-weight: 400; }
+.slots { display: flex; flex-wrap: wrap; gap: 4px; }
+.slot { font: 500 11px var(--font-mono); font-variant-numeric: tabular-nums; padding: 3px 5px; border-radius: 6px; background: var(--busy-bg); color: var(--muted); }
+.slot.free { background: var(--free-bg); color: var(--free); }
+.slot.call { background: var(--call-bg); color: var(--call); }
+.slot.full { background: var(--busy-bg); color: var(--muted); text-decoration: line-through; }
+.slot.offer { background: var(--offer-bg); color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
+.slot.yours { background: var(--yours-bg); color: var(--yours); }
+.slot.held { background: var(--offer-bg); color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); outline: 1.5px dashed var(--accent); outline-offset: 1px; }
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 13px; }
+.log li { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 8px; }
+.log time { font: 12px var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.log code { font: 12px var(--font-mono); background: var(--chip); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+.log .empty { color: var(--muted); display: block; }
+.tag { display: inline-block; font: 600 11px var(--font-body); padding: 1px 7px; border-radius: 999px; background: var(--offer-bg); color: var(--accent); margin-right: 4px; }
+.tools { display: flex; gap: 8px; flex-wrap: wrap; }
+.ghost { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 999px; padding: 6px 12px; font: 600 13px var(--font-body); cursor: pointer; }
+.note { font-size: 13px; color: var(--muted); }
+.checklist { margin-top: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; max-width: 80ch; }
+.checklist summary { font-weight: 600; cursor: pointer; }
+.checklist ol { margin: 10px 0 6px; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; }
+.prep-empty { color: var(--muted); font-size: 14px; }
+.prep { display: grid; gap: 10px; font-size: 14px; }
+.prep .who { font-weight: 600; }
+.prep .label { font: 600 11px var(--font-body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.prep ul { margin: 4px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+.prep .opener { background: var(--offer-bg); border-radius: 10px; padding: 8px 10px; }
+.prep .care { background: var(--call-bg); color: var(--call); border-radius: 10px; padding: 8px 10px; }
+.divider { align-self: center; font: 600 11px var(--font-body); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); background: var(--chip); border-radius: 999px; padding: 4px 10px; margin: 6px 0; }
+</style>
+
+<style>html{color-scheme:light}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Call booking bot — try it</h1>
+    <p>Pretend you're a borrower who just connected Messenger. Type when you're free, pick a time, answer the questions, then confirm. It uses our live free times and real DeepSeek AI, but nothing here books a real call or sends anything on Messenger.</p>
+    <details class="checklist" open>
+      <summary>What to try (about 10 minutes)</summary>
+      <ol>
+        <li><b>A normal booking:</b> type "tomorrow 4 pm", tap the ⭐ time, answer as a working parent with a small business, then type YES and a first name. Check the "Before the call" box on the right.</li>
+        <li><b>Messy typing:</b> "bukas after 6pm", "pwede po ba sa Lunes ng hapon?", "kahit kailan basta gabi", "ok". Does it understand, or ask again?</li>
+        <li><b>A taken or full time:</b> "saturday 2pm". Is it clear the time is taken and which times are closest?</li>
+        <li><b>Someone we can't help yet:</b> answer "Between jobs", "Just myself", "None right now". You should see "our team reviews every booking", then a kind decline.</li>
+        <li><b>Tight money:</b> answer "I run short", "5-6 or a lending app", "Not sure". It should still book, but the box says ⚠️ Talk first.</li>
+        <li><b>Filipino:</b> tap FIL at the top of the chat and do one booking in Filipino.</li>
+      </ol>
+      <p class="note">Anything confusing, too long, or worded wrong? Write it down with the exact message, and send it to George. Use "Start over" at the bottom right to begin again.</p>
+    </details>
+  </header>
+
+  <div class="grid">
+    <section class="phone" aria-label="Pretend Messenger chat">
+      <div class="phone-top">
+        <div class="avatar" aria-hidden="true">M</div>
+        <div class="who">Moodeng Credit<small>Pretend Messenger</small></div>
+        <div class="lang" role="group" aria-label="Bot language">
+          <button type="button" id="lang-en" aria-pressed="true">EN</button>
+          <button type="button" id="lang-fil" aria-pressed="false">FIL</button>
+        </div>
+      </div>
+      <div class="chat" id="chat" aria-live="polite"></div>
+      <div class="composer">
+        <div class="tries" id="tries" aria-label="Example replies"></div>
+        <form id="form">
+          <input id="msg" autocomplete="off" placeholder="Type a message…" aria-label="Your message">
+          <button class="send" id="send" type="submit">Send</button>
+        </form>
+      </div>
+    </section>
+
+    <div class="side">
+      <section class="panel" id="prep-panel">
+        <h2>Before the call</h2>
+        <p class="sub">What the host sees on the call sheet and the Telegram booking card. Filled in from the borrower's answers by AI; it never scores or decides anything.</p>
+        <div id="prep-box" class="prep-empty">Book a call in the chat, then answer the "get to know you" questions to see the prep note here.</div>
+      </section>
+
+      <section class="panel">
+        <h2>Team calendar</h2>
+        <p class="sub">Live free times from our booking system (Emma or George), for the next 7 days, shown in Bangkok time. Borrowers see Manila time, 1 hour later. Emma first, max 4 calls a day. Booking here doesn't touch the real calendar.</p>
+        <div class="legend">
+          <span><b style="background:var(--free-bg);box-shadow:inset 0 0 0 1px var(--free)"></b>Free</span>
+          <span><b style="background:var(--call-bg)"></b>Already booked</span>
+          <span><b style="background:var(--offer-bg);box-shadow:inset 0 0 0 1.5px var(--accent)"></b>Offered now</span>
+          <span><b style="background:var(--offer-bg);outline:1.5px dashed var(--accent);outline-offset:1px"></b>Held, waiting for YES</span>
+          <span><b style="background:var(--yours-bg)"></b>Booked here</span>
+        </div>
+        <div class="days" id="days"></div>
+      </section>
+
+      <section class="panel">
+        <h2>What the bot did</h2>
+        <p class="sub" id="ai-note">The AI steps run on our server with DeepSeek (the same as the real bot will), so the timings are real.</p>
+        <ul class="log" id="log"><li><span></span><span class="empty">Send a message to see each step.</span></li></ul>
+        <div class="tools" style="margin-top:14px">
+          <button class="ghost" type="button" id="reset">Start over: bio already done</button>
+          <button class="ghost" type="button" id="reset-nobio">Start over: bio not done yet</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ---- time helpers: everything is Manila wall time (YYYY-MM-DD + minutes after midnight) ----
+  const manilaNow = () => {
+    const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
+      .formatToParts(new Date()).map((x) => [x.type, x.value]));
+    return { date: `${p.year}-${p.month}-${p.day}`, min: (Number(p.hour) % 24) * 60 + Number(p.minute) };
+  };
+  const addDays = (d, n) => { const t = new Date(d + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
+  const weekday = (d) => new Date(d + 'T00:00:00Z').getUTCDay();
+  const fmtDay = (d, lang) => new Intl.DateTimeFormat(lang === 'fil' ? 'fil-PH' : 'en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(d + 'T00:00:00Z'));
+  const fmtTime = (m) => { const h = Math.floor(m / 60) % 24, mm = String(m % 60).padStart(2, '0'); return `${h % 12 || 12}:${mm} ${h < 12 ? 'AM' : 'PM'}`; };
+  const absMin = (date, min) => new Date(date + 'T00:00:00Z').getTime() / 60000 + min;
+  const hhmm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+  const toMin = (s) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(s || '')); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+
+  // ---- the REAL calendar: Cal.com free times (Emma first, George's Google busy times, max 4 calls a
+  // Bangkok day), pulled from calcom-round-robin's admin preview on Oct 28, 2026 ~11 PM Bangkok. A
+  // snapshot: times booked since then still show as free here. Manila time, 15-min slots. ----
+  // Live free times from our booking function (the same list the booking page uses), not a snapshot.
+  const FN_URL = 'https://qplmmxynzxzkfxtayoqr.supabase.co/functions/v1/calcom-round-robin';
+  // The project's public anon key (shipped to every browser by the app already).
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwbG1teHluenh6a2Z4dGF5b3FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxOTQzNDQsImV4cCI6MjA4MDc3MDM0NH0.Ggw2jy2OmiZhO8ZcHumzZfWGdbFx97O4usdmz7DVs00';
+  const KEY = new URLSearchParams(location.search).get('k') || '';
+  const api = async (body) => {
+    const res = await fetch(FN_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${ANON}`, apikey: ANON }, body: JSON.stringify({ action: 'sandbox', key: KEY, ...body }) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  };
+  let REAL = {};
+  const SLOT_HOST = {};
+  const SNAPSHOT = 'Oct 29, 2 AM Bangkok';
+  const REAL_CALLS = []; // live free times already leave booked calls out
+  const MAX_PER_DAY = 4;
+  let cal = [];
+  const buildCalendar = () => {
+    const now = manilaNow();
+    cal = Object.entries(REAL).slice(0, 7).map(([date, list]) => ({
+      date,
+      slots: list.split(',').map((t) => ({ date, min: toMin(t), host: SLOT_HOST[`${date} ${t}`] === 'george' ? 'George' : 'Emma', status: 'free' }))
+        // Gone by now, or under 2 hours away.
+        .filter((s) => absMin(s.date, s.min) > absMin(now.date, now.min) + 120)
+    }));
+    // Calls already booked (Manila time), shown in place and counted toward the day's 4.
+    for (const c of REAL_CALLS) {
+      const day = cal.find((d) => d.date === c.date);
+      if (!day) continue;
+      const min = toMin(c.t);
+      day.slots.push({ date: c.date, min, host: 'Emma', status: 'call' });
+      day.slots.sort((a, b) => a.min - b.min);
+    }
+    refreshFull();
+  };
+  const callsOn = (day) => day.slots.filter((s) => s.status === 'call' || s.status === 'yours' || s.status === 'held').length;
+  const refreshFull = () => cal.forEach((day) => {
+    const full = callsOn(day) >= MAX_PER_DAY;
+    day.slots.forEach((s) => { if (s.status === 'free' && full) s.status = 'full'; if (s.status === 'full' && !full) s.status = 'free'; });
+  });
+  const freeSlots = () => cal.flatMap((d) => d.slots.filter((s) => s.status === 'free'));
+
+  // ---- matching: the windows they asked for → the 3 closest free times ----
+  const match = (parsed) => {
+    const free = freeSlots();
+    if (parsed.anytime) return { picks: free.slice(0, 3), exact: true };
+    // They named one exact time ("tomorrow at 9pm"): is it free? Then the free times nearest to it.
+    const at = parsed.windows[0] && toMin(parsed.at);
+    if (at !== null && at !== undefined && parsed.windows[0]) {
+      const date = parsed.windows[0].date;
+      const target = absMin(date, at);
+      const hit = free.find((s) => s.date === date && s.min === at) ?? null;
+      // Same day first (nearest time), then the same time of day on the nearest other days.
+      const dayGap = (s) => Math.abs(absMin(s.date, 0) - absMin(date, 0)) / 1440;
+      const score = (s) => (s.date === date ? Math.abs(s.min - at) : dayGap(s) * 240 + Math.abs(s.min - at));
+      const near = free.filter((s) => s !== hit).sort((a, b) => score(a) - score(b));
+      const dayFull = !free.some((s) => s.date === date);
+      return { picks: hit ? [hit, ...near.slice(0, 2)] : near.slice(0, 3), exact: !!hit, asked: { date, min: at }, dayFull };
+    }
+    const picks = [];
+    for (const w of parsed.windows) {
+      const from = toMin(w.from) ?? 9 * 60, to = toMin(w.to) ?? 21 * 60;
+      const inside = free.filter((s) => s.date === w.date && s.min >= from && s.min + 15 <= to);
+      const narrow = to - from <= 90;
+      const mid = (from + to) / 2;
+      inside.sort((a, b) => (narrow ? Math.abs(a.min - mid) - Math.abs(b.min - mid) : a.min - b.min));
+      for (const s of inside) if (!picks.includes(s) && picks.length < 3) picks.push(s);
+    }
+    picks.sort((a, b) => a.date.localeCompare(b.date) || a.min - b.min);
+    if (picks.length >= 3) return { picks, exact: true };
+    if (picks.length) {
+      // Fewer than 3 inside their window: top up with the free times nearest to it.
+      const w0 = parsed.windows[0];
+      const mid = absMin(w0.date, ((toMin(w0.from) ?? 540) + (toMin(w0.to) ?? 1260)) / 2);
+      const more = free.filter((s) => !picks.includes(s)).sort((a, b) => Math.abs(absMin(a.date, a.min) - mid) - Math.abs(absMin(b.date, b.min) - mid));
+      return { picks: [...picks, ...more.slice(0, 3 - picks.length)], exact: true, inside: picks.length };
+    }
+    // Nothing inside: the free times nearest to what they asked for.
+    const w = parsed.windows[0];
+    const target = w ? (new Date(w.date + 'T00:00:00Z').getTime() / 60000) + ((toMin(w.from) ?? 540) + (toMin(w.to) ?? 1260)) / 2 : 0;
+    const abs = (s) => new Date(s.date + 'T00:00:00Z').getTime() / 60000 + s.min;
+    const near = [...free].sort((a, b) => Math.abs(abs(a) - target) - Math.abs(abs(b) - target)).slice(0, 3);
+    near.sort((a, b) => a.date.localeCompare(b.date) || a.min - b.min);
+    return { picks: near, exact: false };
+  };
+
+  // ---- reading their message: AI first, simple rules if AI is unavailable ----
+  const sample = null; // AI runs on our server (DeepSeek), not in the page
+
+  const aiPrompt = (text, now) => `You read a borrower's chat reply about when they can do a 15-minute video call. They live in the Philippines (Manila time). They may write English, Filipino or Taglish, with typos.
+Right now it is ${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][weekday(now.date)]} ${now.date} ${hhmm(now.min)} Manila time.
+Their message: """${text.slice(0, 400)}"""
+
+Reply with only this JSON:
+{"windows":[{"date":"YYYY-MM-DD","from":"HH:MM","to":"HH:MM"}],"anytime":false,"unclear":false,"at":null,"lang":"en","summary":"..."}
+Rules:
+- windows: up to 4 time ranges in the next 7 days (24-hour Manila time), in the order they prefer.
+- morning/umaga 08:00-12:00, lunch/tanghali 11:00-13:00, afternoon/hapon 12:00-17:00, evening/gabi/night 17:00-21:00.
+- "after 6pm" = 18:00-21:00. "before 3pm" = 09:00-15:00. One exact time like "3pm" = 14:30-15:30.
+- bukas = tomorrow, mamaya = later today, ngayon = today, weekend = the coming Saturday and Sunday. A weekday name = its next date (today counts if it's that day and the time hasn't passed).
+- A time with no day: today if still possible, else tomorrow. A day with no time: 09:00-21:00.
+- anytime=true (and windows empty) if they say any time works. unclear=true if the message has no usable day or time.
+- lang: "fil" if they wrote mostly Filipino or Taglish, else "en".
+- at: "HH:MM" when they named one exact time (e.g. "9pm" → "21:00"), else null.
+- summary: under 8 words, English, what they asked for, e.g. "tomorrow after 6 PM".`;
+
+  const DAYS = [
+    [/\b(sun|sunday|linggo)\b/, 0], [/\b(mon|monday|lunes)\b/, 1], [/\b(tue|tues|tuesday|martes)\b/, 2], [/\b(wed|wednesday|miyerkules|miyerkoles)\b/, 3],
+    [/\b(thu|thur|thurs|thursday|huwebes)\b/, 4], [/\b(fri|friday|biyernes)\b/, 5], [/\b(sat|saturday|sabado)\b/, 6]
+  ];
+  const hourOf = (h, mm, ap) => { let x = Number(h) % 12; if (ap === 'pm' || (!ap && x >= 1 && x <= 7)) x += 12; return x * 60 + Number(mm || 0); };
+  const ruleParse = (text, now) => {
+    const t = text.toLowerCase();
+    const dates = [];
+    const nextDow = (dow) => { for (let i = 0; i < 7; i++) { const d = addDays(now.date, i); if (weekday(d) === dow) return d; } };
+    if (/\b(today|ngayon|mamaya|later|tonight|ngayong)\b/.test(t)) dates.push(now.date);
+    if (/\b(tomorrow|bukas|tmrw|tom)\b/.test(t)) dates.push(addDays(now.date, 1));
+    if (/weekend/.test(t)) dates.push(nextDow(6), nextDow(0));
+    for (const [re, dow] of DAYS) if (re.test(t)) dates.push(nextDow(dow));
+    let from = null, to = null, at = null;
+    let m;
+    if ((m = /(after|pagkatapos ng|from)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/.exec(t))) { from = hourOf(m[2], m[3], m[4]); to = 21 * 60; }
+    else if ((m = /(before|bago)\s*(?:mag\s*)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/.exec(t))) { from = 9 * 60; to = hourOf(m[2], m[3], m[4]); }
+    else if ((m = /(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/.exec(t)) || (m = /\b(?:at|alas)\s*(\d{1,2})(?::(\d{2}))?\b/.exec(t))) { const c = hourOf(m[1], m[2], m[3]); from = c - 30; to = c + 30; at = hhmm(c); }
+    else if (/morning|umaga/.test(t)) { from = 8 * 60; to = 12 * 60; }
+    else if (/afternoon|hapon/.test(t)) { from = 12 * 60; to = 17 * 60; }
+    else if (/evening|night|gabi|tonight/.test(t)) { from = 17 * 60; to = 21 * 60; }
+    const anytime = /\b(any ?time|kahit kailan|kahit anong oras|whenever|kahit ano)\b/.test(t);
+    if (!dates.length && from === null) return { windows: [], anytime, unclear: !anytime, lang: guessLang(t), summary: anytime ? 'any time' : '' };
+    if (!dates.length) dates.push(from !== null && to > now.min + 120 ? now.date : addDays(now.date, 1));
+    if (from === null) { from = 9 * 60; to = 21 * 60; }
+    const windows = [...new Set(dates)].map((date) => ({ date, from: hhmm(from), to: hhmm(to) }));
+    return { windows: windows.slice(0, at ? 1 : 4), at, anytime: false, unclear: false, lang: guessLang(t), summary: '' };
+  };
+  const guessLang = (t) => (/\b(bukas|ngayon|mamaya|umaga|hapon|gabi|po|ako|ko|lang|sana|pwede|puwede|kahit|ng|sa)\b/.test(t) ? 'fil' : 'en');
+
+  const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const readMessage = async (text) => {
+    const now = manilaNow();
+    const t0 = performance.now();
+    try {
+      const r = await api({ kind: 'time', text, now: { weekday: WEEKDAYS[weekday(now.date)], date: now.date, time: hhmm(now.min) } });
+      if (r && r.read) {
+        const x = r.read;
+        return { parsed: { windows: x.windows || [], anytime: !!x.anytime, unclear: !!x.unclear, at: x.at || null, lang: x.lang === 'fil' ? 'fil' : 'en', summary: String(x.summary || '').slice(0, 60) }, how: 'DeepSeek', ms: performance.now() - t0 };
+      }
+      log(`DeepSeek didn't answer (<code>${esc(r && r.error || 'error')}</code>), so the rule-based reader took over.`);
+    } catch (e) {
+      log(`DeepSeek didn't answer (<code>${esc(e.message)}</code>), so the rule-based reader took over.`);
+    }
+    return { parsed: ruleParse(text, now), how: 'rules', ms: performance.now() - t0 };
+  };
+
+  // ---- words the bot says ----
+  let lang = 'en';
+  const T = {
+    connected: {
+      en: '✅ Messenger connected! You\'ll get your updates here.',
+      fil: '✅ Naka-connect na ang Messenger! Dito mo matatanggap ang updates mo.'
+    },
+    bioMissing: {
+      en: '👉 NEXT: go back to Moodeng and answer 5 quick questions about your work and payday (1 min).\n\nAs soon as you\'re done, I\'ll message you here to book your call.',
+      fil: '👉 SUSUNOD: bumalik sa Moodeng at sagutin ang 5 mabilis na tanong tungkol sa trabaho at sweldo mo (1 min).\n\nPagkatapos mo, magme-message ako dito para i-book ang call mo.'
+    },
+    backBtn: { en: '↩️ Back to Moodeng', fil: '↩️ Bumalik sa Moodeng' },
+    ask: {
+      en: '📅 LAST STEP: book your 15-min video call with George or Emma.\n\nWhat day and time works best for you? Write it any way you like, e.g. "bukas after 6pm" or "Saturday morning".',
+      fil: '📅 HULING HAKBANG: mag-book ng 15-min video call kasama si George o Emma.\n\nAnong araw at oras ang pinaka-okay sa iyo? Isulat mo lang kahit paano, gaya ng "bukas after 6pm" o "Sabado ng umaga".'
+    },
+    offer: { en: (s) => `Got it${s ? ` — ${s}` : ''}! These times are free. Tap one to book it:`, fil: () => 'Sige! Bakante ang mga oras na ito. Pindutin ang isa para i-book:' },
+    near: { en: (s) => `Sorry, we're fully booked${s ? ` ${s}` : ' then'}. The closest free times are:`, fil: () => 'Pasensya, puno na kami sa oras na iyan. Ito ang pinakamalapit na bakante:' },
+    askedFree: { en: (w) => `✅ ${w} is free! Tap it to book, or pick another time:`, fil: (w) => `✅ Bakante ang ${w}! Pindutin para i-book, o pumili ng ibang oras:` },
+    dayFull: { en: (d) => `❌ ${d} is fully booked.\n\nThese are the closest free times on other days:`, fil: (d) => `❌ Puno na ang ${d}.\n\nIto ang pinakamalapit na bakante sa ibang araw:` },
+    askedTaken: { en: (w) => `❌ ${w} is already taken.
+
+These are the closest free times to it:`, fil: (w) => `❌ May naka-book na sa ${w}.
+
+Ito ang pinakamalapit na bakanteng oras:` },
+    tzNote: { en: 'All times are your time (Manila).', fil: 'Lahat ng oras ay oras mo (Manila).' },
+    unclear: { en: 'Sorry, I didn\'t catch a day or time 🙏 Try something like "tomorrow 3pm" or "Saturday morning".', fil: 'Pasensya, hindi ko nakuha ang araw o oras 🙏 Subukan ang "bukas 3pm" o "Sabado umaga".' },
+    other: { en: 'No problem! What other day or time works for you?', fil: 'Walang problema! Anong ibang araw o oras ang okay sa iyo?' },
+    otherBtn: { en: '🕐 Other time', fil: '🕐 Ibang oras' },
+    none: { en: 'Sorry, our calendar is full this week. The team will message you with a time 🙏', fil: 'Pasensya, puno na ang calendar namin ngayong linggo. Ime-message ka ng team para sa oras 🙏' },
+    oneMoment: { en: '⏳ One second, saving this time for you…', fil: '⏳ Sandali lang, sine-save ko ang oras na ito para sa iyo…' },
+    confirmTime: {
+      en: (when, host) => `✅ LAST STEP: CONFIRM YOUR CALL\n\n📅 ${when}\n👤 with ${host || 'George or Emma'} · 🎥 Zoom · 15 min\n\nOne rule: 1 hour before, I'll message you a ✅ I'll be there button. Tap it, or the call is cancelled.\n\n👉 Type YES to confirm your call.`,
+      fil: (when, host) => `✅ HULING HAKBANG: I-CONFIRM ANG CALL MO\n\n📅 ${when}\n👤 kasama si ${host || 'George o Emma'} · 🎥 Zoom · 15 min\n\nIsang rule: 1 oras bago, magme-message ako ng ✅ I'll be there button. Pindutin ito, kung hindi makakansela ang call.\n\n👉 I-type ang YES para i-confirm ang call mo.`
+    },
+    sayYes: { en: 'Please type YES to confirm this time, or tap 🕐 Other time.', fil: 'Pakitype ang YES para i-confirm, o pindutin ang 🕐 Ibang oras.' },
+    askName: { en: 'Thank you! Last thing: please type your first name (for security).', fil: 'Salamat! Huling bagay: pakitype ang first name mo (para sa security).' },
+    badName: { en: 'Please type just your first name, e.g. Maria', fil: 'Pakitype lang ang first name mo, hal. Maria' },
+    booked: {
+      en: (when, name) => `🎉 CONFIRMED! You're booked, ${name}!\n\nYour call with George or Emma from Moodeng is on ${when} via Zoom.\nhttps://zoom.us/j/0000000000 (pretend link)\n\nPlease have ready:\n1. Your original physical ID or passport\n2. Camera on, a well-lit room, and your phone nearby`,
+      fil: (when, name) => `🎉 CONFIRMED! Naka-book ka na, ${name}!\n\nAng call mo kasama si George o Emma ng Moodeng ay sa ${when} sa Zoom.\nhttps://zoom.us/j/0000000000 (pretend link)\n\nPakihanda ang:\n1. Ang orihinal mong ID o passport\n2. Naka-on ang camera, maliwanag na kwarto, at nasa tabi ang phone mo`
+    },
+    promise: { en: (name) => `⏰ Remember, ${name}: tap ✅ 1 hour before, or the call is cancelled.`, fil: (name) => `⏰ Tandaan, ${name}: pindutin ang ✅ 1 oras bago, kung hindi makakansela ang call.` },
+    card: { en: ['Will you make it?', 'Tap ✅ so we know you\'re coming — or pick a new time.', "✅ I'll be there", '🔄 Change time'], fil: ['Makakarating ka ba?', 'Pindutin ang ✅ para alam naming darating ka — o pumili ng bagong oras.', "✅ I'll be there", '🔄 Palitan ang oras'] },
+    thanks: { en: '✅ Thanks! See you then 🙌', fil: '✅ Salamat! Kita tayo 🙌' }
+  };
+  const say = (k, ...a) => { const v = T[k][lang]; return typeof v === 'function' ? v(...a) : v; };
+  const gap = (s, asked) => {
+    const d = absMin(s.date, s.min) - absMin(asked.date, asked.min);
+    if (d === 0) return '';
+    const fil = lang === 'fil';
+    if (s.date !== asked.date) return s.min === asked.min ? (fil ? ' (parehong oras)' : ' (same time)') : '';
+    const n = Math.abs(d), amount = n % 60 === 0 ? `${n / 60} ${fil ? 'oras' : n === 60 ? 'hr' : 'hrs'}` : `${n} min`;
+    return fil ? ` (${amount} ${d < 0 ? 'mas maaga' : 'mas huli'})` : ` (${amount} ${d < 0 ? 'earlier' : 'later'})`;
+  };
+  const slotLabel = (s, star, asked) => `${star ? '⭐ ' : ''}${fmtDay(s.date, lang)} · ${fmtTime(s.min)}${asked ? gap(s, asked) : ''}`;
+
+  // ---- chat rendering ----
+  const chat = document.getElementById('chat');
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const scroll = () => { chat.scrollTop = chat.scrollHeight; };
+  const clearQuick = () => chat.querySelectorAll('.quick, .card button').forEach((el) => (el.tagName === 'BUTTON' ? (el.disabled = true) : el.remove()));
+  const botSay = (text) => { const r = document.createElement('div'); r.className = 'row bot'; r.innerHTML = '<div class="avatar" aria-hidden="true">M</div>'; const b = document.createElement('div'); b.className = 'bubble'; b.textContent = text; r.append(b); chat.append(r); scroll(); };
+  const meSay = (text) => { const r = document.createElement('div'); r.className = 'row me'; const b = document.createElement('div'); b.className = 'bubble'; b.textContent = text; r.append(b); chat.append(r); scroll(); };
+  const typing = () => { const r = document.createElement('div'); r.className = 'row bot'; r.innerHTML = '<div class="avatar" aria-hidden="true">M</div><div class="bubble typing" aria-label="Typing"><i></i><i></i><i></i></div>'; chat.append(r); scroll(); return () => r.remove(); };
+  const quick = (buttons) => { const q = document.createElement('div'); q.className = 'quick'; for (const [label, fn] of buttons) { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.onclick = () => { clearQuick(); fn(label); }; q.append(b); } chat.append(q); scroll(); };
+  const card = () => {
+    const [title, sub, yes, change] = T.card[lang];
+    const c = document.createElement('div'); c.className = 'card';
+    c.innerHTML = `<div class="c-body"><div class="c-title">${esc(title)}</div><div class="c-sub">${esc(sub)}</div></div>`;
+    const b1 = document.createElement('button'); b1.type = 'button'; b1.textContent = yes;
+    b1.onclick = () => { b1.disabled = true; meSay(yes); botSay(say('thanks')); log('They tapped <b>✅ I\'ll be there</b> — call confirmed, reminders keep going.'); };
+    const b2 = document.createElement('button'); b2.type = 'button'; b2.textContent = change;
+    b2.onclick = () => { clearQuick(); meSay(change); releaseBooking(); botSay(say('other')); step = 'ask'; };
+    c.append(b1, b2); chat.append(c); scroll();
+  };
+
+  // ---- team log ----
+  const logEl = document.getElementById('log');
+  let logStarted = false;
+  const log = (html) => {
+    if (!logStarted) { logEl.innerHTML = ''; logStarted = true; }
+    const li = document.createElement('li');
+    const n = manilaNow();
+    li.innerHTML = `<time>${hhmm((n.min + 1440 - 60) % 1440)}</time><span>${html}</span>`;
+    logEl.append(li);
+  };
+
+  // ---- calendar rendering (Bangkok time = Manila − 1h) ----
+  let offered = [];
+  const daysEl = document.getElementById('days');
+  const renderCal = () => {
+    daysEl.innerHTML = '';
+    for (const day of cal) {
+      const row = document.createElement('div'); row.className = 'day';
+      const n = callsOn(day);
+      row.innerHTML = `<div class="day-name">${esc(fmtDay(day.date, 'en'))}<small>${n}/${MAX_PER_DAY} calls${n >= MAX_PER_DAY ? ' · full' : ''}</small></div>`;
+      const box = document.createElement('div'); box.className = 'slots';
+      for (const s of day.slots) {
+        const el = document.createElement('span');
+        el.className = 'slot ' + (offered.includes(s) && s.status === 'free' ? 'offer' : s.status);
+        el.textContent = hhmm(s.min - 60);
+        el.title = `${fmtTime(s.min - 60)} Bangkok · ${fmtTime(s.min)} Manila · ${s.status === 'free' ? `free (${s.host})` : s.status === 'call' ? 'another borrower' : s.status === 'yours' ? `booked here with ${s.host}` : s.status === 'held' ? 'held, waiting for YES' :s.status === 'full' ? 'day is full' : 'busy'}`;
+        box.append(el);
+      }
+      row.append(box); daysEl.append(row);
+    }
+  };
+
+  // ---- conversation flow ----
+  let step = 'ask';
+  let mine = null;
+  const releaseBooking = () => { if (mine) { mine.status = 'free'; log(`Released ${fmtDay(mine.date, 'en')} ${fmtTime(mine.min - 60)} Bangkok — they want a new time.`); mine = null; refreshFull(); renderCal(); } };
+
+  const longWhen = (s) => `${new Intl.DateTimeFormat(lang === 'fil' ? 'fil-PH' : 'en-US', { timeZone: 'UTC', weekday: 'long', month: 'long', day: 'numeric' }).format(new Date(s.date + 'T00:00:00Z'))}, ${fmtTime(s.min)} (Manila time)`;
+
+  // Picking a time only holds it. Then three separate messages: YES to the time, their first name, confirmed.
+  const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+  const hold = async (s) => {
+    offered = [];
+    s.status = 'held'; mine = s; refreshFull(); renderCal();
+    log(`<span class="tag">Held</span>${esc(fmtDay(s.date, 'en'))} · ${fmtTime(s.min - 60)} Bangkok — waiting for YES, then their first name. (Real bot: hold ~15 min, then free it.)`);
+    step = 'busy';
+    botSay(say('oneMoment'));
+    const stop = typing(); await pause(1200); stop();
+    if (mine !== s) return;
+    startQuiz(s);
+  };
+  // After the questions (and a good-enough fit): the very clear final confirmation.
+  const askFinalConfirm = (s) => {
+    botSay(say('confirmTime', longWhen(s), s.host));
+    quick([[say('otherBtn'), (label) => { meSay(label); releaseBooking(); botSay(say('other')); step = 'ask'; }]]);
+    step = 'held';
+  };
+  const isYes = (text) => /^\s*(yes|yeah|yep|oo|opo|sige|ok|okay)\b/i.test(text);
+  // A first name: letters only, 2+ letters, first word kept. "yes maria" also works.
+  const firstName = (text) => {
+    const w = text.replace(/^\s*(yes|oo|opo|sige)\b[\s,.!-]*(po\b)?/i, '').replace(/[^\p{L}\s'-]/gu, ' ').trim().split(/\s+/)[0] || '';
+    return /^\p{L}[\p{L}'-]{1,29}$/u.test(w) ? w[0].toUpperCase() + w.slice(1) : null;
+  };
+
+  const book = (s, name) => {
+    s.status = 'yours'; refreshFull(); renderCal();
+    log(`<span class="tag">Booked</span>${esc(fmtDay(s.date, 'en'))} · ${fmtTime(s.min - 60)} Bangkok / ${fmtTime(s.min)} Manila with <b>${s.host}</b>. First name <b>${esc(name)}</b> saved with the booking. In the real bot: Cal.com booking + Zoom link + reminders, same as the booking page.`);
+    botSay(say('booked', longWhen(s), name));
+    botSay(say('promise', name));
+    card();
+    step = 'booked';
+    log('<span class="tag">Team</span>Booking card + "Before the call" prep note sent to the host (Telegram + call sheet).');
+  };
+
+  // ---- Questions before the final YES: 5 base questions, then follow-ups picked from the answers
+  // (max 10 in all), then a fit check. Ranges, not exact numbers; "Prefer not to say" on money. ----
+  const PNS = { en: 'Prefer not to say', fil: 'Ayokong sabihin' };
+  const Q = {
+    work: { en: 'Are you working right now?', fil: 'May trabaho ka ba ngayon?', opts: { en: ['Employed', 'Own business', 'Between jobs', 'Other'], fil: ['May trabaho', 'Sariling negosyo', 'Walang trabaho ngayon', 'Iba pa'] } },
+    support: { en: 'Who do you support with your income? (tap the main one)', fil: 'Sino ang sinusuportahan mo sa kita mo? (piliin ang pangunahin)', opts: { en: ['My kids', 'My parents', 'Siblings', 'Partner', 'Other family', 'Just myself'], fil: ['Mga anak ko', 'Magulang ko', 'Kapatid', 'Partner', 'Ibang kamag-anak', 'Sarili ko lang'] } },
+    kids: { en: 'Do you have kids?', fil: 'May anak ka ba?', opts: { en: ['Yes', 'No'], fil: ['Oo', 'Wala'] } },
+    income: { en: 'About how much came in last month? (work, sales, help from family)', fil: 'Mga magkano ang pumasok sa iyo noong nakaraang buwan? (trabaho, benta, tulong ng pamilya)', money: true, opts: { en: ['Under ₱5k', '₱5–10k', '₱10–20k', '₱20–40k', 'More than ₱40k'], fil: ['Below ₱5k', '₱5–10k', '₱10–20k', '₱20–40k', 'Higit ₱40k'] } },
+    leftover: { en: "By the end of the month, what's usually left?", fil: 'Pagdating ng katapusan ng buwan, magkano ang natitira?', money: true, opts: { en: ['I run short 😓', 'Almost nothing', '₱500–1k', '₱1–3k', 'More than ₱3k'], fil: ['Kulang pa 😓', 'Halos wala', '₱500–1k', '₱1–3k', 'Higit ₱3k'] } },
+    job: { en: "What's your job? (just type it)", fil: 'Ano ang trabaho mo? (i-type lang)', free: true },
+    jobLong: { en: 'How long have you had it?', fil: 'Gaano ka na katagal doon?', opts: { en: ['<6 months', '6–12 months', '1–3 years', '3+ years'], fil: ['<6 buwan', '6–12 buwan', '1–3 taon', '3+ taon'] } },
+    payday: { en: 'When does your pay come in?', fil: 'Kailan ang sweldo mo?', opts: { en: ['15th & 30th', 'Weekly', 'Daily', 'It varies'], fil: ['Kinsenas', 'Lingguhan', 'Araw-araw', 'Pabago-bago'] } },
+    biz: { en: "What's your business? (just type it)", fil: 'Ano ang negosyo mo? (i-type lang)', free: true },
+    sales: { en: 'About how much do you sell in a week?', fil: 'Mga magkano ang benta mo kada linggo?', money: true, opts: { en: ['Under ₱1k', '₱1–3k', '₱3–7k', 'More than ₱7k'], fil: ['Below ₱1k', '₱1–3k', '₱3–7k', 'Higit ₱7k'] } },
+    lastJob: { en: 'What was your most recent job? (just type it)', fil: 'Ano ang huli mong trabaho? (i-type lang)', free: true },
+    prevJob: { en: 'And the job before that? (type it, or Skip)', fil: 'At ang trabaho bago iyon? (i-type, o Laktawan)', free: true },
+    moneyNow: { en: 'Any money coming in right now?', fil: 'May pumapasok bang pera ngayon?', opts: { en: ['Help from family', 'Odd jobs', 'None right now'], fil: ['Tulong ng pamilya', 'Raket / sideline', 'Wala sa ngayon'] } },
+    kidsCount: { en: 'How many kids?', fil: 'Ilan ang anak mo?', opts: { en: ['1', '2', '3', '4+'], fil: ['1', '2', '3', '4+'] } },
+    rentFood: { en: 'About how much went to rent and food last month?', fil: 'Mga magkano ang napunta sa upa at pagkain noong nakaraang buwan?', money: true, opts: { en: ['Under ₱3k', '₱3–6k', '₱6–10k', '₱10–20k', 'More'], fil: ['Below ₱3k', '₱3–6k', '₱6–10k', '₱10–20k', 'Higit pa'] } },
+    billTrouble: { en: 'In the last 3 months, did you have trouble paying a bill on time?', fil: 'Sa nakaraang 3 buwan, nahirapan ka bang magbayad ng bill sa oras?', opts: { en: ['No', 'Once', 'A few times', 'Most months'], fil: ['Hindi', 'Isang beses', 'Ilang beses', 'Halos buwan-buwan'] } },
+    debt: { en: 'Do you owe money right now?', fil: 'May utang ka ba ngayon?', money: true, opts: { en: ['No', 'Family / friends', '5-6 or a lending app', 'Bank / credit card', 'Several places'], fil: ['Wala', 'Pamilya / kaibigan', '5-6 o lending app', 'Bangko / credit card', 'Maraming lugar'] } },
+    debtAmt: { en: 'About how much in total?', fil: 'Mga magkano lahat?', money: true, opts: { en: ['Under ₱5k', '₱5–20k', '₱20–50k', 'More'], fil: ['Below ₱5k', '₱5–20k', '₱20–50k', 'Higit pa'] } },
+    loanUse: { en: 'What would ₱870 (our first $15 loan) help with? (just type it)', fil: 'Saan makakatulong ang ₱870 (unang $15 loan namin)? (i-type lang)', free: true },
+    repay: { en: 'When could you pay it back?', fil: 'Kailan mo ito kayang bayaran?', opts: { en: ['Next payday', 'Within 2 weeks', 'Not sure'], fil: ['Sa susunod na sweldo', 'Sa loob ng 2 linggo', 'Hindi sigurado'] } }
+  };
+  const BASE = ['work', 'support', 'kids', 'income', 'leftover'];
+  const MAX_Q = 10;
+  const is = (v, ...words) => words.some((w) => String(v || '').toLowerCase().includes(w.toLowerCase()));
+  // Which follow-ups apply, most useful first.
+  const followUps = (a) => [
+    is(a.work, 'employed', 'may trabaho') && 'job', is(a.work, 'employed', 'may trabaho') && 'payday',
+    is(a.work, 'business', 'negosyo') && 'biz', is(a.work, 'business', 'negosyo') && 'sales',
+    is(a.work, 'between', 'walang', 'other', 'iba') && 'lastJob', is(a.work, 'between', 'walang') && 'moneyNow',
+    is(a.kids, 'yes', 'oo') && 'kidsCount',
+    (is(a.leftover, 'short', 'kulang', 'nothing', 'wala') || a.leftover === PNS.en || a.leftover === PNS.fil) && 'debt',
+    a.debt && !is(a.debt, 'no', 'wala', 'prefer', 'ayoko') && 'debtAmt',
+    'loanUse', 'repay',
+    is(a.leftover, 'short', 'kulang') && 'billTrouble',
+    is(a.work, 'employed', 'may trabaho') && 'jobLong',
+    'rentFood', 'prevJob'
+  ].filter(Boolean);
+
+  let prepName = '', prepHost = 'Emma', prepAnswers = {}, prepList = [], prepI = 0, asked = [], quizSlot = null;
+  const nextKey = () => {
+    if (asked.length >= MAX_Q) return null;
+    const order = [...BASE, ...followUps(prepAnswers)];
+    return order.find((k) => !asked.includes(k)) ?? null;
+  };
+  const startQuiz = (s) => {
+    quizSlot = s; prepAnswers = {}; asked = []; prepHost = s.host;
+    botSay(lang === 'fil'
+      ? `⏳ Naka-hold para sa iyo ang ${longWhen(s)} kasama si ${s.host}.\n\nIlang mabilis na tanong muna para makapaghanda si ${s.host} (mga 2 min). Ranges lang, at pribado ito sa team namin 🔒`
+      : `⏳ I'm holding ${longWhen(s)} with ${s.host} for you.\n\nA few quick questions first so ${s.host} can prepare (about 2 min). Ranges are fine, and it stays private with our team 🔒`);
+    askNext();
+  };
+  const askNext = () => {
+    const key = nextKey();
+    if (!key) return finishQuiz();
+    asked.push(key);
+    const q = Q[key];
+    prepList = [Object.assign({ key }, q)]; prepI = 0;
+    const total = Math.min(MAX_Q, BASE.length + followUps(prepAnswers).length);
+    botSay(`${lang === 'fil' ? 'Tanong' : 'Question'} ${asked.length}/${Math.max(total, asked.length)} · ${q[lang]}`);
+    const buttons = (q.opts ? q.opts[lang] : []).map((o) => [o, (l) => { meSay(l); answerPrep(l); }]);
+    if (q.money) buttons.push([PNS[lang], (l) => { meSay(l); answerPrep(l); }]);
+    if (q.free) buttons.push([skipLabel(), (l) => { meSay(l); answerPrep(null); }]);
+    quick(buttons);
+    step = 'prep';
+  };
+  const skipLabel = () => (lang === 'fil' ? 'Laktawan' : 'Skip');
+  const answerPrep = (value) => {
+    const key = asked[asked.length - 1];
+    if (value) prepAnswers[key] = value;
+    askNext();
+  };
+
+  // ---- Fit check (team-only): mission rule + "will $15 actually help?" ----
+  const fitCheck = (a) => {
+    const noIncome = is(a.work, 'between', 'walang') && (is(a.moneyNow, 'none', 'wala') || !a.moneyNow);
+    const supportsNoOne = is(a.support, 'just myself', 'sarili ko lang');
+    const deepTrouble = is(a.leftover, 'short', 'kulang') && is(a.debt, 'several', 'maraming') && is(a.repay, 'not sure', 'hindi sigurado');
+    if (noIncome) return { verdict: 'decline', reason: 'no current work or income', kind: 'income' };
+    if (supportsNoOne) return { verdict: 'decline', reason: "doesn't support any family members (program rule)", kind: 'mission' };
+    if (deepTrouble) return { verdict: 'decline', reason: "runs short, owes several places, unsure when they'd repay — $15 likely won't help", kind: 'help' };
+    const talk = is(a.leftover, 'short', 'kulang') || is(a.debt, '5-6', 'lending app', 'several', 'maraming') || is(a.billTrouble, 'most', 'halos') || Object.values(a).some((v) => v === PNS.en || v === PNS.fil);
+    return talk ? { verdict: 'talk', reason: 'tight money or existing debts — ask how they would repay' } : { verdict: 'good', reason: 'has income, supports family, a small gap a $15 loan can cover' };
+  };
+  const PRETEND_BIO = { work: 'Full-time employee', payday: '15th & 30th' };
+  const crossCheck = (a) => {
+    const notes = [];
+    if (a.work && !is(a.work, 'employed', 'may trabaho')) notes.push(`Bio says "${PRETEND_BIO.work}", but in chat: ${a.work}${a.biz ? ` (${a.biz})` : a.lastJob ? ` (last job: ${a.lastJob})` : ''}. Ask which is their main income now.`);
+    if (a.payday && !is(a.payday, '15')) notes.push(`Bio payday ${PRETEND_BIO.payday}, chat says ${a.payday}. Ask when money really comes in.`);
+    return notes;
+  };
+
+  const finishQuiz = () => {
+    const fit = fitCheck(prepAnswers);
+    log(`<span class="tag">Answers</span>${Object.entries(prepAnswers).map(([k, v]) => `${k}: <code>${esc(v)}</code>`).join(' · ') || 'all skipped'}`);
+    log(`<span class="tag">Fit check</span>${fit.verdict === 'good' ? '✅ Good fit' : fit.verdict === 'talk' ? '⚠️ Talk first' : '❌ Not eligible'} — ${esc(fit.reason)}. Team-only, never shown to the borrower. Family answers are not used for scoring.`);
+    writePrepNote(fit);
+    if (fit.verdict === 'decline') return underReview(fit);
+    askFinalConfirm(quizSlot);
+  };
+
+  const underReview = (fit) => {
+    releaseBooking();
+    botSay(lang === 'fil' ? 'Salamat! 🙏 Nire-review ng team namin ang bawat booking. Magme-message kami dito sa loob ng ilang oras.' : "Thanks! 🙏 Our team reviews every booking. We'll message you here within a few hours.");
+    log('<span class="tag">Team card</span>"AI suggests: not eligible right now (' + esc(fit.reason) + ')" with <b>[Decline]</b> <b>[Book them anyway]</b>. If nobody taps within a few hours, the kind decline goes out automatically.');
+    step = 'busy';
+    setTimeout(() => {
+      const d = document.createElement('div'); d.className = 'divider'; d.textContent = '⏩ A few hours later (nobody tapped "Book anyway")'; chat.append(d);
+      const why = {
+        income: { en: 'Moodeng loans need money coming in to repay.', fil: 'Kailangan ng Moodeng loan na may pumapasok na pera para makabayad.' },
+        mission: { en: 'Right now our program is for people who support family members.', fil: 'Sa ngayon, para ang programa namin sa mga sumusuporta sa pamilya.' },
+        help: { en: "We don't want a loan to add to the pressure you're under right now.", fil: 'Ayaw naming dumagdag pa ang loan sa bigat na dinadala mo ngayon.' }
+      }[fit.kind];
+      botSay(lang === 'fil'
+        ? `Hi! Salamat sa paghihintay. Sa ngayon, hindi pa kami makakapag-alok ng call. ${why.fil}\n\nKapag nagbago ang sitwasyon mo, i-message lang kami ng "ready" at titingnan namin ulit 🙂`
+        : `Hi! Thanks for waiting. For now we can't offer a call. ${why.en}\n\nWhen things change, just message us "ready" and we'll look again 🙂`);
+      step = 'ask';
+    }, 1800);
+  };
+
+  // ---- The host's prep note (real bot: DeepSeek). Conversation help + the team-only fit check. ----
+  const prepBox = () => document.getElementById('prep-box');
+  const renderPrep = (n, fit, checks) => {
+    const box = prepBox();
+    box.className = 'prep';
+    box.innerHTML = '';
+    const add = (cls, label, content) => {
+      const div = document.createElement('div');
+      if (label) { const l = document.createElement('div'); l.className = 'label'; l.textContent = label; div.append(l); }
+      const body = document.createElement('div'); body.className = cls;
+      if (Array.isArray(content)) { const ul = document.createElement('ul'); for (const c of content) { const li = document.createElement('li'); li.textContent = c; ul.append(li); } body.append(ul); } else body.textContent = content;
+      div.append(body); box.append(div);
+    };
+    add(fit.verdict === 'good' ? 'opener' : 'care', 'Fit check (team only)', `${fit.verdict === 'good' ? '✅ Good fit' : fit.verdict === 'talk' ? '⚠️ Talk first' : '❌ Not eligible'}: ${fit.reason}`);
+    add('who', 'Who they are', n.who || '—');
+    add('opener', 'Suggested opener', n.opener || '—');
+    if (checks.length) add('care', 'Check against bio', checks);
+    if (n.points?.length) add('', 'Talking points', n.points);
+    if (n.care) add('care', 'Heads-up', n.care);
+  };
+  const fallbackNote = () => {
+    const a = prepAnswers;
+    return {
+      who: [a.work, a.job || a.biz || a.lastJob, a.support && `supports ${a.support.toLowerCase()}`, a.kidsCount && `${a.kidsCount} kid(s)`].filter(Boolean).join(' · ') || 'No answers given.',
+      opener: a.biz ? `Ask how ${a.biz} is going this week.` : a.job ? `Ask what a normal day as ${a.job} looks like.` : 'Ask how they heard about Moodeng.',
+      points: [a.loanUse && `Wants the loan for: ${a.loanUse}.`, a.repay && `Says they can repay: ${a.repay}.`, a.debt && !is(a.debt, 'no', 'wala') && `Owes: ${a.debt}${a.debtAmt ? ` (${a.debtAmt})` : ''}. Ask how this loan fits.`].filter(Boolean),
+      care: ''
+    };
+  };
+  const writePrepNote = async (fit) => {
+    const checks = crossCheck(prepAnswers);
+    const box = prepBox();
+    box.className = 'prep-empty';
+    box.textContent = 'Writing the prep note…';
+    const t0 = performance.now();
+    let note = null, how = 'rules';
+    try {
+      const r = await api({ kind: 'prep', name: prepName || 'the borrower', host: prepHost, answers: prepAnswers });
+      if (r && r.note) { note = r.note; how = 'DeepSeek'; }
+    } catch {}
+    if (!note) note = fallbackNote();
+    renderPrep(note, fit, checks);
+    log(`<span class="tag">${how}</span>Prep note in <b>${((performance.now() - t0) / 1000).toFixed(1)}s</b>. Bio cross-check: ${checks.length ? checks.length + ' thing(s) to ask about' : 'matches'}.`);
+  };
+
+  const offer = ({ picks, exact, asked, inside, dayFull }, summary) => {
+    offered = picks; renderCal();
+    if (!picks.length) { botSay(say('none')); log('No free time in the next 7 days — the real bot would alert the team.'); return; }
+    const askedText = asked ? `${fmtDay(asked.date, lang)} ${lang === 'fil' ? 'nang' : 'at'} ${fmtTime(asked.min)}` : '';
+    const longDay = asked && new Intl.DateTimeFormat(lang === 'fil' ? 'fil-PH' : 'en-US', { timeZone: 'UTC', weekday: 'long', month: 'short', day: 'numeric' }).format(new Date(asked.date + 'T00:00:00Z'));
+    const intro = asked && dayFull ? say('dayFull', longDay) : asked ? say(exact ? 'askedFree' : 'askedTaken', askedText) : exact ? say('offer', summary) : say('near', summary);
+    botSay(`${intro}
+${say('tzNote')}`);
+    quick([...picks.map((s, i) => [slotLabel(s, i === 0, asked), (label) => { meSay(label); hold(s); }]),[say('otherBtn'), (label) => { meSay(label); offered = []; renderCal(); botSay(say('other')); step = 'ask'; }]]);
+    log(`Offered ${picks.map((s) => `<code>${esc(fmtDay(s.date, 'en'))} ${hhmm(s.min - 60)}</code>`).join(' ')} (Bangkok)${asked ? (exact ? ' — the exact time they asked for is free, plus 2 nearby' : dayFull ? ' — that whole day is full (4 calls or no free hosts), so the same time on the nearest days' : ' — the exact time is taken, so the 3 nearest, closest first') : exact ? (inside ? ` — only ${inside} free in their window, topped up with the nearest` : '') : ' — nothing free in their window, so the nearest times'}. ⭐ = best match.`);
+    step = 'offered';
+  };
+
+  const handle = async (text) => {
+    meSay(text);
+    if (step === 'prep') {
+      const q = prepList[prepI];
+      clearQuick();
+      if (/^\s*(skip|laktawan)\s*$/i.test(text)) { answerPrep(null); return; }
+      const opts = q.opts ? q.opts[lang] : [];
+      const n = Number(text.trim());
+      const pick = Number.isInteger(n) && n >= 1 && n <= opts.length ? opts[n - 1] : opts.find((o) => o.toLowerCase().includes(text.trim().toLowerCase()) && text.trim().length >= 3);
+      answerPrep(q.free ? text.trim().slice(0, 120) : pick || text.trim().slice(0, 60));
+      return;
+    }
+    if (step === 'waiting_bio') { botSay(say('bioMissing')); return; }
+    // A reply of 1/2/3 while times are on screen picks that time.
+    if (step === 'offered' && /^\s*[1-3]\s*$/.test(text) && offered[Number(text) - 1]) { clearQuick(); hold(offered[Number(text) - 1]); return; }
+    if (step === 'busy') return;
+    if (step === 'held' && mine) {
+      if (isYes(text)) {
+        clearQuick();
+        log('They typed <b>YES</b> to the time — asking for their first name.');
+        // "YES Maria" in one go: take the name too.
+        const inline = firstName(text);
+        if (inline && !/^(yes|oo|opo|sige|ok|okay)$/i.test(inline)) { book(mine, inline); return; }
+        botSay(say('askName')); step = 'name'; return;
+      }
+      if (/^\s*(no|hindi|ayoko|wag)\b/i.test(text)) { clearQuick(); releaseBooking(); botSay(say('other')); step = 'ask'; return; }
+      if (!/\d|today|tomorrow|bukas|mamaya|morning|afternoon|evening|umaga|hapon|gabi|mon|tue|wed|thu|fri|sat|sun|lunes|martes|miyerkules|huwebes|biyernes|sabado|linggo|weekend/i.test(text)) { botSay(say('sayYes')); return; }
+      log('Not a YES — reading it as a new time instead.');
+    }
+    if (step === 'name' && mine) {
+      const name = firstName(text);
+      if (name) { book(mine, name); return; }
+      botSay(say('badName')); return;
+    }
+    clearQuick();
+    if (step === 'booked' || step === 'held' || step === 'name') releaseBooking();
+    const stop = typing();
+    setBusy(true);
+    const { parsed, how, ms } = await readMessage(text);
+    stop(); setBusy(false);
+    if (parsed.lang !== lang) setLang(parsed.lang, true);
+    const windowsText = parsed.anytime ? 'any time' : parsed.windows.map((w) => `${fmtDay(w.date, 'en')} ${w.from}–${w.to}`).join(', ') || '—';
+    log(`<span class="tag">${how}</span>Read it in <b>${(ms / 1000).toFixed(1)}s</b> → <code>${esc(windowsText)}</code> (Manila)${parsed.lang === 'fil' ? ' · replied in Filipino' : ''}`);
+    if (parsed.unclear) { botSay(say('unclear')); step = 'ask'; return; }
+    offer(match(parsed), parsed.summary);
+  };
+
+  // ---- controls ----
+  const form = document.getElementById('form'), input = document.getElementById('msg'), sendBtn = document.getElementById('send');
+  const setBusy = (b) => { sendBtn.disabled = b; input.disabled = b; if (!b) input.focus(); };
+  form.addEventListener('submit', (e) => { e.preventDefault(); const v = input.value.trim(); if (!v || sendBtn.disabled) return; input.value = ''; handle(v); });
+
+  const setLang = (l, quiet) => {
+    lang = l;
+    document.getElementById('lang-en').setAttribute('aria-pressed', String(l === 'en'));
+    document.getElementById('lang-fil').setAttribute('aria-pressed', String(l === 'fil'));
+    if (!quiet) restart();
+  };
+  document.getElementById('lang-en').onclick = () => setLang('en');
+  document.getElementById('lang-fil').onclick = () => setLang('fil');
+
+  const TRIES = ['YES', 'Maria', 'bukas after 6pm','Saturday morning', 'pwede po ba sa Lunes ng hapon?', 'tomorrow 3pm', 'any time is ok', 'mamaya gabi', 'next friday before noon', 'ok'];
+  const tries = document.getElementById('tries');
+  for (const t of TRIES) { const b = document.createElement('button'); b.type = 'button'; b.textContent = t; b.onclick = () => { if (!sendBtn.disabled) handle(t); }; tries.append(b); }
+
+  let bioDone = true;
+  const restart = () => {
+    chat.innerHTML = ''; offered = []; mine = null; step = 'ask'; prepAnswers = {};
+    { const b = document.getElementById('prep-box'); b.className = 'prep-empty'; b.textContent = 'Book a call in the chat, then answer the "get to know you" questions to see the prep note here.'; }
+    buildCalendar(); renderCal();
+    meSay('MOODENG-4821');
+    botSay(say('connected'));
+    if (bioDone) { botSay(say('ask')); return; }
+    // Bio not filled in yet: send them back to the app; the bot asks to book once the app saves it.
+    botSay(say('bioMissing'));
+    step = 'waiting_bio';
+    quick([[say('backBtn'), (label) => {
+      meSay(label);
+      log('<span class="tag">App</span>They answered the 5 questions in the app → the app tells the bot → the bot sends "LAST STEP: book your call" here.');
+      botSay(say('ask'));
+      step = 'ask';
+    }]]);
+  };
+  const startOver = (done) => { bioDone = done; logEl.innerHTML = '<li><span></span><span class="empty">Send a message to see each step.</span></li>'; logStarted = false; restart(); };
+  document.getElementById('reset').onclick = () => startOver(true);
+  document.getElementById('reset-nobio').onclick = () => startOver(false);
+
+  // Load the live free times, then start the chat.
+  const loadLive = async () => {
+    if (!KEY) { document.getElementById('chat').innerHTML = '<p class="note" style="padding:16px">This test link is missing its key. Ask George for the full link.</p>'; return; }
+    try {
+      const data = await api({ kind: 'slots', timeZone: 'Asia/Manila' });
+      const byDay = {};
+      for (const iso of data.all || data.slots || []) {
+        const date = iso.slice(0, 10), t = iso.slice(11, 16);
+        (byDay[date] = byDay[date] || []).push(t);
+        SLOT_HOST[`${date} ${t}`] = (data.hosts || {})[iso] || null;
+      }
+      REAL = Object.fromEntries(Object.entries(byDay).sort().map(([d, ts]) => [d, ts.join(',')]));
+      log(`<span class="tag">Live</span>Loaded ${(data.all || data.slots || []).length} real free times (Emma + George) from the booking system.`);
+    } catch (e) {
+      document.getElementById('chat').innerHTML = `<p class="note" style="padding:16px">Couldn't load the live calendar (${esc(e.message)}). Check the link, or ask George.</p>`;
+      return;
+    }
+    restart();
+  };
+  loadLive();
+})();
+</script>
+
+</body>
+</html>
