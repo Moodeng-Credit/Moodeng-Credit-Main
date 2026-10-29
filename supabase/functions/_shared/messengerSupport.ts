@@ -14,7 +14,7 @@
 // (the SendPulse bot menu answers it) never become a ticket.
 import { adminUserUrl } from './adminCards.ts';
 import { PAGE_INBOX_URL, SITE_URL } from './loanAccess.ts';
-import { lastOutgoingMessengerAt, type MessengerCard, sendMessengerMessage } from './sendpulse.ts';
+import { lastOutgoingMessengerAt, type MessengerCard, sendMessengerMessage, sendTikTokText, TIKTOK_INBOX_URL } from './sendpulse.ts';
 import type { TelegramInlineKeyboard } from './telegram.ts';
 import { alertTeam, pingTeam, postToTicket } from './supportTickets.ts';
 
@@ -35,7 +35,8 @@ export type BotLocale = 'en' | 'fil';
 export const toBotLocale = (value: string | null | undefined): BotLocale => (value === 'fil' ? 'fil' : 'en');
 
 // Links carry the language so the page opens in it (the app reads ?lang=).
-export const signUpUrl = (locale: BotLocale) => `${SITE_URL}/request-board?lang=${locale}&utm_source=messenger&utm_medium=support`;
+export const signUpUrl = (locale: BotLocale, source: 'messenger' | 'tiktok' = 'messenger') =>
+   `${SITE_URL}/request-board?lang=${locale}&utm_source=${source}&utm_medium=support`;
 // The step-by-step "How to borrow" card (scripts/cards/render-cards.mjs).
 export const borrowCardImage = (locale: BotLocale) => `${SITE_URL}/cards/how-to-borrow-${locale}.png`;
 
@@ -136,18 +137,18 @@ const ticketContext = (borrower: Borrower | null, facebookName: string | null) =
            .join(' · ')
       : `Messenger · not linked to a Moodeng account yet (Facebook: ${facebookName ?? 'unknown'}). The automatic reply offers them the sign-up link.`;
 
-type Conversation = { id: string; token: string; status: string; last_message_at: string | null };
+export type Conversation = { id: string; token: string; status: string; last_message_at: string | null };
 
-// Their one Messenger ticket, created on first contact. visitor_email stays empty on purpose: the
-// away-reply email sweep only emails tickets with an address, and Messenger replies go to Messenger.
-const findOrCreateConversation = async (
+// Their one Messenger (or TikTok) ticket, created on first contact. visitor_email stays empty on
+// purpose: the away-reply email sweep only emails tickets with an address, and replies go back on the
+// channel they wrote on. A TikTok chat's SendPulse contact id also lives in messenger_contact_id:
+// SendPulse ids are unique across its channels, and that column is what fires the reply relay.
+export const findOrCreateConversation = async (
    svc: Svc,
    contactId: string,
-   facebookName: string | null,
-   borrower: Borrower | null
+   opts: { label: string; context: string; channel: 'messenger' | 'tiktok'; pageUrl: string }
 ): Promise<{ conversation: Conversation; created: boolean } | null> => {
-   const label = `${facebookName ?? 'Facebook user'} (Messenger)`;
-   const context = ticketContext(borrower, facebookName);
+   const { label, context } = opts;
    const { data: existing } = await svc
       .from('widget_conversations')
       .select('id, token, status, last_message_at, visitor_name, bot_context')
@@ -163,12 +164,12 @@ const findOrCreateConversation = async (
    const { data, error } = await svc
       .from('widget_conversations')
       .insert({
-         channel: 'messenger',
+         channel: opts.channel,
          messenger_contact_id: contactId,
          visitor_name: label,
-         page_url: PAGE_INBOX_URL,
+         page_url: opts.pageUrl,
          bot_context: context,
-         ip: 'messenger'
+         ip: opts.channel
       })
       .select('id, token, status, last_message_at')
       .single();
@@ -215,7 +216,12 @@ export const openMessengerTicket = async (
       ? await svc.from('users').select('id, username, email, display_name, cs').eq('id', input.userId).maybeSingle()
       : { data: null };
    const borrower = (borrowerRow as Borrower | null) ?? null;
-   const found = await findOrCreateConversation(svc, input.contactId, input.facebookName, borrower);
+   const found = await findOrCreateConversation(svc, input.contactId, {
+      label: `${input.facebookName ?? 'Facebook user'} (Messenger)`,
+      context: ticketContext(borrower, input.facebookName),
+      channel: 'messenger',
+      pageUrl: PAGE_INBOX_URL
+   });
    if (!found) return;
    const { conversation, created } = found;
 
@@ -271,8 +277,8 @@ export const openMessengerTicket = async (
    }
 };
 
-// A team reply saved by discord-interactions → Messenger. Claimed first, so a retried trigger call
-// can't send it twice.
+// A team reply saved by discord-interactions → Messenger or TikTok. Claimed first, so a retried
+// trigger call can't send it twice.
 export const relayAgentReply = async (svc: Svc, messageId: string): Promise<{ ok: boolean; reason?: string }> => {
    const { data: claimed } = await svc
       .from('widget_messages')
@@ -286,17 +292,30 @@ export const relayAgentReply = async (svc: Svc, messageId: string): Promise<{ ok
    if (!message) return { ok: false, reason: 'already_handled' };
    const { data: conv } = await svc
       .from('widget_conversations')
-      .select('messenger_contact_id, visitor_name')
+      .select('messenger_contact_id, visitor_name, channel')
       .eq('id', message.conversation_id)
       .maybeSingle();
    const contactId = (conv as { messenger_contact_id?: string | null } | null)?.messenger_contact_id;
    if (!contactId) return { ok: false, reason: 'not_messenger' };
+   const onTikTok = (conv as { channel?: string | null }).channel === 'tiktok';
 
-   const sent = await sendMessengerMessage(contactId, { text: message.body });
+   const sent = onTikTok ? await sendTikTokText(contactId, message.body) : await sendMessengerMessage(contactId, { text: message.body });
    if (sent.ok) return { ok: true };
 
    await svc.from('widget_messages').update({ channel_delivered_at: null, channel_error: sent.reason }).eq('id', message.id);
    const who = (conv as { visitor_name?: string | null }).visitor_name ?? 'this person';
+   if (onTikTok) {
+      const tiktokWhy =
+         sent.reason === 'send_failed'
+            ? "TikTok refused it — most likely it's been more than 48 hours since they last wrote, or we already sent 10 messages since then (TikTok's rule)."
+            : `SendPulse said: ${sent.reason}.`;
+      await alertTeam(
+         svc,
+         `⚠️ A Discord reply to ${who} was NOT delivered on TikTok. ${tiktokWhy}\nIt can only go through after they write again.\n> ${message.body.slice(0, 300)}`,
+         [[{ text: '💬 Open SendPulse chats', url: TIKTOK_INBOX_URL }]]
+      );
+      return { ok: false, reason: sent.reason };
+   }
    const why =
       sent.reason === 'send_failed'
          ? "Messenger refused it — most likely it's been more than 24 hours since they last wrote (Meta's rule)."

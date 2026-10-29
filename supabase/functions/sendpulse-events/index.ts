@@ -15,10 +15,12 @@ import {
    MESSENGER_PAGE_ID,
    messengerDisplayName,
    SENDPULSE_BOT_ID,
-   sendMessengerMessage
+   sendMessengerMessage,
+   TIKTOK_BOT_ID
 } from '../_shared/sendpulse.ts';
 import { parseSendPulseEvents, type SendPulseEvent } from '../_shared/sendpulseEvents.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
+import { openTikTokTicket } from '../_shared/tiktokSupport.ts';
 
 // SendPulse bot webhooks → a second chance to confirm Facebook when the m.me code got lost.
 //
@@ -48,6 +50,8 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 //      payload) with borrowers who tapped "Verify via Messenger" in the last 30 minutes
 //      (_shared/messengerAutoMatch.ts). One strong match → confirm through the same endpoint and tell
 //      the person in Messenger; anything less certain → an "Is this them?" card for the team.
+// The TikTok bot (@moodeng.credit) posts to the same URL: its messages only become support tickets
+// (_shared/tiktokSupport.ts). No Facebook step, codes or matching there.
 // Always answers 200 so SendPulse doesn't retry; failures are logged.
 
 const ENV_EVENTS_SECRET = Deno.env.get('SENDPULSE_EVENTS_SECRET')?.trim() ?? '';
@@ -283,6 +287,16 @@ serve(async (req) => {
    for (const event of events) {
       try {
          if (!event.fromPerson || !event.contactId) continue;
+         if (event.channel === 'tiktok') {
+            if (event.botId && event.botId !== TIKTOK_BOT_ID) {
+               console.warn('sendpulse-events: skipped an event from another TikTok bot', event.botId);
+               continue;
+            }
+            if (isSupportMessage(event)) {
+               await openTikTokTicket(svc, { contactId: event.contactId, text: event.text, hasAttachment: event.hasAttachment, at: event.at });
+            }
+            continue;
+         }
          // Our bot, by SendPulse bot id or by our Page id. Logged when skipped, so a SendPulse change in
          // how bots are identified shows up in the logs instead of silently switching this off.
          const ours = (!event.botId && !event.pageId) || event.botId === SENDPULSE_BOT_ID || event.pageId === MESSENGER_PAGE_ID;

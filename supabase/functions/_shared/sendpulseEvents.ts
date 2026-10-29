@@ -12,6 +12,8 @@ import { extractMessengerCodes } from './messengerCodes.ts';
 
 export type SendPulseEvent = {
    title: string;
+   // Which of our SendPulse bots it came from: the Facebook Page (Messenger) or @moodeng.credit (TikTok).
+   channel: 'messenger' | 'tiktok';
    botId: string | null;
    // The Facebook Page id SendPulse reports as the bot's "external_id".
    pageId: string | null;
@@ -82,7 +84,8 @@ export const parseSendPulseEvents = (body: unknown, now = Date.now()): SendPulse
       if (!e) return [];
       const title = asString(e.title) ?? asString(e.event) ?? '';
       const service = asString(e.service);
-      if (service && !/messenger|facebook/i.test(service)) return [];
+      if (service && !/messenger|facebook|tiktok/i.test(service)) return [];
+      const channel = service && /tiktok/i.test(service) ? 'tiktok' : 'messenger';
       const bot = asObject(e.bot);
       const contact = asObject(e.contact);
       const variables = asObject(contact?.variables);
@@ -96,6 +99,7 @@ export const parseSendPulseEvents = (body: unknown, now = Date.now()): SendPulse
       return [
          {
             title,
+            channel,
             botId: asString(bot?.id),
             pageId: asString(bot?.external_id),
             contactId: asString(contact?.id),
