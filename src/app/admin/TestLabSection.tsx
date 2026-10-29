@@ -121,7 +121,7 @@ function StableyardOnboardingCard() {
          </div>
          <p className="text-sm text-[#a89bb8]">
             For YOUR Stableyard account. 1) Send a code to your sign-in email. 2) Enter it. 3) Start KYC and finish it yourself on your
-            phone.
+            phone. &quot;Share my Didit KYC&quot; mints a Didit Reusable KYC token for Stableyard (needs their Didit app ID in the vault).
          </p>
          <div className="flex flex-wrap items-center gap-2">
             <button type="button" onClick={() => void run('email_start')} disabled={busy !== null} className={smallButton}>
@@ -144,6 +144,9 @@ function StableyardOnboardingCard() {
             </button>
             <button type="button" onClick={() => void run('kyc_start')} disabled={busy !== null} className={smallButton}>
                {busy === 'kyc_start' ? 'Starting…' : '3. Start KYC'}
+            </button>
+            <button type="button" onClick={() => void run('didit_share')} disabled={busy !== null} className={smallButton}>
+               {busy === 'didit_share' ? 'Sharing…' : 'Share my Didit KYC'}
             </button>
          </div>
          {kycUrl ? (

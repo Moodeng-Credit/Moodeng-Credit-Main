@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { shareDiditSession } from '../_shared/diditShare.ts';
 import { isStableyardConfigured, stableyard, type StableyardAccount, type StableyardDepositNetwork } from '../_shared/stableyard.ts';
 import {
    BASE_CHAIN_ID,
@@ -15,7 +16,7 @@ import { handleStableyardWebhook, isStableyardWebhook } from '../_shared/stabley
 //
 // POST {}                    → ensure the user's Stableyard account + addresses exist, return them
 // POST { refresh: true }     → same, and re-read deposits from Stableyard first
-// POST { onboarding: 'status' | 'email_start' | 'email_confirm' | 'kyc_start' }
+// POST { onboarding: 'status' | 'email_start' | 'email_confirm' | 'kyc_start' | 'didit_share' }
 //                            → the caller's own account: verify its email and start KYC, which
 //                              Stableyard requires before QR payments. The email is always the
 //                              caller's sign-in email, never one from the client.
@@ -112,7 +113,49 @@ const ensureAccount = async (admin: SupabaseClient, userId: string, wallet: stri
    return { ok: true as const, accountId: account.id };
 };
 
-const ONBOARDING_ACTIONS = new Set(['status', 'email_start', 'email_confirm', 'kyc_start']);
+const ONBOARDING_ACTIONS = new Set(['status', 'email_start', 'email_confirm', 'kyc_start', 'didit_share']);
+
+/**
+ * Didit Reusable KYC → Stableyard: mint a share token for the caller's newest approved Didit session,
+ * addressed to Stableyard's Didit application (vault STABLEYARD_DIDIT_APP_ID), so Stableyard can import
+ * it instead of a second KYC. Until Stableyard gives us that ID and an import route, this answers
+ * code 'not_configured' and changes nothing. The token is a credential: returned to the caller for
+ * manual hand-off while there is no delivery route, never logged or stored.
+ */
+const shareKycWithStableyard = async (admin: SupabaseClient, userId: string) => {
+   const { data: appId } = await admin.rpc('stableyard_didit_app_id');
+   if (!appId) return json({ ok: false, code: 'not_configured', error: "Stableyard hasn't given us their Didit app ID yet." }, 409);
+
+   const { data: identity } = await admin
+      .from('kyc_identities')
+      .select('session_id')
+      .eq('user_id', userId)
+      .ilike('session_status', 'approved')
+      .order('session_created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+   const sessionId = identity?.session_id as string | undefined;
+   if (!sessionId) return json({ ok: false, code: 'no_approved_kyc', error: 'No approved Didit verification on this account.' }, 409);
+
+   const ttlSeconds = 86_400;
+   const shared = await shareDiditSession(sessionId, String(appId), ttlSeconds);
+   await admin.from('stableyard_kyc_shares').insert({
+      user_id: userId,
+      didit_session_id: sessionId,
+      for_application_id: String(appId),
+      session_kind: shared.ok ? shared.sessionKind : null,
+      ttl_seconds: ttlSeconds,
+      error: shared.ok ? null : `${shared.status} ${shared.error}`.slice(0, 500)
+   });
+   if (!shared.ok) return json({ ok: false, code: 'didit_share_failed', error: shared.error, diditStatus: shared.status }, 502);
+   return json({
+      ok: true,
+      step: 'didit_share',
+      sessionKind: shared.sessionKind,
+      expiresInSeconds: ttlSeconds,
+      shareToken: shared.shareToken
+   });
+};
 
 /** Email verification + KYC for the caller's own Stableyard account (needed for QR payments). */
 const handleOnboarding = async (
@@ -122,6 +165,8 @@ const handleOnboarding = async (
    action: string,
    body: { challengeId?: unknown; code?: unknown }
 ) => {
+   if (action === 'didit_share') return shareKycWithStableyard(admin, userId);
+
    const { data: row } = await admin.from('stableyard_accounts').select('account_id').eq('user_id', userId).maybeSingle();
    const accountId = row?.account_id as string | undefined;
    if (!accountId) return json({ error: 'No Stableyard account yet. Open the deposit test first to create one.' }, 409);
