@@ -71,12 +71,12 @@ const callCard = (title: string, u: CallUser, opts: { confirm?: boolean } = {}):
    if (confirm) {
       return {
          title,
-         subtitle: change ? "Tap ✅ so we know you're coming — or pick a new time." : "Tap below so we know you're coming.",
+         subtitle: change ? 'Tap ✅ to come, or pick a new time.' : 'Tap ✅ so we know you are coming.',
          button: { title: "✅ I'll be there", url: buildConfirmUrl(confirm) },
          ...(change ? { moreButtons: [change] } : {})
       };
    }
-   return change ? { title: "Can't make it?", subtitle: 'Pick a new time that works for you.', button: change } : undefined;
+   return change ? { title: "Can't make it?", subtitle: 'Pick a new time.', button: change } : undefined;
 };
 
 type CallUser = {
@@ -118,8 +118,9 @@ export const sendBookedMessenger = (u: CallUser) => {
 export const sendMovedMessenger = (u: CallUser) => {
    if (!u.video_call_starts_at) return Promise.resolve({ ok: false as const, reason: 'no_call' });
    const when = formatCallTime(u.video_call_starts_at, u.video_call_timezone);
+   // Short (George, 2026-10-29: "text heavy… I wonder if people even read them").
    return sendMessengerMessage(u.messenger_psid, {
-      text: `📅 Your meeting with Moodeng has moved to ${when} via Zoom.\n${joinLine(u)}\n\nPlease have your ID or passport ready.\n\n${CONFIRM_NOTICE}`,
+      text: `📅 Moved to ${when}. Same Zoom link:\n${u.video_call_join_url ?? 'in your email'}\n\n⏰ Tap ✅ 1 hour before to keep it.`,
       card: callCard('See you then?', u)
    });
 };
@@ -132,8 +133,8 @@ export const sendReminderMessenger = (u: CallUser, stage: 1 | 2) => {
    // Emma's "Remind the initial meeting" script.
    const text =
       stage === 2
-         ? `⏰ Our meeting starts in under an hour — ${when}. ${u.video_call_join_url ? `Join here: ${u.video_call_join_url}` : 'The Zoom link is in your email.'} Please have your ID or passport ready.`
-         : `👋 Just a quick reminder about our meeting scheduled for ${when}. Please let us know here if that time still works for you or if you'd prefer to reschedule. Remember: 1 hour before, tap ✅ I'll be there to confirm — otherwise the meeting is cancelled automatically. Looking forward to meeting you!`;
+         ? `⏰ Starting soon: ${when}\n${u.video_call_join_url ? `Join: ${u.video_call_join_url}` : 'The Zoom link is in your email.'}\n🪪 Have your ID ready.`
+         : `👋 Reminder: your call is ${when} on Zoom.\n⏰ 1 hour before, tap ✅ to keep your spot.`;
    return sendMessengerMessage(u.messenger_psid, {
       text,
       card: callCard('Still coming?', u)
@@ -147,8 +148,8 @@ export const sendConfirmAskMessenger = (u: CallUser) => {
    if (!u.video_call_starts_at) return Promise.resolve({ ok: false as const, reason: 'no_call' });
    const when = formatCallTime(u.video_call_starts_at, u.video_call_timezone);
    return sendMessengerMessage(u.messenger_psid, {
-      text: `⏰ Our meeting is in 1 hour — ${when}. Please tap ✅ I'll be there below within 30 minutes to confirm you're coming. If you don't confirm, the meeting is cancelled automatically. Need a different time? Tap 🔄 Change time.`,
-      card: callCard('Confirm your meeting', u, { confirm: true })
+      text: `⏰ Your call is in 1 hour (${when}).\nTap ✅ to keep it, or it's cancelled in 30 min.`,
+      card: callCard('Keep your spot?', u, { confirm: true })
    });
 };
 
@@ -156,8 +157,7 @@ export const sendConfirmAskMessenger = (u: CallUser) => {
 export const sendStartingMessenger = (u: CallUser) => {
    if (!u.video_call_starts_at) return Promise.resolve({ ok: false as const, reason: 'no_call' });
    return sendMessengerMessage(u.messenger_psid, {
-      text: `👋 Our meeting is starting now! ${joinLine(u)}
-Please have your ID or passport ready.`
+      text: `👋 We're starting now! ${joinLine(u)}`
    });
 };
 
@@ -165,7 +165,6 @@ Please have your ID or passport ready.`
 export const sendWaitingMessenger = (u: CallUser) => {
    if (!u.video_call_starts_at) return Promise.resolve({ ok: false as const, reason: 'no_call' });
    return sendMessengerMessage(u.messenger_psid, {
-      text: `🙂 We're ready for you! ${joinLine(u)}
-Can't make it? Just reply here and we'll find a new time.`
+      text: `🙂 We're waiting for you! ${joinLine(u)}\nCan't make it? Reply here.`
    });
 };

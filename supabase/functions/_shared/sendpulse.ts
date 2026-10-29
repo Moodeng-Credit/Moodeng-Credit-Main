@@ -374,3 +374,34 @@ export const sendWhatsAppText = async (contactId: string | null | undefined, tex
       return { ok: false, reason: 'send_failed' };
    }
 };
+
+// ---- Message stats (admin-only research): how often each kind of bot message is seen / tapped ----
+
+export type SendPulseMessage = { direction?: number; status?: number; created_at?: string; opened_at?: string | null; redirected_at?: string | null; data?: any };
+
+/** Recent Messenger chats (contact ids), newest first. Never throws. */
+export const listMessengerChats = async (max = 120): Promise<string[]> => {
+   const token = await getToken();
+   if (!token) return [];
+   const ids: string[] = [];
+   for (let skip = 0; skip < max; skip += 50) {
+      const res = await fetch(`${API}/messenger/chats?bot_id=${encodeURIComponent(SENDPULSE_BOT_ID)}&size=50&skip=${skip}`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+      const body = res?.ok ? await res.json().catch(() => null) : null;
+      const list = (Array.isArray(body?.data) ? body.data : []) as Array<{ contact_id?: string; contact?: { id?: string } }>;
+      for (const c of list) {
+         const id = c.contact_id ?? c.contact?.id;
+         if (id) ids.push(id);
+      }
+      if (list.length < 50) break;
+   }
+   return ids;
+};
+
+/** One contact's message history, newest first. Never throws. */
+export const listMessengerMessages = async (contactId: string, size = 200): Promise<SendPulseMessage[]> => {
+   const token = await getToken();
+   if (!token) return [];
+   const res = await fetch(`${API}/messenger/chats/messages?contact_id=${encodeURIComponent(contactId)}&size=${size}&order=desc`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+   const body = res?.ok ? await res.json().catch(() => null) : null;
+   return (Array.isArray(body?.data) ? body.data : []) as SendPulseMessage[];
+};
