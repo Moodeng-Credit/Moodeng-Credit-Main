@@ -16,16 +16,19 @@ import {
    sendWaitingMessenger
 } from '../_shared/videoCall.ts';
 import { autoMarkNoShow, closeReleasedCall, promptAdminsForAttendance } from '../_shared/videoCallOutcome.ts';
-import { CONFIRM_CLOSES_MIN, RUNG, type Rung, shouldReleaseSlot, skipsConfirmAsk, skipsDayBeforeReminder, targetRung } from './lib.ts';
+import { buildCallConfirmTemplate, CALL_CONFIRM_WHATSAPP_SETTING_KEY, CONFIRM_CLOSES_MIN, RUNG, type Rung, shouldReleaseSlot, skipsConfirmAsk, skipsDayBeforeReminder, targetRung } from './lib.ts';
 import { cancelCalBooking } from '../_shared/calcomCancel.ts';
 import { cancelCallButton } from '../_shared/callCancel.ts';
 import { isInternalRequest } from '../_shared/internalAuth.ts';
 import { postDiscord } from '../_shared/discord.ts';
+import { getTelegramBotSettingEnabled } from '../_shared/borrowerNotificationDelivery.ts';
+import { sendWhatsAppTemplate } from '../_shared/sendpulse.ts';
 
 // Cron-driven (every 5 min) no-show defence for booked video calls. The full ladder — day-before,
 // confirm-or-cancel (1h before) / cancel unconfirmed (30 min before), starting now, we're waiting, admin prompt, auto
 // no-show — and its timing rules live in ./lib.ts. Channels: web push, Telegram (when connected +
-// account-activity on) and Messenger (SendPulse, only inside Meta's 24h window).
+// account-activity on), Messenger (SendPulse, only inside Meta's 24h window) and, for the 1h ✅ ask
+// only, a WhatsApp template when Messenger can't reach them.
 //
 // verify_jwt stays on (no config.toml entry → project default), and the pg_cron job calls it with
 // the service key, so only a valid project token reaches it. Never throws per-user: one borrower's
@@ -51,6 +54,8 @@ type ReminderUser = {
    chat_id: string | number | null;
    notif_account_activity: boolean | null;
    messenger_psid: string | null;
+   whatsapp_contact_id: string | null;
+   display_name: string | null;
    video_call_host: string | null;
    video_call_starts_at: string;
    video_call_scheduled_at: string | null;
@@ -67,7 +72,7 @@ type ReminderUser = {
 };
 
 const COLUMNS =
-   'id, username, chat_id, notif_account_activity, messenger_psid, video_call_host, video_call_starts_at, video_call_scheduled_at, video_call_timezone, video_call_join_url, video_call_booking_uid, video_call_meeting_id, video_call_arrived_at, video_call_confirm_token, video_call_confirmed_at, video_call_keep_spot_asked_at, video_call_reminder_stage, loan_access_status';
+   'id, username, chat_id, notif_account_activity, messenger_psid, whatsapp_contact_id, display_name, video_call_host, video_call_starts_at, video_call_scheduled_at, video_call_timezone, video_call_join_url, video_call_booking_uid, video_call_meeting_id, video_call_arrived_at, video_call_confirm_token, video_call_confirmed_at, video_call_keep_spot_asked_at, video_call_reminder_stage, loan_access_status';
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
@@ -173,8 +178,17 @@ const runRung = async (svc: Svc, u: ReminderUser, rung: Rung, zoomActive: boolea
          const viaTelegram = await telegram(u, `Confirm your Moodeng call ✅\n\n${body}`, [[{ text: "✅ I'll be there", url: confirmUrl }]]);
          const viaMessenger = await sendConfirmAskMessenger(u);
          logMessenger(u, viaMessenger);
+         // Messenger couldn't reach them (outside its 24h window): the approved WhatsApp template, if
+         // they connected WhatsApp and the switch is on.
+         let viaWhatsApp = false;
+         if (!viaMessenger.ok && u.whatsapp_contact_id && (await getTelegramBotSettingEnabled(svc, CALL_CONFIRM_WHATSAPP_SETTING_KEY).catch(() => false))) {
+            const firstName = (u.display_name ?? '').trim().split(/\s+/)[0] || u.username;
+            const sent = await sendWhatsAppTemplate(u.whatsapp_contact_id, buildCallConfirmTemplate(firstName, at, u.video_call_confirm_token));
+            viaWhatsApp = sent.ok;
+            console.log('video-call-reminders: whatsapp confirm for', u.id, sent.ok ? 'sent' : `not sent (${sent.reason})`);
+         }
          // Only an ask that verifiably landed somewhere makes the call cancellable at the deadline.
-         if (viaMessenger.ok || viaTelegram || viaPush) {
+         if (viaMessenger.ok || viaWhatsApp || viaTelegram || viaPush) {
             await svc.from('users').update({ video_call_keep_spot_asked_at: new Date().toISOString() }).eq('id', u.id);
          }
          return 'confirm_ask';

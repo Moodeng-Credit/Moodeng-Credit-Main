@@ -19,6 +19,7 @@ import {
    sendMessengerMessage
 } from '../_shared/sendpulse.ts';
 import { loadBorrowSteps, loadNextStep } from '../_shared/botNextStep.ts';
+import { botMessageStats } from '../_shared/botMessageStats.ts';
 import { saveBotLocale } from '../_shared/messengerSupport.ts';
 import { callTelegramApi, sendTelegramMessage } from '../_shared/telegram.ts';
 import { testAccountRow } from '../_shared/testAccount.ts';
@@ -214,7 +215,9 @@ const connectByTiming = async (svc: Svc, contactId: string, at: number): Promise
    const result = ((await res.json().catch(() => null)) as { ok?: boolean; already?: boolean } | null) ?? {};
    const seconds = Math.max(0, Math.round((at - Date.parse(decision.attempt.chat_opened_at)) / 1000));
    console.log(`sendpulse-messenger-verify: no code → matched by timing (${seconds}s after the tap): ${result.ok ? (result.already ? 'already' : 'connected') : 'refused'}`);
-   return Boolean(result.ok);
+   // "already": the code they pasted connected them first, and the flow already said so (Oct 28: two
+   // "connected" messages in a row). Only a fresh timing connection gets our own reply.
+   return Boolean(result.ok) && !result.already;
 };
 
 const replyNotYet = (svc: Svc, contactId: string | null, reason: NotYetReason) => {
@@ -371,6 +374,15 @@ const handleWhatsApp = async (svc: Svc, body: VerifyBody, nowIso: string): Promi
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
    if (req.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405);
+
+   // Admin-only research: bot message stats (seen / tapped / replied per kind). X-Admin-Token, read-only.
+   if (req.headers.get('x-admin-token')) {
+      const expected = (Deno.env.get('ADMIN_API_TOKEN') ?? '').trim();
+      if (!expected || req.headers.get('x-admin-token')!.trim() !== expected) return json({ ok: false, error: 'unauthorized' }, 401);
+      const p = await req.json().catch(() => ({}));
+      if (p?.action !== 'message_stats') return json({ ok: false, error: 'unknown_action' }, 400);
+      return json(await botMessageStats(String(p.since ?? new Date(Date.now() - 21 * 86400_000).toISOString()), Number(p.maxChats ?? 120)));
+   }
 
    // Shared-secret gate. Fail-closed once the secret is set; if it isn't configured yet, allow (so a
    // deploy-before-secret doesn't 401 every call) but log loudly.

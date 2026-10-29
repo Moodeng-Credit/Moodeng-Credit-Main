@@ -224,9 +224,41 @@ export const stableyard = {
          },
          idempotencyKey
       }),
+   // One-time bank / e-wallet payout (off-ramp): same send Payment as a QR, destination external_bank.
+   // Preview rejects external_bank, so the quote comes from this create call.
+   createBankPayment: (
+      accountId: string,
+      payment: { country: string; bankCode: string; accountNumber: string; beneficiaryName: string; amount: string; currency: string },
+      idempotencyKey: string
+   ) =>
+      stableyardRequest('POST', '/v2/payments', {
+         body: {
+            intent: 'send',
+            sender: { accountId },
+            destination: {
+               type: 'external_bank',
+               country: payment.country,
+               bankCode: payment.bankCode,
+               accountNumber: payment.accountNumber,
+               // Required for PH ("beneficiaryName is required for Philippines bank transfers").
+               beneficiaryName: payment.beneficiaryName
+            },
+            amountMode: 'deliver_exact',
+            paymentAmount: { amount: payment.amount, assetType: 'fiat', assetCode: payment.currency },
+            description: 'Moodeng admin bank payout test'
+         },
+         idempotencyKey
+      }),
+   // Regulated capabilities (bank_payout = sending fiat to an external bank). A first PH bank payout
+   // stops on a hosted compliance form; each new activation issues a fresh link and kills the old one.
+   activateCapability: (
+      accountId: string,
+      activation: { capability: 'bank_payout' | 'linked_bank' | 'bank_onramp'; country: string; currency: string; rail: string },
+      idempotencyKey: string
+   ) => stableyardRequest('POST', `${accountPath(accountId)}/capability-activations`, { body: activation, idempotencyKey }),
+   listCapabilities: (accountId: string) => stableyardRequest('GET', `${accountPath(accountId)}/capabilities`),
    // Bank codes accepted for an external_bank payout (PH/VN one-time beneficiary). Read-only.
-   listBeneficiaryBanks: (country: string) =>
-      stableyardRequest('GET', '/v2/payments/external-bank/banks', { query: { country } }),
+   listBeneficiaryBanks: (country: string) => stableyardRequest('GET', '/v2/payments/external-bank/banks', { query: { country } }),
    getPayment: (paymentId: string) => stableyardRequest('GET', `/v2/payments/${encodeURIComponent(paymentId)}`),
 
    getBalances: (accountId: string) => stableyardRequest('GET', `${accountPath(accountId)}/balances`),

@@ -25,7 +25,7 @@ import { postDiscord } from './discord.ts';
 import { loadOnboardingTimeline, signupLines, timelineLines } from './onboardingTimeline.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import type { PushLocale, PushPayload } from './pushMessages.ts';
-import { getMessengerContact, messengerDisplayName, sendMessengerMessage } from './sendpulse.ts';
+import { getMessengerContact, messengerDisplayName, sendMessengerMessage, type MessengerCard } from './sendpulse.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
 import { changeTimeButton } from './callReschedule.ts';
 import { cancelCallButton } from './callCancel.ts';
@@ -244,9 +244,8 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
 const BORROWER_MESSAGES = {
    // Emma's "Post-meeting recap".
    approved: {
-      title: "You're approved to borrow 🎉",
-      body:
-         'Great meeting you! Tap to apply for your loan. Please reply on Messenger with your current contact details and social media handles so the team can reach you when your loan lands in your wallet. IMPORTANT: keeping your account active requires sticking to our repayment terms — loan defaults are flagged immediately and permanently banned across all affiliated platforms.',
+      title: "🎉 You're approved!",
+      body: 'Great meeting you! Tap to request your first $15 loan.\n⚠️ Pay on time: missed payments are flagged and close your account.\nPS: reply here with your other social media so we can reach you.',
       url: APPLY_URL
    },
    // Emma's "Decline the loan request" script.
@@ -311,23 +310,23 @@ type BorrowerMessage = { title: string; body: string; url: string };
 // loan), and anything that sends them back sends them to book again on /onboarding/connect.
 const PRE_KYC_MESSAGES: Partial<Record<BorrowerMessageKind, BorrowerMessage>> = {
    approved: {
-      title: "You're approved 🎉 Apply for your loan",
-      body: "Great meeting you! Tap to fill in your loan request — the last step is a quick ID check (about 2 minutes). IMPORTANT: keeping your account active requires sticking to our repayment terms — loan defaults are flagged immediately and permanently banned across all affiliated platforms.",
+      title: "🎉 You're approved!",
+      body: 'Great meeting you! Tap to request your first $15 loan (last step: a 2-min ID check).\n⚠️ Pay on time: missed payments are flagged and close your account.',
       url: APPLY_URL
    },
    no_show: {
-      title: 'We missed you on the call',
-      body: "We're sorry we missed you — we need to meet you before you can borrow. Tap to book a new time, or message us on Messenger.",
+      title: 'We missed you 😢',
+      body: 'No problem: tap to pick a new time. We need to meet before you can borrow.',
       url: CONNECT_URL
    },
    call_cancelled: {
       title: 'Your Moodeng call was cancelled',
-      body: 'No problem — tap to pick a new time for your 15-minute call. You can apply right after it.',
+      body: 'No problem: tap to pick a new time.',
       url: CONNECT_URL
    },
    spot_released: {
       title: 'Your Moodeng call was cancelled',
-      body: "You didn't confirm your call in the hour before, so it was cancelled. No problem — tap to pick a new time that works for you.",
+      body: "You didn't tap ✅ in time, so it was cancelled. Tap to pick a new time.",
       url: CONNECT_URL
    },
    expired: {
@@ -341,13 +340,33 @@ const PRE_KYC_MESSAGES: Partial<Record<BorrowerMessageKind, BorrowerMessage>> = 
 // window, and the call can be days after they connected).
 const PRE_KYC_EMAIL: ReadonlySet<BorrowerMessageKind> = new Set(['approved', 'no_show']);
 
-// Sent on Messenger after the approval message. Titles from Moodeng Credit's YouTube channel.
+// Sent on Messenger after the approval message: one card, three buttons (was a wall of links).
+export const APPROVED_VIDEOS_CARD: MessengerCard = {
+   title: '📺 3 one-minute videos',
+   subtitle: 'Before your first loan: start, cash out, repay.',
+   button: { title: '▶️ Get started', url: 'https://www.youtube.com/shorts/G4hibvp-T9g' },
+   moreButtons: [
+      { title: '▶️ Cash out', url: 'https://www.youtube.com/watch?v=SMasdjEpDkg' },
+      { title: '▶️ Repay', url: 'https://www.youtube.com/watch?v=Eu9JzDMOSmw' }
+   ]
+};
+// Titles from Moodeng Credit's YouTube channel (kept for the email/Telegram text versions).
 export const APPROVED_VIDEOS_TEXT =
    '📺 3 quick videos before your first loan:\n\n' +
    '1️⃣ How to get started on Moodeng (6 simple steps)\nhttps://www.youtube.com/shorts/G4hibvp-T9g\n\n' +
    '2️⃣ How to cash out your loan via Coins.ph\nhttps://www.youtube.com/watch?v=SMasdjEpDkg\n\n' +
    '3️⃣ How to repay your loan in 1 minute (Coins.ph)\nhttps://www.youtube.com/watch?v=Eu9JzDMOSmw\n\n' +
    'Questions? Just reply here 🦛';
+
+// The button under the message: same wording on Messenger and Telegram.
+const ctaLabel = (msg: BorrowerMessage, kind: BorrowerMessageKind) =>
+   msg.url === VERIFY_URL
+      ? 'Verify my ID'
+      : msg.url === CONNECT_URL || kind === 'no_show' || kind === 'call_cancelled' || kind === 'spot_released'
+        ? 'Pick a new time'
+        : kind === 'approved'
+          ? 'Request my loan'
+          : 'Open Moodeng';
 
 export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow, kind: BorrowerMessageKind) => {
    const preKycMsg = PRE_KYC_MESSAGES[kind] && (await loadNeedsIdCheck(svc, borrower.id, borrower)) ? PRE_KYC_MESSAGES[kind] : undefined;
@@ -374,12 +393,15 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
    }
 
    // Messenger too (lands only inside Meta's 24h window — e.g. they chatted around the call).
-   const messenger = await sendMessengerMessage(borrower.messenger_psid, { text: `${msg.title}\n\n${msg.body}\n\n${msg.url}` });
+   const messenger = await sendMessengerMessage(borrower.messenger_psid, {
+      text: `${msg.title}\n${msg.body}`,
+      card: { title: '👉 Next step', button: { title: ctaLabel(msg, kind), url: msg.url } }
+   });
    if (!messenger.ok && messenger.reason !== 'no_contact') console.log('loanAccess: messenger skipped for', borrower.id, messenger.reason);
    // Approved: the how-to videos right after, so they know how to get started, cash out and repay
    // before their first loan (George, 2026-10-13).
    if (kind === 'approved' && messenger.ok) {
-      const videos = await sendMessengerMessage(borrower.messenger_psid, { text: APPROVED_VIDEOS_TEXT });
+      const videos = await sendMessengerMessage(borrower.messenger_psid, { text: '📺 Watch these first (1 min each) 👇', card: APPROVED_VIDEOS_CARD });
       if (!videos.ok) console.log('loanAccess: approval videos skipped for', borrower.id, videos.reason);
    }
 

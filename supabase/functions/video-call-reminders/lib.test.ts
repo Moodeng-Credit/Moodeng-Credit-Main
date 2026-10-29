@@ -1,6 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { RUNG, shouldReleaseSlot, skipsDayBeforeReminder, skipsConfirmAsk, targetRung } from './lib.ts';
+import { buildCallConfirmTemplate, RUNG, shouldReleaseSlot, skipsDayBeforeReminder, skipsConfirmAsk, targetRung } from './lib.ts';
 
 const H = 60 * 60 * 1000;
 const start = Date.parse('2026-09-25T08:00:00Z');
@@ -44,4 +44,12 @@ Deno.test('a slot is released only if unconfirmed AND the ask verifiably reached
    assertEquals(shouldReleaseSlot({ ...base, video_call_confirmed_at: '2026-09-25T06:10:00Z' }), false);
    assertEquals(shouldReleaseSlot({ ...base, video_call_keep_spot_asked_at: null }), false);
    assertEquals(shouldReleaseSlot({ ...base, video_call_booking_uid: null }), false);
+});
+
+Deno.test('WhatsApp confirm template: name, time and the confirm token as the button suffix', () => {
+   const t = buildCallConfirmTemplate('Maria', 'Thu, Oct 30, 7:00 PM (Manila time)', 'abc123');
+   assertEquals(t.name, 'moodeng_call_confirm');
+   assertEquals(t.components[0].parameters.map((p) => p.text), ['Maria', 'Thu, Oct 30, 7:00 PM (Manila time)']);
+   assertEquals(t.components[1], { type: 'button', sub_type: 'url', index: '0', parameters: [{ type: 'text', text: 'abc123' }] });
+   assertEquals(buildCallConfirmTemplate('  ', 'x', 't').components[0].parameters[0].text, 'there');
 });

@@ -11,7 +11,7 @@ import { getAccount } from 'wagmi/actions';
 import FundingMethodModal, { type FundLoanTarget } from '@/components/funding/FundingMethodModal';
 import PaymentProgressRing from '@/components/loading/PaymentProgressRing';
 import { FlipFace, useFloatingParticles, useReplayClass, useTapFlip } from '@/components/motion/TapDelight';
-import LenderFundedPopup from '@/components/funding/LenderFundedPopup';
+import { openLenderFundedPopup } from '@/components/funding/LenderFundedPopup';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
@@ -180,7 +180,6 @@ export default function UserCard(loan: UserCardProps) {
    const [showFundingModal, setShowFundingModal] = useState(false);
    // Borrower's own request on hold (missed video call): book a new call right from the card.
    const [showRebook, setShowRebook] = useState(false);
-   const [showModal, setShowModal] = useState(false);
    const [showWalletChecklist, setShowWalletChecklist] = useState(false);
    const [isProcessing, setIsProcessing] = useState(false);
    // The on-chain transfer hash, set the moment Transfer resolves. Drives the "Sending" →
@@ -238,7 +237,6 @@ export default function UserCard(loan: UserCardProps) {
    const due = parseISO(loanData.dueDate);
 
    const handleFetch = async () => {
-      setShowModal(false);
       await dispatch(fetchLoans())
          .unwrap()
          .then(() => console.log('Loan fetched successfully'))
@@ -433,7 +431,15 @@ export default function UserCard(loan: UserCardProps) {
                   }
                   // If they cancelled the overlay and moved on, don't slam a full-screen success
                   // modal over the request board — the toast below still confirms it went through.
-                  if (!cancelledRef.current) setShowModal(true);
+                  const showSuccessPopup = !cancelledRef.current;
+                  if (showSuccessPopup) {
+                     openLenderFundedPopup({
+                        userId,
+                        borrowerName: borrowerDisplayName,
+                        totalRepayment: Number(loanData.totalRepaymentAmount ?? 0),
+                        dueDate: loanData.dueDate
+                     });
+                  }
 
                   // The money moved and the loan is Lent. A failed non-critical follow-up (awarding
                   // IOU points, sending the funded notification) is NOT the lender's problem and must
@@ -450,11 +456,15 @@ export default function UserCard(loan: UserCardProps) {
                      console.warn(`[fund] loan ${loanData.id} funded, but follow-ups failed: ${errorDetails}`);
                   }
 
-                  showToast(
-                     TOAST_TYPES.SUCCESS,
-                     'Thank You!',
-                     `You successfully funded $${formatCurrency(loanData.loanAmount)} to ${borrowerDisplayName}.`
-                  );
+                  // On desktop the centered popup is the confirmation; a second one in the corner is
+                  // noise. Phones keep the toast too (it sits where the thumb is).
+                  if (!showSuccessPopup || !window.matchMedia?.('(min-width: 768px)').matches) {
+                     showToast(
+                        TOAST_TYPES.SUCCESS,
+                        'Thank You!',
+                        `You successfully funded $${formatCurrency(loanData.loanAmount)} to ${borrowerDisplayName}.`
+                     );
+                  }
 
                   // The loan is now Lent, but the request board is a client-side list refreshed
                   // only by an explicit fetch or the 60s poll (loans aren't realtime). Re-pull now
@@ -518,6 +528,8 @@ export default function UserCard(loan: UserCardProps) {
          loanData.borrowerWallet,
          loanData.coin,
          loanData.loanAmount,
+         loanData.totalRepaymentAmount,
+         loanData.dueDate,
          loanData.id,
          borrowerDisplayName,
          userId,
@@ -990,16 +1002,6 @@ export default function UserCard(loan: UserCardProps) {
             />
          ) : null}
 
-         {/* Fund success: celebrates the funding and asks, once, to turn on repayment notifications. */}
-         {showModal ? (
-            <LenderFundedPopup
-               userId={userId}
-               borrowerName={borrowerDisplayName}
-               totalRepayment={Number(loanData.totalRepaymentAmount ?? 0)}
-               dueDate={loanData.dueDate}
-               onClose={handleFetch}
-            />
-         ) : null}
       </>
    );
 }

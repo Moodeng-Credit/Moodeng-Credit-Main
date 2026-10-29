@@ -16,6 +16,7 @@ Deno.test('a first-time "Get Started" without a code', () => {
    assertEquals(parseSendPulseEvents([subscribe], NOW), [
       {
          title: 'new_subscriber',
+         channel: 'messenger',
          botId: '81acb48b-e32c-4c85-b29f-0efae2ca2716',
          pageId: '1148756028310286',
          contactId: 'sp-contact-1',
@@ -63,6 +64,20 @@ Deno.test('other channels, junk and odd dates', () => {
    assertEquals(parseSendPulseEvents([{ ...subscribe, date: 1790666560 }], NOW)[0].at, 1790666560000);
    assertEquals(parseSendPulseEvents([{ ...subscribe, date: NOW + 60_000 }], NOW)[0].at, NOW);
    assertEquals(parseSendPulseEvents([{ ...subscribe, date: undefined }], NOW)[0].at, NOW);
+});
+
+Deno.test('TikTok events are kept and tagged', () => {
+   const tiktok = {
+      ...subscribe,
+      service: 'tiktok',
+      title: 'incoming_message',
+      bot: { id: '6ae0c655b46f4667e40f5082', name: 'Moodeng Credit' },
+      contact: { id: 'tt-contact-1', name: 'Ana', last_message: 'how do I borrow?', variables: {} }
+   };
+   const [event] = parseSendPulseEvents([tiktok], NOW);
+   assertEquals(event.channel, 'tiktok');
+   assertEquals(event.botId, '6ae0c655b46f4667e40f5082');
+   assertEquals(event.text, 'how do I borrow?');
 });
 
 Deno.test('what the person wrote: platform text first, then last_message; attachments and button taps', () => {
