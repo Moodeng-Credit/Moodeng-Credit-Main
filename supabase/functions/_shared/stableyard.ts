@@ -224,9 +224,31 @@ export const stableyard = {
          },
          idempotencyKey
       }),
+   // One-time bank / e-wallet payout (off-ramp): same send Payment as a QR, destination external_bank.
+   // Preview rejects external_bank, so the quote comes from this create call.
+   createBankPayment: (
+      accountId: string,
+      payment: { country: string; bankCode: string; accountNumber: string; amount: string; currency: string },
+      idempotencyKey: string
+   ) =>
+      stableyardRequest('POST', '/v2/payments', {
+         body: {
+            intent: 'send',
+            sender: { accountId },
+            destination: {
+               type: 'external_bank',
+               country: payment.country,
+               bankCode: payment.bankCode,
+               accountNumber: payment.accountNumber
+            },
+            amountMode: 'deliver_exact',
+            paymentAmount: { amount: payment.amount, assetType: 'fiat', assetCode: payment.currency },
+            description: 'Moodeng admin bank payout test'
+         },
+         idempotencyKey
+      }),
    // Bank codes accepted for an external_bank payout (PH/VN one-time beneficiary). Read-only.
-   listBeneficiaryBanks: (country: string) =>
-      stableyardRequest('GET', '/v2/payments/external-bank/banks', { query: { country } }),
+   listBeneficiaryBanks: (country: string) => stableyardRequest('GET', '/v2/payments/external-bank/banks', { query: { country } }),
    getPayment: (paymentId: string) => stableyardRequest('GET', `/v2/payments/${encodeURIComponent(paymentId)}`),
 
    getBalances: (accountId: string) => stableyardRequest('GET', `${accountPath(accountId)}/balances`),
