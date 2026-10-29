@@ -19,6 +19,7 @@ import {
    type StuckBorrower,
    type StuckCode
 } from '../_shared/messengerStuckAlert.ts';
+import { sendDuePosters } from '../_shared/messengerBorrowPoster.ts';
 import { handleRemindersStuck, REMINDERS_CORS } from '../_shared/remindersStuckHandler.ts';
 import { buildMessengerVerifyLink, MESSENGER_PAGE_URL } from '../_shared/sendpulse.ts';
 import { isInternalRequest } from '../_shared/internalAuth.ts';
@@ -36,6 +37,8 @@ import { loadOnboardingTimeline, signupLines, timelineLines } from '../_shared/o
 // start_contact_verification keeps at most one open code per borrower per channel, so each open
 // code here is that borrower's latest attempt. users.messenger_stuck_alerted_at keeps it to one
 // email + one ping per borrower per day.
+//
+// Also sends the "6 things" poster a few minutes after someone connects (_shared/messengerBorrowPoster.ts).
 //
 // Also serves "reminders couldn't turn on" (body `reminders: true`), from the onboarding app and a
 // daily pg_cron health check: see _shared/remindersStuckHandler.ts. It lives here because the
@@ -61,6 +64,7 @@ serve(async (req) => {
    if (body?.reminders === true) return handleRemindersStuck(req, body, svc);
    if (!(await isInternalRequest(svc, req))) return json({ error: 'unauthorized' }, 401);
    const now = Date.now();
+   const posters = await sendDuePosters(svc, now);
 
    const { data: codes, error: codesError } = await svc
       .from('contact_verification_codes')
@@ -73,7 +77,7 @@ serve(async (req) => {
       console.error('messenger-stuck-alerts: code lookup failed', codesError.message);
       return json({ error: 'lookup_failed' }, 500);
    }
-   if (!codes?.length) return json({ ok: true, alerted: 0 });
+   if (!codes?.length) return json({ ok: true, alerted: 0, posters });
 
    const { data: borrowers, error: usersError } = await svc
       .from('users')
@@ -161,5 +165,5 @@ serve(async (req) => {
       alerted += 1;
    }
 
-   return json({ ok: true, alerted });
+   return json({ ok: true, alerted, posters });
 });

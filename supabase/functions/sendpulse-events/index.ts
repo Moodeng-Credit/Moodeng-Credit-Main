@@ -5,7 +5,6 @@ import { adminUserUrl, OPEN_IN_ADMIN_TEXT, sendAdminCard } from '../_shared/admi
 import { postDiscord } from '../_shared/discord.ts';
 import { PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
 import { decideAutoMatch, MATCH_WINDOW_MS, type OpenAttempt } from '../_shared/messengerAutoMatch.ts';
-import { BORROW_POSTER_CARD, type PosterCandidate, shouldSendBorrowPoster } from '../_shared/messengerBorrowPoster.ts';
 import { logMessengerContact, rememberMessengerContact, saveFacebookName } from '../_shared/messengerContactLog.ts';
 import { CONNECTED_BY_TIMING_TEXT } from '../_shared/messengerStatusFollowUp.ts';
 import { isSupportMessage, openMessengerTicket, relayAgentReply } from '../_shared/messengerSupport.ts';
@@ -248,35 +247,6 @@ const matchByName = async (svc: Svc, event: SendPulseEvent, contactId: string) =
    }
 };
 
-// The first message a connected borrower writes after their MDNG code → the "6 things you need to know
-// before borrow" poster, once (_shared/messengerBorrowPoster.ts). Skipped once they've had a funded loan.
-const maybeSendBorrowPoster = async (svc: Svc, userId: string, contactId: string, at: number) => {
-   const [{ data: user }, { count }] = await Promise.all([
-      svc.from('users').select('messenger_verified_at, borrow_poster_sent_at, user_role').eq('id', userId).maybeSingle(),
-      svc
-         .from('loans')
-         .select('id', { count: 'exact', head: true })
-         .eq('borrower_user_id', userId)
-         .eq('is_test', false)
-         .not('funded_at', 'is', null)
-   ]);
-   if (!shouldSendBorrowPoster(user as PosterCandidate | null, at, (count ?? 0) > 0)) return;
-   // Claim it first: two messages can arrive together, and only one of them should send the poster.
-   const { data: claimed } = await svc
-      .from('users')
-      .update({ borrow_poster_sent_at: new Date().toISOString() })
-      .eq('id', userId)
-      .is('borrow_poster_sent_at', null)
-      .select('id')
-      .maybeSingle();
-   if (!claimed) return;
-   // Card only: its title already says it all (the extra text line went unread).
-   const result = await sendMessengerMessage(contactId, { card: BORROW_POSTER_CARD });
-   console.log(`sendpulse-events: borrow poster for ${userId.slice(0, 8)} → ${result.ok ? 'sent' : `not sent (${result.reason})`}`);
-   // Not sent → unclaim, so their next message tries again.
-   if (!result.ok) await svc.from('users').update({ borrow_poster_sent_at: null }).eq('id', userId);
-};
-
 const eventsSecret = async (svc: Svc) => {
    if (ENV_EVENTS_SECRET) return ENV_EVENTS_SECRET;
    const { data } = await svc.from('telegram_bot_settings').select('value').eq('key', 'sendpulse_events_secret').maybeSingle();
@@ -345,7 +315,6 @@ serve(async (req) => {
                at: event.at
             });
          }
-         if (known && !/subscri/i.test(event.title)) await maybeSendBorrowPoster(svc, known.userId, event.contactId, event.at);
 
          if (event.codes.length) {
             for (const code of event.codes) await confirmCode(code, event.contactId, event.contactName);
