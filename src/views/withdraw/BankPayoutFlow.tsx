@@ -93,20 +93,14 @@ const peso = (n: number) => `₱${n.toLocaleString(undefined, { minimumFractionD
 const shortBank = (name: string) => (name.startsWith('MAYA PHILIPPINES') ? 'Maya' : name === 'GCASH' ? 'GCash' : name);
 
 const inputClass =
-   'w-full rounded-[14px] border border-[var(--border-card)] bg-[var(--surface)] px-[14px] py-[13px] text-[16px] text-[var(--ink)] outline-none focus:border-[var(--primary)]';
+   'w-full rounded-[8px] border-2 border-[#e8e4ff] bg-[var(--surface)] px-[14px] py-[12px] text-[16px] text-[var(--ink)] outline-none focus:border-[#6b55f7]';
 const primaryClass =
-   'w-full rounded-[16px] px-[20px] py-[16px] flex items-center justify-center gap-[8px] text-[16px] font-semibold text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] disabled:bg-[var(--disabled)] disabled:cursor-not-allowed active:scale-[0.98] transition-all';
-const linkClass = 'w-full text-center text-[14px] font-semibold text-[var(--primary)] py-[8px] hover:underline disabled:opacity-60';
+   // Milestone design: purple gradient pill.
+   'w-full rounded-[36px] px-[20px] py-[15px] flex items-center justify-center gap-[8px] text-[16px] font-semibold text-white bg-[linear-gradient(85deg,#9584ff_0%,#6b55f7_98%)] shadow-[0_6px_16px_rgba(107,85,247,0.3)] disabled:bg-none disabled:bg-[var(--disabled)] disabled:shadow-none disabled:cursor-not-allowed active:scale-[0.98] transition-all';
+const linkClass = 'w-full text-center text-[15px] font-semibold text-[#4492f1] py-[8px] hover:underline disabled:opacity-60';
 
 function Panel({ children }: { children: React.ReactNode }) {
-   return (
-      <div
-         className="rounded-[18px] border border-[var(--border-card)] bg-[var(--surface)] p-[16px] space-y-[12px]"
-         style={{ boxShadow: 'var(--card-shadow)' }}
-      >
-         {children}
-      </div>
-   );
+   return <div className="rounded-[8px] border-2 border-[#e8e4ff] bg-[var(--surface)] p-[16px] space-y-[12px]">{children}</div>;
 }
 
 function ErrorLine({ text }: { text: string }) {

@@ -2204,10 +2204,14 @@ function WithdrawScreen({
 
 function WithdrawFlow() {
    const navigate = useNavigate();
+   const location = useLocation();
    const { showToast } = useToast();
-   const [screen, setScreen] = useState<Screen>('celebrate');
-   const [withdrawVisible, setWithdrawVisible] = useState(false);
-   const [provider, setProvider] = useState<Provider>('moneybees');
+   // /withdraw?to=bank (from the /money screen's Cash out) skips the provider list and goes straight to
+   // the GCash / bank payout; Back returns to /money.
+   const directBank = new URLSearchParams(location.search).get('to') === 'bank';
+   const [screen, setScreen] = useState<Screen>(directBank ? 'withdraw' : 'celebrate');
+   const [withdrawVisible, setWithdrawVisible] = useState(directBank);
+   const [provider, setProvider] = useState<Provider>(directBank ? 'bank' : 'moneybees');
 
    function goWithdraw(p: Provider) {
       track('withdraw_exchange_selected', { exchange: p });
@@ -2230,7 +2234,7 @@ function WithdrawFlow() {
       [showToast]
    );
 
-   const handleDone = useCallback(() => navigate('/dashboard'), [navigate]);
+   const handleDone = useCallback(() => navigate(directBank ? '/money' : '/dashboard'), [navigate, directBank]);
 
    return (
       <>
@@ -2244,6 +2248,7 @@ function WithdrawFlow() {
                   onConfirmed={handleConfirmed}
                   onDone={handleDone}
                   onBack={() => {
+                     if (directBank) return navigate('/money');
                      setWithdrawVisible(false);
                      setTimeout(() => setScreen('celebrate'), 50);
                   }}

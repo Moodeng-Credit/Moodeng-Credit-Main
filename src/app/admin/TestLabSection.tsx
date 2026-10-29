@@ -589,6 +589,15 @@ export default function TestLabSection() {
          <StableyardCheckCard />
          <StableyardOnboardingCard />
          <StableyardQrCard />
+         <div className={cardClass}>
+            <p className="text-base font-bold text-white">Money screen (testers)</p>
+            <p className="text-sm text-[#a89bb8]">
+               What borrowers will see: balance, Add money (crypto now, GCash/bank coming) and Cash out to GCash or a bank.
+            </p>
+            <a href="/money" className={`${smallButton} inline-block`}>
+               Open /money
+            </a>
+         </div>
          <StableyardBankPayoutCard />
          <div className={cardClass}>
             <p className="text-base font-bold text-white">Stableyard deposits (test)</p>

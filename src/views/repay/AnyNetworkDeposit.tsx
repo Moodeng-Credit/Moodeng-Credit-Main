@@ -95,8 +95,9 @@ const copyText = async (text: string) => {
    }
 };
 
-export default function AnyNetworkDeposit() {
-   const [open, setOpen] = useState(false);
+// `embedded`: shown inside the /money Add money screen, already open and without the "doesn't offer Base" toggle.
+export default function AnyNetworkDeposit({ embedded = false }: { embedded?: boolean } = {}) {
+   const [open, setOpen] = useState(embedded);
    const [loading, setLoading] = useState(false);
    const [data, setData] = useState<DepositResponse | null>(null);
    const [error, setError] = useState<string | null>(null);
@@ -150,27 +151,29 @@ export default function AnyNetworkDeposit() {
    if (data && !data.enabled) return null;
 
    return (
-      <div className="mt-3 rounded-2xl bg-white ring-1 ring-[#e4e0f0] dark:bg-[#1e1233] dark:ring-[#3a2a55]">
-         <button
-            type="button"
-            onClick={() => setOpen((value) => !value)}
-            aria-expanded={open}
-            className="flex min-h-[48px] w-full items-center justify-between gap-3 px-4 py-3 text-left"
-         >
-            <span>
-               <span className="block text-[13px] font-bold text-[#1a1240] dark:text-white">My exchange doesn't offer Base</span>
-               <span className="block text-[12px] text-[#6b6090] dark:text-[#a095c8]">
-                  Send USDT or USDC on Tron, BNB, Solana and more — it arrives as USDC on Base.
+      <div className={embedded ? '' : 'mt-3 rounded-2xl bg-white ring-1 ring-[#e4e0f0] dark:bg-[#1e1233] dark:ring-[#3a2a55]'}>
+         {embedded ? null : (
+            <button
+               type="button"
+               onClick={() => setOpen((value) => !value)}
+               aria-expanded={open}
+               className="flex min-h-[48px] w-full items-center justify-between gap-3 px-4 py-3 text-left"
+            >
+               <span>
+                  <span className="block text-[13px] font-bold text-[#1a1240] dark:text-white">My exchange doesn't offer Base</span>
+                  <span className="block text-[12px] text-[#6b6090] dark:text-[#a095c8]">
+                     Send USDT or USDC on Tron, BNB, Solana and more — it arrives as USDC on Base.
+                  </span>
                </span>
-            </span>
-            <ChevronDown
-               className={`h-5 w-5 shrink-0 text-[#6b6090] transition-transform ${open ? 'rotate-180' : ''}`}
-               aria-hidden="true"
-            />
-         </button>
+               <ChevronDown
+                  className={`h-5 w-5 shrink-0 text-[#6b6090] transition-transform ${open ? 'rotate-180' : ''}`}
+                  aria-hidden="true"
+               />
+            </button>
+         )}
 
          {open ? (
-            <div className="space-y-3 border-t border-[#efeaf8] px-4 pb-4 pt-3 dark:border-[#3a2a55]">
+            <div className={embedded ? 'space-y-3' : 'space-y-3 border-t border-[#efeaf8] px-4 pb-4 pt-3 dark:border-[#3a2a55]'}>
                {loading && !data ? (
                   <p className="text-[13px] text-[#6b6090] dark:text-[#a095c8]">Setting up your deposit addresses…</p>
                ) : null}
