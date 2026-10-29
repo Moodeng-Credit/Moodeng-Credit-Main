@@ -164,13 +164,15 @@ const handleOnboarding = async (
    return json({ ok: true, accountId, step: 'status', email: emailStatus.data, kyc: kyc.data });
 };
 
-const QR_ACTIONS = new Set(['setup', 'status', 'use_wallet', 'decode', 'create', 'get', 'sent']);
+const QR_ACTIONS = new Set(['setup', 'status', 'use_wallet', 'decode', 'create', 'get', 'sent', 'bank_list', 'bank_create']);
 
 // Fiat currency per supported QR country, with a test cap (~$35) so a typo can't pay a big bill.
 const QR_COUNTRIES: Record<string, { currency: string; max: number }> = {
    PH: { currency: 'PHP', max: 2000 },
    VN: { currency: 'VND', max: 1_000_000 }
 };
+// Bank payout test cap (~$9): it's an off-ramp to any account number, so keep it smaller than QR.
+const BANK_MAX: Record<string, number> = { PH: 500, VN: 250_000 };
 const FIAT_AMOUNT = /^(0|[1-9][0-9]*)(\.[0-9]{1,2})?$/;
 
 // Stableyard's email / KYC / payment-source bodies aren't documented to us, so read them loosely:
@@ -218,8 +220,11 @@ const marketRate = async (currency: string): Promise<{ rate: number; at: string 
  *                and logs the quote against the market rate in stableyard_qr_quotes
  *   get        → re-read a Payment
  *   sent       → record the tx hash once the person paid
+ *   bank_list  → bank / e-wallet codes for a bank payout (PH/VN)
+ *   bank_create → off-ramp test: a send Payment to a bank account or e-wallet (external_bank);
+ *                like create, it returns escrow depositInstructions and moves no money yet
  * The money only moves when the person sends the exact USDC to the escrow address from the app.
- * QR payloads and decoded account numbers are sensitive: never logged or stored here.
+ * QR payloads and account numbers are sensitive: never logged or stored here (only the last 4 digits).
  */
 const handleQr = async (
    admin: SupabaseClient,
@@ -233,6 +238,9 @@ const handleQr = async (
       requestKey?: unknown;
       txHash?: unknown;
       merchant?: unknown;
+      bankCode?: unknown;
+      bankName?: unknown;
+      accountNumber?: unknown;
    }
 ) => {
    if (action === 'setup') {
@@ -341,8 +349,63 @@ const handleQr = async (
       .trim()
       .toUpperCase();
    const rules = QR_COUNTRIES[country];
-   const qrPayload = String(body.qrPayload ?? '').trim();
    if (!rules) return json({ error: 'Country must be PH or VN.' }, 400);
+
+   if (action === 'bank_list') {
+      const result = await stableyard.listBeneficiaryBanks(country);
+      return result.ok ? json({ ok: true, accountId, step: 'bank_list', result: result.data }) : fail(result);
+   }
+
+   if (action === 'bank_create') {
+      const bankCode = String(body.bankCode ?? '').trim();
+      const accountNumber = String(body.accountNumber ?? '').replace(/[\s-]/g, '');
+      const amount = String(body.amount ?? '').trim();
+      const requestKey = String(body.requestKey ?? '').trim();
+      if (!/^[A-Za-z0-9_-]{2,64}$/.test(bankCode)) return json({ error: 'Pick a bank.' }, 400);
+      if (!/^[0-9]{6,20}$/.test(accountNumber)) return json({ error: 'Account number is 6–20 digits.' }, 400);
+      if (!FIAT_AMOUNT.test(amount) || Number(amount) <= 0) return json({ error: 'Enter an amount like 100 or 100.50.' }, 400);
+      if (Number(amount) > BANK_MAX[country]) {
+         return json({ error: `Test payouts are capped at ${BANK_MAX[country]} ${rules.currency}.` }, 400);
+      }
+      if (!/^[A-Za-z0-9-]{8,64}$/.test(requestKey)) return json({ error: 'Missing request key.' }, 400);
+      const result = await stableyard.createBankPayment(
+         accountId,
+         { country, bankCode, accountNumber, amount, currency: rules.currency },
+         `moodeng-bank:${accountId}:${requestKey}`
+      );
+      if (!result.ok) return fail(result);
+
+      const data = result.data as {
+         payment?: { id?: string };
+         nextAction?: { depositInstructions?: { amount?: string } } | null;
+      };
+      const usdc = Number(data?.nextAction?.depositInstructions?.amount);
+      const market = await marketRate(rules.currency);
+      const fairUsdc = market ? Number(amount) / market.rate : null;
+      const quote = {
+         usdc: Number.isFinite(usdc) ? usdc : null,
+         marketRate: market?.rate ?? null,
+         marketRateAt: market?.at ?? null,
+         fairUsdc,
+         spreadPct: fairUsdc && Number.isFinite(usdc) ? (usdc / fairUsdc - 1) * 100 : null
+      };
+      const bankName = String(body.bankName ?? '').slice(0, 80) || bankCode;
+      const { error: logError } = await admin.from('stableyard_qr_quotes').insert({
+         user_id: userId,
+         payment_id: data?.payment?.id ?? null,
+         country,
+         fiat_currency: rules.currency,
+         fiat_amount: Number(amount),
+         usdc_amount: quote.usdc,
+         market_rate: quote.marketRate,
+         market_rate_at: quote.marketRateAt,
+         merchant_name: `Bank payout: ${bankName} ••${accountNumber.slice(-4)}`
+      });
+      if (logError) console.error('[stableyard-deposit-address] log bank quote failed', logError.message);
+      return json({ ok: true, accountId, step: 'bank_create', result: result.data, quote });
+   }
+
+   const qrPayload = String(body.qrPayload ?? '').trim();
    if (!qrPayload || qrPayload.length > 4096) return json({ error: 'Paste the QR text (1–4096 characters).' }, 400);
 
    if (action === 'decode') {

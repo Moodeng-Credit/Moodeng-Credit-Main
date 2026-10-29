@@ -9,7 +9,7 @@ import AnyNetworkDeposit from '@/views/repay/AnyNetworkDeposit';
 
 // Admin → More → Test lab: a place to try things for real before people do. Tools: the Stableyard
 // credential check, email + KYC setup for your own Stableyard account, a Stableyard External QR
-// payment test, and a Stableyard deposit test. (The old Semaphore SMS tools were removed on
+// payment test, a bank payout (off-ramp) test, and a Stableyard deposit test. (The old Semaphore SMS tools were removed on
 // 2026-10-20: Moodeng no longer uses Semaphore, and its error replies blanked this whole page.)
 
 const cardClass = 'space-y-3 rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4 sm:p-5';
@@ -24,9 +24,11 @@ function StableyardCheckCard() {
    const [checking, setChecking] = useState(false);
    const [result, setResult] = useState<StableyardCheck | null>(null);
 
-   const runCheck = async () => {
+   const runCheck = async (raw = false) => {
       setChecking(true);
-      const { data, error } = await getSupabaseBrowserClient().functions.invoke('stableyard-partner-check', { body: {} });
+      const { data, error } = await getSupabaseBrowserClient().functions.invoke('stableyard-partner-check', {
+         body: raw ? { raw: true } : {}
+      });
       let next = data as StableyardCheck | null;
       if (error) {
          const context = (error as { context?: { json?: () => Promise<StableyardCheck> } }).context;
@@ -40,9 +42,14 @@ function StableyardCheckCard() {
       <div className={cardClass}>
          <div className="flex items-center justify-between gap-3">
             <p className="text-base font-bold text-white">Stableyard</p>
-            <button type="button" onClick={() => void runCheck()} disabled={checking} className={smallButton}>
-               {checking ? 'Checking…' : 'Check credentials'}
-            </button>
+            <div className="flex gap-2">
+               <button type="button" onClick={() => void runCheck(true)} disabled={checking} className={smallButton}>
+                  Full config
+               </button>
+               <button type="button" onClick={() => void runCheck()} disabled={checking} className={smallButton}>
+                  {checking ? 'Checking…' : 'Check credentials'}
+               </button>
+            </div>
          </div>
          {result ? (
             <>
@@ -356,12 +363,215 @@ function StableyardQrCard() {
    );
 }
 
+type BankOption = { code: string; name: string };
+
+// Stableyard bank payout test (off-ramp): send pesos/dong to a bank account or e-wallet (GCash, Maya…)
+// with USDC from YOUR Moodeng wallet. "Get quote" creates the Payment but moves no money; only "Send"
+// does, after a confirm. Uses the same payment source as the QR card. Capped at ₱500 / ₫250,000.
+function StableyardBankPayoutCard() {
+   const { payUsdc } = useWallet();
+   const paymentMethod = useActivePaymentMethod();
+   const [busy, setBusy] = useState<string | null>(null);
+   const [result, setResult] = useState<QrResult | null>(null);
+   const [country, setCountry] = useState<'PH' | 'VN'>('PH');
+   const [banks, setBanks] = useState<BankOption[]>([]);
+   const [bankCode, setBankCode] = useState('');
+   const [accountNumber, setAccountNumber] = useState('');
+   const [amount, setAmount] = useState('');
+   const [paymentId, setPaymentId] = useState('');
+   const [deposit, setDeposit] = useState<DepositInstructions | null>(null);
+   const [sentHash, setSentHash] = useState('');
+
+   const run = async (qr: string, extra: Record<string, string> = {}) => {
+      setBusy(qr);
+      const { data, error } = await getSupabaseBrowserClient().functions.invoke('stableyard-deposit-address', {
+         body: { qr, ...extra }
+      });
+      let next = data as QrResult | null;
+      if (error) {
+         const context = (error as { context?: { json?: () => Promise<QrResult> } }).context;
+         next = (await context?.json?.().catch(() => null)) ?? { ok: false, error: error.message };
+      }
+      if (qr === 'bank_list') {
+         const list = ((next?.result as { banks?: BankOption[] } | undefined)?.banks ?? []).slice();
+         list.sort((a, b) => a.name.localeCompare(b.name));
+         setBanks(list);
+         setBankCode(list.find((bank) => bank.name === 'GCASH')?.code ?? list[0]?.code ?? '');
+         // The list is long; show a short summary instead of dumping it.
+         setResult(next?.ok ? { ok: true, step: `bank_list · ${list.length} banks` } : (next ?? { ok: false, error: 'No response' }));
+         setBusy(null);
+         return;
+      }
+      const id = next?.result?.payment?.id;
+      if (id) setPaymentId(id);
+      const instructions = next?.result?.nextAction?.depositInstructions;
+      if (qr === 'bank_create' || qr === 'get') setDeposit(instructions ?? null);
+      setResult(next ?? { ok: false, error: 'No response' });
+      setBusy(null);
+   };
+
+   const bankName = banks.find((bank) => bank.code === bankCode)?.name ?? '';
+   const currency = country === 'PH' ? 'PHP' : 'VND';
+   const canSend =
+      deposit !== null &&
+      deposit.chainId === BASE_CHAIN_ID &&
+      deposit.tokenAddress.toLowerCase() === BASE_USDC &&
+      deposit.decimals === 6 &&
+      !sentHash;
+
+   const send = async () => {
+      if (!deposit) return;
+      if (
+         !window.confirm(
+            `Send ${deposit.amount} USDC from your Moodeng wallet to pay out ${amount} ${currency} to ${bankName} ••${accountNumber.slice(-4)}?`
+         )
+      ) {
+         return;
+      }
+      setBusy('send');
+      const outcome = await payUsdc({
+         method: paymentMethod,
+         to: deposit.address,
+         usdAmount: deposit.amount,
+         loanId: `stableyard-bank:${paymentId}`
+      });
+      if (outcome) {
+         setSentHash(outcome.hash);
+         void run('sent', { paymentId, txHash: outcome.hash });
+      }
+      setBusy(null);
+   };
+
+   const failed = result && !result.ok;
+
+   return (
+      <div className={cardClass}>
+         <div className="flex items-center justify-between gap-3">
+            <p className="text-base font-bold text-white">Stableyard bank payout (off-ramp test)</p>
+            <button type="button" onClick={() => void run('status')} disabled={busy !== null} className={smallButton}>
+               {busy === 'status' ? 'Checking…' : 'Check setup'}
+            </button>
+         </div>
+         <p className="text-sm text-[#a89bb8]">
+            Cash out USDC from YOUR Moodeng wallet to a bank or e-wallet (GCash, Maya…). Try your own account first. Steps 1–3 move no
+            money. Step 4 sends the USDC. Max ₱500 or ₫250,000.
+         </p>
+         <div className="flex flex-wrap items-center gap-2">
+            <button type="button" onClick={() => void run('use_wallet')} disabled={busy !== null} className={smallButton}>
+               {busy === 'use_wallet' ? 'Saving…' : '1. Pay from my Moodeng wallet'}
+            </button>
+            <select
+               value={country}
+               onChange={(event) => {
+                  setCountry(event.target.value as 'PH' | 'VN');
+                  setBanks([]);
+                  setBankCode('');
+               }}
+               className="rounded-lg border border-[#2a1453] bg-[#1c0a3a] px-2 py-1.5 text-xs text-white"
+            >
+               <option value="PH">Philippines (PHP)</option>
+               <option value="VN">Vietnam (VND)</option>
+            </select>
+            <button type="button" onClick={() => void run('bank_list', { country })} disabled={busy !== null} className={smallButton}>
+               {busy === 'bank_list' ? 'Loading…' : '2. Load banks'}
+            </button>
+         </div>
+         {banks.length ? (
+            <div className="flex flex-wrap items-center gap-2">
+               <select
+                  value={bankCode}
+                  onChange={(event) => setBankCode(event.target.value)}
+                  className="max-w-[220px] rounded-lg border border-[#2a1453] bg-[#1c0a3a] px-2 py-1.5 text-xs text-white"
+               >
+                  {banks.map((bank) => (
+                     <option key={bank.code} value={bank.code}>
+                        {bank.name}
+                     </option>
+                  ))}
+               </select>
+               <input
+                  value={accountNumber}
+                  onChange={(event) => setAccountNumber(event.target.value.replace(/\D/g, '').slice(0, 20))}
+                  inputMode="numeric"
+                  placeholder={bankName === 'GCASH' ? 'GCash number 09…' : 'Account number'}
+                  className="w-40 rounded-lg border border-[#2a1453] bg-transparent px-3 py-1.5 text-xs text-white placeholder:text-[#a89bb8]"
+               />
+               <input
+                  value={amount}
+                  onChange={(event) => setAmount(event.target.value.replace(/[^\d.]/g, ''))}
+                  inputMode="decimal"
+                  placeholder={`Amount in ${currency}`}
+                  className="w-32 rounded-lg border border-[#2a1453] bg-transparent px-3 py-1.5 text-xs text-white placeholder:text-[#a89bb8]"
+               />
+               <button
+                  type="button"
+                  onClick={() => {
+                     setSentHash('');
+                     void run('bank_create', { country, bankCode, bankName, accountNumber, amount, requestKey: crypto.randomUUID() });
+                  }}
+                  disabled={busy !== null || !bankCode || accountNumber.length < 6 || !amount}
+                  className={smallButton}
+               >
+                  {busy === 'bank_create' ? 'Getting quote…' : '3. Get USDC quote'}
+               </button>
+            </div>
+         ) : null}
+         {deposit ? (
+            <div className="space-y-2 rounded-xl border border-[#2a1453] p-3 text-sm text-white">
+               <p>
+                  To cash out, send exactly{' '}
+                  <span className="font-bold">
+                     {deposit.amount} {deposit.assetCode}
+                  </span>{' '}
+                  on {deposit.chainId === BASE_CHAIN_ID ? 'Base' : `chain ${deposit.chainId}`}.
+               </p>
+               {canSend ? (
+                  <button
+                     type="button"
+                     onClick={() => void send()}
+                     disabled={busy !== null}
+                     className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-bold text-[#1c0a3a] disabled:opacity-60"
+                  >
+                     {busy === 'send' ? 'Sending…' : `4. Send ${deposit.amount} USDC`}
+                  </button>
+               ) : sentHash ? null : (
+                  <p className="text-xs text-amber-300">Not USDC on Base, so this card can&apos;t send it. See the details below.</p>
+               )}
+            </div>
+         ) : null}
+         {sentHash ? <p className="break-all text-sm font-semibold text-emerald-300">Sent: {sentHash}</p> : null}
+         {paymentId ? (
+            <button type="button" onClick={() => void run('get', { paymentId })} disabled={busy !== null} className={smallButton}>
+               {busy === 'get' ? 'Checking…' : `Check payment ${paymentId}`}
+            </button>
+         ) : null}
+         {result ? (
+            <>
+               <p className={`text-sm font-semibold ${failed ? 'text-red-300' : 'text-emerald-300'}`}>
+                  {failed
+                     ? `Failed${result.stableyardStatus ? ` (HTTP ${result.stableyardStatus})` : ''}: ${result.error}${
+                          result.code ? ` · ${result.code}` : ''
+                       }${result.requestId ? ` · request ID ${result.requestId}` : ''}`
+                     : `Done: ${result.step}${result.result?.payment?.status ? ` · payment ${result.result.payment.status}` : ''}${
+                          result.result?.nextAction?.type ? ` · next: ${result.result.nextAction.type}` : ''
+                       }`}
+               </p>
+               <pre className="max-h-64 overflow-auto rounded-xl border border-[#2a1453] p-3 text-xs text-[#a89bb8]">
+                  {JSON.stringify(result, null, 2)}
+               </pre>
+            </>
+         ) : null}
+      </div>
+   );
+}
+
 export default function TestLabSection() {
    return (
       <div className="space-y-6">
          <StableyardCheckCard />
          <StableyardOnboardingCard />
          <StableyardQrCard />
+         <StableyardBankPayoutCard />
          <div className={cardClass}>
             <p className="text-base font-bold text-white">Stableyard deposits (test)</p>
             <p className="text-sm text-[#a89bb8]">

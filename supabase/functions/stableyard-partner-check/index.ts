@@ -9,6 +9,7 @@ import { stableyard } from '../_shared/stableyard.ts';
 // STABLEYARD_APP_ID / STABLEYARD_APP_SECRET work against production, and to see which modules and
 // deposit networks are live for our app. Never returns the credentials.
 // POST { banks: 'PH' } lists the bank codes Stableyard accepts for a Philippine bank payout.
+// POST { raw: true } returns the full config instead of the summary.
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -59,6 +60,8 @@ serve(async (req) => {
    if (!result.ok) {
       return json({ ok: false, stableyardStatus: result.status, error: result.error, code: result.code ?? null }, 502);
    }
+   // POST { raw: true } → the whole config (bank access + payment permissions aren't in the summary).
+   if (body?.raw === true) return json({ ok: true, stableyardStatus: result.status, partner: result.data });
 
    type Module = { id: string; available: boolean; disabledReason: string | null };
    type Network = { code: string; chainId: number; depositAddresses?: { operational?: boolean; disabledReason?: string | null } };
