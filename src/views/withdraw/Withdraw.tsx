@@ -28,9 +28,6 @@ import posthog from 'posthog-js';
 import { useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { erc20Abi } from 'viem';
-
-import { TransferAddressLabel } from '@/i18n/SentenceLabels';
-import { useUsdcRate } from '@/lib/useUsdcRate';
 import { useAccount, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
 
 import { openSupportContacts } from '@/components/support/supportContacts';
@@ -45,11 +42,15 @@ import { parseDateSafely } from '@/utils/dateFormatters';
 
 import { COINS_PH_SUSPENDED, COINS_PH_SUSPENDED_MESSAGE, COINS_PH_SUSPENDED_TITLE } from '@/config/paymentRails';
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
+import { TransferAddressLabel } from '@/i18n/SentenceLabels';
 import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
 import { recordWithdrawal } from '@/lib/recordWithdrawal';
+import { useUsdcRate } from '@/lib/useUsdcRate';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { CashoutGateError, startCashoutFaceCheck } from '@/lib/withdraw/cashoutFaceGate';
 import type { RootState } from '@/store/store';
+import BankPayoutFlow from '@/views/withdraw/BankPayoutFlow';
+import useBankPayoutAvailable from '@/views/withdraw/useBankPayoutAvailable';
 
 import './withdraw-theme.css';
 
@@ -62,7 +63,8 @@ function track(event: string, props?: Record<string, unknown>) {
 }
 
 type Screen = 'celebrate' | 'withdraw';
-type Provider = 'moneybees' | 'binance' | 'coinsph' | 'gcash' | 'pdax';
+// 'bank' = straight to GCash / any bank through Stableyard (testers only for now, see BankPayoutFlow).
+type Provider = 'moneybees' | 'binance' | 'coinsph' | 'gcash' | 'pdax' | 'bank';
 
 // Real data + actions provided by the page root and consumed by the ported
 // prototype components. `available` replaces the prototype's hardcoded
@@ -597,8 +599,9 @@ function PickerRow({ id, selected, onSelect, icon, name, line1, line2, recommend
 }
 
 function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) => void; onLater: () => void }) {
-   const { spendable, walletConnected, repayUsdc: REPAY_USDC, dueDate: DUE_DATE } = useWithdrawData();
+   const { spendable, walletConnected, repayUsdc: REPAY_USDC, dueDate: DUE_DATE, isPreview } = useWithdrawData();
    const navigate = useNavigate();
+   const bankPayout = useBankPayoutAvailable(isPreview);
    // No region/IP check here (deliberately removed): `useRegion()` is an IP-based guess, not
    // the user's actual location or nationality — a Filipino traveling or living abroad still
    // has working Coins.ph/GCash/PDAX accounts, and a client-side IP lookup routinely misreads
@@ -608,6 +611,10 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
    // While Coins.ph is suspended (config/paymentRails) PDAX takes its place as the default.
    const [selected, setSelected] = useState<Provider>(COINS_PH_SUSPENDED ? 'pdax' : 'coinsph');
    const [showCoinsPaused, setShowCoinsPaused] = useState(false);
+   // Testers get the direct payout as the default once we know they can use it.
+   useEffect(() => {
+      if (bankPayout) setSelected('bank');
+   }, [bankPayout]);
    const selectProvider = (id: Provider) => {
       if (id === 'coinsph' && COINS_PH_SUSPENDED) {
          setShowCoinsPaused(true);
@@ -622,7 +629,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
          selected={selected}
          onSelect={selectProvider}
          id="coinsph"
-         recommended={!COINS_PH_SUSPENDED}
+         recommended={!COINS_PH_SUSPENDED && !bankPayout}
          paused={COINS_PH_SUSPENDED}
          icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />}
          name="Coins.ph"
@@ -636,7 +643,8 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
       binance: 'Binance',
       coinsph: 'Coins.ph',
       gcash: 'GCrypto',
-      pdax: 'PDAX'
+      pdax: 'PDAX',
+      bank: 'GCash or bank'
    };
 
    return (
@@ -668,7 +676,11 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                   Withdraw your USDC
                </h1>
                <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[6px]">
-                  {!walletConnected ? 'Connect your wallet to see your balance' : spendable == null ? 'Checking your balance…' : `${spendable} USDC available`}
+                  {!walletConnected
+                     ? 'Connect your wallet to see your balance'
+                     : spendable == null
+                       ? 'Checking your balance…'
+                       : `${spendable} USDC available`}
                   {REPAY_USDC != null && DUE_DATE ? (
                      <>
                         {' '}
@@ -690,13 +702,29 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                 the recommended default for everyone; a user genuinely abroad can still pick
                 Binance themselves. */}
             <div className="space-y-[10px]">
+               {bankPayout && (
+                  <PickerRow
+                     selected={selected}
+                     onSelect={selectProvider}
+                     id="bank"
+                     recommended
+                     icon={
+                        <div className="w-[46px] h-[46px] rounded-[12px] bg-[var(--surface-2)] flex items-center justify-center">
+                           <Landmark className="w-[24px] h-[24px] text-[var(--primary)]" />
+                        </div>
+                     }
+                     name="Straight to GCash or bank"
+                     line1="Pesos sent for you, no exchange app needed"
+                     line2="GCash, Maya or any bank · minutes"
+                  />
+               )}
                {!COINS_PH_SUSPENDED && coinsPhRow}
                {COINS_PH_SUSPENDED && (
                   <PickerRow
                      selected={selected}
                      onSelect={selectProvider}
                      id="pdax"
-                     recommended
+                     recommended={!bankPayout}
                      icon={<PdaxAppIcon className="w-[46px] h-[46px]" />}
                      name="PDAX"
                      line1="Sell for pesos, withdraw to bank or e-wallet"
@@ -756,7 +784,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                )}
             </div>
 
-            {selected !== 'moneybees' && <BaseOnlyNotice className="mt-[12px]" />}
+            {selected !== 'moneybees' && selected !== 'bank' && <BaseOnlyNotice className="mt-[12px]" />}
             <button
                onClick={() => navigate('/support/guides/withdrawing-to-your-bank')}
                className="w-full text-center text-[13px] font-semibold text-[var(--accent)] py-[10px] hover:underline"
@@ -972,7 +1000,8 @@ const PROVIDER_NAMES: Record<Provider, string> = {
    binance: 'Binance',
    coinsph: 'Coins.ph',
    gcash: 'GCrypto',
-   pdax: 'PDAX'
+   pdax: 'PDAX',
+   bank: 'GCash or bank'
 };
 
 function SuccessBanner({ exchange, amount }: { exchange: string; amount: number }) {
@@ -1137,8 +1166,7 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
    // The cap is the verified on-chain balance — never the loan estimate. Until it
    // loads (`spendable == null`) the amount can't be validated, so send stays off.
    // USDC has 6 decimals: more than that can't be sent exactly (and String(1e-7) would be '1e-7').
-   const amtValid =
-      spendable != null && !isNaN(amtNum) && amtNum > 0 && amtNum <= spendable && /^\d*(\.\d{0,6})?$/.test(amount.trim());
+   const amtValid = spendable != null && !isNaN(amtNum) && amtNum > 0 && amtNum <= spendable && /^\d*(\.\d{0,6})?$/.test(amount.trim());
    const canSend = addrValid && amtValid && !sending;
    const sentAmountRef = useRef(0);
 
@@ -1174,11 +1202,7 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
          // can't hang on the spinner, and give the user an explicit failure signal.
          track('withdraw_send_failed', { exchange: cfg.name, amount: amtNum });
          setSendPhase(null);
-         showToast(
-            TOAST_TYPES.ERROR,
-            "Withdrawal didn't go through",
-            err instanceof Error ? err.message : 'Please try again in a moment.'
-         );
+         showToast(TOAST_TYPES.ERROR, "Withdrawal didn't go through", err instanceof Error ? err.message : 'Please try again in a moment.');
       } finally {
          setSending(false);
          setConfirming(false);
@@ -1283,7 +1307,11 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
                         <span className="pr-[16px] text-[14px] font-semibold text-[var(--text-muted)] shrink-0">USDC</span>
                      </div>
                      <p className="text-[12px] text-[var(--text-muted)] leading-[18px]">
-                        {!walletConnected ? 'Wallet not connected' : spendable == null ? 'Checking your balance…' : `Available: ${spendable} USDC`}
+                        {!walletConnected
+                           ? 'Wallet not connected'
+                           : spendable == null
+                             ? 'Checking your balance…'
+                             : `Available: ${spendable} USDC`}
                      </p>
                      {amount !== '' && spendable != null && amtNum > spendable && (
                         <p className="text-[12px] text-[var(--danger)] leading-[18px] flex items-center gap-1">
@@ -1609,8 +1637,7 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
    const amtNum = parseFloat(amount);
    // Cap on the verified on-chain balance only; send stays off until it loads.
    // USDC has 6 decimals: more than that can't be sent exactly (and String(1e-7) would be '1e-7').
-   const amtValid =
-      spendable != null && !isNaN(amtNum) && amtNum > 0 && amtNum <= spendable && /^\d*(\.\d{0,6})?$/.test(amount.trim());
+   const amtValid = spendable != null && !isNaN(amtNum) && amtNum > 0 && amtNum <= spendable && /^\d*(\.\d{0,6})?$/.test(amount.trim());
    const canSend = addrValid && amtValid && !sending;
    const sentAmountRef = useRef(0);
 
@@ -1647,11 +1674,7 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
          // the user always gets an explicit failure signal.
          track('withdraw_send_failed', { exchange: 'Binance', amount: amtNum });
          setSendPhase(null);
-         showToast(
-            TOAST_TYPES.ERROR,
-            "Withdrawal didn't go through",
-            err instanceof Error ? err.message : 'Please try again in a moment.'
-         );
+         showToast(TOAST_TYPES.ERROR, "Withdrawal didn't go through", err instanceof Error ? err.message : 'Please try again in a moment.');
       } finally {
          setSending(false);
          setConfirming(false);
@@ -1789,7 +1812,11 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
                         <span className="pr-[16px] text-[14px] font-semibold text-[var(--text-muted)] shrink-0">USDC</span>
                      </div>
                      <p className="text-[12px] text-[var(--text-muted)] leading-[18px]">
-                        {!walletConnected ? 'Wallet not connected' : spendable == null ? 'Checking your balance…' : `Available: ${spendable} USDC`}
+                        {!walletConnected
+                           ? 'Wallet not connected'
+                           : spendable == null
+                             ? 'Checking your balance…'
+                             : `Available: ${spendable} USDC`}
                      </p>
                      {amount !== '' && spendable != null && amtNum > spendable && (
                         <p className="text-[12px] text-[var(--danger)] leading-[18px] flex items-center gap-1">
@@ -2108,13 +2135,21 @@ function MoneybeesIntegratedFlow() {
    );
 }
 
+/* ─── Straight to GCash / bank (Stableyard) ─────────────────────── */
+// No "on its way to your exchange" toast here: the flow has its own payout status screen.
+function DirectBankFlow({ onDone }: { onDone: () => void }) {
+   const { isPreview, spendable, send } = useWithdrawData();
+   return <BankPayoutFlow isPreview={isPreview} spendable={spendable} send={send} onDone={onDone} />;
+}
+
 /* ─── Withdraw screen wrapper ────────────────────────────────────── */
 const PROVIDER_TITLES: Record<Provider, string> = {
    moneybees: 'Cash out with Moneybees',
    binance: 'Send to Binance',
    coinsph: 'Send to Coins.ph',
    gcash: 'Send to GCrypto',
-   pdax: 'Send to PDAX'
+   pdax: 'Send to PDAX',
+   bank: 'Cash out to GCash or bank'
 };
 
 function WithdrawScreen({
@@ -2147,7 +2182,9 @@ function WithdrawScreen({
 
          <div className="flex-1 overflow-y-auto pb-[40px]">
             <div className="px-[16px] pt-[12px]">
-               {provider === 'moneybees' ? (
+               {provider === 'bank' ? (
+                  <DirectBankFlow onDone={onDone} />
+               ) : provider === 'moneybees' ? (
                   <MoneybeesFlow />
                ) : provider === 'binance' ? (
                   <BinanceFlow onConfirmed={onConfirmed} onDone={onDone} />
@@ -2301,7 +2338,12 @@ export default function Withdraw() {
             ? 'July 18, 2026'
             : primaryLoan
               ? // A due date is a calendar date stored as midnight UTC: read it in UTC so it isn't a day early west of UTC.
-                parseDateSafely(primaryLoan.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+                parseDateSafely(primaryLoan.dueDate).toLocaleDateString(undefined, {
+                   month: 'short',
+                   day: 'numeric',
+                   year: 'numeric',
+                   timeZone: 'UTC'
+                })
               : null,
          walletAddress,
          isPreview,
@@ -2390,7 +2432,19 @@ export default function Withdraw() {
             return { hash: outcome.hash, confirmed: method === 'base' };
          }
       }),
-      [available, spendable, walletConnected, isPreview, primaryLoan, walletAddress, payUsdc, activePaymentMethod, user.id, navigate, refetchUsdcBalance]
+      [
+         available,
+         spendable,
+         walletConnected,
+         isPreview,
+         primaryLoan,
+         walletAddress,
+         payUsdc,
+         activePaymentMethod,
+         user.id,
+         navigate,
+         refetchUsdcBalance
+      ]
    );
 
    return (
