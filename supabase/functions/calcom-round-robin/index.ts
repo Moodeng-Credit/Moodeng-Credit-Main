@@ -48,6 +48,28 @@ serve(async (req) => {
       return json({ error: 'bad_request' }, 400);
    }
 
+   // The booking-bot test page (moodeng.app/booking-bot-test?k=…): live free times and the two DeepSeek
+   // steps, read-only — it never books or messages anyone. Gated by telegram_bot_settings
+   // `booking_sandbox_key` (no row = off), so only people given the link can use it.
+   if (payload.action === 'sandbox') {
+      // deno-lint-ignore no-explicit-any
+      const p = payload as any;
+      const svcKey = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      const { data: row } = await svcKey.from('telegram_bot_settings').select('value').eq('key', 'booking_sandbox_key').maybeSingle();
+      const expectedKey = String((row as { value?: unknown } | null)?.value ?? '').trim();
+      if (!expectedKey || String(p.key ?? '').trim() !== expectedKey) return json({ error: 'unauthorized' }, 401);
+      if (p.kind === 'slots') {
+         const result = await listCallSlots(svcKey, { id: '00000000-0000-0000-0000-000000000000', email: null }, String(p.timeZone || 'Asia/Manila'), null, true);
+         return json(result.body, result.status);
+      }
+      if (p.kind === 'time') return json(await readCallTime(String(p.text ?? '').slice(0, 400), p.now ?? { weekday: 'Monday', date: '2026-11-02', time: '09:00' }));
+      if (p.kind === 'prep') {
+         const answers = Object.fromEntries(Object.entries(p.answers ?? {}).slice(0, 25).map(([k, v]) => [String(k).slice(0, 30), String(v).slice(0, 200)]));
+         return json(await writePrepNote(String(p.name ?? '').slice(0, 40), String(p.host ?? 'Emma').slice(0, 20), answers));
+      }
+      return json({ error: 'unknown_kind' }, 400);
+   }
+
    // Admin-only trial of the booking bot's two AI steps (DeepSeek), for testing before the bot ships:
    // { action: 'ai_preview', texts: [...], now: {weekday,date,time} } and/or { prep: {name, host, answers} }.
    if (payload.action === 'ai_preview') {
