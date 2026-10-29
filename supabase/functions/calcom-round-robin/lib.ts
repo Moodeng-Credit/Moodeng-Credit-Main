@@ -52,18 +52,27 @@ export const teamGuests = (hostId: string, emailsByHost: Record<string, string |
    return out;
 };
 
-// Soonest-first slot offer. Calls booked inside ~a day get far fewer no-shows, and they're the only
+// Soonest-first slot offer. Calls booked inside a day or two get far fewer no-shows, and they're the
 // ones our Messenger reminders can reach (Messenger allows free messages for 24h after the
 // borrower's last interaction, which is the verify tap just before booking). So when there are at
-// least `minCount` open times within `windowHours`, offer only those; otherwise fall back to the
-// full list so a quiet weekend never leaves a borrower with nothing to pick.
-export const preferSoonSlots = (slots: string[], now: number, windowHours = 22, minCount = 3): string[] => {
+// least `minCount` open times within `windowHours`, offer those plus every Saturday/Sunday time
+// (Bangkok days) — some borrowers can only talk on weekends; otherwise fall back to the full list
+// so a quiet stretch never leaves a borrower with nothing to pick.
+export const preferSoonSlots = (slots: string[], now: number, windowHours = 48, minCount = 3): string[] => {
    const cutoff = now + windowHours * 60 * 60 * 1000;
-   const soon = slots.filter((s) => {
+   const upcoming = slots.filter((s) => {
       const t = Date.parse(s);
-      return !Number.isNaN(t) && t > now && t <= cutoff;
+      return !Number.isNaN(t) && t > now;
    });
-   return soon.length >= minCount ? soon : slots;
+   const soon = upcoming.filter((s) => Date.parse(s) <= cutoff);
+   if (soon.length < minCount) return slots;
+   return upcoming.filter((s) => Date.parse(s) <= cutoff || isBangkokWeekend(s));
+};
+
+/** True when the instant falls on a Saturday or Sunday in Bangkok. */
+const isBangkokWeekend = (iso: string): boolean => {
+   const weekday = new Date(Date.parse(iso) + 7 * 3600000).getUTCDay();
+   return weekday === 0 || weekday === 6;
 };
 
 // Date range for re-checking one slot right before booking. Cal.com reads date-only bounds in the
