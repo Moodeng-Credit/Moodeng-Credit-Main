@@ -377,6 +377,7 @@ function StableyardBankPayoutCard() {
    const [banks, setBanks] = useState<BankOption[]>([]);
    const [bankCode, setBankCode] = useState('');
    const [accountNumber, setAccountNumber] = useState('');
+   const [beneficiaryName, setBeneficiaryName] = useState('');
    const [amount, setAmount] = useState('');
    const [paymentId, setPaymentId] = useState('');
    const [deposit, setDeposit] = useState<DepositInstructions | null>(null);
@@ -497,6 +498,12 @@ function StableyardBankPayoutCard() {
                   className="w-40 rounded-lg border border-[#2a1453] bg-transparent px-3 py-1.5 text-xs text-white placeholder:text-[#a89bb8]"
                />
                <input
+                  value={beneficiaryName}
+                  onChange={(event) => setBeneficiaryName(event.target.value.slice(0, 100))}
+                  placeholder="Name on the account"
+                  className="w-40 rounded-lg border border-[#2a1453] bg-transparent px-3 py-1.5 text-xs text-white placeholder:text-[#a89bb8]"
+               />
+               <input
                   value={amount}
                   onChange={(event) => setAmount(event.target.value.replace(/[^\d.]/g, ''))}
                   inputMode="decimal"
@@ -507,9 +514,17 @@ function StableyardBankPayoutCard() {
                   type="button"
                   onClick={() => {
                      setSentHash('');
-                     void run('bank_create', { country, bankCode, bankName, accountNumber, amount, requestKey: crypto.randomUUID() });
+                     void run('bank_create', {
+                        country,
+                        bankCode,
+                        bankName,
+                        accountNumber,
+                        beneficiaryName,
+                        amount,
+                        requestKey: crypto.randomUUID()
+                     });
                   }}
-                  disabled={busy !== null || !bankCode || accountNumber.length < 6 || !amount}
+                  disabled={busy !== null || !bankCode || accountNumber.length < 6 || beneficiaryName.trim().length < 2 || !amount}
                   className={smallButton}
                >
                   {busy === 'bank_create' ? 'Getting quote…' : '3. Get USDC quote'}

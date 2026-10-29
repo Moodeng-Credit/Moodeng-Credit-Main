@@ -137,6 +137,7 @@ export default function BankPayoutFlow({
    const [banks, setBanks] = useState<Bank[]>([]);
    const [bankCode, setBankCode] = useState('');
    const [accountNumber, setAccountNumber] = useState('');
+   const [accountName, setAccountName] = useState('');
    const [amount, setAmount] = useState('');
    const [paymentId, setPaymentId] = useState('');
    const [deposit, setDeposit] = useState<DepositInstructions | null>(null);
@@ -149,6 +150,7 @@ export default function BankPayoutFlow({
    const isEwallet = bank ? /GCASH|MAYA|GRABPAY|SHOPEEPAY|COINS|PALAWANPAY/.test(bank.name) : false;
    const amountNum = Number(amount);
    const amountOk = amount !== '' && amountNum >= MIN_PHP && amountNum <= MAX_PHP;
+   const nameOk = accountName.trim().length >= 2;
    const accountOk = isEwallet ? /^09\d{9}$/.test(accountNumber) : accountNumber.length >= 6;
 
    const sortedBanks = useMemo(() => {
@@ -227,6 +229,7 @@ export default function BankPayoutFlow({
          bankCode,
          bankName: bank?.name ?? '',
          accountNumber,
+         beneficiaryName: accountName.trim(),
          amount: String(amountNum),
          requestKey: requestKey.current
       });
@@ -390,6 +393,16 @@ export default function BankPayoutFlow({
                   ) : null}
                </label>
                <label className="block">
+                  <span className="text-[13px] font-semibold text-[var(--ink)]">Name on the account</span>
+                  <input
+                     value={accountName}
+                     onChange={(e) => setAccountName(e.target.value.slice(0, 100))}
+                     autoComplete="name"
+                     placeholder={isEwallet ? `Full name on your ${shortBank(bank?.name ?? '')}` : 'Full name on the account'}
+                     className={`${inputClass} mt-[6px]`}
+                  />
+               </label>
+               <label className="block">
                   <span className="text-[13px] font-semibold text-[var(--ink)]">Amount in pesos</span>
                   <div className="relative mt-[6px]">
                      <span className="absolute left-[14px] top-1/2 -translate-y-1/2 text-[16px] text-[var(--text-muted)]">₱</span>
@@ -408,7 +421,11 @@ export default function BankPayoutFlow({
                </label>
                {error ? <ErrorLine text={error} /> : null}
             </Panel>
-            <button className={primaryClass} disabled={busy || !bankCode || !accountOk || !amountOk} onClick={() => void getQuote()}>
+            <button
+               className={primaryClass}
+               disabled={busy || !bankCode || !accountOk || !nameOk || !amountOk}
+               onClick={() => void getQuote()}
+            >
                {busy ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : null}
                {busy ? 'Getting your price…' : 'See how much USDC'}
                {!busy ? <ArrowRight className="w-4 h-4" /> : null}
