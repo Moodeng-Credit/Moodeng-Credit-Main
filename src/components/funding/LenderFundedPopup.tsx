@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { isValid, parseISO } from 'date-fns';
 
@@ -205,4 +205,35 @@ export default function LenderFundedPopup({ userId, borrowerName, totalRepayment
          )}
       </LenderPopupShell>
    );
+}
+
+type LenderFundedDetail = Omit<Props, 'onClose'>;
+
+const LENDER_FUNDED_EVENT = 'moodeng:lender-funded';
+
+/**
+ * Opens the funded popup from anywhere. It used to live inside the request card, but funding
+ * re-pulls the board, which drops the funded card and took the popup with it, leaving only a
+ * corner toast. The host below is mounted once at the app root, so the popup stays up.
+ */
+export const openLenderFundedPopup = (detail: LenderFundedDetail) => {
+   window.dispatchEvent(new CustomEvent<LenderFundedDetail>(LENDER_FUNDED_EVENT, { detail }));
+};
+
+export function LenderFundedPopupHost() {
+   const [detail, setDetail] = useState<LenderFundedDetail | null>(null);
+
+   const close = useCallback(() => setDetail(null), []);
+
+   useEffect(() => {
+      const handleFunded = (event: Event) => setDetail((event as CustomEvent<LenderFundedDetail>).detail);
+
+      window.addEventListener(LENDER_FUNDED_EVENT, handleFunded);
+
+      return () => {
+         window.removeEventListener(LENDER_FUNDED_EVENT, handleFunded);
+      };
+   }, []);
+
+   return detail ? <LenderFundedPopup {...detail} onClose={close} /> : null;
 }
