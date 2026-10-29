@@ -225,7 +225,7 @@ const marketRate = async (currency: string): Promise<{ rate: number; at: string 
  *   bank_create → off-ramp test: a send Payment to a bank account or e-wallet (external_bank);
  *                like create, it returns escrow depositInstructions and moves no money yet
  * The money only moves when the person sends the exact USDC to the escrow address from the app.
- * QR payloads and account numbers are sensitive: never logged or stored here (only the last 4 digits).
+ * QR payloads, account numbers and names are sensitive: never logged or stored here (only the last 4 digits).
  */
 const handleQr = async (
    admin: SupabaseClient,
@@ -242,6 +242,7 @@ const handleQr = async (
       bankCode?: unknown;
       bankName?: unknown;
       accountNumber?: unknown;
+      beneficiaryName?: unknown;
    }
 ) => {
    if (action === 'setup') {
@@ -360,17 +361,21 @@ const handleQr = async (
    if (action === 'bank_create') {
       const bankCode = String(body.bankCode ?? '').trim();
       const accountNumber = String(body.accountNumber ?? '').replace(/[\s-]/g, '');
+      const beneficiaryName = String(body.beneficiaryName ?? '')
+         .replace(/\s+/g, ' ')
+         .trim();
       const amount = String(body.amount ?? '').trim();
       const requestKey = String(body.requestKey ?? '').trim();
       if (!/^[A-Za-z0-9_-]{2,64}$/.test(bankCode)) return json({ error: 'Pick a bank.' }, 400);
       if (!/^[0-9]{6,20}$/.test(accountNumber)) return json({ error: 'Account number is 6–20 digits.' }, 400);
+      if (beneficiaryName.length < 2 || beneficiaryName.length > 100) return json({ error: 'Enter the name on the account.' }, 400);
       if (!FIAT_AMOUNT.test(amount) || Number(amount) <= 0) return json({ error: 'Enter an amount like 100 or 100.50.' }, 400);
       if (Number(amount) < BANK_MIN[country]) return json({ error: `The minimum is ${BANK_MIN[country]} ${rules.currency}.` }, 400);
       if (Number(amount) > BANK_MAX[country]) return json({ error: `The maximum for now is ${BANK_MAX[country]} ${rules.currency}.` }, 400);
       if (!/^[A-Za-z0-9-]{8,64}$/.test(requestKey)) return json({ error: 'Missing request key.' }, 400);
       const result = await stableyard.createBankPayment(
          accountId,
-         { country, bankCode, accountNumber, amount, currency: rules.currency },
+         { country, bankCode, accountNumber, beneficiaryName, amount, currency: rules.currency },
          `moodeng-bank:${accountId}:${requestKey}`
       );
       if (!result.ok) return fail(result);

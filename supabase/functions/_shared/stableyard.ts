@@ -228,7 +228,7 @@ export const stableyard = {
    // Preview rejects external_bank, so the quote comes from this create call.
    createBankPayment: (
       accountId: string,
-      payment: { country: string; bankCode: string; accountNumber: string; amount: string; currency: string },
+      payment: { country: string; bankCode: string; accountNumber: string; beneficiaryName: string; amount: string; currency: string },
       idempotencyKey: string
    ) =>
       stableyardRequest('POST', '/v2/payments', {
@@ -239,7 +239,9 @@ export const stableyard = {
                type: 'external_bank',
                country: payment.country,
                bankCode: payment.bankCode,
-               accountNumber: payment.accountNumber
+               accountNumber: payment.accountNumber,
+               // Required for PH ("beneficiaryName is required for Philippines bank transfers").
+               beneficiaryName: payment.beneficiaryName
             },
             amountMode: 'deliver_exact',
             paymentAmount: { amount: payment.amount, assetType: 'fiat', assetCode: payment.currency },
