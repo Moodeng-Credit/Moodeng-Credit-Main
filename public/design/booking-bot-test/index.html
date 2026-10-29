@@ -808,6 +808,7 @@ ${say('tzNote')}`);
   // Load the live free times, then start the chat.
   const loadLive = async () => {
     if (!KEY) { document.getElementById('chat').innerHTML = '<p class="note" style="padding:16px">This test link is missing its key. Ask George for the full link.</p>'; return; }
+    document.getElementById('chat').innerHTML = '<p class="note" style="padding:16px">⏳ Loading our live calendar…</p>';
     try {
       const data = await api({ kind: 'slots', timeZone: 'Asia/Manila' });
       const byDay = {};
