@@ -219,6 +219,30 @@ const postSend = async (token: string, payload: unknown) => {
 };
 
 // Sends `text` (if any) and then `card` (if any) — only inside the 24h window.
+/**
+ * When anything (bot or a team member typing in SendPulse) was last sent to this Messenger contact,
+ * from SendPulse's chat history. Null when unknown. Never throws.
+ */
+export const lastOutgoingMessengerAt = (contactId: string) => lastOutgoingAt('messenger', contactId);
+
+const lastOutgoingAt = async (service: 'messenger' | 'tiktok', contactId: string): Promise<number | null> => {
+   if (!isSendPulseConfigured()) return null;
+   try {
+      const token = await getToken();
+      if (!token) return null;
+      const res = await fetch(`${API}/${service}/chats/messages?contact_id=${encodeURIComponent(contactId)}&size=20&order=desc`, {
+         headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) return null;
+      const body = await res.json().catch(() => null);
+      const list = (Array.isArray(body?.data) ? body.data : []) as Array<{ direction?: number; created_at?: string }>;
+      const times = list.filter((m) => m.direction === 2 && m.created_at).map((m) => Date.parse(String(m.created_at))).filter((t) => !Number.isNaN(t));
+      return times.length ? Math.max(...times) : null;
+   } catch {
+      return null;
+   }
+};
+
 export const sendMessengerMessage = async (
    contactId: string | null | undefined,
    content: { text?: string; card?: MessengerCard }
@@ -298,7 +322,8 @@ export const normalizeWhatsAppPhone = (raw: unknown): string | null => {
 export type WhatsAppTemplate = {
    name: string;
    language: { code: string };
-   components?: Array<{ type: 'header' | 'body' | 'button'; parameters: Array<{ type: 'text'; text: string }> }>;
+   // A URL button's dynamic suffix goes in a 'button' component with sub_type 'url' and its index.
+   components?: Array<{ type: 'header' | 'body' | 'button'; sub_type?: 'url'; index?: string; parameters: Array<{ type: 'text'; text: string }> }>;
 };
 
 /** Sends an approved template to a SendPulse WhatsApp contact. Never throws. */
@@ -350,4 +375,98 @@ export const sendWhatsAppText = async (contactId: string | null | undefined, tex
       console.error('[sendpulse] whatsapp send threw', err instanceof Error ? err.message : err);
       return { ok: false, reason: 'send_failed' };
    }
+};
+
+// ---------------------------------------------------------------------------------------------------
+// TikTok (same SendPulse account and credentials, separate API under /tiktok).
+//
+// The @moodeng.credit business account is connected as a SendPulse TikTok bot. TikTok only lets a
+// business message someone within 48 hours of their last message, and at most 10 messages in that
+// window, so it carries support replies, never reminders. Messages are plain text (≤1024 chars).
+const TIKTOK_API = `${API}/tiktok`;
+const TIKTOK_TEXT_MAX = 1024;
+
+export const TIKTOK_BOT_ID = Deno.env.get('SENDPULSE_TIKTOK_BOT_ID')?.trim() || '6ae0c655b46f4667e40f5082';
+// Where the team reads and answers TikTok chats by hand.
+export const TIKTOK_INBOX_URL = 'https://login.sendpulse.com/messengers/chats/';
+
+export type SendPulseTikTokContact = {
+   id: string;
+   status?: number; // 1 active, 2 unsubscribed, 3 disabled, 4 blocked by user
+   variables?: Record<string, unknown>;
+   channel_data?: { display_name?: string; username?: string };
+};
+
+export const getTikTokContact = async (contactId: string): Promise<SendPulseTikTokContact | null> => {
+   try {
+      const token = await getToken();
+      if (!token) return null;
+      const res = await fetch(`${TIKTOK_API}/contacts/get?id=${encodeURIComponent(contactId)}`, {
+         headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) return null;
+      const body = await res.json().catch(() => null);
+      return (body?.data ?? null) as SendPulseTikTokContact | null;
+   } catch {
+      return null;
+   }
+};
+
+export const tiktokDisplayName = (contact: SendPulseTikTokContact | null) =>
+   contact?.channel_data?.display_name?.trim() || contact?.channel_data?.username?.trim() || null;
+
+export const lastOutgoingTikTokAt = (contactId: string) => lastOutgoingAt('tiktok', contactId);
+
+export const sendTikTokText = async (contactId: string | null | undefined, text: string): Promise<SendPulseResult> => {
+   if (!contactId) return { ok: false, reason: 'no_contact' };
+   if (!isSendPulseConfigured()) return { ok: false, reason: 'not_configured' };
+   try {
+      const token = await getToken();
+      if (!token) return { ok: false, reason: 'auth_failed' };
+      const res = await fetch(`${TIKTOK_API}/contacts/send`, {
+         method: 'POST',
+         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+         body: JSON.stringify({ contact_id: contactId, messages: [{ type: 'text', text: { text: text.slice(0, TIKTOK_TEXT_MAX) } }] })
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || body?.success === false) {
+         console.error('[sendpulse] tiktok contacts/send failed', res.status, JSON.stringify(body)?.slice(0, 300));
+         return { ok: false, reason: 'send_failed' };
+      }
+      return { ok: true };
+   } catch (err) {
+      console.error('[sendpulse] tiktok send threw', err instanceof Error ? err.message : err);
+      return { ok: false, reason: 'send_failed' };
+   }
+};
+
+// ---- Message stats (admin-only research): how often each kind of bot message is seen / tapped ----
+
+export type SendPulseMessage = { direction?: number; status?: number; created_at?: string; opened_at?: string | null; redirected_at?: string | null; data?: any };
+
+/** Recent Messenger chats (contact ids), newest first. Never throws. */
+export const listMessengerChats = async (max = 120): Promise<string[]> => {
+   const token = await getToken();
+   if (!token) return [];
+   const ids: string[] = [];
+   for (let skip = 0; skip < max; skip += 50) {
+      const res = await fetch(`${API}/messenger/chats?bot_id=${encodeURIComponent(SENDPULSE_BOT_ID)}&size=50&skip=${skip}`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+      const body = res?.ok ? await res.json().catch(() => null) : null;
+      const list = (Array.isArray(body?.data) ? body.data : []) as Array<{ contact_id?: string; contact?: { id?: string } }>;
+      for (const c of list) {
+         const id = c.contact_id ?? c.contact?.id;
+         if (id) ids.push(id);
+      }
+      if (list.length < 50) break;
+   }
+   return ids;
+};
+
+/** One contact's message history, newest first. Never throws. */
+export const listMessengerMessages = async (contactId: string, size = 200): Promise<SendPulseMessage[]> => {
+   const token = await getToken();
+   if (!token) return [];
+   const res = await fetch(`${API}/messenger/chats/messages?contact_id=${encodeURIComponent(contactId)}&size=${size}&order=desc`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+   const body = res?.ok ? await res.json().catch(() => null) : null;
+   return (Array.isArray(body?.data) ? body.data : []) as SendPulseMessage[];
 };

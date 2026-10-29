@@ -3,7 +3,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { bookCall, HOSTS, listCallSlots } from '../_shared/callBooking.ts';
 import { CRON_TOKEN_HEADER } from '../_shared/cronAuth.ts';
-import { syncEmmaCalendlyHours } from './calendlySync.ts';
+import { syncAllCalendlyHours } from './calendlySync.ts';
+import { readCallTime, writePrepNote } from '../_shared/bookingAi.ts';
 
 // Free round-robin booking for the no-referral video call — the paid Cal.com Teams feature, built
 // ourselves on the free API. The borrower sees one anonymous "Moodeng team" time list; we read each
@@ -12,13 +13,14 @@ import { syncEmmaCalendlyHours } from './calendlySync.ts';
 //
 // Two actions (POST JSON): { action: 'slots', timeZone } returns the merged available start times;
 // { action: 'book', start, timeZone } books the slot and stamps users.video_call_scheduled_at.
-// Calls are booked on CALL_HOST's calendar (Emma, 2026-10-14) with the other cofounder as a guest;
+// Calls are booked on Emma's calendar, or on George's when only he is free and calls_either_host is on, with the other cofounder as a guest;
 // optional { host: 'emma' | 'george' } on both pins a different host.
 // verify_jwt is on, so only a signed-in borrower can call it; we take their identity from the JWT,
 // never from the body, so nobody can book as someone else. The host Cal.com API keys live only in
 // this function's env, never in the client.
 // A third action, { action: 'sync_calendly_hours', dryRun? }, is the daily pg_cron job that copies
-// Emma's Calendly hours onto her Cal.com schedule — X-Admin-Token only, never a borrower.
+// each host's Calendly hours onto their Cal.com schedule — X-Admin-Token only, never a borrower.
+// { action: 'preview_slots', timeZone? } (X-Admin-Token only) returns the free times a fresh borrower would see.
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
@@ -46,11 +48,53 @@ serve(async (req) => {
       return json({ error: 'bad_request' }, 400);
    }
 
-   if (payload.action === 'sync_calendly_hours') {
+   // The booking-bot test page (moodeng.app/booking-bot-test?k=…): live free times and the two DeepSeek
+   // steps, read-only — it never books or messages anyone. Gated by telegram_bot_settings
+   // `booking_sandbox_key` (no row = off), so only people given the link can use it.
+   if (payload.action === 'sandbox') {
+      // deno-lint-ignore no-explicit-any
+      const p = payload as any;
+      const svcKey = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      const { data: row } = await svcKey.from('telegram_bot_settings').select('value').eq('key', 'booking_sandbox_key').maybeSingle();
+      const expectedKey = String((row as { value?: unknown } | null)?.value ?? '').trim();
+      if (!expectedKey || String(p.key ?? '').trim() !== expectedKey) return json({ error: 'unauthorized' }, 401);
+      if (p.kind === 'slots') {
+         const result = await listCallSlots(svcKey, { id: '00000000-0000-0000-0000-000000000000', email: null }, String(p.timeZone || 'Asia/Manila'), null, true);
+         return json(result.body, result.status);
+      }
+      if (p.kind === 'time') return json(await readCallTime(String(p.text ?? '').slice(0, 400), p.now ?? { weekday: 'Monday', date: '2026-11-02', time: '09:00' }));
+      if (p.kind === 'prep') {
+         const answers = Object.fromEntries(Object.entries(p.answers ?? {}).slice(0, 25).map(([k, v]) => [String(k).slice(0, 30), String(v).slice(0, 200)]));
+         return json(await writePrepNote(String(p.name ?? '').slice(0, 40), String(p.host ?? 'Emma').slice(0, 20), answers));
+      }
+      return json({ error: 'unknown_kind' }, 400);
+   }
+
+   // Admin-only trial of the booking bot's two AI steps (DeepSeek), for testing before the bot ships:
+   // { action: 'ai_preview', texts: [...], now: {weekday,date,time} } and/or { prep: {name, host, answers} }.
+   if (payload.action === 'ai_preview') {
+      const expected = (Deno.env.get('ADMIN_API_TOKEN') ?? '').trim();
+      if (!expected || (req.headers.get(CRON_TOKEN_HEADER) ?? '').trim() !== expected) return json({ error: 'unauthorized' }, 401);
+      // deno-lint-ignore no-explicit-any
+      const p = payload as any;
+      const now = p.now ?? { weekday: 'Thursday', date: '2026-10-29', time: '09:00' };
+      const times = await Promise.all(((p.texts ?? []) as string[]).slice(0, 12).map(async (text) => ({ text, ...(await readCallTime(String(text), now)) })));
+      const prep = p.prep ? await writePrepNote(String(p.prep.name ?? ''), String(p.prep.host ?? 'Emma'), p.prep.answers ?? {}) : null;
+      return json({ times, prep });
+   }
+
+   if (payload.action === 'sync_calendly_hours' || payload.action === 'preview_slots') {
       // Fails closed (unlike checkCronAuth): no configured token, no sync.
       const expected = (Deno.env.get('ADMIN_API_TOKEN') ?? '').trim();
       if (!expected || (req.headers.get(CRON_TOKEN_HEADER) ?? '').trim() !== expected) return json({ error: 'unauthorized' }, 401);
-      const result = await syncEmmaCalendlyHours(createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY), payload.dryRun === true);
+      const adminSvc = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      // Read-only: the free times a borrower with no call and no strikes would see right now (for
+      // testing the Messenger booking bot against the real calendar). Books nothing.
+      if (payload.action === 'preview_slots') {
+         const result = await listCallSlots(adminSvc, { id: '00000000-0000-0000-0000-000000000000', email: null }, payload.timeZone || 'Asia/Manila', payload.host, true);
+         return json(result.body, result.status);
+      }
+      const result = await syncAllCalendlyHours(adminSvc, payload.dryRun === true);
       return json(result, result.ok ? 200 : 502);
    }
 

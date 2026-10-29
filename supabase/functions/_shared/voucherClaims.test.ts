@@ -157,10 +157,12 @@ Deno.test('digest: bot nudge marks and one 💬 button per Messenger person', ()
    const reach = buildVoucherDigest(digest, 6);
    assertStringIncludes(reach, '👋 HOW TO REACH THEM');
    assertStringIncludes(reach, '📘 On Facebook Messenger (2)');
-   assertStringIncludes(reach, '• Type "Ana Cruz" — that\'s Ana');
-   assertStringIncludes(reach, '• Ben — on Messenger, name not saved: tap their 💬 below');
+   assertStringIncludes(reach, '• Type "Ana Cruz" — that\'s Ana · ₱50 sent, not confirmed');
+   assertStringIncludes(reach, '• Ben — on Messenger, name not saved: tap their 💬 below · ₱50 sent, not confirmed');
+   const owed = buildVoucherDigest({ ...digest, pending: [{ ...base, name: 'Ana', userId: 'u1', amountPhp: 100 }], not_arrived: [{ ...base, name: 'Ana', userId: 'u1', amountPhp: '50.00' }] }, 6);
+   assertStringIncludes(owed, '• Type "Ana Cruz" — that\'s Ana · ₱150 claimed, NOT received yet + ₱50 sent, not confirmed');
    const offline = buildVoucherDigest({ unclaimed: [], pending: [], not_arrived: [], no_answer: [{ ...base, name: 'Cy', facebook: null, messenger: false, email: 'cy@example.com' }] }, 6);
-   assertStringIncludes(offline, '📵 Not on Facebook (1): email or text them\n• Cy — ✉️ cy@example.com');
+   assertStringIncludes(offline, '📵 Not on Facebook (1): email or text them\n• Cy — ✉️ cy@example.com · ₱50 sent, not confirmed');
 });
 
 Deno.test('digest: says what each person is owed and how to reach them', () => {

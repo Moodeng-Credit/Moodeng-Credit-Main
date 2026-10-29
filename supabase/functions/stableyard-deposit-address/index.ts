@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { shareDiditSession } from '../_shared/diditShare.ts';
 import { isStableyardConfigured, stableyard, type StableyardAccount, type StableyardDepositNetwork } from '../_shared/stableyard.ts';
 import {
    BASE_CHAIN_ID,
@@ -15,7 +16,7 @@ import { handleStableyardWebhook, isStableyardWebhook } from '../_shared/stabley
 //
 // POST {}                    → ensure the user's Stableyard account + addresses exist, return them
 // POST { refresh: true }     → same, and re-read deposits from Stableyard first
-// POST { onboarding: 'status' | 'email_start' | 'email_confirm' | 'kyc_start' }
+// POST { onboarding: 'status' | 'email_start' | 'email_confirm' | 'kyc_start' | 'didit_share' }
 //                            → the caller's own account: verify its email and start KYC, which
 //                              Stableyard requires before QR payments. The email is always the
 //                              caller's sign-in email, never one from the client.
@@ -112,7 +113,49 @@ const ensureAccount = async (admin: SupabaseClient, userId: string, wallet: stri
    return { ok: true as const, accountId: account.id };
 };
 
-const ONBOARDING_ACTIONS = new Set(['status', 'email_start', 'email_confirm', 'kyc_start']);
+const ONBOARDING_ACTIONS = new Set(['status', 'email_start', 'email_confirm', 'kyc_start', 'didit_share']);
+
+/**
+ * Didit Reusable KYC → Stableyard: mint a share token for the caller's newest approved Didit session,
+ * addressed to Stableyard's Didit application (vault STABLEYARD_DIDIT_APP_ID), so Stableyard can import
+ * it instead of a second KYC. Until Stableyard gives us that ID and an import route, this answers
+ * code 'not_configured' and changes nothing. The token is a credential: returned to the caller for
+ * manual hand-off while there is no delivery route, never logged or stored.
+ */
+const shareKycWithStableyard = async (admin: SupabaseClient, userId: string) => {
+   const { data: appId } = await admin.rpc('stableyard_didit_app_id');
+   if (!appId) return json({ ok: false, code: 'not_configured', error: "Stableyard hasn't given us their Didit app ID yet." }, 409);
+
+   const { data: identity } = await admin
+      .from('kyc_identities')
+      .select('session_id')
+      .eq('user_id', userId)
+      .ilike('session_status', 'approved')
+      .order('session_created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+   const sessionId = identity?.session_id as string | undefined;
+   if (!sessionId) return json({ ok: false, code: 'no_approved_kyc', error: 'No approved Didit verification on this account.' }, 409);
+
+   const ttlSeconds = 86_400;
+   const shared = await shareDiditSession(sessionId, String(appId), ttlSeconds);
+   await admin.from('stableyard_kyc_shares').insert({
+      user_id: userId,
+      didit_session_id: sessionId,
+      for_application_id: String(appId),
+      session_kind: shared.ok ? shared.sessionKind : null,
+      ttl_seconds: ttlSeconds,
+      error: shared.ok ? null : `${shared.status} ${shared.error}`.slice(0, 500)
+   });
+   if (!shared.ok) return json({ ok: false, code: 'didit_share_failed', error: shared.error, diditStatus: shared.status }, 502);
+   return json({
+      ok: true,
+      step: 'didit_share',
+      sessionKind: shared.sessionKind,
+      expiresInSeconds: ttlSeconds,
+      shareToken: shared.shareToken
+   });
+};
 
 /** Email verification + KYC for the caller's own Stableyard account (needed for QR payments). */
 const handleOnboarding = async (
@@ -122,6 +165,8 @@ const handleOnboarding = async (
    action: string,
    body: { challengeId?: unknown; code?: unknown }
 ) => {
+   if (action === 'didit_share') return shareKycWithStableyard(admin, userId);
+
    const { data: row } = await admin.from('stableyard_accounts').select('account_id').eq('user_id', userId).maybeSingle();
    const accountId = row?.account_id as string | undefined;
    if (!accountId) return json({ error: 'No Stableyard account yet. Open the deposit test first to create one.' }, 409);
@@ -164,13 +209,28 @@ const handleOnboarding = async (
    return json({ ok: true, accountId, step: 'status', email: emailStatus.data, kyc: kyc.data });
 };
 
-const QR_ACTIONS = new Set(['setup', 'status', 'use_wallet', 'decode', 'create', 'get', 'sent']);
+const QR_ACTIONS = new Set([
+   'setup',
+   'status',
+   'use_wallet',
+   'decode',
+   'create',
+   'get',
+   'sent',
+   'bank_list',
+   'bank_create',
+   'payout_status',
+   'payout_activate'
+]);
 
 // Fiat currency per supported QR country, with a test cap (~$35) so a typo can't pay a big bill.
 const QR_COUNTRIES: Record<string, { currency: string; max: number }> = {
    PH: { currency: 'PHP', max: 2000 },
    VN: { currency: 'VND', max: 1_000_000 }
 };
+// Bank payout limits while it's tester-only (~$85 max, enough to cash out a loan). Stableyard's PH minimum is ₱50.
+const BANK_MIN: Record<string, number> = { PH: 50, VN: 20_000 };
+const BANK_MAX: Record<string, number> = { PH: 5000, VN: 2_000_000 };
 const FIAT_AMOUNT = /^(0|[1-9][0-9]*)(\.[0-9]{1,2})?$/;
 
 // Stableyard's email / KYC / payment-source bodies aren't documented to us, so read them loosely:
@@ -218,8 +278,13 @@ const marketRate = async (currency: string): Promise<{ rate: number; at: string 
  *                and logs the quote against the market rate in stableyard_qr_quotes
  *   get        → re-read a Payment
  *   sent       → record the tx hash once the person paid
+ *   bank_list  → bank / e-wallet codes for a bank payout (PH/VN)
+ *   payout_status   → the account's capabilities (bank_payout must be active before pesos go out)
+ *   payout_activate → (re)start bank_payout activation; returns a fresh hosted compliance link
+ *   bank_create → off-ramp test: a send Payment to a bank account or e-wallet (external_bank);
+ *                like create, it returns escrow depositInstructions and moves no money yet
  * The money only moves when the person sends the exact USDC to the escrow address from the app.
- * QR payloads and decoded account numbers are sensitive: never logged or stored here.
+ * QR payloads, account numbers and names are sensitive: never logged or stored here (only the last 4 digits).
  */
 const handleQr = async (
    admin: SupabaseClient,
@@ -233,6 +298,11 @@ const handleQr = async (
       requestKey?: unknown;
       txHash?: unknown;
       merchant?: unknown;
+      bankCode?: unknown;
+      bankName?: unknown;
+      rail?: unknown;
+      accountNumber?: unknown;
+      beneficiaryName?: unknown;
    }
 ) => {
    if (action === 'setup') {
@@ -341,8 +411,87 @@ const handleQr = async (
       .trim()
       .toUpperCase();
    const rules = QR_COUNTRIES[country];
-   const qrPayload = String(body.qrPayload ?? '').trim();
    if (!rules) return json({ error: 'Country must be PH or VN.' }, 400);
+
+   if (action === 'payout_status') {
+      const result = await stableyard.listCapabilities(accountId);
+      return result.ok ? json({ ok: true, accountId, step: 'payout_status', result: result.data }) : fail(result);
+   }
+
+   if (action === 'payout_activate') {
+      // The hosted link is a credential for the caller only: returned, never logged or stored.
+      const rail = String(body.rail ?? 'instapay')
+         .trim()
+         .toLowerCase();
+      if (!/^[a-z0-9][a-z0-9._-]{0,63}$/.test(rail)) return json({ error: 'Invalid rail.' }, 400);
+      const requestKey = String(body.requestKey ?? '').trim();
+      if (!/^[A-Za-z0-9-]{8,64}$/.test(requestKey)) return json({ error: 'Missing request key.' }, 400);
+      const result = await stableyard.activateCapability(
+         accountId,
+         { capability: 'bank_payout', country, currency: rules.currency, rail },
+         `moodeng-cap:${accountId}:${requestKey}`
+      );
+      return result.ok ? json({ ok: true, accountId, step: 'payout_activate', result: result.data }) : fail(result);
+   }
+
+   if (action === 'bank_list') {
+      const result = await stableyard.listBeneficiaryBanks(country);
+      return result.ok ? json({ ok: true, accountId, step: 'bank_list', result: result.data }) : fail(result);
+   }
+
+   if (action === 'bank_create') {
+      const bankCode = String(body.bankCode ?? '').trim();
+      const accountNumber = String(body.accountNumber ?? '').replace(/[\s-]/g, '');
+      const beneficiaryName = String(body.beneficiaryName ?? '')
+         .replace(/\s+/g, ' ')
+         .trim();
+      const amount = String(body.amount ?? '').trim();
+      const requestKey = String(body.requestKey ?? '').trim();
+      if (!/^[A-Za-z0-9_-]{2,64}$/.test(bankCode)) return json({ error: 'Pick a bank.' }, 400);
+      if (!/^[0-9]{6,20}$/.test(accountNumber)) return json({ error: 'Account number is 6–20 digits.' }, 400);
+      if (beneficiaryName.length < 2 || beneficiaryName.length > 100) return json({ error: 'Enter the name on the account.' }, 400);
+      if (!FIAT_AMOUNT.test(amount) || Number(amount) <= 0) return json({ error: 'Enter an amount like 100 or 100.50.' }, 400);
+      if (Number(amount) < BANK_MIN[country]) return json({ error: `The minimum is ${BANK_MIN[country]} ${rules.currency}.` }, 400);
+      if (Number(amount) > BANK_MAX[country]) return json({ error: `The maximum for now is ${BANK_MAX[country]} ${rules.currency}.` }, 400);
+      if (!/^[A-Za-z0-9-]{8,64}$/.test(requestKey)) return json({ error: 'Missing request key.' }, 400);
+      const result = await stableyard.createBankPayment(
+         accountId,
+         { country, bankCode, accountNumber, beneficiaryName, amount, currency: rules.currency },
+         `moodeng-bank:${accountId}:${requestKey}`
+      );
+      if (!result.ok) return fail(result);
+
+      const data = result.data as {
+         payment?: { id?: string };
+         nextAction?: { depositInstructions?: { amount?: string } } | null;
+      };
+      const usdc = Number(data?.nextAction?.depositInstructions?.amount);
+      const market = await marketRate(rules.currency);
+      const fairUsdc = market ? Number(amount) / market.rate : null;
+      const quote = {
+         usdc: Number.isFinite(usdc) ? usdc : null,
+         marketRate: market?.rate ?? null,
+         marketRateAt: market?.at ?? null,
+         fairUsdc,
+         spreadPct: fairUsdc && Number.isFinite(usdc) ? (usdc / fairUsdc - 1) * 100 : null
+      };
+      const bankName = String(body.bankName ?? '').slice(0, 80) || bankCode;
+      const { error: logError } = await admin.from('stableyard_qr_quotes').insert({
+         user_id: userId,
+         payment_id: data?.payment?.id ?? null,
+         country,
+         fiat_currency: rules.currency,
+         fiat_amount: Number(amount),
+         usdc_amount: quote.usdc,
+         market_rate: quote.marketRate,
+         market_rate_at: quote.marketRateAt,
+         merchant_name: `Bank payout: ${bankName} ••${accountNumber.slice(-4)}`
+      });
+      if (logError) console.error('[stableyard-deposit-address] log bank quote failed', logError.message);
+      return json({ ok: true, accountId, step: 'bank_create', result: result.data, quote });
+   }
+
+   const qrPayload = String(body.qrPayload ?? '').trim();
    if (!qrPayload || qrPayload.length > 4096) return json({ error: 'Paste the QR text (1–4096 characters).' }, 400);
 
    if (action === 'decode') {

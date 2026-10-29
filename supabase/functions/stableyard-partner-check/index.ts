@@ -9,6 +9,8 @@ import { stableyard } from '../_shared/stableyard.ts';
 // STABLEYARD_APP_ID / STABLEYARD_APP_SECRET work against production, and to see which modules and
 // deposit networks are live for our app. Never returns the credentials.
 // POST { banks: 'PH' } lists the bank codes Stableyard accepts for a Philippine bank payout.
+// POST { raw: true } returns the full config instead of the summary.
+// POST { payment: 'payment_…' } returns one Payment as Stableyard sees it.
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -54,11 +56,23 @@ serve(async (req) => {
          : json({ ok: false, stableyardStatus: banks.status, error: banks.error, code: banks.code ?? null }, 502);
    }
 
+   // ---- POST { payment: 'payment_…' } → read one Payment (support: why a payout is stuck) ------
+   const paymentId = String(body?.payment ?? '').trim();
+   if (paymentId) {
+      if (!/^payment_[A-Za-z0-9_-]+$/.test(paymentId)) return json({ error: 'Invalid payment ID.' }, 400);
+      const payment = await stableyard.getPayment(paymentId);
+      return payment.ok
+         ? json({ ok: true, stableyardStatus: payment.status, payment: payment.data })
+         : json({ ok: false, stableyardStatus: payment.status, error: payment.error, code: payment.code ?? null }, 502);
+   }
+
    // ---- GET /v2/partners/config -------------------------------------------------------------
    const result = await stableyard.partnerConfig();
    if (!result.ok) {
       return json({ ok: false, stableyardStatus: result.status, error: result.error, code: result.code ?? null }, 502);
    }
+   // POST { raw: true } → the whole config (bank access + payment permissions aren't in the summary).
+   if (body?.raw === true) return json({ ok: true, stableyardStatus: result.status, partner: result.data });
 
    type Module = { id: string; available: boolean; disabledReason: string | null };
    type Network = { code: string; chainId: number; depositAddresses?: { operational?: boolean; disabledReason?: string | null } };

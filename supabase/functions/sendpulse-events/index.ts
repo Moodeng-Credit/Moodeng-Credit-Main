@@ -5,7 +5,6 @@ import { adminUserUrl, OPEN_IN_ADMIN_TEXT, sendAdminCard } from '../_shared/admi
 import { postDiscord } from '../_shared/discord.ts';
 import { PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
 import { decideAutoMatch, MATCH_WINDOW_MS, type OpenAttempt } from '../_shared/messengerAutoMatch.ts';
-import { BORROW_POSTER_CARD, BORROW_POSTER_TEXT, type PosterCandidate, shouldSendBorrowPoster } from '../_shared/messengerBorrowPoster.ts';
 import { logMessengerContact, rememberMessengerContact, saveFacebookName } from '../_shared/messengerContactLog.ts';
 import { CONNECTED_BY_TIMING_TEXT } from '../_shared/messengerStatusFollowUp.ts';
 import { isSupportMessage, openMessengerTicket, relayAgentReply } from '../_shared/messengerSupport.ts';
@@ -16,10 +15,12 @@ import {
    MESSENGER_PAGE_ID,
    messengerDisplayName,
    SENDPULSE_BOT_ID,
-   sendMessengerMessage
+   sendMessengerMessage,
+   TIKTOK_BOT_ID
 } from '../_shared/sendpulse.ts';
 import { parseSendPulseEvents, type SendPulseEvent } from '../_shared/sendpulseEvents.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
+import { openTikTokTicket } from '../_shared/tiktokSupport.ts';
 
 // SendPulse bot webhooks → a second chance to confirm Facebook when the m.me code got lost.
 //
@@ -49,6 +50,8 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 //      payload) with borrowers who tapped "Verify via Messenger" in the last 30 minutes
 //      (_shared/messengerAutoMatch.ts). One strong match → confirm through the same endpoint and tell
 //      the person in Messenger; anything less certain → an "Is this them?" card for the team.
+// The TikTok bot (@moodeng.credit) posts to the same URL: its messages only become support tickets
+// (_shared/tiktokSupport.ts). No Facebook step, codes or matching there.
 // Always answers 200 so SendPulse doesn't retry; failures are logged.
 
 const ENV_EVENTS_SECRET = Deno.env.get('SENDPULSE_EVENTS_SECRET')?.trim() ?? '';
@@ -248,34 +251,6 @@ const matchByName = async (svc: Svc, event: SendPulseEvent, contactId: string) =
    }
 };
 
-// The first message a connected borrower writes after their MDNG code → the "6 things you need to know
-// before borrow" poster, once (_shared/messengerBorrowPoster.ts). Skipped once they've had a funded loan.
-const maybeSendBorrowPoster = async (svc: Svc, userId: string, contactId: string, at: number) => {
-   const [{ data: user }, { count }] = await Promise.all([
-      svc.from('users').select('messenger_verified_at, borrow_poster_sent_at, user_role').eq('id', userId).maybeSingle(),
-      svc
-         .from('loans')
-         .select('id', { count: 'exact', head: true })
-         .eq('borrower_user_id', userId)
-         .eq('is_test', false)
-         .not('funded_at', 'is', null)
-   ]);
-   if (!shouldSendBorrowPoster(user as PosterCandidate | null, at, (count ?? 0) > 0)) return;
-   // Claim it first: two messages can arrive together, and only one of them should send the poster.
-   const { data: claimed } = await svc
-      .from('users')
-      .update({ borrow_poster_sent_at: new Date().toISOString() })
-      .eq('id', userId)
-      .is('borrow_poster_sent_at', null)
-      .select('id')
-      .maybeSingle();
-   if (!claimed) return;
-   const result = await sendMessengerMessage(contactId, { text: BORROW_POSTER_TEXT, card: BORROW_POSTER_CARD });
-   console.log(`sendpulse-events: borrow poster for ${userId.slice(0, 8)} → ${result.ok ? 'sent' : `not sent (${result.reason})`}`);
-   // Not sent → unclaim, so their next message tries again.
-   if (!result.ok) await svc.from('users').update({ borrow_poster_sent_at: null }).eq('id', userId);
-};
-
 const eventsSecret = async (svc: Svc) => {
    if (ENV_EVENTS_SECRET) return ENV_EVENTS_SECRET;
    const { data } = await svc.from('telegram_bot_settings').select('value').eq('key', 'sendpulse_events_secret').maybeSingle();
@@ -312,6 +287,16 @@ serve(async (req) => {
    for (const event of events) {
       try {
          if (!event.fromPerson || !event.contactId) continue;
+         if (event.channel === 'tiktok') {
+            if (event.botId && event.botId !== TIKTOK_BOT_ID) {
+               console.warn('sendpulse-events: skipped an event from another TikTok bot', event.botId);
+               continue;
+            }
+            if (isSupportMessage(event)) {
+               await openTikTokTicket(svc, { contactId: event.contactId, text: event.text, hasAttachment: event.hasAttachment, at: event.at });
+            }
+            continue;
+         }
          // Our bot, by SendPulse bot id or by our Page id. Logged when skipped, so a SendPulse change in
          // how bots are identified shows up in the logs instead of silently switching this off.
          const ours = (!event.botId && !event.pageId) || event.botId === SENDPULSE_BOT_ID || event.pageId === MESSENGER_PAGE_ID;
@@ -344,7 +329,6 @@ serve(async (req) => {
                at: event.at
             });
          }
-         if (known && !/subscri/i.test(event.title)) await maybeSendBorrowPoster(svc, known.userId, event.contactId, event.at);
 
          if (event.codes.length) {
             for (const code of event.codes) await confirmCode(code, event.contactId, event.contactName);

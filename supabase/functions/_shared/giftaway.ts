@@ -6,7 +6,7 @@
 // Paid from prepaid credits (top up via PayPal or bank transfer); costs value + 10% fee + VAT on the fee.
 // API reference: "Public APIs.pdf" from Justin Hirang (solutions@giftaway.ph), 2026-10-22.
 //
-// The keys live in the DB vault as one JSON secret GIFTAWAY ({ api_key, private_key, email }), read
+// The keys live in the DB vault as one JSON secret GIFTAWAY ({ api_key, private_key, email, sender_mobile }), read
 // through public.giftaway_config() (edge function secrets are at their cap).
 
 const BASE_URL = 'https://giftaway.ph/api';
@@ -17,7 +17,8 @@ export const GIFTAWAY_MERCHANTS = {
 } as const;
 
 export type GiftawayBrand = keyof typeof GIFTAWAY_MERCHANTS;
-export type GiftawayConfig = { apiKey: string; privateKey: string; email: string };
+// senderMobile: Giftaway refuses orders without one (107 "Invalid Sender Mobile"); a +66 number works.
+export type GiftawayConfig = { apiKey: string; privateKey: string; email: string; senderMobile: string };
 
 type SupabaseClient = any;
 
@@ -26,7 +27,8 @@ export const getGiftawayConfig = async (supabase: SupabaseClient): Promise<Gifta
    const apiKey = String(data?.api_key ?? '').trim();
    const privateKey = String(data?.private_key ?? '').trim();
    const email = String(data?.email ?? '').trim();
-   return apiKey && privateKey && email ? { apiKey, privateKey, email } : null;
+   const senderMobile = String(data?.sender_mobile ?? '').trim();
+   return apiKey && privateKey && email && senderMobile ? { apiKey, privateKey, email, senderMobile } : null;
 };
 
 export const sha1Hex = async (value: string) => {
@@ -58,6 +60,7 @@ const STATUS_MESSAGES: Record<number, string> = {
    101: 'invalid API key',
    102: 'invalid merchant',
    103: 'invalid items',
+   107: 'invalid sender mobile',
    108: 'invalid recipient name',
    109: 'invalid recipient email',
    110: 'invalid recipient mobile',
@@ -156,6 +159,7 @@ export const orderGiftawayEgift = async (
          referenceno: referenceNo,
          sendername: 'Moodeng Credit',
          senderemail: 'support@moodeng.app',
+         sendermobile: config.senderMobile,
          recipientname: twoWordName(recipient.name),
          ...(recipient.mobile ? { recipientmobile: recipient.mobile } : {}),
          ...(recipient.email ? { recipientemail: recipient.email } : {}),

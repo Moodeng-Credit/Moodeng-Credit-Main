@@ -8,6 +8,7 @@ import { WagmiProvider } from 'wagmi';
 
 import { AuthInitializer } from '@/components/AuthInitializer';
 import BasePaymentReconciler from '@/components/BasePaymentReconciler';
+import { LenderFundedPopupHost } from '@/components/funding/LenderFundedPopup';
 import Loading from '@/components/Loading';
 import AccountLocaleSync from '@/components/AccountLocaleSync';
 import LiveChatHost from '@/components/support/LiveChatHost';
@@ -76,6 +77,7 @@ export function Providers({ children }: { children: ReactNode }) {
                               <BasePaymentReconciler />
                               {children}
                               <SupportContactsModalHost />
+                              <LenderFundedPopupHost />
                               {/* Live chat owns the persistent help launcher and every "I have a
                                   problem" path, including loan-reason wording — it reaches a human. */}
                               <LiveChatHost />

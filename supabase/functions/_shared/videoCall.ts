@@ -76,7 +76,7 @@ const callCard = (title: string, u: CallUser, opts: { confirm?: boolean; calenda
    if (confirm) {
       return {
          title,
-         subtitle: change ? "Tap ✅ so we know you're coming — or pick a new time." : "Tap below so we know you're coming.",
+         subtitle: change ? 'Tap ✅ to come, or pick a new time.' : 'Tap ✅ so we know you are coming.',
          button: { title: "✅ I'll be there", url: buildConfirmUrl(confirm) },
          ...(change ? { moreButtons: [change] } : {})
       };
@@ -92,7 +92,7 @@ const callCard = (title: string, u: CallUser, opts: { confirm?: boolean; calenda
          ...(change ? { moreButtons: [change] } : {})
       };
    }
-   return change ? { title: "Can't make it?", subtitle: 'Pick a new time that works for you.', button: change } : undefined;
+   return change ? { title: "Can't make it?", subtitle: 'Pick a new time.', button: change } : undefined;
 };
 
 type CallUser = {
@@ -108,8 +108,7 @@ type CallUser = {
 
 // Told at booking (and when the call moves): the ✅ button only comes 1h before, and skipping it
 // cancels the call. The borrower page (ConnectStep) says the same.
-const CONFIRM_NOTICE =
-   "⚠️ IMPORTANT: 1 hour before the meeting, we'll send you a ✅ I'll be there button here on Messenger (it's also on the Moodeng page where you booked). Please come back and tap it to confirm you're coming — if you don't confirm, the meeting is cancelled automatically.\n\n📅 Tap \"Add to calendar\" below so your phone reminds you, too.";
+const CONFIRM_NOTICE = "⚠️ 1 hour before, we'll message you here with a ✅ I'll be there button. Tap it, or the call is cancelled.\n📅 Tap Add to calendar below so your phone reminds you too.";
 
 // Right after booking — the borrower just tapped through Messenger, so the 24h window is open.
 export const sendBookedMessenger = (u: CallUser) => {
@@ -118,16 +117,14 @@ export const sendBookedMessenger = (u: CallUser) => {
    // Emma's "Confirm the initial meeting" script, with this booking's own join link.
    // Every call sits on Emma's calendar with George invited, and whoever's free takes it.
    const withWhom = 'George or Emma from Moodeng';
-   const link = u.video_call_join_url
-      ? `You can join from your computer, tablet or phone:\n${u.video_call_join_url}`
-      : 'The join link is in your email.';
+   const link = u.video_call_join_url ? `Join on Zoom: ${u.video_call_join_url}` : 'The Zoom link is in your email.';
+   // Short and friendly (George, 2026-10-29): the old version read like a compliance notice.
    return sendMessengerMessage(u.messenger_psid, {
       text:
-         `📅 Thank you for confirming! Your meeting with ${withWhom} is on ${when} via Zoom.\n${link}\n\n` +
-         'To make it smooth, please have ready:\n1. Your original physical ID or passport — account approval depends on passing this compliance check (legal, financial and GDPR rules)\n' +
-         '2. Camera on, a well-lit room, and your phone nearby\n\n' +
-         'To get funded after the meeting, connect with Emma Moodeng on Facebook: https://www.facebook.com/emmamoodengcredit\n\n' +
-         CONFIRM_NOTICE,
+         `📅 You're booked! 15-min video call with ${withWhom}\n🗓️ ${when}\n${link}\n\n` +
+         'Bring 🪪 your original ID or passport and 📷 camera on. That\'s it!\n\n' +
+         `${CONFIRM_NOTICE}\n\n` +
+         'After the call, add Emma on Facebook so we can fund you: https://www.facebook.com/emmamoodengcredit',
       card: callCard('Will you make it?', u, { calendar: true })
    });
 };
@@ -137,8 +134,9 @@ export const sendBookedMessenger = (u: CallUser) => {
 export const sendMovedMessenger = (u: CallUser) => {
    if (!u.video_call_starts_at) return Promise.resolve({ ok: false as const, reason: 'no_call' });
    const when = formatCallTime(u.video_call_starts_at, u.video_call_timezone);
+   // Short (George, 2026-10-29: "text heavy… I wonder if people even read them").
    return sendMessengerMessage(u.messenger_psid, {
-      text: `📅 Your meeting with Moodeng has moved to ${when} via Zoom.\n${joinLine(u)}\n\nPlease have your ID or passport ready.\n\n${CONFIRM_NOTICE}`,
+      text: `📅 Moved to ${when}. Same Zoom link:\n${u.video_call_join_url ?? 'in your email'}\n\n⏰ Tap ✅ 1 hour before to keep it.`,
       card: callCard('See you then?', u, { calendar: true })
    });
 };
@@ -151,8 +149,8 @@ export const sendReminderMessenger = (u: CallUser, stage: 1 | 2) => {
    // Emma's "Remind the initial meeting" script.
    const text =
       stage === 2
-         ? `⏰ Our meeting starts in under an hour — ${when}. ${u.video_call_join_url ? `Join here: ${u.video_call_join_url}` : 'The Zoom link is in your email.'} Please have your ID or passport ready.`
-         : `👋 Just a quick reminder about our meeting scheduled for ${when}. Please let us know here if that time still works for you or if you'd prefer to reschedule. Remember: 1 hour before, tap ✅ I'll be there to confirm — otherwise the meeting is cancelled automatically. Looking forward to meeting you!`;
+         ? `⏰ Starting soon: ${when}\n${u.video_call_join_url ? `Join: ${u.video_call_join_url}` : 'The Zoom link is in your email.'}\n🪪 Have your ID ready.`
+         : `👋 Reminder: your call is ${when} on Zoom.\n⏰ 1 hour before, tap ✅ to keep your spot.`;
    return sendMessengerMessage(u.messenger_psid, {
       text,
       card: callCard('Still coming?', u)
@@ -166,8 +164,8 @@ export const sendConfirmAskMessenger = (u: CallUser) => {
    if (!u.video_call_starts_at) return Promise.resolve({ ok: false as const, reason: 'no_call' });
    const when = formatCallTime(u.video_call_starts_at, u.video_call_timezone);
    return sendMessengerMessage(u.messenger_psid, {
-      text: `⏰ Our meeting is in 1 hour — ${when}. Please tap ✅ I'll be there below within 30 minutes to confirm you're coming. If you don't confirm, the meeting is cancelled automatically. Need a different time? Tap 🔄 Change time.`,
-      card: callCard('Confirm your meeting', u, { confirm: true })
+      text: `⏰ Your call is in 1 hour (${when}).\nTap ✅ to keep it, or it's cancelled in 30 min.`,
+      card: callCard('Keep your spot?', u, { confirm: true })
    });
 };
 
@@ -175,8 +173,7 @@ export const sendConfirmAskMessenger = (u: CallUser) => {
 export const sendStartingMessenger = (u: CallUser) => {
    if (!u.video_call_starts_at) return Promise.resolve({ ok: false as const, reason: 'no_call' });
    return sendMessengerMessage(u.messenger_psid, {
-      text: `👋 Our meeting is starting now! ${joinLine(u)}
-Please have your ID or passport ready.`
+      text: `👋 We're starting now! ${joinLine(u)}`
    });
 };
 
@@ -184,7 +181,6 @@ Please have your ID or passport ready.`
 export const sendWaitingMessenger = (u: CallUser) => {
    if (!u.video_call_starts_at) return Promise.resolve({ ok: false as const, reason: 'no_call' });
    return sendMessengerMessage(u.messenger_psid, {
-      text: `🙂 We're ready for you! ${joinLine(u)}
-Can't make it? Just reply here and we'll find a new time.`
+      text: `🙂 We're waiting for you! ${joinLine(u)}\nCan't make it? Reply here.`
    });
 };

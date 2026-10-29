@@ -72,3 +72,21 @@ export const shouldReleaseSlot = (u: {
    video_call_keep_spot_asked_at: string | null;
    video_call_booking_uid: string | null;
 }): boolean => !u.video_call_confirmed_at && Boolean(u.video_call_keep_spot_asked_at) && Boolean(u.video_call_booking_uid);
+
+// WhatsApp fallback for the 1h ✅ ask, for borrowers Messenger can't reach (outside its 24h window).
+// WhatsApp only allows approved templates there, so this is `moodeng_call_confirm` (Utility):
+//   body   "Hi {{1}}, your Moodeng video call is in 1 hour ({{2}}). Tap the button below within 30
+//           minutes to confirm you're coming, or the call is cancelled automatically."
+//   button URL ".../functions/v1/video-call-confirm?t={{1}}" (the confirm token)
+// Switch: telegram_bot_settings `call_confirm_whatsapp_enabled`, off until Meta approves the template.
+export const CALL_CONFIRM_TEMPLATE = 'moodeng_call_confirm';
+export const CALL_CONFIRM_WHATSAPP_SETTING_KEY = 'call_confirm_whatsapp_enabled';
+
+export const buildCallConfirmTemplate = (name: string | null | undefined, at: string, confirmToken: string) => ({
+   name: CALL_CONFIRM_TEMPLATE,
+   language: { code: 'en' },
+   components: [
+      { type: 'body' as const, parameters: [{ type: 'text' as const, text: name?.trim() || 'there' }, { type: 'text' as const, text: at }] },
+      { type: 'button' as const, sub_type: 'url' as const, index: '0', parameters: [{ type: 'text' as const, text: confirmToken }] }
+   ]
+});
