@@ -155,7 +155,9 @@ header p { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
         <li><b>Messy typing:</b> "bukas after 6pm", "pwede po ba sa Lunes ng hapon?", "kahit kailan basta gabi", "ok". Does it understand, or ask again?</li>
         <li><b>A taken or full time:</b> "saturday 2pm". Is it clear the time is taken and which times are closest?</li>
         <li><b>Someone in a tough spot:</b> answer "Between jobs" and "None right now". They still book; the box on the right says ❗ Needs a closer look. Single people ("Just myself") are never marked down.</li>
-        <li><b>Tight money:</b> answer "I run short", "5-6 or a lending app", "Not sure". It should still book, but the box says ⚠️ Talk first.</li>
+        <li><b>Tight money:</b> answer "I run short" and "5-6 or a lending app". It should still book, but the box says ⚠️ Talk first.</li>
+        <li><b>Dodging:</b> tap "Prefer not to say" or "Not sure". The bot asks once more for a rough guess. Tap it again: it still books, but the box says ❗ Needs a closer look.</li>
+        <li><b>After booking:</b> type "ok" or "thanks". The bot says you're all set and keeps the booking. Typing a new day and time moves it.</li>
         <li><b>Filipino:</b> tap FIL at the top of the chat and do one booking in Filipino.</li>
       </ol>
       <p class="note">Anything confusing, too long, or worded wrong? Write it down with the exact message, and send it to George. Use "Start over" at the bottom right to begin again.</p>
@@ -425,12 +427,21 @@ Ito ang pinakamalapit na bakanteng oras:` },
     askName: { en: 'Thank you! Last thing: please type your first name (for security).', fil: 'Salamat! Huling bagay: pakitype ang first name mo (para sa security).' },
     badName: { en: 'Please type just your first name, e.g. Maria', fil: 'Pakitype lang ang first name mo, hal. Maria' },
     booked: {
-      en: (when, name) => `🎉 CONFIRMED! You're booked, ${name}!\n\nYour call with George or Emma from Moodeng is on ${when} via Zoom.\nhttps://zoom.us/j/0000000000 (pretend link)\n\nPlease have ready:\n1. Your original physical ID or passport\n2. Camera on, a well-lit room, and your phone nearby`,
-      fil: (when, name) => `🎉 CONFIRMED! Naka-book ka na, ${name}!\n\nAng call mo kasama si George o Emma ng Moodeng ay sa ${when} sa Zoom.\nhttps://zoom.us/j/0000000000 (pretend link)\n\nPakihanda ang:\n1. Ang orihinal mong ID o passport\n2. Naka-on ang camera, maliwanag na kwarto, at nasa tabi ang phone mo`
+      en: (when, name) => `🎉 You're booked, ${name}!\n🗓️ ${when} · 15 min with George or Emma\nJoin on Zoom: https://zoom.us/j/0000000000 (pretend link)\n\nBring 🪪 your original ID and 📷 camera on. That's it!`,
+      fil: (when, name) => `🎉 Naka-book ka na, ${name}!\n🗓️ ${when} · 15 min kasama si George o Emma\nSa Zoom: https://zoom.us/j/0000000000 (pretend link)\n\nDalhin ang 🪪 orihinal mong ID at naka-on ang 📷 camera. Iyon lang!`
     },
     promise: { en: (name) => `⏰ Remember, ${name}: tap ✅ 1 hour before, or the call is cancelled.`, fil: (name) => `⏰ Tandaan, ${name}: pindutin ang ✅ 1 oras bago, kung hindi makakansela ang call.` },
     card: { en: ['Will you make it?', 'Tap ✅ so we know you\'re coming — or pick a new time.', "✅ I'll be there", '🔄 Change time'], fil: ['Makakarating ka ba?', 'Pindutin ang ✅ para alam naming darating ka — o pumili ng bagong oras.', "✅ I'll be there", '🔄 Palitan ang oras'] },
-    thanks: { en: '✅ Thanks! See you then 🙌', fil: '✅ Salamat! Kita tayo 🙌' }
+    thanks: { en: '✅ Thanks! See you then 🙌', fil: '✅ Salamat! Kita tayo 🙌' },
+    allSet: {
+      en: (name, when) => `👍 You're all set${name ? `, ${name}` : ''}! See you ${when}.\nNeed a different time? Just tell me a day and time.`,
+      fil: (name, when) => `👍 Ayos na${name ? `, ${name}` : ''}! Kita tayo sa ${when}.\nKailangan ng ibang oras? Sabihin lang ang araw at oras.`
+    },
+    // Prefer not to say / Not sure on a money question: asked once more, kindly (Emma, 2026-10-30).
+    reask: {
+      en: "That's OK 🙂 A rough guess is fine.\nWe lend to people who keep track of their money, so an estimate really helps us.",
+      fil: 'Okay lang 🙂 Kahit tantya lang.\nNagpapautang kami sa mga taong alam kung saan napupunta ang pera nila, kaya malaking tulong ang tantya.'
+    }
   };
   const say = (k, ...a) => { const v = T[k][lang]; return typeof v === 'function' ? v(...a) : v; };
   const gap = (s, asked) => {
@@ -527,7 +538,9 @@ Ito ang pinakamalapit na bakanteng oras:` },
     return /^\p{L}[\p{L}'-]{1,29}$/u.test(w) ? w[0].toUpperCase() + w.slice(1) : null;
   };
 
+  let bookedName = '';
   const book = (s, name) => {
+    bookedName = name;
     s.status = 'yours'; refreshFull(); renderCal();
     log(`<span class="tag">Booked</span>${esc(fmtDay(s.date, 'en'))} · ${fmtTime(s.min - 60)} Bangkok / ${fmtTime(s.min)} Manila with <b>${s.host}</b>. First name <b>${esc(name)}</b> saved with the booking. In the real bot: Cal.com booking + Zoom link + reminders, same as the booking page.`);
     botSay(say('booked', longWhen(s), name));
@@ -579,14 +592,16 @@ Ito ang pinakamalapit na bakanteng oras:` },
     'rentFood', 'prevJob'
   ].filter(Boolean);
 
-  let prepName = '', prepHost = 'Emma', prepAnswers = {}, prepList = [], prepI = 0, asked = [], quizSlot = null;
+  let prepName = '', prepHost = 'Emma', prepAnswers = {}, prepList = [], prepI = 0, asked = [], quizSlot = null, reasked = [];
+  const NOT_SURE = ['Not sure', 'Hindi sigurado'];
+  const dodged = (v) => v === PNS.en || v === PNS.fil || NOT_SURE.includes(v);
   const nextKey = () => {
     if (asked.length >= MAX_Q) return null;
     const order = [...BASE, ...followUps(prepAnswers)];
     return order.find((k) => !asked.includes(k)) ?? null;
   };
   const startQuiz = (s) => {
-    quizSlot = s; prepAnswers = {}; asked = []; prepHost = s.host;
+    quizSlot = s; prepAnswers = {}; asked = []; reasked = []; prepHost = s.host;
     botSay(lang === 'fil'
       ? `⏳ Naka-hold para sa iyo ang ${longWhen(s)} kasama si ${s.host}.\n\nIlang mabilis na tanong muna para makapaghanda si ${s.host} (mga 2 min). Ranges lang, at pribado ito sa team namin 🔒`
       : `⏳ I'm holding ${longWhen(s)} with ${s.host} for you.\n\nA few quick questions first so ${s.host} can prepare (about 2 min). Ranges are fine, and it stays private with our team 🔒`);
@@ -609,6 +624,17 @@ Ito ang pinakamalapit na bakanteng oras:` },
   const skipLabel = () => (lang === 'fil' ? 'Laktawan' : 'Skip');
   const answerPrep = (value) => {
     const key = asked[asked.length - 1];
+    // First dodge on this question: ask again, kindly, same buttons.
+    if (dodged(value) && !reasked.includes(key)) {
+      reasked.push(key);
+      log(`<span class="tag">Re-ask</span><code>${esc(key)}</code>: they tapped "${esc(value)}" — asking once more for a rough guess.`);
+      botSay(say('reask'));
+      const q = Q[key];
+      const buttons = (q.opts ? q.opts[lang] : []).map((o) => [o, (l) => { meSay(l); answerPrep(l); }]);
+      if (q.money) buttons.push([PNS[lang], (l) => { meSay(l); answerPrep(l); }]);
+      quick(buttons);
+      return;
+    }
     if (value) prepAnswers[key] = value;
     askNext();
   };
@@ -620,8 +646,11 @@ Ito ang pinakamalapit na bakanteng oras:` },
     const noIncome = is(a.work, 'between', 'walang') && (is(a.moneyNow, 'none', 'wala') || !a.moneyNow);
     const deepTrouble = is(a.leftover, 'short', 'kulang') && is(a.debt, 'several', 'maraming') && is(a.repay, 'not sure', 'hindi sigurado');
     if (noIncome) return { verdict: 'review', reason: 'no current work or income — ask how they would repay' };
+    // Still "Prefer not to say" / "Not sure" after being asked twice (Emma, 2026-10-30).
+    const held = Object.entries(a).filter(([, v]) => dodged(v)).map(([k]) => k);
+    if (held.length) return { verdict: 'review', reason: `wouldn't give a rough answer on ${held.join(', ')}, even when asked twice — check they know their own finances before approving` };
     if (deepTrouble) return { verdict: 'review', reason: "runs short, owes several places, unsure when they'd repay — check $15 really helps" };
-    const talk = is(a.leftover, 'short', 'kulang') || is(a.debt, '5-6', 'lending app', 'several', 'maraming') || is(a.billTrouble, 'most', 'halos') || Object.values(a).some((v) => v === PNS.en || v === PNS.fil);
+    const talk = is(a.leftover, 'short', 'kulang') || is(a.debt, '5-6', 'lending app', 'several', 'maraming') || is(a.billTrouble, 'most', 'halos') ;
     return talk ? { verdict: 'talk', reason: 'tight money or existing debts — ask how they would repay' } : { verdict: 'good', reason: 'has income and a small gap a $15 loan can cover' };
   };
   const PRETEND_BIO = { work: 'Full-time employee', payday: '15th & 30th' };
@@ -707,6 +736,8 @@ ${say('tzNote')}`);
     step = 'offered';
   };
 
+  const looksLikeTime = (text) => /\d|today|tomorrow|bukas|mamaya|morning|afternoon|evening|umaga|hapon|gabi|mon|tue|wed|thu|fri|sat|sun|lunes|martes|miyerkules|huwebes|biyernes|sabado|linggo|weekend/i.test(text);
+
   const handle = async (text) => {
     meSay(text);
     if (step === 'prep') {
@@ -734,8 +765,13 @@ ${say('tzNote')}`);
         botSay(say('askName')); step = 'name'; return;
       }
       if (/^\s*(no|hindi|ayoko|wag)\b/i.test(text)) { clearQuick(); releaseBooking(); botSay(say('other')); step = 'ask'; return; }
-      if (!/\d|today|tomorrow|bukas|mamaya|morning|afternoon|evening|umaga|hapon|gabi|mon|tue|wed|thu|fri|sat|sun|lunes|martes|miyerkules|huwebes|biyernes|sabado|linggo|weekend/i.test(text)) { botSay(say('sayYes')); return; }
+      if (!looksLikeTime(text)) { botSay(say('sayYes')); return; }
       log('Not a YES — reading it as a new time instead.');
+    }
+    // Booked: "ok", "thanks", 👍 … get a friendly reply. Only a day/time (or "change") moves the call —
+    // before, any message released the booking and then said "didn't catch a time" (Emma, 2026-10-30).
+    if (step === 'booked' && mine && !looksLikeTime(text) && !/\b(change|resched|move|cancel|palit|iba(ng)? oras)/i.test(text)) {
+      clearQuick(); botSay(say('allSet', bookedName, longWhen(mine))); return;
     }
     if (step === 'name' && mine) {
       const name = firstName(text);
