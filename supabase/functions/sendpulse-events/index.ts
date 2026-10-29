@@ -5,7 +5,7 @@ import { adminUserUrl, OPEN_IN_ADMIN_TEXT, sendAdminCard } from '../_shared/admi
 import { postDiscord } from '../_shared/discord.ts';
 import { PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
 import { decideAutoMatch, MATCH_WINDOW_MS, type OpenAttempt } from '../_shared/messengerAutoMatch.ts';
-import { BORROW_POSTER_CARD, BORROW_POSTER_TEXT, type PosterCandidate, shouldSendBorrowPoster } from '../_shared/messengerBorrowPoster.ts';
+import { BORROW_POSTER_CARD, type PosterCandidate, shouldSendBorrowPoster } from '../_shared/messengerBorrowPoster.ts';
 import { logMessengerContact, rememberMessengerContact, saveFacebookName } from '../_shared/messengerContactLog.ts';
 import { CONNECTED_BY_TIMING_TEXT } from '../_shared/messengerStatusFollowUp.ts';
 import { isSupportMessage, openMessengerTicket, relayAgentReply } from '../_shared/messengerSupport.ts';
@@ -270,7 +270,8 @@ const maybeSendBorrowPoster = async (svc: Svc, userId: string, contactId: string
       .select('id')
       .maybeSingle();
    if (!claimed) return;
-   const result = await sendMessengerMessage(contactId, { text: BORROW_POSTER_TEXT, card: BORROW_POSTER_CARD });
+   // Card only: its title already says it all (the extra text line went unread).
+   const result = await sendMessengerMessage(contactId, { card: BORROW_POSTER_CARD });
    console.log(`sendpulse-events: borrow poster for ${userId.slice(0, 8)} → ${result.ok ? 'sent' : `not sent (${result.reason})`}`);
    // Not sent → unclaim, so their next message tries again.
    if (!result.ok) await svc.from('users').update({ borrow_poster_sent_at: null }).eq('id', userId);
