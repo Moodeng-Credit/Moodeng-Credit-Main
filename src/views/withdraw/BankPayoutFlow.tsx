@@ -34,8 +34,8 @@ type FnResult = {
       banks?: Bank[];
       challenge?: { id?: string };
       verificationUrl?: string;
-      payment?: { id?: string; status?: string; quoteExpiresAt?: string };
-      nextAction?: { expiresAt?: string | null; depositInstructions?: DepositInstructions } | null;
+      payment?: { id?: string; status?: string; stage?: string; quoteExpiresAt?: string; expiresAt?: string };
+      nextAction?: { type?: string; url?: string; expiresAt?: string | null; depositInstructions?: DepositInstructions } | null;
    };
 };
 
@@ -82,6 +82,13 @@ async function call(isPreview: boolean, body: Record<string, string>): Promise<F
    return (await context?.json?.().catch(() => null)) ?? { ok: false, error: error.message };
 }
 
+// PH mobile numbers for e-wallets: accept +63 976…, 63976…, 976… or 0976… and keep the local 09… form.
+const toLocalMobile = (digits: string) => {
+   if (digits.startsWith('63')) return `0${digits.slice(2)}`.slice(0, 11);
+   if (digits.startsWith('9')) return `0${digits}`.slice(0, 11);
+   return digits.slice(0, 11);
+};
+
 const peso = (n: number) => `₱${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 const shortBank = (name: string) => (name.startsWith('MAYA PHILIPPINES') ? 'Maya' : name === 'GCASH' ? 'GCash' : name);
 
@@ -110,7 +117,9 @@ function ErrorLine({ text }: { text: string }) {
    );
 }
 
-type Step = 'loading' | 'verify' | 'form' | 'quote' | 'sending' | 'tracking';
+// 'compliance': Stableyard wants a one-time form (nextAction complete_compliance) before it prices the payout.
+// 'pricing': the Payment exists and Stableyard is still working out the quote.
+type Step = 'loading' | 'verify' | 'form' | 'compliance' | 'pricing' | 'quote' | 'sending' | 'tracking';
 
 export default function BankPayoutFlow({
    isPreview,
@@ -145,6 +154,8 @@ export default function BankPayoutFlow({
    const [now, setNow] = useState(Date.now());
    const [status, setStatus] = useState('');
    const requestKey = useRef('');
+   const [complianceUrl, setComplianceUrl] = useState('');
+   const pricingTries = useRef(0);
 
    const bank = banks.find((b) => b.code === bankCode);
    const isEwallet = bank ? /GCASH|MAYA|GRABPAY|SHOPEEPAY|COINS|PALAWANPAY/.test(bank.name) : false;
@@ -219,6 +230,40 @@ export default function BankPayoutFlow({
       if (action === 'email_confirm') void loadSetup();
    };
 
+   // One reply (from create or a re-read) → the next screen. A bank payout can come back priced, waiting
+   // on Stableyard's one-time compliance form, or still pricing.
+   const showPayment = (res: FnResult) => {
+      const payment = res.result?.payment;
+      const next = res.result?.nextAction;
+      if (!res.ok || !payment?.id) {
+         setStep('form');
+         return setError(res.error ?? 'Could not get a price right now. Try again in a minute.');
+      }
+      setPaymentId(payment.id);
+      if (payment.status && FAILED.has(payment.status)) {
+         setStep('form');
+         return setError('That price expired. Tap the button again for a new one.');
+      }
+      const instructions = next?.depositInstructions;
+      if (instructions) {
+         if (instructions.chainId !== 8453 || instructions.tokenAddress.toLowerCase() !== BASE_USDC || instructions.decimals !== 6) {
+            setStep('form');
+            return setError('This payout needs a different coin. Please contact support.');
+         }
+         setDeposit(instructions);
+         const expiry = next?.expiresAt ?? payment.quoteExpiresAt ?? payment.expiresAt;
+         setExpiresAt(expiry ? new Date(expiry).getTime() : null);
+         setNow(Date.now());
+         return setStep('quote');
+      }
+      if (next?.type === 'complete_compliance' && next.url) {
+         setComplianceUrl(next.url);
+         return setStep('compliance');
+      }
+      pricingTries.current = 0;
+      setStep('pricing');
+   };
+
    const getQuote = async () => {
       setBusy(true);
       setError('');
@@ -234,20 +279,39 @@ export default function BankPayoutFlow({
          requestKey: requestKey.current
       });
       setBusy(false);
-      const instructions = res.result?.nextAction?.depositInstructions;
-      if (!res.ok || !instructions || !res.result?.payment?.id) {
-         return setError(res.error ?? 'Could not get a price right now. Try again in a minute.');
-      }
-      if (instructions.chainId !== 8453 || instructions.tokenAddress.toLowerCase() !== BASE_USDC || instructions.decimals !== 6) {
-         return setError('This payout needs a different coin. Please contact support.');
-      }
-      setPaymentId(res.result.payment.id);
-      setDeposit(instructions);
-      const expiry = res.result.nextAction?.expiresAt ?? res.result.payment.quoteExpiresAt;
-      setExpiresAt(expiry ? new Date(expiry).getTime() : null);
-      setNow(Date.now());
-      setStep('quote');
+      showPayment(res);
    };
+
+   const recheckPayment = async () => {
+      setBusy(true);
+      setError('');
+      const res = await call(isPreview, { qr: 'get', paymentId });
+      setBusy(false);
+      const paymentStatus = res.result?.payment?.status;
+      // The first Payment may have expired while the form was filled in: start a fresh one.
+      if (paymentStatus && FAILED.has(paymentStatus)) return getQuote();
+      if (res.result?.nextAction?.type === 'complete_compliance')
+         return setError("Stableyard hasn't received the form yet. Finish it, then try again.");
+      showPayment(res);
+   };
+
+   // While Stableyard prices the payout, re-read it every few seconds (up to ~1 minute).
+   useEffect(() => {
+      if (step !== 'pricing' || !paymentId) return;
+      const t = setTimeout(async () => {
+         pricingTries.current += 1;
+         const res = await call(isPreview, { qr: 'get', paymentId });
+         const next = res.result?.nextAction;
+         if (next?.depositInstructions || next?.type === 'complete_compliance' || !res.ok) return showPayment(res);
+         if (pricingTries.current >= 20) {
+            setStep('form');
+            return setError('Stableyard is taking long to price this. Try again in a few minutes.');
+         }
+         setNow(Date.now());
+      }, 3000);
+      return () => clearTimeout(t);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [step, paymentId, now]);
 
    const usdc = deposit ? Number(deposit.amount) : 0;
    const notEnough = spendable != null && usdc > spendable;
@@ -381,14 +445,17 @@ export default function BankPayoutFlow({
                   </span>
                   <input
                      value={accountNumber}
-                     onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, '').slice(0, 20))}
+                     onChange={(e) => {
+                        const digits = e.target.value.replace(/\D/g, '');
+                        setAccountNumber(isEwallet ? toLocalMobile(digits) : digits.slice(0, 20));
+                     }}
                      inputMode="numeric"
-                     placeholder={isEwallet ? '09XX XXX XXXX' : 'Account number'}
+                     placeholder={isEwallet ? '09XX XXX XXXX or +63' : 'Account number'}
                      className={`${inputClass} mt-[6px]`}
                   />
                   {accountNumber && !accountOk ? (
                      <span className="text-[12px] text-[var(--danger)]">
-                        {isEwallet ? 'Use the 11-digit number that starts with 09.' : 'Check the account number.'}
+                        {isEwallet ? 'Enter the 11-digit number (09… or +63…).' : 'Check the account number.'}
                      </span>
                   ) : null}
                </label>
@@ -434,6 +501,41 @@ export default function BankPayoutFlow({
                Nothing leaves your wallet until you confirm on the next screen.
             </p>
          </div>
+      );
+   }
+
+   if (step === 'compliance') {
+      return (
+         <div className="space-y-[12px]">
+            <Panel>
+               <div className="flex items-start gap-[12px]">
+                  <ShieldCheck className="w-[22px] h-[22px] text-[var(--primary)] shrink-0 mt-[2px]" />
+                  <div>
+                     <p className="text-[16px] font-semibold text-[var(--ink)]">One more step, only once</p>
+                     <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[4px]">
+                        Before your first cash-out, Stableyard needs a few details on a short form. It takes about 2 minutes.
+                     </p>
+                  </div>
+               </div>
+               {error ? <ErrorLine text={error} /> : null}
+            </Panel>
+            <button className={primaryClass} onClick={() => window.open(complianceUrl, '_blank', 'noopener')}>
+               Open the form <ArrowRight className="w-4 h-4" />
+            </button>
+            <button className={linkClass} disabled={busy} onClick={() => void recheckPayment()}>
+               {busy ? 'Checking…' : 'I finished — get my price'}
+            </button>
+         </div>
+      );
+   }
+
+   if (step === 'pricing') {
+      return (
+         <Panel>
+            <div className="flex items-center gap-[10px] text-[14px] text-[var(--text-muted)]">
+               <Loader2 className="w-[18px] h-[18px] animate-spin" /> Getting your price…
+            </div>
+         </Panel>
       );
    }
 
