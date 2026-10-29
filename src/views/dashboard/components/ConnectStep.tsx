@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 
-import { Camera, Gift, IdCard, MessagesSquare, ShieldCheck, Sparkles, Unlock, Video, Wallet } from 'lucide-react';
+import { CalendarPlus, Camera, Gift, IdCard, MessagesSquare, ShieldCheck, Sparkles, Unlock, Video, Wallet } from 'lucide-react';
 
 import { clarityEvent } from '@/lib/analytics/clarity';
 import { MoreCharactersLabel } from '@/i18n/SentenceLabels';
@@ -597,6 +597,18 @@ export function LoanAccessPendingCard({
                      <ConfirmLaterNotice />
                   ) : meeting?.confirmed && !callOver ? (
                      <span className="text-[14px] font-semibold text-[#2f7a3a]">✅ You confirmed — see you there!</span>
+                  ) : null}
+                  {/* The phone's own calendar reminds them 1h before, with the ✅ link — it still works
+                      after Messenger's 24h window has closed (video-call-confirm ?ics=). */}
+                  {meeting?.confirmToken && !meeting.confirmed && !callOver ? (
+                     <a
+                        className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full border-2 border-[#7661f9] bg-white text-[16px] font-semibold text-[#6b55f7] active:scale-[0.98]"
+                        href={`${(import.meta.env.VITE_SUPABASE_URL ?? '').trim().replace(/\/$/, '')}/functions/v1/video-call-confirm?ics=${encodeURIComponent(meeting.confirmToken)}`}
+                        onClick={() => clarityEvent('call_add_to_calendar')}
+                     >
+                        <CalendarPlus aria-hidden="true" className="size-4" strokeWidth={2.2} />
+                        Add to my calendar
+                     </a>
                   ) : null}
                   {meeting?.joinUrl && !callOver ? (
                      <a

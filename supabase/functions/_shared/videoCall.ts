@@ -9,6 +9,11 @@ const SUPABASE_URL = (Deno.env.get('SUPABASE_URL') ?? '').replace(/\/$/, '');
 // The link behind the Messenger button. verify_jwt is off for video-call-confirm; the random,
 // single-booking token is the whole credential (it only marks "I'll be there", nothing more).
 export const buildConfirmUrl = (token: string) => `${SUPABASE_URL}/functions/v1/video-call-confirm?t=${encodeURIComponent(token)}`;
+/** The ✅ link inside the calendar event (counts only in the last 2h before the call). */
+export const buildCalendarConfirmUrl = (token: string) => `${buildConfirmUrl(token)}&src=cal`;
+/** "📅 Add to my calendar": .ics on iPhone/desktop, Google Calendar on Android (callCalendar.ts). */
+export const buildCalendarUrl = (token: string) => `${SUPABASE_URL}/functions/v1/video-call-confirm?ics=${encodeURIComponent(token)}`;
+const ADD_TO_CALENDAR = '📅 Add to calendar';
 
 export const newConfirmToken = () => crypto.randomUUID().replace(/-/g, '');
 
@@ -65,7 +70,7 @@ export const formatCallTimeForTeam = (iso: string, borrowerZone?: string | null)
 
 // The card under a call message: ✅ I'll be there (only in the confirm window, until they tap it)
 // and 🔄 Change time, so a borrower who can't make it picks a new time instead of not showing up.
-const callCard = (title: string, u: CallUser, opts: { confirm?: boolean } = {}): MessengerCard | undefined => {
+const callCard = (title: string, u: CallUser, opts: { confirm?: boolean; calendar?: boolean } = {}): MessengerCard | undefined => {
    const confirm = opts.confirm === true && !u.video_call_confirmed_at && u.video_call_confirm_token;
    const change = u.video_call_booking_uid ? { title: CHANGE_TIME, url: buildRescheduleUrl(u.video_call_booking_uid) } : null;
    if (confirm) {
@@ -73,6 +78,17 @@ const callCard = (title: string, u: CallUser, opts: { confirm?: boolean } = {}):
          title,
          subtitle: change ? 'Tap ✅ to come, or pick a new time.' : 'Tap ✅ so we know you are coming.',
          button: { title: "✅ I'll be there", url: buildConfirmUrl(confirm) },
+         ...(change ? { moreButtons: [change] } : {})
+      };
+   }
+   // Booked / moved: the calendar button first (the phone's own reminder works after Messenger's
+   // 24h window closes), then Change time.
+   const calendar = u.video_call_confirm_token ? { title: ADD_TO_CALENDAR, url: buildCalendarUrl(u.video_call_confirm_token) } : null;
+   if (opts.calendar && calendar) {
+      return {
+         title: 'Add it to your calendar 📅',
+         subtitle: 'Your phone reminds you 1 hour before.',
+         button: calendar,
          ...(change ? { moreButtons: [change] } : {})
       };
    }
@@ -92,7 +108,7 @@ type CallUser = {
 
 // Told at booking (and when the call moves): the ✅ button only comes 1h before, and skipping it
 // cancels the call. The borrower page (ConnectStep) says the same.
-const CONFIRM_NOTICE = "⚠️ 1 hour before, we'll message you here with a ✅ I'll be there button. Tap it, or the call is cancelled.";
+const CONFIRM_NOTICE = "⚠️ 1 hour before, we'll message you here with a ✅ I'll be there button. Tap it, or the call is cancelled.\n📅 Tap Add to calendar below so your phone reminds you too.";
 
 // Right after booking — the borrower just tapped through Messenger, so the 24h window is open.
 export const sendBookedMessenger = (u: CallUser) => {
@@ -109,7 +125,7 @@ export const sendBookedMessenger = (u: CallUser) => {
          'Bring 🪪 your original ID or passport and 📷 camera on. That\'s it!\n\n' +
          `${CONFIRM_NOTICE}\n\n` +
          'After the call, add Emma on Facebook so we can fund you: https://www.facebook.com/emmamoodengcredit',
-      card: callCard('Will you make it?', u)
+      card: callCard('Will you make it?', u, { calendar: true })
    });
 };
 
@@ -121,7 +137,7 @@ export const sendMovedMessenger = (u: CallUser) => {
    // Short (George, 2026-10-29: "text heavy… I wonder if people even read them").
    return sendMessengerMessage(u.messenger_psid, {
       text: `📅 Moved to ${when}. Same Zoom link:\n${u.video_call_join_url ?? 'in your email'}\n\n⏰ Tap ✅ 1 hour before to keep it.`,
-      card: callCard('See you then?', u)
+      card: callCard('See you then?', u, { calendar: true })
    });
 };
 
