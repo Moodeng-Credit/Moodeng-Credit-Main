@@ -28,6 +28,9 @@ import posthog from 'posthog-js';
 import { useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { erc20Abi } from 'viem';
+
+import { TransferAddressLabel } from '@/i18n/SentenceLabels';
+import { useUsdcRate } from '@/lib/useUsdcRate';
 import { useAccount, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
 
 import { openSupportContacts } from '@/components/support/supportContacts';
@@ -42,10 +45,8 @@ import { parseDateSafely } from '@/utils/dateFormatters';
 
 import { COINS_PH_SUSPENDED, COINS_PH_SUSPENDED_MESSAGE, COINS_PH_SUSPENDED_TITLE } from '@/config/paymentRails';
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
-import { TransferAddressLabel } from '@/i18n/SentenceLabels';
 import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
 import { recordWithdrawal } from '@/lib/recordWithdrawal';
-import { useUsdcRate } from '@/lib/useUsdcRate';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { CashoutGateError, startCashoutFaceCheck } from '@/lib/withdraw/cashoutFaceGate';
 import type { RootState } from '@/store/store';
@@ -676,11 +677,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                   Withdraw your USDC
                </h1>
                <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[6px]">
-                  {!walletConnected
-                     ? 'Connect your wallet to see your balance'
-                     : spendable == null
-                       ? 'Checking your balance…'
-                       : `${spendable} USDC available`}
+                  {!walletConnected ? 'Connect your wallet to see your balance' : spendable == null ? 'Checking your balance…' : `${spendable} USDC available`}
                   {REPAY_USDC != null && DUE_DATE ? (
                      <>
                         {' '}
@@ -1166,7 +1163,8 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
    // The cap is the verified on-chain balance — never the loan estimate. Until it
    // loads (`spendable == null`) the amount can't be validated, so send stays off.
    // USDC has 6 decimals: more than that can't be sent exactly (and String(1e-7) would be '1e-7').
-   const amtValid = spendable != null && !isNaN(amtNum) && amtNum > 0 && amtNum <= spendable && /^\d*(\.\d{0,6})?$/.test(amount.trim());
+   const amtValid =
+      spendable != null && !isNaN(amtNum) && amtNum > 0 && amtNum <= spendable && /^\d*(\.\d{0,6})?$/.test(amount.trim());
    const canSend = addrValid && amtValid && !sending;
    const sentAmountRef = useRef(0);
 
@@ -1202,7 +1200,11 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
          // can't hang on the spinner, and give the user an explicit failure signal.
          track('withdraw_send_failed', { exchange: cfg.name, amount: amtNum });
          setSendPhase(null);
-         showToast(TOAST_TYPES.ERROR, "Withdrawal didn't go through", err instanceof Error ? err.message : 'Please try again in a moment.');
+         showToast(
+            TOAST_TYPES.ERROR,
+            "Withdrawal didn't go through",
+            err instanceof Error ? err.message : 'Please try again in a moment.'
+         );
       } finally {
          setSending(false);
          setConfirming(false);
@@ -1307,11 +1309,7 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
                         <span className="pr-[16px] text-[14px] font-semibold text-[var(--text-muted)] shrink-0">USDC</span>
                      </div>
                      <p className="text-[12px] text-[var(--text-muted)] leading-[18px]">
-                        {!walletConnected
-                           ? 'Wallet not connected'
-                           : spendable == null
-                             ? 'Checking your balance…'
-                             : `Available: ${spendable} USDC`}
+                        {!walletConnected ? 'Wallet not connected' : spendable == null ? 'Checking your balance…' : `Available: ${spendable} USDC`}
                      </p>
                      {amount !== '' && spendable != null && amtNum > spendable && (
                         <p className="text-[12px] text-[var(--danger)] leading-[18px] flex items-center gap-1">
@@ -1637,7 +1635,8 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
    const amtNum = parseFloat(amount);
    // Cap on the verified on-chain balance only; send stays off until it loads.
    // USDC has 6 decimals: more than that can't be sent exactly (and String(1e-7) would be '1e-7').
-   const amtValid = spendable != null && !isNaN(amtNum) && amtNum > 0 && amtNum <= spendable && /^\d*(\.\d{0,6})?$/.test(amount.trim());
+   const amtValid =
+      spendable != null && !isNaN(amtNum) && amtNum > 0 && amtNum <= spendable && /^\d*(\.\d{0,6})?$/.test(amount.trim());
    const canSend = addrValid && amtValid && !sending;
    const sentAmountRef = useRef(0);
 
@@ -1674,7 +1673,11 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
          // the user always gets an explicit failure signal.
          track('withdraw_send_failed', { exchange: 'Binance', amount: amtNum });
          setSendPhase(null);
-         showToast(TOAST_TYPES.ERROR, "Withdrawal didn't go through", err instanceof Error ? err.message : 'Please try again in a moment.');
+         showToast(
+            TOAST_TYPES.ERROR,
+            "Withdrawal didn't go through",
+            err instanceof Error ? err.message : 'Please try again in a moment.'
+         );
       } finally {
          setSending(false);
          setConfirming(false);
@@ -1812,11 +1815,7 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
                         <span className="pr-[16px] text-[14px] font-semibold text-[var(--text-muted)] shrink-0">USDC</span>
                      </div>
                      <p className="text-[12px] text-[var(--text-muted)] leading-[18px]">
-                        {!walletConnected
-                           ? 'Wallet not connected'
-                           : spendable == null
-                             ? 'Checking your balance…'
-                             : `Available: ${spendable} USDC`}
+                        {!walletConnected ? 'Wallet not connected' : spendable == null ? 'Checking your balance…' : `Available: ${spendable} USDC`}
                      </p>
                      {amount !== '' && spendable != null && amtNum > spendable && (
                         <p className="text-[12px] text-[var(--danger)] leading-[18px] flex items-center gap-1">
@@ -2338,12 +2337,7 @@ export default function Withdraw() {
             ? 'July 18, 2026'
             : primaryLoan
               ? // A due date is a calendar date stored as midnight UTC: read it in UTC so it isn't a day early west of UTC.
-                parseDateSafely(primaryLoan.dueDate).toLocaleDateString(undefined, {
-                   month: 'short',
-                   day: 'numeric',
-                   year: 'numeric',
-                   timeZone: 'UTC'
-                })
+                parseDateSafely(primaryLoan.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
               : null,
          walletAddress,
          isPreview,
@@ -2432,19 +2426,7 @@ export default function Withdraw() {
             return { hash: outcome.hash, confirmed: method === 'base' };
          }
       }),
-      [
-         available,
-         spendable,
-         walletConnected,
-         isPreview,
-         primaryLoan,
-         walletAddress,
-         payUsdc,
-         activePaymentMethod,
-         user.id,
-         navigate,
-         refetchUsdcBalance
-      ]
+      [available, spendable, walletConnected, isPreview, primaryLoan, walletAddress, payUsdc, activePaymentMethod, user.id, navigate, refetchUsdcBalance]
    );
 
    return (
