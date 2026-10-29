@@ -164,7 +164,19 @@ const handleOnboarding = async (
    return json({ ok: true, accountId, step: 'status', email: emailStatus.data, kyc: kyc.data });
 };
 
-const QR_ACTIONS = new Set(['setup', 'status', 'use_wallet', 'decode', 'create', 'get', 'sent', 'bank_list', 'bank_create']);
+const QR_ACTIONS = new Set([
+   'setup',
+   'status',
+   'use_wallet',
+   'decode',
+   'create',
+   'get',
+   'sent',
+   'bank_list',
+   'bank_create',
+   'payout_status',
+   'payout_activate'
+]);
 
 // Fiat currency per supported QR country, with a test cap (~$35) so a typo can't pay a big bill.
 const QR_COUNTRIES: Record<string, { currency: string; max: number }> = {
@@ -222,6 +234,8 @@ const marketRate = async (currency: string): Promise<{ rate: number; at: string 
  *   get        → re-read a Payment
  *   sent       → record the tx hash once the person paid
  *   bank_list  → bank / e-wallet codes for a bank payout (PH/VN)
+ *   payout_status   → the account's capabilities (bank_payout must be active before pesos go out)
+ *   payout_activate → (re)start bank_payout activation; returns a fresh hosted compliance link
  *   bank_create → off-ramp test: a send Payment to a bank account or e-wallet (external_bank);
  *                like create, it returns escrow depositInstructions and moves no money yet
  * The money only moves when the person sends the exact USDC to the escrow address from the app.
@@ -241,6 +255,7 @@ const handleQr = async (
       merchant?: unknown;
       bankCode?: unknown;
       bankName?: unknown;
+      rail?: unknown;
       accountNumber?: unknown;
       beneficiaryName?: unknown;
    }
@@ -352,6 +367,27 @@ const handleQr = async (
       .toUpperCase();
    const rules = QR_COUNTRIES[country];
    if (!rules) return json({ error: 'Country must be PH or VN.' }, 400);
+
+   if (action === 'payout_status') {
+      const result = await stableyard.listCapabilities(accountId);
+      return result.ok ? json({ ok: true, accountId, step: 'payout_status', result: result.data }) : fail(result);
+   }
+
+   if (action === 'payout_activate') {
+      // The hosted link is a credential for the caller only: returned, never logged or stored.
+      const rail = String(body.rail ?? 'instapay')
+         .trim()
+         .toLowerCase();
+      if (!/^[a-z0-9][a-z0-9._-]{0,63}$/.test(rail)) return json({ error: 'Invalid rail.' }, 400);
+      const requestKey = String(body.requestKey ?? '').trim();
+      if (!/^[A-Za-z0-9-]{8,64}$/.test(requestKey)) return json({ error: 'Missing request key.' }, 400);
+      const result = await stableyard.activateCapability(
+         accountId,
+         { capability: 'bank_payout', country, currency: rules.currency, rail },
+         `moodeng-cap:${accountId}:${requestKey}`
+      );
+      return result.ok ? json({ ok: true, accountId, step: 'payout_activate', result: result.data }) : fail(result);
+   }
 
    if (action === 'bank_list') {
       const result = await stableyard.listBeneficiaryBanks(country);

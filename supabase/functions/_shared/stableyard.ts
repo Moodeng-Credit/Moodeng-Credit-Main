@@ -249,6 +249,14 @@ export const stableyard = {
          },
          idempotencyKey
       }),
+   // Regulated capabilities (bank_payout = sending fiat to an external bank). A first PH bank payout
+   // stops on a hosted compliance form; each new activation issues a fresh link and kills the old one.
+   activateCapability: (
+      accountId: string,
+      activation: { capability: 'bank_payout' | 'linked_bank' | 'bank_onramp'; country: string; currency: string; rail: string },
+      idempotencyKey: string
+   ) => stableyardRequest('POST', `${accountPath(accountId)}/capability-activations`, { body: activation, idempotencyKey }),
+   listCapabilities: (accountId: string) => stableyardRequest('GET', `${accountPath(accountId)}/capabilities`),
    // Bank codes accepted for an external_bank payout (PH/VN one-time beneficiary). Read-only.
    listBeneficiaryBanks: (country: string) => stableyardRequest('GET', '/v2/payments/external-bank/banks', { query: { country } }),
    getPayment: (paymentId: string) => stableyardRequest('GET', `/v2/payments/${encodeURIComponent(paymentId)}`),
