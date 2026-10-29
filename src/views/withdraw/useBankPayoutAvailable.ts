@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
-/** True when this person may use the Stableyard payout (admins + testers). False on any doubt. */
+/** True when this person may use the Stableyard payout (admins + testers), false on any doubt, null while checking. */
 export default function useBankPayoutAvailable(isPreview: boolean) {
-   const [available, setAvailable] = useState(isPreview);
+   const [available, setAvailable] = useState<boolean | null>(isPreview ? true : null);
    useEffect(() => {
       if (isPreview) return;
       let cancelled = false;

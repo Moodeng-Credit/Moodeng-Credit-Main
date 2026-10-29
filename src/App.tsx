@@ -128,6 +128,7 @@ import FundWalletPreview from '@/views/fund/FundWalletPreview';
 import Repay from '@/views/repay/Repay';
 import TransactionDetail from '@/views/transactions/TransactionDetail';
 import TransactionHistory from '@/views/transactions/TransactionHistory';
+import MoneyHub from '@/views/money/MoneyHub';
 import CashoutFaceCheck from '@/views/withdraw/CashoutFaceCheck';
 import Withdraw from '@/views/withdraw/Withdraw';
 
@@ -525,6 +526,17 @@ export default function App() {
                }
             />
             {showPreviewRoutes ? <Route path="/withdraw-preview" element={<Withdraw />} /> : null}
+            <Route
+               path="/money"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <MoneyHub />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
+            {showPreviewRoutes ? <Route path="/money-preview" element={<MoneyHub />} /> : null}
             <Route
                path="/withdraw/face-check"
                element={
