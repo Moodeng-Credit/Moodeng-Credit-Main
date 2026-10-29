@@ -367,7 +367,7 @@ type BankOption = { code: string; name: string };
 
 // Stableyard bank payout test (off-ramp): send pesos/dong to a bank account or e-wallet (GCash, Maya…)
 // with USDC from YOUR Moodeng wallet. "Get quote" creates the Payment but moves no money; only "Send"
-// does, after a confirm. Uses the same payment source as the QR card. Capped at ₱500 / ₫250,000.
+// does, after a confirm. Uses the same payment source as the QR card. ₱50–₱5,000 (₫20,000–₫2,000,000).
 function StableyardBankPayoutCard() {
    const { payUsdc } = useWallet();
    const paymentMethod = useActivePaymentMethod();
@@ -454,7 +454,7 @@ function StableyardBankPayoutCard() {
          </div>
          <p className="text-sm text-[#a89bb8]">
             Cash out USDC from YOUR Moodeng wallet to a bank or e-wallet (GCash, Maya…). Try your own account first. Steps 1–3 move no
-            money. Step 4 sends the USDC. Max ₱500 or ₫250,000.
+            money. Step 4 sends the USDC. ₱50–₱5,000.
          </p>
          <div className="flex flex-wrap items-center gap-2">
             <button type="button" onClick={() => void run('use_wallet')} disabled={busy !== null} className={smallButton}>

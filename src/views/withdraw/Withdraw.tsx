@@ -50,6 +50,8 @@ import { recordWithdrawal } from '@/lib/recordWithdrawal';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { CashoutGateError, startCashoutFaceCheck } from '@/lib/withdraw/cashoutFaceGate';
 import type { RootState } from '@/store/store';
+import BankPayoutFlow from '@/views/withdraw/BankPayoutFlow';
+import useBankPayoutAvailable from '@/views/withdraw/useBankPayoutAvailable';
 
 import './withdraw-theme.css';
 
@@ -62,7 +64,8 @@ function track(event: string, props?: Record<string, unknown>) {
 }
 
 type Screen = 'celebrate' | 'withdraw';
-type Provider = 'moneybees' | 'binance' | 'coinsph' | 'gcash' | 'pdax';
+// 'bank' = straight to GCash / any bank through Stableyard (testers only for now, see BankPayoutFlow).
+type Provider = 'moneybees' | 'binance' | 'coinsph' | 'gcash' | 'pdax' | 'bank';
 
 // Real data + actions provided by the page root and consumed by the ported
 // prototype components. `available` replaces the prototype's hardcoded
@@ -597,8 +600,9 @@ function PickerRow({ id, selected, onSelect, icon, name, line1, line2, recommend
 }
 
 function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) => void; onLater: () => void }) {
-   const { spendable, walletConnected, repayUsdc: REPAY_USDC, dueDate: DUE_DATE } = useWithdrawData();
+   const { spendable, walletConnected, repayUsdc: REPAY_USDC, dueDate: DUE_DATE, isPreview } = useWithdrawData();
    const navigate = useNavigate();
+   const bankPayout = useBankPayoutAvailable(isPreview);
    // No region/IP check here (deliberately removed): `useRegion()` is an IP-based guess, not
    // the user's actual location or nationality — a Filipino traveling or living abroad still
    // has working Coins.ph/GCash/PDAX accounts, and a client-side IP lookup routinely misreads
@@ -608,6 +612,10 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
    // While Coins.ph is suspended (config/paymentRails) PDAX takes its place as the default.
    const [selected, setSelected] = useState<Provider>(COINS_PH_SUSPENDED ? 'pdax' : 'coinsph');
    const [showCoinsPaused, setShowCoinsPaused] = useState(false);
+   // Testers get the direct payout as the default once we know they can use it.
+   useEffect(() => {
+      if (bankPayout) setSelected('bank');
+   }, [bankPayout]);
    const selectProvider = (id: Provider) => {
       if (id === 'coinsph' && COINS_PH_SUSPENDED) {
          setShowCoinsPaused(true);
@@ -622,7 +630,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
          selected={selected}
          onSelect={selectProvider}
          id="coinsph"
-         recommended={!COINS_PH_SUSPENDED}
+         recommended={!COINS_PH_SUSPENDED && !bankPayout}
          paused={COINS_PH_SUSPENDED}
          icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />}
          name="Coins.ph"
@@ -636,7 +644,8 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
       binance: 'Binance',
       coinsph: 'Coins.ph',
       gcash: 'GCrypto',
-      pdax: 'PDAX'
+      pdax: 'PDAX',
+      bank: 'GCash or bank'
    };
 
    return (
@@ -690,13 +699,29 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                 the recommended default for everyone; a user genuinely abroad can still pick
                 Binance themselves. */}
             <div className="space-y-[10px]">
+               {bankPayout && (
+                  <PickerRow
+                     selected={selected}
+                     onSelect={selectProvider}
+                     id="bank"
+                     recommended
+                     icon={
+                        <div className="w-[46px] h-[46px] rounded-[12px] bg-[var(--surface-2)] flex items-center justify-center">
+                           <Landmark className="w-[24px] h-[24px] text-[var(--primary)]" />
+                        </div>
+                     }
+                     name="Straight to GCash or bank"
+                     line1="Pesos sent for you, no exchange app needed"
+                     line2="GCash, Maya or any bank · minutes"
+                  />
+               )}
                {!COINS_PH_SUSPENDED && coinsPhRow}
                {COINS_PH_SUSPENDED && (
                   <PickerRow
                      selected={selected}
                      onSelect={selectProvider}
                      id="pdax"
-                     recommended
+                     recommended={!bankPayout}
                      icon={<PdaxAppIcon className="w-[46px] h-[46px]" />}
                      name="PDAX"
                      line1="Sell for pesos, withdraw to bank or e-wallet"
@@ -756,7 +781,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                )}
             </div>
 
-            {selected !== 'moneybees' && <BaseOnlyNotice className="mt-[12px]" />}
+            {selected !== 'moneybees' && selected !== 'bank' && <BaseOnlyNotice className="mt-[12px]" />}
             <button
                onClick={() => navigate('/support/guides/withdrawing-to-your-bank')}
                className="w-full text-center text-[13px] font-semibold text-[var(--accent)] py-[10px] hover:underline"
@@ -972,7 +997,8 @@ const PROVIDER_NAMES: Record<Provider, string> = {
    binance: 'Binance',
    coinsph: 'Coins.ph',
    gcash: 'GCrypto',
-   pdax: 'PDAX'
+   pdax: 'PDAX',
+   bank: 'GCash or bank'
 };
 
 function SuccessBanner({ exchange, amount }: { exchange: string; amount: number }) {
@@ -2108,13 +2134,21 @@ function MoneybeesIntegratedFlow() {
    );
 }
 
+/* ─── Straight to GCash / bank (Stableyard) ─────────────────────── */
+// No "on its way to your exchange" toast here: the flow has its own payout status screen.
+function DirectBankFlow({ onDone }: { onDone: () => void }) {
+   const { isPreview, spendable, send } = useWithdrawData();
+   return <BankPayoutFlow isPreview={isPreview} spendable={spendable} send={send} onDone={onDone} />;
+}
+
 /* ─── Withdraw screen wrapper ────────────────────────────────────── */
 const PROVIDER_TITLES: Record<Provider, string> = {
    moneybees: 'Cash out with Moneybees',
    binance: 'Send to Binance',
    coinsph: 'Send to Coins.ph',
    gcash: 'Send to GCrypto',
-   pdax: 'Send to PDAX'
+   pdax: 'Send to PDAX',
+   bank: 'Cash out to GCash or bank'
 };
 
 function WithdrawScreen({
@@ -2147,7 +2181,9 @@ function WithdrawScreen({
 
          <div className="flex-1 overflow-y-auto pb-[40px]">
             <div className="px-[16px] pt-[12px]">
-               {provider === 'moneybees' ? (
+               {provider === 'bank' ? (
+                  <DirectBankFlow onDone={onDone} />
+               ) : provider === 'moneybees' ? (
                   <MoneybeesFlow />
                ) : provider === 'binance' ? (
                   <BinanceFlow onConfirmed={onConfirmed} onDone={onDone} />

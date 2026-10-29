@@ -171,8 +171,9 @@ const QR_COUNTRIES: Record<string, { currency: string; max: number }> = {
    PH: { currency: 'PHP', max: 2000 },
    VN: { currency: 'VND', max: 1_000_000 }
 };
-// Bank payout test cap (~$9): it's an off-ramp to any account number, so keep it smaller than QR.
-const BANK_MAX: Record<string, number> = { PH: 500, VN: 250_000 };
+// Bank payout limits while it's tester-only (~$85 max, enough to cash out a loan). Stableyard's PH minimum is ₱50.
+const BANK_MIN: Record<string, number> = { PH: 50, VN: 20_000 };
+const BANK_MAX: Record<string, number> = { PH: 5000, VN: 2_000_000 };
 const FIAT_AMOUNT = /^(0|[1-9][0-9]*)(\.[0-9]{1,2})?$/;
 
 // Stableyard's email / KYC / payment-source bodies aren't documented to us, so read them loosely:
@@ -364,9 +365,8 @@ const handleQr = async (
       if (!/^[A-Za-z0-9_-]{2,64}$/.test(bankCode)) return json({ error: 'Pick a bank.' }, 400);
       if (!/^[0-9]{6,20}$/.test(accountNumber)) return json({ error: 'Account number is 6–20 digits.' }, 400);
       if (!FIAT_AMOUNT.test(amount) || Number(amount) <= 0) return json({ error: 'Enter an amount like 100 or 100.50.' }, 400);
-      if (Number(amount) > BANK_MAX[country]) {
-         return json({ error: `Test payouts are capped at ${BANK_MAX[country]} ${rules.currency}.` }, 400);
-      }
+      if (Number(amount) < BANK_MIN[country]) return json({ error: `The minimum is ${BANK_MIN[country]} ${rules.currency}.` }, 400);
+      if (Number(amount) > BANK_MAX[country]) return json({ error: `The maximum for now is ${BANK_MAX[country]} ${rules.currency}.` }, 400);
       if (!/^[A-Za-z0-9-]{8,64}$/.test(requestKey)) return json({ error: 'Missing request key.' }, 400);
       const result = await stableyard.createBankPayment(
          accountId,
