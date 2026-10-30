@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect } from 'react';
 
-import { Check } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 
 import type { TurnOnStatus } from '@/components/funding/useLenderPushTurnOn';
 
@@ -137,21 +137,38 @@ export default function LenderPopupShell({ title, labelledBy, onClose, children 
 
    return (
       <div
-         className="fixed inset-0 z-[80] flex overflow-y-auto overscroll-contain bg-black/80 px-5 py-6"
+         className="fixed inset-0 z-[80] flex overflow-y-auto overscroll-contain bg-black/80 px-5 py-6 md:bg-black/50 md:backdrop-blur-sm"
          role="dialog"
          aria-modal="true"
          aria-labelledby={labelledBy}
          onClick={onClose}
       >
-         <div className="m-auto flex w-full max-w-[400px] flex-col items-center" onClick={(event) => event.stopPropagation()}>
-            {/* Usernames run to 45 characters with no spaces, so let them break anywhere and cap at two lines. */}
-            <p className="mb-2 line-clamp-2 max-w-[350px] text-center text-[26px] font-black italic leading-9 text-[#4c239f] underline decoration-[#7e6afa] decoration-4 underline-offset-8 [overflow-wrap:anywhere]">
+         <div className="m-auto flex w-full max-w-[400px] flex-col items-center md:max-w-[460px]" onClick={(event) => event.stopPropagation()}>
+            {/* Usernames run to 45 characters with no spaces, so let them break anywhere and cap at two lines.
+                Phones show the title above the card; on desktop the dark purple vanished on the dim
+                backdrop, so there it moves inside the card (below). */}
+            <p className="mb-2 line-clamp-2 max-w-[350px] text-center text-[26px] font-black italic leading-9 text-[#4c239f] underline decoration-[#7e6afa] decoration-4 underline-offset-8 [overflow-wrap:anywhere] md:hidden">
                {title}
             </p>
-            <div className="w-full rounded-[26px] bg-gradient-to-b from-[#f3ecff] via-white via-40% to-white shadow-[0_-1px_0_0_#fff]">
-               <div className="flex flex-col items-center gap-[9px] px-5 pb-6 pt-[18px] text-center">{children}</div>
+            <div className="relative w-full rounded-[26px] bg-gradient-to-b from-[#f3ecff] via-white via-40% to-white shadow-[0_-1px_0_0_#fff] md:shadow-[0_24px_60px_rgba(76,35,159,0.25)]">
+               {/* Desktop: close sits in the card's corner, where a mouse expects it. */}
+               <button
+                  type="button"
+                  onClick={onClose}
+                  className="absolute right-4 top-4 hidden size-9 items-center justify-center rounded-full text-[#594d65] transition hover:bg-[#ece4ff] md:flex"
+                  aria-label={CLOSE_LABEL[locale]}
+               >
+                  <X className="size-5" aria-hidden="true" />
+               </button>
+               <div className="flex flex-col items-center gap-[9px] px-5 pb-6 pt-[18px] text-center md:gap-3 md:px-10 md:pb-9 md:pt-10">
+                  <p className="hidden max-w-[340px] text-center text-[28px] font-black italic leading-9 text-[#4c239f] underline decoration-[#7e6afa] decoration-4 underline-offset-8 [overflow-wrap:anywhere] md:mb-2 md:line-clamp-2">
+                     {title}
+                  </p>
+                  {children}
+               </div>
             </div>
-            <button type="button" onClick={onClose} className="mt-14 h-[50px] w-[50px]" aria-label={CLOSE_LABEL[locale]}>
+            {/* Phones: big round close below the card, within thumb reach. */}
+            <button type="button" onClick={onClose} className="mt-14 h-[50px] w-[50px] md:hidden" aria-label={CLOSE_LABEL[locale]}>
                <img src={CLOSE_ICON} alt="" className="h-[50px] w-[50px]" />
             </button>
          </div>
