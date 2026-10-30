@@ -613,13 +613,13 @@ function DirectPesoBanner({ onCashOut }: { onCashOut: () => void }) {
          style={{ backgroundImage: 'linear-gradient(100deg, #efeaff 0%, #ddd5ff 100%)' }}
       >
          <img
-            src="/dashboard-v2/moo-envelope.png"
+            src="/dashboard-v2/moo-cashout.png"
             alt=""
             aria-hidden="true"
-            className="absolute right-[-6px] bottom-[-14px] h-[128px] w-auto pointer-events-none select-none"
+            className="absolute right-[-10px] bottom-[-30px] h-[142px] w-auto pointer-events-none select-none"
          />
-         <span className="relative flex h-full flex-col justify-center pl-[16px] pr-[110px]">
-            <span className="text-[24px] font-black italic leading-[1.1] tracking-[-0.5px] text-[#6b55f7]">Pesos in minutes</span>
+         <span className="relative flex h-full flex-col justify-center pl-[16px] pr-[136px]">
+            <span className="text-[22px] font-black italic leading-[1.1] tracking-[-0.5px] text-[#6b55f7]">Pesos in minutes</span>
             <span className="mt-[2px] text-[14px] leading-[18px] text-[#594d65]">USDC straight to GCash, Maya or bank</span>
             <span
                className="mt-[8px] self-start h-[28px] rounded-full px-[14px] flex items-center text-[14px] text-white"
