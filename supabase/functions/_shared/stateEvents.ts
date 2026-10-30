@@ -84,7 +84,8 @@ export const stateEventStamp = (event: StateEvent): EventStamp | null => {
       }
       case 'voucher': {
          const voucher = { ...base, cardKind: 'voucher' as const };
-         if (to === 'sent') return { ...voucher, header: '✅ VOUCHER SENT', final: true };
+         // Not final: the card keeps updating after the send (delivered, opened, tapped, I got it).
+         if (to === 'sent') return { ...voucher, header: '✅ VOUCHER SENT', final: false };
          if (to === 'rejected') return { ...voucher, header: '❌ VOUCHER REJECTED', final: true };
          return null;
       }

@@ -272,6 +272,36 @@ export const stampDecisionCards = async (
    }
 };
 
+/**
+ * Re-stamp every remembered message for `refId`, keeping the refs (like `final: false`), with a stamp
+ * built per message from its original text — for a card whose after-state keeps growing (a voucher:
+ * delivered, opened, tapped…) and whose original may or may not already hold some of the details.
+ */
+export const restampCards = async (
+   svc: SupabaseClient,
+   kind: AdminCardKind,
+   refId: string,
+   build: (originalText: string) => CardStamp
+): Promise<number> => {
+   try {
+      const { data, error } = await svc
+         .from('admin_message_refs')
+         .select('channel, chat_id, webhook_key, message_id, original_text, original_payload')
+         .eq('kind', kind)
+         .eq('ref_id', refId);
+      if (error) {
+         console.error('adminCards: reading cards failed', kind, refId, error.message);
+         return 0;
+      }
+      const refs = (data ?? []) as MessageRef[];
+      await Promise.all(refs.map((ref) => stampRef(ref, build(ref.original_text ?? ''))));
+      return refs.length;
+   } catch (err) {
+      console.error('adminCards: restampCards failed', kind, refId, err instanceof Error ? err.message : err);
+      return 0;
+   }
+};
+
 // The tapped card's ref, if it was posted after admin_message_refs existed and isn't stamped yet.
 // telegram-webhook reads it BEFORE deciding: a remembered card is stamped by the decision itself,
 // an older card from the message in the tap.

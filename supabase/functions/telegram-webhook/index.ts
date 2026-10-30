@@ -448,7 +448,10 @@ const handleAdminCallback = async (supabase: SupabaseClient, query: TelegramCall
          if (remembered) {
             // Still remembered = the decision didn't stamp it (nothing changed): stamp it here. A
             // no-show (stamp with buttons) did stamp it and keeps it remembered for ✅ Approve anyway.
-            if (!result.stamp?.buttons && (await claimCard(supabase, cardChatId, card.message_id))) {
+            // A sent voucher already re-rendered its cards and keeps them for the delivered / opened /
+            // tapped updates, so it isn't claimed here.
+            const keepsUpdating = Boolean(voucher && result.ok && voucher.decision === 'sent');
+            if (!result.stamp?.buttons && !keepsUpdating && (await claimCard(supabase, cardChatId, card.message_id))) {
                await stampCard(cardChatId, card.message_id, remembered.text, remembered.links, stamp);
             }
          } else {

@@ -8,6 +8,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { stampDecisionCards } from '../_shared/adminCards.ts';
 import { type StateEvent, stateEventStamp } from '../_shared/stateEvents.ts';
+import { restampVoucherCard } from '../_shared/voucherClaims.ts';
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = ReturnType<typeof createClient<any>>;
@@ -49,6 +50,11 @@ serve(async (req) => {
       const event = data as StateEvent;
       const stamp = stateEventStamp(event);
       if (!stamp) return json({ ok: true, stamped: 0 });
+
+      // A sent voucher's card shows what happened since (delivered, opened, tapped): rendered from the claim.
+      if (stamp.cardKind === 'voucher' && event.to_state === 'sent') {
+         return json({ ok: true, stamped: await restampVoucherCard(supabase, stamp.refId), header: stamp.header });
+      }
 
       const stamped = await stampDecisionCards(supabase, stamp.cardKind, stamp.refId, stamp.header, {
          detail: stamp.detail,
