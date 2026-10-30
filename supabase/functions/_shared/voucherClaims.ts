@@ -20,7 +20,8 @@ import { buyBitrefillCode, getBitrefillApiKey, GRABMART_PRODUCTS } from './bitre
 import { sendEmail } from './email.ts';
 import { getGiftawayConfig, giftawaySource, type GiftawayBrand, orderGiftawayEgift, toPhilippineMobile } from './giftaway.ts';
 import { isPlaceholderEmail } from './placeholderEmail.ts';
-import { type MessengerCard, messengerChatUrl, sendMessengerMessage } from './sendpulse.ts';
+import { getTelegramBotSettingEnabled } from './borrowerNotificationDelivery.ts';
+import { type MessengerCard, messengerChatUrl, sendMessengerMessage, sendWhatsAppTemplate, type WhatsAppTemplate } from './sendpulse.ts';
 import type { TelegramInlineKeyboard } from './telegram.ts';
 
 // Telegram callback_data for the card buttons: "vo:<s|r>:<claim uuid>" (≤64 bytes).
@@ -128,13 +129,20 @@ const SITE_URL = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL
 const DASHBOARD_URL = `${SITE_URL}/dashboard`;
 
 /** Who to message: their SendPulse contact (users.messenger_psid), Facebook name and bot language. */
-export type MessengerContact = { contactId: string | null; facebookName: string | null; firstName: string | null; locale: 'en' | 'fil' };
+export type MessengerContact = {
+   contactId: string | null;
+   facebookName: string | null;
+   firstName: string | null;
+   locale: 'en' | 'fil';
+   /** Their SendPulse WhatsApp contact, when they connected WhatsApp and didn't send STOP. */
+   whatsappContactId?: string | null;
+};
 
 export const loadMessengerContact = async (supabase: SupabaseClient, userId: string | null | undefined): Promise<MessengerContact | null> => {
    if (!userId) return null;
    const { data: user } = await supabase
       .from('users')
-      .select('messenger_psid, facebook_name, display_name, preferred_locale')
+      .select('messenger_psid, facebook_name, display_name, preferred_locale, whatsapp_contact_id, notif_whatsapp')
       .eq('id', userId)
       .maybeSingle();
    if (!user) return null;
@@ -148,7 +156,8 @@ export const loadMessengerContact = async (supabase: SupabaseClient, userId: str
       contactId,
       facebookName,
       firstName: firstWord(user.display_name) ?? firstWord(facebookName),
-      locale: (contact?.locale ?? user.preferred_locale) === 'fil' ? 'fil' : 'en'
+      locale: (contact?.locale ?? user.preferred_locale) === 'fil' ? 'fil' : 'en',
+      whatsappContactId: user.notif_whatsapp === false ? null : ((user.whatsapp_contact_id as string | null) ?? null)
    };
 };
 
@@ -279,13 +288,66 @@ export const messageBorrower = async (facebook: MessengerContact | null, content
    return result.ok ? 'sent' : (result.reason ?? 'send_failed');
 };
 
-/** One line for the admin card: did the bot reach them? */
-export const messengerOutcomeLine = (outcome: 'sent' | string) =>
-   outcome === 'sent'
-      ? '💬 Messenger: told them ✓'
-      : outcome === 'no_contact'
-        ? '💬 Messenger: not linked — only the email went out'
-        : `💬 Messenger: didn't go through (${outcome === 'send_failed' ? 'likely outside the 24h window' : outcome}) — tap 💬 to message them`;
+// WhatsApp fallback when Messenger can't reach them (outside its 24h window, or never linked).
+// WhatsApp allows only approved templates there, so this is `moodeng_reward_sent` (Utility, English,
+// created in SendPulse → WhatsApp bot → Templates):
+//   body   "Hi {{1}}, your {{2}} from Moodeng Credit has been sent to {{3}}. Please check your inbox
+//           and Spam folder. You can also open it in the Moodeng app."
+//   button static URL "Open Moodeng" → https://moodeng.app/dashboard
+// Switch: telegram_bot_settings `voucher_whatsapp_enabled`, off until Meta approves the template.
+export const REWARD_SENT_TEMPLATE = 'moodeng_reward_sent';
+export const VOUCHER_WHATSAPP_SETTING_KEY = 'voucher_whatsapp_enabled';
+
+/** Where the voucher went, for the WhatsApp notice: "₱50 food voucher" sent to "your email". */
+export type RewardNotice = { what: string; sentTo: string };
+
+export const buildRewardWhatsAppTemplate = (firstName: string | null | undefined, notice: RewardNotice): WhatsAppTemplate => ({
+   name: REWARD_SENT_TEMPLATE,
+   language: { code: 'en' },
+   components: [
+      {
+         type: 'body',
+         parameters: [
+            { type: 'text', text: firstName?.trim() || 'there' },
+            { type: 'text', text: notice.what },
+            { type: 'text', text: notice.sentTo }
+         ]
+      }
+   ]
+});
+
+/** Messenger outcome, plus the WhatsApp fallback's (null = not tried). */
+export type BorrowerTold = { messenger: 'sent' | string; whatsapp: 'sent' | string | null };
+
+/**
+ * Messenger first; when that fails, the WhatsApp template saying where the voucher went. Never
+ * throws. WhatsApp is skipped when they never connected it, sent STOP, or the switch is off.
+ */
+export const tellBorrower = async (
+   supabase: SupabaseClient,
+   facebook: MessengerContact | null,
+   content: RewardMessengerContent,
+   notice: RewardNotice
+): Promise<BorrowerTold> => {
+   const messenger = await messageBorrower(facebook, content);
+   if (messenger === 'sent' || !facebook?.whatsappContactId) return { messenger, whatsapp: null };
+   const enabled = await getTelegramBotSettingEnabled(supabase, VOUCHER_WHATSAPP_SETTING_KEY).catch(() => false);
+   if (!enabled) return { messenger, whatsapp: null };
+   const result = await sendWhatsAppTemplate(facebook.whatsappContactId, buildRewardWhatsAppTemplate(facebook.firstName, notice));
+   return { messenger, whatsapp: result.ok ? 'sent' : (result.reason ?? 'send_failed') };
+};
+
+/** One line for the admin card: did the bot reach them (and, if Messenger didn't, did WhatsApp)? */
+export const messengerOutcomeLine = (outcome: 'sent' | string, whatsapp: 'sent' | string | null = null) => {
+   if (outcome === 'sent') return '💬 Messenger: told them ✓';
+   const messenger =
+      outcome === 'no_contact'
+         ? '💬 Messenger: not linked'
+         : `💬 Messenger: didn't go through (${outcome === 'send_failed' ? 'likely outside the 24h window' : outcome})`;
+   if (whatsapp === 'sent') return `${messenger} · 🟢 WhatsApp: told them where it went ✓`;
+   if (whatsapp) return `${messenger} · 🟢 WhatsApp failed too (${whatsapp}) — message them yourself`;
+   return outcome === 'no_contact' ? `${messenger} — only the email went out` : `${messenger} — tap 💬 to message them`;
+};
 
 /** Telegram line when the borrower answers "Did your Moo-meal arrive?". */
 export const buildVoucherReceiptMessage = (claim: VoucherClaimRow & { received_at?: string | null }, giftawayResent: boolean | null = null) => {
@@ -678,7 +740,9 @@ const sendViaGiftaway = async (supabase: SupabaseClient, claim: any, admin: stri
    if (codeError) console.error('giftaway link not recorded', claim.id, codeError.message);
 
    const facebook = await loadMessengerContact(supabase, claim.user_id);
-   const told = await messageBorrower(
+   const realEmail = email && !isPlaceholderEmail(email) ? email : null;
+   const told = await tellBorrower(
+      supabase,
       facebook,
       buildRewardSentMessage({
          firstName: facebook?.firstName ?? null,
@@ -688,11 +752,12 @@ const sendViaGiftaway = async (supabase: SupabaseClient, claim: any, admin: stri
          links: order.urls,
          product: order.product,
          provider: 'giftaway'
-      })
+      }),
+      { what: `₱${amountPhp} ${order.product === 'Grab' ? 'Grab' : 'food'} voucher`, sentTo: realEmail ? 'your phone (text) and email' : 'your phone (text)' }
    );
-   const to = [toPhilippineMobile(claim.mobile), email && !isPlaceholderEmail(email) ? email : null].filter(Boolean).join(' + ');
+   const to = [toPhilippineMobile(claim.mobile), realEmail].filter(Boolean).join(' + ');
    const credits = order.creditsLeft === null ? '' : ` · ${pesoUsd(order.creditsLeft.toFixed(2))} Giftaway credits left${order.creditsLeft < 500 ? ' ⚠️ top up soon' : ''}`;
-   const summary = `✅ ${pesoUsd(amountPhp)} ${order.product} eGift ordered on Giftaway (order ${order.orderId}) and sent by Giftaway to ${to} · by ${admin}${credits}\n${messengerOutcomeLine(told)}`;
+   const summary = `✅ ${pesoUsd(amountPhp)} ${order.product} eGift ordered on Giftaway (order ${order.orderId}) and sent by Giftaway to ${to} · by ${admin}${credits}\n${messengerOutcomeLine(told.messenger, told.whatsapp)}`;
    const stamp: CardStamp = { header: voucherStampHeader('sent', sent), detail: summary, by: admin };
    await stampDecisionCards(supabase, 'voucher', claim.id, stamp);
    return { ok: true, summary, stamp };
@@ -747,11 +812,13 @@ const sendViaBitrefill = async (supabase: SupabaseClient, claim: any, admin: str
 
    const why = claim.brand === 'grabmart' ? 'they picked GrabMart' : 'Xoxo link stock was empty';
    const facebook = await loadMessengerContact(supabase, claim.user_id);
-   const told = await messageBorrower(
+   const told = await tellBorrower(
+      supabase,
       facebook,
-      buildRewardSentMessage({ firstName: facebook?.firstName ?? null, locale: facebook?.locale ?? 'en', amountPhp, reward: claim.reward, links: [], product: bought.product })
+      buildRewardSentMessage({ firstName: facebook?.firstName ?? null, locale: facebook?.locale ?? 'en', amountPhp, reward: claim.reward, links: [], product: bought.product }),
+      { what: `₱${amountPhp} ${bought.product} voucher`, sentTo: 'your email' }
    );
-   const summary = `✅ ${pesoUsd(amountPhp)} ${bought.product} voucher (${why}) bought on Bitrefill and emailed by Bitrefill to ${email} · by ${admin}\n${messengerOutcomeLine(told)}`;
+   const summary = `✅ ${pesoUsd(amountPhp)} ${bought.product} voucher (${why}) bought on Bitrefill and emailed by Bitrefill to ${email} · by ${admin}\n${messengerOutcomeLine(told.messenger, told.whatsapp)}`;
    const stamp: CardStamp = { header: voucherStampHeader('sent', sent), detail: summary, by: admin };
    await stampDecisionCards(supabase, 'voucher', claim.id, stamp);
    return { ok: true, summary, stamp };
@@ -805,11 +872,13 @@ export const sendVoucherCode = async (supabase: SupabaseClient, claimId: string,
    const remaining = Number(data.remaining ?? 0);
    const stock = `${remaining} ₱50 link${remaining === 1 ? '' : 's'} left${remaining <= LOW_STOCK ? ' ⚠️ restock soon' : ''}`;
    const facebook = await loadMessengerContact(supabase, claim.user_id);
-   const told = await messageBorrower(
+   const told = await tellBorrower(
+      supabase,
       facebook,
-      buildRewardSentMessage({ firstName: facebook?.firstName ?? null, locale: facebook?.locale ?? 'en', amountPhp: Number(data.amount_php), reward: String(data.reward), links })
+      buildRewardSentMessage({ firstName: facebook?.firstName ?? null, locale: facebook?.locale ?? 'en', amountPhp: Number(data.amount_php), reward: String(data.reward), links }),
+      { what: `${peso(data.amount_php)} food voucher`, sentTo: 'your email' }
    );
-   const summary = `✅ ${pesoUsd(data.amount_php)} food voucher (${links.length} Xoxo link${links.length === 1 ? '' : 's'}) emailed to ${email} · by ${admin} · ${stock}\n${messengerOutcomeLine(told)}`;
+   const summary = `✅ ${pesoUsd(data.amount_php)} food voucher (${links.length} Xoxo link${links.length === 1 ? '' : 's'}) emailed to ${email} · by ${admin} · ${stock}\n${messengerOutcomeLine(told.messenger, told.whatsapp)}`;
    const stamp: CardStamp = { header: voucherStampHeader('sent', data), detail: summary, by: admin };
    await stampDecisionCards(supabase, 'voucher', claimId, stamp);
    return { ok: true, summary, stamp };
