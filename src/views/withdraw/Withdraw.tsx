@@ -599,6 +599,78 @@ function PickerRow({ id, selected, onSelect, icon, name, line1, line2, recommend
    );
 }
 
+// Styled after the Figma "Milestone_9.23version" screens: the level card's black-italic purple
+// headline, white cards with a 2px lavender border, the lavender banner.
+
+/** Page header for testers, in the Milestone banner style (copy left, Moodeng art right). Not tappable: nothing on it looks like a button. */
+function DirectPesoBanner({ balanceLine, repayLine }: { balanceLine: string; repayLine: string | null }) {
+   return (
+      <div
+         className="relative w-full h-[112px] mb-[16px] rounded-[12px] overflow-hidden text-left"
+         style={{ backgroundImage: 'linear-gradient(100deg, #efeaff 0%, #ddd5ff 100%)' }}
+      >
+         <img
+            src="/dashboard-v2/moo-cashout.png"
+            alt=""
+            aria-hidden="true"
+            className="absolute right-[-10px] bottom-[-30px] h-[142px] w-auto pointer-events-none select-none"
+         />
+         <div className="relative flex h-full flex-col justify-center pl-[16px] pr-[136px]">
+            <h1 className="text-[22px] font-black italic leading-[1.1] tracking-[-0.5px] text-[#6b55f7]">Cash out to pesos</h1>
+            <p className="mt-[4px] text-[14px] leading-[18px] text-[#594d65] font-semibold">{balanceLine}</p>
+            {repayLine && <p className="text-[13px] leading-[17px] text-[#594d65]">{repayLine}</p>}
+         </div>
+      </div>
+   );
+}
+
+/** The direct payout (Stableyard): shows USDC turning straight into pesos, so it doesn't read like one more exchange. */
+function DirectPesoCard({ selected, onSelect, spendable }: { selected: boolean; onSelect: () => void; spendable: number | null }) {
+   const { value: phpRate } = useUsdcRate('php');
+   const pesos = spendable != null && spendable > 0 ? Math.floor(spendable * phpRate) : null;
+   return (
+      <button onClick={onSelect} className="relative w-full text-left outline-none">
+         <div
+            className={`rounded-[8px] border-2 bg-[var(--surface,#fff)] px-[14px] pt-[12px] pb-[14px] transition-all ${selected ? 'border-[#6b55f7]' : 'border-[var(--border-card,#e8e4ff)]'}`}
+            style={{ boxShadow: selected ? '0px 6px 18px rgba(107,85,247,0.16)' : '0px 1px 2px rgba(28,5,61,0.06)' }}
+         >
+            <div className="flex items-center justify-between gap-[10px]">
+               <p className="text-[22px] font-black italic leading-[1.2] tracking-[-0.3px] text-[var(--text-muted,#594d65)]">
+                  USDC → Pesos
+               </p>
+               <div
+                  className={`w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center shrink-0 ${selected ? 'bg-[#6b55f7] border-[#6b55f7]' : 'border-[var(--border-input)]'}`}
+               >
+                  {selected && <Check className="w-[12px] h-[12px] text-white" strokeWidth={3.5} />}
+               </div>
+            </div>
+
+            <div className="mt-[4px] flex items-baseline gap-[8px] flex-wrap">
+               <span className="text-[34px] font-black italic leading-[1.2] tracking-[-0.68px] text-[#735dfa]">
+                  {pesos != null ? `₱${pesos.toLocaleString('en-PH')}` : '₱'}
+               </span>
+               {spendable != null && spendable > 0 && (
+                  <span className="text-[14px] leading-[18px] text-[var(--text-muted,#45556c)]">about, from {spendable} USDC</span>
+               )}
+            </div>
+
+            <p className="mt-[4px] text-[16px] leading-[22px] text-[var(--text-muted,#45556c)]">
+               Straight to your GCash, Maya or bank. No exchange app, nothing to sell.
+            </p>
+
+            <div className="mt-[10px] flex flex-wrap items-center gap-x-[12px] gap-y-[4px]">
+               {['GCash', 'Maya', '80+ banks', 'Arrives in minutes'].map((t) => (
+                  <span key={t} className="flex items-center gap-[4px] text-[13px] text-[#735dfa]" style={{ fontWeight: 590 }}>
+                     <Check className="w-[13px] h-[13px]" strokeWidth={3} />
+                     {t}
+                  </span>
+               ))}
+            </div>
+         </div>
+      </button>
+   );
+}
+
 function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) => void; onLater: () => void }) {
    const { spendable, walletConnected, repayUsdc: REPAY_USDC, dueDate: DUE_DATE, isPreview } = useWithdrawData();
    const navigate = useNavigate();
@@ -648,6 +720,13 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
       bank: 'GCash or bank'
    };
 
+   const balanceLine = !walletConnected
+      ? 'Connect your wallet to see your balance'
+      : spendable == null
+        ? 'Checking your balance…'
+        : `${spendable} USDC available`;
+   const repayLine = REPAY_USDC != null && DUE_DATE ? `Repay ${REPAY_USDC} USDC by ${DUE_DATE}` : null;
+
    return (
       <div className="absolute inset-0 bg-[var(--surface)] flex flex-col">
          <div className="flex-1 overflow-y-auto px-[22px] pt-[max(44px,env(safe-area-inset-top))]">
@@ -664,56 +743,60 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                      style={{ top: d.top, left: d.left, width: d.s, height: d.s, background: d.c, opacity: d.o }}
                   />
                ))}
-               <div
-                  className="w-[64px] h-[64px] rounded-full bg-[var(--surface)] border-[5px] border-[var(--border-1)] flex items-center justify-center mb-[14px]"
-                  style={{ boxShadow: '0px 6px 18px rgba(96,16,210,0.14)' }}
-               >
-                  <div className="relative">
-                     <Wallet className="w-[26px] h-[26px] text-[var(--primary)]" strokeWidth={2.2} />
-                     <ArrowUpRight className="w-[13px] h-[13px] text-[var(--primary)] absolute -top-[3px] -right-[5px]" strokeWidth={3} />
+               {bankPayout ? (
+                  <DirectPesoBanner balanceLine={balanceLine} repayLine={repayLine} />
+               ) : (
+                  <div
+                     className="w-[64px] h-[64px] rounded-full bg-[var(--surface)] border-[5px] border-[var(--border-1)] flex items-center justify-center mb-[14px]"
+                     style={{ boxShadow: '0px 6px 18px rgba(96,16,210,0.14)' }}
+                  >
+                     <div className="relative">
+                        <Wallet className="w-[26px] h-[26px] text-[var(--primary)]" strokeWidth={2.2} />
+                        <ArrowUpRight className="w-[13px] h-[13px] text-[var(--primary)] absolute -top-[3px] -right-[5px]" strokeWidth={3} />
+                     </div>
                   </div>
-               </div>
-               <h1 className="text-[27px] text-[var(--ink)]" style={{ fontWeight: 590, lineHeight: 1.1, letterSpacing: '-0.04em' }}>
-                  Withdraw your USDC
-               </h1>
-               <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[6px]">
-                  {!walletConnected ? 'Connect your wallet to see your balance' : spendable == null ? 'Checking your balance…' : `${spendable} USDC available`}
-                  {REPAY_USDC != null && DUE_DATE ? (
-                     <>
-                        {' '}
-                        · Repay <span className="font-semibold text-[var(--primary)]">{REPAY_USDC} USDC</span> by {DUE_DATE}
-                     </>
-                  ) : null}
-               </p>
+               )}
+               {!bankPayout && (
+                  <>
+                     <h1 className="text-[27px] text-[var(--ink)]" style={{ fontWeight: 590, lineHeight: 1.1, letterSpacing: '-0.04em' }}>
+                        Withdraw your USDC
+                     </h1>
+                     <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[6px]">
+                        {balanceLine}
+                        {repayLine && (
+                           <>
+                              {' '}
+                              · Repay <span className="font-semibold text-[var(--primary)]">{REPAY_USDC} USDC</span> by {DUE_DATE}
+                           </>
+                        )}
+                     </p>
+                  </>
+               )}
             </div>
 
-            <p className="text-[18px] text-[var(--ink)] mt-[10px] mb-[6px]" style={{ fontWeight: 590, letterSpacing: '-0.02em' }}>
-               How would you like to cash out?
-            </p>
-            <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mb-[14px]">
-               Your loan funds are in your wallet. Withdraw or convert them using an exchange, P2P platform, or a supported local crypto
-               service.
-            </p>
+            {!bankPayout && (
+               <>
+                  <p className="text-[18px] text-[var(--ink)] mt-[10px] mb-[6px]" style={{ fontWeight: 590, letterSpacing: '-0.02em' }}>
+                     How would you like to cash out?
+                  </p>
+                  <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mb-[14px]">
+                     Your loan funds are in your wallet. Withdraw or convert them using an exchange, P2P platform, or a supported local crypto
+                     service.
+                  </p>
+               </>
+            )}
             {/* Every provider is shown to everyone — see the note on `region` above for why
                 location must never hide or reorder these based on an IP guess. Coins.ph stays
                 the recommended default for everyone; a user genuinely abroad can still pick
                 Binance themselves. */}
             <div className="space-y-[10px]">
                {bankPayout && (
-                  <PickerRow
-                     selected={selected}
-                     onSelect={selectProvider}
-                     id="bank"
-                     recommended
-                     icon={
-                        <div className="w-[46px] h-[46px] rounded-[12px] bg-[var(--surface-2)] flex items-center justify-center">
-                           <Landmark className="w-[24px] h-[24px] text-[var(--primary)]" />
-                        </div>
-                     }
-                     name="Straight to GCash or bank"
-                     line1="Pesos sent for you, no exchange app needed"
-                     line2="GCash, Maya or any bank · minutes"
-                  />
+                  <>
+                     <DirectPesoCard selected={selected === 'bank'} onSelect={() => selectProvider('bank')} spendable={spendable} />
+                     <p className="text-[18px] font-black italic leading-[1.2] tracking-[-0.3px] text-[var(--text-muted,#594d65)] pt-[10px] pb-[2px]">
+                        Or sell on an exchange app
+                     </p>
+                  </>
                )}
                {!COINS_PH_SUSPENDED && coinsPhRow}
                {COINS_PH_SUSPENDED && (
