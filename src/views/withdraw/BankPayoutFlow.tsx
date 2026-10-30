@@ -850,10 +850,11 @@ export default function BankPayoutFlow({
    const failed = FAILED.has(status);
    // Stableyard only says waiting / processing / succeeded, so the cake rises on a clock while we wait
    // (frames 1-5, holding at 5) and comes out of the oven (6) when the payout succeeds.
-   const elapsed = Math.max(0, (clock - sentAt) / 1000) / (isPreview ? 0.08 : 1);
+   const realElapsed = Math.max(0, (clock - sentAt) / 1000);
+   const elapsed = realElapsed / (isPreview ? 0.08 : 1); // the preview bakes ~12x faster
    const ovenFrame = done ? 6 : elapsed < 10 ? 1 : elapsed < 40 ? 2 : elapsed < 90 ? 3 : elapsed < 150 ? 4 : 5;
-   const slow = !done && !failed && elapsed > 300;
-   const minutes = Math.floor(elapsed / 60);
+   const slow = !done && !failed && realElapsed > 300;
+   const minutes = Math.floor(realElapsed / 60);
    const steps: { label: string; state: 'done' | 'active' | 'todo' }[] = [
       { label: 'USDC sent from your wallet', state: 'done' },
       { label: 'Converting to pesos', state: done ? 'done' : 'active' },
