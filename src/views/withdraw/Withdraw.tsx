@@ -605,10 +605,7 @@ function PickerRow({ id, selected, onSelect, icon, name, line1, line2, recommend
 /** Page header for testers, in the Milestone banner style (copy left, Moodeng art right). Not tappable: nothing on it looks like a button. */
 function DirectPesoBanner({ balanceLine, repayLine }: { balanceLine: string; repayLine: string | null }) {
    return (
-      <div
-         className="relative w-full h-[112px] mb-[16px] rounded-[12px] overflow-hidden text-left"
-         style={{ backgroundImage: 'linear-gradient(100deg, #efeaff 0%, #ddd5ff 100%)' }}
-      >
+      <div className="relative w-full h-[112px] mb-[16px] rounded-[12px] overflow-hidden text-left bg-[linear-gradient(100deg,#efeaff_0%,#ddd5ff_100%)] dark:bg-[linear-gradient(100deg,#252035_0%,#30285a_100%)]">
          <img
             src="/dashboard-v2/moo-cashout.png"
             alt=""
@@ -616,9 +613,9 @@ function DirectPesoBanner({ balanceLine, repayLine }: { balanceLine: string; rep
             className="absolute right-[-10px] bottom-[-30px] h-[142px] w-auto pointer-events-none select-none"
          />
          <div className="relative flex h-full flex-col justify-center pl-[16px] pr-[136px]">
-            <h1 className="text-[22px] font-black italic leading-[1.1] tracking-[-0.5px] text-[#6b55f7]">Cash out to pesos</h1>
-            <p className="mt-[4px] text-[14px] leading-[18px] text-[#594d65] font-semibold">{balanceLine}</p>
-            {repayLine && <p className="text-[13px] leading-[17px] text-[#594d65]">{repayLine}</p>}
+            <h1 className="text-[22px] font-black italic leading-[1.1] tracking-[-0.5px] text-[#6b55f7] dark:text-[#b3a6ff]">Cash out to pesos</h1>
+            <p className="mt-[4px] text-[14px] leading-[18px] text-[#594d65] dark:text-[#e6def0] font-semibold">{balanceLine}</p>
+            {repayLine && <p className="text-[13px] leading-[17px] text-[#594d65] dark:text-[#b6afc1]">{repayLine}</p>}
          </div>
       </div>
    );
@@ -661,7 +658,7 @@ function DirectPesoCard({
             </div>
 
             <div className="mt-[4px] flex items-baseline gap-[8px] flex-wrap">
-               <span className="text-[34px] font-black italic leading-[1.2] tracking-[-0.68px] text-[#735dfa]">
+               <span className="text-[34px] font-black italic leading-[1.2] tracking-[-0.68px] text-[#735dfa] dark:text-[#a98bff]">
                   {pesos != null ? `₱${pesos.toLocaleString('en-PH')}` : '₱'}
                </span>
                {spendable != null && spendable > 0 && (
@@ -675,7 +672,7 @@ function DirectPesoCard({
 
             <div className="mt-[10px] flex flex-wrap items-center gap-x-[12px] gap-y-[4px]">
                {['GCash', 'Maya', '80+ banks', 'Arrives in minutes'].map((t) => (
-                  <span key={t} className="flex items-center gap-[4px] text-[13px] text-[#735dfa]" style={{ fontWeight: 590 }}>
+                  <span key={t} className="flex items-center gap-[4px] text-[13px] text-[#735dfa] dark:text-[#a98bff]" style={{ fontWeight: 590 }}>
                      <Check className="w-[13px] h-[13px]" strokeWidth={3} />
                      {t}
                   </span>
@@ -686,7 +683,7 @@ function DirectPesoCard({
                 partner's details form) before the first quote; say so up front, until their ID check is approved. */}
             {!setupDone && (
                <div className="mt-[12px] rounded-[8px] bg-[var(--surface-2,#f6f3ff)] px-[10px] py-[8px] flex gap-[8px]">
-                  <Info className="w-[15px] h-[15px] text-[#735dfa] shrink-0 mt-[1px]" />
+                  <Info className="w-[15px] h-[15px] text-[#735dfa] dark:text-[#a98bff] shrink-0 mt-[1px]" />
                   <p className="text-[12px] leading-[17px] text-[var(--text-muted,#45556c)]">
                      <span className="font-semibold text-[var(--ink,#0f172b)]">First time only, about 5 min:</span> confirm your email, a
                      quick ID check and a short details form with Stableyard, our payout partner. After that it&apos;s just the amount.

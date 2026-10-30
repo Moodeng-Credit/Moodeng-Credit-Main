@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ArrowRight, Check, CheckCircle2, Clock, Landmark, Loader2, Search, ShieldCheck, XCircle } from 'lucide-react';
 
+import { isValidEmail } from '@/lib/accountEmail';
+import { isPlaceholderEmail } from '@/lib/phoneAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 // "Straight to GCash or bank" cash-out through Stableyard (an off-ramp): the borrower picks a bank or
@@ -164,6 +166,18 @@ export default function BankPayoutFlow({
    const [setup, setSetup] = useState<FnResult | null>(null);
    const [challengeId, setChallengeId] = useState('');
    const [code, setCode] = useState('');
+   // Where Stableyard sends its code: the login email, or blank for Telegram / phone / TikTok sign-ups
+   // whose login email is a placeholder nobody can read, so they type a real one.
+   const [codeEmail, setCodeEmail] = useState('');
+   useEffect(() => {
+      if (isPreview) return;
+      void getSupabaseBrowserClient()
+         .auth.getUser()
+         .then(({ data }) => {
+            const login = data.user?.email ?? '';
+            if (login && !isPlaceholderEmail(login)) setCodeEmail((current) => current || login);
+         });
+   }, [isPreview]);
    const [banks, setBanks] = useState<Bank[]>([]);
    const [bankCode, setBankCode] = useState('');
    const [accountNumber, setAccountNumber] = useState('');
@@ -415,7 +429,20 @@ export default function BankPayoutFlow({
                   <p className="text-[13px] font-semibold text-[var(--ink)]">1. Email {emailDone ? '✓' : ''}</p>
                   {!emailDone ? (
                      <>
-                        <button className={primaryClass} disabled={busy} onClick={() => void runOnboarding('email_start')}>
+                        <input
+                           value={codeEmail}
+                           onChange={(e) => setCodeEmail(e.target.value.trim())}
+                           type="email"
+                           inputMode="email"
+                           autoComplete="email"
+                           placeholder="Your email, e.g. juan@gmail.com"
+                           className={inputClass}
+                        />
+                        <button
+                           className={primaryClass}
+                           disabled={busy || !isValidEmail(codeEmail) || isPlaceholderEmail(codeEmail)}
+                           onClick={() => void runOnboarding('email_start', { email: codeEmail })}
+                        >
                            {challengeId ? 'Send the code again' : 'Send me a code'}
                         </button>
                         {challengeId ? (
