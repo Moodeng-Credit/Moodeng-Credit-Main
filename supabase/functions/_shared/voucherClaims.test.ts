@@ -305,3 +305,12 @@ Deno.test('card tracking lines: delivered, opened, tapped, I got it — in Bangk
    assertStringIncludes(bounced[0], '⚠️ Email bounced');
    assertStringIncludes(bounced[1], "didn't arrive");
 });
+
+Deno.test('seen pings: opened, tapped, bounced', async () => {
+   const { buildVoucherSeenMessage } = await import('./voucherClaims.ts');
+   const claim = { full_name: 'Irish Delos Santos', amount_php: 50, email: 'irish@example.com' };
+   assertStringIncludes(buildVoucherSeenMessage('opened', claim), '👀 Irish Delos Santos opened their ₱50');
+   assertStringIncludes(buildVoucherSeenMessage('tapped', claim), "they've seen it");
+   assertStringIncludes(buildVoucherSeenMessage('bounced', claim), 'irish@example.com');
+   assertStringIncludes(buildVoucherSeenMessage('opened', {}), 'The borrower');
+});
