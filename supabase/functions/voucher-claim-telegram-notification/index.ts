@@ -21,6 +21,9 @@
 //                                                rewards feature works), from the same bot as the cards.
 //   { claimId, event: 'admin_send' }             admin Vouchers page → Send code (admin session required).
 //                                                Lives here because the project is at its function limit.
+//   { event: 'resend_setup', apply? }             internal: the voucher email tracking settings in Resend — open
+//                                                tracking on moodeng.app, and email.delivered / opened / bounced on the
+//                                                email-inbound webhook. Without apply: true it only reports.
 //   GET ?go=<voucher_codes.id>                   the voucher email's button (moodeng.app/v/<id>, proxied by
 //                                                vercel.json): stamp the first tap on the card, then 302 to
 //                                                the Xoxo link. No auth: the id is random and only in that email.
@@ -159,6 +162,50 @@ const forwardVoucherTap = async (req: Request) => {
    }
 };
 
+// Resend's admin API with the sending key the functions already have; never returns the key or a
+// webhook's ?secret=.
+const TRACKING_EVENTS = ['email.delivered', 'email.opened', 'email.bounced'];
+const resendTrackingSetup = async (apply: boolean) => {
+   const key = Deno.env.get('RESEND_API_KEY');
+   if (!key) return { error: 'RESEND_API_KEY not set' };
+   const call = async (method: string, path: string, payload?: unknown) => {
+      const res = await fetch(`https://api.resend.com${path}`, {
+         method,
+         headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+         ...(payload ? { body: JSON.stringify(payload) } : {})
+      });
+      return { status: res.status, // deno-lint-ignore no-explicit-any
+      body: (await res.json().catch(() => null)) as any };
+   };
+   const noSecret = (endpoint: unknown) => String(endpoint ?? '').split('?')[0];
+
+   const domains = await call('GET', '/domains');
+   const domain = (domains.body?.data ?? []).find((d: { name?: string }) => d.name === 'moodeng.app');
+   let domainResult: unknown = domain ? { id: domain.id, open_tracking: domain.open_tracking ?? null } : { status: domains.status, error: domains.body?.message ?? 'moodeng.app not found' };
+   if (apply && domain) {
+      const updated = await call('PATCH', `/domains/${domain.id}`, { open_tracking: true });
+      domainResult = { id: domain.id, patch_status: updated.status, response: updated.body?.message ?? updated.body?.object ?? null };
+   }
+
+   const hooks = await call('GET', '/webhooks');
+   const list = (hooks.body?.data ?? []) as { id: string; endpoint?: string; events?: string[]; status?: string }[];
+   const inbound = list.find((h) => String(h.endpoint ?? '').includes('/functions/v1/email-inbound'));
+   let webhookResult: unknown = inbound ? null : { status: hooks.status, error: hooks.body?.message ?? 'email-inbound webhook not found' };
+   if (inbound) {
+      const events = [...new Set([...(inbound.events ?? []), ...TRACKING_EVENTS])];
+      webhookResult = { id: inbound.id, endpoint: noSecret(inbound.endpoint), events: inbound.events ?? [] };
+      if (apply && events.length !== (inbound.events ?? []).length) {
+         const updated = await call('PATCH', `/webhooks/${inbound.id}`, { events });
+         webhookResult = { id: inbound.id, patch_status: updated.status, events, response: updated.body?.message ?? null };
+      }
+   }
+   return {
+      domain: domainResult,
+      webhook: webhookResult,
+      webhooks: list.map((h) => ({ id: h.id, endpoint: noSecret(h.endpoint), events: h.events ?? [], status: h.status ?? null }))
+   };
+};
+
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
    if (req.method === 'GET') return await forwardVoucherTap(req);
@@ -167,13 +214,15 @@ serve(async (req) => {
    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 
    try {
-      const { claimId, event, decidedBy, text, nudge } = (await req.json().catch(() => ({}))) as {
+      const { claimId, event, decidedBy, text, nudge, apply } = (await req.json().catch(() => ({}))) as {
          claimId?: string;
          event?: string;
          decidedBy?: string | null;
          text?: string;
          // digest: false = just post the list, no Messenger nudges (e.g. an extra run outside 10:00).
          nudge?: boolean;
+         // resend_setup: true = change the settings, else just report them.
+         apply?: boolean;
       };
       if (event === 'announce') {
          if (!(await isAuthorized(supabase, req))) return json({ error: 'Unauthorized' }, 401);
@@ -183,6 +232,11 @@ serve(async (req) => {
          const sent = (await sendTelegramMessage(chatId, text.trim())) as { message_id?: number } | undefined;
          await toDiscord(supabase, text.trim());
          return json({ ok: true, messageId: sent?.message_id ?? null });
+      }
+
+      if (event === 'resend_setup') {
+         if (!(await isAuthorized(supabase, req))) return json({ error: 'Unauthorized' }, 401);
+         return json(await resendTrackingSetup(apply === true));
       }
 
       if (event === 'digest') {
