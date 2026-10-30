@@ -42,13 +42,15 @@ export const callTelegramApi = async <T = unknown>(method: string, payload: Reco
 export const sendTelegramMessage = async (
    chatId: number | string,
    text: string,
-   options: { inlineKeyboard?: TelegramInlineKeyboard; messageThreadId?: number } = {}
+   options: { inlineKeyboard?: TelegramInlineKeyboard; messageThreadId?: number; replyToMessageId?: number } = {}
 ) => {
    return callTelegramApi('sendMessage', {
       chat_id: chatId,
       text,
       disable_web_page_preview: true,
       ...(options.messageThreadId ? { message_thread_id: options.messageThreadId } : {}),
+      // allow_sending_without_reply: still post if the card was deleted.
+      ...(options.replyToMessageId ? { reply_to_message_id: options.replyToMessageId, allow_sending_without_reply: true } : {}),
       ...(options.inlineKeyboard ? { reply_markup: { inline_keyboard: options.inlineKeyboard } } : {})
    });
 };

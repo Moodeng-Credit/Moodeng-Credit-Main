@@ -22,7 +22,7 @@ import { getGiftawayConfig, giftawaySource, type GiftawayBrand, orderGiftawayEgi
 import { isPlaceholderEmail } from './placeholderEmail.ts';
 import { getTelegramBotSettingEnabled } from './borrowerNotificationDelivery.ts';
 import { type MessengerCard, messengerChatUrl, sendMessengerMessage, sendWhatsAppTemplate, type WhatsAppTemplate } from './sendpulse.ts';
-import type { TelegramInlineKeyboard } from './telegram.ts';
+import { sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
 
 // Telegram callback_data for the card buttons: "vo:<s|r>:<claim uuid>" (≤64 bytes).
 export type VoucherDecision = 'sent' | 'rejected';
@@ -770,6 +770,44 @@ const markVoucherSentOnCards = async (supabase: SupabaseClient, claimId: string,
    await restampVoucherCard(supabase, claimId);
 };
 
+export type VoucherSeenStep = 'opened' | 'tapped' | 'bounced';
+
+/** The ping for the rewards group: card edits don't notify anyone, a new message does. */
+export const buildVoucherSeenMessage = (step: VoucherSeenStep, claim: { full_name?: string | null; amount_php?: number | string | null; email?: string | null }) => {
+   const name = claim.full_name?.trim() || 'The borrower';
+   const amount = pesoUsd(Number(claim.amount_php ?? 0));
+   if (step === 'opened') return `👀 ${name} opened their ${amount} voucher email`;
+   if (step === 'tapped') return `🍗 ${name} tapped their ${amount} voucher — they've seen it!`;
+   return `⚠️ ${name}'s ${amount} voucher email bounced${claim.email ? ` (${claim.email})` : ''} — check the address and message them`;
+};
+
+/** Post the ping to the rewards group, as a reply to the claim's card there. Never throws. */
+const pingVoucherSeen = async (supabase: SupabaseClient, claimId: string, step: VoucherSeenStep) => {
+   try {
+      const { data: settings } = await supabase
+         .from('telegram_bot_settings')
+         .select('key, value')
+         .in('key', ['voucher_alert_chat_id', 'kyc_alert_chat_id']);
+      const setting = (key: string) => (settings ?? []).find((row: { key: string; value: string }) => row.key === key)?.value || null;
+      const chatId = setting('voucher_alert_chat_id') ?? setting('kyc_alert_chat_id');
+      if (!chatId) return;
+      const { data: claim } = await supabase.from('voucher_claims').select('full_name, amount_php, email').eq('id', claimId).maybeSingle();
+      if (!claim) return;
+      const { data: card } = await supabase
+         .from('admin_message_refs')
+         .select('message_id')
+         .eq('kind', 'voucher')
+         .eq('ref_id', claimId)
+         .eq('channel', 'telegram')
+         .eq('chat_id', String(chatId))
+         .limit(1)
+         .maybeSingle();
+      await sendTelegramMessage(chatId, buildVoucherSeenMessage(step, claim), card?.message_id ? { replyToMessageId: Number(card.message_id) } : {});
+   } catch (err) {
+      console.error('voucher seen ping failed', claimId, step, err instanceof Error ? err.message : err);
+   }
+};
+
 // Resend webhook event → the claim column it stamps (first time only).
 const EMAIL_EVENT_COLUMNS: Record<string, keyof VoucherTracking> = {
    'email.delivered': 'email_delivered_at',
@@ -794,6 +832,9 @@ export const recordVoucherEmailEvent = async (supabase: SupabaseClient, type: st
       .maybeSingle();
    if (!claim) return 'not_a_voucher_or_repeat';
    await restampVoucherCard(supabase, claim.id);
+   // A delivery is expected; an open or a bounce is worth a ping.
+   if (type === 'email.opened') await pingVoucherSeen(supabase, claim.id, 'opened');
+   if (type === 'email.bounced') await pingVoucherSeen(supabase, claim.id, 'bounced');
    return 'stamped';
 };
 
@@ -809,7 +850,8 @@ export const recordVoucherTap = async (supabase: SupabaseClient, codeId: string)
       .is('voucher_clicked_at', null)
       .select('id')
       .maybeSingle();
-   return { url, restamp: first ? restampVoucherCard(supabase, code.claim_id) : null };
+   const claimId = code.claim_id as string;
+   return { url, restamp: first ? restampVoucherCard(supabase, claimId).then(() => pingVoucherSeen(supabase, claimId, 'tapped')) : null };
 };
 
 export type VoucherActionResult = {
