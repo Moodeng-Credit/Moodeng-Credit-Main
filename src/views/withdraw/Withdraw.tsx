@@ -33,6 +33,7 @@ import { TransferAddressLabel } from '@/i18n/SentenceLabels';
 import { useUsdcRate } from '@/lib/useUsdcRate';
 import { useAccount, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
 
+import { PhFlag } from '@/components/auth/PhFlag';
 import { openSupportContacts } from '@/components/support/supportContacts';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -647,7 +648,8 @@ function DirectPesoCard({
             style={{ boxShadow: selected ? '0px 6px 18px rgba(107,85,247,0.16)' : '0px 1px 2px rgba(28,5,61,0.06)' }}
          >
             <div className="flex items-center justify-between gap-[10px]">
-               <p className="text-[22px] font-black italic leading-[1.2] tracking-[-0.3px] text-[var(--text-muted,#594d65)]">
+               <p className="flex items-center gap-[8px] text-[22px] font-black italic leading-[1.2] tracking-[-0.3px] text-[var(--text-muted,#594d65)]">
+                  <PhFlag className="h-[16px] w-[24px]" />
                   USDC → Pesos
                </p>
                <div
@@ -667,11 +669,11 @@ function DirectPesoCard({
             </div>
 
             <p className="mt-[4px] text-[16px] leading-[22px] text-[var(--text-muted,#45556c)]">
-               Straight to your GCash, Maya or bank. No exchange app, nothing to sell.
+               Straight to your Philippine GCash, Maya or bank account, from anywhere. No exchange app, nothing to sell.
             </p>
 
             <div className="mt-[10px] flex flex-wrap items-center gap-x-[12px] gap-y-[4px]">
-               {['GCash', 'Maya', '80+ banks', 'Arrives in minutes'].map((t) => (
+               {['GCash', 'Maya', '80+ PH banks', 'Arrives in minutes'].map((t) => (
                   <span key={t} className="flex items-center gap-[4px] text-[13px] text-[#735dfa] dark:text-[#a98bff]" style={{ fontWeight: 590 }}>
                      <Check className="w-[13px] h-[13px]" strokeWidth={3} />
                      {t}
