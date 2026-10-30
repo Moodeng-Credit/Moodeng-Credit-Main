@@ -45,7 +45,7 @@ describe('LenderFundedPopup', () => {
    let root: Root;
    const onClose = vi.fn();
 
-   const render = async () => {
+   const render = async (extra: { isRepeatLender?: boolean } = {}) => {
       await act(async () => {
          root.render(
             createElement(LenderFundedPopup, {
@@ -53,6 +53,7 @@ describe('LenderFundedPopup', () => {
                borrowerName: 'Mimi',
                totalRepayment: 44,
                dueDate: '2026-10-12',
+               ...extra,
                onClose
             })
          );
@@ -164,6 +165,15 @@ describe('LenderFundedPopup', () => {
 
       await act(async () => buttonByText(container, 'Got It')?.click());
       expect(onClose).toHaveBeenCalledTimes(1);
+   });
+
+   it('thanks a lender who has funded before instead of calling them new', async () => {
+      window.localStorage.setItem('moodeng-repaid-push-card-seen', '1');
+      await render({ isRepeatLender: true });
+      expect(container.textContent).toContain('Thanks, Moo-lender!');
+      expect(container.textContent).toContain('Thanks for being a Moo‑lender!');
+      expect(container.textContent).not.toContain('officially');
+      expect(container.textContent).not.toContain('Congrats');
    });
 
    it('renders in the lender’s own app language, not just English', async () => {

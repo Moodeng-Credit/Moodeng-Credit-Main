@@ -11,6 +11,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { formatCurrency } from '@/utils/decimalHelpers';
 
 import { type LocaleCode, useLocalization } from '@/i18n';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getPushPermission, isPushConfigured, isPushSupported, needsHomeScreenForPush } from '@/lib/push/webPushClient';
 
 const formatDueDayUtc = (date: Date): string =>
@@ -23,11 +24,14 @@ const POPUP_COPY: Record<
    LocaleCode,
    {
       congratsTitle: string;
+      /** Title for a lender who has funded before: they're not new, so thank them instead. */
+      repeatTitle: string;
       repaysLine: (name: string, amount: string, byDate: string | null) => string;
       enableHeading: string;
       enableCta: string;
       /** Uses a non-breaking hyphen (U+2011) so the big heading never wraps as "Moo-" / "lender". */
       thanksHeading: string;
+      repeatThanksHeading: string;
       doneCta: string;
       homeScreenGuideHeading: string;
       homeScreenGuideBody: string;
@@ -36,10 +40,12 @@ const POPUP_COPY: Record<
 > = {
    en: {
       congratsTitle: 'Congrats, Moo-lender!',
+      repeatTitle: 'Thanks, Moo-lender!',
       repaysLine: (name, amount, byDate) => `You funded ${name}! They repay you $${amount}${byDate ? ` by ${byDate}` : ''}.`,
       enableHeading: 'Want to know when you’re repaid?',
       enableCta: 'Notify Me When Repaid',
       thanksHeading: 'You’re officially a Moo‑lender!',
+      repeatThanksHeading: 'Thanks for being a Moo‑lender!',
       doneCta: 'Done',
       homeScreenGuideHeading: 'Add Moodeng to your Home Screen',
       homeScreenGuideBody: 'iPhones only send notifications from apps on your Home Screen.',
@@ -47,10 +53,12 @@ const POPUP_COPY: Record<
    },
    fil: {
       congratsTitle: 'Congrats, Moo-lender!',
+      repeatTitle: 'Salamat, Moo-lender!',
       repaysLine: (name, amount, byDate) => `Napondohan mo si ${name}! Babayaran ka niya ng $${amount}${byDate ? ` pagsapit ng ${byDate}` : ''}.`,
       enableHeading: 'Gusto mo bang malaman kapag nabayaran ka na?',
       enableCta: 'Ipaalam Kapag Nabayaran Na',
       thanksHeading: 'Opisyal ka nang Moo‑lender!',
+      repeatThanksHeading: 'Salamat sa pagiging Moo‑lender!',
       doneCta: 'Tapos na',
       homeScreenGuideHeading: 'Idagdag ang Moodeng sa Home Screen mo',
       homeScreenGuideBody: 'Nagpapadala lang ng notification ang mga iPhone mula sa mga app na nasa Home Screen.',
@@ -58,10 +66,12 @@ const POPUP_COPY: Record<
    },
    id: {
       congratsTitle: 'Selamat, Moo-lender!',
+      repeatTitle: 'Terima kasih, Moo-lender!',
       repaysLine: (name, amount, byDate) => `Kamu mendanai ${name}! Dia akan membayarmu $${amount}${byDate ? ` sebelum ${byDate}` : ''}.`,
       enableHeading: 'Mau tahu kapan kamu dibayar kembali?',
       enableCta: 'Beri Tahu Saat Dibayar Kembali',
       thanksHeading: 'Kamu resmi jadi Moo‑lender!',
+      repeatThanksHeading: 'Terima kasih sudah jadi Moo‑lender!',
       doneCta: 'Selesai',
       homeScreenGuideHeading: 'Tambahkan Moodeng ke Home Screen kamu',
       homeScreenGuideBody: 'iPhone hanya mengirim notifikasi dari aplikasi di Home Screen.',
@@ -69,10 +79,12 @@ const POPUP_COPY: Record<
    },
    th: {
       congratsTitle: 'ยินดีด้วย Moo-lender!',
+      repeatTitle: 'ขอบคุณ Moo-lender!',
       repaysLine: (name, amount, byDate) => `คุณปล่อยกู้ให้ ${name} แล้ว! เขาจะชำระคืนคุณ $${amount}${byDate ? ` ภายในวันที่ ${byDate}` : ''}`,
       enableHeading: 'อยากรู้ไหมว่าเมื่อไหร่คุณจะได้รับเงินคืน',
       enableCta: 'แจ้งเตือนเมื่อได้รับเงินคืน',
       thanksHeading: 'คุณเป็น Moo‑lender อย่างเป็นทางการแล้ว!',
+      repeatThanksHeading: 'ขอบคุณที่เป็น Moo‑lender!',
       doneCta: 'เสร็จสิ้น',
       homeScreenGuideHeading: 'เพิ่ม Moodeng ไปยังหน้าจอโฮมของคุณ',
       homeScreenGuideBody: 'iPhone จะส่งการแจ้งเตือนเฉพาะจากแอปที่อยู่บนหน้าจอโฮมเท่านั้น',
@@ -80,10 +92,12 @@ const POPUP_COPY: Record<
    },
    vi: {
       congratsTitle: 'Chúc mừng, Moo-lender!',
+      repeatTitle: 'Cảm ơn, Moo-lender!',
       repaysLine: (name, amount, byDate) => `Bạn đã cho ${name} vay! Họ sẽ trả bạn $${amount}${byDate ? ` trước ${byDate}` : ''}.`,
       enableHeading: 'Bạn có muốn biết khi nào được hoàn trả không?',
       enableCta: 'Báo Tôi Khi Được Hoàn Trả',
       thanksHeading: 'Bạn chính thức là Moo‑lender!',
+      repeatThanksHeading: 'Cảm ơn bạn đã là Moo‑lender!',
       doneCta: 'Xong',
       homeScreenGuideHeading: 'Thêm Moodeng vào Màn hình chính của bạn',
       homeScreenGuideBody: 'iPhone chỉ gửi thông báo từ các ứng dụng trên Màn hình chính.',
@@ -129,6 +143,8 @@ interface Props {
    borrowerName: string;
    totalRepayment: number;
    dueDate?: string | null;
+   /** Funded at least one loan before this one. */
+   isRepeatLender?: boolean;
    onClose: () => void;
 }
 
@@ -139,7 +155,7 @@ interface Props {
  * the channel on that device for good). iPhones can't be switched on from here (push needs the app on
  * the Home Screen first), so there the button shows how instead.
  */
-export default function LenderFundedPopup({ userId, borrowerName, totalRepayment, dueDate, onClose }: Props) {
+export default function LenderFundedPopup({ userId, borrowerName, totalRepayment, dueDate, isRepeatLender = false, onClose }: Props) {
    // Decided once on mount, so marking the ask seen below doesn't change the popup mid-screen.
    const pushAsk = useMemo(pickPushAsk, []);
    const push = usePushNotifications(userId, { autoPrompt: false });
@@ -167,7 +183,12 @@ export default function LenderFundedPopup({ userId, borrowerName, totalRepayment
            art: '/icons/hippo-repaid-coin-3d.png',
            cta: copy.enableCta
         }
-      : { heading: copy.thanksHeading, body: repaysLine, art: '/hippos/party.png', cta: copy.doneCta };
+      : {
+           heading: isRepeatLender ? copy.repeatThanksHeading : copy.thanksHeading,
+           body: repaysLine,
+           art: '/hippos/party.png',
+           cta: copy.doneCta
+        };
 
    const handleCta = () => {
       if (pushAsk === 'home-screen') setShowSteps(true);
@@ -175,7 +196,7 @@ export default function LenderFundedPopup({ userId, borrowerName, totalRepayment
    };
 
    return (
-      <LenderPopupShell title={copy.congratsTitle} labelledBy="lender-funded-popup-title" onClose={onClose}>
+      <LenderPopupShell title={isRepeatLender ? copy.repeatTitle : copy.congratsTitle} labelledBy="lender-funded-popup-title" onClose={onClose}>
          {showSteps ? (
             <>
                <div className="w-full text-[#594d65]">
@@ -207,9 +228,20 @@ export default function LenderFundedPopup({ userId, borrowerName, totalRepayment
    );
 }
 
-type LenderFundedDetail = Omit<Props, 'onClose'>;
+type LenderFundedDetail = Omit<Props, 'onClose' | 'isRepeatLender'>;
 
 const LENDER_FUNDED_EVENT = 'moodeng:lender-funded';
+
+// The popup opens after the funding is saved, so the count already includes this loan: more than one
+// means they've lent before. If the count fails, thank them rather than call a veteran "new".
+const fetchIsRepeatLender = async (userId: string | null | undefined): Promise<boolean> => {
+   if (!userId) return false;
+   const { count, error } = await getSupabaseBrowserClient()
+      .from('loans')
+      .select('id', { count: 'exact', head: true })
+      .eq('lender_user_id', userId);
+   return error ? true : (count ?? 0) > 1;
+};
 
 /**
  * Opens the funded popup from anywhere. It used to live inside the request card, but funding
@@ -221,12 +253,18 @@ export const openLenderFundedPopup = (detail: LenderFundedDetail) => {
 };
 
 export function LenderFundedPopupHost() {
-   const [detail, setDetail] = useState<LenderFundedDetail | null>(null);
+   const [detail, setDetail] = useState<(LenderFundedDetail & { isRepeatLender: boolean }) | null>(null);
 
    const close = useCallback(() => setDetail(null), []);
 
    useEffect(() => {
-      const handleFunded = (event: Event) => setDetail((event as CustomEvent<LenderFundedDetail>).detail);
+      // Decide the wording before showing, so the title never swaps while the lender is reading it.
+      const handleFunded = (event: Event) => {
+         const funded = (event as CustomEvent<LenderFundedDetail>).detail;
+         void fetchIsRepeatLender(funded.userId)
+            .catch(() => true)
+            .then((isRepeatLender) => setDetail({ ...funded, isRepeatLender }));
+      };
 
       window.addEventListener(LENDER_FUNDED_EVENT, handleFunded);
 
