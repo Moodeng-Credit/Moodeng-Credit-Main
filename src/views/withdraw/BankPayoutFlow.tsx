@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { ArrowRight, Check, Clock, Landmark, Loader2, Search, ShieldCheck, XCircle } from 'lucide-react';
+import { ArrowRight, Check, Clock, Landmark, Loader2, Search, XCircle } from 'lucide-react';
 
 import { PhFlag } from '@/components/auth/PhFlag';
+import PoweredByStableyard from '@/components/brand/PoweredByStableyard';
 
 import { isValidEmail } from '@/lib/accountEmail';
 import { isPlaceholderEmail } from '@/lib/phoneAuth';
@@ -83,9 +84,19 @@ const PREVIEW: Record<string, FnResult> = {
 async function call(isPreview: boolean, body: Record<string, string>): Promise<FnResult> {
    if (isPreview) {
       await new Promise((r) => setTimeout(r, 600));
-      // ?sim=verify shows the one-time email + ID screen.
-      if (body.qr === 'setup' && new URLSearchParams(window.location.search).get('sim') === 'verify') {
-         return { ok: true, emailVerified: true, kycApproved: false, kycStatus: 'not_started' };
+      // ?sim=email / ?sim=verify show the one-time setup at the email / ID step; ?sim=compliance shows
+      // Stableyard's one-time form after the first "Get my price".
+      const sim = new URLSearchParams(window.location.search).get('sim');
+      if (body.qr === 'setup' && sim === 'email') return { ok: true, emailVerified: false, kycApproved: false, kycStatus: 'not_started' };
+      if (body.qr === 'setup' && sim === 'verify') return { ok: true, emailVerified: true, kycApproved: false, kycStatus: 'not_started' };
+      if (body.qr === 'bank_create' && sim === 'compliance') {
+         return {
+            ok: true,
+            result: {
+               payment: { id: 'payment_preview', status: 'requires_action' },
+               nextAction: { type: 'complete_compliance', url: 'https://stableyard.fi' }
+            }
+         };
       }
       return PREVIEW[body.qr ?? body.onboarding ?? ''] ?? { ok: true };
    }
@@ -232,6 +243,62 @@ function ErrorLine({ text }: { text: string }) {
       <p className="rounded-[12px] border border-[var(--danger-border)] bg-[var(--danger-bg)] px-[12px] py-[10px] text-[13px] text-[var(--danger-text)]">
          {text}
       </p>
+   );
+}
+
+// The whole one-time setup at a glance, so the third step (Stableyard's form, which only appears after
+// the first price request) is never a surprise. Shown on the email/ID screen and on the form screen.
+const SETUP_STEPS = [
+   { label: 'Confirm your email', hint: 'We send a 6-digit code' },
+   { label: 'ID check', hint: "On Stableyard's page" },
+   { label: 'Short form', hint: 'Phone and nationality, about 2 minutes' }
+];
+
+function SetupSteps({ done }: { done: number }) {
+   return (
+      <Panel>
+         <div>
+            <p className="text-[16px] font-semibold text-[var(--ink)]">Set up cash-out</p>
+            <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[4px]">
+               Only once, about 5 minutes. Our partner Stableyard sends the pesos to your GCash or bank, so they check a few things first.
+            </p>
+         </div>
+         <ol className="space-y-[10px]">
+            {SETUP_STEPS.map((s, i) => {
+               const state = i < done ? 'done' : i === done ? 'current' : 'next';
+               return (
+                  <li key={s.label} className="flex items-center gap-[12px]">
+                     <span
+                        className={`flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full text-[13px] font-semibold ${
+                           state === 'done'
+                              ? 'bg-[#1baf7a] text-white'
+                              : state === 'current'
+                                ? 'bg-[#6b55f7] text-white'
+                                : 'border-2 border-[#e8e4ff] text-[var(--text-muted)]'
+                        }`}
+                     >
+                        {state === 'done' ? <Check className="w-[15px] h-[15px]" strokeWidth={3} /> : i + 1}
+                     </span>
+                     <div className="min-w-0">
+                        <p
+                           className={`text-[14px] leading-[18px] ${state === 'next' ? 'text-[var(--text-muted)]' : 'font-semibold text-[var(--ink)]'}`}
+                        >
+                           {s.label}
+                        </p>
+                        <p className="text-[12px] leading-[16px] text-[var(--text-muted)]">{state === 'done' ? 'Done' : s.hint}</p>
+                     </div>
+                  </li>
+               );
+            })}
+            <li className="flex items-center gap-[12px]">
+               <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-[#f1eeff] text-[#6b55f7]">
+                  <ArrowRight className="w-[15px] h-[15px]" />
+               </span>
+               <p className="text-[13px] leading-[18px] text-[var(--text-muted)]">Then cash out anytime, no setup again</p>
+            </li>
+         </ol>
+         <PoweredByStableyard />
+      </Panel>
    );
 }
 
@@ -525,19 +592,11 @@ export default function BankPayoutFlow({
       const emailDone = Boolean(setup?.emailVerified);
       return (
          <div className="space-y-[12px]">
+            <SetupSteps done={emailDone ? (setup?.kycApproved ? 2 : 1) : 0} />
             <Panel>
-               <div className="flex items-start gap-[12px]">
-                  <ShieldCheck className="w-[22px] h-[22px] text-[var(--primary)] shrink-0 mt-[2px]" />
-                  <div>
-                     <p className="text-[16px] font-semibold text-[var(--ink)]">One-time check by our payout partner</p>
-                     <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[4px]">
-                        Stableyard sends the pesos to your GCash or bank. Before the first cash-out they need to confirm your email and ID.
-                     </p>
-                  </div>
-               </div>
                {error ? <ErrorLine text={error} /> : null}
                <div className="space-y-[8px]">
-                  <p className="text-[13px] font-semibold text-[var(--ink)]">1. Email {emailDone ? '✓' : ''}</p>
+                  {!emailDone ? <p className="text-[14px] font-semibold text-[var(--ink)]">1. Confirm your email</p> : null}
                   {!emailDone ? (
                      <>
                         <input
@@ -576,8 +635,15 @@ export default function BankPayoutFlow({
                         ) : null}
                      </>
                   ) : null}
-                  <p className="text-[13px] font-semibold text-[var(--ink)] pt-[4px]">2. ID check {setup?.kycApproved ? '✓' : ''}</p>
-                  {!setup?.kycApproved ? (
+                  {emailDone && !setup?.kycApproved ? (
+                     <>
+                        <p className="text-[14px] font-semibold text-[var(--ink)]">2. ID check</p>
+                        <p className="text-[13px] text-[var(--text-muted)] leading-[18px]">
+                           Stableyard&apos;s page opens in a new tab. Have your ID ready, then come back here.
+                        </p>
+                     </>
+                  ) : null}
+                  {emailDone && !setup?.kycApproved ? (
                      <button
                         className={primaryClass}
                         disabled={busy || !emailDone}
@@ -763,16 +829,12 @@ export default function BankPayoutFlow({
    if (step === 'compliance') {
       return (
          <div className="space-y-[12px]">
+            <SetupSteps done={2} />
             <Panel>
-               <div className="flex items-start gap-[12px]">
-                  <ShieldCheck className="w-[22px] h-[22px] text-[var(--primary)] shrink-0 mt-[2px]" />
-                  <div>
-                     <p className="text-[16px] font-semibold text-[var(--ink)]">One more step, only once</p>
-                     <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[4px]">
-                        Before your first cash-out, Stableyard needs a few details on a short form. It takes about 2 minutes.
-                     </p>
-                  </div>
-               </div>
+               <p className="text-[14px] font-semibold text-[var(--ink)]">3. Short form</p>
+               <p className="text-[13px] text-[var(--text-muted)] leading-[18px]">
+                  Last step. Fill it in one go: the link works only once, so finish before you close it.
+               </p>
                {error ? <ErrorLine text={error} /> : null}
             </Panel>
             <button className={primaryClass} onClick={() => window.open(complianceUrl, '_blank', 'noopener')}>
