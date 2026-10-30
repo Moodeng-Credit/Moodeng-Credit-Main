@@ -624,10 +624,15 @@ function DirectPesoBanner({ balanceLine, repayLine }: { balanceLine: string; rep
    );
 }
 
+// Share of the USDC that Stableyard's fees take on a bank payout: 0.5% platform + the off-ramp
+// provider's cut. The first real payout (₱100, 2026-10-30) cost 0.035573 of 1.608695 USDC ≈ 2.2%.
+// The exact figure comes from Stableyard's quote on the next screen; this only sets expectations.
+const BANK_PAYOUT_FEE_SHARE = 0.022;
+
 /** The direct payout (Stableyard): shows USDC turning straight into pesos, so it doesn't read like one more exchange. */
 function DirectPesoCard({ selected, onSelect, spendable }: { selected: boolean; onSelect: () => void; spendable: number | null }) {
    const { value: phpRate } = useUsdcRate('php');
-   const pesos = spendable != null && spendable > 0 ? Math.floor(spendable * phpRate) : null;
+   const pesos = spendable != null && spendable > 0 ? Math.floor(spendable * phpRate * (1 - BANK_PAYOUT_FEE_SHARE)) : null;
    return (
       <button onClick={onSelect} className="relative w-full text-left outline-none">
          <div
@@ -650,7 +655,7 @@ function DirectPesoCard({ selected, onSelect, spendable }: { selected: boolean; 
                   {pesos != null ? `₱${pesos.toLocaleString('en-PH')}` : '₱'}
                </span>
                {spendable != null && spendable > 0 && (
-                  <span className="text-[14px] leading-[18px] text-[var(--text-muted,#45556c)]">about, from {spendable} USDC</span>
+                  <span className="text-[14px] leading-[18px] text-[var(--text-muted,#45556c)]">about, from {spendable} USDC after fees</span>
                )}
             </div>
 
