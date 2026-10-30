@@ -671,6 +671,16 @@ function DirectPesoCard({ selected, onSelect, spendable }: { selected: boolean; 
                   </span>
                ))}
             </div>
+
+            {/* BankPayoutFlow runs Stableyard's one-time setup (email code, ID check, then the
+                partner's details form) before the first quote; say so up front. */}
+            <div className="mt-[12px] rounded-[8px] bg-[var(--surface-2,#f6f3ff)] px-[10px] py-[8px] flex gap-[8px]">
+               <Info className="w-[15px] h-[15px] text-[#735dfa] shrink-0 mt-[1px]" />
+               <p className="text-[12px] leading-[17px] text-[var(--text-muted,#45556c)]">
+                  <span className="font-semibold text-[var(--ink,#0f172b)]">First time only, about 5 min:</span> confirm your email, a
+                  quick ID check and a short details form with Stableyard, our payout partner. After that it&apos;s just the amount.
+               </p>
+            </div>
          </div>
       </button>
    );
