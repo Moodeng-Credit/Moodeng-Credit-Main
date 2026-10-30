@@ -33,6 +33,7 @@ import { TransferAddressLabel } from '@/i18n/SentenceLabels';
 import { useUsdcRate } from '@/lib/useUsdcRate';
 import { useAccount, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
 
+import { PhFlag } from '@/components/auth/PhFlag';
 import { openSupportContacts } from '@/components/support/supportContacts';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -647,7 +648,8 @@ function DirectPesoCard({
             style={{ boxShadow: selected ? '0px 6px 18px rgba(107,85,247,0.16)' : '0px 1px 2px rgba(28,5,61,0.06)' }}
          >
             <div className="flex items-center justify-between gap-[10px]">
-               <p className="text-[22px] font-black italic leading-[1.2] tracking-[-0.3px] text-[var(--text-muted,#594d65)]">
+               <p className="flex items-center gap-[8px] text-[22px] font-black italic leading-[1.2] tracking-[-0.3px] text-[var(--text-muted,#594d65)]">
+                  <PhFlag className="h-[16px] w-[24px]" />
                   USDC → Pesos
                </p>
                <div

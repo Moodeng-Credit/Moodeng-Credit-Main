@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ArrowRight, Check, CheckCircle2, Clock, Landmark, Loader2, Search, ShieldCheck, XCircle } from 'lucide-react';
 
+import { PhFlag } from '@/components/auth/PhFlag';
+
 import { isValidEmail } from '@/lib/accountEmail';
 import { isPlaceholderEmail } from '@/lib/phoneAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -612,8 +614,8 @@ export default function BankPayoutFlow({
                      <div className="grid grid-cols-2 gap-[6px] mb-[8px]" role="tablist">
                         {(
                            [
-                              ['wallet', 'E-wallet', 'GCash, Maya…'],
-                              ['bank', 'Bank', 'BDO, BPI…']
+                              ['wallet', 'PH e-wallet', 'GCash, Maya…'],
+                              ['bank', 'PH bank', 'BDO, BPI…']
                            ] as const
                         ).map(([kind, label, hint]) => (
                            <button
@@ -627,7 +629,10 @@ export default function BankPayoutFlow({
                               }}
                               className={`rounded-[10px] border-2 px-[10px] py-[8px] text-left transition-colors ${payeeKind === kind ? 'border-[#6b55f7] bg-[var(--surface-2)]' : 'border-[var(--border-card)]'}`}
                            >
-                              <span className="block text-[14px] font-semibold text-[var(--ink)]">{label}</span>
+                              <span className="flex items-center gap-[6px] text-[14px] font-semibold text-[var(--ink)]">
+                                 <PhFlag className="h-[11px] w-[16px]" />
+                                 {label}
+                              </span>
                               <span className="block text-[12px] text-[var(--text-muted)]">{hint}</span>
                            </button>
                         ))}
