@@ -708,6 +708,8 @@
       '<path d="' + NOTE + '" fill="#fff" transform="scale(.9) translate(1.3 1.3)"/></svg>';
 
    if (!window.fetch) return;
+   // Already signed in: a login button is just noise next to Sign out.
+   if (/(?:^|;\s*)sb-[a-z0-9]+-auth-token(?:\.0)?=/i.test(document.cookie)) return;
    fetch('/landing/auth-providers.json', { cache: 'no-cache' })
       .then(function (r) {
          return r.ok ? r.json() : null;

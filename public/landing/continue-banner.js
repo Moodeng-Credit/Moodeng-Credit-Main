@@ -1,6 +1,7 @@
 // Signed in in this browser (the app keeps its Supabase session in a cookie). The app also leaves an
 // md_landing cookie saying where they are (src/lib/landingSessionCookie.ts):
-//   signout — all set: "Sign in" becomes "Sign out", no banner.
+//   signout — all set: "Sign in" becomes "Sign out", no banner; lenders (md_role=lender) get "Fund loans"
+//     instead of "Get a loan".
 //   continue (or not known yet) — still signing up / onboarding / applying: "Sign in" becomes "Continue",
 //     "Get a loan" becomes "Sign out", and a "Continue where you left off" banner.
 //     Reopening moodeng.app inside Facebook's / Messenger's browser lands on this static page, and people
@@ -31,6 +32,14 @@
       var show = function () {
          if (allSet) {
             relabel('Sign out', '/sign-out');
+            // Lenders fund loans, they don't take them.
+            if (/(?:^|;\s*)md_role=lender(?:;|$)/.test(document.cookie)) {
+               document
+                  .querySelectorAll('a[href="/request-board"], a[href="https://moodeng.app/request-board"]')
+                  .forEach(function (link) {
+                     if (link.textContent.trim() === 'Get a loan') link.textContent = 'Fund loans';
+                  });
+            }
             return;
          }
          relabel('Continue', '/continue?via=landing');
