@@ -20,7 +20,8 @@ import { buyBitrefillCode, getBitrefillApiKey, GRABMART_PRODUCTS } from './bitre
 import { sendEmail } from './email.ts';
 import { getGiftawayConfig, giftawaySource, type GiftawayBrand, orderGiftawayEgift, toPhilippineMobile } from './giftaway.ts';
 import { isPlaceholderEmail } from './placeholderEmail.ts';
-import { type MessengerCard, messengerChatUrl, sendMessengerMessage } from './sendpulse.ts';
+import { getTelegramBotSettingEnabled } from './borrowerNotificationDelivery.ts';
+import { type MessengerCard, messengerChatUrl, sendMessengerMessage, sendWhatsAppTemplate, type WhatsAppTemplate } from './sendpulse.ts';
 import type { TelegramInlineKeyboard } from './telegram.ts';
 
 // Telegram callback_data for the card buttons: "vo:<s|r>:<claim uuid>" (≤64 bytes).
@@ -128,13 +129,20 @@ const SITE_URL = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL
 const DASHBOARD_URL = `${SITE_URL}/dashboard`;
 
 /** Who to message: their SendPulse contact (users.messenger_psid), Facebook name and bot language. */
-export type MessengerContact = { contactId: string | null; facebookName: string | null; firstName: string | null; locale: 'en' | 'fil' };
+export type MessengerContact = {
+   contactId: string | null;
+   facebookName: string | null;
+   firstName: string | null;
+   locale: 'en' | 'fil';
+   /** Their SendPulse WhatsApp contact, when they connected WhatsApp and didn't send STOP. */
+   whatsappContactId?: string | null;
+};
 
 export const loadMessengerContact = async (supabase: SupabaseClient, userId: string | null | undefined): Promise<MessengerContact | null> => {
    if (!userId) return null;
    const { data: user } = await supabase
       .from('users')
-      .select('messenger_psid, facebook_name, display_name, preferred_locale')
+      .select('messenger_psid, facebook_name, display_name, preferred_locale, whatsapp_contact_id, notif_whatsapp')
       .eq('id', userId)
       .maybeSingle();
    if (!user) return null;
@@ -148,7 +156,8 @@ export const loadMessengerContact = async (supabase: SupabaseClient, userId: str
       contactId,
       facebookName,
       firstName: firstWord(user.display_name) ?? firstWord(facebookName),
-      locale: (contact?.locale ?? user.preferred_locale) === 'fil' ? 'fil' : 'en'
+      locale: (contact?.locale ?? user.preferred_locale) === 'fil' ? 'fil' : 'en',
+      whatsappContactId: user.notif_whatsapp === false ? null : ((user.whatsapp_contact_id as string | null) ?? null)
    };
 };
 
@@ -279,13 +288,66 @@ export const messageBorrower = async (facebook: MessengerContact | null, content
    return result.ok ? 'sent' : (result.reason ?? 'send_failed');
 };
 
-/** One line for the admin card: did the bot reach them? */
-export const messengerOutcomeLine = (outcome: 'sent' | string) =>
-   outcome === 'sent'
-      ? '💬 Messenger: told them ✓'
-      : outcome === 'no_contact'
-        ? '💬 Messenger: not linked — only the email went out'
-        : `💬 Messenger: didn't go through (${outcome === 'send_failed' ? 'likely outside the 24h window' : outcome}) — tap 💬 to message them`;
+// WhatsApp fallback when Messenger can't reach them (outside its 24h window, or never linked).
+// WhatsApp allows only approved templates there, so this is `moodeng_reward_sent` (Utility, English,
+// created in SendPulse → WhatsApp bot → Templates):
+//   body   "Hi {{1}}, your {{2}} from Moodeng Credit has been sent to {{3}}. Please check your inbox
+//           and Spam folder. You can also open it in the Moodeng app."
+//   button static URL "Open Moodeng" → https://moodeng.app/dashboard
+// Switch: telegram_bot_settings `voucher_whatsapp_enabled`, off until Meta approves the template.
+export const REWARD_SENT_TEMPLATE = 'moodeng_reward_sent';
+export const VOUCHER_WHATSAPP_SETTING_KEY = 'voucher_whatsapp_enabled';
+
+/** Where the voucher went, for the WhatsApp notice: "₱50 food voucher" sent to "your email". */
+export type RewardNotice = { what: string; sentTo: string };
+
+export const buildRewardWhatsAppTemplate = (firstName: string | null | undefined, notice: RewardNotice): WhatsAppTemplate => ({
+   name: REWARD_SENT_TEMPLATE,
+   language: { code: 'en' },
+   components: [
+      {
+         type: 'body',
+         parameters: [
+            { type: 'text', text: firstName?.trim() || 'there' },
+            { type: 'text', text: notice.what },
+            { type: 'text', text: notice.sentTo }
+         ]
+      }
+   ]
+});
+
+/** Messenger outcome, plus the WhatsApp fallback's (null = not tried). */
+export type BorrowerTold = { messenger: 'sent' | string; whatsapp: 'sent' | string | null };
+
+/**
+ * Messenger first; when that fails, the WhatsApp template saying where the voucher went. Never
+ * throws. WhatsApp is skipped when they never connected it, sent STOP, or the switch is off.
+ */
+export const tellBorrower = async (
+   supabase: SupabaseClient,
+   facebook: MessengerContact | null,
+   content: RewardMessengerContent,
+   notice: RewardNotice
+): Promise<BorrowerTold> => {
+   const messenger = await messageBorrower(facebook, content);
+   if (messenger === 'sent' || !facebook?.whatsappContactId) return { messenger, whatsapp: null };
+   const enabled = await getTelegramBotSettingEnabled(supabase, VOUCHER_WHATSAPP_SETTING_KEY).catch(() => false);
+   if (!enabled) return { messenger, whatsapp: null };
+   const result = await sendWhatsAppTemplate(facebook.whatsappContactId, buildRewardWhatsAppTemplate(facebook.firstName, notice));
+   return { messenger, whatsapp: result.ok ? 'sent' : (result.reason ?? 'send_failed') };
+};
+
+/** One line for the admin card: did the bot reach them (and, if Messenger didn't, did WhatsApp)? */
+export const messengerOutcomeLine = (outcome: 'sent' | string, whatsapp: 'sent' | string | null = null) => {
+   if (outcome === 'sent') return '💬 Messenger: told them ✓';
+   const messenger =
+      outcome === 'no_contact'
+         ? '💬 Messenger: not linked'
+         : `💬 Messenger: didn't go through (${outcome === 'send_failed' ? 'likely outside the 24h window' : outcome})`;
+   if (whatsapp === 'sent') return `${messenger} · 🟢 WhatsApp: told them where it went ✓`;
+   if (whatsapp) return `${messenger} · 🟢 WhatsApp failed too (${whatsapp}) — message them yourself`;
+   return outcome === 'no_contact' ? `${messenger} — only the email went out` : `${messenger} — tap 💬 to message them`;
+};
 
 /** Telegram line when the borrower answers "Did your Moo-meal arrive?". */
 export const buildVoucherReceiptMessage = (claim: VoucherClaimRow & { received_at?: string | null }, giftawayResent: boolean | null = null) => {
@@ -562,14 +624,34 @@ export const voucherDecidedBy = (adminNote: string | null | undefined) =>
 
 const escapeHtml = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-/** The borrower's email: one button per ₱50 link. */
+/** The site a voucher link opens ("plum.gift"), so the email can say where the button goes. */
+const linkHost = (link: string) => {
+   try {
+      return new URL(link).host.replace(/^www\./, '');
+   } catch {
+      return null;
+   }
+};
+
+const LOGO_URL = `${SITE_URL}/app-icons/icon-192.png`;
+
+/**
+ * The borrower's email: one button per ₱50 link. Branded (logo, card, footer) and it names the site
+ * the button opens, so it doesn't read like phishing: the links go to Xoxo's plum.gift, a domain
+ * borrowers don't know.
+ */
 export const buildVoucherCodeEmail = (input: { fullName: string; amountPhp: number; reward: string; links: string[] }) => {
    const firstName = input.fullName.trim().split(/\s+/)[0] || 'there';
    const reason = REWARD_REASONS[input.reward] ?? 'from Moodeng Credit';
    const amount = `₱${input.amountPhp}`;
    const many = input.links.length > 1;
+   const host = input.links.length ? linkHost(input.links[0]) : null;
    const subject = `Your ${amount} food voucher from Moodeng Credit`;
-   const how = `Open ${many ? 'each link' : 'the link'}, pick ${FOOD_BRANDS}, and you'll get a voucher code to show at the store.`;
+   const steps = [
+      `Tap ${many ? 'each button' : 'the button'} above${host ? ` (it opens ${host}, the voucher site of our partner Xoxo)` : ''}.`,
+      `Pick ${FOOD_BRANDS}. You'll get a voucher code.`,
+      'Show the code at the store.'
+   ];
    const text = [
       `Hi ${firstName},`,
       '',
@@ -577,23 +659,45 @@ export const buildVoucherCodeEmail = (input: { fullName: string; amountPhp: numb
       '',
       ...input.links.map((link, i) => (many ? `₱50 voucher ${i + 1}: ${link}` : `Your voucher: ${link}`)),
       '',
-      how,
-      'If anything goes wrong, just reply to this email.',
+      ...steps.map((step, i) => `${i + 1}. ${step}`),
       '',
-      'Moodeng Credit'
+      `It's also in your Moodeng app: ${DASHBOARD_URL}`,
+      '',
+      'Questions? Just reply to this email.',
+      '',
+      'Moodeng Credit · moodeng.app',
+      'You got this email because you earned a reward on your Moodeng Credit account. We will never ask for your password, PIN or a payment by email.'
    ].join('\n');
+
+   const font = "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
    const buttons = input.links
       .map(
          (link, i) =>
-            `<p><a href="${escapeHtml(link)}" style="display:inline-block;padding:12px 20px;background:#6b55f7;color:#fff;border-radius:24px;text-decoration:none;font-weight:700">${many ? `Open ₱50 voucher ${i + 1}` : 'Open my food voucher'}</a></p>`
+            `<tr><td align="center" style="padding:6px 0"><a href="${escapeHtml(link)}" style="display:inline-block;padding:14px 28px;background:#6b55f7;color:#ffffff;border-radius:28px;text-decoration:none;font-weight:700;font-size:16px;${font}">${many ? `Open ₱50 voucher ${i + 1}` : 'Open my food voucher'}</a></td></tr>`
       )
-      .join('\n');
-   const html = `<p>Hi ${escapeHtml(firstName)},</p>
-<p>Here is your <b>${amount} food voucher</b> ${escapeHtml(reason)}. Salamat!</p>
-${buttons}
-<p>${escapeHtml(how)}</p>
-<p>If anything goes wrong, just reply to this email.</p>
-<p>Moodeng Credit</p>`;
+      .join('');
+   const stepRows = steps
+      .map(
+         (step, i) =>
+            `<tr><td valign="top" style="padding:4px 10px 4px 0;width:24px"><div style="width:22px;height:22px;line-height:22px;border-radius:11px;background:#efeaff;color:#6b55f7;font-weight:700;font-size:13px;text-align:center;${font}">${i + 1}</div></td><td style="padding:4px 0;font-size:15px;line-height:22px;color:#3a3550;${font}">${escapeHtml(step)}</td></tr>`
+      )
+      .join('');
+   const html = `<!doctype html>
+<html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="margin:0;padding:0;background:#f4f2fb">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f2fb"><tr><td align="center" style="padding:24px 12px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px">
+<tr><td align="center" style="padding:0 0 16px"><img src="${LOGO_URL}" width="56" height="56" alt="Moodeng" style="display:block;border-radius:14px"><div style="padding-top:8px;font-size:18px;font-weight:800;color:#2a2346;${font}">Moodeng Credit</div></td></tr>
+<tr><td style="background:#ffffff;border-radius:16px;padding:28px 24px">
+<p style="margin:0 0 10px;font-size:15px;color:#3a3550;${font}">Hi ${escapeHtml(firstName)},</p>
+<p style="margin:0 0 20px;font-size:15px;line-height:22px;color:#3a3550;${font}">Here is your food voucher ${escapeHtml(reason)}. Salamat! 🎉</p>
+<div style="text-align:center;padding:16px;background:#fff7d6;border-radius:12px;margin:0 0 16px"><div style="font-size:34px;font-weight:800;color:#2a2346;${font}">${amount}</div><div style="font-size:14px;color:#6f7d1d;${font}">🍗 Food voucher · ${escapeHtml(FOOD_BRANDS)}</div></div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${buttons}</table>
+<p style="margin:20px 0 8px;font-size:15px;font-weight:700;color:#2a2346;${font}">How to use it</p>
+<table role="presentation" cellpadding="0" cellspacing="0">${stepRows}</table>
+<p style="margin:20px 0 0;font-size:14px;line-height:20px;color:#6b6585;${font}">It's also in your <a href="${DASHBOARD_URL}" style="color:#6b55f7;font-weight:600">Moodeng app</a>. Questions? Just reply to this email.</p>
+</td></tr>
+<tr><td align="center" style="padding:16px 8px 0;font-size:12px;line-height:18px;color:#8b86a0;${font}">You got this email because you earned a reward on your Moodeng Credit account.<br>We will never ask for your password, PIN or a payment by email.<br><a href="${SITE_URL}" style="color:#8b86a0">moodeng.app</a> · <a href="mailto:support@moodeng.app" style="color:#8b86a0">support@moodeng.app</a></td></tr>
+</table></td></tr></table></body></html>`;
    return { subject, text, html };
 };
 
@@ -678,7 +782,9 @@ const sendViaGiftaway = async (supabase: SupabaseClient, claim: any, admin: stri
    if (codeError) console.error('giftaway link not recorded', claim.id, codeError.message);
 
    const facebook = await loadMessengerContact(supabase, claim.user_id);
-   const told = await messageBorrower(
+   const realEmail = email && !isPlaceholderEmail(email) ? email : null;
+   const told = await tellBorrower(
+      supabase,
       facebook,
       buildRewardSentMessage({
          firstName: facebook?.firstName ?? null,
@@ -688,11 +794,12 @@ const sendViaGiftaway = async (supabase: SupabaseClient, claim: any, admin: stri
          links: order.urls,
          product: order.product,
          provider: 'giftaway'
-      })
+      }),
+      { what: `₱${amountPhp} ${order.product === 'Grab' ? 'Grab' : 'food'} voucher`, sentTo: realEmail ? 'your phone (text) and email' : 'your phone (text)' }
    );
-   const to = [toPhilippineMobile(claim.mobile), email && !isPlaceholderEmail(email) ? email : null].filter(Boolean).join(' + ');
+   const to = [toPhilippineMobile(claim.mobile), realEmail].filter(Boolean).join(' + ');
    const credits = order.creditsLeft === null ? '' : ` · ${pesoUsd(order.creditsLeft.toFixed(2))} Giftaway credits left${order.creditsLeft < 500 ? ' ⚠️ top up soon' : ''}`;
-   const summary = `✅ ${pesoUsd(amountPhp)} ${order.product} eGift ordered on Giftaway (order ${order.orderId}) and sent by Giftaway to ${to} · by ${admin}${credits}\n${messengerOutcomeLine(told)}`;
+   const summary = `✅ ${pesoUsd(amountPhp)} ${order.product} eGift ordered on Giftaway (order ${order.orderId}) and sent by Giftaway to ${to} · by ${admin}${credits}\n${messengerOutcomeLine(told.messenger, told.whatsapp)}`;
    const stamp: CardStamp = { header: voucherStampHeader('sent', sent), detail: summary, by: admin };
    await stampDecisionCards(supabase, 'voucher', claim.id, stamp);
    return { ok: true, summary, stamp };
@@ -747,11 +854,13 @@ const sendViaBitrefill = async (supabase: SupabaseClient, claim: any, admin: str
 
    const why = claim.brand === 'grabmart' ? 'they picked GrabMart' : 'Xoxo link stock was empty';
    const facebook = await loadMessengerContact(supabase, claim.user_id);
-   const told = await messageBorrower(
+   const told = await tellBorrower(
+      supabase,
       facebook,
-      buildRewardSentMessage({ firstName: facebook?.firstName ?? null, locale: facebook?.locale ?? 'en', amountPhp, reward: claim.reward, links: [], product: bought.product })
+      buildRewardSentMessage({ firstName: facebook?.firstName ?? null, locale: facebook?.locale ?? 'en', amountPhp, reward: claim.reward, links: [], product: bought.product }),
+      { what: `₱${amountPhp} ${bought.product} voucher`, sentTo: 'your email' }
    );
-   const summary = `✅ ${pesoUsd(amountPhp)} ${bought.product} voucher (${why}) bought on Bitrefill and emailed by Bitrefill to ${email} · by ${admin}\n${messengerOutcomeLine(told)}`;
+   const summary = `✅ ${pesoUsd(amountPhp)} ${bought.product} voucher (${why}) bought on Bitrefill and emailed by Bitrefill to ${email} · by ${admin}\n${messengerOutcomeLine(told.messenger, told.whatsapp)}`;
    const stamp: CardStamp = { header: voucherStampHeader('sent', sent), detail: summary, by: admin };
    await stampDecisionCards(supabase, 'voucher', claim.id, stamp);
    return { ok: true, summary, stamp };
@@ -805,11 +914,13 @@ export const sendVoucherCode = async (supabase: SupabaseClient, claimId: string,
    const remaining = Number(data.remaining ?? 0);
    const stock = `${remaining} ₱50 link${remaining === 1 ? '' : 's'} left${remaining <= LOW_STOCK ? ' ⚠️ restock soon' : ''}`;
    const facebook = await loadMessengerContact(supabase, claim.user_id);
-   const told = await messageBorrower(
+   const told = await tellBorrower(
+      supabase,
       facebook,
-      buildRewardSentMessage({ firstName: facebook?.firstName ?? null, locale: facebook?.locale ?? 'en', amountPhp: Number(data.amount_php), reward: String(data.reward), links })
+      buildRewardSentMessage({ firstName: facebook?.firstName ?? null, locale: facebook?.locale ?? 'en', amountPhp: Number(data.amount_php), reward: String(data.reward), links }),
+      { what: `${peso(data.amount_php)} food voucher`, sentTo: 'your email' }
    );
-   const summary = `✅ ${pesoUsd(data.amount_php)} food voucher (${links.length} Xoxo link${links.length === 1 ? '' : 's'}) emailed to ${email} · by ${admin} · ${stock}\n${messengerOutcomeLine(told)}`;
+   const summary = `✅ ${pesoUsd(data.amount_php)} food voucher (${links.length} Xoxo link${links.length === 1 ? '' : 's'}) emailed to ${email} · by ${admin} · ${stock}\n${messengerOutcomeLine(told.messenger, told.whatsapp)}`;
    const stamp: CardStamp = { header: voucherStampHeader('sent', data), detail: summary, by: admin };
    await stampDecisionCards(supabase, 'voucher', claimId, stamp);
    return { ok: true, summary, stamp };

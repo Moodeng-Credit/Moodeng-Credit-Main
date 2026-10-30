@@ -127,6 +127,19 @@ Deno.test('admin side: 💬 button opens their SendPulse chat; outcome line says
    assertStringIncludes(messengerOutcomeLine('no_contact'), 'not linked');
 });
 
+Deno.test('WhatsApp fallback: template says what was sent and where; card line says who reached them', async () => {
+   const { buildRewardWhatsAppTemplate } = await import('./voucherClaims.ts');
+   const t = buildRewardWhatsAppTemplate('Irish', { what: '₱50 food voucher', sentTo: 'your email' });
+   assertEquals(t.name, 'moodeng_reward_sent');
+   assertEquals(t.components?.[0].parameters.map((p) => p.text), ['Irish', '₱50 food voucher', 'your email']);
+   assertEquals(buildRewardWhatsAppTemplate('  ', { what: 'x', sentTo: 'y' }).components?.[0].parameters[0].text, 'there');
+   assertStringIncludes(messengerOutcomeLine('send_failed', 'sent'), 'WhatsApp: told them where it went ✓');
+   assertStringIncludes(messengerOutcomeLine('no_contact', 'sent'), 'WhatsApp: told them');
+   assertStringIncludes(messengerOutcomeLine('send_failed', 'send_failed'), 'WhatsApp failed too');
+   assertStringIncludes(messengerOutcomeLine('send_failed', null), 'tap 💬');
+   assertEquals(messengerOutcomeLine('sent', null), '💬 Messenger: told them ✓');
+});
+
 Deno.test('digest: bot nudge marks and one 💬 button per Messenger person', () => {
    const base = { username: null, facebook: 'Ana Cruz', messenger: true, amountPhp: 50, vouchers: 1, days: 2 };
    const digest = {
