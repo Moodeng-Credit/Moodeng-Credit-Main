@@ -649,8 +649,8 @@ function DirectPesoCard({
          >
             <div className="flex items-center justify-between gap-[10px]">
                <p className="flex items-center gap-[8px] text-[22px] font-black italic leading-[1.2] tracking-[-0.3px] text-[var(--text-muted,#594d65)]">
-                  <PhFlag className="h-[16px] w-[24px]" />
                   USDC → Pesos
+                  <PhFlag className="h-[16px] w-[24px]" />
                </p>
                <div
                   className={`w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center shrink-0 ${selected ? 'bg-[#6b55f7] border-[#6b55f7]' : 'border-[var(--border-input)]'}`}
@@ -664,33 +664,19 @@ function DirectPesoCard({
                   {pesos != null ? `₱${pesos.toLocaleString('en-PH')}` : '₱'}
                </span>
                {spendable != null && spendable > 0 && (
-                  <span className="text-[14px] leading-[18px] text-[var(--text-muted,#45556c)]">about, from {spendable} USDC after fees</span>
+                  <span className="text-[14px] leading-[18px] text-[var(--text-muted,#45556c)]">after fees</span>
                )}
             </div>
 
-            <p className="mt-[4px] text-[16px] leading-[22px] text-[var(--text-muted,#45556c)]">
-               Straight to your Philippine GCash, Maya or bank account, from anywhere. No exchange app, nothing to sell.
-            </p>
-
-            <div className="mt-[10px] flex flex-wrap items-center gap-x-[12px] gap-y-[4px]">
-               {['GCash', 'Maya', '80+ PH banks', 'Arrives in minutes'].map((t) => (
-                  <span key={t} className="flex items-center gap-[4px] text-[13px] text-[#735dfa] dark:text-[#a98bff]" style={{ fontWeight: 590 }}>
-                     <Check className="w-[13px] h-[13px]" strokeWidth={3} />
-                     {t}
-                  </span>
-               ))}
-            </div>
+            <p className="mt-[2px] text-[15px] leading-[21px] text-[var(--text-muted,#45556c)]">To any PH GCash, Maya or bank, in minutes.</p>
 
             {/* BankPayoutFlow runs Stableyard's one-time setup (email code, ID check, then the
                 partner's details form) before the first quote; say so up front, until their ID check is approved. */}
             {!setupDone && (
-               <div className="mt-[12px] rounded-[8px] bg-[var(--surface-2,#f6f3ff)] px-[10px] py-[8px] flex gap-[8px]">
-                  <Info className="w-[15px] h-[15px] text-[#735dfa] dark:text-[#a98bff] shrink-0 mt-[1px]" />
-                  <p className="text-[12px] leading-[17px] text-[var(--text-muted,#45556c)]">
-                     <span className="font-semibold text-[var(--ink,#0f172b)]">First time only, about 5 min:</span> confirm your email, a
-                     quick ID check and a short details form with Stableyard, our payout partner. After that it&apos;s just the amount.
-                  </p>
-               </div>
+               <p className="mt-[8px] flex items-center gap-[6px] text-[12px] leading-[16px] text-[var(--text-muted,#45556c)]">
+                  <Info className="w-[14px] h-[14px] text-[#735dfa] dark:text-[#a98bff] shrink-0" />
+                  First time: quick ID check, ~5 min.
+               </p>
             )}
          </div>
       </button>
