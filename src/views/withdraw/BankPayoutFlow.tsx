@@ -258,7 +258,7 @@ export default function BankPayoutFlow({
       setStep('pricing');
    };
 
-   const getQuote = async () => {
+   const createPayment = async () => {
       setBusy(true);
       setError('');
       requestKey.current = crypto.randomUUID();
@@ -273,18 +273,16 @@ export default function BankPayoutFlow({
          requestKey: requestKey.current
       });
       setBusy(false);
-      showPayment(res);
+      return res;
    };
 
+   const getQuote = async () => showPayment(await createPayment());
+
+   // Stableyard never moves a Payment on once the form is done (it keeps asking for it), so after
+   // the form we start a fresh Payment; only if that one still asks has the form not landed.
    const recheckPayment = async () => {
-      setBusy(true);
-      setError('');
-      const res = await call(isPreview, { qr: 'get', paymentId });
-      setBusy(false);
-      const paymentStatus = res.result?.payment?.status;
-      // The first Payment may have expired while the form was filled in: start a fresh one.
-      if (paymentStatus && FAILED.has(paymentStatus)) return getQuote();
-      if (res.result?.nextAction?.type === 'complete_compliance')
+      const res = await createPayment();
+      if (res.ok && res.result?.nextAction?.type === 'complete_compliance')
          return setError("Stableyard hasn't received the form yet. Finish it, then try again.");
       showPayment(res);
    };
