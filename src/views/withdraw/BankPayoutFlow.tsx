@@ -672,53 +672,58 @@ export default function BankPayoutFlow({
                      </div>
                   </div>
                )}
-               <label className="block">
-                  <span className="text-[13px] font-semibold text-[var(--ink)]">
-                     {isEwallet ? `${shortBank(bank?.name ?? '')} number` : 'Account number'}
-                  </span>
-                  <input
-                     value={accountNumber}
-                     onChange={(e) => {
-                        const digits = e.target.value.replace(/\D/g, '');
-                        setAccountNumber(isEwallet ? toLocalMobile(digits) : digits.slice(0, 20));
-                     }}
-                     inputMode="numeric"
-                     placeholder={isEwallet ? '09XX XXX XXXX or +63' : 'Account number'}
-                     className={`${inputClass} mt-[6px]`}
-                  />
-                  {accountNumber && !accountOk ? (
-                     <span className="text-[12px] text-[var(--danger)]">
-                        {isEwallet ? 'Enter the 11-digit number (09… or +63…).' : 'Check the account number.'}
-                     </span>
-                  ) : null}
-               </label>
-               <label className="block">
-                  <span className="text-[13px] font-semibold text-[var(--ink)]">Name on the account</span>
-                  <input
-                     value={accountName}
-                     onChange={(e) => setAccountName(e.target.value.slice(0, 100))}
-                     autoComplete="name"
-                     placeholder={isEwallet ? `Full name on your ${shortBank(bank?.name ?? '')}` : 'Full name on the account'}
-                     className={`${inputClass} mt-[6px]`}
-                  />
-               </label>
-               <label className="block">
-                  <span className="text-[13px] font-semibold text-[var(--ink)]">Amount in pesos</span>
-                  <div className="relative mt-[6px]">
-                     <span className="absolute left-[14px] top-1/2 -translate-y-1/2 text-[16px] text-[var(--text-muted)]">₱</span>
-                     <input
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, '').replace(/(\.\d{0,2}).*/, '$1'))}
-                        inputMode="decimal"
-                        placeholder="0"
-                        className={`${inputClass} pl-[30px]`}
-                     />
-                  </div>
-                  <span className="text-[12px] text-[var(--text-faint)]">
-                     {peso(MIN_PHP)}–{peso(MAX_PHP)}
-                     {spendable != null ? ` · ${spendable} USDC in your wallet` : ''}
-                  </span>
-               </label>
+               {/* The account fields follow the chosen bank (GCash number vs account number), so they wait until one is picked. */}
+               {bank && !pickingBank && (
+                  <>
+                     <label className="block">
+                        <span className="text-[13px] font-semibold text-[var(--ink)]">
+                           {isEwallet ? `${shortBank(bank?.name ?? '')} number` : 'Account number'}
+                        </span>
+                        <input
+                           value={accountNumber}
+                           onChange={(e) => {
+                              const digits = e.target.value.replace(/\D/g, '');
+                              setAccountNumber(isEwallet ? toLocalMobile(digits) : digits.slice(0, 20));
+                           }}
+                           inputMode="numeric"
+                           placeholder={isEwallet ? '09XX XXX XXXX or +63' : 'Account number'}
+                           className={`${inputClass} mt-[6px]`}
+                        />
+                        {accountNumber && !accountOk ? (
+                           <span className="text-[12px] text-[var(--danger)]">
+                              {isEwallet ? 'Enter the 11-digit number (09… or +63…).' : 'Check the account number.'}
+                           </span>
+                        ) : null}
+                     </label>
+                     <label className="block">
+                        <span className="text-[13px] font-semibold text-[var(--ink)]">Name on the account</span>
+                        <input
+                           value={accountName}
+                           onChange={(e) => setAccountName(e.target.value.slice(0, 100))}
+                           autoComplete="name"
+                           placeholder={isEwallet ? `Full name on your ${shortBank(bank?.name ?? '')}` : 'Full name on the account'}
+                           className={`${inputClass} mt-[6px]`}
+                        />
+                     </label>
+                     <label className="block">
+                        <span className="text-[13px] font-semibold text-[var(--ink)]">Amount in pesos</span>
+                        <div className="relative mt-[6px]">
+                           <span className="absolute left-[14px] top-1/2 -translate-y-1/2 text-[16px] text-[var(--text-muted)]">₱</span>
+                           <input
+                              value={amount}
+                              onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, '').replace(/(\.\d{0,2}).*/, '$1'))}
+                              inputMode="decimal"
+                              placeholder="0"
+                              className={`${inputClass} pl-[30px]`}
+                           />
+                        </div>
+                        <span className="text-[12px] text-[var(--text-faint)]">
+                           {peso(MIN_PHP)}–{peso(MAX_PHP)}
+                           {spendable != null ? ` · ${spendable} USDC in your wallet` : ''}
+                        </span>
+                     </label>
+                  </>
+               )}
                {error ? <ErrorLine text={error} /> : null}
             </Panel>
             <button
