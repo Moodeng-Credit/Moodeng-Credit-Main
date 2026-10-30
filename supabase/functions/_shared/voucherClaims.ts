@@ -624,14 +624,34 @@ export const voucherDecidedBy = (adminNote: string | null | undefined) =>
 
 const escapeHtml = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-/** The borrower's email: one button per ₱50 link. */
+/** The site a voucher link opens ("plum.gift"), so the email can say where the button goes. */
+const linkHost = (link: string) => {
+   try {
+      return new URL(link).host.replace(/^www\./, '');
+   } catch {
+      return null;
+   }
+};
+
+const LOGO_URL = `${SITE_URL}/app-icons/icon-192.png`;
+
+/**
+ * The borrower's email: one button per ₱50 link. Branded (logo, card, footer) and it names the site
+ * the button opens, so it doesn't read like phishing: the links go to Xoxo's plum.gift, a domain
+ * borrowers don't know.
+ */
 export const buildVoucherCodeEmail = (input: { fullName: string; amountPhp: number; reward: string; links: string[] }) => {
    const firstName = input.fullName.trim().split(/\s+/)[0] || 'there';
    const reason = REWARD_REASONS[input.reward] ?? 'from Moodeng Credit';
    const amount = `₱${input.amountPhp}`;
    const many = input.links.length > 1;
+   const host = input.links.length ? linkHost(input.links[0]) : null;
    const subject = `Your ${amount} food voucher from Moodeng Credit`;
-   const how = `Open ${many ? 'each link' : 'the link'}, pick ${FOOD_BRANDS}, and you'll get a voucher code to show at the store.`;
+   const steps = [
+      `Tap ${many ? 'each button' : 'the button'} above${host ? ` (it opens ${host}, the voucher site of our partner Xoxo)` : ''}.`,
+      `Pick ${FOOD_BRANDS}. You'll get a voucher code.`,
+      'Show the code at the store.'
+   ];
    const text = [
       `Hi ${firstName},`,
       '',
@@ -639,23 +659,45 @@ export const buildVoucherCodeEmail = (input: { fullName: string; amountPhp: numb
       '',
       ...input.links.map((link, i) => (many ? `₱50 voucher ${i + 1}: ${link}` : `Your voucher: ${link}`)),
       '',
-      how,
-      'If anything goes wrong, just reply to this email.',
+      ...steps.map((step, i) => `${i + 1}. ${step}`),
       '',
-      'Moodeng Credit'
+      `It's also in your Moodeng app: ${DASHBOARD_URL}`,
+      '',
+      'Questions? Just reply to this email.',
+      '',
+      'Moodeng Credit · moodeng.app',
+      'You got this email because you earned a reward on your Moodeng Credit account. We will never ask for your password, PIN or a payment by email.'
    ].join('\n');
+
+   const font = "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
    const buttons = input.links
       .map(
          (link, i) =>
-            `<p><a href="${escapeHtml(link)}" style="display:inline-block;padding:12px 20px;background:#6b55f7;color:#fff;border-radius:24px;text-decoration:none;font-weight:700">${many ? `Open ₱50 voucher ${i + 1}` : 'Open my food voucher'}</a></p>`
+            `<tr><td align="center" style="padding:6px 0"><a href="${escapeHtml(link)}" style="display:inline-block;padding:14px 28px;background:#6b55f7;color:#ffffff;border-radius:28px;text-decoration:none;font-weight:700;font-size:16px;${font}">${many ? `Open ₱50 voucher ${i + 1}` : 'Open my food voucher'}</a></td></tr>`
       )
-      .join('\n');
-   const html = `<p>Hi ${escapeHtml(firstName)},</p>
-<p>Here is your <b>${amount} food voucher</b> ${escapeHtml(reason)}. Salamat!</p>
-${buttons}
-<p>${escapeHtml(how)}</p>
-<p>If anything goes wrong, just reply to this email.</p>
-<p>Moodeng Credit</p>`;
+      .join('');
+   const stepRows = steps
+      .map(
+         (step, i) =>
+            `<tr><td valign="top" style="padding:4px 10px 4px 0;width:24px"><div style="width:22px;height:22px;line-height:22px;border-radius:11px;background:#efeaff;color:#6b55f7;font-weight:700;font-size:13px;text-align:center;${font}">${i + 1}</div></td><td style="padding:4px 0;font-size:15px;line-height:22px;color:#3a3550;${font}">${escapeHtml(step)}</td></tr>`
+      )
+      .join('');
+   const html = `<!doctype html>
+<html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="margin:0;padding:0;background:#f4f2fb">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f2fb"><tr><td align="center" style="padding:24px 12px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px">
+<tr><td align="center" style="padding:0 0 16px"><img src="${LOGO_URL}" width="56" height="56" alt="Moodeng" style="display:block;border-radius:14px"><div style="padding-top:8px;font-size:18px;font-weight:800;color:#2a2346;${font}">Moodeng Credit</div></td></tr>
+<tr><td style="background:#ffffff;border-radius:16px;padding:28px 24px">
+<p style="margin:0 0 10px;font-size:15px;color:#3a3550;${font}">Hi ${escapeHtml(firstName)},</p>
+<p style="margin:0 0 20px;font-size:15px;line-height:22px;color:#3a3550;${font}">Here is your food voucher ${escapeHtml(reason)}. Salamat! 🎉</p>
+<div style="text-align:center;padding:16px;background:#fff7d6;border-radius:12px;margin:0 0 16px"><div style="font-size:34px;font-weight:800;color:#2a2346;${font}">${amount}</div><div style="font-size:14px;color:#6f7d1d;${font}">🍗 Food voucher · ${escapeHtml(FOOD_BRANDS)}</div></div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${buttons}</table>
+<p style="margin:20px 0 8px;font-size:15px;font-weight:700;color:#2a2346;${font}">How to use it</p>
+<table role="presentation" cellpadding="0" cellspacing="0">${stepRows}</table>
+<p style="margin:20px 0 0;font-size:14px;line-height:20px;color:#6b6585;${font}">It's also in your <a href="${DASHBOARD_URL}" style="color:#6b55f7;font-weight:600">Moodeng app</a>. Questions? Just reply to this email.</p>
+</td></tr>
+<tr><td align="center" style="padding:16px 8px 0;font-size:12px;line-height:18px;color:#8b86a0;${font}">You got this email because you earned a reward on your Moodeng Credit account.<br>We will never ask for your password, PIN or a payment by email.<br><a href="${SITE_URL}" style="color:#8b86a0">moodeng.app</a> · <a href="mailto:support@moodeng.app" style="color:#8b86a0">support@moodeng.app</a></td></tr>
+</table></td></tr></table></body></html>`;
    return { subject, text, html };
 };
 
