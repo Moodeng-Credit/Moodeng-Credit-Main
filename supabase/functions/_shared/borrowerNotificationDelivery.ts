@@ -34,6 +34,27 @@ export const WHATSAPP_REMINDER_TEMPLATES: Partial<Record<LoanNotificationType, s
 // it on (telegram_bot_settings, like the Telegram one).
 export const BORROWER_WHATSAPP_SETTING_KEY = 'borrower_whatsapp_enabled';
 
+// "Funded" on WhatsApp: only when Messenger couldn't tell them (outside its 24h window, or never
+// linked). Template `moodeng_loan_funded` (Utility, en): "Hi {{1}}, good news! Your Moodeng loan of
+// {{2}} USDC has been funded and sent to your wallet. Tap below to see it and your due date." with a
+// static "Open Moodeng" button. Own switch, off until Meta approves the template.
+export const FUNDED_WHATSAPP_TEMPLATE = 'moodeng_loan_funded';
+export const FUNDED_WHATSAPP_SETTING_KEY = 'funded_whatsapp_enabled';
+
+export const buildFundedWhatsAppTemplate = (recipient: LoanNotificationRecipient, loan: LoanNotificationLoan): WhatsAppTemplate => ({
+   name: FUNDED_WHATSAPP_TEMPLATE,
+   language: { code: 'en' },
+   components: [
+      {
+         type: 'body',
+         parameters: [
+            { type: 'text', text: recipient.username?.trim() || 'there' },
+            { type: 'text', text: formatUsdcAmount(loan.loan_amount) }
+         ]
+      }
+   ]
+});
+
 export const buildWhatsAppReminderTemplate = (
    type: LoanNotificationType,
    recipient: LoanNotificationRecipient,
@@ -366,6 +387,16 @@ export const sendBorrowerLoanNotification = async (
          const result = await sendWhatsAppTemplate(recipient.whatsapp_contact_id, whatsappTemplate);
          whatsappSent = result.ok;
          console.log(`[borrowerNotification] WhatsApp "${type}" (${whatsappTemplate.name}) → ${result.ok ? 'sent' : `not sent (${result.reason})`}`);
+      }
+   }
+
+   // Funded, when Messenger couldn't reach them: the WhatsApp template instead.
+   if (type === 'funded' && loan && !messengerSent && recipient.whatsapp_contact_id && recipient.notif_whatsapp !== false && options.push?.supabase) {
+      const enabled = await getTelegramBotSettingEnabled(options.push.supabase, FUNDED_WHATSAPP_SETTING_KEY).catch(() => false);
+      if (enabled) {
+         const result = await sendWhatsAppTemplate(recipient.whatsapp_contact_id, buildFundedWhatsAppTemplate(recipient, loan));
+         whatsappSent = result.ok;
+         console.log(`[borrowerNotification] WhatsApp "funded" for ${loan.tracking_id ?? '?'} → ${result.ok ? 'sent' : `not sent (${result.reason})`}`);
       }
    }
 

@@ -58,3 +58,10 @@ Deno.test('WhatsApp: phone numbers normalised to digits', () => {
    assertEquals(normalizeWhatsAppPhone(''), null);
    assertEquals(normalizeWhatsAppPhone('123'), null);
 });
+
+Deno.test('funded WhatsApp template: name and amount', async () => {
+   const { buildFundedWhatsAppTemplate } = await import('./borrowerNotificationDelivery.ts');
+   const t = buildFundedWhatsAppTemplate({ username: 'maria' } as never, { loan_amount: 20 } as never);
+   assertEquals(t.name, 'moodeng_loan_funded');
+   assertEquals(t.components?.[0].parameters.map((p) => p.text), ['maria', '20']);
+});
