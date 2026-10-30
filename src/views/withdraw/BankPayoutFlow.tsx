@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { ArrowRight, CheckCircle2, Clock, Landmark, Loader2, ShieldCheck, XCircle } from 'lucide-react';
+import { ArrowRight, Check, CheckCircle2, Clock, Landmark, Loader2, Search, ShieldCheck, XCircle } from 'lucide-react';
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
@@ -90,6 +90,11 @@ const toLocalMobile = (digits: string) => {
 };
 
 const peso = (n: number) => `₱${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+const normalize = (s: string) =>
+   s
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
 const shortBank = (name: string) => (name.startsWith('MAYA PHILIPPINES') ? 'Maya' : name === 'GCASH' ? 'GCash' : name);
 
 const inputClass =
@@ -163,6 +168,21 @@ export default function BankPayoutFlow({
       const rest = banks.filter((b) => !POPULAR.includes(b.name)).sort((a, b) => a.name.localeCompare(b.name));
       return { top, rest };
    }, [banks]);
+
+   // Type-to-search over ~90 banks: every typed word must appear in the name (ignoring case and
+   // punctuation), popular ones first. An empty search shows the popular list.
+   const [bankQuery, setBankQuery] = useState('');
+   const [pickingBank, setPickingBank] = useState(false);
+   const bankMatches = useMemo(() => {
+      const words = normalize(bankQuery).split(' ').filter(Boolean);
+      if (words.length === 0) return sortedBanks.top;
+      return [...sortedBanks.top, ...sortedBanks.rest]
+         .filter((b) => {
+            const name = normalize(`${b.name} ${shortBank(b.name)}`);
+            return words.every((w) => name.includes(w));
+         })
+         .slice(0, 8);
+   }, [bankQuery, sortedBanks]);
 
    const loadSetup = async () => {
       setError('');
@@ -412,25 +432,61 @@ export default function BankPayoutFlow({
       return (
          <div className="space-y-[12px]">
             <Panel>
-               <label className="block">
-                  <span className="text-[13px] font-semibold text-[var(--ink)]">Send to</span>
-                  <select value={bankCode} onChange={(e) => setBankCode(e.target.value)} className={`${inputClass} mt-[6px]`}>
-                     <optgroup label="Popular">
-                        {sortedBanks.top.map((b) => (
-                           <option key={b.code} value={b.code}>
-                              {shortBank(b.name)}
-                           </option>
+               <span className="block text-[13px] font-semibold text-[var(--ink)]">Send to</span>
+               {bank && !pickingBank ? (
+                  <button
+                     type="button"
+                     onClick={() => {
+                        setBankQuery('');
+                        setPickingBank(true);
+                     }}
+                     className={`${inputClass} mt-[6px] flex items-center gap-[10px] text-left`}
+                  >
+                     <Landmark className="w-[18px] h-[18px] text-[var(--primary)] shrink-0" />
+                     <span className="flex-1 min-w-0 truncate font-semibold">{shortBank(bank.name)}</span>
+                     <span className="text-[13px] font-semibold text-[var(--accent)] shrink-0">Change</span>
+                  </button>
+               ) : (
+                  <div className="mt-[6px]">
+                     <div className="relative">
+                        <Search className="w-[16px] h-[16px] text-[var(--text-faint)] absolute left-[12px] top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                           value={bankQuery}
+                           onChange={(e) => setBankQuery(e.target.value)}
+                           autoFocus={pickingBank}
+                           placeholder="Type your bank or e-wallet, e.g. BDO"
+                           className={`${inputClass} pl-[36px]`}
+                        />
+                     </div>
+                     <div className="mt-[6px] rounded-[12px] border border-[var(--border-card)] overflow-hidden divide-y divide-[var(--divider)]">
+                        {!bankQuery.trim() && (
+                           <p className="px-[12px] pt-[8px] pb-[4px] text-[11px] font-bold uppercase tracking-[0.4px] text-[var(--text-faint)]">
+                              Popular
+                           </p>
+                        )}
+                        {bankMatches.map((b) => (
+                           <button
+                              key={b.code}
+                              type="button"
+                              onClick={() => {
+                                 setBankCode(b.code);
+                                 setPickingBank(false);
+                                 setBankQuery('');
+                              }}
+                              className="w-full px-[12px] py-[10px] flex items-center gap-[10px] text-left hover:bg-[var(--surface-2)]"
+                           >
+                              <span className="flex-1 min-w-0 truncate text-[14px] text-[var(--ink)]">{shortBank(b.name)}</span>
+                              {b.code === bankCode && <Check className="w-[16px] h-[16px] text-[var(--primary)] shrink-0" />}
+                           </button>
                         ))}
-                     </optgroup>
-                     <optgroup label="All banks and e-wallets">
-                        {sortedBanks.rest.map((b) => (
-                           <option key={b.code} value={b.code}>
-                              {b.name}
-                           </option>
-                        ))}
-                     </optgroup>
-                  </select>
-               </label>
+                        {bankMatches.length === 0 && (
+                           <p className="px-[12px] py-[10px] text-[13px] text-[var(--text-muted)]">
+                              No bank matches “{bankQuery.trim()}”. Try a shorter name, like “BDO” or “Metro”.
+                           </p>
+                        )}
+                     </div>
+                  </div>
+               )}
                <label className="block">
                   <span className="text-[13px] font-semibold text-[var(--ink)]">
                      {isEwallet ? `${shortBank(bank?.name ?? '')} number` : 'Account number'}

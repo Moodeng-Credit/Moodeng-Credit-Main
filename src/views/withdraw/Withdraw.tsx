@@ -51,7 +51,7 @@ import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { CashoutGateError, startCashoutFaceCheck } from '@/lib/withdraw/cashoutFaceGate';
 import type { RootState } from '@/store/store';
 import BankPayoutFlow from '@/views/withdraw/BankPayoutFlow';
-import useBankPayoutAvailable from '@/views/withdraw/useBankPayoutAvailable';
+import { useBankPayoutStatus } from '@/views/withdraw/useBankPayoutAvailable';
 
 import './withdraw-theme.css';
 
@@ -630,7 +630,17 @@ function DirectPesoBanner({ balanceLine, repayLine }: { balanceLine: string; rep
 const BANK_PAYOUT_FEE_SHARE = 0.022;
 
 /** The direct payout (Stableyard): shows USDC turning straight into pesos, so it doesn't read like one more exchange. */
-function DirectPesoCard({ selected, onSelect, spendable }: { selected: boolean; onSelect: () => void; spendable: number | null }) {
+function DirectPesoCard({
+   selected,
+   onSelect,
+   spendable,
+   setupDone
+}: {
+   selected: boolean;
+   onSelect: () => void;
+   spendable: number | null;
+   setupDone: boolean;
+}) {
    const { value: phpRate } = useUsdcRate('php');
    const pesos = spendable != null && spendable > 0 ? Math.floor(spendable * phpRate * (1 - BANK_PAYOUT_FEE_SHARE)) : null;
    return (
@@ -673,14 +683,16 @@ function DirectPesoCard({ selected, onSelect, spendable }: { selected: boolean; 
             </div>
 
             {/* BankPayoutFlow runs Stableyard's one-time setup (email code, ID check, then the
-                partner's details form) before the first quote; say so up front. */}
-            <div className="mt-[12px] rounded-[8px] bg-[var(--surface-2,#f6f3ff)] px-[10px] py-[8px] flex gap-[8px]">
-               <Info className="w-[15px] h-[15px] text-[#735dfa] shrink-0 mt-[1px]" />
-               <p className="text-[12px] leading-[17px] text-[var(--text-muted,#45556c)]">
-                  <span className="font-semibold text-[var(--ink,#0f172b)]">First time only, about 5 min:</span> confirm your email, a
-                  quick ID check and a short details form with Stableyard, our payout partner. After that it&apos;s just the amount.
-               </p>
-            </div>
+                partner's details form) before the first quote; say so up front, until their ID check is approved. */}
+            {!setupDone && (
+               <div className="mt-[12px] rounded-[8px] bg-[var(--surface-2,#f6f3ff)] px-[10px] py-[8px] flex gap-[8px]">
+                  <Info className="w-[15px] h-[15px] text-[#735dfa] shrink-0 mt-[1px]" />
+                  <p className="text-[12px] leading-[17px] text-[var(--text-muted,#45556c)]">
+                     <span className="font-semibold text-[var(--ink,#0f172b)]">First time only, about 5 min:</span> confirm your email, a
+                     quick ID check and a short details form with Stableyard, our payout partner. After that it&apos;s just the amount.
+                  </p>
+               </div>
+            )}
          </div>
       </button>
    );
@@ -689,7 +701,7 @@ function DirectPesoCard({ selected, onSelect, spendable }: { selected: boolean; 
 function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) => void; onLater: () => void }) {
    const { spendable, walletConnected, repayUsdc: REPAY_USDC, dueDate: DUE_DATE, isPreview } = useWithdrawData();
    const navigate = useNavigate();
-   const bankPayout = useBankPayoutAvailable(isPreview);
+   const { available: bankPayout, kycApproved } = useBankPayoutStatus(isPreview);
    // No region/IP check here (deliberately removed): `useRegion()` is an IP-based guess, not
    // the user's actual location or nationality — a Filipino traveling or living abroad still
    // has working Coins.ph/GCash/PDAX accounts, and a client-side IP lookup routinely misreads
@@ -807,7 +819,12 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
             <div className="space-y-[10px]">
                {bankPayout && (
                   <>
-                     <DirectPesoCard selected={selected === 'bank'} onSelect={() => selectProvider('bank')} spendable={spendable} />
+                     <DirectPesoCard
+                        selected={selected === 'bank'}
+                        onSelect={() => selectProvider('bank')}
+                        spendable={spendable}
+                        setupDone={kycApproved}
+                     />
                      <p className="text-[18px] font-black italic leading-[1.2] tracking-[-0.3px] text-[var(--text-muted,#594d65)] pt-[10px] pb-[2px]">
                         Or sell on an exchange app
                      </p>
