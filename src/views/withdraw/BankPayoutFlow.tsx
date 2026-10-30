@@ -23,6 +23,7 @@ type Bank = { code: string; name: string };
 type DepositInstructions = { address: string; chainId: number; tokenAddress: string; decimals: number; amount: string };
 type FnResult = {
    ok?: boolean;
+   accountId?: string;
    code?: string | null;
    error?: string;
    emailVerified?: boolean;
@@ -97,6 +98,27 @@ const normalize = (s: string) =>
       .trim();
 const shortBank = (name: string) => (name.startsWith('MAYA PHILIPPINES') ? 'Maya' : name === 'GCASH' ? 'GCash' : name);
 
+// The last payout's bank + account, kept on this device only (we never store full account numbers
+// server-side), keyed by the Stableyard account so another login on the same phone doesn't see it.
+type SavedPayee = { bankCode: string; accountNumber: string; accountName: string };
+const savedKey = (accountId: string) => `moodeng.bankPayout.last.${accountId}`;
+const readSavedPayee = (accountId: string): SavedPayee | null => {
+   try {
+      const raw = window.localStorage.getItem(savedKey(accountId));
+      const saved = raw ? (JSON.parse(raw) as Partial<SavedPayee>) : null;
+      return saved?.bankCode && saved.accountNumber && saved.accountName ? (saved as SavedPayee) : null;
+   } catch {
+      return null;
+   }
+};
+const writeSavedPayee = (accountId: string, payee: SavedPayee) => {
+   try {
+      window.localStorage.setItem(savedKey(accountId), JSON.stringify(payee));
+   } catch {
+      /* private mode / storage blocked: just don't remember */
+   }
+};
+
 const inputClass =
    'w-full rounded-[8px] border-2 border-[#e8e4ff] bg-[var(--surface)] px-[14px] py-[12px] text-[16px] text-[var(--ink)] outline-none focus:border-[#6b55f7]';
 const primaryClass =
@@ -154,6 +176,7 @@ export default function BankPayoutFlow({
    const [status, setStatus] = useState('');
    const requestKey = useRef('');
    const [complianceUrl, setComplianceUrl] = useState('');
+   const [remembered, setRemembered] = useState(false);
    const pricingTries = useRef(0);
 
    const bank = banks.find((b) => b.code === bankCode);
@@ -201,7 +224,15 @@ export default function BankPayoutFlow({
       const list = await call(isPreview, { qr: 'bank_list', country: 'PH' });
       const all = list.result?.banks ?? [];
       setBanks(all);
-      setBankCode((current) => current || all.find((b) => b.name === 'GCASH')?.code || all[0]?.code || '');
+      const saved = readSavedPayee(res.accountId ?? 'preview');
+      if (saved && all.some((b) => b.code === saved.bankCode)) {
+         setBankCode(saved.bankCode);
+         setAccountNumber(saved.accountNumber);
+         setAccountName(saved.accountName);
+         setRemembered(true);
+      } else {
+         setBankCode((current) => current || all.find((b) => b.name === 'GCASH')?.code || all[0]?.code || '');
+      }
       if (!list.ok) setError(list.error ?? 'Could not load banks. Try again.');
       setStep('form');
    };
@@ -342,6 +373,7 @@ export default function BankPayoutFlow({
             return;
          }
          void call(isPreview, { qr: 'sent', paymentId, txHash: outcome.hash });
+         writeSavedPayee(setup?.accountId ?? 'preview', { bankCode, accountNumber, accountName: accountName.trim() });
          setStatus('processing');
          setStep('tracking');
       } catch (err) {
@@ -432,6 +464,11 @@ export default function BankPayoutFlow({
       return (
          <div className="space-y-[12px]">
             <Panel>
+               {remembered && (
+                  <p className="rounded-[8px] bg-[var(--surface-2)] px-[10px] py-[8px] text-[12px] leading-[17px] text-[var(--text-muted)]">
+                     Filled in from your last cash-out. Check it&apos;s still right, then enter the amount.
+                  </p>
+               )}
                <span className="block text-[13px] font-semibold text-[var(--ink)]">Send to</span>
                {bank && !pickingBank ? (
                   <button
