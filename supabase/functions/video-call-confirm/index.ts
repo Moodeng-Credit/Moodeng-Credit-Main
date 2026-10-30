@@ -5,7 +5,7 @@ import { postDiscord } from '../_shared/discord.ts';
 import { getAdminChatId } from '../_shared/loanAccess.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { buildCallIcs, CALENDAR_CONFIRM_OPENS_MIN, googleCalendarUrl, isAndroid } from '../_shared/callCalendar.ts';
-import { buildCalendarConfirmUrl, formatCallTime } from '../_shared/videoCall.ts';
+import { buildCalendarConfirmUrl, formatCallTime, sendConfirmedMessenger } from '../_shared/videoCall.ts';
 
 // Target of the "✅ I'll be there" button in the Messenger booking confirmation / reminders.
 //
@@ -55,7 +55,7 @@ serve(async (req) => {
    const svc = createClient(SUPABASE_URL, SERVICE_KEY);
    const { data: user, error } = await svc
       .from('users')
-      .select('id, username, display_name, email, video_call_starts_at, video_call_timezone, video_call_confirmed_at, video_call_join_url')
+      .select('id, username, display_name, email, messenger_psid, video_call_starts_at, video_call_timezone, video_call_confirmed_at, video_call_join_url')
       .eq('video_call_confirm_token', token)
       .maybeSingle();
    if (error || !user?.video_call_starts_at) return redirect('expired');
@@ -89,6 +89,9 @@ serve(async (req) => {
          console.error('video-call-confirm: telegram failed', err instanceof Error ? err.message : err);
       }
       await postDiscord({ content: text }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
+      // Reply in their Messenger chat so the tap visibly "did something" there too.
+      const ack = await sendConfirmedMessenger(user).catch((err) => ({ ok: false, reason: err instanceof Error ? err.message : String(err) }));
+      if (!ack.ok && ack.reason !== 'no_contact') console.log('video-call-confirm: messenger ack skipped for', user.id, ack.reason);
    }
 
    return redirect('yes');

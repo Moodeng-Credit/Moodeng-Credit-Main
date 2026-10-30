@@ -169,6 +169,16 @@ export const sendConfirmAskMessenger = (u: CallUser) => {
    });
 };
 
+// Right after they tap ✅ I'll be there. Messenger can't edit the card we sent, so this reply is what
+// tells them the tap worked (the old card's buttons stay; a second tap just lands back in the app).
+export const sendConfirmedMessenger = (u: CallUser) => {
+   if (!u.video_call_starts_at) return Promise.resolve({ ok: false as const, reason: 'no_call' });
+   const when = formatCallTime(u.video_call_starts_at, u.video_call_timezone);
+   return sendMessengerMessage(u.messenger_psid, {
+      text: `✅ Got it, your spot is saved! See you ${when}.\n${u.video_call_join_url ? `Join: ${u.video_call_join_url}` : 'The Zoom link is in your email.'}\n🪪 Have your ID ready.`
+   });
+};
+
 // At the start time — the single most effective no-show nudge.
 export const sendStartingMessenger = (u: CallUser) => {
    if (!u.video_call_starts_at) return Promise.resolve({ ok: false as const, reason: 'no_call' });
