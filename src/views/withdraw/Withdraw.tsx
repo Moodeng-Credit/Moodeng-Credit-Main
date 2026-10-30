@@ -603,6 +603,35 @@ function PickerRow({ id, selected, onSelect, icon, name, line1, line2, recommend
 // level card, the 85° purple gradient of its pill buttons, white cards with a 2px lavender border.
 const MILESTONE_GRADIENT = 'linear-gradient(85deg, #9584ff 0%, #6b55f7 98%)';
 
+/** Top banner for testers, in the Milestone banner style (copy left, Moodeng art right); tap goes straight to the payout. */
+function DirectPesoBanner({ onCashOut }: { onCashOut: () => void }) {
+   return (
+      <button
+         type="button"
+         onClick={onCashOut}
+         className="relative w-full h-[112px] mb-[16px] rounded-[12px] overflow-hidden text-left active:scale-[0.99] transition-transform"
+         style={{ backgroundImage: 'linear-gradient(100deg, #efeaff 0%, #ddd5ff 100%)' }}
+      >
+         <img
+            src="/dashboard-v2/moo-envelope.png"
+            alt=""
+            aria-hidden="true"
+            className="absolute right-[-6px] bottom-[-14px] h-[128px] w-auto pointer-events-none select-none"
+         />
+         <span className="relative flex h-full flex-col justify-center pl-[16px] pr-[110px]">
+            <span className="text-[24px] font-black italic leading-[1.1] tracking-[-0.5px] text-[#6b55f7]">Pesos in minutes</span>
+            <span className="mt-[2px] text-[14px] leading-[18px] text-[#594d65]">USDC straight to GCash, Maya or bank</span>
+            <span
+               className="mt-[8px] self-start h-[28px] rounded-full px-[14px] flex items-center text-[14px] text-white"
+               style={{ backgroundImage: MILESTONE_GRADIENT, fontWeight: 590 }}
+            >
+               Cash out
+            </span>
+         </span>
+      </button>
+   );
+}
+
 /** The direct payout (Stableyard): shows USDC turning straight into pesos, so it doesn't read like one more exchange. */
 function DirectPesoCard({ selected, onSelect, spendable }: { selected: boolean; onSelect: () => void; spendable: number | null }) {
    const { value: phpRate } = useUsdcRate('php');
@@ -721,15 +750,19 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                      style={{ top: d.top, left: d.left, width: d.s, height: d.s, background: d.c, opacity: d.o }}
                   />
                ))}
-               <div
-                  className="w-[64px] h-[64px] rounded-full bg-[var(--surface)] border-[5px] border-[var(--border-1)] flex items-center justify-center mb-[14px]"
-                  style={{ boxShadow: '0px 6px 18px rgba(96,16,210,0.14)' }}
-               >
-                  <div className="relative">
-                     <Wallet className="w-[26px] h-[26px] text-[var(--primary)]" strokeWidth={2.2} />
-                     <ArrowUpRight className="w-[13px] h-[13px] text-[var(--primary)] absolute -top-[3px] -right-[5px]" strokeWidth={3} />
+               {bankPayout ? (
+                  <DirectPesoBanner onCashOut={() => onWithdraw('bank')} />
+               ) : (
+                  <div
+                     className="w-[64px] h-[64px] rounded-full bg-[var(--surface)] border-[5px] border-[var(--border-1)] flex items-center justify-center mb-[14px]"
+                     style={{ boxShadow: '0px 6px 18px rgba(96,16,210,0.14)' }}
+                  >
+                     <div className="relative">
+                        <Wallet className="w-[26px] h-[26px] text-[var(--primary)]" strokeWidth={2.2} />
+                        <ArrowUpRight className="w-[13px] h-[13px] text-[var(--primary)] absolute -top-[3px] -right-[5px]" strokeWidth={3} />
+                     </div>
                   </div>
-               </div>
+               )}
                <h1 className="text-[27px] text-[var(--ink)]" style={{ fontWeight: 590, lineHeight: 1.1, letterSpacing: '-0.04em' }}>
                   Withdraw your USDC
                </h1>
