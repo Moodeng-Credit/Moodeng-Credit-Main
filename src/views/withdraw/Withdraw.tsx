@@ -599,6 +599,64 @@ function PickerRow({ id, selected, onSelect, icon, name, line1, line2, recommend
    );
 }
 
+/** The direct payout (Stableyard): shows USDC turning straight into pesos, so it doesn't read like one more exchange. */
+function DirectPesoCard({ selected, onSelect, spendable }: { selected: boolean; onSelect: () => void; spendable: number | null }) {
+   const { value: phpRate } = useUsdcRate('php');
+   const pesos = spendable != null && spendable > 0 ? Math.floor(spendable * phpRate) : null;
+   return (
+      <button onClick={onSelect} className="relative w-full text-left outline-none">
+         <div className="absolute -top-[9px] left-[14px] z-10 bg-[var(--primary)] rounded-full px-[7px] py-[2px] shadow-sm flex items-center justify-center">
+            <span className="text-[8px] font-bold text-white uppercase tracking-[0.4px] leading-none">Recommended · No exchange app</span>
+         </div>
+         <div
+            className={`rounded-[20px] p-[16px] border-2 transition-all ${selected ? 'bg-[var(--surface-2)] border-[var(--primary)]' : 'bg-[var(--surface)] border-[var(--border-card)] hover:border-[var(--border-4)]'}`}
+            style={{ boxShadow: selected ? '0px 6px 18px rgba(96,16,210,0.14)' : '0px 1px 3px rgba(27,28,29,0.05)' }}
+         >
+            <div className="flex items-start gap-[12px]">
+               <div className="flex-1 min-w-0">
+                  <p className="text-[17px] text-[var(--ink)] leading-[22px]" style={{ fontWeight: 650 }}>
+                     USDC straight to pesos
+                  </p>
+                  <p className="text-[12px] text-[var(--text-muted)] leading-[17px] mt-[3px]">
+                     We send pesos to your GCash, Maya or bank. Nothing to sell, no other app.
+                  </p>
+               </div>
+               <div
+                  className={`w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center shrink-0 mt-[2px] ${selected ? 'bg-[var(--primary)] border-[var(--primary)]' : 'border-[var(--border-input)]'}`}
+               >
+                  {selected && <Check className="w-[12px] h-[12px] text-white" strokeWidth={3.5} />}
+               </div>
+            </div>
+
+            <div className="mt-[12px] rounded-[14px] bg-[var(--surface)] border border-[var(--border-card)] px-[12px] py-[10px] flex items-center gap-[10px]">
+               <div className="flex-1 min-w-0">
+                  <p className="text-[10px] uppercase tracking-[0.4px] text-[var(--text-faint)] font-bold">You have</p>
+                  <p className="text-[15px] text-[var(--ink)] font-semibold truncate">{spendable != null ? `${spendable} USDC` : 'USDC'}</p>
+               </div>
+               <ArrowRight className="w-[18px] h-[18px] text-[var(--primary)] shrink-0" strokeWidth={2.6} />
+               <div className="flex-1 min-w-0 text-right">
+                  <p className="text-[10px] uppercase tracking-[0.4px] text-[var(--text-faint)] font-bold">You get</p>
+                  <p className="text-[15px] text-[var(--primary)] font-semibold truncate">
+                     {pesos != null ? `≈ ₱${pesos.toLocaleString('en-PH')}` : '₱ pesos'}
+                  </p>
+               </div>
+            </div>
+
+            <div className="mt-[10px] flex flex-wrap gap-[6px]">
+               {['GCash', 'Maya', '80+ banks', 'Arrives in minutes'].map((t) => (
+                  <span
+                     key={t}
+                     className="text-[11px] font-semibold text-[var(--primary)] bg-[var(--surface)] border border-[var(--border-card)] rounded-full px-[8px] py-[3px]"
+                  >
+                     {t}
+                  </span>
+               ))}
+            </div>
+         </div>
+      </button>
+   );
+}
+
 function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) => void; onLater: () => void }) {
    const { spendable, walletConnected, repayUsdc: REPAY_USDC, dueDate: DUE_DATE, isPreview } = useWithdrawData();
    const navigate = useNavigate();
@@ -700,20 +758,12 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                 Binance themselves. */}
             <div className="space-y-[10px]">
                {bankPayout && (
-                  <PickerRow
-                     selected={selected}
-                     onSelect={selectProvider}
-                     id="bank"
-                     recommended
-                     icon={
-                        <div className="w-[46px] h-[46px] rounded-[12px] bg-[var(--surface-2)] flex items-center justify-center">
-                           <Landmark className="w-[24px] h-[24px] text-[var(--primary)]" />
-                        </div>
-                     }
-                     name="Straight to GCash or bank"
-                     line1="Pesos sent for you, no exchange app needed"
-                     line2="GCash, Maya or any bank · minutes"
-                  />
+                  <>
+                     <DirectPesoCard selected={selected === 'bank'} onSelect={() => selectProvider('bank')} spendable={spendable} />
+                     <p className="text-[12px] font-semibold text-[var(--text-faint)] uppercase tracking-[0.4px] pt-[8px]">
+                        Or sell on an exchange app
+                     </p>
+                  </>
                )}
                {!COINS_PH_SUSPENDED && coinsPhRow}
                {COINS_PH_SUSPENDED && (
