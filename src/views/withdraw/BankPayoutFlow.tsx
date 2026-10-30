@@ -849,10 +849,12 @@ export default function BankPayoutFlow({
    const done = DONE.has(status);
    const failed = FAILED.has(status);
    // Stableyard only says waiting / processing / succeeded, so the cake rises on a clock while we wait
-   // (frames 1-5, holding at 5) and comes out of the oven (6) when the payout succeeds.
+   // (frames 1-5, holding at 5) and the finished cake shows when the payout succeeds. The bar is an
+   // estimate too: 15% once the USDC is sent, easing toward 92% (never stalls at a round number), 100% on success.
    const realElapsed = Math.max(0, (clock - sentAt) / 1000);
    const elapsed = realElapsed / (isPreview ? 0.08 : 1); // the preview bakes ~12x faster
-   const ovenFrame = done ? 6 : elapsed < 10 ? 1 : elapsed < 40 ? 2 : elapsed < 90 ? 3 : elapsed < 150 ? 4 : 5;
+   const ovenFrame = elapsed < 10 ? 1 : elapsed < 40 ? 2 : elapsed < 90 ? 3 : elapsed < 150 ? 4 : 5;
+   const percent = done ? 100 : Math.round(15 + 77 * (1 - Math.exp(-elapsed / 90)));
    const slow = !done && !failed && realElapsed > 300;
    const minutes = Math.floor(realElapsed / 60);
    const steps: { label: string; state: 'done' | 'active' | 'todo' }[] = [
@@ -873,17 +875,39 @@ export default function BankPayoutFlow({
                </div>
             ) : (
                <div className="flex flex-col items-center text-center">
-                  {/* All frames stacked so they're preloaded; the current one fades in. */}
-                  <div className="relative w-full max-w-[260px] aspect-[549/560]" aria-hidden="true">
-                     {[1, 2, 3, 4, 5, 6].map((n) => (
-                        <img
-                           key={n}
-                           src={`/withdraw-oven/oven-${n}.webp`}
-                           alt=""
-                           className="absolute inset-0 w-full h-full object-contain transition-opacity duration-700"
-                           style={{ opacity: n === ovenFrame ? 1 : 0 }}
+                  {done ? (
+                     <img src="/withdraw-oven/cake.webp" alt="" aria-hidden="true" className="h-[96px] w-auto" />
+                  ) : (
+                     // All frames stacked so they're preloaded; the current one fades in.
+                     <div className="relative w-[150px] aspect-[549/560]" aria-hidden="true">
+                        {[1, 2, 3, 4, 5].map((n) => (
+                           <img
+                              key={n}
+                              src={`/withdraw-oven/oven-${n}.webp`}
+                              alt=""
+                              className="absolute inset-0 w-full h-full object-contain transition-opacity duration-700"
+                              style={{ opacity: n === ovenFrame ? 1 : 0 }}
+                           />
+                        ))}
+                     </div>
+                  )}
+                  <div className="mt-[12px] w-full">
+                     <div className="flex justify-between text-[12px] font-semibold text-[var(--text-muted)] mb-[4px]">
+                        <span>{done ? 'Done' : 'Sending…'}</span>
+                        <span className="text-[#6b55f7] dark:text-[#a98bff]">{percent}%</span>
+                     </div>
+                     <div
+                        className="h-[10px] w-full rounded-full bg-[var(--surface-2,#f1edff)] overflow-hidden"
+                        role="progressbar"
+                        aria-valuenow={percent}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                     >
+                        <div
+                           className="h-full rounded-full bg-[linear-gradient(85deg,#9584ff_0%,#6b55f7_98%)] transition-[width] duration-1000 ease-out"
+                           style={{ width: `${percent}%` }}
                         />
-                     ))}
+                     </div>
                   </div>
                   <p
                      className={
