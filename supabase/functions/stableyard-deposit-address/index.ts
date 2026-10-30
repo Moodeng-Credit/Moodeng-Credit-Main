@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { shareDiditSession } from '../_shared/diditShare.ts';
+import { isPlaceholderEmail } from '../_shared/placeholderEmail.ts';
 import { isStableyardConfigured, stableyard, type StableyardAccount, type StableyardDepositNetwork } from '../_shared/stableyard.ts';
 import {
    BASE_CHAIN_ID,
@@ -163,7 +164,7 @@ const handleOnboarding = async (
    userId: string,
    email: string,
    action: string,
-   body: { challengeId?: unknown; code?: unknown }
+   body: { challengeId?: unknown; code?: unknown; email?: unknown }
 ) => {
    if (action === 'didit_share') return shareKycWithStableyard(admin, userId);
 
@@ -186,8 +187,17 @@ const handleOnboarding = async (
       );
 
    if (action === 'email_start') {
-      if (!email) return json({ error: 'Your Moodeng login has no email to verify.' }, 409);
-      const result = await stableyard.startEmailVerification(accountId, email);
+      // Telegram / LINE / phone / TikTok / guest sign-ups only have a made-up login email that can't receive
+      // Stableyard's code, so the person may type a real one; it's checked by the code they get.
+      const typed = String(body.email ?? '')
+         .trim()
+         .toLowerCase();
+      const unusable = (e: string) => !e || isPlaceholderEmail(e) || /^(guest|tiktok)_[^@]+@moodeng\.(app|credit)$/i.test(e);
+      if (typed && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(typed) || typed.length > 254 || unusable(typed)))
+         return json({ code: 'bad_email', error: 'Check the email address.' }, 400);
+      const target = typed || (unusable(email) ? '' : email);
+      if (!target) return json({ code: 'email_needed', error: 'Type an email you can open to get the code.' }, 409);
+      const result = await stableyard.startEmailVerification(accountId, target);
       return result.ok ? json({ ok: true, accountId, step: 'email_start', result: result.data }) : fail(result);
    }
    if (action === 'email_confirm') {

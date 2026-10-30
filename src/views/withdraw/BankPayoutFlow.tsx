@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { ArrowRight, CheckCircle2, Clock, Landmark, Loader2, ShieldCheck, XCircle } from 'lucide-react';
+import { ArrowRight, Check, CheckCircle2, Clock, Landmark, Loader2, Search, ShieldCheck, XCircle } from 'lucide-react';
 
+import { isValidEmail } from '@/lib/accountEmail';
+import { isPlaceholderEmail } from '@/lib/phoneAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 // "Straight to GCash or bank" cash-out through Stableyard (an off-ramp): the borrower picks a bank or
@@ -23,6 +25,7 @@ type Bank = { code: string; name: string };
 type DepositInstructions = { address: string; chainId: number; tokenAddress: string; decimals: number; amount: string };
 type FnResult = {
    ok?: boolean;
+   accountId?: string;
    code?: string | null;
    error?: string;
    emailVerified?: boolean;
@@ -90,7 +93,33 @@ const toLocalMobile = (digits: string) => {
 };
 
 const peso = (n: number) => `₱${n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+const normalize = (s: string) =>
+   s
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
 const shortBank = (name: string) => (name.startsWith('MAYA PHILIPPINES') ? 'Maya' : name === 'GCASH' ? 'GCash' : name);
+
+// The last payout's bank + account, kept on this device only (we never store full account numbers
+// server-side), keyed by the Stableyard account so another login on the same phone doesn't see it.
+type SavedPayee = { bankCode: string; accountNumber: string; accountName: string };
+const savedKey = (accountId: string) => `moodeng.bankPayout.last.${accountId}`;
+const readSavedPayee = (accountId: string): SavedPayee | null => {
+   try {
+      const raw = window.localStorage.getItem(savedKey(accountId));
+      const saved = raw ? (JSON.parse(raw) as Partial<SavedPayee>) : null;
+      return saved?.bankCode && saved.accountNumber && saved.accountName ? (saved as SavedPayee) : null;
+   } catch {
+      return null;
+   }
+};
+const writeSavedPayee = (accountId: string, payee: SavedPayee) => {
+   try {
+      window.localStorage.setItem(savedKey(accountId), JSON.stringify(payee));
+   } catch {
+      /* private mode / storage blocked: just don't remember */
+   }
+};
 
 const inputClass =
    'w-full rounded-[8px] border-2 border-[#e8e4ff] bg-[var(--surface)] px-[14px] py-[12px] text-[16px] text-[var(--ink)] outline-none focus:border-[#6b55f7]';
@@ -137,6 +166,18 @@ export default function BankPayoutFlow({
    const [setup, setSetup] = useState<FnResult | null>(null);
    const [challengeId, setChallengeId] = useState('');
    const [code, setCode] = useState('');
+   // Where Stableyard sends its code: the login email, or blank for Telegram / phone / TikTok sign-ups
+   // whose login email is a placeholder nobody can read, so they type a real one.
+   const [codeEmail, setCodeEmail] = useState('');
+   useEffect(() => {
+      if (isPreview) return;
+      void getSupabaseBrowserClient()
+         .auth.getUser()
+         .then(({ data }) => {
+            const login = data.user?.email ?? '';
+            if (login && !isPlaceholderEmail(login)) setCodeEmail((current) => current || login);
+         });
+   }, [isPreview]);
    const [banks, setBanks] = useState<Bank[]>([]);
    const [bankCode, setBankCode] = useState('');
    const [accountNumber, setAccountNumber] = useState('');
@@ -149,6 +190,7 @@ export default function BankPayoutFlow({
    const [status, setStatus] = useState('');
    const requestKey = useRef('');
    const [complianceUrl, setComplianceUrl] = useState('');
+   const [remembered, setRemembered] = useState(false);
    const pricingTries = useRef(0);
 
    const bank = banks.find((b) => b.code === bankCode);
@@ -163,6 +205,21 @@ export default function BankPayoutFlow({
       const rest = banks.filter((b) => !POPULAR.includes(b.name)).sort((a, b) => a.name.localeCompare(b.name));
       return { top, rest };
    }, [banks]);
+
+   // Type-to-search over ~90 banks: every typed word must appear in the name (ignoring case and
+   // punctuation), popular ones first. An empty search shows the popular list.
+   const [bankQuery, setBankQuery] = useState('');
+   const [pickingBank, setPickingBank] = useState(false);
+   const bankMatches = useMemo(() => {
+      const words = normalize(bankQuery).split(' ').filter(Boolean);
+      if (words.length === 0) return sortedBanks.top;
+      return [...sortedBanks.top, ...sortedBanks.rest]
+         .filter((b) => {
+            const name = normalize(`${b.name} ${shortBank(b.name)}`);
+            return words.every((w) => name.includes(w));
+         })
+         .slice(0, 8);
+   }, [bankQuery, sortedBanks]);
 
    const loadSetup = async () => {
       setError('');
@@ -181,7 +238,15 @@ export default function BankPayoutFlow({
       const list = await call(isPreview, { qr: 'bank_list', country: 'PH' });
       const all = list.result?.banks ?? [];
       setBanks(all);
-      setBankCode((current) => current || all.find((b) => b.name === 'GCASH')?.code || all[0]?.code || '');
+      const saved = readSavedPayee(res.accountId ?? 'preview');
+      if (saved && all.some((b) => b.code === saved.bankCode)) {
+         setBankCode(saved.bankCode);
+         setAccountNumber(saved.accountNumber);
+         setAccountName(saved.accountName);
+         setRemembered(true);
+      } else {
+         setBankCode((current) => current || all.find((b) => b.name === 'GCASH')?.code || all[0]?.code || '');
+      }
       if (!list.ok) setError(list.error ?? 'Could not load banks. Try again.');
       setStep('form');
    };
@@ -322,6 +387,7 @@ export default function BankPayoutFlow({
             return;
          }
          void call(isPreview, { qr: 'sent', paymentId, txHash: outcome.hash });
+         writeSavedPayee(setup?.accountId ?? 'preview', { bankCode, accountNumber, accountName: accountName.trim() });
          setStatus('processing');
          setStep('tracking');
       } catch (err) {
@@ -363,7 +429,20 @@ export default function BankPayoutFlow({
                   <p className="text-[13px] font-semibold text-[var(--ink)]">1. Email {emailDone ? '✓' : ''}</p>
                   {!emailDone ? (
                      <>
-                        <button className={primaryClass} disabled={busy} onClick={() => void runOnboarding('email_start')}>
+                        <input
+                           value={codeEmail}
+                           onChange={(e) => setCodeEmail(e.target.value.trim())}
+                           type="email"
+                           inputMode="email"
+                           autoComplete="email"
+                           placeholder="Your email, e.g. juan@gmail.com"
+                           className={inputClass}
+                        />
+                        <button
+                           className={primaryClass}
+                           disabled={busy || !isValidEmail(codeEmail) || isPlaceholderEmail(codeEmail)}
+                           onClick={() => void runOnboarding('email_start', { email: codeEmail })}
+                        >
                            {challengeId ? 'Send the code again' : 'Send me a code'}
                         </button>
                         {challengeId ? (
@@ -412,25 +491,66 @@ export default function BankPayoutFlow({
       return (
          <div className="space-y-[12px]">
             <Panel>
-               <label className="block">
-                  <span className="text-[13px] font-semibold text-[var(--ink)]">Send to</span>
-                  <select value={bankCode} onChange={(e) => setBankCode(e.target.value)} className={`${inputClass} mt-[6px]`}>
-                     <optgroup label="Popular">
-                        {sortedBanks.top.map((b) => (
-                           <option key={b.code} value={b.code}>
-                              {shortBank(b.name)}
-                           </option>
+               {remembered && (
+                  <p className="rounded-[8px] bg-[var(--surface-2)] px-[10px] py-[8px] text-[12px] leading-[17px] text-[var(--text-muted)]">
+                     Filled in from your last cash-out. Check it&apos;s still right, then enter the amount.
+                  </p>
+               )}
+               <span className="block text-[13px] font-semibold text-[var(--ink)]">Send to</span>
+               {bank && !pickingBank ? (
+                  <button
+                     type="button"
+                     onClick={() => {
+                        setBankQuery('');
+                        setPickingBank(true);
+                     }}
+                     className={`${inputClass} mt-[6px] flex items-center gap-[10px] text-left`}
+                  >
+                     <Landmark className="w-[18px] h-[18px] text-[var(--primary)] shrink-0" />
+                     <span className="flex-1 min-w-0 truncate font-semibold">{shortBank(bank.name)}</span>
+                     <span className="text-[13px] font-semibold text-[var(--accent)] shrink-0">Change</span>
+                  </button>
+               ) : (
+                  <div className="mt-[6px]">
+                     <div className="relative">
+                        <Search className="w-[16px] h-[16px] text-[var(--text-faint)] absolute left-[12px] top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                           value={bankQuery}
+                           onChange={(e) => setBankQuery(e.target.value)}
+                           autoFocus={pickingBank}
+                           placeholder="Type your bank or e-wallet, e.g. BDO"
+                           className={`${inputClass} pl-[36px]`}
+                        />
+                     </div>
+                     <div className="mt-[6px] rounded-[12px] border border-[var(--border-card)] overflow-hidden divide-y divide-[var(--divider)]">
+                        {!bankQuery.trim() && (
+                           <p className="px-[12px] pt-[8px] pb-[4px] text-[11px] font-bold uppercase tracking-[0.4px] text-[var(--text-faint)]">
+                              Popular
+                           </p>
+                        )}
+                        {bankMatches.map((b) => (
+                           <button
+                              key={b.code}
+                              type="button"
+                              onClick={() => {
+                                 setBankCode(b.code);
+                                 setPickingBank(false);
+                                 setBankQuery('');
+                              }}
+                              className="w-full px-[12px] py-[10px] flex items-center gap-[10px] text-left hover:bg-[var(--surface-2)]"
+                           >
+                              <span className="flex-1 min-w-0 truncate text-[14px] text-[var(--ink)]">{shortBank(b.name)}</span>
+                              {b.code === bankCode && <Check className="w-[16px] h-[16px] text-[var(--primary)] shrink-0" />}
+                           </button>
                         ))}
-                     </optgroup>
-                     <optgroup label="All banks and e-wallets">
-                        {sortedBanks.rest.map((b) => (
-                           <option key={b.code} value={b.code}>
-                              {b.name}
-                           </option>
-                        ))}
-                     </optgroup>
-                  </select>
-               </label>
+                        {bankMatches.length === 0 && (
+                           <p className="px-[12px] py-[10px] text-[13px] text-[var(--text-muted)]">
+                              No bank matches “{bankQuery.trim()}”. Try a shorter name, like “BDO” or “Metro”.
+                           </p>
+                        )}
+                     </div>
+                  </div>
+               )}
                <label className="block">
                   <span className="text-[13px] font-semibold text-[var(--ink)]">
                      {isEwallet ? `${shortBank(bank?.name ?? '')} number` : 'Account number'}
