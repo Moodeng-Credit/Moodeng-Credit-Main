@@ -352,7 +352,9 @@ const handleWhatsApp = async (svc: Svc, body: VerifyBody, nowIso: string): Promi
       ]);
       if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(card);
       else await card;
-      return json({ ok: true, wa_first: stepsDue ? 1 : 0 });
+      // already: 0 resets the flow's wa_repeat variable, which SendPulse keeps per contact; a repeat
+      // (already: 1, below) makes the flow skip a second "you're set".
+      return json({ ok: true, wa_first: stepsDue ? 1 : 0, already: 0 });
    }
 
    // Sent twice (the pre-filled message, then the copied code): a code confirmed in the last few
