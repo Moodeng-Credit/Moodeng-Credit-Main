@@ -17,7 +17,15 @@ const FN = 'stableyard-deposit-address';
 const MIN_PHP = 50;
 const MAX_PHP = 5000;
 // Shown first in the bank list: what most borrowers use.
-const POPULAR = ['GCASH', 'MAYA PHILIPPINES, INC./ MAYA WALLET', 'GOTYME BANK', 'BDO', 'BPI', 'GRABPAY', 'MARIBANK', 'UNIONDIGITAL BANK'];
+// The picker asks "E-wallet or bank?" first; each side lists its own popular ones before searching.
+const POPULAR_WALLETS = ['GCASH', 'MAYA PHILIPPINES, INC./ MAYA WALLET', 'GRABPAY', 'SHOPEEPAY', 'DCPAY / COINS.PH', 'PALAWANPAY'];
+const POPULAR_BANKS = ['GOTYME BANK', 'BDO', 'BPI', 'MARIBANK', 'UNIONDIGITAL BANK', 'METROBANK', 'LANDBANK /OFBANK', 'SECURITY BANK'];
+const POPULAR = [...POPULAR_WALLETS, ...POPULAR_BANKS];
+// Stableyard's list mixes wallets and banks; these names are wallets / payment apps.
+const WALLET_NAME =
+   /GCASH|MAYA PHILIPPINES|GRABPAY|SHOPEEPAY|COINS\.PH|PALAWANPAY|TAYOCASH|TOKTOKWALLET|STARPAY|MARCOPAY|LULU MONEY|BANANAPAY|LAZADA WALLET|OMNIPAY|PAY MONGO|SPEEDYPAY|TRAXIONPAY|JUANCASH|I-REMIT|USSC|BAYAD|NATIONLINK|PDAX/;
+type PayeeKind = 'wallet' | 'bank';
+const kindOf = (name: string): PayeeKind => (WALLET_NAME.test(name) ? 'wallet' : 'bank');
 const DONE = new Set(['succeeded', 'completed']);
 const FAILED = new Set(['failed', 'cancelled', 'expired', 'refunded', 'requires_intervention']);
 
@@ -98,6 +106,91 @@ const normalize = (s: string) =>
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, ' ')
       .trim();
+// Logos for the banks most borrowers use: each bank's official app icon (PH App Store, publisher
+// checked), 96px, in public/bank-logos. Keyed by Stableyard's bank name. Everything else gets initials.
+const BANK_LOGOS: Record<string, string> = {
+   GCASH: 'gcash',
+   'MAYA PHILIPPINES, INC./ MAYA WALLET': 'maya',
+   'MAYA BANK, INC.': 'maya',
+   'GOTYME BANK': 'gotyme',
+   BDO: 'bdo',
+   BPI: 'bpi',
+   GRABPAY: 'grabpay',
+   MARIBANK: 'maribank',
+   'UNIONDIGITAL BANK': 'uniondigital',
+   METROBANK: 'metrobank',
+   'LANDBANK /OFBANK': 'landbank',
+   'SECURITY BANK': 'securitybank',
+   'RCBC/DISKARTECH': 'rcbc',
+   PNB: 'pnb',
+   'TONIK BANK': 'tonik',
+   'DCPAY / COINS.PH': 'coinsph',
+   CHINABANK: 'chinabank',
+   'UNION BANK': 'unionbank',
+   'PHILIPPINE SAVINGS BANK': 'psbank',
+   'EASTWEST BANK': 'eastwest',
+   ALLBANK: 'allbank',
+   'ASIA UNITED BANK': 'aub',
+   'BANK OF COMMERCE': 'bankcom',
+   'BPI GLOBE BANKO': 'banko',
+   'CARD BANK INC.': 'cardbank',
+   'CARD SME BANK': 'cardsme',
+   'CHINA BANK SAVINGS INC.': 'cbs',
+   'CIMB PHILIPPINES, INC.': 'cimb',
+   'CIS BAYAD CENTER / BAYAD': 'bayad',
+   'CITY SAVINGS BANK': 'citysavings',
+   'CTBC BANK (PHILIPPINES) CORP.': 'ctbc',
+   'EASTWEST RURAL BANK / KOMO': 'komo',
+   'ISLA BANK': 'islabank',
+   'LULU MONEY': 'lulu',
+   MAYBANK: 'maybank',
+   NETBANK: 'netbank',
+   'OWN BANK': 'ownbank',
+   PALAWANPAY: 'palawanpay',
+   PBCOM: 'pbcom',
+   'PHILIPPINE DIGITAL ASSET EXCHANGE, INC. / PDAX': 'pdax',
+   PVB: 'pvb',
+   STARPAY: 'starpay',
+   'STERLING BANK': 'sterling',
+   'TAYOCASH,INC.': 'tayocash',
+   UNOBANK: 'unobank',
+   MARCOPAY: 'marcopay',
+   'TRAXIONPAY/DIGICOOP/COOPNET': 'traxionpay'
+};
+const INITIALS_SKIP = new Set(['BANK', 'INC', 'THE', 'OF', 'A', 'AND', 'CORP', 'CORPORATION', 'RURAL', 'SAVINGS']);
+
+function BankBadge({ name, size = 28 }: { name: string; size?: number }) {
+   const logo = BANK_LOGOS[name];
+   if (logo)
+      return (
+         <img
+            src={`/bank-logos/${logo}.webp`}
+            alt=""
+            width={size}
+            height={size}
+            className="shrink-0 rounded-[7px] border border-[var(--border-card)]"
+            style={{ width: size, height: size }}
+         />
+      );
+   const words = name
+      .toUpperCase()
+      .split(/[^A-Z0-9]+/)
+      .filter((w) => w && !INITIALS_SKIP.has(w));
+   const initials = (words.length > 1 ? words[0][0] + words[1][0] : (words[0] ?? name).slice(0, 2)).toUpperCase();
+   // Same colour for the same bank every time.
+   let hue = 0;
+   for (const ch of name) hue = (hue * 31 + ch.charCodeAt(0)) % 360;
+   return (
+      <span
+         aria-hidden="true"
+         className="shrink-0 rounded-full flex items-center justify-center text-white font-bold"
+         style={{ width: size, height: size, fontSize: size * 0.38, background: `hsl(${hue} 45% 52%)` }}
+      >
+         {initials}
+      </span>
+   );
+}
+
 const shortBank = (name: string) => (name.startsWith('MAYA PHILIPPINES') ? 'Maya' : name === 'GCASH' ? 'GCash' : name);
 
 // The last payout's bank + account, kept on this device only (we never store full account numbers
@@ -210,16 +303,19 @@ export default function BankPayoutFlow({
    // punctuation), popular ones first. An empty search shows the popular list.
    const [bankQuery, setBankQuery] = useState('');
    const [pickingBank, setPickingBank] = useState(false);
+   const [payeeKind, setPayeeKind] = useState<PayeeKind>('wallet');
    const bankMatches = useMemo(() => {
       const words = normalize(bankQuery).split(' ').filter(Boolean);
-      if (words.length === 0) return sortedBanks.top;
-      return [...sortedBanks.top, ...sortedBanks.rest]
-         .filter((b) => {
-            const name = normalize(`${b.name} ${shortBank(b.name)}`);
-            return words.every((w) => name.includes(w));
-         })
-         .slice(0, 8);
-   }, [bankQuery, sortedBanks]);
+      const popular = payeeKind === 'wallet' ? POPULAR_WALLETS : POPULAR_BANKS;
+      if (words.length === 0) return popular.map((name) => banks.find((b) => b.name === name)).filter((b): b is Bank => Boolean(b));
+      const all = [...sortedBanks.top, ...sortedBanks.rest].filter((b) => {
+         const name = normalize(`${b.name} ${shortBank(b.name)}`);
+         return words.every((w) => name.includes(w));
+      });
+      // Search this side first; if the name is on the other side (picked the wrong tab), still show it.
+      const sameKind = all.filter((b) => kindOf(b.name) === payeeKind);
+      return (sameKind.length ? sameKind : all).slice(0, 8);
+   }, [bankQuery, sortedBanks, banks, payeeKind]);
 
    const loadSetup = async () => {
       setError('');
@@ -502,23 +598,47 @@ export default function BankPayoutFlow({
                      type="button"
                      onClick={() => {
                         setBankQuery('');
+                        setPayeeKind(kindOf(bank.name));
                         setPickingBank(true);
                      }}
                      className={`${inputClass} mt-[6px] flex items-center gap-[10px] text-left`}
                   >
-                     <Landmark className="w-[18px] h-[18px] text-[var(--primary)] shrink-0" />
+                     <BankBadge name={bank.name} />
                      <span className="flex-1 min-w-0 truncate font-semibold">{shortBank(bank.name)}</span>
                      <span className="text-[13px] font-semibold text-[var(--accent)] shrink-0">Change</span>
                   </button>
                ) : (
                   <div className="mt-[6px]">
+                     <div className="grid grid-cols-2 gap-[6px] mb-[8px]" role="tablist">
+                        {(
+                           [
+                              ['wallet', 'E-wallet', 'GCash, Maya…'],
+                              ['bank', 'Bank', 'BDO, BPI…']
+                           ] as const
+                        ).map(([kind, label, hint]) => (
+                           <button
+                              key={kind}
+                              type="button"
+                              role="tab"
+                              aria-selected={payeeKind === kind}
+                              onClick={() => {
+                                 setPayeeKind(kind);
+                                 setBankQuery('');
+                              }}
+                              className={`rounded-[10px] border-2 px-[10px] py-[8px] text-left transition-colors ${payeeKind === kind ? 'border-[#6b55f7] bg-[var(--surface-2)]' : 'border-[var(--border-card)]'}`}
+                           >
+                              <span className="block text-[14px] font-semibold text-[var(--ink)]">{label}</span>
+                              <span className="block text-[12px] text-[var(--text-muted)]">{hint}</span>
+                           </button>
+                        ))}
+                     </div>
                      <div className="relative">
                         <Search className="w-[16px] h-[16px] text-[var(--text-faint)] absolute left-[12px] top-1/2 -translate-y-1/2 pointer-events-none" />
                         <input
                            value={bankQuery}
                            onChange={(e) => setBankQuery(e.target.value)}
                            autoFocus={pickingBank}
-                           placeholder="Type your bank or e-wallet, e.g. BDO"
+                           placeholder={payeeKind === 'wallet' ? 'Search e-wallets, e.g. GCash' : 'Search banks, e.g. BDO'}
                            className={`${inputClass} pl-[36px]`}
                         />
                      </div>
@@ -539,6 +659,7 @@ export default function BankPayoutFlow({
                               }}
                               className="w-full px-[12px] py-[10px] flex items-center gap-[10px] text-left hover:bg-[var(--surface-2)]"
                            >
+                              <BankBadge name={b.name} />
                               <span className="flex-1 min-w-0 truncate text-[14px] text-[var(--ink)]">{shortBank(b.name)}</span>
                               {b.code === bankCode && <Check className="w-[16px] h-[16px] text-[var(--primary)] shrink-0" />}
                            </button>
@@ -656,9 +777,13 @@ export default function BankPayoutFlow({
          <div className="space-y-[12px]">
             <Panel>
                <div className="flex items-center gap-[12px]">
-                  <div className="w-[44px] h-[44px] rounded-full bg-[var(--surface-2)] flex items-center justify-center">
-                     <Landmark className="w-[22px] h-[22px] text-[var(--primary)]" />
-                  </div>
+                  {bank ? (
+                     <BankBadge name={bank.name} size={44} />
+                  ) : (
+                     <div className="w-[44px] h-[44px] rounded-full bg-[var(--surface-2)] flex items-center justify-center">
+                        <Landmark className="w-[22px] h-[22px] text-[var(--primary)]" />
+                     </div>
+                  )}
                   <div>
                      <p className="text-[13px] text-[var(--text-muted)]">{accountLabel} gets</p>
                      <p className="text-[26px] font-semibold text-[var(--ink)] leading-[1.1]">{peso(amountNum)}</p>
