@@ -1,6 +1,7 @@
 // Signed in in this browser (the app keeps its Supabase session in a cookie). The app also leaves an
 // md_landing cookie saying where they are (src/lib/landingSessionCookie.ts):
-//   signout — all set: "Sign in" becomes "Sign out", no banner.
+//   signout — all set: "Sign in" becomes "Sign out", no banner; lenders (md_role=lender) get "Fund loans"
+//     instead of "Get a loan".
 //   continue (or not known yet) — still signing up / onboarding / applying: "Sign in" becomes "Continue",
 //     "Get a loan" becomes "Sign out", and a "Continue where you left off" banner.
 //     Reopening moodeng.app inside Facebook's / Messenger's browser lands on this static page, and people
@@ -28,9 +29,37 @@
             }
          });
       };
+      // Sign out is rarely used, so it shouldn't sit beside the main button: a plain text link on wide screens,
+      // and in the menu only (not the header) wherever the header has a menu button.
+      var quietSignOut = function () {
+         document.querySelectorAll('.site-header a[href="/sign-out"], .head-signin[href="/sign-out"]').forEach(function (link) {
+            link.setAttribute('data-header-signout', '');
+         });
+         if (document.querySelector('style[data-header-signout-style]')) return;
+         var style = document.createElement('style');
+         style.setAttribute('data-header-signout-style', '');
+         style.textContent =
+            '.site-header a[data-header-signout]{background:none!important;border-color:transparent!important;box-shadow:none!important;padding-left:10px!important;padding-right:10px!important;font-weight:600!important;opacity:.8}' +
+            '.site-header a[data-header-signout]:hover{opacity:1;text-decoration:underline}' +
+            '@media (max-width:1179px){.site-header .header-actions a[data-header-signout]{display:none!important}}' +
+            // Phone page: the header shows the main button instead of Sign out (Sign out is in the drawer).
+            (document.querySelector('.head-signin[data-header-signout]')
+               ? '.head-signin[data-header-signout]{display:none!important}.site-head .head-cta{display:inline-flex!important}'
+               : '');
+         document.head.appendChild(style);
+      };
       var show = function () {
          if (allSet) {
             relabel('Sign out', '/sign-out');
+            // Lenders fund loans, they don't take them.
+            if (/(?:^|;\s*)md_role=lender(?:;|$)/.test(document.cookie)) {
+               document
+                  .querySelectorAll('a[href="/request-board"], a[href="https://moodeng.app/request-board"]')
+                  .forEach(function (link) {
+                     if (link.textContent.trim() === 'Get a loan') link.textContent = 'Fund loans';
+                  });
+            }
+            quietSignOut();
             return;
          }
          relabel('Continue', '/continue?via=landing');
@@ -56,6 +85,7 @@
                   next.className = bold;
                }
             });
+         quietSignOut();
          // Phone menu (old-mobile.html) has no "Get a loan" to swap, only "Continue →" at the bottom.
          document.querySelectorAll('.d-foot').forEach(function (foot) {
             if (foot.querySelector('a[href="/sign-out"]')) return;

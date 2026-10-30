@@ -20,7 +20,7 @@ export function LandingSessionCookie() {
       if (!signedIn || gate.isLoading) return;
       const midFlow =
          !user.userRole || isGuestEmail(user.email) || (user.userRole === 'borrower' && getJourney(user, gate.isGated).stage !== 'verified');
-      setLandingSessionCookie(midFlow ? 'continue' : 'signout');
+      setLandingSessionCookie(midFlow ? 'continue' : 'signout', user.userRole);
    }, [signedIn, gate.isLoading, gate.isGated, user]);
 
    return null;

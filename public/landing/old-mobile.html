@@ -3231,6 +3231,8 @@
   // TikTok login in the menu drawer. Hidden until public/landing/auth-providers.json says {"tiktok": true}.
   (function () {
     if (!window.fetch) return;
+    // Already signed in: no login button.
+    if (/(?:^|;\s*)sb-[a-z0-9]+-auth-token(?:\.0)?=/i.test(document.cookie)) return;
     var isLocal = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
     var NOTE = 'M16.6 5.8c-.9-.6-1.5-1.5-1.7-2.6h-2.9v11.6c0 1.2-1 2.2-2.2 2.2s-2.2-1-2.2-2.2 1-2.2 2.2-2.2c.2 0 .5 0 .7.1V9.7c-.2 0-.5-.1-.7-.1-2.8 0-5.1 2.3-5.1 5.1s2.3 5.1 5.1 5.1 5.1-2.3 5.1-5.1V9.2c1 .8 2.3 1.2 3.6 1.2V7.5c-.8 0-1.6-.3-2.2-.8z';
     var logo = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" style="flex:none"><rect width="24" height="24" rx="5.5" fill="#010101"/>' +
@@ -3254,7 +3256,7 @@
   })();
 </script>
 <script src="/landing/first-touch.js?v=20261018-1" defer></script>
-<script src="/landing/continue-banner.js?v=20261021-1" defer></script>
+<script src="/landing/continue-banner.js?v=20261030-2" defer></script>
 <script src="/landing/open-in-browser.js?v=20261018-7" defer></script>
 <script src="https://web-iota-sage-38.vercel.app/widget.js" data-launcher="hidden" data-title="Moodeng Support" data-accent="#16a34a" defer></script>
 <script src="/landing/messenger-chat.js?v=20261023-2" defer></script>
