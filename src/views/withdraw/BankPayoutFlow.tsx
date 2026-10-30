@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { ArrowRight, Check, CheckCircle2, Clock, Landmark, Loader2, Search, ShieldCheck, XCircle } from 'lucide-react';
+import { ArrowRight, Check, Clock, Landmark, Loader2, Search, ShieldCheck, XCircle } from 'lucide-react';
 
 import { PhFlag } from '@/components/auth/PhFlag';
 
@@ -786,22 +786,23 @@ export default function BankPayoutFlow({
       return (
          <div className="space-y-[12px]">
             <Panel>
-               <div className="flex items-center gap-[12px]">
-                  {bank ? (
-                     <BankBadge name={bank.name} size={44} />
-                  ) : (
-                     <div className="w-[44px] h-[44px] rounded-full bg-[var(--surface-2)] flex items-center justify-center">
-                        <Landmark className="w-[22px] h-[22px] text-[var(--primary)]" />
-                     </div>
-                  )}
-                  <div>
-                     <p className="text-[13px] text-[var(--text-muted)]">{accountLabel} gets</p>
-                     <p className="text-[26px] font-semibold text-[var(--ink)] leading-[1.1]">{peso(amountNum)}</p>
+               {/* Milestone style: the peso amount as the black-italic headline, the bank under it. */}
+               <div className="text-center pt-[4px]">
+                  <p className="text-[13px] text-[var(--text-muted)]">They get</p>
+                  <p className="text-[40px] font-black italic leading-[1.15] tracking-[-0.8px] text-[#735dfa] dark:text-[#a98bff]">
+                     {peso(amountNum)}
+                  </p>
+                  <div className="mt-[6px] inline-flex items-center gap-[8px] rounded-full bg-[var(--surface-2)] pl-[4px] pr-[12px] py-[4px]">
+                     {bank ? <BankBadge name={bank.name} size={24} /> : <Landmark className="w-[18px] h-[18px] text-[var(--primary)]" />}
+                     <span className="text-[14px] font-semibold text-[var(--ink)]">{accountLabel}</span>
                   </div>
                </div>
-               <div className="rounded-[12px] bg-[var(--surface-2)] px-[12px] py-[10px] text-[14px] text-[var(--ink)] flex justify-between">
-                  <span>You send</span>
-                  <span className="font-semibold">{deposit?.amount} USDC</span>
+               <div className="rounded-[12px] border border-[var(--border-card)] px-[12px] py-[10px] text-[14px] text-[var(--ink)]">
+                  <div className="flex justify-between">
+                     <span>You send</span>
+                     <span className="font-semibold">{deposit?.amount} USDC</span>
+                  </div>
+                  <p className="text-[12px] text-[var(--text-muted)] mt-[2px]">Fees included. Nothing else to pay.</p>
                </div>
                {secondsLeft != null ? (
                   <p className={`text-[12px] flex items-center gap-[6px] ${expired ? 'text-[var(--danger)]' : 'text-[var(--text-muted)]'}`}>
@@ -839,15 +840,21 @@ export default function BankPayoutFlow({
          <Panel>
             <div className="flex flex-col items-center text-center gap-[10px] py-[8px]">
                {done ? (
-                  <CheckCircle2 className="w-[44px] h-[44px] text-[var(--green)]" />
+                  <img src="/dashboard-v2/moo-cashout.png" alt="" aria-hidden="true" className="h-[132px] w-auto" />
                ) : failed ? (
                   <XCircle className="w-[44px] h-[44px] text-[var(--danger)]" />
                ) : (
                   <Loader2 className="w-[40px] h-[40px] text-[var(--primary)] animate-spin" />
                )}
-               <p className="text-[20px] font-semibold text-[var(--ink)]">
+               <p
+                  className={
+                     done
+                        ? 'text-[26px] font-black italic leading-[1.2] tracking-[-0.5px] text-[#6b55f7] dark:text-[#b3a6ff]'
+                        : 'text-[20px] font-semibold text-[var(--ink)]'
+                  }
+               >
                   {done
-                     ? `${peso(amountNum)} sent to ${accountLabel}`
+                     ? `${peso(amountNum)} sent to ${accountLabel}!`
                      : failed
                        ? 'The payout did not go through'
                        : `Sending ${peso(amountNum)} to ${accountLabel}`}
