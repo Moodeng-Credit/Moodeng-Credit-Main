@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { isAutomatedEmail } from '../_shared/inboundEmailFilter.ts';
 import { alertTeam, postToTicket } from '../_shared/supportTickets.ts';
+import { recordVoucherEmailEvent } from '../_shared/voucherClaims.ts';
 
 // Inbound-email → support ticket.
 //
@@ -21,6 +22,10 @@ import { alertTeam, postToTicket } from '../_shared/supportTickets.ts';
 // Replies: a team member's Reply in Discord is saved as an 'agent' message, and the existing
 // nudge-away-replies sweep emails it to the sender (visitor_email). The team can also reply straight
 // from the mailbox: the sender's address is on the ticket.
+//
+// Sending events: the same Resend webhook also delivers email.delivered / email.opened /
+// email.bounced for mail we send. Voucher emails stamp their claim and update the team's card
+// (voucherClaims.ts recordVoucherEmailEvent); every other sending event is acknowledged and ignored.
 //
 // Auth: a shared secret in the query string (?secret=EMAIL_INBOUND_SECRET), set on the webhook
 // endpoint URL when you configure Resend/Cloudflare. Provider-agnostic and unguessable; combined
@@ -238,6 +243,20 @@ serve(async (req) => {
       payload = await req.json();
    } catch {
       return jsonResponse({ error: 'invalid_json' }, 400);
+   }
+
+   // Not an inbound email: a sending event (delivered / opened / bounced …) for mail we sent.
+   const eventType = typeof payload.type === 'string' ? payload.type : '';
+   if (eventType.startsWith('email.') && eventType !== 'email.received') {
+      const data = (payload.data && typeof payload.data === 'object' ? payload.data : {}) as Record<string, unknown>;
+      const emailId = typeof data.email_id === 'string' ? data.email_id : '';
+      const at = typeof payload.created_at === 'string' ? payload.created_at : null;
+      const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+      const result = await recordVoucherEmailEvent(svc, eventType, emailId, at).catch((err) => {
+         console.error('[email-inbound] sending event failed', eventType, err instanceof Error ? err.message : err);
+         return 'error';
+      });
+      return jsonResponse({ ok: true, event: eventType, result });
    }
 
    // Resend only sends the envelope; fetch the body before parsing.

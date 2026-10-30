@@ -272,3 +272,36 @@ Deno.test('team amounts show dollars next to pesos; borrower drafts stay in peso
    const draft = buildNudgeDraft('unclaimed', { name: 'Ana', username: null, facebook: null, messenger: false, amountPhp: 100, vouchers: 1, days: null });
    assert(!draft.includes('$'));
 });
+
+Deno.test('voucher email buttons use the tracked moodeng.app link; step 1 still names the real site', async () => {
+   const { trackedVoucherUrl } = await import('./voucherClaims.ts');
+   const tracked = trackedVoucherUrl('0274e575-7921-4a25-b4f3-722fba3c2da6');
+   assertEquals(tracked, 'https://moodeng.app/v/0274e575-7921-4a25-b4f3-722fba3c2da6');
+   const email = buildVoucherCodeEmail({ fullName: 'Irish', amountPhp: 50, reward: 'first_on_time_repayment', links: ['https://plum.gift/abc'], trackedLinks: [tracked] });
+   assertStringIncludes(email.html, `href="${tracked}"`);
+   assert(!email.html.includes('href="https://plum.gift/abc"'));
+   assertStringIncludes(email.text, `Your voucher: ${tracked}`);
+   assertStringIncludes(email.text, 'it opens plum.gift');
+});
+
+Deno.test('card tracking lines: delivered, opened, tapped, I got it — in Bangkok time', async () => {
+   const { voucherTrackingLines } = await import('./voucherClaims.ts');
+   assertEquals(voucherTrackingLines({}), []);
+   assertEquals(voucherTrackingLines({ email_message_id: 're_1' }), ['⏳ Email sent, not delivered yet']);
+   const lines = voucherTrackingLines({
+      email_message_id: 're_1',
+      email_delivered_at: '2026-10-30T13:04:30Z',
+      email_opened_at: '2026-10-30T13:15:00Z',
+      voucher_clicked_at: '2026-10-30T13:16:00Z',
+      received_at: '2026-10-30T14:00:00Z'
+   });
+   assertEquals(lines, [
+      '📬 Email delivered · Oct 30, 8:04 PM',
+      '👀 Email opened · Oct 30, 8:15 PM',
+      '🍗 Tapped the voucher · Oct 30, 8:16 PM',
+      '✅ They tapped "I got it" · Oct 30, 9:00 PM'
+   ]);
+   const bounced = voucherTrackingLines({ email_message_id: 're_1', email_delivered_at: '2026-10-30T13:04:30Z', email_bounced_at: '2026-10-30T13:05:00Z', receipt_issue_at: '2026-10-31T01:00:00Z' });
+   assertStringIncludes(bounced[0], '⚠️ Email bounced');
+   assertStringIncludes(bounced[1], "didn't arrive");
+});

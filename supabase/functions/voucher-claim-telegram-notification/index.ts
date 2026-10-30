@@ -21,6 +21,9 @@
 //                                                rewards feature works), from the same bot as the cards.
 //   { claimId, event: 'admin_send' }             admin Vouchers page → Send code (admin session required).
 //                                                Lives here because the project is at its function limit.
+//   GET ?go=<voucher_codes.id>                   the voucher email's button (moodeng.app/v/<id>, proxied by
+//                                                vercel.json): stamp the first tap on the card, then 302 to
+//                                                the Xoxo link. No auth: the id is random and only in that email.
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -39,6 +42,8 @@ import {
    loadMessengerContact,
    messageBorrower,
    messengerChatButton,
+   recordVoucherTap,
+   restampVoucherCard,
    sendVoucherCode,
    type VoucherClaimRow,
    type VoucherDigest,
@@ -130,8 +135,33 @@ const adminFromSession = async (supabase: SupabaseClient, req: Request): Promise
    return caller?.username ? `@${caller.username}` : (caller?.email ?? 'admin');
 };
 
+const APP_URL = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('SITE_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
+
+// The email's voucher button. Forward first; the card edit finishes in the background when the
+// runtime allows it, so the borrower never waits on Telegram.
+const forwardVoucherTap = async (req: Request) => {
+   const codeId = new URL(req.url).searchParams.get('go') ?? '';
+   const fallback = `${APP_URL}/dashboard`;
+   const redirect = (location: string) => new Response(null, { status: 302, headers: { Location: location, 'Cache-Control': 'no-store' } });
+   if (!/^[0-9a-f-]{36}$/i.test(codeId)) return redirect(fallback);
+   try {
+      const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+      const { url, restamp } = await recordVoucherTap(supabase, codeId);
+      if (restamp) {
+         const waitUntil = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime?.waitUntil;
+         if (waitUntil) waitUntil(restamp.catch((err) => console.error('voucher tap restamp failed', err)));
+         else await restamp.catch((err) => console.error('voucher tap restamp failed', err));
+      }
+      return redirect(url ?? fallback);
+   } catch (err) {
+      console.error('voucher tap failed', err instanceof Error ? err.message : err);
+      return redirect(fallback);
+   }
+};
+
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+   if (req.method === 'GET') return await forwardVoucherTap(req);
    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
@@ -196,6 +226,8 @@ serve(async (req) => {
 
       if (event === 'decided') {
          if (claim.status !== 'sent' && claim.status !== 'rejected') return json({ ok: true, stamped: 0 });
+         // Sent: the card keeps updating (delivered, opened, tapped…), so it's re-rendered, not closed.
+         if (claim.status === 'sent') return json({ ok: true, stamped: await restampVoucherCard(supabase, claim.id) });
          const by = voucherDecidedBy(claim.admin_note) ?? (decidedBy ? `${decidedBy} (admin panel)` : 'the admin panel');
          const stamped = await stampDecisionCards(supabase, 'voucher', claim.id, {
             header: voucherStampHeader(claim.status, claim),
@@ -221,6 +253,7 @@ serve(async (req) => {
             if (order && giftaway) resent = await resendGiftawayOrder(giftaway, order.referenceNo, order.orderId);
          }
          const receiptText = buildVoucherReceiptMessage(claim as unknown as VoucherClaimRow & { received_at?: string | null }, resent);
+         await restampVoucherCard(supabase, claim.id);
          await sendTelegramMessage(chatId, receiptText, chatButton ? { inlineKeyboard: [[chatButton]] } : {});
          await toDiscord(supabase, receiptText, chatButton ? [[chatButton]] : []);
          return json({ ok: true });

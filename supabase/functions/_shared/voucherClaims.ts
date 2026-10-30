@@ -15,7 +15,7 @@
 // Deciding in the admin panel instead fires notify_voucher_claim_decided, which stamps the card the
 // same way (event 'decided').
 
-import { adminUserUrl, type CardStamp, stampDecisionCards } from './adminCards.ts';
+import { adminUserUrl, type CardStamp, restampCards, stampDecisionCards } from './adminCards.ts';
 import { buyBitrefillCode, getBitrefillApiKey, GRABMART_PRODUCTS } from './bitrefill.ts';
 import { sendEmail } from './email.ts';
 import { getGiftawayConfig, giftawaySource, type GiftawayBrand, orderGiftawayEgift, toPhilippineMobile } from './giftaway.ts';
@@ -640,12 +640,14 @@ const LOGO_URL = `${SITE_URL}/app-icons/icon-192.png`;
  * the button opens, so it doesn't read like phishing: the links go to Xoxo's plum.gift, a domain
  * borrowers don't know.
  */
-export const buildVoucherCodeEmail = (input: { fullName: string; amountPhp: number; reward: string; links: string[] }) => {
+export const buildVoucherCodeEmail = (input: { fullName: string; amountPhp: number; reward: string; links: string[]; trackedLinks?: string[] }) => {
    const firstName = input.fullName.trim().split(/\s+/)[0] || 'there';
    const reason = REWARD_REASONS[input.reward] ?? 'from Moodeng Credit';
    const amount = `₱${input.amountPhp}`;
    const many = input.links.length > 1;
    const host = input.links.length ? linkHost(input.links[0]) : null;
+   // What the buttons point at: the moodeng.app/v/… redirect when there is one (it forwards to the link).
+   const hrefs = input.links.map((link, i) => input.trackedLinks?.[i] ?? link);
    const subject = `Your ${amount} food voucher from Moodeng Credit`;
    const steps = [
       `Tap ${many ? 'each button' : 'the button'} above${host ? ` (it opens ${host}, the voucher site of our partner Xoxo)` : ''}.`,
@@ -657,7 +659,7 @@ export const buildVoucherCodeEmail = (input: { fullName: string; amountPhp: numb
       '',
       `Here is your ${amount} food voucher ${reason}. Salamat!`,
       '',
-      ...input.links.map((link, i) => (many ? `₱50 voucher ${i + 1}: ${link}` : `Your voucher: ${link}`)),
+      ...hrefs.map((link, i) => (many ? `₱50 voucher ${i + 1}: ${link}` : `Your voucher: ${link}`)),
       '',
       ...steps.map((step, i) => `${i + 1}. ${step}`),
       '',
@@ -670,7 +672,7 @@ export const buildVoucherCodeEmail = (input: { fullName: string; amountPhp: numb
    ].join('\n');
 
    const font = "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
-   const buttons = input.links
+   const buttons = hrefs
       .map(
          (link, i) =>
             `<tr><td align="center" style="padding:6px 0"><a href="${escapeHtml(link)}" style="display:inline-block;padding:14px 28px;background:#6b55f7;color:#ffffff;border-radius:28px;text-decoration:none;font-weight:700;font-size:16px;${font}">${many ? `Open ₱50 voucher ${i + 1}` : 'Open my food voucher'}</a></td></tr>`
@@ -699,6 +701,115 @@ export const buildVoucherCodeEmail = (input: { fullName: string; amountPhp: numb
 <tr><td align="center" style="padding:16px 8px 0;font-size:12px;line-height:18px;color:#8b86a0;${font}">You got this email because you earned a reward on your Moodeng Credit account.<br>We will never ask for your password, PIN or a payment by email.<br><a href="${SITE_URL}" style="color:#8b86a0">moodeng.app</a> · <a href="mailto:support@moodeng.app" style="color:#8b86a0">support@moodeng.app</a></td></tr>
 </table></td></tr></table></body></html>`;
    return { subject, text, html };
+};
+
+// ---- After it's sent: delivered / opened / tapped / I got it, on the team's cards ---------------
+
+/** The email's voucher button: moodeng.app/v/<voucher_codes.id> → voucher-claim-telegram-notification ?go=. */
+export const trackedVoucherUrl = (codeId: string) => `${SITE_URL}/v/${codeId}`;
+
+export type VoucherTracking = {
+   email_message_id?: string | null;
+   email_delivered_at?: string | null;
+   email_opened_at?: string | null;
+   email_bounced_at?: string | null;
+   voucher_clicked_at?: string | null;
+   received_at?: string | null;
+   receipt_issue_at?: string | null;
+};
+
+const bangkokTime = (iso: string) =>
+   new Date(iso).toLocaleString('en-US', { timeZone: 'Asia/Bangkok', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+/** One line per thing that happened after the send, oldest step first. Empty when nothing is known. */
+export const voucherTrackingLines = (t: VoucherTracking): string[] => {
+   const at = (iso: string) => ` · ${bangkokTime(iso)}`;
+   const lines: string[] = [];
+   if (t.email_bounced_at) lines.push(`⚠️ Email bounced${at(t.email_bounced_at)} — wrong address? Message them`);
+   else if (t.email_delivered_at) lines.push(`📬 Email delivered${at(t.email_delivered_at)}`);
+   else if (t.email_message_id) lines.push('⏳ Email sent, not delivered yet');
+   if (t.email_opened_at) lines.push(`👀 Email opened${at(t.email_opened_at)}`);
+   if (t.voucher_clicked_at) lines.push(`🍗 Tapped the voucher${at(t.voucher_clicked_at)}`);
+   if (t.received_at) lines.push(`✅ They tapped "I got it"${at(t.received_at)}`);
+   else if (t.receipt_issue_at) lines.push(`❌ They said it didn't arrive${at(t.receipt_issue_at)}`);
+   return lines;
+};
+
+const TRACKING_COLUMNS = 'email_message_id, email_delivered_at, email_opened_at, email_bounced_at, voucher_clicked_at, received_at, receipt_issue_at';
+
+/**
+ * Re-render the claim's cards as sent, with what's happened since (voucherTrackingLines). The refs
+ * are kept, so every later step (delivered, opened, tapped, I got it) re-stamps the same messages.
+ * Rendered from the database each time, so steps arriving in any order end up the same.
+ */
+export const restampVoucherCard = async (supabase: SupabaseClient, claimId: string): Promise<number> => {
+   const { data: claim } = await supabase
+      .from('voucher_claims')
+      .select(`status, full_name, amount_php, admin_note, sent_at, ${TRACKING_COLUMNS}`)
+      .eq('id', claimId)
+      .maybeSingle();
+   if (!claim || claim.status !== 'sent') return 0;
+   const by = voucherDecidedBy(claim.admin_note);
+   const detail = voucherTrackingLines(claim).join('\n') || null;
+   return await restampCards(supabase, 'voucher', claimId, () => ({
+      header: voucherStampHeader('sent', claim),
+      detail,
+      by: by ?? 'system',
+      verb: by ? 'Sent by' : 'Updated by',
+      at: claim.sent_at ? new Date(claim.sent_at) : new Date()
+   }));
+};
+
+/** At the send: keep the send summary in each remembered card (later re-stamps start from it), then stamp. */
+const markVoucherSentOnCards = async (supabase: SupabaseClient, claimId: string, summary: string) => {
+   const { data: refs } = await supabase.from('admin_message_refs').select('id, original_text').eq('kind', 'voucher').eq('ref_id', claimId);
+   for (const ref of (refs ?? []) as { id: string; original_text: string | null }[]) {
+      if (ref.original_text?.includes(summary)) continue;
+      await supabase.from('admin_message_refs').update({ original_text: [ref.original_text, summary].filter(Boolean).join('\n') }).eq('id', ref.id);
+   }
+   await restampVoucherCard(supabase, claimId);
+};
+
+// Resend webhook event → the claim column it stamps (first time only).
+const EMAIL_EVENT_COLUMNS: Record<string, keyof VoucherTracking> = {
+   'email.delivered': 'email_delivered_at',
+   'email.opened': 'email_opened_at',
+   'email.bounced': 'email_bounced_at'
+};
+
+/**
+ * A Resend delivered / opened / bounced event for one of our emails. If it's a voucher email seen
+ * for the first time, stamp the claim and re-stamp its cards. Returns what happened, for the log.
+ */
+export const recordVoucherEmailEvent = async (supabase: SupabaseClient, type: string, emailId: string, at?: string | null) => {
+   const column = EMAIL_EVENT_COLUMNS[type];
+   if (!column || !emailId) return 'ignored';
+   const when = at && !Number.isNaN(Date.parse(at)) ? new Date(at).toISOString() : new Date().toISOString();
+   const { data: claim } = await supabase
+      .from('voucher_claims')
+      .update({ [column]: when })
+      .eq('email_message_id', emailId)
+      .is(column, null)
+      .select('id')
+      .maybeSingle();
+   if (!claim) return 'not_a_voucher_or_repeat';
+   await restampVoucherCard(supabase, claim.id);
+   return 'stamped';
+};
+
+/** A tap on the email's voucher button: the link to forward to, after stamping the first tap. */
+export const recordVoucherTap = async (supabase: SupabaseClient, codeId: string): Promise<{ url: string | null; restamp: Promise<unknown> | null }> => {
+   const { data: code } = await supabase.from('voucher_codes').select('code, claim_id').eq('id', codeId).maybeSingle();
+   const url = typeof code?.code === 'string' && /^https?:\/\//i.test(code.code) ? code.code : null;
+   if (!url || !code?.claim_id) return { url, restamp: null };
+   const { data: first } = await supabase
+      .from('voucher_claims')
+      .update({ voucher_clicked_at: new Date().toISOString() })
+      .eq('id', code.claim_id)
+      .is('voucher_clicked_at', null)
+      .select('id')
+      .maybeSingle();
+   return { url, restamp: first ? restampVoucherCard(supabase, code.claim_id) : null };
 };
 
 export type VoucherActionResult = {
@@ -801,7 +912,7 @@ const sendViaGiftaway = async (supabase: SupabaseClient, claim: any, admin: stri
    const credits = order.creditsLeft === null ? '' : ` · ${pesoUsd(order.creditsLeft.toFixed(2))} Giftaway credits left${order.creditsLeft < 500 ? ' ⚠️ top up soon' : ''}`;
    const summary = `✅ ${pesoUsd(amountPhp)} ${order.product} eGift ordered on Giftaway (order ${order.orderId}) and sent by Giftaway to ${to} · by ${admin}${credits}\n${messengerOutcomeLine(told.messenger, told.whatsapp)}`;
    const stamp: CardStamp = { header: voucherStampHeader('sent', sent), detail: summary, by: admin };
-   await stampDecisionCards(supabase, 'voucher', claim.id, stamp);
+   await markVoucherSentOnCards(supabase, claim.id, summary);
    return { ok: true, summary, stamp };
 };
 
@@ -862,7 +973,7 @@ const sendViaBitrefill = async (supabase: SupabaseClient, claim: any, admin: str
    );
    const summary = `✅ ${pesoUsd(amountPhp)} ${bought.product} voucher (${why}) bought on Bitrefill and emailed by Bitrefill to ${email} · by ${admin}\n${messengerOutcomeLine(told.messenger, told.whatsapp)}`;
    const stamp: CardStamp = { header: voucherStampHeader('sent', sent), detail: summary, by: admin };
-   await stampDecisionCards(supabase, 'voucher', claim.id, stamp);
+   await markVoucherSentOnCards(supabase, claim.id, summary);
    return { ok: true, summary, stamp };
 };
 
@@ -901,15 +1012,26 @@ export const sendVoucherCode = async (supabase: SupabaseClient, claimId: string,
    if (data?.error || !links.length) return { ok: false, retry: true, summary: `Couldn't send: ${data?.error ?? 'no link returned'}` };
 
    const email = typeof data.email === 'string' ? data.email.trim() : '';
+   // The email's buttons go through moodeng.app/v/<code id>, so a tap shows on the team's card.
+   const { data: codeRows } = await supabase.from('voucher_codes').select('id, code').eq('claim_id', claimId);
+   const trackedLinks = links.map((link) => {
+      const row = (codeRows ?? []).find((r: { id: string; code: string }) => r.code === link);
+      return row ? trackedVoucherUrl(row.id) : link;
+   });
+   let emailMessageId: string | null = null;
    try {
       if (!email || isPlaceholderEmail(email)) throw new Error('no real email on the claim or account');
-      const message = buildVoucherCodeEmail({ fullName: String(data.full_name ?? ''), amountPhp: Number(data.amount_php), reward: String(data.reward), links });
-      await sendEmail(email, message.subject, message.text, message.html);
+      const message = buildVoucherCodeEmail({ fullName: String(data.full_name ?? ''), amountPhp: Number(data.amount_php), reward: String(data.reward), links, trackedLinks });
+      const sentEmail = (await sendEmail(email, message.subject, message.text, message.html)) as { id?: string } | null;
+      emailMessageId = typeof sentEmail?.id === 'string' ? sentEmail.id : null;
    } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
       await supabase.rpc('release_voucher_code', { p_claim_id: claimId, p_reason: reason.slice(0, 200) });
       return { ok: false, retry: true, summary: `Email failed (${reason.slice(0, 120)}). Links returned to stock; claim still pending.` };
    }
+
+   // Resend's id, so its delivered / opened / bounced webhooks (email-inbound) find this claim.
+   if (emailMessageId) await supabase.from('voucher_claims').update({ email_message_id: emailMessageId }).eq('id', claimId);
 
    const remaining = Number(data.remaining ?? 0);
    const stock = `${remaining} ₱50 link${remaining === 1 ? '' : 's'} left${remaining <= LOW_STOCK ? ' ⚠️ restock soon' : ''}`;
@@ -922,7 +1044,7 @@ export const sendVoucherCode = async (supabase: SupabaseClient, claimId: string,
    );
    const summary = `✅ ${pesoUsd(data.amount_php)} food voucher (${links.length} Xoxo link${links.length === 1 ? '' : 's'}) emailed to ${email} · by ${admin} · ${stock}\n${messengerOutcomeLine(told.messenger, told.whatsapp)}`;
    const stamp: CardStamp = { header: voucherStampHeader('sent', data), detail: summary, by: admin };
-   await stampDecisionCards(supabase, 'voucher', claimId, stamp);
+   await markVoucherSentOnCards(supabase, claimId, summary);
    return { ok: true, summary, stamp };
 };
 
