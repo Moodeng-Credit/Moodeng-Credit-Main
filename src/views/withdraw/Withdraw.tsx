@@ -599,58 +599,57 @@ function PickerRow({ id, selected, onSelect, icon, name, line1, line2, recommend
    );
 }
 
+// Milestone design tokens (Figma "Milestone_9.23version"): the black-italic purple headline of the
+// level card, the 85° purple gradient of its pill buttons, white cards with a 2px lavender border.
+const MILESTONE_GRADIENT = 'linear-gradient(85deg, #9584ff 0%, #6b55f7 98%)';
+
 /** The direct payout (Stableyard): shows USDC turning straight into pesos, so it doesn't read like one more exchange. */
 function DirectPesoCard({ selected, onSelect, spendable }: { selected: boolean; onSelect: () => void; spendable: number | null }) {
    const { value: phpRate } = useUsdcRate('php');
    const pesos = spendable != null && spendable > 0 ? Math.floor(spendable * phpRate) : null;
    return (
       <button onClick={onSelect} className="relative w-full text-left outline-none">
-         <div className="absolute -top-[9px] left-[14px] z-10 bg-[var(--primary)] rounded-full px-[7px] py-[2px] shadow-sm flex items-center justify-center">
-            <span className="text-[8px] font-bold text-white uppercase tracking-[0.4px] leading-none">Recommended · No exchange app</span>
-         </div>
          <div
-            className={`rounded-[20px] p-[16px] border-2 transition-all ${selected ? 'bg-[var(--surface-2)] border-[var(--primary)]' : 'bg-[var(--surface)] border-[var(--border-card)] hover:border-[var(--border-4)]'}`}
-            style={{ boxShadow: selected ? '0px 6px 18px rgba(96,16,210,0.14)' : '0px 1px 3px rgba(27,28,29,0.05)' }}
+            className={`rounded-[8px] border-2 bg-[var(--surface,#fff)] px-[14px] pt-[12px] pb-[14px] transition-all ${selected ? 'border-[#6b55f7]' : 'border-[var(--border-card,#e8e4ff)]'}`}
+            style={{ boxShadow: selected ? '0px 6px 18px rgba(107,85,247,0.16)' : '0px 1px 2px rgba(28,5,61,0.06)' }}
          >
-            <div className="flex items-start gap-[12px]">
-               <div className="flex-1 min-w-0">
-                  <p className="text-[17px] text-[var(--ink)] leading-[22px]" style={{ fontWeight: 650 }}>
-                     USDC straight to pesos
-                  </p>
-                  <p className="text-[12px] text-[var(--text-muted)] leading-[17px] mt-[3px]">
-                     We send pesos to your GCash, Maya or bank. Nothing to sell, no other app.
-                  </p>
-               </div>
+            <div className="flex items-center justify-between gap-[10px]">
+               <p className="text-[22px] font-black italic leading-[1.2] tracking-[-0.3px] text-[var(--text-muted,#594d65)]">
+                  USDC → Pesos
+               </p>
                <div
-                  className={`w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center shrink-0 mt-[2px] ${selected ? 'bg-[var(--primary)] border-[var(--primary)]' : 'border-[var(--border-input)]'}`}
+                  className={`w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center shrink-0 ${selected ? 'bg-[#6b55f7] border-[#6b55f7]' : 'border-[var(--border-input)]'}`}
                >
                   {selected && <Check className="w-[12px] h-[12px] text-white" strokeWidth={3.5} />}
                </div>
             </div>
 
-            <div className="mt-[12px] rounded-[14px] bg-[var(--surface)] border border-[var(--border-card)] px-[12px] py-[10px] flex items-center gap-[10px]">
-               <div className="flex-1 min-w-0">
-                  <p className="text-[10px] uppercase tracking-[0.4px] text-[var(--text-faint)] font-bold">You have</p>
-                  <p className="text-[15px] text-[var(--ink)] font-semibold truncate">{spendable != null ? `${spendable} USDC` : 'USDC'}</p>
-               </div>
-               <ArrowRight className="w-[18px] h-[18px] text-[var(--primary)] shrink-0" strokeWidth={2.6} />
-               <div className="flex-1 min-w-0 text-right">
-                  <p className="text-[10px] uppercase tracking-[0.4px] text-[var(--text-faint)] font-bold">You get</p>
-                  <p className="text-[15px] text-[var(--primary)] font-semibold truncate">
-                     {pesos != null ? `≈ ₱${pesos.toLocaleString('en-PH')}` : '₱ pesos'}
-                  </p>
-               </div>
+            <div className="mt-[4px] flex items-baseline gap-[8px] flex-wrap">
+               <span className="text-[34px] font-black italic leading-[1.2] tracking-[-0.68px] text-[#735dfa]">
+                  {pesos != null ? `₱${pesos.toLocaleString('en-PH')}` : '₱'}
+               </span>
+               {spendable != null && spendable > 0 && (
+                  <span className="text-[14px] leading-[18px] text-[var(--text-muted,#45556c)]">about, from {spendable} USDC</span>
+               )}
             </div>
 
-            <div className="mt-[10px] flex flex-wrap gap-[6px]">
-               {['GCash', 'Maya', '80+ banks', 'Arrives in minutes'].map((t) => (
+            <p className="mt-[4px] text-[16px] leading-[22px] text-[var(--text-muted,#45556c)]">
+               Straight to your GCash, Maya or bank. No exchange app, nothing to sell.
+            </p>
+
+            <div className="mt-[12px] flex flex-wrap items-center gap-[6px]">
+               {['GCash', 'Maya', '80+ banks'].map((t) => (
                   <span
                      key={t}
-                     className="text-[11px] font-semibold text-[var(--primary)] bg-[var(--surface)] border border-[var(--border-card)] rounded-full px-[8px] py-[3px]"
+                     className="h-[28px] rounded-full px-[12px] flex items-center text-[13px] text-white"
+                     style={{ backgroundImage: MILESTONE_GRADIENT, fontWeight: 590 }}
                   >
                      {t}
                   </span>
                ))}
+               <span className="text-[13px] text-[#735dfa] pl-[4px]" style={{ fontWeight: 590 }}>
+                  Arrives in minutes
+               </span>
             </div>
          </div>
       </button>
@@ -760,7 +759,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                {bankPayout && (
                   <>
                      <DirectPesoCard selected={selected === 'bank'} onSelect={() => selectProvider('bank')} spendable={spendable} />
-                     <p className="text-[12px] font-semibold text-[var(--text-faint)] uppercase tracking-[0.4px] pt-[8px]">
+                     <p className="text-[18px] font-black italic leading-[1.2] tracking-[-0.3px] text-[var(--text-muted,#594d65)] pt-[10px] pb-[2px]">
                         Or sell on an exchange app
                      </p>
                   </>
