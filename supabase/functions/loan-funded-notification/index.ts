@@ -135,7 +135,7 @@ serve(async (req) => {
 
    const { data: borrower, error: borrowerError } = await supabase
       .from('users')
-      .select('id, username, telegram_username, email, cs, is_world_id, is_didit, chat_id, notif_transaction_activity, notif_push, messenger_psid')
+      .select('id, username, telegram_username, email, cs, is_world_id, is_didit, chat_id, notif_transaction_activity, notif_push, messenger_psid, whatsapp_contact_id, notif_whatsapp')
       .eq('id', loan.borrower_user_id)
       .maybeSingle();
 
@@ -196,7 +196,7 @@ serve(async (req) => {
       }
    );
 
-   if (!delivery.emailSent && !delivery.telegramSent && !delivery.pushSent && !delivery.messengerSent) {
+   if (!delivery.emailSent && !delivery.telegramSent && !delivery.pushSent && !delivery.messengerSent && !delivery.whatsappSent) {
       return new Response(JSON.stringify({ error: 'Borrower notification target not found' }), { status: 404, headers: corsHeaders });
    }
 

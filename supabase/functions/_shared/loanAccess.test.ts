@@ -112,3 +112,10 @@ Deno.test('username lookups escape LIKE wildcards ("maria_s" must not match "mar
    assertEquals(escapeLike('50%off'), '50\\%off');
    assertEquals(escapeLike('plain'), 'plain');
 });
+
+Deno.test('approved WhatsApp template: first name, else "there"', async () => {
+   const { buildApprovedWhatsAppTemplate } = await import('./loanAccess.ts');
+   assertEquals(buildApprovedWhatsAppTemplate('Irish').components[0].parameters[0].text, 'Irish');
+   assertEquals(buildApprovedWhatsAppTemplate(null).name, 'moodeng_approved');
+   assertEquals(buildApprovedWhatsAppTemplate('  ').components[0].parameters[0].text, 'there');
+});

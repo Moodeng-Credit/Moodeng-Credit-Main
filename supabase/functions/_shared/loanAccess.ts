@@ -25,7 +25,8 @@ import { postDiscord } from './discord.ts';
 import { loadOnboardingTimeline, signupLines, timelineLines } from './onboardingTimeline.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import type { PushLocale, PushPayload } from './pushMessages.ts';
-import { getMessengerContact, messengerDisplayName, sendMessengerMessage, type MessengerCard } from './sendpulse.ts';
+import { getMessengerContact, messengerDisplayName, sendMessengerMessage, sendWhatsAppTemplate, type MessengerCard } from './sendpulse.ts';
+import { getTelegramBotSettingEnabled } from './borrowerNotificationDelivery.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
 import { changeTimeButton } from './callReschedule.ts';
 import { cancelCallButton } from './callCancel.ts';
@@ -124,6 +125,8 @@ export type BorrowerRow = {
    messenger_psid: string | null;
    messenger_verified_at: string | null;
    whatsapp_verified_at: string | null;
+   whatsapp_contact_id?: string | null;
+   notif_whatsapp?: boolean | null;
    loan_access_status: string | null;
    is_world_id?: string | null;
    video_call_starts_at?: string | null;
@@ -134,7 +137,7 @@ export type BorrowerRow = {
 };
 
 export const BORROWER_COLUMNS =
-   'id, username, email, display_name, chat_id, notif_account_activity, is_didit, is_world_id, didit_id_status, messenger_psid, messenger_verified_at, whatsapp_verified_at, loan_access_status, video_call_starts_at, video_call_timezone, video_call_confirmed_at, video_call_booking_uid, is_test';
+   'id, username, email, display_name, chat_id, notif_account_activity, is_didit, is_world_id, didit_id_status, messenger_psid, messenger_verified_at, whatsapp_verified_at, whatsapp_contact_id, notif_whatsapp, loan_access_status, video_call_starts_at, video_call_timezone, video_call_confirmed_at, video_call_booking_uid, is_test';
 export const REQUEST_COLUMNS = 'id, user_id, kind, display_name, reason, referral_code, channel, status, created_at';
 
 export const shortId = (id: string) => id.slice(0, 8);
@@ -368,6 +371,16 @@ const ctaLabel = (msg: BorrowerMessage, kind: BorrowerMessageKind) =>
           ? 'Request my loan'
           : 'Open Moodeng';
 
+// "You're approved" on WhatsApp, for when Messenger can't reach them. Template `moodeng_approved`
+// (Utility, en): "Hi {{1}}, your Moodeng Credit account is approved. You can now request your first
+// loan. Tap below to get started." with a static "Request a loan" button. Off until Meta approves it.
+export const APPROVED_WHATSAPP_SETTING_KEY = 'approved_whatsapp_enabled';
+export const buildApprovedWhatsAppTemplate = (firstName: string | null | undefined) => ({
+   name: 'moodeng_approved',
+   language: { code: 'en' },
+   components: [{ type: 'body' as const, parameters: [{ type: 'text' as const, text: firstName?.trim() || 'there' }] }]
+});
+
 export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow, kind: BorrowerMessageKind) => {
    const preKycMsg = PRE_KYC_MESSAGES[kind] && (await loadNeedsIdCheck(svc, borrower.id, borrower)) ? PRE_KYC_MESSAGES[kind] : undefined;
    const msg: BorrowerMessage = preKycMsg ?? BORROWER_MESSAGES[kind];
@@ -398,6 +411,14 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
       card: { title: '👉 Next step', button: { title: ctaLabel(msg, kind), url: msg.url } }
    });
    if (!messenger.ok && messenger.reason !== 'no_contact') console.log('loanAccess: messenger skipped for', borrower.id, messenger.reason);
+   // Approved but Messenger couldn't tell them (outside its 24h window): the WhatsApp template.
+   if (kind === 'approved' && !messenger.ok && borrower.whatsapp_contact_id && borrower.notif_whatsapp !== false) {
+      if (await getTelegramBotSettingEnabled(svc, APPROVED_WHATSAPP_SETTING_KEY).catch(() => false)) {
+         const firstName = (borrower.display_name ?? '').trim().split(/\s+/)[0] || borrower.username || null;
+         const sent = await sendWhatsAppTemplate(borrower.whatsapp_contact_id, buildApprovedWhatsAppTemplate(firstName));
+         console.log('loanAccess: whatsapp approved for', borrower.id, sent.ok ? 'sent' : `not sent (${sent.reason})`);
+      }
+   }
    // Approved: the how-to videos right after, so they know how to get started, cash out and repay
    // before their first loan (George, 2026-10-13).
    if (kind === 'approved' && messenger.ok) {
