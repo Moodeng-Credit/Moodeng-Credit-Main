@@ -541,9 +541,10 @@ function useRegion(): Region {
 }
 
 /* ─── SCREEN 1: Withdraw your USDC ────────────────────────────────── */
+// Tapping a row opens that provider straight away (no select-then-Continue): a wrong tap is one back
+// arrow away, and nothing is sent before the provider's own confirm step.
 type PickerRowProps = {
    id: Provider;
-   selected: Provider;
    onSelect: (id: Provider) => void;
    icon: React.ReactNode;
    name: string;
@@ -555,8 +556,7 @@ type PickerRowProps = {
    paused?: boolean;
 };
 
-function PickerRow({ id, selected, onSelect, icon, name, line1, line2, recommended, warn, paused }: PickerRowProps) {
-   const active = selected === id && !paused;
+function PickerRow({ id, onSelect, icon, name, line1, line2, recommended, warn, paused }: PickerRowProps) {
    return (
       <button
          onClick={() => onSelect(id)}
@@ -579,8 +579,8 @@ function PickerRow({ id, selected, onSelect, icon, name, line1, line2, recommend
             </div>
          )}
          <div
-            className={`rounded-[18px] p-[14px] border-2 flex items-center gap-[14px] transition-all ${active ? 'bg-[var(--surface-2)] border-[var(--primary)]' : 'bg-[var(--surface)] border-[var(--border-card)] hover:border-[var(--border-4)]'}`}
-            style={{ boxShadow: active ? '0px 4px 14px rgba(96,16,210,0.10)' : '0px 1px 3px rgba(27,28,29,0.05)' }}
+            className="rounded-[18px] p-[14px] border-2 flex items-center gap-[14px] transition-all bg-[var(--surface)] border-[var(--border-card)] hover:border-[var(--border-4)] active:scale-[0.99]"
+            style={{ boxShadow: '0px 1px 3px rgba(27,28,29,0.05)' }}
          >
             <div className="shrink-0">{icon}</div>
             <div className="flex-1 min-w-0">
@@ -590,11 +590,7 @@ function PickerRow({ id, selected, onSelect, icon, name, line1, line2, recommend
                <p className="text-[12px] text-[var(--text-muted)] leading-[16px] mt-[2px]">{line1}</p>
                <p className="text-[12px] text-[var(--text-faint)] leading-[16px]">{line2}</p>
             </div>
-            <div
-               className={`w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center shrink-0 ${active ? 'bg-[var(--primary)] border-[var(--primary)]' : 'border-[var(--border-input)]'}`}
-            >
-               {active && <Check className="w-[12px] h-[12px] text-white" strokeWidth={3.5} />}
-            </div>
+            {!paused && <ChevronRight className="w-[20px] h-[20px] text-[var(--text-faint)] shrink-0" />}
          </div>
       </button>
    );
@@ -629,12 +625,10 @@ const BANK_PAYOUT_FEE_SHARE = 0.022;
 
 /** The direct payout (Stableyard): shows USDC turning straight into pesos, so it doesn't read like one more exchange. */
 function DirectPesoCard({
-   selected,
    onSelect,
    spendable,
    setupDone
 }: {
-   selected: boolean;
    onSelect: () => void;
    spendable: number | null;
    setupDone: boolean;
@@ -644,19 +638,15 @@ function DirectPesoCard({
    return (
       <button onClick={onSelect} className="relative w-full text-left outline-none">
          <div
-            className={`rounded-[8px] border-2 bg-[var(--surface,#fff)] px-[14px] pt-[12px] pb-[14px] transition-all ${selected ? 'border-[#6b55f7]' : 'border-[var(--border-card,#e8e4ff)]'}`}
-            style={{ boxShadow: selected ? '0px 6px 18px rgba(107,85,247,0.16)' : '0px 1px 2px rgba(28,5,61,0.06)' }}
+            className="rounded-[8px] border-2 border-[#6b55f7] bg-[var(--surface,#fff)] px-[14px] pt-[12px] pb-[14px] transition-all active:scale-[0.99]"
+            style={{ boxShadow: '0px 6px 18px rgba(107,85,247,0.16)' }}
          >
             <div className="flex items-center justify-between gap-[10px]">
                <p className="flex items-center gap-[8px] text-[22px] font-black italic leading-[1.2] tracking-[-0.3px] text-[var(--text-muted,#594d65)]">
                   USDC → Pesos
                   <PhFlag className="h-[16px] w-[24px]" />
                </p>
-               <div
-                  className={`w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center shrink-0 ${selected ? 'bg-[#6b55f7] border-[#6b55f7]' : 'border-[var(--border-input)]'}`}
-               >
-                  {selected && <Check className="w-[12px] h-[12px] text-white" strokeWidth={3.5} />}
-               </div>
+               <ChevronRight className="w-[22px] h-[22px] text-[#6b55f7] dark:text-[#a98bff] shrink-0" strokeWidth={2.6} />
             </div>
 
             <div className="mt-[4px] flex items-baseline gap-[8px] flex-wrap">
@@ -694,24 +684,17 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
    // Coins.ph stays the recommended default for everyone, and a user genuinely abroad can still
    // pick Binance themselves — location must never hide a rail or auto-switch the default.
    // While Coins.ph is suspended (config/paymentRails) PDAX takes its place as the default.
-   const [selected, setSelected] = useState<Provider>(COINS_PH_SUSPENDED ? 'pdax' : 'coinsph');
    const [showCoinsPaused, setShowCoinsPaused] = useState(false);
-   // Testers get the direct payout as the default once we know they can use it.
-   useEffect(() => {
-      if (bankPayout) setSelected('bank');
-   }, [bankPayout]);
    const selectProvider = (id: Provider) => {
       if (id === 'coinsph' && COINS_PH_SUSPENDED) {
          setShowCoinsPaused(true);
          return;
       }
-      setShowCoinsPaused(false);
-      setSelected(id);
+      onWithdraw(id);
    };
 
    const coinsPhRow = (
       <PickerRow
-         selected={selected}
          onSelect={selectProvider}
          id="coinsph"
          recommended={!COINS_PH_SUSPENDED && !bankPayout}
@@ -722,15 +705,6 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
          line2="Lowest fees · bank or GCash · ~30 min"
       />
    );
-
-   const NAMES: Record<Provider, string> = {
-      moneybees: 'Moneybees',
-      binance: 'Binance',
-      coinsph: 'Coins.ph',
-      gcash: 'GCrypto',
-      pdax: 'PDAX',
-      bank: 'GCash or bank'
-   };
 
    const balanceLine = !walletConnected
       ? 'Connect your wallet to see your balance'
@@ -805,7 +779,6 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                {bankPayout && (
                   <>
                      <DirectPesoCard
-                        selected={selected === 'bank'}
                         onSelect={() => selectProvider('bank')}
                         spendable={spendable}
                         setupDone={kycApproved}
@@ -818,8 +791,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                {!COINS_PH_SUSPENDED && coinsPhRow}
                {COINS_PH_SUSPENDED && (
                   <PickerRow
-                     selected={selected}
-                     onSelect={selectProvider}
+                        onSelect={selectProvider}
                      id="pdax"
                      recommended={!bankPayout}
                      icon={<PdaxAppIcon className="w-[46px] h-[46px]" />}
@@ -829,7 +801,6 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                   />
                )}
                <PickerRow
-                  selected={selected}
                   onSelect={selectProvider}
                   id="gcash"
                   icon={<GCashAppIcon className="w-[46px] h-[46px]" />}
@@ -839,8 +810,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                />
                {!COINS_PH_SUSPENDED && (
                   <PickerRow
-                     selected={selected}
-                     onSelect={selectProvider}
+                        onSelect={selectProvider}
                      id="pdax"
                      icon={<PdaxAppIcon className="w-[46px] h-[46px]" />}
                      name="PDAX"
@@ -849,7 +819,6 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                   />
                )}
                <PickerRow
-                  selected={selected}
                   onSelect={selectProvider}
                   id="binance"
                   icon={<BinanceAppIcon className="w-[46px] h-[46px]" />}
@@ -858,7 +827,6 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                   line2="GCash, Maya or Bank · 30 min–hours"
                />
                <PickerRow
-                  selected={selected}
                   onSelect={selectProvider}
                   id="moneybees"
                   icon={<MoneybeesAppIcon className="w-[46px] h-[46px]" />}
@@ -881,7 +849,6 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                )}
             </div>
 
-            {selected !== 'moneybees' && selected !== 'bank' && <BaseOnlyNotice className="mt-[12px]" />}
             <button
                onClick={() => navigate('/support/guides/withdrawing-to-your-bank')}
                className="w-full text-center text-[13px] font-semibold text-[var(--accent)] py-[10px] hover:underline"
@@ -892,9 +859,6 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
          </div>
 
          <div className="px-[22px] pt-[12px] pb-[max(14px,env(safe-area-inset-bottom))] bg-[var(--surface)] border-t border-[var(--divider)] space-y-[6px]">
-            <PrimaryBtn onClick={() => onWithdraw(selected)}>
-               Continue with {NAMES[selected]} <ArrowRight className="w-4 h-4" />
-            </PrimaryBtn>
             <button
                onClick={onLater}
                className="w-full text-center text-[14px] font-semibold text-[var(--primary)] py-[6px] hover:underline"
