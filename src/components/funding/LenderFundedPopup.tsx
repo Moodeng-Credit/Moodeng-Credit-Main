@@ -195,7 +195,7 @@ export default function LenderFundedPopup({ userId, borrowerName, totalRepayment
                   </p>
                   <p className="mt-1 text-[20px] leading-6">{content.body}</p>
                </div>
-               <img src={content.art} alt="" className="h-[94px] w-[94px] object-contain" />
+               <img src={content.art} alt="" className="h-[94px] w-[94px] object-contain md:my-2 md:h-[128px] md:w-[128px]" />
                {pushAsk === 'enable' ? (
                   <TurnOnButton label={content.cta} status={turnOnStatus} onTurnOn={() => void turnOn()} onDone={onClose} />
                ) : (
