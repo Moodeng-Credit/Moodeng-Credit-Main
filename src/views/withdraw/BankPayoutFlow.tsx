@@ -283,6 +283,9 @@ export default function BankPayoutFlow({
    const [expiresAt, setExpiresAt] = useState<number | null>(null);
    const [now, setNow] = useState(Date.now());
    const [status, setStatus] = useState('');
+   // When the USDC went out, and a 1s clock for the oven tracker (kept apart from `now`, which re-arms the status poll).
+   const [sentAt, setSentAt] = useState(0);
+   const [clock, setClock] = useState(Date.now());
    const requestKey = useRef('');
    const [complianceUrl, setComplianceUrl] = useState('');
    const [remembered, setRemembered] = useState(false);
@@ -361,6 +364,12 @@ export default function BankPayoutFlow({
       return () => clearInterval(t);
    }, [step]);
 
+   useEffect(() => {
+      if (step !== 'tracking') return;
+      const t = setInterval(() => setClock(Date.now()), 1000);
+      return () => clearInterval(t);
+   }, [step]);
+
    // After the USDC is sent, follow the payout until Stableyard says it landed or failed.
    useEffect(() => {
       if (step !== 'tracking' || !paymentId || DONE.has(status) || FAILED.has(status)) return;
@@ -368,13 +377,15 @@ export default function BankPayoutFlow({
          async () => {
             const res = await call(isPreview, { qr: 'get', paymentId });
             const next = res.result?.payment?.status;
+            // The preview answers 'succeeded' at once; hold it ~12s so the oven tracker can be seen.
+            if (isPreview && next && DONE.has(next) && Date.now() - sentAt < 12_000) return setNow(Date.now());
             if (next) setStatus(next);
             else setNow(Date.now()); // re-arm the poll on a failed read
          },
          isPreview ? 1500 : 8000
       );
       return () => clearTimeout(t);
-   }, [step, paymentId, status, now, isPreview]);
+   }, [step, paymentId, status, now, isPreview, sentAt]);
 
    const runOnboarding = async (action: string, extra: Record<string, string> = {}) => {
       setBusy(true);
@@ -487,6 +498,8 @@ export default function BankPayoutFlow({
          void call(isPreview, { qr: 'sent', paymentId, txHash: outcome.hash });
          writeSavedPayee(setup?.accountId ?? 'preview', { bankCode, accountNumber, accountName: accountName.trim() });
          setStatus('processing');
+         setSentAt(Date.now());
+         setClock(Date.now());
          setStep('tracking');
       } catch (err) {
          setError((err as Error).message || 'The send did not go through. Nothing left your wallet.');
@@ -835,38 +848,90 @@ export default function BankPayoutFlow({
    // tracking
    const done = DONE.has(status);
    const failed = FAILED.has(status);
+   // Stableyard only says waiting / processing / succeeded, so the cake rises on a clock while we wait
+   // (frames 1-5, holding at 5) and comes out of the oven (6) when the payout succeeds.
+   const elapsed = Math.max(0, (clock - sentAt) / 1000) / (isPreview ? 0.08 : 1);
+   const ovenFrame = done ? 6 : elapsed < 10 ? 1 : elapsed < 40 ? 2 : elapsed < 90 ? 3 : elapsed < 150 ? 4 : 5;
+   const slow = !done && !failed && elapsed > 300;
+   const minutes = Math.floor(elapsed / 60);
+   const steps: { label: string; state: 'done' | 'active' | 'todo' }[] = [
+      { label: 'USDC sent from your wallet', state: 'done' },
+      { label: 'Converting to pesos', state: done ? 'done' : 'active' },
+      { label: `Arrived in ${accountLabel}`, state: done ? 'done' : 'todo' }
+   ];
    return (
       <div className="space-y-[12px]">
          <Panel>
-            <div className="flex flex-col items-center text-center gap-[10px] py-[8px]">
-               {done ? (
-                  <img src="/dashboard-v2/moo-cashout.png" alt="" aria-hidden="true" className="h-[132px] w-auto" />
-               ) : failed ? (
+            {failed ? (
+               <div className="flex flex-col items-center text-center gap-[10px] py-[8px]">
                   <XCircle className="w-[44px] h-[44px] text-[var(--danger)]" />
-               ) : (
-                  <Loader2 className="w-[40px] h-[40px] text-[var(--primary)] animate-spin" />
-               )}
-               <p
-                  className={
-                     done
-                        ? 'text-[26px] font-black italic leading-[1.2] tracking-[-0.5px] text-[#6b55f7] dark:text-[#b3a6ff]'
-                        : 'text-[20px] font-semibold text-[var(--ink)]'
-                  }
-               >
-                  {done
-                     ? `${peso(amountNum)} sent to ${accountLabel}!`
-                     : failed
-                       ? 'The payout did not go through'
-                       : `Sending ${peso(amountNum)} to ${accountLabel}`}
-               </p>
-               <p className="text-[13px] text-[var(--text-muted)] leading-[18px]">
-                  {done
-                     ? 'Check your app. It can take a few minutes to show.'
-                     : failed
-                       ? "Don't worry, your USDC is safe. Message us and we'll sort it out."
-                       : 'Usually a few minutes. You can leave this page; we will keep sending it.'}
-               </p>
-            </div>
+                  <p className="text-[20px] font-semibold text-[var(--ink)]">The payout did not go through</p>
+                  <p className="text-[13px] text-[var(--text-muted)] leading-[18px]">
+                     Don&apos;t worry, your USDC is safe. Message us and we&apos;ll sort it out.
+                  </p>
+               </div>
+            ) : (
+               <div className="flex flex-col items-center text-center">
+                  {/* All frames stacked so they're preloaded; the current one fades in. */}
+                  <div className="relative w-full max-w-[260px] aspect-[549/560]" aria-hidden="true">
+                     {[1, 2, 3, 4, 5, 6].map((n) => (
+                        <img
+                           key={n}
+                           src={`/withdraw-oven/oven-${n}.webp`}
+                           alt=""
+                           className="absolute inset-0 w-full h-full object-contain transition-opacity duration-700"
+                           style={{ opacity: n === ovenFrame ? 1 : 0 }}
+                        />
+                     ))}
+                  </div>
+                  <p
+                     className={
+                        done
+                           ? 'mt-[6px] text-[26px] font-black italic leading-[1.2] tracking-[-0.5px] text-[#6b55f7] dark:text-[#b3a6ff]'
+                           : 'mt-[6px] text-[20px] font-semibold text-[var(--ink)]'
+                     }
+                  >
+                     {done ? `${peso(amountNum)} sent to ${accountLabel}!` : `Baking your ${peso(amountNum)}…`}
+                  </p>
+                  {done ? (
+                     <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[4px]">
+                        Check your app. It can take a few minutes to show.
+                     </p>
+                  ) : (
+                     <>
+                        <ol className="mt-[12px] w-full space-y-[8px] text-left">
+                           {steps.map((st) => (
+                              <li key={st.label} className="flex items-center gap-[10px] text-[14px]">
+                                 <span
+                                    className={`w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0 ${
+                                       st.state === 'done'
+                                          ? 'bg-[#6b55f7] text-white'
+                                          : st.state === 'active'
+                                            ? 'border-2 border-[#6b55f7]'
+                                            : 'border-2 border-[var(--border-input)]'
+                                    }`}
+                                 >
+                                    {st.state === 'done' ? (
+                                       <Check className="w-[13px] h-[13px]" strokeWidth={3} />
+                                    ) : st.state === 'active' ? (
+                                       <Loader2 className="w-[12px] h-[12px] text-[#6b55f7] animate-spin" />
+                                    ) : null}
+                                 </span>
+                                 <span className={st.state === 'todo' ? 'text-[var(--text-faint)]' : 'text-[var(--ink)] font-semibold'}>
+                                    {st.label}
+                                 </span>
+                              </li>
+                           ))}
+                        </ol>
+                        <p className="mt-[12px] text-[12px] text-[var(--text-muted)] leading-[17px]">
+                           {slow
+                              ? 'Taking longer than usual, but it’s on its way. You can leave this page; we’ll keep sending it.'
+                              : `Started ${minutes < 1 ? 'just now' : `${minutes} min ago`} · usually a few minutes. You can leave this page.`}
+                        </p>
+                     </>
+                  )}
+               </div>
+            )}
          </Panel>
          <button className={primaryClass} onClick={onDone}>
             Done
