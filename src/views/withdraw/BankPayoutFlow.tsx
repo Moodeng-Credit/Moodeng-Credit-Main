@@ -17,7 +17,15 @@ const FN = 'stableyard-deposit-address';
 const MIN_PHP = 50;
 const MAX_PHP = 5000;
 // Shown first in the bank list: what most borrowers use.
-const POPULAR = ['GCASH', 'MAYA PHILIPPINES, INC./ MAYA WALLET', 'GOTYME BANK', 'BDO', 'BPI', 'GRABPAY', 'MARIBANK', 'UNIONDIGITAL BANK'];
+// The picker asks "E-wallet or bank?" first; each side lists its own popular ones before searching.
+const POPULAR_WALLETS = ['GCASH', 'MAYA PHILIPPINES, INC./ MAYA WALLET', 'GRABPAY', 'SHOPEEPAY', 'DCPAY / COINS.PH', 'PALAWANPAY'];
+const POPULAR_BANKS = ['GOTYME BANK', 'BDO', 'BPI', 'MARIBANK', 'UNIONDIGITAL BANK', 'METROBANK', 'LANDBANK /OFBANK', 'SECURITY BANK'];
+const POPULAR = [...POPULAR_WALLETS, ...POPULAR_BANKS];
+// Stableyard's list mixes wallets and banks; these names are wallets / payment apps.
+const WALLET_NAME =
+   /GCASH|MAYA PHILIPPINES|GRABPAY|SHOPEEPAY|COINS\.PH|PALAWANPAY|TAYOCASH|TOKTOKWALLET|STARPAY|MARCOPAY|LULU MONEY|BANANAPAY|LAZADA WALLET|OMNIPAY|PAY MONGO|SPEEDYPAY|TRAXIONPAY|JUANCASH|I-REMIT|USSC|BAYAD|NATIONLINK|PDAX/;
+type PayeeKind = 'wallet' | 'bank';
+const kindOf = (name: string): PayeeKind => (WALLET_NAME.test(name) ? 'wallet' : 'bank');
 const DONE = new Set(['succeeded', 'completed']);
 const FAILED = new Set(['failed', 'cancelled', 'expired', 'refunded', 'requires_intervention']);
 
@@ -295,16 +303,19 @@ export default function BankPayoutFlow({
    // punctuation), popular ones first. An empty search shows the popular list.
    const [bankQuery, setBankQuery] = useState('');
    const [pickingBank, setPickingBank] = useState(false);
+   const [payeeKind, setPayeeKind] = useState<PayeeKind>('wallet');
    const bankMatches = useMemo(() => {
       const words = normalize(bankQuery).split(' ').filter(Boolean);
-      if (words.length === 0) return sortedBanks.top;
-      return [...sortedBanks.top, ...sortedBanks.rest]
-         .filter((b) => {
-            const name = normalize(`${b.name} ${shortBank(b.name)}`);
-            return words.every((w) => name.includes(w));
-         })
-         .slice(0, 8);
-   }, [bankQuery, sortedBanks]);
+      const popular = payeeKind === 'wallet' ? POPULAR_WALLETS : POPULAR_BANKS;
+      if (words.length === 0) return popular.map((name) => banks.find((b) => b.name === name)).filter((b): b is Bank => Boolean(b));
+      const all = [...sortedBanks.top, ...sortedBanks.rest].filter((b) => {
+         const name = normalize(`${b.name} ${shortBank(b.name)}`);
+         return words.every((w) => name.includes(w));
+      });
+      // Search this side first; if the name is on the other side (picked the wrong tab), still show it.
+      const sameKind = all.filter((b) => kindOf(b.name) === payeeKind);
+      return (sameKind.length ? sameKind : all).slice(0, 8);
+   }, [bankQuery, sortedBanks, banks, payeeKind]);
 
    const loadSetup = async () => {
       setError('');
@@ -587,6 +598,7 @@ export default function BankPayoutFlow({
                      type="button"
                      onClick={() => {
                         setBankQuery('');
+                        setPayeeKind(kindOf(bank.name));
                         setPickingBank(true);
                      }}
                      className={`${inputClass} mt-[6px] flex items-center gap-[10px] text-left`}
@@ -597,13 +609,36 @@ export default function BankPayoutFlow({
                   </button>
                ) : (
                   <div className="mt-[6px]">
+                     <div className="grid grid-cols-2 gap-[6px] mb-[8px]" role="tablist">
+                        {(
+                           [
+                              ['wallet', 'E-wallet', 'GCash, Maya…'],
+                              ['bank', 'Bank', 'BDO, BPI…']
+                           ] as const
+                        ).map(([kind, label, hint]) => (
+                           <button
+                              key={kind}
+                              type="button"
+                              role="tab"
+                              aria-selected={payeeKind === kind}
+                              onClick={() => {
+                                 setPayeeKind(kind);
+                                 setBankQuery('');
+                              }}
+                              className={`rounded-[10px] border-2 px-[10px] py-[8px] text-left transition-colors ${payeeKind === kind ? 'border-[#6b55f7] bg-[var(--surface-2)]' : 'border-[var(--border-card)]'}`}
+                           >
+                              <span className="block text-[14px] font-semibold text-[var(--ink)]">{label}</span>
+                              <span className="block text-[12px] text-[var(--text-muted)]">{hint}</span>
+                           </button>
+                        ))}
+                     </div>
                      <div className="relative">
                         <Search className="w-[16px] h-[16px] text-[var(--text-faint)] absolute left-[12px] top-1/2 -translate-y-1/2 pointer-events-none" />
                         <input
                            value={bankQuery}
                            onChange={(e) => setBankQuery(e.target.value)}
                            autoFocus={pickingBank}
-                           placeholder="Type your bank or e-wallet, e.g. BDO"
+                           placeholder={payeeKind === 'wallet' ? 'Search e-wallets, e.g. GCash' : 'Search banks, e.g. BDO'}
                            className={`${inputClass} pl-[36px]`}
                         />
                      </div>
