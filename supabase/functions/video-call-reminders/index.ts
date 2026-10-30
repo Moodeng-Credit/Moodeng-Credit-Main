@@ -145,7 +145,7 @@ const releaseSlot = async (svc: Svc, u: ReminderUser): Promise<boolean> => {
 
 const hourBefore = async (svc: Svc, u: ReminderUser) => {
    const at = formatCallTime(u.video_call_starts_at, u.video_call_timezone);
-   const body = `Your quick video hello with the Moodeng team starts in under an hour: ${at}. Have your ID ready.`;
+   const body = `Your quick video hello with the Moodeng team starts in under an hour: ${at}. Have your ID ready and video on.`;
    await push(svc, u, 'Your Moodeng call is starting soon', body, u.video_call_join_url ?? `${SITE_URL}/request-board`);
    await telegram(u, `Your Moodeng call is starting soon\n\n${body}`, joinButton(u));
    logMessenger(u, await sendReminderMessenger(u, 2));
@@ -173,7 +173,7 @@ const runRung = async (svc: Svc, u: ReminderUser, rung: Rung, zoomActive: boolea
             return 'hour';
          }
          const confirmUrl = buildConfirmUrl(u.video_call_confirm_token);
-         const body = `Your call is in 1 hour — ${at}. Tap ✅ I'll be there within ${60 - CONFIRM_CLOSES_MIN} minutes, or the call is cancelled automatically.`;
+         const body = `Your call is in 1 hour — ${at}. Bring your original ID and turn on video. Tap ✅ I'll be there within ${60 - CONFIRM_CLOSES_MIN} minutes, or the call is cancelled automatically.`;
          const viaPush = await push(svc, u, 'Confirm your Moodeng call ✅', body, confirmUrl);
          const viaTelegram = await telegram(u, `Confirm your Moodeng call ✅\n\n${body}`, [[{ text: "✅ I'll be there", url: confirmUrl }]]);
          const viaMessenger = await sendConfirmAskMessenger(u);
