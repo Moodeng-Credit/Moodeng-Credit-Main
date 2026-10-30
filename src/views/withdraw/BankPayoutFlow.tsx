@@ -98,6 +98,65 @@ const normalize = (s: string) =>
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, ' ')
       .trim();
+// Logos for the banks most borrowers use: each bank's official app icon (PH App Store, publisher
+// checked), 96px, in public/bank-logos. Keyed by Stableyard's bank name. Everything else gets initials.
+const BANK_LOGOS: Record<string, string> = {
+   GCASH: 'gcash',
+   'MAYA PHILIPPINES, INC./ MAYA WALLET': 'maya',
+   'MAYA BANK, INC.': 'maya',
+   'GOTYME BANK': 'gotyme',
+   BDO: 'bdo',
+   BPI: 'bpi',
+   GRABPAY: 'grabpay',
+   MARIBANK: 'maribank',
+   'UNIONDIGITAL BANK': 'uniondigital',
+   METROBANK: 'metrobank',
+   'LANDBANK /OFBANK': 'landbank',
+   'SECURITY BANK': 'securitybank',
+   'RCBC/DISKARTECH': 'rcbc',
+   PNB: 'pnb',
+   'TONIK BANK': 'tonik',
+   'DCPAY / COINS.PH': 'coinsph',
+   CHINABANK: 'chinabank',
+   'UNION BANK': 'unionbank',
+   'PS BANK': 'psbank',
+   'PHILIPPINE SAVINGS BANK': 'psbank',
+   'EASTWEST BANK': 'eastwest'
+};
+const INITIALS_SKIP = new Set(['BANK', 'INC', 'THE', 'OF', 'A', 'AND', 'CORP', 'CORPORATION', 'RURAL', 'SAVINGS']);
+
+function BankBadge({ name, size = 28 }: { name: string; size?: number }) {
+   const logo = BANK_LOGOS[name];
+   if (logo)
+      return (
+         <img
+            src={`/bank-logos/${logo}.webp`}
+            alt=""
+            width={size}
+            height={size}
+            className="shrink-0 rounded-[7px] border border-[var(--border-card)]"
+            style={{ width: size, height: size }}
+         />
+      );
+   const words = name
+      .toUpperCase()
+      .split(/[^A-Z0-9]+/)
+      .filter((w) => w && !INITIALS_SKIP.has(w));
+   const initials = (words.length > 1 ? words[0][0] + words[1][0] : (words[0] ?? name).slice(0, 2)).toUpperCase();
+   // Same colour for the same bank every time.
+   let hue = 0;
+   for (const ch of name) hue = (hue * 31 + ch.charCodeAt(0)) % 360;
+   return (
+      <span
+         aria-hidden="true"
+         className="shrink-0 rounded-full flex items-center justify-center text-white font-bold"
+         style={{ width: size, height: size, fontSize: size * 0.38, background: `hsl(${hue} 45% 52%)` }}
+      >
+         {initials}
+      </span>
+   );
+}
+
 const shortBank = (name: string) => (name.startsWith('MAYA PHILIPPINES') ? 'Maya' : name === 'GCASH' ? 'GCash' : name);
 
 // The last payout's bank + account, kept on this device only (we never store full account numbers
@@ -506,7 +565,7 @@ export default function BankPayoutFlow({
                      }}
                      className={`${inputClass} mt-[6px] flex items-center gap-[10px] text-left`}
                   >
-                     <Landmark className="w-[18px] h-[18px] text-[var(--primary)] shrink-0" />
+                     <BankBadge name={bank.name} />
                      <span className="flex-1 min-w-0 truncate font-semibold">{shortBank(bank.name)}</span>
                      <span className="text-[13px] font-semibold text-[var(--accent)] shrink-0">Change</span>
                   </button>
@@ -539,6 +598,7 @@ export default function BankPayoutFlow({
                               }}
                               className="w-full px-[12px] py-[10px] flex items-center gap-[10px] text-left hover:bg-[var(--surface-2)]"
                            >
+                              <BankBadge name={b.name} />
                               <span className="flex-1 min-w-0 truncate text-[14px] text-[var(--ink)]">{shortBank(b.name)}</span>
                               {b.code === bankCode && <Check className="w-[16px] h-[16px] text-[var(--primary)] shrink-0" />}
                            </button>
@@ -656,9 +716,13 @@ export default function BankPayoutFlow({
          <div className="space-y-[12px]">
             <Panel>
                <div className="flex items-center gap-[12px]">
-                  <div className="w-[44px] h-[44px] rounded-full bg-[var(--surface-2)] flex items-center justify-center">
-                     <Landmark className="w-[22px] h-[22px] text-[var(--primary)]" />
-                  </div>
+                  {bank ? (
+                     <BankBadge name={bank.name} size={44} />
+                  ) : (
+                     <div className="w-[44px] h-[44px] rounded-full bg-[var(--surface-2)] flex items-center justify-center">
+                        <Landmark className="w-[22px] h-[22px] text-[var(--primary)]" />
+                     </div>
+                  )}
                   <div>
                      <p className="text-[13px] text-[var(--text-muted)]">{accountLabel} gets</p>
                      <p className="text-[26px] font-semibold text-[var(--ink)] leading-[1.1]">{peso(amountNum)}</p>
