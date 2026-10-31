@@ -478,13 +478,8 @@ export default function App() {
             />
             <Route
                path="/dashboard/refer"
-               element={
-                  <ProtectedRoute>
-                     <RoleGuard>
-                        <DashboardV2Referral />
-                     </RoleGuard>
-                  </ProtectedRoute>
-               }
+               // The referral program refunds interest now; old links land on its page.
+               element={<Navigate to="/refer" replace />}
             />
             {/* "Pay zero interest": the Request Board's card once the credit line is maxed out. */}
             <Route

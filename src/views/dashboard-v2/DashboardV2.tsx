@@ -23,9 +23,9 @@ import WalletBalanceCard from '@/views/account/WalletBalanceCard';
 import {
    ConnectFacebookBanner,
    ConnectWalletBanner,
+   InterestReferralBanner,
    TurnOnRemindersBanner,
    VerifyIdentityBanner,
-   VoucherReferralBanner,
    WithdrawBanner
 } from '@/views/dashboard-v2/components/DashboardV2Banners';
 import DashboardV2Hero from '@/views/dashboard-v2/components/DashboardV2Hero';
@@ -202,7 +202,7 @@ export default function DashboardV2() {
             onClaim={() => setClaimingVoucher(ownVoucher.voucher)}
          />
          <div className="-mt-[5px]">
-            <VoucherReferralBanner language={language} onRefer={() => navigate(`/dashboard/refer${previewSearch}`)} />
+            <InterestReferralBanner language={language} onRefer={() => navigate('/refer')} />
          </div>
       </div>
    );
