@@ -207,3 +207,47 @@ export function clearPendingInvite(): void {
       // Nothing to clear.
    }
 }
+
+/** One friend you invited, for the "Pay zero interest" tracker (no names: the database never sends them). */
+export interface InterestRefundFriend {
+   joinedAt: string;
+   repaid: boolean;
+   /** Set once both of you have repaid: the interest coming back to you (capped at $5). */
+   refundUsd: number | null;
+   refundStatus: 'pending' | 'sent' | null;
+   sentAt: string | null;
+   txHash: string | null;
+}
+
+export interface MyInterestRefunds {
+   friends: InterestRefundFriend[];
+   totalRefundedUsd: number;
+}
+
+export const EMPTY_INTEREST_REFUNDS: MyInterestRefunds = { friends: [], totalRefundedUsd: 0 };
+
+/** Parses the jsonb returned by get_my_interest_refunds() (migration 20261101120000), tolerating missing keys. */
+export function parseMyInterestRefunds(raw: unknown): MyInterestRefunds {
+   if (!raw || typeof raw !== 'object') return EMPTY_INTEREST_REFUNDS;
+   const value = raw as Record<string, unknown>;
+   const friends = Array.isArray(value.friends) ? (value.friends as Record<string, unknown>[]) : [];
+   const text = (item: unknown) => (typeof item === 'string' && item ? item : null);
+
+   return {
+      friends: friends.map((item) => ({
+         joinedAt: text(item.joinedAt) ?? '',
+         repaid: item.repaid === true,
+         refundUsd: item.refundUsd === null || item.refundUsd === undefined ? null : toNumber(item.refundUsd),
+         refundStatus: item.refundStatus === 'sent' ? 'sent' : item.refundStatus === 'pending' ? 'pending' : null,
+         sentAt: text(item.sentAt),
+         txHash: text(item.txHash)
+      })),
+      totalRefundedUsd: toNumber(value.totalRefundedUsd)
+   };
+}
+
+export async function getMyInterestRefunds(): Promise<MyInterestRefunds> {
+   const { data, error } = await getSupabaseBrowserClient().rpc('get_my_interest_refunds');
+   if (error) throw error;
+   return parseMyInterestRefunds(data);
+}

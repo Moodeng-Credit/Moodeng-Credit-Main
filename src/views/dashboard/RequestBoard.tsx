@@ -1332,6 +1332,9 @@ function RequestBoard$() {
    const loanAccessStatus = effectiveUser?.loanAccessStatus;
    const isFreshlyApproved = isBorrower && loanAccessStatus === 'approved' && !effectiveUser?.loanAccessSeenAt;
    const isLoanAccessPending = isBorrower && loanFlow !== 'open' && loanAccessStatus === 'pending';
+   // Whole credit line in use: they can't apply for more, so the Apply card pitches the referral program instead.
+   const showReferralCard =
+      isBorrower && !journey.onboarding && !isFreshlyApproved && !isLoanAccessPending && effectiveCreditLimit > 0 && availableCreditLimit <= 0;
    // The finish line of onboarding: the first time a freshly approved borrower opens the app, a
    // full-screen "You're now a Moo-borrower!" before the loan form. Once per borrower (this device).
    const mooBorrowerDue = useMemo(
@@ -2189,7 +2192,13 @@ function RequestBoard$() {
                      >
                         <div className="flex flex-col gap-4 relative z-10">
                            <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-none max-[374px]:pr-[76px]">
-                              {journey.onboarding && journey.step ? (
+                              {showReferralCard ? (
+                                 <>
+                                    <p className="text-md-b3 font-semibold uppercase tracking-wide text-md-primary-1200">Referral program</p>
+                                    <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Pay zero interest</p>
+                                    <p className="text-md-b2 font-medium text-md-neutral-700">Refer friends and we cover it.</p>
+                                 </>
+                              ) : journey.onboarding && journey.step ? (
                                  <>
                                     <p className="text-md-b3 font-semibold uppercase tracking-wide text-md-primary-1200">
                                        {`Step ${journey.step} of 3 to your first loan`}
@@ -2228,7 +2237,13 @@ function RequestBoard$() {
                               )}
                            </div>
                            <button
-                              onClick={journey.onboarding ? (e) => { e.preventDefault(); journey.go(); } : handleApplyLoanClick}
+                              onClick={
+                                 showReferralCard
+                                    ? () => navigate('/refer')
+                                    : journey.onboarding
+                                      ? (e) => { e.preventDefault(); journey.go(); }
+                                      : handleApplyLoanClick
+                              }
                               disabled={isOpeningLoanRequest}
                               aria-busy={isOpeningLoanRequest}
                               data-tour-target="request-apply-button"
@@ -2241,6 +2256,8 @@ function RequestBoard$() {
                                     <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
                                     Opening...
                                  </>
+                              ) : showReferralCard ? (
+                                 <>Refer a friend<span aria-hidden="true"> →</span></>
                               ) : journey.onboarding ? (
                                  <>{journey.cta}<span aria-hidden="true"> →</span></>
                               ) : (

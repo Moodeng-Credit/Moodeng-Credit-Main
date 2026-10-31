@@ -64,6 +64,7 @@ import { useUsdcRate } from '@/lib/useUsdcRate';
 import { playDing, playSuccess, setSoundsEnabled, useSoundsEnabled } from '@/lib/uiSounds';
 import { onlyEmailReaches, type ReminderReach, requestContactSteps } from '@/config/contactVerification';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { isValidInviteCode, redeemFriendInvite, type RedeemInviteResult } from '@/lib/friendReferrals';
 import { getVerificationUiState, VERIFICATION_STATE_CTA } from '@/lib/verificationUiState';
 import { fetchUser, updateBorrowerContext, updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
@@ -156,6 +157,12 @@ export type BorrowerContextOption = {
 
 export type BorrowerContextMultiOption = BorrowerContextOption & {
    icon: typeof BriefcaseBusiness;
+};
+
+const FRIEND_INVITE_ERRORS: Record<Exclude<RedeemInviteResult, 'joined' | 'invalid_code'>, string> = {
+   self_referral: "That's your own code. Share it with a friend instead.",
+   already_referred: "You've already joined with a friend's code.",
+   not_a_new_account: "Friend codes are for new accounts that haven't borrowed yet."
 };
 
 const REFERRAL_TEST_CODES: Record<string, AppliedReferralCode> = {
@@ -1317,6 +1324,8 @@ export default function LoanRequestModal({
    const [referralCode, setReferralCode] = useState('');
    const [appliedReferral, setAppliedReferral] = useState<AppliedReferralCode | null>(null);
    const [referralCodeError, setReferralCodeError] = useState('');
+   // A friend's invite code (not an admin promo code): links them as the inviter, no limit boost.
+   const [friendInviteCode, setFriendInviteCode] = useState<string | null>(null);
    const [isApplyingReferralCode, setIsApplyingReferralCode] = useState(false);
    const [showBorrowerContextStep, setShowBorrowerContextStep] = useState(startOnBorrowerContextStep);
    // The bio step is split into two short pages so borrowers never face one long scroll.
@@ -1496,7 +1505,7 @@ export default function LoanRequestModal({
    const [calendarMonth, setCalendarMonth] = useState(selectedCalendarDate ?? todayDate);
    const isRepaymentDateFilled = Boolean(inferLoanDate(typedDateDigits, todayDate, maxLoanDate, allowYearEditing));
    const hasReferralCode = referralCode.trim().length > 0;
-   const hasAppliedReferralCode = appliedReferral !== null;
+   const hasAppliedReferralCode = appliedReferral !== null || friendInviteCode !== null;
    const hasReferralCodeError = referralCodeError.length > 0;
    const isReferralTestMode = import.meta.env.DEV && new URLSearchParams(window.location.search).has('referralTest');
    // Unapproved borrowers (call/approval flows) go from the referral card to "Let's connect", not to
@@ -1917,6 +1926,7 @@ export default function LoanRequestModal({
    const handleReferralCodeChange = (value: string) => {
       setReferralCode(value);
       setReferralCodeError('');
+      if (friendInviteCode && value.trim().toUpperCase() !== friendInviteCode) setFriendInviteCode(null);
 
       if (appliedReferral && value.trim().toUpperCase() !== appliedReferral.code) {
          setAppliedReferral(null);
@@ -1946,6 +1956,19 @@ export default function LoanRequestModal({
             onReferralApplied?.(testReferral);
             setReferralCodeError('');
             return true;
+         }
+
+         // Friend invite codes (ABCDEF12345) link the friend who shared it; anything else is a promo code.
+         if (isValidInviteCode(cleanCode)) {
+            const result = await redeemFriendInvite(cleanCode);
+            if (result === 'joined') {
+               setFriendInviteCode(cleanCode);
+               return true;
+            }
+            if (result !== 'invalid_code') {
+               setReferralCodeError(FRIEND_INVITE_ERRORS[result]);
+               return false;
+            }
          }
 
          const supabase = getSupabaseBrowserClient();
@@ -2815,12 +2838,17 @@ export default function LoanRequestModal({
                      <div className="rounded-md-md bg-md-red-100 px-md-2 py-md-1 text-md-b3 font-normal text-md-red-500">
                         {referralCodeError}
                      </div>
-                  ) : hasAppliedReferralCode ? (
+                  ) : appliedReferral ? (
                      <div className="flex items-center gap-md-1 rounded-md-md bg-[#eefbf2] px-md-2 py-md-1 text-md-b3 font-normal text-[#178447]">
                         <CheckCircle aria-hidden="true" className="h-4 w-4" strokeWidth={2} />
                         <span>
                            Code {appliedReferral.code} applied: +${formatReferralBoost(appliedReferral.boostAmount)} starting limit
                         </span>
+                     </div>
+                  ) : friendInviteCode ? (
+                     <div className="flex items-center gap-md-1 rounded-md-md bg-[#eefbf2] px-md-2 py-md-1 text-md-b3 font-normal text-[#178447]">
+                        <CheckCircle aria-hidden="true" className="h-4 w-4" strokeWidth={2} />
+                        <span>Friend code {friendInviteCode} added. You both earn rewards when you repay.</span>
                      </div>
                   ) : null}
 

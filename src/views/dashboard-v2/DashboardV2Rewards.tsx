@@ -644,17 +644,6 @@ export function DashboardV2InviteLanding() {
                </p>
             </div>
 
-            <div className="relative mx-5 mt-6 overflow-hidden rounded-[16px] bg-[#ffef85] px-4 py-4">
-               <DesignImage
-                  src={DASHBOARD_V2_ASSETS.voucherBannerFood}
-                  className="absolute -right-4 top-0 h-[90px] w-[160px] object-contain"
-               />
-               <p className="relative max-w-[60%] text-[20px] font-black italic leading-6 text-[#3c8248]">₱100 food voucher each</p>
-               <p className="relative mt-1 max-w-[60%] text-[14px] font-medium leading-5 text-[#6f7d1d]">
-                  When you repay your first loan on time, you and {inviter || 'your friend'} both get one.
-               </p>
-            </div>
-
             <Link
                to={isUnknownCode ? '/sign-up' : `/sign-up?invite=${encodeURIComponent(code)}`}
                className="mx-5 mt-6 flex h-[52px] items-center justify-center rounded-[35px] text-[20px] font-semibold text-white"

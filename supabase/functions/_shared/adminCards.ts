@@ -23,6 +23,7 @@
 //    kyc_review   ref = user id   Didit "in manual review" cards — stamped by the Didit verdict
 //    kyc_tries    ref = user id   "out of KYC tries" cards (kr:)
 //    referral_payout ref = payout id  "code owner is owed money" cards (rp:)
+//    interest_refund ref = refund id  "send their interest back" cards (stamped from the admin panel)
 // stampDecisionCards claims the refs with one DELETE … RETURNING, so two paths deciding at once
 // (e.g. a card tap and the voucher trigger) edit each card only once.
 //
@@ -36,7 +37,16 @@ type SupabaseClient = any;
 
 //    loan         ref = loan id   (Discord) new request / funded / unknown-sender + needs-refund alerts —
 //                                 multi-step: funded → overdue → repaid, stamped by state-events-dispatch
-export type AdminCardKind = 'loan_access' | 'voucher' | 'messenger' | 'kyc_review' | 'kyc_tries' | 'loan' | 'referral_payout' | 'referral_claim';
+export type AdminCardKind =
+   | 'loan_access'
+   | 'voucher'
+   | 'messenger'
+   | 'kyc_review'
+   | 'kyc_tries'
+   | 'loan'
+   | 'referral_payout'
+   | 'referral_claim'
+   | 'interest_refund';
 
 export type CardLink = { text: string; url: string };
 

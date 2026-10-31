@@ -67,6 +67,7 @@ import LoanExtensionSection from './LoanExtensionSection';
 import MuleRiskSection from './MuleRiskSection';
 import OnChainSection from './OnChainSection';
 import PricingHealthSection from './PricingHealthSection';
+import InterestRefundsSection from './InterestRefundsSection';
 import RemoveLoanRequestDialog from '@/app/admin/RemoveLoanRequestDialog';
 import ReferralCodesSection from './ReferralCodesSection';
 import RefundSection from './RefundSection';
@@ -1748,6 +1749,7 @@ function AdminPanel() {
                   <h2 className="break-words text-2xl font-black sm:text-3xl">Referral codes</h2>
                   <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">Create codes, deactivate old ones, and track redemptions.</p>
                </div>
+               <InterestRefundsSection />
                <ReferralCodesSection />
             </section>
          ) : null}
