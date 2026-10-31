@@ -636,11 +636,6 @@ function RequestBoard$() {
 
       return floanRequests.filter((loan) => loan.borrowerUser === borrowerUserId);
    }, [borrowerUserId, floanRequests]);
-   // Paid off at least one loan (a refund isn't a repayment): they get the "refer, drop your interest" banner.
-   const hasRepaidLoan = useMemo(
-      () => borrowerCreditLoans.some((loan) => loan.repaymentStatus === 'Paid' && !loan.refundedAt),
-      [borrowerCreditLoans]
-   );
    const usedCreditAmount = useMemo(() => {
       return getBorrowerUsedCreditAmount(borrowerCreditLoans);
    }, [borrowerCreditLoans]);
@@ -1337,6 +1332,9 @@ function RequestBoard$() {
    const loanAccessStatus = effectiveUser?.loanAccessStatus;
    const isFreshlyApproved = isBorrower && loanAccessStatus === 'approved' && !effectiveUser?.loanAccessSeenAt;
    const isLoanAccessPending = isBorrower && loanFlow !== 'open' && loanAccessStatus === 'pending';
+   // Whole credit line in use: they can't apply for more, so the Apply card pitches the referral program instead.
+   const showReferralCard =
+      isBorrower && !journey.onboarding && !isFreshlyApproved && !isLoanAccessPending && effectiveCreditLimit > 0 && availableCreditLimit <= 0;
    // The finish line of onboarding: the first time a freshly approved borrower opens the app, a
    // full-screen "You're now a Moo-borrower!" before the loan form. Once per borrower (this device).
    const mooBorrowerDue = useMemo(
@@ -2194,7 +2192,13 @@ function RequestBoard$() {
                      >
                         <div className="flex flex-col gap-4 relative z-10">
                            <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-none max-[374px]:pr-[76px]">
-                              {journey.onboarding && journey.step ? (
+                              {showReferralCard ? (
+                                 <>
+                                    <p className="text-md-b3 font-semibold uppercase tracking-wide text-md-primary-1200">Referral program</p>
+                                    <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Take the interest off your loan</p>
+                                    <p className="text-md-b2 font-medium text-md-neutral-700">Refer friends to Moodeng and your interest is on us.</p>
+                                 </>
+                              ) : journey.onboarding && journey.step ? (
                                  <>
                                     <p className="text-md-b3 font-semibold uppercase tracking-wide text-md-primary-1200">
                                        {`Step ${journey.step} of 3 to your first loan`}
@@ -2233,7 +2237,13 @@ function RequestBoard$() {
                               )}
                            </div>
                            <button
-                              onClick={journey.onboarding ? (e) => { e.preventDefault(); journey.go(); } : handleApplyLoanClick}
+                              onClick={
+                                 showReferralCard
+                                    ? () => navigate('/dashboard/refer')
+                                    : journey.onboarding
+                                      ? (e) => { e.preventDefault(); journey.go(); }
+                                      : handleApplyLoanClick
+                              }
                               disabled={isOpeningLoanRequest}
                               aria-busy={isOpeningLoanRequest}
                               data-tour-target="request-apply-button"
@@ -2246,6 +2256,8 @@ function RequestBoard$() {
                                     <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
                                     Opening...
                                  </>
+                              ) : showReferralCard ? (
+                                 <>Refer a friend<span aria-hidden="true"> →</span></>
                               ) : journey.onboarding ? (
                                  <>{journey.cta}<span aria-hidden="true"> →</span></>
                               ) : (
@@ -2254,7 +2266,7 @@ function RequestBoard$() {
                            </button>
                         </div>
                         <img
-                           src={isFreshlyApproved ? CONNECT_HIPPOS.approved : '/hippos/thumb-up-right.png'}
+                           src={showReferralCard ? '/hippos/referral-boost.png' : isFreshlyApproved ? CONNECT_HIPPOS.approved : '/hippos/thumb-up-right.png'}
                            alt=""
                            className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:right-1 max-[374px]:top-2 max-[374px]:h-[92px]"
                         />
@@ -2289,30 +2301,6 @@ function RequestBoard$() {
                            className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:right-1 max-[374px]:top-2 max-[374px]:h-[92px]"
                         />
                      </div>
-                  ) : null}
-
-                  {/* Referral program — borrowers who've repaid a loan. */}
-                  {isAuthenticated && isBorrower && hasSelectedRole && hasRepaidLoan ? (
-                     <Link
-                        to="/dashboard/refer"
-                        className="relative flex items-center overflow-hidden rounded-md-lg border border-[#ffe27a] p-4 pr-[112px] transition-all duration-150 active:scale-[0.99] max-[374px]:p-3 max-[374px]:pr-[96px]"
-                        style={{ backgroundImage: 'linear-gradient(90deg, #fff8cc 0%, #ffe27a 100%)' }}
-                     >
-                        <div className="flex flex-col gap-1">
-                           <p className="text-md-b3 font-semibold uppercase tracking-wide text-[#3c8248]">Referral program</p>
-                           <p className="text-md-h6 font-semibold text-md-heading max-[374px]:text-[18px]">Take the interest off your loan</p>
-                           <p className="text-md-b2 font-medium text-md-neutral-700">Refer friends to Moodeng and your interest is on us.</p>
-                           <span className="mt-2 inline-flex w-fit items-center rounded-full bg-[#4aa256] px-4 py-1.5 text-md-b2 font-semibold text-white">
-                              Refer a friend<span aria-hidden="true">&nbsp;→</span>
-                           </span>
-                        </div>
-                        <img
-                           src="/hippos/referral-boost.png"
-                           alt=""
-                           className="pointer-events-none absolute bottom-[-8px] right-0 h-[140px] w-[140px] object-contain max-[374px]:h-[120px] max-[374px]:w-[120px]"
-                           aria-hidden="true"
-                        />
-                     </Link>
                   ) : null}
 
                   {/* Fund Wallet Card — visible for authenticated lenders */}
