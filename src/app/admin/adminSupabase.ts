@@ -2036,6 +2036,45 @@ export async function setReferralPayoutStatus(id: string, status: 'unpaid' | 'pa
    return data as unknown as AdminReferralPayout;
 }
 
+/** "Pay zero interest" refunds owed to inviters (migration 20261101120000_referral_interest_refunds). */
+export interface AdminInterestRefund {
+   id: string;
+   status: 'pending' | 'sent';
+   interest_usd: number;
+   amount_usd: number;
+   tx_hash: string | null;
+   sent_at: string | null;
+   sent_by: string | null;
+   created_at: string;
+   user: { id: string; username: string | null; display_name: string | null; email: string | null; wallet_address: string | null } | null;
+   loan: { id: string; loan_amount: number; total_repayment_amount: number } | null;
+   friend: { referred: { id: string; username: string | null; display_name: string | null } | null } | null;
+}
+
+const INTEREST_REFUND_SELECT =
+   'id, status, interest_usd, amount_usd, tx_hash, sent_at, sent_by, created_at, user:users!interest_refunds_user_id_fkey(id, username, display_name, email, wallet_address), loan:loans!interest_refunds_loan_id_fkey(id, loan_amount, total_repayment_amount), friend:friend_referrals!interest_refunds_friend_referral_id_fkey(referred:users!friend_referrals_referred_user_id_fkey(id, username, display_name))';
+
+export async function listInterestRefunds(): Promise<AdminInterestRefund[]> {
+   const supabase = getSupabaseBrowserClient();
+   const data = await requireOk(
+      supabase.from('interest_refunds').select(INTEREST_REFUND_SELECT).order('created_at', { ascending: false }).limit(200)
+   );
+   return (data ?? []) as unknown as AdminInterestRefund[];
+}
+
+export async function setInterestRefundSent(id: string, txHash: string | null, sentBy: string): Promise<AdminInterestRefund> {
+   const supabase = getSupabaseBrowserClient();
+   const data = await requireOk(
+      supabase
+         .from('interest_refunds')
+         .update({ status: 'sent', tx_hash: txHash, sent_at: new Date().toISOString(), sent_by: sentBy })
+         .eq('id', id)
+         .select(INTEREST_REFUND_SELECT)
+         .single()
+   );
+   return data as unknown as AdminInterestRefund;
+}
+
 // Affiliate claims: friends a code owner added by name on /affiliate (tracking only, no payout).
 export interface AdminReferralClaim {
    id: string;

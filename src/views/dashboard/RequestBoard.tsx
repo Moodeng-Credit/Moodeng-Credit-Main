@@ -2239,7 +2239,7 @@ function RequestBoard$() {
                            <button
                               onClick={
                                  showReferralCard
-                                    ? () => navigate('/dashboard/refer')
+                                    ? () => navigate('/refer')
                                     : journey.onboarding
                                       ? (e) => { e.preventDefault(); journey.go(); }
                                       : handleApplyLoanClick

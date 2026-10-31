@@ -121,6 +121,7 @@ import SettingsStylePreview from '@/views/account/SettingsStylePreview';
 import DashboardV2 from '@/views/dashboard-v2/DashboardV2';
 import DashboardV2Milestones from '@/views/dashboard-v2/DashboardV2Milestones';
 import { DashboardV2InviteLanding, DashboardV2Referral } from '@/views/dashboard-v2/DashboardV2Rewards';
+import InterestReferralPage from '@/views/referral/InterestReferralPage';
 import LoanRequestPreview from '@/views/dashboard/LoanRequestPreview';
 import WhatsAppRemindersPreview from '@/views/dashboard/WhatsAppRemindersPreview';
 import RequestBoard from '@/views/dashboard/RequestBoard';
@@ -485,6 +486,18 @@ export default function App() {
                   </ProtectedRoute>
                }
             />
+            {/* "Pay zero interest": the Request Board's card once the credit line is maxed out. */}
+            <Route
+               path="/refer"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <InterestReferralPage />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
+            {import.meta.env.DEV ? <Route path="/refer-preview" element={<InterestReferralPage sample />} /> : null}
             {/* Referral code owners (affiliates, e.g. Belle): their own signups and payouts, no admin needed. */}
             <Route
                path="/affiliate"
