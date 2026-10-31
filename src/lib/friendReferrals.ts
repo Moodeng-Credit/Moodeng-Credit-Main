@@ -115,6 +115,13 @@ export async function getMyRewards(): Promise<MyRewards> {
    return parseMyRewards(data);
 }
 
+/** True while the borrower has a past-due, unpaid loan: vouchers can't be claimed until it is repaid. */
+export async function getVouchersBlockedByOverdue(): Promise<boolean> {
+   const { data, error } = await getSupabaseBrowserClient().rpc('my_vouchers_blocked_by_overdue');
+   if (error) throw error;
+   return data === true;
+}
+
 export async function submitVoucherClaim(input: {
    reward: VoucherReward;
    friendReferralId: string | null;
