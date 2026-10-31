@@ -444,7 +444,8 @@ export default function ContactsStep({
       if (pushOn) setShowUnblockGuide(false);
    }, [pushOn]);
 
-   const handleEnablePush = async () => {
+   // Returns whether reminders are on afterwards, so Continue can move on in the same tap.
+   const handleEnablePush = async (): Promise<boolean> => {
       setPushError('');
       const outcome = await push.enable();
       const failure = outcome === 'failed' ? getLastPushFailure() : null;
@@ -471,7 +472,9 @@ export default function ContactsStep({
          }
       } else if (outcome === 'subscribed' || outcome === 'already-subscribed') {
          setPushFailures(0);
+         return true;
       }
+      return false;
    };
    // The "WhatsApp instead of Messenger" card, only when that option is switched on (WhatsApp reminders
    // have their own card below).
@@ -965,7 +968,21 @@ export default function ContactsStep({
       }
    };
 
-   const handleContinue = () => {
+   // Facebook done, only reminders left (2026-10-31: two Android borrowers sat on a greyed-out Continue
+   // under the green check and left): Continue itself turns reminders on, then moves on. Chrome needs a
+   // tap to ask, so this is the tap. Blocked or broken phones fall back to the cards as before.
+   const continueTurnsOnPush = contactVerified && pushRequired && !pushOn && !whatsappRequired;
+
+   const handleContinue = async () => {
+      if (continueTurnsOnPush) {
+         track('contact_push_continue_tapped', { source });
+         if (!(await handleEnablePush())) return;
+         // Don't let the auto-continue fire a second onContinue once pushOn flips.
+         autoContinueTimerRef.current = -1;
+         track('contact_verify_continue', { source, channel: messengerVerified ? 'messenger' : 'whatsapp', push_on: true });
+         onContinue();
+         return;
+      }
       if (!canContinue) return;
       track('contact_verify_continue', { source, channel: messengerVerified ? 'messenger' : 'whatsapp', push_on: pushOn });
       onContinue();
@@ -1518,7 +1535,7 @@ export default function ContactsStep({
                              ? 'Not working on this phone.'
                              : 'Not working on this phone. You can continue — we’ll remind you on Messenger and email.'
                           : nudgeReminders
-                          ? 'One more tap — turn on reminders and you’re through.'
+                          ? 'One more tap: the button below, then Allow.'
                           : 'We remind you before your due date'
                   }
                   title="Turn on reminders"
@@ -1579,14 +1596,17 @@ export default function ContactsStep({
                   You&apos;re connected ✓ Tap Continue for the next step.
                </p>
             ) : null}
-            <PrimaryButton disabled={!canContinue || isSubmitting} onClick={handleContinue}>
-               {isSubmitting ? 'Submitting…' : 'Continue'}
+            <PrimaryButton
+               disabled={(!canContinue && !continueTurnsOnPush) || isSubmitting || (continueTurnsOnPush && push.isBusy)}
+               onClick={() => void handleContinue()}
+            >
+               {isSubmitting ? 'Submitting…' : continueTurnsOnPush ? (push.isBusy ? 'Turning on…' : 'Turn on reminders and continue') : 'Continue'}
             </PrimaryButton>
             {!contactVerified && hasReminderStep ? (
                <p className="text-center text-md-b3 text-[#877897]">Connect Facebook to continue.</p>
             ) : null}
-            {contactVerified && pushRequired && !pushOn ? (
-               <p className="text-center text-md-b3 text-[#877897]">Turn on reminders to continue.</p>
+            {continueTurnsOnPush ? (
+               <p className="text-center text-md-b3 text-[#877897]">Your phone will ask next. Tap Allow.</p>
             ) : null}
             {contactVerified && whatsappRequired ? (
                <p className="text-center text-md-b3 text-[#877897]">Turn on WhatsApp reminders to continue.</p>

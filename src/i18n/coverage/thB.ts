@@ -620,6 +620,9 @@ export const thaiCoverageB: Record<string, string> = {
    'Add to Home Screen': 'เพิ่มไปยังหน้าจอโฮม',
    ', open Moodeng from there and turn on notifications. In the Facebook app, open this page in Chrome or Safari instead.':
       'แล้วเปิด Moodeng จากหน้าจอโฮมและเปิดการแจ้งเตือน หากใช้แอป Facebook ให้เปิดหน้านี้ใน Chrome หรือ Safari แทน',
+   'Turn on reminders and continue': 'เปิดการแจ้งเตือนและดำเนินการต่อ',
+   'Your phone will ask next. Tap Allow.': 'โทรศัพท์จะถามต่อไป แตะอนุญาต',
+   'One more tap: the button below, then Allow.': 'อีกครั้งเดียว: กดปุ่มด้านล่าง แล้วแตะอนุญาต',
    'Turn on reminders to continue.': 'เปิดการแจ้งเตือนเพื่อดำเนินการต่อ',
 
    // src/views/dashboard/components/VideoCallStep.tsx
