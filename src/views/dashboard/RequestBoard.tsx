@@ -636,6 +636,11 @@ function RequestBoard$() {
 
       return floanRequests.filter((loan) => loan.borrowerUser === borrowerUserId);
    }, [borrowerUserId, floanRequests]);
+   // Paid off at least one loan (a refund isn't a repayment): they get the "refer, drop your interest" banner.
+   const hasRepaidLoan = useMemo(
+      () => borrowerCreditLoans.some((loan) => loan.repaymentStatus === 'Paid' && !loan.refundedAt),
+      [borrowerCreditLoans]
+   );
    const usedCreditAmount = useMemo(() => {
       return getBorrowerUsedCreditAmount(borrowerCreditLoans);
    }, [borrowerCreditLoans]);
@@ -2284,6 +2289,30 @@ function RequestBoard$() {
                            className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:right-1 max-[374px]:top-2 max-[374px]:h-[92px]"
                         />
                      </div>
+                  ) : null}
+
+                  {/* Referral program — borrowers who've repaid a loan. */}
+                  {isAuthenticated && isBorrower && hasSelectedRole && hasRepaidLoan ? (
+                     <Link
+                        to="/dashboard/refer"
+                        className="relative flex items-center overflow-hidden rounded-md-lg border border-[#ffe27a] p-4 pr-[112px] transition-all duration-150 active:scale-[0.99] max-[374px]:p-3 max-[374px]:pr-[96px]"
+                        style={{ backgroundImage: 'linear-gradient(90deg, #fff8cc 0%, #ffe27a 100%)' }}
+                     >
+                        <div className="flex flex-col gap-1">
+                           <p className="text-md-b3 font-semibold uppercase tracking-wide text-[#3c8248]">Referral program</p>
+                           <p className="text-md-h6 font-semibold text-md-heading max-[374px]:text-[18px]">Take the interest off your loan</p>
+                           <p className="text-md-b2 font-medium text-md-neutral-700">Refer friends to Moodeng and your interest is on us.</p>
+                           <span className="mt-2 inline-flex w-fit items-center rounded-full bg-[#4aa256] px-4 py-1.5 text-md-b2 font-semibold text-white">
+                              Refer a friend<span aria-hidden="true">&nbsp;→</span>
+                           </span>
+                        </div>
+                        <img
+                           src="/hippos/referral-boost.png"
+                           alt=""
+                           className="pointer-events-none absolute bottom-[-8px] right-0 h-[140px] w-[140px] object-contain max-[374px]:h-[120px] max-[374px]:w-[120px]"
+                           aria-hidden="true"
+                        />
+                     </Link>
                   ) : null}
 
                   {/* Fund Wallet Card — visible for authenticated lenders */}
