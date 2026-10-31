@@ -68,6 +68,7 @@ import MuleRiskSection from './MuleRiskSection';
 import OnChainSection from './OnChainSection';
 import PricingHealthSection from './PricingHealthSection';
 import InterestRefundsSection from './InterestRefundsSection';
+import RemoveLoanRequestDialog from '@/app/admin/RemoveLoanRequestDialog';
 import ReferralCodesSection from './ReferralCodesSection';
 import RefundSection from './RefundSection';
 import RelayLinksSection from './RelayLinksSection';
@@ -346,6 +347,7 @@ function AdminPanel() {
    const [selectedRecoveryPath, setSelectedRecoveryPath] = useState<RecoveryPath>('repay_now');
    const [recoveryNote, setRecoveryNote] = useState('');
    const [selectedRequestId, setSelectedRequestId] = useState('');
+   const [removingRequest, setRemovingRequest] = useState<AdminLoanRequest | null>(null);
    const [requestReviewNote, setRequestReviewNote] = useState('Reviewed from the admin panel.');
    const [selectedTemplateId, setSelectedTemplateId] = useState(noticeTemplates[0].id);
    const [noticeUsername, setNoticeUsername] = useState('');
@@ -1564,8 +1566,15 @@ function AdminPanel() {
                            </label>
                            <button
                               type="button"
-                              onClick={() => handleLoanRequestAction('remove_review')}
+                              onClick={() => setRemovingRequest(selectedRequest)}
                               className="mt-5 w-full rounded-2xl bg-red-600 px-5 py-4 text-xl font-black text-white"
+                           >
+                              Remove request
+                           </button>
+                           <button
+                              type="button"
+                              onClick={() => handleLoanRequestAction('remove_review')}
+                              className="mt-3 w-full rounded-2xl border border-red-800 bg-[#241044] px-5 py-4 text-xl font-black text-red-300"
                            >
                               Flag for removal review
                            </button>
@@ -1933,6 +1942,16 @@ function AdminPanel() {
                   </form>
                </div>
             </section>
+         ) : null}
+         {removingRequest ? (
+            <RemoveLoanRequestDialog
+               loan={removingRequest}
+               onClose={() => setRemovingRequest(null)}
+               onRemoved={() => {
+                  setLoanRequests((prev) => prev.filter((request) => request.id !== removingRequest.id));
+                  void refresh(search);
+               }}
+            />
          ) : null}
       </AdminShell>
    );

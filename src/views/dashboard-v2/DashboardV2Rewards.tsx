@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Link, useParams } from 'react-router-dom';
 
-import { useSubmitVoucherClaim } from '@/hooks/useFriendReferrals';
+import { useSubmitVoucherClaim, useVouchersBlockedByOverdue } from '@/hooks/useFriendReferrals';
 
 import {
    type ClaimableVoucher,
@@ -92,6 +92,7 @@ function FoodIcon({ src, label, size }: { src: string; label: string; size: 'lg'
 
 const describeClaimError = (error: unknown) => {
    const message = error instanceof Error ? error.message : String((error as { message?: string } | null)?.message ?? '');
+   if (message.includes('overdue loan')) return 'Please repay your loan first, then claim your voucher.';
    if (message.includes('already claimed')) return 'This voucher was already claimed.';
    if (message.includes('not eligible')) return "This voucher isn't unlocked yet.";
    if (message.includes('email required')) return 'Please add your email — your voucher is sent there.';
@@ -122,6 +123,7 @@ export function VoucherClaimPopup({
    const [step, setStep] = useState<MooStep>(initialStep);
    const [brand, setBrand] = useState<VoucherBrand>('food');
    const submitClaim = useSubmitVoucherClaim();
+   const isBlockedByOverdue = useVouchersBlockedByOverdue(!isPreview);
    const canGrabMart = voucher.amountPhp >= GRABMART_MIN_PHP;
    const picked = MOO_MENU.find((item) => item.brand === brand) ?? MOO_MENU[0];
 
@@ -159,7 +161,28 @@ export function VoucherClaimPopup({
                {step === 'sent' ? 'Moo-redeemed!' : 'Moo-Menu'}
             </p>
             <div className="w-full rounded-[26px] bg-gradient-to-b from-[#fff6c2] via-white via-40% to-white px-5 pb-6 pt-5 text-center dark:from-[#3a3216] dark:via-dv2-card dark:to-dv2-card">
-               {step === 'pick' ? (
+               {isBlockedByOverdue && step !== 'sent' ? (
+                  <div className="flex flex-col items-center gap-3 py-2">
+                     <DesignImage src={DASHBOARD_V2_ASSETS.mooMenuChef} alt="" className="h-28 w-28 object-contain" />
+                     <p id="dv2-voucher-title" className="text-[22px] font-bold leading-7 text-[#594d65] dark:text-[#e6def2]">
+                        Repay your loan first
+                     </p>
+                     <p className="text-[16px] leading-[22px] text-[#45556c]">
+                        Your loan is past due. Your ₱{voucher.amountPhp} voucher is saved for you — claim it as soon as your loan is
+                        repaid.
+                     </p>
+                     <Link
+                        to="/repay"
+                        className="mt-1 flex h-[52px] w-full items-center justify-center rounded-[35px] text-[20px] font-semibold text-white"
+                        style={{ backgroundImage: PRIMARY_GRADIENT }}
+                     >
+                        Repay Now
+                     </Link>
+                     <button type="button" onClick={onClose} className="text-[14px] font-semibold text-[#6b55f7]">
+                        Close
+                     </button>
+                  </div>
+               ) : step === 'pick' ? (
                   <div className="flex flex-col items-center gap-3">
                      <DesignImage src={DASHBOARD_V2_ASSETS.mooMenuChef} alt="" className="h-28 w-28 object-contain" />
                      <p id="dv2-voucher-title" className="text-[22px] font-bold leading-6 text-[#594d65] dark:text-[#e6def2]">

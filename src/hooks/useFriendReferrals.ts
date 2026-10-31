@@ -9,6 +9,7 @@ import {
    EMPTY_REWARDS,
    getMyInviteCode,
    getMyRewards,
+   getVouchersBlockedByOverdue,
    isAccountNewerThanInvite,
    readPendingInvite,
    redeemFriendInvite,
@@ -64,6 +65,18 @@ export function useSubmitVoucherClaim() {
       }) => submitVoucherClaim(input),
       onSuccess: () => queryClient.invalidateQueries({ queryKey: rewardsKey(userId) })
    });
+}
+
+/** Whether a past-due loan blocks voucher claims right now (re-checked each time the claim popup opens). */
+export function useVouchersBlockedByOverdue(enabled = true) {
+   const userId = useSelector((state: RootState) => state.auth.user?.id) ?? '';
+   const query = useQuery({
+      queryKey: ['friend-referrals', 'blocked-by-overdue', userId] as const,
+      queryFn: getVouchersBlockedByOverdue,
+      enabled: enabled && Boolean(userId) && isSupabaseBrowserConfigured(),
+      staleTime: 0
+   });
+   return query.data === true;
 }
 
 /** "I got it" / "Didn't get it" on a sent voucher. */

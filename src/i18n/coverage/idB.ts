@@ -577,6 +577,9 @@ export const indonesianCoverageB: Record<string, string> = {
    'Add to Home Screen': 'Tambah ke Layar Utama',
    ', open Moodeng from there and turn on notifications. In the Facebook app, open this page in Chrome or Safari instead.':
       ', buka Moodeng dari sana, lalu nyalakan notifikasi. Jika kamu memakai aplikasi Facebook, buka halaman ini di Chrome atau Safari.',
+   'Turn on reminders and continue': 'Nyalakan pengingat dan lanjutkan',
+   'Your phone will ask next. Tap Allow.': 'Ponselmu akan bertanya. Ketuk Izinkan.',
+   'One more tap: the button below, then Allow.': 'Satu ketukan lagi: tombol di bawah, lalu Izinkan.',
    'Turn on reminders to continue.': 'Nyalakan pengingat untuk melanjutkan.',
 
    'Sending…': 'Mengirim…',

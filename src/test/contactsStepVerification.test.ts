@@ -82,6 +82,13 @@ const buttonByText = (container: HTMLElement, text: string) =>
 const channelCard = (container: HTMLElement, channel: 'Messenger' | 'WhatsApp' | 'Get reminders on WhatsApp' | 'Turn on reminders' | 'Viber reminders' | 'Telegram reminders') =>
    Array.from(container.querySelectorAll('button')).find((b) => (b.textContent ?? '').trim().startsWith(channel));
 
+// Facebook done, reminders not on yet: Continue becomes the button that turns them on.
+const remindersContinueButton = (container: HTMLElement) => {
+   const btn = buttonByText(container, 'Turn on reminders and continue');
+   expect(btn).toBeTruthy();
+   return btn as HTMLButtonElement;
+};
+
 const continueButton = (container: HTMLElement) => {
    const btn = buttonByText(container, 'Continue');
    expect(btn).toBeTruthy();
@@ -583,7 +590,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: '2026-10-13T00:00:00Z' };
       await render();
       expect(continueButton(container).disabled).toBe(false);
-      expect(container.textContent).not.toContain('Turn on reminders to continue.');
+      expect(container.textContent).not.toContain('Your phone will ask next. Tap Allow.');
       expect(container.textContent).toContain('Blocked in your browser');
       expect(container.textContent).toContain('Optional');
 
@@ -600,13 +607,13 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(supa.invoke).toHaveBeenCalledWith('messenger-stuck-alerts', { body: expect.objectContaining({ reminders: true, reason: 'blocked' }) });
    });
 
-   it('requires reminders on a push-capable device: Continue stays off until they are turned on', async () => {
+   it('requires reminders on a push-capable device: the card turns them on', async () => {
       push.state.isSupported = true;
       push.state.permission = 'default';
       supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: '2026-09-25T00:00:00Z' };
       await render();
-      expect(continueButton(container).disabled).toBe(true);
-      expect(container.textContent).toContain('Turn on reminders to continue.');
+      expect(remindersContinueButton(container).disabled).toBe(false);
+      expect(container.textContent).toContain('Your phone will ask next. Tap Allow.');
 
       const remindersCard = Array.from(container.querySelectorAll('button')).find((b) =>
          (b.textContent ?? '').includes('Turn on reminders')
@@ -617,6 +624,34 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(push.enable).toHaveBeenCalledTimes(1);
       await render();
       expect(continueButton(container).disabled).toBe(false);
+   });
+
+   it('Continue turns reminders on and moves on in the same tap', async () => {
+      push.state.isSupported = true;
+      push.state.permission = 'default';
+      supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: '2026-09-25T00:00:00Z' };
+      await render();
+      await act(async () => {
+         remindersContinueButton(container).click();
+      });
+      expect(push.enable).toHaveBeenCalledTimes(1);
+      expect(onContinue).toHaveBeenCalledTimes(1);
+   });
+
+   it('Continue stays put when they tap Block, and the card shows how to unblock', async () => {
+      push.state.isSupported = true;
+      push.state.permission = 'default';
+      push.enable.mockImplementationOnce(async () => {
+         push.state.permission = 'denied';
+         return 'permission-denied';
+      });
+      supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: '2026-09-25T00:00:00Z' };
+      await render();
+      await act(async () => {
+         remindersContinueButton(container).click();
+      });
+      expect(onContinue).not.toHaveBeenCalled();
+      expect(container.querySelector('[aria-labelledby="unblock-guide-title"]')).not.toBeNull();
    });
 
    it('stops requiring reminders after they fail twice on a phone that cannot subscribe', async () => {
@@ -631,7 +666,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       await act(async () => {
          remindersCard()?.click();
       });
-      expect(continueButton(container).disabled).toBe(true);
+      expect(remindersContinueButton(container)).toBeTruthy();
       expect(container.textContent).toContain("Couldn't turn on reminders");
 
       await act(async () => {
@@ -640,7 +675,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(push.enable).toHaveBeenCalledTimes(2);
       expect(continueButton(container).disabled).toBe(false);
       expect(container.textContent).toContain('Not working on this phone');
-      expect(container.textContent).not.toContain('Turn on reminders to continue.');
+      expect(container.textContent).not.toContain('Your phone will ask next. Tap Allow.');
       // The bot tells them how to fix it in Chrome/Safari, and the team hears about it.
       expect(supa.invoke).toHaveBeenCalledWith('messenger-stuck-alerts', { body: expect.objectContaining({ reminders: true, reason: 'failed', failures: 2 }) });
    });
@@ -864,7 +899,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
             await render('user-1', undefined, false, 'connect');
             expect(channelCard(container, 'Turn on reminders')).toBeTruthy();
             expect(container.textContent).not.toContain('Viber reminders');
-            expect(continueButton(container).disabled).toBe(true);
+            expect(remindersContinueButton(container)).toBeTruthy();
          });
 
          it('"I don’t have WhatsApp" lets them through', async () => {
@@ -893,8 +928,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
             push.state.permission = 'default';
             supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
             await render('user-1', undefined, true);
-            expect(continueButton(container).disabled).toBe(true);
-            expect(container.textContent).toContain('Turn on reminders to continue.');
+            expect(remindersContinueButton(container)).toBeTruthy();
             expect(container.textContent).not.toContain('Get reminders on WhatsApp');
          });
 
