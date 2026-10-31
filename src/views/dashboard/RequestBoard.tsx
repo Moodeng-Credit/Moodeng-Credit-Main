@@ -2195,8 +2195,8 @@ function RequestBoard$() {
                               {showReferralCard ? (
                                  <>
                                     <p className="text-md-b3 font-semibold uppercase tracking-wide text-md-primary-1200">Referral program</p>
-                                    <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Take the interest off your loan</p>
-                                    <p className="text-md-b2 font-medium text-md-neutral-700">Refer friends to Moodeng and your interest is on us.</p>
+                                    <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Pay zero interest</p>
+                                    <p className="text-md-b2 font-medium text-md-neutral-700">Refer friends and we cover it.</p>
                                  </>
                               ) : journey.onboarding && journey.step ? (
                                  <>
@@ -2266,7 +2266,7 @@ function RequestBoard$() {
                            </button>
                         </div>
                         <img
-                           src={showReferralCard ? '/hippos/referral-boost.png' : isFreshlyApproved ? CONNECT_HIPPOS.approved : '/hippos/thumb-up-right.png'}
+                           src={isFreshlyApproved ? CONNECT_HIPPOS.approved : '/hippos/thumb-up-right.png'}
                            alt=""
                            className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:right-1 max-[374px]:top-2 max-[374px]:h-[92px]"
                         />
