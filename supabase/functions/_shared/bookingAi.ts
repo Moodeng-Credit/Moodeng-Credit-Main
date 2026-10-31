@@ -51,11 +51,12 @@ Rules:
 - morning/umaga/pagi 08:00-12:00, lunch/tanghali/siang 11:00-13:00, afternoon/hapon/sore 12:00-17:00, evening/gabi/malam/night 17:00-21:00.
 - "after 6pm" = 18:00-21:00. "before 3pm" = 09:00-15:00. One exact time like "3pm" = 14:30-15:30 and at = "15:00".
 - bukas/besok = tomorrow, mamaya/nanti = later today, ngayon/sekarang = today, weekend = the coming Saturday and Sunday. A weekday name = its next date (today counts if it's that day and the time hasn't passed).
+- "linggo" alone is Sunday, but "susunod na linggo", "sa isang linggo", "next week" and "minggu depan" mean next week: with no day named, that's Monday to Thursday of next week (09:00-21:00, or the time they gave). Never unclear.
 - A time with no day: today if still possible, else tomorrow. A day with no time: 09:00-21:00.
 - anytime=true (windows empty) if they say any time works. unclear=true if there is no usable day or time.
 - at: "HH:MM" only when they named one exact time, else null.
 - lang: "fil" for Filipino/Taglish, "id" for Indonesian, else "en".
-- summary: under 8 words, English, what they asked for.`;
+- summary: under 8 words, English, just the time they asked for, e.g. "tomorrow after 6 PM" (for the team log only).`;
 
 const okTime = (s: unknown) => typeof s === 'string' && /^\d{2}:\d{2}$/.test(s);
 const okDate = (s: unknown) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);

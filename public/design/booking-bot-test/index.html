@@ -83,7 +83,7 @@ header p { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
 .quick { display: flex; flex-wrap: wrap; gap: 6px; padding-left: 34px; }
 .quick button { border: 1.5px solid var(--accent); background: var(--panel); color: var(--accent); border-radius: 999px; padding: 6px 12px; font: 600 13px var(--font-body); cursor: pointer; }
 .quick button:hover { background: var(--offer-bg); }
-.card { margin-left: 34px; max-width: 80%; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--panel); }
+.card { flex-shrink: 0; margin-left: 34px; max-width: 80%; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--panel); }
 .card .c-body { padding: 10px 13px; }
 .card .c-title { font-weight: 600; }
 .card .c-sub { color: var(--muted); font-size: 13px; }
@@ -342,24 +342,45 @@ Rules:
 - summary: under 8 words, English, what they asked for, e.g. "tomorrow after 6 PM".`;
 
   const DAYS = [
-    [/\b(sun|sunday|linggo)\b/, 0], [/\b(mon|monday|lunes)\b/, 1], [/\b(tue|tues|tuesday|martes)\b/, 2], [/\b(wed|wednesday|miyerkules|miyerkoles)\b/, 3],
+    [/\b(sun|sunday|linggo)\b/, 0], [/\b(mon|monday|lunes)\b/, 1], [/\b(tue|tues|tuesday|martes)\b/, 2], [/\b(wed|weds|wednesday|miyerkules|miyerkoles)\b/, 3],
     [/\b(thu|thur|thurs|thursday|huwebes)\b/, 4], [/\b(fri|friday|biyernes)\b/, 5], [/\b(sat|saturday|sabado)\b/, 6]
   ];
-  const hourOf = (h, mm, ap) => { let x = Number(h) % 12; if (ap === 'pm' || (!ap && x >= 1 && x <= 7)) x += 12; return x * 60 + Number(mm || 0); };
+  // "next week" in Filipino is "susunod na linggo" — there "linggo" means week, not Sunday.
+  const NEXT_WEEK = /\b(next week|susunod na linggo|sa isang linggo|next linggo|minggu depan)\b/;
+  // A clock hour with no am/pm: night words make it PM, morning words AM, else 1–7 is PM.
+  const hourOf = (h, mm, ap, t = '') => {
+    let x = Number(h) % 12;
+    const night = /\b(gabi|night|tonight|evening|hapon|afternoon|pm)\b/.test(t), morning = /\b(umaga|morning|am)\b/.test(t);
+    if (ap === 'pm' || (!ap && (night || (!morning && x >= 1 && x <= 7)))) x += 12;
+    return x * 60 + Number(mm || 0);
+  };
   const ruleParse = (text, now) => {
-    const t = text.toLowerCase();
+    const t = text.toLowerCase().replace(/\b(noon|tanghaling tapat)\b/g, '12pm').replace(/\bmidnight\b/g, '12am');
     const dates = [];
     const nextDow = (dow) => { for (let i = 0; i < 7; i++) { const d = addDays(now.date, i); if (weekday(d) === dow) return d; } };
-    if (/\b(today|ngayon|mamaya|later|tonight|ngayong)\b/.test(t)) dates.push(now.date);
-    if (/\b(tomorrow|bukas|tmrw|tom)\b/.test(t)) dates.push(addDays(now.date, 1));
-    if (/weekend/.test(t)) dates.push(nextDow(6), nextDow(0));
-    for (const [re, dow] of DAYS) if (re.test(t)) dates.push(nextDow(dow));
+    const nextWeek = NEXT_WEEK.test(t);
+    const dayText = t.replace(NEXT_WEEK, ' ');
+    if (/\b(today|ngayon|mamaya|later|tonight|ngayong)\b/.test(dayText)) dates.push(now.date);
+    if (/\b(tomorrow|tmrw|tmr|bukas)\b/.test(dayText)) dates.push(addDays(now.date, 1));
+    if (/weekend/.test(dayText)) dates.push(nextDow(6), nextDow(0));
+    for (const [re, dow] of DAYS) if (re.test(dayText)) dates.push(nextDow(dow));
+    // "next week" with no day named: the first weekdays of next week.
+    if (nextWeek && !dates.length) { const mon = addDays(nextDow(1), nextDow(1) === now.date ? 7 : 0); for (let i = 0; i < 4; i++) dates.push(addDays(mon, i)); }
     let from = null, to = null, at = null;
     let m;
-    if ((m = /(after|pagkatapos ng|from)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/.exec(t))) { from = hourOf(m[2], m[3], m[4]); to = 21 * 60; }
-    else if ((m = /(before|bago)\s*(?:mag\s*)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/.exec(t))) { from = 9 * 60; to = hourOf(m[2], m[3], m[4]); }
-    else if ((m = /(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/.exec(t)) || (m = /\b(?:at|alas)\s*(\d{1,2})(?::(\d{2}))?\b/.exec(t))) { const c = hourOf(m[1], m[2], m[3]); from = c - 30; to = c + 30; at = hhmm(c); }
+    if ((m = /(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-|–|to|hanggang|until)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/.exec(t)) && (m[3] || m[6] || m[2] || m[5])) {
+      // A range: "3 to 5pm", "2-4pm", "10am-12pm". The end's am/pm carries over to the start.
+      from = hourOf(m[1], m[2], m[3] || m[6], t); to = hourOf(m[4], m[5], m[6], t);
+      if (from > to && !m[3]) from -= 12 * 60;
+    }
+    else if ((m = /(after|pagkatapos ng|from)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/.exec(t))) { from = hourOf(m[2], m[3], m[4], t); to = Math.max(21 * 60, from + 60); }
+    else if ((m = /(before|bago)\s*(?:mag\s*)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/.exec(t))) { to = hourOf(m[2], m[3], m[4], t); from = Math.min(9 * 60, to - 60); }
+    else if ((m = /(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/.exec(t)) || (m = /\b(?:at|alas|around|mga)\s*(\d{1,2})(?::(\d{2}))?\b/.exec(t)) || (m = /\b([01]?\d|2[0-3]):([0-5]\d)\b/.exec(t))) {
+      const c = m[0].includes(':') && Number(m[1]) > 12 ? Number(m[1]) * 60 + Number(m[2]) : hourOf(m[1], m[2], m[3], t);
+      from = c - 30; to = c + 30; at = hhmm(c);
+    }
     else if (/morning|umaga/.test(t)) { from = 8 * 60; to = 12 * 60; }
+    else if (/\b(lunch|tanghali)\b/.test(t)) { from = 11 * 60; to = 13 * 60; }
     else if (/afternoon|hapon/.test(t)) { from = 12 * 60; to = 17 * 60; }
     else if (/evening|night|gabi|tonight/.test(t)) { from = 17 * 60; to = 21 * 60; }
     const anytime = /\b(any ?time|kahit kailan|kahit anong oras|whenever|kahit ano)\b/.test(t);
@@ -379,6 +400,8 @@ Rules:
       const r = await api({ kind: 'time', text, now: { weekday: WEEKDAYS[weekday(now.date)], date: now.date, time: hhmm(now.min) } });
       if (r && r.read) {
         const x = r.read;
+        // "next week" came back unclear: the simple reader knows it (Mon–Thu of next week).
+        if (x.unclear && NEXT_WEEK.test(text.toLowerCase())) return { parsed: ruleParse(text, now), how: 'DeepSeek said unclear → rules (next week)', ms: performance.now() - t0 };
         return { parsed: { windows: x.windows || [], anytime: !!x.anytime, unclear: !!x.unclear, at: x.at || null, lang: x.lang === 'fil' ? 'fil' : 'en', summary: String(x.summary || '').slice(0, 60) }, how: 'DeepSeek', ms: performance.now() - t0 };
       }
       log(`DeepSeek didn't answer (<code>${esc(r && r.error || 'error')}</code>), so the rule-based reader took over.`);
@@ -404,8 +427,11 @@ Rules:
       en: '📅 LAST STEP: book your 15-min video call with George or Emma.\n\nWhat day and time works best for you? Write it any way you like, e.g. "bukas after 6pm" or "Saturday morning".',
       fil: '📅 HULING HAKBANG: mag-book ng 15-min video call kasama si George o Emma.\n\nAnong araw at oras ang pinaka-okay sa iyo? Isulat mo lang kahit paano, gaya ng "bukas after 6pm" o "Sabado ng umaga".'
     },
-    offer: { en: (s) => `Got it${s ? ` — ${s}` : ''}! These times are free. Tap one to book it:`, fil: () => 'Sige! Bakante ang mga oras na ito. Pindutin ang isa para i-book:' },
-    near: { en: (s) => `Sorry, we're fully booked${s ? ` ${s}` : ' then'}. The closest free times are:`, fil: () => 'Pasensya, puno na kami sa oras na iyan. Ito ang pinakamalapit na bakante:' },
+    // The AI's summary is never shown to the borrower (it's for the team log only).
+    offer: { en: 'Got it! These times are free. Tap one to book it:', fil: 'Sige! Bakante ang mga oras na ito. Pindutin ang isa para i-book:' },
+    near: { en: "Sorry, we're fully booked then. The closest free times are:", fil: 'Pasensya, puno na kami sa oras na iyan. Ito ang pinakamalapit na bakante:' },
+    reoffer: { en: 'Tap one of these times, or tell me another day and time 🙂', fil: 'Pumili ng isa sa mga oras na ito, o sabihin ang ibang araw at oras 🙂' },
+    keepBtn: { en: (w) => `👍 Keep ${w}`, fil: (w) => `👍 ${w} na lang` },
     askedFree: { en: (w) => `✅ ${w} is free! Tap it to book, or pick another time:`, fil: (w) => `✅ Bakante ang ${w}! Pindutin para i-book, o pumili ng ibang oras:` },
     dayFull: { en: (d) => `❌ ${d} is fully booked.\n\nThese are the closest free times on other days:`, fil: (d) => `❌ Puno na ang ${d}.\n\nIto ang pinakamalapit na bakante sa ibang araw:` },
     askedTaken: { en: (w) => `❌ ${w} is already taken.
@@ -413,9 +439,24 @@ Rules:
 These are the closest free times to it:`, fil: (w) => `❌ May naka-book na sa ${w}.
 
 Ito ang pinakamalapit na bakanteng oras:` },
+    askedMine: { en: (w) => `${w} is the time you have now 🙂\nHere are other free times near it:`, fil: (w) => `${w} ang oras mo ngayon 🙂\nIto ang ibang bakanteng oras malapit doon:` },
     tzNote: { en: 'All times are your time (Manila).', fil: 'Lahat ng oras ay oras mo (Manila).' },
     unclear: { en: 'Sorry, I didn\'t catch a day or time 🙏 Try something like "tomorrow 3pm" or "Saturday morning".', fil: 'Pasensya, hindi ko nakuha ang araw o oras 🙏 Subukan ang "bukas 3pm" o "Sabado umaga".' },
     other: { en: 'No problem! What other day or time works for you?', fil: 'Walang problema! Anong ibang araw o oras ang okay sa iyo?' },
+    otherKeep: {
+      en: 'No problem! What other day or time works for you?\nYour call stays booked until you pick a new time.',
+      fil: 'Walang problema! Anong ibang araw o oras ang okay sa iyo?\nNaka-book pa rin ang call mo hanggang pumili ka ng bagong oras.'
+    },
+    unclearKeep: {
+      en: (when) => `Sorry, I didn't catch a day or time 🙏 You're still booked for ${when}.\nTo change it, try something like "tomorrow 3pm" or "Saturday morning".`,
+      fil: (when) => `Pasensya, hindi ko nakuha ang araw o oras 🙏 Naka-book ka pa rin sa ${when}.\nPara palitan, subukan ang "bukas 3pm" o "Sabado umaga".`
+    },
+    cancelled: { en: (w) => `OK, your call on ${w} is cancelled.\nWhenever you're ready, just tell me a day and time 🙂`, fil: (w) => `Sige, kinansela na ang call mo sa ${w}.\nKapag handa ka na, sabihin lang ang araw at oras 🙂` },
+    tooFar: { en: 'I can only book up to a week ahead 🙏 These are the free times closest to what you asked:', fil: 'Hanggang isang linggo lang ang pwede kong i-book 🙏 Ito ang pinakamalapit na bakante sa hiningi mo:' },
+    tapOne: { en: 'Please tap one of the buttons 🙂', fil: 'Pakipindot ang isa sa mga button 🙂' },
+    rangeNumber: { en: 'Is that in thousands? Please tap the closest range 🙂', fil: 'Libo ba iyan? Pakipindot ang pinakamalapit na range 🙂' },
+    finishFirst: { en: "Sorry, I didn't catch a new day or time. Let's finish these questions first — you can change the time at the end 🙂", fil: 'Pasensya, hindi ko nakuha ang bagong araw o oras. Tapusin muna natin ang mga tanong — pwede mong palitan ang oras pagkatapos 🙂' },
+    resume: { en: (when, host) => `⏳ Now holding ${when} with ${host}. Let's finish the questions:`, fil: (when, host) => `⏳ Naka-hold na ang ${when} kasama si ${host}. Tapusin natin ang mga tanong:` },
     otherBtn: { en: '🕐 Other time', fil: '🕐 Ibang oras' },
     none: { en: 'Sorry, our calendar is full this week. The team will message you with a time 🙏', fil: 'Pasensya, puno na ang calendar namin ngayong linggo. Ime-message ka ng team para sa oras 🙏' },
     oneMoment: { en: '⏳ One second, saving this time for you…', fil: '⏳ Sandali lang, sine-save ko ang oras na ito para sa iyo…' },
@@ -427,8 +468,8 @@ Ito ang pinakamalapit na bakanteng oras:` },
     askName: { en: 'Thank you! Last thing: please type your first name (for security).', fil: 'Salamat! Huling bagay: pakitype ang first name mo (para sa security).' },
     badName: { en: 'Please type just your first name, e.g. Maria', fil: 'Pakitype lang ang first name mo, hal. Maria' },
     booked: {
-      en: (when, name) => `🎉 You're booked, ${name}!\n🗓️ ${when} · 15 min with George or Emma\nJoin on Zoom: https://zoom.us/j/0000000000 (pretend link)\n\nBring 🪪 your original ID and 📷 camera on. That's it!`,
-      fil: (when, name) => `🎉 Naka-book ka na, ${name}!\n🗓️ ${when} · 15 min kasama si George o Emma\nSa Zoom: https://zoom.us/j/0000000000 (pretend link)\n\nDalhin ang 🪪 orihinal mong ID at naka-on ang 📷 camera. Iyon lang!`
+      en: (when, name, host) => `🎉 You're booked, ${name}!\n🗓️ ${when} · 15 min with ${host || 'George or Emma'}\nJoin on Zoom: https://zoom.us/j/0000000000 (pretend link)\n\nBring 🪪 your original ID and 📷 camera on. That's it!`,
+      fil: (when, name, host) => `🎉 Naka-book ka na, ${name}!\n🗓️ ${when} · 15 min kasama si ${host || 'George o Emma'}\nSa Zoom: https://zoom.us/j/0000000000 (pretend link)\n\nDalhin ang 🪪 orihinal mong ID at naka-on ang 📷 camera. Iyon lang!`
     },
     promise: { en: (name) => `⏰ Remember, ${name}: tap ✅ 1 hour before, or the call is cancelled.`, fil: (name) => `⏰ Tandaan, ${name}: pindutin ang ✅ 1 oras bago, kung hindi makakansela ang call.` },
     card: { en: ['Will you make it?', 'Tap ✅ so we know you\'re coming — or pick a new time.', "✅ I'll be there", '🔄 Change time'], fil: ['Makakarating ka ba?', 'Pindutin ang ✅ para alam naming darating ka — o pumili ng bagong oras.', "✅ I'll be there", '🔄 Palitan ang oras'] },
@@ -483,7 +524,8 @@ Ito ang pinakamalapit na bakanteng oras:` },
     const b1 = document.createElement('button'); b1.type = 'button'; b1.textContent = yes;
     b1.onclick = () => { b1.disabled = true; meSay(yes); botSay(say('thanks')); log('They tapped <b>✅ I\'ll be there</b> — call confirmed, reminders keep going.'); };
     const b2 = document.createElement('button'); b2.type = 'button'; b2.textContent = change;
-    b2.onclick = () => { clearQuick(); meSay(change); releaseBooking(); botSay(say('other')); step = 'ask'; };
+    // Their call stays booked until they tap a new time.
+    b2.onclick = () => { clearQuick(); meSay(change); botSay(say('otherKeep')); changing = true; step = 'booked'; };
     c.append(b1, b2); chat.append(c); scroll();
   };
 
@@ -527,28 +569,83 @@ Ito ang pinakamalapit na bakanteng oras:` },
   const longWhen = (s) => `${new Intl.DateTimeFormat(lang === 'fil' ? 'fil-PH' : 'en-US', { timeZone: 'UTC', weekday: 'long', month: 'long', day: 'numeric' }).format(new Date(s.date + 'T00:00:00Z'))}, ${fmtTime(s.min)} (Manila time)`;
 
   // Picking a time only holds it. Then three separate messages: YES to the time, their first name, confirmed.
+  // Moving a call: the old time stays theirs until they tap a new one, and answers already given are kept.
   const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+  let quizDone = false, changing = false;
   const hold = async (s) => {
     offered = [];
-    s.status = 'held'; mine = s; refreshFull(); renderCal();
+    changing = false;
+    if (mine && mine !== s) releaseBooking();
+    s.status = 'held'; mine = s; quizSlot = s; prepHost = s.host; refreshFull(); renderCal();
     log(`<span class="tag">Held</span>${esc(fmtDay(s.date, 'en'))} · ${fmtTime(s.min - 60)} Bangkok — waiting for YES, then their first name. (Real bot: hold ~15 min, then free it.)`);
     step = 'busy';
     botSay(say('oneMoment'));
     const stop = typing(); await pause(1200); stop();
     if (mine !== s) return;
+    if (quizDone) return askFinalConfirm(s);
+    if (asked.length) { botSay(say('resume', longWhen(s), s.host)); return askNext(); }
     startQuiz(s);
   };
   // After the questions (and a good-enough fit): the very clear final confirmation.
   const askFinalConfirm = (s) => {
     botSay(say('confirmTime', longWhen(s), s.host));
-    quick([[say('otherBtn'), (label) => { meSay(label); releaseBooking(); botSay(say('other')); step = 'ask'; }]]);
+    heldButtons();
     step = 'held';
   };
-  const isYes = (text) => /^\s*(yes|yeah|yep|oo|opo|sige|ok|okay)\b/i.test(text);
-  // A first name: letters only, 2+ letters, first word kept. "yes maria" also works.
+
+  // ---- reading short replies ----
+  const norm = (t) => String(t || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '');
+  const words = (t) => norm(t).replace(/[^\p{L}\p{N}\s:'-]/gu, ' ').split(/\s+/).filter(Boolean);
+  // Whole words only: "friend" is not Friday, "money" is not Monday, "2 kids" is not a time.
+  const TIME_WORD = /\b(today|tonight|tomorrow|tmrw|tmr|bukas|mamaya|ngayon|later|morning|afternoon|evening|night|noon|lunch|umaga|hapon|gabi|tanghali|mon|monday|tue|tues|tuesday|wed|weds|wednesday|thu|thur|thurs|thursday|fri|friday|sat|saturday|sun|sunday|lunes|martes|miyerkules|miyerkoles|huwebes|biyernes|sabado|linggo|weekend|week|besok|nanti|sekarang|pagi|siang|sore|malam|senin|selasa|rabu|kamis|jumat|sabtu|minggu|jan|feb|march|apr|april|june|july|aug|sept|oct|nov|dec)\b/;
+  const CLOCK = /\b\d{1,2}(:\d{2})?\s*(am|pm)\b|\b\d{1,2}:\d{2}\b|\b(alas|jam|at|around|after|before|from|by|pagkatapos ng|bago mag)\s+\d{1,2}\b|\b\d{1,2}\s*(-|–|to)\s*\d{1,2}\s*(am|pm)?\b|\b\d{1,2}\/\d{1,2}\b/;
+  const DAY_WORD = /\b(today|tonight|tomorrow|tmrw|tmr|bukas|mamaya|ngayon|ngayong|later|mon|monday|tue|tues|tuesday|wed|weds|wednesday|thu|thur|thurs|thursday|fri|friday|sat|saturday|sun|sunday|lunes|martes|miyerkules|miyerkoles|huwebes|biyernes|sabado|linggo|weekend|weekdays?|week|besok|lusa|nanti|sekarang|senin|selasa|rabu|kamis|jumat|sabtu|minggu|jan|feb|march|apr|april|june|july|aug|sept|oct|nov|dec|\d{1,2}(st|nd|rd|th))\b|\b\d{1,2}\/\d{1,2}\b/;
+  const looksLikeTime = (text) => TIME_WORD.test(norm(text)) || CLOCK.test(norm(text));
+  const CHANGE = /\b(change|resched\w*|move|instead|another (day|time)|other (day|time)|ibang (araw|oras)|iba ?ng (araw|oras)|palit\w*|ilipat|lipat|cancel|na lang|nalang)\b/;
+  const wantsChange = (text) => CHANGE.test(norm(text));
+  const CANCEL = /\b(cancel\w*|can'?t (make it|come|attend)|cannot (make it|come|attend)|hindi (na )?(ako )?makakapunta|di (ako )?makakapunta|hindi na lang|ayaw ko na|wag na lang|huwag na lang)\b/;
+  const YES_WORDS = new Set(['yes', 'yeah', 'yea', 'yep', 'yup', 'ye', 'oo', 'opo', 'oho', 'sige', 'ok', 'okay', 'okey', 'oki', 'k', 'sure', 'confirm', 'confirmed', 'go', 'game', 'ya', 'iya', 'g']);
+  // Words that can follow a YES without being a name.
+  const FILLER = new Set(['po', 'naman', 'please', 'pls', 'plz', 'thanks', 'thank', 'you', 'ty', 'salamat', 'sure', 'confirm', 'confirmed', 'na', 'lang', 'i', 'will', 'be', 'there', 'see', 'tayo', 'then', 'terima', 'kasih', 'good', 'great', 'nice', 'got', 'it', 'all', 'set', 'deal', 'noted', 'ill', "i'll", 'definitely', 'of', 'course', 'yes', 'oo', 'opo', 'sige', 'ok', 'okay', 'yep', 'yeah', 'kita']);
+  // Common words that are never a first name.
+  const NOT_NAMES = new Set([...FILLER, ...YES_WORDS, 'hi', 'hello', 'hey', 'actually', 'sorry', 'wait', 'teka', 'ako', 'me', 'my', 'name', 'is', 'am', 'im', 'ang', 'si', 'ay', 'ko', 'yung', 'the', 'a', 'an', 'and', 'but', 'pero', 'also', 'din', 'rin', 'sir', 'maam', "ma'am", 'madam', 'kuya', 'ate', 'boss', 'no', 'hindi', 'morning', 'afternoon', 'evening', 'can', 'what', 'when', 'how', 'why', 'pwede', 'paano', 'saan', 'kailan', 'bakit', 'this', 'its', "it's", 'just', 'lol', 'haha', 'hehe', 'test', 'nope', 'none', 'wala']);
+  const NEGATIVE = /^\s*(no|nope|hindi|ayoko|ayaw|wag|huwag|cancel)\b(?!\s*(problem|prob|worries|worry|problema))/i;
+  const cap = (w) => (w === w.toLowerCase() || w === w.toUpperCase() ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w[0].toUpperCase() + w.slice(1));
+  // A first name: "Maria", "my name is Maria", "ako si Maria", "Ma. Cristina". Null if it doesn't look like one.
   const firstName = (text) => {
-    const w = text.replace(/^\s*(yes|oo|opo|sige)\b[\s,.!-]*(po\b)?/i, '').replace(/[^\p{L}\s'-]/gu, ' ').trim().split(/\s+/)[0] || '';
-    return /^\p{L}[\p{L}'-]{1,29}$/u.test(w) ? w[0].toUpperCase() + w.slice(1) : null;
+    let t = String(text).replace(/[^\p{L}\s'.-]/gu, ' ').trim();
+    t = t.replace(/^(yes|oo|opo|sige|ok|okay)\b[\s,.!-]*/i, '').replace(/^(po|hi|hello|hey)\b[\s,.!-]*/i, '');
+    t = t.replace(/^((my\s+)?(first\s+)?name\s*(is|'s)?|i\s*am|i'?m|this\s+is|it'?s|ako\s+(po\s+)?(ay\s+)?(si\s+)?|si|(ang\s+)?pangalan\s+ko\s*(po\s*)?(ay\s*)?|nama\s+saya|saya)\b[\s:,.-]*/i, '').replace(/^po\b\s*/i, '');
+    const parts = t.split(/\s+/).map((x) => x.replace(/^[.'-]+|[.'-]+$/g, '')).filter(Boolean);
+    const w = parts[0] || '';
+    if (!/^\p{L}[\p{L}'-]{1,29}$/u.test(w) || NOT_NAMES.has(w.toLowerCase())) return null;
+    if (/^ma$/i.test(w) && parts[1] && /^\p{L}{2,}$/u.test(parts[1]) && !NOT_NAMES.has(parts[1].toLowerCase())) return `Ma. ${cap(parts[1])}`;
+    return cap(w);
+  };
+  // What a reply to "Type YES to confirm" means: yes (maybe with their name), no, a new time, or neither.
+  const readConfirm = (text) => {
+    if (/^\s*(👍|✅|👌|🙏)+\s*$/u.test(text)) return { kind: 'yes', name: null };
+    const ws = words(text);
+    if (!ws.length) return { kind: 'other' };
+    if (!YES_WORDS.has(ws[0])) {
+      if (NEGATIVE.test(norm(text))) return { kind: 'no' };
+      return looksLikeTime(text) || wantsChange(text) ? { kind: 'time' } : { kind: 'other' };
+    }
+    const rest = ws.slice(1);
+    const restText = rest.join(' ');
+    // "yes but can we do 4pm instead?" is a new time, not a yes.
+    if (looksLikeTime(restText) || wantsChange(restText)) return { kind: 'time' };
+    if (/\b(but|pero|wait|teka|actually)\b/.test(restText)) return { kind: 'other' };
+    const content = rest.filter((w) => !FILLER.has(w));
+    if (!content.length) return { kind: 'yes', name: null };
+    // "yes Maria" / "yes, my name is Maria": take the name. Anything else: still a yes, ask the name.
+    // "YES Maria": only when written like a name (capital first letter), so "yes excited" isn't a name.
+    if (content.length === 1) {
+      const orig = String(text).split(/[^\p{L}'-]+/u).find((w) => norm(w) === content[0]) || '';
+      return { kind: 'yes', name: /^\p{Lu}/u.test(orig) ? firstName(orig) : null };
+    }
+    // "yes, my name is Maria" / "oo, ako si Maria".
+    return { kind: 'yes', name: /\b(name|pangalan)\b|\bako (po )?si\b|\bthis is\b/.test(restText) ? firstName(text.replace(/^\s*\S+[\s,.!-]*/, '')) : null };
   };
 
   let bookedName = '';
@@ -556,7 +653,7 @@ Ito ang pinakamalapit na bakanteng oras:` },
     bookedName = name;
     s.status = 'yours'; refreshFull(); renderCal();
     log(`<span class="tag">Booked</span>${esc(fmtDay(s.date, 'en'))} · ${fmtTime(s.min - 60)} Bangkok / ${fmtTime(s.min)} Manila with <b>${s.host}</b>. First name <b>${esc(name)}</b> saved with the booking. In the real bot: Cal.com booking + Zoom link + reminders, same as the booking page.`);
-    botSay(say('booked', longWhen(s), name));
+    botSay(say('booked', longWhen(s), name, s.host));
     botSay(say('promise', name));
     card();
     step = 'booked';
@@ -617,7 +714,7 @@ Ito ang pinakamalapit na bakanteng oras:` },
     return order.find((k) => !asked.includes(k)) ?? null;
   };
   const startQuiz = (s) => {
-    quizSlot = s; prepAnswers = {}; asked = []; reasked = []; prepHost = s.host;
+    quizSlot = s; prepAnswers = {}; asked = []; reasked = []; quizDone = false; prepHost = s.host;
     botSay(lang === 'fil'
       ? `⏳ Naka-hold para sa iyo ang ${longWhen(s)} kasama si ${s.host}.\n\nIlang mabilis na tanong muna para makapaghanda si ${s.host} (mga 2 min). Ranges lang, at pribado ito sa team namin 🔒`
       : `⏳ I'm holding ${longWhen(s)} with ${s.host} for you.\n\nA few quick questions first so ${s.host} can prepare (about 2 min). Ranges are fine, and it stays private with our team 🔒`);
@@ -629,17 +726,95 @@ Ito ang pinakamalapit na bakanteng oras:` },
     asked.push(key);
     const q = Q[key];
     prepList = [Object.assign({ key }, q)]; prepI = 0;
-    const total = Math.min(MAX_Q, BASE.length + followUps(prepAnswers).length);
-    botSay(`${lang === 'fil' ? 'Tanong' : 'Question'} ${asked.length}/${Math.max(total, asked.length)} · ${q[lang]}`);
+    // Every path has at least 10 questions to choose from, so the count is always out of 10.
+    botSay(`${lang === 'fil' ? 'Tanong' : 'Question'} ${asked.length}/${MAX_Q} · ${q[lang]}`);
+    prepButtons(key);
+    step = 'prep';
+  };
+  const prepButtons = (key) => {
+    const q = Q[key];
     const buttons = (q.opts ? q.opts[lang] : []).map((o) => [o, (l) => { meSay(l); answerPrep(l); }]);
     if (q.money) buttons.push([PNS[lang], (l) => { meSay(l); answerPrep(l); }]);
     if (q.free) buttons.push([skipLabel(), (l) => { meSay(l); answerPrep(null); }]);
     quick(buttons);
-    step = 'prep';
+  };
+  // ---- Typed answers: matched to a button by meaning, never by position ("5" is not the 5th button). ----
+  const DODGE = /\b(skip|laktawan|ayoko|ayaw|prefer not|rather not|secret|sikreto|private|pass|idk|i don'?t know|dunno|di ko alam|hindi ko alam|ewan|not sure|hindi sigurado|no comment|tidak tahu|rahasia|none of your business|bakit)\b/;
+  // [pattern, button index] per question, checked in order.
+  const SYN = {
+    work: [[/\b(between|unemployed|jobless|no work|no job|walang trabaho|wala(ng)? work|wala pa|wala)\b/, 2], [/\b(business|negosyo|tindahan|sari|store|selling|seller|benta|nagtitinda|online shop|reseller)\b/, 1], [/\b(employed|empleyado|employee|working|may trabaho|staff|office|full ?time|part ?time|yes|oo|opo|meron)\b/, 0], [/\b(other|iba|student|freelance\w*|retired|ofw|housewife|plain housewife)\b/, 3]],
+    support: [[/\b(kids?|anak|children|child)\b/, 0], [/\b(parents?|magulang|nanay|tatay|mama|papa|mom|dad|mother|father)\b/, 1], [/\b(siblings?|kapatid|brother|sister)\b/, 2], [/\b(partner|asawa|husband|wife|bf|gf|boyfriend|girlfriend|jowa)\b/, 3], [/\b(family|kamag|relatives?|lola|lolo|tita|tito|pamangkin|grand\w*)\b/, 4], [/\b(myself|sarili|ako lang|me|alone|just me|none|no one|wala)\b/, 5]],
+    kids: [[/^(no|none|wala|wala pa|hindi|nope|zero|0)\b/, 1], [/^(yes|oo|opo|meron|mayroon|yep|yeah|[1-9])\b/, 0]],
+    kidsCount: [[/^(1|one|isa)\b/, 0], [/^(2|two|dalawa)\b/, 1], [/^(3|three|tatlo)\b/, 2], [/^([4-9]|1\d|four|five|apat|lima|anim)\b/, 3]],
+    jobLong: [[/\b([1-5])\s*(months?|mos?|buwan)\b|\b(new|bago|kakasimula|just started)\b/, 0], [/\b([6-9]|1[01])\s*(months?|mos?|buwan)\b|\b(half a year|almost a year)\b/, 1], [/\b(1|2|one|two|isa|dalawa|a)\s*(years?|yrs?|taon)\b/, 2], [/\b([3-9]|[1-9]\d|three|tatlo|many|matagal)\s*(years?|yrs?|taon)\b|\bmatagal na\b/, 3]],
+    payday: [[/\b(15|30|kinsenas|kinsena|katapusan|twice a month|semi)\b/, 0], [/\b(weekly|week|lingguhan|linggo)\b/, 1], [/\b(daily|araw-araw|araw araw|everyday|every day|arawan)\b/, 2], [/\b(varies|depende|pabago|iba-iba|irregular|random|minsan)\b/, 3]],
+    moneyNow: [[/\b(family|pamilya|parents|magulang|asawa|padala)\b/, 0], [/\b(odd|raket|sideline|extra|gig|part ?time|labada|delivery)\b/, 1], [/\b(none|wala|nothing|no)\b/, 2]],
+    billTrouble: [[/^(no|hindi|never|wala|nope)\b/, 0], [/\b(once|isang beses|isa|one time|1)\b/, 1], [/\b(few|ilang|sometimes|minsan|twice|2|3)\b/, 2], [/\b(most|always|lagi|palagi|halos|every month)\b/, 3]],
+    leftover: [[/\b(short|kulang|negative|utang|kapos|lubog)\b/, 0], [/\b(nothing|wala|zero|halos wala|almost none|none)\b/, 1]],
+    debt: [[/^(no|none|wala|hindi|nope)\b/, 0], [/\b(several|marami|many|lots|everywhere|ilang lugar)\b/, 4], [/\b(5-6|five six|lending|app|gcash|ggives|gloan|tala|cashalo|billease|home credit|sloan|spaylater)\b/, 2], [/\b(bank|credit card|cc|card)\b/, 3], [/\b(family|friends?|pamilya|kaibigan|kapatid|relatives?)\b/, 1]],
+    repay: [[/\b(payday|sweldo|next pay|kinsenas|katapusan)\b/, 0], [/\b(2 weeks|two weeks|2 linggo|dalawang linggo|week|linggo)\b/, 1], [/\b(not sure|hindi sigurado|depende|di ko alam|hindi ko alam|idk|ewan)\b/, 2]]
+  };
+  // Money ranges by the amount typed: upper bounds per button.
+  const RANGES = { income: [5000, 10000, 20000, 40000], leftover: [null, 500, 1000, 3000], sales: [1000, 3000, 7000], rentFood: [3000, 6000, 10000, 20000], debtAmt: [5000, 20000, 50000] };
+  const amountOf = (t) => {
+    const m = /(\d[\d,]*(?:\.\d+)?)\s*(k\b|thousand|libo|rb\b|ribu)?/.exec(t);
+    if (!m) return null;
+    const n = Number(m[1].replace(/,/g, ''));
+    if (m[2]) return n * 1000;
+    // "5" alone could be ₱5 or ₱5,000: ask instead of guessing.
+    return n === 0 || n >= 100 ? n : 'unsure';
+  };
+  const readTyped = (key, text) => {
+    const q = Q[key], opts = q.opts[lang], t = norm(text).trim();
+    const clean = (o) => norm(o).replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+    const ct = clean(text);
+    const exact = opts.find((o) => clean(o) === ct) || (ct.length >= 3 && opts.find((o) => clean(o).startsWith(ct)));
+    if (exact) return { pick: exact };
+    for (const [re, i] of SYN[key] || []) if (re.test(t)) return { pick: opts[i] };
+    if (RANGES[key]) {
+      const a = amountOf(t);
+      if (a === 'unsure') return { unsure: true };
+      if (a !== null) {
+        const bounds = RANGES[key];
+        let i = bounds.findIndex((b) => b !== null && a < b);
+        if (i === -1) i = bounds.length;
+        if (key === 'leftover') i = a === 0 ? 1 : i; // leftover: 0 → "Almost nothing"
+        return { pick: opts[Math.min(i, opts.length - 1)] };
+      }
+    }
+    return {};
+  };
+  // They ask to move the call partway through: keep their answers, find a new time, then carry on.
+  const changeMidQuiz = async (text) => {
+    asked.pop();
+    clearQuick();
+    const ok = await readAndOffer(text, 'prep');
+    if (!ok) { botSay(say('finishFirst')); askNext(); }
+  };
+  const handlePrep = (text) => {
+    const key = asked[asked.length - 1], q = Q[key], t = norm(text).trim();
+    clearQuick();
+    // Typed "skip": a free-text question is skipped, a money question counts as "Prefer not to say".
+    if (/^\s*(skip|laktawan)\s*$/.test(t)) return answerPrep(q.free ? null : q.money ? PNS[lang] : undefined);
+    if (q.free) {
+      if (DODGE.test(t) && t.split(/\s+/).length <= 4) return answerPrep(null);
+      if (wantsChange(t) && looksLikeTime(t)) return changeMidQuiz(text);
+      return answerPrep(text.trim().slice(0, 120));
+    }
+    const r = readTyped(key, text);
+    if (r.pick) return answerPrep(r.pick);
+    if (looksLikeTime(t) && (wantsChange(t) || !SYN[key])) return changeMidQuiz(text);
+    if (wantsChange(t) && looksLikeTime(t)) return changeMidQuiz(text);
+    if (q.money && DODGE.test(t)) return answerPrep(PNS[lang]);
+    if (r.unsure) { botSay(say('rangeNumber')); return prepButtons(key); }
+    botSay(say('tapOne'));
+    prepButtons(key);
   };
   const skipLabel = () => (lang === 'fil' ? 'Laktawan' : 'Skip');
   const answerPrep = (value) => {
     const key = asked[asked.length - 1];
+    // A typed "skip" on a button question that isn't about money: just show the buttons again.
+    if (value === undefined) { botSay(say('tapOne')); return prepButtons(key); }
     if (isDodge(key, value)) {
       // Second dodge on the same question: hold off, kindly (Emma + George, 2026-10-30).
       if (reasked.includes(key)) return holdOff(key, value);
@@ -648,10 +823,7 @@ Ito ang pinakamalapit na bakanteng oras:` },
       log(`<span class="tag">Re-ask</span><code>${esc(key)}</code>: they answered "${esc(value ?? 'Skip')}" — asking once more.`);
       const q = Q[key];
       botSay(say(q.free ? 'reaskType' : key === 'work' ? 'reaskOther' : 'reask'));
-      const buttons = (q.opts ? q.opts[lang] : []).map((o) => [o, (l) => { meSay(l); answerPrep(l); }]);
-      if (q.money) buttons.push([PNS[lang], (l) => { meSay(l); answerPrep(l); }]);
-      if (q.free) buttons.push([skipLabel(), (l) => { meSay(l); answerPrep(null); }]);
-      quick(buttons);
+      prepButtons(key);
       return;
     }
     if (value) prepAnswers[key] = value;
@@ -661,7 +833,7 @@ Ito ang pinakamalapit na bakanteng oras:` },
   const holdOff = (key, value) => {
     log(`<span class="tag">Held off</span>No call booked: still "${esc(value ?? 'Skip')}" on <code>${esc(key)}</code> after being asked twice. The time is freed. Real bot: a "⏸ Held off" line to the team, nothing else. They can start again any time.`);
     releaseBooking();
-    quizSlot = null;
+    quizSlot = null; asked = []; prepAnswers = {}; quizDone = false;
     botSay(say('heldOff'));
     step = 'ask';
   };
@@ -681,11 +853,12 @@ Ito ang pinakamalapit na bakanteng oras:` },
   const crossCheck = (a) => {
     const notes = [];
     if (a.work && !is(a.work, 'employed', 'may trabaho')) notes.push(`Bio says "${PRETEND_BIO.work}", but in chat: ${a.work}${a.biz ? ` (${a.biz})` : a.lastJob ? ` (last job: ${a.lastJob})` : ''}. Ask which is their main income now.`);
-    if (a.payday && !is(a.payday, '15')) notes.push(`Bio payday ${PRETEND_BIO.payday}, chat says ${a.payday}. Ask when money really comes in.`);
+    if (a.payday && !is(a.payday, '15', 'kinsenas')) notes.push(`Bio payday ${PRETEND_BIO.payday}, chat says ${a.payday}. Ask when money really comes in.`);
     return notes;
   };
 
   const finishQuiz = () => {
+    quizDone = true;
     const fit = fitCheck(prepAnswers);
     log(`<span class="tag">Answers</span>${Object.entries(prepAnswers).map(([k, v]) => `${k}: <code>${esc(v)}</code>`).join(' · ') || 'all skipped'}`);
     log(`<span class="tag">Fit check</span>${fit.verdict === 'good' ? '✅ Good fit' : fit.verdict === 'talk' ? '⚠️ Talk first' : '❗ Needs a closer look'} — ${esc(fit.reason)}. Team-only, never shown to the borrower, never a rejection. Family answers are not used for scoring.`);
@@ -747,72 +920,137 @@ Ito ang pinakamalapit na bakanteng oras:` },
     log(`<span class="tag">${how}</span>Prep note in <b>${((performance.now() - t0) / 1000).toFixed(1)}s</b>. Bio cross-check: ${checks.length ? checks.length + ' thing(s) to ask about' : 'matches'}.`);
   };
 
-  const offer = ({ picks, exact, asked, inside, dayFull }, summary) => {
+  let lastOffer = null;
+  const offer = (result, summary) => {
+    const { picks, exact, asked, inside, dayFull } = result;
     offered = picks; renderCal();
     if (!picks.length) { botSay(say('none')); log('No free time in the next 7 days — the real bot would alert the team.'); return; }
+    lastOffer = result;
     const askedText = asked ? `${fmtDay(asked.date, lang)} ${lang === 'fil' ? 'nang' : 'at'} ${fmtTime(asked.min)}` : '';
     const longDay = asked && new Intl.DateTimeFormat(lang === 'fil' ? 'fil-PH' : 'en-US', { timeZone: 'UTC', weekday: 'long', month: 'short', day: 'numeric' }).format(new Date(asked.date + 'T00:00:00Z'));
-    const intro = asked && dayFull ? say('dayFull', longDay) : asked ? say(exact ? 'askedFree' : 'askedTaken', askedText) : exact ? say('offer', summary) : say('near', summary);
+    const isMine = asked && mine && asked.date === mine.date && asked.min === mine.min;
+    const intro = result.tooFar ? say('tooFar') : isMine ? say('askedMine', askedText) : asked && dayFull ? say('dayFull', longDay) : asked ? say(exact ? 'askedFree' : 'askedTaken', askedText) : exact ? say('offer') : say('near');
     botSay(`${intro}
 ${say('tzNote')}`);
-    quick([...picks.map((s, i) => [slotLabel(s, i === 0, asked), (label) => { meSay(label); hold(s); }]),[say('otherBtn'), (label) => { meSay(label); offered = []; renderCal(); botSay(say('other')); step = 'ask'; }]]);
-    log(`Offered ${picks.map((s) => `<code>${esc(fmtDay(s.date, 'en'))} ${hhmm(s.min - 60)}</code>`).join(' ')} (Bangkok)${asked ? (exact ? ' — the exact time they asked for is free, plus 2 nearby' : dayFull ? ' — that whole day is full (4 calls or no free hosts), so the same time on the nearest days' : ' — the exact time is taken, so the 3 nearest, closest first') : exact ? (inside ? ` — only ${inside} free in their window, topped up with the nearest` : '') : ' — nothing free in their window, so the nearest times'}. ⭐ = best match.`);
+    offerButtons(picks, asked);
+    log(`Offered ${picks.map((s) => `<code>${esc(fmtDay(s.date, 'en'))} ${hhmm(s.min - 60)}</code>`).join(' ')} (Bangkok)${asked ? (exact ? ' — the exact time they asked for is free, plus 2 nearby' : dayFull ? ' — that whole day is full (4 calls or no free hosts), so the same time on the nearest days' : ' — the exact time is taken, so the 3 nearest, closest first') : exact ? (inside ? ` — only ${inside} free in their window, topped up with the nearest` : '') : ' — nothing free in their window, so the nearest times'}${summary ? ` · AI summary (team only): "${esc(summary)}"` : ''}. ⭐ = best match.`);
     step = 'offered';
   };
+  const offerButtons = (picks, asked) => {
+    const buttons = picks.map((s, i) => [slotLabel(s, i === 0, asked), (label) => { meSay(label); hold(s); }]);
+    // Already have a time? Let them keep it.
+    if (mine) buttons.push([say('keepBtn', `${fmtDay(mine.date, lang)} · ${fmtTime(mine.min)}`), (label) => { meSay(label); keepCurrent(); }]);
+    buttons.push([say('otherBtn'), (label) => {
+      meSay(label); offered = []; renderCal();
+      if (mine && mine.status === 'yours') { botSay(say('otherKeep')); changing = true; step = 'booked'; } else { botSay(say('other')); step = 'ask'; }
+    }]);
+    quick(buttons);
+  };
+  const reoffer = () => { offered = lastOffer.picks; renderCal(); botSay(say('reoffer')); offerButtons(lastOffer.picks, lastOffer.asked); step = 'offered'; };
+  const keepCurrent = () => {
+    offered = []; renderCal(); changing = false;
+    if (mine.status === 'yours') { botSay(say('allSet', bookedName, longWhen(mine))); step = 'booked'; return; }
+    if (quizDone) return askFinalConfirm(mine);
+    askNext();
+  };
+  // "2", "the second one", "yung pangalawa", or a time that matches exactly one of the offered buttons.
+  const ORD = [/^(1|one|first|1st|una|unang|uno|#1)$/, /^(2|two|second|2nd|pangalawa|ikalawa|#2)$/, /^(3|three|third|3rd|pangatlo|ikatlo|#3)$/];
+  const PICK_FILL = new Set(['the', 'yung', 'ung', 'ang', 'po', 'option', 'number', 'choice', 'na', 'lang', 'please', 'pls', 'sige', 'ok', 'okay', 'take', 'gusto', 'ko', 'ako', 'sa', 'nalang', 'i', "i'll", 'ill', 'want', 'pick', 'yes', 'oo', 'opo', 'slot', 'time']);
+  const pickOffered = (text) => {
+    let ws = words(text).filter((w) => !PICK_FILL.has(w));
+    if (ws.length === 2 && ws[1] === 'one') ws = [ws[0]];
+    if (ws.length !== 1 && !(ws.length === 2 && /^(am|pm)$/.test(ws[1]))) return null;
+    const core = ws.join('');
+    const i = ORD.findIndex((re) => re.test(core));
+    if (i >= 0) return offered[i] || null;
+    const m = /^(\d{1,2})(?::(\d{2}))?(am|pm)?$/.exec(core);
+    if (!m) return null;
+    const h = Number(m[1]) % 12, mm = Number(m[2] || 0);
+    const mins = m[3] === 'am' ? [h * 60 + mm] : m[3] === 'pm' ? [(h + 12) * 60 + mm] : Number(m[1]) > 12 ? [Number(m[1]) * 60 + mm] : [h * 60 + mm, (h + 12) * 60 + mm];
+    const hits = offered.filter((s) => mins.includes(s.min));
+    return hits.length === 1 ? hits[0] : null;
+  };
+  const heldButtons = () => quick([[say('otherBtn'), (label) => { meSay(label); releaseBooking(); botSay(say('other')); step = 'ask'; }]]);
 
-  const looksLikeTime = (text) => /\d|today|tomorrow|bukas|mamaya|morning|afternoon|evening|umaga|hapon|gabi|mon|tue|wed|thu|fri|sat|sun|lunes|martes|miyerkules|huwebes|biyernes|sabado|linggo|weekend/i.test(text);
-
-  const handle = async (text) => {
-    meSay(text);
-    if (step === 'prep') {
-      const q = prepList[prepI];
-      clearQuick();
-      if (/^\s*(skip|laktawan)\s*$/i.test(text)) { answerPrep(null); return; }
-      const opts = q.opts ? q.opts[lang] : [];
-      const n = Number(text.trim());
-      const pick = Number.isInteger(n) && n >= 1 && n <= opts.length ? opts[n - 1] : opts.find((o) => o.toLowerCase().includes(text.trim().toLowerCase()) && text.trim().length >= 3);
-      answerPrep(q.free ? text.trim().slice(0, 120) : pick || text.trim().slice(0, 60));
-      return;
-    }
-    if (step === 'waiting_bio') { botSay(say('bioMissing')); return; }
-    // A reply of 1/2/3 while times are on screen picks that time.
-    if (step === 'offered' && /^\s*[1-3]\s*$/.test(text) && offered[Number(text) - 1]) { clearQuick(); hold(offered[Number(text) - 1]); return; }
-    if (step === 'busy') return;
-    if (step === 'expect') { clearQuick(); askFinalConfirm(quizSlot); return; }
-    if (step === 'held' && mine) {
-      if (isYes(text)) {
-        clearQuick();
-        log('They typed <b>YES</b> to the time — asking for their first name.');
-        // "YES Maria" in one go: take the name too.
-        const inline = firstName(text);
-        if (inline && !/^(yes|oo|opo|sige|ok|okay)$/i.test(inline)) { book(mine, inline); return; }
-        botSay(say('askName')); step = 'name'; return;
-      }
-      if (/^\s*(no|hindi|ayoko|wag)\b/i.test(text)) { clearQuick(); releaseBooking(); botSay(say('other')); step = 'ask'; return; }
-      if (!looksLikeTime(text)) { botSay(say('sayYes')); return; }
-      log('Not a YES — reading it as a new time instead.');
-    }
-    // Booked: "ok", "thanks", 👍 … get a friendly reply. Only a day/time (or "change") moves the call —
-    // before, any message released the booking and then said "didn't catch a time" (Emma, 2026-10-30).
-    if (step === 'booked' && mine && !looksLikeTime(text) && !/\b(change|resched|move|cancel|palit|iba(ng)? oras)/i.test(text)) {
-      clearQuick(); botSay(say('allSet', bookedName, longWhen(mine))); return;
-    }
-    if (step === 'name' && mine) {
-      const name = firstName(text);
-      if (name) { book(mine, name); return; }
-      botSay(say('badName')); return;
-    }
+  // Read a message as a day/time and offer free times. False if there's no usable day or time.
+  // Nothing they already have (a held or booked time) is let go here — only when they tap a new time.
+  const readAndOffer = async (text, from) => {
     clearQuick();
-    if (step === 'booked' || step === 'held' || step === 'name') releaseBooking();
     const stop = typing();
     setBusy(true);
     const { parsed, how, ms } = await readMessage(text);
     stop(); setBusy(false);
-    if (parsed.lang !== lang) setLang(parsed.lang, true);
+    // One-word replies ("ok", "3pm") don't switch the language.
+    if (parsed.lang !== lang && words(text).length >= 2) setLang(parsed.lang, true);
     const windowsText = parsed.anytime ? 'any time' : parsed.windows.map((w) => `${fmtDay(w.date, 'en')} ${w.from}–${w.to}`).join(', ') || '—';
-    log(`<span class="tag">${how}</span>Read it in <b>${(ms / 1000).toFixed(1)}s</b> → <code>${esc(windowsText)}</code> (Manila)${parsed.lang === 'fil' ? ' · replied in Filipino' : ''}`);
-    if (parsed.unclear) { botSay(say('unclear')); step = 'ask'; return; }
-    offer(match(parsed), parsed.summary);
+    log(`<span class="tag">${how}</span>Read it in <b>${(ms / 1000).toFixed(1)}s</b> → <code>${esc(windowsText)}</code> (Manila)${lang === 'fil' ? ' · replying in Filipino' : ''}`);
+    if (parsed.unclear || (!parsed.anytime && !parsed.windows.length)) return false;
+    // They already have a time and name only a new hour ("4pm instead"): same day as the one they have.
+    if (mine && parsed.windows.length && !DAY_WORD.test(norm(text))) {
+      parsed.windows = parsed.windows.slice(0, 1).map((w) => ({ ...w, date: mine.date }));
+      log(`No day named, so reading it as ${esc(fmtDay(mine.date, 'en'))} (the day they already have).`);
+    }
+    // Booked and they mention the time they already have ("see you tomorrow!"): nothing to change.
+    if (from === 'booked' && !changing && mine && parsed.windows.some((w) => w.date === mine.date && (toMin(w.from) ?? 0) <= mine.min && mine.min < (toMin(w.to) ?? 1440))) {
+      botSay(say('allSet', bookedName, longWhen(mine))); step = 'booked'; return true;
+    }
+    const result = match(parsed);
+    // Everything they asked for is past the 7 days we can book: say so, don't call it "fully booked".
+    const lastDay = cal.length ? cal[cal.length - 1].date : '';
+    if (!parsed.anytime && lastDay && parsed.windows.every((w) => w.date > lastDay)) result.tooFar = true;
+    offer(result, parsed.summary);
+    return true;
+  };
+
+  const handle = async (text) => {
+    meSay(text);
+    if (step === 'busy') return;
+    if (step === 'waiting_bio') { botSay(say('bioMissing')); return; }
+    if (step === 'prep') return handlePrep(text);
+    if (step === 'expect') { clearQuick(); askFinalConfirm(quizSlot); return; }
+    // "2", "the first one", "3:30" while times are on screen picks that time.
+    if (step === 'offered') { const s = pickOffered(text); if (s) { clearQuick(); hold(s); return; } }
+    if (step === 'held' && mine) {
+      const c = readConfirm(text);
+      if (c.kind === 'yes') {
+        clearQuick();
+        log('They typed <b>YES</b> to the time.');
+        // "YES Maria" in one go, or a moved call (we already have their name): book now.
+        const name = c.name || bookedName;
+        if (name) { book(mine, name); return; }
+        botSay(say('askName')); step = 'name'; return;
+      }
+      if (c.kind === 'no') { clearQuick(); releaseBooking(); botSay(say('other')); step = 'ask'; return; }
+      if (c.kind === 'other') { botSay(say('sayYes')); return; }
+      log('Not a YES — reading it as a new time.');
+    }
+    // A name, unless it's clearly a new time ("actually tuesday 3pm is bad").
+    if (step === 'name' && mine && !(words(text).length > 1 && (looksLikeTime(text) || wantsChange(text)))) {
+      const name = firstName(text);
+      if (name) { book(mine, name); return; }
+      botSay(say('badName')); return;
+    }
+    // Booked: "ok", "thanks", "can I bring a friend?" get a friendly reply; only a day/time moves the call.
+    if (step === 'booked' && mine && !looksLikeTime(text) && CANCEL.test(norm(text))) {
+      clearQuick();
+      const was = longWhen(mine);
+      log(`<span class="tag">Cancelled</span>They cancelled ${esc(fmtDay(mine.date, 'en'))}. Real bot: cancel the Cal.com booking and tell the host.`);
+      releaseBooking(); changing = false;
+      botSay(say('cancelled', was)); step = 'ask'; return;
+    }
+    if (step === 'booked' && mine && !changing && !looksLikeTime(text)) {
+      clearQuick();
+      if (wantsChange(text)) { botSay(say('otherKeep')); changing = true; return; }
+      botSay(say('allSet', bookedName, longWhen(mine))); return;
+    }
+    const from = step;
+    if (await readAndOffer(text, from)) return;
+    // No usable day or time: whatever they had stays exactly as it was.
+    if (from === 'offered' && lastOffer) return reoffer();
+    if (from === 'held' && mine) { botSay(say('sayYes')); heldButtons(); step = 'held'; return; }
+    if (from === 'name' && mine) { botSay(say('askName')); step = 'name'; return; }
+    if (from === 'booked' && mine) { botSay(changing ? say('unclearKeep', longWhen(mine)) : say('allSet', bookedName, longWhen(mine))); step = 'booked'; return; }
+    botSay(say('unclear')); step = 'ask';
   };
 
   // ---- controls ----
@@ -836,6 +1074,7 @@ ${say('tzNote')}`);
   let bioDone = true;
   const restart = () => {
     chat.innerHTML = ''; offered = []; mine = null; step = 'ask'; prepAnswers = {};
+    asked = []; reasked = []; quizDone = false; changing = false; bookedName = ''; lastOffer = null; quizSlot = null;
     { const b = document.getElementById('prep-box'); b.className = 'prep-empty'; b.textContent = 'Book a call in the chat, then answer the "get to know you" questions to see the prep note here.'; }
     buildCalendar(); renderCal();
     meSay('MOODENG-4821');
