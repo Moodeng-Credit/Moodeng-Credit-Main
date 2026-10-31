@@ -196,3 +196,186 @@ revoke all on function app_private.queue_interest_refunds(uuid) from public;
 revoke all on function app_private.queue_interest_refunds_on_repayment() from public;
 revoke all on function app_private.is_fully_repaid_loan(public.loans) from public;
 grant execute on function public.get_my_interest_refunds() to authenticated;
+
+-- ---------------------------------------------------------------------------------------------
+-- The referral program pays back interest now, so referrals no longer earn the ₱100 food vouchers
+-- (referral_inviter / referral_invitee). The food voucher program itself is unchanged: own first
+-- on-time repayment and the tier vouchers still work. No referral voucher was ever claimed.
+-- ---------------------------------------------------------------------------------------------
+
+create or replace function public.get_my_rewards()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  with me as (select auth.uid() as id),
+  invited as (
+    select r.id, r.created_at, app_private.has_on_time_repayment(r.referred_user_id, r.referrer_user_id) as qualified
+    from public.friend_referrals r, me
+    where r.referrer_user_id = me.id
+  ),
+  referred_by as (
+    select r.id, r.referrer_user_id from public.friend_referrals r, me where r.referred_user_id = me.id
+  ),
+  claims as (
+    select c.id, c.reward, c.friend_referral_id, c.status, c.brand, c.amount_php, c.sent_at, c.received_at, c.receipt_issue_at, c.created_at,
+      case when c.status = 'sent' then (
+        select coalesce(jsonb_agg(vc.code order by vc.created_at), '[]'::jsonb) from public.voucher_codes vc where vc.claim_id = c.id
+      ) else '[]'::jsonb end as links
+    from public.voucher_claims c, me where c.user_id = me.id
+  ),
+  eligible as (
+    select 'first_on_time_repayment'::text as reward, null::uuid as friend_referral_id, 50::numeric as amount_php
+    from me where app_private.has_on_time_repayment(me.id)
+    union all
+    select t.reward, null::uuid, (app_private.tier_voucher(t.reward)).amount_php
+    from me, unnest(array['tier_rising', 'tier_prime', 'tier_apex']) as t(reward)
+    where app_private.pandesal_total(me.id) >= (app_private.tier_voucher(t.reward)).min_pandesal
+  )
+  select jsonb_build_object(
+    'invitedCount', (select count(*) from invited),
+    'qualifiedCount', (select count(*) from invited where qualified),
+    'wasReferred', exists (select 1 from referred_by),
+    'claims', coalesce((select jsonb_agg(jsonb_build_object(
+        'id', id, 'reward', reward, 'friendReferralId', friend_referral_id, 'status', status, 'brand', brand,
+        'amountPhp', amount_php, 'sentAt', sent_at, 'receivedAt', received_at, 'receiptIssueAt', receipt_issue_at,
+        'links', links
+      ) order by created_at desc) from claims), '[]'::jsonb),
+    'claimable', coalesce((
+      select jsonb_agg(jsonb_build_object('reward', e.reward, 'friendReferralId', e.friend_referral_id, 'amountPhp', e.amount_php))
+      from eligible e
+      where not exists (
+        select 1 from claims c
+        where c.reward = e.reward and c.friend_referral_id is not distinct from e.friend_referral_id and c.status <> 'rejected'
+      )
+    ), '[]'::jsonb)
+  )
+  from me
+  where me.id is not null;
+$$;
+
+create or replace function public.submit_voucher_claim(
+  p_reward text,
+  p_friend_referral_id uuid,
+  p_full_name text,
+  p_mobile text,
+  p_email text default null,
+  p_brand text default 'food'
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_user_id uuid := auth.uid();
+  v_amount numeric;
+  v_eligible boolean;
+  v_tier record;
+  v_id uuid;
+begin
+  if v_user_id is null then
+    raise exception 'not authenticated' using errcode = '28000';
+  end if;
+
+  if app_private.has_overdue_loan(v_user_id) then
+    raise exception 'overdue loan: repay your loan to claim vouchers' using errcode = '42501';
+  end if;
+
+  if p_reward = 'first_on_time_repayment' then
+    v_amount := 50;
+    v_eligible := p_friend_referral_id is null and app_private.has_on_time_repayment(v_user_id);
+  elsif p_reward in ('referral_invitee', 'referral_inviter') then
+    -- Referrals refund interest now (interest_refunds), not food vouchers.
+    v_amount := 100;
+    v_eligible := false;
+  elsif p_reward in ('tier_rising', 'tier_prime', 'tier_apex') then
+    select * into v_tier from app_private.tier_voucher(p_reward);
+    v_amount := v_tier.amount_php;
+    v_eligible := p_friend_referral_id is null and app_private.pandesal_total(v_user_id) >= v_tier.min_pandesal;
+  else
+    raise exception 'unknown reward %', p_reward using errcode = '22023';
+  end if;
+
+  if not v_eligible then
+    raise exception 'not eligible for this voucher' using errcode = '42501';
+  end if;
+  if nullif(trim(coalesce(p_email, '')), '') is null then
+    raise exception 'email required: the voucher is emailed' using errcode = '22023';
+  end if;
+  if coalesce(p_brand, 'food') not in ('food', 'grabmart') then
+    raise exception 'unknown brand %', p_brand using errcode = '22023';
+  end if;
+  if p_brand = 'grabmart' and v_amount < 100 then
+    raise exception 'grabmart needs 100: GrabMart vouchers start at PHP 100' using errcode = '22023';
+  end if;
+
+  insert into public.voucher_claims (user_id, reward, friend_referral_id, amount_php, full_name, mobile, email, brand)
+  values (v_user_id, p_reward, p_friend_referral_id, v_amount, trim(p_full_name), trim(p_mobile), nullif(trim(coalesce(p_email, '')), ''), coalesce(p_brand, 'food'))
+  returning id into v_id;
+  return v_id;
+exception
+  when unique_violation then
+    raise exception 'voucher already claimed' using errcode = '23505';
+end;
+$$;
+
+-- ---------------------------------------------------------------------------------------------
+-- Telegram: a card to the admin channel when a refund is owed (who, how much, which wallet, pay now),
+-- stamped ✅ SENT when the team marks it sent. Same path as notify_referral_code_payout.
+-- ---------------------------------------------------------------------------------------------
+
+create or replace function private.notify_interest_refund()
+returns trigger
+language plpgsql
+security definer
+set search_path = 'public', 'vault', 'net'
+as $$
+declare
+  project_url text;
+  service_key text;
+  sent_by text;
+  body jsonb;
+begin
+  select decrypted_secret into project_url from vault.decrypted_secrets where name = 'SUPABASE_PROJECT_URL' limit 1;
+  select decrypted_secret into service_key from vault.decrypted_secrets where name = 'SUPABASE_SECRET_KEY' limit 1;
+
+  if project_url is null or service_key is null then
+    raise warning 'Interest refund notification skipped: Supabase project URL or secret key missing from vault.';
+    return new;
+  end if;
+
+  if tg_op = 'INSERT' then
+    body := jsonb_build_object('interestRefundId', new.id);
+  else
+    select display_name into sent_by from public.admin_users where user_id = auth.uid() and active limit 1;
+    body := jsonb_build_object('interestRefundId', new.id, 'event', 'sent', 'decidedBy', sent_by);
+  end if;
+
+  perform net.http_post(
+    url := project_url || '/functions/v1/referral-payout-telegram-notification',
+    headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization', 'Bearer ' || service_key),
+    body := body
+  );
+  return new;
+exception when others then
+  raise warning 'Interest refund notification failed: %', sqlerrm;
+  return new;
+end;
+$$;
+
+revoke all on function private.notify_interest_refund() from public, anon, authenticated;
+
+drop trigger if exists notify_interest_refund on public.interest_refunds;
+create trigger notify_interest_refund
+  after insert on public.interest_refunds
+  for each row execute function private.notify_interest_refund();
+
+drop trigger if exists notify_interest_refund_sent on public.interest_refunds;
+create trigger notify_interest_refund_sent
+  after update of status on public.interest_refunds
+  for each row
+  when (old.status is distinct from new.status and new.status = 'sent')
+  execute function private.notify_interest_refund();

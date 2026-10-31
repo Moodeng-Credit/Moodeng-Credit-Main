@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { ArrowUpRight, Bell, BellOff, Facebook, Share, Video, Wallet } from 'lucide-react';
+import { ArrowUpRight, Bell, BellOff, Facebook, Share, UserPlus, Video, Wallet } from 'lucide-react';
 
 import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
@@ -72,40 +72,28 @@ export function ConnectWalletBanner({ onConnect }: { onConnect: () => void }) {
    );
 }
 
-/**
- * Referral entry point: the copy set over the designer's yellow card and the text-free food art cut
- * from her banner. Filipino used her exported banner, but that image says "GrabFood" and the reward is
- * now a food voucher the borrower picks (Jollibee, Chowking, Greenwich, Mang Inasal, Red Ribbon).
- */
-const REFERRAL_BANNER_COPY: Record<DashboardV2Language, { lead: string; rest: string; sub: string; cta: string }> = {
-   en: { lead: 'FREE', rest: 'meal for both of you', sub: 'Feast with friend', cta: 'Grab Now' },
-   fil: { lead: '₱100', rest: 'Food Voucher', sub: 'kumain kayong dalawa', cta: 'Mag-refer' }
+const INTEREST_REFERRAL_COPY: Record<DashboardV2Language, { title: string; body: string; cta: string }> = {
+   en: { title: 'Pay zero interest', body: 'Refer friends and we cover it.', cta: 'Refer' },
+   fil: { title: 'Walang interes', body: 'Mag-refer ng kaibigan, sagot namin ang interes mo.', cta: 'Mag-refer' }
 };
 
-export function VoucherReferralBanner({ language, onRefer }: { language: DashboardV2Language; onRefer: () => void }) {
-   const copy = REFERRAL_BANNER_COPY[language] ?? REFERRAL_BANNER_COPY.en;
+/** Referral entry point: invited friends who repay a loan earn back the interest (see /refer). */
+export function InterestReferralBanner({ language, onRefer }: { language: DashboardV2Language; onRefer: () => void }) {
+   const copy = INTEREST_REFERRAL_COPY[language] ?? INTEREST_REFERRAL_COPY.en;
    return (
-      <button type="button" onClick={onRefer} className={clsx(BANNER_BUTTON, 'relative h-[81px] text-left')}>
-         {/* Figma "banner_4" (9.23 file). */}
-         <span
-            className="absolute inset-x-5 bottom-0 h-16 rounded-[8px]"
-            style={{ backgroundImage: 'linear-gradient(90deg, #fff3a3 0%, #ffe27a 100%)' }}
-            aria-hidden="true"
-         />
-         <DesignImage
-            src={DASHBOARD_V2_ASSETS.voucherBannerFood}
-            className="absolute right-0 top-0 h-[81px] w-[clamp(100px,32.7vw,144px)] object-contain object-right"
-         />
-         <span className="absolute left-[34px] top-[22px] flex items-baseline gap-1.5 font-black italic leading-none text-[#3c8248]">
-            <span className="text-[clamp(20px,6.4vw,28px)]">{copy.lead}</span>
-            <span className="text-[clamp(13px,4.5vw,20px)]">{copy.rest}</span>
+      <button
+         type="button"
+         onClick={onRefer}
+         className="mx-5 flex w-[calc(100%-40px)] items-center gap-3 rounded-[8px] bg-white px-3 py-3.5 text-left shadow-[0_1px_2px_rgba(28,5,61,0.06)] active:scale-[0.99] dark:bg-dv2-card"
+      >
+         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#efeaff] dark:bg-dv2-tab">
+            <UserPlus className="h-5 w-5 text-[#6b55f7] dark:text-[#b3a6ff]" aria-hidden="true" />
          </span>
-         <span className="absolute left-[34px] top-[52px] flex items-center gap-2">
-            <span className="text-[14px] font-medium tracking-[-0.28px] text-[#96aa26]">{copy.sub}</span>
-            <span className="flex h-5 items-center rounded-full bg-[#4aa256] px-3 text-[12px] font-bold tracking-[-0.24px] text-white shadow-[0_1px_1px_rgba(0,0,0,0.3),0_-1px_1px_rgba(255,255,255,0.2)]">
-               {copy.cta}
-            </span>
+         <span className="min-w-0 flex-1">
+            <span className="block text-[18px] font-medium leading-6 text-[#0f172b] dark:text-[#d9cfe6]">{copy.title}</span>
+            <span className="block text-[14px] leading-[18px] text-[#45556c] dark:text-[#8f819e]">{copy.body}</span>
          </span>
+         <span className="shrink-0 rounded-full bg-[#6b55f7] px-3 py-1.5 text-[13px] font-bold text-white">{copy.cta}</span>
       </button>
    );
 }

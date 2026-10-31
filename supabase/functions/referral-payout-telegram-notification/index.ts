@@ -6,10 +6,13 @@
 //                                                 A no-op if the Telegram button already stamped it.
 //   { claimId }                                   an affiliate added a friend they referred (submit_referral_claim)
 //                                                 → card asking the team to find them in Admin → Referral codes.
+//   { interestRefundId }                          "Pay zero interest": an invited friend repaid, so the inviter's
+//                                                 interest is owed (notify_interest_refund) → who, how much, wallet.
+//   { interestRefundId, event: 'sent', decidedBy? } marked Sent in the admin panel → stamp the card.
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import { openInAdminButton, sendAdminCard, stampDecisionCards } from '../_shared/adminCards.ts';
+import { formatDecidedAt, openInAdminButton, sendAdminCard, stampDecisionCards } from '../_shared/adminCards.ts';
 import { buildPayoutCallback, buildPayoutCard, type PayoutRow, payoutSelect, payoutStampHeader } from '../_shared/referralPayouts.ts';
 import type { TelegramInlineKeyboard } from '../_shared/telegram.ts';
 
@@ -71,6 +74,68 @@ const postClaimCard = async (supabase: SupabaseClient, claimId: string) => {
    return json({ ok: true });
 };
 
+type Person = { id?: string; username: string | null; display_name: string | null; email?: string | null } | null;
+
+type InterestRefundRow = {
+   id: string;
+   status: string;
+   amount_usd: number;
+   interest_usd: number;
+   tx_hash: string | null;
+   created_at: string;
+   user: (Person & { wallet_address: string | null }) | null;
+   loan: { loan_amount: number; total_repayment_amount: number } | null;
+   friend: { referred: Person } | null;
+};
+
+const personLabel = (p: Person) => p?.display_name?.trim() || (p?.username ? `@${p.username}` : null) || p?.email || 'Someone';
+const usd = (value: number) => `$${Number(value).toFixed(2)}`;
+
+// "Pay zero interest": who to pay, how much, to which wallet, and that it's due now.
+const handleInterestRefund = async (supabase: SupabaseClient, refundId: string, event?: string, decidedBy?: string | null) => {
+   const { data, error } = await supabase
+      .from('interest_refunds')
+      .select(
+         'id, status, amount_usd, interest_usd, tx_hash, created_at, user:users!interest_refunds_user_id_fkey(id, username, display_name, email, wallet_address), loan:loans!interest_refunds_loan_id_fkey(loan_amount, total_repayment_amount), friend:friend_referrals!interest_refunds_friend_referral_id_fkey(referred:users!friend_referrals_referred_user_id_fkey(username, display_name))'
+      )
+      .eq('id', refundId)
+      .maybeSingle();
+   if (error) throw new Error(error.message);
+   if (!data) return json({ error: 'Interest refund not found' }, 404);
+   const r = data as unknown as InterestRefundRow;
+   const who = personLabel(r.user);
+
+   if (event === 'sent') {
+      if (r.status !== 'sent') return json({ ok: true, stamped: 0 });
+      const stamped = await stampDecisionCards(supabase, 'interest_refund', r.id, {
+         header: `✅ SENT — ${who} got ${usd(r.amount_usd)} USDC back`,
+         detail: r.tx_hash ? `Tx: ${r.tx_hash}` : null,
+         by: decidedBy ? `${decidedBy} (admin panel)` : 'the admin panel'
+      });
+      return json({ ok: true, stamped });
+   }
+
+   const chatId = await getSetting(supabase, 'kyc_alert_chat_id');
+   if (!chatId) return json({ error: 'kyc_alert_chat_id is not set' }, 500);
+
+   const text = [
+      `💸 Pay ${who} ${usd(r.amount_usd)} USDC now — interest refund`,
+      '',
+      `To (USDC on Base): ${r.user?.wallet_address || 'NO WALLET ON FILE — message them first'}`,
+      `Who: ${who}${r.user?.username ? ` (@${r.user.username})` : ''}${r.user?.email ? ` · ${r.user.email}` : ''}`,
+      `Why: their friend ${personLabel(r.friend?.referred ?? null)} joined with their code and repaid a loan`,
+      `Their loan: ${usd(r.loan?.loan_amount ?? 0)} → ${usd(r.loan?.total_repayment_amount ?? 0)} (interest ${usd(r.interest_usd)}${Number(r.amount_usd) < Number(r.interest_usd) ? ', capped at $5' : ''})`,
+      `Owed since: ${formatDecidedAt(new Date(r.created_at))}`,
+      '',
+      'Send it, then mark ✅ Sent in Admin → Referral codes → Interest refunds.'
+   ].join('\n');
+   const siteUrl = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('SITE_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
+   const keyboard: TelegramInlineKeyboard = [[{ text: '💸 Mark sent in admin', url: `${siteUrl}/admin/referrals` }]];
+   if (r.user?.id) keyboard.push([openInAdminButton(r.user.id, r.user.username)]);
+   await sendAdminCard(supabase, chatId, { kind: 'interest_refund', refId: r.id, text, keyboard });
+   return json({ ok: true });
+};
+
 serve(async (req) => {
    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
@@ -78,13 +143,15 @@ serve(async (req) => {
    if (!(await isAuthorized(supabase, req))) return json({ error: 'Unauthorized' }, 401);
 
    try {
-      const { payoutId, event, decidedBy, claimId } = (await req.json().catch(() => ({}))) as {
+      const { payoutId, event, decidedBy, claimId, interestRefundId } = (await req.json().catch(() => ({}))) as {
          payoutId?: string;
          event?: string;
          decidedBy?: string | null;
          claimId?: string;
+         interestRefundId?: string;
       };
       if (claimId) return await postClaimCard(supabase, claimId);
+      if (interestRefundId) return await handleInterestRefund(supabase, interestRefundId, event, decidedBy);
       if (!payoutId) return json({ error: 'payoutId is required' }, 400);
 
       const { data, error } = await supabase.from('referral_code_payouts').select(payoutSelect).eq('id', payoutId).maybeSingle();
