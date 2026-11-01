@@ -1,6 +1,6 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { alertTexts, freeFromSlots, holdColumns, START, wallNow, withoutHeld, zonedIso } from './messengerBookingBot.ts';
+import { alertTexts, answerRecord, freeFromSlots, holdColumns, START, wallNow, withoutHeld, zonedIso } from './messengerBookingBot.ts';
 
 Deno.test('wallNow: the wall clock in a zone', () => {
    const at = new Date('2026-11-01T18:30:00Z');
@@ -50,8 +50,29 @@ Deno.test('alertTexts: call prep with the fit check, held off, name check; nothi
    assert(prep.includes('📝 Booking bot · call prep') && prep.includes('Siti Rahma · 🧪 test account · ID · chat in Bahasa Indonesia'));
    assert(prep.includes('Holding Tuesday, November 3, 3:00 PM (Jakarta time)'));
    assert(prep.includes('🟢 Fit check') && prep.includes('• Are you working right now? Employed') && prep.includes('school fees'));
-   const [held] = alertTexts([{ type: 'heldOff', key: 'income', value: 'Prefer not to say' }], st, who);
-   assert(held.includes('held off') && held.includes('About how much came in last month?'));
+   const [held] = alertTexts([{ type: 'heldOff', key: 'income', value: 'Prefer not to say', answers: { work: 'Employed' } }], st, who);
+   assert(held.includes('held off') && held.includes('About how much came in last month?') && held.includes('• Are you working right now? Employed'));
    assertEquals(alertTexts([{ type: 'note', text: 'Name check: they typed "Ana", their account says "Siti".' }], st, who).length, 1);
    assertEquals(alertTexts([{ type: 'note', text: 'No day named, so reading it as Tue.' }, { type: 'hold', slot: st.mine }], st, who).length, 0);
+});
+
+Deno.test('answerRecord: saved answers for the call sheet (questions in English), held off with answers so far', async () => {
+   const Bot = await import('./bookingBot.ts');
+   const st = { ...Bot.newState(Bot.profileFromUser({ preferred_locale: 'fil' })), mine: { date: '2026-11-03', min: 15 * 60, host: 'Emma' } };
+   const rec = answerRecord({ type: 'answers', answers: { work: 'Employed', job: 'cashier' }, fit: { verdict: 'talk', reason: 'tight money' } }, st, 'Asia/Manila', 'u1');
+   assertEquals(rec, {
+      user_id: 'u1',
+      items: [{ q: 'Are you working right now?', a: 'Employed' }, { q: "What's your job? (just type it)", a: 'cashier' }],
+      lang: 'fil',
+      market: 'PH',
+      holding_at: '2026-11-03T07:00:00.000Z',
+      kind: 'answers',
+      fit_verdict: 'talk',
+      fit_reason: 'tight money',
+      checks: []
+   });
+   const held = answerRecord({ type: 'heldOff', key: 'income', value: null, answers: { work: 'Employed' } }, { ...st, mine: null }, 'Asia/Manila', 'u1');
+   assertEquals(held?.kind, 'held_off');
+   assertEquals((held as { held_off_value: string }).held_off_value, 'skipped');
+   assertEquals(answerRecord({ type: 'hold', slot: st.mine }, st, 'Asia/Manila', 'u1'), null);
 });

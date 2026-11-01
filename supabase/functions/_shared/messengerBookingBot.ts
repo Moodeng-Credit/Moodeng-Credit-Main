@@ -25,7 +25,8 @@
 //
 // Team alerts (Telegram, 'booking_bot_alert_chat_id', else the call-changes group, else the admin/KYC group):
 // the call-prep answers with the fit check when the questions are done, "held off", the name check, a failed
-// booking and "no free times". Team-only notes, never shown to the borrower.
+// booking and "no free times". Team-only notes, never shown to the borrower. The answers (and a held off,
+// with what they'd answered so far) are also saved to public.booking_bot_answers for the admin call sheet.
 
 import { readCallTime } from './bookingAi.ts';
 import * as Bot from './bookingBot.ts';
@@ -106,6 +107,16 @@ const say = async (contactId: string, replies: Bot.Reply[], lang: Bot.Lang, quic
    }
 };
 
+/** The booking_bot_answers row for a finished quiz or a held off (null for every other event). */
+export const answerRecord = (e: Bot.BotEvent, state: Bot.BotState, zone: string, userId: string) => {
+   if (e.type !== 'answers' && e.type !== 'heldOff') return null;
+   const Q = Bot.questions(Bot.MARKETS[state.market] ?? Bot.MARKETS.PH);
+   const items = Object.entries(e.answers).map(([k, a]) => ({ q: Q[k]?.en ?? k, a }));
+   const base = { user_id: userId, items, lang: state.lang, market: state.market, holding_at: state.mine ? zonedIso(state.mine, zone) : null };
+   if (e.type === 'heldOff') return { ...base, kind: 'held_off', held_off_question: Q[e.key]?.en ?? e.key, held_off_value: e.value ?? 'skipped' };
+   return { ...base, kind: 'answers', fit_verdict: e.fit.verdict, fit_reason: e.fit.reason, checks: Bot.crossCheck(e.answers, { work: state.known.work, payday: state.known.payday }) };
+};
+
 const FIT_ICON = { good: '🟢', talk: '🟡', review: '🔴' } as const;
 const LANG_NAME: Record<Bot.Lang, string> = { en: 'English', fil: 'Filipino', id: 'Bahasa Indonesia' };
 /** The team's Telegram alerts for this turn's events (none for most turns). */
@@ -132,7 +143,11 @@ export const alertTexts = (events: Bot.BotEvent[], state: Bot.BotState, who: { n
          );
       }
       if (e.type === 'heldOff') {
-         out.push(`${head('⏸️ Booking bot · held off')}\nThey didn't answer "${Q[e.key]?.en ?? e.key}" twice (${e.value ?? 'skipped'}). No call booked; the bot asked them to come back when they're ready.`);
+         const sofar = Object.entries(e.answers).map(([k, v]) => `• ${Q[k]?.en ?? k} ${v}`);
+         out.push(
+            `${head('⏸️ Booking bot · held off')}\nThey didn't answer "${Q[e.key]?.en ?? e.key}" twice (${e.value ?? 'skipped'}). No call booked; the bot asked them to come back when they're ready.` +
+               (sofar.length ? `\n\nWhat they answered before that:\n${sofar.join('\n')}` : '')
+         );
       }
       if (e.type === 'note' && /^(Name check|Booking failed|No free time)/.test(e.text)) out.push(`${head('⚠️ Booking bot')}\n${e.text}`);
    }
@@ -225,6 +240,12 @@ export const handleBookingMessage = async (svc: Svc, userId: string, contactId: 
       const extra: Bot.Reply[] = dry && r.events.some((e) => e.type === 'book') ? [{ text: '🧪 Practice mode: nothing was really booked.' }] : [];
       await say(contactId, [...r.replies, ...extra], r.state.lang, cfg.quick);
       await save(r.state);
+      for (const e of r.events) {
+         const rec = answerRecord(e, r.state, zone, userId);
+         if (!rec) continue;
+         const { error: saveErr } = await svc.from('booking_bot_answers').insert(rec);
+         if (saveErr) console.error('messenger-booking-bot: could not save answers', saveErr.message);
+      }
       const who = { name: user.display_name || user.facebook_name || (user.username ? `@${user.username}` : 'A borrower'), isTest: user.is_test };
       // Best-effort: they've already had their reply, so a failed alert must not turn this into a support ticket.
       for (const text of cfg.alertChat ? alertTexts(r.events, r.state, who) : []) {

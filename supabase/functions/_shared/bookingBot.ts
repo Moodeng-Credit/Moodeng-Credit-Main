@@ -168,7 +168,7 @@ export type BotEvent =
    | { type: 'release'; slot: Slot; why: 'moved' | 'other' | 'no' | 'heldOff' | 'cancel' | 'taken' | 'lapsed' }
    | { type: 'book'; slot: Slot; name: string }
    | { type: 'reask'; key: string; value: string | null }
-   | { type: 'heldOff'; key: string; value: string | null }
+   | { type: 'heldOff'; key: string; value: string | null; answers: Record<string, string> } // answers so far
    | { type: 'answers'; answers: Record<string, string>; fit: Fit }
    | { type: 'expectations' }
    | { type: 'attend'; slot: Slot }
@@ -1018,7 +1018,7 @@ const finishQuiz = (t: Turn) => {
    t.st.step = 'expect';
 };
 const holdOff = (t: Turn, key: string, value: string | null) => {
-   t.events.push({ type: 'heldOff', key, value });
+   t.events.push({ type: 'heldOff', key, value, answers: { ...t.st.answers } });
    release(t, 'heldOff');
    t.st.asked = [];
    t.st.answers = { ...t.st.known };

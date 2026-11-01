@@ -1649,7 +1649,10 @@ var holdOff = (t, key, value) => {
   t.events.push({
     type: "heldOff",
     key,
-    value
+    value,
+    answers: {
+      ...t.st.answers
+    }
   });
   release(t, "heldOff");
   t.st.asked = [];
