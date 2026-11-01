@@ -158,7 +158,7 @@ header p { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
         <li><b>Tight money:</b> answer "I run short" and "5-6 or a lending app". It should still book, but the box says ⚠️ Talk first.</li>
         <li><b>Dodging:</b> tap "Other" (first question), "Prefer not to say", or Skip on a type-it question (typing "secret" or "ayoko" counts too). The bot asks once more. Do it again: the bot says sorry, we work with people who know their situation, and books no call. Typing a day and time starts again. "Not sure" on when they could repay is a normal answer.</li>
         <li><b>After booking:</b> type "ok", "thanks" or "can I bring a friend?". The bot says you're all set and keeps the booking. Typing a new day and time offers new times, with a 👍 Keep my time button; "cancel" cancels.</li>
-        <li><b>Who they are:</b> switch "Pretend borrower" (under the calendar). Maria's app bio already has her work, income and payday, so the chat skips those. Siti is in Indonesia: Jakarta time and Rupiah. Ana is a Filipino on Bangkok time.</li>
+        <li><b>Who they are:</b> switch "Pretend borrower" (under the calendar). Maria's app bio already has her work, income and payday, so the chat skips those. Siti is in Indonesia: Jakarta time, Rupiah, and the chat in Bahasa Indonesia. Ana is a Filipino on Bangkok time.</li>
         <li><b>Filipino:</b> tap FIL at the top of the chat and do one booking in Filipino.</li>
       </ol>
       <p class="note">Anything confusing, too long, or worded wrong? Write it down with the exact message, and send it to George. Use "Start over" at the bottom right to begin again.</p>
@@ -173,6 +173,7 @@ header p { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
         <div class="lang" role="group" aria-label="Bot language">
           <button type="button" id="lang-en" aria-pressed="true">EN</button>
           <button type="button" id="lang-fil" aria-pressed="false">FIL</button>
+          <button type="button" id="lang-id" aria-pressed="false">ID</button>
         </div>
       </div>
       <div class="chat" id="chat" aria-live="polite"></div>
@@ -454,14 +455,16 @@ const showLang = (l) => {
   currentLang = l;
   document.getElementById('lang-en').setAttribute('aria-pressed', String(l === 'en'));
   document.getElementById('lang-fil').setAttribute('aria-pressed', String(l === 'fil'));
+  document.getElementById('lang-id').setAttribute('aria-pressed', String(l === 'id'));
 };
 document.getElementById('lang-en').onclick = () => { langOverride = 'en'; startOver(bioDone); };
 document.getElementById('lang-fil').onclick = () => { langOverride = 'fil'; startOver(bioDone); };
+document.getElementById('lang-id').onclick = () => { langOverride = 'id'; startOver(bioDone); };
 const who = document.getElementById('who');
 for (const [k, p] of Object.entries(PROFILES)) { const o = document.createElement('option'); o.value = k; o.textContent = p.label; who.append(o); }
 who.onchange = async () => { profileKey = who.value; langOverride = null; buildCalendar(); startOver(bioDone); };
 
-const TRIES = ['YES', 'Maria', 'bukas after 6pm', 'Saturday morning', 'pwede po ba sa Lunes ng hapon?', 'tomorrow 3pm', 'any time is ok', 'next week na lang', '4pm instead', 'ok', 'cancel'];
+const TRIES = ['YES', 'Maria', 'bukas after 6pm', 'Saturday morning', 'pwede po ba sa Lunes ng hapon?', 'tomorrow 3pm', 'any time is ok', 'next week na lang', '4pm instead', 'ok', 'cancel', 'besok setelah jam 6 sore', 'Sabtu pagi', 'iya'];
 const tries = document.getElementById('tries');
 for (const t of TRIES) { const b = document.createElement('button'); b.type = 'button'; b.textContent = t; b.onclick = () => { if (busy) return; clearQuick(); bubble('me', t); run({ text: t }); }; tries.append(b); }
 
@@ -476,7 +479,7 @@ const startOver = (done) => {
   state = Bot.newState(p);
   showLang(state.lang);
   const known = Object.entries(p.known).map(([k, v]) => `${k}: <code>${esc(v)}</code>`).join(' · ');
-  log(`<span class="tag">Who</span>${esc(PROFILES[profileKey].label)} → ${p.market === 'ID' ? 'Indonesia' : 'Philippines'}, times in <b>${esc(p.zone)}</b>, ${p.lang === 'fil' ? 'Filipino' : 'English'}${known ? `. From the app bio (not asked again): ${known}` : '. No bio answers yet, so the chat asks them.'}`);
+  log(`<span class="tag">Who</span>${esc(PROFILES[profileKey].label)} → ${p.market === 'ID' ? 'Indonesia' : 'Philippines'}, times in <b>${esc(p.zone)}</b>, ${p.lang === 'fil' ? 'Filipino' : p.lang === 'id' ? 'Bahasa Indonesia' : 'English'}${known ? `. From the app bio (not asked again): ${known}` : '. No bio answers yet, so the chat asks them.'}`);
   bubble('me', 'MOODENG-4821');
   const g = Bot.greet(state, done);
   state = g.state;

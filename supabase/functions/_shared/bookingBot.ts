@@ -47,15 +47,17 @@ export const MARKETS: Record<MarketId, Market> = {
       bounds: { income: [5000, 10000, 20000, 40000], leftover: [500, 1000, 3000], sales: [1000, 3000, 7000], debtAmt: [5000, 20000, 50000] },
       bareMin: 100
    },
-   // PLACEHOLDER (not reviewed): ranges converted from the peso ones at ~₱1 = Rp280. The team should set
-   // real Rupiah ranges, and Indonesian wording is still to come — Indonesians get English for now.
+   // Rupiah ranges set 2026-11-01 from Indonesian wages (provincial minimum ~Rp2–5.4jt a month), rounded to
+   // what people say out loud; $15 ≈ Rp250rb. Not yet checked by the team: change the bounds here if they
+   // don't fit the borrowers we see.
    ID: {
       id: 'ID',
       zone: 'Asia/Jakarta',
       cur: 'Rp',
-      firstLoan: 'Rp245rb',
-      bounds: { income: [1_500_000, 3_000_000, 5_000_000, 10_000_000], leftover: [150_000, 300_000, 1_000_000], sales: [300_000, 1_000_000, 2_000_000], debtAmt: [1_500_000, 5_000_000, 15_000_000] },
-      bareMin: 1000
+      firstLoan: 'Rp250rb',
+      bounds: { income: [2_000_000, 4_000_000, 6_000_000, 10_000_000], leftover: [200_000, 500_000, 1_000_000], sales: [500_000, 1_000_000, 3_000_000], debtAmt: [1_000_000, 5_000_000, 15_000_000] },
+      // "500" for a range question means 500rb: anything under Rp10.000 is asked, not guessed.
+      bareMin: 10_000
    }
 };
 
@@ -117,7 +119,7 @@ export const profileFromUser = (u: UserRow = {}): Profile => {
       market,
       zone,
       zoneName: zone.split('/').pop()!.replace(/_/g, ' '),
-      lang: u.preferred_locale === 'fil' ? 'fil' : 'en',
+      lang: u.preferred_locale === 'fil' ? 'fil' : market === 'ID' && u.preferred_locale !== 'en' ? 'id' : 'en',
       firstName: /^\p{L}[\p{L}'.-]+$/u.test(name) ? name : null,
       known
    };
@@ -127,7 +129,7 @@ export const profileFromUser = (u: UserRow = {}): Profile => {
 // Types
 // ---------------------------------------------------------------------------------------------------
 
-export type Lang = 'en' | 'fil';
+export type Lang = 'en' | 'fil' | 'id';
 /** A free time, in the borrower's wall clock: date YYYY-MM-DD, minutes after midnight. */
 export type Slot = { date: string; min: number; host: string };
 export type Button = { title: string; payload: string };
@@ -203,7 +205,7 @@ export const addDays = (d: string, n: number) => {
 };
 const weekday = (d: string) => new Date(d + 'T00:00:00Z').getUTCDay();
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const locale = (lang: Lang) => (lang === 'fil' ? 'fil-PH' : 'en-US');
+const locale = (lang: Lang) => (lang === 'fil' ? 'fil-PH' : lang === 'id' ? 'id-ID' : 'en-US');
 export const fmtDay = (d: string, lang: Lang) => new Intl.DateTimeFormat(locale(lang), { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(d + 'T00:00:00Z'));
 const fmtDayLong = (d: string, lang: Lang) => new Intl.DateTimeFormat(locale(lang), { timeZone: 'UTC', weekday: 'long', month: 'short', day: 'numeric' }).format(new Date(d + 'T00:00:00Z'));
 /** "Tue 3" — short enough for a button. */
@@ -221,14 +223,14 @@ export const toMin = (s: unknown) => {
 export const slotKey = (s: { date: string; min: number }) => `${s.date} ${hhmm(s.min)}`;
 const sameSlot = (a: Slot | null, b: Slot | null) => !!a && !!b && a.date === b.date && a.min === b.min;
 export const longWhen = (s: Slot, lang: Lang, zoneName: string) =>
-   `${new Intl.DateTimeFormat(locale(lang), { timeZone: 'UTC', weekday: 'long', month: 'long', day: 'numeric' }).format(new Date(s.date + 'T00:00:00Z'))}, ${fmtTime(s.min)} (${zoneName} time)`;
+   `${new Intl.DateTimeFormat(locale(lang), { timeZone: 'UTC', weekday: 'long', month: 'long', day: 'numeric' }).format(new Date(s.date + 'T00:00:00Z'))}, ${fmtTime(s.min)} (${lang === 'id' ? `waktu ${zoneName}` : `${zoneName} time`})`;
 
 // ---------------------------------------------------------------------------------------------------
 // Words the bot says
 // ---------------------------------------------------------------------------------------------------
 
 type Text = string | ((...a: string[]) => string);
-const T: Record<string, Record<Lang, Text>> = {
+const T: Record<string, Record<'en' | 'fil', Text>> = {
    connected: { en: (n) => `✅ Messenger connected${n ? `, ${n}` : ''}! You'll get your updates here.`, fil: (n) => `✅ Naka-connect na ang Messenger${n ? `, ${n}` : ''}! Dito mo matatanggap ang updates mo.` },
    bioMissing: {
       en: "👉 NEXT: go back to Moodeng and answer 5 quick questions about your work and payday (1 min).\n\nAs soon as you're done, I'll message you here to book your call.",
@@ -335,8 +337,60 @@ const T: Record<string, Record<Lang, Text>> = {
    },
    skip: { en: 'Skip', fil: 'Laktawan' }
 };
+// Bahasa Indonesia (Indonesian borrowers), one entry per key above.
+const ID_TEXT: Record<string, Text> = {
+   connected: (n) => `✅ Messenger terhubung${n ? `, ${n}` : ''}! Kabar terbaru akan kamu terima di sini.`,
+   bioMissing: '👉 BERIKUTNYA: kembali ke Moodeng dan jawab 5 pertanyaan singkat tentang pekerjaan dan hari gajianmu (1 menit).\n\nBegitu selesai, aku akan kirim pesan di sini untuk menjadwalkan panggilanmu.',
+   backBtn: '↩️ Kembali',
+   ask: '📅 LANGKAH TERAKHIR: jadwalkan video call 15 menit dengan George atau Emma.\n\nHari dan jam berapa yang paling cocok untukmu? Tulis saja sesukamu, misalnya "besok setelah jam 6 sore" atau "Sabtu pagi".',
+   offer: 'Oke! Jam-jam ini masih kosong:',
+   near: 'Maaf, jam itu sudah penuh. Jam kosong terdekat:',
+   askedFree: (w) => `✅ ${w} masih kosong!`,
+   askedTaken: (w) => `❌ ${w} sudah terisi. Jam kosong terdekat:`,
+   askedMine: (w) => `${w} adalah jadwalmu sekarang 🙂 Jam kosong lain di dekatnya:`,
+   dayFull: (d) => `❌ ${d} sudah penuh. Jam kosong terdekat di hari lain:`,
+   tooFar: 'Aku hanya bisa menjadwalkan sampai seminggu ke depan 🙏 Jam kosong yang paling dekat dengan permintaanmu:',
+   pickHint: 'Ketuk salah satu jam untuk memesannya, atau ketik nomornya.',
+   reoffer: 'Pilih salah satu jam ini, atau sebutkan hari dan jam lain 🙂',
+   keepBtn: '👍 Tetap jam ini',
+   tzNote: (z) => `Semua jam sesuai waktumu (${z}).`,
+   unclear: 'Maaf, aku belum menangkap hari atau jamnya 🙏 Coba seperti "besok jam 3 sore" atau "Sabtu pagi".',
+   other: 'Tidak masalah! Hari atau jam lain yang cocok untukmu?',
+   otherKeep: 'Tidak masalah! Hari atau jam lain yang cocok untukmu?\nPanggilanmu tetap terjadwal sampai kamu memilih jam baru.',
+   unclearKeep: (w) => `Maaf, aku belum menangkap hari atau jamnya 🙏 Kamu masih terjadwal ${w}.\nUntuk menggantinya, coba seperti "besok jam 3 sore" atau "Sabtu pagi".`,
+   cancelled: (w) => `Oke, panggilanmu ${w} sudah dibatalkan.\nKapan pun kamu siap, sebutkan saja hari dan jamnya 🙂`,
+   tapOne: 'Silakan ketuk salah satu tombol 🙂',
+   rangeNumber: 'Itu dalam ribuan? Silakan ketuk kisaran yang paling dekat 🙂',
+   finishFirst: 'Maaf, aku belum menangkap hari atau jam baru. Kita selesaikan dulu pertanyaannya — jamnya bisa diganti di akhir 🙂',
+   resume: (w, h) => `⏳ Sekarang aku tahan ${w} dengan ${h}. Kita lanjutkan pertanyaannya:`,
+   otherBtn: '🕐 Jam lain',
+   lapsed: '⌛ Aku hanya bisa menahan jammu selama 15 menit, dan sudah diambil orang lain.',
+   bookFailed: '😕 Maaf, ada masalah saat memesan panggilanmu. Ketik YES lagi untuk mencoba — atau tim kami akan mengirim pesan dengan jadwalnya.',
+   cancelFailed: '😕 Maaf, aku belum bisa membatalkan panggilanmu sekarang. Coba lagi, atau tim kami yang akan membatalkannya.',
+   none: 'Maaf, kalender kami penuh minggu ini. Tim kami akan mengirim pesan dengan jadwalnya 🙏',
+   holding: (w, h) => `⏳ Aku tahan ${w} dengan ${h} untukmu.\n\nBeberapa pertanyaan singkat dulu supaya ${h} bisa bersiap (sekitar 2 menit). Kisaran saja cukup, dan semuanya hanya untuk tim kami 🔒`,
+   question: (n, q) => `Pertanyaan ${n} · ${q}`,
+   expectations: (l) => `Terima kasih! 🙏 Sebelum kamu konfirmasi, supaya jelas 👇\n\n• Pinjaman pertamamu kecil: $15 (sekitar ${l}).\n• Limitmu naik bertahap: setiap pinjaman yang dibayar tepat waktu membuka level berikutnya. Butuh beberapa pinjaman, bukan beberapa hari.\n• Tidak bisa dipercepat, tapi kalau kamu bayar tepat waktu, Moodeng tumbuh bersamamu 🦛`,
+   gotIt: '👍 Mengerti',
+   confirmTime: (w, h) => `✅ LANGKAH TERAKHIR: KONFIRMASI PANGGILANMU\n\n📅 ${w}\n👤 dengan ${h} · 🎥 Zoom · 15 menit\n\nSatu aturan: 1 jam sebelumnya, aku akan kirim tombol ✅ I'll be there. Ketuk tombol itu, atau panggilan dibatalkan.\n\n👉 Ketik YES untuk konfirmasi panggilanmu.`,
+   sayYes: 'Ketik YES untuk konfirmasi jam ini, atau ketuk 🕐 Jam lain.',
+   askName: 'Terima kasih! Terakhir: ketik nama depanmu (untuk keamanan).',
+   badName: 'Ketik nama depanmu saja, misalnya Siti',
+   booked: (w, n, h) => `🎉 Kamu sudah terjadwal, ${n}!\n🗓️ ${w} · 15 menit dengan ${h}\n\nBawa 🪪 KTP aslimu dan nyalakan 📷 kamera. Itu saja!`,
+   promise: (n) => `⏰ Ingat, ${n}: ketuk ✅ 1 jam sebelumnya, atau panggilan dibatalkan.`,
+   card: 'Bisa hadir? Ketuk ✅ supaya kami tahu kamu datang — atau pilih jam baru.',
+   attendBtn: '✅ Aku akan hadir',
+   changeBtn: '🔄 Ganti jam',
+   thanks: '✅ Terima kasih! Sampai jumpa 🙌',
+   allSet: (n, w) => `👍 Sudah beres${n ? `, ${n}` : ''}! Sampai jumpa ${w}.\nPerlu jam lain? Sebutkan saja hari dan jamnya.`,
+   reask: 'Tidak apa-apa 🙂 Perkiraan kasar saja cukup.\nKami meminjamkan kepada orang yang tahu ke mana uangnya pergi, jadi perkiraan sangat membantu.',
+   reaskType: 'Tidak apa-apa 🙂 Beberapa kata saja cukup.\nIni membantu kami memahami keadaanmu sebelum panggilan.',
+   reaskOther: 'Bisa pilih yang paling mendekati? 🙂 Ini membantu kami memahami keadaanmu.',
+   heldOff: 'Maaf 🙏 Kami belum bisa menjadwalkan panggilanmu.\nKami bekerja dengan orang yang paham keadaannya sendiri dan mengatur keuangannya dengan bertanggung jawab.\nKalau kamu sudah siap berbagi gambaran kasarnya, sebutkan saja hari dan jam, dan kita mulai lagi.',
+   skip: 'Lewati'
+};
 const tr = (lang: Lang, key: string, ...a: string[]) => {
-   const v = T[key][lang];
+   const v = lang === 'id' ? ID_TEXT[key] : T[key][lang];
    return typeof v === 'function' ? v(...a) : v;
 };
 
@@ -344,8 +398,8 @@ const tr = (lang: Lang, key: string, ...a: string[]) => {
 // Questions. Answers are stored in English (the team reads them); buttons show the borrower's language.
 // ---------------------------------------------------------------------------------------------------
 
-type Opt = { en: string; fil: string };
-type Question = { en: string; fil: string; opts?: Opt[]; money?: keyof Market['bounds'] | true; free?: boolean };
+type Opt = { en: string; fil: string; id: string };
+type Question = { en: string; fil: string; id: string; opts?: Opt[]; money?: keyof Market['bounds'] | true; free?: boolean };
 
 const kfmt = (n: number, m: Market) => (m.id === 'ID' ? (n >= 1e6 ? `${n / 1e6}jt` : n >= 1000 ? `${n / 1000}rb` : `${n}`) : n >= 1000 ? `${n / 1000}k` : `${n}`);
 const unit = (s: string) => s.replace(/^[\d.]+/, '');
@@ -354,52 +408,114 @@ const between = (a: number, b: number, m: Market) => {
    return `${m.cur}${unit(x) === unit(y) ? x.slice(0, x.length - unit(x).length) : x}–${y}`;
 };
 /** Range buttons from upper bounds: "Under ₱5k", "₱5–10k", …, "More than ₱40k". */
-const rangeOpts = (bounds: number[], m: Market, under = true): Opt[] => [
-   ...(under ? [{ en: `Under ${m.cur}${kfmt(bounds[0], m)}`, fil: `Below ${m.cur}${kfmt(bounds[0], m)}` }] : []),
-   ...bounds.slice(1).map((b, i) => ({ en: between(bounds[i], b, m), fil: between(bounds[i], b, m) })),
-   { en: `More than ${m.cur}${kfmt(bounds[bounds.length - 1], m)}`, fil: `Higit ${m.cur}${kfmt(bounds[bounds.length - 1], m)}` }
-];
+const rangeOpts = (bounds: number[], m: Market, under = true): Opt[] => {
+   const first = `${m.cur}${kfmt(bounds[0], m)}`, last = `${m.cur}${kfmt(bounds[bounds.length - 1], m)}`;
+   return [
+      ...(under ? [{ en: `Under ${first}`, fil: `Below ${first}`, id: `Di bawah ${first}` }] : []),
+      ...bounds.slice(1).map((b, i) => ({ en: between(bounds[i], b, m), fil: between(bounds[i], b, m), id: between(bounds[i], b, m) })),
+      { en: `More than ${last}`, fil: `Higit ${last}`, id: `Lebih dari ${last}` }
+   ];
+};
 
-export const PNS: Opt = { en: 'Prefer not to say', fil: 'Ayokong sabihin' };
-const o = (en: string, fil: string): Opt => ({ en, fil });
+export const PNS: Opt = { en: 'Prefer not to say', fil: 'Ayokong sabihin', id: 'Tidak mau jawab' };
+const o = (en: string, fil: string, id: string): Opt => ({ en, fil, id });
 
 export const questions = (m: Market): Record<string, Question> => ({
-   work: { en: 'Are you working right now?', fil: 'May trabaho ka ba ngayon?', opts: [o('Employed', 'May trabaho'), o('Own business', 'Sariling negosyo'), o('Between jobs', 'Walang trabaho'), o('Other', 'Iba pa')] },
+   work: {
+      en: 'Are you working right now?',
+      fil: 'May trabaho ka ba ngayon?',
+      id: 'Apakah kamu sedang bekerja sekarang?',
+      opts: [o('Employed', 'May trabaho', 'Bekerja'), o('Own business', 'Sariling negosyo', 'Usaha sendiri'), o('Between jobs', 'Walang trabaho', 'Belum bekerja'), o('Other', 'Iba pa', 'Lainnya')]
+   },
    support: {
       en: 'Who do you support with your income? (tap the main one)',
       fil: 'Sino ang sinusuportahan mo sa kita mo? (piliin ang pangunahin)',
-      opts: [o('My kids', 'Mga anak ko'), o('My parents', 'Magulang ko'), o('Siblings', 'Kapatid'), o('Partner', 'Partner'), o('Other family', 'Ibang kamag-anak'), o('Just myself', 'Sarili ko lang')]
+      id: 'Siapa yang kamu tanggung dengan penghasilanmu? (pilih yang utama)',
+      opts: [
+         o('My kids', 'Mga anak ko', 'Anak saya'),
+         o('My parents', 'Magulang ko', 'Orang tua'),
+         o('Siblings', 'Kapatid', 'Saudara'),
+         o('Partner', 'Partner', 'Pasangan'),
+         o('Other family', 'Ibang kamag-anak', 'Keluarga lain'),
+         o('Just myself', 'Sarili ko lang', 'Diri sendiri')
+      ]
    },
-   kids: { en: 'Do you have kids?', fil: 'May anak ka ba?', opts: [o('Yes', 'Oo'), o('No', 'Wala')] },
-   income: { en: 'About how much came in last month? (work, sales, help from family)', fil: 'Mga magkano ang pumasok sa iyo noong nakaraang buwan? (trabaho, benta, tulong ng pamilya)', money: 'income', opts: rangeOpts(m.bounds.income, m) },
+   kids: { en: 'Do you have kids?', fil: 'May anak ka ba?', id: 'Apakah kamu punya anak?', opts: [o('Yes', 'Oo', 'Ya'), o('No', 'Wala', 'Tidak')] },
+   income: {
+      en: 'About how much came in last month? (work, sales, help from family)',
+      fil: 'Mga magkano ang pumasok sa iyo noong nakaraang buwan? (trabaho, benta, tulong ng pamilya)',
+      id: 'Kira-kira berapa uang yang masuk bulan lalu? (kerja, jualan, bantuan keluarga)',
+      money: 'income',
+      opts: rangeOpts(m.bounds.income, m)
+   },
    leftover: {
       en: "By the end of the month, what's usually left?",
       fil: 'Pagdating ng katapusan ng buwan, magkano ang natitira?',
+      id: 'Di akhir bulan, biasanya sisa berapa?',
       money: 'leftover',
-      opts: [o('I run short 😓', 'Kulang pa 😓'), o('Almost nothing', 'Halos wala'), ...rangeOpts(m.bounds.leftover, m, false)]
+      opts: [o('I run short 😓', 'Kulang pa 😓', 'Malah kurang 😓'), o('Almost nothing', 'Halos wala', 'Hampir tidak ada'), ...rangeOpts(m.bounds.leftover, m, false)]
    },
-   job: { en: "What's your job? (just type it)", fil: 'Ano ang trabaho mo? (i-type lang)', free: true },
-   jobLong: { en: 'How long have you been at your job?', fil: 'Gaano ka na katagal sa trabaho mo?', opts: [o('<6 months', '<6 buwan'), o('6–12 months', '6–12 buwan'), o('1–3 years', '1–3 taon'), o('3+ years', '3+ taon')] },
-   payday: { en: 'When does your pay come in?', fil: 'Kailan ang sweldo mo?', opts: [o('15th & 30th', 'Kinsenas'), o('Weekly', 'Lingguhan'), o('Daily', 'Araw-araw'), o('It varies', 'Pabago-bago')] },
-   biz: { en: "What's your business? (just type it)", fil: 'Ano ang negosyo mo? (i-type lang)', free: true },
-   sales: { en: 'About how much do you sell in a week?', fil: 'Mga magkano ang benta mo kada linggo?', money: 'sales', opts: rangeOpts(m.bounds.sales, m) },
-   lastJob: { en: 'What was your most recent job? (just type it)', fil: 'Ano ang huli mong trabaho? (i-type lang)', free: true },
-   moneyNow: { en: 'Any money coming in right now?', fil: 'May pumapasok bang pera ngayon?', opts: [o('Help from family', 'Tulong ng pamilya'), o('Odd jobs', 'Raket / sideline'), o('None right now', 'Wala sa ngayon')] },
-   kidsCount: { en: 'How many kids?', fil: 'Ilan ang anak mo?', opts: [o('1', '1'), o('2', '2'), o('3', '3'), o('4+', '4+')] },
+   job: { en: "What's your job? (just type it)", fil: 'Ano ang trabaho mo? (i-type lang)', id: 'Apa pekerjaanmu? (ketik saja)', free: true },
+   jobLong: {
+      en: 'How long have you been at your job?',
+      fil: 'Gaano ka na katagal sa trabaho mo?',
+      id: 'Sudah berapa lama di pekerjaanmu?',
+      opts: [o('<6 months', '<6 buwan', '<6 bulan'), o('6–12 months', '6–12 buwan', '6–12 bulan'), o('1–3 years', '1–3 taon', '1–3 tahun'), o('3+ years', '3+ taon', '3+ tahun')]
+   },
+   // Filipinos are mostly paid on the 15th and 30th; Indonesians mostly once a month.
+   payday: {
+      en: 'When does your pay come in?',
+      fil: 'Kailan ang sweldo mo?',
+      id: 'Kapan kamu gajian?',
+      opts: [
+         m.id === 'ID' ? o('Monthly', 'Buwanan', 'Bulanan') : o('15th & 30th', 'Kinsenas', 'Tgl 15 & 30'),
+         o('Weekly', 'Lingguhan', 'Mingguan'),
+         o('Daily', 'Araw-araw', 'Harian'),
+         o('It varies', 'Pabago-bago', 'Tidak tentu')
+      ]
+   },
+   biz: { en: "What's your business? (just type it)", fil: 'Ano ang negosyo mo? (i-type lang)', id: 'Apa usahamu? (ketik saja)', free: true },
+   sales: { en: 'About how much do you sell in a week?', fil: 'Mga magkano ang benta mo kada linggo?', id: 'Kira-kira berapa omzetmu per minggu?', money: 'sales', opts: rangeOpts(m.bounds.sales, m) },
+   lastJob: { en: 'What was your most recent job? (just type it)', fil: 'Ano ang huli mong trabaho? (i-type lang)', id: 'Apa pekerjaan terakhirmu? (ketik saja)', free: true },
+   moneyNow: {
+      en: 'Any money coming in right now?',
+      fil: 'May pumapasok bang pera ngayon?',
+      id: 'Ada uang masuk sekarang?',
+      opts: [o('Help from family', 'Tulong ng pamilya', 'Bantuan keluarga'), o('Odd jobs', 'Raket / sideline', 'Kerja serabutan'), o('None right now', 'Wala sa ngayon', 'Belum ada')]
+   },
+   kidsCount: { en: 'How many kids?', fil: 'Ilan ang anak mo?', id: 'Berapa anakmu?', opts: [o('1', '1', '1'), o('2', '2', '2'), o('3', '3', '3'), o('4+', '4+', '4+')] },
    billTrouble: {
       en: 'In the last 3 months, did you have trouble paying a bill on time?',
       fil: 'Sa nakaraang 3 buwan, nahirapan ka bang magbayad ng bill sa oras?',
-      opts: [o('No', 'Hindi'), o('Once', 'Isang beses'), o('A few times', 'Ilang beses'), o('Most months', 'Halos buwan-buwan')]
+      id: 'Dalam 3 bulan terakhir, pernah kesulitan bayar tagihan tepat waktu?',
+      opts: [o('No', 'Hindi', 'Tidak'), o('Once', 'Isang beses', 'Sekali'), o('A few times', 'Ilang beses', 'Beberapa kali'), o('Most months', 'Halos buwan-buwan', 'Hampir tiap bulan')]
    },
    debt: {
       en: 'Do you owe money right now?',
       fil: 'May utang ka ba ngayon?',
+      id: 'Apakah kamu punya utang sekarang?',
       money: true,
-      opts: [o('No', 'Wala'), o('Family / friends', 'Pamilya / kaibigan'), o('5-6 or lending app', '5-6 o lending app'), o('Bank / credit card', 'Bangko / credit card'), o('Several places', 'Maraming lugar')]
+      opts: [
+         o('No', 'Wala', 'Tidak'),
+         o('Family / friends', 'Pamilya / kaibigan', 'Keluarga / teman'),
+         m.id === 'ID' ? o('Lending app/paylater', 'Lending app', 'Pinjol / paylater') : o('5-6 or lending app', '5-6 o lending app', 'Pinjol'),
+         o('Bank / credit card', 'Bangko / credit card', 'Bank / kartu kredit'),
+         o('Several places', 'Maraming lugar', 'Banyak tempat')
+      ]
    },
-   debtAmt: { en: 'About how much in total?', fil: 'Mga magkano lahat?', money: 'debtAmt', opts: rangeOpts(m.bounds.debtAmt, m) },
-   loanUse: { en: `What would ${m.firstLoan} (our first $15 loan) help with? (just type it)`, fil: `Saan makakatulong ang ${m.firstLoan} (unang $15 loan namin)? (i-type lang)`, free: true },
-   repay: { en: 'When could you pay it back?', fil: 'Kailan mo ito kayang bayaran?', opts: [o('Next payday', 'Sa susunod na sweldo'), o('Within 2 weeks', 'Sa loob ng 2 linggo'), o('Not sure', 'Hindi sigurado')] }
+   debtAmt: { en: 'About how much in total?', fil: 'Mga magkano lahat?', id: 'Kira-kira totalnya berapa?', money: 'debtAmt', opts: rangeOpts(m.bounds.debtAmt, m) },
+   loanUse: {
+      en: `What would ${m.firstLoan} (our first $15 loan) help with? (just type it)`,
+      fil: `Saan makakatulong ang ${m.firstLoan} (unang $15 loan namin)? (i-type lang)`,
+      id: `${m.firstLoan} (pinjaman pertama $15 kami) akan membantu untuk apa? (ketik saja)`,
+      free: true
+   },
+   repay: {
+      en: 'When could you pay it back?',
+      fil: 'Kailan mo ito kayang bayaran?',
+      id: 'Kapan kamu bisa melunasinya?',
+      opts: [o('Next payday', 'Sa susunod na sweldo', 'Gajian berikutnya'), o('Within 2 weeks', 'Sa loob ng 2 linggo', 'Dalam 2 minggu'), o('Not sure', 'Hindi sigurado', 'Belum tahu')]
+   }
 });
 
 const BASE = ['work', 'support', 'kids', 'income', 'leftover'];
@@ -440,7 +556,7 @@ export const fitCheck = (a: Record<string, string>): Fit => {
 export const crossCheck = (a: Record<string, string>, bio: { work?: string; payday?: string }) => {
    const notes: string[] = [];
    if (a.work && bio.work && !is(a.work, 'employed')) notes.push(`Bio says "${bio.work}", but in chat: ${a.work}${a.biz ? ` (${a.biz})` : a.lastJob ? ` (last job: ${a.lastJob})` : ''}. Ask which is their main income now.`);
-   if (a.payday && bio.payday && !is(a.payday, '15')) notes.push(`Bio payday ${bio.payday}, chat says ${a.payday}. Ask when money really comes in.`);
+   if (a.payday && bio.payday && !is(a.payday, '15', 'monthly')) notes.push(`Bio payday ${bio.payday}, chat says ${a.payday}. Ask when money really comes in.`);
    return notes;
 };
 
@@ -456,21 +572,22 @@ const CLOCK = /\b\d{1,2}(:\d{2})?\s*(am|pm)\b|\b\d{1,2}:\d{2}\b|\b(alas|jam|at|a
 // A day named ("4pm instead" has none, so it means the day they already have).
 const DAY_WORD = /\b(today|tonight|tomorrow|tmrw|tmr|bukas|mamaya|ngayon|ngayong|later|mon|monday|tue|tues|tuesday|wed|weds|wednesday|thu|thur|thurs|thursday|fri|friday|sat|saturday|sun|sunday|lunes|martes|miyerkules|miyerkoles|huwebes|biyernes|sabado|linggo|weekend|weekdays?|week|besok|lusa|nanti|sekarang|senin|selasa|rabu|kamis|jumat|sabtu|minggu|jan|feb|march|apr|april|june|july|aug|sept|oct|nov|dec|\d{1,2}(st|nd|rd|th))\b|\b\d{1,2}\/\d{1,2}\b/;
 export const looksLikeTime = (t: string) => TIME_WORD.test(norm(t)) || CLOCK.test(norm(t));
-const CHANGE = /\b(change|resched\w*|move|instead|another (day|time)|other (day|time)|ibang (araw|oras)|iba ?ng (araw|oras)|palit\w*|ilipat|lipat|cancel|na lang|nalang)\b/;
+const CHANGE = /\b(change|resched\w*|move|instead|another (day|time)|other (day|time)|ibang (araw|oras)|iba ?ng (araw|oras)|palit\w*|ilipat|lipat|cancel|na lang|nalang|ganti|pindah|jam lain|hari lain|jadwal ulang|diganti)\b/;
 const wantsChange = (t: string) => CHANGE.test(norm(t));
-const CANCEL = /\b(cancel\w*|can'?t (make it|come|attend)|cannot (make it|come|attend)|hindi (na )?(ako )?makakapunta|di (ako )?makakapunta|hindi na lang|ayaw ko na|wag na lang|huwag na lang)\b/;
-const YES_WORDS = new Set(['yes', 'yeah', 'yea', 'yep', 'yup', 'ye', 'oo', 'opo', 'oho', 'sige', 'ok', 'okay', 'okey', 'oki', 'k', 'sure', 'confirm', 'confirmed', 'go', 'game', 'ya', 'iya', 'g']);
+const CANCEL = /\b(cancel\w*|can'?t (make it|come|attend)|cannot (make it|come|attend)|hindi (na )?(ako )?makakapunta|di (ako )?makakapunta|hindi na lang|ayaw ko na|wag na lang|huwag na lang|batal\w*|(tidak|gak|nggak|enggak|ga) (jadi|bisa (datang|hadir|ikut)))\b/;
+const YES_WORDS = new Set(['yes', 'yeah', 'yea', 'yep', 'yup', 'ye', 'oo', 'opo', 'oho', 'sige', 'ok', 'okay', 'okey', 'oki', 'k', 'sure', 'confirm', 'confirmed', 'go', 'game', 'ya', 'iya', 'g', 'oke', 'baik', 'siap', 'boleh', 'bisa', 'betul', 'benar', 'setuju']);
 // Words that can follow a YES without being a name.
-const FILLER = new Set(['po', 'naman', 'please', 'pls', 'plz', 'thanks', 'thank', 'you', 'ty', 'salamat', 'sure', 'confirm', 'confirmed', 'na', 'lang', 'i', 'will', 'be', 'there', 'see', 'tayo', 'then', 'terima', 'kasih', 'good', 'great', 'nice', 'got', 'it', 'all', 'set', 'deal', 'noted', 'ill', "i'll", 'definitely', 'of', 'course', 'yes', 'oo', 'opo', 'sige', 'ok', 'okay', 'yep', 'yeah', 'kita']);
+const FILLER = new Set(['po', 'naman', 'please', 'pls', 'plz', 'thanks', 'thank', 'you', 'ty', 'salamat', 'sure', 'confirm', 'confirmed', 'na', 'lang', 'i', 'will', 'be', 'there', 'see', 'tayo', 'then', 'terima', 'kasih', 'makasih', 'dong', 'kak', 'pak', 'bu', 'mas', 'mbak', 'good', 'great', 'nice', 'got', 'it', 'all', 'set', 'deal', 'noted', 'ill', "i'll", 'definitely', 'of', 'course', 'yes', 'oo', 'opo', 'sige', 'ok', 'okay', 'yep', 'yeah', 'kita']);
 // Common words that are never a first name.
 const NOT_NAMES = new Set([
    ...FILLER,
    ...YES_WORDS,
    ...['hi', 'hello', 'hey', 'actually', 'sorry', 'wait', 'teka', 'ako', 'me', 'my', 'name', 'is', 'am', 'im', 'ang', 'si', 'ay', 'ko', 'yung', 'the', 'a', 'an', 'and', 'but', 'pero', 'also', 'din', 'rin'],
    ...['sir', 'maam', "ma'am", 'madam', 'kuya', 'ate', 'boss', 'no', 'hindi', 'morning', 'afternoon', 'evening', 'can', 'what', 'when', 'how', 'why', 'pwede', 'paano', 'saan', 'kailan', 'bakit'],
-   ...['this', 'its', "it's", 'just', 'lol', 'haha', 'hehe', 'test', 'nope', 'none', 'wala']
+   ...['this', 'its', "it's", 'just', 'lol', 'haha', 'hehe', 'test', 'nope', 'none', 'wala'],
+   ...['halo', 'hai', 'tidak', 'nggak', 'gak', 'saya', 'aku', 'nama', 'selamat', 'pagi', 'siang', 'sore', 'malam', 'wkwk']
 ]);
-const NEGATIVE = /^\s*(no|nope|hindi|ayoko|ayaw|wag|huwag|cancel)\b(?!\s*(problem|prob|worries|worry|problema))/;
+const NEGATIVE = /^\s*(no|nope|hindi|ayoko|ayaw|wag|huwag|cancel|tidak|nggak|gak|enggak|jangan|batal)\b(?!\s*(problem|prob|worries|worry|problema|masalah|apa-apa|apa apa))/;
 const cap = (w: string) => (w === w.toLowerCase() || w === w.toUpperCase() ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w[0].toUpperCase() + w.slice(1));
 
 /** A first name from "Maria", "my name is Maria", "ako si Maria", "Ma. Cristina". Null if it doesn't look like one. */
@@ -511,17 +628,22 @@ export const readConfirm = (text: string): { kind: 'yes'; name: string | null } 
 };
 
 // ---- typed answers to the questions: matched by meaning, never by position ("5" is not the 5th button) ----
-const DODGE = /\b(skip|laktawan|ayoko|ayaw|prefer not|rather not|secret|sikreto|private|pass|idk|i don'?t know|dunno|di ko alam|hindi ko alam|ewan|not sure|hindi sigurado|no comment|tidak tahu|rahasia|none of your business|bakit)\b/;
+const DODGE = /\b(skip|laktawan|ayoko|ayaw|prefer not|rather not|secret|sikreto|private|pass|idk|i don'?t know|dunno|di ko alam|hindi ko alam|ewan|not sure|hindi sigurado|no comment|tidak tahu|nggak tahu|gak tahu|belum tahu|rahasia|lewati|tidak mau|gak mau|none of your business|bakit)\b/;
 // [pattern, button index] per question, checked in order.
 const SYN: Record<string, [RegExp, number][]> = {
    work: [
-      [/\b(between|unemployed|jobless|no work|no job|walang trabaho|wala(ng)? work|wala pa|wala)\b/, 2],
-      [/\b(business|negosyo|tindahan|sari|store|selling|seller|benta|nagtitinda|online shop|reseller)\b/, 1],
-      [/\b(employed|empleyado|employee|working|may trabaho|staff|office|full ?time|part ?time|yes|oo|opo|meron)\b/, 0],
+      [/\b(between|unemployed|jobless|no work|no job|walang trabaho|wala(ng)? work|wala pa|wala|belum (kerja|bekerja)|nganggur|pengangguran|tidak (kerja|bekerja))\b/, 2],
+      [/\b(business|negosyo|tindahan|sari|store|selling|seller|benta|nagtitinda|online shop|reseller|usaha|jualan|dagang|warung|toko)\b/, 1],
+      [/\b(employed|empleyado|employee|working|may trabaho|staff|office|full ?time|part ?time|yes|oo|opo|meron|kerja|bekerja|karyawan|pegawai|kantor|ya|iya)\b/, 0],
       [/\b(other|iba|student|freelance\w*|retired|ofw|housewife)\b/, 3]
    ],
    support: [
       [/\b(kids?|anak|children|child)\b/, 0],
+      [/\b(orang ?tua|ortu|ibu|bapak|ayah)\b/, 1],
+      [/\b(saudara|adik|kakak)\b/, 2],
+      [/\b(pasangan|suami|istri|pacar)\b/, 3],
+      [/\b(keluarga|nenek|kakek|om|tante|ponakan)\b/, 4],
+      [/\b(sendiri|diri sendiri|cuma saya|saya sendiri)\b/, 5],
       [/\b(parents?|magulang|nanay|tatay|mama|papa|mom|dad|mother|father)\b/, 1],
       [/\b(siblings?|kapatid|brother|sister)\b/, 2],
       [/\b(partner|asawa|husband|wife|bf|gf|boyfriend|girlfriend|jowa)\b/, 3],
@@ -529,8 +651,8 @@ const SYN: Record<string, [RegExp, number][]> = {
       [/\b(myself|sarili|ako lang|me|alone|just me|none|no one|wala)\b/, 5]
    ],
    kids: [
-      [/^(no|none|wala|wala pa|hindi|nope|zero|0)\b/, 1],
-      [/^(yes|oo|opo|meron|mayroon|yep|yeah|[1-9])\b/, 0]
+      [/^(no|none|wala|wala pa|hindi|nope|zero|0|tidak|belum|gak|nggak)\b/, 1],
+      [/^(yes|oo|opo|meron|mayroon|yep|yeah|[1-9]|ya|iya|punya|ada)\b/, 0]
    ],
    kidsCount: [
       [/^(1|one|isa)\b/, 0],
@@ -545,10 +667,10 @@ const SYN: Record<string, [RegExp, number][]> = {
       [/\b([3-9]|[1-9]\d|three|tatlo|many|matagal)\s*(years?|yrs?|taon)\b|\bmatagal na\b/, 3]
    ],
    payday: [
-      [/\b(15|30|kinsenas|kinsena|katapusan|twice a month|semi)\b/, 0],
-      [/\b(weekly|week|lingguhan|linggo)\b/, 1],
-      [/\b(daily|araw-araw|araw araw|everyday|every day|arawan)\b/, 2],
-      [/\b(varies|depende|pabago|iba-iba|irregular|random|minsan)\b/, 3]
+      [/\b(15|30|kinsenas|kinsena|katapusan|twice a month|semi|bulanan|sebulan|tiap bulan|monthly|akhir bulan|tanggal \d+)\b/, 0],
+      [/\b(weekly|week|lingguhan|linggo|mingguan|seminggu)\b/, 1],
+      [/\b(daily|araw-araw|araw araw|everyday|every day|arawan|harian|tiap hari)\b/, 2],
+      [/\b(varies|depende|pabago|iba-iba|irregular|random|minsan|tidak tentu|gak tentu|nggak tentu|tergantung)\b/, 3]
    ],
    moneyNow: [
       [/\b(family|pamilya|parents|magulang|asawa|padala)\b/, 0],
@@ -562,20 +684,20 @@ const SYN: Record<string, [RegExp, number][]> = {
       [/\b(most|always|lagi|palagi|halos|every month)\b/, 3]
    ],
    leftover: [
-      [/\b(short|kulang|negative|utang|kapos|lubog)\b/, 0],
-      [/\b(nothing|wala|zero|halos wala|almost none|none)\b/, 1]
+      [/\b(short|kulang|negative|utang|kapos|lubog|kurang|minus|tekor)\b/, 0],
+      [/\b(nothing|wala|zero|halos wala|almost none|none|habis|tidak ada|gak ada|nggak ada|pas-pasan)\b/, 1]
    ],
    debt: [
-      [/^(no|none|wala|hindi|nope)\b/, 0],
-      [/\b(several|marami|many|lots|everywhere|ilang lugar)\b/, 4],
-      [/\b(5-6|five six|lending|app|gcash|ggives|gloan|tala|cashalo|billease|home credit|sloan|spaylater)\b/, 2],
-      [/\b(bank|credit card|cc|card)\b/, 3],
-      [/\b(family|friends?|pamilya|kaibigan|kapatid|relatives?)\b/, 1]
+      [/^(no|none|wala|hindi|nope|tidak|gak|nggak|enggak)\b/, 0],
+      [/\b(several|marami|banyak|many|lots|everywhere|ilang lugar)\b/, 4],
+      [/\b(5-6|five six|lending|app|gcash|ggives|gloan|tala|cashalo|billease|home credit|sloan|spaylater|pinjol|kredivo|akulaku|gopaylater|paylater|easycash|adakami)\b/, 2],
+      [/\b(bank|credit card|cc|card|kartu kredit|kta)\b/, 3],
+      [/\b(family|friends?|pamilya|kaibigan|kapatid|relatives?|keluarga|teman|saudara)\b/, 1]
    ],
    repay: [
-      [/\b(payday|sweldo|next pay|kinsenas|katapusan)\b/, 0],
-      [/\b(2 weeks|two weeks|2 linggo|dalawang linggo|week|linggo)\b/, 1],
-      [/\b(not sure|hindi sigurado|depende|di ko alam|hindi ko alam|idk|ewan)\b/, 2]
+      [/\b(payday|sweldo|next pay|kinsenas|katapusan|gajian|gaji)\b/, 0],
+      [/\b(2 weeks|two weeks|2 linggo|dalawang linggo|week|linggo|2 minggu|dua minggu|minggu)\b/, 1],
+      [/\b(not sure|hindi sigurado|depende|di ko alam|hindi ko alam|idk|ewan|belum tahu|tidak tahu|gak tahu|belum pasti)\b/, 2]
    ]
 };
 /** An amount typed in local money ("15k", "15,000", "500rb", "1jt"). 'unsure' for a bare small number. */
@@ -592,8 +714,8 @@ const readTyped = (q: Question, key: string, text: string, m: Market): { pick?: 
    const t = norm(text).trim();
    const clean = (s: string) => norm(s).replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
    const ct = clean(text);
-   let i = opts.findIndex((op) => clean(op.en) === ct || clean(op.fil) === ct);
-   if (i < 0 && ct.length >= 3) i = opts.findIndex((op) => clean(op.en).startsWith(ct) || clean(op.fil).startsWith(ct));
+   let i = opts.findIndex((op) => clean(op.en) === ct || clean(op.fil) === ct || clean(op.id) === ct);
+   if (i < 0 && ct.length >= 3) i = opts.findIndex((op) => clean(op.en).startsWith(ct) || clean(op.fil).startsWith(ct) || clean(op.id).startsWith(ct));
    if (i >= 0) return { pick: i };
    for (const [re, idx] of SYN[key] ?? []) if (re.test(t)) return { pick: idx };
    if (typeof q.money === 'string') {
@@ -620,13 +742,13 @@ const readTyped = (q: Question, key: string, text: string, m: Market): { pick?: 
 // ---------------------------------------------------------------------------------------------------
 
 const DAYS: [RegExp, number][] = [
-   [/\b(sun|sunday|linggo)\b/, 0],
-   [/\b(mon|monday|lunes)\b/, 1],
-   [/\b(tue|tues|tuesday|martes)\b/, 2],
-   [/\b(wed|weds|wednesday|miyerkules|miyerkoles)\b/, 3],
-   [/\b(thu|thur|thurs|thursday|huwebes)\b/, 4],
-   [/\b(fri|friday|biyernes)\b/, 5],
-   [/\b(sat|saturday|sabado)\b/, 6]
+   [/\b(sun|sunday|linggo|minggu)\b/, 0],
+   [/\b(mon|monday|lunes|senin)\b/, 1],
+   [/\b(tue|tues|tuesday|martes|selasa)\b/, 2],
+   [/\b(wed|weds|wednesday|miyerkules|miyerkoles|rabu)\b/, 3],
+   [/\b(thu|thur|thurs|thursday|huwebes|kamis)\b/, 4],
+   [/\b(fri|friday|biyernes|jumat|jum'at)\b/, 5],
+   [/\b(sat|saturday|sabado|sabtu)\b/, 6]
 ];
 // "next week" in Filipino is "susunod na linggo" — there "linggo" means week, not Sunday.
 export const NEXT_WEEK = /\b(next week|susunod na linggo|sa isang linggo|next linggo|minggu depan)\b/;
@@ -638,7 +760,8 @@ const hourOf = (h: string, mm: string | undefined, ap: string | undefined, t = '
    if (ap === 'pm' || (!ap && (night || (!morning && x >= 1 && x <= 7)))) x += 12;
    return x * 60 + Number(mm || 0);
 };
-const guessLang = (t: string): Lang => (/\b(bukas|ngayon|mamaya|umaga|hapon|gabi|po|ako|ko|lang|sana|pwede|puwede|kahit|ng|sa)\b/.test(t) ? 'fil' : 'en');
+const guessLang = (t: string): Lang =>
+   /\b(besok|nanti|sekarang|pagi|siang|sore|malam|jam|bisa|saya|aku|hari|minggu depan|lusa|dong|ya)\b/.test(t) ? 'id' : /\b(bukas|ngayon|mamaya|umaga|hapon|gabi|po|ako|ko|lang|sana|pwede|puwede|kahit|ng|sa)\b/.test(t) ? 'fil' : 'en';
 
 export const ruleParse = (text: string, now: Now): Parsed => {
    const t = text.toLowerCase().replace(/\b(noon|tanghaling tapat)\b/g, '12pm').replace(/\bmidnight\b/g, '12am');
@@ -653,7 +776,8 @@ export const ruleParse = (text: string, now: Now): Parsed => {
    const dayText = t.replace(NEXT_WEEK, ' ');
    if (/\b(today|ngayon|mamaya|later|tonight|ngayong|sekarang|nanti)\b/.test(dayText)) dates.push(now.date);
    if (/\b(tomorrow|tmrw|tmr|bukas|besok)\b/.test(dayText)) dates.push(addDays(now.date, 1));
-   if (/weekend/.test(dayText)) dates.push(nextDow(6), nextDow(0));
+   if (/\blusa\b/.test(dayText)) dates.push(addDays(now.date, 2));
+   if (/weekend|akhir pekan/.test(dayText)) dates.push(nextDow(6), nextDow(0));
    for (const [re, dow] of DAYS) if (re.test(dayText)) dates.push(nextDow(dow));
    // "next week" with no day named: the first weekdays of next week.
    if (NEXT_WEEK.test(t) && !dates.length) {
@@ -667,10 +791,10 @@ export const ruleParse = (text: string, now: Now): Parsed => {
       from = hourOf(m[1], m[2], m[3] || m[6], t);
       to = hourOf(m[4], m[5], m[6], t);
       if (from > to && !m[3]) from -= 12 * 60;
-   } else if ((m = /(after|pagkatapos ng|from)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/.exec(t))) {
+   } else if ((m = /(after|pagkatapos ng|from|setelah|sesudah|habis|dari)\s*(?:jam\s*)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/.exec(t))) {
       from = hourOf(m[2], m[3], m[4], t);
       to = Math.max(21 * 60, from + 60);
-   } else if ((m = /(before|bago)\s*(?:mag\s*)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/.exec(t))) {
+   } else if ((m = /(before|bago|sebelum)\s*(?:mag\s*|jam\s*)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/.exec(t))) {
       to = hourOf(m[2], m[3], m[4], t);
       from = Math.min(9 * 60, to - 60);
    } else if ((m = /(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/.exec(t)) || (m = /\b(?:at|alas|around|mga|jam)\s*(\d{1,2})(?::(\d{2}))?\b/.exec(t)) || (m = /\b([01]?\d|2[0-3]):([0-5]\d)\b/.exec(t))) {
@@ -923,7 +1047,7 @@ const handlePrep = async (t: Turn, text: string) => {
    const q = t.Q[key];
    const n = norm(text).trim();
    // Typed "skip": a free-text question is skipped, a money question counts as "Prefer not to say".
-   if (/^\s*(skip|laktawan)\s*$/.test(n)) return answerPrep(t, q.free ? null : q.money ? PNS.en : undefined);
+   if (/^\s*(skip|laktawan|lewati)\s*$/.test(n)) return answerPrep(t, q.free ? null : q.money ? PNS.en : undefined);
    if (q.free) {
       if (DODGE.test(n) && n.split(/\s+/).length <= 4) return answerPrep(t, null);
       if (wantsChange(n) && looksLikeTime(n)) return changeMidQuiz(t, text);
@@ -948,22 +1072,23 @@ const changeMidQuiz = async (t: Turn, text: string) => {
 const gap = (t: Turn, s: Slot, asked: { date: string; min: number }) => {
    const d = absMin(s.date, s.min) - absMin(asked.date, asked.min);
    if (d === 0) return '';
-   const fil = t.st.lang === 'fil';
-   if (s.date !== asked.date) return s.min === asked.min ? (fil ? ' (parehong oras)' : ' (same time)') : '';
-   const n = Math.abs(d), amount = n % 60 === 0 ? `${n / 60} ${fil ? 'oras' : n === 60 ? 'hr' : 'hrs'}` : `${n} min`;
+   const fil = t.st.lang === 'fil', id = t.st.lang === 'id';
+   if (s.date !== asked.date) return s.min === asked.min ? (fil ? ' (parehong oras)' : id ? ' (jam yang sama)' : ' (same time)') : '';
+   const n = Math.abs(d), amount = n % 60 === 0 ? `${n / 60} ${fil ? 'oras' : id ? 'jam' : n === 60 ? 'hr' : 'hrs'}` : `${n} ${id ? 'menit' : 'min'}`;
+   if (id) return ` (${amount} ${d < 0 ? 'lebih awal' : 'lebih lambat'})`;
    return fil ? ` (${amount} ${d < 0 ? 'mas maaga' : 'mas huli'})` : ` (${amount} ${d < 0 ? 'earlier' : 'later'})`;
 };
 const offer = (t: Turn, result: OfferResult, summary: string) => {
    const { picks, exact, asked, dayFull, tooFar } = result;
    t.st.offered = picks;
    if (!picks.length) {
-      t.events.push({ type: 'note', text: 'No free time in the next 7 days — the real bot would alert the team.' });
+      t.events.push({ type: 'note', text: 'No free time in the next 7 days — please message them with a time.' });
       return send(t, say(t, 'none'));
    }
    t.st.lastOffer = result;
    t.events.push({ type: 'offered', result, summary });
    const lang = t.st.lang;
-   const askedText = asked ? `${fmtDay(asked.date, lang)} ${lang === 'fil' ? 'nang' : 'at'} ${fmtTime(asked.min)}` : '';
+   const askedText = asked ? `${fmtDay(asked.date, lang)} ${lang === 'fil' ? 'nang' : lang === 'id' ? 'jam' : 'at'} ${fmtTime(asked.min)}` : '';
    const isMine = asked && t.st.mine && asked.date === t.st.mine.date && asked.min === t.st.mine.min;
    const intro = tooFar
       ? say(t, 'tooFar')
@@ -976,7 +1101,7 @@ const offer = (t: Turn, result: OfferResult, summary: string) => {
             : say(t, exact ? 'offer' : 'near');
    // Details live in the text (buttons are capped at 20 characters).
    const list = picks.map((s, i) => `${i + 1}. ${fmtDay(s.date, lang)} · ${fmtTime(s.min)}${asked ? gap(t, s, asked) : ''}${i === 0 ? ' ⭐' : ''}`).join('\n');
-   const mine = t.st.mine ? `\n${lang === 'fil' ? 'Oras mo ngayon' : 'Your time now'}: ${fmtDay(t.st.mine.date, lang)} · ${fmtTime(t.st.mine.min)}` : '';
+   const mine = t.st.mine ? `\n${lang === 'fil' ? 'Oras mo ngayon' : lang === 'id' ? 'Jadwalmu sekarang' : 'Your time now'}: ${fmtDay(t.st.mine.date, lang)} · ${fmtTime(t.st.mine.min)}` : '';
    send(t, `${intro}\n\n${list}\n${mine}\n${say(t, 'pickHint')} ${say(t, 'tzNote', t.st.zoneName)}`.replace(/\n\n\n/g, '\n\n'), offerButtons(t, picks));
    t.st.step = 'offered';
 };
@@ -1038,7 +1163,7 @@ const readTime = async (t: Turn, text: string): Promise<Parsed> => {
                t.events.push({ type: 'read', how: 'DeepSeek said unclear → rules (next week)', ms: Date.now() - t0, parsed });
                return parsed;
             }
-            const parsed: Parsed = { windows: x.windows ?? [], at: x.at ?? null, anytime: !!x.anytime, unclear: !!x.unclear, lang: x.lang === 'fil' ? 'fil' : 'en', summary: String(x.summary ?? '').slice(0, 60) };
+            const parsed: Parsed = { windows: x.windows ?? [], at: x.at ?? null, anytime: !!x.anytime, unclear: !!x.unclear, lang: x.lang === 'fil' || x.lang === 'id' ? x.lang : 'en', summary: String(x.summary ?? '').slice(0, 60) };
             t.events.push({ type: 'read', how: 'DeepSeek', ms: Date.now() - t0, parsed });
             return parsed;
          }
@@ -1058,8 +1183,9 @@ const readTime = async (t: Turn, text: string): Promise<Parsed> => {
  */
 const readAndOffer = async (t: Turn, text: string, from: Step): Promise<boolean> => {
    const parsed = await readTime(t, text);
-   // One-word replies ("ok", "3pm") don't switch the language. Indonesian is English for now.
-   if (parsed.lang !== t.st.lang && words(text).length >= 2 && t.m.id === 'PH') t.st.lang = parsed.lang;
+   // One-word replies ("ok", "3pm") don't switch the language; each country switches only between its own two.
+   const langs: Lang[] = t.m.id === 'ID' ? ['en', 'id'] : ['en', 'fil'];
+   if (parsed.lang !== t.st.lang && words(text).length >= 2 && langs.includes(parsed.lang)) t.st.lang = parsed.lang;
    if (parsed.unclear || (!parsed.anytime && !parsed.windows.length)) return false;
    const mine = t.st.mine;
    // They already have a time and name only a new hour ("4pm instead"): same day as the one they have.
@@ -1232,7 +1358,8 @@ export const plainText = (reply: Reply, lang: Lang = 'en') => {
    const opts = lettered(reply.buttons ?? []);
    if (!opts.length) return reply.text;
    const list = opts.map((b, i) => `${LETTERS[i]}) ${b.title}`).join('\n');
-   const hint = lang === 'fil' ? 'Sumagot ng letra (A, B…) o i-type ang sagot mo.' : 'Reply with a letter (A, B…) or type your answer.';
+   const hint =
+      lang === 'fil' ? 'Sumagot ng letra (A, B…) o i-type ang sagot mo.' : lang === 'id' ? 'Balas dengan huruf (A, B…) atau ketik jawabanmu.' : 'Reply with a letter (A, B…) or type your answer.';
    return `${reply.text}\n\n${list}\n\n${hint}`;
 };
 

@@ -31,37 +31,39 @@ var MARKETS = {
     },
     bareMin: 100
   },
-  // PLACEHOLDER (not reviewed): ranges converted from the peso ones at ~₱1 = Rp280. The team should set
-  // real Rupiah ranges, and Indonesian wording is still to come — Indonesians get English for now.
+  // Rupiah ranges set 2026-11-01 from Indonesian wages (provincial minimum ~Rp2–5.4jt a month), rounded to
+  // what people say out loud; $15 ≈ Rp250rb. Not yet checked by the team: change the bounds here if they
+  // don't fit the borrowers we see.
   ID: {
     id: "ID",
     zone: "Asia/Jakarta",
     cur: "Rp",
-    firstLoan: "Rp245rb",
+    firstLoan: "Rp250rb",
     bounds: {
       income: [
-        15e5,
-        3e6,
-        5e6,
+        2e6,
+        4e6,
+        6e6,
         1e7
       ],
       leftover: [
-        15e4,
-        3e5,
+        2e5,
+        5e5,
         1e6
       ],
       sales: [
-        3e5,
+        5e5,
         1e6,
-        2e6
+        3e6
       ],
       debtAmt: [
-        15e5,
+        1e6,
         5e6,
         15e6
       ]
     },
-    bareMin: 1e3
+    // "500" for a range question means 500rb: anything under Rp10.000 is asked, not guessed.
+    bareMin: 1e4
   }
 };
 var isZone = (z) => {
@@ -105,7 +107,7 @@ var profileFromUser = (u = {}) => {
     market,
     zone,
     zoneName: zone.split("/").pop().replace(/_/g, " "),
-    lang: u.preferred_locale === "fil" ? "fil" : "en",
+    lang: u.preferred_locale === "fil" ? "fil" : market === "ID" && u.preferred_locale !== "en" ? "id" : "en",
     firstName: /^\p{L}[\p{L}'.-]+$/u.test(name) ? name : null,
     known
   };
@@ -127,7 +129,7 @@ var WEEKDAYS = [
   "Friday",
   "Saturday"
 ];
-var locale = (lang) => lang === "fil" ? "fil-PH" : "en-US";
+var locale = (lang) => lang === "fil" ? "fil-PH" : lang === "id" ? "id-ID" : "en-US";
 var fmtDay = (d, lang) => new Intl.DateTimeFormat(locale(lang), {
   timeZone: "UTC",
   weekday: "short",
@@ -161,7 +163,7 @@ var longWhen = (s, lang, zoneName) => `${new Intl.DateTimeFormat(locale(lang), {
   weekday: "long",
   month: "long",
   day: "numeric"
-}).format(/* @__PURE__ */ new Date(s.date + "T00:00:00Z"))}, ${fmtTime(s.min)} (${zoneName} time)`;
+}).format(/* @__PURE__ */ new Date(s.date + "T00:00:00Z"))}, ${fmtTime(s.min)} (${lang === "id" ? `waktu ${zoneName}` : `${zoneName} time`})`;
 var T = {
   connected: {
     en: (n) => `\u2705 Messenger connected${n ? `, ${n}` : ""}! You'll get your updates here.`,
@@ -400,8 +402,78 @@ Kailangan ng ibang oras? Sabihin lang ang araw at oras.`
     fil: "Laktawan"
   }
 };
+var ID_TEXT = {
+  connected: (n) => `\u2705 Messenger terhubung${n ? `, ${n}` : ""}! Kabar terbaru akan kamu terima di sini.`,
+  bioMissing: "\u{1F449} BERIKUTNYA: kembali ke Moodeng dan jawab 5 pertanyaan singkat tentang pekerjaan dan hari gajianmu (1 menit).\n\nBegitu selesai, aku akan kirim pesan di sini untuk menjadwalkan panggilanmu.",
+  backBtn: "\u21A9\uFE0F Kembali",
+  ask: '\u{1F4C5} LANGKAH TERAKHIR: jadwalkan video call 15 menit dengan George atau Emma.\n\nHari dan jam berapa yang paling cocok untukmu? Tulis saja sesukamu, misalnya "besok setelah jam 6 sore" atau "Sabtu pagi".',
+  offer: "Oke! Jam-jam ini masih kosong:",
+  near: "Maaf, jam itu sudah penuh. Jam kosong terdekat:",
+  askedFree: (w) => `\u2705 ${w} masih kosong!`,
+  askedTaken: (w) => `\u274C ${w} sudah terisi. Jam kosong terdekat:`,
+  askedMine: (w) => `${w} adalah jadwalmu sekarang \u{1F642} Jam kosong lain di dekatnya:`,
+  dayFull: (d) => `\u274C ${d} sudah penuh. Jam kosong terdekat di hari lain:`,
+  tooFar: "Aku hanya bisa menjadwalkan sampai seminggu ke depan \u{1F64F} Jam kosong yang paling dekat dengan permintaanmu:",
+  pickHint: "Ketuk salah satu jam untuk memesannya, atau ketik nomornya.",
+  reoffer: "Pilih salah satu jam ini, atau sebutkan hari dan jam lain \u{1F642}",
+  keepBtn: "\u{1F44D} Tetap jam ini",
+  tzNote: (z) => `Semua jam sesuai waktumu (${z}).`,
+  unclear: 'Maaf, aku belum menangkap hari atau jamnya \u{1F64F} Coba seperti "besok jam 3 sore" atau "Sabtu pagi".',
+  other: "Tidak masalah! Hari atau jam lain yang cocok untukmu?",
+  otherKeep: "Tidak masalah! Hari atau jam lain yang cocok untukmu?\nPanggilanmu tetap terjadwal sampai kamu memilih jam baru.",
+  unclearKeep: (w) => `Maaf, aku belum menangkap hari atau jamnya \u{1F64F} Kamu masih terjadwal ${w}.
+Untuk menggantinya, coba seperti "besok jam 3 sore" atau "Sabtu pagi".`,
+  cancelled: (w) => `Oke, panggilanmu ${w} sudah dibatalkan.
+Kapan pun kamu siap, sebutkan saja hari dan jamnya \u{1F642}`,
+  tapOne: "Silakan ketuk salah satu tombol \u{1F642}",
+  rangeNumber: "Itu dalam ribuan? Silakan ketuk kisaran yang paling dekat \u{1F642}",
+  finishFirst: "Maaf, aku belum menangkap hari atau jam baru. Kita selesaikan dulu pertanyaannya \u2014 jamnya bisa diganti di akhir \u{1F642}",
+  resume: (w, h) => `\u23F3 Sekarang aku tahan ${w} dengan ${h}. Kita lanjutkan pertanyaannya:`,
+  otherBtn: "\u{1F550} Jam lain",
+  lapsed: "\u231B Aku hanya bisa menahan jammu selama 15 menit, dan sudah diambil orang lain.",
+  bookFailed: "\u{1F615} Maaf, ada masalah saat memesan panggilanmu. Ketik YES lagi untuk mencoba \u2014 atau tim kami akan mengirim pesan dengan jadwalnya.",
+  cancelFailed: "\u{1F615} Maaf, aku belum bisa membatalkan panggilanmu sekarang. Coba lagi, atau tim kami yang akan membatalkannya.",
+  none: "Maaf, kalender kami penuh minggu ini. Tim kami akan mengirim pesan dengan jadwalnya \u{1F64F}",
+  holding: (w, h) => `\u23F3 Aku tahan ${w} dengan ${h} untukmu.
+
+Beberapa pertanyaan singkat dulu supaya ${h} bisa bersiap (sekitar 2 menit). Kisaran saja cukup, dan semuanya hanya untuk tim kami \u{1F512}`,
+  question: (n, q) => `Pertanyaan ${n} \xB7 ${q}`,
+  expectations: (l) => `Terima kasih! \u{1F64F} Sebelum kamu konfirmasi, supaya jelas \u{1F447}
+
+\u2022 Pinjaman pertamamu kecil: $15 (sekitar ${l}).
+\u2022 Limitmu naik bertahap: setiap pinjaman yang dibayar tepat waktu membuka level berikutnya. Butuh beberapa pinjaman, bukan beberapa hari.
+\u2022 Tidak bisa dipercepat, tapi kalau kamu bayar tepat waktu, Moodeng tumbuh bersamamu \u{1F99B}`,
+  gotIt: "\u{1F44D} Mengerti",
+  confirmTime: (w, h) => `\u2705 LANGKAH TERAKHIR: KONFIRMASI PANGGILANMU
+
+\u{1F4C5} ${w}
+\u{1F464} dengan ${h} \xB7 \u{1F3A5} Zoom \xB7 15 menit
+
+Satu aturan: 1 jam sebelumnya, aku akan kirim tombol \u2705 I'll be there. Ketuk tombol itu, atau panggilan dibatalkan.
+
+\u{1F449} Ketik YES untuk konfirmasi panggilanmu.`,
+  sayYes: "Ketik YES untuk konfirmasi jam ini, atau ketuk \u{1F550} Jam lain.",
+  askName: "Terima kasih! Terakhir: ketik nama depanmu (untuk keamanan).",
+  badName: "Ketik nama depanmu saja, misalnya Siti",
+  booked: (w, n, h) => `\u{1F389} Kamu sudah terjadwal, ${n}!
+\u{1F5D3}\uFE0F ${w} \xB7 15 menit dengan ${h}
+
+Bawa \u{1FAAA} KTP aslimu dan nyalakan \u{1F4F7} kamera. Itu saja!`,
+  promise: (n) => `\u23F0 Ingat, ${n}: ketuk \u2705 1 jam sebelumnya, atau panggilan dibatalkan.`,
+  card: "Bisa hadir? Ketuk \u2705 supaya kami tahu kamu datang \u2014 atau pilih jam baru.",
+  attendBtn: "\u2705 Aku akan hadir",
+  changeBtn: "\u{1F504} Ganti jam",
+  thanks: "\u2705 Terima kasih! Sampai jumpa \u{1F64C}",
+  allSet: (n, w) => `\u{1F44D} Sudah beres${n ? `, ${n}` : ""}! Sampai jumpa ${w}.
+Perlu jam lain? Sebutkan saja hari dan jamnya.`,
+  reask: "Tidak apa-apa \u{1F642} Perkiraan kasar saja cukup.\nKami meminjamkan kepada orang yang tahu ke mana uangnya pergi, jadi perkiraan sangat membantu.",
+  reaskType: "Tidak apa-apa \u{1F642} Beberapa kata saja cukup.\nIni membantu kami memahami keadaanmu sebelum panggilan.",
+  reaskOther: "Bisa pilih yang paling mendekati? \u{1F642} Ini membantu kami memahami keadaanmu.",
+  heldOff: "Maaf \u{1F64F} Kami belum bisa menjadwalkan panggilanmu.\nKami bekerja dengan orang yang paham keadaannya sendiri dan mengatur keuangannya dengan bertanggung jawab.\nKalau kamu sudah siap berbagi gambaran kasarnya, sebutkan saja hari dan jam, dan kita mulai lagi.",
+  skip: "Lewati"
+};
 var tr = (lang, key, ...a) => {
-  const v = T[key][lang];
+  const v = lang === "id" ? ID_TEXT[key] : T[key][lang];
   return typeof v === "function" ? v(...a) : v;
 };
 var kfmt = (n, m) => m.id === "ID" ? n >= 1e6 ? `${n / 1e6}jt` : n >= 1e3 ? `${n / 1e3}rb` : `${n}` : n >= 1e3 ? `${n / 1e3}k` : `${n}`;
@@ -410,177 +482,204 @@ var between = (a, b, m) => {
   const x = kfmt(a, m), y = kfmt(b, m);
   return `${m.cur}${unit(x) === unit(y) ? x.slice(0, x.length - unit(x).length) : x}\u2013${y}`;
 };
-var rangeOpts = (bounds, m, under = true) => [
-  ...under ? [
+var rangeOpts = (bounds, m, under = true) => {
+  const first = `${m.cur}${kfmt(bounds[0], m)}`, last = `${m.cur}${kfmt(bounds[bounds.length - 1], m)}`;
+  return [
+    ...under ? [
+      {
+        en: `Under ${first}`,
+        fil: `Below ${first}`,
+        id: `Di bawah ${first}`
+      }
+    ] : [],
+    ...bounds.slice(1).map((b, i) => ({
+      en: between(bounds[i], b, m),
+      fil: between(bounds[i], b, m),
+      id: between(bounds[i], b, m)
+    })),
     {
-      en: `Under ${m.cur}${kfmt(bounds[0], m)}`,
-      fil: `Below ${m.cur}${kfmt(bounds[0], m)}`
+      en: `More than ${last}`,
+      fil: `Higit ${last}`,
+      id: `Lebih dari ${last}`
     }
-  ] : [],
-  ...bounds.slice(1).map((b, i) => ({
-    en: between(bounds[i], b, m),
-    fil: between(bounds[i], b, m)
-  })),
-  {
-    en: `More than ${m.cur}${kfmt(bounds[bounds.length - 1], m)}`,
-    fil: `Higit ${m.cur}${kfmt(bounds[bounds.length - 1], m)}`
-  }
-];
+  ];
+};
 var PNS = {
   en: "Prefer not to say",
-  fil: "Ayokong sabihin"
+  fil: "Ayokong sabihin",
+  id: "Tidak mau jawab"
 };
-var o = (en, fil) => ({
+var o = (en, fil, id) => ({
   en,
-  fil
+  fil,
+  id
 });
 var questions = (m) => ({
   work: {
     en: "Are you working right now?",
     fil: "May trabaho ka ba ngayon?",
+    id: "Apakah kamu sedang bekerja sekarang?",
     opts: [
-      o("Employed", "May trabaho"),
-      o("Own business", "Sariling negosyo"),
-      o("Between jobs", "Walang trabaho"),
-      o("Other", "Iba pa")
+      o("Employed", "May trabaho", "Bekerja"),
+      o("Own business", "Sariling negosyo", "Usaha sendiri"),
+      o("Between jobs", "Walang trabaho", "Belum bekerja"),
+      o("Other", "Iba pa", "Lainnya")
     ]
   },
   support: {
     en: "Who do you support with your income? (tap the main one)",
     fil: "Sino ang sinusuportahan mo sa kita mo? (piliin ang pangunahin)",
+    id: "Siapa yang kamu tanggung dengan penghasilanmu? (pilih yang utama)",
     opts: [
-      o("My kids", "Mga anak ko"),
-      o("My parents", "Magulang ko"),
-      o("Siblings", "Kapatid"),
-      o("Partner", "Partner"),
-      o("Other family", "Ibang kamag-anak"),
-      o("Just myself", "Sarili ko lang")
+      o("My kids", "Mga anak ko", "Anak saya"),
+      o("My parents", "Magulang ko", "Orang tua"),
+      o("Siblings", "Kapatid", "Saudara"),
+      o("Partner", "Partner", "Pasangan"),
+      o("Other family", "Ibang kamag-anak", "Keluarga lain"),
+      o("Just myself", "Sarili ko lang", "Diri sendiri")
     ]
   },
   kids: {
     en: "Do you have kids?",
     fil: "May anak ka ba?",
+    id: "Apakah kamu punya anak?",
     opts: [
-      o("Yes", "Oo"),
-      o("No", "Wala")
+      o("Yes", "Oo", "Ya"),
+      o("No", "Wala", "Tidak")
     ]
   },
   income: {
     en: "About how much came in last month? (work, sales, help from family)",
     fil: "Mga magkano ang pumasok sa iyo noong nakaraang buwan? (trabaho, benta, tulong ng pamilya)",
+    id: "Kira-kira berapa uang yang masuk bulan lalu? (kerja, jualan, bantuan keluarga)",
     money: "income",
     opts: rangeOpts(m.bounds.income, m)
   },
   leftover: {
     en: "By the end of the month, what's usually left?",
     fil: "Pagdating ng katapusan ng buwan, magkano ang natitira?",
+    id: "Di akhir bulan, biasanya sisa berapa?",
     money: "leftover",
     opts: [
-      o("I run short \u{1F613}", "Kulang pa \u{1F613}"),
-      o("Almost nothing", "Halos wala"),
+      o("I run short \u{1F613}", "Kulang pa \u{1F613}", "Malah kurang \u{1F613}"),
+      o("Almost nothing", "Halos wala", "Hampir tidak ada"),
       ...rangeOpts(m.bounds.leftover, m, false)
     ]
   },
   job: {
     en: "What's your job? (just type it)",
     fil: "Ano ang trabaho mo? (i-type lang)",
+    id: "Apa pekerjaanmu? (ketik saja)",
     free: true
   },
   jobLong: {
     en: "How long have you been at your job?",
     fil: "Gaano ka na katagal sa trabaho mo?",
+    id: "Sudah berapa lama di pekerjaanmu?",
     opts: [
-      o("<6 months", "<6 buwan"),
-      o("6\u201312 months", "6\u201312 buwan"),
-      o("1\u20133 years", "1\u20133 taon"),
-      o("3+ years", "3+ taon")
+      o("<6 months", "<6 buwan", "<6 bulan"),
+      o("6\u201312 months", "6\u201312 buwan", "6\u201312 bulan"),
+      o("1\u20133 years", "1\u20133 taon", "1\u20133 tahun"),
+      o("3+ years", "3+ taon", "3+ tahun")
     ]
   },
+  // Filipinos are mostly paid on the 15th and 30th; Indonesians mostly once a month.
   payday: {
     en: "When does your pay come in?",
     fil: "Kailan ang sweldo mo?",
+    id: "Kapan kamu gajian?",
     opts: [
-      o("15th & 30th", "Kinsenas"),
-      o("Weekly", "Lingguhan"),
-      o("Daily", "Araw-araw"),
-      o("It varies", "Pabago-bago")
+      m.id === "ID" ? o("Monthly", "Buwanan", "Bulanan") : o("15th & 30th", "Kinsenas", "Tgl 15 & 30"),
+      o("Weekly", "Lingguhan", "Mingguan"),
+      o("Daily", "Araw-araw", "Harian"),
+      o("It varies", "Pabago-bago", "Tidak tentu")
     ]
   },
   biz: {
     en: "What's your business? (just type it)",
     fil: "Ano ang negosyo mo? (i-type lang)",
+    id: "Apa usahamu? (ketik saja)",
     free: true
   },
   sales: {
     en: "About how much do you sell in a week?",
     fil: "Mga magkano ang benta mo kada linggo?",
+    id: "Kira-kira berapa omzetmu per minggu?",
     money: "sales",
     opts: rangeOpts(m.bounds.sales, m)
   },
   lastJob: {
     en: "What was your most recent job? (just type it)",
     fil: "Ano ang huli mong trabaho? (i-type lang)",
+    id: "Apa pekerjaan terakhirmu? (ketik saja)",
     free: true
   },
   moneyNow: {
     en: "Any money coming in right now?",
     fil: "May pumapasok bang pera ngayon?",
+    id: "Ada uang masuk sekarang?",
     opts: [
-      o("Help from family", "Tulong ng pamilya"),
-      o("Odd jobs", "Raket / sideline"),
-      o("None right now", "Wala sa ngayon")
+      o("Help from family", "Tulong ng pamilya", "Bantuan keluarga"),
+      o("Odd jobs", "Raket / sideline", "Kerja serabutan"),
+      o("None right now", "Wala sa ngayon", "Belum ada")
     ]
   },
   kidsCount: {
     en: "How many kids?",
     fil: "Ilan ang anak mo?",
+    id: "Berapa anakmu?",
     opts: [
-      o("1", "1"),
-      o("2", "2"),
-      o("3", "3"),
-      o("4+", "4+")
+      o("1", "1", "1"),
+      o("2", "2", "2"),
+      o("3", "3", "3"),
+      o("4+", "4+", "4+")
     ]
   },
   billTrouble: {
     en: "In the last 3 months, did you have trouble paying a bill on time?",
     fil: "Sa nakaraang 3 buwan, nahirapan ka bang magbayad ng bill sa oras?",
+    id: "Dalam 3 bulan terakhir, pernah kesulitan bayar tagihan tepat waktu?",
     opts: [
-      o("No", "Hindi"),
-      o("Once", "Isang beses"),
-      o("A few times", "Ilang beses"),
-      o("Most months", "Halos buwan-buwan")
+      o("No", "Hindi", "Tidak"),
+      o("Once", "Isang beses", "Sekali"),
+      o("A few times", "Ilang beses", "Beberapa kali"),
+      o("Most months", "Halos buwan-buwan", "Hampir tiap bulan")
     ]
   },
   debt: {
     en: "Do you owe money right now?",
     fil: "May utang ka ba ngayon?",
+    id: "Apakah kamu punya utang sekarang?",
     money: true,
     opts: [
-      o("No", "Wala"),
-      o("Family / friends", "Pamilya / kaibigan"),
-      o("5-6 or lending app", "5-6 o lending app"),
-      o("Bank / credit card", "Bangko / credit card"),
-      o("Several places", "Maraming lugar")
+      o("No", "Wala", "Tidak"),
+      o("Family / friends", "Pamilya / kaibigan", "Keluarga / teman"),
+      m.id === "ID" ? o("Lending app/paylater", "Lending app", "Pinjol / paylater") : o("5-6 or lending app", "5-6 o lending app", "Pinjol"),
+      o("Bank / credit card", "Bangko / credit card", "Bank / kartu kredit"),
+      o("Several places", "Maraming lugar", "Banyak tempat")
     ]
   },
   debtAmt: {
     en: "About how much in total?",
     fil: "Mga magkano lahat?",
+    id: "Kira-kira totalnya berapa?",
     money: "debtAmt",
     opts: rangeOpts(m.bounds.debtAmt, m)
   },
   loanUse: {
     en: `What would ${m.firstLoan} (our first $15 loan) help with? (just type it)`,
     fil: `Saan makakatulong ang ${m.firstLoan} (unang $15 loan namin)? (i-type lang)`,
+    id: `${m.firstLoan} (pinjaman pertama $15 kami) akan membantu untuk apa? (ketik saja)`,
     free: true
   },
   repay: {
     en: "When could you pay it back?",
     fil: "Kailan mo ito kayang bayaran?",
+    id: "Kapan kamu bisa melunasinya?",
     opts: [
-      o("Next payday", "Sa susunod na sweldo"),
-      o("Within 2 weeks", "Sa loob ng 2 linggo"),
-      o("Not sure", "Hindi sigurado")
+      o("Next payday", "Sa susunod na sweldo", "Gajian berikutnya"),
+      o("Within 2 weeks", "Sa loob ng 2 linggo", "Dalam 2 minggu"),
+      o("Not sure", "Hindi sigurado", "Belum tahu")
     ]
   }
 });
@@ -631,7 +730,7 @@ var fitCheck = (a) => {
 var crossCheck = (a, bio) => {
   const notes = [];
   if (a.work && bio.work && !is(a.work, "employed")) notes.push(`Bio says "${bio.work}", but in chat: ${a.work}${a.biz ? ` (${a.biz})` : a.lastJob ? ` (last job: ${a.lastJob})` : ""}. Ask which is their main income now.`);
-  if (a.payday && bio.payday && !is(a.payday, "15")) notes.push(`Bio payday ${bio.payday}, chat says ${a.payday}. Ask when money really comes in.`);
+  if (a.payday && bio.payday && !is(a.payday, "15", "monthly")) notes.push(`Bio payday ${bio.payday}, chat says ${a.payday}. Ask when money really comes in.`);
   return notes;
 };
 var norm = (t) => String(t ?? "").toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "");
@@ -640,9 +739,9 @@ var TIME_WORD = /\b(today|tonight|tomorrow|tmrw|tmr|bukas|mamaya|ngayon|later|mo
 var CLOCK = /\b\d{1,2}(:\d{2})?\s*(am|pm)\b|\b\d{1,2}:\d{2}\b|\b(alas|jam|at|around|after|before|from|by|pagkatapos ng|bago mag)\s+\d{1,2}\b|\b\d{1,2}\s*(-|–|to)\s*\d{1,2}\s*(am|pm)?\b|\b\d{1,2}\/\d{1,2}\b/;
 var DAY_WORD = /\b(today|tonight|tomorrow|tmrw|tmr|bukas|mamaya|ngayon|ngayong|later|mon|monday|tue|tues|tuesday|wed|weds|wednesday|thu|thur|thurs|thursday|fri|friday|sat|saturday|sun|sunday|lunes|martes|miyerkules|miyerkoles|huwebes|biyernes|sabado|linggo|weekend|weekdays?|week|besok|lusa|nanti|sekarang|senin|selasa|rabu|kamis|jumat|sabtu|minggu|jan|feb|march|apr|april|june|july|aug|sept|oct|nov|dec|\d{1,2}(st|nd|rd|th))\b|\b\d{1,2}\/\d{1,2}\b/;
 var looksLikeTime = (t) => TIME_WORD.test(norm(t)) || CLOCK.test(norm(t));
-var CHANGE = /\b(change|resched\w*|move|instead|another (day|time)|other (day|time)|ibang (araw|oras)|iba ?ng (araw|oras)|palit\w*|ilipat|lipat|cancel|na lang|nalang)\b/;
+var CHANGE = /\b(change|resched\w*|move|instead|another (day|time)|other (day|time)|ibang (araw|oras)|iba ?ng (araw|oras)|palit\w*|ilipat|lipat|cancel|na lang|nalang|ganti|pindah|jam lain|hari lain|jadwal ulang|diganti)\b/;
 var wantsChange = (t) => CHANGE.test(norm(t));
-var CANCEL = /\b(cancel\w*|can'?t (make it|come|attend)|cannot (make it|come|attend)|hindi (na )?(ako )?makakapunta|di (ako )?makakapunta|hindi na lang|ayaw ko na|wag na lang|huwag na lang)\b/;
+var CANCEL = /\b(cancel\w*|can'?t (make it|come|attend)|cannot (make it|come|attend)|hindi (na )?(ako )?makakapunta|di (ako )?makakapunta|hindi na lang|ayaw ko na|wag na lang|huwag na lang|batal\w*|(tidak|gak|nggak|enggak|ga) (jadi|bisa (datang|hadir|ikut)))\b/;
 var YES_WORDS = /* @__PURE__ */ new Set([
   "yes",
   "yeah",
@@ -666,7 +765,15 @@ var YES_WORDS = /* @__PURE__ */ new Set([
   "game",
   "ya",
   "iya",
-  "g"
+  "g",
+  "oke",
+  "baik",
+  "siap",
+  "boleh",
+  "bisa",
+  "betul",
+  "benar",
+  "setuju"
 ]);
 var FILLER = /* @__PURE__ */ new Set([
   "po",
@@ -693,6 +800,13 @@ var FILLER = /* @__PURE__ */ new Set([
   "then",
   "terima",
   "kasih",
+  "makasih",
+  "dong",
+  "kak",
+  "pak",
+  "bu",
+  "mas",
+  "mbak",
   "good",
   "great",
   "nice",
@@ -786,9 +900,25 @@ var NOT_NAMES = /* @__PURE__ */ new Set([
     "nope",
     "none",
     "wala"
+  ],
+  ...[
+    "halo",
+    "hai",
+    "tidak",
+    "nggak",
+    "gak",
+    "saya",
+    "aku",
+    "nama",
+    "selamat",
+    "pagi",
+    "siang",
+    "sore",
+    "malam",
+    "wkwk"
   ]
 ]);
-var NEGATIVE = /^\s*(no|nope|hindi|ayoko|ayaw|wag|huwag|cancel)\b(?!\s*(problem|prob|worries|worry|problema))/;
+var NEGATIVE = /^\s*(no|nope|hindi|ayoko|ayaw|wag|huwag|cancel|tidak|nggak|gak|enggak|jangan|batal)\b(?!\s*(problem|prob|worries|worry|problema|masalah|apa-apa|apa apa))/;
 var cap = (w) => w === w.toLowerCase() || w === w.toUpperCase() ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w[0].toUpperCase() + w.slice(1);
 var firstName = (text) => {
   let t = String(text).replace(/[^\p{L}\s'.-]/gu, " ").trim();
@@ -844,19 +974,19 @@ var readConfirm = (text) => {
     name: /\b(name|pangalan)\b|\bako (po )?si\b|\bthis is\b/.test(restText) ? firstName(text.replace(/^\s*\S+[\s,.!-]*/, "")) : null
   };
 };
-var DODGE = /\b(skip|laktawan|ayoko|ayaw|prefer not|rather not|secret|sikreto|private|pass|idk|i don'?t know|dunno|di ko alam|hindi ko alam|ewan|not sure|hindi sigurado|no comment|tidak tahu|rahasia|none of your business|bakit)\b/;
+var DODGE = /\b(skip|laktawan|ayoko|ayaw|prefer not|rather not|secret|sikreto|private|pass|idk|i don'?t know|dunno|di ko alam|hindi ko alam|ewan|not sure|hindi sigurado|no comment|tidak tahu|nggak tahu|gak tahu|belum tahu|rahasia|lewati|tidak mau|gak mau|none of your business|bakit)\b/;
 var SYN = {
   work: [
     [
-      /\b(between|unemployed|jobless|no work|no job|walang trabaho|wala(ng)? work|wala pa|wala)\b/,
+      /\b(between|unemployed|jobless|no work|no job|walang trabaho|wala(ng)? work|wala pa|wala|belum (kerja|bekerja)|nganggur|pengangguran|tidak (kerja|bekerja))\b/,
       2
     ],
     [
-      /\b(business|negosyo|tindahan|sari|store|selling|seller|benta|nagtitinda|online shop|reseller)\b/,
+      /\b(business|negosyo|tindahan|sari|store|selling|seller|benta|nagtitinda|online shop|reseller|usaha|jualan|dagang|warung|toko)\b/,
       1
     ],
     [
-      /\b(employed|empleyado|employee|working|may trabaho|staff|office|full ?time|part ?time|yes|oo|opo|meron)\b/,
+      /\b(employed|empleyado|employee|working|may trabaho|staff|office|full ?time|part ?time|yes|oo|opo|meron|kerja|bekerja|karyawan|pegawai|kantor|ya|iya)\b/,
       0
     ],
     [
@@ -868,6 +998,26 @@ var SYN = {
     [
       /\b(kids?|anak|children|child)\b/,
       0
+    ],
+    [
+      /\b(orang ?tua|ortu|ibu|bapak|ayah)\b/,
+      1
+    ],
+    [
+      /\b(saudara|adik|kakak)\b/,
+      2
+    ],
+    [
+      /\b(pasangan|suami|istri|pacar)\b/,
+      3
+    ],
+    [
+      /\b(keluarga|nenek|kakek|om|tante|ponakan)\b/,
+      4
+    ],
+    [
+      /\b(sendiri|diri sendiri|cuma saya|saya sendiri)\b/,
+      5
     ],
     [
       /\b(parents?|magulang|nanay|tatay|mama|papa|mom|dad|mother|father)\b/,
@@ -892,11 +1042,11 @@ var SYN = {
   ],
   kids: [
     [
-      /^(no|none|wala|wala pa|hindi|nope|zero|0)\b/,
+      /^(no|none|wala|wala pa|hindi|nope|zero|0|tidak|belum|gak|nggak)\b/,
       1
     ],
     [
-      /^(yes|oo|opo|meron|mayroon|yep|yeah|[1-9])\b/,
+      /^(yes|oo|opo|meron|mayroon|yep|yeah|[1-9]|ya|iya|punya|ada)\b/,
       0
     ]
   ],
@@ -938,19 +1088,19 @@ var SYN = {
   ],
   payday: [
     [
-      /\b(15|30|kinsenas|kinsena|katapusan|twice a month|semi)\b/,
+      /\b(15|30|kinsenas|kinsena|katapusan|twice a month|semi|bulanan|sebulan|tiap bulan|monthly|akhir bulan|tanggal \d+)\b/,
       0
     ],
     [
-      /\b(weekly|week|lingguhan|linggo)\b/,
+      /\b(weekly|week|lingguhan|linggo|mingguan|seminggu)\b/,
       1
     ],
     [
-      /\b(daily|araw-araw|araw araw|everyday|every day|arawan)\b/,
+      /\b(daily|araw-araw|araw araw|everyday|every day|arawan|harian|tiap hari)\b/,
       2
     ],
     [
-      /\b(varies|depende|pabago|iba-iba|irregular|random|minsan)\b/,
+      /\b(varies|depende|pabago|iba-iba|irregular|random|minsan|tidak tentu|gak tentu|nggak tentu|tergantung)\b/,
       3
     ]
   ],
@@ -988,47 +1138,47 @@ var SYN = {
   ],
   leftover: [
     [
-      /\b(short|kulang|negative|utang|kapos|lubog)\b/,
+      /\b(short|kulang|negative|utang|kapos|lubog|kurang|minus|tekor)\b/,
       0
     ],
     [
-      /\b(nothing|wala|zero|halos wala|almost none|none)\b/,
+      /\b(nothing|wala|zero|halos wala|almost none|none|habis|tidak ada|gak ada|nggak ada|pas-pasan)\b/,
       1
     ]
   ],
   debt: [
     [
-      /^(no|none|wala|hindi|nope)\b/,
+      /^(no|none|wala|hindi|nope|tidak|gak|nggak|enggak)\b/,
       0
     ],
     [
-      /\b(several|marami|many|lots|everywhere|ilang lugar)\b/,
+      /\b(several|marami|banyak|many|lots|everywhere|ilang lugar)\b/,
       4
     ],
     [
-      /\b(5-6|five six|lending|app|gcash|ggives|gloan|tala|cashalo|billease|home credit|sloan|spaylater)\b/,
+      /\b(5-6|five six|lending|app|gcash|ggives|gloan|tala|cashalo|billease|home credit|sloan|spaylater|pinjol|kredivo|akulaku|gopaylater|paylater|easycash|adakami)\b/,
       2
     ],
     [
-      /\b(bank|credit card|cc|card)\b/,
+      /\b(bank|credit card|cc|card|kartu kredit|kta)\b/,
       3
     ],
     [
-      /\b(family|friends?|pamilya|kaibigan|kapatid|relatives?)\b/,
+      /\b(family|friends?|pamilya|kaibigan|kapatid|relatives?|keluarga|teman|saudara)\b/,
       1
     ]
   ],
   repay: [
     [
-      /\b(payday|sweldo|next pay|kinsenas|katapusan)\b/,
+      /\b(payday|sweldo|next pay|kinsenas|katapusan|gajian|gaji)\b/,
       0
     ],
     [
-      /\b(2 weeks|two weeks|2 linggo|dalawang linggo|week|linggo)\b/,
+      /\b(2 weeks|two weeks|2 linggo|dalawang linggo|week|linggo|2 minggu|dua minggu|minggu)\b/,
       1
     ],
     [
-      /\b(not sure|hindi sigurado|depende|di ko alam|hindi ko alam|idk|ewan)\b/,
+      /\b(not sure|hindi sigurado|depende|di ko alam|hindi ko alam|idk|ewan|belum tahu|tidak tahu|gak tahu|belum pasti)\b/,
       2
     ]
   ]
@@ -1046,8 +1196,8 @@ var readTyped = (q, key, text, m) => {
   const t = norm(text).trim();
   const clean = (s) => norm(s).replace(/[^\p{L}\p{N}]+/gu, " ").trim();
   const ct = clean(text);
-  let i = opts.findIndex((op) => clean(op.en) === ct || clean(op.fil) === ct);
-  if (i < 0 && ct.length >= 3) i = opts.findIndex((op) => clean(op.en).startsWith(ct) || clean(op.fil).startsWith(ct));
+  let i = opts.findIndex((op) => clean(op.en) === ct || clean(op.fil) === ct || clean(op.id) === ct);
+  if (i < 0 && ct.length >= 3) i = opts.findIndex((op) => clean(op.en).startsWith(ct) || clean(op.fil).startsWith(ct) || clean(op.id).startsWith(ct));
   if (i >= 0) return {
     pick: i
   };
@@ -1080,31 +1230,31 @@ var readTyped = (q, key, text, m) => {
 };
 var DAYS = [
   [
-    /\b(sun|sunday|linggo)\b/,
+    /\b(sun|sunday|linggo|minggu)\b/,
     0
   ],
   [
-    /\b(mon|monday|lunes)\b/,
+    /\b(mon|monday|lunes|senin)\b/,
     1
   ],
   [
-    /\b(tue|tues|tuesday|martes)\b/,
+    /\b(tue|tues|tuesday|martes|selasa)\b/,
     2
   ],
   [
-    /\b(wed|weds|wednesday|miyerkules|miyerkoles)\b/,
+    /\b(wed|weds|wednesday|miyerkules|miyerkoles|rabu)\b/,
     3
   ],
   [
-    /\b(thu|thur|thurs|thursday|huwebes)\b/,
+    /\b(thu|thur|thurs|thursday|huwebes|kamis)\b/,
     4
   ],
   [
-    /\b(fri|friday|biyernes)\b/,
+    /\b(fri|friday|biyernes|jumat|jum'at)\b/,
     5
   ],
   [
-    /\b(sat|saturday|sabado)\b/,
+    /\b(sat|saturday|sabado|sabtu)\b/,
     6
   ]
 ];
@@ -1116,7 +1266,7 @@ var hourOf = (h, mm, ap, t = "") => {
   if (ap === "pm" || !ap && (night || !morning && x >= 1 && x <= 7)) x += 12;
   return x * 60 + Number(mm || 0);
 };
-var guessLang = (t) => /\b(bukas|ngayon|mamaya|umaga|hapon|gabi|po|ako|ko|lang|sana|pwede|puwede|kahit|ng|sa)\b/.test(t) ? "fil" : "en";
+var guessLang = (t) => /\b(besok|nanti|sekarang|pagi|siang|sore|malam|jam|bisa|saya|aku|hari|minggu depan|lusa|dong|ya)\b/.test(t) ? "id" : /\b(bukas|ngayon|mamaya|umaga|hapon|gabi|po|ako|ko|lang|sana|pwede|puwede|kahit|ng|sa)\b/.test(t) ? "fil" : "en";
 var ruleParse = (text, now) => {
   const t = text.toLowerCase().replace(/\b(noon|tanghaling tapat)\b/g, "12pm").replace(/\bmidnight\b/g, "12am");
   const dates = [];
@@ -1130,7 +1280,8 @@ var ruleParse = (text, now) => {
   const dayText = t.replace(NEXT_WEEK, " ");
   if (/\b(today|ngayon|mamaya|later|tonight|ngayong|sekarang|nanti)\b/.test(dayText)) dates.push(now.date);
   if (/\b(tomorrow|tmrw|tmr|bukas|besok)\b/.test(dayText)) dates.push(addDays(now.date, 1));
-  if (/weekend/.test(dayText)) dates.push(nextDow(6), nextDow(0));
+  if (/\blusa\b/.test(dayText)) dates.push(addDays(now.date, 2));
+  if (/weekend|akhir pekan/.test(dayText)) dates.push(nextDow(6), nextDow(0));
   for (const [re, dow] of DAYS) if (re.test(dayText)) dates.push(nextDow(dow));
   if (NEXT_WEEK.test(t) && !dates.length) {
     const mon = addDays(nextDow(1), nextDow(1) === now.date ? 7 : 0);
@@ -1142,10 +1293,10 @@ var ruleParse = (text, now) => {
     from = hourOf(m[1], m[2], m[3] || m[6], t);
     to = hourOf(m[4], m[5], m[6], t);
     if (from > to && !m[3]) from -= 12 * 60;
-  } else if (m = /(after|pagkatapos ng|from)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/.exec(t)) {
+  } else if (m = /(after|pagkatapos ng|from|setelah|sesudah|habis|dari)\s*(?:jam\s*)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/.exec(t)) {
     from = hourOf(m[2], m[3], m[4], t);
     to = Math.max(21 * 60, from + 60);
-  } else if (m = /(before|bago)\s*(?:mag\s*)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/.exec(t)) {
+  } else if (m = /(before|bago|sebelum)\s*(?:mag\s*|jam\s*)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/.exec(t)) {
     to = hourOf(m[2], m[3], m[4], t);
     from = Math.min(9 * 60, to - 60);
   } else if ((m = /(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/.exec(t)) || (m = /\b(?:at|alas|around|mga|jam)\s*(\d{1,2})(?::(\d{2}))?\b/.exec(t)) || (m = /\b([01]?\d|2[0-3]):([0-5]\d)\b/.exec(t))) {
@@ -1531,7 +1682,7 @@ var handlePrep = async (t, text) => {
   const key = t.st.asked[t.st.asked.length - 1];
   const q = t.Q[key];
   const n = norm(text).trim();
-  if (/^\s*(skip|laktawan)\s*$/.test(n)) return answerPrep(t, q.free ? null : q.money ? PNS.en : void 0);
+  if (/^\s*(skip|laktawan|lewati)\s*$/.test(n)) return answerPrep(t, q.free ? null : q.money ? PNS.en : void 0);
   if (q.free) {
     if (DODGE.test(n) && n.split(/\s+/).length <= 4) return answerPrep(t, null);
     if (wantsChange(n) && looksLikeTime(n)) return changeMidQuiz(t, text);
@@ -1553,9 +1704,10 @@ var changeMidQuiz = async (t, text) => {
 var gap = (t, s, asked) => {
   const d = absMin(s.date, s.min) - absMin(asked.date, asked.min);
   if (d === 0) return "";
-  const fil = t.st.lang === "fil";
-  if (s.date !== asked.date) return s.min === asked.min ? fil ? " (parehong oras)" : " (same time)" : "";
-  const n = Math.abs(d), amount = n % 60 === 0 ? `${n / 60} ${fil ? "oras" : n === 60 ? "hr" : "hrs"}` : `${n} min`;
+  const fil = t.st.lang === "fil", id = t.st.lang === "id";
+  if (s.date !== asked.date) return s.min === asked.min ? fil ? " (parehong oras)" : id ? " (jam yang sama)" : " (same time)" : "";
+  const n = Math.abs(d), amount = n % 60 === 0 ? `${n / 60} ${fil ? "oras" : id ? "jam" : n === 60 ? "hr" : "hrs"}` : `${n} ${id ? "menit" : "min"}`;
+  if (id) return ` (${amount} ${d < 0 ? "lebih awal" : "lebih lambat"})`;
   return fil ? ` (${amount} ${d < 0 ? "mas maaga" : "mas huli"})` : ` (${amount} ${d < 0 ? "earlier" : "later"})`;
 };
 var offer = (t, result, summary) => {
@@ -1564,7 +1716,7 @@ var offer = (t, result, summary) => {
   if (!picks.length) {
     t.events.push({
       type: "note",
-      text: "No free time in the next 7 days \u2014 the real bot would alert the team."
+      text: "No free time in the next 7 days \u2014 please message them with a time."
     });
     return send(t, say(t, "none"));
   }
@@ -1575,12 +1727,12 @@ var offer = (t, result, summary) => {
     summary
   });
   const lang = t.st.lang;
-  const askedText = asked ? `${fmtDay(asked.date, lang)} ${lang === "fil" ? "nang" : "at"} ${fmtTime(asked.min)}` : "";
+  const askedText = asked ? `${fmtDay(asked.date, lang)} ${lang === "fil" ? "nang" : lang === "id" ? "jam" : "at"} ${fmtTime(asked.min)}` : "";
   const isMine = asked && t.st.mine && asked.date === t.st.mine.date && asked.min === t.st.mine.min;
   const intro = tooFar ? say(t, "tooFar") : isMine ? say(t, "askedMine", askedText) : asked && dayFull ? say(t, "dayFull", fmtDayLong(asked.date, lang)) : asked ? say(t, exact ? "askedFree" : "askedTaken", askedText) : say(t, exact ? "offer" : "near");
   const list = picks.map((s, i) => `${i + 1}. ${fmtDay(s.date, lang)} \xB7 ${fmtTime(s.min)}${asked ? gap(t, s, asked) : ""}${i === 0 ? " \u2B50" : ""}`).join("\n");
   const mine = t.st.mine ? `
-${lang === "fil" ? "Oras mo ngayon" : "Your time now"}: ${fmtDay(t.st.mine.date, lang)} \xB7 ${fmtTime(t.st.mine.min)}` : "";
+${lang === "fil" ? "Oras mo ngayon" : lang === "id" ? "Jadwalmu sekarang" : "Your time now"}: ${fmtDay(t.st.mine.date, lang)} \xB7 ${fmtTime(t.st.mine.min)}` : "";
   send(t, `${intro}
 
 ${list}
@@ -1712,7 +1864,7 @@ var readTime = async (t, text) => {
           at: x.at ?? null,
           anytime: !!x.anytime,
           unclear: !!x.unclear,
-          lang: x.lang === "fil" ? "fil" : "en",
+          lang: x.lang === "fil" || x.lang === "id" ? x.lang : "en",
           summary: String(x.summary ?? "").slice(0, 60)
         };
         t.events.push({
@@ -1740,7 +1892,14 @@ var readTime = async (t, text) => {
 };
 var readAndOffer = async (t, text, from) => {
   const parsed = await readTime(t, text);
-  if (parsed.lang !== t.st.lang && words(text).length >= 2 && t.m.id === "PH") t.st.lang = parsed.lang;
+  const langs = t.m.id === "ID" ? [
+    "en",
+    "id"
+  ] : [
+    "en",
+    "fil"
+  ];
+  if (parsed.lang !== t.st.lang && words(text).length >= 2 && langs.includes(parsed.lang)) t.st.lang = parsed.lang;
   if (parsed.unclear || !parsed.anytime && !parsed.windows.length) return false;
   const mine = t.st.mine;
   if (mine && parsed.windows.length && !DAY_WORD.test(norm(text))) {
@@ -1912,7 +2071,7 @@ var plainText = (reply, lang = "en") => {
   const opts = lettered(reply.buttons ?? []);
   if (!opts.length) return reply.text;
   const list = opts.map((b, i) => `${LETTERS[i]}) ${b.title}`).join("\n");
-  const hint = lang === "fil" ? "Sumagot ng letra (A, B\u2026) o i-type ang sagot mo." : "Reply with a letter (A, B\u2026) or type your answer.";
+  const hint = lang === "fil" ? "Sumagot ng letra (A, B\u2026) o i-type ang sagot mo." : lang === "id" ? "Balas dengan huruf (A, B\u2026) atau ketik jawabanmu." : "Reply with a letter (A, B\u2026) or type your answer.";
   return `${reply.text}
 
 ${list}

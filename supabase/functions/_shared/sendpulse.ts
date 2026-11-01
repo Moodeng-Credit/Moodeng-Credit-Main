@@ -172,9 +172,16 @@ export type MessengerCard = {
 
 // /contacts/send bodies: a plain text message, or a one-card template carrying a link button.
 // Messenger caps card titles and subtitles at 80 chars and button titles at 20.
-export const buildTextPayload = (contactId: string, text: string) => ({
+// quickReplies: Messenger quick replies under the text (≤ 13, ≤ 20 chars). SendPulse doesn't document
+// them; Messenger's own shape is passed through, and a tap comes back as a message with the title as text.
+export const buildTextPayload = (contactId: string, text: string, quickReplies: string[] = []) => ({
    contact_id: contactId,
-   message: { type: 'RESPONSE', content_type: 'message', text }
+   message: {
+      type: 'RESPONSE',
+      content_type: 'message',
+      text,
+      ...(quickReplies.length ? { quick_replies: quickReplies.slice(0, 13).map((t) => ({ content_type: 'text', title: t.slice(0, 20), payload: t.slice(0, 20) })) } : {})
+   }
 });
 
 export const buildCardPayload = (contactId: string, card: MessengerCard) => ({
@@ -245,7 +252,7 @@ const lastOutgoingAt = async (service: 'messenger' | 'tiktok', contactId: string
 
 export const sendMessengerMessage = async (
    contactId: string | null | undefined,
-   content: { text?: string; card?: MessengerCard }
+   content: { text?: string; card?: MessengerCard; quickReplies?: string[] }
 ): Promise<SendPulseResult> => {
    if (!contactId) return { ok: false, reason: 'no_contact' };
    if (!isSendPulseConfigured()) return { ok: false, reason: 'not_configured' };
@@ -270,7 +277,7 @@ export const sendMessengerMessage = async (
 
       const token = await getToken();
       if (!token) return { ok: false, reason: 'auth_failed' };
-      if (content.text && !(await postSend(token, buildTextPayload(contactId, content.text)))) return { ok: false, reason: 'send_failed' };
+      if (content.text && !(await postSend(token, buildTextPayload(contactId, content.text, content.quickReplies)))) return { ok: false, reason: 'send_failed' };
       if (content.card && !(await postSend(token, buildCardPayload(contactId, content.card)))) return { ok: false, reason: 'send_failed' };
       return { ok: true };
    } catch (err) {

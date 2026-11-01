@@ -469,7 +469,7 @@ Deno.test('Indonesia: Jakarta time and Rupiah ranges', async () => {
    await c.tap(0); // support → my kids
    assert(c.last[0].buttons?.some((b) => b.title.startsWith('Rp')));
    await c.send('2jt');
-   assertEquals(c.state.answers.income, 'Rp1.5–3jt');
+   assertEquals(c.state.answers.income, 'Rp2–4jt');
 });
 
 Deno.test('greeting uses their name, and sends them back to the app when the bio is missing', () => {
@@ -619,4 +619,44 @@ Deno.test('cancel: really cancelled, or kept when cancelling fails', async () =>
    await c.send('cancel my call');
    assertEquals(c.state.booked, false);
    assertEquals(c.state.mine, null);
+});
+
+// ---------------------------------------------------------------------------------------------------
+// Bahasa Indonesia
+// ---------------------------------------------------------------------------------------------------
+
+Deno.test('Indonesia: Indonesian by default (English only if they chose it), whole chat in Bahasa', async () => {
+   assertEquals(profileFromUser({ whatsapp_number: '+6281234' }).lang, 'id');
+   assertEquals(profileFromUser({ timezone: 'Asia/Jakarta' }).lang, 'id');
+   assertEquals(profileFromUser({ whatsapp_number: '+6281234', preferred_locale: 'en' }).lang, 'en');
+   const s = newState(profileFromUser({ whatsapp_number: '+6281234', facebook_name: 'Siti Rahma' }));
+   const g = greet(s);
+   assert(g.replies[0].text.includes('terhubung, Siti') && g.replies[1].text.includes('Hari dan jam'));
+   const c = chat(s, { ai: false });
+   await c.send('selasa jam 3 sore');
+   assert(c.text.includes('waktu Jakarta') || c.text.includes('Jakarta'), c.text);
+   assert(c.text.includes('Ketuk salah satu jam'), c.text);
+   await c.tap(0);
+   assert(c.text.includes('Aku tahan') && c.text.includes('Pertanyaan 1'), c.text);
+   await c.send('karyawan');
+   assertEquals(c.state.answers.work, 'Employed');
+   await c.tap('Anak saya');
+   assertEquals(c.state.answers.support, 'My kids');
+   await c.send('3jt');
+   assertEquals(c.state.answers.income, 'Rp2–4jt');
+   await c.send('500');
+   assert(c.text.includes('ribuan'), c.text); // a bare 500 → asked, not guessed
+});
+
+Deno.test('Indonesia: monthly pay and pinjol options; yes/no/cancel in Bahasa', async () => {
+   const Q = (await import('./bookingBot.ts')).questions((await import('./bookingBot.ts')).MARKETS.ID);
+   assertEquals(Q.payday.opts?.[0].en, 'Monthly');
+   assertEquals(Q.debt.opts?.[2].id, 'Pinjol / paylater');
+   for (const t of ['iya', 'oke', 'siap kak']) assertEquals(readConfirm(t).kind, 'yes', t);
+   for (const t of ['tidak', 'nggak jadi', 'jangan']) assertEquals(readConfirm(t).kind, 'no', t);
+   assertEquals(firstName('nama saya Siti'), 'Siti');
+   assertEquals(ruleParse('besok setelah jam 6', NOW).windows[0], { date: '2026-11-02', from: '18:00', to: '21:00' });
+   assertEquals(ruleParse('lusa pagi', NOW).windows[0].date, '2026-11-03');
+   assertEquals(ruleParse('minggu depan', NOW).windows[0].date, '2026-11-02');
+   assertEquals(ruleParse('selasa jam 3 sore', NOW).lang, 'id');
 });
