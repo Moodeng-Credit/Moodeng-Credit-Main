@@ -76,3 +76,14 @@ Deno.test('answerRecord: saved answers for the call sheet (questions in English)
    assertEquals((held as { held_off_value: string }).held_off_value, 'skipped');
    assertEquals(answerRecord({ type: 'hold', slot: st.mine }, st, 'Asia/Manila', 'u1'), null);
 });
+
+Deno.test('answers are listed in asking order, whatever order the saved chat gives them', async () => {
+   const Bot = await import('./bookingBot.ts');
+   const st = Bot.newState(Bot.profileFromUser({}));
+   // The order the live test chat came back in from jsonb (2026-11-01).
+   const answers = { job: 'cashier', kids: 'No', work: 'Employed', repay: 'Next payday', income: '₱10–20k', payday: '15th & 30th', loanUse: 'food', support: 'My parents', leftover: '₱1–3k', jobLong: '1–3 years' };
+   const rec = answerRecord({ type: 'answers', answers, fit: { verdict: 'good', reason: 'x' } }, st, 'Asia/Manila', 'u1');
+   assertEquals(rec?.items.map((i) => i.a), ['Employed', 'My parents', 'No', '₱10–20k', '₱1–3k', 'cashier', '15th & 30th', 'food', 'Next payday', '1–3 years']);
+   const [alert] = alertTexts([{ type: 'answers', answers, fit: { verdict: 'good', reason: 'x' } }], st, { name: 'T' });
+   assert(alert.indexOf('Are you working') < alert.indexOf('Who do you support') && alert.indexOf('pay it back') < alert.indexOf('How long'));
+});

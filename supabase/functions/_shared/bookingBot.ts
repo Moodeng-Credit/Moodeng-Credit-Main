@@ -521,6 +521,13 @@ export const questions = (m: Market): Record<string, Question> => ({
 });
 
 const BASE = ['work', 'support', 'kids', 'income', 'leftover'];
+// Every question in the order the chat asks them (BASE, then followUps' order), for the team's lists.
+const ASK_ORDER = [...BASE, 'job', 'payday', 'biz', 'sales', 'lastJob', 'moneyNow', 'kidsCount', 'debt', 'debtAmt', 'loanUse', 'repay', 'billTrouble', 'jobLong'];
+/** Answers in asking order. Saved state goes through jsonb, which doesn't keep key order. */
+export const orderedAnswers = (a: Record<string, string>): Array<[string, string]> => {
+   const rank = (k: string) => (ASK_ORDER.includes(k) ? ASK_ORDER.indexOf(k) : ASK_ORDER.length);
+   return Object.entries(a).sort(([x], [y]) => rank(x) - rank(y));
+};
 const is = (v: string | undefined, ...ws: string[]) => ws.some((w) => String(v ?? '').toLowerCase().includes(w.toLowerCase()));
 /** Which follow-ups apply, most useful first (answers are English). */
 const followUps = (a: Record<string, string>) =>

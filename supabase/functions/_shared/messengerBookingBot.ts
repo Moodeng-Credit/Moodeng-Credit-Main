@@ -110,7 +110,7 @@ const say = async (contactId: string, replies: Bot.Reply[], lang: Bot.Lang, quic
 export const answerRecord = (e: Bot.BotEvent, state: Bot.BotState, zone: string, userId: string) => {
    if (e.type !== 'answers' && e.type !== 'heldOff') return null;
    const Q = Bot.questions(Bot.MARKETS[state.market] ?? Bot.MARKETS.PH);
-   const items = Object.entries(e.answers).map(([k, a]) => ({ q: Q[k]?.en ?? k, a }));
+   const items = Bot.orderedAnswers(e.answers).map(([k, a]) => ({ q: Q[k]?.en ?? k, a }));
    const base = { user_id: userId, items, lang: state.lang, market: state.market, holding_at: state.mine ? zonedIso(state.mine, zone) : null };
    if (e.type === 'heldOff') return { ...base, kind: 'held_off', held_off_question: Q[e.key]?.en ?? e.key, held_off_value: e.value ?? 'skipped' };
    return { ...base, kind: 'answers', fit_verdict: e.fit.verdict, fit_reason: e.fit.reason, checks: Bot.crossCheck(e.answers, { work: state.known.work, payday: state.known.payday }) };
@@ -125,7 +125,7 @@ export const alertTexts = (events: Bot.BotEvent[], state: Bot.BotState, who: { n
    const out: string[] = [];
    for (const e of events) {
       if (e.type === 'answers') {
-         const lines = Object.entries(e.answers).map(([k, v]) => `• ${Q[k]?.en ?? k} ${v}`);
+         const lines = Bot.orderedAnswers(e.answers).map(([k, v]) => `• ${Q[k]?.en ?? k} ${v}`);
          const checks = Bot.crossCheck(e.answers, { work: state.known.work, payday: state.known.payday });
          out.push(
             [
@@ -142,7 +142,7 @@ export const alertTexts = (events: Bot.BotEvent[], state: Bot.BotState, who: { n
          );
       }
       if (e.type === 'heldOff') {
-         const sofar = Object.entries(e.answers).map(([k, v]) => `• ${Q[k]?.en ?? k} ${v}`);
+         const sofar = Bot.orderedAnswers(e.answers).map(([k, v]) => `• ${Q[k]?.en ?? k} ${v}`);
          out.push(
             `${head('⏸️ Booking bot · held off')}\nThey didn't answer "${Q[e.key]?.en ?? e.key}" twice (${e.value ?? 'skipped'}). No call booked; the bot asked them to come back when they're ready.` +
                (sofar.length ? `\n\nWhat they answered before that:\n${sofar.join('\n')}` : '')
