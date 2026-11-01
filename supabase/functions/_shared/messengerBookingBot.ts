@@ -1,12 +1,12 @@
-// The call-booking bot (bookingBot.ts) on real Messenger, through SendPulse — TEST ACCOUNTS ONLY for now.
+// The call-booking bot (bookingBot.ts) on real Messenger, through SendPulse.
 //
-// sendpulse-events hands us each message a known borrower types. We answer it only when:
-//   - telegram_bot_settings 'messenger_booking_bot' is 'test' or 'test-dry' (no row, or anything else = off), and
-//   - the borrower is a test account (users.is_test), and
+// sendpulse-events hands us each message a known borrower types (not "menu" or menu-button taps). We answer it only when:
+//   - telegram_bot_settings 'messenger_booking_bot' lets this person in (bookingBotSwitch.ts: 'on' = everyone,
+//     'test' / 'test-dry' = test accounts only, anything else = nobody), and
 //   - they're already in a booking chat, or this message starts one ("book", "book a call", "mag-book").
 // Otherwise we return false and the message goes on to support as before.
 //
-// 'test': calls are really booked on Cal.com at the final YES (callBooking.bookCall: same hosts, daily cap,
+// 'on' / 'test': calls are really booked on Cal.com at the final YES (callBooking.bookCall: same hosts, daily cap,
 // Zoom link, reminders, team alert marked 🧪, and its own Messenger confirmation with the ✅ card), and
 // "cancel" really cancels (callCancel.cancelUpcomingCall). Free times are this borrower's own list
 // (listCallSlots: cooldown, soonest-first), minus times other Messenger chats are holding.
@@ -30,6 +30,7 @@
 
 import { readCallTime } from './bookingAi.ts';
 import * as Bot from './bookingBot.ts';
+import { BOOKING_BOT_SETTING, type BookingBotMode, bookingBotAnswers, readBookingBotMode } from './bookingBotSwitch.ts';
 import { bookCall, listCallSlots } from './callBooking.ts';
 import { cancelUpcomingCall } from './callCancel.ts';
 import { openInAdminButton } from './adminCards.ts';
@@ -39,7 +40,6 @@ import { sendTelegramMessage } from './telegram.ts';
 // deno-lint-ignore no-explicit-any
 type Svc = any;
 
-const SETTING = 'messenger_booking_bot';
 const HOLD_MS = 15 * 60_000;
 export const START = /^\s*(book|book a call|book call|book my call|schedule( a)? call|mag-?book|iskedyul)\b/i;
 const STOP = /^\s*(stop|exit|quit|end)\s*[.!]*\s*$/i;
@@ -84,13 +84,12 @@ export const holdColumns = (state: Bot.BotState, zone: string, now = Date.now())
       ? { held_start: zonedIso(state.mine, zone), held_until: new Date(now + HOLD_MS).toISOString() }
       : { held_start: null, held_until: null };
 
-type Settings = { mode: 'off' | 'test' | 'test-dry'; quick: boolean; alertChat: string };
+type Settings = { mode: BookingBotMode; quick: boolean; alertChat: string };
 const ALERT_KEYS = ['booking_bot_alert_chat_id', 'call_changes_chat_id', 'kyc_alert_chat_id'];
 const settings = async (svc: Svc): Promise<Settings> => {
-   const { data } = await svc.from('telegram_bot_settings').select('key, value').in('key', [SETTING, 'messenger_booking_buttons', ...ALERT_KEYS]);
+   const { data } = await svc.from('telegram_bot_settings').select('key, value').in('key', [BOOKING_BOT_SETTING, 'messenger_booking_buttons', ...ALERT_KEYS]);
    const v = (k: string) => String(((data ?? []) as Array<{ key: string; value: unknown }>).find((r) => r.key === k)?.value ?? '').replace(/"/g, '').trim();
-   const m = v(SETTING);
-   return { mode: m === 'test' || m === 'test-dry' ? m : 'off', quick: v('messenger_booking_buttons') === 'quick', alertChat: ALERT_KEYS.map(v).find(Boolean) ?? '' };
+   return { mode: readBookingBotMode(v(BOOKING_BOT_SETTING)), quick: v('messenger_booking_buttons') === 'quick', alertChat: ALERT_KEYS.map(v).find(Boolean) ?? '' };
 };
 
 const say = async (contactId: string, replies: Bot.Reply[], lang: Bot.Lang, quick: boolean) => {
@@ -165,22 +164,27 @@ export const handleBookingMessage = async (svc: Svc, userId: string, contactId: 
          .select('id, email, username, is_test, display_name, facebook_name, whatsapp_number, timezone, video_call_timezone, preferred_locale, income_type, monthly_income, payday_type, payday_start, payday_end')
          .eq('id', userId)
          .maybeSingle();
-      if (!user?.is_test) return false;
+      if (!user || !bookingBotAnswers(cfg.mode, user.is_test)) return false;
       const { data: row, error } = await svc.from('messenger_booking_chats').select('state, held_until').eq('contact_id', contactId).maybeSingle();
       if (error) {
          console.error('messenger-booking-bot: state lookup failed', error.message);
          return false;
       }
       const zone = Bot.profileFromUser(user).zone;
+      const bioDone = !!(user.income_type && user.monthly_income && user.payday_type);
       const save = (state: Bot.BotState) =>
          svc.from('messenger_booking_chats').upsert({ contact_id: contactId, user_id: userId, state, ...holdColumns(state, zone), updated_at: new Date().toISOString() });
 
       if (!row) {
          if (!START.test(text)) return false;
-         const bioDone = !!(user.income_type && user.monthly_income && user.payday_type);
          const g = Bot.greet(Bot.newState(Bot.profileFromUser(user)), bioDone);
-         const notice = dry ? '🧪 Test account, practice mode: nothing gets really booked. Type STOP to end.' : '🧪 Test account: calls you book here are real (on Cal.com). Type STOP to end.';
-         await say(contactId, [...g.replies, { text: notice }], g.state.lang, cfg.quick);
+         const notice = dry
+            ? '🧪 Test account, practice mode: nothing gets really booked. Type STOP to end.'
+            : user.is_test
+              ? '🧪 Test account: calls you book here are real (on Cal.com). Type STOP to end.'
+              : null;
+         // Not greet's "✅ Messenger connected" line: they connected long ago and just typed BOOK.
+         await say(contactId, [...g.replies.slice(1), ...(notice ? [{ text: notice }] : [])], g.state.lang, cfg.quick);
          await save(g.state);
          return true;
       }
@@ -188,7 +192,7 @@ export const handleBookingMessage = async (svc: Svc, userId: string, contactId: 
       if (STOP.test(text)) {
          await svc.from('messenger_booking_chats').delete().eq('contact_id', contactId);
          const kept = state.booked || state.kept ? ' Your booked call stays booked.' : '';
-         await say(contactId, [{ text: `🧪 Booking chat ended.${kept} Type BOOK to start again.` }], state.lang, cfg.quick);
+         await say(contactId, [{ text: `${user.is_test ? '🧪 ' : ''}Booking chat ended.${kept} Type BOOK to start again.` }], state.lang, cfg.quick);
          return true;
       }
 
@@ -219,6 +223,7 @@ export const handleBookingMessage = async (svc: Svc, userId: string, contactId: 
          lastDay: listedFree.length ? listedFree[listedFree.length - 1].date : '',
          readAi: (t, n) => readCallTime(t, n),
          lapsed,
+         bioDone,
          ...(dry
             ? {}
             : {

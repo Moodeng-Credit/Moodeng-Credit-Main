@@ -1,6 +1,6 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { type BotStage, type BotUserRow, borrowReply, borrowStep, botStage, type LoanState, NO_LOANS, nextStepReply } from './botNextStep.ts';
+import { type BotStage, type BotUserRow, borrowReply, borrowStep, botStage, type LoanState, NO_LOANS, nextStepReply, withBookHere } from './botNextStep.ts';
 
 const borrower = (over: Partial<BotUserRow> = {}): BotUserRow => ({
    user_role: 'borrower',
@@ -88,4 +88,11 @@ Deno.test('every borrow reply fits Messenger limits', () => {
          }
       }
    }
+});
+
+Deno.test('withBookHere: the BOOK line goes just above "Type menu to go back"', () => {
+   const r = withBookHere(nextStepReply('book_call', 'en'), 'en');
+   const i = r.text.indexOf('type BOOK'), j = r.text.indexOf('Type "menu"');
+   assertEquals(i > 0 && j > i, true);
+   assertEquals(withBookHere(nextStepReply('book_call', 'fil'), 'fil').text.includes('i-type lang ang BOOK'), true);
 });

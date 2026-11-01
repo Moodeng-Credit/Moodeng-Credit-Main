@@ -320,9 +320,10 @@ serve(async (req) => {
             known?.userId ?? null,
             async () => messengerDisplayName(await getMessengerContact(contactId)) ?? event.contactName
          );
-         // The call-booking bot (off unless 'messenger_booking_bot' = 'test', and then test accounts only):
-         // a message it answers isn't also a support ticket.
-         if (known?.userId && event.text && !event.hasAttachment && !event.codes.length && (await handleBookingMessage(svc, known.userId, contactId, event.text))) continue;
+         // The call-booking bot (who it answers: 'messenger_booking_bot', see bookingBotSwitch.ts): a message it
+         // answers isn't also a support ticket. "menu" and ☰ / card-button taps belong to the SendPulse menu flow.
+         const forMenu = event.isPostback || /^\s*menu\s*$/i.test(event.text ?? '');
+         if (known?.userId && event.text && !forMenu && !event.hasAttachment && !event.codes.length && (await handleBookingMessage(svc, known.userId, contactId, event.text))) continue;
          if (isSupportMessage(event)) {
             await openMessengerTicket(svc, {
                contactId,

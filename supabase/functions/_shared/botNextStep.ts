@@ -9,6 +9,7 @@
 //   apply → ID check (processing / review / unfinished / declined / duplicate) → verified
 import { APPLY_URL, CONNECT_URL, SITE_URL } from './loanAccess.ts';
 import { type BotLocale, borrowCardImage, signUpUrl, toBotLocale } from './messengerSupport.ts';
+import { bookingBotAnswers, loadBookingBotMode } from './bookingBotSwitch.ts';
 import { isKycVerified, kycTriesLeft, needsPreKycGate } from './preKycGate.ts';
 
 // deno-lint-ignore no-explicit-any
@@ -74,6 +75,13 @@ export type NextStepReply = { text: string; cardTitle: string; buttons: Button[]
 const withLang = (url: string, locale: BotLocale) => `${url}${url.includes('?') ? '&' : '?'}lang=${locale}&utm_source=messenger&utm_medium=bot_menu`;
 
 const BACK = { en: 'Type "menu" to go back.', fil: 'I-type ang "menu" para bumalik.' };
+// When the Messenger booking bot answers this person (bookingBotSwitch.ts): they can book the call right here.
+const BOOK_HERE = { en: '💬 Or book it right here in this chat: just type BOOK.', fil: '💬 O mag-book dito mismo sa chat: i-type lang ang BOOK.' };
+/** A "book your call" reply plus the BOOK line, just above "Type menu to go back". */
+export const withBookHere = <R extends { text: string }>(reply: R, locale: BotLocale): R => ({
+   ...reply,
+   text: reply.text.includes(BACK[locale]) ? reply.text.replace(BACK[locale], `${BOOK_HERE[locale]}\n\n${BACK[locale]}`) : `${reply.text}\n\n${BOOK_HERE[locale]}`
+});
 const BROWSER = {
    en: 'Open it in Chrome or Safari, not inside Facebook or Messenger.',
    fil: 'Buksan sa Chrome o Safari, hindi sa loob ng Facebook o Messenger.'
@@ -192,7 +200,7 @@ export const nextStepReply = (stage: BotStage, locale: BotLocale, firstName: str
 // No is_world_id_passport: that column isn't on every database (the app reads it defensively), and
 // selecting a missing column fails the whole lookup.
 const USER_COLUMNS =
-   'id, display_name, user_role, wallet_address, messenger_verified_at, whatsapp_verified_at, income_type, loan_access_status, is_didit, is_world_id, didit_id_status, didit_submitted_at, preferred_locale';
+   'id, is_test, display_name, user_role, wallet_address, messenger_verified_at, whatsapp_verified_at, income_type, loan_access_status, is_didit, is_world_id, didit_id_status, didit_submitted_at, preferred_locale';
 
 const firstWord = (name: string | null | undefined) => name?.trim().split(/\s+/)[0] || null;
 
@@ -216,12 +224,15 @@ const loadPerson = async (svc: Svc, contactId: string, flowLocale?: string | nul
    const triesLeft = user && declined ? await kycTriesLeft(svc, user.id) : 0;
    const stage = botStage(user ?? null, gated, triesLeft);
    const firstName = firstWord(user?.display_name) ?? firstWord(contact?.facebook_name);
-   return { user, stage, locale, firstName, triesLeft };
+   // At "book your call", and only if the booking bot will answer them: "type BOOK" here.
+   const bookHere = stage === 'book_call' && !!user && bookingBotAnswers(await loadBookingBotMode(svc), user.is_test);
+   return { user, stage, locale, firstName, triesLeft, bookHere };
 };
 
 export const loadNextStep = async (svc: Svc, contactId: string, flowLocale?: string | null) => {
-   const { stage, locale, firstName, triesLeft } = await loadPerson(svc, contactId, flowLocale);
-   return { stage, locale, reply: nextStepReply(stage, locale, firstName, triesLeft) };
+   const { stage, locale, firstName, triesLeft, bookHere } = await loadPerson(svc, contactId, flowLocale);
+   const reply = nextStepReply(stage, locale, firstName, triesLeft);
+   return { stage, locale, reply: bookHere ? withBookHere(reply, locale) : reply };
 };
 
 // ---------------------------------------------------------------------------------------------------
@@ -413,7 +424,8 @@ const loadLoanState = async (svc: Svc, userId: string): Promise<LoanState> => {
 };
 
 export const loadBorrowSteps = async (svc: Svc, contactId: string, flowLocale?: string | null) => {
-   const { user, stage, locale, firstName, triesLeft } = await loadPerson(svc, contactId, flowLocale);
+   const { user, stage, locale, firstName, triesLeft, bookHere } = await loadPerson(svc, contactId, flowLocale);
    const loans = user ? await loadLoanState(svc, user.id) : NO_LOANS;
-   return { stage, locale, reply: borrowReply(stage, loans, locale, firstName, triesLeft) };
+   const reply = borrowReply(stage, loans, locale, firstName, triesLeft);
+   return { stage, locale, reply: bookHere ? withBookHere(reply, locale) : reply };
 };

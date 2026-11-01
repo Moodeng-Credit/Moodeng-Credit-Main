@@ -660,3 +660,15 @@ Deno.test('Indonesia: monthly pay and pinjol options; yes/no/cancel in Bahasa', 
    assertEquals(ruleParse('minggu depan', NOW).windows[0].date, '2026-11-02');
    assertEquals(ruleParse('selasa jam 3 sore', NOW).lang, 'id');
 });
+
+Deno.test('no bio: "Back" asks for the bio again until it is done, then the chat carries on', async () => {
+   const g = greet(newState(), false);
+   const ctx = (bioDone: boolean): Ctx => ({ now: NOW, free: week(), lastDay: '2026-11-07', bioDone });
+   const stuck = await step(g.state, { payload: 'back' }, ctx(false));
+   assertEquals(stuck.state.step, 'waiting_bio');
+   assert(stuck.replies[0].text.includes('5 quick questions'));
+   const done = await step(g.state, { payload: 'back' }, ctx(true));
+   assertEquals(done.state.step, 'ask');
+   const typed = await step(g.state, { text: 'saturday morning' }, { ...ctx(true), readAi: undefined });
+   assertEquals(typed.state.step, 'offered');
+});
