@@ -690,6 +690,26 @@ var BASE = [
   "income",
   "leftover"
 ];
+var ASK_ORDER = [
+  ...BASE,
+  "job",
+  "payday",
+  "biz",
+  "sales",
+  "lastJob",
+  "moneyNow",
+  "kidsCount",
+  "debt",
+  "debtAmt",
+  "loanUse",
+  "repay",
+  "billTrouble",
+  "jobLong"
+];
+var orderedAnswers = (a) => {
+  const rank = (k) => ASK_ORDER.includes(k) ? ASK_ORDER.indexOf(k) : ASK_ORDER.length;
+  return Object.entries(a).sort(([x], [y]) => rank(x) - rank(y));
+};
 var is = (v, ...ws) => ws.some((w) => String(v ?? "").toLowerCase().includes(w.toLowerCase()));
 var followUps = (a) => [
   is(a.work, "employed") && "job",
@@ -2134,6 +2154,7 @@ export {
   match,
   newState,
   norm,
+  orderedAnswers,
   plainText,
   profileFromUser,
   questions,
