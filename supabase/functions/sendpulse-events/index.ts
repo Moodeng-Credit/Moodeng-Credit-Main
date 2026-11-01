@@ -5,6 +5,7 @@ import { adminUserUrl, OPEN_IN_ADMIN_TEXT, sendAdminCard } from '../_shared/admi
 import { postDiscord } from '../_shared/discord.ts';
 import { PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
 import { decideAutoMatch, MATCH_WINDOW_MS, type OpenAttempt } from '../_shared/messengerAutoMatch.ts';
+import { handleBookingMessage } from '../_shared/messengerBookingBot.ts';
 import { logMessengerContact, rememberMessengerContact, saveFacebookName } from '../_shared/messengerContactLog.ts';
 import { CONNECTED_BY_TIMING_TEXT } from '../_shared/messengerStatusFollowUp.ts';
 import { isSupportMessage, openMessengerTicket, relayAgentReply } from '../_shared/messengerSupport.ts';
@@ -319,6 +320,9 @@ serve(async (req) => {
             known?.userId ?? null,
             async () => messengerDisplayName(await getMessengerContact(contactId)) ?? event.contactName
          );
+         // The call-booking bot (off unless 'messenger_booking_bot' = 'test', and then test accounts only):
+         // a message it answers isn't also a support ticket.
+         if (known?.userId && event.text && !event.hasAttachment && !event.codes.length && (await handleBookingMessage(svc, known.userId, contactId, event.text))) continue;
          if (isSupportMessage(event)) {
             await openMessengerTicket(svc, {
                contactId,
