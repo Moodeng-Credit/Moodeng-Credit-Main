@@ -19,7 +19,8 @@ import {
    PREFERRED_HOST,
    preferSoonSlots,
    recheckRange,
-   teamGuests
+   teamGuests,
+   zoomFallbackWarning
 } from '../calcom-round-robin/lib.ts';
 import { cancelCalBooking } from './calcomCancel.ts';
 import { changeTimeButton } from './callReschedule.ts';
@@ -100,6 +101,7 @@ const notifyTeamBooking = async (
    const text =
       `📅 New Moodeng call booked\nHost: ${hostId}\nWith: ${attendee.name} (${attendee.email})\nWhen: ${formatCallTimeForTeam(start, attendee.timeZone)}` +
       `\nJoin: ${joinUrl ?? 'no link on the booking — check the host’s Cal.com'}` +
+      zoomFallbackWarning(joinUrl, hostId) +
       (borrower?.isTest ? '\n🧪 Test account' : '');
 
    // tgChat is the admins-only channel (telegram_bot_settings.team_group_chat_id), resolved by the

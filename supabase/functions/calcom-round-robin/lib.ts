@@ -221,3 +221,11 @@ export const clusterSlots = (
 export const PREFERRED_HOST = 'emma';
 export const preferHost = (order: string[], preferred = PREFERRED_HOST): string[] =>
    order.includes(preferred) ? [preferred, ...order.filter((h) => h !== preferred)] : order;
+
+// Every booking asks Cal.com for Zoom (callBooking ZOOM_LOCATION). When Cal.com can't create the Zoom meeting it
+// still books, quietly on Cal Video — so the booking alert says so, and the host can fix their Zoom connection
+// before the call (Emma's kept dropping since 2026-10-30).
+export const zoomFallbackWarning = (joinUrl: string | null, hostId: string) =>
+   joinUrl && /cal\.com\/video|cal\.video/i.test(joinUrl)
+      ? `\n⚠️ Cal Video link, not Zoom: Cal.com couldn't create the Zoom meeting on ${hostId === 'george' ? 'George' : 'Emma'}'s account. Reconnect Zoom in their Cal.com (Settings → Apps → Zoom) before the call.`
+      : '';
