@@ -13,7 +13,8 @@ import {
    preferHost,
    preferSoonSlots,
    recheckRange,
-   teamGuests
+   teamGuests,
+   zoomFallbackWarning
 } from './lib.ts';
 
 Deno.test('mergeSlots unions hosts, de-dupes by instant, and sorts', () => {
@@ -211,4 +212,10 @@ Deno.test('calendlyToCalSchedule: a window ending at midnight ("00:00") becomes 
       { days: ['Sunday'], startTime: '00:00', endTime: '02:00' },
       { days: ['Sunday'], startTime: '16:00', endTime: '23:59' }
    ]);
+});
+
+Deno.test('zoomFallbackWarning: only for a Cal Video link', () => {
+   assertEquals(zoomFallbackWarning('https://app.cal.com/video/8VWGe7EkEMWqiDL7AEkxGY', 'emma').includes("Emma's account"), true);
+   assertEquals(zoomFallbackWarning('https://us06web.zoom.us/j/123', 'emma'), '');
+   assertEquals(zoomFallbackWarning(null, 'emma'), '');
 });
