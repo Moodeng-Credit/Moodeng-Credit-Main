@@ -187,6 +187,8 @@ export type Ctx = {
    cancel?: () => Promise<boolean>;
    /** Their 15-minute hold ran out and that time isn't free any more. */
    lapsed?: boolean;
+   /** Their app bio is done now (work, income, payday). Unknown (the test page) → "Back" lets them carry on. */
+   bioDone?: boolean;
 };
 export type Input = { text?: string; payload?: string };
 export type Result = { state: BotState; replies: Reply[]; events: BotEvent[] };
@@ -1222,6 +1224,8 @@ const backOut = (t: Turn) => {
 const handlePayload = (t: Turn, payload: string) => {
    const st = t.st;
    if (payload === 'back' && st.step === 'waiting_bio') {
+      // Still no bio: the call needs it first.
+      if (t.ctx.bioDone === false) return send(t, say(t, 'bioMissing'), [{ title: say(t, 'backBtn'), payload: 'back' }]);
       send(t, say(t, 'ask'));
       st.step = 'ask';
       return;
@@ -1277,6 +1281,8 @@ const handlePayload = (t: Turn, payload: string) => {
 // ---- typed messages ----
 const handleText = async (t: Turn, text: string) => {
    const st = t.st;
+   // Bio done since: carry on as if they'd just been asked for a time.
+   if (st.step === 'waiting_bio' && t.ctx.bioDone) st.step = 'ask';
    if (st.step === 'waiting_bio') return send(t, say(t, 'bioMissing'), [{ title: say(t, 'backBtn'), payload: 'back' }]);
    if (st.step === 'prep') return handlePrep(t, text);
    if (st.step === 'expect') {

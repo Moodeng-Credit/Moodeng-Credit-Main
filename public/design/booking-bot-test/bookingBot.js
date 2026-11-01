@@ -1938,6 +1938,12 @@ var backOut = (t) => {
 var handlePayload = (t, payload) => {
   const st = t.st;
   if (payload === "back" && st.step === "waiting_bio") {
+    if (t.ctx.bioDone === false) return send(t, say(t, "bioMissing"), [
+      {
+        title: say(t, "backBtn"),
+        payload: "back"
+      }
+    ]);
     send(t, say(t, "ask"));
     st.step = "ask";
     return;
@@ -1996,6 +2002,7 @@ var handlePayload = (t, payload) => {
 };
 var handleText = async (t, text) => {
   const st = t.st;
+  if (st.step === "waiting_bio" && t.ctx.bioDone) st.step = "ask";
   if (st.step === "waiting_bio") return send(t, say(t, "bioMissing"), [
     {
       title: say(t, "backBtn"),

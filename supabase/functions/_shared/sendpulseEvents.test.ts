@@ -27,6 +27,7 @@ Deno.test('a first-time "Get Started" without a code', () => {
          text: null,
          hasAttachment: false,
          isButtonTap: false,
+         isPostback: false,
          payload: null
       }
    ]);
@@ -106,6 +107,11 @@ Deno.test('what the person wrote: platform text first, then last_message; attach
       info: { message: { channel_data: { message: { text: '📋 Menu / Help', postback: { title: '📋 Menu / Help', payload: 'eyJ9' } } } } }
    };
    assertEquals(parseSendPulseEvents([menuTap], NOW)[0].isButtonTap, true);
+   // Menu taps are postbacks (left to the SendPulse menu flow); a quick reply's tap is the button's text.
+   assertEquals(parseSendPulseEvents([menuTap], NOW)[0].isPostback, true);
+   const quick = { ...subscribe, title: 'incoming_message', info: { message: { channel_data: { message: { text: '⭐ Tue 3 · 3:00 PM', quick_reply: { payload: 'x' } } } } } };
+   const [q] = parseSendPulseEvents([quick], NOW);
+   assertEquals([q.text, q.isButtonTap, q.isPostback], ['⭐ Tue 3 · 3:00 PM', true, false]);
 
    // A subscribe never carries text, even though last_message is set.
    assertEquals(parseSendPulseEvents([subscribe], NOW)[0].text, null);

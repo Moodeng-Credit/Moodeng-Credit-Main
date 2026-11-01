@@ -28,6 +28,9 @@ export type SendPulseEvent = {
    text: string | null;
    hasAttachment: boolean;
    isButtonTap: boolean;
+   // A tap on a menu / card button (a postback: the ☰ menu, Get Started, a flow's button) — not a quick
+   // reply, whose tap arrives as the button's text.
+   isPostback: boolean;
    // The parts of the raw event worth keeping for debugging (info + contact.last_message), trimmed.
    payload: Json | null;
 };
@@ -67,8 +70,9 @@ const readMessage = (e: Json, contact: Json | null, incoming: boolean) => {
       (incoming && typeof lastMessage === 'string' ? asString(lastMessage) : null);
    const attachments = platform?.attachments ?? message?.attachments;
    // A button or ☰ menu tap: Messenger puts it under channel_data.message.postback.
-   const isButtonTap = Boolean(platform?.quick_reply || platform?.postback || channelData?.postback || message?.postback || info?.postback);
-   return { text, hasAttachment: Array.isArray(attachments) && attachments.length > 0, isButtonTap };
+   const isPostback = Boolean(platform?.postback || channelData?.postback || message?.postback || info?.postback);
+   const isButtonTap = Boolean(platform?.quick_reply) || isPostback;
+   return { text, hasAttachment: Array.isArray(attachments) && attachments.length > 0, isButtonTap, isPostback };
 };
 
 const trimPayload = (e: Json, contact: Json | null): Json | null => {
@@ -92,7 +96,7 @@ export const parseSendPulseEvents = (body: unknown, now = Date.now()): SendPulse
       const fromPerson = !NOT_FROM_PERSON.test(title) && (title === '' || FROM_PERSON.test(title));
       // Codes only count when the person sent them (or their link set mdng_code on the contact).
       const incoming = fromPerson && /incoming|message/i.test(title) && !/subscri/i.test(title);
-      const message = incoming ? readMessage(e, contact, true) : { text: null, hasAttachment: false, isButtonTap: false };
+      const message = incoming ? readMessage(e, contact, true) : { text: null, hasAttachment: false, isButtonTap: false, isPostback: false };
       const codeSources = fromPerson
          ? [JSON.stringify(contact?.last_message ?? ''), JSON.stringify(e.info ?? ''), asString(variables?.mdng_code)]
          : [];
