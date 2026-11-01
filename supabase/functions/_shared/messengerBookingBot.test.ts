@@ -1,6 +1,6 @@
-import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
+import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { freeFromSlots, holdColumns, START, wallNow, withoutHeld, zonedIso } from './messengerBookingBot.ts';
+import { alertTexts, freeFromSlots, holdColumns, START, wallNow, withoutHeld, zonedIso } from './messengerBookingBot.ts';
 
 Deno.test('wallNow: the wall clock in a zone', () => {
    const at = new Date('2026-11-01T18:30:00Z');
@@ -40,4 +40,18 @@ Deno.test('holdColumns: held → 15 minutes from now; booked or nothing → clea
    const now = Date.parse('2026-11-01T02:00:00Z');
    assertEquals(holdColumns(st, 'Asia/Manila', now), { held_start: '2026-11-03T07:00:00.000Z', held_until: '2026-11-01T02:15:00.000Z' });
    assertEquals(holdColumns({ mine: null, booked: false } as never, 'Asia/Manila', now), { held_start: null, held_until: null });
+});
+
+Deno.test('alertTexts: call prep with the fit check, held off, name check; nothing for ordinary turns', async () => {
+   const Bot = await import('./bookingBot.ts');
+   const st = { ...Bot.newState(Bot.profileFromUser({ whatsapp_number: '+6281234' })), mine: { date: '2026-11-03', min: 15 * 60, host: 'Emma' } };
+   const who = { name: 'Siti Rahma', isTest: true };
+   const [prep] = alertTexts([{ type: 'answers', answers: { work: 'Employed', income: 'Rp2–4jt', loanUse: 'school fees' }, fit: { verdict: 'good', reason: 'has income' } }], st, who);
+   assert(prep.includes('📝 Booking bot · call prep') && prep.includes('Siti Rahma · 🧪 test account · ID · chat in Bahasa Indonesia'));
+   assert(prep.includes('Holding Tuesday, November 3, 3:00 PM (Jakarta time)'));
+   assert(prep.includes('🟢 Fit check') && prep.includes('• Are you working right now? Employed') && prep.includes('school fees'));
+   const [held] = alertTexts([{ type: 'heldOff', key: 'income', value: 'Prefer not to say' }], st, who);
+   assert(held.includes('held off') && held.includes('About how much came in last month?'));
+   assertEquals(alertTexts([{ type: 'note', text: 'Name check: they typed "Ana", their account says "Siti".' }], st, who).length, 1);
+   assertEquals(alertTexts([{ type: 'note', text: 'No day named, so reading it as Tue.' }, { type: 'hold', slot: st.mine }], st, who).length, 0);
 });
