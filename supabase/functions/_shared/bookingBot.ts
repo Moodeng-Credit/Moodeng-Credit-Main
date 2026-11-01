@@ -9,8 +9,12 @@
 // Moving a call keeps the old time until a new one is tapped. Nothing here scores or decides anything:
 // the fit check is a team-only note.
 //
+// It starts from what we already know (profileFromUser): their country (phone, then device time zone),
+// their time zone, language, first name, and the app bio (work, monthly income, payday) — so the chat
+// never re-asks what the bio already answered.
+//
 // Messenger limits kept here: quick-reply / button titles ≤ 20 characters (details go in the message
-// text), at most 13 quick replies. All times are the borrower's wall clock in their market's zone.
+// text), at most 13 quick replies. All times are the borrower's wall clock in their own time zone.
 
 import type { CallTimeRead } from './bookingAi.ts';
 
@@ -21,12 +25,11 @@ import type { CallTimeRead } from './bookingAi.ts';
 export type MarketId = 'PH' | 'ID';
 export type Market = {
    id: MarketId;
-   zone: string; // IANA zone the borrower sees times in
-   zoneName: string; // shown to the borrower: "All times are your time (Manila)."
+   zone: string; // default IANA zone when we don't know theirs
    cur: string; // currency prefix
    firstLoan: string; // the first $15 loan in local money
    // Upper bounds of each money question's ranges (the last button is "more than the last bound").
-   bounds: { income: number[]; leftover: number[]; sales: number[]; rentFood: number[]; debtAmt: number[] };
+   bounds: { income: number[]; leftover: number[]; sales: number[]; debtAmt: number[] };
    // A bare number under this could mean thousands ("5" for ₱5k): ask instead of guessing.
    bareMin: number;
 };
@@ -35,10 +38,9 @@ export const MARKETS: Record<MarketId, Market> = {
    PH: {
       id: 'PH',
       zone: 'Asia/Manila',
-      zoneName: 'Manila',
       cur: '₱',
       firstLoan: '₱870',
-      bounds: { income: [5000, 10000, 20000, 40000], leftover: [500, 1000, 3000], sales: [1000, 3000, 7000], rentFood: [3000, 6000, 10000, 20000], debtAmt: [5000, 20000, 50000] },
+      bounds: { income: [5000, 10000, 20000, 40000], leftover: [500, 1000, 3000], sales: [1000, 3000, 7000], debtAmt: [5000, 20000, 50000] },
       bareMin: 100
    },
    // PLACEHOLDER (not reviewed): ranges converted from the peso ones at ~₱1 = Rp280. The team should set
@@ -46,16 +48,76 @@ export const MARKETS: Record<MarketId, Market> = {
    ID: {
       id: 'ID',
       zone: 'Asia/Jakarta',
-      zoneName: 'Jakarta',
       cur: 'Rp',
       firstLoan: 'Rp245rb',
-      bounds: { income: [1_500_000, 3_000_000, 5_000_000, 10_000_000], leftover: [150_000, 300_000, 1_000_000], sales: [300_000, 1_000_000, 2_000_000], rentFood: [1_000_000, 2_000_000, 3_000_000, 5_000_000], debtAmt: [1_500_000, 5_000_000, 15_000_000] },
+      bounds: { income: [1_500_000, 3_000_000, 5_000_000, 10_000_000], leftover: [150_000, 300_000, 1_000_000], sales: [300_000, 1_000_000, 2_000_000], debtAmt: [1_500_000, 5_000_000, 15_000_000] },
       bareMin: 1000
    }
 };
 
-/** Their market from their phone: +62 is Indonesia, everyone else the Philippines (same rule as whatsappFirst.ts). */
-export const marketForPhone = (phone: string | null | undefined): MarketId => (String(phone ?? '').replace(/\D/g, '').startsWith('62') ? 'ID' : 'PH');
+/** What the bot knows before the first message: from public.users (see profileFromUser). */
+export type Profile = {
+   market: MarketId;
+   zone: string; // IANA zone their times are shown in
+   zoneName: string; // "Manila", "Bangkok"
+   lang: Lang;
+   firstName: string | null; // from their account, to check the name they type
+   known: Record<string, string>; // question key → answer from the app bio (never re-asked)
+};
+
+/** The public.users columns profileFromUser reads (all optional). */
+export type UserRow = {
+   display_name?: string | null;
+   facebook_name?: string | null;
+   whatsapp_number?: string | null;
+   timezone?: string | null; // device time zone at signup
+   video_call_timezone?: string | null; // the zone they last booked a call in
+   preferred_locale?: string | null;
+   income_type?: string | null; // full-time | part-time | freelance
+   monthly_income?: string | null; // under_200 | 200_400 | 400_700 | 700_plus (USD)
+   payday_type?: string | null; // mid-month | end-of-month | irregular
+   payday_start?: number | null;
+   payday_end?: number | null;
+};
+
+const isZone = (z: string) => {
+   try {
+      new Intl.DateTimeFormat('en-US', { timeZone: z });
+      return z.includes('/');
+   } catch {
+      return false;
+   }
+};
+const INCOME_USD: Record<string, string> = { under_200: 'Under $200', '200_400': '$200–$400', '400_700': '$400–$700', '700_plus': 'Over $700' };
+const WORK: Record<string, string> = { 'full-time': 'Employed (full-time)', 'part-time': 'Employed (part-time)', freelance: 'Employed (freelance)' };
+
+/**
+ * Their starting profile. Country: phone first (+62 Indonesia, +63 Philippines), then device time zone
+ * (Asia/Jakarta → Indonesia), else the Philippines. Time zone: where they booked before, else their
+ * device's, else their country's.
+ */
+export const profileFromUser = (u: UserRow = {}): Profile => {
+   const digits = String(u.whatsapp_number ?? '').replace(/\D/g, '');
+   const tzs = [u.video_call_timezone, u.timezone].map((z) => String(z ?? '').trim()).filter(isZone);
+   const market: MarketId = digits.startsWith('62') ? 'ID' : digits.startsWith('63') ? 'PH' : tzs.includes('Asia/Jakarta') ? 'ID' : 'PH';
+   const zone = tzs[0] || MARKETS[market].zone;
+   const known: Record<string, string> = {};
+   if (u.income_type && WORK[u.income_type]) known.work = `${WORK[u.income_type]} · from app`;
+   if (u.monthly_income && INCOME_USD[u.monthly_income]) known.income = `${INCOME_USD[u.monthly_income]} a month · from app`;
+   if (u.payday_type) {
+      const days = u.payday_start && u.payday_end ? `, day ${u.payday_start === u.payday_end ? u.payday_start : `${u.payday_start}–${u.payday_end}`}` : '';
+      known.payday = `${u.payday_type === 'irregular' ? 'It varies' : u.payday_type === 'mid-month' ? 'Mid-month' : 'End of month'}${days} · from app`;
+   }
+   const name = String(u.facebook_name || u.display_name || '').trim().split(/\s+/)[0] ?? '';
+   return {
+      market,
+      zone,
+      zoneName: zone.split('/').pop()!.replace(/_/g, ' '),
+      lang: u.preferred_locale === 'fil' ? 'fil' : 'en',
+      firstName: /^\p{L}[\p{L}'.-]+$/u.test(name) ? name : null,
+      known
+   };
+};
 
 // ---------------------------------------------------------------------------------------------------
 // Types
@@ -74,7 +136,10 @@ export type Step = 'waiting_bio' | 'ask' | 'offered' | 'prep' | 'expect' | 'held
 
 export type BotState = {
    market: MarketId;
+   zoneName: string;
    lang: Lang;
+   knownName: string | null; // their account's first name (to check the typed one)
+   known: Record<string, string>; // answers from the app bio
    step: Step;
    mine: Slot | null; // the time they hold or have booked
    booked: boolean; // mine is booked (not just held)
@@ -143,8 +208,8 @@ export const toMin = (s: unknown) => {
 };
 export const slotKey = (s: { date: string; min: number }) => `${s.date} ${hhmm(s.min)}`;
 const sameSlot = (a: Slot | null, b: Slot | null) => !!a && !!b && a.date === b.date && a.min === b.min;
-export const longWhen = (s: Slot, lang: Lang, market: Market) =>
-   `${new Intl.DateTimeFormat(locale(lang), { timeZone: 'UTC', weekday: 'long', month: 'long', day: 'numeric' }).format(new Date(s.date + 'T00:00:00Z'))}, ${fmtTime(s.min)} (${market.zoneName} time)`;
+export const longWhen = (s: Slot, lang: Lang, zoneName: string) =>
+   `${new Intl.DateTimeFormat(locale(lang), { timeZone: 'UTC', weekday: 'long', month: 'long', day: 'numeric' }).format(new Date(s.date + 'T00:00:00Z'))}, ${fmtTime(s.min)} (${zoneName} time)`;
 
 // ---------------------------------------------------------------------------------------------------
 // Words the bot says
@@ -152,7 +217,7 @@ export const longWhen = (s: Slot, lang: Lang, market: Market) =>
 
 type Text = string | ((...a: string[]) => string);
 const T: Record<string, Record<Lang, Text>> = {
-   connected: { en: "✅ Messenger connected! You'll get your updates here.", fil: '✅ Naka-connect na ang Messenger! Dito mo matatanggap ang updates mo.' },
+   connected: { en: (n) => `✅ Messenger connected${n ? `, ${n}` : ''}! You'll get your updates here.`, fil: (n) => `✅ Naka-connect na ang Messenger${n ? `, ${n}` : ''}! Dito mo matatanggap ang updates mo.` },
    bioMissing: {
       en: "👉 NEXT: go back to Moodeng and answer 5 quick questions about your work and payday (1 min).\n\nAs soon as you're done, I'll message you here to book your call.",
       fil: '👉 SUSUNOD: bumalik sa Moodeng at sagutin ang 5 mabilis na tanong tungkol sa trabaho at sweldo mo (1 min).\n\nPagkatapos mo, magme-message ako dito para i-book ang call mo.'
@@ -204,7 +269,8 @@ const T: Record<string, Record<Lang, Text>> = {
       en: (w, h) => `⏳ I'm holding ${w} with ${h} for you.\n\nA few quick questions first so ${h} can prepare (about 2 min). Ranges are fine, and it stays private with our team 🔒`,
       fil: (w, h) => `⏳ Naka-hold para sa iyo ang ${w} kasama si ${h}.\n\nIlang mabilis na tanong muna para makapaghanda si ${h} (mga 2 min). Ranges lang, at pribado ito sa team namin 🔒`
    },
-   question: { en: (n, q) => `Question ${n}/${MAX_Q} · ${q}`, fil: (n, q) => `Tanong ${n}/${MAX_Q} · ${q}` },
+   // No "of N": how many follow-ups apply depends on their answers, and a total that changes confuses.
+   question: { en: (n, q) => `Question ${n} · ${q}`, fil: (n, q) => `Tanong ${n} · ${q}` },
    expectations: {
       en: (l) => `Thanks! 🙏 Before you confirm, so it's clear 👇\n\n• Your first loan is small: $15 (about ${l}).\n• Your limit grows step by step: each loan repaid on time unlocks the next level. It takes a few loans, not a few days.\n• It can't be rushed, but if you pay on time, Moodeng grows with you 🦛`,
       fil: (l) => `Salamat! 🙏 Bago mo i-confirm, para malinaw 👇\n\n• Maliit ang unang loan: $15 (mga ${l}).\n• Tumataas ang limit mo nang paunti-unti: bawat loan na nabayaran sa oras, may susunod na level. Ilang loan ito, hindi ilang araw.\n• Hindi ito mapapabilis, pero kapag on time ka, lalaki kasama mo ang Moodeng 🦛`
@@ -292,15 +358,13 @@ export const questions = (m: Market): Record<string, Question> => ({
       opts: [o('I run short 😓', 'Kulang pa 😓'), o('Almost nothing', 'Halos wala'), ...rangeOpts(m.bounds.leftover, m, false)]
    },
    job: { en: "What's your job? (just type it)", fil: 'Ano ang trabaho mo? (i-type lang)', free: true },
-   jobLong: { en: 'How long have you had it?', fil: 'Gaano ka na katagal doon?', opts: [o('<6 months', '<6 buwan'), o('6–12 months', '6–12 buwan'), o('1–3 years', '1–3 taon'), o('3+ years', '3+ taon')] },
+   jobLong: { en: 'How long have you been at your job?', fil: 'Gaano ka na katagal sa trabaho mo?', opts: [o('<6 months', '<6 buwan'), o('6–12 months', '6–12 buwan'), o('1–3 years', '1–3 taon'), o('3+ years', '3+ taon')] },
    payday: { en: 'When does your pay come in?', fil: 'Kailan ang sweldo mo?', opts: [o('15th & 30th', 'Kinsenas'), o('Weekly', 'Lingguhan'), o('Daily', 'Araw-araw'), o('It varies', 'Pabago-bago')] },
    biz: { en: "What's your business? (just type it)", fil: 'Ano ang negosyo mo? (i-type lang)', free: true },
    sales: { en: 'About how much do you sell in a week?', fil: 'Mga magkano ang benta mo kada linggo?', money: 'sales', opts: rangeOpts(m.bounds.sales, m) },
    lastJob: { en: 'What was your most recent job? (just type it)', fil: 'Ano ang huli mong trabaho? (i-type lang)', free: true },
-   prevJob: { en: 'And the job before that? (type it, or Skip)', fil: 'At ang trabaho bago iyon? (i-type, o Laktawan)', free: true },
    moneyNow: { en: 'Any money coming in right now?', fil: 'May pumapasok bang pera ngayon?', opts: [o('Help from family', 'Tulong ng pamilya'), o('Odd jobs', 'Raket / sideline'), o('None right now', 'Wala sa ngayon')] },
    kidsCount: { en: 'How many kids?', fil: 'Ilan ang anak mo?', opts: [o('1', '1'), o('2', '2'), o('3', '3'), o('4+', '4+')] },
-   rentFood: { en: 'About how much went to rent and food last month?', fil: 'Mga magkano ang napunta sa upa at pagkain noong nakaraang buwan?', money: 'rentFood', opts: rangeOpts(m.bounds.rentFood, m) },
    billTrouble: {
       en: 'In the last 3 months, did you have trouble paying a bill on time?',
       fil: 'Sa nakaraang 3 buwan, nahirapan ka bang magbayad ng bill sa oras?',
@@ -318,7 +382,6 @@ export const questions = (m: Market): Record<string, Question> => ({
 });
 
 const BASE = ['work', 'support', 'kids', 'income', 'leftover'];
-const OPTIONAL = ['prevJob'];
 const is = (v: string | undefined, ...ws: string[]) => ws.some((w) => String(v ?? '').toLowerCase().includes(w.toLowerCase()));
 /** Which follow-ups apply, most useful first (answers are English). */
 const followUps = (a: Record<string, string>) =>
@@ -335,14 +398,12 @@ const followUps = (a: Record<string, string>) =>
       'loanUse',
       'repay',
       is(a.leftover, 'short') && 'billTrouble',
-      is(a.work, 'employed') && 'jobLong',
-      'rentFood',
-      'prevJob'
+      is(a.work, 'employed') && 'jobLong'
    ].filter((k): k is string => !!k);
 
-// "Not sure" counts as dodging, like "Prefer not to say" (Emma, 2026-10-30).
-const isDodge = (q: Question, key: string, value: string | null) =>
-   value == null ? !!q.free && !OPTIONAL.includes(key) : value === PNS.en || value === 'Not sure' || (key === 'work' && value === 'Other');
+// Dodging = "Prefer not to say", a skipped typed question, or "Other" on work. "Not sure" on when they
+// could repay is a real answer (it's one of that question's own buttons), not a dodge.
+const isDodge = (q: Question, key: string, value: string | null) => (value == null ? !!q.free : value === PNS.en || (key === 'work' && value === 'Other'));
 
 /** Team-only, never a rejection (George, 2026-10-29). Being single or supporting nobody never counts against anyone. */
 export const fitCheck = (a: Record<string, string>): Fit => {
@@ -520,7 +581,12 @@ const readTyped = (q: Question, key: string, text: string, m: Market): { pick?: 
       if (a !== null) {
          const bounds = m.bounds[q.money];
          // leftover's first two buttons are words; its ranges start at the third. 0 → "Almost nothing".
-         if (key === 'leftover') return { pick: a === 0 ? 1 : Math.min(2 + (bounds.slice(1).findIndex((b) => a < b) + 1 || bounds.length), opts.length - 1) - (a < bounds[0] ? 1 : 0) };
+         if (key === 'leftover') {
+            // Buttons: short, almost nothing, then ranges from bounds[0] up. Under the first range → almost nothing.
+            if (a < bounds[0]) return { pick: 1 };
+            const j = bounds.slice(1).findIndex((x) => a < x);
+            return { pick: j === -1 ? opts.length - 1 : 2 + j };
+         }
          const j = bounds.findIndex((b) => a < b);
          return { pick: j === -1 ? bounds.length : j };
       }
@@ -647,9 +713,12 @@ export const match = (parsed: Parsed, free: Slot[]): OfferResult => {
 // The conversation
 // ---------------------------------------------------------------------------------------------------
 
-export const newState = (market: MarketId = 'PH', lang: Lang = 'en'): BotState => ({
-   market,
-   lang,
+export const newState = (p: Profile = profileFromUser()): BotState => ({
+   market: p.market,
+   zoneName: p.zoneName,
+   lang: p.lang,
+   knownName: p.firstName,
+   known: { ...p.known },
    step: 'ask',
    mine: null,
    booked: false,
@@ -666,7 +735,7 @@ export const newState = (market: MarketId = 'PH', lang: Lang = 'en'): BotState =
 /** The first messages after Messenger is connected. bioDone false → send them back to the app first. */
 export const greet = (state: BotState, bioDone = true): Result => {
    const st = structuredClone(state);
-   const replies: Reply[] = [{ text: tr(st.lang, 'connected') }];
+   const replies: Reply[] = [{ text: tr(st.lang, 'connected', st.knownName ?? '') }];
    if (bioDone) {
       st.step = 'ask';
       replies.push({ text: tr(st.lang, 'ask') });
@@ -690,7 +759,7 @@ export const attendCard = (state: BotState): Reply => ({
 type Turn = { st: BotState; ctx: Ctx; m: Market; Q: Record<string, Question>; replies: Reply[]; events: BotEvent[] };
 const say = (t: Turn, key: string, ...a: string[]) => tr(t.st.lang, key, ...a);
 const send = (t: Turn, text: string, buttons?: Button[]) => t.replies.push(buttons?.length ? { text, buttons } : { text });
-const when = (t: Turn, s: Slot) => longWhen(s, t.st.lang, t.m);
+const when = (t: Turn, s: Slot) => longWhen(s, t.st.lang, t.st.zoneName);
 const release = (t: Turn, why: Extract<BotEvent, { type: 'release' }>['why']) => {
    if (!t.st.mine) return;
    t.events.push({ type: 'release', slot: t.st.mine, why });
@@ -717,13 +786,20 @@ const hold = (t: Turn, s: Slot) => {
       send(t, say(t, 'resume', when(t, s), s.host));
       return askNext(t);
    }
-   t.st.answers = {};
+   t.st.answers = { ...t.st.known };
    t.st.reasked = [];
    send(t, say(t, 'holding', when(t, s), s.host));
    askNext(t);
 };
+/** Same person? First names match, or one starts the other ("Ma. Cristina" / "Maria"). */
+export const sameFirstName = (a: string, b: string) => {
+   const x = norm(a).replace(/[^\p{L}]/gu, ''), y = norm(b).replace(/[^\p{L}]/gu, '');
+   return !!x && !!y && (x === y || (Math.min(x.length, y.length) >= 2 && (x.startsWith(y) || y.startsWith(x))));
+};
 const book = (t: Turn, name: string) => {
    const s = t.st.mine as Slot;
+   // The typed name is a light security check: never shown back, never blocking — the team just sees a mismatch.
+   if (t.st.knownName && !sameFirstName(name, t.st.knownName)) t.events.push({ type: 'note', text: `Name check: they typed "${name}", their account says "${t.st.knownName}". Check their ID on the call.` });
    t.st.name = name;
    t.st.booked = true;
    t.st.step = 'booked';
@@ -736,8 +812,12 @@ const allSet = (t: Turn) => send(t, say(t, 'allSet', t.st.name, when(t, t.st.min
 
 // ---- the questions ----
 const nextKey = (t: Turn) => {
+   const a = t.st.answers;
+   // They support their kids: no need to ask whether they have kids.
+   if (a.support === 'My kids' && !a.kids) a.kids = 'Yes';
    if (t.st.asked.length >= MAX_Q) return null;
-   return [...BASE, ...followUps(t.st.answers)].find((k) => !t.st.asked.includes(k)) ?? null;
+   // Skip anything already answered (in chat, or in the app bio).
+   return [...BASE, ...followUps(a)].find((k) => !t.st.asked.includes(k) && !(k in a)) ?? null;
 };
 const prepButtons = (t: Turn, key: string): Button[] => {
    const q = t.Q[key];
@@ -764,7 +844,7 @@ const holdOff = (t: Turn, key: string, value: string | null) => {
    t.events.push({ type: 'heldOff', key, value });
    release(t, 'heldOff');
    t.st.asked = [];
-   t.st.answers = {};
+   t.st.answers = { ...t.st.known };
    t.st.reasked = [];
    t.st.quizDone = false;
    send(t, say(t, 'heldOff'));
@@ -844,7 +924,7 @@ const offer = (t: Turn, result: OfferResult, summary: string) => {
    // Details live in the text (buttons are capped at 20 characters).
    const list = picks.map((s, i) => `${i + 1}. ${fmtDay(s.date, lang)} · ${fmtTime(s.min)}${asked ? gap(t, s, asked) : ''}${i === 0 ? ' ⭐' : ''}`).join('\n');
    const mine = t.st.mine ? `\n${lang === 'fil' ? 'Oras mo ngayon' : 'Your time now'}: ${fmtDay(t.st.mine.date, lang)} · ${fmtTime(t.st.mine.min)}` : '';
-   send(t, `${intro}\n\n${list}\n${mine}\n${say(t, 'pickHint')} ${say(t, 'tzNote', t.m.zoneName)}`.replace(/\n\n\n/g, '\n\n'), offerButtons(t, picks));
+   send(t, `${intro}\n\n${list}\n${mine}\n${say(t, 'pickHint')} ${say(t, 'tzNote', t.st.zoneName)}`.replace(/\n\n\n/g, '\n\n'), offerButtons(t, picks));
    t.st.step = 'offered';
 };
 const offerButtons = (t: Turn, picks: Slot[]): Button[] => {

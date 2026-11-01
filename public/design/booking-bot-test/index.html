@@ -156,8 +156,9 @@ header p { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
         <li><b>A taken or full time:</b> "saturday 2pm". Is it clear the time is taken and which times are closest?</li>
         <li><b>Someone in a tough spot:</b> answer "Between jobs" and "None right now". They still book; the box on the right says ❗ Needs a closer look. Single people ("Just myself") are never marked down.</li>
         <li><b>Tight money:</b> answer "I run short" and "5-6 or a lending app". It should still book, but the box says ⚠️ Talk first.</li>
-        <li><b>Dodging:</b> tap "Other" (first question), "Prefer not to say", "Not sure", or Skip on a type-it question. The bot asks once more. Do it again: the bot says sorry, we work with people who know their situation, and books no call. Typing a day and time starts again.</li>
-        <li><b>After booking:</b> type "ok" or "thanks". The bot says you're all set and keeps the booking. Typing a new day and time moves it.</li>
+        <li><b>Dodging:</b> tap "Other" (first question), "Prefer not to say", or Skip on a type-it question (typing "secret" or "ayoko" counts too). The bot asks once more. Do it again: the bot says sorry, we work with people who know their situation, and books no call. Typing a day and time starts again. "Not sure" on when they could repay is a normal answer.</li>
+        <li><b>After booking:</b> type "ok", "thanks" or "can I bring a friend?". The bot says you're all set and keeps the booking. Typing a new day and time offers new times, with a 👍 Keep my time button; "cancel" cancels.</li>
+        <li><b>Who they are:</b> switch "Pretend borrower" (under the calendar). Maria's app bio already has her work, income and payday, so the chat skips those. Siti is in Indonesia: Jakarta time and Rupiah. Ana is a Filipino on Bangkok time.</li>
         <li><b>Filipino:</b> tap FIL at the top of the chat and do one booking in Filipino.</li>
       </ol>
       <p class="note">Anything confusing, too long, or worded wrong? Write it down with the exact message, and send it to George. Use "Start over" at the bottom right to begin again.</p>
@@ -193,7 +194,7 @@ header p { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
 
       <section class="panel">
         <h2>Team calendar</h2>
-        <p class="sub">Live free times from our booking system (Emma or George), for the next 7 days, shown in Bangkok time. Borrowers see Manila time, 1 hour later. Emma first, max 4 calls a day. Booking here doesn't touch the real calendar.</p>
+        <p class="sub">Live free times from our booking system (Emma or George), for the next 7 days. Chips show Bangkok time; the borrower sees their own time (<span id="cal-zone">Manila</span>). Max 4 calls a day. Booking here doesn't touch the real calendar.</p>
         <div class="legend">
           <span><b style="background:var(--free-bg);box-shadow:inset 0 0 0 1px var(--free)"></b>Free</span>
           <span><b style="background:var(--call-bg)"></b>Already booked</span>
@@ -209,6 +210,10 @@ header p { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
         <p class="sub" id="ai-note">The AI steps run on our server with DeepSeek (the same as the real bot will), so the timings are real.</p>
         <ul class="log" id="log"><li><span></span><span class="empty">Send a message to see each step.</span></li></ul>
         <div class="tools" style="margin-top:14px">
+          <label class="note" for="who">Pretend borrower</label>
+          <select id="who" class="ghost"></select>
+        </div>
+        <div class="tools" style="margin-top:8px">
           <button class="ghost" type="button" id="reset">Start over: bio already done</button>
           <button class="ghost" type="button" id="reset-nobio">Start over: bio not done yet</button>
         </div>
@@ -217,906 +222,285 @@ header p { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
   </div>
 </div>
 
-<script>
-(() => {
-  // ---- time helpers: everything is Manila wall time (YYYY-MM-DD + minutes after midnight) ----
-  const manilaNow = () => {
-    const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
-      .formatToParts(new Date()).map((x) => [x.type, x.value]));
-    return { date: `${p.year}-${p.month}-${p.day}`, min: (Number(p.hour) % 24) * 60 + Number(p.minute) };
-  };
-  const addDays = (d, n) => { const t = new Date(d + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
-  const weekday = (d) => new Date(d + 'T00:00:00Z').getUTCDay();
-  const fmtDay = (d, lang) => new Intl.DateTimeFormat(lang === 'fil' ? 'fil-PH' : 'en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(d + 'T00:00:00Z'));
-  const fmtTime = (m) => { const h = Math.floor(m / 60) % 24, mm = String(m % 60).padStart(2, '0'); return `${h % 12 || 12}:${mm} ${h < 12 ? 'AM' : 'PM'}`; };
-  const absMin = (date, min) => new Date(date + 'T00:00:00Z').getTime() / 60000 + min;
-  const hhmm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
-  const toMin = (s) => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(s || '')); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+<script type="module">
+// The test page is only the screen: chat bubbles, the team calendar, the log and the prep note. The
+// conversation itself is supabase/functions/_shared/bookingBot.ts (bundled to bookingBot.js by
+// scripts/build-booking-bot.sh) — the same code the Messenger bot will run.
+import * as Bot from '/design/booking-bot-test/bookingBot.js';
 
-  // ---- the REAL calendar: Cal.com free times (Emma first, George's Google busy times, max 4 calls a
-  // Bangkok day), pulled from calcom-round-robin's admin preview on Oct 28, 2026 ~11 PM Bangkok. A
-  // snapshot: times booked since then still show as free here. Manila time, 15-min slots. ----
-  // Live free times from our booking function (the same list the booking page uses), not a snapshot.
-  const FN_URL = 'https://qplmmxynzxzkfxtayoqr.supabase.co/functions/v1/calcom-round-robin';
-  // The project's public anon key (shipped to every browser by the app already).
-  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwbG1teHluenh6a2Z4dGF5b3FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxOTQzNDQsImV4cCI6MjA4MDc3MDM0NH0.Ggw2jy2OmiZhO8ZcHumzZfWGdbFx97O4usdmz7DVs00';
-  const KEY = new URLSearchParams(location.search).get('k') || '';
-  const api = async (body) => {
-    const res = await fetch(FN_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${ANON}`, apikey: ANON }, body: JSON.stringify({ action: 'sandbox', key: KEY, ...body }) });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  };
-  let REAL = {};
-  const SLOT_HOST = {};
-  const SNAPSHOT = 'Oct 29, 2 AM Bangkok';
-  const REAL_CALLS = []; // live free times already leave booked calls out
-  const MAX_PER_DAY = 4;
-  let cal = [];
-  const buildCalendar = () => {
-    const now = manilaNow();
-    cal = Object.entries(REAL).slice(0, 7).map(([date, list]) => ({
-      date,
-      slots: list.split(',').map((t) => ({ date, min: toMin(t), host: SLOT_HOST[`${date} ${t}`] === 'george' ? 'George' : 'Emma', status: 'free' }))
-        // Gone by now, or under 2 hours away.
-        .filter((s) => absMin(s.date, s.min) > absMin(now.date, now.min) + 120)
-    }));
-    // Calls already booked (Manila time), shown in place and counted toward the day's 4.
-    for (const c of REAL_CALLS) {
-      const day = cal.find((d) => d.date === c.date);
-      if (!day) continue;
-      const min = toMin(c.t);
-      day.slots.push({ date: c.date, min, host: 'Emma', status: 'call' });
-      day.slots.sort((a, b) => a.min - b.min);
+// ---- backend: live free times and the two DeepSeek steps (read-only sandbox, gated by ?k=) ----
+const FN_URL = 'https://qplmmxynzxzkfxtayoqr.supabase.co/functions/v1/calcom-round-robin';
+// The project's public anon key (shipped to every browser by the app already).
+const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwbG1teHluenh6a2Z4dGF5b3FyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxOTQzNDQsImV4cCI6MjA4MDc3MDM0NH0.Ggw2jy2OmiZhO8ZcHumzZfWGdbFx97O4usdmz7DVs00';
+const KEY = new URLSearchParams(location.search).get('k') || '';
+const api = async (body) => {
+  const res = await fetch(FN_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${ANON}`, apikey: ANON }, body: JSON.stringify({ action: 'sandbox', key: KEY, ...body }) });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+};
+
+// ---- pretend borrowers: the public.users fields the bot starts from ----
+const PROFILES = {
+  ph_bio: { label: 'Philippines · bio done (Maria)', user: { facebook_name: 'Maria Santos', whatsapp_number: '639171234567', timezone: 'Asia/Manila', income_type: 'full-time', monthly_income: '200_400', payday_type: 'mid-month', payday_start: 15, payday_end: 15 } },
+  ph_new: { label: 'Philippines · no bio answers (Juan)', user: { facebook_name: 'Juan dela Cruz', timezone: 'Asia/Manila' } },
+  id: { label: 'Indonesia · Jakarta (Siti)', user: { facebook_name: 'Siti Rahma', whatsapp_number: '6281234567890', timezone: 'Asia/Jakarta' } },
+  bkk: { label: 'Filipino on Bangkok time (Ana)', user: { facebook_name: 'Ana Reyes', timezone: 'Asia/Bangkok', preferred_locale: 'fil' } }
+};
+let profileKey = 'ph_bio';
+let langOverride = null;
+const profile = () => {
+  const p = Bot.profileFromUser(PROFILES[profileKey].user);
+  return langOverride ? { ...p, lang: langOverride } : p;
+};
+
+// ---- time: wall clock in any zone ----
+const TEAM_ZONE = 'Asia/Bangkok';
+const wall = (d, zone) => {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(d).map((x) => [x.type, x.value]));
+  return { date: `${p.year}-${p.month}-${p.day}`, min: (Number(p.hour) % 24) * 60 + Number(p.minute) };
+};
+const absMin = (w) => new Date(w.date + 'T00:00:00Z').getTime() / 60000 + w.min;
+const teamTime = (s) => Bot.hhmm(wall(s.at, TEAM_ZONE).min);
+const teamDay = (s) => Bot.fmtDay(wall(s.at, TEAM_ZONE).date, 'en');
+
+// ---- the calendar (borrower's days; chips show team time) ----
+const MAX_PER_DAY = 4;
+let RAW = []; // [{ at: Date, host }]
+let cal = [];
+const key = (s) => `${s.date} ${s.min}`;
+const buildCalendar = () => {
+  const zone = profile().zone;
+  const now = wall(new Date(), zone);
+  const byDay = {};
+  for (const r of RAW) {
+    const w = wall(r.at, zone);
+    if (absMin(w) <= absMin(now) + 120) continue; // gone, or under 2 hours away
+    (byDay[w.date] = byDay[w.date] || []).push({ date: w.date, min: w.min, host: r.host, at: r.at, status: 'free' });
+  }
+  cal = Object.keys(byDay).sort().slice(0, 7).map((date) => ({ date, slots: byDay[date].sort((a, b) => a.min - b.min) }));
+  refreshFull();
+};
+const findSlot = (s) => cal.flatMap((d) => d.slots).find((x) => x.date === s.date && x.min === s.min);
+const callsOn = (day) => day.slots.filter((s) => s.status === 'yours' || s.status === 'held').length;
+const refreshFull = () => cal.forEach((day) => {
+  const full = callsOn(day) >= MAX_PER_DAY;
+  day.slots.forEach((s) => { if (s.status === 'free' && full) s.status = 'full'; if (s.status === 'full' && !full) s.status = 'free'; });
+});
+const ctx = () => ({
+  now: wall(new Date(), profile().zone),
+  free: cal.flatMap((d) => d.slots.filter((s) => s.status === 'free').map(({ date, min, host }) => ({ date, min, host }))),
+  lastDay: cal.length ? cal[cal.length - 1].date : '',
+  readAi: (text, now) => api({ kind: 'time', text, now })
+});
+let offeredKeys = [];
+const daysEl = document.getElementById('days');
+const renderCal = () => {
+  daysEl.innerHTML = '';
+  for (const day of cal) {
+    const row = document.createElement('div'); row.className = 'day';
+    const n = callsOn(day);
+    row.innerHTML = `<div class="day-name">${esc(Bot.fmtDay(day.date, 'en'))}<small>${n}/${MAX_PER_DAY} calls${n >= MAX_PER_DAY ? ' · full' : ''}</small></div>`;
+    const box = document.createElement('div'); box.className = 'slots';
+    for (const s of day.slots) {
+      const el = document.createElement('span');
+      el.className = 'slot ' + (offeredKeys.includes(key(s)) && s.status === 'free' ? 'offer' : s.status);
+      el.textContent = teamTime(s);
+      el.title = `${teamTime(s)} Bangkok · ${Bot.fmtTime(s.min)} borrower time · ${s.status === 'free' ? `free (${s.host})` : s.status === 'yours' ? `booked here with ${s.host}` : s.status === 'held' ? 'held, waiting for YES' : s.status === 'full' ? 'day is full' : 'busy'}`;
+      box.append(el);
     }
-    refreshFull();
-  };
-  const callsOn = (day) => day.slots.filter((s) => s.status === 'call' || s.status === 'yours' || s.status === 'held').length;
-  const refreshFull = () => cal.forEach((day) => {
-    const full = callsOn(day) >= MAX_PER_DAY;
-    day.slots.forEach((s) => { if (s.status === 'free' && full) s.status = 'full'; if (s.status === 'full' && !full) s.status = 'free'; });
-  });
-  const freeSlots = () => cal.flatMap((d) => d.slots.filter((s) => s.status === 'free'));
+    row.append(box); daysEl.append(row);
+  }
+  document.getElementById('cal-zone').textContent = profile().zoneName;
+};
 
-  // ---- matching: the windows they asked for → the 3 closest free times ----
-  const match = (parsed) => {
-    const free = freeSlots();
-    if (parsed.anytime) return { picks: free.slice(0, 3), exact: true };
-    // They named one exact time ("tomorrow at 9pm"): is it free? Then the free times nearest to it.
-    const at = parsed.windows[0] && toMin(parsed.at);
-    if (at !== null && at !== undefined && parsed.windows[0]) {
-      const date = parsed.windows[0].date;
-      const target = absMin(date, at);
-      const hit = free.find((s) => s.date === date && s.min === at) ?? null;
-      // Same day first (nearest time), then the same time of day on the nearest other days.
-      const dayGap = (s) => Math.abs(absMin(s.date, 0) - absMin(date, 0)) / 1440;
-      const score = (s) => (s.date === date ? Math.abs(s.min - at) : dayGap(s) * 240 + Math.abs(s.min - at));
-      const near = free.filter((s) => s !== hit).sort((a, b) => score(a) - score(b));
-      const dayFull = !free.some((s) => s.date === date);
-      return { picks: hit ? [hit, ...near.slice(0, 2)] : near.slice(0, 3), exact: !!hit, asked: { date, min: at }, dayFull };
+// ---- chat rendering ----
+const chat = document.getElementById('chat');
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const scroll = () => { chat.scrollTop = chat.scrollHeight; };
+const clearQuick = () => chat.querySelectorAll('.quick').forEach((el) => el.remove());
+const bubble = (who, text) => { const r = document.createElement('div'); r.className = `row ${who}`; if (who === 'bot') r.innerHTML = '<div class="avatar" aria-hidden="true">M</div>'; const b = document.createElement('div'); b.className = 'bubble'; b.textContent = text; r.append(b); chat.append(r); scroll(); };
+const typing = () => { const r = document.createElement('div'); r.className = 'row bot'; r.innerHTML = '<div class="avatar" aria-hidden="true">M</div><div class="bubble typing" aria-label="Typing"><i></i><i></i><i></i></div>'; chat.append(r); scroll(); return () => r.remove(); };
+const tap = (b) => { if (busy) return; clearQuick(); bubble('me', b.title); run({ payload: b.payload }); };
+const quick = (buttons) => { const q = document.createElement('div'); q.className = 'quick'; for (const b of buttons) { const el = document.createElement('button'); el.type = 'button'; el.textContent = b.title; el.onclick = () => tap(b); q.append(el); } chat.append(q); scroll(); };
+const card = (r) => {
+  const c = document.createElement('div'); c.className = 'card';
+  c.innerHTML = `<div class="c-body"><div class="c-sub">${esc(r.text)}</div></div>`;
+  for (const b of r.buttons || []) { const el = document.createElement('button'); el.type = 'button'; el.textContent = b.title; el.onclick = () => { if (busy) return; el.disabled = true; bubble('me', b.title); run({ payload: b.payload }); }; c.append(el); }
+  chat.append(c); scroll();
+};
+const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+const render = async (replies) => {
+  for (const r of replies) {
+    if (r.card) card(r);
+    else { bubble('bot', r.text); if (r.buttons?.length) quick(r.buttons); }
+    await pause(120);
+  }
+};
+
+// ---- team log ----
+const logEl = document.getElementById('log');
+let logStarted = false;
+const log = (html) => {
+  if (!logStarted) { logEl.innerHTML = ''; logStarted = true; }
+  const li = document.createElement('li');
+  li.innerHTML = `<time>${Bot.hhmm(wall(new Date(), TEAM_ZONE).min)}</time><span>${html}</span>`;
+  logEl.append(li);
+};
+const slotText = (s) => { const x = findSlot(s) || s; return x.at ? `${esc(teamDay(x))} ${teamTime(x)} Bangkok / ${Bot.fmtTime(s.min)} borrower` : `${esc(Bot.fmtDay(s.date, 'en'))} ${Bot.fmtTime(s.min)}`; };
+const WHY = { moved: 'they picked a new time', other: 'they tapped Other time', no: 'they said no', heldOff: 'held off', cancel: 'they cancelled' };
+const onEvents = (events) => {
+  for (const e of events) {
+    if (e.type === 'read') {
+      const p = e.parsed;
+      const w = p.anytime ? 'any time' : p.windows.map((x) => `${Bot.fmtDay(x.date, 'en')} ${x.from}–${x.to}`).join(', ') || 'no day or time';
+      log(`<span class="tag">${esc(e.how)}</span>Read it in <b>${(e.ms / 1000).toFixed(1)}s</b> → <code>${esc(w)}</code>${e.error ? ` (DeepSeek didn't answer: <code>${esc(e.error)}</code>)` : ''}`);
+    } else if (e.type === 'offered') {
+      offeredKeys = e.result.picks.map(key);
+      log(`Offered ${e.result.picks.map((s) => `<code>${slotText(s)}</code>`).join(' ')}${e.result.tooFar ? ' — past the 7 days we book' : ''}${e.summary ? ` · AI summary (team only): "${esc(e.summary)}"` : ''}`);
+    } else if (e.type === 'hold') {
+      const s = findSlot(e.slot); if (s) s.status = 'held'; offeredKeys = [];
+      log(`<span class="tag">Held</span>${slotText(e.slot)} with ${esc(e.slot.host)}. (Real bot: hold ~15 min, then free it.)`);
+    } else if (e.type === 'release') {
+      const s = findSlot(e.slot); if (s) s.status = 'free';
+      log(`Released ${slotText(e.slot)} — ${WHY[e.why] || e.why}.`);
+    } else if (e.type === 'book') {
+      const s = findSlot(e.slot); if (s) s.status = 'yours';
+      log(`<span class="tag">Booked</span>${slotText(e.slot)} with <b>${esc(e.slot.host)}</b>, first name <b>${esc(e.name)}</b>. Real bot: Cal.com booking + Zoom link + reminders.`);
+    } else if (e.type === 'reask') {
+      log(`<span class="tag">Re-ask</span><code>${esc(e.key)}</code>: "${esc(e.value ?? 'Skip')}" — asking once more.`);
+    } else if (e.type === 'heldOff') {
+      log(`<span class="tag">Held off</span>No call booked: still "${esc(e.value ?? 'Skip')}" on <code>${esc(e.key)}</code> after asking twice. Real bot: a "⏸ Held off" line to the team. They can start again any time.`);
+    } else if (e.type === 'answers') {
+      const f = e.fit;
+      log(`<span class="tag">Answers</span>${Object.entries(e.answers).map(([k, v]) => `${k}: <code>${esc(v)}</code>`).join(' · ') || 'none'}`);
+      log(`<span class="tag">Fit check</span>${f.verdict === 'good' ? '✅ Good fit' : f.verdict === 'talk' ? '⚠️ Talk first' : '❗ Needs a closer look'} — ${esc(f.reason)}. Team-only, never a rejection.`);
+      writePrepNote(e.answers, f);
+    } else if (e.type === 'expectations') {
+      log('<span class="tag">Expectations</span>They acknowledged: first loan $15, limit grows step by step.');
+    } else if (e.type === 'attend') {
+      log('They tapped <b>✅ I\'ll be there</b> — call confirmed, reminders keep going.');
+    } else if (e.type === 'note') {
+      log(`<span class="tag">Note</span>${esc(e.text)}`);
     }
-    const picks = [];
-    for (const w of parsed.windows) {
-      const from = toMin(w.from) ?? 9 * 60, to = toMin(w.to) ?? 21 * 60;
-      const inside = free.filter((s) => s.date === w.date && s.min >= from && s.min + 15 <= to);
-      const narrow = to - from <= 90;
-      const mid = (from + to) / 2;
-      inside.sort((a, b) => (narrow ? Math.abs(a.min - mid) - Math.abs(b.min - mid) : a.min - b.min));
-      for (const s of inside) if (!picks.includes(s) && picks.length < 3) picks.push(s);
+  }
+  refreshFull(); renderCal();
+};
+
+// ---- the host's prep note (DeepSeek on the server; a plain fallback if it's down) ----
+const prepBox = () => document.getElementById('prep-box');
+const renderPrep = (n, fit) => {
+  const box = prepBox(); box.className = 'prep'; box.innerHTML = '';
+  const add = (cls, label, content) => {
+    const div = document.createElement('div');
+    if (label) { const l = document.createElement('div'); l.className = 'label'; l.textContent = label; div.append(l); }
+    const body = document.createElement('div'); body.className = cls;
+    if (Array.isArray(content)) { const ul = document.createElement('ul'); for (const c of content) { const li = document.createElement('li'); li.textContent = c; ul.append(li); } body.append(ul); } else body.textContent = content;
+    div.append(body); box.append(div);
+  };
+  add(fit.verdict === 'good' ? 'opener' : 'care', 'Fit check (team only)', `${fit.verdict === 'good' ? '✅ Good fit' : fit.verdict === 'talk' ? '⚠️ Talk first' : '❗ Needs a closer look'}: ${fit.reason}`);
+  add('who', 'Who they are (AI summary of their answers)', n.who || '—');
+  add('opener', 'Suggested opener', n.opener || '—');
+  if (n.points?.length) add('', 'Talking points', n.points);
+  if (n.care) add('care', 'Heads-up', n.care);
+};
+const fallbackNote = (a) => ({
+  who: [a.work, a.job || a.biz || a.lastJob, a.support && `supports ${a.support.toLowerCase()}`, a.kidsCount && `${a.kidsCount} kid(s)`].filter(Boolean).join(' · ') || 'No answers given.',
+  opener: a.biz ? `Ask how ${a.biz} is going this week.` : a.job ? `Ask what a normal day as ${a.job} looks like.` : 'Ask how they heard about Moodeng.',
+  points: [a.loanUse && `Wants the loan for: ${a.loanUse}.`, a.repay && `Says they can repay: ${a.repay}.`, a.debt && !/^no/i.test(a.debt) && `Owes: ${a.debt}${a.debtAmt ? ` (${a.debtAmt})` : ''}. Ask how this loan fits.`].filter(Boolean),
+  care: ''
+});
+const writePrepNote = async (answers, fit) => {
+  const box = prepBox(); box.className = 'prep-empty'; box.textContent = 'Writing the prep note…';
+  const t0 = performance.now();
+  let note = null, how = 'rules';
+  try { const r = await api({ kind: 'prep', name: state.knownName || 'the borrower', host: state.mine?.host || 'Emma', answers }); if (r && r.note) { note = r.note; how = 'DeepSeek'; } } catch {}
+  renderPrep(note || fallbackNote(answers), fit);
+  log(`<span class="tag">${how}</span>Prep note in <b>${((performance.now() - t0) / 1000).toFixed(1)}s</b>.`);
+};
+
+// ---- one turn ----
+let state = null;
+let busy = false;
+const form = document.getElementById('form'), input = document.getElementById('msg'), sendBtn = document.getElementById('send');
+const setBusy = (b) => { busy = b; sendBtn.disabled = b; input.disabled = b; if (!b) input.focus(); };
+// Messages typed while the bot is still answering wait their turn instead of being dropped.
+let queue = Promise.resolve();
+const run = (inp) => (queue = queue.then(async () => {
+  setBusy(true);
+  const stop = inp.text ? typing() : () => {};
+  try {
+    const r = await Bot.step(state, inp, ctx());
+    stop();
+    state = r.state;
+    onEvents(r.events);
+    if (state.lang !== currentLang) showLang(state.lang);
+    await render(r.replies);
+    // Preview of the card the real bot sends 1 hour before the call.
+    if (r.events.some((e) => e.type === 'book')) {
+      log('<span class="tag">Preview</span>The real bot sends this "Will you make it?" card 1 hour before the call.');
+      await render([Bot.attendCard(state)]);
     }
-    picks.sort((a, b) => a.date.localeCompare(b.date) || a.min - b.min);
-    if (picks.length >= 3) return { picks, exact: true };
-    if (picks.length) {
-      // Fewer than 3 inside their window: top up with the free times nearest to it.
-      const w0 = parsed.windows[0];
-      const mid = absMin(w0.date, ((toMin(w0.from) ?? 540) + (toMin(w0.to) ?? 1260)) / 2);
-      const more = free.filter((s) => !picks.includes(s)).sort((a, b) => Math.abs(absMin(a.date, a.min) - mid) - Math.abs(absMin(b.date, b.min) - mid));
-      return { picks: [...picks, ...more.slice(0, 3 - picks.length)], exact: true, inside: picks.length };
-    }
-    // Nothing inside: the free times nearest to what they asked for.
-    const w = parsed.windows[0];
-    const target = w ? (new Date(w.date + 'T00:00:00Z').getTime() / 60000) + ((toMin(w.from) ?? 540) + (toMin(w.to) ?? 1260)) / 2 : 0;
-    const abs = (s) => new Date(s.date + 'T00:00:00Z').getTime() / 60000 + s.min;
-    const near = [...free].sort((a, b) => Math.abs(abs(a) - target) - Math.abs(abs(b) - target)).slice(0, 3);
-    near.sort((a, b) => a.date.localeCompare(b.date) || a.min - b.min);
-    return { picks: near, exact: false };
-  };
+  } catch (e) {
+    stop();
+    log(`<span class="tag">Error</span><code>${esc(e.message)}</code>`);
+  }
+  setBusy(false);
+}));
+form.addEventListener('submit', (e) => { e.preventDefault(); const v = input.value.trim(); if (!v) return; input.value = ''; clearQuick(); bubble('me', v); run({ text: v }); });
 
-  // ---- reading their message: AI first, simple rules if AI is unavailable ----
-  const sample = null; // AI runs on our server (DeepSeek), not in the page
+// ---- controls ----
+let currentLang = 'en';
+const showLang = (l) => {
+  currentLang = l;
+  document.getElementById('lang-en').setAttribute('aria-pressed', String(l === 'en'));
+  document.getElementById('lang-fil').setAttribute('aria-pressed', String(l === 'fil'));
+};
+document.getElementById('lang-en').onclick = () => { langOverride = 'en'; startOver(bioDone); };
+document.getElementById('lang-fil').onclick = () => { langOverride = 'fil'; startOver(bioDone); };
+const who = document.getElementById('who');
+for (const [k, p] of Object.entries(PROFILES)) { const o = document.createElement('option'); o.value = k; o.textContent = p.label; who.append(o); }
+who.onchange = async () => { profileKey = who.value; langOverride = null; buildCalendar(); startOver(bioDone); };
 
-  const aiPrompt = (text, now) => `You read a borrower's chat reply about when they can do a 15-minute video call. They live in the Philippines (Manila time). They may write English, Filipino or Taglish, with typos.
-Right now it is ${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][weekday(now.date)]} ${now.date} ${hhmm(now.min)} Manila time.
-Their message: """${text.slice(0, 400)}"""
+const TRIES = ['YES', 'Maria', 'bukas after 6pm', 'Saturday morning', 'pwede po ba sa Lunes ng hapon?', 'tomorrow 3pm', 'any time is ok', 'next week na lang', '4pm instead', 'ok', 'cancel'];
+const tries = document.getElementById('tries');
+for (const t of TRIES) { const b = document.createElement('button'); b.type = 'button'; b.textContent = t; b.onclick = () => { if (busy) return; clearQuick(); bubble('me', t); run({ text: t }); }; tries.append(b); }
 
-Reply with only this JSON:
-{"windows":[{"date":"YYYY-MM-DD","from":"HH:MM","to":"HH:MM"}],"anytime":false,"unclear":false,"at":null,"lang":"en","summary":"..."}
-Rules:
-- windows: up to 4 time ranges in the next 7 days (24-hour Manila time), in the order they prefer.
-- morning/umaga 08:00-12:00, lunch/tanghali 11:00-13:00, afternoon/hapon 12:00-17:00, evening/gabi/night 17:00-21:00.
-- "after 6pm" = 18:00-21:00. "before 3pm" = 09:00-15:00. One exact time like "3pm" = 14:30-15:30.
-- bukas = tomorrow, mamaya = later today, ngayon = today, weekend = the coming Saturday and Sunday. A weekday name = its next date (today counts if it's that day and the time hasn't passed).
-- A time with no day: today if still possible, else tomorrow. A day with no time: 09:00-21:00.
-- anytime=true (and windows empty) if they say any time works. unclear=true if the message has no usable day or time.
-- lang: "fil" if they wrote mostly Filipino or Taglish, else "en".
-- at: "HH:MM" when they named one exact time (e.g. "9pm" → "21:00"), else null.
-- summary: under 8 words, English, what they asked for, e.g. "tomorrow after 6 PM".`;
+let bioDone = true;
+const startOver = (done) => {
+  bioDone = done;
+  logEl.innerHTML = '<li><span></span><span class="empty">Send a message to see each step.</span></li>'; logStarted = false;
+  chat.innerHTML = ''; offeredKeys = [];
+  { const b = prepBox(); b.className = 'prep-empty'; b.textContent = 'Book a call in the chat, then answer the "get to know you" questions to see the prep note here.'; }
+  buildCalendar(); renderCal();
+  const p = profile();
+  state = Bot.newState(p);
+  showLang(state.lang);
+  const known = Object.entries(p.known).map(([k, v]) => `${k}: <code>${esc(v)}</code>`).join(' · ');
+  log(`<span class="tag">Who</span>${esc(PROFILES[profileKey].label)} → ${p.market === 'ID' ? 'Indonesia' : 'Philippines'}, times in <b>${esc(p.zone)}</b>, ${p.lang === 'fil' ? 'Filipino' : 'English'}${known ? `. From the app bio (not asked again): ${known}` : '. No bio answers yet, so the chat asks them.'}`);
+  bubble('me', 'MOODENG-4821');
+  const g = Bot.greet(state, done);
+  state = g.state;
+  render(g.replies);
+};
+document.getElementById('reset').onclick = () => startOver(true);
+document.getElementById('reset-nobio').onclick = () => startOver(false);
 
-  const DAYS = [
-    [/\b(sun|sunday|linggo)\b/, 0], [/\b(mon|monday|lunes)\b/, 1], [/\b(tue|tues|tuesday|martes)\b/, 2], [/\b(wed|weds|wednesday|miyerkules|miyerkoles)\b/, 3],
-    [/\b(thu|thur|thurs|thursday|huwebes)\b/, 4], [/\b(fri|friday|biyernes)\b/, 5], [/\b(sat|saturday|sabado)\b/, 6]
-  ];
-  // "next week" in Filipino is "susunod na linggo" — there "linggo" means week, not Sunday.
-  const NEXT_WEEK = /\b(next week|susunod na linggo|sa isang linggo|next linggo|minggu depan)\b/;
-  // A clock hour with no am/pm: night words make it PM, morning words AM, else 1–7 is PM.
-  const hourOf = (h, mm, ap, t = '') => {
-    let x = Number(h) % 12;
-    const night = /\b(gabi|night|tonight|evening|hapon|afternoon|pm)\b/.test(t), morning = /\b(umaga|morning|am)\b/.test(t);
-    if (ap === 'pm' || (!ap && (night || (!morning && x >= 1 && x <= 7)))) x += 12;
-    return x * 60 + Number(mm || 0);
-  };
-  const ruleParse = (text, now) => {
-    const t = text.toLowerCase().replace(/\b(noon|tanghaling tapat)\b/g, '12pm').replace(/\bmidnight\b/g, '12am');
-    const dates = [];
-    const nextDow = (dow) => { for (let i = 0; i < 7; i++) { const d = addDays(now.date, i); if (weekday(d) === dow) return d; } };
-    const nextWeek = NEXT_WEEK.test(t);
-    const dayText = t.replace(NEXT_WEEK, ' ');
-    if (/\b(today|ngayon|mamaya|later|tonight|ngayong)\b/.test(dayText)) dates.push(now.date);
-    if (/\b(tomorrow|tmrw|tmr|bukas)\b/.test(dayText)) dates.push(addDays(now.date, 1));
-    if (/weekend/.test(dayText)) dates.push(nextDow(6), nextDow(0));
-    for (const [re, dow] of DAYS) if (re.test(dayText)) dates.push(nextDow(dow));
-    // "next week" with no day named: the first weekdays of next week.
-    if (nextWeek && !dates.length) { const mon = addDays(nextDow(1), nextDow(1) === now.date ? 7 : 0); for (let i = 0; i < 4; i++) dates.push(addDays(mon, i)); }
-    let from = null, to = null, at = null;
-    let m;
-    if ((m = /(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-|–|to|hanggang|until)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/.exec(t)) && (m[3] || m[6] || m[2] || m[5])) {
-      // A range: "3 to 5pm", "2-4pm", "10am-12pm". The end's am/pm carries over to the start.
-      from = hourOf(m[1], m[2], m[3] || m[6], t); to = hourOf(m[4], m[5], m[6], t);
-      if (from > to && !m[3]) from -= 12 * 60;
-    }
-    else if ((m = /(after|pagkatapos ng|from)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/.exec(t))) { from = hourOf(m[2], m[3], m[4], t); to = Math.max(21 * 60, from + 60); }
-    else if ((m = /(before|bago)\s*(?:mag\s*)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/.exec(t))) { to = hourOf(m[2], m[3], m[4], t); from = Math.min(9 * 60, to - 60); }
-    else if ((m = /(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/.exec(t)) || (m = /\b(?:at|alas|around|mga)\s*(\d{1,2})(?::(\d{2}))?\b/.exec(t)) || (m = /\b([01]?\d|2[0-3]):([0-5]\d)\b/.exec(t))) {
-      const c = m[0].includes(':') && Number(m[1]) > 12 ? Number(m[1]) * 60 + Number(m[2]) : hourOf(m[1], m[2], m[3], t);
-      from = c - 30; to = c + 30; at = hhmm(c);
-    }
-    else if (/morning|umaga/.test(t)) { from = 8 * 60; to = 12 * 60; }
-    else if (/\b(lunch|tanghali)\b/.test(t)) { from = 11 * 60; to = 13 * 60; }
-    else if (/afternoon|hapon/.test(t)) { from = 12 * 60; to = 17 * 60; }
-    else if (/evening|night|gabi|tonight/.test(t)) { from = 17 * 60; to = 21 * 60; }
-    const anytime = /\b(any ?time|kahit kailan|kahit anong oras|whenever|kahit ano)\b/.test(t);
-    if (!dates.length && from === null) return { windows: [], anytime, unclear: !anytime, lang: guessLang(t), summary: anytime ? 'any time' : '' };
-    if (!dates.length) dates.push(from !== null && to > now.min + 120 ? now.date : addDays(now.date, 1));
-    if (from === null) { from = 9 * 60; to = 21 * 60; }
-    const windows = [...new Set(dates)].map((date) => ({ date, from: hhmm(from), to: hhmm(to) }));
-    return { windows: windows.slice(0, at ? 1 : 4), at, anytime: false, unclear: false, lang: guessLang(t), summary: '' };
-  };
-  const guessLang = (t) => (/\b(bukas|ngayon|mamaya|umaga|hapon|gabi|po|ako|ko|lang|sana|pwede|puwede|kahit|ng|sa)\b/.test(t) ? 'fil' : 'en');
-
-  const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const readMessage = async (text) => {
-    const now = manilaNow();
-    const t0 = performance.now();
-    try {
-      const r = await api({ kind: 'time', text, now: { weekday: WEEKDAYS[weekday(now.date)], date: now.date, time: hhmm(now.min) } });
-      if (r && r.read) {
-        const x = r.read;
-        // "next week" came back unclear: the simple reader knows it (Mon–Thu of next week).
-        if (x.unclear && NEXT_WEEK.test(text.toLowerCase())) return { parsed: ruleParse(text, now), how: 'DeepSeek said unclear → rules (next week)', ms: performance.now() - t0 };
-        return { parsed: { windows: x.windows || [], anytime: !!x.anytime, unclear: !!x.unclear, at: x.at || null, lang: x.lang === 'fil' ? 'fil' : 'en', summary: String(x.summary || '').slice(0, 60) }, how: 'DeepSeek', ms: performance.now() - t0 };
-      }
-      log(`DeepSeek didn't answer (<code>${esc(r && r.error || 'error')}</code>), so the rule-based reader took over.`);
-    } catch (e) {
-      log(`DeepSeek didn't answer (<code>${esc(e.message)}</code>), so the rule-based reader took over.`);
-    }
-    return { parsed: ruleParse(text, now), how: 'rules', ms: performance.now() - t0 };
-  };
-
-  // ---- words the bot says ----
-  let lang = 'en';
-  const T = {
-    connected: {
-      en: '✅ Messenger connected! You\'ll get your updates here.',
-      fil: '✅ Naka-connect na ang Messenger! Dito mo matatanggap ang updates mo.'
-    },
-    bioMissing: {
-      en: '👉 NEXT: go back to Moodeng and answer 5 quick questions about your work and payday (1 min).\n\nAs soon as you\'re done, I\'ll message you here to book your call.',
-      fil: '👉 SUSUNOD: bumalik sa Moodeng at sagutin ang 5 mabilis na tanong tungkol sa trabaho at sweldo mo (1 min).\n\nPagkatapos mo, magme-message ako dito para i-book ang call mo.'
-    },
-    backBtn: { en: '↩️ Back to Moodeng', fil: '↩️ Bumalik sa Moodeng' },
-    ask: {
-      en: '📅 LAST STEP: book your 15-min video call with George or Emma.\n\nWhat day and time works best for you? Write it any way you like, e.g. "bukas after 6pm" or "Saturday morning".',
-      fil: '📅 HULING HAKBANG: mag-book ng 15-min video call kasama si George o Emma.\n\nAnong araw at oras ang pinaka-okay sa iyo? Isulat mo lang kahit paano, gaya ng "bukas after 6pm" o "Sabado ng umaga".'
-    },
-    // The AI's summary is never shown to the borrower (it's for the team log only).
-    offer: { en: 'Got it! These times are free. Tap one to book it:', fil: 'Sige! Bakante ang mga oras na ito. Pindutin ang isa para i-book:' },
-    near: { en: "Sorry, we're fully booked then. The closest free times are:", fil: 'Pasensya, puno na kami sa oras na iyan. Ito ang pinakamalapit na bakante:' },
-    reoffer: { en: 'Tap one of these times, or tell me another day and time 🙂', fil: 'Pumili ng isa sa mga oras na ito, o sabihin ang ibang araw at oras 🙂' },
-    keepBtn: { en: (w) => `👍 Keep ${w}`, fil: (w) => `👍 ${w} na lang` },
-    askedFree: { en: (w) => `✅ ${w} is free! Tap it to book, or pick another time:`, fil: (w) => `✅ Bakante ang ${w}! Pindutin para i-book, o pumili ng ibang oras:` },
-    dayFull: { en: (d) => `❌ ${d} is fully booked.\n\nThese are the closest free times on other days:`, fil: (d) => `❌ Puno na ang ${d}.\n\nIto ang pinakamalapit na bakante sa ibang araw:` },
-    askedTaken: { en: (w) => `❌ ${w} is already taken.
-
-These are the closest free times to it:`, fil: (w) => `❌ May naka-book na sa ${w}.
-
-Ito ang pinakamalapit na bakanteng oras:` },
-    askedMine: { en: (w) => `${w} is the time you have now 🙂\nHere are other free times near it:`, fil: (w) => `${w} ang oras mo ngayon 🙂\nIto ang ibang bakanteng oras malapit doon:` },
-    tzNote: { en: 'All times are your time (Manila).', fil: 'Lahat ng oras ay oras mo (Manila).' },
-    unclear: { en: 'Sorry, I didn\'t catch a day or time 🙏 Try something like "tomorrow 3pm" or "Saturday morning".', fil: 'Pasensya, hindi ko nakuha ang araw o oras 🙏 Subukan ang "bukas 3pm" o "Sabado umaga".' },
-    other: { en: 'No problem! What other day or time works for you?', fil: 'Walang problema! Anong ibang araw o oras ang okay sa iyo?' },
-    otherKeep: {
-      en: 'No problem! What other day or time works for you?\nYour call stays booked until you pick a new time.',
-      fil: 'Walang problema! Anong ibang araw o oras ang okay sa iyo?\nNaka-book pa rin ang call mo hanggang pumili ka ng bagong oras.'
-    },
-    unclearKeep: {
-      en: (when) => `Sorry, I didn't catch a day or time 🙏 You're still booked for ${when}.\nTo change it, try something like "tomorrow 3pm" or "Saturday morning".`,
-      fil: (when) => `Pasensya, hindi ko nakuha ang araw o oras 🙏 Naka-book ka pa rin sa ${when}.\nPara palitan, subukan ang "bukas 3pm" o "Sabado umaga".`
-    },
-    cancelled: { en: (w) => `OK, your call on ${w} is cancelled.\nWhenever you're ready, just tell me a day and time 🙂`, fil: (w) => `Sige, kinansela na ang call mo sa ${w}.\nKapag handa ka na, sabihin lang ang araw at oras 🙂` },
-    tooFar: { en: 'I can only book up to a week ahead 🙏 These are the free times closest to what you asked:', fil: 'Hanggang isang linggo lang ang pwede kong i-book 🙏 Ito ang pinakamalapit na bakante sa hiningi mo:' },
-    tapOne: { en: 'Please tap one of the buttons 🙂', fil: 'Pakipindot ang isa sa mga button 🙂' },
-    rangeNumber: { en: 'Is that in thousands? Please tap the closest range 🙂', fil: 'Libo ba iyan? Pakipindot ang pinakamalapit na range 🙂' },
-    finishFirst: { en: "Sorry, I didn't catch a new day or time. Let's finish these questions first — you can change the time at the end 🙂", fil: 'Pasensya, hindi ko nakuha ang bagong araw o oras. Tapusin muna natin ang mga tanong — pwede mong palitan ang oras pagkatapos 🙂' },
-    resume: { en: (when, host) => `⏳ Now holding ${when} with ${host}. Let's finish the questions:`, fil: (when, host) => `⏳ Naka-hold na ang ${when} kasama si ${host}. Tapusin natin ang mga tanong:` },
-    otherBtn: { en: '🕐 Other time', fil: '🕐 Ibang oras' },
-    none: { en: 'Sorry, our calendar is full this week. The team will message you with a time 🙏', fil: 'Pasensya, puno na ang calendar namin ngayong linggo. Ime-message ka ng team para sa oras 🙏' },
-    oneMoment: { en: '⏳ One second, saving this time for you…', fil: '⏳ Sandali lang, sine-save ko ang oras na ito para sa iyo…' },
-    confirmTime: {
-      en: (when, host) => `✅ LAST STEP: CONFIRM YOUR CALL\n\n📅 ${when}\n👤 with ${host || 'George or Emma'} · 🎥 Zoom · 15 min\n\nOne rule: 1 hour before, I'll message you a ✅ I'll be there button. Tap it, or the call is cancelled.\n\n👉 Type YES to confirm your call.`,
-      fil: (when, host) => `✅ HULING HAKBANG: I-CONFIRM ANG CALL MO\n\n📅 ${when}\n👤 kasama si ${host || 'George o Emma'} · 🎥 Zoom · 15 min\n\nIsang rule: 1 oras bago, magme-message ako ng ✅ I'll be there button. Pindutin ito, kung hindi makakansela ang call.\n\n👉 I-type ang YES para i-confirm ang call mo.`
-    },
-    sayYes: { en: 'Please type YES to confirm this time, or tap 🕐 Other time.', fil: 'Pakitype ang YES para i-confirm, o pindutin ang 🕐 Ibang oras.' },
-    askName: { en: 'Thank you! Last thing: please type your first name (for security).', fil: 'Salamat! Huling bagay: pakitype ang first name mo (para sa security).' },
-    badName: { en: 'Please type just your first name, e.g. Maria', fil: 'Pakitype lang ang first name mo, hal. Maria' },
-    booked: {
-      en: (when, name, host) => `🎉 You're booked, ${name}!\n🗓️ ${when} · 15 min with ${host || 'George or Emma'}\nJoin on Zoom: https://zoom.us/j/0000000000 (pretend link)\n\nBring 🪪 your original ID and 📷 camera on. That's it!`,
-      fil: (when, name, host) => `🎉 Naka-book ka na, ${name}!\n🗓️ ${when} · 15 min kasama si ${host || 'George o Emma'}\nSa Zoom: https://zoom.us/j/0000000000 (pretend link)\n\nDalhin ang 🪪 orihinal mong ID at naka-on ang 📷 camera. Iyon lang!`
-    },
-    promise: { en: (name) => `⏰ Remember, ${name}: tap ✅ 1 hour before, or the call is cancelled.`, fil: (name) => `⏰ Tandaan, ${name}: pindutin ang ✅ 1 oras bago, kung hindi makakansela ang call.` },
-    card: { en: ['Will you make it?', 'Tap ✅ so we know you\'re coming — or pick a new time.', "✅ I'll be there", '🔄 Change time'], fil: ['Makakarating ka ba?', 'Pindutin ang ✅ para alam naming darating ka — o pumili ng bagong oras.', "✅ I'll be there", '🔄 Palitan ang oras'] },
-    thanks: { en: '✅ Thanks! See you then 🙌', fil: '✅ Salamat! Kita tayo 🙌' },
-    allSet: {
-      en: (name, when) => `👍 You're all set${name ? `, ${name}` : ''}! See you ${when}.\nNeed a different time? Just tell me a day and time.`,
-      fil: (name, when) => `👍 Ayos na${name ? `, ${name}` : ''}! Kita tayo sa ${when}.\nKailangan ng ibang oras? Sabihin lang ang araw at oras.`
-    },
-    // Prefer not to say / Not sure on a money question: asked once more, kindly (Emma, 2026-10-30).
-    reask: {
-      en: "That's OK 🙂 A rough guess is fine.\nWe lend to people who keep track of their money, so an estimate really helps us.",
-      fil: 'Okay lang 🙂 Kahit tantya lang.\nNagpapautang kami sa mga taong alam kung saan napupunta ang pera nila, kaya malaking tulong ang tantya.'
-    },
-    reaskType: {
-      en: "That's OK 🙂 Just a few words is fine.\nIt helps us understand your situation before the call.",
-      fil: 'Okay lang 🙂 Kahit ilang salita lang.\nNakakatulong ito para maintindihan namin ang sitwasyon mo bago ang call.'
-    },
-    reaskOther: {
-      en: 'Could you pick the closest one? 🙂 It helps us understand your situation.',
-      fil: 'Pwede mo bang piliin ang pinakamalapit? 🙂 Nakakatulong ito para maintindihan namin ang sitwasyon mo.'
-    },
-    // Still dodging after the re-ask (Emma + George, 2026-10-30): no call booked for now.
-    heldOff: {
-      en: "Sorry 🙏 We can't book your call just yet.\nWe work with people who are well aware of their current situation and manage their finances responsibly.\nWhen you're ready to share a rough picture, just tell me a day and time and we'll start again.",
-      fil: 'Pasensya 🙏 Hindi pa namin ma-book ang call mo.\nNakikipagtulungan kami sa mga taong alam ang kasalukuyang sitwasyon nila at responsable sa pera.\nKapag handa ka nang magbahagi kahit tantya lang, sabihin lang ang araw at oras at magsisimula ulit tayo.'
-    }
-  };
-  const say = (k, ...a) => { const v = T[k][lang]; return typeof v === 'function' ? v(...a) : v; };
-  const gap = (s, asked) => {
-    const d = absMin(s.date, s.min) - absMin(asked.date, asked.min);
-    if (d === 0) return '';
-    const fil = lang === 'fil';
-    if (s.date !== asked.date) return s.min === asked.min ? (fil ? ' (parehong oras)' : ' (same time)') : '';
-    const n = Math.abs(d), amount = n % 60 === 0 ? `${n / 60} ${fil ? 'oras' : n === 60 ? 'hr' : 'hrs'}` : `${n} min`;
-    return fil ? ` (${amount} ${d < 0 ? 'mas maaga' : 'mas huli'})` : ` (${amount} ${d < 0 ? 'earlier' : 'later'})`;
-  };
-  const slotLabel = (s, star, asked) => `${star ? '⭐ ' : ''}${fmtDay(s.date, lang)} · ${fmtTime(s.min)}${asked ? gap(s, asked) : ''}`;
-
-  // ---- chat rendering ----
-  const chat = document.getElementById('chat');
-  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const scroll = () => { chat.scrollTop = chat.scrollHeight; };
-  const clearQuick = () => chat.querySelectorAll('.quick, .card button').forEach((el) => (el.tagName === 'BUTTON' ? (el.disabled = true) : el.remove()));
-  const botSay = (text) => { const r = document.createElement('div'); r.className = 'row bot'; r.innerHTML = '<div class="avatar" aria-hidden="true">M</div>'; const b = document.createElement('div'); b.className = 'bubble'; b.textContent = text; r.append(b); chat.append(r); scroll(); };
-  const meSay = (text) => { const r = document.createElement('div'); r.className = 'row me'; const b = document.createElement('div'); b.className = 'bubble'; b.textContent = text; r.append(b); chat.append(r); scroll(); };
-  const typing = () => { const r = document.createElement('div'); r.className = 'row bot'; r.innerHTML = '<div class="avatar" aria-hidden="true">M</div><div class="bubble typing" aria-label="Typing"><i></i><i></i><i></i></div>'; chat.append(r); scroll(); return () => r.remove(); };
-  const quick = (buttons) => { const q = document.createElement('div'); q.className = 'quick'; for (const [label, fn] of buttons) { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.onclick = () => { clearQuick(); fn(label); }; q.append(b); } chat.append(q); scroll(); };
-  const card = () => {
-    const [title, sub, yes, change] = T.card[lang];
-    const c = document.createElement('div'); c.className = 'card';
-    c.innerHTML = `<div class="c-body"><div class="c-title">${esc(title)}</div><div class="c-sub">${esc(sub)}</div></div>`;
-    const b1 = document.createElement('button'); b1.type = 'button'; b1.textContent = yes;
-    b1.onclick = () => { b1.disabled = true; meSay(yes); botSay(say('thanks')); log('They tapped <b>✅ I\'ll be there</b> — call confirmed, reminders keep going.'); };
-    const b2 = document.createElement('button'); b2.type = 'button'; b2.textContent = change;
-    // Their call stays booked until they tap a new time.
-    b2.onclick = () => { clearQuick(); meSay(change); botSay(say('otherKeep')); changing = true; step = 'booked'; };
-    c.append(b1, b2); chat.append(c); scroll();
-  };
-
-  // ---- team log ----
-  const logEl = document.getElementById('log');
-  let logStarted = false;
-  const log = (html) => {
-    if (!logStarted) { logEl.innerHTML = ''; logStarted = true; }
-    const li = document.createElement('li');
-    const n = manilaNow();
-    li.innerHTML = `<time>${hhmm((n.min + 1440 - 60) % 1440)}</time><span>${html}</span>`;
-    logEl.append(li);
-  };
-
-  // ---- calendar rendering (Bangkok time = Manila − 1h) ----
-  let offered = [];
-  const daysEl = document.getElementById('days');
-  const renderCal = () => {
-    daysEl.innerHTML = '';
-    for (const day of cal) {
-      const row = document.createElement('div'); row.className = 'day';
-      const n = callsOn(day);
-      row.innerHTML = `<div class="day-name">${esc(fmtDay(day.date, 'en'))}<small>${n}/${MAX_PER_DAY} calls${n >= MAX_PER_DAY ? ' · full' : ''}</small></div>`;
-      const box = document.createElement('div'); box.className = 'slots';
-      for (const s of day.slots) {
-        const el = document.createElement('span');
-        el.className = 'slot ' + (offered.includes(s) && s.status === 'free' ? 'offer' : s.status);
-        el.textContent = hhmm(s.min - 60);
-        el.title = `${fmtTime(s.min - 60)} Bangkok · ${fmtTime(s.min)} Manila · ${s.status === 'free' ? `free (${s.host})` : s.status === 'call' ? 'another borrower' : s.status === 'yours' ? `booked here with ${s.host}` : s.status === 'held' ? 'held, waiting for YES' :s.status === 'full' ? 'day is full' : 'busy'}`;
-        box.append(el);
-      }
-      row.append(box); daysEl.append(row);
-    }
-  };
-
-  // ---- conversation flow ----
-  let step = 'ask';
-  let mine = null;
-  const releaseBooking = () => { if (mine) { mine.status = 'free'; log(`Released ${fmtDay(mine.date, 'en')} ${fmtTime(mine.min - 60)} Bangkok — they want a new time.`); mine = null; refreshFull(); renderCal(); } };
-
-  const longWhen = (s) => `${new Intl.DateTimeFormat(lang === 'fil' ? 'fil-PH' : 'en-US', { timeZone: 'UTC', weekday: 'long', month: 'long', day: 'numeric' }).format(new Date(s.date + 'T00:00:00Z'))}, ${fmtTime(s.min)} (Manila time)`;
-
-  // Picking a time only holds it. Then three separate messages: YES to the time, their first name, confirmed.
-  // Moving a call: the old time stays theirs until they tap a new one, and answers already given are kept.
-  const pause = (ms) => new Promise((r) => setTimeout(r, ms));
-  let quizDone = false, changing = false;
-  const hold = async (s) => {
-    offered = [];
-    changing = false;
-    if (mine && mine !== s) releaseBooking();
-    s.status = 'held'; mine = s; quizSlot = s; prepHost = s.host; refreshFull(); renderCal();
-    log(`<span class="tag">Held</span>${esc(fmtDay(s.date, 'en'))} · ${fmtTime(s.min - 60)} Bangkok — waiting for YES, then their first name. (Real bot: hold ~15 min, then free it.)`);
-    step = 'busy';
-    botSay(say('oneMoment'));
-    const stop = typing(); await pause(1200); stop();
-    if (mine !== s) return;
-    if (quizDone) return askFinalConfirm(s);
-    if (asked.length) { botSay(say('resume', longWhen(s), s.host)); return askNext(); }
-    startQuiz(s);
-  };
-  // After the questions (and a good-enough fit): the very clear final confirmation.
-  const askFinalConfirm = (s) => {
-    botSay(say('confirmTime', longWhen(s), s.host));
-    heldButtons();
-    step = 'held';
-  };
-
-  // ---- reading short replies ----
-  const norm = (t) => String(t || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '');
-  const words = (t) => norm(t).replace(/[^\p{L}\p{N}\s:'-]/gu, ' ').split(/\s+/).filter(Boolean);
-  // Whole words only: "friend" is not Friday, "money" is not Monday, "2 kids" is not a time.
-  const TIME_WORD = /\b(today|tonight|tomorrow|tmrw|tmr|bukas|mamaya|ngayon|later|morning|afternoon|evening|night|noon|lunch|umaga|hapon|gabi|tanghali|mon|monday|tue|tues|tuesday|wed|weds|wednesday|thu|thur|thurs|thursday|fri|friday|sat|saturday|sun|sunday|lunes|martes|miyerkules|miyerkoles|huwebes|biyernes|sabado|linggo|weekend|week|besok|nanti|sekarang|pagi|siang|sore|malam|senin|selasa|rabu|kamis|jumat|sabtu|minggu|jan|feb|march|apr|april|june|july|aug|sept|oct|nov|dec)\b/;
-  const CLOCK = /\b\d{1,2}(:\d{2})?\s*(am|pm)\b|\b\d{1,2}:\d{2}\b|\b(alas|jam|at|around|after|before|from|by|pagkatapos ng|bago mag)\s+\d{1,2}\b|\b\d{1,2}\s*(-|–|to)\s*\d{1,2}\s*(am|pm)?\b|\b\d{1,2}\/\d{1,2}\b/;
-  const DAY_WORD = /\b(today|tonight|tomorrow|tmrw|tmr|bukas|mamaya|ngayon|ngayong|later|mon|monday|tue|tues|tuesday|wed|weds|wednesday|thu|thur|thurs|thursday|fri|friday|sat|saturday|sun|sunday|lunes|martes|miyerkules|miyerkoles|huwebes|biyernes|sabado|linggo|weekend|weekdays?|week|besok|lusa|nanti|sekarang|senin|selasa|rabu|kamis|jumat|sabtu|minggu|jan|feb|march|apr|april|june|july|aug|sept|oct|nov|dec|\d{1,2}(st|nd|rd|th))\b|\b\d{1,2}\/\d{1,2}\b/;
-  const looksLikeTime = (text) => TIME_WORD.test(norm(text)) || CLOCK.test(norm(text));
-  const CHANGE = /\b(change|resched\w*|move|instead|another (day|time)|other (day|time)|ibang (araw|oras)|iba ?ng (araw|oras)|palit\w*|ilipat|lipat|cancel|na lang|nalang)\b/;
-  const wantsChange = (text) => CHANGE.test(norm(text));
-  const CANCEL = /\b(cancel\w*|can'?t (make it|come|attend)|cannot (make it|come|attend)|hindi (na )?(ako )?makakapunta|di (ako )?makakapunta|hindi na lang|ayaw ko na|wag na lang|huwag na lang)\b/;
-  const YES_WORDS = new Set(['yes', 'yeah', 'yea', 'yep', 'yup', 'ye', 'oo', 'opo', 'oho', 'sige', 'ok', 'okay', 'okey', 'oki', 'k', 'sure', 'confirm', 'confirmed', 'go', 'game', 'ya', 'iya', 'g']);
-  // Words that can follow a YES without being a name.
-  const FILLER = new Set(['po', 'naman', 'please', 'pls', 'plz', 'thanks', 'thank', 'you', 'ty', 'salamat', 'sure', 'confirm', 'confirmed', 'na', 'lang', 'i', 'will', 'be', 'there', 'see', 'tayo', 'then', 'terima', 'kasih', 'good', 'great', 'nice', 'got', 'it', 'all', 'set', 'deal', 'noted', 'ill', "i'll", 'definitely', 'of', 'course', 'yes', 'oo', 'opo', 'sige', 'ok', 'okay', 'yep', 'yeah', 'kita']);
-  // Common words that are never a first name.
-  const NOT_NAMES = new Set([...FILLER, ...YES_WORDS, 'hi', 'hello', 'hey', 'actually', 'sorry', 'wait', 'teka', 'ako', 'me', 'my', 'name', 'is', 'am', 'im', 'ang', 'si', 'ay', 'ko', 'yung', 'the', 'a', 'an', 'and', 'but', 'pero', 'also', 'din', 'rin', 'sir', 'maam', "ma'am", 'madam', 'kuya', 'ate', 'boss', 'no', 'hindi', 'morning', 'afternoon', 'evening', 'can', 'what', 'when', 'how', 'why', 'pwede', 'paano', 'saan', 'kailan', 'bakit', 'this', 'its', "it's", 'just', 'lol', 'haha', 'hehe', 'test', 'nope', 'none', 'wala']);
-  const NEGATIVE = /^\s*(no|nope|hindi|ayoko|ayaw|wag|huwag|cancel)\b(?!\s*(problem|prob|worries|worry|problema))/i;
-  const cap = (w) => (w === w.toLowerCase() || w === w.toUpperCase() ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w[0].toUpperCase() + w.slice(1));
-  // A first name: "Maria", "my name is Maria", "ako si Maria", "Ma. Cristina". Null if it doesn't look like one.
-  const firstName = (text) => {
-    let t = String(text).replace(/[^\p{L}\s'.-]/gu, ' ').trim();
-    t = t.replace(/^(yes|oo|opo|sige|ok|okay)\b[\s,.!-]*/i, '').replace(/^(po|hi|hello|hey)\b[\s,.!-]*/i, '');
-    t = t.replace(/^((my\s+)?(first\s+)?name\s*(is|'s)?|i\s*am|i'?m|this\s+is|it'?s|ako\s+(po\s+)?(ay\s+)?(si\s+)?|si|(ang\s+)?pangalan\s+ko\s*(po\s*)?(ay\s*)?|nama\s+saya|saya)\b[\s:,.-]*/i, '').replace(/^po\b\s*/i, '');
-    const parts = t.split(/\s+/).map((x) => x.replace(/^[.'-]+|[.'-]+$/g, '')).filter(Boolean);
-    const w = parts[0] || '';
-    if (!/^\p{L}[\p{L}'-]{1,29}$/u.test(w) || NOT_NAMES.has(w.toLowerCase())) return null;
-    if (/^ma$/i.test(w) && parts[1] && /^\p{L}{2,}$/u.test(parts[1]) && !NOT_NAMES.has(parts[1].toLowerCase())) return `Ma. ${cap(parts[1])}`;
-    return cap(w);
-  };
-  // What a reply to "Type YES to confirm" means: yes (maybe with their name), no, a new time, or neither.
-  const readConfirm = (text) => {
-    if (/^\s*(👍|✅|👌|🙏)+\s*$/u.test(text)) return { kind: 'yes', name: null };
-    const ws = words(text);
-    if (!ws.length) return { kind: 'other' };
-    if (!YES_WORDS.has(ws[0])) {
-      if (NEGATIVE.test(norm(text))) return { kind: 'no' };
-      return looksLikeTime(text) || wantsChange(text) ? { kind: 'time' } : { kind: 'other' };
-    }
-    const rest = ws.slice(1);
-    const restText = rest.join(' ');
-    // "yes but can we do 4pm instead?" is a new time, not a yes.
-    if (looksLikeTime(restText) || wantsChange(restText)) return { kind: 'time' };
-    if (/\b(but|pero|wait|teka|actually)\b/.test(restText)) return { kind: 'other' };
-    const content = rest.filter((w) => !FILLER.has(w));
-    if (!content.length) return { kind: 'yes', name: null };
-    // "yes Maria" / "yes, my name is Maria": take the name. Anything else: still a yes, ask the name.
-    // "YES Maria": only when written like a name (capital first letter), so "yes excited" isn't a name.
-    if (content.length === 1) {
-      const orig = String(text).split(/[^\p{L}'-]+/u).find((w) => norm(w) === content[0]) || '';
-      return { kind: 'yes', name: /^\p{Lu}/u.test(orig) ? firstName(orig) : null };
-    }
-    // "yes, my name is Maria" / "oo, ako si Maria".
-    return { kind: 'yes', name: /\b(name|pangalan)\b|\bako (po )?si\b|\bthis is\b/.test(restText) ? firstName(text.replace(/^\s*\S+[\s,.!-]*/, '')) : null };
-  };
-
-  let bookedName = '';
-  const book = (s, name) => {
-    bookedName = name;
-    s.status = 'yours'; refreshFull(); renderCal();
-    log(`<span class="tag">Booked</span>${esc(fmtDay(s.date, 'en'))} · ${fmtTime(s.min - 60)} Bangkok / ${fmtTime(s.min)} Manila with <b>${s.host}</b>. First name <b>${esc(name)}</b> saved with the booking. In the real bot: Cal.com booking + Zoom link + reminders, same as the booking page.`);
-    botSay(say('booked', longWhen(s), name, s.host));
-    botSay(say('promise', name));
-    card();
-    step = 'booked';
-    log('<span class="tag">Team</span>Booking card + "Before the call" prep note sent to the host (Telegram + call sheet).');
-  };
-
-  // ---- Questions before the final YES: 5 base questions, then follow-ups picked from the answers
-  // (max 10 in all), then a fit check. Ranges, not exact numbers; "Prefer not to say" on money. ----
-  const PNS = { en: 'Prefer not to say', fil: 'Ayokong sabihin' };
-  const Q = {
-    work: { en: 'Are you working right now?', fil: 'May trabaho ka ba ngayon?', opts: { en: ['Employed', 'Own business', 'Between jobs', 'Other'], fil: ['May trabaho', 'Sariling negosyo', 'Walang trabaho ngayon', 'Iba pa'] } },
-    support: { en: 'Who do you support with your income? (tap the main one)', fil: 'Sino ang sinusuportahan mo sa kita mo? (piliin ang pangunahin)', opts: { en: ['My kids', 'My parents', 'Siblings', 'Partner', 'Other family', 'Just myself'], fil: ['Mga anak ko', 'Magulang ko', 'Kapatid', 'Partner', 'Ibang kamag-anak', 'Sarili ko lang'] } },
-    kids: { en: 'Do you have kids?', fil: 'May anak ka ba?', opts: { en: ['Yes', 'No'], fil: ['Oo', 'Wala'] } },
-    income: { en: 'About how much came in last month? (work, sales, help from family)', fil: 'Mga magkano ang pumasok sa iyo noong nakaraang buwan? (trabaho, benta, tulong ng pamilya)', money: true, opts: { en: ['Under ₱5k', '₱5–10k', '₱10–20k', '₱20–40k', 'More than ₱40k'], fil: ['Below ₱5k', '₱5–10k', '₱10–20k', '₱20–40k', 'Higit ₱40k'] } },
-    leftover: { en: "By the end of the month, what's usually left?", fil: 'Pagdating ng katapusan ng buwan, magkano ang natitira?', money: true, opts: { en: ['I run short 😓', 'Almost nothing', '₱500–1k', '₱1–3k', 'More than ₱3k'], fil: ['Kulang pa 😓', 'Halos wala', '₱500–1k', '₱1–3k', 'Higit ₱3k'] } },
-    job: { en: "What's your job? (just type it)", fil: 'Ano ang trabaho mo? (i-type lang)', free: true },
-    jobLong: { en: 'How long have you had it?', fil: 'Gaano ka na katagal doon?', opts: { en: ['<6 months', '6–12 months', '1–3 years', '3+ years'], fil: ['<6 buwan', '6–12 buwan', '1–3 taon', '3+ taon'] } },
-    payday: { en: 'When does your pay come in?', fil: 'Kailan ang sweldo mo?', opts: { en: ['15th & 30th', 'Weekly', 'Daily', 'It varies'], fil: ['Kinsenas', 'Lingguhan', 'Araw-araw', 'Pabago-bago'] } },
-    biz: { en: "What's your business? (just type it)", fil: 'Ano ang negosyo mo? (i-type lang)', free: true },
-    sales: { en: 'About how much do you sell in a week?', fil: 'Mga magkano ang benta mo kada linggo?', money: true, opts: { en: ['Under ₱1k', '₱1–3k', '₱3–7k', 'More than ₱7k'], fil: ['Below ₱1k', '₱1–3k', '₱3–7k', 'Higit ₱7k'] } },
-    lastJob: { en: 'What was your most recent job? (just type it)', fil: 'Ano ang huli mong trabaho? (i-type lang)', free: true },
-    prevJob: { en: 'And the job before that? (type it, or Skip)', fil: 'At ang trabaho bago iyon? (i-type, o Laktawan)', free: true },
-    moneyNow: { en: 'Any money coming in right now?', fil: 'May pumapasok bang pera ngayon?', opts: { en: ['Help from family', 'Odd jobs', 'None right now'], fil: ['Tulong ng pamilya', 'Raket / sideline', 'Wala sa ngayon'] } },
-    kidsCount: { en: 'How many kids?', fil: 'Ilan ang anak mo?', opts: { en: ['1', '2', '3', '4+'], fil: ['1', '2', '3', '4+'] } },
-    rentFood: { en: 'About how much went to rent and food last month?', fil: 'Mga magkano ang napunta sa upa at pagkain noong nakaraang buwan?', money: true, opts: { en: ['Under ₱3k', '₱3–6k', '₱6–10k', '₱10–20k', 'More'], fil: ['Below ₱3k', '₱3–6k', '₱6–10k', '₱10–20k', 'Higit pa'] } },
-    billTrouble: { en: 'In the last 3 months, did you have trouble paying a bill on time?', fil: 'Sa nakaraang 3 buwan, nahirapan ka bang magbayad ng bill sa oras?', opts: { en: ['No', 'Once', 'A few times', 'Most months'], fil: ['Hindi', 'Isang beses', 'Ilang beses', 'Halos buwan-buwan'] } },
-    debt: { en: 'Do you owe money right now?', fil: 'May utang ka ba ngayon?', money: true, opts: { en: ['No', 'Family / friends', '5-6 or a lending app', 'Bank / credit card', 'Several places'], fil: ['Wala', 'Pamilya / kaibigan', '5-6 o lending app', 'Bangko / credit card', 'Maraming lugar'] } },
-    debtAmt: { en: 'About how much in total?', fil: 'Mga magkano lahat?', money: true, opts: { en: ['Under ₱5k', '₱5–20k', '₱20–50k', 'More'], fil: ['Below ₱5k', '₱5–20k', '₱20–50k', 'Higit pa'] } },
-    loanUse: { en: 'What would ₱870 (our first $15 loan) help with? (just type it)', fil: 'Saan makakatulong ang ₱870 (unang $15 loan namin)? (i-type lang)', free: true },
-    repay: { en: 'When could you pay it back?', fil: 'Kailan mo ito kayang bayaran?', opts: { en: ['Next payday', 'Within 2 weeks', 'Not sure'], fil: ['Sa susunod na sweldo', 'Sa loob ng 2 linggo', 'Hindi sigurado'] } }
-  };
-  const BASE = ['work', 'support', 'kids', 'income', 'leftover'];
-  const MAX_Q = 10;
-  const is = (v, ...words) => words.some((w) => String(v || '').toLowerCase().includes(w.toLowerCase()));
-  // Which follow-ups apply, most useful first.
-  const followUps = (a) => [
-    is(a.work, 'employed', 'may trabaho') && 'job', is(a.work, 'employed', 'may trabaho') && 'payday',
-    is(a.work, 'business', 'negosyo') && 'biz', is(a.work, 'business', 'negosyo') && 'sales',
-    is(a.work, 'between', 'walang', 'other', 'iba') && 'lastJob', is(a.work, 'between', 'walang') && 'moneyNow',
-    is(a.kids, 'yes', 'oo') && 'kidsCount',
-    (is(a.leftover, 'short', 'kulang', 'nothing', 'wala') || a.leftover === PNS.en || a.leftover === PNS.fil) && 'debt',
-    a.debt && !is(a.debt, 'no', 'wala', 'prefer', 'ayoko') && 'debtAmt',
-    'loanUse', 'repay',
-    is(a.leftover, 'short', 'kulang') && 'billTrouble',
-    is(a.work, 'employed', 'may trabaho') && 'jobLong',
-    'rentFood', 'prevJob'
-  ].filter(Boolean);
-
-  let prepName = '', prepHost = 'Emma', prepAnswers = {}, prepList = [], prepI = 0, asked = [], quizSlot = null, reasked = [];
-  const NOT_SURE = ['Not sure', 'Hindi sigurado'];
-  const OTHER = ['Other', 'Iba pa'];
-  const OPTIONAL = ['prevJob'];
-  const dodged = (v) => v === PNS.en || v === PNS.fil || NOT_SURE.includes(v);
-  const isDodge = (key, value) => (value == null ? Q[key].free && !OPTIONAL.includes(key) : dodged(value) || (key === 'work' && OTHER.includes(value)));
-  const nextKey = () => {
-    if (asked.length >= MAX_Q) return null;
-    const order = [...BASE, ...followUps(prepAnswers)];
-    return order.find((k) => !asked.includes(k)) ?? null;
-  };
-  const startQuiz = (s) => {
-    quizSlot = s; prepAnswers = {}; asked = []; reasked = []; quizDone = false; prepHost = s.host;
-    botSay(lang === 'fil'
-      ? `⏳ Naka-hold para sa iyo ang ${longWhen(s)} kasama si ${s.host}.\n\nIlang mabilis na tanong muna para makapaghanda si ${s.host} (mga 2 min). Ranges lang, at pribado ito sa team namin 🔒`
-      : `⏳ I'm holding ${longWhen(s)} with ${s.host} for you.\n\nA few quick questions first so ${s.host} can prepare (about 2 min). Ranges are fine, and it stays private with our team 🔒`);
-    askNext();
-  };
-  const askNext = () => {
-    const key = nextKey();
-    if (!key) return finishQuiz();
-    asked.push(key);
-    const q = Q[key];
-    prepList = [Object.assign({ key }, q)]; prepI = 0;
-    // Every path has at least 10 questions to choose from, so the count is always out of 10.
-    botSay(`${lang === 'fil' ? 'Tanong' : 'Question'} ${asked.length}/${MAX_Q} · ${q[lang]}`);
-    prepButtons(key);
-    step = 'prep';
-  };
-  const prepButtons = (key) => {
-    const q = Q[key];
-    const buttons = (q.opts ? q.opts[lang] : []).map((o) => [o, (l) => { meSay(l); answerPrep(l); }]);
-    if (q.money) buttons.push([PNS[lang], (l) => { meSay(l); answerPrep(l); }]);
-    if (q.free) buttons.push([skipLabel(), (l) => { meSay(l); answerPrep(null); }]);
-    quick(buttons);
-  };
-  // ---- Typed answers: matched to a button by meaning, never by position ("5" is not the 5th button). ----
-  const DODGE = /\b(skip|laktawan|ayoko|ayaw|prefer not|rather not|secret|sikreto|private|pass|idk|i don'?t know|dunno|di ko alam|hindi ko alam|ewan|not sure|hindi sigurado|no comment|tidak tahu|rahasia|none of your business|bakit)\b/;
-  // [pattern, button index] per question, checked in order.
-  const SYN = {
-    work: [[/\b(between|unemployed|jobless|no work|no job|walang trabaho|wala(ng)? work|wala pa|wala)\b/, 2], [/\b(business|negosyo|tindahan|sari|store|selling|seller|benta|nagtitinda|online shop|reseller)\b/, 1], [/\b(employed|empleyado|employee|working|may trabaho|staff|office|full ?time|part ?time|yes|oo|opo|meron)\b/, 0], [/\b(other|iba|student|freelance\w*|retired|ofw|housewife|plain housewife)\b/, 3]],
-    support: [[/\b(kids?|anak|children|child)\b/, 0], [/\b(parents?|magulang|nanay|tatay|mama|papa|mom|dad|mother|father)\b/, 1], [/\b(siblings?|kapatid|brother|sister)\b/, 2], [/\b(partner|asawa|husband|wife|bf|gf|boyfriend|girlfriend|jowa)\b/, 3], [/\b(family|kamag|relatives?|lola|lolo|tita|tito|pamangkin|grand\w*)\b/, 4], [/\b(myself|sarili|ako lang|me|alone|just me|none|no one|wala)\b/, 5]],
-    kids: [[/^(no|none|wala|wala pa|hindi|nope|zero|0)\b/, 1], [/^(yes|oo|opo|meron|mayroon|yep|yeah|[1-9])\b/, 0]],
-    kidsCount: [[/^(1|one|isa)\b/, 0], [/^(2|two|dalawa)\b/, 1], [/^(3|three|tatlo)\b/, 2], [/^([4-9]|1\d|four|five|apat|lima|anim)\b/, 3]],
-    jobLong: [[/\b([1-5])\s*(months?|mos?|buwan)\b|\b(new|bago|kakasimula|just started)\b/, 0], [/\b([6-9]|1[01])\s*(months?|mos?|buwan)\b|\b(half a year|almost a year)\b/, 1], [/\b(1|2|one|two|isa|dalawa|a)\s*(years?|yrs?|taon)\b/, 2], [/\b([3-9]|[1-9]\d|three|tatlo|many|matagal)\s*(years?|yrs?|taon)\b|\bmatagal na\b/, 3]],
-    payday: [[/\b(15|30|kinsenas|kinsena|katapusan|twice a month|semi)\b/, 0], [/\b(weekly|week|lingguhan|linggo)\b/, 1], [/\b(daily|araw-araw|araw araw|everyday|every day|arawan)\b/, 2], [/\b(varies|depende|pabago|iba-iba|irregular|random|minsan)\b/, 3]],
-    moneyNow: [[/\b(family|pamilya|parents|magulang|asawa|padala)\b/, 0], [/\b(odd|raket|sideline|extra|gig|part ?time|labada|delivery)\b/, 1], [/\b(none|wala|nothing|no)\b/, 2]],
-    billTrouble: [[/^(no|hindi|never|wala|nope)\b/, 0], [/\b(once|isang beses|isa|one time|1)\b/, 1], [/\b(few|ilang|sometimes|minsan|twice|2|3)\b/, 2], [/\b(most|always|lagi|palagi|halos|every month)\b/, 3]],
-    leftover: [[/\b(short|kulang|negative|utang|kapos|lubog)\b/, 0], [/\b(nothing|wala|zero|halos wala|almost none|none)\b/, 1]],
-    debt: [[/^(no|none|wala|hindi|nope)\b/, 0], [/\b(several|marami|many|lots|everywhere|ilang lugar)\b/, 4], [/\b(5-6|five six|lending|app|gcash|ggives|gloan|tala|cashalo|billease|home credit|sloan|spaylater)\b/, 2], [/\b(bank|credit card|cc|card)\b/, 3], [/\b(family|friends?|pamilya|kaibigan|kapatid|relatives?)\b/, 1]],
-    repay: [[/\b(payday|sweldo|next pay|kinsenas|katapusan)\b/, 0], [/\b(2 weeks|two weeks|2 linggo|dalawang linggo|week|linggo)\b/, 1], [/\b(not sure|hindi sigurado|depende|di ko alam|hindi ko alam|idk|ewan)\b/, 2]]
-  };
-  // Money ranges by the amount typed: upper bounds per button.
-  const RANGES = { income: [5000, 10000, 20000, 40000], leftover: [null, 500, 1000, 3000], sales: [1000, 3000, 7000], rentFood: [3000, 6000, 10000, 20000], debtAmt: [5000, 20000, 50000] };
-  const amountOf = (t) => {
-    const m = /(\d[\d,]*(?:\.\d+)?)\s*(k\b|thousand|libo|rb\b|ribu)?/.exec(t);
-    if (!m) return null;
-    const n = Number(m[1].replace(/,/g, ''));
-    if (m[2]) return n * 1000;
-    // "5" alone could be ₱5 or ₱5,000: ask instead of guessing.
-    return n === 0 || n >= 100 ? n : 'unsure';
-  };
-  const readTyped = (key, text) => {
-    const q = Q[key], opts = q.opts[lang], t = norm(text).trim();
-    const clean = (o) => norm(o).replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
-    const ct = clean(text);
-    const exact = opts.find((o) => clean(o) === ct) || (ct.length >= 3 && opts.find((o) => clean(o).startsWith(ct)));
-    if (exact) return { pick: exact };
-    for (const [re, i] of SYN[key] || []) if (re.test(t)) return { pick: opts[i] };
-    if (RANGES[key]) {
-      const a = amountOf(t);
-      if (a === 'unsure') return { unsure: true };
-      if (a !== null) {
-        const bounds = RANGES[key];
-        let i = bounds.findIndex((b) => b !== null && a < b);
-        if (i === -1) i = bounds.length;
-        if (key === 'leftover') i = a === 0 ? 1 : i; // leftover: 0 → "Almost nothing"
-        return { pick: opts[Math.min(i, opts.length - 1)] };
-      }
-    }
-    return {};
-  };
-  // They ask to move the call partway through: keep their answers, find a new time, then carry on.
-  const changeMidQuiz = async (text) => {
-    asked.pop();
-    clearQuick();
-    const ok = await readAndOffer(text, 'prep');
-    if (!ok) { botSay(say('finishFirst')); askNext(); }
-  };
-  const handlePrep = (text) => {
-    const key = asked[asked.length - 1], q = Q[key], t = norm(text).trim();
-    clearQuick();
-    // Typed "skip": a free-text question is skipped, a money question counts as "Prefer not to say".
-    if (/^\s*(skip|laktawan)\s*$/.test(t)) return answerPrep(q.free ? null : q.money ? PNS[lang] : undefined);
-    if (q.free) {
-      if (DODGE.test(t) && t.split(/\s+/).length <= 4) return answerPrep(null);
-      if (wantsChange(t) && looksLikeTime(t)) return changeMidQuiz(text);
-      return answerPrep(text.trim().slice(0, 120));
-    }
-    const r = readTyped(key, text);
-    if (r.pick) return answerPrep(r.pick);
-    if (looksLikeTime(t) && (wantsChange(t) || !SYN[key])) return changeMidQuiz(text);
-    if (wantsChange(t) && looksLikeTime(t)) return changeMidQuiz(text);
-    if (q.money && DODGE.test(t)) return answerPrep(PNS[lang]);
-    if (r.unsure) { botSay(say('rangeNumber')); return prepButtons(key); }
-    botSay(say('tapOne'));
-    prepButtons(key);
-  };
-  const skipLabel = () => (lang === 'fil' ? 'Laktawan' : 'Skip');
-  const answerPrep = (value) => {
-    const key = asked[asked.length - 1];
-    // A typed "skip" on a button question that isn't about money: just show the buttons again.
-    if (value === undefined) { botSay(say('tapOne')); return prepButtons(key); }
-    if (isDodge(key, value)) {
-      // Second dodge on the same question: hold off, kindly (Emma + George, 2026-10-30).
-      if (reasked.includes(key)) return holdOff(key, value);
-      // First dodge: ask once more, same buttons.
-      reasked.push(key);
-      log(`<span class="tag">Re-ask</span><code>${esc(key)}</code>: they answered "${esc(value ?? 'Skip')}" — asking once more.`);
-      const q = Q[key];
-      botSay(say(q.free ? 'reaskType' : key === 'work' ? 'reaskOther' : 'reask'));
-      prepButtons(key);
-      return;
-    }
-    if (value) prepAnswers[key] = value;
-    askNext();
-  };
-
-  const holdOff = (key, value) => {
-    log(`<span class="tag">Held off</span>No call booked: still "${esc(value ?? 'Skip')}" on <code>${esc(key)}</code> after being asked twice. The time is freed. Real bot: a "⏸ Held off" line to the team, nothing else. They can start again any time.`);
-    releaseBooking();
-    quizSlot = null; asked = []; prepAnswers = {}; quizDone = false;
-    botSay(say('heldOff'));
-    step = 'ask';
-  };
-
-  // ---- Fit check (team-only): mission rule + "will $15 actually help?" ----
-  // Team-only, never a rejection (George, 2026-10-29: "let's not deny people anything"). Being single
-  // or supporting nobody never counts against anyone.
-  const fitCheck = (a) => {
-    const noIncome = is(a.work, 'between', 'walang') && (is(a.moneyNow, 'none', 'wala') || !a.moneyNow);
-    const deepTrouble = is(a.leftover, 'short', 'kulang') && is(a.debt, 'several', 'maraming') && is(a.repay, 'not sure', 'hindi sigurado');
-    if (noIncome) return { verdict: 'review', reason: 'no current work or income — ask how they would repay' };
-    if (deepTrouble) return { verdict: 'review', reason: "runs short, owes several places, unsure when they'd repay — check $15 really helps" };
-    const talk = is(a.leftover, 'short', 'kulang') || is(a.debt, '5-6', 'lending app', 'several', 'maraming') || is(a.billTrouble, 'most', 'halos') ;
-    return talk ? { verdict: 'talk', reason: 'tight money or existing debts — ask how they would repay' } : { verdict: 'good', reason: 'has income and a small gap a $15 loan can cover' };
-  };
-  const PRETEND_BIO = { work: 'Full-time employee', payday: '15th & 30th' };
-  const crossCheck = (a) => {
-    const notes = [];
-    if (a.work && !is(a.work, 'employed', 'may trabaho')) notes.push(`Bio says "${PRETEND_BIO.work}", but in chat: ${a.work}${a.biz ? ` (${a.biz})` : a.lastJob ? ` (last job: ${a.lastJob})` : ''}. Ask which is their main income now.`);
-    if (a.payday && !is(a.payday, '15', 'kinsenas')) notes.push(`Bio payday ${PRETEND_BIO.payday}, chat says ${a.payday}. Ask when money really comes in.`);
-    return notes;
-  };
-
-  const finishQuiz = () => {
-    quizDone = true;
-    const fit = fitCheck(prepAnswers);
-    log(`<span class="tag">Answers</span>${Object.entries(prepAnswers).map(([k, v]) => `${k}: <code>${esc(v)}</code>`).join(' · ') || 'all skipped'}`);
-    log(`<span class="tag">Fit check</span>${fit.verdict === 'good' ? '✅ Good fit' : fit.verdict === 'talk' ? '⚠️ Talk first' : '❗ Needs a closer look'} — ${esc(fit.reason)}. Team-only, never shown to the borrower, never a rejection. Family answers are not used for scoring.`);
-    writePrepNote(fit);
-    showExpectations();
-  };
-
-  // Before the YES: what the first loan really is, so nobody books expecting more.
-  const showExpectations = () => {
-    botSay(lang === 'fil'
-      ? 'Salamat! 🙏 Bago mo i-confirm, para malinaw 👇\n\n• Maliit ang unang loan: $15 (mga ₱870).\n• Tumataas ang limit mo nang paunti-unti: bawat loan na nabayaran sa oras, may susunod na level. Ilang loan ito, hindi ilang araw.\n• Hindi ito mapapabilis, pero kapag on time ka, lalaki kasama mo ang Moodeng 🦛'
-      : "Thanks! 🙏 Before you confirm, so it's clear 👇\n\n• Your first loan is small: $15 (about ₱870).\n• Your limit grows step by step: each loan repaid on time unlocks the next level. It takes a few loans, not a few days.\n• It can't be rushed, but if you pay on time, Moodeng grows with you 🦛");
-    quick([[lang === 'fil' ? '👍 Naiintindihan ko' : '👍 Got it', (l) => { meSay(l); log('<span class="tag">Expectations</span>They acknowledged: first loan $15, limit grows step by step.'); askFinalConfirm(quizSlot); }]]);
-    step = 'expect';
-  };
-
-  // ---- The host's prep note (real bot: DeepSeek). Conversation help + the team-only fit check. ----
-  const prepBox = () => document.getElementById('prep-box');
-  const renderPrep = (n, fit, checks) => {
-    const box = prepBox();
-    box.className = 'prep';
-    box.innerHTML = '';
-    const add = (cls, label, content) => {
-      const div = document.createElement('div');
-      if (label) { const l = document.createElement('div'); l.className = 'label'; l.textContent = label; div.append(l); }
-      const body = document.createElement('div'); body.className = cls;
-      if (Array.isArray(content)) { const ul = document.createElement('ul'); for (const c of content) { const li = document.createElement('li'); li.textContent = c; ul.append(li); } body.append(ul); } else body.textContent = content;
-      div.append(body); box.append(div);
-    };
-    add(fit.verdict === 'good' ? 'opener' : 'care', 'Fit check (team only)', `${fit.verdict === 'good' ? '✅ Good fit' : fit.verdict === 'talk' ? '⚠️ Talk first' : '❗ Needs a closer look'}: ${fit.reason}`);
-    add('who', 'Who they are', n.who || '—');
-    add('opener', 'Suggested opener', n.opener || '—');
-    if (checks.length) add('care', 'Check against bio', checks);
-    if (n.points?.length) add('', 'Talking points', n.points);
-    if (n.care) add('care', 'Heads-up', n.care);
-  };
-  const fallbackNote = () => {
-    const a = prepAnswers;
-    return {
-      who: [a.work, a.job || a.biz || a.lastJob, a.support && `supports ${a.support.toLowerCase()}`, a.kidsCount && `${a.kidsCount} kid(s)`].filter(Boolean).join(' · ') || 'No answers given.',
-      opener: a.biz ? `Ask how ${a.biz} is going this week.` : a.job ? `Ask what a normal day as ${a.job} looks like.` : 'Ask how they heard about Moodeng.',
-      points: [a.loanUse && `Wants the loan for: ${a.loanUse}.`, a.repay && `Says they can repay: ${a.repay}.`, a.debt && !is(a.debt, 'no', 'wala') && `Owes: ${a.debt}${a.debtAmt ? ` (${a.debtAmt})` : ''}. Ask how this loan fits.`].filter(Boolean),
-      care: ''
-    };
-  };
-  const writePrepNote = async (fit) => {
-    const checks = crossCheck(prepAnswers);
-    const box = prepBox();
-    box.className = 'prep-empty';
-    box.textContent = 'Writing the prep note…';
-    const t0 = performance.now();
-    let note = null, how = 'rules';
-    try {
-      const r = await api({ kind: 'prep', name: prepName || 'the borrower', host: prepHost, answers: prepAnswers });
-      if (r && r.note) { note = r.note; how = 'DeepSeek'; }
-    } catch {}
-    if (!note) note = fallbackNote();
-    renderPrep(note, fit, checks);
-    log(`<span class="tag">${how}</span>Prep note in <b>${((performance.now() - t0) / 1000).toFixed(1)}s</b>. Bio cross-check: ${checks.length ? checks.length + ' thing(s) to ask about' : 'matches'}.`);
-  };
-
-  let lastOffer = null;
-  const offer = (result, summary) => {
-    const { picks, exact, asked, inside, dayFull } = result;
-    offered = picks; renderCal();
-    if (!picks.length) { botSay(say('none')); log('No free time in the next 7 days — the real bot would alert the team.'); return; }
-    lastOffer = result;
-    const askedText = asked ? `${fmtDay(asked.date, lang)} ${lang === 'fil' ? 'nang' : 'at'} ${fmtTime(asked.min)}` : '';
-    const longDay = asked && new Intl.DateTimeFormat(lang === 'fil' ? 'fil-PH' : 'en-US', { timeZone: 'UTC', weekday: 'long', month: 'short', day: 'numeric' }).format(new Date(asked.date + 'T00:00:00Z'));
-    const isMine = asked && mine && asked.date === mine.date && asked.min === mine.min;
-    const intro = result.tooFar ? say('tooFar') : isMine ? say('askedMine', askedText) : asked && dayFull ? say('dayFull', longDay) : asked ? say(exact ? 'askedFree' : 'askedTaken', askedText) : exact ? say('offer') : say('near');
-    botSay(`${intro}
-${say('tzNote')}`);
-    offerButtons(picks, asked);
-    log(`Offered ${picks.map((s) => `<code>${esc(fmtDay(s.date, 'en'))} ${hhmm(s.min - 60)}</code>`).join(' ')} (Bangkok)${asked ? (exact ? ' — the exact time they asked for is free, plus 2 nearby' : dayFull ? ' — that whole day is full (4 calls or no free hosts), so the same time on the nearest days' : ' — the exact time is taken, so the 3 nearest, closest first') : exact ? (inside ? ` — only ${inside} free in their window, topped up with the nearest` : '') : ' — nothing free in their window, so the nearest times'}${summary ? ` · AI summary (team only): "${esc(summary)}"` : ''}. ⭐ = best match.`);
-    step = 'offered';
-  };
-  const offerButtons = (picks, asked) => {
-    const buttons = picks.map((s, i) => [slotLabel(s, i === 0, asked), (label) => { meSay(label); hold(s); }]);
-    // Already have a time? Let them keep it.
-    if (mine) buttons.push([say('keepBtn', `${fmtDay(mine.date, lang)} · ${fmtTime(mine.min)}`), (label) => { meSay(label); keepCurrent(); }]);
-    buttons.push([say('otherBtn'), (label) => {
-      meSay(label); offered = []; renderCal();
-      if (mine && mine.status === 'yours') { botSay(say('otherKeep')); changing = true; step = 'booked'; } else { botSay(say('other')); step = 'ask'; }
-    }]);
-    quick(buttons);
-  };
-  const reoffer = () => { offered = lastOffer.picks; renderCal(); botSay(say('reoffer')); offerButtons(lastOffer.picks, lastOffer.asked); step = 'offered'; };
-  const keepCurrent = () => {
-    offered = []; renderCal(); changing = false;
-    if (mine.status === 'yours') { botSay(say('allSet', bookedName, longWhen(mine))); step = 'booked'; return; }
-    if (quizDone) return askFinalConfirm(mine);
-    askNext();
-  };
-  // "2", "the second one", "yung pangalawa", or a time that matches exactly one of the offered buttons.
-  const ORD = [/^(1|one|first|1st|una|unang|uno|#1)$/, /^(2|two|second|2nd|pangalawa|ikalawa|#2)$/, /^(3|three|third|3rd|pangatlo|ikatlo|#3)$/];
-  const PICK_FILL = new Set(['the', 'yung', 'ung', 'ang', 'po', 'option', 'number', 'choice', 'na', 'lang', 'please', 'pls', 'sige', 'ok', 'okay', 'take', 'gusto', 'ko', 'ako', 'sa', 'nalang', 'i', "i'll", 'ill', 'want', 'pick', 'yes', 'oo', 'opo', 'slot', 'time']);
-  const pickOffered = (text) => {
-    let ws = words(text).filter((w) => !PICK_FILL.has(w));
-    if (ws.length === 2 && ws[1] === 'one') ws = [ws[0]];
-    if (ws.length !== 1 && !(ws.length === 2 && /^(am|pm)$/.test(ws[1]))) return null;
-    const core = ws.join('');
-    const i = ORD.findIndex((re) => re.test(core));
-    if (i >= 0) return offered[i] || null;
-    const m = /^(\d{1,2})(?::(\d{2}))?(am|pm)?$/.exec(core);
-    if (!m) return null;
-    const h = Number(m[1]) % 12, mm = Number(m[2] || 0);
-    const mins = m[3] === 'am' ? [h * 60 + mm] : m[3] === 'pm' ? [(h + 12) * 60 + mm] : Number(m[1]) > 12 ? [Number(m[1]) * 60 + mm] : [h * 60 + mm, (h + 12) * 60 + mm];
-    const hits = offered.filter((s) => mins.includes(s.min));
-    return hits.length === 1 ? hits[0] : null;
-  };
-  const heldButtons = () => quick([[say('otherBtn'), (label) => { meSay(label); releaseBooking(); botSay(say('other')); step = 'ask'; }]]);
-
-  // Read a message as a day/time and offer free times. False if there's no usable day or time.
-  // Nothing they already have (a held or booked time) is let go here — only when they tap a new time.
-  const readAndOffer = async (text, from) => {
-    clearQuick();
-    const stop = typing();
-    setBusy(true);
-    const { parsed, how, ms } = await readMessage(text);
-    stop(); setBusy(false);
-    // One-word replies ("ok", "3pm") don't switch the language.
-    if (parsed.lang !== lang && words(text).length >= 2) setLang(parsed.lang, true);
-    const windowsText = parsed.anytime ? 'any time' : parsed.windows.map((w) => `${fmtDay(w.date, 'en')} ${w.from}–${w.to}`).join(', ') || '—';
-    log(`<span class="tag">${how}</span>Read it in <b>${(ms / 1000).toFixed(1)}s</b> → <code>${esc(windowsText)}</code> (Manila)${lang === 'fil' ? ' · replying in Filipino' : ''}`);
-    if (parsed.unclear || (!parsed.anytime && !parsed.windows.length)) return false;
-    // They already have a time and name only a new hour ("4pm instead"): same day as the one they have.
-    if (mine && parsed.windows.length && !DAY_WORD.test(norm(text))) {
-      parsed.windows = parsed.windows.slice(0, 1).map((w) => ({ ...w, date: mine.date }));
-      log(`No day named, so reading it as ${esc(fmtDay(mine.date, 'en'))} (the day they already have).`);
-    }
-    // Booked and they mention the time they already have ("see you tomorrow!"): nothing to change.
-    if (from === 'booked' && !changing && mine && parsed.windows.some((w) => w.date === mine.date && (toMin(w.from) ?? 0) <= mine.min && mine.min < (toMin(w.to) ?? 1440))) {
-      botSay(say('allSet', bookedName, longWhen(mine))); step = 'booked'; return true;
-    }
-    const result = match(parsed);
-    // Everything they asked for is past the 7 days we can book: say so, don't call it "fully booked".
-    const lastDay = cal.length ? cal[cal.length - 1].date : '';
-    if (!parsed.anytime && lastDay && parsed.windows.every((w) => w.date > lastDay)) result.tooFar = true;
-    offer(result, parsed.summary);
-    return true;
-  };
-
-  const handle = async (text) => {
-    meSay(text);
-    if (step === 'busy') return;
-    if (step === 'waiting_bio') { botSay(say('bioMissing')); return; }
-    if (step === 'prep') return handlePrep(text);
-    if (step === 'expect') { clearQuick(); askFinalConfirm(quizSlot); return; }
-    // "2", "the first one", "3:30" while times are on screen picks that time.
-    if (step === 'offered') { const s = pickOffered(text); if (s) { clearQuick(); hold(s); return; } }
-    if (step === 'held' && mine) {
-      const c = readConfirm(text);
-      if (c.kind === 'yes') {
-        clearQuick();
-        log('They typed <b>YES</b> to the time.');
-        // "YES Maria" in one go, or a moved call (we already have their name): book now.
-        const name = c.name || bookedName;
-        if (name) { book(mine, name); return; }
-        botSay(say('askName')); step = 'name'; return;
-      }
-      if (c.kind === 'no') { clearQuick(); releaseBooking(); botSay(say('other')); step = 'ask'; return; }
-      if (c.kind === 'other') { botSay(say('sayYes')); return; }
-      log('Not a YES — reading it as a new time.');
-    }
-    // A name, unless it's clearly a new time ("actually tuesday 3pm is bad").
-    if (step === 'name' && mine && !(words(text).length > 1 && (looksLikeTime(text) || wantsChange(text)))) {
-      const name = firstName(text);
-      if (name) { book(mine, name); return; }
-      botSay(say('badName')); return;
-    }
-    // Booked: "ok", "thanks", "can I bring a friend?" get a friendly reply; only a day/time moves the call.
-    if (step === 'booked' && mine && !looksLikeTime(text) && CANCEL.test(norm(text))) {
-      clearQuick();
-      const was = longWhen(mine);
-      log(`<span class="tag">Cancelled</span>They cancelled ${esc(fmtDay(mine.date, 'en'))}. Real bot: cancel the Cal.com booking and tell the host.`);
-      releaseBooking(); changing = false;
-      botSay(say('cancelled', was)); step = 'ask'; return;
-    }
-    if (step === 'booked' && mine && !changing && !looksLikeTime(text)) {
-      clearQuick();
-      if (wantsChange(text)) { botSay(say('otherKeep')); changing = true; return; }
-      botSay(say('allSet', bookedName, longWhen(mine))); return;
-    }
-    const from = step;
-    if (await readAndOffer(text, from)) return;
-    // No usable day or time: whatever they had stays exactly as it was.
-    if (from === 'offered' && lastOffer) return reoffer();
-    if (from === 'held' && mine) { botSay(say('sayYes')); heldButtons(); step = 'held'; return; }
-    if (from === 'name' && mine) { botSay(say('askName')); step = 'name'; return; }
-    if (from === 'booked' && mine) { botSay(changing ? say('unclearKeep', longWhen(mine)) : say('allSet', bookedName, longWhen(mine))); step = 'booked'; return; }
-    botSay(say('unclear')); step = 'ask';
-  };
-
-  // ---- controls ----
-  const form = document.getElementById('form'), input = document.getElementById('msg'), sendBtn = document.getElementById('send');
-  const setBusy = (b) => { sendBtn.disabled = b; input.disabled = b; if (!b) input.focus(); };
-  form.addEventListener('submit', (e) => { e.preventDefault(); const v = input.value.trim(); if (!v || sendBtn.disabled) return; input.value = ''; handle(v); });
-
-  const setLang = (l, quiet) => {
-    lang = l;
-    document.getElementById('lang-en').setAttribute('aria-pressed', String(l === 'en'));
-    document.getElementById('lang-fil').setAttribute('aria-pressed', String(l === 'fil'));
-    if (!quiet) restart();
-  };
-  document.getElementById('lang-en').onclick = () => setLang('en');
-  document.getElementById('lang-fil').onclick = () => setLang('fil');
-
-  const TRIES = ['YES', 'Maria', 'bukas after 6pm','Saturday morning', 'pwede po ba sa Lunes ng hapon?', 'tomorrow 3pm', 'any time is ok', 'mamaya gabi', 'next friday before noon', 'ok'];
-  const tries = document.getElementById('tries');
-  for (const t of TRIES) { const b = document.createElement('button'); b.type = 'button'; b.textContent = t; b.onclick = () => { if (!sendBtn.disabled) handle(t); }; tries.append(b); }
-
-  let bioDone = true;
-  const restart = () => {
-    chat.innerHTML = ''; offered = []; mine = null; step = 'ask'; prepAnswers = {};
-    asked = []; reasked = []; quizDone = false; changing = false; bookedName = ''; lastOffer = null; quizSlot = null;
-    { const b = document.getElementById('prep-box'); b.className = 'prep-empty'; b.textContent = 'Book a call in the chat, then answer the "get to know you" questions to see the prep note here.'; }
-    buildCalendar(); renderCal();
-    meSay('MOODENG-4821');
-    botSay(say('connected'));
-    if (bioDone) { botSay(say('ask')); return; }
-    // Bio not filled in yet: send them back to the app; the bot asks to book once the app saves it.
-    botSay(say('bioMissing'));
-    step = 'waiting_bio';
-    quick([[say('backBtn'), (label) => {
-      meSay(label);
-      log('<span class="tag">App</span>They answered the 5 questions in the app → the app tells the bot → the bot sends "LAST STEP: book your call" here.');
-      botSay(say('ask'));
-      step = 'ask';
-    }]]);
-  };
-  const startOver = (done) => { bioDone = done; logEl.innerHTML = '<li><span></span><span class="empty">Send a message to see each step.</span></li>'; logStarted = false; restart(); };
-  document.getElementById('reset').onclick = () => startOver(true);
-  document.getElementById('reset-nobio').onclick = () => startOver(false);
-
-  // Load the live free times, then start the chat.
-  const loadLive = async () => {
-    if (!KEY) { document.getElementById('chat').innerHTML = '<p class="note" style="padding:16px">This test link is missing its key. Ask George for the full link.</p>'; return; }
-    document.getElementById('chat').innerHTML = '<p class="note" style="padding:16px">⏳ Loading our live calendar…</p>';
-    try {
-      const data = await api({ kind: 'slots', timeZone: 'Asia/Manila' });
-      const byDay = {};
-      for (const iso of data.all || data.slots || []) {
-        const date = iso.slice(0, 10), t = iso.slice(11, 16);
-        (byDay[date] = byDay[date] || []).push(t);
-        SLOT_HOST[`${date} ${t}`] = (data.hosts || {})[iso] || null;
-      }
-      REAL = Object.fromEntries(Object.entries(byDay).sort().map(([d, ts]) => [d, ts.join(',')]));
-      log(`<span class="tag">Live</span>Loaded ${(data.all || data.slots || []).length} real free times (Emma + George) from the booking system.`);
-    } catch (e) {
-      document.getElementById('chat').innerHTML = `<p class="note" style="padding:16px">Couldn't load the live calendar (${esc(e.message)}). Check the link, or ask George.</p>`;
-      return;
-    }
-    restart();
-  };
-  loadLive();
-})();
+// Load the live free times, then start the chat.
+const loadLive = async () => {
+  if (!KEY) { chat.innerHTML = '<p class="note" style="padding:16px">This test link is missing its key. Ask George for the full link.</p>'; return; }
+  chat.innerHTML = '<p class="note" style="padding:16px">⏳ Loading our live calendar…</p>';
+  try {
+    // Asked in UTC; each slot is a real instant, shown in whichever zone the pretend borrower is in.
+    const data = await api({ kind: 'slots', timeZone: 'UTC' });
+    RAW = (data.all || data.slots || []).map((iso) => ({ at: new Date(iso), host: (data.hosts || {})[iso] === 'george' ? 'George' : 'Emma' }));
+    log(`<span class="tag">Live</span>Loaded ${RAW.length} real free times (Emma + George) from the booking system.`);
+  } catch (e) {
+    chat.innerHTML = `<p class="note" style="padding:16px">Couldn't load the live calendar (${esc(e.message)}). Check the link, or ask George.</p>`;
+    return;
+  }
+  startOver(true);
+};
+loadLive();
 </script>
-
 </body>
 </html>
