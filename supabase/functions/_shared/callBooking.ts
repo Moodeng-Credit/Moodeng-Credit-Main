@@ -335,8 +335,10 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
             )
             .maybeSingle();
          // Messenger confirmation with the "✅ I'll be there" button — best-effort, never blocks.
+         let messengerSent = false;
          if (booked) {
             const sent = await sendBookedMessenger(booked);
+            messengerSent = sent.ok;
             if (!sent.ok) console.log('calcom-round-robin: messenger confirmation skipped:', sent.reason);
          }
          // Bookings go to the call-changes ("rearrange meetings") group with their 🔄 Change time
@@ -354,7 +356,7 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
             const cancelled = await cancelCalBooking(previousBooking.host, previousBooking.uid, 'Rebooked to a new time.');
             if (!cancelled) console.error(`calcom-round-robin: could not cancel previous booking ${previousBooking.uid}`);
          }
-         return reply({ ok: true, host: hostId, start });
+         return reply({ ok: true, host: hostId, start, messenger: messengerSent });
       }
       if (result.error !== 'taken') break;
    }

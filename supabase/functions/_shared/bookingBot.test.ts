@@ -60,16 +60,20 @@ const AI: Record<string, CallTimeRead> = {
 };
 
 /** A chat: runs messages/taps through step(), keeping a simple calendar (hold/book take a slot, release frees it). */
-const chat = (state: BotState = newState(), opts: { ai?: boolean } = {}) => {
+const chat = (state: BotState = newState(), opts: { ai?: boolean; book?: Ctx['book']; cancel?: Ctx['cancel'] } = {}) => {
    let st = state;
    let free = week();
+   let lapsed = false;
    const all: Reply[] = [];
    const events: BotEvent[] = [];
    const ctx = (): Ctx => ({
       now: NOW,
       free,
       lastDay: '2026-11-07',
-      readAi: opts.ai === false ? undefined : async (text) => ({ read: AI[text.toLowerCase()] ?? UNCLEAR })
+      readAi: opts.ai === false ? undefined : async (text) => ({ read: AI[text.toLowerCase()] ?? UNCLEAR }),
+      book: opts.book,
+      cancel: opts.cancel,
+      lapsed
    });
    const apply = (ev: BotEvent[]) => {
       for (const e of ev) {
@@ -90,8 +94,19 @@ const chat = (state: BotState = newState(), opts: { ai?: boolean } = {}) => {
       },
       all,
       events,
+      /** Someone else takes this time (Cal.com or another chat). */
+      take(key: string) {
+         free = free.filter((s) => slotKey(s) !== key);
+         return api;
+      },
+      /** The next message arrives after their hold ran out and the time was taken. */
+      lapse() {
+         lapsed = true;
+         return api;
+      },
       async send(text: string) {
          const r = await step(st, { text }, ctx());
+         lapsed = false;
          st = r.state;
          last = r.replies;
          all.push(...r.replies);
@@ -511,4 +526,97 @@ Deno.test('"k" and "g" still mean yes at the confirm step (only one lettered but
    const c = await chat().toConfirm();
    await c.send('k');
    assertEquals(c.state.step, 'name');
+});
+
+// ---------------------------------------------------------------------------------------------------
+// Real booking (Ctx.book / Ctx.cancel) and 15-minute holds (Ctx.lapsed)
+// ---------------------------------------------------------------------------------------------------
+
+const realBook = (outcomes: Array<'ok' | 'sent' | 'taken' | 'other'>) => {
+   const calls: string[] = [];
+   const book: Ctx['book'] = async (slot) => {
+      calls.push(slotKey(slot));
+      const o = outcomes.shift() ?? 'ok';
+      return o === 'ok' || o === 'sent' ? { ok: true, confirmed: o === 'sent' } : { ok: false, why: o };
+   };
+   return { book, calls };
+};
+
+Deno.test('real booking: YES books the held time; its own confirmation replaces ours', async () => {
+   const b = realBook(['sent']);
+   const c = await chat(newState(), { book: b.book }).toBooked();
+   assertEquals(b.calls, ['2026-11-03 15:00']);
+   assertEquals(c.state.step, 'booked');
+   assertEquals(c.last.length, 0);
+   const quiet = realBook(['ok']);
+   const c2 = await chat(newState(), { book: quiet.book }).toBooked();
+   assert(c2.text.includes("You're booked, Maria!"));
+});
+
+Deno.test('real booking: the time was just taken → closest free times, answers kept, next YES books', async () => {
+   const b = realBook(['taken', 'sent']);
+   const c = await chat(newState(), { book: b.book }).toBooked();
+   assertEquals(c.state.step, 'offered');
+   assertEquals(c.state.mine, null);
+   assert(c.text.includes('already taken'), c.text);
+   assertEquals(c.state.quizDone, true);
+   await c.tap(0);
+   assertEquals(c.state.step, 'held');
+   await c.send('yes');
+   assertEquals(c.state.step, 'booked');
+   assertEquals(b.calls.length, 2);
+   assert(b.calls[1] !== '2026-11-03 15:00');
+});
+
+Deno.test('real booking: another failure keeps the hold and YES tries again', async () => {
+   const b = realBook(['other', 'ok']);
+   const c = await chat(newState(), { book: b.book }).toBooked();
+   assertEquals(c.state.step, 'held');
+   assert(c.text.includes('something went wrong'));
+   await c.send('yes');
+   assertEquals(c.state.step, 'booked');
+   assertEquals(b.calls, ['2026-11-03 15:00', '2026-11-03 15:00']);
+});
+
+Deno.test('hold ran out and the time is gone → told, offered the closest; their message is not read', async () => {
+   const c = await chat().toConfirm();
+   c.take('2026-11-03 15:00').lapse();
+   await c.send('yes');
+   assertEquals(c.state.mine, null);
+   assertEquals(c.state.step, 'offered');
+   assert(c.text.includes('15 minutes') && c.text.includes('already taken'), c.text);
+   assert(c.events.some((e) => e.type === 'release' && e.why === 'lapsed'));
+});
+
+Deno.test('moving a booked call: it stays booked until the new time is, and backing out keeps it', async () => {
+   const b = realBook(['ok', 'taken']);
+   const c = await chat(newState(), { book: b.book }).toBooked();
+   await c.send('saturday morning');
+   await c.send('1');
+   assertEquals(c.state.step, 'held');
+   assertEquals(c.state.kept?.date, '2026-11-03');
+   await c.send('no');
+   assertEquals(c.state.step, 'booked');
+   assertEquals(c.state.booked, true);
+   assertEquals(c.state.mine?.date, '2026-11-03');
+   assert(c.text.includes('stays booked'));
+   // Losing the new time also leaves them on the old one.
+   await c.send('saturday morning');
+   await c.send('1');
+   await c.send('yes');
+   assertEquals(c.state.booked, true);
+   assertEquals(c.state.mine?.date, '2026-11-03');
+   assert(c.text.includes('Your time now'));
+});
+
+Deno.test('cancel: really cancelled, or kept when cancelling fails', async () => {
+   let ok = false;
+   const c = await chat(newState(), { book: realBook([]).book, cancel: async () => ok }).toBooked();
+   await c.send('cancel my call');
+   assertEquals(c.state.booked, true);
+   assert(c.text.includes("couldn't cancel"));
+   ok = true;
+   await c.send('cancel my call');
+   assertEquals(c.state.booked, false);
+   assertEquals(c.state.mine, null);
 });
