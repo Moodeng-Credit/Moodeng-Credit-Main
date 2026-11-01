@@ -5,11 +5,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { type AdminCallApprovalRow, recheckAdminCallForm } from '@/app/admin/adminSupabase';
 import { type CheckField, currentVerdict, type FormCheck, tallyCheck } from '@/app/admin/callFormCheck';
 import {
+   type BotAnswers,
    type CallScreening,
    type CallSheetProfile,
    type CallTranscript,
    CASH_VIDEOS,
    EXCHANGES,
+   loadBotAnswers,
    loadCallSheet,
    loadCallTranscript,
    prefillAnswers,
@@ -315,6 +317,67 @@ function ProfileCard({ profile }: { profile: CallSheetProfile }) {
    );
 }
 
+const FIT: Record<string, { icon: string; className: string }> = {
+   good: { icon: '🟢', className: 'bg-[#e7f6ec] text-[#1f7a3d]' },
+   talk: { icon: '🟡', className: 'bg-[#fff6db] text-[#8a6100]' },
+   review: { icon: '🔴', className: 'bg-[#fde8e8] text-[#b42318]' }
+};
+const LANG: Record<string, string> = { en: 'English', fil: 'Filipino', id: 'Bahasa Indonesia' };
+const when = (iso: string) =>
+   new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+// What they told the Messenger booking bot before the call: the latest answers (and any held off).
+function BotAnswersCard({ records }: { records: BotAnswers[] }) {
+   if (!records.length) return null;
+   return (
+      <section className="space-y-2 rounded-lg border border-[#e3e3e3] bg-white px-3 py-2.5 text-[13px] text-[#37352f]">
+         {records.map((r) => (
+            <div key={r.id} className="space-y-1.5">
+               <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <b className="text-[14px] text-[#1f1f1f]">
+                     {r.kind === 'held_off' ? '⏸️ Held off by the Messenger bot' : '💬 Answers to the Messenger bot'}
+                  </b>
+                  <span className="text-[#9a9a9a]">
+                     {when(r.createdAt)}
+                     {r.lang ? ` · in ${LANG[r.lang] ?? r.lang}` : ''}
+                     {r.holdingAt ? ` · was holding ${when(r.holdingAt)}` : ''}
+                  </span>
+                  {r.fitVerdict ? (
+                     <span
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${FIT[r.fitVerdict]?.className ?? ''}`}
+                        title="Rules-based note, not a decision"
+                     >
+                        {FIT[r.fitVerdict]?.icon} Fit: {r.fitVerdict} — {r.fitReason}
+                     </span>
+                  ) : null}
+               </p>
+               {r.kind === 'held_off' ? (
+                  <p className="text-[#5a5a5a]">
+                     Didn&apos;t answer “{r.heldOffQuestion}” twice ({r.heldOffValue}).{' '}
+                     {r.items.length ? 'What they answered before that:' : ''}
+                  </p>
+               ) : null}
+               {r.items.length ? (
+                  <dl className="grid gap-x-6 gap-y-0.5 sm:grid-cols-2">
+                     {r.items.map((it) => (
+                        <div key={it.q} className="flex gap-1.5">
+                           <dt className="text-[#7a7a7a]">{it.q.replace(/\s*\((just type it|tap the main one)\)\s*$/, '')}</dt>
+                           <dd className="font-semibold text-[#1f1f1f]">{it.a}</dd>
+                        </div>
+                     ))}
+                  </dl>
+               ) : null}
+               {r.checks.map((c) => (
+                  <p key={c} className="text-[#8a6100]">
+                     ⚠️ {c}
+                  </p>
+               ))}
+            </div>
+         ))}
+      </section>
+   );
+}
+
 export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow; onClose: () => void }) {
    const [profile, setProfile] = useState<CallSheetProfile | null>(null);
    const [screening, setScreening] = useState<CallScreening | null>(null);
@@ -325,6 +388,7 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
    const [error, setError] = useState('');
    const [status, setStatus] = useState<'idle' | 'dirty' | 'saving' | 'saved'>('idle');
    const [transcript, setTranscript] = useState<CallTranscript | null>(null);
+   const [botAnswers, setBotAnswers] = useState<BotAnswers[]>([]);
    const [rechecking, setRechecking] = useState(false);
    const savingRef = useRef(false);
    const idRef = useRef<string | null>(null);
@@ -332,6 +396,7 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
    useEffect(() => {
       let cancelled = false;
       void loadCallTranscript(row.userId).then((t) => !cancelled && setTranscript(t));
+      void loadBotAnswers(row.userId).then((b) => !cancelled && setBotAnswers(b));
       loadCallSheet(row.userId, row.callStartsAt)
          .then(({ profile: p, screening: s }) => {
             if (cancelled) return;
@@ -520,6 +585,7 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
             {profile ? (
                <div className="space-y-3">
                   <ProfileCard profile={profile} />
+                  <BotAnswersCard records={botAnswers} />
                   <FormCheckBar answers={answers} busy={rechecking} onRecheck={() => void recheck()} transcript={transcript} />
 
                   <div className="grid gap-x-6 gap-y-3 lg:grid-cols-2">

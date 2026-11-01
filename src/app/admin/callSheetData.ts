@@ -235,3 +235,43 @@ export async function loadCallTranscript(userId: string): Promise<CallTranscript
       formCheckError: r.form_check_error ?? null
    };
 }
+
+// What they told the Messenger booking bot before the call (booking_bot_answers): each finished set of
+// questions, or a "held off" with what they'd answered so far. Questions/answers are in English.
+export interface BotAnswers {
+   id: string;
+   kind: 'answers' | 'held_off';
+   items: Array<{ q: string; a: string }>;
+   fitVerdict: 'good' | 'talk' | 'review' | null;
+   fitReason: string | null;
+   checks: string[];
+   heldOffQuestion: string | null;
+   heldOffValue: string | null;
+   lang: string | null;
+   holdingAt: string | null;
+   createdAt: string;
+}
+
+/** Their latest Messenger booking-bot answers, newest first (a few, so a held off before them still shows). */
+export async function loadBotAnswers(userId: string): Promise<BotAnswers[]> {
+   const { data, error } = await getSupabaseBrowserClient()
+      .from('booking_bot_answers')
+      .select('id,kind,items,fit_verdict,fit_reason,checks,held_off_question,held_off_value,lang,holding_at,created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(3);
+   if (error || !data) return [];
+   return (data as AnyRow[]).map((r) => ({
+      id: r.id,
+      kind: r.kind,
+      items: Array.isArray(r.items) ? r.items : [],
+      fitVerdict: r.fit_verdict ?? null,
+      fitReason: r.fit_reason ?? null,
+      checks: Array.isArray(r.checks) ? r.checks : [],
+      heldOffQuestion: r.held_off_question ?? null,
+      heldOffValue: r.held_off_value ?? null,
+      lang: r.lang ?? null,
+      holdingAt: r.holding_at ?? null,
+      createdAt: r.created_at
+   }));
+}
