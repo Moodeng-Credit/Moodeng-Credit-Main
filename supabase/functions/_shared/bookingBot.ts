@@ -9,6 +9,10 @@
 // Moving a call keeps the old time until a new one is tapped. Nothing here scores or decides anything:
 // the fit check is a team-only note.
 //
+// Real booking is the caller's (Ctx.book / Ctx.cancel; without them, as on the test page, it's pretend).
+// A booked call being moved stays booked (`kept`) until the new time is really booked at YES, so backing
+// out, losing the new time, or letting its hold run out (Ctx.lapsed) puts them back on the old one.
+//
 // It starts from what we already know (profileFromUser): their country (phone, then device time zone),
 // their time zone, language, first name, and the app bio (work, monthly income, payday) — so the chat
 // never re-asks what the bio already answered.
@@ -143,6 +147,7 @@ export type BotState = {
    step: Step;
    mine: Slot | null; // the time they hold or have booked
    booked: boolean; // mine is booked (not just held)
+   kept: Slot | null; // their booked call while they hold a new time for it (booked until the new one is)
    offered: Slot[];
    lastOffer: OfferResult | null;
    answers: Record<string, string>; // English labels (team-facing), or what they typed
@@ -158,7 +163,7 @@ export type BotEvent =
    | { type: 'read'; how: string; ms: number; parsed: Parsed; error?: string }
    | { type: 'offered'; result: OfferResult; summary: string }
    | { type: 'hold'; slot: Slot }
-   | { type: 'release'; slot: Slot; why: 'moved' | 'other' | 'no' | 'heldOff' | 'cancel' }
+   | { type: 'release'; slot: Slot; why: 'moved' | 'other' | 'no' | 'heldOff' | 'cancel' | 'taken' | 'lapsed' }
    | { type: 'book'; slot: Slot; name: string }
    | { type: 'reask'; key: string; value: string | null }
    | { type: 'heldOff'; key: string; value: string | null }
@@ -174,6 +179,12 @@ export type Ctx = {
    lastDay: string; // last date we can book
    /** DeepSeek reader (bookingAi.readCallTime). Missing or failing → the simple rules below. */
    readAi?: (text: string, now: { weekday: string; date: string; time: string }) => Promise<{ read: CallTimeRead | null; error?: string }>;
+   /** Really book the held time. confirmed: the booking already sent its own Messenger confirmation. Missing → pretend. */
+   book?: (slot: Slot) => Promise<{ ok: true; confirmed: boolean } | { ok: false; why: 'taken' | 'other' }>;
+   /** Really cancel their booked call; false if it couldn't be. Missing → pretend. */
+   cancel?: () => Promise<boolean>;
+   /** Their 15-minute hold ran out and that time isn't free any more. */
+   lapsed?: boolean;
 };
 export type Input = { text?: string; payload?: string };
 export type Result = { state: BotState; replies: Reply[]; events: BotEvent[] };
@@ -265,6 +276,15 @@ const T: Record<string, Record<Lang, Text>> = {
    },
    resume: { en: (w, h) => `⏳ Now holding ${w} with ${h}. Let's finish the questions:`, fil: (w, h) => `⏳ Naka-hold na ang ${w} kasama si ${h}. Tapusin natin ang mga tanong:` },
    otherBtn: { en: '🕐 Other time', fil: '🕐 Ibang oras' },
+   lapsed: { en: '⌛ I could only hold your time for 15 minutes, and someone else took it.', fil: '⌛ 15 minuto lang kaya kong i-hold ang oras mo, at may ibang kumuha na nito.' },
+   bookFailed: {
+      en: "😕 Sorry, something went wrong booking your call. Please type YES to try again — or our team will message you with a time.",
+      fil: '😕 Pasensya, nagka-problema sa pag-book ng call mo. Pakitype ulit ang YES — o ime-message ka ng team para sa oras.'
+   },
+   cancelFailed: {
+      en: "😕 Sorry, I couldn't cancel your call just now. Please try again, or our team will cancel it for you.",
+      fil: '😕 Pasensya, hindi ko ma-cancel ang call mo ngayon. Subukan ulit, o ika-cancel ito ng team para sa iyo.'
+   },
    none: { en: 'Sorry, our calendar is full this week. The team will message you with a time 🙏', fil: 'Pasensya, puno na ang calendar namin ngayong linggo. Ime-message ka ng team para sa oras 🙏' },
    holding: {
       en: (w, h) => `⏳ I'm holding ${w} with ${h} for you.\n\nA few quick questions first so ${h} can prepare (about 2 min). Ranges are fine, and it stays private with our team 🔒`,
@@ -723,6 +743,7 @@ export const newState = (p: Profile = profileFromUser()): BotState => ({
    step: 'ask',
    mine: null,
    booked: false,
+   kept: null,
    offered: [],
    lastOffer: null,
    answers: {},
@@ -779,6 +800,8 @@ const askFinalConfirm = (t: Turn) => {
 const hold = (t: Turn, s: Slot) => {
    t.st.offered = [];
    t.st.changing = false;
+   // Moving a booked call: it stays booked until the new time is (bookCall then cancels it).
+   if (t.st.booked && t.st.mine && !sameSlot(t.st.mine, s)) t.st.kept = t.st.mine;
    if (t.st.mine && !sameSlot(t.st.mine, s)) release(t, 'moved');
    t.st.mine = s;
    t.st.booked = false;
@@ -798,17 +821,45 @@ export const sameFirstName = (a: string, b: string) => {
    const x = norm(a).replace(/[^\p{L}]/gu, ''), y = norm(b).replace(/[^\p{L}]/gu, '');
    return !!x && !!y && (x === y || (Math.min(x.length, y.length) >= 2 && (x.startsWith(y) || y.startsWith(x))));
 };
-const book = (t: Turn, name: string) => {
+const book = async (t: Turn, name: string) => {
    const s = t.st.mine as Slot;
    // The typed name is a light security check: never shown back, never blocking — the team just sees a mismatch.
    if (t.st.knownName && !sameFirstName(name, t.st.knownName)) t.events.push({ type: 'note', text: `Name check: they typed "${name}", their account says "${t.st.knownName}". Check their ID on the call.` });
    t.st.name = name;
+   const r = t.ctx.book ? await t.ctx.book(s) : { ok: true as const, confirmed: false };
+   if (!r.ok && r.why === 'taken') return lostTime(t, s, 'taken');
+   if (!r.ok) {
+      t.events.push({ type: 'note', text: 'Booking failed (not a taken slot) — they can type YES again, or the team books them by hand.' });
+      t.st.step = 'held';
+      return send(t, say(t, 'bookFailed'), heldButtons(t));
+   }
    t.st.booked = true;
+   t.st.kept = null;
    t.st.step = 'booked';
    t.st.changing = false;
    t.events.push({ type: 'book', slot: s, name });
+   // A real booking already sent the confirmation with its Zoom link and ✅ card (videoCall.sendBookedMessenger).
+   if (r.confirmed) return;
    send(t, say(t, 'booked', when(t, s), name, s.host));
    send(t, say(t, 'promise', name));
+};
+/** Backing out of moving a booked call: the call they had is still booked. */
+const restoreKept = (t: Turn) => {
+   if (!t.st.kept) return false;
+   t.st.mine = t.st.kept;
+   t.st.booked = true;
+   t.st.kept = null;
+   return true;
+};
+/** Their time is gone (taken when we went to book it, or their hold ran out): the closest free times. Answers are kept. */
+const lostTime = (t: Turn, s: Slot, why: 'taken' | 'lapsed') => {
+   release(t, why);
+   restoreKept(t);
+   t.st.changing = false;
+   t.st.step = t.st.booked ? 'booked' : 'ask';
+   if (why === 'lapsed') send(t, say(t, 'lapsed'));
+   const asked: Parsed = { windows: [{ date: s.date, from: hhmm(s.min), to: hhmm(s.min + 30) }], at: hhmm(s.min), anytime: false, unclear: false, lang: t.st.lang, summary: '' };
+   offer(t, match(asked, t.ctx.free.filter((x) => !sameSlot(x, s))), '');
 };
 const allSet = (t: Turn) => send(t, say(t, 'allSet', t.st.name, when(t, t.st.mine as Slot)));
 
@@ -1029,6 +1080,18 @@ const readAndOffer = async (t: Turn, text: string, from: Step): Promise<boolean>
    return true;
 };
 
+/** They let go of the held time: ask for another (their booked call, if they were moving one, stays). */
+const backOut = (t: Turn) => {
+   if (restoreKept(t)) {
+      send(t, say(t, 'otherKeep'));
+      t.st.changing = true;
+      t.st.step = 'booked';
+      return;
+   }
+   send(t, say(t, 'other'));
+   t.st.step = 'ask';
+};
+
 // ---- buttons ----
 const handlePayload = (t: Turn, payload: string) => {
    const st = t.st;
@@ -1057,9 +1120,7 @@ const handlePayload = (t: Turn, payload: string) => {
    }
    if (payload === 'other_held' && st.step === 'held') {
       release(t, 'other');
-      send(t, say(t, 'other'));
-      st.step = 'ask';
-      return;
+      return backOut(t);
    }
    if (payload.startsWith('ans:') && st.step === 'prep') {
       const [, key, v] = payload.split(':');
@@ -1112,9 +1173,7 @@ const handleText = async (t: Turn, text: string) => {
       }
       if (c.kind === 'no') {
          release(t, 'no');
-         send(t, say(t, 'other'));
-         st.step = 'ask';
-         return;
+         return backOut(t);
       }
       if (c.kind === 'other') return send(t, say(t, 'sayYes'), heldButtons(t));
       // kind 'time': read it below.
@@ -1126,6 +1185,7 @@ const handleText = async (t: Turn, text: string) => {
    }
    if (st.step === 'booked' && st.mine && !looksLikeTime(text) && CANCEL.test(norm(text))) {
       const was = when(t, st.mine);
+      if (t.ctx.cancel && !(await t.ctx.cancel())) return send(t, say(t, 'cancelFailed'));
       release(t, 'cancel');
       st.changing = false;
       send(t, say(t, 'cancelled', was));
@@ -1180,11 +1240,14 @@ export const plainText = (reply: Reply, lang: Lang = 'en') => {
 export const step = async (state: BotState, input: Input, ctx: Ctx): Promise<Result> => {
    const st = structuredClone(state);
    st.lastButtons ??= [];
+   st.kept ??= null;
    const m = MARKETS[st.market] ?? MARKETS.PH;
    const t: Turn = { st, ctx, m, Q: questions(m), replies: [], events: [] };
    const text = input.text?.trim().slice(0, 400) ?? '';
    const tapped = !input.payload && text ? buttonFor(st, text) : null;
-   if (input.payload || tapped) handlePayload(t, (input.payload || tapped?.payload) as string);
+   // Their hold ran out and the time is gone: say so and offer the closest (this message isn't read).
+   if (ctx.lapsed && st.mine && !st.booked) lostTime(t, st.mine, 'lapsed');
+   else if (input.payload || tapped) handlePayload(t, (input.payload || tapped?.payload) as string);
    else if (text) await handleText(t, text);
    // What's on screen now: the buttons of our last message (none if it had none).
    if (t.replies.length) t.st.lastButtons = t.replies[t.replies.length - 1].buttons ?? [];

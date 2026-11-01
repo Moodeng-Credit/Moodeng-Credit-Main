@@ -1,6 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { freeFromSlots, START, wallNow } from './messengerBookingBot.ts';
+import { freeFromSlots, holdColumns, START, wallNow, withoutHeld, zonedIso } from './messengerBookingBot.ts';
 
 Deno.test('wallNow: the wall clock in a zone', () => {
    const at = new Date('2026-11-01T18:30:00Z');
@@ -19,4 +19,25 @@ Deno.test('freeFromSlots: local times, hosts, 2+ hours away, 7 days', () => {
 Deno.test('START: what begins a booking chat', () => {
    for (const t of ['book', 'BOOK', 'Book a call', 'mag-book po', 'schedule a call']) assertEquals(START.test(t), true, t);
    for (const t of ['hi', 'when is my loan due', 'facebook']) assertEquals(START.test(t), false, t);
+});
+
+Deno.test('zonedIso: a wall-clock time in a zone → UTC', () => {
+   assertEquals(zonedIso({ date: '2026-11-03', min: 15 * 60 }, 'Asia/Manila'), '2026-11-03T07:00:00.000Z');
+   assertEquals(zonedIso({ date: '2026-11-03', min: 30 }, 'Asia/Jakarta'), '2026-11-02T17:30:00.000Z');
+});
+
+Deno.test('withoutHeld: times other chats hold are not offered, in any zone', () => {
+   const free = [
+      { date: '2026-11-03', min: 15 * 60, host: 'Emma' },
+      { date: '2026-11-03', min: 15 * 60 + 30, host: 'Emma' }
+   ];
+   // Someone in Jakarta holds 14:00 WIB = 15:00 Manila.
+   assertEquals(withoutHeld(free, ['2026-11-03T07:00:00.000Z'], 'Asia/Manila'), [free[1]]);
+});
+
+Deno.test('holdColumns: held → 15 minutes from now; booked or nothing → cleared', () => {
+   const st = { mine: { date: '2026-11-03', min: 15 * 60, host: 'Emma' }, booked: false } as never;
+   const now = Date.parse('2026-11-01T02:00:00Z');
+   assertEquals(holdColumns(st, 'Asia/Manila', now), { held_start: '2026-11-03T07:00:00.000Z', held_until: '2026-11-01T02:15:00.000Z' });
+   assertEquals(holdColumns({ mine: null, booked: false } as never, 'Asia/Manila', now), { held_start: null, held_until: null });
 });

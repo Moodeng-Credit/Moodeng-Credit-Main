@@ -124,6 +124,13 @@ export const cancelCallQuietly = async (svc: SupabaseClient, u: CallRow & { vide
    return null;
 };
 
+/** The borrower's own upcoming call, cancelled quietly (the Messenger booking bot's "cancel"). Null when done. */
+export const cancelUpcomingCall = async (svc: SupabaseClient, userId: string, by: string): Promise<string | null> => {
+   const u = await loadCall(svc, userId);
+   if (!hasUpcomingCall(u)) return 'No upcoming call.';
+   return cancelCallQuietly(svc, u, by);
+};
+
 // Post the confirm prompt (from a card's button) — the card itself stays as it was.
 const postConfirm = async (svc: SupabaseClient, chatId: number | string, userId: string): Promise<string> => {
    const u = await loadCall(svc, userId);

@@ -268,6 +268,18 @@ Kapag handa ka na, sabihin lang ang araw at oras \u{1F642}`
     en: "\u{1F550} Other time",
     fil: "\u{1F550} Ibang oras"
   },
+  lapsed: {
+    en: "\u231B I could only hold your time for 15 minutes, and someone else took it.",
+    fil: "\u231B 15 minuto lang kaya kong i-hold ang oras mo, at may ibang kumuha na nito."
+  },
+  bookFailed: {
+    en: "\u{1F615} Sorry, something went wrong booking your call. Please type YES to try again \u2014 or our team will message you with a time.",
+    fil: "\u{1F615} Pasensya, nagka-problema sa pag-book ng call mo. Pakitype ulit ang YES \u2014 o ime-message ka ng team para sa oras."
+  },
+  cancelFailed: {
+    en: "\u{1F615} Sorry, I couldn't cancel your call just now. Please try again, or our team will cancel it for you.",
+    fil: "\u{1F615} Pasensya, hindi ko ma-cancel ang call mo ngayon. Subukan ulit, o ika-cancel ito ng team para sa iyo."
+  },
   none: {
     en: "Sorry, our calendar is full this week. The team will message you with a time \u{1F64F}",
     fil: "Pasensya, puno na ang calendar namin ngayong linggo. Ime-message ka ng team para sa oras \u{1F64F}"
@@ -1259,6 +1271,7 @@ var newState = (p = profileFromUser()) => ({
   step: "ask",
   mine: null,
   booked: false,
+  kept: null,
   offered: [],
   lastOffer: null,
   answers: {},
@@ -1345,6 +1358,7 @@ var askFinalConfirm = (t) => {
 var hold = (t, s) => {
   t.st.offered = [];
   t.st.changing = false;
+  if (t.st.booked && t.st.mine && !sameSlot(t.st.mine, s)) t.st.kept = t.st.mine;
   if (t.st.mine && !sameSlot(t.st.mine, s)) release(t, "moved");
   t.st.mine = s;
   t.st.booked = false;
@@ -1368,14 +1382,28 @@ var sameFirstName = (a, b) => {
   const x = norm(a).replace(/[^\p{L}]/gu, ""), y = norm(b).replace(/[^\p{L}]/gu, "");
   return !!x && !!y && (x === y || Math.min(x.length, y.length) >= 2 && (x.startsWith(y) || y.startsWith(x)));
 };
-var book = (t, name) => {
+var book = async (t, name) => {
   const s = t.st.mine;
   if (t.st.knownName && !sameFirstName(name, t.st.knownName)) t.events.push({
     type: "note",
     text: `Name check: they typed "${name}", their account says "${t.st.knownName}". Check their ID on the call.`
   });
   t.st.name = name;
+  const r = t.ctx.book ? await t.ctx.book(s) : {
+    ok: true,
+    confirmed: false
+  };
+  if (!r.ok && r.why === "taken") return lostTime(t, s, "taken");
+  if (!r.ok) {
+    t.events.push({
+      type: "note",
+      text: "Booking failed (not a taken slot) \u2014 they can type YES again, or the team books them by hand."
+    });
+    t.st.step = "held";
+    return send(t, say(t, "bookFailed"), heldButtons(t));
+  }
   t.st.booked = true;
+  t.st.kept = null;
   t.st.step = "booked";
   t.st.changing = false;
   t.events.push({
@@ -1383,8 +1411,38 @@ var book = (t, name) => {
     slot: s,
     name
   });
+  if (r.confirmed) return;
   send(t, say(t, "booked", when(t, s), name, s.host));
   send(t, say(t, "promise", name));
+};
+var restoreKept = (t) => {
+  if (!t.st.kept) return false;
+  t.st.mine = t.st.kept;
+  t.st.booked = true;
+  t.st.kept = null;
+  return true;
+};
+var lostTime = (t, s, why) => {
+  release(t, why);
+  restoreKept(t);
+  t.st.changing = false;
+  t.st.step = t.st.booked ? "booked" : "ask";
+  if (why === "lapsed") send(t, say(t, "lapsed"));
+  const asked = {
+    windows: [
+      {
+        date: s.date,
+        from: hhmm(s.min),
+        to: hhmm(s.min + 30)
+      }
+    ],
+    at: hhmm(s.min),
+    anytime: false,
+    unclear: false,
+    lang: t.st.lang,
+    summary: ""
+  };
+  offer(t, match(asked, t.ctx.free.filter((x) => !sameSlot(x, s))), "");
 };
 var allSet = (t) => send(t, say(t, "allSet", t.st.name, when(t, t.st.mine)));
 var nextKey = (t) => {
@@ -1705,6 +1763,16 @@ var readAndOffer = async (t, text, from) => {
   offer(t, result, parsed.summary);
   return true;
 };
+var backOut = (t) => {
+  if (restoreKept(t)) {
+    send(t, say(t, "otherKeep"));
+    t.st.changing = true;
+    t.st.step = "booked";
+    return;
+  }
+  send(t, say(t, "other"));
+  t.st.step = "ask";
+};
 var handlePayload = (t, payload) => {
   const st = t.st;
   if (payload === "back" && st.step === "waiting_bio") {
@@ -1732,9 +1800,7 @@ var handlePayload = (t, payload) => {
   }
   if (payload === "other_held" && st.step === "held") {
     release(t, "other");
-    send(t, say(t, "other"));
-    st.step = "ask";
-    return;
+    return backOut(t);
   }
   if (payload.startsWith("ans:") && st.step === "prep") {
     const [, key, v] = payload.split(":");
@@ -1796,9 +1862,7 @@ var handleText = async (t, text) => {
     }
     if (c.kind === "no") {
       release(t, "no");
-      send(t, say(t, "other"));
-      st.step = "ask";
-      return;
+      return backOut(t);
     }
     if (c.kind === "other") return send(t, say(t, "sayYes"), heldButtons(t));
   }
@@ -1808,6 +1872,7 @@ var handleText = async (t, text) => {
   }
   if (st.step === "booked" && st.mine && !looksLikeTime(text) && CANCEL.test(norm(text))) {
     const was = when(t, st.mine);
+    if (t.ctx.cancel && !await t.ctx.cancel()) return send(t, say(t, "cancelFailed"));
     release(t, "cancel");
     st.changing = false;
     send(t, say(t, "cancelled", was));
@@ -1857,6 +1922,7 @@ ${hint}`;
 var step = async (state, input, ctx) => {
   const st = structuredClone(state);
   st.lastButtons ??= [];
+  st.kept ??= null;
   const m = MARKETS[st.market] ?? MARKETS.PH;
   const t = {
     st,
@@ -1868,7 +1934,8 @@ var step = async (state, input, ctx) => {
   };
   const text = input.text?.trim().slice(0, 400) ?? "";
   const tapped = !input.payload && text ? buttonFor(st, text) : null;
-  if (input.payload || tapped) handlePayload(t, input.payload || tapped?.payload);
+  if (ctx.lapsed && st.mine && !st.booked) lostTime(t, st.mine, "lapsed");
+  else if (input.payload || tapped) handlePayload(t, input.payload || tapped?.payload);
   else if (text) await handleText(t, text);
   if (t.replies.length) t.st.lastButtons = t.replies[t.replies.length - 1].buttons ?? [];
   return {
