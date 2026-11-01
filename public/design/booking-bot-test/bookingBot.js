@@ -1266,7 +1266,8 @@ var newState = (p = profileFromUser()) => ({
   reasked: [],
   quizDone: false,
   changing: false,
-  name: ""
+  name: "",
+  lastButtons: []
 });
 var greet = (state, bioDone = true) => {
   const st = structuredClone(state);
@@ -1830,8 +1831,32 @@ var handleText = async (t, text) => {
   send(t, say(t, "unclear"));
   st.step = "ask";
 };
+var LETTERS = "ABCDEFGHIJKLM";
+var lettered = (buttons) => buttons.filter((b) => !b.payload.startsWith("slot:"));
+var bare = (s) => norm(s).replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+var buttonFor = (st, text) => {
+  const b = st.lastButtons ?? [];
+  const t = bare(text);
+  if (!t) return null;
+  const byTitle = b.find((x) => bare(x.title) === t);
+  if (byTitle) return byTitle;
+  const m = /^\s*\(?([a-m])\)?[.)]?\s*$/i.exec(text);
+  return m ? lettered(b)[LETTERS.indexOf(m[1].toUpperCase())] ?? null : null;
+};
+var plainText = (reply, lang = "en") => {
+  const opts = lettered(reply.buttons ?? []);
+  if (!opts.length) return reply.text;
+  const list = opts.map((b, i) => `${LETTERS[i]}) ${b.title}`).join("\n");
+  const hint = lang === "fil" ? "Sumagot ng letra (A, B\u2026) o i-type ang sagot mo." : "Reply with a letter (A, B\u2026) or type your answer.";
+  return `${reply.text}
+
+${list}
+
+${hint}`;
+};
 var step = async (state, input, ctx) => {
   const st = structuredClone(state);
+  st.lastButtons ??= [];
   const m = MARKETS[st.market] ?? MARKETS.PH;
   const t = {
     st,
@@ -1841,8 +1866,11 @@ var step = async (state, input, ctx) => {
     replies: [],
     events: []
   };
-  if (input.payload) handlePayload(t, input.payload);
-  else if (input.text && input.text.trim()) await handleText(t, input.text.trim().slice(0, 400));
+  const text = input.text?.trim().slice(0, 400) ?? "";
+  const tapped = !input.payload && text ? buttonFor(st, text) : null;
+  if (input.payload || tapped) handlePayload(t, input.payload || tapped?.payload);
+  else if (text) await handleText(t, text);
+  if (t.replies.length) t.st.lastButtons = t.replies[t.replies.length - 1].buttons ?? [];
   return {
     state: t.st,
     replies: t.replies,
@@ -1857,6 +1885,7 @@ export {
   PNS,
   addDays,
   attendCard,
+  buttonFor,
   crossCheck,
   firstName,
   fitCheck,
@@ -1869,6 +1898,7 @@ export {
   match,
   newState,
   norm,
+  plainText,
   profileFromUser,
   questions,
   readConfirm,

@@ -151,6 +151,7 @@ export type BotState = {
    quizDone: boolean;
    changing: boolean; // booked and asked to move: the next message is read as a time
    name: string;
+   lastButtons: Button[]; // the buttons on our latest message: typing one's text (or its letter) taps it
 };
 
 export type BotEvent =
@@ -729,7 +730,8 @@ export const newState = (p: Profile = profileFromUser()): BotState => ({
    reasked: [],
    quizDone: false,
    changing: false,
-   name: ''
+   name: '',
+   lastButtons: []
 });
 
 /** The first messages after Messenger is connected. bioDone false → send them back to the app first. */
@@ -1150,12 +1152,41 @@ const handleText = async (t: Turn, text: string) => {
    st.step = 'ask';
 };
 
+// ---- text-only channels (SendPulse sends plain text): buttons become a lettered list ----
+const LETTERS = 'ABCDEFGHIJKLM';
+/** The buttons that get a letter: time buttons are already numbered in the message text. */
+const lettered = (buttons: Button[]) => buttons.filter((b) => !b.payload.startsWith('slot:'));
+const bare = (s: string) => norm(s).replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+/** Typing a button's text, or its letter from plainText, taps it. */
+export const buttonFor = (st: BotState, text: string): Button | null => {
+   const b = st.lastButtons ?? [];
+   const t = bare(text);
+   if (!t) return null;
+   const byTitle = b.find((x) => bare(x.title) === t);
+   if (byTitle) return byTitle;
+   const m = /^\s*\(?([a-m])\)?[.)]?\s*$/i.exec(text);
+   return m ? (lettered(b)[LETTERS.indexOf(m[1].toUpperCase())] ?? null) : null;
+};
+/** A reply as one plain message: its text, then "A) …" for each lettered button. */
+export const plainText = (reply: Reply, lang: Lang = 'en') => {
+   const opts = lettered(reply.buttons ?? []);
+   if (!opts.length) return reply.text;
+   const list = opts.map((b, i) => `${LETTERS[i]}) ${b.title}`).join('\n');
+   const hint = lang === 'fil' ? 'Sumagot ng letra (A, B…) o i-type ang sagot mo.' : 'Reply with a letter (A, B…) or type your answer.';
+   return `${reply.text}\n\n${list}\n\n${hint}`;
+};
+
 /** One turn: their message (text) or a button tap (payload) → new state, replies, events. Never mutates `state`. */
 export const step = async (state: BotState, input: Input, ctx: Ctx): Promise<Result> => {
    const st = structuredClone(state);
+   st.lastButtons ??= [];
    const m = MARKETS[st.market] ?? MARKETS.PH;
    const t: Turn = { st, ctx, m, Q: questions(m), replies: [], events: [] };
-   if (input.payload) handlePayload(t, input.payload);
-   else if (input.text && input.text.trim()) await handleText(t, input.text.trim().slice(0, 400));
+   const text = input.text?.trim().slice(0, 400) ?? '';
+   const tapped = !input.payload && text ? buttonFor(st, text) : null;
+   if (input.payload || tapped) handlePayload(t, (input.payload || tapped?.payload) as string);
+   else if (text) await handleText(t, text);
+   // What's on screen now: the buttons of our last message (none if it had none).
+   if (t.replies.length) t.st.lastButtons = t.replies[t.replies.length - 1].buttons ?? [];
    return { state: t.st, replies: t.replies, events: t.events };
 };

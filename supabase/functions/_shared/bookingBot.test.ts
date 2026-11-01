@@ -9,6 +9,7 @@ import {
    greet,
    MAX_BUTTON,
    newState,
+   plainText,
    profileFromUser,
    readConfirm,
    type Reply,
@@ -477,4 +478,37 @@ Deno.test('every button fits Messenger (≤ 20 characters, ≤ 13 per message), 
          for (const b of r.buttons ?? []) assert(b.title.length <= MAX_BUTTON, `"${b.title}" is ${b.title.length} characters`);
       }
    }
+});
+
+// ---------------------------------------------------------------------------------------------------
+// Text-only Messenger (SendPulse): lettered options, typed button text
+// ---------------------------------------------------------------------------------------------------
+
+Deno.test('plain text: options become letters, and a letter or the button text taps it', async () => {
+   const c = await toQuestion('work');
+   const txt = plainText(c.last[c.last.length - 1]);
+   assert(txt.includes('A) Employed') && txt.includes('D) Other') && txt.includes('Reply with a letter'));
+   await c.send('b');
+   assertEquals(c.state.answers.work, 'Own business');
+   await c.send('Just myself');
+   assertEquals(c.state.answers.support, 'Just myself');
+});
+
+Deno.test('plain text: time offers keep their numbers; letters go to Keep / Other', async () => {
+   const c = await chat().toBooked();
+   await c.send('saturday morning');
+   const txt = plainText(c.last[0]);
+   assert(txt.includes('1. Sat, Nov 7') && txt.includes('A) 👍 Keep my time') && txt.includes('B) 🕐 Other time'));
+   await c.send('A');
+   assertEquals(c.state.step, 'booked');
+   assertEquals(c.state.mine?.date, '2026-11-03');
+   await c.send('saturday morning');
+   await c.send('2');
+   assertEquals(c.state.mine?.date, '2026-11-07');
+});
+
+Deno.test('"k" and "g" still mean yes at the confirm step (only one lettered button there)', async () => {
+   const c = await chat().toConfirm();
+   await c.send('k');
+   assertEquals(c.state.step, 'name');
 });
