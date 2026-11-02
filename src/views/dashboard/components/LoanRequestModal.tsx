@@ -50,6 +50,7 @@ import UserAvatar, { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
+import { useIncomeDocRequirement } from '@/hooks/useIncomeDocRequirement';
 import type { LoanFlow } from '@/hooks/useLoanFlow';
 
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
@@ -71,7 +72,7 @@ import type { AppDispatch } from '@/store/store';
 import { type User } from '@/types/authTypes';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
 import ConnectStep, { LoanAccessPendingCard } from '@/views/dashboard/components/ConnectStep';
-import { CONNECT_HIPPOS, ConnectHero, stepAnimationClass, useStepDirection } from '@/views/dashboard/components/connectKit';
+import { CONNECT_HIPPOS, ConnectHero, GhostButton, PrimaryButton, stepAnimationClass, useStepDirection } from '@/views/dashboard/components/connectKit';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
 import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
 
@@ -121,6 +122,8 @@ interface LoanRequestModalProps {
     * the terms and send them once the borrower comes back verified.
     */
    onVerifyToSend?: () => void;
+   /** "Send proof of income" leaves for /documents: keep what they typed for when they come back. */
+   onLeaveForDocuments?: () => void;
    /** Back from the ID check, verified, with saved terms: send the request without another tap. */
    autoSubmit?: boolean;
    /** Fired once when the auto-submit is triggered, so the parent can stop asking for it. */
@@ -1281,6 +1284,7 @@ export default function LoanRequestModal({
    resume = null,
    onFlowStateChange,
    onVerifyToSend,
+   onLeaveForDocuments,
    autoSubmit = false,
    onAutoSubmitStarted,
    onBackdropPress
@@ -1392,6 +1396,9 @@ export default function LoanRequestModal({
    // Open flow only: the no-referral video call, booked (not attended) before the request posts.
    const [showVideoCallStep, setShowVideoCallStep] = useState(false);
    const [videoCallStepDone, setVideoCallStepDone] = useState(false);
+   // Loans of income_doc_min_usd ($60) or more need a proof of income first (moodeng.app/documents).
+   const [showIncomeGate, setShowIncomeGate] = useState(false);
+   const incomeDocRequirement = useIncomeDocRequirement(isOpen);
    useEffect(() => {
       if (!showBorrowerContextStep) return;
       formRef.current?.scrollTo({ top: 0 });
@@ -1649,6 +1656,7 @@ export default function LoanRequestModal({
       setShowReferralStep(startOnReferralStep && canOfferReferral && !isWaitingOnTeam);
       setShowBorrowerContextStep(startOnBorrowerContextStep);
       setBioPage(1);
+      setShowIncomeGate(false);
       setTermErrors({});
       setBorrowerContext(emptyBorrowerContext);
       setBorrowerContextPromptSeen(false);
@@ -2345,6 +2353,16 @@ export default function LoanRequestModal({
          }
       }
 
+      // $60 or more: proof of income first (sent in the last 90 days, not declined or sent back).
+      // The card sends them to /documents with what they typed kept, and back here after.
+      if (incomeDocRequirement.minUsd != null && !incomeDocRequirement.ok && Number(loanAmount) >= incomeDocRequirement.minUsd) {
+         event.preventDefault();
+         setShowBorrowerContextStep(false);
+         setShowIncomeGate(true);
+         trackLoanFormRule('loan_form_income_doc_gate', { amount: Number(loanAmount) });
+         return;
+      }
+
       // Borrowers who already saved their bio context (income/payday/etc.) shouldn't be
       // re-prompted on every loan request — that data lives on their profile and persists.
       // Returning users can update it from Account Settings instead.
@@ -2730,9 +2748,9 @@ export default function LoanRequestModal({
                <div className="flex min-w-0 items-center gap-md-1 pr-3">
                   {shouldShowReferralStep ? (
                      <h2 className="text-md-h6 text-md-heading">Referral Boost</h2>
-                  ) : isLoanAccessGated || showContactsStep ? (
+                  ) : isLoanAccessGated || showContactsStep || showIncomeGate ? (
                      // These screens carry their own hippo hero + title (Figma style) — no duplicate header.
-                     <h2 className="sr-only">{isLoanAccessPending ? 'Almost there' : showContactsStep ? (isExistingBorrower ? 'Add your Facebook' : 'How can we reach you') : "Let's connect"}</h2>
+                     <h2 className="sr-only">{showIncomeGate ? 'Show us your income first' : isLoanAccessPending ? 'Almost there' : showContactsStep ? (isExistingBorrower ? 'Add your Facebook' : 'How can we reach you') : "Let's connect"}</h2>
                   ) : showVideoCallStep ? (
                      <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">
                         Schedule a video call
@@ -2916,6 +2934,31 @@ export default function LoanRequestModal({
                      ) : undefined
                   }
                />
+            ) : showIncomeGate ? (
+               <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
+                  <ConnectHero
+                     image={CONNECT_HIPPOS.cashout}
+                     title="Show us your income first"
+                     subtitle={<>Loans of ${incomeDocRequirement.minUsd} or more need one proof of income. It takes 2 minutes.</>}
+                  />
+                  <ul className="flex flex-col gap-1.5 text-[15px] leading-[20px] text-[#594d65] dark:text-[#d9cfe8]">
+                     <li>📱 GCash or Maya history, last 2–3 months (screenshots are fine)</li>
+                     <li>🏦 Bank statement</li>
+                     <li>🧾 Latest payslip</li>
+                  </ul>
+                  <p className="text-[14px] leading-[19px] text-[#7b6b8c] dark:text-[#b9abcc]">What you typed is kept. Come back after sending and tap Send request.</p>
+                  <div className="mt-auto flex flex-col gap-1 pt-1">
+                     <PrimaryButton
+                        onClick={() => {
+                           onLeaveForDocuments?.();
+                           navigate('/documents?back=loan');
+                        }}
+                     >
+                        Send proof of income
+                     </PrimaryButton>
+                     <GhostButton onClick={() => setShowIncomeGate(false)}>Change the amount</GhostButton>
+                  </div>
+               </div>
             ) : showVideoCallStep ? (
                <VideoCallStep
                   userId={user.id}

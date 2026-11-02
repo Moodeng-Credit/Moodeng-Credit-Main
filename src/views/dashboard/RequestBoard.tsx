@@ -774,6 +774,29 @@ function RequestBoard$() {
       });
    }, [appliedReferral, days, effectiveUser?.id, loanAmount, loanRequestFlowState, reason, totalRepaymentAmount]);
 
+   // "Send proof of income" (loans of $60+) leaves for /documents. Keep the terms to refill the form
+   // when they come back (/request-board?applyLoan=1), without sending anything by itself.
+   const handleLeaveForDocuments = useCallback(() => {
+      if (!effectiveUser?.id || (!loanAmount && !reason)) return;
+      saveLoanRequestDraft(effectiveUser.id, {
+         terms: { loanAmount, totalRepaymentAmount, reason, days },
+         referral: loanRequestFlowState?.referral ?? appliedReferral,
+         flow: {
+            showReferralStep: false,
+            showBorrowerContextStep: false,
+            bioPage: 1,
+            showContactsStep: false,
+            showVideoCallStep: false,
+            contactsStepDone: false,
+            videoCallStepDone: false,
+            borrowerContextPromptSeen: loanRequestFlowState?.flow.borrowerContextPromptSeen ?? false
+         },
+         borrowerContext: loanRequestFlowState?.borrowerContext ?? { incomeSetup: '', paydayWindow: '', cashGaps: [] },
+         profileName: loanRequestFlowState?.profileName ?? '',
+         prefillOnly: true
+      });
+   }, [appliedReferral, days, effectiveUser?.id, loanAmount, loanRequestFlowState, reason, totalRepaymentAmount]);
+
    // The auto-send fired: drop the "send after verify" mark so a failed send (reason check, cooldown)
    // can't re-fire on every reload. The terms stay on the open form for them to fix and send.
    const handleAutoSubmitStarted = useCallback(() => {
@@ -2542,6 +2565,7 @@ function RequestBoard$() {
                   resume={loanRequestResume}
                   onFlowStateChange={handleLoanRequestFlowStateChange}
                   onVerifyToSend={handleVerifyToSend}
+                  onLeaveForDocuments={handleLeaveForDocuments}
                   autoSubmit={autoSendLoanRequest}
                   onAutoSubmitStarted={handleAutoSubmitStarted}
                   onBackdropPress={handleLoanModalBackdropPress}
