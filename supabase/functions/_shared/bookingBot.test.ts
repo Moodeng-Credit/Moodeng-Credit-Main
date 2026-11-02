@@ -9,6 +9,7 @@ import {
    greet,
    MAX_BUTTON,
    newState,
+   nudge,
    plainText,
    profileFromUser,
    readConfirm,
@@ -671,4 +672,71 @@ Deno.test('no bio: "Back" asks for the bio again until it is done, then the chat
    assertEquals(done.state.step, 'ask');
    const typed = await step(g.state, { text: 'saturday morning' }, { ...ctx(true), readAi: undefined });
    assertEquals(typed.state.step, 'offered');
+});
+
+// ---------------------------------------------------------------------------------------------------
+// Booked on the website, then "questions"; and the one nudge when they stop partway
+// ---------------------------------------------------------------------------------------------------
+
+const websiteBooked = (): BotState => ({ ...newState(), step: 'booked', booked: true, mine: { date: '2026-11-03', min: 19 * 60, host: 'Emma' } });
+
+Deno.test('a website booker types QUESTIONS: same questions, the $15 note, and their call stays booked', async () => {
+   const c = chat(websiteBooked());
+   await c.send('Questions');
+   assertEquals(c.state.step, 'prep');
+   assert(c.text.includes('Emma will read these before your call'));
+   await c.quiz();
+   assertEquals(c.state.step, 'expect');
+   assert(c.text.includes('One thing to know before your call'));
+   assert(!c.text.includes('Before you confirm'));
+   assert(has(c, 'answers'));
+   await c.tap('Got it');
+   assertEquals(c.state.step, 'booked');
+   assert(c.state.booked);
+   assert(c.text.includes('See you Tuesday, November 3, 7:00 PM'));
+   assert(!has(c, 'release') && !has(c, 'book'));
+   // Asking again just gets "all set".
+   await c.send('questions');
+   assertEquals(c.state.step, 'booked');
+   assert(c.text.includes("You're all set"));
+});
+
+Deno.test('a website booker who dodges twice keeps the call; the team sees the held off', async () => {
+   const c = chat(websiteBooked());
+   await c.send('questions');
+   for (let i = 0; i < 6 && c.state.step === 'prep' && !has(c, 'heldOff'); i++) {
+      const pns = c.last.flatMap((r) => r.buttons ?? []).find((b) => b.payload.endsWith(':pns'));
+      if (pns) await c.tap(pns.title);
+      else await c.tap(0);
+   }
+   assert(has(c, 'heldOff'));
+   assertEquals(c.state.step, 'booked');
+   assert(c.state.booked && c.state.mine);
+   assert(!has(c, 'release'));
+   assert(c.text.includes('Emma can ask you on the call'));
+});
+
+Deno.test('the nudge repeats the question they stopped at, and their reply carries on', async () => {
+   const c = chat();
+   await c.send('tuesday 3pm');
+   await c.tap(0);
+   await c.tap(0); // first question answered
+   const before = c.state.asked.length;
+   const n = nudge(c.state);
+   assertEquals(n.replies.length, 2);
+   assert(n.replies[0].text.includes("isn't booked yet"));
+   assert(n.replies[1].text.startsWith(`Question ${before} ·`));
+   assertEquals(n.state.lastButtons, n.replies[1].buttons);
+   // Tapping by letter works on the nudge's buttons.
+   const r = await step(n.state, { text: 'A' }, { now: NOW, free: week(), lastDay: '2026-11-07' });
+   assertEquals(r.state.asked.length, before + 1);
+});
+
+Deno.test('the nudge on the times list shows the times again', async () => {
+   const c = chat();
+   await c.send('tuesday 3pm');
+   assertEquals(c.state.step, 'offered');
+   const n = nudge(c.state);
+   assertEquals(n.replies.length, 2);
+   assert((n.replies[1].buttons ?? []).some((b) => b.payload.startsWith('slot:')));
 });

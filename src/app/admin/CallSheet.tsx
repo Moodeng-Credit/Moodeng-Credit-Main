@@ -335,7 +335,11 @@ function BotAnswersCard({ records }: { records: BotAnswers[] }) {
             <div key={r.id} className="space-y-1.5">
                <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <b className="text-[14px] text-[#1f1f1f]">
-                     {r.kind === 'held_off' ? '⏸️ Held off by the Messenger bot' : '💬 Answers to the Messenger bot'}
+                     {r.kind === 'held_off'
+                        ? '⏸️ Held off by the Messenger bot'
+                        : r.kind === 'stalled'
+                          ? '🕓 Stopped partway in the Messenger bot'
+                          : '💬 Answers to the Messenger bot'}
                   </b>
                   <span className="text-[#9a9a9a]">
                      {when(r.createdAt)}
@@ -355,6 +359,10 @@ function BotAnswersCard({ records }: { records: BotAnswers[] }) {
                   <p className="text-[#5a5a5a]">
                      Didn&apos;t answer “{r.heldOffQuestion}” twice ({r.heldOffValue}).{' '}
                      {r.items.length ? 'What they answered before that:' : ''}
+                  </p>
+               ) : r.kind === 'stalled' ? (
+                  <p className="text-[#5a5a5a]">
+                     Stopped at “{r.heldOffQuestion}” and got one nudge. {r.items.length ? 'What they answered before that:' : ''}
                   </p>
                ) : null}
                {r.items.length ? (

@@ -7,7 +7,9 @@ import {
    clusterSlots,
    dayIsFull,
    dropBusySlots,
+   dropMorningAfterLateNight,
    hostsFreeAt,
+   isGoodCallTime,
    mergeSlots,
    orderHostsToTry,
    preferHost,
@@ -218,4 +220,36 @@ Deno.test('zoomFallbackWarning: only for a Cal Video link', () => {
    assertEquals(zoomFallbackWarning('https://app.cal.com/video/8VWGe7EkEMWqiDL7AEkxGY', 'emma').includes("Emma's account"), true);
    assertEquals(zoomFallbackWarning('https://us06web.zoom.us/j/123', 'emma'), '');
    assertEquals(zoomFallbackWarning(null, 'emma'), '');
+});
+
+Deno.test('isGoodCallTime: weekday evenings and weekend days, in the borrower\'s zone', () => {
+   // Tue Nov 3 2026, Manila (UTC+8)
+   assertEquals(isGoodCallTime('2026-11-03T10:00:00+08:00', 'Asia/Manila'), false);
+   assertEquals(isGoodCallTime('2026-11-03T17:00:00+08:00', 'Asia/Manila'), true);
+   assertEquals(isGoodCallTime('2026-11-03T21:45:00+08:00', 'Asia/Manila'), true);
+   assertEquals(isGoodCallTime('2026-11-03T22:00:00+08:00', 'Asia/Manila'), false);
+   // Sat Nov 7: from 10 AM
+   assertEquals(isGoodCallTime('2026-11-07T09:45:00+08:00', 'Asia/Manila'), false);
+   assertEquals(isGoodCallTime('2026-11-07T11:00:00+08:00', 'Asia/Manila'), true);
+   // Same instant, Bangkok clock (6 PM Manila = 5 PM Bangkok): both evening
+   assertEquals(isGoodCallTime('2026-11-03T10:00:00Z', 'Asia/Bangkok'), true);
+   // Unknown zone falls back to Manila
+   assertEquals(isGoodCallTime('2026-11-03T18:00:00+08:00', 'Not/AZone'), true);
+});
+
+Deno.test('dropMorningAfterLateNight: booking between 10 PM and 6 AM hides times before the coming noon', () => {
+   const slots = ['2026-11-04T10:00:00+08:00', '2026-11-04T11:45:00+08:00', '2026-11-04T12:00:00+08:00', '2026-11-04T19:00:00+08:00'];
+   // 2:30 AM Wed, Manila
+   assertEquals(dropMorningAfterLateNight(slots, Date.parse('2026-11-04T02:30:00+08:00'), 'Asia/Manila'), slots.slice(2));
+   // 11 PM Tue, Manila
+   assertEquals(dropMorningAfterLateNight(slots, Date.parse('2026-11-03T23:10:00+08:00'), 'Asia/Manila'), slots.slice(2));
+   // 8 AM: untouched
+   assertEquals(dropMorningAfterLateNight(slots, Date.parse('2026-11-04T08:00:00+08:00'), 'Asia/Manila'), slots);
+});
+
+Deno.test('clusterSlots with isGood: an empty day recommends only its good times', () => {
+   const day = ['2026-11-03T10:00:00+07:00', '2026-11-03T18:00:00+07:00', '2026-11-03T23:00:00+07:00'];
+   const out = clusterSlots(day, [], day, (s) => isGoodCallTime(s, 'Asia/Bangkok'));
+   assertEquals(out.slots, day);
+   assertEquals(out.recommended, ['2026-11-03T18:00:00+07:00']);
 });

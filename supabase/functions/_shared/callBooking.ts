@@ -6,13 +6,16 @@
 import { ATTENDANCE_RESET, meetingIdFromJoinUrl } from './attendance.ts';
 import { adminUserUrl, OPEN_IN_ADMIN_TEXT } from './adminCards.ts';
 import { postDiscord } from './discord.ts';
+import { bookingBotAnswers, loadBookingBotMode } from './bookingBotSwitch.ts';
 import { formatCallTimeForTeam, newConfirmToken, sendBookedMessenger } from './videoCall.ts';
 import {
    bookingCooldownUntil,
    clusterSlots,
    dayIsFull,
    dropBusySlots,
+   dropMorningAfterLateNight,
    hostsFreeAt,
+   isGoodCallTime,
    mergeSlots,
    orderHostsToTry,
    preferHost,
@@ -153,6 +156,22 @@ const bookedCallStarts = async (svc: Svc, userId: string, from: string, to: stri
    return ((data ?? []) as Array<{ video_call_starts_at: string | null }>).map((r) => r.video_call_starts_at).filter((s): s is string => Boolean(s));
 };
 
+// The "You're booked" message offers the Messenger bot's questions ("type QUESTIONS") to people the bot
+// answers who haven't answered them in the last 30 days (a bot booking already has). Best-effort: false on error.
+const offerBotQuestions = async (svc: Svc, userId: string): Promise<boolean> => {
+   try {
+      const since = new Date(Date.now() - 30 * 86400000).toISOString();
+      const [mode, { data: u }, { data: done }] = await Promise.all([
+         loadBookingBotMode(svc),
+         svc.from('users').select('is_test').eq('id', userId).maybeSingle(),
+         svc.from('booking_bot_answers').select('id').eq('user_id', userId).in('kind', ['answers', 'held_off']).gte('created_at', since).limit(1)
+      ]);
+      return bookingBotAnswers(mode, (u as { is_test?: boolean | null } | null)?.is_test) && !(done ?? []).length;
+   } catch {
+      return false;
+   }
+};
+
 type Resolved = Array<{ id: string; apiKey: string; eventTypeId: number }>;
 
 const eitherHostOn = async (svc: Svc): Promise<boolean> => {
@@ -223,7 +242,13 @@ export const listCallSlots = async (svc: Svc, user: CallUser, timeZone: string, 
    const hostSlots = perHost.map((slots, i) => (resolved[i].id === 'george' ? dropBusySlots(slots, georgeBusy, CALL_MINUTES) : slots));
    const free = mergeSlots(hostSlots);
    const emmaIndex = resolved.findIndex((h) => h.id === PREFERRED_HOST);
-   const clustered = clusterSlots(free, booked, emmaIndex >= 0 ? hostSlots[emmaIndex] : []);
+   // Evenings and weekend days lead as ⭐ (isGoodCallTime); late-night bookers get nothing before noon.
+   const clustered = clusterSlots(
+      dropMorningAfterLateNight(free, Date.now(), timeZone),
+      booked,
+      emmaIndex >= 0 ? hostSlots[emmaIndex] : [],
+      (s) => isGoodCallTime(s, timeZone)
+   );
    const slots = preferSoonSlots(clustered.slots, Date.now());
    const offered = new Set(slots);
    // includeAll (admin preview only): also every free time over the next two weeks, before the soonest-first cut.
@@ -339,7 +364,7 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
          // Messenger confirmation with the "✅ I'll be there" button — best-effort, never blocks.
          let messengerSent = false;
          if (booked) {
-            const sent = await sendBookedMessenger(booked);
+            const sent = await sendBookedMessenger(booked, await offerBotQuestions(svc, user.id));
             messengerSent = sent.ok;
             if (!sent.ok) console.log('calcom-round-robin: messenger confirmation skipped:', sent.reason);
          }

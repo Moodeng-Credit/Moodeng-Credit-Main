@@ -111,7 +111,8 @@ type CallUser = {
 const CONFIRM_NOTICE = "⚠️ 1 hour before, we'll message you here with a ✅ I'll be there button. Tap it to confirm you'll have your ID and video on, or the call is cancelled.\n📅 Tap Add to calendar below so your phone reminds you too.";
 
 // Right after booking — the borrower just tapped through Messenger, so the 24h window is open.
-export const sendBookedMessenger = (u: CallUser) => {
+// offerQuestions: booked on the website (no Messenger bot answers yet) → the bot's questions, on request.
+export const sendBookedMessenger = (u: CallUser, offerQuestions = false) => {
    if (!u.video_call_starts_at) return Promise.resolve({ ok: false as const, reason: 'no_call' });
    const when = formatCallTime(u.video_call_starts_at, u.video_call_timezone);
    // Emma's "Confirm the initial meeting" script, with this booking's own join link.
@@ -124,6 +125,7 @@ export const sendBookedMessenger = (u: CallUser) => {
          `📅 You're booked! 15-min video call with ${withWhom}\n🗓️ ${when}\n${link}\n\n` +
          'Bring 🪪 your original ID or passport and 📷 camera on. That\'s it!\n\n' +
          `${CONFIRM_NOTICE}\n\n` +
+         (offerQuestions ? '💬 Help Emma get ready: type QUESTIONS for a few quick ones (2 min).\n\n' : '') +
          'After the call, add Emma on Facebook so we can fund you: https://www.facebook.com/emmamoodengcredit',
       card: callCard('Will you make it?', u, { calendar: true })
    });
