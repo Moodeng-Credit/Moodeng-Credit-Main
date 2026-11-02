@@ -39,6 +39,57 @@ const STATUS_LINE: Record<string, string> = {
  * told on push, Messenger and Telegram, and sees it on /documents. "Rows" lists every transaction the AI read with the
  * exact line it came from, so any number in the memo ([T4] = row 4) can be checked in one tap.
  */
+// One tap fills the decline reason the borrower sees (still editable before sending).
+const QUICK_REASONS = [
+   'Please send your last 2–3 months of history, not just a few days.',
+   'This is a company account. Please send your own personal account or payslip.',
+   'The name on the document doesn’t match your ID. Please send one in your own name.',
+   'The photo is too blurry to check. Please send a clearer screenshot with all 4 corners showing.',
+   'Please send the original from your bank or GCash app, not an edited copy.'
+];
+
+/** The files of one send as tappable previews: photos inline, PDFs as a tile. */
+function DocPreviews({ files, onOpen }: { files: AdminIncomeDocument['files']; onOpen: (path: string) => void }) {
+   const [urls, setUrls] = useState<Record<string, string>>({});
+   useEffect(() => {
+      let cancelled = false;
+      for (const f of files) {
+         if (!(f.mime ?? '').startsWith('image/')) continue;
+         void incomeDocumentUrl(f.path)
+            .then((url) => !cancelled && setUrls((prev) => ({ ...prev, [f.path]: url })))
+            .catch(() => undefined);
+      }
+      return () => {
+         cancelled = true;
+      };
+   }, [files]);
+   return (
+      <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+         {files.map((f, i) => (
+            <button
+               key={f.path}
+               type="button"
+               onClick={() => onOpen(f.path)}
+               title={f.name}
+               className="relative h-40 w-28 shrink-0 overflow-hidden rounded-xl border border-[#3a2d4f] bg-[#241044] text-left"
+            >
+               {urls[f.path] ? (
+                  <img alt={f.name ?? `File ${i + 1}`} className="size-full object-cover object-top" src={urls[f.path]} />
+               ) : (
+                  <span className="flex size-full flex-col items-center justify-center gap-1 px-2 text-center text-xs font-bold text-[#cfc6dd]">
+                     <span className="text-2xl">{f.mime === 'application/pdf' ? '📄' : '🖼️'}</span>
+                     <span className="line-clamp-3 break-all">{f.name ?? `File ${i + 1}`}</span>
+                  </span>
+               )}
+               <span className="absolute inset-x-0 bottom-0 bg-black/60 px-1.5 py-0.5 text-[11px] font-bold text-white">
+                  {i + 1} · {f.mime === 'application/pdf' ? 'PDF' : 'photo'} · open
+               </span>
+            </button>
+         ))}
+      </div>
+   );
+}
+
 export default function IncomeDocsSection() {
    const [docs, setDocs] = useState<AdminIncomeDocument[]>([]);
    const [loading, setLoading] = useState(true);
@@ -161,17 +212,6 @@ export default function IncomeDocsSection() {
                            </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                           {doc.files.map((f, i) => (
-                              <button
-                                 key={f.path}
-                                 type="button"
-                                 onClick={() => void openFile(f.path)}
-                                 className="rounded-xl bg-[#8336f0] px-3 py-1.5 text-sm font-black text-white"
-                                 title={f.name}
-                              >
-                                 File {i + 1}
-                              </button>
-                           ))}
                            {rows.length ? (
                               <button
                                  type="button"
@@ -200,6 +240,7 @@ export default function IncomeDocsSection() {
                         </div>
                      </div>
 
+                     <DocPreviews files={doc.files} onOpen={(path) => void openFile(path)} />
                      {doc.checks?.length ? (
                         <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">
                            {doc.checks.map((c) => (
@@ -233,6 +274,18 @@ export default function IncomeDocsSection() {
                      )}
                      {declining === doc.id ? (
                         <div className="mt-3 flex flex-wrap gap-2">
+                           <div className="flex w-full flex-wrap gap-1.5">
+                              {QUICK_REASONS.map((text) => (
+                                 <button
+                                    key={text}
+                                    type="button"
+                                    onClick={() => setReasons((prev) => ({ ...prev, [doc.id]: text }))}
+                                    className={`rounded-full px-3 py-1 text-xs font-bold ${reasons[doc.id] === text ? 'bg-red-700 text-white' : 'bg-[#241044] text-[#cfc6dd]'}`}
+                                 >
+                                    {text.split('.')[0]}
+                                 </button>
+                              ))}
+                           </div>
                            <input
                               value={reasons[doc.id] ?? ''}
                               onChange={(event) => setReasons((prev) => ({ ...prev, [doc.id]: event.target.value }))}

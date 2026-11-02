@@ -59,6 +59,25 @@ const fetchStatus = async (): Promise<Status> => {
    return row ?? null;
 };
 
+const REVIEW_HOURS = 24;
+
+const dayWord = (at: Date, now: Date) => {
+   const days = Math.round((new Date(at).setHours(0, 0, 0, 0) - new Date(now).setHours(0, 0, 0, 0)) / 86_400_000);
+   return days === 0
+      ? 'today'
+      : days === 1
+        ? 'tomorrow'
+        : days === -1
+          ? 'yesterday'
+          : at.toLocaleDateString(undefined, { weekday: 'long' });
+};
+
+/** "today 2:25 PM", "tomorrow 2:25 PM" — in the borrower's own time. Pure. */
+const whenText = (at: number, now: number) => {
+   const date = new Date(at);
+   return `${dayWord(date, new Date(now))} ${date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
+};
+
 // Android Chrome can't open m.me links; messenger.com/t works there.
 const facebookHref = () =>
    typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent)
@@ -67,13 +86,25 @@ const facebookHref = () =>
 
 export default function DocumentsPage({
    preview
-}: { preview?: { phase: DocumentsPhase; reason?: string; checkingStep?: 1 | 2 | 3; fileNames?: string[] } } = {}) {
+}: {
+   preview?: {
+      phase: DocumentsPhase;
+      reason?: string;
+      checkingStep?: 1 | 2 | 3;
+      fileNames?: string[];
+      sentAt?: number;
+      fileCount?: number;
+   };
+} = {}) {
    const [phase, setPhase] = useState<DocumentsPhase>(preview?.phase ?? 'loading');
    const [picked, setPicked] = useState<Picked[]>([]);
    const [note, setNote] = useState('');
    const [sentCount, setSentCount] = useState(0);
    const [checkingStep, setCheckingStep] = useState<1 | 2 | 3>(preview?.checkingStep ?? 1);
    const [reason, setReason] = useState<string | null>(preview?.reason ?? null);
+   // Their latest send, for "Sent 3 files today 2:25 PM" and the reply-by time.
+   const [sentAt, setSentAt] = useState<number | null>(preview?.sentAt ?? null);
+   const [fileCount, setFileCount] = useState<number>(preview?.fileCount ?? 0);
    const [error, setError] = useState<string | null>(null);
    const inputRef = useRef<HTMLInputElement>(null);
    const navigate = useNavigate();
@@ -90,6 +121,8 @@ export default function DocumentsPage({
    const showStatus = useCallback((status: Status) => {
       if (!status) return setPhase('pick');
       setReason(status.reason);
+      setSentAt(Date.parse(status.sent_at));
+      setFileCount(status.file_count);
       setPhase(status.stage);
    }, []);
 
@@ -179,6 +212,8 @@ export default function DocumentsPage({
          setPhase('pick');
          return;
       }
+      setSentAt(Date.now());
+      setFileCount(files.length);
       setPicked([]);
       setNote('');
       setCheckingStep(1);
@@ -347,12 +382,28 @@ export default function DocumentsPage({
                <div className="flex flex-col gap-4 rounded-[20px] bg-white px-5 py-5 dark:bg-dv2-card">
                   <ConnectHero image={CONNECT_HIPPOS.waiting} title="Thanks, we got it!" subtitle="The team is reviewing your document." />
                   <ul className="flex flex-col gap-3 rounded-[16px] border-2 border-[#e2dcee] px-4 py-4 dark:border-[#3a2d4f]">
-                     <StepRow state="done" label="Uploaded" />
+                     <StepRow
+                        state="done"
+                        label={
+                           sentAt
+                              ? `${fileCount ? `Sent ${fileCount} ${fileCount === 1 ? 'file' : 'files'}` : 'Sent'} ${whenText(sentAt, Date.now())}`
+                              : 'Uploaded'
+                        }
+                     />
                      <StepRow state="done" label="Read and checked" />
                      <StepRow state="active" label="Team review" />
                   </ul>
                   <div className="rounded-[16px] bg-[#f8f1ff] px-4 py-3 text-[15px] leading-[21px] text-[#594d65] dark:bg-[#221a31] dark:text-[#d9cfe8]">
-                     <b>We’ll let you know within 24 hours</b> on Messenger and here. Questions? Message us on Facebook.
+                     {sentAt && Date.now() > sentAt + REVIEW_HOURS * 3_600_000 ? (
+                        <>
+                           <b>This is taking longer than usual.</b> Sorry! Message us on Facebook and we’ll check it right away.
+                        </>
+                     ) : (
+                        <>
+                           <b>We’ll reply by {sentAt ? whenText(sentAt + REVIEW_HOURS * 3_600_000, Date.now()) : 'within 24 hours'}</b> on
+                           Messenger and here. You don’t need to do anything until then.
+                        </>
+                     )}
                   </div>
                   {facebookButton}
                   {fromLoan ? (
