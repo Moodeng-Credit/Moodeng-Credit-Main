@@ -1,6 +1,15 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { bangkokHour, borrowCardImage, buildAutoReply, buildMessengerPing, isSupportMessage, isTeamOnline, signUpUrl } from './messengerSupport.ts';
+import {
+   bangkokHour,
+   borrowCardImage,
+   buildAutoReply,
+   buildMessengerPing,
+   formatIncomeDocStatus,
+   isSupportMessage,
+   isTeamOnline,
+   signUpUrl
+} from './messengerSupport.ts';
 
 const msg = (text: string | null, extra: Partial<{ hasAttachment: boolean; isButtonTap: boolean; codes: string[] }> = {}) => ({
    text,
@@ -75,4 +84,17 @@ Deno.test('Telegram ping drops Facebook photo links', () => {
    });
    assert(!ping.text.includes('fbcdn'));
    assert(ping.text.includes('> 📎 Sent a photo'));
+});
+
+Deno.test('proof-of-income status line for the team', () => {
+   const now = Date.parse('2026-11-02T10:00:00Z');
+   const line = formatIncomeDocStatus(
+      { created_at: '2026-11-02T08:00:00Z', status: 'failed', verdict: 'resend', resend_reason: 'not_financial', decision: null, risk: 'red' },
+      now
+   );
+   assertEquals(line, '📄 Proof of income · sent 2h ago · ↩️ asked to resend (not financial) · 🚨 fraud signs');
+   assert(formatIncomeDocStatus({ created_at: '2026-11-02T09:50:00Z', status: 'done', verdict: 'looks_good', resend_reason: null, decision: 'approved', risk: 'green' }, now).includes('✅ approved'));
+   const ping = buildMessengerPing({ facebookName: 'Ana', borrower: null, body: 'hi', startsConversation: true, incomeDoc: line });
+   assert(ping.text.includes('🚨 fraud signs'));
+   assertEquals(ping.keyboard.at(-1)?.[0]?.text, '📄 Income docs');
 });
