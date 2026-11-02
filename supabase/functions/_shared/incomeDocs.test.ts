@@ -1,6 +1,6 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { buildMemo, buildSections, verdictOf, computeMetrics, type Extracted, namesMatch, normalizeExtracted, parseStatedIncome, readPdfInfo, riskOf, runChecks, scoreOf } from './incomeDocs.ts';
+import { buildMemo, buildSections, parseSteps, stepFor, verdictOf, computeMetrics, type Extracted, namesMatch, normalizeExtracted, parseStatedIncome, readPdfInfo, riskOf, runChecks, scoreOf } from './incomeDocs.ts';
 
 const tx = (date: string, amount: number, balance: number | null, description = 'x') => ({ date, description, amount, balance, page: 1, source_text: `${date} ${amount}` });
 
@@ -164,4 +164,35 @@ Deno.test('unread documents show content checks as not checked', () => {
    assertEquals(by.not_ai, 'fail');
    assertEquals(by.afford, 'skip');
    assertEquals(by.identity, 'skip');
+});
+
+const STEPS = parseSteps([
+   { min: 40, months: 0, fresh: false, autoApprove: true, maxShare: null, balance: false, liveCall: false },
+   { min: 60, months: 2, fresh: false, autoApprove: false, maxShare: 0.5, balance: false, liveCall: false },
+   { min: 100, months: 2, fresh: true, autoApprove: false, maxShare: 0.3, balance: true, liveCall: false },
+   { min: 140, months: 2, fresh: true, autoApprove: false, maxShare: 0.3, balance: true, liveCall: true }
+]);
+
+Deno.test('steps: $40 takes one screenshot, $60 needs 2 months', () => {
+   const week = base({ period_start: '2026-10-08', period_end: '2026-10-15', transactions: [tx('2026-10-09', 3000, 4000), tx('2026-10-10', -500, 3500)], opening_balance: null, closing_balance: null });
+   const at40 = runChecks(week, computeMetrics(week), { ...smallLoan, step: stepFor(40, STEPS) });
+   assert(!at40.some((f) => f.code === 'short_history'));
+   const at60 = runChecks(week, computeMetrics(week), { ...smallLoan, step: stepFor(60, STEPS) });
+   assert(at60.some((f) => f.code === 'short_history'));
+   assertEquals(verdictOf(at60, week.doc_type), { verdict: 'resend', reason: 'short_history' });
+});
+
+Deno.test('steps: repayment share and balance get stricter at $100', () => {
+   const doc = base();
+   // $90 repay on ~$210/month = 43%: fine at the $60 step (50%), flagged at $100 (30%).
+   const loan = { amount: 80, total_repayment: 90, due_date: null };
+   const at60 = runChecks(doc, computeMetrics(doc), { ...ctx, loan, step: stepFor(60, STEPS) });
+   assert(!at60.some((f) => f.code === 'repayment_vs_income'));
+   const at100 = runChecks(doc, computeMetrics(doc), { ...ctx, loan, step: stepFor(100, STEPS) });
+   assertEquals(at100.find((f) => f.code === 'repayment_vs_income')?.severity, 'orange');
+   // Average balance (~PHP 15k ≈ $265) vs a $300 repayment: a note below $100, a flag from $100.
+   const big = { amount: 140, total_repayment: 300, due_date: null };
+   assertEquals(runChecks(doc, computeMetrics(doc), { ...ctx, loan: big, step: stepFor(60, STEPS) }).find((f) => f.code === 'balance_below_repayment')?.severity, 'info');
+   assertEquals(runChecks(doc, computeMetrics(doc), { ...ctx, loan: big, step: stepFor(140, STEPS) }).find((f) => f.code === 'balance_below_repayment')?.severity, 'orange');
+   assert(runChecks(doc, computeMetrics(doc), { ...ctx, loan: big, step: stepFor(140, STEPS) }).some((f) => f.code === 'live_call'));
 });

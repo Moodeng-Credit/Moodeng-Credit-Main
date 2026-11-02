@@ -50,7 +50,8 @@ import UserAvatar, { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
-import { useIncomeDocRequirement } from '@/hooks/useIncomeDocRequirement';
+import { useIncomeDocFacts } from '@/hooks/useIncomeDocRequirement';
+import { gateMessage, type IncomeDocGate, incomeDocGate } from '@/lib/incomeDocSteps';
 import type { LoanFlow } from '@/hooks/useLoanFlow';
 
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
@@ -1396,9 +1397,11 @@ export default function LoanRequestModal({
    // Open flow only: the no-referral video call, booked (not attended) before the request posts.
    const [showVideoCallStep, setShowVideoCallStep] = useState(false);
    const [videoCallStepDone, setVideoCallStepDone] = useState(false);
-   // Loans of income_doc_min_usd ($60) or more need a proof of income first (moodeng.app/documents).
-   const [showIncomeGate, setShowIncomeGate] = useState(false);
-   const incomeDocRequirement = useIncomeDocRequirement(isOpen);
+   // Proof of income in steps that follow the credit ladder ($40, $60, $100, $140 today —
+   // telegram_bot_settings.income_doc_tiers). The card says what this amount still needs.
+   const [incomeGate, setIncomeGate] = useState<Extract<IncomeDocGate, { ok: false }> | null>(null);
+   const showIncomeGate = incomeGate !== null;
+   const incomeDocFacts = useIncomeDocFacts(isOpen);
    useEffect(() => {
       if (!showBorrowerContextStep) return;
       formRef.current?.scrollTo({ top: 0 });
@@ -1656,7 +1659,7 @@ export default function LoanRequestModal({
       setShowReferralStep(startOnReferralStep && canOfferReferral && !isWaitingOnTeam);
       setShowBorrowerContextStep(startOnBorrowerContextStep);
       setBioPage(1);
-      setShowIncomeGate(false);
+      setIncomeGate(null);
       setTermErrors({});
       setBorrowerContext(emptyBorrowerContext);
       setBorrowerContextPromptSeen(false);
@@ -2353,13 +2356,14 @@ export default function LoanRequestModal({
          }
       }
 
-      // $60 or more: proof of income first (sent in the last 90 days, not declined or sent back).
-      // The card sends them to /documents with what they typed kept, and back here after.
-      if (incomeDocRequirement.minUsd != null && !incomeDocRequirement.ok && Number(loanAmount) >= incomeDocRequirement.minUsd) {
+      // Proof of income for this amount's step. The card sends them to /documents with what they
+      // typed kept (and the amount, so the checks use the right step), and back here after.
+      const gate = incomeDocGate(Number(loanAmount), incomeDocFacts);
+      if (!gate.ok) {
          event.preventDefault();
          setShowBorrowerContextStep(false);
-         setShowIncomeGate(true);
-         trackLoanFormRule('loan_form_income_doc_gate', { amount: Number(loanAmount) });
+         setIncomeGate(gate);
+         trackLoanFormRule('loan_form_income_doc_gate', { amount: Number(loanAmount), step: gate.step.min, missing: gate.missing });
          return;
       }
 
@@ -2939,24 +2943,19 @@ export default function LoanRequestModal({
                   <ConnectHero
                      image={CONNECT_HIPPOS.cashout}
                      title="Show us your income first"
-                     subtitle={<>Loans of ${incomeDocRequirement.minUsd} or more need one proof of income. It takes 2 minutes.</>}
+                     subtitle={incomeGate ? gateMessage(incomeGate) : undefined}
                   />
-                  <ul className="flex flex-col gap-1.5 text-[15px] leading-[20px] text-[#594d65] dark:text-[#d9cfe8]">
-                     <li>📱 GCash or Maya history, last 2–3 months (screenshots are fine)</li>
-                     <li>🏦 Bank statement</li>
-                     <li>🧾 Latest payslip</li>
-                  </ul>
                   <p className="text-[14px] leading-[19px] text-[#7b6b8c] dark:text-[#b9abcc]">What you typed is kept. Come back after sending and tap Send request.</p>
                   <div className="mt-auto flex flex-col gap-1 pt-1">
                      <PrimaryButton
                         onClick={() => {
                            onLeaveForDocuments?.();
-                           navigate('/documents?back=loan');
+                           navigate(`/documents?back=loan&amount=${encodeURIComponent(loanAmount)}&repay=${encodeURIComponent(totalRepaymentAmount)}`);
                         }}
                      >
                         Send proof of income
                      </PrimaryButton>
-                     <GhostButton onClick={() => setShowIncomeGate(false)}>Change the amount</GhostButton>
+                     <GhostButton onClick={() => setIncomeGate(null)}>Change the amount</GhostButton>
                   </div>
                </div>
             ) : showVideoCallStep ? (

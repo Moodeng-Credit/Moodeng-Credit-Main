@@ -213,7 +213,39 @@ const EDITOR_RE = /photoshop|canva|illustrator|gimp|ilovepdf|smallpdf|sejda|pdfe
 
 export type FileFacts = { name: string; image: ImageInfo | null; markers: ReturnType<typeof fileMarkers> };
 
+// ---- Steps (credit ladder) --------------------------------------------------------------------
+// The more someone asks for, the more we need. Same rules as src/lib/incomeDocSteps.ts (the loan
+// form); the list lives in telegram_bot_settings.income_doc_tiers.
+export type IncomeDocStep = {
+   min: number;
+   months: number;
+   fresh: boolean;
+   autoApprove: boolean;
+   maxShare: number | null;
+   balance: boolean;
+   liveCall: boolean;
+};
+
+export const parseSteps = (raw: unknown): IncomeDocStep[] =>
+   (Array.isArray(raw) ? raw : [])
+      .filter((x): x is Record<string, unknown> => Boolean(x) && typeof x === 'object' && Number((x as Record<string, unknown>).min) > 0)
+      .map((x) => ({
+         min: Number(x.min),
+         months: Number(x.months) || 0,
+         fresh: x.fresh === true,
+         autoApprove: x.autoApprove === true,
+         maxShare: typeof x.maxShare === 'number' ? x.maxShare : null,
+         balance: x.balance === true,
+         liveCall: x.liveCall === true
+      }))
+      .sort((a, b) => a.min - b.min);
+
+export const stepFor = (amount: number | null, steps: IncomeDocStep[]) =>
+   amount != null && Number.isFinite(amount) ? ([...steps].reverse().find((x) => amount >= x.min) ?? null) : null;
+
 export type CheckContext = {
+   /** The step for the amount they're asking (null: no amount known — the old $60 rules apply). */
+   step?: IncomeDocStep | null;
    pdfs: PdfInfo[];
    /** Per file: image size and hidden tags (fileForensics.ts). */
    files?: FileFacts[];
@@ -341,20 +373,27 @@ export const runChecks = (doc: Extracted, metrics: Metrics, ctx: CheckContext): 
          detail: `Said ${ctx.statedMonthlyIncome}/month in their bio; this document shows about ${round2(detectedMonthly)}.`
       });
    }
-   if (ctx.loan && incomeUsd) {
+   // The step sets how much of their monthly income the repayment may take (no step: 30%).
+   const maxShare = ctx.step ? ctx.step.maxShare : 0.3;
+   if (ctx.loan && incomeUsd && maxShare != null) {
       const share = ctx.loan.total_repayment / incomeUsd;
-      if (share > 0.3) {
+      if (share > maxShare) {
          flags.push({
             code: 'repayment_vs_income',
-            severity: share > 0.5 ? 'red' : 'orange',
-            detail: `Repayment $${ctx.loan.total_repayment} is ${Math.round(share * 100)}% of ~$${incomeUsd} coming in a month (aim: under 30%).`
+            severity: share > Math.max(0.5, maxShare + 0.2) ? 'red' : 'orange',
+            detail: `Repayment $${ctx.loan.total_repayment} is ${Math.round(share * 100)}% of ~$${incomeUsd} coming in a month (aim: under ${Math.round(maxShare * 100)}%).`
          });
       }
    }
+   const monthsNeeded = ctx.step ? ctx.step.months : 2;
    if (!tx.length && !p?.net_pay && doc.doc_type !== 'business_permit') {
       flags.push({ code: 'no_income_rows', severity: 'orange', detail: 'No transactions or pay figures could be read.' });
-   } else if (tx.length && metrics.months_covered < 2) {
-      flags.push({ code: 'short_history', severity: 'orange', detail: `Only ~${Math.round(metrics.months_covered * 4.3)} weeks of history — ask for 2–3 months.` });
+   } else if (tx.length && monthsNeeded > 0 && metrics.months_covered < monthsNeeded - 0.25) {
+      flags.push({
+         code: 'short_history',
+         severity: 'orange',
+         detail: `Only ~${Math.round(metrics.months_covered * 4.3)} weeks of history — this loan needs ${monthsNeeded}+ months.`
+      });
    }
    if (tx.length && !metrics.regular_deposits.length && !p?.net_pay) {
       flags.push({ code: 'no_regular_income', severity: 'orange', detail: 'No regular (salary-like) deposit across 2+ months.' });
@@ -364,10 +403,14 @@ export const runChecks = (doc: Extracted, metrics: Metrics, ctx: CheckContext): 
       if (avgUsd < ctx.loan.total_repayment) {
          flags.push({
             code: 'balance_below_repayment',
-            severity: 'info',
+            // From the $100 step the balance has to cover it; below that it's just a note.
+            severity: ctx.step?.balance ? 'orange' : 'info',
             detail: `Average balance ~$${round2(avgUsd)} is below the $${ctx.loan.total_repayment} repayment — repayment depends on the next deposit.`
          });
       }
+   }
+   if (ctx.step?.liveCall) {
+      flags.push({ code: 'live_call', severity: 'info', detail: `$${ctx.step.min}+ step: ask them to open GCash and scroll their history live on the call.` });
    }
    const payday = metrics.regular_deposits[0]?.payday ?? null;
    if (payday && ctx.loan?.due_date) {
@@ -470,7 +513,7 @@ export const RESEND_TEXT: Record<ResendReason, string> = {
    unreadable: 'We couldn’t read it clearly. Please retake it in good light with all 4 corners showing and the numbers sharp.',
    not_financial: 'This doesn’t look like a GCash or Maya history, bank statement or payslip. Please send one of those.',
    old_document: 'This is more than 2 months old. Please send your latest one.',
-   short_history: 'This shows less than 2 months. Please send your last 2–3 months of history.',
+   short_history: 'This doesn’t show enough history for the amount you’re asking. Please send your last 2–3 months.',
    no_income: 'We couldn’t see money coming in. Please send a history or statement that shows the money you receive.'
 };
 
@@ -484,7 +527,7 @@ const SECTIONS: Array<{ key: string; label: string; codes: string[] }> = [
    { key: 'unique', label: 'Not used by another account', codes: ['same_file_other_account', 'same_rows_other_account'] },
    { key: 'recent', label: 'Recent and 2+ months', codes: ['old_document', 'short_history'] },
    { key: 'income', label: 'Regular income', codes: ['no_income_rows', 'no_regular_income', 'income_below_stated', 'one_big_deposit'] },
-   { key: 'afford', label: 'Can afford the repayment', codes: ['repayment_vs_income', 'balance_below_repayment', 'due_far_from_payday'] }
+   { key: 'afford', label: 'Can afford the repayment', codes: ['repayment_vs_income', 'balance_below_repayment', 'due_far_from_payday', 'live_call'] }
 ];
 const FAKE_SECTIONS = new Set(['authentic', 'not_ai', 'identity', 'unique']);
 
@@ -660,14 +703,14 @@ const personOf = (user: { username?: string | null; display_name?: string | null
 export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string, apiKey: string | null | undefined) => {
    const { data: row, error: rowError } = await supabase
       .from('income_documents')
-      .select('id, user_id, files, note, status')
+      .select('id, user_id, files, note, status, requested_amount, requested_repay')
       .eq('id', id)
       .maybeSingle();
    if (rowError || !row) return { ok: false, error: rowError?.message ?? 'not found' };
    if (row.status !== 'pending') return { ok: true, skipped: row.status };
 
    const files = (row.files ?? []) as Array<{ path: string; name?: string; mime?: string }>;
-   const [{ data: user }, { data: kyc }, { data: loan }, { data: chat }] = await Promise.all([
+   const [{ data: user }, { data: kyc }, { data: loan }, { data: chat }, { data: stepsRow }] = await Promise.all([
       supabase.from('users').select('username, display_name, monthly_income').eq('id', row.user_id).maybeSingle(),
       supabase
          .from('kyc_identities')
@@ -685,12 +728,28 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
          .order('created_at', { ascending: false })
          .limit(1)
          .maybeSingle(),
-      supabase.from('telegram_bot_settings').select('value').eq('key', 'kyc_alert_chat_id').maybeSingle()
+      supabase.from('telegram_bot_settings').select('value').eq('key', 'kyc_alert_chat_id').maybeSingle(),
+      supabase.from('telegram_bot_settings').select('value').eq('key', 'income_doc_tiers').maybeSingle()
    ]);
+
+   // The amount they were asking for when they sent it (loan form), else their open request.
+   const askedAmount = row.requested_amount != null ? Number(row.requested_amount) : loan ? Number(loan.loan_amount) : null;
+   const askedRepay = row.requested_repay != null ? Number(row.requested_repay) : loan ? Number(loan.total_repayment_amount) : null;
+   let steps: IncomeDocStep[] = [];
+   try {
+      steps = parseSteps(JSON.parse(stepsRow?.value ?? '[]'));
+   } catch {
+      steps = [];
+   }
+   const step = stepFor(askedAmount, steps);
 
    // 0. Tell the team now — the AI read follows as a reply.
    const who = personOf(user, row.user_id);
-   const loanLine = loan ? `${loan.loan_status === 'Lent' ? 'Has a loan' : 'Asking'} $${Number(loan.loan_amount)} → repay $${Number(loan.total_repayment_amount)}` : 'No open request';
+   const stepLine = step ? ` · $${step.min} step${step.autoApprove ? ' (auto-approve)' : ''}` : '';
+   const loanLine =
+      askedAmount != null
+         ? `${loan?.loan_status === 'Lent' && row.requested_amount == null ? 'Has a loan' : 'Asking'} $${askedAmount}${askedRepay ? ` → repay $${askedRepay}` : ''}${stepLine}`
+         : 'No open request';
    const ping = [`📄 Proof of income from ${who}`, `${files.length} file${files.length === 1 ? '' : 's'}${row.note ? ` · "${row.note}"` : ''}`, loanLine].join('\n');
    let pingId: number | undefined;
    if (chat?.value) {
@@ -823,10 +882,12 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
          ? supabase.from('income_documents').select('user_id, row_keys').overlaps('row_keys', keys).neq('user_id', row.user_id).limit(20)
          : Promise.resolve({ data: [] as Array<{ user_id: string; row_keys: string[] }> })
    ]);
-   const loanCtx: LoanContext | null = loan ? { amount: Number(loan.loan_amount), total_repayment: Number(loan.total_repayment_amount), due_date: loan.due_date } : null;
+   const loanCtx: LoanContext | null =
+      askedAmount != null ? { amount: askedAmount, total_repayment: askedRepay ?? askedAmount, due_date: row.requested_amount == null ? (loan?.due_date ?? null) : null } : null;
    const metrics = computeMetrics(doc);
    const flags = runChecks(doc, metrics, {
       pdfs,
+      step,
       files: facts,
       rowMatches: (sameRows ?? []).map((r) => ({ user_id: r.user_id, share: rowOverlap(keys, r.row_keys ?? []) })),
       duplicateOf: dupes ?? [],
@@ -861,6 +922,7 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
 
    const patch = {
       status: 'done',
+      tier: step,
       file_hashes: hashes,
       row_keys: keys,
       doc_type: doc.doc_type,
@@ -876,10 +938,19 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    };
    if (verdict === 'resend' && reason) return askResend(patch, reason, `score ${score}/100`);
    const checkLine = checks.map((c) => `${c.status === 'pass' ? '✅' : c.status === 'warn' ? '🟠' : '🔴'} ${c.label}`).join('\n');
-   return finish(
-      { ...patch, verdict },
-      [`${VERDICT_LINE[verdict]} · score ${score}/100${aiNote ? ` · AI says ${aiNote.verdict}` : ''}`, checkLine, memo, aiNote?.note].filter(Boolean).join('\n\n').slice(0, 3900)
+   // Small steps ($40 today): every check passed → approved without a team decision.
+   const autoApprove = verdict === 'looks_good' && step?.autoApprove === true;
+   const headline = autoApprove ? `✅ Approved automatically ($${step!.min} step)` : VERDICT_LINE[verdict];
+   const result = await finish(
+      {
+         ...patch,
+         verdict,
+         ...(autoApprove ? { decision: 'approved', decided_at: new Date().toISOString(), decided_by: `auto ($${step!.min} step)` } : {})
+      },
+      [`${headline} · score ${score}/100${aiNote ? ` · AI says ${aiNote.verdict}` : ''}`, checkLine, memo, aiNote?.note].filter(Boolean).join('\n\n').slice(0, 3900)
    );
+   if (autoApprove) await notifyIncomeDecision(supabase, id);
+   return result;
 };
 
 const DOCUMENTS_URL = 'https://moodeng.app/documents';

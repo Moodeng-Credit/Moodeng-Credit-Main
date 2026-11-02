@@ -1,31 +1,41 @@
 import { useQuery } from '@tanstack/react-query';
 
+import { type IncomeDocFacts, parseSteps } from '@/lib/incomeDocSteps';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 /**
- * Proof of income for bigger loans. Admins set the line in telegram_bot_settings.income_doc_min_usd
- * ($60 today; 0 = off): a request of that amount or more needs a proof of income sent in the last
- * 90 days that wasn't declined or sent back to fix (moodeng.app/documents).
+ * What the loan form needs to decide whether this borrower's proof of income is enough for the
+ * amount they're asking (incomeDocGate in @/lib/incomeDocSteps). The steps come from
+ * telegram_bot_settings.income_doc_tiers, so the team changes them without a deploy.
  *
- * Anything unexpected — the RPC not deployed yet, a network error, loading — reads as "not needed",
- * so this can never lock a borrower out.
+ * Anything unexpected — the RPC not deployed yet, a network error, loading — reads as "no steps",
+ * so this can never lock a borrower out. Re-read on every open, so a document they just sent counts.
  */
-export type IncomeDocRequirement = { minUsd: number | null; ok: boolean };
+const OFF: IncomeDocFacts = { steps: [], doc: null, lastFundedAt: null };
 
-const OFF: IncomeDocRequirement = { minUsd: null, ok: true };
-
-export const fetchIncomeDocRequirement = async (): Promise<IncomeDocRequirement> => {
+export const fetchIncomeDocFacts = async (): Promise<IncomeDocFacts> => {
    const { data, error } = await getSupabaseBrowserClient().rpc('get_income_doc_requirement');
    if (error || !data) return OFF;
-   const value = data as { min_usd?: unknown; ok?: unknown };
-   const minUsd = Number(value.min_usd);
-   return { minUsd: Number.isFinite(minUsd) && minUsd > 0 ? minUsd : null, ok: value.ok === true };
+   const value = data as { tiers?: unknown; doc?: Record<string, unknown> | null; last_funded_at?: string | null };
+   const doc = value.doc;
+   return {
+      steps: parseSteps(value.tiers),
+      doc: doc
+         ? {
+              createdAt: Date.parse(String(doc.created_at)),
+              months: typeof doc.months === 'number' ? doc.months : null,
+              read: doc.read === true,
+              approved: doc.approved === true
+           }
+         : null,
+      lastFundedAt: value.last_funded_at ? Date.parse(value.last_funded_at) : null
+   };
 };
 
-export function useIncomeDocRequirement(enabled: boolean): IncomeDocRequirement {
+export function useIncomeDocFacts(enabled: boolean): IncomeDocFacts {
    const { data } = useQuery({
       queryKey: ['income-doc-requirement'],
-      queryFn: fetchIncomeDocRequirement,
+      queryFn: fetchIncomeDocFacts,
       enabled,
       staleTime: 0,
       refetchOnMount: 'always'

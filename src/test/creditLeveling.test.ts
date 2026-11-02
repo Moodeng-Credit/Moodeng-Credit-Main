@@ -20,6 +20,10 @@ vi.mock('@/hooks/usePreKycGate', () => ({
    usePreKycGate: () => ({ isGated: false, isLoading: false })
 }));
 
+// Proof-of-income steps: none in these tests (and no QueryClientProvider to fetch them with).
+vi.mock('@/hooks/useIncomeDocRequirement', () => ({
+   useIncomeDocFacts: () => ({ steps: [], doc: null, lastFundedAt: null })
+}));
 vi.mock('@/hooks/usePushNotifications', () => ({
    usePushNotifications: () => ({
       isSupported: false,
