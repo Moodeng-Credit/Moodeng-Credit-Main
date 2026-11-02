@@ -474,7 +474,7 @@ export const RESEND_TEXT: Record<ResendReason, string> = {
    no_income: 'We couldn’t see money coming in. Please send a history or statement that shows the money you receive.'
 };
 
-export type CheckSection = { key: string; label: string; status: 'pass' | 'warn' | 'fail'; notes: string[] };
+export type CheckSection = { key: string; label: string; status: 'pass' | 'warn' | 'fail' | 'skip'; notes: string[] };
 
 // Which flag belongs to which named check. Anything that could mean a fake is in FAKE_SECTIONS.
 const SECTIONS: Array<{ key: string; label: string; codes: string[] }> = [
@@ -488,22 +488,34 @@ const SECTIONS: Array<{ key: string; label: string; codes: string[] }> = [
 ];
 const FAKE_SECTIONS = new Set(['authentic', 'not_ai', 'identity', 'unique']);
 
-/** Named checks for the admin card, with the first one ("Readable") from the read itself. Pure. */
+/**
+ * Named checks for the admin card, with the first one ("Readable") from the read itself. When the
+ * document couldn't be read, checks that need its contents show 'skip' (not checked) instead of a
+ * misleading pass; file-level findings (AI tags) still show. Pure.
+ */
 export const buildSections = (flags: Flag[], read: { ok: boolean; note?: string }): CheckSection[] => [
    { key: 'readable', label: 'Readable', status: read.ok ? 'pass' : 'fail', notes: read.note ? [read.note] : [] },
    ...SECTIONS.map(({ key, label, codes }) => {
       const mine = flags.filter((f) => codes.includes(f.code));
-      const status: CheckSection['status'] = mine.some((f) => f.severity === 'red') ? 'fail' : mine.some((f) => f.severity === 'orange') ? 'warn' : 'pass';
+      const status: CheckSection['status'] = mine.some((f) => f.severity === 'red')
+         ? 'fail'
+         : mine.some((f) => f.severity === 'orange')
+           ? 'warn'
+           : read.ok
+             ? 'pass'
+             : 'skip';
       return { key, label, status, notes: mine.map((f) => f.detail) };
    })
 ];
 
 /** The verdict for a send that was read. Fake signs always win over a fixable problem. Pure. */
 export const verdictOf = (flags: Flag[], docType: Extracted['doc_type']): { verdict: Verdict; reason: ResendReason | null } => {
+   // Not a financial document at all (a cartoon, a selfie): telling them so gives nothing away, so
+   // they're asked for a real one even if it also carries fake signs — the team still sees those.
+   if (docType === 'other') return { verdict: 'resend', reason: 'not_financial' };
    const fakeCodes = new Set(SECTIONS.filter((x) => FAKE_SECTIONS.has(x.key)).flatMap((x) => x.codes));
    const serious = flags.filter((f) => f.severity !== 'info');
    if (serious.some((f) => fakeCodes.has(f.code))) return { verdict: 'needs_review', reason: null };
-   if (docType === 'other') return { verdict: 'resend', reason: 'not_financial' };
    const has = (code: string) => serious.some((f) => f.code === code);
    if (has('no_income_rows')) return { verdict: 'resend', reason: 'no_income' };
    if (has('old_document')) return { verdict: 'resend', reason: 'old_document' };
@@ -701,12 +713,27 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       return { ok: patch.status === 'done', ...patch };
    };
    // A problem the borrower can fix: tell them now (card + push/Messenger/Telegram) and the team in the reply.
+   // If it also carries fake signs (e.g. an AI-made image), the borrower is still only asked for a
+   // real document, but the team gets a 🚨 alert in the fraud group + Discord and it stays on the
+   // admin "to review" list (risk 'red').
    const askResend = async (patch: Record<string, unknown>, reason: ResendReason, teamNote: string) => {
+      const fraud = ((patch.flags as Flag[] | undefined) ?? []).filter((f) => f.severity === 'red');
       const result = await finish(
          { ...patch, verdict: 'resend', resend_reason: reason, checks: patch.checks ?? buildSections([], { ok: false, note: teamNote }) },
-         `${VERDICT_LINE.resend}: ${RESEND_TEXT[reason]}\n(${teamNote})`
+         `${fraud.length ? '🚨 Fraud signs · ' : ''}${VERDICT_LINE.resend}: ${RESEND_TEXT[reason]}\n(${teamNote})`
       );
       await notifyIncomeDecision(supabase, id);
+      if (fraud.length) {
+         const alert = `🚨 Possible fraud: ${who} sent this as proof of income\n${fraud.map((f) => `• ${f.detail}`).join('\n')}\n${loanLine}`;
+         const { data: fraudChat } = await supabase.from('telegram_bot_settings').select('value').eq('key', 'fraud_alert_chat_id').maybeSingle();
+         if (fraudChat?.value) {
+            await sendTelegramMessage(fraudChat.value, alert, { inlineKeyboard: [[{ text: '👀 Review', url: ADMIN_URL }]] }).catch(() => undefined);
+         }
+         await postDiscord(
+            { embeds: [{ title: `🚨 Possible fraud — ${who}`, description: `${alert.split('\n').slice(1).join('\n')}\n${ADMIN_URL}`, color: 0xe74c3c }] },
+            { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }
+         ).catch(() => undefined);
+      }
       return result;
    };
    // Our side failed (download, AI down) — never the borrower's fault, so it goes to the team.
@@ -757,6 +784,8 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       status: 'failed',
       file_hashes: hashes,
       error: note,
+      flags: fileFakeFlags,
+      risk: fileFakeFlags.length ? 'red' : null,
       ...extra,
       checks: buildSections(fileFakeFlags, { ok: false, note })
    });
@@ -780,9 +809,11 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    }
    if (!doc.readable) {
       const note = `unreadable: ${doc.unreadable_reason ?? 'no reason given'}`;
-      const patch = unreadablePatch(note, { doc_type: doc.doc_type, extracted: doc });
+      const patch = unreadablePatch(note, { doc_type: doc.doc_type, extracted: doc, model: MODEL });
+      // Not a financial document: ask for a real one (AI tags are still listed for the team).
+      if (doc.doc_type === 'other') return askResend(patch, 'not_financial', fileWarnings ? `${note}\n${fileWarnings}` : note);
       if (fileWarnings) return finish({ ...patch, verdict: 'needs_review' }, `${VERDICT_LINE.needs_review}: ${note}\n${fileWarnings}`);
-      return askResend(patch, doc.doc_type === 'other' ? 'not_financial' : 'unreadable', note);
+      return askResend(patch, 'unreadable', note);
    }
 
    const keys = rowKeys(doc.transactions);
