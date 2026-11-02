@@ -3,7 +3,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, ChevronLeft, FileText, ImagePlus, Loader2, Lock, MessageCircle, X } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
+import { useIncomeDocFacts } from '@/hooks/useIncomeDocRequirement';
+
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
+import { stepAsk, stepFor } from '@/lib/incomeDocSteps';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, PrimaryButton } from '@/views/dashboard/components/connectKit';
 
@@ -77,6 +80,12 @@ export default function DocumentsPage({
    // Sent here from the loan form ("Send proof of income", loans of $60+): offer the way back to it.
    const [searchParams] = useSearchParams();
    const fromLoan = searchParams.get('back') === 'loan';
+   // The amount they're asking for (from the loan form): sent along so the checks use that step,
+   // and used to say exactly what to send.
+   const requestedAmount = Number(searchParams.get('amount')) || null;
+   const requestedRepay = Number(searchParams.get('repay')) || null;
+   const { steps } = useIncomeDocFacts(requestedAmount != null);
+   const step = requestedAmount != null ? stepFor(requestedAmount, steps) : null;
 
    const showStatus = useCallback((status: Status) => {
       if (!status) return setPhase('pick');
@@ -154,7 +163,12 @@ export default function DocumentsPage({
          setSentCount((n) => n + 1);
       }
       const { error: submitError } = files.length
-         ? await supabase.rpc('submit_income_document', { p_files: files, p_note: note.trim() || null })
+         ? await supabase.rpc('submit_income_document', {
+              p_files: files,
+              p_note: note.trim() || null,
+              p_amount: requestedAmount,
+              p_repay: requestedRepay
+           })
          : { error: new Error('nothing uploaded') };
       if (submitError) {
          setError(
@@ -210,13 +224,19 @@ export default function DocumentsPage({
                   <ConnectHero
                      image={CONNECT_HIPPOS.cashout}
                      title="Send your proof of income"
-                     subtitle="It helps you borrow more. Any one of these works:"
+                     subtitle={
+                        step
+                           ? `For a $${requestedAmount} loan, please send ${stepAsk(step)}.`
+                           : 'It helps you borrow more. Any one of these works:'
+                     }
                   />
-                  <ul className="flex flex-col gap-1.5 text-[15px] leading-[20px] text-[#594d65] dark:text-[#d9cfe8]">
-                     <li>📱 GCash or Maya history, last 2–3 months (screenshots are fine)</li>
-                     <li>🏦 Bank statement</li>
-                     <li>🧾 Latest payslip</li>
-                  </ul>
+                  {step ? null : (
+                     <ul className="flex flex-col gap-1.5 text-[15px] leading-[20px] text-[#594d65] dark:text-[#d9cfe8]">
+                        <li>📱 GCash or Maya history, last 2–3 months (screenshots are fine)</li>
+                        <li>🏦 Bank statement</li>
+                        <li>🧾 Latest payslip</li>
+                     </ul>
+                  )}
 
                   {picked.length ? (
                      <ul className="grid grid-cols-3 gap-2">

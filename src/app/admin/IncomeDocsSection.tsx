@@ -149,6 +149,10 @@ export default function IncomeDocsSection() {
                            </p>
                            <p className="text-sm font-medium text-[#a89bb8]">
                               {(doc.doc_type ?? 'document').replace(/_/g, ' ')} · sent {bkk(doc.created_at)}
+                              {doc.requested_amount ? ` · asking $${Number(doc.requested_amount)}` : ''}
+                              {doc.tier
+                                 ? ` · $${doc.tier.min} step (${doc.tier.months ? `${doc.tier.months}+ months` : 'any recent'}${doc.tier.fresh ? ', fresh' : ''}${doc.tier.maxShare != null ? `, repay ≤${Math.round(doc.tier.maxShare * 100)}%` : ''}${doc.tier.liveCall ? ', live GCash on call' : ''}${doc.tier.autoApprove ? ', auto-approve' : ''})`
+                                 : ''}
                               {doc.note ? ` · “${doc.note}”` : ''}
                               {doc.user?.monthly_income ? ` · bio says ${doc.user.monthly_income}/month` : ''}
                               {doc.decision

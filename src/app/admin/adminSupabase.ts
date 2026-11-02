@@ -3158,6 +3158,8 @@ export interface AdminIncomeDocument {
    decided_at: string | null;
    decided_by: string | null;
    notified_at: string | null;
+   requested_amount: number | null;
+   tier: { min: number; months: number; fresh: boolean; autoApprove: boolean; maxShare: number | null; liveCall: boolean } | null;
    verdict: 'resend' | 'needs_review' | 'looks_good' | null;
    resend_reason: string | null;
    checks: Array<{ key: string; label: string; status: 'pass' | 'warn' | 'fail' | 'skip'; notes: string[] }> | null;
@@ -3165,7 +3167,7 @@ export interface AdminIncomeDocument {
 }
 
 const INCOME_DOC_SELECT =
-   'id, files, note, status, doc_type, risk, score, memo, ai_note, flags, extracted, error, created_at, decision, decision_reason, decided_at, decided_by, notified_at, verdict, resend_reason, checks, user:users!income_documents_user_id_fkey(id, username, display_name, monthly_income)';
+   'id, files, note, status, doc_type, risk, score, memo, ai_note, flags, extracted, error, created_at, decision, decision_reason, decided_at, decided_by, notified_at, verdict, resend_reason, checks, requested_amount, tier, user:users!income_documents_user_id_fkey(id, username, display_name, monthly_income)';
 
 export async function listIncomeDocuments(): Promise<AdminIncomeDocument[]> {
    const supabase = getSupabaseBrowserClient();
