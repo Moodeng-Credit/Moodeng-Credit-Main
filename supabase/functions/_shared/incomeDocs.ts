@@ -25,7 +25,7 @@ const MODEL = 'deepseek-flash';
 const DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions';
 const ADMIN_URL = 'https://moodeng.app/admin/income-docs';
 // Rough rates for the affordability checks only; close enough to compare sizes.
-const PER_USD: Record<string, number> = { USD: 1, PHP: 57, IDR: 16300 };
+const PER_USD: Record<string, number> = { USD: 1, PHP: 57, IDR: 16300, THB: 33 };
 
 export const parseStatedIncome = (text: string | null | undefined) => {
    const m = (text ?? '').toLowerCase().replace(/,/g, '').match(/(\d+(?:\.\d+)?)\s*(k)?/);
@@ -100,7 +100,7 @@ const EXAMPLE_JSON = {
    visual_anomalies: []
 };
 
-const SYSTEM = `You read proof-of-income documents for a small lender in the Philippines and Indonesia: GCash, Maya, DANA or OVO transaction history (PDF export or app screenshots), bank statements, payslips, remittance receipts, business permits. Several files from one person are usually screenshots of the SAME history: read them as one document, merge the rows, and drop rows that appear twice because screenshots overlap.
+const SYSTEM = `You read proof-of-income documents for a small lender in the Philippines, Indonesia and Thailand: GCash, Maya, DANA, OVO or PromptPay/bank-app transaction history (PDF export or app screenshots), bank statements (often bilingual, e.g. Thai + English — read the English labels and the numbers), payslips, remittance receipts, business permits. Several files from one person are usually screenshots of the SAME history: read them as one document, merge the rows, and drop rows that appear twice because screenshots overlap.
 
 Copy what the document says. Never guess or fill in a number that is not printed.
 - transactions: every row, oldest first. amount is positive for money in, negative for money out. balance is the running balance printed on that row, or null. date as YYYY-MM-DD.
@@ -317,8 +317,17 @@ export const runChecks = (doc: Extracted, metrics: Metrics, ctx: CheckContext): 
       if (tool && EDITOR_RE.test(tool)) {
          flags.push({ code: 'made_in_editor', severity: 'orange', detail: `PDF was made with ${tool}, not exported by a bank or e-wallet.` });
       }
+      // Phone scans (iPhone "Scan Document", Android/scanner apps) are re-saved whenever they're renamed
+      // or shared, so a later change date means nothing there; it matters for a bank's own export.
+      const phoneScan = /\b(iOS|iPadOS|Android|CamScanner|Adobe Scan|Genius Scan|Microsoft Lens|Scanner)\b/i.test(tool);
       if (pdf.created && pdf.modified && pdf.created.slice(2, 16) !== pdf.modified.slice(2, 16)) {
-         flags.push({ code: 'edited_after_creation', severity: 'orange', detail: `PDF was changed after it was made (${pdf.created} → ${pdf.modified}).` });
+         flags.push({
+            code: 'edited_after_creation',
+            severity: phoneScan ? 'info' : 'orange',
+            detail: phoneScan
+               ? `Phone scan re-saved after it was made (${tool}) — normal for scans.`
+               : `PDF was changed after it was made (${pdf.created} → ${pdf.modified}).`
+         });
       }
    }
    for (const note of doc.visual_anomalies) flags.push({ code: 'visual_anomaly', severity: 'orange', detail: note });
@@ -664,19 +673,57 @@ const pdfText = async (bytes: Uint8Array<ArrayBuffer>) => {
    return (text as string[]).map((t) => t.trim());
 };
 
+/**
+ * The page photos inside a scanned PDF (iPhone "Scan Document", scanner apps): each page is usually
+ * one JPEG stored as-is (/Filter /DCTDecode), so its bytes can be taken out and read as an image.
+ * Pure; returns [] when there are none (e.g. compressed object streams).
+ */
+export const pdfJpegs = (bytes: Uint8Array, max = 6): Uint8Array[] => {
+   const text = new TextDecoder('latin1').decode(bytes);
+   const found: Uint8Array[] = [];
+   const re = /<<([^]*?)>>\s*stream\r?\n/g;
+   for (let m = re.exec(text); m && found.length < max; m = re.exec(text)) {
+      const dict = m[1];
+      if (!/\/Subtype\s*\/Image/.test(dict) || !/\/Filter\s*\/DCTDecode/.test(dict)) continue;
+      const start = m.index + m[0].length;
+      const declared = dict.match(/\/Length\s+(\d+)(?!\s+\d+\s+R)/);
+      const end = declared ? start + Number(declared[1]) : text.indexOf('endstream', start);
+      if (end <= start || end > bytes.length) continue;
+      const jpeg = bytes.subarray(start, end);
+      // Small images are logos and icons, not pages.
+      if (jpeg[0] === 0xff && jpeg[1] === 0xd8 && jpeg.length > 50_000) found.push(jpeg);
+   }
+   return found;
+};
+
 const extract = async (apiKey: string, files: LoadedFile[]): Promise<Extracted> => {
    const parts: ChatPart[] = [];
+   const unreadable: string[] = [];
    let page = 0;
    for (const f of files) {
       if (f.mime === 'application/pdf') {
-         const pages = await pdfText(f.bytes);
-         if (!pages.some((t) => t.length > 40)) throw new Error(`${f.name} is a scanned PDF with no text — ask for screenshots`);
-         for (const t of pages) parts.push({ type: 'text', text: `--- page ${++page} (from ${f.name}, PDF text) ---\n${t}` });
+         const pages = await pdfText(f.bytes).catch(() => [] as string[]);
+         if (pages.some((t) => t.length > 40)) {
+            for (const t of pages) parts.push({ type: 'text', text: `--- page ${++page} (from ${f.name}, PDF text) ---\n${t}` });
+            continue;
+         }
+         // No text: a scan. Read the page photos inside it instead.
+         const scans = pdfJpegs(f.bytes);
+         if (!scans.length) {
+            unreadable.push(f.name);
+            continue;
+         }
+         for (const jpeg of scans) {
+            parts.push({ type: 'text', text: `--- page ${++page} (from ${f.name}, scanned page) ---` });
+            parts.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${toBase64(jpeg)}`, detail: 'high' } });
+         }
       } else {
          parts.push({ type: 'text', text: `--- page ${++page} (${f.name}, image) ---` });
          parts.push({ type: 'image_url', image_url: { url: `data:${f.mime};base64,${toBase64(f.bytes)}`, detail: 'high' } });
       }
    }
+   // Only throw when nothing at all could be read; one bad PDF shouldn't sink the others.
+   if (!page) throw new Error(`${unreadable.join(', ')} is a scanned PDF with no text — ask for screenshots`);
    parts.push({ type: 'text', text: `Read these ${page} page(s) as one person's proof of income. Reply in json.` });
    return normalizeExtracted(await deepseekJson<Record<string, unknown>>(apiKey, SYSTEM, parts, 16000));
 };

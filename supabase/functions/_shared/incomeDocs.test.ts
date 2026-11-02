@@ -1,6 +1,6 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { buildMemo, buildSections, parseSteps, stepFor, verdictOf, computeMetrics, type Extracted, namesMatch, normalizeExtracted, parseStatedIncome, readPdfInfo, riskOf, runChecks, scoreOf } from './incomeDocs.ts';
+import { buildMemo, buildSections, parseSteps, pdfJpegs, stepFor, verdictOf, computeMetrics, type Extracted, namesMatch, normalizeExtracted, parseStatedIncome, readPdfInfo, riskOf, runChecks, scoreOf } from './incomeDocs.ts';
 
 const tx = (date: string, amount: number, balance: number | null, description = 'x') => ({ date, description, amount, balance, page: 1, source_text: `${date} ${amount}` });
 
@@ -195,4 +195,37 @@ Deno.test('steps: repayment share and balance get stricter at $100', () => {
    assertEquals(runChecks(doc, computeMetrics(doc), { ...ctx, loan: big, step: stepFor(60, STEPS) }).find((f) => f.code === 'balance_below_repayment')?.severity, 'info');
    assertEquals(runChecks(doc, computeMetrics(doc), { ...ctx, loan: big, step: stepFor(140, STEPS) }).find((f) => f.code === 'balance_below_repayment')?.severity, 'orange');
    assert(runChecks(doc, computeMetrics(doc), { ...ctx, loan: big, step: stepFor(140, STEPS) }).some((f) => f.code === 'live_call'));
+});
+
+Deno.test('scanned PDF: page photos come out as JPEGs, logos are skipped', () => {
+   const enc = new TextEncoder();
+   const page = new Uint8Array(60_000);
+   page.set([0xff, 0xd8, 0xff, 0xe0]);
+   const logo = new Uint8Array(2_000);
+   logo.set([0xff, 0xd8]);
+   const chunks = [
+      enc.encode('%PDF-1.4\r11 0 obj\r<</Filter/DCTDecode/Height 4002/Length 60000/Subtype/Image/Type/XObject/Width 2740>>stream\r\n'),
+      page,
+      enc.encode('\r\nendstream\rendobj\r12 0 obj\r<</Subtype/Image/Filter /DCTDecode/Length 2000>>stream\n'),
+      logo,
+      enc.encode('\nendstream\rendobj\r%%EOF')
+   ];
+   const pdf = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
+   let at = 0;
+   for (const c of chunks) {
+      pdf.set(c, at);
+      at += c.length;
+   }
+   const jpegs = pdfJpegs(pdf);
+   assertEquals(jpegs.length, 1);
+   assertEquals(jpegs[0].length, 60_000);
+   assertEquals(pdfJpegs(enc.encode('%PDF-1.4 no images')).length, 0);
+});
+
+Deno.test('a re-saved phone scan is a note, a re-saved bank export is a warning', () => {
+   const doc = base();
+   const scan = { encrypted: false, producer: 'iOS Version 27.0.1 (Build 24A446)', creator: null, created: 'D:20261027080711Z', modified: "D:20261027153843+07'00'" };
+   const exported = { ...scan, producer: 'iText 5.5' };
+   assertEquals(runChecks(doc, computeMetrics(doc), { ...smallLoan, pdfs: [scan] }).find((f) => f.code === 'edited_after_creation')?.severity, 'info');
+   assertEquals(runChecks(doc, computeMetrics(doc), { ...smallLoan, pdfs: [exported] }).find((f) => f.code === 'edited_after_creation')?.severity, 'orange');
 });
