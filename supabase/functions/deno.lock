@@ -1,11 +1,15 @@
 {
   "version": "5",
   "specifiers": {
-    "npm:jose@5": "5.10.0"
+    "npm:jose@5": "5.10.0",
+    "npm:unpdf@1.8.1": "1.8.1"
   },
   "npm": {
     "jose@5.10.0": {
       "integrity": "sha512-s+3Al/p9g32Iq+oqXxkW//7jk2Vig6FF1CFqzVXoTUXt2qz89YWbL+OwS17NFYEvxC35n0FKeGO2LGYSxeM2Gg=="
+    },
+    "unpdf@1.8.1": {
+      "integrity": "sha512-xkURhy2SoGpOIH0a1gLHNkASPIQYonadDJs2AQwPEfUakafeD9EA1WTWWsaR++gfTCXJpV27W7tU1nXuk82UKQ=="
     }
   },
   "redirects": {

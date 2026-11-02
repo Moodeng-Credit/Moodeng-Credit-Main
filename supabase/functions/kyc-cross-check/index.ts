@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { checkCronAuth } from '../_shared/cronAuth.ts';
 import { postDiscord } from '../_shared/discord.ts';
+import { analyseIncomeDocument, notifyIncomeDecision } from '../_shared/incomeDocs.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
 // KYC cross-check. Pulls every Didit KYC session (declined attempts too), stores the identity Didit
@@ -279,7 +280,27 @@ serve(async (req) => {
    const auth = checkCronAuth(req, Deno.env.get('ADMIN_API_TOKEN'), corsHeaders);
    if (!auth.ok) return auth.response;
 
-   const body = (await req.json().catch(() => ({}))) as { report?: string; refetch?: boolean; dry?: boolean };
+   const body = (await req.json().catch(() => ({}))) as {
+      report?: string;
+      refetch?: boolean;
+      dry?: boolean;
+      income_doc?: string;
+      income_decision?: string;
+   };
+
+   // Proof of income rides on this function (edge function cap): submit_income_document() sends
+   // {"income_doc": id} and decide_income_document() sends {"income_decision": id}. See _shared/incomeDocs.ts.
+   if (body.income_decision) {
+      if (!UUID_RE.test(body.income_decision)) return jsonResponse({ error: 'bad income_decision id' }, 400);
+      const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+      return jsonResponse(await notifyIncomeDecision(svc, body.income_decision));
+   }
+   if (body.income_doc) {
+      if (!UUID_RE.test(body.income_doc)) return jsonResponse({ error: 'bad income_doc id' }, 400);
+      const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+      return jsonResponse(await analyseIncomeDocument(svc, body.income_doc, Deno.env.get('DEEPSEEK_API_KEY')));
+   }
+
    const dailyReport = body.report === 'daily';
 
    const apiKey = Deno.env.get('DIDIT_API_KEY');

@@ -3121,3 +3121,65 @@ export async function recheckAdminCallForm(userId: string): Promise<FormCheck> {
    const result = await invokeAdminCallApprovals<{ ok: boolean; check: FormCheck }>({ action: 'check_form', userId });
    return result.check;
 }
+
+// Proof of income sent from /documents. The AI read + checks run in kyc-cross-check
+// (_shared/incomeDocs.ts); this lists the results, opens the files and approves / declines a send.
+export interface AdminIncomeDocFlag {
+   code: string;
+   severity: 'red' | 'orange' | 'info';
+   detail: string;
+}
+
+export interface AdminIncomeDocRow {
+   date: string;
+   description: string;
+   amount: number;
+   balance: number | null;
+   page: number;
+   source_text: string;
+}
+
+export interface AdminIncomeDocument {
+   id: string;
+   files: Array<{ path: string; name?: string; mime?: string; size?: number }>;
+   note: string | null;
+   status: 'pending' | 'processing' | 'done' | 'failed' | 'skipped';
+   doc_type: string | null;
+   risk: 'green' | 'orange' | 'red' | null;
+   score: number | null;
+   memo: string | null;
+   ai_note: string | null;
+   flags: AdminIncomeDocFlag[];
+   extracted: { currency?: string | null; transactions?: AdminIncomeDocRow[] } | null;
+   error: string | null;
+   created_at: string;
+   decision: 'approved' | 'declined' | null;
+   decision_reason: string | null;
+   decided_at: string | null;
+   decided_by: string | null;
+   notified_at: string | null;
+   user: { id: string; username: string | null; display_name: string | null; monthly_income: string | null } | null;
+}
+
+const INCOME_DOC_SELECT =
+   'id, files, note, status, doc_type, risk, score, memo, ai_note, flags, extracted, error, created_at, decision, decision_reason, decided_at, decided_by, notified_at, user:users!income_documents_user_id_fkey(id, username, display_name, monthly_income)';
+
+export async function listIncomeDocuments(): Promise<AdminIncomeDocument[]> {
+   const supabase = getSupabaseBrowserClient();
+   const data = await requireOk(
+      supabase.from('income_documents').select(INCOME_DOC_SELECT).order('created_at', { ascending: false }).limit(100)
+   );
+   return (data ?? []) as unknown as AdminIncomeDocument[];
+}
+
+/** Approve or decline a send; the database then tells the borrower (push, Messenger, Telegram). */
+export async function decideIncomeDocument(id: string, decision: 'approved' | 'declined', reason: string | null): Promise<void> {
+   await requireOk(getSupabaseBrowserClient().rpc('decide_income_document', { p_id: id, p_decision: decision, p_reason: reason }));
+}
+
+/** A 10-minute link to one uploaded file (private bucket; admins can read it). */
+export async function incomeDocumentUrl(storagePath: string): Promise<string> {
+   const { data, error } = await getSupabaseBrowserClient().storage.from('income-docs').createSignedUrl(storagePath, 600);
+   if (error || !data?.signedUrl) throw error ?? new Error('No link');
+   return data.signedUrl;
+}
