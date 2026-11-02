@@ -3,7 +3,8 @@
 // sendpulse-events hands us each message a known borrower types (not "menu" or menu-button taps). We answer it only when:
 //   - telegram_bot_settings 'messenger_booking_bot' lets this person in (bookingBotSwitch.ts: 'on' = everyone,
 //     'test' / 'test-dry' = test accounts only, anything else = nobody), and
-//   - they're already in a booking chat, or this message starts one ("book", "book a call", "mag-book").
+//   - they're already in a booking chat, or this message starts one ("book", "book a call", "mag-book"; or
+//     "questions" from someone booked on the website, whose "You're booked" message offers the questions).
 // Otherwise we return false and the message goes on to support as before.
 //
 // 'on' / 'test': calls are really booked on Cal.com at the final YES (callBooking.bookCall: same hosts, daily cap,
@@ -130,7 +131,7 @@ export const alertTexts = (events: Bot.BotEvent[], state: Bot.BotState, who: { n
          out.push(
             [
                head('📝 Booking bot · call prep'),
-               state.mine ? `📅 Holding ${Bot.longWhen(state.mine, 'en', state.zoneName)}` : '',
+               state.mine ? `📅 ${state.booked ? 'Booked (on the website)' : 'Holding'} ${Bot.longWhen(state.mine, 'en', state.zoneName)}` : '',
                `${FIT_ICON[e.fit.verdict]} Fit check (rules, not a decision): ${e.fit.verdict} — ${e.fit.reason}`,
                '',
                'Their answers (tapped, or typed in their own words):',
@@ -144,7 +145,9 @@ export const alertTexts = (events: Bot.BotEvent[], state: Bot.BotState, who: { n
       if (e.type === 'heldOff') {
          const sofar = Bot.orderedAnswers(e.answers).map(([k, v]) => `• ${Q[k]?.en ?? k} ${v}`);
          out.push(
-            `${head('⏸️ Booking bot · held off')}\nThey didn't answer "${Q[e.key]?.en ?? e.key}" twice (${e.value ?? 'skipped'}). No call booked; the bot asked them to come back when they're ready.` +
+            `${head('⏸️ Booking bot · held off')}\nThey didn't answer "${Q[e.key]?.en ?? e.key}" twice (${e.value ?? 'skipped'}). ${
+               state.booked ? 'Their website booking stays; ask them on the call.' : "No call booked; the bot asked them to come back when they're ready."
+            }` +
                (sofar.length ? `\n\nWhat they answered before that:\n${sofar.join('\n')}` : '')
          );
       }
@@ -161,7 +164,9 @@ export const handleBookingMessage = async (svc: Svc, userId: string, contactId: 
       const dry = cfg.mode === 'test-dry';
       const { data: user } = await svc
          .from('users')
-         .select('id, email, username, is_test, display_name, facebook_name, whatsapp_number, timezone, video_call_timezone, preferred_locale, income_type, monthly_income, payday_type, payday_start, payday_end')
+         .select(
+            'id, email, username, is_test, display_name, facebook_name, whatsapp_number, timezone, video_call_timezone, preferred_locale, income_type, monthly_income, payday_type, payday_start, payday_end, video_call_starts_at, video_call_host, video_call_booking_uid'
+         )
          .eq('id', userId)
          .maybeSingle();
       if (!user || !bookingBotAnswers(cfg.mode, user.is_test)) return false;
@@ -175,7 +180,16 @@ export const handleBookingMessage = async (svc: Svc, userId: string, contactId: 
       const save = (state: Bot.BotState) =>
          svc.from('messenger_booking_chats').upsert({ contact_id: contactId, user_id: userId, state, ...holdColumns(state, zone), updated_at: new Date().toISOString() });
 
-      if (!row) {
+      // Booked on the website and typed QUESTIONS (their "You're booked" message offers it): a chat that
+      // starts at their booked call, so the bot goes straight to the questions.
+      const upcoming = user.video_call_booking_uid && user.video_call_starts_at && Date.parse(user.video_call_starts_at) > Date.now() ? user.video_call_starts_at : null;
+      let started: Bot.BotState | null = null;
+      // (An old chat that isn't on a booked call, e.g. one they stopped, is replaced.)
+      if ((!row || !(row.state as Bot.BotState).booked) && upcoming && Bot.PREP_START.test(text)) {
+         started = { ...Bot.newState(Bot.profileFromUser(user)), step: 'booked', booked: true, mine: { ...wallNow(zone, new Date(upcoming)), host: user.video_call_host === 'george' ? 'George' : 'Emma' } };
+      }
+
+      if (!row && !started) {
          if (!START.test(text)) return false;
          const g = Bot.greet(Bot.newState(Bot.profileFromUser(user)), bioDone);
          const notice = dry
@@ -188,7 +202,7 @@ export const handleBookingMessage = async (svc: Svc, userId: string, contactId: 
          await save(g.state);
          return true;
       }
-      const state = row.state as Bot.BotState;
+      const state = started ?? (row.state as Bot.BotState);
       if (STOP.test(text)) {
          await svc.from('messenger_booking_chats').delete().eq('contact_id', contactId);
          const kept = state.booked || state.kept ? ' Your booked call stays booked.' : '';
@@ -265,5 +279,70 @@ export const handleBookingMessage = async (svc: Svc, userId: string, contactId: 
    } catch (err) {
       console.error('messenger-booking-bot: failed', err instanceof Error ? err.message : err);
       return false;
+   }
+};
+
+const NUDGE_AFTER_MS = 3 * 3600_000;
+// Messenger only allows free messages for 24h after their last one; updated_at is when that was.
+const NUDGE_BEFORE_MS = 23 * 3600_000;
+const STEP_LABEL: Record<string, string> = { offered: 'Picking a time', expect: 'The $15 first-loan note', held: 'Typing YES to book', name: 'Typing their first name' };
+
+/**
+ * One nudge per stall: chats that stopped partway (Bot.STALLED_STEPS, nothing booked) 3–23 hours ago get
+ * "your call isn't booked yet" plus the question they stopped at. Where they stopped is saved
+ * (booking_bot_answers 'stalled', on the admin call sheet). Run by video-call-reminders' cron. Never throws.
+ */
+export const nudgeStalledChats = async (svc: Svc, now = Date.now()): Promise<number> => {
+   try {
+      const cfg = await settings(svc);
+      if (cfg.mode === 'off') return 0;
+      const { data: rows, error } = await svc
+         .from('messenger_booking_chats')
+         .select('contact_id, user_id, state, updated_at, nudged_at')
+         .lt('updated_at', new Date(now - NUDGE_AFTER_MS).toISOString())
+         .gt('updated_at', new Date(now - NUDGE_BEFORE_MS).toISOString());
+      if (error) {
+         console.error('messenger-booking-bot: nudge lookup failed', error.message);
+         return 0;
+      }
+      const due = ((rows ?? []) as Array<{ contact_id: string; user_id: string; state: Bot.BotState; updated_at: string; nudged_at: string | null }>).filter(
+         (r) => Bot.STALLED_STEPS.includes(r.state.step) && !r.state.booked && !r.state.kept && (!r.nudged_at || Date.parse(r.nudged_at) < Date.parse(r.updated_at))
+      );
+      if (!due.length) return 0;
+      const { data: users } = await svc.from('users').select('id, is_test').in('id', due.map((r) => r.user_id));
+      let sent = 0;
+      for (const r of due) {
+         const u = ((users ?? []) as Array<{ id: string; is_test: boolean | null }>).find((x) => x.id === r.user_id);
+         if (!u || !bookingBotAnswers(cfg.mode, u.is_test)) continue;
+         // Claim it first, so an overlapping cron run can't send it twice.
+         const { data: claimed } = await svc
+            .from('messenger_booking_chats')
+            .update({ nudged_at: new Date(now).toISOString() })
+            .eq('contact_id', r.contact_id)
+            .eq('updated_at', r.updated_at)
+            .select('contact_id')
+            .maybeSingle();
+         if (!claimed) continue;
+         const n = Bot.nudge(r.state);
+         await say(r.contact_id, n.replies, n.state.lang, cfg.quick);
+         await svc.from('messenger_booking_chats').update({ state: n.state }).eq('contact_id', r.contact_id);
+         const Q = Bot.questions(Bot.MARKETS[r.state.market] ?? Bot.MARKETS.PH);
+         const key = r.state.asked[r.state.asked.length - 1];
+         const { error: saveErr } = await svc.from('booking_bot_answers').insert({
+            user_id: r.user_id,
+            kind: 'stalled',
+            items: Bot.orderedAnswers(r.state.answers ?? {}).map(([k, a]) => ({ q: Q[k]?.en ?? k, a })),
+            held_off_question: r.state.step === 'prep' && key ? (Q[key]?.en ?? key) : (STEP_LABEL[r.state.step] ?? r.state.step),
+            held_off_value: r.state.step,
+            lang: r.state.lang,
+            market: r.state.market
+         });
+         if (saveErr) console.error('messenger-booking-bot: could not save stalled step', saveErr.message);
+         sent += 1;
+      }
+      return sent;
+   } catch (err) {
+      console.error('messenger-booking-bot: nudge failed', err instanceof Error ? err.message : err);
+      return 0;
    }
 };

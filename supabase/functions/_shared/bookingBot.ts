@@ -193,6 +193,9 @@ export type Ctx = {
 export type Input = { text?: string; payload?: string };
 export type Result = { state: BotState; replies: Reply[]; events: BotEvent[] };
 
+/** "questions": a website booker asking for the prep questions (offered in the "You're booked" message). */
+export const PREP_START = /^\s*(questions?|tanong|mga tanong|pertanyaan)\s*[.!]*\s*$/i;
+
 export const MAX_BUTTON = 20;
 export const MAX_Q = 10;
 
@@ -337,7 +340,23 @@ const T: Record<string, Record<'en' | 'fil', Text>> = {
       en: "Sorry 🙏 We can't book your call just yet.\nWe work with people who are well aware of their current situation and manage their finances responsibly.\nWhen you're ready to share a rough picture, just tell me a day and time and we'll start again.",
       fil: 'Pasensya 🙏 Hindi pa namin ma-book ang call mo.\nNakikipagtulungan kami sa mga taong alam ang kasalukuyang sitwasyon nila at responsable sa pera.\nKapag handa ka nang magbahagi kahit tantya lang, sabihin lang ang araw at oras at magsisimula ulit tayo.'
    },
-   skip: { en: 'Skip', fil: 'Laktawan' }
+   skip: { en: 'Skip', fil: 'Laktawan' },
+   // Booked on the website, then typed QUESTIONS (the "You're booked" message offers it).
+   prepBooked: {
+      en: (h) => `Thanks! ${h} will read these before your call 🙏 A few quick questions (about 2 min). Rough ranges are fine, and only our team sees them 🔒`,
+      fil: (h) => `Salamat! Babasahin ito ni ${h} bago ang call mo 🙏 Ilang mabilis na tanong (mga 2 minuto). Puwede ang tantya lang, at team lang namin ang makakakita 🔒`
+   },
+   expectBookedHead: { en: 'Thanks! 🙏 One thing to know before your call 👇', fil: 'Salamat! 🙏 Isang bagay bago ang call mo 👇' },
+   prepThanks: { en: (w) => `✅ Got it, thank you! See you ${w} 🙌`, fil: (w) => `✅ Salamat! Kita tayo sa ${w} 🙌` },
+   heldOffBooked: {
+      en: (h, w) => `No problem 🙂 ${h} can ask you on the call. See you ${w}!`,
+      fil: (h, w) => `Walang problema 🙂 Itatanong na lang ni ${h} sa call. Kita tayo sa ${w}!`
+   },
+   // One nudge a few hours after they stop partway (messengerBookingBot.nudgeStalledChats).
+   nudge: {
+      en: "👋 Your call isn't booked yet. Want to finish? Just reply here and we'll carry on where you left off 🙂 (Type STOP to end.)",
+      fil: '👋 Hindi pa naka-book ang call mo. Tapusin natin? Mag-reply lang dito at itutuloy natin 🙂 (I-type ang STOP para tumigil.)'
+   }
 };
 // Bahasa Indonesia (Indonesian borrowers), one entry per key above.
 const ID_TEXT: Record<string, Text> = {
@@ -389,7 +408,12 @@ const ID_TEXT: Record<string, Text> = {
    reaskType: 'Tidak apa-apa 🙂 Beberapa kata saja cukup.\nIni membantu kami memahami keadaanmu sebelum panggilan.',
    reaskOther: 'Bisa pilih yang paling mendekati? 🙂 Ini membantu kami memahami keadaanmu.',
    heldOff: 'Maaf 🙏 Kami belum bisa menjadwalkan panggilanmu.\nKami bekerja dengan orang yang paham keadaannya sendiri dan mengatur keuangannya dengan bertanggung jawab.\nKalau kamu sudah siap berbagi gambaran kasarnya, sebutkan saja hari dan jam, dan kita mulai lagi.',
-   skip: 'Lewati'
+   skip: 'Lewati',
+   prepBooked: (h) => `Terima kasih! ${h} akan membacanya sebelum panggilanmu 🙏 Beberapa pertanyaan singkat (sekitar 2 menit). Kisaran saja cukup, dan hanya tim kami yang melihatnya 🔒`,
+   expectBookedHead: 'Terima kasih! 🙏 Satu hal sebelum panggilanmu 👇',
+   prepThanks: (w) => `✅ Terima kasih! Sampai jumpa ${w} 🙌`,
+   heldOffBooked: (h, w) => `Tidak apa-apa 🙂 ${h} bisa menanyakannya saat panggilan. Sampai jumpa ${w}!`,
+   nudge: '👋 Panggilanmu belum terjadwal. Mau lanjut? Balas saja di sini, kita lanjutkan dari terakhir 🙂 (Ketik STOP untuk berhenti.)'
 };
 const tr = (lang: Lang, key: string, ...a: string[]) => {
    const v = lang === 'id' ? ID_TEXT[key] : T[key][lang];
@@ -1023,11 +1047,35 @@ const askNext = (t: Turn) => {
 const finishQuiz = (t: Turn) => {
    t.st.quizDone = true;
    t.events.push({ type: 'answers', answers: { ...t.st.answers }, fit: fitCheck(t.st.answers) });
-   send(t, say(t, 'expectations', t.m.firstLoan), [{ title: say(t, 'gotIt'), payload: 'gotit' }]);
+   const text = say(t, 'expectations', t.m.firstLoan);
+   // Already booked (website booker answering after): no "before you confirm".
+   send(t, t.st.booked ? `${say(t, 'expectBookedHead')}${text.slice(text.indexOf('\n'))}` : text, [{ title: say(t, 'gotIt'), payload: 'gotit' }]);
    t.st.step = 'expect';
+};
+/** After the $15 note: confirm the held time, or (already booked) just thanks. */
+const afterExpect = (t: Turn) => {
+   t.events.push({ type: 'expectations' });
+   if (!t.st.booked || !t.st.mine) return askFinalConfirm(t);
+   send(t, say(t, 'prepThanks', when(t, t.st.mine)));
+   t.st.step = 'booked';
+};
+/** Booked on the website and typed QUESTIONS: the same questions, their call stays as it is. */
+const startPrepBooked = (t: Turn) => {
+   t.st.answers = { ...t.st.known };
+   t.st.asked = [];
+   t.st.reasked = [];
+   send(t, say(t, 'prepBooked', (t.st.mine as Slot).host));
+   askNext(t);
 };
 const holdOff = (t: Turn, key: string, value: string | null) => {
    t.events.push({ type: 'heldOff', key, value, answers: { ...t.st.answers } });
+   // Booked on the website: their call stays (the team sees the held off); the host asks on the call.
+   if (t.st.booked && t.st.mine) {
+      t.st.quizDone = true;
+      send(t, say(t, 'heldOffBooked', t.st.mine.host, when(t, t.st.mine)));
+      t.st.step = 'booked';
+      return;
+   }
    release(t, 'heldOff');
    t.st.asked = [];
    t.st.answers = { ...t.st.known };
@@ -1269,10 +1317,7 @@ const handlePayload = (t: Turn, payload: string) => {
       if (op) answerPrep(t, op.en);
       return;
    }
-   if (payload === 'gotit' && st.step === 'expect') {
-      t.events.push({ type: 'expectations' });
-      return askFinalConfirm(t);
-   }
+   if (payload === 'gotit' && st.step === 'expect') return afterExpect(t);
    if (payload === 'attend' && st.booked && st.mine) {
       t.events.push({ type: 'attend', slot: st.mine });
       send(t, say(t, 'thanks'));
@@ -1292,10 +1337,8 @@ const handleText = async (t: Turn, text: string) => {
    if (st.step === 'waiting_bio' && t.ctx.bioDone) st.step = 'ask';
    if (st.step === 'waiting_bio') return send(t, say(t, 'bioMissing'), [{ title: say(t, 'backBtn'), payload: 'back' }]);
    if (st.step === 'prep') return handlePrep(t, text);
-   if (st.step === 'expect') {
-      t.events.push({ type: 'expectations' });
-      return askFinalConfirm(t);
-   }
+   if (st.step === 'expect') return afterExpect(t);
+   if (st.step === 'booked' && st.booked && st.mine && PREP_START.test(text)) return st.quizDone ? allSet(t) : startPrepBooked(t);
    if (st.step === 'offered') {
       const s = pickOffered(t, text);
       if (s) return hold(t, s);
@@ -1349,6 +1392,22 @@ const handleText = async (t: Turn, text: string) => {
    if (from === 'booked' && st.mine) return send(t, st.changing ? say(t, 'unclearKeep', when(t, st.mine)) : say(t, 'allSet', st.name, when(t, st.mine)));
    send(t, say(t, 'unclear'));
    st.step = 'ask';
+};
+
+// ---- one nudge when they stop partway ----
+/** Steps where they stopped partway, before anything was booked ('ask' isn't one: it's also "come back when ready"). */
+export const STALLED_STEPS: Step[] = ['offered', 'prep', 'expect', 'held', 'name'];
+/** The nudge, then the question they stopped at (or the times they were offered) again. */
+export const nudge = (state: BotState): Result => {
+   const st = structuredClone(state);
+   const m = MARKETS[st.market] ?? MARKETS.PH;
+   const t: Turn = { st, ctx: { now: { date: '', min: 0 }, free: [], lastDay: '' }, m, Q: questions(m), replies: [], events: [] };
+   send(t, say(t, 'nudge'));
+   const key = st.asked[st.asked.length - 1];
+   if (st.step === 'prep' && key && t.Q[key]) send(t, say(t, 'question', String(st.asked.length), t.Q[key][st.lang]), prepButtons(t, key));
+   else if (st.step === 'offered' && st.lastOffer) reoffer(t);
+   st.lastButtons = t.replies[t.replies.length - 1].buttons ?? [];
+   return { state: st, replies: t.replies, events: [] };
 };
 
 // ---- text-only channels (SendPulse sends plain text): buttons become a lettered list ----

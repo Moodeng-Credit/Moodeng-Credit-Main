@@ -69,6 +69,42 @@ export const preferSoonSlots = (slots: string[], now: number, windowHours = 48, 
    return upcoming.filter((s) => Date.parse(s) <= cutoff || isBangkokWeekend(s));
 };
 
+/** The borrower's wall-clock hour (0–23) and weekday (0 = Sunday) at an instant. */
+const localClock = (ms: number, timeZone: string): { hour: number; weekday: number } => {
+   const p = Object.fromEntries(
+      new Intl.DateTimeFormat('en-US', { timeZone, hour: '2-digit', hourCycle: 'h23', weekday: 'short' }).formatToParts(new Date(ms)).map((x) => [x.type, x.value])
+   );
+   return { hour: Number(p.hour) % 24, weekday: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(p.weekday) };
+};
+const safeClock = (ms: number, timeZone: string) => {
+   try {
+      return localClock(ms, timeZone);
+   } catch {
+      return localClock(ms, 'Asia/Manila');
+   }
+};
+
+// The times people actually turn up for (Oct 2026: weekend-evening calls 3 of 3, weekday 10 AM–1 PM
+// 0 of 5): evenings, 5–10 PM their time, and weekend days from 10 AM. These lead as "⭐ Best times".
+export const isGoodCallTime = (iso: string, timeZone: string): boolean => {
+   const t = Date.parse(iso);
+   if (Number.isNaN(t)) return false;
+   const { hour, weekday } = safeClock(t, timeZone);
+   if (hour >= 17 && hour < 22) return true;
+   return (weekday === 0 || weekday === 6) && hour >= 10 && hour < 22;
+};
+
+// Someone booking late at night (10 PM–6 AM their time) tends to grab the first time on the list,
+// the next morning, and then sleep through it or be at work (Oct 2026: four of those, all missed).
+// So for them, nothing before noon the coming day.
+export const dropMorningAfterLateNight = (slots: string[], now: number, timeZone: string): string[] => {
+   const { hour } = safeClock(now, timeZone);
+   if (hour >= 6 && hour < 22) return slots;
+   // The next local noon: today's after midnight, else tomorrow's (whole-hour zones).
+   const noon = now - (now % 3600000) + (hour < 6 ? 12 - hour : 36 - hour) * 3600000;
+   return slots.filter((s) => Date.parse(s) >= noon);
+};
+
 /** True when the instant falls on a Saturday or Sunday in Bangkok. */
 const isBangkokWeekend = (iso: string): boolean => {
    const weekday = new Date(Date.parse(iso) + 7 * 3600000).getUTCDay();
@@ -172,12 +208,15 @@ export const dayIsFull = (start: string, bookedStarts: string[]): boolean =>
  * booked (never returned — only the free times next to them). `preferredSlots` are the preferred
  * host's (Emma's) own free times: on a day with no calls yet they're the recommended ones, unless
  * every time that day is hers (then a star on everything means nothing, so none is starred).
+ * With `isGood` (isGoodCallTime in the borrower's zone), a day with no calls yet recommends only its
+ * good times (of Emma's, when only some are hers).
  * Returns the slots to offer (chronological) and the recommended subset.
  */
 export const clusterSlots = (
    slots: string[],
    bookedStarts: string[],
-   preferredSlots: string[] = []
+   preferredSlots: string[] = [],
+   isGood?: (s: string) => boolean
 ): { slots: string[]; recommended: string[] } => {
    const bookedByDay = new Map<string, number[]>();
    for (const b of bookedStarts) {
@@ -203,7 +242,8 @@ export const clusterSlots = (
       if (booked.length === 0) {
          offered.push(...daySlots);
          const hers = daySlots.filter((s) => preferred.has(Date.parse(s)));
-         if (hers.length < daySlots.length) recommended.push(...hers);
+         if (isGood) recommended.push(...(hers.length < daySlots.length ? hers : daySlots).filter(isGood));
+         else if (hers.length < daySlots.length) recommended.push(...hers);
          continue;
       }
       const gap = (s: string) => Math.min(...booked.map((b) => Math.abs(Date.parse(s) - b))) / 60000;

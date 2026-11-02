@@ -240,7 +240,7 @@ export async function loadCallTranscript(userId: string): Promise<CallTranscript
 // questions, or a "held off" with what they'd answered so far. Questions/answers are in English.
 export interface BotAnswers {
    id: string;
-   kind: 'answers' | 'held_off';
+   kind: 'answers' | 'held_off' | 'stalled';
    items: Array<{ q: string; a: string }>;
    fitVerdict: 'good' | 'talk' | 'review' | null;
    fitReason: string | null;

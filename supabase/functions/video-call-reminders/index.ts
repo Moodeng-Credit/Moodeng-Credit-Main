@@ -23,6 +23,7 @@ import { isInternalRequest } from '../_shared/internalAuth.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { getTelegramBotSettingEnabled } from '../_shared/borrowerNotificationDelivery.ts';
 import { sendWhatsAppTemplate } from '../_shared/sendpulse.ts';
+import { nudgeStalledChats } from '../_shared/messengerBookingBot.ts';
 
 // Cron-driven (every 5 min) no-show defence for booked video calls. The full ladder — day-before,
 // confirm-or-cancel (1h before) / cancel unconfirmed (30 min before), starting now, we're waiting, admin prompt, auto
@@ -187,11 +188,13 @@ const runRung = async (svc: Svc, u: ReminderUser, rung: Rung, zoomActive: boolea
             viaWhatsApp = sent.ok;
             console.log('video-call-reminders: whatsapp confirm for', u.id, sent.ok ? 'sent' : `not sent (${sent.reason})`);
          }
-         // Only an ask that verifiably landed somewhere makes the call cancellable at the deadline.
-         if (viaMessenger.ok || viaWhatsApp || viaTelegram || viaPush) {
-            await svc.from('users').update({ video_call_keep_spot_asked_at: new Date().toISOString() }).eq('id', u.id);
-         }
-         return 'confirm_ask';
+         // The call is cancellable at the deadline even when the ask reached them nowhere (George,
+         // 2026-11-02): they were told at booking that an unconfirmed call is cancelled, they can still
+         // confirm in the app, and an unreachable borrower who kept the slot didn't come (Oct 29).
+         const landed = viaMessenger.ok || viaWhatsApp || viaTelegram || viaPush;
+         if (!landed) console.log('video-call-reminders: confirm ask reached no channel for', u.id, '— cancelled at the deadline unless they confirm in the app');
+         await svc.from('users').update({ video_call_keep_spot_asked_at: new Date().toISOString() }).eq('id', u.id);
+         return landed ? 'confirm_ask' : 'confirm_ask_unreached';
       }
       case RUNG.RELEASE: {
          if (shouldReleaseSlot(u) && (await releaseSlot(svc, u))) return 'released';
@@ -289,6 +292,8 @@ serve(async (req) => {
    }
 
    tally.sheet_alerts = await alertCallSheets(svc, now);
+   // Messenger booking chats that stopped partway a few hours ago: one nudge each (no new function: free-plan cap).
+   tally.booking_nudges = await nudgeStalledChats(svc);
    return json({ ok: true, scanned: users.length, ...tally });
 });
 
