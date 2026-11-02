@@ -474,6 +474,7 @@ export const filipinoCoverageB: Record<string, string> = {
    'Set up cash-out to your local currency': 'I-set up ang cash-out papunta sa local currency mo',
    'Meet the team, ask anything': 'Kilalanin ang team, magtanong ng kahit ano',
    'Apply right after the call': 'Mag-apply kaagad pagkatapos ng call',
+   'First loan is $15 — pay on time and your limit grows': 'Ang unang loan ay $15 — magbayad sa oras at lalaki ang limit mo',
    'What do you need a loan for?': 'Para saan mo kailangan ang loan?',
    'Your time is in your email': 'Nasa email mo ang oras',
    'Join the meeting': 'Sumali sa meeting',
