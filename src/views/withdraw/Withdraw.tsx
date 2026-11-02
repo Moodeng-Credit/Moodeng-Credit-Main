@@ -66,7 +66,7 @@ function track(event: string, props?: Record<string, unknown>) {
 
 type Screen = 'celebrate' | 'withdraw';
 // 'bank' = straight to GCash / any bank through Stableyard (testers only for now, see BankPayoutFlow).
-type Provider = 'moneybees' | 'binance' | 'coinsph' | 'gcash' | 'pdax' | 'bank';
+type Provider = 'moneybees' | 'binance' | 'coinsph' | 'gcash' | 'pdax' | 'bank' | 'kraken' | 'coinbase';
 
 // Real data + actions provided by the page root and consumed by the ported
 // prototype components. `available` replaces the prototype's hardcoded
@@ -170,9 +170,10 @@ function SecondaryBtn({ children, onClick }: { children: React.ReactNode; onClic
 /* Live USDC → fiat rate — shared hook (also powers the balance card's peso line). */
 
 function ReceiveEstimate({ currency, usdcAmount }: { currency: string; usdcAmount: number }) {
-   const cur = currency.toLowerCase() === 'php' ? 'php' : 'usd';
-   const symbol = cur === 'php' ? '₱' : '$';
-   const { value, live } = useUsdcRate(cur as 'php' | 'usd');
+   const lower = currency.toLowerCase();
+   const cur = lower === 'php' || lower === 'eur' ? lower : 'usd';
+   const symbol = cur === 'php' ? '₱' : cur === 'eur' ? '€' : '$';
+   const { value, live } = useUsdcRate(cur);
    const val = usdcAmount * value;
    return (
       <>
@@ -182,7 +183,7 @@ function ReceiveEstimate({ currency, usdcAmount }: { currency: string; usdcAmoun
          </p>
          <p className="text-[11px] text-[var(--text-faint)] leading-[15px] mt-[2px]">
             1 USDC ≈ {symbol}
-            {value.toLocaleString(undefined, { maximumFractionDigits: 0 })} · {currency}
+            {value.toLocaleString(undefined, { maximumFractionDigits: cur === 'eur' ? 2 : 0 })} · {currency}
             {live ? '' : ' (est.)'}
          </p>
       </>
@@ -327,6 +328,29 @@ function CoinsPhAppIcon({ className = '' }: { className?: string }) {
             <circle cx="50" cy="50" r="50" fill="#F0A500" />
             <circle cx="50" cy="50" r="41" fill="#3B6CC8" />
             <path d="M62 36 A18 18 0 1 0 62 64" fill="none" stroke="#FFFFFF" strokeWidth="11" strokeLinecap="round" />
+         </svg>
+      </div>
+   );
+}
+
+function KrakenAppIcon({ className = '' }: { className?: string }) {
+   return (
+      <div className={`rounded-[16px] bg-[#7132F5] flex items-center justify-center ${className}`}>
+         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="w-[62%] h-[62%]">
+            <path
+               d="M50 14C28 14 12 31 12 52v18a6 6 0 0 0 12 0V54a4 4 0 0 1 8 0v16a6 6 0 0 0 12 0V54a4 4 0 0 1 8 0v16a6 6 0 0 0 12 0V54a4 4 0 0 1 8 0v16a6 6 0 0 0 12 0V52c0-21-16-38-38-38Z"
+               fill="#FFFFFF"
+            />
+         </svg>
+      </div>
+   );
+}
+function CoinbaseAppIcon({ className = '' }: { className?: string }) {
+   return (
+      <div className={`rounded-[16px] bg-[#0052FF] flex items-center justify-center ${className}`}>
+         <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="w-[64%] h-[64%]">
+            <circle cx="50" cy="50" r="42" fill="#FFFFFF" />
+            <rect x="37" y="37" width="26" height="26" rx="4" fill="#0052FF" />
          </svg>
       </div>
    );
@@ -540,6 +564,20 @@ function useRegion(): Region {
    return region;
 }
 
+// EU + EEA + UK + Switzerland: where Kraken and Coinbase pay out to a local bank.
+const EUROPE_COUNTRIES = new Set([
+   'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL',
+   'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO', 'GB', 'CH'
+]);
+
+// True when check-geo puts this visitor's IP in Europe. Only ever used to ADD the European
+// exchanges, never to hide another rail. /withdraw-preview?region=eu forces it on.
+function useInEurope(isPreview: boolean): boolean {
+   const { countryCode } = useGeoCheck(isPreview);
+   if (isPreview) return new URLSearchParams(window.location.search).get('region') === 'eu';
+   return countryCode != null && EUROPE_COUNTRIES.has(countryCode);
+}
+
 /* ─── SCREEN 1: Withdraw your USDC ────────────────────────────────── */
 // Tapping a row opens that provider straight away (no select-then-Continue): a wrong tap is one back
 // arrow away, and nothing is sent before the provider's own confirm step.
@@ -677,6 +715,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
    const { spendable, walletConnected, repayUsdc: REPAY_USDC, dueDate: DUE_DATE, isPreview } = useWithdrawData();
    const navigate = useNavigate();
    const { available: bankPayout, kycApproved } = useBankPayoutStatus(isPreview);
+   const inEurope = useInEurope(isPreview);
    // No region/IP check here (deliberately removed): `useRegion()` is an IP-based guess, not
    // the user's actual location or nationality — a Filipino traveling or living abroad still
    // has working Coins.ph/GCash/PDAX accounts, and a client-side IP lookup routinely misreads
@@ -684,6 +723,8 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
    // Coins.ph stays the recommended default for everyone, and a user genuinely abroad can still
    // pick Binance themselves — location must never hide a rail or auto-switch the default.
    // While Coins.ph is suspended (config/paymentRails) PDAX takes its place as the default.
+   // The one exception only ADDS rails: a European IP also gets Kraken + Coinbase on top (cash
+   // out to EUR over SEPA), since none of the PH apps work for them. The PH rows stay below.
    const [showCoinsPaused, setShowCoinsPaused] = useState(false);
    const selectProvider = (id: Provider) => {
       if (id === 'coinsph' && COINS_PH_SUSPENDED) {
@@ -697,7 +738,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
       <PickerRow
          onSelect={selectProvider}
          id="coinsph"
-         recommended={!COINS_PH_SUSPENDED && !bankPayout}
+         recommended={!COINS_PH_SUSPENDED && !bankPayout && !inEurope}
          paused={COINS_PH_SUSPENDED}
          icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />}
          name="Coins.ph"
@@ -788,12 +829,33 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                      </p>
                   </>
                )}
+               {inEurope && (
+                  <>
+                     <PickerRow
+                        onSelect={selectProvider}
+                        id="kraken"
+                        recommended
+                        icon={<KrakenAppIcon className="w-[46px] h-[46px]" />}
+                        name="Kraken"
+                        line1="Sell for euros, withdraw to your bank"
+                        line2="SEPA bank transfer · same day"
+                     />
+                     <PickerRow
+                        onSelect={selectProvider}
+                        id="coinbase"
+                        icon={<CoinbaseAppIcon className="w-[46px] h-[46px]" />}
+                        name="Coinbase"
+                        line1="Sell for euros, withdraw to your bank"
+                        line2="SEPA bank transfer · same day"
+                     />
+                  </>
+               )}
                {!COINS_PH_SUSPENDED && coinsPhRow}
                {COINS_PH_SUSPENDED && (
                   <PickerRow
                         onSelect={selectProvider}
                      id="pdax"
-                     recommended={!bankPayout}
+                     recommended={!bankPayout && !inEurope}
                      icon={<PdaxAppIcon className="w-[46px] h-[46px]" />}
                      name="PDAX"
                      line1="Sell for pesos, withdraw to bank or e-wallet"
@@ -1062,7 +1124,9 @@ const PROVIDER_NAMES: Record<Provider, string> = {
    coinsph: 'Coins.ph',
    gcash: 'GCrypto',
    pdax: 'PDAX',
-   bank: 'GCash or bank'
+   bank: 'GCash or bank',
+   kraken: 'Kraken',
+   coinbase: 'Coinbase'
 };
 
 function SuccessBanner({ exchange, amount }: { exchange: string; amount: number }) {
@@ -1678,6 +1742,127 @@ const COINSPH_FLOW: AppFlowConfig = {
    ]
 };
 
+/* ─── European exchanges (shown to European IPs only, see useInEurope) ─── */
+const KRAKEN_FLOW: AppFlowConfig = {
+   name: 'Kraken',
+   short: 'Kraken',
+   receiveCurrency: 'EUR',
+   payout: 'Bank (SEPA)',
+   howItWorks:
+      'Send USDC from your Moodeng wallet to your Kraken account. Once it arrives, sell it for euros and withdraw to your bank by SEPA transfer.',
+   steps: [
+      {
+         icon: <Download className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
+         title: 'Open Kraken → Deposit → USDC',
+         desc: 'Tap Deposit, search for USDC, then pick the Base network (USDC on Base).',
+         guide: {
+            title: 'How to find your Kraken deposit address',
+            steps: [
+               'Open the Kraken app and tap Deposit (or the + button).',
+               'Search for USDC and select it.',
+               'Choose the Base network. Any other network will lose the funds.',
+               'Tap to copy the deposit address shown on screen.'
+            ]
+         }
+      },
+      {
+         icon: <Copy className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
+         title: 'Copy your Kraken address',
+         desc: 'Tap to copy the USDC (Base) deposit address.'
+      },
+      {
+         icon: <ClipboardCheck className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
+         title: 'Paste it below',
+         desc: 'Paste the address in the field below, then confirm and send.'
+      }
+   ],
+   cashOutTitle: 'Cash out to euros with Kraken',
+   cashOutIntro: 'Once your USDC arrives in Kraken (usually a few minutes), sell it for euros and withdraw to your bank.',
+   cashOutSteps: [
+      {
+         title: (
+            <>
+               Tap <span className="font-bold">Sell</span>, then choose <span className="font-bold">USDC → EUR</span>
+            </>
+         ),
+         helper: 'Enter the amount and confirm. Your EUR balance updates right away.'
+      },
+      {
+         title: (
+            <>
+               Go to <span className="font-bold">Withdraw → EUR</span>
+            </>
+         ),
+         helper: 'Pick SEPA bank transfer and add your bank account (IBAN) if you have not already.'
+      },
+      {
+         title: 'Enter the amount and confirm the withdrawal',
+         helper: 'SEPA transfers usually arrive the same or next business day.',
+         danger: "Double-check your IBAN before confirming — wrong transfers can't be reversed."
+      }
+   ]
+};
+
+const COINBASE_FLOW: AppFlowConfig = {
+   name: 'Coinbase',
+   short: 'Coinbase',
+   receiveCurrency: 'EUR',
+   payout: 'Bank (SEPA)',
+   howItWorks:
+      'Send USDC from your Moodeng wallet to your Coinbase account. Once it arrives, sell it for euros and cash out to your bank by SEPA transfer.',
+   steps: [
+      {
+         icon: <Download className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
+         title: 'Open Coinbase → Receive → USDC',
+         desc: 'Tap Transfer, then Receive, choose USDC and pick the Base network.',
+         guide: {
+            title: 'How to find your Coinbase receiving address',
+            steps: [
+               'Open the Coinbase app and tap Transfer, then Receive.',
+               'Search for USDC and select it.',
+               'Choose the Base network. Any other network will lose the funds.',
+               'Tap to copy the address shown on screen.'
+            ]
+         }
+      },
+      {
+         icon: <Copy className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
+         title: 'Copy your Coinbase address',
+         desc: 'Tap to copy the USDC (Base) address.'
+      },
+      {
+         icon: <ClipboardCheck className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
+         title: 'Paste it below',
+         desc: 'Paste the address in the field below, then confirm and send.'
+      }
+   ],
+   cashOutTitle: 'Cash out to euros with Coinbase',
+   cashOutIntro: 'Once your USDC arrives in Coinbase (usually under a minute on Base), sell it for euros and cash out to your bank.',
+   cashOutSteps: [
+      {
+         title: (
+            <>
+               Open <span className="font-bold">USDC → Sell</span>, then choose <span className="font-bold">EUR</span>
+            </>
+         ),
+         helper: 'Enter the amount and confirm. The euros land in your Coinbase EUR balance.'
+      },
+      {
+         title: (
+            <>
+               Tap <span className="font-bold">Transfer → Cash out</span>
+            </>
+         ),
+         helper: 'Pick SEPA bank transfer and link your bank account (IBAN) if you have not already.'
+      },
+      {
+         title: 'Enter the amount and confirm the cash out',
+         helper: 'SEPA transfers usually arrive the same or next business day.',
+         danger: "Double-check your IBAN before confirming — wrong transfers can't be reversed."
+      }
+   ]
+};
+
 /* ─── Binance flow (custom — has P2P cash-out guide with video) ──── */
 function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) => void; onDone: () => void }) {
    const { available: LOAN_USDC, spendable, walletConnected, isPreview, isInstantWallet, send } = useWithdrawData();
@@ -2212,7 +2397,9 @@ const PROVIDER_TITLES: Record<Provider, string> = {
    coinsph: 'Send to Coins.ph',
    gcash: 'Send to GCrypto',
    pdax: 'Send to PDAX',
-   bank: 'Cash out to GCash or bank'
+   bank: 'Cash out to GCash or bank',
+   kraken: 'Send to Kraken',
+   coinbase: 'Send to Coinbase'
 };
 
 function WithdrawScreen({
@@ -2255,6 +2442,10 @@ function WithdrawScreen({
                   <AppFlow cfg={GCASH_FLOW} onConfirmed={onConfirmed} onDone={onDone} />
                ) : provider === 'pdax' ? (
                   <AppFlow cfg={PDAX_FLOW} onConfirmed={onConfirmed} onDone={onDone} />
+               ) : provider === 'kraken' ? (
+                  <AppFlow cfg={KRAKEN_FLOW} onConfirmed={onConfirmed} onDone={onDone} />
+               ) : provider === 'coinbase' ? (
+                  <AppFlow cfg={COINBASE_FLOW} onConfirmed={onConfirmed} onDone={onDone} />
                ) : (
                   <AppFlow cfg={COINSPH_FLOW} onConfirmed={onConfirmed} onDone={onDone} />
                )}

@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 /* Live USDC → fiat rate from CoinGecko's free endpoint. Falls back to an approximate
    fixed rate if the request is blocked/rate-limited, so an estimate always shows.
    Shared by the withdraw payout estimate and the borrower balance card's peso line. */
-export const FALLBACK_RATE: Record<'php' | 'usd', number> = { php: 58.5, usd: 1 };
+export const FALLBACK_RATE: Record<'php' | 'usd' | 'eur', number> = { php: 58.5, usd: 1, eur: 0.86 };
 
-export function useUsdcRate(currency: 'php' | 'usd') {
+export function useUsdcRate(currency: 'php' | 'usd' | 'eur') {
    const [rate, setRate] = useState<{ value: number; live: boolean }>({ value: FALLBACK_RATE[currency], live: false });
    useEffect(() => {
       let cancelled = false;
