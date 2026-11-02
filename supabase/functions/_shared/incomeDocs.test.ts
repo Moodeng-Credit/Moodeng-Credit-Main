@@ -221,3 +221,11 @@ Deno.test('scanned PDF: page photos come out as JPEGs, logos are skipped', () =>
    assertEquals(jpegs[0].length, 60_000);
    assertEquals(pdfJpegs(enc.encode('%PDF-1.4 no images')).length, 0);
 });
+
+Deno.test('a re-saved phone scan is a note, a re-saved bank export is a warning', () => {
+   const doc = base();
+   const scan = { encrypted: false, producer: 'iOS Version 27.0.1 (Build 24A446)', creator: null, created: 'D:20261027080711Z', modified: "D:20261027153843+07'00'" };
+   const exported = { ...scan, producer: 'iText 5.5' };
+   assertEquals(runChecks(doc, computeMetrics(doc), { ...smallLoan, pdfs: [scan] }).find((f) => f.code === 'edited_after_creation')?.severity, 'info');
+   assertEquals(runChecks(doc, computeMetrics(doc), { ...smallLoan, pdfs: [exported] }).find((f) => f.code === 'edited_after_creation')?.severity, 'orange');
+});

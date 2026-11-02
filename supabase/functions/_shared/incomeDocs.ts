@@ -317,8 +317,17 @@ export const runChecks = (doc: Extracted, metrics: Metrics, ctx: CheckContext): 
       if (tool && EDITOR_RE.test(tool)) {
          flags.push({ code: 'made_in_editor', severity: 'orange', detail: `PDF was made with ${tool}, not exported by a bank or e-wallet.` });
       }
+      // Phone scans (iPhone "Scan Document", Android/scanner apps) are re-saved whenever they're renamed
+      // or shared, so a later change date means nothing there; it matters for a bank's own export.
+      const phoneScan = /\b(iOS|iPadOS|Android|CamScanner|Adobe Scan|Genius Scan|Microsoft Lens|Scanner)\b/i.test(tool);
       if (pdf.created && pdf.modified && pdf.created.slice(2, 16) !== pdf.modified.slice(2, 16)) {
-         flags.push({ code: 'edited_after_creation', severity: 'orange', detail: `PDF was changed after it was made (${pdf.created} → ${pdf.modified}).` });
+         flags.push({
+            code: 'edited_after_creation',
+            severity: phoneScan ? 'info' : 'orange',
+            detail: phoneScan
+               ? `Phone scan re-saved after it was made (${tool}) — normal for scans.`
+               : `PDF was changed after it was made (${pdf.created} → ${pdf.modified}).`
+         });
       }
    }
    for (const note of doc.visual_anomalies) flags.push({ code: 'visual_anomaly', severity: 'orange', detail: note });
