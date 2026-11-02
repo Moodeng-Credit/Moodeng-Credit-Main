@@ -713,12 +713,27 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       return { ok: patch.status === 'done', ...patch };
    };
    // A problem the borrower can fix: tell them now (card + push/Messenger/Telegram) and the team in the reply.
+   // If it also carries fake signs (e.g. an AI-made image), the borrower is still only asked for a
+   // real document, but the team gets a 🚨 alert in the fraud group + Discord and it stays on the
+   // admin "to review" list (risk 'red').
    const askResend = async (patch: Record<string, unknown>, reason: ResendReason, teamNote: string) => {
+      const fraud = ((patch.flags as Flag[] | undefined) ?? []).filter((f) => f.severity === 'red');
       const result = await finish(
          { ...patch, verdict: 'resend', resend_reason: reason, checks: patch.checks ?? buildSections([], { ok: false, note: teamNote }) },
-         `${VERDICT_LINE.resend}: ${RESEND_TEXT[reason]}\n(${teamNote})`
+         `${fraud.length ? '🚨 Fraud signs · ' : ''}${VERDICT_LINE.resend}: ${RESEND_TEXT[reason]}\n(${teamNote})`
       );
       await notifyIncomeDecision(supabase, id);
+      if (fraud.length) {
+         const alert = `🚨 Possible fraud: ${who} sent this as proof of income\n${fraud.map((f) => `• ${f.detail}`).join('\n')}\n${loanLine}`;
+         const { data: fraudChat } = await supabase.from('telegram_bot_settings').select('value').eq('key', 'fraud_alert_chat_id').maybeSingle();
+         if (fraudChat?.value) {
+            await sendTelegramMessage(fraudChat.value, alert, { inlineKeyboard: [[{ text: '👀 Review', url: ADMIN_URL }]] }).catch(() => undefined);
+         }
+         await postDiscord(
+            { embeds: [{ title: `🚨 Possible fraud — ${who}`, description: `${alert.split('\n').slice(1).join('\n')}\n${ADMIN_URL}`, color: 0xe74c3c }] },
+            { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }
+         ).catch(() => undefined);
+      }
       return result;
    };
    // Our side failed (download, AI down) — never the borrower's fault, so it goes to the team.
@@ -769,6 +784,8 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       status: 'failed',
       file_hashes: hashes,
       error: note,
+      flags: fileFakeFlags,
+      risk: fileFakeFlags.length ? 'red' : null,
       ...extra,
       checks: buildSections(fileFakeFlags, { ok: false, note })
    });

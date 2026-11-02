@@ -90,7 +90,8 @@ export default function IncomeDocsSection() {
    }, []);
 
    // Yours to decide: no decision yet, and not already sent back to the borrower to fix.
-   const toReview = docs.filter((d) => !d.decision && d.verdict !== 'resend');
+   // Sent back to the borrower but with fraud signs (risk red) stays on the list.
+   const toReview = docs.filter((d) => !d.decision && (d.verdict !== 'resend' || d.risk === 'red'));
    const shown = showReviewed ? docs : toReview;
 
    return (
@@ -135,6 +136,9 @@ export default function IncomeDocsSection() {
                      <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="min-w-0">
                            <p className="text-lg font-black text-white">
+                              {doc.risk === 'red' ? (
+                                 <span className="mr-2 rounded-lg bg-red-600 px-2 py-0.5 text-sm text-white">🚨 Fraud signs</span>
+                              ) : null}
                               {doc.verdict ? (
                                  <span className={`mr-2 rounded-lg px-2 py-0.5 text-sm ${VERDICT_BADGE[doc.verdict].className}`}>
                                     {VERDICT_BADGE[doc.verdict].label}
