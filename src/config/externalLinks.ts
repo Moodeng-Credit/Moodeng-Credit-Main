@@ -26,7 +26,9 @@ export const EXTERNAL_LINKS = {
       messengerKycTries: 'https://m.me/61589106561061?ref=kyc_tries_used',
       // Code never arrived (login). Android Chrome can't open m.me links, so Android uses messenger.com/t.
       messengerLoginCode: 'https://m.me/61589106561061?ref=login_code',
-      messengerLoginCodeAndroid: 'https://www.messenger.com/t/61589106561061'
+      messengerLoginCodeAndroid: 'https://www.messenger.com/t/61589106561061',
+      // Questions about a proof-of-income send (/documents).
+      messengerDocuments: 'https://m.me/61589106561061?ref=income_docs'
    },
    fund: {
       coinbaseOnramp: 'https://pay.coinbase.com/buy/select-asset',

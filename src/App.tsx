@@ -38,6 +38,7 @@ import AccountRestrictedPage from '@/app/account-restricted/page';
 import AdminPanel from '@/app/admin/page';
 import PricingHealthPreview from '@/app/admin/PricingHealthPreview';
 import AffiliateDashboardPage from '@/app/affiliate/page';
+import DocumentsPage from '@/app/documents/page';
 import AuthSuccess from '@/app/auth-success/page';
 import AuthConfirm from '@/app/auth/confirm/page';
 import LineCallback from '@/app/auth/line/callback/page';
@@ -503,6 +504,14 @@ export default function App() {
                }
             />
             {import.meta.env.DEV ? <Route path="/affiliate-preview" element={<AffiliateDashboardPage sample />} /> : null}
+            <Route
+               path="/documents"
+               element={
+                  <ProtectedRoute>
+                     <DocumentsPage />
+                  </ProtectedRoute>
+               }
+            />
             <Route path="/dashboard-v2-preview" element={<DashboardV2 />} />
             {/* Mock borrower dashboard (two loans, $15 + $20) for Emma's video — sample data only, never writes. */}
             <Route path="/borrower-demo" element={<Navigate to="/dashboard-v2-preview?state=demo" replace />} />

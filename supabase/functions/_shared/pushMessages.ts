@@ -26,6 +26,8 @@ export type PushNotificationType =
    | 'video_call_reminder'
    | 'loan_access_decision'
    | 'verification_decision'
+   // Proof of income approved / declined (incomeDocs.ts).
+   | 'income_doc_decision'
    // Admin → Campaigns re-engagement message.
    | 'campaign';
 
