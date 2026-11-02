@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Check, ChevronLeft, FileText, ImagePlus, Loader2, Lock, MessageCircle, X } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -74,6 +74,9 @@ export default function DocumentsPage({
    const [error, setError] = useState<string | null>(null);
    const inputRef = useRef<HTMLInputElement>(null);
    const navigate = useNavigate();
+   // Sent here from the loan form ("Send proof of income", loans of $60+): offer the way back to it.
+   const [searchParams] = useSearchParams();
+   const fromLoan = searchParams.get('back') === 'loan';
 
    const showStatus = useCallback((status: Status) => {
       if (!status) return setPhase('pick');
@@ -332,7 +335,11 @@ export default function DocumentsPage({
                      <b>We’ll let you know within 24 hours</b> on Messenger and here. Questions? Message us on Facebook.
                   </div>
                   {facebookButton}
-                  <GhostButton onClick={() => navigate('/dashboard')}>Back to dashboard</GhostButton>
+                  {fromLoan ? (
+                     <PrimaryButton onClick={() => navigate('/request-board?applyLoan=1')}>Back to my loan request</PrimaryButton>
+                  ) : (
+                     <GhostButton onClick={() => navigate('/dashboard')}>Back to dashboard</GhostButton>
+                  )}
                </div>
             ) : null}
 
@@ -347,7 +354,9 @@ export default function DocumentsPage({
                   <p className="text-[15px] leading-[21px] text-[#594d65] dark:text-[#d9cfe8]">
                      It helps your loan requests get funded. Repay on time to keep raising your limit.
                   </p>
-                  <PrimaryButton onClick={() => navigate('/dashboard')}>Go to dashboard</PrimaryButton>
+                  <PrimaryButton onClick={() => navigate(fromLoan ? '/request-board?applyLoan=1' : '/dashboard')}>
+                     {fromLoan ? 'Back to my loan request' : 'Go to dashboard'}
+                  </PrimaryButton>
                </div>
             ) : null}
 
