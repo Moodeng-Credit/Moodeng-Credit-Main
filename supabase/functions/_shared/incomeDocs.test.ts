@@ -1,6 +1,6 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { buildMemo, computeMetrics, type Extracted, namesMatch, normalizeExtracted, parseStatedIncome, readPdfInfo, riskOf, runChecks, scoreOf } from './incomeDocs.ts';
+import { buildMemo, buildSections, verdictOf, computeMetrics, type Extracted, namesMatch, normalizeExtracted, parseStatedIncome, readPdfInfo, riskOf, runChecks, scoreOf } from './incomeDocs.ts';
 
 const tx = (date: string, amount: number, balance: number | null, description = 'x') => ({ date, description, amount, balance, page: 1, source_text: `${date} ${amount}` });
 
@@ -118,4 +118,36 @@ Deno.test('loose JSON from the model is normalized', () => {
    assertEquals(doc.transactions[0].amount, 12000);
    assertEquals(doc.visual_anomalies, []);
    assert(doc.readable);
+});
+
+Deno.test('verdict: clean looks good, fixable resends, fake signs always go to the team', () => {
+   const doc = base();
+   const clean = runChecks(doc, computeMetrics(doc), smallLoan);
+   assertEquals(verdictOf(clean, doc.doc_type).verdict, 'looks_good');
+
+   const old = base({ period_end: '2026-06-01' });
+   assertEquals(verdictOf(runChecks(old, computeMetrics(old), smallLoan), old.doc_type), { verdict: 'resend', reason: 'old_document' });
+   assertEquals(verdictOf([], 'other'), { verdict: 'resend', reason: 'not_financial' });
+
+   // Old AND edited: the fake sign wins, and the borrower is never told why.
+   const oldEdited = base({ period_end: '2026-06-01', closing_balance: 99999 });
+   assertEquals(verdictOf(runChecks(oldEdited, computeMetrics(oldEdited), smallLoan), oldEdited.doc_type).verdict, 'needs_review');
+
+   // Can't afford it: not fixable by resending, so the team decides.
+   assertEquals(verdictOf(runChecks(doc, computeMetrics(doc), ctx), doc.doc_type).verdict, 'needs_review');
+});
+
+Deno.test('named checks pass, warn and fail', () => {
+   const sections = buildSections(
+      [
+         { code: 'name_mismatch', severity: 'red', detail: 'x' },
+         { code: 'short_history', severity: 'orange', detail: 'y' }
+      ],
+      { ok: true }
+   );
+   const by = Object.fromEntries(sections.map((c) => [c.key, c.status]));
+   assertEquals(by.readable, 'pass');
+   assertEquals(by.identity, 'fail');
+   assertEquals(by.recent, 'warn');
+   assertEquals(by.not_ai, 'pass');
 });

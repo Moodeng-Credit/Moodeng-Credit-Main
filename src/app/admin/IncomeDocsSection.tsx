@@ -15,6 +15,15 @@ const RISK_STYLE: Record<string, string> = {
    green: 'border-emerald-700/60 bg-emerald-950/20'
 };
 
+// The automatic verdict, like Didit's status: what the checks concluded before anyone looked.
+const VERDICT_BADGE: Record<string, { label: string; className: string }> = {
+   looks_good: { label: '✅ Looks good', className: 'bg-emerald-600 text-white' },
+   needs_review: { label: '⚠️ Needs review', className: 'bg-amber-500 text-black' },
+   resend: { label: '↩️ Asked to resend', className: 'bg-[#3a2d4f] text-[#cfc6dd]' }
+};
+
+const CHECK_ICON: Record<string, string> = { pass: '✅', warn: '🟠', fail: '🔴' };
+
 const bkk = (iso: string) =>
    new Date(iso).toLocaleString('en-US', { timeZone: 'Asia/Bangkok', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 
@@ -80,7 +89,8 @@ export default function IncomeDocsSection() {
       }
    }, []);
 
-   const toReview = docs.filter((d) => !d.decision);
+   // Yours to decide: no decision yet, and not already sent back to the borrower to fix.
+   const toReview = docs.filter((d) => !d.decision && d.verdict !== 'resend');
    const shown = showReviewed ? docs : toReview;
 
    return (
@@ -102,7 +112,7 @@ export default function IncomeDocsSection() {
                   onClick={() => setShowReviewed((v) => !v)}
                   className="rounded-full bg-[#241044] px-4 py-1.5 text-sm font-black text-[#a89bb8]"
                >
-                  {showReviewed ? 'Hide decided' : 'Show decided'}
+                  {showReviewed ? 'Only to review' : 'Show all (decided + resent)'}
                </button>
                <button
                   type="button"
@@ -125,6 +135,11 @@ export default function IncomeDocsSection() {
                      <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="min-w-0">
                            <p className="text-lg font-black text-white">
+                              {doc.verdict ? (
+                                 <span className={`mr-2 rounded-lg px-2 py-0.5 text-sm ${VERDICT_BADGE[doc.verdict].className}`}>
+                                    {VERDICT_BADGE[doc.verdict].label}
+                                 </span>
+                              ) : null}
                               {doc.score != null ? <span className="mr-2 rounded-lg bg-white/10 px-2 py-0.5">{doc.score}/100</span> : null}
                               {personLabel(doc.user)}
                            </p>
@@ -177,6 +192,27 @@ export default function IncomeDocsSection() {
                         </div>
                      </div>
 
+                     {doc.checks?.length ? (
+                        <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">
+                           {doc.checks.map((c) => (
+                              <li
+                                 key={c.key}
+                                 className="rounded-lg bg-white/5 px-3 py-1.5 text-sm text-[#e8e0f2]"
+                                 title={c.notes.join('\n')}
+                              >
+                                 {CHECK_ICON[c.status]} <b>{c.label}</b>
+                                 {c.status !== 'pass' && c.notes[0] ? (
+                                    <span className="block text-xs text-[#a89bb8]">{c.notes[0]}</span>
+                                 ) : null}
+                              </li>
+                           ))}
+                        </ul>
+                     ) : null}
+                     {doc.verdict === 'resend' && !doc.decision ? (
+                        <p className="mt-2 text-sm text-[#cfc6dd]">
+                           Borrower was asked to resend ({(doc.resend_reason ?? '').replace(/_/g, ' ')}).
+                        </p>
+                     ) : null}
                      {doc.status === 'done' && doc.memo ? (
                         <p className="mt-3 whitespace-pre-line text-[15px] leading-6 text-[#e8e0f2]">{doc.memo}</p>
                      ) : (
