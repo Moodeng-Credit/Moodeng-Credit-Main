@@ -125,6 +125,56 @@ export const buildAutoReply = (opts: {
 
 type Borrower = { id: string; username: string | null; email: string | null; display_name: string | null; cs: number | null };
 
+// Their latest proof of income (moodeng.app/documents), so the team sees what a "why was my document
+// rejected?" message is about without looking it up. Team-only: never sent to the borrower.
+const INCOME_DOCS_ADMIN_URL = `${SITE_URL}/admin/income-docs`;
+const INCOME_DOC_LOOKBACK_MS = 30 * 24 * 60 * 60 * 1000;
+
+export type IncomeDocSummary = {
+   created_at: string;
+   status: string;
+   verdict: string | null;
+   resend_reason: string | null;
+   decision: string | null;
+   risk: string | null;
+};
+
+const agoText = (ms: number) => {
+   const minutes = Math.max(1, Math.round(ms / 60000));
+   if (minutes < 60) return `${minutes} min ago`;
+   const hours = Math.round(minutes / 60);
+   return hours < 48 ? `${hours}h ago` : `${Math.round(hours / 24)} days ago`;
+};
+
+/** One line for the ticket and the ping. Pure. */
+export const formatIncomeDocStatus = (doc: IncomeDocSummary, now: number) => {
+   const state =
+      doc.decision === 'approved'
+         ? '✅ approved'
+         : doc.decision === 'declined'
+           ? '❌ declined'
+           : doc.verdict === 'resend'
+             ? `↩️ asked to resend (${(doc.resend_reason ?? 'unclear').replace(/_/g, ' ')})`
+             : doc.verdict === 'needs_review'
+               ? '⚠️ needs your review'
+               : doc.verdict === 'looks_good'
+                 ? '✅ looks good, waiting for your decision'
+                 : 'being read';
+   return `📄 Proof of income · sent ${agoText(now - Date.parse(doc.created_at))} · ${state}${doc.risk === 'red' ? ' · 🚨 fraud signs' : ''}`;
+};
+
+const loadIncomeDocStatus = async (svc: Svc, userId: string, now: number): Promise<string | null> => {
+   const { data } = await svc
+      .from('income_documents')
+      .select('created_at, status, verdict, resend_reason, decision, risk')
+      .eq('user_id', userId)
+      .gte('created_at', new Date(now - INCOME_DOC_LOOKBACK_MS).toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+   return data ? formatIncomeDocStatus(data as IncomeDocSummary, now) : null;
+};
+
 const ticketContext = (borrower: Borrower | null, facebookName: string | null) =>
    borrower
       ? [
@@ -189,7 +239,13 @@ export const findOrCreateConversation = async (
 
 // The Telegram ping for each new Page message: the team isn't signed in to the Page on their phones, so
 // Facebook never notifies them.
-export const buildMessengerPing = (opts: { facebookName: string | null; borrower: Borrower | null; body: string; startsConversation: boolean }) => {
+export const buildMessengerPing = (opts: {
+   facebookName: string | null;
+   borrower: Borrower | null;
+   body: string;
+   startsConversation: boolean;
+   incomeDoc?: string | null;
+}) => {
    const who = opts.borrower
       ? [opts.borrower.display_name?.trim() || opts.facebookName || 'A borrower', opts.borrower.username ? `@${opts.borrower.username}` : null]
            .filter(Boolean)
@@ -198,9 +254,10 @@ export const buildMessengerPing = (opts: { facebookName: string | null; borrower
    const head = opts.startsConversation ? `💬 New Messenger chat from ${who}` : `💬 ${who} on Messenger`;
    // A photo arrives as a long Facebook CDN link; the 📎 line already says there's one.
    const body = opts.body.replace(/https:\/\/\S*fbcdn\.net\S*/g, '').replace(/\n{2,}/g, '\n').trim();
-   const text = `${head}:\n> ${body.slice(0, 800)}\nReply from the Discord ticket or the Page inbox.`;
+   const text = `${head}:\n> ${body.slice(0, 800)}\n${opts.incomeDoc ? `${opts.incomeDoc}\n` : ''}Reply from the Discord ticket or the Page inbox.`;
    const keyboard: TelegramInlineKeyboard = [[{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }]];
    if (opts.borrower) keyboard.push([{ text: '👤 Borrower in admin', url: adminUserUrl(opts.borrower.id, opts.borrower.username) }]);
+   if (opts.incomeDoc) keyboard.push([{ text: '📄 Income docs', url: INCOME_DOCS_ADMIN_URL }]);
    return { text, keyboard };
 };
 
@@ -230,7 +287,9 @@ export const openMessengerTicket = async (
       created || conversation.status === 'resolved' || Number.isNaN(lastAt) || input.at - lastAt > NEW_CONVERSATION_AFTER_MS;
 
    const body = [input.text?.trim(), input.hasAttachment ? ATTACHMENT_NOTE : null].filter(Boolean).join('\n');
-   const posted = await postToTicket(conversation, body);
+   const incomeDoc = borrower ? await loadIncomeDocStatus(svc, borrower.id, input.at) : null;
+   // The status goes in the Discord ticket once per conversation (and in every Telegram ping).
+   const posted = await postToTicket(conversation, startsConversation && incomeDoc ? `${body}\n— ${incomeDoc} · ${INCOME_DOCS_ADMIN_URL}` : body);
    if (!posted) {
       // The ticket couldn't be posted: still make sure someone sees it.
       await alertTeam(
@@ -239,7 +298,7 @@ export const openMessengerTicket = async (
          [[{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }]]
       );
    } else {
-      const ping = buildMessengerPing({ facebookName: input.facebookName, borrower, body, startsConversation });
+      const ping = buildMessengerPing({ facebookName: input.facebookName, borrower, body, startsConversation, incomeDoc });
       await pingTeam(svc, ping.text, ping.keyboard, 'messenger_alert_chat_id');
    }
 
