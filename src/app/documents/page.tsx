@@ -12,6 +12,8 @@ import { CONNECT_HIPPOS, ConnectHero, GhostButton, PrimaryButton } from '@/views
 //   pick       add photos/PDFs (up to 6) + what it is
 //   sending    each file ticks off as it uploads
 //   checking   Sent ✓ → Reading → Checking, while the AI reads it (get_my_income_document = checking)
+//   resend     "Let's try that again" with the exact fix — the automatic checks found something they can
+//              fix (blurry, locked PDF, wrong document, too old, too short); no team decision needed
 //   in_review  "We'll let you know within 24 hours" + message us on Facebook
 //   approved   / declined (with the team's reason) — what they see when they come back, and what the
 //              push / Messenger / Telegram message opens
@@ -26,10 +28,22 @@ const POLL_MS = 3000;
 // The AI read usually takes under a minute; after this the card moves on to "in review" anyway.
 const CHECKING_MAX_MS = 75_000;
 
-export type DocumentsPhase = 'loading' | 'pick' | 'sending' | 'checking' | 'in_review' | 'approved' | 'declined';
+export type DocumentsPhase = 'loading' | 'pick' | 'sending' | 'checking' | 'resend' | 'in_review' | 'approved' | 'declined';
+
+// What to fix, by the reason code the checks return (incomeDocs.ts RESEND_TEXT says the same).
+const RESEND_FIX: Record<string, string> = {
+   password_protected: 'Your PDF is locked with a password, so we can’t open it. Please send screenshots of your history instead.',
+   scanned_pdf: 'We couldn’t read your PDF. Please send screenshots of your history instead.',
+   unsupported_file: 'We couldn’t open that photo type. Please send a screenshot or a JPG/PNG photo instead.',
+   unreadable: 'We couldn’t read it clearly. Please retake it in good light with all 4 corners showing and the numbers sharp.',
+   not_financial: 'This doesn’t look like a GCash or Maya history, bank statement or payslip. Please send one of those.',
+   old_document: 'This is more than 2 months old. Please send your latest one.',
+   short_history: 'This shows less than 2 months. Please send your last 2–3 months of history.',
+   no_income: 'We couldn’t see money coming in. Please send a history or statement that shows the money you receive.'
+};
 type Picked = { key: string; file: File; preview: string | null; error: string | null };
 type Status = {
-   stage: 'checking' | 'in_review' | 'approved' | 'declined';
+   stage: 'checking' | 'resend' | 'in_review' | 'approved' | 'declined';
    file_count: number;
    sent_at: string;
    reason: string | null;
@@ -334,6 +348,21 @@ export default function DocumentsPage({
                      It helps your loan requests get funded. Repay on time to keep raising your limit.
                   </p>
                   <PrimaryButton onClick={() => navigate('/dashboard')}>Go to dashboard</PrimaryButton>
+               </div>
+            ) : null}
+
+            {phase === 'resend' ? (
+               <div className="flex flex-col gap-4 rounded-[20px] bg-white px-5 py-5 dark:bg-dv2-card">
+                  <ConnectHero
+                     image={CONNECT_HIPPOS.missed}
+                     title="Let’s try that again"
+                     subtitle="We need a clearer document before the team can review it."
+                  />
+                  <div className="rounded-[16px] bg-[#f8f1ff] px-4 py-3 text-[15px] leading-[21px] text-[#594d65] dark:bg-[#221a31] dark:text-[#d9cfe8]">
+                     <b>What to send:</b> {RESEND_FIX[reason ?? ''] ?? RESEND_FIX.unreadable}
+                  </div>
+                  <PrimaryButton onClick={startOver}>Send again</PrimaryButton>
+                  {facebookButton}
                </div>
             ) : null}
 

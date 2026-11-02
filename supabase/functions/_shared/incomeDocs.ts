@@ -451,6 +451,72 @@ export const buildMemo = (doc: Extracted, metrics: Metrics, flags: Flag[]): stri
 export const riskOf = (flags: Flag[]): 'green' | 'orange' | 'red' =>
    flags.some((f) => f.severity === 'red') ? 'red' : flags.some((f) => f.severity === 'orange') ? 'orange' : 'green';
 
+// ---- Verdict (Didit-style) ---------------------------------------------------------------------
+// Every send ends with one verdict, plus a list of named checks that each pass, warn or fail:
+//   resend        a problem the borrower can fix (blurry, locked PDF, wrong document, too old, too
+//                 short, no money in). They're told right away what to send instead; no team decision.
+//   needs_review  anything that could be a fake, someone else's document or a repayment risk. Never
+//                 explained to the borrower — the team decides.
+//   looks_good    every check passed. Still the team's call (no auto-approve).
+
+export type Verdict = 'resend' | 'needs_review' | 'looks_good';
+export type ResendReason = 'password_protected' | 'scanned_pdf' | 'unsupported_file' | 'unreadable' | 'not_financial' | 'old_document' | 'short_history' | 'no_income';
+
+/** What the borrower is told to fix, in their words. */
+export const RESEND_TEXT: Record<ResendReason, string> = {
+   password_protected: 'Your PDF is locked with a password, so we can’t open it. Please send screenshots of your history instead.',
+   scanned_pdf: 'We couldn’t read your PDF. Please send screenshots of your history instead.',
+   unsupported_file: 'We couldn’t open that photo type. Please send a screenshot or a JPG/PNG photo instead.',
+   unreadable: 'We couldn’t read it clearly. Please retake it in good light with all 4 corners showing and the numbers sharp.',
+   not_financial: 'This doesn’t look like a GCash or Maya history, bank statement or payslip. Please send one of those.',
+   old_document: 'This is more than 2 months old. Please send your latest one.',
+   short_history: 'This shows less than 2 months. Please send your last 2–3 months of history.',
+   no_income: 'We couldn’t see money coming in. Please send a history or statement that shows the money you receive.'
+};
+
+export type CheckSection = { key: string; label: string; status: 'pass' | 'warn' | 'fail'; notes: string[] };
+
+// Which flag belongs to which named check. Anything that could mean a fake is in FAKE_SECTIONS.
+const SECTIONS: Array<{ key: string; label: string; codes: string[] }> = [
+   { key: 'authentic', label: 'Not edited', codes: ['balance_math', 'running_balance', 'payslip_math', 'made_in_editor', 'edited_after_creation', 'visual_anomaly', 'edited_image'] },
+   { key: 'not_ai', label: 'Not AI-made', codes: ['ai_label', 'ai_generator', 'ai_image_size', 'gcash_ref_repeated', 'gcash_ref_format'] },
+   { key: 'identity', label: 'Name matches ID', codes: ['name_mismatch'] },
+   { key: 'unique', label: 'Not used by another account', codes: ['same_file_other_account', 'same_rows_other_account'] },
+   { key: 'recent', label: 'Recent and 2+ months', codes: ['old_document', 'short_history'] },
+   { key: 'income', label: 'Regular income', codes: ['no_income_rows', 'no_regular_income', 'income_below_stated', 'one_big_deposit'] },
+   { key: 'afford', label: 'Can afford the repayment', codes: ['repayment_vs_income', 'balance_below_repayment', 'due_far_from_payday'] }
+];
+const FAKE_SECTIONS = new Set(['authentic', 'not_ai', 'identity', 'unique']);
+
+/** Named checks for the admin card, with the first one ("Readable") from the read itself. Pure. */
+export const buildSections = (flags: Flag[], read: { ok: boolean; note?: string }): CheckSection[] => [
+   { key: 'readable', label: 'Readable', status: read.ok ? 'pass' : 'fail', notes: read.note ? [read.note] : [] },
+   ...SECTIONS.map(({ key, label, codes }) => {
+      const mine = flags.filter((f) => codes.includes(f.code));
+      const status: CheckSection['status'] = mine.some((f) => f.severity === 'red') ? 'fail' : mine.some((f) => f.severity === 'orange') ? 'warn' : 'pass';
+      return { key, label, status, notes: mine.map((f) => f.detail) };
+   })
+];
+
+/** The verdict for a send that was read. Fake signs always win over a fixable problem. Pure. */
+export const verdictOf = (flags: Flag[], docType: Extracted['doc_type']): { verdict: Verdict; reason: ResendReason | null } => {
+   const fakeCodes = new Set(SECTIONS.filter((x) => FAKE_SECTIONS.has(x.key)).flatMap((x) => x.codes));
+   const serious = flags.filter((f) => f.severity !== 'info');
+   if (serious.some((f) => fakeCodes.has(f.code))) return { verdict: 'needs_review', reason: null };
+   if (docType === 'other') return { verdict: 'resend', reason: 'not_financial' };
+   const has = (code: string) => serious.some((f) => f.code === code);
+   if (has('no_income_rows')) return { verdict: 'resend', reason: 'no_income' };
+   if (has('old_document')) return { verdict: 'resend', reason: 'old_document' };
+   if (has('short_history')) return { verdict: 'resend', reason: 'short_history' };
+   return { verdict: serious.length ? 'needs_review' : 'looks_good', reason: null };
+};
+
+const VERDICT_LINE: Record<Verdict, string> = {
+   resend: '↩️ Asked them to resend',
+   needs_review: '⚠️ Needs your review',
+   looks_good: '✅ Looks good — approve?'
+};
+
 const toBase64 = (bytes: Uint8Array) => {
    let binary = '';
    for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
@@ -634,8 +700,20 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       if (replyText) await reply(replyText);
       return { ok: patch.status === 'done', ...patch };
    };
+   // A problem the borrower can fix: tell them now (card + push/Messenger/Telegram) and the team in the reply.
+   const askResend = async (patch: Record<string, unknown>, reason: ResendReason, teamNote: string) => {
+      const result = await finish(
+         { ...patch, verdict: 'resend', resend_reason: reason, checks: patch.checks ?? buildSections([], { ok: false, note: teamNote }) },
+         `${VERDICT_LINE.resend}: ${RESEND_TEXT[reason]}\n(${teamNote})`
+      );
+      await notifyIncomeDecision(supabase, id);
+      return result;
+   };
+   // Our side failed (download, AI down) — never the borrower's fault, so it goes to the team.
+   const toTeam = (patch: Record<string, unknown>, teamNote: string) =>
+      finish({ ...patch, verdict: 'needs_review', checks: buildSections([], { ok: false, note: teamNote }) }, `${VERDICT_LINE.needs_review}: ${teamNote}`);
 
-   if (!apiKey) return finish({ status: 'skipped', error: 'DEEPSEEK_API_KEY not set — review by hand' });
+   if (!apiKey) return toTeam({ status: 'skipped', error: 'DEEPSEEK_API_KEY not set' }, 'no AI key — check the files by hand');
    await supabase.from('income_documents').update({ status: 'processing', loan_id: loan?.id ?? null }).eq('id', id);
 
    // 1. Load the files.
@@ -643,39 +721,68 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    const pdfs: PdfInfo[] = [];
    const hashes: string[] = [];
    const facts: FileFacts[] = [];
+   let locked = false;
+   let unsupported = false;
    for (const f of files) {
       const { data: blob, error } = await supabase.storage.from('income-docs').download(f.path);
-      if (error || !blob) return finish({ status: 'failed', error: `download failed: ${f.path}` }, '⚠️ Couldn’t open the files — check them by hand.');
+      if (error || !blob) return toTeam({ status: 'failed', error: `download failed: ${f.path}` }, 'couldn’t open the files');
       const bytes = new Uint8Array(await blob.arrayBuffer());
       hashes.push(await sha256(bytes));
       facts.push({ name: f.name ?? `file ${facts.length + 1}`, image: imageInfo(bytes), markers: fileMarkers(bytes) });
       const mime = f.mime && (f.mime === 'application/pdf' || IMAGE_TYPES.has(f.mime)) ? f.mime : blob.type;
       if (mime === 'application/pdf') {
          const info = readPdfInfo(bytes);
-         if (info.encrypted) return finish({ status: 'failed', file_hashes: hashes, error: 'password-protected PDF' }, '🔒 PDF has a password — ask them for screenshots instead.');
+         if (info.encrypted) {
+            locked = true;
+            continue;
+         }
          pdfs.push(info);
       } else if (!IMAGE_TYPES.has(mime)) {
-         continue; // HEIC etc. — the team opens it by hand
+         unsupported = true; // HEIC etc.
+         continue;
       }
       loaded.push({ name: f.name ?? f.path, mime, bytes });
    }
-   if (!loaded.length) return finish({ status: 'failed', file_hashes: hashes, error: 'no readable file type (HEIC?)' }, '⚠️ File type the AI can’t read (iPhone HEIC?) — check by hand.');
 
-   // AI labels and generator tags are in the file itself, so report them even if the read below fails.
+   // AI labels and generator tags are in the file itself: a fake sign, so it always goes to the team.
    const fileWarnings = facts
       .flatMap((f) => [f.markers.aiLabel && `🔴 ${f.name}: ${f.markers.aiLabel}`, f.markers.generator && `🔴 ${f.name}: ${f.markers.generator} tag`])
       .filter(Boolean)
       .join('\n');
+   const fileFakeFlags: Flag[] = facts.flatMap((f) => [
+      ...(f.markers.aiLabel ? [{ code: 'ai_label', severity: 'red' as const, detail: `${f.name} is ${f.markers.aiLabel}.` }] : []),
+      ...(f.markers.generator ? [{ code: 'ai_generator', severity: 'red' as const, detail: `${f.name} carries a ${f.markers.generator} tag.` }] : [])
+   ]);
+   const unreadablePatch = (note: string, extra: Record<string, unknown> = {}) => ({
+      status: 'failed',
+      file_hashes: hashes,
+      error: note,
+      ...extra,
+      checks: buildSections(fileFakeFlags, { ok: false, note })
+   });
+
+   if (!loaded.length) {
+      const reason: ResendReason = locked ? 'password_protected' : 'unsupported_file';
+      const note = locked ? 'password-protected PDF' : 'file type the AI can’t open (HEIC?)';
+      if (fileWarnings) return finish({ ...unreadablePatch(note), verdict: 'needs_review' }, `${VERDICT_LINE.needs_review}: ${note}\n${fileWarnings}`);
+      return askResend(unreadablePatch(note), reason, note);
+   }
 
    // 2–5. Read, work out, check, score, note.
    let doc: Extracted;
    try {
       doc = await extract(apiKey, loaded);
    } catch (err) {
-      return finish({ status: 'failed', file_hashes: hashes, error: `read failed: ${err instanceof Error ? err.message : String(err)}` }, `⚠️ AI couldn’t read it — check by hand.${fileWarnings ? `\n${fileWarnings}` : ''}`);
+      const message = err instanceof Error ? err.message : String(err);
+      // A scanned PDF has no text to read — the borrower can fix that with screenshots.
+      if (/scanned PDF/.test(message) && !fileWarnings) return askResend(unreadablePatch(message), 'scanned_pdf', message);
+      return finish({ ...unreadablePatch(`read failed: ${message}`), verdict: 'needs_review' }, `${VERDICT_LINE.needs_review}: AI couldn’t read it.${fileWarnings ? `\n${fileWarnings}` : ''}`);
    }
    if (!doc.readable) {
-      return finish({ status: 'failed', file_hashes: hashes, doc_type: doc.doc_type, extracted: doc, error: `unreadable: ${doc.unreadable_reason ?? '?'}` }, `⚠️ Unreadable: ${doc.unreadable_reason ?? 'no reason given'}${fileWarnings ? `\n${fileWarnings}` : ''}`);
+      const note = `unreadable: ${doc.unreadable_reason ?? 'no reason given'}`;
+      const patch = unreadablePatch(note, { doc_type: doc.doc_type, extracted: doc });
+      if (fileWarnings) return finish({ ...patch, verdict: 'needs_review' }, `${VERDICT_LINE.needs_review}: ${note}\n${fileWarnings}`);
+      return askResend(patch, doc.doc_type === 'other' ? 'not_financial' : 'unreadable', note);
    }
 
    const keys = rowKeys(doc.transactions);
@@ -699,62 +806,76 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    const memo = buildMemo(doc, metrics, flags);
    const risk = riskOf(flags);
    const score = scoreOf(doc, metrics, flags);
+   const checks = buildSections(flags, {
+      ok: true,
+      note: `${doc.transactions.length} rows read${locked ? ' (a locked PDF was skipped)' : ''}${unsupported ? ' (a HEIC photo was skipped)' : ''}`
+   });
+   const { verdict, reason } = verdictOf(flags, doc.doc_type);
 
    let aiNote: { verdict: string; note: string } | null = null;
-   try {
-      aiNote = await writeNote(apiKey, {
-         loan: loanCtx,
-         monthly_income_usd: monthlyIncomeUsd(doc, metrics),
-         document: { type: doc.doc_type, institution: doc.institution, period: [doc.period_start, doc.period_end], currency: doc.currency },
-         metrics,
-         checks: flags,
-         score
-      });
-   } catch (err) {
-      console.error('income doc note failed', err);
+   if (verdict !== 'resend') {
+      try {
+         aiNote = await writeNote(apiKey, {
+            loan: loanCtx,
+            monthly_income_usd: monthlyIncomeUsd(doc, metrics),
+            document: { type: doc.doc_type, institution: doc.institution, period: [doc.period_start, doc.period_end], currency: doc.currency },
+            metrics,
+            checks: flags,
+            score
+         });
+      } catch (err) {
+         console.error('income doc note failed', err);
+      }
    }
 
-   const icon = risk === 'red' ? '🔴' : risk === 'orange' ? '🟠' : '✅';
+   const patch = {
+      status: 'done',
+      file_hashes: hashes,
+      row_keys: keys,
+      doc_type: doc.doc_type,
+      extracted: doc,
+      metrics,
+      flags,
+      memo,
+      risk,
+      score,
+      checks,
+      ai_note: aiNote ? `${aiNote.verdict.toUpperCase()}: ${aiNote.note}` : null,
+      model: MODEL
+   };
+   if (verdict === 'resend' && reason) return askResend(patch, reason, `score ${score}/100`);
+   const checkLine = checks.map((c) => `${c.status === 'pass' ? '✅' : c.status === 'warn' ? '🟠' : '🔴'} ${c.label}`).join('\n');
    return finish(
-      {
-         status: 'done',
-         file_hashes: hashes,
-         row_keys: keys,
-         doc_type: doc.doc_type,
-         extracted: doc,
-         metrics,
-         flags,
-         memo,
-         risk,
-         score,
-         ai_note: aiNote ? `${aiNote.verdict.toUpperCase()}: ${aiNote.note}` : null,
-         model: MODEL
-      },
-      [`${icon} Score ${score}/100${aiNote ? ` · AI says ${aiNote.verdict}` : ''}`, memo, aiNote?.note].filter(Boolean).join('\n\n').slice(0, 3900)
+      { ...patch, verdict },
+      [`${VERDICT_LINE[verdict]} · score ${score}/100${aiNote ? ` · AI says ${aiNote.verdict}` : ''}`, checkLine, memo, aiNote?.note].filter(Boolean).join('\n\n').slice(0, 3900)
    );
 };
 
 const DOCUMENTS_URL = 'https://moodeng.app/documents';
 
-/** What the borrower is told about a decision. Pure. */
-export const decisionMessage = (decision: 'approved' | 'declined', reason: string | null) =>
-   decision === 'approved'
+/** What the borrower is told: the team's decision, or an automatic "please resend". Pure. */
+export const decisionMessage = (kind: 'approved' | 'declined' | 'resend', reason: string | null) =>
+   kind === 'approved'
       ? { title: 'Proof of income approved ✅', body: 'Thanks! Your document is verified. It helps your loan requests get funded.' }
-      : {
-           title: 'We couldn’t approve your document',
-           body: `${reason ? `${reason} ` : ''}You can send a different one any time, or message us on Facebook if you have questions.`
-        };
+      : kind === 'resend'
+        ? { title: 'Let’s try that again', body: `${reason ?? 'Please send a clearer document.'} Questions? Message us on Facebook.` }
+        : {
+             title: 'We couldn’t approve your document',
+             body: `${reason ? `${reason} ` : ''}You can send a different one any time, or message us on Facebook if you have questions.`
+          };
 
-/** Tell the borrower the team's decision on push, Messenger and Telegram (whichever they have). */
+/** Tell the borrower on push, Messenger and Telegram (whichever they have): a decision or a resend ask. */
 export const notifyIncomeDecision = async (supabase: SupabaseClient, id: string) => {
-   const { data: row } = await supabase.from('income_documents').select('id, user_id, decision, decision_reason').eq('id', id).maybeSingle();
-   if (!row?.decision) return { ok: false, error: 'no decision' };
+   const { data: row } = await supabase.from('income_documents').select('id, user_id, decision, decision_reason, verdict, resend_reason').eq('id', id).maybeSingle();
+   const kind: 'approved' | 'declined' | 'resend' | null = row?.decision ?? (row?.verdict === 'resend' ? 'resend' : null);
+   if (!row || !kind) return { ok: false, error: 'nothing to tell' };
    const { data: user } = await supabase
       .from('users')
       .select('id, chat_id, notif_account_activity, messenger_psid')
       .eq('id', row.user_id)
       .maybeSingle();
-   const msg = decisionMessage(row.decision, row.decision_reason);
+   const msg = decisionMessage(kind, kind === 'resend' ? (RESEND_TEXT[row.resend_reason as ResendReason] ?? null) : row.decision_reason);
+   const button = kind === 'approved' ? 'Open Moodeng' : 'Send again';
    const sent: string[] = [];
 
    try {
@@ -767,12 +888,12 @@ export const notifyIncomeDecision = async (supabase: SupabaseClient, id: string)
    }
    const messenger = await sendMessengerMessage(user?.messenger_psid, {
       text: `${msg.title}\n${msg.body}`,
-      card: { title: msg.title, button: { title: row.decision === 'approved' ? 'Open Moodeng' : 'Send another document', url: DOCUMENTS_URL } }
+      card: { title: msg.title, button: { title: button, url: DOCUMENTS_URL } }
    });
    if (messenger.ok) sent.push('Messenger');
    if (user?.chat_id && user.notif_account_activity !== false) {
       try {
-         await sendTelegramMessage(user.chat_id, `${msg.title}\n\n${msg.body}`, { inlineKeyboard: [[{ text: 'Open Moodeng', url: DOCUMENTS_URL }]] });
+         await sendTelegramMessage(user.chat_id, `${msg.title}\n\n${msg.body}`, { inlineKeyboard: [[{ text: button, url: DOCUMENTS_URL }]] });
          sent.push('Telegram');
       } catch (err) {
          console.error('income decision telegram failed', err);
