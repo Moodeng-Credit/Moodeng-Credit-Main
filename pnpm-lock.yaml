@@ -4,13 +4,18 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@base-org/account@2.5.7':
+    hash: f31de02bbabd4636420d4f04d436c24e0fbbbd5d9b52e679f5ede0997ce81a1b
+    path: patches/@base-org__account@2.5.7.patch
+
 importers:
 
   .:
     dependencies:
       '@base-org/account':
         specifier: ^2.5.7
-        version: 2.5.7(@types/react@19.2.7)(bufferutil@4.1.0)(immer@11.1.3)(react@19.2.3)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.2.3))(utf-8-validate@5.0.10)(zod@4.3.5)
+        version: 2.5.7(patch_hash=f31de02bbabd4636420d4f04d436c24e0fbbbd5d9b52e679f5ede0997ce81a1b)(@types/react@19.2.7)(bufferutil@4.1.0)(immer@11.1.3)(react@19.2.3)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.2.3))(utf-8-validate@5.0.10)(zod@4.3.5)
       '@dotenvx/dotenvx':
         specifier: ^1.51.2
         version: 1.51.4
@@ -7147,7 +7152,7 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@base-org/account@2.5.7(@types/react@19.2.7)(bufferutil@4.1.0)(immer@11.1.3)(react@19.2.3)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.2.3))(utf-8-validate@5.0.10)(zod@4.3.5)':
+  '@base-org/account@2.5.7(patch_hash=f31de02bbabd4636420d4f04d436c24e0fbbbd5d9b52e679f5ede0997ce81a1b)(@types/react@19.2.7)(bufferutil@4.1.0)(immer@11.1.3)(react@19.2.3)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.2.3))(utf-8-validate@5.0.10)(zod@4.3.5)':
     dependencies:
       '@coinbase/cdp-sdk': 1.51.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)
       brotli-wasm: 3.0.1

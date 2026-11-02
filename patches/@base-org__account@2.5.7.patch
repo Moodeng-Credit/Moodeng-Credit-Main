@@ -1,0 +1,72 @@
+diff --git a/dist/interface/payment/pay.js b/dist/interface/payment/pay.js
+index 28226b3cb970322e4a37fe5360754ebff746cf21..523b7b156ae99ad6830277ec13865ec7d993cd90 100644
+--- a/dist/interface/payment/pay.js
++++ b/dist/interface/payment/pay.js
+@@ -30,7 +30,7 @@ import { normalizeAddress, validateDataSuffix, validateStringAmount } from './ut
+  * ```
+  */
+ export async function pay(options) {
+-    const { amount, to, dataSuffix, testnet = false, payerInfo, walletUrl, telemetry = true, } = options;
++    const { amount, to, dataSuffix, testnet = false, payerInfo, walletUrl, telemetry = true, paymasterUrl, } = options;
+     // Generate correlation ID for this payment request
+     const correlationId = crypto.randomUUID();
+     // Log payment started
+@@ -44,7 +44,7 @@ export async function pay(options) {
+             validateDataSuffix(dataSuffix);
+         }
+         // Step 2: Translate payment to sendCalls format
+-        const requestParams = translatePaymentToSendCalls(normalizedAddress, amount, testnet, payerInfo, dataSuffix);
++        const requestParams = translatePaymentToSendCalls(normalizedAddress, amount, testnet, payerInfo, dataSuffix, paymasterUrl);
+         // Step 3: Execute payment with SDK
+         const executionResult = await executePaymentWithSDK(requestParams, testnet, walletUrl, telemetry, dataSuffix);
+         // Log payment completed
+diff --git a/dist/interface/payment/types.d.ts b/dist/interface/payment/types.d.ts
+index e2866ebf1011a019dea37954cbaeab6b85d95cdc..2973df2489de5b72a6399906137a31783d3b8733 100644
+--- a/dist/interface/payment/types.d.ts
++++ b/dist/interface/payment/types.d.ts
+@@ -69,6 +69,8 @@ export interface PaymentOptions {
+     walletUrl?: string;
+     /** Whether to enable telemetry logging. Defaults to true */
+     telemetry?: boolean;
++    /** Patched (Moodeng): ERC-7677 paymaster URL that sponsors gas instead of Base's default. */
++    paymasterUrl?: string;
+ }
+ /**
+  * Successful payment result
+diff --git a/dist/interface/payment/utils/translatePayment.js b/dist/interface/payment/utils/translatePayment.js
+index c7d6505d042cfe81496d3f384a4e617ee235155e..24333ee8c6973ad2939635bde8c37bc385b1edfa 100644
+--- a/dist/interface/payment/utils/translatePayment.js
++++ b/dist/interface/payment/utils/translatePayment.js
+@@ -23,7 +23,7 @@ export function encodeTransferCall(recipient, amount) {
+  * @param dataSuffix - Optional 0x-prefixed hex attribution suffix
+  * @returns The request parameters for wallet_sendCalls
+  */
+-export function buildSendCallsRequest(transferData, testnet, payerInfo, dataSuffix) {
++export function buildSendCallsRequest(transferData, testnet, payerInfo, dataSuffix, paymasterUrl) {
+     const network = testnet ? 'baseSepolia' : 'base';
+     const chainId = CHAIN_IDS[network];
+     const usdcAddress = TOKENS.USDC.addresses[network];
+@@ -48,6 +48,10 @@ export function buildSendCallsRequest(transferData, testnet, payerInfo, dataSuff
+     if (dataSuffix) {
+         capabilities.attribution = { suffix: dataSuffix };
+     }
++    // Patched (Moodeng): sponsor gas with our own ERC-7677 paymaster instead of Base's default.
++    if (paymasterUrl) {
++        capabilities.paymasterService = { url: paymasterUrl };
++    }
+     // Build the request parameters
+     const requestParams = {
+         version: '2.0.0',
+@@ -66,10 +70,10 @@ export function buildSendCallsRequest(transferData, testnet, payerInfo, dataSuff
+  * @param dataSuffix - Optional 0x-prefixed hex attribution suffix
+  * @returns The complete request parameters
+  */
+-export function translatePaymentToSendCalls(recipient, amount, testnet, payerInfo, dataSuffix) {
++export function translatePaymentToSendCalls(recipient, amount, testnet, payerInfo, dataSuffix, paymasterUrl) {
+     // Encode the transfer call
+     const transferData = encodeTransferCall(recipient, amount);
+     // Build and return the sendCalls request
+-    return buildSendCallsRequest(transferData, testnet, payerInfo, dataSuffix);
++    return buildSendCallsRequest(transferData, testnet, payerInfo, dataSuffix, paymasterUrl);
+ }
+ //# sourceMappingURL=translatePayment.js.map

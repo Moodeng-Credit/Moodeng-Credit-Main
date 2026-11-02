@@ -1,5 +1,6 @@
 import { getPaymentStatus, pay, type PaymentStatus } from '@base-org/account';
 
+import { PAYMASTER_URL } from '@/config/loanFundingConfig';
 import { ERROR_CODES, type ErrorCode } from '@/types/errorCodes';
 
 /**
@@ -16,6 +17,12 @@ import { ERROR_CODES, type ErrorCode } from '@/types/errorCodes';
 // USDC-on-Base only, forever (a hard product invariant), so we never send Base Sepolia in
 // production. An env override exists purely so a testnet build can exercise the flow.
 const USE_TESTNET = import.meta.env.VITE_BASE_PAY_TESTNET === 'true';
+
+// Gas is sponsored by our own CDP paymaster rather than Base's default one: the default ran
+// dry on 2026-11-02 ("AA31 paymaster deposit too low") and blocked every payment. Our CDP
+// policy must allowlist USDC `transfer` for this to work. `paymasterUrl` comes from our
+// pnpm patch of @base-org/account. The URL is mainnet-only, so a testnet build skips it.
+const BASE_PAY_PAYMASTER_URL = !USE_TESTNET && /^https?:\/\//i.test(PAYMASTER_URL) ? PAYMASTER_URL : undefined;
 
 // pay() resolves the moment the user approves; the userOp still has to land on-chain, so we
 // poll getPaymentStatus to confirmation. These bound that poll.
@@ -110,6 +117,7 @@ export async function startBasePayment({
          amount: usdAmount,
          to,
          testnet: USE_TESTNET,
+         ...(BASE_PAY_PAYMASTER_URL ? { paymasterUrl: BASE_PAY_PAYMASTER_URL } : {}),
          ...(dataSuffix ? { dataSuffix } : {})
       });
       return { id: result.id, to: result.to };
