@@ -253,3 +253,11 @@ Deno.test('clusterSlots with isGood: an empty day recommends only its good times
    assertEquals(out.slots, day);
    assertEquals(out.recommended, ['2026-11-03T18:00:00+07:00']);
 });
+
+Deno.test("clusterSlots with isGood: Emma's good times first, else anyone's", () => {
+   const day = ['2026-11-03T10:00:00+07:00', '2026-11-03T18:00:00+07:00', '2026-11-03T20:00:00+07:00', '2026-11-03T23:00:00+07:00'];
+   const good = (s: string) => isGoodCallTime(s, 'Asia/Bangkok');
+   assertEquals(clusterSlots(day, [], [day[2], day[3]], good).recommended, [day[2]]);
+   // Emma only free at 11 PM that day: George's good times are starred instead.
+   assertEquals(clusterSlots(day, [], [day[3]], good).recommended, [day[1], day[2]]);
+});
