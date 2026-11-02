@@ -209,7 +209,7 @@ export const dayIsFull = (start: string, bookedStarts: string[]): boolean =>
  * host's (Emma's) own free times: on a day with no calls yet they're the recommended ones, unless
  * every time that day is hers (then a star on everything means nothing, so none is starred).
  * With `isGood` (isGoodCallTime in the borrower's zone), a day with no calls yet recommends only its
- * good times (of Emma's, when only some are hers).
+ * good times: Emma's, when only some are hers and she has good ones, else anyone's.
  * Returns the slots to offer (chronological) and the recommended subset.
  */
 export const clusterSlots = (
@@ -242,7 +242,9 @@ export const clusterSlots = (
       if (booked.length === 0) {
          offered.push(...daySlots);
          const hers = daySlots.filter((s) => preferred.has(Date.parse(s)));
-         if (isGood) recommended.push(...(hers.length < daySlots.length ? hers : daySlots).filter(isGood));
+         // Emma's good times first; a day where she has none stars anyone's good times.
+         const herGood = (hers.length < daySlots.length ? hers : daySlots).filter((s) => isGood?.(s));
+         if (isGood) recommended.push(...(herGood.length ? herGood : daySlots.filter(isGood)));
          else if (hers.length < daySlots.length) recommended.push(...hers);
          continue;
       }
