@@ -22,7 +22,7 @@ const VERDICT_BADGE: Record<string, { label: string; className: string }> = {
    resend: { label: '↩️ Asked to resend', className: 'bg-[#3a2d4f] text-[#cfc6dd]' }
 };
 
-const CHECK_ICON: Record<string, string> = { pass: '✅', warn: '🟠', fail: '🔴' };
+const CHECK_ICON: Record<string, string> = { pass: '✅', warn: '🟠', fail: '🔴', skip: '➖' };
 
 const bkk = (iso: string) =>
    new Date(iso).toLocaleString('en-US', { timeZone: 'Asia/Bangkok', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -201,6 +201,9 @@ export default function IncomeDocsSection() {
                                  title={c.notes.join('\n')}
                               >
                                  {CHECK_ICON[c.status]} <b>{c.label}</b>
+                                 {c.status === 'skip' ? (
+                                    <span className="block text-xs text-[#a89bb8]">Not checked — couldn’t read it</span>
+                                 ) : null}
                                  {c.status !== 'pass' && c.notes[0] ? (
                                     <span className="block text-xs text-[#a89bb8]">{c.notes[0]}</span>
                                  ) : null}

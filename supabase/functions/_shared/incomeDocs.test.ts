@@ -151,3 +151,17 @@ Deno.test('named checks pass, warn and fail', () => {
    assertEquals(by.recent, 'warn');
    assertEquals(by.not_ai, 'pass');
 });
+
+Deno.test('not a financial document goes back to the borrower even with AI tags', () => {
+   assertEquals(verdictOf([{ code: 'ai_label', severity: 'red', detail: 'x' }], 'other'), { verdict: 'resend', reason: 'not_financial' });
+   // An AI-tagged GCash history is still the team's call.
+   assertEquals(verdictOf([{ code: 'ai_label', severity: 'red', detail: 'x' }], 'gcash_history').verdict, 'needs_review');
+});
+
+Deno.test('unread documents show content checks as not checked', () => {
+   const by = Object.fromEntries(buildSections([{ code: 'ai_label', severity: 'red', detail: 'x' }], { ok: false }).map((c) => [c.key, c.status]));
+   assertEquals(by.readable, 'fail');
+   assertEquals(by.not_ai, 'fail');
+   assertEquals(by.afford, 'skip');
+   assertEquals(by.identity, 'skip');
+});

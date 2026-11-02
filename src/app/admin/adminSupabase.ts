@@ -3160,7 +3160,7 @@ export interface AdminIncomeDocument {
    notified_at: string | null;
    verdict: 'resend' | 'needs_review' | 'looks_good' | null;
    resend_reason: string | null;
-   checks: Array<{ key: string; label: string; status: 'pass' | 'warn' | 'fail'; notes: string[] }> | null;
+   checks: Array<{ key: string; label: string; status: 'pass' | 'warn' | 'fail' | 'skip'; notes: string[] }> | null;
    user: { id: string; username: string | null; display_name: string | null; monthly_income: string | null } | null;
 }
 
