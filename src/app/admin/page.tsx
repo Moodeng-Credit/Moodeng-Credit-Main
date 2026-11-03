@@ -47,6 +47,7 @@ import {
    resetUserMfa,
    saveDefaultRecoveryPlan,
    sendNoticeToUsername,
+   setLoanRequestHidden,
    upsertAccountRestrictionByUserId,
    upsertLoanRequestReview
 } from './adminSupabase';
@@ -125,7 +126,7 @@ const noticeTemplates: NoticeTemplate[] = [
 
 function badgeTone(value: string) {
    if (['banned', 'blocked', 'deleted', 'high', 'overdue', 'needs_review'].includes(value)) return 'bg-red-900/50 text-red-300';
-   if (['watchlist', 'reported', 'duplicate', 'medium', 'Partial'].includes(value)) return 'bg-amber-900/50 text-amber-300';
+   if (['watchlist', 'reported', 'duplicate', 'medium', 'Partial', 'hidden'].includes(value)) return 'bg-amber-900/50 text-amber-300';
    if (['active', 'kept', 'low', 'Paid', 'ACTIVE'].includes(value)) return 'bg-emerald-900/50 text-emerald-300';
    if (['lender', 'Lent'].includes(value)) return 'bg-blue-900/50 text-blue-300';
    return 'bg-purple-900/50 text-purple-300';
@@ -209,7 +210,12 @@ function riskTone(user: AdminDirectoryUser) {
    return user.riskProfile?.risk_level ?? 'low';
 }
 
+function isRequestHiddenByAdmin(request: AdminLoanRequest) {
+   return request.on_hold_reason === 'admin_hidden' && Boolean(request.on_hold_since);
+}
+
 function requestStatus(request: AdminLoanRequest) {
+   if (isRequestHiddenByAdmin(request)) return 'hidden';
    return request.review?.status ?? 'visible';
 }
 
@@ -651,6 +657,28 @@ function AdminPanel() {
          await refresh(search);
       } catch (caught) {
          setError(caught instanceof Error ? caught.message : 'Could not review this loan request.');
+      }
+   }
+
+   // Hide a request from lenders and the board without deleting it, or put it back. Reversible.
+   async function handleToggleRequestHidden() {
+      if (!selectedRequest) return;
+      setError(null);
+      setStatusMessage(null);
+
+      const hide = !isRequestHiddenByAdmin(selectedRequest);
+      const name = selectedRequest.borrower?.username ?? 'This request';
+
+      try {
+         await setLoanRequestHidden({ loanId: selectedRequest.id, hidden: hide, note: requestReviewNote });
+         setStatusMessage(
+            hide
+               ? `${name}'s request is hidden from lenders and the board. Nothing was deleted; use "Show on board" to put it back.`
+               : `${name}'s request is back on the board.`
+         );
+         await refresh(search);
+      } catch (caught) {
+         setError(caught instanceof Error ? caught.message : 'Could not update this request.');
       }
    }
 
@@ -1565,10 +1593,22 @@ function AdminPanel() {
                                  className="min-h-28 rounded-2xl border border-[#3d1f6e] bg-[#241044] p-4 text-lg font-bold normal-case tracking-normal text-white placeholder:text-[#a89bb8]"
                               />
                            </label>
+                           {isRequestHiddenByAdmin(selectedRequest) ? (
+                              <p className="mt-5 rounded-2xl border border-amber-900 bg-amber-950/60 p-4 text-lg font-bold text-amber-300">
+                                 Hidden from lenders and the board. Nothing was deleted.
+                              </p>
+                           ) : null}
+                           <button
+                              type="button"
+                              onClick={handleToggleRequestHidden}
+                              className="mt-5 w-full rounded-2xl border border-amber-700 bg-[#241044] px-5 py-4 text-xl font-black text-amber-300"
+                           >
+                              {isRequestHiddenByAdmin(selectedRequest) ? 'Show on board' : 'Hide request (keep it)'}
+                           </button>
                            <button
                               type="button"
                               onClick={() => setRemovingRequest(selectedRequest)}
-                              className="mt-5 w-full rounded-2xl bg-red-600 px-5 py-4 text-xl font-black text-white"
+                              className="mt-3 w-full rounded-2xl bg-red-600 px-5 py-4 text-xl font-black text-white"
                            >
                               Remove request
                            </button>

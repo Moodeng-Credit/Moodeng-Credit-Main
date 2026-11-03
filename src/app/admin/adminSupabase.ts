@@ -149,7 +149,7 @@ export interface AdminLoanRequestReview {
    id: string;
    loan_id: string | null;
    borrower_user_id: string | null;
-   status: 'needs_review' | 'reported' | 'duplicate' | 'kept' | 'deleted';
+   status: 'needs_review' | 'reported' | 'duplicate' | 'kept' | 'deleted' | 'hidden';
    reason: 'spam' | 'duplicate' | 'unsafe' | 'bad_data' | 'manual' | null;
    risk_level: RiskLevel;
    evidence_summary: string | null;
@@ -160,6 +160,9 @@ export interface AdminLoanRequestReview {
 }
 
 export interface AdminLoanRequest extends AdminLoanRecord {
+   // Request hold (loans.on_hold_since / on_hold_reason). 'admin_hidden' = hidden from the board by an admin.
+   on_hold_since: string | null;
+   on_hold_reason: string | null;
    review: AdminLoanRequestReview | null;
 }
 
@@ -679,7 +682,7 @@ export async function listAdminLoanRequests(): Promise<AdminLoanRequest[]> {
       supabase
          .from('loans')
          .select(
-            'id,tracking_id,borrower_user_id,lender_user_id,borrower_wallet,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,reason,coin,loan_status,repayment_status,created_at,funded_at'
+            'id,tracking_id,borrower_user_id,lender_user_id,borrower_wallet,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,reason,coin,loan_status,repayment_status,created_at,funded_at,on_hold_since,on_hold_reason'
          )
          .eq('loan_status', 'Requested')
          .order('created_at', { ascending: false })
@@ -696,6 +699,8 @@ export async function listAdminLoanRequests(): Promise<AdminLoanRequest[]> {
 
    return rows.map((row) => ({
       ...mapLoan(row, usersById),
+      on_hold_since: row.on_hold_since ?? null,
+      on_hold_reason: row.on_hold_reason ?? null,
       review: reviewsByLoanId.get(row.id) ?? null
    }));
 }
@@ -1561,7 +1566,7 @@ export async function logAdminAction(input: {
 export async function upsertLoanRequestReview(input: {
    loan_id: string;
    borrower_user_id?: string | null;
-   status: 'needs_review' | 'reported' | 'duplicate' | 'kept' | 'deleted';
+   status: 'needs_review' | 'reported' | 'duplicate' | 'kept' | 'deleted' | 'hidden';
    reason: 'spam' | 'duplicate' | 'unsafe' | 'bad_data' | 'manual';
    risk_level: RiskLevel;
    evidence_summary?: string | null;
@@ -1588,6 +1593,26 @@ export async function upsertLoanRequestReview(input: {
          .select()
          .single()
    );
+}
+
+// Messages for the refusals admin_set_loan_request_hidden returns as JSON.
+const LOAN_HIDE_ERRORS: Record<string, string> = {
+   not_found: 'That request no longer exists.',
+   not_open: 'Only an open, unfunded request can be hidden or shown.',
+   already_on_hold: 'This request is already off the board (missed or pending video call), so it is already hidden from lenders.',
+   not_hidden: 'This request was not hidden by an admin.'
+};
+
+// Hide an open request from lenders and the board without deleting it, or put it back.
+export async function setLoanRequestHidden(input: { loanId: string; hidden: boolean; note?: string | null }) {
+   const { data, error } = await getSupabaseBrowserClient().rpc('admin_set_loan_request_hidden', {
+      p_loan_id: input.loanId,
+      p_hidden: input.hidden,
+      p_note: input.note ?? null
+   });
+   if (error) throw new Error(error.message || 'Could not update this request.');
+   const result = data as { error?: string } | null;
+   if (result?.error) throw new Error(LOAN_HIDE_ERRORS[result.error] ?? 'Could not update this request.');
 }
 
 export async function upsertRiskProfileByUsername(input: {

@@ -22,6 +22,13 @@ describe('request board: a request on hold (missed video call)', () => {
       expect(isRequestBoardLoanVisible({ ...request, onHoldSince: '2026-10-01T11:00:00Z' }, now, 'borrower-1')).toBe(true);
    });
 
+   it('is hidden from lenders when an admin hid it, but its borrower still sees it', () => {
+      const hidden = { ...request, onHoldSince: '2026-10-01T11:00:00Z', onHoldReason: 'admin_hidden' };
+      expect(isRequestBoardLoanVisible(hidden, now, 'lender-1')).toBe(false);
+      expect(isRequestBoardLoanVisible(hidden, now, null)).toBe(false);
+      expect(isRequestBoardLoanVisible(hidden, now, 'borrower-1')).toBe(true);
+   });
+
    it('is visible to everyone once the hold is cleared', () => {
       expect(isRequestBoardLoanVisible(request, now, 'lender-1')).toBe(true);
    });

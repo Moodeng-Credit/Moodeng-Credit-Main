@@ -844,7 +844,14 @@ export default function UserCard(loan: UserCardProps) {
                ) : isOwnLoan && loanData.onHoldSince && loanData.loanStatus === 'Requested' ? (
                   // Hidden from lenders until they rebook; booking a new call puts it straight back.
                   <div className="flex flex-col gap-md-2 rounded-md-lg border border-[#f5c56b] bg-[#fff6e0] p-md-3">
-                     {loanData.onHoldReason === 'awaiting_call' ? (
+                     {loanData.onHoldReason === 'admin_hidden' ? (
+                        <>
+                           <p className="text-md-b2 font-semibold text-[#8a5300]">Paused while our team reviews it</p>
+                           <p className="text-md-b3 text-[#8a5300]">
+                              Moo-lenders can&apos;t see this request for now. Nothing is needed from you, and we&apos;ll be in touch if we have questions.
+                           </p>
+                        </>
+                     ) : loanData.onHoldReason === 'awaiting_call' ? (
                         <>
                            <p className="text-md-b2 font-semibold text-[#8a5300]">Waiting for your video call</p>
                            <p className="text-md-b3 text-[#8a5300]">
@@ -860,13 +867,15 @@ export default function UserCard(loan: UserCardProps) {
                            </p>
                         </>
                      )}
-                     <button
-                        type="button"
-                        onClick={() => setShowRebook(true)}
-                        className="w-full rounded-md-lg bg-md-primary-1200 py-md-3 text-md-b1 font-semibold text-md-neutral-100 transition-all duration-150 hover:brightness-110 active:scale-[0.98]"
-                     >
-                        {loanData.onHoldReason === 'awaiting_call' ? 'Book or change your call' : 'Book a new call'}
-                     </button>
+                     {loanData.onHoldReason === 'admin_hidden' ? null : (
+                        <button
+                           type="button"
+                           onClick={() => setShowRebook(true)}
+                           className="w-full rounded-md-lg bg-md-primary-1200 py-md-3 text-md-b1 font-semibold text-md-neutral-100 transition-all duration-150 hover:brightness-110 active:scale-[0.98]"
+                        >
+                           {loanData.onHoldReason === 'awaiting_call' ? 'Book or change your call' : 'Book a new call'}
+                        </button>
+                     )}
                   </div>
                ) : isOwnLoan ? (
                   <div className="bg-md-neutral-500 text-md-neutral-1200 text-md-b1 font-semibold py-md-3 rounded-md-lg text-center cursor-not-allowed">
