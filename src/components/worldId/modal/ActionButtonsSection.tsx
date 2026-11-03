@@ -34,6 +34,13 @@ const ACTION_BUTTONS_COPY = {
          'find-location': 'Cari lokasi verifikasi',
          'check-status': 'Cek status koneksi'
       }
+   },
+   es: {
+      labels: {
+         'connect-world-id': 'Verificar con World ID',
+         'find-location': 'Buscar un lugar de verificación',
+         'check-status': 'Comprobar el estado de la conexión'
+      }
    }
 } satisfies Record<LocaleCode, { labels: Record<string, string> }>;
 

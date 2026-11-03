@@ -982,10 +982,222 @@ Từ màn hình "Tài khoản", bạn có thể cập nhật tên hiển thị, 
    }
 };
 
+const SPANISH_GUIDES: Record<string, LocalizedGuideArticle> = {
+   'how-to-request-your-first-loan': {
+      title: 'Cómo solicitar tu primer préstamo',
+      lastUpdated: '9 jun 2026',
+      body: `Sigue estos pasos sencillos para enviar tu primera solicitud de préstamo en Moodeng Credit. También puedes ver un vídeo explicativo de este proceso aquí: https://youtube.com/shorts/fKpBC9zD6Hk?si=KoU6NRuIguzLw-Hh.
+
+Paso 1: Crea tu cuenta
+Regístrate en la plataforma de Moodeng introduciendo el nombre de usuario, el correo electrónico y la contraseña que prefieras. Haz clic en «Crear cuenta» para continuar.
+
+Paso 2: Empieza tu solicitud de préstamo
+Cuando hayas iniciado sesión, toca el botón «Solicitar un préstamo» para empezar el proceso.
+
+Paso 3: Configura tu cartera
+Las transacciones seguras en Moodeng necesitan una cartera. Por defecto, usas una Instant Wallet de Moodeng: se crea a partir de tu inicio de sesión de Moodeng, sin app aparte ni frase semilla. Si lo prefieres, puedes usar una cuenta Base en su lugar: entra en https://account.base.app y sigue las instrucciones de registro.
+
+Paso 4: Conecta tu cartera
+Vuelve a la plataforma de Moodeng y toca «Conectar cartera» para crear tu Instant Wallet, o vincula de forma segura tu cuenta Base si elegiste una, para que quede ligada a tu cuenta de Moodeng.
+
+Paso 5: Verifica tu identidad
+Para garantizar la seguridad de la comunidad, toca «Verificarme» y completa la comprobación rápida con documento y selfie («Verifica tu identidad»): lleva unos 3 minutos. ¿Ya usas World App? Puedes elegir «Verificar con World ID» en su lugar.
+
+Paso 6: Envía tu solicitud
+Toca «Explora el tablón de solicitudes» para fijar las condiciones concretas de tu préstamo. Tendrás que definir:
+- El importe del préstamo que quieres.
+- El importe y la fecha de pago.
+- Un motivo claro para tu solicitud, que ayude a generar confianza con los posibles Moo-lenders.`
+   },
+   'understanding-your-trust-score': {
+      title: 'Entender tus puntos Pandesal',
+      lastUpdated: '9 jun 2026',
+      body: `Tus puntos Pandesal reflejan lo fiable que eres al devolver préstamos en Moodeng Credit.
+
+Suben con cada pago a tiempo y bajan cuando no pagas o caes en impago. Los Moo-lenders los usan como señal rápida para decidir si financian tu solicitud.
+
+Como tus puntos Pandesal están vinculados a tu cartera, te acompañan: no están encerrados en una sola app.`
+   },
+   'how-credit-levels-work': {
+      title: 'Cómo funcionan los niveles de crédito',
+      lastUpdated: '9 jun 2026',
+      body: `Los niveles de crédito determinan cuánto puedes pedir prestado de una vez.
+
+Todos empiezan en el nivel 1 con un límite de $15. A medida que pides y devuelves por completo, tu límite crece ($15 → $20 → $40 → $60 → $80 → $100 → $120 → $140) y se desbloquean niveles nuevos.
+
+Solo avanzas completando un préstamo para generar crédito: un préstamo por tu límite actual completo, devuelto por completo y a tiempo.`
+   },
+   'trust-building-vs-credit-building-loans': {
+      title: 'Préstamos para generar confianza y préstamos para generar crédito',
+      lastUpdated: '9 jun 2026',
+      body: `Moodeng Credit admite dos tipos de préstamos:
+
+Los préstamos para generar confianza son préstamos menores que tu límite actual. Te ayudan a demostrar que devuelves con fiabilidad, pero no aumentan tu límite.
+
+Los préstamos para generar crédito son préstamos por el límite completo. Devolver uno a tiempo sube tu límite y desbloquea el siguiente nivel de crédito.
+
+La mayoría de los prestatarios usan ambos: los préstamos para generar confianza para mantener activo su historial de pagos y los préstamos para generar crédito para hacer crecer su límite con el tiempo.`
+   },
+   'how-repayments-affect-your-trust-score': {
+      title: 'Cómo afectan los pagos a tus puntos Pandesal',
+      lastUpdated: '9 jun 2026',
+      body: `Cada pago de un préstamo, ya sea para generar crédito o para generar confianza, influye directamente en tus puntos Pandesal, que son tu reputación en la plataforma. Nuestro sistema está diseñado para premiar el comportamiento constante, fiable y honesto: los préstamos pequeños devueltos con limpieza valen más para tu reputación que los préstamos grandes devueltos con descuido.
+
+Desglose de la puntuación
+
+- Pagos completos y a tiempo: completar el 100 % del pago en la fecha de vencimiento o antes da el máximo (10 puntos).
+
+- Pagos parciales: no devolver el importe completo reduce tus puntos de forma proporcional: 75 % = 7 puntos · 50 % = 5 puntos · 25 % = 3 puntos.
+
+- Pagos tardíos: cualquier pago recibido después de la fecha límite acordada da 0 puntos por esa transacción.
+
+- Impagos: los préstamos sin pagar dejan una marca permanente en tu perfil que ven todos los Moo-lenders futuros.`
+   },
+   'what-happens-when-you-repay-a-loan-on-time': {
+      title: 'Las ventajas de pagar a tiempo',
+      lastUpdated: '9 jun 2026',
+      body: `Enviar tu pago en la fecha programada o antes es la forma más eficaz de reforzar tu posición en el ecosistema de Moodeng Credit. Todos los pagos se confirman onchain; cuando se liquida la transferencia de USDC, el estado de tu préstamo se actualiza automáticamente a «Devuelto correctamente».
+
+Cuando pagas a tiempo, se aplican estas ventajas a tu perfil:
+
+- Más puntos Pandesal: tus puntos Pandesal aumentan tanto en préstamos para generar crédito como para generar confianza, reflejando tu fiabilidad ante la comunidad.
+- Progresión del límite de crédito: en los préstamos para generar crédito, tu límite de préstamo actual aumenta y desbloquea con éxito el siguiente nivel de crédito (por ejemplo, pasar de $15 → $20).
+- Historial de préstamos verificado: tu historial de pagos correctos pasa a ser visible para posibles Moo-lenders, lo que agiliza mucho la financiación de tus solicitudes futuras.
+
+Desglose de la puntuación de los pagos
+
+Tus puntos Pandesal reflejan tu fiabilidad y determinan tu éxito de financiación futuro:
+
+- Pago completo y a tiempo: da el máximo de 10 puntos.
+- Pago parcial: tus puntos se reducen de forma proporcional al importe pagado (por ejemplo, 75 % = 7 puntos; 50 % = 5 puntos).
+- Pago tardío: cualquier pago hecho después de la fecha límite da 0 puntos, sea cual sea el importe.
+- Impago: los préstamos sin pagar dejan una marca permanente en tu perfil público onchain.`
+   },
+   'repaying-your-loan': {
+      title: 'Formas de devolver tu préstamo',
+      lastUpdated: '3 jul 2026',
+      body: `Para devolver, envía el importe de USDC necesario a la dirección de pago que aparece en Moodeng (la pantalla Devolver muestra el importe exacto y te deja copiar la dirección). Puedes enviar desde una cartera, un exchange, una plataforma P2P o un servicio cripto local, lo que haya disponible en tu país.
+
+Enviar desde una cartera
+Si ya tienes USDC en alguna cartera, envía el importe del pago a la dirección que aparece en Moodeng. Asegúrate de que la red sea Base.
+
+Enviar desde un exchange
+Retira USDC de tu cuenta del exchange directamente a la dirección de pago. Elige USDC y selecciona Base como red.
+
+Comprar USDC primero y luego devolver
+Si todavía no tienes USDC, cómpralos primero y envíalos a tu cartera; después devuelve desde ahí:
+- Binance P2P: compra USDC con moneda local a otros usuarios y retíralos en la red Base.
+- Coins.ph (en pausa temporalmente): compra USDC con PHP y luego usa Enviar cripto → Cartera externa → red Base.
+- GCrypto (GCash): si las criptomonedas están activadas en tu app de GCash, compra USDC y retíralos con USDCBASE.
+- PDAX: compra USDC con PHP y retíralos a tu cartera en Base.
+- Moneybees (opción externa): un servicio extrabursátil que algunos usuarios pueden usar para comprar cripto con el proceso propio de Moneybees. Sigue sus instrucciones directamente en https://www.moneybees.ph/.
+
+El detalle clave: selecciona siempre Base como red al enviar USDC. Usar la red equivocada puede hacer que pierdas los fondos.`
+   },
+   'adding-funds-to-your-wallet': {
+      title: 'Formas de añadir USDC a tu cartera',
+      lastUpdated: '3 jul 2026',
+      body: `Tu cartera de Moodeng funciona con USDC en la red Base. Además de las opciones dentro de la app (compra con tarjeta y puente desde otra cadena), estas son formas habituales de conseguir USDC en tu cartera:
+
+Comprar en un exchange
+Compra USDC en un exchange que ya uses y retíralos a la dirección de tu cartera. Selecciona siempre USDC y la red Base al retirar.
+
+Binance P2P
+Compra USDC con moneda local directamente a otros usuarios y retíralos en la red Base.
+
+Servicios de Filipinas
+- Coins.ph (en pausa temporalmente): compra USDC con PHP y luego Enviar cripto → Cartera externa → red Base.
+- PDAX: compra USDC con PHP y retíralos a tu cartera en Base.
+- GCrypto (GCash): si las criptomonedas están activadas en tu app de GCash, compra y retira con USDCBASE.
+
+Moneybees (opción externa)
+Moneybees es un servicio externo extrabursátil que algunos usuarios pueden usar para comprar cripto con el proceso propio de Moneybees. Tendrás que seguir las instrucciones de Moneybees directamente en https://www.moneybees.ph/.
+
+Enviar desde otra cartera
+Si tienes USDC en otro sitio, envíalos a la dirección de tu cartera de Moodeng, en la red Base.
+
+El detalle clave: elige siempre Base como red. Enviar por una red equivocada puede hacer que pierdas los fondos.`
+   },
+   'withdrawing-to-your-bank': {
+      title: 'Retirar tus fondos a una cuenta bancaria',
+      lastUpdated: '3 jul 2026',
+      body: `Puedes retirar enviando tus USDC a un exchange o servicio compatible, vendiéndolos allí y transfiriendo la moneda local a tu cuenta bancaria.
+
+Vídeo explicativo: enviar USDC de tu cuenta Base a Binance: https://www.youtube.com/watch?v=Bqc2u3utbwc
+
+Opciones habituales:
+
+Binance P2P
+Envía USDC a tu cuenta de Binance (elige siempre la red Base), véndelos por Binance P2P y recibe la moneda local directamente en tu banco o monedero electrónico.
+
+PDAX
+Un exchange filipino regulado por el BSP. Deposita USDC, véndelos por PHP y retira a tu cuenta bancaria.
+
+Coins.ph (en pausa temporalmente)
+El gobierno de Filipinas ha suspendido temporalmente Coins.ph, así que los ingresos y los retiros allí no funcionan ahora mismo; lo actualizaremos en cuanto vuelva. Mientras tanto, usa PDAX o GCrypto.
+Deposita USDC, conviértelos a PHP y retira a tu banco o a GCash.
+
+GCrypto (GCash)
+Si las criptomonedas están activadas en tu app de GCash, puedes recibir cripto compatible y convertirlo dentro de GCash.
+
+Moneybees (opción externa)
+Moneybees es un servicio externo extrabursátil que algunos usuarios pueden usar para comprar o vender cripto con el proceso propio de Moneybees. Tendrás que seguir las instrucciones de Moneybees directamente en https://www.moneybees.ph/.
+
+Otra cartera u otro exchange
+Siempre puedes enviar USDC a cualquier cartera o exchange que ya uses; solo asegúrate de que admita USDC en la red Base antes de enviar.
+
+El detalle clave: selecciona siempre Base como red al depositar en un exchange. Usar la red equivocada puede hacer que pierdas los fondos.`
+   },
+   'using-usdc-on-moodeng-credit': {
+      title: 'Usar USDC en Moodeng Credit',
+      lastUpdated: '9 jun 2026',
+      body: `Todos los préstamos de Moodeng Credit están denominados en USDC: una stablecoin regulada y ligada 1:1 al dólar estadounidense.
+
+Usar USDC hace que el valor de los préstamos se mantenga constante. Un préstamo de $20 hoy sigue siendo un préstamo de $20 cuando lo devuelves, sin importar lo que haga el mercado cripto.
+
+Tu Instant Wallet (o una cuenta Base, si lo prefieres) funciona en Base, donde las transferencias de USDC no tienen gas: no pagas comisiones de red.`
+   },
+   'verification-and-why-its-required': {
+      title: 'Verificación y seguridad',
+      lastUpdated: '9 jun 2026',
+      body: `Para mantener Moodeng seguro y justo, todos los prestatarios completan una breve verificación de identidad que se hace una sola vez. Esto protege a la comunidad de cuentas falsas y duplicadas, y es lo que permite que los Moo-lenders confíen en las solicitudes que financian.
+
+¿Por qué verificarte?
+- Seguridad: garantiza que cada solicitud procede de una persona real y única, y evita el fraude.
+- Acceso: completar la verificación desbloquea las solicitudes de préstamo y empieza a darte puntos Pandesal.
+
+La forma recomendada: Verifica tu identidad
+1. Toca «Verificarme» en la app y elige «Verifica tu identidad».
+2. Ten a mano tu documento nacional de identidad físico y busca una buena iluminación uniforme.
+3. Completa la comprobación rápida con foto del documento y selfie: lleva unos 3 minutos.
+4. La mayoría de las comprobaciones terminan en unos minutos. Si la tuya necesita una revisión humana, te avisaremos en cuanto termine (normalmente en unas horas y, como mucho, en 1 día laborable).
+
+Nuestro socio de verificación seguro comprueba tu documento y Moodeng nunca lo guarda.
+
+Alternativa: verifícate con World ID
+Si ya usas World App (verificado en persona en un Orb o con un pasaporte biométrico), puedes elegir «Verificar con World ID» en su lugar y confirmarlo a través de World App.`
+   },
+   'managing-your-account-and-security-settings': {
+      title: 'Gestionar tu cuenta y los ajustes de seguridad',
+      lastUpdated: '9 jun 2026',
+      body: `Tu cuenta está vinculada a tu cartera, así que la seguridad de la cartera es la seguridad de la cuenta.
+
+Desde la pantalla Cuenta puedes actualizar tu nombre visible, gestionar tu correo electrónico, cambiar tu contraseña y cerrar sesión.`
+   }
+};
+
 export function getGuidesForLocale(locale: string): GuideArticle[] {
-   if (!['fil', 'id', 'th', 'vi'].includes(locale)) return GUIDES;
+   if (!['fil', 'id', 'th', 'vi', 'es'].includes(locale)) return GUIDES;
    const localizedGuides =
-      locale === 'fil' ? FILIPINO_GUIDES : locale === 'id' ? INDONESIAN_GUIDES : locale === 'th' ? THAI_GUIDES : VIETNAMESE_GUIDES;
+      locale === 'fil'
+         ? FILIPINO_GUIDES
+         : locale === 'id'
+           ? INDONESIAN_GUIDES
+           : locale === 'th'
+             ? THAI_GUIDES
+             : locale === 'es'
+               ? SPANISH_GUIDES
+               : VIETNAMESE_GUIDES;
 
    return GUIDES.map((guide) => ({
       ...guide,

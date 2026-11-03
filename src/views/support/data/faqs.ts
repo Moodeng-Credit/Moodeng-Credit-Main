@@ -459,10 +459,102 @@ Mỗi khoản vay bằng toàn bộ hạn mức mà bạn trả đúng hạn s�
    }
 ];
 
+const SPANISH_FAQS: FAQItem[] = [
+   {
+      id: 'what-is-moodeng-credit',
+      question: '¿Qué es Moodeng Credit?',
+      answer: `Moodeng Credit es una plataforma de préstamos que te permite solicitar préstamos a corto plazo en USDC mientras ganas puntos Pandesal vinculados a tu cartera.
+
+En lugar de centrarse en las puntuaciones de crédito tradicionales, Moodeng te ayuda a generar confianza pidiendo prestado con responsabilidad y pagando a tiempo. Con el tiempo, esa confianza te permite desbloquear niveles de crédito más altos y solicitar importes mayores.
+
+Tus puntos Pandesal no están encerrados en una sola app. Están pensados para reflejar tu fiabilidad y ayudarte a construir una reputación que puedes llevarte contigo.`
+   },
+   {
+      id: 'how-does-borrowing-work',
+      question: '¿Cómo funciona pedir prestado en Moodeng?',
+      answer: `Publicas una solicitud de préstamo en el tablón de solicitudes con el importe que quieres (hasta tu límite actual), la fecha de pago, el tipo de interés y el motivo.
+
+Los Moo-lenders consultan las solicitudes abiertas y eligen cuáles financiar. Cuando un Moo-lender te financia, los USDC se transfieren directamente a tu cartera. Se los devuelves en la fecha acordada, o antes, desde cualquier cartera que tenga USDC.`
+   },
+   {
+      id: 'what-is-a-trust-score',
+      question: '¿Qué son los puntos Pandesal y cómo se calculan?',
+      answer: `Tus puntos Pandesal son una señal de reputación que refleja lo fiable que eres al devolver préstamos.
+
+Suben con los pagos completos y a tiempo, y bajan con los pagos tardíos o los impagos. Los Moo-lenders los usan para valorar el riesgo al decidir si financian tus solicitudes.`
+   },
+   {
+      id: 'what-is-a-credit-level',
+      question: '¿Qué es un nivel de crédito?',
+      answer: `Los niveles de crédito determinan cuánto puedes pedir prestado de una vez.
+
+Empiezas en el nivel 1 con un límite de $15. Cada vez que devuelves por completo un préstamo para generar crédito, tu límite sube y desbloqueas el siguiente nivel: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, que es el máximo actual.`
+   },
+   {
+      id: 'what-is-a-base-wallet',
+      question: '¿Qué cartera usa Moodeng?',
+      answer: `Los prestatarios de Moodeng usan por defecto la Instant Wallet. Es la cartera propia de Moodeng y se crea directamente a partir de tu inicio de sesión: no hay que descargar ninguna app ni apuntar una frase semilla. Tu préstamo llega a ella y es totalmente tuya: puedes exportar su clave cuando quieras.
+
+La Instant Wallet funciona en Base, una red blockchain de capa 2 creada por Coinbase y diseñada para transacciones cripto rápidas, baratas y seguras. Moodeng usa Base por un motivo importante: las transacciones de USDC sin gas. Enviar o recibir USDC con la Instant Wallet o una cuenta Base en Base no cuesta nada en comisiones de red. Cuando recibes un préstamo, el importe completo llega a tu cartera. Cuando devuelves, el Moo-lender recupera hasta el último céntimo.
+
+¿Prefieres una cuenta Base? Puedes conectar una en su lugar. Una cuenta Base es la cartera inteligente de la app de Base, que también funciona sin contraseña y sin frase semilla: inicias sesión con el correo electrónico o con una clave de acceso y no hay ninguna frase de recuperación de 12 palabras que perder. A los Moo-lenders les recomendamos una cuenta Base. Los Moo-lenders también pueden usar una Instant Wallet o conectar otra cartera (como MetaMask); la Instant Wallet y la cuenta Base mantienen las transacciones sin gas.`
+   },
+   {
+      id: 'what-is-usdc',
+      question: '¿Qué es USDC y por qué lo usa Moodeng?',
+      answer: `USDC es una stablecoin ligada 1:1 al dólar estadounidense, emitida por Circle, una empresa financiera regulada de EE. UU. Un USDC siempre equivale a un dólar, lo que significa que los importes de los préstamos en Moodeng no fluctúan con las oscilaciones del mercado cripto: un préstamo de $20 hoy sigue valiendo $20 cuando se devuelve.
+
+Moodeng usa USDC porque resuelve problemas que tienen tanto las monedas tradicionales como otras criptomonedas. Las transferencias bancarias en dólares tardan días, exigen que ambas partes tengan la infraestructura bancaria adecuada y a menudo tienen comisiones. Las criptomonedas volátiles como Bitcoin o ETH pueden oscilar entre un 10 % y un 20 % durante la vida de un préstamo, lo que expone a ambas partes a un riesgo de cambio además del riesgo de impago. USDC no tiene ninguno de los dos problemas.
+
+USDC también se mueve a cualquier parte del mundo en segundos, lo aceptan todos los grandes exchanges (puedes convertirlo a tu moneda local en Coinbase, Binance, Kraken o en rampas locales de entrada y salida) y no tiene gas cuando se usa en Base. Funciona igual si estás en Manila, Lagos o Bombay.`
+   },
+   {
+      id: 'does-moodeng-charge-fees',
+      question: '¿Moodeng cobra comisiones?',
+      answer: `No. Moodeng Credit es gratis. No hay comisiones de plataforma por pedir prestado, ni por prestar, ni suscripciones mensuales, ni costes de alta. El 100 % de lo que financia un Moo-lender llega al prestatario y el 100 % de un pago llega al Moo-lender.
+
+Las comisiones de red (gas) también son cero cuando usas tu Instant Wallet o una cuenta Base en Base. Así que el único coste de usar Moodeng es el tipo de interés que ofrece el prestatario, y eso va íntegro al Moo-lender, no a nosotros.
+
+¿Cómo lo mantenemos gratis? No nos llevamos ninguna parte. Nuestro futuro modelo de negocio es el token IOU, que lanzaremos mediante un airdrop a los Moo-lenders activos. Hasta entonces, Moodeng no cobra ninguna comisión.`
+   },
+   {
+      id: 'fight-loan-sharks',
+      question: '¿Cómo ayuda Moodeng a combatir a los usureros?',
+      answer: `Los usureros, es decir, los prestamistas informales que cobran entre un 20 % y un 100 % de interés semanal, amenazan a los prestatarios y atrapan a la gente en ciclos de deuda, son un problema mundial. Cientos de millones de personas sin acceso o con acceso limitado a la banca no tienen otro lugar al que acudir cuando necesitan dinero urgente, y acaban pagando varias veces lo que pidieron, una y otra vez.
+
+Moodeng Credit nace como una alternativa más justa. Los tipos de interés los fija el prestatario y los Moo-lenders los aceptan (o los rechazan) en un mercado transparente, sin cargos ocultos ni trucos de interés compuesto. Los préstamos iniciales pequeños ($15–$60 en los niveles de crédito 1–4) se ajustan a lo que los prestatarios necesitan de verdad para emergencias a corto plazo, junto con un sistema de generación de crédito que aumenta tu límite a medida que demuestras fiabilidad.
+
+No hace falta garantía ni cuenta bancaria: solo una comprobación de identidad rápida (una foto del documento y un selfie, o World ID) y una cartera (la Instant Wallet de Moodeng, que se configura con tu inicio de sesión, o una cuenta Base si lo prefieres). Cualquiera con un teléfono puede acceder a préstamos. Y tu reputación te acompaña (vinculada a tu cartera y a tu identidad verificada), así que construyes un historial de crédito genuino en el que confían los Moo-lenders, en lugar de quedarte atrapado en un ciclo.
+
+No pretendemos sustituir a los bancos para todo el mundo. Pero para quienes hoy recurren a los usureros porque no tienen otra opción, Moodeng aspira a ser un camino más seguro, más justo y más digno.`
+   },
+   {
+      id: 'what-is-credit-building-loan',
+      question: '¿Qué es un préstamo para generar crédito?',
+      answer: `Un préstamo para generar crédito es un préstamo que pides específicamente para aumentar tu límite de crédito en Moodeng. Para que cuente como tal, el préstamo tiene que ser por el límite completo de tu nivel de crédito actual, no por menos.
+
+Así funciona. Empiezas en el nivel de crédito 1 con un límite de $15. Pide los $15 completos y devuélvelos a tiempo, y tu límite sube a $20. La próxima vez pide esos $20 completos y devuélvelos: desbloqueas $40. Después $60. La progresión continúa en los niveles más altos.
+
+Los préstamos menores que tu límite completo se llaman préstamos para generar confianza. También ayudan (aumentan tu historial de pagos y tu reputación ante los Moo-lenders), pero no suben tu nivel de crédito. Así que, si tu objetivo es generar crédito y desbloquear préstamos mayores, lo que te interesa es pedir y devolver préstamos para generar crédito por el límite completo.
+
+A diferencia de una tarjeta de crédito bancaria o de un producto tradicional para construir crédito, el crédito de Moodeng no se comunica a ninguna agencia de crédito. Se registra onchain, vinculado a tu cartera y a tu identidad verificada, y es portátil a cualquier plataforma que se integre con el sistema.`
+   },
+   {
+      id: 'small-loan',
+      question: '¿Puedo conseguir un préstamo pequeño con Moodeng?',
+      answer: `Sí: los préstamos pequeños son justo para lo que está pensado Moodeng. Los prestatarios nuevos empiezan con un límite de $15 y la plataforma se diseñó para préstamos de corta duración y poco importe: dinero para emergencias, para cubrir el desfase antes del día de cobro, gastos puntuales.
+
+No hay importes mínimos de préstamo, ni suscripciones mensuales, ni costes de alta, ni comisiones. Solicitas lo que necesitas (hasta el límite de tu nivel de crédito actual), fijas la fecha de pago y el tipo de interés, y los Moo-lenders deciden si te financian.
+
+Cada préstamo por el límite completo que devuelves a tiempo sube tu límite un escalón: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, que es el máximo actual. Así puedes empezar con poco para probar la plataforma con poco riesgo, construir tu reputación y pasar a préstamos mayores solo cuando estés listo.`
+   }
+];
+
 export function getFaqsForLocale(locale: string): FAQItem[] {
    if (locale === 'fil') return FILIPINO_FAQS;
    if (locale === 'id') return INDONESIAN_FAQS;
    if (locale === 'th') return THAI_FAQS;
    if (locale === 'vi') return VIETNAMESE_FAQS;
+   if (locale === 'es') return SPANISH_FAQS;
    return FAQS;
 }

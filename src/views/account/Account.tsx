@@ -213,6 +213,33 @@ const ACCOUNT_COPY: Record<
       cancel: 'Hủy',
       settingsAria: 'Đi tới Cài đặt tài khoản',
       helpLabel: 'Trợ giúp'
+   },
+   es: {
+      accountInformation: 'Información de la cuenta',
+      accountItems: {
+         settings: 'Ajustes de la cuenta',
+         loanHistory: 'Ver el historial de transacciones del préstamo'
+      },
+      contactItems: {
+         community: 'Únete a nuestra comunidad',
+         help: 'Obtener ayuda',
+         contact: 'Contáctanos'
+      },
+      getInTouch: 'Ponte en contacto',
+      commonQuestions: 'Preguntas frecuentes',
+      viewMore: 'Ver más',
+      creditGuide: 'Mira nuestra guía de niveles de crédito',
+      verified: 'Verificado',
+      notVerified: 'Sin verificar',
+      connectWallet: 'Conectar cartera',
+      addBaseWallet: 'Configurar cartera',
+      signOut: 'Cerrar sesión',
+      signOutTitle: '¿Cerrar sesión?',
+      signOutBody: 'Puedes volver a iniciar sesión cuando quieras. Tus puntos Pandesal se quedan con tu cartera.',
+      signingOut: 'Cerrando sesión...',
+      cancel: 'Cancelar',
+      settingsAria: 'Ir a los ajustes de la cuenta',
+      helpLabel: 'Ayuda'
    }
 };
 

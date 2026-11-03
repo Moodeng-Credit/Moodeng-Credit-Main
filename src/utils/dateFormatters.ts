@@ -47,6 +47,7 @@ export const getDateFormatterLocale = (locale: LocaleCode) => {
    if (locale === 'id') return 'id-ID';
    if (locale === 'th') return 'th-TH-u-ca-gregory';
    if (locale === 'vi') return 'vi-VN';
+   if (locale === 'es') return 'es-ES';
    return 'en-US';
 };
 

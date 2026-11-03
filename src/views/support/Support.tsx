@@ -197,6 +197,40 @@ const SUPPORT_COPY: Record<
             badge: 'MỚI'
          }
       ]
+   },
+   es: {
+      greeting: (name) => `Hola, ${name}`,
+      title: 'Centro de ayuda y soporte',
+      subtitle: '¿Necesitas ayuda para empezar? Consulta los artículos de ayuda o escríbenos si necesitas soporte.',
+      communityTitle: 'Únete a la comunidad',
+      communityDescription: 'Conecta con otros prestatarios, comparte tus opiniones y mantente al día con Moodeng Credit.',
+      cards: [
+         {
+            label: 'Primeros pasos',
+            description: '¿Nuevo en Moodeng Credit? Aprende lo básico y solicita tu primer préstamo.',
+            icon: 'play-outline.svg',
+            path: '/support/getting-started'
+         },
+         {
+            label: 'Guías',
+            description: 'Guías paso a paso sobre los puntos Pandesal, el nivel de crédito y los pagos.',
+            icon: 'guide.png',
+            path: '/support/guides'
+         },
+         {
+            label: 'Preguntas frecuentes',
+            description: 'Respuestas claras sobre préstamos, confianza, verificación y pagos.',
+            icon: 'question_light.svg',
+            path: '/help'
+         },
+         {
+            label: 'Novedades',
+            description: 'Novedades del producto, cambios y anuncios importantes.',
+            icon: 'updates.png',
+            path: '/support/updates',
+            badge: 'NUEVO'
+         }
+      ]
    }
 };
 

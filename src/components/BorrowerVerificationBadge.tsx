@@ -27,6 +27,13 @@ const BADGE_COPY = {
       pending: 'Menunggu',
       review: 'Sedang ditinjau',
       unfinished: 'Belum selesai'
+   },
+   es: {
+      verified: 'Prestatario verificado',
+      notVerified: 'Sin verificar',
+      pending: 'Pendiente',
+      review: 'En revisión',
+      unfinished: 'Sin terminar'
    }
 } as const;
 

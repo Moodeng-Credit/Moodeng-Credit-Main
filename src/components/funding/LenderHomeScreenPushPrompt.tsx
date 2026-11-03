@@ -38,6 +38,12 @@ const PROMPT_COPY: Record<LocaleCode, { title: string; heading: string; body: st
       heading: 'Bật thông báo',
       body: 'Nhận thông báo ngay khi người vay trả nợ cho bạn.',
       turnOn: 'Bật'
+   },
+   es: {
+      title: '¡Ya estás en la pantalla de inicio!',
+      heading: 'Activa las notificaciones',
+      body: 'Recibe un aviso en el momento en que un prestatario te devuelva el dinero.',
+      turnOn: 'Activar'
    }
 };
 

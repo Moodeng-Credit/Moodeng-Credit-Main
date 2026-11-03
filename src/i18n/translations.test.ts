@@ -18,6 +18,8 @@ describe('localization translations', () => {
       expect(resolveLocaleCode('thai')).toBe('th');
       expect(resolveLocaleCode('vi-VN')).toBe('vi');
       expect(resolveLocaleCode('vietnamese')).toBe('vi');
+      expect(resolveLocaleCode('es-ES')).toBe('es');
+      expect(resolveLocaleCode('spanish')).toBe('es');
       expect(resolveLocaleCode('fr-FR')).toBeNull();
    });
 
@@ -61,11 +63,17 @@ describe('localization translations', () => {
       expect(Object.keys(translations.vi).sort()).toEqual(Object.keys(translations.en).sort());
    });
 
+   it('keeps Spanish translations aligned with English keys', () => {
+      expect(Object.keys(translations.es).sort()).toEqual(Object.keys(translations.en).sort());
+   });
+
    it('interpolates translated parameters', () => {
       expect(translate('fil', 'points.total', { points: '12.5' })).toBe('IOU 12.5');
       expect(translate('id', 'auth.signIn')).toBe('Masuk');
       expect(translate('th', 'auth.signIn')).toBe('เข้าสู่ระบบ');
       expect(translate('vi', 'auth.signIn')).toBe('Đăng nhập');
+      expect(translate('es', 'auth.signIn')).toBe('Iniciar sesión');
+      expect(translate('es', 'points.total', { points: '12.5' })).toBe('IOU 12.5');
    });
 
    it('keeps canonical screen titles in the correct language records', () => {
@@ -83,6 +91,8 @@ describe('localization translations', () => {
       expect(screenTranslationsByLocale.id['Need short-term support?']).toBe('Butuh dana jangka pendek?');
       expect(screenTranslationsByLocale.th['Transaction History']).toBe('ประวัติธุรกรรม');
       expect(screenTranslationsByLocale.vi['Need short-term support?']).toBe('Cần hỗ trợ ngắn hạn?');
+      expect(screenTranslationsByLocale.es['Need short-term support?']).toBe('¿Necesitas ayuda a corto plazo?');
+      expect(screenTranslationsByLocale.es['Transaction History']).toBe('Historial de transacciones');
    });
 
    it('localizes support guide cards and detail body copy', () => {
@@ -96,6 +106,8 @@ describe('localization translations', () => {
       expect(getGuideForLocale('how-credit-levels-work', 'th')?.body).toContain('ระดับเครดิตกำหนด');
       expect(getGuidesForLocale('vi').map((guide) => guide.title)).toContain('Hạng tín dụng hoạt động như thế nào');
       expect(getGuideForLocale('how-credit-levels-work', 'vi')?.body).toContain('Hạng tín dụng xác định');
+      expect(getGuidesForLocale('es').map((guide) => guide.title)).toContain('Cómo funcionan los niveles de crédito');
+      expect(getGuideForLocale('how-credit-levels-work', 'es')?.body).toContain('Los niveles de crédito determinan');
    });
 
    it('localizes account and support FAQ records', () => {
@@ -111,5 +123,11 @@ describe('localization translations', () => {
       expect(getFaqsForLocale('th').map((faq) => faq.question)).toContain('Moodeng Credit คืออะไร?');
       expect(getAccountFaqsForLocale('vi', false).map((faq) => faq.question)).toContain('Tôi trả khoản vay bằng cách nào?');
       expect(getFaqsForLocale('vi').map((faq) => faq.question)).toContain('Moodeng Credit là gì?');
+      expect(getFaqsForLocale('es').map((faq) => faq.question)).toContain('¿Qué es Moodeng Credit?');
+      expect(getFaqsForLocale('es').find((faq) => faq.id === 'does-moodeng-charge-fees')?.answer).toContain('Moodeng Credit es gratis');
+      expect(getAccountFaqsForLocale('es', false).map((faq) => faq.question)).toContain('¿Cómo devuelvo mi préstamo?');
+      expect(getAccountFaqsForLocale('es', true).some((faq) => faq.id === 'how-to-get-verified')).toBe(false);
+      expect(getAccountFaqsForLocale('es', false).length).toBe(getAccountFaqsForLocale('en', false).length);
+      expect(getFaqsForLocale('es').length).toBe(getFaqsForLocale('en').length);
    });
 });

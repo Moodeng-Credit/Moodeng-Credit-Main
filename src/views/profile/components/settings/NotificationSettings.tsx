@@ -54,6 +54,16 @@ const PUSH_COPY: Record<LocaleCode, PushCopy> = {
       working: 'Memproses…',
       blocked: 'Notifikasi diblokir di pengaturan browser. Izinkan dulu di sana, lalu kembali ke sini.',
       unsupported: 'Browser ini tidak mendukung notifikasi push. Coba Chrome, atau tambahkan Moodeng ke layar utama.'
+   },
+   es: {
+      label: 'Notificaciones push en este dispositivo',
+      description:
+         'Recibe una notificación en el momento en que venza un pago, o cuando un prestatario que ya te devolvió el dinero te pida otro préstamo. Solo se aplica a este dispositivo.',
+      enable: 'Activar',
+      disable: 'Desactivar',
+      working: 'Procesando…',
+      blocked: 'Las notificaciones están bloqueadas en los ajustes de tu navegador. Permítelas allí y vuelve.',
+      unsupported: 'Este navegador no puede mostrar notificaciones push. Prueba con Chrome o añade Moodeng a tu pantalla de inicio.'
    }
 };
 
@@ -118,6 +128,27 @@ const NOTIFICATION_SETTINGS_COPY: Record<LocaleCode, { title: string; body: stri
             id: 'moodeng-blogs',
             label: 'Blog Moodeng',
             description: 'Dapatkan update tentang berita, pembaruan, dan blog terbaru kami.'
+         }
+      ]
+   },
+   es: {
+      title: 'Notificaciones',
+      body: 'Recibe avisos de la actividad de tu cuenta. Las notificaciones se enviarán al correo electrónico que nos has facilitado.',
+      options: [
+         {
+            id: 'account-activity',
+            label: 'Actividad de la cuenta',
+            description: 'Recibe avisos importantes sobre ti o sobre la actividad que te hayas perdido'
+         },
+         {
+            id: 'transaction-activity',
+            label: 'Actividad de transacciones',
+            description: 'Recibe avisos importantes sobre tus transacciones'
+         },
+         {
+            id: 'moodeng-blogs',
+            label: 'Blogs de Moodeng',
+            description: 'Mantente al día con nuestras últimas noticias, novedades y blogs'
          }
       ]
    }

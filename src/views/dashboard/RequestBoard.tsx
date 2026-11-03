@@ -90,7 +90,7 @@ import SuccessModal from '@/views/dashboard/components/SuccessModal';
 import UserCard from '@/views/dashboard/components/UserCard';
 import FundWalletSheet from '@/views/fund/FundWalletSheet';
 import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
-import { FAQS } from '@/views/support/data/faqs';
+import { getFaqsForLocale } from '@/views/support/data/faqs';
 
 // Temporarily hides the lender "IMPORTANT NOTE" fee banner on the request board.
 // Flip to `true` to restore it (see the banner block below, gated on this flag).
@@ -110,7 +110,6 @@ const GUEST_REQUEST_BOARD_TOUR_STEP_COUNT = 8;
 const DASHBOARD_TOUR_STEP_COUNT = 3;
 const TOUR_STEP_EXTRA_DURATION_MS = 3500;
 const REQUEST_BOARD_COMPLETION_HIGHLIGHT_MS = 5000;
-const PUBLIC_COMMON_QUESTIONS = FAQS;
 
 const getDefaultRequestFilters = (): LoanFilters => ({
    amount: '',
@@ -2700,6 +2699,7 @@ function PublicQuestionsMenu({
    // Answers are clamped to 3 lines by default; tapping a question expands the full
    // text. Previously the clamp produced a dead "…" with no way to read the rest.
    const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
+   const { locale } = useLocalization();
 
    if (!isOpen) return null;
 
@@ -2727,7 +2727,7 @@ function PublicQuestionsMenu({
             className="max-h-[56vh] overflow-y-auto overscroll-contain flex flex-col divide-y divide-md-neutral-400 rounded-md-lg border border-md-neutral-400 bg-md-neutral-100"
             data-tour-target="request-common-questions-panel"
          >
-            {PUBLIC_COMMON_QUESTIONS.map((item) => {
+            {getFaqsForLocale(locale).map((item) => {
                const isExpanded = expandedQuestion === item.question;
                return (
                   <button
