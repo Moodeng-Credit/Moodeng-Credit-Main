@@ -254,7 +254,7 @@ serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
    if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405);
 
-   let body: { loanId?: string; hash?: string; method?: string; action?: string };
+   let body: { loanId?: string; hash?: string; method?: string; action?: string; onBehalfOf?: string };
    try {
       body = await req.json();
    } catch {
@@ -283,12 +283,36 @@ serve(async (req) => {
    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-   const callerClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
-   const { data: userData, error: userError } = await callerClient.auth.getUser();
-   if (userError || !userData?.user) {
-      return jsonResponse({ error: 'Not authenticated' }, 401);
+   // Admin replay: the team finishes a repayment the borrower's app never got to record (e.g. Base Pay
+   // status checks were down). Needs X-Admin-Token = ADMIN_API_TOKEN (fail-closed) and only works for
+   // `repay` as the loan's own borrower; the payment is still verified on-chain exactly as below, so it
+   // can only record money that really reached the lender.
+   const presentedAdminToken = (req.headers.get('X-Admin-Token') ?? '').trim();
+   const adminApiToken = (Deno.env.get('ADMIN_API_TOKEN') ?? '').trim();
+   let callerId: string;
+   if (presentedAdminToken) {
+      if (!adminApiToken || presentedAdminToken !== adminApiToken) return jsonResponse({ error: 'unauthorized' }, 401);
+      const onBehalfOf = typeof body.onBehalfOf === 'string' ? body.onBehalfOf : '';
+      if (action !== 'repay' || !/^[0-9a-f-]{36}$/i.test(onBehalfOf)) {
+         return jsonResponse({ error: 'Admin replay needs action "repay" and onBehalfOf (the borrower id)' }, 400);
+      }
+      const { data: replayLoan } = await createClient(supabaseUrl, serviceRoleKey)
+         .from('loans')
+         .select('borrower_user_id')
+         .eq('id', loanId)
+         .maybeSingle();
+      if (!replayLoan || replayLoan.borrower_user_id !== onBehalfOf) {
+         return jsonResponse({ error: 'onBehalfOf is not this loan\'s borrower' }, 403);
+      }
+      callerId = onBehalfOf;
+   } else {
+      const callerClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
+      const { data: userData, error: userError } = await callerClient.auth.getUser();
+      if (userError || !userData?.user) {
+         return jsonResponse({ error: 'Not authenticated' }, 401);
+      }
+      callerId = userData.user.id;
    }
-   const callerId = userData.user.id;
 
    const admin = createClient(supabaseUrl, serviceRoleKey);
 
