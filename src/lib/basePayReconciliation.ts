@@ -1,3 +1,5 @@
+import type { PaymentStatus } from '@base-org/account';
+
 import { getBasePaymentStatus } from '@/lib/basePay';
 
 /**
@@ -47,6 +49,8 @@ export type PendingBasePaymentInput = (
 export type PendingBasePayment = PendingBasePaymentInput & { createdAt: number; failedSince?: number };
 
 const FAILED_CONFIRM_MS = 10 * 60 * 1000;
+// After this, a Base entry the status endpoints can't confirm is handed to the server to verify.
+const SERVER_VERIFY_AGE_MS = 20 * 60 * 1000;
 
 /** True while a payment for this loan is approved but not yet recorded: don't let them pay again. */
 export function hasPendingPaymentForLoan(loanId: string | null | undefined): boolean {
@@ -163,15 +167,17 @@ export async function reconcilePendingBasePayments(
       // on-chain itself, keeps returning retry-later until it settles, and the entry expires at
       // MAX_ENTRY_AGE_MS if the tx never lands.
       if (method === 'base') {
-         let status;
+         let status: PaymentStatus | null;
          try {
             status = await getBasePaymentStatus(entry.id);
          } catch {
-            // Transient — leave it for the next pass.
-            continue;
+            // No status endpoint answered. Past the bundlers' short memory, let the server verify it
+            // instead (it also searches the recipient's USDC history); it says retry-later if unsettled.
+            if (age >= SERVER_VERIFY_AGE_MS) status = null;
+            else continue;
          }
 
-         if (status.status === 'failed') {
+         if (status && status.status === 'failed') {
             // Base Pay can briefly report `failed` for a payment that then settles: only drop the
             // entry once it has stayed failed for a while (the money never moved, nothing to write).
             if (!entry.failedSince) {
@@ -181,10 +187,12 @@ export async function reconcilePendingBasePayments(
             }
             continue;
          }
-         if (status.status !== 'completed') {
-            continue; // pending / not_found — try again later.
+         if (status && status.status !== 'completed') {
+            // pending / not_found. Bundlers forget a userOp after ~30 minutes, so an older one that
+            // still reads not_found goes to the server, which can find it in the recipient's history.
+            if (age < SERVER_VERIFY_AGE_MS) continue;
          }
-         payerWallet = status.sender;
+         if (status?.status === 'completed') payerWallet = status.sender;
       }
 
       try {

@@ -157,3 +157,14 @@ describe('payment status endpoint', () => {
       );
    });
 });
+
+describe('payment status fallback', () => {
+   it("falls back to the SDK's Coinbase endpoint when Alchemy has no answer", async () => {
+      mockGetStatus
+         .mockResolvedValueOnce({ status: 'not_found', id: '0xop', message: 'not found' } as never)
+         .mockResolvedValueOnce({ status: 'completed', id: '0xop', sender: '0xs', amount: '1', recipient: '0xr' } as never);
+
+      await expect(waitForBasePayment('0xop', FAST)).resolves.toMatchObject({ sender: '0xs' });
+      expect(mockGetStatus.mock.calls[1][0]).not.toHaveProperty('bundlerUrl');
+   });
+});

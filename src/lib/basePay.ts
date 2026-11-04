@@ -19,15 +19,30 @@ import { ERROR_CODES, type ErrorCode } from '@/types/errorCodes';
 const USE_TESTNET = import.meta.env.VITE_BASE_PAY_TESTNET === 'true';
 
 // Where getPaymentStatus asks "did this payment land?". The SDK's built-in default is a Coinbase
-// developer key that Coinbase now refuses (401 "request denied", Nov 2026), so every Base Pay
+// developer key that Coinbase started refusing (401 "request denied", Nov 2026), so every Base Pay
 // payment polled forever, never recorded, and the borrower was told "still confirming, don't pay
-// again". Alchemy's Base endpoint answers the same eth_getUserOperationReceipt call. Testnet keeps
-// the SDK default.
+// again". We ask Alchemy's Base endpoint first (same eth_getUserOperationReceipt call) and still
+// fall back to the SDK's Coinbase default, so either one answering is enough. Testnet keeps the
+// SDK default only.
 export const BASE_PAY_STATUS_URL: string | undefined = USE_TESTNET ? undefined : BASE_ALCHEMY_RPC_URL;
 
-/** getPaymentStatus through our own endpoint (see {@link BASE_PAY_STATUS_URL}). */
-export const getBasePaymentStatus = (id: string) =>
-   getPaymentStatus({ id, testnet: USE_TESTNET, ...(BASE_PAY_STATUS_URL ? { bundlerUrl: BASE_PAY_STATUS_URL } : {}) });
+/** getPaymentStatus through Alchemy, then the SDK's own Coinbase endpoint if Alchemy has no answer. */
+export async function getBasePaymentStatus(id: string): Promise<PaymentStatus> {
+   if (!BASE_PAY_STATUS_URL) return getPaymentStatus({ id, testnet: USE_TESTNET });
+   let primary: PaymentStatus | null = null;
+   try {
+      primary = await getPaymentStatus({ id, testnet: USE_TESTNET, bundlerUrl: BASE_PAY_STATUS_URL });
+      if (primary.status === 'completed' || primary.status === 'failed') return primary;
+   } catch {
+      // Alchemy unreachable: the Coinbase default below may still answer.
+   }
+   try {
+      return await getPaymentStatus({ id, testnet: USE_TESTNET });
+   } catch (err) {
+      if (primary) return primary;
+      throw err;
+   }
+}
 
 // pay() resolves the moment the user approves; the userOp still has to land on-chain, so we
 // poll getPaymentStatus to confirmation. These bound that poll.

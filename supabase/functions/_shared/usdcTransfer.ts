@@ -4,12 +4,18 @@ export const USDC_ADDRESS = (Deno.env.get('BASE_USDC_ADDRESS') || '0x833589fCD6e
 export const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 export const ALCHEMY_ID = Deno.env.get('ALCHEMY_ID') ?? '';
 export const RPC_URL = ALCHEMY_ID ? `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_ID}` : 'https://mainnet.base.org';
-// Base Pay userOperation lookups (eth_getUserOperationReceipt). The Coinbase developer key that
-// @base-org/account ships now returns 401 "request denied" (Nov 2026), which left every Base Pay
-// repayment unverifiable. Alchemy's Base endpoint serves the same call; it falls back to the
-// public Base Alchemy key the web app uses when no ALCHEMY_ID secret is set.
+// Base Pay userOperation lookups (eth_getUserOperationReceipt), tried in order until one answers.
+// The Coinbase developer key that @base-org/account ships started returning 401 "request denied"
+// (Nov 2026), which left every Base Pay repayment unverifiable. Alchemy's Base endpoint serves the
+// same call (it only remembers the last ~30 minutes); our own Coinbase CDP key (CDP_BUNDLER_URL,
+// optional) and the SDK's old shared key stay as fallbacks in case either works.
 const DEFAULT_BASE_ALCHEMY_ID = 'E5yDrf19k4QC9THtY7xec';
-export const BUNDLER_URL = `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_ID || DEFAULT_BASE_ALCHEMY_ID}`;
+export const ALCHEMY_BASE_URL = `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_ID || DEFAULT_BASE_ALCHEMY_ID}`;
+const COINBASE_SDK_BUNDLER_URL = 'https://api.developer.coinbase.com/rpc/v1/base/S-fOd2n2Oi4fl4e1Crm83XeDXZ7tkg8O';
+export const BUNDLER_URLS = [ALCHEMY_BASE_URL, Deno.env.get('CDP_BUNDLER_URL')?.trim(), COINBASE_SDK_BUNDLER_URL].filter(
+   (url): url is string => !!url
+);
+export const BUNDLER_URL = BUNDLER_URLS[0];
 
 export const topicToAddress = (topic: string) => `0x${topic.slice(-40)}`.toLowerCase();
 export const hexToBigInt = (hex: string) => (hex && hex !== '0x' ? BigInt(hex) : 0n);
@@ -83,13 +89,68 @@ export interface VerifiedTransfer {
    spendHashes: string[];
 }
 
+interface UserOpReceipt {
+   success: boolean;
+   sender: string;
+   receipt: { logs?: RawLog[]; blockNumber?: string; transactionHash?: string };
+}
+
+// Ask each bundler endpoint in turn; the first non-null receipt wins. A refusing endpoint is skipped.
+const getUserOpReceipt = async (hash: string): Promise<UserOpReceipt | null> => {
+   for (const url of BUNDLER_URLS) {
+      try {
+         const result = await rpcCall(url, 'eth_getUserOperationReceipt', [hash]);
+         if (result) return result as UserOpReceipt;
+      } catch {
+         // 401 / rate limit / outage on this endpoint: try the next one.
+      }
+   }
+   return null;
+};
+
+// Bundlers only remember recent userOps (Alchemy: ~30 minutes), so a payment finished hours later
+// (the reconciler, a support replay) is found through the recipient's USDC history instead: each
+// recent incoming transfer's transaction is checked for this userOp's UserOperationEvent.
+const RECIPIENT_LOOKBACK_BLOCKS = 3 * 43_200; // ~3 days of 2s Base blocks
+const findUserOpViaRecipient = async (hash: string, recipient: string): Promise<UserOpReceipt | null> => {
+   const target = hash.toLowerCase();
+   const head = Number(await rpcCall(ALCHEMY_BASE_URL, 'eth_blockNumber', []));
+   const history = await rpcCall(ALCHEMY_BASE_URL, 'alchemy_getAssetTransfers', [
+      {
+         fromBlock: `0x${Math.max(0, head - RECIPIENT_LOOKBACK_BLOCKS).toString(16)}`,
+         toAddress: recipient,
+         contractAddresses: [USDC_ADDRESS],
+         category: ['erc20'],
+         order: 'desc',
+         maxCount: '0x32'
+      }
+   ]);
+   const txHashes = [...new Set(((history?.transfers ?? []) as { hash: string }[]).map((t) => t.hash))].slice(0, 25);
+   for (const txHash of txHashes) {
+      const receipt = await rpcCall(ALCHEMY_BASE_URL, 'eth_getTransactionReceipt', [txHash]);
+      const event = ((receipt?.logs ?? []) as RawLog[]).find(
+         (log) => (log.topics ?? [])[0]?.toLowerCase() === USER_OPERATION_EVENT_TOPIC && (log.topics ?? [])[1]?.toLowerCase() === target
+      );
+      if (!event) continue;
+      // UserOperationEvent data: nonce, success, actualGasCost, actualGasUsed (32 bytes each).
+      const data = (event.data ?? '0x').slice(2);
+      return {
+         success: hexToBigInt(`0x${data.slice(64, 128)}`) === 1n,
+         sender: topicToAddress((event.topics as string[])[2]),
+         receipt: { logs: receipt.logs, blockNumber: receipt.blockNumber, transactionHash: receipt.transactionHash }
+      };
+   }
+   return null;
+};
+
 // Confirms `hash` on-chain and returns the USDC transfer it produced. Throws
 // PaymentNotConfirmedError if it's simply not landed yet (caller should retry), or a plain
 // Error for anything short of "money definitely moved to someone" (failed tx, wrong token, no
 // USDC transfer in the receipt at all).
-export const verifyPayment = async (method: 'wallet' | 'base', hash: string): Promise<VerifiedTransfer> => {
+// `expectedRecipient` (optional) lets a Base payment older than the bundlers' memory still verify.
+export const verifyPayment = async (method: 'wallet' | 'base', hash: string, expectedRecipient?: string | null): Promise<VerifiedTransfer> => {
    if (method === 'base') {
-      const result = await rpcCall(BUNDLER_URL, 'eth_getUserOperationReceipt', [hash]);
+      const result = (await getUserOpReceipt(hash)) ?? (expectedRecipient ? await findUserOpViaRecipient(hash, expectedRecipient.toLowerCase()) : null);
       if (!result) throw new PaymentNotConfirmedError();
       if (!result.success) throw new Error('Payment failed on-chain');
       const transfers = decodeUsdcTransfers(result.receipt?.logs);

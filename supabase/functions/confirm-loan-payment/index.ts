@@ -409,7 +409,7 @@ serve(async (req) => {
 
    let transfer: VerifiedTransfer;
    try {
-      transfer = await verifyPayment(method, hash);
+      transfer = await verifyPayment(method, hash, expectedRecipient);
    } catch (err) {
       if (err instanceof PaymentNotConfirmedError) {
          return jsonResponse({ error: err.message, retry: true }, 202);
