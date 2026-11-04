@@ -31,8 +31,8 @@ const LENDER_POINTS_PER_USDC = 1n
 // Same RPC setup as confirm-loan-payment: Alchemy when the secret is set, public fallback.
 const ALCHEMY_ID = Deno.env.get('ALCHEMY_ID') ?? ''
 const RPC_URL = ALCHEMY_ID ? `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_ID}` : 'https://mainnet.base.org'
-// Base Pay userOp lookups go through Alchemy: the Coinbase key @base-org/account ships now returns 401.
-const BUNDLER_URL = `https://base-mainnet.g.alchemy.com/v2/${(Deno.env.get('ALCHEMY_ID') ?? '') || 'E5yDrf19k4QC9THtY7xec'}`
+// Coinbase's current Base Pay status endpoint (the old developer key returns 401 since Oct 2026).
+const BUNDLER_URL = 'https://chain-proxy.wallet.coinbase.com?targetName=base'
 // Real mode switch: the deployed LoanManager address (see contracts/DEPLOYMENTS.md). Unset = mock.
 const LOAN_MANAGER_ADDRESS = (Deno.env.get('LOAN_MANAGER_ADDRESS') ?? '').trim().toLowerCase()
 const MOCK_MODE = Deno.env.get('LOAN_NOTES_MOCK_MODE') === 'true'

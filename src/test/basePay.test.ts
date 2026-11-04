@@ -143,7 +143,7 @@ describe('classifyBasePayThrow', () => {
 });
 
 describe('payment status endpoint', () => {
-   it("checks status through our Alchemy endpoint, not the SDK's revoked Coinbase default", async () => {
+   it("checks status through Coinbase's current endpoint, not the SDK's revoked default", async () => {
       mockGetStatus.mockResolvedValue({ status: 'completed', id: '0xop', sender: '0xs', amount: '1', recipient: '0xr' } as never);
 
       await waitForBasePayment('0xop', FAST);
@@ -152,19 +152,19 @@ describe('payment status endpoint', () => {
          expect.objectContaining({
             id: '0xop',
             testnet: false,
-            bundlerUrl: expect.stringMatching(/^https:\/\/base-mainnet\.g\.alchemy\.com\/v2\/.+/)
+            bundlerUrl: 'https://chain-proxy.wallet.coinbase.com?targetName=base'
          })
       );
    });
 });
 
 describe('payment status fallback', () => {
-   it("falls back to the SDK's Coinbase endpoint when Alchemy has no answer", async () => {
+   it('falls back to Alchemy when Coinbase has no answer', async () => {
       mockGetStatus
          .mockResolvedValueOnce({ status: 'not_found', id: '0xop', message: 'not found' } as never)
          .mockResolvedValueOnce({ status: 'completed', id: '0xop', sender: '0xs', amount: '1', recipient: '0xr' } as never);
 
       await expect(waitForBasePayment('0xop', FAST)).resolves.toMatchObject({ sender: '0xs' });
-      expect(mockGetStatus.mock.calls[1][0]).not.toHaveProperty('bundlerUrl');
+      expect(mockGetStatus.mock.calls[1][0]).toMatchObject({ bundlerUrl: expect.stringMatching(/alchemy\.com/) });
    });
 });

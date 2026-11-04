@@ -5,14 +5,15 @@ export const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11
 export const ALCHEMY_ID = Deno.env.get('ALCHEMY_ID') ?? '';
 export const RPC_URL = ALCHEMY_ID ? `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_ID}` : 'https://mainnet.base.org';
 // Base Pay userOperation lookups (eth_getUserOperationReceipt), tried in order until one answers.
-// The Coinbase developer key that @base-org/account ships started returning 401 "request denied"
-// (Nov 2026), which left every Base Pay repayment unverifiable. Alchemy's Base endpoint serves the
-// same call (it only remembers the last ~30 minutes); our own Coinbase CDP key (CDP_BUNDLER_URL,
-// optional) and the SDK's old shared key stay as fallbacks in case either works.
+// Coinbase moved Base Pay status checks to chain-proxy.wallet.coinbase.com (SDK 2.6.0, Oct 29 2026)
+// and shut off the developer key older SDKs, and this file, used (401 "request denied"), which left
+// every Base Pay repayment unverifiable. Coinbase's new endpoint remembers old userOps; Alchemy's
+// Base endpoint serves the same call for recent ones (~30 minutes). CDP_BUNDLER_URL (optional) is
+// our own Coinbase CDP endpoint if one is ever added.
 const DEFAULT_BASE_ALCHEMY_ID = 'E5yDrf19k4QC9THtY7xec';
 export const ALCHEMY_BASE_URL = `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_ID || DEFAULT_BASE_ALCHEMY_ID}`;
-const COINBASE_SDK_BUNDLER_URL = 'https://api.developer.coinbase.com/rpc/v1/base/S-fOd2n2Oi4fl4e1Crm83XeDXZ7tkg8O';
-export const BUNDLER_URLS = [ALCHEMY_BASE_URL, Deno.env.get('CDP_BUNDLER_URL')?.trim(), COINBASE_SDK_BUNDLER_URL].filter(
+const COINBASE_STATUS_URL = 'https://chain-proxy.wallet.coinbase.com?targetName=base';
+export const BUNDLER_URLS = [COINBASE_STATUS_URL, Deno.env.get('CDP_BUNDLER_URL')?.trim(), ALCHEMY_BASE_URL].filter(
    (url): url is string => !!url
 );
 export const BUNDLER_URL = BUNDLER_URLS[0];
