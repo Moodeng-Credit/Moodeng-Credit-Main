@@ -141,3 +141,19 @@ describe('classifyBasePayThrow', () => {
       expect(classifyBasePayThrow(new Error('some opaque SDK error')).kind).toBe('unknown');
    });
 });
+
+describe('payment status endpoint', () => {
+   it("checks status through our Alchemy endpoint, not the SDK's revoked Coinbase default", async () => {
+      mockGetStatus.mockResolvedValue({ status: 'completed', id: '0xop', sender: '0xs', amount: '1', recipient: '0xr' } as never);
+
+      await waitForBasePayment('0xop', FAST);
+
+      expect(mockGetStatus).toHaveBeenCalledWith(
+         expect.objectContaining({
+            id: '0xop',
+            testnet: false,
+            bundlerUrl: expect.stringMatching(/^https:\/\/base-mainnet\.g\.alchemy\.com\/v2\/.+/)
+         })
+      );
+   });
+});

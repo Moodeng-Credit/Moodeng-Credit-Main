@@ -1,5 +1,6 @@
 import { getPaymentStatus, pay, type PaymentStatus } from '@base-org/account';
 
+import { BASE_ALCHEMY_RPC_URL } from '@/lib/web3/baseAlchemy';
 import { ERROR_CODES, type ErrorCode } from '@/types/errorCodes';
 
 /**
@@ -16,6 +17,17 @@ import { ERROR_CODES, type ErrorCode } from '@/types/errorCodes';
 // USDC-on-Base only, forever (a hard product invariant), so we never send Base Sepolia in
 // production. An env override exists purely so a testnet build can exercise the flow.
 const USE_TESTNET = import.meta.env.VITE_BASE_PAY_TESTNET === 'true';
+
+// Where getPaymentStatus asks "did this payment land?". The SDK's built-in default is a Coinbase
+// developer key that Coinbase now refuses (401 "request denied", Nov 2026), so every Base Pay
+// payment polled forever, never recorded, and the borrower was told "still confirming, don't pay
+// again". Alchemy's Base endpoint answers the same eth_getUserOperationReceipt call. Testnet keeps
+// the SDK default.
+export const BASE_PAY_STATUS_URL: string | undefined = USE_TESTNET ? undefined : BASE_ALCHEMY_RPC_URL;
+
+/** getPaymentStatus through our own endpoint (see {@link BASE_PAY_STATUS_URL}). */
+export const getBasePaymentStatus = (id: string) =>
+   getPaymentStatus({ id, testnet: USE_TESTNET, ...(BASE_PAY_STATUS_URL ? { bundlerUrl: BASE_PAY_STATUS_URL } : {}) });
 
 // pay() resolves the moment the user approves; the userOp still has to land on-chain, so we
 // poll getPaymentStatus to confirmation. These bound that poll.
@@ -143,7 +155,7 @@ export async function waitForBasePayment(
    for (;;) {
       let status: PaymentStatus;
       try {
-         status = await getPaymentStatus({ id, testnet: USE_TESTNET });
+         status = await getBasePaymentStatus(id);
       } catch (err) {
          // A transient RPC/bundler hiccup shouldn't abort a real payment: keep polling until
          // the deadline, then surface a timeout the caller can reconcile.

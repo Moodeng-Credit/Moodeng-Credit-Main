@@ -2,10 +2,14 @@
 
 export const USDC_ADDRESS = (Deno.env.get('BASE_USDC_ADDRESS') || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913').toLowerCase();
 export const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
-// Same public bundler endpoint @base-org/account's own getPaymentStatus() calls — no secret needed.
-export const BUNDLER_URL = 'https://api.developer.coinbase.com/rpc/v1/base/S-fOd2n2Oi4fl4e1Crm83XeDXZ7tkg8O';
 export const ALCHEMY_ID = Deno.env.get('ALCHEMY_ID') ?? '';
 export const RPC_URL = ALCHEMY_ID ? `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_ID}` : 'https://mainnet.base.org';
+// Base Pay userOperation lookups (eth_getUserOperationReceipt). The Coinbase developer key that
+// @base-org/account ships now returns 401 "request denied" (Nov 2026), which left every Base Pay
+// repayment unverifiable. Alchemy's Base endpoint serves the same call; it falls back to the
+// public Base Alchemy key the web app uses when no ALCHEMY_ID secret is set.
+const DEFAULT_BASE_ALCHEMY_ID = 'E5yDrf19k4QC9THtY7xec';
+export const BUNDLER_URL = `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_ID || DEFAULT_BASE_ALCHEMY_ID}`;
 
 export const topicToAddress = (topic: string) => `0x${topic.slice(-40)}`.toLowerCase();
 export const hexToBigInt = (hex: string) => (hex && hex !== '0x' ? BigInt(hex) : 0n);

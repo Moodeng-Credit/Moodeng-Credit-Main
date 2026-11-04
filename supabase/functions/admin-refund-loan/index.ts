@@ -49,7 +49,8 @@ const json = (body: Record<string, unknown>, status = 200) =>
 // --- On-chain verification (identical to confirm-loan-payment) ---
 const USDC_ADDRESS = (Deno.env.get('BASE_USDC_ADDRESS') || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913').toLowerCase();
 const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
-const BUNDLER_URL = 'https://api.developer.coinbase.com/rpc/v1/base/S-fOd2n2Oi4fl4e1Crm83XeDXZ7tkg8O';
+// Base Pay userOp lookups go through Alchemy: the Coinbase key @base-org/account ships now returns 401.
+const BUNDLER_URL = `https://base-mainnet.g.alchemy.com/v2/${(Deno.env.get('ALCHEMY_ID') ?? '') || 'E5yDrf19k4QC9THtY7xec'}`;
 const ALCHEMY_ID = Deno.env.get('ALCHEMY_ID') ?? '';
 const RPC_URL = ALCHEMY_ID ? `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_ID}` : 'https://mainnet.base.org';
 

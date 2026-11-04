@@ -1,4 +1,4 @@
-import { getPaymentStatus } from '@base-org/account';
+import { getBasePaymentStatus } from '@/lib/basePay';
 
 /**
  * Base Pay's `pay()` returns only after the popup is approved, then we poll for on-chain
@@ -16,7 +16,6 @@ import { getPaymentStatus } from '@base-org/account';
  */
 
 const STORAGE_KEY = 'moodeng.pendingBasePayments.v1';
-const USE_TESTNET = import.meta.env.VITE_BASE_PAY_TESTNET === 'true';
 
 // Don't reconcile an entry until it's older than this: a just-submitted payment is still being
 // polled by the live payUsdc call, and we must not race it into a double DB write.
@@ -166,7 +165,7 @@ export async function reconcilePendingBasePayments(
       if (method === 'base') {
          let status;
          try {
-            status = await getPaymentStatus({ id: entry.id, testnet: USE_TESTNET });
+            status = await getBasePaymentStatus(entry.id);
          } catch {
             // Transient — leave it for the next pass.
             continue;
