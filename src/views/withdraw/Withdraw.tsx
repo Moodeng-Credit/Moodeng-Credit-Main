@@ -988,6 +988,9 @@ function useSendStatus(isPreview: boolean) {
    return {
       status,
       txHash,
+      // Only a wagmi/instant-wallet send gives a real Base transaction hash an exchange can look up;
+      // Base Pay's id is a userOp hash, so the "not arrived" help doesn't offer it to copy.
+      chainTxHash: txHash && !preConfirmed && !isPreview ? txHash : null,
       onSent: (hash: string, confirmed = false) => {
          setTxHash(hash);
          setPreConfirmed(confirmed);
@@ -1129,7 +1132,7 @@ const PROVIDER_NAMES: Record<Provider, string> = {
    coinbase: 'Coinbase'
 };
 
-function SuccessBanner({ exchange, amount }: { exchange: string; amount: number }) {
+function SuccessBanner({ exchange, amount, help }: { exchange: string; amount: number; help?: React.ReactNode }) {
    return (
       <Card className="overflow-hidden">
          <div className="bg-[var(--green-bg)] px-[16px] py-[14px] flex items-center gap-[14px]">
@@ -1146,7 +1149,120 @@ function SuccessBanner({ exchange, amount }: { exchange: string; amount: number 
                </p>
             </div>
          </div>
+         {help ? <div className="px-[16px] py-[12px] border-t border-[var(--border-card-2)]">{help}</div> : null}
       </Card>
+   );
+}
+
+/* ─── "Not in my exchange yet?" help (after a send) ────────────── */
+// The send is confirmed on Base, but the exchange hasn't credited it. Almost always the address
+// was copied from the exchange's USDC wallet on another network (PDAX, for one, keeps USDC and
+// USDC on Base as separate wallets), or the exchange is holding the deposit for review. Either
+// way only the exchange's support can find it, and they need the transaction ID.
+function NotArrivedHelp({ exchange, address, txHash }: { exchange: string; address: string; txHash: string | null }) {
+   const [open, setOpen] = useState(false);
+   const [copied, setCopied] = useState(false);
+   const ending = isValidAddress(address) ? address.slice(-4) : null;
+
+   const copyTx = () => {
+      if (!txHash) return;
+      track('withdraw_not_arrived_copy_tx', { exchange });
+      navigator.clipboard
+         ?.writeText(txHash)
+         .then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+         })
+         .catch(() => {
+            /* clipboard blocked — non-critical */
+         });
+   };
+
+   if (!open) {
+      return (
+         <button
+            onClick={() => {
+               setOpen(true);
+               track('withdraw_not_arrived_help_opened', { exchange });
+            }}
+            className="w-full inline-flex items-center justify-center gap-[6px] text-[13px] font-semibold text-[var(--accent)] hover:text-[var(--primary)] transition-colors"
+         >
+            <Info className="w-[14px] h-[14px]" /> Not showing up after 10 minutes?
+         </button>
+      );
+   }
+
+   const stepBadge = (n: number) => (
+      <span className="shrink-0 w-[20px] h-[20px] rounded-full bg-[var(--surface-1)] text-[11px] font-semibold text-[var(--text-muted)] flex items-center justify-center">
+         {n}
+      </span>
+   );
+   const stepText = 'text-[13px] leading-[18px] text-[var(--text-muted)]';
+   // PDAX often credits USDC on Base straight into the peso balance, so "0 USDC" there can mean it
+   // already arrived (2026-11-05: a borrower's $20 showed up as PHP). Check that first, on PDAX only.
+   const pesoFirst = exchange === 'PDAX';
+   const n = pesoFirst ? 1 : 0;
+
+   return (
+      <div className="text-left space-y-[10px]">
+         <p className="text-[14px] font-semibold text-[var(--ink)] tracking-[-0.3px]">Not there yet? Your money is safe.</p>
+         {pesoFirst ? (
+            <div className="flex gap-[10px]">
+               {stepBadge(1)}
+               <p className={stepText}>
+                  Check your peso (PHP) balance first. PDAX often changes USDC on Base into pesos for you.
+               </p>
+            </div>
+         ) : null}
+         <div className="flex gap-[10px]">
+            {stepBadge(n + 1)}
+            <p className={stepText}>
+               Open your USDC receiving address for the Base network.
+               {ending ? (
+                  <>
+                     {' '}
+                     It should end in <span className="font-semibold text-[var(--ink)]">{ending}</span>.
+                  </>
+               ) : null}
+            </p>
+         </div>
+         <div className="flex gap-[10px]">
+            {stepBadge(n + 2)}
+            <p className={stepText}>
+               {txHash
+                  ? "If it matches, message the exchange's support and send them this transaction ID."
+                  : "If it matches, message the exchange's support — they can find your deposit."}
+            </p>
+         </div>
+         {txHash ? (
+            <button
+               onClick={copyTx}
+               className="w-full rounded-[12px] py-[10px] text-[13px] font-semibold text-[var(--primary)] border border-[var(--border-2)] bg-[var(--surface-1)] hover:bg-[var(--hover-1)] transition-colors active:scale-[0.98] inline-flex items-center justify-center gap-[6px]"
+            >
+               {copied ? (
+                  <>
+                     <Check className="w-[14px] h-[14px] text-[var(--green-2)]" strokeWidth={3} /> Copied
+                  </>
+               ) : (
+                  <>
+                     <Copy className="w-[14px] h-[14px]" /> Copy transaction ID
+                  </>
+               )}
+            </button>
+         ) : null}
+         <div className="flex gap-[10px]">
+            {stepBadge(n + 3)}
+            <p className={stepText}>
+               {ending ? "Doesn't match, or not sure? Message us — we'll help you get it back." : "Not sure? Message us — we'll help."}
+            </p>
+         </div>
+         <button
+            onClick={() => openSupportContacts('general')}
+            className="inline-flex items-center gap-[5px] text-[13px] font-semibold text-[var(--accent)] hover:text-[var(--primary)] transition-colors"
+         >
+            <MessageCircle className="w-[14px] h-[14px]" /> Message Moodeng
+         </button>
+      </div>
    );
 }
 
@@ -1166,12 +1282,14 @@ function SendProgressOverlay({
    phase,
    exchange,
    amount,
-   onDone
+   onDone,
+   help
 }: {
    phase: SendPhase;
    exchange: string;
    amount: number;
    onDone: () => void;
+   help?: React.ReactNode;
 }) {
    const succeeded = phase === 'success';
    const [activeStep, setActiveStep] = useState(0);
@@ -1191,10 +1309,10 @@ function SendProgressOverlay({
 
    return (
       <div
-         className="fixed inset-0 z-[60] flex items-center justify-center px-[24px]"
+         className="fixed inset-0 z-[60] flex items-center justify-center px-[24px] overflow-y-auto"
          style={{ backgroundColor: 'var(--app-bg)', fontFamily: FONT }}
       >
-         <div className="w-full max-w-[360px] flex flex-col items-center text-center">
+         <div className="w-full max-w-[360px] flex flex-col items-center text-center my-auto py-[24px]">
             {succeeded ? (
                <>
                   <img src="/icons/check-3d.png" alt="Sent" className="mb-[16px] size-[104px]" />
@@ -1205,6 +1323,7 @@ function SendProgressOverlay({
                   <PrimaryBtn onClick={onDone}>
                      Done <Check className="w-4 h-4" strokeWidth={3} />
                   </PrimaryBtn>
+                  {help ? <div className="mt-[20px] w-full">{help}</div> : null}
                </>
             ) : (
                <>
@@ -1284,7 +1403,7 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
    // once it resolves, null when idle or after a failure (so the form returns and they can retry).
    const [sendPhase, setSendPhase] = useState<SendPhase | null>(null);
    const [showCashOut, setShowCashOut] = useState(true);
-   const { status: sentStatus, txHash, onSent, reset } = useSendStatus(isPreview);
+   const { status: sentStatus, txHash, chainTxHash, onSent, reset } = useSendStatus(isPreview);
    const arrived = sentStatus === 'arrived';
    const addrValid = isValidAddress(address);
    const amtNum = parseFloat(amount);
@@ -1342,13 +1461,23 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
    return (
       <div className="space-y-[12px]">
          {sendPhase && (
-            <SendProgressOverlay phase={sendPhase} exchange={cfg.name} amount={sentAmountRef.current || amtNum} onDone={onDone} />
+            <SendProgressOverlay
+               phase={sendPhase}
+               exchange={cfg.name}
+               amount={sentAmountRef.current || amtNum}
+               onDone={onDone}
+               help={<NotArrivedHelp exchange={cfg.name} address={address.trim()} txHash={chainTxHash} />}
+            />
          )}
 
          {cfg.topWarning}
 
          {arrived ? (
-            <SuccessBanner exchange={cfg.name} amount={sentAmountRef.current} />
+            <SuccessBanner
+               exchange={cfg.name}
+               amount={sentAmountRef.current}
+               help={<NotArrivedHelp exchange={cfg.name} address={address.trim()} txHash={chainTxHash} />}
+            />
          ) : sentStatus === 'in-progress' || sentStatus === 'delayed' || sentStatus === 'failed' ? (
             <SentStatusCard
                exchange={cfg.name}
@@ -1594,7 +1723,7 @@ const PDAX_FLOW: AppFlowConfig = {
    receiveCurrency: 'PHP',
    payout: 'Bank, GCash or Maya',
    howItWorks:
-      'Send USDC from your Moodeng wallet to your PDAX account. Once it arrives, sell it for pesos and withdraw to your bank or e-wallet.',
+      'Send USDC from your Moodeng wallet to your PDAX account. PDAX often changes it into pesos for you — then cash out to your bank or e-wallet.',
    steps: [
       {
          icon: <Download className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
@@ -1607,7 +1736,7 @@ const PDAX_FLOW: AppFlowConfig = {
             steps: [
                'Open the PDAX app and tap the Portfolio icon.',
                'Select USDC, then tap "Receive" (or Deposit).',
-               'Choose "Base" as the network.',
+               'Choose "Base" as the network. PDAX keeps USDC on Base separate from plain USDC — use the Base one.',
                'Confirm it says Base before continuing.'
             ]
          }
@@ -1630,9 +1759,18 @@ const PDAX_FLOW: AppFlowConfig = {
       }
    ],
    cashOutTitle: 'Cash out to pesos with PDAX',
-   cashOutIntro: 'Once your USDC arrives in PDAX (usually under 1 minute), sell it for pesos and withdraw to your bank, GCash, or Maya.',
+   cashOutIntro:
+      'Once your USDC arrives in PDAX (usually under 1 minute), check your Portfolio. PDAX often changes it into pesos for you — if your PHP balance went up, skip to the last step.',
    cashOutVideo: '4JNXv7s_Trs',
    cashOutSteps: [
+      {
+         title: (
+            <>
+               Check <span className="font-bold">Portfolio → Balances</span>
+            </>
+         ),
+         helper: 'PHP went up? PDAX already changed it into pesos — go to the last step. Still shows USDC? Sell it first.'
+      },
       {
          title: (
             <>
@@ -1656,7 +1794,7 @@ const PDAX_FLOW: AppFlowConfig = {
       {
          title: (
             <>
-               Go to <span className="font-bold">Wallet → Withdraw PHP</span>
+               Go to <span className="font-bold">Portfolio → Cash out</span>
             </>
          ),
          helper:
@@ -1878,7 +2016,7 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
    // Staged send-progress overlay state (see AppFlow / SendProgressOverlay).
    const [sendPhase, setSendPhase] = useState<SendPhase | null>(null);
    const [showP2P, setShowP2P] = useState(false);
-   const { status: sentStatus, txHash, onSent, reset } = useSendStatus(isPreview);
+   const { status: sentStatus, txHash, chainTxHash, onSent, reset } = useSendStatus(isPreview);
    const arrived = sentStatus === 'arrived';
    const addrValid = isValidAddress(address);
    const amtNum = parseFloat(amount);
@@ -1936,11 +2074,21 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
    return (
       <div className="space-y-[12px]">
          {sendPhase && (
-            <SendProgressOverlay phase={sendPhase} exchange="Binance" amount={sentAmountRef.current || amtNum} onDone={onDone} />
+            <SendProgressOverlay
+               phase={sendPhase}
+               exchange="Binance"
+               amount={sentAmountRef.current || amtNum}
+               onDone={onDone}
+               help={<NotArrivedHelp exchange="Binance" address={address.trim()} txHash={chainTxHash} />}
+            />
          )}
 
          {arrived ? (
-            <SuccessBanner exchange="Binance" amount={sentAmountRef.current} />
+            <SuccessBanner
+               exchange="Binance"
+               amount={sentAmountRef.current}
+               help={<NotArrivedHelp exchange="Binance" address={address.trim()} txHash={chainTxHash} />}
+            />
          ) : sentStatus === 'in-progress' || sentStatus === 'delayed' || sentStatus === 'failed' ? (
             <SentStatusCard
                exchange="Binance"
