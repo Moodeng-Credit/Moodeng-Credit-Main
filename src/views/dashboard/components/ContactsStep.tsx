@@ -368,8 +368,27 @@ export default function ContactsStep({
          cancelled = true;
       };
    }, []);
+   // No-code (guest) sign-ups are anonymous sessions: they can't sign back in outside Facebook's browser
+   // until their email is confirmed after approval, and confirming WhatsApp / Telegram / Viber sends them
+   // to another app (2026-11-05: a guest confirmed WhatsApp and never found her way back). Messenger is
+   // their reminder line, so they get no "remind me on another app" card here.
+   const [isGuest, setIsGuest] = useState(false);
+   useEffect(() => {
+      let cancelled = false;
+      (async () => {
+         try {
+            const { data } = await getSupabaseBrowserClient().auth.getSession();
+            if (!cancelled) setIsGuest(Boolean(data.session?.user?.is_anonymous));
+         } catch {
+            // Can't tell: treat as a normal account, the step works as before.
+         }
+      })();
+      return () => {
+         cancelled = true;
+      };
+   }, []);
    const pushCantWork = !push.isSupported || pushBlocked || pushUnavailable;
-   const offerWhatsAppReminders = whatsappRemindersEnabled && pushCantWork;
+   const offerWhatsAppReminders = whatsappRemindersEnabled && pushCantWork && !isGuest;
    // requireReminders: where push can't work, WhatsApp becomes required, with "I don't have WhatsApp" as
    // the way out so nobody is locked in (2026-10-13: ~30 taps on a reminder that could never turn on).
    // Without the WhatsApp card on, there's nothing else to ask for, so it's the old rule.
