@@ -1,9 +1,11 @@
 // The KYC admin cards (Telegram KYC group) and their after-states — see adminCards.ts.
 //
 //   kyc_review  "👀 IN MANUAL REVIEW — check the Didit dashboard" (diditNotifications.notifyAdmins).
-//               Nothing to decide in-app — the verdict is given in the Didit console — so the card
-//               carries a 🔎 Open Didit console link, and the Didit verdict (webhook or pull sync)
-//               stamps it: ✅ DIDIT APPROVED / ❌ DIDIT DECLINED / 🚫 DUPLICATE FACE …
+//               Decidable in-app: ✅ Approve / ❌ Decline (callback "kv:<a|d>:<user uuid>", then a
+//               "kv:<ya|yd>" confirm, "kv:b" goes back) set the verdict through the Didit API; the
+//               🔎 Open Didit console link is there to look at the ID first. Didit then fires its
+//               webhook like a console verdict, which runs the normal approved / declined flow (the
+//               borrower's message included). The verdict stamps the card: ✅ DIDIT APPROVED / …
 //   kyc_tries   "Out of KYC tries" (diditNotifications on the 3rd decline, create-didit-session).
 //               Decidable in-app: 🔁 Give 3 more tries (callback "kr:<user uuid>") does what
 //               /kycretry does, and either stamps the card.
@@ -31,6 +33,107 @@ export const buildKycRetryCallback = (userId: string) => `kr:${userId}`;
 export const parseKycRetryCallback = (data?: string | null): { userId: string } | null => {
    const match = (data ?? '').match(/^kr:([0-9a-f-]{36})$/i);
    return match ? { userId: match[1] } : null;
+};
+
+// Telegram callback_data for the manual-review card: "kv:<a|d|ya|yd|b>:<user uuid>" (≤64 bytes).
+//   a / d    first tap on ✅ Approve / ❌ Decline → swaps in a confirm row (nothing saved yet)
+//   ya / yd  ✅ Yes, approve / ❌ Yes, decline → sets the verdict in Didit
+//   b        ◀ Back → the Approve / Decline row again
+export type KycReviewStep = 'approve' | 'decline' | 'yes_approve' | 'yes_decline' | 'back';
+const KYC_REVIEW_CODES: Record<KycReviewStep, string> = {
+   approve: 'a',
+   decline: 'd',
+   yes_approve: 'ya',
+   yes_decline: 'yd',
+   back: 'b'
+};
+export const buildKycReviewCallback = (step: KycReviewStep, userId: string) => `kv:${KYC_REVIEW_CODES[step]}:${userId}`;
+export const parseKycReviewCallback = (data?: string | null): { step: KycReviewStep; userId: string } | null => {
+   const match = (data ?? '').match(/^kv:(a|d|ya|yd|b):([0-9a-f-]{36})$/i);
+   if (!match) return null;
+   const step = (Object.keys(KYC_REVIEW_CODES) as KycReviewStep[]).find((k) => KYC_REVIEW_CODES[k] === match[1].toLowerCase());
+   return step ? { step, userId: match[2] } : null;
+};
+
+export const kycReviewDecisionRow = (userId: string) => [
+   { text: '✅ Approve', callback_data: buildKycReviewCallback('approve', userId) },
+   { text: '❌ Decline', callback_data: buildKycReviewCallback('decline', userId) }
+];
+
+export const kycReviewConfirmRows = (userId: string, decision: 'approve' | 'decline') => [
+   [
+      decision === 'approve'
+         ? { text: '✅ Yes, approve their ID', callback_data: buildKycReviewCallback('yes_approve', userId) }
+         : { text: '❌ Yes, decline their ID', callback_data: buildKycReviewCallback('yes_decline', userId) }
+   ],
+   [{ text: '◀ Back', callback_data: buildKycReviewCallback('back', userId) }]
+];
+
+export const kycReviewKeyboard = (userId: string, username?: string | null, sessionId?: string | null): TelegramInlineKeyboard => [
+   kycReviewDecisionRow(userId),
+   [diditConsoleButton(sessionId), openInAdminButton(userId, username)]
+];
+
+const DIDIT_API_BASE = () => (Deno.env.get('DIDIT_API_BASE')?.trim() || 'https://verification.didit.me/v3').replace(/\/$/, '');
+
+/**
+ * ✅ Yes, approve / ❌ Yes, decline on a manual-review card: set the verdict on the borrower's
+ * latest Didit session (PATCH /v3/session/{id}/update-status/). Didit then fires its status webhook,
+ * and didit-webhook does the rest exactly as for a console verdict (users row, borrower message,
+ * stamping this person's review cards). Only a session still "In Review" is changed here.
+ */
+export const decideKycReview = async (
+   svc: SupabaseClient,
+   userId: string,
+   decision: 'Approved' | 'Declined',
+   by: string
+): Promise<{ ok: boolean; summary: string; stamp?: CardStamp }> => {
+   const { data: user } = await svc
+      .from('users')
+      .select('id, username, display_name, didit_session_id, didit_id_status, is_didit')
+      .eq('id', userId)
+      .maybeSingle();
+   if (!user) return { ok: false, summary: `No user found for ${userId}.` };
+   const name = personName(user);
+   const sessionId = String(user.didit_session_id ?? '').trim();
+   if (!sessionId) return { ok: false, summary: `${name} has no Didit session on file.` };
+   if (user.is_didit === 'ACTIVE') {
+      return {
+         ok: false,
+         summary: `${name} is already ID-verified.`,
+         stamp: { header: `ℹ️ Already approved — ${name} is ID-verified`, by, verb: 'Tapped by' }
+      };
+   }
+   if (!/review/i.test(String(user.didit_id_status ?? ''))) {
+      return {
+         ok: false,
+         summary: `${name}'s ID check isn't in review any more (${user.didit_id_status ?? 'no status'}).`,
+         stamp: { header: `ℹ️ Already decided — ${name}'s ID check is ${user.didit_id_status ?? 'closed'}`, by, verb: 'Tapped by' }
+      };
+   }
+   const apiKey = Deno.env.get('DIDIT_API_KEY');
+   if (!apiKey) throw new Error('DIDIT_API_KEY not configured');
+   const res = await fetch(`${DIDIT_API_BASE()}/session/${encodeURIComponent(sessionId)}/update-status/`, {
+      method: 'PATCH',
+      headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ new_status: decision, comment: `${decision} from the Telegram review card by ${by}` }),
+      signal: AbortSignal.timeout(15_000)
+   });
+   if (!res.ok) {
+      const body = (await res.json().catch(() => ({}))) as { detail?: string; error?: string; message?: string };
+      throw new Error(`Didit said ${res.status}: ${body.detail ?? body.error ?? body.message ?? 'no details'}`);
+   }
+   const approved = decision === 'Approved';
+   return {
+      ok: true,
+      summary: approved
+         ? `✅ Approved ${name}'s ID — they'll get the "you're verified" message in a moment.`
+         : `❌ Declined ${name}'s ID — they'll be told to try again (uses one of their tries).`,
+      stamp: {
+         header: approved ? `✅ APPROVED — ${name} is ID-verified` : `❌ DECLINED — ${name}'s ID check failed`,
+         by
+      }
+   };
 };
 
 export const kycTriesKeyboard = (userId: string, username?: string | null, sessionId?: string | null): TelegramInlineKeyboard => [

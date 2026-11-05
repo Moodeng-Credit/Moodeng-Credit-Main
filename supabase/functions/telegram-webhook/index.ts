@@ -15,7 +15,14 @@ import {
    stampDecisionCards,
    withAdminLink
 } from '../_shared/adminCards.ts';
-import { parseKycRetryCallback, resetKycTries } from '../_shared/kycCards.ts';
+import {
+   decideKycReview,
+   kycReviewConfirmRows,
+   kycReviewDecisionRow,
+   parseKycRetryCallback,
+   parseKycReviewCallback,
+   resetKycTries
+} from '../_shared/kycCards.ts';
 import {
    answerCallback,
    decideLoanAccess,
@@ -358,8 +365,9 @@ const handleLoanAccessCommand = async (supabase: SupabaseClient, message: Telegr
 
 // The inline buttons on admin cards: la: (loan-access Approve / Reject / Showed up / No-show),
 // vc: (open-flow call attendance), vo: (food voucher claim Send code / Reject), mv: (stuck
-// Facebook confirmation → Mark Facebook verified), kr: (out of KYC tries → 3 more tries) and rp:
-// (referral code owner payout ✅ Paid / ⏳ Not paid yet).
+// Facebook confirmation → Mark Facebook verified), kr: (out of KYC tries → 3 more tries), kv:
+// (Didit manual review → ✅ Approve / ❌ Decline, each with a confirm tap) and rp: (referral code
+// owner payout ✅ Paid / ⏳ Not paid yet).
 // Honored only when the card sits in an admin channel, so a forwarded card can't be tapped from
 // anywhere else.
 //
@@ -381,7 +389,8 @@ const handleAdminCallback = async (supabase: SupabaseClient, query: TelegramCall
    const messenger = parsed || outcome || voucher ? null : parseMessengerVerifyCallback(query.data);
    const kycRetry = parsed || outcome || voucher || messenger ? null : parseKycRetryCallback(query.data);
    const payout = parsed || outcome || voucher || messenger || kycRetry ? null : parsePayoutCallback(query.data);
-   if (!parsed && !outcome && !voucher && !messenger && !kycRetry && !payout) {
+   const kycReview = parsed || outcome || voucher || messenger || kycRetry || payout ? null : parseKycReviewCallback(query.data);
+   if (!parsed && !outcome && !voucher && !messenger && !kycRetry && !payout && !kycReview) {
       await answerCallback(query.id, 'Unknown action.');
       return;
    }
@@ -407,6 +416,27 @@ const handleAdminCallback = async (supabase: SupabaseClient, query: TelegramCall
       return;
    }
 
+   // KYC review: the first tap on ✅ Approve / ❌ Decline (and ◀ Back) only swaps the buttons — the
+   // verdict goes to Didit on the "Yes, …" tap. Links (Didit console, admin) stay on the card.
+   if (kycReview && (kycReview.step === 'approve' || kycReview.step === 'decline' || kycReview.step === 'back')) {
+      const card = query.message;
+      const links = (card?.reply_markup?.inline_keyboard ?? []).filter((row) => row.some((b) => 'url' in b));
+      const rows =
+         kycReview.step === 'back' ? [kycReviewDecisionRow(kycReview.userId)] : kycReviewConfirmRows(kycReview.userId, kycReview.step);
+      await Promise.all([
+         answerCallback(
+            query.id,
+            kycReview.step === 'approve'
+               ? 'Tap ✅ Yes to approve their ID.'
+               : kycReview.step === 'decline'
+                 ? 'Tap ❌ Yes to decline — it uses one of their 3 tries.'
+                 : ''
+         ),
+         card ? setCardButtons(cardChatId, card.message_id, [...rows, ...links]) : null
+      ]);
+      return;
+   }
+
    // Acknowledge the tap right away — the decision (database + Messenger / email / push to the
    // borrower + Discord) takes a few seconds, and a silent button reads as "nothing happened".
    const card = query.message;
@@ -419,7 +449,7 @@ const handleAdminCallback = async (supabase: SupabaseClient, query: TelegramCall
    ]);
 
    try {
-      let userId: string | null = outcome?.userId ?? messenger?.userId ?? kycRetry?.userId ?? null;
+      let userId: string | null = outcome?.userId ?? messenger?.userId ?? kycRetry?.userId ?? kycReview?.userId ?? null;
       let result: ButtonResult;
       if (parsed) {
          const decided = await decideLoanAccess(supabase, parsed.requestId, parsed.decision, by);
@@ -433,6 +463,8 @@ const handleAdminCallback = async (supabase: SupabaseClient, query: TelegramCall
          result = await markPayoutPaid(supabase, payout.payoutId, by);
       } else if (messenger) {
          result = await markMessengerVerified(supabase, messenger.userId, by);
+      } else if (kycReview) {
+         result = await decideKycReview(supabase, kycReview.userId, kycReview.step === 'yes_approve' ? 'Approved' : 'Declined', by);
       } else {
          result = await resetKycTries(supabase, kycRetry!.userId, by);
       }
