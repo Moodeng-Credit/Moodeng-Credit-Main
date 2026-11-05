@@ -53,15 +53,35 @@ const detailRow = (icon: string, label: string, value: string, tone: 'default' |
                 </tr>`;
 };
 
-const buildEmail = (amount: number, exchange: string, txHash: string, username?: string | null) => {
+// Last 4 characters of the address the borrower pasted, so they can check it against the exchange's
+// receiving address on Base (the usual "not credited" cause is an address copied from another network).
+const addressEnding = (address?: string | null) => {
+   const a = String(address ?? '').trim();
+   return /^0x[0-9a-fA-F]{40}$/.test(a) ? a.slice(-4) : null;
+};
+
+const buildEmail = (amount: number, exchange: string, txHash: string, username?: string | null, destinationAddress?: string | null) => {
    const amt = formatAmount(amount);
    const name = username?.trim() || 'there';
+   const ending = addressEnding(destinationAddress);
+   // PDAX often credits USDC on Base straight into the peso balance, so "0 USDC" can mean it already
+   // arrived (2026-11-05: a borrower's $20 showed up as PHP, not USDC). Check that first, there only.
+   const pesoFirst = /pdax/i.test(exchange);
+   const steps = [
+      ...(pesoFirst ? ['Check your peso (PHP) balance first. PDAX often changes USDC on Base into pesos for you.'] : []),
+      `In ${exchange}, open your USDC receiving address for the Base network.${ending ? ` It should end in ${ending}.` : ''}`,
+      `If it matches, message ${exchange} support and send them this transaction ID:`,
+      "Doesn't match, or not sure? Message us and we'll help you get it back."
+   ];
+   const txStep = steps.length - 2; // the step the transaction ID goes under
    const subject = `Your ${amt} USDC withdrawal is on its way`;
    const text =
       `Hi ${name},\n\n` +
       `Your withdrawal of ${amt} USDC to ${exchange} has been sent and is on its way. ` +
       `It usually arrives within a few minutes.\n\n` +
-      `If it hasn't arrived, contact support with this reference: ${txHash}\n\n` +
+      `Not in ${exchange} after 10 minutes? Your money is safe.\n` +
+      steps.map((step, i) => `${i + 1}. ${step}${i === txStep ? ` ${txHash}` : ''}`).join('\n') +
+      `\n\n` +
       `Telegram: ${telegramUrl}\nMoodeng Credit`;
    const html = `<div style="margin:0;padding:0;background:#f9f8fa;font-family:${fontFamily};color:#100733;-webkit-font-smoothing:antialiased;">
   <style>
@@ -112,9 +132,17 @@ const buildEmail = (amount: number, exchange: string, txHash: string, username?:
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;margin:0;border-collapse:separate;border-spacing:0;border:1px solid #e4d8f0;border-radius:12px;background:#fbf8ff;">
                 <tr>
                   <td style="padding:12px 14px;">
-                    <p style="margin:0 0 6px;color:#100733;font-size:14px;line-height:18px;font-weight:590;">Hasn't arrived?</p>
-                    <p style="margin:0 0 8px;color:#33294c;font-size:13px;line-height:18px;">Message us with this reference and we'll track it down:</p>
-                    <div style="padding:8px 10px;border:1px dashed #cbb5ec;border-radius:8px;background:#fdfcfd;color:#33294c;font-family:${monoFamily};font-size:12px;line-height:17px;word-break:break-all;">${escapeHtml(txHash)}</div>
+                    <p style="margin:0 0 6px;color:#100733;font-size:14px;line-height:18px;font-weight:590;">Not in ${escapeHtml(exchange)} after 10 minutes?</p>
+                    <p style="margin:0 0 6px;color:#33294c;font-size:13px;line-height:18px;">Your money is safe.</p>
+                    ${steps
+                       .map(
+                          (step, i) =>
+                             `<p style="margin:0 0 ${i === steps.length - 1 ? 0 : 6}px;color:#33294c;font-size:13px;line-height:18px;"><strong>${i + 1}.</strong> ${escapeHtml(step)}</p>` +
+                             (i === txStep
+                                ? `<div style="margin:0 0 8px;padding:8px 10px;border:1px dashed #cbb5ec;border-radius:8px;background:#fdfcfd;color:#33294c;font-family:${monoFamily};font-size:12px;line-height:17px;word-break:break-all;">${escapeHtml(txHash)}</div>`
+                                : '')
+                       )
+                       .join('\n                    ')}
                   </td>
                 </tr>
               </table>
@@ -173,7 +201,7 @@ serve(async (req) => {
 
    const { data: withdrawal, error: withdrawalError } = await supabase
       .from('withdrawals')
-      .select('id, borrower_user_id, amount, exchange, tx_hash, notified_at')
+      .select('id, borrower_user_id, amount, exchange, tx_hash, destination_address, notified_at')
       .eq('id', withdrawalId)
       .maybeSingle();
 
@@ -218,7 +246,13 @@ serve(async (req) => {
    // up with email, Telegram if they connected it (most borrowers have one).
    if (borrower.email) {
       try {
-         const { subject, text, html } = buildEmail(amount, withdrawal.exchange, withdrawal.tx_hash, borrower.username);
+         const { subject, text, html } = buildEmail(
+            amount,
+            withdrawal.exchange,
+            withdrawal.tx_hash,
+            borrower.username,
+            withdrawal.destination_address
+         );
          await sendEmail(borrower.email, subject, text, html);
          emailSent = true;
       } catch (err) {
