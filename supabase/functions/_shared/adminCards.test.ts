@@ -10,7 +10,16 @@ import {
    truncateForTelegram,
    withAdminLink
 } from './adminCards.ts';
-import { buildKycRetryCallback, classifyKycOutcome, kycVerdictStamp, parseKycRetryCallback } from './kycCards.ts';
+import {
+   buildKycRetryCallback,
+   buildKycReviewCallback,
+   classifyKycOutcome,
+   kycReviewConfirmRows,
+   kycReviewKeyboard,
+   kycVerdictStamp,
+   parseKycRetryCallback,
+   parseKycReviewCallback
+} from './kycCards.ts';
 import { loanAccessStampHeader } from './loanAccess.ts';
 import { voucherDecidedBy, voucherStampHeader } from './voucherClaims.ts';
 
@@ -150,4 +159,31 @@ Deno.test('KYC retry callback round-trips and fits Telegram’s 64 bytes', () =>
    assertEquals(new TextEncoder().encode(data).length <= 64, true);
    assertEquals(parseKycRetryCallback(data), { userId: USER_ID });
    assertEquals(parseKycRetryCallback(`la:a:${USER_ID}`), null);
+});
+
+Deno.test('KYC review callbacks round-trip and fit Telegram’s 64 bytes', () => {
+   for (const step of ['approve', 'decline', 'yes_approve', 'yes_decline', 'back'] as const) {
+      const data = buildKycReviewCallback(step, USER_ID);
+      assertEquals(new TextEncoder().encode(data).length <= 64, true);
+      assertEquals(parseKycReviewCallback(data), { step, userId: USER_ID });
+   }
+   assertEquals(parseKycReviewCallback(`kr:${USER_ID}`), null);
+   assertEquals(parseKycReviewCallback(`kv:x:${USER_ID}`), null);
+   // A kv: button must never parse as the 3-more-tries button, and vice versa.
+   assertEquals(parseKycRetryCallback(buildKycReviewCallback('approve', USER_ID)), null);
+});
+
+Deno.test('KYC review card: Approve / Decline on top, links below; confirm asks before saving', () => {
+   const keyboard = kycReviewKeyboard(USER_ID, 'someone', 'sess-1');
+   assertEquals(
+      keyboard[0].map((b) => b.text),
+      ['✅ Approve', '❌ Decline']
+   );
+   assertEquals(
+      keyboard[1].every((b) => 'url' in b),
+      true
+   );
+   const confirm = kycReviewConfirmRows(USER_ID, 'decline');
+   assertEquals(parseKycReviewCallback((confirm[0][0] as { callback_data: string }).callback_data)?.step, 'yes_decline');
+   assertEquals(parseKycReviewCallback((confirm[1][0] as { callback_data: string }).callback_data)?.step, 'back');
 });

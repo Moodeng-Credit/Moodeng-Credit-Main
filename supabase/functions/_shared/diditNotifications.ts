@@ -1,6 +1,6 @@
 import { adminUserUrl, openInAdminButton, personName, sendAdminCard, stampDecisionCards } from './adminCards.ts';
 import { postDiscord } from './discord.ts';
-import { classifyKycOutcome, diditConsoleButton, kycTriesKeyboard, kycVerdictStamp } from './kycCards.ts';
+import { classifyKycOutcome, diditConsoleButton, kycReviewKeyboard, kycTriesKeyboard, kycVerdictStamp } from './kycCards.ts';
 import { sendEmail } from './email.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import { buildVerificationDecisionPushPayload, type PushLocale } from './pushMessages.ts';
@@ -126,8 +126,9 @@ export const notifyAdmins = async (
             ? sendAdminCard(adminSupabase, chatId, {
                  kind,
                  refId: userId,
-                 text,
-                 keyboard: kind === 'kyc_tries' ? kycTriesKeyboard(userId, p?.username, sessionId) : [links]
+                 text: kind === 'kyc_review' ? `${text}\n\nLook at the ID in Didit, then tap ✅ Approve or ❌ Decline.` : text,
+                 keyboard:
+                    kind === 'kyc_tries' ? kycTriesKeyboard(userId, p?.username, sessionId) : kycReviewKeyboard(userId, p?.username, sessionId)
               })
             : sendTelegramMessage(chatId, text, { inlineKeyboard: [links] })
          ).catch((err: unknown) => console.error('[diditNotifications] Telegram admin alert failed:', err instanceof Error ? err.message : err));
