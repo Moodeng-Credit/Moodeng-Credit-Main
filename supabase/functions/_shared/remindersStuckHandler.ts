@@ -10,6 +10,7 @@ import {
    REMINDERS_REALERT_AFTER_MS,
    REMINDERS_STUCK_REASONS,
    type RemindersStuckOs,
+   type RemindersSignIn,
    type RemindersStuckReason,
    shouldAlertRemindersHealth
 } from './remindersStuck.ts';
@@ -94,6 +95,17 @@ const findContact = async (svc: Svc, userId: string, storedId: string | null) =>
    return contactId && contact ? { id: contactId, contact } : null;
 };
 
+// How they can get back in from Chrome/Safari. Anonymous = guest (email-first sign-up, email not
+// confirmed): no way in outside Facebook. Phone sign-ups keep a guest_…@moodeng.app placeholder email
+// and sign in with an SMS code instead.
+// deno-lint-ignore no-explicit-any
+const signInMethod = (user: any): RemindersSignIn => {
+   if (user?.is_anonymous) return 'none';
+   if (user?.phone && /^guest_[^@]+@moodeng\.app$/i.test(String(user?.email ?? ''))) return 'phone';
+   if (user?.phone && !user?.email) return 'phone';
+   return 'email';
+};
+
 // deno-lint-ignore no-explicit-any
 export const handleRemindersStuck = async (req: Request, body: any, svc: Svc): Promise<Response> => {
    if (body?.mode === 'daily_check') {
@@ -134,7 +146,7 @@ export const handleRemindersStuck = async (req: Request, body: any, svc: Svc): P
       if (!found) messenger = 'failed';
       else if (!isInsideMessagingWindow(found.contact, now)) messenger = 'window_closed';
       else {
-         const text = buildRemindersStuckMessage(reason, os, borrower.facebook_name || borrower.display_name);
+         const text = buildRemindersStuckMessage(reason, os, borrower.facebook_name || borrower.display_name, signInMethod(auth.user));
          const result = await sendMessengerMessage(found.id, { text });
          messenger = result.ok ? 'sent' : 'failed';
          if (!result.ok) console.error('reminders: messenger send failed', result.reason);
