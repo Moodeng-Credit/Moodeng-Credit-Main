@@ -792,7 +792,7 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
 
    // 0. Tell the team now — the AI read follows as a reply.
    const who = personOf(user, row.user_id);
-   const stepLine = step ? ` · $${step.min} step${step.autoApprove ? ' (auto-approve)' : ''}` : '';
+   const stepLine = step ? ` · $${step.min} step${step.autoApprove ? ' (approves itself if every check passes)' : ''}` : '';
    const loanLine =
       askedAmount != null
          ? `${loan?.loan_status === 'Lent' && row.requested_amount == null ? 'Has a loan' : 'Asking'} $${askedAmount}${askedRepay ? ` → repay $${askedRepay}` : ''}${stepLine}`
