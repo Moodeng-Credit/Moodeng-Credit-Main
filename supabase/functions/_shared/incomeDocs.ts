@@ -1,5 +1,5 @@
-import { extractText, getDocumentProxy } from 'npm:unpdf@1.8.1';
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { extractText, getDocumentProxy, getMeta } from 'npm:unpdf@1.8.1';
 
 import { postDiscord } from './discord.ts';
 import { sendPushToUser } from './pushDelivery.ts';
@@ -37,6 +37,11 @@ export const parseStatedIncome = (text: string | null | undefined) => {
 type Nullable<T> = T | null;
 
 export type ExtractedField = { key: string; label: string; value: string; page: number; source_text: string };
+/**
+ * What a row is. Only pay, sales, family and other count as income: money from a loan app, a cash-in
+ * from their own account or a refund isn't money they earned.
+ */
+export type TxKind = 'pay' | 'sales' | 'family' | 'loan_in' | 'loan_repay' | 'own_transfer' | 'refund' | 'spend' | 'other';
 export type ExtractedTransaction = {
    date: string;
    description: string;
@@ -44,6 +49,7 @@ export type ExtractedTransaction = {
    balance: Nullable<number>;
    page: number;
    source_text: string;
+   kind?: TxKind;
 };
 export type Extracted = {
    readable: boolean;
@@ -76,6 +82,22 @@ export type Metrics = {
    regular_deposits: Array<{ amount: number; months: number; description: string; refs: string[]; payday: Nullable<number> }>;
    largest_in: Nullable<{ amount: number; share: number; ref: string }>;
    net_pay: Nullable<number>;
+   /** Money in that counts as income (pay, sales, family, other) — not loans, own cash-ins or refunds. */
+   income_in?: number;
+   monthly_income?: number;
+   /** Income in each whole calendar month the document covers, oldest first. */
+   income_by_month?: Array<{ month: string; income: number }>;
+   /** The leanest whole month (needs 2+ whole months), used for "can they afford it". */
+   worst_month_income?: Nullable<number>;
+   months_with_income?: number;
+   loan_in?: number;
+   loan_repay?: number;
+   loan_repay_monthly?: number;
+   /** Loan apps seen in the rows (money in from or out to them). */
+   lenders?: string[];
+   own_transfer_in?: number;
+   /** Days the balance was under about $2. */
+   low_balance_days?: number;
 };
 
 /** Their open request or loan, in USD. */
@@ -96,7 +118,26 @@ const EXAMPLE_JSON = {
    closing_balance: 13500,
    payslip: null,
    fields: [{ key: 'account_last4', label: 'Account', value: '1234', page: 1, source_text: '0917 *** 1234' }],
-   transactions: [{ date: '2026-08-15', description: 'Received from ACME Trading', amount: 12000, balance: 13000, page: 1, source_text: 'Aug 15 Received from ACME Trading +12,000.00 13,000.00' }],
+   transactions: [
+      {
+         date: '2026-08-15',
+         description: 'Received from ACME Trading',
+         amount: 12000,
+         balance: 13000,
+         page: 1,
+         source_text: 'Aug 15 Received from ACME Trading +12,000.00 13,000.00',
+         kind: 'pay'
+      },
+      {
+         date: '2026-08-20',
+         description: 'GLoan disbursement',
+         amount: 3000,
+         balance: 16000,
+         page: 1,
+         source_text: 'Aug 20 GLoan disbursement +3,000.00 16,000.00',
+         kind: 'loan_in'
+      }
+   ],
    visual_anomalies: []
 };
 
@@ -104,6 +145,7 @@ const SYSTEM = `You read proof-of-income documents for a small lender in the Phi
 
 Copy what the document says. Never guess or fill in a number that is not printed.
 - transactions: every row, oldest first. amount is positive for money in, negative for money out. balance is the running balance printed on that row, or null. date as YYYY-MM-DD.
+- kind for each row, from its description: "pay" (salary, wages, freelance or platform payouts e.g. Upwork, Payoneer, Wise, Grab, Lalamove, Shopee/Lazada seller payout), "sales" (payments from customers), "family" (remittance, padala, money from a person), "loan_in" (money from a lender or loan app, e.g. GLoan, GGives, GCredit, Tala, JuanHand, Billease, Home Credit, Maya Credit, SPayLater, Atome, Kredivo, Akulaku, AdaKami, Kredit Pintar), "loan_repay" (money out to a lender or loan app), "own_transfer" (cash-in from their own bank or a store counter, transfer between their own accounts), "refund", "spend" (any other money out), "other" (money in you can't place).
 - source_text: the exact characters printed for that row or field, so a person can find it. Include the reference number (e.g. "Ref No. 1234 567 890123") when the row shows one. page: 1-based, counting files in the order given (a screenshot is one page).
 - fields: other key facts printed (account number last 4 digits only, employer, pay period, permit number, address). Never copy a full account or ID number.
 - period_start / period_end: the statement or pay period as printed, or the first and last transaction dates, YYYY-MM-DD.
@@ -121,6 +163,52 @@ const median = (xs: number[]) => {
    if (!xs.length) return null;
    const s = [...xs].sort((a, b) => a - b);
    return s[Math.floor(s.length / 2)];
+};
+
+// Loan apps and pay-later services borrowers in the Philippines and Indonesia use. Matched on the row
+// description as a backup to the AI's "kind", so borrowed money never counts as income.
+const LENDER_RE =
+   /\b(gloan|ggives|gcredit|tala|juan ?hand|billease|home ?credit|cashalo|digido|maya (?:easy )?credit|s ?pay ?later|shopee ?pay ?later|laz ?pay ?later|lazada ?pay ?later|atome|kredivo|akulaku|kredit ?pintar|adakami|easy ?cash|julo|indodana|spinjam|gopay ?later|moneycat|finbro|robocash|mocasa|pesoloan|cashexpress|pondo ?peso|uangme|rupiah ?cepat|tunaiku)\b/i;
+
+/** The loan app a row mentions, lower-cased with spaces removed, or null. Pure. */
+export const lenderOf = (description: string) => {
+   const m = description.match(LENDER_RE);
+   return m ? m[1].toLowerCase().replace(/\s+/g, '') : null;
+};
+
+const KINDS = new Set<TxKind>(['pay', 'sales', 'family', 'loan_in', 'loan_repay', 'own_transfer', 'refund', 'spend', 'other']);
+const NOT_INCOME = new Set<TxKind>(['loan_in', 'own_transfer', 'refund']);
+
+/** The row's kind: a lender name always wins; otherwise the AI's label, made to fit the sign. Pure. */
+export const kindOf = (t: ExtractedTransaction): TxKind => {
+   const lender = lenderOf(t.description);
+   if (t.amount > 0) {
+      if (lender) return 'loan_in';
+      return t.kind && KINDS.has(t.kind) && t.kind !== 'loan_repay' && t.kind !== 'spend' ? t.kind : 'other';
+   }
+   if (lender || t.kind === 'loan_repay') return 'loan_repay';
+   return 'spend';
+};
+
+/** Whole calendar months inside the period (a month counts when 80%+ of its days are in it). Pure. */
+const wholeMonths = (start: string | null, end: string | null) => {
+   const s = start ? Date.parse(start) : NaN;
+   const e = end ? Date.parse(end) : NaN;
+   if (!Number.isFinite(s) || !Number.isFinite(e) || e <= s) return [];
+   const out: string[] = [];
+   const cur = new Date(s);
+   cur.setUTCDate(1);
+   while (cur.getTime() <= e) {
+      const y = cur.getUTCFullYear();
+      const m = cur.getUTCMonth();
+      const first = Date.UTC(y, m, 1);
+      const last = Date.UTC(y, m + 1, 0);
+      const days = (last - first) / 86_400_000 + 1;
+      const covered = (Math.min(last, e) - Math.max(first, s)) / 86_400_000 + 1;
+      if (covered >= days * 0.8) out.push(`${y}-${String(m + 1).padStart(2, '0')}`);
+      cur.setUTCMonth(m + 1);
+   }
+   return out;
 };
 
 /** Money in/out, balances and regular deposits (with their usual day of the month), from the rows. Pure. */
@@ -143,7 +231,8 @@ export const computeMetrics = (doc: Extracted): Metrics => {
    const groups: Array<{ amount: number; months: Set<string>; description: string; refs: string[]; days: number[] }> = [];
    for (const c of credits) {
       const m = monthKey(c.date);
-      if (!m || c.amount < 100) continue;
+      // A monthly GLoan or a cash-in from their own bank isn't a salary.
+      if (!m || c.amount < 100 || NOT_INCOME.has(kindOf(c))) continue;
       const day = dayOf(c.date);
       const g = groups.find((x) => Math.abs(x.amount - c.amount) <= x.amount * 0.1);
       if (g) {
@@ -160,6 +249,34 @@ export const computeMetrics = (doc: Extracted): Metrics => {
 
    const largest = credits.reduce<(typeof credits)[number] | null>((best, t) => (!best || t.amount > best.amount ? t : best), null);
 
+   // Income vs borrowed money, by row kind.
+   const kinds = tx.map(kindOf);
+   const sum = (pick: (t: ExtractedTransaction, k: TxKind) => boolean) =>
+      tx.reduce((s, t, i) => (pick(t, kinds[i]) ? s + Math.abs(t.amount) : s), 0);
+   const incomeIn = sum((t, k) => t.amount > 0 && !NOT_INCOME.has(k));
+   const loanIn = sum((_, k) => k === 'loan_in');
+   const loanRepay = sum((_, k) => k === 'loan_repay');
+   const ownIn = sum((t, k) => t.amount > 0 && k === 'own_transfer');
+   const lenders = [
+      ...new Set(
+         tx
+            .map((t, i) => (kinds[i] === 'loan_in' || kinds[i] === 'loan_repay' ? (lenderOf(t.description) ?? 'loan app') : null))
+            .filter((x): x is string => Boolean(x))
+      )
+   ];
+   const periodStart = doc.period_start ?? tx[0]?.date ?? null;
+   const periodEnd = doc.period_end ?? tx[tx.length - 1]?.date ?? null;
+   const whole = wholeMonths(periodStart, periodEnd);
+   const byMonth = whole.map((month) => ({
+      month,
+      income: round2(
+         tx.reduce((s, t, i) => (t.amount > 0 && !NOT_INCOME.has(kinds[i]) && monthKey(t.date) === month ? s + t.amount : s), 0)
+      )
+   }));
+   // "Low" = under about $2 in their currency: one bill away from zero.
+   const lowLine = 2 * (PER_USD[(doc.currency ?? 'PHP').toUpperCase()] ?? 57);
+   const lowDays = new Set(tx.filter((t) => typeof t.balance === 'number' && t.balance < lowLine).map((t) => t.date)).size;
+
    return {
       months_covered: round2(spanMonths),
       transaction_count: tx.length,
@@ -171,7 +288,18 @@ export const computeMetrics = (doc: Extracted): Metrics => {
       lowest_balance: balances.length ? Math.min(...balances) : null,
       regular_deposits: regular,
       largest_in: largest && totalIn > 0 ? { amount: largest.amount, share: round2(largest.amount / totalIn), ref: largest.ref } : null,
-      net_pay: doc.payslip?.net_pay ?? null
+      net_pay: doc.payslip?.net_pay ?? null,
+      income_in: round2(incomeIn),
+      monthly_income: round2(incomeIn / Math.max(1, spanMonths)),
+      income_by_month: byMonth,
+      worst_month_income: byMonth.length >= 2 ? Math.min(...byMonth.map((m) => m.income)) : null,
+      months_with_income: byMonth.filter((m) => m.income > 0).length,
+      loan_in: round2(loanIn),
+      loan_repay: round2(loanRepay),
+      loan_repay_monthly: round2(loanRepay / Math.max(1, spanMonths)),
+      lenders,
+      own_transfer_in: round2(ownIn),
+      low_balance_days: lowDays
    };
 };
 
@@ -194,22 +322,59 @@ export const namesMatch = (a: string | null | undefined, b: string | null | unde
    return shared >= Math.min(2, x.size, y.size);
 };
 
-export type PdfInfo = { encrypted: boolean; producer: string | null; creator: string | null; created: string | null; modified: string | null };
+export type PdfInfo = {
+   encrypted: boolean;
+   producer: string | null;
+   creator: string | null;
+   created: string | null;
+   modified: string | null;
+   /** How many times the file was saved (incremental updates); a fresh export is 1. */
+   saves?: number;
+   /** Carries a digital signature (a bank's own signed statement). */
+   signed?: boolean;
+};
 
-/** Best-effort read of the PDF info dictionary (plain-text trailer only; compressed ones read as null). */
+/**
+ * Best-effort read of the PDF info dictionary from the plain-text trailer, plus how many times the
+ * file was saved. Compressed info dictionaries read as null here; fillPdfInfo() fills those. Pure.
+ */
 export const readPdfInfo = (bytes: Uint8Array): PdfInfo => {
    const text = new TextDecoder('latin1').decode(bytes);
    const pick = (key: string) => text.match(new RegExp(`/${key}\\s*\\(([^)]{0,200})\\)`))?.[1]?.trim() ?? null;
+   // A "fast web view" (linearized) file has two end markers from the start, not from a second save.
+   const eofs = (text.match(/%%EOF/g) ?? []).length;
+   const linearized = /\/Linearized\s/.test(text.slice(0, 2048));
    return {
       encrypted: /\/Encrypt\s/.test(text),
       producer: pick('Producer'),
       creator: pick('Creator'),
       created: pick('CreationDate'),
-      modified: pick('ModDate')
+      modified: pick('ModDate'),
+      saves: Math.max(1, eofs - (linearized ? 1 : 0)),
+      signed: /\/ByteRange\s*\[/.test(text)
    };
 };
 
-const EDITOR_RE = /photoshop|canva|illustrator|gimp|ilovepdf|smallpdf|sejda|pdfescape|pdf-?xchange|foxit phantom|word|wps|libreoffice|google docs|inkscape|affinity|pixelmator|picsart/i;
+/** Fill the producer/creator/dates the plain read missed (compressed PDFs), via the PDF library. */
+const fillPdfInfo = async (info: PdfInfo, bytes: Uint8Array<ArrayBuffer>): Promise<PdfInfo> => {
+   if (info.producer || info.creator) return info;
+   try {
+      const { info: meta } = (await getMeta(await getDocumentProxy(new Uint8Array(bytes)))) as { info: Record<string, unknown> };
+      const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null);
+      return {
+         ...info,
+         producer: str(meta.Producer),
+         creator: str(meta.Creator),
+         created: info.created ?? str(meta.CreationDate),
+         modified: info.modified ?? str(meta.ModDate)
+      };
+   } catch {
+      return info;
+   }
+};
+
+const EDITOR_RE =
+   /photoshop|canva|illustrator|gimp|ilovepdf|smallpdf|sejda|pdfescape|pdf-?xchange|foxit phantom|word|wps|libreoffice|google docs|inkscape|affinity|pixelmator|picsart/i;
 
 export type FileFacts = { name: string; image: ImageInfo | null; markers: ReturnType<typeof fileMarkers> };
 
@@ -258,12 +423,54 @@ export type CheckContext = {
    now?: number;
 };
 
-/** What the document shows coming in per month, in USD (net pay, else the main regular deposit, else all money in). */
+/**
+ * Monthly income in their currency for "can they afford it": net pay, else the leanest whole month
+ * (gig and seller income swings, so plan for a lean month) but never under half the monthly average,
+ * else the average. Loans, own cash-ins and refunds are never income. Rows read before this existed
+ * fall back to the old rule (main regular deposit, else all money in). Pure.
+ */
+export const incomeForAfford = (metrics: Metrics) => {
+   if (metrics.net_pay) return metrics.net_pay;
+   if (metrics.monthly_income == null) return metrics.regular_deposits[0]?.amount || metrics.monthly_in;
+   if (metrics.worst_month_income != null) return Math.max(metrics.worst_month_income, metrics.monthly_income / 2);
+   return metrics.monthly_income;
+};
+
+/** What the document shows coming in per month, in USD (see incomeForAfford). */
 export const monthlyIncomeUsd = (doc: Extracted, metrics: Metrics) => {
    const rate = PER_USD[(doc.currency ?? 'PHP').toUpperCase()];
    if (!rate) return null;
-   const monthly = metrics.net_pay ?? (metrics.regular_deposits[0]?.amount || metrics.monthly_in);
+   const monthly = incomeForAfford(metrics);
    return monthly > 0 ? round2(monthly / rate) : null;
+};
+
+export type Affordability = 'comfortable' | 'tight' | 'too_much' | 'unknown';
+export type Authenticity = 'real' | 'check' | 'fake_signs';
+
+/**
+ * Can they afford it, in one word: the repayment as a share of monthly income left after what they
+ * already pay other loan apps. The step's limit (no limit set: 50%) splits tight from too much; under
+ * 60% of the limit is comfortable. Pure.
+ */
+export const affordOf = (doc: Extracted, metrics: Metrics, loan: LoanContext | null, step: IncomeDocStep | null | undefined) => {
+   const rate = PER_USD[(doc.currency ?? 'PHP').toUpperCase()];
+   const income = incomeForAfford(metrics);
+   const none = {
+      label: 'unknown' as Affordability,
+      share: null as number | null,
+      income_usd: null as number | null,
+      debt_usd: null as number | null
+   };
+   if (!loan || !rate || !(income > 0)) return none;
+   const debt = metrics.loan_repay_monthly ?? 0;
+   const incomeUsd = round2(income / rate);
+   const debtUsd = round2(debt / rate);
+   const available = incomeUsd - debtUsd;
+   if (available <= 0) return { label: 'too_much' as Affordability, share: null, income_usd: incomeUsd, debt_usd: debtUsd };
+   const share = round2(loan.total_repayment / available);
+   const limit = step === undefined ? 0.3 : (step?.maxShare ?? 0.5);
+   const label: Affordability = share <= limit * 0.6 ? 'comfortable' : share <= limit ? 'tight' : 'too_much';
+   return { label, share, income_usd: incomeUsd, debt_usd: debtUsd };
 };
 
 /** Rule checks: edits, identity, and ability to repay. Pure. */
@@ -330,7 +537,52 @@ export const runChecks = (doc: Extracted, metrics: Metrics, ctx: CheckContext): 
          });
       }
    }
+   for (const pdf of ctx.pdfs) {
+      // A bank's own export is written once. Extra save sections mean someone opened it in an editor and
+      // saved it again. A bank's digital signature adds one legitimately; phone scans re-save on rename.
+      if ((pdf.saves ?? 1) > 1 && !pdf.signed) {
+         const tool = [pdf.producer, pdf.creator].filter(Boolean).join(' / ');
+         const phoneScan = /\b(iOS|iPadOS|Android|CamScanner|Adobe Scan|Genius Scan|Microsoft Lens|Scanner)\b/i.test(tool);
+         flags.push({
+            code: 'pdf_saved_again',
+            severity: phoneScan ? 'info' : 'orange',
+            detail: phoneScan
+               ? `Phone scan saved ${pdf.saves} times — normal for scans.`
+               : `PDF was saved ${pdf.saves} times; a bank or e-wallet export is saved once. Compare it with the app.`
+         });
+      }
+   }
    for (const note of doc.visual_anomalies) flags.push({ code: 'visual_anomaly', severity: 'orange', detail: note });
+
+   // --- Math that fakes get wrong (plain code; AI eyes miss these) ----------------------------------
+   const dated = tx.map((t, i) => ({ i, at: Date.parse(t.date) })).filter((x) => Number.isFinite(x.at));
+   let backwards = 0;
+   for (let i = 1; i < dated.length; i++) if (dated[i].at < dated[i - 1].at) backwards++;
+   // Rows come oldest first; one slip is a screenshot overlap, more means rows were moved or typed in.
+   if (backwards > 1 && backwards < dated.length - 2) {
+      flags.push({
+         code: 'dates_out_of_order',
+         severity: 'orange',
+         detail: `${backwards} rows are out of date order — real histories run in order.`
+      });
+   }
+   const future = dated.filter((x) => x.at > now + 86_400_000);
+   if (future.length) {
+      flags.push({
+         code: 'future_date',
+         severity: 'orange',
+         detail: `${future.length} row(s) dated after today (e.g. ${tx[future[0].i].date}) [T${future[0].i + 1}].`
+      });
+   }
+   const ewallet = doc.doc_type === 'gcash_history' || doc.doc_type === 'maya_history';
+   const negative = tx.findIndex((t) => typeof t.balance === 'number' && t.balance < -1);
+   if (ewallet && negative >= 0) {
+      flags.push({
+         code: 'balance_negative',
+         severity: 'red',
+         detail: `Balance below zero at [T${negative + 1}] — a GCash or Maya wallet can't go negative.`
+      });
+   }
 
    // --- Fakes, read from the file itself (no AI) ----------------------------------------------------
    for (const f of ctx.files ?? []) {
@@ -373,8 +625,7 @@ export const runChecks = (doc: Extracted, metrics: Metrics, ctx: CheckContext): 
    }
 
    // --- Ability to repay --------------------------------------------------------------------------
-   const detectedMonthly = metrics.net_pay ?? (metrics.regular_deposits[0]?.amount || metrics.monthly_in);
-   const incomeUsd = monthlyIncomeUsd(doc, metrics);
+   const detectedMonthly = metrics.net_pay ?? metrics.monthly_income ?? (metrics.regular_deposits[0]?.amount || metrics.monthly_in);
    if (ctx.statedMonthlyIncome && detectedMonthly > 0 && ctx.statedMonthlyIncome > detectedMonthly * 2) {
       flags.push({
          code: 'income_below_stated',
@@ -382,20 +633,71 @@ export const runChecks = (doc: Extracted, metrics: Metrics, ctx: CheckContext): 
          detail: `Said ${ctx.statedMonthlyIncome}/month in their bio; this document shows about ${round2(detectedMonthly)}.`
       });
    }
+
+   // Borrowed money isn't income, and what they already pay other loan apps comes off what's left.
+   const totalCredits = metrics.total_in;
+   if ((metrics.loan_in ?? 0) > 0 && totalCredits > 0) {
+      const share = (metrics.loan_in ?? 0) / totalCredits;
+      flags.push({
+         code: 'borrowed_money_in',
+         severity: share >= 0.3 ? 'orange' : 'info',
+         detail: `${Math.round(share * 100)}% of money in (${round2(metrics.loan_in ?? 0)}) came from loan apps — not counted as income.`
+      });
+   }
+   const lenders = metrics.lenders ?? [];
+   if (lenders.length >= 2) {
+      flags.push({
+         code: 'many_lenders',
+         severity: lenders.length >= 3 ? 'orange' : 'info',
+         detail: `Uses ${lenders.length} loan apps in this period (${lenders.slice(0, 5).join(', ')}).`
+      });
+   }
+   if ((metrics.loan_repay_monthly ?? 0) > 0) {
+      flags.push({
+         code: 'other_loan_payments',
+         severity: 'info',
+         detail: `Pays about ${round2(metrics.loan_repay_monthly ?? 0)}/month to other loan apps — taken off their income in the affordability check.`
+      });
+   }
+   if (metrics.income_in === 0 && totalCredits > 0) {
+      flags.push({
+         code: 'no_real_income',
+         severity: 'orange',
+         detail: 'All money in is loans, refunds or cash-ins from their own accounts — no earned income shown.'
+      });
+   } else if (totalCredits > 0 && (metrics.own_transfer_in ?? 0) >= totalCredits * 0.6) {
+      flags.push({
+         code: 'mostly_cash_ins',
+         severity: 'info',
+         detail: 'Most money in is cash-ins from their own bank or a store — ask where the money comes from.'
+      });
+   }
+
    // The step sets how much of their monthly income the repayment may take (no step: 30%).
    const maxShare = ctx.step ? ctx.step.maxShare : 0.3;
-   if (ctx.loan && incomeUsd && maxShare != null) {
-      const share = ctx.loan.total_repayment / incomeUsd;
-      if (share > maxShare) {
-         flags.push({
-            code: 'repayment_vs_income',
-            severity: share > Math.max(0.5, maxShare + 0.2) ? 'red' : 'orange',
-            detail: `Repayment $${ctx.loan.total_repayment} is ${Math.round(share * 100)}% of ~$${incomeUsd} coming in a month (aim: under ${Math.round(maxShare * 100)}%).`
-         });
-      }
+   const afford = affordOf(doc, metrics, ctx.loan, ctx.step);
+   if (ctx.loan && maxShare != null && afford.income_usd != null && (afford.share == null || afford.share > maxShare)) {
+      const left = round2(afford.income_usd - (afford.debt_usd ?? 0));
+      const debtNote = afford.debt_usd ? ` after ~$${afford.debt_usd} to other loan apps` : '';
+      flags.push({
+         code: 'repayment_vs_income',
+         severity: afford.share == null || afford.share > Math.max(0.5, maxShare + 0.2) ? 'red' : 'orange',
+         detail:
+            afford.share == null
+               ? `Nothing left of ~$${afford.income_usd} a month${debtNote} to repay $${ctx.loan.total_repayment}.`
+               : `Repayment $${ctx.loan.total_repayment} is ${Math.round(afford.share * 100)}% of ~$${left} a month${debtNote} (aim: under ${Math.round(maxShare * 100)}%).`
+      });
    }
+
    const monthsNeeded = ctx.step ? ctx.step.months : 2;
-   if (!tx.length && !p?.net_pay && doc.doc_type !== 'business_permit') {
+   if (!tx.length && ctx.step && ctx.step.months > 0) {
+      // A payslip, invoice or permit alone is the easiest thing to fake; from this step we need the account it lands in.
+      flags.push({
+         code: 'needs_history',
+         severity: 'orange',
+         detail: `Only a ${doc.doc_type.replace(/_/g, ' ')} — the $${ctx.step.min} step needs ${ctx.step.months}+ month${ctx.step.months === 1 ? '' : 's'} of GCash, Maya or bank history too.`
+      });
+   } else if (!tx.length && !p?.net_pay && doc.doc_type !== 'business_permit') {
       flags.push({ code: 'no_income_rows', severity: 'orange', detail: 'No transactions or pay figures could be read.' });
    } else if (tx.length && monthsNeeded > 0 && metrics.months_covered < monthsNeeded - 0.25) {
       flags.push({
@@ -404,8 +706,34 @@ export const runChecks = (doc: Extracted, metrics: Metrics, ctx: CheckContext): 
          detail: `Only ~${Math.round(metrics.months_covered * 4.3)} weeks of history — this loan needs ${monthsNeeded}+ months.`
       });
    }
-   if (tx.length && !metrics.regular_deposits.length && !p?.net_pay) {
-      flags.push({ code: 'no_regular_income', severity: 'orange', detail: 'No regular (salary-like) deposit across 2+ months.' });
+   if (tx.length && !p?.net_pay) {
+      const whole = metrics.income_by_month;
+      if (!whole) {
+         // Read before income-by-month existed: the old same-amount rule.
+         if (!metrics.regular_deposits.length)
+            flags.push({ code: 'no_regular_income', severity: 'orange', detail: 'No regular (salary-like) deposit across 2+ months.' });
+      } else if (whole.length >= 2) {
+         // Gig, VA and seller pay differs month to month; what matters is that money comes in every month.
+         const empty = whole.filter((m) => m.income <= 0).length;
+         if (empty)
+            flags.push({ code: 'no_regular_income', severity: 'orange', detail: `No income in ${empty} of ${whole.length} whole months.` });
+         const avg = metrics.monthly_income ?? 0;
+         const worst = metrics.worst_month_income ?? 0;
+         if (!empty && avg > 0 && worst < avg * 0.4) {
+            flags.push({
+               code: 'income_swings',
+               severity: 'info',
+               detail: `Lean month ${round2(worst)} vs ${round2(avg)} on average — the affordability check plans for a lean month.`
+            });
+         }
+      }
+   }
+   if ((metrics.low_balance_days ?? 0) >= 5) {
+      flags.push({
+         code: 'often_near_zero',
+         severity: ctx.step?.balance ? 'orange' : 'info',
+         detail: `Balance was near zero on ${metrics.low_balance_days} days — little room if a payment is late.`
+      });
    }
    if (ctx.loan && rate && metrics.average_balance != null) {
       const avgUsd = metrics.average_balance / rate;
@@ -458,7 +786,8 @@ export const runChecks = (doc: Extracted, metrics: Metrics, ctx: CheckContext): 
  */
 export const scoreOf = (doc: Extracted, metrics: Metrics, flags: Flag[]) => {
    let score = 50;
-   if (metrics.regular_deposits.length || doc.payslip?.net_pay) score += 20;
+   const everyMonth = (metrics.income_by_month?.length ?? 0) >= 2 && metrics.months_with_income === metrics.income_by_month?.length;
+   if (metrics.regular_deposits.length || everyMonth || doc.payslip?.net_pay) score += 20;
    if (metrics.months_covered >= 2) score += 10;
    const has = (code: string) => flags.find((f) => f.code === code);
    const afford = has('repayment_vs_income');
@@ -488,8 +817,19 @@ export const buildMemo = (doc: Extracted, metrics: Metrics, flags: Flag[]): stri
       );
    }
    if (metrics.transaction_count) {
-      lines.push(`${metrics.transaction_count} transactions over ~${metrics.months_covered} months: ${money(metrics.monthly_in, cur)}/month in, ${money(metrics.monthly_out, cur)}/month out.`);
-      if (metrics.average_balance != null) lines.push(`Average balance ${money(metrics.average_balance, cur)}, lowest ${money(metrics.lowest_balance, cur)}.`);
+      lines.push(
+         `${metrics.transaction_count} transactions over ~${metrics.months_covered} months: ${money(metrics.monthly_in, cur)}/month in, ${money(metrics.monthly_out, cur)}/month out.`
+      );
+      if (metrics.income_in != null && metrics.income_in !== metrics.total_in) {
+         lines.push(
+            `Earned income ${money(metrics.monthly_income, cur)}/month (loans ${money(metrics.loan_in, cur)}, own cash-ins ${money(metrics.own_transfer_in, cur)} left out).`
+         );
+      }
+      if (metrics.income_by_month && metrics.income_by_month.length >= 2) {
+         lines.push(`By month: ${metrics.income_by_month.map((m) => `${m.month} ${money(m.income, cur)}`).join(' · ')}.`);
+      }
+      if (metrics.average_balance != null)
+         lines.push(`Average balance ${money(metrics.average_balance, cur)}, lowest ${money(metrics.lowest_balance, cur)}.`);
       for (const r of metrics.regular_deposits.slice(0, 2)) {
          lines.push(`Regular deposit ~${money(r.amount, cur)} in ${r.months} months${r.payday ? `, around the ${r.payday}th` : ''} ("${r.description}") [${r.refs.slice(0, 4).join(', ')}].`);
       }
@@ -512,7 +852,16 @@ export const riskOf = (flags: Flag[]): 'green' | 'orange' | 'red' =>
 //   looks_good    every check passed. Still the team's call (no auto-approve).
 
 export type Verdict = 'resend' | 'needs_review' | 'looks_good';
-export type ResendReason = 'password_protected' | 'scanned_pdf' | 'unsupported_file' | 'unreadable' | 'not_financial' | 'old_document' | 'short_history' | 'no_income';
+export type ResendReason =
+   | 'password_protected'
+   | 'scanned_pdf'
+   | 'unsupported_file'
+   | 'unreadable'
+   | 'not_financial'
+   | 'old_document'
+   | 'short_history'
+   | 'need_history'
+   | 'no_income';
 
 /** What the borrower is told to fix, in their words. */
 export const RESEND_TEXT: Record<ResendReason, string> = {
@@ -523,6 +872,8 @@ export const RESEND_TEXT: Record<ResendReason, string> = {
    not_financial: 'This doesn’t look like a GCash or Maya history, bank statement or payslip. Please send one of those.',
    old_document: 'This is more than 2 months old. Please send your latest one.',
    short_history: 'This doesn’t show enough history for the amount you’re asking. Please send your last 2–3 months.',
+   need_history:
+      'For this amount we also need your GCash, Maya or bank history showing the money you receive (screenshots are fine). Please send it together with your payslip or invoice.',
    no_income: 'We couldn’t see money coming in. Please send a history or statement that shows the money you receive.'
 };
 
@@ -530,13 +881,54 @@ export type CheckSection = { key: string; label: string; status: 'pass' | 'warn'
 
 // Which flag belongs to which named check. Anything that could mean a fake is in FAKE_SECTIONS.
 const SECTIONS: Array<{ key: string; label: string; codes: string[] }> = [
-   { key: 'authentic', label: 'Not edited', codes: ['balance_math', 'running_balance', 'payslip_math', 'made_in_editor', 'edited_after_creation', 'visual_anomaly', 'edited_image'] },
+   {
+      key: 'authentic',
+      label: 'Not edited',
+      codes: [
+         'balance_math',
+         'running_balance',
+         'payslip_math',
+         'made_in_editor',
+         'edited_after_creation',
+         'pdf_saved_again',
+         'visual_anomaly',
+         'edited_image',
+         'dates_out_of_order',
+         'future_date',
+         'balance_negative'
+      ]
+   },
    { key: 'not_ai', label: 'Not AI-made', codes: ['ai_label', 'ai_generator', 'ai_image_size', 'gcash_ref_repeated', 'gcash_ref_format'] },
    { key: 'identity', label: 'Name matches ID', codes: ['name_mismatch'] },
    { key: 'unique', label: 'Not used by another account', codes: ['same_file_other_account', 'same_rows_other_account'] },
-   { key: 'recent', label: 'Recent and 2+ months', codes: ['old_document', 'short_history'] },
-   { key: 'income', label: 'Regular income', codes: ['no_income_rows', 'no_regular_income', 'income_below_stated', 'one_big_deposit'] },
-   { key: 'afford', label: 'Can afford the repayment', codes: ['repayment_vs_income', 'balance_below_repayment', 'due_far_from_payday', 'live_call'] }
+   { key: 'recent', label: 'Recent, with enough history', codes: ['old_document', 'short_history', 'needs_history'] },
+   {
+      key: 'income',
+      label: 'Earned income every month',
+      codes: [
+         'no_income_rows',
+         'no_regular_income',
+         'no_real_income',
+         'borrowed_money_in',
+         'mostly_cash_ins',
+         'income_swings',
+         'income_below_stated',
+         'one_big_deposit'
+      ]
+   },
+   {
+      key: 'afford',
+      label: 'Can afford the repayment',
+      codes: [
+         'repayment_vs_income',
+         'many_lenders',
+         'other_loan_payments',
+         'balance_below_repayment',
+         'often_near_zero',
+         'due_far_from_payday',
+         'live_call'
+      ]
+   }
 ];
 const FAKE_SECTIONS = new Set(['authentic', 'not_ai', 'identity', 'unique']);
 
@@ -572,8 +964,29 @@ export const verdictOf = (flags: Flag[], docType: Extracted['doc_type']): { verd
    if (has('no_income_rows')) return { verdict: 'resend', reason: 'no_income' };
    if (has('old_document')) return { verdict: 'resend', reason: 'old_document' };
    if (has('short_history')) return { verdict: 'resend', reason: 'short_history' };
+   if (has('needs_history')) return { verdict: 'resend', reason: 'need_history' };
    return { verdict: serious.length ? 'needs_review' : 'looks_good', reason: null };
 };
+
+/** "Is it real?" in one word, from the four fake-sign checks. Pure. */
+export const authenticityOf = (sections: CheckSection[]): Authenticity => {
+   const fake = sections.filter((s) => FAKE_SECTIONS.has(s.key));
+   if (fake.some((s) => s.status === 'fail')) return 'fake_signs';
+   if (fake.some((s) => s.status === 'warn')) return 'check';
+   return 'real';
+};
+
+const REAL_LINE: Record<Authenticity, string> = { real: '✅ Looks real', check: '🟠 Check it', fake_signs: '🔴 Fake signs' };
+const AFFORD_LINE: Record<Affordability, string> = {
+   comfortable: '💚 Can afford it',
+   tight: '🟡 Tight',
+   too_much: '🔴 Too much to repay',
+   unknown: '❔ No amount to check'
+};
+
+/** Small steps approve themselves only on a real account history: never on a payslip, invoice or permit alone. Pure. */
+export const canAutoApprove = (verdict: Verdict, step: IncomeDocStep | null, doc: Extracted, real: Authenticity, afford: Affordability) =>
+   verdict === 'looks_good' && step?.autoApprove === true && doc.transactions.length > 0 && real === 'real' && afford !== 'too_much';
 
 const VERDICT_LINE: Record<Verdict, string> = {
    resend: '↩️ Asked them to resend',
@@ -659,7 +1072,8 @@ export const normalizeExtracted = (raw: Record<string, unknown>): Extracted => {
             amount: numOrNull(t.amount) ?? NaN,
             balance: numOrNull(t.balance),
             page: Number(t.page) || 1,
-            source_text: String(t.source_text ?? '')
+            source_text: String(t.source_text ?? ''),
+            ...(KINDS.has(t.kind as TxKind) ? { kind: t.kind as TxKind } : {})
          }))
          .filter((t) => Number.isFinite(t.amount)),
       visual_anomalies: arr<unknown>(raw.visual_anomalies).map(String).filter(Boolean)
@@ -869,7 +1283,7 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
             locked = true;
             continue;
          }
-         pdfs.push(info);
+         pdfs.push(await fillPdfInfo(info, bytes));
       } else if (!IMAGE_TYPES.has(mime)) {
          unsupported = true; // HEIC etc.
          continue;
@@ -950,6 +1364,9 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       note: `${doc.transactions.length} rows read${locked ? ' (a locked PDF was skipped)' : ''}${unsupported ? ' (a HEIC photo was skipped)' : ''}`
    });
    const { verdict, reason } = verdictOf(flags, doc.doc_type);
+   const authenticity = authenticityOf(checks);
+   const afford = affordOf(doc, metrics, loanCtx, step);
+   const labels = `${REAL_LINE[authenticity]} · ${AFFORD_LINE[afford.label]}${afford.share != null ? ` (${Math.round(afford.share * 100)}% of income)` : ''}`;
 
    let aiNote: { verdict: string; note: string } | null = null;
    if (verdict !== 'resend') {
@@ -960,7 +1377,8 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
             document: { type: doc.doc_type, institution: doc.institution, period: [doc.period_start, doc.period_end], currency: doc.currency },
             metrics,
             checks: flags,
-            score
+            is_it_real: authenticity,
+            can_afford: afford
          });
       } catch (err) {
          console.error('income doc note failed', err);
@@ -978,23 +1396,33 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       flags,
       memo,
       risk,
+      // Kept for testing against repayments later; the team sees the two labels instead.
       score,
+      authenticity,
+      affordability: afford.label,
+      afford_share: afford.share,
       checks,
       ai_note: aiNote ? `${aiNote.verdict.toUpperCase()}: ${aiNote.note}` : null,
       model: MODEL
    };
-   if (verdict === 'resend' && reason) return askResend(patch, reason, `score ${score}/100`);
+   if (verdict === 'resend' && reason) return askResend(patch, reason, labels);
    const checkLine = checks.map((c) => `${c.status === 'pass' ? '✅' : c.status === 'warn' ? '🟠' : '🔴'} ${c.label}`).join('\n');
-   // Small steps ($40 today): every check passed → approved without a team decision.
-   const autoApprove = verdict === 'looks_good' && step?.autoApprove === true;
+   // Small steps ($40 today): approved without a team decision only on a clean, real account history.
+   const autoApprove = canAutoApprove(verdict, step, doc, authenticity, afford.label);
    const headline = autoApprove ? `✅ Approved automatically ($${step!.min} step)` : VERDICT_LINE[verdict];
+   const callLine = step?.liveCall
+      ? `📞 $${step.min}+ step: have them open GCash/Maya and scroll their history live on a video call before approving.`
+      : null;
    const result = await finish(
       {
          ...patch,
          verdict,
          ...(autoApprove ? { decision: 'approved', decided_at: new Date().toISOString(), decided_by: `auto ($${step!.min} step)` } : {})
       },
-      [`${headline} · score ${score}/100${aiNote ? ` · AI says ${aiNote.verdict}` : ''}`, checkLine, memo, aiNote?.note].filter(Boolean).join('\n\n').slice(0, 3900)
+      [`${headline}\n${labels}${aiNote ? ` · AI says ${aiNote.verdict}` : ''}`, callLine, checkLine, memo, aiNote?.note]
+         .filter(Boolean)
+         .join('\n\n')
+         .slice(0, 3900)
    );
    if (autoApprove) await notifyIncomeDecision(supabase, id);
    return result;

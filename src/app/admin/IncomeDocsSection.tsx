@@ -2,7 +2,14 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { type AdminIncomeDocument, decideIncomeDocument, incomeDocumentUrl, listIncomeDocuments } from '@/app/admin/adminSupabase';
+import {
+   type AdminIncomeDocument,
+   decideIncomeDocument,
+   incomeDocumentUrl,
+   listIncomeDocOutcomes,
+   listIncomeDocuments
+} from '@/app/admin/adminSupabase';
+import { groupOutcomes, type IncomeDocOutcome } from '@/lib/incomeDocOutcomes';
 
 const personLabel = (p: AdminIncomeDocument['user']) =>
    p ? p.display_name?.trim() || (p.username ? `@${p.username}` : 'Unknown') : 'Deleted account';
@@ -23,6 +30,88 @@ const VERDICT_BADGE: Record<string, { label: string; className: string }> = {
 };
 
 const CHECK_ICON: Record<string, string> = { pass: '✅', warn: '🟠', fail: '🔴', skip: '➖' };
+
+// Two plain answers instead of a 0–100 score (the score is kept in the database for testing later).
+const REAL_BADGE: Record<string, { label: string; className: string }> = {
+   real: { label: 'Real? ✅ Looks real', className: 'bg-emerald-900/60 text-emerald-100' },
+   check: { label: 'Real? 🟠 Check it', className: 'bg-amber-900/60 text-amber-100' },
+   fake_signs: { label: 'Real? 🔴 Fake signs', className: 'bg-red-900/70 text-red-100' }
+};
+const AFFORD_BADGE: Record<string, { label: string; className: string }> = {
+   comfortable: { label: 'Afford? 💚 Comfortable', className: 'bg-emerald-900/60 text-emerald-100' },
+   tight: { label: 'Afford? 🟡 Tight', className: 'bg-amber-900/60 text-amber-100' },
+   too_much: { label: 'Afford? 🔴 Too much', className: 'bg-red-900/70 text-red-100' },
+   unknown: { label: 'Afford? ❔ No amount', className: 'bg-white/10 text-[#cfc6dd]' }
+};
+const AFFORD_ORDER = ['comfortable', 'tight', 'too_much', 'unknown'];
+const AFFORD_NAME: Record<string, string> = {
+   comfortable: '💚 Comfortable',
+   tight: '🟡 Tight',
+   too_much: '🔴 Too much',
+   unknown: '❔ No amount',
+   none: 'Read before labels'
+};
+
+const pct = (n: number | null) => (n == null ? '—' : `${Math.round(n * 100)}%`);
+
+/**
+ * Do the labels predict anything? Each read document's next loan, grouped by "can they afford it".
+ * "Could be up to" is the highest late-or-unpaid rate these results still allow, so a small group
+ * with no bad loans doesn't read as zero risk.
+ */
+function OutcomeScorecard({ initial }: { initial?: IncomeDocOutcome[] }) {
+   const [rows, setRows] = useState<IncomeDocOutcome[] | null>(initial ?? null);
+   const [error, setError] = useState<string | null>(null);
+   useEffect(() => {
+      if (initial) return;
+      void listIncomeDocOutcomes()
+         .then(setRows)
+         .catch((err: unknown) => setError(errorMessage(err)));
+   }, [initial]);
+   if (error) return <p className="text-sm font-bold text-red-300">Scorecard: {error}</p>;
+   if (!rows) return null;
+   const groups = groupOutcomes(rows, 'affordability', AFFORD_ORDER);
+   const due = groups.reduce((s, g) => s + g.due, 0);
+   return (
+      <div className="rounded-2xl border border-[#3a2d4f] bg-[#1c0a3a] p-4">
+         <p className="text-base font-black text-white">Did the checks predict repayment?</p>
+         <p className="mt-0.5 text-sm text-[#a89bb8]">
+            The next loan after each document, by “can they afford it”. Late = paid after the end of the day after it was due.
+            {due < 20
+               ? ` Only ${due} loan${due === 1 ? '' : 's'} with a document ha${due === 1 ? 's' : 've'} come due so far — too few to judge yet.`
+               : ''}
+         </p>
+         <div className="mt-2 overflow-x-auto">
+            <table className="w-full min-w-[520px] text-left text-sm text-[#e8e0f2]">
+               <thead className="text-[#a89bb8]">
+                  <tr>
+                     <th className="py-1 pr-3">Can they afford it?</th>
+                     <th className="py-1 pr-3 text-right">Came due</th>
+                     <th className="py-1 pr-3 text-right">On time</th>
+                     <th className="py-1 pr-3 text-right">Late</th>
+                     <th className="py-1 pr-3 text-right">Unpaid</th>
+                     <th className="py-1 pr-3 text-right">Not due yet</th>
+                     <th className="py-1 text-right">Late or unpaid could be up to</th>
+                  </tr>
+               </thead>
+               <tbody>
+                  {groups.map((g) => (
+                     <tr key={g.key} className="border-t border-[#3a2d4f]">
+                        <td className="py-1 pr-3 font-bold">{AFFORD_NAME[g.key] ?? g.key}</td>
+                        <td className="py-1 pr-3 text-right font-mono">{g.due}</td>
+                        <td className="py-1 pr-3 text-right font-mono">{g.onTime}</td>
+                        <td className="py-1 pr-3 text-right font-mono">{g.late}</td>
+                        <td className="py-1 pr-3 text-right font-mono">{g.unpaid}</td>
+                        <td className="py-1 pr-3 text-right font-mono">{g.notDue}</td>
+                        <td className="py-1 text-right font-mono">{pct(g.upperBadRate)}</td>
+                     </tr>
+                  ))}
+               </tbody>
+            </table>
+         </div>
+      </div>
+   );
+}
 
 const bkk = (iso: string) =>
    new Date(iso).toLocaleString('en-US', { timeZone: 'Asia/Bangkok', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -90,7 +179,8 @@ function DocPreviews({ files, onOpen }: { files: AdminIncomeDocument['files']; o
    );
 }
 
-export default function IncomeDocsSection() {
+/** `preview` (DEV screenshot harness only) shows sample sends instead of reading the database. */
+export default function IncomeDocsSection({ preview }: { preview?: { docs: AdminIncomeDocument[]; outcomes: IncomeDocOutcome[] } } = {}) {
    const [docs, setDocs] = useState<AdminIncomeDocument[]>([]);
    const [loading, setLoading] = useState(true);
    const [error, setError] = useState<string | null>(null);
@@ -101,6 +191,11 @@ export default function IncomeDocsSection() {
    const [reasons, setReasons] = useState<Record<string, string>>({});
 
    const load = useCallback(async () => {
+      if (preview) {
+         setDocs(preview.docs);
+         setLoading(false);
+         return;
+      }
       setLoading(true);
       try {
          setDocs(await listIncomeDocuments());
@@ -110,7 +205,7 @@ export default function IncomeDocsSection() {
       } finally {
          setLoading(false);
       }
-   }, []);
+   }, [preview]);
 
    useEffect(() => {
       void load();
@@ -159,9 +254,10 @@ export default function IncomeDocsSection() {
                   </span>
                </h2>
                <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
-                  Proof of income borrowers send from moodeng.app/documents. The AI reads the files; numbers, checks and the score are
-                  worked out in code. The score isn&apos;t a tested prediction yet — compare it with repayments once ~30 loans above $60
-                  have come due.
+                  Proof of income borrowers send from moodeng.app/documents. The AI reads the files; the numbers and checks are worked out
+                  in code. Each send gets two answers: is it real, and can they afford it (earned income in their leanest month, with
+                  loan-app money left out and what they pay other loan apps taken off). Neither is a tested prediction yet — the scorecard
+                  below shows how they hold up as loans come due.
                </p>
             </div>
             <div className="flex gap-2">
@@ -181,6 +277,7 @@ export default function IncomeDocsSection() {
                </button>
             </div>
          </div>
+         <OutcomeScorecard initial={preview?.outcomes} />
          {error ? <p className="text-sm font-bold text-red-300">{error}</p> : null}
          {!shown.length && !loading ? <p className="text-base font-bold text-[#6f6385]">Nothing to review.</p> : null}
 
@@ -201,9 +298,27 @@ export default function IncomeDocsSection() {
                                     {VERDICT_BADGE[doc.verdict].label}
                                  </span>
                               ) : null}
-                              {doc.score != null ? <span className="mr-2 rounded-lg bg-white/10 px-2 py-0.5">{doc.score}/100</span> : null}
                               {personLabel(doc.user)}
                            </p>
+                           {doc.authenticity || doc.affordability ? (
+                              <p className="my-1 flex flex-wrap gap-1.5 text-sm font-bold">
+                                 {doc.authenticity ? (
+                                    <span className={`rounded-lg px-2 py-0.5 ${REAL_BADGE[doc.authenticity].className}`}>
+                                       {REAL_BADGE[doc.authenticity].label}
+                                    </span>
+                                 ) : null}
+                                 {doc.affordability ? (
+                                    <span className={`rounded-lg px-2 py-0.5 ${AFFORD_BADGE[doc.affordability].className}`}>
+                                       {AFFORD_BADGE[doc.affordability].label}
+                                       {doc.afford_share != null
+                                          ? ` · repay = ${Math.round(Number(doc.afford_share) * 100)}% of income`
+                                          : ''}
+                                    </span>
+                                 ) : null}
+                              </p>
+                           ) : doc.score != null ? (
+                              <p className="my-1 text-sm text-[#a89bb8]">Read before the two labels existed (old score {doc.score}/100)</p>
+                           ) : null}
                            <p className="text-sm font-medium text-[#a89bb8]">
                               {(doc.doc_type ?? 'document').replace(/_/g, ' ')} · sent {bkk(doc.created_at)}
                               {doc.requested_amount ? ` · asking $${Number(doc.requested_amount)}` : ''}
