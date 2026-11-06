@@ -238,6 +238,24 @@ const ewalletPayoutsOn = async (admin: SupabaseClient) => {
    );
 };
 
+// Hide the cash-out while Stableyard can't pay out. Their bank list fails whenever their payout provider
+// is down (e.g. 503 payment_provider_unavailable, 2026-11-07 ~03:00 BKK), so 'status' checks it first and
+// answers enabled:false → the app hides the Withdraw card until it works again. Cached a minute per instance.
+let payoutUpCache: { at: number; up: boolean } | null = null;
+const bankPayoutUp = async () => {
+   if (payoutUpCache && Date.now() - payoutUpCache.at < 60_000) return payoutUpCache.up;
+   const result = await stableyard.listBeneficiaryBanks('PH').catch(() => ({ ok: false as const, status: 0, error: 'unreachable' }));
+   const banks = result.ok ? (result.data as { banks?: unknown[] } | null)?.banks : null;
+   const up = result.ok && Array.isArray(banks) && banks.length > 0;
+   if (!up)
+      console.warn(
+         '[stableyard-deposit-address] payout down, hiding cash-out',
+         result.ok ? 'no banks' : `${result.status} ${result.error}`
+      );
+   payoutUpCache = { at: Date.now(), up };
+   return up;
+};
+
 /** Bank cash-out is public unless telegram_bot_settings.bank_payout_public is 'off' (kill switch, no deploy). */
 const isBankPayoutPublic = async (admin: SupabaseClient) => {
    const { data } = await admin.from('telegram_bot_settings').select('value').eq('key', 'bank_payout_public').maybeSingle();
@@ -648,6 +666,9 @@ serve(async (req) => {
    }
 
    if (isQr) {
+      if (String(body.qr) === 'status' && !(await bankPayoutUp())) {
+         return json({ enabled: false, code: 'payout_unavailable', error: 'Cash-out is unavailable right now.' });
+      }
       try {
          return await handleQr(admin, userId, String(body.qr), body);
       } catch (err) {
