@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 
-import { ArrowRight, Check, ChevronRight, Clock, Landmark, Loader2, Search, ShieldCheck, XCircle } from 'lucide-react';
+import { ArrowRight, Check, ChevronRight, Clock, IdCard, Landmark, Loader2, Mail, Search, ShieldCheck, XCircle } from 'lucide-react';
 
 import { PhFlag } from '@/components/auth/PhFlag';
 import PoweredByStableyard from '@/components/brand/PoweredByStableyard';
@@ -89,8 +89,7 @@ const PREVIEW: Record<string, FnResult> = {
 
 // A shared Moodeng ID check that Stableyard is still copying or reviewing.
 const REUSE_PENDING = new Set(['sharing', 'submitting', 'imported']);
-const PREVIEW_CONSENT =
-   'I agree that Moodeng shares my ID check (name, date of birth, ID document, selfie and screening result) with Stableyard so I can cash out to my bank or e-wallet.';
+const PREVIEW_CONSENT = 'Sends your name, birthday, ID and selfie to Stableyard.';
 
 async function call(isPreview: boolean, body: Record<string, string | boolean>): Promise<FnResult> {
    if (isPreview) {
@@ -272,63 +271,76 @@ function ErrorLine({ text }: { text: string }) {
    );
 }
 
-// The whole one-time setup at a glance, so the third step (Stableyard's form, which only appears after
-// the first price request) is never a surprise. Shown on the email/ID screen and on the form screen.
-const SETUP_STEPS = [
-   { label: 'Confirm your email', hint: 'We send a 6-digit code' },
-   { label: 'ID check', hint: "On Stableyard's page" },
-   { label: 'Short form', hint: 'Phone and nationality, about 2 minutes' }
-];
-
-function SetupSteps({ done, reuse = false }: { done: number; reuse?: boolean }) {
+// One-time setup (Milestone design): a banner, three dots (Email → ID → Form), and a short card for
+// the step you're on. Keep every step to a few words.
+function SetupBanner() {
    return (
-      <Panel>
-         <div>
-            <p className="text-[16px] font-semibold text-[var(--ink)]">Set up cash-out</p>
-            <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[4px]">
-               Only once, about 5 minutes. Our partner Stableyard sends the pesos to your GCash or bank, so they check a few things first.
-            </p>
+      <div className="relative w-full h-[100px] rounded-[12px] overflow-hidden bg-[linear-gradient(100deg,#efeaff_0%,#ddd5ff_100%)] dark:bg-[linear-gradient(100deg,#252035_0%,#30285a_100%)]">
+         <img
+            src="/dashboard-v2/moo-cashout.png"
+            alt=""
+            aria-hidden="true"
+            className="absolute right-[-6px] bottom-[-28px] h-[128px] w-auto pointer-events-none select-none"
+         />
+         <div className="relative flex h-full flex-col justify-center pl-[16px] pr-[130px]">
+            <h2 className="text-[22px] font-black italic leading-[1.1] tracking-[-0.5px] text-[#6b55f7] dark:text-[#b3a6ff]">
+               Set up cash-out
+            </h2>
+            <p className="mt-[4px] text-[14px] font-semibold text-[#594d65] dark:text-[#e6def0]">One time only</p>
          </div>
-         <ol className="space-y-[10px]">
-            {SETUP_STEPS.map((s, i) => {
-               const state = i < done ? 'done' : i === done ? 'current' : 'next';
-               return (
-                  <li key={s.label} className="flex items-center gap-[12px]">
+      </div>
+   );
+}
+
+const SETUP_STEPS = ['Email', 'ID', 'Form'];
+
+function SetupStepper({ done }: { done: number }) {
+   return (
+      <div className="flex items-start px-[4px]">
+         {SETUP_STEPS.map((label, i) => {
+            const state = i < done ? 'done' : i === done ? 'current' : 'next';
+            return (
+               <Fragment key={label}>
+                  <div className="flex w-[52px] shrink-0 flex-col items-center gap-[4px]">
                      <span
-                        className={`flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full text-[13px] font-semibold ${
+                        className={`flex h-[28px] w-[28px] items-center justify-center rounded-full text-[13px] font-bold ${
                            state === 'done'
                               ? 'bg-[#1baf7a] text-white'
                               : state === 'current'
-                                ? 'bg-[#6b55f7] text-white'
+                                ? 'bg-[#6b55f7] text-white shadow-[0_0_0_4px_rgba(107,85,247,0.18)]'
                                 : 'border-2 border-[#e8e4ff] text-[var(--text-muted)]'
                         }`}
                      >
                         {state === 'done' ? <Check className="w-[15px] h-[15px]" strokeWidth={3} /> : i + 1}
                      </span>
-                     <div className="min-w-0">
-                        <p
-                           className={`text-[14px] leading-[18px] ${state === 'next' ? 'text-[var(--text-muted)]' : 'font-semibold text-[var(--ink)]'}`}
-                        >
-                           {s.label}
-                        </p>
-                        <p className="text-[12px] leading-[16px] text-[var(--text-muted)]">
-                           {state === 'done' ? 'Done' : reuse && i === 1 ? 'Share the one you did with Moodeng' : s.hint}
-                        </p>
-                     </div>
-                  </li>
-               );
-            })}
-            <li className="flex items-center gap-[12px]">
-               <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-[#f1eeff] text-[#6b55f7]">
-                  <ArrowRight className="w-[15px] h-[15px]" />
-               </span>
-               <p className="text-[13px] leading-[18px] text-[var(--text-muted)]">Then cash out anytime, no setup again</p>
-            </li>
-         </ol>
-         <PoweredByStableyard />
-      </Panel>
+                     <span className={`text-[12px] ${state === 'next' ? 'text-[var(--text-muted)]' : 'font-semibold text-[var(--ink)]'}`}>
+                        {label}
+                     </span>
+                  </div>
+                  {i < SETUP_STEPS.length - 1 ? (
+                     <div className={`mt-[13px] h-[3px] flex-1 rounded-full ${i < done ? 'bg-[#1baf7a]' : 'bg-[#e8e4ff]'}`} />
+                  ) : null}
+               </Fragment>
+            );
+         })}
+      </div>
    );
 }
+
+/** Icon + a few words: the card for "checking your ID" and similar waits. */
+function StatusCard({ icon, title, sub }: { icon: React.ReactNode; title: string; sub: string }) {
+   return (
+      <div className={reuseCardClass}>
+         {icon}
+         <div className="min-w-0">
+            <p className="text-[17px] font-bold leading-[22px] text-[#6b55f7] dark:text-[#a98bff]">{title}</p>
+            <p className="text-[13px] leading-[18px] text-[#7a6ad8] dark:text-[#b3a6ff]">{sub}</p>
+         </div>
+      </div>
+   );
+}
+
+const stepTitleClass = 'flex items-center gap-[8px] text-[16px] font-bold text-[var(--ink)]';
 
 // 'compliance': Stableyard wants a one-time form (nextAction complete_compliance) before it prices the payout.
 // 'pricing': the Payment exists and Stableyard is still working out the quote.
@@ -359,7 +371,6 @@ export default function BankPayoutFlow({
    // Where Stableyard sends its code: the login email, or blank for Telegram / phone / TikTok sign-ups
    // whose login email is a placeholder nobody can read, so they type a real one.
    const [codeEmail, setCodeEmail] = useState('');
-   const [consent, setConsent] = useState(false);
    const [useHostedCheck, setUseHostedCheck] = useState(false);
    useEffect(() => {
       if (isPreview) return;
@@ -621,136 +632,115 @@ export default function BankPayoutFlow({
    if (step === 'verify') {
       const emailDone = Boolean(setup?.emailVerified);
       const reusePending = REUSE_PENDING.has(setup?.reuseImportStatus ?? '');
-      const offerReuse = Boolean(setup?.reuseAvailable && setup?.consentText) && !useHostedCheck && !reusePending;
+      const reviewing = reusePending || setup?.kycStatus === 'requires_review' || setup?.kycStatus === 'in_review';
+      const offerReuse = Boolean(setup?.reuseAvailable && setup?.consentText) && !useHostedCheck && !reviewing;
+      const idStep = emailDone && !setup?.kycApproved;
       return (
          <div className="space-y-[12px]">
-            <SetupSteps done={emailDone ? (setup?.kycApproved ? 2 : 1) : 0} reuse={offerReuse || reusePending} />
+            <SetupBanner />
             <Panel>
+               <SetupStepper done={emailDone ? (setup?.kycApproved ? 2 : 1) : 0} />
                {error ? <ErrorLine text={error} /> : null}
-               <div className="space-y-[8px]">
-                  {!emailDone ? <p className="text-[14px] font-semibold text-[var(--ink)]">1. Confirm your email</p> : null}
-                  {!emailDone ? (
-                     <>
-                        <input
-                           value={codeEmail}
-                           onChange={(e) => setCodeEmail(e.target.value.trim())}
-                           type="email"
-                           inputMode="email"
-                           autoComplete="email"
-                           placeholder="Your email, e.g. juan@gmail.com"
-                           className={inputClass}
-                        />
-                        <button
-                           className={primaryClass}
-                           disabled={busy || !isValidEmail(codeEmail) || isPlaceholderEmail(codeEmail)}
-                           onClick={() => void runOnboarding('email_start', { email: codeEmail })}
-                        >
-                           {challengeId ? 'Send the code again' : 'Send me a code'}
-                        </button>
-                        {challengeId ? (
-                           <div className="flex gap-[8px]">
-                              <input
-                                 value={code}
-                                 onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                 inputMode="numeric"
-                                 placeholder="6-digit code"
-                                 className={inputClass}
-                              />
-                              <button
-                                 className="shrink-0 rounded-[14px] px-[16px] font-semibold text-white bg-[var(--primary)] disabled:bg-[var(--disabled)]"
-                                 disabled={busy || code.length !== 6}
-                                 onClick={() => void runOnboarding('email_confirm', { challengeId, code })}
-                              >
-                                 Confirm
-                              </button>
-                           </div>
-                        ) : null}
-                     </>
-                  ) : null}
-                  {emailDone && !setup?.kycApproved && reusePending ? (
-                     <div className={reuseCardClass}>
-                        <Clock className="w-[36px] h-[36px] shrink-0 text-[#6b55f7] dark:text-[#a98bff]" strokeWidth={2.2} />
-                        <div className="min-w-0">
-                           <p className="text-[17px] font-bold leading-[22px] text-[#6b55f7] dark:text-[#a98bff]">Checking your ID</p>
-                           <p className="text-[13px] leading-[18px] text-[#7a6ad8] dark:text-[#b3a6ff]">
-                              Stableyard got your Moodeng ID check. This usually takes a few minutes. You don&apos;t need to do anything.
-                           </p>
-                        </div>
-                     </div>
-                  ) : null}
-                  {emailDone && !setup?.kycApproved && offerReuse ? (
-                     <>
-                        <div className={reuseCardClass}>
-                           <ShieldCheck
-                              className="w-[40px] h-[40px] shrink-0 text-[#6b55f7] dark:text-[#a98bff]"
-                              fill="currentColor"
-                              stroke="white"
-                              strokeWidth={2}
-                           />
-                           <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-[8px]">
-                                 <p className="text-[18px] font-bold leading-[22px] text-[#6b55f7] dark:text-[#a98bff]">
-                                    Use my Moodeng ID
-                                 </p>
-                                 <span className="rounded-full bg-[#6b55f7] px-[8px] py-[2px] text-[11px] font-semibold text-white">
-                                    Fastest
-                                 </span>
-                              </div>
-                              <p className="mt-[2px] text-[13px] leading-[18px] text-[#7a6ad8] dark:text-[#b3a6ff]">
-                                 You already verified with Moodeng. Share it — no new ID photo or selfie.
-                              </p>
-                           </div>
-                        </div>
-                        <label className="flex items-start gap-[10px] px-[2px] text-[12px] leading-[17px] text-[var(--text-muted)]">
-                           <input
-                              type="checkbox"
-                              checked={consent}
-                              onChange={(e) => setConsent(e.target.checked)}
-                              className="mt-[1px] h-[18px] w-[18px] shrink-0 accent-[#6b55f7]"
-                           />
-                           <span>{setup?.consentText}</span>
-                        </label>
-                        <button
-                           className={primaryClass}
-                           disabled={busy || !consent}
-                           onClick={() => void runOnboarding('kyc_import', { consent: true })}
-                        >
-                           {busy ? 'Sharing…' : 'Share my ID check'}
-                        </button>
-                        <button
-                           className={`${linkClass} flex items-center justify-center gap-[2px]`}
-                           disabled={busy}
-                           onClick={() => setUseHostedCheck(true)}
-                        >
-                           Do a new ID check instead <ChevronRight className="w-[16px] h-[16px]" />
-                        </button>
-                     </>
-                  ) : null}
-                  {emailDone && !setup?.kycApproved && !offerReuse && !reusePending ? (
-                     <>
-                        <p className="text-[14px] font-semibold text-[var(--ink)]">2. ID check</p>
-                        <p className="text-[13px] text-[var(--text-muted)] leading-[18px]">
-                           Stableyard&apos;s page opens in a new tab. Have your ID ready, then come back here.
-                        </p>
-                     </>
-                  ) : null}
-                  {emailDone && !setup?.kycApproved && !offerReuse && !reusePending ? (
+               {!emailDone ? (
+                  <div className="space-y-[8px]">
+                     <p className={stepTitleClass}>
+                        <Mail className="w-[18px] h-[18px] text-[#6b55f7]" /> Your email
+                     </p>
+                     <input
+                        value={codeEmail}
+                        onChange={(e) => setCodeEmail(e.target.value.trim())}
+                        type="email"
+                        inputMode="email"
+                        autoComplete="email"
+                        placeholder="juan@gmail.com"
+                        className={inputClass}
+                     />
                      <button
                         className={primaryClass}
-                        disabled={busy || !emailDone}
+                        disabled={busy || !isValidEmail(codeEmail) || isPlaceholderEmail(codeEmail)}
+                        onClick={() => void runOnboarding('email_start', { email: codeEmail })}
+                     >
+                        {challengeId ? 'Send again' : 'Send code'}
+                     </button>
+                     {challengeId ? (
+                        <div className="flex gap-[8px]">
+                           <input
+                              value={code}
+                              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                              inputMode="numeric"
+                              placeholder="6-digit code"
+                              className={inputClass}
+                           />
+                           <button
+                              className="shrink-0 rounded-[14px] px-[16px] font-semibold text-white bg-[var(--primary)] disabled:bg-[var(--disabled)]"
+                              disabled={busy || code.length !== 6}
+                              onClick={() => void runOnboarding('email_confirm', { challengeId, code })}
+                           >
+                              Confirm
+                           </button>
+                        </div>
+                     ) : null}
+                  </div>
+               ) : null}
+               {idStep && reviewing ? (
+                  <StatusCard
+                     icon={<Clock className="w-[36px] h-[36px] shrink-0 text-[#6b55f7] dark:text-[#a98bff]" strokeWidth={2.2} />}
+                     title="Checking your ID…"
+                     sub="A few minutes"
+                  />
+               ) : null}
+               {idStep && offerReuse ? (
+                  <div className="space-y-[10px]">
+                     <div className={reuseCardClass}>
+                        <ShieldCheck
+                           className="w-[40px] h-[40px] shrink-0 text-[#6b55f7] dark:text-[#a98bff]"
+                           fill="currentColor"
+                           stroke="white"
+                           strokeWidth={2}
+                        />
+                        <div className="flex min-w-0 flex-wrap items-center gap-[8px]">
+                           <p className="text-[18px] font-bold leading-[22px] text-[#6b55f7] dark:text-[#a98bff]">Use my Moodeng ID</p>
+                           <span className="rounded-full bg-[#6b55f7] px-[8px] py-[2px] text-[11px] font-semibold text-white">Fastest</span>
+                        </div>
+                     </div>
+                     {/* Tapping the button is the consent; the line under it is what's shared (saved with the receipt). */}
+                     <button className={primaryClass} disabled={busy} onClick={() => void runOnboarding('kyc_import', { consent: true })}>
+                        {busy ? 'Sharing…' : 'Share my ID'}
+                     </button>
+                     <p className="text-center text-[11px] leading-[15px] text-[var(--text-faint)]">{setup?.consentText}</p>
+                     <button
+                        className={`${linkClass} flex items-center justify-center gap-[2px]`}
+                        disabled={busy}
+                        onClick={() => setUseHostedCheck(true)}
+                     >
+                        New ID check instead <ChevronRight className="w-[16px] h-[16px]" />
+                     </button>
+                  </div>
+               ) : null}
+               {idStep && !offerReuse && !reviewing ? (
+                  <div className="space-y-[8px]">
+                     <p className={stepTitleClass}>
+                        <IdCard className="w-[18px] h-[18px] text-[#6b55f7]" /> ID check
+                     </p>
+                     <p className="text-[13px] text-[var(--text-muted)]">Have your ID ready</p>
+                     <button
+                        className={primaryClass}
+                        disabled={busy}
                         onClick={() => (setup?.kycUrl ? window.open(setup.kycUrl, '_blank', 'noopener') : void runOnboarding('kyc_start'))}
                      >
                         {setup?.kycStatus && setup.kycStatus !== 'not_started' ? 'Continue ID check' : 'Start ID check'}
                      </button>
-                  ) : null}
-                  {!reusePending && (setup?.kycStatus === 'requires_review' || setup?.kycStatus === 'in_review') ? (
-                     <p className="text-[12px] text-[var(--text-muted)]">Your ID is being reviewed. This usually takes a few minutes.</p>
-                  ) : null}
-               </div>
+                  </div>
+               ) : null}
             </Panel>
-            <button className={linkClass} disabled={busy} onClick={() => void loadSetup()}>
-               I finished — check again
-            </button>
+            {emailDone ? (
+               <button className={linkClass} disabled={busy} onClick={() => void loadSetup()}>
+                  Check again
+               </button>
+            ) : null}
+            <div className="flex justify-center">
+               <PoweredByStableyard />
+            </div>
          </div>
       );
    }
@@ -920,19 +910,22 @@ export default function BankPayoutFlow({
    if (step === 'compliance') {
       return (
          <div className="space-y-[12px]">
-            <SetupSteps done={2} />
+            <SetupBanner />
             <Panel>
-               <p className="text-[14px] font-semibold text-[var(--ink)]">3. Short form</p>
-               <p className="text-[13px] text-[var(--text-muted)] leading-[18px]">
-                  Last step. Fill it in one go: the link works only once, so finish before you close it.
-               </p>
+               <SetupStepper done={2} />
                {error ? <ErrorLine text={error} /> : null}
+               <div className="space-y-[8px]">
+                  <p className={stepTitleClass}>
+                     <IdCard className="w-[18px] h-[18px] text-[#6b55f7]" /> Short form
+                  </p>
+                  <p className="text-[13px] text-[var(--text-muted)]">Works once — finish in one go</p>
+                  <button className={primaryClass} onClick={() => window.open(complianceUrl, '_blank', 'noopener')}>
+                     Open form <ArrowRight className="w-4 h-4" />
+                  </button>
+               </div>
             </Panel>
-            <button className={primaryClass} onClick={() => window.open(complianceUrl, '_blank', 'noopener')}>
-               Open the form <ArrowRight className="w-4 h-4" />
-            </button>
             <button className={linkClass} disabled={busy} onClick={() => void recheckPayment()}>
-               {busy ? 'Checking…' : 'I finished — get my price'}
+               {busy ? 'Checking…' : 'Done — get my price'}
             </button>
          </div>
       );

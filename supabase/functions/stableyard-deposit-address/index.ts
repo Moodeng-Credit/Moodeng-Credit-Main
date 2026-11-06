@@ -184,7 +184,7 @@ const handleOnboarding = async (
    }
    if (action === 'kyc_import' || action === 'kyc_import_status') {
       if (action === 'kyc_import') {
-         if (body.consent !== true) return json({ ok: false, code: 'consent_needed', error: 'Tick the box to agree first.' }, 400);
+         if (body.consent !== true) return json({ ok: false, code: 'consent_needed', error: 'Tap Share my ID to agree.' }, 400);
          const emailStatus = await stableyard.getEmailStatus(accountId);
          if (!emailStatus.ok || !isDone(emailStatus.data))
             return json({ ok: false, code: 'email_needed', error: 'Confirm your email first.' }, 409);

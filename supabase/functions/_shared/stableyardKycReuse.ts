@@ -4,7 +4,7 @@
 // Flow (docs: https://docs.stableyard.fi/concepts/individual-kyc):
 //   1. GET  /v2/partners/kyc-reuse-policy        → enabled + receivingApplicationId + consentVersion
 //   2. the UPA email must already be verified    → Stableyard answers 409 verify_account_email otherwise
-//   3. the person ticks consent                  → we keep a receipt row (stableyard_kyc_imports)
+//   3. the person taps "Share my ID" (consent)   → we keep a receipt row (stableyard_kyc_imports)
 //   4. we mint a Didit share token for their newest approved session, addressed to Stableyard's
 //      receiving Didit app (our DIDIT_API_KEY never leaves us)
 //   5. POST /v2/accounts/{id}/kyc/imports        → { shareToken, consent } + Idempotency-Key
@@ -24,10 +24,13 @@ import { stableyard, type StableyardKycImportResponse, type StableyardKycReusePo
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
 
-/** What the person agrees to. Stored with the receipt; the UI shows the same words. */
-export const KYC_CONSENT_TEXT =
-   'I agree that Moodeng shares my ID check (name, date of birth, ID document, selfie and screening result) with Stableyard so I can cash out to my bank or e-wallet.';
-const OUR_CONSENT_VERSION = 'moodeng-kyc-share-v1';
+/**
+ * Shown under the "Share my ID" button; tapping that button is the consent (explicit, one tap, nothing
+ * pre-ticked). Stored with the receipt, so the words here must match what the app shows.
+ * v1 (2026-11-06) was a checkbox with a longer sentence; v2 (2026-11-07) is this tap-to-share line.
+ */
+export const KYC_CONSENT_TEXT = 'Sends your name, birthday, ID and selfie to Stableyard.';
+const OUR_CONSENT_VERSION = 'moodeng-kyc-share-v2-tap';
 
 // Didit's document_type values payout partners take. Raj (Stableyard): passport / national ID, and on
 // 2026-11-07 "driving license works for PHP" (bank payouts are PH-only). Tax Card isn't confirmed, so
@@ -175,7 +178,7 @@ type ImportOutcome =
      }
    | { ok: false; status: number; code: string; error: string; requestId?: string | null };
 
-/** Consent was ticked in the app. Mint a Didit share token and import it into the Stableyard account. */
+/** The person tapped "Share my ID" in the app (their consent). Mint a Didit share token and import it into the Stableyard account. */
 export const importKycToStableyard = async (admin: SupabaseClient, userId: string, accountId: string): Promise<ImportOutcome> => {
    const policyResult = await stableyard.getKycReusePolicy();
    if (!policyResult.ok)
