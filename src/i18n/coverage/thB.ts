@@ -548,6 +548,7 @@ export const thaiCoverageB: Record<string, string> = {
    'for every friend you refer': 'ต่อเพื่อนหนึ่งคนที่คุณแนะนำ',
    'Meet the team, ask anything': 'พบทีมงาน ถามได้ทุกเรื่อง',
    'Apply right after the call': 'ขอเงินกู้ได้ทันทีหลังวิดีโอคอล',
+   'First loan is $15 — pay on time and your limit grows': 'เงินกู้ครั้งแรก $15 — จ่ายตรงเวลาแล้ววงเงินจะเพิ่มขึ้น',
    'A quick note so the team knows how to help.': 'เขียนสั้น ๆ เพื่อให้ทีมงานรู้ว่าจะช่วยคุณอย่างไร',
    "What's the loan for?": 'คุณจะนำเงินกู้ไปใช้ทำอะไร?',
    'Quick picks': 'ตัวเลือกด่วน',
