@@ -139,6 +139,40 @@ export type StableyardDepositNetwork = {
    supportedAssets: Array<StableyardAsset & { minimumDeposit?: { amount: string } | string | null }>;
 };
 
+export type StableyardKycVerification = {
+   id: string;
+   accountId: string;
+   status: 'not_started' | 'pending' | 'in_progress' | 'approved' | 'rejected' | 'expired' | 'requires_review';
+   verificationUrl?: string;
+   eligibility: {
+      status: 'eligible' | 'expired' | 'revoked' | 'requires_review' | 'not_eligible';
+      verifiedAt?: string;
+      validUntil?: string;
+      revokedAt?: string;
+      reasonCode?: string;
+   };
+   nextAction: { type: string };
+};
+
+export type StableyardKycReusePolicy = {
+   enabled: boolean;
+   version?: number;
+   sourceApplicationId?: string;
+   receivingApplicationId?: string;
+   workflowId?: string;
+   trustReview?: boolean;
+   approvalExpiresAt?: string;
+   maxVerificationAgeDays?: number;
+   maxScreeningAgeHours?: number;
+   validityDays?: number;
+   consentVersion?: string;
+};
+
+export type StableyardKycImportResponse = {
+   import: { id: string; status: 'submitting' | 'imported' | 'requires_reconciliation' | 'rejected'; nextAction?: { type: string } };
+   verification?: StableyardKycVerification;
+};
+
 const accountPath = (accountId: string) => `/v2/accounts/${encodeURIComponent(accountId)}`;
 
 export const stableyard = {
@@ -190,6 +224,19 @@ export const stableyard = {
       }),
    getKyc: (accountId: string) => stableyardRequest('GET', `${accountPath(accountId)}/kyc`),
    startKycSession: (accountId: string) => stableyardRequest('POST', `${accountPath(accountId)}/kyc/session`),
+
+   // Reusable KYC (docs: /concepts/individual-kyc). Stableyard ops configure the policy per app; until
+   // then it answers enabled:false. receivingApplicationId is the Didit app to address share tokens to.
+   getKycReusePolicy: () => stableyardRequest<StableyardKycReusePolicy>('GET', '/v2/partners/kyc-reuse-policy'),
+   // Import an existing Didit verification. The share token is a credential: body only, never logged.
+   // Same Idempotency-Key + same token/consent replays the original; changed input conflicts.
+   importKyc: (
+      accountId: string,
+      body: { shareToken: string; consent: { accepted: true; version: string; reference: string } },
+      idempotencyKey: string
+   ) => stableyardRequest<StableyardKycImportResponse>('POST', `${accountPath(accountId)}/kyc/imports`, { body, idempotencyKey }),
+   getKycImport: (accountId: string, importId: string) =>
+      stableyardRequest<StableyardKycImportResponse>('GET', `${accountPath(accountId)}/kyc/imports/${encodeURIComponent(importId)}`),
 
    // External QR payments (PH/VN merchant QR, paid in fiat, funded with USDC). There's no separate
    // offramp API: decode the QR, then create a send Payment with destination type external_qr. Its

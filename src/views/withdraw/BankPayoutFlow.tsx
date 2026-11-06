@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 
-import { ArrowRight, Check, Clock, Landmark, Loader2, Search, XCircle } from 'lucide-react';
+import { ArrowRight, Check, ChevronRight, Clock, Landmark, Loader2, Search, Smartphone, Wallet, XCircle } from 'lucide-react';
 
-import { PhFlag } from '@/components/auth/PhFlag';
 import PoweredByStableyard from '@/components/brand/PoweredByStableyard';
 
 import { isValidEmail } from '@/lib/accountEmail';
@@ -13,8 +12,10 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 // e-wallet, types the account number and a peso amount, gets a USDC quote, then sends that USDC from
 // their Moodeng wallet to Stableyard's escrow address, and Stableyard pays the pesos out over InstaPay.
 // Everything server-side goes through stableyard-deposit-address (qr: setup / bank_list / bank_create /
-// get / sent), which only answers admins + stableyard_qr_testers while this is being tested.
+// get / sent). Open to every borrower since 2026-11-07 (kill switch: bank_payout_public = 'off').
 // Stableyard needs a verified email + its own KYC on the person's account before it pays out fiat.
+// If Stableyard allows it and our Didit record has what payout partners need, the person can share
+// their Moodeng ID check instead of doing a second one (onboarding: kyc_import, with consent).
 
 const FN = 'stableyard-deposit-address';
 const MIN_PHP = 50;
@@ -43,12 +44,28 @@ type FnResult = {
    kycApproved?: boolean;
    kycStatus?: string;
    kycUrl?: string | null;
+   kycEligibility?: string | null;
+   reuseAvailable?: boolean;
+   reuseImportStatus?: string | null;
+   consentText?: string | null;
    sourceReady?: boolean;
    result?: {
       banks?: Bank[];
       challenge?: { id?: string };
       verificationUrl?: string;
-      payment?: { id?: string; status?: string; stage?: string; quoteExpiresAt?: string; expiresAt?: string };
+      payment?: {
+         id?: string;
+         status?: string;
+         stage?: string;
+         quoteExpiresAt?: string;
+         expiresAt?: string;
+         // Stableyard's price breakdown: what to send, the fees inside it, and the PHP→USD rate.
+         funding?: {
+            required?: { amount?: string };
+            totalFees?: { amount?: string };
+            exchangeRate?: { rate?: string; baseAssetCode?: string; quoteAssetCode?: string };
+         } | null;
+      };
       nextAction?: { type?: string; url?: string; expiresAt?: string | null; depositInstructions?: DepositInstructions } | null;
    };
 };
@@ -81,7 +98,17 @@ const PREVIEW: Record<string, FnResult> = {
    sent: { ok: true }
 };
 
-async function call(isPreview: boolean, body: Record<string, string>): Promise<FnResult> {
+// A shared Moodeng ID check that Stableyard is still copying or reviewing.
+const REUSE_PENDING = new Set(['sharing', 'submitting', 'imported']);
+const PREVIEW_CONSENT = 'Sends your name, birthday, ID and selfie to Stableyard.';
+// Stableyard KYC states where the person has nothing to do but wait (or is busy on Stableyard's page).
+const KYC_WAITING = new Set(['pending', 'in_progress', 'requires_review', 'in_review']);
+// While the ID is being checked, re-check setup this often, for at most this many times (~10 minutes).
+const SETUP_POLL_MS = 6000;
+const SETUP_POLL_MAX = 100;
+let previewReviewSince = 0;
+
+async function call(isPreview: boolean, body: Record<string, string | boolean>): Promise<FnResult> {
    if (isPreview) {
       await new Promise((r) => setTimeout(r, 600));
       // ?sim=email / ?sim=verify show the one-time setup at the email / ID step; ?sim=compliance shows
@@ -89,12 +116,56 @@ async function call(isPreview: boolean, body: Record<string, string>): Promise<F
       const sim = new URLSearchParams(window.location.search).get('sim');
       if (body.qr === 'setup' && sim === 'email') return { ok: true, emailVerified: false, kycApproved: false, kycStatus: 'not_started' };
       if (body.qr === 'setup' && sim === 'verify') return { ok: true, emailVerified: true, kycApproved: false, kycStatus: 'not_started' };
+      // ?sim=reuse shows the "use your Moodeng ID check" step; ?sim=reused shows it under review.
+      if (body.qr === 'setup' && sim === 'reuse')
+         return {
+            ok: true,
+            emailVerified: true,
+            kycApproved: false,
+            kycStatus: 'not_started',
+            reuseAvailable: true,
+            consentText: PREVIEW_CONSENT
+         };
+      // ?sim=reused is approved ~8s after it first shows, so the auto-refresh can be seen moving on.
+      if (body.qr === 'setup' && sim === 'reused') {
+         previewReviewSince ||= Date.now();
+         if (Date.now() - previewReviewSince > 8000) return PREVIEW.setup;
+         return { ok: true, emailVerified: true, kycApproved: false, kycStatus: 'requires_review', reuseImportStatus: 'imported' };
+      }
       if (body.qr === 'bank_create' && sim === 'compliance') {
          return {
             ok: true,
             result: {
                payment: { id: 'payment_preview', status: 'requires_action' },
                nextAction: { type: 'complete_compliance', url: 'https://stableyard.fi' }
+            }
+         };
+      }
+      if (body.qr === 'bank_create') {
+         // Priced from the typed pesos like Stableyard does (rate + ~2.2% fees), so the breakdown adds up.
+         const rate = 0.01725;
+         const principal = Number(body.amount ?? 0) * rate;
+         const fee = Math.round(principal * 0.022 * 1e6) / 1e6;
+         const required = (principal + fee).toFixed(6);
+         const priced = PREVIEW.bank_create;
+         return {
+            ...priced,
+            result: {
+               ...priced.result,
+               payment: {
+                  ...priced.result?.payment,
+                  funding: {
+                     required: { amount: required },
+                     totalFees: { amount: String(fee) },
+                     exchangeRate: { rate: String(rate), baseAssetCode: 'PHP', quoteAssetCode: 'USD' }
+                  }
+               },
+               nextAction: priced.result?.nextAction
+                  ? {
+                       ...priced.result.nextAction,
+                       depositInstructions: { ...priced.result.nextAction.depositInstructions!, amount: required }
+                    }
+                  : null
             }
          };
       }
@@ -233,7 +304,6 @@ const primaryClass =
    // Milestone design: purple gradient pill.
    'w-full rounded-[36px] px-[20px] py-[15px] flex items-center justify-center gap-[8px] text-[16px] font-semibold text-white bg-[linear-gradient(85deg,#9584ff_0%,#6b55f7_98%)] shadow-[0_6px_16px_rgba(107,85,247,0.3)] disabled:bg-none disabled:bg-[var(--disabled)] disabled:shadow-none disabled:cursor-not-allowed active:scale-[0.98] transition-all';
 const linkClass = 'w-full text-center text-[15px] font-semibold text-[#4492f1] py-[8px] hover:underline disabled:opacity-60';
-
 function Panel({ children }: { children: React.ReactNode }) {
    return <div className="rounded-[8px] border-2 border-[#e8e4ff] bg-[var(--surface)] p-[16px] space-y-[12px]">{children}</div>;
 }
@@ -246,61 +316,70 @@ function ErrorLine({ text }: { text: string }) {
    );
 }
 
-// The whole one-time setup at a glance, so the third step (Stableyard's form, which only appears after
-// the first price request) is never a surprise. Shown on the email/ID screen and on the form screen.
-const SETUP_STEPS = [
-   { label: 'Confirm your email', hint: 'We send a 6-digit code' },
-   { label: 'ID check', hint: "On Stableyard's page" },
-   { label: 'Short form', hint: 'Phone and nationality, about 2 minutes' }
-];
+// One-time setup (Milestone design): a banner where Moodeng's pandesal grows with each step (tiny →
+// bun → giant hug), three dots, and just the input or button. Keep every step to a few words.
+const SETUP_ART = {
+   email: '/withdraw-setup/pandesal-1.webp',
+   id: '/withdraw-setup/pandesal-2.webp',
+   form: '/withdraw-setup/pandesal-3.webp'
+};
 
-function SetupSteps({ done }: { done: number }) {
+function SetupBanner({ art, line }: { art: keyof typeof SETUP_ART; line: string }) {
    return (
-      <Panel>
-         <div>
-            <p className="text-[16px] font-semibold text-[var(--ink)]">Set up cash-out</p>
-            <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[4px]">
-               Only once, about 5 minutes. Our partner Stableyard sends the pesos to your GCash or bank, so they check a few things first.
-            </p>
+      <div className="relative w-full h-[112px] rounded-[12px] overflow-hidden bg-[linear-gradient(100deg,#efeaff_0%,#ddd5ff_100%)] dark:bg-[linear-gradient(100deg,#252035_0%,#30285a_100%)]">
+         <img
+            key={art}
+            src={SETUP_ART[art]}
+            alt=""
+            aria-hidden="true"
+            className="moo-float absolute right-[18px] bottom-[-6px] h-[122px] w-auto pointer-events-none select-none"
+         />
+         <div className="relative flex h-full flex-col justify-center pl-[16px] pr-[130px]">
+            <h2 className="text-[22px] font-black italic leading-[1.1] tracking-[-0.5px] text-[#6b55f7] dark:text-[#b3a6ff]">
+               Set up cash-out
+            </h2>
+            <p className="mt-[4px] text-[15px] font-semibold text-[#594d65] dark:text-[#e6def0]">{line}</p>
          </div>
-         <ol className="space-y-[10px]">
-            {SETUP_STEPS.map((s, i) => {
-               const state = i < done ? 'done' : i === done ? 'current' : 'next';
-               return (
-                  <li key={s.label} className="flex items-center gap-[12px]">
+      </div>
+   );
+}
+
+const SETUP_STEPS = ['Email', 'ID', 'Form'];
+
+function SetupStepper({ done }: { done: number }) {
+   return (
+      <div className="flex items-start px-[4px]">
+         {SETUP_STEPS.map((label, i) => {
+            const state = i < done ? 'done' : i === done ? 'current' : 'next';
+            return (
+               <Fragment key={label}>
+                  <div className="flex w-[52px] shrink-0 flex-col items-center gap-[4px]">
                      <span
-                        className={`flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full text-[13px] font-semibold ${
+                        className={`flex h-[28px] w-[28px] items-center justify-center rounded-full text-[13px] font-bold ${
                            state === 'done'
                               ? 'bg-[#1baf7a] text-white'
                               : state === 'current'
-                                ? 'bg-[#6b55f7] text-white'
+                                ? 'bg-[#6b55f7] text-white shadow-[0_0_0_4px_rgba(107,85,247,0.18)]'
                                 : 'border-2 border-[#e8e4ff] text-[var(--text-muted)]'
                         }`}
                      >
                         {state === 'done' ? <Check className="w-[15px] h-[15px]" strokeWidth={3} /> : i + 1}
                      </span>
-                     <div className="min-w-0">
-                        <p
-                           className={`text-[14px] leading-[18px] ${state === 'next' ? 'text-[var(--text-muted)]' : 'font-semibold text-[var(--ink)]'}`}
-                        >
-                           {s.label}
-                        </p>
-                        <p className="text-[12px] leading-[16px] text-[var(--text-muted)]">{state === 'done' ? 'Done' : s.hint}</p>
-                     </div>
-                  </li>
-               );
-            })}
-            <li className="flex items-center gap-[12px]">
-               <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full bg-[#f1eeff] text-[#6b55f7]">
-                  <ArrowRight className="w-[15px] h-[15px]" />
-               </span>
-               <p className="text-[13px] leading-[18px] text-[var(--text-muted)]">Then cash out anytime, no setup again</p>
-            </li>
-         </ol>
-         <PoweredByStableyard />
-      </Panel>
+                     <span className={`text-[12px] ${state === 'next' ? 'text-[var(--text-muted)]' : 'font-semibold text-[var(--ink)]'}`}>
+                        {label}
+                     </span>
+                  </div>
+                  {i < SETUP_STEPS.length - 1 ? (
+                     <div className={`mt-[13px] h-[3px] flex-1 rounded-full ${i < done ? 'bg-[#1baf7a]' : 'bg-[#e8e4ff]'}`} />
+                  ) : null}
+               </Fragment>
+            );
+         })}
+      </div>
    );
 }
+
+const hintClass = 'text-center text-[12px] leading-[16px] text-[var(--text-faint)]';
 
 // 'compliance': Stableyard wants a one-time form (nextAction complete_compliance) before it prices the payout.
 // 'pricing': the Payment exists and Stableyard is still working out the quote.
@@ -331,6 +410,7 @@ export default function BankPayoutFlow({
    // Where Stableyard sends its code: the login email, or blank for Telegram / phone / TikTok sign-ups
    // whose login email is a placeholder nobody can read, so they type a real one.
    const [codeEmail, setCodeEmail] = useState('');
+   const [useHostedCheck, setUseHostedCheck] = useState(false);
    useEffect(() => {
       if (isPreview) return;
       void getSupabaseBrowserClient()
@@ -347,6 +427,9 @@ export default function BankPayoutFlow({
    const [amount, setAmount] = useState('');
    const [paymentId, setPaymentId] = useState('');
    const [deposit, setDeposit] = useState<DepositInstructions | null>(null);
+   // Fee inside the USDC to send, and USD per peso, from Stableyard's quote (null if it didn't say).
+   const [feeUsdc, setFeeUsdc] = useState<number | null>(null);
+   const [usdPerPeso, setUsdPerPeso] = useState<number | null>(null);
    const [expiresAt, setExpiresAt] = useState<number | null>(null);
    const [now, setNow] = useState(Date.now());
    const [status, setStatus] = useState('');
@@ -384,10 +467,25 @@ export default function BankPayoutFlow({
          const name = normalize(`${b.name} ${shortBank(b.name)}`);
          return words.every((w) => name.includes(w));
       });
+      // Names with a word that starts with what you typed come first ("g" → GCash, GrabPay, GoTyme).
+      const startsWith = (b: Bank) =>
+         normalize(`${b.name} ${shortBank(b.name)}`)
+            .split(' ')
+            .some((part) => part.startsWith(words[0]));
+      const ranked = [...all.filter(startsWith), ...all.filter((b) => !startsWith(b))];
       // Search this side first; if the name is on the other side (picked the wrong tab), still show it.
-      const sameKind = all.filter((b) => kindOf(b.name) === payeeKind);
-      return (sameKind.length ? sameKind : all).slice(0, 8);
+      const sameKind = ranked.filter((b) => kindOf(b.name) === payeeKind);
+      return (sameKind.length ? sameKind : ranked).slice(0, 6);
    }, [bankQuery, sortedBanks, banks, payeeKind]);
+
+   // Pick a bank / e-wallet. A GCash number isn't a bank account number (and back), so switching
+   // between the two clears the number.
+   const pickBank = (picked: Bank) => {
+      if (bank && kindOf(bank.name) !== kindOf(picked.name)) setAccountNumber('');
+      setBankCode(picked.code);
+      setPickingBank(false);
+      setBankQuery('');
+   };
 
    const loadSetup = async () => {
       setError('');
@@ -424,6 +522,44 @@ export default function BankPayoutFlow({
       // eslint-disable-next-line react-hooks/exhaustive-deps
    }, []);
 
+   // On the ID step, re-check quietly so the form shows up by itself once Stableyard approves: every few
+   // seconds while the ID is being checked (shared or on Stableyard's page), and whenever the person
+   // comes back to this tab. "Check again" stays as a fallback.
+   const emailVerified = Boolean(setup?.emailVerified);
+   const kycApproved = Boolean(setup?.kycApproved);
+   const idWaiting = REUSE_PENDING.has(setup?.reuseImportStatus ?? '') || KYC_WAITING.has(setup?.kycStatus ?? '');
+   useEffect(() => {
+      if (step !== 'verify' || !emailVerified || kycApproved) return;
+      let stopped = false;
+      let polls = 0;
+      const check = async () => {
+         if (stopped) return;
+         const res = await call(isPreview, { qr: 'setup' });
+         if (stopped || !res.ok) return;
+         if (res.emailVerified && res.kycApproved) return void loadSetup();
+         setSetup(res);
+      };
+      const onBack = () => {
+         if (document.visibilityState === 'visible') void check();
+      };
+      document.addEventListener('visibilitychange', onBack);
+      window.addEventListener('focus', onBack);
+      const timer = idWaiting
+         ? setInterval(() => {
+              polls += 1;
+              if (polls > SETUP_POLL_MAX) return clearInterval(timer);
+              void check();
+           }, SETUP_POLL_MS)
+         : undefined;
+      return () => {
+         stopped = true;
+         document.removeEventListener('visibilitychange', onBack);
+         window.removeEventListener('focus', onBack);
+         if (timer) clearInterval(timer);
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [step, emailVerified, kycApproved, idWaiting, isPreview]);
+
    // Quote countdown.
    useEffect(() => {
       if (step !== 'quote') return;
@@ -454,7 +590,7 @@ export default function BankPayoutFlow({
       return () => clearTimeout(t);
    }, [step, paymentId, status, now, isPreview, sentAt]);
 
-   const runOnboarding = async (action: string, extra: Record<string, string> = {}) => {
+   const runOnboarding = async (action: string, extra: Record<string, string | boolean> = {}) => {
       setBusy(true);
       setError('');
       const res = await call(isPreview, { onboarding: action, ...extra });
@@ -462,7 +598,7 @@ export default function BankPayoutFlow({
       if (!res.ok) return setError(res.error ?? 'Something went wrong. Try again.');
       if (res.result?.challenge?.id) setChallengeId(res.result.challenge.id);
       if (action === 'kyc_start' && res.result?.verificationUrl) window.open(res.result.verificationUrl, '_blank', 'noopener');
-      if (action === 'email_confirm') void loadSetup();
+      if (action === 'email_confirm' || action === 'kyc_import') void loadSetup();
    };
 
    // One reply (from create or a re-read) → the next screen. A bank payout can come back priced, waiting
@@ -486,6 +622,12 @@ export default function BankPayoutFlow({
             return setError('This payout needs a different coin. Please contact support.');
          }
          setDeposit(instructions);
+         const funding = payment.funding;
+         const fee = Number(funding?.totalFees?.amount);
+         const rate = Number(funding?.exchangeRate?.rate);
+         const phpToUsd = funding?.exchangeRate?.baseAssetCode === 'PHP' && funding?.exchangeRate?.quoteAssetCode === 'USD';
+         setFeeUsdc(Number.isFinite(fee) && fee >= 0 ? fee : null);
+         setUsdPerPeso(phpToUsd && Number.isFinite(rate) && rate > 0 ? rate : null);
          const expiry = next?.expiresAt ?? payment.quoteExpiresAt ?? payment.expiresAt;
          setExpiresAt(expiry ? new Date(expiry).getTime() : null);
          setNow(Date.now());
@@ -590,76 +732,102 @@ export default function BankPayoutFlow({
 
    if (step === 'verify') {
       const emailDone = Boolean(setup?.emailVerified);
+      const reusePending = REUSE_PENDING.has(setup?.reuseImportStatus ?? '');
+      const reviewing = reusePending || setup?.kycStatus === 'requires_review' || setup?.kycStatus === 'in_review';
+      const offerReuse = Boolean(setup?.reuseAvailable && setup?.consentText) && !useHostedCheck && !reviewing;
+      const idStep = emailDone && !setup?.kycApproved;
       return (
          <div className="space-y-[12px]">
-            <SetupSteps done={emailDone ? (setup?.kycApproved ? 2 : 1) : 0} />
+            <SetupBanner
+               art={emailDone ? 'id' : 'email'}
+               line={!emailDone ? 'Step 1 · Your email' : reviewing ? 'Checking your ID…' : 'Step 2 · Your ID'}
+            />
             <Panel>
+               <SetupStepper done={emailDone ? (setup?.kycApproved ? 2 : 1) : 0} />
                {error ? <ErrorLine text={error} /> : null}
-               <div className="space-y-[8px]">
-                  {!emailDone ? <p className="text-[14px] font-semibold text-[var(--ink)]">1. Confirm your email</p> : null}
-                  {!emailDone ? (
-                     <>
-                        <input
-                           value={codeEmail}
-                           onChange={(e) => setCodeEmail(e.target.value.trim())}
-                           type="email"
-                           inputMode="email"
-                           autoComplete="email"
-                           placeholder="Your email, e.g. juan@gmail.com"
-                           className={inputClass}
-                        />
-                        <button
-                           className={primaryClass}
-                           disabled={busy || !isValidEmail(codeEmail) || isPlaceholderEmail(codeEmail)}
-                           onClick={() => void runOnboarding('email_start', { email: codeEmail })}
-                        >
-                           {challengeId ? 'Send the code again' : 'Send me a code'}
-                        </button>
-                        {challengeId ? (
-                           <div className="flex gap-[8px]">
-                              <input
-                                 value={code}
-                                 onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                 inputMode="numeric"
-                                 placeholder="6-digit code"
-                                 className={inputClass}
-                              />
-                              <button
-                                 className="shrink-0 rounded-[14px] px-[16px] font-semibold text-white bg-[var(--primary)] disabled:bg-[var(--disabled)]"
-                                 disabled={busy || code.length !== 6}
-                                 onClick={() => void runOnboarding('email_confirm', { challengeId, code })}
-                              >
-                                 Confirm
-                              </button>
-                           </div>
-                        ) : null}
-                     </>
-                  ) : null}
-                  {emailDone && !setup?.kycApproved ? (
-                     <>
-                        <p className="text-[14px] font-semibold text-[var(--ink)]">2. ID check</p>
-                        <p className="text-[13px] text-[var(--text-muted)] leading-[18px]">
-                           Stableyard&apos;s page opens in a new tab. Have your ID ready, then come back here.
-                        </p>
-                     </>
-                  ) : null}
-                  {emailDone && !setup?.kycApproved ? (
+               {!emailDone ? (
+                  <div className="space-y-[8px]">
+                     <input
+                        value={codeEmail}
+                        onChange={(e) => setCodeEmail(e.target.value.trim())}
+                        type="email"
+                        inputMode="email"
+                        autoComplete="email"
+                        placeholder="Your email"
+                        className={inputClass}
+                     />
+                     {challengeId ? (
+                        <div className="flex gap-[8px]">
+                           <input
+                              value={code}
+                              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                              inputMode="numeric"
+                              placeholder="6-digit code"
+                              className={inputClass}
+                           />
+                           <button
+                              className="shrink-0 rounded-[14px] px-[16px] font-semibold text-white bg-[var(--primary)] disabled:bg-[var(--disabled)]"
+                              disabled={busy || code.length !== 6}
+                              onClick={() => void runOnboarding('email_confirm', { challengeId, code })}
+                           >
+                              Confirm
+                           </button>
+                        </div>
+                     ) : null}
+                     <button
+                        className={challengeId ? `${linkClass}` : primaryClass}
+                        disabled={busy || !isValidEmail(codeEmail) || isPlaceholderEmail(codeEmail)}
+                        onClick={() => void runOnboarding('email_start', { email: codeEmail })}
+                     >
+                        {challengeId ? 'Send again' : 'Send code'}
+                     </button>
+                  </div>
+               ) : null}
+               {idStep && reviewing ? (
+                  <p className="flex items-center justify-center gap-[8px] py-[6px] text-[14px] font-semibold text-[var(--text-muted)]">
+                     <Loader2 className="w-[16px] h-[16px] animate-spin text-[#6b55f7]" /> A few minutes
+                  </p>
+               ) : null}
+               {idStep && offerReuse ? (
+                  <div className="space-y-[8px]">
+                     <p className="mx-auto flex w-fit items-center gap-[6px] rounded-full bg-[#e6f7ef] px-[12px] py-[5px] text-[13px] font-semibold text-[#148a5f] dark:bg-[#123d2e] dark:text-[#6fe0b0]">
+                        <Check className="w-[14px] h-[14px]" strokeWidth={3} /> Verified with Moodeng
+                     </p>
+                     {/* Tapping the button is the consent; the line under it is what's shared (saved with the receipt). */}
+                     <button className={primaryClass} disabled={busy} onClick={() => void runOnboarding('kyc_import', { consent: true })}>
+                        {busy ? 'Sharing…' : 'Use my Moodeng ID'}
+                     </button>
+                     <p className={hintClass}>{setup?.consentText}</p>
+                     <button
+                        className={`${linkClass} flex items-center justify-center gap-[2px]`}
+                        disabled={busy}
+                        onClick={() => setUseHostedCheck(true)}
+                     >
+                        New ID check instead <ChevronRight className="w-[16px] h-[16px]" />
+                     </button>
+                  </div>
+               ) : null}
+               {idStep && !offerReuse && !reviewing ? (
+                  <div className="space-y-[8px]">
                      <button
                         className={primaryClass}
-                        disabled={busy || !emailDone}
+                        disabled={busy}
                         onClick={() => (setup?.kycUrl ? window.open(setup.kycUrl, '_blank', 'noopener') : void runOnboarding('kyc_start'))}
                      >
                         {setup?.kycStatus && setup.kycStatus !== 'not_started' ? 'Continue ID check' : 'Start ID check'}
                      </button>
-                  ) : null}
-                  {setup?.kycStatus === 'requires_review' || setup?.kycStatus === 'in_review' ? (
-                     <p className="text-[12px] text-[var(--text-muted)]">Your ID is being reviewed. This usually takes a few minutes.</p>
-                  ) : null}
-               </div>
+                     <p className={hintClass}>Have your ID ready</p>
+                  </div>
+               ) : null}
             </Panel>
-            <button className={linkClass} disabled={busy} onClick={() => void loadSetup()}>
-               I finished — check again
-            </button>
+            {emailDone ? (
+               <button className={linkClass} disabled={busy} onClick={() => void loadSetup()}>
+                  Check again
+               </button>
+            ) : null}
+            <div className="flex justify-center">
+               <PoweredByStableyard />
+            </div>
          </div>
       );
    }
@@ -669,8 +837,8 @@ export default function BankPayoutFlow({
          <div className="space-y-[12px]">
             <Panel>
                {remembered && (
-                  <p className="rounded-[8px] bg-[var(--surface-2)] px-[10px] py-[8px] text-[12px] leading-[17px] text-[var(--text-muted)]">
-                     Filled in from your last cash-out. Check it&apos;s still right, then enter the amount.
+                  <p className="flex w-fit items-center gap-[6px] rounded-full bg-[var(--surface-2)] px-[10px] py-[4px] text-[12px] font-semibold text-[var(--text-muted)]">
+                     <Check className="w-[13px] h-[13px]" strokeWidth={3} /> Filled in from last time
                   </p>
                )}
                <span className="block text-[13px] font-semibold text-[var(--ink)]">Send to</span>
@@ -693,10 +861,10 @@ export default function BankPayoutFlow({
                      <div className="grid grid-cols-2 gap-[6px] mb-[8px]" role="tablist">
                         {(
                            [
-                              ['wallet', 'PH e-wallet', 'GCash, Maya…'],
-                              ['bank', 'PH bank', 'BDO, BPI…']
+                              ['wallet', 'E-wallet'],
+                              ['bank', 'Bank']
                            ] as const
-                        ).map(([kind, label, hint]) => (
+                        ).map(([kind, label]) => (
                            <button
                               key={kind}
                               type="button"
@@ -706,13 +874,14 @@ export default function BankPayoutFlow({
                                  setPayeeKind(kind);
                                  setBankQuery('');
                               }}
-                              className={`rounded-[10px] border-2 px-[10px] py-[8px] text-left transition-colors ${payeeKind === kind ? 'border-[#6b55f7] bg-[var(--surface-2)]' : 'border-[var(--border-card)]'}`}
+                              className={`flex items-center justify-center gap-[6px] rounded-[10px] border-2 px-[10px] py-[9px] text-[14px] font-semibold transition-colors ${payeeKind === kind ? 'border-[#6b55f7] bg-[var(--surface-2)] text-[#6b55f7] dark:text-[#a98bff]' : 'border-[var(--border-card)] text-[var(--ink)]'}`}
                            >
-                              <span className="flex items-center gap-[6px] text-[14px] font-semibold text-[var(--ink)]">
-                                 <PhFlag className="h-[11px] w-[16px]" />
-                                 {label}
-                              </span>
-                              <span className="block text-[12px] text-[var(--text-muted)]">{hint}</span>
+                              {kind === 'wallet' ? (
+                                 <Smartphone className="w-[16px] h-[16px]" />
+                              ) : (
+                                 <Landmark className="w-[16px] h-[16px]" />
+                              )}
+                              {label}
                            </button>
                         ))}
                      </div>
@@ -721,26 +890,24 @@ export default function BankPayoutFlow({
                         <input
                            value={bankQuery}
                            onChange={(e) => setBankQuery(e.target.value)}
+                           onKeyDown={(e) => {
+                              // The keyboard's Go / Enter picks the top match.
+                              if (e.key !== 'Enter' || !bankQuery.trim() || !bankMatches[0]) return;
+                              e.preventDefault();
+                              pickBank(bankMatches[0]);
+                           }}
+                           enterKeyHint="go"
                            autoFocus={pickingBank}
-                           placeholder={payeeKind === 'wallet' ? 'Search e-wallets, e.g. GCash' : 'Search banks, e.g. BDO'}
+                           placeholder={payeeKind === 'wallet' ? 'Search e-wallets' : 'Search banks'}
                            className={`${inputClass} pl-[36px]`}
                         />
                      </div>
                      <div className="mt-[6px] rounded-[12px] border border-[var(--border-card)] overflow-hidden divide-y divide-[var(--divider)]">
-                        {!bankQuery.trim() && (
-                           <p className="px-[12px] pt-[8px] pb-[4px] text-[11px] font-bold uppercase tracking-[0.4px] text-[var(--text-faint)]">
-                              Popular
-                           </p>
-                        )}
                         {bankMatches.map((b) => (
                            <button
                               key={b.code}
                               type="button"
-                              onClick={() => {
-                                 setBankCode(b.code);
-                                 setPickingBank(false);
-                                 setBankQuery('');
-                              }}
+                              onClick={() => pickBank(b)}
                               className="w-full px-[12px] py-[10px] flex items-center gap-[10px] text-left hover:bg-[var(--surface-2)]"
                            >
                               <BankBadge name={b.name} />
@@ -749,9 +916,7 @@ export default function BankPayoutFlow({
                            </button>
                         ))}
                         {bankMatches.length === 0 && (
-                           <p className="px-[12px] py-[10px] text-[13px] text-[var(--text-muted)]">
-                              No bank matches “{bankQuery.trim()}”. Try a shorter name, like “BDO” or “Metro”.
-                           </p>
+                           <p className="px-[12px] py-[10px] text-[13px] text-[var(--text-muted)]">No match. Try fewer letters.</p>
                         )}
                      </div>
                   </div>
@@ -770,27 +935,27 @@ export default function BankPayoutFlow({
                               setAccountNumber(isEwallet ? toLocalMobile(digits) : digits.slice(0, 20));
                            }}
                            inputMode="numeric"
-                           placeholder={isEwallet ? '09XX XXX XXXX or +63' : 'Account number'}
+                           placeholder={isEwallet ? '09XX XXX XXXX' : 'Account number'}
                            className={`${inputClass} mt-[6px]`}
                         />
                         {accountNumber && !accountOk ? (
                            <span className="text-[12px] text-[var(--danger)]">
-                              {isEwallet ? 'Enter the 11-digit number (09… or +63…).' : 'Check the account number.'}
+                              {isEwallet ? '11 digits, starts with 09' : 'Check the number'}
                            </span>
                         ) : null}
                      </label>
                      <label className="block">
-                        <span className="text-[13px] font-semibold text-[var(--ink)]">Name on the account</span>
+                        <span className="text-[13px] font-semibold text-[var(--ink)]">Account name</span>
                         <input
                            value={accountName}
                            onChange={(e) => setAccountName(e.target.value.slice(0, 100))}
                            autoComplete="name"
-                           placeholder={isEwallet ? `Full name on your ${shortBank(bank?.name ?? '')}` : 'Full name on the account'}
+                           placeholder="Full name"
                            className={`${inputClass} mt-[6px]`}
                         />
                      </label>
                      <label className="block">
-                        <span className="text-[13px] font-semibold text-[var(--ink)]">Amount in pesos</span>
+                        <span className="text-[13px] font-semibold text-[var(--ink)]">Amount</span>
                         <div className="relative mt-[6px]">
                            <span className="absolute left-[14px] top-1/2 -translate-y-1/2 text-[16px] text-[var(--text-muted)]">₱</span>
                            <input
@@ -803,7 +968,7 @@ export default function BankPayoutFlow({
                         </div>
                         <span className="text-[12px] text-[var(--text-faint)]">
                            {peso(MIN_PHP)}–{peso(MAX_PHP)}
-                           {spendable != null ? ` · ${spendable} USDC in your wallet` : ''}
+                           {spendable != null ? ` · you have ${spendable} USDC` : ''}
                         </span>
                      </label>
                   </>
@@ -816,12 +981,9 @@ export default function BankPayoutFlow({
                onClick={() => void getQuote()}
             >
                {busy ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : null}
-               {busy ? 'Getting your price…' : 'See how much USDC'}
+               {busy ? 'One moment…' : 'Continue'}
                {!busy ? <ArrowRight className="w-4 h-4" /> : null}
             </button>
-            <p className="text-[12px] text-[var(--text-faint)] text-center leading-[17px]">
-               Nothing leaves your wallet until you confirm on the next screen.
-            </p>
          </div>
       );
    }
@@ -829,19 +991,17 @@ export default function BankPayoutFlow({
    if (step === 'compliance') {
       return (
          <div className="space-y-[12px]">
-            <SetupSteps done={2} />
+            <SetupBanner art="form" line="Step 3 · Short form" />
             <Panel>
-               <p className="text-[14px] font-semibold text-[var(--ink)]">3. Short form</p>
-               <p className="text-[13px] text-[var(--text-muted)] leading-[18px]">
-                  Last step. Fill it in one go: the link works only once, so finish before you close it.
-               </p>
+               <SetupStepper done={2} />
                {error ? <ErrorLine text={error} /> : null}
+               <button className={primaryClass} onClick={() => window.open(complianceUrl, '_blank', 'noopener')}>
+                  Open form <ArrowRight className="w-4 h-4" />
+               </button>
+               <p className={hintClass}>Works once · finish in one go</p>
             </Panel>
-            <button className={primaryClass} onClick={() => window.open(complianceUrl, '_blank', 'noopener')}>
-               Open the form <ArrowRight className="w-4 h-4" />
-            </button>
             <button className={linkClass} disabled={busy} onClick={() => void recheckPayment()}>
-               {busy ? 'Checking…' : 'I finished — get my price'}
+               {busy ? 'Checking…' : 'Done — get my price'}
             </button>
          </div>
       );
@@ -850,20 +1010,28 @@ export default function BankPayoutFlow({
    if (step === 'pricing') {
       return (
          <Panel>
-            <div className="flex items-center gap-[10px] text-[14px] text-[var(--text-muted)]">
-               <Loader2 className="w-[18px] h-[18px] animate-spin" /> Getting your price…
+            <div className="flex flex-col items-center gap-[8px] py-[6px]">
+               <img src={SETUP_ART.id} alt="" aria-hidden="true" className="moo-float h-[104px] w-auto" />
+               <p className="flex items-center gap-[8px] text-[15px] font-semibold text-[var(--text-muted)]">
+                  <Loader2 className="w-[16px] h-[16px] animate-spin text-[#6b55f7]" /> Getting your price…
+               </p>
             </div>
          </Panel>
       );
    }
 
    if (step === 'quote' || step === 'sending') {
+      // Everything in pesos so the fee is plain to see: what leaves your wallet, minus the fee, is what arrives.
+      const sendUsdc = Number(deposit?.amount ?? 0);
+      const toPeso = (usdc: number) => (usdPerPeso ? usdc / usdPerPeso : null);
+      const sendPhp = toPeso(sendUsdc);
+      const feePhp = feeUsdc != null ? toPeso(feeUsdc) : null;
+      const usdcText = (n: number) => `${n.toFixed(2)} USDC`;
       return (
          <div className="space-y-[12px]">
             <Panel>
-               {/* Milestone style: the peso amount as the black-italic headline, the bank under it. */}
                <div className="text-center pt-[4px]">
-                  <p className="text-[13px] text-[var(--text-muted)]">They get</p>
+                  <p className="text-[13px] text-[var(--text-muted)]">You get</p>
                   <p className="text-[40px] font-black italic leading-[1.15] tracking-[-0.8px] text-[#735dfa] dark:text-[#a98bff]">
                      {peso(amountNum)}
                   </p>
@@ -872,32 +1040,72 @@ export default function BankPayoutFlow({
                      <span className="text-[14px] font-semibold text-[var(--ink)]">{accountLabel}</span>
                   </div>
                </div>
-               <div className="rounded-[12px] border border-[var(--border-card)] px-[12px] py-[10px] text-[14px] text-[var(--ink)]">
-                  <div className="flex justify-between">
-                     <span>You send</span>
-                     <span className="font-semibold">{deposit?.amount} USDC</span>
+               {/* The breakdown: what leaves the wallet, each fee with whose it is, and what arrives. Every fee
+                   in Stableyard's quote is theirs (their 0.5% + their payout partner's); our partner fee is 0. */}
+               <div className="rounded-[16px] bg-[var(--surface-2)] p-[4px]">
+                  <div className="rounded-[12px] bg-[var(--surface)] px-[14px] py-[12px] space-y-[12px] text-[14px] text-[var(--ink)]">
+                     <div className="flex items-center gap-[10px]">
+                        <span className="flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-full bg-[#f1eeff] dark:bg-[#2a2150]">
+                           <Wallet className="w-[15px] h-[15px] text-[#6b55f7] dark:text-[#a98bff]" />
+                        </span>
+                        <span className="flex-1">You send</span>
+                        <span className="text-right">
+                           <span className="font-semibold">{sendPhp != null ? peso(sendPhp) : usdcText(sendUsdc)}</span>
+                           {sendPhp != null ? (
+                              <span className="block text-[11px] leading-[14px] text-[var(--text-faint)]">
+                                 {Number(deposit?.amount ?? 0)} USDC
+                              </span>
+                           ) : null}
+                        </span>
+                     </div>
+                     <div className="flex items-center gap-[10px]">
+                        <img
+                           src="/brand/stableyard/stableyard-logomark.svg"
+                           alt=""
+                           aria-hidden="true"
+                           className="h-[28px] w-[28px] shrink-0 rounded-[8px]"
+                        />
+                        <span className="flex-1">Stableyard fee</span>
+                        <span className="font-semibold text-[var(--text-muted)]">
+                           {feeUsdc == null ? 'Included' : feePhp != null ? `− ${peso(feePhp)}` : `− ${usdcText(feeUsdc)}`}
+                        </span>
+                     </div>
+                     <div className="flex items-center gap-[10px]">
+                        <span className="flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-black/5">
+                           <img src="/moodenglogo.webp" alt="" aria-hidden="true" className="h-[20px] w-auto" />
+                        </span>
+                        <span className="flex-1">Moodeng fee</span>
+                        <span className="rounded-full bg-[#e6f7ef] px-[8px] py-[2px] text-[13px] font-bold text-[#148a5f] dark:bg-[#123d2e] dark:text-[#6fe0b0]">
+                           ₱0
+                        </span>
+                     </div>
                   </div>
-                  <p className="text-[12px] text-[var(--text-muted)] mt-[2px]">Fees included. Nothing else to pay.</p>
+                  <div className="flex items-center justify-between px-[14px] pt-[10px] pb-[8px]">
+                     <span className="text-[15px] font-bold text-[var(--ink)]">You get</span>
+                     <span className="text-[20px] font-black italic tracking-[-0.3px] text-[#6b55f7] dark:text-[#a98bff]">
+                        {peso(amountNum)}
+                     </span>
+                  </div>
                </div>
                {secondsLeft != null ? (
-                  <p className={`text-[12px] flex items-center gap-[6px] ${expired ? 'text-[var(--danger)]' : 'text-[var(--text-muted)]'}`}>
-                     <Clock className="w-[14px] h-[14px]" />
-                     {expired
-                        ? 'This price expired. Get a new one.'
-                        : `Price held for ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`}
+                  <p
+                     className={`text-[12px] flex items-center justify-center gap-[6px] ${expired ? 'text-[var(--danger)]' : 'text-[var(--text-faint)]'}`}
+                  >
+                     <Clock className="w-[13px] h-[13px]" />
+                     {expired ? 'Price expired' : `Price held ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`}
                   </p>
                ) : null}
-               {notEnough ? <ErrorLine text={`You have ${spendable} USDC. Lower the peso amount and try again.`} /> : null}
+               {notEnough ? <ErrorLine text={`You have ${spendable} USDC. Lower the amount.`} /> : null}
                {error ? <ErrorLine text={error} /> : null}
             </Panel>
             {expired ? (
                <button className={primaryClass} disabled={busy} onClick={() => void getQuote()}>
-                  Get a new price
+                  Refresh price
                </button>
             ) : (
                <button className={primaryClass} disabled={busy || notEnough || spendable == null} onClick={() => void confirmSend()}>
                   {step === 'sending' ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : null}
-                  {step === 'sending' ? 'Sending…' : `Cash out ${peso(amountNum)}`}
+                  {step === 'sending' ? 'Sending…' : 'Confirm'}
                </button>
             )}
             <button className={linkClass} disabled={busy} onClick={() => setStep('form')}>

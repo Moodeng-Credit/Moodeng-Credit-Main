@@ -28,9 +28,6 @@ import posthog from 'posthog-js';
 import { useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { erc20Abi } from 'viem';
-
-import { TransferAddressLabel } from '@/i18n/SentenceLabels';
-import { useUsdcRate } from '@/lib/useUsdcRate';
 import { useAccount, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
 
 import { PhFlag } from '@/components/auth/PhFlag';
@@ -46,8 +43,10 @@ import { parseDateSafely } from '@/utils/dateFormatters';
 
 import { COINS_PH_SUSPENDED, COINS_PH_SUSPENDED_MESSAGE, COINS_PH_SUSPENDED_TITLE } from '@/config/paymentRails';
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
+import { TransferAddressLabel } from '@/i18n/SentenceLabels';
 import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
 import { recordWithdrawal } from '@/lib/recordWithdrawal';
+import { useUsdcRate } from '@/lib/useUsdcRate';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { CashoutGateError, startCashoutFaceCheck } from '@/lib/withdraw/cashoutFaceGate';
 import type { RootState } from '@/store/store';
@@ -566,8 +565,38 @@ function useRegion(): Region {
 
 // EU + EEA + UK + Switzerland: where Kraken and Coinbase pay out to a local bank.
 const EUROPE_COUNTRIES = new Set([
-   'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL',
-   'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO', 'GB', 'CH'
+   'AT',
+   'BE',
+   'BG',
+   'HR',
+   'CY',
+   'CZ',
+   'DK',
+   'EE',
+   'FI',
+   'FR',
+   'DE',
+   'GR',
+   'HU',
+   'IE',
+   'IT',
+   'LV',
+   'LT',
+   'LU',
+   'MT',
+   'NL',
+   'PL',
+   'PT',
+   'RO',
+   'SK',
+   'SI',
+   'ES',
+   'SE',
+   'IS',
+   'LI',
+   'NO',
+   'GB',
+   'CH'
 ]);
 
 // True when check-geo puts this visitor's IP in Europe. Only ever used to ADD the European
@@ -648,7 +677,9 @@ function DirectPesoBanner({ balanceLine, repayLine }: { balanceLine: string; rep
             className="absolute right-[-10px] bottom-[-30px] h-[142px] w-auto pointer-events-none select-none"
          />
          <div className="relative flex h-full flex-col justify-center pl-[16px] pr-[136px]">
-            <h1 className="text-[22px] font-black italic leading-[1.1] tracking-[-0.5px] text-[#6b55f7] dark:text-[#b3a6ff]">Cash out to pesos</h1>
+            <h1 className="text-[22px] font-black italic leading-[1.1] tracking-[-0.5px] text-[#6b55f7] dark:text-[#b3a6ff]">
+               Cash out to pesos
+            </h1>
             <p className="mt-[4px] text-[14px] leading-[18px] text-[#594d65] dark:text-[#e6def0] font-semibold">{balanceLine}</p>
             {repayLine && <p className="text-[13px] leading-[17px] text-[#594d65] dark:text-[#b6afc1]">{repayLine}</p>}
          </div>
@@ -662,48 +693,65 @@ function DirectPesoBanner({ balanceLine, repayLine }: { balanceLine: string; rep
 const BANK_PAYOUT_FEE_SHARE = 0.022;
 
 /** The direct payout (Stableyard): shows USDC turning straight into pesos, so it doesn't read like one more exchange. */
-function DirectPesoCard({
-   onSelect,
-   spendable,
-   setupDone
-}: {
-   onSelect: () => void;
-   spendable: number | null;
-   setupDone: boolean;
-}) {
+// The logos people recognise, so it's obvious this sends straight to their GCash / Maya / bank.
+const PAYOUT_LOGOS = [
+   { slug: 'gcash', name: 'GCash' },
+   { slug: 'maya', name: 'Maya' },
+   { slug: 'gotyme', name: 'GoTyme' },
+   { slug: 'bdo', name: 'BDO' },
+   { slug: 'bpi', name: 'BPI' },
+   { slug: 'metrobank', name: 'Metrobank' }
+];
+
+function DirectPesoCard({ onSelect, spendable, setupDone }: { onSelect: () => void; spendable: number | null; setupDone: boolean }) {
    const { value: phpRate } = useUsdcRate('php');
    const pesos = spendable != null && spendable > 0 ? Math.floor(spendable * phpRate * (1 - BANK_PAYOUT_FEE_SHARE)) : null;
    return (
       <button onClick={onSelect} className="relative w-full text-left outline-none">
          <div
-            className="rounded-[8px] border-2 border-[#6b55f7] bg-[var(--surface,#fff)] px-[14px] pt-[12px] pb-[14px] transition-all active:scale-[0.99]"
+            className="rounded-[12px] border-2 border-[#6b55f7] bg-[var(--surface,#fff)] px-[14px] pt-[14px] pb-[14px] transition-all active:scale-[0.99]"
             style={{ boxShadow: '0px 6px 18px rgba(107,85,247,0.16)' }}
          >
-            <div className="flex items-center justify-between gap-[10px]">
-               <p className="flex items-center gap-[8px] text-[22px] font-black italic leading-[1.2] tracking-[-0.3px] text-[var(--text-muted,#594d65)]">
-                  USDC → Pesos
-                  <PhFlag className="h-[16px] w-[24px]" />
-               </p>
-               <ChevronRight className="w-[22px] h-[22px] text-[#6b55f7] dark:text-[#a98bff] shrink-0" strokeWidth={2.6} />
-            </div>
+            <p className="flex items-center gap-[8px] text-[13px] font-semibold text-[var(--text-muted,#594d65)]">
+               <PhFlag className="h-[11px] w-[16px]" /> Cash out to
+            </p>
+            <p className="mt-[2px] text-[24px] font-black italic leading-[1.15] tracking-[-0.4px] text-[#6b55f7] dark:text-[#b3a6ff]">
+               GCash, Maya or bank
+            </p>
 
-            <div className="mt-[4px] flex items-baseline gap-[8px] flex-wrap">
-               <span className="text-[34px] font-black italic leading-[1.2] tracking-[-0.68px] text-[#735dfa] dark:text-[#a98bff]">
-                  {pesos != null ? `₱${pesos.toLocaleString('en-PH')}` : '₱'}
+            <div className="mt-[10px] flex items-center">
+               {PAYOUT_LOGOS.map((logo, i) => (
+                  <img
+                     key={logo.slug}
+                     src={`/bank-logos/${logo.slug}.webp`}
+                     alt={logo.name}
+                     width={36}
+                     height={36}
+                     className={`h-[36px] w-[36px] rounded-[9px] border-2 border-[var(--surface,#fff)] shadow-[0_1px_3px_rgba(27,28,29,0.12)] ${i ? '-ml-[6px]' : ''}`}
+                     style={{ zIndex: PAYOUT_LOGOS.length - i }}
+                  />
+               ))}
+               <span className="-ml-[6px] flex h-[36px] items-center rounded-[9px] border-2 border-[var(--surface,#fff)] bg-[var(--surface-2,#f1eeff)] px-[8px] text-[12px] font-bold text-[#6b55f7] dark:text-[#a98bff]">
+                  +80
                </span>
-               {spendable != null && spendable > 0 && (
-                  <span className="text-[14px] leading-[18px] text-[var(--text-muted,#45556c)]">after fees</span>
-               )}
             </div>
 
-            <p className="mt-[2px] text-[15px] leading-[21px] text-[var(--text-muted,#45556c)]">To any PH GCash, Maya or bank, in minutes.</p>
+            {pesos != null ? (
+               <p className="mt-[10px] text-[14px] text-[var(--text-muted,#45556c)]">
+                  Up to <span className="font-bold text-[var(--ink)]">₱{pesos.toLocaleString('en-PH')}</span> · after Stableyard fees
+               </p>
+            ) : null}
+
+            <span className="mt-[12px] flex w-full items-center justify-center gap-[8px] rounded-[36px] bg-[linear-gradient(85deg,#9584ff_0%,#6b55f7_98%)] py-[12px] text-[16px] font-semibold text-white shadow-[0_6px_16px_rgba(107,85,247,0.3)]">
+               Tap to cash out <ChevronRight className="w-[18px] h-[18px]" strokeWidth={2.6} />
+            </span>
 
             {/* BankPayoutFlow runs Stableyard's one-time setup (email code, ID check, then the
                 partner's details form) before the first quote; say so up front, until their ID check is approved. */}
             {!setupDone && (
-               <p className="mt-[8px] flex items-center gap-[6px] text-[12px] leading-[16px] text-[var(--text-muted,#45556c)]">
-                  <Info className="w-[14px] h-[14px] text-[#735dfa] dark:text-[#a98bff] shrink-0" />
-                  First time: quick ID check, ~5 min.
+               <p className="mt-[8px] flex items-center justify-center gap-[6px] text-[12px] leading-[16px] text-[var(--text-muted,#45556c)]">
+                  <Info className="w-[13px] h-[13px] text-[#735dfa] dark:text-[#a98bff] shrink-0" />
+                  First time: quick ID check
                </p>
             )}
          </div>
@@ -779,7 +827,10 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                   >
                      <div className="relative">
                         <Wallet className="w-[26px] h-[26px] text-[var(--primary)]" strokeWidth={2.2} />
-                        <ArrowUpRight className="w-[13px] h-[13px] text-[var(--primary)] absolute -top-[3px] -right-[5px]" strokeWidth={3} />
+                        <ArrowUpRight
+                           className="w-[13px] h-[13px] text-[var(--primary)] absolute -top-[3px] -right-[5px]"
+                           strokeWidth={3}
+                        />
                      </div>
                   </div>
                )}
@@ -807,8 +858,8 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                      How would you like to cash out?
                   </p>
                   <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mb-[14px]">
-                     Your loan funds are in your wallet. Withdraw or convert them using an exchange, P2P platform, or a supported local crypto
-                     service.
+                     Your loan funds are in your wallet. Withdraw or convert them using an exchange, P2P platform, or a supported local
+                     crypto service.
                   </p>
                </>
             )}
@@ -819,11 +870,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
             <div className="space-y-[10px]">
                {bankPayout && (
                   <>
-                     <DirectPesoCard
-                        onSelect={() => selectProvider('bank')}
-                        spendable={spendable}
-                        setupDone={kycApproved}
-                     />
+                     <DirectPesoCard onSelect={() => selectProvider('bank')} spendable={spendable} setupDone={kycApproved} />
                      <p className="text-[18px] font-black italic leading-[1.2] tracking-[-0.3px] text-[var(--text-muted,#594d65)] pt-[10px] pb-[2px]">
                         Or sell on an exchange app
                      </p>
@@ -853,7 +900,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                {!COINS_PH_SUSPENDED && coinsPhRow}
                {COINS_PH_SUSPENDED && (
                   <PickerRow
-                        onSelect={selectProvider}
+                     onSelect={selectProvider}
                      id="pdax"
                      recommended={!bankPayout && !inEurope}
                      icon={<PdaxAppIcon className="w-[46px] h-[46px]" />}
@@ -872,7 +919,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                />
                {!COINS_PH_SUSPENDED && (
                   <PickerRow
-                        onSelect={selectProvider}
+                     onSelect={selectProvider}
                      id="pdax"
                      icon={<PdaxAppIcon className="w-[46px] h-[46px]" />}
                      name="PDAX"
@@ -1209,9 +1256,7 @@ function NotArrivedHelp({ exchange, address, txHash }: { exchange: string; addre
          {pesoFirst ? (
             <div className="flex gap-[10px]">
                {stepBadge(1)}
-               <p className={stepText}>
-                  Check your peso (PHP) balance first. PDAX often changes USDC on Base into pesos for you.
-               </p>
+               <p className={stepText}>Check your peso (PHP) balance first. PDAX often changes USDC on Base into pesos for you.</p>
             </div>
          ) : null}
          <div className="flex gap-[10px]">
@@ -1410,8 +1455,7 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
    // The cap is the verified on-chain balance — never the loan estimate. Until it
    // loads (`spendable == null`) the amount can't be validated, so send stays off.
    // USDC has 6 decimals: more than that can't be sent exactly (and String(1e-7) would be '1e-7').
-   const amtValid =
-      spendable != null && !isNaN(amtNum) && amtNum > 0 && amtNum <= spendable && /^\d*(\.\d{0,6})?$/.test(amount.trim());
+   const amtValid = spendable != null && !isNaN(amtNum) && amtNum > 0 && amtNum <= spendable && /^\d*(\.\d{0,6})?$/.test(amount.trim());
    const canSend = addrValid && amtValid && !sending;
    const sentAmountRef = useRef(0);
 
@@ -1447,11 +1491,7 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
          // can't hang on the spinner, and give the user an explicit failure signal.
          track('withdraw_send_failed', { exchange: cfg.name, amount: amtNum });
          setSendPhase(null);
-         showToast(
-            TOAST_TYPES.ERROR,
-            "Withdrawal didn't go through",
-            err instanceof Error ? err.message : 'Please try again in a moment.'
-         );
+         showToast(TOAST_TYPES.ERROR, "Withdrawal didn't go through", err instanceof Error ? err.message : 'Please try again in a moment.');
       } finally {
          setSending(false);
          setConfirming(false);
@@ -1566,7 +1606,11 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
                         <span className="pr-[16px] text-[14px] font-semibold text-[var(--text-muted)] shrink-0">USDC</span>
                      </div>
                      <p className="text-[12px] text-[var(--text-muted)] leading-[18px]">
-                        {!walletConnected ? 'Wallet not connected' : spendable == null ? 'Checking your balance…' : `Available: ${spendable} USDC`}
+                        {!walletConnected
+                           ? 'Wallet not connected'
+                           : spendable == null
+                             ? 'Checking your balance…'
+                             : `Available: ${spendable} USDC`}
                      </p>
                      {amount !== '' && spendable != null && amtNum > spendable && (
                         <p className="text-[12px] text-[var(--danger)] leading-[18px] flex items-center gap-1">
@@ -2022,8 +2066,7 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
    const amtNum = parseFloat(amount);
    // Cap on the verified on-chain balance only; send stays off until it loads.
    // USDC has 6 decimals: more than that can't be sent exactly (and String(1e-7) would be '1e-7').
-   const amtValid =
-      spendable != null && !isNaN(amtNum) && amtNum > 0 && amtNum <= spendable && /^\d*(\.\d{0,6})?$/.test(amount.trim());
+   const amtValid = spendable != null && !isNaN(amtNum) && amtNum > 0 && amtNum <= spendable && /^\d*(\.\d{0,6})?$/.test(amount.trim());
    const canSend = addrValid && amtValid && !sending;
    const sentAmountRef = useRef(0);
 
@@ -2060,11 +2103,7 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
          // the user always gets an explicit failure signal.
          track('withdraw_send_failed', { exchange: 'Binance', amount: amtNum });
          setSendPhase(null);
-         showToast(
-            TOAST_TYPES.ERROR,
-            "Withdrawal didn't go through",
-            err instanceof Error ? err.message : 'Please try again in a moment.'
-         );
+         showToast(TOAST_TYPES.ERROR, "Withdrawal didn't go through", err instanceof Error ? err.message : 'Please try again in a moment.');
       } finally {
          setSending(false);
          setConfirming(false);
@@ -2212,7 +2251,11 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
                         <span className="pr-[16px] text-[14px] font-semibold text-[var(--text-muted)] shrink-0">USDC</span>
                      </div>
                      <p className="text-[12px] text-[var(--text-muted)] leading-[18px]">
-                        {!walletConnected ? 'Wallet not connected' : spendable == null ? 'Checking your balance…' : `Available: ${spendable} USDC`}
+                        {!walletConnected
+                           ? 'Wallet not connected'
+                           : spendable == null
+                             ? 'Checking your balance…'
+                             : `Available: ${spendable} USDC`}
                      </p>
                      {amount !== '' && spendable != null && amtNum > spendable && (
                         <p className="text-[12px] text-[var(--danger)] leading-[18px] flex items-center gap-1">
@@ -2745,7 +2788,12 @@ export default function Withdraw() {
             ? 'July 18, 2026'
             : primaryLoan
               ? // A due date is a calendar date stored as midnight UTC: read it in UTC so it isn't a day early west of UTC.
-                parseDateSafely(primaryLoan.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+                parseDateSafely(primaryLoan.dueDate).toLocaleDateString(undefined, {
+                   month: 'short',
+                   day: 'numeric',
+                   year: 'numeric',
+                   timeZone: 'UTC'
+                })
               : null,
          walletAddress,
          isPreview,
@@ -2834,7 +2882,19 @@ export default function Withdraw() {
             return { hash: outcome.hash, confirmed: method === 'base' };
          }
       }),
-      [available, spendable, walletConnected, isPreview, primaryLoan, walletAddress, payUsdc, activePaymentMethod, user.id, navigate, refetchUsdcBalance]
+      [
+         available,
+         spendable,
+         walletConnected,
+         isPreview,
+         primaryLoan,
+         walletAddress,
+         payUsdc,
+         activePaymentMethod,
+         user.id,
+         navigate,
+         refetchUsdcBalance
+      ]
    );
 
    return (
