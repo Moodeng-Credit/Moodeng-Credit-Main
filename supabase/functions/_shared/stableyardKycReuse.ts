@@ -12,7 +12,7 @@
 //      verification.eligibility.status = eligible (review-first copies sit in requires_review).
 //
 // Stableyard's payout partners need first name, last name, date of birth and the document type
-// (passport / national ID); city is optional and the email comes from the verified UPA email. If our
+// (passport / national ID / driver's license); city is optional and the email comes from the verified UPA email. If our
 // Didit record lacks any of these, the import would get stuck, so those people use Stableyard's own
 // hosted ID check instead.
 //
@@ -29,9 +29,18 @@ export const KYC_CONSENT_TEXT =
    'I agree that Moodeng shares my ID check (name, date of birth, ID document, selfie and screening result) with Stableyard so I can cash out to my bank or e-wallet.';
 const OUR_CONSENT_VERSION = 'moodeng-kyc-share-v1';
 
-// Didit's document_type values we know payout partners take. Raj (Stableyard, 2026-11-06): "passport /
-// national ID". Driver's License and Tax Card are not confirmed, so those people do the hosted check.
-const ACCEPTED_DOCUMENT_TYPES = new Set(['passport', 'identity card', 'national id', 'national identity card']);
+// Didit's document_type values payout partners take. Raj (Stableyard): passport / national ID, and on
+// 2026-11-07 "driving license works for PHP" (bank payouts are PH-only). Tax Card isn't confirmed, so
+// those people do the hosted check. AML isn't required for imports (Raj, 2026-11-07).
+const ACCEPTED_DOCUMENT_TYPES = new Set([
+   'passport',
+   'identity card',
+   'national id',
+   'national identity card',
+   "driver's license",
+   'drivers license',
+   'driving license'
+]);
 
 const MAX_IMPORT_ATTEMPTS = 3;
 const SHARE_TTL_SECONDS = 600;
