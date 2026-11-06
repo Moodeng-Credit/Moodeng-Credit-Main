@@ -693,42 +693,65 @@ function DirectPesoBanner({ balanceLine, repayLine }: { balanceLine: string; rep
 const BANK_PAYOUT_FEE_SHARE = 0.022;
 
 /** The direct payout (Stableyard): shows USDC turning straight into pesos, so it doesn't read like one more exchange. */
+// The logos people recognise, so it's obvious this sends straight to their GCash / Maya / bank.
+const PAYOUT_LOGOS = [
+   { slug: 'gcash', name: 'GCash' },
+   { slug: 'maya', name: 'Maya' },
+   { slug: 'gotyme', name: 'GoTyme' },
+   { slug: 'bdo', name: 'BDO' },
+   { slug: 'bpi', name: 'BPI' },
+   { slug: 'metrobank', name: 'Metrobank' }
+];
+
 function DirectPesoCard({ onSelect, spendable, setupDone }: { onSelect: () => void; spendable: number | null; setupDone: boolean }) {
    const { value: phpRate } = useUsdcRate('php');
    const pesos = spendable != null && spendable > 0 ? Math.floor(spendable * phpRate * (1 - BANK_PAYOUT_FEE_SHARE)) : null;
    return (
       <button onClick={onSelect} className="relative w-full text-left outline-none">
          <div
-            className="rounded-[8px] border-2 border-[#6b55f7] bg-[var(--surface,#fff)] px-[14px] pt-[12px] pb-[14px] transition-all active:scale-[0.99]"
+            className="rounded-[12px] border-2 border-[#6b55f7] bg-[var(--surface,#fff)] px-[14px] pt-[14px] pb-[14px] transition-all active:scale-[0.99]"
             style={{ boxShadow: '0px 6px 18px rgba(107,85,247,0.16)' }}
          >
-            <div className="flex items-center justify-between gap-[10px]">
-               <p className="flex items-center gap-[8px] text-[22px] font-black italic leading-[1.2] tracking-[-0.3px] text-[var(--text-muted,#594d65)]">
-                  USDC → Pesos
-                  <PhFlag className="h-[16px] w-[24px]" />
-               </p>
-               <ChevronRight className="w-[22px] h-[22px] text-[#6b55f7] dark:text-[#a98bff] shrink-0" strokeWidth={2.6} />
-            </div>
-
-            <div className="mt-[4px] flex items-baseline gap-[8px] flex-wrap">
-               <span className="text-[34px] font-black italic leading-[1.2] tracking-[-0.68px] text-[#735dfa] dark:text-[#a98bff]">
-                  {pesos != null ? `₱${pesos.toLocaleString('en-PH')}` : '₱'}
-               </span>
-               {spendable != null && spendable > 0 && (
-                  <span className="text-[14px] leading-[18px] text-[var(--text-muted,#45556c)]">after Stableyard fees</span>
-               )}
-            </div>
-
-            <p className="mt-[2px] text-[15px] leading-[21px] text-[var(--text-muted,#45556c)]">
-               To any PH GCash, Maya or bank, in minutes.
+            <p className="flex items-center gap-[8px] text-[13px] font-semibold text-[var(--text-muted,#594d65)]">
+               <PhFlag className="h-[11px] w-[16px]" /> Cash out to
             </p>
+            <p className="mt-[2px] text-[24px] font-black italic leading-[1.15] tracking-[-0.4px] text-[#6b55f7] dark:text-[#b3a6ff]">
+               GCash, Maya or bank
+            </p>
+
+            <div className="mt-[10px] flex items-center">
+               {PAYOUT_LOGOS.map((logo, i) => (
+                  <img
+                     key={logo.slug}
+                     src={`/bank-logos/${logo.slug}.webp`}
+                     alt={logo.name}
+                     width={36}
+                     height={36}
+                     className={`h-[36px] w-[36px] rounded-[9px] border-2 border-[var(--surface,#fff)] shadow-[0_1px_3px_rgba(27,28,29,0.12)] ${i ? '-ml-[6px]' : ''}`}
+                     style={{ zIndex: PAYOUT_LOGOS.length - i }}
+                  />
+               ))}
+               <span className="-ml-[6px] flex h-[36px] items-center rounded-[9px] border-2 border-[var(--surface,#fff)] bg-[var(--surface-2,#f1eeff)] px-[8px] text-[12px] font-bold text-[#6b55f7] dark:text-[#a98bff]">
+                  +80
+               </span>
+            </div>
+
+            {pesos != null ? (
+               <p className="mt-[10px] text-[14px] text-[var(--text-muted,#45556c)]">
+                  Up to <span className="font-bold text-[var(--ink)]">₱{pesos.toLocaleString('en-PH')}</span> · after Stableyard fees
+               </p>
+            ) : null}
+
+            <span className="mt-[12px] flex w-full items-center justify-center gap-[8px] rounded-[36px] bg-[linear-gradient(85deg,#9584ff_0%,#6b55f7_98%)] py-[12px] text-[16px] font-semibold text-white shadow-[0_6px_16px_rgba(107,85,247,0.3)]">
+               Tap to cash out <ChevronRight className="w-[18px] h-[18px]" strokeWidth={2.6} />
+            </span>
 
             {/* BankPayoutFlow runs Stableyard's one-time setup (email code, ID check, then the
                 partner's details form) before the first quote; say so up front, until their ID check is approved. */}
             {!setupDone && (
-               <p className="mt-[8px] flex items-center gap-[6px] text-[12px] leading-[16px] text-[var(--text-muted,#45556c)]">
-                  <Info className="w-[14px] h-[14px] text-[#735dfa] dark:text-[#a98bff] shrink-0" />
-                  First time: quick ID check, ~5 min.
+               <p className="mt-[8px] flex items-center justify-center gap-[6px] text-[12px] leading-[16px] text-[var(--text-muted,#45556c)]">
+                  <Info className="w-[13px] h-[13px] text-[#735dfa] dark:text-[#a98bff] shrink-0" />
+                  First time: quick ID check
                </p>
             )}
          </div>
