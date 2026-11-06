@@ -68,6 +68,7 @@ import MuleRiskSection from './MuleRiskSection';
 import OnChainSection from './OnChainSection';
 import PricingHealthSection from './PricingHealthSection';
 import IncomeDocsSection from './IncomeDocsSection';
+import ProofRequestsSection from './ProofRequestsSection';
 import InterestRefundsSection from './InterestRefundsSection';
 import RemoveLoanRequestDialog from '@/app/admin/RemoveLoanRequestDialog';
 import ReferralCodesSection from './ReferralCodesSection';
@@ -1758,6 +1759,8 @@ function AdminPanel() {
          {activeTab === 'grab-vouchers' ? <GrabVouchersSection /> : null}
 
          {activeTab === 'income-docs' ? <IncomeDocsSection /> : null}
+
+         {activeTab === 'proof-requests' ? <ProofRequestsSection /> : null}
 
          {activeTab === 'credit-line' ? (
             <section className="space-y-6">
