@@ -1051,7 +1051,8 @@ export default function BankPayoutFlow({
                      </span>
                   </div>
                   <div className="flex items-baseline justify-between gap-[8px] text-[var(--text-muted)]">
-                     <span>Fee</span>
+                     {/* Every fee in the quote is Stableyard's (their 0.5% + their payout partner's); our partner fee is 0. */}
+                     <span>Stableyard fee</span>
                      <span>{feeUsdc == null ? 'Included' : feePhp != null ? `− ${peso(feePhp)}` : `− ${usdcText(feeUsdc)}`}</span>
                   </div>
                   <div className="flex items-baseline justify-between gap-[8px] border-t border-[var(--divider)] pt-[8px] font-bold">
@@ -1059,6 +1060,7 @@ export default function BankPayoutFlow({
                      <span>{peso(amountNum)}</span>
                   </div>
                </div>
+               <p className="text-center text-[12px] text-[var(--text-faint)]">Moodeng takes no fee</p>
                {secondsLeft != null ? (
                   <p
                      className={`text-[12px] flex items-center justify-center gap-[6px] ${expired ? 'text-[var(--danger)]' : 'text-[var(--text-faint)]'}`}
