@@ -12,6 +12,9 @@ const MODAL_NOTE_COPY = {
    },
    id: {
       content: 'Proof of personhood yang mengutamakan privasi. Verifikasi tanpa membuka identitas kamu.'
+   },
+   es: {
+      content: 'Prueba de que eres una persona real, con la privacidad por delante. Verifícate sin revelar tu identidad.'
    }
 } satisfies Record<LocaleCode, { content: string }>;
 

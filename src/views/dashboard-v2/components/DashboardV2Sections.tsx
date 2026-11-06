@@ -301,6 +301,11 @@ const DUE_LABELS: Record<LocaleCode, { overdue: (days: number) => string; today:
       overdue: (days) => `Quá hạn ${days} ngày`,
       today: 'Đến hạn hôm nay',
       dueIn: (days) => `Đến hạn sau ${days} ngày`
+   },
+   es: {
+      overdue: (days) => `Vencido hace ${days} ${days === 1 ? 'día' : 'días'}`,
+      today: 'Vence hoy',
+      dueIn: (days) => `Vence en ${days} ${days === 1 ? 'día' : 'días'}`
    }
 };
 

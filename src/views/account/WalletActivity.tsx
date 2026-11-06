@@ -25,7 +25,8 @@ const ACTIVITY_COPY: Record<LocaleCode, ActivityCopy> = {
    fil: { title: 'Kamakailang activity', moneyIn: 'Pumasok na pera', moneyOut: 'Lumabas na pera' },
    id: { title: 'Aktivitas terbaru', moneyIn: 'Uang masuk', moneyOut: 'Uang keluar' },
    th: { title: 'รายการล่าสุด', moneyIn: 'เงินเข้า', moneyOut: 'เงินออก' },
-   vi: { title: 'Hoạt động gần đây', moneyIn: 'Tiền vào', moneyOut: 'Tiền ra' }
+   vi: { title: 'Hoạt động gần đây', moneyIn: 'Tiền vào', moneyOut: 'Tiền ra' },
+   es: { title: 'Actividad reciente', moneyIn: 'Dinero recibido', moneyOut: 'Dinero enviado' }
 };
 
 const ALCHEMY_ID = import.meta.env.VITE_ALCHEMY_ID ?? '';

@@ -171,6 +171,37 @@ const CONGRATULATIONS_COPY = {
       communityTitle: 'Tiếng nói chống khoản vay không công bằng',
       communityBody: 'Tham gia cộng đồng Facebook của chúng tôi. Kết nối với những người dùng Moodeng Credit khác.',
       joinCommunity: 'Tham gia cộng đồng'
+   },
+   es: {
+      headerTitle: 'Todo listo',
+      title: '¡Enhorabuena! 🎉',
+      body: '¡Tu cuenta de Moodeng está totalmente configurada y listo para empezar!',
+      lenderTitle: '¡Ya eres Moo-lender! 🎉',
+      lenderBody: 'Te damos la bienvenida a la comunidad.',
+      nextTitle: '¿Y ahora qué?',
+      rows: {
+         guides: {
+            title: 'Ver las guías',
+            subtitle: 'Inicio rápido para usuarios nuevos'
+         },
+         telegram: {
+            title: 'Obtén ayuda por Telegram',
+            subtitle: 'Escríbenos si necesitas ayuda con la cartera, los depósitos o cualquier duda'
+         },
+         facebook: {
+            title: 'Contáctanos en Facebook',
+            subtitle: 'Únete a nuestra comunidad y haz tus preguntas'
+         },
+         creditLeveling: {
+            title: 'Aprende el sistema de niveles de crédito',
+            subtitle: 'Aumenta tus límites, genera confianza'
+         }
+      },
+      exploreRequestBoard: 'Explora el tablón de solicitudes',
+      exploreNote: 'Ya puedes explorar Moodeng Credit y empezar tu camino con confianza.',
+      communityTitle: 'Voces contra los préstamos injustos',
+      communityBody: 'Únete a nuestra comunidad de Facebook. Conecta con otros usuarios de Moodeng Credit',
+      joinCommunity: 'Únete a nuestra comunidad'
    }
 } satisfies Record<
    LocaleCode,
@@ -285,7 +316,9 @@ export default function Congratulations() {
                <h1 className="text-[34px] font-[590] leading-[1.2] tracking-[-0.04em] text-[#040033]">
                   {isLender ? copy.lenderTitle : copy.title}
                </h1>
-               <p className="text-[16px] font-[510] leading-6 tracking-[-0.02em] text-[#45556c]">{isLender ? copy.lenderBody : copy.body}</p>
+               <p className="text-[16px] font-[510] leading-6 tracking-[-0.02em] text-[#45556c]">
+                  {isLender ? copy.lenderBody : copy.body}
+               </p>
             </div>
 
             <section className="flex flex-col gap-1">

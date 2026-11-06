@@ -1,10 +1,10 @@
 import { Navigate, useParams } from 'react-router-dom';
 
 import { useLocalization } from '@/i18n';
-import HowCreditLevelsWork from '@/views/support/HowCreditLevelsWork';
 import NeedMoreHelp from '@/views/support/components/NeedMoreHelp';
 import SupportHeader from '@/views/support/components/SupportHeader';
 import { getGuideForLocale } from '@/views/support/data/guides';
+import HowCreditLevelsWork from '@/views/support/HowCreditLevelsWork';
 
 const GUIDE_DETAIL_COPY = {
    en: {
@@ -36,6 +36,12 @@ const GUIDE_DETAIL_COPY = {
       createdBy: 'Tạo bởi',
       lastUpdated: 'Cập nhật lần cuối',
       team: 'Đội ngũ Moodeng'
+   },
+   es: {
+      title: 'Guía',
+      createdBy: 'Creado por',
+      lastUpdated: 'Última actualización',
+      team: 'Equipo de Moodeng'
    }
 } as const;
 

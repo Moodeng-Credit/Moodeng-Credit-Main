@@ -59,6 +59,15 @@ export const SENTENCES: Record<LocaleCode, Sentences> = {
       fundedLoanBody: (name) => `Bạn đã cấp vốn cho khoản vay của ${name}. Khi họ trả nợ, tiền sẽ tự động được gửi vào ví của bạn.`,
       transferAddress: (exchange) => `Địa chỉ chuyển tiền ${exchange} của bạn`,
       quizRestartConfirm: 'Đổi loại phần thưởng sẽ bắt đầu lại bài kiểm tra từ câu 1. Tiếp tục?'
+   },
+   es: {
+      uniqueLenders: (count) => `${count} ${count === 1 ? 'prestamista distinto' : 'prestamistas distintos'}`,
+      moreCharactersToGo: (count) => `Faltan ${count} ${count === 1 ? 'carácter' : 'caracteres'}`,
+      moreCharacters: (count) => `${count} ${count === 1 ? 'carácter' : 'caracteres'} más`,
+      fundLoanTitle: (name) => `Financiar el préstamo de ${name}`,
+      fundedLoanBody: (name) => `Has financiado el préstamo de ${name}. Si lo devuelve, el pago se envía automáticamente a tu cartera.`,
+      transferAddress: (exchange) => `Tu dirección de transferencia de ${exchange}`,
+      quizRestartConfirm: 'Cambiar el tipo de recompensa reiniciará el cuestionario desde la pregunta 1. ¿Continuar?'
    }
 };
 

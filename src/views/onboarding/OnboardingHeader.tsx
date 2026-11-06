@@ -4,8 +4,8 @@ import { Volume2, VolumeX } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import { useLocalization } from '@/i18n/LocalizationProvider';
-import { playDing, setSoundsEnabled, useSoundsEnabled } from '@/lib/uiSounds';
 import type { LocaleCode } from '@/i18n/translations';
+import { playDing, setSoundsEnabled, useSoundsEnabled } from '@/lib/uiSounds';
 
 type OnboardingHeaderProps = {
    title?: string;
@@ -37,6 +37,10 @@ const HEADER_COPY = {
    vi: {
       goBack: 'Quay lại',
       help: 'Trợ giúp'
+   },
+   es: {
+      goBack: 'Volver',
+      help: 'Ayuda'
    }
 } satisfies Record<LocaleCode, { goBack: string; help: string }>;
 

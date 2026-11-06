@@ -60,6 +60,14 @@ const COPY: Record<LocaleCode, RestoreCopy> = {
       working: 'Đang khôi phục…',
       doneTitle: 'Đã khôi phục ví',
       doneBody: 'Instant Wallet của bạn đã được kết nối lại.'
+   },
+   es: {
+      title: 'Restaura tu Instant Wallet',
+      body: 'Tu cartera está a salvo, pero ahora mismo no está conectada a tu cuenta. Toca para volver a conectarla. Solo lleva unos segundos.',
+      button: 'Restaurar mi cartera',
+      working: 'Restaurando…',
+      doneTitle: 'Cartera restaurada',
+      doneBody: 'Tu Instant Wallet vuelve a estar conectada.'
    }
 };
 
@@ -84,7 +92,11 @@ export default function RestoreInstantWalletBanner() {
       }
       let cancelled = false;
       (async () => {
-         const { data } = await getSupabaseBrowserClient().from('embedded_wallet_grants').select('user_id').eq('user_id', userId).maybeSingle();
+         const { data } = await getSupabaseBrowserClient()
+            .from('embedded_wallet_grants')
+            .select('user_id')
+            .eq('user_id', userId)
+            .maybeSingle();
          if (!cancelled) setHasGrant(Boolean(data));
       })().catch(() => undefined);
       return () => {
