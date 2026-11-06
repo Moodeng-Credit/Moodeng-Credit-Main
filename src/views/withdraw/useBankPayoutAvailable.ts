@@ -19,8 +19,9 @@ const findStatus = (data: unknown, depth = 0): string | undefined => {
 const KYC_DONE = new Set(['verified', 'approved', 'completed', 'complete', 'passed', 'active']);
 
 /**
- * Whether this person may use the Stableyard payout (admins + testers; false on any doubt, null while
- * checking), and whether their Stableyard ID check is already approved (so the one-time setup is behind them).
+ * Whether this person may use the Stableyard payout (everyone since 2026-11-07, unless the
+ * bank_payout_public kill switch is off; false on any doubt, null while checking), and whether their
+ * Stableyard ID check is already approved (so the one-time setup is behind them).
  */
 export function useBankPayoutStatus(isPreview: boolean) {
    const [state, setState] = useState<{ available: boolean | null; kycApproved: boolean }>({
@@ -30,8 +31,8 @@ export function useBankPayoutStatus(isPreview: boolean) {
    useEffect(() => {
       if (isPreview) return;
       let cancelled = false;
-      // 'status' answers 403 not_tester for everyone who isn't a tester, 401 when signed out, and
-      // enabled:false when Stableyard is switched off. Anything else (even a Stableyard hiccup) is a tester.
+      // 'status' answers 403 not_tester when the kill switch limits it to testers, 401 when signed out, and
+      // enabled:false when Stableyard is switched off. Anything else (even a Stableyard hiccup) is allowed.
       getSupabaseBrowserClient()
          .functions.invoke('stableyard-deposit-address', { body: { qr: 'status' } })
          .then(async ({ data, error }) => {
@@ -53,7 +54,7 @@ export function useBankPayoutStatus(isPreview: boolean) {
    return state;
 }
 
-/** True when this person may use the Stableyard payout (admins + testers), false on any doubt, null while checking. */
+/** True when this person may use the Stableyard payout, false on any doubt, null while checking. */
 export default function useBankPayoutAvailable(isPreview: boolean) {
    return useBankPayoutStatus(isPreview).available;
 }

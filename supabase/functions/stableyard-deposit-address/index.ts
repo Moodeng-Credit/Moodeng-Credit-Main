@@ -220,6 +220,20 @@ const QR_ACTIONS = new Set([
    'payout_activate'
 ]);
 
+// Merchant store-QR payments (decode / create) and re-activating the payout capability stay tester-only;
+// every other qr action is the GCash / bank cash-out, which is open to everyone (see isBankPayoutPublic).
+const TESTER_ONLY_QR_ACTIONS = new Set(['decode', 'create', 'payout_activate']);
+
+/** Bank cash-out is public unless telegram_bot_settings.bank_payout_public is 'off' (kill switch, no deploy). */
+const isBankPayoutPublic = async (admin: SupabaseClient) => {
+   const { data } = await admin.from('telegram_bot_settings').select('value').eq('key', 'bank_payout_public').maybeSingle();
+   return (
+      String(data?.value ?? 'on')
+         .trim()
+         .toLowerCase() !== 'off'
+   );
+};
+
 // Fiat currency per supported QR country, with a test cap (~$35) so a typo can't pay a big bill.
 const QR_COUNTRIES: Record<string, { currency: string; max: number }> = {
    PH: { currency: 'PHP', max: 2000 },
@@ -588,8 +602,7 @@ serve(async (req) => {
          .maybeSingle();
       return Boolean(adminRow);
    };
-   // QR payments (and the email + KYC they need) are for admins and the people in stableyard_qr_testers,
-   // even once deposits go public.
+   // Store-QR payments and the admin payout tools stay with admins + stableyard_qr_testers.
    const isQrTester = async () => {
       if (await isAdmin()) return true;
       const { data: tester } = await admin.from('stableyard_qr_testers').select('user_id').eq('user_id', userId).maybeSingle();
@@ -602,7 +615,12 @@ serve(async (req) => {
    const isOnboarding = ONBOARDING_ACTIONS.has(String(body?.onboarding ?? ''));
 
    if (isQr || isOnboarding) {
-      if (!(await isQrTester())) return json({ error: 'Forbidden: not a QR payment tester', code: 'not_tester' }, 403);
+      // GCash / bank cash-out (and the email + ID setup it needs) is open to every signed-in borrower
+      // since 2026-11-07. Kill switch: telegram_bot_settings bank_payout_public = 'off' → testers only again.
+      const testerOnly = isQr && TESTER_ONLY_QR_ACTIONS.has(String(body?.qr ?? ''));
+      if ((testerOnly || !(await isBankPayoutPublic(admin))) && !(await isQrTester())) {
+         return json({ error: 'Forbidden: not a QR payment tester', code: 'not_tester' }, 403);
+      }
    } else if (Deno.env.get('STABLEYARD_DEPOSITS_PUBLIC') !== 'true' && !(await isAdmin())) {
       return json({ enabled: false, addresses: [], deposits: [] });
    }

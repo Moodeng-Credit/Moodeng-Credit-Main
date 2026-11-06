@@ -13,7 +13,7 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 // e-wallet, types the account number and a peso amount, gets a USDC quote, then sends that USDC from
 // their Moodeng wallet to Stableyard's escrow address, and Stableyard pays the pesos out over InstaPay.
 // Everything server-side goes through stableyard-deposit-address (qr: setup / bank_list / bank_create /
-// get / sent), which only answers admins + stableyard_qr_testers while this is being tested.
+// get / sent). Open to every borrower since 2026-11-07 (kill switch: bank_payout_public = 'off').
 // Stableyard needs a verified email + its own KYC on the person's account before it pays out fiat.
 // If Stableyard allows it and our Didit record has what payout partners need, the person can share
 // their Moodeng ID check instead of doing a second one (onboarding: kyc_import, with consent).
