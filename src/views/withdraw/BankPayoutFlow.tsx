@@ -49,6 +49,8 @@ type FnResult = {
    reuseImportStatus?: string | null;
    consentText?: string | null;
    sourceReady?: boolean;
+   // bank_list: whether e-wallets are on (off since 2026-11-07, server setting bank_payout_ewallets).
+   ewallets?: boolean;
    result?: {
       banks?: Bank[];
       challenge?: { id?: string };
@@ -458,7 +460,9 @@ export default function BankPayoutFlow({
    // punctuation), popular ones first. An empty search shows the popular list.
    const [bankQuery, setBankQuery] = useState('');
    const [pickingBank, setPickingBank] = useState(false);
-   const [payeeKind, setPayeeKind] = useState<PayeeKind>('wallet');
+   const [payeeKind, setPayeeKind] = useState<PayeeKind>('bank');
+   // E-wallets are paused (Stableyard: not a stable PHP payout method); the server says when they're back.
+   const [ewallets, setEwallets] = useState(false);
    const bankMatches = useMemo(() => {
       const words = normalize(bankQuery).split(' ').filter(Boolean);
       const popular = payeeKind === 'wallet' ? POPULAR_WALLETS : POPULAR_BANKS;
@@ -502,7 +506,10 @@ export default function BankPayoutFlow({
          return;
       }
       const list = await call(isPreview, { qr: 'bank_list', country: 'PH' });
-      const all = list.result?.banks ?? [];
+      const allowWallets = list.ewallets === true;
+      setEwallets(allowWallets);
+      if (!allowWallets) setPayeeKind('bank');
+      const all = (list.result?.banks ?? []).filter((b) => allowWallets || kindOf(b.name) === 'bank');
       setBanks(all);
       const saved = readSavedPayee(res.accountId ?? 'preview');
       if (saved && all.some((b) => b.code === saved.bankCode)) {
@@ -511,7 +518,10 @@ export default function BankPayoutFlow({
          setAccountName(saved.accountName);
          setRemembered(true);
       } else {
-         setBankCode((current) => current || all.find((b) => b.name === 'GCASH')?.code || all[0]?.code || '');
+         const first = allowWallets ? 'GCASH' : POPULAR_BANKS[0];
+         setBankCode((current) =>
+            all.some((b) => b.code === current) ? current : all.find((b) => b.name === first)?.code || all[0]?.code || ''
+         );
       }
       if (!list.ok) setError(list.error ?? 'Could not load banks. Try again.');
       setStep('form');
@@ -858,33 +868,35 @@ export default function BankPayoutFlow({
                   </button>
                ) : (
                   <div className="mt-[6px]">
-                     <div className="grid grid-cols-2 gap-[6px] mb-[8px]" role="tablist">
-                        {(
-                           [
-                              ['wallet', 'E-wallet'],
-                              ['bank', 'Bank']
-                           ] as const
-                        ).map(([kind, label]) => (
-                           <button
-                              key={kind}
-                              type="button"
-                              role="tab"
-                              aria-selected={payeeKind === kind}
-                              onClick={() => {
-                                 setPayeeKind(kind);
-                                 setBankQuery('');
-                              }}
-                              className={`flex items-center justify-center gap-[6px] rounded-[10px] border-2 px-[10px] py-[9px] text-[14px] font-semibold transition-colors ${payeeKind === kind ? 'border-[#6b55f7] bg-[var(--surface-2)] text-[#6b55f7] dark:text-[#a98bff]' : 'border-[var(--border-card)] text-[var(--ink)]'}`}
-                           >
-                              {kind === 'wallet' ? (
-                                 <Smartphone className="w-[16px] h-[16px]" />
-                              ) : (
-                                 <Landmark className="w-[16px] h-[16px]" />
-                              )}
-                              {label}
-                           </button>
-                        ))}
-                     </div>
+                     {ewallets ? (
+                        <div className="grid grid-cols-2 gap-[6px] mb-[8px]" role="tablist">
+                           {(
+                              [
+                                 ['wallet', 'E-wallet'],
+                                 ['bank', 'Bank']
+                              ] as const
+                           ).map(([kind, label]) => (
+                              <button
+                                 key={kind}
+                                 type="button"
+                                 role="tab"
+                                 aria-selected={payeeKind === kind}
+                                 onClick={() => {
+                                    setPayeeKind(kind);
+                                    setBankQuery('');
+                                 }}
+                                 className={`flex items-center justify-center gap-[6px] rounded-[10px] border-2 px-[10px] py-[9px] text-[14px] font-semibold transition-colors ${payeeKind === kind ? 'border-[#6b55f7] bg-[var(--surface-2)] text-[#6b55f7] dark:text-[#a98bff]' : 'border-[var(--border-card)] text-[var(--ink)]'}`}
+                              >
+                                 {kind === 'wallet' ? (
+                                    <Smartphone className="w-[16px] h-[16px]" />
+                                 ) : (
+                                    <Landmark className="w-[16px] h-[16px]" />
+                                 )}
+                                 {label}
+                              </button>
+                           ))}
+                        </div>
+                     ) : null}
                      <div className="relative">
                         <Search className="w-[16px] h-[16px] text-[var(--text-faint)] absolute left-[12px] top-1/2 -translate-y-1/2 pointer-events-none" />
                         <input
