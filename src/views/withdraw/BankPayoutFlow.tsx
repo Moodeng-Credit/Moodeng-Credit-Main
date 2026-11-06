@@ -277,7 +277,7 @@ const SETUP_STEPS = [
    { label: 'Short form', hint: 'Phone and nationality, about 2 minutes' }
 ];
 
-function SetupSteps({ done }: { done: number }) {
+function SetupSteps({ done, reuse = false }: { done: number; reuse?: boolean }) {
    return (
       <Panel>
          <div>
@@ -308,7 +308,9 @@ function SetupSteps({ done }: { done: number }) {
                         >
                            {s.label}
                         </p>
-                        <p className="text-[12px] leading-[16px] text-[var(--text-muted)]">{state === 'done' ? 'Done' : s.hint}</p>
+                        <p className="text-[12px] leading-[16px] text-[var(--text-muted)]">
+                           {state === 'done' ? 'Done' : reuse && i === 1 ? 'Share the one you did with Moodeng' : s.hint}
+                        </p>
                      </div>
                   </li>
                );
@@ -619,7 +621,7 @@ export default function BankPayoutFlow({
       const offerReuse = Boolean(setup?.reuseAvailable && setup?.consentText) && !useHostedCheck && !reusePending;
       return (
          <div className="space-y-[12px]">
-            <SetupSteps done={emailDone ? (setup?.kycApproved ? 2 : 1) : 0} />
+            <SetupSteps done={emailDone ? (setup?.kycApproved ? 2 : 1) : 0} reuse={offerReuse || reusePending} />
             <Panel>
                {error ? <ErrorLine text={error} /> : null}
                <div className="space-y-[8px]">
