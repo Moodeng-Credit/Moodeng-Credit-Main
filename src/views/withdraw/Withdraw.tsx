@@ -703,7 +703,7 @@ const PAYOUT_LOGOS = [
    { slug: 'metrobank', name: 'Metrobank' }
 ];
 
-function DirectPesoCard({ onSelect, spendable, setupDone }: { onSelect: () => void; spendable: number | null; setupDone: boolean }) {
+function DirectPesoCard({ onSelect, spendable }: { onSelect: () => void; spendable: number | null }) {
    const { value: phpRate } = useUsdcRate('php');
    const pesos = spendable != null && spendable > 0 ? Math.floor(spendable * phpRate * (1 - BANK_PAYOUT_FEE_SHARE)) : null;
    return (
@@ -742,18 +742,10 @@ function DirectPesoCard({ onSelect, spendable, setupDone }: { onSelect: () => vo
                </p>
             ) : null}
 
-            <span className="mt-[12px] flex w-full items-center justify-center gap-[8px] rounded-[36px] bg-[linear-gradient(85deg,#9584ff_0%,#6b55f7_98%)] py-[12px] text-[16px] font-semibold text-white shadow-[0_6px_16px_rgba(107,85,247,0.3)]">
+            {/* Gold, like the Milestone design's "Copy" pill, so the one action stands out from all the purple. */}
+            <span className="mt-[12px] flex w-full items-center justify-center gap-[8px] rounded-[36px] bg-[linear-gradient(85deg,#ffe27a_0%,#ffbe1a_98%)] py-[12px] text-[16px] font-bold text-[#4a2a00] shadow-[0_6px_16px_rgba(255,180,0,0.35)]">
                Tap to cash out <ChevronRight className="w-[18px] h-[18px]" strokeWidth={2.6} />
             </span>
-
-            {/* BankPayoutFlow runs Stableyard's one-time setup (email code, ID check, then the
-                partner's details form) before the first quote; say so up front, until their ID check is approved. */}
-            {!setupDone && (
-               <p className="mt-[8px] flex items-center justify-center gap-[6px] text-[12px] leading-[16px] text-[var(--text-muted,#45556c)]">
-                  <Info className="w-[13px] h-[13px] text-[#735dfa] dark:text-[#a98bff] shrink-0" />
-                  First time: quick ID check
-               </p>
-            )}
          </div>
       </button>
    );
@@ -762,7 +754,7 @@ function DirectPesoCard({ onSelect, spendable, setupDone }: { onSelect: () => vo
 function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) => void; onLater: () => void }) {
    const { spendable, walletConnected, repayUsdc: REPAY_USDC, dueDate: DUE_DATE, isPreview } = useWithdrawData();
    const navigate = useNavigate();
-   const { available: bankPayout, kycApproved } = useBankPayoutStatus(isPreview);
+   const { available: bankPayout } = useBankPayoutStatus(isPreview);
    const inEurope = useInEurope(isPreview);
    // No region/IP check here (deliberately removed): `useRegion()` is an IP-based guess, not
    // the user's actual location or nationality — a Filipino traveling or living abroad still
@@ -870,7 +862,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
             <div className="space-y-[10px]">
                {bankPayout && (
                   <>
-                     <DirectPesoCard onSelect={() => selectProvider('bank')} spendable={spendable} setupDone={kycApproved} />
+                     <DirectPesoCard onSelect={() => selectProvider('bank')} spendable={spendable} />
                      <p className="text-[18px] font-black italic leading-[1.2] tracking-[-0.3px] text-[var(--text-muted,#594d65)] pt-[10px] pb-[2px]">
                         Or sell on an exchange app
                      </p>
