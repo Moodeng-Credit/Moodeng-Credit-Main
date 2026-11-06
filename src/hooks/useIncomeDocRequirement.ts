@@ -25,7 +25,8 @@ export const fetchIncomeDocFacts = async (): Promise<IncomeDocFacts> => {
               createdAt: Date.parse(String(doc.created_at)),
               months: typeof doc.months === 'number' ? doc.months : null,
               read: doc.read === true,
-              approved: doc.approved === true
+              approved: doc.approved === true,
+              payday: typeof doc.payday === 'number' ? doc.payday : null
            }
          : null,
       lastFundedAt: value.last_funded_at ? Date.parse(value.last_funded_at) : null

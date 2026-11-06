@@ -36,6 +36,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 import AccountRestrictedPage from '@/app/account-restricted/page';
 import AdminPanel from '@/app/admin/page';
+import IncomeDocsPreview from '@/app/admin/IncomeDocsPreview';
 import PricingHealthPreview from '@/app/admin/PricingHealthPreview';
 import AffiliateDashboardPage from '@/app/affiliate/page';
 import DocumentsPage from '@/app/documents/page';
@@ -404,6 +405,7 @@ export default function App() {
             {import.meta.env.DEV ? <Route path="/loan-request-preview" element={<LoanRequestPreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/whatsapp-reminders-preview" element={<WhatsAppRemindersPreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/admin/pricing-preview" element={<PricingHealthPreview />} /> : null}
+            {import.meta.env.DEV ? <Route path="/admin/income-docs-preview" element={<IncomeDocsPreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/history-preview" element={<TransactionDetail />} /> : null}
 
             {/* Stableyard store-QR payment field test (admins + stableyard_qr_testers) */}

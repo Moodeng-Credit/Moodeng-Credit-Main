@@ -23,7 +23,8 @@ export type IncomeDocStep = {
 export type IncomeDocFacts = {
    steps: IncomeDocStep[];
    /** Their latest usable send (last 90 days, not declined, not sent back to fix). */
-   doc: { createdAt: number; months: number | null; read: boolean; approved: boolean } | null;
+   /** payday: the day of the month their main income lands, from the document (null if none seen). */
+   doc: { createdAt: number; months: number | null; read: boolean; approved: boolean; payday?: number | null } | null;
    lastFundedAt: number | null;
 };
 
@@ -73,11 +74,37 @@ export const incomeDocGate = (amount: number, facts: IncomeDocFacts, now = Date.
    return { ok: true, step };
 };
 
-/** What to send for a step, in the borrower's words. Pure. */
-export const stepAsk = (step: IncomeDocStep) =>
-   step.months > 0
-      ? `your last ${step.months}${step.months >= 2 ? '–3' : ''} months of GCash, Maya or bank history (screenshots are fine), or your latest payslips`
-      : 'one recent GCash or Maya screenshot, bank statement or payslip';
+/**
+ * What to send for a step, in the borrower's words. From the first step that asks for months, a
+ * payslip or invoice alone isn't enough: we need the account the money lands in. Pure.
+ */
+export const stepAsk = (step: IncomeDocStep) => {
+   const ask =
+      step.months >= 2
+         ? `your last ${step.months}–3 months of GCash, Maya or bank history (screenshots are fine). Add your payslips or invoices too if you have them`
+         : step.months === 1
+           ? 'your last month of GCash, Maya or bank history (screenshots are fine). A payslip or invoice alone isn’t enough, so send the history with it'
+           : 'one recent GCash or Maya screenshot, bank statement or payslip';
+   return step.liveCall ? `${ask}. We’ll also ask you to open GCash or Maya on a quick video call` : ask;
+};
+
+/**
+ * A due date the day after their usual payday, if one fits: at least `minDays` away and no later than
+ * `maxDate`. Paydays past the 28th fall back to the month's last day, so a payday of the 31st still
+ * works in a 30-day month. Research on online lenders found repayment rises when the due date lands
+ * just after payday. Pure.
+ */
+export const dueDateAfterPayday = (today: Date, payday: number | null | undefined, maxDate: Date, minDays = 7): Date | null => {
+   if (!payday || payday < 1 || payday > 31) return null;
+   const earliest = new Date(today.getFullYear(), today.getMonth(), today.getDate() + minDays);
+   for (let i = 0; i < 5; i++) {
+      const lastDay = new Date(today.getFullYear(), today.getMonth() + i + 1, 0).getDate();
+      const paid = new Date(today.getFullYear(), today.getMonth() + i, Math.min(payday, lastDay));
+      const due = new Date(paid.getFullYear(), paid.getMonth(), paid.getDate() + 1);
+      if (due >= earliest) return due <= maxDate ? due : null;
+   }
+   return null;
+};
 
 /** The card's headline reason. Pure. */
 export const gateMessage = (gate: Extract<IncomeDocGate, { ok: false }>) => {
