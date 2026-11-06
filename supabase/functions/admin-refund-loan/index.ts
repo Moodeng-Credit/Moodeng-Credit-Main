@@ -35,7 +35,13 @@ import { postDiscord } from '../_shared/discord.ts';
 // went out and it records everything above without sending money (the send happens client-side first).
 //
 // Body: { loanId: string, hash: string, method: 'wallet' | 'base', reason: string,
-//         settlementMode?: 'refund' | 'platform_settlement' }
+//         settlementMode?: 'refund' | 'platform_settlement' | 'rollover', rolloverDueDate?: string }
+//
+//   • 'rollover': Moodeng TAKES OVER the debt on a payment plan. The lender is paid in full and told it
+//     was repaid (exactly like platform_settlement), but the borrower is NOT banned or blacklisted.
+//     Instead a new funded loan is opened from the paying admin to the same borrower for what she still
+//     owes, due on rolloverDueDate (the first installment), and her credit leveling is paused so the
+//     rescue never moves her up a tier. The new loan repays to the admin's paying wallet as normal.
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -205,7 +211,7 @@ serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
-   let body: { loanId?: string; hash?: string; method?: string; reason?: string; settlementMode?: string };
+   let body: { loanId?: string; hash?: string; method?: string; reason?: string; settlementMode?: string; rolloverDueDate?: string };
    try {
       body = await req.json();
    } catch {
@@ -220,7 +226,18 @@ serve(async (req) => {
    // for the FULL repayment (principal + interest) and presents it to the lender as an ordinary repayment
    // — no "refund" wording and no reason — while still recording the truth internally (refunded_at +
    // refund_reason + audit log). Both modes ban + KYC-blacklist the borrower.
-   const settlementMode = body.settlementMode === 'platform_settlement' ? 'platform_settlement' : 'refund';
+   const settlementMode =
+      body.settlementMode === 'platform_settlement' || body.settlementMode === 'rollover' ? body.settlementMode : 'refund';
+   const isRollover = settlementMode === 'rollover';
+   // Rollover and platform settlement both pay the lender the full repayment and present it as repaid.
+   const paysInFull = settlementMode !== 'refund';
+   const rolloverDue = isRollover ? new Date(body.rolloverDueDate ?? '') : null;
+   if (isRollover) {
+      const ms = rolloverDue!.getTime();
+      if (!Number.isFinite(ms)) return json({ error: 'A first payment date is required for a payment plan' }, 400);
+      if (ms < Date.now() || ms > Date.now() + 150 * 86_400_000)
+         return json({ error: 'The first payment date must be between now and 150 days from now' }, 400);
+   }
    if (!loanId || !hash || (method !== 'wallet' && method !== 'base')) return json({ error: 'Missing or invalid loanId, hash, or method' }, 400);
    if (!reason) return json({ error: 'A refund reason is required' }, 400);
 
@@ -254,7 +271,7 @@ serve(async (req) => {
    // Refund = principal only; platform settlement = the full repayment the lender was promised. Either
    // way, less whatever the borrower already repaid to the lender (they already have that part).
    const alreadyRepaid = Math.max(0, Number(loan.repaid_amount ?? 0));
-   const settleTarget = settlementMode === 'platform_settlement' ? Number(loan.total_repayment_amount) : Number(loan.loan_amount);
+   const settleTarget = paysInFull ? Number(loan.total_repayment_amount) : Number(loan.loan_amount);
    const settleAmount = Math.max(0, Math.round((settleTarget - alreadyRepaid) * 1e6) / 1e6);
    if (!(settleAmount > 0)) return json({ error: 'The lender has already been repaid at least this much — nothing to send' }, 409);
    const requiredMicros = BigInt(Math.round(settleAmount * 1e6));
@@ -278,7 +295,7 @@ serve(async (req) => {
       return json(
          {
             error:
-               settlementMode === 'platform_settlement'
+               paysInFull
                   ? 'Transfer is less than the full repayment amount'
                   : 'Refund amount is less than the loan principal'
          },
@@ -303,7 +320,11 @@ serve(async (req) => {
 
    const recordHash = realTxHash;
    const nowIso = new Date().toISOString();
-   const isPlatformSettlement = settlementMode === 'platform_settlement';
+   // Lender-facing wording: rollover is presented to the lender exactly like a platform settlement.
+   const isPlatformSettlement = paysInFull;
+   // Rollover: the replacement loan's tracking id is known up front so the old loan's record names it.
+   const rolloverTrackingId = isRollover ? `LOAN-${Date.now()}-${crypto.randomUUID().replace(/-/g, '').slice(0, 7)}` : null;
+   const recordReason = rolloverTrackingId ? `${reason} → payment plan ${rolloverTrackingId}` : reason;
    const refundAmount = settleAmount;
    const errors: string[] = [];
 
@@ -318,7 +339,7 @@ serve(async (req) => {
          // repayment/credit stats stay honest. Either way refunded_at + refund_reason record the truth.
          ...(isPlatformSettlement ? { repaid_amount: Number(loan.total_repayment_amount) } : {}),
          refunded_at: nowIso,
-         refund_reason: reason,
+         refund_reason: recordReason,
          refunded_by: callerId,
          refund_hash: recordHash,
          hash: [...(loan.hash ?? []), recordHash]
@@ -354,13 +375,74 @@ serve(async (req) => {
    });
    if (ledgerError) errors.push(`ledger: ${ledgerError.message}`);
 
-   // --- (4) Ban borrower + (5) KYC blacklist ---
    const borrowerId = loan.borrower_user_id as string | null;
    let borrowerBanned = false;
    let kycBlacklisted = false;
    let diditPushed = false;
 
-   if (borrowerId) {
+   // --- (4r) Rollover: open the replacement loan from the paying admin, pause credit leveling ---
+   let rolloverLoan: Record<string, unknown> | null = null;
+   if (isRollover && borrowerId) {
+      const remaining = Math.max(0, Math.round((Number(loan.total_repayment_amount) - alreadyRepaid) * 100) / 100);
+      const principalLeft = Math.min(Number(loan.loan_amount), remaining);
+      const { data: created, error: createError } = await admin
+         .from('loans')
+         .insert({
+            tracking_id: rolloverTrackingId,
+            borrower_user_id: borrowerId,
+            borrower_wallet: loan.borrower_wallet,
+            lender_user_id: callerId,
+            // Repayments go to the wallet that actually paid the lender — one the admin controls.
+            lender_wallet: transfer.from,
+            loan_amount: principalLeft,
+            total_repayment_amount: remaining,
+            repaid_amount: 0,
+            loan_status: 'Lent',
+            repayment_status: 'Unpaid',
+            funded_at: nowIso,
+            due_date: rolloverDue!.toISOString(),
+            coin: loan.coin ?? 'USDC',
+            reason: `Payment plan for ${loan.tracking_id}`,
+            is_test: loan.is_test ?? false
+         })
+         .select()
+         .single();
+      if (createError || !created) {
+         errors.push(`rollover: could not create the payment-plan loan — ${createError?.message ?? 'unknown error'}`);
+         await postDiscord(
+            { content: `⚠️ ${loan.tracking_id}: lender paid in full (${recordHash}) but the payment-plan loan was NOT created: ${createError?.message ?? 'unknown'}. Create it by hand.` },
+            { prefer: ['DISCORD_REPAY_WEBHOOK_URL'] }
+         );
+      } else {
+         rolloverLoan = created;
+         // The admin's account carries a credit facility (Bitrepo); a rescued loan isn't funded from it.
+         const { error: unlinkError } = await admin.from('credit_facility_loans').delete().eq('loan_id', created.id);
+         if (unlinkError) errors.push(`rollover(facility unlink): ${unlinkError.message}`);
+      }
+      const { error: pauseError } = await admin.from('users').update({ credit_progression_paused: true }).eq('id', borrowerId);
+      if (pauseError) errors.push(`rollover(pause credit): ${pauseError.message}`);
+
+      if (rolloverLoan) {
+         const dueLabel = rolloverDue!.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' });
+         const { error: bNoticeError } = await admin.from('admin_user_notices').insert({
+            recipient_user_id: borrowerId,
+            audience: 'borrower',
+            notice_type: 'payment_plan',
+            title: 'Your payment plan is set up',
+            body:
+               `Your loan ${loan.tracking_id} is now a payment plan with Moodeng. You owe ${money(remaining)} in total, ` +
+               `and your next payment is due ${dueLabel}. Pay on the Repay page as usual — any amount counts.`,
+            metadata: { loan_id: rolloverLoan.id, previous_loan_id: loanId, tracking_id: rolloverTrackingId, due_date: rolloverDue!.toISOString() },
+            created_by: callerId
+         });
+         if (bNoticeError) errors.push(`rollover(borrower notice): ${bNoticeError.message}`);
+      }
+   } else if (isRollover) {
+      errors.push('rollover: loan has no borrower_user_id — no payment-plan loan created');
+   }
+
+   // --- (4) Ban borrower + (5) KYC blacklist (never for a rollover: the borrower is on a payment plan) ---
+   if (borrowerId && !isRollover) {
       const { data: b } = await admin.from('users').select('id, username, email, wallet_address').eq('id', borrowerId).maybeSingle();
       const borrowerWallet = (b as { wallet_address?: string } | null)?.wallet_address ?? loan.borrower_wallet ?? '';
       const borrowerEmail = b?.email ?? '';
@@ -415,7 +497,7 @@ serve(async (req) => {
       );
       if (blacklistError) errors.push(`kyc(blacklist): ${blacklistError.message}`);
       else kycBlacklisted = true;
-   } else {
+   } else if (!isRollover) {
       errors.push('borrower: loan has no borrower_user_id — could not ban / blacklist');
    }
 
@@ -495,10 +577,23 @@ serve(async (req) => {
             tx_hash: recordHash,
             reason,
             settlement_mode: settlementMode,
-            lender_told: isPlatformSettlement ? 'repaid_in_full' : 'refunded'
+            lender_told: isPlatformSettlement ? 'repaid_in_full' : 'refunded',
+            ...(isRollover ? { rollover_loan_id: rolloverLoan?.id ?? null, rollover_tracking_id: rolloverTrackingId, rollover_due_date: rolloverDue!.toISOString() } : {})
          }
       },
-      ...(borrowerId
+      ...(isRollover && rolloverLoan
+         ? [
+              {
+                 actor_user_id: callerId,
+                 action: 'loan_rolled_over',
+                 target_table: 'loans',
+                 target_id: rolloverLoan.id as string,
+                 target_user_id: borrowerId,
+                 metadata: { previous_loan_id: loanId, previous_tracking_id: loan.tracking_id, tracking_id: rolloverTrackingId, reason }
+              }
+           ]
+         : []),
+      ...(borrowerId && !isRollover
          ? [
               { actor_user_id: callerId, action: 'borrower_banned', target_table: 'users', target_id: borrowerId, target_user_id: borrowerId, metadata: { loan_id: loanId, reason } },
               { actor_user_id: callerId, action: 'kyc_blacklisted', target_table: 'kyc_blacklist', target_id: borrowerId, target_user_id: borrowerId, metadata: { loan_id: loanId, didit_pushed: diditPushed, reason } }
@@ -512,6 +607,7 @@ serve(async (req) => {
       ok: true,
       loan: updatedLoan,
       refund: { amount: refundAmount, coin: loan.coin ?? 'USDC', txHash: recordHash },
+      rolloverLoan: rolloverLoan ? { id: rolloverLoan.id, trackingId: rolloverTrackingId, dueDate: rolloverDue!.toISOString(), amount: rolloverLoan.total_repayment_amount } : null,
       borrowerBanned,
       kycBlacklisted,
       diditPushed,

@@ -2499,7 +2499,7 @@ export async function removeLoanRequest(input: RemoveLoanRequestInput): Promise<
  * reason is shown to them). 'platform_settlement': pay the lender the FULL repayment and present it to
  * them as an ordinary repayment — no refund wording, no reason. The reason is always kept internally.
  */
-export type SettlementMode = 'refund' | 'platform_settlement';
+export type SettlementMode = 'refund' | 'platform_settlement' | 'rollover';
 
 export interface RefundLoanInput {
    loanId: string;
@@ -2510,11 +2510,15 @@ export interface RefundLoanInput {
    reason: string;
    /** Defaults to 'refund' when omitted. */
    settlementMode?: SettlementMode;
+   /** 'rollover' only: when the first payment of the new payment-plan loan is due (ISO). */
+   rolloverDueDate?: string;
 }
 
 export interface RefundLoanResult {
    ok: boolean;
    refund: { amount: number; coin: string; txHash: string };
+   /** 'rollover' only: the new Moodeng → borrower payment-plan loan (null if it could not be created). */
+   rolloverLoan?: { id: string; trackingId: string; dueDate: string; amount: number } | null;
    borrowerBanned: boolean;
    kycBlacklisted: boolean;
    diditPushed: boolean;
@@ -2547,7 +2551,8 @@ export async function refundLoan(input: RefundLoanInput): Promise<RefundLoanResu
          hash: input.hash,
          method: input.method,
          reason: input.reason.trim(),
-         settlementMode: input.settlementMode ?? 'refund'
+         settlementMode: input.settlementMode ?? 'refund',
+         ...(input.rolloverDueDate ? { rolloverDueDate: input.rolloverDueDate } : {})
       }
    });
    if (error) {
