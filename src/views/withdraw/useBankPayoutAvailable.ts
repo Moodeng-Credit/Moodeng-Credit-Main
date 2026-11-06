@@ -32,7 +32,8 @@ export function useBankPayoutStatus(isPreview: boolean) {
       if (isPreview) return;
       let cancelled = false;
       // 'status' answers 403 not_tester when the kill switch limits it to testers, 401 when signed out, and
-      // enabled:false when Stableyard is switched off. Anything else (even a Stableyard hiccup) is allowed.
+      // enabled:false when Stableyard is switched off or its payout provider is down (bank list failing).
+      // Anything else (e.g. no Stableyard account yet) is allowed.
       getSupabaseBrowserClient()
          .functions.invoke('stableyard-deposit-address', { body: { qr: 'status' } })
          .then(async ({ data, error }) => {
