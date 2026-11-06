@@ -18,6 +18,28 @@ import {
 const DEFAULT_REASON = 'Insufficient credit check';
 // Internal-only default for a platform settlement: the lender never sees this — it's for our records.
 const DEFAULT_SETTLEMENT_REASON = 'Platform settlement — borrower KYC/due-diligence gap; lender made whole in full.';
+const DEFAULT_ROLLOVER_REASON = 'Payment plan — Moodeng took over the debt (signed rollover agreement).';
+
+function defaultReason(mode: SettlementMode): string {
+   if (mode === 'rollover') return DEFAULT_ROLLOVER_REASON;
+   return mode === 'platform_settlement' ? DEFAULT_SETTLEMENT_REASON : DEFAULT_REASON;
+}
+
+// yyyy-mm-dd for a date input. Default first payment: the loan's own due date if it's still ahead,
+// otherwise a week from today.
+function toDateInput(d: Date): string {
+   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function defaultFirstPayment(loan: ComingDueLoan): string {
+   const due = new Date(loan.due_date);
+   if (Number.isFinite(due.getTime()) && due.getTime() > Date.now()) return toDateInput(due);
+   return toDateInput(new Date(Date.now() + 7 * 86_400_000));
+}
+// The plan's payment falls due at the end of that day in Manila (16:00 UTC), like other loans.
+function firstPaymentIso(dateInput: string): string | null {
+   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) return null;
+   return `${dateInput}T16:00:00.000Z`;
+}
 
 function money(value: number | null | undefined): string {
    return Number(value ?? 0).toLocaleString(undefined, { style: 'currency', currency: 'USD' });
@@ -41,7 +63,7 @@ function fullRepayment(loan: ComingDueLoan): number {
 // Amount to send for a given mode, less what the borrower already repaid the lender (the server
 // checks the same amount).
 function settleAmount(loan: ComingDueLoan, mode: SettlementMode): number {
-   const target = mode === 'platform_settlement' ? fullRepayment(loan) : principal(loan);
+   const target = mode === 'refund' ? principal(loan) : fullRepayment(loan);
    return Math.max(0, Math.round((target - Number(loan.repaid_amount ?? 0)) * 1e6) / 1e6);
 }
 
@@ -66,7 +88,11 @@ export default function RefundSection() {
    const [error, setError] = useState<string | null>(null);
    const [notice, setNotice] = useState<string | null>(null);
    const [hideTest, setHideTest] = useState(true);
-   const [search, setSearch] = useState('');
+   // /admin/refunds?q=LOAN-… opens with that loan already filtered.
+   const [search, setSearch] = useState(() =>
+      typeof window === 'undefined' ? '' : (new URLSearchParams(window.location.search).get('q') ?? '')
+   );
+   const [firstPayment, setFirstPayment] = useState('');
 
    const [target, setTarget] = useState<ComingDueLoan | null>(null);
    const [mode, setMode] = useState<SettlementMode>('refund');
@@ -119,7 +145,8 @@ export default function RefundSection() {
          const effectiveMode = pending[loan.id]?.mode ?? requestedMode;
          setTarget(loan);
          setMode(effectiveMode);
-         setReason(pending[loan.id]?.reason ?? (effectiveMode === 'platform_settlement' ? DEFAULT_SETTLEMENT_REASON : DEFAULT_REASON));
+         setReason(pending[loan.id]?.reason ?? defaultReason(effectiveMode));
+         setFirstPayment((prev) => (pending[loan.id] && prev ? prev : defaultFirstPayment(loan)));
          setStep('idle');
          setError(null);
          setNotice(null);
@@ -138,7 +165,14 @@ export default function RefundSection() {
       async (loan: ComingDueLoan, hash: string, settleMethod: 'wallet' | 'base', trimmedReason: string, recMode: SettlementMode) => {
          setStep('recording');
          try {
-            const result = await refundLoan({ loanId: loan.id, hash, method: settleMethod, reason: trimmedReason, settlementMode: recMode });
+            const result = await refundLoan({
+               loanId: loan.id,
+               hash,
+               method: settleMethod,
+               reason: trimmedReason,
+               settlementMode: recMode,
+               rolloverDueDate: recMode === 'rollover' ? (firstPaymentIso(firstPayment) ?? undefined) : undefined
+            });
             setDone((prev) => ({ ...prev, [loan.id]: result }));
             setPending((prev) => {
                const next = { ...prev };
@@ -148,10 +182,16 @@ export default function RefundSection() {
             setTarget(null);
             const amount = settleAmount(loan, recMode);
             const lenderName = loan.lender?.username ?? 'the lender';
+            const plan = result.rolloverLoan;
             setNotice(
-               (recMode === 'platform_settlement'
-                  ? `Settled ${money(amount)} in full to ${lenderName} — lender told it was repaid in full · loan ${loan.tracking_id} closed · borrower banned.`
-                  : `Refunded ${money(amount)} to ${lenderName} · loan ${loan.tracking_id} closed · borrower banned.`) +
+               (recMode === 'rollover'
+                  ? `Paid ${money(amount)} in full to ${lenderName} — lender told it was repaid · loan ${loan.tracking_id} closed. ` +
+                    (plan
+                       ? `Payment plan ${plan.trackingId} opened: ${money(plan.amount)} owed to you, first payment due ${new Date(plan.dueDate).toLocaleDateString()}. Borrower NOT banned; credit leveling paused.`
+                       : 'The payment-plan loan was NOT created — see the issues below.')
+                  : recMode === 'platform_settlement'
+                    ? `Settled ${money(amount)} in full to ${lenderName} — lender told it was repaid in full · loan ${loan.tracking_id} closed · borrower banned.`
+                    : `Refunded ${money(amount)} to ${lenderName} · loan ${loan.tracking_id} closed · borrower banned.`) +
                   (result.errors.length ? ` Follow-up issues: ${result.errors.join('; ')}` : '')
             );
             void load(!hideTest); // refresh from server so the row (now Paid) is gone for good
@@ -168,7 +208,7 @@ export default function RefundSection() {
             setStep('idle');
          }
       },
-      [load, hideTest]
+      [load, hideTest, firstPayment]
    );
 
    const handleSettle = useCallback(async () => {
@@ -197,6 +237,13 @@ export default function RefundSection() {
       if (!trimmedReason) {
          setError(mode === 'platform_settlement' ? 'Please enter an internal reason (for our records).' : 'Please enter a reason for the refund.');
          return;
+      }
+      if (mode === 'rollover') {
+         const iso = firstPaymentIso(firstPayment);
+         if (!iso || new Date(iso).getTime() < Date.now()) {
+            setError('Pick a first payment date that is still ahead.');
+            return;
+         }
       }
       const amount = settleAmount(loan, mode);
       if (!(amount > 0)) {
@@ -272,11 +319,12 @@ export default function RefundSection() {
 
       // 2) Record it (verify + close + ban + notify).
       await record(loan, outcome.hash, toSettlementMethod(method), trimmedReason, mode);
-   }, [target, mode, reason, method, payUsdc, pending, record, load, hideTest]);
+   }, [target, mode, reason, firstPayment, method, payUsdc, pending, record, load, hideTest]);
 
    const totalRefundable = useMemo(() => shown.reduce((sum, l) => sum + principal(l), 0), [shown]);
 
-   const isPlatform = mode === 'platform_settlement';
+   const isRollover = mode === 'rollover';
+   const isPlatform = mode !== 'refund';
    const modalAmount = target ? settleAmount(target, mode) : 0;
 
    return (
@@ -320,6 +368,11 @@ export default function RefundSection() {
                <span className="text-[#cfc6dd]">repayment in full</span>: no “refund” wording and no reason. Use this when the loss is ours (e.g. a
                KYC / due-diligence gap). Your reason is kept <span className="text-[#cfc6dd]">internally only</span> — on the loan record and the
                audit log — never shown to the lender.
+            </p>
+            <p>
+               <span className="text-emerald-300">Take over (payment plan)</span> — sends the full repayment like Settle in full, but{' '}
+               <span className="text-emerald-300">does not ban the borrower</span>. It opens a new loan from you to the borrower for what they
+               still owe (repaid to the wallet you pay from), first payment due on the date you pick, and pauses their credit leveling.
             </p>
          </div>
 
@@ -424,6 +477,19 @@ export default function RefundSection() {
                                        >
                                           Settle in full
                                        </button>
+                                       <button
+                                          type="button"
+                                          onClick={() => openConfirm(l, 'rollover')}
+                                          disabled={noWallet}
+                                          className="rounded-full bg-emerald-700 px-4 py-1.5 text-xs font-black uppercase text-white disabled:opacity-50"
+                                          title={
+                                             noWallet
+                                                ? 'Lender has no wallet on file'
+                                                : 'Pay the lender in full, keep the borrower, and move the debt to a Moodeng payment plan'
+                                          }
+                                       >
+                                          Take over (plan)
+                                       </button>
                                     </div>
                                  )}
                               </td>
@@ -447,15 +513,18 @@ export default function RefundSection() {
                         ? isPlatform
                            ? 'Finish recording settlement'
                            : 'Finish recording refund'
-                        : isPlatform
-                          ? 'Confirm platform settlement'
-                          : 'Confirm refund'}
+                        : isRollover
+                          ? 'Confirm take-over (payment plan)'
+                          : isPlatform
+                            ? 'Confirm platform settlement'
+                            : 'Confirm refund'}
                   </h4>
 
                   {pending[target.id] ? (
                      <div className="rounded-xl border border-amber-800 bg-amber-950/40 p-3 text-sm font-bold text-amber-200">
                         The USDC for this loan was already sent (tx {pending[target.id].hash.slice(0, 10)}…). This will record the
-                        {isPlatform ? ' settlement' : ' refund'} and ban the borrower{' '}
+                        {isPlatform ? ' settlement' : ' refund'}
+                        {isRollover ? ' and open the payment plan' : ' and ban the borrower'}{' '}
                         <span className="font-black">without sending any more money</span>.
                      </div>
                   ) : null}
@@ -488,11 +557,40 @@ export default function RefundSection() {
                         <span className="text-[#a89bb8]">Loan</span>
                         <span className="font-mono text-xs text-white">{target.tracking_id}</span>
                      </div>
-                     <div className="mt-2 border-t border-[#2a1453] pt-2 text-red-300">
-                        Borrower <span className="text-white">{target.borrower?.username ?? '—'}</span> will be{' '}
-                        <span className="font-black">banned and KYC-blacklisted</span>, and this loan closed as no longer due.
-                     </div>
+                     {isRollover ? (
+                        <div className="mt-2 space-y-1 border-t border-[#2a1453] pt-2 text-emerald-300">
+                           <div>
+                              Borrower <span className="text-white">{target.borrower?.username ?? '—'}</span> is{' '}
+                              <span className="font-black">not banned</span>. A new loan opens from you to them for{' '}
+                              <span className="text-white">
+                                 {money(Math.max(0, fullRepayment(target) - Number(target.repaid_amount ?? 0)))}
+                              </span>
+                              , repaid to the wallet you pay from. Their credit leveling is paused.
+                           </div>
+                        </div>
+                     ) : (
+                        <div className="mt-2 border-t border-[#2a1453] pt-2 text-red-300">
+                           Borrower <span className="text-white">{target.borrower?.username ?? '—'}</span> will be{' '}
+                           <span className="font-black">banned and KYC-blacklisted</span>, and this loan closed as no longer due.
+                        </div>
+                     )}
                   </div>
+
+                  {isRollover ? (
+                     <label className="block text-sm font-black text-[#a89bb8]">
+                        First payment due (end of day, Manila)
+                        <input
+                           type="date"
+                           value={firstPayment}
+                           onChange={(e) => setFirstPayment(e.target.value)}
+                           disabled={step !== 'idle'}
+                           className="mt-1 w-full rounded-xl border border-[#3d1f6e] bg-[#241044] px-4 py-3 text-base font-bold text-white disabled:opacity-60"
+                        />
+                        <span className="mt-1 block text-xs font-bold text-[#6f6385]">
+                           After each payment, push the due date to the next installment from the Loans tab.
+                        </span>
+                     </label>
+                  ) : null}
 
                   <label className="block text-sm font-black text-[#a89bb8]">
                      {isPlatform ? 'Internal reason (admin only — the lender never sees this)' : 'Reason (shown to the lender)'}
@@ -528,9 +626,11 @@ export default function RefundSection() {
                                ? 'Recording…'
                                : pending[target.id]
                                  ? 'Finish recording (no new payment)'
-                                 : isPlatform
-                                   ? `Send ${money(modalAmount)} & settle in full`
-                                   : `Send ${money(modalAmount)} & refund`}
+                                 : isRollover
+                                   ? `Send ${money(modalAmount)} & start payment plan`
+                                   : isPlatform
+                                     ? `Send ${money(modalAmount)} & settle in full`
+                                     : `Send ${money(modalAmount)} & refund`}
                      </button>
                   </div>
                </div>
