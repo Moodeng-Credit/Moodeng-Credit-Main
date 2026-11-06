@@ -131,7 +131,7 @@ export default function MoneyHub() {
                         </span>
                         <span>
                            <span className="block text-[18px] font-bold text-[var(--ink,#1c053d)]">Cash out</span>
-                           <span className="block text-[13px] text-[var(--text-muted,#45556c)]">Pesos to GCash or bank</span>
+                           <span className="block text-[13px] text-[var(--text-muted,#45556c)]">Pesos to your bank</span>
                         </span>
                      </button>
                   </div>

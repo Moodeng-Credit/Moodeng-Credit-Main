@@ -693,14 +693,15 @@ function DirectPesoBanner({ balanceLine, repayLine }: { balanceLine: string; rep
 const BANK_PAYOUT_FEE_SHARE = 0.022;
 
 /** The direct payout (Stableyard): shows USDC turning straight into pesos, so it doesn't read like one more exchange. */
-// The logos people recognise, so it's obvious this sends straight to their GCash / Maya / bank.
+// The bank logos people recognise, so it's obvious this sends straight to their bank. Banks only since
+// 2026-11-07: e-wallets (GCash, Maya…) are paused — Stableyard says they're not a stable payout method.
 const PAYOUT_LOGOS = [
-   { slug: 'gcash', name: 'GCash' },
-   { slug: 'maya', name: 'Maya' },
    { slug: 'gotyme', name: 'GoTyme' },
    { slug: 'bdo', name: 'BDO' },
    { slug: 'bpi', name: 'BPI' },
-   { slug: 'metrobank', name: 'Metrobank' }
+   { slug: 'metrobank', name: 'Metrobank' },
+   { slug: 'uniondigital', name: 'UnionDigital' },
+   { slug: 'landbank', name: 'Landbank' }
 ];
 
 function DirectPesoCard({ onSelect, spendable }: { onSelect: () => void; spendable: number | null }) {
@@ -716,7 +717,7 @@ function DirectPesoCard({ onSelect, spendable }: { onSelect: () => void; spendab
                <PhFlag className="h-[11px] w-[16px]" /> Cash out to
             </p>
             <p className="mt-[2px] text-[24px] font-black italic leading-[1.15] tracking-[-0.4px] text-[#6b55f7] dark:text-[#b3a6ff]">
-               GCash, Maya or bank
+               Any PH bank
             </p>
 
             <div className="mt-[10px] flex items-center">
@@ -732,7 +733,7 @@ function DirectPesoCard({ onSelect, spendable }: { onSelect: () => void; spendab
                   />
                ))}
                <span className="-ml-[6px] flex h-[36px] items-center rounded-[9px] border-2 border-[var(--surface,#fff)] bg-[var(--surface-2,#f1eeff)] px-[8px] text-[12px] font-bold text-[#6b55f7] dark:text-[#a98bff]">
-                  +80
+                  +60
                </span>
             </div>
 
@@ -1166,7 +1167,7 @@ const PROVIDER_NAMES: Record<Provider, string> = {
    coinsph: 'Coins.ph',
    gcash: 'GCrypto',
    pdax: 'PDAX',
-   bank: 'GCash or bank',
+   bank: 'Bank',
    kraken: 'Kraken',
    coinbase: 'Coinbase'
 };
@@ -2580,7 +2581,7 @@ const PROVIDER_TITLES: Record<Provider, string> = {
    coinsph: 'Send to Coins.ph',
    gcash: 'Send to GCrypto',
    pdax: 'Send to PDAX',
-   bank: 'Cash out to GCash or bank',
+   bank: 'Cash out to your bank',
    kraken: 'Send to Kraken',
    coinbase: 'Send to Coinbase'
 };
