@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { ArrowRight, Check, Clock, Landmark, Loader2, Search, XCircle } from 'lucide-react';
+import { ArrowRight, Check, ChevronRight, Clock, Landmark, Loader2, Search, ShieldCheck, XCircle } from 'lucide-react';
 
 import { PhFlag } from '@/components/auth/PhFlag';
 import PoweredByStableyard from '@/components/brand/PoweredByStableyard';
@@ -256,6 +256,9 @@ const primaryClass =
    // Milestone design: purple gradient pill.
    'w-full rounded-[36px] px-[20px] py-[15px] flex items-center justify-center gap-[8px] text-[16px] font-semibold text-white bg-[linear-gradient(85deg,#9584ff_0%,#6b55f7_98%)] shadow-[0_6px_16px_rgba(107,85,247,0.3)] disabled:bg-none disabled:bg-[var(--disabled)] disabled:shadow-none disabled:cursor-not-allowed active:scale-[0.98] transition-all';
 const linkClass = 'w-full text-center text-[15px] font-semibold text-[#4492f1] py-[8px] hover:underline disabled:opacity-60';
+// Milestone design's "Verify Now" option card: lavender fill, purple border, purple icon + title.
+const reuseCardClass =
+   'flex items-center gap-[12px] rounded-[16px] border-2 border-[#8f7bff] bg-[#f4f0ff] px-[14px] py-[14px] dark:border-[#6b55f7] dark:bg-[#231a45]';
 
 function Panel({ children }: { children: React.ReactNode }) {
    return <div className="rounded-[8px] border-2 border-[#e8e4ff] bg-[var(--surface)] p-[16px] space-y-[12px]">{children}</div>;
@@ -665,27 +668,45 @@ export default function BankPayoutFlow({
                      </>
                   ) : null}
                   {emailDone && !setup?.kycApproved && reusePending ? (
-                     <>
-                        <p className="text-[14px] font-semibold text-[var(--ink)]">2. ID check</p>
-                        <p className="flex items-start gap-[8px] text-[13px] text-[var(--text-muted)] leading-[18px]">
-                           <Clock className="w-[16px] h-[16px] shrink-0 mt-[1px]" />
-                           Stableyard got your Moodeng ID check and is reviewing it. This usually takes a few minutes. You don&apos;t need
-                           to do anything.
-                        </p>
-                     </>
+                     <div className={reuseCardClass}>
+                        <Clock className="w-[36px] h-[36px] shrink-0 text-[#6b55f7] dark:text-[#a98bff]" strokeWidth={2.2} />
+                        <div className="min-w-0">
+                           <p className="text-[17px] font-bold leading-[22px] text-[#6b55f7] dark:text-[#a98bff]">Checking your ID</p>
+                           <p className="text-[13px] leading-[18px] text-[#7a6ad8] dark:text-[#b3a6ff]">
+                              Stableyard got your Moodeng ID check. This usually takes a few minutes. You don&apos;t need to do anything.
+                           </p>
+                        </div>
+                     </div>
                   ) : null}
                   {emailDone && !setup?.kycApproved && offerReuse ? (
                      <>
-                        <p className="text-[14px] font-semibold text-[var(--ink)]">2. Use your Moodeng ID check</p>
-                        <p className="text-[13px] text-[var(--text-muted)] leading-[18px]">
-                           You already checked your ID with Moodeng. Share it with Stableyard so you don&apos;t have to do it again.
-                        </p>
-                        <label className="flex items-start gap-[10px] rounded-[12px] bg-[var(--surface-2)] px-[12px] py-[10px] text-[13px] leading-[18px] text-[var(--ink)]">
+                        <div className={reuseCardClass}>
+                           <ShieldCheck
+                              className="w-[40px] h-[40px] shrink-0 text-[#6b55f7] dark:text-[#a98bff]"
+                              fill="currentColor"
+                              stroke="white"
+                              strokeWidth={2}
+                           />
+                           <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-[8px]">
+                                 <p className="text-[18px] font-bold leading-[22px] text-[#6b55f7] dark:text-[#a98bff]">
+                                    Use my Moodeng ID
+                                 </p>
+                                 <span className="rounded-full bg-[#6b55f7] px-[8px] py-[2px] text-[11px] font-semibold text-white">
+                                    Fastest
+                                 </span>
+                              </div>
+                              <p className="mt-[2px] text-[13px] leading-[18px] text-[#7a6ad8] dark:text-[#b3a6ff]">
+                                 You already verified with Moodeng. Share it — no new ID photo or selfie.
+                              </p>
+                           </div>
+                        </div>
+                        <label className="flex items-start gap-[10px] px-[2px] text-[12px] leading-[17px] text-[var(--text-muted)]">
                            <input
                               type="checkbox"
                               checked={consent}
                               onChange={(e) => setConsent(e.target.checked)}
-                              className="mt-[2px] h-[18px] w-[18px] shrink-0 accent-[var(--primary)]"
+                              className="mt-[1px] h-[18px] w-[18px] shrink-0 accent-[#6b55f7]"
                            />
                            <span>{setup?.consentText}</span>
                         </label>
@@ -696,8 +717,12 @@ export default function BankPayoutFlow({
                         >
                            {busy ? 'Sharing…' : 'Share my ID check'}
                         </button>
-                        <button className={linkClass} disabled={busy} onClick={() => setUseHostedCheck(true)}>
-                           Do a new ID check instead
+                        <button
+                           className={`${linkClass} flex items-center justify-center gap-[2px]`}
+                           disabled={busy}
+                           onClick={() => setUseHostedCheck(true)}
+                        >
+                           Do a new ID check instead <ChevronRight className="w-[16px] h-[16px]" />
                         </button>
                      </>
                   ) : null}
