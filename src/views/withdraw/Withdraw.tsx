@@ -742,7 +742,8 @@ function DirectPesoCard({ onSelect, spendable }: { onSelect: () => void; spendab
                </p>
             ) : null}
 
-            <span className="mt-[12px] flex w-full items-center justify-center gap-[8px] rounded-[36px] bg-[linear-gradient(85deg,#9584ff_0%,#6b55f7_98%)] py-[12px] text-[16px] font-semibold text-white shadow-[0_6px_16px_rgba(107,85,247,0.3)]">
+            {/* Gold, like the Milestone design's "Copy" pill, so the one action stands out from all the purple. */}
+            <span className="mt-[12px] flex w-full items-center justify-center gap-[8px] rounded-[36px] bg-[linear-gradient(85deg,#ffe27a_0%,#ffbe1a_98%)] py-[12px] text-[16px] font-bold text-[#4a2a00] shadow-[0_6px_16px_rgba(255,180,0,0.35)]">
                Tap to cash out <ChevronRight className="w-[18px] h-[18px]" strokeWidth={2.6} />
             </span>
          </div>
