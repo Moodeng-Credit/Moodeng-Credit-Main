@@ -356,7 +356,7 @@ export const readPdfInfo = (bytes: Uint8Array): PdfInfo => {
 };
 
 /** Fill the producer/creator/dates the plain read missed (compressed PDFs), via the PDF library. */
-const fillPdfInfo = async (info: PdfInfo, bytes: Uint8Array<ArrayBuffer>): Promise<PdfInfo> => {
+export const fillPdfInfo = async (info: PdfInfo, bytes: Uint8Array<ArrayBuffer>): Promise<PdfInfo> => {
    if (info.producer || info.creator) return info;
    try {
       const { info: meta } = (await getMeta(await getDocumentProxy(new Uint8Array(bytes)))) as { info: Record<string, unknown> };
