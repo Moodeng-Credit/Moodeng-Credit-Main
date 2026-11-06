@@ -1,8 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 
-import { ArrowRight, Check, ChevronRight, Clock, Landmark, Loader2, Search, XCircle } from 'lucide-react';
+import { ArrowRight, Check, ChevronRight, Clock, Landmark, Loader2, Search, Smartphone, XCircle } from 'lucide-react';
 
-import { PhFlag } from '@/components/auth/PhFlag';
 import PoweredByStableyard from '@/components/brand/PoweredByStableyard';
 
 import { isValidEmail } from '@/lib/accountEmail';
@@ -54,7 +53,19 @@ type FnResult = {
       banks?: Bank[];
       challenge?: { id?: string };
       verificationUrl?: string;
-      payment?: { id?: string; status?: string; stage?: string; quoteExpiresAt?: string; expiresAt?: string };
+      payment?: {
+         id?: string;
+         status?: string;
+         stage?: string;
+         quoteExpiresAt?: string;
+         expiresAt?: string;
+         // Stableyard's price breakdown: what to send, the fees inside it, and the PHP→USD rate.
+         funding?: {
+            required?: { amount?: string };
+            totalFees?: { amount?: string };
+            exchangeRate?: { rate?: string; baseAssetCode?: string; quoteAssetCode?: string };
+         } | null;
+      };
       nextAction?: { type?: string; url?: string; expiresAt?: string | null; depositInstructions?: DepositInstructions } | null;
    };
 };
@@ -90,6 +101,12 @@ const PREVIEW: Record<string, FnResult> = {
 // A shared Moodeng ID check that Stableyard is still copying or reviewing.
 const REUSE_PENDING = new Set(['sharing', 'submitting', 'imported']);
 const PREVIEW_CONSENT = 'Sends your name, birthday, ID and selfie to Stableyard.';
+// Stableyard KYC states where the person has nothing to do but wait (or is busy on Stableyard's page).
+const KYC_WAITING = new Set(['pending', 'in_progress', 'requires_review', 'in_review']);
+// While the ID is being checked, re-check setup this often, for at most this many times (~10 minutes).
+const SETUP_POLL_MS = 6000;
+const SETUP_POLL_MAX = 100;
+let previewReviewSince = 0;
 
 async function call(isPreview: boolean, body: Record<string, string | boolean>): Promise<FnResult> {
    if (isPreview) {
@@ -109,14 +126,46 @@ async function call(isPreview: boolean, body: Record<string, string | boolean>):
             reuseAvailable: true,
             consentText: PREVIEW_CONSENT
          };
-      if (body.qr === 'setup' && sim === 'reused')
+      // ?sim=reused is approved ~8s after it first shows, so the auto-refresh can be seen moving on.
+      if (body.qr === 'setup' && sim === 'reused') {
+         previewReviewSince ||= Date.now();
+         if (Date.now() - previewReviewSince > 8000) return PREVIEW.setup;
          return { ok: true, emailVerified: true, kycApproved: false, kycStatus: 'requires_review', reuseImportStatus: 'imported' };
+      }
       if (body.qr === 'bank_create' && sim === 'compliance') {
          return {
             ok: true,
             result: {
                payment: { id: 'payment_preview', status: 'requires_action' },
                nextAction: { type: 'complete_compliance', url: 'https://stableyard.fi' }
+            }
+         };
+      }
+      if (body.qr === 'bank_create') {
+         // Priced from the typed pesos like Stableyard does (rate + ~2.2% fees), so the breakdown adds up.
+         const rate = 0.01725;
+         const principal = Number(body.amount ?? 0) * rate;
+         const fee = Math.round(principal * 0.022 * 1e6) / 1e6;
+         const required = (principal + fee).toFixed(6);
+         const priced = PREVIEW.bank_create;
+         return {
+            ...priced,
+            result: {
+               ...priced.result,
+               payment: {
+                  ...priced.result?.payment,
+                  funding: {
+                     required: { amount: required },
+                     totalFees: { amount: String(fee) },
+                     exchangeRate: { rate: String(rate), baseAssetCode: 'PHP', quoteAssetCode: 'USD' }
+                  }
+               },
+               nextAction: priced.result?.nextAction
+                  ? {
+                       ...priced.result.nextAction,
+                       depositInstructions: { ...priced.result.nextAction.depositInstructions!, amount: required }
+                    }
+                  : null
             }
          };
       }
@@ -378,6 +427,9 @@ export default function BankPayoutFlow({
    const [amount, setAmount] = useState('');
    const [paymentId, setPaymentId] = useState('');
    const [deposit, setDeposit] = useState<DepositInstructions | null>(null);
+   // Fee inside the USDC to send, and USD per peso, from Stableyard's quote (null if it didn't say).
+   const [feeUsdc, setFeeUsdc] = useState<number | null>(null);
+   const [usdPerPeso, setUsdPerPeso] = useState<number | null>(null);
    const [expiresAt, setExpiresAt] = useState<number | null>(null);
    const [now, setNow] = useState(Date.now());
    const [status, setStatus] = useState('');
@@ -415,10 +467,25 @@ export default function BankPayoutFlow({
          const name = normalize(`${b.name} ${shortBank(b.name)}`);
          return words.every((w) => name.includes(w));
       });
+      // Names with a word that starts with what you typed come first ("g" → GCash, GrabPay, GoTyme).
+      const startsWith = (b: Bank) =>
+         normalize(`${b.name} ${shortBank(b.name)}`)
+            .split(' ')
+            .some((part) => part.startsWith(words[0]));
+      const ranked = [...all.filter(startsWith), ...all.filter((b) => !startsWith(b))];
       // Search this side first; if the name is on the other side (picked the wrong tab), still show it.
-      const sameKind = all.filter((b) => kindOf(b.name) === payeeKind);
-      return (sameKind.length ? sameKind : all).slice(0, 8);
+      const sameKind = ranked.filter((b) => kindOf(b.name) === payeeKind);
+      return (sameKind.length ? sameKind : ranked).slice(0, 6);
    }, [bankQuery, sortedBanks, banks, payeeKind]);
+
+   // Pick a bank / e-wallet. A GCash number isn't a bank account number (and back), so switching
+   // between the two clears the number.
+   const pickBank = (picked: Bank) => {
+      if (bank && kindOf(bank.name) !== kindOf(picked.name)) setAccountNumber('');
+      setBankCode(picked.code);
+      setPickingBank(false);
+      setBankQuery('');
+   };
 
    const loadSetup = async () => {
       setError('');
@@ -454,6 +521,44 @@ export default function BankPayoutFlow({
       void loadSetup();
       // eslint-disable-next-line react-hooks/exhaustive-deps
    }, []);
+
+   // On the ID step, re-check quietly so the form shows up by itself once Stableyard approves: every few
+   // seconds while the ID is being checked (shared or on Stableyard's page), and whenever the person
+   // comes back to this tab. "Check again" stays as a fallback.
+   const emailVerified = Boolean(setup?.emailVerified);
+   const kycApproved = Boolean(setup?.kycApproved);
+   const idWaiting = REUSE_PENDING.has(setup?.reuseImportStatus ?? '') || KYC_WAITING.has(setup?.kycStatus ?? '');
+   useEffect(() => {
+      if (step !== 'verify' || !emailVerified || kycApproved) return;
+      let stopped = false;
+      let polls = 0;
+      const check = async () => {
+         if (stopped) return;
+         const res = await call(isPreview, { qr: 'setup' });
+         if (stopped || !res.ok) return;
+         if (res.emailVerified && res.kycApproved) return void loadSetup();
+         setSetup(res);
+      };
+      const onBack = () => {
+         if (document.visibilityState === 'visible') void check();
+      };
+      document.addEventListener('visibilitychange', onBack);
+      window.addEventListener('focus', onBack);
+      const timer = idWaiting
+         ? setInterval(() => {
+              polls += 1;
+              if (polls > SETUP_POLL_MAX) return clearInterval(timer);
+              void check();
+           }, SETUP_POLL_MS)
+         : undefined;
+      return () => {
+         stopped = true;
+         document.removeEventListener('visibilitychange', onBack);
+         window.removeEventListener('focus', onBack);
+         if (timer) clearInterval(timer);
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [step, emailVerified, kycApproved, idWaiting, isPreview]);
 
    // Quote countdown.
    useEffect(() => {
@@ -517,6 +622,12 @@ export default function BankPayoutFlow({
             return setError('This payout needs a different coin. Please contact support.');
          }
          setDeposit(instructions);
+         const funding = payment.funding;
+         const fee = Number(funding?.totalFees?.amount);
+         const rate = Number(funding?.exchangeRate?.rate);
+         const phpToUsd = funding?.exchangeRate?.baseAssetCode === 'PHP' && funding?.exchangeRate?.quoteAssetCode === 'USD';
+         setFeeUsdc(Number.isFinite(fee) && fee >= 0 ? fee : null);
+         setUsdPerPeso(phpToUsd && Number.isFinite(rate) && rate > 0 ? rate : null);
          const expiry = next?.expiresAt ?? payment.quoteExpiresAt ?? payment.expiresAt;
          setExpiresAt(expiry ? new Date(expiry).getTime() : null);
          setNow(Date.now());
@@ -726,8 +837,8 @@ export default function BankPayoutFlow({
          <div className="space-y-[12px]">
             <Panel>
                {remembered && (
-                  <p className="rounded-[8px] bg-[var(--surface-2)] px-[10px] py-[8px] text-[12px] leading-[17px] text-[var(--text-muted)]">
-                     Filled in from your last cash-out. Check it&apos;s still right, then enter the amount.
+                  <p className="flex w-fit items-center gap-[6px] rounded-full bg-[var(--surface-2)] px-[10px] py-[4px] text-[12px] font-semibold text-[var(--text-muted)]">
+                     <Check className="w-[13px] h-[13px]" strokeWidth={3} /> Filled in from last time
                   </p>
                )}
                <span className="block text-[13px] font-semibold text-[var(--ink)]">Send to</span>
@@ -750,10 +861,10 @@ export default function BankPayoutFlow({
                      <div className="grid grid-cols-2 gap-[6px] mb-[8px]" role="tablist">
                         {(
                            [
-                              ['wallet', 'PH e-wallet', 'GCash, Maya…'],
-                              ['bank', 'PH bank', 'BDO, BPI…']
+                              ['wallet', 'E-wallet'],
+                              ['bank', 'Bank']
                            ] as const
-                        ).map(([kind, label, hint]) => (
+                        ).map(([kind, label]) => (
                            <button
                               key={kind}
                               type="button"
@@ -763,13 +874,14 @@ export default function BankPayoutFlow({
                                  setPayeeKind(kind);
                                  setBankQuery('');
                               }}
-                              className={`rounded-[10px] border-2 px-[10px] py-[8px] text-left transition-colors ${payeeKind === kind ? 'border-[#6b55f7] bg-[var(--surface-2)]' : 'border-[var(--border-card)]'}`}
+                              className={`flex items-center justify-center gap-[6px] rounded-[10px] border-2 px-[10px] py-[9px] text-[14px] font-semibold transition-colors ${payeeKind === kind ? 'border-[#6b55f7] bg-[var(--surface-2)] text-[#6b55f7] dark:text-[#a98bff]' : 'border-[var(--border-card)] text-[var(--ink)]'}`}
                            >
-                              <span className="flex items-center gap-[6px] text-[14px] font-semibold text-[var(--ink)]">
-                                 <PhFlag className="h-[11px] w-[16px]" />
-                                 {label}
-                              </span>
-                              <span className="block text-[12px] text-[var(--text-muted)]">{hint}</span>
+                              {kind === 'wallet' ? (
+                                 <Smartphone className="w-[16px] h-[16px]" />
+                              ) : (
+                                 <Landmark className="w-[16px] h-[16px]" />
+                              )}
+                              {label}
                            </button>
                         ))}
                      </div>
@@ -778,26 +890,24 @@ export default function BankPayoutFlow({
                         <input
                            value={bankQuery}
                            onChange={(e) => setBankQuery(e.target.value)}
+                           onKeyDown={(e) => {
+                              // The keyboard's Go / Enter picks the top match.
+                              if (e.key !== 'Enter' || !bankQuery.trim() || !bankMatches[0]) return;
+                              e.preventDefault();
+                              pickBank(bankMatches[0]);
+                           }}
+                           enterKeyHint="go"
                            autoFocus={pickingBank}
-                           placeholder={payeeKind === 'wallet' ? 'Search e-wallets, e.g. GCash' : 'Search banks, e.g. BDO'}
+                           placeholder={payeeKind === 'wallet' ? 'Search e-wallets' : 'Search banks'}
                            className={`${inputClass} pl-[36px]`}
                         />
                      </div>
                      <div className="mt-[6px] rounded-[12px] border border-[var(--border-card)] overflow-hidden divide-y divide-[var(--divider)]">
-                        {!bankQuery.trim() && (
-                           <p className="px-[12px] pt-[8px] pb-[4px] text-[11px] font-bold uppercase tracking-[0.4px] text-[var(--text-faint)]">
-                              Popular
-                           </p>
-                        )}
                         {bankMatches.map((b) => (
                            <button
                               key={b.code}
                               type="button"
-                              onClick={() => {
-                                 setBankCode(b.code);
-                                 setPickingBank(false);
-                                 setBankQuery('');
-                              }}
+                              onClick={() => pickBank(b)}
                               className="w-full px-[12px] py-[10px] flex items-center gap-[10px] text-left hover:bg-[var(--surface-2)]"
                            >
                               <BankBadge name={b.name} />
@@ -806,9 +916,7 @@ export default function BankPayoutFlow({
                            </button>
                         ))}
                         {bankMatches.length === 0 && (
-                           <p className="px-[12px] py-[10px] text-[13px] text-[var(--text-muted)]">
-                              No bank matches “{bankQuery.trim()}”. Try a shorter name, like “BDO” or “Metro”.
-                           </p>
+                           <p className="px-[12px] py-[10px] text-[13px] text-[var(--text-muted)]">No match. Try fewer letters.</p>
                         )}
                      </div>
                   </div>
@@ -827,27 +935,27 @@ export default function BankPayoutFlow({
                               setAccountNumber(isEwallet ? toLocalMobile(digits) : digits.slice(0, 20));
                            }}
                            inputMode="numeric"
-                           placeholder={isEwallet ? '09XX XXX XXXX or +63' : 'Account number'}
+                           placeholder={isEwallet ? '09XX XXX XXXX' : 'Account number'}
                            className={`${inputClass} mt-[6px]`}
                         />
                         {accountNumber && !accountOk ? (
                            <span className="text-[12px] text-[var(--danger)]">
-                              {isEwallet ? 'Enter the 11-digit number (09… or +63…).' : 'Check the account number.'}
+                              {isEwallet ? '11 digits, starts with 09' : 'Check the number'}
                            </span>
                         ) : null}
                      </label>
                      <label className="block">
-                        <span className="text-[13px] font-semibold text-[var(--ink)]">Name on the account</span>
+                        <span className="text-[13px] font-semibold text-[var(--ink)]">Account name</span>
                         <input
                            value={accountName}
                            onChange={(e) => setAccountName(e.target.value.slice(0, 100))}
                            autoComplete="name"
-                           placeholder={isEwallet ? `Full name on your ${shortBank(bank?.name ?? '')}` : 'Full name on the account'}
+                           placeholder="Full name"
                            className={`${inputClass} mt-[6px]`}
                         />
                      </label>
                      <label className="block">
-                        <span className="text-[13px] font-semibold text-[var(--ink)]">Amount in pesos</span>
+                        <span className="text-[13px] font-semibold text-[var(--ink)]">Amount</span>
                         <div className="relative mt-[6px]">
                            <span className="absolute left-[14px] top-1/2 -translate-y-1/2 text-[16px] text-[var(--text-muted)]">₱</span>
                            <input
@@ -860,7 +968,7 @@ export default function BankPayoutFlow({
                         </div>
                         <span className="text-[12px] text-[var(--text-faint)]">
                            {peso(MIN_PHP)}–{peso(MAX_PHP)}
-                           {spendable != null ? ` · ${spendable} USDC in your wallet` : ''}
+                           {spendable != null ? ` · you have ${spendable} USDC` : ''}
                         </span>
                      </label>
                   </>
@@ -873,12 +981,9 @@ export default function BankPayoutFlow({
                onClick={() => void getQuote()}
             >
                {busy ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : null}
-               {busy ? 'Getting your price…' : 'See how much USDC'}
+               {busy ? 'One moment…' : 'Continue'}
                {!busy ? <ArrowRight className="w-4 h-4" /> : null}
             </button>
-            <p className="text-[12px] text-[var(--text-faint)] text-center leading-[17px]">
-               Nothing leaves your wallet until you confirm on the next screen.
-            </p>
          </div>
       );
    }
@@ -916,12 +1021,17 @@ export default function BankPayoutFlow({
    }
 
    if (step === 'quote' || step === 'sending') {
+      // Everything in pesos so the fee is plain to see: what leaves your wallet, minus the fee, is what arrives.
+      const sendUsdc = Number(deposit?.amount ?? 0);
+      const toPeso = (usdc: number) => (usdPerPeso ? usdc / usdPerPeso : null);
+      const sendPhp = toPeso(sendUsdc);
+      const feePhp = feeUsdc != null ? toPeso(feeUsdc) : null;
+      const usdcText = (n: number) => `${n.toFixed(2)} USDC`;
       return (
          <div className="space-y-[12px]">
             <Panel>
-               {/* Milestone style: the peso amount as the black-italic headline, the bank under it. */}
                <div className="text-center pt-[4px]">
-                  <p className="text-[13px] text-[var(--text-muted)]">They get</p>
+                  <p className="text-[13px] text-[var(--text-muted)]">You get</p>
                   <p className="text-[40px] font-black italic leading-[1.15] tracking-[-0.8px] text-[#735dfa] dark:text-[#a98bff]">
                      {peso(amountNum)}
                   </p>
@@ -930,32 +1040,44 @@ export default function BankPayoutFlow({
                      <span className="text-[14px] font-semibold text-[var(--ink)]">{accountLabel}</span>
                   </div>
                </div>
-               <div className="rounded-[12px] border border-[var(--border-card)] px-[12px] py-[10px] text-[14px] text-[var(--ink)]">
-                  <div className="flex justify-between">
+               <div className="rounded-[12px] border border-[var(--border-card)] px-[14px] py-[12px] space-y-[8px] text-[14px] text-[var(--ink)]">
+                  <div className="flex items-baseline justify-between gap-[8px]">
                      <span>You send</span>
-                     <span className="font-semibold">{deposit?.amount} USDC</span>
+                     <span className="text-right">
+                        <span className="font-semibold">{sendPhp != null ? peso(sendPhp) : usdcText(sendUsdc)}</span>
+                        {sendPhp != null ? (
+                           <span className="block text-[12px] text-[var(--text-muted)]">{deposit?.amount} USDC</span>
+                        ) : null}
+                     </span>
                   </div>
-                  <p className="text-[12px] text-[var(--text-muted)] mt-[2px]">Fees included. Nothing else to pay.</p>
+                  <div className="flex items-baseline justify-between gap-[8px] text-[var(--text-muted)]">
+                     <span>Fee</span>
+                     <span>{feeUsdc == null ? 'Included' : feePhp != null ? `− ${peso(feePhp)}` : `− ${usdcText(feeUsdc)}`}</span>
+                  </div>
+                  <div className="flex items-baseline justify-between gap-[8px] border-t border-[var(--divider)] pt-[8px] font-bold">
+                     <span>You get</span>
+                     <span>{peso(amountNum)}</span>
+                  </div>
                </div>
                {secondsLeft != null ? (
-                  <p className={`text-[12px] flex items-center gap-[6px] ${expired ? 'text-[var(--danger)]' : 'text-[var(--text-muted)]'}`}>
-                     <Clock className="w-[14px] h-[14px]" />
-                     {expired
-                        ? 'This price expired. Get a new one.'
-                        : `Price held for ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`}
+                  <p
+                     className={`text-[12px] flex items-center justify-center gap-[6px] ${expired ? 'text-[var(--danger)]' : 'text-[var(--text-faint)]'}`}
+                  >
+                     <Clock className="w-[13px] h-[13px]" />
+                     {expired ? 'Price expired' : `Price held ${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`}
                   </p>
                ) : null}
-               {notEnough ? <ErrorLine text={`You have ${spendable} USDC. Lower the peso amount and try again.`} /> : null}
+               {notEnough ? <ErrorLine text={`You have ${spendable} USDC. Lower the amount.`} /> : null}
                {error ? <ErrorLine text={error} /> : null}
             </Panel>
             {expired ? (
                <button className={primaryClass} disabled={busy} onClick={() => void getQuote()}>
-                  Get a new price
+                  Refresh price
                </button>
             ) : (
                <button className={primaryClass} disabled={busy || notEnough || spendable == null} onClick={() => void confirmSend()}>
                   {step === 'sending' ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : null}
-                  {step === 'sending' ? 'Sending…' : `Cash out ${peso(amountNum)}`}
+                  {step === 'sending' ? 'Sending…' : 'Confirm'}
                </button>
             )}
             <button className={linkClass} disabled={busy} onClick={() => setStep('form')}>
