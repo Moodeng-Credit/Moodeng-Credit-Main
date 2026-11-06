@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 
-import { ArrowRight, Check, ChevronRight, Clock, Landmark, Loader2, Search, Smartphone, XCircle } from 'lucide-react';
+import { ArrowRight, Check, ChevronRight, Clock, Landmark, Loader2, Search, Smartphone, Wallet, XCircle } from 'lucide-react';
 
 import PoweredByStableyard from '@/components/brand/PoweredByStableyard';
 
@@ -1040,27 +1040,53 @@ export default function BankPayoutFlow({
                      <span className="text-[14px] font-semibold text-[var(--ink)]">{accountLabel}</span>
                   </div>
                </div>
-               <div className="rounded-[12px] border border-[var(--border-card)] px-[14px] py-[12px] space-y-[8px] text-[14px] text-[var(--ink)]">
-                  <div className="flex items-baseline justify-between gap-[8px]">
-                     <span>You send</span>
-                     <span className="text-right">
-                        <span className="font-semibold">{sendPhp != null ? peso(sendPhp) : usdcText(sendUsdc)}</span>
-                        {sendPhp != null ? (
-                           <span className="block text-[12px] text-[var(--text-muted)]">{deposit?.amount} USDC</span>
-                        ) : null}
+               {/* The breakdown: what leaves the wallet, each fee with whose it is, and what arrives. Every fee
+                   in Stableyard's quote is theirs (their 0.5% + their payout partner's); our partner fee is 0. */}
+               <div className="rounded-[16px] bg-[var(--surface-2)] p-[4px]">
+                  <div className="rounded-[12px] bg-[var(--surface)] px-[14px] py-[12px] space-y-[12px] text-[14px] text-[var(--ink)]">
+                     <div className="flex items-center gap-[10px]">
+                        <span className="flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-full bg-[#f1eeff] dark:bg-[#2a2150]">
+                           <Wallet className="w-[15px] h-[15px] text-[#6b55f7] dark:text-[#a98bff]" />
+                        </span>
+                        <span className="flex-1">You send</span>
+                        <span className="text-right">
+                           <span className="font-semibold">{sendPhp != null ? peso(sendPhp) : usdcText(sendUsdc)}</span>
+                           {sendPhp != null ? (
+                              <span className="block text-[11px] leading-[14px] text-[var(--text-faint)]">
+                                 {Number(deposit?.amount ?? 0)} USDC
+                              </span>
+                           ) : null}
+                        </span>
+                     </div>
+                     <div className="flex items-center gap-[10px]">
+                        <img
+                           src="/brand/stableyard/stableyard-logomark.svg"
+                           alt=""
+                           aria-hidden="true"
+                           className="h-[28px] w-[28px] shrink-0 rounded-[8px]"
+                        />
+                        <span className="flex-1">Stableyard fee</span>
+                        <span className="font-semibold text-[var(--text-muted)]">
+                           {feeUsdc == null ? 'Included' : feePhp != null ? `− ${peso(feePhp)}` : `− ${usdcText(feeUsdc)}`}
+                        </span>
+                     </div>
+                     <div className="flex items-center gap-[10px]">
+                        <span className="flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-black/5">
+                           <img src="/moodenglogo.webp" alt="" aria-hidden="true" className="h-[20px] w-auto" />
+                        </span>
+                        <span className="flex-1">Moodeng fee</span>
+                        <span className="rounded-full bg-[#e6f7ef] px-[8px] py-[2px] text-[13px] font-bold text-[#148a5f] dark:bg-[#123d2e] dark:text-[#6fe0b0]">
+                           ₱0
+                        </span>
+                     </div>
+                  </div>
+                  <div className="flex items-center justify-between px-[14px] pt-[10px] pb-[8px]">
+                     <span className="text-[15px] font-bold text-[var(--ink)]">You get</span>
+                     <span className="text-[20px] font-black italic tracking-[-0.3px] text-[#6b55f7] dark:text-[#a98bff]">
+                        {peso(amountNum)}
                      </span>
                   </div>
-                  <div className="flex items-baseline justify-between gap-[8px] text-[var(--text-muted)]">
-                     {/* Every fee in the quote is Stableyard's (their 0.5% + their payout partner's); our partner fee is 0. */}
-                     <span>Stableyard fee</span>
-                     <span>{feeUsdc == null ? 'Included' : feePhp != null ? `− ${peso(feePhp)}` : `− ${usdcText(feeUsdc)}`}</span>
-                  </div>
-                  <div className="flex items-baseline justify-between gap-[8px] border-t border-[var(--divider)] pt-[8px] font-bold">
-                     <span>You get</span>
-                     <span>{peso(amountNum)}</span>
-                  </div>
                </div>
-               <p className="text-center text-[12px] text-[var(--text-faint)]">Moodeng takes no fee</p>
                {secondsLeft != null ? (
                   <p
                      className={`text-[12px] flex items-center justify-center gap-[6px] ${expired ? 'text-[var(--danger)]' : 'text-[var(--text-faint)]'}`}
