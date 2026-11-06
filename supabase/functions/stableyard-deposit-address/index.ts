@@ -224,6 +224,20 @@ const QR_ACTIONS = new Set([
 // every other qr action is the GCash / bank cash-out, which is open to everyone (see isBankPayoutPublic).
 const TESTER_ONLY_QR_ACTIONS = new Set(['decode', 'create', 'payout_activate']);
 
+// E-wallets (GCash, Maya, GrabPay…) are off since 2026-11-07: Stableyard says they face scrutiny on PHP
+// rails and aren't a stable payout method. Banks only, unless telegram_bot_settings.bank_payout_ewallets
+// is 'on' (then the app shows its E-wallet tab again; no deploy needed).
+const EWALLET_NAME =
+   /GCASH|MAYA PHILIPPINES|GRABPAY|SHOPEEPAY|COINS\.PH|PALAWANPAY|TAYOCASH|TOKTOKWALLET|STARPAY|MARCOPAY|LULU MONEY|BANANAPAY|LAZADA WALLET|OMNIPAY|PAY MONGO|SPEEDYPAY|TRAXIONPAY|JUANCASH|I-REMIT|USSC|BAYAD|NATIONLINK|PDAX/i;
+const ewalletPayoutsOn = async (admin: SupabaseClient) => {
+   const { data } = await admin.from('telegram_bot_settings').select('value').eq('key', 'bank_payout_ewallets').maybeSingle();
+   return (
+      String(data?.value ?? 'off')
+         .trim()
+         .toLowerCase() === 'on'
+   );
+};
+
 /** Bank cash-out is public unless telegram_bot_settings.bank_payout_public is 'off' (kill switch, no deploy). */
 const isBankPayoutPublic = async (admin: SupabaseClient) => {
    const { data } = await admin.from('telegram_bot_settings').select('value').eq('key', 'bank_payout_public').maybeSingle();
@@ -458,7 +472,11 @@ const handleQr = async (
 
    if (action === 'bank_list') {
       const result = await stableyard.listBeneficiaryBanks(country);
-      return result.ok ? json({ ok: true, accountId, step: 'bank_list', result: result.data }) : fail(result);
+      if (!result.ok) return fail(result);
+      const ewallets = await ewalletPayoutsOn(admin);
+      const data = (result.data ?? {}) as { banks?: Array<{ name?: string }> };
+      const banks = Array.isArray(data.banks) ? data.banks.filter((b) => ewallets || !EWALLET_NAME.test(String(b.name ?? ''))) : data.banks;
+      return json({ ok: true, accountId, step: 'bank_list', ewallets, result: { ...data, banks } });
    }
 
    if (action === 'bank_create') {
@@ -470,6 +488,10 @@ const handleQr = async (
       const amount = String(body.amount ?? '').trim();
       const requestKey = String(body.requestKey ?? '').trim();
       if (!/^[A-Za-z0-9_-]{2,64}$/.test(bankCode)) return json({ error: 'Pick a bank.' }, 400);
+      // Older app versions still list e-wallets; refuse them while they're off (see EWALLET_NAME).
+      if (EWALLET_NAME.test(String(body.bankName ?? '')) && !(await ewalletPayoutsOn(admin))) {
+         return json({ error: 'E-wallets are paused for now. Pick a bank.', code: 'ewallets_paused' }, 400);
+      }
       if (!/^[0-9]{6,20}$/.test(accountNumber)) return json({ error: 'Account number is 6–20 digits.' }, 400);
       if (beneficiaryName.length < 2 || beneficiaryName.length > 100) return json({ error: 'Enter the name on the account.' }, 400);
       if (!FIAT_AMOUNT.test(amount) || Number(amount) <= 0) return json({ error: 'Enter an amount like 100 or 100.50.' }, 400);
