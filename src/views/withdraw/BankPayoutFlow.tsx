@@ -267,10 +267,13 @@ function ErrorLine({ text }: { text: string }) {
    );
 }
 
-// One-time setup (Milestone design): a banner where Moodeng acts out the step (envelope → ID card →
-// chef with the form, like the oven on the payout), three dots, and just the input or button. Keep
-// every step to a few words.
-const SETUP_ART = { email: '/withdraw-setup/email.webp', id: '/withdraw-setup/id.webp', form: '/withdraw-setup/form.webp' };
+// One-time setup (Milestone design): a banner where Moodeng's pandesal grows with each step (tiny →
+// bun → giant hug), three dots, and just the input or button. Keep every step to a few words.
+const SETUP_ART = {
+   email: '/withdraw-setup/pandesal-1.webp',
+   id: '/withdraw-setup/pandesal-2.webp',
+   form: '/withdraw-setup/pandesal-3.webp'
+};
 
 function SetupBanner({ art, line }: { art: keyof typeof SETUP_ART; line: string }) {
    return (
@@ -280,7 +283,7 @@ function SetupBanner({ art, line }: { art: keyof typeof SETUP_ART; line: string 
             src={SETUP_ART[art]}
             alt=""
             aria-hidden="true"
-            className="moo-float absolute right-[8px] bottom-[-8px] h-[124px] w-auto pointer-events-none select-none"
+            className="moo-float absolute right-[18px] bottom-[-6px] h-[122px] w-auto pointer-events-none select-none"
          />
          <div className="relative flex h-full flex-col justify-center pl-[16px] pr-[130px]">
             <h2 className="text-[22px] font-black italic leading-[1.1] tracking-[-0.5px] text-[#6b55f7] dark:text-[#b3a6ff]">
@@ -902,8 +905,11 @@ export default function BankPayoutFlow({
    if (step === 'pricing') {
       return (
          <Panel>
-            <div className="flex items-center gap-[10px] text-[14px] text-[var(--text-muted)]">
-               <Loader2 className="w-[18px] h-[18px] animate-spin" /> Getting your price…
+            <div className="flex flex-col items-center gap-[8px] py-[6px]">
+               <img src={SETUP_ART.id} alt="" aria-hidden="true" className="moo-float h-[104px] w-auto" />
+               <p className="flex items-center gap-[8px] text-[15px] font-semibold text-[var(--text-muted)]">
+                  <Loader2 className="w-[16px] h-[16px] animate-spin text-[#6b55f7]" /> Getting your price…
+               </p>
             </div>
          </Panel>
       );
