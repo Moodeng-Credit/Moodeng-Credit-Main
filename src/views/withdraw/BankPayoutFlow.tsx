@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 
-import { ArrowRight, Check, ChevronRight, Clock, IdCard, Landmark, Loader2, Mail, Search, ShieldCheck, XCircle } from 'lucide-react';
+import { ArrowRight, Check, ChevronRight, Clock, Landmark, Loader2, Search, XCircle } from 'lucide-react';
 
 import { PhFlag } from '@/components/auth/PhFlag';
 import PoweredByStableyard from '@/components/brand/PoweredByStableyard';
@@ -255,10 +255,6 @@ const primaryClass =
    // Milestone design: purple gradient pill.
    'w-full rounded-[36px] px-[20px] py-[15px] flex items-center justify-center gap-[8px] text-[16px] font-semibold text-white bg-[linear-gradient(85deg,#9584ff_0%,#6b55f7_98%)] shadow-[0_6px_16px_rgba(107,85,247,0.3)] disabled:bg-none disabled:bg-[var(--disabled)] disabled:shadow-none disabled:cursor-not-allowed active:scale-[0.98] transition-all';
 const linkClass = 'w-full text-center text-[15px] font-semibold text-[#4492f1] py-[8px] hover:underline disabled:opacity-60';
-// Milestone design's "Verify Now" option card: lavender fill, purple border, purple icon + title.
-const reuseCardClass =
-   'flex items-center gap-[12px] rounded-[16px] border-2 border-[#8f7bff] bg-[#f4f0ff] px-[14px] py-[14px] dark:border-[#6b55f7] dark:bg-[#231a45]';
-
 function Panel({ children }: { children: React.ReactNode }) {
    return <div className="rounded-[8px] border-2 border-[#e8e4ff] bg-[var(--surface)] p-[16px] space-y-[12px]">{children}</div>;
 }
@@ -271,22 +267,26 @@ function ErrorLine({ text }: { text: string }) {
    );
 }
 
-// One-time setup (Milestone design): a banner, three dots (Email → ID → Form), and a short card for
-// the step you're on. Keep every step to a few words.
-function SetupBanner() {
+// One-time setup (Milestone design): a banner where Moodeng acts out the step (envelope → ID card →
+// chef with the form, like the oven on the payout), three dots, and just the input or button. Keep
+// every step to a few words.
+const SETUP_ART = { email: '/withdraw-setup/email.webp', id: '/withdraw-setup/id.webp', form: '/withdraw-setup/form.webp' };
+
+function SetupBanner({ art, line }: { art: keyof typeof SETUP_ART; line: string }) {
    return (
-      <div className="relative w-full h-[100px] rounded-[12px] overflow-hidden bg-[linear-gradient(100deg,#efeaff_0%,#ddd5ff_100%)] dark:bg-[linear-gradient(100deg,#252035_0%,#30285a_100%)]">
+      <div className="relative w-full h-[112px] rounded-[12px] overflow-hidden bg-[linear-gradient(100deg,#efeaff_0%,#ddd5ff_100%)] dark:bg-[linear-gradient(100deg,#252035_0%,#30285a_100%)]">
          <img
-            src="/dashboard-v2/moo-cashout.png"
+            key={art}
+            src={SETUP_ART[art]}
             alt=""
             aria-hidden="true"
-            className="absolute right-[-6px] bottom-[-28px] h-[128px] w-auto pointer-events-none select-none"
+            className="moo-float absolute right-[8px] bottom-[-8px] h-[124px] w-auto pointer-events-none select-none"
          />
          <div className="relative flex h-full flex-col justify-center pl-[16px] pr-[130px]">
             <h2 className="text-[22px] font-black italic leading-[1.1] tracking-[-0.5px] text-[#6b55f7] dark:text-[#b3a6ff]">
                Set up cash-out
             </h2>
-            <p className="mt-[4px] text-[14px] font-semibold text-[#594d65] dark:text-[#e6def0]">One time only</p>
+            <p className="mt-[4px] text-[15px] font-semibold text-[#594d65] dark:text-[#e6def0]">{line}</p>
          </div>
       </div>
    );
@@ -327,20 +327,7 @@ function SetupStepper({ done }: { done: number }) {
    );
 }
 
-/** Icon + a few words: the card for "checking your ID" and similar waits. */
-function StatusCard({ icon, title, sub }: { icon: React.ReactNode; title: string; sub: string }) {
-   return (
-      <div className={reuseCardClass}>
-         {icon}
-         <div className="min-w-0">
-            <p className="text-[17px] font-bold leading-[22px] text-[#6b55f7] dark:text-[#a98bff]">{title}</p>
-            <p className="text-[13px] leading-[18px] text-[#7a6ad8] dark:text-[#b3a6ff]">{sub}</p>
-         </div>
-      </div>
-   );
-}
-
-const stepTitleClass = 'flex items-center gap-[8px] text-[16px] font-bold text-[var(--ink)]';
+const hintClass = 'text-center text-[12px] leading-[16px] text-[var(--text-faint)]';
 
 // 'compliance': Stableyard wants a one-time form (nextAction complete_compliance) before it prices the payout.
 // 'pricing': the Payment exists and Stableyard is still working out the quote.
@@ -637,31 +624,24 @@ export default function BankPayoutFlow({
       const idStep = emailDone && !setup?.kycApproved;
       return (
          <div className="space-y-[12px]">
-            <SetupBanner />
+            <SetupBanner
+               art={emailDone ? 'id' : 'email'}
+               line={!emailDone ? 'Step 1 · Your email' : reviewing ? 'Checking your ID…' : 'Step 2 · Your ID'}
+            />
             <Panel>
                <SetupStepper done={emailDone ? (setup?.kycApproved ? 2 : 1) : 0} />
                {error ? <ErrorLine text={error} /> : null}
                {!emailDone ? (
                   <div className="space-y-[8px]">
-                     <p className={stepTitleClass}>
-                        <Mail className="w-[18px] h-[18px] text-[#6b55f7]" /> Your email
-                     </p>
                      <input
                         value={codeEmail}
                         onChange={(e) => setCodeEmail(e.target.value.trim())}
                         type="email"
                         inputMode="email"
                         autoComplete="email"
-                        placeholder="juan@gmail.com"
+                        placeholder="Your email"
                         className={inputClass}
                      />
-                     <button
-                        className={primaryClass}
-                        disabled={busy || !isValidEmail(codeEmail) || isPlaceholderEmail(codeEmail)}
-                        onClick={() => void runOnboarding('email_start', { email: codeEmail })}
-                     >
-                        {challengeId ? 'Send again' : 'Send code'}
-                     </button>
                      {challengeId ? (
                         <div className="flex gap-[8px]">
                            <input
@@ -680,34 +660,30 @@ export default function BankPayoutFlow({
                            </button>
                         </div>
                      ) : null}
+                     <button
+                        className={challengeId ? `${linkClass}` : primaryClass}
+                        disabled={busy || !isValidEmail(codeEmail) || isPlaceholderEmail(codeEmail)}
+                        onClick={() => void runOnboarding('email_start', { email: codeEmail })}
+                     >
+                        {challengeId ? 'Send again' : 'Send code'}
+                     </button>
                   </div>
                ) : null}
                {idStep && reviewing ? (
-                  <StatusCard
-                     icon={<Clock className="w-[36px] h-[36px] shrink-0 text-[#6b55f7] dark:text-[#a98bff]" strokeWidth={2.2} />}
-                     title="Checking your ID…"
-                     sub="A few minutes"
-                  />
+                  <p className="flex items-center justify-center gap-[8px] py-[6px] text-[14px] font-semibold text-[var(--text-muted)]">
+                     <Loader2 className="w-[16px] h-[16px] animate-spin text-[#6b55f7]" /> A few minutes
+                  </p>
                ) : null}
                {idStep && offerReuse ? (
-                  <div className="space-y-[10px]">
-                     <div className={reuseCardClass}>
-                        <ShieldCheck
-                           className="w-[40px] h-[40px] shrink-0 text-[#6b55f7] dark:text-[#a98bff]"
-                           fill="currentColor"
-                           stroke="white"
-                           strokeWidth={2}
-                        />
-                        <div className="flex min-w-0 flex-wrap items-center gap-[8px]">
-                           <p className="text-[18px] font-bold leading-[22px] text-[#6b55f7] dark:text-[#a98bff]">Use my Moodeng ID</p>
-                           <span className="rounded-full bg-[#6b55f7] px-[8px] py-[2px] text-[11px] font-semibold text-white">Fastest</span>
-                        </div>
-                     </div>
+                  <div className="space-y-[8px]">
+                     <p className="mx-auto flex w-fit items-center gap-[6px] rounded-full bg-[#e6f7ef] px-[12px] py-[5px] text-[13px] font-semibold text-[#148a5f] dark:bg-[#123d2e] dark:text-[#6fe0b0]">
+                        <Check className="w-[14px] h-[14px]" strokeWidth={3} /> Verified with Moodeng
+                     </p>
                      {/* Tapping the button is the consent; the line under it is what's shared (saved with the receipt). */}
                      <button className={primaryClass} disabled={busy} onClick={() => void runOnboarding('kyc_import', { consent: true })}>
-                        {busy ? 'Sharing…' : 'Share my ID'}
+                        {busy ? 'Sharing…' : 'Use my Moodeng ID'}
                      </button>
-                     <p className="text-center text-[11px] leading-[15px] text-[var(--text-faint)]">{setup?.consentText}</p>
+                     <p className={hintClass}>{setup?.consentText}</p>
                      <button
                         className={`${linkClass} flex items-center justify-center gap-[2px]`}
                         disabled={busy}
@@ -719,10 +695,6 @@ export default function BankPayoutFlow({
                ) : null}
                {idStep && !offerReuse && !reviewing ? (
                   <div className="space-y-[8px]">
-                     <p className={stepTitleClass}>
-                        <IdCard className="w-[18px] h-[18px] text-[#6b55f7]" /> ID check
-                     </p>
-                     <p className="text-[13px] text-[var(--text-muted)]">Have your ID ready</p>
                      <button
                         className={primaryClass}
                         disabled={busy}
@@ -730,6 +702,7 @@ export default function BankPayoutFlow({
                      >
                         {setup?.kycStatus && setup.kycStatus !== 'not_started' ? 'Continue ID check' : 'Start ID check'}
                      </button>
+                     <p className={hintClass}>Have your ID ready</p>
                   </div>
                ) : null}
             </Panel>
@@ -910,19 +883,14 @@ export default function BankPayoutFlow({
    if (step === 'compliance') {
       return (
          <div className="space-y-[12px]">
-            <SetupBanner />
+            <SetupBanner art="form" line="Step 3 · Short form" />
             <Panel>
                <SetupStepper done={2} />
                {error ? <ErrorLine text={error} /> : null}
-               <div className="space-y-[8px]">
-                  <p className={stepTitleClass}>
-                     <IdCard className="w-[18px] h-[18px] text-[#6b55f7]" /> Short form
-                  </p>
-                  <p className="text-[13px] text-[var(--text-muted)]">Works once — finish in one go</p>
-                  <button className={primaryClass} onClick={() => window.open(complianceUrl, '_blank', 'noopener')}>
-                     Open form <ArrowRight className="w-4 h-4" />
-                  </button>
-               </div>
+               <button className={primaryClass} onClick={() => window.open(complianceUrl, '_blank', 'noopener')}>
+                  Open form <ArrowRight className="w-4 h-4" />
+               </button>
+               <p className={hintClass}>Works once · finish in one go</p>
             </Panel>
             <button className={linkClass} disabled={busy} onClick={() => void recheckPayment()}>
                {busy ? 'Checking…' : 'Done — get my price'}
