@@ -15,6 +15,8 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 // Everything server-side goes through stableyard-deposit-address (qr: setup / bank_list / bank_create /
 // get / sent), which only answers admins + stableyard_qr_testers while this is being tested.
 // Stableyard needs a verified email + its own KYC on the person's account before it pays out fiat.
+// If Stableyard allows it and our Didit record has what payout partners need, the person can share
+// their Moodeng ID check instead of doing a second one (onboarding: kyc_import, with consent).
 
 const FN = 'stableyard-deposit-address';
 const MIN_PHP = 50;
@@ -43,6 +45,10 @@ type FnResult = {
    kycApproved?: boolean;
    kycStatus?: string;
    kycUrl?: string | null;
+   kycEligibility?: string | null;
+   reuseAvailable?: boolean;
+   reuseImportStatus?: string | null;
+   consentText?: string | null;
    sourceReady?: boolean;
    result?: {
       banks?: Bank[];
@@ -81,7 +87,12 @@ const PREVIEW: Record<string, FnResult> = {
    sent: { ok: true }
 };
 
-async function call(isPreview: boolean, body: Record<string, string>): Promise<FnResult> {
+// A shared Moodeng ID check that Stableyard is still copying or reviewing.
+const REUSE_PENDING = new Set(['sharing', 'submitting', 'imported']);
+const PREVIEW_CONSENT =
+   'I agree that Moodeng shares my ID check (name, date of birth, ID document, selfie and screening result) with Stableyard so I can cash out to my bank or e-wallet.';
+
+async function call(isPreview: boolean, body: Record<string, string | boolean>): Promise<FnResult> {
    if (isPreview) {
       await new Promise((r) => setTimeout(r, 600));
       // ?sim=email / ?sim=verify show the one-time setup at the email / ID step; ?sim=compliance shows
@@ -89,6 +100,18 @@ async function call(isPreview: boolean, body: Record<string, string>): Promise<F
       const sim = new URLSearchParams(window.location.search).get('sim');
       if (body.qr === 'setup' && sim === 'email') return { ok: true, emailVerified: false, kycApproved: false, kycStatus: 'not_started' };
       if (body.qr === 'setup' && sim === 'verify') return { ok: true, emailVerified: true, kycApproved: false, kycStatus: 'not_started' };
+      // ?sim=reuse shows the "use your Moodeng ID check" step; ?sim=reused shows it under review.
+      if (body.qr === 'setup' && sim === 'reuse')
+         return {
+            ok: true,
+            emailVerified: true,
+            kycApproved: false,
+            kycStatus: 'not_started',
+            reuseAvailable: true,
+            consentText: PREVIEW_CONSENT
+         };
+      if (body.qr === 'setup' && sim === 'reused')
+         return { ok: true, emailVerified: true, kycApproved: false, kycStatus: 'requires_review', reuseImportStatus: 'imported' };
       if (body.qr === 'bank_create' && sim === 'compliance') {
          return {
             ok: true,
@@ -331,6 +354,8 @@ export default function BankPayoutFlow({
    // Where Stableyard sends its code: the login email, or blank for Telegram / phone / TikTok sign-ups
    // whose login email is a placeholder nobody can read, so they type a real one.
    const [codeEmail, setCodeEmail] = useState('');
+   const [consent, setConsent] = useState(false);
+   const [useHostedCheck, setUseHostedCheck] = useState(false);
    useEffect(() => {
       if (isPreview) return;
       void getSupabaseBrowserClient()
@@ -454,7 +479,7 @@ export default function BankPayoutFlow({
       return () => clearTimeout(t);
    }, [step, paymentId, status, now, isPreview, sentAt]);
 
-   const runOnboarding = async (action: string, extra: Record<string, string> = {}) => {
+   const runOnboarding = async (action: string, extra: Record<string, string | boolean> = {}) => {
       setBusy(true);
       setError('');
       const res = await call(isPreview, { onboarding: action, ...extra });
@@ -462,7 +487,7 @@ export default function BankPayoutFlow({
       if (!res.ok) return setError(res.error ?? 'Something went wrong. Try again.');
       if (res.result?.challenge?.id) setChallengeId(res.result.challenge.id);
       if (action === 'kyc_start' && res.result?.verificationUrl) window.open(res.result.verificationUrl, '_blank', 'noopener');
-      if (action === 'email_confirm') void loadSetup();
+      if (action === 'email_confirm' || action === 'kyc_import') void loadSetup();
    };
 
    // One reply (from create or a re-read) → the next screen. A bank payout can come back priced, waiting
@@ -590,6 +615,8 @@ export default function BankPayoutFlow({
 
    if (step === 'verify') {
       const emailDone = Boolean(setup?.emailVerified);
+      const reusePending = REUSE_PENDING.has(setup?.reuseImportStatus ?? '');
+      const offerReuse = Boolean(setup?.reuseAvailable && setup?.consentText) && !useHostedCheck && !reusePending;
       return (
          <div className="space-y-[12px]">
             <SetupSteps done={emailDone ? (setup?.kycApproved ? 2 : 1) : 0} />
@@ -635,7 +662,44 @@ export default function BankPayoutFlow({
                         ) : null}
                      </>
                   ) : null}
-                  {emailDone && !setup?.kycApproved ? (
+                  {emailDone && !setup?.kycApproved && reusePending ? (
+                     <>
+                        <p className="text-[14px] font-semibold text-[var(--ink)]">2. ID check</p>
+                        <p className="flex items-start gap-[8px] text-[13px] text-[var(--text-muted)] leading-[18px]">
+                           <Clock className="w-[16px] h-[16px] shrink-0 mt-[1px]" />
+                           Stableyard got your Moodeng ID check and is reviewing it. This usually takes a few minutes. You don&apos;t need
+                           to do anything.
+                        </p>
+                     </>
+                  ) : null}
+                  {emailDone && !setup?.kycApproved && offerReuse ? (
+                     <>
+                        <p className="text-[14px] font-semibold text-[var(--ink)]">2. Use your Moodeng ID check</p>
+                        <p className="text-[13px] text-[var(--text-muted)] leading-[18px]">
+                           You already checked your ID with Moodeng. Share it with Stableyard so you don&apos;t have to do it again.
+                        </p>
+                        <label className="flex items-start gap-[10px] rounded-[12px] bg-[var(--surface-2)] px-[12px] py-[10px] text-[13px] leading-[18px] text-[var(--ink)]">
+                           <input
+                              type="checkbox"
+                              checked={consent}
+                              onChange={(e) => setConsent(e.target.checked)}
+                              className="mt-[2px] h-[18px] w-[18px] shrink-0 accent-[var(--primary)]"
+                           />
+                           <span>{setup?.consentText}</span>
+                        </label>
+                        <button
+                           className={primaryClass}
+                           disabled={busy || !consent}
+                           onClick={() => void runOnboarding('kyc_import', { consent: true })}
+                        >
+                           {busy ? 'Sharing…' : 'Share my ID check'}
+                        </button>
+                        <button className={linkClass} disabled={busy} onClick={() => setUseHostedCheck(true)}>
+                           Do a new ID check instead
+                        </button>
+                     </>
+                  ) : null}
+                  {emailDone && !setup?.kycApproved && !offerReuse && !reusePending ? (
                      <>
                         <p className="text-[14px] font-semibold text-[var(--ink)]">2. ID check</p>
                         <p className="text-[13px] text-[var(--text-muted)] leading-[18px]">
@@ -643,7 +707,7 @@ export default function BankPayoutFlow({
                         </p>
                      </>
                   ) : null}
-                  {emailDone && !setup?.kycApproved ? (
+                  {emailDone && !setup?.kycApproved && !offerReuse && !reusePending ? (
                      <button
                         className={primaryClass}
                         disabled={busy || !emailDone}
@@ -652,7 +716,7 @@ export default function BankPayoutFlow({
                         {setup?.kycStatus && setup.kycStatus !== 'not_started' ? 'Continue ID check' : 'Start ID check'}
                      </button>
                   ) : null}
-                  {setup?.kycStatus === 'requires_review' || setup?.kycStatus === 'in_review' ? (
+                  {!reusePending && (setup?.kycStatus === 'requires_review' || setup?.kycStatus === 'in_review') ? (
                      <p className="text-[12px] text-[var(--text-muted)]">Your ID is being reviewed. This usually takes a few minutes.</p>
                   ) : null}
                </div>
