@@ -3,7 +3,8 @@
 //   Cash-out: USDC on Base (the borrower's Moodeng wallet) → Relay one-time deposit address on Base
 //             → USDC on BNB Chain to their Walt address.
 //   Repay:    USDT on BNB Chain (from Walt) → Relay one-time deposit address on BNB Chain
-//             → USDC on Base to their Moodeng wallet.
+//             → USDC on Base to their Moodeng wallet (app), or straight to loans.lender_wallet
+//             (the Telegram bot, _shared/idRepayments.ts).
 //
 // No API key is needed for /quote or /intents/status/v3. We use `useDepositAddress: true`, so the
 // money moves with a plain ERC-20 transfer to `steps[0].depositAddress` (no approvals, no calldata
@@ -242,8 +243,9 @@ export const relayQuoteCashout = (args: { amountUsdc: string; user: string; reci
 
 /**
  * Repay quote: `amountUsdt` (human) of BNB Chain USDT → Base USDC to `recipient` (their Moodeng
- * wallet). Refunds go to `refundTo` on BNB Chain (their Walt address). `user` is only informative
- * for deposit-address quotes; the refund address is used for it.
+ * wallet in the app; the loan's lender_wallet from the Telegram bot). Refunds go to `refundTo` on BNB
+ * Chain (their Walt address). `user` is only informative for deposit-address quotes; the refund
+ * address is used for it.
  */
 export const relayQuoteRepay = (args: { amountUsdt: string; recipient: string; refundTo: string }) => {
    const units = toUnits(args.amountUsdt, BSC_TOKEN_DECIMALS);

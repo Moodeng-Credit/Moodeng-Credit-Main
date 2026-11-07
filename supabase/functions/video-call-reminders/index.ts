@@ -27,6 +27,7 @@ import { nudgeStalledChats } from '../_shared/messengerBookingBot.ts';
 import { type IdEvent, type IdEventData, isIdTrackUser, runIdOnboardingNudges, sendIdTelegram } from '../_shared/idTrack.ts';
 import { runAutoPayouts, runWaltPayoutScan } from '../_shared/idManualFunding.ts';
 import { runIdrRepricing } from '../_shared/fxRates.ts';
+import { runRelayRepayments } from '../_shared/idRepayments.ts';
 
 // Cron-driven (every 5 min) no-show defence for booked video calls. The full ladder — day-before,
 // confirm-or-cancel (1h before) / cancel unconfirmed (30 min before), starting now, we're waiting, admin prompt, auto
@@ -348,6 +349,15 @@ serve(async (req) => {
    tally.walt_payouts_checked = walt.checked;
    tally.walt_payouts_found = walt.found;
    tally.walt_payouts_alerted = walt.alerted;
+   // Repayments sent from Walt through Relay straight to the lender (bot 💰 Bayar): find + record them.
+   try {
+      const relayRepay = await runRelayRepayments(svc, Math.max(Date.now() + 20_000, idDeadline - 5_000));
+      tally.walt_repay_checked = relayRepay.checked;
+      tally.walt_repay_recorded = relayRepay.recorded;
+      tally.walt_repay_alerted = relayRepay.alerted;
+   } catch (err) {
+      console.error('video-call-reminders: relay repayments failed', err);
+   }
    // Rupiah peg — refresh USD/IDR (stored at most every 6h; ID requests are refused while no rate under
    // 36h old exists) and re-price open ID loans; team ping on a >5% move.
    try {

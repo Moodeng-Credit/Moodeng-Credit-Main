@@ -226,7 +226,8 @@ export type IdEventData = {
    lateBy?: string | null;
 };
 
-export type IdMessage = { text: string; button?: { text: string; url: string } };
+/** `actions`: bot buttons (callback_data, handled by _shared/idBot.ts) shown on a row under `button`. */
+export type IdMessage = { text: string; button?: { text: string; url: string }; actions?: Array<{ text: string; callback_data: string }> };
 
 const money = (value: number | string | null | undefined) => {
    const n = Number(value ?? 0);
@@ -272,6 +273,10 @@ export const buildIdMessage = (event: IdEvent, locale: IdLocale, data: IdEventDa
    const repay = { text: say(locale, 'Bayar sekarang', 'Repay now'), url: idAppUrl('/repay') };
    const onboarding = { text: say(locale, 'Buka Moodeng', 'Open Moodeng'), url: idAppUrl('/id/onboarding') };
    const book = { text: say(locale, 'Pilih waktu baru', 'Pick a new time'), url: idAppUrl('/id/onboarding?step=call') };
+   // The bot menu (idBot.ts): everything after onboarding can happen right here in Telegram.
+   const menu = { text: say(locale, '☰ Menu', '☰ Menu'), callback_data: 'idm:menu' };
+   const applyHere = { text: say(locale, '💸 Ajukan di sini', '💸 Request here'), callback_data: 'idm:apply' };
+   const repayHere = [{ text: say(locale, '💰 Bayar dari Walt', '💰 Pay from Walt'), callback_data: 'idm:repay' }];
 
    switch (event) {
       case 'step_done': {
@@ -389,7 +394,8 @@ export const buildIdMessage = (event: IdEvent, locale: IdLocale, data: IdEventDa
                '🎉 Kamu disetujui! Sekarang kamu bisa mengajukan pinjaman pertamamu.\n⚠️ Bayar tepat waktu: keterlambatan dicatat dan akunmu bisa ditutup.',
                '🎉 You’re approved! You can now request your first loan.\n⚠️ Pay on time: late payments are recorded and can close your account.'
             ),
-            button: { text: say(locale, 'Ajukan pinjaman', 'Request a loan'), url: idAppUrl('/request-board?applyLoan=1') }
+            button: { text: say(locale, 'Ajukan pinjaman', 'Request a loan'), url: idAppUrl('/request-board?applyLoan=1') },
+            actions: [applyHere, menu]
          };
       case 'attended_kyc_pending':
          return {
@@ -449,18 +455,19 @@ export const buildIdMessage = (event: IdEvent, locale: IdLocale, data: IdEventDa
                `💸 Pinjaman ${amount} kamu sudah dikirim ke Walt kamu (USDC, BNB Chain).${due ? ` Jatuh tempo ${due}.` : ''} Jual ke Rupiah di Walt P2P.`,
                `💸 Your ${amount} loan was sent to your Walt (USDC, BNB Chain).${due ? ` Due ${due}.` : ''} Sell it for Rupiah in Walt P2P.`
             ),
-            button: { text: say(locale, 'Buka Walt', 'Open Walt'), url: 'https://t.me/wallet' }
+            button: { text: say(locale, 'Buka Walt', 'Open Walt'), url: 'https://t.me/wallet' },
+            actions: [{ text: say(locale, '📋 Pinjamanku', '📋 My loan'), callback_data: 'idm:status' }, menu]
          };
       case 'cashout_walt':
          return {
             text: say(locale, `💸 ${amount} dikirim ke Walt (BNB Chain). Jual USDT ke Rupiah di Walt P2P.`, `💸 ${amount} sent to Walt (BNB Chain). Sell USDT for Rupiah in Walt P2P.`)
          };
       case 'due_soon':
-         return { text: say(locale, `⏰ Pembayaran ${owed} jatuh tempo${due ? ` ${due}` : ' sebentar lagi'}.`, `⏰ Your ${owed} payment is due${due ? ` ${due}` : ' soon'}.`), button: repay };
+         return { text: say(locale, `⏰ Pembayaran ${owed} jatuh tempo${due ? ` ${due}` : ' sebentar lagi'}.`, `⏰ Your ${owed} payment is due${due ? ` ${due}` : ' soon'}.`), button: repay, actions: repayHere };
       case 'due_tomorrow':
-         return { text: say(locale, `⏰ Pembayaran ${owed} jatuh tempo besok. Bayar tepat waktu untuk menjaga skor kreditmu.`, `⏰ Your ${owed} payment is due tomorrow. Pay on time to protect your credit.`), button: repay };
+         return { text: say(locale, `⏰ Pembayaran ${owed} jatuh tempo besok. Bayar tepat waktu untuk menjaga skor kreditmu.`, `⏰ Your ${owed} payment is due tomorrow. Pay on time to protect your credit.`), button: repay, actions: repayHere };
       case 'due_today':
-         return { text: say(locale, `⚠️ Pembayaran ${owed} jatuh tempo hari ini.`, `⚠️ Your ${owed} payment is due today.`), button: repay };
+         return { text: say(locale, `⚠️ Pembayaran ${owed} jatuh tempo hari ini.`, `⚠️ Your ${owed} payment is due today.`), button: repay, actions: repayHere };
       case 'overdue':
          return {
             text: say(
@@ -468,12 +475,14 @@ export const buildIdMessage = (event: IdEvent, locale: IdLocale, data: IdEventDa
                `🚨 Pembayaran ${owed} sudah terlambat${data.lateBy ? ` (${data.lateBy.replace(/days?/, 'hari')})` : ''}. Bayar sekarang untuk menjaga akunmu.`,
                `🚨 Your ${owed} payment is overdue${data.lateBy ? ` (${data.lateBy} late)` : ''}. Pay now to protect your account.`
             ),
-            button: repay
+            button: repay,
+            actions: repayHere
          };
       case 'repaid':
          return {
             text: say(locale, `✅ Pembayaran ${owed} diterima. Terima kasih, pinjamanmu lunas!`, `✅ ${owed} received. Thank you, your loan is fully repaid!`),
-            button: { text: say(locale, 'Pinjam lagi', 'Borrow again'), url: idAppUrl('/request-board') }
+            button: { text: say(locale, 'Pinjam lagi', 'Borrow again'), url: idAppUrl('/request-board') },
+            actions: [applyHere, menu]
          };
       case 'request_expired':
          return {
@@ -512,7 +521,10 @@ export const sendIdTelegramTo = async (user: IdRecipient | null | undefined, eve
    }
    try {
       const msg = buildIdMessage(event, idLocaleOf(user.preferred_locale), data);
-      const keyboard: TelegramInlineKeyboard | undefined = msg.button ? [[appButton(msg.button)]] : undefined;
+      const rows: TelegramInlineKeyboard = [];
+      if (msg.button) rows.push([appButton(msg.button)]);
+      if (msg.actions?.length) rows.push(msg.actions);
+      const keyboard: TelegramInlineKeyboard | undefined = rows.length ? rows : undefined;
       await sendTelegramMessage(user.chat_id, msg.text, keyboard ? { inlineKeyboard: keyboard } : {});
       console.log(`[idTrack] ${event} for ${tag} → sent`);
       return true;

@@ -78,7 +78,7 @@ export type PayoutRow = {
    created_at: string;
 };
 
-type Transfer = { txHash: string; from: string; to: string; value: bigint; blockNumber: bigint; logIndex: number };
+export type Transfer = { txHash: string; from: string; to: string; value: bigint; blockNumber: bigint; logIndex: number };
 
 export type PayoutResult =
    | { ok: true; state: 'found'; payout: PayoutRow; funded: boolean }
@@ -132,7 +132,7 @@ const rpc = async <T>(method: string, params: unknown[]): Promise<T> => {
 };
 
 export const headBlock = async () => BigInt(await rpc<string>('eth_blockNumber', []));
-const blockTime = async (n: bigint) => {
+export const blockTime = async (n: bigint) => {
    const b = await rpc<{ timestamp: string } | null>('eth_getBlockByNumber', [`0x${n.toString(16)}`, false]);
    if (!b) throw new Error(`block ${n} not found`);
    return Number(BigInt(b.timestamp));
@@ -148,13 +148,14 @@ export const blockAtOrBefore = async (iso: string, head: bigint): Promise<bigint
    return back >= head ? 0n : head - back;
 };
 
-export const transfersTo = async (to: string, fromBlock: bigint, toBlock: bigint, from?: string): Promise<Transfer[]> => {
+/** ERC-20 Transfers to `to` on BNB Chain (USDC unless `token` says otherwise, e.g. USDT for Walt repayments). */
+export const transfersTo = async (to: string, fromBlock: bigint, toBlock: bigint, from?: string, token: string = BSC_USDC): Promise<Transfer[]> => {
    type Log = { transactionHash: string; topics: string[]; data: string; blockNumber: string; logIndex: string; removed?: boolean };
    const logs = await rpc<Log[]>('eth_getLogs', [
       {
          fromBlock: `0x${fromBlock.toString(16)}`,
          toBlock: `0x${toBlock.toString(16)}`,
-         address: BSC_USDC,
+         address: token.toLowerCase(),
          topics: [TRANSFER_TOPIC, from ? pad32(from) : null, pad32(to)]
       }
    ]);

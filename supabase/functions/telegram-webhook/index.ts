@@ -34,6 +34,7 @@ import {
 } from '../_shared/loanAccess.ts';
 import { markMessengerVerified, messengerVerifiedStamp, parseMessengerVerifyCallback } from '../_shared/messengerStuckAlert.ts';
 import { payoutWalletStatus } from '../_shared/idPayoutWallet.ts';
+import { handleIdBotCallback, handleIdMenuMessage } from '../_shared/idBot.ts';
 import { formatCallTime } from '../_shared/videoCall.ts';
 import { handleRescheduleStep, parseRescheduleCallback, postReschedulePicker } from '../_shared/callReschedule.ts';
 import { handleCancelStep, parseCancelCallback } from '../_shared/callCancel.ts';
@@ -1268,6 +1269,10 @@ serve(async (req) => {
          if (await handleAppLoginTap(supabase, update.callback_query)) {
             return jsonResponse({ message: 'App login tap handled' });
          }
+         // Indonesia track bot menu + in-chat loans (private chat, market 'ID' only; _shared/idBot.ts).
+         if (await handleIdBotCallback(supabase, update.callback_query)) {
+            return jsonResponse({ message: 'Indonesia bot callback handled' });
+         }
          const teamChatId = await getTeamChatId(supabase);
          const kycChatId = await getSetting(supabase, 'kyc_alert_chat_id');
          // 🔄 Change time picker: the admin chats and the call-changes group.
@@ -1370,6 +1375,12 @@ serve(async (req) => {
          if (payload) {
             await recordReferralStart(supabase, message, payload);
             return jsonResponse({ message: 'Referral start recorded' });
+         }
+
+         // Indonesia track: /menu, a bare /start, "menu" or "pinjaman" → the bot menu. Everyone else
+         // (and any other text) goes on to support as before.
+         if (await handleIdMenuMessage(supabase, message)) {
+            return jsonResponse({ message: 'Indonesia bot menu sent' });
          }
 
          await forwardCustomerMessageToSupport(supabase, message);

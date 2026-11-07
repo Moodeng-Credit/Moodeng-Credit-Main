@@ -101,3 +101,45 @@ them (a forwarded message can't sign in anyone else). The signed data is moved o
 analytics load, is valid for 15 minutes, works once (`telegram_login_hashes`), and asks before
 switching a browser that's signed in to a different account. If the camera or uploads don't work in
 Facebook's browser, "Lanjut di Telegram" makes the bot send a sign-in button for that step.
+
+## Living in Telegram (bot menu, loans and repayments in chat)
+
+After onboarding an Indonesian never needs the website. In a private chat with the bot, `/menu`, a bare
+`/start`, "menu" or "pinjaman" shows four buttons: **📋 Pinjamanku · 💸 Ajukan pinjaman · 💰 Bayar ·
+❓ Bantuan**. Only people found by `users.chat_id` / `users.telegram_id` = the sender with `market = 'ID'`
+get it; everyone else keeps the old behaviour (support chat). The "approved", "funded to Walt", "repaid"
+and due/overdue messages carry the same buttons. Code: `_shared/idBot.ts` (screens + routing),
+`_shared/idLoanMath.ts` (chips, terms, callback data), wired in `telegram-webhook` right after the
+Telegram-app login tap.
+
+- **📋 Pinjamanku**: the open request (⏳ Menunggu dana) or the active loan (amount, due date in WIB,
+  rupiah left = `repay_idr − repaid_idr` and ≈ USD today, 💸 Sudah dikirim ke Walt / 🚨 Terlambat), or
+  ✅ Lunas. Unfinished onboarding → the usual next-step button.
+- **💸 Ajukan**: amount → 7 / 14 days → rupiah total (the same Rp 5.000 chips as the app, inside
+  [amount + $1, 1.5 × amount] at `current_usd_idr()`) → purpose (6 chips, stored in English as
+  `loans.reason`) → confirm. All state is in `callback_data` (`ida:5`, `idt:5:7`, `idr:5:7:110000`,
+  `idp:…:2`, `idc:…:2`, ≤ 64 bytes) and is checked again at every step. The loan is created by
+  `public.bot_request_id_loan` (migration `20261107190000`, service role only), which does every check a
+  service-role insert would otherwise skip (ID terms + peg, Rp 500 steps, KYC/approved/Walt, verified,
+  lender role, `mal`, credit limit, the repost cooldown, one open loan at a time) with the borrower row
+  locked. All insert triggers still run, so the team post, the borrower's "loan posted" and autopay
+  happen exactly as for app requests.
+- **💰 Bayar**: straight to the lender, no Moodeng wallet needed. Relay quote BNB Chain USDT → Base USDC
+  with recipient = `loans.lender_wallet` and refund to their Walt; amount = rupiah left ÷ today's rate +
+  max(1%, $0.30), at least $1. The bot shows the amount (≈ Rp), the address with a copy button and the
+  two Walt steps (Deposit → QRIS; Withdraw → External wallet → BEP20). A still-unused address for the same
+  loan (< 30 min, still covers what's owed) is reused. Refused (support message) for smart-contract /
+  credit-line loans or a loan without a `lender_wallet`. Kill switch: `walt_bridge = off`.
+- **Recording** (`_shared/idRepayments.ts` `runRelayRepayments`, in the 5-minute job): Relay status by
+  request id → the fill tx is verified on Base (USDC Transfer to `lender_wallet`, after the quote) → the
+  real USDC is recorded with `record_loan_payment('repay', …)` and the same follow-ups as the Pay button
+  (`_shared/repaymentFollowUps.ts`: credit level-up, repaid/partial notifications, team feed, repay feed).
+  The deposit is also watched on BNB Chain. If Relay's status never follows a deposit (Relay makes a new
+  request when the amount differs and `GET /requests` needs an API key from v3), after 10 min the fill is
+  searched on Base: USDC → lender within 3 h, deposit − max(5%, $0.50) … deposit + 0.5%, from a known
+  Relay solver (`relay_base_solvers`, learned from verified fills), hash never used. No match → one team
+  alert, nothing recorded. The fill tx hash is spent in `used_payment_hashes`, so nothing is recorded twice.
+  The borrower hears "USDT kamu sudah masuk", then "✅ Pembayaran Rp X diterima. Sisa Rp Y" (partial) or
+  the usual "lunas" message.
+- **❓ Bantuan**: a button that opens the support chat (`/start support`) + a note that the team can
+  reach them on WhatsApp.
