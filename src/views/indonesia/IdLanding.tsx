@@ -72,6 +72,8 @@ export default function IdLanding() {
    const dispatch = useDispatch<AppDispatch>();
    const queryClient = useQueryClient();
    const [searchParams] = useSearchParams();
+   // Dev builds only: ?preview=1 shows the Telegram button ready to tap (screenshots / design review).
+   const landingPreview = import.meta.env.DEV && searchParams.get('preview') === '1';
    const { setLocale, hasChosenLocale } = useLocalization();
    const user = useSelector((state: RootState) => state.auth.user);
    const username = useSelector((state: RootState) => state.auth.username);
@@ -197,9 +199,9 @@ export default function IdLanding() {
                )
             ) : closed ? (
                // Closed to new people; anyone already on the track still signs in here.
-               <TelegramAppSignIn label={t.signInMember} variant="soft" />
+               <TelegramAppSignIn label={t.signInMember} variant="soft" preview={landingPreview && 'idle'} />
             ) : (
-               <TelegramAppSignIn label={t.cta} />
+               <TelegramAppSignIn label={t.cta} preview={landingPreview && 'idle'} />
             )}
          </div>
 

@@ -15,6 +15,7 @@ import { currentIdStep, ID_STEP_LABELS, isIdStepKey, pick, useIdLang } from '@/v
 import AboutStep from '@/views/indonesia/steps/AboutStep';
 import CallStep from '@/views/indonesia/steps/CallStep';
 import ContinueInTelegram from '@/views/indonesia/steps/ContinueInTelegram';
+import TelegramAppSignIn from '@/views/indonesia/TelegramAppSignIn';
 import FacebookStep from '@/views/indonesia/steps/FacebookStep';
 import IncomeStep from '@/views/indonesia/steps/IncomeStep';
 import KycStep from '@/views/indonesia/steps/KycStep';
@@ -133,6 +134,16 @@ export function IdOnboardingPreview() {
    const lang = useIdLang();
    const [searchParams, setSearchParams] = useSearchParams();
    const stepParam = searchParams.get('step');
+   if (stepParam === 'signin') {
+      return (
+         <IdPage skipBody={false}>
+            <div className="flex flex-col gap-4">
+               <StepHead image="/hippos/thinking.png" title="Daftar dengan Telegram" />
+               <TelegramAppSignIn label="Daftar dengan Telegram" preview="waiting" />
+            </div>
+         </IdPage>
+      );
+   }
    const current: IdStepKey = isIdStepKey(stepParam) ? stepParam : 'telegram';
    const data = previewData(current);
    const Step = STEPS[current];

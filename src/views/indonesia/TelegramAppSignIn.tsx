@@ -68,12 +68,15 @@ const goldStyle = { backgroundImage: 'linear-gradient(180deg, #ffe27a 0%, #ffbe1
 export default function TelegramAppSignIn({
    label,
    variant = 'gold',
-   idIntent = true
+   idIntent = true,
+   preview = false
 }: {
    label: string;
    variant?: 'gold' | 'soft';
    /** From /id: join the Indonesia track after signing in. */
    idIntent?: boolean;
+   /** Screenshots / design review (dev builds): a made-up ticket, no server calls. 'waiting' = after the tap. */
+   preview?: false | 'idle' | 'waiting';
 }): JSX.Element {
    const lang = useIdLang();
    const t = pick(lang, COPY);
@@ -82,8 +85,12 @@ export default function TelegramAppSignIn({
    const queryClient = useQueryClient();
    // A ticket is fetched as soon as the page shows, so the button is a real link: in-app browsers only
    // hand a tg:// / intent:// link to the Telegram app when it comes straight from a tap.
-   const [ticket, setTicket] = useState<AppLoginTicket | null>(() => savedAppLogin());
-   const [opened, setOpened] = useState(() => Boolean(savedAppLogin()));
+   const [ticket, setTicket] = useState<AppLoginTicket | null>(() =>
+      preview
+         ? { code: 'preview', pollSecret: 'preview', botUsername: 'MoodengCreditBot', startParam: 'login_preview', expiresAt: new Date(Date.now() + 600_000).toISOString(), matchNumber: 47 }
+         : savedAppLogin()
+   );
+   const [opened, setOpened] = useState(() => preview === 'waiting' || (!preview && Boolean(savedAppLogin())));
    const [signingIn, setSigningIn] = useState(false);
    const [error, setError] = useState('');
    const [copied, setCopied] = useState(false);
@@ -100,8 +107,8 @@ export default function TelegramAppSignIn({
    }, [idIntent, t.failed]);
 
    useEffect(() => {
-      if (!ticket) void fetchTicket();
-   }, [ticket, fetchTicket]);
+      if (!ticket && !preview) void fetchTicket();
+   }, [ticket, fetchTicket, preview]);
 
    // Refresh a ticket a minute before it runs out while nobody has tapped yet.
    useEffect(() => {
@@ -149,7 +156,7 @@ export default function TelegramAppSignIn({
 
    // While waiting: check every 2 s, and right away when they come back to this tab.
    useEffect(() => {
-      if (!opened || !ticket) return undefined;
+      if (!opened || !ticket || preview) return undefined;
       void check();
       const timer = window.setInterval(() => void check(), POLL_MS);
       const onVisible = () => {
@@ -162,7 +169,7 @@ export default function TelegramAppSignIn({
          document.removeEventListener('visibilitychange', onVisible);
          window.removeEventListener('focus', onVisible);
       };
-   }, [opened, ticket, check]);
+   }, [opened, ticket, check, preview]);
 
    const appHref = ticket ? telegramAppLink(ticket, os) : undefined;
    const webHref = ticket ? telegramWebLink(ticket) : undefined;
