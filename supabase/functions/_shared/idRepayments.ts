@@ -427,9 +427,9 @@ const tell = async (user: UserRow | null, text: string, keyboard?: TelegramInlin
 };
 
 const say = (user: UserRow | null, id: string, en: string) => (idLocaleOf(user?.preferred_locale) === 'en' ? en : id);
-const menuRow = (user: UserRow | null): TelegramInlineKeyboard => [
+const menuRow = (user: UserRow | null, pay: 'rest' | 'again' = 'rest'): TelegramInlineKeyboard => [
    [
-      { text: say(user, '💰 Bayar sisanya', '💰 Pay the rest'), callback_data: 'idm:repay' },
+      { text: pay === 'rest' ? say(user, '💰 Bayar sisanya', '💰 Pay the rest') : say(user, '💰 Bayar', '💰 Pay'), callback_data: 'idm:repay' },
       { text: say(user, '☰ Menu', '☰ Menu'), callback_data: 'idm:menu' }
    ]
 ];
@@ -797,7 +797,7 @@ export const runRelayRepayments = async (svc: Svc, deadline = Date.now() + 45_00
             }
             if (status?.status === 'refund') {
                await patchRow(svc, row, { status: 'refund', ...(status.fillTxHash ? { fill_tx_hash: status.fillTxHash } : {}) });
-               await tell(user, refundedText(user), menuRow(user));
+               await tell(user, refundedText(user), menuRow(user, 'again'));
                tally.refunded += 1;
                continue;
             }
@@ -855,7 +855,7 @@ export const runRelayRepayments = async (svc: Svc, deadline = Date.now() + 45_00
                if (refunded) {
                   await patchRow(svc, row, { status: 'refund' }, { recorded: { error: 'refunded_on_bsc', candidate: found.txHash } });
                   const u = await loadUser(svc, row.user_id);
-                  await tell(u, refundedText(u), menuRow(u));
+                  await tell(u, refundedText(u), menuRow(u, 'again'));
                   await alertTeam(
                      svc,
                      `⚠️ 🇮🇩 Walt repay ${short(row.deposit_address)} (loan ${row.loan_id}): Relay didn't report it and USDT went back to their Walt ${short(row.refund_to)} on BNB Chain, so it's treated as a refund — NOT recorded. A similar fill to the lender (${found.txHash}) was left alone; check it if they say they paid.`
