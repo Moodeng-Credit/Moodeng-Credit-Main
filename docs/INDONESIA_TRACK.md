@@ -82,3 +82,22 @@ Code: migration `20261107160000_indonesia_idr_peg.sql`, `_shared/fxRates.ts`, `s
 - USD/IDR is stored only when both sources agree within 2% (or a single source is within 3% of the
   last rate); the peg falls back to the last stored rate of any age.
 - `loans.usd_total_at_request` keeps the original USD total for the BitRepo report.
+
+## Signing in from Facebook's browser (Telegram app login)
+
+Telegram's website login gets lost inside Facebook's / TikTok's in-app browser, so `/id` signs in
+through the Telegram **app**:
+
+1. The page gets a one-time code and a 2-digit number (`telegram-login` `app_start`), and its button
+   opens our bot in the Telegram app (`intent://` on Android, `tg://` on iPhone).
+2. Pressing **Start** does not sign anyone in. The bot shows the device, country and time with a blunt
+   "this gives FULL ACCESS" warning, and asks them to tap the number on their screen out of four. The
+   choices are fixed, and a wrong pick or "Not me" kills the code.
+3. The page, still open in Facebook, polls (`app_poll`) and gets the session. Starting the bot also
+   means the bot can message them, so the Telegram step is done.
+
+Bot buttons to moodeng.app are Telegram **login_url** buttons, so Telegram signs in whoever taps
+them (a forwarded message can't sign in anyone else). The signed data is moved out of the URL before
+analytics load, is valid for 15 minutes, works once (`telegram_login_hashes`), and asks before
+switching a browser that's signed in to a different account. If the camera or uploads don't work in
+Facebook's browser, "Lanjut di Telegram" makes the bot send a sign-in button for that step.

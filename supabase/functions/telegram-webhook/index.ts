@@ -77,6 +77,8 @@ type TelegramUser = {
    username?: string;
    first_name?: string;
    last_name?: string;
+   /** IETF tag of the user's Telegram app language, e.g. 'id', 'en'. */
+   language_code?: string;
 };
 
 type TelegramMessage = {
@@ -872,7 +874,9 @@ const handleTestAccountCallback = async (
 const verifyTelegramSecret = (req: Request) => {
    const expectedSecret = Deno.env.get('TELEGRAM_WEBHOOK_SECRET');
    if (!expectedSecret) {
-      return true;
+      // Fail closed: an unsigned webhook would let anyone post fake updates (incl. sign-in taps).
+      console.error('telegram-webhook: TELEGRAM_WEBHOOK_SECRET is not set — rejecting the update');
+      return false;
    }
 
    // setWebhook only accepts A–Z a–z 0–9 _ - in secret_token, so the webhook is registered with the
@@ -939,6 +943,188 @@ const consumeConnectToken = async (supabase: SupabaseClient, message: TelegramMe
 
    await connectTelegramAlerts(supabase, message, tokenRow.user_id);
    await supabase.from('telegram_connect_tokens').update({ consumed_at: new Date().toISOString() }).eq('id', tokenRow.id);
+};
+
+const sha256Hex = async (value: string) => {
+   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+   return Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+};
+
+// "/start login_<code>" (telegram-login app_start). Start alone never signs anyone in — someone could
+// have been sent another person's link. We show which device asked and when, and ask the person who
+// pressed Start to tap the 2-digit number on their Moodeng page out of three. Only the right number,
+// from that same Telegram account, claims the code (handleAppLoginTap). Migration 20261107180000.
+const APP_LOGIN_PROMPT_MAX_AGE_MS = 10 * 60 * 1000;
+
+const loginCopy = (bahasa: boolean) =>
+   bahasa
+      ? {
+           invalid: 'Link masuk tidak valid. Coba lagi dari halaman Moodeng.',
+           expired: '⏰ Link masuk ini sudah dipakai atau kedaluwarsa. Kembali ke halaman Moodeng dan tekan "Daftar dengan Telegram" lagi.',
+           prompt: (device: string, at: string, where: string) =>
+              `🔐 Masuk ke Moodeng?\n\nPerangkat: ${device}${where ? `\nNegara: ${where}` : ''}\nWaktu: ${at}\n\n⚠️ Ini memberi AKSES PENUH ke akun Moodeng kamu (pinjaman dan uangmu) kepada perangkat itu.\nPilih angka HANYA jika kamu sendiri yang sedang membuka Moodeng di HP kamu. Jangan pernah pilih angka karena disuruh orang lain — Moodeng tidak pernah meminta itu.\n\nPilih angka yang tampil di layar Moodeng kamu:`,
+           notMe: '🚫 Bukan saya',
+           done: (device: string) =>
+              `✅ Kamu sudah masuk di ${device}.\n\nKembali ke Facebook (atau browser tempat kamu mulai) untuk lanjut. Mulai sekarang Moodeng akan mengabari kamu di sini.`,
+           cancelled: '🚫 Dibatalkan. Tidak ada yang masuk ke akunmu.',
+           wrong: '❌ Angkanya salah, jadi kami batalkan demi keamanan. Kembali ke halaman Moodeng dan coba lagi.',
+           notYours: 'Ini bukan permintaan kamu.',
+           toastOk: 'Berhasil masuk ✅',
+           toastNo: 'Dibatalkan'
+        }
+      : {
+           invalid: 'That sign-in link is not valid. Try again from the Moodeng page.',
+           expired: '⏰ This sign-in link was already used or expired. Go back to the Moodeng page and tap "Sign up with Telegram" again.',
+           prompt: (device: string, at: string, where: string) =>
+              `🔐 Sign in to Moodeng?\n\nDevice: ${device}${where ? `\nCountry: ${where}` : ''}\nTime: ${at}\n\n⚠️ This gives that device FULL ACCESS to your Moodeng account (your loans and money).\nOnly pick a number if YOU are opening Moodeng on your own phone right now. Never pick one because someone told you to — Moodeng never asks for that.\n\nTap the number shown on your Moodeng screen:`,
+           notMe: '🚫 Not me',
+           done: (device: string) =>
+              `✅ You’re signed in on ${device}.\n\nGo back to Facebook (or the browser you started in) to continue. From now on Moodeng will message you here.`,
+           cancelled: '🚫 Cancelled. Nobody was signed in to your account.',
+           wrong: '❌ Wrong number, so we cancelled it to keep you safe. Go back to the Moodeng page and try again.',
+           notYours: 'This isn’t your request.',
+           toastOk: 'Signed in ✅',
+           toastNo: 'Cancelled'
+        };
+
+const isBahasa = (user?: TelegramUser) => (user?.language_code ?? 'id').toLowerCase().startsWith('id');
+
+const wibTime = (iso: string) =>
+   `${new Date(iso).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })} WIB`;
+
+/** Three decoys (10–99) different from the real number and each other, shuffled in with it. */
+const matchChoices = (real: number): number[] => {
+   const picks = new Set<number>([real]);
+   const buf = new Uint8Array(1);
+   while (picks.size < 4) {
+      crypto.getRandomValues(buf);
+      if (buf[0] < 180) picks.add(10 + (buf[0] % 90));
+   }
+   const list = [...picks];
+   for (let i = list.length - 1; i > 0; i -= 1) {
+      crypto.getRandomValues(buf);
+      const j = buf[0] % (i + 1);
+      [list[i], list[j]] = [list[j], list[i]];
+   }
+   return list;
+};
+
+const claimAppLogin = async (supabase: SupabaseClient, message: TelegramMessage, payload: string) => {
+   const code = payload.replace(/^login_/, '').trim();
+   const chatId = getSenderChatId(message);
+   const from = message.from;
+   const t = loginCopy(isBahasa(from));
+   if (!from?.id || !/^[A-Za-z0-9_-]{16,64}$/.test(code)) {
+      await sendTelegramMessage(chatId, t.invalid);
+      return;
+   }
+   const now = new Date().toISOString();
+   // The first Telegram account to press Start owns the prompt; nobody else can answer it.
+   const { data: row, error } = await supabase
+      .from('telegram_app_logins')
+      .update({ pending_telegram_id: from.id, prompted_at: now })
+      .eq('code_hash', await sha256Hex(code))
+      .is('claimed_at', null)
+      .gt('expires_at', now)
+      .or(`pending_telegram_id.is.null,pending_telegram_id.eq.${from.id}`)
+      .select('id, match_number, match_choices, device_label, location_label, created_at')
+      .maybeSingle();
+   if (error) throw new Error(error.message);
+   if (!row) {
+      await sendTelegramMessage(chatId, t.expired);
+      return;
+   }
+   // The same choices every time Start is pressed: new decoys would give the real number away.
+   let choices: number[] | null = Array.isArray(row.match_choices) && row.match_choices.length === 4 ? row.match_choices.map(Number) : null;
+   if (!choices) {
+      const fresh = matchChoices(Number(row.match_number));
+      const { data: stored } = await supabase
+         .from('telegram_app_logins')
+         .update({ match_choices: fresh })
+         .eq('id', row.id)
+         .is('match_choices', null)
+         .select('match_choices')
+         .maybeSingle();
+      if (stored?.match_choices) choices = (stored.match_choices as number[]).map(Number);
+      else {
+         const { data: again } = await supabase.from('telegram_app_logins').select('match_choices').eq('id', row.id).maybeSingle();
+         choices = Array.isArray(again?.match_choices) ? (again.match_choices as number[]).map(Number) : fresh;
+      }
+   }
+   await sendTelegramMessage(chatId, t.prompt(row.device_label || 'Browser', wibTime(row.created_at), row.location_label ?? ''), {
+      inlineKeyboard: [
+         choices.map((n: number) => ({ text: String(n), callback_data: `tl:${row.id}:${n}` })),
+         [{ text: t.notMe, callback_data: `tl:${row.id}:x` }]
+      ]
+   });
+};
+
+/** A tap on the number prompt. Returns true when it handled the callback. */
+const handleAppLoginTap = async (supabase: SupabaseClient, query: TelegramCallbackQuery): Promise<boolean> => {
+   const match = /^tl:([0-9a-f-]{36}):(\d{2}|x)$/.exec(query.data ?? '');
+   if (!match) return false;
+   const [, rowId, choice] = match;
+   const t = loginCopy(isBahasa(query.from));
+   const chatId = query.message?.chat.id;
+   const messageId = query.message?.message_id;
+   const finish = async (text: string, toast: string) => {
+      await answerCallback(query.id, toast);
+      if (chatId && messageId) {
+         await callTelegramApi('editMessageText', { chat_id: chatId, message_id: messageId, text, reply_markup: { inline_keyboard: [] } }).catch(
+            (err: unknown) => console.error('telegram-webhook: login prompt edit failed', err instanceof Error ? err.message : err)
+         );
+      }
+   };
+   // Private chats only, and only the account that pressed Start.
+   if (query.message?.chat.type !== 'private') {
+      await answerCallback(query.id, t.notYours);
+      return true;
+   }
+   const { data: row } = await supabase
+      .from('telegram_app_logins')
+      .select('id, match_number, device_label, pending_telegram_id, prompted_at, expires_at, claimed_at')
+      .eq('id', rowId)
+      .maybeSingle();
+   if (!row || Number(row.pending_telegram_id) !== query.from.id) {
+      await answerCallback(query.id, t.notYours);
+      return true;
+   }
+   const now = Date.now();
+   const stale =
+      row.claimed_at ||
+      new Date(row.expires_at).getTime() < now ||
+      !row.prompted_at ||
+      now - new Date(row.prompted_at).getTime() > APP_LOGIN_PROMPT_MAX_AGE_MS;
+   if (stale) {
+      await finish(t.expired, t.toastNo);
+      return true;
+   }
+   if (choice === 'x' || Number(choice) !== Number(row.match_number)) {
+      // "Not me" or a wrong number: kill the code so the page can never collect a session.
+      await supabase.from('telegram_app_logins').update({ expires_at: new Date(now).toISOString() }).eq('id', row.id).is('claimed_at', null);
+      await finish(choice === 'x' ? t.cancelled : t.wrong, t.toastNo);
+      return true;
+   }
+   const from = query.from;
+   const { data: claimed } = await supabase
+      .from('telegram_app_logins')
+      .update({
+         telegram_id: from.id,
+         telegram_username: from.username ?? null,
+         first_name: from.first_name ?? null,
+         last_name: from.last_name ?? null,
+         claimed_at: new Date(now).toISOString()
+      })
+      .eq('id', row.id)
+      .eq('pending_telegram_id', from.id)
+      .is('claimed_at', null)
+      .gt('expires_at', new Date(now).toISOString())
+      .select('id')
+      .maybeSingle();
+   await finish(claimed ? t.done(row.device_label || 'Browser') : t.expired, claimed ? t.toastOk : t.toastNo);
+   return true;
 };
 
 const getOpenSupportSession = async (supabase: SupabaseClient, customerChatId: number) => {
@@ -1078,6 +1264,10 @@ serve(async (req) => {
 
    try {
       if (update.callback_query) {
+         // Telegram-app sign-in: the number prompt (private chat).
+         if (await handleAppLoginTap(supabase, update.callback_query)) {
+            return jsonResponse({ message: 'App login tap handled' });
+         }
          const teamChatId = await getTeamChatId(supabase);
          const kycChatId = await getSetting(supabase, 'kyc_alert_chat_id');
          // 🔄 Change time picker: the admin chats and the call-changes group.
@@ -1168,6 +1358,13 @@ serve(async (req) => {
          if (payload.startsWith('connect_')) {
             await consumeConnectToken(supabase, message, payload);
             return jsonResponse({ message: 'Telegram alerts connected' });
+         }
+
+         // Sign in with the Telegram app (telegram-login app_start / app_poll): claim the code with the
+         // account that pressed Start; the page waiting in Facebook's browser then gets its session.
+         if (payload.startsWith('login_')) {
+            await claimAppLogin(supabase, message, payload);
+            return jsonResponse({ message: 'App login claimed' });
          }
 
          if (payload) {

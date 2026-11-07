@@ -9,7 +9,7 @@
 //
 // This file must stay a leaf (it only imports telegram.ts): loanAccess.ts, callBooking.ts,
 // borrowerNotificationDelivery.ts and others import it.
-import { sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
+import { sendTelegramMessage, type TelegramButton, type TelegramInlineKeyboard } from './telegram.ts';
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
@@ -171,6 +171,7 @@ const RESEND_ID: Record<string, string> = {
 export type IdEvent =
    | 'step_done'
    | 'next_step'
+   | 'continue_in_telegram'
    | 'nudge'
    | 'kyc_approved'
    | 'kyc_review'
@@ -283,6 +284,15 @@ export const buildIdMessage = (event: IdEvent, locale: IdLocale, data: IdEventDa
             button: nextButton(next, locale)
          };
       }
+      case 'continue_in_telegram':
+         return {
+            text: say(
+               locale,
+               `📲 Lanjutkan di sini: ${next ? NEXT_LINE.id[next] : ''}\n\nTekan tombol di bawah. Kamu langsung masuk, tidak perlu login lagi.`,
+               `📲 Continue here: ${next ? NEXT_LINE.en[next] : ''}\n\nTap the button below. You'll be signed in already.`
+            ),
+            button: nextButton(next, locale)
+         };
       case 'next_step':
          return { text: `👉 ${say(locale, 'Langkah berikutnya', 'Next step')}: ${next ? NEXT_LINE[locale][next] : ''}`, button: nextButton(next, locale) };
       case 'nudge': {
@@ -478,6 +488,20 @@ export const idResendReason = (reason: string | null | undefined, locale: IdLoca
 
 type IdRecipient = { id?: string; chat_id?: string | number | null; preferred_locale?: string | null; market?: string | null };
 
+// ── bot buttons sign them in ───────────────────────────────────────────────────────────────────────
+// Links from Telegram open in Telegram's own browser, which isn't signed in (they signed up inside
+// Facebook's). So every moodeng.app button is a Telegram *login_url* button: Telegram adds signed login
+// data for whoever taps it (checked by telegram-login, the same as the website login) and our callback
+// page sends them on to the page. A forwarded message only ever signs in the person who taps it.
+export const appButton = (button: { text: string; url: string }): TelegramButton => {
+   if (!button.url.startsWith(`${ID_SITE_URL}/`)) return button;
+   const next = button.url.slice(ID_SITE_URL.length) || '/';
+   return {
+      text: button.text,
+      login_url: { url: `${ID_SITE_URL}/auth/telegram/callback?next=${encodeURIComponent(next)}`, request_write_access: true }
+   };
+};
+
 /** Send one event to a user row already in hand. Only for market 'ID'. Never throws; true when sent. */
 export const sendIdTelegramTo = async (user: IdRecipient | null | undefined, event: IdEvent, data: IdEventData = {}): Promise<boolean> => {
    if (!user || user.market !== 'ID') return false;
@@ -488,7 +512,7 @@ export const sendIdTelegramTo = async (user: IdRecipient | null | undefined, eve
    }
    try {
       const msg = buildIdMessage(event, idLocaleOf(user.preferred_locale), data);
-      const keyboard: TelegramInlineKeyboard | undefined = msg.button ? [[msg.button]] : undefined;
+      const keyboard: TelegramInlineKeyboard | undefined = msg.button ? [[appButton(msg.button)]] : undefined;
       await sendTelegramMessage(user.chat_id, msg.text, keyboard ? { inlineKeyboard: keyboard } : {});
       console.log(`[idTrack] ${event} for ${tag} → sent`);
       return true;

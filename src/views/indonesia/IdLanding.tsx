@@ -4,7 +4,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
-import { TelegramBigButton } from '@/components/auth/TelegramLoginTile';
 import Loading from '@/components/Loading';
 
 import { ID_ONBOARDING_QUERY_KEY, useIdOnboarding } from '@/hooks/useIdOnboarding';
@@ -17,12 +16,12 @@ import type { AppDispatch, RootState } from '@/store/store';
 import { CONNECT_HIPPOS } from '@/views/dashboard/components/connectKit';
 import {
    pick,
-   setIdTrackIntent,
    TELEGRAM_APP_STORE_URL,
    TELEGRAM_PLAY_STORE_URL,
    useIdLang,
    useIdTrackSwitch
 } from '@/views/indonesia/idFlow';
+import TelegramAppSignIn from '@/views/indonesia/TelegramAppSignIn';
 import { AppIcon, Card, ErrorText, GoldButton, IdBanner, IdPage } from '@/views/indonesia/ui';
 
 // moodeng.app/id — where Indonesians land from Facebook / TikTok ads (often inside those apps'
@@ -198,9 +197,9 @@ export default function IdLanding() {
                )
             ) : closed ? (
                // Closed to new people; anyone already on the track still signs in here.
-               <TelegramBigButton label={t.signInMember} onBeforeLeave={setIdTrackIntent} variant="soft" />
+               <TelegramAppSignIn label={t.signInMember} variant="soft" />
             ) : (
-               <TelegramBigButton label={t.cta} onBeforeLeave={setIdTrackIntent} />
+               <TelegramAppSignIn label={t.cta} />
             )}
          </div>
 

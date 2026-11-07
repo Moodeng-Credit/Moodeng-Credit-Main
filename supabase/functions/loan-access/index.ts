@@ -7,7 +7,7 @@ import { isInternalRequest } from '../_shared/internalAuth.ts';
 import { collectGateDigest, formatGateDigest } from '../_shared/gateDigest.ts';
 import { BORROWER_COLUMNS, getAdminChatId, notifyAdminsOfRequest, notifyBorrower, PAGE_INBOX_URL, REQUEST_COLUMNS, SITE_URL, who } from '../_shared/loanAccess.ts';
 import { needsPreKycGate } from '../_shared/preKycGate.ts';
-import { isIdStep, loadIdStatus, notifyIdNextStep } from '../_shared/idTrack.ts';
+import { isIdStep, loadIdStatus, notifyIdNextStep, sendIdTelegram } from '../_shared/idTrack.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
 // Connect → Approve → Apply (docs/HANDOFF_BORROWER_VERIFICATION.md §13).
@@ -151,6 +151,22 @@ const idStep = async (req: Request, svc: any, body: Record<string, unknown>) => 
    const userId = auth?.user?.id;
    if (!userId) return json({ ok: false, error: 'unauthorized' }, 401);
    if (!isIdStep(body.step)) return json({ ok: false, error: 'bad_step' }, 400);
+   // "Lanjut di Telegram": a step that doesn't work in this browser (camera, upload) — the bot sends a
+   // signed-in button to that step, which opens in Telegram's own browser.
+   if (body.continueInTelegram === true) {
+      // At most one a minute per person (users.id_continue_sent_at, migration 20261107180000).
+      const minuteAgo = new Date(Date.now() - 60_000).toISOString();
+      const { data: claimed } = await svc
+         .from('users')
+         .update({ id_continue_sent_at: new Date().toISOString() })
+         .eq('id', userId)
+         .or(`id_continue_sent_at.is.null,id_continue_sent_at.lt.${minuteAgo}`)
+         .select('id')
+         .maybeSingle();
+      if (!claimed) return json({ ok: false, error: 'too_soon' }, 429);
+      const sent = await sendIdTelegram(svc, userId, 'continue_in_telegram', { next: body.step });
+      return json({ ok: true, sent });
+   }
    const sent = await notifyIdNextStep(svc, userId, body.step);
    return json({ ok: true, sent });
 };

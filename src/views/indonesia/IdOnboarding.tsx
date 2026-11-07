@@ -14,6 +14,7 @@ import type { User } from '@/types/authTypes';
 import { currentIdStep, ID_STEP_LABELS, isIdStepKey, pick, useIdLang } from '@/views/indonesia/idFlow';
 import AboutStep from '@/views/indonesia/steps/AboutStep';
 import CallStep from '@/views/indonesia/steps/CallStep';
+import ContinueInTelegram from '@/views/indonesia/steps/ContinueInTelegram';
 import FacebookStep from '@/views/indonesia/steps/FacebookStep';
 import IncomeStep from '@/views/indonesia/steps/IncomeStep';
 import KycStep from '@/views/indonesia/steps/KycStep';
@@ -42,6 +43,8 @@ const STEPS: Record<IdStepKey, (props: IdStepProps) => ReactElement> = {
 
 // Steps that wait on something outside the app.
 const POLLED: ReadonlySet<IdStepKey> = new Set(['telegram', 'whatsapp', 'facebook', 'kyc', 'call']);
+// Steps needing the camera or file uploads: offer "continue in Telegram" if that fails in this browser.
+const CAMERA_OR_UPLOAD: ReadonlySet<IdStepKey> = new Set(['income', 'kyc']);
 // Steps that embed shared (English, app-translated) components: the DOM translator must reach them.
 const TRANSLATED: ReadonlySet<IdStepKey> = new Set(['about', 'call']);
 
@@ -196,6 +199,7 @@ export default function IdOnboarding() {
          ) : (
             <div key={current} className="flex flex-col gap-4" data-i18n-skip={TRANSLATED.has(current) ? undefined : true}>
                <Step data={data} lang={lang} onDone={onDone} refresh={refresh} user={user} />
+               {CAMERA_OR_UPLOAD.has(current) && !data.steps[current] ? <ContinueInTelegram lang={lang} step={current} /> : null}
             </div>
          )}
       </IdPage>
