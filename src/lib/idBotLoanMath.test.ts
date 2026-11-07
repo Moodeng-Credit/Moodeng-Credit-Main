@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { idRepayIdrBounds, idRepayIdrChoices, idUsdForIdr } from '@/lib/loanMarket';
-import { waltRepayAmount } from '@/views/indonesia/walt/WaltRepaySteps';
 
-// The Telegram bot (supabase/functions/_shared/idLoanMath.ts) offers the same rupiah chips and the same
-// Walt top-up amount as the app. That file is a copy (Deno can't import src/), so check they agree.
+// The Telegram bot (supabase/functions/_shared/idLoanMath.ts) offers the same rupiah chips as the app. That file is a copy (Deno can't import src/), so check they agree.
 import * as bot from '../../supabase/functions/_shared/idLoanMath.ts';
 
 describe('Telegram bot loan maths = app loan maths', () => {
@@ -20,9 +18,4 @@ describe('Telegram bot loan maths = app loan maths', () => {
       expect(bot.idRepayIdrChoices(5, null)).toEqual([]);
    });
 
-   it('Walt top-up amount', () => {
-      for (const owed of [0, 0.2, 1, 5.55, 6.08, 6.666, 12.341, 50, 99.99]) {
-         expect(bot.waltRepayAmount(owed)).toEqual(waltRepayAmount(owed));
-      }
-   });
 });

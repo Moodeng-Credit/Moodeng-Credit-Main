@@ -103,16 +103,7 @@ export const ID_PURPOSES: ReadonlyArray<{ id: string; en: string; reason: string
    { id: '🛵 Transport', en: '🛵 Transport', reason: 'Transport (fuel, fares, motorbike)' }
 ];
 
-// ── Walt top-up amount (same as src/views/indonesia/walt/WaltRepaySteps.tsx waltRepayAmount) ────
-const MIN_USDT = 1;
 const ceilCents = (usd: number) => Math.ceil(Math.round(usd * 1e6) / 1e4) / 100;
-
-/** What's owed + ~1% (at least $0.30) for the bridge, at least $1, rounded up to cents. */
-export const waltRepayAmount = (shortfall: number): number => {
-   const s = Number.isFinite(shortfall) && shortfall > 0 ? shortfall : 0;
-   const buffer = Math.max(0.3, s * 0.01);
-   return Math.max(MIN_USDT, ceilCents(s + buffer));
-};
 
 /** USD still owed on a loan: rupiah left ÷ today's rate when pegged (else the USD left), rounded up to cents. */
 export const idUsdLeft = (

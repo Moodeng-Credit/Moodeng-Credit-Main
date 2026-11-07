@@ -1,7 +1,7 @@
 import { assert, assertEquals, assertStringIncludes } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
 import { menuScreen, postedText, repayScreen } from './idBot.ts';
-import { partialReceivedText, repayBlocker } from './idRepayments.ts';
+import { partialReceivedText } from './idRepayments.ts';
 import { buildIdMessage } from './idTrack.ts';
 import { callbackFits } from './idLoanMath.ts';
 
@@ -23,31 +23,23 @@ Deno.test('posted message', () => {
    );
 });
 
-Deno.test('repay screen: amount, ≈ rupiah, copyable address, the Walt steps, one-send warning', () => {
+Deno.test('repay screen: exact amount, ≈ rupiah, copyable payout address, P2P steps, exact-amount warning', () => {
    const address = '0x1234567890abcdef1234567890abcdef12345678';
-   const screen = repayScreen('id', { depositAddress: address, amountUsdt: '6.38', approxIdr: 105000, rupiahLeft: 100000 });
-   assertStringIncludes(screen.text, 'Kirim: 6.38 USDT (≈ Rp 105.000)');
+   const screen = repayScreen('id', { address, amountUsdt: '6.08', approxIdr: 110000, rupiahLeft: 110000 });
+   assertStringIncludes(screen.text, 'Kirim TEPAT: 6.08 USDT (≈ Rp 110.000)');
    assertStringIncludes(screen.text, address);
    assertStringIncludes(screen.text, 'BNB Smart Chain (BEP20)');
-   assertStringIncludes(screen.text, 'hanya untuk 1x kirim');
-   assertStringIncludes(screen.text, 'QRIS');
-   const copy = screen.keyboard.flat().find((b) => 'copy_text' in b) as { copy_text: { text: string } };
-   assertEquals(copy.copy_text.text, address);
+   assertStringIncludes(screen.text, 'P2P Express');
+   assertStringIncludes(screen.text, 'harus persis 6.08');
+   assert(!screen.text.includes('QRIS'), 'QRIS has a ~Rp 272.000 minimum');
+   const copies = screen.keyboard.flat().filter((b) => 'copy_text' in b) as Array<{ copy_text: { text: string } }>;
+   assertEquals(copies.map((c) => c.copy_text.text), [address, '6.08']);
    for (const data of allCallbacks(screen.keyboard)) assert(callbackFits(data));
 });
 
 Deno.test('partial payment message', () => {
    assertEquals(partialReceivedText('id', 50000, 3.03, 60000, 3.64), '✅ Pembayaran Rp 50.000 diterima. Sisa Rp 60.000 (≈ $3.64).');
    assertEquals(partialReceivedText('en', null, 3, null, 2.5), '✅ Payment of $3.00 received. $2.50 left to pay.');
-});
-
-Deno.test('only wallet-funded loans can be repaid straight to the lender', () => {
-   const lender = '0x1234567890abcdef1234567890abcdef12345678';
-   assertEquals(repayBlocker({ funding_method: 'walt_manual', lender_wallet: lender, onchain_loan_id: null }), null);
-   assertEquals(repayBlocker({ funding_method: 'direct', lender_wallet: lender, onchain_loan_id: null }), null);
-   assertEquals(repayBlocker({ funding_method: 'smart_contract', lender_wallet: lender, onchain_loan_id: null }), 'on_contract');
-   assertEquals(repayBlocker({ funding_method: 'direct', lender_wallet: lender, onchain_loan_id: 12 }), 'on_contract');
-   assertEquals(repayBlocker({ funding_method: 'walt_manual', lender_wallet: null, onchain_loan_id: null }), 'no_lender_wallet');
 });
 
 Deno.test('bot buttons on approved / funded / repaid / due messages', () => {

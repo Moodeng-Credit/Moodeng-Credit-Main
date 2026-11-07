@@ -35,6 +35,7 @@ import {
 import { markMessengerVerified, messengerVerifiedStamp, parseMessengerVerifyCallback } from '../_shared/messengerStuckAlert.ts';
 import { payoutWalletStatus } from '../_shared/idPayoutWallet.ts';
 import { handleIdBotCallback, handleIdMenuMessage } from '../_shared/idBot.ts';
+import { handleSweepCommand, handleWalletDepositCallback } from '../_shared/idRepayments.ts';
 import { formatCallTime } from '../_shared/videoCall.ts';
 import { handleRescheduleStep, parseRescheduleCallback, postReschedulePicker } from '../_shared/callReschedule.ts';
 import { handleCancelStep, parseCancelCallback } from '../_shared/callCancel.ts';
@@ -1273,6 +1274,10 @@ serve(async (req) => {
          if (await handleIdBotCallback(supabase, update.callback_query)) {
             return jsonResponse({ message: 'Indonesia bot callback handled' });
          }
+         // Indonesia payout wallet: unmatched-money card, refunds, /idsweep confirm (admin chats only).
+         if (await handleWalletDepositCallback(supabase, update.callback_query)) {
+            return jsonResponse({ message: 'Indonesia wallet callback handled' });
+         }
          const teamChatId = await getTeamChatId(supabase);
          const kycChatId = await getSetting(supabase, 'kyc_alert_chat_id');
          // 🔄 Change time picker: the admin chats and the call-changes group.
@@ -1473,6 +1478,12 @@ serve(async (req) => {
       }
 
       // Indonesia payout wallet switch — either admin channel.
+      // Indonesia payout wallet: send money out to the one fixed sweep address.
+      if (isAdminChannel && /^\/idsweep\b/i.test(message.text ?? '')) {
+         await handleSweepCommand(supabase, message);
+         return jsonResponse({ message: 'Indonesia sweep command handled' });
+      }
+
       if (isAdminChannel && /^\/idautopay\b/i.test(message.text ?? '')) {
          await handleIdAutopayCommand(supabase, message);
          return jsonResponse({ message: 'Indonesia autopay command handled' });

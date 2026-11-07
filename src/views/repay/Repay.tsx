@@ -482,11 +482,15 @@ export default function Repay() {
    // language counts too, so an Indonesian on a VPN or abroad still sees their own exchanges.
    const inIndonesia = (previewCountry ?? geoCountryCode) === 'ID' || locale === 'id';
    const heroSourceId = inIndonesia ? INDONESIA_HERO_SOURCE_ID : HERO_SOURCE_ID;
-   // Indonesia-track borrowers (users.market = 'ID') top up from Walt first (WaltRepaySteps); the
+   // Indonesia-track borrowers (users.market = 'ID') pay from Walt straight to Moodeng (WaltRepaySteps); the
    // exchanges stay under "Cara lain". Preview: ?market=id.
    const { isIndo: isIdTrackUser } = useIdOnboarding();
    const isWaltRepay = usePreviewLoans ? new URLSearchParams(location.search).get('market') === 'id' : isIdTrackUser;
    const [showOtherWays, setShowOtherWays] = useState(false);
+   // The 5-minute job recorded their Walt payment: reload the loans so the page shows it paid.
+   const refreshAfterWaltRepay = useCallback(() => {
+      if (user?.id) void dispatch(getUserLoans({ userId: user.id }));
+   }, [dispatch, user?.id]);
    const repayLoans = usePreviewLoans ? previewLoans : loans;
    const { hasFetched: hasCheckedRepayLoans, isLoading: isCheckingRepayLoans } = useLoanData({
       userId: user.id,
@@ -1558,12 +1562,9 @@ export default function Repay() {
                                  <>
                                     <WaltRepaySteps
                                        isPreview={usePreviewLoans}
-                                       shortfall={fundingShortfall ?? selectedRemaining}
-                                       usdcBalance={usdcBalance}
-                                       hasEnough={hasEnoughToRepay}
-                                       watchedWallet={repayWalletAddress}
                                        rupiahLeft={selectedRemainingIdr}
                                        usdLeft={selectedRemaining}
+                                       onRecorded={refreshAfterWaltRepay}
                                     />
                                     <button
                                        type="button"

@@ -10,6 +10,9 @@
 //        deposit address on BNB Chain; the borrower withdraws USDT (BEP20) from Walt to it.
 // POST { relay: 'status', transferId } → poll Relay, update the row, return it.
 // POST { relay: 'latest', direction: 'cashout' | 'repay' } → the caller's newest transfer (to resume).
+// POST { relay: 'id_repay' } → Indonesia track: the payout wallet + exact USDT amount for the caller's
+//      active loan (_shared/idRepayments.ts; same as the bot's 💰 Bayar). No Relay involved.
+// POST { relay: 'id_repay_status', requestId } → has that payment arrived / been recorded?
 //
 // Every address comes from the caller's own users row — never from the client: the cash-out
 // recipient is ALWAYS users.walt_address, the repay recipient ALWAYS users.wallet_address.
@@ -30,12 +33,13 @@ import {
    toUnits
 } from '../_shared/relay.ts';
 import { RPC_URL, rpcCall } from '../_shared/usdcTransfer.ts';
+import { getOrCreateRepayRequest, repayRequestStatus } from '../_shared/idRepayments.ts';
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
 type Json = (body: Record<string, unknown>, status?: number) => Response;
 
-const ACTIONS = new Set(['cashout_quote', 'cashout_sent', 'repay_quote', 'status', 'latest']);
+const ACTIONS = new Set(['cashout_quote', 'cashout_sent', 'repay_quote', 'status', 'latest', 'id_repay', 'id_repay_status']);
 export const isRelayAction = (value: unknown) => typeof value === 'string' && ACTIONS.has(value);
 
 const EVM_ADDRESS = /^0x[0-9a-fA-F]{40}$/;
@@ -216,6 +220,20 @@ export const handleRelay = async (
    json: Json
 ): Promise<Response> => {
    try {
+      // Indonesia track: repay straight to the payout wallet (the loan and amount come from the server).
+      if (action === 'id_repay') {
+         const r = await getOrCreateRepayRequest(admin, { id: userId }, 'app');
+         if (!r.ok) return json({ ok: false, code: r.error, error: r.error }, r.error === 'error' ? 502 : 409);
+         return json({ ok: true, requestId: r.requestId, address: r.address, amountUsdt: r.amountUsdt, approxIdr: r.approxIdr, rupiahLeft: r.rupiahLeft, expiresAt: r.expiresAt, reused: r.reused });
+      }
+      if (action === 'id_repay_status') {
+         const requestId = Number(body.requestId);
+         if (!Number.isInteger(requestId) || requestId <= 0) return json({ ok: false, error: 'Invalid request.' }, 400);
+         const status = await repayRequestStatus(admin, userId, requestId);
+         if (!status) return json({ ok: false, error: 'Not found.' }, 404);
+         return json({ ok: true, ...status });
+      }
+
       const { data: profile } = await admin
          .from('users')
          .select('wallet_address, wallet_chain_id, walt_address')

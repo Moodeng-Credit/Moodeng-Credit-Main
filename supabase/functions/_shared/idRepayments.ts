@@ -1,74 +1,131 @@
-// Indonesia track: repaying from Walt straight to the lender (docs/INDONESIA_TRACK.md "Living in
-// Telegram"). The bot (idBot.ts, 💰 Bayar) asks Relay for a one-time BNB Chain address whose output is
-// USDC on Base paid to loans.lender_wallet — the same wallet the app's Pay button pays — so the
-// borrower never needs a Moodeng wallet balance:
+// Indonesia track: repaying straight to Moodeng's payout wallet on BNB Chain
+// (docs/INDONESIA_TRACK.md "Repaying", migration 20261107200000_indonesia_wallet_repay.sql).
 //
-//   Walt (USDT, BEP20) ──withdraw──▶ Relay one-time address on BNB Chain ──fill──▶ USDC on Base → lender
+//   Walt (USDT or USDC, BEP20) ──withdraw──▶ the payout wallet (the same Openfort wallet loans go out from)
 //
-// getOrCreateRepayQuote  — the address for the borrower's active loan (reuses a still-unused one)
-// runRelayRepayments     — the 5-minute job: finds the fill, verifies it on Base, records it exactly
-//                          like confirm-loan-payment (record_loan_payment 'repay' + the shared
-//                          follow-ups in repaymentFollowUps.ts), tells the borrower.
+// No bridge and no fee taken from anyone's money: what the borrower sends is what arrives.
 //
-// How a repayment is found (relay_transfers rows with direction 'repay' and loan_id set):
-//   1. Relay status by request id (/intents/status/v3, no key). 'success' + a fill tx → verified on Base:
-//      the receipt succeeded, holds USDC Transfer(s) to lender_wallet, and its block is after the quote.
-//      The USDC that reached the lender is what's recorded (never the quoted amount).
-//   2. The deposit itself is watched on BNB Chain (USDT Transfer → the one-time address), so we know
-//      when, from where and how much was sent even when Relay says nothing.
-//   3. Relay treats a deposit of a different amount as a NEW request (new id) that our request id may
-//      never show. GET /requests by deposit address needs an API key from v3 on (v2 is retired
-//      2026-11-24), so ≥ 10 min after a deposit that Relay hasn't reported, we search Base for the fill
-//      ourselves: USDC Transfer → lender_wallet within 3 h after the deposit, between the deposit
-//      − max(5%, $0.50) and the deposit + 0.5%, from a known Relay solver address (setting
-//      relay_base_solvers, plus every sender seen on a fill verified through step 1), whose tx hash was
-//      never used for any loan. Several open rows to the same lender are matched oldest deposit first and
-//      one fill is given to one row only. No solver-sent candidate → one team alert, nothing recorded.
-//      Only when Relay definitely says 'waiting'/'unknown' (never on a Relay API error), and never when
-//      the one-time address (or anyone, for about the deposit) sent USDT back to the borrower's Walt on
-//      BNB Chain — that's a refund, nothing was paid. When Relay's own fill was already spent by another
-//      loan, the row stays open and the search keeps looking (3 h cap, one alert).
-//   Never twice: record_loan_payment spends the Base fill tx hash in used_payment_hashes inside its lock;
-//   a second run gets 'hash_used' (same loan → done; another loan → handled like any clash).
-//   Rows are worked until relay_transfers.recorded_at is set — whatever their status — and recorded_at
-//   is only set after the follow-ups ran. quote.recording (written just before record_loan_payment)
-//   lets a later run finish the follow-ups if a worker died in between.
+// Walt sends from its own shared wallets, so the sender doesn't say who paid — the AMOUNT does. Each
+// request (bot 💰 Bayar, app "Dapatkan alamat") gets an exact amount: what's owed rounded up to the
+// cent, plus 0–50 cents when another recent request already has that amount. No two open requests share
+// an amount (unique index), and new requests skip amounts used in the last 7 days, so a late payment to
+// an expired/replaced request still finds its loan.
+//
+//   getOrCreateRepayRequest — the address + exact amount for the borrower's active loan (reuses one)
+//   runIdRepayments         — the 5-minute job: reads USDT/USDC transfers INTO the payout wallet on BNB
+//                             Chain, matches them by exact amount, records them like the app's Pay button
+//                             (record_loan_payment 'repay' + the shared follow-ups), tells the borrower
+//                             and the team. Unmatched money → a team card with buttons (record for a loan /
+//                             top-up / ignore). Known top-up senders (id_topup_senders) are top-ups.
+//   handleWalletDepositCallback — those buttons, plus ↩️ refund-to-their-Walt and the /idsweep confirm (admin chats only)
+//   handleSweepCommand      — /idsweep: send payout-wallet money to the ONE address in id_payout_sweep_to
+//
+// Never twice: a deposit row is claimed (status 'new' → 'recording') by one run only, its request is
+// claimed ('open' → 'paid') by one deposit only, and record_loan_payment spends 'bsc:<tx>:<log index>'
+// in used_payment_hashes inside its lock. recorded_at is set only after the follow-ups ran; a run that
+// died in between is finished by the next one (status 'recording' for > 2 min).
 //
 // Never throws to the caller.
 
-import { blockAtOrBefore, headBlock as bscHead, blockTime as bscBlockTime, transfersTo as bscTransfersTo } from './idManualFunding.ts';
-import { formatRp, idUsdLeft, waltRepayAmount } from './idLoanMath.ts';
+import { blockAtOrBefore, headBlock as bscHead, transfersTo as bscTransfersTo } from './idManualFunding.ts';
+import { balanceOf, BSC_USDC_CHECKSUM, BSC_USDT_CHECKSUM, type BscToken, getPayoutWallet, NotSentError, sendTokenBsc, unitsToUsd, usdcBscUnits } from './idPayoutWallet.ts';
+import { formatRp, idUsdLeft } from './idLoanMath.ts';
 import { idLocaleOf } from './idTrack.ts';
-import { BASE_USDC, BSC_USDT, RelayError, type RelayStatus, relayQuoteRepay, relayStatus, toUnits } from './relay.ts';
 import { runRepaymentFollowUps } from './repaymentFollowUps.ts';
-import { sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
-import { RPC_URL, rpcCall, TRANSFER_TOPIC } from './usdcTransfer.ts';
+import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
 
 const EVM_ADDRESS = /^0x[0-9a-fA-F]{40}$/;
-const HASH = /^0x[0-9a-fA-F]{64}$/;
-const REUSE_MS = 30 * 60_000;
-const BUSY_LOOKBACK_MS = 2 * 3_600_000;
-const MAX_USDT = 500;
-const OPEN_STATUSES = ['quoted', 'sent', 'pending'];
-const ROW_MAX_AGE_MS = 3 * 86_400_000;
-const NO_DEPOSIT_EXPIRE_MS = 24 * 3_600_000;
-const FALLBACK_AFTER_MS = 10 * 60_000;
-const FALLBACK_WINDOW_MS = 3 * 3_600_000;
-const FRESHNESS_GRACE_MS = 10 * 60_000;
-const OVERPAID_ALERT_MICROS = 500_000; // the buffer (max(1%, $0.30)) is expected on top; more → tell the team
+const REQUEST_TTL_MS = 48 * 3_600_000;
+const REUSE_MIN_LEFT_MS = 3 * 3_600_000; // don't hand out a request that expires within 3 h
+const REUSE_MAX_OVER_USD = 0.5;
+const MAX_BUMP_CENTS = 50;
+const AMOUNT_MEMORY_MS = 7 * 86_400_000;
+const LATE_MATCH_MS = 7 * 86_400_000;
+const MAX_USD = 500;
+const RESUME_AFTER_MS = 2 * 60_000;
+const BUSY_MS = 10 * 60_000;
+const OVERPAID_ALERT_MICROS = 500_000;
+const DUST_UNITS = 10n ** 16n; // $0.01
 const BSC_LOG_SPAN = 49_000n;
 const BSC_CONFIRMATIONS = 3n;
-const BASE_LOG_SPAN = 2_000;
-const BASE_SECONDS_PER_BLOCK = 2;
-const MAX_LEARNED_SOLVERS = 12;
-// eth_getLogs over BASE_LOG_SPAN blocks: publicnode allows it (checked 2026-11-08); Alchemy's free tier,
-// mainnet.base.org and drpc's free plan refuse ranges that wide, so they're only fallbacks.
-const BASE_LOG_RPCS = ['https://base-rpc.publicnode.com', RPC_URL];
-// A row whose payment is recorded but whose follow-ups haven't finished: another run may still be on it.
-const RESUME_AFTER_MS = 2 * 60_000;
+const FIRST_SCAN_BACK_MS = 2 * 3_600_000;
+const TOKENS: Array<{ token: 'USDT' | 'USDC'; address: string }> = [
+   { token: 'USDT', address: BSC_USDT_CHECKSUM.toLowerCase() },
+   { token: 'USDC', address: BSC_USDC_CHECKSUM.toLowerCase() }
+];
+
+// ── pure helpers (idRepayments.test.ts) ──────────────────────────────────────────────────────────
+/** Dollars → whole cents, rounded UP (integer math, no float drift). */
+export const ceilCents = (usd: number): number => Math.ceil(Math.round(usd * 1e6) / 1e4);
+
+/** The first amount (in cents) from `baseCents` up that no recent request uses; null when all are taken. */
+export const pickFreeCents = (baseCents: number, taken: Set<number>, maxBump = MAX_BUMP_CENTS): number | null => {
+   for (let bump = 0; bump <= maxBump; bump += 1) if (!taken.has(baseCents + bump)) return baseCents + bump;
+   return null;
+};
+
+/** 18-decimal units → whole cents when the amount is an exact number of cents, else null. */
+export const unitsToExactCents = (units: bigint): number | null => (units % 10n ** 16n === 0n ? Number(units / 10n ** 16n) : null);
+
+export const centsToText = (cents: number): string => `${Math.floor(cents / 100)}.${String(cents % 100).padStart(2, '0')}`;
+
+/** 18-decimal units → an exact decimal string ("6.38", "0.123456789"). */
+export const unitsToDecimal = (units: bigint): string => {
+   const whole = units / 10n ** 18n;
+   const frac = (units % 10n ** 18n).toString().padStart(18, '0').replace(/0+$/, '');
+   return frac ? `${whole}.${frac}` : whole.toString();
+};
+
+/** "6.38" → units, exactly. */
+const centsToUnits = (cents: number): bigint => usdcBscUnits(centsToText(cents));
+
+// ── settings / team ──────────────────────────────────────────────────────────────────────────────
+const getSetting = async (svc: Svc, key: string): Promise<string | null> => {
+   const { data } = await svc.from('telegram_bot_settings').select('value').eq('key', key).maybeSingle();
+   return (data?.value as string | undefined) ?? null;
+};
+
+const setSetting = (svc: Svc, key: string, value: string): Promise<void> =>
+   svc
+      .from('telegram_bot_settings')
+      .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' })
+      .then(() => undefined, () => undefined);
+
+export const adminChatIds = async (svc: Svc): Promise<string[]> =>
+   [
+      await getSetting(svc, 'kyc_alert_chat_id'),
+      Deno.env.get('TEAM_TELEGRAM_CHAT_ID') ?? null,
+      await getSetting(svc, 'team_group_chat_id')
+   ].filter((v, i, a): v is string => !!v && a.indexOf(v) === i);
+
+const alertTeam = async (svc: Svc, text: string, keyboard?: TelegramInlineKeyboard) => {
+   const [chat] = await adminChatIds(svc);
+   if (chat) await sendTelegramMessage(chat, text, keyboard ? { inlineKeyboard: keyboard } : {}).catch(() => undefined);
+};
+
+const short = (a: string | null | undefined) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '?');
+const usd2 = (n: number) => `$${n.toFixed(2)}`;
+
+const parseSenders = (value: string | null) =>
+   new Set(
+      String(value ?? '')
+         .split(',')
+         .map((s) => s.trim().toLowerCase())
+         .filter((s) => EVM_ADDRESS.test(s))
+   );
+
+const currentRate = async (svc: Svc): Promise<number | null> => {
+   try {
+      const { data } = await svc.rpc('current_usd_idr');
+      const n = Number(data);
+      return Number.isFinite(n) && n > 0 ? n : null;
+   } catch {
+      return null;
+   }
+};
 
 // ── loans ────────────────────────────────────────────────────────────────────────────────────────
 export type RepayLoan = {
@@ -78,7 +135,6 @@ export type RepayLoan = {
    loan_status: string;
    repayment_status: string | null;
    funding_method: string | null;
-   lender_wallet: string | null;
    onchain_loan_id: string | number | null;
    repay_idr: number | string | null;
    repaid_idr: number | string | null;
@@ -92,7 +148,7 @@ export type RepayLoan = {
 };
 
 const LOAN_FIELDS =
-   'id, tracking_id, borrower_user_id, loan_status, repayment_status, funding_method, lender_wallet, onchain_loan_id, repay_idr, repaid_idr, total_repayment_amount, repaid_amount, loan_amount, due_date, funded_at, created_at, market';
+   'id, tracking_id, borrower_user_id, loan_status, repayment_status, funding_method, onchain_loan_id, repay_idr, repaid_idr, total_repayment_amount, repaid_amount, loan_amount, due_date, funded_at, created_at, market';
 
 /** The borrower's funded, not fully repaid loan (newest), or null. */
 export const loadActiveLoan = async (svc: Svc, userId: string): Promise<RepayLoan | null> => {
@@ -109,313 +165,183 @@ export const loadActiveLoan = async (svc: Svc, userId: string): Promise<RepayLoa
    return (data as RepayLoan | null) ?? null;
 };
 
-/** Why this loan can't be repaid straight to the lender from Walt, or null when it can. */
-export const repayBlocker = (loan: Pick<RepayLoan, 'funding_method' | 'lender_wallet' | 'onchain_loan_id'>): 'on_contract' | 'no_lender_wallet' | null => {
-   // Smart-contract / credit-line loans are repaid through the contract or the app, never to a wallet.
-   if (loan.onchain_loan_id != null || (loan.funding_method && !['walt_manual', 'direct'].includes(loan.funding_method))) return 'on_contract';
-   if (!loan.lender_wallet || !EVM_ADDRESS.test(loan.lender_wallet)) return 'no_lender_wallet';
-   return null;
-};
+/**
+ * Only Indonesia loans Moodeng paid out to Walt (funding_method 'walt_manual': payout wallet or Binance TH)
+ * are repaid to the payout wallet. Anything else — e.g. an older Indonesian loan a lender funded on Base —
+ * is owed to that lender and goes through the app.
+ */
+export const repayBlocker = (loan: Pick<RepayLoan, 'market' | 'funding_method' | 'onchain_loan_id'>): 'on_contract' | null =>
+   loan.market === 'ID' && loan.funding_method === 'walt_manual' && loan.onchain_loan_id == null ? null : 'on_contract';
 
-const currentRate = async (svc: Svc): Promise<number | null> => {
-   try {
-      const { data } = await svc.rpc('current_usd_idr');
-      const n = Number(data);
-      return Number.isFinite(n) && n > 0 ? n : null;
-   } catch {
-      return null;
-   }
-};
-
-const getSetting = async (svc: Svc, key: string): Promise<string | null> => {
-   const { data } = await svc.from('telegram_bot_settings').select('value').eq('key', key).maybeSingle();
-   return (data?.value as string | undefined) ?? null;
-};
-
-const adminChatId = async (svc: Svc): Promise<string | null> =>
-   (await getSetting(svc, 'kyc_alert_chat_id')) || Deno.env.get('TEAM_TELEGRAM_CHAT_ID') || (await getSetting(svc, 'team_group_chat_id'));
-
-const alertTeam = async (svc: Svc, text: string) => {
-   const chat = await adminChatId(svc);
-   if (chat) await sendTelegramMessage(chat, text).catch(() => undefined);
-};
-
-const short = (a: string | null | undefined) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '?');
-
-// ── relay_transfers rows ─────────────────────────────────────────────────────────────────────────
-type Deposit = { txHash: string; value: string; blockNumber: string; at: string; from: string };
-type RowQuote = {
-   amountIn?: string;
-   amountInUnits?: string;
-   feeUsd?: number | null;
-   source?: string;
-   rupiahLeft?: number | null;
-   rate?: number | null;
-   usdLeft?: number;
-   deposit?: Deposit;
-   depositScanTo?: string;
-   depositSeenToldAt?: string;
-   fallbackAlertedAt?: string;
-   /** Written just before record_loan_payment: which fill this row is being recorded with. */
-   recording?: { hash: string; via: string; micros: string; at: string };
-   recorded?: Record<string, unknown>;
-   /** Relay's fill for this row was already spent by another loan (alerted once). */
-   otherLoanFill?: string;
-   otherLoanAlertedAt?: string;
-   [key: string]: unknown;
-};
-export type RepayRow = {
-   id: string;
+// ── the request (💰 Bayar / app) ─────────────────────────────────────────────────────────────────
+type RequestRow = {
+   id: number;
+   loan_id: string;
    user_id: string;
-   loan_id: string | null;
+   to_address: string;
+   amount_units: string | number;
+   amount_usd: string | number;
+   owed_usd: string | number;
+   rupiah_left: string | number | null;
    status: string;
-   amount_in: string | number;
-   deposit_address: string;
-   recipient: string;
-   refund_to: string | null;
-   request_id: string | null;
-   tx_hash: string | null;
-   fill_tx_hash: string | null;
-   quote: RowQuote | null;
+   deposit_id: number | null;
    created_at: string;
-   updated_at: string;
-   recorded_at: string | null;
+   expires_at: string;
 };
-const ROW_FIELDS =
-   'id, user_id, loan_id, status, amount_in, deposit_address, recipient, refund_to, request_id, tx_hash, fill_tx_hash, quote, created_at, updated_at, recorded_at';
+const REQUEST_FIELDS = 'id, loan_id, user_id, to_address, amount_units, amount_usd, owed_usd, rupiah_left, status, deposit_id, created_at, expires_at';
 
-/** Exact USDT units (18 dp) of a row: the string in `quote` wins (numeric loses precision in JSON). */
-const rowUnits = (row: RepayRow): bigint => {
-   const stored = row.quote?.amountInUnits;
-   if (stored && /^[0-9]+$/.test(stored)) return BigInt(stored);
-   const raw = typeof row.amount_in === 'number' ? row.amount_in.toLocaleString('en-US', { useGrouping: false }) : String(row.amount_in);
-   return BigInt(raw.split('.')[0] || '0');
-};
+const unitsOf = (v: string | number): bigint => BigInt(typeof v === 'number' ? v.toLocaleString('en-US', { useGrouping: false }) : String(v).split('.')[0]);
 
-const patchRow = async (svc: Svc, row: RepayRow, patch: Record<string, unknown>, quotePatch?: Partial<RowQuote>) => {
-   const next: Record<string, unknown> = { ...patch, updated_at: new Date().toISOString() };
-   if (quotePatch) {
-      row.quote = { ...(row.quote ?? {}), ...quotePatch };
-      next.quote = row.quote;
-   }
-   Object.assign(row, patch);
-   await svc.from('relay_transfers').update(next).eq('id', row.id);
-};
-
-// ── the quote (💰 Bayar) ─────────────────────────────────────────────────────────────────────────
-export type RepayQuoteResult =
+export type RepayRequestResult =
    | {
         ok: true;
         reused: boolean;
-        depositAddress: string;
-        /** Human USDT to send, e.g. "6.42". */
+        requestId: number;
+        /** The payout wallet (BNB Chain). */
+        address: string;
+        /** Exact amount to send, e.g. "6.38". */
         amountUsdt: string;
-        /** ≈ rupiah that USDT costs today (rounded to Rp 1.000), null without a rate. */
+        /** ≈ rupiah that costs today (rounded to Rp 1.000), null without a rate. */
         approxIdr: number | null;
         /** Rupiah still owed on the loan (pegged loans). */
         rupiahLeft: number | null;
+        expiresAt: string;
         loan: RepayLoan;
      }
-   | { ok: false; error: 'no_loan' | 'on_contract' | 'no_lender_wallet' | 'no_walt' | 'bridge_off' | 'nothing_left' | 'busy' | 'too_large' | 'relay' };
+   | { ok: false; error: 'no_loan' | 'on_contract' | 'no_payout_wallet' | 'paused' | 'nothing_left' | 'too_large' | 'busy' | 'error' };
 
-const bridgeOff = async (svc: Svc) => String((await getSetting(svc, 'walt_bridge')) ?? 'on').trim().toLowerCase() === 'off';
-
-/**
- * The one-time address for this borrower's active loan. Reuses an unused one for the same loan made in
- * the last 30 minutes when it still covers what's owed (and isn't more than $0.50 over); says 'busy'
- * when a deposit to an earlier address is already on its way.
- */
-export const getOrCreateRepayQuote = async (svc: Svc, user: { id: string; walt_address: string | null }): Promise<RepayQuoteResult> => {
-   const loan = await loadActiveLoan(svc, user.id);
-   if (!loan) return { ok: false, error: 'no_loan' };
-   const blocker = repayBlocker(loan);
-   if (blocker) return { ok: false, error: blocker };
-   const walt = String(user.walt_address ?? '').trim();
-   if (!EVM_ADDRESS.test(walt)) return { ok: false, error: 'no_walt' };
-   if (await bridgeOff(svc)) return { ok: false, error: 'bridge_off' };
-
-   const rate = await currentRate(svc);
-   const left = idUsdLeft(loan, rate);
-   if (left.usd <= 0 || (left.idr != null && left.idr < 1000)) return { ok: false, error: 'nothing_left' };
-   const usdt = waltRepayAmount(left.usd);
-   if (usdt > MAX_USDT) return { ok: false, error: 'too_large' };
-   const amountUsdt = usdt.toFixed(2);
-   const needUnits = toUnits(amountUsdt, 18);
-   const approxIdr = rate ? Math.round((usdt * rate) / 1000) * 1000 : null;
-   const lender = String(loan.lender_wallet);
-
-   // Earlier addresses for this loan: reuse one, or say a payment is already on its way.
-   const { data: recent } = await svc
-      .from('relay_transfers')
-      .select(ROW_FIELDS)
-      .eq('loan_id', loan.id)
-      .eq('direction', 'repay')
-      .in('status', OPEN_STATUSES)
-      .gte('created_at', new Date(Date.now() - BUSY_LOOKBACK_MS).toISOString())
-      .order('created_at', { ascending: false })
-      .limit(5);
-   for (const row of (recent ?? []) as RepayRow[]) {
-      if (row.status !== 'quoted' || row.quote?.deposit) return { ok: false, error: 'busy' };
-      let status: RelayStatus | null = null;
-      try {
-         status = row.request_id ? await relayStatus(row.request_id) : null;
-      } catch {
-         status = null;
-      }
-      if (status && status.status !== 'waiting' && status.status !== 'unknown') return { ok: false, error: 'busy' };
-      const units = rowUnits(row);
-      const fresh = Date.now() - new Date(row.created_at).getTime() < REUSE_MS;
-      const sameRoute = row.recipient.toLowerCase() === lender.toLowerCase() && (row.refund_to ?? '').toLowerCase() === walt.toLowerCase();
-      if (status?.status === 'waiting' && fresh && sameRoute && units >= needUnits && units <= needUnits + toUnits('0.5', 18)) {
-         const human = (Number(units / 10n ** 14n) / 10_000).toFixed(2);
-         return {
-            ok: true,
-            reused: true,
-            depositAddress: row.deposit_address,
-            amountUsdt: human,
-            approxIdr: rate ? Math.round((Number(human) * rate) / 1000) * 1000 : approxIdr,
-            rupiahLeft: left.idr,
-            loan
-         };
-      }
-   }
-
+export const getOrCreateRepayRequest = async (svc: Svc, user: { id: string }, source: 'telegram' | 'app' = 'telegram'): Promise<RepayRequestResult> => {
    try {
-      const q = await relayQuoteRepay({ amountUsdt, recipient: lender, refundTo: walt });
-      const { error } = await svc.from('relay_transfers').insert({
-         user_id: user.id,
-         loan_id: loan.id,
-         direction: 'repay',
-         origin_chain_id: q.originChainId,
-         destination_chain_id: q.destinationChainId,
-         origin_token: q.originToken,
-         destination_token: q.destinationToken,
-         amount_in: q.amountInUnits,
-         amount_out_quoted: q.amountOut,
-         deposit_address: q.depositAddress,
-         recipient: lender,
-         refund_to: walt,
-         request_id: q.requestId,
-         status: 'quoted',
-         quote: {
-            source: 'telegram',
-            feeUsd: q.feeUsd,
-            timeEstimate: q.timeEstimate,
-            amountOutMin: q.amountOutMin,
-            amountIn: q.amountIn,
-            amountInUnits: q.amountInUnits,
-            rupiahLeft: left.idr,
-            rate,
-            usdLeft: left.usd,
-            relay: q.raw
+      const loan = await loadActiveLoan(svc, user.id);
+      if (!loan) return { ok: false, error: 'no_loan' };
+      if (repayBlocker(loan)) return { ok: false, error: 'on_contract' };
+      if (String((await getSetting(svc, 'id_repay')) ?? 'on').trim().toLowerCase() === 'off') return { ok: false, error: 'paused' };
+      const wallet = await getPayoutWallet(svc);
+      if (!wallet) return { ok: false, error: 'no_payout_wallet' };
+
+      // A payment for this loan that's being recorded right now: don't ask for another one.
+      const { data: inFlight } = await svc
+         .from('id_wallet_deposits')
+         .select('id')
+         .eq('loan_id', loan.id)
+         .eq('status', 'recording')
+         .gte('updated_at', new Date(Date.now() - BUSY_MS).toISOString())
+         .limit(1);
+      if ((inFlight ?? []).length) return { ok: false, error: 'busy' };
+
+      const rate = await currentRate(svc);
+      const left = idUsdLeft(loan, rate);
+      if (left.usd <= 0 || (left.idr != null && left.idr < 1000)) return { ok: false, error: 'nothing_left' };
+      const baseCents = Math.max(1, ceilCents(left.usd));
+      if (baseCents > MAX_USD * 100) return { ok: false, error: 'too_large' };
+      const approx = (cents: number) => (rate ? Math.round(((cents / 100) * rate) / 1000) * 1000 : null);
+
+      // Reuse this loan's open request when it still covers what's owed and isn't much more.
+      const { data: open } = await svc
+         .from('id_repay_requests')
+         .select(REQUEST_FIELDS)
+         .eq('loan_id', loan.id)
+         .eq('status', 'open')
+         .order('created_at', { ascending: false })
+         .limit(5);
+      for (const r of (open ?? []) as RequestRow[]) {
+         const cents = unitsToExactCents(unitsOf(r.amount_units));
+         const fresh = new Date(r.expires_at).getTime() - Date.now() > REUSE_MIN_LEFT_MS;
+         if (cents != null && fresh && r.to_address.toLowerCase() === wallet.address.toLowerCase() && cents >= baseCents && cents - baseCents <= REUSE_MAX_OVER_USD * 100) {
+            return {
+               ok: true,
+               reused: true,
+               requestId: r.id,
+               address: wallet.address,
+               amountUsdt: centsToText(cents),
+               approxIdr: approx(cents),
+               rupiahLeft: left.idr,
+               expiresAt: r.expires_at,
+               loan
+            };
          }
-      });
-      if (error) {
-         console.error('[idRepayments] store quote failed', error.message);
-         return { ok: false, error: 'relay' };
       }
-      return { ok: true, reused: false, depositAddress: q.depositAddress, amountUsdt, approxIdr, rupiahLeft: left.idr, loan };
+      // Anything else open for this loan is out of date (a late payment to it still matches: see below).
+      if ((open ?? []).length) {
+         await svc.from('id_repay_requests').update({ status: 'replaced', updated_at: new Date().toISOString() }).eq('loan_id', loan.id).eq('status', 'open');
+      }
+
+      // Amounts used in the last 7 days (any status but paid) are skipped, so an amount points at one loan.
+      const { data: recent } = await svc
+         .from('id_repay_requests')
+         .select('amount_units')
+         .neq('status', 'paid')
+         .gte('created_at', new Date(Date.now() - AMOUNT_MEMORY_MS).toISOString())
+         .gte('amount_units', centsToUnits(baseCents).toString())
+         .lte('amount_units', centsToUnits(baseCents + MAX_BUMP_CENTS).toString());
+      const taken = new Set<number>();
+      for (const r of (recent ?? []) as Array<{ amount_units: string | number }>) {
+         const c = unitsToExactCents(unitsOf(r.amount_units));
+         if (c != null) taken.add(c);
+      }
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+         const cents = pickFreeCents(baseCents, taken);
+         if (cents == null) return { ok: false, error: 'busy' };
+         const expiresAt = new Date(Date.now() + REQUEST_TTL_MS).toISOString();
+         const { data: row, error } = await svc
+            .from('id_repay_requests')
+            .insert({
+               loan_id: loan.id,
+               user_id: user.id,
+               to_address: wallet.address.toLowerCase(),
+               amount_units: centsToUnits(cents).toString(),
+               amount_usd: cents / 100,
+               owed_usd: left.usd,
+               rupiah_left: left.idr,
+               rate,
+               source,
+               expires_at: expiresAt
+            })
+            .select('id')
+            .single();
+         if (!error && row) {
+            return { ok: true, reused: false, requestId: row.id, address: wallet.address, amountUsdt: centsToText(cents), approxIdr: approx(cents), rupiahLeft: left.idr, expiresAt, loan };
+         }
+         if (error?.code !== '23505') {
+            console.error('[idRepayments] store request failed', error?.message);
+            return { ok: false, error: 'error' };
+         }
+         taken.add(cents); // someone took that amount a moment ago: next one
+      }
+      return { ok: false, error: 'busy' };
    } catch (err) {
-      console.warn('[idRepayments] quote failed', err instanceof RelayError ? `${err.code} ${err.message}` : err);
-      return { ok: false, error: 'relay' };
+      console.error('[idRepayments] request failed', err instanceof Error ? err.message : err);
+      return { ok: false, error: 'error' };
    }
 };
 
-// ── Base: verifying a fill ───────────────────────────────────────────────────────────────────────
-type BaseLog = { address: string; topics: string[]; data: string; logIndex: string; transactionHash: string; blockNumber: string; removed?: boolean };
-type Fill = { txHash: string; micros: bigint; from: string; txFrom: string | null; blockNumber: bigint; blockTimeMs: number | null };
-
-const pad32 = (address: string) => `0x${address.toLowerCase().replace(/^0x/, '').padStart(64, '0')}`;
-const topicAddr = (topic: string) => `0x${topic.slice(-40)}`.toLowerCase();
-
-const baseBlockTimeMs = async (blockHex: string): Promise<number | null> => {
-   try {
-      const b = await rpcCall(RPC_URL, 'eth_getBlockByNumber', [blockHex, false]);
-      return b?.timestamp ? Number(BigInt(b.timestamp)) * 1000 : null;
-   } catch {
-      return null;
+/** For the app: where the borrower's newest request stands ('open' | 'paid' + recorded | 'expired' | 'replaced'). */
+export const repayRequestStatus = async (svc: Svc, userId: string, requestId: number) => {
+   const { data: r } = await svc.from('id_repay_requests').select(REQUEST_FIELDS).eq('id', requestId).eq('user_id', userId).maybeSingle();
+   if (!r) return null;
+   const row = r as RequestRow;
+   let deposit: { status: string; units: string | number; token: string } | null = null;
+   if (row.deposit_id) {
+      const { data: d } = await svc.from('id_wallet_deposits').select('status, units, token').eq('id', row.deposit_id).maybeSingle();
+      deposit = d ?? null;
    }
-};
-
-const baseTxFrom = async (txHash: string): Promise<string | null> => {
-   try {
-      const tx = await rpcCall(RPC_URL, 'eth_getTransactionByHash', [txHash]);
-      return typeof tx?.from === 'string' ? tx.from.toLowerCase() : null;
-   } catch {
-      return null;
-   }
-};
-
-/** USDC that `txHash` paid to `lender` on Base. 'pending' while the receipt isn't there yet. */
-export const verifyBaseFill = async (txHash: string, lender: string): Promise<{ ok: true; fill: Fill } | { ok: false; error: 'pending' | 'reverted' | 'no_transfer_to_lender' | 'rpc' }> => {
-   if (!HASH.test(txHash)) return { ok: false, error: 'no_transfer_to_lender' };
-   let receipt: { status?: string; blockNumber?: string; logs?: BaseLog[] } | null;
-   try {
-      receipt = await rpcCall(RPC_URL, 'eth_getTransactionReceipt', [txHash]);
-   } catch {
-      return { ok: false, error: 'rpc' };
-   }
-   if (!receipt?.blockNumber) return { ok: false, error: 'pending' };
-   if (receipt.status !== '0x1') return { ok: false, error: 'reverted' };
-   const usdc = BASE_USDC.toLowerCase();
-   const toLender = (receipt.logs ?? []).filter(
-      (l) =>
-         (l.address ?? '').toLowerCase() === usdc &&
-         (l.topics ?? [])[0]?.toLowerCase() === TRANSFER_TOPIC &&
-         (l.topics ?? []).length === 3 &&
-         topicAddr(l.topics[2]) === lender.toLowerCase()
-   );
-   if (!toLender.length) return { ok: false, error: 'no_transfer_to_lender' };
-   const micros = toLender.reduce((sum, l) => sum + BigInt(l.data && l.data !== '0x' ? l.data : '0x0'), 0n);
-   if (micros <= 0n) return { ok: false, error: 'no_transfer_to_lender' };
-   const [blockTimeMs, txFrom] = await Promise.all([baseBlockTimeMs(receipt.blockNumber), baseTxFrom(txHash)]);
+   const cents = unitsToExactCents(unitsOf(row.amount_units));
    return {
-      ok: true,
-      fill: { txHash: txHash.toLowerCase(), micros, from: topicAddr(toLender[0].topics[1]), txFrom, blockNumber: BigInt(receipt.blockNumber), blockTimeMs }
+      requestId: row.id,
+      status: row.status,
+      address: row.to_address,
+      amountUsdt: cents != null ? centsToText(cents) : String(row.amount_usd),
+      expiresAt: row.expires_at,
+      received: deposit ? { status: deposit.status, token: deposit.token, amount: unitsToUsd(unitsOf(deposit.units)) } : null,
+      recorded: deposit?.status === 'recorded'
    };
 };
 
-/** A Base RPC that takes wide eth_getLogs ranges, falling back between BASE_LOG_RPCS. */
-const baseLogRpc = async (method: string, params: unknown[]) => {
-   let lastError: unknown = null;
-   for (const url of BASE_LOG_RPCS) {
-      try {
-         return await rpcCall(url, method, params);
-      } catch (err) {
-         lastError = err;
-      }
-   }
-   throw lastError instanceof Error ? lastError : new Error(`${method} failed`);
-};
-
-/** USDC Transfers to `lender` on Base between two times (Base makes a block every 2 s). */
-const baseTransfersTo = async (lender: string, fromMs: number, toMs: number, deadline: number) => {
-   // Head, its time and the logs from the same RPC list, so the block numbers line up.
-   const headHex: string = await baseLogRpc('eth_blockNumber', []);
-   const head = Number(BigInt(headHex));
-   const headBlock = await baseLogRpc('eth_getBlockByNumber', [headHex, false]).catch(() => null);
-   const headTime = headBlock?.timestamp ? Number(BigInt(headBlock.timestamp)) * 1000 : null;
-   if (headTime == null) return [];
-   const at = (ms: number) => Math.max(0, Math.min(head, head - Math.ceil((headTime - ms) / 1000 / BASE_SECONDS_PER_BLOCK)));
-   const start = at(fromMs) - 30;
-   const end = at(toMs);
-   const out: BaseLog[] = [];
-   for (let from = Math.max(0, start); from <= end; from += BASE_LOG_SPAN) {
-      if (Date.now() > deadline) break;
-      const to = Math.min(end, from + BASE_LOG_SPAN - 1);
-      const logs: BaseLog[] = await baseLogRpc('eth_getLogs', [
-         { fromBlock: `0x${from.toString(16)}`, toBlock: `0x${to.toString(16)}`, address: BASE_USDC, topics: [TRANSFER_TOPIC, null, pad32(lender)] }
-      ]);
-      out.push(...(logs ?? []).filter((l) => !l.removed));
-   }
-   return out;
-};
-
-// ── recording ────────────────────────────────────────────────────────────────────────────────────
-type UserRow = { id: string; chat_id: string | number | null; preferred_locale: string | null; market: string | null };
+// ── messages ─────────────────────────────────────────────────────────────────────────────────────
+type UserRow = { id: string; chat_id: string | number | null; preferred_locale: string | null; walt_address: string | null };
 
 const loadUser = async (svc: Svc, userId: string): Promise<UserRow | null> => {
-   const { data } = await svc.from('users').select('id, chat_id, preferred_locale, market').eq('id', userId).maybeSingle();
+   const { data } = await svc.from('users').select('id, chat_id, preferred_locale, walt_address').eq('id', userId).maybeSingle();
    return (data as UserRow | null) ?? null;
 };
 
@@ -427,10 +353,10 @@ const tell = async (user: UserRow | null, text: string, keyboard?: TelegramInlin
 };
 
 const say = (user: UserRow | null, id: string, en: string) => (idLocaleOf(user?.preferred_locale) === 'en' ? en : id);
-const menuRow = (user: UserRow | null, pay: 'rest' | 'again' = 'rest'): TelegramInlineKeyboard => [
+const payRestRow = (user: UserRow | null): TelegramInlineKeyboard => [
    [
-      { text: pay === 'rest' ? say(user, '💰 Bayar sisanya', '💰 Pay the rest') : say(user, '💰 Bayar', '💰 Pay'), callback_data: 'idm:repay' },
-      { text: say(user, '☰ Menu', '☰ Menu'), callback_data: 'idm:menu' }
+      { text: say(user, '💰 Bayar sisanya', '💰 Pay the rest'), callback_data: 'idm:repay' },
+      { text: '☰ Menu', callback_data: 'idm:menu' }
    ]
 ];
 
@@ -441,35 +367,69 @@ export const partialReceivedText = (locale: 'id' | 'en', paidIdr: number | null,
    return locale === 'en' ? `✅ Payment of ${paid} received. ${left} left to pay.` : `✅ Pembayaran ${paid} diterima. Sisa ${left}.`;
 };
 
-type RecordOutcome = 'recorded' | 'already' | 'unrecorded' | 'retry' | 'conflict';
+// ── deposits ─────────────────────────────────────────────────────────────────────────────────────
+type DepositRow = {
+   id: number;
+   tx_hash: string;
+   log_index: number;
+   token: 'USDT' | 'USDC';
+   from_address: string;
+   to_address: string;
+   units: string | number;
+   block_number: number;
+   status: string;
+   request_id: number | null;
+   loan_id: string | null;
+   matched_by: string | null;
+   note: Record<string, unknown> | null;
+   recording_at: string | null;
+   recorded_at: string | null;
+   alerted_at: string | null;
+   refund_started_at: string | null;
+   refund_tx: string | null;
+   created_at: string;
+   updated_at: string;
+};
+const DEPOSIT_FIELDS =
+   'id, tx_hash, log_index, token, from_address, to_address, units, block_number, status, request_id, loan_id, matched_by, note, recording_at, recorded_at, alerted_at, refund_started_at, refund_tx, created_at, updated_at';
 
-/**
- * The fill was already spent by ANOTHER loan. The row stays open (no status change, fill_tx_hash left
- * empty) so the fallback search keeps looking for this row's own fill; the team hears once.
- */
-const otherLoanClash = async (svc: Svc, row: RepayRow, fill: Fill, via: string, otherLoanId: string | null): Promise<RecordOutcome> => {
-   if (!row.quote?.otherLoanAlertedAt) {
-      await patchRow(svc, row, {}, { otherLoanFill: fill.txHash, otherLoanAlertedAt: new Date().toISOString() });
-      await alertTeam(
-         svc,
-         `⚠️ 🇮🇩 Walt repay ${short(row.deposit_address)} (loan ${row.loan_id}): fill ${fill.txHash} (${via}) was already used for another loan (${otherLoanId ?? '?'}). Still looking for this payment's own fill for 3 h — check both loans.`
-      );
-   }
-   return 'conflict';
+const depositKey = (d: Pick<DepositRow, 'tx_hash' | 'log_index'>) => `bsc:${d.tx_hash.toLowerCase()}:${d.log_index}`;
+const depositUsd = (d: Pick<DepositRow, 'units'>) => unitsToUsd(unitsOf(d.units));
+const depositText = (d: DepositRow) => `${depositUsd(d).toFixed(2)} ${d.token}`;
+
+const patchDeposit = async (svc: Svc, d: DepositRow, patch: Record<string, unknown>) => {
+   Object.assign(d, patch);
+   await svc
+      .from('id_wallet_deposits')
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq('id', d.id);
 };
 
-/** The fill was already spent by THIS loan. */
-const sameLoanAlready = async (svc: Svc, row: RepayRow, fill: Fill, via: string): Promise<RecordOutcome> => {
-   // Our own earlier run recorded it: resumeFollowUps finishes that row (follow-ups, then recorded_at).
-   if (row.quote?.recording?.hash === fill.txHash) return 'already';
-   // Recorded some other way (admin, an overlapping run): nothing left to do for this row.
-   await patchRow(
-      svc,
-      row,
-      { status: 'success', fill_tx_hash: fill.txHash, recorded_at: new Date().toISOString() },
-      { recorded: { via, already: true, at: new Date().toISOString() } }
-   );
-   return 'already';
+/** Atomically move a deposit from one status to 'recording' (only one run / tap wins). */
+const claimDeposit = async (svc: Svc, d: DepositRow, from: string[], extra: Record<string, unknown> = {}): Promise<boolean> => {
+   const now = new Date().toISOString();
+   const { data } = await svc
+      .from('id_wallet_deposits')
+      .update({ status: 'recording', recording_at: now, updated_at: now, ...extra })
+      .eq('id', d.id)
+      .in('status', from)
+      .select('id');
+   if (!(data ?? []).length) return false;
+   Object.assign(d, { status: 'recording', recording_at: now, ...extra });
+   return true;
+};
+
+/** The run that died mid-way: claim a 'recording' deposit untouched for > 2 min. */
+const claimStuck = async (svc: Svc, d: DepositRow): Promise<boolean> => {
+   const now = new Date().toISOString();
+   const { data } = await svc
+      .from('id_wallet_deposits')
+      .update({ recording_at: now, updated_at: now })
+      .eq('id', d.id)
+      .eq('status', 'recording')
+      .lt('updated_at', new Date(Date.now() - RESUME_AFTER_MS).toISOString())
+      .select('id');
+   return (data ?? []).length > 0;
 };
 
 const spentBy = async (svc: Svc, hash: string): Promise<{ loan_id: string | null } | null> => {
@@ -477,412 +437,501 @@ const spentBy = async (svc: Svc, hash: string): Promise<{ loan_id: string | null
    return (data as { loan_id: string | null } | null) ?? null;
 };
 
-/**
- * After record_loan_payment: the shared follow-ups (level-up, Paid notification / partial notice, feeds)
- * and the borrower's "received, X left" for partial payments — then recorded_at, so a worker killed
- * half-way leaves the row for resumeFollowUps.
- */
-const afterRecorded = async (svc: Svc, row: RepayRow, updatedLoan: Record<string, unknown>, paidUsd: number, paidIdr: number | null) => {
+type Outcome = 'recorded' | 'refund_needed' | 'retry';
+
+/** Messages + follow-ups once a deposit is on the loan; then recorded_at (so a crash before it is retried). */
+const afterRecorded = async (svc: Svc, d: DepositRow, loan: Record<string, unknown>, paidUsd: number, paidIdr: number | null) => {
    await runRepaymentFollowUps(svc, {
-      loanId: String(row.loan_id),
-      updatedLoan,
+      loanId: String(d.loan_id),
+      updatedLoan: loan,
       paidNow: paidUsd,
-      browser: { label: 'Telegram · Walt → Relay', isInApp: false },
+      browser: { label: 'Telegram · Walt → payout wallet', isInApp: false },
       userAgent: null
    });
-   if (updatedLoan.repayment_status !== 'Paid') {
-      // Paid → loan-repayment-received-notification sends the Bahasa 'repaid' message itself.
-      const user = await loadUser(svc, row.user_id);
-      const repayIdr = Number(updatedLoan.repay_idr ?? NaN);
-      const pegged = Number.isFinite(repayIdr) && repayIdr > 0;
-      const leftIdr = pegged ? Math.max(0, Math.round(repayIdr - Number(updatedLoan.repaid_idr ?? 0))) : null;
-      const leftUsd = Math.max(0, Number(updatedLoan.total_repayment_amount ?? 0) - Number(updatedLoan.repaid_amount ?? 0));
-      await tell(user, partialReceivedText(idLocaleOf(user?.preferred_locale), pegged ? paidIdr : null, paidUsd, leftIdr, leftUsd), menuRow(user));
-   }
-   await patchRow(svc, row, { recorded_at: new Date().toISOString() });
+   const borrowerId = String(loan.borrower_user_id ?? '');
+   const user = borrowerId ? await loadUser(svc, borrowerId) : null;
+   const repayIdr = Number(loan.repay_idr ?? NaN);
+   const pegged = Number.isFinite(repayIdr) && repayIdr > 0;
+   const leftIdr = pegged ? Math.max(0, Math.round(repayIdr - Number(loan.repaid_idr ?? 0))) : null;
+   const leftUsd = Math.max(0, Number(loan.total_repayment_amount ?? 0) - Number(loan.repaid_amount ?? 0));
+   const paid = loan.repayment_status === 'Paid';
+   // Paid → loan-repayment-received-notification sends the Bahasa 'repaid' message itself.
+   if (!paid) await tell(user, partialReceivedText(idLocaleOf(user?.preferred_locale), pegged ? paidIdr : null, paidUsd, leftIdr, leftUsd), payRestRow(user));
+   await alertTeam(
+      svc,
+      `💰 🇮🇩 ${loan.tracking_id ?? d.loan_id}: ${depositText(d)} arrived in the payout wallet${paidIdr != null ? ` (Rp ${paidIdr.toLocaleString('id-ID')})` : ''} — ${
+         paid ? 'loan PAID ✅' : `partial, ${leftIdr != null ? `Rp ${leftIdr.toLocaleString('id-ID')}` : usd2(leftUsd)} left`
+      }.${d.matched_by === 'team' ? ' (matched by hand)' : d.matched_by === 'late_amount' ? ' (paid to an older request)' : ''}`
+   );
+   await patchDeposit(svc, d, { status: 'recorded', recorded_at: new Date().toISOString() });
 };
 
 /**
- * A row whose fill was spent on its loan by an earlier run (quote.recording) but never got recorded_at:
- * that worker died before the follow-ups finished. Runs them now. True when the row is handled (or left
- * to a run that may still be on it); false when it needs the normal pass.
+ * Records a claimed ('recording') deposit on d.loan_id. Safe to call again for the same deposit: when the
+ * hash is already spent on this loan, only the follow-ups run (a run died after record_loan_payment).
  */
-const resumeFollowUps = async (svc: Svc, row: RepayRow): Promise<boolean> => {
-   const rec = row.quote?.recording;
-   if (!rec?.hash || !row.loan_id || row.recorded_at) return false;
-   const spent = await spentBy(svc, rec.hash);
-   if (!spent || spent.loan_id !== row.loan_id) return false;
-   if (Date.now() - new Date(row.updated_at).getTime() < RESUME_AFTER_MS) return true;
-   const { data: loan } = await svc.from('loans').select('*').eq('id', row.loan_id).maybeSingle();
-   if (!loan) return true;
-   const done = row.quote?.recorded as { micros?: string; paidIdr?: number | null } | undefined;
-   const micros = BigInt(done?.micros ?? rec.micros ?? '0');
-   await patchRow(
-      svc,
-      row,
-      { status: 'success', fill_tx_hash: rec.hash },
-      { recorded: { ...(row.quote?.recorded ?? { via: rec.via, micros: rec.micros, at: rec.at }), resumedAt: new Date().toISOString() } }
-   );
-   console.warn(`[idRepayments] finishing follow-ups for ${row.id} (loan ${row.loan_id})`);
-   await afterRecorded(svc, row, loan as Record<string, unknown>, Number(micros) / 1e6, done?.paidIdr ?? null);
-   return true;
-};
+const recordDeposit = async (svc: Svc, d: DepositRow): Promise<Outcome> => {
+   if (!d.loan_id) return 'retry';
+   const key = depositKey(d);
+   const micros = Number(unitsOf(d.units) / 10n ** 12n);
+   const paidUsd = micros / 1e6;
+   const { data: loanBefore } = await svc.from('loans').select('id, borrower_user_id, tracking_id, repaid_idr').eq('id', d.loan_id).maybeSingle();
+   if (!loanBefore) return 'retry';
 
-const recordFill = async (svc: Svc, row: RepayRow, fill: Fill, via: 'relay_status' | 'fallback_scan'): Promise<RecordOutcome> => {
-   if (!row.loan_id) return 'unrecorded';
-   // Freshness: the fill must come after the quote (an old transfer to the lender can't count).
-   if (fill.blockTimeMs != null && fill.blockTimeMs < new Date(row.created_at).getTime() - FRESHNESS_GRACE_MS) {
-      await patchRow(svc, row, { status: 'unmatched', fill_tx_hash: fill.txHash }, { recorded: { error: 'fill_predates_quote', via } });
-      await alertTeam(svc, `⚠️ 🇮🇩 Walt repay ${short(row.deposit_address)}: Relay's fill ${fill.txHash} is older than the quote — NOT recorded. Check it.`);
-      return 'unrecorded';
+   const spent = await spentBy(svc, key);
+   if (spent && spent.loan_id === d.loan_id) {
+      const { data: loan } = await svc.from('loans').select('*').eq('id', d.loan_id).maybeSingle();
+      if (!loan) return 'retry';
+      console.warn(`[idRepayments] finishing follow-ups for deposit ${d.id}`);
+      await afterRecorded(svc, d, loan, paidUsd, (d.note?.paidIdr as number | null | undefined) ?? null);
+      return 'recorded';
    }
-   const spent = await spentBy(svc, fill.txHash);
-   if (spent) return spent.loan_id === row.loan_id ? sameLoanAlready(svc, row, fill, via) : otherLoanClash(svc, row, fill, via, spent.loan_id);
+   if (spent) {
+      await patchDeposit(svc, d, { status: 'refund_needed', note: { ...(d.note ?? {}), error: 'hash_used_by_other_loan', other: spent.loan_id } });
+      await alertTeam(svc, `⚠️ 🇮🇩 ${depositText(d)} (tx ${d.tx_hash}) is already recorded on another loan (${spent.loan_id}). Not recorded again — check it.`);
+      return 'refund_needed';
+   }
 
-   const { data: before } = await svc.from('loans').select('repaid_idr, repay_idr, tracking_id').eq('id', row.loan_id).maybeSingle();
-   // Mark which fill this row is being recorded with BEFORE spending it, so a worker that dies after
-   // record_loan_payment leaves enough for the next run to finish the follow-ups.
-   await patchRow(svc, row, {}, { recording: { hash: fill.txHash, via, micros: fill.micros.toString(), at: new Date().toISOString() } });
    const { data: recorded, error } = await svc.rpc('record_loan_payment', {
-      p_loan_id: row.loan_id,
+      p_loan_id: d.loan_id,
       p_action: 'repay',
-      p_caller: row.user_id,
-      p_spend_hashes: [fill.txHash],
-      p_record_hash: fill.txHash,
-      p_amount_micros: Number(fill.micros),
-      p_from: fill.from
+      p_caller: loanBefore.borrower_user_id,
+      p_spend_hashes: [key],
+      p_record_hash: key,
+      p_amount_micros: micros,
+      p_from: d.from_address
    });
    if (error) {
       console.error('[idRepayments] record_loan_payment failed', error.message);
-      return 'retry';
+      return 'retry'; // stays 'recording'; the next run picks it up after 2 min
    }
    const code = (recorded as { error?: string } | null)?.error;
-   const paidUsd = Number(fill.micros) / 1e6;
-   if (code === 'hash_used') {
-      // Another run (or path) spent it between our check and the lock: whose loan was it?
-      const owner = await spentBy(svc, fill.txHash);
-      if (owner && owner.loan_id !== row.loan_id) return otherLoanClash(svc, row, fill, via, owner.loan_id);
-      // Same loan, spent by someone else → that run does the follow-ups; this row is done.
-      await patchRow(
-         svc,
-         row,
-         { status: 'success', fill_tx_hash: fill.txHash, recorded_at: new Date().toISOString() },
-         { recording: undefined, recorded: { via, already: true, at: new Date().toISOString() } }
-      );
-      return 'already';
-   }
+   if (code === 'hash_used') return recordDeposit(svc, d); // another path spent it a moment ago: whose loan?
    if (code) {
-      // The loan can't take it (already repaid another way, refunded, …) but the USDC reached the lender:
-      // spend the hash so it alerts once, and tell the team to refund.
-      await svc.from('used_payment_hashes').insert({ hash: fill.txHash, loan_id: row.loan_id }).then(() => undefined, () => undefined);
-      await patchRow(svc, row, { status: 'unmatched', fill_tx_hash: fill.txHash }, { recording: undefined, recorded: { error: code, via } });
+      // The loan can't take it (already repaid, refunded, …) but the money is in the payout wallet.
+      const user = await loadUser(svc, loanBefore.borrower_user_id);
+      await patchDeposit(svc, d, { status: 'refund_needed', note: { ...(d.note ?? {}), error: code } });
       await alertTeam(
          svc,
-         `⚠️ 🇮🇩 ${before?.tracking_id ?? row.loan_id}: a ${paidUsd.toFixed(2)} USDC Walt repayment reached the lender (${fill.txHash}) but was NOT recorded (${code}). It needs refunding to their Walt ${short(row.refund_to)}.`
+         `⚠️ 🇮🇩 ${loanBefore.tracking_id ?? d.loan_id}: ${depositText(d)} arrived in the payout wallet (tx ${d.tx_hash}) but was NOT recorded (${code}). Their Walt: ${user?.walt_address ?? '? (none saved)'}.`,
+         user?.walt_address ? [[{ text: `↩️ Refund ${depositText(d)} to their Walt`, callback_data: `${CB}f:${d.id}` }]] : undefined
       );
-      return 'unrecorded';
+      return 'refund_needed';
    }
-
-   const updatedLoan = (recorded as { loan?: Record<string, unknown> } | null)?.loan;
+   const loan = (recorded as { loan?: Record<string, unknown> } | null)?.loan;
    const overpaid = Number((recorded as { overpaid_micros?: number } | null)?.overpaid_micros ?? 0);
-   const repayIdr = Number(updatedLoan?.repay_idr ?? NaN);
-   const paidIdr =
-      updatedLoan && Number.isFinite(repayIdr) && repayIdr > 0 ? Math.max(0, Math.round(Number(updatedLoan.repaid_idr ?? 0) - Number(before?.repaid_idr ?? 0))) : null;
-   await patchRow(
-      svc,
-      row,
-      { status: 'success', fill_tx_hash: fill.txHash },
-      { recorded: { via, micros: fill.micros.toString(), paidIdr, from: fill.from, txFrom: fill.txFrom, at: new Date().toISOString(), overpaidMicros: overpaid } }
-   );
-   if (!updatedLoan) {
-      await patchRow(svc, row, { recorded_at: new Date().toISOString() });
+   const repayIdr = Number(loan?.repay_idr ?? NaN);
+   const paidIdr = loan && Number.isFinite(repayIdr) && repayIdr > 0 ? Math.max(0, Math.round(Number(loan.repaid_idr ?? 0) - Number(loanBefore.repaid_idr ?? 0))) : null;
+   await patchDeposit(svc, d, { note: { ...(d.note ?? {}), paidIdr, overpaidMicros: overpaid } });
+   if (!loan) {
+      await patchDeposit(svc, d, { status: 'recorded', recorded_at: new Date().toISOString() });
       return 'recorded';
    }
-
    if (overpaid > OVERPAID_ALERT_MICROS) {
+      const user = await loadUser(svc, loanBefore.borrower_user_id);
       await alertTeam(
          svc,
-         `⚠️ 🇮🇩 ${updatedLoan.tracking_id}: the Walt repayment was ${(overpaid / 1e6).toFixed(2)} USDC more than was left (${fill.txHash}). The loan is closed; send the extra back to their Walt ${short(row.refund_to)} (USDC, BNB Chain).`
+         `⚠️ 🇮🇩 ${loan.tracking_id}: they paid ${(overpaid / 1e6).toFixed(2)} ${d.token} more than was left (tx ${d.tx_hash}). The loan is closed. Their Walt: ${user?.walt_address ?? '? (none saved)'}.`,
+         user?.walt_address ? [[{ text: `↩️ Refund the extra ${(overpaid / 1e6).toFixed(2)} ${d.token} to their Walt`, callback_data: `${CB}o:${d.id}` }]] : undefined
       );
    }
-   if (via === 'fallback_scan') {
-      await alertTeam(svc, `🇮🇩 ${updatedLoan.tracking_id}: Walt repayment matched on Base by amount + Relay solver (Relay's status didn't follow the deposit). Fill ${fill.txHash}, ${paidUsd.toFixed(2)} USDC. Recorded — glance at it.`);
-   }
-   await afterRecorded(svc, row, updatedLoan, paidUsd, paidIdr);
+   await afterRecorded(svc, d, loan, paidUsd, paidIdr);
    return 'recorded';
 };
 
-// ── the 5-minute job ─────────────────────────────────────────────────────────────────────────────
-const parseSolvers = (value: string | null) =>
-   new Set(
-      String(value ?? '')
-         .split(',')
-         .map((s) => s.trim().toLowerCase())
-         .filter((s) => EVM_ADDRESS.test(s))
-   );
-
-/** Remember the Base addresses a verified Relay fill came from (setting relay_base_solvers). */
-const learnSolvers = async (svc: Svc, solvers: Set<string>, fill: Fill) => {
-   const add = [fill.from, fill.txFrom].filter((a): a is string => !!a && EVM_ADDRESS.test(a) && !solvers.has(a));
-   if (!add.length || solvers.size >= MAX_LEARNED_SOLVERS) return;
-   for (const a of add) solvers.add(a);
-   await svc
-      .from('telegram_bot_settings')
-      .upsert({ key: 'relay_base_solvers', value: [...solvers].slice(0, MAX_LEARNED_SOLVERS).join(','), updated_at: new Date().toISOString() }, { onConflict: 'key' })
-      .then(() => undefined, () => undefined);
+/** An open request with exactly this amount, else a recent expired/replaced one whose loan is still owed. */
+const matchRequest = async (svc: Svc, units: bigint): Promise<{ req: RequestRow; late: boolean } | null> => {
+   const { data: open } = await svc.from('id_repay_requests').select(REQUEST_FIELDS).eq('status', 'open').eq('amount_units', units.toString()).limit(1).maybeSingle();
+   if (open) return { req: open as RequestRow, late: false };
+   const { data: older } = await svc
+      .from('id_repay_requests')
+      .select(REQUEST_FIELDS)
+      .in('status', ['expired', 'replaced'])
+      .eq('amount_units', units.toString())
+      .gte('created_at', new Date(Date.now() - LATE_MATCH_MS).toISOString())
+      .order('created_at', { ascending: false })
+      .limit(2);
+   const rows = (older ?? []) as RequestRow[];
+   if (rows.length !== 1) return null; // none, or two loans used that amount: let the team decide
+   const { data: loan } = await svc.from('loans').select('loan_status, repayment_status').eq('id', rows[0].loan_id).maybeSingle();
+   if (!loan || loan.loan_status !== 'Lent' || loan.repayment_status === 'Paid') return null;
+   return { req: rows[0], late: true };
 };
 
-/** BNB Chain: the USDT that reached the one-time address (first transfer), resuming where the last look stopped. */
-const findDeposit = async (svc: Svc, row: RepayRow, deadline: number): Promise<Deposit | null> => {
+/** Claim the request for this deposit ('open'/'expired'/'replaced' → 'paid'); false when someone else did. */
+const claimRequest = async (svc: Svc, req: RequestRow, depositId: number): Promise<boolean> => {
+   const { data } = await svc
+      .from('id_repay_requests')
+      .update({ status: 'paid', deposit_id: depositId, updated_at: new Date().toISOString() })
+      .eq('id', req.id)
+      .in('status', ['open', 'expired', 'replaced'])
+      .select('id');
+   return (data ?? []).length > 0;
+};
+
+// ── team card for money that matched nothing ─────────────────────────────────────────────────────
+const CB = 'idw:';
+export const isWalletDepositCallback = (data: string | undefined) => !!data && data.startsWith(CB);
+
+const unmatchedCard = async (svc: Svc, d: DepositRow): Promise<{ text: string; keyboard: TelegramInlineKeyboard }> => {
+   // Candidates: the newest request per unpaid loan from the last 7 days, closest amount first.
+   const { data: recent } = await svc
+      .from('id_repay_requests')
+      .select(`${REQUEST_FIELDS}, loans!inner(tracking_id, loan_status, repayment_status)`)
+      .neq('status', 'paid')
+      .gte('created_at', new Date(Date.now() - LATE_MATCH_MS).toISOString())
+      .order('created_at', { ascending: false })
+      .limit(40);
+   const got = depositUsd(d);
+   const perLoan = new Map<string, RequestRow & { loans: { tracking_id: string | null; loan_status: string; repayment_status: string | null } }>();
+   for (const r of (recent ?? []) as Array<RequestRow & { loans: { tracking_id: string | null; loan_status: string; repayment_status: string | null } }>) {
+      if (r.loans?.loan_status !== 'Lent' || r.loans?.repayment_status === 'Paid' || perLoan.has(r.loan_id)) continue;
+      perLoan.set(r.loan_id, r);
+   }
+   const options = [...perLoan.values()].sort((a, b) => Math.abs(Number(a.amount_usd) - got) - Math.abs(Number(b.amount_usd) - got)).slice(0, 4);
+   const keyboard: TelegramInlineKeyboard = options.map((r) => [
+      { text: `✅ Record for ${r.loans.tracking_id ?? r.loan_id.slice(0, 8)} (asked ${Number(r.amount_usd).toFixed(2)})`, callback_data: `${CB}r:${d.id}:${r.id}` }
+   ]);
+   keyboard.push([
+      { text: '⬆️ It’s a top-up (remember sender)', callback_data: `${CB}t:${d.id}` },
+      { text: '🙈 Ignore', callback_data: `${CB}i:${d.id}` }
+   ]);
+   const text = [
+      `❓ 🇮🇩 ${depositText(d)} arrived in the payout wallet but matches no repayment request.`,
+      `From ${d.from_address} · tx ${d.tx_hash}`,
+      options.length ? 'Whose is it?' : 'No unpaid loan has a recent request — record it in admin by hand, or mark it below.'
+   ].join('\n');
+   return { text, keyboard };
+};
+
+/** Admin-chat buttons on that card. True when handled. */
+export const handleWalletDepositCallback = async (
+   svc: Svc,
+   query: { id: string; data?: string; from?: { username?: string; first_name?: string }; message?: { chat: { id: number | string }; message_id: number; text?: string } }
+): Promise<boolean> => {
+   if (!isWalletDepositCallback(query.data)) return false;
+   const answer = (text: string) => callTelegramApi('answerCallbackQuery', { callback_query_id: query.id, text: text.slice(0, 190) }).catch(() => undefined);
+   const chatId = query.message?.chat.id;
+   if (chatId == null || !(await adminChatIds(svc)).includes(String(chatId))) {
+      await answer('Not allowed here.');
+      return true;
+   }
+   const [, kind, depId, reqId] = String(query.data).split(':');
+   const by = query.from?.username ? `@${query.from.username}` : (query.from?.first_name ?? 'admin');
+   const finish = async (line: string) => {
+      await answer(line);
+      if (query.message) {
+         await callTelegramApi('editMessageText', {
+            chat_id: chatId,
+            message_id: query.message.message_id,
+            text: `${query.message.text ?? ''}\n\n${line} — ${by}`.slice(0, 4000),
+            reply_markup: { inline_keyboard: [] }
+         }).catch(() => undefined);
+      }
+   };
+   if (kind === 's') {
+      await sweepTap(svc, depId as BscToken, Number(reqId), `${chatId}:${query.message?.message_id}`, answer, finish);
+      return true;
+   }
+   const { data: dep } = await svc.from('id_wallet_deposits').select(DEPOSIT_FIELDS).eq('id', Number(depId)).maybeSingle();
+   const d = dep as DepositRow | null;
+   if (!d) {
+      await answer('Not found.');
+      return true;
+   }
+   if (kind === 'f' || kind === 'o') {
+      await refundTap(svc, d, kind === 'o' ? 'extra' : 'all', answer, finish);
+      return true;
+   }
+   if (d.status !== 'unmatched') {
+      await answer(`Already handled (${d.status}).`);
+      return true;
+   }
+
+   if (kind === 't') {
+      const senders = parseSenders(await getSetting(svc, 'id_topup_senders'));
+      senders.add(d.from_address.toLowerCase());
+      await setSetting(svc, 'id_topup_senders', [...senders].join(','));
+      await patchDeposit(svc, d, { status: 'topup', note: { ...(d.note ?? {}), by } });
+      await finish('⬆️ Top-up — future transfers from this sender count as top-ups');
+      return true;
+   }
+   if (kind === 'i') {
+      await patchDeposit(svc, d, { status: 'ignored', note: { ...(d.note ?? {}), by } });
+      await finish('🙈 Ignored');
+      return true;
+   }
+   if (kind === 'r') {
+      const { data: r } = await svc.from('id_repay_requests').select(REQUEST_FIELDS).eq('id', Number(reqId)).maybeSingle();
+      const req = r as RequestRow | null;
+      if (!req) {
+         await answer('Request not found.');
+         return true;
+      }
+      if (!(await claimDeposit(svc, d, ['unmatched'], { loan_id: req.loan_id, request_id: req.id, matched_by: 'team', note: { ...(d.note ?? {}), by } }))) {
+         await answer('Someone else just handled it.');
+         return true;
+      }
+      await claimRequest(svc, req, d.id); // fine if it was already used: the loan is what matters
+      const outcome = await recordDeposit(svc, d);
+      await finish(outcome === 'recorded' ? '✅ Recorded on that loan' : outcome === 'refund_needed' ? '⚠️ Loan couldn’t take it — see the alert' : '⏳ Saving failed — it retries in a few minutes');
+      return true;
+   }
+   await answer('Unknown action.');
+   return true;
+};
+
+// ── refunds and sweeps (money leaving the payout wallet) ─────────────────────────────────────────
+type Say = (text: string) => Promise<unknown>;
+
+/** ↩️ Send a deposit (or just its overpaid part) back to the borrower's saved Walt address. One tap only. */
+const refundTap = async (svc: Svc, d: DepositRow, what: 'all' | 'extra', answer: Say, finish: Say) => {
+   if (d.refund_tx || d.refund_started_at) return void (await answer('A refund was already started for this one.'));
+   if (what === 'all' && d.status !== 'refund_needed') return void (await answer(`Nothing to refund (${d.status}).`));
+   const overpaidMicros = Number(d.note?.overpaidMicros ?? 0);
+   if (what === 'extra' && !(overpaidMicros > 0)) return void (await answer('Nothing extra to refund.'));
+   const units = what === 'all' ? unitsOf(d.units) : BigInt(Math.round(overpaidMicros)) * 10n ** 12n;
+   const { data: loan } = d.loan_id ? await svc.from('loans').select('borrower_user_id').eq('id', d.loan_id).maybeSingle() : { data: null };
+   const user = loan ? await loadUser(svc, loan.borrower_user_id) : null;
+   const walt = String(user?.walt_address ?? '');
+   if (!EVM_ADDRESS.test(walt)) return void (await answer('No Walt address saved for them.'));
+   const now = new Date().toISOString();
+   const { data: claimed } = await svc
+      .from('id_wallet_deposits')
+      .update({ refund_started_at: now, updated_at: now })
+      .eq('id', d.id)
+      .is('refund_started_at', null)
+      .select('id');
+   if (!(claimed ?? []).length) return void (await answer('A refund was already started for this one.'));
+   const amount = unitsToDecimal(units);
+   try {
+      const txId = await sendTokenBsc(svc, d.token, walt, amount, Date.now() + 55_000);
+      await patchDeposit(svc, d, { refund_tx: txId, refund_units: units.toString(), ...(what === 'all' ? { status: 'refunded' } : {}) });
+      await tell(user, say(user, `↩️ Kami mengembalikan ${amount} ${d.token} ke Walt kamu.`, `↩️ We sent ${amount} ${d.token} back to your Walt.`));
+      await finish(`↩️ Refund of ${amount} ${d.token} sent to ${short(walt)} (Openfort ${txId})`);
+   } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (err instanceof NotSentError) {
+         await svc.from('id_wallet_deposits').update({ refund_started_at: null }).eq('id', d.id);
+         await answer(`Not sent: ${msg}`);
+      } else {
+         // It may have gone out: keep the claim so nobody sends it twice; check the wallet on BscScan.
+         await finish(`⚠️ Refund send failed (${msg}) — it MAY have gone out. Check the payout wallet before trying again.`);
+      }
+   }
+};
+
+const sweepTap = async (svc: Svc, token: BscToken, cents: number, cardKey: string, answer: Say, finish: Say) => {
+   if ((token !== 'USDT' && token !== 'USDC') || !Number.isInteger(cents) || cents <= 0) return void (await answer('Bad sweep.'));
+   const to = String((await getSetting(svc, 'id_payout_sweep_to')) ?? '').trim();
+   if (!EVM_ADDRESS.test(to)) return void (await answer('No sweep address set (id_payout_sweep_to).'));
+   // One send per card, even on a double tap.
+   const { data: locked } = await svc
+      .from('telegram_bot_settings')
+      .update({ value: cardKey, updated_at: new Date().toISOString() })
+      .eq('key', 'id_sweep_lock')
+      .neq('value', cardKey)
+      .select('key');
+   if (!(locked ?? []).length) return void (await answer('Already sent from this card.'));
+   const amount = centsToText(cents);
+   try {
+      const txId = await sendTokenBsc(svc, token, to, amount, Date.now() + 55_000);
+      await finish(`✅ Sent ${amount} ${token} to ${to} (Openfort ${txId})`);
+   } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (err instanceof NotSentError) {
+         await svc.from('telegram_bot_settings').update({ value: '' }).eq('key', 'id_sweep_lock').eq('value', cardKey);
+         await answer(`Not sent: ${msg}`);
+      } else {
+         await finish(`⚠️ Send failed (${msg}) — it MAY have gone out. Check the payout wallet before trying again.`);
+      }
+   }
+};
+
+/**
+ * /idsweep                 balances + where a sweep goes
+ * /idsweep USDT 25 | all   a confirm card; the money only ever goes to id_payout_sweep_to (set by SQL)
+ */
+export const handleSweepCommand = async (svc: Svc, message: { chat: { id: number | string }; text?: string }): Promise<boolean> => {
+   const m = (message.text ?? '').trim().match(/^\/idsweep(?:@\w+)?(?:\s+(\S+))?(?:\s+(\S+))?/i);
+   if (!m) return false;
+   const chatId = message.chat.id;
+   const wallet = await getPayoutWallet(svc);
+   if (!wallet) {
+      await sendTelegramMessage(chatId, 'No payout wallet yet.');
+      return true;
+   }
+   const to = String((await getSetting(svc, 'id_payout_sweep_to')) ?? '').trim();
+   let bal: Awaited<ReturnType<typeof balanceOf>> | null = null;
+   try {
+      bal = await balanceOf(wallet.address);
+   } catch {
+      bal = null;
+   }
+   const token = (m[1] ?? '').toUpperCase();
+   if (!token) {
+      await sendTelegramMessage(
+         chatId,
+         [
+            `🇮🇩 Payout wallet ${wallet.address}`,
+            bal ? `${bal.usdt.toFixed(2)} USDT · ${bal.usdc.toFixed(2)} USDC · ${bal.bnb.toFixed(4)} BNB` : 'Balance: BNB Chain unreachable',
+            EVM_ADDRESS.test(to) ? `Sweeps go to: ${to}` : '⚠️ No sweep address set (telegram_bot_settings.id_payout_sweep_to).',
+            'Usage: /idsweep USDT 25 · /idsweep USDC all'
+         ].join('\n')
+      );
+      return true;
+   }
+   if (token !== 'USDT' && token !== 'USDC') {
+      await sendTelegramMessage(chatId, 'Usage: /idsweep USDT 25 · /idsweep USDC all');
+      return true;
+   }
+   if (!EVM_ADDRESS.test(to)) {
+      await sendTelegramMessage(chatId, '⚠️ No sweep address set (telegram_bot_settings.id_payout_sweep_to). Ask the dev team to set it.');
+      return true;
+   }
+   if (!bal) {
+      await sendTelegramMessage(chatId, '⚠️ Can’t read the balance right now. Try again in a minute.');
+      return true;
+   }
+   const haveCents = Number((token === 'USDT' ? bal.usdtUnits : bal.usdcUnits) / 10n ** 16n);
+   const raw = (m[2] ?? '').toLowerCase();
+   const cents = raw === 'all' ? haveCents : /^\d+(\.\d{1,2})?$/.test(raw) ? Math.round(Number(raw) * 100) : NaN;
+   if (!Number.isFinite(cents) || cents <= 0) {
+      await sendTelegramMessage(chatId, 'Usage: /idsweep USDT 25 · /idsweep USDC all');
+      return true;
+   }
+   if (cents > haveCents) {
+      await sendTelegramMessage(chatId, `Only ${centsToText(haveCents)} ${token} in the payout wallet.`);
+      return true;
+   }
+   await sendTelegramMessage(chatId, `Send ${centsToText(cents)} ${token} from the payout wallet to\n${to}?`, {
+      inlineKeyboard: [[{ text: `✅ Send ${centsToText(cents)} ${token}`, callback_data: `${CB}s:${token}:${cents}` }]]
+   });
+   return true;
+};
+
+// ── the 5-minute job ─────────────────────────────────────────────────────────────────────────────
+/** Reads USDT/USDC transfers into the payout wallet since the last look, saving each as a deposit row. */
+const scanWallet = async (svc: Svc, wallet: string, deadline: number): Promise<number> => {
    const head = (await bscHead()) - BSC_CONFIRMATIONS;
-   let from = row.quote?.depositScanTo ? BigInt(row.quote.depositScanTo) + 1n : await blockAtOrBefore(row.created_at, head);
+   const saved = await getSetting(svc, 'id_repay_scan_block');
+   let from = saved && /^\d+$/.test(saved) ? BigInt(saved) + 1n : await blockAtOrBefore(new Date(Date.now() - FIRST_SCAN_BACK_MS).toISOString(), head);
+   let seen = 0;
+   const me = wallet.toLowerCase();
    while (from <= head && Date.now() < deadline) {
       const to = from + BSC_LOG_SPAN > head ? head : from + BSC_LOG_SPAN;
-      const transfers = await bscTransfersTo(row.deposit_address, from, to, undefined, BSC_USDT);
-      if (transfers.length) {
-         const t = transfers.sort((a, b) => (a.blockNumber === b.blockNumber ? a.logIndex - b.logIndex : a.blockNumber < b.blockNumber ? -1 : 1))[0];
-         const at = new Date((await bscBlockTime(t.blockNumber)) * 1000).toISOString();
-         const deposit: Deposit = { txHash: t.txHash, value: t.value.toString(), blockNumber: t.blockNumber.toString(), at, from: t.from };
-         await patchRow(svc, row, { tx_hash: t.txHash, status: row.status === 'quoted' ? 'sent' : row.status }, { deposit, depositScanTo: to.toString() });
-         return deposit;
+      const rows: Record<string, unknown>[] = [];
+      for (const t of TOKENS) {
+         for (const tr of await bscTransfersTo(me, from, to, undefined, t.address)) {
+            if (tr.from.toLowerCase() === me) continue;
+            rows.push({
+               tx_hash: tr.txHash.toLowerCase(),
+               log_index: tr.logIndex,
+               token: t.token,
+               from_address: tr.from.toLowerCase(),
+               to_address: me,
+               units: tr.value.toString(),
+               block_number: Number(tr.blockNumber)
+            });
+         }
       }
-      await patchRow(svc, row, {}, { depositScanTo: to.toString() });
+      if (rows.length) {
+         const { error } = await svc.from('id_wallet_deposits').upsert(rows, { onConflict: 'tx_hash,log_index', ignoreDuplicates: true });
+         if (error) throw new Error(`save deposits: ${error.message}`); // don't move the cursor past unsaved money
+         seen += rows.length;
+      }
+      await setSetting(svc, 'id_repay_scan_block', to.toString());
       from = to + 1n;
    }
-   return null;
+   return seen;
 };
 
-/** Step 3: the fill found on Base by amount + solver (see the header). */
-const fallbackMatch = async (
-   svc: Svc,
-   row: RepayRow,
-   deposit: Deposit,
-   solvers: Set<string>,
-   claimed: Set<string>,
-   deadline: number
-): Promise<Fill | null | 'unknown_sender'> => {
-   const d6 = BigInt(deposit.value) / 10n ** 12n; // USDT 18 dp → USDC 6 dp
-   const lo = d6 - (d6 / 20n > 500_000n ? d6 / 20n : 500_000n);
-   const hi = d6 + d6 / 200n;
-   const depositMs = new Date(deposit.at).getTime();
-   const logs = await baseTransfersTo(row.recipient, depositMs - 2 * 60_000, Math.min(Date.now(), depositMs + FALLBACK_WINDOW_MS), deadline);
-   const candidates = logs
-      .map((l) => ({ txHash: l.transactionHash.toLowerCase(), value: BigInt(l.data && l.data !== '0x' ? l.data : '0x0'), from: topicAddr(l.topics[1]), block: BigInt(l.blockNumber) }))
-      .filter((c) => c.value >= lo && c.value <= hi && !claimed.has(c.txHash))
-      .sort((a, b) => (a.block < b.block ? -1 : a.block > b.block ? 1 : 0));
-   if (!candidates.length) return null;
-   const hashes = candidates.map((c) => c.txHash);
-   const [{ data: used }, { data: taken }] = await Promise.all([
-      svc.from('used_payment_hashes').select('hash').in('hash', hashes),
-      svc.from('relay_transfers').select('fill_tx_hash').in('fill_tx_hash', hashes)
-   ]);
-   const blocked = new Set([...(used ?? []).map((r: { hash: string }) => r.hash), ...(taken ?? []).map((r: { fill_tx_hash: string }) => r.fill_tx_hash)]);
-   let sawOther = false;
-   for (const c of candidates) {
-      if (Date.now() > deadline) return null; // each candidate costs a few Base RPCs; try again next run
-      if (blocked.has(c.txHash)) continue;
-      const txFrom = await baseTxFrom(c.txHash);
-      if (!solvers.has(c.from) && !(txFrom && solvers.has(txFrom))) {
-         sawOther = true;
-         continue;
-      }
-      const verified = await verifyBaseFill(c.txHash, row.recipient);
-      if (verified.ok) return verified.fill;
+const processNew = async (svc: Svc, d: DepositRow, topupSenders: Set<string>): Promise<'recorded' | 'topup' | 'unmatched' | 'ignored' | 'other'> => {
+   const units = unitsOf(d.units);
+   if (topupSenders.has(d.from_address.toLowerCase())) {
+      await patchDeposit(svc, d, { status: 'topup' });
+      await alertTeam(svc, `⬆️ 🇮🇩 Top-up: ${depositText(d)} into the payout wallet from ${short(d.from_address)}.`);
+      return 'topup';
    }
-   return sawOther ? 'unknown_sender' : null;
-};
-
-/**
- * BNB Chain, before a fallback match is recorded: did USDT go back to the borrower's Walt after the
- * deposit — from the one-time address, or about half the deposit or more from anyone (Relay refunds
- * from its own wallets)? Then nothing was paid. True / false, or null when the look didn't finish
- * (RPC trouble or out of time → don't record this run).
- */
-const refundedOnBsc = async (row: RepayRow, deposit: Deposit, deadline: number): Promise<boolean | null> => {
-   const walt = String(row.refund_to ?? '');
-   if (!EVM_ADDRESS.test(walt)) return false;
-   try {
-      const head = (await bscHead()) - BSC_CONFIRMATIONS;
-      const one = row.deposit_address.toLowerCase();
-      const half = BigInt(deposit.value) / 2n;
-      let from = BigInt(deposit.blockNumber);
-      while (from <= head) {
-         if (Date.now() > deadline) return null;
-         const to = from + BSC_LOG_SPAN > head ? head : from + BSC_LOG_SPAN;
-         const back = await bscTransfersTo(walt, from, to, undefined, BSC_USDT);
-         if (back.some((t) => t.from.toLowerCase() === one || t.value >= half)) return true;
-         from = to + 1n;
-      }
-      return false;
-   } catch (err) {
-      console.warn('[idRepayments] refund check failed', err instanceof Error ? err.message : err);
-      return null;
+   if (units < DUST_UNITS) {
+      await patchDeposit(svc, d, { status: 'ignored', note: { reason: 'dust' } });
+      return 'ignored';
    }
+   const match = await matchRequest(svc, units);
+   if (match && (await claimDeposit(svc, d, ['new'], { loan_id: match.req.loan_id, request_id: match.req.id, matched_by: match.late ? 'late_amount' : 'amount' }))) {
+      if (!(await claimRequest(svc, match.req, d.id))) {
+         // Another deposit took that request a moment ago (two sends of the same amount): the team decides.
+         await patchDeposit(svc, d, { status: 'unmatched', loan_id: null, request_id: null, matched_by: null });
+      } else {
+         const outcome = await recordDeposit(svc, d);
+         return outcome === 'recorded' ? 'recorded' : 'other';
+      }
+   } else if (!match) {
+      if (!(await claimDeposit(svc, d, ['new']))) return 'other';
+      await patchDeposit(svc, d, { status: 'unmatched' });
+   } else {
+      return 'other'; // another run claimed this deposit
+   }
+   const card = await unmatchedCard(svc, d);
+   await alertTeam(svc, card.text, card.keyboard);
+   await patchDeposit(svc, d, { alerted_at: new Date().toISOString() });
+   return 'unmatched';
 };
 
-export type RelayRepayTally = { checked: number; recorded: number; deposits: number; refunded: number; alerted: number };
+export type IdRepayTally = { seen: number; recorded: number; topups: number; unmatched: number; resumed: number; expired: number };
 
-const refundedText = (user: UserRow | null) =>
-   say(
-      user,
-      '↩️ USDT kamu dikembalikan ke Walt (jumlah/jaringan tidak cocok). Tekan 💰 Bayar untuk alamat baru.',
-      '↩️ Your USDT went back to your Walt (wrong amount or network). Tap 💰 Pay for a new address.'
-   );
-
-type FallbackItem = {
-   row: RepayRow;
-   deposit: Deposit;
-   /** Search Base for the fill (only when Relay definitely can't see it, or its fill went to another loan). */
-   scan: boolean;
-   /** Relay gave a definite answer this run (so past the 3 h window the row can be closed as unmatched). */
-   definite: boolean;
-};
-
-/**
- * The 5-minute job (video-call-reminders): every Telegram repay row of the last 3 days that isn't
- * recorded yet (recorded_at null), whatever its status. Pass 1 asks Relay and records the fills it
- * reports; pass 2 (only for deposits Relay definitely hasn't reported for ≥ 10 min) searches Base.
- * Stops at `deadline`. Never throws.
- */
-export const runRelayRepayments = async (svc: Svc, deadline = Date.now() + 45_000): Promise<RelayRepayTally> => {
-   const tally: RelayRepayTally = { checked: 0, recorded: 0, deposits: 0, refunded: 0, alerted: 0 };
+/** The 5-minute job (video-call-reminders). Stops at `deadline`. Never throws. */
+export const runIdRepayments = async (svc: Svc, deadline = Date.now() + 45_000): Promise<IdRepayTally> => {
+   const tally: IdRepayTally = { seen: 0, recorded: 0, topups: 0, unmatched: 0, resumed: 0, expired: 0 };
    try {
-      const { data } = await svc
-         .from('relay_transfers')
-         .select(ROW_FIELDS)
-         .eq('direction', 'repay')
-         .not('loan_id', 'is', null)
-         .is('recorded_at', null)
-         .in('status', [...OPEN_STATUSES, 'success'])
-         .gte('created_at', new Date(Date.now() - ROW_MAX_AGE_MS).toISOString())
-         .order('created_at', { ascending: true })
-         .limit(40);
-      const rows = (data ?? []) as RepayRow[];
-      if (!rows.length) return tally;
-      const solvers = parseSolvers(await getSetting(svc, 'relay_base_solvers'));
-      const claimed = new Set<string>();
-      const needFallback: FallbackItem[] = [];
+      const { data: expired } = await svc
+         .from('id_repay_requests')
+         .update({ status: 'expired', updated_at: new Date().toISOString() })
+         .eq('status', 'open')
+         .lt('expires_at', new Date().toISOString())
+         .select('id');
+      tally.expired = (expired ?? []).length;
 
-      // Pass 1: Relay's status, the deposit on BNB Chain.
-      for (const row of rows) {
-         if (Date.now() > deadline - 5_000) break;
-         tally.checked += 1;
+      const wallet = await getPayoutWallet(svc);
+      if (!wallet) return tally;
+
+      // 1. Finish deposits whose run died mid-way.
+      const { data: stuck } = await svc
+         .from('id_wallet_deposits')
+         .select(DEPOSIT_FIELDS)
+         .eq('status', 'recording')
+         .lt('updated_at', new Date(Date.now() - RESUME_AFTER_MS).toISOString())
+         .order('id', { ascending: true })
+         .limit(10);
+      for (const d of (stuck ?? []) as DepositRow[]) {
+         if (Date.now() > deadline - 10_000) break;
          try {
-            // Recorded by an earlier run that died before its follow-ups: finish those first.
-            if (await resumeFollowUps(svc, row)) continue;
-
-            let status: RelayStatus | null = null;
-            try {
-               status = row.request_id ? await relayStatus(row.request_id) : null;
-            } catch {
-               status = null; // a Relay API error is NOT "Relay can't see it": no Base search on it
-            }
-            const user = status && ['refund', 'failure'].includes(status.status) ? await loadUser(svc, row.user_id) : null;
-            let fillWentElsewhere = false;
-            if (status?.status === 'success' && status.fillTxHash) {
-               const verified = await verifyBaseFill(status.fillTxHash, row.recipient);
-               if (verified.ok) {
-                  claimed.add(verified.fill.txHash);
-                  await learnSolvers(svc, solvers, verified.fill);
-                  const outcome = await recordFill(svc, row, verified.fill, 'relay_status');
-                  if (outcome === 'recorded') tally.recorded += 1;
-                  // Relay's fill was spent by another loan: keep the row open and search for its own fill.
-                  fillWentElsewhere = outcome === 'conflict';
-               } else if (verified.error === 'no_transfer_to_lender' || verified.error === 'reverted') {
-                  await patchRow(svc, row, { status: 'unmatched', fill_tx_hash: status.fillTxHash }, { recorded: { error: verified.error } });
-                  await alertTeam(svc, `⚠️ 🇮🇩 Walt repay ${short(row.deposit_address)}: Relay says done (${status.fillTxHash}) but no USDC reached the lender ${short(row.recipient)} on Base (${verified.error}). Check it.`);
-                  tally.alerted += 1;
-               }
-               if (!fillWentElsewhere) continue;
-            }
-            if (status?.status === 'refund') {
-               await patchRow(svc, row, { status: 'refund', ...(status.fillTxHash ? { fill_tx_hash: status.fillTxHash } : {}) });
-               await tell(user, refundedText(user), menuRow(user, 'again'));
-               tally.refunded += 1;
-               continue;
-            }
-            if (status?.status === 'failure') {
-               await patchRow(svc, row, { status: 'failure' });
-               await tell(user, say(user, '⚠️ Ada masalah dengan pembayaranmu. Tim kami sedang mengecek, kamu akan dikabari di sini.', '⚠️ Something went wrong with your payment. Our team is checking and will tell you here.'));
-               await alertTeam(svc, `⚠️ 🇮🇩 Walt repay FAILED at Relay: ${short(row.deposit_address)} (request ${row.request_id}, loan ${row.loan_id}). Check where the USDT is.`);
-               tally.alerted += 1;
-               continue;
-            }
-            if (status && ['pending', 'submitted', 'delayed'].includes(status.status) && row.status !== 'pending') {
-               await patchRow(svc, row, { status: 'pending', ...(!row.tx_hash && status.inTxHashes[0] ? { tx_hash: status.inTxHashes[0] } : {}) });
-            }
-
-            // Waiting (or pending): look for the deposit on BNB Chain.
-            let deposit = row.quote?.deposit ?? null;
-            if (!deposit && Date.now() - new Date(row.created_at).getTime() > 60_000) {
-               deposit = await findDeposit(svc, row, deadline - 10_000);
-               if (deposit) {
-                  tally.deposits += 1;
-                  if (!row.quote?.depositSeenToldAt) {
-                     const u = await loadUser(svc, row.user_id);
-                     await tell(u, say(u, '⏳ USDT kamu sudah masuk. Sedang diteruskan, biasanya 1–5 menit.', '⏳ Your USDT arrived. Passing it on, usually 1–5 minutes.'));
-                     await patchRow(svc, row, {}, { depositSeenToldAt: new Date().toISOString() });
-                  }
-               }
-            }
-            if (!deposit) {
-               if (Date.now() - new Date(row.created_at).getTime() > NO_DEPOSIT_EXPIRE_MS) await patchRow(svc, row, { status: 'expired' });
-               continue;
-            }
-            const sinceDeposit = Date.now() - new Date(deposit.at).getTime();
-            const relayCantSee = status?.status === 'waiting' || status?.status === 'unknown';
-            const definite = relayCantSee || fillWentElsewhere;
-            if (sinceDeposit > FALLBACK_WINDOW_MS) {
-               needFallback.push({ row, deposit, scan: false, definite }); // past the window: alert only
-            } else if (sinceDeposit > FALLBACK_AFTER_MS && definite) {
-               needFallback.push({ row, deposit, scan: true, definite });
-            }
+            if (!(await claimStuck(svc, d))) continue;
+            if ((await recordDeposit(svc, d)) === 'recorded') tally.resumed += 1;
          } catch (err) {
-            console.error(`[idRepayments] row ${row.id} failed`, err instanceof Error ? err.message : err);
+            console.error(`[idRepayments] resume ${d.id} failed`, err instanceof Error ? err.message : err);
          }
       }
 
-      // Pass 2: deposits Relay didn't report — oldest deposit first, one fill per row.
-      needFallback.sort((a, b) => new Date(a.deposit.at).getTime() - new Date(b.deposit.at).getTime());
-      for (const { row, deposit, scan, definite } of needFallback) {
+      // 2. New money on BNB Chain.
+      try {
+         tally.seen = await scanWallet(svc, wallet.address, deadline - 15_000);
+      } catch (err) {
+         console.error('[idRepayments] scan failed', err instanceof Error ? err.message : err);
+      }
+
+      // 3. Match and record.
+      const { data: fresh } = await svc.from('id_wallet_deposits').select(DEPOSIT_FIELDS).eq('status', 'new').order('id', { ascending: true }).limit(25);
+      const topupSenders = parseSenders(await getSetting(svc, 'id_topup_senders'));
+      for (const d of (fresh ?? []) as DepositRow[]) {
          if (Date.now() > deadline - 5_000) break;
          try {
-            const found = scan ? await fallbackMatch(svc, row, deposit, solvers, claimed, deadline - 5_000) : null;
-            if (found && found !== 'unknown_sender') {
-               // A refund to their Walt means nothing was paid, whatever lands at the lender.
-               const refunded = await refundedOnBsc(row, deposit, deadline - 5_000);
-               if (refunded == null) continue; // couldn't check this run — don't record on a guess
-               if (refunded) {
-                  await patchRow(svc, row, { status: 'refund' }, { recorded: { error: 'refunded_on_bsc', candidate: found.txHash } });
-                  const u = await loadUser(svc, row.user_id);
-                  await tell(u, refundedText(u), menuRow(u, 'again'));
-                  await alertTeam(
-                     svc,
-                     `⚠️ 🇮🇩 Walt repay ${short(row.deposit_address)} (loan ${row.loan_id}): Relay didn't report it and USDT went back to their Walt ${short(row.refund_to)} on BNB Chain, so it's treated as a refund — NOT recorded. A similar fill to the lender (${found.txHash}) was left alone; check it if they say they paid.`
-                  );
-                  tally.refunded += 1;
-                  tally.alerted += 1;
-                  continue;
-               }
-               claimed.add(found.txHash);
-               const outcome = await recordFill(svc, row, found, 'fallback_scan');
-               if (outcome === 'recorded') tally.recorded += 1;
-               continue;
-            }
-            const sinceDeposit = Date.now() - new Date(deposit.at).getTime();
-            const pastWindow = sinceDeposit > FALLBACK_WINDOW_MS;
-            // Close it only on a definite Relay answer; during a Relay outage keep watching (3-day cap).
-            if (pastWindow && definite && row.status !== 'unmatched') await patchRow(svc, row, { status: 'unmatched' });
-            if ((found === 'unknown_sender' || pastWindow) && !row.quote?.fallbackAlertedAt) {
-               await patchRow(svc, row, {}, { fallbackAlertedAt: new Date().toISOString() });
-               await alertTeam(
-                  svc,
-                  `⚠️ 🇮🇩 Walt repay not matched: ${(Number(BigInt(deposit.value) / 10n ** 12n) / 1e6).toFixed(2)} USDT reached Relay address ${row.deposit_address} (BNB tx ${deposit.txHash}, ${Math.round(sinceDeposit / 60_000)} min ago) for loan ${row.loan_id}, but no Relay fill to the lender ${row.recipient} on Base could be matched${found === 'unknown_sender' ? ' (a transfer of about that amount came from an address that is not a known Relay solver)' : ''}. If it arrived, record it in admin with the Base tx hash.`
-               );
-               tally.alerted += 1;
-            }
+            const r = await processNew(svc, d, topupSenders);
+            if (r === 'recorded') tally.recorded += 1;
+            else if (r === 'topup') tally.topups += 1;
+            else if (r === 'unmatched') tally.unmatched += 1;
          } catch (err) {
-            console.error(`[idRepayments] fallback for ${row.id} failed`, err instanceof Error ? err.message : err);
+            console.error(`[idRepayments] deposit ${d.id} failed`, err instanceof Error ? err.message : err);
          }
       }
    } catch (err) {

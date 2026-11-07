@@ -27,10 +27,13 @@ the Facebook/TikTok in-app browser) and land on `/id`.
 - **Their requests look different everywhere**: `loans.market = 'ID'` gets a 🇮🇩 mark on the
   request board, admin pages and team Telegram posts.
 - **Money in and out goes through Walt** (Telegram's wallet bot, with IDR P2P):
-  - Cash-out: Moodeng wallet (USDC on Base) → Relay one-time address → USDC on BNB Chain → their
-    Walt address. One tap, about $0.07 on $20, a few seconds.
-  - Repay: Walt P2P (buy USDT with IDR) → withdraw USDT on BEP20 to a Relay one-time address →
-    USDC on Base in their Moodeng wallet → tap Pay as usual.
+  - Loan out: Moodeng's payout wallet (or Binance TH) → USDC on BNB Chain → their Walt. No fee comes
+    out of the loan (gas is sponsored; Walt turns USDC into USDT 1:1 up to $2,000 / 30 days).
+  - Repay: Walt P2P Express (buy USDT with IDR) → withdraw an EXACT amount of USDT on BEP20 to the payout
+    wallet → recorded automatically (see "Repaying"). No bridge, no fee taken from the money. Walt's QRIS
+    has a ~Rp 272.000 minimum (checked 2026-11-08), too much for $5/$10 loans, so the steps say P2P.
+  - Walt P2P prices seen 2026-11-08: sell 5 USDT → Rp 88.500, buy 5 USDT → Rp 91.661 (official ~18.100/$).
+  - The old Relay route (Base ↔ BNB Chain, `relay_transfers`) stays for the app's Base cash-out only.
 
 ## The switch
 
@@ -124,29 +127,35 @@ Telegram-app login tap.
   lender role, `mal`, credit limit, the repost cooldown, one open loan at a time) with the borrower row
   locked. All insert triggers still run, so the team post, the borrower's "loan posted" and autopay
   happen exactly as for app requests.
-- **💰 Bayar**: straight to the lender, no Moodeng wallet needed. Relay quote BNB Chain USDT → Base USDC
-  with recipient = `loans.lender_wallet` and refund to their Walt; amount = rupiah left ÷ today's rate +
-  max(1%, $0.30), at least $1. The bot shows the amount (≈ Rp), the address with a copy button and the
-  two Walt steps (Deposit → QRIS; Withdraw → External wallet → BEP20). A still-unused address for the same
-  loan (< 30 min, still covers what's owed) is reused. Refused (support message) for smart-contract /
-  credit-line loans or a loan without a `lender_wallet`. Kill switch: `walt_bridge = off`.
-- **Recording** (`_shared/idRepayments.ts` `runRelayRepayments`, in the 5-minute job): Relay status by
-  request id → the fill tx is verified on Base (USDC Transfer to `lender_wallet`, after the quote) → the
-  real USDC is recorded with `record_loan_payment('repay', …)` and the same follow-ups as the Pay button
-  (`_shared/repaymentFollowUps.ts`: credit level-up, repaid/partial notifications, team feed, repay feed).
-  The deposit is also watched on BNB Chain. If Relay's status never follows a deposit (Relay makes a new
-  request when the amount differs and `GET /requests` needs an API key from v3), after 10 min the fill is
-  searched on Base: USDC → lender within 3 h, deposit − max(5%, $0.50) … deposit + 0.5%, from a known
-  Relay solver (`relay_base_solvers`, learned from verified fills), hash never used. No match → one team
-  alert, nothing recorded. The fill tx hash is spent in `used_payment_hashes`, so nothing is recorded twice.
-  Safety rules for that search: only when Relay definitely answers `waiting`/`unknown` (a Relay API error
-  never triggers it); never when USDT went back to their Walt on BNB Chain after the deposit (refund →
-  not recorded, borrower + team told); when Relay's own fill was already spent by another loan the row
-  stays open and the search keeps going (3 h, one alert). Bot rows (`loan_id` set) are invisible to the
-  app's Walt screens (`stableyard-deposit-address` relay `latest`/`status`/reuse). The job works every
-  bot row until `relay_transfers.recorded_at` is set — whatever its status — and sets it only after the
-  follow-ups ran (`quote.recording` lets the next run finish them if a worker died half-way).
-  The borrower hears "USDT kamu sudah masuk", then "✅ Pembayaran Rp X diterima. Sisa Rp Y" (partial) or
-  the usual "lunas" message.
+- **💰 Bayar** (bot) and "Bayar dari Walt" (app Repay page, `WaltRepaySteps`): see "Repaying" below.
 - **❓ Bantuan**: a button that opens the support chat (`/start support`) + a note that the team can
   reach them on WhatsApp.
+
+## Repaying (straight to the payout wallet — migration 20261107200000, `_shared/idRepayments.ts`)
+
+- **Who**: loans with `market = 'ID'` and `funding_method = 'walt_manual'` (Moodeng paid them to Walt).
+  Anything else (e.g. an older Indonesian loan a lender funded on Base) is owed to that lender and goes
+  through the app's normal Pay.
+- **The request** (`id_repay_requests`): 💰 Bayar / "Tampilkan jumlah & alamat" gives the payout wallet
+  address and an EXACT amount: rupiah left ÷ today's rate, rounded up to the cent, plus 0–50 cents when
+  another request from the last 7 days already has that amount. Good for 48 h; reused while it still
+  covers what's owed (≤ $0.50 over). No two OPEN requests share an amount (unique index). Kill switch:
+  `telegram_bot_settings.id_repay = off`.
+- **Why the amount**: Walt withdraws from its own shared wallets, so the sender says nothing about who
+  paid. The amount does. The steps say "if Walt takes a fee, make sure the amount RECEIVED is exact".
+- **Recording** (5-minute job, `runIdRepayments`): reads USDT/USDC transfers into the payout wallet on
+  BNB Chain since `id_repay_scan_block` → `id_wallet_deposits`. Exact match to an open request (or, if
+  none, to the one expired/replaced request from the last 7 days with that amount whose loan is still
+  owed) → `record_loan_payment('repay', hash 'bsc:<tx>:<log>')` + the shared follow-ups → borrower
+  ("✅ Pembayaran Rp X diterima. Sisa Rp Y", or the usual "lunas") and team ("💰 … arrived in the payout
+  wallet"). Never twice: deposit and request are each claimed by one run only and the hash is spent in
+  `used_payment_hashes`; `recorded_at` only after the follow-ups (a run that died is finished after 2 min).
+- **Not matched** → a team card: "✅ Record for MC-…" (closest recent requests), "⬆️ It's a top-up"
+  (adds the sender to `id_topup_senders`; future transfers from it are just top-ups) or "🙈 Ignore".
+- **Money a loan can't take / overpaid > $0.50** → team alert with "↩️ Refund to their Walt" (sends back
+  from the payout wallet to their saved Walt address, one tap only).
+- **Money out of the payout wallet**: `/idsweep` (admin chats) shows USDT/USDC/BNB; `/idsweep USDT 25` or
+  `all` → confirm → sends ONLY to `id_payout_sweep_to` (set by SQL, e.g. your Binance TH BEP20 deposit
+  address). Repayments arrive mostly as USDT while auto-payouts send USDC: sweep USDT to Binance TH,
+  convert, and top up USDC again (or switch payouts to USDT once Walt is confirmed to credit USDT).
+

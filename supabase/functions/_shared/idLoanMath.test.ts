@@ -11,8 +11,7 @@ import {
    idUsdLeft,
    ID_PURPOSES,
    isIdMenuText,
-   parseIdBotCallback,
-   waltRepayAmount
+   parseIdBotCallback
 } from './idLoanMath.ts';
 
 Deno.test('callbacks round-trip and fit in 64 bytes', () => {
@@ -48,14 +47,6 @@ Deno.test('foreign or broken callback data is not ours', () => {
 Deno.test('menu words', () => {
    for (const t of ['/menu', '/start', 'Menu', ' pinjaman ', '/menu@moodengnewbranchbot', '/start@moodengnewbranchbot']) assert(isIdMenuText(t), t);
    for (const t of ['/start support', 'menu please', 'halo', '', null]) assert(!isIdMenuText(t), String(t));
-});
-
-Deno.test('Walt top-up: owed + max(1%, $0.30), at least $1, cents rounded up', () => {
-   assertEquals(waltRepayAmount(6.08), 6.38);
-   assertEquals(waltRepayAmount(0.2), 1);
-   assertEquals(waltRepayAmount(0), 1);
-   assertEquals(waltRepayAmount(50), 50.5);
-   assertEquals(waltRepayAmount(12.341), 12.65);
 });
 
 Deno.test('USD left: rupiah left ÷ today’s rate, rounded up to cents', () => {

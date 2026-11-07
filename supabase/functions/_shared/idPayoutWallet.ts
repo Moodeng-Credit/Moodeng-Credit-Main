@@ -31,6 +31,10 @@ type Svc = any;
 
 export const BSC_CHAIN_ID = 56;
 export const BSC_USDC_CHECKSUM = '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d';
+// Borrowers repay in USDT (what Walt holds) to this same wallet (_shared/idRepayments.ts); /idsweep can send it on.
+export const BSC_USDT_CHECKSUM = '0x55d398326f99059fF775485246999027B3197955';
+export type BscToken = 'USDC' | 'USDT';
+const TOKEN_ADDRESS: Record<BscToken, string> = { USDC: BSC_USDC_CHECKSUM, USDT: BSC_USDT_CHECKSUM };
 const BSC_RPCS = ['https://bsc-rpc.publicnode.com', 'https://bsc.drpc.org'];
 const WALLET_IDEMPOTENCY_KEY = 'moodeng-id-payout-wallet-v1';
 
@@ -258,17 +262,19 @@ const bscRpc = async <T>(method: string, params: unknown[]): Promise<T> => {
    throw lastError instanceof Error ? lastError : new Error(`${method} failed`);
 };
 
-export type WalletBalance = { usdc: number; bnb: number; usdcUnits: bigint };
+export type WalletBalance = { usdc: number; usdt: number; bnb: number; usdcUnits: bigint; usdtUnits: bigint };
 
 export const balanceOf = async (address: string): Promise<WalletBalance> => {
    const data = `0x70a08231${address.slice(2).toLowerCase().padStart(64, '0')}`;
-   const [usdcHex, bnbHex] = await Promise.all([
+   const [usdcHex, usdtHex, bnbHex] = await Promise.all([
       bscRpc<string>('eth_call', [{ to: BSC_USDC_CHECKSUM.toLowerCase(), data }, 'latest']),
+      bscRpc<string>('eth_call', [{ to: BSC_USDT_CHECKSUM.toLowerCase(), data }, 'latest']),
       bscRpc<string>('eth_getBalance', [address, 'latest'])
    ]);
-   const usdcUnits = BigInt(usdcHex && usdcHex !== '0x' ? usdcHex : '0x0');
-   const bnbUnits = BigInt(bnbHex && bnbHex !== '0x' ? bnbHex : '0x0');
-   return { usdc: unitsToUsd(usdcUnits), bnb: unitsToUsd(bnbUnits), usdcUnits };
+   const units = (hex: string) => BigInt(hex && hex !== '0x' ? hex : '0x0');
+   const usdcUnits = units(usdcHex);
+   const usdtUnits = units(usdtHex);
+   return { usdc: unitsToUsd(usdcUnits), usdt: unitsToUsd(usdtUnits), bnb: unitsToUsd(units(bnbHex)), usdcUnits, usdtUnits };
 };
 
 /** The payout wallet's balance, or null when there's no wallet or BNB Chain is unreachable. */
@@ -291,7 +297,11 @@ export const payoutWalletBalance = async (svc: Svc): Promise<(WalletBalance & { 
  * never started with less than MIN_SEND_BUDGET_MS left before `deadline`; if IT throws or times out the
  * money may still have gone out — the caller marks the payout failed and the BNB Chain check decides.
  */
-export const sendUsdcBsc = async (svc: Svc, to: string, amountUsd: number | string, deadline = Date.now() + 60_000): Promise<string> => {
+export const sendUsdcBsc = (svc: Svc, to: string, amountUsd: number | string, deadline = Date.now() + 60_000): Promise<string> =>
+   sendTokenBsc(svc, 'USDC', to, amountUsd, deadline);
+
+/** Same as sendUsdcBsc for either stablecoin (both 18 decimals on BNB Chain). */
+export const sendTokenBsc = async (svc: Svc, token: BscToken, to: string, amountUsd: number | string, deadline = Date.now() + 60_000): Promise<string> => {
    let prepared: {
       openfort: OpenfortClient;
       account: Awaited<ReturnType<OpenfortClient['accounts']['evm']['backend']['get']>>;
@@ -319,7 +329,7 @@ export const sendUsdcBsc = async (svc: Svc, to: string, amountUsd: number | stri
       openfort.accounts.evm.backend.sendTransaction({
          account,
          chainId: BSC_CHAIN_ID,
-         interactions: [{ to: BSC_USDC_CHECKSUM, data }],
+         interactions: [{ to: TOKEN_ADDRESS[token], data }],
          policy: feeSponsorshipId,
          rpcUrl: BSC_RPCS[0]
       }),
@@ -377,6 +387,7 @@ export type PayoutWalletStatus = {
    configured: boolean;
    address: string | null;
    usdc: number | null;
+   usdt: number | null;
    bnb: number | null;
    autopay: 'on' | 'off';
    maxUsd: number;
@@ -403,6 +414,7 @@ export const payoutWalletStatus = async (svc: Svc, now = Date.now()): Promise<Pa
       configured: Boolean(creds),
       address: wallet?.address ?? null,
       usdc: balance ? balance.usdc : null,
+      usdt: balance ? balance.usdt : null,
       bnb: balance ? balance.bnb : null,
       autopay: limits.autopay,
       maxUsd: limits.maxUsd,

@@ -6,7 +6,7 @@
 //   Ajukan: amount (ida:<amt>) → term (idt:<amt>:<days>) → rupiah total (idr:<amt>:<days>:<rp>) → purpose
 //           (idp:…:<i>) → confirm (idc:…:<i>) → public.bot_request_id_loan (migration 20261107190000), which
 //           re-checks everything. The whole state is in callback_data (≤ 64 bytes, idLoanMath.ts).
-//   Bayar:  a Relay one-time BNB Chain address paying the lender straight away (idRepayments.ts).
+//   Bayar:  the payout wallet on BNB Chain + an exact amount that identifies the payment (idRepayments.ts).
 //
 // Only people found by users.chat_id / users.telegram_id = the sender AND users.market = 'ID' get any of
 // this; everyone else keeps the bot's old behaviour (the handlers return false). Bahasa by default,
@@ -27,7 +27,7 @@ import {
    isIdMenuText,
    parseIdBotCallback
 } from './idLoanMath.ts';
-import { getOrCreateRepayQuote } from './idRepayments.ts';
+import { getOrCreateRepayRequest } from './idRepayments.ts';
 import { appButton, buildIdMessage, formatIdDay, idLocaleOf, type IdLocale, type IdNext, loadIdStatus } from './idTrack.ts';
 import { loanTimezone, pastDueAt } from './loanDeadline.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramButton, type TelegramInlineKeyboard } from './telegram.ts';
@@ -410,18 +410,18 @@ const handleApplyStep = async (svc: Svc, user: BotUser, l: IdLocale, step: IdBot
 };
 
 // ── 💰 repay ─────────────────────────────────────────────────────────────────────────────────────
-/** The repay instructions: amount, the address with a copy button, the Walt steps. */
-export const repayScreen = (l: IdLocale, q: { depositAddress: string; amountUsdt: string; approxIdr: number | null; rupiahLeft: number | null }): Screen => {
+/** The repay instructions: the exact amount, the payout wallet with copy buttons, the Walt steps. */
+export const repayScreen = (l: IdLocale, q: { address: string; amountUsdt: string; approxIdr: number | null; rupiahLeft: number | null }): Screen => {
    const approx = q.approxIdr ? ` (≈ ${formatRp(q.approxIdr)})` : '';
    const left = q.rupiahLeft != null ? say(l, `Sisa pinjaman: ${formatRp(q.rupiahLeft)}\n`, `Left on your loan: ${formatRp(q.rupiahLeft)}\n`) : '';
    return {
       text: say(
          l,
-         `💰 Bayar dari Walt\n\n${left}Kirim: ${q.amountUsdt} USDT${approx}\nKe alamat:\n${q.depositAddress}\n\n1. Walt → Deposit → QRIS: bayar rupiah, dapat USDT.\n2. Walt → Withdraw → External wallet → jaringan BNB Smart Chain (BEP20) → tempel alamat → kirim ${q.amountUsdt} USDT.\n\n⚠️ Alamat ini hanya untuk 1x kirim, dan hanya BEP20.\nKami cek otomatis dan kabari kamu di sini (biasanya 1–5 menit).`,
-         `💰 Pay from Walt\n\n${left}Send: ${q.amountUsdt} USDT${approx}\nTo this address:\n${q.depositAddress}\n\n1. Walt → Deposit → QRIS: pay rupiah, get USDT.\n2. Walt → Withdraw → External wallet → BNB Smart Chain (BEP20) network → paste the address → send ${q.amountUsdt} USDT.\n\n⚠️ This address is for one send only, BEP20 only.\nWe check automatically and tell you here (usually 1–5 minutes).`
+         `💰 Bayar dari Walt\n\n${left}Kirim TEPAT: ${q.amountUsdt} USDT${approx}\nKe alamat Moodeng:\n${q.address}\n\n1. Walt → Deposit → P2P Express: beli USDT dengan rupiah.\n2. Walt → Withdraw → External wallet → jaringan BNB Smart Chain (BEP20) → tempel alamat → kirim ${q.amountUsdt} USDT.\n\n⚠️ Jumlahnya harus persis ${q.amountUsdt} — dari angka itu kami tahu ini pembayaranmu. Kalau Walt memotong biaya, pastikan yang DITERIMA tetap ${q.amountUsdt}.\nHanya jaringan BEP20. Jumlah ini berlaku 48 jam.\nKami cek otomatis dan kabari kamu di sini (biasanya 1–5 menit).`,
+         `💰 Pay from Walt\n\n${left}Send EXACTLY: ${q.amountUsdt} USDT${approx}\nTo Moodeng’s address:\n${q.address}\n\n1. Walt → Deposit → P2P Express: buy USDT with rupiah.\n2. Walt → Withdraw → External wallet → BNB Smart Chain (BEP20) network → paste the address → send ${q.amountUsdt} USDT.\n\n⚠️ The amount must be exactly ${q.amountUsdt} — that number is how we know it’s your payment. If Walt takes a fee, make sure the amount RECEIVED is still ${q.amountUsdt}.\nBEP20 only. This amount is good for 48 hours.\nWe check automatically and tell you here (usually 1–5 minutes).`
       ),
       keyboard: [
-         [{ text: say(l, '📋 Salin alamat', '📋 Copy address'), copy_text: { text: q.depositAddress } }],
+         [{ text: say(l, '📋 Salin alamat', '📋 Copy address'), copy_text: { text: q.address } }],
          [{ text: say(l, '📋 Salin jumlah', '📋 Copy amount'), copy_text: { text: q.amountUsdt } }, { text: say(l, '👛 Buka Walt', '👛 Open Walt'), url: WALT_URL }],
          [menuButton(l)]
       ]
@@ -431,21 +431,20 @@ export const repayScreen = (l: IdLocale, q: { depositAddress: string; amountUsdt
 const REPAY_ERRORS: Record<string, { id: string; en: string }> = {
    no_loan: { id: 'Kamu tidak punya pinjaman yang perlu dibayar. 🎉', en: 'You have no loan to pay. 🎉' },
    on_contract: { id: 'Pinjaman ini belum bisa dibayar dari Telegram. Hubungi kami, kami bantu.', en: 'This loan can’t be paid from Telegram yet. Contact us and we’ll help.' },
-   no_lender_wallet: { id: 'Pinjaman ini belum bisa dibayar dari Telegram. Hubungi kami, kami bantu.', en: 'This loan can’t be paid from Telegram yet. Contact us and we’ll help.' },
-   no_walt: { id: 'Simpan alamat Walt kamu dulu.', en: 'Save your Walt address first.' },
-   bridge_off: { id: 'Pembayaran dari Walt sedang dijeda. Coba lagi nanti atau hubungi kami.', en: 'Paying from Walt is paused right now. Try later or contact us.' },
+   no_payout_wallet: { id: 'Pembayaran dari Walt belum tersedia. Hubungi kami, kami bantu.', en: 'Paying from Walt isn’t available yet. Contact us and we’ll help.' },
+   paused: { id: 'Pembayaran dari Walt sedang dijeda. Coba lagi nanti atau hubungi kami.', en: 'Paying from Walt is paused right now. Try later or contact us.' },
    nothing_left: { id: 'Pinjamanmu sudah lunas. 🎉', en: 'Your loan is already paid. 🎉' },
-   busy: { id: '⏳ Pembayaranmu sedang diproses. Kami kabari di sini begitu masuk.', en: '⏳ Your payment is on its way. We’ll tell you here as soon as it arrives.' },
+   busy: { id: '⏳ Pembayaranmu sedang diproses. Kami kabari di sini begitu masuk.', en: '⏳ Your payment is being processed. We’ll tell you here as soon as it’s done.' },
    too_large: { id: 'Jumlahnya terlalu besar untuk dibayar dari sini. Hubungi kami.', en: 'That’s too much to pay from here. Contact us.' },
-   relay: { id: 'Tidak bisa membuat alamat sekarang. Coba lagi sebentar.', en: 'Couldn’t get an address right now. Try again in a minute.' }
+   error: { id: 'Tidak bisa menyiapkan pembayaran sekarang. Coba lagi sebentar.', en: 'Couldn’t set up the payment right now. Try again in a minute.' }
 };
 
 const handleRepay = async (svc: Svc, user: BotUser, l: IdLocale, chatId: number) => {
-   const q = await getOrCreateRepayQuote(svc, user);
+   const q = await getOrCreateRepayRequest(svc, user, 'telegram');
    if (!q.ok) {
-      const msg = REPAY_ERRORS[q.error] ?? REPAY_ERRORS.relay;
+      const msg = REPAY_ERRORS[q.error] ?? REPAY_ERRORS.error;
       const keyboard: TelegramInlineKeyboard =
-         q.error === 'relay' ? [[cb(say(l, '🔄 Coba lagi', '🔄 Try again'), idCallback.menu('repay'))], [menuButton(l)]] : q.error === 'busy' || q.error === 'nothing_left' || q.error === 'no_loan' ? [[menuButton(l)]] : [supportRow(l)];
+         q.error === 'error' ? [[cb(say(l, '🔄 Coba lagi', '🔄 Try again'), idCallback.menu('repay'))], [menuButton(l)]] : q.error === 'busy' || q.error === 'nothing_left' || q.error === 'no_loan' ? [[menuButton(l)]] : [supportRow(l)];
       return send(chatId, { text: say(l, msg.id, msg.en), keyboard });
    }
    return send(chatId, repayScreen(l, q));

@@ -87,6 +87,36 @@ export const relayWalt = {
    }
 };
 
+/** Indonesia track: repaying straight to Moodeng's payout wallet (no Relay). */
+export type IdRepayRequest = {
+   requestId: number;
+   address: string;
+   /** Exact amount to send, e.g. "6.38" (it identifies the payment). */
+   amountUsdt: string;
+   approxIdr: number | null;
+   rupiahLeft: number | null;
+   expiresAt: string;
+};
+export type IdRepayStatus = {
+   requestId: number;
+   status: 'open' | 'paid' | 'expired' | 'replaced';
+   address: string;
+   amountUsdt: string;
+   expiresAt: string;
+   received: { status: string; token: string; amount: number } | null;
+   recorded: boolean;
+};
+
+export const idRepay = {
+   /** The payout wallet + exact amount for the active loan (reuses an open one). */
+   request: async (): Promise<IdRepayRequest> => {
+      const res = (await call({ relay: 'id_repay' })) as unknown as Partial<IdRepayRequest>;
+      if (!res.requestId || !res.address || !res.amountUsdt) throw new RelayWaltError('Bad answer from the server', 'bad_response');
+      return res as IdRepayRequest;
+   },
+   status: async (requestId: number): Promise<IdRepayStatus> => (await call({ relay: 'id_repay_status', requestId })) as unknown as IdRepayStatus
+};
+
 export const isFinalRelayStatus = (s: string) => s === 'success' || s === 'failure' || s === 'refund' || s === 'expired';
 
 /**

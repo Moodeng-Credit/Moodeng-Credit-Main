@@ -150,19 +150,4 @@ $$;
 revoke all on function public.bot_request_id_loan(uuid, numeric, integer, numeric, text) from public, anon, authenticated;
 grant execute on function public.bot_request_id_loan(uuid, numeric, integer, numeric, text) to service_role;
 
--- Repayments sent from Walt straight to the lender through Relay (_shared/idRepayments.ts) look the
--- open rows up by loan. recorded_at is set once the payment is recorded on the loan AND its follow-ups
--- (credit level-up, notifications) have run; the 5-minute job works every bot row without it, whatever
--- its status says, so a row flipped to 'success' early still gets recorded.
-alter table public.relay_transfers add column if not exists recorded_at timestamptz;
-create index if not exists relay_transfers_loan_idx on public.relay_transfers (loan_id, created_at desc) where loan_id is not null;
-create index if not exists relay_transfers_open_repay_idx on public.relay_transfers (created_at)
-  where direction = 'repay' and loan_id is not null and recorded_at is null and status in ('quoted', 'sent', 'pending', 'success');
-
--- Base addresses Relay fills from (comma separated), for the fallback match when Relay's status API
--- can't follow a deposit of a different amount. Learned addresses from verified fills are added to it
--- at run time; this seed is only a starting point.
-insert into public.telegram_bot_settings (key, value, description) values
-  ('relay_base_solvers', '0xf70da97812cb96acdf810712aa562db8dfa3dbef',
-   'Relay solver addresses on Base (comma separated). Used only by the Walt→lender repay fallback match (_shared/idRepayments.ts).')
-on conflict (key) do nothing;
+-- Repaying in Telegram: see 20261107200000_indonesia_wallet_repay.sql (straight to the payout wallet).
