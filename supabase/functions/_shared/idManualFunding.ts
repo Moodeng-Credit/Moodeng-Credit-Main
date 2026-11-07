@@ -665,6 +665,11 @@ export const findAutoPayoutOnChain = async (svc: Svc, payout: PayoutRow, now: nu
    const want = usdcUnits(payout.amount);
    const startedIso = payout.paid_attempt_at ?? payout.created_at;
    const used = await usedTransfers(svc);
+   // Refunds of repayments also go payout wallet → their Walt (_shared/idRepayments.ts): never take one
+   // for the loan's payout. While a refund's hash isn't known yet, wait.
+   const { data: refunds } = await svc.from('id_wallet_deposits').select('refund_tx_hash').not('refund_tx', 'is', null);
+   if ((refunds ?? []).some((r: { refund_tx_hash: string | null }) => !r.refund_tx_hash)) return { state: 'incomplete' };
+   const refundHashes = new Set((refunds ?? []).map((r: { refund_tx_hash: string }) => String(r.refund_tx_hash).toLowerCase()));
    const head = await headBlock();
    const safeHead = head - CONFIRMATIONS;
    let from = payout.chain_scanned_to_block != null ? BigInt(payout.chain_scanned_to_block) + 1n : await blockAtOrBefore(startedIso, head);
@@ -672,7 +677,7 @@ export const findAutoPayoutOnChain = async (svc: Svc, payout: PayoutRow, now: nu
       if (Date.now() > deadline) return { state: 'incomplete' };
       const to = from + BigInt(MAX_LOG_SPAN) > head ? head : from + BigInt(MAX_LOG_SPAN);
       const transfers = await transfersTo(payout.walt_address, from, to, wallet.address);
-      const match = transfers.find((t) => t.value === want && !used.has(transferKey(t.txHash, t.logIndex)));
+      const match = transfers.find((t) => t.value === want && !used.has(transferKey(t.txHash, t.logIndex)) && !refundHashes.has(t.txHash.toLowerCase()));
       if (match) return match.blockNumber <= safeHead ? { state: 'found', transfer: match } : { state: 'landing' };
       const saved = to <= safeHead ? to : safeHead;
       if (saved >= from) {

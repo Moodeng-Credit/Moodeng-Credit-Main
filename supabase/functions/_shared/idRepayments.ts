@@ -6,10 +6,13 @@
 // No bridge and no fee taken from anyone's money: what the borrower sends is what arrives.
 //
 // Walt sends from its own shared wallets, so the sender doesn't say who paid — the AMOUNT does. Each
-// request (bot 💰 Bayar, app "Dapatkan alamat") gets an exact amount: what's owed rounded up to the
-// cent, plus 0–50 cents when another recent request already has that amount. No two open requests share
-// an amount (unique index), and new requests skip amounts used in the last 7 days, so a late payment to
-// an expired/replaced request still finds its loan.
+// request (bot 💰 Bayar, app "Tampilkan jumlah") gets an exact amount: what's owed rounded up to the
+// cent, moved a few cents (−4…+30) when another request from the last 7 days (paid ones too) already
+// has that amount. No two open requests share an amount (unique index), so a late payment, or a second
+// send of the same amount, never lands on someone else's loan. A matched deposit credits the RUPIAH the
+// request was priced from (record_id_wallet_repayment), so paying exactly what we asked closes what we
+// asked for even if the rate moved; being a few cents under costs at most ~Rp 700 (< the Rp 1.000 the
+// peg forgives anyway).
 //
 //   getOrCreateRepayRequest — the address + exact amount for the borrower's active loan (reuses one)
 //   runIdRepayments         — the 5-minute job: reads USDT/USDC transfers INTO the payout wallet on BNB
@@ -28,7 +31,7 @@
 // Never throws to the caller.
 
 import { blockAtOrBefore, headBlock as bscHead, transfersTo as bscTransfersTo } from './idManualFunding.ts';
-import { balanceOf, BSC_USDC_CHECKSUM, BSC_USDT_CHECKSUM, type BscToken, getPayoutWallet, NotSentError, sendTokenBsc, unitsToUsd, usdcBscUnits } from './idPayoutWallet.ts';
+import { balanceOf, BSC_USDC_CHECKSUM, BSC_USDT_CHECKSUM, type BscToken, getPayoutWallet, NotSentError, pollOpenfortTx, sendTokenBsc, unitsToUsd, usdcBscUnits } from './idPayoutWallet.ts';
 import { formatRp, idUsdLeft } from './idLoanMath.ts';
 import { idLocaleOf } from './idTrack.ts';
 import { runRepaymentFollowUps } from './repaymentFollowUps.ts';
@@ -40,8 +43,11 @@ type Svc = any;
 const EVM_ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 const REQUEST_TTL_MS = 48 * 3_600_000;
 const REUSE_MIN_LEFT_MS = 3 * 3_600_000; // don't hand out a request that expires within 3 h
-const REUSE_MAX_OVER_USD = 0.5;
-const MAX_BUMP_CENTS = 50;
+const REUSE_MAX_OVER_USD = 0.3;
+const SCAN_BEHIND_ALERT_BLOCKS = 2_400n; // ~30 min of BNB Chain blocks
+const SCAN_ALERT_EVERY_MS = 3 * 3_600_000;
+const MAX_BUMP_UP_CENTS = 30;
+const MAX_BUMP_DOWN_CENTS = 4;
 const AMOUNT_MEMORY_MS = 7 * 86_400_000;
 const LATE_MATCH_MS = 7 * 86_400_000;
 const MAX_USD = 500;
@@ -61,9 +67,20 @@ const TOKENS: Array<{ token: 'USDT' | 'USDC'; address: string }> = [
 /** Dollars → whole cents, rounded UP (integer math, no float drift). */
 export const ceilCents = (usd: number): number => Math.ceil(Math.round(usd * 1e6) / 1e4);
 
-/** The first amount (in cents) from `baseCents` up that no recent request uses; null when all are taken. */
-export const pickFreeCents = (baseCents: number, taken: Set<number>, maxBump = MAX_BUMP_CENTS): number | null => {
-   for (let bump = 0; bump <= maxBump; bump += 1) if (!taken.has(baseCents + bump)) return baseCents + bump;
+/**
+ * The amount (in cents) nearest `baseCents` that no recent request uses: base, −1, +1, −2, +2 … down to
+ * −maxDown (never below 1¢), then on up to +maxUp. null when all are taken.
+ */
+export const pickFreeCents = (baseCents: number, taken: Set<number>, maxUp = MAX_BUMP_UP_CENTS, maxDown = MAX_BUMP_DOWN_CENTS): number | null => {
+   const order: number[] = [0];
+   for (let i = 1; i <= Math.max(maxUp, maxDown); i += 1) {
+      if (i <= maxDown) order.push(-i);
+      if (i <= maxUp) order.push(i);
+   }
+   for (const bump of order) {
+      const c = baseCents + bump;
+      if (c >= 1 && !taken.has(c)) return c;
+   }
    return null;
 };
 
@@ -188,7 +205,8 @@ type RequestRow = {
    created_at: string;
    expires_at: string;
 };
-const REQUEST_FIELDS = 'id, loan_id, user_id, to_address, amount_units, amount_usd, owed_usd, rupiah_left, status, deposit_id, created_at, expires_at';
+// numeric(78,0) comes back as a JSON number (float) unless cast: always read the units as text.
+const REQUEST_FIELDS = 'id, loan_id, user_id, to_address, amount_units::text, amount_usd, owed_usd, rupiah_left, status, deposit_id, created_at, expires_at';
 
 const unitsOf = (v: string | number): bigint => BigInt(typeof v === 'number' ? v.toLocaleString('en-US', { useGrouping: false }) : String(v).split('.')[0]);
 
@@ -266,16 +284,17 @@ export const getOrCreateRepayRequest = async (svc: Svc, user: { id: string }, so
          await svc.from('id_repay_requests').update({ status: 'replaced', updated_at: new Date().toISOString() }).eq('loan_id', loan.id).eq('status', 'open');
       }
 
-      // Amounts used in the last 7 days (any status but paid) are skipped, so an amount points at one loan.
-      const { data: recent } = await svc
-         .from('id_repay_requests')
-         .select('amount_units')
-         .neq('status', 'paid')
-         .gte('created_at', new Date(Date.now() - AMOUNT_MEMORY_MS).toISOString())
-         .gte('amount_units', centsToUnits(baseCents).toString())
-         .lte('amount_units', centsToUnits(baseCents + MAX_BUMP_CENTS).toString());
+      // Amounts used in the last 7 days — paid ones too (a second send of a paid amount must not land on
+      // someone else's loan) — and amounts that arrived in the wallet lately are skipped.
+      const lo = centsToUnits(Math.max(1, baseCents - MAX_BUMP_DOWN_CENTS)).toString();
+      const hi = centsToUnits(baseCents + MAX_BUMP_UP_CENTS).toString();
+      const since = new Date(Date.now() - AMOUNT_MEMORY_MS).toISOString();
+      const [{ data: recent }, { data: arrived }] = await Promise.all([
+         svc.from('id_repay_requests').select('amount_units::text').gte('created_at', since).gte('amount_units', lo).lte('amount_units', hi),
+         svc.from('id_wallet_deposits').select('amount_units:units::text').gte('created_at', since).gte('units', lo).lte('units', hi)
+      ]);
       const taken = new Set<number>();
-      for (const r of (recent ?? []) as Array<{ amount_units: string | number }>) {
+      for (const r of [...(recent ?? []), ...(arrived ?? [])] as Array<{ amount_units: string | number }>) {
          const c = unitsToExactCents(unitsOf(r.amount_units));
          if (c != null) taken.add(c);
       }
@@ -322,11 +341,13 @@ export const repayRequestStatus = async (svc: Svc, userId: string, requestId: nu
    const row = r as RequestRow;
    let deposit: { status: string; units: string | number; token: string } | null = null;
    if (row.deposit_id) {
-      const { data: d } = await svc.from('id_wallet_deposits').select('status, units, token').eq('id', row.deposit_id).maybeSingle();
+      const { data: d } = await svc.from('id_wallet_deposits').select('status, units::text, token').eq('id', row.deposit_id).maybeSingle();
       deposit = d ?? null;
    }
    const cents = unitsToExactCents(unitsOf(row.amount_units));
+   const { data: loan } = await svc.from('loans').select('repayment_status').eq('id', row.loan_id).maybeSingle();
    return {
+      loanPaid: loan?.repayment_status === 'Paid',
       requestId: row.id,
       status: row.status,
       address: row.to_address,
@@ -387,22 +408,25 @@ type DepositRow = {
    alerted_at: string | null;
    refund_started_at: string | null;
    refund_tx: string | null;
+   refund_units: string | null;
+   refund_confirmed_at: string | null;
    created_at: string;
    updated_at: string;
 };
 const DEPOSIT_FIELDS =
-   'id, tx_hash, log_index, token, from_address, to_address, units, block_number, status, request_id, loan_id, matched_by, note, recording_at, recorded_at, alerted_at, refund_started_at, refund_tx, created_at, updated_at';
+   'id, tx_hash, log_index, token, from_address, to_address, units::text, block_number, status, request_id, loan_id, matched_by, note, recording_at, recorded_at, alerted_at, refund_started_at, refund_tx, refund_units::text, refund_confirmed_at, created_at, updated_at';
 
 const depositKey = (d: Pick<DepositRow, 'tx_hash' | 'log_index'>) => `bsc:${d.tx_hash.toLowerCase()}:${d.log_index}`;
 const depositUsd = (d: Pick<DepositRow, 'units'>) => unitsToUsd(unitsOf(d.units));
 const depositText = (d: DepositRow) => `${depositUsd(d).toFixed(2)} ${d.token}`;
 
 const patchDeposit = async (svc: Svc, d: DepositRow, patch: Record<string, unknown>) => {
-   Object.assign(d, patch);
-   await svc
+   const { error } = await svc
       .from('id_wallet_deposits')
       .update({ ...patch, updated_at: new Date().toISOString() })
       .eq('id', d.id);
+   if (error) throw new Error(`deposit ${d.id}: ${error.message}`);
+   Object.assign(d, patch);
 };
 
 /** Atomically move a deposit from one status to 'recording' (only one run / tap wins). */
@@ -492,14 +516,20 @@ const recordDeposit = async (svc: Svc, d: DepositRow): Promise<Outcome> => {
       return 'refund_needed';
    }
 
-   const { data: recorded, error } = await svc.rpc('record_loan_payment', {
+   // Matched to a request by its exact amount → credit the rupiah that request was priced from.
+   let creditIdr: number | null = null;
+   if (d.request_id && (d.matched_by === 'amount' || d.matched_by === 'late_amount')) {
+      const { data: req } = await svc.from('id_repay_requests').select('rupiah_left').eq('id', d.request_id).maybeSingle();
+      const r = Number(req?.rupiah_left ?? NaN);
+      if (Number.isFinite(r) && r > 0) creditIdr = r;
+   }
+   const { data: recorded, error } = await svc.rpc('record_id_wallet_repayment', {
       p_loan_id: d.loan_id,
-      p_action: 'repay',
       p_caller: loanBefore.borrower_user_id,
-      p_spend_hashes: [key],
-      p_record_hash: key,
+      p_hash: key,
       p_amount_micros: micros,
-      p_from: d.from_address
+      p_from: d.from_address,
+      p_credit_idr: creditIdr
    });
    if (error) {
       console.error('[idRepayments] record_loan_payment failed', error.message);
@@ -630,7 +660,7 @@ export const handleWalletDepositCallback = async (
       }
    };
    if (kind === 's') {
-      await sweepTap(svc, depId as BscToken, Number(reqId), `${chatId}:${query.message?.message_id}`, answer, finish);
+      await sweepTap(svc, depId as BscToken, Number(reqId), `${chatId}:${query.message?.message_id}`, by, answer, finish);
       return true;
    }
    const { data: dep } = await svc.from('id_wallet_deposits').select(DEPOSIT_FIELDS).eq('id', Number(depId)).maybeSingle();
@@ -707,8 +737,7 @@ const refundTap = async (svc: Svc, d: DepositRow, what: 'all' | 'extra', answer:
    try {
       const txId = await sendTokenBsc(svc, d.token, walt, amount, Date.now() + 55_000);
       await patchDeposit(svc, d, { refund_tx: txId, refund_units: units.toString(), ...(what === 'all' ? { status: 'refunded' } : {}) });
-      await tell(user, say(user, `↩️ Kami mengembalikan ${amount} ${d.token} ke Walt kamu.`, `↩️ We sent ${amount} ${d.token} back to your Walt.`));
-      await finish(`↩️ Refund of ${amount} ${d.token} sent to ${short(walt)} (Openfort ${txId})`);
+      await finish(`↩️ Refund of ${amount} ${d.token} to ${short(walt)} sent (Openfort ${txId}). I'll confirm here once it lands on BNB Chain.`);
    } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (err instanceof NotSentError) {
@@ -721,28 +750,25 @@ const refundTap = async (svc: Svc, d: DepositRow, what: 'all' | 'extra', answer:
    }
 };
 
-const sweepTap = async (svc: Svc, token: BscToken, cents: number, cardKey: string, answer: Say, finish: Say) => {
+const sweepTap = async (svc: Svc, token: BscToken, cents: number, cardKey: string, by: string, answer: Say, finish: Say) => {
    if ((token !== 'USDT' && token !== 'USDC') || !Number.isInteger(cents) || cents <= 0) return void (await answer('Bad sweep.'));
    const to = String((await getSetting(svc, 'id_payout_sweep_to')) ?? '').trim();
    if (!EVM_ADDRESS.test(to)) return void (await answer('No sweep address set (id_payout_sweep_to).'));
-   // One send per card, even on a double tap.
-   const { data: locked } = await svc
-      .from('telegram_bot_settings')
-      .update({ value: cardKey, updated_at: new Date().toISOString() })
-      .eq('key', 'id_sweep_lock')
-      .neq('value', cardKey)
-      .select('key');
-   if (!(locked ?? []).length) return void (await answer('Already sent from this card.'));
+   // One send per card, even on double taps or taps on older cards (card_key is the primary key).
+   const { error: claimError } = await svc.from('id_sweeps').insert({ card_key: cardKey, token, cents, to_address: to.toLowerCase(), by_admin: by });
+   if (claimError) return void (await answer(claimError.code === '23505' ? 'Already sent from this card.' : `Couldn’t start: ${claimError.message}`));
    const amount = centsToText(cents);
    try {
       const txId = await sendTokenBsc(svc, token, to, amount, Date.now() + 55_000);
-      await finish(`✅ Sent ${amount} ${token} to ${to} (Openfort ${txId})`);
+      await svc.from('id_sweeps').update({ openfort_tx: txId, status: 'sent', updated_at: new Date().toISOString() }).eq('card_key', cardKey);
+      await finish(`✅ Sending ${amount} ${token} to ${to} (Openfort ${txId}). I'll confirm here once it lands.`);
    } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (err instanceof NotSentError) {
-         await svc.from('telegram_bot_settings').update({ value: '' }).eq('key', 'id_sweep_lock').eq('value', cardKey);
-         await answer(`Not sent: ${msg}`);
+         await svc.from('id_sweeps').update({ status: 'not_sent', updated_at: new Date().toISOString() }).eq('card_key', cardKey);
+         await finish(`Not sent: ${msg}. Send /idsweep again to retry.`);
       } else {
+         await svc.from('id_sweeps').update({ status: 'failed', updated_at: new Date().toISOString() }).eq('card_key', cardKey);
          await finish(`⚠️ Send failed (${msg}) — it MAY have gone out. Check the payout wallet before trying again.`);
       }
    }
@@ -814,7 +840,10 @@ export const handleSweepCommand = async (svc: Svc, message: { chat: { id: number
 /** Reads USDT/USDC transfers into the payout wallet since the last look, saving each as a deposit row. */
 const scanWallet = async (svc: Svc, wallet: string, deadline: number): Promise<number> => {
    const head = (await bscHead()) - BSC_CONFIRMATIONS;
-   const saved = await getSetting(svc, 'id_repay_scan_block');
+   // Read the cursor strictly: a failed read must not restart the scan 2 h back and skip blocks.
+   const { data: cursorRow, error: cursorError } = await svc.from('telegram_bot_settings').select('value').eq('key', 'id_repay_scan_block').maybeSingle();
+   if (cursorError) throw new Error(`read scan cursor: ${cursorError.message}`);
+   const saved = (cursorRow?.value as string | undefined) ?? null;
    let from = saved && /^\d+$/.test(saved) ? BigInt(saved) + 1n : await blockAtOrBefore(new Date(Date.now() - FIRST_SCAN_BACK_MS).toISOString(), head);
    let seen = 0;
    const me = wallet.toLowerCase();
@@ -840,42 +869,112 @@ const scanWallet = async (svc: Svc, wallet: string, deadline: number): Promise<n
          if (error) throw new Error(`save deposits: ${error.message}`); // don't move the cursor past unsaved money
          seen += rows.length;
       }
-      await setSetting(svc, 'id_repay_scan_block', to.toString());
+      const { error: saveError } = await svc
+         .from('telegram_bot_settings')
+         .upsert({ key: 'id_repay_scan_block', value: to.toString(), updated_at: new Date().toISOString() }, { onConflict: 'key' });
+      if (saveError) throw new Error(`save scan cursor: ${saveError.message}`);
       from = to + 1n;
+   }
+   // Behind by more than ~30 min (RPC trouble, or out of time): tell the team, at most every 3 h.
+   if (head - from > SCAN_BEHIND_ALERT_BLOCKS) {
+      const last = Date.parse(String((await getSetting(svc, 'id_repay_scan_alerted_at')) ?? ''));
+      if (!Number.isFinite(last) || Date.now() - last > SCAN_ALERT_EVERY_MS) {
+         await setSetting(svc, 'id_repay_scan_alerted_at', new Date().toISOString());
+         await alertTeam(svc, `⚠️ 🇮🇩 The payout-wallet repayment scan is ${(head - from).toString()} blocks (~${Math.round(Number(head - from) * 0.75 / 60)} min) behind BNB Chain. Repayments will be recorded late until it catches up.`);
+      }
    }
    return seen;
 };
 
+const sendUnmatchedCard = async (svc: Svc, d: DepositRow) => {
+   const card = await unmatchedCard(svc, d);
+   await alertTeam(svc, card.text, card.keyboard);
+   await patchDeposit(svc, d, { alerted_at: new Date().toISOString() });
+};
+
 const processNew = async (svc: Svc, d: DepositRow, topupSenders: Set<string>): Promise<'recorded' | 'topup' | 'unmatched' | 'ignored' | 'other'> => {
    const units = unitsOf(d.units);
+   if (units < DUST_UNITS) {
+      if (!(await claimDeposit(svc, d, ['new']))) return 'other';
+      await patchDeposit(svc, d, { status: 'ignored', note: { reason: 'dust' } });
+      return 'ignored';
+   }
+   // An exact-amount match wins even from a "top-up" sender: exchanges and Walt send from shared wallets.
+   const match = await matchRequest(svc, units);
+   if (match) {
+      if (!(await claimDeposit(svc, d, ['new'], { loan_id: match.req.loan_id, request_id: match.req.id, matched_by: match.late ? 'late_amount' : 'amount' }))) return 'other';
+      if (await claimRequest(svc, match.req, d.id)) {
+         return (await recordDeposit(svc, d)) === 'recorded' ? 'recorded' : 'other';
+      }
+      // Another deposit took that request a moment ago (two sends of the same amount): the team decides.
+      await patchDeposit(svc, d, { status: 'unmatched', loan_id: null, request_id: null, matched_by: null });
+      await sendUnmatchedCard(svc, d);
+      return 'unmatched';
+   }
+   if (!(await claimDeposit(svc, d, ['new']))) return 'other';
    if (topupSenders.has(d.from_address.toLowerCase())) {
       await patchDeposit(svc, d, { status: 'topup' });
       await alertTeam(svc, `⬆️ 🇮🇩 Top-up: ${depositText(d)} into the payout wallet from ${short(d.from_address)}.`);
       return 'topup';
    }
-   if (units < DUST_UNITS) {
-      await patchDeposit(svc, d, { status: 'ignored', note: { reason: 'dust' } });
-      return 'ignored';
-   }
-   const match = await matchRequest(svc, units);
-   if (match && (await claimDeposit(svc, d, ['new'], { loan_id: match.req.loan_id, request_id: match.req.id, matched_by: match.late ? 'late_amount' : 'amount' }))) {
-      if (!(await claimRequest(svc, match.req, d.id))) {
-         // Another deposit took that request a moment ago (two sends of the same amount): the team decides.
-         await patchDeposit(svc, d, { status: 'unmatched', loan_id: null, request_id: null, matched_by: null });
-      } else {
-         const outcome = await recordDeposit(svc, d);
-         return outcome === 'recorded' ? 'recorded' : 'other';
-      }
-   } else if (!match) {
-      if (!(await claimDeposit(svc, d, ['new']))) return 'other';
-      await patchDeposit(svc, d, { status: 'unmatched' });
-   } else {
-      return 'other'; // another run claimed this deposit
-   }
-   const card = await unmatchedCard(svc, d);
-   await alertTeam(svc, card.text, card.keyboard);
-   await patchDeposit(svc, d, { alerted_at: new Date().toISOString() });
+   await patchDeposit(svc, d, { status: 'unmatched' });
+   await sendUnmatchedCard(svc, d);
    return 'unmatched';
+};
+
+/** Refunds and sweeps sent from the payout wallet: confirm them on chain (or say they failed). */
+const confirmOutgoing = async (svc: Svc, deadline: number) => {
+   const { data: refunds } = await svc
+      .from('id_wallet_deposits')
+      .select(DEPOSIT_FIELDS)
+      .not('refund_tx', 'is', null)
+      .is('refund_confirmed_at', null)
+      .order('id', { ascending: true })
+      .limit(10);
+   for (const d of (refunds ?? []) as DepositRow[]) {
+      if (Date.now() > deadline) return;
+      try {
+         const state = await pollOpenfortTx(svc, String(d.refund_tx));
+         if (state.state === 'pending') continue;
+         const amount = unitsToDecimal(unitsOf(d.refund_units ?? d.units));
+         if (state.state === 'succeeded') {
+            await patchDeposit(svc, d, { refund_tx_hash: state.txHash, refund_confirmed_at: new Date().toISOString() });
+            const { data: loan } = d.loan_id ? await svc.from('loans').select('borrower_user_id').eq('id', d.loan_id).maybeSingle() : { data: null };
+            const user = loan ? await loadUser(svc, loan.borrower_user_id) : null;
+            await tell(user, say(user, `↩️ Kami mengembalikan ${amount} ${d.token} ke Walt kamu.`, `↩️ We sent ${amount} ${d.token} back to your Walt.`));
+            await alertTeam(svc, `✅ 🇮🇩 Refund of ${amount} ${d.token} landed (tx ${state.txHash}).`);
+         } else {
+            const wasAll = d.status === 'refunded';
+            await patchDeposit(svc, d, { refund_tx: null, refund_started_at: null, refund_units: null, ...(wasAll ? { status: 'refund_needed' } : {}) });
+            await alertTeam(svc, `⚠️ 🇮🇩 Refund of ${amount} ${d.token} FAILED (${state.error}). Nothing left the wallet — tap to try again.`, [
+               [{ text: `↩️ Retry refund`, callback_data: `${CB}${wasAll ? 'f' : 'o'}:${d.id}` }]
+            ]);
+         }
+      } catch (err) {
+         console.error(`[idRepayments] refund check ${d.id} failed`, err instanceof Error ? err.message : err);
+      }
+   }
+   const { data: sweeps } = await svc.from('id_sweeps').select('card_key, token, cents, to_address, openfort_tx').eq('status', 'sent').limit(10);
+   for (const sw of (sweeps ?? []) as Array<{ card_key: string; token: string; cents: number; to_address: string; openfort_tx: string }>) {
+      if (Date.now() > deadline) return;
+      try {
+         const state = await pollOpenfortTx(svc, sw.openfort_tx);
+         if (state.state === 'pending') continue;
+         const ok = state.state === 'succeeded';
+         await svc
+            .from('id_sweeps')
+            .update({ status: ok ? 'confirmed' : 'failed', tx_hash: state.txHash ?? null, updated_at: new Date().toISOString() })
+            .eq('card_key', sw.card_key);
+         await alertTeam(
+            svc,
+            ok
+               ? `✅ 🇮🇩 Sweep of ${centsToText(Number(sw.cents))} ${sw.token} to ${short(sw.to_address)} landed (tx ${state.txHash}).`
+               : `⚠️ 🇮🇩 Sweep of ${centsToText(Number(sw.cents))} ${sw.token} FAILED (${state.state === 'failed' ? state.error : '?'}). Nothing left the wallet — send /idsweep again.`
+         );
+      } catch (err) {
+         console.error(`[idRepayments] sweep check ${sw.card_key} failed`, err instanceof Error ? err.message : err);
+      }
+   }
 };
 
 export type IdRepayTally = { seen: number; recorded: number; topups: number; unmatched: number; resumed: number; expired: number };
@@ -907,20 +1006,35 @@ export const runIdRepayments = async (svc: Svc, deadline = Date.now() + 45_000):
          if (Date.now() > deadline - 10_000) break;
          try {
             if (!(await claimStuck(svc, d))) continue;
+            // No loan to put it on (the run died before 'unmatched', or the loan was deleted): ask the team.
+            const { data: hasLoan } = d.loan_id ? await svc.from('loans').select('id').eq('id', d.loan_id).maybeSingle() : { data: null };
+            if (!hasLoan) {
+               await patchDeposit(svc, d, { status: 'unmatched', loan_id: null, request_id: null, matched_by: null });
+               await sendUnmatchedCard(svc, d);
+               tally.unmatched += 1;
+               continue;
+            }
             if ((await recordDeposit(svc, d)) === 'recorded') tally.resumed += 1;
          } catch (err) {
             console.error(`[idRepayments] resume ${d.id} failed`, err instanceof Error ? err.message : err);
          }
       }
 
-      // 2. New money on BNB Chain.
+      // 2. Refunds / sweeps sent earlier: did they land?
+      try {
+         await confirmOutgoing(svc, deadline - 25_000);
+      } catch (err) {
+         console.error('[idRepayments] outgoing check failed', err instanceof Error ? err.message : err);
+      }
+
+      // 3. New money on BNB Chain.
       try {
          tally.seen = await scanWallet(svc, wallet.address, deadline - 15_000);
       } catch (err) {
          console.error('[idRepayments] scan failed', err instanceof Error ? err.message : err);
       }
 
-      // 3. Match and record.
+      // 4. Match and record.
       const { data: fresh } = await svc.from('id_wallet_deposits').select(DEPOSIT_FIELDS).eq('status', 'new').order('id', { ascending: true }).limit(25);
       const topupSenders = parseSenders(await getSetting(svc, 'id_topup_senders'));
       for (const d of (fresh ?? []) as DepositRow[]) {

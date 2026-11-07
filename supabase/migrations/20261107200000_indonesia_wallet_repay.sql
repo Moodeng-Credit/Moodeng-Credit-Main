@@ -61,6 +61,8 @@ create table if not exists public.id_wallet_deposits (
   refund_started_at timestamptz,             -- claimed before a refund send (one tap only)
   refund_tx text,                            -- Openfort transaction id of the refund to their Walt
   refund_units numeric(78, 0),
+  refund_tx_hash text,                       -- the BNB Chain hash once Openfort confirms it
+  refund_confirmed_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (tx_hash, log_index)
@@ -79,6 +81,109 @@ insert into public.telegram_bot_settings (key, value, description) values
    'Comma-separated BNB Chain addresses whose transfers into the payout wallet are top-ups (e.g. Binance TH), not repayments. The "It''s a top-up" button adds to it.'),
   ('id_payout_sweep_to', '',
    'The ONLY address /idsweep can send payout-wallet money to (e.g. your Binance TH USDT/USDC BEP20 deposit address). Set by SQL, never from chat.'),
-  ('id_sweep_lock', '',
-   'Last /idsweep card that was sent (so a double tap can''t send twice).')
+  ('id_repay_scan_alerted_at', '',
+   'When the team was last told the payout-wallet scan is behind (at most every 3 h).')
 on conflict (key) do nothing;
+
+-- Every /idsweep card sends at most once (the card key is the primary key).
+create table if not exists public.id_sweeps (
+  card_key text primary key,                 -- '<chat id>:<message id>'
+  token text not null check (token in ('USDT', 'USDC')),
+  cents bigint not null check (cents > 0),
+  to_address text not null,
+  openfort_tx text,
+  status text not null default 'sending' check (status in ('sending', 'sent', 'confirmed', 'failed', 'not_sent')),
+  tx_hash text,
+  by_admin text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+alter table public.id_sweeps enable row level security;
+revoke all on public.id_sweeps from public, anon, authenticated;
+
+-- ── crediting the rupiah the borrower was asked for ─────────────────────────────────────────────
+-- A repayment request is priced in USDT from the rupiah left at that moment. If the rate moves before
+-- the money lands, converting the USDT at the new rate could leave a few hundred or thousand rupiah
+-- "still owed" although the borrower paid exactly what we asked. So a deposit matched to a request
+-- credits the REQUEST's rupiah (capped at what's still owed): record_id_wallet_repayment sets
+-- moodeng.id_repay_credit_idr for this transaction and apply_idr_peg_on_repayment uses it instead of
+-- the rate. Everything else (app payments, team-matched deposits) converts at the day's rate as before.
+create or replace function app_private.apply_idr_peg_on_repayment()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare
+  v_rate numeric;
+  v_left numeric;
+  v_limit integer;
+  v_credit numeric := nullif(current_setting('moodeng.id_repay_credit_idr', true), '')::numeric;
+begin
+  if new.repay_idr is null then
+    return new;
+  end if;
+  if coalesce(new.repaid_amount, 0) <= coalesce(old.repaid_amount, 0) then
+    return new;
+  end if;
+  if coalesce(old.repayment_status::text, '') = 'Paid' then
+    return new;
+  end if;
+
+  v_rate := coalesce(public.current_usd_idr(), public.latest_usd_idr_any_age(), new.fx_rate_at_request);
+
+  if new.repaid_idr is not distinct from old.repaid_idr then
+    if v_credit is not null and v_credit > 0 then
+      new.repaid_idr := round(coalesce(old.repaid_idr, 0)
+        + least(v_credit, greatest(0, new.repay_idr - coalesce(old.repaid_idr, 0))), 2);
+    elsif v_rate is not null and v_rate > 0 then
+      new.repaid_idr := round(coalesce(old.repaid_idr, 0) + (new.repaid_amount - coalesce(old.repaid_amount, 0)) * v_rate, 2);
+    else
+      return new;
+    end if;
+  end if;
+
+  if coalesce(new.repayment_status::text, '') = 'Paid' then
+    return new;
+  end if;
+
+  v_left := greatest(0, new.repay_idr - new.repaid_idr);
+  if v_left < 1000 then
+    new.total_repayment_amount := new.repaid_amount;
+    new.repayment_status := 'Paid'::public.repayment_status;
+    new.repaid_at := coalesce(new.repaid_at, now());
+    if new.credit_limit_at_repayment is null then
+      select case when u.is_world_id::text = 'ACTIVE' or u.is_didit::text = 'ACTIVE'
+                  then least(greatest(coalesce(u.cs, 0), 15), 140) end
+        into v_limit
+        from public.users as u
+       where u.id = new.borrower_user_id;
+      new.credit_limit_at_repayment := v_limit;
+    end if;
+  elsif v_rate is not null and v_rate > 0 then
+    new.total_repayment_amount := round(new.repaid_amount + v_left / v_rate, 2);
+  end if;
+  return new;
+end;
+$$;
+
+create or replace function public.record_id_wallet_repayment(
+  p_loan_id uuid,
+  p_caller uuid,
+  p_hash text,
+  p_amount_micros bigint,
+  p_from text,
+  p_credit_idr numeric
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_result jsonb;
+begin
+  perform set_config('moodeng.id_repay_credit_idr', coalesce(p_credit_idr::text, ''), true);
+  v_result := public.record_loan_payment(p_loan_id, 'repay', p_caller, array[p_hash], p_hash, p_amount_micros, p_from);
+  perform set_config('moodeng.id_repay_credit_idr', '', true);
+  return v_result;
+end;
+$$;
+revoke all on function public.record_id_wallet_repayment(uuid, uuid, text, bigint, text, numeric) from public, anon, authenticated;
+grant execute on function public.record_id_wallet_repayment(uuid, uuid, text, bigint, text, numeric) to service_role;

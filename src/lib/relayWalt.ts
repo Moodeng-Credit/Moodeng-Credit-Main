@@ -105,6 +105,8 @@ export type IdRepayStatus = {
    expiresAt: string;
    received: { status: string; token: string; amount: number } | null;
    recorded: boolean;
+   /** The whole loan is repaid (a recorded payment can be partial). */
+   loanPaid: boolean;
 };
 
 export const idRepay = {

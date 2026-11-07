@@ -12,10 +12,14 @@ Deno.test('exact amounts: cents rounded up, no float drift', () => {
    assertEquals(centsToText(1000), '10.00');
 });
 
-Deno.test('a free amount: the first unused cent from the base up', () => {
+Deno.test('a free amount: nearest unused cent, a few below first, then up', () => {
    assertEquals(pickFreeCents(608, new Set()), 608);
-   assertEquals(pickFreeCents(608, new Set([608, 609])), 610);
-   assertEquals(pickFreeCents(608, new Set([608, 609, 610]), 2), null);
+   assertEquals(pickFreeCents(608, new Set([608])), 607);
+   assertEquals(pickFreeCents(608, new Set([608, 607])), 609);
+   assertEquals(pickFreeCents(608, new Set([608, 607, 609, 606, 610, 605, 611, 604, 612])), 613);
+   assertEquals(pickFreeCents(2, new Set([2])), 1);
+   assertEquals(pickFreeCents(1, new Set([1])), 2); // never 0
+   assertEquals(pickFreeCents(608, new Set([608, 607, 609]), 1, 1), null);
 });
 
 Deno.test('units ↔ cents: only whole cents match (a fee-cut amount never does)', () => {

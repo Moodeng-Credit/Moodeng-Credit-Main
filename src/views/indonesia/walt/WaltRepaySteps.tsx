@@ -38,6 +38,16 @@ const T = {
    received: { id: 'Uang diterima, sedang dicatat…', en: 'Money received, recording it…' },
    recorded: { id: 'Pembayaran tercatat! Terima kasih.', en: 'Payment recorded! Thank you.' },
    expired: { id: 'Jumlah ini sudah kedaluwarsa. Minta yang baru.', en: 'This amount expired. Get a new one.' },
+   replaced: {
+      id: 'Ada jumlah yang lebih baru (mungkin dari Telegram). Kalau kamu sudah mengirim yang ini, tunggu saja — tetap tercatat.',
+      en: 'There’s a newer amount (maybe from Telegram). If you already sent this one, just wait — it still counts.'
+   },
+   partial: { id: 'Pembayaran tercatat, tapi masih ada sisa.', en: 'Payment recorded, but there’s still some left.' },
+   payRest: { id: 'Bayar sisanya', en: 'Pay the rest' },
+   needsTeam: {
+      id: 'Uangmu sudah kami terima, tapi tim kami perlu mengeceknya. Kami kabari kamu di Telegram.',
+      en: 'We got your money, but our team needs to check it. We’ll tell you in Telegram.'
+   },
    again: { id: 'Minta jumlah baru', en: 'Get a new amount' },
    left: { id: 'Sisa yang harus dibayar', en: 'Left to pay' },
    today: { id: 'hari ini', en: 'today' }
@@ -97,11 +107,12 @@ export default function WaltRepaySteps({ isPreview, rupiahLeft = null, usdLeft, 
       }
    }, [isPreview, lang]);
 
-   // Follow the request until it's recorded or out of date.
+   // Follow the request until it's recorded, needs the team, or is out of date.
    const recorded = status?.recorded === true;
    const stale = status?.status === 'expired' || status?.status === 'replaced';
+   const needsTeam = Boolean(status?.received && ['refund_needed', 'refunded', 'unmatched', 'ignored', 'topup'].includes(status.received.status));
    useEffect(() => {
-      if (!req || isPreview || recorded || stale) return;
+      if (!req || isPreview || recorded || stale || needsTeam) return;
       const timer = setInterval(() => {
          void idRepay
             .status(req.requestId)
@@ -109,7 +120,7 @@ export default function WaltRepaySteps({ isPreview, rupiahLeft = null, usdLeft, 
             .catch(() => undefined);
       }, POLL_MS);
       return () => clearInterval(timer);
-   }, [req, isPreview, recorded, stale]);
+   }, [req, isPreview, recorded, stale, needsTeam]);
 
    useEffect(() => {
       if (recorded) onRecorded?.();
@@ -184,12 +195,12 @@ export default function WaltRepaySteps({ isPreview, rupiahLeft = null, usdLeft, 
                <p className="mb-2 text-[13px] font-semibold text-[#1a1240] dark:text-white">{say(T.s2)}</p>
                {!req || stale ? (
                   <>
-                     {stale && (
+                     {stale ? (
                         <p className="mb-2 flex gap-1.5 text-[12px] text-[#b45309]">
                            <RotateCcw className="mt-[1px] h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                           {say(T.expired)}
+                           {status?.status === 'replaced' ? say(T.replaced) : say(T.expired)}
                         </p>
-                     )}
+                     ) : null}
                      <GoldButton onClick={() => void load()} busy={busy}>
                         {stale ? say(T.again) : say(T.s2btn)}
                      </GoldButton>
@@ -233,19 +244,32 @@ export default function WaltRepaySteps({ isPreview, rupiahLeft = null, usdLeft, 
                      </div>
                   </div>
                )}
-               {error && <p className="mt-2 text-[12px] font-semibold text-[#dc2626]">{error}</p>}
+               {error ? <p className="mt-2 text-[12px] font-semibold text-[#dc2626]">{error}</p> : null}
             </div>
          </div>
 
          {/* 3. waiting */}
-         {req && !stale && (
+         {req && !stale ? (
             <div className="flex gap-3">
                {stepDot(3, recorded)}
                <div className="min-w-0 flex-1">
                   <p className="mb-2 text-[13px] font-semibold text-[#1a1240] dark:text-white">{say(T.s3)}</p>
-                  {recorded ? (
+                  {recorded && status?.loanPaid ? (
                      <p className="rounded-xl bg-[#dcfce7] px-3 py-2.5 text-[13px] font-semibold text-[#14532d] dark:bg-[#052e16] dark:text-[#86efac]">
                         {say(T.recorded)}
+                     </p>
+                  ) : recorded ? (
+                     <div className="space-y-2">
+                        <p className="rounded-xl bg-[#dcfce7] px-3 py-2.5 text-[13px] font-semibold text-[#14532d] dark:bg-[#052e16] dark:text-[#86efac]">
+                           {say(T.partial)}
+                        </p>
+                        <GoldButton onClick={() => void load()} busy={busy}>
+                           {say(T.payRest)}
+                        </GoldButton>
+                     </div>
+                  ) : needsTeam ? (
+                     <p className="rounded-xl bg-[#fffbeb] px-3 py-2.5 text-[13px] font-semibold text-[#78350f] dark:bg-[#2a1d05] dark:text-[#fcd34d]">
+                        {say(T.needsTeam)}
                      </p>
                   ) : (
                      <div className="flex items-center gap-3 rounded-xl bg-[#f3effe] px-3 py-2.5 dark:bg-[#1e1535]">
@@ -258,7 +282,7 @@ export default function WaltRepaySteps({ isPreview, rupiahLeft = null, usdLeft, 
                   )}
                </div>
             </div>
-         )}
+         ) : null}
       </div>
    );
 }
