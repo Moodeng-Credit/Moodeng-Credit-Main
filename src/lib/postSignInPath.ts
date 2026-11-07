@@ -2,6 +2,7 @@ import { fetchDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSuppo
 
 import { takeNextPath } from '@/lib/authNext';
 import { clearPendingSharedRequestId, getPendingSharedRequestId } from '@/lib/pendingSharedRequest';
+import { fetchIdTrackPath } from '@/views/indonesia/idFlow';
 
 /**
  * Where a freshly signed-in user should land. Shared by the email/Google/Telegram sign-in page and
@@ -14,6 +15,10 @@ export const getPostSignInPath = async (user: { id: string; accountStatus?: stri
 
    const defaultedBorrower = await fetchDefaultedBorrowerSupport(user.id);
    if (defaultedBorrower.overdueAmount > 0) return '/account-restricted';
+
+   // Indonesia-track borrowers finish their own onboarding first.
+   const idTrackPath = await fetchIdTrackPath();
+   if (idTrackPath) return idTrackPath;
 
    // A protected page sent them to sign in: take them back there.
    const nextPath = takeNextPath();

@@ -115,7 +115,7 @@ serve(async (req) => {
 
       const { data: loan, error: loanError } = await supabase
          .from('loans')
-         .select('id, loan_amount, coin, reason, borrower_user_id, loan_status, on_hold_since, created_at, due_date, due_timezone')
+         .select('id, loan_amount, coin, reason, borrower_user_id, loan_status, on_hold_since, created_at, due_date, due_timezone, market')
          .eq('id', loanId)
          .maybeSingle();
       if (loanError) throw new Error(loanError.message);

@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { usePreKycGate } from '@/hooks/usePreKycGate';
+import { ID_PATHS } from '@/lib/idTrack';
 import { isTikTokAccountEmail } from '@/lib/phoneAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { WalletSetupPhase } from '@/lib/web3/openfort';
@@ -17,6 +18,7 @@ import GrowingWalletHippo from '@/views/onboarding/GrowingWalletHippo';
 import OnboardingBio from '@/views/onboarding/OnboardingBio';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 import TikTokPhoneStep, { wasTikTokPhoneSkipped } from '@/views/onboarding/TikTokPhoneStep';
+import { useIdTrackStatus } from '@/views/indonesia/idFlow';
 
 // /onboarding/connect — the pre-KYC gate (src/hooks/usePreKycGate.ts). After the wallet, a new
 // borrower connects Messenger, fills in their bio (work, payday, income — shown to the team on the
@@ -76,7 +78,12 @@ export default function ConnectBeforeKyc() {
       };
    }, [isTikTok, isPreview, user]);
 
+   // Indonesia track: its own, longer onboarding (/id/onboarding) replaces this one.
+   const idTrack = useIdTrackStatus();
+
    if (!user) return null;
+   if (!isPreview && idTrack.isLoading) return null;
+   if (!isPreview && idTrack.isIndo) return <Navigate replace to={ID_PATHS.onboarding} />;
    if (!user.userRole) return <Navigate replace to="/onboarding/role" />;
    if (isLoading) return null;
    // Through onboarding (the team approved them, or the gate is off): straight to the loan form —

@@ -35,6 +35,7 @@ import { describeHeldRequests } from './loanRequestHold.ts';
 import { sendEmail } from './email.ts';
 import { loadNeedsIdCheck } from './preKycGate.ts';
 import { testAccountRow } from './testAccount.ts';
+import { idApprovalBlock, type IdEvent, isIdTrackUser, sendIdTelegram } from './idTrack.ts';
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
@@ -381,7 +382,24 @@ export const buildApprovedWhatsAppTemplate = (firstName: string | null | undefin
    components: [{ type: 'body' as const, parameters: [{ type: 'text' as const, text: firstName?.trim() || 'there' }] }]
 });
 
+// Indonesia track: every kind in Bahasa on Telegram (their one channel), always — whatever
+// notif_account_activity says. The English Telegram copy below is skipped for them.
+const ID_EVENT: Record<BorrowerMessageKind, IdEvent> = {
+   approved: 'access_approved',
+   rejected: 'access_rejected',
+   no_show: 'call_no_show',
+   call_cancelled: 'call_cancelled',
+   spot_released: 'call_released',
+   missed_call: 'call_no_show',
+   missed_call_request_paused: 'call_no_show',
+   missed_call_request_waiting: 'call_no_show',
+   no_show_corrected: 'no_show_corrected',
+   expired: 'access_expired'
+};
+
 export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow, kind: BorrowerMessageKind) => {
+   const idTrack = await isIdTrackUser(svc, borrower.id);
+   if (idTrack) await sendIdTelegram(svc, borrower.id, ID_EVENT[kind]);
    const preKycMsg = PRE_KYC_MESSAGES[kind] && (await loadNeedsIdCheck(svc, borrower.id, borrower)) ? PRE_KYC_MESSAGES[kind] : undefined;
    const msg: BorrowerMessage = preKycMsg ?? BORROWER_MESSAGES[kind];
    if (preKycMsg && PRE_KYC_EMAIL.has(kind) && borrower.email) {
@@ -426,7 +444,7 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
       if (!videos.ok) console.log('loanAccess: approval videos skipped for', borrower.id, videos.reason);
    }
 
-   if (borrower.chat_id && borrower.notif_account_activity !== false) {
+   if (borrower.chat_id && borrower.notif_account_activity !== false && !idTrack) {
       try {
          await sendTelegramMessage(borrower.chat_id, `${msg.title}\n\n${msg.body}`, {
             inlineKeyboard: [
@@ -458,7 +476,8 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
 // `stamp` is the after-state written on the person's admin cards (adminCards.ts).
 export type DecideResult =
    | { ok: true; request: RequestRow; borrower: BorrowerRow; summary: string; stamp: CardStamp }
-   | { ok: false; summary: string; stamp?: CardStamp };
+   // retry: nothing changed and the card keeps its buttons (e.g. an Indonesian whose KYC isn't approved yet).
+   | { ok: false; summary: string; stamp?: CardStamp; retry?: boolean };
 
 // The header of a decided loan-access / call card: the decision, then what it means for the person.
 export const loanAccessStampHeader = (
@@ -504,6 +523,25 @@ export const decideLoanAccess = async (
    decidedBy: string
 ): Promise<DecideResult> => {
    const now = new Date().toISOString();
+
+   // Indonesia track: no ✅ until Didit has approved their ID. Nothing is decided; a "Showed up" still
+   // records that they attended, so the auto no-show can't mark them absent meanwhile.
+   if (decision === 'approved') {
+      const { data: target } = await svc.from('loan_access_requests').select('user_id, kind, status').eq('id', requestId).maybeSingle();
+      const blocked = target?.status === 'pending' ? await idApprovalBlock(svc, target.user_id) : null;
+      if (blocked) {
+         if (target.kind === 'call') {
+            const { data: marked } = await svc
+               .from('users')
+               .update({ video_call_outcome: 'attended', video_call_outcome_at: now })
+               .eq('id', target.user_id)
+               .is('video_call_outcome', null)
+               .select('id');
+            if (marked?.length) await sendIdTelegram(svc, target.user_id, 'attended_kyc_pending');
+         }
+         return { ok: false, retry: true, summary: `${blocked}${target.kind === 'call' ? ' Attendance is recorded; approve once KYC is approved.' : ''}` };
+      }
+   }
 
    // Conditional on still-pending, so two admins tapping at once can't double-decide.
    const { data: request, error } = await svc

@@ -10,6 +10,7 @@ import { describeOwed, getTeamTimezone, loadBorrowerTimezones } from './loanDueT
 import { buildTxExplorerLink, getLoanOutstandingAmount } from './loanNotifications.ts';
 import { getMessengerContact, messengerDisplayName } from './sendpulse.ts';
 import { sendTelegramMessage } from './telegram.ts';
+import { idFlag } from './idTrack.ts';
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
@@ -31,10 +32,12 @@ type TeamFeedLoan = {
    loan_status?: string | null;
    repayment_status?: string | null;
    funded_at?: string | null;
+   /** 'ID' = Indonesia track: marked 🇮🇩. */
+   market?: string | null;
 };
 
 const LOAN_COLUMNS =
-   'id, tracking_id, borrower_user_id, lender_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, due_timezone, hash, is_test, loan_status, repayment_status, funded_at';
+   'id, tracking_id, borrower_user_id, lender_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, due_timezone, hash, is_test, loan_status, repayment_status, funded_at, market';
 
 const siteUrl = () => (Deno.env.get('SITE_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
 const usdc = (amount: number | null | undefined) => `${Number(amount ?? 0).toFixed(2)} USDC`;
@@ -103,7 +106,7 @@ export const postLoanFundedToTeam = async (svc: SupabaseClient, loanId: string):
       const url = `${siteUrl()}/request-board?highlight=${loan.id}`;
 
       const lines = [
-         `💰 ${await borrowerLabel(borrower)} was funded ${usdc(loan.loan_amount)} by ${handle(lender)}`,
+         `💰 ${idFlag(loan.market)}${await borrowerLabel(borrower)} was funded ${usdc(loan.loan_amount)} by ${handle(lender)}`,
          `${loan.tracking_id ?? loan.id}`,
          `↩️ Repays ${usdc(loan.total_repayment_amount)}`,
          `⏳ Due ${due}`,
@@ -114,7 +117,7 @@ export const postLoanFundedToTeam = async (svc: SupabaseClient, loanId: string):
          {
             embeds: [
                {
-                  title: '💰 Loan funded',
+                  title: `💰 ${idFlag(loan.market)}Loan funded`,
                   description: [...lines, url].join('\n'),
                   url: adminUserUrl(loan.borrower_user_id, borrower?.username),
                   color: 0x57f287,
@@ -160,7 +163,7 @@ export const postLoanRepaidToTeam = async (svc: SupabaseClient, loanId: string):
       const hashes = loan.hash ?? [];
       const tx = buildTxExplorerLink(hashes.at(-1));
       const description = [
-         `✅ ${await borrowerLabel(borrower)} repaid ${usdc(loan.repaid_amount ?? loan.total_repayment_amount)} to ${handle(lender)}`,
+         `✅ ${idFlag(loan.market)}${await borrowerLabel(borrower)} repaid ${usdc(loan.repaid_amount ?? loan.total_repayment_amount)} to ${handle(lender)}`,
          `${loan.tracking_id ?? loan.id}`,
          tx ? `🔗 ${tx}` : ''
       ]
@@ -168,7 +171,7 @@ export const postLoanRepaidToTeam = async (svc: SupabaseClient, loanId: string):
          .join('\n');
 
       const ok = await postDiscord(
-         { embeds: [{ title: '✅ Loan repaid', description, color: 0x57f287, timestamp: new Date().toISOString() }] },
+         { embeds: [{ title: `✅ ${idFlag(loan.market)}Loan repaid`, description, color: 0x57f287, timestamp: new Date().toISOString() }] },
          { prefer: ['DISCORD_REQUESTS_WEBHOOK_URL'] }
       );
       if (!ok) await unclaim(svc, loan.id, 'team_repaid');
@@ -202,7 +205,7 @@ export const postPartialRepaymentToTeam = async (svc: SupabaseClient, loanId: st
       const tx = buildTxExplorerLink((loan.hash ?? []).at(-1));
 
       const lines = [
-         `🟡 ${await borrowerLabel(borrower)} paid ${usdc(paidNow)} to ${handle(lender)} (partial)`,
+         `🟡 ${idFlag(loan.market)}${await borrowerLabel(borrower)} paid ${usdc(paidNow)} to ${handle(lender)} (partial)`,
          `${loan.tracking_id ?? loan.id}`,
          `💵 ${usdc(repaid)} of ${usdc(total)} paid · ${usdc(Math.max(total - repaid, 0))} left`,
          `⏳ Due ${due}`,
@@ -320,7 +323,7 @@ export const postUpcomingDueDigest = async (svc: SupabaseClient, now: Date = new
       const lines = await Promise.all(upcoming.slice(0, MAX_DIGEST_LINES).map(async ({ loan, zone, days }) => {
          const owed = describeOwed(loan);
          const lender = loan.lender_user_id ? handle(byId.get(loan.lender_user_id)) : 'unknown';
-         return `• **${whenLabel(days)}**: ${await borrowerLabel(byId.get(loan.borrower_user_id as string))} owes ${owed} (lender ${lender}, ${loan.tracking_id})\n   due by ${formatDeadlineForTeam(loan.due_date as string, zone, teamZone)}`;
+         return `• **${whenLabel(days)}**: ${idFlag(loan.market)}${await borrowerLabel(byId.get(loan.borrower_user_id as string))} owes ${owed} (lender ${lender}, ${loan.tracking_id})\n   due by ${formatDeadlineForTeam(loan.due_date as string, zone, teamZone)}`;
       }));
       if (upcoming.length > MAX_DIGEST_LINES) lines.push(`…and ${upcoming.length - MAX_DIGEST_LINES} more`);
 

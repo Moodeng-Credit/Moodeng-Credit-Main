@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { sendEmail } from '../_shared/email.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
+import { sendIdTelegramTo } from '../_shared/idTrack.ts';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -220,12 +221,26 @@ serve(async (req) => {
 
    const { data: borrower, error: borrowerError } = await supabase
       .from('users')
-      .select('id, email, username, chat_id, notif_transaction_activity')
+      .select('id, email, username, chat_id, notif_transaction_activity, market, preferred_locale')
       .eq('id', withdrawal.borrower_user_id)
       .maybeSingle();
 
    if (borrowerError) {
       return new Response(JSON.stringify({ error: borrowerError.message }), { status: 500, headers: corsHeaders });
+   }
+
+   // Indonesia track: cash-outs go to Walt. Told on Telegram in Bahasa, always (their one channel);
+   // a placeholder Telegram sign-up address gets no email.
+   const idBorrower = borrower as { id: string; chat_id: string | number | null; market?: string | null; preferred_locale?: string | null } | null;
+   const idWithdrawal = withdrawal as { id: string; amount: number | string; exchange: string | null };
+   if (idBorrower?.market === 'ID' && /walt/i.test(String(idWithdrawal.exchange ?? ''))) {
+      const sent = await sendIdTelegramTo(idBorrower, 'cashout_walt', { amount: Number(idWithdrawal.amount) });
+      if (!sent) {
+         return new Response(JSON.stringify({ error: 'No notification could be delivered' }), { status: 502, headers: corsHeaders });
+      }
+      // deno-lint-ignore no-explicit-any
+      await (supabase as any).from('withdrawals').update({ notified_at: new Date().toISOString() }).eq('id', idWithdrawal.id);
+      return new Response(JSON.stringify({ message: 'Notification sent', emailSent: false, telegramSent: true }), { status: 200, headers: corsHeaders });
    }
 
    // Respect the borrower's money-movement notification preference.

@@ -27,6 +27,7 @@ import { showPasswordlessSignup, showPhoneFirst } from '@/lib/phoneAuth';
 import { registerUser, registerWithGoogle, registerWithTelegram } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import { WorldId } from '@/types/authTypes';
+import IdEntryBanner from '@/views/indonesia/IdEntryBanner';
 import { Icons } from '@/views/login/components/Icons';
 import PasswordlessSignUpScreen from '@/views/signup/PasswordlessSignUpScreen';
 import '@/views/signup/styles/signup.css';
@@ -69,8 +70,19 @@ export default function SignUpPage() {
    // Already signed in (often a guest whose Facebook page reloaded): straight to their next step.
    const redirectingSignedIn = useSignedInRedirect();
    if (redirectingSignedIn) return <Loading />;
-   if (phoneFirst) return <PasswordlessSignUpScreen initialChannel="sms" phoneFirst />;
-   return passwordless ? <PasswordlessSignUpScreen /> : <PasswordSignUpPage />;
+   return (
+      <>
+         {/* From Indonesia: the Telegram sign-up at /id (other methods stay below). */}
+         <IdEntryBanner />
+         {phoneFirst ? (
+            <PasswordlessSignUpScreen initialChannel="sms" phoneFirst />
+         ) : passwordless ? (
+            <PasswordlessSignUpScreen />
+         ) : (
+            <PasswordSignUpPage />
+         )}
+      </>
+   );
 }
 
 function PasswordSignUpPage() {

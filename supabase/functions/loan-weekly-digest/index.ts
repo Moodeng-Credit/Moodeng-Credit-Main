@@ -56,7 +56,7 @@ const sendTeamLoansDue = async (supabase: SupabaseClient, force: boolean) => {
 
    const { data: loans, error } = await supabase
       .from('loans')
-      .select('due_date, total_repayment_amount, repaid_amount, on_hold_since, borrower_user_id')
+      .select('due_date, total_repayment_amount, repaid_amount, on_hold_since, borrower_user_id, market')
       .eq('loan_status', 'Lent')
       .eq('repayment_status', 'Unpaid')
       .not('is_test', 'is', true)
@@ -75,7 +75,8 @@ const sendTeamLoansDue = async (supabase: SupabaseClient, force: boolean) => {
       return {
          dueDate: loan.due_date,
          owedUsd: getLoanOutstandingAmount(loan),
-         name: String(user.display_name ?? '').trim() || user.username || 'Someone',
+         // 🇮🇩 = Indonesia track.
+         name: `${loan.market === 'ID' ? '🇮🇩 ' : ''}${String(user.display_name ?? '').trim() || user.username || 'Someone'}`,
          username: user.username ?? null,
          facebookName: user.facebook_name ?? null,
          messengerContactId: user.messenger_psid ?? null,
@@ -96,7 +97,7 @@ const loadBorrowers = async (supabase: SupabaseClient, userIds: string[]): Promi
 
    const { data, error } = await supabase
       .from('users')
-      .select('id, username, telegram_username, email, cs, is_world_id, is_didit, chat_id, notif_transaction_activity')
+      .select('id, username, telegram_username, email, cs, is_world_id, is_didit, chat_id, notif_transaction_activity, market, preferred_locale')
       .in('id', userIds);
 
    if (error || !data) {

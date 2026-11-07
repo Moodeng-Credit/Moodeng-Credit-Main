@@ -5,9 +5,17 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useIncomeDocFacts } from '@/hooks/useIncomeDocRequirement';
 
+import {
+   ACCEPT,
+   ACCEPTED,
+   fetchIncomeDocStatus,
+   type IncomeDocStatus,
+   MAX_BYTES,
+   MAX_FILES,
+   uploadIncomeDocuments
+} from '@/app/documents/incomeDocUpload';
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { stepAsk, stepFor } from '@/lib/incomeDocSteps';
-import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, PrimaryButton } from '@/views/dashboard/components/connectKit';
 
 // moodeng.app/documents — a borrower sends proof of income (GCash/Maya history, bank statement,
@@ -23,10 +31,6 @@ import { CONNECT_HIPPOS, ConnectHero, GhostButton, PrimaryButton } from '@/views
 // Files go to the private income-docs bucket; submit_income_document() records the send and pings the
 // team. Borrowers never see scores or flags — only the stage and, if declined, the team's reason.
 
-const MAX_FILES = 6;
-const MAX_BYTES = 10 * 1024 * 1024;
-const ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf';
-const ACCEPTED = new Set(ACCEPT.split(','));
 const POLL_MS = 3000;
 // The AI read usually takes under a minute; after this the card moves on to "in review" anyway.
 const CHECKING_MAX_MS = 75_000;
@@ -45,19 +49,7 @@ const RESEND_FIX: Record<string, string> = {
    no_income: 'We couldn’t see money coming in. Please send a history or statement that shows the money you receive.'
 };
 type Picked = { key: string; file: File; preview: string | null; error: string | null };
-type Status = {
-   stage: 'checking' | 'resend' | 'in_review' | 'approved' | 'declined';
-   file_count: number;
-   sent_at: string;
-   reason: string | null;
-} | null;
-
-const fetchStatus = async (): Promise<Status> => {
-   const { data, error } = await getSupabaseBrowserClient().rpc('get_my_income_document');
-   if (error) return null;
-   const row = (Array.isArray(data) ? data[0] : data) as Status | undefined;
-   return row ?? null;
-};
+type Status = IncomeDocStatus;
 
 const REVIEW_HOURS = 24;
 
@@ -129,7 +121,7 @@ export default function DocumentsPage({
    // Where is their latest send? (Skipped in design previews.)
    useEffect(() => {
       if (preview) return;
-      void fetchStatus().then(showStatus);
+      void fetchIncomeDocStatus().then(showStatus);
    }, [preview, showStatus]);
 
    // While the AI reads: tick "Reading" → "Checking" for the feel of progress, and move on to
@@ -139,7 +131,7 @@ export default function DocumentsPage({
       const startedAt = Date.now();
       const stepTimer = window.setTimeout(() => setCheckingStep(2), 6000);
       const poll = window.setInterval(async () => {
-         const status = await fetchStatus();
+         const status = await fetchIncomeDocStatus();
          if (status && status.stage !== 'checking') {
             setCheckingStep(3);
             window.setTimeout(() => showStatus(status), 900);
@@ -177,43 +169,23 @@ export default function DocumentsPage({
       setPhase('sending');
       setSentCount(0);
       setError(null);
-      const supabase = getSupabaseBrowserClient();
-      const { data: auth } = await supabase.auth.getUser();
-      const userId = auth.user?.id;
-      if (!userId) {
-         setError('Please sign in again, then send.');
-         setPhase('pick');
-         return;
-      }
-      const files: Array<{ path: string; name: string; mime: string; size: number }> = [];
-      for (const p of good) {
-         const safeName = p.file.name.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(-80) || 'document';
-         const path = `${userId}/${crypto.randomUUID()}-${safeName}`;
-         const { error: uploadError } = await supabase.storage
-            .from('income-docs')
-            .upload(path, p.file, { contentType: p.file.type, upsert: false });
-         if (!uploadError) files.push({ path, name: p.file.name.slice(0, 200), mime: p.file.type, size: p.file.size });
-         setSentCount((n) => n + 1);
-      }
-      const { error: submitError } = files.length
-         ? await supabase.rpc('submit_income_document', {
-              p_files: files,
-              p_note: note.trim() || null,
-              p_amount: requestedAmount,
-              p_repay: requestedRepay
-           })
-         : { error: new Error('nothing uploaded') };
-      if (submitError) {
+      const result = await uploadIncomeDocuments(
+         good.map((p) => p.file),
+         { note, amount: requestedAmount, repay: requestedRepay, onFileDone: () => setSentCount((n) => n + 1) }
+      );
+      if (!result.ok) {
          setError(
-            /too many/i.test(submitError.message)
-               ? 'You’ve sent a lot today. Try again tomorrow, or message us.'
-               : 'Couldn’t send. Check your connection and try again.'
+            result.error === 'signin'
+               ? 'Please sign in again, then send.'
+               : result.error === 'too_many'
+                 ? 'You’ve sent a lot today. Try again tomorrow, or message us.'
+                 : 'Couldn’t send. Check your connection and try again.'
          );
          setPhase('pick');
          return;
       }
       setSentAt(Date.now());
-      setFileCount(files.length);
+      setFileCount(result.count);
       setPicked([]);
       setNote('');
       setCheckingStep(1);

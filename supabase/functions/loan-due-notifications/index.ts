@@ -71,7 +71,7 @@ const loadBorrowers = async (supabase: SupabaseClient, userIds: string[]): Promi
 
    const { data, error } = await supabase
       .from('users')
-      .select('id, username, telegram_username, email, cs, is_world_id, is_didit, chat_id, notif_transaction_activity, notif_push, messenger_psid, whatsapp_contact_id, notif_whatsapp, viber_number, notif_viber')
+      .select('id, username, telegram_username, email, cs, is_world_id, is_didit, chat_id, notif_transaction_activity, notif_push, messenger_psid, whatsapp_contact_id, notif_whatsapp, viber_number, notif_viber, market, preferred_locale')
       .in('id', userIds);
 
    if (error || !data) {
@@ -318,7 +318,7 @@ serve(async (req) => {
    const { data: loans, error } = await supabase
       .from('loans')
       .select(
-         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, due_timezone, funded_at, lender_user_id, repayment_status'
+         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, due_timezone, funded_at, lender_user_id, repayment_status, market'
       )
       .eq('loan_status', 'Lent')
       .in('repayment_status', ['Unpaid', 'Partial'])

@@ -24,6 +24,7 @@ import { openMessengerSupport } from '@/config/contactVerification';
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { CONNECT_HIPPOS, ConnectHero } from '@/views/dashboard/components/connectKit';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
+import { ID_KYC_RETURN_PATH, ID_RETURN_TO, takeIdKycReturn, useIdTrackStatus } from '@/views/indonesia/idFlow';
 
 const STATUS_REFRESH_RETRIES = 40;
 const STATUS_REFRESH_DELAY_MS = 3000;
@@ -614,9 +615,23 @@ export default function VerifyFlow() {
 
    // --- Mount -------------------------------------------------------------------
 
+   // Indonesia track: their ID check lives in /id/onboarding (step "kyc"), which polls Didit itself.
+   // Didit sends everyone back here, so hand them straight back (marked when the step opened Didit).
+   const idTrack = useIdTrackStatus();
+   useEffect(() => {
+      if (!idTrack.isIndo) return;
+      pollRunRef.current += 1;
+      navigate(ID_KYC_RETURN_PATH, { replace: true });
+   }, [idTrack.isIndo, navigate]);
+
    useEffect(() => {
       if (startedRef.current) return;
       startedRef.current = true;
+
+      if (takeIdKycReturn() || new URLSearchParams(location.search).get('returnTo') === ID_RETURN_TO) {
+         navigate(ID_KYC_RETURN_PATH, { replace: true });
+         return;
+      }
 
       if (isUserVerified(user)) {
          // Already verified — e.g. opened from the "You're verified" Messenger/email/push link, or

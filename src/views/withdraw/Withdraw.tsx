@@ -36,6 +36,7 @@ import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { useGeoCheck } from '@/hooks/useGeoCheck';
+import { useIdOnboarding } from '@/hooks/useIdOnboarding';
 import { useLoanData } from '@/hooks/useLoanData';
 import useWallet, { type PaymentMethod, useActivePaymentMethod } from '@/hooks/useWallet';
 
@@ -50,6 +51,8 @@ import { useUsdcRate } from '@/lib/useUsdcRate';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { CashoutGateError, startCashoutFaceCheck } from '@/lib/withdraw/cashoutFaceGate';
 import type { RootState } from '@/store/store';
+import WaltCashoutFlow from '@/views/indonesia/walt/WaltCashoutFlow';
+import { WaltIcon } from '@/views/indonesia/walt/waltUi';
 import BankPayoutFlow from '@/views/withdraw/BankPayoutFlow';
 import { useBankPayoutStatus } from '@/views/withdraw/useBankPayoutAvailable';
 
@@ -65,7 +68,15 @@ function track(event: string, props?: Record<string, unknown>) {
 
 type Screen = 'celebrate' | 'withdraw';
 // 'bank' = straight to GCash / any bank through Stableyard (testers only for now, see BankPayoutFlow).
-type Provider = 'moneybees' | 'binance' | 'coinsph' | 'gcash' | 'pdax' | 'bank' | 'kraken' | 'coinbase';
+// 'walt' = Indonesia track: to their saved Walt (Telegram wallet) address through Relay (WaltCashoutFlow).
+type Provider = 'moneybees' | 'binance' | 'coinsph' | 'gcash' | 'pdax' | 'bank' | 'kraken' | 'coinbase' | 'walt';
+
+// Indonesia-track borrowers (users.market = 'ID'). Preview: /withdraw-preview?market=id.
+function useIsIndo(isPreview: boolean) {
+   const { isIndo } = useIdOnboarding();
+   if (isPreview) return new URLSearchParams(window.location.search).get('market') === 'id';
+   return isIndo;
+}
 
 // Real data + actions provided by the page root and consumed by the ported
 // prototype components. `available` replaces the prototype's hardcoded
@@ -755,7 +766,10 @@ function DirectPesoCard({ onSelect, spendable }: { onSelect: () => void; spendab
 function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) => void; onLater: () => void }) {
    const { spendable, walletConnected, repayUsdc: REPAY_USDC, dueDate: DUE_DATE, isPreview } = useWithdrawData();
    const navigate = useNavigate();
-   const { available: bankPayout } = useBankPayoutStatus(isPreview);
+   const isIndo = useIsIndo(isPreview);
+   // Indonesians get Walt (first, recommended) + Binance; the Philippine rails and the peso payout are hidden.
+   const { available: phBankPayout } = useBankPayoutStatus(isPreview);
+   const bankPayout = phBankPayout && !isIndo;
    const inEurope = useInEurope(isPreview);
    // No region/IP check here (deliberately removed): `useRegion()` is an IP-based guess, not
    // the user's actual location or nationality — a Filipino traveling or living abroad still
@@ -830,7 +844,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                {!bankPayout && (
                   <>
                      <h1 className="text-[27px] text-[var(--ink)]" style={{ fontWeight: 590, lineHeight: 1.1, letterSpacing: '-0.04em' }}>
-                        Withdraw your USDC
+                        {isIndo ? 'Tarik uang kamu' : 'Withdraw your USDC'}
                      </h1>
                      <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[6px]">
                         {balanceLine}
@@ -848,11 +862,12 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
             {!bankPayout && (
                <>
                   <p className="text-[18px] text-[var(--ink)] mt-[10px] mb-[6px]" style={{ fontWeight: 590, letterSpacing: '-0.02em' }}>
-                     How would you like to cash out?
+                     {isIndo ? 'Mau dicairkan ke mana?' : 'How would you like to cash out?'}
                   </p>
                   <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mb-[14px]">
-                     Your loan funds are in your wallet. Withdraw or convert them using an exchange, P2P platform, or a supported local
-                     crypto service.
+                     {isIndo
+                        ? 'Kirim ke Walt di Telegram, lalu jual ke Rupiah.'
+                        : 'Your loan funds are in your wallet. Withdraw or convert them using an exchange, P2P platform, or a supported local crypto service.'}
                   </p>
                </>
             )}
@@ -869,7 +884,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                      </p>
                   </>
                )}
-               {inEurope && (
+               {inEurope && !isIndo && (
                   <>
                      <PickerRow
                         onSelect={selectProvider}
@@ -890,53 +905,78 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                      />
                   </>
                )}
-               {!COINS_PH_SUSPENDED && coinsPhRow}
-               {COINS_PH_SUSPENDED && (
-                  <PickerRow
-                     onSelect={selectProvider}
-                     id="pdax"
-                     recommended={!bankPayout && !inEurope}
-                     icon={<PdaxAppIcon className="w-[46px] h-[46px]" />}
-                     name="PDAX"
-                     line1="Sell for pesos, withdraw to bank or e-wallet"
-                     line2="Bank, GCash or Maya · ~30 min"
-                  />
+               {isIndo && (
+                  <>
+                     <PickerRow
+                        onSelect={selectProvider}
+                        id="walt"
+                        recommended
+                        icon={<WaltIcon />}
+                        name="Kirim ke Walt (Telegram)"
+                        line1="Jual USDT ke Rupiah di P2P · Sell for Rupiah"
+                        line2="Biaya ≈ $0.07 · beberapa detik"
+                     />
+                     <PickerRow
+                        onSelect={selectProvider}
+                        id="binance"
+                        icon={<BinanceAppIcon className="w-[46px] h-[46px]" />}
+                        name="Binance"
+                        line1="Sell for local currency via P2P marketplace"
+                        line2="Send on Base · 30 min–hours"
+                     />
+                  </>
                )}
-               <PickerRow
-                  onSelect={selectProvider}
-                  id="gcash"
-                  icon={<GCashAppIcon className="w-[46px] h-[46px]" />}
-                  name="GCrypto"
-                  line1="Cash out straight to your GCash"
-                  line2="GCash balance · ~5 min"
-               />
-               {!COINS_PH_SUSPENDED && (
-                  <PickerRow
-                     onSelect={selectProvider}
-                     id="pdax"
-                     icon={<PdaxAppIcon className="w-[46px] h-[46px]" />}
-                     name="PDAX"
-                     line1="Sell for pesos, withdraw to bank or e-wallet"
-                     line2="Bank, GCash or Maya · ~30 min"
-                  />
+               {!isIndo && (
+                  <>
+                     {!COINS_PH_SUSPENDED && coinsPhRow}
+                     {COINS_PH_SUSPENDED && (
+                        <PickerRow
+                           onSelect={selectProvider}
+                           id="pdax"
+                           recommended={!bankPayout && !inEurope}
+                           icon={<PdaxAppIcon className="w-[46px] h-[46px]" />}
+                           name="PDAX"
+                           line1="Sell for pesos, withdraw to bank or e-wallet"
+                           line2="Bank, GCash or Maya · ~30 min"
+                        />
+                     )}
+                     <PickerRow
+                        onSelect={selectProvider}
+                        id="gcash"
+                        icon={<GCashAppIcon className="w-[46px] h-[46px]" />}
+                        name="GCrypto"
+                        line1="Cash out straight to your GCash"
+                        line2="GCash balance · ~5 min"
+                     />
+                     {!COINS_PH_SUSPENDED && (
+                        <PickerRow
+                           onSelect={selectProvider}
+                           id="pdax"
+                           icon={<PdaxAppIcon className="w-[46px] h-[46px]" />}
+                           name="PDAX"
+                           line1="Sell for pesos, withdraw to bank or e-wallet"
+                           line2="Bank, GCash or Maya · ~30 min"
+                        />
+                     )}
+                     <PickerRow
+                        onSelect={selectProvider}
+                        id="binance"
+                        icon={<BinanceAppIcon className="w-[46px] h-[46px]" />}
+                        name="Binance"
+                        line1="Sell for local currency via P2P marketplace"
+                        line2="GCash, Maya or Bank · 30 min–hours"
+                     />
+                     <PickerRow
+                        onSelect={selectProvider}
+                        id="moneybees"
+                        icon={<MoneybeesAppIcon className="w-[46px] h-[46px]" />}
+                        name="Moneybees"
+                        line1="External option · buy and sell via their own process"
+                        line2="You follow Moneybees' instructions directly"
+                     />
+                     {COINS_PH_SUSPENDED && coinsPhRow}
+                  </>
                )}
-               <PickerRow
-                  onSelect={selectProvider}
-                  id="binance"
-                  icon={<BinanceAppIcon className="w-[46px] h-[46px]" />}
-                  name="Binance"
-                  line1="Sell for local currency via P2P marketplace"
-                  line2="GCash, Maya or Bank · 30 min–hours"
-               />
-               <PickerRow
-                  onSelect={selectProvider}
-                  id="moneybees"
-                  icon={<MoneybeesAppIcon className="w-[46px] h-[46px]" />}
-                  name="Moneybees"
-                  line1="External option · buy and sell via their own process"
-                  line2="You follow Moneybees' instructions directly"
-               />
-               {COINS_PH_SUSPENDED && coinsPhRow}
                {showCoinsPaused && (
                   <div
                      role="status"
@@ -951,12 +991,14 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                )}
             </div>
 
-            <button
-               onClick={() => navigate('/support/guides/withdrawing-to-your-bank')}
-               className="w-full text-center text-[13px] font-semibold text-[var(--accent)] py-[10px] hover:underline"
-            >
-               Learn more about withdrawal options
-            </button>
+            {!isIndo && (
+               <button
+                  onClick={() => navigate('/support/guides/withdrawing-to-your-bank')}
+                  className="w-full text-center text-[13px] font-semibold text-[var(--accent)] py-[10px] hover:underline"
+               >
+                  Learn more about withdrawal options
+               </button>
+            )}
             <div className="h-[12px]" />
          </div>
 
@@ -2583,8 +2625,16 @@ const PROVIDER_TITLES: Record<Provider, string> = {
    pdax: 'Send to PDAX',
    bank: 'Cash out to your bank',
    kraken: 'Send to Kraken',
-   coinbase: 'Send to Coinbase'
+   coinbase: 'Send to Coinbase',
+   walt: 'Kirim ke Walt'
 };
+
+/* ─── Indonesia track: to Walt through Relay ─────────────────────── */
+// Its own done screen, so no "on its way to your exchange" toast.
+function WaltFlow({ onDone }: { onDone: () => void }) {
+   const { isPreview, spendable, walletAddress, send } = useWithdrawData();
+   return <WaltCashoutFlow isPreview={isPreview} spendable={spendable} walletAddress={walletAddress} send={send} onDone={onDone} />;
+}
 
 function WithdrawScreen({
    provider,
@@ -2616,7 +2666,9 @@ function WithdrawScreen({
 
          <div className="flex-1 overflow-y-auto pb-[40px]">
             <div className="px-[16px] pt-[12px]">
-               {provider === 'bank' ? (
+               {provider === 'walt' ? (
+                  <WaltFlow onDone={onDone} />
+               ) : provider === 'bank' ? (
                   <DirectBankFlow onDone={onDone} />
                ) : provider === 'moneybees' ? (
                   <MoneybeesFlow />
@@ -2648,9 +2700,11 @@ function WithdrawFlow() {
    // /withdraw?to=bank (from the /money screen's Cash out) skips the provider list and goes straight to
    // the GCash / bank payout; Back returns to /money.
    const directBank = new URLSearchParams(location.search).get('to') === 'bank';
-   const [screen, setScreen] = useState<Screen>(directBank ? 'withdraw' : 'celebrate');
-   const [withdrawVisible, setWithdrawVisible] = useState(directBank);
-   const [provider, setProvider] = useState<Provider>(directBank ? 'bank' : 'moneybees');
+   // /withdraw?to=walt (Indonesia track: bot links, the face-check return) opens the Walt cash-out; Back shows the list.
+   const directWalt = new URLSearchParams(location.search).get('to') === 'walt';
+   const [screen, setScreen] = useState<Screen>(directBank || directWalt ? 'withdraw' : 'celebrate');
+   const [withdrawVisible, setWithdrawVisible] = useState(directBank || directWalt);
+   const [provider, setProvider] = useState<Provider>(directBank ? 'bank' : directWalt ? 'walt' : 'moneybees');
 
    function goWithdraw(p: Provider) {
       track('withdraw_exchange_selected', { exchange: p });
@@ -2820,7 +2874,9 @@ export default function Withdraw() {
                   throw err instanceof CashoutGateError ? err : new Error('Could not verify this cash-out. Please try again.');
                });
                if (gate.required) {
-                  navigate('/withdraw/face-check', { state: { url: gate.url, returnTo: '/withdraw' } });
+                  navigate('/withdraw/face-check', {
+                     state: { url: gate.url, returnTo: exchange === 'Walt' ? '/withdraw?to=walt' : '/withdraw' }
+                  });
                   return null;
                }
             }

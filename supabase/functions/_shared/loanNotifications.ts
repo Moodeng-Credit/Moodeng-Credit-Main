@@ -29,6 +29,8 @@ export type LoanNotificationLoan = {
    lender_username?: string | null;
    lender_wallet?: string | null;
    hash?: string[] | null;
+   /** 'ID' = Indonesia track: team posts are marked 🇮🇩. */
+   market?: string | null;
 };
 
 export type LoanNotificationRecipient = {
@@ -51,6 +53,10 @@ export type LoanNotificationRecipient = {
    trust_points_total?: number | string | null;
    trust_points_reward?: number | string | null;
    trust_points_reward_kind?: 'potential' | 'earned';
+   /** 'ID' = Indonesia track: always told on Telegram, in Bahasa (idTrack.ts). */
+   market?: string | null;
+   /** 'en' → English for the Indonesia-track Telegram copy; anything else → Bahasa. */
+   preferred_locale?: string | null;
 };
 
 export type LoanNotificationAggregate = {
@@ -1190,7 +1196,7 @@ export const buildRepaymentTeamFeedMessage = (
    const verifyLine = explorerLink ? `Verify on-chain: ${explorerLink}` : '';
    const actionUrl = buildDashboardLink();
 
-   const text = normalizeNotificationText(`✅ Loan repaid
+   const text = normalizeNotificationText(`✅ ${loan.market === 'ID' ? '🇮🇩 ' : ''}Loan repaid
 ${handleName(borrower)} repaid ${amountRepaid} for ${loan.tracking_id}.
 Lender: ${handleName(lender)}
 ${walletLine}

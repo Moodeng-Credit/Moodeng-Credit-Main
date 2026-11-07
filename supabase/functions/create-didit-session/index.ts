@@ -6,6 +6,7 @@ import { postDiscord } from '../_shared/discord.ts';
 import { kycTriesKeyboard } from '../_shared/kycCards.ts';
 import { getAdminChatId } from '../_shared/loanAccess.ts';
 import { KYC_TRIES, kycTriesLeft, needsPreKycGate } from '../_shared/preKycGate.ts';
+import { loadIdStatus } from '../_shared/idTrack.ts';
 
 // Creates a Didit verification session for the authenticated caller and returns
 // the hosted verification URL to redirect them to.
@@ -344,6 +345,18 @@ serve(async (req) => {
       // before we pay Didit for their KYC. Checked before the session is created.
       if ((kind === 'liveness' || kind === 'combined' || kind === 'id') && (await needsPreKycGate(supabase, user.id))) {
          return jsonResponse({ error: 'Please meet the team before verifying your ID.', code: 'APPROVAL_REQUIRED' }, 409);
+      }
+
+      // Indonesia track: KYC comes after Telegram, WhatsApp, Facebook, About you and proof of income
+      // (id_onboarding_status, the same order the app shows). Everyone else is untouched.
+      if (kind === 'liveness' || kind === 'combined' || kind === 'id') {
+         const idStatus = await loadIdStatus(supabase, user.id);
+         if (idStatus?.market === 'ID' && idStatus.readyForKyc !== true) {
+            return jsonResponse(
+               { error: 'Finish the earlier onboarding steps first.', code: 'ID_ONBOARDING_INCOMPLETE', next: idStatus.next ?? null },
+               409
+            );
+         }
       }
 
       // An ID already in Didit's manual review: a new session would cost another check and reset

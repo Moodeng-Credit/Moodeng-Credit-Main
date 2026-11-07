@@ -1,11 +1,13 @@
 import { useSelector } from 'react-redux';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import { useLocalization } from '@/i18n/LocalizationProvider';
+import { ID_PATHS } from '@/lib/idTrack';
 import type { LocaleCode } from '@/i18n/translations';
 import type { RootState } from '@/store/store';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 import { OnboardingLanguagePicker } from '@/views/onboarding/OnboardingLanguagePicker';
+import { useIdTrackStatus } from '@/views/indonesia/idFlow';
 
 const TUTORIAL_URL = 'https://youtube.com/shorts/fKpBC9zD6Hk';
 
@@ -127,6 +129,9 @@ export default function Welcome() {
    const returnTo =
       (location.state as { returnTo?: string } | null)?.returnTo || new URLSearchParams(location.search).get('returnTo') || undefined;
    const walletPath = isPreview ? '/onboarding/wallet-preview' : '/onboarding/wallet';
+   // Indonesia track: its own onboarding (/id/onboarding) replaces this welcome.
+   const idTrack = useIdTrackStatus();
+   if (!isPreview && idTrack.isIndo) return <Navigate replace to={ID_PATHS.onboarding} />;
 
    return (
       <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white dark:from-[#08040f] dark:via-[#12091f] dark:to-[#08040f] flex flex-col max-w-[440px] mx-auto w-full">

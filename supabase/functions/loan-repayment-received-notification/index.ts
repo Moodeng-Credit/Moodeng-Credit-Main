@@ -23,6 +23,7 @@ import type {
    TrustPointMilestoneDefinition,
    TrustPointRewardLoan
 } from '../_shared/trustPointRewards.ts';
+import { sendIdTelegramTo } from '../_shared/idTrack.ts';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -129,7 +130,7 @@ serve(async (req) => {
    const { data: loan, error: loanError } = await supabase
       .from('loans')
       .select(
-         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, funded_at, lender_user_id, lender_wallet, hash, repayment_status, updated_at'
+         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, funded_at, lender_user_id, lender_wallet, hash, repayment_status, updated_at, market'
       )
       .eq('id', loanId)
       .maybeSingle();
@@ -152,7 +153,7 @@ serve(async (req) => {
 
    const { data: borrower, error: borrowerError } = await supabase
       .from('users')
-      .select('id, username, telegram_username, email, cs, is_world_id, is_didit, chat_id')
+      .select('id, username, telegram_username, email, cs, is_world_id, is_didit, chat_id, market, preferred_locale')
       .eq('id', loan.borrower_user_id)
       .maybeSingle();
 
@@ -183,7 +184,9 @@ serve(async (req) => {
       trust_points_total: trustPoints?.points_total ?? 0
    };
 
-   const borrowerAlreadySent = borrower?.email
+   // Indonesia track: the borrower hears on Telegram (Bahasa), whatever their email looks like.
+   const idTrack = borrower?.market === 'ID';
+   const borrowerAlreadySent = borrower?.email || idTrack
       ? await hasNotificationBeenSent(supabase, { loanId: loan.id, userId: borrower.id, type: 'repayment_received' })
       : true;
    const lenderAlreadySent = lender?.id
@@ -260,6 +263,15 @@ serve(async (req) => {
       });
    }
 
+   let idTelegramSent = false;
+   if (idTrack && !borrowerAlreadySent) {
+      idTelegramSent = await sendIdTelegramTo(borrower, 'repaid', { amount: loan.repaid_amount ?? loan.total_repayment_amount });
+      // Recorded once per loan, like the email (which a Telegram sign-up's placeholder address never gets).
+      if (idTelegramSent && !emailSent) {
+         notificationRows.push({ loan_id: loan.id, user_id: borrower.id, notification_type: 'repayment_received' });
+      }
+   }
+
    const lenderTelegramEnabled = await getLenderDirectNotificationsEnabled(supabase);
    if (lender?.chat_id && lenderTelegramEnabled && !lenderAlreadySent) {
       const { text, actionUrl } = buildLenderRepaymentTelegram(loan, lender, borrower);
@@ -307,7 +319,7 @@ serve(async (req) => {
       }
    }
 
-   if (!emailSent && !telegramSent && !pushSent && !lenderEmailSent) {
+   if (!emailSent && !telegramSent && !pushSent && !lenderEmailSent && !idTelegramSent) {
       return new Response(
          JSON.stringify({ message: 'No eligible borrower/lender target', teamFeedSent }),
          { status: 200, headers: corsHeaders }
@@ -322,5 +334,5 @@ serve(async (req) => {
       }
    }
 
-   return new Response(JSON.stringify({ message: 'Notification sent', emailSent, telegramSent, pushSent, lenderEmailSent, teamFeedSent }), { status: 200, headers: corsHeaders });
+   return new Response(JSON.stringify({ message: 'Notification sent', emailSent, telegramSent, pushSent, lenderEmailSent, teamFeedSent, idTelegramSent }), { status: 200, headers: corsHeaders });
 });
