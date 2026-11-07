@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 import { postLoanFundedToTeam } from '../_shared/teamLoanFeed.ts'
-import { checkNow, markSent, payNow, payoutStatus, recordByTxid } from '../_shared/idManualFunding.ts'
+import { checkNow, markSent, payNow, payoutStatus, recordByTxid, releasePayout } from '../_shared/idManualFunding.ts'
 import { createPayoutWallet, payoutWalletStatus } from '../_shared/idPayoutWallet.ts'
 
 // Records a loan funded by a Moodeng admin (direct transfer OR smart-contract /
@@ -66,6 +66,8 @@ serve(async (req) => {
       if (body.action === 'walt_payout_status') return json(await payoutStatus(supabase, loanId))
       if (body.action === 'walt_payout_sent') return json(await markSent(supabase, loanId, callerId))
       if (body.action === 'walt_payout_check') return json(await checkNow(supabase, loanId))
+      // A stuck / failed automatic payout: BNB Chain is checked first; nothing there → paying by hand opens.
+      if (body.action === 'walt_payout_release') return json(await releasePayout(supabase, loanId, callerId))
       if (body.action === 'walt_payout_txid') {
         return json(await recordByTxid(supabase, loanId, String(body.txHash ?? '').trim(), callerId))
       }
@@ -95,11 +97,16 @@ serve(async (req) => {
     // success, so the modal's silent retry after a lost response doesn't report a failure.
     const { data: current, error: currentError } = await supabase
       .from('loans')
-      .select('loan_status, lender_user_id, funded_at, hash')
+      .select('loan_status, lender_user_id, funded_at, hash, market')
       .eq('id', loanId)
       .maybeSingle()
     if (currentError) return json({ error: 'Failed to load loan', details: currentError.message }, 500)
     if (!current) return json({ error: 'Loan not found' }, 404)
+    // Indonesia loans are paid to the borrower's Walt (payout wallet / Binance TH, the walt_payout_*
+    // actions above), never funded on Base: that would pay them twice.
+    if (current.market === 'ID') {
+      return json({ error: 'Indonesia loans are paid to Walt from admin (Pay to Walt card), not funded on Base' }, 409)
+    }
     if (current.loan_status !== 'Requested' || current.lender_user_id || current.funded_at) {
       const existingHashes: string[] = Array.isArray(current.hash) ? current.hash : []
       if (txHash && current.loan_status === 'Lent' && existingHashes.includes(txHash)) {

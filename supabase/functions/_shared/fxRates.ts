@@ -3,8 +3,11 @@
 //   Borrowers owe a fixed number of rupiah (loans.repay_idr); the USD still due floats with the
 //   USD/IDR rate. This keeps public.fx_rates fresh and the USD due current:
 //
-//   refreshUsdIdrRate — fetch USD→IDR (open.er-api.com, fallback frankfurter.app), sanity-check it
-//                       and store it in fx_rates, at most once per 6h
+//   refreshUsdIdrRate — fetch USD→IDR from BOTH open.er-api.com and frankfurter.app, at most once per
+//                       6h. Stored only when they agree within 2% (the average), or — when only one
+//                       answers — when it is within 3% of the last stored rate (or nothing is stored
+//                       yet and it's 10,000–30,000). Otherwise the old rate stays and the team is told
+//                       (at most once per 6h)
 //   runIdrRepricing   — refresh, then public.reprice_id_loans() (total_repayment_amount = repaid +
 //                       rupiah left ÷ today's rate), and one team Telegram line per loan whose rate
 //                       moved > 5% since the request
@@ -21,6 +24,9 @@ export const USD_IDR_MIN = 10_000;
 export const USD_IDR_MAX = 30_000;
 export const RATE_REFRESH_MS = 6 * 60 * 60_000;
 const FETCH_TIMEOUT_MS = 8_000;
+export const SOURCES_AGREE_PCT = 0.02;
+export const SINGLE_SOURCE_MAX_MOVE_PCT = 0.03;
+const ALERT_EVERY_MS = 6 * 60 * 60_000;
 
 const SOURCES: { name: string; url: string; read: (body: unknown) => unknown }[] = [
    {
@@ -113,24 +119,64 @@ const getSetting = async (svc: Svc, key: string): Promise<string | null> => {
 const adminChatId = async (svc: Svc): Promise<string | null> =>
    (await getSetting(svc, 'kyc_alert_chat_id')) || Deno.env.get('TEAM_TELEGRAM_CHAT_ID') || (await getSetting(svc, 'team_group_chat_id'));
 
-const fetchRate = async (fetchImpl: typeof fetch = fetch): Promise<{ rate: number; source: string } | null> => {
-   for (const source of SOURCES) {
-      try {
-         const res = await fetchImpl(source.url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
-         if (!res.ok) continue;
-         const rate = saneUsdIdr(source.read(await res.json()));
-         if (rate != null) return { rate, source: source.name };
-      } catch {
-         // try the next source
-      }
+type SourceRate = { rate: number; source: string };
+
+const fetchOne = async (source: (typeof SOURCES)[number], fetchImpl: typeof fetch, timeoutMs: number): Promise<SourceRate | null> => {
+   try {
+      const res = await fetchImpl(source.url, { signal: AbortSignal.timeout(timeoutMs) });
+      if (!res.ok) return null;
+      const rate = saneUsdIdr(source.read(await res.json()));
+      return rate == null ? null : { rate, source: source.name };
+   } catch {
+      return null;
    }
-   return null;
+};
+
+export type RateDecision = { store: SourceRate } | { store: null; error: 'no_rate_source' | 'sources_disagree' | 'single_source_off' };
+
+/**
+ * What to store given what each source answered and the last stored rate (any age). Pure.
+ *   both answer   → their average when within 2% of each other, else nothing ('sources_disagree')
+ *   one answers   → it, when within 3% of the last stored rate (or nothing stored yet), else nothing
+ *   none          → nothing ('no_rate_source')
+ */
+export const decideUsdIdrRate = (got: (SourceRate | null)[], lastRate: number | null): RateDecision => {
+   const ok = got.filter((g): g is SourceRate => g != null);
+   if (ok.length >= 2) {
+      const [a, b] = ok;
+      const avg = (a.rate + b.rate) / 2;
+      if (Math.abs(a.rate - b.rate) / avg > SOURCES_AGREE_PCT) return { store: null, error: 'sources_disagree' };
+      return { store: { rate: Math.round(avg * 100) / 100, source: 'er-api+frankfurter' } };
+   }
+   if (ok.length === 1) {
+      const only = ok[0];
+      if (lastRate == null || !(lastRate > 0)) return { store: only };
+      if (Math.abs(only.rate / lastRate - 1) <= SINGLE_SOURCE_MAX_MOVE_PCT) return { store: only };
+      return { store: null, error: 'single_source_off' };
+   }
+   return { store: null, error: 'no_rate_source' };
 };
 
 export type RefreshResult = { rate: number | null; fetched: boolean; source?: string; error?: string };
 
+const setSetting = async (svc: Svc, key: string, value: string) => {
+   await svc.from('telegram_bot_settings').upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+};
+
+/** Team line when the rate looks wrong, at most once per 6h (telegram_bot_settings.fx_rate_alerted_at). */
+const alertRateProblem = async (svc: Svc, text: string) => {
+   const last = await getSetting(svc, 'fx_rate_alerted_at');
+   if (last && Date.now() - Date.parse(last) < ALERT_EVERY_MS) return;
+   await setSetting(svc, 'fx_rate_alerted_at', new Date().toISOString());
+   const chat = await adminChatId(svc);
+   if (chat) await sendTelegramMessage(chat, text).catch(() => undefined);
+};
+
 /** Store a fresh USD/IDR rate unless one under 6h old exists. Returns the latest usable rate. */
-export const refreshUsdIdrRate = async (svc: Svc, options: { fetchImpl?: typeof fetch; force?: boolean } = {}): Promise<RefreshResult> => {
+export const refreshUsdIdrRate = async (
+   svc: Svc,
+   options: { fetchImpl?: typeof fetch; force?: boolean; deadline?: number; alert?: (text: string) => Promise<void> } = {}
+): Promise<RefreshResult> => {
    try {
       const { data: latest } = await svc
          .from('fx_rates')
@@ -139,14 +185,29 @@ export const refreshUsdIdrRate = async (svc: Svc, options: { fetchImpl?: typeof 
          .order('fetched_at', { ascending: false })
          .limit(1)
          .maybeSingle();
+      const lastRate = latest ? saneUsdIdr(Number(latest.rate)) : null;
       if (!options.force && latest && isRateFresh(latest.fetched_at as string)) {
-         return { rate: saneUsdIdr(Number(latest.rate)), fetched: false };
+         return { rate: lastRate, fetched: false };
       }
-      const got = await fetchRate(options.fetchImpl);
-      if (!got) return { rate: null, fetched: false, error: 'no_rate_source' };
-      const { error } = await svc.from('fx_rates').insert({ pair: USD_IDR_PAIR, rate: got.rate, source: got.source });
-      if (error) return { rate: got.rate, fetched: false, source: got.source, error: error.message };
-      return { rate: got.rate, fetched: true, source: got.source };
+      const timeoutMs = Math.max(1_000, Math.min(FETCH_TIMEOUT_MS, (options.deadline ?? Infinity) - Date.now()));
+      const fetchImpl = options.fetchImpl ?? fetch;
+      const got = await Promise.all(SOURCES.map((source) => fetchOne(source, fetchImpl, timeoutMs)));
+      const decision = decideUsdIdrRate(got, lastRate);
+      if (!decision.store) {
+         const seen = got.map((g, i) => `${SOURCES[i].name}: ${g ? Math.round(g.rate).toLocaleString('en-US') : '—'}`).join(', ');
+         const why =
+            decision.error === 'sources_disagree'
+               ? 'the two sources disagree by more than 2%'
+               : decision.error === 'single_source_off'
+                 ? 'only one source answered and it is more than 3% off the last stored rate'
+                 : 'no source answered';
+         const text = `⚠️ 🇮🇩 USD/IDR not updated: ${why} (${seen}; last stored ${lastRate ? Math.round(lastRate).toLocaleString('en-US') : '—'}). The old rate stays; ID requests stop if it gets older than 36h.`;
+         await (options.alert ? options.alert(text) : alertRateProblem(svc, text)).catch(() => undefined);
+         return { rate: lastRate, fetched: false, error: decision.error };
+      }
+      const { error } = await svc.from('fx_rates').insert({ pair: USD_IDR_PAIR, rate: decision.store.rate, source: decision.store.source });
+      if (error) return { rate: decision.store.rate, fetched: false, source: decision.store.source, error: error.message };
+      return { rate: decision.store.rate, fetched: true, source: decision.store.source };
    } catch (err) {
       return { rate: null, fetched: false, error: err instanceof Error ? err.message : String(err) };
    }
@@ -155,8 +216,8 @@ export const refreshUsdIdrRate = async (svc: Svc, options: { fetchImpl?: typeof 
 export type RepricingResult = { rate: number | null; fetched: boolean; repriced: number; alerted: number; error?: string };
 
 /** Refresh the rate, re-price open pegged loans, and tell the team about big moves. */
-export const runIdrRepricing = async (svc: Svc): Promise<RepricingResult> => {
-   const refresh = await refreshUsdIdrRate(svc);
+export const runIdrRepricing = async (svc: Svc, deadline?: number): Promise<RepricingResult> => {
+   const refresh = await refreshUsdIdrRate(svc, { deadline });
    try {
       const { data, error } = await svc.rpc('reprice_id_loans');
       if (error) return { rate: refresh.rate, fetched: refresh.fetched, repriced: 0, alerted: 0, error: error.message };

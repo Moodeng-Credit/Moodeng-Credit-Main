@@ -68,3 +68,17 @@ refreshed by the 5-minute job at most every 6 h from open.er-api / frankfurter; 
 requests are refused). Each repayment adds `payment × rate` to `repaid_idr`; under Rp 1.000 left → Paid.
 Moodeng lends and is repaid in USDC and carries the FX swing; a >5% move on an open loan pings the team.
 Code: migration `20261107160000_indonesia_idr_peg.sql`, `_shared/fxRates.ts`, `src/lib/loanMarket.ts`.
+
+## Safety rails (migration 20261107170000)
+
+- A loan with a payout in progress (paying / found / marked sent / an auto attempt not yet checked on
+  chain) can't be deleted — by the borrower, an admin, or a user deletion.
+- Indonesian loans can't be funded from Base (record_loan_payment 'fund' and admin-fund-loan refuse
+  market 'ID'); lenders see "Dibayar oleh Moodeng" instead of Lend.
+- A failed auto payout is searched on BNB Chain (USDC from the payout wallet to their Walt) before any
+  hand payment or release is allowed; if the money went out it's recorded, not paid again.
+- Admin "Release" on a stuck auto payout runs that chain check first.
+- One BNB Chain transfer (tx hash + log index) can fund only one loan.
+- USD/IDR is stored only when both sources agree within 2% (or a single source is within 3% of the
+  last rate); the peg falls back to the last stored rate of any age.
+- `loans.usd_total_at_request` keeps the original USD total for the BitRepo report.

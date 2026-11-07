@@ -69,3 +69,21 @@ Deno.test('parseCreds: the OPENFORT_PAYOUT vault JSON', () => {
       feeSponsorshipId: 'pol_1'
    });
 });
+
+Deno.test('withTimeout rejects a hung Openfort call and passes a quick one through', async () => {
+   const { withTimeout, OpenfortTimeoutError } = await import('./idPayoutWallet.ts');
+   assertEquals(await withTimeout(Promise.resolve(7), 'quick', 50), 7);
+   let timer: number | undefined;
+   const hung = new Promise((r) => {
+      timer = setTimeout(r, 1_000);
+   });
+   let caught: unknown = null;
+   try {
+      await withTimeout(hung, 'openfort_send', 20);
+   } catch (err) {
+      caught = err;
+   }
+   clearTimeout(timer);
+   assertEquals(caught instanceof OpenfortTimeoutError, true);
+   assertEquals((caught as Error).message, 'openfort_send_timeout_0s');
+});

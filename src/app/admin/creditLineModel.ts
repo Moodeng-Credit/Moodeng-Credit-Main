@@ -20,7 +20,15 @@ export interface CreditFacility {
 }
 
 export type LedgerKind =
-   'advance' | 'transfer' | 'draw' | 'disbursement' | 'repayment' | 'interest_payment' | 'principal_return' | 'fee' | 'other';
+   | 'advance'
+   | 'transfer'
+   | 'draw'
+   | 'disbursement'
+   | 'repayment'
+   | 'interest_payment'
+   | 'principal_return'
+   | 'fee'
+   | 'other';
 
 export interface FacilityLedgerRow {
    id: number;
@@ -42,6 +50,10 @@ export interface FacilityLoanInput {
    due_date: string | null;
    loan_amount: number;
    total_repayment_amount: number;
+   // Indonesia track: the USD total as priced at request (loans.usd_total_at_request). The live
+   // total_repayment_amount floats with the rupiah (and is set to what was paid when it closes), so the
+   // agreed cost of the loan comes from this when present.
+   usd_total_at_request?: number | null;
    repaid_amount: number | null;
    repaid_at: string | null;
    repayment_status: string | null;
@@ -137,14 +149,21 @@ export function buildFacilityLoans(inputs: FacilityLoanInput[], ledger: Facility
       .sort((a, b) => a.funded_at.localeCompare(b.funded_at))
       .map((loan) => {
          const amount = Number(loan.loan_amount);
-         const repayable = Number(loan.total_repayment_amount);
+         const liveTotal = Number(loan.total_repayment_amount);
+         const atRequest = loan.usd_total_at_request == null ? NaN : Number(loan.usd_total_at_request);
+         // What was agreed: the request-time total when recorded (rupiah-pegged loans), else the live one.
+         const repayable = Number.isFinite(atRequest) && atRequest > 0 ? atRequest : liveTotal;
          const repaid = Number(loan.repaid_amount ?? 0);
-         const closed = loan.repayment_status === 'Paid' || repaid >= repayable;
-         const principalRepaid = closed ? amount : Math.min(amount, repaid);
+         const closed = loan.repayment_status === 'Paid' || repaid >= liveTotal;
+         // Never more principal back than was actually repaid (a pegged loan can close below its USD
+         // principal when the rupiah fell). A closed loan with no repaid amount on record (older manual
+         // closes) counts as fully repaid, as before.
+         const principalRepaid = closed && repaid <= 0 ? amount : Math.min(amount, repaid);
          const fundedDate = manilaDate(loan.funded_at);
          const dueDate = loan.due_date ? manilaDate(loan.due_date) : null;
          const repaidDate = closed && loan.repaid_at ? manilaDate(loan.repaid_at) : null;
-         const outstanding = round2(amount - principalRepaid);
+         // A closed loan has nothing outstanding; any principal shortfall is a loss, not deployed money.
+         const outstanding = closed ? 0 : round2(amount - principalRepaid);
          const daysPastDue = outstanding > 0 && dueDate && asOf > dueDate ? daysBetween(dueDate, asOf) : 0;
          const hashes = (loan.hash ?? []).filter(Boolean);
          const ledgerFor = (kind: LedgerKind) =>

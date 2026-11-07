@@ -327,28 +327,33 @@ serve(async (req) => {
    // Indonesia track: stalled onboarding → a Telegram nudge (max 3, one per 24h; idTrack.ts). This job
    // runs every 5 min, so the pass only runs in the first tick of each hour.
    if (new Date(now).getUTCMinutes() < 5) tally.id_nudges = await runIdOnboardingNudges(svc, now);
-   // Indonesia track: rupiah peg — refresh USD/IDR (stored at most every 6h; ID requests are refused
-   // while no rate under 36h old exists) and re-price open ID loans; team ping on a >5% move.
+   // Indonesia track, one shared budget of ≤ 90 s (deadlines passed down; every Openfort call times out
+   // at 20 s and no send starts with < 30 s left). Money first: the payout wallet (settle payments in
+   // flight, BNB Chain checks on failed ones, new payouts when /idautopay is on), then the hand-payout
+   // scan, then the rupiah repricing. None of them throw.
+   const idStart = Date.now();
+   const idDeadline = idStart + 90_000;
    try {
-      await runIdrRepricing(svc);
-   } catch (err) {
-      console.error('video-call-reminders: IDR repricing failed', err);
-   }
-   // Indonesia track: loans paid by hand from Binance TH to Walt — confirm them on BNB Chain.
-   const walt = await runWaltPayoutScan(svc, now);
-   tally.walt_payouts_checked = walt.checked;
-   tally.walt_payouts_found = walt.found;
-   tally.walt_payouts_alerted = walt.alerted;
-   // Indonesia track: the Openfort payout wallet pays open requests to Walt (only when /idautopay on;
-   // payments already in flight are always followed up). Never throws.
-   try {
-      const auto = await runAutoPayouts(svc, now);
+      const auto = await runAutoPayouts(svc, now, idStart + 50_000);
       tally.walt_auto_settled = auto.settled;
       tally.walt_auto_funded = auto.funded;
       tally.walt_auto_sent = auto.sent;
       tally.walt_auto_failed = auto.failed;
+      tally.walt_auto_chain_checked = auto.chainChecked;
    } catch (err) {
       console.error('video-call-reminders: auto payouts failed', err);
+   }
+   // Loans paid by hand from Binance TH to Walt — confirm them on BNB Chain.
+   const walt = await runWaltPayoutScan(svc, now, Math.max(Date.now(), idDeadline - 15_000));
+   tally.walt_payouts_checked = walt.checked;
+   tally.walt_payouts_found = walt.found;
+   tally.walt_payouts_alerted = walt.alerted;
+   // Rupiah peg — refresh USD/IDR (stored at most every 6h; ID requests are refused while no rate under
+   // 36h old exists) and re-price open ID loans; team ping on a >5% move.
+   try {
+      await runIdrRepricing(svc, idDeadline);
+   } catch (err) {
+      console.error('video-call-reminders: IDR repricing failed', err);
    }
    return json({ ok: true, scanned: users.length, ...tally });
 });

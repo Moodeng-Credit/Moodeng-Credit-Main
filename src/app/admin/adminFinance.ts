@@ -12,6 +12,17 @@ async function requireOk<T>(request: PromiseLike<{ data: T; error: unknown }>): 
    return data;
 }
 
+// loans.usd_total_at_request comes with 20261107170000. Until it's applied the query is retried
+// without it (same pattern as 'market' in adminSupabase), so the page keeps working either way.
+async function requireOkWithExtraColumns<T>(
+   make: (extraColumns: string) => PromiseLike<{ data: T; error: unknown }>,
+   extraColumns: string
+): Promise<T> {
+   const first = await make(extraColumns);
+   if (!first.error) return first.data;
+   return requireOk(make(''));
+}
+
 async function optionalOk<T>(request: PromiseLike<{ data: T; error: unknown }>, fallback: T): Promise<T> {
    const { data, error } = await request;
    return error ? fallback : (data ?? fallback);
@@ -57,26 +68,30 @@ export async function loadCreditLine(facilityId?: string): Promise<CreditLineDat
    ]);
    const rationale = new Map(links.map((l) => [l.loan_id as string, (l.rationale as string | null) ?? null]));
    const loanRows = links.length
-      ? await requireOk<AnyRow[]>(
-           supabase
-              .from('loans')
-              .select(LOAN_FIELDS)
-              .in('id', [...rationale.keys()])
+      ? await requireOkWithExtraColumns<AnyRow[]>(
+           (extra) =>
+              supabase
+                 .from('loans')
+                 .select(LOAN_FIELDS + extra)
+                 .in('id', [...rationale.keys()]),
+           ',usd_total_at_request'
         )
       : [];
 
    const lenderIds = [...new Set(loanRows.map((l) => l.lender_user_id).filter(Boolean))];
    const linked = new Set(allLinks.map((l) => l.loan_id as string));
    const candidateRows = lenderIds.length
-      ? await requireOk<AnyRow[]>(
-           supabase
-              .from('loans')
-              .select(LOAN_FIELDS)
-              .in('lender_user_id', lenderIds)
-              .gte('funded_at', `${facility.start_date}T00:00:00+08:00`)
-              .eq('is_test', false)
-              .is('refunded_at', null)
-              .order('funded_at', { ascending: false })
+      ? await requireOkWithExtraColumns<AnyRow[]>(
+           (extra) =>
+              supabase
+                 .from('loans')
+                 .select(LOAN_FIELDS + extra)
+                 .in('lender_user_id', lenderIds)
+                 .gte('funded_at', `${facility.start_date}T00:00:00+08:00`)
+                 .eq('is_test', false)
+                 .is('refunded_at', null)
+                 .order('funded_at', { ascending: false }),
+           ',usd_total_at_request'
         )
       : [];
    const candidatesRaw = candidateRows.filter((l) => !linked.has(l.id));
@@ -125,6 +140,7 @@ export async function loadCreditLine(facilityId?: string): Promise<CreditLineDat
          due_date: l.due_date,
          loan_amount: num(l.loan_amount),
          total_repayment_amount: num(l.total_repayment_amount),
+         usd_total_at_request: l.usd_total_at_request == null ? null : num(l.usd_total_at_request),
          repaid_amount: num(l.repaid_amount),
          repaid_at: l.repaid_at,
          repayment_status: l.repayment_status,

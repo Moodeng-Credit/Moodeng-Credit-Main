@@ -522,6 +522,8 @@ serve(async (req) => {
             ? 'someone else funded it a moment earlier'
             : recordedError === 'not_awaiting_repayment'
               ? 'the loan was already fully repaid'
+              : recordedError === 'id_loan_paid_by_moodeng'
+                ? 'Indonesia loans are paid to Walt from admin, not funded on Base'
               : `the loan couldn't take it (${recordedError})`;
       await alertUnrecorded(why);
       return jsonResponse({ error: `This payment couldn't be applied because ${why}. Contact support for a refund.` }, 409);

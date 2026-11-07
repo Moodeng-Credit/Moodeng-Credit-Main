@@ -4,7 +4,6 @@
 //
 // Interest follows the agreed terms: simple, actual/365, on principal deployed each day (a loan counts from its
 // funding date until the day it is repaid, Manila calendar dates).
-
 import {
    addDays,
    buildFacilityLoans,
@@ -68,6 +67,7 @@ export async function loadLenderReport(password: string): Promise<{ data: Lender
       ...l,
       loan_amount: num(l.loan_amount),
       total_repayment_amount: num(l.total_repayment_amount),
+      usd_total_at_request: l.usd_total_at_request == null ? null : num(l.usd_total_at_request),
       repaid_amount: num(l.repaid_amount),
       hash: l.hash ?? [],
       borrower: {
@@ -143,7 +143,11 @@ export interface PeriodReport {
    medians: { loan: number; term: number; fee: number; loanStandard: number; termStandard: number; feeStandard: number };
 }
 
-export function buildPeriodReport(data: LenderReportData, period: { start: string; end: string; due: string }, today = manilaToday()): PeriodReport {
+export function buildPeriodReport(
+   data: LenderReportData,
+   period: { start: string; end: string; due: string },
+   today = manilaToday()
+): PeriodReport {
    const asOf = today < period.end ? today : period.end;
    const loans = data.loans.filter((l) => l.fundedDate <= period.end);
    const daily = dailyInterest(loans, Number(data.facility.annual_rate), period.start, period.end, asOf);
@@ -166,7 +170,9 @@ export function buildPeriodReport(data: LenderReportData, period: { start: strin
       drawn,
       atBinance: advanced - drawn,
       lent,
-      principalRepaid: lent - deployed,
+      // Repaid principal as recorded per loan: never more than was actually paid back (a rupiah-pegged
+      // loan can close below its USD principal).
+      principalRepaid: loans.reduce((t, l) => t + (l.repaidDate && l.repaidDate <= asOf ? l.principalRepaid : 0), 0),
       deployed,
       available: commitment - deployed,
       utilization: commitment > 0 ? deployed / commitment : 0,

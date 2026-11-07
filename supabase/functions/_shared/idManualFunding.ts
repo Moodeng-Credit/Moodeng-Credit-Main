@@ -8,6 +8,7 @@
 //                       the request was posted; resumes from scanned_to_block
 //   recordByTxid      — fallback: the admin pastes the BNB Chain TxID
 //   runWaltPayoutScan — the 5-minute job: every open Indonesian request + one "not seen" alert
+//   releasePayout     — admin "Release" on a stuck/failed automatic payout (after a BNB Chain check)
 //
 // A match must be: USDC (BSC) Transfer → the borrower's walt_address, received amount between
 // (loan − $0.50) and the loan amount (an exact match wins), at least CONFIRMATIONS deep, a tx hash
@@ -28,6 +29,8 @@ import {
    getAutoPayLimits,
    getPayoutWallet,
    loadPayoutCreds,
+   MIN_SEND_BUDGET_MS,
+   NotSentError,
    paidTodayUsd,
    pollOpenfortTx,
    sendUsdcBsc,
@@ -62,6 +65,9 @@ export type PayoutRow = {
    openfort_tx_id?: string | null;
    paid_attempt_at?: string | null;
    error?: string | null;
+   chain_checked_at?: string | null;
+   chain_scanned_to_block?: number | null;
+   log_index?: number | null;
    bsc_tx_hash: string | null;
    from_address: string | null;
    block_number: number | null;
@@ -78,6 +84,7 @@ export type PayoutResult =
    | { ok: true; state: 'found'; payout: PayoutRow; funded: boolean }
    | { ok: true; state: 'waiting'; payout: PayoutRow }
    | { ok: true; state: 'paying'; payout: PayoutRow }
+   | { ok: true; state: 'released'; payout: PayoutRow }
    | { ok: false; error: string; payout?: PayoutRow };
 
 // ── amounts ──────────────────────────────────────────────────────────────────────────────────────
@@ -94,6 +101,14 @@ const pad32 = (address: string) => `0x${address.toLowerCase().replace(/^0x/, '')
 const fromTopic = (topic: string) => `0x${topic.slice(-40)}`.toLowerCase();
 const isAddress = (v: unknown): v is string => typeof v === 'string' && /^0x[0-9a-fA-F]{40}$/.test(v);
 const isTxHash = (v: unknown): v is string => typeof v === 'string' && /^0x[0-9a-fA-F]{64}$/.test(v);
+
+/** One Transfer = (tx hash, log index): a single tx can pay several loans, each log only once. */
+export const transferKey = (txHash: string, logIndex: number | null | undefined) => `${txHash.toLowerCase()}:${logIndex ?? -1}`;
+
+const usedTransfers = async (svc: Svc): Promise<Set<string>> => {
+   const { data } = await svc.from('id_manual_payouts').select('bsc_tx_hash, log_index').not('bsc_tx_hash', 'is', null);
+   return new Set(((data ?? []) as Array<{ bsc_tx_hash: string; log_index: number | null }>).map((r) => transferKey(r.bsc_tx_hash, r.log_index)));
+};
 
 // ── BNB Chain RPC ────────────────────────────────────────────────────────────────────────────────
 const rpc = async <T>(method: string, params: unknown[]): Promise<T> => {
@@ -133,14 +148,14 @@ export const blockAtOrBefore = async (iso: string, head: bigint): Promise<bigint
    return back >= head ? 0n : head - back;
 };
 
-export const transfersTo = async (to: string, fromBlock: bigint, toBlock: bigint): Promise<Transfer[]> => {
+export const transfersTo = async (to: string, fromBlock: bigint, toBlock: bigint, from?: string): Promise<Transfer[]> => {
    type Log = { transactionHash: string; topics: string[]; data: string; blockNumber: string; logIndex: string; removed?: boolean };
    const logs = await rpc<Log[]>('eth_getLogs', [
       {
          fromBlock: `0x${fromBlock.toString(16)}`,
          toBlock: `0x${toBlock.toString(16)}`,
          address: BSC_USDC,
-         topics: [TRANSFER_TOPIC, null, pad32(to)]
+         topics: [TRANSFER_TOPIC, from ? pad32(from) : null, pad32(to)]
       }
    ]);
    return (logs ?? [])
@@ -220,7 +235,7 @@ const recordFunding = async (
    t: Transfer,
    foundBy: 'scan' | 'txid' | 'auto'
 ): Promise<PayoutResult> => {
-   // Claim the tx first: bsc_tx_hash is unique, so one transfer can never fund two loans.
+   // Claim the transfer first: (bsc_tx_hash, log_index) is unique, so one transfer can never fund two loans.
    // The lender is read fresh: whoever tapped "I sent it" / pasted the TxID last paid it.
    const { data: fresh } = await svc.from('id_manual_payouts').select('lender_user_id').eq('id', payout.id).maybeSingle();
    const lenderId =
@@ -231,13 +246,15 @@ const recordFunding = async (
    if (!isAddress(lenderWallet)) return { ok: false, error: 'lender_has_no_base_wallet', payout };
 
    const now = new Date().toISOString();
-   // An automatic payout is recorded only from its own 'paying' row; the manual paths never touch a
-   // row the payout wallet is paying (and never a found one).
+   // An automatic payout is recorded only from its own row ('paying', or 'failed' when the BNB Chain
+   // check finds it went out after all); the manual paths never touch a row the payout wallet is paying
+   // (and never a found one).
    let claimQuery = svc
       .from('id_manual_payouts')
       .update({
          status: 'found',
          bsc_tx_hash: t.txHash,
+         log_index: t.logIndex,
          from_address: t.from,
          block_number: Number(t.blockNumber),
          found_at: now,
@@ -247,7 +264,7 @@ const recordFunding = async (
          updated_at: now
       })
       .eq('id', payout.id);
-   claimQuery = foundBy === 'auto' ? claimQuery.eq('status', 'paying') : claimQuery.not('status', 'in', '(found,paying)');
+   claimQuery = foundBy === 'auto' ? claimQuery.in('status', ['paying', 'failed']) : claimQuery.not('status', 'in', '(found,paying)');
    const { data: claimed, error: claimError } = await claimQuery.select('*').maybeSingle();
    if (claimError) {
       const dup = /duplicate|unique/i.test(claimError.message ?? '');
@@ -313,7 +330,7 @@ const recordFunding = async (
 // ── searching BNB Chain ──────────────────────────────────────────────────────────────────────────
 /** Exact amount first; otherwise the closest one at most $0.50 under (a fee taken out of it). */
 const pickMatch = (transfers: Transfer[], want: bigint, used: Set<string>): Transfer | undefined => {
-   const fresh = transfers.filter((t) => !used.has(t.txHash) && t.value <= want && t.value >= want - SHORTFALL_ALLOWED);
+   const fresh = transfers.filter((t) => !used.has(transferKey(t.txHash, t.logIndex)) && t.value <= want && t.value >= want - SHORTFALL_ALLOWED);
    return fresh.find((t) => t.value === want) ?? fresh.sort((a, b) => (a.value > b.value ? -1 : 1))[0];
 };
 
@@ -339,8 +356,7 @@ export const checkPayout = async (
    const head = await headBlock();
    const safeHead = head - CONFIRMATIONS;
    let from = payout.scanned_to_block != null ? BigInt(payout.scanned_to_block) + 1n : await blockAtOrBefore(loan.created_at, head);
-   const { data: usedRows } = await svc.from('id_manual_payouts').select('bsc_tx_hash').not('bsc_tx_hash', 'is', null);
-   const used = new Set(((usedRows ?? []) as Array<{ bsc_tx_hash: string }>).map((r) => r.bsc_tx_hash.toLowerCase()));
+   const used = await usedTransfers(svc);
 
    let spans = 0;
    while (from <= safeHead && spans < MAX_SPANS_PER_CHECK && Date.now() < deadline) {
@@ -403,6 +419,9 @@ export const markSent = async (svc: Svc, loanId: string, adminUserId: string): P
    if (!payout || !loan) return { ok: false, error: error ?? 'payout_unavailable' };
    if (payout.status === 'found') return { ok: true, state: 'found', payout, funded: false };
    if (payout.status === 'paying') return { ok: false, error: 'auto_payout_in_progress', payout };
+   // A failed automatic payout may still have gone out: look on BNB Chain first.
+   const gate = await chainGateForManual(svc, payout);
+   if (gate) return gate;
    const now = new Date().toISOString();
    const { data: updated } = await svc
       .from('id_manual_payouts')
@@ -419,6 +438,8 @@ export const markSent = async (svc: Svc, loanId: string, adminUserId: string): P
       // One statement with the claim's condition flipped: if the payout wallet claimed it a moment
       // ago this matches nothing, and if this lands first the claim sees marked_sent_at and backs off.
       .not('status', 'in', '(found,paying)')
+      // …and never a failed automatic payout BNB Chain hasn't been checked for.
+      .or('method.eq.manual,status.neq.failed,chain_checked_at.not.is.null')
       .select('*')
       .maybeSingle();
    if (!updated) {
@@ -443,10 +464,17 @@ export const recordByTxid = async (svc: Svc, loanId: string, txHash: string, adm
    if (!payout || !loan) return { ok: false, error: error ?? 'payout_unavailable' };
    if (payout.status === 'found') return { ok: true, state: 'found', payout, funded: false };
    if (payout.status === 'paying') return { ok: false, error: 'auto_payout_in_progress', payout };
+   const gate = await chainGateForManual(svc, payout);
+   if (gate) return gate;
    if (!isOpen(loan)) return { ok: false, error: 'loan_not_open', payout };
    const verified = await verifyTransferTx(txHash, payout.walt_address, usdcUnits(payout.amount), { shortfall: SHORTFALL_ALLOWED });
    if (!verified.ok) return { ok: false, error: verified.error, payout };
-   const { data: dup } = await svc.from('id_manual_payouts').select('id').eq('bsc_tx_hash', txHash.toLowerCase()).maybeSingle();
+   const { data: dup } = await svc
+      .from('id_manual_payouts')
+      .select('id')
+      .eq('bsc_tx_hash', txHash.toLowerCase())
+      .eq('log_index', verified.transfer.logIndex)
+      .maybeSingle();
    if (dup) return { ok: false, error: 'tx_already_used', payout };
    const withLender = { ...payout, lender_user_id: adminUserId };
    await svc.from('id_manual_payouts').update({ lender_user_id: adminUserId, updated_at: new Date().toISOString() }).eq('id', payout.id);
@@ -459,6 +487,14 @@ export const checkNow = async (svc: Svc, loanId: string): Promise<PayoutResult> 
    if (!payout || !loan) return { ok: false, error: error ?? 'payout_unavailable' };
    try {
       if (payout.status === 'paying') return await settleAutoPayout(svc, payout);
+      if (needsChainCheck(payout)) {
+         const r = await runChainCheck(svc, payout, Date.now(), Date.now() + SCAN_BUDGET_MS);
+         if (r.result) return r.result;
+         const { data: fresh } = await svc.from('id_manual_payouts').select('*').eq('id', payout.id).maybeSingle();
+         return r.outcome === 'nothing'
+            ? { ok: true, state: 'waiting', payout: (fresh ?? payout) as PayoutRow }
+            : { ok: false, error: chainOutcomeError(r.outcome), payout: (fresh ?? payout) as PayoutRow };
+      }
       return await checkPayout(svc, payout, loan);
    } catch (err) {
       console.error('idManualFunding.checkNow failed', err);
@@ -473,9 +509,12 @@ export const payoutStatus = async (svc: Svc, loanId: string) => {
 };
 
 // ── the 5-minute job ─────────────────────────────────────────────────────────────────────────────
-export const runWaltPayoutScan = async (svc: Svc, now = Date.now()): Promise<{ checked: number; found: number; alerted: number }> => {
+export const runWaltPayoutScan = async (
+   svc: Svc,
+   now = Date.now(),
+   deadline = Date.now() + SCAN_BUDGET_MS
+): Promise<{ checked: number; found: number; alerted: number }> => {
    const tally = { checked: 0, found: 0, alerted: 0 };
-   const deadline = Date.now() + SCAN_BUDGET_MS;
    try {
       // Only payouts an admin said they sent (nothing is matched without that).
       const { data: rows } = await svc
@@ -534,8 +573,14 @@ export const runWaltPayoutScan = async (svc: Svc, now = Date.now()): Promise<{ c
 //      open, the max and the daily cap, and moves the loan's payout row 'waiting' → 'paying'. Only a
 //      row nobody touched can be claimed: no "I sent it" tap, no tx, no earlier attempt.
 //   2. The loan is re-read right before sending; if it was funded meanwhile the claim is released.
-//   3. Openfort is called once. Its id is saved at once. If it throws before giving an id, the row
-//      goes 'failed' and the team is told — it is never retried on its own (the money may have left).
+//   3. Openfort is called once (never with < 30 s of budget left; every SDK call times out at 20 s).
+//      Its id is saved at once. If it throws (or times out) before giving an id, the row goes 'failed'
+//      and the team is told — it is never retried on its own (the money may have left). A failure
+//      before sendTransaction was even started (NotSentError) releases the claim instead.
+//   3b. A 'failed' automatic payout (or a 'paying' one with no Openfort id) is looked for on BNB Chain
+//      — USDC from the payout wallet to their Walt, exact amount, since paid_attempt_at — before
+//      anything else: found → recorded as paid; nothing (and ≥ 15 min old) → chain_checked_at is set
+//      and only then can it be paid by hand ("I sent it" / TxID refuse until then).
 //   4. A 'paying' row is never sent again: later runs only poll its Openfort id. Succeeded → the
 //      receipt is checked on BNB Chain (USDC from the payout wallet → their Walt, exact amount) and
 //      recordFunding(…, 'auto') funds the loan. Reverted/failed → 'failed' + alert.
@@ -544,7 +589,10 @@ export const runWaltPayoutScan = async (svc: Svc, now = Date.now()): Promise<{ c
 
 const LOW_BALANCE_USD = 20;
 const LOW_ALERT_EVERY_MS = 6 * 3_600_000;
-const NO_TX_ID_FAIL_MS = 10 * 60_000;
+const NO_TX_ID_FAIL_MS = 15 * 60_000;
+// A payout attempt younger than this may still land (Openfort retries / mempool): "nothing on chain"
+// isn't conclusive before it.
+const CHAIN_CHECK_MIN_AGE_MS = 15 * 60_000;
 const STUCK_ALERT_MS = 30 * 60_000;
 const AUTO_BUDGET_MS = 60_000;
 
@@ -580,11 +628,11 @@ const maybeAlertCap = async (svc: Svc, limits: AutoPayLimits, paidToday: number,
    );
 };
 
-const failAutoPayout = async (svc: Svc, payout: PayoutRow, error: string, alert: string) => {
+const failAutoPayout = async (svc: Svc, payout: PayoutRow, error: string, alert: string, extra: Record<string, unknown> = {}) => {
    const now = new Date().toISOString();
    const { data } = await svc
       .from('id_manual_payouts')
-      .update({ status: 'failed', error: error.slice(0, 500), updated_at: now })
+      .update({ status: 'failed', error: error.slice(0, 500), updated_at: now, ...extra })
       .eq('id', payout.id)
       .eq('status', 'paying')
       .select('*')
@@ -593,21 +641,169 @@ const failAutoPayout = async (svc: Svc, payout: PayoutRow, error: string, alert:
    return { ok: false as const, error: 'auto_payout_failed', payout: (data ?? { ...payout, status: 'failed', error }) as PayoutRow };
 };
 
+// ── 3b. the BNB Chain check for automatic payouts that may have gone out ─────────────────────────
+/** A failed automatic payout (or a 'paying' one Openfort never gave an id for) not yet checked on BNB Chain. */
+export const needsChainCheck = (p: Pick<PayoutRow, 'method' | 'status' | 'openfort_tx_id' | 'chain_checked_at'>): boolean =>
+   p.method === 'auto' && !p.chain_checked_at && (p.status === 'failed' || (p.status === 'paying' && !p.openfort_tx_id));
+
+export type ChainCheck =
+   | { state: 'found'; transfer: Transfer }
+   | { state: 'landing' } // a matching transfer is there but not CONFIRMATIONS deep yet
+   | { state: 'too_soon' } // nothing (yet), but the attempt is too recent to be sure
+   | { state: 'incomplete' } // ran out of time before reaching the chain head
+   | { state: 'nothing' };
+
+/**
+ * USDC (BSC) Transfer FROM the payout wallet TO the borrower's Walt of exactly the payout amount, since
+ * paid_attempt_at (eth_getLogs topics [Transfer, payout wallet, Walt]), not already used by another
+ * payout. Resumes from chain_scanned_to_block (saved only up to the confirmed part of the chain).
+ */
+export const findAutoPayoutOnChain = async (svc: Svc, payout: PayoutRow, now: number, deadline: number): Promise<ChainCheck> => {
+   const wallet = await getPayoutWallet(svc);
+   if (!wallet) throw new Error('no_payout_wallet');
+   const want = usdcUnits(payout.amount);
+   const startedIso = payout.paid_attempt_at ?? payout.created_at;
+   const used = await usedTransfers(svc);
+   const head = await headBlock();
+   const safeHead = head - CONFIRMATIONS;
+   let from = payout.chain_scanned_to_block != null ? BigInt(payout.chain_scanned_to_block) + 1n : await blockAtOrBefore(startedIso, head);
+   while (from <= head) {
+      if (Date.now() > deadline) return { state: 'incomplete' };
+      const to = from + BigInt(MAX_LOG_SPAN) > head ? head : from + BigInt(MAX_LOG_SPAN);
+      const transfers = await transfersTo(payout.walt_address, from, to, wallet.address);
+      const match = transfers.find((t) => t.value === want && !used.has(transferKey(t.txHash, t.logIndex)));
+      if (match) return match.blockNumber <= safeHead ? { state: 'found', transfer: match } : { state: 'landing' };
+      const saved = to <= safeHead ? to : safeHead;
+      if (saved >= from) {
+         await svc
+            .from('id_manual_payouts')
+            .update({ chain_scanned_to_block: Number(saved), updated_at: new Date().toISOString() })
+            .eq('id', payout.id);
+         payout = { ...payout, chain_scanned_to_block: Number(saved) };
+      }
+      from = to + 1n;
+   }
+   if (now - new Date(startedIso).getTime() < CHAIN_CHECK_MIN_AGE_MS) return { state: 'too_soon' };
+   return { state: 'nothing' };
+};
+
+/**
+ * Runs the check and acts on it: found → recordFunding(…, 'auto'); nothing → chain_checked_at set (for a
+ * 'failed' row; a 'paying' row is left to the caller). Never sends.
+ */
+const runChainCheck = async (
+   svc: Svc,
+   payout: PayoutRow,
+   now: number,
+   deadline: number
+): Promise<{ outcome: ChainCheck['state'] | 'error'; result?: PayoutResult; error?: string }> => {
+   let check: ChainCheck;
+   try {
+      check = await findAutoPayoutOnChain(svc, payout, now, deadline);
+   } catch (err) {
+      console.error(`idManualFunding: chain check failed for ${payout.loan_id}`, err);
+      return { outcome: 'error', error: err instanceof Error ? err.message : String(err) };
+   }
+   if (check.state === 'found') {
+      const loan = await loadLoan(svc, payout.loan_id);
+      if (!loan) return { outcome: 'found', result: { ok: false, error: 'loan_not_found', payout } };
+      const result = await recordFunding(svc, payout, loan, check.transfer, 'auto');
+      if (result.ok)
+         await alertTeam(
+            svc,
+            `🇮🇩 The auto-payout for loan ${payout.loan_id.slice(0, 8)} that looked failed DID go out (tx ${short(check.transfer.txHash)}) — recorded as paid. Don't pay it by hand.`
+         );
+      return { outcome: 'found', result };
+   }
+   if (check.state === 'nothing' && payout.status === 'failed') {
+      await svc
+         .from('id_manual_payouts')
+         .update({ chain_checked_at: new Date(now).toISOString(), updated_at: new Date(now).toISOString() })
+         .eq('id', payout.id)
+         .eq('status', 'failed');
+   }
+   return { outcome: check.state };
+};
+
+const chainOutcomeError = (outcome: string) =>
+   outcome === 'landing'
+      ? 'auto_payout_landing'
+      : outcome === 'too_soon'
+        ? 'chain_check_too_soon'
+        : outcome === 'incomplete'
+          ? 'chain_check_incomplete'
+          : 'bnb_chain_unreachable';
+
+/** For "I sent it" / the TxID: a failed automatic payout is first looked for on BNB Chain. null = go ahead. */
+const chainGateForManual = async (svc: Svc, payout: PayoutRow): Promise<PayoutResult | null> => {
+   if (!needsChainCheck(payout)) return null;
+   const r = await runChainCheck(svc, payout, Date.now(), Date.now() + SCAN_BUDGET_MS);
+   if (r.result) return r.result;
+   if (r.outcome === 'nothing') return null;
+   return { ok: false, error: chainOutcomeError(r.outcome), payout };
+};
+
+/**
+ * Admin "Release" on an automatic payout stuck in 'paying' or 'failed': BNB Chain first. Money found →
+ * recorded as paid. Nothing (and the attempt ≥ 15 min old) → 'failed' with error 'released_by_admin' and
+ * chain_checked_at set, so "I sent it" / the TxID open. Never sends.
+ */
+export const releasePayout = async (svc: Svc, loanId: string, adminUserId: string): Promise<PayoutResult> => {
+   const { data } = await svc.from('id_manual_payouts').select('*').eq('loan_id', loanId).maybeSingle();
+   const payout = data as PayoutRow | null;
+   if (!payout) return { ok: false, error: 'payout_not_found' };
+   if (payout.status === 'found') return { ok: true, state: 'found', payout, funded: false };
+   if (payout.method !== 'auto' || (payout.status !== 'paying' && payout.status !== 'failed')) {
+      return { ok: false, error: 'not_releasable', payout };
+   }
+   const now = Date.now();
+   const r = await runChainCheck(svc, payout, now, now + SCAN_BUDGET_MS);
+   if (r.result) return r.result;
+   if (r.outcome !== 'nothing') return { ok: false, error: chainOutcomeError(r.outcome), payout };
+   const stamp = new Date().toISOString();
+   const { data: released } = await svc
+      .from('id_manual_payouts')
+      .update({ status: 'failed', error: 'released_by_admin', chain_checked_at: stamp, updated_at: stamp })
+      .eq('id', payout.id)
+      .in('status', ['paying', 'failed'])
+      .select('*')
+      .maybeSingle();
+   if (!released) {
+      const { data: again } = await svc.from('id_manual_payouts').select('*').eq('id', payout.id).maybeSingle();
+      return { ok: false, error: 'payout_not_claimable', payout: (again ?? payout) as PayoutRow };
+   }
+   console.log(`idManualFunding: auto-payout for ${loanId} released by ${adminUserId} (nothing on BNB Chain)`);
+   await alertTeam(
+      svc,
+      `🇮🇩 Auto-payout for loan ${loanId.slice(0, 8)} released by an admin: nothing from the payout wallet on BNB Chain. It can be paid by hand now.`
+   );
+   return { ok: true, state: 'released', payout: released as PayoutRow };
+};
+
 /** Moves a 'paying' row on: poll Openfort, verify on BNB Chain, record the funding. Never sends. */
-export const settleAutoPayout = async (svc: Svc, payout: PayoutRow, now = Date.now()): Promise<PayoutResult> => {
+export const settleAutoPayout = async (
+   svc: Svc,
+   payout: PayoutRow,
+   now = Date.now(),
+   deadline = Date.now() + SCAN_BUDGET_MS
+): Promise<PayoutResult> => {
    if (payout.status !== 'paying') return { ok: true, state: payout.status === 'found' ? 'found' : 'waiting', payout } as PayoutResult;
    const loanTag = payout.loan_id.slice(0, 8);
    const wallet = await getPayoutWallet(svc);
    const startedAt = payout.paid_attempt_at ? new Date(payout.paid_attempt_at).getTime() : now;
 
    if (!payout.openfort_tx_id) {
-      // Claimed but no Openfort id saved (the run died mid-send?). Don't guess: after 10 min a human checks.
+      // Claimed but no Openfort id saved (the run died mid-send?). After 15 min, BNB Chain decides.
       if (now - startedAt < NO_TX_ID_FAIL_MS) return { ok: true, state: 'paying', payout };
+      const r = await runChainCheck(svc, payout, now, deadline);
+      if (r.result) return r.result;
+      if (r.outcome !== 'nothing') return { ok: true, state: 'paying', payout };
       return await failAutoPayout(
          svc,
          payout,
          'no_openfort_tx_id',
-         `⚠️ 🇮🇩 Auto-payout for loan ${loanTag} ($${Number(payout.amount)} → ${short(payout.walt_address)}) has no Openfort transaction saved. It may or may not have gone out — check the payout wallet${wallet ? ` (${walletLink(wallet.address)})` : ''} before paying by hand.`
+         `⚠️ 🇮🇩 Auto-payout for loan ${loanTag} ($${Number(payout.amount)} → ${short(payout.walt_address)}) has no Openfort transaction saved, and nothing from the payout wallet reached their Walt on BNB Chain${wallet ? ` (${walletLink(wallet.address)})` : ''}. It can be paid by hand.`,
+         { chain_checked_at: new Date(now).toISOString() }
       );
    }
 
@@ -624,7 +820,7 @@ export const settleAutoPayout = async (svc: Svc, payout: PayoutRow, now = Date.n
          svc,
          payout,
          st.error,
-         `⚠️ 🇮🇩 Auto-payout FAILED for loan ${loanTag}: $${Number(payout.amount)} → ${short(payout.walt_address)} (${st.error.slice(0, 200)}). Openfort ${payout.openfort_tx_id}${st.txHash ? `, tx ${st.txHash}` : ''}. Nothing will retry by itself — pay by hand in admin if it really didn't go out.`
+         `⚠️ 🇮🇩 Auto-payout FAILED for loan ${loanTag}: $${Number(payout.amount)} → ${short(payout.walt_address)} (${st.error.slice(0, 200)}). Openfort ${payout.openfort_tx_id}${st.txHash ? `, tx ${st.txHash}` : ''}. Nothing will retry by itself. BNB Chain is checked ${Math.round(CHAIN_CHECK_MIN_AGE_MS / 60_000)} min after the attempt; paying by hand unlocks only if nothing went out.`
       );
    }
 
@@ -719,7 +915,17 @@ const loadAutoCtx = async (svc: Svc, now: number): Promise<{ ctx?: AutoCtx; erro
 };
 
 /** One automatic payout attempt for one loan. Claims first; sends at most once. */
-const attemptAutoPay = async (svc: Svc, loan: LoanForPayout, ctx: AutoCtx, now: number, requireAge: boolean, by: string): Promise<PayoutResult> => {
+const attemptAutoPay = async (
+   svc: Svc,
+   loan: LoanForPayout,
+   ctx: AutoCtx,
+   now: number,
+   requireAge: boolean,
+   by: string,
+   deadline: number
+): Promise<PayoutResult> => {
+   // Never claim (and so never send) without time to finish the send.
+   if (deadline - Date.now() < MIN_SEND_BUDGET_MS + 5_000) return { ok: false, error: 'no_time_left' };
    const { data: borrower } = await svc.from('users').select('walt_address').eq('id', loan.borrower_user_id).maybeSingle();
    const walt = borrower?.walt_address as string | null | undefined;
    const amountUsd = Number(loan.loan_amount);
@@ -753,27 +959,35 @@ const attemptAutoPay = async (svc: Svc, loan: LoanForPayout, ctx: AutoCtx, now: 
    let payout = c.payout;
 
    // Right before sending: still open? (someone may have funded it since the claim)
-   const fresh = await loadLoan(svc, loan.id);
-   if (!fresh || !isOpen(fresh)) {
-      await svc
+   const releaseClaim = () =>
+      svc
          .from('id_manual_payouts')
          .update({ status: 'waiting', method: 'manual', paid_attempt_at: null, lender_user_id: null, updated_at: new Date().toISOString() })
          .eq('id', payout.id)
          .eq('status', 'paying')
          .is('openfort_tx_id', null);
+   const fresh = await loadLoan(svc, loan.id);
+   if (!fresh || !isOpen(fresh)) {
+      await releaseClaim();
       return { ok: false, error: 'loan_not_open' };
    }
 
    let txId: string;
    try {
-      txId = await sendUsdcBsc(svc, payout.walt_address, payout.amount);
+      txId = await sendUsdcBsc(svc, payout.walt_address, payout.amount, deadline);
    } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      if (err instanceof NotSentError) {
+         // Failed before sendTransaction was started: nothing left the wallet, so the claim is released.
+         await releaseClaim();
+         console.error(`idManualFunding: auto-payout not sent for ${loan.id}: ${msg}`);
+         return { ok: false, error: msg === 'no_time_left' ? 'no_time_left' : `not_sent: ${msg}` };
+      }
       return await failAutoPayout(
          svc,
          payout,
          `send: ${msg}`,
-         `⚠️ 🇮🇩 Auto-payout FAILED for loan ${loan.id.slice(0, 8)}: $${Number(payout.amount)} → ${short(payout.walt_address)} (${msg.slice(0, 200)}). Nothing will retry by itself. Check the payout wallet (${walletLink(ctx.wallet.address)}) before paying by hand.`
+         `⚠️ 🇮🇩 Auto-payout FAILED for loan ${loan.id.slice(0, 8)}: $${Number(payout.amount)} → ${short(payout.walt_address)} (${msg.slice(0, 200)}). Nothing will retry by itself. It may still have gone out: BNB Chain is checked ${Math.round(CHAIN_CHECK_MIN_AGE_MS / 60_000)} min after the attempt, and paying by hand unlocks only if nothing did (${walletLink(ctx.wallet.address)}).`
       );
    }
    ctx.paidToday += amountUsd;
@@ -804,18 +1018,43 @@ const attemptAutoPay = async (svc: Svc, loan: LoanForPayout, ctx: AutoCtx, now: 
 /** The 5-minute job: settle payouts in flight, then (when /idautopay is on) pay open requests. */
 export const runAutoPayouts = async (
    svc: Svc,
-   now = Date.now()
-): Promise<{ settled: number; funded: number; sent: number; failed: number; skipped?: string }> => {
-   const tally = { settled: 0, funded: 0, sent: 0, failed: 0 } as { settled: number; funded: number; sent: number; failed: number; skipped?: string };
-   const deadline = Date.now() + AUTO_BUDGET_MS;
+   now = Date.now(),
+   deadline = Date.now() + AUTO_BUDGET_MS
+): Promise<{ settled: number; funded: number; sent: number; failed: number; chainChecked: number; skipped?: string }> => {
+   const tally = { settled: 0, funded: 0, sent: 0, failed: 0, chainChecked: 0 } as {
+      settled: number;
+      funded: number;
+      sent: number;
+      failed: number;
+      chainChecked: number;
+      skipped?: string;
+   };
    try {
+      // 0. Failed automatic payouts (last 7 days) not yet looked for on BNB Chain: did the money go out?
+      const { data: failedRows } = await svc
+         .from('id_manual_payouts')
+         .select('*')
+         .eq('method', 'auto')
+         .eq('status', 'failed')
+         .is('chain_checked_at', null)
+         .gte('paid_attempt_at', new Date(now - 7 * 86_400_000).toISOString())
+         .lte('paid_attempt_at', new Date(now - CHAIN_CHECK_MIN_AGE_MS).toISOString())
+         .order('paid_attempt_at')
+         .limit(10);
+      for (const row of (failedRows ?? []) as PayoutRow[]) {
+         if (Date.now() > deadline) break;
+         tally.chainChecked += 1;
+         const r = await runChainCheck(svc, row, now, deadline);
+         if (r.result?.ok && r.result.state === 'found') tally.funded += 1;
+      }
+
       // 1. In flight: poll only, never send.
       const { data: paying } = await svc.from('id_manual_payouts').select('*').eq('status', 'paying').order('paid_attempt_at').limit(20);
       for (const row of (paying ?? []) as PayoutRow[]) {
          if (Date.now() > deadline) break;
          tally.settled += 1;
          try {
-            const r = await settleAutoPayout(svc, row, now);
+            const r = await settleAutoPayout(svc, row, now, deadline);
             if (r.ok && r.state === 'found') tally.funded += 1;
             if (!r.ok && r.error === 'auto_payout_failed') tally.failed += 1;
          } catch (err) {
@@ -855,12 +1094,12 @@ export const runAutoPayouts = async (
             .map((r) => r.loan_id)
       );
       for (const loan of list) {
-         if (Date.now() > deadline) break;
+         if (deadline - Date.now() < MIN_SEND_BUDGET_MS + 5_000) break;
          if (touched.has(loan.id)) continue;
-         const r = await attemptAutoPay(svc, loan, ctx, now, true, 'cron');
+         const r = await attemptAutoPay(svc, loan, ctx, now, true, 'cron', deadline);
          if (r.ok) tally.sent += 1;
          else if (r.error === 'auto_payout_failed') tally.failed += 1;
-         else if (r.error === 'low_balance' || r.error === 'daily_cap_reached' || r.error === 'balance_unknown') break;
+         else if (r.error === 'low_balance' || r.error === 'daily_cap_reached' || r.error === 'balance_unknown' || r.error === 'no_time_left') break;
       }
    } catch (err) {
       console.error('idManualFunding: auto payouts failed', err);
@@ -878,13 +1117,14 @@ export const payNow = async (svc: Svc, loanId: string, adminUserId: string): Pro
    const row = existing as PayoutRow | null;
    if (row?.status === 'found') return { ok: true, state: 'found', payout: row, funded: false };
    if (row?.status === 'paying') return await settleAutoPayout(svc, row, now);
+   // A failed automatic payout is never re-sent from the wallet (release it and pay by hand).
    if (row && (row.status !== 'waiting' || row.marked_sent_at)) {
       return { ok: false, error: row.status === 'failed' ? 'auto_payout_failed_before' : 'being_paid_by_hand', payout: row };
    }
    if (!isOpen(loan)) return { ok: false, error: 'loan_not_open' };
    const { ctx, error } = await loadAutoCtx(svc, now);
    if (!ctx) return { ok: false, error: error ?? 'not_configured' };
-   const sent = await attemptAutoPay(svc, loan, ctx, now, false, adminUserId);
+   const sent = await attemptAutoPay(svc, loan, ctx, now, false, adminUserId, now + AUTO_BUDGET_MS);
    if (!sent.ok || sent.state !== 'paying') return sent;
    // Usually lands in seconds: wait a little so the admin sees it funded; otherwise the card keeps checking.
    let latest: PayoutResult = sent;

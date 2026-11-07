@@ -273,6 +273,8 @@ export default function UserCard(loan: UserCardProps) {
    const executeLend = useCallback(
       async (method: PaymentMethod) => {
          if (lendInFlightRef.current || isProcessing || loanData.loanStatus === 'Lent') return;
+         // Indonesia loans are paid to the borrower's Walt by Moodeng (admin), never funded on Base.
+         if (loanData.market === 'ID') return;
          lendInFlightRef.current = true;
          const stepProps = { flow: 'lend', method, loan_id: loanData.id };
          trackPaymentStep('tapped', stepProps);
@@ -525,6 +527,7 @@ export default function UserCard(loan: UserCardProps) {
       },
       [
          isProcessing,
+         loanData.market,
          loanData.loanStatus,
          loanData.borrowerUser,
          loanData.borrowerWallet,
@@ -567,6 +570,7 @@ export default function UserCard(loan: UserCardProps) {
 
    const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
+      if (isIndonesianLoan(loanData)) return;
       // Internal accounts get to choose Direct Lend vs Smart Contract Lend (Liquidity Relay).
       if (isFundingAdmin) {
          setShowFundingModal(true);
@@ -587,7 +591,11 @@ export default function UserCard(loan: UserCardProps) {
    const dueFormatted = format(due, 'MMM dd yyyy');
    const isOwnLoan = loanData.borrowerUser === userId;
    const isLent = loanData.loanStatus === 'Lent';
-   const canDeleteOwnRequest = Boolean(isAuthenticated && isOwnLoan && loanData.loanStatus === 'Requested' && onDeleteOwnRequest);
+   // A request Moodeng is paying out (Indonesia: payout claimed / marked sent) can't be deleted; the server refuses too.
+   const isBeingPaidOut = loanData.onHoldReason === 'id_payout_in_progress';
+   const canDeleteOwnRequest = Boolean(
+      isAuthenticated && isOwnLoan && loanData.loanStatus === 'Requested' && onDeleteOwnRequest && !isBeingPaidOut
+   );
    const borrowerContextProfileData = useMemo(
       () => borrowerContextProfile ?? normalizeBorrowerContextProfile(borrowerProfile),
       [borrowerContextProfile, borrowerProfile]
@@ -898,6 +906,11 @@ export default function UserCard(loan: UserCardProps) {
                      View Details
                      <ExternalLink className="w-5 h-5" />
                   </Link>
+               ) : isIndoLoan && !isOwnLoan ? (
+                  // Indonesia requests are paid to the borrower's Walt by Moodeng, never by a lender on Base.
+                  <div className="w-full rounded-md-lg bg-md-neutral-500 py-md-3 text-center text-md-b2 font-semibold text-md-neutral-1200">
+                     Dibayar oleh Moodeng · Paid by Moodeng
+                  </div>
                ) : isLenderCard && !showDetails ? (
                   <button
                      type="button"
@@ -921,7 +934,7 @@ export default function UserCard(loan: UserCardProps) {
                )}
 
                {/* Base Pay is the one-tap default; give non-Base lenders an explicit way in. */}
-               {isLenderCard && showDetails && !isLent && !isOwnLoan && !isProcessing && !isConnected ? (
+               {isLenderCard && showDetails && !isLent && !isOwnLoan && !isProcessing && !isConnected && !isIndoLoan ? (
                   <button
                      type="button"
                      onClick={() => setShowWalletChecklist(true)}

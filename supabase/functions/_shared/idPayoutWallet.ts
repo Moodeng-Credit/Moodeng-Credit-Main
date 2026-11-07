@@ -34,6 +34,28 @@ export const BSC_USDC_CHECKSUM = '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d';
 const BSC_RPCS = ['https://bsc-rpc.publicnode.com', 'https://bsc.drpc.org'];
 const WALLET_IDEMPOTENCY_KEY = 'moodeng-id-payout-wallet-v1';
 
+/** Every Openfort SDK call is bounded: a hung call must not eat the 5-minute job's budget. */
+export const OPENFORT_TIMEOUT_MS = 20_000;
+/** sendTransaction is never started with less than this much of the caller's budget left. */
+export const MIN_SEND_BUDGET_MS = 30_000;
+
+export class OpenfortTimeoutError extends Error {}
+
+/** Rejects with OpenfortTimeoutError after `ms` (the underlying call keeps running; it can't be aborted). */
+export const withTimeout = <T>(p: Promise<T>, label: string, ms = OPENFORT_TIMEOUT_MS): Promise<T> => {
+   let timer: number | undefined;
+   const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new OpenfortTimeoutError(`${label}_timeout_${Math.round(ms / 1000)}s`)), ms);
+   });
+   return Promise.race([p, timeout]).finally(() => clearTimeout(timer));
+};
+
+/**
+ * Thrown by sendUsdcBsc for anything that fails BEFORE sendTransaction is called: no money can have
+ * left, so the caller may release its claim instead of marking the payout failed.
+ */
+export class NotSentError extends Error {}
+
 export type PayoutCreds = { secretKey: string; walletSecret: string; feeSponsorshipId: string };
 export type PayoutWallet = { accountId: string; address: string };
 
@@ -188,8 +210,11 @@ export const createPayoutWallet = async (svc: Svc): Promise<CreateWalletResult> 
    if (!creds) return { ok: false, error: 'not_configured' };
    try {
       // A fixed idempotency key: two taps at once (or a retry) get the same wallet back.
-      const openfort = await openfortFor(creds);
-      const account = await openfort.accounts.evm.backend.create({ idempotencyKey: WALLET_IDEMPOTENCY_KEY });
+      const openfort = await withTimeout(openfortFor(creds), 'openfort_load');
+      const account = await withTimeout(
+         openfort.accounts.evm.backend.create({ idempotencyKey: WALLET_IDEMPOTENCY_KEY }),
+         'openfort_create_account'
+      );
       const address = (await loadSdk()).getAddress(account.address);
       // Save only over the empty defaults, so a wallet already saved is never replaced.
       const now = new Date().toISOString();
@@ -261,27 +286,45 @@ export const payoutWalletBalance = async (svc: Svc): Promise<(WalletBalance & { 
 // ── sending ──────────────────────────────────────────────────────────────────────────────────────
 /**
  * Creates the sponsored USDC (BSC) transfer and returns Openfort's transaction id. Resolves once the
- * transaction is created and signed, not when it lands: poll pollOpenfortTx. Throws on any failure
- * BEFORE an id exists (the caller then marks the payout failed and never retries on its own).
+ * transaction is created and signed, not when it lands: poll pollOpenfortTx. Anything that fails before
+ * sendTransaction is called throws NotSentError (nothing left the wallet). sendTransaction itself is
+ * never started with less than MIN_SEND_BUDGET_MS left before `deadline`; if IT throws or times out the
+ * money may still have gone out — the caller marks the payout failed and the BNB Chain check decides.
  */
-export const sendUsdcBsc = async (svc: Svc, to: string, amountUsd: number | string): Promise<string> => {
-   const creds = await loadPayoutCreds(svc);
-   if (!creds) throw new Error('not_configured');
-   const wallet = await getPayoutWallet(svc);
-   if (!wallet) throw new Error('no_payout_wallet');
-   const units = usdcBscUnits(amountUsd);
-   const { getAddress } = await loadSdk();
-   const data = encodeTransfer(getAddress(to), units);
-   const openfort = await openfortFor(creds);
-   const account = await openfort.accounts.evm.backend.get({ id: wallet.accountId });
-   if (getAddress(account.address) !== getAddress(wallet.address)) throw new Error('payout_wallet_mismatch');
-   const tx = await openfort.accounts.evm.backend.sendTransaction({
-      account,
-      chainId: BSC_CHAIN_ID,
-      interactions: [{ to: BSC_USDC_CHECKSUM, data }],
-      policy: creds.feeSponsorshipId,
-      rpcUrl: BSC_RPCS[0]
-   });
+export const sendUsdcBsc = async (svc: Svc, to: string, amountUsd: number | string, deadline = Date.now() + 60_000): Promise<string> => {
+   let prepared: {
+      openfort: OpenfortClient;
+      account: Awaited<ReturnType<OpenfortClient['accounts']['evm']['backend']['get']>>;
+      data: string;
+      feeSponsorshipId: string;
+   };
+   try {
+      const creds = await loadPayoutCreds(svc);
+      if (!creds) throw new Error('not_configured');
+      const wallet = await getPayoutWallet(svc);
+      if (!wallet) throw new Error('no_payout_wallet');
+      const units = usdcBscUnits(amountUsd);
+      const { getAddress } = await withTimeout(loadSdk(), 'openfort_load');
+      const data = encodeTransfer(getAddress(to), units);
+      const openfort = await openfortFor(creds);
+      const account = await withTimeout(openfort.accounts.evm.backend.get({ id: wallet.accountId }), 'openfort_get_account');
+      if (getAddress(account.address) !== getAddress(wallet.address)) throw new Error('payout_wallet_mismatch');
+      if (deadline - Date.now() < MIN_SEND_BUDGET_MS) throw new Error('no_time_left');
+      prepared = { openfort, account, data, feeSponsorshipId: creds.feeSponsorshipId };
+   } catch (err) {
+      throw err instanceof NotSentError ? err : new NotSentError(err instanceof Error ? err.message : String(err));
+   }
+   const { openfort, account, data, feeSponsorshipId } = prepared;
+   const tx = await withTimeout(
+      openfort.accounts.evm.backend.sendTransaction({
+         account,
+         chainId: BSC_CHAIN_ID,
+         interactions: [{ to: BSC_USDC_CHECKSUM, data }],
+         policy: feeSponsorshipId,
+         rpcUrl: BSC_RPCS[0]
+      }),
+      'openfort_send'
+   );
    if (!tx?.id) throw new Error('openfort_returned_no_id');
    return tx.id;
 };
@@ -302,24 +345,30 @@ const errText = (e: unknown) => {
 export const pollOpenfortTx = async (svc: Svc, id: string): Promise<OpenfortTxState> => {
    const creds = await loadPayoutCreds(svc);
    if (!creds) throw new Error('not_configured');
-   const openfort = await openfortFor(creds);
-   // v2 transactions first (status: submitted → succeeded | reverted | failed) …
+   const openfort = await withTimeout(openfortFor(creds), 'openfort_load');
+   // v2 transactions first (status: submitted → succeeded | reverted | failed; 'expired' = never landed) …
    try {
-      const t = await openfort.transactions.get(id);
+      const t = await withTimeout(openfort.transactions.get(id), 'openfort_tx_get');
       const hash = t.receipt?.transactionHash;
-      if (t.status === 'succeeded') return hash ? { state: 'succeeded', txHash: hash } : { state: 'pending' };
-      if (t.status === 'reverted' || t.status === 'failed')
-         return { state: 'failed', error: `${t.status}: ${errText(t.receipt?.error)}`, txHash: hash };
+      const status = String(t.status);
+      if (status === 'succeeded') return hash ? { state: 'succeeded', txHash: hash } : { state: 'pending' };
+      if (status === 'reverted' || status === 'failed' || status === 'expired')
+         return { state: 'failed', error: `${status}: ${errText(t.receipt?.error)}`, txHash: hash };
+      // The user-operation monitor can say "expired" in the timeline while the status hasn't moved.
+      if ((t.timeline ?? []).some((e) => String(e.event) === 'expired'))
+         return { state: 'failed', error: 'expired', txHash: hash };
       return { state: 'pending' };
    } catch (err) {
       // … sendTransaction hands back a transaction intent (tin_); if v2 doesn't know the id, read the intent.
-      if (!id.startsWith('tin_')) throw err;
+      // A timeout is a network problem, not an unknown id: don't spend another 20 s on the intent.
+      if (err instanceof OpenfortTimeoutError || !id.startsWith('tin_')) throw err;
    }
-   const intent = await openfort.transactionIntents.get(id);
+   const intent = await withTimeout(openfort.transactionIntents.get(id), 'openfort_intent_get');
    const r = intent.response;
    if (r?.status === 1 && r.transactionHash) return { state: 'succeeded', txHash: r.transactionHash };
    if (r?.status === 0) return { state: 'failed', error: `reverted: ${errText(r.error)}`, txHash: r.transactionHash };
    if (r?.error) return { state: 'failed', error: errText(r.error), txHash: r.transactionHash };
+   if (String((intent as { status?: unknown }).status ?? '') === 'expired') return { state: 'failed', error: 'expired', txHash: r?.transactionHash };
    return { state: 'pending' };
 };
 
