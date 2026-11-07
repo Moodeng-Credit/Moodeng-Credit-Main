@@ -6,7 +6,8 @@
 //   Ajukan: amount (ida:<amt>) → term (idt:<amt>:<days>) → rupiah total (idr:<amt>:<days>:<rp>) → purpose
 //           (idp:…:<i>) → confirm (idc:…:<i>) → public.bot_request_id_loan (migration 20261107190000), which
 //           re-checks everything. The whole state is in callback_data (≤ 64 bytes, idLoanMath.ts).
-//   Bayar:  the payout wallet on BNB Chain + an exact amount that identifies the payment (idRepayments.ts).
+//   Bayar:  Walt → Transfer → Moodeng's Walt username (free), "✅ Sudah kirim" (ids:<request id>) → team
+//           confirms (idRepayments.ts). Backup: the payout wallet on BNB Chain + an exact amount.
 //
 // Only people found by users.chat_id / users.telegram_id = the sender AND users.market = 'ID' get any of
 // this; everyone else keeps the bot's old behaviour (the handlers return false). Bahasa by default,
@@ -27,7 +28,7 @@ import {
    isIdMenuText,
    parseIdBotCallback
 } from './idLoanMath.ts';
-import { getOrCreateRepayRequest } from './idRepayments.ts';
+import { claimSent, getOrCreateRepayRequest } from './idRepayments.ts';
 import { appButton, buildIdMessage, formatIdDay, idLocaleOf, type IdLocale, type IdNext, loadIdStatus } from './idTrack.ts';
 import { loanTimezone, pastDueAt } from './loanDeadline.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramButton, type TelegramInlineKeyboard } from './telegram.ts';
@@ -365,6 +366,7 @@ const handleApplyStep = async (svc: Svc, user: BotUser, l: IdLocale, step: IdBot
    const restart = (note: string) => edit(chatId, messageId, { ...amountScreen(l, rules.amounts, rate), text: `${note}\n\n${amountScreen(l, rules.amounts, rate).text}` });
 
    if (step.kind === 'menu') return edit(chatId, messageId, amountScreen(l, rules.amounts, rate));
+   if (step.kind === 'sent') return; // handled before (repay), never a loan step
    // Everything in the callback is checked again (it came from a button, but a button can be old).
    if (!rules.amounts.includes(step.amount)) return restart(say(l, 'Jumlah itu tidak tersedia lagi.', 'That amount isn’t available any more.'));
    if (step.kind === 'amount') return edit(chatId, messageId, termScreen(l, step.amount, rules.maxTermDays, now));
@@ -410,10 +412,39 @@ const handleApplyStep = async (svc: Svc, user: BotUser, l: IdLocale, step: IdBot
 };
 
 // ── 💰 repay ─────────────────────────────────────────────────────────────────────────────────────
-/** The repay instructions: the exact amount, the payout wallet with copy buttons, the Walt steps. */
-export const repayScreen = (l: IdLocale, q: { address: string; amountUsdt: string; approxIdr: number | null; rupiahLeft: number | null }): Screen => {
+type RepayInfo = {
+   method?: 'walt_transfer' | 'bep20';
+   waltUsername?: string | null;
+   requestId?: number;
+   address: string;
+   amountUsdt: string;
+   approxIdr: number | null;
+   rupiahLeft: number | null;
+};
+
+/**
+ * The repay instructions. Walt Transfer (free): username + exact amount with copy buttons, "Buka Walt",
+ * then "✅ Sudah kirim". On-chain backup: the payout wallet address + the BEP20 steps.
+ */
+export const repayScreen = (l: IdLocale, q: RepayInfo): Screen => {
    const approx = q.approxIdr ? ` (≈ ${formatRp(q.approxIdr)})` : '';
    const left = q.rupiahLeft != null ? say(l, `Sisa pinjaman: ${formatRp(q.rupiahLeft)}\n`, `Left on your loan: ${formatRp(q.rupiahLeft)}\n`) : '';
+   if (q.method === 'walt_transfer' && q.waltUsername && q.requestId) {
+      const who = `@${q.waltUsername}`;
+      return {
+         text: say(
+            l,
+            `💰 Bayar lewat Walt (gratis)\n\n${left}Kirim TEPAT: ${q.amountUsdt} USDT${approx}\nKe: ${who}\n\n1. Belum punya USDT? Walt → Deposit → P2P Express: beli USDT dengan rupiah.\n2. Walt → Transfer → tempel ${who} → tempel jumlah ${q.amountUsdt} → kirim.\n3. Kembali ke sini dan tekan "✅ Sudah kirim".\n\n⚠️ Pakai Transfer (gratis), BUKAN Withdraw (ada biaya). Jumlah ini berlaku 48 jam.`,
+            `💰 Pay with Walt (free)\n\n${left}Send EXACTLY: ${q.amountUsdt} USDT${approx}\nTo: ${who}\n\n1. No USDT yet? Walt → Deposit → P2P Express: buy USDT with rupiah.\n2. Walt → Transfer → paste ${who} → paste the amount ${q.amountUsdt} → send.\n3. Come back here and tap "✅ I've sent it".\n\n⚠️ Use Transfer (free), NOT Withdraw (it has a fee). This amount is good for 48 hours.`
+         ),
+         keyboard: [
+            [{ text: say(l, '📋 Salin username', '📋 Copy username'), copy_text: { text: who } }, { text: say(l, '📋 Salin jumlah', '📋 Copy amount'), copy_text: { text: q.amountUsdt } }],
+            [{ text: say(l, '👛 Buka Walt', '👛 Open Walt'), url: WALT_URL }],
+            [cb(say(l, '✅ Sudah kirim', '✅ I’ve sent it'), idCallback.sent(q.requestId))],
+            [menuButton(l)]
+         ]
+      };
+   }
    return {
       text: say(
          l,
@@ -480,9 +511,23 @@ export const handleIdBotCallback = async (svc: Svc, query: TgCallback): Promise<
    }
    const l = idLocaleOf(user.preferred_locale);
    try {
+      if (step.kind === 'sent') {
+         const r = await claimSent(svc, user.id, step.requestId);
+         await answer(query.id, r.ok ? say(l, '✅ Terima kasih!', '✅ Thank you!') : '');
+         const text = r.ok
+            ? say(
+                 l,
+                 '⏳ Terima kasih! Tim kami sedang mengecek Walt dan akan mengonfirmasi pembayaranmu di sini (biasanya dalam beberapa jam, pukul 08–22 WIB).',
+                 '⏳ Thank you! Our team is checking Walt and will confirm your payment here (usually within a few hours, 08–22 WIB).'
+              )
+            : r.error === 'paid'
+              ? say(l, '✅ Pembayaran ini sudah tercatat.', '✅ This payment is already recorded.')
+              : say(l, 'Permintaan ini tidak ditemukan. Tekan 💰 Bayar untuk yang baru.', 'This request wasn’t found. Tap 💰 Pay for a new one.');
+         await send(chatId, { text, keyboard: [[menuButton(l)]] });
+         return true;
+      }
       if (step.kind === 'menu' && step.action === 'repay') {
-         // Relay can take a few seconds: acknowledge the tap first.
-         await answer(query.id, say(l, '⏳ Menyiapkan alamat…', '⏳ Getting an address…'));
+         await answer(query.id, say(l, '⏳ Menyiapkan…', '⏳ One moment…'));
          await handleRepay(svc, user, l, chatId);
          return true;
       }

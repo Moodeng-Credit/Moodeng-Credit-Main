@@ -90,6 +90,9 @@ export const relayWalt = {
 /** Indonesia track: repaying straight to Moodeng's payout wallet (no Relay). */
 export type IdRepayRequest = {
    requestId: number;
+   /** 'walt_transfer' = Walt → Transfer → @waltUsername (free); 'bep20' = withdraw to `address`. */
+   method: 'walt_transfer' | 'bep20';
+   waltUsername: string | null;
    address: string;
    /** Exact amount to send, e.g. "6.38" (it identifies the payment). */
    amountUsdt: string;
@@ -107,6 +110,9 @@ export type IdRepayStatus = {
    recorded: boolean;
    /** The whole loan is repaid (a recorded payment can be partial). */
    loanPaid: boolean;
+   method: 'walt_transfer' | 'bep20';
+   /** The borrower tapped "I've sent it" (Walt Transfer), waiting for the team. */
+   sentClaimed: boolean;
 };
 
 export const idRepay = {
@@ -116,7 +122,11 @@ export const idRepay = {
       if (!res.requestId || !res.address || !res.amountUsdt) throw new RelayWaltError('Bad answer from the server', 'bad_response');
       return res as IdRepayRequest;
    },
-   status: async (requestId: number): Promise<IdRepayStatus> => (await call({ relay: 'id_repay_status', requestId })) as unknown as IdRepayStatus
+   status: async (requestId: number): Promise<IdRepayStatus> => (await call({ relay: 'id_repay_status', requestId })) as unknown as IdRepayStatus,
+   /** "I've sent it" for a Walt Transfer: the team checks their Walt and confirms. */
+   sent: async (requestId: number) => {
+      await call({ relay: 'id_repay_sent', requestId });
+   }
 };
 
 export const isFinalRelayStatus = (s: string) => s === 'success' || s === 'failure' || s === 'refund' || s === 'expired';

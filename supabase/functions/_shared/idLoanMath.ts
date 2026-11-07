@@ -132,7 +132,9 @@ export type IdBotCallback =
    | { kind: 'term'; amount: number; days: number }
    | { kind: 'rupiah'; amount: number; days: number; rp: number }
    | { kind: 'purpose'; amount: number; days: number; rp: number; purpose: number }
-   | { kind: 'confirm'; amount: number; days: number; rp: number; purpose: number };
+   | { kind: 'confirm'; amount: number; days: number; rp: number; purpose: number }
+   /** "✅ Sudah kirim" on a Walt Transfer repayment request. */
+   | { kind: 'sent'; requestId: number };
 
 const AMOUNT = '(\\d{1,4}(?:\\.\\d{1,2})?)';
 const INT = '(\\d{1,3})';
@@ -146,6 +148,7 @@ const PATTERNS: Array<[RegExp, (m: RegExpExecArray) => IdBotCallback | null]> = 
       new RegExp(`^idp:${AMOUNT}:${INT}:${RP}:(\\d)$`),
       (m) => ({ kind: 'purpose', amount: Number(m[1]), days: Number(m[2]), rp: Number(m[3]), purpose: Number(m[4]) })
    ],
+   [/^ids:(\d{1,12})$/, (m) => ({ kind: 'sent', requestId: Number(m[1]) })],
    [
       new RegExp(`^idc:${AMOUNT}:${INT}:${RP}:(\\d)$`),
       (m) => ({ kind: 'confirm', amount: Number(m[1]), days: Number(m[2]), rp: Number(m[3]), purpose: Number(m[4]) })
@@ -155,7 +158,7 @@ const PATTERNS: Array<[RegExp, (m: RegExpExecArray) => IdBotCallback | null]> = 
 /** Parse one of our callbacks; null for anything else (other handlers get it). */
 export const parseIdBotCallback = (data: string | null | undefined): IdBotCallback | null => {
    const s = String(data ?? '');
-   if (!/^id[mtarpc]:/.test(s) || s.length > 64) return null;
+   if (!/^id[mtarpcs]:/.test(s) || s.length > 64) return null;
    for (const [re, build] of PATTERNS) {
       const m = re.exec(s);
       if (m) {
@@ -176,7 +179,8 @@ export const idCallback = {
    term: (amount: number, days: number) => `idt:${num(amount)}:${days}`,
    rupiah: (amount: number, days: number, rp: number) => `idr:${num(amount)}:${days}:${Math.round(rp)}`,
    purpose: (amount: number, days: number, rp: number, purpose: number) => `idp:${num(amount)}:${days}:${Math.round(rp)}:${purpose}`,
-   confirm: (amount: number, days: number, rp: number, purpose: number) => `idc:${num(amount)}:${days}:${Math.round(rp)}:${purpose}`
+   confirm: (amount: number, days: number, rp: number, purpose: number) => `idc:${num(amount)}:${days}:${Math.round(rp)}:${purpose}`,
+   sent: (requestId: number) => `ids:${requestId}`
 };
 
 /** Telegram's limit: callback_data is 1–64 BYTES. */

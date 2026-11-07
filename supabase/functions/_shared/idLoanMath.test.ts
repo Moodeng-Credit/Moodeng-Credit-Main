@@ -16,6 +16,7 @@ import {
 
 Deno.test('callbacks round-trip and fit in 64 bytes', () => {
    const cases = [
+      idCallback.sent(123456789012),
       idCallback.menu('status'),
       idCallback.menu('apply'),
       idCallback.menu('repay'),

@@ -7,12 +7,12 @@ import { formatIdr } from '@/lib/loanMarket';
 import { idRepay, type IdRepayRequest, type IdRepayStatus, RelayWaltError } from '@/lib/relayWalt';
 import { GoldButton, LangToggle, useWaltLang, WaltIcon, type WaltLang } from '@/views/indonesia/walt/waltUi';
 
-// "Bayar dari Walt" — how Indonesia-track borrowers repay (same as the bot's 💰 Bayar):
-//   1. buy USDT on Walt P2P with rupiah
-//   2. get Moodeng's payout-wallet address + an EXACT amount (it identifies the payment)
-//   3. withdraw exactly that from Walt (BEP20) to the address
-//   4. the 5-minute job sees it on BNB Chain and records it on the loan; this card polls and says so.
-// No bridge, no fee taken from the money (supabase/functions/_shared/idRepayments.ts).
+// "Bayar dari Walt" — how Indonesia-track borrowers repay (same as the bot's 💰 Bayar), with no fees:
+//   1. (if needed) buy USDT on Walt P2P Express with rupiah
+//   2. get the exact amount + Moodeng's Walt @username, send it with Walt → Transfer (free)
+//   3. tap "Sudah kirim"; the team checks Walt and confirms, which records it. This card polls and says so.
+// Backup when no Walt username is set: withdraw on BNB Chain to the payout wallet, matched automatically.
+// (supabase/functions/_shared/idRepayments.ts)
 
 const POLL_MS = 15_000;
 
@@ -22,6 +22,14 @@ const T = {
    s1: { id: 'Beli USDT di Walt P2P Express', en: 'Buy USDT on Walt P2P Express' },
    s1btn: { id: 'Buka Walt', en: 'Open Walt' },
    s2: { id: 'Kirim jumlah TEPAT ini ke alamat Moodeng', en: 'Send EXACTLY this amount to Moodeng' },
+   s2walt: { id: 'Kirim jumlah TEPAT ini lewat Walt → Transfer', en: 'Send EXACTLY this amount with Walt → Transfer' },
+   to: { id: 'Ke', en: 'To' },
+   copyUser: { id: 'Salin username', en: 'Copy username' },
+   transferHow: { id: 'Di Walt: Transfer → tempel username → tempel jumlah → kirim.', en: 'In Walt: Transfer → paste the username → paste the amount → send.' },
+   notWithdraw: { id: 'Pakai Transfer (gratis), BUKAN Withdraw (ada biaya).', en: 'Use Transfer (free), NOT Withdraw (it has a fee).' },
+   sentBtn: { id: '✅ Sudah kirim', en: '✅ I’ve sent it' },
+   waitingTeam: { id: 'Menunggu Moodeng mengonfirmasi…', en: 'Waiting for Moodeng to confirm…' },
+   waitingTeamBody: { id: 'Tim kami mengecek Walt, biasanya dalam beberapa jam (08–22 WIB).', en: 'Our team checks Walt, usually within a few hours (08–22 WIB).' },
    s2btn: { id: 'Tampilkan jumlah & alamat', en: 'Show amount & address' },
    copy: { id: 'Salin alamat', en: 'Copy address' },
    copyAmount: { id: 'Salin jumlah', en: 'Copy amount' },
@@ -75,6 +83,8 @@ type Props = {
 
 const PREVIEW: IdRepayRequest = {
    requestId: 0,
+   method: 'walt_transfer',
+   waltUsername: 'jimmymoodengcredit',
    address: '0x37184ee77827c102ea3cbd98e7f2e535a41a40aa',
    amountUsdt: '6.08',
    approxIdr: 110000,
@@ -90,6 +100,7 @@ export default function WaltRepaySteps({ isPreview, rupiahLeft = null, usdLeft, 
    const [error, setError] = useState<string | null>(null);
    const [copied, setCopied] = useState<'address' | 'amount' | null>(null);
    const [boughtTapped, setBoughtTapped] = useState(false);
+   const [sentTapped, setSentTapped] = useState(false);
    const say = (t: Record<WaltLang, string>) => t[lang];
 
    const load = useCallback(async () => {
@@ -99,6 +110,7 @@ export default function WaltRepaySteps({ isPreview, rupiahLeft = null, usdLeft, 
          const next = isPreview ? PREVIEW : await idRepay.request();
          setReq(next);
          setStatus(null);
+         setSentTapped(false);
       } catch (err) {
          const code = err instanceof RelayWaltError ? err.code : 'error';
          setError((ERRORS[code] ?? ERRORS.error)[lang]);
@@ -126,10 +138,28 @@ export default function WaltRepaySteps({ isPreview, rupiahLeft = null, usdLeft, 
       if (recorded) onRecorded?.();
    }, [recorded, onRecorded]);
 
+   const isWalt = req?.method === 'walt_transfer' && Boolean(req.waltUsername);
+   const recipient = isWalt ? `@${req?.waltUsername}` : (req?.address ?? '');
+   const sent = sentTapped || status?.sentClaimed === true;
+
+   const markSent = async () => {
+      if (!req) return;
+      setBusy(true);
+      setError(null);
+      try {
+         if (!isPreview) await idRepay.sent(req.requestId);
+         setSentTapped(true);
+      } catch {
+         setError(ERRORS.error[lang]);
+      } finally {
+         setBusy(false);
+      }
+   };
+
    const copy = async (what: 'address' | 'amount') => {
       if (!req) return;
       try {
-         await navigator.clipboard.writeText(what === 'address' ? req.address : req.amountUsdt);
+         await navigator.clipboard.writeText(what === 'address' ? recipient : req.amountUsdt);
          setCopied(what);
          setTimeout(() => setCopied(null), 2000);
       } catch {
@@ -192,7 +222,7 @@ export default function WaltRepaySteps({ isPreview, rupiahLeft = null, usdLeft, 
          <div className="flex gap-3">
             {stepDot(2, Boolean(req) && !stale)}
             <div className="min-w-0 flex-1">
-               <p className="mb-2 text-[13px] font-semibold text-[#1a1240] dark:text-white">{say(T.s2)}</p>
+               <p className="mb-2 text-[13px] font-semibold text-[#1a1240] dark:text-white">{isWalt ? say(T.s2walt) : say(T.s2)}</p>
                {!req || stale ? (
                   <>
                      {stale ? (
@@ -214,7 +244,13 @@ export default function WaltRepaySteps({ isPreview, rupiahLeft = null, usdLeft, 
                         {req.approxIdr ? (
                            <p className="mt-1 text-[13px] font-semibold text-[#6b6090] dark:text-[#a095c8]">≈ {formatIdr(req.approxIdr)}</p>
                         ) : null}
-                        <p className="mt-3 select-all break-all font-mono text-[13px] font-semibold text-[#1a1240] dark:text-white">{req.address}</p>
+                        {isWalt ? (
+                           <p className="mt-3 text-[15px] font-semibold text-[#1a1240] dark:text-white">
+                              {say(T.to)} <span className="select-all font-mono">{recipient}</span>
+                           </p>
+                        ) : (
+                           <p className="mt-3 select-all break-all font-mono text-[13px] font-semibold text-[#1a1240] dark:text-white">{req.address}</p>
+                        )}
                         <div className="mt-2 flex gap-2">
                            <button
                               type="button"
@@ -230,18 +266,32 @@ export default function WaltRepaySteps({ isPreview, rupiahLeft = null, usdLeft, 
                               className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-[36px] bg-[linear-gradient(85deg,#ffe27a_0%,#ffbe1a_98%)] text-[13px] font-bold text-[#4a2a00]"
                            >
                               {copied === 'address' ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
-                              {copied === 'address' ? say(T.copied) : say(T.copy)}
+                              {copied === 'address' ? say(T.copied) : isWalt ? say(T.copyUser) : say(T.copy)}
                            </button>
                         </div>
                      </div>
                      <div className="flex gap-2 rounded-xl border border-[#fcd34d] bg-[#fffbeb] px-3 py-2.5 dark:border-[#78350f] dark:bg-[#2a1d05]">
                         <AlertTriangle className="mt-[1px] h-4 w-4 shrink-0 text-[#d97706]" aria-hidden="true" />
                         <div className="text-[12px] leading-[17px] text-[#78350f] dark:text-[#fcd34d]">
-                           <p className="font-bold">{say(T.network)}</p>
-                           <p>{say(T.exactWhy)}</p>
+                           {isWalt ? (
+                              <>
+                                 <p className="font-bold">{say(T.notWithdraw)}</p>
+                                 <p>{say(T.transferHow)}</p>
+                              </>
+                           ) : (
+                              <>
+                                 <p className="font-bold">{say(T.network)}</p>
+                                 <p>{say(T.exactWhy)}</p>
+                              </>
+                           )}
                            <p>{say(T.validFor)}</p>
                         </div>
                      </div>
+                     {isWalt && !sent ? (
+                        <GoldButton onClick={() => void markSent()} busy={busy}>
+                           {say(T.sentBtn)}
+                        </GoldButton>
+                     ) : null}
                   </div>
                )}
                {error ? <p className="mt-2 text-[12px] font-semibold text-[#dc2626]">{error}</p> : null}
@@ -249,7 +299,7 @@ export default function WaltRepaySteps({ isPreview, rupiahLeft = null, usdLeft, 
          </div>
 
          {/* 3. waiting */}
-         {req && !stale ? (
+         {req && !stale && (!isWalt || sent || recorded) ? (
             <div className="flex gap-3">
                {stepDot(3, recorded)}
                <div className="min-w-0 flex-1">
@@ -275,8 +325,10 @@ export default function WaltRepaySteps({ isPreview, rupiahLeft = null, usdLeft, 
                      <div className="flex items-center gap-3 rounded-xl bg-[#f3effe] px-3 py-2.5 dark:bg-[#1e1535]">
                         <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[#6c3fe0]" aria-hidden="true" />
                         <div>
-                           <p className="text-[13px] font-semibold text-[#3d1a8a] dark:text-[#c4b5fd]">{status?.received ? say(T.received) : say(T.waiting)}</p>
-                           <p className="text-[11px] text-[#6b6090] dark:text-[#a095c8]">{say(T.waitingBody)}</p>
+                           <p className="text-[13px] font-semibold text-[#3d1a8a] dark:text-[#c4b5fd]">
+                              {status?.received ? say(T.received) : isWalt ? say(T.waitingTeam) : say(T.waiting)}
+                           </p>
+                           <p className="text-[11px] text-[#6b6090] dark:text-[#a095c8]">{isWalt ? say(T.waitingTeamBody) : say(T.waitingBody)}</p>
                         </div>
                      </div>
                   )}

@@ -131,7 +131,19 @@ Telegram-app login tap.
 - **❓ Bantuan**: a button that opens the support chat (`/start support`) + a note that the team can
   reach them on WhatsApp.
 
-## Repaying (straight to the payout wallet — migration 20261107200000, `_shared/idRepayments.ts`)
+## Repaying (no fees — migration 20261107200000, `_shared/idRepayments.ts`)
+
+George's rule (2026-11-08): no fees anywhere. Walt's on-chain withdrawal costs 1.5 USDT (BEP20) — 25% of a
+$6 repayment — and Walt Pay (merchant API) is "unavailable" for his account, so:
+
+- **Main way — Walt Transfer** (`method = 'walt_transfer'`, setting `id_walt_username` = `jimmymoodengcredit`):
+  💰 Bayar shows the exact amount + `@jimmymoodengcredit` with copy buttons and "👛 Buka Walt". In Walt:
+  Transfer → paste username → paste amount → send (free, inside Walt). Then "✅ Sudah kirim" (`ids:<id>`;
+  app: "Sudah kirim" button → relay action `id_repay_sent`). The team gets a card (once per 10 min):
+  "✅ Arrived — record" (`idw:a:<id>`) creates deposit `walt-transfer:<id>` (unique — a double tap can't
+  record twice) and records it with the request's rupiah; "❌ Not there" (`idw:x:<id>`) tells the borrower
+  to check and tap again. Walt can't be opened pre-filled (no API): the bot gives copy buttons.
+- **Backup — on chain** (`method = 'bep20'`, only if `id_walt_username` is empty), as below.
 
 - **Who**: loans with `market = 'ID'` and `funding_method = 'walt_manual'` (Moodeng paid them to Walt).
   Anything else (e.g. an older Indonesian loan a lender funded on Base) is owed to that lender and goes

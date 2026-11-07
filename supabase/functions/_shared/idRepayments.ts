@@ -1,6 +1,12 @@
-// Indonesia track: repaying straight to Moodeng's payout wallet on BNB Chain
-// (docs/INDONESIA_TRACK.md "Repaying", migration 20261107200000_indonesia_wallet_repay.sql).
+// Indonesia track: repaying with no fees (docs/INDONESIA_TRACK.md "Repaying",
+// migration 20261107200000_indonesia_wallet_repay.sql).
 //
+// MAIN WAY — Walt Transfer (method 'walt_transfer'): the borrower sends the exact amount inside Walt to
+// Moodeng's Walt @username (setting id_walt_username). Free. Walt has no API, so: the borrower taps
+// "✅ Sudah kirim" (claimSent) → the team gets a card → "✅ Arrived" records it (confirmWaltTransfer).
+//
+// BACKUP — on chain (method 'bep20', only when no Walt username is set; also catches anyone who sends on
+// chain anyway):
 //   Walt (USDT or USDC, BEP20) ──withdraw──▶ the payout wallet (the same Openfort wallet loans go out from)
 //
 // No bridge and no fee taken from anyone's money: what the borrower sends is what arrives.
@@ -134,6 +140,12 @@ const parseSenders = (value: string | null) =>
          .filter((s) => EVM_ADDRESS.test(s))
    );
 
+/** "@JimmyMoodengCredit " → "jimmymoodengcredit"; null unless it's a valid Telegram username. */
+export const waltUsernameOf = (value: string | null | undefined): string | null => {
+   const u = String(value ?? '').trim().replace(/^@/, '');
+   return /^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(u) ? u : null;
+};
+
 const currentRate = async (svc: Svc): Promise<number | null> => {
    try {
       const { data } = await svc.rpc('current_usd_idr');
@@ -200,13 +212,15 @@ type RequestRow = {
    amount_usd: string | number;
    owed_usd: string | number;
    rupiah_left: string | number | null;
+   method: 'walt_transfer' | 'bep20';
+   sent_claimed_at: string | null;
    status: string;
    deposit_id: number | null;
    created_at: string;
    expires_at: string;
 };
 // numeric(78,0) comes back as a JSON number (float) unless cast: always read the units as text.
-const REQUEST_FIELDS = 'id, loan_id, user_id, to_address, amount_units::text, amount_usd, owed_usd, rupiah_left, status, deposit_id, created_at, expires_at';
+const REQUEST_FIELDS = 'id, loan_id, user_id, to_address, amount_units::text, amount_usd, owed_usd, rupiah_left, method, sent_claimed_at, status, deposit_id, created_at, expires_at';
 
 const unitsOf = (v: string | number): bigint => BigInt(typeof v === 'number' ? v.toLocaleString('en-US', { useGrouping: false }) : String(v).split('.')[0]);
 
@@ -215,7 +229,11 @@ export type RepayRequestResult =
         ok: true;
         reused: boolean;
         requestId: number;
-        /** The payout wallet (BNB Chain). */
+        /** 'walt_transfer' = Walt → Transfer → waltUsername (free); 'bep20' = withdraw to `address`. */
+        method: 'walt_transfer' | 'bep20';
+        /** Moodeng's Walt @username (without @) for walt_transfer. */
+        waltUsername: string | null;
+        /** The payout wallet (BNB Chain), for bep20. */
         address: string;
         /** Exact amount to send, e.g. "6.38". */
         amountUsdt: string;
@@ -234,8 +252,12 @@ export const getOrCreateRepayRequest = async (svc: Svc, user: { id: string }, so
       if (!loan) return { ok: false, error: 'no_loan' };
       if (repayBlocker(loan)) return { ok: false, error: 'on_contract' };
       if (String((await getSetting(svc, 'id_repay')) ?? 'on').trim().toLowerCase() === 'off') return { ok: false, error: 'paused' };
-      const wallet = await getPayoutWallet(svc);
-      if (!wallet) return { ok: false, error: 'no_payout_wallet' };
+      const waltUsername = waltUsernameOf(await getSetting(svc, 'id_walt_username'));
+      const method: 'walt_transfer' | 'bep20' = waltUsername ? 'walt_transfer' : 'bep20';
+      const payoutWallet = method === 'bep20' ? await getPayoutWallet(svc) : null;
+      if (method === 'bep20' && !payoutWallet) return { ok: false, error: 'no_payout_wallet' };
+      // Where the money goes: 'walt:@name' or the payout wallet address.
+      const wallet = { address: waltUsername ? `walt:@${waltUsername}` : String(payoutWallet?.address) };
 
       // A payment for this loan that's being recorded right now: don't ask for another one.
       const { data: inFlight } = await svc
@@ -270,6 +292,8 @@ export const getOrCreateRepayRequest = async (svc: Svc, user: { id: string }, so
                ok: true,
                reused: true,
                requestId: r.id,
+               method,
+               waltUsername,
                address: wallet.address,
                amountUsdt: centsToText(cents),
                approxIdr: approx(cents),
@@ -314,12 +338,13 @@ export const getOrCreateRepayRequest = async (svc: Svc, user: { id: string }, so
                rupiah_left: left.idr,
                rate,
                source,
+               method,
                expires_at: expiresAt
             })
             .select('id')
             .single();
          if (!error && row) {
-            return { ok: true, reused: false, requestId: row.id, address: wallet.address, amountUsdt: centsToText(cents), approxIdr: approx(cents), rupiahLeft: left.idr, expiresAt, loan };
+            return { ok: true, reused: false, requestId: row.id, method, waltUsername, address: wallet.address, amountUsdt: centsToText(cents), approxIdr: approx(cents), rupiahLeft: left.idr, expiresAt, loan };
          }
          if (error?.code !== '23505') {
             console.error('[idRepayments] store request failed', error?.message);
@@ -348,6 +373,8 @@ export const repayRequestStatus = async (svc: Svc, userId: string, requestId: nu
    const { data: loan } = await svc.from('loans').select('repayment_status').eq('id', row.loan_id).maybeSingle();
    return {
       loanPaid: loan?.repayment_status === 'Paid',
+      method: row.method,
+      sentClaimed: Boolean(row.sent_claimed_at),
       requestId: row.id,
       status: row.status,
       address: row.to_address,
@@ -416,7 +443,10 @@ type DepositRow = {
 const DEPOSIT_FIELDS =
    'id, tx_hash, log_index, token, from_address, to_address, units::text, block_number, status, request_id, loan_id, matched_by, note, recording_at, recorded_at, alerted_at, refund_started_at, refund_tx, refund_units::text, refund_confirmed_at, created_at, updated_at';
 
-const depositKey = (d: Pick<DepositRow, 'tx_hash' | 'log_index'>) => `bsc:${d.tx_hash.toLowerCase()}:${d.log_index}`;
+const WALT_TX = 'walt-transfer:';
+const isWaltDeposit = (d: Pick<DepositRow, 'tx_hash'>) => d.tx_hash.startsWith(WALT_TX);
+/** The hash spent in used_payment_hashes: 'bsc:<tx>:<log>' on chain, 'walt-transfer:<request id>' for a confirmed Walt transfer. */
+const depositKey = (d: Pick<DepositRow, 'tx_hash' | 'log_index'>) => (isWaltDeposit(d) ? d.tx_hash : `bsc:${d.tx_hash.toLowerCase()}:${d.log_index}`);
 const depositUsd = (d: Pick<DepositRow, 'units'>) => unitsToUsd(unitsOf(d.units));
 const depositText = (d: DepositRow) => `${depositUsd(d).toFixed(2)} ${d.token}`;
 
@@ -483,7 +513,7 @@ const afterRecorded = async (svc: Svc, d: DepositRow, loan: Record<string, unkno
    if (!paid) await tell(user, partialReceivedText(idLocaleOf(user?.preferred_locale), pegged ? paidIdr : null, paidUsd, leftIdr, leftUsd), payRestRow(user));
    await alertTeam(
       svc,
-      `💰 🇮🇩 ${loan.tracking_id ?? d.loan_id}: ${depositText(d)} arrived in the payout wallet${paidIdr != null ? ` (Rp ${paidIdr.toLocaleString('id-ID')})` : ''} — ${
+      `💰 🇮🇩 ${loan.tracking_id ?? d.loan_id}: ${depositText(d)} ${isWaltDeposit(d) ? 'received in Walt' : 'arrived in the payout wallet'}${paidIdr != null ? ` (Rp ${paidIdr.toLocaleString('id-ID')})` : ''} — ${
          paid ? 'loan PAID ✅' : `partial, ${leftIdr != null ? `Rp ${leftIdr.toLocaleString('id-ID')}` : usd2(leftUsd)} left`
       }.${d.matched_by === 'team' ? ' (matched by hand)' : d.matched_by === 'late_amount' ? ' (paid to an older request)' : ''}`
    );
@@ -518,7 +548,7 @@ const recordDeposit = async (svc: Svc, d: DepositRow): Promise<Outcome> => {
 
    // Matched to a request by its exact amount → credit the rupiah that request was priced from.
    let creditIdr: number | null = null;
-   if (d.request_id && (d.matched_by === 'amount' || d.matched_by === 'late_amount')) {
+   if (d.request_id && (d.matched_by === 'amount' || d.matched_by === 'late_amount' || d.matched_by === 'walt_confirmed')) {
       const { data: req } = await svc.from('id_repay_requests').select('rupiah_left').eq('id', d.request_id).maybeSingle();
       const r = Number(req?.rupiah_left ?? NaN);
       if (Number.isFinite(r) && r > 0) creditIdr = r;
@@ -659,6 +689,10 @@ export const handleWalletDepositCallback = async (
          }).catch(() => undefined);
       }
    };
+   if (kind === 'a' || kind === 'x') {
+      await waltTransferTap(svc, Number(depId), kind === 'a', by, answer, finish);
+      return true;
+   }
    if (kind === 's') {
       await sweepTap(svc, depId as BscToken, Number(reqId), `${chatId}:${query.message?.message_id}`, by, answer, finish);
       return true;
@@ -709,6 +743,102 @@ export const handleWalletDepositCallback = async (
    }
    await answer('Unknown action.');
    return true;
+};
+
+// ── Walt Transfer: "✅ Sudah kirim" → team card → "✅ Arrived" ──────────────────────────────────
+export type ClaimSentResult = { ok: true; already: boolean } | { ok: false; error: 'not_found' | 'paid' | 'not_walt' | 'error' };
+
+/** The borrower says they sent it: tell the team (once per 10 min) with ✅ Arrived / ❌ Not yet buttons. */
+export const claimSent = async (svc: Svc, userId: string, requestId: number): Promise<ClaimSentResult> => {
+   try {
+      const { data: r } = await svc.from('id_repay_requests').select(REQUEST_FIELDS).eq('id', requestId).eq('user_id', userId).maybeSingle();
+      const req = r as RequestRow | null;
+      if (!req) return { ok: false, error: 'not_found' };
+      if (req.status === 'paid') return { ok: false, error: 'paid' };
+      if (req.method !== 'walt_transfer') return { ok: false, error: 'not_walt' };
+      const now = new Date().toISOString();
+      // One card per 10 minutes, however often they tap.
+      const { data: claimed } = await svc
+         .from('id_repay_requests')
+         .update({ sent_claimed_at: now, updated_at: now })
+         .eq('id', req.id)
+         .or(`sent_claimed_at.is.null,sent_claimed_at.lt.${new Date(Date.now() - BUSY_MS).toISOString()}`)
+         .select('id');
+      if (!(claimed ?? []).length) return { ok: true, already: true };
+      const [{ data: loan }, { data: who }] = await Promise.all([
+         svc.from('loans').select('tracking_id').eq('id', req.loan_id).maybeSingle(),
+         svc.from('users').select('username, display_name, telegram_username').eq('id', req.user_id).maybeSingle()
+      ]);
+      const cents = unitsToExactCents(unitsOf(req.amount_units));
+      const amount = cents != null ? centsToText(cents) : String(req.amount_usd);
+      const name = [who?.display_name, who?.telegram_username ? `@${who.telegram_username}` : who?.username ? `(${who.username})` : null].filter(Boolean).join(' ') || req.user_id.slice(0, 8);
+      const rp = Number(req.rupiah_left ?? NaN);
+      await alertTeam(
+         svc,
+         [
+            `💸 🇮🇩 ${loan?.tracking_id ?? req.loan_id}: ${name} says they sent ${amount} USDT${Number.isFinite(rp) ? ` (Rp ${rp.toLocaleString('id-ID')})` : ''} by Walt Transfer to ${req.to_address.replace(/^walt:/, '')}.`,
+            'Check your Walt (Transfers / history), then tap:'
+         ].join('\n'),
+         [
+            [{ text: `✅ Arrived — record ${amount} USDT`, callback_data: `${CB}a:${req.id}` }],
+            [{ text: '❌ Not there', callback_data: `${CB}x:${req.id}` }]
+         ]
+      );
+      return { ok: true, already: false };
+   } catch (err) {
+      console.error('[idRepayments] claimSent failed', err instanceof Error ? err.message : err);
+      return { ok: false, error: 'error' };
+   }
+};
+
+/** ✅ Arrived → record it on the loan (exactly once); ❌ Not there → tell the borrower. */
+const waltTransferTap = async (svc: Svc, requestId: number, arrived: boolean, by: string, answer: Say, finish: Say) => {
+   const { data: r } = await svc.from('id_repay_requests').select(REQUEST_FIELDS).eq('id', requestId).maybeSingle();
+   const req = r as RequestRow | null;
+   if (!req) return void (await answer('Request not found.'));
+   const user = await loadUser(svc, req.user_id);
+   if (!arrived) {
+      if (req.status === 'paid') return void (await answer('Already recorded as paid.'));
+      await svc.from('id_repay_requests').update({ sent_claimed_at: null, updated_at: new Date().toISOString() }).eq('id', req.id);
+      await tell(
+         user,
+         say(
+            user,
+            `❗ Kami belum menerima ${centsToText(unitsToExactCents(unitsOf(req.amount_units)) ?? 0)} USDT darimu di Walt. Pastikan kamu mengirim lewat Walt → Transfer ke ${req.to_address.replace(/^walt:/, '')}, lalu tekan "✅ Sudah kirim" lagi. Butuh bantuan? Hubungi kami.`,
+            `❗ We haven't received ${centsToText(unitsToExactCents(unitsOf(req.amount_units)) ?? 0)} USDT from you in Walt yet. Make sure you sent it with Walt → Transfer to ${req.to_address.replace(/^walt:/, '')}, then tap "✅ I've sent it" again. Need help? Contact us.`
+         ),
+         payRestRow(user)
+      );
+      return void (await finish('❌ Not there — borrower told to check and tap again'));
+   }
+   // One deposit row per request (tx_hash 'walt-transfer:<id>' is unique): a second tap finds it.
+   const now = new Date().toISOString();
+   const { data: ins, error: insError } = await svc
+      .from('id_wallet_deposits')
+      .insert({
+         tx_hash: `${WALT_TX}${req.id}`,
+         log_index: 0,
+         token: 'USDT',
+         from_address: 'walt',
+         to_address: req.to_address,
+         units: String(req.amount_units),
+         block_number: 0,
+         status: 'recording',
+         recording_at: now,
+         request_id: req.id,
+         loan_id: req.loan_id,
+         matched_by: 'walt_confirmed',
+         note: { by }
+      })
+      .select(DEPOSIT_FIELDS)
+      .single();
+   if (insError || !ins) {
+      return void (await answer(insError?.code === '23505' ? 'Already recorded (or being recorded).' : `Couldn’t save: ${insError?.message ?? '?'}`));
+   }
+   const d = ins as DepositRow;
+   await claimRequest(svc, req, d.id);
+   const outcome = await recordDeposit(svc, d);
+   await finish(outcome === 'recorded' ? '✅ Recorded on the loan' : outcome === 'refund_needed' ? '⚠️ The loan couldn’t take it — see the alert' : '⏳ Saving failed — it retries in a few minutes');
 };
 
 // ── refunds and sweeps (money leaving the payout wallet) ─────────────────────────────────────────

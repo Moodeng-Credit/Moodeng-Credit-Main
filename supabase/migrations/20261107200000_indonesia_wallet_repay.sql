@@ -1,5 +1,11 @@
--- Indonesia track: repaying straight to Moodeng's payout wallet on BNB Chain
--- (docs/INDONESIA_TRACK.md "Repaying", _shared/idRepayments.ts).
+-- Indonesia track: repaying with no fees (docs/INDONESIA_TRACK.md "Repaying", _shared/idRepayments.ts).
+--
+--   Main way (method 'walt_transfer'): Walt → Transfer → Moodeng's Walt username (setting
+--   id_walt_username). Inside Walt, so free. Walt has no API, so the borrower taps "✅ Sudah kirim" and
+--   the team confirms with one tap ("✅ Arrived") — that records it.
+--
+--   Backup (method 'bep20', used only when no Walt username is set, or if someone sends on chain
+--   anyway): the transfer into the payout wallet on BNB Chain is found and matched automatically:
 --
 --   The borrower sends USDT (or USDC) on BNB Chain (BEP20) from Walt to the payout wallet — the same
 --   Openfort wallet loans are paid from. No bridge, no fee taken from anyone's money.
@@ -28,6 +34,8 @@ create table if not exists public.id_repay_requests (
   rupiah_left numeric,
   rate numeric,
   source text not null default 'telegram' check (source in ('telegram', 'app')),
+  method text not null default 'walt_transfer' check (method in ('walt_transfer', 'bep20')),
+  sent_claimed_at timestamptz,               -- the borrower tapped "✅ Sudah kirim" (walt_transfer)
   status text not null default 'open' check (status in ('open', 'paid', 'expired', 'replaced')),
   deposit_id bigint,
   created_at timestamptz not null default now(),
@@ -77,6 +85,8 @@ revoke all on sequence public.id_repay_requests_id_seq, public.id_wallet_deposit
 insert into public.telegram_bot_settings (key, value, description) values
   ('id_repay_scan_block', '',
    'Last BNB Chain block scanned for USDT/USDC into the Indonesia payout wallet (_shared/idRepayments.ts). Empty = start ~2 h back.'),
+  ('id_walt_username', 'jimmymoodengcredit',
+   'Moodeng''s Walt @username borrowers Transfer repayments to (free inside Walt). Empty = fall back to sending on BNB Chain to the payout wallet.'),
   ('id_topup_senders', '',
    'Comma-separated BNB Chain addresses whose transfers into the payout wallet are top-ups (e.g. Binance TH), not repayments. The "It''s a top-up" button adds to it.'),
   ('id_payout_sweep_to', '',

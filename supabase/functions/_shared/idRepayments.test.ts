@@ -1,6 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { ceilCents, centsToText, pickFreeCents, repayBlocker, unitsToDecimal, unitsToExactCents } from './idRepayments.ts';
+import { ceilCents, centsToText, pickFreeCents, repayBlocker, unitsToDecimal, unitsToExactCents, waltUsernameOf } from './idRepayments.ts';
 
 Deno.test('exact amounts: cents rounded up, no float drift', () => {
    assertEquals(ceilCents(6.08), 608);
@@ -39,4 +39,12 @@ Deno.test('only Indonesia loans paid to Walt are repaid to the payout wallet', (
    assertEquals(repayBlocker({ market: 'PH', funding_method: 'walt_manual', onchain_loan_id: null }), 'on_contract');
    assertEquals(repayBlocker({ market: 'ID', funding_method: 'smart_contract', onchain_loan_id: null }), 'on_contract');
    assertEquals(repayBlocker({ market: 'ID', funding_method: 'walt_manual', onchain_loan_id: 7 }), 'on_contract');
+});
+
+Deno.test('Walt username setting', () => {
+   assertEquals(waltUsernameOf('@jimmymoodengcredit'), 'jimmymoodengcredit');
+   assertEquals(waltUsernameOf(' JimmyMoodengCredit '), 'JimmyMoodengCredit');
+   assertEquals(waltUsernameOf(''), null);
+   assertEquals(waltUsernameOf('ab'), null);
+   assertEquals(waltUsernameOf('0x1234567890abcdef1234567890abcdef12345678'), null);
 });

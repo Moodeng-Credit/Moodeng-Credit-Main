@@ -37,6 +37,18 @@ Deno.test('repay screen: exact amount, ≈ rupiah, copyable payout address, P2P 
    for (const data of allCallbacks(screen.keyboard)) assert(callbackFits(data));
 });
 
+Deno.test('repay screen (Walt Transfer, free): exact amount, @username, copy buttons, Sudah kirim, no Withdraw', () => {
+   const screen = repayScreen('id', { method: 'walt_transfer', waltUsername: 'jimmymoodengcredit', requestId: 42, address: 'walt:@jimmymoodengcredit', amountUsdt: '6.08', approxIdr: 110000, rupiahLeft: 110000 });
+   assertStringIncludes(screen.text, 'Kirim TEPAT: 6.08 USDT (≈ Rp 110.000)');
+   assertStringIncludes(screen.text, 'Ke: @jimmymoodengcredit');
+   assertStringIncludes(screen.text, 'Transfer (gratis), BUKAN Withdraw');
+   assert(!screen.text.includes('BEP20'), 'no on-chain steps in the free way');
+   const copies = screen.keyboard.flat().filter((b) => 'copy_text' in b) as Array<{ copy_text: { text: string } }>;
+   assertEquals(copies.map((c) => c.copy_text.text), ['@jimmymoodengcredit', '6.08']);
+   assert(allCallbacks(screen.keyboard).includes('ids:42'));
+   for (const data of allCallbacks(screen.keyboard)) assert(callbackFits(data));
+});
+
 Deno.test('partial payment message', () => {
    assertEquals(partialReceivedText('id', 50000, 3.03, 60000, 3.64), '✅ Pembayaran Rp 50.000 diterima. Sisa Rp 60.000 (≈ $3.64).');
    assertEquals(partialReceivedText('en', null, 3, null, 2.5), '✅ Payment of $3.00 received. $2.50 left to pay.');
