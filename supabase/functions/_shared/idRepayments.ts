@@ -24,8 +24,15 @@
 //      relay_base_solvers, plus every sender seen on a fill verified through step 1), whose tx hash was
 //      never used for any loan. Several open rows to the same lender are matched oldest deposit first and
 //      one fill is given to one row only. No solver-sent candidate → one team alert, nothing recorded.
+//      Only when Relay definitely says 'waiting'/'unknown' (never on a Relay API error), and never when
+//      the one-time address (or anyone, for about the deposit) sent USDT back to the borrower's Walt on
+//      BNB Chain — that's a refund, nothing was paid. When Relay's own fill was already spent by another
+//      loan, the row stays open and the search keeps looking (3 h cap, one alert).
 //   Never twice: record_loan_payment spends the Base fill tx hash in used_payment_hashes inside its lock;
-//   a second run gets 'hash_used' and only marks the row done.
+//   a second run gets 'hash_used' (same loan → done; another loan → handled like any clash).
+//   Rows are worked until relay_transfers.recorded_at is set — whatever their status — and recorded_at
+//   is only set after the follow-ups ran. quote.recording (written just before record_loan_payment)
+//   lets a later run finish the follow-ups if a worker died in between.
 //
 // Never throws to the caller.
 
@@ -57,6 +64,11 @@ const BSC_CONFIRMATIONS = 3n;
 const BASE_LOG_SPAN = 2_000;
 const BASE_SECONDS_PER_BLOCK = 2;
 const MAX_LEARNED_SOLVERS = 12;
+// eth_getLogs over BASE_LOG_SPAN blocks: publicnode allows it (checked 2026-11-08); Alchemy's free tier,
+// mainnet.base.org and drpc's free plan refuse ranges that wide, so they're only fallbacks.
+const BASE_LOG_RPCS = ['https://base-rpc.publicnode.com', RPC_URL];
+// A row whose payment is recorded but whose follow-ups haven't finished: another run may still be on it.
+const RESUME_AFTER_MS = 2 * 60_000;
 
 // ── loans ────────────────────────────────────────────────────────────────────────────────────────
 export type RepayLoan = {
@@ -144,7 +156,12 @@ type RowQuote = {
    depositScanTo?: string;
    depositSeenToldAt?: string;
    fallbackAlertedAt?: string;
+   /** Written just before record_loan_payment: which fill this row is being recorded with. */
+   recording?: { hash: string; via: string; micros: string; at: string };
    recorded?: Record<string, unknown>;
+   /** Relay's fill for this row was already spent by another loan (alerted once). */
+   otherLoanFill?: string;
+   otherLoanAlertedAt?: string;
    [key: string]: unknown;
 };
 export type RepayRow = {
@@ -161,8 +178,11 @@ export type RepayRow = {
    fill_tx_hash: string | null;
    quote: RowQuote | null;
    created_at: string;
+   updated_at: string;
+   recorded_at: string | null;
 };
-const ROW_FIELDS = 'id, user_id, loan_id, status, amount_in, deposit_address, recipient, refund_to, request_id, tx_hash, fill_tx_hash, quote, created_at';
+const ROW_FIELDS =
+   'id, user_id, loan_id, status, amount_in, deposit_address, recipient, refund_to, request_id, tx_hash, fill_tx_hash, quote, created_at, updated_at, recorded_at';
 
 /** Exact USDT units (18 dp) of a row: the string in `quote` wins (numeric loses precision in JSON). */
 const rowUnits = (row: RepayRow): bigint => {
@@ -355,11 +375,26 @@ export const verifyBaseFill = async (txHash: string, lender: string): Promise<{ 
    };
 };
 
+/** A Base RPC that takes wide eth_getLogs ranges, falling back between BASE_LOG_RPCS. */
+const baseLogRpc = async (method: string, params: unknown[]) => {
+   let lastError: unknown = null;
+   for (const url of BASE_LOG_RPCS) {
+      try {
+         return await rpcCall(url, method, params);
+      } catch (err) {
+         lastError = err;
+      }
+   }
+   throw lastError instanceof Error ? lastError : new Error(`${method} failed`);
+};
+
 /** USDC Transfers to `lender` on Base between two times (Base makes a block every 2 s). */
 const baseTransfersTo = async (lender: string, fromMs: number, toMs: number, deadline: number) => {
-   const headHex: string = await rpcCall(RPC_URL, 'eth_blockNumber', []);
+   // Head, its time and the logs from the same RPC list, so the block numbers line up.
+   const headHex: string = await baseLogRpc('eth_blockNumber', []);
    const head = Number(BigInt(headHex));
-   const headTime = await baseBlockTimeMs(headHex);
+   const headBlock = await baseLogRpc('eth_getBlockByNumber', [headHex, false]).catch(() => null);
+   const headTime = headBlock?.timestamp ? Number(BigInt(headBlock.timestamp)) * 1000 : null;
    if (headTime == null) return [];
    const at = (ms: number) => Math.max(0, Math.min(head, head - Math.ceil((headTime - ms) / 1000 / BASE_SECONDS_PER_BLOCK)));
    const start = at(fromMs) - 30;
@@ -368,7 +403,7 @@ const baseTransfersTo = async (lender: string, fromMs: number, toMs: number, dea
    for (let from = Math.max(0, start); from <= end; from += BASE_LOG_SPAN) {
       if (Date.now() > deadline) break;
       const to = Math.min(end, from + BASE_LOG_SPAN - 1);
-      const logs: BaseLog[] = await rpcCall(RPC_URL, 'eth_getLogs', [
+      const logs: BaseLog[] = await baseLogRpc('eth_getLogs', [
          { fromBlock: `0x${from.toString(16)}`, toBlock: `0x${to.toString(16)}`, address: BASE_USDC, topics: [TRANSFER_TOPIC, null, pad32(lender)] }
       ]);
       out.push(...(logs ?? []).filter((l) => !l.removed));
@@ -406,7 +441,92 @@ export const partialReceivedText = (locale: 'id' | 'en', paidIdr: number | null,
    return locale === 'en' ? `✅ Payment of ${paid} received. ${left} left to pay.` : `✅ Pembayaran ${paid} diterima. Sisa ${left}.`;
 };
 
-type RecordOutcome = 'recorded' | 'already' | 'unrecorded' | 'retry';
+type RecordOutcome = 'recorded' | 'already' | 'unrecorded' | 'retry' | 'conflict';
+
+/**
+ * The fill was already spent by ANOTHER loan. The row stays open (no status change, fill_tx_hash left
+ * empty) so the fallback search keeps looking for this row's own fill; the team hears once.
+ */
+const otherLoanClash = async (svc: Svc, row: RepayRow, fill: Fill, via: string, otherLoanId: string | null): Promise<RecordOutcome> => {
+   if (!row.quote?.otherLoanAlertedAt) {
+      await patchRow(svc, row, {}, { otherLoanFill: fill.txHash, otherLoanAlertedAt: new Date().toISOString() });
+      await alertTeam(
+         svc,
+         `⚠️ 🇮🇩 Walt repay ${short(row.deposit_address)} (loan ${row.loan_id}): fill ${fill.txHash} (${via}) was already used for another loan (${otherLoanId ?? '?'}). Still looking for this payment's own fill for 3 h — check both loans.`
+      );
+   }
+   return 'conflict';
+};
+
+/** The fill was already spent by THIS loan. */
+const sameLoanAlready = async (svc: Svc, row: RepayRow, fill: Fill, via: string): Promise<RecordOutcome> => {
+   // Our own earlier run recorded it: resumeFollowUps finishes that row (follow-ups, then recorded_at).
+   if (row.quote?.recording?.hash === fill.txHash) return 'already';
+   // Recorded some other way (admin, an overlapping run): nothing left to do for this row.
+   await patchRow(
+      svc,
+      row,
+      { status: 'success', fill_tx_hash: fill.txHash, recorded_at: new Date().toISOString() },
+      { recorded: { via, already: true, at: new Date().toISOString() } }
+   );
+   return 'already';
+};
+
+const spentBy = async (svc: Svc, hash: string): Promise<{ loan_id: string | null } | null> => {
+   const { data } = await svc.from('used_payment_hashes').select('loan_id').eq('hash', hash).maybeSingle();
+   return (data as { loan_id: string | null } | null) ?? null;
+};
+
+/**
+ * After record_loan_payment: the shared follow-ups (level-up, Paid notification / partial notice, feeds)
+ * and the borrower's "received, X left" for partial payments — then recorded_at, so a worker killed
+ * half-way leaves the row for resumeFollowUps.
+ */
+const afterRecorded = async (svc: Svc, row: RepayRow, updatedLoan: Record<string, unknown>, paidUsd: number, paidIdr: number | null) => {
+   await runRepaymentFollowUps(svc, {
+      loanId: String(row.loan_id),
+      updatedLoan,
+      paidNow: paidUsd,
+      browser: { label: 'Telegram · Walt → Relay', isInApp: false },
+      userAgent: null
+   });
+   if (updatedLoan.repayment_status !== 'Paid') {
+      // Paid → loan-repayment-received-notification sends the Bahasa 'repaid' message itself.
+      const user = await loadUser(svc, row.user_id);
+      const repayIdr = Number(updatedLoan.repay_idr ?? NaN);
+      const pegged = Number.isFinite(repayIdr) && repayIdr > 0;
+      const leftIdr = pegged ? Math.max(0, Math.round(repayIdr - Number(updatedLoan.repaid_idr ?? 0))) : null;
+      const leftUsd = Math.max(0, Number(updatedLoan.total_repayment_amount ?? 0) - Number(updatedLoan.repaid_amount ?? 0));
+      await tell(user, partialReceivedText(idLocaleOf(user?.preferred_locale), pegged ? paidIdr : null, paidUsd, leftIdr, leftUsd), menuRow(user));
+   }
+   await patchRow(svc, row, { recorded_at: new Date().toISOString() });
+};
+
+/**
+ * A row whose fill was spent on its loan by an earlier run (quote.recording) but never got recorded_at:
+ * that worker died before the follow-ups finished. Runs them now. True when the row is handled (or left
+ * to a run that may still be on it); false when it needs the normal pass.
+ */
+const resumeFollowUps = async (svc: Svc, row: RepayRow): Promise<boolean> => {
+   const rec = row.quote?.recording;
+   if (!rec?.hash || !row.loan_id || row.recorded_at) return false;
+   const spent = await spentBy(svc, rec.hash);
+   if (!spent || spent.loan_id !== row.loan_id) return false;
+   if (Date.now() - new Date(row.updated_at).getTime() < RESUME_AFTER_MS) return true;
+   const { data: loan } = await svc.from('loans').select('*').eq('id', row.loan_id).maybeSingle();
+   if (!loan) return true;
+   const done = row.quote?.recorded as { micros?: string; paidIdr?: number | null } | undefined;
+   const micros = BigInt(done?.micros ?? rec.micros ?? '0');
+   await patchRow(
+      svc,
+      row,
+      { status: 'success', fill_tx_hash: rec.hash },
+      { recorded: { ...(row.quote?.recorded ?? { via: rec.via, micros: rec.micros, at: rec.at }), resumedAt: new Date().toISOString() } }
+   );
+   console.warn(`[idRepayments] finishing follow-ups for ${row.id} (loan ${row.loan_id})`);
+   await afterRecorded(svc, row, loan as Record<string, unknown>, Number(micros) / 1e6, done?.paidIdr ?? null);
+   return true;
+};
 
 const recordFill = async (svc: Svc, row: RepayRow, fill: Fill, via: 'relay_status' | 'fallback_scan'): Promise<RecordOutcome> => {
    if (!row.loan_id) return 'unrecorded';
@@ -416,18 +536,13 @@ const recordFill = async (svc: Svc, row: RepayRow, fill: Fill, via: 'relay_statu
       await alertTeam(svc, `⚠️ 🇮🇩 Walt repay ${short(row.deposit_address)}: Relay's fill ${fill.txHash} is older than the quote — NOT recorded. Check it.`);
       return 'unrecorded';
    }
-   const { data: spent } = await svc.from('used_payment_hashes').select('loan_id').eq('hash', fill.txHash).maybeSingle();
-   if (spent) {
-      if (spent.loan_id === row.loan_id) {
-         await patchRow(svc, row, { status: 'success', fill_tx_hash: fill.txHash });
-         return 'already';
-      }
-      await patchRow(svc, row, { status: 'unmatched', fill_tx_hash: fill.txHash }, { recorded: { error: 'fill_used_by_other_loan', via } });
-      await alertTeam(svc, `⚠️ 🇮🇩 Walt repay ${short(row.deposit_address)}: fill ${fill.txHash} was already used for another loan. Check loan ${row.loan_id}.`);
-      return 'unrecorded';
-   }
+   const spent = await spentBy(svc, fill.txHash);
+   if (spent) return spent.loan_id === row.loan_id ? sameLoanAlready(svc, row, fill, via) : otherLoanClash(svc, row, fill, via, spent.loan_id);
 
    const { data: before } = await svc.from('loans').select('repaid_idr, repay_idr, tracking_id').eq('id', row.loan_id).maybeSingle();
+   // Mark which fill this row is being recorded with BEFORE spending it, so a worker that dies after
+   // record_loan_payment leaves enough for the next run to finish the follow-ups.
+   await patchRow(svc, row, {}, { recording: { hash: fill.txHash, via, micros: fill.micros.toString(), at: new Date().toISOString() } });
    const { data: recorded, error } = await svc.rpc('record_loan_payment', {
       p_loan_id: row.loan_id,
       p_action: 'repay',
@@ -444,14 +559,23 @@ const recordFill = async (svc: Svc, row: RepayRow, fill: Fill, via: 'relay_statu
    const code = (recorded as { error?: string } | null)?.error;
    const paidUsd = Number(fill.micros) / 1e6;
    if (code === 'hash_used') {
-      await patchRow(svc, row, { status: 'success', fill_tx_hash: fill.txHash });
+      // Another run (or path) spent it between our check and the lock: whose loan was it?
+      const owner = await spentBy(svc, fill.txHash);
+      if (owner && owner.loan_id !== row.loan_id) return otherLoanClash(svc, row, fill, via, owner.loan_id);
+      // Same loan, spent by someone else → that run does the follow-ups; this row is done.
+      await patchRow(
+         svc,
+         row,
+         { status: 'success', fill_tx_hash: fill.txHash, recorded_at: new Date().toISOString() },
+         { recording: undefined, recorded: { via, already: true, at: new Date().toISOString() } }
+      );
       return 'already';
    }
    if (code) {
       // The loan can't take it (already repaid another way, refunded, …) but the USDC reached the lender:
       // spend the hash so it alerts once, and tell the team to refund.
       await svc.from('used_payment_hashes').insert({ hash: fill.txHash, loan_id: row.loan_id }).then(() => undefined, () => undefined);
-      await patchRow(svc, row, { status: 'unmatched', fill_tx_hash: fill.txHash }, { recorded: { error: code, via } });
+      await patchRow(svc, row, { status: 'unmatched', fill_tx_hash: fill.txHash }, { recording: undefined, recorded: { error: code, via } });
       await alertTeam(
          svc,
          `⚠️ 🇮🇩 ${before?.tracking_id ?? row.loan_id}: a ${paidUsd.toFixed(2)} USDC Walt repayment reached the lender (${fill.txHash}) but was NOT recorded (${code}). It needs refunding to their Walt ${short(row.refund_to)}.`
@@ -461,13 +585,19 @@ const recordFill = async (svc: Svc, row: RepayRow, fill: Fill, via: 'relay_statu
 
    const updatedLoan = (recorded as { loan?: Record<string, unknown> } | null)?.loan;
    const overpaid = Number((recorded as { overpaid_micros?: number } | null)?.overpaid_micros ?? 0);
+   const repayIdr = Number(updatedLoan?.repay_idr ?? NaN);
+   const paidIdr =
+      updatedLoan && Number.isFinite(repayIdr) && repayIdr > 0 ? Math.max(0, Math.round(Number(updatedLoan.repaid_idr ?? 0) - Number(before?.repaid_idr ?? 0))) : null;
    await patchRow(
       svc,
       row,
       { status: 'success', fill_tx_hash: fill.txHash },
-      { recorded: { via, micros: fill.micros.toString(), from: fill.from, txFrom: fill.txFrom, at: new Date().toISOString(), overpaidMicros: overpaid } }
+      { recorded: { via, micros: fill.micros.toString(), paidIdr, from: fill.from, txFrom: fill.txFrom, at: new Date().toISOString(), overpaidMicros: overpaid } }
    );
-   if (!updatedLoan) return 'recorded';
+   if (!updatedLoan) {
+      await patchRow(svc, row, { recorded_at: new Date().toISOString() });
+      return 'recorded';
+   }
 
    if (overpaid > OVERPAID_ALERT_MICROS) {
       await alertTeam(
@@ -478,25 +608,7 @@ const recordFill = async (svc: Svc, row: RepayRow, fill: Fill, via: 'relay_statu
    if (via === 'fallback_scan') {
       await alertTeam(svc, `🇮🇩 ${updatedLoan.tracking_id}: Walt repayment matched on Base by amount + Relay solver (Relay's status didn't follow the deposit). Fill ${fill.txHash}, ${paidUsd.toFixed(2)} USDC. Recorded — glance at it.`);
    }
-
-   await runRepaymentFollowUps(svc, {
-      loanId: row.loan_id,
-      updatedLoan,
-      paidNow: paidUsd,
-      browser: { label: 'Telegram · Walt → Relay', isInApp: false },
-      userAgent: null
-   });
-
-   if (updatedLoan.repayment_status !== 'Paid') {
-      // Paid → loan-repayment-received-notification sends the Bahasa 'repaid' message itself.
-      const user = await loadUser(svc, row.user_id);
-      const repayIdr = Number(updatedLoan.repay_idr ?? NaN);
-      const pegged = Number.isFinite(repayIdr) && repayIdr > 0;
-      const paidIdr = pegged ? Math.max(0, Math.round(Number(updatedLoan.repaid_idr ?? 0) - Number(before?.repaid_idr ?? 0))) : null;
-      const leftIdr = pegged ? Math.max(0, Math.round(repayIdr - Number(updatedLoan.repaid_idr ?? 0))) : null;
-      const leftUsd = Math.max(0, Number(updatedLoan.total_repayment_amount ?? 0) - Number(updatedLoan.repaid_amount ?? 0));
-      await tell(user, partialReceivedText(idLocaleOf(user?.preferred_locale), paidIdr, paidUsd, leftIdr, leftUsd), menuRow(user));
-   }
+   await afterRecorded(svc, row, updatedLoan, paidUsd, paidIdr);
    return 'recorded';
 };
 
@@ -567,6 +679,7 @@ const fallbackMatch = async (
    const blocked = new Set([...(used ?? []).map((r: { hash: string }) => r.hash), ...(taken ?? []).map((r: { fill_tx_hash: string }) => r.fill_tx_hash)]);
    let sawOther = false;
    for (const c of candidates) {
+      if (Date.now() > deadline) return null; // each candidate costs a few Base RPCs; try again next run
       if (blocked.has(c.txHash)) continue;
       const txFrom = await baseTxFrom(c.txHash);
       if (!solvers.has(c.from) && !(txFrom && solvers.has(txFrom))) {
@@ -579,12 +692,57 @@ const fallbackMatch = async (
    return sawOther ? 'unknown_sender' : null;
 };
 
+/**
+ * BNB Chain, before a fallback match is recorded: did USDT go back to the borrower's Walt after the
+ * deposit — from the one-time address, or about half the deposit or more from anyone (Relay refunds
+ * from its own wallets)? Then nothing was paid. True / false, or null when the look didn't finish
+ * (RPC trouble or out of time → don't record this run).
+ */
+const refundedOnBsc = async (row: RepayRow, deposit: Deposit, deadline: number): Promise<boolean | null> => {
+   const walt = String(row.refund_to ?? '');
+   if (!EVM_ADDRESS.test(walt)) return false;
+   try {
+      const head = (await bscHead()) - BSC_CONFIRMATIONS;
+      const one = row.deposit_address.toLowerCase();
+      const half = BigInt(deposit.value) / 2n;
+      let from = BigInt(deposit.blockNumber);
+      while (from <= head) {
+         if (Date.now() > deadline) return null;
+         const to = from + BSC_LOG_SPAN > head ? head : from + BSC_LOG_SPAN;
+         const back = await bscTransfersTo(walt, from, to, undefined, BSC_USDT);
+         if (back.some((t) => t.from.toLowerCase() === one || t.value >= half)) return true;
+         from = to + 1n;
+      }
+      return false;
+   } catch (err) {
+      console.warn('[idRepayments] refund check failed', err instanceof Error ? err.message : err);
+      return null;
+   }
+};
+
 export type RelayRepayTally = { checked: number; recorded: number; deposits: number; refunded: number; alerted: number };
 
+const refundedText = (user: UserRow | null) =>
+   say(
+      user,
+      '↩️ USDT kamu dikembalikan ke Walt (jumlah/jaringan tidak cocok). Tekan 💰 Bayar untuk alamat baru.',
+      '↩️ Your USDT went back to your Walt (wrong amount or network). Tap 💰 Pay for a new address.'
+   );
+
+type FallbackItem = {
+   row: RepayRow;
+   deposit: Deposit;
+   /** Search Base for the fill (only when Relay definitely can't see it, or its fill went to another loan). */
+   scan: boolean;
+   /** Relay gave a definite answer this run (so past the 3 h window the row can be closed as unmatched). */
+   definite: boolean;
+};
+
 /**
- * The 5-minute job (video-call-reminders): every open Telegram repay address of the last 3 days. Pass 1
- * asks Relay and records the fills it reports; pass 2 (only for deposits Relay hasn't reported ≥ 10 min)
- * searches Base. Stops at `deadline`. Never throws.
+ * The 5-minute job (video-call-reminders): every Telegram repay row of the last 3 days that isn't
+ * recorded yet (recorded_at null), whatever its status. Pass 1 asks Relay and records the fills it
+ * reports; pass 2 (only for deposits Relay definitely hasn't reported for ≥ 10 min) searches Base.
+ * Stops at `deadline`. Never throws.
  */
 export const runRelayRepayments = async (svc: Svc, deadline = Date.now() + 45_000): Promise<RelayRepayTally> => {
    const tally: RelayRepayTally = { checked: 0, recorded: 0, deposits: 0, refunded: 0, alerted: 0 };
@@ -594,7 +752,8 @@ export const runRelayRepayments = async (svc: Svc, deadline = Date.now() + 45_00
          .select(ROW_FIELDS)
          .eq('direction', 'repay')
          .not('loan_id', 'is', null)
-         .in('status', OPEN_STATUSES)
+         .is('recorded_at', null)
+         .in('status', [...OPEN_STATUSES, 'success'])
          .gte('created_at', new Date(Date.now() - ROW_MAX_AGE_MS).toISOString())
          .order('created_at', { ascending: true })
          .limit(40);
@@ -602,20 +761,24 @@ export const runRelayRepayments = async (svc: Svc, deadline = Date.now() + 45_00
       if (!rows.length) return tally;
       const solvers = parseSolvers(await getSetting(svc, 'relay_base_solvers'));
       const claimed = new Set<string>();
-      const needFallback: Array<{ row: RepayRow; deposit: Deposit }> = [];
+      const needFallback: FallbackItem[] = [];
 
       // Pass 1: Relay's status, the deposit on BNB Chain.
       for (const row of rows) {
          if (Date.now() > deadline - 5_000) break;
          tally.checked += 1;
          try {
+            // Recorded by an earlier run that died before its follow-ups: finish those first.
+            if (await resumeFollowUps(svc, row)) continue;
+
             let status: RelayStatus | null = null;
             try {
                status = row.request_id ? await relayStatus(row.request_id) : null;
             } catch {
-               status = null;
+               status = null; // a Relay API error is NOT "Relay can't see it": no Base search on it
             }
             const user = status && ['refund', 'failure'].includes(status.status) ? await loadUser(svc, row.user_id) : null;
+            let fillWentElsewhere = false;
             if (status?.status === 'success' && status.fillTxHash) {
                const verified = await verifyBaseFill(status.fillTxHash, row.recipient);
                if (verified.ok) {
@@ -623,24 +786,18 @@ export const runRelayRepayments = async (svc: Svc, deadline = Date.now() + 45_00
                   await learnSolvers(svc, solvers, verified.fill);
                   const outcome = await recordFill(svc, row, verified.fill, 'relay_status');
                   if (outcome === 'recorded') tally.recorded += 1;
+                  // Relay's fill was spent by another loan: keep the row open and search for its own fill.
+                  fillWentElsewhere = outcome === 'conflict';
                } else if (verified.error === 'no_transfer_to_lender' || verified.error === 'reverted') {
                   await patchRow(svc, row, { status: 'unmatched', fill_tx_hash: status.fillTxHash }, { recorded: { error: verified.error } });
                   await alertTeam(svc, `⚠️ 🇮🇩 Walt repay ${short(row.deposit_address)}: Relay says done (${status.fillTxHash}) but no USDC reached the lender ${short(row.recipient)} on Base (${verified.error}). Check it.`);
                   tally.alerted += 1;
                }
-               continue;
+               if (!fillWentElsewhere) continue;
             }
             if (status?.status === 'refund') {
                await patchRow(svc, row, { status: 'refund', ...(status.fillTxHash ? { fill_tx_hash: status.fillTxHash } : {}) });
-               await tell(
-                  user,
-                  say(
-                     user,
-                     '↩️ USDT kamu dikembalikan ke Walt (jumlah/jaringan tidak cocok). Tekan 💰 Bayar untuk alamat baru.',
-                     '↩️ Your USDT went back to your Walt (wrong amount or network). Tap 💰 Pay for a new address.'
-                  ),
-                  menuRow(user)
-               );
+               await tell(user, refundedText(user), menuRow(user));
                tally.refunded += 1;
                continue;
             }
@@ -673,8 +830,12 @@ export const runRelayRepayments = async (svc: Svc, deadline = Date.now() + 45_00
                continue;
             }
             const sinceDeposit = Date.now() - new Date(deposit.at).getTime();
-            if (sinceDeposit > FALLBACK_AFTER_MS && (!status || status.status === 'waiting' || status.status === 'unknown' || sinceDeposit > FALLBACK_WINDOW_MS)) {
-               needFallback.push({ row, deposit });
+            const relayCantSee = status?.status === 'waiting' || status?.status === 'unknown';
+            const definite = relayCantSee || fillWentElsewhere;
+            if (sinceDeposit > FALLBACK_WINDOW_MS) {
+               needFallback.push({ row, deposit, scan: false, definite }); // past the window: alert only
+            } else if (sinceDeposit > FALLBACK_AFTER_MS && definite) {
+               needFallback.push({ row, deposit, scan: true, definite });
             }
          } catch (err) {
             console.error(`[idRepayments] row ${row.id} failed`, err instanceof Error ? err.message : err);
@@ -683,19 +844,37 @@ export const runRelayRepayments = async (svc: Svc, deadline = Date.now() + 45_00
 
       // Pass 2: deposits Relay didn't report — oldest deposit first, one fill per row.
       needFallback.sort((a, b) => new Date(a.deposit.at).getTime() - new Date(b.deposit.at).getTime());
-      for (const { row, deposit } of needFallback) {
+      for (const { row, deposit, scan, definite } of needFallback) {
          if (Date.now() > deadline - 5_000) break;
          try {
-            const found = await fallbackMatch(svc, row, deposit, solvers, claimed, deadline - 5_000);
+            const found = scan ? await fallbackMatch(svc, row, deposit, solvers, claimed, deadline - 5_000) : null;
             if (found && found !== 'unknown_sender') {
+               // A refund to their Walt means nothing was paid, whatever lands at the lender.
+               const refunded = await refundedOnBsc(row, deposit, deadline - 5_000);
+               if (refunded == null) continue; // couldn't check this run — don't record on a guess
+               if (refunded) {
+                  await patchRow(svc, row, { status: 'refund' }, { recorded: { error: 'refunded_on_bsc', candidate: found.txHash } });
+                  const u = await loadUser(svc, row.user_id);
+                  await tell(u, refundedText(u), menuRow(u));
+                  await alertTeam(
+                     svc,
+                     `⚠️ 🇮🇩 Walt repay ${short(row.deposit_address)} (loan ${row.loan_id}): Relay didn't report it and USDT went back to their Walt ${short(row.refund_to)} on BNB Chain, so it's treated as a refund — NOT recorded. A similar fill to the lender (${found.txHash}) was left alone; check it if they say they paid.`
+                  );
+                  tally.refunded += 1;
+                  tally.alerted += 1;
+                  continue;
+               }
                claimed.add(found.txHash);
                const outcome = await recordFill(svc, row, found, 'fallback_scan');
                if (outcome === 'recorded') tally.recorded += 1;
                continue;
             }
             const sinceDeposit = Date.now() - new Date(deposit.at).getTime();
-            if ((found === 'unknown_sender' || sinceDeposit > FALLBACK_WINDOW_MS) && !row.quote?.fallbackAlertedAt) {
-               await patchRow(svc, row, sinceDeposit > FALLBACK_WINDOW_MS ? { status: 'unmatched' } : {}, { fallbackAlertedAt: new Date().toISOString() });
+            const pastWindow = sinceDeposit > FALLBACK_WINDOW_MS;
+            // Close it only on a definite Relay answer; during a Relay outage keep watching (3-day cap).
+            if (pastWindow && definite && row.status !== 'unmatched') await patchRow(svc, row, { status: 'unmatched' });
+            if ((found === 'unknown_sender' || pastWindow) && !row.quote?.fallbackAlertedAt) {
+               await patchRow(svc, row, {}, { fallbackAlertedAt: new Date().toISOString() });
                await alertTeam(
                   svc,
                   `⚠️ 🇮🇩 Walt repay not matched: ${(Number(BigInt(deposit.value) / 10n ** 12n) / 1e6).toFixed(2)} USDT reached Relay address ${row.deposit_address} (BNB tx ${deposit.txHash}, ${Math.round(sinceDeposit / 60_000)} min ago) for loan ${row.loan_id}, but no Relay fill to the lender ${row.recipient} on Base could be matched${found === 'unknown_sender' ? ' (a transfer of about that amount came from an address that is not a known Relay solver)' : ''}. If it arrived, record it in admin with the Base tx hash.`

@@ -139,6 +139,13 @@ Telegram-app login tap.
   searched on Base: USDC → lender within 3 h, deposit − max(5%, $0.50) … deposit + 0.5%, from a known
   Relay solver (`relay_base_solvers`, learned from verified fills), hash never used. No match → one team
   alert, nothing recorded. The fill tx hash is spent in `used_payment_hashes`, so nothing is recorded twice.
+  Safety rules for that search: only when Relay definitely answers `waiting`/`unknown` (a Relay API error
+  never triggers it); never when USDT went back to their Walt on BNB Chain after the deposit (refund →
+  not recorded, borrower + team told); when Relay's own fill was already spent by another loan the row
+  stays open and the search keeps going (3 h, one alert). Bot rows (`loan_id` set) are invisible to the
+  app's Walt screens (`stableyard-deposit-address` relay `latest`/`status`/reuse). The job works every
+  bot row until `relay_transfers.recorded_at` is set — whatever its status — and sets it only after the
+  follow-ups ran (`quote.recording` lets the next run finish them if a worker died half-way).
   The borrower hears "USDT kamu sudah masuk", then "✅ Pembayaran Rp X diterima. Sisa Rp Y" (partial) or
   the usual "lunas" message.
 - **❓ Bantuan**: a button that opens the support chat (`/start support`) + a note that the team can

@@ -147,6 +147,7 @@ const reusableQuote = async (
       .select(ROW_FIELDS)
       .eq('user_id', userId)
       .eq('direction', direction)
+      .is('loan_id', null) // the Telegram bot's repay rows (loan_id set, paid to the lender) are never the app's
       .eq('status', 'quoted')
       .eq('amount_in', units.toString())
       .gte('created_at', new Date(Date.now() - REUSE_MS).toISOString())
@@ -226,7 +227,15 @@ export const handleRelay = async (
       if (action === 'status' || action === 'cashout_sent') {
          const transferId = String(body.transferId ?? '').trim();
          if (!UUID.test(transferId)) return json({ ok: false, error: 'Invalid transfer.' }, 400);
-         const { data } = await admin.from('relay_transfers').select(ROW_FIELDS).eq('id', transferId).eq('user_id', userId).maybeSingle();
+         // Bot repay rows (loan_id set) belong to the 5-minute job (_shared/idRepayments.ts): the app
+         // must never poll or flip them, or the payment would never be recorded on the loan.
+         const { data } = await admin
+            .from('relay_transfers')
+            .select(ROW_FIELDS)
+            .eq('id', transferId)
+            .eq('user_id', userId)
+            .is('loan_id', null)
+            .maybeSingle();
          const row = data as Row | null;
          if (!row) return json({ ok: false, error: 'Transfer not found.' }, 404);
 
@@ -278,6 +287,7 @@ export const handleRelay = async (
             .select(ROW_FIELDS)
             .eq('user_id', userId)
             .eq('direction', direction)
+            .is('loan_id', null) // never resume the Telegram bot's repay address in the app
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle();

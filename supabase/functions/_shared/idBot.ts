@@ -133,7 +133,7 @@ export const menuScreen = (l: IdLocale, name?: string | null): Screen => ({
    ]
 });
 
-const helpScreen = (l: IdLocale): Screen => ({
+export const helpScreen = (l: IdLocale): Screen => ({
    text: say(
       l,
       '❓ Bantuan\n\nTekan "Chat dengan tim" lalu tulis pertanyaanmu di sini. Tim kami membalas di Telegram.\n\nTim juga bisa menghubungimu lewat WhatsApp di nomor yang kamu daftarkan (bot WhatsApp kami tidak membalas chat).',
@@ -145,7 +145,7 @@ const helpScreen = (l: IdLocale): Screen => ({
 const supportRow = (l: IdLocale): TelegramButton[] => [{ text: say(l, '💬 Hubungi kami', '💬 Contact us'), url: SUPPORT_URL }, menuButton(l)];
 
 /** The onboarding "next step" message (existing copy + sign-in button). */
-const nextStepScreen = (l: IdLocale, next: IdNext | null): Screen => {
+export const nextStepScreen = (l: IdLocale, next: IdNext | null): Screen => {
    const msg = buildIdMessage('next_step', l, { next });
    return {
       text: say(l, `Pendaftaranmu belum selesai.\n\n${msg.text}`, `Your sign-up isn’t finished yet.\n\n${msg.text}`),
@@ -153,7 +153,7 @@ const nextStepScreen = (l: IdLocale, next: IdNext | null): Screen => {
    };
 };
 
-const noRateScreen = (l: IdLocale): Screen => ({
+export const noRateScreen = (l: IdLocale): Screen => ({
    text: say(l, 'Kurs Rupiah belum tersedia. Coba lagi sebentar lagi.', 'The rupiah exchange rate isn’t available right now. Try again soon.'),
    keyboard: [[menuButton(l)]]
 });
@@ -275,7 +275,7 @@ const applyGate = async (svc: Svc, user: BotUser, l: IdLocale, now = Date.now())
    return null;
 };
 
-const amountScreen = (l: IdLocale, amounts: number[], rate: number): Screen => ({
+export const amountScreen = (l: IdLocale, amounts: number[], rate: number): Screen => ({
    text: say(l, '💸 Berapa yang kamu butuhkan?', '💸 How much do you need?'),
    keyboard: [
       amounts.map((a) => cb(`${usd(a)} (≈ ${formatRp(Math.round((a * rate) / 1000) * 1000)})`, idCallback.amount(a))),
@@ -283,7 +283,7 @@ const amountScreen = (l: IdLocale, amounts: number[], rate: number): Screen => (
    ]
 });
 
-const termScreen = (l: IdLocale, amount: number, maxTermDays: number, now: Date): Screen => ({
+export const termScreen = (l: IdLocale, amount: number, maxTermDays: number, now: Date): Screen => ({
    text: say(l, `📅 Pinjam ${usd(amount)}. Kapan kamu bayar kembali?`, `📅 Borrow ${usd(amount)}. When will you pay it back?`),
    keyboard: [
       idTermChoices(maxTermDays).map((d) => cb(`${d} ${say(l, 'hari', 'days')} (${formatIdDay(idDueDateIso(now, d), l)})`, idCallback.term(amount, d))),
@@ -291,7 +291,7 @@ const termScreen = (l: IdLocale, amount: number, maxTermDays: number, now: Date)
    ]
 });
 
-const rupiahScreen = (l: IdLocale, amount: number, days: number, rate: number, note = ''): Screen | null => {
+export const rupiahScreen = (l: IdLocale, amount: number, days: number, rate: number, note = ''): Screen | null => {
    const chips = idRepayIdrChoices(amount, rate);
    if (!chips.length) return null;
    return {
@@ -306,7 +306,7 @@ const rupiahScreen = (l: IdLocale, amount: number, days: number, rate: number, n
    };
 };
 
-const purposeScreen = (l: IdLocale, amount: number, days: number, rp: number): Screen => {
+export const purposeScreen = (l: IdLocale, amount: number, days: number, rp: number): Screen => {
    const buttons = ID_PURPOSES.map((p, i) => cb(l === 'en' ? p.en : p.id, idCallback.purpose(amount, days, rp, i)));
    const rows: TelegramButton[][] = [];
    for (let i = 0; i < buttons.length; i += 2) rows.push(buttons.slice(i, i + 2));
@@ -316,7 +316,7 @@ const purposeScreen = (l: IdLocale, amount: number, days: number, rp: number): S
    };
 };
 
-const confirmScreen = (l: IdLocale, amount: number, days: number, rp: number, purpose: number, rate: number, now: Date): Screen => {
+export const confirmScreen = (l: IdLocale, amount: number, days: number, rp: number, purpose: number, rate: number, now: Date): Screen => {
    const p = ID_PURPOSES[purpose];
    const due = formatIdDay(idDueDateIso(now, days), l);
    return {
