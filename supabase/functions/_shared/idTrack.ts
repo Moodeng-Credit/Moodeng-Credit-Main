@@ -196,6 +196,7 @@ export type IdEvent =
    | 'attended_kyc_pending'
    | 'loan_posted'
    | 'loan_funded'
+   | 'loan_funded_walt'
    | 'cashout_walt'
    | 'due_soon'
    | 'due_tomorrow'
@@ -422,6 +423,15 @@ export const buildIdMessage = (event: IdEvent, locale: IdLocale, data: IdEventDa
                `🎉 Your ${amount} loan was sent to your Moodeng wallet.${due ? ` Due ${due}.` : ''} Send it to Walt now →`
             ),
             button: { text: say(locale, 'Kirim ke Walt', 'Send to Walt'), url: idAppUrl('/withdraw?to=walt') }
+         };
+      case 'loan_funded_walt':
+         return {
+            text: say(
+               locale,
+               `💸 Pinjaman ${amount} kamu sudah dikirim ke Walt kamu (USDC, BNB Chain).${due ? ` Jatuh tempo ${due}.` : ''} Jual ke Rupiah di Walt P2P.`,
+               `💸 Your ${amount} loan was sent to your Walt (USDC, BNB Chain).${due ? ` Due ${due}.` : ''} Sell it for Rupiah in Walt P2P.`
+            ),
+            button: { text: say(locale, 'Buka Walt', 'Open Walt'), url: 'https://t.me/wallet' }
          };
       case 'cashout_walt':
          return {

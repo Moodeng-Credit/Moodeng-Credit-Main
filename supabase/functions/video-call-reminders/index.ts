@@ -25,6 +25,7 @@ import { getTelegramBotSettingEnabled } from '../_shared/borrowerNotificationDel
 import { sendWhatsAppTemplate } from '../_shared/sendpulse.ts';
 import { nudgeStalledChats } from '../_shared/messengerBookingBot.ts';
 import { type IdEvent, type IdEventData, isIdTrackUser, runIdOnboardingNudges, sendIdTelegram } from '../_shared/idTrack.ts';
+import { runWaltPayoutScan } from '../_shared/idManualFunding.ts';
 
 // Cron-driven (every 5 min) no-show defence for booked video calls. The full ladder — day-before,
 // confirm-or-cancel (1h before) / cancel unconfirmed (30 min before), starting now, we're waiting, admin prompt, auto
@@ -325,6 +326,11 @@ serve(async (req) => {
    // Indonesia track: stalled onboarding → a Telegram nudge (max 3, one per 24h; idTrack.ts). This job
    // runs every 5 min, so the pass only runs in the first tick of each hour.
    if (new Date(now).getUTCMinutes() < 5) tally.id_nudges = await runIdOnboardingNudges(svc, now);
+   // Indonesia track: loans paid by hand from Binance TH to Walt — confirm them on BNB Chain.
+   const walt = await runWaltPayoutScan(svc, now);
+   tally.walt_payouts_checked = walt.checked;
+   tally.walt_payouts_found = walt.found;
+   tally.walt_payouts_alerted = walt.alerted;
    return json({ ok: true, scanned: users.length, ...tally });
 });
 

@@ -14,6 +14,7 @@ import { type AdminTab, isAdminTab, navGroups } from '@/app/admin/adminNav';
 import CalendarSection from '@/app/admin/CalendarSection';
 import CallApprovalsSection from '@/app/admin/CallApprovalsSection';
 import IndonesiaContactCard from '@/app/admin/IndonesiaContactCard';
+import WaltPayoutCard from '@/app/admin/WaltPayoutCard';
 import IndonesiaBadge from '@/components/IndonesiaBadge';
 import FilloutSection from '@/app/admin/FilloutSection';
 import { groupCallApprovals } from '@/app/admin/callApprovalsModel';
@@ -1539,6 +1540,9 @@ function AdminPanel() {
                                  {selectedRequest.market === 'ID' ? (
                                     <div className="mt-3">
                                        <IndonesiaContactCard key={selectedRequest.borrower_user_id ?? ''} userId={selectedRequest.borrower_user_id} />
+                                       <div className="mt-3">
+                                          <WaltPayoutCard key={selectedRequest.id} loanId={selectedRequest.id} />
+                                       </div>
                                     </div>
                                  ) : null}
                               </div>

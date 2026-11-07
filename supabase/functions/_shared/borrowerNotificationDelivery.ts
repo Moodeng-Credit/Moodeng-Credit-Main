@@ -306,9 +306,10 @@ export const sendBorrowerLoanNotification = async (
    let idTelegramSent = false;
    if (idTrack && idEvent) {
       const lateBy = aggregate?.dueLabel && aggregate.dueLabel !== 'overdue' ? aggregate.dueLabel : null;
+      const fundedToWalt = type === 'funded' && loan?.funding_method === 'walt_manual';
       idTelegramSent = await sendIdTelegramTo(
          { id: options.push?.userId ?? loan?.borrower_user_id ?? undefined, chat_id: idRecipient!.chat_id, preferred_locale: idRecipient!.preferred_locale, market: 'ID' },
-         idEvent,
+         fundedToWalt ? 'loan_funded_walt' : idEvent,
          {
             amount:
                type === 'funded'

@@ -31,6 +31,8 @@ export type LoanNotificationLoan = {
    hash?: string[] | null;
    /** 'ID' = Indonesia track: team posts are marked 🇮🇩. */
    market?: string | null;
+   /** 'walt_manual' = paid by hand from Binance TH straight to their Walt (BNB Chain). */
+   funding_method?: string | null;
 };
 
 export type LoanNotificationRecipient = {
