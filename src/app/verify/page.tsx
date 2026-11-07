@@ -264,6 +264,9 @@ export default function VerifyFlow() {
             case 'dashboard-credit-level':
                navigate('/dashboard', { replace: true });
                return;
+            case 'id-onboarding':
+               navigate('/id/onboarding?step=kyc', { replace: true });
+               return;
             default:
                if (returnTo && returnTo.startsWith('/')) {
                   navigate(returnTo, { replace: true });

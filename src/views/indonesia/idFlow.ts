@@ -90,6 +90,18 @@ export const takeIdKycReturn = (): boolean => {
  * to /id/onboarding?step=walt) and the Didit session (/verify sends them back to ?step=kyc).
  */
 export const ID_RETURN_TO = 'id-onboarding';
+
+/**
+ * Tells the server a step the app saves itself is done, so the Telegram bot sends the
+ * "✅ done — next step" message (loan-access action id_step). Best effort: never throws.
+ */
+export const reportIdStep = async (step: 'telegram' | 'about' | 'facebook' | 'walt'): Promise<void> => {
+   try {
+      await getSupabaseBrowserClient().functions.invoke('loan-access', { body: { action: 'id_step', step } });
+   } catch (err) {
+      console.warn('[idTrack] id_step report failed', err);
+   }
+};
 export const ID_WALLET_RETURN_TO = ID_RETURN_TO;
 export const ID_WALLET_SETUP_PATH = `/onboarding/wallet?returnTo=${ID_WALLET_RETURN_TO}`;
 

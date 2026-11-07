@@ -69,11 +69,14 @@ type Props = {
    /** Current Moodeng wallet USDC balance (null while loading). */
    usdcBalance: number | null;
    hasEnough: boolean;
+   /** The wallet this page watches for the top-up. The one-time address pays users.wallet_address;
+    *  if those differ the money would land where we aren't looking, so we don't show the address. */
+   watchedWallet?: string;
 };
 
 const toFixed2 = (n: number) => n.toFixed(2);
 
-export default function WaltRepaySteps({ isPreview, shortfall, usdcBalance, hasEnough }: Props) {
+export default function WaltRepaySteps({ isPreview, shortfall, usdcBalance, hasEnough, watchedWallet }: Props) {
    const { lang, toggle } = useWaltLang();
    const idr = useUsdIdrRate();
    const amountUsdt = useMemo(() => waltRepayAmount(Math.max(0, shortfall)), [shortfall]);
@@ -158,6 +161,9 @@ export default function WaltRepaySteps({ isPreview, shortfall, usdcBalance, hasE
 
    // An old address for a different amount: show the amount it was made for (that's what Relay expects).
    const sendAmount = transfer ? transfer.amountIn : toFixed2(amountUsdt);
+   const walletMismatch = Boolean(
+      transfer && !isPreview && watchedWallet && transfer.recipient.toLowerCase() !== watchedWallet.toLowerCase()
+   );
    const rupiah = formatRupiah(Number(sendAmount), idr);
    const stale = transfer && (transfer.status === 'refund' || transfer.status === 'failure' || transfer.status === 'expired');
 
@@ -214,7 +220,13 @@ export default function WaltRepaySteps({ isPreview, shortfall, usdcBalance, hasE
             {stepDot(3, Boolean(transfer) && !stale)}
             <div className="min-w-0 flex-1">
                <p className="mb-2 text-[13px] font-semibold text-[#1a1240] dark:text-white">{T.s3[lang]}</p>
-               {!transfer || stale ? (
+               {walletMismatch ? (
+                  <p className="rounded-xl bg-red-50 px-3 py-2 text-[14px] font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-300">
+                     {lang === 'id'
+                        ? 'Dompet Moodeng kamu berbeda dari akunmu. Jangan kirim dulu — hubungi kami.'
+                        : 'Your Moodeng wallet doesn’t match your account. Don’t send yet — contact us.'}
+                  </p>
+               ) : !transfer || stale ? (
                   <>
                      {stale && (
                         <p className="mb-2 flex gap-1.5 text-[12px] text-[#b45309]">

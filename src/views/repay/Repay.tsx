@@ -1553,6 +1553,7 @@ export default function Repay() {
                                        shortfall={fundingShortfall ?? selectedRemaining}
                                        usdcBalance={usdcBalance}
                                        hasEnough={hasEnoughToRepay}
+                                       watchedWallet={repayWalletAddress}
                                     />
                                     <button
                                        type="button"

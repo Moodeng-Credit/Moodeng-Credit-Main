@@ -65,7 +65,7 @@ const jsonResponse = (body: Record<string, unknown>, status = 200) =>
 
 // Short enum of in-app destinations the verify page understands. Only these are
 // echoed into the callback URL, so an attacker can't turn this into an open redirect.
-const ALLOWED_RETURN_TO = new Set(['loan-request', 'account-settings', 'repay', 'milestones', 'dashboard-credit-level']);
+const ALLOWED_RETURN_TO = new Set(['loan-request', 'account-settings', 'repay', 'milestones', 'dashboard-credit-level', 'id-onboarding']);
 
 type SessionKind = 'liveness' | 'id' | 'combined' | 'wallet' | 'cashout';
 

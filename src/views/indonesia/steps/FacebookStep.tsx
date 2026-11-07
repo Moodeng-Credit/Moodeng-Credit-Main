@@ -14,7 +14,7 @@ import { idTrackErrorText, MOODENG_FACEBOOK_PAGE_URL } from '@/lib/idTrack';
 import { detectInAppBrowser } from '@/lib/inAppBrowser';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { CONNECT_HIPPOS } from '@/views/dashboard/components/connectKit';
-import { inputClass, pick } from '@/views/indonesia/idFlow';
+import { inputClass, pick, reportIdStep } from '@/views/indonesia/idFlow';
 import type { IdStepProps } from '@/views/indonesia/steps/types';
 import { AppIcon, DoneRow, ErrorText, GoldButton, GoldLink, SoftLink, StepHead, WaitRow } from '@/views/indonesia/ui';
 
@@ -221,6 +221,7 @@ export default function FacebookStep({ data, user, lang, refresh, onDone }: IdSt
          setSaveError(idTrackErrorText(error.message, lang));
          return;
       }
+      void reportIdStep('facebook');
       await refresh();
    };
 

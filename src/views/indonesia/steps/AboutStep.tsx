@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import { CONNECT_HIPPOS } from '@/views/dashboard/components/connectKit';
-import { idStepPath, pick } from '@/views/indonesia/idFlow';
+import { idStepPath, pick, reportIdStep } from '@/views/indonesia/idFlow';
 import type { IdStepProps } from '@/views/indonesia/steps/types';
 import { DoneRow, GoldButton, SoftButton, StepHead } from '@/views/indonesia/ui';
 import OnboardingBio from '@/views/onboarding/OnboardingBio';
@@ -63,6 +63,7 @@ export default function AboutStep({ data, user, lang, refresh, onDone }: IdStepP
                      await dispatch(fetchUser())
                         .unwrap()
                         .catch(() => undefined);
+                     void reportIdStep('about');
                      await refresh();
                      setEditing(false);
                      onDone();

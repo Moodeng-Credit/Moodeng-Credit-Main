@@ -12,7 +12,7 @@ import { setLastUsedAuth } from '@/lib/lastUsedAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
-import { clearIdTrackIntent, fetchIdTrackPath, hasIdTrackIntent } from '@/views/indonesia/idFlow';
+import { clearIdTrackIntent, fetchIdTrackPath, hasIdTrackIntent, reportIdStep } from '@/views/indonesia/idFlow';
 
 export default function TelegramCallbackPage(): JSX.Element {
    const navigate = useNavigate();
@@ -93,6 +93,8 @@ export default function TelegramCallbackPage(): JSX.Element {
                .unwrap()
                .catch(() => undefined);
             await queryClient.invalidateQueries({ queryKey: [ID_ONBOARDING_QUERY_KEY] });
+            // Welcome + "next step" from the bot (only lands if they allowed bot messages).
+            void reportIdStep('telegram');
             navigate(ID_PATHS.onboarding, { replace: true });
             return;
          }

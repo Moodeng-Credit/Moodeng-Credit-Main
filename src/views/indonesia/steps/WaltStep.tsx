@@ -6,7 +6,7 @@ import { idTrackErrorText, isEvmAddress, WALT_BOT_URL } from '@/lib/idTrack';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { hasWalletAddressOnAccount } from '@/lib/walletProvider';
 import { CONNECT_HIPPOS } from '@/views/dashboard/components/connectKit';
-import { ID_WALLET_SETUP_PATH, inputClass, pick } from '@/views/indonesia/idFlow';
+import { ID_WALLET_SETUP_PATH, inputClass, pick, reportIdStep } from '@/views/indonesia/idFlow';
 import type { IdStepProps } from '@/views/indonesia/steps/types';
 import { AppIcon, DoneRow, ErrorText, GoldButton, SoftButton, SoftLink, StepHead } from '@/views/indonesia/ui';
 
@@ -116,6 +116,7 @@ export default function WaltStep({ data, user, lang, refresh, onDone }: IdStepPr
          return;
       }
       setEditing(false);
+      void reportIdStep('walt');
       await refresh();
    };
 

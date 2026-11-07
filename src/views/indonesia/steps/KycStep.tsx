@@ -127,6 +127,12 @@ export default function KycStep({ data, lang, refresh, onDone }: IdStepProps) {
             setBusy(false);
             return;
          }
+         if (refusal === 'ID_ONBOARDING_INCOMPLETE') {
+            // An earlier step isn't done on the server: refresh so the page moves back to it.
+            await refresh();
+            setBusy(false);
+            return;
+         }
          if (refusal === 'ID_IN_REVIEW') {
             await refresh();
             setBusy(false);
