@@ -166,7 +166,7 @@ export const recordCallOutcome = async (
    const pendingRequest = await findPendingCallRequest(svc, userId);
    if (pendingRequest) {
       const decided = await decideLoanAccess(svc, pendingRequest.id, outcome === 'attended' ? 'approved' : 'no_show', decidedBy);
-      return { ok: decided.ok, summary: decided.summary, stamp: decided.stamp };
+      return { ok: decided.ok, summary: decided.summary, stamp: decided.stamp, retry: (decided as { retry?: boolean }).retry };
    }
    // Read before the outcome is written: the pre-KYC gate makes this tap the approval too.
    const preKyc = await needsPreKycGate(svc, userId);

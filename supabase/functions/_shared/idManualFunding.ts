@@ -9,10 +9,11 @@
 //   recordByTxid      — fallback: the admin pastes the BNB Chain TxID
 //   runWaltPayoutScan — the 5-minute job: every open Indonesian request + one "not seen" alert
 //
-// A match must be: USDC (BSC) Transfer → the borrower's walt_address, value == loan amount × 1e18,
-// at least CONFIRMATIONS deep, a tx hash never used before, and EITHER the admin tapped "I sent it"
-// OR it came from an address Binance TH has already paid us from (id_binance_senders), so a borrower
-// depositing $5 into their own Walt can't make a loan look funded.
+// A match must be: USDC (BSC) Transfer → the borrower's walt_address, received amount between
+// (loan − $0.50) and the loan amount (an exact match wins), at least CONFIRMATIONS deep, a tx hash
+// never used before, and ONLY after an admin tapped "I sent it" (or pasted the TxID). Exchange hot
+// wallets are shared by millions, so a borrower withdrawing $5 into their own Walt must never be
+// able to make a loan look funded on its own.
 //
 // Funding is recorded like any direct lend: loan_status 'Lent', lender = the admin (repayments go to
 // their users.wallet_address on Base), funding_method 'walt_manual'. Never throws to callers.
@@ -31,6 +32,8 @@ const MAX_SPANS_PER_CHECK = 8; // ≈ 2 days of BNB Chain per check, so one chec
 const CONFIRMATIONS = 15n;
 const NOT_FOUND_ALERT_MS = 30 * 60_000;
 const USDC_DECIMALS = 18n;
+const SHORTFALL_ALLOWED = 5n * 10n ** 17n; // $0.50: a fee taken out of the amount
+const SCAN_BUDGET_MS = 60_000;
 
 export type PayoutRow = {
    id: string;
@@ -139,24 +142,6 @@ const getSetting = async (svc: Svc, key: string): Promise<string | null> => {
    return (data?.value as string | undefined) ?? null;
 };
 
-const knownSenders = async (svc: Svc): Promise<Set<string>> =>
-   new Set(
-      String((await getSetting(svc, 'id_binance_senders')) ?? '')
-         .split(',')
-         .map((s) => s.trim().toLowerCase())
-         .filter(isAddress)
-   );
-
-const learnSender = async (svc: Svc, address: string) => {
-   const senders = await knownSenders(svc);
-   const a = address.toLowerCase();
-   if (senders.has(a)) return;
-   senders.add(a);
-   await svc
-      .from('telegram_bot_settings')
-      .upsert({ key: 'id_binance_senders', value: [...senders].join(','), updated_at: new Date().toISOString() }, { onConflict: 'key' });
-};
-
 const adminChatId = async (svc: Svc): Promise<string | null> =>
    (await getSetting(svc, 'kyc_alert_chat_id')) || Deno.env.get('TEAM_TELEGRAM_CHAT_ID') || (await getSetting(svc, 'team_group_chat_id'));
 
@@ -211,7 +196,10 @@ export const ensurePayout = async (svc: Svc, loanId: string): Promise<{ payout?:
 // ── recording the funding ────────────────────────────────────────────────────────────────────────
 const recordFunding = async (svc: Svc, payout: PayoutRow, loan: LoanForPayout, t: Transfer, foundBy: 'scan' | 'txid'): Promise<PayoutResult> => {
    // Claim the tx first: bsc_tx_hash is unique, so one transfer can never fund two loans.
-   const lenderId = payout.lender_user_id ?? (await getSetting(svc, 'id_payout_lender_user_id'));
+   // The lender is read fresh: whoever tapped "I sent it" / pasted the TxID last paid it.
+   const { data: fresh } = await svc.from('id_manual_payouts').select('lender_user_id').eq('id', payout.id).maybeSingle();
+   const lenderId =
+      (fresh?.lender_user_id as string | null | undefined) ?? payout.lender_user_id ?? (await getSetting(svc, 'id_payout_lender_user_id'));
    if (!lenderId) return { ok: false, error: 'no_lender_of_record', payout };
    const { data: lender } = await svc.from('users').select('wallet_address').eq('id', lenderId).maybeSingle();
    const lenderWallet = lender?.wallet_address as string | null | undefined;
@@ -254,6 +242,9 @@ const recordFunding = async (svc: Svc, payout: PayoutRow, loan: LoanForPayout, t
          lender_wallet: lenderWallet,
          ...(isAddress(borrower?.wallet_address) ? { borrower_wallet: borrower.wallet_address } : {}),
          is_sellable: false,
+         // loans.hash: the funding tx first, repayments after (the BitRepo report reads it that way).
+         // Here the funding tx is on BNB Chain; funding_method 'walt_manual' says so.
+         hash: [`bsc:${t.txHash}`],
          on_hold_since: null,
          on_hold_reason: null,
          updated_at: now
@@ -276,9 +267,6 @@ const recordFunding = async (svc: Svc, payout: PayoutRow, loan: LoanForPayout, t
       return { ok: false, error: fundError?.message ?? 'loan_already_funded', payout: claimed as PayoutRow };
    }
 
-   // A transfer the admin vouched for teaches us Binance TH's sending address.
-   if (payout.marked_sent_at || foundBy === 'txid') await learnSender(svc, t.from).catch(() => undefined);
-
    await postLoanFundedToTeam(svc, loan.id).catch(() => undefined);
    const { error: notifyError } = await svc.functions.invoke('loan-funded-notification', { body: { loanId: loan.id } });
    if (notifyError) console.error(`idManualFunding: borrower notification failed for ${loan.id}: ${notifyError.message}`);
@@ -286,19 +274,29 @@ const recordFunding = async (svc: Svc, payout: PayoutRow, loan: LoanForPayout, t
    if (chat) {
       await sendTelegramMessage(
          chat,
-         `🇮🇩 Walt payout confirmed on BNB Chain ✅ $${Number(payout.amount)} → ${short(payout.walt_address)} (tx ${short(t.txHash)}${foundBy === 'scan' && !payout.marked_sent_at ? ', found without a tap' : ''}).`
+         `🇮🇩 Walt payout confirmed on BNB Chain ✅ $${Number(payout.amount)} → ${short(payout.walt_address)} (received ${(Number(t.value) / 1e18).toFixed(2)} USDC, tx ${short(t.txHash)}).`
       ).catch(() => undefined);
    }
    return { ok: true, state: 'found', payout: claimed as PayoutRow, funded: true };
 };
 
 // ── searching BNB Chain ──────────────────────────────────────────────────────────────────────────
-export const checkPayout = async (svc: Svc, payout: PayoutRow, loan: LoanForPayout, senders?: Set<string>): Promise<PayoutResult> => {
+/** Exact amount first; otherwise the closest one at most $0.50 under (a fee taken out of it). */
+const pickMatch = (transfers: Transfer[], want: bigint, used: Set<string>): Transfer | undefined => {
+   const fresh = transfers.filter((t) => !used.has(t.txHash) && t.value <= want && t.value >= want - SHORTFALL_ALLOWED);
+   return fresh.find((t) => t.value === want) ?? fresh.sort((a, b) => (a.value > b.value ? -1 : 1))[0];
+};
+
+export const checkPayout = async (
+   svc: Svc,
+   payout: PayoutRow,
+   loan: LoanForPayout,
+   deadline = Date.now() + SCAN_BUDGET_MS
+): Promise<PayoutResult> => {
    if (payout.status === 'found') return { ok: true, state: 'found', payout, funded: false };
    if (!isOpen(loan)) return { ok: false, error: 'loan_not_open', payout };
-   const known = senders ?? (await knownSenders(svc));
-   // Nothing to look for yet: nobody tapped "I sent it" and we've never learned Binance TH's address.
-   if (!payout.marked_sent_at && known.size === 0) return { ok: true, state: 'waiting', payout };
+   // Nothing is accepted until an admin says they sent it.
+   if (!payout.marked_sent_at) return { ok: true, state: 'waiting', payout };
 
    let want: bigint;
    try {
@@ -313,12 +311,10 @@ export const checkPayout = async (svc: Svc, payout: PayoutRow, loan: LoanForPayo
    const used = new Set(((usedRows ?? []) as Array<{ bsc_tx_hash: string }>).map((r) => r.bsc_tx_hash.toLowerCase()));
 
    let spans = 0;
-   while (from <= safeHead && spans < MAX_SPANS_PER_CHECK) {
+   while (from <= safeHead && spans < MAX_SPANS_PER_CHECK && Date.now() < deadline) {
       const to = from + BigInt(MAX_LOG_SPAN) > safeHead ? safeHead : from + BigInt(MAX_LOG_SPAN);
       const transfers = await transfersTo(payout.walt_address, from, to);
-      const match = transfers.find(
-         (t) => t.value === want && !used.has(t.txHash) && (Boolean(payout.marked_sent_at) || known.has(t.from))
-      );
+      const match = pickMatch(transfers, want, used);
       if (match) return await recordFunding(svc, payout, loan, match, 'scan');
       await svc.from('id_manual_payouts').update({ scanned_to_block: Number(to), updated_at: new Date().toISOString() }).eq('id', payout.id);
       payout = { ...payout, scanned_to_block: Number(to) };
@@ -380,7 +376,7 @@ export const recordByTxid = async (svc: Svc, loanId: string, txHash: string, adm
    );
    if (!log) return { ok: false, error: 'tx_not_usdc_to_their_walt', payout };
    const value = BigInt(log.data);
-   if (value !== want) return { ok: false, error: 'tx_wrong_amount', payout };
+   if (value > want || value < want - SHORTFALL_ALLOWED) return { ok: false, error: 'tx_wrong_amount', payout };
    const { data: dup } = await svc.from('id_manual_payouts').select('id').eq('bsc_tx_hash', txHash.toLowerCase()).maybeSingle();
    if (dup) return { ok: false, error: 'tx_already_used', payout };
    const withLender = { ...payout, lender_user_id: adminUserId };
@@ -422,28 +418,24 @@ export const payoutStatus = async (svc: Svc, loanId: string) => {
 // ── the 5-minute job ─────────────────────────────────────────────────────────────────────────────
 export const runWaltPayoutScan = async (svc: Svc, now = Date.now()): Promise<{ checked: number; found: number; alerted: number }> => {
    const tally = { checked: 0, found: 0, alerted: 0 };
+   const deadline = Date.now() + SCAN_BUDGET_MS;
    try {
-      const senders = await knownSenders(svc);
-      // Open Indonesian requests from the last 7 days (requests expire after 7).
-      const { data: loans } = await svc
-         .from('loans')
-         .select('id, borrower_user_id, loan_amount, loan_status, lender_user_id, funded_at, market, created_at, is_test')
-         .eq('market', 'ID')
-         .eq('loan_status', 'Requested')
-         .is('lender_user_id', null)
-         .is('funded_at', null)
-         .gte('created_at', new Date(now - 7 * 86_400_000).toISOString())
+      // Only payouts an admin said they sent (nothing is matched without that).
+      const { data: rows } = await svc
+         .from('id_manual_payouts')
+         .select('*')
+         .neq('status', 'found')
+         .not('marked_sent_at', 'is', null)
+         .gte('marked_sent_at', new Date(now - 7 * 86_400_000).toISOString())
+         .order('marked_sent_at', { ascending: true })
          .limit(50);
-      for (const loan of (loans ?? []) as LoanForPayout[]) {
-         const { data: existing } = await svc.from('id_manual_payouts').select('*').eq('loan_id', loan.id).maybeSingle();
-         // Without a tap and without a known Binance TH address there is nothing we could accept.
-         if (!existing && senders.size === 0) continue;
-         const { payout } = existing ? { payout: existing as PayoutRow } : await ensurePayout(svc, loan.id);
-         if (!payout || payout.status === 'found') continue;
-         if (!payout.marked_sent_at && senders.size === 0) continue;
+      for (const payout of (rows ?? []) as PayoutRow[]) {
+         if (Date.now() > deadline) break;
+         const loan = await loadLoan(svc, payout.loan_id);
+         if (!loan || !isOpen(loan)) continue;
          tally.checked += 1;
          try {
-            const result = await checkPayout(svc, payout, loan, senders);
+            const result = await checkPayout(svc, payout, loan, deadline);
             if (result.ok && result.state === 'found') tally.found += 1;
             const latest = result.payout ?? payout;
             if (
@@ -457,7 +449,7 @@ export const runWaltPayoutScan = async (svc: Svc, now = Date.now()): Promise<{ c
                if (chat) {
                   await sendTelegramMessage(
                      chat,
-                     `🇮🇩 Walt payout not seen yet: $${Number(latest.amount)} → ${short(latest.walt_address)} (tapped "I sent it" ${Math.round((now - new Date(latest.marked_sent_at).getTime()) / 60_000)} min ago). Check it was USDC on BSC and exactly $${Number(latest.amount)}, or paste the TxID in admin.`
+                     `🇮🇩 Walt payout not seen yet: $${Number(latest.amount)} → ${short(latest.walt_address)} (tapped "I sent it" ${Math.round((now - new Date(latest.marked_sent_at).getTime()) / 60_000)} min ago). Check it was USDC on BSC and the full amount arrived, or paste the TxID in admin.`
                   ).catch(() => undefined);
                }
                await svc
@@ -468,7 +460,7 @@ export const runWaltPayoutScan = async (svc: Svc, now = Date.now()): Promise<{ c
                tally.alerted += 1;
             }
          } catch (err) {
-            console.error(`idManualFunding: check failed for ${loan.id}`, err);
+            console.error(`idManualFunding: check failed for ${payout.loan_id}`, err);
          }
       }
    } catch (err) {

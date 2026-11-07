@@ -76,8 +76,11 @@ begin
   if exists (select 1 from public.loans l where l.borrower_user_id = v_user.id) then
     raise exception 'id_track_existing_borrower';
   end if;
+  -- Old accounts default to loan_access_status = 'approved' (20260924150000), and the normal flow
+  -- can approve before KYC: on this track approval only comes from its own call, after KYC.
   update public.users
      set market = 'ID', market_set_at = now(), user_role = coalesce(user_role, 'borrower'),
+         loan_access_status = 'none', loan_access_approved_at = null,
          preferred_locale = coalesce(preferred_locale, 'id'), preferred_locale_at = coalesce(preferred_locale_at, now())
    where id = v_user.id;
   return 'ID';
@@ -110,6 +113,9 @@ declare
 begin
   if auth.uid() is null then raise exception 'not signed in'; end if;
   if v_addr !~ '^0x[0-9a-fA-F]{40}$' then raise exception 'walt_address_invalid'; end if;
+  if not exists (select 1 from public.users where id = auth.uid() and market = 'ID') then
+    raise exception 'walt_address_id_track_only';
+  end if;
   select wallet_address into v_wallet from public.users where id = auth.uid();
   if lower(v_addr) = lower(coalesce(v_wallet, '')) then raise exception 'walt_address_is_moodeng_wallet'; end if;
   if lower(v_addr) = '0x0000000000000000000000000000000000000000' then raise exception 'walt_address_invalid'; end if;
@@ -139,7 +145,8 @@ returns jsonb language sql stable security definer set search_path = public as $
       (u.messenger_verified_at is not null) as messenger,
       (u.facebook_profile_url is not null and u.facebook_page_followed_at is not null) as facebook_profile,
       (u.income_type is not null) as about,
-      exists (select 1 from doc where doc.decision is distinct from 'declined') as income,
+      exists (select 1 from doc where doc.decision is distinct from 'declined'
+                                  and (doc.decision = 'approved' or doc.verdict is distinct from 'resend')) as income,
       coalesce((select doc.decision from doc), case when (select doc.verdict from doc) = 'resend' then 'resend' end) as income_state,
       coalesce(u.is_didit = 'ACTIVE', false) as kyc_approved,
       coalesce(u.is_didit = 'ACTIVE'
@@ -148,7 +155,7 @@ returns jsonb language sql stable security definer set search_path = public as $
             and lower(coalesce(u.didit_id_status, '')) not in ('duplicate', 'declined', 'abandoned', 'expired', 'not started', 'in progress')), false) as kyc,
       lower(coalesce(u.didit_id_status, '')) as kyc_state,
       u.walt_address is not null as walt,
-      coalesce(u.video_call_scheduled_at is not null or u.loan_access_status in ('pending', 'approved'), false) as call,
+      coalesce(u.loan_access_status in ('pending', 'approved'), false) as call,
       coalesce(u.loan_access_status, 'none') as access
     from u
   )
@@ -243,6 +250,8 @@ returns trigger language plpgsql set search_path to '' as $function$
 declare
   v_market text;
   v_access text;
+  v_didit text;
+  v_walt text;
   v_rules jsonb;
   v_max_days int;
 begin
@@ -262,12 +271,12 @@ begin
     raise exception 'loans: the repayment date must be between today and 120 days from now';
   end if;
 
-  select u.market, u.loan_access_status into v_market, v_access
+  select u.market, u.loan_access_status, u.is_didit, u.walt_address into v_market, v_access, v_didit, v_walt
   from public.users u where u.id = new.borrower_user_id;
   if v_market = 'ID' then
     v_rules := public.get_id_loan_rules();
     v_max_days := (v_rules ->> 'maxTermDays')::int;
-    if v_access is distinct from 'approved' then
+    if v_access is distinct from 'approved' or v_didit is distinct from 'ACTIVE' or v_walt is null then
       raise exception 'loans: finish your Indonesia onboarding and call before requesting a loan';
     end if;
     if not exists (select 1 from jsonb_array_elements_text(v_rules -> 'amounts') a where a::numeric = new.loan_amount) then

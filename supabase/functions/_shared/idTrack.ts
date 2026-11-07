@@ -581,7 +581,12 @@ export const runIdOnboardingNudges = async (svc: Svc, now = Date.now()): Promise
          if (user.account_status && user.account_status !== 'active') continue;
          const status = await loadIdStatus(svc, user.id);
          const next = status?.next;
-         if (status?.market !== 'ID' || !next || next === 'waiting' || next === 'apply' || next === 'telegram') continue;
+         if (next === 'waiting' || next === 'apply') {
+            // Past onboarding: take them out of the nudge queue for good.
+            await svc.from('users').update({ id_nudge_count: NUDGE_MAX }).eq('id', user.id);
+            continue;
+         }
+         if (status?.market !== 'ID' || !next || next === 'telegram') continue;
          const count = user.id_nudge_count ?? 0;
          const { data: claimed } = await svc
             .from('users')

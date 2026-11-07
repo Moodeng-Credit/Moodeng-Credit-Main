@@ -176,10 +176,13 @@ const shortenWallet = (address?: string | null) => {
 
 // Basescan link for a confirmed on-chain transaction hash. Returns '' for anything that isn't a
 // real 32-byte tx hash (e.g. a Base Account userOperation hash, which 404s on the explorer).
+// "bsc:0x…" = a BNB Chain tx (Indonesia track: loans paid by hand to Walt, idManualFunding.ts).
 export const buildTxExplorerLink = (hash?: string | null) => {
-   const value = (hash ?? '').trim();
+   const raw = (hash ?? '').trim();
+   const onBsc = raw.startsWith('bsc:');
+   const value = onBsc ? raw.slice(4) : raw;
    if (!/^0x[0-9a-fA-F]{64}$/.test(value)) return '';
-   return `https://basescan.org/tx/${value}`;
+   return onBsc ? `https://bscscan.com/tx/${value}` : `https://basescan.org/tx/${value}`;
 };
 
 const buildDashboardLink = () => buildAppLink('/dashboard');

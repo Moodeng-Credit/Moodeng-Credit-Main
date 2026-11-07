@@ -8,9 +8,8 @@
 --   'walt_manual', lender = the admin who sent it, repayments go to that admin's Base wallet), the
 --   team gets a line, and the bot tells the borrower in Bahasa. Not found after 30 min → one ping.
 --
---   Without a tap, the job still matches a transfer IF it came from an address we've already seen
---   Binance TH send from (learned from confirmed payouts: id_binance_senders). That stops a borrower
---   who deposits $5 into their own Walt from looking "funded". Fallback: paste the TxID.
+--   Nothing is ever matched without a tap (or a pasted TxID): exchange hot wallets are shared by
+--   millions, so a borrower withdrawing $5 into their own Walt must never look "funded".
 
 alter table public.loans drop constraint if exists loans_funding_method_check;
 alter table public.loans add constraint loans_funding_method_check
@@ -45,7 +44,6 @@ create policy id_manual_payouts_admin_read on public.id_manual_payouts for selec
 -- Writes only through admin-fund-loan / the cron job (service role).
 
 insert into public.telegram_bot_settings (key, value, description) values
-  ('id_binance_senders', '', 'Indonesia manual payouts: BNB Chain addresses Binance TH has sent our payouts from (learned automatically; comma separated, lowercase).'),
   ('id_payout_lender_user_id', '2371a419-4344-4f28-b580-19933e3d663f', 'Indonesia manual payouts: lender of record when a payout is found without anyone tapping "I sent it" (George''s direct-lend account, the BitRepo facility lender).')
 on conflict (key) do nothing;
 
