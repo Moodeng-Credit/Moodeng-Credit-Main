@@ -10,6 +10,7 @@ import { useIdOnboarding } from '@/hooks/useIdOnboarding';
 
 import { ID_PATHS, ID_STEP_ORDER, type IdOnboarding as IdOnboardingData, type IdStepKey } from '@/lib/idTrack';
 import type { RootState } from '@/store/store';
+import type { User } from '@/types/authTypes';
 import { currentIdStep, ID_STEP_LABELS, isIdStepKey, pick, useIdLang } from '@/views/indonesia/idFlow';
 import AboutStep from '@/views/indonesia/steps/AboutStep';
 import CallStep from '@/views/indonesia/steps/CallStep';
@@ -100,6 +101,45 @@ function Trail({ data, current, onPick }: { data: IdOnboardingData; current: IdS
             {t.step(index + 1, ID_STEP_ORDER.length)} · {pick(lang, ID_STEP_LABELS[current])}
          </p>
       </div>
+   );
+}
+
+/** /id/onboarding-preview?step=<key> (preview builds only, like /repay-preview): every earlier step
+ *  shows done, nothing is saved, and server calls just fail. For screenshots and design review. */
+const previewData = (step: IdStepKey): IdOnboardingData => {
+   const at = ID_STEP_ORDER.indexOf(step);
+   return {
+      market: 'ID',
+      track: 'on',
+      rules: { amounts: [5, 10], maxTermDays: 14 },
+      steps: Object.fromEntries(ID_STEP_ORDER.map((k, i) => [k, i < at])) as Record<IdStepKey, boolean>,
+      messenger: false,
+      facebookProfile: false,
+      incomeState: null,
+      kycApproved: false,
+      kycState: '',
+      access: 'none',
+      readyForKyc: at >= ID_STEP_ORDER.indexOf('kyc'),
+      readyForCall: at >= ID_STEP_ORDER.indexOf('call'),
+      next: step
+   };
+};
+const PREVIEW_USER = { id: 'preview', username: 'preview', walletAddress: '0x0000000000000000000000000000000000000001' } as unknown as User;
+
+export function IdOnboardingPreview() {
+   const lang = useIdLang();
+   const [searchParams, setSearchParams] = useSearchParams();
+   const stepParam = searchParams.get('step');
+   const current: IdStepKey = isIdStepKey(stepParam) ? stepParam : 'telegram';
+   const data = previewData(current);
+   const Step = STEPS[current];
+   const goTo = (step: IdStepKey | null) => setSearchParams(step ? { step } : {});
+   return (
+      <IdPage skipBody={false} top={<Trail current={current} data={{ ...data, next: 'call' }} onPick={goTo} />}>
+         <div key={current} className="flex flex-col gap-4" data-i18n-skip={TRANSLATED.has(current) ? undefined : true}>
+            <Step data={data} lang={lang} onDone={() => undefined} refresh={async () => undefined} user={PREVIEW_USER} />
+         </div>
+      </IdPage>
    );
 }
 

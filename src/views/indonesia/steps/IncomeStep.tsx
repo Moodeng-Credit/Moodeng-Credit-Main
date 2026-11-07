@@ -118,7 +118,18 @@ export default function IncomeStep({ data, lang, refresh, onDone }: IdStepProps)
    const [error, setError] = useState('');
    const inputRef = useRef<HTMLInputElement>(null);
 
-   const load = useCallback(async () => setStatus(await fetchIncomeDocStatus()), []);
+   // Never hang on the skeleton: a status call that errors or takes over 8 s reads as "nothing sent yet".
+   const load = useCallback(async () => {
+      try {
+         const result = await Promise.race([
+            fetchIncomeDocStatus(),
+            new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 8_000))
+         ]);
+         setStatus(result);
+      } catch {
+         setStatus(null);
+      }
+   }, []);
    useEffect(() => {
       void load();
    }, [load, data.incomeState]);

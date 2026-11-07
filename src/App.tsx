@@ -106,7 +106,7 @@ import VerifyFlow from '@/app/verify/page';
 import WhyLend from '@/app/whylend/page';
 import CreditLineLenderPage from '@/views/creditline/CreditLineLenderPage';
 import IdLanding from '@/views/indonesia/IdLanding';
-import IdOnboarding from '@/views/indonesia/IdOnboarding';
+import IdOnboarding, { IdOnboardingPreview } from '@/views/indonesia/IdOnboarding';
 import ContinuePage from '@/views/onboarding/ContinuePage';
 import MessengerHandoff from '@/views/onboarding/MessengerHandoff';
 import { clarityEvent, clarityTag, identifyClarity, isClarityEnabled, signupMethodLabel } from '@/lib/analytics/clarity';
@@ -338,6 +338,7 @@ export default function App() {
                 handle signed-out visitors themselves (back to /id), so no ProtectedRoute. */}
             <Route path="/id" element={<IdLanding />} />
             <Route path="/id/onboarding" element={<IdOnboarding />} />
+            {showPreviewRoutes ? <Route path="/id/onboarding-preview" element={<IdOnboardingPreview />} /> : null}
 
             {/* Onboarding */}
             <Route path="/onboarding/role" element={<RoleSelection />} />

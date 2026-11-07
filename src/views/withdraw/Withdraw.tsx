@@ -913,7 +913,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                         recommended
                         icon={<WaltIcon />}
                         name="Kirim ke Walt (Telegram)"
-                        line1="Jual USDT ke Rupiah di P2P · Sell for Rupiah"
+                        line1="Jual USDT ke Rupiah di Walt P2P"
                         line2="Biaya ≈ $0.07 · beberapa detik"
                      />
                      <PickerRow
