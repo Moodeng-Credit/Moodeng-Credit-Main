@@ -134,21 +134,21 @@ returns jsonb language sql stable security definer set search_path = public as $
     select
       u.market,
       u.chat_id is not null as telegram,
-      (u.whatsapp_verified_at is not null and regexp_replace(coalesce(u.whatsapp_number, ''), '\D', '', 'g') like '62%') as whatsapp,
+      coalesce(u.whatsapp_verified_at is not null and regexp_replace(coalesce(u.whatsapp_number, ''), '\D', '', 'g') like '62%', false) as whatsapp,
       (u.messenger_verified_at is not null and u.facebook_profile_url is not null and u.facebook_page_followed_at is not null) as facebook,
       (u.messenger_verified_at is not null) as messenger,
       (u.facebook_profile_url is not null and u.facebook_page_followed_at is not null) as facebook_profile,
       (u.income_type is not null) as about,
       exists (select 1 from doc where doc.decision is distinct from 'declined') as income,
       coalesce((select doc.decision from doc), case when (select doc.verdict from doc) = 'resend' then 'resend' end) as income_state,
-      (u.is_didit = 'ACTIVE') as kyc_approved,
-      (u.is_didit = 'ACTIVE'
+      coalesce(u.is_didit = 'ACTIVE', false) as kyc_approved,
+      coalesce(u.is_didit = 'ACTIVE'
         or lower(coalesce(u.didit_id_status, '')) like '%review%'
         or (u.didit_submitted_at is not null
-            and lower(coalesce(u.didit_id_status, '')) not in ('duplicate', 'declined', 'abandoned', 'expired', 'not started', 'in progress'))) as kyc,
+            and lower(coalesce(u.didit_id_status, '')) not in ('duplicate', 'declined', 'abandoned', 'expired', 'not started', 'in progress')), false) as kyc,
       lower(coalesce(u.didit_id_status, '')) as kyc_state,
       u.walt_address is not null as walt,
-      (u.video_call_scheduled_at is not null or u.loan_access_status in ('pending', 'approved')) as call,
+      coalesce(u.video_call_scheduled_at is not null or u.loan_access_status in ('pending', 'approved'), false) as call,
       coalesce(u.loan_access_status, 'none') as access
     from u
   )
