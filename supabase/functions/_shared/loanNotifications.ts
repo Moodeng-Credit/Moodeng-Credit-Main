@@ -33,6 +33,9 @@ export type LoanNotificationLoan = {
    market?: string | null;
    /** 'walt_manual' = paid by hand from Binance TH straight to their Walt (BNB Chain). */
    funding_method?: string | null;
+   /** Indonesia rupiah peg: the fixed rupiah owed and the rupiah repaid so far (null = not pegged). */
+   repay_idr?: number | string | null;
+   repaid_idr?: number | string | null;
 };
 
 export type LoanNotificationRecipient = {
@@ -68,6 +71,8 @@ export type LoanNotificationAggregate = {
    nextDueDate?: string | null;
    /** Overdue only: a later check-in (day 3 / day 7) rather than the first overdue notice. */
    followUp?: boolean;
+   /** Indonesia rupiah peg: rupiah left over these loans, when every one is pegged (else null/undefined). */
+   totalIdr?: number | null;
 };
 
 type DetailTone = 'default' | 'good' | 'warn';

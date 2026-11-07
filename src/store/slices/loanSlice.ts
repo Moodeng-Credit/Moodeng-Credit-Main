@@ -29,6 +29,22 @@ export class PaymentNotConfirmedError extends Error {
    }
 }
 
+// Indonesia rupiah peg columns (20261107160000; not in the generated types yet).
+type IdrPegRow = { repay_idr?: number | string | null; repaid_idr?: number | string | null; fx_rate_at_request?: number | string | null };
+const optionalNumber = (v: number | string | null | undefined): number | undefined => {
+   if (v == null) return undefined;
+   const n = Number(v);
+   return Number.isFinite(n) ? n : undefined;
+};
+const mapIdrPeg = (row: IdrPegRow): Pick<Loan, 'repayIdr' | 'repaidIdr' | 'fxRateAtRequest'> =>
+   row.repay_idr == null
+      ? {}
+      : {
+           repayIdr: optionalNumber(row.repay_idr),
+           repaidIdr: optionalNumber(row.repaid_idr) ?? 0,
+           fxRateAtRequest: optionalNumber(row.fx_rate_at_request)
+        };
+
 // Helper function to map Supabase loan row to frontend Loan type
 const mapSupabaseLoanToLoan = (row: LoanRow): Loan => ({
    id: row.id,
@@ -68,7 +84,8 @@ const mapSupabaseLoanToLoan = (row: LoanRow): Loan => ({
    refundHash: row.refund_hash ?? undefined,
    offplatformSettledAt: row.offplatform_settled_at ?? undefined,
    offplatformSettlementNote: row.offplatform_settlement_note ?? undefined,
-   market: (row as { market?: string | null }).market === 'ID' ? 'ID' : undefined
+   market: (row as { market?: string | null }).market === 'ID' ? 'ID' : undefined,
+   ...mapIdrPeg(row as IdrPegRow)
 });
 
 const initialState: LoanState = {
@@ -115,7 +132,9 @@ export const createLoan = createAsyncThunk('loans/create', async (loanData: Crea
    // Generate a unique tracking ID
    const trackingId = `LOAN-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
-   const loanInsert: LoanInsert = {
+   // repay_idr: Indonesia rupiah peg — the server sets the USD total from it (enforce_new_loan_terms).
+   const loanInsert: LoanInsert & { repay_idr?: number } = {
+      ...(loanData.repayIdr != null ? { repay_idr: loanData.repayIdr } : {}),
       tracking_id: trackingId,
       borrower_wallet: loanData.borrowerWallet || null,
       borrower_user_id: loanData.borrowerUserId || null,

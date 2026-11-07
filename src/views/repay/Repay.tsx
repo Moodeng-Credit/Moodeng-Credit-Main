@@ -47,6 +47,7 @@ import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { detectInAppBrowser, shouldBlockRepayForInAppBrowser } from '@/lib/inAppBrowser';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getDueDayEnd, getLoanTimezone, isPastDueDay } from '@/lib/loanDeadline';
+import { formatIdr, remainingIdr } from '@/lib/loanMarket';
 import { areWalletAddressesEqual, formatWalletAddressShort, getBaseWalletLockStatus, isBaseWalletProvider } from '@/lib/walletProvider';
 import { confirmLoanPayment, getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -677,6 +678,9 @@ export default function Repay() {
    // value. Otherwise a remaining of e.g. 0.469 shows as "$0.47" but rejects a 0.47 "Full"
    // payment as exceeding the maximum, leaving the borrower unable to clear the loan.
    const selectedRemainingRounded = Math.round(selectedRemaining * 100) / 100;
+   // Indonesia rupiah peg: they owe fixed rupiah; the USD left (selectedRemaining) is the server's
+   // price for it today (total_repayment_amount is re-priced by the server).
+   const selectedRemainingIdr = remainingIdr(selectedLoan);
    const parsedRepaymentAmount = toNumber(repaymentAmount);
    const repaySliderPercent =
       selectedRemainingRounded > 0
@@ -1125,7 +1129,11 @@ export default function Repay() {
          } else {
             // Partial payment: the loan stays active, so acknowledge it inline instead of
             // the full-payoff screen.
-            const remainingAfter = Math.max(0, toNumber(selectedLoan.totalRepaymentAmount) - toNumber(confirmedLoan.repaidAmount));
+            // The server's total (a rupiah-pegged loan is re-priced when a part payment lands).
+            const remainingAfter = Math.max(
+               0,
+               toNumber(confirmedLoan.totalRepaymentAmount ?? selectedLoan.totalRepaymentAmount) - toNumber(confirmedLoan.repaidAmount)
+            );
             setPartialPaid({ paidAmount: effectiveRepayment, remaining: remainingAfter, coin: transferCoin });
          }
          // A short success buzz on devices that support it makes the payoff feel tactile.
@@ -1554,6 +1562,8 @@ export default function Repay() {
                                        usdcBalance={usdcBalance}
                                        hasEnough={hasEnoughToRepay}
                                        watchedWallet={repayWalletAddress}
+                                       rupiahLeft={selectedRemainingIdr}
+                                       usdLeft={selectedRemaining}
                                     />
                                     <button
                                        type="button"
@@ -2099,6 +2109,17 @@ export default function Repay() {
                               <p className="text-md-b3 font-medium text-md-red-600">
                                  Paying less than the full ${formatCurrency(selectedRemaining)} reduces what you owe, but your account stays
                                  restricted until this loan is fully repaid.
+                              </p>
+                           </div>
+                        ) : null}
+
+                        {selectedRemainingIdr !== null ? (
+                           // Rupiah peg: the rupiah left is what they owe; the USDT is today's price for it.
+                           <div className="mb-4 rounded-md-input border border-[#e9e3f8] bg-[#f7f4ff] px-3 py-3 dark:border-[#2a1f4f] dark:bg-[#1e1535]">
+                              <p className="text-xs font-medium text-[#6b6090] dark:text-[#a095c8]">{locale === 'en' ? 'Left to pay' : 'Sisa'}</p>
+                              <p className="text-3xl font-bold tracking-tight text-[#1a1240] dark:text-white">{formatIdr(selectedRemainingIdr)}</p>
+                              <p className="mt-0.5 text-xs text-[#6b6090] dark:text-[#a095c8]">
+                                 ≈ {formatCurrency(selectedRemaining)} USDT {locale === 'en' ? 'today' : 'hari ini'}
                               </p>
                            </div>
                         ) : null}

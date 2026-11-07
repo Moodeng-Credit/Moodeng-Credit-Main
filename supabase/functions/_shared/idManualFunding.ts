@@ -20,6 +20,20 @@
 
 import { sendTelegramMessage } from './telegram.ts';
 import { postLoanFundedToTeam } from './teamLoanFeed.ts';
+import {
+   autoPayBlocker,
+   balanceOf,
+   bangkokDay,
+   bangkokDayStart,
+   getAutoPayLimits,
+   getPayoutWallet,
+   loadPayoutCreds,
+   paidTodayUsd,
+   pollOpenfortTx,
+   sendUsdcBsc,
+   type AutoPayLimits,
+   type PayoutWallet
+} from './idPayoutWallet.ts';
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
@@ -43,7 +57,11 @@ export type PayoutRow = {
    amount: number | string;
    lender_user_id: string | null;
    marked_sent_at: string | null;
-   status: 'waiting' | 'found' | 'not_found';
+   status: 'waiting' | 'paying' | 'found' | 'not_found' | 'failed';
+   method?: 'manual' | 'auto';
+   openfort_tx_id?: string | null;
+   paid_attempt_at?: string | null;
+   error?: string | null;
    bsc_tx_hash: string | null;
    from_address: string | null;
    block_number: number | null;
@@ -59,6 +77,7 @@ type Transfer = { txHash: string; from: string; to: string; value: bigint; block
 export type PayoutResult =
    | { ok: true; state: 'found'; payout: PayoutRow; funded: boolean }
    | { ok: true; state: 'waiting'; payout: PayoutRow }
+   | { ok: true; state: 'paying'; payout: PayoutRow }
    | { ok: false; error: string; payout?: PayoutRow };
 
 // ── amounts ──────────────────────────────────────────────────────────────────────────────────────
@@ -194,7 +213,13 @@ export const ensurePayout = async (svc: Svc, loanId: string): Promise<{ payout?:
 };
 
 // ── recording the funding ────────────────────────────────────────────────────────────────────────
-const recordFunding = async (svc: Svc, payout: PayoutRow, loan: LoanForPayout, t: Transfer, foundBy: 'scan' | 'txid'): Promise<PayoutResult> => {
+const recordFunding = async (
+   svc: Svc,
+   payout: PayoutRow,
+   loan: LoanForPayout,
+   t: Transfer,
+   foundBy: 'scan' | 'txid' | 'auto'
+): Promise<PayoutResult> => {
    // Claim the tx first: bsc_tx_hash is unique, so one transfer can never fund two loans.
    // The lender is read fresh: whoever tapped "I sent it" / pasted the TxID last paid it.
    const { data: fresh } = await svc.from('id_manual_payouts').select('lender_user_id').eq('id', payout.id).maybeSingle();
@@ -206,7 +231,9 @@ const recordFunding = async (svc: Svc, payout: PayoutRow, loan: LoanForPayout, t
    if (!isAddress(lenderWallet)) return { ok: false, error: 'lender_has_no_base_wallet', payout };
 
    const now = new Date().toISOString();
-   const { data: claimed, error: claimError } = await svc
+   // An automatic payout is recorded only from its own 'paying' row; the manual paths never touch a
+   // row the payout wallet is paying (and never a found one).
+   let claimQuery = svc
       .from('id_manual_payouts')
       .update({
          status: 'found',
@@ -216,19 +243,22 @@ const recordFunding = async (svc: Svc, payout: PayoutRow, loan: LoanForPayout, t
          found_at: now,
          found_by: foundBy,
          lender_user_id: lenderId,
+         error: null,
          updated_at: now
       })
-      .eq('id', payout.id)
-      .neq('status', 'found')
-      .select('*')
-      .maybeSingle();
+      .eq('id', payout.id);
+   claimQuery = foundBy === 'auto' ? claimQuery.eq('status', 'paying') : claimQuery.not('status', 'in', '(found,paying)');
+   const { data: claimed, error: claimError } = await claimQuery.select('*').maybeSingle();
    if (claimError) {
       const dup = /duplicate|unique/i.test(claimError.message ?? '');
       return { ok: false, error: dup ? 'tx_already_used' : claimError.message, payout };
    }
    if (!claimed) {
       const { data: again } = await svc.from('id_manual_payouts').select('*').eq('id', payout.id).maybeSingle();
-      return { ok: true, state: 'found', payout: (again ?? payout) as PayoutRow, funded: false };
+      const row = (again ?? payout) as PayoutRow;
+      if (row.status === 'paying') return { ok: false, error: 'auto_payout_in_progress', payout: row };
+      if (row.status !== 'found') return { ok: false, error: 'payout_not_claimable', payout: row };
+      return { ok: true, state: 'found', payout: row, funded: false };
    }
 
    const { data: borrower } = await svc.from('users').select('wallet_address').eq('id', loan.borrower_user_id).maybeSingle();
@@ -274,7 +304,7 @@ const recordFunding = async (svc: Svc, payout: PayoutRow, loan: LoanForPayout, t
    if (chat) {
       await sendTelegramMessage(
          chat,
-         `🇮🇩 Walt payout confirmed on BNB Chain ✅ $${Number(payout.amount)} → ${short(payout.walt_address)} (received ${(Number(t.value) / 1e18).toFixed(2)} USDC, tx ${short(t.txHash)}).`
+         `🇮🇩 ${foundBy === 'auto' ? 'Auto-payout from the payout wallet' : 'Walt payout'} confirmed on BNB Chain ✅ $${Number(payout.amount)} → ${short(payout.walt_address)} (received ${(Number(t.value) / 1e18).toFixed(2)} USDC, tx ${short(t.txHash)}).`
       ).catch(() => undefined);
    }
    return { ok: true, state: 'found', payout: claimed as PayoutRow, funded: true };
@@ -294,6 +324,8 @@ export const checkPayout = async (
    deadline = Date.now() + SCAN_BUDGET_MS
 ): Promise<PayoutResult> => {
    if (payout.status === 'found') return { ok: true, state: 'found', payout, funded: false };
+   // The payout wallet is paying this one: only its own Openfort transaction can fund it.
+   if (payout.status === 'paying') return { ok: true, state: 'paying', payout };
    if (!isOpen(loan)) return { ok: false, error: 'loan_not_open', payout };
    // Nothing is accepted until an admin says they sent it.
    if (!payout.marked_sent_at) return { ok: true, state: 'waiting', payout };
@@ -324,11 +356,53 @@ export const checkPayout = async (
    return { ok: true, state: 'waiting', payout };
 };
 
+/**
+ * A BNB Chain tx's receipt holds a USDC (BSC) Transfer to `to` of the right amount (exact, or up to
+ * `shortfall` under), at least CONFIRMATIONS deep — and, when `from` is given, sent from that address.
+ */
+const verifyTransferTx = async (
+   txHash: string,
+   to: string,
+   want: bigint,
+   opts: { shortfall?: bigint; from?: string } = {}
+): Promise<{ ok: true; transfer: Transfer } | { ok: false; error: string }> => {
+   type Receipt = { status: string; blockNumber: string; logs: Array<{ address: string; topics: string[]; data: string; logIndex: string; transactionHash: string }> } | null;
+   const receipt = await rpc<Receipt>('eth_getTransactionReceipt', [txHash]);
+   if (!receipt) return { ok: false, error: 'tx_not_found_on_bnb_chain' };
+   if (receipt.status !== '0x1') return { ok: false, error: 'tx_failed' };
+   const head = await headBlock();
+   if (BigInt(receipt.blockNumber) > head - CONFIRMATIONS) return { ok: false, error: 'tx_too_new_try_again' };
+   const shortfall = opts.shortfall ?? 0n;
+   const log = receipt.logs.find(
+      (l) =>
+         l.address.toLowerCase() === BSC_USDC &&
+         l.topics?.[0] === TRANSFER_TOPIC &&
+         l.topics.length === 3 &&
+         fromTopic(l.topics[2]) === to.toLowerCase() &&
+         (!opts.from || fromTopic(l.topics[1]) === opts.from.toLowerCase())
+   );
+   if (!log) return { ok: false, error: 'tx_not_usdc_to_their_walt' };
+   const value = BigInt(log.data);
+   if (value > want || value < want - shortfall) return { ok: false, error: 'tx_wrong_amount' };
+   return {
+      ok: true,
+      transfer: {
+         txHash: txHash.toLowerCase(),
+         from: fromTopic(log.topics[1]),
+         to: fromTopic(log.topics[2]),
+         value,
+         blockNumber: BigInt(receipt.blockNumber),
+         logIndex: Number(BigInt(log.logIndex))
+      }
+   };
+};
+
 /** Admin tapped "I sent it": they are the lender of record; look right away. */
 export const markSent = async (svc: Svc, loanId: string, adminUserId: string): Promise<PayoutResult> => {
    const { payout, loan, error } = await ensurePayout(svc, loanId);
    if (!payout || !loan) return { ok: false, error: error ?? 'payout_unavailable' };
    if (payout.status === 'found') return { ok: true, state: 'found', payout, funded: false };
+   if (payout.status === 'paying') return { ok: false, error: 'auto_payout_in_progress', payout };
    const now = new Date().toISOString();
    const { data: updated } = await svc
       .from('id_manual_payouts')
@@ -342,10 +416,19 @@ export const markSent = async (svc: Svc, loanId: string, adminUserId: string): P
          updated_at: now
       })
       .eq('id', payout.id)
+      // One statement with the claim's condition flipped: if the payout wallet claimed it a moment
+      // ago this matches nothing, and if this lands first the claim sees marked_sent_at and backs off.
+      .not('status', 'in', '(found,paying)')
       .select('*')
       .maybeSingle();
+   if (!updated) {
+      const { data: again } = await svc.from('id_manual_payouts').select('*').eq('id', payout.id).maybeSingle();
+      const row = (again ?? payout) as PayoutRow;
+      if (row.status === 'found') return { ok: true, state: 'found', payout: row, funded: false };
+      return { ok: false, error: row.status === 'paying' ? 'auto_payout_in_progress' : 'payout_row_failed', payout: row };
+   }
    try {
-      return await checkPayout(svc, (updated ?? payout) as PayoutRow, loan);
+      return await checkPayout(svc, updated as PayoutRow, loan);
    } catch (err) {
       // BNB Chain unreachable: the 5-minute job keeps looking.
       console.error('idManualFunding.markSent check failed', err);
@@ -359,42 +442,15 @@ export const recordByTxid = async (svc: Svc, loanId: string, txHash: string, adm
    const { payout, loan, error } = await ensurePayout(svc, loanId);
    if (!payout || !loan) return { ok: false, error: error ?? 'payout_unavailable' };
    if (payout.status === 'found') return { ok: true, state: 'found', payout, funded: false };
+   if (payout.status === 'paying') return { ok: false, error: 'auto_payout_in_progress', payout };
    if (!isOpen(loan)) return { ok: false, error: 'loan_not_open', payout };
-   type Receipt = { status: string; blockNumber: string; logs: Array<{ address: string; topics: string[]; data: string; logIndex: string; transactionHash: string }> } | null;
-   const receipt = await rpc<Receipt>('eth_getTransactionReceipt', [txHash]);
-   if (!receipt) return { ok: false, error: 'tx_not_found_on_bnb_chain', payout };
-   if (receipt.status !== '0x1') return { ok: false, error: 'tx_failed', payout };
-   const head = await headBlock();
-   if (BigInt(receipt.blockNumber) > head - CONFIRMATIONS) return { ok: false, error: 'tx_too_new_try_again', payout };
-   const want = usdcUnits(payout.amount);
-   const log = receipt.logs.find(
-      (l) =>
-         l.address.toLowerCase() === BSC_USDC &&
-         l.topics?.[0] === TRANSFER_TOPIC &&
-         l.topics.length === 3 &&
-         fromTopic(l.topics[2]) === payout.walt_address.toLowerCase()
-   );
-   if (!log) return { ok: false, error: 'tx_not_usdc_to_their_walt', payout };
-   const value = BigInt(log.data);
-   if (value > want || value < want - SHORTFALL_ALLOWED) return { ok: false, error: 'tx_wrong_amount', payout };
+   const verified = await verifyTransferTx(txHash, payout.walt_address, usdcUnits(payout.amount), { shortfall: SHORTFALL_ALLOWED });
+   if (!verified.ok) return { ok: false, error: verified.error, payout };
    const { data: dup } = await svc.from('id_manual_payouts').select('id').eq('bsc_tx_hash', txHash.toLowerCase()).maybeSingle();
    if (dup) return { ok: false, error: 'tx_already_used', payout };
    const withLender = { ...payout, lender_user_id: adminUserId };
    await svc.from('id_manual_payouts').update({ lender_user_id: adminUserId, updated_at: new Date().toISOString() }).eq('id', payout.id);
-   return await recordFunding(
-      svc,
-      withLender,
-      loan,
-      {
-         txHash: txHash.toLowerCase(),
-         from: fromTopic(log.topics[1]),
-         to: fromTopic(log.topics[2]),
-         value,
-         blockNumber: BigInt(receipt.blockNumber),
-         logIndex: Number(BigInt(log.logIndex))
-      },
-      'txid'
-   );
+   return await recordFunding(svc, withLender, loan, verified.transfer, 'txid');
 };
 
 /** "Check again" from the admin card: resume the search without resetting anything. */
@@ -402,6 +458,7 @@ export const checkNow = async (svc: Svc, loanId: string): Promise<PayoutResult> 
    const { payout, loan, error } = await ensurePayout(svc, loanId);
    if (!payout || !loan) return { ok: false, error: error ?? 'payout_unavailable' };
    try {
+      if (payout.status === 'paying') return await settleAutoPayout(svc, payout);
       return await checkPayout(svc, payout, loan);
    } catch (err) {
       console.error('idManualFunding.checkNow failed', err);
@@ -424,7 +481,7 @@ export const runWaltPayoutScan = async (svc: Svc, now = Date.now()): Promise<{ c
       const { data: rows } = await svc
          .from('id_manual_payouts')
          .select('*')
-         .neq('status', 'found')
+         .not('status', 'in', '(found,paying)')
          .not('marked_sent_at', 'is', null)
          .gte('marked_sent_at', new Date(now - 7 * 86_400_000).toISOString())
          .order('marked_sent_at', { ascending: true })
@@ -456,7 +513,7 @@ export const runWaltPayoutScan = async (svc: Svc, now = Date.now()): Promise<{ c
                   .from('id_manual_payouts')
                   .update({ status: 'not_found', not_found_alerted_at: new Date(now).toISOString(), updated_at: new Date(now).toISOString() })
                   .eq('id', latest.id)
-                  .neq('status', 'found');
+                  .not('status', 'in', '(found,paying)');
                tally.alerted += 1;
             }
          } catch (err) {
@@ -467,4 +524,376 @@ export const runWaltPayoutScan = async (svc: Svc, now = Date.now()): Promise<{ c
       console.error('idManualFunding: scan failed', err);
    }
    return tally;
+};
+
+// ── the payout wallet: automatic payouts ─────────────────────────────────────────────────────────
+// (migration 20261107150000_indonesia_payout_wallet.sql, _shared/idPayoutWallet.ts)
+//
+// Never pay twice:
+//   1. claim_id_auto_payout() (SQL, one transaction under an advisory lock) re-checks the loan is
+//      open, the max and the daily cap, and moves the loan's payout row 'waiting' → 'paying'. Only a
+//      row nobody touched can be claimed: no "I sent it" tap, no tx, no earlier attempt.
+//   2. The loan is re-read right before sending; if it was funded meanwhile the claim is released.
+//   3. Openfort is called once. Its id is saved at once. If it throws before giving an id, the row
+//      goes 'failed' and the team is told — it is never retried on its own (the money may have left).
+//   4. A 'paying' row is never sent again: later runs only poll its Openfort id. Succeeded → the
+//      receipt is checked on BNB Chain (USDC from the payout wallet → their Walt, exact amount) and
+//      recordFunding(…, 'auto') funds the loan. Reverted/failed → 'failed' + alert.
+//   5. The manual paths ("I sent it", the TxID, the scan) skip 'paying' rows, and recordFunding only
+//      records an automatic payout from its own 'paying' row.
+
+const LOW_BALANCE_USD = 20;
+const LOW_ALERT_EVERY_MS = 6 * 3_600_000;
+const NO_TX_ID_FAIL_MS = 10 * 60_000;
+const STUCK_ALERT_MS = 30 * 60_000;
+const AUTO_BUDGET_MS = 60_000;
+
+const alertTeam = async (svc: Svc, text: string) => {
+   const chat = await adminChatId(svc);
+   if (chat) await sendTelegramMessage(chat, text).catch(() => undefined);
+};
+
+const setSetting = async (svc: Svc, key: string, value: string) => {
+   await svc.from('telegram_bot_settings').upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+};
+
+const walletLink = (address: string) => `https://bscscan.com/address/${address}#tokentxns`;
+
+const maybeAlertLowBalance = async (svc: Svc, wallet: PayoutWallet, usdc: number, now: number) => {
+   if (usdc >= LOW_BALANCE_USD) return;
+   const last = await getSetting(svc, 'id_payout_low_alerted_at');
+   if (last && now - new Date(last).getTime() < LOW_ALERT_EVERY_MS) return;
+   await setSetting(svc, 'id_payout_low_alerted_at', new Date(now).toISOString());
+   await alertTeam(
+      svc,
+      `🇮🇩 Payout wallet is low: ${usdc.toFixed(2)} USDC left. Top it up: Binance TH → Withdraw USDC → network BSC → ${wallet.address}`
+   );
+};
+
+const maybeAlertCap = async (svc: Svc, limits: AutoPayLimits, paidToday: number, now: number) => {
+   const today = bangkokDay(now);
+   if ((await getSetting(svc, 'id_payout_cap_alerted_day')) === today) return;
+   await setSetting(svc, 'id_payout_cap_alerted_day', today);
+   await alertTeam(
+      svc,
+      `🇮🇩 Payout wallet hit today's cap: $${paidToday.toFixed(2)} of $${limits.dailyCapUsd} paid automatically. The rest wait for tomorrow (Bangkok) or a hand payout.`
+   );
+};
+
+const failAutoPayout = async (svc: Svc, payout: PayoutRow, error: string, alert: string) => {
+   const now = new Date().toISOString();
+   const { data } = await svc
+      .from('id_manual_payouts')
+      .update({ status: 'failed', error: error.slice(0, 500), updated_at: now })
+      .eq('id', payout.id)
+      .eq('status', 'paying')
+      .select('*')
+      .maybeSingle();
+   await alertTeam(svc, alert);
+   return { ok: false as const, error: 'auto_payout_failed', payout: (data ?? { ...payout, status: 'failed', error }) as PayoutRow };
+};
+
+/** Moves a 'paying' row on: poll Openfort, verify on BNB Chain, record the funding. Never sends. */
+export const settleAutoPayout = async (svc: Svc, payout: PayoutRow, now = Date.now()): Promise<PayoutResult> => {
+   if (payout.status !== 'paying') return { ok: true, state: payout.status === 'found' ? 'found' : 'waiting', payout } as PayoutResult;
+   const loanTag = payout.loan_id.slice(0, 8);
+   const wallet = await getPayoutWallet(svc);
+   const startedAt = payout.paid_attempt_at ? new Date(payout.paid_attempt_at).getTime() : now;
+
+   if (!payout.openfort_tx_id) {
+      // Claimed but no Openfort id saved (the run died mid-send?). Don't guess: after 10 min a human checks.
+      if (now - startedAt < NO_TX_ID_FAIL_MS) return { ok: true, state: 'paying', payout };
+      return await failAutoPayout(
+         svc,
+         payout,
+         'no_openfort_tx_id',
+         `⚠️ 🇮🇩 Auto-payout for loan ${loanTag} ($${Number(payout.amount)} → ${short(payout.walt_address)}) has no Openfort transaction saved. It may or may not have gone out — check the payout wallet${wallet ? ` (${walletLink(wallet.address)})` : ''} before paying by hand.`
+      );
+   }
+
+   let st: Awaited<ReturnType<typeof pollOpenfortTx>>;
+   try {
+      st = await pollOpenfortTx(svc, payout.openfort_tx_id);
+   } catch (err) {
+      console.error(`idManualFunding: Openfort poll failed for ${payout.loan_id}`, err);
+      st = { state: 'pending' };
+   }
+
+   if (st.state === 'failed') {
+      return await failAutoPayout(
+         svc,
+         payout,
+         st.error,
+         `⚠️ 🇮🇩 Auto-payout FAILED for loan ${loanTag}: $${Number(payout.amount)} → ${short(payout.walt_address)} (${st.error.slice(0, 200)}). Openfort ${payout.openfort_tx_id}${st.txHash ? `, tx ${st.txHash}` : ''}. Nothing will retry by itself — pay by hand in admin if it really didn't go out.`
+      );
+   }
+
+   if (st.state === 'pending') {
+      if (now - startedAt > STUCK_ALERT_MS && !payout.not_found_alerted_at) {
+         await svc
+            .from('id_manual_payouts')
+            .update({ not_found_alerted_at: new Date(now).toISOString(), updated_at: new Date(now).toISOString() })
+            .eq('id', payout.id)
+            .eq('status', 'paying');
+         await alertTeam(
+            svc,
+            `🇮🇩 Auto-payout for loan ${loanTag} still not confirmed after ${Math.round((now - startedAt) / 60_000)} min (Openfort ${payout.openfort_tx_id}). It won't be sent again; check Openfort / the payout wallet.`
+         );
+      }
+      return { ok: true, state: 'paying', payout };
+   }
+
+   // Openfort says it landed: check it ourselves on BNB Chain, from our wallet, the exact amount.
+   let want: bigint;
+   try {
+      want = usdcUnits(payout.amount);
+   } catch {
+      return { ok: false, error: 'bad_amount', payout };
+   }
+   let verified: Awaited<ReturnType<typeof verifyTransferTx>>;
+   try {
+      verified = await verifyTransferTx(st.txHash, payout.walt_address, want, { from: wallet?.address });
+   } catch (err) {
+      console.error(`idManualFunding: receipt check failed for ${payout.loan_id}`, err);
+      return { ok: true, state: 'paying', payout };
+   }
+   if (!verified.ok) {
+      if (verified.error === 'tx_not_found_on_bnb_chain' || verified.error === 'tx_too_new_try_again') return { ok: true, state: 'paying', payout };
+      return await failAutoPayout(
+         svc,
+         payout,
+         `onchain_check: ${verified.error} (${st.txHash})`,
+         `⚠️ 🇮🇩 Auto-payout for loan ${loanTag}: Openfort says it succeeded, but BNB Chain doesn't show $${Number(payout.amount)} USDC → ${short(payout.walt_address)} (${verified.error}). Tx https://bscscan.com/tx/${st.txHash} — check it before doing anything else.`
+      );
+   }
+
+   const loan = await loadLoan(svc, payout.loan_id);
+   if (!loan) return { ok: false, error: 'loan_not_found', payout };
+   const result = await recordFunding(svc, payout, loan, verified.transfer, 'auto');
+   if (!result.ok && result.error !== 'auto_payout_in_progress') {
+      // Money went out but the loan couldn't be recorded (e.g. funded by someone else meanwhile —
+      // recordFunding already alerted for that). Keep the reason on the row; alert once for the rest.
+      const { data: row } = await svc.from('id_manual_payouts').select('*').eq('id', payout.id).maybeSingle();
+      if (row?.status === 'paying') {
+         await svc
+            .from('id_manual_payouts')
+            .update({ error: result.error, not_found_alerted_at: new Date(now).toISOString(), updated_at: new Date(now).toISOString() })
+            .eq('id', payout.id)
+            .eq('status', 'paying');
+         if (!row.not_found_alerted_at) {
+            await alertTeam(
+               svc,
+               `⚠️ 🇮🇩 Auto-payout for loan ${loanTag} landed on BNB Chain (https://bscscan.com/tx/${st.txHash}) but the loan couldn't be recorded: ${result.error}. It will keep trying to record it; it will NOT send again.`
+            );
+         }
+      }
+   }
+   return result;
+};
+
+type AutoCtx = {
+   wallet: PayoutWallet;
+   limits: AutoPayLimits & { autopay: 'on' | 'off' };
+   paidToday: number;
+   balanceUsd: number | null;
+   lenderId: string;
+};
+
+const loadAutoCtx = async (svc: Svc, now: number): Promise<{ ctx?: AutoCtx; error?: string }> => {
+   if (!(await loadPayoutCreds(svc))) return { error: 'not_configured' };
+   const wallet = await getPayoutWallet(svc);
+   if (!wallet) return { error: 'no_payout_wallet' };
+   const lenderId = await getSetting(svc, 'id_payout_lender_user_id');
+   if (!lenderId) return { error: 'no_lender_of_record' };
+   const { data: lender } = await svc.from('users').select('wallet_address').eq('id', lenderId).maybeSingle();
+   // Checked before sending: otherwise money would go out and the loan couldn't be recorded.
+   if (!isAddress(lender?.wallet_address)) return { error: 'lender_has_no_base_wallet' };
+   const [limits, paidToday] = await Promise.all([getAutoPayLimits(svc), paidTodayUsd(svc, now)]);
+   let balanceUsd: number | null = null;
+   try {
+      balanceUsd = (await balanceOf(wallet.address)).usdc;
+   } catch (err) {
+      console.error('idManualFunding: payout wallet balance failed', err);
+   }
+   return { ctx: { wallet, limits, paidToday, balanceUsd, lenderId } };
+};
+
+/** One automatic payout attempt for one loan. Claims first; sends at most once. */
+const attemptAutoPay = async (svc: Svc, loan: LoanForPayout, ctx: AutoCtx, now: number, requireAge: boolean, by: string): Promise<PayoutResult> => {
+   const { data: borrower } = await svc.from('users').select('walt_address').eq('id', loan.borrower_user_id).maybeSingle();
+   const walt = borrower?.walt_address as string | null | undefined;
+   const amountUsd = Number(loan.loan_amount);
+   const blocker = autoPayBlocker({
+      amountUsd,
+      createdAt: loan.created_at,
+      now,
+      paidTodayUsd: ctx.paidToday,
+      balanceUsd: ctx.balanceUsd,
+      limits: ctx.limits,
+      hasWalt: isAddress(walt),
+      requireAge
+   });
+   if (blocker === 'low_balance' && ctx.balanceUsd != null) await maybeAlertLowBalance(svc, ctx.wallet, ctx.balanceUsd, now);
+   if (blocker === 'daily_cap_reached') await maybeAlertCap(svc, ctx.limits, ctx.paidToday, now);
+   if (blocker) return { ok: false, error: blocker };
+
+   const { data: claim, error: claimError } = await svc.rpc('claim_id_auto_payout', {
+      p_loan_id: loan.id,
+      p_lender_user_id: ctx.lenderId,
+      p_max_usd: ctx.limits.maxUsd,
+      p_cap_usd: ctx.limits.dailyCapUsd,
+      p_day_start: bangkokDayStart(now).toISOString()
+   });
+   if (claimError) return { ok: false, error: `claim_failed: ${claimError.message}` };
+   const c = claim as { ok: boolean; error?: string; payout?: PayoutRow; paid_today?: number };
+   if (!c?.ok || !c.payout) {
+      if (c?.error === 'daily_cap_reached') await maybeAlertCap(svc, ctx.limits, Number(c.paid_today ?? ctx.paidToday), now);
+      return { ok: false, error: c?.error ?? 'claim_failed' };
+   }
+   let payout = c.payout;
+
+   // Right before sending: still open? (someone may have funded it since the claim)
+   const fresh = await loadLoan(svc, loan.id);
+   if (!fresh || !isOpen(fresh)) {
+      await svc
+         .from('id_manual_payouts')
+         .update({ status: 'waiting', method: 'manual', paid_attempt_at: null, lender_user_id: null, updated_at: new Date().toISOString() })
+         .eq('id', payout.id)
+         .eq('status', 'paying')
+         .is('openfort_tx_id', null);
+      return { ok: false, error: 'loan_not_open' };
+   }
+
+   let txId: string;
+   try {
+      txId = await sendUsdcBsc(svc, payout.walt_address, payout.amount);
+   } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return await failAutoPayout(
+         svc,
+         payout,
+         `send: ${msg}`,
+         `⚠️ 🇮🇩 Auto-payout FAILED for loan ${loan.id.slice(0, 8)}: $${Number(payout.amount)} → ${short(payout.walt_address)} (${msg.slice(0, 200)}). Nothing will retry by itself. Check the payout wallet (${walletLink(ctx.wallet.address)}) before paying by hand.`
+      );
+   }
+   ctx.paidToday += amountUsd;
+   if (ctx.balanceUsd != null) ctx.balanceUsd -= amountUsd;
+
+   const saveTxId = () =>
+      svc
+         .from('id_manual_payouts')
+         .update({ openfort_tx_id: txId, updated_at: new Date().toISOString() })
+         .eq('id', payout.id)
+         .eq('status', 'paying')
+         .select('*')
+         .maybeSingle();
+   let saved = await saveTxId();
+   if (saved.error) saved = await saveTxId();
+   if (saved.error || !saved.data) {
+      await alertTeam(
+         svc,
+         `⚠️ 🇮🇩 Auto-payout for loan ${loan.id.slice(0, 8)} was SENT (Openfort ${txId}) but the id couldn't be saved: ${saved.error?.message ?? 'row changed'}. It will not send again; check it in Openfort.`
+      );
+   } else {
+      payout = saved.data as PayoutRow;
+   }
+   console.log(`idManualFunding: auto-payout sent for ${loan.id} by ${by}: ${txId}`);
+   return { ok: true, state: 'paying', payout };
+};
+
+/** The 5-minute job: settle payouts in flight, then (when /idautopay is on) pay open requests. */
+export const runAutoPayouts = async (
+   svc: Svc,
+   now = Date.now()
+): Promise<{ settled: number; funded: number; sent: number; failed: number; skipped?: string }> => {
+   const tally = { settled: 0, funded: 0, sent: 0, failed: 0 } as { settled: number; funded: number; sent: number; failed: number; skipped?: string };
+   const deadline = Date.now() + AUTO_BUDGET_MS;
+   try {
+      // 1. In flight: poll only, never send.
+      const { data: paying } = await svc.from('id_manual_payouts').select('*').eq('status', 'paying').order('paid_attempt_at').limit(20);
+      for (const row of (paying ?? []) as PayoutRow[]) {
+         if (Date.now() > deadline) break;
+         tally.settled += 1;
+         try {
+            const r = await settleAutoPayout(svc, row, now);
+            if (r.ok && r.state === 'found') tally.funded += 1;
+            if (!r.ok && r.error === 'auto_payout_failed') tally.failed += 1;
+         } catch (err) {
+            console.error(`idManualFunding: settle failed for ${row.loan_id}`, err);
+         }
+      }
+
+      // 2. New payouts, only when switched on.
+      const { autopay } = await getAutoPayLimits(svc);
+      if (autopay !== 'on') return { ...tally, skipped: 'autopay_off' };
+      const { ctx, error } = await loadAutoCtx(svc, now);
+      if (!ctx) return { ...tally, skipped: error };
+      if (ctx.balanceUsd != null) await maybeAlertLowBalance(svc, ctx.wallet, ctx.balanceUsd, now);
+
+      const { data: loans } = await svc
+         .from('loans')
+         .select('id, borrower_user_id, loan_amount, loan_status, lender_user_id, funded_at, market, created_at, is_test')
+         .eq('market', 'ID')
+         .eq('loan_status', 'Requested')
+         .is('lender_user_id', null)
+         .is('funded_at', null)
+         .lte('created_at', new Date(now - 2 * 60_000).toISOString())
+         .gte('created_at', new Date(now - 7 * 86_400_000).toISOString())
+         .lte('loan_amount', ctx.limits.maxUsd)
+         .order('created_at', { ascending: true })
+         .limit(20);
+      const list = (loans ?? []) as LoanForPayout[];
+      if (!list.length) return tally;
+      // Skip loans an admin is already paying by hand, or that had an attempt.
+      const { data: rows } = await svc
+         .from('id_manual_payouts')
+         .select('loan_id, status, marked_sent_at')
+         .in('loan_id', list.map((l) => l.id));
+      const touched = new Set(
+         ((rows ?? []) as Array<{ loan_id: string; status: string; marked_sent_at: string | null }>)
+            .filter((r) => r.status !== 'waiting' || r.marked_sent_at)
+            .map((r) => r.loan_id)
+      );
+      for (const loan of list) {
+         if (Date.now() > deadline) break;
+         if (touched.has(loan.id)) continue;
+         const r = await attemptAutoPay(svc, loan, ctx, now, true, 'cron');
+         if (r.ok) tally.sent += 1;
+         else if (r.error === 'auto_payout_failed') tally.failed += 1;
+         else if (r.error === 'low_balance' || r.error === 'daily_cap_reached' || r.error === 'balance_unknown') break;
+      }
+   } catch (err) {
+      console.error('idManualFunding: auto payouts failed', err);
+   }
+   return tally;
+};
+
+/** Admin "Pay now from payout wallet": works with /idautopay off, still enforces max, cap and balance. */
+export const payNow = async (svc: Svc, loanId: string, adminUserId: string): Promise<PayoutResult> => {
+   const now = Date.now();
+   const loan = await loadLoan(svc, loanId);
+   if (!loan) return { ok: false, error: 'loan_not_found' };
+   if (loan.market !== 'ID') return { ok: false, error: 'not_indonesia_loan' };
+   const { data: existing } = await svc.from('id_manual_payouts').select('*').eq('loan_id', loanId).maybeSingle();
+   const row = existing as PayoutRow | null;
+   if (row?.status === 'found') return { ok: true, state: 'found', payout: row, funded: false };
+   if (row?.status === 'paying') return await settleAutoPayout(svc, row, now);
+   if (row && (row.status !== 'waiting' || row.marked_sent_at)) {
+      return { ok: false, error: row.status === 'failed' ? 'auto_payout_failed_before' : 'being_paid_by_hand', payout: row };
+   }
+   if (!isOpen(loan)) return { ok: false, error: 'loan_not_open' };
+   const { ctx, error } = await loadAutoCtx(svc, now);
+   if (!ctx) return { ok: false, error: error ?? 'not_configured' };
+   const sent = await attemptAutoPay(svc, loan, ctx, now, false, adminUserId);
+   if (!sent.ok || sent.state !== 'paying') return sent;
+   // Usually lands in seconds: wait a little so the admin sees it funded; otherwise the card keeps checking.
+   let latest: PayoutResult = sent;
+   for (let i = 0; i < 6; i += 1) {
+      await new Promise((r) => setTimeout(r, 4_000));
+      const { data: fresh } = await svc.from('id_manual_payouts').select('*').eq('id', sent.payout.id).maybeSingle();
+      if (!fresh) break;
+      latest = await settleAutoPayout(svc, fresh as PayoutRow);
+      if (!(latest.ok && latest.state === 'paying')) break;
+   }
+   return latest;
 };

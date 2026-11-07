@@ -19,6 +19,7 @@ import {
 } from './pushMessages.ts';
 import { type MessengerCard, sendMessengerMessage, sendWhatsAppTemplate, type WhatsAppTemplate } from './sendpulse.ts';
 import { sendTelegramMessage } from './telegram.ts';
+import { remainingIdr } from './fxRates.ts';
 import { type IdEvent, sendIdTelegramTo } from './idTrack.ts';
 
 // WhatsApp reminders: the Meta-approved Utility templates (created in SendPulse → WhatsApp bot →
@@ -317,6 +318,14 @@ export const sendBorrowerLoanNotification = async (
                   : type === 'repayment_received'
                     ? (loan?.repaid_amount ?? loan?.total_repayment_amount ?? aggregate?.totalAmount)
                     : (aggregate?.totalAmount ?? (loan ? getLoanOutstandingAmount(loan) : null)),
+            // Rupiah-pegged loans (loans.repay_idr): lead with the rupiah. Repaid = the rupiah total
+            // promised; reminders = the rupiah still left. The USD above is today's equivalent.
+            amountIdr:
+               type === 'funded'
+                  ? null
+                  : type === 'repayment_received'
+                    ? (loan?.repay_idr ?? null)
+                    : (aggregate?.totalIdr ?? remainingIdr(loan)),
             dueAt: type === 'funded' ? (loan?.due_date ?? null) : (aggregate?.nextDueDate ?? loan?.due_date ?? null),
             lateBy
          }

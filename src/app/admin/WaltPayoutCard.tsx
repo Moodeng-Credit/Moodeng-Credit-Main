@@ -2,25 +2,37 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
+import { fetchPayoutWalletStatus, type PayoutWalletStatus } from '@/app/admin/IdPayoutWalletPanel';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 /**
- * Indonesia track: fund a request by hand from Binance TH straight to the borrower's Walt
- * (USDC on BNB Smart Chain). Copy the address + exact amount, send it, tap "I sent it" — the app
- * finds the transfer on BNB Chain by itself and marks the loan funded (admin-fund-loan
- * walt_payout_* actions → supabase/functions/_shared/idManualFunding.ts). Fallback: paste the TxID.
+ * Indonesia track: fund a request to the borrower's Walt (USDC on BNB Smart Chain).
+ *   Primary: "Pay now from payout wallet" — the server sends it from Moodeng's Openfort payout wallet
+ *   (walt_payout_auto → payNow in supabase/functions/_shared/idManualFunding.ts), at most once.
+ *   Fallback: pay by hand from Binance TH. Copy the address + exact amount, send it, tap "I sent it" —
+ *   the app finds the transfer on BNB Chain by itself and marks the loan funded. Or paste the TxID.
  */
 
 type Payout = {
    walt_address: string;
    amount: number | string;
    marked_sent_at: string | null;
-   status: 'waiting' | 'found' | 'not_found';
+   status: 'waiting' | 'paying' | 'found' | 'not_found' | 'failed';
    bsc_tx_hash: string | null;
    found_by: string | null;
+   method?: 'manual' | 'auto';
+   openfort_tx_id?: string | null;
+   error?: string | null;
 };
 
-type ApiResult = { ok: boolean; state?: 'found' | 'waiting'; error?: string; payout?: Payout | null; funded?: boolean; loanOpen?: boolean };
+type ApiResult = {
+   ok: boolean;
+   state?: 'found' | 'waiting' | 'paying';
+   error?: string;
+   payout?: Payout | null;
+   funded?: boolean;
+   loanOpen?: boolean;
+};
 
 const ERRORS: Record<string, string> = {
    no_walt_address: 'This borrower hasn’t saved a Walt address yet.',
@@ -36,7 +48,20 @@ const ERRORS: Record<string, string> = {
    lender_has_no_base_wallet: 'Your account has no Base wallet on file, so repayments would have nowhere to go.',
    no_lender_of_record: 'No lender of record configured.',
    bnb_chain_unreachable: 'Couldn’t reach BNB Chain. Try again in a minute.',
-   loan_already_funded: 'Found the payout, but the loan was funded by someone else meanwhile. Check it — money may have gone out twice.'
+   loan_already_funded: 'Found the payout, but the loan was funded by someone else meanwhile. Check it — money may have gone out twice.',
+   auto_payout_in_progress: 'The payout wallet is paying this one right now. Don’t pay by hand.',
+   auto_payout_failed: 'The payout wallet’s payment failed. Check the wallet on BscScan before paying by hand.',
+   auto_payout_failed_before:
+      'An automatic payment already failed for this loan; it won’t be retried. Check the wallet on BscScan, then pay by hand.',
+   being_paid_by_hand: 'Someone tapped “I sent it” — this one is being paid by hand.',
+   not_configured: 'The payout wallet isn’t set up (Openfort keys missing).',
+   no_payout_wallet: 'No payout wallet yet — create it at the top of Requests.',
+   over_max: 'Over the automatic payout limit — pay by hand.',
+   daily_cap_reached: 'Today’s automatic payout cap is reached — pay by hand or wait for tomorrow.',
+   low_balance: 'Not enough USDC in the payout wallet — top it up or pay by hand.',
+   balance_unknown: 'Couldn’t read the payout wallet balance. Try again in a minute.',
+   already_claimed: 'This loan was already picked up for payment.',
+   payout_not_claimable: 'This payout is already being handled.'
 };
 
 const errorText = (code: string | undefined) => (code && ERRORS[code]) || code || 'Something went wrong.';
@@ -45,7 +70,13 @@ const call = async (body: Record<string, unknown>): Promise<ApiResult> => {
    const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-fund-loan', { body });
    if (error) {
       const ctx = (error as { context?: Response }).context;
-      const parsed = ctx && typeof ctx.clone === 'function' ? await ctx.clone().json().catch(() => null) : null;
+      const parsed =
+         ctx && typeof ctx.clone === 'function'
+            ? await ctx
+                 .clone()
+                 .json()
+                 .catch(() => null)
+            : null;
       return { ok: false, error: (parsed as { error?: string } | null)?.error ?? error.message };
    }
    return data as ApiResult;
@@ -85,10 +116,13 @@ export default function WaltPayoutCard({ loanId, onFunded }: { loanId: string; o
    const [error, setError] = useState('');
    const [txid, setTxid] = useState('');
    const [funded, setFunded] = useState(false);
+   const [loanOpen, setLoanOpen] = useState(true);
+   const [wallet, setWallet] = useState<PayoutWalletStatus | null>(null);
 
    const apply = useCallback(
       (res: ApiResult) => {
          if (res.payout) setPayout(res.payout);
+         if (typeof res.loanOpen === 'boolean') setLoanOpen(res.loanOpen);
          if (!res.ok) setError(errorText(res.error));
          else setError('');
          if (res.ok && (res.state === 'found' || res.payout?.status === 'found')) {
@@ -107,13 +141,26 @@ export default function WaltPayoutCard({ loanId, onFunded }: { loanId: string; o
          apply(res);
          setLoading(false);
       });
+      void fetchPayoutWalletStatus().then((res) => {
+         if (!cancelled && res.data) setWallet(res.data);
+      });
       return () => {
          cancelled = true;
       };
    }, [loanId, apply]);
 
+   // The payout wallet is sending: check every 8 s until it lands (the server job also checks every 5 min).
+   const paying = payout?.status === 'paying' && !funded;
+   useEffect(() => {
+      if (!paying) return undefined;
+      const id = window.setInterval(() => {
+         void call({ action: 'walt_payout_check', loanId }).then(apply);
+      }, 8_000);
+      return () => window.clearInterval(id);
+   }, [paying, loanId, apply]);
+
    // After "I sent it", keep looking every 20 s while the card is open (the server job also checks every 5 min).
-   const waitingAfterTap = Boolean(payout?.marked_sent_at) && payout?.status !== 'found' && !funded;
+   const waitingAfterTap = Boolean(payout?.marked_sent_at) && payout?.status !== 'found' && payout?.status !== 'paying' && !funded;
    useEffect(() => {
       if (!waitingAfterTap) return undefined;
       const id = window.setInterval(() => {
@@ -126,6 +173,10 @@ export default function WaltPayoutCard({ loanId, onFunded }: { loanId: string; o
       if (busy) return;
       setBusy(true);
       apply(await call({ ...body, loanId }));
+      if (body.action === 'walt_payout_auto') {
+         const res = await fetchPayoutWalletStatus();
+         if (res.data) setWallet(res.data);
+      }
       setBusy(false);
    };
 
@@ -133,80 +184,137 @@ export default function WaltPayoutCard({ loanId, onFunded }: { loanId: string; o
 
    const amount = payout ? Number(payout.amount) : null;
    const done = funded || payout?.status === 'found';
+   const autoFailed = payout?.status === 'failed' && payout.method === 'auto';
+
+   // Why "Pay now" can't be used right now (null = it can).
+   const payNowBlocker = (() => {
+      if (!payout || amount == null) return 'Loading…';
+      if (!loanOpen) return 'This request isn’t open any more.';
+      if (payout.marked_sent_at) return 'Already being paid by hand.';
+      if (payout.status !== 'waiting') return autoFailed ? 'An automatic payment already failed for this loan.' : 'Already being handled.';
+      if (!wallet) return 'Checking the payout wallet…';
+      if (!wallet.configured) return 'Payout wallet not set up (Openfort keys missing).';
+      if (!wallet.address) return 'No payout wallet yet — create it at the top of Requests.';
+      if (amount > wallet.maxUsd) return `Over the $${wallet.maxUsd} automatic limit.`;
+      if (wallet.paidTodayUsd + amount > wallet.dailyCapUsd) return `Today’s $${wallet.dailyCapUsd} cap is reached.`;
+      if (wallet.usdc == null) return 'Couldn’t read the wallet balance.';
+      if (wallet.usdc < amount) return `Wallet has only ${wallet.usdc.toFixed(2)} USDC — top it up.`;
+      return null;
+   })();
+   const showManual = Boolean(payout?.marked_sent_at) || autoFailed || payout?.status === 'not_found';
 
    return (
       <div className="flex flex-col gap-2 rounded-lg border border-[#ce1126]/25 border-t-[3px] border-t-[#ce1126] bg-[#fff8f8] p-3 text-[13px] text-[#37352f]">
-         <p className="text-[15px] font-black text-[#1b1c1d]">🇮🇩 Pay to Walt by hand (Binance TH)</p>
+         <p className="text-[15px] font-black text-[#1b1c1d]">🇮🇩 Pay to Walt (USDC on BNB Chain)</p>
 
          {done ? (
             <div className="rounded-lg bg-[#e7f6ec] px-3 py-2 font-semibold text-[#1f7a3d]">
-               ✅ Seen on BNB Chain — loan marked funded. The borrower got a Telegram message.
+               {payout?.found_by === 'auto' ? '✅ Paid from the payout wallet' : '✅ Seen on BNB Chain'} — loan marked funded. The borrower
+               got a Telegram message.
                {payout?.bsc_tx_hash ? (
-                  <a
-                     href={`https://bscscan.com/tx/${payout.bsc_tx_hash}`}
-                     target="_blank"
-                     rel="noreferrer"
-                     className="ml-1 underline"
-                  >
+                  <a href={`https://bscscan.com/tx/${payout.bsc_tx_hash}`} target="_blank" rel="noreferrer" className="ml-1 underline">
                      View on BscScan
                   </a>
                ) : null}
             </div>
+         ) : payout?.status === 'paying' ? (
+            <div className="rounded-lg bg-[#fff6db] px-3 py-2 font-semibold text-[#8a6100]">
+               Sending {amount} USDC from the payout wallet… usually under a minute. It will not be sent twice — don’t pay by hand.
+            </div>
          ) : payout ? (
             <>
-               <ol className="ml-4 list-decimal text-[13px] leading-5">
-                  <li>
-                     Binance TH → Withdraw → <b>USDC</b> → network <b>BSC (BNB Smart Chain)</b>
-                  </li>
-                  <li>Paste the address and the amount below</li>
-                  <li>
-                     Tap <b>I sent it</b> — the app finds it on BNB Chain by itself
-                  </li>
-               </ol>
-               <p className="text-[12px] leading-4 text-[#7a7a7a]">
-                  The borrower must receive the loan amount. Binance TH’s BSC fee for USDC is $0 — if it shows a fee, enter
-                  the amount + fee.
-               </p>
-               <CopyRow label="Walt address (BEP20)" value={payout.walt_address} />
-               {amount != null ? <CopyRow label="Amount (USDC)" value={String(amount)} display={`${amount} USDC`} /> : null}
-
-               {payout.marked_sent_at ? (
-                  <div className="rounded-lg bg-[#fff6db] px-3 py-2 font-semibold text-[#8a6100]">
-                     {payout.status === 'not_found'
-                        ? 'Not seen after 30 min. Check it was USDC on BSC and the borrower received the loan amount — or paste the TxID below.'
-                        : 'Looking for it on BNB Chain… (usually under a minute after Binance sends it)'}
+               {autoFailed ? (
+                  <div className="rounded-lg bg-[#fde8e8] px-3 py-2 font-semibold text-[#b42318]">
+                     Automatic payment failed{payout.error ? `: ${payout.error}` : ''}. It won’t retry. Check the payout wallet on BscScan
+                     {wallet?.address ? (
+                        <a
+                           href={`https://bscscan.com/address/${wallet.address}#tokentxns`}
+                           target="_blank"
+                           rel="noreferrer"
+                           className="ml-1 underline"
+                        >
+                           (open)
+                        </a>
+                     ) : null}{' '}
+                     before paying by hand.
                   </div>
                ) : null}
 
-               <div className="flex flex-wrap gap-2">
-                  <button
-                     type="button"
-                     disabled={busy}
-                     onClick={() => void run({ action: payout.marked_sent_at ? 'walt_payout_check' : 'walt_payout_sent' })}
-                     className="rounded-lg px-4 py-2 text-[14px] font-black text-[#4a2a00] disabled:opacity-60"
-                     style={{ background: 'linear-gradient(180deg, #ffe27a 0%, #ffbe1a 100%)' }}
-                  >
-                     {busy ? 'Checking…' : payout.marked_sent_at ? 'Check again' : 'I sent it'}
-                  </button>
-               </div>
-
-               <details className="text-[12px]">
-                  <summary className="cursor-pointer font-semibold text-[#7a7a7a]">Paste the TxID instead</summary>
-                  <div className="mt-2 flex gap-2">
-                     <input
-                        value={txid}
-                        onChange={(e) => setTxid(e.target.value)}
-                        placeholder="0x… (Binance TH → Withdrawal history → TxID)"
-                        className="min-w-0 flex-1 rounded-md border border-[#d6d3cf] bg-white px-2 py-1.5 font-mono text-[12px]"
-                     />
+               {!payout.marked_sent_at && !autoFailed ? (
+                  <div className="flex flex-col gap-1">
                      <button
                         type="button"
-                        disabled={busy || !txid.trim()}
-                        onClick={() => void run({ action: 'walt_payout_txid', txHash: txid.trim() })}
-                        className="rounded-md bg-[#1b1c1d] px-3 py-1.5 text-[12px] font-bold text-white disabled:opacity-50"
+                        disabled={busy || Boolean(payNowBlocker)}
+                        onClick={() => void run({ action: 'walt_payout_auto' })}
+                        className="rounded-lg px-4 py-2.5 text-[15px] font-black text-[#4a2a00] disabled:opacity-50"
+                        style={{ background: 'linear-gradient(180deg, #ffe27a 0%, #ffbe1a 100%)' }}
                      >
-                        Use TxID
+                        {busy ? 'Paying…' : `Pay now from payout wallet ($${amount})`}
                      </button>
+                     <p className="text-[12px] text-[#7a7a7a]">
+                        {payNowBlocker ??
+                           `Wallet: ${wallet?.usdc != null ? `${wallet.usdc.toFixed(2)} USDC` : '—'} · paid today $${(wallet?.paidTodayUsd ?? 0).toFixed(2)} of $${wallet?.dailyCapUsd ?? '—'}`}
+                     </p>
+                  </div>
+               ) : null}
+
+               <details open={showManual} className="rounded-lg border border-[#ce1126]/15 bg-white/60 p-2">
+                  <summary className="cursor-pointer text-[13px] font-bold text-[#1b1c1d]">Pay by hand instead (Binance TH)</summary>
+                  <div className="mt-2 flex flex-col gap-2">
+                     <ol className="ml-4 list-decimal text-[13px] leading-5">
+                        <li>
+                           Binance TH → Withdraw → <b>USDC</b> → network <b>BSC (BNB Smart Chain)</b>
+                        </li>
+                        <li>Paste the address and the amount below</li>
+                        <li>
+                           Tap <b>I sent it</b> — the app finds it on BNB Chain by itself
+                        </li>
+                     </ol>
+                     <p className="text-[12px] leading-4 text-[#7a7a7a]">
+                        The borrower must receive the loan amount. Binance TH’s BSC fee for USDC is $0 — if it shows a fee, enter the amount
+                        + fee.
+                     </p>
+                     <CopyRow label="Walt address (BEP20)" value={payout.walt_address} />
+                     {amount != null ? <CopyRow label="Amount (USDC)" value={String(amount)} display={`${amount} USDC`} /> : null}
+
+                     {payout.marked_sent_at ? (
+                        <div className="rounded-lg bg-[#fff6db] px-3 py-2 font-semibold text-[#8a6100]">
+                           {payout.status === 'not_found'
+                              ? 'Not seen after 30 min. Check it was USDC on BSC and the borrower received the loan amount — or paste the TxID below.'
+                              : 'Looking for it on BNB Chain… (usually under a minute after Binance sends it)'}
+                        </div>
+                     ) : null}
+
+                     <div className="flex flex-wrap gap-2">
+                        <button
+                           type="button"
+                           disabled={busy}
+                           onClick={() => void run({ action: payout.marked_sent_at ? 'walt_payout_check' : 'walt_payout_sent' })}
+                           className="rounded-lg bg-[#1b1c1d] px-4 py-2 text-[14px] font-black text-white disabled:opacity-60"
+                        >
+                           {busy ? 'Checking…' : payout.marked_sent_at ? 'Check again' : 'I sent it'}
+                        </button>
+                     </div>
+
+                     <details className="text-[12px]">
+                        <summary className="cursor-pointer font-semibold text-[#7a7a7a]">Paste the TxID instead</summary>
+                        <div className="mt-2 flex gap-2">
+                           <input
+                              value={txid}
+                              onChange={(e) => setTxid(e.target.value)}
+                              placeholder="0x… (Binance TH → Withdrawal history → TxID)"
+                              className="min-w-0 flex-1 rounded-md border border-[#d6d3cf] bg-white px-2 py-1.5 font-mono text-[12px]"
+                           />
+                           <button
+                              type="button"
+                              disabled={busy || !txid.trim()}
+                              onClick={() => void run({ action: 'walt_payout_txid', txHash: txid.trim() })}
+                              className="rounded-md bg-[#1b1c1d] px-3 py-1.5 text-[12px] font-bold text-white disabled:opacity-50"
+                           >
+                              Use TxID
+                           </button>
+                        </div>
+                     </details>
                   </div>
                </details>
             </>

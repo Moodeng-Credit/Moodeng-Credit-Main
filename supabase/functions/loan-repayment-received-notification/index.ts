@@ -130,7 +130,7 @@ serve(async (req) => {
    const { data: loan, error: loanError } = await supabase
       .from('loans')
       .select(
-         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, funded_at, lender_user_id, lender_wallet, hash, repayment_status, updated_at, market'
+         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, funded_at, lender_user_id, lender_wallet, hash, repayment_status, updated_at, market, repay_idr, repaid_idr'
       )
       .eq('id', loanId)
       .maybeSingle();
@@ -265,7 +265,7 @@ serve(async (req) => {
 
    let idTelegramSent = false;
    if (idTrack && !borrowerAlreadySent) {
-      idTelegramSent = await sendIdTelegramTo(borrower, 'repaid', { amount: loan.repaid_amount ?? loan.total_repayment_amount });
+      idTelegramSent = await sendIdTelegramTo(borrower, 'repaid', { amount: loan.repaid_amount ?? loan.total_repayment_amount, amountIdr: loan.repay_idr ?? null });
       // Recorded once per loan, like the email (which a Telegram sign-up's placeholder address never gets).
       if (idTelegramSent && !emailSent) {
          notificationRows.push({ loan_id: loan.id, user_id: borrower.id, notification_type: 'repayment_received' });

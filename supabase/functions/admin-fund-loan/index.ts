@@ -2,7 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 import { postLoanFundedToTeam } from '../_shared/teamLoanFeed.ts'
-import { checkNow, markSent, payoutStatus, recordByTxid } from '../_shared/idManualFunding.ts'
+import { checkNow, markSent, payNow, payoutStatus, recordByTxid } from '../_shared/idManualFunding.ts'
+import { createPayoutWallet, payoutWalletStatus } from '../_shared/idPayoutWallet.ts'
 
 // Records a loan funded by a Moodeng admin (direct transfer OR smart-contract /
 // LoanManager). SECURITY: this route is the real boundary — it independently verifies
@@ -51,11 +52,17 @@ serve(async (req) => {
 
     const body = await req.json()
 
-    // Indonesia track: paid by hand from Binance TH to the borrower's Walt (USDC on BNB Chain).
-    // The app confirms it on-chain itself (_shared/idManualFunding.ts).
+    // Indonesia track: Moodeng's Openfort payout wallet on BNB Chain (_shared/idPayoutWallet.ts).
+    if (body?.action === 'payout_wallet_status') return json(await payoutWalletStatus(supabase))
+    if (body?.action === 'payout_wallet_create') return json(await createPayoutWallet(supabase))
+
+    // Indonesia track: paid by hand from Binance TH to the borrower's Walt (USDC on BNB Chain), or
+    // automatically from the payout wallet (walt_payout_auto). The app confirms it on-chain itself
+    // (_shared/idManualFunding.ts).
     if (typeof body?.action === 'string' && body.action.startsWith('walt_payout_')) {
       const loanId = typeof body.loanId === 'string' ? body.loanId : ''
       if (!loanId) return json({ error: 'Missing loanId' }, 400)
+      if (body.action === 'walt_payout_auto') return json(await payNow(supabase, loanId, callerId))
       if (body.action === 'walt_payout_status') return json(await payoutStatus(supabase, loanId))
       if (body.action === 'walt_payout_sent') return json(await markSent(supabase, loanId, callerId))
       if (body.action === 'walt_payout_check') return json(await checkNow(supabase, loanId))

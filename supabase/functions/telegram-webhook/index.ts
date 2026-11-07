@@ -33,6 +33,7 @@ import {
    shortId
 } from '../_shared/loanAccess.ts';
 import { markMessengerVerified, messengerVerifiedStamp, parseMessengerVerifyCallback } from '../_shared/messengerStuckAlert.ts';
+import { payoutWalletStatus } from '../_shared/idPayoutWallet.ts';
 import { formatCallTime } from '../_shared/videoCall.ts';
 import { handleRescheduleStep, parseRescheduleCallback, postReschedulePicker } from '../_shared/callReschedule.ts';
 import { handleCancelStep, parseCancelCallback } from '../_shared/callCancel.ts';
@@ -678,6 +679,55 @@ const handleIdTrackCommand = async (supabase: SupabaseClient, message: TelegramM
    return true;
 };
 
+// Indonesia payout wallet (migration 20261107150000, _shared/idPayoutWallet.ts):
+//   /idautopay         show the switch, the wallet address, its balance and today's total
+//   /idautopay on|off  pay open Indonesian requests automatically from the payout wallet
+const handleIdAutopayCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
+   const match = (message.text ?? '').trim().match(/^\/idautopay(?:@\w+)?(?:\s+(\S+))?/i);
+   if (!match) return false;
+   const chatId = message.chat.id;
+   const wanted = (match[1] ?? '').trim().toLowerCase();
+   if (wanted && wanted !== 'on' && wanted !== 'off') {
+      await sendTelegramMessage(chatId, 'Usage: /idautopay on | off');
+      return true;
+   }
+   const status = await payoutWalletStatus(supabase);
+   if (!wanted) {
+      const money = (v: number | null, unit: string) => (v == null ? '? (BNB Chain unreachable)' : `${v.toFixed(unit === 'BNB' ? 4 : 2)} ${unit}`);
+      const lines = [
+         `🇮🇩 Auto-payouts: ${status.autopay === 'on' ? 'ON — open Indonesian requests are paid from the payout wallet' : 'OFF — pay by hand (or "Pay now" in admin)'}`,
+         status.configured ? null : '⚠️ Openfort keys not set (vault secret OPENFORT_PAYOUT).',
+         status.address
+            ? `Wallet (BNB Chain): ${status.address}\nBalance: ${money(status.usdc, 'USDC')} · ${money(status.bnb, 'BNB')}`
+            : 'No payout wallet yet — create it in admin → Requests.',
+         `Paid today: $${status.paidTodayUsd.toFixed(2)} of $${status.dailyCapUsd} · max $${status.maxUsd} per loan`,
+         status.address ? 'Top up: Binance TH → Withdraw USDC → network BSC → the address above' : null,
+         '',
+         'Switch with /idautopay on · /idautopay off'
+      ];
+      await sendTelegramMessage(chatId, lines.filter((l) => l !== null).join('\n'));
+      return true;
+   }
+   if (wanted === 'on' && (!status.configured || !status.address)) {
+      await sendTelegramMessage(
+         chatId,
+         !status.configured
+            ? '⚠️ Can’t switch on: the Openfort keys aren’t set (vault secret OPENFORT_PAYOUT).'
+            : '⚠️ Can’t switch on: no payout wallet yet. Create it in admin → Requests first.'
+      );
+      return true;
+   }
+   const { error } = await supabase.from('telegram_bot_settings').upsert({ key: 'id_autopay', value: wanted }, { onConflict: 'key' });
+   if (error) throw new Error(error.message);
+   await sendTelegramMessage(
+      chatId,
+      wanted === 'on'
+         ? `✅ 🇮🇩 Auto-payouts ON — open Indonesian requests up to $${status.maxUsd} are paid from the payout wallet (cap $${status.dailyCapUsd}/day). Balance: ${status.usdc == null ? '?' : `${status.usdc.toFixed(2)} USDC`} — by ${adminHandle(message.from)}`
+         : `✅ 🇮🇩 Auto-payouts OFF — pay by hand from now on (payouts already sent still get confirmed) — by ${adminHandle(message.from)}`
+   );
+   return true;
+};
+
 // KYC tries (kyc_declines): after 3 declines a borrower must message us before trying again.
 //   /kycretry @username   gives them 3 fresh tries (voids their counted declines)
 const handleKycRetryCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
@@ -1212,6 +1262,12 @@ serve(async (req) => {
       if (isAdminChannel && /^\/(idtrack|idloans|idterm)\b/i.test(message.text ?? '')) {
          await handleIdTrackCommand(supabase, message);
          return jsonResponse({ message: 'Indonesia track command handled' });
+      }
+
+      // Indonesia payout wallet switch — either admin channel.
+      if (isAdminChannel && /^\/idautopay\b/i.test(message.text ?? '')) {
+         await handleIdAutopayCommand(supabase, message);
+         return jsonResponse({ message: 'Indonesia autopay command handled' });
       }
 
       await handleSupportAgentMessage(supabase, message);

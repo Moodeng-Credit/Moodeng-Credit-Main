@@ -14,7 +14,7 @@ import { isLoanPastDue } from '@/utils/loanOverdue';
 import { getLoanBadgeStyles } from '@/utils/loanStatusFormatters';
 
 import { DEFAULT_LOAN_TIMEZONE, getDaysUntilDueDay, getLoanTimezone } from '@/lib/loanDeadline';
-import { isIndonesianLoan } from '@/lib/loanMarket';
+import { formatIdr, isIndonesianLoan, remainingIdr } from '@/lib/loanMarket';
 
 import { deleteLoan, getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -142,7 +142,18 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
             </div>
             <div>
                <p>Payback</p>
-               <p className="mt-1 text-[16px] font-normal text-[#166534]">${formatNumber(loan.totalRepaymentAmount)}</p>
+               {loan.repayIdr != null ? (
+                  // Rupiah peg: they owe fixed rupiah; the USD floats with the rate.
+                  <>
+                     <p className="mt-1 text-[16px] font-normal text-[#166534]">{formatIdr(loan.repayIdr)}</p>
+                     {loan.repaymentStatus !== 'Paid' && (remainingIdr(loan) ?? 0) < loan.repayIdr ? (
+                        <p className="text-[11px] text-[#6B7280]">Sisa {formatIdr(remainingIdr(loan) ?? 0)}</p>
+                     ) : null}
+                     <p className="text-[11px] text-[#6B7280]">≈ ${formatNumber(loan.totalRepaymentAmount)}</p>
+                  </>
+               ) : (
+                  <p className="mt-1 text-[16px] font-normal text-[#166534]">${formatNumber(loan.totalRepaymentAmount)}</p>
+               )}
             </div>
             <div></div>
             <div>

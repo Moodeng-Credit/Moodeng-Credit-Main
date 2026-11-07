@@ -13,6 +13,7 @@ import AdminShell from '@/app/admin/AdminShell';
 import { type AdminTab, isAdminTab, navGroups } from '@/app/admin/adminNav';
 import CalendarSection from '@/app/admin/CalendarSection';
 import CallApprovalsSection from '@/app/admin/CallApprovalsSection';
+import IdPayoutWalletPanel from '@/app/admin/IdPayoutWalletPanel';
 import IndonesiaContactCard from '@/app/admin/IndonesiaContactCard';
 import WaltPayoutCard from '@/app/admin/WaltPayoutCard';
 import IndonesiaBadge from '@/components/IndonesiaBadge';
@@ -1485,6 +1486,8 @@ function AdminPanel() {
                ) : null}
             </section>
          ) : null}
+
+         {activeTab === 'requests' ? <IdPayoutWalletPanel /> : null}
 
          {activeTab === 'requests' ? (
             <CallApprovalsSection variant="waiting" onCountChange={setCallApprovalCount} onOpenCalls={() => setActiveTab('calls')} />

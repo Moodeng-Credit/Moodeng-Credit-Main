@@ -8,6 +8,7 @@ import {
    type RefObject,
    useCallback,
    useEffect,
+   useMemo,
    useRef,
    useState
 } from 'react';
@@ -57,7 +58,17 @@ import type { LoanFlow } from '@/hooks/useLoanFlow';
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import type { LoanRequestFlowState } from '@/lib/loanRequestDraft';
 import { type IdLoanRules, idTermOptions } from '@/lib/idTrack';
-import { daysUntil, idLoanTermMessage, idRepaymentBounds, idRepaymentChoices } from '@/lib/loanMarket';
+import {
+   approxIdr,
+   clipRepayIdr,
+   daysUntil,
+   formatIdr,
+   ID_NO_RATE_TEXT,
+   idLoanTermMessage,
+   idRepayIdrBounds,
+   idRepayIdrChoices,
+   idUsdForIdr
+} from '@/lib/loanMarket';
 import { minimumRepayment, suggestedReturnRange } from '@/lib/loanPricing';
 import { checkLoanReason, getCachedReasonVerdict, type ReasonAttempt, type ReasonCategory, type ReasonCheckLocale } from '@/lib/loanReasonCheck';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
@@ -139,6 +150,12 @@ interface LoanRequestModalProps {
     * call, income-doc and ID-check steps — they were all done in /id/onboarding.
     */
    idLoanRules?: IdLoanRules | null;
+   /** Indonesia rupiah peg: the fixed rupiah total they promise (string, whole rupiah). */
+   repayIdr?: string;
+   setRepayIdr?: (value: string) => void;
+   /** The server's USD/IDR (get_usd_idr_rate); null = no fresh rate, so ID requests can't be sent. */
+   usdIdrRate?: number | null;
+   isUsdIdrRateLoading?: boolean;
 }
 
 // Everything the modal owns that a resume needs: which screen the borrower is on, the referral they
@@ -1025,9 +1042,11 @@ function ReturnHint({ lo, hi }: { lo: number; hi: number }) {
    );
 }
 
-// ── Indonesia track: $5/$10, 7 or 14 days, repayment ≤ 1.5× ───────────────────────────────────
+// ── Indonesia track: $5/$10, 7 or 14 days, a fixed rupiah repayment ≤ 1.5× ────────────────────
 // Replaces the free amount, repayment and date fields for market-ID borrowers (idLoanRules set).
 // Mirrors app_private.enforce_new_loan_terms (see src/lib/loanMarket.ts). Bahasa first.
+// The rupiah peg (20261107160000): they promise a fixed rupiah total (repayIdr); the USD it's worth
+// today (totalRepaymentAmount) is what the server checks and floats with the rate until repaid.
 const ID_FORM_TEXT = {
    amountLabel: { id: 'Jumlah pinjaman', en: 'Borrow amount' },
    amountHint: { id: 'Dikirim dalam USDC ke dompet Moodeng kamu.', en: 'Sent in USDC to your Moodeng wallet.' },
@@ -1038,10 +1057,21 @@ const ID_FORM_TEXT = {
    orType: { id: 'Atau ketik', en: 'Or type' },
    toLender: { id: 'untuk pemberi pinjaman kamu', en: 'goes to your moo-lender' },
    termLabel: { id: 'Kapan kamu bayar?', en: 'When will you repay?' },
-   days: { id: 'hari', en: 'days' }
+   days: { id: 'hari', en: 'days' },
+   youPay: { id: 'Kamu bayar', en: 'You repay' },
+   today: { id: 'hari ini', en: 'today' },
+   pegNote: {
+      id: 'Jumlah Rupiah ini tetap. Nilai USDT-nya ikut kurs hari kamu bayar.',
+      en: 'This rupiah amount is fixed. Its USDT value follows the rate on the day you pay.'
+   },
+   loadingRate: { id: 'Memuat kurs Rupiah…', en: 'Loading the rupiah rate…' }
 } as const;
 
 const fmtUsd = (n: number) => (Number.isInteger(n) ? `$${n}` : `$${n.toFixed(2)}`);
+
+const noopSetString = (value: string) => {
+   void value;
+};
 
 const idChipClass = (active: boolean, disabled = false) =>
    `inline-flex flex-col items-center justify-center rounded-md-lg border-2 transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
@@ -1058,8 +1088,11 @@ function IdLoanTermsFields({
    limitAmount,
    loanAmount,
    setLoanAmount,
-   totalRepaymentAmount,
    setTotalRepaymentAmount,
+   repayIdr,
+   setRepayIdr,
+   usdIdrRate,
+   isRateLoading,
    selectedDate,
    todayDate,
    onPickDate,
@@ -1071,8 +1104,11 @@ function IdLoanTermsFields({
    limitAmount: number;
    loanAmount: string;
    setLoanAmount: (value: string) => void;
-   totalRepaymentAmount: string;
    setTotalRepaymentAmount: (value: string) => void;
+   repayIdr: string;
+   setRepayIdr: (value: string) => void;
+   usdIdrRate: number | null;
+   isRateLoading: boolean;
    selectedDate: string;
    todayDate: Date;
    onPickDate: (date: Date) => void;
@@ -1082,33 +1118,51 @@ function IdLoanTermsFields({
    const t = (key: keyof typeof ID_FORM_TEXT) => ID_FORM_TEXT[key][lang];
    const amount = Number(loanAmount);
    const hasAmount = Boolean(loanAmount) && rules.amounts.includes(amount);
-   const bounds = hasAmount ? idRepaymentBounds(amount) : null;
-   const choices = hasAmount ? idRepaymentChoices(amount) : [];
-   const repay = Number(totalRepaymentAmount);
-   const isChoice = Boolean(totalRepaymentAmount) && choices.includes(repay);
-   const [customRepay, setCustomRepay] = useState(() => (totalRepaymentAmount && !isChoice ? totalRepaymentAmount : ''));
+   const rate = usdIdrRate;
+   const bounds = hasAmount ? idRepayIdrBounds(amount, rate) : null;
+   const choices = useMemo(() => (hasAmount ? idRepayIdrChoices(amount, rate) : []), [amount, hasAmount, rate]);
+   const idr = Number(repayIdr);
+   const hasIdr = Boolean(repayIdr) && Number.isFinite(idr) && idr > 0;
+   const isChoice = hasIdr && choices.includes(idr);
+   const [customRepay, setCustomRepay] = useState(() => (hasIdr && !isChoice ? repayIdr : ''));
+
+   // The USD the server will check is the rupiah at today's rate: keep it in step (also when the
+   // rate refreshes while the form is open).
+   useEffect(() => {
+      if (!rate) return;
+      const n = Number(repayIdr);
+      setTotalRepaymentAmount(repayIdr && Number.isFinite(n) && n > 0 ? String(idUsdForIdr(n, rate)) : '');
+   }, [rate, repayIdr, setTotalRepaymentAmount]);
+
+   // An amount with no rupiah yet (e.g. a restored draft, or the rate arrived late): start them on
+   // the middle suggestion, like picking the amount does.
+   useEffect(() => {
+      if (!hasAmount || repayIdr || customRepay || !choices.length) return;
+      setRepayIdr(String(choices[Math.floor(choices.length / 2)]));
+   }, [choices, customRepay, hasAmount, repayIdr, setRepayIdr]);
 
    const pickAmount = (next: number) => {
       setLoanAmount(String(next));
       clearError('amount');
-      // Keep their repayment when it still fits; otherwise start them on the middle suggestion.
-      const { min, max } = idRepaymentBounds(next);
-      const current = Number(totalRepaymentAmount);
-      if (!totalRepaymentAmount || !Number.isFinite(current) || current < min || current > max) {
-         const nextChoices = idRepaymentChoices(next);
-         setTotalRepaymentAmount(nextChoices.length ? String(nextChoices[Math.floor(nextChoices.length / 2)]) : '');
+      // Keep their rupiah when it still fits; otherwise start them on the middle suggestion.
+      const nextBounds = idRepayIdrBounds(next, rate);
+      const current = Number(repayIdr);
+      if (!nextBounds || !repayIdr || !Number.isFinite(current) || current < nextBounds.min || current > nextBounds.max) {
+         const nextChoices = idRepayIdrChoices(next, rate);
+         setRepayIdr(nextChoices.length ? String(nextChoices[Math.floor(nextChoices.length / 2)]) : '');
          setCustomRepay('');
          clearError('repayment');
       }
    };
 
    const pickRepay = (value: number) => {
-      setTotalRepaymentAmount(String(value));
+      setRepayIdr(String(value));
       setCustomRepay('');
       clearError('repayment');
    };
 
-   const extra = hasAmount && Number.isFinite(repay) && totalRepaymentAmount ? repay - amount : 0;
+   const usdToday = hasIdr && rate ? idUsdForIdr(idr, rate) : null;
+   const extra = hasAmount && usdToday !== null ? Math.round((usdToday - amount) * 100) / 100 : 0;
 
    return (
       <>
@@ -1123,6 +1177,7 @@ function IdLoanTermsFields({
                {rules.amounts.map((option) => {
                   const disabled = option > limitAmount;
                   const active = hasAmount && amount === option;
+                  const approx = approxIdr(option, rate);
                   return (
                      <button
                         key={option}
@@ -1134,7 +1189,7 @@ function IdLoanTermsFields({
                         type="button"
                      >
                         <span className="text-[28px] font-semibold leading-none tracking-[-0.03em]">${option}</span>
-                        <span className="text-md-b3 font-medium opacity-80">{disabled ? t('overLimit') : 'USDC'}</span>
+                        <span className="text-md-b3 font-medium opacity-80">{disabled ? t('overLimit') : approx ? `USDC · ${approx}` : 'USDC'}</span>
                      </button>
                   );
                })}
@@ -1147,11 +1202,15 @@ function IdLoanTermsFields({
             <label className="text-md-b2 font-[590] text-md-heading" htmlFor="repayment-amount">
                {t('repayLabel')}
             </label>
-            {bounds ? (
+            {!rate ? (
+               <p className="rounded-md-md bg-md-neutral-200 px-md-2 py-md-1 text-md-b3 text-md-neutral-1200" id="repayment-amount">
+                  {isRateLoading ? t('loadingRate') : ID_NO_RATE_TEXT[lang]}
+               </p>
+            ) : bounds ? (
                <>
                   <div className="grid grid-cols-3 gap-md-1" role="radiogroup" aria-label={t('repayLabel')}>
                      {choices.map((choice) => {
-                        const active = repay === choice && !customRepay;
+                        const active = idr === choice && !customRepay;
                         return (
                            <button
                               key={choice}
@@ -1161,8 +1220,8 @@ function IdLoanTermsFields({
                               role="radio"
                               type="button"
                            >
-                              <span className="text-md-b1 font-semibold">{fmtUsd(choice)}</span>
-                              <span className="text-[11px] font-medium leading-tight opacity-75">+{fmtUsd(choice - amount)}</span>
+                              <span className="text-md-b2 font-semibold">{formatIdr(choice)}</span>
+                              <span className="text-[11px] font-medium leading-tight opacity-75">≈ {fmtUsd(idUsdForIdr(choice, rate))}</span>
                            </button>
                         );
                      })}
@@ -1172,26 +1231,26 @@ function IdLoanTermsFields({
                         termErrors.repayment ? '!border-md-red-500' : customRepay ? '!border-md-primary-900' : ''
                      }`}
                      id="repayment-amount"
-                     inputMode="decimal"
+                     inputMode="numeric"
                      onBlur={() => {
                         if (!customRepay) return;
-                        const typed = Number(customRepay);
-                        if (!Number.isFinite(typed)) return;
-                        // Clip to what the server takes: at least $1 more, at most 1.5×.
-                        const clipped = Math.round(Math.min(Math.max(typed, bounds.min), bounds.max) * 100) / 100;
+                        // Clip to what the server takes: Rp 500 steps, at least $1 more, at most 1.5×.
+                        const clipped = clipRepayIdr(Number(customRepay), amount, rate);
+                        if (clipped === null) return;
                         setCustomRepay(String(clipped));
-                        setTotalRepaymentAmount(String(clipped));
+                        setRepayIdr(String(clipped));
                      }}
                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                        const next = e.target.value.replace(/,/g, '').replace(/^\$/, '');
-                        if (!/^\d*(\.\d{0,2})?$/.test(next)) return;
+                        // Rupiah are whole: drop "Rp", dots, commas and spaces.
+                        const next = e.target.value.replace(/^\s*rp\s*/i, '').replace(/[.,\s]/g, '');
+                        if (!/^\d{0,9}$/.test(next)) return;
                         setCustomRepay(next);
-                        setTotalRepaymentAmount(next);
+                        setRepayIdr(next);
                         clearError('repayment');
                      }}
-                     placeholder={`${t('orType')}: ${fmtUsd(bounds.min)}–${fmtUsd(bounds.max)}`}
+                     placeholder={`${t('orType')}: ${formatIdr(bounds.min)}–${formatIdr(bounds.max)}`}
                      type="text"
-                     value={customRepay}
+                     value={customRepay ? formatIdr(Number(customRepay)).replace(/^Rp\s/, '') : ''}
                   />
                </>
             ) : (
@@ -1200,10 +1259,21 @@ function IdLoanTermsFields({
                </p>
             )}
             {termErrors.repayment ? <FieldError message={termErrors.repayment} /> : null}
-            {!termErrors.repayment && extra > 0 ? (
-               <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-                  <span className="font-semibold text-md-primary-1200">{fmtUsd(Math.round(extra * 100) / 100)}</span> {t('toLender')}.
-               </p>
+            {!termErrors.repayment && rate && hasIdr && usdToday !== null ? (
+               <div className="flex flex-col gap-0.5 rounded-md-md bg-md-primary-100 px-md-2 py-md-1 dark:bg-[#2a1740]">
+                  <p className="text-md-b2 font-semibold text-md-heading">
+                     {t('youPay')} {formatIdr(idr)}{' '}
+                     <span className="font-normal text-md-neutral-1200">
+                        (≈ {usdToday.toFixed(2)} USDT {t('today')})
+                     </span>
+                  </p>
+                  <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">{t('pegNote')}</p>
+                  {extra > 0 ? (
+                     <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
+                        <span className="font-semibold text-md-primary-1200">≈ {fmtUsd(extra)}</span> {t('toLender')}.
+                     </p>
+                  ) : null}
+               </div>
             ) : null}
          </div>
 
@@ -1511,7 +1581,11 @@ export default function LoanRequestModal({
    autoSubmit = false,
    onAutoSubmitStarted,
    onBackdropPress,
-   idLoanRules = null
+   idLoanRules = null,
+   repayIdr = '',
+   setRepayIdr = noopSetString,
+   usdIdrRate = null,
+   isUsdIdrRateLoading = false
 }: LoanRequestModalProps) {
    const isIdLoan = idLoanRules !== null;
    const dispatch = useDispatch<AppDispatch>();
@@ -1672,6 +1746,8 @@ export default function LoanRequestModal({
    // it wasn't in English); `category` says why it was flagged, or 'tip' for a pass with advice.
    const reasonLocale = (useOptionalLocalization()?.locale ?? 'en') as ReasonCheckLocale;
    const idLang: 'id' | 'en' = (reasonLocale as string) === 'id' ? 'id' : 'en';
+   // Rupiah peg: without the server's rate an ID request can't be priced, so it can't be sent.
+   const idNoRate = isIdLoan && !usdIdrRate;
    const [liveReasonCheck, setLiveReasonCheck] = useState<{
       // 'pending' = waiting for typing to settle before asking; nothing judged yet.
       // 'reviewing' = the second opinion is thinking it over (see isStuck).
@@ -2476,14 +2552,21 @@ export default function LoanRequestModal({
             errors.amount = `${idLang === 'id' ? 'Di atas limit kamu' : 'Above your limit'} ($${limitAmount}).`;
             rules.amount = 'over_limit';
          } else {
-            const { min, max } = idRepaymentBounds(amount);
-            const repay = Number(totalRepaymentAmount);
-            if (!totalRepaymentAmount || !Number.isFinite(repay) || repay < min) {
-               errors.repayment = idLoanTermMessage('repayment_low', idLoanRules, amount, idLang);
+            // Rupiah peg: a whole-rupiah total (Rp 500 steps) whose USD today fits the server's range.
+            const idrBounds = idRepayIdrBounds(amount, usdIdrRate);
+            const idr = Number(repayIdr);
+            if (!idrBounds) {
+               errors.repayment = ID_NO_RATE_TEXT[idLang];
+               rules.repayment = 'id_no_rate';
+            } else if (!repayIdr || !Number.isFinite(idr) || idr < idrBounds.min) {
+               errors.repayment = idLoanTermMessage('repayment_low', idLoanRules, amount, idLang, usdIdrRate);
                rules.repayment = 'id_repayment_low';
-            } else if (repay > max) {
-               errors.repayment = idLoanTermMessage('repayment_high', idLoanRules, amount, idLang);
+            } else if (idr > idrBounds.max) {
+               errors.repayment = idLoanTermMessage('repayment_high', idLoanRules, amount, idLang, usdIdrRate);
                rules.repayment = 'id_repayment_high';
+            } else if (idr % 500 !== 0) {
+               errors.repayment = idLang === 'id' ? 'Gunakan kelipatan Rp 500.' : 'Use steps of Rp 500.';
+               rules.repayment = 'id_repayment_step';
             }
          }
          const termDays = days ? daysUntil(today, days) : null;
@@ -3299,9 +3382,12 @@ export default function LoanRequestModal({
                               selectedDate={selectedDate}
                               setLoanAmount={setLoanAmount}
                               setTotalRepaymentAmount={setTotalRepaymentAmount}
+                              repayIdr={repayIdr}
+                              setRepayIdr={setRepayIdr}
+                              usdIdrRate={usdIdrRate}
+                              isRateLoading={isUsdIdrRateLoading}
                               termErrors={termErrors}
                               todayDate={todayDate}
-                              totalRepaymentAmount={totalRepaymentAmount}
                            />
                         ) : (
                            <>
@@ -3760,17 +3846,22 @@ export default function LoanRequestModal({
                               )}
                            </div>
                         ) : null}
+                        {idNoRate ? (
+                           <p className="text-center text-md-b3 font-medium text-md-red-500" id="loan-id-no-rate" role="status">
+                              {isUsdIdrRateLoading ? (idLang === 'id' ? 'Memuat kurs Rupiah…' : 'Loading the rupiah rate…') : ID_NO_RATE_TEXT[idLang]}
+                           </p>
+                        ) : null}
                         {/* Deliberately not aria-disabled: the button *does* act — it explains why it
                             can't submit yet. Point screen readers at that explanation instead. */}
                         <button
-                           aria-describedby={isVerified ? undefined : 'loan-verify-blocker'}
+                           aria-describedby={idNoRate ? 'loan-id-no-rate' : isVerified ? undefined : 'loan-verify-blocker'}
                            className={`w-full rounded-md-lg px-md-4 py-md-3 text-md-b1 font-medium text-md-neutral-100 ${
-                              (isVerified || verifyAtSubmit) && !isSubmitting
+                              (isVerified || verifyAtSubmit) && !isSubmitting && !idNoRate
                                  ? 'bg-md-primary-1200 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2'
                                  : 'bg-md-neutral-600'
                            } ${verifyNudge ? 'blocked-tap-shake' : ''}`}
                            type="submit"
-                           disabled={isSubmitting}
+                           disabled={isSubmitting || idNoRate}
                         >
                            {isSubmitting ? 'Submitting...' : isCheckingBeforeVerify ? 'Checking...' : verifyAtSubmit ? 'Verify ID & send request' : 'Make Your Request'}
                         </button>

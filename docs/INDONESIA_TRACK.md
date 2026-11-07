@@ -47,3 +47,24 @@ rules. Change it with `/idtrack off|test|on` in the admin Telegram group.
 - Server: `supabase/functions/_shared/idTrack.ts` (Bahasa Telegram messages, "next step" pings) and
   `supabase/functions/_shared/relay.ts` (Relay quotes and status). The Relay actions live in
   `stableyard-deposit-address`, because we're at the edge-function cap.
+
+## Paying loans out (three ways, all recorded the same: funding_method 'walt_manual', hash `bsc:0x…`)
+
+1. **Payout wallet (automatic).** A Moodeng-owned Openfort backend wallet on BNB Chain, topped up
+   with USDC (BSC) from Binance TH. With `/idautopay on`, the 5-minute job pays each open Indonesian
+   request (2 min after posting, ≤ `id_autopay_max_usd`, ≤ `id_autopay_daily_cap_usd` per Bangkok day)
+   to the borrower's Walt, gas sponsored. Admin → Requests → "Pay now" works even when autopay is off.
+   A payout is claimed in SQL (`claim_id_auto_payout`) before Openfort is called and is never re-sent;
+   it only counts once the BNB Chain receipt shows the exact USDC transfer. Keys: vault secret
+   `OPENFORT_PAYOUT` = {secretKey, walletSecret, feeSponsorshipId}. Code: `_shared/idPayoutWallet.ts`.
+2. **By hand from Binance TH** ("Pay by hand instead"): send, tap "I sent it", the job finds it.
+3. **TxID** pasted in the admin card.
+
+## Rupiah peg
+
+Indonesian loans are fixed in rupiah: the borrower chooses `repay_idr` (e.g. Rp 110.000) and that never
+changes. The USD owed (`total_repayment_amount`) = rupiah left ÷ the current USD/IDR rate (`fx_rates`,
+refreshed by the 5-minute job at most every 6 h from open.er-api / frankfurter; no rate under 36 h old →
+requests are refused). Each repayment adds `payment × rate` to `repaid_idr`; under Rp 1.000 left → Paid.
+Moodeng lends and is repaid in USDC and carries the FX swing; a >5% move on an open loan pings the team.
+Code: migration `20261107160000_indonesia_idr_peg.sql`, `_shared/fxRates.ts`, `src/lib/loanMarket.ts`.

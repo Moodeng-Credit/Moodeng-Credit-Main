@@ -29,6 +29,7 @@ import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal
 import IndonesiaBadge from '@/components/IndonesiaBadge';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useIdOnboarding } from '@/hooks/useIdOnboarding';
+import { useUsdIdrPeg } from '@/hooks/useUsdIdrPeg';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 import { useLoanFlow } from '@/hooks/useLoanFlow';
 import { useVerificationJourney } from '@/hooks/useVerificationJourney';
@@ -58,7 +59,7 @@ import { ID_PATHS } from '@/lib/idTrack';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { isTransientNetworkError } from '@/lib/isTransientNetworkError';
 import { isUserVerified, isVerificationPending } from '@/lib/isUserVerified';
-import { checkIdLoanTerms, idLoanTermMessage } from '@/lib/loanMarket';
+import { checkIdLoanTerms, ID_NO_RATE_TEXT, idLoanTermMessage, idUsdForIdr } from '@/lib/loanMarket';
 import { checkLoanReason, type ReasonCheckLocale } from '@/lib/loanReasonCheck';
 import { getLoanRequestCooldownMessage, type LoanRequestRepostStatus } from '@/lib/loanRequestRepostStatus';
 import { setPendingSharedRequestId } from '@/lib/pendingSharedRequest';
@@ -568,6 +569,8 @@ function RequestBoard$() {
    const { data: idOnboarding, isIndo, isLoading: isIdOnboardingLoading } = useIdOnboarding();
    const idLoanRules = isIndo && idOnboarding ? idOnboarding.rules : null;
    const idApproved = isIndo && idOnboarding?.access === 'approved';
+   // Rupiah peg: ID borrowers promise a fixed rupiah total, priced at the server's USD/IDR.
+   const { rate: usdIdrRate, isLoading: isUsdIdrRateLoading } = useUsdIdrPeg(isIndo);
    const idNeedsOnboarding = isIndo && !idApproved;
    const idLang: 'id' | 'en' = locale === 'id' ? 'id' : 'en';
    // Whatever opened the loan form (Apply card, ?applyLoan=1, the journey nudge, a resumed draft): an
@@ -632,6 +635,8 @@ function RequestBoard$() {
    const lenderUserId = '';
    const [loanAmount, setLoanAmount] = useState('');
    const [totalRepaymentAmount, setTotalRepaymentAmount] = useState('');
+   // Indonesia track: the fixed rupiah total (loans.repay_idr). totalRepaymentAmount follows it at today's rate.
+   const [repayIdr, setRepayIdr] = useState('');
    const [reason, setReason] = useState('');
    const [days, setDays] = useState('');
    const [customAmount, setCustomAmount] = useState('');
@@ -734,6 +739,7 @@ function RequestBoard$() {
 
    const clear = () => {
       setTotalRepaymentAmount('');
+      setRepayIdr('');
       setLoanAmount('');
       setReason('');
       setDays('');
@@ -1531,7 +1537,18 @@ function RequestBoard$() {
          const borrowerWallet = effectiveUser.walletAddress?.trim();
          const trimmedReason = reason.trim();
          const parsedLoanAmount = Number.parseFloat(loanAmount);
-         const parsedRepaymentAmount = Number.parseFloat(totalRepaymentAmount);
+         // Indonesia rupiah peg: the rupiah total is what they promise; the USD is that at today's
+         // server rate (the server recomputes it the same way and overwrites what we send).
+         const isIdPegged = Boolean(isIndo && idLoanRules);
+         const parsedRepayIdr = isIdPegged ? Number(repayIdr) : null;
+         if (isIdPegged && !usdIdrRate) {
+            showToast(TOAST_TYPES.ERROR, idLang === 'id' ? 'Kurs belum tersedia' : 'No exchange rate yet', ID_NO_RATE_TEXT[idLang], 'OK', 'acknowledge');
+            return;
+         }
+         const parsedRepaymentAmount =
+            isIdPegged && usdIdrRate && parsedRepayIdr && Number.isFinite(parsedRepayIdr) && parsedRepayIdr > 0
+               ? idUsdForIdr(parsedRepayIdr, usdIdrRate)
+               : Number.parseFloat(totalRepaymentAmount);
          const parsedDueDate = days ? new Date(days) : null;
 
          if (!isWorldIdVerified && !hasBorrowerBaseWallet) {
@@ -1558,7 +1575,12 @@ function RequestBoard$() {
             showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT));
             return;
          }
-         if (!totalRepaymentAmount || Number.isNaN(parsedRepaymentAmount) || parsedRepaymentAmount < parsedLoanAmount + 1) {
+         if (
+            (!isIdPegged && !totalRepaymentAmount) ||
+            (isIdPegged && !parsedRepayIdr) ||
+            Number.isNaN(parsedRepaymentAmount) ||
+            parsedRepaymentAmount < parsedLoanAmount + 1
+         ) {
             showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_REPAYMENT_TOO_LOW));
             return;
          }
@@ -1576,7 +1598,7 @@ function RequestBoard$() {
                showToast(
                   TOAST_TYPES.ERROR,
                   idLang === 'id' ? 'Periksa pinjamanmu' : 'Check your loan',
-                  idLoanTermMessage(idProblem, idLoanRules, parsedLoanAmount, idLang),
+                  idLoanTermMessage(idProblem, idLoanRules, parsedLoanAmount, idLang, usdIdrRate),
                   'OK',
                   'acknowledge'
                );
@@ -1645,7 +1667,8 @@ function RequestBoard$() {
             dueDate: days,
             referralCodeId: appliedReferral?.id,
             referralCode: appliedReferral?.code,
-            referralBoostAmount: appliedReferral?.boostAmount
+            referralBoostAmount: appliedReferral?.boostAmount,
+            ...(isIdPegged && parsedRepayIdr ? { repayIdr: parsedRepayIdr } : {})
          };
 
          if (
@@ -2617,6 +2640,10 @@ function RequestBoard$() {
                <LoanRequestModal
                   isOpen={showModal && !idNeedsOnboarding && !isIdOnboardingLoading}
                   idLoanRules={isGuestBorrowerTour ? null : idLoanRules}
+                  repayIdr={repayIdr}
+                  setRepayIdr={setRepayIdr}
+                  usdIdrRate={usdIdrRate}
+                  isUsdIdrRateLoading={isUsdIdrRateLoading}
                   onClose={handleCloseModal}
                   showVerify={isGuestBorrowerTour ? false : showVerify}
                   isPending={isGuestBorrowerTour ? false : isPending}

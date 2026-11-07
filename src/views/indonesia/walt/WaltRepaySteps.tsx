@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Check, Copy, ExternalLink, Loader2, RotateCcw } from 'lucide-react';
 
 import { WALT_BOT_URL } from '@/lib/idTrack';
+import { formatIdr } from '@/lib/loanMarket';
 import { formatRupiah, isFinalRelayStatus, type RelayTransfer, relayWalt, RelayWaltError, useUsdIdrRate } from '@/lib/relayWalt';
 import { GoldButton, LangToggle, useWaltLang, WaltIcon, type WaltLang } from '@/views/indonesia/walt/waltUi';
 
@@ -58,7 +59,9 @@ const T = {
       en: 'Couldn’t get an address right now. Try again in a minute.'
    },
    noWalt: { id: 'Simpan alamat Walt kamu dulu (di langkah Walt).', en: 'Save your Walt address first (Walt step).' },
-   getsUsdc: { id: 'Masuk ke dompet Moodeng', en: 'Lands in your Moodeng wallet' }
+   getsUsdc: { id: 'Masuk ke dompet Moodeng', en: 'Lands in your Moodeng wallet' },
+   left: { id: 'Sisa yang harus dibayar', en: 'Left to pay' },
+   today: { id: 'hari ini', en: 'today' }
 } satisfies Record<string, Record<WaltLang, string>>;
 
 /** Round a dollar amount UP to whole cents (integer math, no float drift). */
@@ -80,11 +83,15 @@ type Props = {
    /** The wallet this page watches for the top-up. The one-time address pays users.wallet_address;
     *  if those differ the money would land where we aren't looking, so we don't show the address. */
    watchedWallet?: string;
+   /** Rupiah peg: rupiah still owed on the loan (repay_idr − repaid_idr), null when not pegged. */
+   rupiahLeft?: number | null;
+   /** USD the server prices that rupiah at today (what's left of total_repayment_amount). */
+   usdLeft?: number;
 };
 
 const toFixed2 = (n: number) => n.toFixed(2);
 
-export default function WaltRepaySteps({ isPreview, shortfall, usdcBalance, hasEnough, watchedWallet }: Props) {
+export default function WaltRepaySteps({ isPreview, shortfall, usdcBalance, hasEnough, watchedWallet, rupiahLeft = null, usdLeft }: Props) {
    const { lang, toggle } = useWaltLang();
    const idr = useUsdIdrRate();
    const amountUsdt = useMemo(() => waltRepayAmount(Math.max(0, shortfall)), [shortfall]);
@@ -221,6 +228,19 @@ export default function WaltRepaySteps({ isPreview, shortfall, usdcBalance, hasE
             </div>
             <LangToggle lang={lang} onToggle={toggle} />
          </div>
+
+         {rupiahLeft != null ? (
+            // Rupiah peg: what they owe is fixed in rupiah; the USDT is today's price for it.
+            <div className="rounded-xl bg-[#f7f4ff] px-3 py-2.5 dark:bg-[#1e1535]">
+               <p className="text-[12px] font-medium text-[#6b6090] dark:text-[#a095c8]">{T.left[lang]}</p>
+               <p className="text-[22px] font-bold leading-tight text-[#1a1240] dark:text-white">{formatIdr(rupiahLeft)}</p>
+               {usdLeft != null ? (
+                  <p className="text-[12px] text-[#6b6090] dark:text-[#a095c8]">
+                     ≈ {toFixed2(usdLeft)} USDT {T.today[lang]}
+                  </p>
+               ) : null}
+            </div>
+         ) : null}
 
          {/* 1. how much */}
          <div className="flex gap-3">

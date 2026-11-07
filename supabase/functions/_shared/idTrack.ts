@@ -216,6 +216,9 @@ export type IdEventData = {
    joinUrl?: string | null;
    confirmUrl?: string | null;
    amount?: number | string | null;
+   /** Indonesia rupiah peg: rupiah owed (left, or paid for 'repaid'). Shown as "Rp 110.000 (≈ $6.08)"
+    *  on due_soon / due_tomorrow / due_today / overdue / repaid when set; `amount` is the USD today. */
+   amountIdr?: number | string | null;
    /** Loan due date (ISO); shown in WIB. */
    dueAt?: string | null;
    /** Overdue: how late, e.g. "2 days". */
@@ -229,6 +232,9 @@ const money = (value: number | string | null | undefined) => {
    const fixed = Number.isFinite(n) ? n : 0;
    return `$${fixed % 1 === 0 ? fixed.toFixed(0) : fixed.toFixed(2)}`;
 };
+
+/** "Rp 110.000" — whole rupiah, Indonesian grouping (same as fxRates.formatIdr; kept here so this file stays a leaf). */
+const formatIdr = (value: number | string) => `Rp ${new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(Math.round(Number(value)))}`;
 
 /** "Sabtu, 8 Nov, 14:00 WIB" / "Saturday, 8 Nov, 14:00 WIB". */
 export const formatIdTime = (iso: string | null | undefined, locale: IdLocale) => {
@@ -257,6 +263,8 @@ export const buildIdMessage = (event: IdEvent, locale: IdLocale, data: IdEventDa
    const next = data.next ?? null;
    const nextLine = next ? `\n\n👉 ${say(locale, 'Langkah berikutnya', 'Next')}: ${NEXT_LINE[locale][next]}` : '';
    const amount = money(data.amount);
+   // Pegged loans owe rupiah: lead with the rupiah, the USD is just today's equivalent.
+   const owed = data.amountIdr != null && Number.isFinite(Number(data.amountIdr)) && Number(data.amountIdr) > 0 ? `${formatIdr(data.amountIdr)} (≈ ${amount})` : amount;
    const at = formatIdTime(data.callAt, locale);
    const due = formatIdDay(data.dueAt, locale);
    const join = data.joinUrl ? { text: say(locale, '🎥 Gabung video call', '🎥 Join the call'), url: data.joinUrl } : undefined;
@@ -438,23 +446,23 @@ export const buildIdMessage = (event: IdEvent, locale: IdLocale, data: IdEventDa
             text: say(locale, `💸 ${amount} dikirim ke Walt (BNB Chain). Jual USDT ke Rupiah di Walt P2P.`, `💸 ${amount} sent to Walt (BNB Chain). Sell USDT for Rupiah in Walt P2P.`)
          };
       case 'due_soon':
-         return { text: say(locale, `⏰ Pembayaran ${amount} jatuh tempo${due ? ` ${due}` : ' sebentar lagi'}.`, `⏰ Your ${amount} payment is due${due ? ` ${due}` : ' soon'}.`), button: repay };
+         return { text: say(locale, `⏰ Pembayaran ${owed} jatuh tempo${due ? ` ${due}` : ' sebentar lagi'}.`, `⏰ Your ${owed} payment is due${due ? ` ${due}` : ' soon'}.`), button: repay };
       case 'due_tomorrow':
-         return { text: say(locale, `⏰ Pembayaran ${amount} jatuh tempo besok. Bayar tepat waktu untuk menjaga skor kreditmu.`, `⏰ Your ${amount} payment is due tomorrow. Pay on time to protect your credit.`), button: repay };
+         return { text: say(locale, `⏰ Pembayaran ${owed} jatuh tempo besok. Bayar tepat waktu untuk menjaga skor kreditmu.`, `⏰ Your ${owed} payment is due tomorrow. Pay on time to protect your credit.`), button: repay };
       case 'due_today':
-         return { text: say(locale, `⚠️ Pembayaran ${amount} jatuh tempo hari ini.`, `⚠️ Your ${amount} payment is due today.`), button: repay };
+         return { text: say(locale, `⚠️ Pembayaran ${owed} jatuh tempo hari ini.`, `⚠️ Your ${owed} payment is due today.`), button: repay };
       case 'overdue':
          return {
             text: say(
                locale,
-               `🚨 Pembayaran ${amount} sudah terlambat${data.lateBy ? ` (${data.lateBy.replace(/days?/, 'hari')})` : ''}. Bayar sekarang untuk menjaga akunmu.`,
-               `🚨 Your ${amount} payment is overdue${data.lateBy ? ` (${data.lateBy} late)` : ''}. Pay now to protect your account.`
+               `🚨 Pembayaran ${owed} sudah terlambat${data.lateBy ? ` (${data.lateBy.replace(/days?/, 'hari')})` : ''}. Bayar sekarang untuk menjaga akunmu.`,
+               `🚨 Your ${owed} payment is overdue${data.lateBy ? ` (${data.lateBy} late)` : ''}. Pay now to protect your account.`
             ),
             button: repay
          };
       case 'repaid':
          return {
-            text: say(locale, `✅ Pembayaran ${amount} diterima. Terima kasih, pinjamanmu lunas!`, `✅ ${amount} received. Thank you, your loan is fully repaid!`),
+            text: say(locale, `✅ Pembayaran ${owed} diterima. Terima kasih, pinjamanmu lunas!`, `✅ ${owed} received. Thank you, your loan is fully repaid!`),
             button: { text: say(locale, 'Pinjam lagi', 'Borrow again'), url: idAppUrl('/request-board') }
          };
       case 'request_expired':

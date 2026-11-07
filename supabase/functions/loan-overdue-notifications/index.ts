@@ -11,6 +11,7 @@ import {
    LoanNotificationLoan,
    LoanNotificationRecipient
 } from '../_shared/loanNotifications.ts';
+import { sumRemainingIdr } from '../_shared/fxRates.ts';
 import { dueDayBounds, loanTimezone, localHour, QUIET_HOURS_END, resolveTimezone } from '../_shared/loanDeadline.ts';
 import { loadBorrowerTimezones, postDueTeamFeed } from '../_shared/loanDueTeamFeed.ts';
 import { loadPushSubscriptions } from '../_shared/pushDelivery.ts';
@@ -281,7 +282,7 @@ serve(async (req) => {
    const { data: loans, error } = await supabase
       .from('loans')
       .select(
-         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, due_timezone, funded_at, lender_user_id, repayment_status, market'
+         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, due_timezone, funded_at, lender_user_id, repayment_status, market, repay_idr, repaid_idr'
       )
       .eq('loan_status', 'Lent')
       .in('repayment_status', ['Unpaid', 'Partial'])
@@ -367,7 +368,9 @@ serve(async (req) => {
             ),
             nextDueDate,
             // A check-in when every loan here already had its first overdue notice.
-            followUp: pendingLoans.every((loan) => sentStages.get(loan.id)?.has('overdue'))
+            followUp: pendingLoans.every((loan) => sentStages.get(loan.id)?.has('overdue')),
+            // Indonesia rupiah peg: rupiah left (only when every loan here is pegged).
+            totalIdr: sumRemainingIdr(pendingLoans)
          };
          const allBorrowerLoans = trustPointRewardContext.loansByBorrowerId.get(borrower.id) ?? [];
          const trustPointsReward = calculateTrustPointRewardDelta({

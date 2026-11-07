@@ -52,3 +52,10 @@ Deno.test('approval is blocked for an Indonesian until KYC is approved', async (
    assertEquals(await idApprovalBlock(svcWith({ market: 'ID', is_didit: 'ACTIVE' }), 'u1'), null);
    assertEquals(await idApprovalBlock(svcWith({ market: null, is_didit: null }), 'u1'), null);
 });
+
+Deno.test('rupiah-pegged loans lead with the rupiah owed', () => {
+   assertStringIncludes(buildIdMessage('due_today', 'id', { amount: 6.08, amountIdr: 110000 }).text, 'Pembayaran Rp 110.000 (≈ $6.08) jatuh tempo hari ini');
+   assertStringIncludes(buildIdMessage('overdue', 'en', { amount: 4, amountIdr: 72000, lateBy: '2 days' }).text, 'Your Rp 72.000 (≈ $4) payment is overdue');
+   assertStringIncludes(buildIdMessage('repaid', 'id', { amount: 6.1, amountIdr: 110000 }).text, 'Pembayaran Rp 110.000 (≈ $6.10) diterima');
+   assertStringIncludes(buildIdMessage('due_tomorrow', 'id', { amount: 10, amountIdr: null }).text, 'Pembayaran $10 jatuh tempo besok');
+});
