@@ -25,6 +25,8 @@ export interface SearchableRequest {
    reason: string;
    borrower: { username: string } | null;
    borrower_wallet: string | null;
+   /** 'ID' = Indonesia-track request: titled with 🇮🇩 and found by "indonesia". */
+   market?: 'ID' | null;
 }
 
 export type AdminSearchResult =
@@ -139,12 +141,12 @@ export function searchAdmin(
    const requests = ranked(
       sources.requests,
       query,
-      (r) => [r.borrower?.username, r.tracking_id, r.borrower_wallet, r.reason, r.id],
+      (r) => [r.borrower?.username, r.tracking_id, r.borrower_wallet, r.reason, r.id, r.market === 'ID' ? 'indonesia' : null],
       LIMITS.request
    ).map<AdminSearchResult>((r) => ({
       kind: 'request',
       id: r.id,
-      title: `${r.borrower?.username ?? 'Unknown borrower'} · $${Number(r.loan_amount ?? 0).toLocaleString()}`,
+      title: `${r.market === 'ID' ? '🇮🇩 ' : ''}${r.borrower?.username ?? 'Unknown borrower'} · $${Number(r.loan_amount ?? 0).toLocaleString()}`,
       detail: r.reason || r.tracking_id
    }));
 

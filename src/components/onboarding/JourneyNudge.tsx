@@ -10,6 +10,7 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { PRE_KYC_CONNECT_PATH } from '@/hooks/usePreKycGate';
 import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
+import { ID_PATHS } from '@/lib/idTrack';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 
@@ -122,10 +123,12 @@ export function JourneyNudge({ bottomNavVisible }: { bottomNavVisible: boolean }
       if (!isBorrower || previous !== 'pending' || loanAccessStatus !== 'approved') return;
       showToast(TOAST_TYPES.SUCCESS, 'You’re approved 🎉', 'The team approved you — apply for your loan now.');
       // The onboarding screen sends them on to the loan form itself (ConnectBeforeKyc).
-      if (location.pathname === PRE_KYC_CONNECT_PATH) return;
+      if (location.pathname === PRE_KYC_CONNECT_PATH || location.pathname === ID_PATHS.onboarding) return;
       navigate('/request-board', { state: { justApproved: true } });
    }, [isBorrower, loanAccessStatus, location.pathname, navigate, showToast]);
    const active = isBorrower && !journey.isLoading && journey.onboarding;
+   // Indonesia track: their own 8 steps at /id/onboarding instead of the 3-step bar.
+   const isIdTrack = journey.stage === 'id_track';
 
    // 1x a day: a plain app open (no deep-link state / query) on a home screen → their next step.
    useEffect(() => {
@@ -140,7 +143,12 @@ export function JourneyNudge({ bottomNavVisible }: { bottomNavVisible: boolean }
    // Visiting their next step themselves counts as today's resume.
    useEffect(() => {
       if (!user?.id) return;
-      if (location.pathname === PRE_KYC_CONNECT_PATH || location.pathname.startsWith('/onboarding/wallet')) markResumed(user.id);
+      if (
+         location.pathname === PRE_KYC_CONNECT_PATH ||
+         location.pathname.startsWith('/onboarding/wallet') ||
+         location.pathname.startsWith(ID_PATHS.onboarding)
+      )
+         markResumed(user.id);
    }, [location.pathname, user?.id]);
 
    const onPointerDown = (e: PointerEvent<HTMLButtonElement>) => {
@@ -196,7 +204,7 @@ export function JourneyNudge({ bottomNavVisible }: { bottomNavVisible: boolean }
       }
    };
 
-   if (hidden || !active || !bottomNavVisible || location.pathname === '/request-board' || !journey.step) return null;
+   if (hidden || !active || !bottomNavVisible || location.pathname === '/request-board' || (!journey.step && !isIdTrack)) return null;
 
    return (
       <div
@@ -215,8 +223,15 @@ export function JourneyNudge({ bottomNavVisible }: { bottomNavVisible: boolean }
          >
             <span aria-hidden="true" className="absolute left-1/2 top-1 h-1 w-8 -translate-x-1/2 rounded-full bg-white/40" />
             <span className="flex min-w-0 flex-1 flex-col">
-               <span className="text-[12px] font-semibold uppercase tracking-wide text-white/80">{`Step ${journey.step} of 3 to your first loan`}</span>
-               <span className="truncate text-[16px] font-bold">{journey.cta}</span>
+               <span
+                  className="text-[12px] font-semibold uppercase tracking-wide text-white/80"
+                  data-i18n-skip={isIdTrack ? true : undefined}
+               >
+                  {isIdTrack ? journey.body : `Step ${journey.step} of 3 to your first loan`}
+               </span>
+               <span className="truncate text-[16px] font-bold" data-i18n-skip={isIdTrack ? true : undefined}>
+                  {journey.cta}
+               </span>
             </span>
             <ChevronRight aria-hidden="true" className="size-5 shrink-0" />
          </button>

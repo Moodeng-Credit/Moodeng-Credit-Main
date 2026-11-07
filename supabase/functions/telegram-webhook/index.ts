@@ -602,6 +602,82 @@ const handleKycGateCommand = async (supabase: SupabaseClient, message: TelegramM
    return true;
 };
 
+// Indonesia track (docs/INDONESIA_TRACK.md, migration 20261107120000):
+//   /idtrack              show the switch and the loan rules
+//   /idtrack off|test|on  who can JOIN the track (test = is_test accounts only)
+//   /idloans 5,10         allowed loan amounts in USD
+//   /idterm 14            longest loan term in days
+const ID_TRACK_STATES: Record<string, string> = {
+   off: 'OFF — nobody new joins (people already on it keep their rules)',
+   test: 'TEST — only test accounts can join',
+   on: 'ON — Indonesians can join from /id'
+};
+const ID_TRACK_USAGE = 'Switch with /idtrack off · /idtrack test · /idtrack on\nLoan amounts: /idloans 5,10 · Longest term: /idterm 14';
+
+const handleIdTrackCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
+   const text = (message.text ?? '').trim();
+   const chatId = message.chat.id;
+   const by = adminHandle(message.from);
+   const upsert = async (key: string, value: string) => {
+      const { error } = await supabase.from('telegram_bot_settings').upsert({ key, value }, { onConflict: 'key' });
+      if (error) throw new Error(error.message);
+   };
+
+   const amounts = text.match(/^\/idloans(?:@\w+)?(?:\s+(.+))?$/i);
+   if (amounts) {
+      const parts = (amounts[1] ?? '').trim().split(/[\s,]+/).filter(Boolean);
+      const valid = parts.length > 0 && parts.length <= 6 && parts.every((p) => /^\d{1,3}(\.\d{1,2})?$/.test(p) && Number(p) >= 1 && Number(p) <= 100);
+      if (!valid) {
+         await sendTelegramMessage(chatId, 'Usage: /idloans 5,10 — dollars (cents allowed), $1–$100, up to 6 amounts.');
+         return true;
+      }
+      const value = [...new Set(parts.map(Number))].sort((a, b) => a - b).join(',');
+      await upsert('id_loan_amounts', value);
+      await sendTelegramMessage(chatId, `✅ 🇮🇩 Indonesia loan amounts: ${value.split(',').map((a) => `$${a}`).join(' · ')} — by ${by}`);
+      return true;
+   }
+
+   const term = text.match(/^\/idterm(?:@\w+)?(?:\s+(\S+))?/i);
+   if (term) {
+      const days = Number(term[1]);
+      if (!/^\d{1,2}$/.test(term[1] ?? '') || days < 1 || days > 60) {
+         await sendTelegramMessage(chatId, 'Usage: /idterm 14 — the longest loan term in days (1–60).');
+         return true;
+      }
+      await upsert('id_max_term_days', String(days));
+      await sendTelegramMessage(chatId, `✅ 🇮🇩 Indonesia loans must be repaid within ${days} days — by ${by}`);
+      return true;
+   }
+
+   const match = text.match(/^\/idtrack(?:@\w+)?(?:\s+(\S+))?/i);
+   if (!match) return false;
+   const wanted = (match[1] ?? '').trim().toLowerCase();
+   if (!wanted) {
+      const [track, loans, maxDays] = await Promise.all([
+         getSetting(supabase, 'id_track'),
+         getSetting(supabase, 'id_loan_amounts'),
+         getSetting(supabase, 'id_max_term_days')
+      ]);
+      const current = track && ID_TRACK_STATES[track] ? track : 'off';
+      const { count } = await supabase.from('users').select('id', { count: 'exact', head: true }).eq('market', 'ID');
+      await sendTelegramMessage(
+         chatId,
+         `🇮🇩 Indonesia track: ${ID_TRACK_STATES[current]}\nLoans: ${String(loans ?? '5,10')
+            .split(',')
+            .map((a) => `$${a.trim()}`)
+            .join(' · ')}, repaid within ${maxDays ?? '14'} days\nPeople on the track: ${count ?? '?'}\n\n${ID_TRACK_USAGE}`
+      );
+      return true;
+   }
+   if (!ID_TRACK_STATES[wanted]) {
+      await sendTelegramMessage(chatId, 'Usage: /idtrack off | test | on');
+      return true;
+   }
+   await upsert('id_track', wanted);
+   await sendTelegramMessage(chatId, `✅ 🇮🇩 Indonesia track switched ${ID_TRACK_STATES[wanted]} — by ${by}`);
+   return true;
+};
+
 // KYC tries (kyc_declines): after 3 declines a borrower must message us before trying again.
 //   /kycretry @username   gives them 3 fresh tries (voids their counted declines)
 const handleKycRetryCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
@@ -1130,6 +1206,12 @@ serve(async (req) => {
       if (isAdminChannel && /^\/kycgate\b/i.test(message.text ?? '')) {
          await handleKycGateCommand(supabase, message);
          return jsonResponse({ message: 'KYC gate command handled' });
+      }
+
+      // Indonesia track switch + loan rules — either admin channel.
+      if (isAdminChannel && /^\/(idtrack|idloans|idterm)\b/i.test(message.text ?? '')) {
+         await handleIdTrackCommand(supabase, message);
+         return jsonResponse({ message: 'Indonesia track command handled' });
       }
 
       await handleSupportAgentMessage(supabase, message);

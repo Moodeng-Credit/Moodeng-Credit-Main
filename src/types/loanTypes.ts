@@ -49,6 +49,9 @@ export interface Loan {
    // calculation (all of which key off `!refundedAt`). A refund is never counted as a repayment.
    offplatformSettledAt?: string;
    offplatformSettlementNote?: string;
+   // 'ID' = an Indonesia-track borrower's request (stamped from users.market on insert, never changed).
+   // Shown with a 🇮🇩 mark on the board and in admin. See src/lib/loanMarket.ts.
+   market?: 'ID' | null;
 }
 
 /**

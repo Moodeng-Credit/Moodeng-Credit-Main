@@ -29,6 +29,10 @@ export type LoanNotificationLoan = {
    lender_username?: string | null;
    lender_wallet?: string | null;
    hash?: string[] | null;
+   /** 'ID' = Indonesia track: team posts are marked 🇮🇩. */
+   market?: string | null;
+   /** 'walt_manual' = paid by hand from Binance TH straight to their Walt (BNB Chain). */
+   funding_method?: string | null;
 };
 
 export type LoanNotificationRecipient = {
@@ -51,6 +55,10 @@ export type LoanNotificationRecipient = {
    trust_points_total?: number | string | null;
    trust_points_reward?: number | string | null;
    trust_points_reward_kind?: 'potential' | 'earned';
+   /** 'ID' = Indonesia track: always told on Telegram, in Bahasa (idTrack.ts). */
+   market?: string | null;
+   /** 'en' → English for the Indonesia-track Telegram copy; anything else → Bahasa. */
+   preferred_locale?: string | null;
 };
 
 export type LoanNotificationAggregate = {
@@ -168,10 +176,13 @@ const shortenWallet = (address?: string | null) => {
 
 // Basescan link for a confirmed on-chain transaction hash. Returns '' for anything that isn't a
 // real 32-byte tx hash (e.g. a Base Account userOperation hash, which 404s on the explorer).
+// "bsc:0x…" = a BNB Chain tx (Indonesia track: loans paid by hand to Walt, idManualFunding.ts).
 export const buildTxExplorerLink = (hash?: string | null) => {
-   const value = (hash ?? '').trim();
+   const raw = (hash ?? '').trim();
+   const onBsc = raw.startsWith('bsc:');
+   const value = onBsc ? raw.slice(4) : raw;
    if (!/^0x[0-9a-fA-F]{64}$/.test(value)) return '';
-   return `https://basescan.org/tx/${value}`;
+   return onBsc ? `https://bscscan.com/tx/${value}` : `https://basescan.org/tx/${value}`;
 };
 
 const buildDashboardLink = () => buildAppLink('/dashboard');
@@ -1190,7 +1201,7 @@ export const buildRepaymentTeamFeedMessage = (
    const verifyLine = explorerLink ? `Verify on-chain: ${explorerLink}` : '';
    const actionUrl = buildDashboardLink();
 
-   const text = normalizeNotificationText(`✅ Loan repaid
+   const text = normalizeNotificationText(`✅ ${loan.market === 'ID' ? '🇮🇩 ' : ''}Loan repaid
 ${handleName(borrower)} repaid ${amountRepaid} for ${loan.tracking_id}.
 Lender: ${handleName(lender)}
 ${walletLine}

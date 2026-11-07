@@ -8,9 +8,13 @@ import { getPostSignInPath } from '@/lib/postSignInPath';
 import { getJourney } from '@/lib/verificationJourney';
 import type { RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
+import { fetchIdTrackPath } from '@/views/indonesia/idFlow';
 
 /** Where someone already signed in goes instead of the sign-in / sign-up form. */
 export const getSignedInReturnPath = async (user: User, isGated: boolean): Promise<string> => {
+   // Indonesia track: always borrowers (no role picker), and their own onboarding until it's done.
+   const idTrackPath = user.userRole === 'lender' ? null : await fetchIdTrackPath();
+   if (idTrackPath) return idTrackPath;
    if (!user.userRole) return '/onboarding/role';
    if (user.userRole === 'borrower') {
       const journey = getJourney(user, isGated);

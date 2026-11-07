@@ -23,6 +23,7 @@ import {
    toCsv
 } from '@/app/admin/creditLineModel';
 import { useAdminLiveReload } from '@/app/admin/useAdminLive';
+import { bareTxHash, txExplorerUrl } from '@/lib/txExplorer';
 
 // Admin → Finance → Credit line: everything a credit-line lender's monthly report needs (BitRepo: Schedule B),
 // live from our records — balances, interest owed, every loan with its txs and rationale, the fund-flow ledger,
@@ -32,7 +33,6 @@ const usd = (n: number, digits = 2) =>
    `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
 const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
 const shortTx = (tx: string) => `${tx.slice(0, 8)}…${tx.slice(-4)}`;
-const SCAN = 'https://basescan.org/tx/';
 const LEDGER_KINDS: LedgerKind[] = [
    'advance',
    'transfer',
@@ -61,8 +61,8 @@ function TxLinks({ txs }: { txs: string[] }) {
    return (
       <span className="flex flex-col">
          {txs.map((tx) => (
-            <a className="font-mono text-xs text-[#b99cff] underline" href={`${SCAN}${tx}`} key={tx} rel="noreferrer" target="_blank">
-               {shortTx(tx)}
+            <a className="font-mono text-xs text-[#b99cff] underline" href={txExplorerUrl(tx)} key={tx} rel="noreferrer" target="_blank">
+               {shortTx(bareTxHash(tx))}
             </a>
          ))}
       </span>

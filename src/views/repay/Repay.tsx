@@ -28,10 +28,11 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
 import UserAvatar from '@/components/UserAvatar';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
-import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
 import { useGeoCheck } from '@/hooks/useGeoCheck';
+import { useIdOnboarding } from '@/hooks/useIdOnboarding';
 import { useLoanData } from '@/hooks/useLoanData';
+import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 import useWallet, { type PaymentMethod, toSettlementMethod, useActivePaymentMethod } from '@/hooks/useWallet';
 
 import { parseDateSafely } from '@/utils/dateFormatters';
@@ -52,6 +53,7 @@ import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
+import WaltRepaySteps from '@/views/indonesia/walt/WaltRepaySteps';
 
 const quickRepaymentFractions = [
    { label: '25%', value: 0.25 },
@@ -479,6 +481,11 @@ export default function Repay() {
    // language counts too, so an Indonesian on a VPN or abroad still sees their own exchanges.
    const inIndonesia = (previewCountry ?? geoCountryCode) === 'ID' || locale === 'id';
    const heroSourceId = inIndonesia ? INDONESIA_HERO_SOURCE_ID : HERO_SOURCE_ID;
+   // Indonesia-track borrowers (users.market = 'ID') top up from Walt first (WaltRepaySteps); the
+   // exchanges stay under "Cara lain". Preview: ?market=id.
+   const { isIndo: isIdTrackUser } = useIdOnboarding();
+   const isWaltRepay = usePreviewLoans ? new URLSearchParams(location.search).get('market') === 'id' : isIdTrackUser;
+   const [showOtherWays, setShowOtherWays] = useState(false);
    const repayLoans = usePreviewLoans ? previewLoans : loans;
    const { hasFetched: hasCheckedRepayLoans, isLoading: isCheckingRepayLoans } = useLoanData({
       userId: user.id,
@@ -716,19 +723,19 @@ export default function Repay() {
               onAction: journey.go,
               title: journey.onboarding && journey.step ? `Step ${journey.step} of 3: ${journey.title}` : journey.title
            }
-           : !hasCompletedBaseWalletSetup
-             ? {
-                  actionLabel: 'Add Wallet',
-                  body: 'You are verified. Set up your Instant Wallet (or connect a Base Account) so loans and repayments can stay tied to your Moodeng account.',
-                  onAction: () => navigate('/onboarding/wallet', { state: { returnTo: 'repay' } }),
-                  title: 'Add a wallet to borrow'
-               }
-             : {
-                  actionLabel: 'Request a loan',
-                  body: 'Your repayment activity will appear here once a moo-lender funds your first loan.',
-                  onAction: () => navigate('/request-board', { state: { openLoanRequest: true } }),
-                  title: 'No repayments yet'
-               }
+         : !hasCompletedBaseWalletSetup
+           ? {
+                actionLabel: 'Add Wallet',
+                body: 'You are verified. Set up your Instant Wallet (or connect a Base Account) so loans and repayments can stay tied to your Moodeng account.',
+                onAction: () => navigate('/onboarding/wallet', { state: { returnTo: 'repay' } }),
+                title: 'Add a wallet to borrow'
+             }
+           : {
+                actionLabel: 'Request a loan',
+                body: 'Your repayment activity will appear here once a moo-lender funds your first loan.',
+                onAction: () => navigate('/request-board', { state: { openLoanRequest: true } }),
+                title: 'No repayments yet'
+             }
       : null;
 
    const handleSelectLoan = (loanId: string, e: React.MouseEvent<HTMLButtonElement>) => {
@@ -903,7 +910,11 @@ export default function Repay() {
       }
       // A repayment already approved for this loan but not yet recorded: paying again would overpay.
       if (hasPendingPaymentForLoan(selectedLoan.id)) {
-         showToast(TOAST_TYPES.INFO, 'Payment still confirming', 'Your last payment for this loan is still confirming. It will update here shortly. Please don’t pay again.');
+         showToast(
+            TOAST_TYPES.INFO,
+            'Payment still confirming',
+            'Your last payment for this loan is still confirming. It will update here shortly. Please don’t pay again.'
+         );
          return;
       }
 
@@ -1107,7 +1118,9 @@ export default function Repay() {
                paidAmount: toNumber(selectedLoan.totalRepaymentAmount),
                coin: transferCoin,
                trustPoints: earnedTrustPoints,
-               creditLevelUp: serverLevelUp ? { toLevel: getCreditLevelNumber(serverLevelUp.toLimit), newLimit: serverLevelUp.toLimit } : null
+               creditLevelUp: serverLevelUp
+                  ? { toLevel: getCreditLevelNumber(serverLevelUp.toLimit), newLimit: serverLevelUp.toLimit }
+                  : null
             });
          } else {
             // Partial payment: the loan stays active, so acknowledge it inline instead of
@@ -1533,446 +1546,478 @@ export default function Repay() {
 
                         {showAddFunds ? (
                            <div className="space-y-5 px-4 pb-5 pt-2">
-                              {/* ── Step 1: Choose your source ────────────────── */}
-                              <div>
-                                 <div className="mb-2 flex items-center gap-2">
-                                    <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[11px] font-bold text-white">
-                                       1
-                                    </span>
-                                    <p className="text-sm font-semibold text-[#1a1240] dark:text-white">Choose your source</p>
-                                 </div>
-                                 {geoLoading ? (
-                                    <div className="flex items-center justify-center gap-2 py-6 text-sm text-[#6b6090] dark:text-[#a095c8]">
-                                       <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                                       Loading your options…
-                                    </div>
-                                 ) : (
-                                    <>
-                                       <p className="mb-3 text-xs text-[#6b6090]">
-                                          Pick where you'll buy or withdraw USDC.{' '}
-                                          <span className="font-semibold text-[#6c3fe0]">{getFundSource(heroSourceId).label}</span> works
-                                          well for most people
-                                          {inIndonesia ? (
-                                             <>
-                                                {' '}
-                                                in Indonesia. <span className="font-semibold text-[#6c3fe0]">Reku</span> works too; Pintu
-                                                and Indodax are under "Other options".
-                                             </>
-                                          ) : !inPhilippines ? (
-                                             <>
-                                                {' '}
-                                                — and works the same whether you're in the Philippines or traveling.{' '}
-                                                <span className="font-semibold text-[#6c3fe0]">Binance</span> is also available under "Other
-                                                options".
-                                             </>
-                                          ) : (
-                                             '.'
-                                          )}
-                                       </p>
-
-                                       {renderHeroSource(getFundSource(heroSourceId))}
-
-                                       <div className="mt-1.5">
-                                          {renderSourcePill(inIndonesia ? getFundSource(INDONESIA_PILL_SOURCE_ID) : fundSources[1])}
-                                       </div>
-
-                                       {(() => {
-                                          // Local rails always show. Binance is added here ONLY for users detected
-                                          // outside the Philippines (see the fundSources comment above for why) — it's
-                                          // an added option abroad, never a replacement for the local rails.
-                                          // Whichever of Coins.ph/PDAX isn't the hero lives here; a suspended
-                                          // Coins.ph shows greyed out rather than disappearing.
-                                          // Indonesian borrowers get only Pintu/Indodax here (see the fundSources comment).
-                                          const otherSources = inIndonesia
-                                             ? INDONESIA_OTHER_SOURCE_IDS.map(getFundSource)
-                                             : fundSources
-                                                  .filter(
-                                                     (source) =>
-                                                        source.id !== HERO_SOURCE_ID &&
-                                                        (source.id === 'gcrypto' ||
-                                                           source.id === 'pdax' ||
-                                                           source.id === 'coinsph' ||
-                                                           (source.id === 'binance' && !inPhilippines))
-                                                  )
-                                                  .sort((a, b) => Number(isPausedSource(a.id)) - Number(isPausedSource(b.id)));
-                                          const otherSelected = otherSources.some((source) => source.id === fundSource);
-                                          const expanded = showMoreSources || otherSelected;
-
-                                          return (
-                                             <>
-                                                <button
-                                                   type="button"
-                                                   onClick={() => setShowMoreSources((value) => !value)}
-                                                   aria-expanded={expanded}
-                                                   className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-1 cursor-pointer text-xs font-semibold text-[#6b6090] transition hover:text-[#6c3fe0] dark:text-[#a095c8]"
-                                                   style={{ touchAction: 'manipulation' }}
-                                                >
-                                                   {expanded ? 'Fewer options' : 'Other options'}
-                                                   <ChevronDown
-                                                      className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`}
-                                                      aria-hidden="true"
-                                                   />
-                                                </button>
-
-                                                {expanded ? (
-                                                   <div className="mt-1.5 grid grid-cols-2 gap-1.5">
-                                                      {otherSources.map((source) => renderSourcePill(source))}
-                                                   </div>
-                                                ) : null}
-                                                {expanded && showCoinsPaused ? (
-                                                   <div
-                                                      role="status"
-                                                      className="mt-2 rounded-xl border border-[#e9e3f8] bg-[#f8f6fd] px-3.5 py-3 dark:border-[#3d2a60] dark:bg-[#1e1535]"
-                                                   >
-                                                      <p className="text-xs font-semibold text-[#1a1240] dark:text-white">
-                                                         {COINS_PH_SUSPENDED_TITLE}
-                                                      </p>
-                                                      <p className="mt-0.5 text-[11px] leading-relaxed text-[#6b6090] dark:text-[#a095c8]">
-                                                         {COINS_PH_SUSPENDED_MESSAGE}
-                                                      </p>
-                                                   </div>
-                                                ) : null}
-                                             </>
-                                          );
-                                       })()}
-                                       <p className="mt-2 text-xs text-[#6b6090] dark:text-[#a095c8]">
-                                          You can repay from a wallet, an exchange, a P2P platform, or a local crypto service — whatever is
-                                          available in your country.{' '}
-                                          <button
-                                             type="button"
-                                             onClick={() => navigate('/support/guides/repaying-your-loan')}
-                                             className="font-semibold text-[#6c3fe0] underline underline-offset-2"
-                                          >
-                                             Learn more
-                                          </button>
-                                       </p>
-                                    </>
-                                 )}
-                              </div>
-
-                              {/* ── Step 2: Copy your wallet address ─────────── */}
-                              {repayWalletAddress ? (
-                                 <div>
-                                    <div className="mb-2 flex items-center gap-2">
-                                       <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[11px] font-bold text-white">
-                                          2
-                                       </span>
-                                       <p className="text-sm font-semibold text-[#1a1240] dark:text-white">Copy your wallet address</p>
-                                    </div>
-                                    <p className="mb-3 text-xs text-[#6b6090] dark:text-[#a095c8]">
-                                       {activeSource.id === 'moneybees' ? (
-                                          <>
-                                             This is the same wallet your loan was sent to. Copy it — you'll share it with Moneybees so they
-                                             send your USDC here.
-                                          </>
-                                       ) : (
-                                          <>
-                                             This is the same wallet your loan was sent to. Copy it — you'll paste it into{' '}
-                                             {activeSource.label} as the destination.
-                                          </>
-                                       )}
-                                    </p>
+                              {isWaltRepay ? (
+                                 <>
+                                    <WaltRepaySteps
+                                       isPreview={usePreviewLoans}
+                                       shortfall={fundingShortfall ?? selectedRemaining}
+                                       usdcBalance={usdcBalance}
+                                       hasEnough={hasEnoughToRepay}
+                                       watchedWallet={repayWalletAddress}
+                                    />
                                     <button
                                        type="button"
-                                       onClick={handleCopyAddress}
-                                       className={`w-full rounded-2xl p-4 text-left transition-colors duration-200 active:scale-[0.99] ${
-                                          copiedAddress
-                                             ? 'bg-[#dcfce7] ring-2 ring-[#16a34a] dark:bg-[#052e16]'
-                                             : 'bg-[#f5f4fa] ring-2 ring-[#6c3fe0]/30 dark:bg-[#2a1740] dark:ring-[#6c3fe0]/40'
-                                       }`}
+                                       onClick={() => setShowOtherWays((open) => !open)}
+                                       aria-expanded={showOtherWays}
+                                       className="flex w-full items-center justify-center gap-1 border-t border-[#ede9f8] pt-3 text-[13px] font-semibold text-[#6c3fe0] dark:border-[#2a1f4f]"
                                     >
-                                       <div className="flex items-center justify-between gap-2">
-                                          <p
-                                             className={`text-xs font-semibold ${copiedAddress ? 'text-[#16a34a]' : 'text-[#6c3fe0] dark:text-[#c4b5fd]'}`}
-                                          >
-                                             {copiedAddress ? 'Copied!' : 'Tap to copy your wallet address'}
-                                          </p>
-                                          <span
-                                             className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${copiedAddress ? 'bg-[#16a34a]' : 'bg-[#6c3fe0]'}`}
-                                          >
-                                             {copiedAddress ? (
-                                                <Check className="h-3.5 w-3.5 text-white" aria-hidden="true" />
-                                             ) : (
-                                                <Copy className="h-3.5 w-3.5 text-white" aria-hidden="true" />
-                                             )}
-                                          </span>
-                                       </div>
-                                       <p className="mt-1.5 truncate font-mono text-[22px] font-extrabold leading-tight text-[#1a1240] dark:text-white">
-                                          {formatWalletAddressShort(repayWalletAddress)}
-                                       </p>
-                                       {copiedAddress && (
-                                          <p className="mt-1.5 text-[12px] font-medium text-[#16a34a]">
-                                             {activeSource.id === 'moneybees'
-                                                ? 'Now open Moneybees below →'
-                                                : 'Now paste it into the app below →'}
-                                          </p>
-                                       )}
+                                       {locale === 'en' ? 'Other ways' : 'Cara lain'}
+                                       <ChevronDown
+                                          className={`h-4 w-4 transition-transform ${showOtherWays ? 'rotate-180' : ''}`}
+                                          aria-hidden="true"
+                                       />
                                     </button>
-                                    {/* Wrong-network sends lose funds and can't be recovered — make BASE unmissable
-                                        at the exact moment the borrower copies the address to paste as a destination. */}
-                                    <div className="mt-3 rounded-xl bg-[#fef2f2] p-3 ring-1 ring-[#fca5a5] dark:bg-[#3a1414] dark:ring-[#7f1d1d]">
-                                       <p className="text-[13px] font-extrabold leading-snug text-[#b91c1c] dark:text-[#fca5a5]">
-                                          ⚠️ Send on the BASE network only
-                                       </p>
-                                       <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#b91c1c] dark:text-[#fca5a5]">
-                                          USDC sent on Ethereum, Polygon, or any other network goes to this address on the wrong chain and
-                                          is lost forever — it cannot be recovered. When {activeSource.label} asks which network, choose{' '}
-                                          <span className="font-extrabold underline">Base</span>.
-                                       </p>
-                                    </div>
-                                 </div>
+                                 </>
                               ) : null}
+                              {!isWaltRepay || showOtherWays ? (
+                                 <>
+                                    {/* ── Step 1: Choose your source ────────────────── */}
+                                    <div>
+                                       <div className="mb-2 flex items-center gap-2">
+                                          <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[11px] font-bold text-white">
+                                             1
+                                          </span>
+                                          <p className="text-sm font-semibold text-[#1a1240] dark:text-white">Choose your source</p>
+                                       </div>
+                                       {geoLoading ? (
+                                          <div className="flex items-center justify-center gap-2 py-6 text-sm text-[#6b6090] dark:text-[#a095c8]">
+                                             <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                                             Loading your options…
+                                          </div>
+                                       ) : (
+                                          <>
+                                             <p className="mb-3 text-xs text-[#6b6090]">
+                                                Pick where you'll buy or withdraw USDC.{' '}
+                                                <span className="font-semibold text-[#6c3fe0]">{getFundSource(heroSourceId).label}</span>{' '}
+                                                works well for most people
+                                                {inIndonesia ? (
+                                                   <>
+                                                      {' '}
+                                                      in Indonesia. <span className="font-semibold text-[#6c3fe0]">Reku</span> works too;
+                                                      Pintu and Indodax are under "Other options".
+                                                   </>
+                                                ) : !inPhilippines ? (
+                                                   <>
+                                                      {' '}
+                                                      — and works the same whether you're in the Philippines or traveling.{' '}
+                                                      <span className="font-semibold text-[#6c3fe0]">Binance</span> is also available under
+                                                      "Other options".
+                                                   </>
+                                                ) : (
+                                                   '.'
+                                                )}
+                                             </p>
 
-                              {/* ── Step 3: Open app and send ─────────────────── */}
-                              {repayWalletAddress && !geoLoading ? (
-                                 <div>
-                                    <div className="mb-2 flex items-center gap-2">
-                                       <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[11px] font-bold text-white">
-                                          3
-                                       </span>
-                                       <p className="text-sm font-semibold text-[#1a1240] dark:text-white">{activeSource.action}</p>
+                                             {renderHeroSource(getFundSource(heroSourceId))}
+
+                                             <div className="mt-1.5">
+                                                {renderSourcePill(inIndonesia ? getFundSource(INDONESIA_PILL_SOURCE_ID) : fundSources[1])}
+                                             </div>
+
+                                             {(() => {
+                                                // Local rails always show. Binance is added here ONLY for users detected
+                                                // outside the Philippines (see the fundSources comment above for why) — it's
+                                                // an added option abroad, never a replacement for the local rails.
+                                                // Whichever of Coins.ph/PDAX isn't the hero lives here; a suspended
+                                                // Coins.ph shows greyed out rather than disappearing.
+                                                // Indonesian borrowers get only Pintu/Indodax here (see the fundSources comment).
+                                                const otherSources = inIndonesia
+                                                   ? INDONESIA_OTHER_SOURCE_IDS.map(getFundSource)
+                                                   : fundSources
+                                                        .filter(
+                                                           (source) =>
+                                                              source.id !== HERO_SOURCE_ID &&
+                                                              (source.id === 'gcrypto' ||
+                                                                 source.id === 'pdax' ||
+                                                                 source.id === 'coinsph' ||
+                                                                 (source.id === 'binance' && !inPhilippines))
+                                                        )
+                                                        .sort((a, b) => Number(isPausedSource(a.id)) - Number(isPausedSource(b.id)));
+                                                const otherSelected = otherSources.some((source) => source.id === fundSource);
+                                                const expanded = showMoreSources || otherSelected;
+
+                                                return (
+                                                   <>
+                                                      <button
+                                                         type="button"
+                                                         onClick={() => setShowMoreSources((value) => !value)}
+                                                         aria-expanded={expanded}
+                                                         className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-1 cursor-pointer text-xs font-semibold text-[#6b6090] transition hover:text-[#6c3fe0] dark:text-[#a095c8]"
+                                                         style={{ touchAction: 'manipulation' }}
+                                                      >
+                                                         {expanded ? 'Fewer options' : 'Other options'}
+                                                         <ChevronDown
+                                                            className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`}
+                                                            aria-hidden="true"
+                                                         />
+                                                      </button>
+
+                                                      {expanded ? (
+                                                         <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+                                                            {otherSources.map((source) => renderSourcePill(source))}
+                                                         </div>
+                                                      ) : null}
+                                                      {expanded && showCoinsPaused ? (
+                                                         <div
+                                                            role="status"
+                                                            className="mt-2 rounded-xl border border-[#e9e3f8] bg-[#f8f6fd] px-3.5 py-3 dark:border-[#3d2a60] dark:bg-[#1e1535]"
+                                                         >
+                                                            <p className="text-xs font-semibold text-[#1a1240] dark:text-white">
+                                                               {COINS_PH_SUSPENDED_TITLE}
+                                                            </p>
+                                                            <p className="mt-0.5 text-[11px] leading-relaxed text-[#6b6090] dark:text-[#a095c8]">
+                                                               {COINS_PH_SUSPENDED_MESSAGE}
+                                                            </p>
+                                                         </div>
+                                                      ) : null}
+                                                   </>
+                                                );
+                                             })()}
+                                             <p className="mt-2 text-xs text-[#6b6090] dark:text-[#a095c8]">
+                                                You can repay from a wallet, an exchange, a P2P platform, or a local crypto service —
+                                                whatever is available in your country.{' '}
+                                                <button
+                                                   type="button"
+                                                   onClick={() => navigate('/support/guides/repaying-your-loan')}
+                                                   className="font-semibold text-[#6c3fe0] underline underline-offset-2"
+                                                >
+                                                   Learn more
+                                                </button>
+                                             </p>
+                                          </>
+                                       )}
                                     </div>
 
-                                    {/* Instruction card */}
-                                    {activeSource.id === 'moneybees' ? (
-                                       <div className="mb-3 rounded-xl bg-[#f3effe] px-4 py-3.5 dark:bg-[#1e1535]">
-                                          <p className="mb-2.5 text-[11px] font-bold uppercase tracking-wide text-[#6c3fe0]">
-                                             How it works
+                                    {/* ── Step 2: Copy your wallet address ─────────── */}
+                                    {repayWalletAddress ? (
+                                       <div>
+                                          <div className="mb-2 flex items-center gap-2">
+                                             <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[11px] font-bold text-white">
+                                                2
+                                             </span>
+                                             <p className="text-sm font-semibold text-[#1a1240] dark:text-white">
+                                                Copy your wallet address
+                                             </p>
+                                          </div>
+                                          <p className="mb-3 text-xs text-[#6b6090] dark:text-[#a095c8]">
+                                             {activeSource.id === 'moneybees' ? (
+                                                <>
+                                                   This is the same wallet your loan was sent to. Copy it — you'll share it with Moneybees
+                                                   so they send your USDC here.
+                                                </>
+                                             ) : (
+                                                <>
+                                                   This is the same wallet your loan was sent to. Copy it — you'll paste it into{' '}
+                                                   {activeSource.label} as the destination.
+                                                </>
+                                             )}
                                           </p>
-                                          <div className="space-y-2">
-                                             {(
-                                                [
-                                                   'Visit moneybees.ph and follow their own process',
-                                                   'They handle ID checks and the rate directly with you'
-                                                ] as const
-                                             ).map((step, i) => (
-                                                <div key={i} className="flex items-start gap-2.5">
-                                                   <span className="mt-0.5 flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[9px] font-bold leading-none text-white">
-                                                      {String.fromCharCode(97 + i)}
-                                                   </span>
-                                                   <span className="text-[12px] font-medium leading-snug text-[#3d1a8a] dark:text-[#c4b5fd]">
-                                                      {step}
-                                                   </span>
-                                                </div>
-                                             ))}
-                                             <div className="flex items-start gap-2.5">
-                                                <span className="mt-0.5 flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[9px] font-bold leading-none text-white">
-                                                   c
-                                                </span>
-                                                <span className="text-[12px] font-medium leading-snug text-[#3d1a8a] dark:text-[#c4b5fd]">
-                                                   Share your address —{' '}
-                                                   <button
-                                                      type="button"
-                                                      onClick={handleCopyAddress}
-                                                      className="inline-flex items-center gap-1 font-semibold text-[#6c3fe0] underline underline-offset-2 active:opacity-70"
-                                                   >
-                                                      {copiedAddress ? (
-                                                         <>
-                                                            <Check className="inline h-3 w-3" /> Copied!
-                                                         </>
-                                                      ) : (
-                                                         <>
-                                                            <Copy className="inline h-3 w-3" /> copy it here
-                                                         </>
-                                                      )}
-                                                   </button>{' '}
-                                                   · pay only after they confirm
+                                          <button
+                                             type="button"
+                                             onClick={handleCopyAddress}
+                                             className={`w-full rounded-2xl p-4 text-left transition-colors duration-200 active:scale-[0.99] ${
+                                                copiedAddress
+                                                   ? 'bg-[#dcfce7] ring-2 ring-[#16a34a] dark:bg-[#052e16]'
+                                                   : 'bg-[#f5f4fa] ring-2 ring-[#6c3fe0]/30 dark:bg-[#2a1740] dark:ring-[#6c3fe0]/40'
+                                             }`}
+                                          >
+                                             <div className="flex items-center justify-between gap-2">
+                                                <p
+                                                   className={`text-xs font-semibold ${copiedAddress ? 'text-[#16a34a]' : 'text-[#6c3fe0] dark:text-[#c4b5fd]'}`}
+                                                >
+                                                   {copiedAddress ? 'Copied!' : 'Tap to copy your wallet address'}
+                                                </p>
+                                                <span
+                                                   className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${copiedAddress ? 'bg-[#16a34a]' : 'bg-[#6c3fe0]'}`}
+                                                >
+                                                   {copiedAddress ? (
+                                                      <Check className="h-3.5 w-3.5 text-white" aria-hidden="true" />
+                                                   ) : (
+                                                      <Copy className="h-3.5 w-3.5 text-white" aria-hidden="true" />
+                                                   )}
                                                 </span>
                                              </div>
+                                             <p className="mt-1.5 truncate font-mono text-[22px] font-extrabold leading-tight text-[#1a1240] dark:text-white">
+                                                {formatWalletAddressShort(repayWalletAddress)}
+                                             </p>
+                                             {copiedAddress && (
+                                                <p className="mt-1.5 text-[12px] font-medium text-[#16a34a]">
+                                                   {activeSource.id === 'moneybees'
+                                                      ? 'Now open Moneybees below →'
+                                                      : 'Now paste it into the app below →'}
+                                                </p>
+                                             )}
+                                          </button>
+                                          {/* Wrong-network sends lose funds and can't be recovered — make BASE unmissable
+                                        at the exact moment the borrower copies the address to paste as a destination. */}
+                                          <div className="mt-3 rounded-xl bg-[#fef2f2] p-3 ring-1 ring-[#fca5a5] dark:bg-[#3a1414] dark:ring-[#7f1d1d]">
+                                             <p className="text-[13px] font-extrabold leading-snug text-[#b91c1c] dark:text-[#fca5a5]">
+                                                ⚠️ Send on the BASE network only
+                                             </p>
+                                             <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#b91c1c] dark:text-[#fca5a5]">
+                                                USDC sent on Ethereum, Polygon, or any other network goes to this address on the wrong chain
+                                                and is lost forever — it cannot be recovered. When {activeSource.label} asks which network,
+                                                choose <span className="font-extrabold underline">Base</span>.
+                                             </p>
                                           </div>
-                                          <p className="mt-2.5 text-[11px] leading-snug text-[#6b6090] dark:text-[#a095c8]">
-                                             Moneybees is an external service — you transact with them directly; Moodeng isn&rsquo;t part of
-                                             the transaction.
+                                       </div>
+                                    ) : null}
+
+                                    {/* ── Step 3: Open app and send ─────────────────── */}
+                                    {repayWalletAddress && !geoLoading ? (
+                                       <div>
+                                          <div className="mb-2 flex items-center gap-2">
+                                             <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[11px] font-bold text-white">
+                                                3
+                                             </span>
+                                             <p className="text-sm font-semibold text-[#1a1240] dark:text-white">{activeSource.action}</p>
+                                          </div>
+
+                                          {/* Instruction card */}
+                                          {activeSource.id === 'moneybees' ? (
+                                             <div className="mb-3 rounded-xl bg-[#f3effe] px-4 py-3.5 dark:bg-[#1e1535]">
+                                                <p className="mb-2.5 text-[11px] font-bold uppercase tracking-wide text-[#6c3fe0]">
+                                                   How it works
+                                                </p>
+                                                <div className="space-y-2">
+                                                   {(
+                                                      [
+                                                         'Visit moneybees.ph and follow their own process',
+                                                         'They handle ID checks and the rate directly with you'
+                                                      ] as const
+                                                   ).map((step, i) => (
+                                                      <div key={i} className="flex items-start gap-2.5">
+                                                         <span className="mt-0.5 flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[9px] font-bold leading-none text-white">
+                                                            {String.fromCharCode(97 + i)}
+                                                         </span>
+                                                         <span className="text-[12px] font-medium leading-snug text-[#3d1a8a] dark:text-[#c4b5fd]">
+                                                            {step}
+                                                         </span>
+                                                      </div>
+                                                   ))}
+                                                   <div className="flex items-start gap-2.5">
+                                                      <span className="mt-0.5 flex h-[16px] w-[16px] shrink-0 items-center justify-center rounded-full bg-[#6c3fe0] text-[9px] font-bold leading-none text-white">
+                                                         c
+                                                      </span>
+                                                      <span className="text-[12px] font-medium leading-snug text-[#3d1a8a] dark:text-[#c4b5fd]">
+                                                         Share your address —{' '}
+                                                         <button
+                                                            type="button"
+                                                            onClick={handleCopyAddress}
+                                                            className="inline-flex items-center gap-1 font-semibold text-[#6c3fe0] underline underline-offset-2 active:opacity-70"
+                                                         >
+                                                            {copiedAddress ? (
+                                                               <>
+                                                                  <Check className="inline h-3 w-3" /> Copied!
+                                                               </>
+                                                            ) : (
+                                                               <>
+                                                                  <Copy className="inline h-3 w-3" /> copy it here
+                                                               </>
+                                                            )}
+                                                         </button>{' '}
+                                                         · pay only after they confirm
+                                                      </span>
+                                                   </div>
+                                                </div>
+                                                <p className="mt-2.5 text-[11px] leading-snug text-[#6b6090] dark:text-[#a095c8]">
+                                                   Moneybees is an external service — you transact with them directly; Moodeng isn&rsquo;t
+                                                   part of the transaction.
+                                                </p>
+                                             </div>
+                                          ) : (
+                                             <div className="mb-3 rounded-xl bg-[#f3effe] px-4 py-3.5 dark:bg-[#1e1535]">
+                                                <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-[#6c3fe0]">
+                                                   In {activeSource.label}
+                                                </p>
+                                                <p className="text-[12px] font-semibold leading-relaxed text-[#1a1240] dark:text-white">
+                                                   {FUND_SOURCE_PATHS[activeSource.id]}
+                                                </p>
+                                                <div className="mt-2.5 flex items-center gap-1.5 rounded-lg bg-[#ede9f8] px-2.5 py-1.5 dark:bg-[#2a1f4f]">
+                                                   <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-[#6c3fe0]" aria-hidden="true" />
+                                                   {activeSource.id === 'binance' ||
+                                                   activeSource.id === 'reku' ||
+                                                   activeSource.id === 'coinsph' ||
+                                                   activeSource.id === 'tokocrypto' ||
+                                                   activeSource.id === 'indodax' ||
+                                                   activeSource.id === 'pintu' ? (
+                                                      <span className="text-[11px] font-semibold text-[#4a1fb8] dark:text-[#a78bfa]">
+                                                         Select <strong>Base</strong> network — not Ethereum or Polygon
+                                                      </span>
+                                                   ) : (
+                                                      <span className="text-[11px] font-semibold text-[#4a1fb8] dark:text-[#a78bfa]">
+                                                         Look for <strong>USDCBASE</strong> — not USDC or other tokens
+                                                      </span>
+                                                   )}
+                                                </div>
+                                                {activeSource.id === 'pdax' ? (
+                                                   <div className="mt-3 overflow-hidden rounded-lg">
+                                                      <iframe
+                                                         className="w-full"
+                                                         height="195"
+                                                         src="https://www.youtube.com/embed/tuHmz4J7I2o"
+                                                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                         allowFullScreen
+                                                         title="How to withdraw USDC from PDAX to your wallet"
+                                                      />
+                                                   </div>
+                                                ) : null}
+                                             </div>
+                                          )}
+
+                                          {/* Indonesian sources: "buy a little extra" before they leave for the exchange */}
+                                          {(() => {
+                                             const breakdown = SOURCE_FEE_BREAKDOWN[activeSource.id];
+                                             if (!breakdown) return null;
+                                             const amount = fundingShortfall ?? 0;
+                                             const amountToBuy = getAmountToBuy(breakdown, amount);
+                                             return (
+                                                <div className="mb-3 rounded-xl bg-[#fff8e6] px-3.5 py-3 ring-1 ring-[#fcd34d] dark:bg-[#2a2210] dark:ring-[#854d0e]">
+                                                   <p className="text-[13px] font-extrabold text-[#1a1240] dark:text-white">
+                                                      Buy a little extra to cover the fee
+                                                   </p>
+                                                   <p className="mt-1 text-[13px] font-semibold leading-snug text-[#1a1240] dark:text-white">
+                                                      You need ${formatCurrency(amount)} → buy about{' '}
+                                                      <span className="font-extrabold text-[#6c3fe0] dark:text-[#c4b5fd]">
+                                                         ${formatCurrency(amountToBuy)}
+                                                      </span>{' '}
+                                                      of USDC
+                                                   </p>
+                                                   <p className="mt-1.5 text-[12px] leading-snug text-[#6b6090] dark:text-[#a095c8]">
+                                                      {activeSource.label} takes about {breakdown.feeLabel.replace('~', '')} to send your
+                                                      USDC. If you only buy ${formatCurrency(amount)}, less than that arrives and your
+                                                      repayment falls short.
+                                                   </p>
+                                                   {breakdown.depositTip ? (
+                                                      <p className="mt-1.5 text-[12px] leading-snug text-[#6b6090] dark:text-[#a095c8]">
+                                                         {breakdown.depositTip}
+                                                      </p>
+                                                   ) : null}
+                                                   <div className="mt-2 flex items-center justify-between border-t border-[#fde68a] pt-2 text-[12px] dark:border-[#854d0e]">
+                                                      <span className="flex items-center gap-2 text-[#6b6090] dark:text-[#a095c8]">
+                                                         <ShieldCheck className="h-3.5 w-3.5 text-[#6c3fe0]" aria-hidden="true" />
+                                                         Moodeng fee
+                                                      </span>
+                                                      <span className="whitespace-nowrap rounded-full bg-[#dcfce7] px-2 py-0.5 text-[10px] font-bold text-[#16a34a] dark:bg-[#052e16]">
+                                                         Free ✓
+                                                      </span>
+                                                   </div>
+                                                </div>
+                                             );
+                                          })()}
+
+                                          {/* CTA button */}
+                                          <button
+                                             type="button"
+                                             onClick={() => {
+                                                if (!activeSource.deepLink) {
+                                                   window.open(activeSource.href, '_blank', 'noopener,noreferrer');
+                                                   return;
+                                                }
+                                                // Try app scheme; if app not installed the location change is a no-op,
+                                                // so fall back to the web URL after 1.5 s.
+                                                window.location.href = activeSource.deepLink;
+                                                setTimeout(() => {
+                                                   window.open(activeSource.href, '_blank', 'noopener,noreferrer');
+                                                }, 1500);
+                                             }}
+                                             className="inline-flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-md-xl bg-[linear-gradient(135deg,#5b21d6_0%,#7c3aed_100%)] text-md-b2 font-semibold text-white shadow-[0_4px_14px_rgba(108,63,224,0.35)] active:scale-[0.98]"
+                                          >
+                                             {activeSource.action}
+                                             <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                                          </button>
+
+                                          {/* Fee attribution — only for paid sources */}
+                                          {(() => {
+                                             const fee = FUND_SOURCE_FEES[activeSource.id];
+                                             if (fee === 0) return null;
+                                             const breakdown = SOURCE_FEE_BREAKDOWN[activeSource.id];
+                                             if (breakdown) return null;
+                                             return (
+                                                <div className="mt-2.5 rounded-xl bg-[#f8f7fb] px-3.5 py-3 dark:bg-[#1e1535]">
+                                                   <div className="flex items-center justify-between text-[12px]">
+                                                      <span className="flex items-center gap-2 text-[#6b6090] dark:text-[#a095c8]">
+                                                         {renderSourceLogo(activeSource.id, false)}
+                                                         {activeSource.label}'s fee
+                                                      </span>
+                                                      <span className="whitespace-nowrap rounded-full bg-[#ede9f8] px-2 py-0.5 text-[10px] font-bold text-[#6b6090] dark:bg-[#2a1f4f] dark:text-[#a095c8]">
+                                                         Small fee
+                                                      </span>
+                                                   </div>
+                                                   <div className="mt-2 flex items-center justify-between border-t border-[#ede9f8] pt-2 text-[12px] dark:border-[#2a1f4f]">
+                                                      <span className="flex items-center gap-2 text-[#6b6090] dark:text-[#a095c8]">
+                                                         <ShieldCheck className="h-3.5 w-3.5 text-[#6c3fe0]" aria-hidden="true" />
+                                                         Moodeng fee
+                                                      </span>
+                                                      <span className="whitespace-nowrap rounded-full bg-[#dcfce7] px-2 py-0.5 text-[10px] font-bold text-[#16a34a] dark:bg-[#052e16]">
+                                                         Free ✓
+                                                      </span>
+                                                   </div>
+                                                   <p className="mt-2 text-[11px] leading-snug text-[#6b6090] dark:text-[#a095c8]">
+                                                      Send a little extra to cover {activeSource.label}'s fee — Moodeng never charges to
+                                                      repay.
+                                                   </p>
+                                                </div>
+                                             );
+                                          })()}
+                                       </div>
+                                    ) : null}
+
+                                    {/* ── Transfer status card ──────────────────────── */}
+                                    {usdcBalance === null ? (
+                                       <div className="flex items-center gap-3 rounded-xl bg-[#f3effe] px-4 py-3 dark:bg-[#1e1535]">
+                                          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[#6c3fe0]" aria-hidden="true" />
+                                          <span className="text-sm font-semibold text-[#3d1a8a] dark:text-[#c4b5fd]">
+                                             Checking your balance…
+                                          </span>
+                                       </div>
+                                    ) : hasEnoughToRepay ? (
+                                       <div className="flex items-center gap-3 rounded-xl bg-[#dcfce7] px-4 py-3 dark:bg-[#052e16]">
+                                          <Check className="h-4 w-4 shrink-0 text-[#16a34a]" aria-hidden="true" />
+                                          <span className="text-sm font-semibold text-[#14532d] dark:text-[#86efac]">Funds ready</span>
+                                       </div>
+                                    ) : hasPartialFunds ? (
+                                       <div className="rounded-xl bg-[#f3effe] px-4 py-3.5 dark:bg-[#1e1535]">
+                                          <div className="mb-2 flex items-center justify-between text-[12px]">
+                                             <span className="font-semibold text-[#3d1a8a] dark:text-[#c4b5fd]">
+                                                ${formatCurrency(usdcBalance!)} USDC received
+                                             </span>
+                                             <span className="text-[#6b6090] dark:text-[#a095c8]">
+                                                ${formatCurrency(selectedRemaining)} needed
+                                             </span>
+                                          </div>
+                                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#e0d9f8] dark:bg-[#2a1f4f]">
+                                             <div
+                                                className="h-full rounded-full bg-[#6c3fe0] transition-all duration-500"
+                                                style={{ width: `${Math.min(99, (usdcBalance! / selectedRemaining) * 100)}%` }}
+                                             />
+                                          </div>
+                                          <p className="mt-2.5 text-[11px] text-[#6b6090] dark:text-[#a095c8]">
+                                             Tap{' '}
+                                             <span className="font-semibold text-[#4a1fb8] dark:text-[#a78bfa]">
+                                                Pay ${formatCurrency(usdcBalance!)}
+                                             </span>{' '}
+                                             below to pay now, or keep waiting for the rest to arrive.
                                           </p>
                                        </div>
                                     ) : (
-                                       <div className="mb-3 rounded-xl bg-[#f3effe] px-4 py-3.5 dark:bg-[#1e1535]">
-                                          <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-[#6c3fe0]">
-                                             In {activeSource.label}
-                                          </p>
-                                          <p className="text-[12px] font-semibold leading-relaxed text-[#1a1240] dark:text-white">
-                                             {FUND_SOURCE_PATHS[activeSource.id]}
-                                          </p>
-                                          <div className="mt-2.5 flex items-center gap-1.5 rounded-lg bg-[#ede9f8] px-2.5 py-1.5 dark:bg-[#2a1f4f]">
-                                             <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-[#6c3fe0]" aria-hidden="true" />
-                                             {activeSource.id === 'binance' ||
-                                             activeSource.id === 'reku' ||
-                                             activeSource.id === 'coinsph' ||
-                                             activeSource.id === 'tokocrypto' ||
-                                             activeSource.id === 'indodax' ||
-                                             activeSource.id === 'pintu' ? (
-                                                <span className="text-[11px] font-semibold text-[#4a1fb8] dark:text-[#a78bfa]">
-                                                   Select <strong>Base</strong> network — not Ethereum or Polygon
-                                                </span>
-                                             ) : (
-                                                <span className="text-[11px] font-semibold text-[#4a1fb8] dark:text-[#a78bfa]">
-                                                   Look for <strong>USDCBASE</strong> — not USDC or other tokens
-                                                </span>
-                                             )}
+                                       <div className="flex items-center gap-3 rounded-xl bg-[#f3effe] px-4 py-3.5 dark:bg-[#1e1535]">
+                                          <div className="relative flex h-5 w-5 shrink-0 items-center justify-center">
+                                             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#6c3fe0] opacity-25" />
+                                             <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#6c3fe0]" />
                                           </div>
-                                          {activeSource.id === 'pdax' ? (
-                                             <div className="mt-3 overflow-hidden rounded-lg">
-                                                <iframe
-                                                   className="w-full"
-                                                   height="195"
-                                                   src="https://www.youtube.com/embed/tuHmz4J7I2o"
-                                                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                   allowFullScreen
-                                                   title="How to withdraw USDC from PDAX to your wallet"
-                                                />
-                                             </div>
-                                          ) : null}
+                                          <div>
+                                             <p className="text-sm font-semibold text-[#3d1a8a] dark:text-[#c4b5fd]">
+                                                Watching for your transfer
+                                             </p>
+                                             <p className="text-[11px] text-[#6b6090] dark:text-[#a095c8]">
+                                                Detects automatically — usually under a minute
+                                             </p>
+                                          </div>
                                        </div>
                                     )}
-
-                                    {/* Indonesian sources: "buy a little extra" before they leave for the exchange */}
-                                    {(() => {
-                                       const breakdown = SOURCE_FEE_BREAKDOWN[activeSource.id];
-                                       if (!breakdown) return null;
-                                       const amount = fundingShortfall ?? 0;
-                                       const amountToBuy = getAmountToBuy(breakdown, amount);
-                                       return (
-                                          <div className="mb-3 rounded-xl bg-[#fff8e6] px-3.5 py-3 ring-1 ring-[#fcd34d] dark:bg-[#2a2210] dark:ring-[#854d0e]">
-                                             <p className="text-[13px] font-extrabold text-[#1a1240] dark:text-white">
-                                                Buy a little extra to cover the fee
-                                             </p>
-                                             <p className="mt-1 text-[13px] font-semibold leading-snug text-[#1a1240] dark:text-white">
-                                                You need ${formatCurrency(amount)} → buy about{' '}
-                                                <span className="font-extrabold text-[#6c3fe0] dark:text-[#c4b5fd]">
-                                                   ${formatCurrency(amountToBuy)}
-                                                </span>{' '}
-                                                of USDC
-                                             </p>
-                                             <p className="mt-1.5 text-[12px] leading-snug text-[#6b6090] dark:text-[#a095c8]">
-                                                {activeSource.label} takes about {breakdown.feeLabel.replace('~', '')} to send your USDC. If
-                                                you only buy ${formatCurrency(amount)}, less than that arrives and your repayment falls
-                                                short.
-                                             </p>
-                                             {breakdown.depositTip ? (
-                                                <p className="mt-1.5 text-[12px] leading-snug text-[#6b6090] dark:text-[#a095c8]">
-                                                   {breakdown.depositTip}
-                                                </p>
-                                             ) : null}
-                                             <div className="mt-2 flex items-center justify-between border-t border-[#fde68a] pt-2 text-[12px] dark:border-[#854d0e]">
-                                                <span className="flex items-center gap-2 text-[#6b6090] dark:text-[#a095c8]">
-                                                   <ShieldCheck className="h-3.5 w-3.5 text-[#6c3fe0]" aria-hidden="true" />
-                                                   Moodeng fee
-                                                </span>
-                                                <span className="whitespace-nowrap rounded-full bg-[#dcfce7] px-2 py-0.5 text-[10px] font-bold text-[#16a34a] dark:bg-[#052e16]">
-                                                   Free ✓
-                                                </span>
-                                             </div>
-                                          </div>
-                                       );
-                                    })()}
-
-                                    {/* CTA button */}
-                                    <button
-                                       type="button"
-                                       onClick={() => {
-                                          if (!activeSource.deepLink) {
-                                             window.open(activeSource.href, '_blank', 'noopener,noreferrer');
-                                             return;
-                                          }
-                                          // Try app scheme; if app not installed the location change is a no-op,
-                                          // so fall back to the web URL after 1.5 s.
-                                          window.location.href = activeSource.deepLink;
-                                          setTimeout(() => {
-                                             window.open(activeSource.href, '_blank', 'noopener,noreferrer');
-                                          }, 1500);
-                                       }}
-                                       className="inline-flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-md-xl bg-[linear-gradient(135deg,#5b21d6_0%,#7c3aed_100%)] text-md-b2 font-semibold text-white shadow-[0_4px_14px_rgba(108,63,224,0.35)] active:scale-[0.98]"
-                                    >
-                                       {activeSource.action}
-                                       <ExternalLink className="h-4 w-4" aria-hidden="true" />
-                                    </button>
-
-                                    {/* Fee attribution — only for paid sources */}
-                                    {(() => {
-                                       const fee = FUND_SOURCE_FEES[activeSource.id];
-                                       if (fee === 0) return null;
-                                       const breakdown = SOURCE_FEE_BREAKDOWN[activeSource.id];
-                                       if (breakdown) return null;
-                                       return (
-                                          <div className="mt-2.5 rounded-xl bg-[#f8f7fb] px-3.5 py-3 dark:bg-[#1e1535]">
-                                             <div className="flex items-center justify-between text-[12px]">
-                                                <span className="flex items-center gap-2 text-[#6b6090] dark:text-[#a095c8]">
-                                                   {renderSourceLogo(activeSource.id, false)}
-                                                   {activeSource.label}'s fee
-                                                </span>
-                                                <span className="whitespace-nowrap rounded-full bg-[#ede9f8] px-2 py-0.5 text-[10px] font-bold text-[#6b6090] dark:bg-[#2a1f4f] dark:text-[#a095c8]">
-                                                   Small fee
-                                                </span>
-                                             </div>
-                                             <div className="mt-2 flex items-center justify-between border-t border-[#ede9f8] pt-2 text-[12px] dark:border-[#2a1f4f]">
-                                                <span className="flex items-center gap-2 text-[#6b6090] dark:text-[#a095c8]">
-                                                   <ShieldCheck className="h-3.5 w-3.5 text-[#6c3fe0]" aria-hidden="true" />
-                                                   Moodeng fee
-                                                </span>
-                                                <span className="whitespace-nowrap rounded-full bg-[#dcfce7] px-2 py-0.5 text-[10px] font-bold text-[#16a34a] dark:bg-[#052e16]">
-                                                   Free ✓
-                                                </span>
-                                             </div>
-                                             <p className="mt-2 text-[11px] leading-snug text-[#6b6090] dark:text-[#a095c8]">
-                                                Send a little extra to cover {activeSource.label}'s fee — Moodeng never charges to repay.
-                                             </p>
-                                          </div>
-                                       );
-                                    })()}
-                                 </div>
+                                 </>
                               ) : null}
-
-                              {/* ── Transfer status card ──────────────────────── */}
-                              {usdcBalance === null ? (
-                                 <div className="flex items-center gap-3 rounded-xl bg-[#f3effe] px-4 py-3 dark:bg-[#1e1535]">
-                                    <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[#6c3fe0]" aria-hidden="true" />
-                                    <span className="text-sm font-semibold text-[#3d1a8a] dark:text-[#c4b5fd]">Checking your balance…</span>
-                                 </div>
-                              ) : hasEnoughToRepay ? (
-                                 <div className="flex items-center gap-3 rounded-xl bg-[#dcfce7] px-4 py-3 dark:bg-[#052e16]">
-                                    <Check className="h-4 w-4 shrink-0 text-[#16a34a]" aria-hidden="true" />
-                                    <span className="text-sm font-semibold text-[#14532d] dark:text-[#86efac]">Funds ready</span>
-                                 </div>
-                              ) : hasPartialFunds ? (
-                                 <div className="rounded-xl bg-[#f3effe] px-4 py-3.5 dark:bg-[#1e1535]">
-                                    <div className="mb-2 flex items-center justify-between text-[12px]">
-                                       <span className="font-semibold text-[#3d1a8a] dark:text-[#c4b5fd]">
-                                          ${formatCurrency(usdcBalance!)} USDC received
-                                       </span>
-                                       <span className="text-[#6b6090] dark:text-[#a095c8]">
-                                          ${formatCurrency(selectedRemaining)} needed
-                                       </span>
-                                    </div>
-                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#e0d9f8] dark:bg-[#2a1f4f]">
-                                       <div
-                                          className="h-full rounded-full bg-[#6c3fe0] transition-all duration-500"
-                                          style={{ width: `${Math.min(99, (usdcBalance! / selectedRemaining) * 100)}%` }}
-                                       />
-                                    </div>
-                                    <p className="mt-2.5 text-[11px] text-[#6b6090] dark:text-[#a095c8]">
-                                       Tap{' '}
-                                       <span className="font-semibold text-[#4a1fb8] dark:text-[#a78bfa]">
-                                          Pay ${formatCurrency(usdcBalance!)}
-                                       </span>{' '}
-                                       below to pay now, or keep waiting for the rest to arrive.
-                                    </p>
-                                 </div>
-                              ) : (
-                                 <div className="flex items-center gap-3 rounded-xl bg-[#f3effe] px-4 py-3.5 dark:bg-[#1e1535]">
-                                    <div className="relative flex h-5 w-5 shrink-0 items-center justify-center">
-                                       <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#6c3fe0] opacity-25" />
-                                       <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#6c3fe0]" />
-                                    </div>
-                                    <div>
-                                       <p className="text-sm font-semibold text-[#3d1a8a] dark:text-[#c4b5fd]">
-                                          Watching for your transfer
-                                       </p>
-                                       <p className="text-[11px] text-[#6b6090] dark:text-[#a095c8]">
-                                          Detects automatically — usually under a minute
-                                       </p>
-                                    </div>
-                                 </div>
-                              )}
 
                               {/* ── Help link ────────────────────────────────── */}
                               <div className="flex items-center justify-end px-0.5 text-[12px]">
@@ -2186,9 +2231,7 @@ export default function Repay() {
                            <Clock className="h-4 w-4 shrink-0" aria-hidden="true" />
                            {isLoanOverdue(selectedLoan) ? 'Past due' : `${getDueCountdownCopy(selectedLoan)}`}
                         </span>
-                        <span>
-                           Due {getDueDateShortCopy(selectedLoan)}
-                        </span>
+                        <span>Due {getDueDateShortCopy(selectedLoan)}</span>
                      </div>
                   </section>
                </>

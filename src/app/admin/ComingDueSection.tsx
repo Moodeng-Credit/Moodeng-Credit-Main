@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { AdminLiveRow, useAdminLiveReload } from '@/app/admin/useAdminLive';
+import IndonesiaBadge from '@/components/IndonesiaBadge';
 
 import AdminDeadline from './AdminDeadline';
 import { type ComingDueLoan, connectBorrower, listComingDueLoans, nudgeBorrower } from './adminSupabase';
@@ -139,7 +140,7 @@ export default function ComingDueSection({
          .filter((l) => activeBucket.test(l.days_until_due))
          .filter((l) => {
             if (!q) return true;
-            const fields = [l.tracking_id, l.borrower?.username, l.lender?.username, l.reason];
+            const fields = [l.tracking_id, l.borrower?.username, l.lender?.username, l.reason, l.market === 'ID' ? 'indonesia 🇮🇩' : null];
             return fields.some((f) => (f ?? '').toLowerCase().includes(q));
          });
    }, [loans, activeBucket, search]);
@@ -263,7 +264,12 @@ export default function ComingDueSection({
                               <AdminDeadline dueDate={l.due_date} dueTimezone={l.due_timezone} />
                            </td>
                            <td className="px-4 py-3 font-mono text-sm font-bold text-[#cfc6dd]">{l.tracking_id}</td>
-                           <td className="px-4 py-3 text-sm font-bold text-white">{l.borrower?.username ?? '—'}</td>
+                           <td className="px-4 py-3 text-sm font-bold text-white">
+                              <span className="inline-flex items-center gap-1.5">
+                                 {l.borrower?.username ?? '—'}
+                                 {l.market === 'ID' ? <IndonesiaBadge compact /> : null}
+                              </span>
+                           </td>
                            <td className="px-4 py-3 text-xs font-medium text-[#a89bb8]">
                               <div className="space-y-0.5">
                                  <div>{l.borrower?.email ?? '—'}</div>
