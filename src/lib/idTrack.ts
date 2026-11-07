@@ -104,7 +104,8 @@ export const ID_TRACK_ERRORS: Record<string, { id: string; en: string }> = {
    facebook_follow_required: { id: 'Ikuti halaman Facebook kami dulu.', en: 'Follow our Facebook page first.' },
    walt_address_invalid: { id: 'Alamat tidak valid. Harus mulai 0x…', en: 'That address isn’t valid. It starts with 0x…' },
    walt_address_is_moodeng_wallet: { id: 'Itu alamat Moodeng kamu. Tempel alamat Walt.', en: 'That’s your Moodeng address. Paste your Walt one.' },
-   walt_address_in_use: { id: 'Alamat ini dipakai akun lain.', en: 'Another account uses this address.' }
+   walt_address_in_use: { id: 'Alamat ini dipakai akun lain.', en: 'Another account uses this address.' },
+   walt_address_id_track_only: { id: 'Hanya untuk akun Indonesia.', en: 'Only for Indonesia accounts.' }
 };
 
 export const idTrackErrorText = (message: string | undefined, lang: 'id' | 'en'): string => {

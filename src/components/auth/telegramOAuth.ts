@@ -5,16 +5,20 @@
 const TELEGRAM_BOT_ID = '7975444499';
 
 /**
- * Telegram's OAuth page for our bot. `request_access=write` asks the person to let the bot message
- * them (Telegram then returns allows_write_to_pm, and telegram-login saves users.chat_id), so the bot
- * can reach them from the first minute, which the Indonesia track needs for its step 1.
+ * Telegram's OAuth page for our bot. With `requestWrite`, `request_access=write` asks the person to
+ * let the bot message them (Telegram then returns allows_write_to_pm, and telegram-login saves
+ * users.chat_id), so the bot can reach them from the first minute — only the Indonesia track (/id)
+ * needs that for its step 1. Everyone else gets the plain sign-in URL, with no extra prompt.
  */
-export const buildTelegramOAuthUrl = (origin: string = window.location.origin): string => {
+export const buildTelegramOAuthUrl = (
+   origin: string = window.location.origin,
+   { requestWrite = false }: { requestWrite?: boolean } = {}
+): string => {
    const returnTo = `${origin}/auth/telegram/callback`;
    return (
       `https://oauth.telegram.org/auth?bot_id=${TELEGRAM_BOT_ID}` +
       `&origin=${encodeURIComponent(origin)}` +
-      `&request_access=write` +
+      (requestWrite ? `&request_access=write` : '') +
       `&return_to=${encodeURIComponent(returnTo)}`
    );
 };
@@ -23,8 +27,8 @@ export const buildTelegramOAuthUrl = (origin: string = window.location.origin): 
  * Leaves for Telegram's OAuth page. Paints a spinner first, then navigates on the next frame so the
  * loading state actually shows before the browser leaves (mirrors LINE).
  */
-export const startTelegramLogin = (): void => {
-   const url = buildTelegramOAuthUrl();
+export const startTelegramLogin = (options: { requestWrite?: boolean } = {}): void => {
+   const url = buildTelegramOAuthUrl(window.location.origin, options);
    requestAnimationFrame(() =>
       requestAnimationFrame(() => {
          window.location.href = url;

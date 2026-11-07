@@ -31,7 +31,7 @@ const ERRORS: Record<string, string> = {
    tx_failed: 'That transaction failed on BNB Chain.',
    tx_too_new_try_again: 'Too new — wait a minute and try again.',
    tx_not_usdc_to_their_walt: 'That transaction isn’t USDC to this borrower’s Walt address.',
-   tx_wrong_amount: 'Wrong amount — it must be exactly the loan amount.',
+   tx_wrong_amount: 'Amount received doesn’t match the loan (must be within $0.50 under it).',
    tx_already_used: 'That transaction already funded another loan.',
    lender_has_no_base_wallet: 'Your account has no Base wallet on file, so repayments would have nowhere to go.',
    no_lender_of_record: 'No lender of record configured.',
@@ -158,18 +158,22 @@ export default function WaltPayoutCard({ loanId, onFunded }: { loanId: string; o
                   <li>
                      Binance TH → Withdraw → <b>USDC</b> → network <b>BSC (BNB Smart Chain)</b>
                   </li>
-                  <li>Paste the address, send exactly the amount below</li>
+                  <li>Paste the address and the amount below</li>
                   <li>
                      Tap <b>I sent it</b> — the app finds it on BNB Chain by itself
                   </li>
                </ol>
+               <p className="text-[12px] leading-4 text-[#7a7a7a]">
+                  The borrower must receive the loan amount. Binance TH’s BSC fee for USDC is $0 — if it shows a fee, enter
+                  the amount + fee.
+               </p>
                <CopyRow label="Walt address (BEP20)" value={payout.walt_address} />
                {amount != null ? <CopyRow label="Amount (USDC)" value={String(amount)} display={`${amount} USDC`} /> : null}
 
                {payout.marked_sent_at ? (
                   <div className="rounded-lg bg-[#fff6db] px-3 py-2 font-semibold text-[#8a6100]">
                      {payout.status === 'not_found'
-                        ? 'Not seen after 30 min. Check it was USDC on BSC and the exact amount — or paste the TxID below.'
+                        ? 'Not seen after 30 min. Check it was USDC on BSC and the borrower received the loan amount — or paste the TxID below.'
                         : 'Looking for it on BNB Chain… (usually under a minute after Binance sends it)'}
                   </div>
                ) : null}

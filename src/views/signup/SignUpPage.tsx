@@ -28,6 +28,7 @@ import { registerUser, registerWithGoogle, registerWithTelegram } from '@/store/
 import type { AppDispatch } from '@/store/store';
 import { WorldId } from '@/types/authTypes';
 import IdEntryBanner from '@/views/indonesia/IdEntryBanner';
+import { clearIdTrackIntent } from '@/views/indonesia/idFlow';
 import { Icons } from '@/views/login/components/Icons';
 import PasswordlessSignUpScreen from '@/views/signup/PasswordlessSignUpScreen';
 import '@/views/signup/styles/signup.css';
@@ -106,6 +107,11 @@ function PasswordSignUpPage() {
    const [showPassWeak, setShowPassWeak] = useState(false);
    const [accountErrorType, setAccountErrorType] = useState<SignUpErrorType>(null);
    const isWorldId = WorldId.INACTIVE;
+
+   // A /id Telegram tap that never finished must not turn this sign-up into an Indonesia sign-up.
+   useEffect(() => {
+      clearIdTrackIntent();
+   }, []);
 
    useEffect(() => {
       if (import.meta.env.PROD && facebookInApp) posthog.capture('signup_inapp_email_shown', { app: inApp.appName, os: inApp.os });

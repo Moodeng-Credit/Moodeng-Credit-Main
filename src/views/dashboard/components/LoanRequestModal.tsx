@@ -57,7 +57,7 @@ import type { LoanFlow } from '@/hooks/useLoanFlow';
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import type { LoanRequestFlowState } from '@/lib/loanRequestDraft';
 import { type IdLoanRules, idTermOptions } from '@/lib/idTrack';
-import { checkIdLoanTerms, daysUntil, idLoanTermMessage, idRepaymentBounds, idRepaymentChoices } from '@/lib/loanMarket';
+import { daysUntil, idLoanTermMessage, idRepaymentBounds, idRepaymentChoices } from '@/lib/loanMarket';
 import { minimumRepayment, suggestedReturnRange } from '@/lib/loanPricing';
 import { checkLoanReason, getCachedReasonVerdict, type ReasonAttempt, type ReasonCategory, type ReasonCheckLocale } from '@/lib/loanReasonCheck';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';

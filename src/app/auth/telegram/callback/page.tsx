@@ -1,4 +1,4 @@
-import { type JSX, useEffect, useState } from 'react';
+import { type JSX, useEffect, useMemo, useState } from 'react';
 
 import { useQueryClient } from '@tanstack/react-query';
 import { useDispatch } from 'react-redux';
@@ -19,8 +19,15 @@ export default function TelegramCallbackPage(): JSX.Element {
    const dispatch = useDispatch<AppDispatch>();
    const queryClient = useQueryClient();
    const [error, setError] = useState<string | null>(null);
+   // Read once on arrival: every failure below clears the intent (so a stale /id tap can't turn a
+   // later, unrelated Telegram sign-in into an Indonesia sign-up), but the error screen still needs it.
+   const fromId = useMemo(() => hasIdTrackIntent(), []);
 
    useEffect(() => {
+      const fail = (message: string) => {
+         clearIdTrackIntent();
+         setError(message);
+      };
       const run = async () => {
          let params: Record<string, string> = Object.fromEntries(new URLSearchParams(window.location.search));
 
@@ -42,7 +49,7 @@ export default function TelegramCallbackPage(): JSX.Element {
          }
 
          if (!params.hash) {
-            setError('Missing Telegram auth data. Please try again.');
+            fail('Missing Telegram auth data. Please try again.');
             return;
          }
 
@@ -53,17 +60,17 @@ export default function TelegramCallbackPage(): JSX.Element {
          });
 
          if (fnError) {
-            setError(fnError.message || 'Telegram login failed.');
+            fail(fnError.message || 'Telegram login failed.');
             return;
          }
          if (data?.error) {
-            setError(data.error as string);
+            fail(data.error as string);
             return;
          }
 
          const { error: sessionError } = await supabase.auth.setSession(data.session);
          if (sessionError) {
-            setError(sessionError.message);
+            fail(sessionError.message);
             return;
          }
 
@@ -124,13 +131,12 @@ export default function TelegramCallbackPage(): JSX.Element {
       };
 
       run().catch((err: unknown) => {
-         setError(err instanceof Error ? err.message : 'Unexpected error during Telegram login.');
+         fail(err instanceof Error ? err.message : 'Unexpected error during Telegram login.');
       });
    }, [navigate, dispatch, queryClient]);
 
    if (error) {
       // From /id: back to the Indonesian page (it has the Telegram button again), in Bahasa.
-      const fromId = hasIdTrackIntent();
       return (
          <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
             <p className="text-lg font-semibold text-red-600">{fromId ? 'Login Telegram gagal' : 'Telegram login failed'}</p>

@@ -20,6 +20,7 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { loginUser, loginWithGoogle, loginWithTelegram, type OtpChannel } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import IdEntryBanner from '@/views/indonesia/IdEntryBanner';
+import { clearIdTrackIntent } from '@/views/indonesia/idFlow';
 import { Icons } from '@/views/login/components/Icons';
 import '@/views/signup/styles/signup.css';
 
@@ -94,6 +95,11 @@ export default function SignInPage() {
       if (from?.pathname) rememberNextPath(`${from.pathname}${from.search ?? ''}`);
       else if (searchParams.get('next')) rememberNextPath(searchParams.get('next'));
       // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
+
+   // A /id Telegram tap that never finished must not turn this sign-in into an Indonesia sign-up.
+   useEffect(() => {
+      clearIdTrackIntent();
    }, []);
 
    useEffect(() => {

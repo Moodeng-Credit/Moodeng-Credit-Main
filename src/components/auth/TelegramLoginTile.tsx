@@ -60,7 +60,8 @@ export default function TelegramLoginTile(): JSX.Element {
 }
 
 /**
- * The big full-width variant for /id (Indonesia track): same OAuth flow, one gold button.
+ * The big full-width variant for /id (Indonesia track): same OAuth flow, one gold button, plus
+ * Telegram's "let the bot message you" prompt (the track's step 1 needs it).
  * `onBeforeLeave` runs right before the browser leaves (e.g. to mark the sign-up intent).
  */
 export function TelegramBigButton({
@@ -77,7 +78,7 @@ export function TelegramBigButton({
       if (isLoading) return;
       setIsLoading(true);
       onBeforeLeave?.();
-      startTelegramLogin();
+      startTelegramLogin({ requestWrite: true });
    };
    const gold = variant === 'gold';
    return (

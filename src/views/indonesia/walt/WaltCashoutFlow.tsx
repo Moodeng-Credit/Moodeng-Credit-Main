@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, ArrowDown, CheckCircle2, ExternalLink, Loader2, RotateCcw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+import { openMessengerSupport } from '@/config/contactVerification';
+import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { ID_PATHS, WALT_BOT_URL } from '@/lib/idTrack';
 import {
    estimateCashout,
@@ -28,6 +30,25 @@ const SLOW_MS = 3 * 60_000;
 const GIVE_UP_MS = 30 * 60_000;
 // The server's quote must give back at least this share of what's sent (≈ $0.07 fee on $20 is 0.35%).
 const MIN_OUT_RATIO = 0.95;
+// The transfer the wallet already approved/broadcast but that has no recorded tx hash yet. Kept
+// across reloads so a reload can't drop the person back on the form (a same-amount quote would
+// reuse the same deposit address and the money would be sent twice).
+const SUBMITTED_KEY = 'moodeng:walt-cashout-submitted';
+const readSubmitted = (): string | null => {
+   try {
+      return window.localStorage.getItem(SUBMITTED_KEY);
+   } catch {
+      return null;
+   }
+};
+const writeSubmitted = (transferId: string | null) => {
+   try {
+      if (transferId) window.localStorage.setItem(SUBMITTED_KEY, transferId);
+      else window.localStorage.removeItem(SUBMITTED_KEY);
+   } catch {
+      // storage blocked: the in-memory state still guards this visit
+   }
+};
 
 const T = {
    toWalt: { id: 'Ke Walt kamu', en: 'To your Walt' },
@@ -50,6 +71,22 @@ const T = {
    quoting: { id: 'Menyiapkan…', en: 'Getting ready…' },
    sending: { id: 'Mengirim…', en: 'Sending…' },
    tracking: { id: 'Sedang dikirim ke Walt…', en: 'On its way to Walt…' },
+   confirming: { id: 'Sedang dikonfirmasi — jangan kirim lagi', en: 'Confirming — don’t send again' },
+   confirmingBody: {
+      id: 'Pembayaran sudah disetujui. Tunggu di sini, jangan kirim ulang.',
+      en: 'Your payment was approved. Wait here and don’t send it again.'
+   },
+   stuckTitle: { id: 'Belum ada kabar', en: 'No update yet' },
+   stuckBody: {
+      id: 'Transfer ini belum selesai. Jangan kirim lagi. Cek lagi nanti, atau hubungi kami.',
+      en: 'This transfer hasn’t finished yet. Don’t send again. Check again later, or contact us.'
+   },
+   checkAgain: { id: 'Cek lagi', en: 'Check again' },
+   contact: { id: 'Hubungi kami', en: 'Contact us' },
+   wrongRecipient: {
+      id: 'Alamat Walt tidak cocok. Tidak ada yang dikirim. Muat ulang halaman.',
+      en: 'The Walt address didn’t match. Nothing was sent. Reload the page.'
+   },
    trackingBody: { id: 'Biasanya beberapa detik.', en: 'Usually a few seconds.' },
    slow: { id: 'Agak lama. Uang kamu aman — kami terus cek.', en: 'Taking a little longer. Your money is safe — we keep checking.' },
    doneTitle: { id: 'Sudah sampai di Walt ✅', en: 'Arrived in Walt ✅' },
@@ -75,7 +112,7 @@ const T = {
    loadFail: { id: 'Tidak bisa memuat. Coba lagi.', en: 'Couldn’t load. Try again.' }
 } satisfies Record<string, Record<WaltLang, string>>;
 
-type Phase = 'form' | 'quoting' | 'sending' | 'tracking' | 'done' | 'refund' | 'failure';
+type Phase = 'form' | 'quoting' | 'sending' | 'tracking' | 'stuck' | 'done' | 'refund' | 'failure';
 
 type Props = {
    isPreview: boolean;
@@ -117,6 +154,10 @@ export default function WaltCashoutFlow({ isPreview, spendable, walletAddress, s
    const [error, setError] = useState<string | null>(null);
    const [transfer, setTransfer] = useState<RelayTransfer | null>(null);
    const [slow, setSlow] = useState(false);
+   // True once the wallet approved/broadcast the send (onSubmitted) for the current transfer.
+   const submittedRef = useRef(false);
+   // Submitted, but no tx hash came back (Base Pay timeout, a throw after approval…).
+   const [unconfirmed, setUnconfirmed] = useState(false);
 
    // Saved Walt address + resume a cash-out that's still on its way.
    const load = useCallback(async () => {
@@ -129,7 +170,16 @@ export default function WaltCashoutFlow({ isPreview, spendable, walletAddress, s
       try {
          const { transfer: last, waltAddress } = await relayWalt.latest('cashout');
          setWalt(waltAddress);
-         if (
+         const submittedId = readSubmitted();
+         const submittedNoHash = Boolean(last && submittedId === last.transferId && last.status === 'quoted');
+         if (last && isFinalRelayStatus(last.status) && submittedId === last.transferId) writeSubmitted(null);
+         if (submittedNoHash && last) {
+            // Approved in the wallet but never got its hash recorded: keep following it, no new quote.
+            submittedRef.current = true;
+            setUnconfirmed(true);
+            setTransfer(last);
+            setPhase('tracking');
+         } else if (
             last &&
             (last.status === 'sent' || last.status === 'pending') &&
             Date.now() - new Date(last.createdAt).getTime() < 2 * 60 * 60_000
@@ -198,13 +248,18 @@ export default function WaltCashoutFlow({ isPreview, spendable, walletAddress, s
       const tick = async () => {
          polls += 1;
          if (Date.now() - started > SLOW_MS) setSlow(true);
-         if (Date.now() - started > GIVE_UP_MS) return;
+         if (Date.now() - started > GIVE_UP_MS) {
+            // Stop polling and say so — the stuck screen offers a manual re-check and support.
+            if (alive) setPhase('stuck');
+            return;
+         }
          try {
             const next = isPreview
                ? { ...transfer, status: polls >= 2 ? ('success' as const) : ('pending' as const) }
                : await relayWalt.status(transfer.transferId);
             if (!alive) return;
             setTransfer(next);
+            if (isFinalRelayStatus(next.status)) writeSubmitted(null);
             if (next.status === 'success') setPhase('done');
             else if (next.status === 'refund') setPhase('refund');
             else if (next.status === 'failure' || next.status === 'expired') setPhase('failure');
@@ -252,6 +307,13 @@ export default function WaltCashoutFlow({ isPreview, spendable, walletAddress, s
          setPhase('form');
          return;
       }
+      // The server picks the recipient from the account; still refuse to send if it isn't the Walt
+      // address this screen shows.
+      if (!walt || (quote.recipient ?? '').toLowerCase() !== walt.toLowerCase()) {
+         setError(T.wrongRecipient[lang]);
+         setPhase('form');
+         return;
+      }
       // Send exactly what was quoted — never a different amount to a strict deposit address.
       if (Number(quote.amountIn) !== amtNum || Number(quote.amountOut ?? 0) < amtNum * MIN_OUT_RATIO) {
          setError(T.priceMoved[lang]);
@@ -260,19 +322,33 @@ export default function WaltCashoutFlow({ isPreview, spendable, walletAddress, s
       }
       setTransfer(quote);
       setPhase('sending');
+      submittedRef.current = false;
+      setUnconfirmed(false);
       let sent: { hash: string } | null = null;
       try {
-         sent = await send(quote.depositAddress, quote.amountIn, 'Walt');
+         sent = await send(quote.depositAddress, quote.amountIn, 'Walt', () => {
+            submittedRef.current = true;
+            if (!isPreview) writeSubmitted(quote.transferId);
+         });
       } catch (err) {
          console.error('[walt] send failed', err);
          sent = null;
       }
       if (!sent) {
+         if (submittedRef.current) {
+            // The wallet already approved it: the money may be on its way. Follow the transfer
+            // (status polling works without the hash) and never offer a new quote meanwhile.
+            setUnconfirmed(true);
+            setSlow(false);
+            setPhase('tracking');
+            return;
+         }
          // Rejected, failed, or handed off to the face check (this screen is gone then).
          setError(T.notSent[lang]);
          setPhase('form');
          return;
       }
+      if (!isPreview) writeSubmitted(null);
       if (!isPreview) {
          try {
             setTransfer(await relayWalt.cashoutSent(quote.transferId, sent.hash));
@@ -324,7 +400,7 @@ export default function WaltCashoutFlow({ isPreview, spendable, walletAddress, s
       );
    }
 
-   if (phase === 'tracking' || phase === 'done' || phase === 'refund' || phase === 'failure') {
+   if (phase === 'tracking' || phase === 'stuck' || phase === 'done' || phase === 'refund' || phase === 'failure') {
       const sentAmount = transfer?.amountIn ?? amount;
       const got = transfer?.amountOut ? Number(transfer.amountOut) : null;
       return (
@@ -334,8 +410,18 @@ export default function WaltCashoutFlow({ isPreview, spendable, walletAddress, s
                {phase === 'tracking' ? (
                   <>
                      <Loader2 className="h-[36px] w-[36px] animate-spin text-[#1e96c8]" aria-hidden="true" />
-                     <p className="text-[18px] font-bold text-[var(--ink)]">{T.tracking[lang]}</p>
-                     <p className="text-[13px] text-[var(--text-muted)]">{slow ? T.slow[lang] : T.trackingBody[lang]}</p>
+                     <p className="text-[18px] font-bold text-[var(--ink)]">
+                        {unconfirmed ? T.confirming[lang] : T.tracking[lang]}
+                     </p>
+                     <p className="text-[13px] text-[var(--text-muted)]">
+                        {slow ? T.slow[lang] : unconfirmed ? T.confirmingBody[lang] : T.trackingBody[lang]}
+                     </p>
+                  </>
+               ) : phase === 'stuck' ? (
+                  <>
+                     <AlertTriangle className="h-[36px] w-[36px] text-[#d97706]" aria-hidden="true" />
+                     <p className="text-[18px] font-bold text-[var(--ink)]">{T.stuckTitle[lang]}</p>
+                     <p className="text-[13px] text-[var(--text-muted)]">{T.stuckBody[lang]}</p>
                   </>
                ) : phase === 'done' ? (
                   <>
@@ -372,16 +458,47 @@ export default function WaltCashoutFlow({ isPreview, spendable, walletAddress, s
                      {T.finish[lang]}
                   </button>
                </>
-            ) : phase === 'tracking' ? null : (
-               <GoldButton
-                  onClick={() => {
-                     setTransfer(null);
-                     setError(null);
-                     setPhase('form');
-                  }}
-               >
-                  {T.tryAgain[lang]}
-               </GoldButton>
+            ) : phase === 'tracking' ? null : phase === 'stuck' ? (
+               <>
+                  <GoldButton
+                     onClick={() => {
+                        setSlow(true);
+                        setPhase('tracking');
+                     }}
+                  >
+                     {T.checkAgain[lang]}
+                  </GoldButton>
+                  <button
+                     type="button"
+                     onClick={() => openMessengerSupport(EXTERNAL_LINKS.support.messenger)}
+                     className="w-full py-[8px] text-[14px] font-semibold text-[var(--primary)]"
+                  >
+                     {T.contact[lang]}
+                  </button>
+               </>
+            ) : (
+               <>
+                  <GoldButton
+                     onClick={() => {
+                        setTransfer(null);
+                        setError(null);
+                        setUnconfirmed(false);
+                        submittedRef.current = false;
+                        setPhase('form');
+                     }}
+                  >
+                     {T.tryAgain[lang]}
+                  </GoldButton>
+                  {phase === 'failure' && (
+                     <button
+                        type="button"
+                        onClick={() => openMessengerSupport(EXTERNAL_LINKS.support.messenger)}
+                        className="w-full py-[8px] text-[14px] font-semibold text-[var(--primary)]"
+                     >
+                        {T.contact[lang]}
+                     </button>
+                  )}
+               </>
             )}
          </div>
       );

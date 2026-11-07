@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Check, Copy, ExternalLink, Loader2, RotateCcw } from 'lucide-react';
 
 import { WALT_BOT_URL } from '@/lib/idTrack';
-import { formatRupiah, type RelayTransfer, relayWalt, RelayWaltError, useUsdIdrRate } from '@/lib/relayWalt';
+import { formatRupiah, isFinalRelayStatus, type RelayTransfer, relayWalt, RelayWaltError, useUsdIdrRate } from '@/lib/relayWalt';
 import { GoldButton, LangToggle, useWaltLang, WaltIcon, type WaltLang } from '@/views/indonesia/walt/waltUi';
 
 // "Bayar dari Walt" — the Indonesia track's way to top up before repaying:
@@ -16,6 +16,9 @@ import { GoldButton, LangToggle, useWaltLang, WaltIcon, type WaltLang } from '@/
 const MIN_USDT = 1;
 const POLL_MS = 5000;
 const REUSE_MS = 30 * 60_000;
+// After Relay says 'success', give the page's balance watch this long to see the USDC before
+// calling the address used up and offering a new one for what's still missing.
+const SUCCESS_SETTLE_MS = 30_000;
 
 const T = {
    title: { id: 'Bayar dari Walt', en: 'Pay from Walt' },
@@ -44,6 +47,11 @@ const T = {
       en: 'The transfer went back to your Walt. Try again with a new address.'
    },
    failed: { id: 'Ada masalah dengan transfer ini. Hubungi kami.', en: 'Something went wrong with this transfer. Contact us.' },
+   expired: { id: 'Alamat ini sudah kedaluwarsa. Minta alamat baru.', en: 'This address expired. Get a new one.' },
+   stillShort: {
+      id: 'Transfer sebelumnya sudah masuk, tapi masih kurang. Alamat lama sudah terpakai — minta alamat baru untuk sisanya.',
+      en: 'Your last transfer arrived, but it’s still not enough. That address is used up — get a new one for the rest.'
+   },
    newAddress: { id: 'Minta alamat baru', en: 'Get a new address' },
    quoteFail: {
       id: 'Tidak bisa dapat alamat sekarang. Coba lagi sebentar.',
@@ -85,6 +93,10 @@ export default function WaltRepaySteps({ isPreview, shortfall, usdcBalance, hasE
    const [error, setError] = useState<string | null>(null);
    const [copied, setCopied] = useState(false);
    const [boughtTapped, setBoughtTapped] = useState(false);
+   // The newest repay transfer from the server, waiting until the balance is known to decide
+   // whether it can be resumed.
+   const [resumable, setResumable] = useState<RelayTransfer | null>(null);
+   const [successSettled, setSuccessSettled] = useState(false);
 
    // Resume a recent, still-open address (e.g. they went to Walt and came back).
    useEffect(() => {
@@ -95,7 +107,7 @@ export default function WaltRepaySteps({ isPreview, shortfall, usdcBalance, hasE
          .then(({ transfer: last }) => {
             if (!alive || !last) return;
             const fresh = Date.now() - new Date(last.createdAt).getTime() < REUSE_MS;
-            if (fresh && (last.status === 'quoted' || last.status === 'pending')) setTransfer(last);
+            if (fresh && (last.status === 'quoted' || last.status === 'pending')) setResumable(last);
          })
          .catch(() => undefined);
       return () => {
@@ -103,11 +115,29 @@ export default function WaltRepaySteps({ isPreview, shortfall, usdcBalance, hasE
       };
    }, [isPreview]);
 
+   // Only resume an unused address if it was made for at least what's missing now; a smaller one
+   // would leave them short after sending. A 'pending' one already has their USDT — always follow it.
+   useEffect(() => {
+      if (!resumable || usdcBalance == null) return;
+      if (!transfer && (resumable.status === 'pending' || Number(resumable.amountIn) >= amountUsdt)) setTransfer(resumable);
+      setResumable(null);
+   }, [resumable, usdcBalance, amountUsdt, transfer]);
+
+   // 'success' but still not enough: once the balance watch has had time to catch up, the address
+   // counts as used up.
+   const succeeded = transfer?.status === 'success';
+   useEffect(() => {
+      setSuccessSettled(false);
+      if (!succeeded || hasEnough) return;
+      const timer = setTimeout(() => setSuccessSettled(true), SUCCESS_SETTLE_MS);
+      return () => clearTimeout(timer);
+   }, [succeeded, hasEnough, transfer?.transferId]);
+
    // Follow the Relay request so a refund / in-flight state can be shown. Arrival itself is
    // detected by the page's balance watch (hasEnough).
    useEffect(() => {
       if (!transfer || isPreview || hasEnough) return;
-      if (transfer.status === 'success' || transfer.status === 'refund' || transfer.status === 'failure') return;
+      if (isFinalRelayStatus(transfer.status)) return;
       const timer = setInterval(() => {
          void relayWalt
             .status(transfer.transferId)
@@ -159,13 +189,19 @@ export default function WaltRepaySteps({ isPreview, shortfall, usdcBalance, hasE
       }
    };
 
+   const stale = Boolean(
+      transfer &&
+         (transfer.status === 'refund' ||
+            transfer.status === 'failure' ||
+            transfer.status === 'expired' ||
+            (transfer.status === 'success' && !hasEnough && successSettled))
+   );
    // An old address for a different amount: show the amount it was made for (that's what Relay expects).
-   const sendAmount = transfer ? transfer.amountIn : toFixed2(amountUsdt);
+   const sendAmount = transfer && !stale ? transfer.amountIn : toFixed2(amountUsdt);
    const walletMismatch = Boolean(
       transfer && !isPreview && watchedWallet && transfer.recipient.toLowerCase() !== watchedWallet.toLowerCase()
    );
    const rupiah = formatRupiah(Number(sendAmount), idr);
-   const stale = transfer && (transfer.status === 'refund' || transfer.status === 'failure' || transfer.status === 'expired');
 
    const stepDot = (n: number, done: boolean) => (
       <span
@@ -231,7 +267,13 @@ export default function WaltRepaySteps({ isPreview, shortfall, usdcBalance, hasE
                      {stale && (
                         <p className="mb-2 flex gap-1.5 text-[12px] text-[#b45309]">
                            <RotateCcw className="mt-[1px] h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                           {transfer?.status === 'refund' ? T.refund[lang] : T.failed[lang]}
+                           {transfer?.status === 'refund'
+                              ? T.refund[lang]
+                              : transfer?.status === 'success'
+                                ? T.stillShort[lang]
+                                : transfer?.status === 'expired'
+                                  ? T.expired[lang]
+                                  : T.failed[lang]}
                         </p>
                      )}
                      <GoldButton onClick={() => void getAddress()} busy={busy}>
@@ -290,7 +332,7 @@ export default function WaltRepaySteps({ isPreview, shortfall, usdcBalance, hasE
                         <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[#6c3fe0]" aria-hidden="true" />
                         <div>
                            <p className="text-[13px] font-semibold text-[#3d1a8a] dark:text-[#c4b5fd]">
-                              {transfer.status === 'pending' ? T.arriving[lang] : T.waiting[lang]}
+                              {transfer.status === 'pending' || transfer.status === 'success' ? T.arriving[lang] : T.waiting[lang]}
                            </p>
                            <p className="text-[11px] text-[#6b6090] dark:text-[#a095c8]">
                               {T.waitingBody[lang]}

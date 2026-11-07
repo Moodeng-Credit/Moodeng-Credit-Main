@@ -7,7 +7,7 @@ import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { CONNECT_HIPPOS } from '@/views/dashboard/components/connectKit';
 import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
-import { idStepPath, inputClass, pick } from '@/views/indonesia/idFlow';
+import { idStepPath, inputClass, isIdStepKey, pick } from '@/views/indonesia/idFlow';
 import type { IdStepProps } from '@/views/indonesia/steps/types';
 import { ErrorText, GoldButton, GoldLink, SoftButton, SoftLink, StepHead, WaitRow } from '@/views/indonesia/ui';
 
@@ -40,6 +40,7 @@ const COPY = {
       approvedTitle: 'Kamu disetujui! 🎉',
       approvedBody: (amounts: string) => `Ajukan pinjaman ${amounts}.`,
       apply: 'Ajukan pinjaman',
+      kycWait: 'Menunggu cek KTP disetujui',
       rejected: 'Maaf, kamu belum disetujui.',
       contact: 'Hubungi kami',
       locked: 'Selesaikan langkah sebelumnya dulu.',
@@ -74,6 +75,7 @@ const COPY = {
       approvedTitle: 'You’re approved! 🎉',
       approvedBody: (amounts: string) => `Apply for a ${amounts} loan.`,
       apply: 'Apply for a loan',
+      kycWait: 'Waiting for your ID check',
       rejected: 'Sorry, you weren’t approved.',
       contact: 'Message us',
       locked: 'Finish the steps before this first.',
@@ -113,6 +115,8 @@ export default function CallStep({ data, user, lang, refresh }: IdStepProps) {
    const [error, setError] = useState('');
    const [meeting, setMeeting] = useState<Meeting | null>(null);
    const [now, setNow] = useState(() => Date.now());
+   // The server said there's no upcoming call (or the booked time passed): book again.
+   const [rebook, setRebook] = useState(false);
 
    useEffect(() => {
       try {
@@ -171,17 +175,30 @@ export default function CallStep({ data, user, lang, refresh }: IdStepProps) {
          const { data: res, error: invokeError } = await getSupabaseBrowserClient().functions.invoke('loan-access', {
             body: { action: 'submit', reason: trimmed, displayName: user.displayName || undefined }
          });
-         let payload = res as { ok?: boolean; status?: string; error?: string } | null;
+         let payload = res as { ok?: boolean; status?: string; error?: string; code?: string; next?: unknown; data?: { next?: unknown } } | null;
          if (invokeError) {
             const ctx = (invokeError as { context?: Response }).context;
             payload = ctx && typeof ctx.json === 'function' ? await ctx.json().catch(() => null) : null;
          }
          if (!payload?.ok) {
-            const code = payload?.error ?? '';
+            const code = payload?.code || payload?.error || '';
+            if (code === 'ID_ONBOARDING_INCOMPLETE') {
+               // An earlier step isn't done on the server: refresh and go back to it.
+               await refresh();
+               const next = payload?.next ?? payload?.data?.next;
+               navigate(idStepPath(typeof next === 'string' && isIdStepKey(next) ? next : undefined));
+               return;
+            }
             setError((t.errors as Record<string, string>)[code] ?? t.errors.default);
             if (code === 'contact_not_verified') navigate(idStepPath('whatsapp'));
+            if (code === 'call_not_booked') {
+               // No upcoming call on the server: show the booking widget again.
+               setRebook(true);
+               setGoalDone(true);
+            }
             return;
          }
+         setRebook(false);
          try {
             window.sessionStorage.removeItem(reasonKey);
          } catch {
@@ -202,7 +219,11 @@ export default function CallStep({ data, user, lang, refresh }: IdStepProps) {
       return (
          <div data-i18n-skip className="flex flex-col gap-4">
             <StepHead image={CONNECT_HIPPOS.approved} title={t.approvedTitle} subtitle={t.approvedBody(amounts)} />
-            <GoldButton onClick={() => navigate('/request-board', { state: { openLoanRequest: true } })}>{t.apply}</GoldButton>
+            {data.kycApproved ? (
+               <GoldButton onClick={() => navigate('/request-board', { state: { openLoanRequest: true } })}>{t.apply}</GoldButton>
+            ) : (
+               <WaitRow>{t.kycWait}</WaitRow>
+            )}
          </div>
       );
    }
@@ -216,8 +237,13 @@ export default function CallStep({ data, user, lang, refresh }: IdStepProps) {
       );
    }
 
-   if (booked) {
-      const startsMs = meeting?.startsAt ? Date.parse(meeting.startsAt) : NaN;
+   const bookedStartsMs = meeting?.startsAt ? Date.parse(meeting.startsAt) : NaN;
+   // Not sent to the team yet and no upcoming call: loan-access would answer call_not_booked, so
+   // go straight back to the booking widget instead of a "Send" button that can't work.
+   const needsRebook = booked && !pending && (rebook || (!Number.isNaN(bookedStartsMs) && now > bookedStartsMs));
+
+   if (booked && !needsRebook) {
+      const startsMs = bookedStartsMs;
       const callOver = !Number.isNaN(startsMs) && now > startsMs + CALL_OVER_AFTER_MS;
       const needsConfirm = Boolean(meeting?.confirmToken) && !meeting?.confirmed && !callOver;
       const confirmOpen = needsConfirm && !Number.isNaN(startsMs) && now >= startsMs - CONFIRM_OPENS_MS;

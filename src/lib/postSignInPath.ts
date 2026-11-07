@@ -16,12 +16,15 @@ export const getPostSignInPath = async (user: { id: string; accountStatus?: stri
    const defaultedBorrower = await fetchDefaultedBorrowerSupport(user.id);
    if (defaultedBorrower.overdueAmount > 0) return '/account-restricted';
 
+   // Always consume the stored "next" path, even when the Indonesia track wins below, so it can't
+   // leak into a later sign-in.
+   const nextPath = takeNextPath();
+
    // Indonesia-track borrowers finish their own onboarding first.
    const idTrackPath = await fetchIdTrackPath();
    if (idTrackPath) return idTrackPath;
 
    // A protected page sent them to sign in: take them back there.
-   const nextPath = takeNextPath();
    if (nextPath) return nextPath;
 
    // If they arrived via a shared request link before signing in, return them to that exact
