@@ -16,7 +16,8 @@ import {
    getWhatsAppContact,
    messengerDisplayName,
    normalizeWhatsAppPhone,
-   sendMessengerMessage
+   sendMessengerMessage,
+   sendWhatsAppText
 } from '../_shared/sendpulse.ts';
 import { loadBorrowSteps, loadNextStep } from '../_shared/botNextStep.ts';
 import { botMessageStats } from '../_shared/botMessageStats.ts';
@@ -26,6 +27,7 @@ import { testAccountRow } from '../_shared/testAccount.ts';
 import { bookFromWindow, startWhatsAppBooking } from '../_shared/whatsappBooking.ts';
 import { whatsappContactCard } from '../_shared/whatsappContactCard.ts';
 import { facebookStepsDue, sendFacebookConnectedOnWhatsApp, sendFacebookStepsOnWhatsApp, setWhatsAppLocale } from '../_shared/whatsappFirst.ts';
+import { ID_WHATSAPP_CONNECTED_TEXT, ID_WHATSAPP_USE_TELEGRAM_TEXT, isIdTrackUser, isIdWhatsAppContact, notifyIdNextStep } from '../_shared/idTrack.ts';
 
 // SendPulse → Moodeng bridge for Facebook Messenger contact verification.
 //
@@ -282,6 +284,14 @@ const handleWhatsApp = async (svc: Svc, body: VerifyBody, nowIso: string): Promi
    const contactId = body.contact_id ? String(body.contact_id) : null;
    if (!contactId) return json({ ok: false, error: 'no_contact' });
 
+   // Indonesia track (market 'ID'): WhatsApp is notifications + humans only, never a bot conversation.
+   // Any bot action from them gets at most one line pointing to Telegram, and the flow is told not to
+   // continue (can_book 0 / ok false).
+   if ((body.action === 'wa_locale' || body.action === 'wa_booking_start' || body.action === 'wa_book') && (await isIdWhatsAppContact(svc, contactId))) {
+      if (body.action !== 'wa_locale') await sendWhatsAppText(contactId, ID_WHATSAPP_USE_TELEGRAM_TEXT);
+      return json(body.action === 'wa_booking_start' ? { ok: true, can_book: 0, reason: 'id_track' } : { ok: false, error: 'id_track' });
+   }
+
    // Indonesia's in-chat booking (whatsappBooking.ts): JADWAL, then the time window they tapped.
    // 🇮🇩/🇬🇧 tapped in the JADWAL flow: {action:'wa_locale', locale:'id'|'en'}.
    if (body.action === 'wa_locale') return json(await setWhatsAppLocale(svc, contactId, String(body.locale ?? '')));
@@ -343,6 +353,18 @@ const handleWhatsApp = async (svc: Svc, body: VerifyBody, nowIso: string): Promi
          return json({ ok: false, error: 'update_failed' }, 500);
       }
       console.log(`sendpulse-messenger-verify: WhatsApp reminders on for ${String(pending.user_id).slice(0, 8)}${phone ? '' : ' (no phone from SendPulse)'}`);
+      // Indonesia track: no Facebook steps, no booking prompts on WhatsApp. One short line back, and the
+      // next step goes to them on Telegram. wa_first 1 makes the flow skip its own English reply.
+      if (await isIdTrackUser(svc, String(pending.user_id))) {
+         const idWork = Promise.all([
+            announceWhatsAppContact(svc, String(pending.user_id), phone),
+            sendWhatsAppText(contactId, ID_WHATSAPP_CONNECTED_TEXT),
+            notifyIdNextStep(svc, String(pending.user_id), 'whatsapp')
+         ]);
+         if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(idWork);
+         else await idWork;
+         return json({ ok: true, wa_first: 1, already: 0 });
+      }
       // Indonesia's WhatsApp-first sign-up: Facebook isn't connected yet, so send its steps here. The
       // flow skips its English "you're set" reply when wa_first is 1 (our steps say it in their language).
       const stepsDue = await facebookStepsDue(svc, String(pending.user_id), phone);
@@ -532,11 +554,18 @@ serve(async (req) => {
          console.error('sendpulse-messenger-verify: user update failed', userError.message);
       } else if (!(before as { messenger_verified_at?: string | null } | null)?.messenger_verified_at) {
          await announceConnected(svc, pending.user_id, contactId, body.name ? String(body.name) : null);
-         const followUp = Promise.all([
-            followUpWithStatus(svc, pending.user_id, contactId),
-            // Indonesia's WhatsApp-first sign-up: say so on WhatsApp too, with the next step.
-            sendFacebookConnectedOnWhatsApp(svc, pending.user_id)
-         ]);
+         // Indonesia track: the next step goes to them on Telegram (Facebook only counts as done once
+         // the profile link is saved too; the status RPC decides), and nothing on WhatsApp.
+         const idTrack = await isIdTrackUser(svc, pending.user_id);
+         const followUp = Promise.all(
+            idTrack
+               ? [notifyIdNextStep(svc, pending.user_id, 'facebook')]
+               : [
+                    followUpWithStatus(svc, pending.user_id, contactId),
+                    // Indonesia's WhatsApp-first sign-up: say so on WhatsApp too, with the next step.
+                    sendFacebookConnectedOnWhatsApp(svc, pending.user_id)
+                 ]
+         );
          if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(followUp);
       }
 

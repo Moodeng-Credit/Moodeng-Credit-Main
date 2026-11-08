@@ -40,6 +40,8 @@ import IncomeDocsPreview from '@/app/admin/IncomeDocsPreview';
 import PricingHealthPreview from '@/app/admin/PricingHealthPreview';
 import AffiliateDashboardPage from '@/app/affiliate/page';
 import DocumentsPage from '@/app/documents/page';
+import ProofRequestPage from '@/app/proof/page';
+import { PROOF_PAGE_SAMPLE } from '@/app/proof/sample';
 import AuthSuccess from '@/app/auth-success/page';
 import AuthConfirm from '@/app/auth/confirm/page';
 import LineCallback from '@/app/auth/line/callback/page';
@@ -106,6 +108,8 @@ import WorldIdVerification from '@/app/verify-world-id/page';
 import VerifyFlow from '@/app/verify/page';
 import WhyLend from '@/app/whylend/page';
 import CreditLineLenderPage from '@/views/creditline/CreditLineLenderPage';
+import IdLanding from '@/views/indonesia/IdLanding';
+import IdOnboarding, { IdOnboardingPreview } from '@/views/indonesia/IdOnboarding';
 import ContinuePage from '@/views/onboarding/ContinuePage';
 import MessengerHandoff from '@/views/onboarding/MessengerHandoff';
 import { clarityEvent, clarityTag, identifyClarity, isClarityEnabled, signupMethodLabel } from '@/lib/analytics/clarity';
@@ -333,6 +337,12 @@ export default function App() {
             <Route path="/account-restricted" element={<AccountRestrictedPage />} />
             <Route path="/mfa-challenge" element={<MfaChallengePage />} />
 
+            {/* Indonesia track (src/lib/idTrack.ts): Telegram-only sign-up and its own onboarding. Both
+                handle signed-out visitors themselves (back to /id), so no ProtectedRoute. */}
+            <Route path="/id" element={<IdLanding />} />
+            <Route path="/id/onboarding" element={<IdOnboarding />} />
+            {showPreviewRoutes ? <Route path="/id/onboarding-preview" element={<IdOnboardingPreview />} /> : null}
+
             {/* Onboarding */}
             <Route path="/onboarding/role" element={<RoleSelection />} />
             <Route
@@ -514,6 +524,9 @@ export default function App() {
                   </ProtectedRoute>
                }
             />
+            {/* Public: the proof link the team sends a new applicant after their call (moodeng.app/proof/TOKEN). */}
+            <Route path="/proof/:token" element={<ProofRequestPage />} />
+            {showPreviewRoutes ? <Route path="/proof-preview" element={<ProofRequestPage preview={PROOF_PAGE_SAMPLE} />} /> : null}
             <Route path="/dashboard-v2-preview" element={<DashboardV2 />} />
             {/* Mock borrower dashboard (two loans, $15 + $20) for Emma's video — sample data only, never writes. */}
             <Route path="/borrower-demo" element={<Navigate to="/dashboard-v2-preview?state=demo" replace />} />

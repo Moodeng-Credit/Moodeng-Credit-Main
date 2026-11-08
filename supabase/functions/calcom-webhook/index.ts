@@ -12,6 +12,7 @@ import { cancelCallButton } from '../_shared/callCancel.ts';
 import { testAccountRow } from '../_shared/testAccount.ts';
 import { formatCallTimeForTeam, sendMovedMessenger } from '../_shared/videoCall.ts';
 import { extractBooking, verifySignature, type CalcomWebhookBody } from './parse.ts';
+import { sendIdTelegram } from '../_shared/idTrack.ts';
 
 // Cal.com webhook — the server-side "did they actually book it" gate for the no-referral video
 // call, replacing the client-asserted mark_video_call_scheduled RPC.
@@ -160,6 +161,11 @@ serve(async (req) => {
             const sent = await sendMovedMessenger(moved);
             if (!sent.ok) console.log('calcom-webhook: moved messenger skipped:', sent.reason);
          }
+         // Indonesia track: on Telegram too, in WIB (sendIdTelegram is a no-op for everyone else).
+         await sendIdTelegram(supabase, booking.userId, 'call_moved', {
+            callAt: booking.startsAt,
+            joinUrl: (moved as { video_call_join_url?: string | null } | null)?.video_call_join_url ?? booking.joinUrl ?? null
+         });
       }
 
       // A pending call request stays open until a week after the call — follow the new time.

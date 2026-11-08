@@ -1,9 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import { shareDiditSession } from '../_shared/diditShare.ts';
 import { isPlaceholderEmail } from '../_shared/placeholderEmail.ts';
 import { isStableyardConfigured, stableyard, type StableyardAccount, type StableyardDepositNetwork } from '../_shared/stableyard.ts';
+import { importKycToStableyard, KYC_CONSENT_TEXT, refreshKycImport, reuseStatus } from '../_shared/stableyardKycReuse.ts';
 import {
    BASE_CHAIN_ID,
    configuredDepositChainIds,
@@ -12,17 +12,23 @@ import {
    syncDeposits
 } from '../_shared/stableyardSync.ts';
 import { handleStableyardWebhook, isStableyardWebhook } from '../_shared/stableyardWebhook.ts';
+import { handleRelay, isRelayAction } from './relay.ts';
 
 // Stableyard deposit addresses for the signed-in user ("send from any chain").
 //
 // POST {}                    → ensure the user's Stableyard account + addresses exist, return them
 // POST { refresh: true }     → same, and re-read deposits from Stableyard first
-// POST { onboarding: 'status' | 'email_start' | 'email_confirm' | 'kyc_start' | 'didit_share' }
+// POST { onboarding: 'status' | 'email_start' | 'email_confirm' | 'kyc_start' | 'kyc_import' | 'kyc_import_status' | 'kyc_reuse_check' }
 //                            → the caller's own account: verify its email and start KYC, which
 //                              Stableyard requires before QR payments. The email is always the
 //                              caller's sign-in email, never one from the client.
+//                              kyc_import copies their approved Moodeng (Didit) ID check into
+//                              Stableyard instead (needs { consent: true }); see _shared/stableyardKycReuse.ts.
 // POST { qr: 'status' | 'use_wallet' | 'decode' | 'create' | 'get', ... }
 //                            → External QR payment test for admins + stableyard_qr_testers (see handleQr).
+// POST { relay: 'cashout_quote' | 'cashout_sent' | 'repay_quote' | 'status' | 'latest', ... }
+//                            → Walt (Telegram wallet) bridge for the Indonesia track through Relay
+//                              (Base USDC ↔ BNB Chain). Not Stableyard; see ./relay.ts.
 //
 // The account's settlement wallet is the user's own Moodeng wallet on Base (users.wallet_address),
 // so every deposit lands there as USDC and the existing repay flow picks it up. We never accept a
@@ -114,49 +120,15 @@ const ensureAccount = async (admin: SupabaseClient, userId: string, wallet: stri
    return { ok: true as const, accountId: account.id };
 };
 
-const ONBOARDING_ACTIONS = new Set(['status', 'email_start', 'email_confirm', 'kyc_start', 'didit_share']);
-
-/**
- * Didit Reusable KYC → Stableyard: mint a share token for the caller's newest approved Didit session,
- * addressed to Stableyard's Didit application (vault STABLEYARD_DIDIT_APP_ID), so Stableyard can import
- * it instead of a second KYC. Until Stableyard gives us that ID and an import route, this answers
- * code 'not_configured' and changes nothing. The token is a credential: returned to the caller for
- * manual hand-off while there is no delivery route, never logged or stored.
- */
-const shareKycWithStableyard = async (admin: SupabaseClient, userId: string) => {
-   const { data: appId } = await admin.rpc('stableyard_didit_app_id');
-   if (!appId) return json({ ok: false, code: 'not_configured', error: "Stableyard hasn't given us their Didit app ID yet." }, 409);
-
-   const { data: identity } = await admin
-      .from('kyc_identities')
-      .select('session_id')
-      .eq('user_id', userId)
-      .ilike('session_status', 'approved')
-      .order('session_created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-   const sessionId = identity?.session_id as string | undefined;
-   if (!sessionId) return json({ ok: false, code: 'no_approved_kyc', error: 'No approved Didit verification on this account.' }, 409);
-
-   const ttlSeconds = 86_400;
-   const shared = await shareDiditSession(sessionId, String(appId), ttlSeconds);
-   await admin.from('stableyard_kyc_shares').insert({
-      user_id: userId,
-      didit_session_id: sessionId,
-      for_application_id: String(appId),
-      session_kind: shared.ok ? shared.sessionKind : null,
-      ttl_seconds: ttlSeconds,
-      error: shared.ok ? null : `${shared.status} ${shared.error}`.slice(0, 500)
-   });
-   if (!shared.ok) return json({ ok: false, code: 'didit_share_failed', error: shared.error, diditStatus: shared.status }, 502);
-   return json({
-      ok: true,
-      step: 'didit_share',
-      sessionKind: shared.sessionKind,
-      expiresInSeconds: ttlSeconds,
-      shareToken: shared.shareToken
-   });
-};
+const ONBOARDING_ACTIONS = new Set([
+   'status',
+   'email_start',
+   'email_confirm',
+   'kyc_start',
+   'kyc_import',
+   'kyc_import_status',
+   'kyc_reuse_check'
+]);
 
 /** Email verification + KYC for the caller's own Stableyard account (needed for QR payments). */
 const handleOnboarding = async (
@@ -164,10 +136,8 @@ const handleOnboarding = async (
    userId: string,
    email: string,
    action: string,
-   body: { challengeId?: unknown; code?: unknown; email?: unknown }
+   body: { challengeId?: unknown; code?: unknown; email?: unknown; consent?: unknown }
 ) => {
-   if (action === 'didit_share') return shareKycWithStableyard(admin, userId);
-
    const { data: row } = await admin.from('stableyard_accounts').select('account_id').eq('user_id', userId).maybeSingle();
    const accountId = row?.account_id as string | undefined;
    if (!accountId) return json({ error: 'No Stableyard account yet. Open the deposit test first to create one.' }, 409);
@@ -212,6 +182,27 @@ const handleOnboarding = async (
       const result = await stableyard.startKycSession(accountId);
       return result.ok ? json({ ok: true, accountId, step: 'kyc_start', result: result.data }) : fail(result);
    }
+   if (action === 'kyc_reuse_check') {
+      const [reuse, kyc] = await Promise.all([reuseStatus(admin, userId, accountId), stableyard.getKyc(accountId)]);
+      return json({ ok: true, accountId, step: 'kyc_reuse_check', reuse, consentText: KYC_CONSENT_TEXT, kyc: kyc.ok ? kyc.data : null });
+   }
+   if (action === 'kyc_import' || action === 'kyc_import_status') {
+      if (action === 'kyc_import') {
+         if (body.consent !== true) return json({ ok: false, code: 'consent_needed', error: 'Tap Share my ID to agree.' }, 400);
+         const emailStatus = await stableyard.getEmailStatus(accountId);
+         if (!emailStatus.ok || !isDone(emailStatus.data))
+            return json({ ok: false, code: 'email_needed', error: 'Confirm your email first.' }, 409);
+      }
+      const outcome =
+         action === 'kyc_import' ? await importKycToStableyard(admin, userId, accountId) : await refreshKycImport(admin, userId, accountId);
+      if (!outcome.ok) {
+         return json(
+            { ok: false, accountId, code: outcome.code, error: outcome.error, requestId: outcome.requestId ?? null },
+            outcome.status
+         );
+      }
+      return json({ ok: true, accountId, step: action, import: outcome.import, verification: outcome.verification });
+   }
 
    const [emailStatus, kyc] = await Promise.all([stableyard.getEmailStatus(accountId), stableyard.getKyc(accountId)]);
    if (!emailStatus.ok) return fail(emailStatus);
@@ -232,6 +223,52 @@ const QR_ACTIONS = new Set([
    'payout_status',
    'payout_activate'
 ]);
+
+// Merchant store-QR payments (decode / create) and re-activating the payout capability stay tester-only;
+// every other qr action is the GCash / bank cash-out, which is open to everyone (see isBankPayoutPublic).
+const TESTER_ONLY_QR_ACTIONS = new Set(['decode', 'create', 'payout_activate']);
+
+// E-wallets (GCash, Maya, GrabPay…) are off since 2026-11-07: Stableyard says they face scrutiny on PHP
+// rails and aren't a stable payout method. Banks only, unless telegram_bot_settings.bank_payout_ewallets
+// is 'on' (then the app shows its E-wallet tab again; no deploy needed).
+const EWALLET_NAME =
+   /GCASH|MAYA PHILIPPINES|GRABPAY|SHOPEEPAY|COINS\.PH|PALAWANPAY|TAYOCASH|TOKTOKWALLET|STARPAY|MARCOPAY|LULU MONEY|BANANAPAY|LAZADA WALLET|OMNIPAY|PAY MONGO|SPEEDYPAY|TRAXIONPAY|JUANCASH|I-REMIT|USSC|BAYAD|NATIONLINK|PDAX/i;
+const ewalletPayoutsOn = async (admin: SupabaseClient) => {
+   const { data } = await admin.from('telegram_bot_settings').select('value').eq('key', 'bank_payout_ewallets').maybeSingle();
+   return (
+      String(data?.value ?? 'off')
+         .trim()
+         .toLowerCase() === 'on'
+   );
+};
+
+// Hide the cash-out while Stableyard can't pay out. Their bank list fails whenever their payout provider
+// is down (e.g. 503 payment_provider_unavailable, 2026-11-07 ~03:00 BKK), so 'status' checks it first and
+// answers enabled:false → the app hides the Withdraw card until it works again. Cached a minute per instance.
+let payoutUpCache: { at: number; up: boolean } | null = null;
+const bankPayoutUp = async () => {
+   if (payoutUpCache && Date.now() - payoutUpCache.at < 60_000) return payoutUpCache.up;
+   const result = await stableyard.listBeneficiaryBanks('PH').catch(() => ({ ok: false as const, status: 0, error: 'unreachable' }));
+   const banks = result.ok ? (result.data as { banks?: unknown[] } | null)?.banks : null;
+   const up = result.ok && Array.isArray(banks) && banks.length > 0;
+   if (!up)
+      console.warn(
+         '[stableyard-deposit-address] payout down, hiding cash-out',
+         result.ok ? 'no banks' : `${result.status} ${result.error}`
+      );
+   payoutUpCache = { at: Date.now(), up };
+   return up;
+};
+
+/** Bank cash-out is public unless telegram_bot_settings.bank_payout_public is 'off' (kill switch, no deploy). */
+const isBankPayoutPublic = async (admin: SupabaseClient) => {
+   const { data } = await admin.from('telegram_bot_settings').select('value').eq('key', 'bank_payout_public').maybeSingle();
+   return (
+      String(data?.value ?? 'on')
+         .trim()
+         .toLowerCase() !== 'off'
+   );
+};
 
 // Fiat currency per supported QR country, with a test cap (~$35) so a typo can't pay a big bill.
 const QR_COUNTRIES: Record<string, { currency: string; max: number }> = {
@@ -382,13 +419,24 @@ const handleQr = async (
          sourceReady = source.ok;
       }
       const kycStatus = kyc.ok ? String(findValue(kyc.data, ['status']) ?? 'not_started') : 'unknown';
+      // Stableyard: offer a bank rail only when eligibility is `eligible` (an import can be `approved`
+      // before the review clears). Older bodies without eligibility fall back to the status.
+      const eligibility = kyc.ok
+         ? String((kyc.data as { current?: { eligibility?: { status?: string } } })?.current?.eligibility?.status ?? '')
+         : '';
+      const kycApproved = kyc.ok && (eligibility ? eligibility === 'eligible' : DONE_STATUSES.has(kycStatus.toLowerCase()));
+      const reuse = kycApproved ? null : await reuseStatus(admin, userId, accountId).catch(() => null);
       return json({
          ok: true,
          accountId,
          step: 'setup',
          emailVerified: email.ok && isDone(email.data),
          kycStatus,
-         kycApproved: kyc.ok && DONE_STATUSES.has(kycStatus.toLowerCase()),
+         kycEligibility: eligibility || null,
+         kycApproved,
+         reuseAvailable: Boolean(reuse?.available),
+         reuseImportStatus: reuse?.lastImport?.status ?? null,
+         consentText: reuse?.available ? KYC_CONSENT_TEXT : null,
          kycUrl: kyc.ok ? (findValue(kyc.data, ['verificationUrl']) ?? null) : null,
          sourceReady,
          email: email.ok ? email.data : null,
@@ -446,7 +494,11 @@ const handleQr = async (
 
    if (action === 'bank_list') {
       const result = await stableyard.listBeneficiaryBanks(country);
-      return result.ok ? json({ ok: true, accountId, step: 'bank_list', result: result.data }) : fail(result);
+      if (!result.ok) return fail(result);
+      const ewallets = await ewalletPayoutsOn(admin);
+      const data = (result.data ?? {}) as { banks?: Array<{ name?: string }> };
+      const banks = Array.isArray(data.banks) ? data.banks.filter((b) => ewallets || !EWALLET_NAME.test(String(b.name ?? ''))) : data.banks;
+      return json({ ok: true, accountId, step: 'bank_list', ewallets, result: { ...data, banks } });
    }
 
    if (action === 'bank_create') {
@@ -458,6 +510,10 @@ const handleQr = async (
       const amount = String(body.amount ?? '').trim();
       const requestKey = String(body.requestKey ?? '').trim();
       if (!/^[A-Za-z0-9_-]{2,64}$/.test(bankCode)) return json({ error: 'Pick a bank.' }, 400);
+      // Older app versions still list e-wallets; refuse them while they're off (see EWALLET_NAME).
+      if (EWALLET_NAME.test(String(body.bankName ?? '')) && !(await ewalletPayoutsOn(admin))) {
+         return json({ error: 'E-wallets are paused for now. Pick a bank.', code: 'ewallets_paused' }, 400);
+      }
       if (!/^[0-9]{6,20}$/.test(accountNumber)) return json({ error: 'Account number is 6–20 digits.' }, 400);
       if (beneficiaryName.length < 2 || beneficiaryName.length > 100) return json({ error: 'Enter the name on the account.' }, 400);
       if (!FIAT_AMOUNT.test(amount) || Number(amount) <= 0) return json({ error: 'Enter an amount like 100 or 100.50.' }, 400);
@@ -569,6 +625,19 @@ serve(async (req) => {
    if (isStableyardWebhook(req)) return handleStableyardWebhook(req);
    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
+   const body = await req.json().catch(() => ({}));
+
+   // Walt bridge through Relay (Indonesia track). Doesn't use Stableyard, so it runs before the
+   // Stableyard switches below. See ./relay.ts.
+   if (isRelayAction(body?.relay)) {
+      const relayAdmin = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+      const relayToken = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
+      if (!relayToken) return json({ error: 'Missing authorization token' }, 401);
+      const { data: relayUser, error: relayUserError } = await relayAdmin.auth.getUser(relayToken);
+      if (relayUserError || !relayUser?.user?.id) return json({ error: 'Authentication required' }, 401);
+      return handleRelay(relayAdmin, relayUser.user.id, String(body.relay), body, json);
+   }
+
    if (Deno.env.get('STABLEYARD_DEPOSITS_DISABLED') === 'true' || !isStableyardConfigured()) {
       return json({ enabled: false, addresses: [], deposits: [] });
    }
@@ -590,26 +659,32 @@ serve(async (req) => {
          .maybeSingle();
       return Boolean(adminRow);
    };
-   // QR payments (and the email + KYC they need) are for admins and the people in stableyard_qr_testers,
-   // even once deposits go public.
+   // Store-QR payments and the admin payout tools stay with admins + stableyard_qr_testers.
    const isQrTester = async () => {
       if (await isAdmin()) return true;
       const { data: tester } = await admin.from('stableyard_qr_testers').select('user_id').eq('user_id', userId).maybeSingle();
       return Boolean(tester);
    };
 
-   const body = await req.json().catch(() => ({}));
    const refresh = Boolean(body?.refresh);
    const isQr = QR_ACTIONS.has(String(body?.qr ?? ''));
    const isOnboarding = ONBOARDING_ACTIONS.has(String(body?.onboarding ?? ''));
 
    if (isQr || isOnboarding) {
-      if (!(await isQrTester())) return json({ error: 'Forbidden: not a QR payment tester', code: 'not_tester' }, 403);
+      // GCash / bank cash-out (and the email + ID setup it needs) is open to every signed-in borrower
+      // since 2026-11-07. Kill switch: telegram_bot_settings bank_payout_public = 'off' → testers only again.
+      const testerOnly = isQr && TESTER_ONLY_QR_ACTIONS.has(String(body?.qr ?? ''));
+      if ((testerOnly || !(await isBankPayoutPublic(admin))) && !(await isQrTester())) {
+         return json({ error: 'Forbidden: not a QR payment tester', code: 'not_tester' }, 403);
+      }
    } else if (Deno.env.get('STABLEYARD_DEPOSITS_PUBLIC') !== 'true' && !(await isAdmin())) {
       return json({ enabled: false, addresses: [], deposits: [] });
    }
 
    if (isQr) {
+      if (String(body.qr) === 'status' && !(await bankPayoutUp())) {
+         return json({ enabled: false, code: 'payout_unavailable', error: 'Cash-out is unavailable right now.' });
+      }
       try {
          return await handleQr(admin, userId, String(body.qr), body);
       } catch (err) {

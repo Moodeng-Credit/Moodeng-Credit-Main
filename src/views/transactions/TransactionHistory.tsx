@@ -5,12 +5,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import BorrowerVerificationBadge from '@/components/BorrowerVerificationBadge';
+import IndonesiaBadge from '@/components/IndonesiaBadge';
 import UserAvatar from '@/components/UserAvatar';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 
 import { fetchUserProfiles } from '@/store/slices/authSlice';
+import { isIndonesianLoan } from '@/lib/loanMarket';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { Loan } from '@/types/loanTypes';
@@ -134,7 +136,10 @@ function TransactionRow({ loan, counterpartyName, counterpartyAvatar, variant, s
          </div>
 
          <div className="flex-1 min-w-0 flex flex-col gap-md-0 justify-center">
-            <p className="text-md-b1 font-semibold text-md-primary-2000 line-clamp-2">{loan.reason || 'Loan'}</p>
+            <p className="text-md-b1 font-semibold text-md-primary-2000 line-clamp-2">
+               {isIndonesianLoan(loan) ? <IndonesiaBadge compact className="mr-1 align-middle" /> : null}
+               {loan.reason || 'Loan'}
+            </p>
             <div className="flex items-center gap-1 flex-wrap">
                <span className="text-md-b3 text-md-neutral-1200">
                   {counterpartyLabel}

@@ -3,17 +3,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { adminUserUrl, OPEN_IN_ADMIN_TEXT } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
-import {
-   computeYearOneIouPointsDelta,
-   evaluateCreditProgression,
-   getEffectiveCreditLimit,
-   getYearOneIouBorrowerBonusPoints,
-   LOAN_FUNDING_POINTS_PER_USDC,
-   toNumber
-} from '../_shared/creditAndPoints.ts';
+import { computeYearOneIouPointsDelta, getYearOneIouBorrowerBonusPoints, LOAN_FUNDING_POINTS_PER_USDC } from '../_shared/creditAndPoints.ts';
 import { DEFAULT_TIMEZONE, loanTimezone, pastDueAt } from '../_shared/loanDeadline.ts';
-import { notifyBorrowerPartialRepayment } from '../_shared/partialRepaymentNotice.ts';
-import { postPartialRepaymentToTeam } from '../_shared/teamLoanFeed.ts';
+import { type CreditLevelUp, runRepaymentFollowUps, type SideEffectError } from '../_shared/repaymentFollowUps.ts';
 import { PaymentNotConfirmedError, RPC_URL, rpcCall, type VerifiedTransfer, verifyPayment } from '../_shared/usdcTransfer.ts';
 
 // Server-side proof-of-payment gate for loan funding/repayment.
@@ -66,52 +58,6 @@ const describeBrowser = (ua: string | null): { label: string; isInApp: boolean }
    return { label: 'Other', isInApp: false };
 };
 
-// Posts one repayment line to a Discord channel via DISCORD_REPAY_WEBHOOK_URL; no-ops when unset.
-// Deliberately no fallback to the login webhook — #logins is login events only. Red embed for in-app browsers (the users who may
-// get stuck on Base), green otherwise. Fire-and-forget — never affects the payment response.
-const postRepayFeed = async (details: {
-   username: string | null;
-   email: string | null;
-   repaidAmount: number;
-   totalAmount: number;
-   coin: string;
-   trackingId: string | null;
-   fullyRepaid: boolean;
-   browser: { label: string; isInApp: boolean };
-   userAgent: string | null;
-}) => {
-   const webhook = Deno.env.get('DISCORD_REPAY_WEBHOOK_URL');
-   if (!webhook) return;
-
-   const { username, email, repaidAmount, totalAmount, coin, trackingId, fullyRepaid, browser, userAgent } = details;
-   const embed = {
-      title: `💸 Repayment — ${username ?? 'unknown user'}`,
-      color: browser.isInApp ? 0xe74c3c : 0x2ecc71,
-      fields: [
-         { name: 'User', value: `${username ?? '—'}\n${email ?? '—'}`, inline: true },
-         {
-            name: 'Amount',
-            value: `$${repaidAmount.toFixed(2)} / $${totalAmount.toFixed(2)} ${coin}${fullyRepaid ? ' ✅ paid in full' : ' (partial)'}`,
-            inline: true
-         },
-         { name: 'Browser', value: `${browser.isInApp ? '🚩 ' : ''}${browser.label}`, inline: true },
-         { name: 'Loan', value: trackingId ?? '—', inline: false }
-      ],
-      footer: { text: (userAgent ?? 'no user-agent').slice(0, 180) },
-      timestamp: new Date().toISOString()
-   };
-
-   try {
-      await fetch(webhook, {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ embeds: [embed] })
-      });
-   } catch {
-      // Best-effort — the repay feed must never affect the payment response.
-   }
-};
-
 // Best-effort block timestamp (ms) for the freshness check. Fail-open: any RPC/parse problem returns
 // null so the caller skips the check rather than false-rejecting a legitimate payment.
 const getBlockTimestampMs = async (blockNumber?: string): Promise<number | null> => {
@@ -125,7 +71,6 @@ const getBlockTimestampMs = async (blockNumber?: string): Promise<number | null>
    }
 };
 
-type SideEffectError = { type: 'award_points' | 'loan_notification' | 'credit_progression'; message: string };
 // deno-lint-ignore no-explicit-any
 type Admin = any;
 
@@ -175,68 +120,6 @@ const awardFundingPoints = async (admin: Admin, loan: Record<string, unknown>): 
    });
    if (pointsError) errors.push({ type: 'award_points', message: pointsError.message });
    return errors;
-};
-
-// Mirrors the repay-branch credit-progression logic that used to run in updateLoanStatus: on a
-// fully-repaid full-limit loan, level up the borrower's credit limit. This is the ONLY writer of
-// users.cs once the Phase 3 lock lands. (The limit the loan was measured against is recorded by
-// public.record_loan_payment in the same update that marks it Paid.)
-type CreditLevelUp = { fromLimit: number; toLimit: number };
-
-const applyCreditProgression = async (
-   admin: Admin,
-   loan: Record<string, unknown>
-): Promise<{ errors: SideEffectError[]; levelUp: CreditLevelUp | null }> => {
-   const errors: SideEffectError[] = [];
-   const borrowerId = loan.borrower_user_id as string | null;
-   if (!borrowerId || !loan.due_date) return { errors, levelUp: null };
-
-   const { data: borrower, error: borrowerError } = await admin
-      .from('users')
-      .select('id, cs, is_world_id, is_didit')
-      .eq('id', borrowerId)
-      .single();
-   if (borrowerError || !borrower) {
-      errors.push({ type: 'credit_progression', message: borrowerError?.message ?? 'Borrower not found' });
-      return { errors, levelUp: null };
-   }
-
-   const evaluation = evaluateCreditProgression({
-      currentLimit: borrower.cs ?? 0,
-      // Any supported identity method grants verified status for credit progression, mirroring the
-      // frontend isUserVerified(). Didit is the majority path; gating on World ID alone stalled
-      // Didit-verified borrowers' credit-limit growth (this is the authoritative writer).
-      isVerified: borrower.is_world_id === 'ACTIVE' || borrower.is_didit === 'ACTIVE',
-      repaidAmount: toNumber(loan.repaid_amount as number | string | null),
-      totalRepaymentAmount: toNumber(loan.total_repayment_amount as number | string | null),
-      loanAmount: toNumber(loan.loan_amount as number | string | null),
-      dueDate: String(loan.due_date),
-      paidAt: String(loan.repaid_at ?? loan.updated_at ?? new Date().toISOString())
-   });
-
-   if (!evaluation.shouldLevelUp) return { errors, levelUp: null };
-
-   // Compare-and-set on the limit we evaluated against: if two final repayments race, only the
-   // first raises the limit, so one full-limit loan can never level a borrower up twice.
-   const levelUp = admin.from('users').update({ cs: evaluation.nextLimit }).eq('id', borrower.id);
-   const { data: leveled, error: userUpdateError } = await (borrower.cs === null ? levelUp.is('cs', null) : levelUp.eq('cs', borrower.cs)).select('id');
-   if (userUpdateError) {
-      errors.push({ type: 'credit_progression', message: userUpdateError.message });
-      return { errors, levelUp: null };
-   }
-   if (!leveled?.length) {
-      // The limit changed between reading and writing (a referral, an admin edit, a race). The borrower
-      // earned this level-up, so don't lose it silently: tell the team to look.
-      const { data: nowRow } = await admin.from('users').select('cs').eq('id', borrower.id).maybeSingle();
-      const message = `level-up skipped: the limit changed from $${borrower.cs ?? '?'} to $${nowRow?.cs ?? '?'} during this repayment`;
-      errors.push({ type: 'credit_progression', message });
-      await postDiscord(
-         { content: `⚠️ ${loan.tracking_id}: a full-limit loan was repaid in full but the borrower was NOT levelled up (${message}). Check their limit.` },
-         { prefer: ['DISCORD_REPAY_WEBHOOK_URL'] }
-      );
-      return { errors, levelUp: null };
-   }
-   return { errors, levelUp: { fromLimit: getEffectiveCreditLimit(borrower.cs, true), toLimit: evaluation.nextLimit } };
 };
 
 // True when `wallet` is one the borrower is known to use: their profile wallet, or a wallet one of
@@ -522,6 +405,8 @@ serve(async (req) => {
             ? 'someone else funded it a moment earlier'
             : recordedError === 'not_awaiting_repayment'
               ? 'the loan was already fully repaid'
+              : recordedError === 'id_loan_paid_by_moodeng'
+                ? 'Indonesia loans are paid to Walt from admin, not funded on Base'
               : `the loan couldn't take it (${recordedError})`;
       await alertUnrecorded(why);
       return jsonResponse({ error: `This payment couldn't be applied because ${why}. Contact support for a refund.` }, 409);
@@ -583,44 +468,19 @@ serve(async (req) => {
       sideEffectErrors.push(...(await awardFundingPoints(admin, updatedLoan)));
       const { error: notifyError } = await admin.functions.invoke('loan-funded-notification', { body: { loanId } });
       if (notifyError) sideEffectErrors.push({ type: 'loan_notification', message: notifyError.message });
-   } else if (action === 'repay' && updatedLoan.repayment_status === 'Paid') {
+   } else if (action === 'repay') {
       // Guarded on action, not just status: a return-interest call also leaves the loan 'Paid', and
-      // must NOT re-run credit progression / re-fire the repayment notification.
-      const progression = await applyCreditProgression(admin, updatedLoan);
-      sideEffectErrors.push(...progression.errors);
-      creditLevelUp = progression.levelUp;
-      const { error: notifyError } = await admin.functions.invoke('loan-repayment-received-notification', { body: { loanId } });
-      if (notifyError) sideEffectErrors.push({ type: 'loan_notification', message: notifyError.message });
-   } else if (action === 'repay' && updatedLoan.repayment_status === 'Partial') {
-      // A payment that leaves a balance used to tell nobody. Tell the borrower what was paid and what's
-      // left (and how to reach us if it was a mistake), and post it to the team. Both never throw.
-      const paidNow = Number(transfer.micros) / 1e6;
-      await Promise.all([
-         notifyBorrowerPartialRepayment(admin, updatedLoan as Parameters<typeof notifyBorrowerPartialRepayment>[1], paidNow),
-         postPartialRepaymentToTeam(admin, loanId, paidNow)
-      ]);
-   }
-
-   // Repay browser feed → Discord. Fires on every repayment (partial or full), flags in-app
-   // browsers (Facebook/etc.) where the Base wallet can't complete. Best-effort and awaited only
-   // so the fetch starts; failures are swallowed inside postRepayFeed and never block the response.
-   if (action === 'repay') {
-      const { data: borrowerRow } = await admin
-         .from('users')
-         .select('username, email')
-         .eq('id', updatedLoan.borrower_user_id)
-         .maybeSingle();
-      await postRepayFeed({
-         username: borrowerRow?.username ?? null,
-         email: borrowerRow?.email ?? null,
-         repaidAmount: toNumber(updatedLoan.repaid_amount as number | string | null),
-         totalAmount: toNumber(updatedLoan.total_repayment_amount as number | string | null),
-         coin: (updatedLoan.coin as string | null)?.trim() || 'USDC',
-         trackingId: (updatedLoan.tracking_id as string | null) ?? null,
-         fullyRepaid: updatedLoan.repayment_status === 'Paid',
+      // must NOT re-run credit progression / re-fire the repayment notification. Shared with the
+      // Indonesia Walt → lender repayments (_shared/idRepayments.ts).
+      const followUps = await runRepaymentFollowUps(admin, {
+         loanId,
+         updatedLoan,
+         paidNow: Number(transfer.micros) / 1e6,
          browser: describeBrowser(req.headers.get('user-agent')),
          userAgent: req.headers.get('user-agent')
       });
+      sideEffectErrors.push(...followUps.errors);
+      creditLevelUp = followUps.creditLevelUp;
    }
 
    return jsonResponse({ loan: updatedLoan, sideEffectErrors, creditLevelUp });

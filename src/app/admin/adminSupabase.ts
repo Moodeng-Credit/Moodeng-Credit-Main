@@ -2,6 +2,7 @@ import type { CalAvailability, CalOverride, CalSchedule } from '@/app/admin/cale
 import type { FormCheck } from '@/app/admin/callFormCheck';
 import type { IncomeDocOutcome } from '@/lib/incomeDocOutcomes';
 import { DEFAULT_LOAN_TIMEZONE, getDaysUntilDueDay, getLoanTimezone, isPastDueDay } from '@/lib/loanDeadline';
+import type { ProofAnswers, ProofItem } from '@/lib/proofRequests';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 
 export type AdminRole = 'owner' | 'admin' | 'support';
@@ -136,6 +137,8 @@ export interface AdminLoanRecord {
    is_test: boolean;
    created_at: string | null;
    funded_at: string | null;
+   // 'ID' = an Indonesia-track request (loans.market); shown with the 🇮🇩 badge.
+   market: 'ID' | null;
    borrower: Pick<
       AdminDirectoryUser,
       'id' | 'username' | 'wallet_address' | 'user_role' | 'account_status' | 'is_world_id' | 'is_didit'
@@ -219,6 +222,14 @@ async function requireOk<T>(request: PromiseLike<{ data: T; error: unknown }>): 
    const { data, error } = await request;
    if (error) throw error;
    return data;
+}
+
+// loans.market comes with the Indonesia-track migration (20261107120000). Until it's applied the
+// query is retried without the extra columns, so the admin keeps working either way.
+async function requireOkWithExtraColumns<T>(make: (extraColumns: string) => PromiseLike<{ data: T; error: unknown }>, extraColumns: string): Promise<T> {
+   const first = await make(extraColumns);
+   if (!first.error) return first.data;
+   return requireOk(make(''));
 }
 
 async function optionalOk<T>(request: PromiseLike<{ data: T; error: unknown }>, fallback: T): Promise<T> {
@@ -331,6 +342,7 @@ function mapLoan(row: AnyRow, usersById: Map<string, AdminDirectoryUser>): Admin
       is_test: Boolean(row.is_test),
       created_at: row.created_at ?? null,
       funded_at: row.funded_at ?? null,
+      market: row.market === 'ID' ? 'ID' : null,
       borrower: shortUser(row.borrower_user_id ? usersById.get(row.borrower_user_id) : null),
       lender: shortUser(row.lender_user_id ? usersById.get(row.lender_user_id) : null)
    };
@@ -676,15 +688,17 @@ export async function listAdminDirectoryUsers(search?: string): Promise<AdminDir
 
 export async function listAdminLoanRequests(): Promise<AdminLoanRequest[]> {
    const supabase = getSupabaseBrowserClient();
-   const rows = await requireOk<AnyRow[]>(
-      supabase
-         .from('loans')
-         .select(
-            'id,tracking_id,borrower_user_id,lender_user_id,borrower_wallet,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,reason,coin,loan_status,repayment_status,created_at,funded_at'
-         )
-         .eq('loan_status', 'Requested')
-         .order('created_at', { ascending: false })
-         .limit(100)
+   const rows = await requireOkWithExtraColumns<AnyRow[]>(
+      (extra) =>
+         supabase
+            .from('loans')
+            .select(
+               `id,tracking_id,borrower_user_id,lender_user_id,borrower_wallet,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,reason,coin,loan_status,repayment_status,created_at,funded_at${extra}`
+            )
+            .eq('loan_status', 'Requested')
+            .order('created_at', { ascending: false })
+            .limit(100),
+      ',market'
    );
 
    const userIds = rows.flatMap((loan) => [loan.borrower_user_id, loan.lender_user_id].filter(Boolean));
@@ -709,24 +723,27 @@ export async function listAdminLoans(
    { includeTest = false, limit = 500 }: { includeTest?: boolean; limit?: number } = {}
 ): Promise<AdminLoanRecord[]> {
    const supabase = getSupabaseBrowserClient();
-   let query = supabase
-      .from('loans')
-      .select(
-         'id,tracking_id,borrower_user_id,lender_user_id,borrower_wallet,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,due_timezone,reason,coin,loan_status,repayment_status,is_test,created_at,funded_at'
-      );
+   const makeQuery = (extra: string) => {
+      let query = supabase
+         .from('loans')
+         .select(
+            `id,tracking_id,borrower_user_id,lender_user_id,borrower_wallet,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,due_timezone,reason,coin,loan_status,repayment_status,is_test,created_at,funded_at${extra}`
+         );
 
-   if (!includeTest) query = query.eq('is_test', false);
+      if (!includeTest) query = query.eq('is_test', false);
 
-   if (status === 'requested') {
-      query = query.eq('loan_status', 'Requested');
-   } else if (status === 'active' || status === 'overdue') {
-      // Split below: overdue only once the due day has ended in the borrower's zone.
-      query = query.eq('loan_status', 'Lent').in('repayment_status', ['Unpaid', 'Partial']);
-   } else if (status === 'repaid') {
-      query = query.eq('loan_status', 'Lent').eq('repayment_status', 'Paid');
-   }
+      if (status === 'requested') {
+         query = query.eq('loan_status', 'Requested');
+      } else if (status === 'active' || status === 'overdue') {
+         // Split below: overdue only once the due day has ended in the borrower's zone.
+         query = query.eq('loan_status', 'Lent').in('repayment_status', ['Unpaid', 'Partial']);
+      } else if (status === 'repaid') {
+         query = query.eq('loan_status', 'Lent').eq('repayment_status', 'Paid');
+      }
+      return query.order('created_at', { ascending: false }).limit(limit);
+   };
 
-   const rows = await requireOk<AnyRow[]>(query.order('created_at', { ascending: false }).limit(limit));
+   const rows = await requireOkWithExtraColumns<AnyRow[]>(makeQuery, ',market');
    const userIds = rows.flatMap((loan) => [loan.borrower_user_id, loan.lender_user_id].filter(Boolean));
    const usersById = await fetchUsersByIds(userIds);
    const loans = rows.map((row) => mapLoan(row, usersById));
@@ -777,6 +794,8 @@ export interface ComingDueLoan {
    coin: string | null;
    repayment_status: 'Unpaid' | 'Partial' | 'Paid' | null;
    is_test: boolean;
+   // 'ID' = an Indonesia-track loan (loans.market); shown with the 🇮🇩 badge.
+   market: 'ID' | null;
    borrower: ComingDueParty | null;
    lender: ComingDueParty | null;
    /** The wallet the loan was funded from: where a refund must go (what admin-refund-loan checks). */
@@ -803,18 +822,21 @@ export async function listComingDueLoans({ includeTest = false, limit = 500 }: {
    ComingDueLoan[]
 > {
    const supabase = getSupabaseBrowserClient();
-   let query = supabase
-      .from('loans')
-      .select(
-         'id,tracking_id,borrower_user_id,lender_user_id,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,due_timezone,funded_at,created_at,reason,coin,repayment_status,is_test'
-      )
-      .eq('loan_status', 'Lent')
-      .in('repayment_status', ['Unpaid', 'Partial'])
-      .not('due_date', 'is', null);
+   const makeQuery = (extra: string) => {
+      let query = supabase
+         .from('loans')
+         .select(
+            `id,tracking_id,borrower_user_id,lender_user_id,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,due_timezone,funded_at,created_at,reason,coin,repayment_status,is_test${extra}`
+         )
+         .eq('loan_status', 'Lent')
+         .in('repayment_status', ['Unpaid', 'Partial'])
+         .not('due_date', 'is', null);
 
-   if (!includeTest) query = query.eq('is_test', false);
+      if (!includeTest) query = query.eq('is_test', false);
+      return query.order('due_date', { ascending: true }).limit(limit);
+   };
 
-   const rows = await requireOk<AnyRow[]>(query.order('due_date', { ascending: true }).limit(limit));
+   const rows = await requireOkWithExtraColumns<AnyRow[]>(makeQuery, ',market');
 
    const userIds = [...new Set(rows.flatMap((row) => [row.borrower_user_id, row.lender_user_id]).filter(Boolean))] as string[];
    const contactsById = new Map<string, ComingDueParty>();
@@ -856,6 +878,7 @@ export async function listComingDueLoans({ includeTest = false, limit = 500 }: {
          coin: row.coin ?? null,
          repayment_status: row.repayment_status ?? null,
          is_test: Boolean(row.is_test),
+         market: row.market === 'ID' ? 'ID' : null,
          borrower: row.borrower_user_id ? (contactsById.get(row.borrower_user_id) ?? null) : null,
          lender_wallet: row.lender_wallet ?? null,
          lender: row.lender_user_id ? (contactsById.get(row.lender_user_id) ?? null) : null
@@ -2244,10 +2267,18 @@ export interface VoucherCodeStock {
 
 export async function getVoucherCodeStock(): Promise<VoucherCodeStock[]> {
    const data = (await requireOk(getSupabaseBrowserClient().rpc('admin_voucher_code_stock'))) as AnyRow[] | null;
-   return (data ?? []).map((row) => ({ amount_php: toNumber(row.amount_php), available: toNumber(row.available), used: toNumber(row.used) }));
+   return (data ?? []).map((row) => ({
+      amount_php: toNumber(row.amount_php),
+      available: toNumber(row.available),
+      used: toNumber(row.used)
+   }));
 }
 
-export async function addVoucherCodes(amountPhp: number, codes: string[], source?: string | null): Promise<{ added: number; skipped: number }> {
+export async function addVoucherCodes(
+   amountPhp: number,
+   codes: string[],
+   source?: string | null
+): Promise<{ added: number; skipped: number }> {
    const result = (await requireOk(
       getSupabaseBrowserClient().rpc('admin_add_voucher_codes', { p_amount_php: amountPhp, p_codes: codes, p_source: source ?? null })
    )) as AnyRow | null;
@@ -2500,7 +2531,7 @@ export async function removeLoanRequest(input: RemoveLoanRequestInput): Promise<
  * reason is shown to them). 'platform_settlement': pay the lender the FULL repayment and present it to
  * them as an ordinary repayment — no refund wording, no reason. The reason is always kept internally.
  */
-export type SettlementMode = 'refund' | 'platform_settlement';
+export type SettlementMode = 'refund' | 'platform_settlement' | 'rollover';
 
 export interface RefundLoanInput {
    loanId: string;
@@ -2511,11 +2542,15 @@ export interface RefundLoanInput {
    reason: string;
    /** Defaults to 'refund' when omitted. */
    settlementMode?: SettlementMode;
+   /** 'rollover' only: when the first payment of the new payment-plan loan is due (ISO). */
+   rolloverDueDate?: string;
 }
 
 export interface RefundLoanResult {
    ok: boolean;
    refund: { amount: number; coin: string; txHash: string };
+   /** 'rollover' only: the new Moodeng → borrower payment-plan loan (null if it could not be created). */
+   rolloverLoan?: { id: string; trackingId: string; dueDate: string; amount: number } | null;
    borrowerBanned: boolean;
    kycBlacklisted: boolean;
    diditPushed: boolean;
@@ -2548,7 +2583,8 @@ export async function refundLoan(input: RefundLoanInput): Promise<RefundLoanResu
          hash: input.hash,
          method: input.method,
          reason: input.reason.trim(),
-         settlementMode: input.settlementMode ?? 'refund'
+         settlementMode: input.settlementMode ?? 'refund',
+         ...(input.rolloverDueDate ? { rolloverDueDate: input.rolloverDueDate } : {})
       }
    });
    if (error) {
@@ -3195,6 +3231,77 @@ export async function decideIncomeDocument(id: string, decision: 'approved' | 'd
 /** A 10-minute link to one uploaded file (private bucket; admins can read it). */
 export async function incomeDocumentUrl(storagePath: string): Promise<string> {
    const { data, error } = await getSupabaseBrowserClient().storage.from('income-docs').createSignedUrl(storagePath, 600);
+   if (error || !data?.signedUrl) throw error ?? new Error('No link');
+   return data.signedUrl;
+}
+
+// Proof requests: after a call, ask a new applicant to back up what they said with one link
+// (moodeng.app/proof/<token>). No automatic checks — the team reads the answers and files here.
+export interface AdminProofRequest {
+   id: string;
+   token: string;
+   items: ProofItem[];
+   message: string | null;
+   status: 'open' | 'submitted' | 'reviewed';
+   answers: ProofAnswers;
+   files: Array<{ item: string; path: string; name?: string; mime?: string; size?: number }>;
+   created_by: string | null;
+   created_at: string;
+   expires_at: string;
+   sent_at: string | null;
+   sent_via: string[] | null;
+   opened_at: string | null;
+   submitted_at: string | null;
+   submit_count: number;
+   review: 'ok' | 'ask_again' | null;
+   review_note: string | null;
+   reviewed_at: string | null;
+   reviewed_by: string | null;
+   user: { id: string; username: string | null; display_name: string | null } | null;
+}
+
+const PROOF_REQUEST_SELECT =
+   'id, token, items, message, status, answers, files, created_by, created_at, expires_at, sent_at, sent_via, opened_at, submitted_at, submit_count, review, review_note, reviewed_at, reviewed_by, user:users!proof_requests_user_id_fkey(id, username, display_name)';
+
+export async function listProofRequests(userId?: string): Promise<AdminProofRequest[]> {
+   let query = getSupabaseBrowserClient()
+      .from('proof_requests')
+      .select(PROOF_REQUEST_SELECT)
+      .order('created_at', { ascending: false })
+      .limit(150);
+   if (userId) query = query.eq('user_id', userId);
+   return ((await requireOk(query)) ?? []) as unknown as AdminProofRequest[];
+}
+
+/** Make the link; with send = true it also goes to them on push / Messenger / Telegram right away. */
+export async function createProofRequest(input: {
+   userId: string;
+   items: ProofItem[];
+   message: string | null;
+   send: boolean;
+}): Promise<{ id: string; token: string }> {
+   const data = await requireOk(
+      getSupabaseBrowserClient().rpc('create_proof_request', {
+         p_user_id: input.userId,
+         p_items: input.items,
+         p_message: input.message,
+         p_send: input.send
+      })
+   );
+   return data as { id: string; token: string };
+}
+
+export async function resendProofRequest(id: string): Promise<void> {
+   await requireOk(getSupabaseBrowserClient().rpc('send_proof_request', { p_id: id }));
+}
+
+/** "Looks good" closes it; "Ask again" opens the link again with what's missing and tells them. */
+export async function reviewProofRequest(id: string, review: 'ok' | 'ask_again', note: string | null): Promise<void> {
+   await requireOk(getSupabaseBrowserClient().rpc('review_proof_request', { p_id: id, p_review: review, p_note: note }));
+}
+
+export async function proofFileUrl(storagePath: string): Promise<string> {
+   const { data, error } = await getSupabaseBrowserClient().storage.from('proof-requests').createSignedUrl(storagePath, 600);
    if (error || !data?.signedUrl) throw error ?? new Error('No link');
    return data.signedUrl;
 }

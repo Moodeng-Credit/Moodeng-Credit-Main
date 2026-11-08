@@ -7,6 +7,7 @@ import { isInternalRequest } from '../_shared/internalAuth.ts';
 import { collectGateDigest, formatGateDigest } from '../_shared/gateDigest.ts';
 import { BORROWER_COLUMNS, getAdminChatId, notifyAdminsOfRequest, notifyBorrower, PAGE_INBOX_URL, REQUEST_COLUMNS, SITE_URL, who } from '../_shared/loanAccess.ts';
 import { needsPreKycGate } from '../_shared/preKycGate.ts';
+import { isIdStep, loadIdStatus, notifyIdNextStep, sendIdTelegram } from '../_shared/idTrack.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
 // Connect → Approve → Apply (docs/HANDOFF_BORROWER_VERIFICATION.md §13).
@@ -28,6 +29,8 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 //   action=gate_digest (daily cron) — the admin check-in: calls waiting on a ✅ / ❌, and people who
 //                                   connected Messenger but never booked. Sent at most once a day
 //                                   (claimed in telegram_bot_settings), so an extra call is harmless.
+//   action=id_step (borrower JWT, Indonesia track) — the app finished a step it saves itself; the
+//                                   bot says "✅ done — next: …" on Telegram (_shared/idTrack.ts).
 //   action=referral_alert (DB trigger on redeem) — posts "🎟️ code X used by …" to the admin
 //                                   Telegram + Discord. Deduped by referral_redemptions.alerted_at,
 //                                   so it can only ever fire once per real redemption.
@@ -79,13 +82,21 @@ const submit = async (req: Request, svc: any, body: Record<string, unknown>) => 
       return json({ ok: true, status: borrower.loan_access_status });
    }
 
+   // Indonesia track: the call comes after every other onboarding step (id_onboarding_status), and
+   // it's always a call request, whatever the loan flow.
+   const idStatus = await loadIdStatus(svc, userId);
+   const idTrack = idStatus?.market === 'ID';
+   if (idTrack && idStatus?.readyForCall !== true) {
+      return json({ ok: false, error: 'ID_ONBOARDING_INCOMPLETE', next: idStatus?.next ?? null }, 409);
+   }
+
    // Pre-KYC gate: a new borrower meets the team before KYC, whatever the loan flow — always a call.
    const preKyc = await needsPreKycGate(svc, userId);
    const { data: flowData } = await svc.rpc('get_loan_flow');
    const flow = typeof flowData === 'string' ? flowData : 'open';
-   if (flow === 'open' && !preKyc) return json({ ok: false, error: 'gate_off' }, 409);
+   if (flow === 'open' && !preKyc && !idTrack) return json({ ok: false, error: 'gate_off' }, 409);
    // Referred → Emma's setup call, even in the approval flow.
-   const isCallRequest = preKyc || flow === 'call' || Boolean(borrower.redeemed_referral_code_id);
+   const isCallRequest = idTrack || preKyc || flow === 'call' || Boolean(borrower.redeemed_referral_code_id);
 
    // Call request: the reach-out IS the booked call, so there must be one coming up.
    if (isCallRequest && !(borrower.video_call_starts_at && Date.parse(borrower.video_call_starts_at) > Date.now())) {
@@ -126,6 +137,38 @@ const submit = async (req: Request, svc: any, body: Record<string, unknown>) => 
 
    await notifyAdminsOfRequest(svc, request, borrower);
    return json({ ok: true, status: 'pending' });
+};
+
+// Indonesia track: the app finished a step it saves itself (joined the track = 'telegram', About you,
+// Facebook profile link, Walt address) → "✅ <step> selesai — langkah berikutnya: …" on Telegram. The
+// status RPC decides whether the step really is done; a step that isn't just gets "what's next".
+// deno-lint-ignore no-explicit-any
+const idStep = async (req: Request, svc: any, body: Record<string, unknown>) => {
+   const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } }
+   });
+   const { data: auth } = await authClient.auth.getUser();
+   const userId = auth?.user?.id;
+   if (!userId) return json({ ok: false, error: 'unauthorized' }, 401);
+   if (!isIdStep(body.step)) return json({ ok: false, error: 'bad_step' }, 400);
+   // "Lanjut di Telegram": a step that doesn't work in this browser (camera, upload) — the bot sends a
+   // signed-in button to that step, which opens in Telegram's own browser.
+   if (body.continueInTelegram === true) {
+      // At most one a minute per person (users.id_continue_sent_at, migration 20261107180000).
+      const minuteAgo = new Date(Date.now() - 60_000).toISOString();
+      const { data: claimed } = await svc
+         .from('users')
+         .update({ id_continue_sent_at: new Date().toISOString() })
+         .eq('id', userId)
+         .or(`id_continue_sent_at.is.null,id_continue_sent_at.lt.${minuteAgo}`)
+         .select('id')
+         .maybeSingle();
+      if (!claimed) return json({ ok: false, error: 'too_soon' }, 429);
+      const sent = await sendIdTelegram(svc, userId, 'continue_in_telegram', { next: body.step });
+      return json({ ok: true, sent });
+   }
+   const sent = await notifyIdNextStep(svc, userId, body.step);
+   return json({ ok: true, sent });
 };
 
 // deno-lint-ignore no-explicit-any
@@ -252,6 +295,7 @@ serve(async (req) => {
       if (body.action === 'expire') return await expire(svc);
       if (body.action === 'referral_alert') return await referralAlert(svc, body);
       if (body.action === 'gate_digest') return await gateDigest(req, svc);
+      if (body.action === 'id_step') return await idStep(req, svc, body);
       return json({ error: 'unknown_action' }, 400);
    } catch (err) {
       console.error('loan-access failed:', err instanceof Error ? err.message : err);

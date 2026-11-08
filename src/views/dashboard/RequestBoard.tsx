@@ -26,7 +26,10 @@ import UserAvatar from '@/components/UserAvatar';
 import { VerificationUnsuccessfulModal } from '@/components/verification/VerificationUnsuccessfulModal';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 
+import IndonesiaBadge from '@/components/IndonesiaBadge';
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { useIdOnboarding } from '@/hooks/useIdOnboarding';
+import { useUsdIdrPeg } from '@/hooks/useUsdIdrPeg';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 import { useLoanFlow } from '@/hooks/useLoanFlow';
 import { useVerificationJourney } from '@/hooks/useVerificationJourney';
@@ -52,9 +55,11 @@ import {
    recordGuidedTourShown,
    shouldShowGuidedTour
 } from '@/lib/guidedTourStorage';
+import { ID_PATHS } from '@/lib/idTrack';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { isTransientNetworkError } from '@/lib/isTransientNetworkError';
 import { isUserVerified, isVerificationPending } from '@/lib/isUserVerified';
+import { checkIdLoanTerms, ID_NO_RATE_TEXT, idLoanTermMessage, idUsdForIdr } from '@/lib/loanMarket';
 import { checkLoanReason, type ReasonCheckLocale } from '@/lib/loanReasonCheck';
 import { getLoanRequestCooldownMessage, type LoanRequestRepostStatus } from '@/lib/loanRequestRepostStatus';
 import { setPendingSharedRequestId } from '@/lib/pendingSharedRequest';
@@ -95,6 +100,17 @@ import { FAQS } from '@/views/support/data/faqs';
 // Temporarily hides the lender "IMPORTANT NOTE" fee banner on the request board.
 // Flip to `true` to restore it (see the banner block below, gated on this flag).
 const SHOW_LENDER_FEE_NOTE = false;
+
+// Apply card for Indonesia-track borrowers (Bahasa first).
+const ID_APPLY_CARD_TEXT = {
+   finishTitle: { id: 'Selesaikan pendaftaran', en: 'Finish signing up' },
+   finishBody: { id: 'Ikuti langkahnya, lalu ajukan pinjaman pertamamu.', en: 'Finish the steps, then apply for your first loan.' },
+   borrow: { id: 'Pinjam', en: 'Borrow' },
+   or: { id: ' atau ', en: ' or ' },
+   repayWithin: { id: 'Bayar kembali dalam {n} hari.', en: 'Repay within {n} days.' },
+   continue: { id: 'Lanjutkan', en: 'Continue' },
+   apply: { id: 'Ajukan pinjaman', en: 'Apply For A Loan' }
+} as const;
 
 // Stable empty-array identity so memos/selectors that fall back to "no loans" don't
 // produce a fresh [] every render (which would churn downstream useMemos in a loop
@@ -547,6 +563,23 @@ function RequestBoard$() {
    // header link and the apply card follow it. "Apply" here opens this board's own loan form.
    const openLoanFormFromJourney = useCallback(() => setShowModal(true), []);
    const journey = useVerificationJourney(openLoanFormFromJourney);
+   // Indonesia track (users.market = 'ID', docs/INDONESIA_TRACK.md): their own onboarding at
+   // /id/onboarding instead of the journey above, and $5/$10 loans with short terms once the team
+   // approved them after the call. Until then every "request" entry sends them to their next step.
+   const { data: idOnboarding, isIndo, isLoading: isIdOnboardingLoading } = useIdOnboarding();
+   const idLoanRules = isIndo && idOnboarding ? idOnboarding.rules : null;
+   const idApproved = isIndo && idOnboarding?.access === 'approved';
+   // Rupiah peg: ID borrowers promise a fixed rupiah total, priced at the server's USD/IDR.
+   const { rate: usdIdrRate, isLoading: isUsdIdrRateLoading } = useUsdIdrPeg(isIndo);
+   const idNeedsOnboarding = isIndo && !idApproved;
+   const idLang: 'id' | 'en' = locale === 'id' ? 'id' : 'en';
+   // Whatever opened the loan form (Apply card, ?applyLoan=1, the journey nudge, a resumed draft): an
+   // Indonesian who isn't approved yet goes to their onboarding instead.
+   useEffect(() => {
+      if (!showModal || !idNeedsOnboarding) return;
+      setShowModal(false);
+      navigate(ID_PATHS.onboarding);
+   }, [idNeedsOnboarding, navigate, showModal]);
    // Keep the verification badge honest: pull the real Didit status for pending users.
    useVerificationStatusSync();
    const storeIsBorrower = useIsBorrower();
@@ -602,6 +635,8 @@ function RequestBoard$() {
    const lenderUserId = '';
    const [loanAmount, setLoanAmount] = useState('');
    const [totalRepaymentAmount, setTotalRepaymentAmount] = useState('');
+   // Indonesia track: the fixed rupiah total (loans.repay_idr). totalRepaymentAmount follows it at today's rate.
+   const [repayIdr, setRepayIdr] = useState('');
    const [reason, setReason] = useState('');
    const [days, setDays] = useState('');
    const [customAmount, setCustomAmount] = useState('');
@@ -704,6 +739,7 @@ function RequestBoard$() {
 
    const clear = () => {
       setTotalRepaymentAmount('');
+      setRepayIdr('');
       setLoanAmount('');
       setReason('');
       setDays('');
@@ -903,6 +939,10 @@ function RequestBoard$() {
    const handleApplyLoanClick = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
       if (isOpeningLoanRequest) return;
+      if (idNeedsOnboarding) {
+         navigate(ID_PATHS.onboarding);
+         return;
+      }
       setIsOpeningLoanRequest(true);
 
       try {
@@ -1497,7 +1537,18 @@ function RequestBoard$() {
          const borrowerWallet = effectiveUser.walletAddress?.trim();
          const trimmedReason = reason.trim();
          const parsedLoanAmount = Number.parseFloat(loanAmount);
-         const parsedRepaymentAmount = Number.parseFloat(totalRepaymentAmount);
+         // Indonesia rupiah peg: the rupiah total is what they promise; the USD is that at today's
+         // server rate (the server recomputes it the same way and overwrites what we send).
+         const isIdPegged = Boolean(isIndo && idLoanRules);
+         const parsedRepayIdr = isIdPegged ? Number(repayIdr) : null;
+         if (isIdPegged && !usdIdrRate) {
+            showToast(TOAST_TYPES.ERROR, idLang === 'id' ? 'Kurs belum tersedia' : 'No exchange rate yet', ID_NO_RATE_TEXT[idLang], 'OK', 'acknowledge');
+            return;
+         }
+         const parsedRepaymentAmount =
+            isIdPegged && usdIdrRate && parsedRepayIdr && Number.isFinite(parsedRepayIdr) && parsedRepayIdr > 0
+               ? idUsdForIdr(parsedRepayIdr, usdIdrRate)
+               : Number.parseFloat(totalRepaymentAmount);
          const parsedDueDate = days ? new Date(days) : null;
 
          if (!isWorldIdVerified && !hasBorrowerBaseWallet) {
@@ -1524,9 +1575,39 @@ function RequestBoard$() {
             showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_AMOUNT_EXCEEDS_LIMIT));
             return;
          }
-         if (!totalRepaymentAmount || Number.isNaN(parsedRepaymentAmount) || parsedRepaymentAmount < parsedLoanAmount + 1) {
+         if (
+            (!isIdPegged && !totalRepaymentAmount) ||
+            (isIdPegged && !parsedRepayIdr) ||
+            Number.isNaN(parsedRepaymentAmount) ||
+            parsedRepaymentAmount < parsedLoanAmount + 1
+         ) {
             showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_REPAYMENT_TOO_LOW));
             return;
+         }
+         if (isIndo && idLoanRules) {
+            // Mirrors app_private.enforce_new_loan_terms: $5/$10, ≤ 1.5× back, due within the term.
+            const idProblem = checkIdLoanTerms({
+               amount: parsedLoanAmount,
+               repayment: parsedRepaymentAmount,
+               dueDate: days,
+               today,
+               rules: idLoanRules,
+               approved: idApproved
+            });
+            if (idProblem) {
+               showToast(
+                  TOAST_TYPES.ERROR,
+                  idLang === 'id' ? 'Periksa pinjamanmu' : 'Check your loan',
+                  idLoanTermMessage(idProblem, idLoanRules, parsedLoanAmount, idLang, usdIdrRate),
+                  'OK',
+                  'acknowledge'
+               );
+               if (idProblem === 'not_approved') {
+                  setShowModal(false);
+                  navigate(ID_PATHS.onboarding);
+               }
+               return;
+            }
          }
          if (!parsedDueDate || Number.isNaN(parsedDueDate.getTime())) {
             showToast(
@@ -1586,7 +1667,8 @@ function RequestBoard$() {
             dueDate: days,
             referralCodeId: appliedReferral?.id,
             referralCode: appliedReferral?.code,
-            referralBoostAmount: appliedReferral?.boostAmount
+            referralBoostAmount: appliedReferral?.boostAmount,
+            ...(isIdPegged && parsedRepayIdr ? { repayIdr: parsedRepayIdr } : {})
          };
 
          if (
@@ -2215,7 +2297,21 @@ function RequestBoard$() {
                      >
                         <div className="flex flex-col gap-4 relative z-10">
                            <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-none max-[374px]:pr-[76px]">
-                              {showReferralCard ? (
+                              {isIndo ? (
+                                 <>
+                                    <IndonesiaBadge className="w-fit" />
+                                    <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">
+                                       {idNeedsOnboarding
+                                          ? ID_APPLY_CARD_TEXT.finishTitle[idLang]
+                                          : `${ID_APPLY_CARD_TEXT.borrow[idLang]} ${(idLoanRules?.amounts ?? []).map((a) => `$${a}`).join(ID_APPLY_CARD_TEXT.or[idLang])}`}
+                                    </p>
+                                    <p className="text-md-b2 font-medium text-md-neutral-700">
+                                       {idNeedsOnboarding
+                                          ? ID_APPLY_CARD_TEXT.finishBody[idLang]
+                                          : ID_APPLY_CARD_TEXT.repayWithin[idLang].replace('{n}', String(idLoanRules?.maxTermDays ?? 14))}
+                                    </p>
+                                 </>
+                              ) : showReferralCard ? (
                                  <>
                                     <p className="text-md-b3 font-semibold uppercase tracking-wide text-md-primary-1200">Referral program</p>
                                     <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Pay zero interest</p>
@@ -2261,7 +2357,9 @@ function RequestBoard$() {
                            </div>
                            <button
                               onClick={
-                                 showReferralCard
+                                 isIndo
+                                    ? handleApplyLoanClick
+                                    : showReferralCard
                                     ? () => navigate('/refer')
                                     : journey.onboarding
                                       ? (e) => { e.preventDefault(); journey.go(); }
@@ -2279,6 +2377,12 @@ function RequestBoard$() {
                                     <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
                                     Opening...
                                  </>
+                              ) : isIndo ? (
+                                 idNeedsOnboarding ? (
+                                    <>{ID_APPLY_CARD_TEXT.continue[idLang]}<span aria-hidden="true"> →</span></>
+                                 ) : (
+                                    ID_APPLY_CARD_TEXT.apply[idLang]
+                                 )
                               ) : showReferralCard ? (
                                  <>Refer a friend<span aria-hidden="true"> →</span></>
                               ) : journey.onboarding ? (
@@ -2534,7 +2638,12 @@ function RequestBoard$() {
          {((isAuthenticated && isBorrower) || isGuestBorrowerTour) && (
             <>
                <LoanRequestModal
-                  isOpen={showModal}
+                  isOpen={showModal && !idNeedsOnboarding && !isIdOnboardingLoading}
+                  idLoanRules={isGuestBorrowerTour ? null : idLoanRules}
+                  repayIdr={repayIdr}
+                  setRepayIdr={setRepayIdr}
+                  usdIdrRate={usdIdrRate}
+                  isUsdIdrRateLoading={isUsdIdrRateLoading}
                   onClose={handleCloseModal}
                   showVerify={isGuestBorrowerTour ? false : showVerify}
                   isPending={isGuestBorrowerTour ? false : isPending}
@@ -2557,9 +2666,9 @@ function RequestBoard$() {
                   onReferralRedeemed={handleReferralRedeemed}
                   isSubmitting={isSubmitting || isCheckingReason}
                   availableCreditLimit={availableCreditLimit}
-                  canUseReferralBoost={canUseReferralBoost}
+                  canUseReferralBoost={canUseReferralBoost && !isIndo}
                   loanFlow={loanFlow}
-                  startOnReferralStep={!shouldShowBorrowerTour && canUseReferralBoost}
+                  startOnReferralStep={!shouldShowBorrowerTour && canUseReferralBoost && !isIndo}
                   showBioStep={showBioStep}
                   onBioSave={handleBioSave}
                   resume={loanRequestResume}

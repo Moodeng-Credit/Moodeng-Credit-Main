@@ -61,7 +61,9 @@ export const rpcCall = async (url: string, method: string, params: unknown[]) =>
    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params })
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+      // A hung RPC must not eat a caller's whole time budget (e.g. the 5-minute job).
+      signal: AbortSignal.timeout(15_000)
    });
    const json = await res.json();
    if (json.error) throw new Error(json.error.message || 'RPC error');

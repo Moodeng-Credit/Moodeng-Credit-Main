@@ -2,6 +2,7 @@ import { sendEmail } from './email.ts';
 import {
    buildLoanNotificationEmail,
    buildLoanNotificationTelegram,
+   getLoanOutstandingAmount,
    LoanNotificationAggregate,
    LoanNotificationLoan,
    LoanNotificationRecipient,
@@ -18,6 +19,8 @@ import {
 } from './pushMessages.ts';
 import { type MessengerCard, sendMessengerMessage, sendWhatsAppTemplate, type WhatsAppTemplate } from './sendpulse.ts';
 import { sendTelegramMessage } from './telegram.ts';
+import { remainingIdr } from './fxRates.ts';
+import { type IdEvent, sendIdTelegramTo } from './idTrack.ts';
 
 // WhatsApp reminders: the Meta-approved Utility templates (created in SendPulse → WhatsApp bot →
 // Templates). Every template takes the same three body variables: {{1}} name, {{2}} amount in USDC,
@@ -235,6 +238,38 @@ const buildPushPayloadForType = (
    }
 };
 
+// Indonesia track: the Bahasa Telegram copy for each loan event (idTrack.ts). Other types (the weekly
+// digest) keep the normal path.
+const ID_LOAN_EVENT: Partial<Record<LoanNotificationType, IdEvent>> = {
+   funded: 'loan_funded',
+   urgent_reminder: 'due_soon',
+   final_reminder: 'due_tomorrow',
+   due_today: 'due_today',
+   overdue: 'overdue',
+   repayment_received: 'repaid',
+   request_expired: 'request_expired'
+};
+
+/** market / preferred_locale from the recipient row, or looked up when a caller didn't select them. */
+const resolveIdRecipient = async (
+   recipient: LoanNotificationRecipient,
+   loan: LoanNotificationLoan | null,
+   push?: { supabase: any; userId: string }
+): Promise<{ market: string | null; preferred_locale: string | null; chat_id: string | number | null }> => {
+   if (recipient.market !== undefined) {
+      return { market: recipient.market ?? null, preferred_locale: recipient.preferred_locale ?? null, chat_id: recipient.chat_id ?? null };
+   }
+   const userId = push?.userId ?? loan?.borrower_user_id ?? null;
+   if (!push?.supabase || !userId) return { market: null, preferred_locale: null, chat_id: recipient.chat_id ?? null };
+   try {
+      const { data, error } = await push.supabase.from('users').select('market, preferred_locale, chat_id').eq('id', userId).maybeSingle();
+      if (error || !data) return { market: null, preferred_locale: null, chat_id: recipient.chat_id ?? null };
+      return { market: data.market ?? null, preferred_locale: data.preferred_locale ?? null, chat_id: recipient.chat_id ?? data.chat_id ?? null };
+   } catch {
+      return { market: null, preferred_locale: null, chat_id: recipient.chat_id ?? null };
+   }
+};
+
 export const getTelegramBotSettingEnabled = async (supabase: any, key: string) => {
    const { data, error } = await supabase.from('telegram_bot_settings').select('value').eq('key', key).maybeSingle();
 
@@ -264,15 +299,47 @@ export const sendBorrowerLoanNotification = async (
       push?: { supabase: any; userId: string };
    } = { telegramEnabled: false }
 ): Promise<BorrowerNotificationDeliveryResult> => {
+   // Indonesia track: Telegram is their one channel, so these always go out there, in Bahasa —
+   // whatever the global borrower_notifications_enabled switch or their notification toggles say.
+   const idEvent = ID_LOAN_EVENT[type];
+   const idRecipient = idEvent ? await resolveIdRecipient(recipient, loan, options.push) : null;
+   const idTrack = idRecipient?.market === 'ID';
+   let idTelegramSent = false;
+   if (idTrack && idEvent) {
+      const lateBy = aggregate?.dueLabel && aggregate.dueLabel !== 'overdue' ? aggregate.dueLabel : null;
+      const fundedToWalt = type === 'funded' && loan?.funding_method === 'walt_manual';
+      idTelegramSent = await sendIdTelegramTo(
+         { id: options.push?.userId ?? loan?.borrower_user_id ?? undefined, chat_id: idRecipient!.chat_id, preferred_locale: idRecipient!.preferred_locale, market: 'ID' },
+         fundedToWalt ? 'loan_funded_walt' : idEvent,
+         {
+            amount:
+               type === 'funded'
+                  ? (loan?.loan_amount ?? aggregate?.totalAmount)
+                  : type === 'repayment_received'
+                    ? (loan?.repaid_amount ?? loan?.total_repayment_amount ?? aggregate?.totalAmount)
+                    : (aggregate?.totalAmount ?? (loan ? getLoanOutstandingAmount(loan) : null)),
+            // Rupiah-pegged loans (loans.repay_idr): lead with the rupiah. Repaid = the rupiah total
+            // promised; reminders = the rupiah still left. The USD above is today's equivalent.
+            amountIdr:
+               type === 'funded'
+                  ? null
+                  : type === 'repayment_received'
+                    ? (loan?.repay_idr ?? null)
+                    : (aggregate?.totalIdr ?? remainingIdr(loan)),
+            dueAt: type === 'funded' ? (loan?.due_date ?? null) : (aggregate?.nextDueDate ?? loan?.due_date ?? null),
+            lateBy
+         }
+      );
+   }
+
    // If the user has opted out of this notification category, skip silently
    if (options.notifEnabled === false) {
-      return { emailSent: false, telegramSent: false, pushSent: false, messengerSent: false, whatsappSent: false, viberQueued: false };
+      return { emailSent: false, telegramSent: idTelegramSent, pushSent: false, messengerSent: false, whatsappSent: false, viberQueued: false };
    }
 
    let whatsappSent = false;
    let viberQueued = false;
    let emailSent = false;
-   let telegramSent = false;
    let pushSent = false;
    let messengerSent = false;
    // Telegram/LINE sign-ups get a placeholder address (telegram_<id>@moodeng.app, line_<id>@…) that
@@ -305,7 +372,8 @@ export const sendBorrowerLoanNotification = async (
       }
    }
 
-   if (options.telegramEnabled && recipient.chat_id) {
+   let telegramSent = idTelegramSent;
+   if (options.telegramEnabled && recipient.chat_id && !(idTrack && idEvent)) {
       try {
          const { text, actionUrl } = buildLoanNotificationTelegram(type, loan, recipient, aggregate);
          await sendTelegramMessage(recipient.chat_id, text, {

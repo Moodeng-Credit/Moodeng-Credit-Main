@@ -28,6 +28,7 @@ export type AdminTab =
    | 'self-lending'
    | 'mule-risk'
    | 'income-docs'
+   | 'proof-requests'
    | 'referrals'
    | 'grab-vouchers'
    | 'borrower-contacts'
@@ -56,6 +57,7 @@ export const navGroups: NavGroup[] = [
       items: [
          { id: 'users', label: 'Directory' },
          { id: 'calls', label: 'Call approvals' },
+         { id: 'proof-requests', label: 'Proof requests' },
          { id: 'fillout', label: 'Fillout' },
          { id: 'borrower-contacts', label: 'Borrower contacts' },
          { id: 'email', label: 'Email users' },
@@ -163,6 +165,7 @@ export const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'self-lending',
    'mule-risk',
    'income-docs',
+   'proof-requests',
    'referrals',
    'grab-vouchers',
    'borrower-contacts',

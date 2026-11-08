@@ -6,6 +6,7 @@ import { sendPushToUser } from './pushDelivery.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
 import { fileMarkers, gcashRefIssues, type ImageInfo, imageInfo, isAiSize, rowKeys, rowOverlap } from './fileForensics.ts';
 import { sendTelegramMessage } from './telegram.ts';
+import { idLocaleOf, idResendReason, isIdTrackUser, loadIdStatus, notifyIdNextStep, sendIdTelegram } from './idTrack.ts';
 
 // Proof of income sent from moodeng.app/documents (see the income_documents migration).
 //   0. ping     Telegram admin chat + Discord #kyc right away: who sent what, open it in Admin
@@ -1237,6 +1238,9 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    const finish = async (patch: Record<string, unknown>, replyText?: string) => {
       await supabase.from('income_documents').update({ ...patch, analyzed_at: new Date().toISOString() }).eq('id', id);
       if (replyText) await reply(replyText);
+      // Indonesia track: "✅ Bukti penghasilan selesai — langkah berikutnya: …" on Telegram, unless
+      // they're asked to resend it or it approved itself (those get their own message).
+      if (patch.verdict !== 'resend' && patch.decision !== 'approved') await notifyIdNextStep(supabase, row.user_id, 'income');
       return { ok: patch.status === 'done', ...patch };
    };
    // A problem the borrower can fix: tell them now (card + push/Messenger/Telegram) and the team in the reply.
@@ -1459,6 +1463,26 @@ export const notifyIncomeDecision = async (supabase: SupabaseClient, id: string)
       .eq('id', row.user_id)
       .maybeSingle();
    const msg = decisionMessage(kind, kind === 'resend' ? (RESEND_TEXT[row.resend_reason as ResendReason] ?? null) : row.decision_reason);
+   // Indonesia track: in Bahasa on Telegram, always (instead of the English Telegram copy below).
+   const idTrack = await isIdTrackUser(supabase, row.user_id);
+   let idSent = false;
+   if (idTrack) {
+      const { data: idUser } = await supabase.from('users').select('preferred_locale').eq('id', row.user_id).maybeSingle();
+      const locale = idLocaleOf(idUser?.preferred_locale);
+      const reason =
+         kind === 'resend'
+            ? idResendReason(row.resend_reason, locale, RESEND_TEXT[row.resend_reason as ResendReason] ?? null)
+            : locale === 'en'
+              ? row.decision_reason
+              : row.decision_reason
+                ? `Catatan tim: ${row.decision_reason}`
+                : null;
+      const status = kind === 'approved' ? await loadIdStatus(supabase, row.user_id) : null;
+      idSent = await sendIdTelegram(supabase, row.user_id, kind === 'approved' ? 'income_approved' : kind === 'resend' ? 'income_resend' : 'income_declined', {
+         reason,
+         next: status?.next ?? null
+      });
+   }
    const button = kind === 'approved' ? 'Open Moodeng' : 'Send again';
    const sent: string[] = [];
 
@@ -1475,7 +1499,8 @@ export const notifyIncomeDecision = async (supabase: SupabaseClient, id: string)
       card: { title: msg.title, button: { title: button, url: DOCUMENTS_URL } }
    });
    if (messenger.ok) sent.push('Messenger');
-   if (user?.chat_id && user.notif_account_activity !== false) {
+   if (idSent) sent.push('Telegram');
+   if (user?.chat_id && user.notif_account_activity !== false && !idTrack) {
       try {
          await sendTelegramMessage(user.chat_id, `${msg.title}\n\n${msg.body}`, { inlineKeyboard: [[{ text: button, url: DOCUMENTS_URL }]] });
          sent.push('Telegram');
