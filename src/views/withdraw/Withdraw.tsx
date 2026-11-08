@@ -1880,25 +1880,18 @@ const GCASH_FLOW: AppFlowConfig = {
       }
    ],
    cashOutTitle: 'Cash out to pesos in GCash',
-   cashOutVideo: 'SUN94mXH1WA?start=85',
-   cashOutIntro:
-      'Once your USDC is in GCrypto, cashing out is two quick steps: sell it for pesos, then move those pesos to your main GCash balance.',
+   cashOutIntro: 'Sell the USDC for pesos, then move them to GCash.',
+   // Pictures: real GCrypto screenshots (same as the Repay GCrypto guide), re-boxed.
    cashOutSteps: [
       {
-         title: (
-            <>
-               In GCrypto, open <span className="font-bold">USDC</span> and tap <span className="font-bold">Sell</span>
-            </>
-         ),
-         helper: 'Enter the amount in USDC or pesos and confirm. The pesos land in your GCrypto trading wallet.'
+         title: 'Trade → Sell USDC (Base)',
+         helper: 'Sell all of it for pesos.',
+         img: '/repay-guides/gcrypto/step2-trade.webp'
       },
       {
-         title: (
-            <>
-               Go to your <span className="font-bold">trading wallet</span> and tap <span className="font-bold">Withdraw</span>
-            </>
-         ),
-         helper: 'Move the pesos to your main GCash balance — it usually arrives within a few minutes.'
+         title: 'Peso Balance → Withdraw',
+         helper: 'Pesos go to your GCash wallet.',
+         img: '/cashout-guides/gcrypto/step2-withdraw.webp'
       }
    ]
 };

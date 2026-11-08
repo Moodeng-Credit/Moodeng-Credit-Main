@@ -2460,12 +2460,11 @@ export default function Repay() {
                ) : null}
             </Card>
          );
-      // App tiles: logo + name, one tap picks it and moves on.
+      // App tiles: logo + name, one tap picks it and moves on. (Moneybees left out: barely tapped,
+      // no repayment traced to it — Nov 2026.)
       const tileIds: FundSourceId[] = inIndonesia
          ? [...INDONESIA_SOURCE_IDS]
-         : (['gcrypto', 'pdax', 'moneybees', 'coinsph', 'binance'] as const).filter(
-              (id) => !isPausedSource(id) && (id !== 'binance' || !inPhilippines)
-           );
+         : (['gcrypto', 'pdax', 'coinsph', 'binance'] as const).filter((id) => !isPausedSource(id) && (id !== 'binance' || !inPhilippines));
       const tileLabel = (id: FundSourceId) => (id === 'gcrypto' ? 'GCash' : getFundSource(id).label);
       const tileLogo = (id: FundSourceId) => {
          const src = TILE_LOGO_SRC[id] ?? SOURCE_LOGO_SRC[id];
