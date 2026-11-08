@@ -106,9 +106,23 @@ type Props = {
    addressCard: ReactNode;
    /** The live "waiting for your money" card shown after the last step. */
    finalStep: ReactNode;
+   memoryKey?: string;
+   onStep?: (index: number, key: string) => void;
 };
 
-export default function AppGuideSteps({ appId, appName, appLogo, path, buyTip, money, openApp, addressCard, finalStep }: Props) {
+export default function AppGuideSteps({
+   appId,
+   appName,
+   appLogo,
+   path,
+   buyTip,
+   money,
+   openApp,
+   addressCard,
+   finalStep,
+   memoryKey,
+   onStep
+}: Props) {
    return (
       <GuideCards
          appName={appName}
@@ -116,6 +130,8 @@ export default function AppGuideSteps({ appId, appName, appLogo, path, buyTip, m
          cards={buildCards({ appId, appName, path, buyTip, money, addressCard })}
          onOpenApp={openApp}
          finalStep={finalStep}
+         memoryKey={memoryKey}
+         onStep={onStep}
       />
    );
 }

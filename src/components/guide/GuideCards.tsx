@@ -1,7 +1,8 @@
-import { type ReactNode, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { Check, ExternalLink } from 'lucide-react';
 
+import { readStep, writeStep } from '@/lib/stepMemory';
 import { Card, GoldButton, SoftButton } from '@/views/indonesia/ui';
 
 // One small card at a time: a picture, one short instruction, and a gold "Done" button. Done steps
@@ -40,15 +41,29 @@ type Props = {
    /** Shown after the last card; omit to stop at the last card's Done (onFinish). */
    finalStep?: ReactNode;
    onFinish?: () => void;
+   /** Remember the card they're on (a day), so a reloaded page picks up where they were. */
+   memoryKey?: string;
+   /** Called each time a card shows (for analytics). `key` is 'final' for finalStep. */
+   onStep?: (index: number, key: string) => void;
 };
 
-export default function GuideCards({ appName, appLogo, cards, onOpenApp, finalStep, onFinish }: Props) {
-   const [index, setIndex] = useState(0);
+export default function GuideCards({ appName, appLogo, cards, onOpenApp, finalStep, onFinish, memoryKey, onStep }: Props) {
+   const [index, setIndex] = useState(() => {
+      const saved = memoryKey ? readStep<number>(memoryKey) : null;
+      return typeof saved === 'number' && saved >= 0 && saved <= cards.length ? saved : 0;
+   });
    const [confirmed, setConfirmed] = useState(false);
    const topRef = useRef<HTMLDivElement>(null);
    const allDone = index >= cards.length;
    const card = cards[Math.min(index, cards.length - 1)];
    const total = cards.length + (finalStep ? 1 : 0);
+
+   useEffect(() => {
+      if (memoryKey) writeStep(memoryKey, index);
+      onStep?.(index, index >= cards.length ? 'final' : cards[index].key);
+      // Only when the card changes.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [index, memoryKey]);
 
    const done = () => {
       setConfirmed(false);

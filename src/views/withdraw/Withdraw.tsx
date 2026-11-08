@@ -46,6 +46,7 @@ import { COINS_PH_SUSPENDED, COINS_PH_SUSPENDED_MESSAGE, COINS_PH_SUSPENDED_TITL
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
 import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
 import { recordWithdrawal } from '@/lib/recordWithdrawal';
+import { clearStep, readStep, writeStep } from '@/lib/stepMemory';
 import { useUsdcRate } from '@/lib/useUsdcRate';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { CashoutGateError, startCashoutFaceCheck } from '@/lib/withdraw/cashoutFaceGate';
@@ -1487,6 +1488,9 @@ type AppFlowConfig = {
 // Step-by-step cash-out to an exchange (same look as Repay): 1 get the app's address, 2 send, 3 cash
 // out inside the app (picture cards), then a done screen.
 type CashoutStep = 'address' | 'send' | 'cashout' | 'done';
+// Where they are, kept a day so a reload (after switching to the exchange app) doesn't start over.
+type CashoutMemory = { wiz: CashoutStep; address: string; sent: number };
+const cashoutMemoryKey = (exchange: string) => `moodeng-cashout:${exchange}`;
 const CASHOUT_STEPS: { key: Exclude<CashoutStep, 'done'>; label: string }[] = [
    { key: 'address', label: 'Address' },
    { key: 'send', label: 'Send' },
@@ -1536,7 +1540,10 @@ function CashoutTrail({ step, onPick }: { step: Exclude<CashoutStep, 'done'>; on
 function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed: (amount: number) => void; onDone: () => void }) {
    const { available: LOAN_USDC, spendable, walletConnected, isPreview, isInstantWallet, send } = useWithdrawData();
    const { showToast } = useToast();
-   const [address, setAddress] = useState('');
+   // Read once, on open.
+   // eslint-disable-next-line react-hooks/exhaustive-deps
+   const memory = useMemo(() => readStep<CashoutMemory>(cashoutMemoryKey(cfg.name)), []);
+   const [address, setAddress] = useState(memory?.address ?? '');
    const [amount, setAmount] = useState('');
    const [sending, setSending] = useState(false);
    // True once the payment is approved and we're waiting on-chain confirmation — flips the
@@ -1545,7 +1552,9 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
    // Drives the staged send-progress overlay: 'progress' while the send is in flight, 'success'
    // once it resolves, null when idle or after a failure (so the form returns and they can retry).
    const [sendPhase, setSendPhase] = useState<SendPhase | null>(null);
-   const [wiz, setWiz] = useState<CashoutStep>('address');
+   const [wiz, setWiz] = useState<CashoutStep>(memory && memory.wiz !== 'done' ? memory.wiz : 'address');
+   // USDC already sent before a reload (the live send status is gone after one).
+   const [sentBefore, setSentBefore] = useState(memory?.sent ?? 0);
    const { value: phpRate } = useUsdcRate('php');
    const { value: eurRate } = useUsdcRate('eur');
    const { status: sentStatus, txHash, chainTxHash, onSent, reset } = useSendStatus(isPreview);
@@ -1558,6 +1567,17 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
    const amtValid = spendable != null && !isNaN(amtNum) && amtNum > 0 && amtNum <= spendable && /^\d*(\.\d{0,6})?$/.test(amount.trim());
    const canSend = addrValid && amtValid && !sending;
    const sentAmountRef = useRef(0);
+
+   // Remember the step + address (+ what was sent); forget it once they're done.
+   useEffect(() => {
+      if (wiz === 'done') clearStep(cashoutMemoryKey(cfg.name));
+      else writeStep<CashoutMemory>(cashoutMemoryKey(cfg.name), { wiz, address, sent: sentAmountRef.current || sentBefore });
+   }, [wiz, address, sentBefore, cfg.name]);
+
+   // One event per step, so PostHog shows where people stop.
+   useEffect(() => {
+      track('withdraw_step', { exchange: cfg.name, step: wiz });
+   }, [wiz, cfg.name]);
 
    useEffect(() => {
       if (sentStatus === 'arrived') {
@@ -1584,6 +1604,7 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
             track('withdraw_sent', { exchange: cfg.name, amount: amtNum });
             onSent(result.hash, result.confirmed);
             setSendPhase(null);
+            setSentBefore(amtNum);
             setWiz('cashout');
          } else {
             track('withdraw_send_rejected', { exchange: cfg.name, amount: amtNum });
@@ -1687,7 +1708,14 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
          {wiz === 'address' ? (
             <>
                <StepHead image={CONNECT_HIPPOS.codeCopied} title={`Your ${cfg.short} address`} />
-               <GuideCards appName={cfg.short} cards={addressCards} onOpenApp={openApp} onFinish={() => setWiz('send')} />
+               <GuideCards
+                  appName={cfg.short}
+                  cards={addressCards}
+                  onOpenApp={openApp}
+                  onFinish={() => setWiz('send')}
+                  memoryKey={`moodeng-cashout-guide:${cfg.name}:address`}
+                  onStep={(index, key) => track('withdraw_guide_step', { exchange: cfg.name, part: 'address', step: key, index })}
+               />
             </>
          ) : null}
 
@@ -1762,15 +1790,22 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
          {/* ── 3. Watch it land, then cash out inside the app ──────── */}
          {wiz === 'cashout' ? (
             <>
-               {arrived ? (
+               {arrived || (sentStatus === 'idle' && sentBefore > 0) ? (
                   <DoneRow>
-                     {sentAmountRef.current} USDC sent to {cfg.short}
+                     {sentAmountRef.current || sentBefore} USDC sent to {cfg.short}
                   </DoneRow>
                ) : (
                   <WaitRow>{sentStatus === 'delayed' ? 'Taking a bit longer. It’s on its way.' : `Sending to ${cfg.short}…`}</WaitRow>
                )}
                <StepHead image={CONNECT_HIPPOS.cashout} title={`Get your ${money}`} />
-               <GuideCards appName={cfg.short} cards={cashOutCards} onOpenApp={openApp} onFinish={() => setWiz('done')} />
+               <GuideCards
+                  appName={cfg.short}
+                  cards={cashOutCards}
+                  onOpenApp={openApp}
+                  onFinish={() => setWiz('done')}
+                  memoryKey={`moodeng-cashout-guide:${cfg.name}:cashout`}
+                  onStep={(index, key) => track('withdraw_guide_step', { exchange: cfg.name, part: 'cashout', step: key, index })}
+               />
                {cfg.cashOutVideo && !cfg.cashOutSteps.some((s) => s.img) ? (
                   <div className="flex justify-center">
                      <HowToButton guide={{ title: cfg.cashOutTitle, steps: [], video: cfg.cashOutVideo }} />
@@ -1787,8 +1822,8 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
                <h2 className="text-[30px] font-extrabold leading-[34px] tracking-[-0.02em]">
                   {cfg.receiveCurrency === 'PHP' ? 'Pesos on the way! 🎉' : 'All done! 🎉'}
                </h2>
-               {sentAmountRef.current ? (
-                  <span className="text-[40px] font-extrabold leading-[44px]">≈ {fiat(sentAmountRef.current)}</span>
+               {sentAmountRef.current || sentBefore ? (
+                  <span className="text-[40px] font-extrabold leading-[44px]">≈ {fiat(sentAmountRef.current || sentBefore)}</span>
                ) : null}
                <div className="w-full">
                   <GoldButton onClick={onDone}>Done</GoldButton>

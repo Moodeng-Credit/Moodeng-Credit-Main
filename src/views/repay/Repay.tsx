@@ -44,11 +44,13 @@ import { COINS_PH_SUSPENDED, COINS_PH_SUSPENDED_MESSAGE, COINS_PH_SUSPENDED_TITL
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
 import { useLocalization } from '@/i18n';
 import { clearPendingBasePayment, hasPendingPaymentForLoan, registerPendingBasePayment } from '@/lib/basePayReconciliation';
+import { evaluateCreditProgression } from '@/lib/creditLeveling';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { detectInAppBrowser, shouldBlockRepayForInAppBrowser } from '@/lib/inAppBrowser';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getDueDayEnd, getLoanTimezone, isPastDueDay } from '@/lib/loanDeadline';
 import { formatIdr, remainingIdr } from '@/lib/loanMarket';
+import { clearStep, readStep, writeStep } from '@/lib/stepMemory';
 import { openSupportChat } from '@/lib/support/liveChat';
 import { useUsdcRate } from '@/lib/useUsdcRate';
 import { areWalletAddressesEqual, formatWalletAddressShort, getBaseWalletLockStatus, isBaseWalletProvider } from '@/lib/walletProvider';
@@ -74,6 +76,14 @@ const WIZARD_LABELS: Record<WizardStep, string> = {
    send: 'Send USDC',
    pay: 'Pay'
 };
+
+// Repay-funnel analytics (PostHog only runs in production, see main.tsx).
+const trackRepay = (event: string, props?: Record<string, unknown>) => {
+   if (import.meta.env.PROD) posthog.capture(event, props);
+};
+const repayMemoryKey = (loanId: string) => `moodeng-repay:${loanId}`;
+const repayGuideMemoryKey = (loanId: string, source: string) => `moodeng-repay-guide:${loanId}:${source}`;
+type RepayMemory = { step: WizardStep; source: FundSourceId; amount: string };
 
 function RepayTrail({ step, onPick }: { step: WizardStep; onPick: (step: WizardStep) => void }) {
    const index = WIZARD_STEPS.indexOf(step);
@@ -1007,13 +1017,48 @@ export default function Repay() {
       if (!isWaltRepay && partialPaid) setRepaymentAmount(formatCurrency(partialPaid.remaining));
    }, [isWaltRepay, partialPaid]);
 
-   // Step-by-step repay: each loan starts at its full amount ("Full" chip), which they can lower.
+   // Step-by-step repay: each loan starts at its full amount ("Full" chip), which they can lower —
+   // unless they were part-way through it in the last day (left for GCash/PDAX, page reloaded):
+   // then it picks up on the same step, app and amount.
+   const [restoredLoanId, setRestoredLoanId] = useState<string | null>(null);
    useEffect(() => {
       if (isWaltRepay || !selectedLoanId || selectedRemaining <= 0) return;
-      setRepaymentAmount(formatCurrency(selectedRemaining));
+      const urlStep = usePreviewLoans && new URLSearchParams(location.search).get('step');
+      const saved = urlStep ? null : readStep<RepayMemory>(repayMemoryKey(selectedLoanId));
+      if (saved && (WIZARD_STEPS as readonly string[]).includes(saved.step)) {
+         setWizardStep(saved.step);
+         if (fundSources.some((source) => source.id === saved.source) && !isPausedSource(saved.source)) setFundSource(saved.source);
+         setRepaymentAmount(saved.amount || formatCurrency(selectedRemaining));
+      } else {
+         setRepaymentAmount(formatCurrency(selectedRemaining));
+      }
+      setRestoredLoanId(selectedLoanId);
       // Only when the loan changes, not as they edit the amount.
       // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [selectedLoanId, isWaltRepay]);
+
+   // Save where they are (after the restore above has run for this loan).
+   useEffect(() => {
+      if (isWaltRepay || !selectedLoanId || restoredLoanId !== selectedLoanId) return;
+      writeStep<RepayMemory>(repayMemoryKey(selectedLoanId), { step: wizardStep, source: fundSource, amount: repaymentAmount });
+   }, [isWaltRepay, selectedLoanId, restoredLoanId, wizardStep, fundSource, repaymentAmount]);
+
+   // Paid in full: forget the saved step and the app's card.
+   useEffect(() => {
+      if (!completion || !selectedLoanId) return;
+      clearStep(repayMemoryKey(selectedLoanId));
+      clearStep(repayGuideMemoryKey(selectedLoanId, fundSource));
+   }, [completion, selectedLoanId, fundSource]);
+
+   // One event per step, so PostHog shows where people stop. `funded` = already had the USDC (one-tap Pay).
+   const wizardFunded =
+      usdcBalance !== null && parsedRepaymentAmount > 0 && usdcBalance + 0.005 >= Math.min(parsedRepaymentAmount, selectedRemainingRounded);
+   useEffect(() => {
+      if (isWaltRepay || !selectedLoanId || usdcBalance === null) return;
+      trackRepay('repay_step', { step: wizardStep, funded: wizardFunded, source: wizardStep === 'amount' ? null : fundSource });
+      // Once per step change (not on every balance tick).
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [wizardStep, selectedLoanId, usdcBalance === null]);
 
    const handleRepay = useCallback(async () => {
       if (!selectedLoan || isProcessing || repayInFlightRef.current) {
@@ -2138,8 +2183,19 @@ export default function Repay() {
       // Enough USDC already: one screen, one tap (no steps).
       const quickPay = wizardStep === 'amount' && amountFunded;
       // Paying off a full-limit loan moves them up a tier ([[credit-leveling-rule]]).
+      // Same rule the server applies when the loan is marked Paid (src/lib/creditLeveling.ts mirrors
+      // supabase/functions/_shared/creditAndPoints.ts): a full-limit loan repaid in full → next tier.
+      const progression = evaluateCreditProgression({
+         currentLimit: user.cs,
+         isVerified: isWorldIdVerified,
+         repaidAmount: toNumber(selectedLoan.repaidAmount) + payAmount,
+         totalRepaymentAmount: toNumber(selectedLoan.totalRepaymentAmount),
+         loanAmount: toNumber(selectedLoan.loanAmount),
+         dueDate: selectedLoan.dueDate,
+         paidAt: new Date().toISOString()
+      });
       const currentLimit = user.cs || STARTING_CREDIT_LIMIT;
-      const nextLimit = toNumber(selectedLoan.loanAmount) >= currentLimit - 0.005 ? getNextCreditTier(currentLimit) : currentLimit;
+      const nextLimit = progression.shouldLevelUp ? progression.nextLimit : currentLimit;
       const goTo = (next: WizardStep) => {
          setWizardStep(next);
          window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2522,6 +2578,8 @@ export default function Repay() {
                            openApp={openSourceApp}
                            addressCard={addressCard}
                            finalStep={arrivalCheck}
+                           memoryKey={repayGuideMemoryKey(selectedLoan.id, activeSource.id)}
+                           onStep={(index, key) => trackRepay('repay_guide_step', { app: activeSource.id, step: key, index })}
                         />
                      )}
                      {backLink('source')}
