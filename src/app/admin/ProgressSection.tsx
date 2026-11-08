@@ -1,6 +1,11 @@
+'use client';
+
 // Admin → More → Progress (/admin/progress): a plain-English list for Emma of what is built and what
 // is left on the Indonesia track and the Philippines cash-in / cash-out work. To update it, edit the
-// lists below and change UPDATED; the progress bars are counted from them.
+// lists below and change UPDATED; the progress bars are counted from them. Rows named in PICTURES open
+// their screenshots (public/admin-progress, saved at double size).
+
+import { useEffect, useState } from 'react';
 
 const UPDATED = '8 Nov 2026, Bangkok time';
 
@@ -15,6 +20,27 @@ const STATUS: Record<Status, { label: string; className: string }> = {
    test: { label: 'Needs a real test', className: 'border-amber-800 bg-amber-950 text-amber-300' },
    paused: { label: 'Paused', className: 'border-zinc-700 bg-zinc-800 text-zinc-300' },
    todo: { label: 'To do', className: 'border-purple-800 bg-purple-950 text-purple-300' }
+};
+
+const PICTURES: Record<string, string[]> = {
+   'Bot menu': ['id-bot-menu-borrow'],
+   'Request a loan in chat': ['id-bot-menu-borrow'],
+   'Repay in chat': ['id-bot-pay'],
+   'Chat with the team': ['id-bot-help'],
+   'Step-by-step Repay': ['repay-steps'],
+   'One-tap pay': ['repay-one-tap'],
+   'GCash (GCrypto) picture guide': ['repay-gcash-buy', 'repay-gcash-processing'],
+   'PDAX picture guide': ['repay-pdax-cashin', 'repay-pdax-buy', 'repay-pdax-send', 'repay-pdax-send-2'],
+   'Moneybees removed': ['repay-apps'],
+   '"You\'re paid!" screen': ['repay-paid'],
+   'Cash out to any PH bank': ['cashout-bank-card', 'cashout-bank-picker'],
+   'Simpler setup': ['cashout-setup-email', 'cashout-setup-id', 'cashout-setup-form'],
+   'Clear fees before confirming': ['cashout-fees'],
+   'Exchange cash-out in 3 steps': ['cashout-exchange-steps'],
+   'GCrypto and PDAX pictures': ['cashout-gcrypto', 'cashout-pdax'],
+   'Filipino text': ['repay-filipino'],
+   '"Stuck? Chat with us"': ['repay-gcash-processing'],
+   'Reuse the Moodeng ID check for bank cash-out': ['cashout-setup-id']
 };
 
 const TRACKS: Track[] = [
@@ -133,7 +159,49 @@ function StatusPill({ status }: { status: Status }) {
    return <span className={`shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-bold ${className}`}>{label}</span>;
 }
 
-function TrackCard({ track }: { track: Track }) {
+function PicturesDialog({ item, onClose }: { item: Item; onClose: () => void }) {
+   useEffect(() => {
+      const onKey = (event: KeyboardEvent) => {
+         if (event.key === 'Escape') onClose();
+      };
+      window.addEventListener('keydown', onKey);
+      return () => window.removeEventListener('keydown', onKey);
+   }, [onClose]);
+
+   return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 sm:p-6" onClick={onClose}>
+         <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={item.title}
+            className="flex max-h-full w-full max-w-5xl flex-col rounded-3xl border border-[#2a1453] bg-[#1c0a3a]"
+            onClick={(event) => event.stopPropagation()}
+         >
+            <div className="flex items-start justify-between gap-3 p-4 sm:p-5">
+               <div className="min-w-0">
+                  <h3 className="text-lg font-black text-white">{item.title}</h3>
+                  <p className="mt-0.5 text-sm leading-5 text-[#a89bb8]">{item.detail}</p>
+               </div>
+               <button type="button" onClick={onClose} aria-label="Close" className="shrink-0 rounded-full bg-[#2a1453] px-3 py-1 text-lg font-bold text-white">
+                  ×
+               </button>
+            </div>
+            <div className="space-y-4 overflow-y-auto px-4 pb-4 sm:px-5 sm:pb-5">
+               {(PICTURES[item.title] ?? []).map((name) => {
+                  const src = `/admin-progress/${name}.webp`;
+                  return (
+                     <div key={name} className="overflow-x-auto">
+                        <img src={src} srcSet={`${src} 2x`} alt={item.title} className="mx-auto max-w-none rounded-xl" />
+                     </div>
+                  );
+               })}
+            </div>
+         </div>
+      </div>
+   );
+}
+
+function TrackCard({ track, onOpen }: { track: Track; onOpen: (item: Item) => void }) {
    const items = track.groups.flatMap((group) => group.items);
    const live = items.filter((item) => item.status === 'live').length;
    const percent = Math.round((live / items.length) * 100);
@@ -158,18 +226,32 @@ function TrackCard({ track }: { track: Track }) {
             <div key={group.title} className="mt-6">
                <h4 className="text-xs font-bold uppercase tracking-wide text-[#a89bb8]">{group.title}</h4>
                <ul className="mt-1 divide-y divide-[#2a1453]">
-                  {group.items.map((item) => (
-                     <li key={item.title} className="flex items-start justify-between gap-3 py-3">
-                        <div className="min-w-0">
-                           <p className="text-sm font-bold text-zinc-100">{item.title}</p>
-                           <p className="mt-0.5 text-sm leading-5 text-[#a89bb8]">
-                              {item.detail}
-                              {item.date ? <span className="text-[#7d6f90]"> · {item.date}</span> : null}
-                           </p>
-                        </div>
-                        <StatusPill status={item.status} />
-                     </li>
-                  ))}
+                  {group.items.map((item) => {
+                     const row = (
+                        <>
+                           <div className="min-w-0">
+                              <p className="text-sm font-bold text-zinc-100">{item.title}</p>
+                              <p className="mt-0.5 text-sm leading-5 text-[#a89bb8]">
+                                 {item.detail}
+                                 {item.date ? <span className="text-[#7d6f90]"> · {item.date}</span> : null}
+                              </p>
+                              {PICTURES[item.title] ? <p className="mt-1 text-xs font-bold text-amber-300">See the card ›</p> : null}
+                           </div>
+                           <StatusPill status={item.status} />
+                        </>
+                     );
+                     return (
+                        <li key={item.title}>
+                           {PICTURES[item.title] ? (
+                              <button type="button" onClick={() => onOpen(item)} className="flex w-full items-start justify-between gap-3 py-3 text-left hover:bg-[#2a1453]/40">
+                                 {row}
+                              </button>
+                           ) : (
+                              <div className="flex items-start justify-between gap-3 py-3">{row}</div>
+                           )}
+                        </li>
+                     );
+                  })}
                </ul>
             </div>
          ))}
@@ -178,6 +260,8 @@ function TrackCard({ track }: { track: Track }) {
 }
 
 export default function ProgressSection() {
+   const [openItem, setOpenItem] = useState<Item | null>(null);
+
    return (
       <div className="mx-auto max-w-3xl space-y-5">
          <header>
@@ -185,8 +269,9 @@ export default function ProgressSection() {
             <p className="mt-1 text-sm text-[#a89bb8]">Updated {UPDATED}</p>
          </header>
          {TRACKS.map((track) => (
-            <TrackCard key={track.id} track={track} />
+            <TrackCard key={track.id} track={track} onOpen={setOpenItem} />
          ))}
+         {openItem ? <PicturesDialog item={openItem} onClose={() => setOpenItem(null)} /> : null}
       </div>
    );
 }
