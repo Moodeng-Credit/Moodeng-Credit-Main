@@ -2,7 +2,6 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 
 import {
    AlertTriangle,
-   ArrowDownLeft,
    ArrowRight,
    ArrowUpRight,
    Check,
@@ -31,6 +30,7 @@ import { erc20Abi } from 'viem';
 import { useAccount, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
 
 import { PhFlag } from '@/components/auth/PhFlag';
+import GuideCards, { type GuideCard } from '@/components/guide/GuideCards';
 import { openSupportContacts } from '@/components/support/supportContacts';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -44,13 +44,14 @@ import { parseDateSafely } from '@/utils/dateFormatters';
 
 import { COINS_PH_SUSPENDED, COINS_PH_SUSPENDED_MESSAGE, COINS_PH_SUSPENDED_TITLE } from '@/config/paymentRails';
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
-import { TransferAddressLabel } from '@/i18n/SentenceLabels';
 import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
 import { recordWithdrawal } from '@/lib/recordWithdrawal';
 import { useUsdcRate } from '@/lib/useUsdcRate';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { CashoutGateError, startCashoutFaceCheck } from '@/lib/withdraw/cashoutFaceGate';
 import type { RootState } from '@/store/store';
+import { CONNECT_HIPPOS } from '@/views/dashboard/components/connectKit';
+import { DoneRow, GoldButton, Card as GoldCard, StepHead, WaitRow } from '@/views/indonesia/ui';
 import WaltCashoutFlow from '@/views/indonesia/walt/WaltCashoutFlow';
 import { WaltIcon } from '@/views/indonesia/walt/waltUi';
 import BankPayoutFlow from '@/views/withdraw/BankPayoutFlow';
@@ -407,7 +408,17 @@ function HowThisWorks({ children }: { children: React.ReactNode }) {
 }
 
 type Guide = { title: string; steps: string[]; video?: string; link?: { label: string; url: string } };
-type FlowStep = { icon?: React.ReactNode; title: string; desc: string; guide?: Guide; extra?: React.ReactNode };
+type FlowStep = {
+   icon?: React.ReactNode;
+   title: string;
+   desc: string;
+   guide?: Guide;
+   extra?: React.ReactNode;
+   /** A screenshot for the step-by-step cash-out (public/cashout-guides/<app>/). */
+   img?: string;
+   /** The "paste it below" step: the step-by-step cash-out shows its own paste box instead. */
+   pasteStep?: boolean;
+};
 
 function HowToButton({ guide }: { guide: Guide }) {
    const [open, setOpen] = useState(false);
@@ -1466,9 +1477,61 @@ type AppFlowConfig = {
    cashOutTitle: string;
    cashOutIntro: string;
    cashOutVideo?: string;
-   cashOutSteps: { title: React.ReactNode; helper?: React.ReactNode; danger?: React.ReactNode }[];
+   /** img: a screenshot under the step (public/cashout-guides/<app>/). */
+   cashOutSteps: { title: React.ReactNode; helper?: React.ReactNode; danger?: React.ReactNode; img?: string }[];
    topWarning?: React.ReactNode;
+   /** Opens the exchange (the "Open <app>" button on the first card). */
+   appUrl?: string;
 };
+
+// Step-by-step cash-out to an exchange (same look as Repay): 1 get the app's address, 2 send, 3 cash
+// out inside the app (picture cards), then a done screen.
+type CashoutStep = 'address' | 'send' | 'cashout' | 'done';
+const CASHOUT_STEPS: { key: Exclude<CashoutStep, 'done'>; label: string }[] = [
+   { key: 'address', label: 'Address' },
+   { key: 'send', label: 'Send' },
+   { key: 'cashout', label: 'Cash out' }
+];
+
+function CashoutTrail({ step, onPick }: { step: Exclude<CashoutStep, 'done'>; onPick: (step: CashoutStep) => void }) {
+   const index = CASHOUT_STEPS.findIndex((s) => s.key === step);
+   return (
+      <div>
+         <ol className="flex items-center justify-between gap-1" aria-label={`Step ${index + 1} of ${CASHOUT_STEPS.length}`}>
+            {CASHOUT_STEPS.map((s, i) => {
+               const done = i < index;
+               const isCurrent = i === index;
+               return (
+                  <li key={s.key} className="flex flex-1 items-center last:flex-none">
+                     <button
+                        type="button"
+                        aria-current={isCurrent ? 'step' : undefined}
+                        aria-label={s.label}
+                        disabled={!done}
+                        onClick={() => onPick(s.key)}
+                        className={`grid size-9 shrink-0 place-items-center rounded-full text-[15px] font-extrabold transition ${
+                           done
+                              ? 'bg-[#2f9e44] text-white'
+                              : isCurrent
+                                ? 'bg-[#ffd75a] text-[#4a2a00] ring-4 ring-[#ffe9a8] dark:ring-[#4a3a10]'
+                                : 'bg-[#efe6cc] text-[#9a8a6a] dark:bg-[#2a2335] dark:text-[#8a7f99]'
+                        }`}
+                     >
+                        {done ? <Check aria-hidden="true" className="size-4" strokeWidth={3.5} /> : i + 1}
+                     </button>
+                     {i < CASHOUT_STEPS.length - 1 ? (
+                        <span className={`mx-1 h-1 flex-1 rounded-full ${done ? 'bg-[#2f9e44]' : 'bg-[#efe6cc] dark:bg-[#2a2335]'}`} />
+                     ) : null}
+                  </li>
+               );
+            })}
+         </ol>
+         <p className="mt-2 text-center text-[14px] font-bold text-[#7a6a4f] dark:text-[#bfb29a]">
+            Step {index + 1} of {CASHOUT_STEPS.length} · {CASHOUT_STEPS[index].label}
+         </p>
+      </div>
+   );
+}
 
 function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed: (amount: number) => void; onDone: () => void }) {
    const { available: LOAN_USDC, spendable, walletConnected, isPreview, isInstantWallet, send } = useWithdrawData();
@@ -1482,7 +1545,9 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
    // Drives the staged send-progress overlay: 'progress' while the send is in flight, 'success'
    // once it resolves, null when idle or after a failure (so the form returns and they can retry).
    const [sendPhase, setSendPhase] = useState<SendPhase | null>(null);
-   const [showCashOut, setShowCashOut] = useState(true);
+   const [wiz, setWiz] = useState<CashoutStep>('address');
+   const { value: phpRate } = useUsdcRate('php');
+   const { value: eurRate } = useUsdcRate('eur');
    const { status: sentStatus, txHash, chainTxHash, onSent, reset } = useSendStatus(isPreview);
    const arrived = sentStatus === 'arrived';
    const addrValid = isValidAddress(address);
@@ -1502,6 +1567,11 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
       else if (sentStatus === 'delayed') track('withdraw_delayed', { exchange: cfg.name, amount: sentAmountRef.current });
    }, [sentStatus, onConfirmed, cfg.name]);
 
+   // A send that failed on-chain goes back to the Send step (nothing left the wallet).
+   useEffect(() => {
+      if (sentStatus === 'failed') setWiz((w) => (w === 'cashout' ? 'send' : w));
+   }, [sentStatus]);
+
    async function handleSend() {
       if (!canSend) return;
       track('withdraw_send_initiated', { exchange: cfg.name, amount: amtNum });
@@ -1513,7 +1583,8 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
             sentAmountRef.current = amtNum;
             track('withdraw_sent', { exchange: cfg.name, amount: amtNum });
             onSent(result.hash, result.confirmed);
-            setSendPhase('success');
+            setSendPhase(null);
+            setWiz('cashout');
          } else {
             track('withdraw_send_rejected', { exchange: cfg.name, amount: amtNum });
             // Rejected / recoverable-soft-fail (payUsdc already toasted, or a stale-chunk reload is
@@ -1533,196 +1604,197 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
       }
    }
 
-   return (
-      <div className="space-y-[12px]">
-         {sendPhase && (
-            <SendProgressOverlay
-               phase={sendPhase}
-               exchange={cfg.name}
-               amount={sentAmountRef.current || amtNum}
-               onDone={onDone}
-               help={<NotArrivedHelp exchange={cfg.name} address={address.trim()} txHash={chainTxHash} />}
+   const money = cfg.receiveCurrency === 'PHP' ? 'pesos' : 'money';
+   const shownUsdc = amtValid ? amtNum : (spendable ?? LOAN_USDC);
+   const fiat = (usdc: number) =>
+      cfg.receiveCurrency === 'EUR'
+         ? `€${(usdc * eurRate).toLocaleString('en', { maximumFractionDigits: 0 })}`
+         : `₱${Math.round(usdc * phpRate).toLocaleString('en-PH')}`;
+   const backLink = (to: CashoutStep) => (
+      <button
+         type="button"
+         onClick={() => setWiz(to)}
+         className="mx-auto mt-1 text-[15px] font-bold text-[#8a7a5a] underline-offset-2 hover:underline dark:text-[#c9b98f]"
+      >
+         ← Back
+      </button>
+   );
+   const openApp = cfg.appUrl ? () => window.open(cfg.appUrl, '_blank', 'noopener,noreferrer') : undefined;
+
+   // Step 1 cards: the app's own "find your address" steps, then a paste box.
+   const pasteBox = (
+      <div className="flex flex-col gap-2">
+         <div
+            className={`flex min-h-[56px] items-center rounded-[14px] border-2 bg-white px-3 dark:bg-[#1a1524] ${
+               address && !addrValid ? 'border-[#e5484d]' : addrValid ? 'border-[#2f9e44]' : 'border-[#ecdfb8] dark:border-[#4a3d1c]'
+            }`}
+         >
+            <input
+               value={address}
+               onChange={(e) => setAddress(e.target.value)}
+               placeholder={`Paste your ${cfg.short} address`}
+               className="min-w-0 flex-1 bg-transparent text-[16px] font-semibold outline-none placeholder:font-medium placeholder:text-[#a8987a]"
             />
+            {address ? (
+               <button type="button" onClick={() => setAddress('')} aria-label="Clear" className="p-1 text-[#8a7a5a]">
+                  <X className="size-4" />
+               </button>
+            ) : null}
+         </div>
+         {address && !addrValid ? <p className="text-[14px] font-bold text-[#c0392b]">That doesn’t look like an address.</p> : null}
+      </div>
+   );
+   const addressCards: GuideCard[] = [
+      ...cfg.steps
+         .filter((s) => !s.pasteStep)
+         .map((s, i) => ({
+            key: s.title,
+            title: s.title,
+            text: s.desc,
+            img: s.img,
+            open: i === 0,
+            content: s.guide && !s.img ? <HowToButton guide={s.guide} /> : undefined
+         })),
+      {
+         key: 'paste',
+         title: `Paste your ${cfg.short} address`,
+         content: pasteBox,
+         danger: 'Base network only',
+         canContinue: addrValid,
+         doneLabel: 'Next'
+      }
+   ];
+   const cashOutCards: GuideCard[] = cfg.cashOutSteps.map((s, i) => ({
+      key: `cashout-${i}`,
+      title: s.title,
+      text: s.helper,
+      img: s.img,
+      danger: s.danger,
+      doneLabel: i === cfg.cashOutSteps.length - 1 ? `I got my ${money}` : undefined
+   }));
+
+   return (
+      <div className="flex flex-col gap-4 pb-6 text-[#2b2116] dark:text-[#f5efe3]">
+         {sendPhase === 'progress' && (
+            <SendProgressOverlay phase="progress" exchange={cfg.name} amount={sentAmountRef.current || amtNum} onDone={onDone} />
          )}
 
          {cfg.topWarning}
 
-         {arrived ? (
-            <SuccessBanner
-               exchange={cfg.name}
-               amount={sentAmountRef.current}
-               help={<NotArrivedHelp exchange={cfg.name} address={address.trim()} txHash={chainTxHash} />}
-            />
-         ) : sentStatus === 'in-progress' || sentStatus === 'delayed' || sentStatus === 'failed' ? (
-            <SentStatusCard
-               exchange={cfg.name}
-               amount={sentAmountRef.current || amtNum}
-               status={sentStatus}
-               txHash={txHash}
-               isPreview={isPreview}
-               onRetry={reset}
-            />
-         ) : (
+         {wiz === 'done' ? null : <CashoutTrail step={wiz} onPick={setWiz} />}
+
+         {/* ── 1. Get the app's USDC (Base) address ───────────────── */}
+         {wiz === 'address' ? (
             <>
-               <AmountCard
-                  receive={<ReceiveEstimate currency={cfg.receiveCurrency} usdcAmount={amtValid ? amtNum : LOAN_USDC} />}
-                  payout={
-                     <>
-                        Payout to <span className="font-semibold text-[var(--ink)]">{cfg.payout}</span>
-                     </>
-                  }
-               />
+               <StepHead image={CONNECT_HIPPOS.codeCopied} title={`Your ${cfg.short} address`} />
+               <GuideCards appName={cfg.short} cards={addressCards} onOpenApp={openApp} onFinish={() => setWiz('send')} />
+            </>
+         ) : null}
 
-               <div>
-                  <p className="text-[14px] font-semibold text-[var(--ink)] mb-[10px] px-[2px]">How to transfer to {cfg.short}</p>
-                  <StepList steps={cfg.steps} />
-               </div>
-
-               <BaseOnlyNotice />
-
-               <Card className="p-[16px] space-y-[12px]">
-                  <p className="text-[16px] text-[var(--ink)]" style={{ fontWeight: 590, letterSpacing: '-0.02em' }}>
-                     <TransferAddressLabel exchange={cfg.short} />
-                  </p>
-                  <div className="space-y-[6px]">
-                     <div
-                        className="bg-[var(--surface)] rounded-[12px] relative overflow-hidden flex items-center"
-                        style={{ boxShadow: '0px 2px 4px rgba(27,28,29,0.04)' }}
-                     >
-                        <div
-                           aria-hidden
-                           className={`absolute inset-0 rounded-[12px] border pointer-events-none ${address && !addrValid ? 'border-[var(--danger)]' : 'border-[var(--border-strong)]'}`}
-                        />
+         {/* ── 2. How much, then send ───────────────────────────── */}
+         {wiz === 'send' ? (
+            <>
+               <DoneRow>
+                  {cfg.short} address{addrValid ? ` …${address.trim().slice(-4)}` : ''}
+               </DoneRow>
+               <StepHead image="/hippos/hippo-wallet.png" title="How much?" />
+               {sentStatus === 'failed' ? (
+                  <SentStatusCard
+                     exchange={cfg.name}
+                     amount={sentAmountRef.current || amtNum}
+                     status="failed"
+                     txHash={txHash}
+                     isPreview={isPreview}
+                     onRetry={reset}
+                  />
+               ) : null}
+               <GoldCard className="items-center !gap-2 py-5 text-center">
+                  <span className="text-[44px] font-extrabold leading-[48px] tracking-[-0.02em]">≈ {fiat(shownUsdc)}</span>
+                  <span className="text-[16px] font-bold text-[#7a6a4f] dark:text-[#bfb29a]">{shownUsdc} USDC</span>
+                  <div className="mt-2 flex w-full items-center gap-2">
+                     <div className="flex min-h-[52px] min-w-0 flex-1 items-center rounded-[14px] border-2 border-[#ecdfb8] bg-white px-3 dark:border-[#4a3d1c] dark:bg-[#1a1524]">
                         <input
-                           value={address}
-                           onChange={(e) => setAddress(e.target.value)}
-                           placeholder={`Paste your ${cfg.short} address`}
-                           className="flex-1 px-[16px] py-[12px] bg-transparent text-[16px] leading-[24px] tracking-[-0.32px] text-[var(--ink)] placeholder:text-[var(--text-muted)] focus:outline-none w-full"
-                        />
-                        {address && (
-                           <button onClick={() => setAddress('')} className="pr-[12px] text-[var(--text-muted)] hover:text-[var(--ink)]">
-                              <X className="w-4 h-4" />
-                           </button>
-                        )}
-                     </div>
-                     {address && !addrValid && (
-                        <p className="text-[12px] text-[var(--danger)] leading-[18px] flex items-center gap-1">
-                           <AlertTriangle className="w-3 h-3" />
-                           Doesn't look like a valid wallet address.
-                        </p>
-                     )}
-                  </div>
-                  <div className="space-y-[6px]">
-                     <p className="font-semibold text-[14px] text-[var(--ink)]">Amount</p>
-                     <div
-                        className="bg-[var(--surface)] rounded-[12px] relative overflow-hidden flex items-center"
-                        style={{ boxShadow: '0px 2px 4px rgba(27,28,29,0.04)' }}
-                     >
-                        <div
-                           aria-hidden
-                           className="absolute inset-0 rounded-[12px] border border-[var(--border-strong)] pointer-events-none"
-                        />
-                        <input
-                           type="number"
+                           type="text"
+                           inputMode="decimal"
                            value={amount}
                            onChange={(e) => setAmount(e.target.value)}
                            placeholder="0"
-                           className="flex-1 min-w-0 px-[16px] py-[12px] bg-transparent text-[16px] leading-[24px] tracking-[-0.32px] text-[var(--ink)] placeholder:text-[var(--text-muted)] focus:outline-none"
+                           aria-label="Amount in USDC"
+                           className="min-w-0 flex-1 bg-transparent text-[22px] font-extrabold outline-none"
                         />
-                        <button
-                           onClick={() => {
-                              if (spendable != null) setAmount(String(spendable));
-                           }}
-                           disabled={spendable == null}
-                           className="text-[12px] text-[var(--accent)] font-semibold pr-[10px] shrink-0 hover:underline disabled:opacity-40 disabled:no-underline"
-                        >
-                           Max
-                        </button>
-                        <span className="pr-[16px] text-[14px] font-semibold text-[var(--text-muted)] shrink-0">USDC</span>
+                        <span className="text-[15px] font-bold text-[#7a6a4f] dark:text-[#bfb29a]">USDC</span>
                      </div>
-                     <p className="text-[12px] text-[var(--text-muted)] leading-[18px]">
-                        {!walletConnected
-                           ? 'Wallet not connected'
-                           : spendable == null
-                             ? 'Checking your balance…'
-                             : `Available: ${spendable} USDC`}
-                     </p>
-                     {amount !== '' && spendable != null && amtNum > spendable && (
-                        <p className="text-[12px] text-[var(--danger)] leading-[18px] flex items-center gap-1">
-                           <AlertTriangle className="w-3 h-3" />
-                           That's more than your available balance.
-                        </p>
-                     )}
+                     <button
+                        type="button"
+                        disabled={spendable == null}
+                        onClick={() => {
+                           if (spendable != null) setAmount(String(spendable));
+                        }}
+                        className="min-h-[52px] rounded-[14px] bg-[#fff1c2] px-4 text-[15px] font-extrabold text-[#6b4a00] disabled:opacity-50 dark:bg-[#3a2e10] dark:text-[#ffe27a]"
+                     >
+                        All
+                     </button>
                   </div>
-               </Card>
-
-               <PrimaryBtn disabled={!canSend} onClick={handleSend}>
-                  {sending ? (
-                     <>
-                        <Loader2 className="w-4 h-4 animate-spin" />{' '}
-                        {confirming ? 'Confirming on Base…' : isInstantWallet ? 'Sending…' : 'Confirm in your wallet…'}
-                     </>
-                  ) : (
-                     <>
-                        Send {amount || '0'} USDC to {cfg.short} <ArrowRight className="w-4 h-4" />
-                     </>
-                  )}
-               </PrimaryBtn>
+                  <span className="text-[14px] font-semibold text-[#7a6a4f] dark:text-[#bfb29a]">
+                     {!walletConnected
+                        ? 'Wallet not connected'
+                        : spendable == null
+                          ? 'Checking your balance…'
+                          : `You have ${spendable} USDC`}
+                  </span>
+                  {amount !== '' && spendable != null && amtNum > spendable ? (
+                     <span className="text-[14px] font-bold text-[#c0392b]">More than you have.</span>
+                  ) : null}
+               </GoldCard>
+               <GoldButton busy={sending} disabled={!canSend} onClick={handleSend}>
+                  {sending
+                     ? confirming
+                        ? 'Confirming…'
+                        : isInstantWallet
+                          ? 'Sending…'
+                          : 'Confirm in your wallet…'
+                     : `Send ${amtValid ? amtNum : ''} USDC to ${cfg.short}`.replace('  ', ' ')}
+               </GoldButton>
+               {backLink('address')}
             </>
-         )}
+         ) : null}
 
-         {/* After it arrives — always expanded */}
-         <Card className="overflow-hidden">
-            <button onClick={() => setShowCashOut((v) => !v)} className="w-full flex items-center gap-[12px] px-[16px] py-[14px] text-left">
-               <div className="w-[36px] h-[36px] rounded-[11px] bg-[var(--green-bg)] flex items-center justify-center shrink-0">
-                  <ArrowDownLeft className="w-[18px] h-[18px] text-[var(--green-2)]" strokeWidth={2.5} />
-               </div>
-               <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-semibold text-[var(--accent)] uppercase tracking-[0.4px]">After it arrives</p>
-                  <p className="text-[15px] text-[var(--ink)] tracking-[-0.3px]" style={{ fontWeight: 590 }}>
-                     {cfg.cashOutTitle}
-                  </p>
-               </div>
-               <ChevronRight
-                  className={`w-[18px] h-[18px] text-[var(--border-strong)] shrink-0 transition-transform ${showCashOut ? 'rotate-90' : ''}`}
-               />
-            </button>
-            {showCashOut && (
-               <div className="px-[16px] pb-[16px] pt-[2px] border-t border-[var(--surface-grey)]">
-                  <p className="text-[13px] leading-[19px] tracking-[-0.26px] text-[var(--text-muted)] pt-[12px] pb-[14px]">
-                     {cfg.cashOutIntro}
-                  </p>
-                  {cfg.cashOutVideo && (
-                     <div className="mb-[14px] rounded-[12px] overflow-hidden">
-                        <iframe
-                           className="w-full"
-                           height="195"
-                           src={`https://www.youtube.com/embed/${cfg.cashOutVideo}`}
-                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                           allowFullScreen
-                           title="Cash-out guide"
-                        />
-                     </div>
-                  )}
-                  {cfg.cashOutSteps.map((s, i) => (
-                     <TimelineStep key={i} n={i + 1} last={i === cfg.cashOutSteps.length - 1} title={s.title}>
-                        {s.helper && <p className="text-[13px] text-[var(--text-muted)] leading-[19px] tracking-[-0.26px]">{s.helper}</p>}
-                        {s.danger && (
-                           <div className="mt-[6px] bg-[var(--danger-bg)] rounded-[8px] px-[10px] py-[6px] border border-[var(--danger-border)]">
-                              <p className="text-[12px] leading-[18px] tracking-[-0.24px] text-[var(--danger-text)]">{s.danger}</p>
-                           </div>
-                        )}
-                     </TimelineStep>
-                  ))}
-               </div>
-            )}
-         </Card>
+         {/* ── 3. Watch it land, then cash out inside the app ──────── */}
+         {wiz === 'cashout' ? (
+            <>
+               {arrived ? (
+                  <DoneRow>
+                     {sentAmountRef.current} USDC sent to {cfg.short}
+                  </DoneRow>
+               ) : (
+                  <WaitRow>{sentStatus === 'delayed' ? 'Taking a bit longer. It’s on its way.' : `Sending to ${cfg.short}…`}</WaitRow>
+               )}
+               <StepHead image={CONNECT_HIPPOS.cashout} title={`Get your ${money}`} />
+               <GuideCards appName={cfg.short} cards={cashOutCards} onOpenApp={openApp} onFinish={() => setWiz('done')} />
+               {cfg.cashOutVideo && !cfg.cashOutSteps.some((s) => s.img) ? (
+                  <div className="flex justify-center">
+                     <HowToButton guide={{ title: cfg.cashOutTitle, steps: [], video: cfg.cashOutVideo }} />
+                  </div>
+               ) : null}
+               <NotArrivedHelp exchange={cfg.name} address={address.trim()} txHash={chainTxHash} />
+            </>
+         ) : null}
 
-         {arrived && (
-            <PrimaryBtn onClick={onDone}>
-               Done <Check className="w-4 h-4" />
-            </PrimaryBtn>
-         )}
+         {/* ── Done ─────────────────────────────────────────────── */}
+         {wiz === 'done' ? (
+            <div className="flex flex-col items-center gap-4 pt-4 text-center">
+               <img src={CONNECT_HIPPOS.approved} alt="" aria-hidden="true" className="h-[170px] w-auto select-none" draggable={false} />
+               <h2 className="text-[30px] font-extrabold leading-[34px] tracking-[-0.02em]">
+                  {cfg.receiveCurrency === 'PHP' ? 'Pesos on the way! 🎉' : 'All done! 🎉'}
+               </h2>
+               {sentAmountRef.current ? (
+                  <span className="text-[40px] font-extrabold leading-[44px]">≈ {fiat(sentAmountRef.current)}</span>
+               ) : null}
+               <div className="w-full">
+                  <GoldButton onClick={onDone}>Done</GoldButton>
+               </div>
+            </div>
+         ) : null}
       </div>
    );
 }
@@ -1733,6 +1805,7 @@ const GCASH_HELP = 'https://help.gcash.com/hc/en-us/articles/10203149752601-How-
 const GCASH_FLOW: AppFlowConfig = {
    name: 'GCrypto',
    short: 'GCrypto',
+   appUrl: 'https://www.gcash.com',
    receiveCurrency: 'PHP',
    payout: 'GCash balance',
    howItWorks:
@@ -1741,7 +1814,7 @@ const GCASH_FLOW: AppFlowConfig = {
       {
          icon: <Download className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
          title: 'Open GCrypto in GCash',
-         desc: 'Open GCrypto, then tap Receive. Choose USDC and select Base as the network.',
+         desc: 'USDC → Receive → Base.',
          guide: {
             title: 'How to open GCrypto in GCash',
             video: 'm5-cD7v4SLg',
@@ -1756,7 +1829,7 @@ const GCASH_FLOW: AppFlowConfig = {
       {
          icon: <Copy className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
          title: 'Copy your GCash address',
-         desc: 'Tap to copy the address shown on the screen.',
+         desc: 'Tap Copy.',
          guide: {
             title: 'How to copy your GCrypto address',
             video: 'm5-cD7v4SLg',
@@ -1767,6 +1840,7 @@ const GCASH_FLOW: AppFlowConfig = {
       {
          icon: <ClipboardCheck className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
          title: 'Paste it below',
+         pasteStep: true,
          desc: 'Paste the address in the field below, then confirm and send.'
       }
    ],
@@ -1799,6 +1873,7 @@ const PDAX_DEPOSIT_HELP =
 const PDAX_FLOW: AppFlowConfig = {
    name: 'PDAX',
    short: 'PDAX',
+   appUrl: 'https://www.pdax.ph',
    receiveCurrency: 'PHP',
    payout: 'Bank, GCash or Maya',
    howItWorks:
@@ -1806,8 +1881,9 @@ const PDAX_FLOW: AppFlowConfig = {
    steps: [
       {
          icon: <Download className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
-         title: 'Open PDAX → Portfolio → USDC → Receive',
-         desc: 'Select USDC, tap Receive, then choose Base as the network.',
+         title: 'Open PDAX → Deposit',
+         desc: 'Portfolio → Deposit → USDC → Base.',
+         img: '/cashout-guides/pdax/step0-deposit.webp',
          guide: {
             title: 'How to find your PDAX receiving address',
             video: 'q8F8H1UzBEU',
@@ -1823,7 +1899,7 @@ const PDAX_FLOW: AppFlowConfig = {
       {
          icon: <Copy className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
          title: 'Copy your PDAX address',
-         desc: 'Tap to copy the address from the screen.',
+         desc: 'Check it says Base. Tap Copy.',
          guide: {
             title: 'How to copy your PDAX address',
             video: 'q8F8H1UzBEU',
@@ -1834,50 +1910,30 @@ const PDAX_FLOW: AppFlowConfig = {
       {
          icon: <ClipboardCheck className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
          title: 'Paste it below',
+         pasteStep: true,
          desc: 'Paste the address in the field below, then confirm and send.'
       }
    ],
    cashOutTitle: 'Cash out to pesos with PDAX',
-   cashOutIntro:
-      'Once your USDC arrives in PDAX (usually under 1 minute), check your Portfolio. PDAX often changes it into pesos for you — if your PHP balance went up, skip to the last step.',
-   cashOutVideo: '4JNXv7s_Trs',
+   cashOutIntro: 'PDAX often turns it into pesos for you. Check Portfolio first.',
+   // Pictures: frames from Moodeng's own PDAX Short (youtube.com/shorts/IyObBHW3Sbg), captions removed.
    cashOutSteps: [
       {
-         title: (
-            <>
-               Check <span className="font-bold">Portfolio → Balances</span>
-            </>
-         ),
-         helper: 'PHP went up? PDAX already changed it into pesos — go to the last step. Still shows USDC? Sell it first.'
+         title: 'Still shows USDC? Sell it',
+         helper: 'Markets → USDCBASE/PHP → Sell. Already pesos? Skip this.',
+         img: '/cashout-guides/pdax/step1-sell.webp'
       },
       {
-         title: (
-            <>
-               In PDAX, go to <span className="font-bold">Trade → Sell</span>
-            </>
-         ),
-         helper: 'Tap the Trade tab at the bottom, then select Sell.'
+         title: <span className="font-bold">Portfolio → Cash out</span>,
+         img: '/cashout-guides/pdax/step2-cashout.webp'
       },
+      { title: 'Pick your bank or GCash', img: '/cashout-guides/pdax/step3-bank.webp' },
+      { title: 'Type the pesos', img: '/cashout-guides/pdax/step4-amount.webp' },
+      { title: 'Type your account number', img: '/cashout-guides/pdax/step5-account.webp' },
       {
-         title: (
-            <>
-               Select <span className="font-bold">USDC → PHP</span> as the pair
-            </>
-         ),
-         helper: 'Search for USDC and choose PHP as the currency you want to receive.'
-      },
-      {
-         title: 'Enter the amount and confirm the sale',
-         helper: "PDAX shows you the PHP amount you'll receive at the current rate. Tap Sell to confirm."
-      },
-      {
-         title: (
-            <>
-               Go to <span className="font-bold">Portfolio → Cash out</span>
-            </>
-         ),
-         helper:
-            'Choose your payout destination: bank account, GCash, or Maya. GCash and Maya withdrawals arrive in minutes; bank transfers clear same day.'
+         title: 'Tap Cash-Out, then the email code',
+         img: '/cashout-guides/pdax/step6-confirm.webp',
+         danger: 'Check the account number first.'
       }
    ]
 };
@@ -1887,6 +1943,7 @@ const COINSPH_DEPOSIT_HELP =
 const COINSPH_FLOW: AppFlowConfig = {
    name: 'Coins.ph',
    short: 'Coins.ph',
+   appUrl: 'https://coins.ph',
    receiveCurrency: 'PHP',
    payout: 'Bank or GCash',
    howItWorks:
@@ -1894,8 +1951,8 @@ const COINSPH_FLOW: AppFlowConfig = {
    steps: [
       {
          icon: <Download className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
-         title: 'Open Coins.ph → Portfolio → USDC → Receive',
-         desc: 'Go to your Portfolio, select USDC, then tap Receive. Choose Base as the network.',
+         title: 'Open Coins.ph → Receive',
+         desc: 'Portfolio → USDC → Receive → Base.',
          guide: {
             title: 'How to find your Coins.ph receiving address',
             video: '8jgQIuqp5E4?start=45',
@@ -1911,11 +1968,12 @@ const COINSPH_FLOW: AppFlowConfig = {
       {
          icon: <Copy className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
          title: 'Copy your Coins.ph address',
-         desc: 'Tap to copy the address shown on screen.'
+         desc: 'Tap Copy.'
       },
       {
          icon: <ClipboardCheck className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
          title: 'Paste it below',
+         pasteStep: true,
          desc: 'Paste the address in the field below, then confirm and send.'
       }
    ],
@@ -1990,6 +2048,7 @@ const KRAKEN_FLOW: AppFlowConfig = {
       {
          icon: <ClipboardCheck className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
          title: 'Paste it below',
+         pasteStep: true,
          desc: 'Paste the address in the field below, then confirm and send.'
       }
    ],
@@ -2050,6 +2109,7 @@ const COINBASE_FLOW: AppFlowConfig = {
       {
          icon: <ClipboardCheck className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
          title: 'Paste it below',
+         pasteStep: true,
          desc: 'Paste the address in the field below, then confirm and send.'
       }
    ],
@@ -2617,15 +2677,18 @@ function DirectBankFlow({ onDone }: { onDone: () => void }) {
 }
 
 /* ─── Withdraw screen wrapper ────────────────────────────────────── */
+// Exchanges that use the step-by-step AppFlow (cream page like Repay).
+const STEP_BY_STEP_PROVIDERS: Provider[] = ['gcash', 'pdax', 'coinsph', 'kraken', 'coinbase'];
+
 const PROVIDER_TITLES: Record<Provider, string> = {
    moneybees: 'Cash out with Moneybees',
    binance: 'Send to Binance',
-   coinsph: 'Send to Coins.ph',
-   gcash: 'Send to GCrypto',
-   pdax: 'Send to PDAX',
+   coinsph: 'Cash out with Coins.ph',
+   gcash: 'Cash out with GCrypto',
+   pdax: 'Cash out with PDAX',
    bank: 'Cash out to your bank',
-   kraken: 'Send to Kraken',
-   coinbase: 'Send to Coinbase',
+   kraken: 'Cash out with Kraken',
+   coinbase: 'Cash out with Coinbase',
    walt: 'Kirim ke Walt'
 };
 
@@ -2648,8 +2711,12 @@ function WithdrawScreen({
    onDone: () => void;
 }) {
    return (
-      <div className="absolute inset-0 bg-[var(--app-bg)] flex flex-col pt-[env(safe-area-inset-top,0px)] w-full">
-         <div className="sticky top-0 z-20 bg-[var(--app-bg)]/80 backdrop-blur-md px-[24px] pt-[20px] pb-[16px] shrink-0 mt-[10px]">
+      <div
+         className={`absolute inset-0 flex flex-col pt-[env(safe-area-inset-top,0px)] w-full ${
+            STEP_BY_STEP_PROVIDERS.includes(provider) ? 'bg-[#fffaf0] dark:bg-[#100d17]' : 'bg-[var(--app-bg)]'
+         }`}
+      >
+         <div className="sticky top-0 z-20 bg-transparent backdrop-blur-md px-[24px] pt-[20px] pb-[16px] shrink-0 mt-[10px]">
             <div className="relative flex items-center justify-center">
                <button
                   onClick={onBack}
