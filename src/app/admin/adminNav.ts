@@ -38,6 +38,7 @@ export type AdminTab =
    | 'chat'
    | 'relay'
    | 'test-lab'
+   | 'progress'
    | 'demo-platform'
    | 'demo-b2c-dashboard'
    | 'demo-b2c-assets'
@@ -125,6 +126,7 @@ export const navGroups: NavGroup[] = [
       id: 'more',
       label: 'More',
       items: [
+         { id: 'progress', label: 'Progress' },
          { id: 'test-lab', label: 'Test lab' },
          { id: 'relay', label: 'Liquidity Relay' },
          { id: 'demo-platform', label: 'B2B demo' },
@@ -175,6 +177,7 @@ export const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'chat',
    'relay',
    'test-lab',
+   'progress',
    'demo-platform',
    'demo-b2c-dashboard',
    'demo-b2c-assets',

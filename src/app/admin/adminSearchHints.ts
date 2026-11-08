@@ -36,6 +36,7 @@ export const TAB_HINTS: Record<AdminTab, string> = {
    'trust-points': 'Pandesal points for borrowers: balances and point events',
    chat: 'Live support chat with users; reply to tickets and messages',
    calendar: 'Calendar of onboarding calls and bookings; who has a call today',
+   progress: 'What is built and what is left: Indonesia onboarding and Telegram, Philippines cash-in and cash-out',
    'test-lab': 'Send a real test SMS through Semaphore and check delivery; text message tester, OTP',
    relay: 'Liquidity Relay links for funders',
    'demo-platform': 'B2B demo for partners',
