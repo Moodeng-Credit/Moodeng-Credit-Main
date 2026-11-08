@@ -53,16 +53,25 @@ const buildCards = ({
    }
 
    // PDAX: cash in pesos → buy USDCBASE → Send it out on Base (the team's PDAX repay guide).
-   // Pictures are frames from Moodeng's own PDAX Short (youtube.com/shorts/IyObBHW3Sbg).
+   // Pictures: frames from Moodeng's own PDAX Short (youtube.com/shorts/IyObBHW3Sbg) and PDAX's
+   // "Cash in via the UnionBank app" reel (facebook.com/reel/1479406229395251).
    if (appId === 'pdax') {
       return [
          {
             key: 'cashin',
-            title: 'Open PDAX, cash in pesos',
-            text: 'Portfolio → Cash in.',
+            title: 'Open PDAX → Cash in',
+            text: 'Copy your PDAX account number.',
+            img: `${PDAX_IMG}/step0a-cashin.webp`,
             tip: 'New to PDAX? Approval takes up to 24 hours.',
             open: true
          },
+         {
+            key: 'instapay',
+            title: 'Send pesos to PDAX',
+            text: 'Your bank or GCash → InstaPay → PDAX.',
+            img: `${PDAX_IMG}/step0b-instapay.webp`
+         },
+         { key: 'instapay-confirm', title: 'Type the pesos, confirm', img: `${PDAX_IMG}/step0c-confirm.webp` },
          { key: 'find', title: 'Find USDCBASE', text: 'Markets → type “usdc” → USDCBASE/PHP.', img: `${PDAX_IMG}/step1-find.webp` },
          { key: 'buy', title: 'Buy USDC', text: 'Buy → type pesos → Buy USDC.', img: `${PDAX_IMG}/step2-buy.webp`, tip: buyTip },
          copy,
