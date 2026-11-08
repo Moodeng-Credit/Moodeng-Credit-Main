@@ -6,7 +6,6 @@ import IncomeDocsSection from './IncomeDocsSection';
 // DEV-only screenshot harness for Admin → Income docs: made-up sends (no real borrowers) showing the
 // two labels and the outcome scorecard. Never registered in production.
 const STEP60 = { min: 60, months: 2, fresh: false, autoApprove: false, maxShare: 0.5, liveCall: true };
-const STEP40 = { min: 40, months: 1, fresh: false, autoApprove: true, maxShare: null, liveCall: false };
 
 const section = (key: string, label: string, status: 'pass' | 'warn' | 'fail' | 'skip', notes: string[] = []) => ({
    key,
@@ -63,13 +62,13 @@ const DOCS: AdminIncomeDocument[] = [
    {
       ...base('p2', 'Sample teacher (payslip only)'),
       doc_type: 'payslip',
-      requested_amount: 40,
-      tier: STEP40,
+      requested_amount: 60,
+      tier: STEP60,
       verdict: 'resend',
       resend_reason: 'need_history',
       risk: 'orange',
       affordability: 'comfortable',
-      afford_share: 0.11,
+      afford_share: 0.17,
       checks: [
          section('readable', 'Readable', 'pass', ['0 rows read']),
          section('authentic', 'Not edited', 'pass'),
@@ -77,7 +76,7 @@ const DOCS: AdminIncomeDocument[] = [
          section('identity', 'Name matches ID', 'pass'),
          section('unique', 'Not used by another account', 'pass'),
          section('recent', 'Recent, with enough history', 'warn', [
-            'Only a payslip — the $40 step needs 1+ month of GCash, Maya or bank history too.'
+            'Only a payslip — the $60 step needs 2+ months of GCash, Maya or bank history too.'
          ]),
          section('income', 'Earned income every month', 'pass'),
          section('afford', 'Can afford the repayment', 'pass')
