@@ -2213,6 +2213,11 @@ export default function Repay() {
       const buyTip = (() => {
          if (amountShortfall === null || amountShortfall <= 0) return null;
          if (activeSource.id === 'gcrypto') return `Buy $${formatCurrency(suggestedGcryptoBuyAmount(amountShortfall))} USDC`;
+         // PDAX: they type the pesos, so show pesos. PDAX's price runs ~2% over the market rate and
+         // sending out costs a little USDC, so round up with a buffer.
+         if (activeSource.id === 'pdax') {
+            return `Type ₱${(Math.ceil(((amountShortfall + 0.5) * phpRate * 1.03) / 10) * 10).toLocaleString('en-PH')}`;
+         }
          const breakdown = SOURCE_FEE_BREAKDOWN[activeSource.id];
          if (breakdown) return `Buy $${formatCurrency(getAmountToBuy(breakdown, amountShortfall))} USDC`;
          return `Buy a bit more than $${formatCurrency(amountShortfall)} USDC`;
