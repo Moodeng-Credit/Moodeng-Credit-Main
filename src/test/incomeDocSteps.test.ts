@@ -63,12 +63,13 @@ describe('proof-of-income steps', () => {
    });
 });
 
-describe('stricter steps from $40', () => {
-   it('asks for account history, not a payslip alone, and mentions the video call', () => {
-      const one = { min: 40, months: 1, fresh: false, autoApprove: true, maxShare: null, balance: false, liveCall: false };
-      expect(stepAsk(one)).toContain('last month of GCash, Maya or bank history');
+describe('what each step asks for', () => {
+   it('$40 takes any one recent document; $60 asks for history and mentions the video call', () => {
+      const forty = { min: 40, months: 0, fresh: false, autoApprove: true, maxShare: null, balance: false, liveCall: false };
+      expect(stepAsk(forty)).toBe('one recent GCash or Maya screenshot, bank statement or payslip');
+      const one = { ...forty, months: 1 };
       expect(stepAsk(one)).toContain('payslip or invoice alone isn’t enough');
-      const sixty = { ...one, min: 60, months: 2, autoApprove: false, liveCall: true };
+      const sixty = { ...forty, min: 60, months: 2, autoApprove: false, liveCall: true };
       expect(stepAsk(sixty)).toContain('last 2–3 months');
       expect(stepAsk(sixty)).toContain('quick video call');
    });

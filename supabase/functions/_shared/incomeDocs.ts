@@ -984,9 +984,16 @@ const AFFORD_LINE: Record<Affordability, string> = {
    unknown: '❔ No amount to check'
 };
 
-/** Small steps approve themselves only on a real account history: never on a payslip, invoice or permit alone. Pure. */
+/**
+ * Small steps approve themselves when it looks real and affordable. A step that asks for months of
+ * history never approves on a payslip, invoice or permit alone. Pure.
+ */
 export const canAutoApprove = (verdict: Verdict, step: IncomeDocStep | null, doc: Extracted, real: Authenticity, afford: Affordability) =>
-   verdict === 'looks_good' && step?.autoApprove === true && doc.transactions.length > 0 && real === 'real' && afford !== 'too_much';
+   verdict === 'looks_good' &&
+   step?.autoApprove === true &&
+   (doc.transactions.length > 0 || step.months === 0) &&
+   real === 'real' &&
+   afford !== 'too_much';
 
 const VERDICT_LINE: Record<Verdict, string> = {
    resend: '↩️ Asked them to resend',
@@ -1407,7 +1414,7 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    };
    if (verdict === 'resend' && reason) return askResend(patch, reason, labels);
    const checkLine = checks.map((c) => `${c.status === 'pass' ? '✅' : c.status === 'warn' ? '🟠' : '🔴'} ${c.label}`).join('\n');
-   // Small steps ($40 today): approved without a team decision only on a clean, real account history.
+   // Small steps ($40 today): approved without a team decision when it looks real and affordable.
    const autoApprove = canAutoApprove(verdict, step, doc, authenticity, afford.label);
    const headline = autoApprove ? `✅ Approved automatically ($${step!.min} step)` : VERDICT_LINE[verdict];
    const callLine = step?.liveCall

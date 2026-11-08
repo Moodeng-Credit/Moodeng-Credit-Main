@@ -170,10 +170,10 @@ Deno.test('affordability uses the lean month and takes off other loan payments',
    assertEquals(affordOf(doc, m, null, STEP60).label, 'unknown');
 });
 
-const STEP40 = { min: 40, months: 1, fresh: false, autoApprove: true, maxShare: null, balance: false, liveCall: false };
+const STEP40 = { min: 40, months: 0, fresh: false, autoApprove: true, maxShare: null, balance: false, liveCall: false };
 const STEP60 = { min: 60, months: 2, fresh: false, autoApprove: false, maxShare: 0.5, balance: false, liveCall: true };
 
-Deno.test('$40+: a payslip alone is sent back for account history, and never approves itself', () => {
+Deno.test('$40 takes a payslip alone; from $60 a payslip alone is sent back for account history', () => {
    const slip = base({
       doc_type: 'payslip',
       transactions: [],
@@ -181,12 +181,17 @@ Deno.test('$40+: a payslip alone is sent back for account history, and never app
       closing_balance: null,
       payslip: { employer: 'ACME', gross_pay: 20000, total_deductions: 2000, net_pay: 18000 }
    });
-   const flags = runChecks(slip, computeMetrics(slip), { ...smallLoan, step: STEP40 });
+   // $40: easy step. A payslip alone is fine and can approve itself if it looks real.
+   assert(!runChecks(slip, computeMetrics(slip), { ...smallLoan, step: STEP40 }).some((f) => f.code === 'needs_history'));
+   assert(canAutoApprove('looks_good', STEP40, slip, 'real', 'comfortable'));
+   assert(!canAutoApprove('looks_good', STEP40, slip, 'check', 'comfortable'));
+   assert(!canAutoApprove('looks_good', STEP40, slip, 'real', 'too_much'));
+   assert(canAutoApprove('looks_good', STEP40, gig(), 'real', 'comfortable'));
+   // $60: a payslip alone goes back for history, and a months step never approves on a payslip alone.
+   const flags = runChecks(slip, computeMetrics(slip), { ...smallLoan, step: STEP60 });
    assert(flags.some((f) => f.code === 'needs_history'));
    assertEquals(verdictOf(flags, 'payslip'), { verdict: 'resend', reason: 'need_history' });
-   assert(!canAutoApprove('looks_good', STEP40, slip, 'real', 'comfortable'));
-   assert(canAutoApprove('looks_good', STEP40, gig(), 'real', 'comfortable'));
-   assert(!canAutoApprove('looks_good', STEP40, gig(), 'check', 'comfortable'));
+   assert(!canAutoApprove('looks_good', { ...STEP60, autoApprove: true }, slip, 'real', 'comfortable'));
    // No step known (opened /documents on its own): a payslip is still fine for the team to look at.
    assert(!runChecks(slip, computeMetrics(slip), smallLoan).some((f) => f.code === 'needs_history'));
 });

@@ -1,4 +1,4 @@
--- Proof of income, stricter from $40 and with two plain labels instead of one score.
+-- Proof of income, stricter from $60 and with two plain labels instead of one score.
 --   authenticity   "is it real?": real / check / fake_signs (from the four fake-sign checks)
 --   affordability  "can they afford it?": comfortable / tight / too_much / unknown, using the leanest
 --                  month's earned income (loan-app money and own cash-ins left out) minus what they
@@ -10,11 +10,11 @@ alter table public.income_documents
   add column if not exists affordability text check (affordability in ('comfortable', 'tight', 'too_much', 'unknown')),
   add column if not exists afford_share numeric;
 
--- Stricter steps (George, 2026-11-06): $40 needs a month of GCash/Maya/bank history (a payslip or
--- invoice alone goes back for history and never approves itself); $60+ also has them open GCash live
--- on a video call. Only changed if the team hasn't edited the steps since #1372.
+-- Steps (George, 2026-11-08): $40 stays easy (any one recent screenshot, statement or payslip). From
+-- $60 a payslip or invoice alone goes back for GCash/Maya/bank history, and the team has them open
+-- GCash live on a video call. Only changed if the team hasn't edited the steps since #1372.
 update public.telegram_bot_settings
-set value = '[{"min":40,"months":1,"fresh":false,"autoApprove":true,"maxShare":null,"balance":false,"liveCall":false},{"min":60,"months":2,"fresh":false,"autoApprove":false,"maxShare":0.5,"balance":false,"liveCall":true},{"min":100,"months":2,"fresh":true,"autoApprove":false,"maxShare":0.3,"balance":true,"liveCall":true},{"min":140,"months":2,"fresh":true,"autoApprove":false,"maxShare":0.3,"balance":true,"liveCall":true}]'
+set value = '[{"min":40,"months":0,"fresh":false,"autoApprove":true,"maxShare":null,"balance":false,"liveCall":false},{"min":60,"months":2,"fresh":false,"autoApprove":false,"maxShare":0.5,"balance":false,"liveCall":true},{"min":100,"months":2,"fresh":true,"autoApprove":false,"maxShare":0.3,"balance":true,"liveCall":true},{"min":140,"months":2,"fresh":true,"autoApprove":false,"maxShare":0.3,"balance":true,"liveCall":true}]'
 where key = 'income_doc_tiers'
   and value::jsonb = '[{"min":40,"months":0,"fresh":false,"autoApprove":true,"maxShare":null,"balance":false,"liveCall":false},{"min":60,"months":2,"fresh":false,"autoApprove":false,"maxShare":0.5,"balance":false,"liveCall":false},{"min":100,"months":2,"fresh":true,"autoApprove":false,"maxShare":0.3,"balance":true,"liveCall":false},{"min":140,"months":2,"fresh":true,"autoApprove":false,"maxShare":0.3,"balance":true,"liveCall":true}]'::jsonb;
 
