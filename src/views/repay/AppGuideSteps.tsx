@@ -72,8 +72,22 @@ const buildCards = ({
             img: `${PDAX_IMG}/step0b-instapay.webp`
          },
          { key: 'instapay-confirm', title: 'Type the pesos, confirm', img: `${PDAX_IMG}/step0c-confirm.webp` },
-         { key: 'find', title: 'Find USDCBASE', text: 'Markets → type “usdc” → USDCBASE/PHP.', img: `${PDAX_IMG}/step1-find.webp` },
-         { key: 'buy', title: 'Buy USDC', text: 'Buy → type pesos → Buy USDC.', img: `${PDAX_IMG}/step2-buy.webp`, tip: buyTip },
+         { key: 'markets', title: 'Tap Markets', text: 'At the bottom of PDAX.', img: `${PDAX_IMG}/step3-markets.webp` },
+         {
+            key: 'find',
+            title: 'Search “usdc”, tap USDCBASE/PHP',
+            text: 'The one that says Base.',
+            img: `${PDAX_IMG}/step4-usdcbase.webp`
+         },
+         { key: 'buy', title: 'Tap Buy', img: `${PDAX_IMG}/step5-buy.webp` },
+         {
+            key: 'amount',
+            title: 'Type the pesos, tap Buy USDC',
+            text: 'Type it in pesos (₱), not USDC.',
+            img: `${PDAX_IMG}/step6-amount.webp`,
+            tip: buyTip,
+            danger: 'Says “Insufficient PHP Balance”? Cash in more pesos first.'
+         },
          copy,
          {
             key: 'send',
