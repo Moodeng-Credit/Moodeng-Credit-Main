@@ -96,7 +96,7 @@ const buildCards = ({
          {
             key: 'send-paste',
             title: 'Paste your address',
-            text: 'Here it says BTC; yours says USDCBASE.',
+            text: 'Network must say Base.',
             img: `${PDAX_IMG}/step9-paste.webp`,
             danger: 'Base network only'
          },
