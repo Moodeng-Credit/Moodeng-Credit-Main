@@ -518,6 +518,7 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Old to New': 'Luma hanggang bago',
    'out of': 'sa',
    'Pay Now': 'Magbayad ngayon',
+   'Waiting for USDC': 'Hinihintay ang USDC',
    'Past due': 'Lampas na sa due date',
    'Read Moodeng Blogs': 'Basahin ang mga blog ng Moodeng',
    REPAID: 'BAYAD NA',

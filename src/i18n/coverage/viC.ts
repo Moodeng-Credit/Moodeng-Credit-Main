@@ -437,6 +437,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Small fee': 'Phí nhỏ',
    'Enter an amount greater than 0.': 'Nhập số tiền lớn hơn 0.',
    'Pay Now': 'Trả ngay',
+   'Waiting for USDC': 'Đang chờ USDC',
    'Start Setup': 'Bắt đầu thiết lập',
    'Verify yourself and set up your wallet (an Instant Wallet, or a Base Account if you prefer) before requesting loans. Repayments will show here after a moo-lender funds your first loan.':
       'Hãy xác minh danh tính và thiết lập ví (Instant Wallet, hoặc Base Account nếu bạn muốn) trước khi yêu cầu vay. Các khoản trả nợ sẽ hiển thị tại đây sau khi moo-lender cấp vốn cho khoản vay đầu tiên của bạn.',

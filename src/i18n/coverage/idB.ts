@@ -296,6 +296,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'Defaulted($)': 'Gagal bayar($)',
    'Due today': 'Jatuh tempo hari ini',
    'Pay Now': 'Bayar sekarang',
+   'Waiting for USDC': 'Menunggu USDC',
    'My insights': 'Wawasanku',
    'Moodeng grew to': 'Moodeng tumbuh ke',
    'Claim your ₱': 'Klaim ₱',

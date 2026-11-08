@@ -9,6 +9,7 @@ import { ALLOWED_CHAIN_DISPLAY_NAME, getAllowedChainTokenConfig } from '@/config
 import { errorText, trackPaymentStep } from '@/lib/analytics/paymentSteps';
 import { BasePaymentError, startBasePayment, waitForBasePayment } from '@/lib/basePay';
 import { isStaleChunkError, reloadOnceForStaleChunk } from '@/lib/staleChunkReload';
+import { isTokenBalanceShortfall } from '@/lib/tokenBalanceShortfall';
 import { WALLET_RESPONSE_TIMEOUT_MS, WalletTimeoutError, withTimeout } from '@/lib/withTimeout';
 import { OPENFORT_WALLET_PROVIDER, sendUsdcFromEmbeddedWallet, WalletGateError } from '@/lib/web3/openfort';
 import { reportInstantWalletFailure } from '@/lib/web3/openfort/reportFailure';
@@ -42,10 +43,6 @@ export interface PaymentOutcome {
 const WALLET_SUPPORT_TOPIC = 'I had a problem with a wallet transaction';
 const INSTANT_WALLET_SUPPORT_TOPIC = 'My Instant Wallet payment failed';
 
-// A USDC (ERC-20) balance shortfall. Unlike running out of ETH for gas, viem has no typed error
-// for it — the token contract's revert reason is all there is.
-const TOKEN_BALANCE_SHORTFALL = /transfer amount exceeds balance/i;
-
 // Inspects the (often deeply-wrapped) wagmi/viem error to route to a toast the
 // user can act on, instead of a generic "transaction failed" they can't self-correct.
 const classifyTransferError = (err: unknown): ErrorCode => {
@@ -67,7 +64,8 @@ const classifyTransferError = (err: unknown): ErrorCode => {
       }
    }
 
-   if (err instanceof Error && TOKEN_BALANCE_SHORTFALL.test(err.message)) {
+   // A USDC balance shortfall — plain text from a wallet, hex-encoded from Openfort's simulation.
+   if (isTokenBalanceShortfall(err)) {
       return ERROR_CODES.INSUFFICIENT_FUNDS;
    }
 

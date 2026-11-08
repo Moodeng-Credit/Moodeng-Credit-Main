@@ -329,6 +329,7 @@ export const thaiCoverageB: Record<string, string> = {
    'Defaulted($)': 'ผิดนัดชำระ ($)',
    'Due today': 'ครบกำหนดวันนี้',
    'Pay Now': 'ชำระเลย',
+   'Waiting for USDC': 'กำลังรอ USDC',
    'My insights': 'ข้อมูลเชิงลึกของฉัน',
    'Loading voucher': 'กำลังโหลดบัตรกำนัล',
    'Moodeng grew to': 'Moodeng โตถึงระดับ',

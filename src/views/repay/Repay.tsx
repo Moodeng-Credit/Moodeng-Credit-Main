@@ -826,6 +826,17 @@ export default function Repay() {
    const hasEnoughToRepay = usdcBalance !== null && usdcBalance >= selectedRemaining - 0.005;
    const isShortOnFunds = fundingShortfall !== null && fundingShortfall > 0;
    const hasPartialFunds = usdcBalance !== null && usdcBalance > 0 && isShortOnFunds;
+   // An Instant Wallet pays from exactly the address whose balance is read above, so when that
+   // balance can't cover the amount the send is certain to fail (its simulation reverts with
+   // "transfer amount exceeds balance"). Hold the Pay button until the deposit lands instead of
+   // letting the borrower tap into a "Transaction Error" — seen 2026-11-08 with $0 and Pay $17.
+   // Base Pay / connected wallets are left alone: they can pay from a different wallet.
+   const instantWalletCantCover =
+      activePaymentMethod === 'openfort' &&
+      !usePreviewLoans &&
+      usdcBalance !== null &&
+      parsedRepaymentAmount > 0 &&
+      Math.min(parsedRepaymentAmount, selectedRemaining) > usdcBalance + 1e-6;
    // True only for the loan that just crossed short→funded — drives the success handoff.
    // Subscribe to incoming USDC Transfer events on Base so the UI updates within ~1-2s
    // of the deposit landing — no polling delay. Only active while short on funds.
@@ -925,6 +936,16 @@ export default function Repay() {
       }
 
       if (amountError || parsedRepaymentAmount <= 0) {
+         return;
+      }
+
+      // Backstop for the disabled bottom-nav button: an Instant Wallet send that can't succeed.
+      if (instantWalletCantCover) {
+         showToast(
+            TOAST_TYPES.INFO,
+            'Waiting for your USDC',
+            `Your wallet has $${formatCurrency(usdcBalance ?? 0)} USDC so far. Pay unlocks as soon as your transfer arrives. Nothing was sent.`
+         );
          return;
       }
 
@@ -1167,7 +1188,9 @@ export default function Repay() {
       dispatch,
       user.id,
       usePreviewLoans,
-      blockForInAppBase
+      blockForInAppBase,
+      instantWalletCantCover,
+      usdcBalance
    ]);
 
    const handleRepayRef = useRef(handleRepay);
@@ -1185,11 +1208,11 @@ export default function Repay() {
          selectedLoan && !completion
             ? {
                  ariaLabel: account.isConnected ? `Pay now ${paymentCtaAmount}` : `Connect and pay ${paymentCtaAmount}`,
-                 disabled: isRepayDisabled,
+                 disabled: isRepayDisabled || instantWalletCantCover,
                  icon: 'dollar-circle.svg',
                  id: 'repay-pay-now',
                  isProcessing,
-                 label: connectStatus === 'pending' ? 'Connecting' : payNowLabel,
+                 label: connectStatus === 'pending' ? 'Connecting' : instantWalletCantCover ? 'Waiting for USDC' : payNowLabel,
                  onClick: handleBottomNavRepay,
                  path: '/repay'
               }
@@ -1199,6 +1222,7 @@ export default function Repay() {
          completion,
          connectStatus,
          handleBottomNavRepay,
+         instantWalletCantCover,
          isProcessing,
          isRepayDisabled,
          paymentCtaAmount,
