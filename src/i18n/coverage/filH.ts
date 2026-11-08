@@ -59,6 +59,8 @@ export const filipinoCoverageH: Record<string, string> = {
    'Tap Max, then Send': 'I-tap ang Max, tapos Send',
    'PDAX may send a code to your email.': 'Baka magpadala ang PDAX ng code sa email mo.',
    'You’ll see “Your USDCBASE is on its way!”': 'Makikita mo ang “Your USDCBASE is on its way!”',
+   'Search “usdc”, tap USDCBASE.': 'I-search ang “usdc”, i-tap ang USDCBASE.',
+   'Here it says BTC; yours says USDCBASE.': 'BTC ang nakasulat dito; USDCBASE sa iyo.',
    'Find USDCBASE': 'Hanapin ang USDCBASE',
    'Buy USDC': 'Bumili ng USDC',
    'Send it to your address': 'Ipadala sa address mo',

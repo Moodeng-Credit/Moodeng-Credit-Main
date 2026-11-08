@@ -54,7 +54,8 @@ const buildCards = ({
 
    // PDAX: cash in pesos → buy USDCBASE → Send it out on Base (the team's PDAX repay guide).
    // Pictures: frames from Moodeng's own PDAX Short (youtube.com/shorts/IyObBHW3Sbg) and PDAX's
-   // "Cash in via the UnionBank app" reel (facebook.com/reel/1479406229395251).
+   // "Cash in via the UnionBank app" reel (facebook.com/reel/1479406229395251), "How to send crypto from
+   // your PDAX wallet" (youtube.com/watch?v=Q89OLTa9pd8) and a borrower's own screenshots.
    if (appId === 'pdax') {
       return [
          {
@@ -91,12 +92,19 @@ const buildCards = ({
          copy,
          // Sending it out of PDAX, one tap per card.
          { key: 'send', title: 'Portfolio → Send', text: 'Bottom right, then Send.', img: `${PDAX_IMG}/step7-send.webp`, open: true },
-         { key: 'send-coin', title: 'Pick USDCBASE', text: 'The one that says Base.' },
-         { key: 'send-paste', title: 'Paste your address', text: 'Network must say Base.', danger: 'Base network only' },
+         { key: 'send-coin', title: 'Pick USDCBASE', text: 'Search “usdc”, tap USDCBASE.', img: `${PDAX_IMG}/step8-coin.webp` },
+         {
+            key: 'send-paste',
+            title: 'Paste your address',
+            text: 'Here it says BTC; yours says USDCBASE.',
+            img: `${PDAX_IMG}/step9-paste.webp`,
+            danger: 'Base network only'
+         },
          {
             key: 'send-max',
             title: 'Tap Max, then Send',
             text: 'PDAX may send a code to your email.',
+            img: `${PDAX_IMG}/step10-max-send.webp`,
             tip: 'You’ll see “Your USDCBASE is on its way!”',
             doneLabel: 'I sent it'
          }
