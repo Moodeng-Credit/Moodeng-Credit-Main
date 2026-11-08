@@ -38,6 +38,8 @@ export const filipinoCoverageH: Record<string, string> = {
    'Check it says Base, then Send': 'Siguraduhing Base, tapos i-Send',
    'Open PDAX, cash in pesos': 'Buksan ang PDAX, mag-cash in ng pesos',
    'New to PDAX? Approval takes up to 24 hours.': 'Bago sa PDAX? Hanggang 24 oras ang approval.',
+   'You’ll see “processing”': 'Makikita mo ang “processing”',
+   'GCrypto emails you when it’s sent. Come back here.': 'Mag-e-email ang GCrypto kapag naipadala na. Bumalik dito.',
    'Open PDAX → Cash in': 'Buksan ang PDAX → Cash in',
    'Copy your PDAX account number.': 'Kopyahin ang PDAX account number mo.',
    'Send pesos to PDAX': 'Magpadala ng pesos sa PDAX',

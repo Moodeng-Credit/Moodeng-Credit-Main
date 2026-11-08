@@ -48,7 +48,14 @@ const buildCards = ({
          { key: 'buy', title: 'Buy USDC (Base)', text: 'Trade → Buy → USDC (Base).', img: `${GCRYPTO_IMG}/step2-trade.webp`, tip: buyTip },
          copy,
          { key: 'send', title: 'Paste it, tap MAX', text: 'Send → paste → MAX.', img: `${GCRYPTO_IMG}/step3-send.webp` },
-         { key: 'confirm', title: 'Check it says Base, then Send', img: `${GCRYPTO_IMG}/step4-confirm.webp`, doneLabel: 'I sent it' }
+         { key: 'confirm', title: 'Check it says Base, then Send', img: `${GCRYPTO_IMG}/step4-confirm.webp` },
+         {
+            key: 'processing',
+            title: 'You’ll see “processing”',
+            text: 'GCrypto emails you when it’s sent. Come back here.',
+            img: `${GCRYPTO_IMG}/step5-processing.webp`,
+            doneLabel: 'I sent it'
+         }
       ];
    }
 
