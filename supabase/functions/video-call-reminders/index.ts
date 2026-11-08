@@ -27,7 +27,8 @@ import { nudgeStalledChats } from '../_shared/messengerBookingBot.ts';
 import { type IdEvent, type IdEventData, isIdTrackUser, runIdOnboardingNudges, sendIdTelegram } from '../_shared/idTrack.ts';
 import { runAutoPayouts, runWaltPayoutScan } from '../_shared/idManualFunding.ts';
 import { runIdrRepricing } from '../_shared/fxRates.ts';
-import { runIdRepayments } from '../_shared/idRepayments.ts';
+import { runIdRepayNudges, runIdRepayments } from '../_shared/idRepayments.ts';
+import { runWaltTransferPayoutCards } from '../_shared/idWaltPayouts.ts';
 
 // Cron-driven (every 5 min) no-show defence for booked video calls. The full ladder — day-before,
 // confirm-or-cancel (1h before) / cancel unconfirmed (30 min before), starting now, we're waiting, admin prompt, auto
@@ -344,6 +345,14 @@ serve(async (req) => {
    } catch (err) {
       console.error('video-call-reminders: auto payouts failed', err);
    }
+   // Walt Transfer mode (the default): one "send X USDT to @user" card per open request for the team.
+   try {
+      const cards = await runWaltTransferPayoutCards(svc, now, Math.max(Date.now() + 10_000, idDeadline - 40_000));
+      tally.walt_payout_cards = cards.cards;
+      tally.walt_username_asked = cards.askedUsername;
+   } catch (err) {
+      console.error('video-call-reminders: Walt payout cards failed', err);
+   }
    // Loans paid by hand from Binance TH to Walt — confirm them on BNB Chain.
    const walt = await runWaltPayoutScan(svc, now, Math.max(Date.now(), idDeadline - 15_000));
    tally.walt_payouts_checked = walt.checked;
@@ -355,6 +364,7 @@ serve(async (req) => {
       tally.walt_repay_seen = repay.seen;
       tally.walt_repay_recorded = repay.recorded + repay.resumed;
       tally.walt_repay_unmatched = repay.unmatched;
+      tally.walt_repay_nudged = await runIdRepayNudges(svc, now);
    } catch (err) {
       console.error('video-call-reminders: wallet repayments failed', err);
    }

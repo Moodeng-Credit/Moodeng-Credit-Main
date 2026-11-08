@@ -23,7 +23,7 @@ import {
    toCsv
 } from '@/app/admin/creditLineModel';
 import { useAdminLiveReload } from '@/app/admin/useAdminLive';
-import { bareTxHash, txExplorerUrl } from '@/lib/txExplorer';
+import { bareTxHash, isWaltTx, txExplorerUrl } from '@/lib/txExplorer';
 
 // Admin → Finance → Credit line: everything a credit-line lender's monthly report needs (BitRepo: Schedule B),
 // live from our records — balances, interest owed, every loan with its txs and rationale, the fund-flow ledger,
@@ -60,11 +60,17 @@ function TxLinks({ txs }: { txs: string[] }) {
    if (!txs.length) return <span className="text-red-300">missing</span>;
    return (
       <span className="flex flex-col">
-         {txs.map((tx) => (
-            <a className="font-mono text-xs text-[#b99cff] underline" href={txExplorerUrl(tx)} key={tx} rel="noreferrer" target="_blank">
-               {shortTx(bareTxHash(tx))}
-            </a>
-         ))}
+         {txs.map((tx) =>
+            isWaltTx(tx) ? (
+               <span className="font-mono text-xs text-white/70" key={tx} title={tx}>
+                  Walt Transfer
+               </span>
+            ) : (
+               <a className="font-mono text-xs text-[#b99cff] underline" href={txExplorerUrl(tx)} key={tx} rel="noreferrer" target="_blank">
+                  {shortTx(bareTxHash(tx))}
+               </a>
+            )
+         )}
       </span>
    );
 }

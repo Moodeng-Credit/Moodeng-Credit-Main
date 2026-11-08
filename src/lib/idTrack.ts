@@ -19,7 +19,8 @@ export type IdNext = IdStepKey | 'apply' | 'waiting';
 
 export type IdTrackSwitch = 'off' | 'test' | 'on';
 
-export type IdLoanRules = { amounts: number[]; maxTermDays: number };
+/** firstLoanMax: set while this borrower hasn't repaid a loan on time yet (amounts are capped to it). */
+export type IdLoanRules = { amounts: number[]; maxTermDays: number; firstLoanMax?: number | null };
 
 export type IdOnboarding = {
    /** 'ID' when this account is on the Indonesia track. */

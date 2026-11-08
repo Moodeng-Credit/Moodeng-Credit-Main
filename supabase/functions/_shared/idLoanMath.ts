@@ -134,7 +134,14 @@ export type IdBotCallback =
    | { kind: 'purpose'; amount: number; days: number; rp: number; purpose: number }
    | { kind: 'confirm'; amount: number; days: number; rp: number; purpose: number }
    /** "✅ Sudah kirim" on a Walt Transfer repayment request. */
-   | { kind: 'sent'; requestId: number };
+   | { kind: 'sent'; requestId: number }
+   /** A step-by-step guide (idGuides.ts): `guide` 'list' = the index; step 'ok' = "✅ Sudah" (re-check). */
+   | { kind: 'guide'; guide: IdGuideKey | 'list'; step: number | 'ok' };
+
+/** The step-by-step guides (idGuides.ts). */
+export const ID_GUIDE_KEYS = ['how', 'uname', 'walt', 'cash', 'buy', 'send'] as const;
+export type IdGuideKey = (typeof ID_GUIDE_KEYS)[number];
+const GUIDE_KEYS: ReadonlySet<string> = new Set<string>(ID_GUIDE_KEYS);
 
 const AMOUNT = '(\\d{1,4}(?:\\.\\d{1,2})?)';
 const INT = '(\\d{1,3})';
@@ -150,6 +157,13 @@ const PATTERNS: Array<[RegExp, (m: RegExpExecArray) => IdBotCallback | null]> = 
    ],
    [/^ids:(\d{1,12})$/, (m) => ({ kind: 'sent', requestId: Number(m[1]) })],
    [
+      /^idg:([a-z]{3,5}):(\d{1,2}|ok)$/,
+      (m) =>
+         m[1] === 'list' || GUIDE_KEYS.has(m[1])
+            ? { kind: 'guide', guide: m[1] as IdGuideKey | 'list', step: m[2] === 'ok' ? 'ok' : Number(m[2]) }
+            : null
+   ],
+   [
       new RegExp(`^idc:${AMOUNT}:${INT}:${RP}:(\\d)$`),
       (m) => ({ kind: 'confirm', amount: Number(m[1]), days: Number(m[2]), rp: Number(m[3]), purpose: Number(m[4]) })
    ]
@@ -158,7 +172,7 @@ const PATTERNS: Array<[RegExp, (m: RegExpExecArray) => IdBotCallback | null]> = 
 /** Parse one of our callbacks; null for anything else (other handlers get it). */
 export const parseIdBotCallback = (data: string | null | undefined): IdBotCallback | null => {
    const s = String(data ?? '');
-   if (!/^id[mtarpcs]:/.test(s) || s.length > 64) return null;
+   if (!/^id[mtarpcsg]:/.test(s) || s.length > 64) return null;
    for (const [re, build] of PATTERNS) {
       const m = re.exec(s);
       if (m) {
@@ -180,13 +194,20 @@ export const idCallback = {
    rupiah: (amount: number, days: number, rp: number) => `idr:${num(amount)}:${days}:${Math.round(rp)}`,
    purpose: (amount: number, days: number, rp: number, purpose: number) => `idp:${num(amount)}:${days}:${Math.round(rp)}:${purpose}`,
    confirm: (amount: number, days: number, rp: number, purpose: number) => `idc:${num(amount)}:${days}:${Math.round(rp)}:${purpose}`,
-   sent: (requestId: number) => `ids:${requestId}`
+   sent: (requestId: number) => `ids:${requestId}`,
+   guide: (guide: IdGuideKey | 'list', step: number | 'ok' = 0) => `idg:${guide}:${step}`
 };
 
 /** Telegram's limit: callback_data is 1–64 BYTES. */
 export const callbackFits = (data: string) => {
    const bytes = new TextEncoder().encode(data).length;
    return bytes >= 1 && bytes <= 64;
+};
+
+/** Text worth asking the AI helper about: not a command, at least 2 letters, at most 600 characters. */
+export const isIdQuestionText = (text: string | null | undefined): boolean => {
+   const t = String(text ?? '').trim();
+   return t.length >= 2 && t.length <= 600 && !t.startsWith('/') && /\p{L}/u.test(t);
 };
 
 /** Is this private-chat text a request for the menu? (/menu, bare /start, "menu", "pinjaman"). */

@@ -39,6 +39,7 @@
 import { blockAtOrBefore, headBlock as bscHead, transfersTo as bscTransfersTo } from './idManualFunding.ts';
 import { balanceOf, BSC_USDC_CHECKSUM, BSC_USDT_CHECKSUM, type BscToken, getPayoutWallet, NotSentError, pollOpenfortTx, sendTokenBsc, unitsToUsd, usdcBscUnits } from './idPayoutWallet.ts';
 import { formatRp, idUsdLeft } from './idLoanMath.ts';
+import { sendRepayStuckOffer } from './idGuides.ts';
 import { idLocaleOf } from './idTrack.ts';
 import { runRepaymentFollowUps } from './repaymentFollowUps.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
@@ -253,11 +254,11 @@ export const getOrCreateRepayRequest = async (svc: Svc, user: { id: string }, so
       if (repayBlocker(loan)) return { ok: false, error: 'on_contract' };
       if (String((await getSetting(svc, 'id_repay')) ?? 'on').trim().toLowerCase() === 'off') return { ok: false, error: 'paused' };
       const waltUsername = waltUsernameOf(await getSetting(svc, 'id_walt_username'));
-      const method: 'walt_transfer' | 'bep20' = waltUsername ? 'walt_transfer' : 'bep20';
-      const payoutWallet = method === 'bep20' ? await getPayoutWallet(svc) : null;
-      if (method === 'bep20' && !payoutWallet) return { ok: false, error: 'no_payout_wallet' };
-      // Where the money goes: 'walt:@name' or the payout wallet address.
-      const wallet = { address: waltUsername ? `walt:@${waltUsername}` : String(payoutWallet?.address) };
+      // George's rule: no withdrawals (Walt charges 1.5 USDT). No Walt username set → paused, not BEP20.
+      if (!waltUsername) return { ok: false, error: 'paused' };
+      const method = 'walt_transfer' as const;
+      // Where the money goes: Moodeng's Walt username.
+      const wallet = { address: `walt:@${waltUsername}` };
 
       // A payment for this loan that's being recorded right now: don't ask for another one.
       const { data: inFlight } = await svc
@@ -1110,6 +1111,43 @@ const confirmOutgoing = async (svc: Svc, deadline: number) => {
 export type IdRepayTally = { seen: number; recorded: number; topups: number; unmatched: number; resumed: number; expired: number };
 
 /** The 5-minute job (video-call-reminders). Stops at `deadline`. Never throws. */
+const NUDGE_AFTER_MS = 6 * 3_600_000;
+
+/**
+ * Hand-holding: a borrower opened 💰 Bayar 6+ hours ago and never tapped "✅ Sudah kirim" (and the loan
+ * is still owed) → one "need a hand?" message with the buy-USDT and pay guides. Once per request.
+ */
+export const runIdRepayNudges = async (svc: Svc, now = Date.now()): Promise<number> => {
+   let sent = 0;
+   try {
+      const { data } = await svc
+         .from('id_repay_requests')
+         .select('id, loan_id, user_id')
+         .eq('status', 'open')
+         .eq('method', 'walt_transfer')
+         .is('sent_claimed_at', null)
+         .is('nudged_at', null)
+         .lte('created_at', new Date(now - NUDGE_AFTER_MS).toISOString())
+         .gte('expires_at', new Date(now).toISOString())
+         .limit(20);
+      for (const r of (data ?? []) as Array<{ id: number; loan_id: string; user_id: string }>) {
+         const stamp = new Date().toISOString();
+         const { data: claimed } = await svc.from('id_repay_requests').update({ nudged_at: stamp }).eq('id', r.id).is('nudged_at', null).select('id');
+         if (!(claimed ?? []).length) continue;
+         const [{ data: loan }, user] = await Promise.all([
+            svc.from('loans').select('repayment_status').eq('id', r.loan_id).maybeSingle(),
+            loadUser(svc, r.user_id)
+         ]);
+         if (!user?.chat_id || loan?.repayment_status === 'Paid') continue;
+         await sendRepayStuckOffer(user.chat_id, idLocaleOf(user.preferred_locale));
+         sent += 1;
+      }
+   } catch (err) {
+      console.error('[idRepayments] nudges failed', err instanceof Error ? err.message : err);
+   }
+   return sent;
+};
+
 export const runIdRepayments = async (svc: Svc, deadline = Date.now() + 45_000): Promise<IdRepayTally> => {
    const tally: IdRepayTally = { seen: 0, recorded: 0, topups: 0, unmatched: 0, resumed: 0, expired: 0 };
    try {

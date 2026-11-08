@@ -1049,7 +1049,11 @@ function ReturnHint({ lo, hi }: { lo: number; hi: number }) {
 // today (totalRepaymentAmount) is what the server checks and floats with the rate until repaid.
 const ID_FORM_TEXT = {
    amountLabel: { id: 'Jumlah pinjaman', en: 'Borrow amount' },
-   amountHint: { id: 'Dikirim dalam USDC ke dompet Moodeng kamu.', en: 'Sent in USDC to your Moodeng wallet.' },
+   amountHint: { id: 'Dikirim ke Walt kamu (dompet di Telegram).', en: 'Sent to your Walt (the wallet in Telegram).' },
+   firstLoan: {
+      id: '⭐ Pinjaman pertama maksimal ${n}. Bayar tepat waktu → berikutnya bisa lebih besar.',
+      en: '⭐ Your first loan is up to ${n}. Pay on time → the next one can be bigger.'
+   },
    overLimit: { id: 'Di atas limit', en: 'Above limit' },
    limit: { id: 'Limit kamu', en: 'Your limit' },
    repayLabel: { id: 'Total yang kamu kembalikan', en: 'Total you’ll repay' },
@@ -1196,6 +1200,7 @@ function IdLoanTermsFields({
             </div>
             {termErrors.amount ? <FieldError message={termErrors.amount} /> : null}
             <p className="text-md-b3 font-normal text-md-neutral-1200">{t('amountHint')}</p>
+            {rules.firstLoanMax ? <p className="text-md-b3 font-medium text-md-heading">{t('firstLoan').replace('{n}', String(rules.firstLoanMax))}</p> : null}
          </div>
 
          <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-amount">

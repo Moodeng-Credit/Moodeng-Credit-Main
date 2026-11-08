@@ -19,6 +19,7 @@
 // Funding is recorded like any direct lend: loan_status 'Lent', lender = the admin (repayments go to
 // their users.wallet_address on Base), funding_method 'walt_manual'. Never throws to callers.
 
+import { sendCashOutGuideOffer } from './idGuides.ts';
 import { sendTelegramMessage } from './telegram.ts';
 import { postLoanFundedToTeam } from './teamLoanFeed.ts';
 import {
@@ -177,6 +178,10 @@ const getSetting = async (svc: Svc, key: string): Promise<string | null> => {
    return (data?.value as string | undefined) ?? null;
 };
 
+/** How loans go out: 'walt_transfer' (default — George's Walt → their @username, by hand) or 'chain'. */
+export const payoutModeOf = async (svc: Svc): Promise<'walt_transfer' | 'chain'> =>
+   String((await getSetting(svc, 'id_payout_mode')) ?? 'walt_transfer').trim().toLowerCase() === 'chain' ? 'chain' : 'walt_transfer';
+
 const adminChatId = async (svc: Svc): Promise<string | null> =>
    (await getSetting(svc, 'kyc_alert_chat_id')) || Deno.env.get('TEAM_TELEGRAM_CHAT_ID') || (await getSetting(svc, 'team_group_chat_id'));
 
@@ -234,7 +239,7 @@ const recordFunding = async (
    payout: PayoutRow,
    loan: LoanForPayout,
    t: Transfer,
-   foundBy: 'scan' | 'txid' | 'auto'
+   foundBy: 'scan' | 'txid' | 'auto' | 'walt'
 ): Promise<PayoutResult> => {
    // Claim the transfer first: (bsc_tx_hash, log_index) is unique, so one transfer can never fund two loans.
    // The lender is read fresh: whoever tapped "I sent it" / pasted the TxID last paid it.
@@ -292,7 +297,8 @@ const recordFunding = async (
          is_sellable: false,
          // loans.hash: the funding tx first, repayments after (the BitRepo report reads it that way).
          // Here the funding tx is on BNB Chain; funding_method 'walt_manual' says so.
-         hash: [`bsc:${t.txHash}`],
+         // A Walt Transfer (inside Telegram's wallet, no chain) is 'walt-transfer-out:<loan id>'.
+         hash: [foundBy === 'walt' ? t.txHash : `bsc:${t.txHash}`],
          on_hold_since: null,
          on_hold_reason: null,
          updated_at: now
@@ -309,7 +315,7 @@ const recordFunding = async (
       if (chat) {
          await sendTelegramMessage(
             chat,
-            `⚠️ 🇮🇩 Walt payout found on BNB Chain (${short(t.txHash)}) but the loan ${loan.id.slice(0, 8)} could not be marked funded: ${fundError?.message ?? 'it was already funded'}. Check it in admin.`
+            `⚠️ 🇮🇩 Walt payout ${foundBy === 'walt' ? 'marked sent by Walt Transfer' : `found on BNB Chain (${short(t.txHash)})`} but the loan ${loan.id.slice(0, 8)} could not be marked funded: ${fundError?.message ?? 'it was already funded'}. Check it in admin.`
          ).catch(() => undefined);
       }
       return { ok: false, error: fundError?.message ?? 'loan_already_funded', payout: claimed as PayoutRow };
@@ -318,7 +324,10 @@ const recordFunding = async (
    await postLoanFundedToTeam(svc, loan.id).catch(() => undefined);
    const { error: notifyError } = await svc.functions.invoke('loan-funded-notification', { body: { loanId: loan.id } });
    if (notifyError) console.error(`idManualFunding: borrower notification failed for ${loan.id}: ${notifyError.message}`);
-   const chat = await adminChatId(svc);
+   // Hand-holding: the money is in their Walt — show them how to turn it into rupiah, step by step.
+   await sendCashOutGuideOffer(svc, loan.borrower_user_id, Number(payout.amount)).catch(() => undefined);
+   // A Walt Transfer is confirmed on the card it was tapped on (no second line needed).
+   const chat = foundBy === 'walt' ? null : await adminChatId(svc);
    if (chat) {
       await sendTelegramMessage(
          chat,
@@ -480,6 +489,32 @@ export const recordByTxid = async (svc: Svc, loanId: string, txHash: string, adm
    const withLender = { ...payout, lender_user_id: adminUserId };
    await svc.from('id_manual_payouts').update({ lender_user_id: adminUserId, updated_at: new Date().toISOString() }).eq('id', payout.id);
    return await recordFunding(svc, withLender, loan, verified.transfer, 'txid');
+};
+
+/**
+ * Paid by Walt Transfer (George's Walt → the borrower's Telegram @username, free, no chain): the team
+ * tapped "✅ Sent" on the payout card (idWaltPayouts.ts). Walt has no API, so the tap IS the record.
+ * Same claim as the other manual paths: never a row the payout wallet is paying, never a found one,
+ * never a failed automatic payout BNB Chain hasn't been checked for. The hash 'walt-transfer-out:<loan>'
+ * is unique (id_manual_payouts.bsc_tx_hash), so two taps can't fund twice.
+ */
+export const recordWaltTransferPayout = async (svc: Svc, loanId: string): Promise<PayoutResult> => {
+   const { payout, loan, error } = await ensurePayout(svc, loanId);
+   if (!payout || !loan) return { ok: false, error: error ?? 'payout_unavailable' };
+   if (payout.status === 'found') return { ok: true, state: 'found', payout, funded: false };
+   if (payout.status === 'paying') return { ok: false, error: 'auto_payout_in_progress', payout };
+   const gate = await chainGateForManual(svc, payout);
+   if (gate) return gate;
+   if (!isOpen(loan)) return { ok: false, error: 'loan_not_open', payout };
+   const t: Transfer = {
+      txHash: `walt-transfer-out:${loan.id}`,
+      from: 'walt',
+      to: payout.walt_address,
+      value: usdcUnits(payout.amount),
+      blockNumber: 0n,
+      logIndex: 0
+   };
+   return await recordFunding(svc, payout, loan, t, 'walt');
 };
 
 /** "Check again" from the admin card: resume the search without resetting anything. */
@@ -1071,6 +1106,8 @@ export const runAutoPayouts = async (
       // 2. New payouts, only when switched on.
       const { autopay } = await getAutoPayLimits(svc);
       if (autopay !== 'on') return { ...tally, skipped: 'autopay_off' };
+      // Loans go out by Walt Transfer (setting id_payout_mode, idWaltPayouts.ts): never also from the wallet.
+      if ((await payoutModeOf(svc)) === 'walt_transfer') return { ...tally, skipped: 'walt_transfer_mode' };
       const { ctx, error } = await loadAutoCtx(svc, now);
       if (!ctx) return { ...tally, skipped: error };
       if (ctx.balanceUsd != null) await maybeAlertLowBalance(svc, ctx.wallet, ctx.balanceUsd, now);

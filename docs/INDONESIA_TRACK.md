@@ -3,6 +3,38 @@
 A separate borrower system for Indonesians. They arrive from Facebook or TikTok ads (often inside
 the Facebook/TikTok in-app browser) and land on `/id`.
 
+## Hand-holding (read this before touching any borrower-facing text)
+
+Design for someone who has never used a crypto wallet, may read slowly, and will give up the moment a
+screen confuses them. Assume no prior knowledge, every time. In practice:
+
+- **One action per screen.** Never "do X, then Y, then Z" in one message when it can be three steps
+  with ➡️ Lanjut. Short sentences, one idea per line, everyday Bahasa ("kamu"), no jargon. "USDT =
+  dolar digital" is explained, never assumed.
+- **Always show the next button.** Every message ends with the button for the next thing to do
+  (👛 Buka Walt, 💰 Bayar, ✅ Sudah kirim…). Typing is the fallback, not the plan.
+- **Copy buttons for anything they must type** (usernames, amounts). Nobody retypes "6.08".
+- **A guide at every money moment** (`_shared/idGuides.ts`, 📖 in the menu, `idg:<guide>:<step>`):
+  - after the request is posted: "what happens now" in 3 steps + 📖 Buka Walt pertama kali
+  - when the loan lands in their Walt: a message with 📖 Cairkan ke rupiah (`sendCashOutGuideOffer`)
+  - on 💰 Bayar: 📖 Beli USDT + 📖 Bayar pinjaman under the instructions
+  - 6 h after opening 💰 Bayar with no "✅ Sudah kirim": one "butuh bantuan?" nudge (`runIdRepayNudges`)
+  - no Telegram @username: 📖 Buat username, then "✅ Sudah, cek lagi"
+  Screenshots: `telegram_bot_settings.id_guide_media` = `{"cash:2": "<Telegram file_id or https URL>"}`.
+  **Check the Walt button names in the guides against a real phone** (Walt renames things); fix the text in
+  `idGuides.ts` and add screenshots — pictures beat words for this audience.
+- **"🙋 Masih bingung? Chat tim" on every guide screen.** A person is always one tap away.
+- **Typed questions get an answer** (`_shared/idHelper.ts`): DeepSeek Flash replies in ≤ 5 short lines from
+  the guides + their loan state, with the right 📖 button. Unsure, money missing, complaints, extensions,
+  "I want a person" → it says the team will reply and opens a support chat (`handoff`). It only explains:
+  it never records, approves, changes amounts/dates, and an answer naming any @username other than ours
+  or containing an address is dropped. Log: `id_ai_questions` (rate limit `id_ai_daily_limit`/day,
+  switch `id_ai_helper`). Read the log weekly: repeated questions = a guide step that needs fixing.
+- **Warnings only where they matter, in caps:** "BUKAN Withdraw", "jangan tekan Sudah terima sebelum uang
+  masuk", "jangan kasih PIN ke siapa pun", "bayar HANYA ke rekening di dalam Walt".
+- **Small first.** First loan $5 (`id_first_loan_max`); $10 only after a loan repaid on time
+  (`app_private.id_first_loan_cap`, enforced on every insert). Shown as "⭐ Pinjaman pertama maksimal $5".
+
 ## The rules
 
 - **Sign-up and sign-in are Telegram only.** The page says plainly that Telegram is required and
@@ -51,7 +83,23 @@ rules. Change it with `/idtrack off|test|on` in the admin Telegram group.
   `supabase/functions/_shared/relay.ts` (Relay quotes and status). The Relay actions live in
   `stableyard-deposit-address`, because we're at the edge-function cap.
 
-## Paying loans out (three ways, all recorded the same: funding_method 'walt_manual', hash `bsc:0x…`)
+## Paying loans out — Walt Transfer (default, free)
+
+`telegram_bot_settings.id_payout_mode = 'walt_transfer'` (default). No chain, no fee, no withdrawal:
+
+1. The 5-minute job posts ONE card per open (not held) Indonesian request to the admin chat
+   (`_shared/idWaltPayouts.ts`): "💸 Pay MC-…: send 5 USDT to @budi_88 by Walt Transfer", with copy
+   buttons for the @username and the amount, 👛 Open Walt and **✅ Sent**.
+2. In Walt: Transfer → paste @username → paste amount → send. Then tap ✅ Sent (`idwp:<loan id>`).
+3. `recordWaltTransferPayout` funds the loan (funding_method 'walt_manual', lender = `id_payout_lender_user_id`,
+   hash `walt-transfer-out:<loan id>`, found_by 'walt'), the borrower gets "money sent" + the cash-out guide.
+   Two taps can't fund twice; a row the payout wallet is paying is refused.
+- Loans go to the borrower's **Telegram @username** (`users.telegram_username`, refreshed from every bot
+  message/tap). No username → no card; the bot sends the "make a username" guide once, and 💸 Ajukan asks
+  for one first. They must have opened Walt once (the onboarding Walt step does that).
+- The payout wallet's autopay never sends in this mode. `id_payout_mode = 'chain'` brings back the ways below.
+
+## Paying loans out on chain (`id_payout_mode = 'chain'`; recorded the same: funding_method 'walt_manual', hash `bsc:0x…`)
 
 1. **Payout wallet (automatic).** A Moodeng-owned Openfort backend wallet on BNB Chain, topped up
    with USDC (BSC) from Binance TH. With `/idautopay on`, the 5-minute job pays each open Indonesian
@@ -136,14 +184,19 @@ Telegram-app login tap.
 George's rule (2026-11-08): no fees anywhere. Walt's on-chain withdrawal costs 1.5 USDT (BEP20) — 25% of a
 $6 repayment — and Walt Pay (merchant API) is "unavailable" for his account, so:
 
-- **Main way — Walt Transfer** (`method = 'walt_transfer'`, setting `id_walt_username` = `jimmymoodengcredit`):
+- **The only way — Walt Transfer** (`method = 'walt_transfer'`, setting `id_walt_username` = `jimmymoodengcredit`):
   💰 Bayar shows the exact amount + `@jimmymoodengcredit` with copy buttons and "👛 Buka Walt". In Walt:
   Transfer → paste username → paste amount → send (free, inside Walt). Then "✅ Sudah kirim" (`ids:<id>`;
   app: "Sudah kirim" button → relay action `id_repay_sent`). The team gets a card (once per 10 min):
   "✅ Arrived — record" (`idw:a:<id>`) creates deposit `walt-transfer:<id>` (unique — a double tap can't
   record twice) and records it with the request's rupiah; "❌ Not there" (`idw:x:<id>`) tells the borrower
   to check and tap again. Walt can't be opened pre-filled (no API): the bot gives copy buttons.
-- **Backup — on chain** (`method = 'bep20'`, only if `id_walt_username` is empty), as below.
+- **No on-chain backup any more** (2026-11-08): with `id_walt_username` empty, 💰 Bayar says paying is paused
+  ("hubungi kami") instead of telling anyone to withdraw. The BNB Chain scan below still runs, so money
+  someone sends on chain anyway is still found (or lands on the unmatched card).
+- **Fees, all in:** none from Moodeng or Walt Transfer. The only cost is Walt P2P's spread when the
+  borrower sells USDT for rupiah (~2.2%) and buys it back to repay (~1.3%), plus any bank/e-wallet transfer
+  fee to the P2P seller (free same-bank/e-wallet, ~Rp 2.500 BI-FAST).
 
 - **Who**: loans with `market = 'ID'` and `funding_method = 'walt_manual'` (Moodeng paid them to Walt).
   Anything else (e.g. an older Indonesian loan a lender funded on Base) is owed to that lender and goes

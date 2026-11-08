@@ -34,7 +34,9 @@ import {
 } from '../_shared/loanAccess.ts';
 import { markMessengerVerified, messengerVerifiedStamp, parseMessengerVerifyCallback } from '../_shared/messengerStuckAlert.ts';
 import { payoutWalletStatus } from '../_shared/idPayoutWallet.ts';
-import { handleIdBotCallback, handleIdMenuMessage } from '../_shared/idBot.ts';
+import { findIdUserByTelegram, handleIdBotCallback, handleIdMenuMessage } from '../_shared/idBot.ts';
+import { handleIdFreeText } from '../_shared/idHelper.ts';
+import { handleWaltPayoutCallback } from '../_shared/idWaltPayouts.ts';
 import { handleSweepCommand, handleWalletDepositCallback } from '../_shared/idRepayments.ts';
 import { formatCallTime } from '../_shared/videoCall.ts';
 import { handleRescheduleStep, parseRescheduleCallback, postReschedulePicker } from '../_shared/callReschedule.ts';
@@ -1274,6 +1276,10 @@ serve(async (req) => {
          if (await handleIdBotCallback(supabase, update.callback_query)) {
             return jsonResponse({ message: 'Indonesia bot callback handled' });
          }
+         // Indonesia: "✅ Sent" on a Walt Transfer payout card (admin chats only; idwp:<loan id>).
+         if (await handleWaltPayoutCallback(supabase, update.callback_query)) {
+            return jsonResponse({ message: 'Indonesia Walt payout handled' });
+         }
          // Indonesia payout wallet: unmatched-money card, refunds, /idsweep confirm (admin chats only).
          if (await handleWalletDepositCallback(supabase, update.callback_query)) {
             return jsonResponse({ message: 'Indonesia wallet callback handled' });
@@ -1386,6 +1392,19 @@ serve(async (req) => {
          // (and any other text) goes on to support as before.
          if (await handleIdMenuMessage(supabase, message)) {
             return jsonResponse({ message: 'Indonesia bot menu sent' });
+         }
+
+         // Indonesia track: a typed question with no human support chat open → the AI helper answers
+         // from the guides (_shared/idHelper.ts); when it can't, a support chat is opened for the team.
+         if (!(await getOpenSupportSession(supabase, getSenderChatId(message)))) {
+            const idUser = await findIdUserByTelegram(supabase, message.from?.id ?? message.chat.id);
+            const outcome = idUser ? await handleIdFreeText(supabase, message, idUser) : false;
+            if (outcome === 'answered') return jsonResponse({ message: 'Indonesia helper answered' });
+            if (outcome === 'handoff') {
+               await startSupportSession(supabase, message);
+               await forwardCustomerMessageToSupport(supabase, message);
+               return jsonResponse({ message: 'Indonesia helper handed off to support' });
+            }
          }
 
          await forwardCustomerMessageToSupport(supabase, message);

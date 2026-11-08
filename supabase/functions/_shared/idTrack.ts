@@ -452,8 +452,8 @@ export const buildIdMessage = (event: IdEvent, locale: IdLocale, data: IdEventDa
          return {
             text: say(
                locale,
-               `💸 Pinjaman ${amount} kamu sudah dikirim ke Walt kamu (USDC, BNB Chain).${due ? ` Jatuh tempo ${due}.` : ''} Jual ke Rupiah di Walt P2P.`,
-               `💸 Your ${amount} loan was sent to your Walt (USDC, BNB Chain).${due ? ` Due ${due}.` : ''} Sell it for Rupiah in Walt P2P.`
+               `💸 Pinjaman ${amount} kamu sudah dikirim ke Walt kamu.${due ? `\nJatuh tempo: ${due}.` : ''}\n\nCara jadikan rupiah ada di pesan berikutnya, langkah demi langkah.`,
+               `💸 Your ${amount} loan was sent to your Walt.${due ? `\nDue: ${due}.` : ''}\n\nHow to turn it into rupiah is in the next message, step by step.`
             ),
             button: { text: say(locale, 'Buka Walt', 'Open Walt'), url: 'https://t.me/wallet' },
             actions: [{ text: say(locale, '📋 Pinjamanku', '📋 My loan'), callback_data: 'idm:status' }, menu]
