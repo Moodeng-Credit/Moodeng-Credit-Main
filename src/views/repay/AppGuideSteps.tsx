@@ -89,11 +89,15 @@ const buildCards = ({
             danger: 'Says “Insufficient PHP Balance”? Cash in more pesos first.'
          },
          copy,
+         // Sending it out of PDAX, one tap per card.
+         { key: 'send', title: 'Portfolio → Send', text: 'Bottom right, then Send.', img: `${PDAX_IMG}/step7-send.webp`, open: true },
+         { key: 'send-coin', title: 'Pick USDCBASE', text: 'The one that says Base.' },
+         { key: 'send-paste', title: 'Paste your address', text: 'Network must say Base.', danger: 'Base network only' },
          {
-            key: 'send',
-            title: 'Send it to your address',
-            text: 'Pick Base. Paste your address.',
-            path: 'Portfolio → Send → USDC → Base → paste',
+            key: 'send-max',
+            title: 'Tap Max, then Send',
+            text: 'PDAX may send a code to your email.',
+            tip: 'You’ll see “Your USDCBASE is on its way!”',
             doneLabel: 'I sent it'
          }
       ];

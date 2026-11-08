@@ -53,6 +53,8 @@ export default function GuideCards({ appName, appLogo, cards, onOpenApp, finalSt
       return typeof saved === 'number' && saved >= 0 && saved <= cards.length ? saved : 0;
    });
    const [confirmed, setConfirmed] = useState(false);
+   // More than 2 steps done: fold them into one "✓ N steps done" line (tap to see them).
+   const [showDone, setShowDone] = useState(false);
    const topRef = useRef<HTMLDivElement>(null);
    const allDone = index >= cards.length;
    const card = cards[Math.min(index, cards.length - 1)];
@@ -67,6 +69,7 @@ export default function GuideCards({ appName, appLogo, cards, onOpenApp, finalSt
 
    const done = () => {
       setConfirmed(false);
+      setShowDone(false);
       if (index + 1 >= cards.length) onFinish?.();
       setIndex((i) => i + 1);
       topRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
@@ -74,13 +77,28 @@ export default function GuideCards({ appName, appLogo, cards, onOpenApp, finalSt
 
    return (
       <div ref={topRef} className="flex scroll-mt-24 flex-col gap-3">
-         {index > 0 ? (
+         {index > 2 && !showDone ? (
+            <button
+               type="button"
+               onClick={() => setShowDone(true)}
+               className="flex w-full items-center gap-3 rounded-[14px] bg-[#eafbef] px-3 py-2.5 text-left text-[15px] font-bold text-[#1f7a3d] dark:bg-[#12301e] dark:text-[#8fe3a8]"
+            >
+               <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[#2f9e44] text-white">
+                  <Check aria-hidden="true" className="size-3.5" strokeWidth={3} />
+               </span>
+               <span className="min-w-0 flex-1">{index} steps done</span>
+               <span className="text-[13px] font-semibold opacity-75">Show</span>
+            </button>
+         ) : index > 0 ? (
             <ol className="flex flex-col gap-1.5">
                {cards.slice(0, index).map((c, i) => (
                   <li key={c.key}>
                      <button
                         type="button"
-                        onClick={() => setIndex(i)}
+                        onClick={() => {
+                           setShowDone(false);
+                           setIndex(i);
+                        }}
                         className="flex w-full items-center gap-3 rounded-[14px] bg-[#eafbef] px-3 py-2.5 text-left text-[15px] font-bold text-[#1f7a3d] dark:bg-[#12301e] dark:text-[#8fe3a8]"
                      >
                         <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[#2f9e44] text-white">
@@ -98,18 +116,15 @@ export default function GuideCards({ appName, appLogo, cards, onOpenApp, finalSt
          ) : (
             <Card>
                <div className="flex items-center justify-between gap-2">
-                  <span className="inline-flex items-center gap-2 text-[14px] font-bold text-[#7a6a4f] dark:text-[#bfb29a]">
+                  <span className="inline-flex min-w-0 items-center gap-2 text-[14px] font-bold text-[#7a6a4f] dark:text-[#bfb29a]">
                      {appLogo}
                      {appName} · step {index + 1} of {total}
                   </span>
-                  <span className="flex gap-1" aria-hidden="true">
-                     {cards.map((c, i) => (
-                        <span
-                           key={c.key}
-                           className={`h-1.5 w-4 rounded-full ${i < index ? 'bg-[#2f9e44]' : i === index ? 'bg-[#ffbe1a]' : 'bg-[#efe6cc] dark:bg-[#2a2335]'}`}
-                        />
-                     ))}
-                     {finalStep ? <span className="h-1.5 w-4 rounded-full bg-[#efe6cc] dark:bg-[#2a2335]" /> : null}
+                  <span className="h-1.5 w-20 shrink-0 overflow-hidden rounded-full bg-[#efe6cc] dark:bg-[#2a2335]" aria-hidden="true">
+                     <span
+                        className="block h-full rounded-full bg-[#2f9e44] transition-[width] duration-300"
+                        style={{ width: `${Math.round(((index + 1) / total) * 100)}%` }}
+                     />
                   </span>
                </div>
 
