@@ -1,6 +1,7 @@
 import type { CalAvailability, CalOverride, CalSchedule } from '@/app/admin/calendarModel';
 import type { FormCheck } from '@/app/admin/callFormCheck';
 import { DEFAULT_LOAN_TIMEZONE, getDaysUntilDueDay, getLoanTimezone, isPastDueDay } from '@/lib/loanDeadline';
+import type { ProofAnswers, ProofItem } from '@/lib/proofRequests';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 
 export type AdminRole = 'owner' | 'admin' | 'support';
@@ -2265,10 +2266,18 @@ export interface VoucherCodeStock {
 
 export async function getVoucherCodeStock(): Promise<VoucherCodeStock[]> {
    const data = (await requireOk(getSupabaseBrowserClient().rpc('admin_voucher_code_stock'))) as AnyRow[] | null;
-   return (data ?? []).map((row) => ({ amount_php: toNumber(row.amount_php), available: toNumber(row.available), used: toNumber(row.used) }));
+   return (data ?? []).map((row) => ({
+      amount_php: toNumber(row.amount_php),
+      available: toNumber(row.available),
+      used: toNumber(row.used)
+   }));
 }
 
-export async function addVoucherCodes(amountPhp: number, codes: string[], source?: string | null): Promise<{ added: number; skipped: number }> {
+export async function addVoucherCodes(
+   amountPhp: number,
+   codes: string[],
+   source?: string | null
+): Promise<{ added: number; skipped: number }> {
    const result = (await requireOk(
       getSupabaseBrowserClient().rpc('admin_add_voucher_codes', { p_amount_php: amountPhp, p_codes: codes, p_source: source ?? null })
    )) as AnyRow | null;
@@ -3212,6 +3221,77 @@ export async function decideIncomeDocument(id: string, decision: 'approved' | 'd
 /** A 10-minute link to one uploaded file (private bucket; admins can read it). */
 export async function incomeDocumentUrl(storagePath: string): Promise<string> {
    const { data, error } = await getSupabaseBrowserClient().storage.from('income-docs').createSignedUrl(storagePath, 600);
+   if (error || !data?.signedUrl) throw error ?? new Error('No link');
+   return data.signedUrl;
+}
+
+// Proof requests: after a call, ask a new applicant to back up what they said with one link
+// (moodeng.app/proof/<token>). No automatic checks — the team reads the answers and files here.
+export interface AdminProofRequest {
+   id: string;
+   token: string;
+   items: ProofItem[];
+   message: string | null;
+   status: 'open' | 'submitted' | 'reviewed';
+   answers: ProofAnswers;
+   files: Array<{ item: string; path: string; name?: string; mime?: string; size?: number }>;
+   created_by: string | null;
+   created_at: string;
+   expires_at: string;
+   sent_at: string | null;
+   sent_via: string[] | null;
+   opened_at: string | null;
+   submitted_at: string | null;
+   submit_count: number;
+   review: 'ok' | 'ask_again' | null;
+   review_note: string | null;
+   reviewed_at: string | null;
+   reviewed_by: string | null;
+   user: { id: string; username: string | null; display_name: string | null } | null;
+}
+
+const PROOF_REQUEST_SELECT =
+   'id, token, items, message, status, answers, files, created_by, created_at, expires_at, sent_at, sent_via, opened_at, submitted_at, submit_count, review, review_note, reviewed_at, reviewed_by, user:users!proof_requests_user_id_fkey(id, username, display_name)';
+
+export async function listProofRequests(userId?: string): Promise<AdminProofRequest[]> {
+   let query = getSupabaseBrowserClient()
+      .from('proof_requests')
+      .select(PROOF_REQUEST_SELECT)
+      .order('created_at', { ascending: false })
+      .limit(150);
+   if (userId) query = query.eq('user_id', userId);
+   return ((await requireOk(query)) ?? []) as unknown as AdminProofRequest[];
+}
+
+/** Make the link; with send = true it also goes to them on push / Messenger / Telegram right away. */
+export async function createProofRequest(input: {
+   userId: string;
+   items: ProofItem[];
+   message: string | null;
+   send: boolean;
+}): Promise<{ id: string; token: string }> {
+   const data = await requireOk(
+      getSupabaseBrowserClient().rpc('create_proof_request', {
+         p_user_id: input.userId,
+         p_items: input.items,
+         p_message: input.message,
+         p_send: input.send
+      })
+   );
+   return data as { id: string; token: string };
+}
+
+export async function resendProofRequest(id: string): Promise<void> {
+   await requireOk(getSupabaseBrowserClient().rpc('send_proof_request', { p_id: id }));
+}
+
+/** "Looks good" closes it; "Ask again" opens the link again with what's missing and tells them. */
+export async function reviewProofRequest(id: string, review: 'ok' | 'ask_again', note: string | null): Promise<void> {
+   await requireOk(getSupabaseBrowserClient().rpc('review_proof_request', { p_id: id, p_review: review, p_note: note }));
+}
+
+export async function proofFileUrl(storagePath: string): Promise<string> {
+   const { data, error } = await getSupabaseBrowserClient().storage.from('proof-requests').createSignedUrl(storagePath, 600);
    if (error || !data?.signedUrl) throw error ?? new Error('No link');
    return data.signedUrl;
 }

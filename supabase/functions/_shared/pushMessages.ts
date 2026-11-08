@@ -28,6 +28,8 @@ export type PushNotificationType =
    | 'verification_decision'
    // Proof of income approved / declined (incomeDocs.ts).
    | 'income_doc_decision'
+   // Admin asked a new applicant for proof after their call (proofRequests.ts).
+   | 'proof_request'
    // Admin → Campaigns re-engagement message.
    | 'campaign';
 
