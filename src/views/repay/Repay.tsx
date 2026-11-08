@@ -27,6 +27,7 @@ import RepayInAppBrowserGate from '@/components/RepayInAppBrowserGate';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
 import UserAvatar from '@/components/UserAvatar';
+import GcryptoPictureSteps from '@/views/repay/GcryptoPictureSteps';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
@@ -205,7 +206,7 @@ const SOURCE_SUBTITLE: Partial<Record<FundSourceId, string>> = {
 const FUND_SOURCE_PATHS: Record<FundSourceId, string> = {
    moneybees: 'Visit moneybees.ph → follow their own process → share your wallet address → pay only after they confirm',
    coinsph: 'Transfer → Send Crypto → USDC → External Wallet → paste address → Base network → confirm',
-   gcrypto: 'GCash app → GCrypto → USDCBASE → Withdraw',
+   gcrypto: 'GCash → GCrypto → Top Up pesos → Trade → Buy USDC (Base) → Send → paste address → MAX',
    pdax: 'Wallet → USDCBASE → Withdraw → Paste wallet address',
    binance: 'Wallet → Withdraw → USDC → Network: Base → Paste wallet address',
    reku: 'Wallet → USDC → Send → External wallet → Network: Base → paste address → confirm',
@@ -537,6 +538,7 @@ export default function Repay() {
    // In preview mode, ?funded=1 mocks a fully-funded wallet so the repay-ready state is visible.
    const previewFunded = usePreviewLoans && new URLSearchParams(location.search).get('funded') === '1';
    const previewArriving = usePreviewLoans && new URLSearchParams(location.search).get('arriving') === '1';
+   const previewEmpty = usePreviewLoans && new URLSearchParams(location.search).get('empty') === '1';
    // Tracks when the borrower was previously short so we can detect the short→funded transition
    // and show a brief "funds received" celebration before revealing the repay section.
    // shortLoanIdRef pins the detection to a specific loan so switching to a different loan
@@ -814,11 +816,13 @@ export default function Repay() {
    });
    // USDC has 6 decimals. In the preview host, mock the balance: ?funded=1 gives enough to
    // cover the loan (triggers the green handoff card); default shows a partial balance so the
-   // add-funds steps and progress bar are visible without a real wallet.
+   // add-funds steps and progress bar are visible without a real wallet. ?empty=1 mocks a $0 wallet.
    const usdcBalance = usePreviewLoans
       ? previewFunded
          ? 130
-         : 18.4
+         : previewEmpty
+           ? 0
+           : 18.4
       : typeof usdcBalanceRaw === 'bigint'
         ? Number(usdcBalanceRaw) / 1e6
         : null;
@@ -826,6 +830,8 @@ export default function Repay() {
    const hasEnoughToRepay = usdcBalance !== null && usdcBalance >= selectedRemaining - 0.005;
    const isShortOnFunds = fundingShortfall !== null && fundingShortfall > 0;
    const hasPartialFunds = usdcBalance !== null && usdcBalance > 0 && isShortOnFunds;
+   // Under a cent counts as empty: exchanges leave dust like 0.0047 behind after a send.
+   const isWalletEmpty = usdcBalance !== null && usdcBalance < 0.01 && isShortOnFunds;
    // True only for the loan that just crossed short→funded — drives the success handoff.
    // Subscribe to incoming USDC Transfer events on Base so the UI updates within ~1-2s
    // of the deposit landing — no polling delay. Only active while short on funds.
@@ -932,6 +938,22 @@ export default function Repay() {
       // popup that fuses Base Account sign-in and the USDC send, so repayment is one tap even
       // from a cold start. An Openfort-locked borrower sends gaslessly from their embedded wallet.
       const method: PaymentMethod = activePaymentMethod;
+
+      // Not enough USDC in the Moodeng wallet: say so plainly and open the add-funds steps,
+      // instead of letting the wallet popup fail with a vague "insufficient funds". Skipped when
+      // a different wagmi wallet is connected (its balance isn't the one we read) and while the
+      // balance is still loading (null).
+      const payerIsMoodengWallet = method !== 'wallet' || areWalletAddressesEqual(account.address, repayWalletAddress);
+      if (payerIsMoodengWallet && usdcBalance !== null && usdcBalance + 0.005 < parsedRepaymentAmount) {
+         const have = usdcBalance < 0.01 ? 0 : usdcBalance;
+         showToast(
+            TOAST_TYPES.WARNING,
+            have === 0 ? 'Your wallet is empty' : 'Not enough in your wallet',
+            `Your Moodeng wallet has $${formatCurrency(have)} USDC. Add $${formatCurrency(parsedRepaymentAmount - have)} more first. The steps are on this page.`
+         );
+         setShowAddFunds(true);
+         return;
+      }
 
       // Claimed before the first await, so a quick double-tap can't start a second payment.
       repayInFlightRef.current = true;
@@ -1167,7 +1189,9 @@ export default function Repay() {
       dispatch,
       user.id,
       usePreviewLoans,
-      blockForInAppBase
+      blockForInAppBase,
+      usdcBalance,
+      repayWalletAddress
    ]);
 
    const handleRepayRef = useRef(handleRepay);
@@ -1503,9 +1527,19 @@ export default function Repay() {
                               <Wallet className="h-5 w-5" aria-hidden="true" />
                            </span>
                            <span className="min-w-0 flex-1">
-                              <span className="block text-md-b1 font-semibold text-md-heading">Add funds to repay</span>
+                              <span className="block text-md-b1 font-semibold text-md-heading">
+                                 {isWalletEmpty ? 'Your wallet is empty' : 'Add funds to repay'}
+                              </span>
                               <span className="mt-0.5 block text-md-b3 text-md-neutral-1200">
-                                 {hasPartialFunds ? (
+                                 {isWalletEmpty ? (
+                                    <>
+                                       Your Moodeng wallet has <span className="font-semibold text-[#d97706]">$0 USDC</span>. Add{' '}
+                                       <span className="font-semibold text-md-primary-1200">
+                                          ${formatCurrency(fundingShortfall ?? 0)} USDC
+                                       </span>{' '}
+                                       to repay.
+                                    </>
+                                 ) : hasPartialFunds ? (
                                     <>
                                        You have <span className="font-semibold text-[#d97706]">${formatCurrency(usdcBalance!)} USDC</span> —
                                        still need{' '}
@@ -1635,6 +1669,19 @@ export default function Repay() {
                                              </>
                                           );
                                        })()}
+                                       {inPhilippines && fundSource !== 'gcrypto' ? (
+                                          <button
+                                             type="button"
+                                             onClick={() => {
+                                                setFundSource('gcrypto');
+                                                setShowMoreSources(true);
+                                             }}
+                                             className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#ffbe1a] bg-[#fff6d6] px-3 py-2.5 text-xs font-semibold text-[#4a2a00] dark:bg-[#3a2e10] dark:text-[#ffe27a]"
+                                             style={{ touchAction: 'manipulation' }}
+                                          >
+                                             Using GCash? See GCrypto steps with pictures
+                                          </button>
+                                       ) : null}
                                        <p className="mt-2 text-xs text-[#6b6090] dark:text-[#a095c8]">
                                           You can repay from a wallet, an exchange, a P2P platform, or a local crypto service — whatever is
                                           available in your country.{' '}
@@ -1822,6 +1869,7 @@ export default function Repay() {
                                                 />
                                              </div>
                                           ) : null}
+                                          {activeSource.id === 'gcrypto' ? <GcryptoPictureSteps shortfall={fundingShortfall} /> : null}
                                        </div>
                                     )}
 
