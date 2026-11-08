@@ -129,6 +129,13 @@ export const idRepay = {
    }
 };
 
+/** Onboarding Walt step: the server reads their Telegram @username and marks Walt ready. */
+export const markIdWaltReady = async (): Promise<{ telegramUsername: string }> => {
+   const res = (await call({ relay: 'id_walt_ready' })) as unknown as { telegramUsername?: string };
+   if (!res.telegramUsername) throw new RelayWaltError('Bad answer from the server', 'bad_response');
+   return { telegramUsername: res.telegramUsername };
+};
+
 export const isFinalRelayStatus = (s: string) => s === 'success' || s === 'failure' || s === 'refund' || s === 'expired';
 
 /**

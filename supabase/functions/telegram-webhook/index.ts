@@ -36,6 +36,7 @@ import { markMessengerVerified, messengerVerifiedStamp, parseMessengerVerifyCall
 import { payoutWalletStatus } from '../_shared/idPayoutWallet.ts';
 import { findIdUserByTelegram, handleIdBotCallback, handleIdMenuMessage } from '../_shared/idBot.ts';
 import { handleIdFreeText } from '../_shared/idHelper.ts';
+import { handleGuidePhotoCommand, isGuidePhotoCommand } from '../_shared/idGuides.ts';
 import { handleWaltPayoutCallback } from '../_shared/idWaltPayouts.ts';
 import { handleSweepCommand, handleWalletDepositCallback } from '../_shared/idRepayments.ts';
 import { formatCallTime } from '../_shared/videoCall.ts';
@@ -1143,17 +1144,39 @@ const getOpenSupportSession = async (supabase: SupabaseClient, customerChatId: n
    return data as { id: string; thread_id: number; status: string } | null;
 };
 
+// Indonesia-track borrowers get the support lines in Bahasa (unless they chose English).
+const SUPPORT_TEXT = {
+   en: {
+      notReady: 'Moodeng support is not fully connected yet. Please use the support link in the app.',
+      already: 'You are already connected to Moodeng support. Send your message here.',
+      connected: 'You are connected to Moodeng support. Send your question here and the team will reply.',
+      howToStart: 'To start a private Moodeng support chat, send /start support.'
+   },
+   id: {
+      notReady: 'Chat tim Moodeng belum tersedia. Hubungi kami lewat WhatsApp.',
+      already: 'Kamu sudah terhubung dengan tim Moodeng. Tulis pesanmu di sini.',
+      connected: '💬 Kamu terhubung dengan tim Moodeng. Tulis pertanyaanmu di sini — tim akan membalas di chat ini (08–22 WIB).',
+      howToStart: 'Untuk chat dengan tim Moodeng, kirim /start support.'
+   }
+};
+
+const supportLang = async (supabase: SupabaseClient, message: TelegramMessage): Promise<'en' | 'id'> => {
+   const idUser = await findIdUserByTelegram(supabase, getSenderChatId(message)).catch(() => null);
+   return idUser && idUser.preferred_locale !== 'en' ? 'id' : 'en';
+};
+
 const startSupportSession = async (supabase: SupabaseClient, message: TelegramMessage) => {
    const customerChatId = getSenderChatId(message);
+   const st = SUPPORT_TEXT[await supportLang(supabase, message)];
    const supportGroupChatId = await getSupportGroupChatId(supabase);
    if (!supportGroupChatId) {
-      await sendTelegramMessage(customerChatId, 'Moodeng support is not fully connected yet. Please use the support link in the app.');
+      await sendTelegramMessage(customerChatId, st.notReady);
       return;
    }
 
    const existingSession = await getOpenSupportSession(supabase, customerChatId);
    if (existingSession) {
-      await sendTelegramMessage(customerChatId, 'You are already connected to Moodeng support. Send your message here.');
+      await sendTelegramMessage(customerChatId, st.already);
       return;
    }
 
@@ -1176,7 +1199,7 @@ const startSupportSession = async (supabase: SupabaseClient, message: TelegramMe
 
    if (error) throw new Error(error.message);
 
-   await sendTelegramMessage(customerChatId, 'You are connected to Moodeng support. Send your question here and the team will reply.');
+   await sendTelegramMessage(customerChatId, st.connected);
    await sendTelegramMessage(
       supportGroupChatId,
       `New Moodeng support chat from ${getDisplayName(message)}.\nReply in this topic to DM the customer.\nUse /resolve when finished.`,
@@ -1190,7 +1213,7 @@ const forwardCustomerMessageToSupport = async (supabase: SupabaseClient, message
    const session = await getOpenSupportSession(supabase, customerChatId);
 
    if (!supportGroupChatId || !session) {
-      await sendTelegramMessage(customerChatId, 'To start a private Moodeng support chat, send /start support.');
+      await sendTelegramMessage(customerChatId, SUPPORT_TEXT[await supportLang(supabase, message)].howToStart);
       return;
    }
 
@@ -1220,7 +1243,13 @@ const handleSupportAgentMessage = async (supabase: SupabaseClient, message: Tele
    if (/^\/resolve(?:@\w+)?/i.test(message.text ?? '')) {
       const now = new Date().toISOString();
       await supabase.from('support_sessions').update({ status: 'resolved', resolved_at: now, updated_at: now }).eq('id', session.id);
-      await sendTelegramMessage(session.customer_chat_id, 'Your Moodeng support conversation has been closed. Start a new chat from the app if you need more help.');
+      const idCustomer = await findIdUserByTelegram(supabase, Number(session.customer_chat_id)).catch(() => null);
+      await sendTelegramMessage(
+         session.customer_chat_id,
+         idCustomer && idCustomer.preferred_locale !== 'en'
+            ? '✅ Chat dengan tim sudah selesai. Butuh bantuan lagi? Tulis saja di sini atau tekan ☰ Menu.'
+            : 'Your Moodeng support conversation has been closed. Start a new chat from the app if you need more help.'
+      );
       await closeTelegramForumTopic(supportGroupChatId, message.message_thread_id);
       return;
    }
@@ -1494,6 +1523,12 @@ serve(async (req) => {
       if (isAdminChannel && /^\/(idtrack|idloans|idterm)\b/i.test(message.text ?? '')) {
          await handleIdTrackCommand(supabase, message);
          return jsonResponse({ message: 'Indonesia track command handled' });
+      }
+
+      // Indonesia guides: attach a screenshot to a step (photo + caption "/idguidephoto cash 2").
+      if (isAdminChannel && isGuidePhotoCommand(message as never)) {
+         await handleGuidePhotoCommand(supabase, message as never);
+         return jsonResponse({ message: 'Indonesia guide photo handled' });
       }
 
       // Indonesia payout wallet switch — either admin channel.

@@ -57,7 +57,8 @@ export type PayoutRow = {
    id: string;
    loan_id: string;
    borrower_user_id: string;
-   walt_address: string;
+   /** Null for a Walt Transfer loan (sent to their Telegram @username, no address needed). */
+   walt_address: string | null;
    amount: number | string;
    lender_user_id: string | null;
    marked_sent_at: string | null;
@@ -185,7 +186,7 @@ export const payoutModeOf = async (svc: Svc): Promise<'walt_transfer' | 'chain'>
 const adminChatId = async (svc: Svc): Promise<string | null> =>
    (await getSetting(svc, 'kyc_alert_chat_id')) || Deno.env.get('TEAM_TELEGRAM_CHAT_ID') || (await getSetting(svc, 'team_group_chat_id'));
 
-const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
+const short = (a: string | null | undefined) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : 'their Walt');
 
 // ── the payout row ───────────────────────────────────────────────────────────────────────────────
 type LoanForPayout = {
@@ -220,11 +221,12 @@ export const ensurePayout = async (svc: Svc, loanId: string): Promise<{ payout?:
    if (!isOpen(loan)) return { error: 'loan_not_open', loan };
    const { data: borrower } = await svc.from('users').select('walt_address').eq('id', loan.borrower_user_id).maybeSingle();
    const walt = borrower?.walt_address as string | null | undefined;
-   if (!isAddress(walt)) return { error: 'no_walt_address', loan };
+   // Walt Transfer mode pays their Telegram @username: no address needed (the chain ways still refuse).
+   if (!isAddress(walt) && (await payoutModeOf(svc)) !== 'walt_transfer') return { error: 'no_walt_address', loan };
    const { data: created, error } = await svc
       .from('id_manual_payouts')
       .upsert(
-         { loan_id: loan.id, borrower_user_id: loan.borrower_user_id, walt_address: walt.toLowerCase(), amount: loan.loan_amount },
+         { loan_id: loan.id, borrower_user_id: loan.borrower_user_id, walt_address: isAddress(walt) ? walt.toLowerCase() : null, amount: loan.loan_amount },
          { onConflict: 'loan_id', ignoreDuplicates: false }
       )
       .select('*')
@@ -356,6 +358,8 @@ export const checkPayout = async (
    if (!isOpen(loan)) return { ok: false, error: 'loan_not_open', payout };
    // Nothing is accepted until an admin says they sent it.
    if (!payout.marked_sent_at) return { ok: true, state: 'waiting', payout };
+   if (!payout.walt_address) return { ok: false, error: 'no_walt_address', payout };
+   const waltAddress = payout.walt_address;
 
    let want: bigint;
    try {
@@ -371,7 +375,7 @@ export const checkPayout = async (
    let spans = 0;
    while (from <= safeHead && spans < MAX_SPANS_PER_CHECK && Date.now() < deadline) {
       const to = from + BigInt(MAX_LOG_SPAN) > safeHead ? safeHead : from + BigInt(MAX_LOG_SPAN);
-      const transfers = await transfersTo(payout.walt_address, from, to);
+      const transfers = await transfersTo(waltAddress, from, to);
       const match = pickMatch(transfers, want, used);
       if (match) return await recordFunding(svc, payout, loan, match, 'scan');
       await svc.from('id_manual_payouts').update({ scanned_to_block: Number(to), updated_at: new Date().toISOString() }).eq('id', payout.id);
@@ -477,6 +481,7 @@ export const recordByTxid = async (svc: Svc, loanId: string, txHash: string, adm
    const gate = await chainGateForManual(svc, payout);
    if (gate) return gate;
    if (!isOpen(loan)) return { ok: false, error: 'loan_not_open', payout };
+   if (!payout.walt_address) return { ok: false, error: 'no_walt_address', payout };
    const verified = await verifyTransferTx(txHash, payout.walt_address, usdcUnits(payout.amount), { shortfall: SHORTFALL_ALLOWED });
    if (!verified.ok) return { ok: false, error: verified.error, payout };
    const { data: dup } = await svc
@@ -509,7 +514,7 @@ export const recordWaltTransferPayout = async (svc: Svc, loanId: string): Promis
    const t: Transfer = {
       txHash: `walt-transfer-out:${loan.id}`,
       from: 'walt',
-      to: payout.walt_address,
+      to: payout.walt_address ?? 'walt',
       value: usdcUnits(payout.amount),
       blockNumber: 0n,
       logIndex: 0
@@ -711,7 +716,7 @@ export const findAutoPayoutOnChain = async (svc: Svc, payout: PayoutRow, now: nu
    while (from <= head) {
       if (Date.now() > deadline) return { state: 'incomplete' };
       const to = from + BigInt(MAX_LOG_SPAN) > head ? head : from + BigInt(MAX_LOG_SPAN);
-      const transfers = await transfersTo(payout.walt_address, from, to, wallet.address);
+      const transfers = await transfersTo(payout.walt_address ?? '', from, to, wallet.address);
       const match = transfers.find((t) => t.value === want && !used.has(transferKey(t.txHash, t.logIndex)) && !refundHashes.has(t.txHash.toLowerCase()));
       if (match) return match.blockNumber <= safeHead ? { state: 'found', transfer: match } : { state: 'landing' };
       const saved = to <= safeHead ? to : safeHead;
@@ -889,7 +894,7 @@ export const settleAutoPayout = async (
    }
    let verified: Awaited<ReturnType<typeof verifyTransferTx>>;
    try {
-      verified = await verifyTransferTx(st.txHash, payout.walt_address, want, { from: wallet?.address });
+      verified = await verifyTransferTx(st.txHash, payout.walt_address ?? '', want, { from: wallet?.address });
    } catch (err) {
       console.error(`idManualFunding: receipt check failed for ${payout.loan_id}`, err);
       return { ok: true, state: 'paying', payout };
@@ -1013,6 +1018,11 @@ const attemptAutoPay = async (
       return { ok: false, error: 'loan_not_open' };
    }
 
+   // claim_id_auto_payout copies their address in; never send without one.
+   if (!isAddress(payout.walt_address)) {
+      await releaseClaim();
+      return { ok: false, error: 'no_walt_address' };
+   }
    let txId: string;
    try {
       txId = await sendUsdcBsc(svc, payout.walt_address, payout.amount, deadline);

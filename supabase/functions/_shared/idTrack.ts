@@ -86,7 +86,7 @@ const STEP_LABEL: Record<IdLocale, Record<IdStep, string>> = {
       about: 'Tentang kamu',
       income: 'Bukti penghasilan',
       kyc: 'Verifikasi KTP & wajah',
-      walt: 'Alamat Walt',
+      walt: 'Dompet Walt',
       call: 'Jadwal video call'
    },
    en: {
@@ -96,7 +96,7 @@ const STEP_LABEL: Record<IdLocale, Record<IdStep, string>> = {
       about: 'About you',
       income: 'Proof of income',
       kyc: 'ID + face check',
-      walt: 'Walt address',
+      walt: 'Walt wallet',
       call: 'Book the video call'
    }
 };
@@ -110,7 +110,7 @@ const NEXT_LINE: Record<IdLocale, Record<IdNext, string>> = {
       about: 'Ceritakan sedikit tentang dirimu (2 menit).',
       income: 'Kirim bukti penghasilan (mutasi rekening, e-wallet, atau slip gaji).',
       kyc: 'Verifikasi KTP dan wajah (3 menit).',
-      walt: 'Tempel alamat Walt kamu (USDC, BNB Chain / BEP20).',
+      walt: 'Buka Walt (dompet di Telegram) sekali dan pastikan kamu punya username Telegram (1 menit).',
       call: 'Pilih waktu video call 15 menit dengan tim.',
       apply: 'Kamu sudah disetujui! Ajukan pinjaman pertamamu.',
       waiting: 'Tunggu kabar dari tim setelah video call.'
@@ -122,7 +122,7 @@ const NEXT_LINE: Record<IdLocale, Record<IdNext, string>> = {
       about: 'Tell us a little about yourself (2 minutes).',
       income: 'Send proof of income (bank or e-wallet history, or a payslip).',
       kyc: 'Verify your ID and face (3 minutes).',
-      walt: 'Paste your Walt address (USDC, BNB Chain / BEP20).',
+      walt: 'Open Walt (the wallet in Telegram) once and make sure you have a Telegram username (1 minute).',
       call: 'Pick a time for the 15-minute video call with the team.',
       apply: 'You’re approved! Request your first loan.',
       waiting: 'We’ll message you after the video call.'
@@ -137,7 +137,7 @@ const NEXT_BUTTON: Record<IdLocale, Record<IdNext, string>> = {
       about: 'Isi sekarang',
       income: 'Kirim dokumen',
       kyc: 'Verifikasi sekarang',
-      walt: 'Tempel alamat Walt',
+      walt: 'Siapkan Walt',
       call: 'Pilih waktu',
       apply: 'Ajukan pinjaman',
       waiting: 'Buka Moodeng'
@@ -149,7 +149,7 @@ const NEXT_BUTTON: Record<IdLocale, Record<IdNext, string>> = {
       about: 'Fill it in',
       income: 'Send document',
       kyc: 'Verify now',
-      walt: 'Paste Walt address',
+      walt: 'Set up Walt',
       call: 'Pick a time',
       apply: 'Request a loan',
       waiting: 'Open Moodeng'

@@ -373,7 +373,7 @@ export const confirmScreen = (l: IdLocale, amount: number, days: number, rp: num
 const REQUEST_ERRORS: Record<string, { id: string; en: string }> = {
    not_approved: { id: 'Kamu belum disetujui untuk meminjam.', en: 'You’re not approved to borrow yet.' },
    kyc: { id: 'Verifikasi KTP-mu belum disetujui.', en: 'Your ID check isn’t approved yet.' },
-   no_walt: { id: 'Simpan alamat Walt kamu dulu.', en: 'Save your Walt address first.' },
+   no_walt: { id: 'Siapkan Walt kamu dulu (langkah 7).', en: 'Set up your Walt first (step 7).' },
    not_verified: { id: 'Verifikasi KTP-mu belum disetujui.', en: 'Your ID check isn’t approved yet.' },
    has_open_loan: { id: 'Kamu masih punya pinjaman yang berjalan.', en: 'You still have a loan going.' },
    mal_reached: { id: 'Kamu sudah mencapai batas jumlah pinjaman aktif.', en: 'You’ve reached your active loan limit.' },

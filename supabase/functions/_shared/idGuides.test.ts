@@ -1,6 +1,6 @@
 import { assert, assertEquals, assertStringIncludes } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { GUIDES, guideListScreen, guideStepScreen } from './idGuides.ts';
+import { GUIDES, guideListScreen, guideStepScreen, parseGuidePhotoCommand } from './idGuides.ts';
 import { parseHelperReply } from './idHelper.ts';
 import { callbackFits, ID_GUIDE_KEYS, isIdQuestionText, parseIdBotCallback } from './idLoanMath.ts';
 import { cleanTelegramUsername, payoutCard } from './idWaltPayouts.ts';
@@ -93,7 +93,18 @@ Deno.test('payout card: amount + @username to copy, one ✅ Sent button that fit
    const copies = card.keyboard.flat().filter((b) => 'copy_text' in b) as Array<{ copy_text: { text: string } }>;
    assertEquals(copies.map((c) => c.copy_text.text), ['@budi_88', '5']);
    const data = callbacks(card.keyboard);
-   assertEquals(data, ['idwp:11111111-2222-3333-4444-555555555555']);
-   assert(callbackFits(data[0]));
-   assertEquals(parseIdBotCallback(data[0]), null, 'not a borrower button');
+   assertEquals(data, ['idwp:11111111-2222-3333-4444-555555555555', 'idwx:11111111-2222-3333-4444-555555555555']);
+   for (const d of data) {
+      assert(callbackFits(d));
+      assertEquals(parseIdBotCallback(d), null, 'not a borrower button');
+      assert(!d.startsWith('idw:'), 'not swallowed by the deposit-card handler');
+   }
+});
+
+Deno.test('/idguidephoto parsing', () => {
+   assertEquals(parseGuidePhotoCommand('/idguidephoto cash 2'), { key: 'cash', step: 2, clear: false });
+   assertEquals(parseGuidePhotoCommand('/idguidephoto@moodengbot send 5 clear'), { key: 'send', step: 5, clear: true });
+   assertEquals(parseGuidePhotoCommand('/idguidephoto'), 'list');
+   assertEquals(parseGuidePhotoCommand('/idguidephoto cash 99'), null);
+   assertEquals(parseGuidePhotoCommand('/idguidephoto nope 1'), null);
 });

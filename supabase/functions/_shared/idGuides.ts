@@ -315,3 +315,58 @@ export const sendRepayStuckOffer = async (chatId: number | string, l: IdLocale) 
          : '👋 Butuh bantuan bayar? Biasanya orang bingung di bagian beli USDT. Ini langkahnya, satu per satu — atau chat dengan kami.';
    await sendTelegramMessage(chatId, text, { inlineKeyboard: [[guideButton(l, 'buy')], [guideButton(l, 'send')], [helpButton(l)]] }).catch(() => undefined);
 };
+
+// ── /idguidephoto (admin chats): attach a screenshot to a guide step ─────────────────────────────
+// Send a photo with the caption "/idguidephoto cash 2" (or reply to a photo with that text): step 2 of
+// "cash" is then shown with that picture. "/idguidephoto cash 2 clear" removes it; "/idguidephoto" alone
+// lists which steps have pictures. Stored as Telegram file_ids in telegram_bot_settings.id_guide_media.
+type PhotoMessage = {
+   text?: string;
+   caption?: string;
+   chat: { id: number | string };
+   photo?: Array<{ file_id: string; width?: number }>;
+   reply_to_message?: PhotoMessage;
+};
+
+export const parseGuidePhotoCommand = (raw: string): { key: IdGuideKey; step: number; clear: boolean } | 'list' | null => {
+   const m = /^\/idguidephoto(?:@\w+)?(?:\s+([a-z]+)\s+(\d{1,2})(\s+clear)?)?\s*$/i.exec(raw.trim());
+   if (!m) return null;
+   if (!m[1]) return 'list';
+   const key = m[1].toLowerCase();
+   if (!(ID_GUIDE_KEYS as readonly string[]).includes(key)) return null;
+   const step = Number(m[2]);
+   if (step < 1 || step > GUIDES[key as IdGuideKey].steps.length) return null;
+   return { key: key as IdGuideKey, step, clear: Boolean(m[3]) };
+};
+
+export const isGuidePhotoCommand = (m: PhotoMessage) => /^\/idguidephoto\b/i.test(String(m.text ?? m.caption ?? '').trim());
+
+export const handleGuidePhotoCommand = async (svc: Svc, m: PhotoMessage) => {
+   const reply = (text: string) => sendTelegramMessage(m.chat.id, text).catch(() => undefined);
+   const cmd = parseGuidePhotoCommand(String(m.text ?? m.caption ?? ''));
+   const usage = `Usage: send a screenshot with the caption "/idguidephoto <guide> <step>" (guides: ${ID_GUIDE_KEYS.join(', ')}), or add "clear" to remove one.`;
+   if (!cmd) return void (await reply(`Couldn't read that. ${usage}`));
+   const media = await loadGuideMedia(svc);
+   if (cmd === 'list') {
+      const lines = ID_GUIDE_KEYS.map((k) => {
+         const n = GUIDES[k].steps.length;
+         const have = Array.from({ length: n }, (_, i) => (media[`${k}:${i + 1}`] ? `${i + 1}✅` : `${i + 1}·`)).join(' ');
+         return `${k} (${GUIDES[k].title.en}): ${have}`;
+      });
+      return void (await reply(`📖 Guide screenshots\n${lines.join('\n')}\n\n${usage}`));
+   }
+   const slot = `${cmd.key}:${cmd.step}`;
+   if (cmd.clear) {
+      delete media[slot];
+   } else {
+      const photos = m.photo ?? m.reply_to_message?.photo ?? [];
+      const best = [...photos].sort((a, b) => (b.width ?? 0) - (a.width ?? 0))[0];
+      if (!best?.file_id) return void (await reply(`No photo found. ${usage}`));
+      media[slot] = best.file_id;
+   }
+   const { error } = await svc
+      .from('telegram_bot_settings')
+      .upsert({ key: 'id_guide_media', value: JSON.stringify(media), description: 'Indonesia guides: screenshots per step (Telegram file_ids), set with /idguidephoto.' }, { onConflict: 'key' });
+   if (error) return void (await reply(`Couldn't save: ${error.message}`));
+   await reply(cmd.clear ? `🗑 Removed the picture from ${slot}.` : `✅ ${slot} ("${GUIDES[cmd.key].title.en}", step ${cmd.step}) now shows this picture.`);
+};

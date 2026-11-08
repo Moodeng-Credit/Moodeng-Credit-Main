@@ -12,6 +12,10 @@
 //      gets "money sent" + the step-by-step cash-out guide. Two taps can't fund twice.
 //   3. No Telegram @username → no card; the borrower is sent the "make a username" guide once. The card
 //      is posted on the next run after they have one (the bot refreshes it whenever they write).
+//   4. "⚠️ Not found in Walt" (idwx:<loan id>) → the borrower is asked to message Moodeng's account and
+//      open Walt; the card keeps its buttons. A card still unpaid after 2 h gets one "⏰ still unpaid" ping.
+//   5. The website's Walt step (stableyard-deposit-address action id_walt_ready → markWaltReady) reads
+//      their @username from Telegram itself (getChat) and marks Walt ready — no address to paste.
 //
 // Only when telegram_bot_settings.id_payout_mode is 'walt_transfer' (the default). 'chain' = the old way
 // (payout wallet / Binance TH, idManualFunding.ts). The payout wallet's autopay never sends in walt mode.
@@ -28,6 +32,8 @@ import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } fro
 type Svc = any;
 
 export const PAYOUT_CB = 'idwp:';
+export const NOT_FOUND_CB = 'idwx:';
+const REMIND_AFTER_MS = 2 * 3_600_000;
 const CARD_MIN_AGE_MS = 60_000; // the request's own triggers (team post, risk score, hold) run first
 const OPEN_FOR_MS = 7 * 86_400_000;
 
@@ -71,14 +77,17 @@ export const payoutCard = (loan: OpenLoan, borrower: Borrower, username: string)
             { text: `📋 ${amount}`, copy_text: { text: amount } }
          ],
          [{ text: '👛 Open Walt', url: WALT_URL }],
-         [{ text: `✅ Sent ${amount} USDT to ${who}`, callback_data: `${PAYOUT_CB}${loan.id}` }]
+         [{ text: `✅ Sent ${amount} USDT to ${who}`, callback_data: `${PAYOUT_CB}${loan.id}` }],
+         [{ text: '⚠️ Not found in Walt', callback_data: `${NOT_FOUND_CB}${loan.id}` }]
       ]
    };
 };
 
 /** The 5-minute job: one card per open Indonesian request (Walt Transfer mode only). */
-export const runWaltTransferPayoutCards = async (svc: Svc, now = Date.now(), deadline = Date.now() + 20_000): Promise<{ cards: number; askedUsername: number; skipped?: string }> => {
-   const tally = { cards: 0, askedUsername: 0 } as { cards: number; askedUsername: number; skipped?: string };
+type CardTally = { cards: number; askedUsername: number; reminded: number; skipped?: string };
+
+export const runWaltTransferPayoutCards = async (svc: Svc, now = Date.now(), deadline = Date.now() + 20_000): Promise<CardTally> => {
+   const tally: CardTally = { cards: 0, askedUsername: 0, reminded: 0 };
    try {
       if ((await payoutModeOf(svc)) !== 'walt_transfer') return { ...tally, skipped: 'chain_mode' };
       const [chat] = await adminChatIds(svc);
@@ -139,6 +148,29 @@ export const runWaltTransferPayoutCards = async (svc: Svc, now = Date.now(), dea
             await svc.from('id_manual_payouts').update({ walt_card_at: null }).eq('id', row.id);
          }
       }
+      // One "⏰ still unpaid" ping per card left untapped for 2 h (the borrower is waiting).
+      const { data: stale } = await svc
+         .from('id_manual_payouts')
+         .select('id, loan_id, amount, walt_username, walt_card_at')
+         .eq('status', 'waiting')
+         .is('marked_sent_at', null)
+         .is('walt_card_reminded_at', null)
+         .not('walt_card_at', 'is', null)
+         .lte('walt_card_at', new Date(now - REMIND_AFTER_MS).toISOString())
+         .limit(10);
+      for (const r of (stale ?? []) as Array<{ id: string; loan_id: string; amount: number | string; walt_username: string | null; walt_card_at: string }>) {
+         const stamp = new Date().toISOString();
+         const { data: claimed } = await svc.from('id_manual_payouts').update({ walt_card_reminded_at: stamp }).eq('id', r.id).is('walt_card_reminded_at', null).select('id');
+         if (!(claimed ?? []).length) continue;
+         const { data: loan } = await svc.from('loans').select('tracking_id, loan_status, lender_user_id').eq('id', r.loan_id).maybeSingle();
+         if (!loan || loan.loan_status !== 'Requested' || loan.lender_user_id) continue;
+         const hours = Math.round((now - new Date(r.walt_card_at).getTime()) / 3_600_000);
+         await sendTelegramMessage(
+            chat,
+            `⏰ 🇮🇩 ${loan.tracking_id ?? r.loan_id.slice(0, 8)} still unpaid after ${hours} h: send ${usdText(Number(r.amount))} USDT to @${r.walt_username ?? '?'} by Walt Transfer, then tap ✅ Sent on the card above.`
+         ).catch(() => undefined);
+         tally.reminded += 1;
+      }
    } catch (err) {
       console.error('[idWaltPayouts] run failed', err instanceof Error ? err.message : err);
    }
@@ -159,14 +191,15 @@ export const handleWaltPayoutCallback = async (
    query: { id: string; data?: string; from?: { username?: string; first_name?: string }; message?: { chat: { id: number | string }; message_id: number; text?: string } }
 ): Promise<boolean> => {
    const data = String(query.data ?? '');
-   if (!data.startsWith(PAYOUT_CB)) return false;
+   const notFound = data.startsWith(NOT_FOUND_CB);
+   if (!data.startsWith(PAYOUT_CB) && !notFound) return false;
    const answer = (text: string) => callTelegramApi('answerCallbackQuery', { callback_query_id: query.id, text: text.slice(0, 190) }).catch(() => undefined);
    const chatId = query.message?.chat.id;
    if (chatId == null || !(await adminChatIds(svc)).includes(String(chatId))) {
       await answer('Not allowed here.');
       return true;
    }
-   const loanId = data.slice(PAYOUT_CB.length);
+   const loanId = data.slice(PAYOUT_CB.length); // both prefixes are 5 characters
    if (!/^[0-9a-f-]{36}$/i.test(loanId)) {
       await answer('Bad button.');
       return true;
@@ -183,6 +216,10 @@ export const handleWaltPayoutCallback = async (
          }).catch(() => undefined);
       }
    };
+   if (notFound) {
+      await waltNotFoundTap(svc, loanId, query, by, answer);
+      return true;
+   }
    try {
       const r = await recordWaltTransferPayout(svc, loanId);
       if (r.ok && r.state === 'found') {
@@ -198,6 +235,70 @@ export const handleWaltPayoutCallback = async (
       await finish(`⚠️ Failed: ${err instanceof Error ? err.message : String(err)}`, true);
    }
    return true;
+};
+
+/** "⚠️ Not found in Walt": ask the borrower to message Moodeng's account + open Walt. Card keeps its buttons. */
+const waltNotFoundTap = async (
+   svc: Svc,
+   loanId: string,
+   query: { message?: { chat: { id: number | string }; message_id: number; text?: string } },
+   by: string,
+   answer: (text: string) => Promise<unknown>
+) => {
+   const { data: row } = await svc.from('id_manual_payouts').select('id, status, borrower_user_id, walt_not_found_at').eq('loan_id', loanId).maybeSingle();
+   if (!row) return void (await answer('No payout card for this loan.'));
+   if (row.status === 'found') return void (await answer('Already recorded as paid.'));
+   const recent = row.walt_not_found_at && Date.now() - new Date(row.walt_not_found_at).getTime() < 30 * 60_000;
+   if (recent) return void (await answer('They were asked less than 30 min ago.'));
+   await svc.from('id_manual_payouts').update({ walt_not_found_at: new Date().toISOString() }).eq('id', row.id);
+   const { data: u } = await svc.from('users').select('chat_id, preferred_locale').eq('id', row.borrower_user_id).maybeSingle();
+   const ours = String((await svc.from('telegram_bot_settings').select('value').eq('key', 'id_walt_username').maybeSingle())?.data?.value ?? 'jimmymoodengcredit').replace(/^@/, '');
+   if (u?.chat_id) {
+      const en = idLocaleOf(u.preferred_locale) === 'en';
+      await sendTelegramMessage(
+         u.chat_id,
+         en
+            ? `👋 We're sending your loan, but Walt can't find you yet. Two quick things:\n\n1. Tap "💬 Message @${ours}" and send "hi".\n2. Tap "👛 Open Walt" and make sure you tapped Start.\n\nThat's it — we'll try again right away.`
+            : `👋 Kami sedang mengirim pinjamanmu, tapi Walt belum bisa menemukanmu. Dua langkah cepat:\n\n1. Tekan "💬 Chat @${ours}" dan kirim "halo".\n2. Tekan "👛 Buka Walt" dan pastikan kamu sudah tekan Mulai.\n\nSelesai — kami langsung coba lagi.`,
+         {
+            inlineKeyboard: [
+               [{ text: en ? `💬 Message @${ours}` : `💬 Chat @${ours}`, url: `https://t.me/${ours}` }],
+               [{ text: en ? '👛 Open Walt' : '👛 Buka Walt', url: WALT_URL }]
+            ]
+         }
+      ).catch(() => undefined);
+   }
+   await answer(u?.chat_id ? 'Asked them to message you + open Walt.' : 'They have no Telegram chat saved — reach them on WhatsApp.');
+   if (query.message) {
+      await callTelegramApi('editMessageText', {
+         chat_id: query.message.chat.id,
+         message_id: query.message.message_id,
+         text: `${query.message.text ?? ''}\n\n⚠️ Not found in Walt — borrower asked to message @${ours} and open Walt (${by}). Try again in a few minutes.`.slice(0, 4000),
+         reply_markup: { inline_keyboard: (query.message as { reply_markup?: { inline_keyboard?: unknown } }).reply_markup?.inline_keyboard ?? [] }
+      }).catch(() => undefined);
+   }
+};
+
+export type WaltReadyResult = { ok: true; username: string } | { ok: false; error: 'not_id_track' | 'no_telegram' | 'no_username' | 'username_taken' | 'error' };
+
+/**
+ * The website's Walt step: they opened Walt; read their @username from Telegram (getChat on their
+ * private chat with the bot — never from the client) and mark Walt ready.
+ */
+export const markWaltReady = async (svc: Svc, userId: string): Promise<WaltReadyResult> => {
+   try {
+      const { data: u } = await svc.from('users').select('market, chat_id').eq('id', userId).maybeSingle();
+      if (!u || u.market !== 'ID') return { ok: false, error: 'not_id_track' };
+      if (!u.chat_id) return { ok: false, error: 'no_telegram' };
+      const chat = await callTelegramApi<{ username?: string }>('getChat', { chat_id: u.chat_id }).catch(() => null);
+      const username = cleanTelegramUsername(chat?.username);
+      if (!username) return { ok: false, error: 'no_username' };
+      const { error } = await svc.from('users').update({ telegram_username: username, walt_ready_at: new Date().toISOString() }).eq('id', userId);
+      if (error) return { ok: false, error: /duplicate|unique/i.test(error.message ?? '') ? 'username_taken' : 'error' };
+      return { ok: true, username };
+   } catch {
+      return { ok: false, error: 'error' };
+   }
 };
 
 /**

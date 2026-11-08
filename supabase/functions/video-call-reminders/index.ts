@@ -350,6 +350,7 @@ serve(async (req) => {
       const cards = await runWaltTransferPayoutCards(svc, now, Math.max(Date.now() + 10_000, idDeadline - 40_000));
       tally.walt_payout_cards = cards.cards;
       tally.walt_username_asked = cards.askedUsername;
+      tally.walt_payout_reminded = cards.reminded;
    } catch (err) {
       console.error('video-call-reminders: Walt payout cards failed', err);
    }

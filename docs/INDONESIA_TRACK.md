@@ -20,10 +20,12 @@ screen confuses them. Assume no prior knowledge, every time. In practice:
   - on 💰 Bayar: 📖 Beli USDT + 📖 Bayar pinjaman under the instructions
   - 6 h after opening 💰 Bayar with no "✅ Sudah kirim": one "butuh bantuan?" nudge (`runIdRepayNudges`)
   - no Telegram @username: 📖 Buat username, then "✅ Sudah, cek lagi"
-  Screenshots: `telegram_bot_settings.id_guide_media` = `{"cash:2": "<Telegram file_id or https URL>"}`.
+  Screenshots: in an admin chat, send a screenshot with the caption `/idguidephoto cash 2` (guide + step);
+  `/idguidephoto` lists which steps have one, `… clear` removes it (stored in `id_guide_media`).
   **Check the Walt button names in the guides against a real phone** (Walt renames things); fix the text in
   `idGuides.ts` and add screenshots — pictures beat words for this audience.
-- **"🙋 Masih bingung? Chat tim" on every guide screen.** A person is always one tap away.
+- **"🙋 Masih bingung? Chat tim" on every guide screen.** A person is always one tap away, and the support
+  chat itself talks Bahasa to Indonesia-track borrowers (connected / closed / how-to-start lines).
 - **Typed questions get an answer** (`_shared/idHelper.ts`): DeepSeek Flash replies in ≤ 5 short lines from
   the guides + their loan state, with the right 📖 button. Unsure, money missing, complaints, extensions,
   "I want a person" → it says the team will reply and opens a support chat (`handoff`). It only explains:
@@ -52,7 +54,9 @@ screen confuses them. Assume no prior knowledge, every time. In practice:
   4. About you (income type, payday, income and expenses)
   5. Proof of income (upload, not declined)
   6. ID + liveness (Didit), submitted. Approval is needed before the team can ✅ them.
-  7. Walt address (their Telegram wallet, USDC on BNB Smart Chain / BEP20)
+  7. Walt: open Walt once + have a Telegram @username ("Cek & lanjut" → the server reads the username from
+     Telegram with getChat and sets `users.walt_ready_at`; migration 20261108130000). No address to paste.
+     Old accounts with a saved BEP20 `walt_address` count as done too.
   8. Book the 15-minute call. The team approves after the call (`loan_access_status = 'approved'`).
 - **Small, short loans**: $5 or $10 (`id_loan_amounts`), due within 14 days (`id_max_term_days`).
   Repayment can be at most 1.5× the amount. Enforced in `app_private.enforce_new_loan_terms`.
@@ -97,6 +101,12 @@ rules. Change it with `/idtrack off|test|on` in the admin Telegram group.
 - Loans go to the borrower's **Telegram @username** (`users.telegram_username`, refreshed from every bot
   message/tap). No username → no card; the bot sends the "make a username" guide once, and 💸 Ajukan asks
   for one first. They must have opened Walt once (the onboarding Walt step does that).
+- **⚠️ Not found in Walt** on the card (`idwx:<loan id>`): the borrower is asked to message @jimmymoodengcredit
+  ("halo") and open Walt + tap Start, so Walt can find them; the card keeps its buttons (max once per 30 min).
+- A card still untapped after 2 h gets one "⏰ still unpaid" ping in the admin chat.
+- Payout rows for these loans have no address (`id_manual_payouts.walt_address` may be null; the chain ways
+  still refuse without one). A Walt Transfer repayment that can't be recorded / is overpaid is sent back by
+  Walt Transfer to their @username (the alert says so; no on-chain refund button).
 - The payout wallet's autopay never sends in this mode. `id_payout_mode = 'chain'` brings back the ways below.
 
 ## Paying loans out on chain (`id_payout_mode = 'chain'`; recorded the same: funding_method 'walt_manual', hash `bsc:0x…`)

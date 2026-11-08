@@ -14,6 +14,7 @@
 //      active loan (_shared/idRepayments.ts; same as the bot's 💰 Bayar). No Relay involved.
 // POST { relay: 'id_repay_status', requestId } → has that payment arrived / been recorded?
 // POST { relay: 'id_repay_sent', requestId } → "I've sent it" (Walt Transfer): asks the team to confirm.
+// POST { relay: 'id_walt_ready' } → onboarding Walt step: reads their @username from Telegram, marks Walt ready.
 //
 // Every address comes from the caller's own users row — never from the client: the cash-out
 // recipient is ALWAYS users.walt_address, the repay recipient ALWAYS users.wallet_address.
@@ -35,12 +36,13 @@ import {
 } from '../_shared/relay.ts';
 import { RPC_URL, rpcCall } from '../_shared/usdcTransfer.ts';
 import { claimSent, getOrCreateRepayRequest, repayRequestStatus } from '../_shared/idRepayments.ts';
+import { markWaltReady } from '../_shared/idWaltPayouts.ts';
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
 type Json = (body: Record<string, unknown>, status?: number) => Response;
 
-const ACTIONS = new Set(['cashout_quote', 'cashout_sent', 'repay_quote', 'status', 'latest', 'id_repay', 'id_repay_status', 'id_repay_sent']);
+const ACTIONS = new Set(['cashout_quote', 'cashout_sent', 'repay_quote', 'status', 'latest', 'id_repay', 'id_repay_status', 'id_repay_sent', 'id_walt_ready']);
 export const isRelayAction = (value: unknown) => typeof value === 'string' && ACTIONS.has(value);
 
 const EVM_ADDRESS = /^0x[0-9a-fA-F]{40}$/;
@@ -244,6 +246,11 @@ export const handleRelay = async (
          const r = await claimSent(admin, userId, requestId);
          if (!r.ok) return json({ ok: false, code: r.error, error: r.error }, r.error === 'error' ? 502 : 409);
          return json({ ok: true, already: r.already });
+      }
+      if (action === 'id_walt_ready') {
+         const r = await markWaltReady(admin, userId);
+         if (!r.ok) return json({ ok: false, code: r.error, error: r.error }, r.error === 'error' ? 502 : 409);
+         return json({ ok: true, telegramUsername: r.username });
       }
       if (action === 'id_repay_status') {
          const requestId = Number(body.requestId);

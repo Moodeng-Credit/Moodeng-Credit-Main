@@ -387,12 +387,15 @@ export const repayRequestStatus = async (svc: Svc, userId: string, requestId: nu
 };
 
 // ── messages ─────────────────────────────────────────────────────────────────────────────────────
-type UserRow = { id: string; chat_id: string | number | null; preferred_locale: string | null; walt_address: string | null };
+type UserRow = { id: string; chat_id: string | number | null; preferred_locale: string | null; walt_address: string | null; telegram_username?: string | null };
 
 const loadUser = async (svc: Svc, userId: string): Promise<UserRow | null> => {
-   const { data } = await svc.from('users').select('id, chat_id, preferred_locale, walt_address').eq('id', userId).maybeSingle();
+   const { data } = await svc.from('users').select('id, chat_id, preferred_locale, walt_address, telegram_username').eq('id', userId).maybeSingle();
    return (data as UserRow | null) ?? null;
 };
+
+/** Where a Walt Transfer refund goes: their Telegram @username. */
+const waltBack = (user: UserRow | null) => (user?.telegram_username ? `@${String(user.telegram_username).replace(/^@/, '')}` : 'them (no Telegram username saved — ask in chat)');
 
 const tell = async (user: UserRow | null, text: string, keyboard?: TelegramInlineKeyboard) => {
    if (!user?.chat_id) return;
@@ -574,8 +577,10 @@ const recordDeposit = async (svc: Svc, d: DepositRow): Promise<Outcome> => {
       await patchDeposit(svc, d, { status: 'refund_needed', note: { ...(d.note ?? {}), error: code } });
       await alertTeam(
          svc,
-         `⚠️ 🇮🇩 ${loanBefore.tracking_id ?? d.loan_id}: ${depositText(d)} arrived in the payout wallet (tx ${d.tx_hash}) but was NOT recorded (${code}). Their Walt: ${user?.walt_address ?? '? (none saved)'}.`,
-         user?.walt_address ? [[{ text: `↩️ Refund ${depositText(d)} to their Walt`, callback_data: `${CB}f:${d.id}` }]] : undefined
+         isWaltDeposit(d)
+            ? `⚠️ 🇮🇩 ${loanBefore.tracking_id ?? d.loan_id}: ${depositText(d)} came to your Walt by Transfer but was NOT recorded (${code}). Send it back by Walt Transfer to ${waltBack(user)}.`
+            : `⚠️ 🇮🇩 ${loanBefore.tracking_id ?? d.loan_id}: ${depositText(d)} arrived in the payout wallet (tx ${d.tx_hash}) but was NOT recorded (${code}). Their Walt: ${user?.walt_address ?? '? (none saved)'}.`,
+         !isWaltDeposit(d) && user?.walt_address ? [[{ text: `↩️ Refund ${depositText(d)} to their Walt`, callback_data: `${CB}f:${d.id}` }]] : undefined
       );
       return 'refund_needed';
    }
@@ -592,8 +597,10 @@ const recordDeposit = async (svc: Svc, d: DepositRow): Promise<Outcome> => {
       const user = await loadUser(svc, loanBefore.borrower_user_id);
       await alertTeam(
          svc,
-         `⚠️ 🇮🇩 ${loan.tracking_id}: they paid ${(overpaid / 1e6).toFixed(2)} ${d.token} more than was left (tx ${d.tx_hash}). The loan is closed. Their Walt: ${user?.walt_address ?? '? (none saved)'}.`,
-         user?.walt_address ? [[{ text: `↩️ Refund the extra ${(overpaid / 1e6).toFixed(2)} ${d.token} to their Walt`, callback_data: `${CB}o:${d.id}` }]] : undefined
+         isWaltDeposit(d)
+            ? `⚠️ 🇮🇩 ${loan.tracking_id}: they paid ${(overpaid / 1e6).toFixed(2)} ${d.token} more than was left (by Walt Transfer). The loan is closed. Send the extra back by Walt Transfer to ${waltBack(user)}.`
+            : `⚠️ 🇮🇩 ${loan.tracking_id}: they paid ${(overpaid / 1e6).toFixed(2)} ${d.token} more than was left (tx ${d.tx_hash}). The loan is closed. Their Walt: ${user?.walt_address ?? '? (none saved)'}.`,
+         !isWaltDeposit(d) && user?.walt_address ? [[{ text: `↩️ Refund the extra ${(overpaid / 1e6).toFixed(2)} ${d.token} to their Walt`, callback_data: `${CB}o:${d.id}` }]] : undefined
       );
    }
    await afterRecorded(svc, d, loan, paidUsd, paidIdr);
