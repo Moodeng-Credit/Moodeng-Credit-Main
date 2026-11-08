@@ -1,5 +1,7 @@
 import { formatCurrency } from '@/utils/decimalHelpers';
 
+import { suggestedBuyAmount } from '@/views/repay/gcryptoBuyAmount';
+
 // GCrypto (inside GCash, run by PDAX) step by step, with real screenshots. Borrowers kept
 // stopping at "I have pesos in GCrypto" — pesos can't be sent, only USDC (Base) can, so the
 // Buy step is the one that matters. Screenshots live in /public/repay-guides/gcrypto (wallet
@@ -22,11 +24,6 @@ const STEPS = [
       img: '/repay-guides/gcrypto/step4-confirm.webp'
    }
 ] as const;
-
-// GCrypto's buy price runs about 2% over the official rate, sending costs 0.01 USDC, and it
-// won't send less than 1 USDC — so a top-up for the exact amount lands a few cents short and
-// can't be fixed with a tiny second send. Suggest a small buffer up front.
-const suggestedBuyAmount = (shortfall: number) => Math.ceil((shortfall + 0.01) * 1.03 * 10) / 10;
 
 interface GcryptoPictureStepsProps {
    shortfall: number | null;
