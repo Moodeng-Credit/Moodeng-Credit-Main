@@ -15,6 +15,7 @@ import {
 } from '../_shared/loanAccess.ts';
 import { checkCallForm } from '../_shared/callFormCheck.ts';
 import { recordCallOutcome } from '../_shared/videoCallOutcome.ts';
+import { idApprovalBlock } from '../_shared/idTrack.ts';
 
 // Call approvals in the admin panel — the same decisions as the Telegram card's buttons and
 // /showed · /noshow · /approve · /reject, so the host can approve a borrower the moment the call
@@ -153,6 +154,9 @@ serve(async (req) => {
       }
 
       if (body.action === 'approve_user' && typeof body.userId === 'string') {
+         // Indonesia track: not before Didit has approved their ID.
+         const idBlocked = await idApprovalBlock(svc, body.userId);
+         if (idBlocked) return json({ ok: false, summary: idBlocked });
          const { data: pendingRequest } = await svc
             .from('loan_access_requests')
             .select('id')

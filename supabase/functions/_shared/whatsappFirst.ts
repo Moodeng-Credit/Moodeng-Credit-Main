@@ -7,6 +7,7 @@
 // Indonesia only (George): an Indonesian (+62) WhatsApp number, or a test account so the team can try it
 // from anywhere. And only people who confirm WhatsApp BEFORE Facebook: everyone else connects Facebook
 // first (WhatsApp is locked until then), so nothing changes for them.
+import { isIdTrackUser } from './idTrack.ts';
 import { MESSENGER_PAGE_ID, type SendPulseResult, sendWhatsAppText } from './sendpulse.ts';
 
 // deno-lint-ignore no-explicit-any
@@ -136,6 +137,8 @@ const facebookCodeFor = async (svc: Svc, userId: string): Promise<string | null>
 const stepsUser = async (svc: Svc, userId: string, phone: string | null): Promise<any | null> => {
    const { data: user } = await svc.from('users').select('messenger_verified_at, user_role, is_test, preferred_locale').eq('id', userId).maybeSingle();
    if (!user || user.messenger_verified_at || user.user_role === 'lender' || !whatsappFirstApplies(phone, user.is_test)) return null;
+   // Indonesia track (market 'ID'): WhatsApp is notifications only, never the Facebook-steps chat.
+   if (await isIdTrackUser(svc, userId)) return null;
    return user;
 };
 
@@ -183,6 +186,8 @@ export const sendFacebookConnectedOnWhatsApp = async (svc: Svc, userId: string) 
          .maybeSingle();
       if (!user?.whatsapp_contact_id || !user.whatsapp_verified_at || !user.messenger_verified_at) return;
       if (!whatsappFirstApplies(user.whatsapp_number, user.is_test)) return;
+      // Indonesia track: they hear about Facebook on Telegram (idTrack.ts), not here.
+      if (await isIdTrackUser(svc, userId)) return;
       // WhatsApp first only (see the top of this file).
       if (new Date(user.whatsapp_verified_at).getTime() >= new Date(user.messenger_verified_at).getTime()) return;
       const sent = await sendWhatsAppText(user.whatsapp_contact_id, facebookConnectedText(whatsappFirstLocale(user.whatsapp_number, user.preferred_locale)));

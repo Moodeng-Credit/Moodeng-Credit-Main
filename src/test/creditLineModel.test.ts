@@ -58,6 +58,50 @@ const loan = (over: Partial<FacilityLoanInput>): FacilityLoanInput => ({
 });
 
 describe('creditLineModel', () => {
+   it('rupiah-pegged loans: cost from the request-time total, principal capped at what was repaid', () => {
+      // $10 lent, priced at $12 at request; the rupiah fell and the borrower closed it paying $9.40.
+      const [pegged] = buildFacilityLoans(
+         [
+            loan({
+               loan_amount: 10,
+               usd_total_at_request: 12,
+               total_repayment_amount: 9.4,
+               repaid_amount: 9.4,
+               repayment_status: 'Paid',
+               repaid_at: '2026-09-27T02:00:00Z',
+               hash: ['bsc:0xdisb', '0xrepay']
+            })
+         ],
+         [],
+         '2026-10-01'
+      );
+      expect(pegged.impliedCost).toBeCloseTo(0.2);
+      expect(pegged.restructured).toBe(false);
+      expect(pegged.principalRepaid).toBe(9.4);
+      expect(pegged.interestRepaid).toBe(0);
+      expect(pegged.outstanding).toBe(0);
+      expect(pegged.status).toBe('Closed');
+
+      // Same loan priced the same, but the rupiah rose: paid $12.60 → principal 10, interest 2.60.
+      const [up] = buildFacilityLoans(
+         [
+            loan({
+               loan_amount: 10,
+               usd_total_at_request: 12,
+               total_repayment_amount: 12.6,
+               repaid_amount: 12.6,
+               repayment_status: 'Paid',
+               repaid_at: '2026-09-27T02:00:00Z'
+            })
+         ],
+         [],
+         '2026-10-01'
+      );
+      expect(up.impliedCost).toBeCloseTo(0.2);
+      expect(up.principalRepaid).toBe(10);
+      expect(up.interestRepaid).toBe(2.6);
+   });
+
    it('numbers borrowers in order of their first loan', () => {
       const ids = privateBorrowerIds([
          { borrower_user_id: 'b', funded_at: '2026-09-25T00:00:00Z' },

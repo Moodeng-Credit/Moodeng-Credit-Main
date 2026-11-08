@@ -135,6 +135,8 @@ export interface AdminLoanRecord {
    is_test: boolean;
    created_at: string | null;
    funded_at: string | null;
+   // 'ID' = an Indonesia-track request (loans.market); shown with the 🇮🇩 badge.
+   market: 'ID' | null;
    borrower: Pick<
       AdminDirectoryUser,
       'id' | 'username' | 'wallet_address' | 'user_role' | 'account_status' | 'is_world_id' | 'is_didit'
@@ -218,6 +220,14 @@ async function requireOk<T>(request: PromiseLike<{ data: T; error: unknown }>): 
    const { data, error } = await request;
    if (error) throw error;
    return data;
+}
+
+// loans.market comes with the Indonesia-track migration (20261107120000). Until it's applied the
+// query is retried without the extra columns, so the admin keeps working either way.
+async function requireOkWithExtraColumns<T>(make: (extraColumns: string) => PromiseLike<{ data: T; error: unknown }>, extraColumns: string): Promise<T> {
+   const first = await make(extraColumns);
+   if (!first.error) return first.data;
+   return requireOk(make(''));
 }
 
 async function optionalOk<T>(request: PromiseLike<{ data: T; error: unknown }>, fallback: T): Promise<T> {
@@ -330,6 +340,7 @@ function mapLoan(row: AnyRow, usersById: Map<string, AdminDirectoryUser>): Admin
       is_test: Boolean(row.is_test),
       created_at: row.created_at ?? null,
       funded_at: row.funded_at ?? null,
+      market: row.market === 'ID' ? 'ID' : null,
       borrower: shortUser(row.borrower_user_id ? usersById.get(row.borrower_user_id) : null),
       lender: shortUser(row.lender_user_id ? usersById.get(row.lender_user_id) : null)
    };
@@ -675,15 +686,17 @@ export async function listAdminDirectoryUsers(search?: string): Promise<AdminDir
 
 export async function listAdminLoanRequests(): Promise<AdminLoanRequest[]> {
    const supabase = getSupabaseBrowserClient();
-   const rows = await requireOk<AnyRow[]>(
-      supabase
-         .from('loans')
-         .select(
-            'id,tracking_id,borrower_user_id,lender_user_id,borrower_wallet,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,reason,coin,loan_status,repayment_status,created_at,funded_at'
-         )
-         .eq('loan_status', 'Requested')
-         .order('created_at', { ascending: false })
-         .limit(100)
+   const rows = await requireOkWithExtraColumns<AnyRow[]>(
+      (extra) =>
+         supabase
+            .from('loans')
+            .select(
+               `id,tracking_id,borrower_user_id,lender_user_id,borrower_wallet,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,reason,coin,loan_status,repayment_status,created_at,funded_at${extra}`
+            )
+            .eq('loan_status', 'Requested')
+            .order('created_at', { ascending: false })
+            .limit(100),
+      ',market'
    );
 
    const userIds = rows.flatMap((loan) => [loan.borrower_user_id, loan.lender_user_id].filter(Boolean));
@@ -708,24 +721,27 @@ export async function listAdminLoans(
    { includeTest = false, limit = 500 }: { includeTest?: boolean; limit?: number } = {}
 ): Promise<AdminLoanRecord[]> {
    const supabase = getSupabaseBrowserClient();
-   let query = supabase
-      .from('loans')
-      .select(
-         'id,tracking_id,borrower_user_id,lender_user_id,borrower_wallet,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,due_timezone,reason,coin,loan_status,repayment_status,is_test,created_at,funded_at'
-      );
+   const makeQuery = (extra: string) => {
+      let query = supabase
+         .from('loans')
+         .select(
+            `id,tracking_id,borrower_user_id,lender_user_id,borrower_wallet,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,due_timezone,reason,coin,loan_status,repayment_status,is_test,created_at,funded_at${extra}`
+         );
 
-   if (!includeTest) query = query.eq('is_test', false);
+      if (!includeTest) query = query.eq('is_test', false);
 
-   if (status === 'requested') {
-      query = query.eq('loan_status', 'Requested');
-   } else if (status === 'active' || status === 'overdue') {
-      // Split below: overdue only once the due day has ended in the borrower's zone.
-      query = query.eq('loan_status', 'Lent').in('repayment_status', ['Unpaid', 'Partial']);
-   } else if (status === 'repaid') {
-      query = query.eq('loan_status', 'Lent').eq('repayment_status', 'Paid');
-   }
+      if (status === 'requested') {
+         query = query.eq('loan_status', 'Requested');
+      } else if (status === 'active' || status === 'overdue') {
+         // Split below: overdue only once the due day has ended in the borrower's zone.
+         query = query.eq('loan_status', 'Lent').in('repayment_status', ['Unpaid', 'Partial']);
+      } else if (status === 'repaid') {
+         query = query.eq('loan_status', 'Lent').eq('repayment_status', 'Paid');
+      }
+      return query.order('created_at', { ascending: false }).limit(limit);
+   };
 
-   const rows = await requireOk<AnyRow[]>(query.order('created_at', { ascending: false }).limit(limit));
+   const rows = await requireOkWithExtraColumns<AnyRow[]>(makeQuery, ',market');
    const userIds = rows.flatMap((loan) => [loan.borrower_user_id, loan.lender_user_id].filter(Boolean));
    const usersById = await fetchUsersByIds(userIds);
    const loans = rows.map((row) => mapLoan(row, usersById));
@@ -776,6 +792,8 @@ export interface ComingDueLoan {
    coin: string | null;
    repayment_status: 'Unpaid' | 'Partial' | 'Paid' | null;
    is_test: boolean;
+   // 'ID' = an Indonesia-track loan (loans.market); shown with the 🇮🇩 badge.
+   market: 'ID' | null;
    borrower: ComingDueParty | null;
    lender: ComingDueParty | null;
    /** The wallet the loan was funded from: where a refund must go (what admin-refund-loan checks). */
@@ -802,18 +820,21 @@ export async function listComingDueLoans({ includeTest = false, limit = 500 }: {
    ComingDueLoan[]
 > {
    const supabase = getSupabaseBrowserClient();
-   let query = supabase
-      .from('loans')
-      .select(
-         'id,tracking_id,borrower_user_id,lender_user_id,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,due_timezone,funded_at,created_at,reason,coin,repayment_status,is_test'
-      )
-      .eq('loan_status', 'Lent')
-      .in('repayment_status', ['Unpaid', 'Partial'])
-      .not('due_date', 'is', null);
+   const makeQuery = (extra: string) => {
+      let query = supabase
+         .from('loans')
+         .select(
+            `id,tracking_id,borrower_user_id,lender_user_id,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,due_timezone,funded_at,created_at,reason,coin,repayment_status,is_test${extra}`
+         )
+         .eq('loan_status', 'Lent')
+         .in('repayment_status', ['Unpaid', 'Partial'])
+         .not('due_date', 'is', null);
 
-   if (!includeTest) query = query.eq('is_test', false);
+      if (!includeTest) query = query.eq('is_test', false);
+      return query.order('due_date', { ascending: true }).limit(limit);
+   };
 
-   const rows = await requireOk<AnyRow[]>(query.order('due_date', { ascending: true }).limit(limit));
+   const rows = await requireOkWithExtraColumns<AnyRow[]>(makeQuery, ',market');
 
    const userIds = [...new Set(rows.flatMap((row) => [row.borrower_user_id, row.lender_user_id]).filter(Boolean))] as string[];
    const contactsById = new Map<string, ComingDueParty>();
@@ -855,6 +876,7 @@ export async function listComingDueLoans({ includeTest = false, limit = 500 }: {
          coin: row.coin ?? null,
          repayment_status: row.repayment_status ?? null,
          is_test: Boolean(row.is_test),
+         market: row.market === 'ID' ? 'ID' : null,
          borrower: row.borrower_user_id ? (contactsById.get(row.borrower_user_id) ?? null) : null,
          lender_wallet: row.lender_wallet ?? null,
          lender: row.lender_user_id ? (contactsById.get(row.lender_user_id) ?? null) : null

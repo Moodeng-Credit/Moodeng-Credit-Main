@@ -12,6 +12,7 @@ import {
    syncDeposits
 } from '../_shared/stableyardSync.ts';
 import { handleStableyardWebhook, isStableyardWebhook } from '../_shared/stableyardWebhook.ts';
+import { handleRelay, isRelayAction } from './relay.ts';
 
 // Stableyard deposit addresses for the signed-in user ("send from any chain").
 //
@@ -25,6 +26,9 @@ import { handleStableyardWebhook, isStableyardWebhook } from '../_shared/stabley
 //                              Stableyard instead (needs { consent: true }); see _shared/stableyardKycReuse.ts.
 // POST { qr: 'status' | 'use_wallet' | 'decode' | 'create' | 'get', ... }
 //                            → External QR payment test for admins + stableyard_qr_testers (see handleQr).
+// POST { relay: 'cashout_quote' | 'cashout_sent' | 'repay_quote' | 'status' | 'latest', ... }
+//                            → Walt (Telegram wallet) bridge for the Indonesia track through Relay
+//                              (Base USDC ↔ BNB Chain). Not Stableyard; see ./relay.ts.
 //
 // The account's settlement wallet is the user's own Moodeng wallet on Base (users.wallet_address),
 // so every deposit lands there as USDC and the existing repay flow picks it up. We never accept a
@@ -621,6 +625,19 @@ serve(async (req) => {
    if (isStableyardWebhook(req)) return handleStableyardWebhook(req);
    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
+   const body = await req.json().catch(() => ({}));
+
+   // Walt bridge through Relay (Indonesia track). Doesn't use Stableyard, so it runs before the
+   // Stableyard switches below. See ./relay.ts.
+   if (isRelayAction(body?.relay)) {
+      const relayAdmin = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+      const relayToken = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
+      if (!relayToken) return json({ error: 'Missing authorization token' }, 401);
+      const { data: relayUser, error: relayUserError } = await relayAdmin.auth.getUser(relayToken);
+      if (relayUserError || !relayUser?.user?.id) return json({ error: 'Authentication required' }, 401);
+      return handleRelay(relayAdmin, relayUser.user.id, String(body.relay), body, json);
+   }
+
    if (Deno.env.get('STABLEYARD_DEPOSITS_DISABLED') === 'true' || !isStableyardConfigured()) {
       return json({ enabled: false, addresses: [], deposits: [] });
    }
@@ -649,7 +666,6 @@ serve(async (req) => {
       return Boolean(tester);
    };
 
-   const body = await req.json().catch(() => ({}));
    const refresh = Boolean(body?.refresh);
    const isQr = QR_ACTIONS.has(String(body?.qr ?? ''));
    const isOnboarding = ONBOARDING_ACTIONS.has(String(body?.onboarding ?? ''));

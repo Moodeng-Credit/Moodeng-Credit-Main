@@ -5,6 +5,7 @@
 import { postDiscord } from './discord.ts';
 import { formatDeadlineForTeam, formatPastDueForTeam, isUsableTimezone, loanTimezone, pastDueAt, resolveTimezone } from './loanDeadline.ts';
 import { sendTelegramMessage } from './telegram.ts';
+import { idFlag } from './idTrack.ts';
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
@@ -22,6 +23,8 @@ export type FeedLoan = {
    due_date: string | null;
    due_timezone?: string | null;
    funded_at: string | null;
+   /** 'ID' = Indonesia track: marked 🇮🇩. */
+   market?: string | null;
 };
 
 const MAX_LINES = 30;
@@ -157,7 +160,7 @@ export const postDueTeamFeed = async (
       const teamZone = await getTeamTimezone(supabase);
       const lines = pending.slice(0, MAX_LINES).map((loan) => {
          const zone = loanTimezone(loan, zones.get(loan.borrower_user_id as string) ?? resolveTimezone(null, null));
-         const borrower = usernames.get(loan.borrower_user_id as string) ?? 'someone';
+         const borrower = `${idFlag(loan.market)}${usernames.get(loan.borrower_user_id as string) ?? 'someone'}`;
          const lender = loan.lender_user_id ? lenderNames.get(loan.lender_user_id) ?? 'unknown' : 'unknown';
          const owed = describeOwed(loan);
          // "Overdue from" is the real moment the app calls it past due (the later of the end of their due

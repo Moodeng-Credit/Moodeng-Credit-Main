@@ -5,6 +5,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useDisconnect } from 'wagmi';
 
 import { PRE_KYC_CONNECT_PATH, usePreKycGate } from '@/hooks/usePreKycGate';
+import { ID_PATHS } from '@/lib/idTrack';
 import { isUserVerified, isVerificationPending } from '@/lib/isUserVerified';
 import { clearPendingSharedRequestId, getPendingSharedRequestId } from '@/lib/pendingSharedRequest';
 import {
@@ -17,6 +18,7 @@ import {
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { LoanStatus } from '@/types/loanTypes';
+import { ID_WALLET_RETURN_TO } from '@/views/indonesia/idFlow';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 
 export default function WalletConnected() {
@@ -87,6 +89,11 @@ export default function WalletConnected() {
       }
       if (returnTo === 'account-settings') {
          navigate('/account/settings', { replace: true });
+         return;
+      }
+      // Indonesia track: the wallet is set up mid-onboarding, right before the Walt step.
+      if (returnTo === ID_WALLET_RETURN_TO) {
+         navigate(`${ID_PATHS.onboarding}?step=walt`, { replace: true });
          return;
       }
       // Next: meet the team (Messenger, bio, call). Anyone already through it carries on to wherever

@@ -67,6 +67,8 @@ export type RepeatBorrowerPushContext = {
    /** Total the borrower has repaid this lender across those loans, in USDC. */
    repaidTotal: number;
    reason: string | null;
+   /** 'ID' = Indonesia track: the title is marked 🇮🇩. */
+   market?: string | null;
 };
 
 export type DuePushContext = {
@@ -186,7 +188,7 @@ const buildRepeatBorrowerPush = (context: RepeatBorrowerPushContext, locale: Pus
 
    return {
       type: 'repeat_borrower_request',
-      title: copy[locale].title,
+      title: `${context.market === 'ID' ? '🇮🇩 ' : ''}${copy[locale].title}`,
       body: copy[locale].body,
       url: buildAppUrl(`/request-board?highlight=${context.loanId}`),
       // One notification per request per lender; a re-fire replaces it.

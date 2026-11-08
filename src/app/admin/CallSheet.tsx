@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { type AdminCallApprovalRow, recheckAdminCallForm } from '@/app/admin/adminSupabase';
+import IndonesiaContactCard from '@/app/admin/IndonesiaContactCard';
 import { type CheckField, currentVerdict, type FormCheck, tallyCheck } from '@/app/admin/callFormCheck';
 import {
    type BotAnswers,
@@ -593,6 +594,8 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
             {profile ? (
                <div className="space-y-3">
                   <ProfileCard profile={profile} />
+                  {/* Indonesia track: how to reach them (WhatsApp/Telegram/Facebook), Walt address, KYC + income doc. */}
+                  <IndonesiaContactCard userId={row.userId} />
                   <BotAnswersCard records={botAnswers} />
                   <FormCheckBar answers={answers} busy={rechecking} onRecheck={() => void recheck()} transcript={transcript} />
 

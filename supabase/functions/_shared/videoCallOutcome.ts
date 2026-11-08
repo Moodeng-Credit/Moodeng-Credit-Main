@@ -31,6 +31,7 @@ import {
    who
 } from './loanAccess.ts';
 import { needsPreKycGate } from './preKycGate.ts';
+import { idApprovalBlock, isIdTrackUser, sendIdTelegram } from './idTrack.ts';
 import { sendTelegramMessage } from './telegram.ts';
 import { formatCallTimeForTeam } from './videoCall.ts';
 
@@ -149,7 +150,7 @@ export const recordCallOutcome = async (
    decidedBy: string,
    // From a card's button: the call it was sent for. A mismatch means they've rebooked since.
    expectedCallKey?: string | null
-): Promise<{ ok: boolean; summary: string; stamp?: CardStamp }> => {
+): Promise<{ ok: boolean; summary: string; stamp?: CardStamp; retry?: boolean }> => {
    if (expectedCallKey) {
       const current = await loadUser(svc, userId);
       if (callKeyFor(current?.video_call_starts_at) !== expectedCallKey) {
@@ -165,10 +166,14 @@ export const recordCallOutcome = async (
    const pendingRequest = await findPendingCallRequest(svc, userId);
    if (pendingRequest) {
       const decided = await decideLoanAccess(svc, pendingRequest.id, outcome === 'attended' ? 'approved' : 'no_show', decidedBy);
-      return { ok: decided.ok, summary: decided.summary, stamp: decided.stamp };
+      return { ok: decided.ok, summary: decided.summary, stamp: decided.stamp, retry: (decided as { retry?: boolean }).retry };
    }
    // Read before the outcome is written: the pre-KYC gate makes this tap the approval too.
    const preKyc = await needsPreKycGate(svc, userId);
+   // Indonesia track: "Showed up" is their approval too (the team ✅s after the call), but only once
+   // Didit has approved their ID (idApprovalBlock); until then attendance is recorded and they wait.
+   const idTrack = await isIdTrackUser(svc, userId);
+   const idBlocked = idTrack && outcome === 'attended' ? await idApprovalBlock(svc, userId) : null;
    // A "Showed up" that corrects a no-show tells the borrower: they were told to rebook.
    const correctingNoShow = outcome === 'attended' && (await loadUser(svc, userId))?.video_call_outcome === 'no_show';
    const update = svc
@@ -187,7 +192,10 @@ export const recordCallOutcome = async (
       const current = await loadUser(svc, userId);
       // Attended an earlier call (open flow, never approved) and now held by the pre-KYC gate: the
       // outcome is already 'attended', but this ✅ must still approve them, or nothing can.
-      if (outcome === 'attended' && preKyc && current?.video_call_outcome === 'attended' && current.loan_access_status !== 'approved') {
+      if (idBlocked && current?.video_call_outcome === 'attended' && current.loan_access_status !== 'approved') {
+         return { ok: false, retry: true, summary: `${idBlocked} Attendance is already recorded.` };
+      }
+      if (outcome === 'attended' && (preKyc || idTrack) && current?.video_call_outcome === 'attended' && current.loan_access_status !== 'approved') {
          // Conditional, so two admins tapping at once approve (and message the borrower) only once.
          const { data: approvedRows, error: approveError } = await svc
             .from('users')
@@ -215,10 +223,12 @@ export const recordCallOutcome = async (
    // "Showed up" always unlocks the application. A no-show stays locked and is asked to rebook.
    // Same for the pre-KYC gate in any flow: Showed up unlocks ID verification.
    const { data: flowData } = await svc.rpc('get_loan_flow');
-   const gateOn = preKyc || (typeof flowData === 'string' && flowData !== 'open');
+   const gateOn = preKyc || idTrack || (typeof flowData === 'string' && flowData !== 'open');
    const unapproved = (updated as BorrowerRow).loan_access_status !== 'approved';
    let approvedNow = false;
-   if (gateOn && unapproved && outcome === 'attended') {
+   if (idBlocked && unapproved && outcome === 'attended') {
+      await sendIdTelegram(svc, userId, 'attended_kyc_pending');
+   } else if (gateOn && unapproved && outcome === 'attended') {
       // Conditional, so a concurrent tap that also got here approves (and messages) only once.
       const { data: approvedRows, error: approveError } = await svc
          .from('users')
@@ -276,14 +286,15 @@ export const recordCallOutcome = async (
             : approvedNow
               ? loanAccessStampHeader('approved', name, { call: true })
               : loanAccessStampHeader(correctingNoShow ? 'corrected' : 'attended', name),
-      detail: held || null,
+      detail: held || (idBlocked && unapproved ? idBlocked : null),
       by: decidedBy,
-      ...(outcome === 'no_show' ? { buttons: approveAnywayButtons(userId) } : {})
+      // An Indonesian waiting on KYC keeps ✅ Approve anyway too, for once Didit approves them.
+      ...(outcome === 'no_show' || (idBlocked && unapproved) ? { buttons: approveAnywayButtons(userId) } : {})
    };
    // A no-show keeps its cards remembered, so ✅ Approve anyway can stamp them all again later.
-   await stampDecisionCards(svc, 'loan_access', userId, stamp, { final: outcome !== 'no_show' });
+   await stampDecisionCards(svc, 'loan_access', userId, stamp, { final: outcome !== 'no_show' && !(idBlocked && unapproved) });
 
-   const summary = `${outcome === 'attended' ? (approvedNow ? '✅ Showed up → approved' : '✅ Showed up') : '❌ No-show'}: ${who(updated as BorrowerRow)} — by ${decidedBy}${held ? `\n${held}` : ''}`;
+   const summary = `${outcome === 'attended' ? (approvedNow ? '✅ Showed up → approved' : '✅ Showed up') : '❌ No-show'}: ${who(updated as BorrowerRow)} — by ${decidedBy}${held ? `\n${held}` : ''}${idBlocked && unapproved ? `\n${idBlocked} Tap ✅ Approve anyway (or /showed) once KYC is approved.` : ''}`;
    await postDiscord({ content: `📞 Video call ${summary}` }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
    return { ok: true, summary, stamp };
 };

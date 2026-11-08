@@ -5,6 +5,7 @@ import { adminUserUrl } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { buildTelegramLoanRequestMessage } from '../_shared/telegramLoanNotifications.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
+import { sendIdTelegram } from '../_shared/idTrack.ts';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -126,7 +127,7 @@ serve(async (req) => {
 
       const { data: loan, error: loanError } = await supabase
          .from('loans')
-         .select('id, tracking_id, loan_amount, coin, due_date, created_at, reason, borrower_user_id, loan_status, on_hold_since, on_hold_reason')
+         .select('id, tracking_id, loan_amount, coin, due_date, created_at, reason, borrower_user_id, loan_status, on_hold_since, on_hold_reason, market')
          .eq('id', loanId)
          .maybeSingle();
 
@@ -183,7 +184,7 @@ serve(async (req) => {
          {
             embeds: [
                {
-                  title: '💸 New loan request',
+                  title: loan.market === 'ID' ? '🇮🇩 New loan request · Indonesia' : '💸 New loan request',
                   description: message,
                   // Title links to the borrower in the admin panel (👤 Open in admin).
                   ...(loan.borrower_user_id ? { url: adminUserUrl(loan.borrower_user_id, borrower?.username) } : {}),
@@ -195,6 +196,12 @@ serve(async (req) => {
          // Remembered: edited to FUNDED / OVERDUE / REPAID / DELETED / EXPIRED (state-events-dispatch).
          { prefer: ['DISCORD_REQUESTS_WEBHOOK_URL'], ref: { svc: supabase, kind: 'loan', refId: loan.id } }
       );
+
+      // Indonesia track: tell the borrower on Telegram that their request is up (Bahasa). A request on
+      // hold isn't visible to lenders yet, so not then.
+      if (loan.market === 'ID' && loan.borrower_user_id && !holdNote) {
+         await sendIdTelegram(supabase, loan.borrower_user_id, 'loan_posted', { amount: loan.loan_amount });
+      }
 
       if (holdNote) {
          return new Response(JSON.stringify({ message: 'Team notified; request is on hold, so no lender broadcast' }), {

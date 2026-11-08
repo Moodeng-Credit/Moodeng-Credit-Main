@@ -49,6 +49,14 @@ export interface Loan {
    // calculation (all of which key off `!refundedAt`). A refund is never counted as a repayment.
    offplatformSettledAt?: string;
    offplatformSettlementNote?: string;
+   // 'ID' = an Indonesia-track borrower's request (stamped from users.market on insert, never changed).
+   // Shown with a 🇮🇩 mark on the board and in admin. See src/lib/loanMarket.ts.
+   market?: 'ID' | null;
+   // Indonesia rupiah peg (20261107160000): the fixed rupiah total owed, rupiah repaid so far, and
+   // USD/IDR when requested. totalRepaymentAmount (USD) is kept current by the server at today's rate.
+   repayIdr?: number;
+   repaidIdr?: number;
+   fxRateAtRequest?: number;
 }
 
 /**
@@ -75,6 +83,8 @@ export interface CreateLoanData {
    referralCodeId?: string;
    referralCode?: string;
    referralBoostAmount?: number;
+   /** Indonesia track: the fixed rupiah total (whole rupiah, multiple of 500). The server prices it. */
+   repayIdr?: number;
 }
 
 export interface LoanState {

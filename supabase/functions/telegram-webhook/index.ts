@@ -33,6 +33,12 @@ import {
    shortId
 } from '../_shared/loanAccess.ts';
 import { markMessengerVerified, messengerVerifiedStamp, parseMessengerVerifyCallback } from '../_shared/messengerStuckAlert.ts';
+import { payoutWalletStatus } from '../_shared/idPayoutWallet.ts';
+import { findIdUserByTelegram, handleIdBotCallback, handleIdMenuMessage } from '../_shared/idBot.ts';
+import { handleIdFreeText } from '../_shared/idHelper.ts';
+import { handleGuidePhotoCommand, isGuidePhotoCommand } from '../_shared/idGuides.ts';
+import { handleWaltPayoutCallback } from '../_shared/idWaltPayouts.ts';
+import { handleSweepCommand, handleWalletDepositCallback } from '../_shared/idRepayments.ts';
 import { formatCallTime } from '../_shared/videoCall.ts';
 import { handleRescheduleStep, parseRescheduleCallback, postReschedulePicker } from '../_shared/callReschedule.ts';
 import { handleCancelStep, parseCancelCallback } from '../_shared/callCancel.ts';
@@ -76,6 +82,8 @@ type TelegramUser = {
    username?: string;
    first_name?: string;
    last_name?: string;
+   /** IETF tag of the user's Telegram app language, e.g. 'id', 'en'. */
+   language_code?: string;
 };
 
 type TelegramMessage = {
@@ -602,6 +610,131 @@ const handleKycGateCommand = async (supabase: SupabaseClient, message: TelegramM
    return true;
 };
 
+// Indonesia track (docs/INDONESIA_TRACK.md, migration 20261107120000):
+//   /idtrack              show the switch and the loan rules
+//   /idtrack off|test|on  who can JOIN the track (test = is_test accounts only)
+//   /idloans 5,10         allowed loan amounts in USD
+//   /idterm 14            longest loan term in days
+const ID_TRACK_STATES: Record<string, string> = {
+   off: 'OFF — nobody new joins (people already on it keep their rules)',
+   test: 'TEST — only test accounts can join',
+   on: 'ON — Indonesians can join from /id'
+};
+const ID_TRACK_USAGE = 'Switch with /idtrack off · /idtrack test · /idtrack on\nLoan amounts: /idloans 5,10 · Longest term: /idterm 14';
+
+const handleIdTrackCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
+   const text = (message.text ?? '').trim();
+   const chatId = message.chat.id;
+   const by = adminHandle(message.from);
+   const upsert = async (key: string, value: string) => {
+      const { error } = await supabase.from('telegram_bot_settings').upsert({ key, value }, { onConflict: 'key' });
+      if (error) throw new Error(error.message);
+   };
+
+   const amounts = text.match(/^\/idloans(?:@\w+)?(?:\s+(.+))?$/i);
+   if (amounts) {
+      const parts = (amounts[1] ?? '').trim().split(/[\s,]+/).filter(Boolean);
+      const valid = parts.length > 0 && parts.length <= 6 && parts.every((p) => /^\d{1,3}(\.\d{1,2})?$/.test(p) && Number(p) >= 1 && Number(p) <= 100);
+      if (!valid) {
+         await sendTelegramMessage(chatId, 'Usage: /idloans 5,10 — dollars (cents allowed), $1–$100, up to 6 amounts.');
+         return true;
+      }
+      const value = [...new Set(parts.map(Number))].sort((a, b) => a - b).join(',');
+      await upsert('id_loan_amounts', value);
+      await sendTelegramMessage(chatId, `✅ 🇮🇩 Indonesia loan amounts: ${value.split(',').map((a) => `$${a}`).join(' · ')} — by ${by}`);
+      return true;
+   }
+
+   const term = text.match(/^\/idterm(?:@\w+)?(?:\s+(\S+))?/i);
+   if (term) {
+      const days = Number(term[1]);
+      if (!/^\d{1,2}$/.test(term[1] ?? '') || days < 1 || days > 60) {
+         await sendTelegramMessage(chatId, 'Usage: /idterm 14 — the longest loan term in days (1–60).');
+         return true;
+      }
+      await upsert('id_max_term_days', String(days));
+      await sendTelegramMessage(chatId, `✅ 🇮🇩 Indonesia loans must be repaid within ${days} days — by ${by}`);
+      return true;
+   }
+
+   const match = text.match(/^\/idtrack(?:@\w+)?(?:\s+(\S+))?/i);
+   if (!match) return false;
+   const wanted = (match[1] ?? '').trim().toLowerCase();
+   if (!wanted) {
+      const [track, loans, maxDays] = await Promise.all([
+         getSetting(supabase, 'id_track'),
+         getSetting(supabase, 'id_loan_amounts'),
+         getSetting(supabase, 'id_max_term_days')
+      ]);
+      const current = track && ID_TRACK_STATES[track] ? track : 'off';
+      const { count } = await supabase.from('users').select('id', { count: 'exact', head: true }).eq('market', 'ID');
+      await sendTelegramMessage(
+         chatId,
+         `🇮🇩 Indonesia track: ${ID_TRACK_STATES[current]}\nLoans: ${String(loans ?? '5,10')
+            .split(',')
+            .map((a) => `$${a.trim()}`)
+            .join(' · ')}, repaid within ${maxDays ?? '14'} days\nPeople on the track: ${count ?? '?'}\n\n${ID_TRACK_USAGE}`
+      );
+      return true;
+   }
+   if (!ID_TRACK_STATES[wanted]) {
+      await sendTelegramMessage(chatId, 'Usage: /idtrack off | test | on');
+      return true;
+   }
+   await upsert('id_track', wanted);
+   await sendTelegramMessage(chatId, `✅ 🇮🇩 Indonesia track switched ${ID_TRACK_STATES[wanted]} — by ${by}`);
+   return true;
+};
+
+// Indonesia payout wallet (migration 20261107150000, _shared/idPayoutWallet.ts):
+//   /idautopay         show the switch, the wallet address, its balance and today's total
+//   /idautopay on|off  pay open Indonesian requests automatically from the payout wallet
+const handleIdAutopayCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
+   const match = (message.text ?? '').trim().match(/^\/idautopay(?:@\w+)?(?:\s+(\S+))?/i);
+   if (!match) return false;
+   const chatId = message.chat.id;
+   const wanted = (match[1] ?? '').trim().toLowerCase();
+   if (wanted && wanted !== 'on' && wanted !== 'off') {
+      await sendTelegramMessage(chatId, 'Usage: /idautopay on | off');
+      return true;
+   }
+   const status = await payoutWalletStatus(supabase);
+   if (!wanted) {
+      const money = (v: number | null, unit: string) => (v == null ? '? (BNB Chain unreachable)' : `${v.toFixed(unit === 'BNB' ? 4 : 2)} ${unit}`);
+      const lines = [
+         `🇮🇩 Auto-payouts: ${status.autopay === 'on' ? 'ON — open Indonesian requests are paid from the payout wallet' : 'OFF — pay by hand (or "Pay now" in admin)'}`,
+         status.configured ? null : '⚠️ Openfort keys not set (vault secret OPENFORT_PAYOUT).',
+         status.address
+            ? `Wallet (BNB Chain): ${status.address}\nBalance: ${money(status.usdc, 'USDC')} · ${money(status.bnb, 'BNB')}`
+            : 'No payout wallet yet — create it in admin → Requests.',
+         `Paid today: $${status.paidTodayUsd.toFixed(2)} of $${status.dailyCapUsd} · max $${status.maxUsd} per loan`,
+         status.address ? 'Top up: Binance TH → Withdraw USDC → network BSC → the address above' : null,
+         '',
+         'Switch with /idautopay on · /idautopay off'
+      ];
+      await sendTelegramMessage(chatId, lines.filter((l) => l !== null).join('\n'));
+      return true;
+   }
+   if (wanted === 'on' && (!status.configured || !status.address)) {
+      await sendTelegramMessage(
+         chatId,
+         !status.configured
+            ? '⚠️ Can’t switch on: the Openfort keys aren’t set (vault secret OPENFORT_PAYOUT).'
+            : '⚠️ Can’t switch on: no payout wallet yet. Create it in admin → Requests first.'
+      );
+      return true;
+   }
+   const { error } = await supabase.from('telegram_bot_settings').upsert({ key: 'id_autopay', value: wanted }, { onConflict: 'key' });
+   if (error) throw new Error(error.message);
+   await sendTelegramMessage(
+      chatId,
+      wanted === 'on'
+         ? `✅ 🇮🇩 Auto-payouts ON — open Indonesian requests up to $${status.maxUsd} are paid from the payout wallet (cap $${status.dailyCapUsd}/day). Balance: ${status.usdc == null ? '?' : `${status.usdc.toFixed(2)} USDC`} — by ${adminHandle(message.from)}`
+         : `✅ 🇮🇩 Auto-payouts OFF — pay by hand from now on (payouts already sent still get confirmed) — by ${adminHandle(message.from)}`
+   );
+   return true;
+};
+
 // KYC tries (kyc_declines): after 3 declines a borrower must message us before trying again.
 //   /kycretry @username   gives them 3 fresh tries (voids their counted declines)
 const handleKycRetryCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
@@ -746,7 +879,9 @@ const handleTestAccountCallback = async (
 const verifyTelegramSecret = (req: Request) => {
    const expectedSecret = Deno.env.get('TELEGRAM_WEBHOOK_SECRET');
    if (!expectedSecret) {
-      return true;
+      // Fail closed: an unsigned webhook would let anyone post fake updates (incl. sign-in taps).
+      console.error('telegram-webhook: TELEGRAM_WEBHOOK_SECRET is not set — rejecting the update');
+      return false;
    }
 
    // setWebhook only accepts A–Z a–z 0–9 _ - in secret_token, so the webhook is registered with the
@@ -815,6 +950,188 @@ const consumeConnectToken = async (supabase: SupabaseClient, message: TelegramMe
    await supabase.from('telegram_connect_tokens').update({ consumed_at: new Date().toISOString() }).eq('id', tokenRow.id);
 };
 
+const sha256Hex = async (value: string) => {
+   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+   return Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+};
+
+// "/start login_<code>" (telegram-login app_start). Start alone never signs anyone in — someone could
+// have been sent another person's link. We show which device asked and when, and ask the person who
+// pressed Start to tap the 2-digit number on their Moodeng page out of three. Only the right number,
+// from that same Telegram account, claims the code (handleAppLoginTap). Migration 20261107180000.
+const APP_LOGIN_PROMPT_MAX_AGE_MS = 10 * 60 * 1000;
+
+const loginCopy = (bahasa: boolean) =>
+   bahasa
+      ? {
+           invalid: 'Link masuk tidak valid. Coba lagi dari halaman Moodeng.',
+           expired: '⏰ Link masuk ini sudah dipakai atau kedaluwarsa. Kembali ke halaman Moodeng dan tekan "Daftar dengan Telegram" lagi.',
+           prompt: (device: string, at: string, where: string) =>
+              `🔐 Masuk ke Moodeng?\n\nPerangkat: ${device}${where ? `\nNegara: ${where}` : ''}\nWaktu: ${at}\n\n⚠️ Ini memberi AKSES PENUH ke akun Moodeng kamu (pinjaman dan uangmu) kepada perangkat itu.\nPilih angka HANYA jika kamu sendiri yang sedang membuka Moodeng di HP kamu. Jangan pernah pilih angka karena disuruh orang lain — Moodeng tidak pernah meminta itu.\n\nPilih angka yang tampil di layar Moodeng kamu:`,
+           notMe: '🚫 Bukan saya',
+           done: (device: string) =>
+              `✅ Kamu sudah masuk di ${device}.\n\nKembali ke Facebook (atau browser tempat kamu mulai) untuk lanjut. Mulai sekarang Moodeng akan mengabari kamu di sini.`,
+           cancelled: '🚫 Dibatalkan. Tidak ada yang masuk ke akunmu.',
+           wrong: '❌ Angkanya salah, jadi kami batalkan demi keamanan. Kembali ke halaman Moodeng dan coba lagi.',
+           notYours: 'Ini bukan permintaan kamu.',
+           toastOk: 'Berhasil masuk ✅',
+           toastNo: 'Dibatalkan'
+        }
+      : {
+           invalid: 'That sign-in link is not valid. Try again from the Moodeng page.',
+           expired: '⏰ This sign-in link was already used or expired. Go back to the Moodeng page and tap "Sign up with Telegram" again.',
+           prompt: (device: string, at: string, where: string) =>
+              `🔐 Sign in to Moodeng?\n\nDevice: ${device}${where ? `\nCountry: ${where}` : ''}\nTime: ${at}\n\n⚠️ This gives that device FULL ACCESS to your Moodeng account (your loans and money).\nOnly pick a number if YOU are opening Moodeng on your own phone right now. Never pick one because someone told you to — Moodeng never asks for that.\n\nTap the number shown on your Moodeng screen:`,
+           notMe: '🚫 Not me',
+           done: (device: string) =>
+              `✅ You’re signed in on ${device}.\n\nGo back to Facebook (or the browser you started in) to continue. From now on Moodeng will message you here.`,
+           cancelled: '🚫 Cancelled. Nobody was signed in to your account.',
+           wrong: '❌ Wrong number, so we cancelled it to keep you safe. Go back to the Moodeng page and try again.',
+           notYours: 'This isn’t your request.',
+           toastOk: 'Signed in ✅',
+           toastNo: 'Cancelled'
+        };
+
+const isBahasa = (user?: TelegramUser) => (user?.language_code ?? 'id').toLowerCase().startsWith('id');
+
+const wibTime = (iso: string) =>
+   `${new Date(iso).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })} WIB`;
+
+/** Three decoys (10–99) different from the real number and each other, shuffled in with it. */
+const matchChoices = (real: number): number[] => {
+   const picks = new Set<number>([real]);
+   const buf = new Uint8Array(1);
+   while (picks.size < 4) {
+      crypto.getRandomValues(buf);
+      if (buf[0] < 180) picks.add(10 + (buf[0] % 90));
+   }
+   const list = [...picks];
+   for (let i = list.length - 1; i > 0; i -= 1) {
+      crypto.getRandomValues(buf);
+      const j = buf[0] % (i + 1);
+      [list[i], list[j]] = [list[j], list[i]];
+   }
+   return list;
+};
+
+const claimAppLogin = async (supabase: SupabaseClient, message: TelegramMessage, payload: string) => {
+   const code = payload.replace(/^login_/, '').trim();
+   const chatId = getSenderChatId(message);
+   const from = message.from;
+   const t = loginCopy(isBahasa(from));
+   if (!from?.id || !/^[A-Za-z0-9_-]{16,64}$/.test(code)) {
+      await sendTelegramMessage(chatId, t.invalid);
+      return;
+   }
+   const now = new Date().toISOString();
+   // The first Telegram account to press Start owns the prompt; nobody else can answer it.
+   const { data: row, error } = await supabase
+      .from('telegram_app_logins')
+      .update({ pending_telegram_id: from.id, prompted_at: now })
+      .eq('code_hash', await sha256Hex(code))
+      .is('claimed_at', null)
+      .gt('expires_at', now)
+      .or(`pending_telegram_id.is.null,pending_telegram_id.eq.${from.id}`)
+      .select('id, match_number, match_choices, device_label, location_label, created_at')
+      .maybeSingle();
+   if (error) throw new Error(error.message);
+   if (!row) {
+      await sendTelegramMessage(chatId, t.expired);
+      return;
+   }
+   // The same choices every time Start is pressed: new decoys would give the real number away.
+   let choices: number[] | null = Array.isArray(row.match_choices) && row.match_choices.length === 4 ? row.match_choices.map(Number) : null;
+   if (!choices) {
+      const fresh = matchChoices(Number(row.match_number));
+      const { data: stored } = await supabase
+         .from('telegram_app_logins')
+         .update({ match_choices: fresh })
+         .eq('id', row.id)
+         .is('match_choices', null)
+         .select('match_choices')
+         .maybeSingle();
+      if (stored?.match_choices) choices = (stored.match_choices as number[]).map(Number);
+      else {
+         const { data: again } = await supabase.from('telegram_app_logins').select('match_choices').eq('id', row.id).maybeSingle();
+         choices = Array.isArray(again?.match_choices) ? (again.match_choices as number[]).map(Number) : fresh;
+      }
+   }
+   await sendTelegramMessage(chatId, t.prompt(row.device_label || 'Browser', wibTime(row.created_at), row.location_label ?? ''), {
+      inlineKeyboard: [
+         choices.map((n: number) => ({ text: String(n), callback_data: `tl:${row.id}:${n}` })),
+         [{ text: t.notMe, callback_data: `tl:${row.id}:x` }]
+      ]
+   });
+};
+
+/** A tap on the number prompt. Returns true when it handled the callback. */
+const handleAppLoginTap = async (supabase: SupabaseClient, query: TelegramCallbackQuery): Promise<boolean> => {
+   const match = /^tl:([0-9a-f-]{36}):(\d{2}|x)$/.exec(query.data ?? '');
+   if (!match) return false;
+   const [, rowId, choice] = match;
+   const t = loginCopy(isBahasa(query.from));
+   const chatId = query.message?.chat.id;
+   const messageId = query.message?.message_id;
+   const finish = async (text: string, toast: string) => {
+      await answerCallback(query.id, toast);
+      if (chatId && messageId) {
+         await callTelegramApi('editMessageText', { chat_id: chatId, message_id: messageId, text, reply_markup: { inline_keyboard: [] } }).catch(
+            (err: unknown) => console.error('telegram-webhook: login prompt edit failed', err instanceof Error ? err.message : err)
+         );
+      }
+   };
+   // Private chats only, and only the account that pressed Start.
+   if (query.message?.chat.type !== 'private') {
+      await answerCallback(query.id, t.notYours);
+      return true;
+   }
+   const { data: row } = await supabase
+      .from('telegram_app_logins')
+      .select('id, match_number, device_label, pending_telegram_id, prompted_at, expires_at, claimed_at')
+      .eq('id', rowId)
+      .maybeSingle();
+   if (!row || Number(row.pending_telegram_id) !== query.from.id) {
+      await answerCallback(query.id, t.notYours);
+      return true;
+   }
+   const now = Date.now();
+   const stale =
+      row.claimed_at ||
+      new Date(row.expires_at).getTime() < now ||
+      !row.prompted_at ||
+      now - new Date(row.prompted_at).getTime() > APP_LOGIN_PROMPT_MAX_AGE_MS;
+   if (stale) {
+      await finish(t.expired, t.toastNo);
+      return true;
+   }
+   if (choice === 'x' || Number(choice) !== Number(row.match_number)) {
+      // "Not me" or a wrong number: kill the code so the page can never collect a session.
+      await supabase.from('telegram_app_logins').update({ expires_at: new Date(now).toISOString() }).eq('id', row.id).is('claimed_at', null);
+      await finish(choice === 'x' ? t.cancelled : t.wrong, t.toastNo);
+      return true;
+   }
+   const from = query.from;
+   const { data: claimed } = await supabase
+      .from('telegram_app_logins')
+      .update({
+         telegram_id: from.id,
+         telegram_username: from.username ?? null,
+         first_name: from.first_name ?? null,
+         last_name: from.last_name ?? null,
+         claimed_at: new Date(now).toISOString()
+      })
+      .eq('id', row.id)
+      .eq('pending_telegram_id', from.id)
+      .is('claimed_at', null)
+      .gt('expires_at', new Date(now).toISOString())
+      .select('id')
+      .maybeSingle();
+   await finish(claimed ? t.done(row.device_label || 'Browser') : t.expired, claimed ? t.toastOk : t.toastNo);
+   return true;
+};
+
 const getOpenSupportSession = async (supabase: SupabaseClient, customerChatId: number) => {
    const { data, error } = await supabase
       .from('support_sessions')
@@ -827,17 +1144,39 @@ const getOpenSupportSession = async (supabase: SupabaseClient, customerChatId: n
    return data as { id: string; thread_id: number; status: string } | null;
 };
 
+// Indonesia-track borrowers get the support lines in Bahasa (unless they chose English).
+const SUPPORT_TEXT = {
+   en: {
+      notReady: 'Moodeng support is not fully connected yet. Please use the support link in the app.',
+      already: 'You are already connected to Moodeng support. Send your message here.',
+      connected: 'You are connected to Moodeng support. Send your question here and the team will reply.',
+      howToStart: 'To start a private Moodeng support chat, send /start support.'
+   },
+   id: {
+      notReady: 'Chat tim Moodeng belum tersedia. Hubungi kami lewat WhatsApp.',
+      already: 'Kamu sudah terhubung dengan tim Moodeng. Tulis pesanmu di sini.',
+      connected: '💬 Kamu terhubung dengan tim Moodeng. Tulis pertanyaanmu di sini — tim akan membalas di chat ini (08–22 WIB).',
+      howToStart: 'Untuk chat dengan tim Moodeng, kirim /start support.'
+   }
+};
+
+const supportLang = async (supabase: SupabaseClient, message: TelegramMessage): Promise<'en' | 'id'> => {
+   const idUser = await findIdUserByTelegram(supabase, getSenderChatId(message)).catch(() => null);
+   return idUser && idUser.preferred_locale !== 'en' ? 'id' : 'en';
+};
+
 const startSupportSession = async (supabase: SupabaseClient, message: TelegramMessage) => {
    const customerChatId = getSenderChatId(message);
+   const st = SUPPORT_TEXT[await supportLang(supabase, message)];
    const supportGroupChatId = await getSupportGroupChatId(supabase);
    if (!supportGroupChatId) {
-      await sendTelegramMessage(customerChatId, 'Moodeng support is not fully connected yet. Please use the support link in the app.');
+      await sendTelegramMessage(customerChatId, st.notReady);
       return;
    }
 
    const existingSession = await getOpenSupportSession(supabase, customerChatId);
    if (existingSession) {
-      await sendTelegramMessage(customerChatId, 'You are already connected to Moodeng support. Send your message here.');
+      await sendTelegramMessage(customerChatId, st.already);
       return;
    }
 
@@ -860,7 +1199,7 @@ const startSupportSession = async (supabase: SupabaseClient, message: TelegramMe
 
    if (error) throw new Error(error.message);
 
-   await sendTelegramMessage(customerChatId, 'You are connected to Moodeng support. Send your question here and the team will reply.');
+   await sendTelegramMessage(customerChatId, st.connected);
    await sendTelegramMessage(
       supportGroupChatId,
       `New Moodeng support chat from ${getDisplayName(message)}.\nReply in this topic to DM the customer.\nUse /resolve when finished.`,
@@ -874,7 +1213,7 @@ const forwardCustomerMessageToSupport = async (supabase: SupabaseClient, message
    const session = await getOpenSupportSession(supabase, customerChatId);
 
    if (!supportGroupChatId || !session) {
-      await sendTelegramMessage(customerChatId, 'To start a private Moodeng support chat, send /start support.');
+      await sendTelegramMessage(customerChatId, SUPPORT_TEXT[await supportLang(supabase, message)].howToStart);
       return;
    }
 
@@ -904,7 +1243,13 @@ const handleSupportAgentMessage = async (supabase: SupabaseClient, message: Tele
    if (/^\/resolve(?:@\w+)?/i.test(message.text ?? '')) {
       const now = new Date().toISOString();
       await supabase.from('support_sessions').update({ status: 'resolved', resolved_at: now, updated_at: now }).eq('id', session.id);
-      await sendTelegramMessage(session.customer_chat_id, 'Your Moodeng support conversation has been closed. Start a new chat from the app if you need more help.');
+      const idCustomer = await findIdUserByTelegram(supabase, Number(session.customer_chat_id)).catch(() => null);
+      await sendTelegramMessage(
+         session.customer_chat_id,
+         idCustomer && idCustomer.preferred_locale !== 'en'
+            ? '✅ Chat dengan tim sudah selesai. Butuh bantuan lagi? Tulis saja di sini atau tekan ☰ Menu.'
+            : 'Your Moodeng support conversation has been closed. Start a new chat from the app if you need more help.'
+      );
       await closeTelegramForumTopic(supportGroupChatId, message.message_thread_id);
       return;
    }
@@ -952,6 +1297,22 @@ serve(async (req) => {
 
    try {
       if (update.callback_query) {
+         // Telegram-app sign-in: the number prompt (private chat).
+         if (await handleAppLoginTap(supabase, update.callback_query)) {
+            return jsonResponse({ message: 'App login tap handled' });
+         }
+         // Indonesia track bot menu + in-chat loans (private chat, market 'ID' only; _shared/idBot.ts).
+         if (await handleIdBotCallback(supabase, update.callback_query)) {
+            return jsonResponse({ message: 'Indonesia bot callback handled' });
+         }
+         // Indonesia: "✅ Sent" on a Walt Transfer payout card (admin chats only; idwp:<loan id>).
+         if (await handleWaltPayoutCallback(supabase, update.callback_query)) {
+            return jsonResponse({ message: 'Indonesia Walt payout handled' });
+         }
+         // Indonesia payout wallet: unmatched-money card, refunds, /idsweep confirm (admin chats only).
+         if (await handleWalletDepositCallback(supabase, update.callback_query)) {
+            return jsonResponse({ message: 'Indonesia wallet callback handled' });
+         }
          const teamChatId = await getTeamChatId(supabase);
          const kycChatId = await getSetting(supabase, 'kyc_alert_chat_id');
          // 🔄 Change time picker: the admin chats and the call-changes group.
@@ -1044,9 +1405,35 @@ serve(async (req) => {
             return jsonResponse({ message: 'Telegram alerts connected' });
          }
 
+         // Sign in with the Telegram app (telegram-login app_start / app_poll): claim the code with the
+         // account that pressed Start; the page waiting in Facebook's browser then gets its session.
+         if (payload.startsWith('login_')) {
+            await claimAppLogin(supabase, message, payload);
+            return jsonResponse({ message: 'App login claimed' });
+         }
+
          if (payload) {
             await recordReferralStart(supabase, message, payload);
             return jsonResponse({ message: 'Referral start recorded' });
+         }
+
+         // Indonesia track: /menu, a bare /start, "menu" or "pinjaman" → the bot menu. Everyone else
+         // (and any other text) goes on to support as before.
+         if (await handleIdMenuMessage(supabase, message)) {
+            return jsonResponse({ message: 'Indonesia bot menu sent' });
+         }
+
+         // Indonesia track: a typed question with no human support chat open → the AI helper answers
+         // from the guides (_shared/idHelper.ts); when it can't, a support chat is opened for the team.
+         if (!(await getOpenSupportSession(supabase, getSenderChatId(message)))) {
+            const idUser = await findIdUserByTelegram(supabase, message.from?.id ?? message.chat.id);
+            const outcome = idUser ? await handleIdFreeText(supabase, message, idUser) : false;
+            if (outcome === 'answered') return jsonResponse({ message: 'Indonesia helper answered' });
+            if (outcome === 'handoff') {
+               await startSupportSession(supabase, message);
+               await forwardCustomerMessageToSupport(supabase, message);
+               return jsonResponse({ message: 'Indonesia helper handed off to support' });
+            }
          }
 
          await forwardCustomerMessageToSupport(supabase, message);
@@ -1130,6 +1517,30 @@ serve(async (req) => {
       if (isAdminChannel && /^\/kycgate\b/i.test(message.text ?? '')) {
          await handleKycGateCommand(supabase, message);
          return jsonResponse({ message: 'KYC gate command handled' });
+      }
+
+      // Indonesia track switch + loan rules — either admin channel.
+      if (isAdminChannel && /^\/(idtrack|idloans|idterm)\b/i.test(message.text ?? '')) {
+         await handleIdTrackCommand(supabase, message);
+         return jsonResponse({ message: 'Indonesia track command handled' });
+      }
+
+      // Indonesia guides: attach a screenshot to a step (photo + caption "/idguidephoto cash 2").
+      if (isAdminChannel && isGuidePhotoCommand(message as never)) {
+         await handleGuidePhotoCommand(supabase, message as never);
+         return jsonResponse({ message: 'Indonesia guide photo handled' });
+      }
+
+      // Indonesia payout wallet switch — either admin channel.
+      // Indonesia payout wallet: send money out to the one fixed sweep address.
+      if (isAdminChannel && /^\/idsweep\b/i.test(message.text ?? '')) {
+         await handleSweepCommand(supabase, message);
+         return jsonResponse({ message: 'Indonesia sweep command handled' });
+      }
+
+      if (isAdminChannel && /^\/idautopay\b/i.test(message.text ?? '')) {
+         await handleIdAutopayCommand(supabase, message);
+         return jsonResponse({ message: 'Indonesia autopay command handled' });
       }
 
       await handleSupportAgentMessage(supabase, message);

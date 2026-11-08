@@ -3,6 +3,7 @@ import { type FormEvent, useMemo, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 
 import { downloadCreditLineExcel } from '@/lib/creditLineExcel';
+import { txExplorerUrl } from '@/lib/txExplorer';
 import { buildPeriodReport, type LenderLoan, type LenderReportData, loadLenderReport, periodsFor } from '@/lib/creditLineReport';
 
 // moodeng.app/creditline — the facility lender (BitRepo) sees the live monthly report and downloads it as
@@ -304,7 +305,7 @@ export default function CreditLineLenderPage() {
                                  <td className="px-3 py-2">{loan.borrower.video_call_attended ? '✓' : '—'}</td>
                                  <td className="max-w-[160px] px-3 py-2 font-mono text-[11px]">
                                     {loan.disbursementTxs.map((tx) => (
-                                       <a className="block truncate text-[#6b55f7] underline" href={`https://basescan.org/tx/${tx}`} key={tx} rel="noreferrer" target="_blank">
+                                       <a className="block truncate text-[#6b55f7] underline" href={txExplorerUrl(tx)} key={tx} rel="noreferrer" target="_blank">
                                           {tx}
                                        </a>
                                     ))}

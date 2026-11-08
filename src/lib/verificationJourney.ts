@@ -1,3 +1,4 @@
+import { ID_STEP_ORDER, type IdNext, type IdOnboarding } from '@/lib/idTrack';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getVerificationUiState } from '@/lib/verificationUiState';
 import { hasWalletAddressOnAccount } from '@/lib/walletProvider';
@@ -23,9 +24,10 @@ export type JourneyStage =
    | 'call_booked' // held by the gate, call booked — waiting for the call / the team's ✅
    | 'apply' // through onboarding, not ID-verified yet: apply; the ID check comes at the end of the request
    | 'id_with_didit' // ID check submitted / in review / unfinished / declined / duplicate
+   | 'id_track' // Indonesia track (src/lib/idTrack.ts): their own 8-step onboarding at /id/onboarding
    | 'verified';
 
-export type JourneyAction = 'wallet' | 'connect' | 'apply' | 'verify_status' | 'none';
+export type JourneyAction = 'wallet' | 'connect' | 'apply' | 'verify_status' | 'id_onboarding' | 'none';
 
 export const ONBOARDING_STEPS = 3;
 
@@ -124,5 +126,43 @@ export function getJourney(user: JourneyUser | null | undefined, isGated: boolea
       title: 'Ready to apply',
       body: "Apply for a loan — you'll verify your ID (about 2 minutes, one time) when you send your request.",
       action: 'apply'
+   };
+}
+
+const ID_NEXT_COPY: Record<IdNext, { id: string; en: string }> = {
+   telegram: { id: 'Hubungkan Telegram', en: 'Connect Telegram' },
+   whatsapp: { id: 'Hubungkan WhatsApp', en: 'Connect WhatsApp' },
+   facebook: { id: 'Hubungkan Facebook', en: 'Connect Facebook' },
+   about: { id: 'Isi tentang kamu', en: 'Tell us about you' },
+   income: { id: 'Kirim bukti penghasilan', en: 'Send proof of income' },
+   kyc: { id: 'Cek KTP + wajah', en: 'Check your ID + face' },
+   walt: { id: 'Tambah dompet Walt', en: 'Add your Walt wallet' },
+   call: { id: 'Pesan video call', en: 'Book your video call' },
+   waiting: { id: 'Lihat status', en: 'See your status' },
+   apply: { id: 'Ajukan pinjaman', en: 'Apply for a loan' }
+};
+
+/**
+ * Indonesia track: the next of their 8 onboarding steps (or waiting on the team after the call).
+ * Once approved (next = 'apply') callers use the normal journey instead.
+ */
+export function getIdJourney(data: Pick<IdOnboarding, 'next' | 'steps'>, lang: 'id' | 'en'): Journey {
+   const done = ID_STEP_ORDER.filter((k) => data.steps[k]).length;
+   const cta = ID_NEXT_COPY[data.next][lang];
+   const waiting = data.next === 'waiting';
+   return {
+      stage: 'id_track',
+      step: null,
+      onboarding: data.next !== 'apply',
+      cta,
+      title: waiting ? (lang === 'id' ? 'Menunggu tim' : 'Waiting on the team') : cta,
+      body: waiting
+         ? lang === 'id'
+            ? 'Setelah video call, tim akan menyetujui kamu.'
+            : 'After your video call, the team approves you.'
+         : lang === 'id'
+           ? `Langkah ${Math.min(done + 1, ID_STEP_ORDER.length)} dari ${ID_STEP_ORDER.length}`
+           : `Step ${Math.min(done + 1, ID_STEP_ORDER.length)} of ${ID_STEP_ORDER.length}`,
+      action: 'id_onboarding'
    };
 }

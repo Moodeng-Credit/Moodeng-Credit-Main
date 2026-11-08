@@ -1,6 +1,11 @@
 // A button opens a link (url), calls back into telegram-webhook (callback_data, ≤64 bytes), or copies
 // text to the tapper's clipboard (copy_text, ≤256 characters).
-export type TelegramButton = { text: string; url: string } | { text: string; callback_data: string } | { text: string; copy_text: { text: string } };
+export type TelegramButton =
+   | { text: string; url: string }
+   | { text: string; callback_data: string }
+   | { text: string; copy_text: { text: string } }
+   // Telegram Login: opens the URL with signed auth data for whoever tapped (domain set in BotFather).
+   | { text: string; login_url: { url: string; request_write_access?: boolean } };
 export type TelegramInlineKeyboard = Array<Array<TelegramButton>>;
 
 type TelegramApiResult<T> = {

@@ -170,7 +170,7 @@ serve(async (req) => {
 
       const { data: loan, error: loanError } = await supabase
          .from('loans')
-         .select('id, loan_amount, reason, borrower_user_id, loan_status, on_hold_since')
+         .select('id, loan_amount, reason, borrower_user_id, loan_status, on_hold_since, market')
          .eq('id', loanId)
          .maybeSingle();
 
@@ -256,7 +256,8 @@ serve(async (req) => {
                      requestAmount: toAmount(loan.loan_amount),
                      repaidLoanCount: lender.repaidLoanCount,
                      repaidTotal: lender.repaidTotal,
-                     reason: loan.reason ?? null
+                     reason: loan.reason ?? null,
+                     market: loan.market ?? null
                   },
                   locale
                )
@@ -284,7 +285,8 @@ serve(async (req) => {
                      requestAmount: toAmount(loan.loan_amount),
                      repaidLoanCount: lender.repaidLoanCount,
                      repaidTotal: lender.repaidTotal,
-                     reason: loan.reason ?? null
+                     reason: loan.reason ?? null,
+                     market: loan.market ?? null
                   },
                   pushLocale
                ),

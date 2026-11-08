@@ -24,6 +24,11 @@ import { postDiscord } from '../_shared/discord.ts';
 import { getTelegramBotSettingEnabled } from '../_shared/borrowerNotificationDelivery.ts';
 import { sendWhatsAppTemplate } from '../_shared/sendpulse.ts';
 import { nudgeStalledChats } from '../_shared/messengerBookingBot.ts';
+import { type IdEvent, type IdEventData, isIdTrackUser, runIdOnboardingNudges, sendIdTelegram } from '../_shared/idTrack.ts';
+import { runAutoPayouts, runWaltPayoutScan } from '../_shared/idManualFunding.ts';
+import { runIdrRepricing } from '../_shared/fxRates.ts';
+import { runIdRepayNudges, runIdRepayments } from '../_shared/idRepayments.ts';
+import { runWaltTransferPayoutCards } from '../_shared/idWaltPayouts.ts';
 
 // Cron-driven (every 5 min) no-show defence for booked video calls. The full ladder — day-before,
 // confirm-or-cancel (1h before) / cancel unconfirmed (30 min before), starting now, we're waiting, admin prompt, auto
@@ -96,8 +101,15 @@ const push = async (svc: Svc, u: ReminderUser, title: string, body: string, url:
    }
 };
 
-// Returns true only when Telegram actually accepted it.
-const telegram = async (u: ReminderUser, text: string, inlineKeyboard?: TelegramInlineKeyboard): Promise<boolean> => {
+// Returns true only when Telegram actually accepted it. Indonesia track (market 'ID'): the Bahasa
+// version (idTrack.ts) instead, always — Telegram is their one channel.
+const telegram = async (
+   u: ReminderUser,
+   text: string,
+   inlineKeyboard?: TelegramInlineKeyboard,
+   id?: { svc: Svc; event: IdEvent; data?: IdEventData }
+): Promise<boolean> => {
+   if (id && (await isIdTrackUser(id.svc, u.id))) return await sendIdTelegram(id.svc, u.id, id.event, id.data);
    if (!u.chat_id || u.notif_account_activity === false) return false;
    try {
       await sendTelegramMessage(u.chat_id, text, inlineKeyboard ? { inlineKeyboard } : {});
@@ -148,7 +160,11 @@ const hourBefore = async (svc: Svc, u: ReminderUser) => {
    const at = formatCallTime(u.video_call_starts_at, u.video_call_timezone);
    const body = `Your quick video hello with the Moodeng team starts in under an hour: ${at}. Have your ID ready and video on.`;
    await push(svc, u, 'Your Moodeng call is starting soon', body, u.video_call_join_url ?? `${SITE_URL}/request-board`);
-   await telegram(u, `Your Moodeng call is starting soon\n\n${body}`, joinButton(u));
+   await telegram(u, `Your Moodeng call is starting soon\n\n${body}`, joinButton(u), {
+      svc,
+      event: 'call_hour',
+      data: { callAt: u.video_call_starts_at, joinUrl: u.video_call_join_url }
+   });
    logMessenger(u, await sendReminderMessenger(u, 2));
 };
 
@@ -163,7 +179,11 @@ const runRung = async (svc: Svc, u: ReminderUser, rung: Rung, zoomActive: boolea
          if (skipsDayBeforeReminder(u.video_call_scheduled_at, startsAt)) return null;
          const body = `Your quick video hello with the Moodeng team is coming up: ${at}. Tap for the details and link.`;
          await push(svc, u, 'Reminder: your Moodeng video call', body, `${SITE_URL}/request-board`);
-         await telegram(u, `Reminder: your Moodeng video call\n\n${body}`);
+         await telegram(u, `Reminder: your Moodeng video call\n\n${body}`, undefined, {
+            svc,
+            event: 'call_reminder_day',
+            data: { callAt: u.video_call_starts_at, joinUrl: u.video_call_join_url }
+         });
          logMessenger(u, await sendReminderMessenger(u, 1));
          return 'day';
       }
@@ -176,7 +196,11 @@ const runRung = async (svc: Svc, u: ReminderUser, rung: Rung, zoomActive: boolea
          const confirmUrl = buildConfirmUrl(u.video_call_confirm_token);
          const body = `Your call is in 1 hour — ${at}. Bring your original ID and turn on video. Tap ✅ I'll be there within ${60 - CONFIRM_CLOSES_MIN} minutes, or the call is cancelled automatically.`;
          const viaPush = await push(svc, u, 'Confirm your Moodeng call ✅', body, confirmUrl);
-         const viaTelegram = await telegram(u, `Confirm your Moodeng call ✅\n\n${body}`, [[{ text: "✅ I'll be there", url: confirmUrl }]]);
+         const viaTelegram = await telegram(u, `Confirm your Moodeng call ✅\n\n${body}`, [[{ text: "✅ I'll be there", url: confirmUrl }]], {
+            svc,
+            event: 'call_confirm',
+            data: { callAt: u.video_call_starts_at, confirmUrl }
+         });
          const viaMessenger = await sendConfirmAskMessenger(u);
          logMessenger(u, viaMessenger);
          // Messenger couldn't reach them (outside its 24h window): the approved WhatsApp template, if
@@ -209,7 +233,11 @@ const runRung = async (svc: Svc, u: ReminderUser, rung: Rung, zoomActive: boolea
          if (u.video_call_arrived_at) return 'starting';
          const body = `Your call is starting now — ${at}. Tap to join.`;
          await push(svc, u, 'Your Moodeng call is starting now 👋', body, u.video_call_join_url ?? `${SITE_URL}/request-board`);
-         await telegram(u, `Your Moodeng call is starting now 👋\n\n${body}`, joinButton(u));
+         await telegram(u, `Your Moodeng call is starting now 👋\n\n${body}`, joinButton(u), {
+            svc,
+            event: 'call_starting',
+            data: { joinUrl: u.video_call_join_url }
+         });
          logMessenger(u, await sendStartingMessenger(u));
          return 'starting';
       }
@@ -217,7 +245,11 @@ const runRung = async (svc: Svc, u: ReminderUser, rung: Rung, zoomActive: boolea
          // Only when Zoom can vouch they're not there — otherwise we'd nag someone already in the call.
          if (!zoomMissing) return null;
          await push(svc, u, "We're ready for you 🙂", 'Tap to join your Moodeng call now.', u.video_call_join_url ?? `${SITE_URL}/request-board`);
-         await telegram(u, "We're ready for you 🙂\n\nTap to join your Moodeng call now. Can't make it? Reply on Messenger and we'll find a new time.", joinButton(u));
+         await telegram(u, "We're ready for you 🙂\n\nTap to join your Moodeng call now. Can't make it? Reply on Messenger and we'll find a new time.", joinButton(u), {
+            svc,
+            event: 'call_waiting',
+            data: { joinUrl: u.video_call_join_url }
+         });
          logMessenger(u, await sendWaitingMessenger(u));
          return 'waiting';
       }
@@ -294,6 +326,56 @@ serve(async (req) => {
    tally.sheet_alerts = await alertCallSheets(svc, now);
    // Messenger booking chats that stopped partway a few hours ago: one nudge each (no new function: free-plan cap).
    tally.booking_nudges = await nudgeStalledChats(svc);
+   // Indonesia track: stalled onboarding → a Telegram nudge (max 3, one per 24h; idTrack.ts). This job
+   // runs every 5 min, so the pass only runs in the first tick of each hour.
+   if (new Date(now).getUTCMinutes() < 5) tally.id_nudges = await runIdOnboardingNudges(svc, now);
+   // Indonesia track, one shared budget of ≤ 90 s (deadlines passed down; every Openfort call times out
+   // at 20 s and no send starts with < 30 s left). Money first: the payout wallet (settle payments in
+   // flight, BNB Chain checks on failed ones, new payouts when /idautopay is on), then the hand-payout
+   // scan, then the rupiah repricing. None of them throw.
+   const idStart = Date.now();
+   const idDeadline = idStart + 90_000;
+   try {
+      const auto = await runAutoPayouts(svc, now, idStart + 50_000);
+      tally.walt_auto_settled = auto.settled;
+      tally.walt_auto_funded = auto.funded;
+      tally.walt_auto_sent = auto.sent;
+      tally.walt_auto_failed = auto.failed;
+      tally.walt_auto_chain_checked = auto.chainChecked;
+   } catch (err) {
+      console.error('video-call-reminders: auto payouts failed', err);
+   }
+   // Walt Transfer mode (the default): one "send X USDT to @user" card per open request for the team.
+   try {
+      const cards = await runWaltTransferPayoutCards(svc, now, Math.max(Date.now() + 10_000, idDeadline - 40_000));
+      tally.walt_payout_cards = cards.cards;
+      tally.walt_username_asked = cards.askedUsername;
+      tally.walt_payout_reminded = cards.reminded;
+   } catch (err) {
+      console.error('video-call-reminders: Walt payout cards failed', err);
+   }
+   // Loans paid by hand from Binance TH to Walt — confirm them on BNB Chain.
+   const walt = await runWaltPayoutScan(svc, now, Math.max(Date.now(), idDeadline - 15_000));
+   tally.walt_payouts_checked = walt.checked;
+   tally.walt_payouts_found = walt.found;
+   tally.walt_payouts_alerted = walt.alerted;
+   // Repayments sent from Walt straight to the payout wallet (bot 💰 Bayar / app): find + record them.
+   try {
+      const repay = await runIdRepayments(svc, Math.max(Date.now() + 20_000, idDeadline - 5_000));
+      tally.walt_repay_seen = repay.seen;
+      tally.walt_repay_recorded = repay.recorded + repay.resumed;
+      tally.walt_repay_unmatched = repay.unmatched;
+      tally.walt_repay_nudged = await runIdRepayNudges(svc, now);
+   } catch (err) {
+      console.error('video-call-reminders: wallet repayments failed', err);
+   }
+   // Rupiah peg — refresh USD/IDR (stored at most every 6h; ID requests are refused while no rate under
+   // 36h old exists) and re-price open ID loans; team ping on a >5% move.
+   try {
+      await runIdrRepricing(svc, idDeadline);
+   } catch (err) {
+      console.error('video-call-reminders: IDR repricing failed', err);
+   }
    return json({ ok: true, scanned: users.length, ...tally });
 });
 
