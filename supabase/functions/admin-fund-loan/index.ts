@@ -4,6 +4,23 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { postLoanFundedToTeam } from '../_shared/teamLoanFeed.ts'
 import { checkNow, markSent, payNow, payoutStatus, recordByTxid, releasePayout } from '../_shared/idManualFunding.ts'
 import { createPayoutWallet, payoutWalletStatus } from '../_shared/idPayoutWallet.ts'
+import { decodeUsdcTransfers, RPC_URL, rpcCall } from '../_shared/usdcTransfer.ts'
+
+// BitRepo originator vault on Base (OriginatorVault). Moodeng's lending wallet draws loans from it straight to
+// the borrower; this route checks the draw on-chain before recording it.
+const BITREPO_VAULT_ADDRESS = (Deno.env.get('BITREPO_VAULT_ADDRESS') || '0x1a59968e6B5E1c458B2Df429d2c111ed21E01443').toLowerCase()
+
+// The draw tx must have succeeded and moved exactly `amountBase` USDC from the vault to the borrower.
+async function verifyVaultDraw(txHash: string, borrowerWallet: string, amountBase: bigint): Promise<string | null> {
+  if (!/^0x[0-9a-fA-F]{64}$/.test(txHash)) return 'Invalid txHash'
+  const receipt = await rpcCall(RPC_URL, 'eth_getTransactionReceipt', [txHash]).catch(() => null)
+  if (!receipt) return 'Draw transaction not found on Base yet'
+  if (receipt.status !== '0x1') return 'Draw transaction failed on-chain'
+  const paid = decodeUsdcTransfers(receipt.logs).some(
+    (t) => t.from === BITREPO_VAULT_ADDRESS && t.to === borrowerWallet.toLowerCase() && t.value === amountBase,
+  )
+  return paid ? null : 'That transaction is not a vault draw of this amount to this borrower'
+}
 
 // Records a loan funded by a Moodeng admin (direct transfer OR smart-contract /
 // LoanManager). SECURITY: this route is the real boundary — it independently verifies
@@ -76,7 +93,7 @@ serve(async (req) => {
 
     const {
       loanId, // existing loans.id to update (loan request being funded)
-      fundingMethod, // 'direct' | 'smart_contract'
+      fundingMethod, // 'direct' | 'smart_contract' | 'credit_line' (BitRepo vault draw)
       txHash,
       borrowerWallet,
       principal, // USDC, major units (string|number)
@@ -86,10 +103,11 @@ serve(async (req) => {
       onchainRequestId,
       listingPrice, // salePrice (defaults to principal on the client)
       listingTxHash, // hash of listLoanNote (distinct from the mint/fund tx in hash[])
+      funderWallet, // vault draws: the operator wallet, which borrowers repay and which then pays the vault
     } = body ?? {}
 
     if (!loanId) return json({ error: 'Missing loanId' }, 400)
-    if (fundingMethod !== 'direct' && fundingMethod !== 'smart_contract') {
+    if (fundingMethod !== 'direct' && fundingMethod !== 'smart_contract' && fundingMethod !== 'credit_line') {
       return json({ error: 'Invalid fundingMethod' }, 400)
     }
 
@@ -116,6 +134,15 @@ serve(async (req) => {
     }
 
     const isSmart = fundingMethod === 'smart_contract'
+    const isVault = fundingMethod === 'credit_line'
+    if (isVault) {
+      if (!txHash || !borrowerWallet || !funderWallet || principal == null) {
+        return json({ error: 'A vault draw needs txHash, borrowerWallet, funderWallet and principal' }, 400)
+      }
+      const amountBase = BigInt(Math.round(Number(principal) * 1e6))
+      const problem = await verifyVaultDraw(String(txHash), String(borrowerWallet), amountBase)
+      if (problem) return json({ error: problem }, 422)
+    }
 
     const updates: Record<string, unknown> = {
       funding_method: fundingMethod,
@@ -151,6 +178,13 @@ serve(async (req) => {
     } else {
       // Direct/manual funding never produces a sellable Loan Note.
       updates.is_sellable = false
+    }
+    if (isVault) {
+      // The admin who drew is the lender of record, so the borrower's Repay pays their wallet (as with a direct
+      // lend) and the BitRepo facility trigger links the loan. Admin → Credit line then pays the vault back.
+      updates.lender_user_id = callerId
+      updates.lender_wallet = String(funderWallet)
+      updates.vault_address = BITREPO_VAULT_ADDRESS
     }
 
     // Append tx hash to the loan's hash[] array.

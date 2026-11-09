@@ -1,4 +1,4 @@
-import { type ReactNode, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { Check, Wallet } from 'lucide-react';
@@ -11,9 +11,11 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { txExplorerUrl } from '@/config/loanFundingConfig';
 import { ensureUsdcAllowance, getLoanManagerService } from '@/lib/web3/loanManager';
 import { recordAdminFunding, usdcToBaseUnits } from '@/lib/loanNotes/api';
+import { BITREPO_VAULT_URL, type VaultStatus, drawFromVault, readVaultStatus, vaultBorrowerId } from '@/lib/web3/bitrepoVault';
 
 export interface FundLoanTarget {
    loanId: string; // loans.id (UUID)
+   borrowerUserId?: string | null;
    borrowerWallet: string | null;
    borrowerName: string;
    principal: number; // USDC
@@ -21,7 +23,7 @@ export interface FundLoanTarget {
    dueDate: string; // ISO
 }
 
-type Method = 'choose' | 'smart';
+type Method = 'choose' | 'smart' | 'vault';
 
 interface Props {
    target: FundLoanTarget;
@@ -87,6 +89,38 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
    }, [principal, totalOwed, salePrice, dueDate, target.borrowerWallet]);
 
    const termsValid = !errors.principal && !errors.totalOwed && !errors.salePrice && !errors.dueDate && !errors.missingWallet;
+
+   // BitRepo vault: what it can lend right now, and whether the connected wallet may draw (OPERATOR_ROLE).
+   const [vault, setVault] = useState<VaultStatus | null>(null);
+   const [vaultError, setVaultError] = useState<string | null>(null);
+   useEffect(() => {
+      if (method !== 'vault') return;
+      let cancelled = false;
+      setVaultError(null);
+      readVaultStatus(address)
+         .then((status) => {
+            if (!cancelled) setVault(status);
+         })
+         .catch(() => {
+            if (!cancelled) setVaultError('Couldn’t read the BitRepo vault. Check your connection and try again.');
+         });
+      return () => {
+         cancelled = true;
+      };
+   }, [method, address]);
+
+   const vaultAvailable = vault ? Number(vault.availableToDraw) / 1e6 : null;
+   const vaultIssue = (() => {
+      if (!vault) return null;
+      if (vault.paused) return 'BitRepo has paused draws on the vault.';
+      if (Number(principal) > (vaultAvailable ?? 0)) return `The vault can lend ${vaultAvailable?.toFixed(2)} USDC right now.`;
+      const dueTs = dueDate ? Math.floor(new Date(`${dueDate}T23:59:59`).getTime() / 1000) : 0;
+      const maxDays = Math.floor(vault.termLimitSeconds / 86400);
+      if (dueTs > Math.floor(Date.now() / 1000) + vault.termLimitSeconds) return `The vault allows due dates up to ${maxDays} days away.`;
+      if (connected && !vault.canDraw) return `This wallet (${shortAddress(address)}) can’t draw from the vault. Connect Moodeng’s lending wallet.`;
+      return null;
+   })();
+   const vaultReady = termsValid && Boolean(vault) && !vaultIssue;
 
    const close = () => {
       if (busy) return;
@@ -195,13 +229,77 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
       }
    };
 
+   const handleVaultDraw = async () => {
+      if (!connected || !vaultReady || !target.borrowerWallet) return;
+      const principalNum = Number(principal);
+      const totalOwedNum = Number(totalOwed);
+      const dueTs = Math.floor(new Date(`${dueDate}T23:59:59`).getTime() / 1000);
+
+      setBusy(true);
+      setNotice(null);
+      let txHash: `0x${string}`;
+      try {
+         txHash = await drawFromVault({
+            loanId: target.loanId,
+            recipient: target.borrowerWallet,
+            amount: usdcToBaseUnits(principalNum),
+            dueDate: dueTs,
+            totalDue: usdcToBaseUnits(totalOwedNum),
+            borrowerId: vaultBorrowerId(target.borrowerUserId || target.loanId)
+         });
+      } catch (err) {
+         // Nothing left the vault: the draw reverted, or the wallet popup was closed.
+         setNotice({ tone: 'error', message: (err as Error).message || 'The vault draw didn’t go through. Nothing was sent — try again.' });
+         setBusy(false);
+         return;
+      }
+
+      const recordPayload = {
+         loanId: target.loanId,
+         fundingMethod: 'credit_line' as const,
+         txHash,
+         borrowerWallet: target.borrowerWallet,
+         funderWallet: address as string,
+         principal: principalNum,
+         totalOwed: totalOwedNum,
+         dueDate: `${dueDate}T23:59:59.000Z`
+      };
+      try {
+         await recordAdminFunding(recordPayload).catch(() => recordAdminFunding(recordPayload));
+      } catch {
+         // The borrower has the money; only our record is missing. Keep the tx visible so it can be re-recorded.
+         setNotice({
+            tone: 'pending',
+            message: (
+               <>
+                  Sent from the vault — saving it to our records didn’t complete. Tap Draw again only after checking the{' '}
+                  <a href={txExplorerUrl(txHash)} target="_blank" rel="noreferrer" className="font-medium underline">
+                     transaction
+                  </a>
+                  ; a second draw for this loan is refused by the vault.
+               </>
+            )
+         });
+         onFunded?.();
+         setBusy(false);
+         return;
+      }
+
+      showToast(TOAST_TYPES.SUCCESS, 'Loan funded', `${principalNum} USDC sent from the BitRepo vault.`);
+      onFunded?.();
+      onClose();
+      setBusy(false);
+   };
+
    const upside = Math.max(0, (Number(totalOwed) || 0) - (Number(salePrice) || 0));
 
    return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" onClick={close}>
          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-start justify-between">
-               <h2 className="text-lg font-semibold text-gray-900">{method === 'smart' ? 'Fund This Loan' : 'Choose How to Fund This Loan'}</h2>
+               <h2 className="text-lg font-semibold text-gray-900">
+                  {method === 'smart' ? 'Fund This Loan' : method === 'vault' ? 'Fund from BitRepo Vault' : 'Choose How to Fund This Loan'}
+               </h2>
                <button type="button" onClick={close} className="text-gray-400 hover:text-gray-600" aria-label="Close">
                   ✕
                </button>
@@ -229,17 +327,31 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
 
             {method === 'choose' ? (
                <div className="space-y-4">
-                  {/* Option 2 — recommended, shown first */}
+                  {/* BitRepo vault — recommended: the money comes straight from the vault, not our wallet */}
                   <button
                      type="button"
-                     onClick={() => setMethod('smart')}
+                     onClick={() => setMethod('vault')}
                      className="block w-full rounded-xl border-2 border-[#0052FF] bg-[#0052FF]/5 p-4 text-left transition hover:bg-[#0052FF]/10"
                   >
                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-gray-900">Smart Contract Lend</span>
+                        <span className="font-semibold text-gray-900">BitRepo Vault</span>
                         <span className="rounded-full bg-[#0052FF] px-2 py-0.5 text-[11px] font-medium text-white">Recommended</span>
                      </div>
                      <p className="mt-1 text-sm text-gray-600">
+                        The vault sends USDC straight to the borrower. Borrowers repay us as usual; then pay the vault from Admin → Credit
+                        line.
+                     </p>
+                  </button>
+
+                  <button
+                     type="button"
+                     onClick={() => setMethod('smart')}
+                     className="block w-full rounded-xl border border-gray-200 bg-gray-50 p-4 text-left transition hover:bg-gray-100"
+                  >
+                     <div className="flex items-center gap-2">
+                        <span className="font-semibold text-gray-700">Smart Contract Lend</span>
+                     </div>
+                     <p className="mt-1 text-sm text-gray-500">
                         Fund through the LoanManager contract. This creates a Loan Note and lets Moodeng recover liquidity later when a
                         moo-lender funds this same loan.
                      </p>
@@ -254,6 +366,108 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
                      <span className="font-semibold text-gray-700">Direct Lend</span>
                      <p className="mt-1 text-sm text-gray-500">Send USDC directly to the borrower. No Loan Note is created.</p>
                      <p className="mt-1 text-xs text-amber-700">This loan will not be sellable later through the Liquidity Relay.</p>
+                  </button>
+               </div>
+            ) : null}
+
+            {method === 'vault' ? (
+               <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                     <label className="text-sm">
+                        <span className="mb-1 block text-gray-600">Principal (USDC)</span>
+                        <input type="number" min="0" value={principal} onChange={(e) => setPrincipal(e.target.value)} className={fieldClass} />
+                        {errors.principal ? <span className="mt-1 block text-xs text-red-600">{errors.principal}</span> : null}
+                     </label>
+                     <label className="text-sm">
+                        <span className="mb-1 block text-gray-600">Total owed (USDC)</span>
+                        <input type="number" min="0" value={totalOwed} onChange={(e) => setTotalOwed(e.target.value)} className={fieldClass} />
+                        {errors.totalOwed ? <span className="mt-1 block text-xs text-red-600">{errors.totalOwed}</span> : null}
+                     </label>
+                     <label className="col-span-2 text-sm">
+                        <span className="mb-1 block text-gray-600">Due date</span>
+                        <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={fieldClass} />
+                        {errors.dueDate ? <span className="mt-1 block text-xs text-red-600">{errors.dueDate}</span> : null}
+                     </label>
+                  </div>
+
+                  {errors.missingWallet ? (
+                     <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">{errors.missingWallet}</p>
+                  ) : null}
+
+                  <div className="rounded-lg bg-[#0052FF]/5 p-3 text-xs text-gray-600">
+                     <p>
+                        Available in the vault:{' '}
+                        <strong>{vaultAvailable == null ? (vaultError ? '—' : 'checking…') : `${vaultAvailable.toFixed(2)} USDC`}</strong>
+                        {' · '}
+                        <a href={BITREPO_VAULT_URL} target="_blank" rel="noreferrer" className="underline">
+                           Open vault
+                        </a>
+                     </p>
+                     <p className="mt-1">
+                        {target.borrowerWallet ? `Sends to the borrower’s wallet ${shortAddress(target.borrowerWallet)}. ` : ''}
+                        The vault charges 15%/yr on what’s out; the rest of the total owed is our margin.
+                     </p>
+                  </div>
+
+                  {vaultError || vaultIssue ? (
+                     <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">{vaultError || vaultIssue}</p>
+                  ) : null}
+
+                  <div>
+                     <ChecklistStep number={1} state={connected ? 'done' : 'active'} title="Connect Moodeng’s lending wallet">
+                        {connected ? (
+                           <span className="inline-flex items-center gap-1.5 rounded-lg bg-md-green-100 px-2.5 py-1 text-xs font-medium text-md-green-800">
+                              <Wallet className="h-3.5 w-3.5" /> {shortAddress(address)} connected
+                           </span>
+                        ) : (
+                           <button
+                              type="button"
+                              onClick={() => openConnectModal?.()}
+                              className="rounded-lg bg-[#0052FF] px-4 py-2 text-sm font-medium text-white transition active:scale-[0.98]"
+                           >
+                              Connect wallet
+                           </button>
+                        )}
+                     </ChecklistStep>
+
+                     <div className={`ml-[13px] h-4 w-0.5 ${connected ? 'bg-md-green-600' : 'bg-gray-200'}`} aria-hidden="true" />
+
+                     <ChecklistStep number={2} state={connected ? 'active' : 'locked'} title="Draw from the vault">
+                        {connected ? (
+                           <button
+                              type="button"
+                              onClick={handleVaultDraw}
+                              disabled={busy || !vaultReady}
+                              className="rounded-lg bg-[#0052FF] px-4 py-2 text-sm font-medium text-white transition active:scale-[0.98] disabled:opacity-50"
+                           >
+                              {busy ? 'Sending…' : `Send ${Number(principal) || 0} USDC to borrower`}
+                           </button>
+                        ) : (
+                           <p className="text-xs text-gray-500">Unlocks once your wallet is connected</p>
+                        )}
+                     </ChecklistStep>
+                  </div>
+
+                  {notice ? (
+                     <p
+                        className={`rounded-lg px-3 py-2 text-xs ${
+                           notice.tone === 'error' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-800'
+                        }`}
+                     >
+                        {notice.message}
+                     </p>
+                  ) : null}
+
+                  <button
+                     type="button"
+                     onClick={() => {
+                        setMethod('choose');
+                        setNotice(null);
+                     }}
+                     disabled={busy}
+                     className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 disabled:opacity-50"
+                  >
+                     Back
                   </button>
                </div>
             ) : null}

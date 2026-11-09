@@ -1008,6 +1008,7 @@ export default function UserCard(loan: UserCardProps) {
                target={
                   {
                      loanId: loanData.id,
+                     borrowerUserId: loanData.borrowerUser ?? null,
                      borrowerWallet: loanData.borrowerWallet ?? null,
                      borrowerName: borrowerDisplayName,
                      principal: Number(loanData.loanAmount ?? 0),
