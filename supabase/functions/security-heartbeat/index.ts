@@ -6,6 +6,9 @@ import { callTelegramApi } from '../_shared/telegram.ts';
 import { buildHeartbeat, HeartbeatInput } from '../_shared/securityHeartbeat.ts';
 import { recordJobRun } from '../_shared/securityJobRuns.ts';
 import { deliverSecurityAlert, resolveSecurityChatId } from '../_shared/securityAlerts.ts';
+import { ALCHEMY_BASE_URL } from '../_shared/usdcTransfer.ts';
+import { assessVault, type VaultWatchState } from '../_shared/vaultWatch.ts';
+import { readVaultSnapshot } from '../_shared/vaultWatchRead.ts';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -38,6 +41,10 @@ serve(async (req) => {
    const startedAt = new Date().toISOString();
    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
    const now = new Date();
+
+   // Every 5 minutes (cron vault-watch-5min): BitRepo vault vs our recorded Vault Lend loans (_shared/vaultWatch.ts).
+   const body = await req.json().catch(() => ({}));
+   if (body?.action === 'vault_watch') return await runVaultWatch(supabase, startedAt);
 
    // --- Gather facts -------------------------------------------------------
    const { data: lastScan } = await supabase
@@ -131,3 +138,35 @@ serve(async (req) => {
 
    return new Response(JSON.stringify({ heartbeat_ok: ok, delivery }), { status: 200, headers: corsHeaders });
 });
+
+const VAULT_JOB = 'vault-watch';
+
+// deno-lint-ignore no-explicit-any
+async function runVaultWatch(supabase: any, startedAt: string): Promise<Response> {
+   // The last successful run's state: the snapshot to compare against, and any unrecorded money it saw.
+   const { data: last } = await supabase
+      .from('security_job_runs')
+      .select('detail')
+      .eq('job_name', VAULT_JOB)
+      .eq('ok', true)
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+   const previous = ((last as { detail?: { state?: VaultWatchState } } | null)?.detail?.state ?? null) as VaultWatchState | null;
+
+   try {
+      const snapshot = await readVaultSnapshot(supabase, Deno.env.get('BASE_RPC_URL')?.trim() || ALCHEMY_BASE_URL);
+      const { findings, state } = assessVault(snapshot, previous);
+      const deliveries = [];
+      for (const f of findings) {
+         deliveries.push(await deliverSecurityAlert(supabase, { source: 'vault', severity: f.severity, title: f.title, body: f.body }));
+      }
+      await recordJobRun(supabase, VAULT_JOB, { startedAt, ok: true, signalCount: findings.length, detail: { state, findings: findings.map((f) => f.title) } });
+      return new Response(JSON.stringify({ ok: true, findings: findings.map((f) => f.title), state }), { status: 200, headers: corsHeaders });
+   } catch (err) {
+      // A failed read is recorded (ok=false) so the next run still compares against the last good state.
+      const message = err instanceof Error ? err.message : String(err);
+      await recordJobRun(supabase, VAULT_JOB, { startedAt, ok: false, detail: { error: message } });
+      return new Response(JSON.stringify({ ok: false, error: message }), { status: 500, headers: corsHeaders });
+   }
+}
