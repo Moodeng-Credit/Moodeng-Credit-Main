@@ -169,7 +169,7 @@ export function DoneRow({ children }: { children: ReactNode }) {
          <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#2f9e44] text-white">
             <Check aria-hidden="true" className="size-4" strokeWidth={3} />
          </span>
-         <span className="min-w-0">{children}</span>
+         <span className="min-w-0 flex-1">{children}</span>
       </div>
    );
 }
