@@ -1,12 +1,15 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 
-import { ArrowRight, Check, ChevronRight, Clock, Landmark, Loader2, Search, Smartphone, Wallet, XCircle } from 'lucide-react';
+import { ArrowRight, Check, ChevronRight, Clock, Landmark, Loader2, QrCode, Search, Smartphone, Wallet, XCircle } from 'lucide-react';
 
 import PoweredByStableyard from '@/components/brand/PoweredByStableyard';
 
 import { isValidEmail } from '@/lib/accountEmail';
 import { isPlaceholderEmail } from '@/lib/phoneAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { GoldButton } from '@/views/indonesia/ui';
+import { qrPayeeName } from '@/views/payQr/qrReader';
+import QrCashoutSteps, { type DecodeReply, QrTrail } from '@/views/withdraw/QrCashoutSteps';
 
 // "Straight to GCash or bank" cash-out through Stableyard (an off-ramp): the borrower picks a bank or
 // e-wallet, types the account number and a peso amount, gets a USDC quote, then sends that USDC from
@@ -16,6 +19,9 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 // Stableyard needs a verified email + its own KYC on the person's account before it pays out fiat.
 // If Stableyard allows it and our Didit record has what payout partners need, the person can share
 // their Moodeng ID check instead of doing a second one (onboarding: kyc_import, with consent).
+// mode 'qr': the same flow, but the money goes to the person's own bank QR (InstaPay / QR Ph "Receive"
+// QR) over Stableyard's QR rail (qr: qr_cash_decode / qr_cash_create), with the gold step-by-step
+// QrCashoutSteps in place of the bank form. It works while Stableyard's bank payout provider is down.
 
 const FN = 'stableyard-deposit-address';
 const MIN_PHP = 50;
@@ -53,6 +59,8 @@ type FnResult = {
    ewallets?: boolean;
    result?: {
       banks?: Bank[];
+      // qr_cash_decode: who the QR pays.
+      merchant?: { displayName?: string; name?: string };
       challenge?: { id?: string };
       verificationUrl?: string;
       payment?: {
@@ -97,7 +105,8 @@ const PREVIEW: Record<string, FnResult> = {
       }
    },
    get: { ok: true, result: { payment: { id: 'payment_preview', status: 'succeeded' } } },
-   sent: { ok: true }
+   sent: { ok: true },
+   qr_cash_decode: { ok: true, result: { merchant: { name: 'JUAN DELA CRUZ' } } }
 };
 
 // A shared Moodeng ID check that Stableyard is still copying or reviewing.
@@ -110,7 +119,8 @@ const SETUP_POLL_MS = 6000;
 const SETUP_POLL_MAX = 100;
 let previewReviewSince = 0;
 
-async function call(isPreview: boolean, body: Record<string, string | boolean>): Promise<FnResult> {
+async function call(isPreview: boolean, input: Record<string, string | boolean>): Promise<FnResult> {
+   let body = input;
    if (isPreview) {
       await new Promise((r) => setTimeout(r, 600));
       // ?sim=email / ?sim=verify show the one-time setup at the email / ID step; ?sim=compliance shows
@@ -134,6 +144,10 @@ async function call(isPreview: boolean, body: Record<string, string | boolean>):
          if (Date.now() - previewReviewSince > 8000) return PREVIEW.setup;
          return { ok: true, emailVerified: true, kycApproved: false, kycStatus: 'requires_review', reuseImportStatus: 'imported' };
       }
+      // ?sim=personal: Stableyard won't take the QR.
+      if (body.qr === 'qr_cash_decode' && sim === 'personal')
+         return { ok: false, code: 'personal_qr_not_supported', error: 'Personal QR codes are not supported.' };
+      if (body.qr === 'qr_cash_create') body = { ...body, qr: 'bank_create' };
       if (body.qr === 'bank_create' && sim === 'compliance') {
          return {
             ok: true,
@@ -391,9 +405,15 @@ export default function BankPayoutFlow({
    isPreview,
    spendable,
    send,
-   onDone
+   onDone,
+   mode = 'bank',
+   onUseBank
 }: {
    isPreview: boolean;
+   /** 'qr': pay out to the person's own bank QR instead of a typed account number. */
+   mode?: 'bank' | 'qr';
+   /** QR mode: switch to the account-number cash-out (offered when Stableyard won't take a QR). */
+   onUseBank?: () => void;
    spendable: number | null;
    send: (
       toAddress: string,
@@ -442,6 +462,10 @@ export default function BankPayoutFlow({
    const [complianceUrl, setComplianceUrl] = useState('');
    const [remembered, setRemembered] = useState(false);
    const pricingTries = useRef(0);
+   const qrMode = mode === 'qr';
+   // QR mode: the QR text (never stored or logged) and who it pays, once Stableyard has read it.
+   const [qrPayload, setQrPayload] = useState('');
+   const [qrName, setQrName] = useState('');
 
    const bank = banks.find((b) => b.code === bankCode);
    const isEwallet = bank ? /GCASH|MAYA|GRABPAY|SHOPEEPAY|COINS|PALAWANPAY/.test(bank.name) : false;
@@ -503,6 +527,10 @@ export default function BankPayoutFlow({
       }
       if (!res.emailVerified || !res.kycApproved) {
          setStep('verify');
+         return;
+      }
+      if (qrMode) {
+         setStep('form');
          return;
       }
       const list = await call(isPreview, { qr: 'bank_list', country: 'PH' });
@@ -655,6 +683,17 @@ export default function BankPayoutFlow({
       setBusy(true);
       setError('');
       requestKey.current = crypto.randomUUID();
+      if (qrMode) {
+         const qrRes = await call(isPreview, {
+            qr: 'qr_cash_create',
+            country: 'PH',
+            qrPayload,
+            amount: String(amountNum),
+            requestKey: requestKey.current
+         });
+         setBusy(false);
+         return qrRes;
+      }
       const res = await call(isPreview, {
          qr: 'bank_create',
          country: 'PH',
@@ -709,13 +748,17 @@ export default function BankPayoutFlow({
       setError('');
       setStep('sending');
       try {
-         const outcome = await send(deposit.address, deposit.amount, `${shortBank(bank?.name ?? 'bank')} via Stableyard`);
+         const outcome = await send(
+            deposit.address,
+            deposit.amount,
+            qrMode ? 'Bank QR via Stableyard' : `${shortBank(bank?.name ?? 'bank')} via Stableyard`
+         );
          if (!outcome) {
             setStep('quote');
             return;
          }
          void call(isPreview, { qr: 'sent', paymentId, txHash: outcome.hash });
-         writeSavedPayee(setup?.accountId ?? 'preview', { bankCode, accountNumber, accountName: accountName.trim() });
+         if (!qrMode) writeSavedPayee(setup?.accountId ?? 'preview', { bankCode, accountNumber, accountName: accountName.trim() });
          setStatus('processing');
          setSentAt(Date.now());
          setClock(Date.now());
@@ -728,7 +771,17 @@ export default function BankPayoutFlow({
       }
    };
 
-   const accountLabel = `${shortBank(bank?.name ?? '')} ••${accountNumber.slice(-4)}`;
+   const accountLabel = qrMode ? qrName || 'your bank' : `${shortBank(bank?.name ?? '')} ••${accountNumber.slice(-4)}`;
+
+   const decodeQr = async (payload: string): Promise<DecodeReply> => {
+      const res = await call(isPreview, { qr: 'qr_cash_decode', country: 'PH', qrPayload: payload });
+      if (!res.ok) return { ok: false, code: res.code, error: res.error };
+      const name = res.result?.merchant?.displayName ?? res.result?.merchant?.name ?? qrPayeeName(payload) ?? '';
+      setQrPayload(payload);
+      setQrName(name);
+      setError('');
+      return { ok: true, name };
+   };
 
    if (step === 'loading') {
       return (
@@ -839,6 +892,30 @@ export default function BankPayoutFlow({
                <PoweredByStableyard />
             </div>
          </div>
+      );
+   }
+
+   if (step === 'form' && qrMode) {
+      return (
+         <QrCashoutSteps
+            spendable={spendable}
+            amount={amount}
+            setAmount={setAmount}
+            minPhp={MIN_PHP}
+            maxPhp={MAX_PHP}
+            busy={busy}
+            error={error}
+            qrName={qrName}
+            hasQr={Boolean(qrPayload)}
+            decode={decodeQr}
+            onClearQr={() => {
+               setQrPayload('');
+               setQrName('');
+               setError('');
+            }}
+            onGetPrice={() => void getQuote()}
+            onUseBank={onUseBank}
+         />
       );
    }
 
@@ -1041,6 +1118,7 @@ export default function BankPayoutFlow({
       const usdcText = (n: number) => `${n.toFixed(2)} USDC`;
       return (
          <div className="space-y-[12px]">
+            {qrMode ? <QrTrail step={2} /> : null}
             <Panel>
                <div className="text-center pt-[4px]">
                   <p className="text-[13px] text-[var(--text-muted)]">You get</p>
@@ -1048,7 +1126,13 @@ export default function BankPayoutFlow({
                      {peso(amountNum)}
                   </p>
                   <div className="mt-[6px] inline-flex items-center gap-[8px] rounded-full bg-[var(--surface-2)] pl-[4px] pr-[12px] py-[4px]">
-                     {bank ? <BankBadge name={bank.name} size={24} /> : <Landmark className="w-[18px] h-[18px] text-[var(--primary)]" />}
+                     {qrMode ? (
+                        <QrCode className="w-[18px] h-[18px] ml-[4px] text-[var(--primary)]" />
+                     ) : bank ? (
+                        <BankBadge name={bank.name} size={24} />
+                     ) : (
+                        <Landmark className="w-[18px] h-[18px] text-[var(--primary)]" />
+                     )}
                      <span className="text-[14px] font-semibold text-[var(--ink)]">{accountLabel}</span>
                   </div>
                </div>
@@ -1110,10 +1194,18 @@ export default function BankPayoutFlow({
                {notEnough ? <ErrorLine text={`You have ${spendable} USDC. Lower the amount.`} /> : null}
                {error ? <ErrorLine text={error} /> : null}
             </Panel>
-            {expired ? (
+            {expired && qrMode ? (
+               <GoldButton disabled={busy} onClick={() => void getQuote()}>
+                  Refresh price
+               </GoldButton>
+            ) : expired ? (
                <button className={primaryClass} disabled={busy} onClick={() => void getQuote()}>
                   Refresh price
                </button>
+            ) : qrMode ? (
+               <GoldButton busy={step === 'sending'} disabled={busy || notEnough || spendable == null} onClick={() => void confirmSend()}>
+                  {step === 'sending' ? 'Sending…' : 'Confirm'}
+               </GoldButton>
             ) : (
                <button className={primaryClass} disabled={busy || notEnough || spendable == null} onClick={() => void confirmSend()}>
                   {step === 'sending' ? <Loader2 className="w-[18px] h-[18px] animate-spin" /> : null}
@@ -1142,7 +1234,7 @@ export default function BankPayoutFlow({
    const steps: { label: string; state: 'done' | 'active' | 'todo' }[] = [
       { label: 'USDC sent from your wallet', state: 'done' },
       { label: 'Converting to pesos', state: done ? 'done' : 'active' },
-      { label: `Arrived in ${accountLabel}`, state: done ? 'done' : 'todo' }
+      { label: qrMode ? 'Arrived in the bank' : `Arrived in ${accountLabel}`, state: done ? 'done' : 'todo' }
    ];
    return (
       <div className="space-y-[12px]">
@@ -1240,9 +1332,13 @@ export default function BankPayoutFlow({
                </div>
             )}
          </Panel>
-         <button className={primaryClass} onClick={onDone}>
-            Done
-         </button>
+         {qrMode ? (
+            <GoldButton onClick={onDone}>Done</GoldButton>
+         ) : (
+            <button className={primaryClass} onClick={onDone}>
+               Done
+            </button>
+         )}
       </div>
    );
 }

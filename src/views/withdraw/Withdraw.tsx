@@ -19,6 +19,7 @@ import {
    Lock,
    MessageCircle,
    PlayCircle,
+   QrCode,
    ShieldAlert,
    Wallet,
    X
@@ -71,7 +72,7 @@ function track(event: string, props?: Record<string, unknown>) {
 type Screen = 'celebrate' | 'withdraw';
 // 'bank' = straight to GCash / any bank through Stableyard (testers only for now, see BankPayoutFlow).
 // 'walt' = Indonesia track: to their saved Walt (Telegram wallet) address through Relay (WaltCashoutFlow).
-type Provider = 'moneybees' | 'binance' | 'coinsph' | 'gcash' | 'pdax' | 'bank' | 'kraken' | 'coinbase' | 'walt';
+type Provider = 'moneybees' | 'binance' | 'coinsph' | 'gcash' | 'pdax' | 'bank' | 'qr' | 'kraken' | 'coinbase' | 'walt';
 
 // Indonesia-track borrowers (users.market = 'ID'). Preview: /withdraw-preview?market=id.
 function useIsIndo(isPreview: boolean) {
@@ -775,13 +776,73 @@ function DirectPesoCard({ onSelect, spendable }: { onSelect: () => void; spendab
    );
 }
 
+/** The same card for the cash-out to your own bank's QR (shown while the bank payout is down). */
+function QrPesoCard({ onSelect, spendable }: { onSelect: () => void; spendable: number | null }) {
+   const { value: phpRate } = useUsdcRate('php');
+   const pesos = spendable != null && spendable > 0 ? Math.floor(spendable * phpRate * (1 - BANK_PAYOUT_FEE_SHARE)) : null;
+   return (
+      <button onClick={onSelect} className="relative w-full text-left outline-none">
+         <div
+            className="rounded-[12px] border-2 border-[#6b55f7] bg-[var(--surface,#fff)] px-[14px] pt-[14px] pb-[14px] transition-all active:scale-[0.99]"
+            style={{ boxShadow: '0px 6px 18px rgba(107,85,247,0.16)' }}
+         >
+            <p className="flex items-center gap-[8px] text-[13px] font-semibold text-[var(--text-muted,#594d65)]">
+               <PhFlag className="h-[11px] w-[16px]" /> Cash out with
+            </p>
+            <p className="mt-[2px] text-[24px] font-black italic leading-[1.15] tracking-[-0.4px] text-[#6b55f7] dark:text-[#b3a6ff]">
+               Your bank&apos;s QR
+            </p>
+            <div className="mt-[10px] flex items-center gap-[10px]">
+               <span className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-[11px] bg-[var(--surface-2,#f1eeff)]">
+                  <QrCode className="w-[26px] h-[26px] text-[#6b55f7] dark:text-[#a98bff]" strokeWidth={2.2} />
+               </span>
+               <p className="text-[14px] leading-[18px] text-[var(--text-muted,#45556c)]">
+                  Save the InstaPay QR from your bank app, upload it here.
+               </p>
+            </div>
+            {pesos != null ? (
+               <p className="mt-[10px] text-[14px] text-[var(--text-muted,#45556c)]">
+                  Up to <span className="font-bold text-[var(--ink)]">₱{pesos.toLocaleString('en-PH')}</span> · after Stableyard fees
+               </p>
+            ) : null}
+            <span className="mt-[12px] flex w-full items-center justify-center gap-[8px] rounded-[36px] bg-[linear-gradient(85deg,#ffe27a_0%,#ffbe1a_98%)] py-[12px] text-[16px] font-bold text-[#4a2a00] shadow-[0_6px_16px_rgba(255,180,0,0.35)]">
+               Tap to cash out <ChevronRight className="w-[18px] h-[18px]" strokeWidth={2.6} />
+            </span>
+         </div>
+      </button>
+   );
+}
+
+/** Under the bank card: the QR option as one small row. */
+function QrPesoRow({ onSelect }: { onSelect: () => void }) {
+   return (
+      <button
+         onClick={onSelect}
+         className="w-full rounded-[12px] border-2 border-[#e8e4ff] bg-[var(--surface,#fff)] px-[14px] py-[12px] flex items-center gap-[12px] text-left active:scale-[0.99] transition-all"
+      >
+         <span className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-[9px] bg-[var(--surface-2,#f1eeff)]">
+            <QrCode className="w-[20px] h-[20px] text-[#6b55f7] dark:text-[#a98bff]" strokeWidth={2.2} />
+         </span>
+         <span className="flex-1 min-w-0">
+            <span className="block text-[15px] font-bold text-[var(--ink)]">Or use your bank&apos;s QR</span>
+            <span className="block text-[13px] text-[var(--text-muted)]">Upload the InstaPay QR from your bank app</span>
+         </span>
+         <ChevronRight className="w-[20px] h-[20px] text-[var(--text-faint)] shrink-0" />
+      </button>
+   );
+}
+
 function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) => void; onLater: () => void }) {
    const { spendable, walletConnected, repayUsdc: REPAY_USDC, dueDate: DUE_DATE, isPreview } = useWithdrawData();
    const navigate = useNavigate();
    const isIndo = useIsIndo(isPreview);
    // Indonesians get Walt (first, recommended) + Binance; the Philippine rails and the peso payout are hidden.
-   const { available: phBankPayout } = useBankPayoutStatus(isPreview);
-   const bankPayout = phBankPayout && !isIndo;
+   const { available: phPayout, bankUp, qrCashout } = useBankPayoutStatus(isPreview);
+   // Straight-to-pesos through Stableyard: to a bank account (when their bank payout is up) and/or to
+   // your own bank's QR (their QR rail, which can work while the bank payout is down).
+   const bankCard = Boolean(phPayout && bankUp) && !isIndo;
+   const qrCard = Boolean(phPayout && qrCashout) && !isIndo;
+   const bankPayout = bankCard || qrCard;
    const inEurope = useInEurope(isPreview);
    // No region/IP check here (deliberately removed): `useRegion()` is an IP-based guess, not
    // the user's actual location or nationality — a Filipino traveling or living abroad still
@@ -890,7 +951,12 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
             <div className="space-y-[10px]">
                {bankPayout && (
                   <>
-                     <DirectPesoCard onSelect={() => selectProvider('bank')} spendable={spendable} />
+                     {bankCard ? (
+                        <DirectPesoCard onSelect={() => selectProvider('bank')} spendable={spendable} />
+                     ) : (
+                        <QrPesoCard onSelect={() => selectProvider('qr')} spendable={spendable} />
+                     )}
+                     {bankCard && qrCard ? <QrPesoRow onSelect={() => selectProvider('qr')} /> : null}
                      <p className="text-[18px] font-black italic leading-[1.2] tracking-[-0.3px] text-[var(--text-muted,#594d65)] pt-[10px] pb-[2px]">
                         Or sell on an exchange app
                      </p>
@@ -2704,9 +2770,25 @@ function DirectBankFlow({ onDone }: { onDone: () => void }) {
    return <BankPayoutFlow isPreview={isPreview} spendable={spendable} send={send} onDone={onDone} />;
 }
 
+// Cash out to your own bank's QR. "Use my account number instead" opens the bank form (when it's up).
+function DirectQrFlow({ onDone, onUseBank }: { onDone: () => void; onUseBank: () => void }) {
+   const { isPreview, spendable, send } = useWithdrawData();
+   const { bankUp } = useBankPayoutStatus(isPreview);
+   return (
+      <BankPayoutFlow
+         mode="qr"
+         isPreview={isPreview}
+         spendable={spendable}
+         send={send}
+         onDone={onDone}
+         onUseBank={bankUp ? onUseBank : undefined}
+      />
+   );
+}
+
 /* ─── Withdraw screen wrapper ────────────────────────────────────── */
 // Exchanges that use the step-by-step AppFlow (cream page like Repay).
-const STEP_BY_STEP_PROVIDERS: Provider[] = ['gcash', 'pdax', 'coinsph', 'kraken', 'coinbase'];
+const STEP_BY_STEP_PROVIDERS: Provider[] = ['gcash', 'pdax', 'coinsph', 'kraken', 'coinbase', 'qr'];
 
 const PROVIDER_TITLES: Record<Provider, string> = {
    moneybees: 'Cash out with Moneybees',
@@ -2715,6 +2797,7 @@ const PROVIDER_TITLES: Record<Provider, string> = {
    gcash: 'Cash out with GCrypto',
    pdax: 'Cash out with PDAX',
    bank: 'Cash out to your bank',
+   qr: 'Cash out with your QR',
    kraken: 'Cash out with Kraken',
    coinbase: 'Cash out with Coinbase',
    walt: 'Kirim ke Walt'
@@ -2731,10 +2814,13 @@ function WithdrawScreen({
    provider,
    onBack,
    onConfirmed,
-   onDone
+   onDone,
+   onSwitch
 }: {
    provider: Provider;
    onBack: () => void;
+   /** Move to another cash-out (QR → bank account number). */
+   onSwitch: (p: Provider) => void;
    onConfirmed: (amount: number) => void;
    onDone: () => void;
 }) {
@@ -2765,6 +2851,8 @@ function WithdrawScreen({
                   <WaltFlow onDone={onDone} />
                ) : provider === 'bank' ? (
                   <DirectBankFlow onDone={onDone} />
+               ) : provider === 'qr' ? (
+                  <DirectQrFlow onDone={onDone} onUseBank={() => onSwitch('bank')} />
                ) : provider === 'moneybees' ? (
                   <MoneybeesFlow />
                ) : provider === 'binance' ? (
@@ -2797,9 +2885,13 @@ function WithdrawFlow() {
    const directBank = new URLSearchParams(location.search).get('to') === 'bank';
    // /withdraw?to=walt (Indonesia track: bot links, the face-check return) opens the Walt cash-out; Back shows the list.
    const directWalt = new URLSearchParams(location.search).get('to') === 'walt';
-   const [screen, setScreen] = useState<Screen>(directBank || directWalt ? 'withdraw' : 'celebrate');
-   const [withdrawVisible, setWithdrawVisible] = useState(directBank || directWalt);
-   const [provider, setProvider] = useState<Provider>(directBank ? 'bank' : directWalt ? 'walt' : 'moneybees');
+   // /withdraw?to=qr opens the cash-out to your own bank's QR (Back shows the list).
+   const directQr = new URLSearchParams(location.search).get('to') === 'qr';
+   // Opened from /money (Cash out): Back and Done return there.
+   const fromMoney = directBank || new URLSearchParams(location.search).get('from') === 'money';
+   const [screen, setScreen] = useState<Screen>(directBank || directWalt || directQr ? 'withdraw' : 'celebrate');
+   const [withdrawVisible, setWithdrawVisible] = useState(directBank || directWalt || directQr);
+   const [provider, setProvider] = useState<Provider>(directBank ? 'bank' : directWalt ? 'walt' : directQr ? 'qr' : 'moneybees');
 
    function goWithdraw(p: Provider) {
       track('withdraw_exchange_selected', { exchange: p });
@@ -2822,7 +2914,7 @@ function WithdrawFlow() {
       [showToast]
    );
 
-   const handleDone = useCallback(() => navigate(directBank ? '/money' : '/dashboard'), [navigate, directBank]);
+   const handleDone = useCallback(() => navigate(fromMoney ? '/money' : '/dashboard'), [navigate, fromMoney]);
 
    return (
       <>
@@ -2835,8 +2927,12 @@ function WithdrawFlow() {
                   provider={provider}
                   onConfirmed={handleConfirmed}
                   onDone={handleDone}
+                  onSwitch={(p) => {
+                     track('withdraw_exchange_selected', { exchange: p, from: provider });
+                     setProvider(p);
+                  }}
                   onBack={() => {
-                     if (directBank) return navigate('/money');
+                     if (fromMoney) return navigate('/money');
                      setWithdrawVisible(false);
                      setTimeout(() => setScreen('celebrate'), 50);
                   }}

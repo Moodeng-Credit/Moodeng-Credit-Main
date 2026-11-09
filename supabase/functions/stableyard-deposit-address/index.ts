@@ -221,7 +221,9 @@ const QR_ACTIONS = new Set([
    'bank_list',
    'bank_create',
    'payout_status',
-   'payout_activate'
+   'payout_activate',
+   'qr_cash_decode',
+   'qr_cash_create'
 ]);
 
 // Merchant store-QR payments (decode / create) and re-activating the payout capability stay tester-only;
@@ -258,6 +260,20 @@ const bankPayoutUp = async () => {
       );
    payoutUpCache = { at: Date.now(), up };
    return up;
+};
+
+// Cash-out to the person's own bank QR (InstaPay / QR Ph "Receive" QR), paid from their own wallet: same
+// Stableyard account, setup and limits as the bank cash-out, but it goes over Stableyard's QR rail, so it can
+// work while their bank payout provider is down. Open to everyone unless telegram_bot_settings.qr_cashout is
+// 'off' (then testers only, no deploy).
+const QR_CASHOUT_ACTIONS = new Set(['qr_cash_decode', 'qr_cash_create']);
+const isQrCashoutOn = async (admin: SupabaseClient) => {
+   const { data } = await admin.from('telegram_bot_settings').select('value').eq('key', 'qr_cashout').maybeSingle();
+   return (
+      String(data?.value ?? 'on')
+         .trim()
+         .toLowerCase() !== 'off'
+   );
 };
 
 /** Bank cash-out is public unless telegram_bot_settings.bank_payout_public is 'off' (kill switch, no deploy). */
@@ -330,6 +346,8 @@ const marketRate = async (currency: string): Promise<{ rate: number; at: string 
  *   payout_activate → (re)start bank_payout activation; returns a fresh hosted compliance link
  *   bank_create → off-ramp test: a send Payment to a bank account or e-wallet (external_bank);
  *                like create, it returns escrow depositInstructions and moves no money yet
+ *   qr_cash_decode / qr_cash_create → decode / create for a cash-out to the person's own bank QR
+ *                (public, bank cash-out limits); Stableyard decides which QRs it takes
  * The money only moves when the person sends the exact USDC to the escrow address from the app.
  * QR payloads, account numbers and names are sensitive: never logged or stored here (only the last 4 digits).
  */
@@ -350,6 +368,9 @@ const handleQr = async (
       rail?: unknown;
       accountNumber?: unknown;
       beneficiaryName?: unknown;
+      // Set by the router for 'status': whether Stableyard's bank payout and the QR cash-out are up.
+      bankUp?: unknown;
+      qrCashout?: unknown;
    }
 ) => {
    if (action === 'setup') {
@@ -387,7 +408,15 @@ const handleQr = async (
    if (action === 'status') {
       const [source, kyc] = await Promise.all([stableyard.getPaymentSource(accountId), stableyard.getKyc(accountId)]);
       if (!source.ok) return fail(source);
-      return json({ ok: true, accountId, step: 'status', paymentSource: source.data, kyc: kyc.ok ? kyc.data : null });
+      return json({
+         ok: true,
+         accountId,
+         step: 'status',
+         paymentSource: source.data,
+         kyc: kyc.ok ? kyc.data : null,
+         bankUp: body.bankUp !== false,
+         qrCashout: body.qrCashout === true
+      });
    }
 
    const useWallet = async () => {
@@ -560,15 +589,19 @@ const handleQr = async (
    const qrPayload = String(body.qrPayload ?? '').trim();
    if (!qrPayload || qrPayload.length > 4096) return json({ error: 'Paste the QR text (1–4096 characters).' }, 400);
 
-   if (action === 'decode') {
+   if (action === 'decode' || action === 'qr_cash_decode') {
       const result = await stableyard.decodeQr(accountId, country, qrPayload);
-      return result.ok ? json({ ok: true, accountId, step: 'decode', result: result.data }) : fail(result);
+      return result.ok ? json({ ok: true, accountId, step: action, result: result.data }) : fail(result);
    }
 
-   // create
+   // create / qr_cash_create
+   const cashout = action === 'qr_cash_create';
    const amount = String(body.amount ?? '').trim();
    if (!FIAT_AMOUNT.test(amount) || Number(amount) <= 0) return json({ error: 'Enter an amount like 100 or 100.50.' }, 400);
-   if (Number(amount) > rules.max) return json({ error: `Test payments are capped at ${rules.max} ${rules.currency}.` }, 400);
+   if (cashout) {
+      if (Number(amount) < BANK_MIN[country]) return json({ error: `The minimum is ${BANK_MIN[country]} ${rules.currency}.` }, 400);
+      if (Number(amount) > BANK_MAX[country]) return json({ error: `The maximum for now is ${BANK_MAX[country]} ${rules.currency}.` }, 400);
+   } else if (Number(amount) > rules.max) return json({ error: `Test payments are capped at ${rules.max} ${rules.currency}.` }, 400);
    // One key per press from the client, so a double-tap can't create two Payments.
    const requestKey = String(body.requestKey ?? '').trim();
    if (!/^[A-Za-z0-9-]{8,64}$/.test(requestKey)) return json({ error: 'Missing request key.' }, 400);
@@ -594,7 +627,8 @@ const handleQr = async (
       fairUsdc,
       spreadPct: fairUsdc && Number.isFinite(usdc) ? (usdc / fairUsdc - 1) * 100 : null
    };
-   const merchant = data?.payment?.destination?.merchant?.name ?? String(body.merchant ?? '').slice(0, 120);
+   // A cash-out QR names a person: log only that it was one, never their name.
+   const merchant = cashout ? 'QR cash-out' : (data?.payment?.destination?.merchant?.name ?? String(body.merchant ?? '').slice(0, 120));
    const { error: logError } = await admin.from('stableyard_qr_quotes').insert({
       user_id: userId,
       payment_id: data?.payment?.id ?? null,
@@ -607,7 +641,7 @@ const handleQr = async (
       merchant_name: merchant || null
    });
    if (logError) console.error('[stableyard-deposit-address] log qr quote failed', logError.message);
-   return json({ ok: true, accountId, step: 'create', result: result.data, quote });
+   return json({ ok: true, accountId, step: action, result: result.data, quote });
 };
 
 const loadNetworks = async (): Promise<StableyardDepositNetwork[]> => {
@@ -673,7 +707,9 @@ serve(async (req) => {
    if (isQr || isOnboarding) {
       // GCash / bank cash-out (and the email + ID setup it needs) is open to every signed-in borrower
       // since 2026-11-07. Kill switch: telegram_bot_settings bank_payout_public = 'off' → testers only again.
-      const testerOnly = isQr && TESTER_ONLY_QR_ACTIONS.has(String(body?.qr ?? ''));
+      const qrAction = String(body?.qr ?? '');
+      const testerOnly =
+         isQr && (TESTER_ONLY_QR_ACTIONS.has(qrAction) || (QR_CASHOUT_ACTIONS.has(qrAction) && !(await isQrCashoutOn(admin))));
       if ((testerOnly || !(await isBankPayoutPublic(admin))) && !(await isQrTester())) {
          return json({ error: 'Forbidden: not a QR payment tester', code: 'not_tester' }, 403);
       }
@@ -682,8 +718,15 @@ serve(async (req) => {
    }
 
    if (isQr) {
-      if (String(body.qr) === 'status' && !(await bankPayoutUp())) {
-         return json({ enabled: false, code: 'payout_unavailable', error: 'Cash-out is unavailable right now.' });
+      if (String(body.qr) === 'status') {
+         // Apps that know the QR cash-out send qrCashout:true and get bankUp / qrCashout back, so they can
+         // still offer the QR while the bank payout is down. Older apps keep getting enabled:false then.
+         const bankUp = await bankPayoutUp();
+         const wantsQr = body.qrCashout === true;
+         const qrOn = wantsQr && ((await isQrCashoutOn(admin)) || (await isQrTester()));
+         if (!bankUp && !qrOn) return json({ enabled: false, code: 'payout_unavailable', error: 'Cash-out is unavailable right now.' });
+         body.bankUp = bankUp;
+         body.qrCashout = qrOn;
       }
       try {
          return await handleQr(admin, userId, String(body.qr), body);
