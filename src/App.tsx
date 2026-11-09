@@ -40,6 +40,7 @@ import PricingHealthPreview from '@/app/admin/PricingHealthPreview';
 import AffiliateDashboardPage from '@/app/affiliate/page';
 import DocumentsPage from '@/app/documents/page';
 import ProofRequestPage from '@/app/proof/page';
+import SmsTestPage, { type SmsTestStage } from '@/app/sms-test/page';
 import { PROOF_PAGE_SAMPLE } from '@/app/proof/sample';
 import AuthSuccess from '@/app/auth-success/page';
 import AuthConfirm from '@/app/auth/confirm/page';
@@ -525,6 +526,22 @@ export default function App() {
             {/* Public: the proof link the team sends a new applicant after their call (moodeng.app/proof/TOKEN). */}
             <Route path="/proof/:token" element={<ProofRequestPage />} />
             {showPreviewRoutes ? <Route path="/proof-preview" element={<ProofRequestPage preview={PROOF_PAGE_SAMPLE} />} /> : null}
+            {/* Public: the Sprint SMS test link the team sends testers (moodeng.app/sms-test?t=TOKEN). */}
+            <Route path="/sms-test" element={<SmsTestPage />} />
+            {showPreviewRoutes ? (
+               <Route
+                  path="/sms-test-preview"
+                  element={
+                     <SmsTestPage
+                        preview={{
+                           stage: (new URLSearchParams(window.location.search).get('stage') as SmsTestStage | null) ?? 'form',
+                           link: 'https://plum.gift/sample-link',
+                           phone: '0917 123 4567'
+                        }}
+                     />
+                  }
+               />
+            ) : null}
             <Route path="/dashboard-v2-preview" element={<DashboardV2 />} />
             {/* Mock borrower dashboard (two loans, $15 + $20) for Emma's video — sample data only, never writes. */}
             <Route path="/borrower-demo" element={<Navigate to="/dashboard-v2-preview?state=demo" replace />} />
