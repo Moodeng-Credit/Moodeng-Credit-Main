@@ -64,9 +64,6 @@ const toDateMs = (dateValue: string | null | undefined) => {
 // defaulted, so refunded and test loans never count as repayments.
 const isPaid = (loan: TrustPointRewardLoan) => loan.repayment_status === 'Paid' && !loan.refunded_at && !loan.is_test;
 
-// Due dates are stored at midnight UTC; a loan stays on time through the whole due date.
-const OVERDUE_AFTER_DUE_DATE_MS = 24 * 60 * 60 * 1000;
-
 // When the loan was repaid. updated_at alone is unreliable: any later edit (interest return, admin
 // fixes) bumps it.
 const getPaidAtMs = (loan: TrustPointRewardLoan) => toDateMs(loan.repaid_at ?? loan.updated_at);
@@ -78,13 +75,13 @@ const isFullyRepaid = (loan: TrustPointRewardLoan) => {
    return totalRepayment > 0 ? repaidAmount >= totalRepayment : repaidAmount > 0;
 };
 
-// The moment a loan is past due: the LATER of due_date + 24h and the end of the due day in the loan's
-// zone. Same as app_private.loan_past_due_at and the app's getLoanPastDueAt.
+// The moment a loan is past due: the end of the due day in the loan's zone. Same as
+// app_private.loan_past_due_at and the app's getLoanPastDueAt.
 const pastDueAtMs = (loan: TrustPointRewardLoan): number | null => {
    const dueAt = toDateMs(loan.due_date);
    if (dueAt === null || !loan.due_date) return null;
    const zone = isUsableTimezone(loan.due_timezone) ? loan.due_timezone : 'Asia/Manila';
-   return Math.max(dueAt + OVERDUE_AFTER_DUE_DATE_MS, dueDayBounds(loan.due_date, zone).end.getTime());
+   return dueDayBounds(loan.due_date, zone).end.getTime();
 };
 
 const isPaidOnTime = (loan: TrustPointRewardLoan) => {
@@ -96,11 +93,9 @@ const isPaidOnTime = (loan: TrustPointRewardLoan) => {
    const dueAt = toDateMs(loan.due_date);
    if (paidAt === null || dueAt === null || !loan.due_date) return false;
 
-   // Same as app_private.is_loan_repaid_on_time: before the LATER of due_date + 24h and the end of the
-   // due day in the loan's own zone, so it's never stricter than before and never stricter than the app.
-   const zone = isUsableTimezone(loan.due_timezone) ? loan.due_timezone : 'Asia/Manila';
-   const deadline = Math.max(dueAt + OVERDUE_AFTER_DUE_DATE_MS, dueDayBounds(loan.due_date, zone).end.getTime());
-   return paidAt < deadline;
+   // Same as app_private.is_loan_repaid_on_time: before the end of the due day in the loan's own zone.
+   const deadline = pastDueAtMs(loan);
+   return deadline !== null && paidAt < deadline;
 };
 
 // Full-limit loans: principal at or above the limit recorded when the loan was repaid. The limit is

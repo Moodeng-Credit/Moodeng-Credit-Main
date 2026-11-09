@@ -111,9 +111,9 @@ Deno.test('resolveTimezone: a new borrower (no usual country yet) is checked aga
    assertEquals(resolveTimezone('Asia/Manila', null, at, 'PH'), 'Asia/Manila');
 });
 
-Deno.test('formatPastDueForTeam: the real overdue moment (later of end of day and due + 24h)', () => {
-   // Manila: end of Sep 30 is 16:00Z, due + 24h is Oct 1 00:00Z (8 AM Manila) — the later one wins.
-   assertEquals(formatPastDueForTeam(DUE, 'Asia/Manila', 'Asia/Bangkok'), 'Thu, Oct 1, 8:00 AM their time (Manila) · 7:00 AM Bangkok time');
-   // New York: end of their day (Oct 1 04:00Z) is later than due + 24h.
+Deno.test('formatPastDueForTeam: overdue from midnight at the end of their due day', () => {
+   // Manila: Sep 30 ends at midnight Manila (Sep 30 16:00Z) = 11 PM Bangkok the same evening.
+   assertEquals(formatPastDueForTeam(DUE, 'Asia/Manila', 'Asia/Bangkok'), 'Thu, Oct 1, 12:00 AM their time (Manila) · Wed, Sep 30, 11:00 PM Bangkok time');
+   // New York: end of their day is Oct 1 04:00Z.
    assertEquals(formatPastDueForTeam(DUE, 'America/New_York', 'Asia/Bangkok'), 'Thu, Oct 1, 12:00 AM their time (New York) · 11:00 AM Bangkok time');
 });

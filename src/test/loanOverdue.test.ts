@@ -1,33 +1,24 @@
 import { describe, expect, it } from 'vitest';
 
-import { LOAN_OVERDUE_GRACE_HOURS, isLoanPastDue, isPublicDefault, wasRepaidPublicLate } from '../utils/loanOverdue';
+import { getLoanPastDueAt, isLoanPastDue, isPublicDefault, wasRepaidPublicLate } from '../utils/loanOverdue';
 
-// due_date is a single UTC instant, but borrowers/lenders span time zones, so a
-// loan gets a flat 24h grace past its due date before it counts as a loss.
+// One deadline: due until the end of the due day on the borrower's clock (Manila when unknown), overdue
+// from 00:00 the next day there. No extra hours on top.
 describe('isLoanPastDue', () => {
    const dueMidnightUtc = '2026-09-11 00:00:00+00';
 
-   it('is NOT past due during the due day itself', () => {
-      const now = new Date('2026-09-11T11:08:00Z');
-      expect(isLoanPastDue(dueMidnightUtc, now)).toBe(false);
+   it('is NOT past due during the due day itself (Manila by default)', () => {
+      expect(isLoanPastDue(dueMidnightUtc, new Date('2026-09-11T11:08:00Z'))).toBe(false);
    });
 
-   it('is NOT past due one minute before the 24h grace window closes', () => {
-      const now = new Date('2026-09-11T23:59:00Z');
-      expect(isLoanPastDue(dueMidnightUtc, now)).toBe(false);
+   it('becomes past due at midnight Manila, the end of the due day', () => {
+      // 11:59 PM Manila on Sep 11 = 15:59Z; midnight = 16:00Z.
+      expect(isLoanPastDue(dueMidnightUtc, new Date('2026-09-11T15:59:59Z'))).toBe(false);
+      expect(isLoanPastDue(dueMidnightUtc, new Date('2026-09-11T16:00:00Z'))).toBe(true);
    });
 
-   it('becomes past due exactly 24h after the due date', () => {
-      expect(isLoanPastDue(dueMidnightUtc, new Date('2026-09-11T23:59:59Z'))).toBe(false);
-      expect(isLoanPastDue(dueMidnightUtc, new Date('2026-09-12T00:00:00Z'))).toBe(true);
-   });
-
-   it('gives a full 24h from the due instant even for an end-of-day due timestamp', () => {
-      // A flat 24h grace (not a date comparison): due 23:59:59 → grace ends the
-      // next day at 23:59:59, so mid-next-day is still within grace.
-      const dueEndOfDay = '2026-09-14 23:59:59+00';
-      expect(isLoanPastDue(dueEndOfDay, new Date('2026-09-15T12:00:00Z'))).toBe(false);
-      expect(isLoanPastDue(dueEndOfDay, new Date('2026-09-16T00:00:00Z'))).toBe(true);
+   it('no longer waits until 8 AM Manila the next day', () => {
+      expect(isLoanPastDue(dueMidnightUtc, new Date('2026-09-11T23:00:00Z'), 'Asia/Manila')).toBe(true);
    });
 
    it('counts a clearly late loan as past due', () => {
@@ -39,18 +30,15 @@ describe('isLoanPastDue', () => {
       expect(isLoanPastDue(undefined)).toBe(false);
    });
 
-   it('uses a 24 hour grace window', () => {
-      expect(LOAN_OVERDUE_GRACE_HOURS).toBe(24);
-   });
-
-   it('gives borrowers west of UTC their whole due day', () => {
+   it('uses the end of the due day in the borrower\'s own zone', () => {
       const due = '2026-10-01T00:00:00Z';
-      // Los Angeles: due day ends Oct 2 07:00Z; the old 24h rule fired at Oct 2 00:00Z (5 PM local).
-      expect(isLoanPastDue(due, new Date('2026-10-02T03:00:00Z'), 'America/Los_Angeles')).toBe(false);
+      // Los Angeles: their Oct 1 ends Oct 2 07:00Z.
+      expect(isLoanPastDue(due, new Date('2026-10-02T06:59:00Z'), 'America/Los_Angeles')).toBe(false);
       expect(isLoanPastDue(due, new Date('2026-10-02T07:00:00Z'), 'America/Los_Angeles')).toBe(true);
-      // Manila is unchanged (due + 24h is later than the end of its day).
-      expect(isLoanPastDue(due, new Date('2026-10-01T23:59:00Z'), 'Asia/Manila')).toBe(false);
-      expect(isLoanPastDue(due, new Date('2026-10-02T00:00:00Z'), 'Asia/Manila')).toBe(true);
+      // Macau (UTC+8): same as Manila.
+      expect(getLoanPastDueAt(due, 'Asia/Macau').toISOString()).toBe('2026-10-01T16:00:00.000Z');
+      // Jakarta (UTC+7): midnight there is 17:00Z.
+      expect(getLoanPastDueAt(due, 'Asia/Jakarta').toISOString()).toBe('2026-10-01T17:00:00.000Z');
    });
 });
 
@@ -58,8 +46,9 @@ describe('public late / default labels', () => {
    const due = '2026-10-01T00:00:00Z';
 
    it('waits 3 days past the deadline before calling a loan a default', () => {
-      expect(isPublicDefault(due, 'Asia/Manila', new Date('2026-10-04T23:00:00Z'))).toBe(false);
-      expect(isPublicDefault(due, 'Asia/Manila', new Date('2026-10-05T00:00:00Z'))).toBe(true);
+      // Deadline is midnight Manila (Oct 1 16:00Z); the public label waits 3 more days.
+      expect(isPublicDefault(due, 'Asia/Manila', new Date('2026-10-04T15:59:00Z'))).toBe(false);
+      expect(isPublicDefault(due, 'Asia/Manila', new Date('2026-10-04T16:00:00Z'))).toBe(true);
    });
 
    it('only calls a repayment late when it came more than 3 days after the deadline', () => {

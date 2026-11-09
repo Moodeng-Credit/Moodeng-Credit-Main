@@ -2,7 +2,7 @@ import { parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
 import { isLoanPastDue } from '@/utils/loanOverdue';
 
-import { getFullLimitLoans, OVERDUE_AFTER_DUE_DATE_MS } from '@/lib/creditLeveling';
+import { getFullLimitLoans } from '@/lib/creditLeveling';
 import { getDueDayEnd, getLoanTimezone } from '@/lib/loanDeadline';
 import { trustPointMilestoneRuleById } from '@/shared/points';
 import type { Loan } from '@/types/loanTypes';
@@ -79,14 +79,9 @@ export const isLoanPaidOnTime = (loan: Loan): boolean => {
    const isFullyRepaid = totalRepayment > 0 ? repaidAmount >= totalRepayment : repaidAmount > 0;
    if (!isFullyRepaid) return false;
    // repaidAt, not updatedAt: any later edit to the loan (interest return, admin fixes) bumps updatedAt.
-   // Before the LATER of due date + 24h and the end of the due day in the loan's zone, the same as
-   // app_private.is_loan_repaid_on_time.
+   // Before the end of the due day on the borrower's clock, the same as app_private.is_loan_repaid_on_time.
    const paidAt = parseDateSafely(loan.repaidAt ?? loan.updatedAt).getTime();
-   const deadline = Math.max(
-      parseDateSafely(loan.dueDate).getTime() + OVERDUE_AFTER_DUE_DATE_MS,
-      getDueDayEnd(loan.dueDate, getLoanTimezone(loan, 'Asia/Manila')).getTime()
-   );
-   return paidAt < deadline;
+   return paidAt < getDueDayEnd(loan.dueDate, getLoanTimezone(loan, 'Asia/Manila')).getTime();
 };
 
 export const getBorrowerLoans = (loans: Loan[], userId: string) => loans.filter((loan) => loan.borrowerUser === userId);

@@ -201,11 +201,10 @@ export const formatDeadlineForTeam = (dueDate: string | Date, borrowerZone: stri
 };
 
 /**
- * The moment a loan is past due: the LATER of the end of its due day in `zone` and due_date + 24h.
- * Same as app_private.loan_past_due_at and the app's getLoanPastDueAt (Manila: 8 AM the next day).
+ * The moment a loan is past due: the end of its due day in `zone` (00:00 the next day there). The one
+ * deadline everywhere: same as app_private.loan_past_due_at and the app's getLoanPastDueAt.
  */
-export const pastDueAt = (dueDate: string | Date, zone: string): Date =>
-   new Date(Math.max(dueDayBounds(dueDate, zone).end.getTime(), new Date(dueDate).getTime() + 24 * 60 * 60 * 1000));
+export const pastDueAt = (dueDate: string | Date, zone: string): Date => dueDayBounds(dueDate, zone).end;
 
 /** For the team: when the loan becomes overdue, on the borrower's clock and the team's. */
 export const formatPastDueForTeam = (dueDate: string | Date, borrowerZone: string, teamZone: string): string => {

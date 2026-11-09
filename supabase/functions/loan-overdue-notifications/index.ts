@@ -304,11 +304,9 @@ serve(async (req) => {
    const overdueLoans = (loans ?? []).filter((loan) => {
       if (!loan.borrower_user_id || !loan.due_date) return false;
       // The zone saved on the loan when it was posted; older loans fall back to the borrower's.
-      // Past due at the later of due_date + 24h and the end of their due day: the same moment the app
-      // (getLoanPastDueAt) and on-time points use, so Manila isn't told "overdue" at 7 AM when the
-      // app still says it's due until 8.
-      const { end } = dueDayBounds(loan.due_date, loanTimezone(loan, zoneFor(loan.borrower_user_id)));
-      const pastDueAt = new Date(Math.max(end.getTime(), new Date(loan.due_date).getTime() + DAY_MS));
+      // Past due once their due day has ended: the same moment the app (getLoanPastDueAt) and on-time
+      // points use.
+      const { end: pastDueAt } = dueDayBounds(loan.due_date, loanTimezone(loan, zoneFor(loan.borrower_user_id)));
       deadlineByLoanId.set(loan.id, pastDueAt);
       return referenceDate.getTime() >= pastDueAt.getTime();
    });
