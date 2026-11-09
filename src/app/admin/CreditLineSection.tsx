@@ -23,6 +23,7 @@ import {
    toCsv
 } from '@/app/admin/creditLineModel';
 import { useAdminLiveReload } from '@/app/admin/useAdminLive';
+import VaultLoansCard from '@/app/admin/VaultLoansCard';
 import { bareTxHash, isWaltTx, txExplorerUrl } from '@/lib/txExplorer';
 
 // Admin → Finance → Credit line: everything a credit-line lender's monthly report needs (BitRepo: Schedule B),
@@ -211,6 +212,7 @@ export default function CreditLineSection() {
 
    return (
       <div className="space-y-6">
+         <VaultLoansCard />
          <div className="flex flex-wrap items-end gap-3">
             {data.facilities.length > 1 ? (
                <label className="flex flex-col text-sm text-[#a89bb8]">

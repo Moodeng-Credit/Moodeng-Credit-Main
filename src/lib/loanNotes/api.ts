@@ -138,7 +138,7 @@ export async function getLoanNotePageData(loanId: string, viewer: { userId?: str
 /** Records an admin-funded loan (direct or smart-contract) via the verified edge function. */
 export async function recordAdminFunding(payload: {
    loanId: string;
-   fundingMethod: 'direct' | 'smart_contract';
+   fundingMethod: 'direct' | 'smart_contract' | 'credit_line';
    txHash?: string;
    borrowerWallet?: string;
    /** Wallet that fronted the money / holds the Loan Note — recorded as the originator (lender of record). */
