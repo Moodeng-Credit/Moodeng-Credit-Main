@@ -2192,6 +2192,7 @@ export default function Repay() {
          totalRepaymentAmount: toNumber(selectedLoan.totalRepaymentAmount),
          loanAmount: toNumber(selectedLoan.loanAmount),
          dueDate: selectedLoan.dueDate,
+         dueTimezone: selectedLoan.dueTimezone,
          paidAt: new Date().toISOString()
       });
       const currentLimit = user.cs || STARTING_CREDIT_LIMIT;

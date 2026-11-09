@@ -216,11 +216,18 @@ describe('Credit leveling logic', () => {
 });
 
 describe('isRepaidOnTime', () => {
-   it('is on time for the whole due date and overdue the day after', () => {
+   it('is on time until the end of the due day on the borrower\'s clock (Manila by default)', () => {
       expect(isRepaidOnTime('2025-02-01T00:00:00.000Z', '2025-02-01T00:00:00.000Z')).toBe(true);
-      expect(isRepaidOnTime('2025-02-01T23:59:59.000Z', '2025-02-01T00:00:00.000Z')).toBe(true);
-      expect(isRepaidOnTime('2025-02-02T00:00:00.000Z', '2025-02-01T00:00:00.000Z')).toBe(false);
+      // 11:59 PM Manila on Feb 1 = 15:59Z; midnight Manila = 16:00Z.
+      expect(isRepaidOnTime('2025-02-01T15:59:59.000Z', '2025-02-01T00:00:00.000Z')).toBe(true);
+      expect(isRepaidOnTime('2025-02-01T16:00:00.000Z', '2025-02-01T00:00:00.000Z')).toBe(false);
       expect(isRepaidOnTime('2025-01-31T12:00:00.000Z', '2025-02-01T00:00:00.000Z')).toBe(true);
+   });
+
+   it('uses the loan\'s own zone when it has one', () => {
+      // Los Angeles: Feb 1 ends Feb 2 08:00Z (PST).
+      expect(isRepaidOnTime('2025-02-02T07:59:00.000Z', '2025-02-01T00:00:00.000Z', 'America/Los_Angeles')).toBe(true);
+      expect(isRepaidOnTime('2025-02-02T08:00:00.000Z', '2025-02-01T00:00:00.000Z', 'America/Los_Angeles')).toBe(false);
    });
 });
 

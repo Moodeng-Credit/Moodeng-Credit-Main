@@ -50,6 +50,7 @@ export const applyCreditProgression = async (
       totalRepaymentAmount: toNumber(loan.total_repayment_amount as number | string | null),
       loanAmount: toNumber(loan.loan_amount as number | string | null),
       dueDate: String(loan.due_date),
+      dueTimezone: (loan.due_timezone as string | null | undefined) ?? null,
       paidAt: String(loan.repaid_at ?? loan.updated_at ?? new Date().toISOString())
    });
 
