@@ -497,6 +497,64 @@ export const idResendReason = (reason: string | null | undefined, locale: IdLoca
 
 type IdRecipient = { id?: string; chat_id?: string | number | null; preferred_locale?: string | null; market?: string | null };
 
+// ── a copy for the founder ─────────────────────────────────────────────────────────────────────────
+// The bot's chats with borrowers are private, so the team can't see what an Indonesian was told. Every
+// message sendIdTelegramTo sends (or fails to send) is also posted, as plain text, to the chat in
+// telegram_bot_settings.id_bot_copy_chat_id (George, 2026-11-09). Empty or missing = off. No buttons in
+// the copy: they are login_url buttons and would sign in whoever taps them. Read over REST so this file
+// stays a leaf; cached for a minute. Never throws.
+const ID_COPY_SETTING = 'id_bot_copy_chat_id';
+const ID_COPY_TTL_MS = 60_000;
+let idCopyChat: { value: string; at: number } | null = null;
+
+const restRows = async <T>(path: string): Promise<T[] | null> => {
+   const url = Deno.env.get('SUPABASE_URL');
+   const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+   if (!url || !key) return null;
+   const res = await fetch(`${url}/rest/v1/${path}`, { headers: { apikey: key, Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(4000) });
+   if (!res.ok) return null;
+   const rows = await res.json();
+   return Array.isArray(rows) ? (rows as T[]) : null;
+};
+
+const idCopyChatId = async (): Promise<string> => {
+   if (idCopyChat && Date.now() - idCopyChat.at < ID_COPY_TTL_MS) return idCopyChat.value;
+   const rows = await restRows<{ value?: string | null }>(`telegram_bot_settings?key=eq.${ID_COPY_SETTING}&select=value`);
+   const value = String(rows?.[0]?.value ?? '').trim();
+   idCopyChat = { value, at: Date.now() };
+   return value;
+};
+
+/** The founder's copy of one bot message: who, which event, the text, and where the button goes. */
+export const idCopyText = (who: string, event: IdEvent, msg: IdMessage, outcome: 'sent' | 'failed'): string => {
+   const lines = [`🇮🇩 Bot → ${who} · ${event}${outcome === 'failed' ? ' · ⚠️ NOT delivered' : ''}`, '', msg.text];
+   if (msg.button) {
+      const where = msg.button.url.startsWith(`${ID_SITE_URL}/`) ? msg.button.url.slice(ID_SITE_URL.length) : msg.button.url;
+      lines.push('', `🔘 ${msg.button.text} → ${where}`);
+   }
+   if (msg.actions?.length) lines.push(`▫️ ${msg.actions.map((a) => a.text).join(' · ')}`);
+   return lines.join('\n');
+};
+
+const copyToFounder = async (user: IdRecipient, event: IdEvent, msg: IdMessage, outcome: 'sent' | 'failed'): Promise<void> => {
+   try {
+      const chat = await idCopyChatId();
+      if (!chat || chat === String(user.chat_id)) return;
+      let who = user.id ? user.id.slice(0, 8) : '?';
+      if (user.id) {
+         const rows = await restRows<{ display_name?: string | null; telegram_username?: string | null }>(
+            `users?id=eq.${encodeURIComponent(user.id)}&select=display_name,telegram_username`
+         );
+         const row = rows?.[0];
+         const name = [row?.display_name?.trim(), row?.telegram_username ? `@${row.telegram_username.replace(/^@/, '')}` : null].filter(Boolean).join(' ');
+         if (name) who = name;
+      }
+      await sendTelegramMessage(chat, idCopyText(who, event, msg, outcome));
+   } catch (err) {
+      console.warn(`[idTrack] founder copy of ${event} failed`, err instanceof Error ? err.message : err);
+   }
+};
+
 // ── bot buttons sign them in ───────────────────────────────────────────────────────────────────────
 // Links from Telegram open in Telegram's own browser, which isn't signed in (they signed up inside
 // Facebook's). So every moodeng.app button is a Telegram *login_url* button: Telegram adds signed login
@@ -519,17 +577,20 @@ export const sendIdTelegramTo = async (user: IdRecipient | null | undefined, eve
       console.log(`[idTrack] ${event} for ${tag} → not sent (no Telegram chat)`);
       return false;
    }
+   let msg: IdMessage | null = null;
    try {
-      const msg = buildIdMessage(event, idLocaleOf(user.preferred_locale), data);
+      msg = buildIdMessage(event, idLocaleOf(user.preferred_locale), data);
       const rows: TelegramInlineKeyboard = [];
       if (msg.button) rows.push([appButton(msg.button)]);
       if (msg.actions?.length) rows.push(msg.actions);
       const keyboard: TelegramInlineKeyboard | undefined = rows.length ? rows : undefined;
       await sendTelegramMessage(user.chat_id, msg.text, keyboard ? { inlineKeyboard: keyboard } : {});
       console.log(`[idTrack] ${event} for ${tag} → sent`);
+      await copyToFounder(user, event, msg, 'sent');
       return true;
    } catch (err) {
       console.error(`[idTrack] ${event} for ${tag} → failed`, err instanceof Error ? err.message : err);
+      if (msg) await copyToFounder(user, event, msg, 'failed');
       return false;
    }
 };

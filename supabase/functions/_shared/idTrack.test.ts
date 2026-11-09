@@ -1,6 +1,6 @@
 import { assert, assertEquals, assertStringIncludes } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { buildIdMessage, formatIdTime, idApprovalBlock, idFlag, idLocaleOf, idStepUrl, sendIdTelegramTo, stepsLeft } from './idTrack.ts';
+import { buildIdMessage, formatIdTime, idApprovalBlock, idCopyText, idFlag, idLocaleOf, idStepUrl, sendIdTelegramTo, stepsLeft } from './idTrack.ts';
 
 Deno.test('step done names the next step and links to it', () => {
    const msg = buildIdMessage('step_done', 'id', { doneStep: 'whatsapp', next: 'facebook' });
@@ -58,4 +58,14 @@ Deno.test('rupiah-pegged loans lead with the rupiah owed', () => {
    assertStringIncludes(buildIdMessage('overdue', 'en', { amount: 4, amountIdr: 72000, lateBy: '2 days' }).text, 'Your Rp 72.000 (≈ $4) payment is overdue');
    assertStringIncludes(buildIdMessage('repaid', 'id', { amount: 6.1, amountIdr: 110000 }).text, 'Pembayaran Rp 110.000 (≈ $6.10) diterima');
    assertStringIncludes(buildIdMessage('due_tomorrow', 'id', { amount: 10, amountIdr: null }).text, 'Pembayaran $10 jatuh tempo besok');
+});
+
+Deno.test('founder copy: who, event, text and the button path, never a button', () => {
+   const msg = buildIdMessage('nudge', 'en', { next: 'facebook', stepsLeft: 6 });
+   const copy = idCopyText('Test Person @tester', 'nudge', msg, 'sent');
+   assertStringIncludes(copy, '🇮🇩 Bot → Test Person @tester · nudge');
+   assertStringIncludes(copy, msg.text);
+   assertStringIncludes(copy, '→ /id/onboarding?step=facebook');
+   assert(!copy.includes('NOT delivered'));
+   assertStringIncludes(idCopyText('x', 'nudge', msg, 'failed'), '⚠️ NOT delivered');
 });
