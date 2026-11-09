@@ -106,7 +106,7 @@ export default function VaultLoansCard() {
          {error ? <p className="mt-2 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p> : null}
 
          {rows.length === 0 ? (
-            <p className="mt-3 text-sm text-[#a89bb8]">No loans drawn from the vault yet. Fund a request with “BitRepo Vault”.</p>
+            <p className="mt-3 text-sm text-[#a89bb8]">No loans drawn from the vault yet. Fund a request with “Vault Lend”.</p>
          ) : (
             <div className="mt-3 overflow-x-auto">
                <table className="w-full text-left text-sm">

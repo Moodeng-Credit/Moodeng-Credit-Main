@@ -298,7 +298,7 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-start justify-between">
                <h2 className="text-lg font-semibold text-gray-900">
-                  {method === 'smart' ? 'Fund This Loan' : method === 'vault' ? 'Fund from BitRepo Vault' : 'Choose How to Fund This Loan'}
+                  {method === 'smart' ? 'Fund This Loan' : method === 'vault' ? 'Vault Lend' : 'Choose How to Fund This Loan'}
                </h2>
                <button type="button" onClick={close} className="text-gray-400 hover:text-gray-600" aria-label="Close">
                   ✕
@@ -334,11 +334,11 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
                      className="block w-full rounded-xl border-2 border-[#0052FF] bg-[#0052FF]/5 p-4 text-left transition hover:bg-[#0052FF]/10"
                   >
                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-gray-900">BitRepo Vault</span>
+                        <span className="font-semibold text-gray-900">Vault Lend</span>
                         <span className="rounded-full bg-[#0052FF] px-2 py-0.5 text-[11px] font-medium text-white">Recommended</span>
                      </div>
                      <p className="mt-1 text-sm text-gray-600">
-                        The vault sends USDC straight to the borrower. Borrowers repay us as usual; then pay the vault from Admin → Credit
+                        BitRepo’s vault sends USDC straight to the borrower — not from your wallet. Borrowers repay us as usual; then pay the vault from Admin → Credit
                         line.
                      </p>
                   </button>
