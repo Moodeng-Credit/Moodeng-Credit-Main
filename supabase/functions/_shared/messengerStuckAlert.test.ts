@@ -5,6 +5,7 @@ import {
    buildMessengerStuckAlert,
    buildMessengerVerifyCallback,
    buildStuckEmail,
+   buildStuckTelegram,
    isEmailable,
    markMessengerVerified,
    parseMessengerVerifyCallback,
@@ -96,6 +97,27 @@ Deno.test('isEmailable: real-looking addresses only', () => {
    assertEquals(isEmailable(null), false);
    assertEquals(isEmailable('aya'), false);
    assertEquals(isEmailable('aya@localhost'), false);
+   // Telegram/LINE/phone sign-ups get a made-up address nobody reads.
+   assertEquals(isEmailable('telegram_240878789@moodeng.app'), false);
+   assertEquals(isEmailable('line_U123@moodeng.app'), false);
+});
+
+Deno.test('alert: says when we reached them on Telegram instead of email, or could not', () => {
+   const code = { code: 'MDNG-001C20', user_id: USER_ID, created_at: '2026-09-29T07:22:25Z' };
+   const b = borrower({ email: 'telegram_240878789@moodeng.app' });
+   assertEquals(
+      buildMessengerStuckAlert(b, code, NOW, 'telegram_sent').includes('💬 No real email, so our Telegram bot sent them the code and a link (code works for 24 h).'),
+      true
+   );
+   assertEquals(buildMessengerStuckAlert(b, code, NOW, 'telegram_failed').includes('our Telegram message to them failed'), true);
+   assertEquals(buildMessengerStuckAlert(b, code, NOW).includes('No real email and no Telegram chat'), true);
+});
+
+Deno.test('telegram nudge: the code, the two steps and the 24 h window, in English or Bahasa', () => {
+   const en = buildStuckTelegram('MDNG-001C20', 'en');
+   for (const part of ['MDNG-001C20', 'Moodeng Credit', 'Get Started', '24 hours', 'Reply']) assertEquals(en.includes(part), true);
+   const id = buildStuckTelegram('MDNG-001C20', 'id');
+   for (const part of ['MDNG-001C20', 'Kirim kode ini', '24 jam']) assertEquals(id.includes(part), true);
 });
 
 Deno.test('email: greets by first name, carries the link, the code and the app link; escapes HTML', () => {

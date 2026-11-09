@@ -4,10 +4,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { adminUserUrl, OPEN_IN_ADMIN_TEXT, sendAdminCard } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { sendEmail } from '../_shared/email.ts';
+import { appButton, idLocaleOf, idStepUrl } from '../_shared/idTrack.ts';
 import { APPLY_URL, PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
 import {
    buildMessengerStuckAlert,
    buildStuckEmail,
+   buildStuckTelegram,
    type EmailOutcome,
    EMAILED_CODE_TTL_MS,
    isEmailable,
@@ -22,6 +24,7 @@ import {
 import { sendDuePosters } from '../_shared/messengerBorrowPoster.ts';
 import { handleRemindersStuck, REMINDERS_CORS } from '../_shared/remindersStuckHandler.ts';
 import { buildMessengerVerifyLink, MESSENGER_PAGE_URL } from '../_shared/sendpulse.ts';
+import { sendTelegramMessage, type TelegramInlineKeyboard } from '../_shared/telegram.ts';
 import { isInternalRequest } from '../_shared/internalAuth.ts';
 import { loadOnboardingTimeline, signupLines, timelineLines } from '../_shared/onboardingTimeline.ts';
 
@@ -29,7 +32,8 @@ import { loadOnboardingTimeline, signupLines, timelineLines } from '../_shared/o
 // aren't confirmed.
 //   1. Their open code is kept alive for 24 h, so the code on their screen and in the email keeps working.
 //   2. They get an email with a one-tap Messenger link, the code to send by hand, and a link back to
-//      their application — the help an admin used to write by hand.
+//      their application — the help an admin used to write by hand. Telegram sign-ups only have a
+//      placeholder email (telegram_<id>@moodeng.app), so they get the same help from our Telegram bot.
 //   3. The team gets a card in the KYC Telegram group (with a "Mark Facebook verified" button, handled
 //      by telegram-webhook) and a line in Discord #kyc, saying whether the email went out.
 // Timing and wording live in _shared/messengerStuckAlert.ts.
@@ -81,7 +85,9 @@ serve(async (req) => {
 
    const { data: borrowers, error: usersError } = await svc
       .from('users')
-      .select('id, username, display_name, email, user_role, account_status, messenger_verified_at, messenger_stuck_alerted_at')
+      .select(
+         'id, username, display_name, email, user_role, account_status, messenger_verified_at, messenger_stuck_alerted_at, chat_id, market, preferred_locale'
+      )
       // Test accounts (users.is_test) are never "stuck".
       .eq('is_test', false)
       .in(
@@ -123,23 +129,41 @@ serve(async (req) => {
          .is('verified_at', null);
       if (extendError) console.error('messenger-stuck-alerts: extending code failed', extendError.message);
 
+      // Without a live code the link and code would fail — tell the team instead of sending them.
       let email: EmailOutcome = 'no_email';
-      if (isEmailable(borrower.email) && !extendError) {
-         const { subject, text, html } = buildStuckEmail(borrower, code.code, {
-            messenger: buildMessengerVerifyLink(code.code),
-            apply: APPLY_URL,
-            page: MESSENGER_PAGE_URL
-         });
-         try {
-            await sendEmail(borrower.email.trim(), subject, text, html);
-            email = 'sent';
-         } catch (err) {
-            console.error('messenger-stuck-alerts: email failed', err instanceof Error ? err.message : err);
-            email = 'failed';
-         }
-      } else if (isEmailable(borrower.email)) {
-         // Without a live code the email's link would fail — tell the team instead of sending it.
+      if (isEmailable(borrower.email)) {
          email = 'failed';
+         if (!extendError) {
+            const { subject, text, html } = buildStuckEmail(borrower, code.code, {
+               messenger: buildMessengerVerifyLink(code.code),
+               apply: APPLY_URL,
+               page: MESSENGER_PAGE_URL
+            });
+            try {
+               await sendEmail(borrower.email.trim(), subject, text, html);
+               email = 'sent';
+            } catch (err) {
+               console.error('messenger-stuck-alerts: email failed', err instanceof Error ? err.message : err);
+            }
+         }
+      } else if (borrower.chat_id) {
+         email = 'telegram_failed';
+         if (!extendError) {
+            const isId = borrower.market === 'ID';
+            const locale = isId ? idLocaleOf(borrower.preferred_locale) : 'en';
+            const app = { text: locale === 'id' ? 'Buka Moodeng' : 'Open Moodeng', url: isId ? idStepUrl('facebook') : APPLY_URL };
+            const keyboard: TelegramInlineKeyboard = [
+               [{ text: locale === 'id' ? '💬 Buka chat Moodeng Credit' : '💬 Open the Moodeng Credit chat', url: MESSENGER_PAGE_URL }],
+               // ID track: a login_url button, so Telegram's browser opens the app signed in.
+               [isId ? appButton(app) : app]
+            ];
+            try {
+               await sendTelegramMessage(borrower.chat_id, buildStuckTelegram(code.code, locale), { inlineKeyboard: keyboard });
+               email = 'telegram_sent';
+            } catch (err) {
+               console.error('messenger-stuck-alerts: telegram nudge failed', err instanceof Error ? err.message : err);
+            }
+         }
       }
 
       // How they signed up and where in onboarding they got stuck.
