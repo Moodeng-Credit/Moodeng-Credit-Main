@@ -125,12 +125,21 @@ export const GUIDES: Record<IdGuideKey, Guide> = {
             ),
             walt: true
          },
-         { text: t('⬆️ Tekan "Withdraw" (tombol dengan panah ke atas).', '⬆️ Tap "Withdraw" (the button with the up arrow).'), walt: true },
          {
-            text: t('👥 Pilih "P2P Express" (Zero fees · For beginners).', '👥 Choose "P2P Express" (Zero fees · For beginners).'),
+            text: t(
+               '⬆️ Tekan "Withdraw" (tombol dengan panah ke atas), lalu pilih "P2P Express" (Zero fees · For beginners).',
+               '⬆️ Tap "Withdraw" (the button with the up arrow), then choose "P2P Express" (Zero fees · For beginners).'
+            ),
             walt: true
          },
-         { text: t('🔢 Tulis berapa yang mau kamu cairkan.', '🔢 Type how much you want to cash out.'), walt: true },
+         { text: t('💵 Pilih "Dollars" (USDT), lalu tekan "Continue".', '💵 Choose "Dollars" (USDT), then tap "Continue".'), walt: true },
+         {
+            text: t(
+               '🔢 Pastikan di atas tertulis IDR (kalau bukan, tekan lalu pilih IDR). Tulis jumlahnya (dalam Rp; ikon ⇅ ganti ke USDT, minimal sekitar 1,7 USDT). Lalu tekan "Sell … USDT".',
+               '🔢 Check it says IDR at the top (if not, tap it and pick IDR). Type the amount (in Rp; the ⇅ icon switches to USDT, minimum about 1.7 USDT). Then tap "Sell … USDT".'
+            ),
+            walt: true
+         },
          {
             text: t(
                '🏦 Pilih cara terima uang: bank atau e-wallet kamu (DANA, GoPay, OVO). Isi nomor rekening/HP dengan BENAR. Cek jumlah rupiahnya, lalu konfirmasi.',
@@ -161,24 +170,24 @@ export const GUIDES: Record<IdGuideKey, Guide> = {
             )
          },
          {
-            text: t('👛 Tekan "👛 Buka Walt", lalu "Deposit" (tombol ➕).', '👛 Tap "👛 Open Walt", then "Deposit" (the ➕ button).'),
+            text: t(
+               '👛 Tekan "👛 Buka Walt", lalu "Deposit" (tombol ➕). Pastikan di atas tertulis IDR, lalu pilih "P2P Express".',
+               '👛 Tap "👛 Open Walt", then "Deposit" (the ➕ button). Check it says IDR at the top, then choose "P2P Express".'
+            ),
             walt: true
          },
-         {
-            text: t('👥 Pastikan di atas tertulis IDR. Pilih "P2P Express".', '👥 Check it says IDR at the top. Choose "P2P Express".'),
-            walt: true
-         },
+         { text: t('💵 Pilih "Dollars" (USDT), lalu tekan "Continue".', '💵 Choose "Dollars" (USDT), then tap "Continue".'), walt: true },
          {
             text: t(
-               '🔢 Tulis jumlah USDT itu, tambah sedikit (contoh: 6.10). Pilih cara bayar yang SAMA dengan milikmu (misal DANA ke DANA) supaya tidak ada biaya transfer.',
-               '🔢 Type that USDT amount, plus a little (e.g. 6.10). Pick the SAME payment method you have (e.g. DANA to DANA) so there’s no transfer fee.'
+               '🔢 Tulis jumlah USDT itu, tambah sedikit (contoh: 6.10). Tekan "Choose payment method" dan pilih yang SAMA dengan milikmu (misal DANA ke DANA) supaya tidak ada biaya transfer. Tidak ada? Tekan "Show more".',
+               '🔢 Type that USDT amount, plus a little (e.g. 6.10). Tap "Choose payment method" and pick the SAME one you have (e.g. DANA to DANA) so there’s no transfer fee. Not listed? Tap "Show more".'
             ),
             walt: true
          },
          {
             text: t(
-               '📲 Transfer rupiah PERSIS sesuai jumlah dan ke rekening yang ditunjukkan Walt. Lalu kembali ke Walt dan tekan "Saya sudah bayar".',
-               '📲 Send EXACTLY the rupiah amount to the account Walt shows you. Then go back to Walt and tap "I’ve paid".'
+               '🔎 Tekan "Search for a seller". Transfer rupiah PERSIS sesuai jumlah dan ke rekening yang ditunjukkan Walt. Lalu kembali ke Walt dan tekan "Saya sudah bayar".',
+               '🔎 Tap "Search for a seller". Send EXACTLY the rupiah amount to the account Walt shows you. Then go back to Walt and tap "I’ve paid".'
             ),
             walt: true
          },
