@@ -25,7 +25,10 @@ const T = {
    s2walt: { id: 'Kirim jumlah TEPAT ini lewat Walt → Transfer', en: 'Send EXACTLY this amount with Walt → Transfer' },
    to: { id: 'Ke', en: 'To' },
    copyUser: { id: 'Salin username', en: 'Copy username' },
-   transferHow: { id: 'Di Walt: Transfer → tempel username → tempel jumlah → kirim.', en: 'In Walt: Transfer → paste the username → paste the amount → send.' },
+   transferHow: {
+      id: 'Di Walt: Transfer → tempel jumlah → Choose Recipient → PIN dompet → tempel username → kirim.',
+      en: 'In Walt: Transfer → paste the amount → Choose Recipient → wallet passcode → paste the username → send.'
+   },
    notWithdraw: { id: 'Pakai Transfer (gratis), BUKAN Withdraw (ada biaya).', en: 'Use Transfer (free), NOT Withdraw (it has a fee).' },
    sentBtn: { id: '✅ Sudah kirim', en: '✅ I’ve sent it' },
    waitingTeam: { id: 'Menunggu Moodeng mengonfirmasi…', en: 'Waiting for Moodeng to confirm…' },
