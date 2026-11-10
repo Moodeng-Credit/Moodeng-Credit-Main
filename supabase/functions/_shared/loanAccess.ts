@@ -258,6 +258,19 @@ const BORROWER_MESSAGES = {
       body: "We're sorry to see you go — your application has been closed. If you have any questions or concerns, please let us know. Should you wish to pursue funding in the future, connect directly with Emma Moodeng on Facebook: facebook.com/emmamoodengcredit",
       url: `${SITE_URL}/request-board`
    },
+   // Rejected before any screening call (no call attended, none missed): point them to other PH
+   // lenders instead (George, 2026-11-11). Sent without a button — there's no next step with us.
+   rejected_pre_call: {
+      title: 'Thank you for your interest in Moodeng Credit',
+      body:
+         "We're sorry, we're not the right fit for you right now. These apps may be able to help:\n" +
+         '• Tala: tala.ph\n' +
+         '• Maya: maya.ph\n' +
+         '• GCash (GLoan / GCredit): gcash.com\n' +
+         '• BillEase: billease.ph\n' +
+         'We wish you all the best! 🦛',
+      url: SITE_URL
+   },
    // Emma's "Decline the loan request" script (no-show).
    no_show: {
       title: 'We missed you on the call',
@@ -387,6 +400,7 @@ export const buildApprovedWhatsAppTemplate = (firstName: string | null | undefin
 const ID_EVENT: Record<BorrowerMessageKind, IdEvent> = {
    approved: 'access_approved',
    rejected: 'access_rejected',
+   rejected_pre_call: 'access_rejected',
    no_show: 'call_no_show',
    call_cancelled: 'call_cancelled',
    spot_released: 'call_released',
@@ -397,8 +411,12 @@ const ID_EVENT: Record<BorrowerMessageKind, IdEvent> = {
    expired: 'access_expired'
 };
 
-export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow, kind: BorrowerMessageKind) => {
+export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow, requestedKind: BorrowerMessageKind) => {
    const idTrack = await isIdTrackUser(svc, borrower.id);
+   // The other-lenders list is Philippine apps: Indonesia-track people keep the plain closed message.
+   const kind: BorrowerMessageKind = requestedKind === 'rejected_pre_call' && idTrack ? 'rejected' : requestedKind;
+   // No button under the pre-call rejection: there's nothing for them to do on Moodeng.
+   const noButton = kind === 'rejected_pre_call';
    if (idTrack) await sendIdTelegram(svc, borrower.id, ID_EVENT[kind]);
    const preKycMsg = PRE_KYC_MESSAGES[kind] && (await loadNeedsIdCheck(svc, borrower.id, borrower)) ? PRE_KYC_MESSAGES[kind] : undefined;
    const msg: BorrowerMessage = preKycMsg ?? BORROWER_MESSAGES[kind];
@@ -426,7 +444,7 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
    // Messenger too (lands only inside Meta's 24h window — e.g. they chatted around the call).
    const messenger = await sendMessengerMessage(borrower.messenger_psid, {
       text: `${msg.title}\n${msg.body}`,
-      card: { title: '👉 Next step', button: { title: ctaLabel(msg, kind), url: msg.url } }
+      ...(noButton ? {} : { card: { title: '👉 Next step', button: { title: ctaLabel(msg, kind), url: msg.url } } })
    });
    if (!messenger.ok && messenger.reason !== 'no_contact') console.log('loanAccess: messenger skipped for', borrower.id, messenger.reason);
    // Approved but Messenger couldn't tell them (outside its 24h window): the WhatsApp template.
@@ -446,7 +464,7 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
 
    if (borrower.chat_id && borrower.notif_account_activity !== false && !idTrack) {
       try {
-         await sendTelegramMessage(borrower.chat_id, `${msg.title}\n\n${msg.body}`, {
+         await sendTelegramMessage(borrower.chat_id, `${msg.title}\n\n${msg.body}`, noButton ? {} : {
             inlineKeyboard: [
                [
                   {
@@ -472,6 +490,18 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
 };
 
 // ---- Decide (admin Approve / Reject) ----------------------------------------------------------
+
+// True when a Reject comes before any screening call: they never attended one, never missed one
+// (no no-show on record, and no booked call whose start time has passed). Those get the kind
+// "other lenders" message; everyone else (no-shows, rejected after the call) keeps the old one.
+const isBeforeAnyCall = async (svc: SupabaseClient, borrower: BorrowerRow): Promise<boolean> => {
+   if (borrower.video_call_starts_at && Date.parse(borrower.video_call_starts_at) <= Date.now()) return false;
+   const [{ data: user }, { count: noShows }] = await Promise.all([
+      svc.from('users').select('video_call_outcome').eq('id', borrower.id).maybeSingle(),
+      svc.from('loan_access_requests').select('id', { count: 'exact', head: true }).eq('user_id', borrower.id).eq('status', 'no_show')
+   ]);
+   return !user?.video_call_outcome && !noShows;
+};
 
 // `stamp` is the after-state written on the person's admin cards (adminCards.ts).
 export type DecideResult =
@@ -595,7 +625,8 @@ export const decideLoanAccess = async (
    // A no-show keeps its cards remembered, so ✅ Approve anyway can stamp them all again later.
    await stampDecisionCards(svc, 'loan_access', request.user_id, stamp, { final: decision !== 'no_show' });
 
-   await notifyBorrower(svc, borrower, decision);
+   const preCall = decision === 'rejected' && (await isBeforeAnyCall(svc, borrower));
+   await notifyBorrower(svc, borrower, preCall ? 'rejected_pre_call' : decision);
 
    const verb =
       decision === 'approved'
@@ -604,7 +635,9 @@ export const decideLoanAccess = async (
             : '✅ Approved'
          : decision === 'no_show'
            ? '❌ No-show:'
-           : '🚫 Rejected';
+           : preCall
+             ? '🚫 Rejected before the call (sent other lenders):'
+             : '🚫 Rejected';
    const summary = `${verb} ${who(borrower, request.display_name)} — by ${decidedBy}${held ? `\n${held}` : ''}`;
    await postDiscord({ content: `🤝 Loan access ${summary}` }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
    return { ok: true, request, borrower, summary, stamp };
