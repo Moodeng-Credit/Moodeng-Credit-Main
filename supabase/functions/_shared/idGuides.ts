@@ -92,25 +92,52 @@ export const GUIDES: Record<IdGuideKey, Guide> = {
    walt: {
       title: t('Buka Walt pertama kali', 'Open Walt for the first time'),
       steps: [
-         { text: t('👛 Walt adalah dompet di dalam Telegram. Uang pinjamanmu masuk ke sini.\nTekan "👛 Buka Walt" di bawah.', '👛 Walt is the wallet inside Telegram. Your loan money arrives here.\nTap "👛 Open Walt" below.'), walt: true },
+         {
+            text: t(
+               '👛 Walt adalah dompet di dalam Telegram. Uang pinjamanmu masuk ke sini.\nTekan "👛 Buka Walt" di bawah.',
+               '👛 Walt is the wallet inside Telegram. Your loan money arrives here.\nTap "👛 Open Walt" below.'
+            ),
+            walt: true
+         },
          { text: t('▶️ Tekan "Mulai" (Start) dan setujui syaratnya.', '▶️ Tap "Start" and accept the terms.'), walt: true },
-         { text: t('✅ Selesai! Dompetmu siap menerima uang. Kembali ke chat ini.', '✅ Done! Your wallet is ready to receive money. Come back to this chat.') }
+         {
+            text: t(
+               '🔐 Walt minta PIN dompet 4 angka saat kamu kirim uang. Kalau diminta membuat PIN, pilih 4 angka yang kamu INGAT.\nTanpa PIN ini kamu tidak bisa bayar pinjaman. Jangan kasih tahu siapa pun.',
+               '🔐 Walt asks for a 4-digit wallet passcode when you send money. If it asks you to make one, pick 4 digits you will REMEMBER.\nWithout it you can’t pay your loan. Never tell anyone.'
+            ),
+            walt: true
+         },
+         {
+            text: t(
+               '✅ Selesai! Dompetmu siap menerima uang. Uangmu tampil sebagai "Dollars" (USDT). Kembali ke chat ini.',
+               '✅ Done! Your wallet is ready to receive money. Your money shows as "Dollars" (USDT). Come back to this chat.'
+            )
+         }
       ]
    },
    cash: {
       title: t('Cairkan pinjaman ke rupiah', 'Cash your loan out to rupiah'),
       steps: [
-         { text: t('👛 Tekan "👛 Buka Walt". Kamu akan lihat saldo USDT.\n(Kalau tertulis USDC, sama saja: 1 USDC = 1 USDT.)', '👛 Tap "👛 Open Walt". You will see your USDT balance.\n(If it says USDC, that’s the same: 1 USDC = 1 USDT.)'), walt: true },
-         { text: t('💱 Tekan "Jual" (Sell) atau "P2P Express".', '💱 Tap "Sell" or "P2P Express".'), walt: true },
-         { text: t('🔢 Pilih USDT, lalu tulis berapa yang mau kamu jual.', '🔢 Choose USDT, then type how much you want to sell.'), walt: true },
          {
             text: t(
-               '🏦 Pilih cara terima uang: bank atau e-wallet kamu (DANA, GoPay, OVO). Isi nomor rekening/HP kamu dengan BENAR.',
-               '🏦 Choose how to get paid: your bank or e-wallet (DANA, GoPay, OVO). Enter your account/phone number CORRECTLY.'
+               '👛 Tekan "👛 Buka Walt". Pinjamanmu tampil sebagai "Dollars" (USDT).\n(1 Dollar = 1 USDT = 1 USDC.)',
+               '👛 Tap "👛 Open Walt". Your loan shows as "Dollars" (USDT).\n(1 Dollar = 1 USDT = 1 USDC.)'
             ),
             walt: true
          },
-         { text: t('👀 Cek berapa rupiah yang kamu terima, lalu tekan "Jual" / "Konfirmasi".', '👀 Check how much rupiah you will get, then tap "Sell" / "Confirm".'), walt: true },
+         { text: t('⬆️ Tekan "Withdraw" (tombol dengan panah ke atas).', '⬆️ Tap "Withdraw" (the button with the up arrow).'), walt: true },
+         {
+            text: t('👥 Pilih "P2P Express" (Zero fees · For beginners).', '👥 Choose "P2P Express" (Zero fees · For beginners).'),
+            walt: true
+         },
+         { text: t('🔢 Tulis berapa yang mau kamu cairkan.', '🔢 Type how much you want to cash out.'), walt: true },
+         {
+            text: t(
+               '🏦 Pilih cara terima uang: bank atau e-wallet kamu (DANA, GoPay, OVO). Isi nomor rekening/HP dengan BENAR. Cek jumlah rupiahnya, lalu konfirmasi.',
+               '🏦 Choose how to get paid: your bank or e-wallet (DANA, GoPay, OVO). Enter your account/phone number CORRECTLY. Check the rupiah amount, then confirm.'
+            ),
+            walt: true
+         },
          {
             text: t(
                '⏳ Tunggu rupiah masuk (biasanya 5–15 menit).\nCek rekening/e-wallet kamu. Kalau SUDAH masuk, baru tekan "Sudah terima" di Walt.',
@@ -127,13 +154,24 @@ export const GUIDES: Record<IdGuideKey, Guide> = {
    buy: {
       title: t('Beli USDT dengan rupiah', 'Buy USDT with rupiah'),
       steps: [
-         { text: t('💰 Tekan 💰 Bayar di menu dulu. Lihat berapa USDT yang harus kamu kirim (contoh: 6.08).', '💰 First tap 💰 Pay in the menu. See how much USDT you must send (e.g. 6.08).') },
-         { text: t('👛 Tekan "👛 Buka Walt", lalu "Beli" (Buy) atau "P2P Express".', '👛 Tap "👛 Open Walt", then "Buy" or "P2P Express".'), walt: true },
-         { text: t('🔢 Pilih USDT. Tulis jumlah USDT itu, tambah sedikit (contoh: 6.10).', '🔢 Choose USDT. Type that USDT amount, plus a little (e.g. 6.10).'), walt: true },
          {
             text: t(
-               '🏦 Pilih cara bayar yang SAMA dengan milikmu (misal DANA ke DANA, BCA ke BCA) supaya tidak ada biaya transfer.',
-               '🏦 Pick the SAME payment method you have (e.g. DANA to DANA, BCA to BCA) so there’s no transfer fee.'
+               '💰 Tekan 💰 Bayar di menu dulu. Lihat berapa USDT yang harus kamu kirim (contoh: 6.08).',
+               '💰 First tap 💰 Pay in the menu. See how much USDT you must send (e.g. 6.08).'
+            )
+         },
+         {
+            text: t('👛 Tekan "👛 Buka Walt", lalu "Deposit" (tombol ➕).', '👛 Tap "👛 Open Walt", then "Deposit" (the ➕ button).'),
+            walt: true
+         },
+         {
+            text: t('👥 Pastikan di atas tertulis IDR. Pilih "P2P Express".', '👥 Check it says IDR at the top. Choose "P2P Express".'),
+            walt: true
+         },
+         {
+            text: t(
+               '🔢 Tulis jumlah USDT itu, tambah sedikit (contoh: 6.10). Pilih cara bayar yang SAMA dengan milikmu (misal DANA ke DANA) supaya tidak ada biaya transfer.',
+               '🔢 Type that USDT amount, plus a little (e.g. 6.10). Pick the SAME payment method you have (e.g. DANA to DANA) so there’s no transfer fee.'
             ),
             walt: true
          },
@@ -144,7 +182,12 @@ export const GUIDES: Record<IdGuideKey, Guide> = {
             ),
             walt: true
          },
-         { text: t('⏳ Tunggu USDT masuk ke Walt (biasanya 5–15 menit). Lalu ikuti panduan "Bayar pinjaman".', '⏳ Wait for the USDT to arrive in Walt (usually 5–15 minutes). Then follow the "Pay your loan" guide.') }
+         {
+            text: t(
+               '⏳ Tunggu USDT masuk ke Walt (biasanya 5–15 menit). Lalu ikuti panduan "Bayar pinjaman".',
+               '⏳ Wait for the USDT to arrive in Walt (usually 5–15 minutes). Then follow the "Pay your loan" guide.'
+            )
+         }
       ],
       warning: t(
          '⚠️ Bayar HANYA ke rekening yang ditunjukkan di dalam Walt. Jangan bayar ke orang yang chat kamu.',
@@ -154,15 +197,44 @@ export const GUIDES: Record<IdGuideKey, Guide> = {
    send: {
       title: t('Bayar pinjaman (gratis)', 'Pay your loan (free)'),
       steps: [
-         { text: t('💰 Tekan 💰 Bayar di menu. Kamu dapat jumlah TEPAT dan username kami: @{walt}.', '💰 Tap 💰 Pay in the menu. You get the EXACT amount and our username: @{walt}.') },
-         { text: t('📋 Tekan "📋 Salin username", lalu "👛 Buka Walt".', '📋 Tap "📋 Copy username", then "👛 Open Walt".'), walt: true },
-         { text: t('➡️ Di Walt tekan "Kirim" / "Transfer", pilih USDT, lalu tempel @{walt}.', '➡️ In Walt tap "Send" / "Transfer", choose USDT, then paste @{walt}.'), walt: true },
-         { text: t('🔢 Kembali ke chat ini, tekan "📋 Salin jumlah". Tempel di Walt. Tekan "Kirim".', '🔢 Come back to this chat, tap "📋 Copy amount". Paste it in Walt. Tap "Send".'), walt: true },
-         { text: t('✅ Kembali ke sini dan tekan "✅ Sudah kirim". Selesai! Kami kabari kalau sudah tercatat.', '✅ Come back here and tap "✅ I’ve sent it". Done! We’ll tell you when it’s recorded.') }
+         {
+            text: t(
+               '💰 Tekan 💰 Bayar di menu. Kamu dapat jumlah TEPAT dan username kami: @{walt}.',
+               '💰 Tap 💰 Pay in the menu. You get the EXACT amount and our username: @{walt}.'
+            )
+         },
+         { text: t('📋 Tekan "📋 Salin jumlah", lalu "👛 Buka Walt".', '📋 Tap "📋 Copy amount", then "👛 Open Walt".'), walt: true },
+         {
+            text: t(
+               '✈️ Di Walt tekan "Transfer" (ikon pesawat kertas). Tempel jumlahnya.',
+               '✈️ In Walt tap "Transfer" (the paper-plane icon). Paste the amount.'
+            ),
+            walt: true
+         },
+         {
+            text: t(
+               '🔐 Tekan "Choose Recipient", lalu masukkan PIN dompet 4 angka kamu.',
+               '🔐 Tap "Choose Recipient", then enter your 4-digit wallet passcode.'
+            ),
+            walt: true
+         },
+         {
+            text: t(
+               '👤 Kembali ke chat ini, tekan "📋 Salin username". Kembali ke Walt dan tempel @{walt}. Cek namanya, lalu tekan kirim.',
+               '👤 Come back to this chat, tap "📋 Copy username". Go back to Walt and paste @{walt}. Check the name, then tap send.'
+            ),
+            walt: true
+         },
+         {
+            text: t(
+               '✅ Kembali ke sini dan tekan "✅ Sudah kirim". Selesai! Kami kabari kalau sudah tercatat.',
+               '✅ Come back here and tap "✅ I’ve sent it". Done! We’ll tell you when it’s recorded.'
+            )
+         }
       ],
       warning: t(
-         '⚠️ JANGAN pakai "Withdraw" / "Tarik" — itu ada biaya. Pakai "Transfer" ke username kami, gratis.',
-         '⚠️ DON’T use "Withdraw" — it has a fee. Use "Transfer" to our username, it’s free.'
+         '⚠️ Untuk bayar ke kami pakai "Transfer" ✈️, BUKAN "Withdraw" — Withdraw ke alamat ada biaya. Transfer ke username kami gratis.',
+         '⚠️ To pay us use "Transfer" ✈️, NOT "Withdraw" — withdrawing to an address has a fee. Transfer to our username is free.'
       )
    }
 };

@@ -35,8 +35,8 @@ Deno.test('guide steps clamp, the username guide ends with a re-check, warnings 
    assertStringIncludes(guideStepScreen('id', 'cash', 99).text, '6/6');
    assertStringIncludes(guideStepScreen('id', 'cash', 0).text, '1/6');
    assert(callbacks(guideStepScreen('id', 'uname', GUIDES.uname.steps.length).keyboard).includes('idg:uname:ok'));
-   assert(!guideStepScreen('id', 'send', 1).text.includes('JANGAN'));
-   assertStringIncludes(guideStepScreen('id', 'send', GUIDES.send.steps.length).text, 'JANGAN pakai "Withdraw"');
+   assert(!guideStepScreen('id', 'send', 1).text.includes('BUKAN'));
+   assertStringIncludes(guideStepScreen('id', 'send', GUIDES.send.steps.length).text, 'BUKAN "Withdraw"');
    assertStringIncludes(guideStepScreen('id', 'send', 1, { waltUsername: '@jimmymoodengcredit' }).text, '@jimmymoodengcredit');
    assertEquals(guideStepScreen('id', 'cash', 2, { media: { 'cash:2': 'FILEID' } }).photo, 'FILEID');
    assertEquals(callbacks(guideListScreen('id').keyboard).filter((d) => d.startsWith('idg:')).length, ID_GUIDE_KEYS.length);
