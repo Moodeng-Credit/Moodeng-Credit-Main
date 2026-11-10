@@ -114,7 +114,12 @@ const pregenerateInstantWallet = async (svc: Svc, actorId: string | null, userId
    const { error: grantError } = await svc
       .from('embedded_wallet_grants')
       .upsert({ user_id: userId, wallet_address: address, user_role: target.user_role ?? 'borrower' });
-   const { error: userError } = await svc.from('users').update({ wallet_address: address }).eq('id', userId);
+   // Provider + connector too: the app reads these to decide Instant Wallet vs Base Account
+   // (getStoredWalletProvider); leaving 'base_wallet' would keep sending them to Base Pay.
+   const { error: userError } = await svc
+      .from('users')
+      .update({ wallet_address: address, wallet_provider: 'openfort', wallet_connector_name: 'Openfort', wallet_chain_id: template.chainId })
+      .eq('id', userId);
 
    await svc.from('admin_audit_logs').insert({
       actor_user_id: actorId,
