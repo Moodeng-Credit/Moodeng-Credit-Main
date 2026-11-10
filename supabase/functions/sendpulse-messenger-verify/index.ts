@@ -27,6 +27,7 @@ import { testAccountRow } from '../_shared/testAccount.ts';
 import { bookFromWindow, startWhatsAppBooking } from '../_shared/whatsappBooking.ts';
 import { whatsappContactCard } from '../_shared/whatsappContactCard.ts';
 import { facebookStepsDue, sendFacebookConnectedOnWhatsApp, sendFacebookStepsOnWhatsApp, setWhatsAppLocale } from '../_shared/whatsappFirst.ts';
+import { bridgeRedirectUrl, handleBridgeInbound } from '../_shared/idWaBridge.ts';
 import { ID_WHATSAPP_CONNECTED_TEXT, ID_WHATSAPP_USE_TELEGRAM_TEXT, isIdTrackUser, isIdWhatsAppContact, notifyIdNextStep } from '../_shared/idTrack.ts';
 
 // SendPulse → Moodeng bridge for Facebook Messenger contact verification.
@@ -307,6 +308,11 @@ const handleWhatsApp = async (svc: Svc, body: VerifyBody, nowIso: string): Promi
    const raw = String(body.code ?? body.ref ?? body.message ?? '').trim();
    if (!raw) return json({ ok: false, error: 'no_code' });
 
+   // Indonesia's WhatsApp → Telegram entry ("… MDNG-DAFTAR", typed for them by the /id button): no
+   // account yet, so there's no code to match. We reply with the steps to Telegram (_shared/idWaBridge.ts).
+   const bridge = await handleBridgeInbound(svc, { contactId, message: raw, phone: body.phone }, nowIso);
+   if (bridge) return json(bridge);
+
    for (const cand of extractMessengerCodes(raw)) {
       const { data, error } = await svc
          .from('contact_verification_codes')
@@ -397,6 +403,13 @@ const handleWhatsApp = async (svc: Svc, body: VerifyBody, nowIso: string): Promi
 
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+   // moodeng.app/t/<token> (vercel.json) → our bot with /start wa_<token>. A plain redirect: it carries
+   // no secret and changes nothing; the bot does the work when they press Start.
+   if (req.method === 'GET') {
+      const go = new URL(req.url).searchParams.get('go');
+      if (go === null) return json({ ok: false, error: 'method_not_allowed' }, 405);
+      return new Response(null, { status: 302, headers: { ...CORS, Location: await bridgeRedirectUrl(go), 'Cache-Control': 'no-store' } });
+   }
    if (req.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405);
 
    // Admin-only research: bot message stats (seen / tapped / replied per kind). X-Admin-Token, read-only.

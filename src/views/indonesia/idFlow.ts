@@ -187,6 +187,41 @@ export const fetchIdTrackSwitch = async (): Promise<IdTrackSwitch> => {
 export const useIdTrackSwitch = (enabled = true) =>
    useQuery({ queryKey: ['id-track-switch'], queryFn: fetchIdTrackSwitch, staleTime: 60_000, enabled }, useAnyQueryClient());
 
+// ── WhatsApp → Telegram entry ───────────────────────────────────────────────────────────────────
+// People who leave Facebook's browser for another app don't come back to the page, and most Indonesians
+// have WhatsApp but must install Telegram first. So /id leads with "Chat di WhatsApp": WhatsApp opens
+// with a message already typed, they tap send, and we lead them to the bot from there
+// (supabase/functions/_shared/idWaBridge.ts). Nothing after the tap needs this page again.
+export type IdWaBridgeSwitch = 'off' | 'test' | 'on';
+
+export const fetchIdWaBridgeSwitch = async (): Promise<IdWaBridgeSwitch> => {
+   const { data, error } = await getSupabaseBrowserClient().rpc('get_id_wa_bridge');
+   if (error) return 'off';
+   return data === 'on' || data === 'test' ? data : 'off';
+};
+
+/** get_id_wa_bridge(): 'off' | 'test' | 'on'. Anyone can read it. */
+export const useIdWaBridgeSwitch = () =>
+   useQuery({ queryKey: ['id-wa-bridge-switch'], queryFn: fetchIdWaBridgeSwitch, staleTime: 60_000 }, useAnyQueryClient());
+
+/** 'test' shows the WhatsApp button only with ?wa=1 (the team's phones); 'on' shows it to everyone. */
+export const idWaBridgeVisible = (value: IdWaBridgeSwitch | undefined, search: URLSearchParams): boolean =>
+   value === 'on' || (value === 'test' && search.get('wa') === '1');
+
+/**
+ * The message typed for them. The tag at the end is what the server reads (parseBridgeKeyword): DAFTAR =
+ * Bahasa, JOIN = English, then A (Android) or I (iPhone) so the reply carries the right app store link.
+ * It must contain "MDNG": that word is what makes SendPulse pass the message on to us. No loan talk on
+ * WhatsApp, in either direction.
+ */
+export const idWaBridgeMessage = (lang: IdLang, os: 'android' | 'ios' | 'other'): string => {
+   const tag = `MDNG-${lang === 'en' ? 'JOIN' : 'DAFTAR'}${os === 'android' ? '-A' : os === 'ios' ? '-I' : ''}`;
+   return lang === 'en' ? `Hi Moodeng! I want to join 👋\n(${tag})` : `Halo Moodeng! Saya mau daftar 👋\n(${tag})`;
+};
+
+export const idWaBridgeLink = (businessNumber: string, lang: IdLang, os: 'android' | 'ios' | 'other'): string =>
+   `https://wa.me/${businessNumber}?text=${encodeURIComponent(idWaBridgeMessage(lang, os))}`;
+
 /** Phone set to an Indonesian time zone or language: only then ask the server for the IP country. */
 export const looksIndonesian = (): boolean => {
    try {

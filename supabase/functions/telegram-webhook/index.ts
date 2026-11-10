@@ -35,6 +35,7 @@ import {
 import { markMessengerVerified, messengerVerifiedStamp, parseMessengerVerifyCallback } from '../_shared/messengerStuckAlert.ts';
 import { payoutWalletStatus } from '../_shared/idPayoutWallet.ts';
 import { findIdUserByTelegram, handleIdBotCallback, handleIdMenuMessage } from '../_shared/idBot.ts';
+import { handleBridgeStart } from '../_shared/idWaBridge.ts';
 import { handleIdFreeText } from '../_shared/idHelper.ts';
 import { handleGuidePhotoCommand, isGuidePhotoCommand } from '../_shared/idGuides.ts';
 import { handleWaltPayoutCallback } from '../_shared/idWaltPayouts.ts';
@@ -1410,6 +1411,12 @@ serve(async (req) => {
          if (payload.startsWith('login_')) {
             await claimAppLogin(supabase, message, payload);
             return jsonResponse({ message: 'App login claimed' });
+         }
+
+         // Indonesia: they came from WhatsApp (moodeng.app/t/<token>). Welcome + the sign-up button.
+         if (payload.startsWith('wa_')) {
+            await handleBridgeStart(supabase, message, payload);
+            return jsonResponse({ message: 'WhatsApp bridge start handled' });
          }
 
          if (payload) {
