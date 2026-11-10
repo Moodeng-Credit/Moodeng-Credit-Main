@@ -28,7 +28,7 @@ export const filipinoCoverageH: Record<string, string> = {
    'Pay next loan': 'Bayaran ang susunod na loan',
    'Pay it all to unlock your account.': 'Bayaran lahat para ma-unlock ang account mo.',
    // src/views/repay/AppGuideSteps.tsx + src/components/guide/GuideCards.tsx — app step cards
-   'Copy your Moodeng address': 'Kopyahin ang Moodeng address mo',
+   'Copy your wallet address': 'Kopyahin ang wallet address mo',
    'Copied, next': 'Nakopya na, susunod',
    'Base network only': 'Base network lang',
    'I sent it': 'Naipadala ko na',

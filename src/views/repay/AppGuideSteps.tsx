@@ -30,7 +30,7 @@ const buildCards = ({
 }): GuideCard[] => {
    const copy: GuideCard = {
       key: 'copy',
-      title: 'Copy your Moodeng address',
+      title: 'Copy your wallet address',
       content: addressCard,
       confirm: appId === 'moneybees' ? 'I’ll ask Moneybees to send USDC on Base' : `I’ll pick the Base network in ${appName}`,
       doneLabel: 'Copied, next'

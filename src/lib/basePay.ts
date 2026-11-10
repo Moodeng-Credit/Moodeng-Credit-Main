@@ -103,10 +103,26 @@ const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve,
 // the userOp is already broadcasting, so a message we don't recognize does not prove the money
 // stayed put. Callers with reconciliation armed treat `unknown` as reconcile-later; only an
 // explicit on-chain revert (from waitForBasePayment) is a hard `failed`.
+// pay() sometimes throws a plain object ({ code, message }) instead of an Error; String() of that
+// is "[object Object]", which is all we logged for a borrower's five failed payments in Nov 2026.
+const describeThrown = (err: unknown): string => {
+   if (err instanceof Error) return err.message;
+   if (err && typeof err === 'object') {
+      const { message, code } = err as { message?: unknown; code?: unknown };
+      if (typeof message === 'string' && message) return code === undefined ? message : `${message} (code ${String(code)})`;
+      try {
+         return JSON.stringify(err).slice(0, 300);
+      } catch {
+         return 'Payment failed';
+      }
+   }
+   return String(err ?? 'Payment failed');
+};
+
 export const classifyBasePayThrow = (err: unknown): BasePaymentError => {
    if (err instanceof BasePaymentError) return err;
 
-   const message = err instanceof Error ? err.message : String(err ?? 'Payment failed');
+   const message = describeThrown(err);
    const normalized = message.toLowerCase();
 
    if (/reject|denied|cancel|dismiss|closed|user (declined|refused)/.test(normalized)) {

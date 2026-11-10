@@ -15,7 +15,7 @@ const STEPS = [
    },
    {
       title: 'Send to your Moodeng wallet',
-      text: 'Open Send USDC (Base). Paste your Moodeng address, then tap MAX.',
+      text: 'Open Send USDC (Base). Paste your wallet address, then tap MAX.',
       img: '/repay-guides/gcrypto/step3-send.webp'
    },
    {

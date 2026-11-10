@@ -21,7 +21,7 @@ import posthog from 'posthog-js';
 import { useDispatch, useSelector, useStore } from 'react-redux';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { erc20Abi } from 'viem';
-import { useAccount, useConnect, useReadContract, useSwitchChain, useWatchContractEvent } from 'wagmi';
+import { useAccount, useConnect, useDisconnect, useReadContract, useSwitchChain, useWatchContractEvent } from 'wagmi';
 
 import { useBottomNavPrimaryAction } from '@/components/BottomNavActionContext';
 import RepayInAppBrowserGate from '@/components/RepayInAppBrowserGate';
@@ -523,7 +523,8 @@ export default function Repay() {
    const account = useAccount();
    // Openfort-locked borrowers send via their embedded wallet; everyone else keeps wallet/Base.
    const activePaymentMethod = useActivePaymentMethod();
-   const { status: connectStatus } = useConnect();
+   const { status: connectStatus, connectAsync, connectors } = useConnect();
+   const { disconnectAsync } = useDisconnect();
    const { switchChainAsync } = useSwitchChain();
 
    const user = useSelector((state: RootState) => state.auth.user);
@@ -864,6 +865,47 @@ export default function Repay() {
    // no real wallet, so use a sample address purely so the add-funds card can be previewed.
    const PREVIEW_ADDRESS = '0x1234aBCd5678Ef901234abcd5678ef901234ABcd';
    const repayWalletAddress = baseWalletLock.address ?? account.address ?? (usePreviewLoans ? PREVIEW_ADDRESS : '');
+
+   // Wallet check (Nov 2026): a Base-wallet borrower must open their saved wallet before we tell
+   // them to add money to it. Pay opens whatever wallet their phone is signed in to now; when that
+   // wasn't the saved one, money landed in a wallet they couldn't pay from and every Pay failed
+   // with no reason given. Instant Wallets (Openfort) pay from the saved wallet itself, so they skip
+   // this. Connecting a different wallet never replaces the saved one: useWalletSync rejects it.
+   // Preview: ?walletcheck=needed | wrong shows the two screens.
+   const previewWalletCheck = usePreviewLoans ? new URLSearchParams(location.search).get('walletcheck') : null;
+   const [walletCheck, setWalletCheck] = useState<
+      { state: 'idle' } | { state: 'opening' } | { state: 'wrong'; opened: string } | { state: 'failed' }
+   >(() => (previewWalletCheck === 'wrong' ? { state: 'wrong', opened: '0x52E9c0ffee000000000000000000000000c077' } : { state: 'idle' }));
+   const savedWalletOpen = Boolean(
+      account.isConnected && baseWalletLock.address && areWalletAddressesEqual(account.address, baseWalletLock.address)
+   );
+   const needsWalletCheck = usePreviewLoans
+      ? previewWalletCheck === 'needed' || previewWalletCheck === 'wrong'
+      : activePaymentMethod !== 'openfort' && baseWalletLock.hasStoredWallet && !savedWalletOpen;
+   const openSavedWallet = async () => {
+      if (usePreviewLoans) return;
+      const connector = connectors.find((c) => c.id === 'baseAccount');
+      if (!connector) {
+         setWalletCheck({ state: 'failed' });
+         return;
+      }
+      setWalletCheck({ state: 'opening' });
+      try {
+         if (account.isConnected) await disconnectAsync();
+         const { accounts } = await connectAsync({ connector, chainId: ALLOWED_CHAIN_ID });
+         const opened = accounts[0];
+         if (opened && baseWalletLock.address && !areWalletAddressesEqual(opened, baseWalletLock.address)) {
+            setWalletCheck({ state: 'wrong', opened });
+            trackRepay('repay_wallet_check', { result: 'wrong_wallet', opened, saved: baseWalletLock.address });
+            return;
+         }
+         setWalletCheck({ state: 'idle' });
+         trackRepay('repay_wallet_check', { result: 'ok' });
+      } catch (err) {
+         setWalletCheck({ state: 'failed' });
+         trackRepay('repay_wallet_check', { result: 'failed', error: err instanceof Error ? err.message.slice(0, 200) : 'unknown' });
+      }
+   };
 
    const handleCopyAddress = useCallback(async () => {
       if (!repayWalletAddress) return;
@@ -2182,6 +2224,8 @@ export default function Repay() {
       const clearsLoan = payAmount >= selectedRemainingRounded;
       // Enough USDC already: one screen, one tap (no steps).
       const quickPay = wizardStep === 'amount' && amountFunded;
+      // Past "how much", nothing moves until they've opened the wallet we'll ask them to fund / pay from.
+      const walletGate = needsWalletCheck && (quickPay || wizardStep !== 'amount');
       // Paying off a full-limit loan moves them up a tier ([[credit-leveling-rule]]).
       // Same rule the server applies when the loan is marked Paid (src/lib/creditLeveling.ts mirrors
       // supabase/functions/_shared/creditAndPoints.ts): a full-limit loan repaid in full → next tier.
@@ -2505,8 +2549,52 @@ export default function Repay() {
                {/* One progress bar at a time: the app guide shows its own. */}
                {quickPay || wizardStep === 'send' ? null : <RepayTrail step={wizardStep} onPick={goTo} />}
 
+               {/* ── Open your saved wallet first (Base wallets) ─────────────── */}
+               {walletGate ? (
+                  walletCheck.state === 'wrong' ? (
+                     <>
+                        <StepHead image={CONNECT_HIPPOS.missed} title="That’s a different wallet" />
+                        <Card>
+                           <p className="text-[16px] font-bold">
+                              You opened <span className="font-mono">{formatWalletAddressShort(walletCheck.opened)}</span>
+                           </p>
+                           <p className="text-[16px] font-bold">
+                              Your saved wallet is{' '}
+                              <span className="font-mono">{formatWalletAddressShort(repayWalletAddress)}</span>
+                           </p>
+                           <p className="rounded-[14px] bg-[#fff7f7] px-3 py-2.5 text-[15px] font-bold text-md-red-600 dark:bg-[#3c171e]">
+                              Don’t add money yet. Open your saved wallet, or chat with us.
+                           </p>
+                        </Card>
+                        <GoldButton onClick={() => void openSavedWallet()}>Try another account</GoldButton>
+                        {backLink('amount')}
+                     </>
+                  ) : (
+                     <>
+                        <StepHead
+                           image={CONNECT_HIPPOS.cashout}
+                           title="First, open your wallet"
+                           subtitle="So your money goes to a wallet you can pay from."
+                        />
+                        <Card className="items-center !gap-1 py-4 text-center">
+                           <span className="text-[15px] font-bold text-[#7a6a4f] dark:text-[#bfb29a]">Your saved wallet</span>
+                           <span className="font-mono text-[22px] font-extrabold">{formatWalletAddressShort(repayWalletAddress)}</span>
+                        </Card>
+                        {walletCheck.state === 'failed' ? (
+                           <p className="text-center text-[15px] font-bold text-md-red-600">It didn’t open. Try again.</p>
+                        ) : null}
+                        {walletCheck.state === 'opening' ? (
+                           <WaitRow>Opening your wallet…</WaitRow>
+                        ) : (
+                           <GoldButton onClick={() => void openSavedWallet()}>Open my wallet</GoldButton>
+                        )}
+                        {backLink('amount')}
+                     </>
+                  )
+               ) : null}
+
                {/* ── Enough USDC already: pay in one tap ───────────────────── */}
-               {quickPay ? (
+               {quickPay && !walletGate ? (
                   <>
                      {partialPaidRow}
                      <DoneRow>${formatCurrency(usdcBalance ?? 0)} USDC in your wallet</DoneRow>
@@ -2532,7 +2620,7 @@ export default function Repay() {
                ) : null}
 
                {/* ── 2. Pick the app they'll get USDC from ──────────────── */}
-               {wizardStep === 'source' ? (
+               {wizardStep === 'source' && !walletGate ? (
                   <>
                      <DoneRow>Paying ${formatCurrency(payAmount)}</DoneRow>
                      <StepHead image="/hippos/thinking.png" title="Which app do you use?" />
@@ -2561,7 +2649,7 @@ export default function Repay() {
                ) : null}
 
                {/* ── 3. Follow the app's steps, one card at a time ─────────── */}
-               {wizardStep === 'send' ? (
+               {wizardStep === 'send' && !walletGate ? (
                   <>
                      <StepHead
                         image="/hippos/hippo-wallet.png"
@@ -2592,7 +2680,7 @@ export default function Repay() {
                ) : null}
 
                {/* ── 4. Pay the moo-lender ─────────────────────────────── */}
-               {wizardStep === 'pay' ? (
+               {wizardStep === 'pay' && !walletGate ? (
                   <>
                      {partialPaid ? (
                         <>

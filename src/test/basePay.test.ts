@@ -140,6 +140,13 @@ describe('classifyBasePayThrow', () => {
    it('defaults an unrecognized message to unknown, not failed', () => {
       expect(classifyBasePayThrow(new Error('some opaque SDK error')).kind).toBe('unknown');
    });
+
+   it('keeps the message of a plain-object throw instead of "[object Object]"', () => {
+      const thrown = classifyBasePayThrow({ code: 4001, message: 'User rejected the request.' });
+      expect(thrown.message).toBe('User rejected the request. (code 4001)');
+      expect(thrown.kind).toBe('rejected');
+      expect(classifyBasePayThrow({ reason: 'wrong account' }).message).toBe('{"reason":"wrong account"}');
+   });
 });
 
 describe('payment status endpoint', () => {
