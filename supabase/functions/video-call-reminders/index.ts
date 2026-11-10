@@ -28,6 +28,7 @@ import { type IdEvent, type IdEventData, isIdTrackUser, runIdOnboardingNudges, s
 import { runAutoPayouts, runWaltPayoutScan } from '../_shared/idManualFunding.ts';
 import { runIdrRepricing } from '../_shared/fxRates.ts';
 import { runIdRepayNudges, runIdRepayments } from '../_shared/idRepayments.ts';
+import { runIdWaBridgeNudges } from '../_shared/idWaBridge.ts';
 import { runWaltTransferPayoutCards } from '../_shared/idWaltPayouts.ts';
 
 // Cron-driven (every 5 min) no-show defence for booked video calls. The full ladder — day-before,
@@ -329,6 +330,10 @@ serve(async (req) => {
    // Indonesia track: stalled onboarding → a Telegram nudge (max 3, one per 24h; idTrack.ts). This job
    // runs every 5 min, so the pass only runs in the first tick of each hour.
    if (new Date(now).getUTCMinutes() < 5) tally.id_nudges = await runIdOnboardingNudges(svc, now);
+   // Indonesia: people who started on WhatsApp and haven't reached Telegram / tapped the sign-up button.
+   const bridgeNudges = await runIdWaBridgeNudges(svc, now);
+   tally.id_bridge_wa_nudges = bridgeNudges.whatsapp;
+   tally.id_bridge_tg_nudges = bridgeNudges.telegram;
    // Indonesia track, one shared budget of ≤ 90 s (deadlines passed down; every Openfort call times out
    // at 20 s and no send starts with < 30 s left). Money first: the payout wallet (settle payments in
    // flight, BNB Chain checks on failed ones, new payouts when /idautopay is on), then the hand-payout

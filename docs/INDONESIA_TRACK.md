@@ -144,6 +144,38 @@ Code: migration `20261107160000_indonesia_idr_peg.sql`, `_shared/fxRates.ts`, `s
   last rate); the peg falls back to the last stored rate of any age.
 - `loans.usd_total_at_request` keeps the original USD total for the BitRepo report.
 
+## The front door: WhatsApp → Telegram (2026-11-10)
+
+Most Indonesians have WhatsApp but must install Telegram, and people who leave Facebook's in-app browser
+for another app don't come back to the page (PostHog, Oct–Nov 2026: 0 of 8 Android people returned after
+opening WhatsApp, though 5 of the 6 real ones did send the message). So `/id` leads with **Chat di
+WhatsApp**, and nothing after that tap needs the page again:
+
+1. The button is a `wa.me` link with a message already typed, ending in a tag: `MDNG-DAFTAR-A`
+   (DAFTAR = Bahasa, JOIN = English; A = Android, I = iPhone). "MDNG" is what makes SendPulse's
+   "Confirm WhatsApp" flow pass the message to `sendpulse-messenger-verify`.
+2. They wrote first, so we may reply freely for 24 hours (no template). `_shared/idWaBridge.ts` sends
+   four short messages: hello, step 1 install Telegram (the right store link), step 2 tap
+   `moodeng.app/t/<token>` (our own link, a 302 to the bot: `vercel.json` → `sendpulse-messenger-verify?go=`),
+   and "reply BANTUAN". One row per WhatsApp contact in `id_wa_bridge`.
+3. In the bot, `/start wa_<token>` ties their Telegram to the row and sends the welcome with
+   **▶️ Mulai daftar**, a login_url button to `/auth/telegram/callback?track=id`. Telegram signs them in,
+   the page joins the track, and `join_id_track()` → `attach_id_wa_bridge()` copies the WhatsApp number
+   onto the account (matched on the Telegram id in `auth.users.raw_app_meta_data`), so the WhatsApp step
+   is already done for a +62 number.
+4. Nudges, from the 5-minute job (`runIdWaBridgeNudges`): on WhatsApp at 20 min and 3 h while they haven't
+   pressed Start (the second one also asks the team, in the KYC group, to message them by hand); in
+   Telegram at 30 min and 20 h when they pressed Start but never tapped the button.
+
+**WhatsApp never talks about loans or money** (George): those messages only lead to Telegram. A test in
+`idWaBridge.test.ts` fails if a WhatsApp text mentions them.
+
+Switch: `telegram_bot_settings.id_wa_bridge` = `off` | `test` (the bridge answers, `/id` shows the button
+only with `?wa=1`) | `on`. The old "Daftar dengan Telegram" button stays underneath for people who already
+have Telegram. Not checked yet on real phones: whether `wa.me` opens from Facebook's browser for
+Indonesians, and whether Telegram keeps the link when someone has to create their account first (the
+steps say install and make the account first, and the nudge repeats the link).
+
 ## Signing in from Facebook's browser (Telegram app login)
 
 Telegram's website login gets lost inside Facebook's / TikTok's in-app browser, so `/id` signs in

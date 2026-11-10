@@ -15,6 +15,7 @@
     { "src": "^/investors/?$", "dest": "/landing/investor-relations.html" },
 
     { "src": "^/v/([0-9a-fA-F-]{36})/?$", "dest": "https://qplmmxynzxzkfxtayoqr.supabase.co/functions/v1/voucher-claim-telegram-notification?go=$1" },
+    { "src": "^/t/([A-Za-z0-9_-]{16,40})/?$", "dest": "https://qplmmxynzxzkfxtayoqr.supabase.co/functions/v1/sendpulse-messenger-verify?go=$1" },
 
     { "src": "^/b2b-demo/?$", "dest": "/demo-b2b/platform.html" },
 

@@ -75,8 +75,10 @@ export default function TelegramCallbackPage(): JSX.Element {
 
          const supabase = getSupabaseBrowserClient();
 
-         // `next` is ours (bot buttons), not part of Telegram's signed data.
-         const { next: nextParam, ...authData } = params;
+         // `next` and `track` are ours (bot buttons), not part of Telegram's signed data.
+         // track=id: the bot's "Mulai daftar" button for someone who came in through WhatsApp
+         // (_shared/idWaBridge.ts) — they join the Indonesia track, same as tapping the button on /id.
+         const { next: nextParam, track: trackParam, ...authData } = params;
          const { data, error: fnError } = await supabase.functions.invoke('telegram-login', {
             body: { authData }
          });
@@ -90,7 +92,7 @@ export default function TelegramCallbackPage(): JSX.Element {
             return;
          }
 
-         const idIntent = hasIdTrackIntent();
+         const idIntent = hasIdTrackIntent() || trackParam === 'id';
          clearIdTrackIntent();
          const next = nextParam ?? new URLSearchParams(window.location.search).get('next');
          // Already signed in as someone else here? Ask before switching accounts (someone could send a
@@ -131,7 +133,11 @@ export default function TelegramCallbackPage(): JSX.Element {
                >
                   Lanjut · Continue
                </button>
-               <button type="button" className="rounded-xl border px-4 py-2 text-sm font-semibold" onClick={() => navigate('/dashboard', { replace: true })}>
+               <button
+                  type="button"
+                  className="rounded-xl border px-4 py-2 text-sm font-semibold"
+                  onClick={() => navigate('/dashboard', { replace: true })}
+               >
                   Batal · Cancel
                </button>
             </div>
