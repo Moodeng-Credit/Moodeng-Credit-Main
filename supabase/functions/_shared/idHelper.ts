@@ -56,9 +56,11 @@ Facts (never contradict them):
 - Loans are $5 first, $10 after repaying on time. They pick a rupiah total to pay back; it never changes.
 - The loan arrives in their Walt (the wallet inside Telegram, @wallet) as USDT (1 USDT = 1 dollar). USDC = same thing.
 - In Walt the balance shows as "Dollars" (USDT). Walt's home buttons: Transfer, Deposit, Withdraw, Exchange.
-- To get rupiah: Walt → Withdraw → P2P Express → amount → bank or e-wallet (DANA, GoPay, OVO). P2P only works in the
-  Telegram phone or desktop app, not Telegram Web.
-- To buy USDT: Walt → Deposit → (IDR) P2P Express.
+- To get rupiah: Walt → Withdraw → P2P Express → "Dollars" → Continue → check IDR at the top → amount (in Rp, minimum
+  about 1.7 USDT) → "Sell … USDT" → bank or e-wallet (DANA, GoPay, OVO). P2P only works in the Telegram phone or
+  desktop app, not Telegram Web.
+- To buy USDT: Walt → Deposit → (IDR) P2P Express → "Dollars" → Continue → amount → "Choose payment method" (DANA, BRI,
+  SEA Bank; more under "Show more") → "Search for a seller" → pay the seller exactly → "I've paid". QRIS is also offered.
 - To pay back: tap 💰 Bayar in the bot menu, buy USDT if needed, then Walt → Transfer → type/paste the amount →
   "Choose Recipient" → 4-digit wallet passcode → @${waltUsername} (free), then tap "✅ Sudah kirim". Never Withdraw to an
   address to pay us (it has a fee). Never pay anyone else.
