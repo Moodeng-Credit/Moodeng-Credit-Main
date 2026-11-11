@@ -809,9 +809,13 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       }
    }
    await postDiscord({ embeds: [{ title: `📄 Proof of income — ${who}`, description: `${ping.split('\n').slice(1).join('\n')}\n${ADMIN_URL}`, color: 0x6b55f7 }] }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }).catch(() => undefined);
+   // The result (read OK, couldn't read, resend asked…) goes to both places the ping went.
    const reply = async (text: string) => {
-      if (!chat?.value) return;
-      await sendTelegramMessage(chat.value, text, { replyToMessageId: pingId }).catch(() => undefined);
+      if (chat?.value) await sendTelegramMessage(chat.value, text, { replyToMessageId: pingId }).catch(() => undefined);
+      await postDiscord(
+         { embeds: [{ title: `📄 Result — ${who}`, description: `${text.slice(0, 3900)}\n${ADMIN_URL}`, color: 0x6b55f7 }] },
+         { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }
+      ).catch(() => undefined);
    };
 
    const finish = async (patch: Record<string, unknown>, replyText?: string) => {
