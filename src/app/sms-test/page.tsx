@@ -13,7 +13,17 @@ import { CONNECT_HIPPOS, ConnectHero, GhostButton } from '@/views/dashboard/comp
 // Everything runs in the database (sms_test_* in 20261109150000_sms_test_page.sql), which also posts each
 // result to Discord #rewards. No sign-in: the token in the link is the key.
 
-export type SmsTestStage = 'loading' | 'bad_link' | 'closed' | 'form' | 'covered' | 'code' | 'won' | 'not_received' | 'already_done';
+export type SmsTestStage =
+   | 'loading'
+   | 'bad_link'
+   | 'closed'
+   | 'fully_tested'
+   | 'form'
+   | 'covered'
+   | 'code'
+   | 'won'
+   | 'not_received'
+   | 'already_done';
 export type SmsTestPreview = { stage: SmsTestStage; link?: string | null; owed?: boolean; phone?: string; done?: string[] };
 
 // Only the networks UniSMS can't reach. Globe (with TM/GOMO) and DITO already get codes, so a Globe or
@@ -28,6 +38,9 @@ const NETWORKS = [
 const SENDERS = ['Moodeng', 'Verify', 'Notify', 'A number', 'Other'] as const;
 
 const WAIT_BEFORE_NOT_RECEIVED_S = 60;
+
+const TESTED_NETWORKS = ['smart', 'tnt', 'sun'];
+const allTested = (done: string[]) => TESTED_NETWORKS.every((n) => done.includes(n));
 
 /** A Globe/TM/GOMO or DITO number by its prefix: UniSMS already texts those, nothing to test. */
 function isCoveredNumber(raw: string): boolean {
@@ -119,6 +132,7 @@ export default function SmsTestPage({ preview }: { preview?: SmsTestPreview } = 
             const r = data as Result | null;
             if (rpcError || !r?.ok) return setStage('bad_link');
             setDone(r.done ?? []);
+            if (allTested(r.done ?? [])) return setStage('fully_tested');
             setStage(r.open ? 'form' : 'closed');
          });
       return () => {
@@ -155,6 +169,7 @@ export default function SmsTestPage({ preview }: { preview?: SmsTestPreview } = 
          setCode('');
          setStage('code');
       } else if (r.error === 'covered') setStage('covered');
+      else if (r.error === 'fully_tested') setStage('fully_tested');
       else if (r.error === 'network_done') {
          setDone((d) => (d.includes(network) ? d : [...d, network]));
          setNetwork('');
@@ -214,6 +229,16 @@ export default function SmsTestPage({ preview }: { preview?: SmsTestPreview } = 
                      image={CONNECT_HIPPOS.waiting}
                      title="The test is full"
                      subtitle="Thank you! We have all the testers we need for now."
+                  />
+               </div>
+            ) : null}
+
+            {stage === 'fully_tested' ? (
+               <div className={card}>
+                  <ConnectHero
+                     image={CONNECT_HIPPOS.approved}
+                     title="Fully tested! 🎉"
+                     subtitle="Thank you so much! And sorry if it wasn’t available for you to test."
                   />
                </div>
             ) : null}
