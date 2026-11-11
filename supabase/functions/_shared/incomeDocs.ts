@@ -284,7 +284,15 @@ export const runChecks = (doc: Extracted, metrics: Metrics, ctx: CheckContext): 
    if (ctx.duplicateOf.length) {
       flags.push({ code: 'same_file_other_account', severity: 'red', detail: `The exact same file was sent by ${ctx.duplicateOf.length} other account(s).` });
    }
-   if (doc.opening_balance != null && doc.closing_balance != null && tx.length) {
+   // When the opening and closing balances are just the first and last rows' (a long history read in
+   // batches), this sum is the running-balance check below counted twice, so it's skipped.
+   const endsFromRows =
+      tx.length > 0 &&
+      tx[0].balance != null &&
+      tx[tx.length - 1].balance != null &&
+      doc.opening_balance === round2((tx[0].balance as number) - tx[0].amount) &&
+      doc.closing_balance === tx[tx.length - 1].balance;
+   if (doc.opening_balance != null && doc.closing_balance != null && tx.length && !endsFromRows) {
       const expected = doc.opening_balance + tx.reduce((s, t) => s + t.amount, 0);
       if (Math.abs(expected - doc.closing_balance) > 1) {
          flags.push({
@@ -731,7 +739,17 @@ export const mergeExtracted = (parts: Extracted[]): Extracted => {
          seen.add(key);
          return true;
       })
-      .sort((a, b) => a.date.localeCompare(b.date));
+      .sort((a, b) => a.date.localeCompare(b.date))
+      // A row read twice from an overlap, with a wrong amount, breaks the running balance where the rows
+      // either side of it join up exactly: that row is the misread copy, so it's dropped.
+      .filter((t, i, all) => {
+         const prev = all[i - 1];
+         const next = all[i + 1];
+         if (!prev || !next || prev.balance == null || t.balance == null || next.balance == null) return true;
+         const fits = Math.abs(prev.balance + t.amount - t.balance) <= 1;
+         const joinsWithout = Math.abs(prev.balance + next.amount - next.balance) <= 1;
+         return fits || !joinsWithout;
+      });
    // Balances at the ends come from the rows themselves (which read covered which end isn't known).
    const firstRow = transactions[0];
    const lastRow = transactions[transactions.length - 1];

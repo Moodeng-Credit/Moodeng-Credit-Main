@@ -250,3 +250,13 @@ Deno.test('opinionText: verdict, note and questions for the team', () => {
       '🧠 AI opinion (with their history): MAYBE\nIncome covers it [T2], but she was 3 days late once.\n❓ When is your next payday?'
    );
 });
+
+Deno.test('mergeExtracted: a misread copy of an overlap row is dropped; balances from rows skip balance_math', () => {
+   const a = base({ transactions: [tx('2026-09-05', -100, 1160.55, 'Transfer to C'), tx('2026-09-06', -55, 1105.55, 'Apple')] });
+   // The next batch re-read the overlap with a wrong amount (-1100 → 160.55).
+   const b = base({ transactions: [tx('2026-09-05', -1100, 160.55, 'Transfer to C'), tx('2026-09-07', 1000, 2105.55, 'Salary')] });
+   const m = mergeExtracted([a, b]);
+   assertEquals(m.transactions.map((t) => t.amount), [-100, -55, 1000]);
+   const flags = runChecks(m, computeMetrics(m), ctx);
+   assert(!flags.some((f) => f.code === 'balance_math' || f.code === 'running_balance'));
+});
