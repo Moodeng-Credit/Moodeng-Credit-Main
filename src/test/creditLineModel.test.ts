@@ -6,11 +6,13 @@ import {
    facilityExceptions,
    type FacilityLedgerRow,
    type FacilityLoanInput,
+   facilityReturnDue,
    facilitySummary,
    interestByMonth,
    lenderLoanRows,
    privateBorrowerIds,
-   reportingPeriods
+   reportingPeriods,
+   splitReturn
 } from '@/app/admin/creditLineModel';
 
 const facility: CreditFacility = {
@@ -215,5 +217,38 @@ describe('creditLineModel', () => {
       expect(csv).toContain('B-01');
       expect(csv).not.toContain('secret-user');
       expect(csv).not.toContain('Secret Name');
+   });
+
+   it('what goes back to BitRepo: the advance not still out, plus 15%/yr on repaid advance loans; vault loans left out', () => {
+      const ledger: FacilityLedgerRow[] = [
+         { id: 'a', occurred_at: '2026-09-17', kind: 'advance', description: '', from_label: '', to_label: '', amount_usd: 500, tx_hash: null, loan_id: null }
+      ];
+      const loans = buildFacilityLoans(
+         [
+            // $100 out for 73 days (Sep 20 → Dec 2), repaid: $3 interest at 15%/yr.
+            loan({ id: 'paid', repaid_amount: 113, repaid_at: '2026-12-02T02:00:00Z', repayment_status: 'Paid', hash: ['0xdisb', '0xrep'] }),
+            loan({ id: 'open', tracking_id: 'LOAN-2', loan_amount: 50, total_repayment_amount: 56 }),
+            loan({ id: 'vault', tracking_id: 'LOAN-3', loan_amount: 25, vault_address: '0xvault' })
+         ],
+         ledger,
+         '2026-12-05'
+      );
+      const due = facilityReturnDue(facility, loans, ledger);
+      expect(due.stillOut).toBe(50);
+      expect(due.principalDue).toBe(450);
+      expect(due.interestDue).toBe(3);
+      expect(due.total).toBe(453);
+      expect(due.openLoans).toBe(1);
+
+      // Recording a $100 return: interest first, then principal.
+      const split = splitReturn(100, due.interestDue);
+      expect(split).toEqual({ interest: 3, principal: 97 });
+      const after = facilityReturnDue(facility, loans, [
+         ...ledger,
+         { ...ledger[0], id: 'i', kind: 'interest_payment', amount_usd: -3 },
+         { ...ledger[0], id: 'p', kind: 'principal_return', amount_usd: -97 }
+      ]);
+      expect(after.total).toBe(353);
+      expect(after.interestDue).toBe(0);
    });
 });

@@ -51,7 +51,7 @@ export interface CreditLineData {
 }
 
 const LOAN_FIELDS =
-   'id,tracking_id,borrower_user_id,lender_user_id,funded_at,due_date,loan_amount,total_repayment_amount,repaid_amount,repaid_at,repayment_status,hash,reason,funding_method,is_test,refunded_at,loan_status';
+   'id,tracking_id,borrower_user_id,lender_user_id,funded_at,due_date,loan_amount,total_repayment_amount,repaid_amount,repaid_at,repayment_status,hash,reason,funding_method,is_test,refunded_at,loan_status,vault_address';
 
 export async function loadCreditLine(facilityId?: string): Promise<CreditLineData> {
    const supabase = getSupabaseBrowserClient();
@@ -147,6 +147,7 @@ export async function loadCreditLine(facilityId?: string): Promise<CreditLineDat
          hash: l.hash ?? [],
          reason: l.reason,
          rationale: rationale.get(l.id) ?? null,
+         vault_address: l.vault_address ?? null,
          borrower: {
             username: u.username ?? null,
             display_name: u.display_name ?? null,
