@@ -1,6 +1,6 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { buildMemo, buildSections, mergeExtracted, parseSteps, pdfJpegs, stepFor, verdictOf, computeMetrics, type Extracted, namesMatch, normalizeExtracted, parseStatedIncome, readPdfInfo, riskOf, runChecks, scoreOf } from './incomeDocs.ts';
+import { buildMemo, buildSections, mergeExtracted, opinionText, parseSteps, pdfJpegs, stepFor, verdictOf, computeMetrics, type Extracted, namesMatch, normalizeExtracted, parseStatedIncome, readPdfInfo, riskOf, runChecks, scoreOf } from './incomeDocs.ts';
 
 const tx = (date: string, amount: number, balance: number | null, description = 'x') => ({ date, description, amount, balance, page: 1, source_text: `${date} ${amount}` });
 
@@ -241,4 +241,11 @@ Deno.test('mergeExtracted: batches of one long history become one document, over
    assertEquals(m.doc_type, 'gcash_history');
    assertEquals(m.visual_anomalies, ['x']);
    assert(m.readable);
+});
+
+Deno.test('opinionText: verdict, note and questions for the team', () => {
+   assertEquals(
+      opinionText({ verdict: 'maybe', note: 'Income covers it [T2], but she was 3 days late once.', ask: ['When is your next payday?'] }),
+      '🧠 AI opinion (with their history): MAYBE\nIncome covers it [T2], but she was 3 days late once.\n❓ When is your next payday?'
+   );
 });

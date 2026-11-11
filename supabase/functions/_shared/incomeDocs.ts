@@ -22,7 +22,12 @@ import { idLocaleOf, idResendReason, isIdTrackUser, loadIdStatus, notifyIdNextSt
 // Results land on the row (Admin → Risk → Income docs) and as a reply under the ping.
 
 // Flash is DeepSeek's only model that reads images, and costs about a cent per send.
+// Reads the pages (it sees images). Thinking off: it's copying rows, and with thinking on (DeepSeek's
+// default) the hidden reasoning used up the answer's room — 5 screenshots "too long to read", Nov 11.
 const MODEL = 'deepseek-flash';
+// Writes the lending opinion from the document + the borrower's history. Text only, so the bigger
+// model with thinking on is cheap (one call per send).
+const OPINION_MODEL = 'deepseek-v4-pro';
 const DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions';
 const TOO_LONG = 'document too long to read in one pass';
 const ADMIN_URL = 'https://moodeng.app/admin/income-docs';
@@ -596,13 +601,21 @@ type LoadedFile = { name: string; mime: string; bytes: Uint8Array<ArrayBuffer> }
 type ChatPart = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string; detail: 'high' } };
 
 /** One DeepSeek chat call in JSON mode. Blank or broken JSON (their JSON mode blanks invalid output) is retried once. */
-const deepseekJson = async <T>(apiKey: string, system: string, content: string | ChatPart[], maxTokens: number): Promise<T> => {
+const deepseekJson = async <T>(
+   apiKey: string,
+   system: string,
+   content: string | ChatPart[],
+   maxTokens: number,
+   opts: { model?: string; thinking?: boolean; timeoutMs?: number } = {}
+): Promise<T> => {
    for (let attempt = 0; attempt < 2; attempt++) {
       const res = await fetch(DEEPSEEK_URL, {
          method: 'POST',
          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+         ...(opts.timeoutMs ? { signal: AbortSignal.timeout(opts.timeoutMs) } : {}),
          body: JSON.stringify({
-            model: MODEL,
+            model: opts.model ?? MODEL,
+            thinking: { type: opts.thinking ? 'enabled' : 'disabled' },
             max_tokens: maxTokens,
             response_format: { type: 'json_object' },
             messages: [
@@ -801,17 +814,107 @@ const extract = async (apiKey: string, files: LoadedFile[]): Promise<Extracted> 
    return mergeExtracted((await Promise.all(batches)).flat());
 };
 
-/** Text-only second opinion from the numbers + checks (no images, so it's cheap). */
-const writeNote = async (apiKey: string, input: Record<string, unknown>) => {
-   const out = await deepseekJson<{ verdict?: string; note?: string }>(
-      apiKey,
-      'You help a small lender decide on loans of $20–$150 to Filipino and Indonesian borrowers, repaid in one payment within about a month. Their target is 90% repaid on time. From the document summary, numbers and checks, write at most 3 short plain sentences: can they repay this amount from what comes in, what to ask them on the call, and any red flag. Cite rows like [T3] when you mention a number. Do not invent numbers. Reply with only a json object: {"verdict": "lend" | "maybe" | "decline", "note": "..."}',
-      JSON.stringify(input),
-      1500
-   );
-   const verdict = ['lend', 'maybe', 'decline'].includes(String(out.verdict)) ? String(out.verdict) : 'maybe';
-   return out.note ? { verdict, note: String(out.note) } : null;
+export type AiOpinion = { verdict: 'lend' | 'maybe' | 'decline'; note: string; ask: string[] };
+
+/**
+ * The lending opinion: what the document shows (numbers, checks) next to who the borrower is — what they
+ * told us about their work and income, every loan they've had with us and how it was repaid, and the AI
+ * summary of their onboarding call. Help for the team, never a decision. Null when it couldn't be written.
+ */
+const OPINION_SYSTEM = `You help a small lender decide on loans of $20–$150 to Filipino and Indonesian borrowers, repaid in one payment within about a month. Their target is 90% repaid on time. Be fair to people with low or irregular incomes: small loans for bills, food, medicine or a pay gap are normal here.
+
+You get: the loan they're asking for, what their proof-of-income document shows (money in and out, regular deposits, checks that passed or failed, a score), and the borrower's own record with us: what they told us about their work and income, their past loans (amount, when due, when repaid, days late), and the AI summary of their onboarding video call if there was one.
+
+Weigh them together: does the document match what they told us and said on the call? Can the money that comes in cover this repayment by the due date? Does their repayment history with us (on time, late, how late) support a bigger or smaller loan? Note any red flag (document contradicts their story, income too small, late before, signs the account isn't theirs).
+
+Cite document rows like [T3] when you mention a number from them. Do not invent numbers. Reply with only a json object:
+{"verdict": "lend" | "maybe" | "decline", "note": "at most 4 short plain sentences", "ask": ["up to 2 questions for the team to ask them"]}`;
+
+const writeOpinion = async (apiKey: string, input: Record<string, unknown>): Promise<AiOpinion | null> => {
+   type Out = { verdict?: string; note?: string; ask?: unknown };
+   const body = JSON.stringify(input);
+   // Thinking first (it weighs things better); if that's slow, a quick answer, so the whole check stays
+   // inside the edge function's time limit.
+   const out = await deepseekJson<Out>(apiKey, OPINION_SYSTEM, body, 6000, { model: OPINION_MODEL, thinking: true, timeoutMs: 45_000 }).catch((err) => {
+      console.warn('income doc opinion: thinking pass failed, trying without', err instanceof Error ? err.message : err);
+      return deepseekJson<Out>(apiKey, OPINION_SYSTEM, body, 1500, { model: OPINION_MODEL, timeoutMs: 25_000 });
+   });
+   const verdict = (['lend', 'maybe', 'decline'].includes(String(out.verdict)) ? String(out.verdict) : 'maybe') as AiOpinion['verdict'];
+   const ask = Array.isArray(out.ask) ? out.ask.map(String).filter(Boolean).slice(0, 2) : [];
+   return out.note ? { verdict, note: String(out.note), ask } : null;
 };
+
+const dayDiff = (from: string | null | undefined, to: string | null | undefined) =>
+   from && to ? Math.round((Date.parse(to) - Date.parse(from)) / 86400000) : null;
+
+/** What we know about the borrower, for the opinion: their own answers, loans with us, and the call summary. No names. */
+export const borrowerContext = async (supabase: SupabaseClient, userId: string) => {
+   const [{ data: u }, { data: loans }, { data: call }] = await Promise.all([
+      supabase
+         .from('users')
+         .select(
+            'created_at, profession, income_type, income_description, monthly_income, monthly_expenses, other_income, payday_type, payday_start, payday_end, market, mal, didit_id_status, video_call_outcome, current_risk_band'
+         )
+         .eq('id', userId)
+         .maybeSingle(),
+      supabase
+         .from('loans')
+         .select('loan_amount, total_repayment_amount, reason, loan_status, repayment_status, created_at, funded_at, due_date, repaid_at, repaid_amount')
+         .eq('borrower_user_id', userId)
+         .order('created_at', { ascending: true })
+         .limit(30),
+      supabase
+         .from('call_transcripts')
+         .select('summary, risk_level, call_started_at')
+         .eq('user_id', userId)
+         .not('summary', 'is', null)
+         .order('call_started_at', { ascending: false })
+         .limit(1)
+         .maybeSingle()
+   ]);
+   const now = new Date().toISOString();
+   const history = ((loans ?? []) as Array<Record<string, string | number | null>>).map((l) => {
+      const repaid = l.repayment_status === 'Paid';
+      const late = repaid ? dayDiff(l.due_date as string, l.repaid_at as string) : l.funded_at ? dayDiff(l.due_date as string, now) : null;
+      return {
+         amount: Number(l.loan_amount),
+         repay: Number(l.total_repayment_amount),
+         reason: l.reason,
+         status: l.loan_status === 'Requested' ? 'asking now' : repaid ? 'repaid' : l.funded_at ? 'open' : String(l.loan_status ?? '').toLowerCase(),
+         lent: (l.funded_at as string | null)?.slice(0, 10) ?? null,
+         due: (l.due_date as string | null)?.slice(0, 10) ?? null,
+         repaid_on: (l.repaid_at as string | null)?.slice(0, 10) ?? null,
+         days_late: late != null && late > 0 ? late : 0
+      };
+   });
+   return {
+      account_age_days: u?.created_at ? dayDiff(u.created_at, now) : null,
+      their_answers: u
+         ? {
+              work: u.profession,
+              income_type: u.income_type,
+              income: u.income_description,
+              monthly_income: u.monthly_income,
+              monthly_expenses: u.monthly_expenses,
+              other_income: u.other_income,
+              payday: [u.payday_type, u.payday_start, u.payday_end].filter(Boolean).join(' '),
+              country: u.market
+           }
+         : null,
+      credit_limit_usd: u?.mal ?? null,
+      id_check: u?.didit_id_status ?? null,
+      call_outcome: u?.video_call_outcome ?? null,
+      risk_band: u?.current_risk_band ?? null,
+      loans_with_us: history,
+      repaid_count: history.filter((h) => h.status === 'repaid').length,
+      late_count: history.filter((h) => h.days_late > 0).length,
+      call_summary: call?.summary ? { risk_level: call.risk_level, ...(call.summary as Record<string, unknown>) } : null
+   };
+};
+
+/** The opinion as it goes out in the Telegram reply and the Discord post. Pure. */
+export const opinionText = (o: AiOpinion) =>
+   [`🧠 AI opinion (with their history): ${o.verdict.toUpperCase()}`, o.note, ...o.ask.map((q) => `❓ ${q}`)].join('\n');
 
 const sha256 = async (bytes: Uint8Array<ArrayBuffer>) =>
    [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -1031,10 +1134,11 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    });
    const { verdict, reason } = verdictOf(flags, doc.doc_type);
 
-   let aiNote: { verdict: string; note: string } | null = null;
+   let aiNote: AiOpinion | null = null;
    if (verdict !== 'resend') {
       try {
-         aiNote = await writeNote(apiKey, {
+         aiNote = await writeOpinion(apiKey, {
+            borrower: await borrowerContext(supabase, row.user_id),
             loan: loanCtx,
             monthly_income_usd: monthlyIncomeUsd(doc, metrics),
             document: { type: doc.doc_type, institution: doc.institution, period: [doc.period_start, doc.period_end], currency: doc.currency },
@@ -1060,7 +1164,7 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       risk,
       score,
       checks,
-      ai_note: aiNote ? `${aiNote.verdict.toUpperCase()}: ${aiNote.note}` : null,
+      ai_note: aiNote ? `${aiNote.verdict.toUpperCase()}: ${aiNote.note}${aiNote.ask.length ? ` Ask: ${aiNote.ask.join(' ')}` : ''}` : null,
       model: MODEL
    };
    if (verdict === 'resend' && reason) return askResend(patch, reason, `score ${score}/100`);
@@ -1074,7 +1178,7 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
          verdict,
          ...(autoApprove ? { decision: 'approved', decided_at: new Date().toISOString(), decided_by: `auto ($${step!.min} step)` } : {})
       },
-      [`${headline} · score ${score}/100${aiNote ? ` · AI says ${aiNote.verdict}` : ''}`, checkLine, memo, aiNote?.note].filter(Boolean).join('\n\n').slice(0, 3900)
+      [`${headline} · score ${score}/100${aiNote ? ` · AI says ${aiNote.verdict}` : ''}`, aiNote ? opinionText(aiNote) : null, checkLine, memo].filter(Boolean).join('\n\n').slice(0, 3900)
    );
    if (autoApprove) await notifyIncomeDecision(supabase, id);
    return result;
