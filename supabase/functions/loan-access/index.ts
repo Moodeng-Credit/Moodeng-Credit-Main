@@ -5,7 +5,8 @@ import { personName, stampDecisionCards } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { isInternalRequest } from '../_shared/internalAuth.ts';
 import { collectGateDigest, formatGateDigest } from '../_shared/gateDigest.ts';
-import { BORROWER_COLUMNS, getAdminChatId, notifyAdminsOfRequest, notifyBorrower, PAGE_INBOX_URL, REQUEST_COLUMNS, SITE_URL, who } from '../_shared/loanAccess.ts';
+import { cancelUpcomingCall } from '../_shared/callCancel.ts';
+import { BORROWER_COLUMNS, getAdminChatId, notifyAdminsOfRequest, notifyBorrower, PAGE_INBOX_URL, REQUEST_COLUMNS, shortId, SITE_URL, who } from '../_shared/loanAccess.ts';
 import { needsPreKycGate } from '../_shared/preKycGate.ts';
 import { isIdStep, loadIdStatus, notifyIdNextStep, sendIdTelegram } from '../_shared/idTrack.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
@@ -31,6 +32,7 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 //                                   (claimed in telegram_bot_settings), so an extra call is harmless.
 //   action=id_step (borrower JWT, Indonesia track) — the app finished a step it saves itself; the
 //                                   bot says "✅ done — next: …" on Telegram (_shared/idTrack.ts).
+//   action=cancel_rejected_calls (server only) — cancels calls still booked by rejected people.
 //   action=referral_alert (DB trigger on redeem) — posts "🎟️ code X used by …" to the admin
 //                                   Telegram + Discord. Deduped by referral_redemptions.alerted_at,
 //                                   so it can only ever fire once per real redemption.
@@ -56,6 +58,26 @@ const MAX_NAME = 80;
 const MAX_REFERRAL = 40;
 
 const clip = (value: unknown, max: number) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
+
+// Rejected people who still have a call booked (rejected before Reject cancelled calls itself, or a
+// cancel that failed at the time): take those calls off Cal.com. Scheduler / server only.
+// deno-lint-ignore no-explicit-any
+const cancelRejectedCalls = async (req: Request, svc: any) => {
+   if (!(await isInternalRequest(svc, req))) return json({ ok: false, error: 'unauthorized' }, 401);
+   const { data, error } = await svc
+      .from('users')
+      .select('id')
+      .eq('loan_access_status', 'rejected')
+      .not('video_call_booking_uid', 'is', null)
+      .gt('video_call_starts_at', new Date().toISOString());
+   if (error) throw new Error(error.message);
+   const results: Array<{ user: string; cancelled: boolean; why: string | null }> = [];
+   for (const row of (data ?? []) as Array<{ id: string }>) {
+      const why = await cancelUpcomingCall(svc, row.id, 'the team (rejected)', { stamp: false });
+      results.push({ user: shortId(row.id), cancelled: !why, why });
+   }
+   return json({ ok: true, results });
+};
 
 // deno-lint-ignore no-explicit-any
 const submit = async (req: Request, svc: any, body: Record<string, unknown>) => {
@@ -300,6 +322,7 @@ serve(async (req) => {
       if (body.action === 'referral_alert') return await referralAlert(svc, body);
       if (body.action === 'gate_digest') return await gateDigest(req, svc);
       if (body.action === 'id_step') return await idStep(req, svc, body);
+      if (body.action === 'cancel_rejected_calls') return await cancelRejectedCalls(req, svc);
       return json({ error: 'unknown_action' }, 400);
    } catch (err) {
       console.error('loan-access failed:', err instanceof Error ? err.message : err);
