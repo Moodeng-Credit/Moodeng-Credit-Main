@@ -156,6 +156,48 @@ export const alertTexts = (events: Bot.BotEvent[], state: Bot.BotState, who: { n
    return out;
 };
 
+// A Philippine mobile number and nothing else: 0917 123 4567, +63 917 123 4567, 639171234567, 9171234567.
+export const isPhMobile = (text: string): boolean => {
+   const t = text.trim();
+   if (!/^\+?[\d\s().-]{10,20}$/.test(t)) return false;
+   return /^(63|0)?9\d{9}$/.test(t.replace(/\D/g, ''));
+};
+
+const NUMBER_REPLY: Record<string, string> = {
+   network: "Sorry, our texts don't reach Smart, TNT or Sun numbers yet 🙏 We'll remind you here on Messenger. Have a Globe, TM, GOMO or DITO number? Send that one.",
+   too_many: "You've changed your number a few times already, so we kept the last one. We'll also remind you here on Messenger.",
+   bad_phone: "That doesn't look like a Philippine mobile number. Send it like 0917 123 4567."
+};
+
+/**
+ * The reply to "📱 Want a TEXT REMINDER?" (videoCall.TEXT_REMINDER_ASK): someone with an upcoming call sends
+ * just a PH mobile number → it's saved for call reminders and texted the booked time (public.call_sms_save_for).
+ * True when we answered it, so it isn't also a booking-bot message or a support ticket. Never throws.
+ */
+export const handleReminderNumber = async (svc: Svc, userId: string, contactId: string, text: string): Promise<boolean> => {
+   try {
+      if (!isPhMobile(text)) return false;
+      const { data: user } = await svc.from('users').select('video_call_booking_uid, video_call_starts_at').eq('id', userId).maybeSingle();
+      if (!user?.video_call_booking_uid || !user.video_call_starts_at || Date.parse(user.video_call_starts_at) <= Date.now()) return false;
+      const { data, error } = await svc.rpc('call_sms_save_for', { p_user: userId, p_phone: text });
+      if (error) throw new Error(error.message);
+      const r = (data ?? {}) as { ok?: boolean; error?: string; number?: string; texted?: boolean };
+      if (!r.ok && r.error === 'off') return false;
+      const reply = r.ok
+         ? r.texted
+            ? `✅ Done! We just texted ${r.number}. You'll get another text 1 hour before your call.`
+            : `✅ Saved ${r.number}. We'll text you 1 hour before your call.`
+         : (NUMBER_REPLY[r.error ?? ''] ?? NUMBER_REPLY.bad_phone);
+      const res = await sendMessengerMessage(contactId, { text: reply });
+      if (!res.ok) console.error('messenger-booking-bot: reminder number reply failed', res.reason);
+      console.log('messenger-booking-bot: reminder number', userId, r.ok ? (r.texted ? 'texted' : 'saved') : r.error);
+      return true;
+   } catch (err) {
+      console.error('messenger-booking-bot: reminder number failed', err instanceof Error ? err.message : err);
+      return false;
+   }
+};
+
 const REJECTED_TEXT = "Sorry, we can't offer you a loan right now, so there's no call to book. We wish you all the best 🦛";
 
 /** True when the booking bot answered this message (so it isn't also a support ticket). Never throws. */

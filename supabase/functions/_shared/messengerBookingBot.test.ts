@@ -1,6 +1,6 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { alertTexts, answerRecord, freeFromSlots, holdColumns, START, wallNow, withoutHeld, zonedIso } from './messengerBookingBot.ts';
+import { alertTexts, answerRecord, freeFromSlots, holdColumns, isPhMobile, START, wallNow, withoutHeld, zonedIso } from './messengerBookingBot.ts';
 
 Deno.test('wallNow: the wall clock in a zone', () => {
    const at = new Date('2026-11-01T18:30:00Z');
@@ -86,4 +86,9 @@ Deno.test('answers are listed in asking order, whatever order the saved chat giv
    assertEquals(rec?.items.map((i) => i.a), ['Employed', 'My parents', 'No', '₱10–20k', '₱1–3k', 'cashier', '15th & 30th', 'food', 'Next payday', '1–3 years']);
    const [alert] = alertTexts([{ type: 'answers', answers, fit: { verdict: 'good', reason: 'x' } }], st, { name: 'T' });
    assert(alert.indexOf('Are you working') < alert.indexOf('Who do you support') && alert.indexOf('pay it back') < alert.indexOf('How long'));
+});
+
+Deno.test('isPhMobile: only a Philippine mobile number on its own', () => {
+   for (const yes of ['0917 123 4567', '09171234567', '+63 917 123 4567', '639171234567', '9171234567', '0917-123-4567', ' (0917) 123 4567 ']) assert(isPhMobile(yes), yes);
+   for (const no of ['15000', '0917 123 456', '+66 81 234 5678', 'my number is 09171234567', '0817 123 4567', '09171234567890', 'book', '']) assert(!isPhMobile(no), no);
 });

@@ -21,6 +21,7 @@ import {
    useStepDirection,
    wasCelebrated
 } from '@/views/dashboard/components/connectKit';
+import CallTextReminder from '@/views/dashboard/components/CallTextReminder';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
 import VideoCallStep, { ConfirmLaterNotice } from '@/views/dashboard/components/VideoCallStep';
 
@@ -636,6 +637,9 @@ export function LoanAccessPendingCard({
                      </a>
                   ) : null}
                </div>
+
+               {/* The call texted to their phone (PH numbers): asks for a number when we have none. */}
+               {callOver ? null : <CallTextReminder />}
 
                {callOver ? null : (
                   <div className="text-left">
