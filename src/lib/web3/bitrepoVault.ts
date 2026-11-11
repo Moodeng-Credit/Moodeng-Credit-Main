@@ -96,6 +96,8 @@ export async function drawFromVault(params: {
    dueDate: number;
    totalDue: bigint;
    borrowerId: Hex;
+   /** Called once the wallet has signed and the tx is broadcast, before it is mined. */
+   onSubmitted?: () => void;
 }): Promise<`0x${string}`> {
    const hash = await writeContract(config, {
       address: BITREPO_VAULT_ADDRESS,
@@ -112,6 +114,7 @@ export async function drawFromVault(params: {
       ],
       chainId: ALLOWED_CHAIN_ID
    });
+   params.onSubmitted?.();
    const receipt = await waitForTransactionReceipt(config, { hash, chainId: ALLOWED_CHAIN_ID });
    if (receipt.status !== 'success') throw new Error('The vault draw failed on-chain. Nothing was sent.');
    return hash;
