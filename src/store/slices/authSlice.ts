@@ -239,6 +239,7 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    walletChainId: (row as UserRow & { wallet_chain_id?: number | null }).wallet_chain_id ?? undefined,
    walletConnectorName: (row as UserRow & { wallet_connector_name?: string | null }).wallet_connector_name ?? undefined,
    walletProvider: (row as UserRow & { wallet_provider?: WalletProvider | null }).wallet_provider ?? undefined,
+   walletSuspended: (row as UserRow & { wallet_suspended?: boolean | null }).wallet_suspended === true,
    isWorldId: row.is_world_id,
    nullifierHash: row.nullifier_hash ?? undefined,
    isWorldIdPassport: (row as UserRow & { is_world_id_passport?: WorldIdStatus | null }).is_world_id_passport ?? undefined,

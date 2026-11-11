@@ -133,6 +133,7 @@ import WhatsAppRemindersPreview from '@/views/dashboard/WhatsAppRemindersPreview
 import RequestBoard from '@/views/dashboard/RequestBoard';
 import FundWalletPreview from '@/views/fund/FundWalletPreview';
 import Repay from '@/views/repay/Repay';
+import DirectRepay, { WalletPaused, WalletSuspendedGate } from '@/views/repay/DirectRepay';
 import TransactionDetail from '@/views/transactions/TransactionDetail';
 import TransactionHistory from '@/views/transactions/TransactionHistory';
 import MoneyHub from '@/views/money/MoneyHub';
@@ -556,18 +557,23 @@ export default function App() {
                element={
                   <ProtectedRoute>
                      <RoleGuard>
-                        <Repay />
+                        <WalletSuspendedGate paused={<DirectRepay />}>
+                           <Repay />
+                        </WalletSuspendedGate>
                      </RoleGuard>
                   </ProtectedRoute>
                }
             />
             {showPreviewRoutes ? <Route path="/repay-preview" element={<Repay />} /> : null}
+            {showPreviewRoutes ? <Route path="/repay-direct-preview" element={<DirectRepay preview />} /> : null}
             <Route
                path="/withdraw"
                element={
                   <ProtectedRoute>
                      <RoleGuard>
-                        <Withdraw />
+                        <WalletSuspendedGate paused={<WalletPaused />}>
+                           <Withdraw />
+                        </WalletSuspendedGate>
                      </RoleGuard>
                   </ProtectedRoute>
                }
@@ -578,7 +584,9 @@ export default function App() {
                element={
                   <ProtectedRoute>
                      <RoleGuard>
-                        <MoneyHub />
+                        <WalletSuspendedGate paused={<WalletPaused />}>
+                           <MoneyHub />
+                        </WalletSuspendedGate>
                      </RoleGuard>
                   </ProtectedRoute>
                }

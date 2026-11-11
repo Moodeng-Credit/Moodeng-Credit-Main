@@ -44,6 +44,8 @@ export interface User {
    walletChainId?: number;
    walletConnectorName?: string;
    walletProvider?: WalletProvider;
+   /** Team paused this borrower's wallet: /repay shows only the pay-the-lender-directly card. */
+   walletSuspended?: boolean;
    isWorldId: WorldIdStatus;
    nullifierHash?: string;
    /** World ID Passport/ID verification status. Independent of the Orb status above. */
