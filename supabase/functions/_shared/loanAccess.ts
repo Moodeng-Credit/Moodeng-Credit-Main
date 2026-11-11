@@ -29,7 +29,7 @@ import { getMessengerContact, messengerDisplayName, sendMessengerMessage, sendWh
 import { getTelegramBotSettingEnabled } from './borrowerNotificationDelivery.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
 import { changeTimeButton } from './callReschedule.ts';
-import { cancelCallButton } from './callCancel.ts';
+import { cancelCallButton, cancelUpcomingCall } from './callCancel.ts';
 import { formatCallTimeForTeam } from './videoCall.ts';
 import { describeHeldRequests } from './loanRequestHold.ts';
 import { sendEmail } from './email.ts';
@@ -620,12 +620,32 @@ export const decideLoanAccess = async (
       header: loanAccessStampHeader(decision, personName(borrower, request.display_name), { call: request.kind === 'call' }),
       detail: held || null,
       by: decidedBy,
-      ...(decision === 'no_show' ? { buttons: approveAnywayButtons(request.user_id) } : {})
+      ...(decision === 'no_show' ? { buttons: approveAnywayButtons(request.user_id) } : {}),
+      // Rejected: the card then asks for how long (for good until someone picks), and can undo it.
+      ...(decision === 'rejected'
+         ? { detail: REJECT_FOLLOW_UP_ASK, buttons: rejectFollowUpButtons(request.user_id) }
+         : {})
    };
-   // A no-show keeps its cards remembered, so ✅ Approve anyway can stamp them all again later.
-   await stampDecisionCards(svc, 'loan_access', request.user_id, stamp, { final: decision !== 'no_show' });
+   // A no-show keeps its cards remembered, so ✅ Approve anyway can stamp them all again later; a
+   // reject keeps them for its follow-up buttons (for good / for now / approve after all).
+   await stampDecisionCards(svc, 'loan_access', request.user_id, stamp, { final: decision === 'approved' });
 
    const preCall = decision === 'rejected' && (await isBeforeAnyCall(svc, borrower));
+
+   // Rejected is final: a call they still have booked comes off Cal.com (its Zoom meeting and the
+   // hosts' calendar events go with it), so nobody turns up for it. Never blocks the reject itself.
+   let callNote = '';
+   if (decision === 'rejected') {
+      try {
+         const why = await cancelUpcomingCall(svc, request.user_id, `${decidedBy} (rejected)`, { stamp: false });
+         if (!why) callNote = '\n🗑️ Their booked call was cancelled.';
+         else if (why !== 'No upcoming call.') callNote = `\n⚠️ Their booked call was NOT cancelled: ${why}`;
+      } catch (err) {
+         console.error('loanAccess: cancel call on reject failed', err instanceof Error ? err.message : err);
+         callNote = '\n⚠️ Their booked call was NOT cancelled — cancel it on Cal.com.';
+      }
+   }
+
    await notifyBorrower(svc, borrower, preCall ? 'rejected_pre_call' : decision);
 
    const verb =
@@ -638,9 +658,119 @@ export const decideLoanAccess = async (
            : preCall
              ? '🚫 Rejected before the call (sent other lenders):'
              : '🚫 Rejected';
-   const summary = `${verb} ${who(borrower, request.display_name)} — by ${decidedBy}${held ? `\n${held}` : ''}`;
+   const summary = `${verb} ${who(borrower, request.display_name)} — by ${decidedBy}${held ? `\n${held}` : ''}${callNote}`;
    await postDiscord({ content: `🤝 Loan access ${summary}` }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
    return { ok: true, request, borrower, summary, stamp };
+};
+
+// ---- After a Reject: for good / for now / approve after all ------------------------------------
+//
+// A rejected borrower can't book a call or reach out again (callBooking.prepare, loan-access submit).
+// The rejected card keeps three buttons ("lr:<g|t|a>:<user id>"):
+//    🚫 For good            the default — nothing lets them back in but the team
+//    ⏳ For now (30 days)   users.loan_access_retry_at = that day; an hourly job (migration
+//                           loan_access_retry_at) then puts them back to 'none' so they can ask again
+//    ✅ Approve after all   we changed our minds: approved, and they get the "You're approved" message
+
+export const REJECT_RETRY_DAYS = 30;
+export type RejectFollowUp = 'for_good' | 'for_now' | 'approve';
+const FOLLOW_UP_CODE: Record<RejectFollowUp, string> = { for_good: 'g', for_now: 't', approve: 'a' };
+const CODE_FOLLOW_UP: Record<string, RejectFollowUp> = { g: 'for_good', t: 'for_now', a: 'approve' };
+const REJECT_FOLLOW_UP_ASK = `For good or for now? It's for good until someone picks. They can't book a call or ask again.`;
+
+export const buildRejectFollowUpCallback = (step: RejectFollowUp, userId: string) => `lr:${FOLLOW_UP_CODE[step]}:${userId}`;
+export const parseRejectFollowUpCallback = (data?: string | null): { step: RejectFollowUp; userId: string } | null => {
+   const match = (data ?? '').match(/^lr:([gta]):([0-9a-f-]{36})$/i);
+   if (!match) return null;
+   return { step: CODE_FOLLOW_UP[match[1].toLowerCase()], userId: match[2].toLowerCase() };
+};
+
+/** The rejected card's buttons; `picked` drops the choice already made. */
+export const rejectFollowUpButtons = (userId: string, picked?: 'for_good' | 'for_now'): TelegramInlineKeyboard => [
+   [
+      ...(picked === 'for_good' ? [] : [{ text: '🚫 For good', callback_data: buildRejectFollowUpCallback('for_good', userId) }]),
+      ...(picked === 'for_now' ? [] : [{ text: `⏳ For now (${REJECT_RETRY_DAYS} days)`, callback_data: buildRejectFollowUpCallback('for_now', userId) }])
+   ],
+   [{ text: '✅ Approve after all', callback_data: buildRejectFollowUpCallback('approve', userId) }]
+];
+
+// The team reads these in Bangkok time.
+const retryDayText = (iso: string) => new Date(iso).toLocaleDateString('en-US', { timeZone: 'Asia/Bangkok', weekday: 'short', month: 'short', day: 'numeric' });
+
+export const decideRejectFollowUp = async (
+   svc: SupabaseClient,
+   userId: string,
+   step: RejectFollowUp,
+   by: string,
+   now = new Date()
+): Promise<{ ok: boolean; summary: string; stamp?: CardStamp; retry?: boolean }> => {
+   const notRejected = { ok: false, summary: "They aren't rejected any more — nothing changed." };
+
+   if (step === 'approve') {
+      // Indonesia: same rule as a first approval — not before Didit has approved their ID.
+      const blocked = await idApprovalBlock(svc, userId);
+      if (blocked) return { ok: false, retry: true, summary: blocked };
+      // Conditional on still-rejected, so two taps approve (and message the borrower) only once.
+      const { data: borrower, error } = await svc
+         .from('users')
+         .update({ loan_access_status: 'approved', loan_access_approved_at: now.toISOString(), loan_access_seen_at: null, loan_access_retry_at: null })
+         .eq('id', userId)
+         .eq('loan_access_status', 'rejected')
+         .select(BORROWER_COLUMNS)
+         .maybeSingle();
+      if (error) throw new Error(error.message);
+      if (!borrower) return notRejected;
+      const stamp: CardStamp = { header: `✅ APPROVED AFTER ALL — ${personName(borrower)} can now apply for a loan`, by };
+      await stampDecisionCards(svc, 'loan_access', userId, stamp);
+      await notifyBorrower(svc, borrower, 'approved');
+      const summary = `✅ Approved after all (was rejected): ${who(borrower)} — by ${by}`;
+      await postDiscord({ content: `🤝 Loan access ${summary}` }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
+      return { ok: true, summary, stamp };
+   }
+
+   const retryAt = step === 'for_now' ? new Date(now.getTime() + REJECT_RETRY_DAYS * 86400000).toISOString() : null;
+   const { data: borrower, error } = await svc
+      .from('users')
+      .update({ loan_access_retry_at: retryAt })
+      .eq('id', userId)
+      .eq('loan_access_status', 'rejected')
+      .select(BORROWER_COLUMNS)
+      .maybeSingle();
+   if (error) throw new Error(error.message);
+   if (!borrower) return notRejected;
+   const name = personName(borrower);
+   const stamp: CardStamp = {
+      header: retryAt
+         ? `⏳ REJECTED FOR NOW — ${name} can ask again from ${retryDayText(retryAt)}`
+         : `🚫 REJECTED FOR GOOD — ${name} can't book a call or ask again`,
+      by,
+      buttons: rejectFollowUpButtons(userId, step)
+   };
+   await stampDecisionCards(svc, 'loan_access', userId, stamp, { final: false });
+   const summary = retryAt
+      ? `⏳ Rejected for now: ${who(borrower)} can ask again from ${retryDayText(retryAt)} — by ${by}`
+      : `🚫 Rejected for good: ${who(borrower)} — by ${by}`;
+   return { ok: true, summary, stamp };
+};
+
+/**
+ * /reopen: a rejected borrower goes back to 'none', so they can book a call and reach out again.
+ * Rejected is otherwise final (no booking, no new request). We don't message them — the admin does.
+ */
+export const reopenLoanAccess = async (svc: SupabaseClient, userId: string, by: string): Promise<{ ok: boolean; summary: string }> => {
+   const { data: reopened, error } = await svc
+      .from('users')
+      .update({ loan_access_status: 'none', loan_access_retry_at: null })
+      .eq('id', userId)
+      .eq('loan_access_status', 'rejected')
+      .select('id, username, email, display_name')
+      .maybeSingle();
+   if (error) throw new Error(error.message);
+   if (!reopened) return { ok: false, summary: "They aren't rejected — nothing to reopen." };
+   await stampDecisionCards(svc, 'loan_access', userId, { header: `🔓 REOPENED — ${personName(reopened)} can book a call and ask again`, by });
+   const summary = `🔓 Reopened ${who(reopened)} — they can book a call and ask again. We didn't message them. — by ${by}`;
+   await postDiscord({ content: `🤝 Loan access ${summary}` }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
+   return { ok: true, summary };
 };
 
 // ---- Telegram plumbing for the admin card -----------------------------------------------------

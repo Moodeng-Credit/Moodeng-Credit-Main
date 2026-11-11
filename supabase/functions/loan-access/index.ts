@@ -82,6 +82,10 @@ const submit = async (req: Request, svc: any, body: Record<string, unknown>) => 
       return json({ ok: true, status: borrower.loan_access_status });
    }
 
+   // Rejected is final: a new reach-out would flip them back to pending and onto the team's list
+   // again. Only an admin's /reopen lets them ask again.
+   if (borrower.loan_access_status === 'rejected') return json({ ok: false, error: 'rejected' }, 403);
+
    // Indonesia track: the call comes after every other onboarding step (id_onboarding_status), and
    // it's always a call request, whatever the loan flow.
    const idStatus = await loadIdStatus(svc, userId);

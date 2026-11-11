@@ -26,9 +26,12 @@ import {
 import {
    answerCallback,
    decideLoanAccess,
+   decideRejectFollowUp,
    escapeLike,
    findPendingRequest,
    parseDecisionCallback,
+   parseRejectFollowUpCallback,
+   reopenLoanAccess,
    setCardButtons,
    shortId
 } from '../_shared/loanAccess.ts';
@@ -372,7 +375,8 @@ const handleLoanAccessCommand = async (supabase: SupabaseClient, message: Telegr
    return true;
 };
 
-// The inline buttons on admin cards: la: (loan-access Approve / Reject / Showed up / No-show),
+// The inline buttons on admin cards: la: (loan-access Approve / Reject / Showed up / No-show), lr:
+// (after a Reject: for good / for now / approve after all),
 // vc: (open-flow call attendance), vo: (food voucher claim Send code / Reject), mv: (stuck
 // Facebook confirmation → Mark Facebook verified), kr: (out of KYC tries → 3 more tries), kv:
 // (Didit manual review → ✅ Approve / ❌ Decline, each with a confirm tap) and rp: (referral code
@@ -399,7 +403,8 @@ const handleAdminCallback = async (supabase: SupabaseClient, query: TelegramCall
    const kycRetry = parsed || outcome || voucher || messenger ? null : parseKycRetryCallback(query.data);
    const payout = parsed || outcome || voucher || messenger || kycRetry ? null : parsePayoutCallback(query.data);
    const kycReview = parsed || outcome || voucher || messenger || kycRetry || payout ? null : parseKycReviewCallback(query.data);
-   if (!parsed && !outcome && !voucher && !messenger && !kycRetry && !payout && !kycReview) {
+   const rejectFollowUp = parsed || outcome || voucher || messenger || kycRetry || payout || kycReview ? null : parseRejectFollowUpCallback(query.data);
+   if (!parsed && !outcome && !voucher && !messenger && !kycRetry && !payout && !kycReview && !rejectFollowUp) {
       await answerCallback(query.id, 'Unknown action.');
       return;
    }
@@ -458,7 +463,7 @@ const handleAdminCallback = async (supabase: SupabaseClient, query: TelegramCall
    ]);
 
    try {
-      let userId: string | null = outcome?.userId ?? messenger?.userId ?? kycRetry?.userId ?? kycReview?.userId ?? null;
+      let userId: string | null = outcome?.userId ?? messenger?.userId ?? kycRetry?.userId ?? kycReview?.userId ?? rejectFollowUp?.userId ?? null;
       let result: ButtonResult;
       if (parsed) {
          const decided = await decideLoanAccess(supabase, parsed.requestId, parsed.decision, by);
@@ -472,6 +477,8 @@ const handleAdminCallback = async (supabase: SupabaseClient, query: TelegramCall
          result = await markPayoutPaid(supabase, payout.payoutId, by);
       } else if (messenger) {
          result = await markMessengerVerified(supabase, messenger.userId, by);
+      } else if (rejectFollowUp) {
+         result = await decideRejectFollowUp(supabase, rejectFollowUp.userId, rejectFollowUp.step, by);
       } else if (kycReview) {
          result = await decideKycReview(supabase, kycReview.userId, kycReview.step === 'yes_approve' ? 'Approved' : 'Declined', by);
       } else {
@@ -756,6 +763,29 @@ const handleKycRetryCommand = async (supabase: SupabaseClient, message: Telegram
    }
    // Same as the 🔁 button on the "Out of KYC tries" card, which it stamps.
    const result = await resetKycTries(supabase, user.id, adminHandle(message.from));
+   await sendTelegramMessage(chatId, result.summary);
+   return true;
+};
+
+// Rejected is final — a rejected borrower can't book a call or reach out again — until an admin:
+//   /reopen @username   puts them back to "not asked yet" (we don't message them)
+const handleReopenCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
+   const match = (message.text ?? '').trim().match(/^\/reopen(?:@\w+)?(?:\s+(\S+))?/i);
+   if (!match) return false;
+   const chatId = message.chat.id;
+   const arg = (match[1] ?? '').trim().replace(/^@/, '');
+   if (!arg) {
+      await sendTelegramMessage(chatId, 'Usage: /reopen @username — lets a rejected borrower book a call and ask again');
+      return true;
+   }
+   const { data: user } = /^[0-9a-f-]{36}$/i.test(arg)
+      ? await supabase.from('users').select('id').eq('id', arg).maybeSingle()
+      : await supabase.from('users').select('id').ilike('username', escapeLike(arg)).maybeSingle();
+   if (!user) {
+      await sendTelegramMessage(chatId, `No user found for ${arg}.`);
+      return true;
+   }
+   const result = await reopenLoanAccess(supabase, user.id, adminHandle(message.from));
    await sendTelegramMessage(chatId, result.summary);
    return true;
 };
@@ -1512,6 +1542,12 @@ serve(async (req) => {
       if (isAdminChannel && /^\/kycretry\b/i.test(message.text ?? '')) {
          await handleKycRetryCommand(supabase, message);
          return jsonResponse({ message: 'KYC retry command handled' });
+      }
+
+      // Let a rejected borrower back in — either admin channel.
+      if (isAdminChannel && /^\/reopen\b/i.test(message.text ?? '')) {
+         await handleReopenCommand(supabase, message);
+         return jsonResponse({ message: 'Reopen command handled' });
       }
 
       // Test-account flag — either admin channel.

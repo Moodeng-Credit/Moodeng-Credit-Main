@@ -182,6 +182,13 @@ const eitherHostOn = async (svc: Svc): Promise<boolean> => {
 
 // Each host's event type, the pinned host, and the no-show cooldown: a reply to send back, or the hosts.
 const prepare = async (svc: Svc, user: CallUser, pin?: string | null): Promise<CallBookingReply | { resolved: Resolved }> => {
+   // Rejected is final (George, 2026-11-11): no times, no booking, on any channel — the app, the
+   // Messenger bot and WhatsApp all come through here. An admin's /reopen lets them back in.
+   const { data: access } = await svc.from('users').select('loan_access_status').eq('id', user.id).maybeSingle();
+   if ((access as { loan_access_status?: string | null } | null)?.loan_access_status === 'rejected') {
+      return reply({ ok: false, error: 'rejected', slots: [] });
+   }
+
    // Resolve each host's event type id once per request.
    const resolved: Array<{ id: string; apiKey: string; eventTypeId: number }> = [];
    for (const host of HOSTS) {

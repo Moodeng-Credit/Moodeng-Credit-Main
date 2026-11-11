@@ -84,6 +84,10 @@ export function getJourney(user: JourneyUser | null | undefined, isGated: boolea
             'connect'
          );
       }
+      // Rejected is final: no "book your call" nudge — the connect screen shows the goodbye card.
+      if (user.loanAccessStatus === 'rejected') {
+         return onboardingStage('book_call', 3, 'See details', 'About your application', "Sorry, we can't offer you a loan right now.", 'connect');
+      }
       if (!user.hasVerifiedContact) {
          return onboardingStage(
             'messenger',

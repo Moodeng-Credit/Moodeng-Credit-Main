@@ -13,7 +13,7 @@ import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
 import { CONNECT_HIPPOS, StepCelebration, StepTrail } from '@/views/dashboard/components/connectKit';
-import ConnectStep, { type ConnectPage, LoanAccessPendingCard } from '@/views/dashboard/components/ConnectStep';
+import ConnectStep, { type ConnectPage, LoanAccessPendingCard, LoanAccessRejectedCard } from '@/views/dashboard/components/ConnectStep';
 import GrowingWalletHippo from '@/views/onboarding/GrowingWalletHippo';
 import OnboardingBio from '@/views/onboarding/OnboardingBio';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
@@ -53,6 +53,9 @@ export default function ConnectBeforeKyc() {
    const gate = usePreKycGate();
    const { isGated, isLoading } = isPreview ? { isGated: true, isLoading: false } : gate;
    const isPending = isPreview ? new URLSearchParams(location.search).get('view') === 'pending' : user?.loanAccessStatus === 'pending';
+   // Dev preview: ?view=rejected (for good) and ?view=rejected-for-now (with a retry day).
+   const previewView = isPreview ? new URLSearchParams(location.search).get('view') : null;
+   const isRejected = isPreview ? previewView === 'rejected' || previewView === 'rejected-for-now' : user?.loanAccessStatus === 'rejected';
 
    // The sub-step lives in the URL, so the phone's back button moves between steps.
    const [searchParams] = useSearchParams();
@@ -117,6 +120,8 @@ export default function ConnectBeforeKyc() {
             />
          ) : isPreview && new URLSearchParams(location.search).get('view') === 'about' ? (
             <OnboardingBio onBack={() => undefined} onDone={() => undefined} user={user} />
+         ) : isRejected ? (
+            <LoanAccessRejectedCard onClose={() => navigate('/request-board')} retryAt={previewView === 'rejected-for-now' ? new Date(Date.now() + 30 * 86400000).toISOString() : user.loanAccessRetryAt} />
          ) : isPending ? (
             <LoanAccessPendingCard
                closeLabel="Look around meanwhile"
@@ -141,7 +146,6 @@ export default function ConnectBeforeKyc() {
                   await dispatch(fetchUser());
                }}
                userId={user.id}
-               wasRejected={user.loanAccessStatus === 'rejected'}
                withEmma={Boolean(user.hasReferral)}
             />
          )}
