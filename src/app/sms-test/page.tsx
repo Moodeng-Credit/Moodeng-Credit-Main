@@ -3,6 +3,7 @@ import { type ButtonHTMLAttributes, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
+import { phNetwork } from '@/lib/phoneAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton } from '@/views/dashboard/components/connectKit';
 
@@ -12,15 +13,15 @@ import { CONNECT_HIPPOS, ConnectHero, GhostButton } from '@/views/dashboard/comp
 // Everything runs in the database (sms_test_* in 20261109150000_sms_test_page.sql), which also posts each
 // result to Discord #rewards. No sign-in: the token in the link is the key.
 
-export type SmsTestStage = 'loading' | 'bad_link' | 'closed' | 'form' | 'code' | 'won' | 'not_received' | 'already_done';
+export type SmsTestStage = 'loading' | 'bad_link' | 'closed' | 'form' | 'covered' | 'code' | 'won' | 'not_received' | 'already_done';
 export type SmsTestPreview = { stage: SmsTestStage; link?: string | null; owed?: boolean; phone?: string };
 
+// Only the networks UniSMS can't reach. Globe (with TM/GOMO) and DITO already get codes, so a Globe or
+// DITO number is turned away here and in sms_test_send ('covered') before it uses up a ₱50 link.
 const NETWORKS = [
-   { id: 'globe', label: 'Globe' },
    { id: 'smart', label: 'Smart' },
-   { id: 'tm', label: 'TM' },
-   { id: 'dito', label: 'DITO' },
-   { id: 'gomo', label: 'GOMO' },
+   { id: 'tnt', label: 'TNT' },
+   { id: 'sun', label: 'Sun' },
    { id: 'not_sure', label: 'Not sure' }
 ] as const;
 
@@ -28,8 +29,16 @@ const SENDERS = ['Moodeng', 'Verify', 'Notify', 'A number', 'Other'] as const;
 
 const WAIT_BEFORE_NOT_RECEIVED_S = 60;
 
+/** A Globe/TM/GOMO or DITO number by its prefix: UniSMS already texts those, nothing to test. */
+function isCoveredNumber(raw: string): boolean {
+   const d = raw.replace(/\D/g, '');
+   const local = d.startsWith('63') ? d.slice(2) : d.startsWith('0') ? d.slice(1) : d;
+   const network = phNetwork(`+63${local}`);
+   return network === 'globe' || network === 'dito';
+}
+
 const ERRORS: Record<string, string> = {
-   bad_phone: 'Please type a PH mobile number, like 0917 123 4567.',
+   bad_phone: 'Please type a PH mobile number, like 0918 123 4567.',
    bad_network: 'Please pick your network.',
    wait: 'Please wait a minute before asking for another code.',
    too_many: 'Too many tries for now. Please message us on Facebook.',
@@ -133,13 +142,15 @@ export default function SmsTestPage({ preview }: { preview?: SmsTestPreview } = 
    };
 
    const sendCode = async () => {
+      if (isCoveredNumber(phone)) return setStage('covered');
       const r = await call('sms_test_send', { p_phone: phone, p_network: network, p_name: name || null });
       if (!r) return;
       if (r.ok && r.test_id) {
          setTestId(r.test_id);
          setCode('');
          setStage('code');
-      } else if (r.error === 'already_done') setStage('already_done');
+      } else if (r.error === 'covered') setStage('covered');
+      else if (r.error === 'already_done') setStage('already_done');
       else if (r.error === 'closed') setStage('closed');
       else if (r.error === 'bad_link') setStage('bad_link');
       else setError(ERRORS[r.error ?? ''] ?? 'Something went wrong. Please try again.');
@@ -212,7 +223,7 @@ export default function SmsTestPage({ preview }: { preview?: SmsTestPreview } = 
                <div className={card}>
                   <ConnectHero
                      image={CONNECT_HIPPOS.hello}
-                     title="Help us test SMS, get ₱50"
+                     title="Smart, TNT or Sun? Get ₱50"
                      subtitle="We text you a code. Type it here and get a ₱50 food voucher."
                   />
                   <div>
@@ -225,13 +236,13 @@ export default function SmsTestPage({ preview }: { preview?: SmsTestPreview } = 
                         id="sms-test-phone"
                         inputMode="tel"
                         onChange={(e) => setPhone(e.target.value)}
-                        placeholder="0917 123 4567"
+                        placeholder="0918 123 4567"
                         value={phone}
                      />
                   </div>
                   <div>
                      <span className={label}>Your network</span>
-                     <div className="grid grid-cols-3 gap-2">
+                     <div className="grid grid-cols-2 gap-2">
                         {NETWORKS.map((n) => (
                            <button className={chipClass(network === n.id)} key={n.id} onClick={() => setNetwork(n.id)} type="button">
                               {n.label}
@@ -256,6 +267,24 @@ export default function SmsTestPage({ preview }: { preview?: SmsTestPreview } = 
                   <GoldButton disabled={!canSend} onClick={() => void sendCode()}>
                      {busy ? <Loader2 aria-label="Sending" className="mx-auto size-5 animate-spin" /> : 'Text me a code'}
                   </GoldButton>
+               </div>
+            ) : null}
+
+            {stage === 'covered' ? (
+               <div className={card}>
+                  <ConnectHero
+                     image={CONNECT_HIPPOS.connected}
+                     title="Your network already works!"
+                     subtitle="We already text Globe, TM, GOMO and DITO. This test is only for Smart, TNT and Sun. Thank you!"
+                  />
+                  <GhostButton
+                     onClick={() => {
+                        setError(null);
+                        setStage('form');
+                     }}
+                  >
+                     Use another number
+                  </GhostButton>
                </div>
             ) : null}
 
