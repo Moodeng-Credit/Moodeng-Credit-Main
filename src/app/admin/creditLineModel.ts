@@ -62,6 +62,9 @@ export interface FacilityLoanInput {
    rationale: string | null;
    // Set when the loan was drawn from the lender's vault (repaid through the vault, not from the advance).
    vault_address?: string | null;
+   // Where the borrower repays. The facility's open loans were pointed at the lender's own return address
+   // on 2026-11-11, so their repayments go straight back to the lender.
+   lender_wallet?: string | null;
    // Borrower facts used for the exception checks (never exported to the lender).
    borrower: {
       username: string | null;
@@ -269,6 +272,36 @@ export function facilityReturnDue(facility: CreditFacility, loans: FacilityLoan[
       openLoans: direct.filter((loan) => loan.status !== 'Closed').length,
       closedLoans: closed.length
    };
+}
+
+export interface DirectReturn {
+   loanId: string;
+   trackingId: string;
+   amount: number;
+   at: string;
+   tx: string | null;
+}
+
+// Repayments that borrowers paid straight to the lender's return address (loans whose lender_wallet is
+// that address), less what the ledger already has for each loan: they still need writing to the ledger.
+export function directReturnsToRecord(loans: FacilityLoan[], ledger: FacilityLedgerRow[], returnAddress: string): DirectReturn[] {
+   const to = returnAddress.toLowerCase();
+   return loans
+      .filter((loan) => (loan.lender_wallet ?? '').toLowerCase() === to && Number(loan.repaid_amount ?? 0) > 0)
+      .map((loan) => {
+         const recorded = ledger
+            .filter((row) => row.loan_id === loan.id && (row.kind === 'principal_return' || row.kind === 'interest_payment'))
+            .reduce((total, row) => total + Math.abs(Number(row.amount_usd)), 0);
+         return {
+            loanId: loan.id,
+            trackingId: loan.tracking_id,
+            amount: round2(Number(loan.repaid_amount) - recorded),
+            at: loan.repaid_at ?? loan.funded_at,
+            tx: loan.repaymentTxs[loan.repaymentTxs.length - 1] ?? null
+         };
+      })
+      .filter((item) => item.amount > 0.009)
+      .sort((a, b) => a.at.localeCompare(b.at));
 }
 
 // Splits one transfer to the lender into interest (first, up to what is due) and principal (the rest).

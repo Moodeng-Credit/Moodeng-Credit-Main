@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
    buildFacilityLoans,
+   directReturnsToRecord,
    type CreditFacility,
    facilityExceptions,
    type FacilityLedgerRow,
@@ -250,5 +251,23 @@ describe('creditLineModel', () => {
       ]);
       expect(after.total).toBe(353);
       expect(after.interestDue).toBe(0);
+   });
+
+   it('repayments paid straight to BitRepo are listed until the ledger has them', () => {
+      const BITREPO = '0xB991b5dd8E6CB2d9D517572CD736f37480bF07DD';
+      const loans = buildFacilityLoans(
+         [
+            loan({ id: 'direct', lender_wallet: BITREPO.toLowerCase(), repaid_amount: 22, repaid_at: '2026-11-20T02:00:00Z', repayment_status: 'Paid', hash: ['0xdisb', '0xrep'] }),
+            loan({ id: 'mine', tracking_id: 'LOAN-2', lender_wallet: '0xc102', repaid_amount: 30, repaid_at: '2026-11-19T02:00:00Z', repayment_status: 'Paid' }),
+            loan({ id: 'open', tracking_id: 'LOAN-3', lender_wallet: BITREPO })
+         ],
+         [],
+         '2026-11-21'
+      );
+      expect(directReturnsToRecord(loans, [], BITREPO)).toEqual([{ loanId: 'direct', trackingId: 'LOAN-1', amount: 22, at: '2026-11-20T02:00:00Z', tx: '0xrep' }]);
+      const row = { id: 'r', occurred_at: '2026-11-20', description: '', from_label: '', to_label: '', tx_hash: '0xrep', loan_id: 'direct' };
+      expect(
+         directReturnsToRecord(loans, [{ ...row, kind: 'interest_payment', amount_usd: -2 }, { ...row, id: 'p', kind: 'principal_return', amount_usd: -20 }], BITREPO)
+      ).toEqual([]);
    });
 });

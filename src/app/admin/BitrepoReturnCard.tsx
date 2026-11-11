@@ -10,6 +10,7 @@ import {
    type CreditFacility,
    type FacilityLedgerRow,
    type FacilityLoan,
+   directReturnsToRecord,
    facilityReturnDue,
    splitReturn
 } from '@/app/admin/creditLineModel';
@@ -57,18 +58,36 @@ export default function BitrepoReturnCard({ facility, loans, ledger, onChanged }
    }, [findTransfers]);
 
    const recorded = useMemo(() => new Set(ledger.map((row) => row.tx_hash?.toLowerCase()).filter(Boolean)), [ledger]);
-   const unrecorded = onchain.filter((t) => !recorded.has(t.hash.toLowerCase()));
+   // Two kinds waiting to be written to the ledger, oldest first: transfers sent from the lending wallet,
+   // and repayments borrowers paid straight to BitRepo (their loans point at BitRepo's address).
+   const unrecorded = useMemo(
+      () =>
+         [
+            ...onchain
+               .filter((t) => !recorded.has(t.hash.toLowerCase()))
+               .map((t) => ({ key: t.hash, label: 'Sent from the lending wallet', amount: t.amount, at: t.at, tx: t.hash as string | null, loanId: null as string | null })),
+            ...directReturnsToRecord(loans, ledger, BITREPO_RETURN_ADDRESS).map((r) => ({
+               key: r.loanId,
+               label: `Repaid straight to BitRepo · ${r.trackingId}`,
+               amount: r.amount,
+               at: r.at,
+               tx: r.tx,
+               loanId: r.loanId as string | null
+            }))
+         ].sort((a, b) => a.at.localeCompare(b.at)),
+      [onchain, recorded, loans, ledger]
+   );
 
    // One transfer → an interest row (first, up to what is due) and a principal row, both with its tx.
-   const record = async (tx: string, amount: number, at: string) => {
+   const record = async (tx: string | null, amount: number, at: string, loanId: string | null = null) => {
       const { interest, principal } = splitReturn(amount, due.interestDue);
       const base = {
          facility_id: facility.id,
          occurred_at: at,
-         from_label: 'Lending wallet',
          to_label: TO_LABEL,
+         from_label: loanId ? 'Borrower (paid BitRepo directly)' : 'Lending wallet',
          tx_hash: tx,
-         loan_id: null
+         loan_id: loanId
       };
       if (interest > 0)
          await addLedgerEntry({ ...base, kind: 'interest_payment', description: 'Interest paid to BitRepo', amount_usd: -interest });
@@ -116,7 +135,7 @@ export default function BitrepoReturnCard({ facility, loans, ledger, onChanged }
             </a>
          </div>
          <p className="mt-1 text-sm text-[#a89bb8]">
-            Older loans lent from the advance (not the vault). As they are repaid, the money goes back to BitRepo.
+            Older loans lent from the advance (not the vault). Their borrowers now repay BitRepo directly; record each repayment here, and send the rest yourself.
          </p>
 
          <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2">
@@ -164,23 +183,26 @@ export default function BitrepoReturnCard({ facility, loans, ledger, onChanged }
 
          {unrecorded.length ? (
             <div className="mt-3 border-t border-[#2a1453] pt-3">
-               <p className="text-sm text-white">Sent to BitRepo, not recorded yet</p>
+               <p className="text-sm text-white">Paid to BitRepo, not recorded yet</p>
                <ul className="mt-1 space-y-1 text-sm">
                   {unrecorded.map((t, i) => (
-                     <li className="flex flex-wrap items-center gap-3" key={t.hash}>
+                     <li className="flex flex-wrap items-center gap-3" key={t.key}>
                         <span className="text-white">{usd(t.amount)}</span>
+                        <span className="text-[#a89bb8]">{t.label}</span>
                         <span className="text-[#a89bb8]">
                            {new Date(t.at).toLocaleString('en-GB', { timeZone: 'Asia/Bangkok', dateStyle: 'medium', timeStyle: 'short' })}
                         </span>
-                        <a className="font-mono text-xs text-[#b99cff] underline" href={txExplorerUrl(t.hash)} rel="noreferrer" target="_blank">
-                           {short(t.hash)}
-                        </a>
+                        {t.tx ? (
+                           <a className="font-mono text-xs text-[#b99cff] underline" href={txExplorerUrl(t.tx)} rel="noreferrer" target="_blank">
+                              {short(t.tx)}
+                           </a>
+                        ) : null}
                         {/* Oldest first, so each one is split against what was due before the next. */}
                         {i === 0 ? (
                            <button
                               className="rounded-lg bg-[#6d3cff] px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
                               disabled={busy}
-                              onClick={() => void run(() => record(t.hash, t.amount, t.at), 'Could not save it. Try again.')}
+                              onClick={() => void run(() => record(t.tx, t.amount, t.at, t.loanId), 'Could not save it. Try again.')}
                               type="button"
                            >
                               Record
