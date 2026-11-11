@@ -720,16 +720,21 @@ export const mergeExtracted = (parts: Extracted[]): Extracted => {
    if (!read.length) return parts[0];
    const first = <K extends keyof Extracted>(k: K) => read.map((p) => p[k]).find((v) => v !== null && v !== undefined) ?? null;
    const typed = read.map((p) => p.doc_type).filter((t) => t !== 'other');
+   // Overlapping screenshots repeat rows, and two reads word a row differently, so a row with a running
+   // balance is the same row when date, amount and balance match; without a balance, the wording decides.
    const seen = new Set<string>();
    const transactions = read
       .flatMap((p) => p.transactions)
       .filter((t) => {
-         const key = `${t.date}|${t.amount}|${t.balance ?? ''}|${t.description.trim().toLowerCase()}`;
+         const key = t.balance != null ? `${t.date}|${t.amount}|${t.balance}` : `${t.date}|${t.amount}||${t.description.trim().toLowerCase()}`;
          if (seen.has(key)) return false;
          seen.add(key);
          return true;
       })
       .sort((a, b) => a.date.localeCompare(b.date));
+   // Balances at the ends come from the rows themselves (which read covered which end isn't known).
+   const firstRow = transactions[0];
+   const lastRow = transactions[transactions.length - 1];
    const dates = read.flatMap((p) => [p.period_start, p.period_end]).filter((d): d is string => Boolean(d)).sort();
    return {
       readable: true,
@@ -740,8 +745,8 @@ export const mergeExtracted = (parts: Extracted[]): Extracted => {
       currency: first('currency') as string | null,
       period_start: dates[0] ?? null,
       period_end: dates[dates.length - 1] ?? null,
-      opening_balance: read[0].opening_balance,
-      closing_balance: read[read.length - 1].closing_balance,
+      opening_balance: firstRow?.balance != null ? round2(firstRow.balance - firstRow.amount) : read[0].opening_balance,
+      closing_balance: lastRow?.balance != null ? lastRow.balance : read[read.length - 1].closing_balance,
       payslip: first('payslip') as Extracted['payslip'],
       fields: read.flatMap((p) => p.fields),
       transactions,
@@ -803,7 +808,10 @@ const extract = async (apiKey: string, files: LoadedFile[]): Promise<Extracted> 
    }
    const readBatch = async (from: number, batch: ChatPart[][]): Promise<Extracted[]> => {
       try {
-         return [await read(batch, `pages ${from + 1}–${from + batch.length} of ${pages.length} (the others are read separately)`)];
+         const doc = await read(batch, `pages ${from + 1}–${from + batch.length} of ${pages.length} (the others are read separately)`);
+         // The model may count pages from 1 again within a batch: put them back in the whole send's numbering.
+         const page = (n: number) => (n >= 1 && n <= batch.length ? from + n : n);
+         return [{ ...doc, transactions: doc.transactions.map((t) => ({ ...t, page: page(t.page) })), fields: doc.fields.map((f) => ({ ...f, page: page(f.page) })) }];
       } catch (err) {
          if (!(err instanceof Error) || err.message !== TOO_LONG || batch.length < 2) throw err;
          return (await Promise.all(batch.map((page, j) => readBatch(from + j, [page])))).flat();
