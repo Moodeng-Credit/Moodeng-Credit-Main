@@ -9,6 +9,7 @@ import NeedMoreHelp from '@/views/support/components/NeedMoreHelp';
 import { getGuideForLocale, getGuidesForLocale, type GuideArticle, GUIDES } from '@/views/support/data/guides';
 import HowCreditLevelsWork from '@/views/support/HowCreditLevelsWork';
 import '@/views/support/PublicGuide.css';
+import QrCashoutGuide, { QR_CASHOUT_GUIDE_SLUG } from '@/views/support/QrCashoutGuide';
 
 function metaDescription(body: string): string {
    const flat = body.replace(/\s+/g, ' ').trim();
@@ -105,6 +106,10 @@ export default function PublicGuide(): JSX.Element {
    // The Credit Levels guide has its own rich, illustrated public page.
    if (slug === 'how-credit-levels-work') {
       return <HowCreditLevelsWork variant="public" />;
+   }
+   // The QR cash-out guide has its own step-by-step page (shareable link for borrowers).
+   if (slug === QR_CASHOUT_GUIDE_SLUG) {
+      return <QrCashoutGuide variant="public" />;
    }
 
    const guide = getGuideForLocale(slug, locale);
