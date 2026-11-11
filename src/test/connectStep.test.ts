@@ -44,7 +44,8 @@ vi.mock('@/hooks/usePushNotifications', () => ({
 vi.mock('@/lib/supabase/client', () => ({
    getSupabaseBrowserClient: () => ({
       from: () => ({ select: () => ({ eq: () => ({ maybeSingle: supa.maybeSingle }) }) }),
-      rpc: vi.fn(),
+      // CallTextReminder asks call_sms_status on the waiting screen: answer "switched off".
+      rpc: vi.fn(async () => ({ data: { enabled: false }, error: null })),
       functions: { invoke: supa.invoke },
       // ContactsStep's live subscription (Supabase Realtime): a no-op channel here.
       channel: () => ({
