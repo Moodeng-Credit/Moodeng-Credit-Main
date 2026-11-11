@@ -1216,7 +1216,8 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
          aiNote = await writeDirection(apiKey, {
             borrower: await borrowerContext(supabase, row.user_id),
             earlier_opinions_on_this_borrower: (earlier ?? []).map((e: { created_at: string; ai_note: string }) => ({ on: e.created_at.slice(0, 10), said: e.ai_note })),
-            loan: loanCtx,
+            // In US dollars (the document is in its own currency; monthly_income_usd converts it).
+            loan_usd: loanCtx ? { amount: loanCtx.amount, repay: loanCtx.total_repayment, due: loanCtx.due_date ?? 'about 30 days after funding' } : null,
             monthly_income_usd: monthlyIncomeUsd(doc, metrics),
             document: { type: doc.doc_type, institution: doc.institution, period: [doc.period_start, doc.period_end], currency: doc.currency },
             metrics,
