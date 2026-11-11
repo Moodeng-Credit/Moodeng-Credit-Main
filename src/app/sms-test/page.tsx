@@ -14,7 +14,7 @@ import { CONNECT_HIPPOS, ConnectHero, GhostButton } from '@/views/dashboard/comp
 // result to Discord #rewards. No sign-in: the token in the link is the key.
 
 export type SmsTestStage = 'loading' | 'bad_link' | 'closed' | 'form' | 'covered' | 'code' | 'won' | 'not_received' | 'already_done';
-export type SmsTestPreview = { stage: SmsTestStage; link?: string | null; owed?: boolean; phone?: string };
+export type SmsTestPreview = { stage: SmsTestStage; link?: string | null; owed?: boolean; phone?: string; done?: string[] };
 
 // Only the networks UniSMS can't reach. Globe (with TM/GOMO) and DITO already get codes, so a Globe or
 // DITO number is turned away here and in sms_test_send ('covered') before it uses up a ₱50 link.
@@ -40,6 +40,7 @@ function isCoveredNumber(raw: string): boolean {
 const ERRORS: Record<string, string> = {
    bad_phone: 'Please type a PH mobile number, like 0918 123 4567.',
    bad_network: 'Please pick your network.',
+   network_done: 'We already tested that network. Thank you!',
    wait: 'Please wait a minute before asking for another code.',
    too_many: 'Too many tries for now. Please message us on Facebook.',
    wrong_code: 'That code doesn’t match. Check the text and try again.',
@@ -83,6 +84,7 @@ type Result = {
    ok?: boolean;
    error?: string;
    open?: boolean;
+   done?: string[];
    test_id?: string;
    link?: string | null;
    owed?: boolean;
@@ -95,6 +97,8 @@ export default function SmsTestPage({ preview }: { preview?: SmsTestPreview } = 
    const [stage, setStage] = useState<SmsTestStage>(preview?.stage ?? 'loading');
    const [phone, setPhone] = useState(preview?.phone ?? '');
    const [network, setNetwork] = useState<string>('');
+   // Networks someone already got a code on: greyed out, no more ₱50 for them.
+   const [done, setDone] = useState<string[]>(preview?.done ?? []);
    const [name, setName] = useState('');
    const [testId, setTestId] = useState<string | null>(null);
    const [code, setCode] = useState('');
@@ -114,6 +118,7 @@ export default function SmsTestPage({ preview }: { preview?: SmsTestPreview } = 
             if (cancelled) return;
             const r = data as Result | null;
             if (rpcError || !r?.ok) return setStage('bad_link');
+            setDone(r.done ?? []);
             setStage(r.open ? 'form' : 'closed');
          });
       return () => {
@@ -150,7 +155,11 @@ export default function SmsTestPage({ preview }: { preview?: SmsTestPreview } = 
          setCode('');
          setStage('code');
       } else if (r.error === 'covered') setStage('covered');
-      else if (r.error === 'already_done') setStage('already_done');
+      else if (r.error === 'network_done') {
+         setDone((d) => (d.includes(network) ? d : [...d, network]));
+         setNetwork('');
+         setError(ERRORS.network_done);
+      } else if (r.error === 'already_done') setStage('already_done');
       else if (r.error === 'closed') setStage('closed');
       else if (r.error === 'bad_link') setStage('bad_link');
       else setError(ERRORS[r.error ?? ''] ?? 'Something went wrong. Please try again.');
@@ -243,11 +252,24 @@ export default function SmsTestPage({ preview }: { preview?: SmsTestPreview } = 
                   <div>
                      <span className={label}>Your network</span>
                      <div className="grid grid-cols-2 gap-2">
-                        {NETWORKS.map((n) => (
-                           <button className={chipClass(network === n.id)} key={n.id} onClick={() => setNetwork(n.id)} type="button">
-                              {n.label}
-                           </button>
-                        ))}
+                        {NETWORKS.map((n) => {
+                           const isDone = n.id !== 'not_sure' && done.includes(n.id);
+                           return (
+                              <button
+                                 className={
+                                    isDone
+                                       ? 'min-h-[44px] cursor-not-allowed rounded-[12px] border-2 border-[#ece9f1] bg-[#f3f1f6] px-3 text-[15px] font-bold text-[#b3a9c2] dark:border-[#2a2238] dark:bg-[#151020] dark:text-[#5f526f]'
+                                       : chipClass(network === n.id)
+                                 }
+                                 disabled={isDone}
+                                 key={n.id}
+                                 onClick={() => setNetwork(n.id)}
+                                 type="button"
+                              >
+                                 {isDone ? `${n.label} ✓ done` : n.label}
+                              </button>
+                           );
+                        })}
                      </div>
                   </div>
                   <div>

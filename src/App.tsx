@@ -5,55 +5,52 @@ import { useSelector } from 'react-redux';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
 import { AdminGuard } from '@/components/AdminGuard';
+import { PendingCodeBanner } from '@/components/auth/PendingCodeBanner';
 import BottomNav from '@/components/BottomNav';
 import { BottomNavActionProvider } from '@/components/BottomNavActionContext';
 import { ExpiredLoanRequestNotifier } from '@/components/ExpiredLoanRequestNotifier';
-import { JourneyNudge } from '@/components/onboarding/JourneyNudge';
-import { SocialContactRequiredNotifier } from '@/components/SocialContactRequiredNotifier';
-import { KycDeclinedNotifier } from '@/components/verification/KycDeclinedNotifier';
-import { VerifiedCelebrationNotifier } from '@/components/verification/VerifiedCelebrationNotifier';
 import Footer from '@/components/Footer';
 import { LenderFundingPrompt } from '@/components/funding/LenderFundingPrompt';
 import LenderHomeScreenPushPrompt from '@/components/funding/LenderHomeScreenPushPrompt';
-import Header from '@/components/Header/Header';
-import { PendingCodeBanner } from '@/components/auth/PendingCodeBanner';
-import { LandingSessionCookie } from '@/components/landing/LandingSessionCookie';
 import { GuestAccountGate } from '@/components/GuestAccountGate';
+import Header from '@/components/Header/Header';
 import InAppBrowserNotice from '@/components/InAppBrowserNotice';
-import OpenInBrowserPrompt from '@/components/OpenInBrowserPrompt';
-import SafariHelpSheet from '@/components/SafariHelpSheet';
+import { LandingSessionCookie } from '@/components/landing/LandingSessionCookie';
 import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay';
 import MarketingPageShell from '@/components/marketing/MarketingPageShell';
+import { JourneyNudge } from '@/components/onboarding/JourneyNudge';
+import OpenInBrowserPrompt from '@/components/OpenInBrowserPrompt';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { RoleGuard } from '@/components/RoleGuard';
+import SafariHelpSheet from '@/components/SafariHelpSheet';
+import { SocialContactRequiredNotifier } from '@/components/SocialContactRequiredNotifier';
+import { KycDeclinedNotifier } from '@/components/verification/KycDeclinedNotifier';
 import { VerificationUnsuccessfulModal } from '@/components/verification/VerificationUnsuccessfulModal';
+import { VerifiedCelebrationNotifier } from '@/components/verification/VerifiedCelebrationNotifier';
 
 import { useDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
 import { usePendingInviteRedemption } from '@/hooks/useFriendReferrals';
 import { usePostLoginReturn } from '@/hooks/usePostLoginReturn';
-import { useRecordDeviceTimezone } from '@/hooks/useRecordDeviceTimezone';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useRecordDeviceTimezone } from '@/hooks/useRecordDeviceTimezone';
 
 import AccountRestrictedPage from '@/app/account-restricted/page';
 import AdminPanel from '@/app/admin/page';
 import PricingHealthPreview from '@/app/admin/PricingHealthPreview';
 import AffiliateDashboardPage from '@/app/affiliate/page';
-import DocumentsPage from '@/app/documents/page';
-import ProofRequestPage from '@/app/proof/page';
-import SmsTestPage, { type SmsTestStage } from '@/app/sms-test/page';
-import { PROOF_PAGE_SAMPLE } from '@/app/proof/sample';
 import AuthSuccess from '@/app/auth-success/page';
 import AuthConfirm from '@/app/auth/confirm/page';
 import LineCallback from '@/app/auth/line/callback/page';
 import AuthStartPage from '@/app/auth/start/page';
-import TikTokCallback from '@/app/auth/tiktok/callback/page';
 import TelegramCallback from '@/app/auth/telegram/callback/page';
+import TikTokCallback from '@/app/auth/tiktok/callback/page';
 import AuthVerifyCode from '@/app/auth/verify-code/page';
 import Benefits from '@/app/benefits/page';
 import BlogDetailPage from '@/app/blogs/[slug]/page';
 import BlogsPage from '@/app/blogs/page';
 import CreditLevelingGuidePage from '@/app/credit-leveling-guide/page';
 import DataDeletionPage from '@/app/data-deletion/page';
+import DocumentsPage from '@/app/documents/page';
 import ForgotPassword from '@/app/forgot-password/page';
 import Guide from '@/app/guide/page';
 import HelpPage from '@/app/help/page';
@@ -68,7 +65,6 @@ import LenderPerformance from '@/app/lender/performance/page';
 import LenderRequestBoard from '@/app/lender/request-board/page';
 import LenderSupportedPage from '@/app/lender/supported/page';
 import Login from '@/app/login/page';
-import SignOutPage from '@/app/sign-out/page';
 import MfaChallengePage from '@/app/mfa-challenge/page';
 import MilestonesPage from '@/app/milestones/page';
 import CongratulationsPage from '@/app/onboarding/congratulations/page';
@@ -80,14 +76,17 @@ import WalletConnect from '@/app/onboarding/wallet/page';
 import OnboardingWelcome from '@/app/onboarding/welcome/page';
 // Import pages
 import Home from '@/app/page';
-import PayQrPage from '@/app/testqr/page';
 import PrivacyPolicyPage from '@/app/privacy-policy/page';
 import PrivacyPage from '@/app/privacy/page';
 import Profile from '@/app/profile/page';
+import ProofRequestPage from '@/app/proof/page';
+import { PROOF_PAGE_SAMPLE } from '@/app/proof/sample';
 import ResetPassword from '@/app/reset-password/page';
 import RoleSelection from '@/app/role-selection/page';
+import SignOutPage from '@/app/sign-out/page';
 import SignUp from '@/app/signup/page';
 import Simple from '@/app/simple/page';
+import SmsTestPage, { type SmsTestStage } from '@/app/sms-test/page';
 import SupportFAQPage from '@/app/support/faq/page';
 import SupportGettingStartedPage from '@/app/support/getting-started/page';
 import SupportGuideDetailPage from '@/app/support/guides/[slug]/page';
@@ -97,8 +96,9 @@ import SupportUpdateDetailPage from '@/app/support/updates/[slug]/page';
 import SupportUpdatesPage from '@/app/support/updates/page';
 import TeamPage from '@/app/team/page';
 import TermsPage from '@/app/terms/page';
-import UnsubscribePage from '@/app/unsubscribe/page';
 import Test from '@/app/test/page';
+import PayQrPage from '@/app/testqr/page';
+import UnsubscribePage from '@/app/unsubscribe/page';
 import UserLenderDiversityPage from '@/app/user/[username]/lender-diversity/page';
 import UserProfile from '@/app/user/[username]/page';
 import UserProgressHistoryPage from '@/app/user/[username]/progress-history/page';
@@ -107,15 +107,10 @@ import DiditVerification from '@/app/verify-didit/page';
 import WorldIdVerification from '@/app/verify-world-id/page';
 import VerifyFlow from '@/app/verify/page';
 import WhyLend from '@/app/whylend/page';
-import CreditLineLenderPage from '@/views/creditline/CreditLineLenderPage';
-import IdLanding from '@/views/indonesia/IdLanding';
-import IdOnboarding, { IdOnboardingPreview } from '@/views/indonesia/IdOnboarding';
-import ContinuePage from '@/views/onboarding/ContinuePage';
-import MessengerHandoff from '@/views/onboarding/MessengerHandoff';
 import { clarityEvent, clarityTag, identifyClarity, isClarityEnabled, signupMethodLabel } from '@/lib/analytics/clarity';
 import { describeBrowser, recordSignupContext, recordSignupSource } from '@/lib/attribution';
-import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { trackNewAccount } from '@/lib/metaPixel';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { type RootState } from '@/store/store';
 import MoneyGuide from '@/views/academy/MoneyGuide';
 import MoneyGuideTopic from '@/views/academy/MoneyGuideTopic';
@@ -124,19 +119,24 @@ import Account from '@/views/account/Account';
 import AccountSettings from '@/views/account/AccountSettings';
 import AccountWalletPreview from '@/views/account/AccountWalletPreview';
 import SettingsStylePreview from '@/views/account/SettingsStylePreview';
+import CreditLineLenderPage from '@/views/creditline/CreditLineLenderPage';
 import DashboardV2 from '@/views/dashboard-v2/DashboardV2';
 import DashboardV2Milestones from '@/views/dashboard-v2/DashboardV2Milestones';
 import { DashboardV2InviteLanding, DashboardV2Referral } from '@/views/dashboard-v2/DashboardV2Rewards';
-import InterestReferralPage from '@/views/referral/InterestReferralPage';
 import LoanRequestPreview from '@/views/dashboard/LoanRequestPreview';
-import WhatsAppRemindersPreview from '@/views/dashboard/WhatsAppRemindersPreview';
 import RequestBoard from '@/views/dashboard/RequestBoard';
+import WhatsAppRemindersPreview from '@/views/dashboard/WhatsAppRemindersPreview';
 import FundWalletPreview from '@/views/fund/FundWalletPreview';
-import Repay from '@/views/repay/Repay';
+import IdLanding from '@/views/indonesia/IdLanding';
+import IdOnboarding, { IdOnboardingPreview } from '@/views/indonesia/IdOnboarding';
+import MoneyHub from '@/views/money/MoneyHub';
+import ContinuePage from '@/views/onboarding/ContinuePage';
+import MessengerHandoff from '@/views/onboarding/MessengerHandoff';
+import InterestReferralPage from '@/views/referral/InterestReferralPage';
 import DirectRepay, { WalletPaused, WalletSuspendedGate } from '@/views/repay/DirectRepay';
+import Repay from '@/views/repay/Repay';
 import TransactionDetail from '@/views/transactions/TransactionDetail';
 import TransactionHistory from '@/views/transactions/TransactionHistory';
-import MoneyHub from '@/views/money/MoneyHub';
 import CashoutFaceCheck from '@/views/withdraw/CashoutFaceCheck';
 import Withdraw from '@/views/withdraw/Withdraw';
 
@@ -206,8 +206,7 @@ export default function App() {
    const isOnRepayRoute = location.pathname === '/repay' || (repayReturnTo && REPAY_CONTINUATION_ROUTES.includes(location.pathname));
    const canRepayWhileDefaulted = isDefaultedBorrower && isOnRepayRoute;
    // A watchlisted (blocked) borrower still owes their lender: let them reach /repay for any open loan.
-   const canRepayWhileBlocked =
-      user?.accountStatus === 'blocked' && (defaultedBorrower.support.openAmount ?? 0) > 0 && isOnRepayRoute;
+   const canRepayWhileBlocked = user?.accountStatus === 'blocked' && (defaultedBorrower.support.openAmount ?? 0) > 0 && isOnRepayRoute;
    const shouldShowAccountSupport = isAccountRestricted || isDefaultedBorrower;
    const isUserDetailRoute = location.pathname.includes('/progress-history') || location.pathname.includes('/lender-diversity');
    const accountSettingsParams = new URLSearchParams(location.search);
@@ -537,7 +536,8 @@ export default function App() {
                         preview={{
                            stage: (new URLSearchParams(window.location.search).get('stage') as SmsTestStage | null) ?? 'form',
                            link: 'https://plum.gift/sample-link',
-                           phone: '0917 123 4567'
+                           phone: '0918 123 4567',
+                           done: new URLSearchParams(window.location.search).get('done')?.split(',') ?? []
                         }}
                      />
                   }
