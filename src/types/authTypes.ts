@@ -90,6 +90,8 @@ export interface User {
     * (column not deployed yet) is treated as approved so the app never locks anyone out early.
     */
    loanAccessStatus?: LoanAccessStatus;
+   /** Rejected "for now": the day they may ask again. Unset on a rejected account = rejected for good. */
+   loanAccessRetryAt?: string;
    /** When the borrower first saw the "you're approved" glow; null/undefined = not seen yet. */
    loanAccessSeenAt?: string;
    /** An admin marked their last video call a no-show — the Connect screen says "we missed you". */

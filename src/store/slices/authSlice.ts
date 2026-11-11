@@ -264,6 +264,7 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    accountStatus: (row as UserRow & { account_status?: AccountStatus | null }).account_status ?? 'active',
    userRole: row.user_role ?? undefined,
    loanAccessStatus: (row as UserRow & { loan_access_status?: LoanAccessStatus | null }).loan_access_status ?? undefined,
+   loanAccessRetryAt: (row as UserRow & { loan_access_retry_at?: string | null }).loan_access_retry_at ?? undefined,
    loanAccessSeenAt: (row as UserRow & { loan_access_seen_at?: string | null }).loan_access_seen_at ?? undefined,
    missedLastCall: (row as UserRow & { video_call_outcome?: string | null }).video_call_outcome === 'no_show',
    attendedCall: (row as UserRow & { video_call_outcome?: string | null }).video_call_outcome === 'attended',

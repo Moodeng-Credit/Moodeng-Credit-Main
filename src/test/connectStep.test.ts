@@ -131,11 +131,6 @@ describe('ConnectStep — PART 1 of Connect → Approve → Apply', () => {
       expect(container.querySelector('img')?.getAttribute('src')).toBe('/hippos/connect/missed.png');
    });
 
-   it('shows the reach-out-again copy for a previously rejected borrower', async () => {
-      await render({ wasRejected: true });
-      expect(container.textContent).toContain('take another look');
-   });
-
    it('keeps Send disabled until the intro is long enough, then submits to loan-access', async () => {
       await render({ referralCode: 'BELLE' });
       await goToIntro();

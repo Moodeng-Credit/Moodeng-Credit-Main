@@ -94,7 +94,6 @@ export default function ConnectStep({
    userId,
    displayName,
    referralCode,
-   wasRejected = false,
    missedCall = false,
    mode = 'approval',
    withEmma = false,
@@ -109,7 +108,6 @@ export default function ConnectStep({
    userId: string;
    displayName: string;
    referralCode?: string;
-   wasRejected?: boolean;
    // An admin marked their last call a no-show: same path, but a friendly "let's pick a new time".
    missedCall?: boolean;
    mode?: 'approval' | 'call';
@@ -278,11 +276,9 @@ export default function ConnectStep({
                }}
                intro={
                   <ConnectHero
-                     image={wasRejected || missedCall ? CONNECT_HIPPOS.missed : CONNECT_HIPPOS.hello}
+                     image={missedCall ? CONNECT_HIPPOS.missed : CONNECT_HIPPOS.hello}
                      subtitle={
-                        wasRejected
-                           ? "Want us to take another look? Reach out again and tell us what's changed."
-                           : missedCall
+                        missedCall
                              ? `No worries — life happens. Pick a new time for your 15-min call${withEmma ? ' with Emma' : ''}.`
                              : withEmma
                                ? 'A quick 15-min call with Emma sets you up to cash out and repay easily.'
@@ -293,9 +289,7 @@ export default function ConnectStep({
                                    : 'Before your first loan, we like to meet every borrower — we approve within a day.'
                      }
                      title={
-                        wasRejected
-                           ? 'Welcome back'
-                           : missedCall
+                        missedCall
                              ? 'We missed you!'
                              : context === 'kyc'
                                ? 'Connect Facebook so we can reach you'
@@ -458,6 +452,25 @@ export default function ConnectStep({
 
 // Shown instead of the application while an admin decides (or, in call mode, until the call has
 // happened): the waiting hippo, the booked time with a Join button, and what to have ready.
+// Rejected: the end of the road — no call to book, nothing to send (the server refuses both). When
+// the team rejected them "for now", the day they can ask again; otherwise just a kind goodbye.
+export function LoanAccessRejectedCard({ onClose, retryAt, closeLabel = 'Got it' }: { onClose: () => void; retryAt?: string | null; closeLabel?: string }) {
+   const retryMs = retryAt ? Date.parse(retryAt) : NaN;
+   const retryDay = Number.isNaN(retryMs) ? null : new Date(retryMs).toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+   return (
+      <div className="connect-ui flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-center text-md-b2 text-md-heading">
+         <ConnectHero
+            image={CONNECT_HIPPOS.missed}
+            subtitle={retryDay ? `You can ask again from ${retryDay}.` : 'Thank you for your interest in Moodeng.'}
+            title={retryDay ? "We can't offer you a loan yet" : "Sorry, we can't offer you a loan"}
+         />
+         <div className="mt-auto pt-1">
+            <PrimaryButton onClick={onClose}>{closeLabel}</PrimaryButton>
+         </div>
+      </div>
+   );
+}
+
 export function LoanAccessPendingCard({
    onClose,
    mode = 'approval',

@@ -85,7 +85,7 @@ import { fetchUser, updateBorrowerContext, updateUser } from '@/store/slices/aut
 import type { AppDispatch } from '@/store/store';
 import { type User } from '@/types/authTypes';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
-import ConnectStep, { LoanAccessPendingCard } from '@/views/dashboard/components/ConnectStep';
+import ConnectStep, { LoanAccessPendingCard, LoanAccessRejectedCard } from '@/views/dashboard/components/ConnectStep';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, PrimaryButton, stepAnimationClass, useStepDirection } from '@/views/dashboard/components/connectKit';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
 import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
@@ -1867,13 +1867,15 @@ export default function LoanRequestModal({
    const connectMode: 'call' | 'approval' = hasReferral || loanFlow === 'call' ? 'call' : 'approval';
    const loanAccessStatus = user.loanAccessStatus ?? 'approved';
    const isLoanAccessPending = isGateOn && isVerified && loanAccessStatus === 'pending';
-   const needsLoanAccessConnect = isGateOn && isVerified && (loanAccessStatus === 'none' || loanAccessStatus === 'rejected');
-   const isLoanAccessGated = isLoanAccessPending || needsLoanAccessConnect;
+   // Rejected is final: a goodbye card, never the connect steps (no call to book, nothing to send).
+   const isLoanAccessRejected = isGateOn && isVerified && loanAccessStatus === 'rejected';
+   const needsLoanAccessConnect = isGateOn && isVerified && loanAccessStatus === 'none';
+   const isLoanAccessGated = isLoanAccessPending || isLoanAccessRejected || needsLoanAccessConnect;
 
    // An admin may have decided while this tab was open — re-check when the waiting borrower opens
    // the modal, so an approval shows up without a page reload.
    useEffect(() => {
-      if (!isOpen || !isLoanAccessPending) return;
+      if (!isOpen || !(isLoanAccessPending || isLoanAccessRejected)) return;
       void dispatch(fetchUser());
       // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [isOpen]);
@@ -3232,12 +3234,13 @@ export default function LoanRequestModal({
                </div>
             ) : isLoanAccessPending ? (
                <LoanAccessPendingCard mode={connectMode} withEmma={hasReferral} userId={user.id} onClose={onClose} />
+            ) : isLoanAccessRejected ? (
+               <LoanAccessRejectedCard onClose={onClose} retryAt={user.loanAccessRetryAt} />
             ) : needsLoanAccessConnect ? (
                <ConnectStep
                   userId={user.id}
                   displayName={currentBorrowerDisplayName}
                   referralCode={appliedReferral?.code}
-                  wasRejected={loanAccessStatus === 'rejected'}
                   missedCall={loanAccessStatus === 'none' && Boolean(user.missedLastCall)}
                   mode={connectMode}
                   withEmma={hasReferral}

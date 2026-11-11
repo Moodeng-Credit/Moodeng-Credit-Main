@@ -119,3 +119,18 @@ Deno.test('approved WhatsApp template: first name, else "there"', async () => {
    assertEquals(buildApprovedWhatsAppTemplate(null).name, 'moodeng_approved');
    assertEquals(buildApprovedWhatsAppTemplate('  ').components[0].parameters[0].text, 'there');
 });
+
+Deno.test('reject follow-up buttons: callbacks round-trip and the picked choice drops out', async () => {
+   const { buildRejectFollowUpCallback, parseRejectFollowUpCallback, rejectFollowUpButtons } = await import('./loanAccess.ts');
+   const userId = '11111111-2222-3333-4444-555555555555';
+   for (const step of ['for_good', 'for_now', 'approve'] as const) {
+      const parsed = parseRejectFollowUpCallback(buildRejectFollowUpCallback(step, userId));
+      if (parsed?.step !== step || parsed.userId !== userId) throw new Error(`round-trip failed for ${step}`);
+   }
+   if (parseRejectFollowUpCallback('la:r:abc') !== null) throw new Error('parsed a non-follow-up callback');
+   const texts = (picked?: 'for_good' | 'for_now') => rejectFollowUpButtons(userId, picked).flat().map((b) => b.text);
+   if (texts().length !== 3) throw new Error('expected three buttons before a choice');
+   if (texts('for_good').some((t) => t.includes('For good'))) throw new Error('For good should drop out once picked');
+   if (texts('for_now').some((t) => t.includes('For now'))) throw new Error('For now should drop out once picked');
+   if (!texts('for_now').some((t) => t.includes('Approve after all'))) throw new Error('Approve after all must stay');
+});

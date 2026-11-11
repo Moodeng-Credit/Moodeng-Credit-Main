@@ -134,6 +134,10 @@ const TEXT = {
       id: 'Pilih waktu yang cocok di kalender kami:\n' + APP_URL,
       en: 'Pick a time that suits you on our calendar:\n' + APP_URL
    },
+   rejected: {
+      id: 'Maaf, saat ini kami belum bisa menawarkan pinjaman untukmu, jadi tidak ada video call yang perlu dipesan. Semoga sukses selalu 🦛',
+      en: 'Sorry, we can’t offer you a loan right now, so there’s no call to book. We wish you all the best 🦛'
+   },
    cooldown: {
       id: 'Kamu belum bisa memesan video call baru saat ini karena panggilan sebelumnya terlewat. Coba lagi nanti, atau balas pesan ini untuk bantuan.',
       en: 'You can’t book a new call just yet because earlier calls were missed. Try again later, or reply here for help.'
@@ -183,6 +187,7 @@ const whoCanBook = async (svc: Svc, contactId: string) => {
    if (await isIdTrackUser(svc, user.id)) return { user, locale, reason: 'idTrack' as const };
    if (!whatsappFirstApplies(user.whatsapp_number, user.is_test)) return { user, locale, reason: 'notIndonesia' as const };
    if (isKycVerified(user) || user.user_role === 'lender') return { user, locale, reason: 'noCallNeeded' as const };
+   if (user.loan_access_status === 'rejected') return { user, locale, reason: 'rejected' as const };
    const gated = await needsPreKycGate(svc, user.id);
    const stage = botStage(user, gated, 0);
    if (stage === 'wallet') return { user, locale, reason: 'walletFirst' as const };
