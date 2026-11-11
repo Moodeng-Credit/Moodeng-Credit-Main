@@ -24,6 +24,7 @@ import { idLocaleOf, idResendReason, isIdTrackUser, loadIdStatus, notifyIdNextSt
 // Flash is DeepSeek's only model that reads images, and costs about a cent per send.
 const MODEL = 'deepseek-flash';
 const DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions';
+const TOO_LONG = 'document too long to read in one pass';
 const ADMIN_URL = 'https://moodeng.app/admin/income-docs';
 // Rough rates for the affordability checks only; close enough to compare sizes.
 const PER_USD: Record<string, number> = { USD: 1, PHP: 57, IDR: 16300, THB: 33 };
@@ -613,7 +614,7 @@ const deepseekJson = async <T>(apiKey: string, system: string, content: string |
       if (!res.ok) throw new Error(`DeepSeek ${res.status}: ${(await res.text()).slice(0, 200)}`);
       const body = (await res.json()) as { choices?: Array<{ message?: { content?: string }; finish_reason?: string }> };
       const choice = body.choices?.[0];
-      if (choice?.finish_reason === 'length') throw new Error('document too long to read in one pass');
+      if (choice?.finish_reason === 'length') throw new Error(TOO_LONG);
       const text = choice?.message?.content?.trim();
       if (text) {
          try {
@@ -697,15 +698,54 @@ export const pdfJpegs = (bytes: Uint8Array, max = 6): Uint8Array[] => {
    return found;
 };
 
+/**
+ * Several reads of one send (a long history split into batches of screenshots) → one document. Rows
+ * that show up twice because screenshots overlap are kept once. Pure.
+ */
+export const mergeExtracted = (parts: Extracted[]): Extracted => {
+   const read = parts.filter((p) => p.readable);
+   if (!read.length) return parts[0];
+   const first = <K extends keyof Extracted>(k: K) => read.map((p) => p[k]).find((v) => v !== null && v !== undefined) ?? null;
+   const typed = read.map((p) => p.doc_type).filter((t) => t !== 'other');
+   const seen = new Set<string>();
+   const transactions = read
+      .flatMap((p) => p.transactions)
+      .filter((t) => {
+         const key = `${t.date}|${t.amount}|${t.balance ?? ''}|${t.description.trim().toLowerCase()}`;
+         if (seen.has(key)) return false;
+         seen.add(key);
+         return true;
+      })
+      .sort((a, b) => a.date.localeCompare(b.date));
+   const dates = read.flatMap((p) => [p.period_start, p.period_end]).filter((d): d is string => Boolean(d)).sort();
+   return {
+      readable: true,
+      unreadable_reason: null,
+      doc_type: typed[0] ?? 'other',
+      holder_name: first('holder_name') as string | null,
+      institution: first('institution') as string | null,
+      currency: first('currency') as string | null,
+      period_start: dates[0] ?? null,
+      period_end: dates[dates.length - 1] ?? null,
+      opening_balance: read[0].opening_balance,
+      closing_balance: read[read.length - 1].closing_balance,
+      payslip: first('payslip') as Extracted['payslip'],
+      fields: read.flatMap((p) => p.fields),
+      transactions,
+      visual_anomalies: [...new Set(read.flatMap((p) => p.visual_anomalies))]
+   };
+};
+
 const extract = async (apiKey: string, files: LoadedFile[]): Promise<Extracted> => {
-   const parts: ChatPart[] = [];
+   // One entry per page (a screenshot, a PDF page's text, a scanned page's photo), each already
+   // labelled with its page number across the whole send.
+   const pages: ChatPart[][] = [];
    const unreadable: string[] = [];
-   let page = 0;
    for (const f of files) {
       if (f.mime === 'application/pdf') {
-         const pages = await pdfText(f.bytes).catch(() => [] as string[]);
-         if (pages.some((t) => t.length > 40)) {
-            for (const t of pages) parts.push({ type: 'text', text: `--- page ${++page} (from ${f.name}, PDF text) ---\n${t}` });
+         const texts = await pdfText(f.bytes).catch(() => [] as string[]);
+         if (texts.some((t) => t.length > 40)) {
+            for (const t of texts) pages.push([{ type: 'text', text: `--- page ${pages.length + 1} (from ${f.name}, PDF text) ---\n${t}` }]);
             continue;
          }
          // No text: a scan. Read the page photos inside it instead.
@@ -715,18 +755,50 @@ const extract = async (apiKey: string, files: LoadedFile[]): Promise<Extracted> 
             continue;
          }
          for (const jpeg of scans) {
-            parts.push({ type: 'text', text: `--- page ${++page} (from ${f.name}, scanned page) ---` });
-            parts.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${toBase64(jpeg)}`, detail: 'high' } });
+            pages.push([
+               { type: 'text', text: `--- page ${pages.length + 1} (from ${f.name}, scanned page) ---` },
+               { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${toBase64(jpeg)}`, detail: 'high' } }
+            ]);
          }
       } else {
-         parts.push({ type: 'text', text: `--- page ${++page} (${f.name}, image) ---` });
-         parts.push({ type: 'image_url', image_url: { url: `data:${f.mime};base64,${toBase64(f.bytes)}`, detail: 'high' } });
+         pages.push([
+            { type: 'text', text: `--- page ${pages.length + 1} (${f.name}, image) ---` },
+            { type: 'image_url', image_url: { url: `data:${f.mime};base64,${toBase64(f.bytes)}`, detail: 'high' } }
+         ]);
       }
    }
    // Only throw when nothing at all could be read; one bad PDF shouldn't sink the others.
-   if (!page) throw new Error(`${unreadable.join(', ')} is a scanned PDF with no text — ask for screenshots`);
-   parts.push({ type: 'text', text: `Read these ${page} page(s) as one person's proof of income. Reply in json.` });
-   return normalizeExtracted(await deepseekJson<Record<string, unknown>>(apiKey, SYSTEM, parts, 16000));
+   if (!pages.length) throw new Error(`${unreadable.join(', ')} is a scanned PDF with no text — ask for screenshots`);
+
+   const read = (batch: ChatPart[][], of: string) =>
+      deepseekJson<Record<string, unknown>>(
+         apiKey,
+         SYSTEM,
+         [...batch.flat(), { type: 'text', text: `Read ${of} as one person's proof of income. Keep the page numbers printed above each page. Reply in json.` }],
+         16000
+      ).then(normalizeExtracted);
+
+   // Up to 3 pages: one read, so the model sees them together. More (a long history, many screenshots
+   // full of rows) can run past one answer's length (Nov 11: 5 GoTyme screenshots), so read 2 pages
+   // at a time, all at once, splitting a batch that is still too long; then merge the rows.
+   if (pages.length <= 3) {
+      try {
+         return await read(pages, `these ${pages.length} page(s)`);
+      } catch (err) {
+         if (!(err instanceof Error) || err.message !== TOO_LONG || pages.length < 2) throw err;
+      }
+   }
+   const readBatch = async (from: number, batch: ChatPart[][]): Promise<Extracted[]> => {
+      try {
+         return [await read(batch, `pages ${from + 1}–${from + batch.length} of ${pages.length} (the others are read separately)`)];
+      } catch (err) {
+         if (!(err instanceof Error) || err.message !== TOO_LONG || batch.length < 2) throw err;
+         return (await Promise.all(batch.map((page, j) => readBatch(from + j, [page])))).flat();
+      }
+   };
+   const batches: Array<Promise<Extracted[]>> = [];
+   for (let i = 0; i < pages.length; i += 2) batches.push(readBatch(i, pages.slice(i, i + 2)));
+   return mergeExtracted((await Promise.all(batches)).flat());
 };
 
 /** Text-only second opinion from the numbers + checks (no images, so it's cheap). */

@@ -1,6 +1,6 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { buildMemo, buildSections, parseSteps, pdfJpegs, stepFor, verdictOf, computeMetrics, type Extracted, namesMatch, normalizeExtracted, parseStatedIncome, readPdfInfo, riskOf, runChecks, scoreOf } from './incomeDocs.ts';
+import { buildMemo, buildSections, mergeExtracted, parseSteps, pdfJpegs, stepFor, verdictOf, computeMetrics, type Extracted, namesMatch, normalizeExtracted, parseStatedIncome, readPdfInfo, riskOf, runChecks, scoreOf } from './incomeDocs.ts';
 
 const tx = (date: string, amount: number, balance: number | null, description = 'x') => ({ date, description, amount, balance, page: 1, source_text: `${date} ${amount}` });
 
@@ -228,4 +228,17 @@ Deno.test('a re-saved phone scan is a note, a re-saved bank export is a warning'
    const exported = { ...scan, producer: 'iText 5.5' };
    assertEquals(runChecks(doc, computeMetrics(doc), { ...smallLoan, pdfs: [scan] }).find((f) => f.code === 'edited_after_creation')?.severity, 'info');
    assertEquals(runChecks(doc, computeMetrics(doc), { ...smallLoan, pdfs: [exported] }).find((f) => f.code === 'edited_after_creation')?.severity, 'orange');
+});
+
+Deno.test('mergeExtracted: batches of one long history become one document, overlapping rows once', () => {
+   const a = base({ period_start: '2026-08-10', period_end: '2026-09-15', opening_balance: 500, closing_balance: 23500, transactions: [tx('2026-08-15', 12000, 13000, 'Salary ACME'), tx('2026-09-15', 12500, 23500, 'Salary ACME')] });
+   const b = base({ holder_name: null, period_start: '2026-09-15', period_end: '2026-11-11', opening_balance: 23500, closing_balance: 9000, transactions: [tx('2026-09-15', 12500, 23500, 'Salary ACME'), tx('2026-10-15', 12500, 9000, 'Salary ACME')], visual_anomalies: ['x'] });
+   const unreadable = base({ readable: false, doc_type: 'other', transactions: [] });
+   const m = mergeExtracted([b, unreadable, a].sort(() => 0));
+   assertEquals(m.transactions.map((t) => t.date), ['2026-08-15', '2026-09-15', '2026-10-15']);
+   assertEquals([m.period_start, m.period_end], ['2026-08-10', '2026-11-11']);
+   assertEquals(m.holder_name, 'Maria Santos Cruz');
+   assertEquals(m.doc_type, 'gcash_history');
+   assertEquals(m.visual_anomalies, ['x']);
+   assert(m.readable);
 });
