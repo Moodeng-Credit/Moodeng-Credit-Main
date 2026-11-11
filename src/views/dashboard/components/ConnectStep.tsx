@@ -595,7 +595,7 @@ export function LoanAccessPendingCard({
                         <span className="text-[14px] text-[#7b6b8c]">{meetingDay} · your local time</span>
                      </span>
                   ) : (
-                     <span className="text-[15px] text-[#7b6b8c]">Your time is in your email</span>
+                     <span className="text-[15px] text-[#7b6b8c]">We’ll message you the time</span>
                   )}
                   {/* Same "I'll be there" as the Messenger button (video-call-confirm) — so confirming,
                       and keeping the call from being cancelled, never depends on Messenger alone.

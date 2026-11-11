@@ -538,7 +538,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'With Emma Moodeng · Zoom': 'Bersama Emma Moodeng · Zoom',
    'Moodeng team · Zoom': 'Tim Moodeng · Zoom',
    '· your local time': '· waktu setempatmu',
-   'Your time is in your email': 'Jadwalmu ada di emailmu',
+   'We’ll message you the time': 'Kami akan kirim jadwalnya lewat pesan',
    "✅ I'll be there": '✅ Saya akan hadir',
    '✅ You confirmed — see you there!': '✅ Kamu sudah konfirmasi — sampai jumpa di sana!',
    'Join the meeting': 'Gabung ke panggilan',

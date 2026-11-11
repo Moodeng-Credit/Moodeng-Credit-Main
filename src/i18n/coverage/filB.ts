@@ -475,7 +475,7 @@ export const filipinoCoverageB: Record<string, string> = {
    'Meet the team, ask anything': 'Kilalanin ang team, magtanong ng kahit ano',
    'Apply right after the call': 'Mag-apply kaagad pagkatapos ng call',
    'What do you need a loan for?': 'Para saan mo kailangan ang loan?',
-   'Your time is in your email': 'Nasa email mo ang oras',
+   'We’ll message you the time': 'Ime-message ka namin ang oras',
    'Join the meeting': 'Sumali sa meeting',
    'Have ready': 'Ihanda ang mga ito',
    'Your original ID or passport': 'Ang orihinal mong ID o passport',

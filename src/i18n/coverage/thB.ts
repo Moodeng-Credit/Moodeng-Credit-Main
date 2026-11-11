@@ -579,7 +579,7 @@ export const thaiCoverageB: Record<string, string> = {
    'With Emma Moodeng · Zoom': 'กับ Emma Moodeng · Zoom',
    'Moodeng team · Zoom': 'ทีม Moodeng · Zoom',
    '· your local time': '· เวลาท้องถิ่นของคุณ',
-   'Your time is in your email': 'เวลานัดหมายอยู่ในอีเมลของคุณ',
+   'We’ll message you the time': 'เราจะส่งเวลานัดหมายให้ทางข้อความ',
    "✅ I'll be there": '✅ ฉันจะเข้าร่วม',
    '✅ You confirmed — see you there!': '✅ คุณยืนยันแล้ว — แล้วพบกัน!',
    'Join the meeting': 'เข้าร่วมการประชุม',

@@ -26,6 +26,7 @@ import {
    zoomFallbackWarning
 } from '../calcom-round-robin/lib.ts';
 import { cancelCalBooking } from './calcomCancel.ts';
+import { callInboxFor, isPlaceholderEmail } from './placeholderEmail.ts';
 import { changeTimeButton } from './callReschedule.ts';
 import { testAccountRow } from './testAccount.ts';
 import { loadIdStatus, sendIdTelegram } from './idTrack.ts';
@@ -328,8 +329,10 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
       prof?.video_call_booking_uid && prof.video_call_starts_at && Date.parse(prof.video_call_starts_at) > Date.now()
          ? { uid: prof.video_call_booking_uid as string, host: (prof.video_call_host as string | null) ?? null }
          : null;
-   const email = prof?.email || user.email;
-   if (!email) return reply({ ok: false, error: 'no_email' });
+   const signInEmail = prof?.email || user.email;
+   if (!signInEmail) return reply({ ok: false, error: 'no_email' });
+   // A made-up sign-up address (phone, guest, Telegram…) would bounce Cal.com's invite: use our call inbox.
+   const email = isPlaceholderEmail(signInEmail) ? callInboxFor(user.id) : signInEmail;
    const attendee: Attendee = { name: prof?.display_name || prof?.username || 'Moodeng borrower', email, timeZone, language: 'en' };
 
    // Every configured host (not just the pinned/free ones), so the other cofounder is always invited.
