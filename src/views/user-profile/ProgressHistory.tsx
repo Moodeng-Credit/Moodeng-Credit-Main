@@ -367,7 +367,7 @@ export function buildBorrowerTimelineEvents(borrower: User, loans: Loan[]): Borr
          // Only "late" a few days past the borrower's deadline: payments can be held up by tech issues.
          const isLate = wasRepaidPublicLate(loan.dueDate, paidDate, loan.dueTimezone);
          const deadline = getLoanPastDueAt(loan.dueDate, loan.dueTimezone);
-         // After the deadline but inside the grace: not "late", but not "on time" either (points agree).
+         // After the deadline but inside the public grace: not "late", but not "on time" either (points agree).
          const isOnTime = paidDate.getTime() < deadline.getTime();
 
          events.push({

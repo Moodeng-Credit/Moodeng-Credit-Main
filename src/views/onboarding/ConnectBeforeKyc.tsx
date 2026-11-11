@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { usePreKycGate } from '@/hooks/usePreKycGate';
+import { ID_PATHS } from '@/lib/idTrack';
 import { isTikTokAccountEmail } from '@/lib/phoneAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { WalletSetupPhase } from '@/lib/web3/openfort';
@@ -12,11 +13,12 @@ import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
 import { CONNECT_HIPPOS, StepCelebration, StepTrail } from '@/views/dashboard/components/connectKit';
-import ConnectStep, { type ConnectPage, LoanAccessPendingCard } from '@/views/dashboard/components/ConnectStep';
+import ConnectStep, { type ConnectPage, LoanAccessPendingCard, LoanAccessRejectedCard } from '@/views/dashboard/components/ConnectStep';
 import GrowingWalletHippo from '@/views/onboarding/GrowingWalletHippo';
 import OnboardingBio from '@/views/onboarding/OnboardingBio';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 import TikTokPhoneStep, { wasTikTokPhoneSkipped } from '@/views/onboarding/TikTokPhoneStep';
+import { useIdTrackStatus } from '@/views/indonesia/idFlow';
 
 // /onboarding/connect — the pre-KYC gate (src/hooks/usePreKycGate.ts). After the wallet, a new
 // borrower connects Messenger, fills in their bio (work, payday, income — shown to the team on the
@@ -51,6 +53,9 @@ export default function ConnectBeforeKyc() {
    const gate = usePreKycGate();
    const { isGated, isLoading } = isPreview ? { isGated: true, isLoading: false } : gate;
    const isPending = isPreview ? new URLSearchParams(location.search).get('view') === 'pending' : user?.loanAccessStatus === 'pending';
+   // Dev preview: ?view=rejected (for good) and ?view=rejected-for-now (with a retry day).
+   const previewView = isPreview ? new URLSearchParams(location.search).get('view') : null;
+   const isRejected = isPreview ? previewView === 'rejected' || previewView === 'rejected-for-now' : user?.loanAccessStatus === 'rejected';
 
    // The sub-step lives in the URL, so the phone's back button moves between steps.
    const [searchParams] = useSearchParams();
@@ -76,7 +81,12 @@ export default function ConnectBeforeKyc() {
       };
    }, [isTikTok, isPreview, user]);
 
+   // Indonesia track: its own, longer onboarding (/id/onboarding) replaces this one.
+   const idTrack = useIdTrackStatus();
+
    if (!user) return null;
+   if (!isPreview && idTrack.isLoading) return null;
+   if (!isPreview && idTrack.isIndo) return <Navigate replace to={ID_PATHS.onboarding} />;
    if (!user.userRole) return <Navigate replace to="/onboarding/role" />;
    if (isLoading) return null;
    // Through onboarding (the team approved them, or the gate is off): straight to the loan form —
@@ -110,6 +120,8 @@ export default function ConnectBeforeKyc() {
             />
          ) : isPreview && new URLSearchParams(location.search).get('view') === 'about' ? (
             <OnboardingBio onBack={() => undefined} onDone={() => undefined} user={user} />
+         ) : isRejected ? (
+            <LoanAccessRejectedCard onClose={() => navigate('/request-board')} retryAt={previewView === 'rejected-for-now' ? new Date(Date.now() + 30 * 86400000).toISOString() : user.loanAccessRetryAt} />
          ) : isPending ? (
             <LoanAccessPendingCard
                closeLabel="Look around meanwhile"
@@ -134,7 +146,6 @@ export default function ConnectBeforeKyc() {
                   await dispatch(fetchUser());
                }}
                userId={user.id}
-               wasRejected={user.loanAccessStatus === 'rejected'}
                withEmma={Boolean(user.hasReferral)}
             />
          )}

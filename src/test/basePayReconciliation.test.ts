@@ -177,3 +177,27 @@ describe('reconcilePendingBasePayments', () => {
       expect(listPendingBasePayments()).toHaveLength(0);
    });
 });
+
+describe('reconcile: old Base entries the status endpoints cannot see', () => {
+   it('hands an entry older than 20 minutes to the server instead of waiting on not_found', async () => {
+      registerPendingBasePayment({ kind: 'repay', id: '0xold', loanId: 'L9', repaidAmount: 21, repaymentStatus: 'Paid' });
+      mockStatus.mockResolvedValue({ status: 'not_found', id: '0xold', message: 'nope' } as never);
+      const completeRepay = vi.fn().mockResolvedValue(undefined);
+      const h = { completeFund: vi.fn(), completeRepay, completeInterest: vi.fn(), completeWithdraw: vi.fn() };
+
+      await reconcilePendingBasePayments(h, Date.now() + 21 * 60 * 1000);
+
+      expect(completeRepay).toHaveBeenCalledWith(expect.objectContaining({ loanId: 'L9', hash: '0xold', method: 'base' }));
+   });
+
+   it('still waits on a young not_found entry', async () => {
+      registerPendingBasePayment({ kind: 'repay', id: '0xnew', loanId: 'L8', repaidAmount: 21, repaymentStatus: 'Paid' });
+      mockStatus.mockResolvedValue({ status: 'not_found', id: '0xnew', message: 'nope' } as never);
+      const completeRepay = vi.fn();
+      const h = { completeFund: vi.fn(), completeRepay, completeInterest: vi.fn(), completeWithdraw: vi.fn() };
+
+      await reconcilePendingBasePayments(h, Date.now() + 5 * 60 * 1000);
+
+      expect(completeRepay).not.toHaveBeenCalled();
+   });
+});

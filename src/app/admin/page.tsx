@@ -13,6 +13,10 @@ import AdminShell from '@/app/admin/AdminShell';
 import { type AdminTab, isAdminTab, navGroups } from '@/app/admin/adminNav';
 import CalendarSection from '@/app/admin/CalendarSection';
 import CallApprovalsSection from '@/app/admin/CallApprovalsSection';
+import IdPayoutWalletPanel from '@/app/admin/IdPayoutWalletPanel';
+import IndonesiaContactCard from '@/app/admin/IndonesiaContactCard';
+import WaltPayoutCard from '@/app/admin/WaltPayoutCard';
+import IndonesiaBadge from '@/components/IndonesiaBadge';
 import FilloutSection from '@/app/admin/FilloutSection';
 import { groupCallApprovals } from '@/app/admin/callApprovalsModel';
 import DirectoryApprovalControl from '@/app/admin/DirectoryApprovalControl';
@@ -68,6 +72,8 @@ import MuleRiskSection from './MuleRiskSection';
 import OnChainSection from './OnChainSection';
 import PricingHealthSection from './PricingHealthSection';
 import IncomeDocsSection from './IncomeDocsSection';
+import ProgressSection from './ProgressSection';
+import ProofRequestsSection from './ProofRequestsSection';
 import InterestRefundsSection from './InterestRefundsSection';
 import RemoveLoanRequestDialog from '@/app/admin/RemoveLoanRequestDialog';
 import ReferralCodesSection from './ReferralCodesSection';
@@ -1483,6 +1489,8 @@ function AdminPanel() {
             </section>
          ) : null}
 
+         {activeTab === 'requests' ? <IdPayoutWalletPanel /> : null}
+
          {activeTab === 'requests' ? (
             <CallApprovalsSection variant="waiting" onCountChange={setCallApprovalCount} onOpenCalls={() => setActiveTab('calls')} />
          ) : null}
@@ -1504,11 +1512,12 @@ function AdminPanel() {
                               key={request.id}
                               type="button"
                               onClick={() => setSelectedRequestId(request.id)}
-                              className={`block w-full border-b border-[#2a1453] p-6 text-left last:border-b-0 ${selectedRequest?.id === request.id ? 'bg-[#241044]' : 'bg-[#1c0a3a]'}`}
+                              className={`block w-full border-b border-[#2a1453] p-6 text-left last:border-b-0 ${selectedRequest?.id === request.id ? 'bg-[#241044]' : 'bg-[#1c0a3a]'} ${request.market === 'ID' ? 'border-l-4 border-l-[#ce1126]' : ''}`}
                            >
                               <div className="flex items-center justify-between gap-4">
-                                 <h3 className="text-3xl font-black underline underline-offset-4">
-                                    {request.borrower?.username ?? 'Unknown borrower'}
+                                 <h3 className="flex flex-wrap items-center gap-3 text-3xl font-black">
+                                    <span className="underline underline-offset-4">{request.borrower?.username ?? 'Unknown borrower'}</span>
+                                    {request.market === 'ID' ? <IndonesiaBadge /> : null}
                                  </h3>
                                  <strong className="text-3xl">{formatMoney(request.loan_amount)}</strong>
                               </div>
@@ -1533,6 +1542,14 @@ function AdminPanel() {
                                  <strong className="mt-2 block text-3xl underline">
                                     {selectedRequest.borrower?.username ?? 'Unknown borrower'}
                                  </strong>
+                                 {selectedRequest.market === 'ID' ? (
+                                    <div className="mt-3">
+                                       <IndonesiaContactCard key={selectedRequest.borrower_user_id ?? ''} userId={selectedRequest.borrower_user_id} />
+                                       <div className="mt-3">
+                                          <WaltPayoutCard key={selectedRequest.id} loanId={selectedRequest.id} />
+                                       </div>
+                                    </div>
+                                 ) : null}
                               </div>
                               <div className="rounded-2xl border border-[#2a1453] bg-[#241044] p-5">
                                  <p className="text-sm font-black uppercase text-[#a89bb8]">Terms</p>
@@ -1632,6 +1649,8 @@ function AdminPanel() {
                <GrowthAnalyticsSection />
             </section>
          ) : null}
+
+         {activeTab === 'progress' ? <ProgressSection /> : null}
 
          {activeTab === 'test-lab' ? (
             <section className="space-y-6">
@@ -1758,6 +1777,8 @@ function AdminPanel() {
          {activeTab === 'grab-vouchers' ? <GrabVouchersSection /> : null}
 
          {activeTab === 'income-docs' ? <IncomeDocsSection /> : null}
+
+         {activeTab === 'proof-requests' ? <ProofRequestsSection /> : null}
 
          {activeTab === 'credit-line' ? (
             <section className="space-y-6">

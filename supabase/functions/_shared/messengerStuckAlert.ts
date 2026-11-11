@@ -2,9 +2,11 @@ import { type CardStamp, openInAdminButton, stampDecisionCards } from './adminCa
 import { postDiscord } from './discord.ts';
 import type { TelegramInlineKeyboard } from './telegram.ts';
 import { testAccountRow } from './testAccount.ts';
+import { isPlaceholderEmail } from './placeholderEmail.ts';
 
 // When a borrower's Facebook (Messenger) confirmation stalls:
-//   * the messenger-stuck-alerts cron emails the borrower a fresh way through (link + code) and posts
+//   * the messenger-stuck-alerts cron emails the borrower a fresh way through (link + code) — or, with
+//     no real email (Telegram sign-ups), sends it from our Telegram bot — and posts
 //     a card to the KYC Telegram group (with a "Mark Facebook verified" button) and Discord #kyc;
 //   * sendpulse-events posts an "Is this them?" card when a Facebook chat arrives without a code but
 //     with a name close to a borrower who just tapped Verify.
@@ -35,11 +37,17 @@ export type StuckBorrower = {
    account_status?: string | null;
    messenger_verified_at: string | null;
    messenger_stuck_alerted_at: string | null;
+   /** Telegram chat with our bot (Telegram sign-ups) — where we nudge them when there's no real email. */
+   chat_id?: number | string | null;
+   market?: string | null;
+   preferred_locale?: string | null;
 };
 
 export type StuckCode = { code: string; user_id: string; created_at: string; suggested_contact_name?: string | null };
 
-export type EmailOutcome = 'sent' | 'failed' | 'no_email';
+// How we reached the borrower: email when they have a real address; otherwise (Telegram sign-ups get a
+// placeholder like telegram_<id>@moodeng.app) a message from our Telegram bot.
+export type EmailOutcome = 'sent' | 'failed' | 'no_email' | 'telegram_sent' | 'telegram_failed';
 
 // Lenders are skipped like in sendpulse-messenger-verify (explicit 'lender' only — some real
 // borrowers still have a NULL role). Banned/blocked accounts can't borrow, so no point chasing them.
@@ -50,14 +58,17 @@ export const shouldAlertStuck = (borrower: StuckBorrower, now = Date.now()) => {
    return Number.isNaN(last) || now - last >= REALERT_AFTER_MS;
 };
 
-export const isEmailable = (email: string | null | undefined): email is string => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email?.trim() ?? '');
+export const isEmailable = (email: string | null | undefined): email is string =>
+   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email?.trim() ?? '') && !isPlaceholderEmail(email);
 
 const borrowerName = (b: Pick<StuckBorrower, 'username' | 'display_name'>) => b.display_name?.trim() || b.username || 'A borrower';
 
 const EMAIL_LINE: Record<EmailOutcome, string> = {
    sent: '📧 We emailed them a link and the code (both work for 24 h).',
    failed: "📧 Emailing them failed — they haven't heard from us.",
-   no_email: "📧 No email on file — they haven't heard from us."
+   no_email: "📧 No real email and no Telegram chat — they haven't heard from us.",
+   telegram_sent: '💬 No real email, so our Telegram bot sent them the code and a link (code works for 24 h).',
+   telegram_failed: "💬 No real email, and our Telegram message to them failed — they haven't heard from us."
 };
 
 export const buildMessengerStuckAlert = (borrower: StuckBorrower, code: StuckCode, now = Date.now(), email: EmailOutcome = 'no_email') => {
@@ -94,6 +105,29 @@ export const buildMatchSuggestionCard = (
       .filter(Boolean)
       .join('\n');
 };
+
+// The Telegram nudge for borrowers without a real email: same two steps as the email. Indonesia-track
+// borrowers get Bahasa unless they picked English. A reply to the bot reaches support (telegram-webhook).
+export const buildStuckTelegram = (code: string, locale: 'id' | 'en') =>
+   locale === 'id'
+      ? [
+           '👋 Facebook kamu belum terhubung ke Moodeng. Dua langkah cepat:',
+           '',
+           '1. Buka Messenger atau Facebook, cari Moodeng Credit dan buka chat kami (tombol di bawah).',
+           `2. Kirim kode ini: ${code}`,
+           'Kami konfirmasi otomatis. Kalau muncul "Mulai" / "Get Started", tekan dulu.',
+           '',
+           'Kode berlaku 24 jam. Bingung? Balas pesan ini.'
+        ].join('\n')
+      : [
+           "👋 Your Facebook isn't connected to Moodeng yet. Two quick steps:",
+           '',
+           '1. Open Messenger or Facebook, search for Moodeng Credit and open our chat (button below).',
+           `2. Send us this code: ${code}`,
+           'We confirm you automatically. If the chat shows "Get Started", tap it first.',
+           '',
+           'The code works for 24 hours. Stuck? Reply to this message.'
+        ].join('\n');
 
 const escapeHtml = (s: string) =>
    s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);

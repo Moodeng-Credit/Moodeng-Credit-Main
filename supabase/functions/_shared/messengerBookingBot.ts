@@ -156,6 +156,8 @@ export const alertTexts = (events: Bot.BotEvent[], state: Bot.BotState, who: { n
    return out;
 };
 
+const REJECTED_TEXT = "Sorry, we can't offer you a loan right now, so there's no call to book. We wish you all the best 🦛";
+
 /** True when the booking bot answered this message (so it isn't also a support ticket). Never throws. */
 export const handleBookingMessage = async (svc: Svc, userId: string, contactId: string, text: string): Promise<boolean> => {
    try {
@@ -165,7 +167,7 @@ export const handleBookingMessage = async (svc: Svc, userId: string, contactId: 
       const { data: user } = await svc
          .from('users')
          .select(
-            'id, email, username, is_test, display_name, facebook_name, whatsapp_number, timezone, video_call_timezone, preferred_locale, income_type, monthly_income, payday_type, payday_start, payday_end, video_call_starts_at, video_call_host, video_call_booking_uid'
+            'id, email, username, is_test, display_name, facebook_name, whatsapp_number, timezone, video_call_timezone, preferred_locale, income_type, monthly_income, payday_type, payday_start, payday_end, video_call_starts_at, video_call_host, video_call_booking_uid, loan_access_status'
          )
          .eq('id', userId)
          .maybeSingle();
@@ -174,6 +176,14 @@ export const handleBookingMessage = async (svc: Svc, userId: string, contactId: 
       if (error) {
          console.error('messenger-booking-bot: state lookup failed', error.message);
          return false;
+      }
+      // Rejected is final: no booking chat. Anything that isn't BOOK (or a chat they had open) goes
+      // on to the support inbox as usual.
+      if (user.loan_access_status === 'rejected') {
+         if (!row && !START.test(text)) return false;
+         if (row) await svc.from('messenger_booking_chats').delete().eq('contact_id', contactId);
+         await say(contactId, [{ text: REJECTED_TEXT }], (row?.state as Bot.BotState | undefined)?.lang ?? Bot.newState(Bot.profileFromUser(user)).lang, cfg.quick);
+         return true;
       }
       const zone = Bot.profileFromUser(user).zone;
       const bioDone = !!(user.income_type && user.monthly_income && user.payday_type);

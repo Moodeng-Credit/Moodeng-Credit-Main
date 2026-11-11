@@ -183,6 +183,19 @@ You can always send USDC to any wallet or exchange you already use — just make
 The key detail: always select Base as the network when depositing to an exchange. Using the wrong network can result in lost funds.`
    },
    {
+      slug: 'cash-out-with-your-bank-qr',
+      title: 'Cash out to your bank with a QR',
+      lastUpdated: 'Nov 11, 2026',
+      body: `Turn your USDC into pesos, straight to your own Philippine bank, using the InstaPay / QR Ph Receive QR from your bank app.
+
+1. Open your bank app and save your Receive QR (Receive → QR Ph → Save QR).
+2. On Moodeng, go to Withdraw → Your bank's QR and upload it.
+3. Type the pesos (₱50 to ₱5,000) and tap Get my price.
+4. Check the price and each fee, then tap Confirm.
+
+Moodeng takes ₱0. Stableyard and their payout partner charge about 2–3% in total.`
+   },
+   {
       slug: 'using-usdc-on-moodeng-credit',
       title: 'Using USDC on Moodeng Credit',
       lastUpdated: 'Jun 9, 2026',

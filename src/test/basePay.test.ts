@@ -141,3 +141,30 @@ describe('classifyBasePayThrow', () => {
       expect(classifyBasePayThrow(new Error('some opaque SDK error')).kind).toBe('unknown');
    });
 });
+
+describe('payment status endpoint', () => {
+   it("checks status through Coinbase's current endpoint, not the SDK's revoked default", async () => {
+      mockGetStatus.mockResolvedValue({ status: 'completed', id: '0xop', sender: '0xs', amount: '1', recipient: '0xr' } as never);
+
+      await waitForBasePayment('0xop', FAST);
+
+      expect(mockGetStatus).toHaveBeenCalledWith(
+         expect.objectContaining({
+            id: '0xop',
+            testnet: false,
+            bundlerUrl: 'https://chain-proxy.wallet.coinbase.com?targetName=base'
+         })
+      );
+   });
+});
+
+describe('payment status fallback', () => {
+   it('falls back to Alchemy when Coinbase has no answer', async () => {
+      mockGetStatus
+         .mockResolvedValueOnce({ status: 'not_found', id: '0xop', message: 'not found' } as never)
+         .mockResolvedValueOnce({ status: 'completed', id: '0xop', sender: '0xs', amount: '1', recipient: '0xr' } as never);
+
+      await expect(waitForBasePayment('0xop', FAST)).resolves.toMatchObject({ sender: '0xs' });
+      expect(mockGetStatus.mock.calls[1][0]).toMatchObject({ bundlerUrl: expect.stringMatching(/alchemy\.com/) });
+   });
+});

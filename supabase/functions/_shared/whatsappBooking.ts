@@ -6,6 +6,7 @@
 // app's booking page (callBooking.ts) and confirm it here. Indonesia only, like whatsappFirst.ts.
 import { botStage, type BotUserRow } from './botNextStep.ts';
 import { bookCall, listCallSlots } from './callBooking.ts';
+import { ID_WHATSAPP_USE_TELEGRAM_TEXT, isIdTrackUser } from './idTrack.ts';
 import { isKycVerified, needsPreKycGate } from './preKycGate.ts';
 import { sendWhatsAppText } from './sendpulse.ts';
 import { ENGLISH_REQUEST_NOTE, whatsappFirstApplies, whatsappFirstLocale, type WhatsAppFirstLocale } from './whatsappFirst.ts';
@@ -103,6 +104,8 @@ export const formatCallTime = (iso: string, locale: WhatsAppFirstLocale) => {
 };
 
 const TEXT = {
+   // Indonesia track (market 'ID'): no bot conversation on WhatsApp, everything is on Telegram.
+   idTrack: { id: ID_WHATSAPP_USE_TELEGRAM_TEXT, en: ID_WHATSAPP_USE_TELEGRAM_TEXT },
    notIndonesia: {
       id: 'Pemesanan lewat WhatsApp belum tersedia untuk akunmu. Pilih waktu di aplikasi Moodeng:\n' + APP_URL,
       en: 'Booking on WhatsApp isn’t available for your account yet. Pick a time in the Moodeng app:\n' + APP_URL
@@ -130,6 +133,10 @@ const TEXT = {
    other: {
       id: 'Pilih waktu yang cocok di kalender kami:\n' + APP_URL,
       en: 'Pick a time that suits you on our calendar:\n' + APP_URL
+   },
+   rejected: {
+      id: 'Maaf, saat ini kami belum bisa menawarkan pinjaman untukmu, jadi tidak ada video call yang perlu dipesan. Semoga sukses selalu 🦛',
+      en: 'Sorry, we can’t offer you a loan right now, so there’s no call to book. We wish you all the best 🦛'
    },
    cooldown: {
       id: 'Kamu belum bisa memesan video call baru saat ini karena panggilan sebelumnya terlewat. Coba lagi nanti, atau balas pesan ini untuk bantuan.',
@@ -177,8 +184,10 @@ const whoCanBook = async (svc: Svc, contactId: string) => {
    const user = data as BookingUser | null;
    if (!user) return { user: null, locale: 'id' as WhatsAppFirstLocale, reason: 'notLinked' as const };
    const locale = whatsappFirstLocale(user.whatsapp_number, user.preferred_locale);
+   if (await isIdTrackUser(svc, user.id)) return { user, locale, reason: 'idTrack' as const };
    if (!whatsappFirstApplies(user.whatsapp_number, user.is_test)) return { user, locale, reason: 'notIndonesia' as const };
    if (isKycVerified(user) || user.user_role === 'lender') return { user, locale, reason: 'noCallNeeded' as const };
+   if (user.loan_access_status === 'rejected') return { user, locale, reason: 'rejected' as const };
    const gated = await needsPreKycGate(svc, user.id);
    const stage = botStage(user, gated, 0);
    if (stage === 'wallet') return { user, locale, reason: 'walletFirst' as const };

@@ -21,8 +21,36 @@ const firstName = (name: string | null | undefined) => name?.trim().split(/\s+/)
 const browserFor = (os: RemindersStuckOs) => (os === 'ios' ? 'Safari' : 'Chrome');
 
 /** The borrower's Messenger note: what happened and how to fix it in Chrome/Safari. Taglish, like the Page's replies. */
-export const buildRemindersStuckMessage = (reason: RemindersStuckReason, os: RemindersStuckOs, name?: string | null) => {
+// How this borrower can sign in outside Facebook's browser. A guest account (email-first sign-up in
+// Facebook's browser, no code yet) has NO way in from Chrome/Safari: its email isn't confirmed, so
+// "sign in with your email" there makes a brand-new empty account or nothing at all. A borrower on
+// 2026-11-05 got exactly that advice, left Facebook for WhatsApp, and wrote "I can't start".
+export type RemindersSignIn = 'email' | 'phone' | 'none';
+
+const STAY_IN_FACEBOOK_LINK = 'https://moodeng.app/continue?via=bot';
+
+export const buildRemindersStuckMessage = (
+   reason: RemindersStuckReason,
+   os: RemindersStuckOs,
+   name?: string | null,
+   signIn: RemindersSignIn = 'email'
+) => {
    const hi = firstName(name) ? `Hi ${firstName(name)}!` : 'Hi!';
+   if (reason === 'in_app' && signIn === 'none') {
+      // Guest: keep them where their account lives. On Android the link opens in Facebook's browser
+      // (same sign-in, seen 2026-11-05); on iPhone Messenger's browser is separate, so no link there.
+      return [
+         `${hi} Binuksan mo ang Moodeng sa loob ng Facebook, kaya hindi gumagana doon ang phone reminders. Okay lang po 'yan!`,
+         '',
+         'Dito na lang namin ipapadala ang reminders mo sa Messenger (video call at due date), kaya huwag i-mute ang chat na ito. 🙏',
+         '',
+         os === 'android'
+            ? `Ituloy lang sa Facebook app — huwag lumipat sa Chrome. 👉 Tap here to continue: ${STAY_IN_FACEBOOK_LINK}`
+            : 'Bumalik lang sa Moodeng sa Facebook app at ituloy doon — huwag lumipat sa Safari.',
+         '',
+         'Mag-message lang kung may tanong. 🦛'
+      ].join('\n');
+   }
    if (reason === 'failed') {
       // Notifications were allowed and they were already in Chrome/Safari: the phone itself can't
       // take them (often no Google services). Retry steps would only send them back to a dead end.
@@ -46,7 +74,7 @@ export const buildRemindersStuckMessage = (reason: RemindersStuckReason, os: Rem
            ]
          : [
               `1. Buksan ang moodeng.app sa ${browser} app${reason === 'in_app' ? ' (hindi sa loob ng Facebook)' : ''}`,
-              '2. Mag-sign in gamit ang email mo',
+              signIn === 'phone' ? '2. Mag-sign in gamit ang mobile number mo' : '2. Mag-sign in gamit ang email mo',
               '3. I-tap ang "Turn on reminders" at Allow'
            ];
    const why =

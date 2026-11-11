@@ -28,6 +28,7 @@ import {
 import { cancelCalBooking } from './calcomCancel.ts';
 import { changeTimeButton } from './callReschedule.ts';
 import { testAccountRow } from './testAccount.ts';
+import { loadIdStatus, sendIdTelegram } from './idTrack.ts';
 import { CAL_BASE, CALL_MINUTES, fetchAccountEmail, fetchSlots, resolveEventTypeId } from './calcomSlots.ts';
 import { fetchGeorgeBusy } from './googleBusy.ts';
 import { needsPreKycGate } from './preKycGate.ts';
@@ -181,6 +182,13 @@ const eitherHostOn = async (svc: Svc): Promise<boolean> => {
 
 // Each host's event type, the pinned host, and the no-show cooldown: a reply to send back, or the hosts.
 const prepare = async (svc: Svc, user: CallUser, pin?: string | null): Promise<CallBookingReply | { resolved: Resolved }> => {
+   // Rejected is final (George, 2026-11-11): no times, no booking, on any channel — the app, the
+   // Messenger bot and WhatsApp all come through here. An admin's /reopen lets them back in.
+   const { data: access } = await svc.from('users').select('loan_access_status').eq('id', user.id).maybeSingle();
+   if ((access as { loan_access_status?: string | null } | null)?.loan_access_status === 'rejected') {
+      return reply({ ok: false, error: 'rejected', slots: [] });
+   }
+
    // Resolve each host's event type id once per request.
    const resolved: Array<{ id: string; apiKey: string; eventTypeId: number }> = [];
    for (const host of HOSTS) {
@@ -260,6 +268,11 @@ export const listCallSlots = async (svc: Svc, user: CallUser, timeZone: string, 
 
 /** Books `startRaw` for this borrower and saves it on their account (see the comments inside). */
 export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null | undefined, timeZone: string, pin?: string | null): Promise<CallBookingReply> => {
+   // Indonesia track: the call is the last step — everything before it must be done first.
+   const idStatus = await loadIdStatus(svc, user.id);
+   if (idStatus?.market === 'ID' && idStatus.readyForCall !== true) {
+      return reply({ ok: false, error: 'ID_ONBOARDING_INCOMPLETE', next: idStatus.next ?? null }, 409);
+   }
    const prepared = await prepare(svc, user, pin);
    if ('status' in prepared) return prepared;
    const { resolved } = prepared;
@@ -361,6 +374,10 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
                'messenger_psid, video_call_host, video_call_starts_at, video_call_timezone, video_call_join_url, video_call_confirm_token, video_call_confirmed_at, video_call_booking_uid'
             )
             .maybeSingle();
+         // Indonesia track: the confirmation on Telegram, in WIB, with the join link.
+         if (idStatus?.market === 'ID') {
+            await sendIdTelegram(svc, user.id, 'call_booked', { callAt: start, joinUrl: booked?.video_call_join_url ?? result.joinUrl ?? null });
+         }
          // Messenger confirmation with the "✅ I'll be there" button — best-effort, never blocks.
          let messengerSent = false;
          if (booked) {

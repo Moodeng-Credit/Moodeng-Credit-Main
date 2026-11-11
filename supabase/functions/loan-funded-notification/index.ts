@@ -108,7 +108,7 @@ serve(async (req) => {
 
    const { data: loan, error: loanError } = await supabase
       .from('loans')
-      .select('id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, funded_at, lender_user_id, loan_status')
+      .select('id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, funded_at, lender_user_id, loan_status, funding_method, repay_idr, repaid_idr')
       .eq('id', loanId)
       .maybeSingle();
 
@@ -135,7 +135,7 @@ serve(async (req) => {
 
    const { data: borrower, error: borrowerError } = await supabase
       .from('users')
-      .select('id, username, telegram_username, email, cs, is_world_id, is_didit, chat_id, notif_transaction_activity, notif_push, messenger_psid, whatsapp_contact_id, notif_whatsapp')
+      .select('id, username, telegram_username, email, cs, is_world_id, is_didit, chat_id, notif_transaction_activity, notif_push, messenger_psid, whatsapp_contact_id, notif_whatsapp, market, preferred_locale')
       .eq('id', loan.borrower_user_id)
       .maybeSingle();
 

@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { checkCronAuth } from '../_shared/cronAuth.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { analyseIncomeDocument, notifyIncomeDecision } from '../_shared/incomeDocs.ts';
+import { pingProofRequest, sendProofRequest } from '../_shared/proofRequests.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
 // KYC cross-check. Pulls every Didit KYC session (declined attempts too), stores the identity Didit
@@ -286,6 +287,8 @@ serve(async (req) => {
       dry?: boolean;
       income_doc?: string;
       income_decision?: string;
+      proof_request?: string;
+      proof_request_send?: string;
    };
 
    // Proof of income rides on this function (edge function cap): submit_income_document() sends
@@ -294,6 +297,14 @@ serve(async (req) => {
       if (!UUID_RE.test(body.income_decision)) return jsonResponse({ error: 'bad income_decision id' }, 400);
       const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
       return jsonResponse(await notifyIncomeDecision(svc, body.income_decision));
+   }
+   // Proof requests ride here too: {"proof_request": id} = tell the team it came in,
+   // {"proof_request_send": id} = send the link to the applicant. See _shared/proofRequests.ts.
+   if (body.proof_request || body.proof_request_send) {
+      const id = body.proof_request ?? body.proof_request_send ?? '';
+      if (!UUID_RE.test(id)) return jsonResponse({ error: 'bad proof request id' }, 400);
+      const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+      return jsonResponse(body.proof_request ? await pingProofRequest(svc, id) : await sendProofRequest(svc, id));
    }
    if (body.income_doc) {
       if (!UUID_RE.test(body.income_doc)) return jsonResponse({ error: 'bad income_doc id' }, 400);

@@ -1,12 +1,13 @@
 import { adminUserUrl, openInAdminButton, personName, sendAdminCard, stampDecisionCards } from './adminCards.ts';
 import { postDiscord } from './discord.ts';
-import { classifyKycOutcome, diditConsoleButton, kycTriesKeyboard, kycVerdictStamp } from './kycCards.ts';
+import { classifyKycOutcome, diditConsoleButton, kycReviewKeyboard, kycTriesKeyboard, kycVerdictStamp } from './kycCards.ts';
 import { sendEmail } from './email.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import { buildVerificationDecisionPushPayload, type PushLocale } from './pushMessages.ts';
 import { kycTriesLeft } from './preKycGate.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
 import { sendTelegramMessage } from './telegram.ts';
+import { type IdEvent, isIdTrackUser, loadIdStatus, sendIdTelegram } from './idTrack.ts';
 
 // Didit outcome notifications, shared by didit-webhook (push) and check-didit-status
 // (pull sync). Both paths can discover the same status change — a webhook can arrive
@@ -126,8 +127,9 @@ export const notifyAdmins = async (
             ? sendAdminCard(adminSupabase, chatId, {
                  kind,
                  refId: userId,
-                 text,
-                 keyboard: kind === 'kyc_tries' ? kycTriesKeyboard(userId, p?.username, sessionId) : [links]
+                 text: kind === 'kyc_review' ? `${text}\n\nLook at the ID in Didit, then tap ✅ Approve or ❌ Decline.` : text,
+                 keyboard:
+                    kind === 'kyc_tries' ? kycTriesKeyboard(userId, p?.username, sessionId) : kycReviewKeyboard(userId, p?.username, sessionId)
               })
             : sendTelegramMessage(chatId, text, { inlineKeyboard: [links] })
          ).catch((err: unknown) => console.error('[diditNotifications] Telegram admin alert failed:', err instanceof Error ? err.message : err));
@@ -222,6 +224,19 @@ const LENDER_APPROVED_COPY = {
    cta: 'Open Moodeng'
 };
 
+// Indonesia track: the KYC result in Bahasa on Telegram (their one channel), with what's next.
+const ID_KYC_EVENT: Record<UserNotifyOutcome, IdEvent> = {
+   approved: 'kyc_approved',
+   review: 'kyc_review',
+   declined: 'kyc_declined',
+   abandoned: 'kyc_abandoned'
+};
+const notifyIdKycOutcome = async (adminSupabase: AdminSupabase, userId: string, outcome: UserNotifyOutcome, reason?: string) => {
+   const status = await loadIdStatus(adminSupabase, userId);
+   const triesLeft = outcome === 'declined' ? await kycTriesLeft(adminSupabase, userId).catch(() => null) : null;
+   await sendIdTelegram(adminSupabase, userId, ID_KYC_EVENT[outcome], { next: status?.next ?? null, reason: reason ?? null, triesLeft });
+};
+
 export const notifyUser = async (
    adminSupabase: AdminSupabase,
    userId: string,
@@ -242,7 +257,11 @@ export const notifyUser = async (
          notif_push?: boolean | null;
          user_role?: string | null;
       } | null;
-      if (!user || user.notif_account_activity === false) return;
+      if (!user) return;
+      // Indonesia track: always told on Telegram (in Bahasa, instead of the English Telegram copy below).
+      const idTrack = await isIdTrackUser(adminSupabase, userId);
+      if (idTrack) await notifyIdKycOutcome(adminSupabase, userId, outcome, reason);
+      if (user.notif_account_activity === false) return;
 
       const copy =
          outcome === 'approved' && user.user_role === 'lender'
@@ -260,7 +279,7 @@ export const notifyUser = async (
             console.error('[diditNotifications] User email notification failed:', err instanceof Error ? err.message : err);
          });
       }
-      if (user.chat_id) {
+      if (user.chat_id && !idTrack) {
          await sendTelegramMessage(user.chat_id, `${copy.subject}\n\n${copy.body(reason)}`, {
             inlineKeyboard: [[{ text: copy.cta, url: verifyUrl }]]
          }).catch((err: unknown) => {

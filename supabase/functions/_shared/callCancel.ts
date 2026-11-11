@@ -93,7 +93,13 @@ const edit = async (chatId: number | string, messageId: number, view: View | str
 
 // Cancel on Cal.com and close the call request — no message to the borrower. Returns null when done,
 // or why it didn't happen.
-export const cancelCallQuietly = async (svc: SupabaseClient, u: CallRow & { video_call_booking_uid: string }, by: string): Promise<string | null> => {
+// `stamp: false` leaves the person's admin cards alone (a Reject writes its own stamp on them).
+export const cancelCallQuietly = async (
+   svc: SupabaseClient,
+   u: CallRow & { video_call_booking_uid: string },
+   by: string,
+   opts: { stamp?: boolean } = {}
+): Promise<string | null> => {
    const snapshot = Object.fromEntries(BOOKING_FIELDS.map((f) => [f, u[f] ?? null]));
    const cleared = Object.fromEntries(BOOKING_FIELDS.map((f) => [f, null]));
    const { data: claimed } = await svc
@@ -120,15 +126,17 @@ export const cancelCallQuietly = async (svc: SupabaseClient, u: CallRow & { vide
    if (closed?.length) {
       await svc.from('users').update({ loan_access_status: 'none' }).eq('id', u.id).eq('loan_access_status', 'pending');
    }
-   await stampDecisionCards(svc, 'loan_access', u.id, `🗑️ CALL CANCELLED — ${personName(u)}'s call was cancelled by the team`, { by });
+   if (opts.stamp !== false) {
+      await stampDecisionCards(svc, 'loan_access', u.id, `🗑️ CALL CANCELLED — ${personName(u)}'s call was cancelled by the team`, { by });
+   }
    return null;
 };
 
 /** The borrower's own upcoming call, cancelled quietly (the Messenger booking bot's "cancel"). Null when done. */
-export const cancelUpcomingCall = async (svc: SupabaseClient, userId: string, by: string): Promise<string | null> => {
+export const cancelUpcomingCall = async (svc: SupabaseClient, userId: string, by: string, opts: { stamp?: boolean } = {}): Promise<string | null> => {
    const u = await loadCall(svc, userId);
    if (!hasUpcomingCall(u)) return 'No upcoming call.';
-   return cancelCallQuietly(svc, u, by);
+   return cancelCallQuietly(svc, u, by, opts);
 };
 
 // Post the confirm prompt (from a card's button) — the card itself stays as it was.

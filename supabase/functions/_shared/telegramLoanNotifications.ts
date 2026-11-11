@@ -7,6 +7,8 @@ export type TelegramLoanRequest = {
    created_at?: string | null;
    reason?: string | null;
    borrower_user_id?: string | null;
+   /** 'ID' = Indonesia track: the post is marked 🇮🇩. */
+   market?: string | null;
 };
 
 export type TelegramLoanHistory = {
@@ -179,7 +181,7 @@ export const buildTelegramLoanRequestMessage = (
 ) => {
    const stats = calculateStats(loan.id, history, borrower);
    const durationDays = calculateDurationDays(loan);
-   const lines = ['🚀 New Loan Request', '', `💰 Amount: ${formatAmount(loan.loan_amount)} ${loan.coin ?? 'USDC'}`];
+   const lines = [loan.market === 'ID' ? '🇮🇩 New Loan Request · Indonesia' : '🚀 New Loan Request', '', `💰 Amount: ${formatAmount(loan.loan_amount)} ${loan.coin ?? 'USDC'}`];
 
    if (durationDays !== null) {
       lines.push(`⏳ Duration: ${durationDays} days`);

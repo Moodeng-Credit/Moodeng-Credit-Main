@@ -1,4 +1,6 @@
-import { useState, type JSX } from 'react';
+import { type JSX, useState } from 'react';
+
+import { startTelegramLogin } from '@/components/auth/telegramOAuth';
 
 /**
  * Telegram login as a plain icon tile (no embedded widget / no invisible iframe).
@@ -14,9 +16,7 @@ import { useState, type JSX } from 'react';
  * bot_id is the numeric id of @MoodenCreditstaging_bot — the same bot whose
  * token is TELEGRAM_API_TOKEN and whose BotFather /setdomain is moodeng.app.
  */
-const TELEGRAM_BOT_ID = '7975444499';
-
-const TelegramLogo = ({ size = 30 }: { size?: number }) => (
+export const TelegramLogo = ({ size = 30 }: { size?: number }) => (
    <svg width={size} height={size} viewBox="0 0 24 24" className="shrink-0" aria-hidden="true">
       <circle cx="12" cy="12" r="11" fill="#229ED9" />
       <path
@@ -39,19 +39,7 @@ export default function TelegramLoginTile(): JSX.Element {
    const handleClick = () => {
       if (isLoading) return;
       setIsLoading(true);
-      const origin = window.location.origin;
-      const returnTo = `${origin}/auth/telegram/callback`;
-      const url =
-         `https://oauth.telegram.org/auth?bot_id=${TELEGRAM_BOT_ID}` +
-         `&origin=${encodeURIComponent(origin)}` +
-         `&return_to=${encodeURIComponent(returnTo)}`;
-      // Paint the spinner first, then navigate on the next frame so the loading
-      // state actually shows before the browser leaves for Telegram (mirrors LINE).
-      requestAnimationFrame(() =>
-         requestAnimationFrame(() => {
-            window.location.href = url;
-         })
-      );
+      startTelegramLogin();
    };
 
    return (
@@ -67,6 +55,47 @@ export default function TelegramLoginTile(): JSX.Element {
          }`}
       >
          {isLoading ? <Spinner className="text-[#229ED9]" /> : <TelegramLogo />}
+      </button>
+   );
+}
+
+/**
+ * The big full-width variant for /id (Indonesia track): same OAuth flow, one gold button, plus
+ * Telegram's "let the bot message you" prompt (the track's step 1 needs it).
+ * `onBeforeLeave` runs right before the browser leaves (e.g. to mark the sign-up intent).
+ */
+export function TelegramBigButton({
+   label,
+   onBeforeLeave,
+   variant = 'gold'
+}: {
+   label: string;
+   onBeforeLeave?: () => void;
+   variant?: 'gold' | 'soft';
+}): JSX.Element {
+   const [isLoading, setIsLoading] = useState(false);
+   const handleClick = () => {
+      if (isLoading) return;
+      setIsLoading(true);
+      onBeforeLeave?.();
+      startTelegramLogin({ requestWrite: true });
+   };
+   const gold = variant === 'gold';
+   return (
+      <button
+         type="button"
+         onClick={handleClick}
+         disabled={isLoading}
+         aria-busy={isLoading}
+         className={
+            gold
+               ? 'flex min-h-[60px] w-full items-center justify-center gap-3 rounded-[18px] px-5 text-[19px] font-extrabold tracking-[-0.01em] text-[#4a2a00] shadow-[0_4px_0_#d99a00,0_10px_22px_rgba(255,190,26,0.35)] transition active:translate-y-[2px] disabled:opacity-80'
+               : 'flex min-h-[52px] w-full items-center justify-center gap-3 rounded-[16px] border-2 border-[#ecdfb8] bg-white px-4 text-[16px] font-bold text-[#6b4a00] transition active:scale-[0.99] disabled:opacity-70 dark:border-[#4a3d1c] dark:bg-[#1c1710] dark:text-[#ffd36b]'
+         }
+         style={gold ? { backgroundImage: 'linear-gradient(180deg, #ffe27a 0%, #ffbe1a 100%)' } : undefined}
+      >
+         {isLoading ? <Spinner className={gold ? 'text-[#4a2a00]' : 'text-[#229ED9]'} /> : <TelegramLogo size={gold ? 30 : 24} />}
+         <span>{label}</span>
       </button>
    );
 }

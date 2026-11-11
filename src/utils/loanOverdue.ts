@@ -3,30 +3,15 @@ import { DEFAULT_LOAN_TIMEZONE, getDueDayEnd, isUsableTimezone } from '@/lib/loa
 import { parseDateSafely } from './dateFormatters';
 
 /**
- * Grace period, in hours, after a loan's stored due date before it is treated as
- * overdue / a realized loss.
- *
- * `due_date` is stored as a single UTC instant (midnight UTC), but borrowers and
- * lenders are spread across time zones, so that instant does not line up with
- * the end of the borrower's local day. A flat 24-hour grace guarantees every
- * borrower a full day past their due date, whatever their zone, before the loan
- * counts against the lender — and matches the backend `loan-overdue-notifications`
- * job (env `OVERDUE_GRACE_HOURS`, default 24). Keep this in sync with that job.
- */
-export const LOAN_OVERDUE_GRACE_HOURS = 24;
-
-const GRACE_MS = LOAN_OVERDUE_GRACE_HOURS * 60 * 60 * 1000;
-
-/**
- * The moment a loan counts as overdue / a loss: the later of the stored due date + 24h and the end
- * of the borrower's due day in their zone (`loans.due_timezone`, else Manila). Same moment as the
- * on-time rule for points (app_private.is_loan_repaid_on_time), so Manila is unchanged and borrowers
- * west of UTC keep their whole day.
+ * The ONE deadline: a loan is due until the end of its due day on the borrower's clock
+ * (`loans.due_timezone`, else Manila) and overdue from 00:00 the next day there. Repay, reminders,
+ * on-time points, lender "default" and team posts all use this moment — no extra hours on top — so
+ * what the borrower is told is exactly what counts. Same as app_private.loan_past_due_at and the edge
+ * functions' pastDueAt.
  */
 export const getLoanPastDueAt = (dueDate: string | Date, dueTimezone?: string | null): Date => {
-   const graced = parseDateSafely(dueDate).getTime() + GRACE_MS;
    const zone = isUsableTimezone(dueTimezone) ? dueTimezone : DEFAULT_LOAN_TIMEZONE;
-   return new Date(Math.max(graced, getDueDayEnd(dueDate, zone).getTime()));
+   return getDueDayEnd(parseDateSafely(dueDate), zone);
 };
 
 /**

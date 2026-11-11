@@ -29,12 +29,13 @@ import { getMessengerContact, messengerDisplayName, sendMessengerMessage, sendWh
 import { getTelegramBotSettingEnabled } from './borrowerNotificationDelivery.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
 import { changeTimeButton } from './callReschedule.ts';
-import { cancelCallButton } from './callCancel.ts';
+import { cancelCallButton, cancelUpcomingCall } from './callCancel.ts';
 import { formatCallTimeForTeam } from './videoCall.ts';
 import { describeHeldRequests } from './loanRequestHold.ts';
 import { sendEmail } from './email.ts';
 import { loadNeedsIdCheck } from './preKycGate.ts';
 import { testAccountRow } from './testAccount.ts';
+import { idApprovalBlock, type IdEvent, isIdTrackUser, sendIdTelegram } from './idTrack.ts';
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
@@ -257,6 +258,19 @@ const BORROWER_MESSAGES = {
       body: "We're sorry to see you go — your application has been closed. If you have any questions or concerns, please let us know. Should you wish to pursue funding in the future, connect directly with Emma Moodeng on Facebook: facebook.com/emmamoodengcredit",
       url: `${SITE_URL}/request-board`
    },
+   // Rejected before any screening call (no call attended, none missed): point them to other PH
+   // lenders instead (George, 2026-11-11). Sent without a button — there's no next step with us.
+   rejected_pre_call: {
+      title: 'Thank you for your interest in Moodeng Credit',
+      body:
+         "We're sorry, we're not the right fit for you right now. These apps may be able to help:\n" +
+         '• Tala: tala.ph\n' +
+         '• Maya: maya.ph\n' +
+         '• GCash (GLoan / GCredit): gcash.com\n' +
+         '• BillEase: billease.ph\n' +
+         'We wish you all the best! 🦛',
+      url: SITE_URL
+   },
    // Emma's "Decline the loan request" script (no-show).
    no_show: {
       title: 'We missed you on the call',
@@ -381,7 +395,29 @@ export const buildApprovedWhatsAppTemplate = (firstName: string | null | undefin
    components: [{ type: 'body' as const, parameters: [{ type: 'text' as const, text: firstName?.trim() || 'there' }] }]
 });
 
-export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow, kind: BorrowerMessageKind) => {
+// Indonesia track: every kind in Bahasa on Telegram (their one channel), always — whatever
+// notif_account_activity says. The English Telegram copy below is skipped for them.
+const ID_EVENT: Record<BorrowerMessageKind, IdEvent> = {
+   approved: 'access_approved',
+   rejected: 'access_rejected',
+   rejected_pre_call: 'access_rejected',
+   no_show: 'call_no_show',
+   call_cancelled: 'call_cancelled',
+   spot_released: 'call_released',
+   missed_call: 'call_no_show',
+   missed_call_request_paused: 'call_no_show',
+   missed_call_request_waiting: 'call_no_show',
+   no_show_corrected: 'no_show_corrected',
+   expired: 'access_expired'
+};
+
+export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow, requestedKind: BorrowerMessageKind) => {
+   const idTrack = await isIdTrackUser(svc, borrower.id);
+   // The other-lenders list is Philippine apps: Indonesia-track people keep the plain closed message.
+   const kind: BorrowerMessageKind = requestedKind === 'rejected_pre_call' && idTrack ? 'rejected' : requestedKind;
+   // No button under the pre-call rejection: there's nothing for them to do on Moodeng.
+   const noButton = kind === 'rejected_pre_call';
+   if (idTrack) await sendIdTelegram(svc, borrower.id, ID_EVENT[kind]);
    const preKycMsg = PRE_KYC_MESSAGES[kind] && (await loadNeedsIdCheck(svc, borrower.id, borrower)) ? PRE_KYC_MESSAGES[kind] : undefined;
    const msg: BorrowerMessage = preKycMsg ?? BORROWER_MESSAGES[kind];
    if (preKycMsg && PRE_KYC_EMAIL.has(kind) && borrower.email) {
@@ -408,7 +444,7 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
    // Messenger too (lands only inside Meta's 24h window — e.g. they chatted around the call).
    const messenger = await sendMessengerMessage(borrower.messenger_psid, {
       text: `${msg.title}\n${msg.body}`,
-      card: { title: '👉 Next step', button: { title: ctaLabel(msg, kind), url: msg.url } }
+      ...(noButton ? {} : { card: { title: '👉 Next step', button: { title: ctaLabel(msg, kind), url: msg.url } } })
    });
    if (!messenger.ok && messenger.reason !== 'no_contact') console.log('loanAccess: messenger skipped for', borrower.id, messenger.reason);
    // Approved but Messenger couldn't tell them (outside its 24h window): the WhatsApp template.
@@ -426,9 +462,9 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
       if (!videos.ok) console.log('loanAccess: approval videos skipped for', borrower.id, videos.reason);
    }
 
-   if (borrower.chat_id && borrower.notif_account_activity !== false) {
+   if (borrower.chat_id && borrower.notif_account_activity !== false && !idTrack) {
       try {
-         await sendTelegramMessage(borrower.chat_id, `${msg.title}\n\n${msg.body}`, {
+         await sendTelegramMessage(borrower.chat_id, `${msg.title}\n\n${msg.body}`, noButton ? {} : {
             inlineKeyboard: [
                [
                   {
@@ -455,10 +491,23 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
 
 // ---- Decide (admin Approve / Reject) ----------------------------------------------------------
 
+// True when a Reject comes before any screening call: they never attended one, never missed one
+// (no no-show on record, and no booked call whose start time has passed). Those get the kind
+// "other lenders" message; everyone else (no-shows, rejected after the call) keeps the old one.
+const isBeforeAnyCall = async (svc: SupabaseClient, borrower: BorrowerRow): Promise<boolean> => {
+   if (borrower.video_call_starts_at && Date.parse(borrower.video_call_starts_at) <= Date.now()) return false;
+   const [{ data: user }, { count: noShows }] = await Promise.all([
+      svc.from('users').select('video_call_outcome').eq('id', borrower.id).maybeSingle(),
+      svc.from('loan_access_requests').select('id', { count: 'exact', head: true }).eq('user_id', borrower.id).eq('status', 'no_show')
+   ]);
+   return !user?.video_call_outcome && !noShows;
+};
+
 // `stamp` is the after-state written on the person's admin cards (adminCards.ts).
 export type DecideResult =
    | { ok: true; request: RequestRow; borrower: BorrowerRow; summary: string; stamp: CardStamp }
-   | { ok: false; summary: string; stamp?: CardStamp };
+   // retry: nothing changed and the card keeps its buttons (e.g. an Indonesian whose KYC isn't approved yet).
+   | { ok: false; summary: string; stamp?: CardStamp; retry?: boolean };
 
 // The header of a decided loan-access / call card: the decision, then what it means for the person.
 export const loanAccessStampHeader = (
@@ -504,6 +553,25 @@ export const decideLoanAccess = async (
    decidedBy: string
 ): Promise<DecideResult> => {
    const now = new Date().toISOString();
+
+   // Indonesia track: no ✅ until Didit has approved their ID. Nothing is decided; a "Showed up" still
+   // records that they attended, so the auto no-show can't mark them absent meanwhile.
+   if (decision === 'approved') {
+      const { data: target } = await svc.from('loan_access_requests').select('user_id, kind, status').eq('id', requestId).maybeSingle();
+      const blocked = target?.status === 'pending' ? await idApprovalBlock(svc, target.user_id) : null;
+      if (blocked) {
+         if (target.kind === 'call') {
+            const { data: marked } = await svc
+               .from('users')
+               .update({ video_call_outcome: 'attended', video_call_outcome_at: now })
+               .eq('id', target.user_id)
+               .is('video_call_outcome', null)
+               .select('id');
+            if (marked?.length) await sendIdTelegram(svc, target.user_id, 'attended_kyc_pending');
+         }
+         return { ok: false, retry: true, summary: `${blocked}${target.kind === 'call' ? ' Attendance is recorded; approve once KYC is approved.' : ''}` };
+      }
+   }
 
    // Conditional on still-pending, so two admins tapping at once can't double-decide.
    const { data: request, error } = await svc
@@ -552,12 +620,33 @@ export const decideLoanAccess = async (
       header: loanAccessStampHeader(decision, personName(borrower, request.display_name), { call: request.kind === 'call' }),
       detail: held || null,
       by: decidedBy,
-      ...(decision === 'no_show' ? { buttons: approveAnywayButtons(request.user_id) } : {})
+      ...(decision === 'no_show' ? { buttons: approveAnywayButtons(request.user_id) } : {}),
+      // Rejected: the card then asks for how long (for good until someone picks), and can undo it.
+      ...(decision === 'rejected'
+         ? { detail: REJECT_FOLLOW_UP_ASK, buttons: rejectFollowUpButtons(request.user_id) }
+         : {})
    };
-   // A no-show keeps its cards remembered, so ✅ Approve anyway can stamp them all again later.
-   await stampDecisionCards(svc, 'loan_access', request.user_id, stamp, { final: decision !== 'no_show' });
+   // A no-show keeps its cards remembered, so ✅ Approve anyway can stamp them all again later; a
+   // reject keeps them for its follow-up buttons (for good / for now / approve after all).
+   await stampDecisionCards(svc, 'loan_access', request.user_id, stamp, { final: decision === 'approved' });
 
-   await notifyBorrower(svc, borrower, decision);
+   const preCall = decision === 'rejected' && (await isBeforeAnyCall(svc, borrower));
+
+   // Rejected is final: a call they still have booked comes off Cal.com (its Zoom meeting and the
+   // hosts' calendar events go with it), so nobody turns up for it. Never blocks the reject itself.
+   let callNote = '';
+   if (decision === 'rejected') {
+      try {
+         const why = await cancelUpcomingCall(svc, request.user_id, `${decidedBy} (rejected)`, { stamp: false });
+         if (!why) callNote = '\n🗑️ Their booked call was cancelled.';
+         else if (why !== 'No upcoming call.') callNote = `\n⚠️ Their booked call was NOT cancelled: ${why}`;
+      } catch (err) {
+         console.error('loanAccess: cancel call on reject failed', err instanceof Error ? err.message : err);
+         callNote = '\n⚠️ Their booked call was NOT cancelled — cancel it on Cal.com.';
+      }
+   }
+
+   await notifyBorrower(svc, borrower, preCall ? 'rejected_pre_call' : decision);
 
    const verb =
       decision === 'approved'
@@ -566,10 +655,122 @@ export const decideLoanAccess = async (
             : '✅ Approved'
          : decision === 'no_show'
            ? '❌ No-show:'
-           : '🚫 Rejected';
-   const summary = `${verb} ${who(borrower, request.display_name)} — by ${decidedBy}${held ? `\n${held}` : ''}`;
+           : preCall
+             ? '🚫 Rejected before the call (sent other lenders):'
+             : '🚫 Rejected';
+   const summary = `${verb} ${who(borrower, request.display_name)} — by ${decidedBy}${held ? `\n${held}` : ''}${callNote}`;
    await postDiscord({ content: `🤝 Loan access ${summary}` }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
    return { ok: true, request, borrower, summary, stamp };
+};
+
+// ---- After a Reject: for good / for now / approve after all ------------------------------------
+//
+// A rejected borrower can't book a call or reach out again (callBooking.prepare, loan-access submit).
+// The rejected card keeps three buttons ("lr:<g|t|a>:<user id>"):
+//    🚫 For good            the default — nothing lets them back in but the team
+//    ⏳ For now (30 days)   users.loan_access_retry_at = that day; an hourly job (migration
+//                           loan_access_retry_at) then puts them back to 'none' so they can ask again
+//    ✅ Approve after all   we changed our minds: approved, and they get the "You're approved" message
+
+export const REJECT_RETRY_DAYS = 30;
+export type RejectFollowUp = 'for_good' | 'for_now' | 'approve';
+const FOLLOW_UP_CODE: Record<RejectFollowUp, string> = { for_good: 'g', for_now: 't', approve: 'a' };
+const CODE_FOLLOW_UP: Record<string, RejectFollowUp> = { g: 'for_good', t: 'for_now', a: 'approve' };
+const REJECT_FOLLOW_UP_ASK = `For good or for now? It's for good until someone picks. They can't book a call or ask again.`;
+
+export const buildRejectFollowUpCallback = (step: RejectFollowUp, userId: string) => `lr:${FOLLOW_UP_CODE[step]}:${userId}`;
+export const parseRejectFollowUpCallback = (data?: string | null): { step: RejectFollowUp; userId: string } | null => {
+   const match = (data ?? '').match(/^lr:([gta]):([0-9a-f-]{36})$/i);
+   if (!match) return null;
+   return { step: CODE_FOLLOW_UP[match[1].toLowerCase()], userId: match[2].toLowerCase() };
+};
+
+/** The rejected card's buttons; `picked` drops the choice already made. */
+export const rejectFollowUpButtons = (userId: string, picked?: 'for_good' | 'for_now'): TelegramInlineKeyboard => [
+   [
+      ...(picked === 'for_good' ? [] : [{ text: '🚫 For good', callback_data: buildRejectFollowUpCallback('for_good', userId) }]),
+      ...(picked === 'for_now' ? [] : [{ text: `⏳ For now (${REJECT_RETRY_DAYS} days)`, callback_data: buildRejectFollowUpCallback('for_now', userId) }])
+   ],
+   [{ text: '✅ Approve after all', callback_data: buildRejectFollowUpCallback('approve', userId) }]
+];
+
+// The team reads these in Bangkok time.
+const retryDayText = (iso: string) => new Date(iso).toLocaleDateString('en-US', { timeZone: 'Asia/Bangkok', weekday: 'short', month: 'short', day: 'numeric' });
+
+export const decideRejectFollowUp = async (
+   svc: SupabaseClient,
+   userId: string,
+   step: RejectFollowUp,
+   by: string,
+   now = new Date()
+): Promise<{ ok: boolean; summary: string; stamp?: CardStamp; retry?: boolean }> => {
+   const notRejected = { ok: false, summary: "They aren't rejected any more — nothing changed." };
+
+   if (step === 'approve') {
+      // Indonesia: same rule as a first approval — not before Didit has approved their ID.
+      const blocked = await idApprovalBlock(svc, userId);
+      if (blocked) return { ok: false, retry: true, summary: blocked };
+      // Conditional on still-rejected, so two taps approve (and message the borrower) only once.
+      const { data: borrower, error } = await svc
+         .from('users')
+         .update({ loan_access_status: 'approved', loan_access_approved_at: now.toISOString(), loan_access_seen_at: null, loan_access_retry_at: null })
+         .eq('id', userId)
+         .eq('loan_access_status', 'rejected')
+         .select(BORROWER_COLUMNS)
+         .maybeSingle();
+      if (error) throw new Error(error.message);
+      if (!borrower) return notRejected;
+      const stamp: CardStamp = { header: `✅ APPROVED AFTER ALL — ${personName(borrower)} can now apply for a loan`, by };
+      await stampDecisionCards(svc, 'loan_access', userId, stamp);
+      await notifyBorrower(svc, borrower, 'approved');
+      const summary = `✅ Approved after all (was rejected): ${who(borrower)} — by ${by}`;
+      await postDiscord({ content: `🤝 Loan access ${summary}` }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
+      return { ok: true, summary, stamp };
+   }
+
+   const retryAt = step === 'for_now' ? new Date(now.getTime() + REJECT_RETRY_DAYS * 86400000).toISOString() : null;
+   const { data: borrower, error } = await svc
+      .from('users')
+      .update({ loan_access_retry_at: retryAt })
+      .eq('id', userId)
+      .eq('loan_access_status', 'rejected')
+      .select(BORROWER_COLUMNS)
+      .maybeSingle();
+   if (error) throw new Error(error.message);
+   if (!borrower) return notRejected;
+   const name = personName(borrower);
+   const stamp: CardStamp = {
+      header: retryAt
+         ? `⏳ REJECTED FOR NOW — ${name} can ask again from ${retryDayText(retryAt)}`
+         : `🚫 REJECTED FOR GOOD — ${name} can't book a call or ask again`,
+      by,
+      buttons: rejectFollowUpButtons(userId, step)
+   };
+   await stampDecisionCards(svc, 'loan_access', userId, stamp, { final: false });
+   const summary = retryAt
+      ? `⏳ Rejected for now: ${who(borrower)} can ask again from ${retryDayText(retryAt)} — by ${by}`
+      : `🚫 Rejected for good: ${who(borrower)} — by ${by}`;
+   return { ok: true, summary, stamp };
+};
+
+/**
+ * /reopen: a rejected borrower goes back to 'none', so they can book a call and reach out again.
+ * Rejected is otherwise final (no booking, no new request). We don't message them — the admin does.
+ */
+export const reopenLoanAccess = async (svc: SupabaseClient, userId: string, by: string): Promise<{ ok: boolean; summary: string }> => {
+   const { data: reopened, error } = await svc
+      .from('users')
+      .update({ loan_access_status: 'none', loan_access_retry_at: null })
+      .eq('id', userId)
+      .eq('loan_access_status', 'rejected')
+      .select('id, username, email, display_name')
+      .maybeSingle();
+   if (error) throw new Error(error.message);
+   if (!reopened) return { ok: false, summary: "They aren't rejected — nothing to reopen." };
+   await stampDecisionCards(svc, 'loan_access', userId, { header: `🔓 REOPENED — ${personName(reopened)} can book a call and ask again`, by });
+   const summary = `🔓 Reopened ${who(reopened)} — they can book a call and ask again. We didn't message them. — by ${by}`;
+   await postDiscord({ content: `🤝 Loan access ${summary}` }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
+   return { ok: true, summary };
 };
 
 // ---- Telegram plumbing for the admin card -----------------------------------------------------

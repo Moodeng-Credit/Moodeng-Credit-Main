@@ -30,6 +30,26 @@ describe('reminders-stuck', () => {
       expect(blocked).not.toContain('Mag-sign in');
    });
 
+   it("never sends a guest (no confirmed email) to Chrome to sign in: they'd have no way back in", () => {
+      const android = buildRemindersStuckMessage('in_app', 'android', 'Neneria Bautista', 'none');
+      expect(android.startsWith('Hi Neneria!')).toBe(true);
+      expect(android).not.toContain('Mag-sign in');
+      expect(android).toContain('huwag lumipat sa Chrome');
+      expect(android).toContain('https://moodeng.app/continue?via=bot');
+      expect(android).toContain('Messenger');
+      const ios = buildRemindersStuckMessage('in_app', 'ios', null, 'none');
+      expect(ios).not.toContain('Mag-sign in');
+      expect(ios).not.toContain('https://');
+      expect(ios).toContain('Facebook app');
+   });
+
+   it('tells phone sign-ups to sign in with their number, not an email they never gave', () => {
+      const phone = buildRemindersStuckMessage('in_app', 'android', null, 'phone');
+      expect(phone).toContain('Mag-sign in gamit ang mobile number mo');
+      expect(phone).not.toContain('email');
+      expect(buildRemindersStuckMessage('in_app', 'android', null)).toContain('Mag-sign in gamit ang email mo');
+   });
+
    it('tells the team why, how many taps, and whether the bot reached them', () => {
       const alert = buildRemindersStuckAlert(
          { display_name: 'Mary Joy Gallano', username: 'maryjoy', email: 'joy@example.com' },

@@ -143,14 +143,20 @@ export default function IncomeDocsSection() {
    // Yours to decide: no decision yet, and not already sent back to the borrower to fix.
    // Sent back to the borrower but with fraud signs (risk red) stays on the list.
    const toReview = docs.filter((d) => !d.decision && (d.verdict !== 'resend' || d.risk === 'red'));
-   const shown = showReviewed ? docs : toReview;
+   // Sent back to fix: still listed (newest first, like everything else) so the upload can be seen
+   // and approved anyway, but not counted as "to review".
+   const resent = docs.filter((d) => !d.decision && d.verdict === 'resend' && d.risk !== 'red');
+   const shown = showReviewed ? docs : docs.filter((d) => !d.decision);
 
    return (
       <section className="space-y-4">
          <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
                <h2 className="break-words text-2xl font-black sm:text-3xl">
-                  Income docs <span className="text-base font-bold text-[#a89bb8]">({toReview.length} to review)</span>
+                  Income docs{' '}
+                  <span className="text-base font-bold text-[#a89bb8]">
+                     ({toReview.length} to review{resent.length ? ` · ${resent.length} asked to resend` : ''})
+                  </span>
                </h2>
                <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
                   Proof of income borrowers send from moodeng.app/documents. The AI reads the files; numbers, checks and the score are
@@ -164,7 +170,7 @@ export default function IncomeDocsSection() {
                   onClick={() => setShowReviewed((v) => !v)}
                   className="rounded-full bg-[#241044] px-4 py-1.5 text-sm font-black text-[#a89bb8]"
                >
-                  {showReviewed ? 'Only to review' : 'Show all (decided + resent)'}
+                  {showReviewed ? 'Hide decided' : 'Show decided too'}
                </button>
                <button
                   type="button"
@@ -202,7 +208,7 @@ export default function IncomeDocsSection() {
                               {(doc.doc_type ?? 'document').replace(/_/g, ' ')} · sent {bkk(doc.created_at)}
                               {doc.requested_amount ? ` · asking $${Number(doc.requested_amount)}` : ''}
                               {doc.tier
-                                 ? ` · $${doc.tier.min} step (${doc.tier.months ? `${doc.tier.months}+ months` : 'any recent'}${doc.tier.fresh ? ', fresh' : ''}${doc.tier.maxShare != null ? `, repay ≤${Math.round(doc.tier.maxShare * 100)}%` : ''}${doc.tier.liveCall ? ', live GCash on call' : ''}${doc.tier.autoApprove ? ', auto-approve' : ''})`
+                                 ? ` · $${doc.tier.min} step (${doc.tier.months ? `${doc.tier.months}+ months` : 'any recent'}${doc.tier.fresh ? ', fresh' : ''}${doc.tier.maxShare != null ? `, repay ≤${Math.round(doc.tier.maxShare * 100)}%` : ''}${doc.tier.liveCall ? ', live GCash on call' : ''}${doc.tier.autoApprove ? ', approves itself if every check passes' : ''})`
                                  : ''}
                               {doc.note ? ` · “${doc.note}”` : ''}
                               {doc.user?.monthly_income ? ` · bio says ${doc.user.monthly_income}/month` : ''}

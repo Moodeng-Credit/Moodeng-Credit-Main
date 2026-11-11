@@ -4,6 +4,7 @@ import { filipinoCoverageC } from '@/i18n/coverage/filC';
 import { filipinoCoverageE } from '@/i18n/coverage/filE';
 import { filipinoCoverageF } from '@/i18n/coverage/filF';
 import { filipinoCoverageG } from '@/i18n/coverage/filG';
+import { filipinoCoverageH } from '@/i18n/coverage/filH';
 import { filipinoCoverageLanding } from '@/i18n/coverage/filLanding';
 
 export const screenCoverage: Record<string, string> = {
@@ -13,5 +14,6 @@ export const screenCoverage: Record<string, string> = {
    ...filipinoCoverageE,
    ...filipinoCoverageF,
    ...filipinoCoverageG,
+   ...filipinoCoverageH,
    ...filipinoCoverageLanding
 };

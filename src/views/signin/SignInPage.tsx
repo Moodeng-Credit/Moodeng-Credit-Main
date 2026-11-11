@@ -19,6 +19,8 @@ import { isSmsLoginEnabled, showPasswordlessSignup, showPhoneFirst } from '@/lib
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { loginUser, loginWithGoogle, loginWithTelegram, type OtpChannel } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
+import IdEntryBanner from '@/views/indonesia/IdEntryBanner';
+import { clearIdTrackIntent } from '@/views/indonesia/idFlow';
 import { Icons } from '@/views/login/components/Icons';
 import '@/views/signup/styles/signup.css';
 
@@ -93,6 +95,11 @@ export default function SignInPage() {
       if (from?.pathname) rememberNextPath(`${from.pathname}${from.search ?? ''}`);
       else if (searchParams.get('next')) rememberNextPath(searchParams.get('next'));
       // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
+
+   // A /id Telegram tap that never finished must not turn this sign-in into an Indonesia sign-up.
+   useEffect(() => {
+      clearIdTrackIntent();
    }, []);
 
    useEffect(() => {
@@ -239,6 +246,8 @@ export default function SignInPage() {
                isolation: 'isolate'
             }}
          >
+            {/* From Indonesia: the Telegram sign-up at /id (other methods stay below). */}
+            <IdEntryBanner />
             <div className="flex flex-1 flex-col items-center justify-center w-full px-5 py-6 sm:py-10">
                {/* Mascot - 110x96 per design */}
                <img src="/auth-screen.png" alt="Moodeng Mascot" className="w-[88px] h-[77px] object-contain mb-5" />

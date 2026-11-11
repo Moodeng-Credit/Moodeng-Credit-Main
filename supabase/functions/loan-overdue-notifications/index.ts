@@ -11,6 +11,7 @@ import {
    LoanNotificationLoan,
    LoanNotificationRecipient
 } from '../_shared/loanNotifications.ts';
+import { sumRemainingIdr } from '../_shared/fxRates.ts';
 import { dueDayBounds, loanTimezone, localHour, QUIET_HOURS_END, resolveTimezone } from '../_shared/loanDeadline.ts';
 import { loadBorrowerTimezones, postDueTeamFeed } from '../_shared/loanDueTeamFeed.ts';
 import { loadPushSubscriptions } from '../_shared/pushDelivery.ts';
@@ -98,7 +99,7 @@ const loadBorrowers = async (supabase: SupabaseClient, userIds: string[]): Promi
 
    const { data, error } = await supabase
       .from('users')
-      .select('id, username, telegram_username, email, cs, is_world_id, is_didit, chat_id, notif_transaction_activity, notif_push, messenger_psid, whatsapp_contact_id, notif_whatsapp, viber_number, notif_viber')
+      .select('id, username, telegram_username, email, cs, is_world_id, is_didit, chat_id, notif_transaction_activity, notif_push, messenger_psid, whatsapp_contact_id, notif_whatsapp, viber_number, notif_viber, market, preferred_locale')
       .in('id', userIds);
 
    if (error || !data) {
@@ -281,7 +282,7 @@ serve(async (req) => {
    const { data: loans, error } = await supabase
       .from('loans')
       .select(
-         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, due_timezone, funded_at, lender_user_id, repayment_status'
+         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, due_timezone, funded_at, lender_user_id, repayment_status, market, repay_idr, repaid_idr'
       )
       .eq('loan_status', 'Lent')
       .in('repayment_status', ['Unpaid', 'Partial'])
@@ -303,11 +304,9 @@ serve(async (req) => {
    const overdueLoans = (loans ?? []).filter((loan) => {
       if (!loan.borrower_user_id || !loan.due_date) return false;
       // The zone saved on the loan when it was posted; older loans fall back to the borrower's.
-      // Past due at the later of due_date + 24h and the end of their due day: the same moment the app
-      // (getLoanPastDueAt) and on-time points use, so Manila isn't told "overdue" at 7 AM when the
-      // app still says it's due until 8.
-      const { end } = dueDayBounds(loan.due_date, loanTimezone(loan, zoneFor(loan.borrower_user_id)));
-      const pastDueAt = new Date(Math.max(end.getTime(), new Date(loan.due_date).getTime() + DAY_MS));
+      // Past due once their due day has ended: the same moment the app (getLoanPastDueAt) and on-time
+      // points use.
+      const { end: pastDueAt } = dueDayBounds(loan.due_date, loanTimezone(loan, zoneFor(loan.borrower_user_id)));
       deadlineByLoanId.set(loan.id, pastDueAt);
       return referenceDate.getTime() >= pastDueAt.getTime();
    });
@@ -367,7 +366,9 @@ serve(async (req) => {
             ),
             nextDueDate,
             // A check-in when every loan here already had its first overdue notice.
-            followUp: pendingLoans.every((loan) => sentStages.get(loan.id)?.has('overdue'))
+            followUp: pendingLoans.every((loan) => sentStages.get(loan.id)?.has('overdue')),
+            // Indonesia rupiah peg: rupiah left (only when every loan here is pegged).
+            totalIdr: sumRemainingIdr(pendingLoans)
          };
          const allBorrowerLoans = trustPointRewardContext.loansByBorrowerId.get(borrower.id) ?? [];
          const trustPointsReward = calculateTrustPointRewardDelta({

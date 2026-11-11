@@ -2,6 +2,25 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 import { postLoanFundedToTeam } from '../_shared/teamLoanFeed.ts'
+import { checkNow, markSent, payNow, payoutStatus, recordByTxid, releasePayout } from '../_shared/idManualFunding.ts'
+import { createPayoutWallet, payoutWalletStatus } from '../_shared/idPayoutWallet.ts'
+import { decodeUsdcTransfers, RPC_URL, rpcCall } from '../_shared/usdcTransfer.ts'
+
+// BitRepo originator vault on Base (OriginatorVault). Moodeng's lending wallet draws loans from it straight to
+// the borrower; this route checks the draw on-chain before recording it.
+const BITREPO_VAULT_ADDRESS = (Deno.env.get('BITREPO_VAULT_ADDRESS') || '0x1a59968e6B5E1c458B2Df429d2c111ed21E01443').toLowerCase()
+
+// The draw tx must have succeeded and moved exactly `amountBase` USDC from the vault to the borrower.
+async function verifyVaultDraw(txHash: string, borrowerWallet: string, amountBase: bigint): Promise<string | null> {
+  if (!/^0x[0-9a-fA-F]{64}$/.test(txHash)) return 'Invalid txHash'
+  const receipt = await rpcCall(RPC_URL, 'eth_getTransactionReceipt', [txHash]).catch(() => null)
+  if (!receipt) return 'Draw transaction not found on Base yet'
+  if (receipt.status !== '0x1') return 'Draw transaction failed on-chain'
+  const paid = decodeUsdcTransfers(receipt.logs).some(
+    (t) => t.from === BITREPO_VAULT_ADDRESS && t.to === borrowerWallet.toLowerCase() && t.value === amountBase,
+  )
+  return paid ? null : 'That transaction is not a vault draw of this amount to this borrower'
+}
 
 // Records a loan funded by a Moodeng admin (direct transfer OR smart-contract /
 // LoanManager). SECURITY: this route is the real boundary — it independently verifies
@@ -49,9 +68,32 @@ serve(async (req) => {
     if (!adminRow) return json({ error: 'Forbidden: admin account required' }, 403)
 
     const body = await req.json()
+
+    // Indonesia track: Moodeng's Openfort payout wallet on BNB Chain (_shared/idPayoutWallet.ts).
+    if (body?.action === 'payout_wallet_status') return json(await payoutWalletStatus(supabase))
+    if (body?.action === 'payout_wallet_create') return json(await createPayoutWallet(supabase))
+
+    // Indonesia track: paid by hand from Binance TH to the borrower's Walt (USDC on BNB Chain), or
+    // automatically from the payout wallet (walt_payout_auto). The app confirms it on-chain itself
+    // (_shared/idManualFunding.ts).
+    if (typeof body?.action === 'string' && body.action.startsWith('walt_payout_')) {
+      const loanId = typeof body.loanId === 'string' ? body.loanId : ''
+      if (!loanId) return json({ error: 'Missing loanId' }, 400)
+      if (body.action === 'walt_payout_auto') return json(await payNow(supabase, loanId, callerId))
+      if (body.action === 'walt_payout_status') return json(await payoutStatus(supabase, loanId))
+      if (body.action === 'walt_payout_sent') return json(await markSent(supabase, loanId, callerId))
+      if (body.action === 'walt_payout_check') return json(await checkNow(supabase, loanId))
+      // A stuck / failed automatic payout: BNB Chain is checked first; nothing there → paying by hand opens.
+      if (body.action === 'walt_payout_release') return json(await releasePayout(supabase, loanId, callerId))
+      if (body.action === 'walt_payout_txid') {
+        return json(await recordByTxid(supabase, loanId, String(body.txHash ?? '').trim(), callerId))
+      }
+      return json({ error: 'Unknown action' }, 400)
+    }
+
     const {
       loanId, // existing loans.id to update (loan request being funded)
-      fundingMethod, // 'direct' | 'smart_contract'
+      fundingMethod, // 'direct' | 'smart_contract' | 'credit_line' (BitRepo vault draw)
       txHash,
       borrowerWallet,
       principal, // USDC, major units (string|number)
@@ -61,10 +103,11 @@ serve(async (req) => {
       onchainRequestId,
       listingPrice, // salePrice (defaults to principal on the client)
       listingTxHash, // hash of listLoanNote (distinct from the mint/fund tx in hash[])
+      funderWallet, // vault draws: the operator wallet, which borrowers repay and which then pays the vault
     } = body ?? {}
 
     if (!loanId) return json({ error: 'Missing loanId' }, 400)
-    if (fundingMethod !== 'direct' && fundingMethod !== 'smart_contract') {
+    if (fundingMethod !== 'direct' && fundingMethod !== 'smart_contract' && fundingMethod !== 'credit_line') {
       return json({ error: 'Invalid fundingMethod' }, 400)
     }
 
@@ -72,11 +115,16 @@ serve(async (req) => {
     // success, so the modal's silent retry after a lost response doesn't report a failure.
     const { data: current, error: currentError } = await supabase
       .from('loans')
-      .select('loan_status, lender_user_id, funded_at, hash')
+      .select('loan_status, lender_user_id, funded_at, hash, market')
       .eq('id', loanId)
       .maybeSingle()
     if (currentError) return json({ error: 'Failed to load loan', details: currentError.message }, 500)
     if (!current) return json({ error: 'Loan not found' }, 404)
+    // Indonesia loans are paid to the borrower's Walt (payout wallet / Binance TH, the walt_payout_*
+    // actions above), never funded on Base: that would pay them twice.
+    if (current.market === 'ID') {
+      return json({ error: 'Indonesia loans are paid to Walt from admin (Pay to Walt card), not funded on Base' }, 409)
+    }
     if (current.loan_status !== 'Requested' || current.lender_user_id || current.funded_at) {
       const existingHashes: string[] = Array.isArray(current.hash) ? current.hash : []
       if (txHash && current.loan_status === 'Lent' && existingHashes.includes(txHash)) {
@@ -86,6 +134,15 @@ serve(async (req) => {
     }
 
     const isSmart = fundingMethod === 'smart_contract'
+    const isVault = fundingMethod === 'credit_line'
+    if (isVault) {
+      if (!txHash || !borrowerWallet || !funderWallet || principal == null) {
+        return json({ error: 'A vault draw needs txHash, borrowerWallet, funderWallet and principal' }, 400)
+      }
+      const amountBase = BigInt(Math.round(Number(principal) * 1e6))
+      const problem = await verifyVaultDraw(String(txHash), String(borrowerWallet), amountBase)
+      if (problem) return json({ error: problem }, 422)
+    }
 
     const updates: Record<string, unknown> = {
       funding_method: fundingMethod,
@@ -121,6 +178,13 @@ serve(async (req) => {
     } else {
       // Direct/manual funding never produces a sellable Loan Note.
       updates.is_sellable = false
+    }
+    if (isVault) {
+      // The admin who drew is the lender of record, so the borrower's Repay pays their wallet (as with a direct
+      // lend) and the BitRepo facility trigger links the loan. Admin → Credit line then pays the vault back.
+      updates.lender_user_id = callerId
+      updates.lender_wallet = String(funderWallet)
+      updates.vault_address = BITREPO_VAULT_ADDRESS
     }
 
     // Append tx hash to the loan's hash[] array.

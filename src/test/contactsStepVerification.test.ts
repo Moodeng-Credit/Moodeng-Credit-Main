@@ -20,7 +20,9 @@ type ReactActGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 const supa = vi.hoisted(() => {
    const state = {
       usersRow: { whatsapp_verified_at: null as string | null, messenger_verified_at: null as string | null, viber_verified_at: null as string | null },
-      rpcResult: { data: 'MDNG-ABC123' as unknown, error: null as unknown }
+      rpcResult: { data: 'MDNG-ABC123' as unknown, error: null as unknown },
+      // The signed-in session; is_anonymous = a no-code (guest) sign-up.
+      anonymous: false
    };
    return {
       state,
@@ -51,6 +53,7 @@ vi.mock('@/lib/supabase/client', () => ({
    getSupabaseBrowserClient: () => ({
       from: () => ({ select: () => ({ eq: () => ({ maybeSingle: supa.maybeSingle }) }) }),
       rpc: supa.rpc,
+      auth: { getSession: async () => ({ data: { session: { user: { is_anonymous: supa.state.anonymous } } } }) },
       functions: { invoke: supa.invoke },
       // ContactsStep's live subscription (Supabase Realtime): a no-op channel here.
       channel: () => ({
@@ -107,6 +110,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       window.sessionStorage.clear();
       supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: null, viber_verified_at: null };
       supa.state.rpcResult = { data: 'MDNG-ABC123', error: null };
+      supa.state.anonymous = false;
       supa.rpc.mockClear();
       supa.invoke.mockClear();
       push.state.isSupported = false;
@@ -768,6 +772,17 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
          supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
          await render();
          expect(container.textContent).not.toContain('Get reminders on WhatsApp');
+      });
+
+      it('does not offer WhatsApp (or any other app) to a no-code guest, who could not sign back in from there', async () => {
+         remindersOn();
+         supa.state.anonymous = true;
+         supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+         await render();
+         expect(container.textContent).not.toContain('Get reminders on WhatsApp');
+         expect(container.textContent).not.toContain('Telegram reminders');
+         // Messenger is their reminder line: Facebook alone lets them through.
+         expect(continueButton(container).disabled).toBe(false);
       });
 
       it('does not offer WhatsApp when push works', async () => {

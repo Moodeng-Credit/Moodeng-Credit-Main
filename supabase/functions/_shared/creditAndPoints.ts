@@ -8,6 +8,8 @@
 // If any of those change, change this too. These are pure functions — no Supabase/Deno deps — so
 // they can be unit-tested in isolation.
 
+import { DEFAULT_TIMEZONE, isUsableTimezone, pastDueAt } from './loanDeadline.ts';
+
 // --- small utils (ported) ---------------------------------------------------------------------
 
 export const toNumber = (value: number | string | null | undefined): number => {
@@ -23,13 +25,11 @@ export const parseDateSafely = (dateValue: string | Date): Date => {
    return Number.isNaN(date.getTime()) ? new Date() : date;
 };
 
-// Kept in sync with src/lib/creditLeveling.ts isRepaidOnTime / OVERDUE_AFTER_DUE_DATE_MS.
-// Due dates are stored at midnight UTC; a loan stays on time through the whole due date and only
-// becomes overdue the day AFTER it. Single source of truth for on-time across progression + volume.
-export const OVERDUE_AFTER_DUE_DATE_MS = 24 * 60 * 60 * 1000;
-
-export const isRepaidOnTime = (paidAt: string | Date, dueDate: string | Date): boolean =>
-   parseDateSafely(paidAt).getTime() < parseDateSafely(dueDate).getTime() + OVERDUE_AFTER_DUE_DATE_MS;
+// Kept in sync with src/lib/creditLeveling.ts isRepaidOnTime: on time = paid before the end of the
+// due day on the borrower's clock (the loan's saved zone, else Manila). Same as pastDueAt.
+export const isRepaidOnTime = (paidAt: string | Date, dueDate: string | Date, dueTimezone?: string | null): boolean =>
+   parseDateSafely(paidAt).getTime() <
+   pastDueAt(parseDateSafely(dueDate), isUsableTimezone(dueTimezone) ? dueTimezone : DEFAULT_TIMEZONE).getTime();
 
 // --- credit tiers (ported from src/config/creditTiers.ts) --------------------------------------
 
@@ -58,6 +58,8 @@ type CreditProgressionInput = {
    /** Principal the borrower requested on the loan just repaid (not the repayment total). */
    loanAmount: number | null | undefined;
    dueDate: string;
+   /** The loan's saved zone (`loans.due_timezone`); Manila when missing. */
+   dueTimezone?: string | null;
    paidAt: string;
 };
 
@@ -75,6 +77,7 @@ export const evaluateCreditProgression = ({
    totalRepaymentAmount,
    loanAmount,
    dueDate,
+   dueTimezone,
    paidAt
 }: CreditProgressionInput): CreditProgressionResult => {
    const normalizedLimit = getEffectiveCreditLimit(currentLimit, isVerified);
@@ -82,7 +85,7 @@ export const evaluateCreditProgression = ({
    const totalRepayment = toNumber(totalRepaymentAmount ?? 0);
    const principal = toNumber(loanAmount ?? 0);
    const isFullyRepaid = totalRepayment > 0 && repaid >= totalRepayment;
-   const isLate = !isRepaidOnTime(paidAt, dueDate);
+   const isLate = !isRepaidOnTime(paidAt, dueDate, dueTimezone);
    // Only a full-limit loan levels you up: request at least your current limit, then repay it in full.
    // A smaller request is a trust-building loan and never levels up, even when principal + interest
    // reaches the limit or several small loans add up to it. Lateness doesn't block it: most late

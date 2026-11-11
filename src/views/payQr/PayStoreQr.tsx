@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import jsQR from 'jsqr';
 import { Camera, ImageUp, Loader2 } from 'lucide-react';
 
 import useWallet, { useActivePaymentMethod } from '@/hooks/useWallet';
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
+import { readQrFromImage, useQrCamera } from '@/views/payQr/qrReader';
 
 // /testqr: field test of Stableyard External QR payments for admins and the people in
 // stableyard_qr_testers. Pay a Philippine store's QR Ph in pesos with USDC from your Moodeng wallet.
@@ -79,54 +79,10 @@ function SetupRow({ done, label }: { done: boolean; label: string }) {
    );
 }
 
-/** Live camera QR scanner (rear camera, jsQR on each frame). Calls onCode once with the QR's text. */
+/** Live camera QR scanner (rear camera). Calls onCode once with the QR's text. */
 function CameraScanner({ onCode, onClose }: { onCode: (text: string) => void; onClose: () => void }) {
    const videoRef = useRef<HTMLVideoElement>(null);
-   const [error, setError] = useState('');
-
-   useEffect(() => {
-      let stream: MediaStream | null = null;
-      let frame = 0;
-      let stopped = false;
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d', { willReadFrequently: true });
-
-      const tick = () => {
-         const video = videoRef.current;
-         if (stopped || !video || !context) return;
-         if (video.readyState >= 2 && video.videoWidth) {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0);
-            const code = jsQR(context.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
-            if (code?.data) {
-               stopped = true;
-               onCode(code.data);
-               return;
-            }
-         }
-         frame = requestAnimationFrame(tick);
-      };
-
-      navigator.mediaDevices
-         ?.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
-         .then((media) => {
-            stream = media;
-            if (stopped) return media.getTracks().forEach((track) => track.stop());
-            if (videoRef.current) {
-               videoRef.current.srcObject = media;
-               void videoRef.current.play();
-            }
-            frame = requestAnimationFrame(tick);
-         })
-         .catch(() => setError('Camera blocked. Allow the camera, or upload a photo of the QR instead.'));
-
-      return () => {
-         stopped = true;
-         cancelAnimationFrame(frame);
-         stream?.getTracks().forEach((track) => track.stop());
-      };
-   }, [onCode]);
+   const error = useQrCamera(videoRef, onCode);
 
    return (
       <div className="space-y-3">
@@ -145,28 +101,6 @@ function CameraScanner({ onCode, onClose }: { onCode: (text: string) => void; on
       </div>
    );
 }
-
-const readQrFromImage = (file: File) =>
-   new Promise<string | null>((resolve) => {
-      const url = URL.createObjectURL(file);
-      const image = new Image();
-      image.onload = () => {
-         const canvas = document.createElement('canvas');
-         const scale = Math.min(1, 1600 / Math.max(image.width, image.height));
-         canvas.width = Math.round(image.width * scale);
-         canvas.height = Math.round(image.height * scale);
-         const context = canvas.getContext('2d');
-         context?.drawImage(image, 0, 0, canvas.width, canvas.height);
-         const data = context?.getImageData(0, 0, canvas.width, canvas.height);
-         URL.revokeObjectURL(url);
-         resolve(data ? (jsQR(data.data, canvas.width, canvas.height)?.data ?? null) : null);
-      };
-      image.onerror = () => {
-         URL.revokeObjectURL(url);
-         resolve(null);
-      };
-      image.src = url;
-   });
 
 export default function PayStoreQr() {
    const { payUsdc } = useWallet();

@@ -8,6 +8,7 @@ import {
    type RefObject,
    useCallback,
    useEffect,
+   useMemo,
    useRef,
    useState
 } from 'react';
@@ -56,6 +57,18 @@ import type { LoanFlow } from '@/hooks/useLoanFlow';
 
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import type { LoanRequestFlowState } from '@/lib/loanRequestDraft';
+import { type IdLoanRules, idTermOptions } from '@/lib/idTrack';
+import {
+   approxIdr,
+   clipRepayIdr,
+   daysUntil,
+   formatIdr,
+   ID_NO_RATE_TEXT,
+   idLoanTermMessage,
+   idRepayIdrBounds,
+   idRepayIdrChoices,
+   idUsdForIdr
+} from '@/lib/loanMarket';
 import { minimumRepayment, suggestedReturnRange } from '@/lib/loanPricing';
 import { checkLoanReason, getCachedReasonVerdict, type ReasonAttempt, type ReasonCategory, type ReasonCheckLocale } from '@/lib/loanReasonCheck';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
@@ -72,7 +85,7 @@ import { fetchUser, updateBorrowerContext, updateUser } from '@/store/slices/aut
 import type { AppDispatch } from '@/store/store';
 import { type User } from '@/types/authTypes';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
-import ConnectStep, { LoanAccessPendingCard } from '@/views/dashboard/components/ConnectStep';
+import ConnectStep, { LoanAccessPendingCard, LoanAccessRejectedCard } from '@/views/dashboard/components/ConnectStep';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, PrimaryButton, stepAnimationClass, useStepDirection } from '@/views/dashboard/components/connectKit';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
 import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
@@ -131,6 +144,18 @@ interface LoanRequestModalProps {
    onAutoSubmitStarted?: () => void;
    /** A tap on the dimmed backdrop itself (not the form, its popups, toasts or other dialogs). */
    onBackdropPress?: () => void;
+   /**
+    * Indonesia track (users.market = 'ID'): the server's loan rules. When set the form shows $5/$10
+    * chips, 7/14-day terms and capped repayment chips, and skips the referral, bio, contacts, video
+    * call, income-doc and ID-check steps — they were all done in /id/onboarding.
+    */
+   idLoanRules?: IdLoanRules | null;
+   /** Indonesia rupiah peg: the fixed rupiah total they promise (string, whole rupiah). */
+   repayIdr?: string;
+   setRepayIdr?: (value: string) => void;
+   /** The server's USD/IDR (get_usd_idr_rate); null = no fresh rate, so ID requests can't be sent. */
+   usdIdrRate?: number | null;
+   isUsdIdrRateLoading?: boolean;
 }
 
 // Everything the modal owns that a resume needs: which screen the borrower is on, the referral they
@@ -1017,6 +1042,278 @@ function ReturnHint({ lo, hi }: { lo: number; hi: number }) {
    );
 }
 
+// ── Indonesia track: $5/$10, 7 or 14 days, a fixed rupiah repayment ≤ 1.5× ────────────────────
+// Replaces the free amount, repayment and date fields for market-ID borrowers (idLoanRules set).
+// Mirrors app_private.enforce_new_loan_terms (see src/lib/loanMarket.ts). Bahasa first.
+// The rupiah peg (20261107160000): they promise a fixed rupiah total (repayIdr); the USD it's worth
+// today (totalRepaymentAmount) is what the server checks and floats with the rate until repaid.
+const ID_FORM_TEXT = {
+   amountLabel: { id: 'Jumlah pinjaman', en: 'Borrow amount' },
+   amountHint: { id: 'Dikirim ke Walt kamu (dompet di Telegram).', en: 'Sent to your Walt (the wallet in Telegram).' },
+   firstLoan: {
+      id: '⭐ Pinjaman pertama maksimal ${n}. Bayar tepat waktu → berikutnya bisa lebih besar.',
+      en: '⭐ Your first loan is up to ${n}. Pay on time → the next one can be bigger.'
+   },
+   overLimit: { id: 'Di atas limit', en: 'Above limit' },
+   limit: { id: 'Limit kamu', en: 'Your limit' },
+   repayLabel: { id: 'Total yang kamu kembalikan', en: 'Total you’ll repay' },
+   pickAmountFirst: { id: 'Pilih jumlah dulu.', en: 'Pick an amount first.' },
+   orType: { id: 'Atau ketik', en: 'Or type' },
+   toLender: { id: 'untuk pemberi pinjaman kamu', en: 'goes to your moo-lender' },
+   termLabel: { id: 'Kapan kamu bayar?', en: 'When will you repay?' },
+   days: { id: 'hari', en: 'days' },
+   youPay: { id: 'Kamu bayar', en: 'You repay' },
+   today: { id: 'hari ini', en: 'today' },
+   pegNote: {
+      id: 'Jumlah Rupiah ini tetap. Nilai USDT-nya ikut kurs hari kamu bayar.',
+      en: 'This rupiah amount is fixed. Its USDT value follows the rate on the day you pay.'
+   },
+   loadingRate: { id: 'Memuat kurs Rupiah…', en: 'Loading the rupiah rate…' }
+} as const;
+
+const fmtUsd = (n: number) => (Number.isInteger(n) ? `$${n}` : `$${n.toFixed(2)}`);
+
+const noopSetString = (value: string) => {
+   void value;
+};
+
+const idChipClass = (active: boolean, disabled = false) =>
+   `inline-flex flex-col items-center justify-center rounded-md-lg border-2 transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
+      disabled
+         ? 'cursor-not-allowed border-md-neutral-600 bg-md-neutral-100 text-md-neutral-700 opacity-50'
+         : active
+           ? 'border-md-primary-900 bg-md-primary-100 text-md-primary-1200 shadow-[0_5px_12px_rgba(105,48,232,0.12)]'
+           : 'border-md-neutral-600 bg-md-neutral-100 text-md-heading'
+   }`;
+
+function IdLoanTermsFields({
+   rules,
+   lang,
+   limitAmount,
+   loanAmount,
+   setLoanAmount,
+   setTotalRepaymentAmount,
+   repayIdr,
+   setRepayIdr,
+   usdIdrRate,
+   isRateLoading,
+   selectedDate,
+   todayDate,
+   onPickDate,
+   termErrors,
+   clearError
+}: {
+   rules: IdLoanRules;
+   lang: 'id' | 'en';
+   limitAmount: number;
+   loanAmount: string;
+   setLoanAmount: (value: string) => void;
+   setTotalRepaymentAmount: (value: string) => void;
+   repayIdr: string;
+   setRepayIdr: (value: string) => void;
+   usdIdrRate: number | null;
+   isRateLoading: boolean;
+   selectedDate: string;
+   todayDate: Date;
+   onPickDate: (date: Date) => void;
+   termErrors: { amount?: string; repayment?: string; date?: string };
+   clearError: (key: 'amount' | 'repayment' | 'date') => void;
+}) {
+   const t = (key: keyof typeof ID_FORM_TEXT) => ID_FORM_TEXT[key][lang];
+   const amount = Number(loanAmount);
+   const hasAmount = Boolean(loanAmount) && rules.amounts.includes(amount);
+   const rate = usdIdrRate;
+   const bounds = hasAmount ? idRepayIdrBounds(amount, rate) : null;
+   const choices = useMemo(() => (hasAmount ? idRepayIdrChoices(amount, rate) : []), [amount, hasAmount, rate]);
+   const idr = Number(repayIdr);
+   const hasIdr = Boolean(repayIdr) && Number.isFinite(idr) && idr > 0;
+   const isChoice = hasIdr && choices.includes(idr);
+   const [customRepay, setCustomRepay] = useState(() => (hasIdr && !isChoice ? repayIdr : ''));
+
+   // The USD the server will check is the rupiah at today's rate: keep it in step (also when the
+   // rate refreshes while the form is open).
+   useEffect(() => {
+      if (!rate) return;
+      const n = Number(repayIdr);
+      setTotalRepaymentAmount(repayIdr && Number.isFinite(n) && n > 0 ? String(idUsdForIdr(n, rate)) : '');
+   }, [rate, repayIdr, setTotalRepaymentAmount]);
+
+   // An amount with no rupiah yet (e.g. a restored draft, or the rate arrived late): start them on
+   // the middle suggestion, like picking the amount does.
+   useEffect(() => {
+      if (!hasAmount || repayIdr || customRepay || !choices.length) return;
+      setRepayIdr(String(choices[Math.floor(choices.length / 2)]));
+   }, [choices, customRepay, hasAmount, repayIdr, setRepayIdr]);
+
+   const pickAmount = (next: number) => {
+      setLoanAmount(String(next));
+      clearError('amount');
+      // Keep their rupiah when it still fits; otherwise start them on the middle suggestion.
+      const nextBounds = idRepayIdrBounds(next, rate);
+      const current = Number(repayIdr);
+      if (!nextBounds || !repayIdr || !Number.isFinite(current) || current < nextBounds.min || current > nextBounds.max) {
+         const nextChoices = idRepayIdrChoices(next, rate);
+         setRepayIdr(nextChoices.length ? String(nextChoices[Math.floor(nextChoices.length / 2)]) : '');
+         setCustomRepay('');
+         clearError('repayment');
+      }
+   };
+
+   const pickRepay = (value: number) => {
+      setRepayIdr(String(value));
+      setCustomRepay('');
+      clearError('repayment');
+   };
+
+   const usdToday = hasIdr && rate ? idUsdForIdr(idr, rate) : null;
+   const extra = hasAmount && usdToday !== null ? Math.round((usdToday - amount) * 100) / 100 : 0;
+
+   return (
+      <>
+         <div className="flex flex-col gap-md-1" data-tour-target="loan-borrow-amount">
+            <div className="flex items-center justify-between gap-md-2">
+               <span className="text-md-b2 font-[590] text-md-heading">{t('amountLabel')}</span>
+               <span className="rounded-md-md bg-md-primary-100 px-md-1 py-md-0 text-md-b3 text-[#3e0a88] dark:bg-[#2a1740] dark:text-[#f8f4ff]">
+                  {t('limit')}: ${limitAmount || '0'}
+               </span>
+            </div>
+            <div className="grid grid-cols-2 gap-md-2" id="borrow-amount" role="radiogroup" aria-label={t('amountLabel')}>
+               {rules.amounts.map((option) => {
+                  const disabled = option > limitAmount;
+                  const active = hasAmount && amount === option;
+                  const approx = approxIdr(option, rate);
+                  return (
+                     <button
+                        key={option}
+                        aria-checked={active}
+                        className={`${idChipClass(active, disabled)} min-h-[76px] gap-0.5 px-md-2 py-md-2`}
+                        disabled={disabled}
+                        onClick={() => pickAmount(option)}
+                        role="radio"
+                        type="button"
+                     >
+                        <span className="text-[28px] font-semibold leading-none tracking-[-0.03em]">${option}</span>
+                        <span className="text-md-b3 font-medium opacity-80">{disabled ? t('overLimit') : approx ? `USDC · ${approx}` : 'USDC'}</span>
+                     </button>
+                  );
+               })}
+            </div>
+            {termErrors.amount ? <FieldError message={termErrors.amount} /> : null}
+            <p className="text-md-b3 font-normal text-md-neutral-1200">{t('amountHint')}</p>
+            {rules.firstLoanMax ? <p className="text-md-b3 font-medium text-md-heading">{t('firstLoan').replace('{n}', String(rules.firstLoanMax))}</p> : null}
+         </div>
+
+         <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-amount">
+            <label className="text-md-b2 font-[590] text-md-heading" htmlFor="repayment-amount">
+               {t('repayLabel')}
+            </label>
+            {!rate ? (
+               <p className="rounded-md-md bg-md-neutral-200 px-md-2 py-md-1 text-md-b3 text-md-neutral-1200" id="repayment-amount">
+                  {isRateLoading ? t('loadingRate') : ID_NO_RATE_TEXT[lang]}
+               </p>
+            ) : bounds ? (
+               <>
+                  <div className="grid grid-cols-3 gap-md-1" role="radiogroup" aria-label={t('repayLabel')}>
+                     {choices.map((choice) => {
+                        const active = idr === choice && !customRepay;
+                        return (
+                           <button
+                              key={choice}
+                              aria-checked={active}
+                              className={`${idChipClass(active)} min-h-[52px] px-md-1 py-md-1`}
+                              onClick={() => pickRepay(choice)}
+                              role="radio"
+                              type="button"
+                           >
+                              <span className="text-md-b2 font-semibold">{formatIdr(choice)}</span>
+                              <span className="text-[11px] font-medium leading-tight opacity-75">≈ {fmtUsd(idUsdForIdr(choice, rate))}</span>
+                           </button>
+                        );
+                     })}
+                  </div>
+                  <input
+                     className={`${inputShellClass} px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none ${
+                        termErrors.repayment ? '!border-md-red-500' : customRepay ? '!border-md-primary-900' : ''
+                     }`}
+                     id="repayment-amount"
+                     inputMode="numeric"
+                     onBlur={() => {
+                        if (!customRepay) return;
+                        // Clip to what the server takes: Rp 500 steps, at least $1 more, at most 1.5×.
+                        const clipped = clipRepayIdr(Number(customRepay), amount, rate);
+                        if (clipped === null) return;
+                        setCustomRepay(String(clipped));
+                        setRepayIdr(String(clipped));
+                     }}
+                     onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                        // Rupiah are whole: drop "Rp", dots, commas and spaces.
+                        const next = e.target.value.replace(/^\s*rp\s*/i, '').replace(/[.,\s]/g, '');
+                        if (!/^\d{0,9}$/.test(next)) return;
+                        setCustomRepay(next);
+                        setRepayIdr(next);
+                        clearError('repayment');
+                     }}
+                     placeholder={`${t('orType')}: ${formatIdr(bounds.min)}–${formatIdr(bounds.max)}`}
+                     type="text"
+                     value={customRepay ? formatIdr(Number(customRepay)).replace(/^Rp\s/, '') : ''}
+                  />
+               </>
+            ) : (
+               <p className="rounded-md-md bg-md-neutral-200 px-md-2 py-md-1 text-md-b3 text-md-neutral-1200" id="repayment-amount">
+                  {t('pickAmountFirst')}
+               </p>
+            )}
+            {termErrors.repayment ? <FieldError message={termErrors.repayment} /> : null}
+            {!termErrors.repayment && rate && hasIdr && usdToday !== null ? (
+               <div className="flex flex-col gap-0.5 rounded-md-md bg-md-primary-100 px-md-2 py-md-1 dark:bg-[#2a1740]">
+                  <p className="text-md-b2 font-semibold text-md-heading">
+                     {t('youPay')} {formatIdr(idr)}{' '}
+                     <span className="font-normal text-md-neutral-1200">
+                        (≈ {usdToday.toFixed(2)} USDT {t('today')})
+                     </span>
+                  </p>
+                  <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">{t('pegNote')}</p>
+                  {extra > 0 ? (
+                     <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
+                        <span className="font-semibold text-md-primary-1200">≈ {fmtUsd(extra)}</span> {t('toLender')}.
+                     </p>
+                  ) : null}
+               </div>
+            ) : null}
+         </div>
+
+         <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-date">
+            <span className="text-md-b2 font-[590] text-md-heading">{t('termLabel')}</span>
+            <div className="grid grid-cols-2 gap-md-2" id="repaymentDate" role="radiogroup" aria-label={t('termLabel')}>
+               {idTermOptions(rules).map((termDays) => {
+                  const date = addDays(todayDate, termDays);
+                  const active = selectedDate === formatDateInputValue(date);
+                  return (
+                     <button
+                        key={termDays}
+                        aria-checked={active}
+                        className={`${idChipClass(active)} min-h-[64px] gap-0.5 px-md-2 py-md-1`}
+                        onClick={() => {
+                           onPickDate(date);
+                           clearError('date');
+                        }}
+                        role="radio"
+                        type="button"
+                     >
+                        <span className="text-md-h5 font-semibold leading-none">
+                           {termDays} {t('days')}
+                        </span>
+                        <span className="text-md-b3 font-medium opacity-75">{formatDateLabel(date)}</span>
+                     </button>
+                  );
+               })}
+            </div>
+            {termErrors.date ? <FieldError message={termErrors.date} /> : null}
+         </div>
+      </>
+   );
+}
+
 // The ordered set of screens a single loan-request flow (PART 2 · Apply) can pass through. Which of
 // these actually appear depends on the borrower: bio pages only for first-time borrowers, the
 // contact step only when they have no verified line yet, and — in the 'open' flow only — the
@@ -1288,8 +1585,14 @@ export default function LoanRequestModal({
    onLeaveForDocuments,
    autoSubmit = false,
    onAutoSubmitStarted,
-   onBackdropPress
+   onBackdropPress,
+   idLoanRules = null,
+   repayIdr = '',
+   setRepayIdr = noopSetString,
+   usdIdrRate = null,
+   isUsdIdrRateLoading = false
 }: LoanRequestModalProps) {
+   const isIdLoan = idLoanRules !== null;
    const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
    const { showToast } = useToast();
@@ -1311,8 +1614,10 @@ export default function LoanRequestModal({
    const journey = useVerificationJourney(openVerify, user);
    // Still onboarding: the form is shown locked. Through onboarding but not ID-verified: the form is
    // open and "Make your request" leads into the ID check.
-   const formLocked = !isPending && journey.onboarding;
-   const verifyAtSubmit = !isPending && !journey.onboarding && journey.stage === 'apply';
+   // Indonesia track: they did ID + liveness, contacts, bio and the call in /id/onboarding, so only a
+   // missing Moodeng wallet locks the form, and the ID check never runs at the end of a request.
+   const formLocked = !isPending && journey.onboarding && (!isIdLoan || journey.stage === 'wallet');
+   const verifyAtSubmit = !isIdLoan && !isPending && !journey.onboarding && journey.stage === 'apply';
    const formRef = useRef<HTMLFormElement | null>(null);
    const dateInputRef = useRef<HTMLInputElement | null>(null);
    const reasonTextareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -1426,6 +1731,8 @@ export default function LoanRequestModal({
    const [returnNudge, setReturnNudge] = useState<{ amount: number; months: number; key: string } | null>(null);
    const returnAckRef = useRef('');
    const lowRepaymentCheck = () => {
+      // Indonesia loans are capped at 1.5× over 7–14 days; the 10%-a-month nudge doesn't apply.
+      if (isIdLoan) return null;
       const min = minimumRepayment(Number(loanAmount), days);
       const repay = Number(totalRepaymentAmount);
       if (!min || !Number.isFinite(repay) || repay >= min.amount) return null;
@@ -1443,6 +1750,9 @@ export default function LoanRequestModal({
    // `suggestion` is a ready-to-post English rewrite built from their text (the translation when
    // it wasn't in English); `category` says why it was flagged, or 'tip' for a pass with advice.
    const reasonLocale = (useOptionalLocalization()?.locale ?? 'en') as ReasonCheckLocale;
+   const idLang: 'id' | 'en' = (reasonLocale as string) === 'id' ? 'id' : 'en';
+   // Rupiah peg: without the server's rate an ID request can't be priced, so it can't be sent.
+   const idNoRate = isIdLoan && !usdIdrRate;
    const [liveReasonCheck, setLiveReasonCheck] = useState<{
       // 'pending' = waiting for typing to settle before asking; nothing judged yet.
       // 'reviewing' = the second opinion is thinking it over (see isStuck).
@@ -1504,7 +1814,7 @@ export default function LoanRequestModal({
    const selectedDate = days ? days.slice(0, 10) : '';
    const selectedCalendarDate = parseIsoDate(selectedDate);
    const todayDate = parseIsoDate(today) ?? new Date();
-   const maxLoanDate = addDays(todayDate, 120);
+   const maxLoanDate = addDays(todayDate, idLoanRules ? idLoanRules.maxTermDays : 120);
    const allowYearEditing = shouldAllowDateYearEditing(todayDate);
    const assumedYear = todayDate.getFullYear();
    const datePlaceholder = allowYearEditing ? 'DD/MM/YYYY' : `DD/MM/${assumedYear}`;
@@ -1527,7 +1837,7 @@ export default function LoanRequestModal({
    const referralPrimaryActionText =
       hasAppliedReferralCode || !hasReferralCode ? referralContinueText : hasReferralCodeError ? 'Try again' : 'Apply code';
    // Before the ID check too (verifyAtSubmit): the referral card is where a code gets entered.
-   const canOfferReferral = (isVerified || verifyAtSubmit) && canUseReferralBoost;
+   const canOfferReferral = (isVerified || verifyAtSubmit) && canUseReferralBoost && !isIdLoan;
    const shouldShowReferralStep = showReferralStep && canOfferReferral;
    const canContinueBorrowerContext = Boolean(
       borrowerContext.incomeSetup &&
@@ -1541,7 +1851,7 @@ export default function LoanRequestModal({
 
    // Bio pages (terms → bio-1 → bio-2) only appear for first-time borrowers; returning borrowers
    // with saved income context submit straight from the terms step.
-   const isMultiStepRequestFlow = requireBorrowerContextStep && !user.incomeType && isVerified;
+   const isMultiStepRequestFlow = !isIdLoan && requireBorrowerContextStep && !user.incomeType && isVerified;
 
    // Connect → Approve → Apply gate (docs/HANDOFF_BORROWER_VERIFICATION.md §13) — in the call and
    // approval flows. A verified borrower who hasn't been approved yet goes through PART 1
@@ -1557,13 +1867,15 @@ export default function LoanRequestModal({
    const connectMode: 'call' | 'approval' = hasReferral || loanFlow === 'call' ? 'call' : 'approval';
    const loanAccessStatus = user.loanAccessStatus ?? 'approved';
    const isLoanAccessPending = isGateOn && isVerified && loanAccessStatus === 'pending';
-   const needsLoanAccessConnect = isGateOn && isVerified && (loanAccessStatus === 'none' || loanAccessStatus === 'rejected');
-   const isLoanAccessGated = isLoanAccessPending || needsLoanAccessConnect;
+   // Rejected is final: a goodbye card, never the connect steps (no call to book, nothing to send).
+   const isLoanAccessRejected = isGateOn && isVerified && loanAccessStatus === 'rejected';
+   const needsLoanAccessConnect = isGateOn && isVerified && loanAccessStatus === 'none';
+   const isLoanAccessGated = isLoanAccessPending || isLoanAccessRejected || needsLoanAccessConnect;
 
    // An admin may have decided while this tab was open — re-check when the waiting borrower opens
    // the modal, so an approval shows up without a page reload.
    useEffect(() => {
-      if (!isOpen || !isLoanAccessPending) return;
+      if (!isOpen || !(isLoanAccessPending || isLoanAccessRejected)) return;
       void dispatch(fetchUser());
       // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [isOpen]);
@@ -1573,13 +1885,14 @@ export default function LoanRequestModal({
       hasAppliedReferral: hasReferral,
       hasAttendedCall: Boolean(user.attendedCall)
    });
-   const needsContactsStep = contactSteps.contacts && (!user.hasVerifiedContact || needsReminders);
+   // Indonesia track: Telegram + WhatsApp + Messenger were verified in /id/onboarding.
+   const needsContactsStep = !isIdLoan && contactSteps.contacts && (!user.hasVerifiedContact || needsReminders);
 
    // The real, path-aware list of steps for THIS borrower — drives the progress rail so the dot
    // count and "Step X of Y" match exactly what they'll go through.
    // Open flow only (today's rule): no referral → book (not attend) the round-robin call before the
    // request posts. In the call/approval flows the call happened before applying (PART 1).
-   const needsVideoCallStep = loanFlow === 'open' && contactSteps.videoCall;
+   const needsVideoCallStep = !isIdLoan && loanFlow === 'open' && contactSteps.videoCall;
    const requestSteps: RequestStepKey[] = [
       'terms',
       ...(isMultiStepRequestFlow ? (['bio1', 'bio2'] as const) : []),
@@ -2237,7 +2550,38 @@ export default function LoanRequestModal({
       const rules: Record<string, string> = {};
 
       const amount = Number(loanAmount);
-      if (!loanAmount || Number.isNaN(amount) || amount <= 0) {
+      if (idLoanRules) {
+         // Same rules as the server (app_private.enforce_new_loan_terms), worded in their language.
+         if (!idLoanRules.amounts.includes(amount)) {
+            errors.amount = idLoanTermMessage('amount', idLoanRules, amount, idLang);
+            rules.amount = 'id_amount';
+         } else if (amount > limitAmount) {
+            errors.amount = `${idLang === 'id' ? 'Di atas limit kamu' : 'Above your limit'} ($${limitAmount}).`;
+            rules.amount = 'over_limit';
+         } else {
+            // Rupiah peg: a whole-rupiah total (Rp 500 steps) whose USD today fits the server's range.
+            const idrBounds = idRepayIdrBounds(amount, usdIdrRate);
+            const idr = Number(repayIdr);
+            if (!idrBounds) {
+               errors.repayment = ID_NO_RATE_TEXT[idLang];
+               rules.repayment = 'id_no_rate';
+            } else if (!repayIdr || !Number.isFinite(idr) || idr < idrBounds.min) {
+               errors.repayment = idLoanTermMessage('repayment_low', idLoanRules, amount, idLang, usdIdrRate);
+               rules.repayment = 'id_repayment_low';
+            } else if (idr > idrBounds.max) {
+               errors.repayment = idLoanTermMessage('repayment_high', idLoanRules, amount, idLang, usdIdrRate);
+               rules.repayment = 'id_repayment_high';
+            } else if (idr % 500 !== 0) {
+               errors.repayment = idLang === 'id' ? 'Gunakan kelipatan Rp 500.' : 'Use steps of Rp 500.';
+               rules.repayment = 'id_repayment_step';
+            }
+         }
+         const termDays = days ? daysUntil(today, days) : null;
+         if (termDays === null || termDays < 1 || termDays > idLoanRules.maxTermDays) {
+            errors.date = idLoanTermMessage('date', idLoanRules, amount, idLang);
+            rules.date = 'id_term';
+         }
+      } else if (!loanAmount || Number.isNaN(amount) || amount <= 0) {
          errors.amount = 'Enter how much you want to borrow.';
          rules.amount = 'missing';
       } else if (amount > limitAmount) {
@@ -2246,7 +2590,9 @@ export default function LoanRequestModal({
       }
 
       const repayment = Number(totalRepaymentAmount);
-      if (!totalRepaymentAmount || Number.isNaN(repayment)) {
+      if (idLoanRules) {
+         // Checked above.
+      } else if (!totalRepaymentAmount || Number.isNaN(repayment)) {
          errors.repayment = 'Enter the amount you will repay.';
          rules.repayment = 'missing';
       } else if (!Number.isNaN(amount) && repayment < amount + 1) {
@@ -2254,7 +2600,7 @@ export default function LoanRequestModal({
          rules.repayment = 'below_borrow_plus_1';
       }
 
-      if (!isRepaymentDateFilled) {
+      if (!idLoanRules && !isRepaymentDateFilled) {
          errors.date = 'Choose when you will repay.';
          rules.date = 'missing';
       }
@@ -2358,7 +2704,8 @@ export default function LoanRequestModal({
 
       // Proof of income for this amount's step. The card sends them to /documents with what they
       // typed kept (and the amount, so the checks use the right step), and back here after.
-      const gate = incomeDocGate(Number(loanAmount), incomeDocFacts);
+      // Indonesia track: proof of income was sent (and not declined) in /id/onboarding.
+      const gate = isIdLoan ? ({ ok: true } as const) : incomeDocGate(Number(loanAmount), incomeDocFacts);
       if (!gate.ok) {
          event.preventDefault();
          setShowBorrowerContextStep(false);
@@ -2372,7 +2719,7 @@ export default function LoanRequestModal({
       // Returning users can update it from Account Settings instead.
       const hasSavedBorrowerContext = Boolean(user.incomeType);
 
-      if (requireBorrowerContextStep && !hasSavedBorrowerContext && !borrowerContextPromptSeen && !showBorrowerContextStep) {
+      if (!isIdLoan && requireBorrowerContextStep && !hasSavedBorrowerContext && !borrowerContextPromptSeen && !showBorrowerContextStep) {
          event.preventDefault();
          setShowBorrowerContextStep(true);
          setBioPage(1);
@@ -2887,12 +3234,13 @@ export default function LoanRequestModal({
                </div>
             ) : isLoanAccessPending ? (
                <LoanAccessPendingCard mode={connectMode} withEmma={hasReferral} userId={user.id} onClose={onClose} />
+            ) : isLoanAccessRejected ? (
+               <LoanAccessRejectedCard onClose={onClose} retryAt={user.loanAccessRetryAt} />
             ) : needsLoanAccessConnect ? (
                <ConnectStep
                   userId={user.id}
                   displayName={currentBorrowerDisplayName}
                   referralCode={appliedReferral?.code}
-                  wasRejected={loanAccessStatus === 'rejected'}
                   missedCall={loanAccessStatus === 'none' && Boolean(user.missedLastCall)}
                   mode={connectMode}
                   withEmma={hasReferral}
@@ -3031,233 +3379,255 @@ export default function LoanRequestModal({
                            className={formLocked ? 'pointer-events-none flex select-none flex-col gap-5 opacity-50 grayscale' : 'flex flex-col gap-5'}
                            inert={formLocked || undefined}
                         >
-                        <div className="flex flex-col gap-md-1" data-tour-target="loan-borrow-amount">
-                           <div className="flex items-center justify-between gap-md-2">
-                              <label className="text-md-b2 font-[590] text-md-heading" htmlFor="borrow-amount">
-                                 Borrow Amount
-                              </label>
-                              <div className="flex items-center gap-md-0 rounded-md-md bg-md-primary-100 px-md-1 py-md-0 text-md-b3 font-normal text-[#3e0a88] dark:border dark:border-[#7c4ed8]/40 dark:bg-[#2a1740] dark:text-[#f8f4ff]">
-                                 <span>Current Limit: ${limitAmount || '0'}</span>
-                                 <InfoTooltip
-                                    activeTooltip={activeTooltip}
-                                    arrowClassName="left-1/2 top-[-5px] -translate-x-1/2 rotate-45"
-                                    iconClassName="h-4 w-4"
-                                    id="limit"
-                                    label="Explain current borrow limit"
-                                    panelClassName="right-0 top-full mt-md-1"
-                                    setActiveTooltip={setActiveTooltip}
+                        {idLoanRules ? (
+                           <IdLoanTermsFields
+                              clearError={(key) => setTermErrors((prev) => ({ ...prev, [key]: undefined }))}
+                              lang={idLang}
+                              limitAmount={limitAmount}
+                              loanAmount={loanAmount}
+                              onPickDate={selectCalendarDate}
+                              rules={idLoanRules}
+                              selectedDate={selectedDate}
+                              setLoanAmount={setLoanAmount}
+                              setTotalRepaymentAmount={setTotalRepaymentAmount}
+                              repayIdr={repayIdr}
+                              setRepayIdr={setRepayIdr}
+                              usdIdrRate={usdIdrRate}
+                              isRateLoading={isUsdIdrRateLoading}
+                              termErrors={termErrors}
+                              todayDate={todayDate}
+                           />
+                        ) : (
+                           <>
+                           <div className="flex flex-col gap-md-1" data-tour-target="loan-borrow-amount">
+                              <div className="flex items-center justify-between gap-md-2">
+                                 <label className="text-md-b2 font-[590] text-md-heading" htmlFor="borrow-amount">
+                                    Borrow Amount
+                                 </label>
+                                 <div className="flex items-center gap-md-0 rounded-md-md bg-md-primary-100 px-md-1 py-md-0 text-md-b3 font-normal text-[#3e0a88] dark:border dark:border-[#7c4ed8]/40 dark:bg-[#2a1740] dark:text-[#f8f4ff]">
+                                    <span>Current Limit: ${limitAmount || '0'}</span>
+                                    <InfoTooltip
+                                       activeTooltip={activeTooltip}
+                                       arrowClassName="left-1/2 top-[-5px] -translate-x-1/2 rotate-45"
+                                       iconClassName="h-4 w-4"
+                                       id="limit"
+                                       label="Explain current borrow limit"
+                                       panelClassName="right-0 top-full mt-md-1"
+                                       setActiveTooltip={setActiveTooltip}
+                                    />
+                                 </div>
+                              </div>
+                              <div
+                                 className={`flex items-center ${inputShellClass} ${termErrors.amount ? '!border-md-red-500' : amountValid ? '!border-md-primary-900' : ''}`}
+                              >
+                                 <UsdcAmountChip amount={loanAmount} />
+                                 <input
+                                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                                       // Whole cents only: a lender's wallet sends 2-decimal amounts, so a
+                                       // sub-cent request could never be funded. Commas are thousands
+                                       // separators ("1,000"), so they're dropped.
+                                       const next = e.target.value.replace(/,/g, '');
+                                       if (!/^\d*(\.\d{0,2})?$/.test(next)) return;
+                                       setLoanAmount(next);
+                                       if (termErrors.amount) setTermErrors((prev) => ({ ...prev, amount: undefined }));
+                                    }}
+                                    onFocus={scrollFieldIntoView}
+                                    onBlur={() => {
+                                       // Say it when they leave the field, not after they tap Make Your Request.
+                                       // Deferred: blur fires before the tap that caused it lands, and the
+                                       // message pushing the form down would make that tap miss its button.
+                                       const value = Number(loanAmount);
+                                       if (loanAmount && Number.isFinite(value) && value > limitAmount) {
+                                          window.setTimeout(
+                                             () => setTermErrors((prev) => ({ ...prev, amount: `That's above your current limit of $${limitAmount}.` })),
+                                             250
+                                          );
+                                       }
+                                    }}
+                                    className="min-w-0 flex-1 bg-transparent px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
+                                    id="borrow-amount"
+                                    inputMode="decimal"
+                                    placeholder="Set your desired amount"
+                                    type="text"
+                                    value={loanAmount}
                                  />
                               </div>
+                              {termErrors.amount ? <FieldError message={termErrors.amount} /> : null}
+                              <div className="flex justify-end gap-md-1 text-md-b3 font-normal text-md-neutral-1200">
+                                 <InfoTooltip
+                                    activeTooltip={activeTooltip}
+                                    iconClassName="h-4 w-4"
+                                    iconStrokeWidth={1.35}
+                                    id="usdc"
+                                    label="Explain USDC loans"
+                                    panelClassName="left-1/2 top-full mt-md-1 -translate-x-1/2"
+                                    setActiveTooltip={setActiveTooltip}
+                                 />
+                                 <span>All loans are issued and repaid in USDC.</span>
+                              </div>
                            </div>
-                           <div
-                              className={`flex items-center ${inputShellClass} ${termErrors.amount ? '!border-md-red-500' : amountValid ? '!border-md-primary-900' : ''}`}
-                           >
-                              <UsdcAmountChip amount={loanAmount} />
+
+                           <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-amount">
+                              <label className="text-md-b2 font-[590] text-md-heading" htmlFor="repayment-amount">
+                                 Set Repayment Amount
+                              </label>
                               <input
                                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                    // Whole cents only: a lender's wallet sends 2-decimal amounts, so a
-                                    // sub-cent request could never be funded. Commas are thousands
-                                    // separators ("1,000"), so they're dropped.
                                     const next = e.target.value.replace(/,/g, '');
                                     if (!/^\d*(\.\d{0,2})?$/.test(next)) return;
-                                    setLoanAmount(next);
-                                    if (termErrors.amount) setTermErrors((prev) => ({ ...prev, amount: undefined }));
+                                    setTotalRepaymentAmount(next);
+                                    if (termErrors.repayment) setTermErrors((prev) => ({ ...prev, repayment: undefined }));
                                  }}
                                  onFocus={scrollFieldIntoView}
                                  onBlur={() => {
-                                    // Say it when they leave the field, not after they tap Make Your Request.
-                                    // Deferred: blur fires before the tap that caused it lands, and the
-                                    // message pushing the form down would make that tap miss its button.
-                                    const value = Number(loanAmount);
-                                    if (loanAmount && Number.isFinite(value) && value > limitAmount) {
+                                    const borrow = Number(loanAmount);
+                                    const repay = Number(totalRepaymentAmount);
+                                    if (totalRepaymentAmount && Number.isFinite(borrow) && Number.isFinite(repay) && borrow > 0 && repay < borrow + 1) {
+                                       // Deferred so the tap that left the field still lands where it was aimed.
                                        window.setTimeout(
-                                          () => setTermErrors((prev) => ({ ...prev, amount: `That's above your current limit of $${limitAmount}.` })),
+                                          () => setTermErrors((prev) => ({ ...prev, repayment: 'Repayment must be at least $1 more than you borrow.' })),
                                           250
                                        );
                                     }
                                  }}
-                                 className="min-w-0 flex-1 bg-transparent px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
-                                 id="borrow-amount"
+                                 className={`${inputShellClass} px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none ${
+                                    termErrors.repayment ? '!border-md-red-500' : repaymentValid ? '!border-md-primary-900' : ''
+                                 }`}
+                                 id="repayment-amount"
                                  inputMode="decimal"
-                                 placeholder="Set your desired amount"
+                                 placeholder={
+                                    suggestedRepayment
+                                       ? `Suggested: $${Number.isInteger(suggestedRepayment) ? suggestedRepayment : suggestedRepayment.toFixed(2)}`
+                                       : 'Must be more than the borrowed amount'
+                                 }
                                  type="text"
-                                 value={loanAmount}
+                                 value={totalRepaymentAmount}
                               />
-                           </div>
-                           {termErrors.amount ? <FieldError message={termErrors.amount} /> : null}
-                           <div className="flex justify-end gap-md-1 text-md-b3 font-normal text-md-neutral-1200">
-                              <InfoTooltip
-                                 activeTooltip={activeTooltip}
-                                 iconClassName="h-4 w-4"
-                                 iconStrokeWidth={1.35}
-                                 id="usdc"
-                                 label="Explain USDC loans"
-                                 panelClassName="left-1/2 top-full mt-md-1 -translate-x-1/2"
-                                 setActiveTooltip={setActiveTooltip}
-                              />
-                              <span>All loans are issued and repaid in USDC.</span>
-                           </div>
-                        </div>
-
-                        <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-amount">
-                           <label className="text-md-b2 font-[590] text-md-heading" htmlFor="repayment-amount">
-                              Set Repayment Amount
-                           </label>
-                           <input
-                              onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                 const next = e.target.value.replace(/,/g, '');
-                                 if (!/^\d*(\.\d{0,2})?$/.test(next)) return;
-                                 setTotalRepaymentAmount(next);
-                                 if (termErrors.repayment) setTermErrors((prev) => ({ ...prev, repayment: undefined }));
-                              }}
-                              onFocus={scrollFieldIntoView}
-                              onBlur={() => {
-                                 const borrow = Number(loanAmount);
-                                 const repay = Number(totalRepaymentAmount);
-                                 if (totalRepaymentAmount && Number.isFinite(borrow) && Number.isFinite(repay) && borrow > 0 && repay < borrow + 1) {
-                                    // Deferred so the tap that left the field still lands where it was aimed.
-                                    window.setTimeout(
-                                       () => setTermErrors((prev) => ({ ...prev, repayment: 'Repayment must be at least $1 more than you borrow.' })),
-                                       250
+                              {termErrors.repayment ? <FieldError message={termErrors.repayment} /> : null}
+                              {(() => {
+                                 // Live clarity: once both amounts are valid, spell out what the borrower will
+                                 // repay and how much of that is the lender's return — Moodeng adds $0, so this
+                                 // makes the deal transparent while they set their own terms.
+                                 const borrowNum = Number(loanAmount);
+                                 const repayNum = Number(totalRepaymentAmount);
+                                 const extra = repayNum - borrowNum;
+                                 if (termErrors.repayment || !loanAmount || !totalRepaymentAmount) return null;
+                                 if (Number.isNaN(borrowNum) || Number.isNaN(repayNum) || borrowNum <= 0 || extra <= 0) return null;
+                                 const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
+                                 return (
+                                    <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
+                                       You’ll repay <span className="font-semibold text-md-heading">${fmt(repayNum)}</span> — that’s{' '}
+                                       <span className="font-semibold text-md-primary-1200">${fmt(extra)}</span> to your moo-lender.
+                                    </p>
+                                 );
+                              })()}
+                              {(() => {
+                                 const borrowNum = Number(loanAmount);
+                                 const repayNum = Number(totalRepaymentAmount);
+                                 const range = suggestedReturnRange(borrowNum);
+                                 const offer = repayNum - borrowNum;
+                                 // Only when the repayment is otherwise valid (passes the $1 minimum, so
+                                 // no error is showing) but still below the typical return for this size.
+                                 const show =
+                                    !termErrors.repayment &&
+                                    Boolean(totalRepaymentAmount) &&
+                                    Number.isFinite(borrowNum) &&
+                                    borrowNum > 0 &&
+                                    Number.isFinite(repayNum) &&
+                                    offer >= 1 &&
+                                    range !== null &&
+                                    offer < range.lo;
+                                 const min = minimumRepayment(borrowNum, days);
+                                 if (!termErrors.repayment && Boolean(totalRepaymentAmount) && min && Number.isFinite(repayNum) && repayNum < min.amount) {
+                                    return (
+                                       <div className="flex items-start gap-1.5 rounded-md-md bg-md-yellow-100 px-md-2 py-md-1 text-md-b3 font-normal leading-[18px] text-md-yellow-700">
+                                          <Lightbulb className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
+                                          <span>
+                                             For this date, moo-lenders usually look for at least{' '}
+                                             <span className="font-semibold">${min.amount.toFixed(2)}</span> back (about 10% a month).
+                                          </span>
+                                       </div>
                                     );
                                  }
-                              }}
-                              className={`${inputShellClass} px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none ${
-                                 termErrors.repayment ? '!border-md-red-500' : repaymentValid ? '!border-md-primary-900' : ''
-                              }`}
-                              id="repayment-amount"
-                              inputMode="decimal"
-                              placeholder={
-                                 suggestedRepayment
-                                    ? `Suggested: $${Number.isInteger(suggestedRepayment) ? suggestedRepayment : suggestedRepayment.toFixed(2)}`
-                                    : 'Must be more than the borrowed amount'
-                              }
-                              type="text"
-                              value={totalRepaymentAmount}
-                           />
-                           {termErrors.repayment ? <FieldError message={termErrors.repayment} /> : null}
-                           {(() => {
-                              // Live clarity: once both amounts are valid, spell out what the borrower will
-                              // repay and how much of that is the lender's return — Moodeng adds $0, so this
-                              // makes the deal transparent while they set their own terms.
-                              const borrowNum = Number(loanAmount);
-                              const repayNum = Number(totalRepaymentAmount);
-                              const extra = repayNum - borrowNum;
-                              if (termErrors.repayment || !loanAmount || !totalRepaymentAmount) return null;
-                              if (Number.isNaN(borrowNum) || Number.isNaN(repayNum) || borrowNum <= 0 || extra <= 0) return null;
-                              const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
-                              return (
-                                 <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-                                    You’ll repay <span className="font-semibold text-md-heading">${fmt(repayNum)}</span> — that’s{' '}
-                                    <span className="font-semibold text-md-primary-1200">${fmt(extra)}</span> to your moo-lender.
-                                 </p>
-                              );
-                           })()}
-                           {(() => {
-                              const borrowNum = Number(loanAmount);
-                              const repayNum = Number(totalRepaymentAmount);
-                              const range = suggestedReturnRange(borrowNum);
-                              const offer = repayNum - borrowNum;
-                              // Only when the repayment is otherwise valid (passes the $1 minimum, so
-                              // no error is showing) but still below the typical return for this size.
-                              const show =
-                                 !termErrors.repayment &&
-                                 Boolean(totalRepaymentAmount) &&
-                                 Number.isFinite(borrowNum) &&
-                                 borrowNum > 0 &&
-                                 Number.isFinite(repayNum) &&
-                                 offer >= 1 &&
-                                 range !== null &&
-                                 offer < range.lo;
-                              const min = minimumRepayment(borrowNum, days);
-                              if (!termErrors.repayment && Boolean(totalRepaymentAmount) && min && Number.isFinite(repayNum) && repayNum < min.amount) {
-                                 return (
-                                    <div className="flex items-start gap-1.5 rounded-md-md bg-md-yellow-100 px-md-2 py-md-1 text-md-b3 font-normal leading-[18px] text-md-yellow-700">
-                                       <Lightbulb className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
-                                       <span>
-                                          For this date, moo-lenders usually look for at least{' '}
-                                          <span className="font-semibold">${min.amount.toFixed(2)}</span> back (about 10% a month).
-                                       </span>
-                                    </div>
-                                 );
-                              }
-                              return show && range ? <ReturnHint lo={range.lo} hi={range.hi} /> : null;
-                           })()}
-                        </div>
+                                 return show && range ? <ReturnHint lo={range.lo} hi={range.hi} /> : null;
+                              })()}
+                           </div>
 
-                        <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-date">
-                           <label className="text-md-b2 font-[590] text-md-heading" htmlFor="repaymentDate">
-                              Set Repayment Date
-                           </label>
-                           <div className="relative">
-                              <div
-                                 className={`relative flex items-center ${inputShellClass} ${termErrors.date ? '!border-md-red-500' : isRepaymentDateFilled ? '!border-md-primary-900' : ''}`}
-                              >
-                                 <input
-                                    ref={dateInputRef}
-                                    aria-label="Selected repayment date"
-                                    onChange={handleTypedDate}
-                                    onClick={() => keepDateCursorInEditablePart()}
-                                    onBlur={() => {
-                                       if (!typedDate.replace(/\D/g, '')) setTypedDate('');
-                                    }}
-                                    onFocus={(event) => {
-                                       scrollFieldIntoView(event);
-                                       keepDateCursorInEditablePart();
-                                    }}
-                                    onKeyDown={handleDateKeyDown}
-                                    onPaste={handleDatePaste}
-                                    onSelect={() => keepDateCursorInEditablePart()}
-                                    placeholder={datePlaceholder}
-                                    type="text"
-                                    value={typedDate}
-                                    id="repaymentDate"
-                                    className="min-w-0 flex-1 bg-transparent px-md-3 py-md-2 pr-[64px] text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
-                                 />
-                                 <button
-                                    aria-expanded={isCalendarOpen}
-                                    aria-label="Open repayment date calendar"
-                                    className={`absolute inset-y-0 right-0 flex w-[56px] items-center justify-center border-l border-md-primary-1200 transition duration-150 ease-out active:bg-[#4b00b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 ${
-                                       isCalendarOpen || isRepaymentDateFilled
-                                          ? 'bg-md-primary-1200 text-md-neutral-100 hover:bg-[#5200c8]'
-                                          : 'bg-md-neutral-100 text-md-primary-900 hover:bg-md-primary-100'
-                                    }`}
-                                    onClick={() => setIsCalendarOpen((isOpen) => !isOpen)}
-                                    type="button"
+                           <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-date">
+                              <label className="text-md-b2 font-[590] text-md-heading" htmlFor="repaymentDate">
+                                 Set Repayment Date
+                              </label>
+                              <div className="relative">
+                                 <div
+                                    className={`relative flex items-center ${inputShellClass} ${termErrors.date ? '!border-md-red-500' : isRepaymentDateFilled ? '!border-md-primary-900' : ''}`}
                                  >
-                                    <CalendarDays aria-hidden="true" className="h-6 w-6" strokeWidth={1.6} />
-                                 </button>
+                                    <input
+                                       ref={dateInputRef}
+                                       aria-label="Selected repayment date"
+                                       onChange={handleTypedDate}
+                                       onClick={() => keepDateCursorInEditablePart()}
+                                       onBlur={() => {
+                                          if (!typedDate.replace(/\D/g, '')) setTypedDate('');
+                                       }}
+                                       onFocus={(event) => {
+                                          scrollFieldIntoView(event);
+                                          keepDateCursorInEditablePart();
+                                       }}
+                                       onKeyDown={handleDateKeyDown}
+                                       onPaste={handleDatePaste}
+                                       onSelect={() => keepDateCursorInEditablePart()}
+                                       placeholder={datePlaceholder}
+                                       type="text"
+                                       value={typedDate}
+                                       id="repaymentDate"
+                                       className="min-w-0 flex-1 bg-transparent px-md-3 py-md-2 pr-[64px] text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
+                                    />
+                                    <button
+                                       aria-expanded={isCalendarOpen}
+                                       aria-label="Open repayment date calendar"
+                                       className={`absolute inset-y-0 right-0 flex w-[56px] items-center justify-center border-l border-md-primary-1200 transition duration-150 ease-out active:bg-[#4b00b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 ${
+                                          isCalendarOpen || isRepaymentDateFilled
+                                             ? 'bg-md-primary-1200 text-md-neutral-100 hover:bg-[#5200c8]'
+                                             : 'bg-md-neutral-100 text-md-primary-900 hover:bg-md-primary-100'
+                                       }`}
+                                       onClick={() => setIsCalendarOpen((isOpen) => !isOpen)}
+                                       type="button"
+                                    >
+                                       <CalendarDays aria-hidden="true" className="h-6 w-6" strokeWidth={1.6} />
+                                    </button>
+                                 </div>
+                              </div>
+                              {termErrors.date ? <FieldError message={termErrors.date} /> : null}
+                              {/* Quick-pick common short terms — typing DD/MM on mobile is the fiddliest field.
+                                  Each fills a valid future date via the same handler the calendar uses. */}
+                              <div className="mt-md-0 flex flex-wrap gap-md-1">
+                                 {[
+                                    { label: '2 weeks', days: 14 },
+                                    { label: '1 month', days: 30 },
+                                    { label: '2 months', days: 60 }
+                                 ].map(({ label, days: offset }) => {
+                                    const date = addDays(todayDate, offset);
+                                    const isActive = selectedDate === formatDateInputValue(date);
+                                    return (
+                                       <button
+                                          key={label}
+                                          type="button"
+                                          aria-pressed={isActive}
+                                          onClick={() => selectCalendarDate(date)}
+                                          className={`inline-flex min-h-[32px] items-center justify-center rounded-md-pill border px-md-2 py-[5px] text-md-b3 font-medium leading-[18px] transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
+                                             isActive
+                                                ? 'border-md-primary-900 bg-md-primary-100 text-md-primary-1200 shadow-[0_5px_12px_rgba(105,48,232,0.08)]'
+                                                : 'border-md-neutral-700 bg-md-neutral-100 text-md-neutral-1400'
+                                          }`}
+                                       >
+                                          {label}
+                                       </button>
+                                    );
+                                 })}
                               </div>
                            </div>
-                           {termErrors.date ? <FieldError message={termErrors.date} /> : null}
-                           {/* Quick-pick common short terms — typing DD/MM on mobile is the fiddliest field.
-                               Each fills a valid future date via the same handler the calendar uses. */}
-                           <div className="mt-md-0 flex flex-wrap gap-md-1">
-                              {[
-                                 { label: '2 weeks', days: 14 },
-                                 { label: '1 month', days: 30 },
-                                 { label: '2 months', days: 60 }
-                              ].map(({ label, days: offset }) => {
-                                 const date = addDays(todayDate, offset);
-                                 const isActive = selectedDate === formatDateInputValue(date);
-                                 return (
-                                    <button
-                                       key={label}
-                                       type="button"
-                                       aria-pressed={isActive}
-                                       onClick={() => selectCalendarDate(date)}
-                                       className={`inline-flex min-h-[32px] items-center justify-center rounded-md-pill border px-md-2 py-[5px] text-md-b3 font-medium leading-[18px] transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
-                                          isActive
-                                             ? 'border-md-primary-900 bg-md-primary-100 text-md-primary-1200 shadow-[0_5px_12px_rgba(105,48,232,0.08)]'
-                                             : 'border-md-neutral-700 bg-md-neutral-100 text-md-neutral-1400'
-                                       }`}
-                                    >
-                                       {label}
-                                    </button>
-                                 );
-                              })}
-                           </div>
-                        </div>
+                           </>
+                        )}
 
                         <div className="flex flex-col gap-md-1" data-tour-target="loan-reason">
                            <label className="text-md-b2 font-[590] text-md-heading" htmlFor="reason">
@@ -3484,17 +3854,22 @@ export default function LoanRequestModal({
                               )}
                            </div>
                         ) : null}
+                        {idNoRate ? (
+                           <p className="text-center text-md-b3 font-medium text-md-red-500" id="loan-id-no-rate" role="status">
+                              {isUsdIdrRateLoading ? (idLang === 'id' ? 'Memuat kurs Rupiah…' : 'Loading the rupiah rate…') : ID_NO_RATE_TEXT[idLang]}
+                           </p>
+                        ) : null}
                         {/* Deliberately not aria-disabled: the button *does* act — it explains why it
                             can't submit yet. Point screen readers at that explanation instead. */}
                         <button
-                           aria-describedby={isVerified ? undefined : 'loan-verify-blocker'}
+                           aria-describedby={idNoRate ? 'loan-id-no-rate' : isVerified ? undefined : 'loan-verify-blocker'}
                            className={`w-full rounded-md-lg px-md-4 py-md-3 text-md-b1 font-medium text-md-neutral-100 ${
-                              (isVerified || verifyAtSubmit) && !isSubmitting
+                              (isVerified || verifyAtSubmit) && !isSubmitting && !idNoRate
                                  ? 'bg-md-primary-1200 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2'
                                  : 'bg-md-neutral-600'
                            } ${verifyNudge ? 'blocked-tap-shake' : ''}`}
                            type="submit"
-                           disabled={isSubmitting}
+                           disabled={isSubmitting || idNoRate}
                         >
                            {isSubmitting ? 'Submitting...' : isCheckingBeforeVerify ? 'Checking...' : verifyAtSubmit ? 'Verify ID & send request' : 'Make Your Request'}
                         </button>

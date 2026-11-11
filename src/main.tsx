@@ -13,6 +13,7 @@ import { LocalizationProvider } from '@/i18n';
 import { initClarity } from '@/lib/analytics/clarity';
 import { maskReplayInput } from '@/lib/analytics/replayMasking';
 import { setupStaleChunkReload } from '@/lib/staleChunkReload';
+import { stashTelegramCallback } from '@/lib/telegramCallbackStash';
 import { applyThemeMode, getStoredThemeMode } from '@/lib/themeMode';
 
 import App from './App.tsx';
@@ -20,6 +21,8 @@ import './globals.css';
 import { captureFirstTouch } from '@/lib/attribution';
 import { hasStoredSession, resolveFbCodeAddress } from '@/lib/inAppHandoff';
 
+// Telegram sign-in data out of the URL before Clarity / PostHog can record it (telegramCallbackStash.ts).
+stashTelegramCallback();
 applyThemeMode(getStoredThemeMode());
 setupStaleChunkReload();
 initClarity();

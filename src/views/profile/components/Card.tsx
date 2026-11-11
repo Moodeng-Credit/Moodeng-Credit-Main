@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 
+import IndonesiaBadge from '@/components/IndonesiaBadge';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import Modal from '@/components/ui/Modal';
 import UserPay from '@/components/UserPay';
@@ -13,6 +14,7 @@ import { isLoanPastDue } from '@/utils/loanOverdue';
 import { getLoanBadgeStyles } from '@/utils/loanStatusFormatters';
 
 import { DEFAULT_LOAN_TIMEZONE, getDaysUntilDueDay, getLoanTimezone } from '@/lib/loanDeadline';
+import { formatIdr, isIndonesianLoan, remainingIdr } from '@/lib/loanMarket';
 
 import { deleteLoan, getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -56,7 +58,10 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
       <div className="bg-white rounded-xl max-w-[320px] w-full h-full flex flex-col shadow-md">
          <div className="p-5 pb-3 flex justify-between items-start">
             <div>
-               <h3 className="font-extrabold text-[15px] leading-[18px] text-[#0B1033]">{loan.reason}</h3>
+               <h3 className="font-extrabold text-[15px] leading-[18px] text-[#0B1033]">
+                  {isIndonesianLoan(loan) ? <IndonesiaBadge compact className="mr-1 align-middle" /> : null}
+                  {loan.reason}
+               </h3>
                <p className="text-[13px] leading-[16px] text-[#6B7280] mt-2">
                   You Funded <span className="font-extrabold">${formatNumber(loan.loanAmount)}</span> to{' '}
                   <em>
@@ -108,7 +113,10 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
       <div className="bg-white rounded-xl max-w-[320px] w-full h-full flex flex-col shadow-md">
          <div className="p-5 pb-3 flex justify-between items-start">
             <div>
-               <h3 className="font-extrabold text-[15px] leading-[18px] text-[#0B1033]">{loan.reason}</h3>
+               <h3 className="font-extrabold text-[15px] leading-[18px] text-[#0B1033]">
+                  {isIndonesianLoan(loan) ? <IndonesiaBadge compact className="mr-1 align-middle" /> : null}
+                  {loan.reason}
+               </h3>
                <p className="text-[12px] leading-[15px] text-[#6B7280] mt-1">posted on {postedDate}</p>
             </div>
          </div>
@@ -134,7 +142,18 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
             </div>
             <div>
                <p>Payback</p>
-               <p className="mt-1 text-[16px] font-normal text-[#166534]">${formatNumber(loan.totalRepaymentAmount)}</p>
+               {loan.repayIdr != null ? (
+                  // Rupiah peg: they owe fixed rupiah; the USD floats with the rate.
+                  <>
+                     <p className="mt-1 text-[16px] font-normal text-[#166534]">{formatIdr(loan.repayIdr)}</p>
+                     {loan.repaymentStatus !== 'Paid' && (remainingIdr(loan) ?? 0) < loan.repayIdr ? (
+                        <p className="text-[11px] text-[#6B7280]">Sisa {formatIdr(remainingIdr(loan) ?? 0)}</p>
+                     ) : null}
+                     <p className="text-[11px] text-[#6B7280]">≈ ${formatNumber(loan.totalRepaymentAmount)}</p>
+                  </>
+               ) : (
+                  <p className="mt-1 text-[16px] font-normal text-[#166534]">${formatNumber(loan.totalRepaymentAmount)}</p>
+               )}
             </div>
             <div></div>
             <div>

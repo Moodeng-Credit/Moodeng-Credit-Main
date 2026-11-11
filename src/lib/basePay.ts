@@ -1,5 +1,6 @@
 import { getPaymentStatus, pay, type PaymentStatus } from '@base-org/account';
 
+import { BASE_ALCHEMY_RPC_URL } from '@/lib/web3/baseAlchemy';
 import { ERROR_CODES, type ErrorCode } from '@/types/errorCodes';
 
 /**
@@ -16,6 +17,34 @@ import { ERROR_CODES, type ErrorCode } from '@/types/errorCodes';
 // USDC-on-Base only, forever (a hard product invariant), so we never send Base Sepolia in
 // production. An env override exists purely so a testnet build can exercise the flow.
 const USE_TESTNET = import.meta.env.VITE_BASE_PAY_TESTNET === 'true';
+
+// Where getPaymentStatus asks "did this payment land?". SDK 2.5.x defaults to a Coinbase developer
+// key that Coinbase shut off when it moved status checks to chain-proxy.wallet.coinbase.com (SDK
+// 2.6.0, Oct 29 2026): every call got 401 "request denied", so Base Pay payments never confirmed,
+// never recorded, and borrowers were told "still confirming, don't pay again". We ask Coinbase's new
+// endpoint first and Alchemy's Base endpoint second (same eth_getUserOperationReceipt call), so
+// either one answering is enough. Testnet keeps the SDK default.
+export const BASE_PAY_STATUS_URLS: string[] = USE_TESTNET
+   ? []
+   : ['https://chain-proxy.wallet.coinbase.com?targetName=base', BASE_ALCHEMY_RPC_URL];
+
+/** getPaymentStatus through each status endpoint in turn; the first definite answer wins. */
+export async function getBasePaymentStatus(id: string): Promise<PaymentStatus> {
+   if (BASE_PAY_STATUS_URLS.length === 0) return getPaymentStatus({ id, testnet: USE_TESTNET });
+   let lastAnswer: PaymentStatus | null = null;
+   let lastError: unknown = null;
+   for (const bundlerUrl of BASE_PAY_STATUS_URLS) {
+      try {
+         const status = await getPaymentStatus({ id, testnet: USE_TESTNET, bundlerUrl });
+         if (status.status === 'completed' || status.status === 'failed') return status;
+         lastAnswer = status;
+      } catch (err) {
+         lastError = err; // this endpoint refused or is down: try the next one
+      }
+   }
+   if (lastAnswer) return lastAnswer;
+   throw lastError ?? new Error('Payment status unavailable');
+}
 
 // pay() resolves the moment the user approves; the userOp still has to land on-chain, so we
 // poll getPaymentStatus to confirmation. These bound that poll.
@@ -143,7 +172,7 @@ export async function waitForBasePayment(
    for (;;) {
       let status: PaymentStatus;
       try {
-         status = await getPaymentStatus({ id, testnet: USE_TESTNET });
+         status = await getBasePaymentStatus(id);
       } catch (err) {
          // A transient RPC/bundler hiccup shouldn't abort a real payment: keep polling until
          // the deadline, then surface a timeout the caller can reconcile.

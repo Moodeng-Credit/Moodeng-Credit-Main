@@ -1075,5 +1075,19 @@ export const filipinoCoverageG: Record<string, string> = {
    "Confirm 1 hour before your call": "Kumpirmahin 1 oras bago ang call mo",
    "We'll send you an “I'll be there” button on Messenger, and it shows up right here. Tap it, or the call is cancelled automatically.": "Magpapadala kami ng “I'll be there” button sa Messenger, at lalabas din ito dito mismo. I-tap ito, kung hindi ay awtomatikong makakansela ang call.",
    "Your call is in under an hour — tap “I’ll be there” now to keep it.": "Wala nang isang oras bago ang call mo — i-tap ang “I’ll be there” ngayon para manatili ito.",
-   "You’re booked! You can apply right after the call.": "Naka-book ka na! Puwede kang mag-apply pagkatapos ng call."
+   "You’re booked! You can apply right after the call.": "Naka-book ka na! Puwede kang mag-apply pagkatapos ng call.",
+   "Not showing up after 10 minutes?": "Wala pa rin pagkalipas ng 10 minuto?",
+   "Not there yet? Your money is safe.": "Wala pa? Ligtas ang pera mo.",
+   "Check your peso (PHP) balance first. PDAX often changes USDC on Base into pesos for you.": "Tingnan muna ang peso (PHP) balance mo. Kadalasan, ginagawang piso ng PDAX ang USDC on Base para sa iyo.",
+   "Open your USDC receiving address for the Base network.": "Buksan ang USDC receiving address mo para sa Base network.",
+   "It should end in": "Dapat nagtatapos ito sa",
+   "If it matches, message the exchange's support and send them this transaction ID.": "Kung tugma, i-message ang support ng exchange at ipadala sa kanila ang transaction ID na ito.",
+   "If it matches, message the exchange's support — they can find your deposit.": "Kung tugma, i-message ang support ng exchange — kaya nilang hanapin ang deposit mo.",
+   "Copy transaction ID": "Kopyahin ang transaction ID",
+   "Doesn't match, or not sure? Message us — we'll help you get it back.": "Hindi tugma, o hindi sigurado? I-message kami — tutulungan ka naming mabawi ito.",
+   "Not sure? Message us — we'll help.": "Hindi sigurado? I-message kami — tutulong kami.",
+   "Choose \"Base\" as the network. PDAX keeps USDC on Base separate from plain USDC — use the Base one.": "Piliin ang \"Base\" bilang network. Hiwalay sa PDAX ang USDC on Base at ang plain USDC — gamitin ang Base.",
+   "Send USDC from your Moodeng wallet to your PDAX account. PDAX often changes it into pesos for you — then cash out to your bank or e-wallet.": "Magpadala ng USDC mula sa Moodeng wallet mo papunta sa PDAX account mo. Kadalasan, ginagawa itong piso ng PDAX para sa iyo — tapos i-cash out sa bangko o e-wallet mo.",
+   "Once your USDC arrives in PDAX (usually under 1 minute), check your Portfolio. PDAX often changes it into pesos for you — if your PHP balance went up, skip to the last step.": "Kapag dumating na sa PDAX ang USDC mo (karaniwang wala pang 1 minuto), tingnan ang Portfolio mo. Kadalasan, ginagawa itong piso ng PDAX para sa iyo — kung tumaas ang PHP balance mo, dumiretso sa huling hakbang.",
+   "PHP went up? PDAX already changed it into pesos — go to the last step. Still shows USDC? Sell it first.": "Tumaas ang PHP? Ginawa na itong piso ng PDAX — pumunta sa huling hakbang. USDC pa rin ang nakikita? Ibenta muna ito."
 };

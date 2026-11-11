@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { deriveLoanStatus } from '@/app/admin/adminStatus';
 import AdminStatusBadge from '@/app/admin/AdminStatusBadge';
 import { AdminLiveRow, useAdminLiveReload } from '@/app/admin/useAdminLive';
+import IndonesiaBadge from '@/components/IndonesiaBadge';
 
 import AdminDeadline from './AdminDeadline';
 import { type AdminLoanRecord, listAdminLoans, type LoanExplorerStatus, setEntityTest } from './adminSupabase';
@@ -80,7 +81,9 @@ export default function LoanExplorerSection() {
                  l.lender?.username,
                  l.borrower_wallet,
                  l.lender_wallet,
-                 l.reason
+                 l.reason,
+                 // "indonesia" / "🇮🇩" finds the Indonesia-track loans.
+                 l.market === 'ID' ? 'indonesia 🇮🇩' : null
               ];
               return fields.some((f) => (f ?? '').toLowerCase().includes(q));
            });
@@ -177,7 +180,12 @@ export default function LoanExplorerSection() {
                                  </AdminLiveRow>
                               </td>
                               <td className="px-4 py-3 font-mono text-sm font-bold text-[#cfc6dd]">{l.tracking_id}</td>
-                              <td className="px-4 py-3 text-sm font-bold text-white">{l.borrower?.username ?? '—'}</td>
+                              <td className="px-4 py-3 text-sm font-bold text-white">
+                                 <span className="inline-flex items-center gap-1.5">
+                                    {l.borrower?.username ?? '—'}
+                                    {l.market === 'ID' ? <IndonesiaBadge compact /> : null}
+                                 </span>
+                              </td>
                               <td className="px-4 py-3 text-sm font-bold text-white">{l.lender?.username ?? '—'}</td>
                               <td className="px-4 py-3 text-right text-sm font-black text-white">{money(l.loan_amount)}</td>
                               <td className="px-4 py-3 text-right text-sm font-bold text-[#a89bb8]">

@@ -7,6 +7,8 @@ import { useAdminLiveReload } from '@/app/admin/useAdminLive';
 import { type AdminCallApprovalRow, type AdminCallDecision, decideAdminCall, getAdminCallApprovals } from '@/app/admin/adminSupabase';
 import { groupCallApprovals, isApprovalRequest, relativeStart } from '@/app/admin/callApprovalsModel';
 import CallSheet from '@/app/admin/CallSheet';
+import { type AdminIndoProfile, fetchIndonesiaProfiles, telegramUrl, whatsappChatUrl } from '@/app/admin/indonesiaAdmin';
+import IndonesiaBadge from '@/components/IndonesiaBadge';
 
 // Call approvals — approve a borrower the moment their video call ends, without waiting for the
 // Telegram "Did they show up?" card. Same decisions as the card's buttons (admin-call-approvals
@@ -35,11 +37,17 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
    const [now, setNow] = useState(() => Date.now());
    // The call sheet open on top (profile + screening questions + notes for this borrower's call).
    const [sheetRow, setSheetRow] = useState<AdminCallApprovalRow | null>(null);
+   // Indonesia-track people in this list (🇮🇩 + how to reach them), read from users.market.
+   const [indo, setIndo] = useState<Map<string, AdminIndoProfile>>(() => new Map());
 
    const load = useCallback(async () => {
       try {
-         setRows(await getAdminCallApprovals());
+         const next = await getAdminCallApprovals();
+         setRows(next);
          setError(null);
+         void fetchIndonesiaProfiles(next.map((r) => r.userId))
+            .then(setIndo)
+            .catch(() => undefined);
       } catch (err) {
          setError(err instanceof Error ? err.message : 'Could not load calls.');
       }
@@ -164,7 +172,33 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
       <li key={row.userId} className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4">
          <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-               <p className="break-words text-lg font-black text-white">{row.name}</p>
+               <p className="flex flex-wrap items-center gap-2 break-words text-lg font-black text-white">
+                  {row.name}
+                  {indo.has(row.userId) ? <IndonesiaBadge /> : null}
+               </p>
+               {(() => {
+                  const p = indo.get(row.userId);
+                  if (!p) return null;
+                  const wa = whatsappChatUrl(p.whatsappNumber);
+                  const tg = telegramUrl(p.telegramUsername);
+                  return (
+                     <p className="mt-0.5 flex flex-wrap gap-x-3 text-sm font-bold">
+                        {wa ? (
+                           <a className="text-emerald-300 underline" href={wa} rel="noopener noreferrer" target="_blank">
+                              Chat on WhatsApp
+                           </a>
+                        ) : null}
+                        {tg ? (
+                           <a className="text-sky-300 underline" href={tg} rel="noopener noreferrer" target="_blank">
+                              @{p.telegramUsername?.replace(/^@/, '')}
+                           </a>
+                        ) : null}
+                        <span className="text-[#a89bb8]">
+                           KYC {p.kyc} · income doc {p.incomeDoc ?? 'none'}
+                        </span>
+                     </p>
+                  );
+               })()}
                {row.callStartsAt ? (
                   <p className="mt-0.5 text-sm font-bold text-[#c9a7ff]">
                      {formatCallTime(row.callStartsAt)} · {relativeStart(row.callStartsAt, now)}

@@ -11,7 +11,7 @@ import { useUsdcRate } from '@/lib/useUsdcRate';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import type { RootState } from '@/store/store';
 import AnyNetworkDeposit from '@/views/repay/AnyNetworkDeposit';
-import useBankPayoutAvailable from '@/views/withdraw/useBankPayoutAvailable';
+import { useBankPayoutStatus } from '@/views/withdraw/useBankPayoutAvailable';
 import '@/views/withdraw/withdraw-theme.css';
 
 // /money: one place to add money to the Moodeng wallet and to cash it out, styled after the
@@ -43,7 +43,8 @@ export default function MoneyHub() {
    const account = useAccount();
    const user = useSelector((state: RootState) => state.auth.user);
    const isPreview = location.pathname === '/money-preview';
-   const allowed = useBankPayoutAvailable(isPreview);
+   // Cash out goes to the bank form, or to the bank-QR cash-out while Stableyard's bank payout is down.
+   const { available: allowed, bankUp } = useBankPayoutStatus(isPreview);
    const [view, setView] = useState<View>('home');
    const { value: phpRate } = useUsdcRate('php');
 
@@ -123,7 +124,7 @@ export default function MoneyHub() {
                      </button>
                      <button
                         type="button"
-                        onClick={() => navigate('/withdraw?to=bank')}
+                        onClick={() => navigate(bankUp ? '/withdraw?to=bank' : '/withdraw?to=qr&from=money')}
                         className="flex flex-col items-start gap-[10px] rounded-[16px] border-2 border-[#e8e4ff] bg-[var(--surface,#fff)] p-[16px] text-left active:scale-[0.98]"
                      >
                         <span className="flex h-[36px] w-[36px] items-center justify-center rounded-full bg-[#e0dbff]">
@@ -131,7 +132,7 @@ export default function MoneyHub() {
                         </span>
                         <span>
                            <span className="block text-[18px] font-bold text-[var(--ink,#1c053d)]">Cash out</span>
-                           <span className="block text-[13px] text-[var(--text-muted,#45556c)]">Pesos to GCash or bank</span>
+                           <span className="block text-[13px] text-[var(--text-muted,#45556c)]">Pesos to your bank</span>
                         </span>
                      </button>
                   </div>

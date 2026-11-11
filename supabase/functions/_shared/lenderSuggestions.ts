@@ -35,6 +35,8 @@ export type LoanForMatch = {
    coin?: string | null;
    reason?: string | null;
    borrower_user_id?: string | null;
+   /** 'ID' = Indonesia track: the post is marked 🇮🇩. */
+   market?: string | null;
 };
 
 export type RankedLender = {
@@ -199,7 +201,7 @@ export const buildLenderSuggestionMessage = (
    const lines: string[] = [];
    const coin = loan.coin || 'USDC';
 
-   lines.push('💸 New loan request');
+   lines.push(loan.market === 'ID' ? '🇮🇩 New loan request · Indonesia' : '💸 New loan request');
    lines.push(`$${formatAmount(loan.loan_amount)} ${coin}${loan.reason ? ` — "${loan.reason}"` : ''}`);
    lines.push(`Borrower: ${borrowerUsername ? `@${borrowerUsername}` : 'unknown'}`);
    if (timing.submitted) lines.push(`🕒 Submitted ${timing.submitted}`);

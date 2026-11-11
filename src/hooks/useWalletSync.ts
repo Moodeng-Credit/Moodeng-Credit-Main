@@ -115,6 +115,15 @@ export function useWalletSync() {
          return;
       }
 
+      // A borrower whose saved wallet is the Instant Wallet (incl. ones moved over from a Base
+      // Account by the team, Nov 2026) has no use for a wagmi wallet: the browser just
+      // auto-reconnected the old one. Drop it quietly — a "Saved wallet mismatch" toast here only
+      // confused people, and repay already ignores wagmi for them (useActivePaymentMethod).
+      if (userRole === 'borrower' && isOpenfortWalletProvider(storedWalletProvider)) {
+         disconnect();
+         return;
+      }
+
       if (userRole === 'borrower' && !isBaseWalletProvider(walletProvider)) {
          showToast(
             TOAST_TYPES.ERROR,
@@ -166,6 +175,7 @@ export function useWalletSync() {
       isAuthChecked,
       showToast,
       storedWalletAddress,
+      storedWalletProvider,
       userId,
       username,
       userRole

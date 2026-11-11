@@ -11,6 +11,7 @@ import { stableyard } from '../_shared/stableyard.ts';
 // POST { banks: 'PH' } lists the bank codes Stableyard accepts for a Philippine bank payout.
 // POST { raw: true } returns the full config instead of the summary.
 // POST { payment: 'payment_…' } returns one Payment as Stableyard sees it.
+// POST { kycReusePolicy: true } returns the Reusable KYC policy (is ID-check sharing on for our app?).
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -64,6 +65,23 @@ serve(async (req) => {
       return payment.ok
          ? json({ ok: true, stableyardStatus: payment.status, payment: payment.data })
          : json({ ok: false, stableyardStatus: payment.status, error: payment.error, code: payment.code ?? null }, 502);
+   }
+
+   // ---- POST { kycReusePolicy: true } → GET /v2/partners/kyc-reuse-policy (read-only) ----------
+   if (body?.kycReusePolicy === true) {
+      const policy = await stableyard.getKycReusePolicy();
+      return policy.ok
+         ? json({ ok: true, stableyardStatus: policy.status, policy: policy.data })
+         : json(
+              {
+                 ok: false,
+                 stableyardStatus: policy.status,
+                 error: policy.error,
+                 code: policy.code ?? null,
+                 requestId: policy.requestId ?? null
+              },
+              502
+           );
    }
 
    // ---- GET /v2/partners/config -------------------------------------------------------------

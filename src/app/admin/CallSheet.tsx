@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { type AdminCallApprovalRow, recheckAdminCallForm } from '@/app/admin/adminSupabase';
+import IndonesiaContactCard from '@/app/admin/IndonesiaContactCard';
 import { type CheckField, currentVerdict, type FormCheck, tallyCheck } from '@/app/admin/callFormCheck';
 import {
    type BotAnswers,
@@ -18,6 +19,7 @@ import {
    saveCallScreening,
    type ScreeningAnswers
 } from '@/app/admin/callSheetData';
+import ProofRequestComposer from '@/app/admin/ProofRequestComposer';
 
 // Admin → Call approvals → Call sheet: everything the host needs on a borrower's onboarding call in
 // one place — who they are (bio, checks, loans), the screening questions to fill in while talking
@@ -398,6 +400,7 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
    const [transcript, setTranscript] = useState<CallTranscript | null>(null);
    const [botAnswers, setBotAnswers] = useState<BotAnswers[]>([]);
    const [rechecking, setRechecking] = useState(false);
+   const [askingProof, setAskingProof] = useState(false);
    const savingRef = useRef(false);
    const idRef = useRef<string | null>(null);
 
@@ -423,10 +426,10 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
    }, [row.userId, row.callStartsAt]);
 
    useEffect(() => {
-      const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+      const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !askingProof && onClose();
       window.addEventListener('keydown', onKey);
       return () => window.removeEventListener('keydown', onKey);
-   }, [onClose]);
+   }, [onClose, askingProof]);
 
    const touch = () => setStatus('dirty');
    const set = <K extends keyof ScreeningAnswers>(key: K, value: ScreeningAnswers[K]) => {
@@ -566,6 +569,14 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                   </a>
                ) : null}
                <button
+                  className="rounded-md border border-[#6b55f7] px-2.5 py-1 text-[13px] font-semibold text-[#6b55f7]"
+                  onClick={() => setAskingProof(true)}
+                  title="Send them a link to upload proof of what they said (work ID, visa, business…)"
+                  type="button"
+               >
+                  📎 Ask for proof
+               </button>
+               <button
                   className="rounded-md bg-[#1f1f1f] px-3 py-1 text-[13px] font-semibold text-white disabled:opacity-50"
                   disabled={status === 'saving'}
                   onClick={async () => {
@@ -593,6 +604,8 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
             {profile ? (
                <div className="space-y-3">
                   <ProfileCard profile={profile} />
+                  {/* Indonesia track: how to reach them (WhatsApp/Telegram/Facebook), Walt address, KYC + income doc. */}
+                  <IndonesiaContactCard userId={row.userId} />
                   <BotAnswersCard records={botAnswers} />
                   <FormCheckBar answers={answers} busy={rechecking} onRecheck={() => void recheck()} transcript={transcript} />
 
@@ -756,6 +769,14 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                </div>
             ) : null}
          </div>
+         {askingProof ? (
+            <ProofRequestComposer
+               firstName={(answers.fullName || profile?.displayName || '').trim().split(/\s+/)[0] || null}
+               name={name}
+               onClose={() => setAskingProof(false)}
+               userId={row.userId}
+            />
+         ) : null}
       </div>
    );
 }

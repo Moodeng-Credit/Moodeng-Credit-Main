@@ -7,10 +7,12 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
 
 import { useLocalization } from '@/i18n/LocalizationProvider';
+import { ID_PATHS } from '@/lib/idTrack';
 import type { LocaleCode } from '@/i18n/translations';
 import { updateUserRole } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { UserRole } from '@/types/authTypes';
+import { useIdTrackStatus } from '@/views/indonesia/idFlow';
 
 const ROLE_SELECTION_COPY = {
    en: {
@@ -124,6 +126,11 @@ export default function RoleSelectionPage() {
    const copy = ROLE_SELECTION_COPY[locale] ?? ROLE_SELECTION_COPY.en;
    const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
    const [isSubmitting, setIsSubmitting] = useState(false);
+   // Indonesia track: always a borrower, so no role picker — straight to their onboarding.
+   const idTrack = useIdTrackStatus();
+
+   if (idTrack.isLoading) return null;
+   if (idTrack.isIndo) return <Navigate to={ID_PATHS.onboarding} replace />;
 
    if (user?.userRole) {
       return <Navigate to={user.userRole === 'lender' ? '/lender/dashboard' : '/dashboard'} replace />;
