@@ -1,0 +1,313 @@
+/* Shareable QR cash-out guide (/learn/cash-out-with-your-bank-qr). Gold borrower look. */
+.qr-guide {
+   --qg-ink: #2b2116;
+   --qg-muted: #6b5d45;
+   --qg-card: #ffffff;
+   --qg-soft: #fff6dc;
+   --qg-line: #f0e4c0;
+   --qg-gold: #ffd75a;
+   --qg-gold-ink: #4a2a00;
+   width: min(560px, calc(100% - 32px));
+   margin-inline: auto;
+   padding: clamp(20px, 4vw, 40px) 0 64px;
+   color: var(--qg-ink);
+   display: flex;
+   flex-direction: column;
+   gap: 16px;
+}
+
+.qr-guide--app {
+   padding-top: 12px;
+}
+
+.qr-guide h2,
+.qr-guide h3 {
+   margin: 0;
+   color: var(--qg-ink);
+}
+
+.qr-guide p {
+   margin: 0;
+}
+
+.qr-guide__breadcrumb {
+   display: flex;
+   flex-wrap: wrap;
+   gap: 8px;
+   font-size: 0.85rem;
+   font-weight: 800;
+   color: #8a7a5c;
+}
+
+.qr-guide__breadcrumb a {
+   color: #8a6a1c;
+}
+
+.qr-guide__lang {
+   align-self: flex-end;
+   display: inline-flex;
+   padding: 4px;
+   border-radius: 999px;
+   background: #f3ead2;
+}
+
+.qr-guide__lang button {
+   min-height: 36px;
+   padding: 0 14px;
+   border: 0;
+   border-radius: 999px;
+   background: transparent;
+   font-size: 0.9rem;
+   font-weight: 800;
+   color: var(--qg-muted);
+   cursor: pointer;
+}
+
+.qr-guide__lang button[aria-pressed='true'] {
+   background: var(--qg-card);
+   color: var(--qg-ink);
+   box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
+}
+
+.qr-guide__hero {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   text-align: center;
+   gap: 8px;
+   padding: 20px 18px 22px;
+   border-radius: 24px;
+   background: linear-gradient(180deg, #fff1c2 0%, #fff8e6 100%);
+}
+
+.qr-guide__hero-art {
+   width: 132px;
+   height: auto;
+}
+
+.qr-guide__eyebrow {
+   font-size: 0.78rem;
+   font-weight: 900;
+   letter-spacing: 0.12em;
+   text-transform: uppercase;
+   color: #a06a00;
+}
+
+.qr-guide__hero h1 {
+   margin: 0;
+   font-size: clamp(1.6rem, 6vw, 2.1rem);
+   line-height: 1.12;
+   font-weight: 900;
+   letter-spacing: -0.02em;
+}
+
+.qr-guide__lead {
+   font-size: 1.05rem;
+   line-height: 1.45;
+   color: var(--qg-muted);
+}
+
+.qr-guide__chips {
+   display: flex;
+   flex-wrap: wrap;
+   justify-content: center;
+   gap: 6px;
+   margin: 6px 0 0;
+   padding: 0;
+   list-style: none;
+}
+
+.qr-guide__chips li {
+   padding: 6px 12px;
+   border-radius: 999px;
+   background: var(--qg-card);
+   font-size: 0.88rem;
+   font-weight: 800;
+}
+
+.qr-guide__card {
+   display: flex;
+   flex-direction: column;
+   gap: 10px;
+   padding: 18px;
+   border: 2px solid var(--qg-line);
+   border-radius: 20px;
+   background: var(--qg-card);
+   font-size: 1rem;
+   line-height: 1.45;
+}
+
+.qr-guide__card h2 {
+   font-size: 1.2rem;
+   font-weight: 900;
+}
+
+.qr-guide__card--soft {
+   background: var(--qg-soft);
+}
+
+.qr-guide__h2 {
+   margin: 8px 0 10px !important;
+   font-size: 1.35rem;
+   font-weight: 900;
+}
+
+.qr-guide__checks,
+.qr-guide__mini,
+.qr-guide__steps {
+   margin: 0;
+   padding: 0;
+   list-style: none;
+   display: flex;
+   flex-direction: column;
+}
+
+.qr-guide__checks {
+   gap: 8px;
+}
+
+.qr-guide__checks li {
+   position: relative;
+   padding-left: 30px;
+   font-weight: 700;
+}
+
+.qr-guide__checks li::before {
+   content: '✓';
+   position: absolute;
+   left: 0;
+   top: 1px;
+   display: grid;
+   place-items: center;
+   width: 22px;
+   height: 22px;
+   border-radius: 50%;
+   background: #2f9e44;
+   color: #fff;
+   font-size: 0.8rem;
+   font-weight: 900;
+}
+
+.qr-guide__steps {
+   gap: 12px;
+}
+
+.qr-guide__step-head {
+   display: flex;
+   gap: 12px;
+   align-items: flex-start;
+}
+
+.qr-guide__step h3 {
+   font-size: 1.15rem;
+   font-weight: 900;
+   line-height: 1.25;
+}
+
+.qr-guide__step p {
+   margin-top: 4px;
+   color: var(--qg-muted);
+}
+
+.qr-guide__num {
+   display: grid;
+   flex-shrink: 0;
+   place-items: center;
+   width: 36px;
+   height: 36px;
+   border-radius: 50%;
+   background: var(--qg-gold);
+   color: var(--qg-gold-ink);
+   font-size: 1.05rem;
+   font-weight: 900;
+}
+
+.qr-guide__path {
+   display: inline-block;
+   margin-top: 6px !important;
+   padding: 4px 10px;
+   border-radius: 10px;
+   background: var(--qg-soft);
+   color: #6b4a00 !important;
+   font-size: 0.9rem;
+   font-weight: 800;
+}
+
+.qr-guide__step-img {
+   width: 100%;
+   height: auto;
+   border-radius: 14px;
+}
+
+.qr-guide__mini {
+   gap: 8px;
+   counter-reset: mini;
+}
+
+.qr-guide__mini li {
+   position: relative;
+   padding-left: 30px;
+   counter-increment: mini;
+}
+
+.qr-guide__mini li::before {
+   content: counter(mini);
+   position: absolute;
+   left: 0;
+   top: 1px;
+   display: grid;
+   place-items: center;
+   width: 22px;
+   height: 22px;
+   border-radius: 50%;
+   background: #efe2b8;
+   font-size: 0.8rem;
+   font-weight: 900;
+}
+
+.qr-guide__help {
+   margin: 0;
+   display: flex;
+   flex-direction: column;
+   gap: 10px;
+}
+
+.qr-guide__help dt {
+   font-weight: 800;
+}
+
+.qr-guide__help dd {
+   margin: 2px 0 0;
+   color: var(--qg-muted);
+}
+
+.qr-guide__cta {
+   display: flex;
+   flex-direction: column;
+   align-items: stretch;
+   gap: 8px;
+   text-align: center;
+   margin-top: 4px;
+}
+
+.qr-guide__gold {
+   display: grid;
+   place-items: center;
+   min-height: 56px;
+   border-radius: 16px;
+   background: var(--qg-gold);
+   color: var(--qg-gold-ink) !important;
+   font-size: 1.15rem;
+   font-weight: 900;
+   text-decoration: none;
+   box-shadow: 0 4px 0 #e0b437;
+}
+
+.qr-guide__cta p {
+   font-size: 0.9rem;
+   color: var(--qg-muted);
+}
+
+.qr-guide__needhelp {
+   margin-top: 8px;
+}

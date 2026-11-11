@@ -1,10 +1,11 @@
 import { Navigate, useParams } from 'react-router-dom';
 
 import { useLocalization } from '@/i18n';
-import HowCreditLevelsWork from '@/views/support/HowCreditLevelsWork';
 import NeedMoreHelp from '@/views/support/components/NeedMoreHelp';
 import SupportHeader from '@/views/support/components/SupportHeader';
 import { getGuideForLocale } from '@/views/support/data/guides';
+import HowCreditLevelsWork from '@/views/support/HowCreditLevelsWork';
+import QrCashoutGuide, { QR_CASHOUT_GUIDE_SLUG } from '@/views/support/QrCashoutGuide';
 
 const GUIDE_DETAIL_COPY = {
    en: {
@@ -52,6 +53,17 @@ export default function GuideDetail() {
    // This guide gets a richer, SEO-optimized layout with custom graphics.
    if (slug === 'how-credit-levels-work') {
       return <HowCreditLevelsWork />;
+   }
+
+   if (slug === QR_CASHOUT_GUIDE_SLUG) {
+      return (
+         <div className="min-h-screen bg-md-neutral-200">
+            <div className="max-w-[440px] mx-auto pb-28 flex flex-col">
+               <SupportHeader title={copy.title} />
+               <QrCashoutGuide variant="app" />
+            </div>
+         </div>
+      );
    }
 
    return (
