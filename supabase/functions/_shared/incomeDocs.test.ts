@@ -1,6 +1,6 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { buildMemo, buildSections, mergeExtracted, opinionText, parseSteps, pdfJpegs, stepFor, verdictOf, computeMetrics, type Extracted, namesMatch, normalizeExtracted, parseStatedIncome, readPdfInfo, riskOf, runChecks, scoreOf } from './incomeDocs.ts';
+import { buildMemo, buildSections, combineOpinions, mergeExtracted, opinionText, parseSteps, pdfJpegs, stepFor, verdictOf, computeMetrics, type Extracted, namesMatch, normalizeExtracted, parseStatedIncome, readPdfInfo, riskOf, runChecks, scoreOf } from './incomeDocs.ts';
 
 const tx = (date: string, amount: number, balance: number | null, description = 'x') => ({ date, description, amount, balance, page: 1, source_text: `${date} ${amount}` });
 
@@ -244,10 +244,20 @@ Deno.test('mergeExtracted: batches of one long history become one document, over
    assert(m.readable);
 });
 
-Deno.test('opinionText: verdict, note and questions for the team', () => {
+Deno.test('combineOpinions: several reads become one direction', () => {
+   const o = (verdict: 'lend' | 'maybe' | 'decline', note = verdict, ask: string[] = []) => ({ verdict, note, ask });
+   const lean = combineOpinions([o('lend', 'covers it', ['When is payday?']), o('maybe'), o('lend', 'covers it too')])!;
+   assertEquals(lean.direction, 'LEAN LEND');
+   assertEquals(lean.votes, ['lend', 'maybe', 'lend']);
+   assertEquals(lean.note, 'covers it');
+   assertEquals(lean.ask, ['When is payday?']);
+   assertEquals(combineOpinions([o('maybe'), o('decline'), o('maybe')])!.direction, 'LEAN DECLINE');
+   assertEquals(combineOpinions([o('lend'), o('decline')])!.direction, 'MAYBE');
+   assertEquals(combineOpinions([o('decline'), o('decline'), o('decline')])!.direction, 'DECLINE');
+   assertEquals(combineOpinions([]), null);
    assertEquals(
-      opinionText({ verdict: 'maybe', note: 'Income covers it [T2], but she was 3 days late once.', ask: ['When is your next payday?'] }),
-      '🧠 AI opinion (with their history): MAYBE\nIncome covers it [T2], but she was 3 days late once.\n❓ When is your next payday?'
+      opinionText(lean),
+      '🧠 AI opinion: LEAN LEND (3 reads: lend, maybe, lend · with their history)\ncovers it\n❓ When is payday?'
    );
 });
 

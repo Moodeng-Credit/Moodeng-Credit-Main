@@ -841,6 +841,32 @@ const extract = async (apiKey: string, files: LoadedFile[]): Promise<Extracted> 
 };
 
 export type AiOpinion = { verdict: 'lend' | 'maybe' | 'decline'; note: string; ask: string[] };
+/** Several opinions on the same send, combined into one direction. */
+export type AiDirection = {
+   direction: 'LEND' | 'LEAN LEND' | 'MAYBE' | 'LEAN DECLINE' | 'DECLINE';
+   votes: AiOpinion['verdict'][];
+   note: string;
+   ask: string[];
+};
+
+const VOTE: Record<AiOpinion['verdict'], number> = { lend: 1, maybe: 0, decline: -1 };
+
+/**
+ * One reading of the evidence can swing (the same screenshots got MAYBE, then DECLINE). Several
+ * independent opinions are averaged into a direction (lend = +1, maybe = 0, decline = −1): all
+ * one way → LEND / DECLINE, a tilt → LEAN …, split → MAYBE. The note shown is from the opinion closest to
+ * that average; the questions are pooled. Pure.
+ */
+export const combineOpinions = (opinions: AiOpinion[]): AiDirection | null => {
+   if (!opinions.length) return null;
+   const mean = opinions.reduce((s, o) => s + VOTE[o.verdict], 0) / opinions.length;
+   const direction: AiDirection['direction'] =
+      mean >= 0.8 ? 'LEND' : mean > 0.15 ? 'LEAN LEND' : mean <= -0.8 ? 'DECLINE' : mean < -0.15 ? 'LEAN DECLINE' : 'MAYBE';
+   const closest = [...opinions].sort((a, b) => Math.abs(VOTE[a.verdict] - mean) - Math.abs(VOTE[b.verdict] - mean))[0];
+   const ask = [...new Set([closest, ...opinions].flatMap((o) => o.ask))].slice(0, 2);
+   return { direction, votes: opinions.map((o) => o.verdict), note: closest.note, ask };
+};
+
 
 /**
  * The lending opinion: what the document shows (numbers, checks) next to who the borrower is — what they
@@ -849,7 +875,7 @@ export type AiOpinion = { verdict: 'lend' | 'maybe' | 'decline'; note: string; a
  */
 const OPINION_SYSTEM = `You help a small lender decide on loans of $20–$150 to Filipino and Indonesian borrowers, repaid in one payment within about a month. Their target is 90% repaid on time. Be fair to people with low or irregular incomes: small loans for bills, food, medicine or a pay gap are normal here.
 
-You get: the loan they're asking for, what their proof-of-income document shows (money in and out, regular deposits, checks that passed or failed, a score), and the borrower's own record with us: what they told us about their work and income, their past loans (amount, when due, when repaid, days late), and the AI summary of their onboarding video call if there was one.
+You get: the loan they're asking for, what their proof-of-income document shows (money in and out, regular deposits, checks that passed or failed, a score), and the borrower's own record with us: what they told us about their work and income, their past loans (amount, when due, when repaid, days late), and the AI summary of their onboarding video call if there was one. Sometimes also what was said about their earlier documents: take it into account, but judge this send on its own evidence.
 
 Weigh them together: does the document match what they told us and said on the call? Can the money that comes in cover this repayment by the due date? Does their repayment history with us (on time, late, how late) support a bigger or smaller loan? Note any red flag (document contradicts their story, income too small, late before, signs the account isn't theirs).
 
@@ -939,8 +965,23 @@ export const borrowerContext = async (supabase: SupabaseClient, userId: string) 
 };
 
 /** The opinion as it goes out in the Telegram reply and the Discord post. Pure. */
-export const opinionText = (o: AiOpinion) =>
-   [`🧠 AI opinion (with their history): ${o.verdict.toUpperCase()}`, o.note, ...o.ask.map((q) => `❓ ${q}`)].join('\n');
+export const opinionText = (o: AiDirection) =>
+   [`🧠 AI opinion: ${o.direction} (${o.votes.length} reads: ${o.votes.join(', ')} · with their history)`, o.note, ...o.ask.map((q) => `❓ ${q}`)].join('\n');
+
+const OPINION_READS = 3;
+
+/** OPINION_READS opinions at once (same time as one), combined. Earlier opinions on this borrower go in too. */
+const writeDirection = async (apiKey: string, input: Record<string, unknown>): Promise<AiDirection | null> => {
+   const reads = await Promise.all(
+      Array.from({ length: OPINION_READS }, () =>
+         writeOpinion(apiKey, input).catch((err) => {
+            console.warn('income doc opinion failed', err instanceof Error ? err.message : err);
+            return null;
+         })
+      )
+   );
+   return combineOpinions(reads.filter((o): o is AiOpinion => o !== null));
+};
 
 const sha256 = async (bytes: Uint8Array<ArrayBuffer>) =>
    [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -1160,11 +1201,21 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    });
    const { verdict, reason } = verdictOf(flags, doc.doc_type);
 
-   let aiNote: AiOpinion | null = null;
+   let aiNote: AiDirection | null = null;
    if (verdict !== 'resend') {
       try {
-         aiNote = await writeOpinion(apiKey, {
+         // What the AI said about their earlier sends, so its view of the same person stays steady.
+         const { data: earlier } = await supabase
+            .from('income_documents')
+            .select('created_at, ai_note')
+            .eq('user_id', row.user_id)
+            .neq('id', id)
+            .not('ai_note', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(3);
+         aiNote = await writeDirection(apiKey, {
             borrower: await borrowerContext(supabase, row.user_id),
+            earlier_opinions_on_this_borrower: (earlier ?? []).map((e: { created_at: string; ai_note: string }) => ({ on: e.created_at.slice(0, 10), said: e.ai_note })),
             loan: loanCtx,
             monthly_income_usd: monthlyIncomeUsd(doc, metrics),
             document: { type: doc.doc_type, institution: doc.institution, period: [doc.period_start, doc.period_end], currency: doc.currency },
@@ -1190,7 +1241,7 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       risk,
       score,
       checks,
-      ai_note: aiNote ? `${aiNote.verdict.toUpperCase()}: ${aiNote.note}${aiNote.ask.length ? ` Ask: ${aiNote.ask.join(' ')}` : ''}` : null,
+      ai_note: aiNote ? `${aiNote.direction} (${aiNote.votes.join(', ')}): ${aiNote.note}${aiNote.ask.length ? ` Ask: ${aiNote.ask.join(' ')}` : ''}` : null,
       model: MODEL
    };
    if (verdict === 'resend' && reason) return askResend(patch, reason, `score ${score}/100`);
@@ -1204,7 +1255,7 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
          verdict,
          ...(autoApprove ? { decision: 'approved', decided_at: new Date().toISOString(), decided_by: `auto ($${step!.min} step)` } : {})
       },
-      [`${headline} · score ${score}/100${aiNote ? ` · AI says ${aiNote.verdict}` : ''}`, aiNote ? opinionText(aiNote) : null, checkLine, memo].filter(Boolean).join('\n\n').slice(0, 3900)
+      [`${headline} · score ${score}/100${aiNote ? ` · AI: ${aiNote.direction.toLowerCase()}` : ''}`, aiNote ? opinionText(aiNote) : null, checkLine, memo].filter(Boolean).join('\n\n').slice(0, 3900)
    );
    if (autoApprove) await notifyIncomeDecision(supabase, id);
    return result;
