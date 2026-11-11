@@ -591,7 +591,17 @@ const handleQr = async (
 
    if (action === 'decode' || action === 'qr_cash_decode') {
       const result = await stableyard.decodeQr(accountId, country, qrPayload);
-      return result.ok ? json({ ok: true, accountId, step: action, result: result.data }) : fail(result);
+      if (result.ok) return json({ ok: true, accountId, step: action, result: result.data });
+      // Stableyard's decode-qr broke on 2026-11-11 (409 "complete_offramp_readiness"); Stableyard said to skip
+      // it and go straight to the payment. A real refusal (personal_qr_not_supported etc.) still shows; on a
+      // readiness/server error, read the name printed in the QR (EMVCo tag 59) so the next step still knows
+      // whose QR it is. The payment call does the real check.
+      const local = result.code === 'personal_qr_not_supported' ? null : readEmvName(qrPayload);
+      if (local && (result.status === 409 || result.status >= 500)) {
+         console.warn('[stableyard-deposit-address] decode-qr failed, using local read', result.status, result.code, result.requestId);
+         return json({ ok: true, accountId, step: action, localDecode: true, result: { merchant: { name: local, displayName: local } } });
+      }
+      return fail(result);
    }
 
    // create / qr_cash_create
@@ -642,6 +652,20 @@ const handleQr = async (
    });
    if (logError) console.error('[stableyard-deposit-address] log qr quote failed', logError.message);
    return json({ ok: true, accountId, step: action, result: result.data, quote });
+};
+
+// EMVCo QR (QR Ph): "ID(2) LEN(2) VALUE" records. Returns the payee name (tag 59), or null if it isn't one.
+const readEmvName = (payload: string): string | null => {
+   if (!payload.startsWith('000201')) return null;
+   let i = 0;
+   while (i + 4 <= payload.length) {
+      const id = payload.slice(i, i + 2);
+      const len = Number(payload.slice(i + 2, i + 4));
+      if (!Number.isInteger(len) || i + 4 + len > payload.length) return null;
+      if (id === '59') return payload.slice(i + 4, i + 4 + len).trim() || null;
+      i += 4 + len;
+   }
+   return null;
 };
 
 const loadNetworks = async (): Promise<StableyardDepositNetwork[]> => {
