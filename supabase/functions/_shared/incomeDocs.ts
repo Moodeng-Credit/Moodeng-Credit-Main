@@ -2,7 +2,7 @@ import { extractText, getDocumentProxy } from 'npm:unpdf@1.8.1';
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { postDiscord } from './discord.ts';
-import { incomeDocKeyboard } from './incomeDocCards.ts';
+import { incomeDocKeyboard, postIncomeDocDiscordCard } from './incomeDocCards.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
 import { fileMarkers, gcashRefIssues, type ImageInfo, imageInfo, isAiSize, rowKeys, rowOverlap } from './fileForensics.ts';
@@ -1085,14 +1085,17 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    }
    await postDiscord({ embeds: [{ title: `📄 Proof of income — ${who}`, description: `${ping.split('\n').slice(1).join('\n')}\n${ADMIN_URL}`, color: 0x6b55f7 }] }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }).catch(() => undefined);
    // The result (read OK, couldn't read, resend asked…) goes to both places the ping went.
-   // One that waits for the team carries 👀 Check + ✅ Approve / ❌ Reject on Telegram (incomeDocCards.ts);
-   // Discord webhooks can't carry working buttons, so that post links to the same Admin page.
+   // One that waits for the team carries 👀 Check + ✅ Approve / ❌ Reject on Telegram and, when the
+   // Discord bot is set up, on Discord too (incomeDocCards.ts). Otherwise Discord gets a webhook post
+   // that links to the same Admin page.
    const reply = async (text: string, waiting = false) => {
       if (chat?.value) {
          await sendTelegramMessage(chat.value, text, { replyToMessageId: pingId, ...(waiting ? { inlineKeyboard: incomeDocKeyboard(id) } : {}) }).catch((err) =>
             console.error('income doc result failed', err)
          );
       }
+      const decisionEmbed = { title: `⚠️ Needs your decision — ${who}`, url: ADMIN_URL, description: text.slice(0, 3800), color: 0xf39c12 };
+      if (waiting && (await postIncomeDocDiscordCard(supabase, id, decisionEmbed))) return;
       await postDiscord(
          {
             embeds: [
