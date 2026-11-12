@@ -1,6 +1,6 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { buildMemo, buildSections, parseSteps, pdfJpegs, stepFor, verdictOf, computeMetrics, type Extracted, namesMatch, normalizeExtracted, parseStatedIncome, readPdfInfo, riskOf, runChecks, scoreOf } from './incomeDocs.ts';
+import { buildMemo, buildSections, combineOpinions, mergeExtracted, opinionText, parseSteps, pdfJpegs, stepFor, verdictOf, computeMetrics, type Extracted, namesMatch, normalizeExtracted, parseStatedIncome, readPdfInfo, riskOf, runChecks, scoreOf } from './incomeDocs.ts';
 
 const tx = (date: string, amount: number, balance: number | null, description = 'x') => ({ date, description, amount, balance, page: 1, source_text: `${date} ${amount}` });
 
@@ -228,4 +228,45 @@ Deno.test('a re-saved phone scan is a note, a re-saved bank export is a warning'
    const exported = { ...scan, producer: 'iText 5.5' };
    assertEquals(runChecks(doc, computeMetrics(doc), { ...smallLoan, pdfs: [scan] }).find((f) => f.code === 'edited_after_creation')?.severity, 'info');
    assertEquals(runChecks(doc, computeMetrics(doc), { ...smallLoan, pdfs: [exported] }).find((f) => f.code === 'edited_after_creation')?.severity, 'orange');
+});
+
+Deno.test('mergeExtracted: batches of one long history become one document, overlapping rows once', () => {
+   const a = base({ period_start: '2026-08-10', period_end: '2026-09-15', opening_balance: 500, closing_balance: 23500, transactions: [tx('2026-08-15', 12000, 13000, 'Salary ACME'), tx('2026-09-15', 12500, 23500, 'Salary ACME')] });
+   const b = base({ holder_name: null, period_start: '2026-09-15', period_end: '2026-11-11', opening_balance: 23500, closing_balance: 9000, transactions: [tx('2026-09-15', 12500, 23500, 'Received from ACME'), tx('2026-10-15', 12500, 9000, 'Salary ACME')], visual_anomalies: ['x'] });
+   const unreadable = base({ readable: false, doc_type: 'other', transactions: [] });
+   const m = mergeExtracted([b, unreadable, a].sort(() => 0));
+   assertEquals(m.transactions.map((t) => t.date), ['2026-08-15', '2026-09-15', '2026-10-15']);
+   assertEquals([m.period_start, m.period_end], ['2026-08-10', '2026-11-11']);
+   assertEquals([m.opening_balance, m.closing_balance], [1000, 9000]);
+   assertEquals(m.holder_name, 'Maria Santos Cruz');
+   assertEquals(m.doc_type, 'gcash_history');
+   assertEquals(m.visual_anomalies, ['x']);
+   assert(m.readable);
+});
+
+Deno.test('combineOpinions: several reads become one direction', () => {
+   const o = (verdict: 'lend' | 'maybe' | 'decline', note = verdict, ask: string[] = []) => ({ verdict, note, ask });
+   const lean = combineOpinions([o('lend', 'covers it', ['When is payday?']), o('maybe'), o('lend', 'covers it too')])!;
+   assertEquals(lean.direction, 'LEAN LEND');
+   assertEquals(lean.votes, ['lend', 'maybe', 'lend']);
+   assertEquals(lean.note, 'covers it');
+   assertEquals(lean.ask, ['When is payday?']);
+   assertEquals(combineOpinions([o('maybe'), o('decline'), o('maybe')])!.direction, 'LEAN DECLINE');
+   assertEquals(combineOpinions([o('lend'), o('decline')])!.direction, 'MAYBE');
+   assertEquals(combineOpinions([o('decline'), o('decline'), o('decline')])!.direction, 'DECLINE');
+   assertEquals(combineOpinions([]), null);
+   assertEquals(
+      opinionText(lean),
+      '🧠 AI opinion: LEAN LEND (3 reads: lend, maybe, lend · with their history)\ncovers it\n❓ When is payday?'
+   );
+});
+
+Deno.test('mergeExtracted: a misread copy of an overlap row is dropped; balances from rows skip balance_math', () => {
+   const a = base({ transactions: [tx('2026-09-05', -100, 1160.55, 'Transfer to C'), tx('2026-09-06', -55, 1105.55, 'Apple')] });
+   // The next batch re-read the overlap with a wrong amount (-1100 → 160.55).
+   const b = base({ transactions: [tx('2026-09-05', -1100, 160.55, 'Transfer to C'), tx('2026-09-07', 1000, 2105.55, 'Salary')] });
+   const m = mergeExtracted([a, b]);
+   assertEquals(m.transactions.map((t) => t.amount), [-100, -55, 1000]);
+   const flags = runChecks(m, computeMetrics(m), ctx);
+   assert(!flags.some((f) => f.code === 'balance_math' || f.code === 'running_balance'));
 });

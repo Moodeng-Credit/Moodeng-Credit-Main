@@ -22,8 +22,14 @@ import { idLocaleOf, idResendReason, isIdTrackUser, loadIdStatus, notifyIdNextSt
 // Results land on the row (Admin → Risk → Income docs) and as a reply under the ping.
 
 // Flash is DeepSeek's only model that reads images, and costs about a cent per send.
+// Reads the pages (it sees images). Thinking off: it's copying rows, and with thinking on (DeepSeek's
+// default) the hidden reasoning used up the answer's room — 5 screenshots "too long to read", Nov 11.
 const MODEL = 'deepseek-flash';
+// Writes the lending opinion from the document + the borrower's history. Text only, so the bigger
+// model with thinking on is cheap (one call per send).
+const OPINION_MODEL = 'deepseek-v4-pro';
 const DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions';
+const TOO_LONG = 'document too long to read in one pass';
 const ADMIN_URL = 'https://moodeng.app/admin/income-docs';
 // Rough rates for the affordability checks only; close enough to compare sizes.
 const PER_USD: Record<string, number> = { USD: 1, PHP: 57, IDR: 16300, THB: 33 };
@@ -278,7 +284,15 @@ export const runChecks = (doc: Extracted, metrics: Metrics, ctx: CheckContext): 
    if (ctx.duplicateOf.length) {
       flags.push({ code: 'same_file_other_account', severity: 'red', detail: `The exact same file was sent by ${ctx.duplicateOf.length} other account(s).` });
    }
-   if (doc.opening_balance != null && doc.closing_balance != null && tx.length) {
+   // When the opening and closing balances are just the first and last rows' (a long history read in
+   // batches), this sum is the running-balance check below counted twice, so it's skipped.
+   const endsFromRows =
+      tx.length > 0 &&
+      tx[0].balance != null &&
+      tx[tx.length - 1].balance != null &&
+      doc.opening_balance === round2((tx[0].balance as number) - tx[0].amount) &&
+      doc.closing_balance === tx[tx.length - 1].balance;
+   if (doc.opening_balance != null && doc.closing_balance != null && tx.length && !endsFromRows) {
       const expected = doc.opening_balance + tx.reduce((s, t) => s + t.amount, 0);
       if (Math.abs(expected - doc.closing_balance) > 1) {
          flags.push({
@@ -595,13 +609,21 @@ type LoadedFile = { name: string; mime: string; bytes: Uint8Array<ArrayBuffer> }
 type ChatPart = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string; detail: 'high' } };
 
 /** One DeepSeek chat call in JSON mode. Blank or broken JSON (their JSON mode blanks invalid output) is retried once. */
-const deepseekJson = async <T>(apiKey: string, system: string, content: string | ChatPart[], maxTokens: number): Promise<T> => {
+const deepseekJson = async <T>(
+   apiKey: string,
+   system: string,
+   content: string | ChatPart[],
+   maxTokens: number,
+   opts: { model?: string; thinking?: boolean; timeoutMs?: number } = {}
+): Promise<T> => {
    for (let attempt = 0; attempt < 2; attempt++) {
       const res = await fetch(DEEPSEEK_URL, {
          method: 'POST',
          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+         ...(opts.timeoutMs ? { signal: AbortSignal.timeout(opts.timeoutMs) } : {}),
          body: JSON.stringify({
-            model: MODEL,
+            model: opts.model ?? MODEL,
+            thinking: { type: opts.thinking ? 'enabled' : 'disabled' },
             max_tokens: maxTokens,
             response_format: { type: 'json_object' },
             messages: [
@@ -613,7 +635,7 @@ const deepseekJson = async <T>(apiKey: string, system: string, content: string |
       if (!res.ok) throw new Error(`DeepSeek ${res.status}: ${(await res.text()).slice(0, 200)}`);
       const body = (await res.json()) as { choices?: Array<{ message?: { content?: string }; finish_reason?: string }> };
       const choice = body.choices?.[0];
-      if (choice?.finish_reason === 'length') throw new Error('document too long to read in one pass');
+      if (choice?.finish_reason === 'length') throw new Error(TOO_LONG);
       const text = choice?.message?.content?.trim();
       if (text) {
          try {
@@ -697,15 +719,69 @@ export const pdfJpegs = (bytes: Uint8Array, max = 6): Uint8Array[] => {
    return found;
 };
 
+/**
+ * Several reads of one send (a long history split into batches of screenshots) → one document. Rows
+ * that show up twice because screenshots overlap are kept once. Pure.
+ */
+export const mergeExtracted = (parts: Extracted[]): Extracted => {
+   const read = parts.filter((p) => p.readable);
+   if (!read.length) return parts[0];
+   const first = <K extends keyof Extracted>(k: K) => read.map((p) => p[k]).find((v) => v !== null && v !== undefined) ?? null;
+   const typed = read.map((p) => p.doc_type).filter((t) => t !== 'other');
+   // Overlapping screenshots repeat rows, and two reads word a row differently, so a row with a running
+   // balance is the same row when date, amount and balance match; without a balance, the wording decides.
+   const seen = new Set<string>();
+   const transactions = read
+      .flatMap((p) => p.transactions)
+      .filter((t) => {
+         const key = t.balance != null ? `${t.date}|${t.amount}|${t.balance}` : `${t.date}|${t.amount}||${t.description.trim().toLowerCase()}`;
+         if (seen.has(key)) return false;
+         seen.add(key);
+         return true;
+      })
+      .sort((a, b) => a.date.localeCompare(b.date))
+      // A row read twice from an overlap, with a wrong amount, breaks the running balance where the rows
+      // either side of it join up exactly: that row is the misread copy, so it's dropped.
+      .filter((t, i, all) => {
+         const prev = all[i - 1];
+         const next = all[i + 1];
+         if (!prev || !next || prev.balance == null || t.balance == null || next.balance == null) return true;
+         const fits = Math.abs(prev.balance + t.amount - t.balance) <= 1;
+         const joinsWithout = Math.abs(prev.balance + next.amount - next.balance) <= 1;
+         return fits || !joinsWithout;
+      });
+   // Balances at the ends come from the rows themselves (which read covered which end isn't known).
+   const firstRow = transactions[0];
+   const lastRow = transactions[transactions.length - 1];
+   const dates = read.flatMap((p) => [p.period_start, p.period_end]).filter((d): d is string => Boolean(d)).sort();
+   return {
+      readable: true,
+      unreadable_reason: null,
+      doc_type: typed[0] ?? 'other',
+      holder_name: first('holder_name') as string | null,
+      institution: first('institution') as string | null,
+      currency: first('currency') as string | null,
+      period_start: dates[0] ?? null,
+      period_end: dates[dates.length - 1] ?? null,
+      opening_balance: firstRow?.balance != null ? round2(firstRow.balance - firstRow.amount) : read[0].opening_balance,
+      closing_balance: lastRow?.balance != null ? lastRow.balance : read[read.length - 1].closing_balance,
+      payslip: first('payslip') as Extracted['payslip'],
+      fields: read.flatMap((p) => p.fields),
+      transactions,
+      visual_anomalies: [...new Set(read.flatMap((p) => p.visual_anomalies))]
+   };
+};
+
 const extract = async (apiKey: string, files: LoadedFile[]): Promise<Extracted> => {
-   const parts: ChatPart[] = [];
+   // One entry per page (a screenshot, a PDF page's text, a scanned page's photo), each already
+   // labelled with its page number across the whole send.
+   const pages: ChatPart[][] = [];
    const unreadable: string[] = [];
-   let page = 0;
    for (const f of files) {
       if (f.mime === 'application/pdf') {
-         const pages = await pdfText(f.bytes).catch(() => [] as string[]);
-         if (pages.some((t) => t.length > 40)) {
-            for (const t of pages) parts.push({ type: 'text', text: `--- page ${++page} (from ${f.name}, PDF text) ---\n${t}` });
+         const texts = await pdfText(f.bytes).catch(() => [] as string[]);
+         if (texts.some((t) => t.length > 40)) {
+            for (const t of texts) pages.push([{ type: 'text', text: `--- page ${pages.length + 1} (from ${f.name}, PDF text) ---\n${t}` }]);
             continue;
          }
          // No text: a scan. Read the page photos inside it instead.
@@ -715,30 +791,196 @@ const extract = async (apiKey: string, files: LoadedFile[]): Promise<Extracted> 
             continue;
          }
          for (const jpeg of scans) {
-            parts.push({ type: 'text', text: `--- page ${++page} (from ${f.name}, scanned page) ---` });
-            parts.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${toBase64(jpeg)}`, detail: 'high' } });
+            pages.push([
+               { type: 'text', text: `--- page ${pages.length + 1} (from ${f.name}, scanned page) ---` },
+               { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${toBase64(jpeg)}`, detail: 'high' } }
+            ]);
          }
       } else {
-         parts.push({ type: 'text', text: `--- page ${++page} (${f.name}, image) ---` });
-         parts.push({ type: 'image_url', image_url: { url: `data:${f.mime};base64,${toBase64(f.bytes)}`, detail: 'high' } });
+         pages.push([
+            { type: 'text', text: `--- page ${pages.length + 1} (${f.name}, image) ---` },
+            { type: 'image_url', image_url: { url: `data:${f.mime};base64,${toBase64(f.bytes)}`, detail: 'high' } }
+         ]);
       }
    }
    // Only throw when nothing at all could be read; one bad PDF shouldn't sink the others.
-   if (!page) throw new Error(`${unreadable.join(', ')} is a scanned PDF with no text — ask for screenshots`);
-   parts.push({ type: 'text', text: `Read these ${page} page(s) as one person's proof of income. Reply in json.` });
-   return normalizeExtracted(await deepseekJson<Record<string, unknown>>(apiKey, SYSTEM, parts, 16000));
+   if (!pages.length) throw new Error(`${unreadable.join(', ')} is a scanned PDF with no text — ask for screenshots`);
+
+   const read = (batch: ChatPart[][], of: string) =>
+      deepseekJson<Record<string, unknown>>(
+         apiKey,
+         SYSTEM,
+         [...batch.flat(), { type: 'text', text: `Read ${of} as one person's proof of income. Keep the page numbers printed above each page. Reply in json.` }],
+         16000
+      ).then(normalizeExtracted);
+
+   // Up to 3 pages: one read, so the model sees them together. More (a long history, many screenshots
+   // full of rows) can run past one answer's length (Nov 11: 5 GoTyme screenshots), so read 2 pages
+   // at a time, all at once, splitting a batch that is still too long; then merge the rows.
+   if (pages.length <= 3) {
+      try {
+         return await read(pages, `these ${pages.length} page(s)`);
+      } catch (err) {
+         if (!(err instanceof Error) || err.message !== TOO_LONG || pages.length < 2) throw err;
+      }
+   }
+   const readBatch = async (from: number, batch: ChatPart[][]): Promise<Extracted[]> => {
+      try {
+         const doc = await read(batch, `pages ${from + 1}–${from + batch.length} of ${pages.length} (the others are read separately)`);
+         // The model may count pages from 1 again within a batch: put them back in the whole send's numbering.
+         const page = (n: number) => (n >= 1 && n <= batch.length ? from + n : n);
+         return [{ ...doc, transactions: doc.transactions.map((t) => ({ ...t, page: page(t.page) })), fields: doc.fields.map((f) => ({ ...f, page: page(f.page) })) }];
+      } catch (err) {
+         if (!(err instanceof Error) || err.message !== TOO_LONG || batch.length < 2) throw err;
+         return (await Promise.all(batch.map((page, j) => readBatch(from + j, [page])))).flat();
+      }
+   };
+   const batches: Array<Promise<Extracted[]>> = [];
+   for (let i = 0; i < pages.length; i += 2) batches.push(readBatch(i, pages.slice(i, i + 2)));
+   return mergeExtracted((await Promise.all(batches)).flat());
 };
 
-/** Text-only second opinion from the numbers + checks (no images, so it's cheap). */
-const writeNote = async (apiKey: string, input: Record<string, unknown>) => {
-   const out = await deepseekJson<{ verdict?: string; note?: string }>(
-      apiKey,
-      'You help a small lender decide on loans of $20–$150 to Filipino and Indonesian borrowers, repaid in one payment within about a month. Their target is 90% repaid on time. From the document summary, numbers and checks, write at most 3 short plain sentences: can they repay this amount from what comes in, what to ask them on the call, and any red flag. Cite rows like [T3] when you mention a number. Do not invent numbers. Reply with only a json object: {"verdict": "lend" | "maybe" | "decline", "note": "..."}',
-      JSON.stringify(input),
-      1500
+export type AiOpinion = { verdict: 'lend' | 'maybe' | 'decline'; note: string; ask: string[] };
+/** Several opinions on the same send, combined into one direction. */
+export type AiDirection = {
+   direction: 'LEND' | 'LEAN LEND' | 'MAYBE' | 'LEAN DECLINE' | 'DECLINE';
+   votes: AiOpinion['verdict'][];
+   note: string;
+   ask: string[];
+};
+
+const VOTE: Record<AiOpinion['verdict'], number> = { lend: 1, maybe: 0, decline: -1 };
+
+/**
+ * One reading of the evidence can swing (the same screenshots got MAYBE, then DECLINE). Several
+ * independent opinions are averaged into a direction (lend = +1, maybe = 0, decline = −1): all
+ * one way → LEND / DECLINE, a tilt → LEAN …, split → MAYBE. The note shown is from the opinion closest to
+ * that average; the questions are pooled. Pure.
+ */
+export const combineOpinions = (opinions: AiOpinion[]): AiDirection | null => {
+   if (!opinions.length) return null;
+   const mean = opinions.reduce((s, o) => s + VOTE[o.verdict], 0) / opinions.length;
+   const direction: AiDirection['direction'] =
+      mean >= 0.8 ? 'LEND' : mean > 0.15 ? 'LEAN LEND' : mean <= -0.8 ? 'DECLINE' : mean < -0.15 ? 'LEAN DECLINE' : 'MAYBE';
+   const closest = [...opinions].sort((a, b) => Math.abs(VOTE[a.verdict] - mean) - Math.abs(VOTE[b.verdict] - mean))[0];
+   const ask = [...new Set([closest, ...opinions].flatMap((o) => o.ask))].slice(0, 2);
+   return { direction, votes: opinions.map((o) => o.verdict), note: closest.note, ask };
+};
+
+
+/**
+ * The lending opinion: what the document shows (numbers, checks) next to who the borrower is — what they
+ * told us about their work and income, every loan they've had with us and how it was repaid, and the AI
+ * summary of their onboarding call. Help for the team, never a decision. Null when it couldn't be written.
+ */
+const OPINION_SYSTEM = `You help a small lender decide on loans of $20–$150 to Filipino and Indonesian borrowers, repaid in one payment within about a month. Their target is 90% repaid on time. Be fair to people with low or irregular incomes: small loans for bills, food, medicine or a pay gap are normal here.
+
+You get: the loan they're asking for, what their proof-of-income document shows (money in and out, regular deposits, checks that passed or failed, a score), and the borrower's own record with us: what they told us about their work and income, their past loans (amount, when due, when repaid, days late), and the AI summary of their onboarding video call if there was one. Sometimes also what was said about their earlier documents: take it into account, but judge this send on its own evidence.
+
+Weigh them together: does the document match what they told us and said on the call? Can the money that comes in cover this repayment by the due date? Does their repayment history with us (on time, late, how late) support a bigger or smaller loan? Note any red flag (document contradicts their story, income too small, late before, signs the account isn't theirs).
+
+Cite document rows like [T3] when you mention a number from them. Do not invent numbers. Reply with only a json object:
+{"verdict": "lend" | "maybe" | "decline", "note": "at most 4 short plain sentences", "ask": ["up to 2 questions for the team to ask them"]}`;
+
+const writeOpinion = async (apiKey: string, input: Record<string, unknown>): Promise<AiOpinion | null> => {
+   type Out = { verdict?: string; note?: string; ask?: unknown };
+   const body = JSON.stringify(input);
+   // Thinking first (it weighs things better); if that's slow, a quick answer, so the whole check stays
+   // inside the edge function's time limit.
+   const out = await deepseekJson<Out>(apiKey, OPINION_SYSTEM, body, 6000, { model: OPINION_MODEL, thinking: true, timeoutMs: 45_000 }).catch((err) => {
+      console.warn('income doc opinion: thinking pass failed, trying without', err instanceof Error ? err.message : err);
+      return deepseekJson<Out>(apiKey, OPINION_SYSTEM, body, 1500, { model: OPINION_MODEL, timeoutMs: 25_000 });
+   });
+   const verdict = (['lend', 'maybe', 'decline'].includes(String(out.verdict)) ? String(out.verdict) : 'maybe') as AiOpinion['verdict'];
+   const ask = Array.isArray(out.ask) ? out.ask.map(String).filter(Boolean).slice(0, 2) : [];
+   return out.note ? { verdict, note: String(out.note), ask } : null;
+};
+
+const dayDiff = (from: string | null | undefined, to: string | null | undefined) =>
+   from && to ? Math.round((Date.parse(to) - Date.parse(from)) / 86400000) : null;
+
+/** What we know about the borrower, for the opinion: their own answers, loans with us, and the call summary. No names. */
+export const borrowerContext = async (supabase: SupabaseClient, userId: string) => {
+   const [{ data: u }, { data: loans }, { data: call }] = await Promise.all([
+      supabase
+         .from('users')
+         .select(
+            'created_at, profession, income_type, income_description, monthly_income, monthly_expenses, other_income, payday_type, payday_start, payday_end, market, mal, didit_id_status, video_call_outcome, current_risk_band'
+         )
+         .eq('id', userId)
+         .maybeSingle(),
+      supabase
+         .from('loans')
+         .select('loan_amount, total_repayment_amount, reason, loan_status, repayment_status, created_at, funded_at, due_date, repaid_at, repaid_amount')
+         .eq('borrower_user_id', userId)
+         .order('created_at', { ascending: true })
+         .limit(30),
+      supabase
+         .from('call_transcripts')
+         .select('summary, risk_level, call_started_at')
+         .eq('user_id', userId)
+         .not('summary', 'is', null)
+         .order('call_started_at', { ascending: false })
+         .limit(1)
+         .maybeSingle()
+   ]);
+   const now = new Date().toISOString();
+   const history = ((loans ?? []) as Array<Record<string, string | number | null>>).map((l) => {
+      const repaid = l.repayment_status === 'Paid';
+      const late = repaid ? dayDiff(l.due_date as string, l.repaid_at as string) : l.funded_at ? dayDiff(l.due_date as string, now) : null;
+      return {
+         amount: Number(l.loan_amount),
+         repay: Number(l.total_repayment_amount),
+         reason: l.reason,
+         status: l.loan_status === 'Requested' ? 'asking now' : repaid ? 'repaid' : l.funded_at ? 'open' : String(l.loan_status ?? '').toLowerCase(),
+         lent: (l.funded_at as string | null)?.slice(0, 10) ?? null,
+         due: (l.due_date as string | null)?.slice(0, 10) ?? null,
+         repaid_on: (l.repaid_at as string | null)?.slice(0, 10) ?? null,
+         days_late: late != null && late > 0 ? late : 0
+      };
+   });
+   return {
+      account_age_days: u?.created_at ? dayDiff(u.created_at, now) : null,
+      their_answers: u
+         ? {
+              work: u.profession,
+              income_type: u.income_type,
+              income: u.income_description,
+              monthly_income: u.monthly_income,
+              monthly_expenses: u.monthly_expenses,
+              other_income: u.other_income,
+              payday: [u.payday_type, u.payday_start, u.payday_end].filter(Boolean).join(' '),
+              country: u.market
+           }
+         : null,
+      credit_limit_usd: u?.mal ?? null,
+      id_check: u?.didit_id_status ?? null,
+      call_outcome: u?.video_call_outcome ?? null,
+      risk_band: u?.current_risk_band ?? null,
+      loans_with_us: history,
+      repaid_count: history.filter((h) => h.status === 'repaid').length,
+      late_count: history.filter((h) => h.days_late > 0).length,
+      call_summary: call?.summary ? { risk_level: call.risk_level, ...(call.summary as Record<string, unknown>) } : null
+   };
+};
+
+/** The opinion as it goes out in the Telegram reply and the Discord post. Pure. */
+export const opinionText = (o: AiDirection) =>
+   [`🧠 AI opinion: ${o.direction} (${o.votes.length} reads: ${o.votes.join(', ')} · with their history)`, o.note, ...o.ask.map((q) => `❓ ${q}`)].join('\n');
+
+const OPINION_READS = 3;
+
+/** OPINION_READS opinions at once (same time as one), combined. Earlier opinions on this borrower go in too. */
+const writeDirection = async (apiKey: string, input: Record<string, unknown>): Promise<AiDirection | null> => {
+   const reads = await Promise.all(
+      Array.from({ length: OPINION_READS }, () =>
+         writeOpinion(apiKey, input).catch((err) => {
+            console.warn('income doc opinion failed', err instanceof Error ? err.message : err);
+            return null;
+         })
+      )
    );
-   const verdict = ['lend', 'maybe', 'decline'].includes(String(out.verdict)) ? String(out.verdict) : 'maybe';
-   return out.note ? { verdict, note: String(out.note) } : null;
+   return combineOpinions(reads.filter((o): o is AiOpinion => o !== null));
 };
 
 const sha256 = async (bytes: Uint8Array<ArrayBuffer>) =>
@@ -809,9 +1051,13 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       }
    }
    await postDiscord({ embeds: [{ title: `📄 Proof of income — ${who}`, description: `${ping.split('\n').slice(1).join('\n')}\n${ADMIN_URL}`, color: 0x6b55f7 }] }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }).catch(() => undefined);
+   // The result (read OK, couldn't read, resend asked…) goes to both places the ping went.
    const reply = async (text: string) => {
-      if (!chat?.value) return;
-      await sendTelegramMessage(chat.value, text, { replyToMessageId: pingId }).catch(() => undefined);
+      if (chat?.value) await sendTelegramMessage(chat.value, text, { replyToMessageId: pingId }).catch(() => undefined);
+      await postDiscord(
+         { embeds: [{ title: `📄 Result — ${who}`, description: `${text.slice(0, 3900)}\n${ADMIN_URL}`, color: 0x6b55f7 }] },
+         { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }
+      ).catch(() => undefined);
    };
 
    const finish = async (patch: Record<string, unknown>, replyText?: string) => {
@@ -955,11 +1201,23 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    });
    const { verdict, reason } = verdictOf(flags, doc.doc_type);
 
-   let aiNote: { verdict: string; note: string } | null = null;
+   let aiNote: AiDirection | null = null;
    if (verdict !== 'resend') {
       try {
-         aiNote = await writeNote(apiKey, {
-            loan: loanCtx,
+         // What the AI said about their earlier sends, so its view of the same person stays steady.
+         const { data: earlier } = await supabase
+            .from('income_documents')
+            .select('created_at, ai_note')
+            .eq('user_id', row.user_id)
+            .neq('id', id)
+            .not('ai_note', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(3);
+         aiNote = await writeDirection(apiKey, {
+            borrower: await borrowerContext(supabase, row.user_id),
+            earlier_opinions_on_this_borrower: (earlier ?? []).map((e: { created_at: string; ai_note: string }) => ({ on: e.created_at.slice(0, 10), said: e.ai_note })),
+            // In US dollars (the document is in its own currency; monthly_income_usd converts it).
+            loan_usd: loanCtx ? { amount: loanCtx.amount, repay: loanCtx.total_repayment, due: loanCtx.due_date ?? 'about 30 days after funding' } : null,
             monthly_income_usd: monthlyIncomeUsd(doc, metrics),
             document: { type: doc.doc_type, institution: doc.institution, period: [doc.period_start, doc.period_end], currency: doc.currency },
             metrics,
@@ -984,7 +1242,7 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       risk,
       score,
       checks,
-      ai_note: aiNote ? `${aiNote.verdict.toUpperCase()}: ${aiNote.note}` : null,
+      ai_note: aiNote ? `${aiNote.direction} (${aiNote.votes.join(', ')}): ${aiNote.note}${aiNote.ask.length ? ` Ask: ${aiNote.ask.join(' ')}` : ''}` : null,
       model: MODEL
    };
    if (verdict === 'resend' && reason) return askResend(patch, reason, `score ${score}/100`);
@@ -998,7 +1256,7 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
          verdict,
          ...(autoApprove ? { decision: 'approved', decided_at: new Date().toISOString(), decided_by: `auto ($${step!.min} step)` } : {})
       },
-      [`${headline} · score ${score}/100${aiNote ? ` · AI says ${aiNote.verdict}` : ''}`, checkLine, memo, aiNote?.note].filter(Boolean).join('\n\n').slice(0, 3900)
+      [`${headline} · score ${score}/100${aiNote ? ` · AI: ${aiNote.direction.toLowerCase()}` : ''}`, aiNote ? opinionText(aiNote) : null, checkLine, memo].filter(Boolean).join('\n\n').slice(0, 3900)
    );
    if (autoApprove) await notifyIncomeDecision(supabase, id);
    return result;
