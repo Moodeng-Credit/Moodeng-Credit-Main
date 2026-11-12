@@ -701,6 +701,14 @@ export const handleWalletDepositCallback = async (
          }).catch(() => undefined);
       }
    };
+   if (kind === 'A') {
+      await allArrivedTap(svc, Number(depId), by, answer, finish);
+      return true;
+   }
+   if (kind === 'R') {
+      await refundSentTap(svc, Number(depId), answer, finish);
+      return true;
+   }
    if (kind === 'a' || kind === 'x') {
       await waltTransferTap(svc, Number(depId), kind === 'a', by, answer, finish);
       return true;
@@ -881,6 +889,151 @@ export const openWaltRequests = async (svc: Svc): Promise<RequestRow[]> => {
 };
 
 export { unitsOf as requestUnitsOf };
+
+// ── daily "✅ All arrived" card: one tap for every "Sudah kirim" still waiting ─────────────────────
+const BKK_MS = 7 * 3_600_000;
+const DIGEST_HOUR_BKK = 20;
+
+/** Walt Transfer requests the borrower says they sent (at or before `before`), still not recorded. */
+const claimedWaltRequests = async (svc: Svc, before: Date): Promise<RequestRow[]> => {
+   const { data } = await svc
+      .from('id_repay_requests')
+      .select(REQUEST_FIELDS)
+      .eq('method', 'walt_transfer')
+      .neq('status', 'paid')
+      .not('sent_claimed_at', 'is', null)
+      .lte('sent_claimed_at', before.toISOString())
+      .gte('created_at', new Date(Date.now() - 14 * 86_400_000).toISOString())
+      .order('sent_claimed_at', { ascending: true })
+      .limit(40);
+   return (data ?? []) as RequestRow[];
+};
+
+/** The card text + one button that records them all. Null when nothing is waiting. */
+export const arrivedDigestCard = async (svc: Svc, at = new Date()): Promise<{ text: string; keyboard: TelegramInlineKeyboard } | null> => {
+   const reqs = await claimedWaltRequests(svc, at);
+   if (!reqs.length) return null;
+   const [{ data: loans }, { data: users }] = await Promise.all([
+      svc.from('loans').select('id, tracking_id').in('id', [...new Set(reqs.map((r) => r.loan_id))]),
+      svc.from('users').select('id, telegram_username, display_name').in('id', [...new Set(reqs.map((r) => r.user_id))])
+   ]);
+   const track = new Map(((loans ?? []) as Array<{ id: string; tracking_id: string | null }>).map((l) => [l.id, l.tracking_id]));
+   const who = new Map(
+      ((users ?? []) as Array<{ id: string; telegram_username: string | null; display_name: string | null }>).map((u) => [
+         u.id,
+         u.telegram_username ? `@${u.telegram_username}` : (u.display_name ?? u.id.slice(0, 8))
+      ])
+   );
+   let totalCents = 0;
+   const lines = reqs.map((r) => {
+      const cents = unitsToExactCents(unitsOf(r.amount_units));
+      totalCents += cents ?? Math.round(Number(r.amount_usd) * 100);
+      const when = new Date(Date.parse(String(r.sent_claimed_at)) + BKK_MS).toISOString().slice(5, 16).replace('T', ' ');
+      return `• ${track.get(r.loan_id) ?? r.loan_id.slice(0, 8)} · ${who.get(r.user_id) ?? '?'} · ${cents != null ? centsToText(cents) : r.amount_usd} USDT · said sent ${when}`;
+   });
+   return {
+      text: [
+         `🧾 🇮🇩 Walt repayments still waiting for ✅ (${reqs.length}, ${centsToText(totalCents)} USDT):`,
+         ...lines,
+         '',
+         'Open Walt history. If every one of these is there, one tap records them all. If one is missing, use ❌ Not there on its own card first.'
+      ].join('\n'),
+      keyboard: [[{ text: `✅ All ${reqs.length} arrived — record them`, callback_data: `${CB}A:${Math.floor(at.getTime() / 1000)}` }]]
+   };
+};
+
+/** Once a day at 20:00 Bangkok (and on /idarrived): the card above, when anything is waiting. */
+export const runWaltArrivedDigest = async (svc: Svc, now = Date.now()): Promise<boolean> => {
+   const bkk = new Date(now + BKK_MS);
+   if (bkk.getUTCHours() < DIGEST_HOUR_BKK) return false;
+   const day = bkk.toISOString().slice(0, 10);
+   if ((await getSetting(svc, 'walt_arrived_digest_day')) === day) return false;
+   await setSetting(svc, 'walt_arrived_digest_day', day);
+   const card = await arrivedDigestCard(svc, new Date(now));
+   if (!card) return false;
+   await alertTeam(svc, card.text, card.keyboard);
+   return true;
+};
+
+/** /idarrived — the same card right now. */
+export const handleArrivedCommand = async (svc: Svc, message: { chat: { id: number | string }; text?: string }): Promise<boolean> => {
+   if (!/^\/idarrived\b/i.test((message.text ?? '').trim())) return false;
+   const card = await arrivedDigestCard(svc);
+   await sendTelegramMessage(message.chat.id, card?.text ?? '🧾 No Walt repayment is waiting for ✅ right now.', card ? { inlineKeyboard: card.keyboard } : {}).catch(() => undefined);
+   return true;
+};
+
+/** ✅ All arrived: records every request claimed up to the card's time (each exactly once). */
+const allArrivedTap = async (svc: Svc, cardEpoch: number, by: string, answer: Say, finish: Say) => {
+   if (!Number.isFinite(cardEpoch) || cardEpoch <= 0) return void (await answer('Bad card.'));
+   const reqs = await claimedWaltRequests(svc, new Date(cardEpoch * 1000));
+   if (!reqs.length) return void (await finish('Nothing left to record — all done already'));
+   await answer(`Recording ${reqs.length}…`);
+   const counts = { recorded: 0, already: 0, refund: 0, retry: 0, failed: 0 };
+   for (const req of reqs) {
+      const r = await recordWaltTransferArrival(svc, req, { by, bulk: true });
+      if (r === 'recorded') counts.recorded += 1;
+      else if (r === 'duplicate') counts.already += 1;
+      else if (r === 'refund_needed') counts.refund += 1;
+      else if (r === 'retry') counts.retry += 1;
+      else counts.failed += 1;
+   }
+   await finish(
+      [
+         `✅ Recorded ${counts.recorded}`,
+         counts.already ? `${counts.already} were already recorded` : '',
+         counts.refund ? `⚠️ ${counts.refund} couldn’t go on their loan — see the alerts` : '',
+         counts.retry ? `⏳ ${counts.retry} retry in a few minutes` : '',
+         counts.failed ? `❌ ${counts.failed} failed — use their own ✅ Arrived cards` : ''
+      ]
+         .filter(Boolean)
+         .join(' · ')
+   );
+};
+
+// ── overpaid Walt Transfers: "send the extra back" card (from the Walt watch) ────────────────────
+/** The team card after the Walt watch recorded an overpaid repayment. The refund itself is a Walt Transfer by hand. */
+export const overpaidRefundCard = async (
+   svc: Svc,
+   o: { waltTxId: number; userId: string; loanId: string; paidCents: number; askedCents: number }
+): Promise<void> => {
+   const user = await loadUser(svc, o.userId);
+   const { data: loan } = await svc.from('loans').select('tracking_id').eq('id', o.loanId).maybeSingle();
+   const extra = centsToText(o.paidCents - o.askedCents);
+   await alertTeam(
+      svc,
+      [
+         `↩️ 🇮🇩 ${loan?.tracking_id ?? o.loanId.slice(0, 8)}: ${waltBack(user)} sent ${centsToText(o.paidCents)} USDT but owed ${centsToText(o.askedCents)}.`,
+         `I recorded ${centsToText(o.askedCents)} on the loan. Send the extra ${extra} USDT back by Walt → Transfer to ${waltBack(user)}, then tap:`
+      ].join('\n'),
+      [[{ text: `✅ Sent ${extra} back`, callback_data: `${CB}R:${o.waltTxId}` }]]
+   );
+};
+
+/** ✅ Sent back: mark it once (walt_transactions.outcome) and tell the borrower. */
+const refundSentTap = async (svc: Svc, waltTxId: number, answer: Say, finish: Say) => {
+   const { data: claimed } = await svc
+      .from('walt_transactions')
+      .update({ outcome: 'overpaid_refunded' })
+      .eq('id', waltTxId)
+      .eq('outcome', 'overpaid_recorded')
+      .select('id, request_id, note');
+   const row = (claimed ?? [])[0] as { id: number; request_id: number | null; note: string | null } | undefined;
+   if (!row) return void (await answer('Already marked as sent back.'));
+   const extraCents = Number(String(row.note ?? '').match(/extra=(\d+)/)?.[1] ?? NaN);
+   const { data: req } = row.request_id ? await svc.from('id_repay_requests').select('user_id').eq('id', row.request_id).maybeSingle() : { data: null };
+   const user = req?.user_id ? await loadUser(svc, req.user_id) : null;
+   if (user && Number.isFinite(extraCents))
+      await tell(
+         user,
+         say(
+            user,
+            `↩️ Kamu mengirim lebih dari yang perlu. Kelebihan ${centsToText(extraCents)} USDT sudah kami kembalikan ke Walt kamu.`,
+            `↩️ You sent more than you owed. We sent the extra ${centsToText(extraCents)} USDT back to your Walt.`
+         )
+      );
+   await finish(`✅ Sent back${user ? ' — borrower told' : ''}`);
+};
 
 // ── refunds and sweeps (money leaving the payout wallet) ─────────────────────────────────────────
 type Say = (text: string) => Promise<unknown>;

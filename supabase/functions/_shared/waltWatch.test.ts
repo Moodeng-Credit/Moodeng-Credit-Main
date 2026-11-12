@@ -1,6 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { extractInitData, initDataUser, isDone, txCents } from './waltWatch.ts';
+import { extractInitData, initDataUser, isDone, potTopUp, txCents } from './waltWatch.ts';
 
 Deno.test('txCents: whole cents only, sign ignored', () => {
    assertEquals(txCents('5.000000'), 500);
@@ -29,4 +29,11 @@ Deno.test('extractInitData: raw, or inside the web app URL', () => {
 Deno.test('initDataUser: reads the Telegram user', () => {
    assertEquals(initDataUser(raw), { id: 12345, username: 'jimmymoodengcredit' });
    assertEquals(initDataUser('hash=1'), null);
+});
+
+Deno.test('potTopUp: back to the target, or to what is waiting when that is more', () => {
+   assertEquals(potTopUp(4, 0, 300), { need: 296, short: 0 });
+   assertEquals(potTopUp(4, 15, 300), { need: 296, short: 11 });
+   assertEquals(potTopUp(250, 400, 300), { need: 150, short: 150 });
+   assertEquals(potTopUp(320, 10, 300), { need: 0, short: 0 });
 });

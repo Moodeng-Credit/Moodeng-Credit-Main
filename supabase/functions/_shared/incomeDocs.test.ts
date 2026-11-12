@@ -1,6 +1,6 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { buildMemo, buildSections, combineOpinions, mergeExtracted, opinionText, parseSteps, pdfJpegs, stepFor, verdictOf, computeMetrics, type Extracted, namesMatch, normalizeExtracted, parseStatedIncome, readPdfInfo, riskOf, runChecks, scoreOf } from './incomeDocs.ts';
+import { aiAutoApproves, parseAiAutoRule, buildMemo, buildSections, combineOpinions, mergeExtracted, opinionText, parseSteps, pdfJpegs, stepFor, verdictOf, computeMetrics, type Extracted, namesMatch, normalizeExtracted, parseStatedIncome, readPdfInfo, riskOf, runChecks, scoreOf } from './incomeDocs.ts';
 
 const tx = (date: string, amount: number, balance: number | null, description = 'x') => ({ date, description, amount, balance, page: 1, source_text: `${date} ${amount}` });
 
@@ -269,4 +269,22 @@ Deno.test('mergeExtracted: a misread copy of an overlap row is dropped; balances
    assertEquals(m.transactions.map((t) => t.amount), [-100, -55, 1000]);
    const flags = runChecks(m, computeMetrics(m), ctx);
    assert(!flags.some((f) => f.code === 'balance_math' || f.code === 'running_balance'));
+});
+
+Deno.test('AI auto-approve: off by default, strict when on', () => {
+   assertEquals(parseAiAutoRule(null), null);
+   assertEquals(parseAiAutoRule('nonsense'), null);
+   assertEquals(parseAiAutoRule('{"maxUsd":60}'), null);
+   const rule = parseAiAutoRule('{"maxUsd":60,"minScore":80}');
+   assertEquals(rule, { maxUsd: 60, minScore: 80 });
+   const ok = { verdict: 'looks_good' as const, votes: ['lend', 'lend', 'lend'], score: 85, askedAmount: 60 };
+   assert(aiAutoApproves(rule, ok));
+   assert(!aiAutoApproves(null, ok));
+   assert(!aiAutoApproves(rule, { ...ok, verdict: 'needs_review' }));
+   assert(!aiAutoApproves(rule, { ...ok, votes: ['lend', 'maybe', 'lend'] }));
+   assert(!aiAutoApproves(rule, { ...ok, votes: ['lend'] }));
+   assert(!aiAutoApproves(rule, { ...ok, votes: null }));
+   assert(!aiAutoApproves(rule, { ...ok, score: 79 }));
+   assert(!aiAutoApproves(rule, { ...ok, askedAmount: 61 }));
+   assert(!aiAutoApproves(rule, { ...ok, askedAmount: null }));
 });
