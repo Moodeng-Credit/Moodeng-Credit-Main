@@ -43,6 +43,7 @@ import { handleIdFreeText } from '../_shared/idHelper.ts';
 import { handleGuidePhotoCommand, isGuidePhotoCommand } from '../_shared/idGuides.ts';
 import { handleWaltPayoutCallback } from '../_shared/idWaltPayouts.ts';
 import { handleSweepCommand, handleWalletDepositCallback } from '../_shared/idRepayments.ts';
+import { handleWaltWatchCommand } from '../_shared/waltWatch.ts';
 import { formatCallTime } from '../_shared/videoCall.ts';
 import { handleRescheduleStep, parseRescheduleCallback, postReschedulePicker } from '../_shared/callReschedule.ts';
 import { handleCancelStep, parseCancelCallback } from '../_shared/callCancel.ts';
@@ -1579,6 +1580,12 @@ serve(async (req) => {
       if (isAdminChannel && /^\/idsweep\b/i.test(message.text ?? '')) {
          await handleSweepCommand(supabase, message);
          return jsonResponse({ message: 'Indonesia sweep command handled' });
+      }
+
+      // Walt watch (read-only Walt history): /waltwatch on|observe|off, /waltconnect <tgWebAppData>.
+      if (isAdminChannel && /^\/walt(watch|connect)\b/i.test(message.text ?? '')) {
+         await handleWaltWatchCommand(supabase, message as never);
+         return jsonResponse({ message: 'Walt watch command handled' });
       }
 
       if (isAdminChannel && /^\/idautopay\b/i.test(message.text ?? '')) {

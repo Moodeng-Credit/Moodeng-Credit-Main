@@ -26,6 +26,7 @@ import { sendWhatsAppTemplate } from '../_shared/sendpulse.ts';
 import { nudgeStalledChats } from '../_shared/messengerBookingBot.ts';
 import { type IdEvent, type IdEventData, isIdTrackUser, runIdOnboardingNudges, sendIdTelegram } from '../_shared/idTrack.ts';
 import { runAutoPayouts, runWaltPayoutScan } from '../_shared/idManualFunding.ts';
+import { runWaltWatch } from '../_shared/waltWatch.ts';
 import { runIdrRepricing } from '../_shared/fxRates.ts';
 import { runIdRepayNudges, runIdRepayments } from '../_shared/idRepayments.ts';
 import { runIdWaBridgeNudges } from '../_shared/idWaBridge.ts';
@@ -349,6 +350,15 @@ serve(async (req) => {
       tally.walt_auto_chain_checked = auto.chainChecked;
    } catch (err) {
       console.error('video-call-reminders: auto payouts failed', err);
+   }
+   // Walt watch: Moodeng's Walt history (read-only) confirms Walt Transfer payouts and repayments by itself.
+   try {
+      const w = await runWaltWatch(svc, Math.min(idDeadline, Date.now() + 30_000));
+      tally.walt_watch_seen = w.seen;
+      tally.walt_watch_acted = w.acted;
+      if (w.error) console.error('video-call-reminders: walt watch', w.error);
+   } catch (err) {
+      console.error('video-call-reminders: walt watch failed', err);
    }
    // Walt Transfer mode (the default): one "send X USDT to @user" card per open request for the team.
    try {
