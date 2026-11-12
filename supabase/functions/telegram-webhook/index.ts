@@ -46,6 +46,7 @@ import { handleIncomeDocCallback } from '../_shared/incomeDocCards.ts';
 import { handleArrivedCommand, handleSweepCommand, handleWalletDepositCallback } from '../_shared/idRepayments.ts';
 import { handleWaltWatchCallback, handleWaltWatchCommand } from '../_shared/waltWatch.ts';
 import { handleVaultBridgeCallback, handleVaultCommand } from '../_shared/idVaultBridge.ts';
+import { handleReadyCallback, handleReadyCommand } from '../_shared/idReady.ts';
 import { formatCallTime } from '../_shared/videoCall.ts';
 import { handleRescheduleStep, parseRescheduleCallback, postReschedulePicker } from '../_shared/callReschedule.ts';
 import { handleCancelStep, parseCancelCallback } from '../_shared/callCancel.ts';
@@ -1355,6 +1356,10 @@ serve(async (req) => {
          if (await handleVaultBridgeCallback(supabase, update.callback_query)) {
             return jsonResponse({ message: 'Indonesia vault bridge handled' });
          }
+         // Indonesia: /idready card buttons (🧪 Test gas, 🔄 Check again; admin chats only; idrd:).
+         if (await handleReadyCallback(supabase, update.callback_query)) {
+            return jsonResponse({ message: 'Indonesia readiness handled' });
+         }
          const teamChatId = await getTeamChatId(supabase);
          const kycChatId = await getSetting(supabase, 'kyc_alert_chat_id');
          // Proof of income: ✅ Approve / ❌ Reject under a result that waits for the team (pi:).
@@ -1613,6 +1618,12 @@ serve(async (req) => {
       }
 
       // Indonesia: repayments (USDT on BNB Chain) back to USDC on Base for the vault, via LI.FI.
+      // Indonesia: is everything in place to fund a request from the board? (_shared/idReady.ts)
+      if (isAdminChannel && /^\/idready\b/i.test(message.text ?? '')) {
+         await handleReadyCommand(supabase, message);
+         return jsonResponse({ message: 'Indonesia readiness sent' });
+      }
+
       if (isAdminChannel && /^\/idvault\b/i.test(message.text ?? '')) {
          await handleVaultCommand(supabase, message);
          return jsonResponse({ message: 'Indonesia vault command handled' });
