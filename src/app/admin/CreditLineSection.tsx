@@ -23,6 +23,7 @@ import {
    toCsv
 } from '@/app/admin/creditLineModel';
 import { useAdminLiveReload } from '@/app/admin/useAdminLive';
+import BitrepoReturnCard from '@/app/admin/BitrepoReturnCard';
 import VaultLoansCard from '@/app/admin/VaultLoansCard';
 import { bareTxHash, isWaltTx, txExplorerUrl } from '@/lib/txExplorer';
 
@@ -213,6 +214,7 @@ export default function CreditLineSection() {
    return (
       <div className="space-y-6">
          <VaultLoansCard />
+         <BitrepoReturnCard facility={facility} ledger={data.ledger} loans={loans} onChanged={load} />
          <div className="flex flex-wrap items-end gap-3">
             {data.facilities.length > 1 ? (
                <label className="flex flex-col text-sm text-[#a89bb8]">
