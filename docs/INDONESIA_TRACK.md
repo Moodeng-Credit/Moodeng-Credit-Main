@@ -151,6 +151,15 @@ Send Your Help opens the funding modal, which for `market = 'ID'` goes straight 
 4. When LI.FI says DONE, `payNow` sends the borrower exactly the loan amount. The 5-minute job finishes
    bridges whose card was closed. Needs `id_payout_token` = USDC (the quote refuses otherwise).
 
+**Walt address required (2026-11-13).** The bot's 💸 Ajukan now stops at "send your Walt deposit address"
+until `users.walt_address` is saved (`applyGate`; `telegram_bot_settings.id_walt_address_required = off`
+makes it optional again). Saving it offers 💸 Ajukan right away.
+
+**Vault payback card.** Mondays 09:00 Bangkok (and `/idvault owed`): loans the borrower repaid whose vault
+`getLoan().totalDueLeft` is still above 0, the total, where the money is (Walt pot, payout wallet), and the
+steps: one Walt withdrawal to the payout wallet (Walt takes 1.5 USDT) → `/idvault USDT all` → Pay vault.
+Nothing owed → no card.
+
 Under it, "Or pay from the payout wallet balance" is the two-tap `payNow` above. `/idvault` (admin chats)
 bridges the payout wallet's USDT/USDC on BNB Chain back to the lending wallet on Base. Repayments by Walt
 Transfer land in Moodeng's Walt, not the payout wallet, so paying the vault back for those is by hand.

@@ -439,6 +439,7 @@ const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
 const centsText = (cents: number) => `${Math.floor(cents / 100)}.${String(cents % 100).padStart(2, '0')}`;
 
 /**
+ * /idvault owed          what the vault is still owed for repaid loans + the steps to pay it
  * /idvault               USDT in the payout wallet (repayments) → a card to send it back to Base
  * /idvault USDT 25 | all  /idvault USDC 10  (USDC there is the payout float — only when asked)
  */
@@ -451,6 +452,11 @@ export const handleVaultCommand = async (svc: Svc, message: { chat: { id: number
       await say(text);
       return true;
    };
+   // /idvault owed — what the vault is still owed for repaid loans, and how to pay it (also sent Mondays).
+   if ((m[1] ?? '').toLowerCase() === 'owed') {
+      const card = await vaultPaybackCard(svc);
+      return await done(card?.text ?? '⚠️ Can’t read the vault on Base right now. Try again in a minute.');
+   }
    const wallet = await getPayoutWallet(svc);
    if (!wallet) return await done('No payout wallet yet.');
    const bal = await balanceOf(wallet.address).catch(() => null);
@@ -483,6 +489,103 @@ export const handleVaultCommand = async (svc: Svc, message: { chat: { id: number
       `${head}\n\nSend ${centsText(cents)} ${token} → at least ${arrive} USDC on Base, to the lending wallet ${short(VAULT_OPERATOR)} (via ${q.tool}, fees ≈ $${q.feeUsd.toFixed(2)}).\nThen: Admin → Credit line → “Pay vault”.`,
       { inlineKeyboard: [[{ text: `↩️ Send ${centsText(cents)} ${token} back to Base`, callback_data: `${CB}s:${token}:${cents}` }]] }
    );
+   return true;
+};
+
+// ── weekly: what the vault is still owed for loans borrowers already repaid ──────────────────────
+/** What the vault says is still due on a loan (6 dec). 0 when it never drew or is fully paid. */
+const vaultDueLeft = async (loanId: string): Promise<bigint> => {
+   const { encodeFunctionData, decodeFunctionResult, parseAbi } = await import('npm:viem@2');
+   const abi = parseAbi(['function getLoan(string loanId) view returns (uint256, uint256, uint256, bool, uint256)']);
+   const data = encodeFunctionData({ abi, functionName: 'getLoan', args: [loanId] });
+   const out = await rpcCall(RPC_URL, 'eth_call', [{ to: VAULT_ADDRESS, data }, 'latest']);
+   const res = decodeFunctionResult({ abi, functionName: 'getLoan', data: out }) as readonly [bigint, bigint, bigint, boolean, bigint];
+   return res[4];
+};
+
+/** Walt's fee per withdrawal (USDT), from its app. */
+const WALT_WITHDRAW_FEE = 1.5;
+
+/**
+ * Where the money for the vault comes from: the payout wallet's USDT first, the rest out of Walt in ONE
+ * withdrawal (plus Walt's fee). Pure (idVaultBridge.test.ts). All in dollars.
+ */
+export const vaultPaybackPlan = (owed: number, payoutUsdt: number, waltPot: number | null) => {
+   const fromWalt = Math.max(0, Math.ceil((owed - payoutUsdt) * 100) / 100);
+   const waltNeeds = fromWalt > 0 ? Math.round((fromWalt + WALT_WITHDRAW_FEE) * 100) / 100 : 0;
+   return { fromWalt, waltNeeds, waltShort: waltPot != null && waltNeeds > waltPot ? Math.round((waltNeeds - waltPot) * 100) / 100 : 0 };
+};
+
+/** The card: loans borrowers repaid whose vault draw is still open, and how to pay it. Null = can't read. */
+export const vaultPaybackCard = async (svc: Svc): Promise<{ text: string; owed: number } | null> => {
+   const { data: loans } = await svc
+      .from('loans')
+      .select('id, tracking_id, repayment_status')
+      .eq('market', 'ID')
+      .not('vault_address', 'is', null)
+      .limit(200);
+   const rows = (loans ?? []) as Array<{ id: string; tracking_id: string | null; repayment_status: string | null }>;
+   const lines: string[] = [];
+   let owedUnits = 0n;
+   let openUnits = 0n;
+   let openCount = 0;
+   try {
+      for (const loan of rows) {
+         const left = await vaultDueLeft(loan.id);
+         if (left <= 0n) continue;
+         if (loan.repayment_status === 'Paid') {
+            owedUnits += left;
+            lines.push(`• ${loan.tracking_id ?? loan.id.slice(0, 8)} · ${baseUnitsText(left)} USDC`);
+         } else {
+            openUnits += left;
+            openCount += 1;
+         }
+      }
+   } catch (err) {
+      console.error('idVaultBridge: vault read failed', errMsg(err));
+      return null;
+   }
+   const owed = Number(owedUnits) / 1e6;
+   const wallet = await getPayoutWallet(svc);
+   const bal = wallet ? await balanceOf(wallet.address).catch(() => null) : null;
+   const potRaw = await getSetting(svc, 'walt_pot_usdt');
+   const pot = potRaw != null && Number.isFinite(Number(potRaw)) ? Number(potRaw) : null;
+   const plan = vaultPaybackPlan(owed, bal?.usdt ?? 0, pot);
+   const head = [
+      `🏦 🇮🇩 Vault payback`,
+      lines.length
+         ? `Borrowers repaid these, the vault is still owed ${baseUnitsText(owedUnits)} USDC (${lines.length} loan${lines.length === 1 ? '' : 's'}):`
+         : 'Nothing to pay back right now: no repaid Indonesian loan has a vault balance left.',
+      ...lines,
+      openCount ? `Not repaid by the borrower yet: ${openCount} loan${openCount === 1 ? '' : 's'}, ${baseUnitsText(openUnits)} USDC.` : null,
+      '',
+      `Where the money is: Walt ${pot != null ? `${pot.toFixed(2)} USDT` : 'unknown (Walt watch not connected)'} · payout wallet ${bal ? `${bal.usdt.toFixed(2)} USDT, ${bal.usdc.toFixed(2)} USDC` : 'unknown'}.`
+   ];
+   const steps = !lines.length
+      ? []
+      : [
+           '',
+           'To pay it:',
+           plan.fromWalt > 0
+              ? `1. In Walt: withdraw ${plan.fromWalt.toFixed(2)} USDT on BNB Smart Chain (BEP20) to the payout wallet ${wallet?.address ?? '(create it first)'}. One withdrawal; Walt takes ${WALT_WITHDRAW_FEE} USDT, so ${plan.waltNeeds.toFixed(2)} leaves Walt.${plan.waltShort > 0 ? ` Walt is ${plan.waltShort.toFixed(2)} short.` : ''}`
+              : '1. The payout wallet already has enough USDT. No Walt withdrawal needed.',
+           '2. Here: /idvault USDT all → ↩️ Send back to Base.',
+           '3. Admin → Credit line → “Pay vault”.'
+        ];
+   return { text: [...head, ...steps].filter((l): l is string => l != null).join('\n'), owed };
+};
+
+/** Mondays from 09:00 Bangkok, once: the card above, only when something is owed. */
+export const runVaultPaybackDigest = async (svc: Svc, now = Date.now()): Promise<boolean> => {
+   const bkk = new Date(now + 7 * 3_600_000);
+   if (bkk.getUTCDay() !== 1 || bkk.getUTCHours() < 9) return false;
+   const day = bkk.toISOString().slice(0, 10);
+   if ((await getSetting(svc, 'id_vault_payback_day')) === day) return false;
+   const card = await vaultPaybackCard(svc);
+   if (!card) return false; // couldn't read the vault: try again on the next run
+   await svc.from('telegram_bot_settings').upsert({ key: 'id_vault_payback_day', value: day, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+   if (!(card.owed > 0)) return false;
+   await tellTeam(svc, card.text);
    return true;
 };
 
