@@ -42,6 +42,7 @@ import { handleBridgeStart } from '../_shared/idWaBridge.ts';
 import { handleIdFreeText } from '../_shared/idHelper.ts';
 import { handleGuidePhotoCommand, isGuidePhotoCommand } from '../_shared/idGuides.ts';
 import { handleWaltPayoutCallback } from '../_shared/idWaltPayouts.ts';
+import { handleIncomeDocCallback } from '../_shared/incomeDocCards.ts';
 import { handleArrivedCommand, handleSweepCommand, handleWalletDepositCallback } from '../_shared/idRepayments.ts';
 import { handleWaltWatchCallback, handleWaltWatchCommand } from '../_shared/waltWatch.ts';
 import { formatCallTime } from '../_shared/videoCall.ts';
@@ -1351,6 +1352,10 @@ serve(async (req) => {
          }
          const teamChatId = await getTeamChatId(supabase);
          const kycChatId = await getSetting(supabase, 'kyc_alert_chat_id');
+         // Proof of income: ✅ Approve / ❌ Reject under a result that waits for the team (pi:).
+         if (await handleIncomeDocCallback(supabase, update.callback_query, [teamChatId, kycChatId].filter(Boolean).map(String))) {
+            return jsonResponse({ message: 'Income document callback handled' });
+         }
          // 🔄 Change time picker: the admin chats and the call-changes group.
          const reschedule = parseRescheduleCallback(update.callback_query.data);
          if (reschedule) {

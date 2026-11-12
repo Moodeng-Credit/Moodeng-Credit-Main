@@ -2,6 +2,7 @@ import { extractText, getDocumentProxy } from 'npm:unpdf@1.8.1';
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { postDiscord } from './discord.ts';
+import { incomeDocKeyboard } from './incomeDocCards.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
 import { fileMarkers, gcashRefIssues, type ImageInfo, imageInfo, isAiSize, rowKeys, rowOverlap } from './fileForensics.ts';
@@ -1084,17 +1085,35 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    }
    await postDiscord({ embeds: [{ title: `📄 Proof of income — ${who}`, description: `${ping.split('\n').slice(1).join('\n')}\n${ADMIN_URL}`, color: 0x6b55f7 }] }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }).catch(() => undefined);
    // The result (read OK, couldn't read, resend asked…) goes to both places the ping went.
-   const reply = async (text: string) => {
-      if (chat?.value) await sendTelegramMessage(chat.value, text, { replyToMessageId: pingId }).catch(() => undefined);
+   // One that waits for the team carries 👀 Check + ✅ Approve / ❌ Reject on Telegram (incomeDocCards.ts);
+   // Discord webhooks can't carry working buttons, so that post links to the same Admin page.
+   const reply = async (text: string, waiting = false) => {
+      if (chat?.value) {
+         await sendTelegramMessage(chat.value, text, { replyToMessageId: pingId, ...(waiting ? { inlineKeyboard: incomeDocKeyboard(id) } : {}) }).catch((err) =>
+            console.error('income doc result failed', err)
+         );
+      }
       await postDiscord(
-         { embeds: [{ title: `📄 Result — ${who}`, description: `${text.slice(0, 3900)}\n${ADMIN_URL}`, color: 0x6b55f7 }] },
+         {
+            embeds: [
+               waiting
+                  ? {
+                       title: `⚠️ Needs your decision — ${who}`,
+                       url: ADMIN_URL,
+                       description: `${text.slice(0, 3800)}\n\n👀 Check, then ✅ Approve or ❌ Decline: ${ADMIN_URL}`,
+                       color: 0xf39c12
+                    }
+                  : { title: `📄 Result — ${who}`, description: `${text.slice(0, 3900)}\n${ADMIN_URL}`, color: 0x6b55f7 }
+            ]
+         },
          { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }
       ).catch(() => undefined);
    };
 
    const finish = async (patch: Record<string, unknown>, replyText?: string) => {
       await supabase.from('income_documents').update({ ...patch, analyzed_at: new Date().toISOString() }).eq('id', id);
-      if (replyText) await reply(replyText);
+      // Not a resend ask and not approved by itself → it waits for the team's Approve / Reject.
+      if (replyText) await reply(replyText, patch.verdict !== 'resend' && patch.decision !== 'approved');
       // Indonesia track: "✅ Bukti penghasilan selesai — langkah berikutnya: …" on Telegram, unless
       // they're asked to resend it or it approved itself (those get their own message).
       if (patch.verdict !== 'resend' && patch.decision !== 'approved') await notifyIdNextStep(supabase, row.user_id, 'income');
