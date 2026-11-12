@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { isCallInbox } from '../_shared/placeholderEmail.ts';
 
 import { isAutomatedEmail } from '../_shared/inboundEmailFilter.ts';
 import { alertTeam, postToTicket } from '../_shared/supportTickets.ts';
@@ -267,6 +268,11 @@ serve(async (req) => {
    if (email.automated) {
       console.log('[email-inbound] ignored automated mail from', email.fromEmail);
       return jsonResponse({ ok: true, ignored: 'automated' });
+   }
+   // Calendar invites for borrowers with no email of their own go to support+call-…@ (placeholderEmail.ts).
+   if (email.toList.some((to) => isCallInbox(parseAddress(to).email))) {
+      console.log('[email-inbound] ignored call-inbox mail from', email.fromEmail);
+      return jsonResponse({ ok: true, ignored: 'call_inbox' });
    }
 
    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');

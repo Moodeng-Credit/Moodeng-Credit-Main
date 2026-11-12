@@ -157,6 +157,19 @@ const releaseSlot = async (svc: Svc, u: ReminderUser): Promise<boolean> => {
    return true;
 };
 
+// The 1-hour text (UniSMS, PH numbers on file; see 20261111220000_call_sms_reminders.sql). True when it went out.
+const callSms = async (svc: Svc, u: ReminderUser, kind: 'confirm' | 'hour'): Promise<boolean> => {
+   try {
+      const { data, error } = await svc.rpc('call_sms_remind', { p_user: u.id, p_kind: kind });
+      if (error) throw new Error(error.message);
+      if (data !== 'no_number' && data !== 'off') console.log('video-call-reminders: text reminder for', u.id, kind, data);
+      return data === 'sent' || data === 'unconfirmed';
+   } catch (err) {
+      console.error('video-call-reminders: text reminder failed for', u.id, err instanceof Error ? err.message : err);
+      return false;
+   }
+};
+
 const hourBefore = async (svc: Svc, u: ReminderUser) => {
    const at = formatCallTime(u.video_call_starts_at, u.video_call_timezone);
    const body = `Your quick video hello with the Moodeng team starts in under an hour: ${at}. Have your ID ready and video on.`;
@@ -167,6 +180,7 @@ const hourBefore = async (svc: Svc, u: ReminderUser) => {
       data: { callAt: u.video_call_starts_at, joinUrl: u.video_call_join_url }
    });
    logMessenger(u, await sendReminderMessenger(u, 2));
+   await callSms(svc, u, 'hour');
 };
 
 // Runs the one rung this booking just reached. Returns a short label for the response tally.
@@ -216,7 +230,8 @@ const runRung = async (svc: Svc, u: ReminderUser, rung: Rung, zoomActive: boolea
          // The call is cancellable at the deadline even when the ask reached them nowhere (George,
          // 2026-11-02): they were told at booking that an unconfirmed call is cancelled, they can still
          // confirm in the app, and an unreachable borrower who kept the slot didn't come (Oct 29).
-         const landed = viaMessenger.ok || viaWhatsApp || viaTelegram || viaPush;
+         const viaSms = await callSms(svc, u, 'confirm');
+         const landed = viaMessenger.ok || viaWhatsApp || viaTelegram || viaPush || viaSms;
          if (!landed) console.log('video-call-reminders: confirm ask reached no channel for', u.id, '— cancelled at the deadline unless they confirm in the app');
          await svc.from('users').update({ video_call_keep_spot_asked_at: new Date().toISOString() }).eq('id', u.id);
          return landed ? 'confirm_ask' : 'confirm_ask_unreached';

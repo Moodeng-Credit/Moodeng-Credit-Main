@@ -5,7 +5,7 @@ import { adminUserUrl, OPEN_IN_ADMIN_TEXT, sendAdminCard } from '../_shared/admi
 import { postDiscord } from '../_shared/discord.ts';
 import { PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
 import { decideAutoMatch, MATCH_WINDOW_MS, type OpenAttempt } from '../_shared/messengerAutoMatch.ts';
-import { handleBookingMessage } from '../_shared/messengerBookingBot.ts';
+import { handleBookingMessage, handleReminderNumber } from '../_shared/messengerBookingBot.ts';
 import { logMessengerContact, rememberMessengerContact, saveFacebookName } from '../_shared/messengerContactLog.ts';
 import { CONNECTED_BY_TIMING_TEXT } from '../_shared/messengerStatusFollowUp.ts';
 import { isSupportMessage, openMessengerTicket, relayAgentReply } from '../_shared/messengerSupport.ts';
@@ -323,7 +323,10 @@ serve(async (req) => {
          // The call-booking bot (who it answers: 'messenger_booking_bot', see bookingBotSwitch.ts): a message it
          // answers isn't also a support ticket. "menu" and ☰ / card-button taps belong to the SendPulse menu flow.
          const forMenu = event.isPostback || /^\s*menu\s*$/i.test(event.text ?? '');
-         if (known?.userId && event.text && !forMenu && !event.hasAttachment && !event.codes.length && (await handleBookingMessage(svc, known.userId, contactId, event.text))) continue;
+         const typed = known?.userId && event.text && !forMenu && !event.hasAttachment && !event.codes.length ? event.text : null;
+         // Just a mobile number from someone with a call booked: their answer to "want a text reminder?".
+         if (typed && (await handleReminderNumber(svc, known!.userId, contactId, typed))) continue;
+         if (typed && (await handleBookingMessage(svc, known!.userId, contactId, typed))) continue;
          if (isSupportMessage(event)) {
             await openMessengerTicket(svc, {
                contactId,

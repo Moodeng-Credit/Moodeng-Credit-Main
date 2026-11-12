@@ -111,7 +111,7 @@ export const buildViberReminderText = (
 
 /** Telegram/LINE/phone sign-ups get a placeholder address nobody reads (telegram_<id>@moodeng.app, line_<id>@…, phone_<id>@…). */
 export const isPlaceholderEmail = (email: string | null | undefined): boolean =>
-   /^(telegram|line|phone)_[^@]+@moodeng\.(app|credit)$/i.test((email ?? '').trim());
+   /^(telegram|line|phone|guest|tiktok)_[^@]+@moodeng\.(app|credit)$/i.test((email ?? '').trim());
 
 export type BorrowerNotificationDeliveryResult = {
    emailSent: boolean;

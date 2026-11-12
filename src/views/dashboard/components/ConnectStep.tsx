@@ -21,6 +21,7 @@ import {
    useStepDirection,
    wasCelebrated
 } from '@/views/dashboard/components/connectKit';
+import CallTextReminder from '@/views/dashboard/components/CallTextReminder';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
 import VideoCallStep, { ConfirmLaterNotice } from '@/views/dashboard/components/VideoCallStep';
 
@@ -594,7 +595,7 @@ export function LoanAccessPendingCard({
                         <span className="text-[14px] text-[#7b6b8c]">{meetingDay} · your local time</span>
                      </span>
                   ) : (
-                     <span className="text-[15px] text-[#7b6b8c]">Your time is in your email</span>
+                     <span className="text-[15px] text-[#7b6b8c]">We’ll message you the time</span>
                   )}
                   {/* Same "I'll be there" as the Messenger button (video-call-confirm) — so confirming,
                       and keeping the call from being cancelled, never depends on Messenger alone.
@@ -636,6 +637,9 @@ export function LoanAccessPendingCard({
                      </a>
                   ) : null}
                </div>
+
+               {/* The call texted to their phone (PH numbers): asks for a number when we have none. */}
+               {callOver ? null : <CallTextReminder />}
 
                {callOver ? null : (
                   <div className="text-left">

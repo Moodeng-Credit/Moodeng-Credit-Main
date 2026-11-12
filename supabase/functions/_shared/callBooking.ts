@@ -7,7 +7,7 @@ import { ATTENDANCE_RESET, meetingIdFromJoinUrl } from './attendance.ts';
 import { adminUserUrl, OPEN_IN_ADMIN_TEXT } from './adminCards.ts';
 import { postDiscord } from './discord.ts';
 import { bookingBotAnswers, loadBookingBotMode } from './bookingBotSwitch.ts';
-import { formatCallTimeForTeam, newConfirmToken, sendBookedMessenger } from './videoCall.ts';
+import { formatCallTimeForTeam, newConfirmToken, sendBookedMessenger, sendTextReminderAsk } from './videoCall.ts';
 import {
    bookingCooldownUntil,
    clusterSlots,
@@ -26,6 +26,7 @@ import {
    zoomFallbackWarning
 } from '../calcom-round-robin/lib.ts';
 import { cancelCalBooking } from './calcomCancel.ts';
+import { callInboxFor, isPlaceholderEmail } from './placeholderEmail.ts';
 import { changeTimeButton } from './callReschedule.ts';
 import { testAccountRow } from './testAccount.ts';
 import { loadIdStatus, sendIdTelegram } from './idTrack.ts';
@@ -159,6 +160,17 @@ const bookedCallStarts = async (svc: Svc, userId: string, from: string, to: stri
 
 // The "You're booked" message offers the Messenger bot's questions ("type QUESTIONS") to people the bot
 // answers who haven't answered them in the last 30 days (a bot booking already has). Best-effort: false on error.
+// Text reminders are on, we could text them (they book in Manila time) and we have no number yet.
+const wantsTextReminderAsk = async (svc: Svc, userId: string): Promise<boolean> => {
+   try {
+      const { data } = await svc.rpc('call_sms_status', { p_user: userId });
+      const s = (data ?? {}) as { enabled?: boolean; eligible?: boolean; number?: string | null };
+      return s.enabled === true && s.eligible === true && !s.number;
+   } catch {
+      return false;
+   }
+};
+
 const offerBotQuestions = async (svc: Svc, userId: string): Promise<boolean> => {
    try {
       const since = new Date(Date.now() - 30 * 86400000).toISOString();
@@ -317,8 +329,10 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
       prof?.video_call_booking_uid && prof.video_call_starts_at && Date.parse(prof.video_call_starts_at) > Date.now()
          ? { uid: prof.video_call_booking_uid as string, host: (prof.video_call_host as string | null) ?? null }
          : null;
-   const email = prof?.email || user.email;
-   if (!email) return reply({ ok: false, error: 'no_email' });
+   const signInEmail = prof?.email || user.email;
+   if (!signInEmail) return reply({ ok: false, error: 'no_email' });
+   // A made-up sign-up address (phone, guest, Telegram…) would bounce Cal.com's invite: use our call inbox.
+   const email = isPlaceholderEmail(signInEmail) ? callInboxFor(user.id) : signInEmail;
    const attendee: Attendee = { name: prof?.display_name || prof?.username || 'Moodeng borrower', email, timeZone, language: 'en' };
 
    // Every configured host (not just the pinned/free ones), so the other cofounder is always invited.
@@ -384,6 +398,11 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
             const sent = await sendBookedMessenger(booked, await offerBotQuestions(svc, user.id));
             messengerSent = sent.ok;
             if (!sent.ok) console.log('calcom-round-robin: messenger confirmation skipped:', sent.reason);
+            // No mobile number on file (they didn't sign up by phone): ask for one, for the text reminder.
+            if (sent.ok && (await wantsTextReminderAsk(svc, user.id))) {
+               const asked = await sendTextReminderAsk(booked);
+               if (!asked.ok) console.log('calcom-round-robin: text reminder ask skipped:', asked.reason);
+            }
          }
          // Bookings go to the call-changes ("rearrange meetings") group with their 🔄 Change time
          // button; the team group only until that group is set.
