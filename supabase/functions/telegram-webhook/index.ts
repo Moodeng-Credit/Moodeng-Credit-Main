@@ -42,8 +42,8 @@ import { handleBridgeStart } from '../_shared/idWaBridge.ts';
 import { handleIdFreeText } from '../_shared/idHelper.ts';
 import { handleGuidePhotoCommand, isGuidePhotoCommand } from '../_shared/idGuides.ts';
 import { handleWaltPayoutCallback } from '../_shared/idWaltPayouts.ts';
-import { handleSweepCommand, handleWalletDepositCallback } from '../_shared/idRepayments.ts';
-import { handleWaltWatchCommand } from '../_shared/waltWatch.ts';
+import { handleArrivedCommand, handleSweepCommand, handleWalletDepositCallback } from '../_shared/idRepayments.ts';
+import { handleWaltWatchCallback, handleWaltWatchCommand } from '../_shared/waltWatch.ts';
 import { formatCallTime } from '../_shared/videoCall.ts';
 import { handleRescheduleStep, parseRescheduleCallback, postReschedulePicker } from '../_shared/callReschedule.ts';
 import { handleCancelStep, parseCancelCallback } from '../_shared/callCancel.ts';
@@ -1345,6 +1345,10 @@ serve(async (req) => {
          if (await handleWalletDepositCallback(supabase, update.callback_query)) {
             return jsonResponse({ message: 'Indonesia wallet callback handled' });
          }
+         // Walt pot card: 🔄 check balance now / 😴 snooze (admin chats only; idww:).
+         if (await handleWaltWatchCallback(supabase, update.callback_query)) {
+            return jsonResponse({ message: 'Walt watch callback handled' });
+         }
          const teamChatId = await getTeamChatId(supabase);
          const kycChatId = await getSetting(supabase, 'kyc_alert_chat_id');
          // 🔄 Change time picker: the admin chats and the call-changes group.
@@ -1582,8 +1586,14 @@ serve(async (req) => {
          return jsonResponse({ message: 'Indonesia sweep command handled' });
       }
 
-      // Walt watch (read-only Walt history): /waltwatch on|observe|off, /waltconnect <tgWebAppData>.
-      if (isAdminChannel && /^\/walt(watch|connect)\b/i.test(message.text ?? '')) {
+      // Indonesia: one card with every Walt repayment still waiting for ✅ (also posted daily at 20:00 BKK).
+      if (isAdminChannel && /^\/idarrived\b/i.test(message.text ?? '')) {
+         await handleArrivedCommand(supabase, message);
+         return jsonResponse({ message: 'Indonesia arrived command handled' });
+      }
+
+      // Walt watch (read-only Walt history): /waltwatch on|observe|off, /waltconnect <tgWebAppData>, /waltpot.
+      if (isAdminChannel && /^\/walt(watch|connect|pot)\b/i.test(message.text ?? '')) {
          await handleWaltWatchCommand(supabase, message as never);
          return jsonResponse({ message: 'Walt watch command handled' });
       }

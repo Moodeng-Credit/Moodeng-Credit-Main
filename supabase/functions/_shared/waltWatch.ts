@@ -5,8 +5,10 @@
 //                                                   (recordWaltTransferPayout, same as "✅ Sent")
 //   money IN from a borrower, the exact amount of their 💰 Bayar request → the repayment is recorded
 //                                                   (recordWaltTransferArrival, same as "✅ Arrived")
+//   money IN, more than their 💰 Bayar amount      → records what they owed + a "send the extra back" card
 //   anything else (wrong amount, unknown sender)   → a line to the team; the buttons still work
-//   the USDT balance                               → walt_pot_usdt, alert below walt_pot_low_usd
+//   the USDT balance                               → walt_pot_usdt; a top-up card below walt_pot_low_usd or
+//                                                     below what open requests need (/waltpot)
 //
 // Sending money stays by hand in Walt: this never moves money. Switch: telegram_bot_settings.walt_watch =
 // off | observe (only posts what it WOULD confirm — the first days, to learn Walt's real status values) | on.
@@ -18,8 +20,8 @@
 // web app's tgWebAppData, then refresh tokens. If Walt rejects it, the watch stops and the team is told once;
 // the ✅ buttons keep working.
 import { recordWaltTransferPayout } from './idManualFunding.ts';
-import { adminChatIds, openWaltRequests, recordWaltTransferArrival, requestUnitsOf } from './idRepayments.ts';
-import { callTelegramApi, sendTelegramMessage } from './telegram.ts';
+import { adminChatIds, openWaltRequests, overpaidRefundCard, recordWaltTransferArrival, requestUnitsOf } from './idRepayments.ts';
+import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
@@ -137,9 +139,9 @@ export const watchMode = async (svc: Svc): Promise<'off' | 'observe' | 'on'> => 
    return v === 'on' ? 'on' : v === 'off' ? 'off' : 'observe';
 };
 
-const tellTeam = async (svc: Svc, text: string) => {
+const tellTeam = async (svc: Svc, text: string, keyboard?: TelegramInlineKeyboard) => {
    const [chat] = await adminChatIds(svc);
-   if (chat) await sendTelegramMessage(chat, text).catch(() => undefined);
+   if (chat) await sendTelegramMessage(chat, text, keyboard ? { inlineKeyboard: keyboard } : {}).catch(() => undefined);
 };
 
 // ── the session (vault WALT_SESSION) ─────────────────────────────────────────────────────────────
@@ -367,6 +369,32 @@ const handleIn = async (svc: Svc, tx: WaltTx, mode: 'observe' | 'on'): Promise<O
    };
    const exact = mine.filter((r) => reqCents(r) === cents);
    const who = tx.username ? `@${tx.username}` : `tg ${tx.tg_id}`;
+   // Paid MORE than their one 💰 Bayar amount: record what they owed; the team sends the extra back.
+   const over =
+      cents == null || exact.length
+         ? []
+         : mine.filter((r) => {
+              const c = reqCents(r);
+              return c != null && c < cents;
+           });
+   if (over.length === 1 && cents != null) {
+      const req = over[0];
+      const asked = reqCents(req)!;
+      const note = `paid=${cents} asked=${asked} extra=${cents - asked}`;
+      if (mode === 'observe') {
+         await tellTeam(
+            svc,
+            `👀 Walt watch (observe): ${who} sent ${tx.amount} USDT but owed ${(asked / 100).toFixed(2)}. Would record ${(asked / 100).toFixed(2)} on their loan and ask you to send ${((cents - asked) / 100).toFixed(2)} back.`
+         );
+         return { outcome: 'would_record_overpaid', request_id: req.id, loan_id: req.loan_id, note };
+      }
+      const r = await recordWaltTransferArrival(svc, req, { by: 'walt_watch', walt_tx: tx.id, overpaid_cents: cents - asked }, 'walt_watch');
+      if (r === 'recorded') {
+         await overpaidRefundCard(svc, { waltTxId: tx.id, userId: req.user_id, loanId: req.loan_id, paidCents: cents, askedCents: asked });
+         return { outcome: 'overpaid_recorded', request_id: req.id, loan_id: req.loan_id, note };
+      }
+      return { outcome: typeof r === 'object' ? `repay_failed:${r.error}` : `repay_${r}`, request_id: req.id, loan_id: req.loan_id, note };
+   }
    if (exact.length !== 1) {
       if (!mine.length) return { outcome: 'in_not_a_repayment', note: `${tx.amount} ${tx.currency} from ${who}` };
       await tellTeam(
@@ -470,13 +498,13 @@ export const runWaltWatch = async (svc: Svc, deadline = Date.now() + 30_000): Pr
          tally.balance = bal;
          await setSetting(svc, 'walt_pot_usdt', bal.toFixed(2));
          const low = Number((await getSetting(svc, 'walt_pot_low_usd')) ?? 40) || 40;
+         // 😴 Snooze sets this into the future, so the 12-hour repeat waits until it has run out.
          const lastAlert = Date.parse(String((await getSetting(svc, 'walt_pot_low_alerted_at')) ?? '')) || 0;
-         if (bal < low && Date.now() - lastAlert > 12 * 3_600_000) {
+         const waiting = await waitingLoansUsd(svc);
+         if ((bal < low || bal < waiting.total) && Date.now() - lastAlert > 12 * 3_600_000) {
             await setSetting(svc, 'walt_pot_low_alerted_at', new Date().toISOString());
-            await tellTeam(
-               svc,
-               `🪫 Walt pot is low: ${bal.toFixed(2)} USDT in @${session.username ?? 'Moodeng'}’s Walt (alert under $${low}). Top it up before the next loans.`
-            );
+            const card = await potCard(svc, bal, waiting, session.username);
+            await tellTeam(svc, card.text, card.keyboard);
          }
       }
    } catch (err) {
@@ -495,8 +523,109 @@ export const runWaltWatch = async (svc: Svc, deadline = Date.now() + 30_000): Pr
    return tally;
 };
 
+// ── the pot card: how much to top up, and where ──────────────────────────────────────────────────
+/** Open Indonesia loan requests nobody has paid out yet (the pot has to cover these). */
+const waitingLoansUsd = async (svc: Svc): Promise<{ count: number; total: number }> => {
+   const loans = await openIdLoans(svc);
+   return { count: loans.length, total: loans.reduce((s, l) => s + (Number(l.loan_amount) || 0), 0) };
+};
+
+/** What the pot needs: back up to the target, or to what's waiting when that is more. Pure (waltWatch.test.ts). */
+export const potTopUp = (balance: number, waiting: number, target: number) => ({
+   need: Math.max(0, Math.ceil(Math.max(target, waiting) - balance)),
+   short: Math.max(0, waiting - balance)
+});
+
+const potCard = async (
+   svc: Svc,
+   balance: number,
+   waiting: { count: number; total: number },
+   username: string | null
+): Promise<{ text: string; keyboard: TelegramInlineKeyboard }> => {
+   const [targetRaw, lowRaw, address] = await Promise.all([
+      getSetting(svc, 'walt_pot_target_usd'),
+      getSetting(svc, 'walt_pot_low_usd'),
+      getSetting(svc, 'id_walt_deposit_address')
+   ]);
+   const target = Number(targetRaw ?? 300) || 300;
+   const low = Number(lowRaw ?? 40) || 40;
+   const { need, short } = potTopUp(balance, waiting.total, target);
+   const who = `@${username ?? 'jimmymoodengcredit'}`;
+   const lines = [
+      `🪫 Walt pot: ${balance.toFixed(2)} USDT in ${who}’s Walt (alert under $${low}, target $${target}).`,
+      waiting.count
+         ? `Waiting to be paid out: ${waiting.count} loan${waiting.count === 1 ? '' : 's'}, $${waiting.total.toFixed(2)}${short > 0 ? ` — $${short.toFixed(2)} short right now` : ''}.`
+         : 'No loan is waiting for a payout.',
+      need > 0 ? `Top up about ${need} USDT to get back to $${Math.max(target, Math.ceil(waiting.total))}.` : null,
+      '',
+      `How: withdraw USDT from Binance (or any exchange) to the Walt deposit address${
+         address?.trim() ? ` ${address.trim()}` : ` (Walt → Deposit → USDT in ${who}; save it here with /waltpot address <addr>)`
+      }. A Walt Transfer from another Walt account also works and is free.`,
+      'I read the balance every 5 minutes. Tap 🔄 to read it now.'
+   ];
+   return {
+      text: lines.filter((l): l is string => l != null).join('\n'),
+      keyboard: [
+         [
+            { text: '🔄 Check balance now', callback_data: 'idww:p' },
+            { text: '😴 Snooze 24h', callback_data: 'idww:z' }
+         ]
+      ]
+   };
+};
+
+/** Buttons on the pot card (admin chats only; idww:). True when handled. */
+export const handleWaltWatchCallback = async (
+   svc: Svc,
+   query: { id: string; data?: string; message?: { chat: { id: number | string }; message_id: number; text?: string } }
+): Promise<boolean> => {
+   if (!query.data?.startsWith('idww:')) return false;
+   const answer = (text: string) => callTelegramApi('answerCallbackQuery', { callback_query_id: query.id, text: text.slice(0, 190) }).catch(() => undefined);
+   const chatId = query.message?.chat.id;
+   if (chatId == null || !(await adminChatIds(svc)).includes(String(chatId))) {
+      await answer('Not allowed here.');
+      return true;
+   }
+   if (query.data === 'idww:z') {
+      // 12 h ahead + the 12 h repeat = quiet for 24 h.
+      await setSetting(svc, 'walt_pot_low_alerted_at', new Date(Date.now() + 12 * 3_600_000).toISOString());
+      await answer('Quiet for 24 hours.');
+      return true;
+   }
+   if (query.data !== 'idww:p') {
+      await answer('Unknown action.');
+      return true;
+   }
+   try {
+      const session = await loadSession(svc);
+      if (!session) {
+         await answer('Walt watch isn’t connected — /waltconnect');
+         return true;
+      }
+      const acc = await waltGet<{ accounts: Array<{ currency: string; available_balance: string }> }>(svc, '/api/v1/accounts/');
+      const bal = Number((acc.accounts ?? []).find((a) => a.currency === 'USDT')?.available_balance ?? NaN);
+      if (!Number.isFinite(bal)) {
+         await answer('Walt didn’t return a USDT balance.');
+         return true;
+      }
+      await setSetting(svc, 'walt_pot_usdt', bal.toFixed(2));
+      const card = await potCard(svc, bal, await waitingLoansUsd(svc), session.username);
+      await answer(`Pot: ${bal.toFixed(2)} USDT`);
+      if (query.message)
+         await callTelegramApi('editMessageText', {
+            chat_id: chatId,
+            message_id: query.message.message_id,
+            text: `${card.text}\n\nChecked ${new Date(Date.now() + 7 * 3_600_000).toISOString().slice(11, 16)} Bangkok`,
+            reply_markup: { inline_keyboard: card.keyboard }
+         }).catch(() => undefined);
+   } catch (err) {
+      await answer(`Couldn’t read Walt: ${err instanceof Error ? err.message : String(err)}`);
+   }
+   return true;
+};
+
 // ── admin commands ───────────────────────────────────────────────────────────────────────────────
-/** /waltwatch [on|observe|off] · /waltconnect <tgWebAppData> (the message is deleted right away). */
+/** /waltwatch [on|observe|off] · /waltconnect <tgWebAppData> (the message is deleted right away) · /waltpot [address|target|low <v>]. */
 export const handleWaltWatchCommand = async (
    svc: Svc,
    message: { chat: { id: number | string }; message_id?: number; text?: string }
@@ -514,6 +643,29 @@ export const handleWaltWatchCommand = async (
             ? `✅ Walt connected (@${r.username}), read-only. Mode: ${await watchMode(svc)}. I deleted your message.`
             : `❌ ${r.error} (I deleted your message.)`
       ).catch(() => undefined);
+      return true;
+   }
+   const potCmd = text.match(/^\/waltpot(?:@\w+)?(?:\s+(address|target|low)\s+(\S+))?\s*$/i);
+   if (potCmd) {
+      if (potCmd[1]) {
+         const key = potCmd[1].toLowerCase();
+         const value = potCmd[2].trim();
+         if (key === 'address' && !/^(0x[0-9a-fA-F]{40}|[A-Za-z0-9_-]{40,60})$/.test(value)) {
+            await sendTelegramMessage(chatId, 'That doesn’t look like a deposit address.').catch(() => undefined);
+            return true;
+         }
+         if (key !== 'address' && !(Number(value) > 0)) {
+            await sendTelegramMessage(chatId, 'Give a dollar amount, e.g. /waltpot target 300').catch(() => undefined);
+            return true;
+         }
+         await setSetting(svc, key === 'address' ? 'id_walt_deposit_address' : key === 'target' ? 'walt_pot_target_usd' : 'walt_pot_low_usd', value);
+      }
+      const session = await loadSession(svc);
+      const bal = Number((await getSetting(svc, 'walt_pot_usdt')) ?? NaN);
+      const card = await potCard(svc, Number.isFinite(bal) ? bal : 0, await waitingLoansUsd(svc), session?.username ?? null);
+      await sendTelegramMessage(chatId, `${card.text}\n\nSet: /waltpot target 300 · /waltpot low 40 · /waltpot address <addr>`, {
+         inlineKeyboard: card.keyboard
+      }).catch(() => undefined);
       return true;
    }
    if (/^\/waltconnect\b/i.test(text)) {

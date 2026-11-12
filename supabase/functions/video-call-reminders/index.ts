@@ -28,7 +28,7 @@ import { type IdEvent, type IdEventData, isIdTrackUser, runIdOnboardingNudges, s
 import { runAutoPayouts, runWaltPayoutScan } from '../_shared/idManualFunding.ts';
 import { runWaltWatch } from '../_shared/waltWatch.ts';
 import { runIdrRepricing } from '../_shared/fxRates.ts';
-import { runIdRepayNudges, runIdRepayments } from '../_shared/idRepayments.ts';
+import { runIdRepayNudges, runIdRepayments, runWaltArrivedDigest } from '../_shared/idRepayments.ts';
 import { runIdWaBridgeNudges } from '../_shared/idWaBridge.ts';
 import { runWaltTransferPayoutCards } from '../_shared/idWaltPayouts.ts';
 
@@ -398,6 +398,12 @@ serve(async (req) => {
       tally.walt_repay_nudged = await runIdRepayNudges(svc, now);
    } catch (err) {
       console.error('video-call-reminders: wallet repayments failed', err);
+   }
+   // 20:00 Bangkok: one "✅ All arrived" card for every Walt repayment still waiting for a tap.
+   try {
+      tally.walt_arrived_digest = (await runWaltArrivedDigest(svc, now)) ? 1 : 0;
+   } catch (err) {
+      console.error('video-call-reminders: arrived digest failed', err);
    }
    // Rupiah peg — refresh USD/IDR (stored at most every 6h; ID requests are refused while no rate under
    // 36h old exists) and re-price open ID loans; team ping on a >5% move.

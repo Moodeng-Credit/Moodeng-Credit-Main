@@ -247,6 +247,37 @@ export const parseSteps = (raw: unknown): IncomeDocStep[] =>
       }))
       .sort((a, b) => a.min - b.min);
 
+/**
+ * Above the auto-approve steps: approve without the team only when the AI is confident. Off unless
+ * telegram_bot_settings.income_doc_ai_auto is set, e.g. {"maxUsd":60,"minScore":80}. Every check must
+ * pass (looks_good), every AI opinion must say lend (at least 2 of them), the score must reach minScore and
+ * the amount asked must be known and at most maxUsd. The score is NOT calibrated yet: keep this strict.
+ */
+export type AiAutoRule = { maxUsd: number; minScore: number };
+export const parseAiAutoRule = (raw: string | null | undefined): AiAutoRule | null => {
+   try {
+      const x = JSON.parse(String(raw ?? '')) as Record<string, unknown>;
+      const maxUsd = Number(x?.maxUsd);
+      const minScore = Number(x?.minScore);
+      return maxUsd > 0 && minScore > 0 && minScore <= 100 ? { maxUsd, minScore } : null;
+   } catch {
+      return null;
+   }
+};
+export const aiAutoApproves = (
+   rule: AiAutoRule | null,
+   o: { verdict: Verdict; votes: string[] | null; score: number; askedAmount: number | null }
+): boolean =>
+   !!rule &&
+   o.verdict === 'looks_good' &&
+   !!o.votes &&
+   o.votes.length >= 2 &&
+   o.votes.every((v) => v === 'lend') &&
+   o.score >= rule.minScore &&
+   o.askedAmount != null &&
+   Number.isFinite(o.askedAmount) &&
+   o.askedAmount <= rule.maxUsd;
+
 export const stepFor = (amount: number | null, steps: IncomeDocStep[]) =>
    amount != null && Number.isFinite(amount) ? ([...steps].reverse().find((x) => amount >= x.min) ?? null) : null;
 
@@ -524,7 +555,7 @@ export const riskOf = (flags: Flag[]): 'green' | 'orange' | 'red' =>
 //                 short, no money in). They're told right away what to send instead; no team decision.
 //   needs_review  anything that could be a fake, someone else's document or a repayment risk. Never
 //                 explained to the borrower — the team decides.
-//   looks_good    every check passed. Still the team's call (no auto-approve).
+//   looks_good    every check passed. The team's call, unless a step or income_doc_ai_auto approves it.
 
 export type Verdict = 'resend' | 'needs_review' | 'looks_good';
 export type ResendReason = 'password_protected' | 'scanned_pdf' | 'unsupported_file' | 'unreadable' | 'not_financial' | 'old_document' | 'short_history' | 'no_income';
@@ -1000,7 +1031,7 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    if (row.status !== 'pending') return { ok: true, skipped: row.status };
 
    const files = (row.files ?? []) as Array<{ path: string; name?: string; mime?: string }>;
-   const [{ data: user }, { data: kyc }, { data: loan }, { data: chat }, { data: stepsRow }] = await Promise.all([
+   const [{ data: user }, { data: kyc }, { data: loan }, { data: chat }, { data: stepsRow }, { data: aiAutoRow }] = await Promise.all([
       supabase.from('users').select('username, display_name, monthly_income').eq('id', row.user_id).maybeSingle(),
       supabase
          .from('kyc_identities')
@@ -1019,7 +1050,8 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
          .limit(1)
          .maybeSingle(),
       supabase.from('telegram_bot_settings').select('value').eq('key', 'kyc_alert_chat_id').maybeSingle(),
-      supabase.from('telegram_bot_settings').select('value').eq('key', 'income_doc_tiers').maybeSingle()
+      supabase.from('telegram_bot_settings').select('value').eq('key', 'income_doc_tiers').maybeSingle(),
+      supabase.from('telegram_bot_settings').select('value').eq('key', 'income_doc_ai_auto').maybeSingle()
    ]);
 
    // The amount they were asking for when they sent it (loan form), else their open request.
@@ -1248,13 +1280,22 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    if (verdict === 'resend' && reason) return askResend(patch, reason, `score ${score}/100`);
    const checkLine = checks.map((c) => `${c.status === 'pass' ? '✅' : c.status === 'warn' ? '🟠' : '🔴'} ${c.label}`).join('\n');
    // Small steps ($40 today): every check passed → approved without a team decision.
-   const autoApprove = verdict === 'looks_good' && step?.autoApprove === true;
-   const headline = autoApprove ? `✅ Approved automatically ($${step!.min} step)` : VERDICT_LINE[verdict];
+   const stepAuto = verdict === 'looks_good' && step?.autoApprove === true;
+   // Bigger asks: only when every AI opinion says lend and the score is high (income_doc_ai_auto).
+   const aiRule = parseAiAutoRule(aiAutoRow?.value);
+   const aiAuto = !stepAuto && aiAutoApproves(aiRule, { verdict, votes: aiNote?.votes ?? null, score, askedAmount });
+   const autoApprove = stepAuto || aiAuto;
+   const decidedBy = stepAuto ? `auto ($${step!.min} step)` : `auto (AI lend x${aiNote?.votes.length ?? 0}, score ${score})`;
+   const headline = stepAuto
+      ? `✅ Approved automatically ($${step!.min} step)`
+      : aiAuto
+        ? `✅ Approved automatically: every check passed, AI said lend ${aiNote!.votes.length}/${aiNote!.votes.length}, score ${score} ≥ ${aiRule!.minScore}, $${askedAmount} ≤ $${aiRule!.maxUsd}`
+        : VERDICT_LINE[verdict];
    const result = await finish(
       {
          ...patch,
          verdict,
-         ...(autoApprove ? { decision: 'approved', decided_at: new Date().toISOString(), decided_by: `auto ($${step!.min} step)` } : {})
+         ...(autoApprove ? { decision: 'approved', decided_at: new Date().toISOString(), decided_by: decidedBy } : {})
       },
       [`${headline} · score ${score}/100${aiNote ? ` · AI: ${aiNote.direction.toLowerCase()}` : ''}`, aiNote ? opinionText(aiNote) : null, checkLine, memo].filter(Boolean).join('\n\n').slice(0, 3900)
    );
