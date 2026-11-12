@@ -205,7 +205,7 @@ export const repayBlocker = (loan: Pick<RepayLoan, 'market' | 'funding_method' |
    loan.market === 'ID' && loan.funding_method === 'walt_manual' && loan.onchain_loan_id == null ? null : 'on_contract';
 
 // ── the request (💰 Bayar / app) ─────────────────────────────────────────────────────────────────
-type RequestRow = {
+export type RequestRow = {
    id: number;
    loan_id: string;
    user_id: string;
@@ -823,7 +823,24 @@ const waltTransferTap = async (svc: Svc, requestId: number, arrived: boolean, by
       );
       return void (await finish('❌ Not there — borrower told to check and tap again'));
    }
-   // One deposit row per request (tx_hash 'walt-transfer:<id>' is unique): a second tap finds it.
+   const r2 = await recordWaltTransferArrival(svc, req, { by });
+   if (r2 === 'duplicate') return void (await answer('Already recorded (or being recorded).'));
+   if (typeof r2 === 'object') return void (await answer(`Couldn’t save: ${r2.error}`));
+   const outcome = r2;
+   await finish(outcome === 'recorded' ? '✅ Recorded on the loan' : outcome === 'refund_needed' ? '⚠️ The loan couldn’t take it — see the alert' : '⏳ Saving failed — it retries in a few minutes');
+};
+
+/**
+ * Records a Walt Transfer repayment for a 💰 Bayar request (exactly once: tx_hash 'walt-transfer:<id>' is
+ * unique). Used by "✅ Arrived" and by the Walt watch (_shared/waltWatch.ts), which passes the Walt
+ * transaction id in `note` and matched_by 'walt_watch'.
+ */
+export const recordWaltTransferArrival = async (
+   svc: Svc,
+   req: Pick<RequestRow, 'id' | 'loan_id' | 'to_address' | 'amount_units'> & Partial<RequestRow>,
+   note: Record<string, unknown>,
+   matchedBy: 'walt_confirmed' | 'walt_watch' = 'walt_confirmed'
+): Promise<'recorded' | 'refund_needed' | 'retry' | 'duplicate' | { error: string }> => {
    const now = new Date().toISOString();
    const { data: ins, error: insError } = await svc
       .from('id_wallet_deposits')
@@ -839,19 +856,31 @@ const waltTransferTap = async (svc: Svc, requestId: number, arrived: boolean, by
          recording_at: now,
          request_id: req.id,
          loan_id: req.loan_id,
-         matched_by: 'walt_confirmed',
-         note: { by }
+         matched_by: matchedBy,
+         note
       })
       .select(DEPOSIT_FIELDS)
       .single();
-   if (insError || !ins) {
-      return void (await answer(insError?.code === '23505' ? 'Already recorded (or being recorded).' : `Couldn’t save: ${insError?.message ?? '?'}`));
-   }
+   if (insError || !ins) return insError?.code === '23505' ? 'duplicate' : { error: insError?.message ?? '?' };
    const d = ins as DepositRow;
-   await claimRequest(svc, req, d.id);
+   await claimRequest(svc, req as RequestRow, d.id);
    const outcome = await recordDeposit(svc, d);
-   await finish(outcome === 'recorded' ? '✅ Recorded on the loan' : outcome === 'refund_needed' ? '⚠️ The loan couldn’t take it — see the alert' : '⏳ Saving failed — it retries in a few minutes');
+   return outcome === 'recorded' ? 'recorded' : outcome === 'refund_needed' ? 'refund_needed' : 'retry';
 };
+
+/** Open 💰 Bayar requests (Walt Transfer, not paid) for the watch to match against. */
+export const openWaltRequests = async (svc: Svc): Promise<RequestRow[]> => {
+   const { data } = await svc
+      .from('id_repay_requests')
+      .select(REQUEST_FIELDS)
+      .eq('method', 'walt_transfer')
+      .neq('status', 'paid')
+      .gte('created_at', new Date(Date.now() - 14 * 86_400_000).toISOString())
+      .limit(200);
+   return (data ?? []) as RequestRow[];
+};
+
+export { unitsOf as requestUnitsOf };
 
 // ── refunds and sweeps (money leaving the payout wallet) ─────────────────────────────────────────
 type Say = (text: string) => Promise<unknown>;
