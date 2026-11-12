@@ -43,6 +43,7 @@ import { sendRepayStuckOffer } from './idGuides.ts';
 import { idLocaleOf } from './idTrack.ts';
 import { runRepaymentFollowUps } from './repaymentFollowUps.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
+import { roundRp, waltP2pPrice } from './waltP2p.ts';
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
@@ -275,7 +276,10 @@ export const getOrCreateRepayRequest = async (svc: Svc, user: { id: string }, so
       if (left.usd <= 0 || (left.idr != null && left.idr < 1000)) return { ok: false, error: 'nothing_left' };
       const baseCents = Math.max(1, ceilCents(left.usd));
       if (baseCents > MAX_USD * 100) return { ok: false, error: 'too_large' };
-      const approx = (cents: number) => (rate ? Math.round(((cents / 100) * rate) / 1000) * 1000 : null);
+      // What buying that much USDT on Walt P2P costs right now; the official rate (rounded) when unknown.
+      const p2pBuy = await waltP2pPrice(svc, 'buy', rate ? (baseCents / 100) * rate : 100_000);
+      const approx = (cents: number) =>
+         p2pBuy ? roundRp((cents / 100) * p2pBuy) : rate ? Math.round(((cents / 100) * rate) / 1000) * 1000 : null;
 
       // Reuse this loan's open request when it still covers what's owed and isn't much more.
       const { data: open } = await svc
