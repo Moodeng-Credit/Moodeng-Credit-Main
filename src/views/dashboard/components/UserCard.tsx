@@ -41,7 +41,6 @@ import {
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { isIndonesianLoan } from '@/lib/loanMarket';
-import IdBoardFund from '@/views/dashboard/components/IdBoardFund';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { isBaseWalletProvider, isOpenfortWalletProvider } from '@/lib/walletProvider';
 import { computePointsDelta, formatPointsMajor } from '@/shared/points';
@@ -571,7 +570,8 @@ export default function UserCard(loan: UserCardProps) {
 
    const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
-      if (isIndonesianLoan(loanData)) return;
+      // Indonesia: only Moodeng's funding accounts can fund (Vault Lend → bridge → their Walt).
+      if (isIndonesianLoan(loanData) && !isFundingAdmin) return;
       // Internal accounts get to choose Direct Lend vs Smart Contract Lend (Liquidity Relay).
       if (isFundingAdmin) {
          setShowFundingModal(true);
@@ -907,11 +907,9 @@ export default function UserCard(loan: UserCardProps) {
                      View Details
                      <ExternalLink className="w-5 h-5" />
                   </Link>
-               ) : isIndoLoan && !isOwnLoan && isFundingAdmin ? (
-                  // Moodeng's funding accounts: one button pays the borrower's Walt from the payout wallet.
-                  <IdBoardFund loanId={loanData.id} amount={Number(loanData.loanAmount)} onFunded={() => void dispatch(fetchLoans())} />
-               ) : isIndoLoan && !isOwnLoan ? (
+               ) : isIndoLoan && !isOwnLoan && !isFundingAdmin ? (
                   // Indonesia requests are paid to the borrower's Walt by Moodeng, never by a lender on Base.
+                  // Moodeng's funding accounts get the normal buttons below; Send Your Help opens Vault Lend.
                   <div className="w-full rounded-md-lg bg-md-neutral-500 py-md-3 text-center text-md-b2 font-semibold text-md-neutral-1200">
                      Dibayar oleh Moodeng · Paid by Moodeng
                   </div>
@@ -1017,7 +1015,8 @@ export default function UserCard(loan: UserCardProps) {
                      borrowerName: borrowerDisplayName,
                      principal: Number(loanData.loanAmount ?? 0),
                      totalOwed: Number(loanData.totalRepaymentAmount ?? 0),
-                     dueDate: loanData.dueDate ?? ''
+                     dueDate: loanData.dueDate ?? '',
+                     market: isIndoLoan ? 'ID' : null
                   } satisfies FundLoanTarget
                }
                onClose={() => setShowFundingModal(false)}

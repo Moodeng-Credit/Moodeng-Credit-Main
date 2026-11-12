@@ -123,8 +123,9 @@ rules. Change it with `/idtrack off|test|on` in the admin Telegram group.
 
 ## "Fund" on the request board (2026-11-12)
 
-For Moodeng's funding accounts, an Indonesian request on the board shows **Fund $X to their Walt** instead
-of "Dibayar oleh Moodeng" (`src/views/dashboard/components/IdBoardFund.tsx`). Two taps (Fund → Confirm), then
+For Moodeng's funding accounts, an Indonesian request on the board has the normal Send Your Help button
+instead of "Dibayar oleh Moodeng". The modal's small "Or pay from the payout wallet balance" link
+(`src/views/dashboard/components/IdBoardFund.tsx`) is two taps (link → Confirm), then
 `admin-fund-loan` → `walt_payout_auto` → `payNow`: the payout wallet sends to the borrower's Walt deposit
 address on BNB Chain, in any `id_payout_mode`, at most once, with the same max / daily cap / balance checks.
 
@@ -135,6 +136,25 @@ address on BNB Chain, in any `id_payout_mode`, at most once, with the same max /
   `save_my_walt_address`; a changed address pings the team). The bot asks for it after a request is posted
   while none is saved. It is optional: without one, the Walt Transfer card still pays them by @username.
 - Everyone else still sees "Dibayar oleh Moodeng"; lenders can't fund Indonesian requests from Base.
+
+### From the BitRepo vault (2026-11-13)
+
+For Moodeng's funding accounts an Indonesian request looks like any other on the board: View Request →
+Send Your Help opens the funding modal, which for `market = 'ID'` goes straight to **Vault Lend** with
+**Fund $X from the vault** (`IdBoardFund` + `IdVaultFundBlock`, the latter also in Admin → Requests):
+
+1. `id_vault_quote`: LI.FI exact-output quote. Draw = quote + 0.6% + 2¢, rounded up (e.g. $5 → about $5.10).
+2. The connected lending wallet draws that from the vault to the payout wallet's address on Base (same
+   Openfort EOA as on BNB Chain).
+3. `id_vault_draw` checks the draw on Base, sets `loans.vault_address`, and bridges Base USDC → BSC USDC
+   with LI.FI in one sponsored transaction (`_shared/idVaultBridge.ts`, `_shared/lifi.ts`).
+4. When LI.FI says DONE, `payNow` sends the borrower exactly the loan amount. The 5-minute job finishes
+   bridges whose card was closed. Needs `id_payout_token` = USDC (the quote refuses otherwise).
+
+Under it, "Or pay from the payout wallet balance" is the two-tap `payNow` above. `/idvault` (admin chats)
+bridges the payout wallet's USDT/USDC on BNB Chain back to the lending wallet on Base. Repayments by Walt
+Transfer land in Moodeng's Walt, not the payout wallet, so paying the vault back for those is by hand.
+The Openfort gas sponsorship must also cover Base (8453).
 
 ## Rupiah peg
 

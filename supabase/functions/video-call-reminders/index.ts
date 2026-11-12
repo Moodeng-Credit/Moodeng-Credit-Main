@@ -27,6 +27,7 @@ import { nudgeStalledChats } from '../_shared/messengerBookingBot.ts';
 import { type IdEvent, type IdEventData, isIdTrackUser, runIdOnboardingNudges, sendIdTelegram } from '../_shared/idTrack.ts';
 import { runAutoPayouts, runWaltPayoutScan } from '../_shared/idManualFunding.ts';
 import { runWaltWatch } from '../_shared/waltWatch.ts';
+import { runVaultBridges } from '../_shared/idVaultBridge.ts';
 import { runIdrRepricing } from '../_shared/fxRates.ts';
 import { runIdRepayNudges, runIdRepayments, runWaltArrivedDigest } from '../_shared/idRepayments.ts';
 import { runIdWaBridgeNudges } from '../_shared/idWaBridge.ts';
@@ -374,6 +375,12 @@ serve(async (req) => {
       if (w.error) console.error('video-call-reminders: walt watch', w.error);
    } catch (err) {
       console.error('video-call-reminders: walt watch failed', err);
+   }
+   // Vault-funded loans bridging Base → BNB Chain (LI.FI), and repayments going back (/idvault).
+   try {
+      tally.vault_bridges = await runVaultBridges(svc, Math.min(idDeadline, Date.now() + 45_000));
+   } catch (err) {
+      console.error('video-call-reminders: vault bridges failed', err);
    }
    // Walt Transfer mode (the default): one "send X USDT to @user" card per open request for the team.
    try {
