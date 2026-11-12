@@ -2839,6 +2839,65 @@ export async function sendMessengerToBorrower(userId: string, text: string): Pro
 }
 
 // ---------------------------------------------------------------------------
+// WhatsApp inbox — the business number's chats via SendPulse (admin-messenger wa_* actions).
+// ---------------------------------------------------------------------------
+
+export interface WhatsAppChatRow {
+   contactId: string;
+   name: string | null;
+   phone: string | null;
+   lastActivityAt: string | null;
+   unread: number;
+   lastText: string;
+   lastDirection: number | null;
+   lastAt: string | null;
+   user: { userId: string; username: string | null; displayName: string | null } | null;
+}
+
+export interface WhatsAppMessageRow {
+   id: string;
+   // 1 = from them, 2 = from us (bot, template or a teammate)
+   direction: number;
+   type: string;
+   text: string;
+   status: number | null;
+   createdAt: string | null;
+}
+
+export interface WhatsAppTemplateRow {
+   name: string;
+   language: string;
+   category: string;
+   content: string;
+   params: number;
+}
+
+export type WhatsAppResult<T = object> = ({ ok: true } & T) | { ok: false; reason: string; detail?: string };
+
+async function invokeWhatsApp<T>(body: Record<string, unknown>): Promise<WhatsAppResult<T>> {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-messenger', { body });
+   if (error) {
+      const ctx = (error as { context?: Response }).context;
+      const payload = ctx && typeof ctx.json === 'function' ? await ctx.json().catch(() => null) : null;
+      const p = payload as { reason?: string; error?: string } | null;
+      return { ok: false, reason: p?.reason ?? p?.error ?? 'request_failed' };
+   }
+   return (data as WhatsAppResult<T>) ?? { ok: false, reason: 'request_failed' };
+}
+
+export const getWhatsAppChats = () => invokeWhatsApp<{ chats: WhatsAppChatRow[] }>({ action: 'wa_chats' });
+
+export const getWhatsAppMessages = (contactId: string) =>
+   invokeWhatsApp<{ messages: WhatsAppMessageRow[]; lastInboundAt: string | null; canFreeText: boolean }>({ action: 'wa_messages', contactId });
+
+export const sendWhatsAppReply = (contactId: string, text: string) => invokeWhatsApp({ action: 'wa_send', contactId, text });
+
+export const getWhatsAppTemplates = () => invokeWhatsApp<{ templates: WhatsAppTemplateRow[] }>({ action: 'wa_templates' });
+
+export const sendWhatsAppTemplateMessage = (input: { contactId?: string; phone?: string; name: string; language: string; params: string[] }) =>
+   invokeWhatsApp({ action: 'wa_send_template', ...input });
+
+// ---------------------------------------------------------------------------
 // Email users — write once, tick people, each gets it by name (admin-send-email edge function).
 // ---------------------------------------------------------------------------
 
