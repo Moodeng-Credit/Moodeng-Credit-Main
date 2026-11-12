@@ -1,15 +1,16 @@
 import { type ReactElement, useCallback, useEffect, useState } from 'react';
 
 import { Check } from 'lucide-react';
-import { useSelector } from 'react-redux';
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
 import Loading from '@/components/Loading';
 
 import { useIdOnboarding } from '@/hooks/useIdOnboarding';
 
 import { ID_PATHS, ID_STEP_ORDER, type IdOnboarding as IdOnboardingData, type IdStepKey } from '@/lib/idTrack';
-import type { RootState } from '@/store/store';
+import { logoutUser } from '@/store/slices/authSlice';
+import type { AppDispatch, RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
 import { currentIdStep, ID_STEP_LABELS, isIdStepKey, pick, useIdLang } from '@/views/indonesia/idFlow';
 import AboutStep from '@/views/indonesia/steps/AboutStep';
@@ -54,13 +55,15 @@ const COPY = {
       step: (n: number, all: number) => `Langkah ${n} dari ${all}`,
       lockedTitle: 'Belum bisa',
       lockedBody: (label: string) => `Selesaikan “${label}” dulu.`,
-      goNext: (label: string) => `Ke ${label}`
+      goNext: (label: string) => `Ke ${label}`,
+      logOut: 'Keluar'
    },
    en: {
       step: (n: number, all: number) => `Step ${n} of ${all}`,
       lockedTitle: 'Not yet',
       lockedBody: (label: string) => `Finish “${label}” first.`,
-      goNext: (label: string) => `Go to ${label}`
+      goNext: (label: string) => `Go to ${label}`,
+      logOut: 'Log out'
    }
 };
 
@@ -130,6 +133,30 @@ const previewData = (step: IdStepKey): IdOnboardingData => {
 };
 const PREVIEW_USER = { id: 'preview', username: 'preview', walletAddress: '0x0000000000000000000000000000000000000001' } as unknown as User;
 
+// A way out of onboarding: sign out and land back on moodeng.app/id.
+function LogOutLink({ lang }: { lang: IdStepProps['lang'] }) {
+   const t = pick(lang, COPY);
+   const dispatch = useDispatch<AppDispatch>();
+   const navigate = useNavigate();
+   const [loggingOut, setLoggingOut] = useState(false);
+   const logOut = async () => {
+      setLoggingOut(true);
+      await dispatch(logoutUser());
+      navigate(ID_PATHS.landing, { replace: true });
+   };
+   return (
+      <button
+         className="mx-auto mt-auto pt-6 text-[14px] font-semibold text-[#8a7a5c] underline underline-offset-4 disabled:opacity-50 dark:text-[#a89a80]"
+         data-i18n-skip
+         disabled={loggingOut}
+         onClick={() => void logOut()}
+         type="button"
+      >
+         {t.logOut}
+      </button>
+   );
+}
+
 export function IdOnboardingPreview() {
    const lang = useIdLang();
    const [searchParams, setSearchParams] = useSearchParams();
@@ -153,6 +180,7 @@ export function IdOnboardingPreview() {
          <div key={current} className="flex flex-col gap-4" data-i18n-skip={TRANSLATED.has(current) ? undefined : true}>
             <Step data={data} lang={lang} onDone={() => undefined} refresh={async () => undefined} user={PREVIEW_USER} />
          </div>
+         <LogOutLink lang={lang} />
       </IdPage>
    );
 }
@@ -213,6 +241,7 @@ export default function IdOnboarding() {
                {CAMERA_OR_UPLOAD.has(current) && !data.steps[current] ? <ContinueInTelegram lang={lang} step={current} /> : null}
             </div>
          )}
+         <LogOutLink lang={lang} />
       </IdPage>
    );
 }
