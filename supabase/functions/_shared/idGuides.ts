@@ -14,8 +14,9 @@
 // Screenshots: telegram_bot_settings.id_guide_media = {"cash:1": "<Telegram file_id or https URL>", …}
 // (step numbers start at 1). A step with a picture is sent as a photo with the text as its caption.
 // Callback data: idg:<guide>:<step> (idLoanMath.ts). Never throws.
-import { formatRp, ID_GUIDE_KEYS, idCallback, type IdGuideKey } from './idLoanMath.ts';
-import { type IdLocale, idLocaleOf } from './idTrack.ts';
+
+import { formatRp, ID_GUIDE_KEYS, type IdGuideKey, idCallback } from './idLoanMath.ts';
+import { idLocaleOf, type IdLocale } from './idTrack.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramButton, type TelegramInlineKeyboard } from './telegram.ts';
 import { roundRp, waltP2pPrice } from './waltP2p.ts';
 
@@ -78,30 +79,15 @@ export const GUIDES: Record<IdGuideKey, Guide> = {
                '🙂 We send loans to your Telegram username (like @budi_88).\nYou don’t have one yet. Let’s make it — 1 minute.'
             )
          },
-         {
-            text: t(
-               '⚙️ Buka Telegram → tekan ☰ (garis tiga) atau "Pengaturan" (Settings).',
-               '⚙️ Open Telegram → tap ☰ (three lines) or "Settings".'
-            )
-         },
-         {
-            text: t(
-               '👤 Tekan nama kamu / "Edit", lalu tekan "Username" (Nama pengguna).',
-               '👤 Tap your name / "Edit", then tap "Username".'
-            )
-         },
+         { text: t('⚙️ Buka Telegram → tekan ☰ (garis tiga) atau "Pengaturan" (Settings).', '⚙️ Open Telegram → tap ☰ (three lines) or "Settings".') },
+         { text: t('👤 Tekan nama kamu / "Edit", lalu tekan "Username" (Nama pengguna).', '👤 Tap your name / "Edit", then tap "Username".') },
          {
             text: t(
                '⌨️ Tulis username, contoh: budi_santoso88\n(huruf, angka dan _ saja, minimal 5 huruf). Tekan ✓ untuk simpan.',
                '⌨️ Type a username, like: budi_santoso88\n(letters, numbers and _ only, at least 5 characters). Tap ✓ to save.'
             )
          },
-         {
-            text: t(
-               '✅ Sudah? Kembali ke chat ini dan tekan "✅ Sudah, cek lagi".',
-               '✅ Done? Come back to this chat and tap "✅ Done, check again".'
-            )
-         }
+         { text: t('✅ Sudah? Kembali ke chat ini dan tekan "✅ Sudah, cek lagi".', '✅ Done? Come back to this chat and tap "✅ Done, check again".') }
       ]
    },
    walt: {
@@ -266,13 +252,9 @@ export const GUIDES: Record<IdGuideKey, Guide> = {
 const say = (l: IdLocale, x: Text) => (l === 'en' ? x.en : x.id);
 const cb = (text: string, data: string): TelegramButton => ({ text, callback_data: data });
 const menuButton = () => cb('☰ Menu', idCallback.menu('menu'));
-export const helpButton = (l: IdLocale): TelegramButton => ({
-   text: l === 'en' ? '🙋 Still stuck? Chat with us' : '🙋 Masih bingung? Chat tim',
-   url: SUPPORT_URL
-});
+export const helpButton = (l: IdLocale): TelegramButton => ({ text: l === 'en' ? '🙋 Still stuck? Chat with us' : '🙋 Masih bingung? Chat tim', url: SUPPORT_URL });
 export const waltButton = (l: IdLocale): TelegramButton => ({ text: l === 'en' ? '👛 Open Walt' : '👛 Buka Walt', url: WALT_URL });
-export const guideButton = (l: IdLocale, guide: IdGuideKey): TelegramButton =>
-   cb(`📖 ${say(l, GUIDES[guide].title)}`, idCallback.guide(guide, 1));
+export const guideButton = (l: IdLocale, guide: IdGuideKey): TelegramButton => cb(`📖 ${say(l, GUIDES[guide].title)}`, idCallback.guide(guide, 1));
 
 export type GuideScreen = { text: string; keyboard: TelegramInlineKeyboard; photo?: string };
 
@@ -289,12 +271,7 @@ export const guideListScreen = (l: IdLocale): GuideScreen => ({
 });
 
 /** One step of a guide (1-based). Out-of-range steps clamp. */
-export const guideStepScreen = (
-   l: IdLocale,
-   key: IdGuideKey,
-   step: number,
-   opts: { waltUsername?: string | null; media?: Record<string, string> } = {}
-): GuideScreen => {
+export const guideStepScreen = (l: IdLocale, key: IdGuideKey, step: number, opts: { waltUsername?: string | null; media?: Record<string, string> } = {}): GuideScreen => {
    const g = GUIDES[key];
    const n = g.steps.length;
    const i = Math.min(Math.max(1, Math.floor(step) || 1), n);
@@ -302,12 +279,7 @@ export const guideStepScreen = (
    const walt = (opts.waltUsername ?? '').replace(/^@/, '') || 'jimmymoodengcredit';
    const last = i === n;
    const body = say(l, s.text).replaceAll('{walt}', walt);
-   const text = [
-      `📖 ${say(l, g.title)} — ${l === 'en' ? 'step' : 'langkah'} ${i}/${n}`,
-      '',
-      body,
-      ...(last && g.warning ? ['', say(l, g.warning)] : [])
-   ].join('\n');
+   const text = [`📖 ${say(l, g.title)} — ${l === 'en' ? 'step' : 'langkah'} ${i}/${n}`, '', body, ...(last && g.warning ? ['', say(l, g.warning)] : [])].join('\n');
    const nav: TelegramButton[] = [];
    if (i > 1) nav.push(cb(l === 'en' ? '⬅️ Back' : '⬅️ Kembali', idCallback.guide(key, i - 1)));
    if (!last) nav.push(cb(l === 'en' ? '➡️ Next' : '➡️ Lanjut', idCallback.guide(key, i + 1)));
@@ -349,12 +321,7 @@ export const loadGuideMedia = async (svc: Svc): Promise<Record<string, string>> 
 export const showGuideScreen = async (chatId: number | string, screen: GuideScreen, editMessageId?: number) => {
    try {
       if (screen.photo) {
-         await callTelegramApi('sendPhoto', {
-            chat_id: chatId,
-            photo: screen.photo,
-            caption: screen.text.slice(0, 1024),
-            reply_markup: { inline_keyboard: screen.keyboard }
-         });
+         await callTelegramApi('sendPhoto', { chat_id: chatId, photo: screen.photo, caption: screen.text.slice(0, 1024), reply_markup: { inline_keyboard: screen.keyboard } });
          return;
       }
       if (editMessageId) {
@@ -416,9 +383,7 @@ export const sendCashOutGuideOffer = async (svc: Svc, userId: string, amountUsd:
       l === 'en'
          ? `💸 ${amountUsd} USDT${approx} is now in your Walt.\n\nWant rupiah in your bank or e-wallet? Follow the steps — one at a time.`
          : `💸 ${amountUsd} USDT${approx} sudah masuk ke Walt kamu.\n\nMau jadi rupiah di bank atau e-wallet? Ikuti langkahnya — satu per satu.`;
-   await sendTelegramMessage(u.chat_id, text, { inlineKeyboard: [[guideButton(l, 'cash')], [waltButton(l)], [helpButton(l)]] }).catch(
-      () => undefined
-   );
+   await sendTelegramMessage(u.chat_id, text, { inlineKeyboard: [[guideButton(l, 'cash')], [waltButton(l)], [helpButton(l)]] }).catch(() => undefined);
 };
 
 /** "You don't have a Telegram username yet" + the guide. */
@@ -436,9 +401,7 @@ export const sendRepayStuckOffer = async (chatId: number | string, l: IdLocale) 
       l === 'en'
          ? '👋 Need a hand paying? Most people get stuck on buying USDT. Here are the steps, one at a time — or chat with us.'
          : '👋 Butuh bantuan bayar? Biasanya orang bingung di bagian beli USDT. Ini langkahnya, satu per satu — atau chat dengan kami.';
-   await sendTelegramMessage(chatId, text, { inlineKeyboard: [[guideButton(l, 'buy')], [guideButton(l, 'send')], [helpButton(l)]] }).catch(
-      () => undefined
-   );
+   await sendTelegramMessage(chatId, text, { inlineKeyboard: [[guideButton(l, 'buy')], [guideButton(l, 'send')], [helpButton(l)]] }).catch(() => undefined);
 };
 
 // ── /idguidephoto (admin chats): attach a screenshot to a guide step ─────────────────────────────
@@ -491,18 +454,7 @@ export const handleGuidePhotoCommand = async (svc: Svc, m: PhotoMessage) => {
    }
    const { error } = await svc
       .from('telegram_bot_settings')
-      .upsert(
-         {
-            key: 'id_guide_media',
-            value: JSON.stringify(media),
-            description: 'Indonesia guides: screenshots per step (Telegram file_ids), set with /idguidephoto.'
-         },
-         { onConflict: 'key' }
-      );
+      .upsert({ key: 'id_guide_media', value: JSON.stringify(media), description: 'Indonesia guides: screenshots per step (Telegram file_ids), set with /idguidephoto.' }, { onConflict: 'key' });
    if (error) return void (await reply(`Couldn't save: ${error.message}`));
-   await reply(
-      cmd.clear
-         ? `🗑 Removed the picture from ${slot}.`
-         : `✅ ${slot} ("${GUIDES[cmd.key].title.en}", step ${cmd.step}) now shows this picture.`
-   );
+   await reply(cmd.clear ? `🗑 Removed the picture from ${slot}.` : `✅ ${slot} ("${GUIDES[cmd.key].title.en}", step ${cmd.step}) now shows this picture.`);
 };

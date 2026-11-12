@@ -35,21 +35,11 @@
 // died in between is finished by the next one (status 'recording' for > 2 min).
 //
 // Never throws to the caller.
-import { sendRepayStuckOffer } from './idGuides.ts';
-import { formatRp, idUsdLeft } from './idLoanMath.ts';
+
 import { blockAtOrBefore, headBlock as bscHead, transfersTo as bscTransfersTo } from './idManualFunding.ts';
-import {
-   balanceOf,
-   BSC_USDC_CHECKSUM,
-   BSC_USDT_CHECKSUM,
-   type BscToken,
-   getPayoutWallet,
-   NotSentError,
-   pollOpenfortTx,
-   sendTokenBsc,
-   unitsToUsd,
-   usdcBscUnits
-} from './idPayoutWallet.ts';
+import { balanceOf, BSC_USDC_CHECKSUM, BSC_USDT_CHECKSUM, type BscToken, getPayoutWallet, NotSentError, pollOpenfortTx, sendTokenBsc, unitsToUsd, usdcBscUnits } from './idPayoutWallet.ts';
+import { formatRp, idUsdLeft } from './idLoanMath.ts';
+import { sendRepayStuckOffer } from './idGuides.ts';
 import { idLocaleOf } from './idTrack.ts';
 import { runRepaymentFollowUps } from './repaymentFollowUps.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
@@ -89,12 +79,7 @@ export const ceilCents = (usd: number): number => Math.ceil(Math.round(usd * 1e6
  * The amount (in cents) nearest `baseCents` that no recent request uses: base, −1, +1, −2, +2 … down to
  * −maxDown (never below 1¢), then on up to +maxUp. null when all are taken.
  */
-export const pickFreeCents = (
-   baseCents: number,
-   taken: Set<number>,
-   maxUp = MAX_BUMP_UP_CENTS,
-   maxDown = MAX_BUMP_DOWN_CENTS
-): number | null => {
+export const pickFreeCents = (baseCents: number, taken: Set<number>, maxUp = MAX_BUMP_UP_CENTS, maxDown = MAX_BUMP_DOWN_CENTS): number | null => {
    const order: number[] = [0];
    for (let i = 1; i <= Math.max(maxUp, maxDown); i += 1) {
       if (i <= maxDown) order.push(-i);
@@ -132,10 +117,7 @@ const setSetting = (svc: Svc, key: string, value: string): Promise<void> =>
    svc
       .from('telegram_bot_settings')
       .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' })
-      .then(
-         () => undefined,
-         () => undefined
-      );
+      .then(() => undefined, () => undefined);
 
 export const adminChatIds = async (svc: Svc): Promise<string[]> =>
    [
@@ -162,9 +144,7 @@ const parseSenders = (value: string | null) =>
 
 /** "@JimmyMoodengCredit " → "jimmymoodengcredit"; null unless it's a valid Telegram username. */
 export const waltUsernameOf = (value: string | null | undefined): string | null => {
-   const u = String(value ?? '')
-      .trim()
-      .replace(/^@/, '');
+   const u = String(value ?? '').trim().replace(/^@/, '');
    return /^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(u) ? u : null;
 };
 
@@ -242,11 +222,9 @@ type RequestRow = {
    expires_at: string;
 };
 // numeric(78,0) comes back as a JSON number (float) unless cast: always read the units as text.
-const REQUEST_FIELDS =
-   'id, loan_id, user_id, to_address, amount_units::text, amount_usd, owed_usd, rupiah_left, method, sent_claimed_at, status, deposit_id, created_at, expires_at';
+const REQUEST_FIELDS = 'id, loan_id, user_id, to_address, amount_units::text, amount_usd, owed_usd, rupiah_left, method, sent_claimed_at, status, deposit_id, created_at, expires_at';
 
-const unitsOf = (v: string | number): bigint =>
-   BigInt(typeof v === 'number' ? v.toLocaleString('en-US', { useGrouping: false }) : String(v).split('.')[0]);
+const unitsOf = (v: string | number): bigint => BigInt(typeof v === 'number' ? v.toLocaleString('en-US', { useGrouping: false }) : String(v).split('.')[0]);
 
 export type RepayRequestResult =
    | {
@@ -270,21 +248,12 @@ export type RepayRequestResult =
      }
    | { ok: false; error: 'no_loan' | 'on_contract' | 'no_payout_wallet' | 'paused' | 'nothing_left' | 'too_large' | 'busy' | 'error' };
 
-export const getOrCreateRepayRequest = async (
-   svc: Svc,
-   user: { id: string },
-   source: 'telegram' | 'app' = 'telegram'
-): Promise<RepayRequestResult> => {
+export const getOrCreateRepayRequest = async (svc: Svc, user: { id: string }, source: 'telegram' | 'app' = 'telegram'): Promise<RepayRequestResult> => {
    try {
       const loan = await loadActiveLoan(svc, user.id);
       if (!loan) return { ok: false, error: 'no_loan' };
       if (repayBlocker(loan)) return { ok: false, error: 'on_contract' };
-      if (
-         String((await getSetting(svc, 'id_repay')) ?? 'on')
-            .trim()
-            .toLowerCase() === 'off'
-      )
-         return { ok: false, error: 'paused' };
+      if (String((await getSetting(svc, 'id_repay')) ?? 'on').trim().toLowerCase() === 'off') return { ok: false, error: 'paused' };
       const waltUsername = waltUsernameOf(await getSetting(svc, 'id_walt_username'));
       // George's rule: no withdrawals (Walt charges 1.5 USDT). No Walt username set → paused, not BEP20.
       if (!waltUsername) return { ok: false, error: 'paused' };
@@ -323,13 +292,7 @@ export const getOrCreateRepayRequest = async (
       for (const r of (open ?? []) as RequestRow[]) {
          const cents = unitsToExactCents(unitsOf(r.amount_units));
          const fresh = new Date(r.expires_at).getTime() - Date.now() > REUSE_MIN_LEFT_MS;
-         if (
-            cents != null &&
-            fresh &&
-            r.to_address.toLowerCase() === wallet.address.toLowerCase() &&
-            cents >= baseCents &&
-            cents - baseCents <= REUSE_MAX_OVER_USD * 100
-         ) {
+         if (cents != null && fresh && r.to_address.toLowerCase() === wallet.address.toLowerCase() && cents >= baseCents && cents - baseCents <= REUSE_MAX_OVER_USD * 100) {
             return {
                ok: true,
                reused: true,
@@ -347,11 +310,7 @@ export const getOrCreateRepayRequest = async (
       }
       // Anything else open for this loan is out of date (a late payment to it still matches: see below).
       if ((open ?? []).length) {
-         await svc
-            .from('id_repay_requests')
-            .update({ status: 'replaced', updated_at: new Date().toISOString() })
-            .eq('loan_id', loan.id)
-            .eq('status', 'open');
+         await svc.from('id_repay_requests').update({ status: 'replaced', updated_at: new Date().toISOString() }).eq('loan_id', loan.id).eq('status', 'open');
       }
 
       // Amounts used in the last 7 days — paid ones too (a second send of a paid amount must not land on
@@ -360,12 +319,7 @@ export const getOrCreateRepayRequest = async (
       const hi = centsToUnits(baseCents + MAX_BUMP_UP_CENTS).toString();
       const since = new Date(Date.now() - AMOUNT_MEMORY_MS).toISOString();
       const [{ data: recent }, { data: arrived }] = await Promise.all([
-         svc
-            .from('id_repay_requests')
-            .select('amount_units::text')
-            .gte('created_at', since)
-            .gte('amount_units', lo)
-            .lte('amount_units', hi),
+         svc.from('id_repay_requests').select('amount_units::text').gte('created_at', since).gte('amount_units', lo).lte('amount_units', hi),
          svc.from('id_wallet_deposits').select('amount_units:units::text').gte('created_at', since).gte('units', lo).lte('units', hi)
       ]);
       const taken = new Set<number>();
@@ -395,19 +349,7 @@ export const getOrCreateRepayRequest = async (
             .select('id')
             .single();
          if (!error && row) {
-            return {
-               ok: true,
-               reused: false,
-               requestId: row.id,
-               method,
-               waltUsername,
-               address: wallet.address,
-               amountUsdt: centsToText(cents),
-               approxIdr: approx(cents),
-               rupiahLeft: left.idr,
-               expiresAt,
-               loan
-            };
+            return { ok: true, reused: false, requestId: row.id, method, waltUsername, address: wallet.address, amountUsdt: centsToText(cents), approxIdr: approx(cents), rupiahLeft: left.idr, expiresAt, loan };
          }
          if (error?.code !== '23505') {
             console.error('[idRepayments] store request failed', error?.message);
@@ -449,26 +391,15 @@ export const repayRequestStatus = async (svc: Svc, userId: string, requestId: nu
 };
 
 // ── messages ─────────────────────────────────────────────────────────────────────────────────────
-type UserRow = {
-   id: string;
-   chat_id: string | number | null;
-   preferred_locale: string | null;
-   walt_address: string | null;
-   telegram_username?: string | null;
-};
+type UserRow = { id: string; chat_id: string | number | null; preferred_locale: string | null; walt_address: string | null; telegram_username?: string | null };
 
 const loadUser = async (svc: Svc, userId: string): Promise<UserRow | null> => {
-   const { data } = await svc
-      .from('users')
-      .select('id, chat_id, preferred_locale, walt_address, telegram_username')
-      .eq('id', userId)
-      .maybeSingle();
+   const { data } = await svc.from('users').select('id, chat_id, preferred_locale, walt_address, telegram_username').eq('id', userId).maybeSingle();
    return (data as UserRow | null) ?? null;
 };
 
 /** Where a Walt Transfer refund goes: their Telegram @username. */
-const waltBack = (user: UserRow | null) =>
-   user?.telegram_username ? `@${String(user.telegram_username).replace(/^@/, '')}` : 'them (no Telegram username saved — ask in chat)';
+const waltBack = (user: UserRow | null) => (user?.telegram_username ? `@${String(user.telegram_username).replace(/^@/, '')}` : 'them (no Telegram username saved — ask in chat)');
 
 const tell = async (user: UserRow | null, text: string, keyboard?: TelegramInlineKeyboard) => {
    if (!user?.chat_id) return;
@@ -486,13 +417,7 @@ const payRestRow = (user: UserRow | null): TelegramInlineKeyboard => [
 ];
 
 /** "✅ Pembayaran Rp X diterima. Sisa Rp Y (≈ $Z)." — partial payments (Paid ones get the 'repaid' message). */
-export const partialReceivedText = (
-   locale: 'id' | 'en',
-   paidIdr: number | null,
-   paidUsd: number,
-   leftIdr: number | null,
-   leftUsd: number
-) => {
+export const partialReceivedText = (locale: 'id' | 'en', paidIdr: number | null, paidUsd: number, leftIdr: number | null, leftUsd: number) => {
    const paid = paidIdr != null ? formatRp(paidIdr) : `$${paidUsd.toFixed(2)}`;
    const left = leftIdr != null ? `${formatRp(leftIdr)} (≈ $${leftUsd.toFixed(2)})` : `$${leftUsd.toFixed(2)}`;
    return locale === 'en' ? `✅ Payment of ${paid} received. ${left} left to pay.` : `✅ Pembayaran ${paid} diterima. Sisa ${left}.`;
@@ -529,8 +454,7 @@ const DEPOSIT_FIELDS =
 const WALT_TX = 'walt-transfer:';
 const isWaltDeposit = (d: Pick<DepositRow, 'tx_hash'>) => d.tx_hash.startsWith(WALT_TX);
 /** The hash spent in used_payment_hashes: 'bsc:<tx>:<log>' on chain, 'walt-transfer:<request id>' for a confirmed Walt transfer. */
-const depositKey = (d: Pick<DepositRow, 'tx_hash' | 'log_index'>) =>
-   isWaltDeposit(d) ? d.tx_hash : `bsc:${d.tx_hash.toLowerCase()}:${d.log_index}`;
+const depositKey = (d: Pick<DepositRow, 'tx_hash' | 'log_index'>) => (isWaltDeposit(d) ? d.tx_hash : `bsc:${d.tx_hash.toLowerCase()}:${d.log_index}`);
 const depositUsd = (d: Pick<DepositRow, 'units'>) => unitsToUsd(unitsOf(d.units));
 const depositText = (d: DepositRow) => `${depositUsd(d).toFixed(2)} ${d.token}`;
 
@@ -594,12 +518,7 @@ const afterRecorded = async (svc: Svc, d: DepositRow, loan: Record<string, unkno
    const leftUsd = Math.max(0, Number(loan.total_repayment_amount ?? 0) - Number(loan.repaid_amount ?? 0));
    const paid = loan.repayment_status === 'Paid';
    // Paid → loan-repayment-received-notification sends the Bahasa 'repaid' message itself.
-   if (!paid)
-      await tell(
-         user,
-         partialReceivedText(idLocaleOf(user?.preferred_locale), pegged ? paidIdr : null, paidUsd, leftIdr, leftUsd),
-         payRestRow(user)
-      );
+   if (!paid) await tell(user, partialReceivedText(idLocaleOf(user?.preferred_locale), pegged ? paidIdr : null, paidUsd, leftIdr, leftUsd), payRestRow(user));
    await alertTeam(
       svc,
       `💰 🇮🇩 ${loan.tracking_id ?? d.loan_id}: ${depositText(d)} ${isWaltDeposit(d) ? 'received in Walt' : 'arrived in the payout wallet'}${paidIdr != null ? ` (Rp ${paidIdr.toLocaleString('id-ID')})` : ''} — ${
@@ -618,11 +537,7 @@ const recordDeposit = async (svc: Svc, d: DepositRow): Promise<Outcome> => {
    const key = depositKey(d);
    const micros = Number(unitsOf(d.units) / 10n ** 12n);
    const paidUsd = micros / 1e6;
-   const { data: loanBefore } = await svc
-      .from('loans')
-      .select('id, borrower_user_id, tracking_id, repaid_idr')
-      .eq('id', d.loan_id)
-      .maybeSingle();
+   const { data: loanBefore } = await svc.from('loans').select('id, borrower_user_id, tracking_id, repaid_idr').eq('id', d.loan_id).maybeSingle();
    if (!loanBefore) return 'retry';
 
    const spent = await spentBy(svc, key);
@@ -634,14 +549,8 @@ const recordDeposit = async (svc: Svc, d: DepositRow): Promise<Outcome> => {
       return 'recorded';
    }
    if (spent) {
-      await patchDeposit(svc, d, {
-         status: 'refund_needed',
-         note: { ...(d.note ?? {}), error: 'hash_used_by_other_loan', other: spent.loan_id }
-      });
-      await alertTeam(
-         svc,
-         `⚠️ 🇮🇩 ${depositText(d)} (tx ${d.tx_hash}) is already recorded on another loan (${spent.loan_id}). Not recorded again — check it.`
-      );
+      await patchDeposit(svc, d, { status: 'refund_needed', note: { ...(d.note ?? {}), error: 'hash_used_by_other_loan', other: spent.loan_id } });
+      await alertTeam(svc, `⚠️ 🇮🇩 ${depositText(d)} (tx ${d.tx_hash}) is already recorded on another loan (${spent.loan_id}). Not recorded again — check it.`);
       return 'refund_needed';
    }
 
@@ -675,19 +584,14 @@ const recordDeposit = async (svc: Svc, d: DepositRow): Promise<Outcome> => {
          isWaltDeposit(d)
             ? `⚠️ 🇮🇩 ${loanBefore.tracking_id ?? d.loan_id}: ${depositText(d)} came to your Walt by Transfer but was NOT recorded (${code}). Send it back by Walt Transfer to ${waltBack(user)}.`
             : `⚠️ 🇮🇩 ${loanBefore.tracking_id ?? d.loan_id}: ${depositText(d)} arrived in the payout wallet (tx ${d.tx_hash}) but was NOT recorded (${code}). Their Walt: ${user?.walt_address ?? '? (none saved)'}.`,
-         !isWaltDeposit(d) && user?.walt_address
-            ? [[{ text: `↩️ Refund ${depositText(d)} to their Walt`, callback_data: `${CB}f:${d.id}` }]]
-            : undefined
+         !isWaltDeposit(d) && user?.walt_address ? [[{ text: `↩️ Refund ${depositText(d)} to their Walt`, callback_data: `${CB}f:${d.id}` }]] : undefined
       );
       return 'refund_needed';
    }
    const loan = (recorded as { loan?: Record<string, unknown> } | null)?.loan;
    const overpaid = Number((recorded as { overpaid_micros?: number } | null)?.overpaid_micros ?? 0);
    const repayIdr = Number(loan?.repay_idr ?? NaN);
-   const paidIdr =
-      loan && Number.isFinite(repayIdr) && repayIdr > 0
-         ? Math.max(0, Math.round(Number(loan.repaid_idr ?? 0) - Number(loanBefore.repaid_idr ?? 0)))
-         : null;
+   const paidIdr = loan && Number.isFinite(repayIdr) && repayIdr > 0 ? Math.max(0, Math.round(Number(loan.repaid_idr ?? 0) - Number(loanBefore.repaid_idr ?? 0))) : null;
    await patchDeposit(svc, d, { note: { ...(d.note ?? {}), paidIdr, overpaidMicros: overpaid } });
    if (!loan) {
       await patchDeposit(svc, d, { status: 'recorded', recorded_at: new Date().toISOString() });
@@ -700,9 +604,7 @@ const recordDeposit = async (svc: Svc, d: DepositRow): Promise<Outcome> => {
          isWaltDeposit(d)
             ? `⚠️ 🇮🇩 ${loan.tracking_id}: they paid ${(overpaid / 1e6).toFixed(2)} ${d.token} more than was left (by Walt Transfer). The loan is closed. Send the extra back by Walt Transfer to ${waltBack(user)}.`
             : `⚠️ 🇮🇩 ${loan.tracking_id}: they paid ${(overpaid / 1e6).toFixed(2)} ${d.token} more than was left (tx ${d.tx_hash}). The loan is closed. Their Walt: ${user?.walt_address ?? '? (none saved)'}.`,
-         !isWaltDeposit(d) && user?.walt_address
-            ? [[{ text: `↩️ Refund the extra ${(overpaid / 1e6).toFixed(2)} ${d.token} to their Walt`, callback_data: `${CB}o:${d.id}` }]]
-            : undefined
+         !isWaltDeposit(d) && user?.walt_address ? [[{ text: `↩️ Refund the extra ${(overpaid / 1e6).toFixed(2)} ${d.token} to their Walt`, callback_data: `${CB}o:${d.id}` }]] : undefined
       );
    }
    await afterRecorded(svc, d, loan, paidUsd, paidIdr);
@@ -711,13 +613,7 @@ const recordDeposit = async (svc: Svc, d: DepositRow): Promise<Outcome> => {
 
 /** An open request with exactly this amount, else a recent expired/replaced one whose loan is still owed. */
 const matchRequest = async (svc: Svc, units: bigint): Promise<{ req: RequestRow; late: boolean } | null> => {
-   const { data: open } = await svc
-      .from('id_repay_requests')
-      .select(REQUEST_FIELDS)
-      .eq('status', 'open')
-      .eq('amount_units', units.toString())
-      .limit(1)
-      .maybeSingle();
+   const { data: open } = await svc.from('id_repay_requests').select(REQUEST_FIELDS).eq('status', 'open').eq('amount_units', units.toString()).limit(1).maybeSingle();
    if (open) return { req: open as RequestRow, late: false };
    const { data: older } = await svc
       .from('id_repay_requests')
@@ -759,24 +655,14 @@ const unmatchedCard = async (svc: Svc, d: DepositRow): Promise<{ text: string; k
       .order('created_at', { ascending: false })
       .limit(40);
    const got = depositUsd(d);
-   const perLoan = new Map<
-      string,
-      RequestRow & { loans: { tracking_id: string | null; loan_status: string; repayment_status: string | null } }
-   >();
-   for (const r of (recent ?? []) as Array<
-      RequestRow & { loans: { tracking_id: string | null; loan_status: string; repayment_status: string | null } }
-   >) {
+   const perLoan = new Map<string, RequestRow & { loans: { tracking_id: string | null; loan_status: string; repayment_status: string | null } }>();
+   for (const r of (recent ?? []) as Array<RequestRow & { loans: { tracking_id: string | null; loan_status: string; repayment_status: string | null } }>) {
       if (r.loans?.loan_status !== 'Lent' || r.loans?.repayment_status === 'Paid' || perLoan.has(r.loan_id)) continue;
       perLoan.set(r.loan_id, r);
    }
-   const options = [...perLoan.values()]
-      .sort((a, b) => Math.abs(Number(a.amount_usd) - got) - Math.abs(Number(b.amount_usd) - got))
-      .slice(0, 4);
+   const options = [...perLoan.values()].sort((a, b) => Math.abs(Number(a.amount_usd) - got) - Math.abs(Number(b.amount_usd) - got)).slice(0, 4);
    const keyboard: TelegramInlineKeyboard = options.map((r) => [
-      {
-         text: `✅ Record for ${r.loans.tracking_id ?? r.loan_id.slice(0, 8)} (asked ${Number(r.amount_usd).toFixed(2)})`,
-         callback_data: `${CB}r:${d.id}:${r.id}`
-      }
+      { text: `✅ Record for ${r.loans.tracking_id ?? r.loan_id.slice(0, 8)} (asked ${Number(r.amount_usd).toFixed(2)})`, callback_data: `${CB}r:${d.id}:${r.id}` }
    ]);
    keyboard.push([
       { text: '⬆️ It’s a top-up (remember sender)', callback_data: `${CB}t:${d.id}` },
@@ -793,16 +679,10 @@ const unmatchedCard = async (svc: Svc, d: DepositRow): Promise<{ text: string; k
 /** Admin-chat buttons on that card. True when handled. */
 export const handleWalletDepositCallback = async (
    svc: Svc,
-   query: {
-      id: string;
-      data?: string;
-      from?: { username?: string; first_name?: string };
-      message?: { chat: { id: number | string }; message_id: number; text?: string };
-   }
+   query: { id: string; data?: string; from?: { username?: string; first_name?: string }; message?: { chat: { id: number | string }; message_id: number; text?: string } }
 ): Promise<boolean> => {
    if (!isWalletDepositCallback(query.data)) return false;
-   const answer = (text: string) =>
-      callTelegramApi('answerCallbackQuery', { callback_query_id: query.id, text: text.slice(0, 190) }).catch(() => undefined);
+   const answer = (text: string) => callTelegramApi('answerCallbackQuery', { callback_query_id: query.id, text: text.slice(0, 190) }).catch(() => undefined);
    const chatId = query.message?.chat.id;
    if (chatId == null || !(await adminChatIds(svc)).includes(String(chatId))) {
       await answer('Not allowed here.');
@@ -864,26 +744,13 @@ export const handleWalletDepositCallback = async (
          await answer('Request not found.');
          return true;
       }
-      if (
-         !(await claimDeposit(svc, d, ['unmatched'], {
-            loan_id: req.loan_id,
-            request_id: req.id,
-            matched_by: 'team',
-            note: { ...(d.note ?? {}), by }
-         }))
-      ) {
+      if (!(await claimDeposit(svc, d, ['unmatched'], { loan_id: req.loan_id, request_id: req.id, matched_by: 'team', note: { ...(d.note ?? {}), by } }))) {
          await answer('Someone else just handled it.');
          return true;
       }
       await claimRequest(svc, req, d.id); // fine if it was already used: the loan is what matters
       const outcome = await recordDeposit(svc, d);
-      await finish(
-         outcome === 'recorded'
-            ? '✅ Recorded on that loan'
-            : outcome === 'refund_needed'
-              ? '⚠️ Loan couldn’t take it — see the alert'
-              : '⏳ Saving failed — it retries in a few minutes'
-      );
+      await finish(outcome === 'recorded' ? '✅ Recorded on that loan' : outcome === 'refund_needed' ? '⚠️ Loan couldn’t take it — see the alert' : '⏳ Saving failed — it retries in a few minutes');
       return true;
    }
    await answer('Unknown action.');
@@ -896,12 +763,7 @@ export type ClaimSentResult = { ok: true; already: boolean } | { ok: false; erro
 /** The borrower says they sent it: tell the team (once per 10 min) with ✅ Arrived / ❌ Not yet buttons. */
 export const claimSent = async (svc: Svc, userId: string, requestId: number): Promise<ClaimSentResult> => {
    try {
-      const { data: r } = await svc
-         .from('id_repay_requests')
-         .select(REQUEST_FIELDS)
-         .eq('id', requestId)
-         .eq('user_id', userId)
-         .maybeSingle();
+      const { data: r } = await svc.from('id_repay_requests').select(REQUEST_FIELDS).eq('id', requestId).eq('user_id', userId).maybeSingle();
       const req = r as RequestRow | null;
       if (!req) return { ok: false, error: 'not_found' };
       if (req.status === 'paid') return { ok: false, error: 'paid' };
@@ -921,10 +783,7 @@ export const claimSent = async (svc: Svc, userId: string, requestId: number): Pr
       ]);
       const cents = unitsToExactCents(unitsOf(req.amount_units));
       const amount = cents != null ? centsToText(cents) : String(req.amount_usd);
-      const name =
-         [who?.display_name, who?.telegram_username ? `@${who.telegram_username}` : who?.username ? `(${who.username})` : null]
-            .filter(Boolean)
-            .join(' ') || req.user_id.slice(0, 8);
+      const name = [who?.display_name, who?.telegram_username ? `@${who.telegram_username}` : who?.username ? `(${who.username})` : null].filter(Boolean).join(' ') || req.user_id.slice(0, 8);
       const rp = Number(req.rupiah_left ?? NaN);
       await alertTeam(
          svc,
@@ -986,20 +845,12 @@ const waltTransferTap = async (svc: Svc, requestId: number, arrived: boolean, by
       .select(DEPOSIT_FIELDS)
       .single();
    if (insError || !ins) {
-      return void (await answer(
-         insError?.code === '23505' ? 'Already recorded (or being recorded).' : `Couldn’t save: ${insError?.message ?? '?'}`
-      ));
+      return void (await answer(insError?.code === '23505' ? 'Already recorded (or being recorded).' : `Couldn’t save: ${insError?.message ?? '?'}`));
    }
    const d = ins as DepositRow;
    await claimRequest(svc, req, d.id);
    const outcome = await recordDeposit(svc, d);
-   await finish(
-      outcome === 'recorded'
-         ? '✅ Recorded on the loan'
-         : outcome === 'refund_needed'
-           ? '⚠️ The loan couldn’t take it — see the alert'
-           : '⏳ Saving failed — it retries in a few minutes'
-   );
+   await finish(outcome === 'recorded' ? '✅ Recorded on the loan' : outcome === 'refund_needed' ? '⚠️ The loan couldn’t take it — see the alert' : '⏳ Saving failed — it retries in a few minutes');
 };
 
 // ── refunds and sweeps (money leaving the payout wallet) ─────────────────────────────────────────
@@ -1028,9 +879,7 @@ const refundTap = async (svc: Svc, d: DepositRow, what: 'all' | 'extra', answer:
    try {
       const txId = await sendTokenBsc(svc, d.token, walt, amount, Date.now() + 55_000);
       await patchDeposit(svc, d, { refund_tx: txId, refund_units: units.toString(), ...(what === 'all' ? { status: 'refunded' } : {}) });
-      await finish(
-         `↩️ Refund of ${amount} ${d.token} to ${short(walt)} sent (Openfort ${txId}). I'll confirm here once it lands on BNB Chain.`
-      );
+      await finish(`↩️ Refund of ${amount} ${d.token} to ${short(walt)} sent (Openfort ${txId}). I'll confirm here once it lands on BNB Chain.`);
    } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (err instanceof NotSentError) {
@@ -1048,18 +897,12 @@ const sweepTap = async (svc: Svc, token: BscToken, cents: number, cardKey: strin
    const to = String((await getSetting(svc, 'id_payout_sweep_to')) ?? '').trim();
    if (!EVM_ADDRESS.test(to)) return void (await answer('No sweep address set (id_payout_sweep_to).'));
    // One send per card, even on double taps or taps on older cards (card_key is the primary key).
-   const { error: claimError } = await svc
-      .from('id_sweeps')
-      .insert({ card_key: cardKey, token, cents, to_address: to.toLowerCase(), by_admin: by });
-   if (claimError)
-      return void (await answer(claimError.code === '23505' ? 'Already sent from this card.' : `Couldn’t start: ${claimError.message}`));
+   const { error: claimError } = await svc.from('id_sweeps').insert({ card_key: cardKey, token, cents, to_address: to.toLowerCase(), by_admin: by });
+   if (claimError) return void (await answer(claimError.code === '23505' ? 'Already sent from this card.' : `Couldn’t start: ${claimError.message}`));
    const amount = centsToText(cents);
    try {
       const txId = await sendTokenBsc(svc, token, to, amount, Date.now() + 55_000);
-      await svc
-         .from('id_sweeps')
-         .update({ openfort_tx: txId, status: 'sent', updated_at: new Date().toISOString() })
-         .eq('card_key', cardKey);
+      await svc.from('id_sweeps').update({ openfort_tx: txId, status: 'sent', updated_at: new Date().toISOString() }).eq('card_key', cardKey);
       await finish(`✅ Sending ${amount} ${token} to ${to} (Openfort ${txId}). I'll confirm here once it lands.`);
    } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -1099,9 +942,7 @@ export const handleSweepCommand = async (svc: Svc, message: { chat: { id: number
          chatId,
          [
             `🇮🇩 Payout wallet ${wallet.address}`,
-            bal
-               ? `${bal.usdt.toFixed(2)} USDT · ${bal.usdc.toFixed(2)} USDC · ${bal.bnb.toFixed(4)} BNB`
-               : 'Balance: BNB Chain unreachable',
+            bal ? `${bal.usdt.toFixed(2)} USDT · ${bal.usdc.toFixed(2)} USDC · ${bal.bnb.toFixed(4)} BNB` : 'Balance: BNB Chain unreachable',
             EVM_ADDRESS.test(to) ? `Sweeps go to: ${to}` : '⚠️ No sweep address set (telegram_bot_settings.id_payout_sweep_to).',
             'Usage: /idsweep USDT 25 · /idsweep USDC all'
          ].join('\n')
@@ -1142,17 +983,10 @@ export const handleSweepCommand = async (svc: Svc, message: { chat: { id: number
 const scanWallet = async (svc: Svc, wallet: string, deadline: number): Promise<number> => {
    const head = (await bscHead()) - BSC_CONFIRMATIONS;
    // Read the cursor strictly: a failed read must not restart the scan 2 h back and skip blocks.
-   const { data: cursorRow, error: cursorError } = await svc
-      .from('telegram_bot_settings')
-      .select('value')
-      .eq('key', 'id_repay_scan_block')
-      .maybeSingle();
+   const { data: cursorRow, error: cursorError } = await svc.from('telegram_bot_settings').select('value').eq('key', 'id_repay_scan_block').maybeSingle();
    if (cursorError) throw new Error(`read scan cursor: ${cursorError.message}`);
    const saved = (cursorRow?.value as string | undefined) ?? null;
-   let from =
-      saved && /^\d+$/.test(saved)
-         ? BigInt(saved) + 1n
-         : await blockAtOrBefore(new Date(Date.now() - FIRST_SCAN_BACK_MS).toISOString(), head);
+   let from = saved && /^\d+$/.test(saved) ? BigInt(saved) + 1n : await blockAtOrBefore(new Date(Date.now() - FIRST_SCAN_BACK_MS).toISOString(), head);
    let seen = 0;
    const me = wallet.toLowerCase();
    while (from <= head && Date.now() < deadline) {
@@ -1188,10 +1022,7 @@ const scanWallet = async (svc: Svc, wallet: string, deadline: number): Promise<n
       const last = Date.parse(String((await getSetting(svc, 'id_repay_scan_alerted_at')) ?? ''));
       if (!Number.isFinite(last) || Date.now() - last > SCAN_ALERT_EVERY_MS) {
          await setSetting(svc, 'id_repay_scan_alerted_at', new Date().toISOString());
-         await alertTeam(
-            svc,
-            `⚠️ 🇮🇩 The payout-wallet repayment scan is ${(head - from).toString()} blocks (~${Math.round((Number(head - from) * 0.75) / 60)} min) behind BNB Chain. Repayments will be recorded late until it catches up.`
-         );
+         await alertTeam(svc, `⚠️ 🇮🇩 The payout-wallet repayment scan is ${(head - from).toString()} blocks (~${Math.round(Number(head - from) * 0.75 / 60)} min) behind BNB Chain. Repayments will be recorded late until it catches up.`);
       }
    }
    return seen;
@@ -1203,11 +1034,7 @@ const sendUnmatchedCard = async (svc: Svc, d: DepositRow) => {
    await patchDeposit(svc, d, { alerted_at: new Date().toISOString() });
 };
 
-const processNew = async (
-   svc: Svc,
-   d: DepositRow,
-   topupSenders: Set<string>
-): Promise<'recorded' | 'topup' | 'unmatched' | 'ignored' | 'other'> => {
+const processNew = async (svc: Svc, d: DepositRow, topupSenders: Set<string>): Promise<'recorded' | 'topup' | 'unmatched' | 'ignored' | 'other'> => {
    const units = unitsOf(d.units);
    if (units < DUST_UNITS) {
       if (!(await claimDeposit(svc, d, ['new']))) return 'other';
@@ -1217,14 +1044,7 @@ const processNew = async (
    // An exact-amount match wins even from a "top-up" sender: exchanges and Walt send from shared wallets.
    const match = await matchRequest(svc, units);
    if (match) {
-      if (
-         !(await claimDeposit(svc, d, ['new'], {
-            loan_id: match.req.loan_id,
-            request_id: match.req.id,
-            matched_by: match.late ? 'late_amount' : 'amount'
-         }))
-      )
-         return 'other';
+      if (!(await claimDeposit(svc, d, ['new'], { loan_id: match.req.loan_id, request_id: match.req.id, matched_by: match.late ? 'late_amount' : 'amount' }))) return 'other';
       if (await claimRequest(svc, match.req, d.id)) {
          return (await recordDeposit(svc, d)) === 'recorded' ? 'recorded' : 'other';
       }
@@ -1261,38 +1081,22 @@ const confirmOutgoing = async (svc: Svc, deadline: number) => {
          const amount = unitsToDecimal(unitsOf(d.refund_units ?? d.units));
          if (state.state === 'succeeded') {
             await patchDeposit(svc, d, { refund_tx_hash: state.txHash, refund_confirmed_at: new Date().toISOString() });
-            const { data: loan } = d.loan_id
-               ? await svc.from('loans').select('borrower_user_id').eq('id', d.loan_id).maybeSingle()
-               : { data: null };
+            const { data: loan } = d.loan_id ? await svc.from('loans').select('borrower_user_id').eq('id', d.loan_id).maybeSingle() : { data: null };
             const user = loan ? await loadUser(svc, loan.borrower_user_id) : null;
-            await tell(
-               user,
-               say(user, `↩️ Kami mengembalikan ${amount} ${d.token} ke Walt kamu.`, `↩️ We sent ${amount} ${d.token} back to your Walt.`)
-            );
+            await tell(user, say(user, `↩️ Kami mengembalikan ${amount} ${d.token} ke Walt kamu.`, `↩️ We sent ${amount} ${d.token} back to your Walt.`));
             await alertTeam(svc, `✅ 🇮🇩 Refund of ${amount} ${d.token} landed (tx ${state.txHash}).`);
          } else {
             const wasAll = d.status === 'refunded';
-            await patchDeposit(svc, d, {
-               refund_tx: null,
-               refund_started_at: null,
-               refund_units: null,
-               ...(wasAll ? { status: 'refund_needed' } : {})
-            });
-            await alertTeam(
-               svc,
-               `⚠️ 🇮🇩 Refund of ${amount} ${d.token} FAILED (${state.error}). Nothing left the wallet — tap to try again.`,
-               [[{ text: `↩️ Retry refund`, callback_data: `${CB}${wasAll ? 'f' : 'o'}:${d.id}` }]]
-            );
+            await patchDeposit(svc, d, { refund_tx: null, refund_started_at: null, refund_units: null, ...(wasAll ? { status: 'refund_needed' } : {}) });
+            await alertTeam(svc, `⚠️ 🇮🇩 Refund of ${amount} ${d.token} FAILED (${state.error}). Nothing left the wallet — tap to try again.`, [
+               [{ text: `↩️ Retry refund`, callback_data: `${CB}${wasAll ? 'f' : 'o'}:${d.id}` }]
+            ]);
          }
       } catch (err) {
          console.error(`[idRepayments] refund check ${d.id} failed`, err instanceof Error ? err.message : err);
       }
    }
-   const { data: sweeps } = await svc
-      .from('id_sweeps')
-      .select('card_key, token, cents, to_address, openfort_tx')
-      .eq('status', 'sent')
-      .limit(10);
+   const { data: sweeps } = await svc.from('id_sweeps').select('card_key, token, cents, to_address, openfort_tx').eq('status', 'sent').limit(10);
    for (const sw of (sweeps ?? []) as Array<{ card_key: string; token: string; cents: number; to_address: string; openfort_tx: string }>) {
       if (Date.now() > deadline) return;
       try {
@@ -1339,12 +1143,7 @@ export const runIdRepayNudges = async (svc: Svc, now = Date.now()): Promise<numb
          .limit(20);
       for (const r of (data ?? []) as Array<{ id: number; loan_id: string; user_id: string }>) {
          const stamp = new Date().toISOString();
-         const { data: claimed } = await svc
-            .from('id_repay_requests')
-            .update({ nudged_at: stamp })
-            .eq('id', r.id)
-            .is('nudged_at', null)
-            .select('id');
+         const { data: claimed } = await svc.from('id_repay_requests').update({ nudged_at: stamp }).eq('id', r.id).is('nudged_at', null).select('id');
          if (!(claimed ?? []).length) continue;
          const [{ data: loan }, user] = await Promise.all([
             svc.from('loans').select('repayment_status').eq('id', r.loan_id).maybeSingle(),
@@ -1415,12 +1214,7 @@ export const runIdRepayments = async (svc: Svc, deadline = Date.now() + 45_000):
       }
 
       // 4. Match and record.
-      const { data: fresh } = await svc
-         .from('id_wallet_deposits')
-         .select(DEPOSIT_FIELDS)
-         .eq('status', 'new')
-         .order('id', { ascending: true })
-         .limit(25);
+      const { data: fresh } = await svc.from('id_wallet_deposits').select(DEPOSIT_FIELDS).eq('status', 'new').order('id', { ascending: true }).limit(25);
       const topupSenders = parseSenders(await getSetting(svc, 'id_topup_senders'));
       for (const d of (fresh ?? []) as DepositRow[]) {
          if (Date.now() > deadline - 5_000) break;
