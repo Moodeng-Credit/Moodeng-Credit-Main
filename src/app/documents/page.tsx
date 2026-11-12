@@ -46,6 +46,8 @@ const RESEND_FIX: Record<string, string> = {
    not_financial: 'This doesn’t look like a GCash or Maya history, bank statement or payslip. Please send one of those.',
    old_document: 'This is more than 2 months old. Please send your latest one.',
    short_history: 'This shows less than 2 months. Please send your last 2–3 months of history.',
+   need_history:
+      'For this amount we also need your GCash, Maya or bank history showing the money you receive (screenshots are fine). Please send it together with your payslip or invoice.',
    no_income: 'We couldn’t see money coming in. Please send a history or statement that shows the money you receive.'
 };
 type Picked = { key: string; file: File; preview: string | null; error: string | null };

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { gateMessage, type IncomeDocFacts, incomeDocGate, parseSteps, stepFor } from '@/lib/incomeDocSteps';
+import { dueDateAfterPayday, gateMessage, type IncomeDocFacts, incomeDocGate, parseSteps, stepAsk, stepFor } from '@/lib/incomeDocSteps';
 
 const steps = parseSteps([
    { min: 40, months: 0, fresh: false, autoApprove: true, maxShare: null, balance: false, liveCall: false },
@@ -60,5 +60,31 @@ describe('proof-of-income steps', () => {
    it('drops malformed steps', () => {
       expect(parseSteps([{ min: 'x' }, null, { min: 50 }])).toHaveLength(1);
       expect(parseSteps('nope')).toEqual([]);
+   });
+});
+
+describe('what each step asks for', () => {
+   it('$40 takes any one recent document; $60 asks for history and mentions the video call', () => {
+      const forty = { min: 40, months: 0, fresh: false, autoApprove: true, maxShare: null, balance: false, liveCall: false };
+      expect(stepAsk(forty)).toBe('one recent GCash or Maya screenshot, bank statement or payslip');
+      const one = { ...forty, months: 1 };
+      expect(stepAsk(one)).toContain('payslip or invoice alone isn’t enough');
+      const sixty = { ...forty, min: 60, months: 2, autoApprove: false, liveCall: true };
+      expect(stepAsk(sixty)).toContain('last 2–3 months');
+      expect(stepAsk(sixty)).toContain('quick video call');
+   });
+});
+
+describe('due date after payday', () => {
+   const max = new Date(2027, 2, 1);
+   it('is the day after their payday, at least a week away', () => {
+      expect(dueDateAfterPayday(new Date(2026, 10, 6), 15, max)).toEqual(new Date(2026, 10, 16));
+      // Payday is in 3 days: too soon, so next month's.
+      expect(dueDateAfterPayday(new Date(2026, 10, 12), 15, max)).toEqual(new Date(2026, 11, 16));
+   });
+   it('handles end-of-month paydays and nothing to go on', () => {
+      expect(dueDateAfterPayday(new Date(2026, 10, 6), 31, max)).toEqual(new Date(2026, 11, 1));
+      expect(dueDateAfterPayday(new Date(2026, 10, 6), null, max)).toBeNull();
+      expect(dueDateAfterPayday(new Date(2026, 10, 6), 15, new Date(2026, 10, 10))).toBeNull();
    });
 });

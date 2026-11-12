@@ -1,6 +1,27 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { buildMemo, buildSections, parseSteps, pdfJpegs, stepFor, verdictOf, computeMetrics, type Extracted, namesMatch, normalizeExtracted, parseStatedIncome, readPdfInfo, riskOf, runChecks, scoreOf } from './incomeDocs.ts';
+import {
+   affordOf,
+   authenticityOf,
+   buildMemo,
+   buildSections,
+   canAutoApprove,
+   computeMetrics,
+   type Extracted,
+   kindOf,
+   lenderOf,
+   namesMatch,
+   normalizeExtracted,
+   parseStatedIncome,
+   parseSteps,
+   pdfJpegs,
+   readPdfInfo,
+   riskOf,
+   runChecks,
+   scoreOf,
+   stepFor,
+   verdictOf
+} from './incomeDocs.ts';
 
 const tx = (date: string, amount: number, balance: number | null, description = 'x') => ({ date, description, amount, balance, page: 1, source_text: `${date} ${amount}` });
 
@@ -67,11 +88,152 @@ Deno.test('due date far from payday suggests a better one', () => {
    assert(f?.detail.includes('16th'));
 });
 
-Deno.test('short history and no regular income', () => {
-   const doc = base({ period_start: '2026-10-01', period_end: '2026-10-15', transactions: [tx('2026-10-02', 3000, 4000), tx('2026-10-09', -500, 3500)], opening_balance: null, closing_balance: null });
+Deno.test('short history: two weeks is too short, but not "no regular income" (no whole month to judge)', () => {
+   const doc = base({
+      period_start: '2026-10-01',
+      period_end: '2026-10-15',
+      transactions: [tx('2026-10-02', 3000, 4000), tx('2026-10-09', -500, 3500)],
+      opening_balance: null,
+      closing_balance: null
+   });
    const codes = runChecks(doc, computeMetrics(doc), smallLoan).map((f) => f.code);
    assert(codes.includes('short_history'));
-   assert(codes.includes('no_regular_income'));
+   assert(!codes.includes('no_regular_income'));
+});
+
+// ---- Income vs borrowed money, gig income, stricter steps -------------------------------------------
+
+const gig = (overrides: Partial<Extracted> = {}) =>
+   base({
+      period_start: '2026-07-01',
+      period_end: '2026-09-30',
+      opening_balance: null,
+      closing_balance: null,
+      transactions: [
+         tx('2026-07-03', 4000, null, 'Received from Payoneer'),
+         tx('2026-07-19', 9000, null, 'Received from Payoneer'),
+         tx('2026-08-11', 6500, null, 'Upwork payout'),
+         tx('2026-09-02', 2500, null, 'Shopee seller payout'),
+         tx('2026-09-24', 7000, null, 'Received from client')
+      ],
+      ...overrides
+   });
+
+Deno.test('gig income that changes every month is income every month, not "irregular"', () => {
+   const doc = gig();
+   const m = computeMetrics(doc);
+   assertEquals(
+      m.income_by_month?.map((x) => x.income),
+      [13000, 6500, 9500]
+   );
+   assertEquals(m.worst_month_income, 6500);
+   const codes = runChecks(doc, m, smallLoan).map((f) => f.code);
+   assert(!codes.includes('no_regular_income'));
+});
+
+Deno.test('a month with no income is flagged', () => {
+   const doc = gig({ transactions: [tx('2026-07-03', 9000, null, 'Payoneer'), tx('2026-09-24', 9000, null, 'Payoneer')] });
+   const flags = runChecks(doc, computeMetrics(doc), smallLoan);
+   assert(flags.find((f) => f.code === 'no_regular_income')?.detail.includes('1 of 3'));
+});
+
+Deno.test('loan app payouts are not income; payments to them come off income', () => {
+   const doc = gig({
+      transactions: [
+         ...gig().transactions,
+         tx('2026-07-05', 5000, null, 'GLoan disbursement'),
+         tx('2026-08-05', 4000, null, 'Tala cash'),
+         tx('2026-08-20', -2000, null, 'Payment to JuanHand'),
+         tx('2026-09-10', -1500, null, 'Billease payment')
+      ]
+   });
+   const m = computeMetrics(doc);
+   assertEquals(m.loan_in, 9000);
+   assertEquals(m.income_in, 29000);
+   assertEquals(m.lenders?.sort(), ['billease', 'gloan', 'juanhand', 'tala']);
+   const codes = runChecks(doc, m, smallLoan).map((f) => f.code);
+   assert(codes.includes('borrowed_money_in'));
+   assert(codes.includes('many_lenders'));
+   assert(codes.includes('other_loan_payments'));
+   assertEquals(lenderOf('Received from Natalia'), null);
+   assertEquals(kindOf(tx('2026-07-05', 500, null, 'SPayLater')), 'loan_in');
+});
+
+Deno.test('affordability uses the lean month and takes off other loan payments', () => {
+   const doc = gig();
+   const m = computeMetrics(doc);
+   // worst month 6500, average ~9667 → plan for 6500 PHP ≈ $114; $35 repay = 31%: comfortable under a 50% limit.
+   assertEquals(affordOf(doc, m, smallLoan.loan, STEP60).label, 'tight');
+   assertEquals(affordOf(doc, m, smallLoan.loan, null).label, 'tight');
+   assertEquals(affordOf(doc, m, { amount: 15, total_repayment: 17, due_date: null }, STEP60).label, 'comfortable');
+   assertEquals(affordOf(doc, m, { amount: 80, total_repayment: 90, due_date: null }, STEP60).label, 'too_much');
+   assertEquals(affordOf(doc, m, null, STEP60).label, 'unknown');
+});
+
+const STEP40 = { min: 40, months: 0, fresh: false, autoApprove: true, maxShare: null, balance: false, liveCall: false };
+const STEP60 = { min: 60, months: 2, fresh: false, autoApprove: false, maxShare: 0.5, balance: false, liveCall: true };
+
+Deno.test('$40 takes a payslip alone; from $60 a payslip alone is sent back for account history', () => {
+   const slip = base({
+      doc_type: 'payslip',
+      transactions: [],
+      opening_balance: null,
+      closing_balance: null,
+      payslip: { employer: 'ACME', gross_pay: 20000, total_deductions: 2000, net_pay: 18000 }
+   });
+   // $40: easy step. A payslip alone is fine and can approve itself if it looks real.
+   assert(!runChecks(slip, computeMetrics(slip), { ...smallLoan, step: STEP40 }).some((f) => f.code === 'needs_history'));
+   assert(canAutoApprove('looks_good', STEP40, slip, 'real', 'comfortable'));
+   assert(!canAutoApprove('looks_good', STEP40, slip, 'check', 'comfortable'));
+   assert(!canAutoApprove('looks_good', STEP40, slip, 'real', 'too_much'));
+   assert(canAutoApprove('looks_good', STEP40, gig(), 'real', 'comfortable'));
+   // $60: a payslip alone goes back for history, and a months step never approves on a payslip alone.
+   const flags = runChecks(slip, computeMetrics(slip), { ...smallLoan, step: STEP60 });
+   assert(flags.some((f) => f.code === 'needs_history'));
+   assertEquals(verdictOf(flags, 'payslip'), { verdict: 'resend', reason: 'need_history' });
+   assert(!canAutoApprove('looks_good', { ...STEP60, autoApprove: true }, slip, 'real', 'comfortable'));
+   // No step known (opened /documents on its own): a payslip is still fine for the team to look at.
+   assert(!runChecks(slip, computeMetrics(slip), smallLoan).some((f) => f.code === 'needs_history'));
+});
+
+Deno.test('math that fakes get wrong: dates out of order, future dates, negative wallet balance', () => {
+   const doc = base({
+      opening_balance: null,
+      closing_balance: null,
+      transactions: [
+         tx('2026-09-01', 100, 200),
+         tx('2026-08-01', 100, 300),
+         tx('2026-09-05', 100, 400),
+         tx('2026-08-03', 100, -50),
+         tx('2026-12-01', 100, 50)
+      ]
+   });
+   const codes = runChecks(doc, computeMetrics(doc), smallLoan).map((f) => f.code);
+   assert(codes.includes('dates_out_of_order'));
+   assert(codes.includes('future_date'));
+   assert(codes.includes('balance_negative'));
+});
+
+Deno.test('a PDF saved again after export is flagged; signed or linearized ones are not', () => {
+   const enc = (s: string) => new TextEncoder().encode(s);
+   assertEquals(readPdfInfo(enc('%PDF-1.4\n...%%EOF\n...%%EOF\n')).saves, 2);
+   assertEquals(readPdfInfo(enc('%PDF-1.4\n<< /Linearized 1 >>\n%%EOF\n...%%EOF\n')).saves, 1);
+   const flags = runChecks(base(), computeMetrics(base()), {
+      ...smallLoan,
+      pdfs: [{ ...readPdfInfo(enc('%%EOF %%EOF %%EOF')), producer: 'BPI eStatement' }]
+   });
+   assertEquals(flags.find((f) => f.code === 'pdf_saved_again')?.severity, 'orange');
+   const signed = runChecks(base(), computeMetrics(base()), { ...smallLoan, pdfs: [readPdfInfo(enc('/ByteRange [0 1 2 3] %%EOF %%EOF'))] });
+   assert(!signed.some((f) => f.code === 'pdf_saved_again'));
+});
+
+Deno.test('two labels: is it real, from the fake-sign checks', () => {
+   const clean = buildSections([], { ok: true });
+   assertEquals(authenticityOf(clean), 'real');
+   assertEquals(authenticityOf(buildSections([{ code: 'visual_anomaly', severity: 'orange', detail: 'x' }], { ok: true })), 'check');
+   assertEquals(authenticityOf(buildSections([{ code: 'name_mismatch', severity: 'red', detail: 'x' }], { ok: true })), 'fake_signs');
+   // Affordability warnings don't make a document look fake.
+   assertEquals(authenticityOf(buildSections([{ code: 'repayment_vs_income', severity: 'red', detail: 'x' }], { ok: true })), 'real');
 });
 
 Deno.test('edited balance is caught', () => {

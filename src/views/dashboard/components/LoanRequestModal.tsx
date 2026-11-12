@@ -52,7 +52,7 @@ import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal
 import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
 import { useIncomeDocFacts } from '@/hooks/useIncomeDocRequirement';
-import { gateMessage, type IncomeDocGate, incomeDocGate } from '@/lib/incomeDocSteps';
+import { dueDateAfterPayday, gateMessage, type IncomeDocGate, incomeDocGate } from '@/lib/incomeDocSteps';
 import type { LoanFlow } from '@/hooks/useLoanFlow';
 
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
@@ -1815,6 +1815,7 @@ export default function LoanRequestModal({
    const selectedCalendarDate = parseIsoDate(selectedDate);
    const todayDate = parseIsoDate(today) ?? new Date();
    const maxLoanDate = addDays(todayDate, idLoanRules ? idLoanRules.maxTermDays : 120);
+   const paydayDueDate = dueDateAfterPayday(todayDate, incomeDocFacts.doc?.payday, maxLoanDate);
    const allowYearEditing = shouldAllowDateYearEditing(todayDate);
    const assumedYear = todayDate.getFullYear();
    const datePlaceholder = allowYearEditing ? 'DD/MM/YYYY' : `DD/MM/${assumedYear}`;
@@ -3602,11 +3603,19 @@ export default function LoanRequestModal({
                                   Each fills a valid future date via the same handler the calendar uses. */}
                               <div className="mt-md-0 flex flex-wrap gap-md-1">
                                  {[
-                                    { label: '2 weeks', days: 14 },
-                                    { label: '1 month', days: 30 },
-                                    { label: '2 months', days: 60 }
-                                 ].map(({ label, days: offset }) => {
-                                    const date = addDays(todayDate, offset);
+                                    // Their payday from their proof of income: due the day after is easiest to repay.
+                                    ...(paydayDueDate
+                                       ? [
+                                            {
+                                               label: `After payday · ${paydayDueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+                                               date: paydayDueDate
+                                            }
+                                         ]
+                                       : []),
+                                    { label: '2 weeks', date: addDays(todayDate, 14) },
+                                    { label: '1 month', date: addDays(todayDate, 30) },
+                                    { label: '2 months', date: addDays(todayDate, 60) }
+                                 ].map(({ label, date }) => {
                                     const isActive = selectedDate === formatDateInputValue(date);
                                     return (
                                        <button

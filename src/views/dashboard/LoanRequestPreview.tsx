@@ -1,15 +1,35 @@
 import { type ChangeEvent, useRef, useState } from 'react';
 
+import type { LoanFlow } from '@/hooks/useLoanFlow';
+
 import { toLocalDateString } from '@/utils/dateFormatters';
 
+import type { LoanAccessStatus, User } from '@/types/authTypes';
 import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
-import type { LoanFlow } from '@/hooks/useLoanFlow';
-import type { LoanAccessStatus, User } from '@/types/authTypes';
 
 // DEV-only screenshot harness for the loan-request flow (terms → bio page 1 → bio page 2).
 // Mounts LoanRequestModal with a mock verified borrower that has no saved bio context, so the
 // full multi-step flow (and the 3-dot progress rail) renders. Never registered in production.
+// ?payday=15 pretends their proof of income shows pay landing on the 15th, so the "After payday" date
+// chip shows: answers the loan form's proof-of-income lookup with that payday.
+const previewPayday = Number(new URLSearchParams(window.location.search).get('payday'));
+if (previewPayday > 0) {
+   const realFetch = window.fetch.bind(window);
+   window.fetch = (input, init) =>
+      String(input instanceof Request ? input.url : input).includes('/rpc/get_income_doc_requirement')
+         ? Promise.resolve(
+              new Response(
+                 JSON.stringify({
+                    tiers: [],
+                    doc: { created_at: new Date().toISOString(), months: 2, read: true, approved: true, payday: previewPayday }
+                 }),
+                 { status: 200, headers: { 'Content-Type': 'application/json' } }
+              )
+           )
+         : realFetch(input, init);
+}
+
 const PREVIEW_BORROWER: User = {
    id: 'loan-request-preview',
    username: 'preview-borrower',

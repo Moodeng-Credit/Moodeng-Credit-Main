@@ -1,5 +1,6 @@
 import type { CalAvailability, CalOverride, CalSchedule } from '@/app/admin/calendarModel';
 import type { FormCheck } from '@/app/admin/callFormCheck';
+import type { IncomeDocOutcome } from '@/lib/incomeDocOutcomes';
 import { DEFAULT_LOAN_TIMEZONE, getDaysUntilDueDay, getLoanTimezone, isPastDueDay } from '@/lib/loanDeadline';
 import type { ProofAnswers, ProofItem } from '@/lib/proofRequests';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
@@ -3198,12 +3199,15 @@ export interface AdminIncomeDocument {
    tier: { min: number; months: number; fresh: boolean; autoApprove: boolean; maxShare: number | null; liveCall: boolean } | null;
    verdict: 'resend' | 'needs_review' | 'looks_good' | null;
    resend_reason: string | null;
+   authenticity: 'real' | 'check' | 'fake_signs' | null;
+   affordability: 'comfortable' | 'tight' | 'too_much' | 'unknown' | null;
+   afford_share: number | null;
    checks: Array<{ key: string; label: string; status: 'pass' | 'warn' | 'fail' | 'skip'; notes: string[] }> | null;
    user: { id: string; username: string | null; display_name: string | null; monthly_income: string | null } | null;
 }
 
 const INCOME_DOC_SELECT =
-   'id, files, note, status, doc_type, risk, score, memo, ai_note, flags, extracted, error, created_at, decision, decision_reason, decided_at, decided_by, notified_at, verdict, resend_reason, checks, requested_amount, tier, user:users!income_documents_user_id_fkey(id, username, display_name, monthly_income)';
+   'id, files, note, status, doc_type, risk, score, memo, ai_note, flags, extracted, error, created_at, decision, decision_reason, decided_at, decided_by, notified_at, verdict, resend_reason, authenticity, affordability, afford_share, checks, requested_amount, tier, user:users!income_documents_user_id_fkey(id, username, display_name, monthly_income)';
 
 export async function listIncomeDocuments(): Promise<AdminIncomeDocument[]> {
    const supabase = getSupabaseBrowserClient();
@@ -3211,6 +3215,12 @@ export async function listIncomeDocuments(): Promise<AdminIncomeDocument[]> {
       supabase.from('income_documents').select(INCOME_DOC_SELECT).order('created_at', { ascending: false }).limit(100)
    );
    return (data ?? []) as unknown as AdminIncomeDocument[];
+}
+
+/** Each read document with what happened to the loan that followed (admins only). */
+export async function listIncomeDocOutcomes(): Promise<IncomeDocOutcome[]> {
+   const data = await requireOk(getSupabaseBrowserClient().rpc('admin_income_doc_outcomes'));
+   return (data ?? []) as IncomeDocOutcome[];
 }
 
 /** Approve or decline a send; the database then tells the borrower (push, Messenger, Telegram). */
