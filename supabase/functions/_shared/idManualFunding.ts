@@ -34,8 +34,9 @@ import {
    NotSentError,
    paidTodayUsd,
    pollOpenfortTx,
-   sendUsdcBsc,
+   sendTokenBsc,
    type AutoPayLimits,
+   type BscToken,
    type PayoutWallet
 } from './idPayoutWallet.ts';
 
@@ -43,6 +44,9 @@ import {
 type Svc = any;
 
 export const BSC_USDC = '0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d';
+export const BSC_USDT = '0x55d398326f99059ff775485246999027b3197955';
+/** A payout is accepted on chain in either dollar coin (both 18 decimals); id_payout_token picks what we SEND. */
+const PAYOUT_TOKENS = [BSC_USDC, BSC_USDT];
 const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 const RPCS = ['https://bsc-rpc.publicnode.com', 'https://bsc.drpc.org'];
 const MAX_LOG_SPAN = 49_000; // publicnode allows 50,000 blocks per eth_getLogs
@@ -151,13 +155,13 @@ export const blockAtOrBefore = async (iso: string, head: bigint): Promise<bigint
 };
 
 /** ERC-20 Transfers to `to` on BNB Chain (USDC unless `token` says otherwise, e.g. USDT for Walt repayments). */
-export const transfersTo = async (to: string, fromBlock: bigint, toBlock: bigint, from?: string, token: string = BSC_USDC): Promise<Transfer[]> => {
+export const transfersTo = async (to: string, fromBlock: bigint, toBlock: bigint, from?: string, token: string | string[] = BSC_USDC): Promise<Transfer[]> => {
    type Log = { transactionHash: string; topics: string[]; data: string; blockNumber: string; logIndex: string; removed?: boolean };
    const logs = await rpc<Log[]>('eth_getLogs', [
       {
          fromBlock: `0x${fromBlock.toString(16)}`,
          toBlock: `0x${toBlock.toString(16)}`,
-         address: token.toLowerCase(),
+         address: Array.isArray(token) ? token.map((t) => t.toLowerCase()) : token.toLowerCase(),
          topics: [TRANSFER_TOPIC, from ? pad32(from) : null, pad32(to)]
       }
    ]);
@@ -180,6 +184,10 @@ const getSetting = async (svc: Svc, key: string): Promise<string | null> => {
 };
 
 /** How loans go out: 'walt_transfer' (default — George's Walt → their @username, by hand) or 'chain'. */
+/** The coin the payout wallet sends: 'USDT' when id_payout_token says so (what Walt holds), else USDC. */
+export const payoutTokenOf = async (svc: Svc): Promise<BscToken> =>
+   String((await getSetting(svc, 'id_payout_token')) ?? '').trim().toUpperCase() === 'USDT' ? 'USDT' : 'USDC';
+
 export const payoutModeOf = async (svc: Svc): Promise<'walt_transfer' | 'chain'> =>
    String((await getSetting(svc, 'id_payout_mode')) ?? 'walt_transfer').trim().toLowerCase() === 'chain' ? 'chain' : 'walt_transfer';
 
@@ -375,7 +383,7 @@ export const checkPayout = async (
    let spans = 0;
    while (from <= safeHead && spans < MAX_SPANS_PER_CHECK && Date.now() < deadline) {
       const to = from + BigInt(MAX_LOG_SPAN) > safeHead ? safeHead : from + BigInt(MAX_LOG_SPAN);
-      const transfers = await transfersTo(waltAddress, from, to);
+      const transfers = await transfersTo(waltAddress, from, to, undefined, PAYOUT_TOKENS);
       const match = pickMatch(transfers, want, used);
       if (match) return await recordFunding(svc, payout, loan, match, 'scan');
       await svc.from('id_manual_payouts').update({ scanned_to_block: Number(to), updated_at: new Date().toISOString() }).eq('id', payout.id);
@@ -405,7 +413,7 @@ const verifyTransferTx = async (
    const shortfall = opts.shortfall ?? 0n;
    const log = receipt.logs.find(
       (l) =>
-         l.address.toLowerCase() === BSC_USDC &&
+         PAYOUT_TOKENS.includes(l.address.toLowerCase()) &&
          l.topics?.[0] === TRANSFER_TOPIC &&
          l.topics.length === 3 &&
          fromTopic(l.topics[2]) === to.toLowerCase() &&
@@ -648,14 +656,14 @@ const setSetting = async (svc: Svc, key: string, value: string) => {
 
 const walletLink = (address: string) => `https://bscscan.com/address/${address}#tokentxns`;
 
-const maybeAlertLowBalance = async (svc: Svc, wallet: PayoutWallet, usdc: number, now: number) => {
+const maybeAlertLowBalance = async (svc: Svc, wallet: PayoutWallet, usdc: number, now: number, token: BscToken = 'USDC') => {
    if (usdc >= LOW_BALANCE_USD) return;
    const last = await getSetting(svc, 'id_payout_low_alerted_at');
    if (last && now - new Date(last).getTime() < LOW_ALERT_EVERY_MS) return;
    await setSetting(svc, 'id_payout_low_alerted_at', new Date(now).toISOString());
    await alertTeam(
       svc,
-      `🇮🇩 Payout wallet is low: ${usdc.toFixed(2)} USDC left. Top it up: Binance TH → Withdraw USDC → network BSC → ${wallet.address}`
+      `🇮🇩 Payout wallet is low: ${usdc.toFixed(2)} ${token} left. Top it up: Binance TH → Withdraw ${token} → network BSC → ${wallet.address}`
    );
 };
 
@@ -716,7 +724,7 @@ export const findAutoPayoutOnChain = async (svc: Svc, payout: PayoutRow, now: nu
    while (from <= head) {
       if (Date.now() > deadline) return { state: 'incomplete' };
       const to = from + BigInt(MAX_LOG_SPAN) > head ? head : from + BigInt(MAX_LOG_SPAN);
-      const transfers = await transfersTo(payout.walt_address ?? '', from, to, wallet.address);
+      const transfers = await transfersTo(payout.walt_address ?? '', from, to, wallet.address, PAYOUT_TOKENS);
       const match = transfers.find((t) => t.value === want && !used.has(transferKey(t.txHash, t.logIndex)) && !refundHashes.has(t.txHash.toLowerCase()));
       if (match) return match.blockNumber <= safeHead ? { state: 'found', transfer: match } : { state: 'landing' };
       const saved = to <= safeHead ? to : safeHead;
@@ -939,6 +947,8 @@ type AutoCtx = {
    paidToday: number;
    balanceUsd: number | null;
    lenderId: string;
+   /** What this wallet sends (id_payout_token). */
+   token: BscToken;
 };
 
 const loadAutoCtx = async (svc: Svc, now: number): Promise<{ ctx?: AutoCtx; error?: string }> => {
@@ -950,14 +960,15 @@ const loadAutoCtx = async (svc: Svc, now: number): Promise<{ ctx?: AutoCtx; erro
    const { data: lender } = await svc.from('users').select('wallet_address').eq('id', lenderId).maybeSingle();
    // Checked before sending: otherwise money would go out and the loan couldn't be recorded.
    if (!isAddress(lender?.wallet_address)) return { error: 'lender_has_no_base_wallet' };
-   const [limits, paidToday] = await Promise.all([getAutoPayLimits(svc), paidTodayUsd(svc, now)]);
+   const [limits, paidToday, token] = await Promise.all([getAutoPayLimits(svc), paidTodayUsd(svc, now), payoutTokenOf(svc)]);
    let balanceUsd: number | null = null;
    try {
-      balanceUsd = (await balanceOf(wallet.address)).usdc;
+      const bal = await balanceOf(wallet.address);
+      balanceUsd = token === 'USDT' ? bal.usdt : bal.usdc;
    } catch (err) {
       console.error('idManualFunding: payout wallet balance failed', err);
    }
-   return { ctx: { wallet, limits, paidToday, balanceUsd, lenderId } };
+   return { ctx: { wallet, limits, paidToday, balanceUsd, lenderId, token } };
 };
 
 /** One automatic payout attempt for one loan. Claims first; sends at most once. */
@@ -985,7 +996,7 @@ const attemptAutoPay = async (
       hasWalt: isAddress(walt),
       requireAge
    });
-   if (blocker === 'low_balance' && ctx.balanceUsd != null) await maybeAlertLowBalance(svc, ctx.wallet, ctx.balanceUsd, now);
+   if (blocker === 'low_balance' && ctx.balanceUsd != null) await maybeAlertLowBalance(svc, ctx.wallet, ctx.balanceUsd, now, ctx.token);
    if (blocker === 'daily_cap_reached') await maybeAlertCap(svc, ctx.limits, ctx.paidToday, now);
    if (blocker) return { ok: false, error: blocker };
 
@@ -1025,7 +1036,7 @@ const attemptAutoPay = async (
    }
    let txId: string;
    try {
-      txId = await sendUsdcBsc(svc, payout.walt_address, payout.amount, deadline);
+      txId = await sendTokenBsc(svc, ctx.token, payout.walt_address, payout.amount, deadline);
    } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (err instanceof NotSentError) {

@@ -447,10 +447,13 @@ const handleApplyStep = async (svc: Svc, user: BotUser, l: IdLocale, step: IdBot
          keyboard: [supportRow(l)]
       });
    }
-   return edit(chatId, messageId, {
+   await edit(chatId, messageId, {
       text: postedText(l, step.amount, step.rp, result.loan?.due_date ?? idDueDateIso(now, step.days)),
       keyboard: [[guideButton(l, 'walt')], [cb(say(l, '📋 Pinjamanku', '📋 My loan'), idCallback.menu('status')), menuButton(l)]]
    });
+   // No Walt deposit address yet: with one, the team's Fund button pays them without a manual transfer.
+   if (!user.walt_address) await send(chatId, { text: waltAddressHint(l), keyboard: [] });
+   return;
 };
 
 // ── 💰 repay ─────────────────────────────────────────────────────────────────────────────────────
@@ -512,6 +515,87 @@ const handleRepay = async (svc: Svc, user: BotUser, l: IdLocale, chatId: number)
       return send(chatId, { text: say(l, msg.id, msg.en), keyboard });
    }
    return send(chatId, repayScreen(l, q));
+};
+
+// ── Walt deposit address (optional): with one saved, "Fund" on the board pays them automatically ──
+const WALT_ADDRESS = /^0x[0-9a-fA-F]{40}$/;
+
+/** How to find it, shown after a request is posted while none is saved. */
+export const waltAddressHint = (l: IdLocale) =>
+   say(
+      l,
+      '⚡ Mau pinjamanmu masuk lebih cepat? Kirim alamat deposit Walt kamu ke chat ini, sekali saja:\n\n1. Buka Walt → Deposit (Tambah) → USDT\n2. Pilih jaringan BNB Smart Chain (BEP20)\n3. Salin alamatnya (mulai 0x…) dan tempel di sini\n\nTanpa alamat pun tetap bisa: kami kirim ke username Telegram kamu seperti biasa.',
+      '⚡ Want your loan to arrive faster? Send your Walt deposit address to this chat, just once:\n\n1. Open Walt → Deposit (Add) → USDT\n2. Pick the network BNB Smart Chain (BEP20)\n3. Copy the address (it starts with 0x…) and paste it here\n\nIt still works without one: we send to your Telegram username as usual.'
+   );
+
+/** Why an address can't be saved, or null. Pure (idBot.test.ts). */
+export const waltAddressProblem = (
+   address: string,
+   o: { ownWallet: string | null; payoutWallet: string | null; usedByOther: boolean }
+): 'invalid' | 'moodeng_wallet' | 'in_use' | null => {
+   const a = address.toLowerCase();
+   if (!WALT_ADDRESS.test(address) || /^0x0{40}$/.test(a)) return 'invalid';
+   if (a === (o.ownWallet ?? '').toLowerCase() || a === (o.payoutWallet ?? '').toLowerCase()) return 'moodeng_wallet';
+   return o.usedByOther ? 'in_use' : null;
+};
+
+/**
+ * Private-chat text that is exactly one 0x address, from an Indonesia-track user: save it as their Walt
+ * deposit address (same rules as save_my_walt_address). True when handled.
+ */
+export const handleIdWaltAddressMessage = async (svc: Svc, message: TgMessage): Promise<boolean> => {
+   const text = (message.text ?? '').trim();
+   if (message.chat.type !== 'private' || !WALT_ADDRESS.test(text)) return false;
+   const user = await findIdUserByTelegram(svc, message.from?.id ?? message.chat.id);
+   if (!user) return false;
+   const l = idLocaleOf(user.preferred_locale);
+   const [{ data: me }, { data: others }, { data: payoutRow }] = await Promise.all([
+      svc.from('users').select('wallet_address, walt_address').eq('id', user.id).maybeSingle(),
+      svc.from('users').select('id').ilike('walt_address', text).neq('id', user.id).limit(1),
+      svc.from('telegram_bot_settings').select('value').eq('key', 'id_payout_wallet_address').maybeSingle()
+   ]);
+   const problem = waltAddressProblem(text, {
+      ownWallet: me?.wallet_address ?? null,
+      payoutWallet: (payoutRow?.value as string | undefined) ?? null,
+      usedByOther: (others ?? []).length > 0
+   });
+   if (problem) {
+      await send(message.chat.id, {
+         text:
+            problem === 'in_use'
+               ? say(l, 'Alamat ini dipakai akun lain. Hubungi kami kalau ini salah.', 'Another account uses this address. Contact us if that’s wrong.')
+               : problem === 'moodeng_wallet'
+                 ? say(l, 'Itu alamat Moodeng, bukan Walt kamu. Tempel alamat deposit dari Walt.', 'That’s a Moodeng address, not your Walt. Paste the deposit address from Walt.')
+                 : say(l, 'Alamat tidak valid. Harus mulai 0x…', 'That address isn’t valid. It starts with 0x…'),
+         keyboard: [supportRow(l)]
+      });
+      return true;
+   }
+   const before = String(me?.walt_address ?? '');
+   const { error } = await svc.from('users').update({ walt_address: text, walt_address_set_at: new Date().toISOString() }).eq('id', user.id);
+   if (error) {
+      console.error('[idBot] save walt address failed', error.message);
+      await send(message.chat.id, { text: say(l, 'Maaf, belum tersimpan. Coba lagi.', 'Sorry, that didn’t save. Try again.'), keyboard: [supportRow(l)] });
+      return true;
+   }
+   // A changed address is worth a look (money goes there next time).
+   if (before && before.toLowerCase() !== text.toLowerCase()) {
+      const { data: chat } = await svc.from('telegram_bot_settings').select('value').eq('key', 'kyc_alert_chat_id').maybeSingle();
+      if (chat?.value)
+         await sendTelegramMessage(
+            chat.value as string,
+            `🇮🇩 ${user.telegram_username ? `@${user.telegram_username}` : (user.display_name ?? user.id.slice(0, 8))} changed their Walt deposit address: ${before.slice(0, 6)}…${before.slice(-4)} → ${text.slice(0, 6)}…${text.slice(-4)}.`
+         ).catch(() => undefined);
+   }
+   await send(message.chat.id, {
+      text: say(
+         l,
+         `✅ Alamat Walt tersimpan (${text.slice(0, 6)}…${text.slice(-4)}). Pinjamanmu berikutnya dikirim ke sana secara otomatis begitu didanai.`,
+         `✅ Walt address saved (${text.slice(0, 6)}…${text.slice(-4)}). Your next loan is sent there automatically as soon as it’s funded.`
+      ),
+      keyboard: [[menuButton(l)]]
+   });
+   return true;
 };
 
 // ── entry points (telegram-webhook) ──────────────────────────────────────────────────────────────

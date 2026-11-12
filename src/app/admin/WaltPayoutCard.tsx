@@ -27,7 +27,7 @@ type Payout = {
    error?: string | null;
 };
 
-type ApiResult = {
+export type WaltPayoutResult = {
    ok: boolean;
    state?: 'found' | 'waiting' | 'paying' | 'released';
    error?: string;
@@ -60,7 +60,7 @@ const ERRORS: Record<string, string> = {
    no_payout_wallet: 'No payout wallet yet — create it at the top of Requests.',
    over_max: 'Over the automatic payout limit — pay by hand.',
    daily_cap_reached: 'Today’s automatic payout cap is reached — pay by hand or wait for tomorrow.',
-   low_balance: 'Not enough USDC in the payout wallet — top it up or pay by hand.',
+   low_balance: 'Not enough money in the payout wallet — top it up or pay by hand.',
    balance_unknown: 'Couldn’t read the payout wallet balance. Try again in a minute.',
    already_claimed: 'This loan was already picked up for payment.',
    payout_not_claimable: 'This payout is already being handled.',
@@ -72,9 +72,9 @@ const ERRORS: Record<string, string> = {
    no_time_left: 'Not enough time left to send safely. Try again.'
 };
 
-const errorText = (code: string | undefined) => (code && ERRORS[code]) || code || 'Something went wrong.';
+export const waltPayoutErrorText = (code: string | undefined) => (code && ERRORS[code]) || code || 'Something went wrong.';
 
-const call = async (body: Record<string, unknown>): Promise<ApiResult> => {
+export const callWaltPayout = async (body: Record<string, unknown>): Promise<WaltPayoutResult> => {
    const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-fund-loan', { body });
    if (error) {
       const ctx = (error as { context?: Response }).context;
@@ -87,7 +87,7 @@ const call = async (body: Record<string, unknown>): Promise<ApiResult> => {
             : null;
       return { ok: false, error: (parsed as { error?: string } | null)?.error ?? error.message };
    }
-   return data as ApiResult;
+   return data as WaltPayoutResult;
 };
 
 function CopyRow({ label, value, display }: { label: string; value: string; display?: string }) {
@@ -128,10 +128,10 @@ export default function WaltPayoutCard({ loanId, onFunded }: { loanId: string; o
    const [wallet, setWallet] = useState<PayoutWalletStatus | null>(null);
 
    const apply = useCallback(
-      (res: ApiResult) => {
+      (res: WaltPayoutResult) => {
          if (res.payout) setPayout(res.payout);
          if (typeof res.loanOpen === 'boolean') setLoanOpen(res.loanOpen);
-         if (!res.ok) setError(errorText(res.error));
+         if (!res.ok) setError(waltPayoutErrorText(res.error));
          else setError('');
          if (res.ok && (res.state === 'found' || res.payout?.status === 'found')) {
             setFunded(true);
@@ -144,7 +144,7 @@ export default function WaltPayoutCard({ loanId, onFunded }: { loanId: string; o
    useEffect(() => {
       let cancelled = false;
       setLoading(true);
-      void call({ action: 'walt_payout_status', loanId }).then((res) => {
+      void callWaltPayout({ action: 'walt_payout_status', loanId }).then((res) => {
          if (cancelled) return;
          apply(res);
          setLoading(false);
@@ -162,7 +162,7 @@ export default function WaltPayoutCard({ loanId, onFunded }: { loanId: string; o
    useEffect(() => {
       if (!paying) return undefined;
       const id = window.setInterval(() => {
-         void call({ action: 'walt_payout_check', loanId }).then(apply);
+         void callWaltPayout({ action: 'walt_payout_check', loanId }).then(apply);
       }, 8_000);
       return () => window.clearInterval(id);
    }, [paying, loanId, apply]);
@@ -172,7 +172,7 @@ export default function WaltPayoutCard({ loanId, onFunded }: { loanId: string; o
    useEffect(() => {
       if (!waitingAfterTap) return undefined;
       const id = window.setInterval(() => {
-         void call({ action: 'walt_payout_check', loanId }).then(apply);
+         void callWaltPayout({ action: 'walt_payout_check', loanId }).then(apply);
       }, 20_000);
       return () => window.clearInterval(id);
    }, [waitingAfterTap, loanId, apply]);
@@ -180,7 +180,7 @@ export default function WaltPayoutCard({ loanId, onFunded }: { loanId: string; o
    const run = async (body: Record<string, unknown>) => {
       if (busy) return;
       setBusy(true);
-      apply(await call({ ...body, loanId }));
+      apply(await callWaltPayout({ ...body, loanId }));
       if (body.action === 'walt_payout_auto') {
          const res = await fetchPayoutWalletStatus();
          if (res.data) setWallet(res.data);

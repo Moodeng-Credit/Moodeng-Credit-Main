@@ -121,6 +121,21 @@ rules. Change it with `/idtrack off|test|on` in the admin Telegram group.
 2. **By hand from Binance TH** ("Pay by hand instead"): send, tap "I sent it", the job finds it.
 3. **TxID** pasted in the admin card.
 
+## "Fund" on the request board (2026-11-12)
+
+For Moodeng's funding accounts, an Indonesian request on the board shows **Fund $X to their Walt** instead
+of "Dibayar oleh Moodeng" (`src/views/dashboard/components/IdBoardFund.tsx`). Two taps (Fund → Confirm), then
+`admin-fund-loan` → `walt_payout_auto` → `payNow`: the payout wallet sends to the borrower's Walt deposit
+address on BNB Chain, in any `id_payout_mode`, at most once, with the same max / daily cap / balance checks.
+
+- The wallet sends `id_payout_token` (`USDT` = what Walt holds; anything else = USDC). On-chain checks accept
+  either coin.
+- It needs the borrower's Walt deposit address (`users.walt_address`). They paste it into the bot chat once
+  (any private message that is exactly one 0x address → `handleIdWaltAddressMessage`, same rules as
+  `save_my_walt_address`; a changed address pings the team). The bot asks for it after a request is posted
+  while none is saved. It is optional: without one, the Walt Transfer card still pays them by @username.
+- Everyone else still sees "Dibayar oleh Moodeng"; lenders can't fund Indonesian requests from Base.
+
 ## Rupiah peg
 
 Indonesian loans are fixed in rupiah: the borrower chooses `repay_idr` (e.g. Rp 110.000) and that never

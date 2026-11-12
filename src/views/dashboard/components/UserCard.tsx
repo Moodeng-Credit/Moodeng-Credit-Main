@@ -41,6 +41,7 @@ import {
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { isIndonesianLoan } from '@/lib/loanMarket';
+import IdBoardFund from '@/views/dashboard/components/IdBoardFund';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { isBaseWalletProvider, isOpenfortWalletProvider } from '@/lib/walletProvider';
 import { computePointsDelta, formatPointsMajor } from '@/shared/points';
@@ -906,6 +907,9 @@ export default function UserCard(loan: UserCardProps) {
                      View Details
                      <ExternalLink className="w-5 h-5" />
                   </Link>
+               ) : isIndoLoan && !isOwnLoan && isFundingAdmin ? (
+                  // Moodeng's funding accounts: one button pays the borrower's Walt from the payout wallet.
+                  <IdBoardFund loanId={loanData.id} amount={Number(loanData.loanAmount)} onFunded={() => void dispatch(fetchLoans())} />
                ) : isIndoLoan && !isOwnLoan ? (
                   // Indonesia requests are paid to the borrower's Walt by Moodeng, never by a lender on Base.
                   <div className="w-full rounded-md-lg bg-md-neutral-500 py-md-3 text-center text-md-b2 font-semibold text-md-neutral-1200">

@@ -37,7 +37,7 @@ import {
 } from '../_shared/loanAccess.ts';
 import { markMessengerVerified, messengerVerifiedStamp, parseMessengerVerifyCallback } from '../_shared/messengerStuckAlert.ts';
 import { payoutWalletStatus } from '../_shared/idPayoutWallet.ts';
-import { findIdUserByTelegram, handleIdBotCallback, handleIdMenuMessage } from '../_shared/idBot.ts';
+import { findIdUserByTelegram, handleIdBotCallback, handleIdMenuMessage, handleIdWaltAddressMessage } from '../_shared/idBot.ts';
 import { handleBridgeStart } from '../_shared/idWaBridge.ts';
 import { handleIdFreeText } from '../_shared/idHelper.ts';
 import { handleGuidePhotoCommand, isGuidePhotoCommand } from '../_shared/idGuides.ts';
@@ -1468,6 +1468,10 @@ serve(async (req) => {
          // (and any other text) goes on to support as before.
          if (await handleIdMenuMessage(supabase, message)) {
             return jsonResponse({ message: 'Indonesia bot menu sent' });
+         }
+         // Indonesia track: a pasted 0x address → saved as their Walt deposit address (automatic payouts).
+         if (await handleIdWaltAddressMessage(supabase, message)) {
+            return jsonResponse({ message: 'Indonesia Walt address handled' });
          }
 
          // Indonesia track: a typed question with no human support chat open → the AI helper answers
