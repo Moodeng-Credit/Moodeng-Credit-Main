@@ -120,6 +120,7 @@ import AccountSettings from '@/views/account/AccountSettings';
 import AccountWalletPreview from '@/views/account/AccountWalletPreview';
 import SettingsStylePreview from '@/views/account/SettingsStylePreview';
 import CreditLineLenderPage from '@/views/creditline/CreditLineLenderPage';
+import RepaidCreditLinePage from '@/views/creditline/RepaidCreditLinePage';
 import DashboardV2 from '@/views/dashboard-v2/DashboardV2';
 import DashboardV2Milestones from '@/views/dashboard-v2/DashboardV2Milestones';
 import { DashboardV2InviteLanding, DashboardV2Referral } from '@/views/dashboard-v2/DashboardV2Rewards';
@@ -329,6 +330,8 @@ export default function App() {
             <Route path="/sign-out" element={<SignOutPage />} />
             {/* Facility lender's report (BitRepo): password-protected, no account needed. */}
             <Route path="/creditline" element={<CreditLineLenderPage />} />
+            <Route path="/repaidcreditline" element={<RepaidCreditLinePage />} />
+            <Route path="/creditline/repaid" element={<RepaidCreditLinePage />} />
             {/* Desktop Messenger QR lands here on the phone (no sign-in; the code is the key). */}
             <Route path="/fb/:code" element={<MessengerHandoff />} />
             {/* "Pick up where you left off": the Messenger bot's link back, and the home page's. */}
