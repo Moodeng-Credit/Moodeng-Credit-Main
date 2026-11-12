@@ -43,6 +43,7 @@ import { handleIdFreeText } from '../_shared/idHelper.ts';
 import { handleGuidePhotoCommand, isGuidePhotoCommand } from '../_shared/idGuides.ts';
 import { handleWaltPayoutCallback } from '../_shared/idWaltPayouts.ts';
 import { handleSweepCommand, handleWalletDepositCallback } from '../_shared/idRepayments.ts';
+import { handleVaultBridgeCallback, handleVaultCommand } from '../_shared/idVaultBridge.ts';
 import { formatCallTime } from '../_shared/videoCall.ts';
 import { handleRescheduleStep, parseRescheduleCallback, postReschedulePicker } from '../_shared/callReschedule.ts';
 import { handleCancelStep, parseCancelCallback } from '../_shared/callCancel.ts';
@@ -1344,6 +1345,10 @@ serve(async (req) => {
          if (await handleWalletDepositCallback(supabase, update.callback_query)) {
             return jsonResponse({ message: 'Indonesia wallet callback handled' });
          }
+         // Indonesia: /idvault "↩️ Send back to Base" (admin chats only; LI.FI bridge to the lending wallet).
+         if (await handleVaultBridgeCallback(supabase, update.callback_query)) {
+            return jsonResponse({ message: 'Indonesia vault bridge handled' });
+         }
          const teamChatId = await getTeamChatId(supabase);
          const kycChatId = await getSetting(supabase, 'kyc_alert_chat_id');
          // 🔄 Change time picker: the admin chats and the call-changes group.
@@ -1579,6 +1584,12 @@ serve(async (req) => {
       if (isAdminChannel && /^\/idsweep\b/i.test(message.text ?? '')) {
          await handleSweepCommand(supabase, message);
          return jsonResponse({ message: 'Indonesia sweep command handled' });
+      }
+
+      // Indonesia: repayments (USDT on BNB Chain) back to USDC on Base for the vault, via LI.FI.
+      if (isAdminChannel && /^\/idvault\b/i.test(message.text ?? '')) {
+         await handleVaultCommand(supabase, message);
+         return jsonResponse({ message: 'Indonesia vault command handled' });
       }
 
       if (isAdminChannel && /^\/idautopay\b/i.test(message.text ?? '')) {

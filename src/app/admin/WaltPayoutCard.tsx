@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { fetchPayoutWalletStatus, type PayoutWalletStatus } from '@/app/admin/IdPayoutWalletPanel';
+import IdVaultFundBlock from '@/app/admin/IdVaultFundBlock';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 /**
@@ -282,6 +283,10 @@ export default function WaltPayoutCard({ loanId, onFunded }: { loanId: string; o
                         </button>
                      ) : null}
                   </div>
+               ) : null}
+
+               {!payout.marked_sent_at && !autoFailed && loanOpen ? (
+                  <IdVaultFundBlock loanId={loanId} onPaid={() => void call({ action: 'walt_payout_status', loanId }).then(apply)} />
                ) : null}
 
                {!payout.marked_sent_at && !autoFailed ? (
