@@ -290,6 +290,11 @@ const applyGate = async (svc: Svc, user: BotUser, l: IdLocale, fromUsername: str
          keyboard: [[cb(say(l, '📋 Pinjamanku', '📋 My loan'), idCallback.menu('status'))], [menuButton(l)]]
       };
    }
+   // Loans are funded from the board to their Walt deposit address: ask for it before the first request
+   // (telegram_bot_settings.id_walt_address_required = off brings back "optional").
+   if (!user.walt_address && (await waltAddressRequired(svc))) {
+      return { text: waltAddressHint(l, true), keyboard: [[helpButton(l)], [menuButton(l)]] };
+   }
    // Loans are sent by Walt Transfer to their Telegram @username: no username, no loan (yet).
    if ((await payoutModeOf(svc)) === 'walt_transfer' && !cleanTelegramUsername(fromUsername ?? user.telegram_username)) {
       return {
@@ -521,8 +526,24 @@ const handleRepay = async (svc: Svc, user: BotUser, l: IdLocale, chatId: number)
 const WALT_ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 
 /** How to find it, shown after a request is posted while none is saved. */
-export const waltAddressHint = (l: IdLocale) =>
-   say(
+const waltAddressRequired = async (svc: Svc): Promise<boolean> => {
+   const { data } = await svc.from('telegram_bot_settings').select('value').eq('key', 'id_walt_address_required').maybeSingle();
+   return String(data?.value ?? 'on').trim().toLowerCase() !== 'off';
+};
+
+const WALT_ADDRESS_STEPS = {
+   id: '1. Buka Walt → Deposit (Tambah) → USDT\n2. Pilih jaringan BNB Smart Chain (BEP20)\n3. Salin alamatnya (mulai 0x…) dan tempel di chat ini',
+   en: '1. Open Walt → Deposit (Add) → USDT\n2. Pick the network BNB Smart Chain (BEP20)\n3. Copy the address (it starts with 0x…) and paste it in this chat'
+};
+
+export const waltAddressHint = (l: IdLocale, required = false) =>
+   required
+      ? say(
+           l,
+           `🙂 Satu langkah lagi sebelum mengajukan: kami perlu alamat deposit Walt kamu, sekali saja. Pinjamanmu dikirim ke sana.\n\n${WALT_ADDRESS_STEPS.id}`,
+           `🙂 One more step before you request: we need your Walt deposit address, just once. Your loan is sent there.\n\n${WALT_ADDRESS_STEPS.en}`
+        )
+      : say(
       l,
       '⚡ Mau pinjamanmu masuk lebih cepat? Kirim alamat deposit Walt kamu ke chat ini, sekali saja:\n\n1. Buka Walt → Deposit (Tambah) → USDT\n2. Pilih jaringan BNB Smart Chain (BEP20)\n3. Salin alamatnya (mulai 0x…) dan tempel di sini\n\nTanpa alamat pun tetap bisa: kami kirim ke username Telegram kamu seperti biasa.',
       '⚡ Want your loan to arrive faster? Send your Walt deposit address to this chat, just once:\n\n1. Open Walt → Deposit (Add) → USDT\n2. Pick the network BNB Smart Chain (BEP20)\n3. Copy the address (it starts with 0x…) and paste it here\n\nIt still works without one: we send to your Telegram username as usual.'
@@ -593,7 +614,7 @@ export const handleIdWaltAddressMessage = async (svc: Svc, message: TgMessage): 
          `✅ Alamat Walt tersimpan (${text.slice(0, 6)}…${text.slice(-4)}). Pinjamanmu berikutnya dikirim ke sana secara otomatis begitu didanai.`,
          `✅ Walt address saved (${text.slice(0, 6)}…${text.slice(-4)}). Your next loan is sent there automatically as soon as it’s funded.`
       ),
-      keyboard: [[menuButton(l)]]
+      keyboard: [[cb(say(l, '💸 Ajukan pinjaman', '💸 Request a loan'), idCallback.menu('apply'))], [menuButton(l)]]
    });
    return true;
 };

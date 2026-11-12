@@ -44,3 +44,11 @@ Deno.test('encodeApprove: ERC-20 approve calldata for the LI.FI contract', () =>
    assertEquals(BigInt(`0x${data.slice(74)}`), 15_220_000n);
    assertThrows(() => encodeApprove('0x123', 1n));
 });
+
+Deno.test('vaultPaybackPlan: payout wallet first, then one Walt withdrawal plus its fee', async () => {
+   const { vaultPaybackPlan } = await import('./idVaultBridge.ts');
+   assertEquals(vaultPaybackPlan(20, 25, 100), { fromWalt: 0, waltNeeds: 0, waltShort: 0 });
+   assertEquals(vaultPaybackPlan(20.33, 5, 100), { fromWalt: 15.33, waltNeeds: 16.83, waltShort: 0 });
+   assertEquals(vaultPaybackPlan(20, 0, 10), { fromWalt: 20, waltNeeds: 21.5, waltShort: 11.5 });
+   assertEquals(vaultPaybackPlan(20, 0, null), { fromWalt: 20, waltNeeds: 21.5, waltShort: 0 });
+});
