@@ -13,6 +13,7 @@ import { txExplorerUrl } from '@/config/loanFundingConfig';
 import { type PaymentStage, holdAtFull, useStagedProgress } from '@/hooks/useStagedProgress';
 import { ensureUsdcAllowance, getLoanManagerService } from '@/lib/web3/loanManager';
 import { recordAdminFunding, usdcToBaseUnits } from '@/lib/loanNotes/api';
+import IdBoardFund from '@/views/dashboard/components/IdBoardFund';
 import { BITREPO_VAULT_URL, type VaultStatus, drawFromVault, readVaultStatus, vaultBorrowerId } from '@/lib/web3/bitrepoVault';
 
 export interface FundLoanTarget {
@@ -23,6 +24,8 @@ export interface FundLoanTarget {
    principal: number; // USDC
    totalOwed: number; // USDC
    dueDate: string; // ISO
+   /** 'ID' = Indonesia track: paid to the borrower's Walt on BNB Chain, never to a Base wallet. */
+   market?: 'ID' | null;
 }
 
 type Method = 'choose' | 'smart' | 'vault';
@@ -332,7 +335,8 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
       setNotice(null);
    };
 
-   const title = method === 'smart' ? 'Smart Contract Lend' : method === 'vault' ? 'Vault Lend' : 'How do you want to fund this?';
+   const isIndo = target.market === 'ID';
+   const title = isIndo || method === 'vault' ? 'Vault Lend' : method === 'smart' ? 'Smart Contract Lend' : 'How do you want to fund this?';
 
    const ringTitle = drawStage
       ? drawStage === 'signing'
@@ -425,7 +429,24 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
                </div>
             </div>
 
-            {method === 'choose' ? (
+            {/* Indonesia: the vault's USDC is bridged to BNB Chain and sent to the borrower's Walt. */}
+            {isIndo ? (
+               <div className="space-y-md-2">
+                  <p className="text-md-b3 text-md-neutral-1500">
+                     The vault’s USDC goes from Base to BNB Chain and lands in the borrower’s Walt as the exact loan amount. They repay us in Walt as usual.
+                  </p>
+                  <IdBoardFund
+                     loanId={target.loanId}
+                     amount={target.principal}
+                     onFunded={() => {
+                        onFunded?.();
+                        onClose();
+                     }}
+                  />
+               </div>
+            ) : null}
+
+            {method === 'choose' && !isIndo ? (
                <div className="space-y-md-2">
                   {/* BitRepo vault — recommended: the money comes straight from the vault, not our wallet */}
                   <button

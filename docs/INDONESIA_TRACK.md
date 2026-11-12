@@ -123,8 +123,9 @@ rules. Change it with `/idtrack off|test|on` in the admin Telegram group.
 
 ## "Fund" on the request board (2026-11-12)
 
-For Moodeng's funding accounts, an Indonesian request on the board shows **Fund $X to their Walt** instead
-of "Dibayar oleh Moodeng" (`src/views/dashboard/components/IdBoardFund.tsx`). Two taps (Fund → Confirm), then
+For Moodeng's funding accounts, an Indonesian request on the board has the normal Send Your Help button
+instead of "Dibayar oleh Moodeng". The modal's small "Or pay from the payout wallet balance" link
+(`src/views/dashboard/components/IdBoardFund.tsx`) is two taps (link → Confirm), then
 `admin-fund-loan` → `walt_payout_auto` → `payNow`: the payout wallet sends to the borrower's Walt deposit
 address on BNB Chain, in any `id_payout_mode`, at most once, with the same max / daily cap / balance checks.
 
@@ -138,7 +139,9 @@ address on BNB Chain, in any `id_payout_mode`, at most once, with the same max /
 
 ### From the BitRepo vault (2026-11-13)
 
-The board's main button is **Fund $X from the vault** (`IdVaultFundBlock`, also in Admin → Requests):
+For Moodeng's funding accounts an Indonesian request looks like any other on the board: View Request →
+Send Your Help opens the funding modal, which for `market = 'ID'` goes straight to **Vault Lend** with
+**Fund $X from the vault** (`IdBoardFund` + `IdVaultFundBlock`, the latter also in Admin → Requests):
 
 1. `id_vault_quote`: LI.FI exact-output quote. Draw = quote + 0.6% + 2¢, rounded up (e.g. $5 → about $5.10).
 2. The connected lending wallet draws that from the vault to the payout wallet's address on Base (same
