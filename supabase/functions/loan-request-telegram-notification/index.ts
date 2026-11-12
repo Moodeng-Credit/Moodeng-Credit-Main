@@ -50,6 +50,45 @@ const authorizeInternalRequest = async (supabase: SupabaseClient, req: Request) 
    return { authorized: true, status: 200, error: null };
 };
 
+const INCOME_DOCS_URL = 'https://moodeng.app/admin/income-docs';
+
+type IncomeDoc = { status: string; verdict: string | null; decision: string | null; files: unknown[] | null; created_at: string };
+
+// The team's view of the borrower's proof of income, for the admin copy only (lenders never see it):
+// "📄 Income proof: 5 files · ⚠️ needs review (AI couldn't read) · today". Null when we couldn't look.
+const incomeProofLine = async (supabase: SupabaseClient, userId: string): Promise<{ line: string; doc: boolean } | null> => {
+   const { data, error } = await supabase
+      .from('income_documents')
+      .select('status, verdict, decision, files, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1);
+   if (error) {
+      console.error('loan-request: income proof lookup failed:', error.message);
+      return null;
+   }
+   const doc = (data?.[0] ?? null) as IncomeDoc | null;
+   if (!doc) return { line: '📄 Income proof: none', doc: false };
+   const count = Array.isArray(doc.files) ? doc.files.length : 0;
+   const state =
+      doc.decision === 'approved'
+         ? '✅ approved'
+         : doc.decision === 'declined'
+           ? '❌ declined'
+           : doc.status === 'pending' || doc.status === 'processing'
+             ? '⏳ AI still checking'
+             : doc.verdict === 'looks_good'
+               ? '👍 AI: looks good'
+               : doc.verdict === 'resend'
+                 ? '🔁 asked to send again'
+                 : doc.status === 'failed'
+                   ? "⚠️ needs review (AI couldn't read)"
+                   : '⚠️ needs review';
+   const days = Math.floor((Date.now() - new Date(doc.created_at).getTime()) / 86400000);
+   const when = days <= 0 ? 'today' : days === 1 ? 'yesterday' : `${days}d ago`;
+   return { line: `📄 Income proof: ${count} file${count === 1 ? '' : 's'} · ${state} · ${when}`, doc: true };
+};
+
 const buildLoanUrl = (loanId: string) => {
    const siteUrl = Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? Deno.env.get('SITE_URL') ?? 'https://moodeng.app';
    return `${siteUrl.replace(/\/$/, '')}/request-board?highlight=${loanId}`;
@@ -163,9 +202,12 @@ serve(async (req) => {
               ? '⏸ On hold (missed their video call): not shown to lenders until they book a new call.\n\n'
               : '';
       const message = holdNote + buildTelegramLoanRequestMessage(loan, history ?? [], borrower, loanUrl);
+      // Admin copy (team Telegram + Discord) also says what proof of income they sent; the lender copy doesn't.
+      const income = loan.borrower_user_id ? await incomeProofLine(supabase, loan.borrower_user_id).catch(() => null) : null;
+      const adminMessage = income ? `${income.line}\n\n${message}` : message;
 
       if (dryRun) {
-         return new Response(JSON.stringify({ message, loanUrl }), {
+         return new Response(JSON.stringify({ message, adminMessage, loanUrl }), {
             status: 200,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
          });
@@ -176,8 +218,8 @@ serve(async (req) => {
       //    Both are best-effort so neither can block the other or the lender broadcast below.
       const adminChatId = await getSetting(supabase, 'kyc_alert_chat_id');
       if (adminChatId) {
-         await sendTelegramMessage(adminChatId, message, {
-            inlineKeyboard: [[{ text: 'View request', url: loanUrl }]]
+         await sendTelegramMessage(adminChatId, adminMessage, {
+            inlineKeyboard: [[{ text: 'View request', url: loanUrl }, ...(income?.doc ? [{ text: '📄 Income proof', url: INCOME_DOCS_URL }] : [])]]
          }).catch((err) => console.error('loan-request admin Telegram failed:', err instanceof Error ? err.message : err));
       }
       await postDiscord(
@@ -185,7 +227,7 @@ serve(async (req) => {
             embeds: [
                {
                   title: loan.market === 'ID' ? '🇮🇩 New loan request · Indonesia' : '💸 New loan request',
-                  description: message,
+                  description: income?.doc ? `${adminMessage}\n[📄 Income proof](${INCOME_DOCS_URL})` : adminMessage,
                   // Title links to the borrower in the admin panel (👤 Open in admin).
                   ...(loan.borrower_user_id ? { url: adminUserUrl(loan.borrower_user_id, borrower?.username) } : {}),
                   color: 0x5865f2,
