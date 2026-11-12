@@ -302,36 +302,63 @@ export const sendUsdcBsc = (svc: Svc, to: string, amountUsd: number | string, de
 
 /** Same as sendUsdcBsc for either stablecoin (both 18 decimals on BNB Chain). */
 export const sendTokenBsc = async (svc: Svc, token: BscToken, to: string, amountUsd: number | string, deadline = Date.now() + 60_000): Promise<string> => {
+   let interactions: Interaction[];
+   try {
+      const units = usdcBscUnits(amountUsd);
+      const { getAddress } = await withTimeout(loadSdk(), 'openfort_load');
+      interactions = [{ to: TOKEN_ADDRESS[token], data: encodeTransfer(getAddress(to), units) }];
+   } catch (err) {
+      throw new NotSentError(err instanceof Error ? err.message : String(err));
+   }
+   return await sendFromPayoutWallet(svc, BSC_CHAIN_ID, interactions, deadline);
+};
+
+export const BASE_CHAIN_ID = 8453;
+const BASE_RPCS = ['https://mainnet.base.org', 'https://base-rpc.publicnode.com'];
+export type Interaction = { to: string; data: string };
+
+/**
+ * One sponsored transaction (several calls, in order, atomically) from the payout wallet on BNB Chain or
+ * Base — the wallet is an EIP-7702 EOA, so it has the same address on both. Same NotSentError contract as
+ * sendTokenBsc. The fee sponsorship must cover the chain (Openfort dashboard → Gas sponsorship).
+ */
+export const sendFromPayoutWallet = async (
+   svc: Svc,
+   chainId: number,
+   interactions: Interaction[],
+   deadline = Date.now() + 60_000
+): Promise<string> => {
    let prepared: {
       openfort: OpenfortClient;
       account: Awaited<ReturnType<OpenfortClient['accounts']['evm']['backend']['get']>>;
-      data: string;
       feeSponsorshipId: string;
    };
    try {
+      if (chainId !== BSC_CHAIN_ID && chainId !== BASE_CHAIN_ID) throw new Error(`unsupported_chain_${chainId}`);
+      if (!interactions.length || interactions.some((i) => !/^0x[0-9a-fA-F]{40}$/.test(i.to) || !/^0x[0-9a-fA-F]*$/.test(i.data))) {
+         throw new Error('bad_interactions');
+      }
       const creds = await loadPayoutCreds(svc);
       if (!creds) throw new Error('not_configured');
       const wallet = await getPayoutWallet(svc);
       if (!wallet) throw new Error('no_payout_wallet');
-      const units = usdcBscUnits(amountUsd);
       const { getAddress } = await withTimeout(loadSdk(), 'openfort_load');
-      const data = encodeTransfer(getAddress(to), units);
       const openfort = await openfortFor(creds);
       const account = await withTimeout(openfort.accounts.evm.backend.get({ id: wallet.accountId }), 'openfort_get_account');
       if (getAddress(account.address) !== getAddress(wallet.address)) throw new Error('payout_wallet_mismatch');
       if (deadline - Date.now() < MIN_SEND_BUDGET_MS) throw new Error('no_time_left');
-      prepared = { openfort, account, data, feeSponsorshipId: creds.feeSponsorshipId };
+      prepared = { openfort, account, feeSponsorshipId: creds.feeSponsorshipId };
    } catch (err) {
       throw err instanceof NotSentError ? err : new NotSentError(err instanceof Error ? err.message : String(err));
    }
-   const { openfort, account, data, feeSponsorshipId } = prepared;
+   const { openfort, account, feeSponsorshipId } = prepared;
    const tx = await withTimeout(
       openfort.accounts.evm.backend.sendTransaction({
          account,
-         chainId: BSC_CHAIN_ID,
-         interactions: [{ to: TOKEN_ADDRESS[token], data }],
+         chainId,
+         interactions,
          policy: feeSponsorshipId,
-         rpcUrl: BSC_RPCS[0]
+         rpcUrl: chainId === BASE_CHAIN_ID ? BASE_RPCS[0] : BSC_RPCS[0]
       }),
       'openfort_send'
    );

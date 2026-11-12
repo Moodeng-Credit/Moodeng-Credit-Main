@@ -1,16 +1,20 @@
 import { useEffect, useState } from 'react';
 
-import { Send } from 'lucide-react';
-
+import IdVaultFundBlock from '@/app/admin/IdVaultFundBlock';
 import { callWaltPayout, waltPayoutErrorText, type WaltPayoutResult } from '@/app/admin/WaltPayoutCard';
 
 /**
- * Request board, Indonesia-track request, Moodeng's funding accounts only: one "Fund" button that pays
- * the borrower's Walt from Moodeng's payout wallet on BNB Chain (admin-fund-loan → walt_payout_auto →
- * payNow, at most once per loan, same limits as Admin → Requests → "Pay now").
+ * Request board, Indonesia-track request, Moodeng's funding accounts only.
  *
- * Two taps (Fund → Confirm) because it moves money. A borrower with no Walt deposit address saved can't
- * be paid this way: the Walt Transfer card in the admin Telegram chat still works for them.
+ * Main button: "Fund $X from the vault" — the lending wallet draws USDC from the BitRepo vault on Base,
+ * LI.FI bridges it to BNB Chain, and the payout wallet sends the borrower's Walt exactly the loan amount
+ * (IdVaultFundBlock → supabase/functions/_shared/idVaultBridge.ts).
+ *
+ * Small link under it: pay from money already in the payout wallet instead (admin-fund-loan →
+ * walt_payout_auto → payNow, at most once per loan). Two taps because it moves money.
+ *
+ * A borrower with no Walt deposit address saved can't be paid either way: the Walt Transfer card in the
+ * admin Telegram chat still works for them.
  */
 type Phase = 'idle' | 'confirm' | 'sending' | 'paying' | 'done' | 'error';
 
@@ -45,7 +49,7 @@ export default function IdBoardFund({ loanId, amount, onFunded }: { loanId: stri
       // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [phase, loanId]);
 
-   const fund = async () => {
+   const payFromWallet = async () => {
       if (phase === 'idle' || phase === 'error') {
          setMessage(null);
          setPhase('confirm');
@@ -66,28 +70,34 @@ export default function IdBoardFund({ loanId, amount, onFunded }: { loanId: stri
 
    const busy = phase === 'sending' || phase === 'paying';
    return (
-      <div className="flex w-full flex-col gap-2">
-         <button
-            type="button"
-            onClick={() => void fund()}
-            disabled={busy}
-            className="flex w-full items-center justify-center gap-2 rounded-md-lg bg-[#ffd75a] py-md-3 text-md-b1 font-semibold text-[#4a2a00] transition-all duration-150 hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-         >
-            {phase === 'sending'
-               ? 'Sending…'
-               : phase === 'paying'
-                 ? 'Sent. Confirming on chain…'
-                 : phase === 'confirm'
-                   ? `Confirm: send $${amount} now`
-                   : `Fund $${amount} to their Walt`}
-            {!busy ? <Send className="h-5 w-5" /> : null}
-         </button>
-         {phase === 'confirm' ? (
-            <button type="button" onClick={() => setPhase('idle')} className="text-md-b2 text-md-neutral-1200 underline">
-               Cancel
+      <div className="flex w-full flex-col gap-2 text-md-b2">
+         {phase === 'idle' || phase === 'error' ? (
+            <IdVaultFundBlock loanId={loanId} onPaid={onFunded} boardLabel={`Fund $${amount} from the vault`} />
+         ) : null}
+         {phase === 'confirm' || busy ? (
+            <button
+               type="button"
+               onClick={() => void payFromWallet()}
+               disabled={busy}
+               className="w-full rounded-md-lg bg-[#ffd75a] py-md-3 text-md-b1 font-semibold text-[#4a2a00] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+               {phase === 'sending'
+                  ? 'Sending…'
+                  : phase === 'paying'
+                    ? 'Sent. Confirming on chain…'
+                    : `Confirm: send $${amount} from the payout wallet`}
             </button>
          ) : null}
-         {message ? <p className="text-md-b2 text-[#b42318]">{message}</p> : null}
+         {!busy ? (
+            <button
+               type="button"
+               onClick={() => (phase === 'confirm' ? setPhase('idle') : void payFromWallet())}
+               className="text-md-neutral-1200 underline"
+            >
+               {phase === 'confirm' ? 'Cancel' : 'Or pay from the payout wallet balance'}
+            </button>
+         ) : null}
+         {message ? <p className="text-[#b42318]">{message}</p> : null}
       </div>
    );
 }

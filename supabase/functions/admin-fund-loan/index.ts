@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { postLoanFundedToTeam } from '../_shared/teamLoanFeed.ts'
 import { checkNow, markSent, payNow, payoutStatus, recordByTxid, releasePayout } from '../_shared/idManualFunding.ts'
 import { createPayoutWallet, payoutWalletStatus } from '../_shared/idPayoutWallet.ts'
+import { recordVaultDraw, vaultBridgeStatus, vaultDrawQuote } from '../_shared/idVaultBridge.ts'
 import { decodeUsdcTransfers, RPC_URL, rpcCall } from '../_shared/usdcTransfer.ts'
 
 // BitRepo originator vault on Base (OriginatorVault). Moodeng's lending wallet draws loans from it straight to
@@ -72,6 +73,16 @@ serve(async (req) => {
     // Indonesia track: Moodeng's Openfort payout wallet on BNB Chain (_shared/idPayoutWallet.ts).
     if (body?.action === 'payout_wallet_status') return json(await payoutWalletStatus(supabase))
     if (body?.action === 'payout_wallet_create') return json(await createPayoutWallet(supabase))
+
+    // Indonesia track: fund from the BitRepo vault on Base, bridged to BNB Chain by LI.FI (_shared/idVaultBridge.ts).
+    if (typeof body?.action === 'string' && body.action.startsWith('id_vault_')) {
+      const loanId = typeof body.loanId === 'string' ? body.loanId : ''
+      if (!loanId) return json({ error: 'Missing loanId' }, 400)
+      if (body.action === 'id_vault_quote') return json(await vaultDrawQuote(supabase, loanId))
+      if (body.action === 'id_vault_draw') return json(await recordVaultDraw(supabase, loanId, String(body.txHash ?? '').trim(), callerId))
+      if (body.action === 'id_vault_status') return json(await vaultBridgeStatus(supabase, loanId))
+      return json({ error: 'Unknown action' }, 400)
+    }
 
     // Indonesia track: paid by hand from Binance TH to the borrower's Walt (USDC on BNB Chain), or
     // automatically from the payout wallet (walt_payout_auto). The app confirms it on-chain itself

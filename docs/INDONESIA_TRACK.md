@@ -136,6 +136,23 @@ address on BNB Chain, in any `id_payout_mode`, at most once, with the same max /
   while none is saved. It is optional: without one, the Walt Transfer card still pays them by @username.
 - Everyone else still sees "Dibayar oleh Moodeng"; lenders can't fund Indonesian requests from Base.
 
+### From the BitRepo vault (2026-11-13)
+
+The board's main button is **Fund $X from the vault** (`IdVaultFundBlock`, also in Admin → Requests):
+
+1. `id_vault_quote`: LI.FI exact-output quote. Draw = quote + 0.6% + 2¢, rounded up (e.g. $5 → about $5.10).
+2. The connected lending wallet draws that from the vault to the payout wallet's address on Base (same
+   Openfort EOA as on BNB Chain).
+3. `id_vault_draw` checks the draw on Base, sets `loans.vault_address`, and bridges Base USDC → BSC USDC
+   with LI.FI in one sponsored transaction (`_shared/idVaultBridge.ts`, `_shared/lifi.ts`).
+4. When LI.FI says DONE, `payNow` sends the borrower exactly the loan amount. The 5-minute job finishes
+   bridges whose card was closed. Needs `id_payout_token` = USDC (the quote refuses otherwise).
+
+Under it, "Or pay from the payout wallet balance" is the two-tap `payNow` above. `/idvault` (admin chats)
+bridges the payout wallet's USDT/USDC on BNB Chain back to the lending wallet on Base. Repayments by Walt
+Transfer land in Moodeng's Walt, not the payout wallet, so paying the vault back for those is by hand.
+The Openfort gas sponsorship must also cover Base (8453).
+
 ## Rupiah peg
 
 Indonesian loans are fixed in rupiah: the borrower chooses `repay_idr` (e.g. Rp 110.000) and that never

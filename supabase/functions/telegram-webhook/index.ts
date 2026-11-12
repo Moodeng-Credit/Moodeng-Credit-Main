@@ -45,6 +45,7 @@ import { handleWaltPayoutCallback } from '../_shared/idWaltPayouts.ts';
 import { handleIncomeDocCallback } from '../_shared/incomeDocCards.ts';
 import { handleArrivedCommand, handleSweepCommand, handleWalletDepositCallback } from '../_shared/idRepayments.ts';
 import { handleWaltWatchCallback, handleWaltWatchCommand } from '../_shared/waltWatch.ts';
+import { handleVaultBridgeCallback, handleVaultCommand } from '../_shared/idVaultBridge.ts';
 import { formatCallTime } from '../_shared/videoCall.ts';
 import { handleRescheduleStep, parseRescheduleCallback, postReschedulePicker } from '../_shared/callReschedule.ts';
 import { handleCancelStep, parseCancelCallback } from '../_shared/callCancel.ts';
@@ -1350,6 +1351,10 @@ serve(async (req) => {
          if (await handleWaltWatchCallback(supabase, update.callback_query)) {
             return jsonResponse({ message: 'Walt watch callback handled' });
          }
+         // Indonesia: /idvault "↩️ Send back to Base" (admin chats only; LI.FI bridge to the lending wallet).
+         if (await handleVaultBridgeCallback(supabase, update.callback_query)) {
+            return jsonResponse({ message: 'Indonesia vault bridge handled' });
+         }
          const teamChatId = await getTeamChatId(supabase);
          const kycChatId = await getSetting(supabase, 'kyc_alert_chat_id');
          // Proof of income: ✅ Approve / ❌ Reject under a result that waits for the team (pi:).
@@ -1605,6 +1610,12 @@ serve(async (req) => {
       if (isAdminChannel && /^\/walt(watch|connect|pot)\b/i.test(message.text ?? '')) {
          await handleWaltWatchCommand(supabase, message as never);
          return jsonResponse({ message: 'Walt watch command handled' });
+      }
+
+      // Indonesia: repayments (USDT on BNB Chain) back to USDC on Base for the vault, via LI.FI.
+      if (isAdminChannel && /^\/idvault\b/i.test(message.text ?? '')) {
+         await handleVaultCommand(supabase, message);
+         return jsonResponse({ message: 'Indonesia vault command handled' });
       }
 
       if (isAdminChannel && /^\/idautopay\b/i.test(message.text ?? '')) {
