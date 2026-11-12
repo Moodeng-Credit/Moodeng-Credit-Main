@@ -160,6 +160,12 @@ makes it optional again). Saving it offers 💸 Ajukan right away.
 steps: one Walt withdrawal to the payout wallet (Walt takes 1.5 USDT) → `/idvault USDT all` → Pay vault.
 Nothing owed → no card.
 
+**`/idready`** (admin chats, `_shared/idReady.ts`): one card that says whether a request can be funded from
+the board: Openfort keys, payout wallet, gas sponsorship on Base and BNB Chain, payout coin, the vault
+(available, paused, draw permission), a live LI.FI price for $5, borrowers with a Walt address. Each ❌ says
+what to do. "🧪 Test gas on Base / BNB" sends 0 USDC from the payout wallet to itself on that chain (moves
+no money) and remembers the result for 30 days.
+
 Under it, "Or pay from the payout wallet balance" is the two-tap `payNow` above. `/idvault` (admin chats)
 bridges the payout wallet's USDT/USDC on BNB Chain back to the lending wallet on Base. Repayments by Walt
 Transfer land in Moodeng's Walt, not the payout wallet, so paying the vault back for those is by hand.
