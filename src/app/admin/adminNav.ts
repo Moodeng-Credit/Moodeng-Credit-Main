@@ -36,6 +36,7 @@ export type AdminTab =
    | 'campaigns'
    | 'notifications'
    | 'chat'
+   | 'whatsapp'
    | 'relay'
    | 'test-lab'
    | 'progress'
@@ -119,6 +120,7 @@ export const navGroups: NavGroup[] = [
       label: 'Support',
       items: [
          { id: 'chat', label: 'Live chat' },
+         { id: 'whatsapp', label: 'WhatsApp' },
          { id: 'calendar', label: 'Calendar' }
       ]
    },
@@ -175,6 +177,7 @@ export const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'campaigns',
    'notifications',
    'chat',
+   'whatsapp',
    'relay',
    'test-lab',
    'progress',

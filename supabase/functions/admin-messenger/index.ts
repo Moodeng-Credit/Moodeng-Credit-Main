@@ -7,9 +7,16 @@ import {
    getMessengerContact,
    isInsideMessagingWindow,
    isSendPulseConfigured,
+   listWhatsAppChats,
+   listWhatsAppMessages,
+   listWhatsAppTemplates,
+   markWhatsAppRead,
    messengerDisplayName,
+   normalizeWhatsAppPhone,
+   replyWhatsAppText,
    type SendPulseContact,
-   sendMessengerMessage
+   sendMessengerMessage,
+   sendWhatsAppTemplateTo
 } from '../_shared/sendpulse.ts';
 
 // Admin → Borrower contacts, Messenger side (SendPulse API; the key never reaches the browser):
@@ -18,6 +25,13 @@ import {
 //   { action: 'send', userId, text } → sends the admin's message to that borrower on Messenger.
 //   { action: 'sync_history', userIds? } → saves Facebook names + backfills messenger_contact_events
 //                                      from SendPulse's chat log (_shared/messengerContactLog.ts).
+// WhatsApp inbox (Admin → Support → WhatsApp), so the team can chat on the business number without the
+// WhatsApp Business app:
+//   { action: 'wa_chats' }                         → recent chats + which Moodeng user each one is.
+//   { action: 'wa_messages', contactId }           → one chat's messages (and marks it read).
+//   { action: 'wa_send', contactId, text }         → free-text reply (only inside Meta's 24h window).
+//   { action: 'wa_templates' }                     → approved templates.
+//   { action: 'wa_send_template', contactId | phone, name, language, params } → template to a chat or a new number.
 // Active admins only — re-checked here against admin_users, like the other admin-* functions — or
 // X-Admin-Token for server-side calls (pg_net), like admin-send-email.
 
@@ -156,5 +170,71 @@ serve(async (req) => {
       return json(result);
    }
 
+   if (typeof body.action === 'string' && body.action.startsWith('wa_')) return json(await handleWhatsApp(svc, body));
+
    return json({ error: 'unknown_action' }, 400);
 });
+
+const WA_TEXT_MAX = 1024;
+const WINDOW_MS = 24 * 60 * 60 * 1000;
+
+// deno-lint-ignore no-explicit-any
+const handleWhatsApp = async (svc: Svc, body: any) => {
+   const contactId = typeof body.contactId === 'string' ? body.contactId.trim() : '';
+
+   if (body.action === 'wa_chats') {
+      const res = await listWhatsAppChats(100);
+      if (!res.ok) return res;
+      // Which Moodeng account each chat belongs to (set when they opted in to WhatsApp reminders).
+      const ids = res.data.map((c) => c.contactId);
+      const { data: users } = ids.length
+         ? await svc.from('users').select('id, username, display_name, whatsapp_contact_id').in('whatsapp_contact_id', ids)
+         : { data: [] };
+      const byContact = new Map(
+         ((users ?? []) as Array<{ id: string; username: string | null; display_name: string | null; whatsapp_contact_id: string }>).map((u) => [
+            u.whatsapp_contact_id,
+            { userId: u.id, username: u.username, displayName: u.display_name }
+         ])
+      );
+      const chats = res.data
+         .map((c) => ({ ...c, user: byContact.get(c.contactId) ?? null }))
+         .sort((a, b) => Date.parse(b.lastAt ?? '') - Date.parse(a.lastAt ?? '') || 0);
+      return { ok: true, chats };
+   }
+
+   if (body.action === 'wa_messages') {
+      if (!contactId) return { ok: false, reason: 'missing_contact' };
+      const res = await listWhatsAppMessages(contactId, 150);
+      if (!res.ok) return res;
+      await markWhatsAppRead(contactId);
+      const lastInbound = [...res.data].reverse().find((m) => m.direction === 1)?.createdAt ?? null;
+      const canFreeText = lastInbound ? Date.now() - Date.parse(lastInbound) < WINDOW_MS : false;
+      return { ok: true, messages: res.data, lastInboundAt: lastInbound, canFreeText };
+   }
+
+   if (body.action === 'wa_send') {
+      const text = typeof body.text === 'string' ? body.text.trim() : '';
+      if (!contactId || !text) return { ok: false, reason: 'missing_fields' };
+      if (text.length > WA_TEXT_MAX) return { ok: false, reason: 'too_long' };
+      return await replyWhatsAppText(contactId, text);
+   }
+
+   if (body.action === 'wa_templates') {
+      const res = await listWhatsAppTemplates();
+      return res.ok ? { ok: true, templates: res.data } : res;
+   }
+
+   if (body.action === 'wa_send_template') {
+      const name = typeof body.name === 'string' ? body.name.trim() : '';
+      const language = typeof body.language === 'string' && body.language.trim() ? body.language.trim() : 'en';
+      const params = (Array.isArray(body.params) ? body.params : []).map((p: unknown) => String(p ?? '').trim().slice(0, 300));
+      if (!name) return { ok: false, reason: 'missing_template' };
+      if (params.some((p: string) => !p)) return { ok: false, reason: 'missing_params' };
+      if (contactId) return await sendWhatsAppTemplateTo({ contactId }, { name, language, params });
+      const phone = normalizeWhatsAppPhone(body.phone);
+      if (!phone) return { ok: false, reason: 'bad_phone' };
+      return await sendWhatsAppTemplateTo({ phone }, { name, language, params });
+   }
+
+   return { ok: false, reason: 'unknown_action' };
+};

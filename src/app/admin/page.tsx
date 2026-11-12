@@ -82,6 +82,7 @@ import RelayLinksSection from './RelayLinksSection';
 import RiskAssessmentSection from './RiskAssessmentSection';
 import SelfLendingSection from './SelfLendingSection';
 import SupportChatSection from './SupportChatSection';
+import WhatsAppInboxSection from './WhatsAppInboxSection';
 import TestLabSection from './TestLabSection';
 import UxHealthSection from './UxHealthSection';
 
@@ -1873,6 +1874,8 @@ function AdminPanel() {
          {activeTab === 'calendar' ? <CalendarSection /> : null}
 
          {activeTab === 'chat' ? <SupportChatSection /> : null}
+
+         {activeTab === 'whatsapp' ? <WhatsAppInboxSection /> : null}
 
          {activeTab === 'relay' && isFundingAdmin ? <RelayLinksSection /> : null}
 

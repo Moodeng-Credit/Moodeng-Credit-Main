@@ -384,6 +384,162 @@ export const sendWhatsAppText = async (contactId: string | null | undefined, tex
    }
 };
 
+// ---- WhatsApp inbox (Admin → Support → WhatsApp): read chats and answer them from our own admin ----
+// The team can read and reply here without the WhatsApp Business app or the SendPulse login.
+
+export const WHATSAPP_BOT_ID = Deno.env.get('SENDPULSE_WHATSAPP_BOT_ID')?.trim() || '6ad10bbcbd345e7b0f09c494';
+
+type WaCall<T> = { ok: true; data: T } | { ok: false; reason: string; detail?: string };
+
+// One request to the SendPulse WhatsApp API. Keeps SendPulse's error text so the admin sees why a send
+// failed (usually "outside the 24h window"). Never throws.
+const waCall = async <T = unknown>(method: 'GET' | 'POST' | 'PUT', path: string, body?: unknown): Promise<WaCall<T>> => {
+   if (!isSendPulseConfigured()) return { ok: false, reason: 'not_configured' };
+   try {
+      const token = await getToken();
+      if (!token) return { ok: false, reason: 'auth_failed' };
+      const res = await fetch(`${WHATSAPP_API}${path}`, {
+         method,
+         headers: { Authorization: `Bearer ${token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+         body: body ? JSON.stringify(body) : undefined
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || json?.success === false) {
+         const detail = JSON.stringify(json?.errors ?? json?.message ?? json?.error ?? json)?.slice(0, 400);
+         console.error('[sendpulse] whatsapp', method, path.split('?')[0], res.status, detail);
+         return { ok: false, reason: 'sendpulse_error', detail };
+      }
+      return { ok: true, data: (json?.data ?? json) as T };
+   } catch (err) {
+      return { ok: false, reason: 'request_failed', detail: err instanceof Error ? err.message : String(err) };
+   }
+};
+
+// deno-lint-ignore no-explicit-any
+type Raw = any;
+
+/** Best-effort readable text for any WhatsApp message payload SendPulse stores. */
+export const whatsAppMessageText = (type: string | undefined, data: Raw): string => {
+   const d = data && typeof data === 'object' ? data : {};
+   const pick = (...values: unknown[]) => values.find((v) => typeof v === 'string' && v.trim()) as string | undefined;
+   const text = pick(
+      d.text?.body,
+      typeof d.text === 'string' ? d.text : undefined,
+      d.body,
+      d.interactive?.body?.text,
+      d.interactive?.button_reply?.title,
+      d.interactive?.list_reply?.title,
+      d.button?.text,
+      d.image?.caption,
+      d.video?.caption,
+      d.document?.caption,
+      d.reaction?.emoji
+   );
+   if (text) return text;
+   const tplName = pick(d.template?.name, d.name);
+   if (type === 'template' || d.template) return `📋 Template${tplName ? `: ${tplName}` : ''}`;
+   if (d.image || type === 'image') return '🖼️ Photo';
+   if (d.video || type === 'video') return '🎬 Video';
+   if (d.document || type === 'document') return `📎 ${pick(d.document?.filename) ?? 'File'}`;
+   if (d.audio || d.voice || type === 'audio' || type === 'voice') return '🎤 Voice message';
+   if (type === 'sticker') return '🙂 Sticker';
+   if (type === 'location') return '📍 Location';
+   return type ? `[${type}]` : '';
+};
+
+export type WhatsAppChat = {
+   contactId: string;
+   name: string | null;
+   phone: string | null;
+   lastActivityAt: string | null;
+   unread: number;
+   lastText: string;
+   lastDirection: number | null;
+   lastAt: string | null;
+};
+
+/** Recent WhatsApp chats, newest activity first. */
+export const listWhatsAppChats = async (size = 100): Promise<WaCall<WhatsAppChat[]>> => {
+   const res = await waCall<Raw[]>('GET', `/chats?bot_id=${encodeURIComponent(WHATSAPP_BOT_ID)}&size=${size}&skip=0`);
+   if (!res.ok) return res;
+   const chats = (Array.isArray(res.data) ? res.data : []).map((row: Raw): WhatsAppChat => {
+      const c = row?.contact ?? {};
+      const last = row?.inbox_last_message ?? null;
+      return {
+         contactId: String(c.id ?? row?.contact_id ?? ''),
+         name: c.channel_data?.name?.trim?.() || c.channel_data?.username || null,
+         phone: normalizeWhatsAppPhone(c.channel_data?.phone),
+         lastActivityAt: c.last_activity_at ?? null,
+         unread: Number(row?.inbox_unread ?? c.unread ?? 0) || 0,
+         lastText: last ? whatsAppMessageText(last.type, last.data) : '',
+         lastDirection: last?.direction ?? null,
+         lastAt: last?.created_at ?? c.last_activity_at ?? null
+      };
+   });
+   return { ok: true, data: chats.filter((c) => c.contactId) };
+};
+
+export type WhatsAppThreadMessage = { id: string; direction: number; type: string; text: string; status: number | null; createdAt: string | null };
+
+/** Latest messages of one chat, oldest first (ready to render top-to-bottom). */
+export const listWhatsAppMessages = async (contactId: string, size = 100): Promise<WaCall<WhatsAppThreadMessage[]>> => {
+   const res = await waCall<Raw[]>('GET', `/chats/messages?contact_id=${encodeURIComponent(contactId)}&size=${size}&order=desc`);
+   if (!res.ok) return res;
+   const msgs = (Array.isArray(res.data) ? res.data : [])
+      .map(
+         (m: Raw): WhatsAppThreadMessage => ({
+            id: String(m?.id ?? ''),
+            direction: Number(m?.direction ?? 0),
+            type: String(m?.type ?? ''),
+            text: whatsAppMessageText(m?.type, m?.data),
+            status: m?.status ?? null,
+            createdAt: m?.created_at ?? null
+         })
+      )
+      // Typing indicators / internal markers aren't messages anyone wrote.
+      .filter((m) => m.text && !['typing', 'system', 'request_welcome', 'operator_group_assigned'].includes(m.type))
+      .reverse();
+   return { ok: true, data: msgs };
+};
+
+export const markWhatsAppRead = (contactId: string) => waCall('PUT', `/contacts/mark-read?contact_id=${encodeURIComponent(contactId)}`);
+
+/** Free text to an existing chat (Meta only delivers it within 24h of their last message). */
+export const replyWhatsAppText = (contactId: string, text: string) =>
+   waCall('POST', '/contacts/send', { contact_id: contactId, message: { type: 'text', text: { body: text.slice(0, 1024) } } });
+
+export type WhatsAppTemplateInfo = { name: string; language: string; category: string; content: string; params: number };
+
+/** Approved templates — the only thing that can open (or reopen) a conversation. */
+export const listWhatsAppTemplates = async (): Promise<WaCall<WhatsAppTemplateInfo[]>> => {
+   const res = await waCall<Raw[]>('GET', `/templates?bot_id=${encodeURIComponent(WHATSAPP_BOT_ID)}&status=APPROVED`);
+   if (!res.ok) return res;
+   const list = (Array.isArray(res.data) ? res.data : []).map((t: Raw): WhatsAppTemplateInfo => {
+      const bodyComponent = (Array.isArray(t?.components) ? t.components : []).find((c: Raw) => String(c?.type).toUpperCase() === 'BODY');
+      const content = String(t?.content ?? bodyComponent?.text ?? '');
+      const params = new Set(content.match(/\{\{\s*\d+\s*\}\}/g) ?? []).size;
+      return { name: String(t?.name ?? ''), language: String(t?.language ?? 'en'), category: String(t?.category ?? ''), content, params };
+   });
+   return { ok: true, data: list.filter((t) => t.name) };
+};
+
+/** Sends an approved template to a chat (contactId) or straight to a phone number (new chat). */
+export const sendWhatsAppTemplateTo = (
+   target: { contactId?: string; phone?: string },
+   template: { name: string; language: string; params: string[] }
+) => {
+   const payload = {
+      name: template.name,
+      language: { code: template.language },
+      ...(template.params.length
+         ? { components: [{ type: 'body', parameters: template.params.map((text) => ({ type: 'text', text })) }] }
+         : {})
+   };
+   return target.contactId
+      ? waCall('POST', '/contacts/sendTemplate', { contact_id: target.contactId, template: payload })
+      : waCall('POST', '/contacts/sendTemplateByPhone', { bot_id: WHATSAPP_BOT_ID, phone: target.phone, template: payload });
+};
+
 // ---------------------------------------------------------------------------------------------------
 // TikTok (same SendPulse account and credentials, separate API under /tiktok).
 //
