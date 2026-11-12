@@ -57,3 +57,15 @@ Deno.test('bot buttons on approved / funded / repaid / due messages', () => {
    assertEquals(buildIdMessage('repaid', 'id', { amount: 6 }).actions?.map((a) => a.callback_data), ['idm:apply', 'idm:menu']);
    assertEquals(buildIdMessage('due_today', 'id', { amount: 6 }).actions?.map((a) => a.callback_data), ['idm:repay']);
 });
+
+Deno.test('waltAddressProblem: only a real, unused 0x address that is not ours', async () => {
+   const { waltAddressProblem } = await import('./idBot.ts');
+   const a = '0x' + 'aB'.repeat(20);
+   const none = { ownWallet: null, payoutWallet: null, usedByOther: false };
+   assertEquals(waltAddressProblem(a, none), null);
+   assertEquals(waltAddressProblem('0x123', none), 'invalid');
+   assertEquals(waltAddressProblem('0x' + '0'.repeat(40), none), 'invalid');
+   assertEquals(waltAddressProblem(a, { ...none, ownWallet: a.toUpperCase().replace('0X', '0x') }), 'moodeng_wallet');
+   assertEquals(waltAddressProblem(a, { ...none, payoutWallet: a.toLowerCase() }), 'moodeng_wallet');
+   assertEquals(waltAddressProblem(a, { ...none, usedByOther: true }), 'in_use');
+});
