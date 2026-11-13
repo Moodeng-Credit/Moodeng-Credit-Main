@@ -1381,18 +1381,29 @@ function SendProgressOverlay({
 }) {
    const succeeded = phase === 'success';
    const [activeStep, setActiveStep] = useState(0);
+   // The oven picture (same hippo as the peso payout tracker): frames 1-3 follow the steps, then the cake
+   // keeps rising on a clock while "Confirming on Base" holds, so a slow first send still shows life.
+   const [ovenFrame, setOvenFrame] = useState(1);
 
    // Auto-advance the first two steps on a timer while the send is in flight. Reset + rearm
    // whenever we (re)enter the progress phase; the success view ignores this.
    useEffect(() => {
       if (succeeded) return;
       setActiveStep(0);
-      const t1 = setTimeout(() => setActiveStep(1), SEND_STEP_2_AT_MS);
-      const t2 = setTimeout(() => setActiveStep(2), SEND_STEP_3_AT_MS);
-      return () => {
-         clearTimeout(t1);
-         clearTimeout(t2);
-      };
+      setOvenFrame(1);
+      const timers = [
+         setTimeout(() => {
+            setActiveStep(1);
+            setOvenFrame(2);
+         }, SEND_STEP_2_AT_MS),
+         setTimeout(() => {
+            setActiveStep(2);
+            setOvenFrame(3);
+         }, SEND_STEP_3_AT_MS),
+         setTimeout(() => setOvenFrame(4), 20_000),
+         setTimeout(() => setOvenFrame(5), 45_000)
+      ];
+      return () => timers.forEach(clearTimeout);
    }, [succeeded]);
 
    return (
@@ -1400,63 +1411,71 @@ function SendProgressOverlay({
          className="fixed inset-0 z-[60] flex items-center justify-center px-[24px] overflow-y-auto"
          style={{ backgroundColor: 'var(--app-bg)', fontFamily: FONT }}
       >
-         <div className="w-full max-w-[360px] flex flex-col items-center text-center my-auto py-[24px]">
+         <div className="w-full max-w-[360px] flex flex-col items-center text-center my-auto py-[24px]" aria-live="polite">
+            {succeeded ? (
+               <div className="relative">
+                  <img src="/withdraw-oven/cake.webp" alt="" aria-hidden="true" className="h-[104px] w-auto" />
+                  <span className="absolute -right-[10px] -bottom-[4px] flex h-[34px] w-[34px] items-center justify-center rounded-full border-[3px] border-[var(--app-bg)] bg-[#2f9e44] text-white">
+                     <Check className="w-[18px] h-[18px]" strokeWidth={3.5} />
+                  </span>
+               </div>
+            ) : (
+               // All frames stacked so they're preloaded; the current one fades in.
+               <div className="relative w-[140px] aspect-[549/560]" aria-hidden="true">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                     <img
+                        key={n}
+                        src={`/withdraw-oven/oven-${n}.webp`}
+                        alt=""
+                        className="absolute inset-0 w-full h-full object-contain transition-opacity duration-700"
+                        style={{ opacity: n === ovenFrame ? 1 : 0 }}
+                     />
+                  ))}
+               </div>
+            )}
+            <h2
+               className={`mt-[10px] text-[26px] font-black italic leading-[1.15] tracking-[-0.5px] ${
+                  succeeded ? 'text-[#2f9e44] dark:text-[#6fdc8c]' : 'text-[#6b55f7] dark:text-[#b3a6ff]'
+               }`}
+            >
+               {succeeded ? 'Sent!' : amount > 0 ? `Sending ${amount} USDC…` : 'Sending your USDC…'}
+            </h2>
+            <p className="mt-[2px] text-[14px] leading-[19px] text-[var(--text-muted)]">
+               {succeeded ? `${amount} USDC is on its way to ${exchange}.` : `To ${exchange}. Keep this screen open.`}
+            </p>
+            <ol className="mt-[16px] w-full space-y-[10px] rounded-[12px] border-2 border-[#e8e4ff] bg-[var(--surface)] p-[16px] text-left dark:border-[var(--border-card-2)]">
+               {SEND_STEPS.map((label, i) => {
+                  const done = succeeded || i < activeStep;
+                  const active = !succeeded && i === activeStep;
+                  return (
+                     <li key={label} className="flex items-center gap-[10px] text-[15px]">
+                        <span
+                           className={`w-[24px] h-[24px] rounded-full flex items-center justify-center shrink-0 ${
+                              done ? 'bg-[#2f9e44] text-white' : active ? 'border-2 border-[#6b55f7]' : 'border-2 border-[var(--border-input)]'
+                           }`}
+                        >
+                           {done ? (
+                              <Check className="w-[14px] h-[14px]" strokeWidth={3.5} />
+                           ) : active ? (
+                              <Loader2 className="w-[13px] h-[13px] text-[#6b55f7] animate-spin" />
+                           ) : null}
+                        </span>
+                        <span className={done || active ? 'text-[var(--ink)] font-semibold' : 'text-[var(--text-faint)]'}>{label}</span>
+                     </li>
+                  );
+               })}
+            </ol>
             {succeeded ? (
                <>
-                  <img src="/icons/check-3d.png" alt="Sent" className="mb-[16px] size-[104px]" />
-                  <h2 className="text-[28px] font-semibold leading-[1.12] tracking-[-0.6px] text-[var(--ink)]">Sent!</h2>
-                  <p className="mt-[10px] mb-[28px] text-[15px] font-medium leading-[22px] text-[var(--text-muted)]">
-                     {amount} USDC is on its way to {exchange}.
-                  </p>
-                  <PrimaryBtn onClick={onDone}>
-                     Done <Check className="w-4 h-4" strokeWidth={3} />
-                  </PrimaryBtn>
+                  <div className="mt-[20px] w-full">
+                     <PrimaryBtn onClick={onDone}>
+                        Done <Check className="w-4 h-4" strokeWidth={3} />
+                     </PrimaryBtn>
+                  </div>
                   {help ? <div className="mt-[20px] w-full">{help}</div> : null}
                </>
             ) : (
-               <>
-                  <p className="mb-[22px] text-[20px] font-semibold tracking-[-0.4px] text-[var(--ink)]">Cashing out…</p>
-                  <div className="w-full space-y-[12px]">
-                     {SEND_STEPS.map((label, i) => {
-                        const done = i < activeStep;
-                        const active = i === activeStep;
-                        return (
-                           <div
-                              key={label}
-                              className={`flex items-center gap-[14px] rounded-[16px] px-[16px] py-[14px] border transition-all ${
-                                 active
-                                    ? 'bg-[var(--surface-1)] border-[var(--border-strong)]'
-                                    : 'bg-[var(--surface)] border-[var(--border-card-2)]'
-                              }`}
-                           >
-                              <div
-                                 className={`w-[28px] h-[28px] rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                                    done ? 'bg-[var(--green)]' : active ? 'bg-[var(--primary)]' : 'bg-[var(--surface-grey)]'
-                                 }`}
-                              >
-                                 {done ? (
-                                    <Check className="w-[16px] h-[16px] text-white" strokeWidth={3} />
-                                 ) : active ? (
-                                    <Loader2 className="w-[16px] h-[16px] text-white animate-spin" />
-                                 ) : (
-                                    <span className="text-[12px] font-semibold text-[var(--text-muted)]">{i + 1}</span>
-                                 )}
-                              </div>
-                              <p
-                                 className={`text-[15px] tracking-[-0.3px] ${
-                                    done || active ? 'font-semibold text-[var(--ink)]' : 'font-medium text-[var(--text-muted)]'
-                                 }`}
-                              >
-                                 {label}
-                              </p>
-                           </div>
-                        );
-                     })}
-                  </div>
-                  <p className="mt-[20px] text-[12px] leading-[18px] text-[var(--text-faint)]">
-                     This can take a couple of minutes the first time. Keep this screen open.
-                  </p>
-               </>
+               <p className="mt-[14px] text-[12px] leading-[18px] text-[var(--text-faint)]">The first time can take a couple of minutes.</p>
             )}
          </div>
       </div>
