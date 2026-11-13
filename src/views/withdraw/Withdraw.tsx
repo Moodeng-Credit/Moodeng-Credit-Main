@@ -933,16 +933,6 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                      />
                   </>
                )}
-               {mayaOn && (
-                  <PickerRow
-                     onSelect={selectProvider}
-                     id="maya"
-                     icon={<MayaIcon />}
-                     name="Maya"
-                     line1="Send USDC to Maya, sell for pesos there"
-                     line2="Fee ≈ $0.03 · a few seconds"
-                  />
-               )}
                {!isIndo && (
                   <>
                      {!COINS_PH_SUSPENDED && coinsPhRow}
@@ -973,6 +963,17 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                            name="PDAX"
                            line1="Sell for pesos, withdraw to bank or e-wallet"
                            line2="Bank, GCash or Maya · ~30 min"
+                        />
+                     )}
+                     {/* Maya is listed after PDAX and GCrypto (Nov 2026). */}
+                     {mayaOn && (
+                        <PickerRow
+                           onSelect={selectProvider}
+                           id="maya"
+                           icon={<MayaIcon />}
+                           name="Maya"
+                           line1="Send USDC to Maya, sell for pesos there"
+                           line2="Fee ≈ $0.03 · a few seconds"
                         />
                      )}
                      {/* Binance P2P is the hardest route, so it waits behind "More options". A paused Coins.ph
