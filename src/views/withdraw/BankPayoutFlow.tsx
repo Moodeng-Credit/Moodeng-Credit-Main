@@ -621,9 +621,11 @@ export default function BankPayoutFlow({
             // The preview answers 'succeeded' at once; hold it ~12s so the oven tracker can be seen.
             if (isPreview && next && DONE.has(next) && Date.now() - sentAt < 12_000) return setNow(Date.now());
             if (next) setStatus(next);
-            else setNow(Date.now()); // re-arm the poll on a failed read
+            // Always re-arm: the same status twice in a row ('processing' → 'processing') changes no state,
+            // so without this the poll stopped after its second read and the success screen never came.
+            setNow(Date.now());
          },
-         isPreview ? 1500 : 8000
+         isPreview ? 1500 : 5000
       );
       return () => clearTimeout(t);
    }, [step, paymentId, status, now, isPreview, sentAt]);
