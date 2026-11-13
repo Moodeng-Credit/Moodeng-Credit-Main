@@ -3409,3 +3409,40 @@ export async function proofFileUrl(storagePath: string): Promise<string> {
    if (error || !data?.signedUrl) throw error ?? new Error('No link');
    return data.signedUrl;
 }
+
+// ---------------------------------------------------------------------------
+// Audience — who our users are, in groups (Admin → Growth → Audience; SQL admin_audience_summary).
+// ---------------------------------------------------------------------------
+
+export interface AudienceRow {
+   key: string;
+   parent: string | null;
+   users: number;
+   borrowers: number;
+   repaid: number;
+   late: number;
+   new30d: number;
+   idChecked: number;
+}
+
+export interface AudienceSummary {
+   generatedAt: string;
+   totals: {
+      users: number;
+      idChecked: number;
+      withPlace: number;
+      withAge: number;
+      withIpCity: number;
+      borrowers: number;
+      repaid: number;
+      late: number;
+      new30d: number;
+   };
+   groups: Partial<Record<'country' | 'region' | 'province' | 'ipCity' | 'age' | 'gender' | 'ageGender' | 'work' | 'income', AudienceRow[]>>;
+}
+
+export async function getAudienceSummary(): Promise<AudienceSummary | null> {
+   const { data, error } = await getSupabaseBrowserClient().rpc('admin_audience_summary');
+   if (error) throw error;
+   return (data as AudienceSummary | null) ?? null;
+}

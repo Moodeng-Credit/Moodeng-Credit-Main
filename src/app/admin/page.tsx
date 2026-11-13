@@ -66,6 +66,7 @@ import EmailUsersSection from './EmailUsersSection';
 import GrowthAnalyticsSection from './GrowthAnalyticsSection';
 import PostLinksSection from './PostLinksSection';
 import SignupSourcesSection from './SignupSourcesSection';
+import AudienceSection from './AudienceSection';
 import BorrowerProfileSection from '@/app/admin/BorrowerProfileSection';
 import LoanExplorerSection from './LoanExplorerSection';
 import LoanExtensionSection from './LoanExtensionSection';
@@ -1677,6 +1678,8 @@ function AdminPanel() {
                <PostLinksSection />
             </section>
          ) : null}
+
+         {activeTab === 'audience' ? <AudienceSection /> : null}
 
          {activeTab === 'signups' ? (
             <section className="space-y-6">
