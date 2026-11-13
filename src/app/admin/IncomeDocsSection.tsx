@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { type AdminIncomeDocument, decideIncomeDocument, incomeDocumentUrl, listIncomeDocuments } from '@/app/admin/adminSupabase';
 
@@ -99,6 +99,8 @@ export default function IncomeDocsSection() {
    const [busy, setBusy] = useState<string | null>(null);
    const [declining, setDeclining] = useState<string | null>(null);
    const [reasons, setReasons] = useState<Record<string, string>>({});
+   // ?doc=<id> (the Telegram / Discord card's link): that send first, highlighted, even if decided.
+   const focusId = useMemo(() => new URLSearchParams(window.location.search).get('doc'), []);
 
    const load = useCallback(async () => {
       setLoading(true);
@@ -146,7 +148,12 @@ export default function IncomeDocsSection() {
    // Sent back to fix: still listed (newest first, like everything else) so the upload can be seen
    // and approved anyway, but not counted as "to review".
    const resent = docs.filter((d) => !d.decision && d.verdict === 'resend' && d.risk !== 'red');
-   const shown = showReviewed ? docs : docs.filter((d) => !d.decision);
+   const focused = docs.find((d) => d.id === focusId);
+   const shown = [...(focused ? [focused] : []), ...(showReviewed ? docs : docs.filter((d) => !d.decision)).filter((d) => d !== focused)];
+
+   useEffect(() => {
+      if (focused) document.getElementById(`income-doc-${focused.id}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+   }, [focused]);
 
    return (
       <section className="space-y-4">
@@ -189,7 +196,11 @@ export default function IncomeDocsSection() {
                const rows = doc.extracted?.transactions ?? [];
                const currency = doc.extracted?.currency ?? 'PHP';
                return (
-                  <li key={doc.id} className={`rounded-2xl border p-4 ${RISK_STYLE[doc.risk ?? ''] ?? 'border-[#3a2d4f] bg-[#1c0a3a]'}`}>
+                  <li
+                     key={doc.id}
+                     id={`income-doc-${doc.id}`}
+                     className={`scroll-mt-4 rounded-2xl border p-4 ${RISK_STYLE[doc.risk ?? ''] ?? 'border-[#3a2d4f] bg-[#1c0a3a]'} ${doc === focused ? 'ring-4 ring-[#f5c542]' : ''}`}
+                  >
                      <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="min-w-0">
                            <p className="text-lg font-black text-white">

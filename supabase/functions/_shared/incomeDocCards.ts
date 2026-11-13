@@ -1,6 +1,6 @@
 // The buttons under a proof-of-income result that waits for the team (Telegram KYC group):
 //
-//    👀 Check                 opens Admin → Risk → Income docs (files, checks, score, AI note)
+//    👀 Open this document    opens Admin → Income docs on this one send (?doc=<id>: files, checks, score, AI note)
 //    ✅ Approve / ❌ Reject    callback "pi:<a|d>:<document uuid>" → swaps in a confirm row (nothing
 //                             saved yet), "pi:<ya|yd>" saves it, "pi:b" goes back
 //
@@ -32,7 +32,10 @@ export const parseIncomeDocCallback = (data?: string | null): { step: IncomeDocS
    return step ? { step, docId: match[2].toLowerCase() } : null;
 };
 
-const checkRow = () => [{ text: '👀 Check', url: INCOME_DOCS_ADMIN_URL }];
+/** Admin → Income docs opened on this one send (shown first, highlighted). */
+export const incomeDocUrl = (docId: string) => `${INCOME_DOCS_ADMIN_URL}?doc=${docId}`;
+
+const checkRow = (docId: string) => [{ text: '👀 Open this document', url: incomeDocUrl(docId) }];
 
 export const incomeDocDecisionRow = (docId: string) => [
    { text: '✅ Approve', callback_data: buildIncomeDocCallback('approve', docId) },
@@ -49,7 +52,8 @@ export const incomeDocConfirmRows = (docId: string, decision: 'approve' | 'decli
 ];
 
 /** What goes under a result that waits for the team. */
-export const incomeDocKeyboard = (docId: string): TelegramInlineKeyboard => [checkRow(), incomeDocDecisionRow(docId)];
+export const incomeDocKeyboard = (docId: string, decide = true): TelegramInlineKeyboard =>
+   decide ? [checkRow(docId), incomeDocDecisionRow(docId)] : [checkRow(docId)];
 
 type CardDecision = { state: 'decided' | 'already' | 'not_found'; decision?: string | null; by?: string | null };
 
@@ -142,17 +146,17 @@ export const parseIncomeDocDiscordId = (customId?: string | null) =>
    customId?.startsWith('incdoc:') ? parseIncomeDocCallback(`pi:${customId.slice('incdoc:'.length)}`) : null;
 
 const LINK = 5;
-const discordCheck = (): DiscordButton => ({ type: 2, style: LINK, label: '👀 Check', url: INCOME_DOCS_ADMIN_URL });
+const discordCheck = (docId: string): DiscordButton => ({ type: 2, style: LINK, label: '👀 Check', url: incomeDocUrl(docId) });
 
 /** The rows under a Discord card at each step. Pure. */
 export const incomeDocDiscordRows = (docId: string, show: 'decide' | 'approve' | 'decline' | 'done'): DiscordRow[] => {
-   if (show === 'done') return [{ type: 1, components: [discordCheck()] }];
+   if (show === 'done') return [{ type: 1, components: [discordCheck(docId)] }];
    if (show === 'decide') {
       return [
          {
             type: 1,
             components: [
-               discordCheck(),
+               discordCheck(docId),
                { type: 2, style: 3, label: '✅ Approve', custom_id: buildIncomeDocDiscordId('approve', docId) },
                { type: 2, style: 4, label: '❌ Reject', custom_id: buildIncomeDocDiscordId('decline', docId) }
             ]
