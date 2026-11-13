@@ -37,11 +37,8 @@ export function GCashMark({ className = '' }: LogoProps) {
 export function PdaxMark({ className = '' }: LogoProps) {
    return (
       <svg viewBox="0 0 100 100" className={className} xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-         <circle cx="50" cy="50" r="50" fill="#0E1A2B" />
-         <g fill="#19D86F">
-            <path d="M34 30 H49 L37 70 H22 Z" />
-            <path d="M59 30 H74 L62 70 H47 Z" />
-         </g>
+         <rect width="100" height="100" fill="#0A2756" />
+         <path d="M47 22 H76 L64 52 H52 L40 78 H24 L36 50 H36 Z" fill="#6FD65A" />
       </svg>
    );
 }
@@ -94,8 +91,8 @@ export function GCashTile({ className = '' }: LogoProps) {
 }
 export function PdaxTile({ className = '' }: LogoProps) {
    return (
-      <span className={`inline-flex items-center justify-center overflow-hidden rounded-[6px] bg-[#0B1426] ${className}`}>
-         <PdaxMark className="h-[82%] w-[82%]" />
+      <span className={`inline-flex items-center justify-center overflow-hidden rounded-[6px] bg-[#0A2756] ${className}`}>
+         <PdaxMark className="h-full w-full" />
       </span>
    );
 }
