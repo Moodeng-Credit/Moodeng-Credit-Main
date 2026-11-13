@@ -621,7 +621,9 @@ export default function BankPayoutFlow({
             // The preview answers 'succeeded' at once; hold it ~12s so the oven tracker can be seen.
             if (isPreview && next && DONE.has(next) && Date.now() - sentAt < 12_000) return setNow(Date.now());
             if (next) setStatus(next);
-            else setNow(Date.now()); // re-arm the poll on a failed read
+            // Always re-arm: an unchanged status ("processing" again) changes no state, and without this
+            // the poll stopped after one read and the tracker sat on "Converting to pesos" forever.
+            setNow(Date.now());
          },
          isPreview ? 1500 : 8000
       );
