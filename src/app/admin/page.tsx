@@ -66,6 +66,7 @@ import EmailUsersSection from './EmailUsersSection';
 import GrowthAnalyticsSection from './GrowthAnalyticsSection';
 import PostLinksSection from './PostLinksSection';
 import SignupSourcesSection from './SignupSourcesSection';
+import BorrowerProfileSection from '@/app/admin/BorrowerProfileSection';
 import LoanExplorerSection from './LoanExplorerSection';
 import LoanExtensionSection from './LoanExtensionSection';
 import MuleRiskSection from './MuleRiskSection';
@@ -1686,6 +1687,18 @@ function AdminPanel() {
                   </p>
                </div>
                <SignupSourcesSection />
+            </section>
+         ) : null}
+
+         {activeTab === 'borrower-profile' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Borrower profile</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Who our users are — age, gender, where they live, income — and which groups repay best, to decide who to target next.
+                  </p>
+               </div>
+               <BorrowerProfileSection />
             </section>
          ) : null}
 

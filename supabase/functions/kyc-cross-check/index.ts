@@ -59,6 +59,11 @@ type Identity = {
    longitude: number | null;
    geo_precision: string | null;
    nik_district: string | null;
+   gender: string | null;
+   marital_status: string | null;
+   region: string | null;
+   province: string | null;
+   city: string | null;
    warnings: string[];
 };
 
@@ -143,6 +148,15 @@ const collectWarnings = (decision: any): string[] => {
    return [...codes];
 };
 
+// Google's address parts from Didit's address lookup: level 1 = region ("Cagayan Valley"),
+// level 2 = province ("Nueva Vizcaya"), locality = city. Feeds Admin → Borrower profile.
+// deno-lint-ignore no-explicit-any
+const addressPart = (parsed: any, type: string): string | null => {
+   // deno-lint-ignore no-explicit-any
+   const part = (parsed?.raw_results?.address_components ?? []).find((c: any) => Array.isArray(c?.types) && c.types.includes(type));
+   return typeof part?.long_name === 'string' && part.long_name.trim() ? part.long_name.trim() : null;
+};
+
 // deno-lint-ignore no-explicit-any
 const toIdentity = (decision: any, userIds: Set<string>): Identity => {
    const iv = decision?.id_verifications?.[0] ?? null;
@@ -170,6 +184,11 @@ const toIdentity = (decision: any, userIds: Set<string>): Identity => {
       longitude: typeof location?.lng === 'number' ? location.lng : null,
       geo_precision: parsed?.raw_results?.geometry?.location_type ?? null,
       nik_district: iv?.issuing_state === 'IDN' && docNumber && /^\d{16}$/.test(docNumber) ? docNumber.slice(0, 6) : null,
+      gender: typeof iv?.gender === 'string' && /^[MF]/i.test(iv.gender) ? iv.gender.slice(0, 1).toUpperCase() : null,
+      marital_status: typeof iv?.marital_status === 'string' && iv.marital_status.trim() ? iv.marital_status.trim() : null,
+      region: addressPart(parsed, 'administrative_area_level_1') ?? (typeof parsed?.region === 'string' ? parsed.region : null),
+      province: addressPart(parsed, 'administrative_area_level_2'),
+      city: addressPart(parsed, 'locality'),
       warnings: collectWarnings(decision)
    };
 };
