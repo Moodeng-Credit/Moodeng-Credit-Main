@@ -59,12 +59,20 @@ export const aboutLine = (p: PersonCard | null | undefined) => {
    return bits.length ? bits.join(' · ') : null;
 };
 
-const incomeLabel: Record<string, string> = {
-   under_200: 'Under $200 / month',
-   '200_400': '$200–400 / month',
-   '400_700': '$400–700 / month',
-   '700_plus': '$700+ / month'
+/** Application money bands ("200_400", "under_200", "700_plus") as "$200–400 / month". */
+const bandLabel = (band: string) => {
+   const range = band.match(/^(\d+)_(\d+)$/);
+   if (range) return `$${range[1]}–${range[2]} / month`;
+   const under = band.match(/^under_(\d+)$/);
+   if (under) return `Under $${under[1]} / month`;
+   const plus = band.match(/^(\d+)_plus$/);
+   if (plus) return `$${plus[1]}+ / month`;
+   return band;
 };
+
+/** Phone sign-ups get a made-up phone_…@moodeng.app address; don't show it as if it were theirs. */
+const isRealEmail = (email: string | null) =>
+   Boolean(email) && !email!.endsWith('.local') && !/^phone_[0-9a-f]+@moodeng\.app$/i.test(email!);
 const workLabel: Record<string, string> = { 'full-time': 'Full-time', 'part-time': 'Part-time', freelance: 'Freelance', none: 'No job' };
 const paydayLabel = (a: NonNullable<PersonCard['application']>) => {
    const base = { 'mid-month': 'Mid-month', 'end-of-month': 'End of month', irregular: 'Irregular' }[a.paydayType ?? ''] ?? a.paydayType;
@@ -201,7 +209,7 @@ export default function WhatsAppPersonCard({
                   <div className="mt-2 divide-y divide-[#2a1453]">
                      {person.kycName ? <Row label="ID name">{person.kycName}</Row> : null}
                      {person.facebookName ? <Row label="Facebook">{person.facebookName}</Row> : null}
-                     {person.email && !person.email.endsWith('.local') ? <Row label="Email">{person.email}</Row> : null}
+                     {isRealEmail(person.email) ? <Row label="Email">{person.email}</Row> : null}
                      {person.market ? <Row label="Country">{person.market.toUpperCase()}</Row> : null}
                      <Row label="Loan access">{accessLabel[person.loanAccess ?? 'none'] ?? person.loanAccess}</Row>
                      {person.riskBand ? <Row label="Risk">{person.riskBand}</Row> : null}
@@ -260,10 +268,8 @@ export default function WhatsAppPersonCard({
                               <Row label="Job (call)">{call.role}</Row>
                            ) : null}
                            {app?.incomeType ? <Row label="Work">{workLabel[app.incomeType] ?? app.incomeType}</Row> : null}
-                           {app?.monthlyIncome ? <Row label="Income">{incomeLabel[app.monthlyIncome] ?? app.monthlyIncome}</Row> : null}
-                           {app?.monthlyExpenses ? (
-                              <Row label="Expenses">{incomeLabel[app.monthlyExpenses] ?? app.monthlyExpenses}</Row>
-                           ) : null}
+                           {app?.monthlyIncome ? <Row label="Income">{bandLabel(app.monthlyIncome)}</Row> : null}
+                           {app?.monthlyExpenses ? <Row label="Expenses">{bandLabel(app.monthlyExpenses)}</Row> : null}
                            {payday ? <Row label="Payday">{payday}</Row> : null}
                            {app?.otherIncome ? <Row label="Other income">{app.otherIncome}</Row> : null}
                            {call?.loanUse ? <Row label="Loan for">{call.loanUse}</Row> : null}
