@@ -55,7 +55,7 @@ export type ExtractedTransaction = {
 export type Extracted = {
    readable: boolean;
    unreadable_reason: Nullable<string>;
-   doc_type: 'gcash_history' | 'maya_history' | 'bank_statement' | 'payslip' | 'remittance' | 'business_permit' | 'other';
+   doc_type: 'gcash_history' | 'maya_history' | 'bank_statement' | 'payslip' | 'remittance' | 'business_permit' | 'gig_earnings' | 'seller_payout' | 'freelance_earnings' | 'sss_contributions' | 'other';
    holder_name: Nullable<string>;
    institution: Nullable<string>;
    currency: Nullable<string>;
@@ -107,7 +107,7 @@ const EXAMPLE_JSON = {
    visual_anomalies: []
 };
 
-const SYSTEM = `You read proof-of-income documents for a small lender in the Philippines, Indonesia and Thailand: GCash, Maya, DANA, OVO or PromptPay/bank-app transaction history (PDF export or app screenshots), bank statements (often bilingual, e.g. Thai + English — read the English labels and the numbers), payslips, remittance receipts, business permits. Several files from one person are usually screenshots of the SAME history: read them as one document, merge the rows, and drop rows that appear twice because screenshots overlap.
+const SYSTEM = `You read proof-of-income documents for a small lender in the Philippines, Indonesia and Thailand: GCash, Maya, DANA, OVO or PromptPay/bank-app transaction history (PDF export or app screenshots), bank statements (often bilingual, e.g. Thai + English — read the English labels and the numbers), payslips, remittance receipts, business permits, and proof of the work itself: a rider's or driver's earnings screen (Grab, Lalamove, foodpanda, Angkas, Gojek), an online shop's income or payout screen (Shopee, Lazada, TikTok Shop, Tokopedia), a freelancer's earnings or payout history (Upwork, OnlineJobs, PayPal, Wise, Payoneer), or an SSS contributions record (My.SSS). Several files from one person are usually screenshots of the SAME history: read them as one document, merge the rows, and drop rows that appear twice because screenshots overlap.
 
 Copy what the document says. Never guess or fill in a number that is not printed.
 - transactions: every row, oldest first. amount is positive for money in, negative for money out. balance is the running balance printed on that row, or null. date as YYYY-MM-DD.
@@ -116,7 +116,10 @@ Copy what the document says. Never guess or fill in a number that is not printed
 - period_start / period_end: the statement or pay period as printed, or the first and last transaction dates, YYYY-MM-DD.
 - visual_anomalies: only things you can actually see that suggest editing: mixed fonts or sizes within one column, misaligned digits, numbers pasted over a different background, blurred amounts next to sharp text, totals that do not match the rows, a layout that does not match the institution's real format. Empty if none.
 - If you cannot read it (blank, not a financial document, password-protected, too blurry), set readable false, say why in unreadable_reason, and leave the lists empty.
-- doc_type is one of: gcash_history, maya_history, bank_statement, payslip, remittance, business_permit, other. payslip is null unless it is a payslip, else {"employer", "gross_pay", "total_deductions", "net_pay"} (numbers or null).
+- doc_type is one of: gcash_history, maya_history, bank_statement, payslip, remittance, business_permit, gig_earnings (rider/driver app earnings), seller_payout (online shop income), freelance_earnings (freelance platform or PayPal/Wise/Payoneer payouts), sss_contributions, other. Use other only when it is none of these.
+- gig_earnings, seller_payout, freelance_earnings: each day, week or payout shown is one transaction with a positive amount (what they earned or were paid), dated at the end of that day or week; balance is null. institution is the app.
+- sss_contributions: put the employer and each month's contribution in fields, leave transactions empty (a contribution is not money in), and set period_start / period_end to the first and last month shown.
+- payslip is null unless it is a payslip, else {"employer", "gross_pay", "total_deductions", "net_pay"} (numbers or null).
 
 Reply with ONLY a json object in exactly this shape (values here are just an example):
 ${JSON.stringify(EXAMPLE_JSON)}`;
@@ -441,7 +444,7 @@ export const runChecks = (doc: Extracted, metrics: Metrics, ctx: CheckContext): 
       }
    }
    const monthsNeeded = ctx.step ? ctx.step.months : 2;
-   if (!tx.length && !p?.net_pay && doc.doc_type !== 'business_permit') {
+   if (!tx.length && !p?.net_pay && doc.doc_type !== 'business_permit' && doc.doc_type !== 'sss_contributions') {
       flags.push({ code: 'no_income_rows', severity: 'orange', detail: 'No transactions or pay figures could be read.' });
    } else if (tx.length && monthsNeeded > 0 && metrics.months_covered < monthsNeeded - 0.25) {
       flags.push({
@@ -566,7 +569,7 @@ export const RESEND_TEXT: Record<ResendReason, string> = {
    scanned_pdf: 'We couldn’t read your PDF. Please send screenshots of your history instead.',
    unsupported_file: 'We couldn’t open that photo type. Please send a screenshot or a JPG/PNG photo instead.',
    unreadable: 'We couldn’t read it clearly. Please retake it in good light with all 4 corners showing and the numbers sharp.',
-   not_financial: 'This doesn’t look like a GCash or Maya history, bank statement or payslip. Please send one of those.',
+   not_financial: 'This doesn’t look like proof of income. Please send one of the examples shown: a payslip, your earnings screen, or your GCash or Maya history.',
    old_document: 'This is more than 2 months old. Please send your latest one.',
    short_history: 'This doesn’t show enough history for the amount you’re asking. Please send your last 2–3 months.',
    no_income: 'We couldn’t see money coming in. Please send a history or statement that shows the money you receive.'
@@ -682,7 +685,7 @@ const deepseekJson = async <T>(
 const arr = <T>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
 const numOrNull = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : typeof v === 'string' && v.trim() && Number.isFinite(Number(v.replace(/,/g, ''))) ? Number(v.replace(/,/g, '')) : null);
 const strOrNull = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null);
-const DOC_TYPES = new Set(['gcash_history', 'maya_history', 'bank_statement', 'payslip', 'remittance', 'business_permit', 'other']);
+const DOC_TYPES = new Set(['gcash_history', 'maya_history', 'bank_statement', 'payslip', 'remittance', 'business_permit', 'gig_earnings', 'seller_payout', 'freelance_earnings', 'sss_contributions', 'other']);
 
 /** Make whatever came back match Extracted exactly (JSON mode has no schema). Pure. */
 export const normalizeExtracted = (raw: Record<string, unknown>): Extracted => {

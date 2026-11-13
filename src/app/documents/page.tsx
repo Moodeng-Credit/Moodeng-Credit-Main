@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { Check, ChevronLeft, FileText, ImagePlus, Loader2, Lock, MessageCircle, X } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, FileText, ImagePlus, Loader2, Lock, MessageCircle, X } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useIncomeDocFacts } from '@/hooks/useIncomeDocRequirement';
+
+import { DocExample } from '@/app/documents/DocExample';
+import { askFor, EARN_TYPES, type EarnId, kindsFor, sendNote } from '@/app/documents/incomeDocKinds';
 
 import {
    ACCEPT,
@@ -15,12 +18,12 @@ import {
    uploadIncomeDocuments
 } from '@/app/documents/incomeDocUpload';
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
-import { stepAsk, stepFor } from '@/lib/incomeDocSteps';
+import { stepFor } from '@/lib/incomeDocSteps';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, PrimaryButton } from '@/views/dashboard/components/connectKit';
 
-// moodeng.app/documents — a borrower sends proof of income (GCash/Maya history, bank statement,
-// payslip) and follows it here. Cards, in order:
-//   pick       add photos/PDFs (up to 6) + what it is
+// moodeng.app/documents — a borrower sends proof of income and follows it here. Cards, in order:
+//   pick       1. "How do you earn?"  2. the documents that fit (incomeDocKinds.ts)
+//              3. a drawn example of a good one, then add photos/PDFs (up to 6)
 //   sending    each file ticks off as it uploads
 //   checking   Sent ✓ → Reading → Checking, while the AI reads it (get_my_income_document = checking)
 //   resend     "Let's try that again" with the exact fix — the automatic checks found something they can
@@ -43,7 +46,7 @@ const RESEND_FIX: Record<string, string> = {
    scanned_pdf: 'We couldn’t read your PDF. Please send screenshots of your history instead.',
    unsupported_file: 'We couldn’t open that photo type. Please send a screenshot or a JPG/PNG photo instead.',
    unreadable: 'We couldn’t read it clearly. Please retake it in good light with all 4 corners showing and the numbers sharp.',
-   not_financial: 'This doesn’t look like a GCash or Maya history, bank statement or payslip. Please send one of those.',
+   not_financial: 'This doesn’t look like proof of income. Please send one of the examples shown: a payslip, your earnings screen, or your GCash or Maya history.',
    old_document: 'This is more than 2 months old. Please send your latest one.',
    short_history: 'This shows less than 2 months. Please send your last 2–3 months of history.',
    no_income: 'We couldn’t see money coming in. Please send a history or statement that shows the money you receive.'
@@ -86,11 +89,16 @@ export default function DocumentsPage({
       fileNames?: string[];
       sentAt?: number;
       fileCount?: number;
+      earn?: EarnId;
+      kind?: string;
    };
 } = {}) {
    const [phase, setPhase] = useState<DocumentsPhase>(preview?.phase ?? 'loading');
    const [picked, setPicked] = useState<Picked[]>([]);
    const [note, setNote] = useState('');
+   // The pick card's own steps: how they earn, then which document.
+   const [earnId, setEarnId] = useState<EarnId | null>(preview?.earn ?? null);
+   const [kindId, setKindId] = useState<string | null>(preview?.kind ?? null);
    const [sentCount, setSentCount] = useState(0);
    const [checkingStep, setCheckingStep] = useState<1 | 2 | 3>(preview?.checkingStep ?? 1);
    const [reason, setReason] = useState<string | null>(preview?.reason ?? null);
@@ -109,6 +117,16 @@ export default function DocumentsPage({
    const requestedRepay = Number(searchParams.get('repay')) || null;
    const { steps } = useIncomeDocFacts(requestedAmount != null);
    const step = requestedAmount != null ? stepFor(requestedAmount, steps) : null;
+   const monthsNeeded = step?.months ?? 0;
+   const earn = EARN_TYPES.find((e) => e.id === earnId) ?? null;
+   const kinds = earn ? kindsFor(earn, monthsNeeded) : [];
+   // Only one document fits: skip the choice.
+   const kind = kinds.find((k) => k.id === kindId) ?? (kinds.length === 1 ? kinds[0] : null);
+   const backFromKind = () => {
+      setPicked([]);
+      setKindId(null);
+      if (kinds.length <= 1) setEarnId(null);
+   };
 
    const showStatus = useCallback((status: Status) => {
       if (!status) return setPhase('pick');
@@ -171,7 +189,7 @@ export default function DocumentsPage({
       setError(null);
       const result = await uploadIncomeDocuments(
          good.map((p) => p.file),
-         { note, amount: requestedAmount, repay: requestedRepay, onFileDone: () => setSentCount((n) => n + 1) }
+         { note: earn && kind ? sendNote(earn, kind, note) : note, amount: requestedAmount, repay: requestedRepay, onFileDone: () => setSentCount((n) => n + 1) }
       );
       if (!result.ok) {
          setError(
@@ -194,6 +212,8 @@ export default function DocumentsPage({
 
    const startOver = () => {
       setPicked([]);
+      setEarnId(null);
+      setKindId(null);
       setError(null);
       setPhase('pick');
    };
@@ -226,24 +246,35 @@ export default function DocumentsPage({
                <div className="mt-4 h-[220px] animate-pulse rounded-[16px] bg-[#ece9f1] dark:bg-dv2-card" aria-busy="true" />
             ) : null}
 
-            {phase === 'pick' ? (
-               <div className="flex flex-col gap-4 rounded-[20px] bg-white px-5 py-5 dark:bg-dv2-card">
+            {phase === 'pick' && !earn ? (
+               <div className="flex flex-col gap-3 rounded-[20px] bg-white px-5 py-5 dark:bg-dv2-card">
                   <ConnectHero
                      image={CONNECT_HIPPOS.cashout}
-                     title="Send your proof of income"
+                     title="How do you earn?"
                      subtitle={
-                        step
-                           ? `For a $${requestedAmount} loan, please send ${stepAsk(step)}.`
-                           : 'It helps you borrow more. Any one of these works:'
+                        requestedAmount && step ? `A $${requestedAmount} loan needs proof of income. Pick one first.` : 'Pick one. We’ll show you what to send.'
                      }
                   />
-                  {step ? null : (
-                     <ul className="flex flex-col gap-1.5 text-[15px] leading-[20px] text-[#594d65] dark:text-[#d9cfe8]">
-                        <li>📱 GCash or Maya history, last 2–3 months (screenshots are fine)</li>
-                        <li>🏦 Bank statement</li>
-                        <li>🧾 Latest payslip</li>
-                     </ul>
-                  )}
+                  {EARN_TYPES.map((e) => (
+                     <ChoiceRow key={e.id} emoji={e.emoji} title={e.label} onClick={() => setEarnId(e.id)} />
+                  ))}
+               </div>
+            ) : null}
+
+            {phase === 'pick' && earn && !kind ? (
+               <div className="flex flex-col gap-3 rounded-[20px] bg-white px-5 py-5 dark:bg-dv2-card">
+                  <ConnectHero image={CONNECT_HIPPOS.cashout} title="What can you send?" subtitle="Any one of these works." />
+                  {kinds.map((k) => (
+                     <ChoiceRow key={k.id} emoji={k.emoji} title={k.title} hint={k.hint} onClick={() => setKindId(k.id)} />
+                  ))}
+                  <GhostButton onClick={() => setEarnId(null)}>Back</GhostButton>
+               </div>
+            ) : null}
+
+            {phase === 'pick' && earn && kind ? (
+               <div className="flex flex-col gap-4 rounded-[20px] bg-white px-5 py-5 dark:bg-dv2-card">
+                  <ConnectHero image={CONNECT_HIPPOS.cashout} title={kind.title} subtitle={askFor(kind, monthsNeeded)} />
+                  <DocExample spec={kind.example} mustShow={kind.mustShow} />
 
                   {picked.length ? (
                      <ul className="grid grid-cols-3 gap-2">
@@ -294,12 +325,12 @@ export default function DocumentsPage({
                   ) : null}
 
                   <label className="flex flex-col gap-1.5 text-[14px] font-semibold text-[#594d65] dark:text-[#d9cfe8]">
-                     What is it? (optional)
+                     Anything to add? (optional)
                      <input
                         className="min-h-[48px] rounded-[12px] border-2 border-[#e2dcee] bg-white px-3 text-[16px] font-normal text-[#3b2f4a] dark:border-[#3a2d4f] dark:bg-[#1b1526] dark:text-[#f5f0ff]"
                         maxLength={300}
                         onChange={(e) => setNote(e.target.value)}
-                        placeholder="e.g. my GCash history for Sept–Oct"
+                        placeholder="e.g. I get paid on the 15th and 30th"
                         value={note}
                      />
                   </label>
@@ -314,6 +345,7 @@ export default function DocumentsPage({
                   <PrimaryButton disabled={!good.length} onClick={() => void send()}>
                      {good.length ? `Send ${good.length} ${good.length === 1 ? 'file' : 'files'}` : 'Add a document first'}
                   </PrimaryButton>
+                  <GhostButton onClick={backFromKind}>Send something else</GhostButton>
                </div>
             ) : null}
 
@@ -438,6 +470,35 @@ export default function DocumentsPage({
             ) : null}
          </div>
       </div>
+   );
+}
+
+/** Dev only (/documents-preview?earn=rider&kind=gig_earnings): the pick cards without signing in. */
+export function DocumentsPreview() {
+   const [params] = useSearchParams();
+   return (
+      <DocumentsPage
+         preview={{ phase: 'pick', earn: (params.get('earn') as EarnId | null) ?? undefined, kind: params.get('kind') ?? undefined }}
+      />
+   );
+}
+
+function ChoiceRow({ emoji, title, hint, onClick }: { emoji: string; title: string; hint?: string; onClick: () => void }) {
+   return (
+      <button
+         className="flex min-h-[60px] w-full items-center gap-3 rounded-[16px] border-2 border-b-4 border-[#e2dcee] bg-white px-4 py-2.5 text-left transition duration-100 ease-out active:translate-y-[2px] active:border-b-2 dark:border-[#3a2d4f] dark:bg-[#1b1526]"
+         onClick={onClick}
+         type="button"
+      >
+         <span aria-hidden="true" className="w-8 shrink-0 text-center text-[24px] leading-none">
+            {emoji}
+         </span>
+         <span className="flex min-w-0 flex-1 flex-col">
+            <span className="text-[17px] font-bold leading-[22px] text-[#3b2f4a] dark:text-[#f5f0ff]">{title}</span>
+            {hint ? <span className="text-[14px] leading-[18px] text-[#7b6b8c] dark:text-[#b9abcc]">{hint}</span> : null}
+         </span>
+         <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-[#a49cb5]" strokeWidth={2.5} />
+      </button>
    );
 }
 
