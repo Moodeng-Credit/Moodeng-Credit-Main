@@ -5,6 +5,7 @@ import {
    ArrowRight,
    ArrowUpRight,
    Check,
+   ChevronDown,
    ChevronLeft,
    ChevronRight,
    ClipboardCheck,
@@ -777,6 +778,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
    // The one exception only ADDS rails: a European IP also gets Kraken + Coinbase on top (cash
    // out to EUR over SEPA), since none of the PH apps work for them. The PH rows stay below.
    const [showCoinsPaused, setShowCoinsPaused] = useState(false);
+   const [showMore, setShowMore] = useState(false);
    const selectProvider = (id: Provider) => {
       if (id === 'coinsph' && COINS_PH_SUSPENDED) {
          setShowCoinsPaused(true);
@@ -961,15 +963,26 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                            line2="Bank, GCash or Maya · ~30 min"
                         />
                      )}
-                     <PickerRow
-                        onSelect={selectProvider}
-                        id="binance"
-                        icon={<BinanceAppIcon className="w-[46px] h-[46px]" />}
-                        name="Binance"
-                        line1="Sell for local currency via P2P marketplace"
-                        line2="GCash, Maya or Bank · 30 min–hours"
-                     />
-                     {COINS_PH_SUSPENDED && coinsPhRow}
+                     {/* Binance P2P is the hardest route, so it waits behind "More options". A paused Coins.ph
+                         isn't listed at all: a greyed-out row nobody can use only adds noise. */}
+                     {showMore ? (
+                        <PickerRow
+                           onSelect={selectProvider}
+                           id="binance"
+                           icon={<BinanceAppIcon className="w-[46px] h-[46px]" />}
+                           name="Binance"
+                           line1="Sell for local currency via P2P marketplace"
+                           line2="GCash, Maya or Bank · 30 min–hours"
+                        />
+                     ) : (
+                        <button
+                           type="button"
+                           onClick={() => setShowMore(true)}
+                           className="flex min-h-[44px] w-full items-center justify-center gap-[4px] text-[14px] font-semibold text-[var(--text-muted)]"
+                        >
+                           More options <ChevronDown className="w-[16px] h-[16px]" strokeWidth={2.4} />
+                        </button>
+                     )}
                   </>
                )}
                {showCoinsPaused && (
