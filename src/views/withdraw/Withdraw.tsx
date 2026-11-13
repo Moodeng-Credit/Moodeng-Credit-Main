@@ -54,6 +54,7 @@ import { DoneRow, GoldButton, Card as GoldCard, StepHead, WaitRow } from '@/view
 import WaltCashoutFlow from '@/views/indonesia/walt/WaltCashoutFlow';
 import { WaltIcon } from '@/views/indonesia/walt/waltUi';
 import BankPayoutFlow from '@/views/withdraw/BankPayoutFlow';
+import MayaCashoutFlow, { MayaIcon, useMayaEnabled } from '@/views/withdraw/MayaCashoutFlow';
 import { useBankPayoutStatus } from '@/views/withdraw/useBankPayoutAvailable';
 
 import './withdraw-theme.css';
@@ -69,7 +70,8 @@ function track(event: string, props?: Record<string, unknown>) {
 type Screen = 'celebrate' | 'withdraw';
 // 'bank' = straight to GCash / any bank through Stableyard (testers only for now, see BankPayoutFlow).
 // 'walt' = Indonesia track: to their saved Walt (Telegram wallet) address through Relay (WaltCashoutFlow).
-type Provider = 'binance' | 'coinsph' | 'gcash' | 'pdax' | 'bank' | 'qr' | 'kraken' | 'coinbase' | 'walt';
+// 'maya' = Philippines: to their saved Maya address (USDC on Solana) through Relay (MayaCashoutFlow).
+type Provider = 'binance' | 'coinsph' | 'gcash' | 'pdax' | 'bank' | 'qr' | 'kraken' | 'coinbase' | 'walt' | 'maya';
 
 // Indonesia-track borrowers (users.market = 'ID'). Preview: /withdraw-preview?market=id.
 function useIsIndo(isPreview: boolean) {
@@ -738,9 +740,7 @@ function QrPesoCard({ onSelect, spendable, recommended }: { onSelect: () => void
                <span className="flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-[11px] bg-[var(--surface-2,#f1eeff)]">
                   <QrCode className="w-[26px] h-[26px] text-[#6b55f7] dark:text-[#a98bff]" strokeWidth={2.2} />
                </span>
-               <p className="text-[14px] leading-[18px] text-[var(--text-muted,#45556c)]">
-                  Upload the QR from your bank app. No typing.
-               </p>
+               <p className="text-[14px] leading-[18px] text-[var(--text-muted,#45556c)]">Upload the QR from your bank app. No typing.</p>
             </div>
             {pesos != null ? (
                <p className="mt-[10px] text-[14px] text-[var(--text-muted,#45556c)]">
@@ -768,6 +768,8 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
    const qrCard = Boolean(phPayout && qrCashout) && !isIndo;
    const bankPayout = bankCard || qrCard;
    const inEurope = useInEurope(isPreview);
+   // Send to Maya (USDC on Solana through Relay): only once the server switch opens it for this account.
+   const mayaOn = useMayaEnabled(isPreview) && !isIndo;
    // No region/IP check here (deliberately removed): `useRegion()` is an IP-based guess, not
    // the user's actual location or nationality — a Filipino traveling or living abroad still
    // has working Coins.ph/GCash/PDAX accounts, and a client-side IP lookup routinely misreads
@@ -930,6 +932,16 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                         line2="Send on Base · 30 min–hours"
                      />
                   </>
+               )}
+               {mayaOn && (
+                  <PickerRow
+                     onSelect={selectProvider}
+                     id="maya"
+                     icon={<MayaIcon />}
+                     name="Maya"
+                     line1="Send USDC to Maya, sell for pesos there"
+                     line2="Fee ≈ $0.03 · a few seconds"
+                  />
                )}
                {!isIndo && (
                   <>
@@ -1451,7 +1463,11 @@ function SendProgressOverlay({
                      <li key={label} className="flex items-center gap-[10px] text-[15px]">
                         <span
                            className={`w-[24px] h-[24px] rounded-full flex items-center justify-center shrink-0 ${
-                              done ? 'bg-[#2f9e44] text-white' : active ? 'border-2 border-[#6b55f7]' : 'border-2 border-[var(--border-input)]'
+                              done
+                                 ? 'bg-[#2f9e44] text-white'
+                                 : active
+                                   ? 'border-2 border-[#6b55f7]'
+                                   : 'border-2 border-[var(--border-input)]'
                            }`}
                         >
                            {done ? (
@@ -2542,8 +2558,15 @@ const PROVIDER_TITLES: Record<Provider, string> = {
    qr: 'Cash out with your QR',
    kraken: 'Cash out with Kraken',
    coinbase: 'Cash out with Coinbase',
-   walt: 'Kirim ke Walt'
+   walt: 'Kirim ke Walt',
+   maya: 'Send to Maya'
 };
+
+/* ─── Philippines: to Maya (USDC on Solana) through Relay ─────────── */
+function MayaFlow({ onDone }: { onDone: () => void }) {
+   const { isPreview, spendable, walletAddress, send } = useWithdrawData();
+   return <MayaCashoutFlow isPreview={isPreview} spendable={spendable} walletAddress={walletAddress} send={send} onDone={onDone} />;
+}
 
 /* ─── Indonesia track: to Walt through Relay ─────────────────────── */
 // Its own done screen, so no "on its way to your exchange" toast.
@@ -2591,6 +2614,8 @@ function WithdrawScreen({
             <div className="px-[16px] pt-[12px]">
                {provider === 'walt' ? (
                   <WaltFlow onDone={onDone} />
+               ) : provider === 'maya' ? (
+                  <MayaFlow onDone={onDone} />
                ) : provider === 'bank' ? (
                   <DirectBankFlow onDone={onDone} />
                ) : provider === 'qr' ? (
@@ -2627,11 +2652,16 @@ function WithdrawFlow() {
    const directWalt = new URLSearchParams(location.search).get('to') === 'walt';
    // /withdraw?to=qr opens the cash-out to your own bank's QR (Back shows the list).
    const directQr = new URLSearchParams(location.search).get('to') === 'qr';
+   // /withdraw?to=maya opens Send to Maya (the face-check return lands here too).
+   const directMaya = new URLSearchParams(location.search).get('to') === 'maya';
    // Opened from /money (Cash out): Back and Done return there.
    const fromMoney = directBank || new URLSearchParams(location.search).get('from') === 'money';
-   const [screen, setScreen] = useState<Screen>(directBank || directWalt || directQr ? 'withdraw' : 'celebrate');
-   const [withdrawVisible, setWithdrawVisible] = useState(directBank || directWalt || directQr);
-   const [provider, setProvider] = useState<Provider>(directBank ? 'bank' : directWalt ? 'walt' : directQr ? 'qr' : 'pdax');
+   const directOpen = directBank || directWalt || directQr || directMaya;
+   const [screen, setScreen] = useState<Screen>(directOpen ? 'withdraw' : 'celebrate');
+   const [withdrawVisible, setWithdrawVisible] = useState(directOpen);
+   const [provider, setProvider] = useState<Provider>(
+      directBank ? 'bank' : directWalt ? 'walt' : directQr ? 'qr' : directMaya ? 'maya' : 'pdax'
+   );
 
    function goWithdraw(p: Provider) {
       track('withdraw_exchange_selected', { exchange: p });
@@ -2806,7 +2836,10 @@ export default function Withdraw() {
                });
                if (gate.required) {
                   navigate('/withdraw/face-check', {
-                     state: { url: gate.url, returnTo: exchange === 'Walt' ? '/withdraw?to=walt' : '/withdraw' }
+                     state: {
+                        url: gate.url,
+                        returnTo: exchange === 'Walt' ? '/withdraw?to=walt' : exchange === 'Maya' ? '/withdraw?to=maya' : '/withdraw'
+                     }
                   });
                   return null;
                }
