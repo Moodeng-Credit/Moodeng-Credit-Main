@@ -342,8 +342,8 @@ export const indonesianCoverageB: Record<string, string> = {
       'Buat akun gratis untuk meminjam atau memberi pinjaman. Pilih peranmu setelah mendaftar, dan kami akan memandumu untuk langkah selanjutnya.',
    'This is the marketplace. Once a request is live, moo-lenders review the amount, repayment, and borrower before funding.':
       'Inilah pasarnya. Setelah permintaan tayang, moo-lender menilai jumlah, pembayaran kembali, dan peminjamnya sebelum mendanai.',
-   'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it for a higher starting limit.':
-      'Saat kamu siap meminjam, kartu ini membuka alur permintaan pinjaman. Punya kode dari teman? Masukkan untuk limit awal yang lebih tinggi.',
+   'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it so we know who invited you.':
+      'Saat kamu siap meminjam, kartu ini membuka alur permintaan pinjaman. Punya kode dari teman? Masukkan agar kami tahu siapa yang mengundangmu.',
    'Verify first': 'Verifikasi dulu',
    'Borrowers complete a one-time identity check before requesting a loan. It helps moo-lenders know they are funding a real person.':
       'Peminjam menjalani pemeriksaan identitas satu kali sebelum mengajukan pinjaman. Ini membantu moo-lender tahu bahwa mereka mendanai orang sungguhan.',
@@ -746,7 +746,7 @@ export const indonesianCoverageB: Record<string, string> = {
       'Sebagian infomu terlalu singkat untuk dipahami moo-lender — ketuk lagi jika tetap ingin lanjut.',
    "Couldn't save — please try again.": 'Gagal menyimpan — silakan coba lagi.',
    'Swipe right to close loan form': 'Geser ke kanan untuk menutup formulir pinjaman',
-   'Referral Boost': 'Bonus referal',
+   'Invited by someone?': 'Diundang seseorang?',
    'Add your Facebook': 'Tambahkan Facebook kamu',
    'How can we reach you': 'Bagaimana kami bisa menghubungimu',
    "Let's connect": 'Yuk, terhubung',
@@ -758,8 +758,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'Close loan form': 'Tutup formulir pinjaman',
    Optional: 'Opsional',
    'Have a referral code?': 'Punya kode referal?',
-   'Add it now for a higher starting limit.': 'Masukkan sekarang untuk limit awal yang lebih tinggi.',
-   '+$5 Credit Limit Boost': 'Bonus limit kredit +$5',
+   'Add it so we know who invited you.': 'Masukkan agar kami tahu siapa yang mengundangmu.',
    'Enter code': 'Masukkan kode',
    Code: 'Kode',
    'applied: +$': 'diterapkan: +$',
@@ -1205,11 +1204,11 @@ export const indonesianCoverageB: Record<string, string> = {
    'Every repayment affects your Pandesal points, and small loans repaid cleanly are worth more than large loans repaid sloppily. On-time, full repayment earns the maximum 10 points. Partial repayments earn proportionally — 75% = 7, 50% = 5, 25% = 3. Any payment after the deadline earns 0 for that transaction. A default leaves a permanent mark on your public profile, visible to all future moo-lenders.':
       'Setiap pembayaran kembali memengaruhi poin Pandesal-mu, dan pinjaman kecil yang dibayar dengan rapi lebih berharga daripada pinjaman besar yang dibayar sembarangan. Pembayaran lunas tepat waktu menghasilkan poin maksimum, 10. Pembayaran sebagian menghasilkan poin secara proporsional — 75% = 7, 50% = 5, 25% = 3. Pembayaran apa pun setelah tenggat menghasilkan 0 poin untuk transaksi itu. Gagal bayar meninggalkan tanda permanen di profil publikmu, yang terlihat oleh semua calon moo-lender di masa depan.',
    'Where do I put a referral code?': 'Di mana aku memasukkan kode referal?',
-   '+$5 to your starting limit': '+$5 untuk limit awalmu',
+   'Tell us who invited you': 'Beri tahu siapa yang mengundangmu',
    'Where do I enter a referral code?': 'Di mana aku memasukkan kode referal?',
    'From the Request Board, tap to apply for a loan.': 'Dari Papan Permintaan, ketuk untuk mengajukan pinjaman.',
-   'A valid referral code adds $5 to your starting credit limit — so a new borrower who normally starts at $15 would start at $20.':
-      'Kode referal yang valid menambah $5 ke limit kredit awalmu — jadi peminjam baru yang biasanya mulai di $15 akan mulai di $20.',
+   'A referral code just tells us who invited you. It does not change your credit limit.':
+      'Kode referal hanya memberi tahu kami siapa yang mengundangmu. Kode ini tidak mengubah limit kreditmu.',
    'It says "write it in English"': 'Ada tulisan "tulis dalam bahasa Inggris"',
    'Why, and how to fix it': 'Kenapa, dan cara memperbaikinya',
    'My loan reason says to write it in English — what should I do?':

@@ -309,8 +309,8 @@ export const vietnameseCoverageE: Record<string, string> = {
       'Để lên hạng, hãy vay một Credit-Building Loan — khoản vay bằng toàn bộ hạn mức hiện tại — và trả đầy đủ, đúng hạn.',
    'Credit levels run $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
       'Các Hạng tín dụng lần lượt là $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
-   'A referral code adds $5 to your starting limit — entered at the start of the loan application.':
-      'Mã giới thiệu cộng thêm $5 vào hạn mức khởi điểm của bạn — nhập ở bước đầu của đơn vay.',
+   'A referral code tells us who invited you — entered at the start of the loan application.':
+      'Mã giới thiệu cho chúng tôi biết ai đã mời bạn — nhập ở bước đầu của đơn vay.',
    'The first step of the application asks for a referral code — type it and tap "Apply code". (This step only appears for verified borrowers.)':
       'Bước đầu tiên của đơn vay sẽ hỏi mã giới thiệu — nhập mã và nhấn "Áp dụng mã". (Bước này chỉ hiện với người vay đã xác minh.)',
    'No code? Just tap "Continue to application" — the code is optional and there is no penalty for skipping it.':
@@ -442,7 +442,6 @@ export const vietnameseCoverageE: Record<string, string> = {
    'How can we reach you': 'Chúng tôi có thể liên hệ với bạn qua đâu',
    "Let's connect": 'Cùng kết nối nhé',
    'Add practical context without sharing private details.': 'Thêm thông tin thực tế mà không cần chia sẻ chi tiết riêng tư.',
-   '+$5 Credit Limit Boost': 'Tăng +$5 hạn mức tín dụng',
    Code: 'Mã',
    'applied: +$': 'đã được áp dụng: +$',
    'starting limit': 'hạn mức khởi điểm',

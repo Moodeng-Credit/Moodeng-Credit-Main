@@ -1246,7 +1246,7 @@ function RequestBoard$() {
             {
                target: '[data-tour-target="request-apply-card"]',
                title: 'Apply for a loan',
-               body: 'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it for a higher starting limit.',
+               body: 'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it so we know who invited you.',
                durationMs: 6500
             },
             {

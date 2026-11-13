@@ -422,8 +422,8 @@ export const thaiCoverageB: Record<string, string> = {
       'สร้างบัญชีฟรีเพื่อยืมหรือให้กู้ เลือกบทบาทหลังสมัครสมาชิก แล้วเราจะแนะนำขั้นตอนที่เหลือให้',
    'This is the marketplace. Once a request is live, moo-lenders review the amount, repayment, and borrower before funding.':
       'ที่นี่คือตลาดกลาง เมื่อคำขอแสดงบนกระดานแล้ว Moo-lender จะตรวจดูจำนวนเงิน ยอดชำระคืน และผู้ยืมก่อนปล่อยกู้',
-   'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it for a higher starting limit.':
-      'เมื่อคุณพร้อมจะยืม การ์ดนี้จะเปิดขั้นตอนการขอเงินกู้ ได้รับโค้ดจากเพื่อนใช่ไหม? ใส่โค้ดเพื่อรับวงเงินเริ่มต้นที่สูงขึ้น',
+   'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it so we know who invited you.':
+      'เมื่อคุณพร้อมจะยืม การ์ดนี้จะเปิดขั้นตอนการขอเงินกู้ ได้รับโค้ดจากเพื่อนใช่ไหม? ใส่โค้ดเพื่อให้เรารู้ว่าใครชวนคุณมา',
    'Verify first': 'ยืนยันตัวตนก่อน',
    'Borrowers complete a one-time identity check before requesting a loan. It helps moo-lenders know they are funding a real person.':
       'ผู้ยืมต้องยืนยันตัวตนครั้งเดียวก่อนขอเงินกู้ เพื่อให้ Moo-lender มั่นใจว่ากำลังปล่อยกู้ให้คนจริง',
@@ -813,7 +813,7 @@ export const thaiCoverageB: Record<string, string> = {
       'ข้อมูลบางส่วนของคุณสั้นเกินไปจน Moo-lender อาจไม่เข้าใจ — แตะอีกครั้งหากต้องการดำเนินการต่อ',
    "Couldn't save — please try again.": 'บันทึกไม่ได้ — โปรดลองอีกครั้ง',
    'Swipe right to close loan form': 'ปัดไปทางขวาเพื่อปิดแบบฟอร์มขอเงินกู้',
-   'Referral Boost': 'สิทธิ์เพิ่มวงเงินจากโค้ดแนะนำ',
+   'Invited by someone?': 'มีคนชวนคุณมาไหม?',
    'Almost there': 'ใกล้เสร็จแล้ว',
    'Add your Facebook': 'เพิ่ม Facebook ของคุณ',
    'How can we reach you': 'เราจะติดต่อคุณได้ทางไหน',
@@ -826,8 +826,7 @@ export const thaiCoverageB: Record<string, string> = {
    'Close loan form': 'ปิดแบบฟอร์มขอเงินกู้',
    Optional: 'ไม่บังคับ',
    'Have a referral code?': 'มีโค้ดแนะนำไหม?',
-   'Add it now for a higher starting limit.': 'ใส่โค้ดตอนนี้เพื่อรับวงเงินเริ่มต้นที่สูงขึ้น',
-   '+$5 Credit Limit Boost': 'เพิ่มวงเงิน +$5',
+   'Add it so we know who invited you.': 'ใส่โค้ดเพื่อให้เรารู้ว่าใครชวนคุณมา',
    'Referral code': 'โค้ดแนะนำ',
    'Enter code': 'ใส่โค้ด',
    Code: 'โค้ด',
@@ -1439,11 +1438,11 @@ export const thaiCoverageB: Record<string, string> = {
    'Every repayment affects your Pandesal points, and small loans repaid cleanly are worth more than large loans repaid sloppily. On-time, full repayment earns the maximum 10 points. Partial repayments earn proportionally — 75% = 7, 50% = 5, 25% = 3. Any payment after the deadline earns 0 for that transaction. A default leaves a permanent mark on your public profile, visible to all future moo-lenders.':
       'การชำระคืนทุกครั้งส่งผลต่อแต้ม Pandesal ของคุณ และเงินกู้จำนวนน้อยที่ชำระคืนอย่างเรียบร้อยมีค่ามากกว่าเงินกู้จำนวนมากที่ชำระคืนไม่เรียบร้อย การชำระคืนเต็มจำนวนตรงเวลาจะได้แต้มสูงสุด 10 แต้ม การชำระคืนบางส่วนจะได้แต้มตามสัดส่วน — 75% = 7 แต้ม, 50% = 5 แต้ม, 25% = 3 แต้ม การชำระใด ๆ หลังกำหนดเวลาจะได้ 0 แต้มสำหรับรายการนั้น การผิดนัดชำระจะทิ้งรอยถาวรไว้บนโปรไฟล์สาธารณะของคุณ ซึ่ง Moo-lender ทุกคนในอนาคตจะมองเห็นได้',
    'Where do I put a referral code?': 'ฉันจะใส่โค้ดแนะนำเพื่อนได้ที่ไหน',
-   '+$5 to your starting limit': '+$5 เข้าวงเงินเริ่มต้นของคุณ',
+   'Tell us who invited you': 'บอกเราว่าใครชวนคุณมา',
    'Where do I enter a referral code?': 'ฉันจะกรอกโค้ดแนะนำเพื่อนได้ที่ไหน',
    'From the Request Board, tap to apply for a loan.': 'จากกระดานคำขอ แตะเพื่อสมัครขอเงินกู้',
-   'A valid referral code adds $5 to your starting credit limit — so a new borrower who normally starts at $15 would start at $20.':
-      'โค้ดแนะนำเพื่อนที่ใช้ได้จะเพิ่ม $5 ให้วงเงินเครดิตเริ่มต้นของคุณ — ดังนั้นผู้ยืมใหม่ที่ปกติเริ่มที่ $15 จะเริ่มที่ $20 แทน',
+   'A referral code just tells us who invited you. It does not change your credit limit.':
+      'โค้ดแนะนำเพื่อนแค่บอกเราว่าใครชวนคุณมา ไม่ได้เปลี่ยนวงเงินเครดิตของคุณ',
    'It says "write it in English"': '"write it in English" ขึ้นเตือน',
    'Why, and how to fix it': 'ทำไม และแก้ไขอย่างไร',
    'My loan reason says to write it in English — what should I do?': 'เหตุผลการขอกู้ของฉันบอกให้เขียนเป็นภาษาอังกฤษ — ฉันควรทำอย่างไร',

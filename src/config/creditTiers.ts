@@ -18,15 +18,6 @@ export function getNextCreditTier(currentAmount: number): number {
    return CREDIT_TIERS[Math.min(currentTierIndex + 1, CREDIT_TIERS.length - 1)];
 }
 
-/**
- * Boosts a referral code may carry. A new borrower starts at STARTING_CREDIT_LIMIT and a boost lands
- * them at start + boost, which must be a credit level exactly, or the next level would skip one
- * (a $10 boost gives $25, and the next tier from $25 is $60). Matches the referral_codes check constraint.
- */
-export const REFERRAL_BOOST_OPTIONS: readonly number[] = CREDIT_TIERS.slice(1).map((tier) => tier - STARTING_CREDIT_LIMIT);
-
-export const isValidReferralBoost = (boost: number): boolean => REFERRAL_BOOST_OPTIONS.includes(boost);
-
 export function getCreditLevelNumber(creditLimit: number): number {
    const tierIndex = CREDIT_TIERS.findIndex((tier) => tier >= creditLimit);
    return tierIndex >= 0 ? tierIndex + 1 : CREDIT_TIERS.length;

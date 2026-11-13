@@ -304,7 +304,6 @@ export const filipinoCoverageG: Record<string, string> = {
    "Let's connect": 'Mag-connect tayo',
    'Add practical context without sharing private details.':
       'Magbigay ng praktikal na konteksto nang hindi nagbabahagi ng pribadong detalye.',
-   '+$5 Credit Limit Boost': '+$5 na dagdag sa credit limit',
    'applied: +$': 'na-apply: +$',
    'starting limit': 'sa starting limit',
    'Checking code...': 'Chine-check ang code...',

@@ -605,13 +605,13 @@ export const HELP_TOPICS: HelpTopic[] = [
             'Repay on time. On-time repayment earns Pandesal points, and repaying a full-limit loan on time moves you up a level.',
             'To move up a level, take a Credit-Building Loan — a loan at your full current limit — and repay it in full and on time.',
             'Credit levels run $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
-            'A referral code adds $5 to your starting limit — entered at the start of the loan application.'
+            'A referral code tells us who invited you — entered at the start of the loan application.'
          ],
          fil: [
             'Magbayad on time. Nagdadagdag ng Pandesal points ang on-time na bayad, at kapag nabayaran mo nang on time ang full-limit na loan, aakyat ka ng isang level.',
             'Para tumaas ng level, kumuha ng Credit-Building Loan — loan sa buong kasalukuyang limit — at bayaran nang buo at on time.',
             'Ang mga Credit Level ay $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
-            'May dagdag na $5 sa starting limit mo ang referral code — inilalagay sa simula ng loan application.'
+            'Sinasabi ng referral code kung sino ang nag-invite sa iyo — inilalagay sa simula ng loan application.'
          ]
       },
       guide: { path: '/learn/how-credit-levels-work', label: { en: 'How Credit Levels work', fil: 'Paano gumagana ang Credit Level' } },
@@ -659,7 +659,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       category: 'credit',
       emoji: '🎟️',
       title: { en: 'Where do I put a referral code?', fil: 'Saan ilalagay ang referral code?' },
-      subtitle: { en: '+$5 to your starting limit', fil: '+$5 sa starting limit mo' },
+      subtitle: { en: 'Tell us who invited you', fil: 'Sabihin kung sino ang nag-invite sa iyo' },
       question: { en: 'Where do I enter a referral code?', fil: 'Saan ko ilalagay ang referral code?' },
       steps: {
          en: [
@@ -674,8 +674,8 @@ export const HELP_TOPICS: HelpTopic[] = [
          ]
       },
       watchOut: {
-         en: 'A valid referral code adds $5 to your starting credit limit — so a new borrower who normally starts at $15 would start at $20.',
-         fil: 'Ang balidong referral code ay nagdadagdag ng $5 sa starting limit mo — kaya ang bagong borrower na karaniwang nasa $15 ay magsisimula sa $20.'
+         en: 'A referral code just tells us who invited you. It does not change your credit limit.',
+         fil: 'Sinasabi lang ng referral code kung sino ang nag-invite sa iyo. Hindi nito binabago ang credit limit mo.'
       },
       keywords: ['referral', 'code', 'promo', 'invite', 'bonus']
    },

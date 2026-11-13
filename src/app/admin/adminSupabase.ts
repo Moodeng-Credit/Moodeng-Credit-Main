@@ -1946,7 +1946,6 @@ export async function listReferralCodes(): Promise<AdminReferralCode[]> {
 
 export async function createReferralCode(input: {
    code: string;
-   boost_amount: number;
    max_uses?: number | null;
    expires_at?: string | null;
 }): Promise<AdminReferralCode> {
@@ -1956,7 +1955,6 @@ export async function createReferralCode(input: {
          .from('referral_codes')
          .insert({
             code: input.code.trim().toUpperCase(),
-            boost_amount: input.boost_amount,
             max_uses: input.max_uses ?? null,
             expires_at: input.expires_at ?? null
          })
@@ -1982,12 +1980,11 @@ export async function setReferralCodeActive(id: string, isActive: boolean): Prom
    } as AdminReferralCode;
 }
 
-// Edit a live code's terms (boost, usage cap, expiry) without recreating it. The code string
+// Edit a live code's terms (payout, usage cap, expiry) without recreating it. The code string
 // itself is immutable — loans/users reference it — so it is not editable here.
 export async function updateReferralCode(
    id: string,
    changes: {
-      boost_amount?: number;
       payout_amount?: number;
       max_uses?: number | null;
       expires_at?: string | null;
@@ -1995,7 +1992,6 @@ export async function updateReferralCode(
 ): Promise<AdminReferralCode> {
    const supabase = getSupabaseBrowserClient();
    const patch: Record<string, unknown> = {};
-   if (changes.boost_amount !== undefined) patch.boost_amount = changes.boost_amount;
    if (changes.payout_amount !== undefined) patch.payout_amount = changes.payout_amount;
    if (changes.max_uses !== undefined) patch.max_uses = changes.max_uses;
    if (changes.expires_at !== undefined) patch.expires_at = changes.expires_at;

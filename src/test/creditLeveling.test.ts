@@ -5,7 +5,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { formatDate } from '@/utils/dateFormatters';
 
-import { isValidReferralBoost, REFERRAL_BOOST_OPTIONS } from '@/config/creditTiers';
 import { evaluateCreditProgression, getFullLimitLoans, isRepaidOnTime } from '@/lib/creditLeveling';
 import type { User } from '@/types/authTypes';
 import type { Loan } from '@/types/loanTypes';
@@ -510,17 +509,5 @@ describe('Borrower progress timeline', () => {
       const unlocked = eventsFor([late]).find((event) => event.type === 'credit_limit_unlocked');
       expect(unlocked?.amount).toBe(20);
       expect(unlocked?.description).toBe('Unlocked Level 2: a $20 limit.');
-   });
-});
-
-describe('referral boosts', () => {
-   it('only allows a boost that lands the $15 start exactly on a credit level', () => {
-      expect([...REFERRAL_BOOST_OPTIONS]).toEqual([5, 25, 45, 65, 85, 105, 125]);
-      expect(isValidReferralBoost(5)).toBe(true);
-      expect(isValidReferralBoost(25)).toBe(true);
-   });
-
-   it('rejects a boost that would land between levels, which would make the next level skip one', () => {
-      [0, -5, 10, 15, 20, 30, 5.5, Number.NaN].forEach((boost) => expect(isValidReferralBoost(boost)).toBe(false));
    });
 });

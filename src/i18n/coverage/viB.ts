@@ -494,8 +494,8 @@ export const vietnameseCoverageB: Record<string, string> = {
       'Tạo tài khoản miễn phí để vay hoặc cho vay. Chọn vai trò sau khi đăng ký, chúng tôi sẽ hướng dẫn bạn các bước còn lại.',
    'This is the marketplace. Once a request is live, moo-lenders review the amount, repayment, and borrower before funding.':
       'Đây là nơi giao dịch. Khi yêu cầu được đăng, moo-lender sẽ xem số tiền, khoản trả nợ và người vay trước khi cấp vốn.',
-   'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it for a higher starting limit.':
-      'Khi bạn sẵn sàng vay, thẻ này sẽ mở quy trình yêu cầu vay. Có mã giới thiệu từ bạn bè? Nhập mã để có hạn mức khởi đầu cao hơn.',
+   'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it so we know who invited you.':
+      'Khi bạn sẵn sàng vay, thẻ này sẽ mở quy trình yêu cầu vay. Có mã giới thiệu từ bạn bè? Nhập mã để chúng tôi biết ai đã mời bạn.',
    'Verify first': 'Xác minh trước',
    'Borrowers complete a one-time identity check before requesting a loan. It helps moo-lenders know they are funding a real person.':
       'Người vay cần xác minh danh tính một lần trước khi yêu cầu vay. Điều này giúp moo-lender biết họ đang cấp vốn cho người thật.',
@@ -571,13 +571,13 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Be specific, for example teacher or market vendor.': 'Hãy cụ thể, ví dụ như giáo viên hoặc người bán hàng ở chợ.',
    'Still needed: how you describe your work.': 'Vẫn còn thiếu: mô tả về công việc của bạn.',
    'For example tutoring, delivery, or market trading.': 'Ví dụ: dạy kèm, giao hàng, hoặc buôn bán ở chợ.',
-   'Referral Boost': 'Ưu đãi giới thiệu',
+   'Invited by someone?': 'Có ai mời bạn không?',
    'Schedule a video call': 'Đặt lịch gọi video',
    'How moo-lenders see you': 'Moo-lender sẽ thấy bạn thế nào',
    'Set your loan terms': 'Đặt điều khoản vay',
    Optional: 'Không bắt buộc',
    'Have a referral code?': 'Bạn có mã giới thiệu không?',
-   'Add it now for a higher starting limit.': 'Thêm mã ngay để có hạn mức khởi điểm cao hơn.',
+   'Add it so we know who invited you.': 'Nhập mã để chúng tôi biết ai đã mời bạn.',
    'Referral code': 'Mã giới thiệu',
    'No code needed. You can continue normally.': 'Không cần mã. Bạn có thể tiếp tục bình thường.',
    '$10 referral program': 'chương trình giới thiệu $10',
@@ -922,11 +922,11 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Every repayment affects your Pandesal points, and small loans repaid cleanly are worth more than large loans repaid sloppily. On-time, full repayment earns the maximum 10 points. Partial repayments earn proportionally — 75% = 7, 50% = 5, 25% = 3. Any payment after the deadline earns 0 for that transaction. A default leaves a permanent mark on your public profile, visible to all future moo-lenders.':
       'Mỗi lần trả nợ đều ảnh hưởng đến điểm Pandesal của bạn, và các khoản vay nhỏ được trả đầy đủ, đúng hạn có giá trị hơn các khoản vay lớn trả chậm hoặc trả thiếu. Trả đủ và đúng hạn được cộng điểm tối đa là 10. Trả một phần được cộng điểm theo tỷ lệ — 75% = 7, 50% = 5, 25% = 3. Bất kỳ khoản trả nào sau ngày đến hạn đều được 0 điểm cho giao dịch đó. Một lần vỡ nợ sẽ để lại dấu vết vĩnh viễn trên hồ sơ công khai của bạn, mà tất cả moo-lender trong tương lai đều có thể thấy.',
    'Where do I put a referral code?': 'Tôi nhập mã giới thiệu ở đâu?',
-   '+$5 to your starting limit': '+$5 vào hạn mức khởi điểm của bạn',
+   'Tell us who invited you': 'Cho chúng tôi biết ai đã mời bạn',
    'Where do I enter a referral code?': 'Tôi nhập mã giới thiệu ở đâu?',
    'From the Request Board, tap to apply for a loan.': 'Từ Bảng yêu cầu, hãy nhấn để đăng ký vay.',
-   'A valid referral code adds $5 to your starting credit limit — so a new borrower who normally starts at $15 would start at $20.':
-      'Một mã giới thiệu hợp lệ sẽ cộng thêm $5 vào hạn mức tín dụng khởi điểm của bạn — vì vậy một người vay mới thường bắt đầu ở mức $15 sẽ bắt đầu ở mức $20.',
+   'A referral code just tells us who invited you. It does not change your credit limit.':
+      'Mã giới thiệu chỉ cho chúng tôi biết ai đã mời bạn. Mã này không thay đổi hạn mức tín dụng của bạn.',
    'It says "write it in English"': 'Ứng dụng báo "hãy viết bằng tiếng Anh"',
    'Why, and how to fix it': 'Vì sao, và cách khắc phục',
    'My loan reason says to write it in English — what should I do?': 'Lý do vay của tôi báo phải viết bằng tiếng Anh — tôi nên làm gì?',
