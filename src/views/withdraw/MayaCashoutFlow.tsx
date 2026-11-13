@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { AlertTriangle, ArrowDown, CheckCircle2, ClipboardPaste, Loader2, RotateCcw } from 'lucide-react';
+import posthog from 'posthog-js';
+
+import GuideCards, { type GuideCard } from '@/components/guide/GuideCards';
 
 import { openMessengerSupport } from '@/config/contactVerification';
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { estimateToSolana, isFinalRelayStatus, relayMaya, type RelayTransfer, relayWalt, RelayWaltError } from '@/lib/relayWalt';
 import { useUsdcRate } from '@/lib/useUsdcRate';
+import { CONNECT_HIPPOS } from '@/views/dashboard/components/connectKit';
+import { Card as GoldCard, StepHead } from '@/views/indonesia/ui';
 import { GoldButton, shortAddress } from '@/views/indonesia/walt/waltUi';
 
 // "Send to Maya": cash out from the Moodeng wallet (USDC on Base) to the borrower's Maya
@@ -97,7 +102,23 @@ export function useMayaEnabled(isPreview: boolean): boolean {
 
 const peso = (usd: number, rate: number) => `≈ ₱${Math.round(usd * rate).toLocaleString('en-PH')}`;
 
-/** Saving the Maya Solana address: three short steps + paste box. */
+// PostHog only initialises in production (see main.tsx).
+const track = (event: string, props?: Record<string, unknown>) => {
+   if (import.meta.env.PROD) posthog.capture(event, props);
+};
+
+// Real Maya screenshots (address + QR blurred), same picture cards as the PDAX / GCrypto cash-out.
+const MAYA_IMG = '/cashout-guides/maya';
+const MAYA_CARDS: GuideCard[] = [
+   { key: 'crypto', title: 'Open Maya → Crypto', img: `${MAYA_IMG}/step1-crypto.webp`, open: true },
+   { key: 'more', title: 'Tap ⋯ next to Sell', img: `${MAYA_IMG}/step2-more.webp` },
+   { key: 'receive', title: 'Tap Receive', img: `${MAYA_IMG}/step3-receive.webp` },
+   { key: 'usdc', title: 'Search usdc → USD Coin', img: `${MAYA_IMG}/step4-usdc.webp` },
+   { key: 'solana', title: 'Pick Solana', img: `${MAYA_IMG}/step5-solana.webp`, danger: 'Solana, not Ethereum' },
+   { key: 'copy', title: 'Copy your address', text: 'Tap the copy icon.', img: `${MAYA_IMG}/step6-copy.webp` }
+];
+
+/** Saving the Maya Solana address: picture steps, then the paste box. */
 function MayaAddressSetup({ initial, onSaved, onCancel }: { initial: string; onSaved: (a: string) => void; onCancel?: () => void }) {
    const [value, setValue] = useState(initial);
    const [saving, setSaving] = useState(false);
@@ -125,71 +146,69 @@ function MayaAddressSetup({ initial, onSaved, onCancel }: { initial: string; onS
       }
    };
 
-   return (
-      <div className="space-y-[14px] py-[4px]">
-         <div className="flex flex-col items-center gap-[8px] text-center">
-            <MayaIcon size={56} />
-            <p className="text-[18px] font-bold text-[var(--ink)]">Add your Maya address</p>
-            <p className="text-[13px] text-[var(--text-muted)]">Once only. We send USDC there, you sell it for pesos in Maya.</p>
+   const pasteCard = (
+      <GoldCard>
+         <div className="flex items-start gap-3">
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#ffd75a] text-[17px] font-extrabold text-[#4a2a00]">
+               {MAYA_CARDS.length + 1}
+            </span>
+            <h3 className="min-w-0 flex-1 text-[20px] font-extrabold leading-[24px] tracking-[-0.01em]">Paste it here</h3>
          </div>
-
-         <ol className="space-y-[8px] rounded-[18px] border-2 border-[var(--border-card)] bg-[var(--surface)] p-[14px] text-[14px] text-[var(--ink)]">
-            <li>
-               <b>1.</b> Maya → <b>Crypto</b> → <b>USDC</b> → <b>Receive</b>
-            </li>
-            <li>
-               <b>2.</b> Tap <b>Change network</b> → pick <b>Solana</b>
-            </li>
-            <li>
-               <b>3.</b> Copy the address and paste it here
-            </li>
-         </ol>
-
-         <div className="rounded-[18px] border-2 border-[var(--border-card)] bg-[var(--surface)] p-[12px]">
-            <div className="flex items-center gap-[8px]">
-               <input
-                  aria-label="Maya Solana address"
-                  autoComplete="off"
-                  autoCapitalize="off"
-                  spellCheck={false}
-                  value={value}
-                  onChange={(e) => {
-                     setError(null);
-                     setValue(e.target.value.trim());
-                  }}
-                  placeholder="Solana address from Maya"
-                  className="min-w-0 flex-1 bg-transparent font-mono text-[14px] text-[var(--ink)] outline-none"
-               />
-               <button
-                  type="button"
-                  onClick={() => void paste()}
-                  className="flex shrink-0 items-center gap-[4px] rounded-full bg-[var(--surface-2,#f3effe)] px-[12px] py-[6px] text-[12px] font-bold text-[var(--ink)]"
-               >
-                  <ClipboardPaste className="h-[14px] w-[14px]" aria-hidden="true" /> Paste
-               </button>
-            </div>
-         </div>
-
-         {(looksEth || error) && (
-            <div
-               role="alert"
-               className="flex gap-[8px] rounded-[14px] border border-[#fcd34d] bg-[#fffbeb] px-[12px] py-[10px] dark:border-[#78350f] dark:bg-[#2a1d05]"
+         <div
+            className={`flex min-h-[56px] items-center gap-2 rounded-[14px] border-2 bg-white px-3 dark:bg-[#1a1524] ${
+               looksEth || error ? 'border-[#e5484d]' : 'border-[#ecdfb8] dark:border-[#4a3d1c]'
+            }`}
+         >
+            <input
+               aria-label="Maya Solana address"
+               autoComplete="off"
+               autoCapitalize="off"
+               spellCheck={false}
+               value={value}
+               onChange={(e) => {
+                  setError(null);
+                  setValue(e.target.value.trim());
+               }}
+               placeholder="Paste your Maya address"
+               className="min-w-0 flex-1 bg-transparent font-mono text-[15px] font-semibold outline-none placeholder:font-sans placeholder:font-medium placeholder:text-[#a8987a]"
+            />
+            <button
+               type="button"
+               onClick={() => void paste()}
+               className="flex shrink-0 items-center gap-1 rounded-full bg-[#fff1c2] px-3 py-1.5 text-[14px] font-extrabold text-[#6b4a00] dark:bg-[#3a2e10] dark:text-[#ffe27a]"
             >
-               <AlertTriangle className="mt-[1px] h-[16px] w-[16px] shrink-0 text-[#d97706]" aria-hidden="true" />
-               <p className="text-[13px] text-[#78350f] dark:text-[#fcd34d]">
-                  {looksEth ? 'That’s the Ethereum address. In Maya tap Change network → Solana, then copy again.' : error}
-               </p>
-            </div>
+               <ClipboardPaste className="size-4" aria-hidden="true" /> Paste
+            </button>
+         </div>
+         {looksEth || error ? (
+            <p role="alert" className="text-[14px] font-bold text-[#c0392b]">
+               {looksEth ? 'That’s the Ethereum address. Pick Solana in Maya, then copy again.' : error}
+            </p>
+         ) : (
+            <p className="text-center text-[15px] font-extrabold text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Solana network only</p>
          )}
-
          <GoldButton onClick={() => void save()} disabled={!value || looksEth} busy={saving}>
             Save Maya address
          </GoldButton>
-         {onCancel && (
+      </GoldCard>
+   );
+
+   return (
+      <div className="flex flex-col gap-4 pb-2 text-[#2b2116] dark:text-[#f5efe3]">
+         <StepHead image={CONNECT_HIPPOS.codeCopied} title="Your Maya address" subtitle="Once only." />
+         <GuideCards
+            appName="Maya"
+            cards={MAYA_CARDS}
+            onOpenApp={() => window.open('https://www.maya.ph', '_blank', 'noopener,noreferrer')}
+            finalStep={pasteCard}
+            memoryKey="moodeng-cashout-guide:Maya:address"
+            onStep={(index, key) => track('withdraw_guide_step', { exchange: 'Maya', part: 'address', step: key, index })}
+         />
+         {onCancel ? (
             <button type="button" onClick={onCancel} className="w-full py-[8px] text-[14px] font-semibold text-[var(--primary)]">
                Cancel
             </button>
-         )}
+         ) : null}
       </div>
    );
 }
