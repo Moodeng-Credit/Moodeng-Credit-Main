@@ -28,7 +28,7 @@ import {
 // WhatsApp inbox (Admin → Support → WhatsApp), so the team can chat on the business number without the
 // WhatsApp Business app:
 //   { action: 'wa_chats' }                         → recent chats + which Moodeng user each one is.
-//   { action: 'wa_messages', contactId }           → one chat's messages (and marks it read).
+//   { action: 'wa_messages', contactId, markRead?, size? } → one chat's messages (markRead when opened).
 //   { action: 'wa_send', contactId, text }         → free-text reply (only inside Meta's 24h window).
 //   { action: 'wa_templates' }                     → approved templates.
 //   { action: 'wa_send_template', contactId | phone, name, language, params } → template to a chat or a new number.
@@ -79,6 +79,7 @@ serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
+   const t0 = Date.now();
    const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 
    // Auth: server-side token (X-Admin-Token = ADMIN_API_TOKEN, fail-closed), or an active admin's session.
@@ -170,12 +171,25 @@ serve(async (req) => {
       return json(result);
    }
 
-   if (typeof body.action === 'string' && body.action.startsWith('wa_')) return json(await handleWhatsApp(svc, body));
+   if (typeof body.action === 'string' && body.action.startsWith('wa_')) {
+      const tAuth = Date.now() - t0;
+      const result = await handleWhatsApp(svc, body);
+      // Timing in the logs: where the inbox's wait goes (our auth check vs SendPulse).
+      console.log(`[wa] ${body.action} auth=${tAuth}ms work=${Date.now() - t0 - tAuth}ms`);
+      return json(result);
+   }
 
    return json({ error: 'unknown_action' }, 400);
 });
 
 const WA_TEXT_MAX = 1024;
+
+// Finish work after the response is sent (Supabase edge runtime), so the admin doesn't wait on it.
+const runInBackground = (p: Promise<unknown>) => {
+   const rt = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime;
+   if (rt?.waitUntil) rt.waitUntil(p.catch(() => undefined));
+   else void p.catch(() => undefined);
+};
 const WINDOW_MS = 24 * 60 * 60 * 1000;
 
 // deno-lint-ignore no-explicit-any
@@ -204,9 +218,12 @@ const handleWhatsApp = async (svc: Svc, body: any) => {
 
    if (body.action === 'wa_messages') {
       if (!contactId) return { ok: false, reason: 'missing_contact' };
-      const res = await listWhatsAppMessages(contactId, 150);
+      // Smaller pages keep the SendPulse round trip short; the inbox polls this every few seconds.
+      const size = Math.min(150, Math.max(20, Number(body.size) || 60));
+      const res = await listWhatsAppMessages(contactId, size, body.debug === true);
       if (!res.ok) return res;
-      await markWhatsAppRead(contactId);
+      // Only when a teammate actually opens the chat (not on every poll), and without making them wait.
+      if (body.markRead === true) runInBackground(markWhatsAppRead(contactId));
       const lastInbound = [...res.data].reverse().find((m) => m.direction === 1)?.createdAt ?? null;
       const canFreeText = lastInbound ? Date.now() - Date.parse(lastInbound) < WINDOW_MS : false;
       return { ok: true, messages: res.data, lastInboundAt: lastInbound, canFreeText };
