@@ -32,14 +32,16 @@ const getAuthHeader = (): string | null => {
 
 export const isStableyardConfigured = () => getAuthHeader() !== null;
 
-type RequestOptions = { body?: unknown; idempotencyKey?: string; query?: Record<string, string | number | undefined> };
+// `bearer` = a Payment's checkout clientSecret, for the /v2/public/payments/* checkout calls (they take
+// that instead of the partner credentials).
+type RequestOptions = { body?: unknown; idempotencyKey?: string; query?: Record<string, string | number | undefined>; bearer?: string };
 
 export const stableyardRequest = async <T = unknown>(
    method: 'GET' | 'POST' | 'PUT',
    path: string,
-   { body, idempotencyKey, query }: RequestOptions = {}
+   { body, idempotencyKey, query, bearer }: RequestOptions = {}
 ): Promise<StableyardResult<T>> => {
-   const authorization = getAuthHeader();
+   const authorization = bearer ? `Bearer ${bearer}` : getAuthHeader();
    if (!authorization) {
       return { ok: false, status: 500, error: 'STABLEYARD_APP_ID / STABLEYARD_APP_SECRET are not set' };
    }
@@ -105,6 +107,35 @@ export const stableyardRequest = async <T = unknown>(
 export type StableyardAsset = { chainId: number; tokenAddress: string; symbol: string; decimals: number; kind?: string };
 
 export type StableyardAccount = { id: string; externalUserId: string; status: string };
+
+type StableyardCheckoutAmount = { amountAtomic?: string; amountDecimal?: string };
+
+export type StableyardCheckoutMethod = {
+   id: string;
+   providerCode?: string;
+   chainId?: number;
+   tokenAddress?: string;
+   assetSymbol?: string;
+   available?: boolean;
+};
+
+export type StableyardCheckoutOption = {
+   id: string;
+   expiresAt?: string | null;
+   quoteExpiresAt?: string | null;
+   actionExpiresAt?: string | null;
+   payerAmount?: StableyardCheckoutAmount | null;
+   providerFee?: StableyardCheckoutAmount | null;
+   execution?: {
+      type?: string;
+      address?: string;
+      chainId?: number;
+      tokenAddress?: string;
+      amountAtomic?: string;
+      decimals?: number;
+      expiresAt?: string | null;
+   } | null;
+};
 
 export type StableyardDepositAddress = {
    id: string;
@@ -307,8 +338,27 @@ export const stableyard = {
    // Bank codes accepted for an external_bank payout (PH/VN one-time beneficiary). Read-only.
    listBeneficiaryBanks: (country: string) => stableyardRequest('GET', '/v2/payments/external-bank/banks', { query: { country } }),
    getPayment: (paymentId: string) => stableyardRequest('GET', `/v2/payments/${encodeURIComponent(paymentId)}`),
-   // Hosted checkout link for a Payment that must collect its source funds (nextAction "payment_method").
-   getPaymentCheckout: (paymentId: string) => stableyardRequest('GET', `/v2/payments/${encodeURIComponent(paymentId)}/checkout`),
+   // Checkout API for a send Payment that must collect its source funds (nextAction "payment_method"):
+   // list the funding methods, select one (returns the deposit address + exact amount), then report the
+   // payer's transaction. All three authenticate with the Payment's checkout clientSecret, which only
+   // the create response carries.
+   listCheckoutMethods: (paymentId: string, clientSecret: string) =>
+      stableyardRequest<{ paymentMethods?: StableyardCheckoutMethod[] }>(
+         'GET',
+         `/v2/public/payments/${encodeURIComponent(paymentId)}/payment-methods`,
+         { bearer: clientSecret }
+      ),
+   selectCheckoutMethod: (paymentId: string, clientSecret: string, paymentMethodId: string, idempotencyKey: string) =>
+      stableyardRequest<{ option?: StableyardCheckoutOption }>('POST', `/v2/public/payments/${encodeURIComponent(paymentId)}/options`, {
+         body: { paymentMethodId },
+         idempotencyKey,
+         bearer: clientSecret
+      }),
+   submitCheckoutTransaction: (paymentId: string, clientSecret: string, optionId: string, transactionHash: string) =>
+      stableyardRequest('POST', `/v2/public/payments/${encodeURIComponent(paymentId)}/transactions`, {
+         body: { optionId, transactionHash },
+         bearer: clientSecret
+      }),
 
    getBalances: (accountId: string) => stableyardRequest('GET', `${accountPath(accountId)}/balances`),
    getTransactions: (accountId: string) => stableyardRequest('GET', `${accountPath(accountId)}/transactions`)
