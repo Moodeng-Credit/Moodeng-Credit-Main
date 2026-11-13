@@ -444,6 +444,11 @@ export const whatsAppMessageText = (type: string | undefined, data: Raw): string
    if (d.audio || d.voice || type === 'audio' || type === 'voice') return '🎤 Voice message';
    if (type === 'sticker') return '🙂 Sticker';
    if (type === 'location') return '📍 Location';
+   // Meta error 131051: WhatsApp never hands these to the API (polls, view-once media, some calls…),
+   // so the content can't be shown anywhere but the phone.
+   if (type === 'unsupported' || type === 'unknown')
+      return '⚠️ A message WhatsApp can’t show here (e.g. a poll, view-once photo or call). Check WhatsApp on the phone.';
+   if (type === 'call') return '📞 Call';
    return type ? `[${type}]` : '';
 };
 
@@ -479,10 +484,18 @@ export const listWhatsAppChats = async (size = 100): Promise<WaCall<WhatsAppChat
    return { ok: true, data: chats.filter((c) => c.contactId) };
 };
 
-export type WhatsAppThreadMessage = { id: string; direction: number; type: string; text: string; status: number | null; createdAt: string | null };
+export type WhatsAppThreadMessage = {
+   id: string;
+   direction: number;
+   type: string;
+   text: string;
+   status: number | null;
+   createdAt: string | null;
+   raw?: unknown;
+};
 
 /** Latest messages of one chat, oldest first (ready to render top-to-bottom). */
-export const listWhatsAppMessages = async (contactId: string, size = 100): Promise<WaCall<WhatsAppThreadMessage[]>> => {
+export const listWhatsAppMessages = async (contactId: string, size = 100, withRaw = false): Promise<WaCall<WhatsAppThreadMessage[]>> => {
    const res = await waCall<Raw[]>('GET', `/chats/messages?contact_id=${encodeURIComponent(contactId)}&size=${size}&order=desc`);
    if (!res.ok) return res;
    const msgs = (Array.isArray(res.data) ? res.data : [])
@@ -493,7 +506,8 @@ export const listWhatsAppMessages = async (contactId: string, size = 100): Promi
             type: String(m?.type ?? ''),
             text: whatsAppMessageText(m?.type, m?.data),
             status: m?.status ?? null,
-            createdAt: m?.created_at ?? null
+            createdAt: m?.created_at ?? null,
+            ...(withRaw ? { raw: m } : {})
          })
       )
       // Typing indicators / internal markers aren't messages anyone wrote.

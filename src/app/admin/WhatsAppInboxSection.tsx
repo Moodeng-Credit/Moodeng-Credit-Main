@@ -19,8 +19,39 @@ import {
 } from '@/app/admin/adminSupabase';
 
 const BUSINESS_NUMBER = '+66 95 165 9077';
-const CHATS_POLL_MS = 20_000;
-const THREAD_POLL_MS = 8_000;
+const CHATS_POLL_MS = 30_000;
+const THREAD_POLL_MS = 10_000;
+// A cached thread younger than this is shown as-is when opened; older ones show at once and refresh.
+const PREFETCH_FRESH_MS = 15_000;
+
+type ThreadData = { messages: WhatsAppMessageRow[]; canFreeText: boolean; lastInboundAt: string | null; at: number };
+
+// Threads already fetched this visit, so opening (or re-opening) a chat is instant. Every SendPulse round
+// trip takes 1–2s, so the inbox never makes anyone wait on one it can avoid.
+const threadCache = new Map<string, ThreadData>();
+const threadInFlight = new Map<string, Promise<ThreadData | { error: string }>>();
+
+const fetchThread = (contactId: string, markRead = false): Promise<ThreadData | { error: string }> => {
+   const running = threadInFlight.get(contactId);
+   if (running && !markRead) return running;
+   const p = getWhatsAppMessages(contactId, { markRead })
+      .then((res): ThreadData | { error: string } => {
+         if (!res.ok) return { error: reasonText(res.reason, res.detail) };
+         const data = { messages: res.messages, canFreeText: res.canFreeText, lastInboundAt: res.lastInboundAt, at: Date.now() };
+         threadCache.set(contactId, data);
+         return data;
+      })
+      .finally(() => threadInFlight.delete(contactId));
+   threadInFlight.set(contactId, p);
+   return p;
+};
+
+/** Warm the cache when the pointer rests on a chat, so the click opens it instantly. */
+const prefetchThread = (contactId: string) => {
+   const cached = threadCache.get(contactId);
+   if (cached && Date.now() - cached.at < PREFETCH_FRESH_MS) return;
+   void fetchThread(contactId);
+};
 const TEXT_MAX = 1024;
 
 const cardClass = 'rounded-3xl border border-[#2a1453] bg-[#1c0a3a]';
@@ -70,8 +101,13 @@ export default function WhatsAppInboxSection() {
    const [newChat, setNewChat] = useState(false);
    const [templates, setTemplates] = useState<WhatsAppTemplateRow[] | null>(null);
 
+   const chatsInFlight = useRef(false);
    const loadChats = useCallback(async () => {
-      const res = await getWhatsAppChats();
+      if (chatsInFlight.current) return;
+      chatsInFlight.current = true;
+      const res = await getWhatsAppChats().finally(() => {
+         chatsInFlight.current = false;
+      });
       setLoadingChats(false);
       if (!res.ok) {
          setChatsError(reasonText(res.reason, res.detail));
@@ -175,6 +211,8 @@ export default function WhatsAppInboxSection() {
                            key={c.contactId}
                            type="button"
                            onClick={() => openChat(c.contactId)}
+                           onMouseEnter={() => prefetchThread(c.contactId)}
+                           onFocus={() => prefetchThread(c.contactId)}
                            className={`flex w-full items-start gap-3 border-b border-[#2a1453]/60 px-4 py-3 text-left transition ${
                               active ? 'bg-[#2a1453]' : 'hover:bg-[#20103e]'
                            }`}
@@ -261,9 +299,12 @@ function ThreadPanel({
    onBack: () => void;
    onSent: () => void;
 }) {
-   const [messages, setMessages] = useState<WhatsAppMessageRow[] | null>(null);
-   const [canFreeText, setCanFreeText] = useState(false);
-   const [lastInboundAt, setLastInboundAt] = useState<string | null>(null);
+   const cached = threadCache.get(chat.contactId);
+   const [messages, setMessages] = useState<WhatsAppMessageRow[] | null>(cached?.messages ?? null);
+   const [canFreeText, setCanFreeText] = useState(cached?.canFreeText ?? false);
+   const [lastInboundAt, setLastInboundAt] = useState<string | null>(cached?.lastInboundAt ?? null);
+   // Messages sent from here that SendPulse hasn't listed yet — shown right away, dropped once they appear.
+   const [pending, setPending] = useState<WhatsAppMessageRow[]>([]);
    const [error, setError] = useState<string | null>(null);
    const [draft, setDraft] = useState('');
    const [sending, setSending] = useState(false);
@@ -271,20 +312,26 @@ function ThreadPanel({
    const scrollRef = useRef<HTMLDivElement>(null);
    const lastCount = useRef(0);
 
-   const load = useCallback(async () => {
-      const res = await getWhatsAppMessages(chat.contactId);
-      if (!res.ok) {
-         setError(reasonText(res.reason, res.detail));
-         return;
-      }
-      setError(null);
-      setMessages(res.messages);
-      setCanFreeText(res.canFreeText);
-      setLastInboundAt(res.lastInboundAt);
-   }, [chat.contactId]);
+   const load = useCallback(
+      async (markRead = false) => {
+         const res = await fetchThread(chat.contactId, markRead);
+         if ('error' in res) {
+            setError(res.error);
+            return;
+         }
+         setError(null);
+         setMessages(res.messages);
+         setCanFreeText(res.canFreeText);
+         setLastInboundAt(res.lastInboundAt);
+         // Drop optimistic bubbles once SendPulse lists a message from us with the same text.
+         setPending((prev) => prev.filter((p) => !res.messages.some((m) => m.direction === 2 && m.text.trim() === p.text.trim())));
+      },
+      [chat.contactId]
+   );
 
    useEffect(() => {
-      void load();
+      // Mark read only when there's something unread, and only on open — not on every poll.
+      void load(chat.unread > 0);
       const t = window.setInterval(() => {
          if (document.visibilityState === 'visible') void load();
       }, THREAD_POLL_MS);
@@ -293,24 +340,37 @@ function ThreadPanel({
 
    // Stick to the bottom when new messages arrive.
    useEffect(() => {
-      const n = messages?.length ?? 0;
+      const n = (messages?.length ?? 0) + pending.length;
       if (n !== lastCount.current && scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
       lastCount.current = n;
-   }, [messages]);
+   }, [messages, pending]);
 
    const send = async () => {
       const text = draft.trim();
       if (!text || sending) return;
+      const local: WhatsAppMessageRow = {
+         id: `local-${Date.now()}`,
+         direction: 2,
+         type: 'text',
+         text,
+         status: 1,
+         createdAt: new Date().toISOString()
+      };
+      // Show it immediately; the network round trip happens behind it.
+      setPending((prev) => [...prev, local]);
+      setDraft('');
       setSending(true);
       setSendError(null);
       const res = await sendWhatsAppReply(chat.contactId, text);
       setSending(false);
       if (!res.ok) {
+         setPending((prev) => prev.filter((p) => p.id !== local.id));
+         setDraft(text);
          setSendError(reasonText(res.reason, res.detail));
          return;
       }
-      setDraft('');
-      await load();
+      setPending((prev) => prev.map((p) => (p.id === local.id ? { ...p, status: 2 } : p)));
+      window.setTimeout(() => void load(), 1500);
       onSent();
    };
 
@@ -349,19 +409,33 @@ function ThreadPanel({
             {error ? <p className="text-sm font-bold text-red-300">{error}</p> : null}
             {!messages && !error ? <p className="text-sm text-[#a89bb8]">Loading messages…</p> : null}
             {messages && !messages.length ? <p className="text-sm text-[#a89bb8]">No messages yet.</p> : null}
-            {messages?.map((m) => {
+            {[...(messages ?? []), ...pending].map((m) => {
                const mine = m.direction === 2;
+               const isLocal = m.id.startsWith('local-');
+               const cantShow = m.type === 'unsupported' || m.type === 'unknown';
                return (
                   <div key={m.id || `${m.createdAt}-${m.text}`} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                      <div
                         className={`max-w-[80%] whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2 text-sm ${
-                           mine ? 'rounded-br-md bg-[#1f6b45] text-white' : 'rounded-bl-md bg-[#2a1453] text-purple-50'
+                           cantShow
+                              ? 'rounded-bl-md border border-dashed border-[#4a3570] bg-transparent italic text-[#a89bb8]'
+                              : mine
+                                ? `rounded-br-md bg-[#1f6b45] text-white ${isLocal ? 'opacity-70' : ''}`
+                                : 'rounded-bl-md bg-[#2a1453] text-purple-50'
                         }`}
                      >
                         {m.text}
                         <span className="ml-2 inline-block align-bottom text-[10px] text-white/60">
                            {bangkokTime(m.createdAt)}
-                           {mine && m.status === 6 ? ' · failed' : mine && m.status && m.status >= 4 ? ' · ✓✓' : ''}
+                           {isLocal
+                              ? m.status === 1
+                                 ? ' · sending…'
+                                 : ' · ✓'
+                              : mine && m.status === 6
+                                ? ' · failed'
+                                : mine && m.status && m.status >= 4
+                                  ? ' · ✓✓'
+                                  : ''}
                         </span>
                      </div>
                   </div>

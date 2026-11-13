@@ -2887,8 +2887,12 @@ async function invokeWhatsApp<T>(body: Record<string, unknown>): Promise<WhatsAp
 
 export const getWhatsAppChats = () => invokeWhatsApp<{ chats: WhatsAppChatRow[] }>({ action: 'wa_chats' });
 
-export const getWhatsAppMessages = (contactId: string) =>
-   invokeWhatsApp<{ messages: WhatsAppMessageRow[]; lastInboundAt: string | null; canFreeText: boolean }>({ action: 'wa_messages', contactId });
+export const getWhatsAppMessages = (contactId: string, opts: { markRead?: boolean } = {}) =>
+   invokeWhatsApp<{ messages: WhatsAppMessageRow[]; lastInboundAt: string | null; canFreeText: boolean }>({
+      action: 'wa_messages',
+      contactId,
+      markRead: opts.markRead === true
+   });
 
 export const sendWhatsAppReply = (contactId: string, text: string) => invokeWhatsApp({ action: 'wa_send', contactId, text });
 
