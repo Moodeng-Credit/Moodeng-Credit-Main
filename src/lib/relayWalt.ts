@@ -15,7 +15,7 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 const FN = 'stableyard-deposit-address';
 
-export type RelayDirection = 'cashout' | 'repay';
+export type RelayDirection = 'cashout' | 'repay' | 'maya';
 /** relay_transfers.status: quoted → sent → pending → success | failure | refund (| expired). */
 export type RelayRowStatus = 'quoted' | 'sent' | 'pending' | 'success' | 'failure' | 'refund' | 'expired';
 
@@ -42,6 +42,8 @@ type RelayResponse = Partial<RelayTransfer> & {
    code?: string;
    error?: string;
    waltAddress?: string | null;
+   mayaAddress?: string | null;
+   mayaEnabled?: boolean;
    relayStatus?: string | null;
    transfer?: RelayTransfer | null;
 };
@@ -87,6 +89,67 @@ export const relayWalt = {
    }
 };
 
+/**
+ * Send to Maya (Philippines): USDC on Base → Relay one-time address on Base → USDC on Solana → the
+ * borrower's Maya "Receive USDC" address (Solana network), saved on the account (users.maya_address).
+ * Status and "sent" use the same calls as Walt (relayWalt.status / relayWalt.cashoutSent).
+ */
+export const relayMaya = {
+   /** Newest Maya transfer (to resume), the saved address, and whether Send to Maya is open for this account. */
+   latest: async () => {
+      const res = await call({ relay: 'latest', direction: 'maya' });
+      return { transfer: res.transfer ?? null, mayaAddress: res.mayaAddress ?? null, enabled: Boolean(res.mayaEnabled) };
+   },
+   save: async (address: string) => {
+      const res = await call({ relay: 'maya_save', address: address.trim() });
+      if (!res.mayaAddress) throw new RelayWaltError('Bad answer from the server', 'bad_response');
+      return res.mayaAddress;
+   },
+   quote: async (amount: string) => asTransfer(await call({ relay: 'maya_quote', amount }))
+};
+
+/** Price preview for Send to Maya, straight from Relay (no key, nothing stored). Null on any problem. */
+export const estimateToSolana = async (args: {
+   amountUsdc: string;
+   wallet: string;
+   recipient: string;
+   signal?: AbortSignal;
+}): Promise<{ amountOut: number; feeUsd: number; seconds: number | null } | null> => {
+   const m = /^(0|[1-9][0-9]{0,5})(\.[0-9]{1,2})?$/.exec(args.amountUsdc.trim());
+   if (!m) return null;
+   const units = BigInt(m[1]) * 1_000_000n + BigInt(((m[2] ?? '.').slice(1) || '0').padEnd(6, '0'));
+   if (units < 1_000_000n) return null;
+   try {
+      const res = await fetch('https://api.relay.link/quote', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         signal: args.signal,
+         body: JSON.stringify({
+            user: args.wallet,
+            recipient: args.recipient,
+            originChainId: 8453,
+            destinationChainId: 792703809,
+            originCurrency: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+            destinationCurrency: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+            amount: units.toString(),
+            tradeType: 'EXACT_INPUT'
+         })
+      });
+      if (!res.ok) return null;
+      const q = (await res.json()) as {
+         details?: { currencyOut?: { amountFormatted?: string }; timeEstimate?: number };
+         fees?: { relayer?: { amountUsd?: string }; gas?: { amountUsd?: string } };
+      };
+      const amountOut = Number(q.details?.currencyOut?.amountFormatted);
+      if (!Number.isFinite(amountOut)) return null;
+      const feeUsd = (Number(q.fees?.relayer?.amountUsd) || 0) + (Number(q.fees?.gas?.amountUsd) || 0);
+      const seconds = Number(q.details?.timeEstimate);
+      return { amountOut, feeUsd, seconds: Number.isFinite(seconds) ? seconds : null };
+   } catch {
+      return null;
+   }
+};
+
 /** Indonesia track: repaying straight to Moodeng's payout wallet (no Relay). */
 export type IdRepayRequest = {
    requestId: number;
@@ -122,7 +185,8 @@ export const idRepay = {
       if (!res.requestId || !res.address || !res.amountUsdt) throw new RelayWaltError('Bad answer from the server', 'bad_response');
       return res as IdRepayRequest;
    },
-   status: async (requestId: number): Promise<IdRepayStatus> => (await call({ relay: 'id_repay_status', requestId })) as unknown as IdRepayStatus,
+   status: async (requestId: number): Promise<IdRepayStatus> =>
+      (await call({ relay: 'id_repay_status', requestId })) as unknown as IdRepayStatus,
    /** "I've sent it" for a Walt Transfer: the team checks their Walt and confirms. */
    sent: async (requestId: number) => {
       await call({ relay: 'id_repay_sent', requestId });

@@ -27,6 +27,28 @@ export const BSC_USDC = '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d';
 export const BSC_USDT = '0x55d398326f99059fF775485246999027B3197955';
 export const BASE_USDC_DECIMALS = 6;
 export const BSC_TOKEN_DECIMALS = 18;
+// Send to Maya: Relay's id for Solana mainnet, and Circle's USDC mint there (6 decimals).
+export const SOLANA_CHAIN_ID = 792703809;
+export const SOLANA_USDC = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+export const SOLANA_USDC_DECIMALS = 6;
+
+const BASE58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+
+/** A Solana wallet address: base58 that decodes to exactly 32 bytes. */
+export const isSolanaAddress = (value: string): boolean => {
+   const s = String(value ?? '').trim();
+   if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(s)) return false;
+   let n = 0n;
+   for (const ch of s) n = n * 58n + BigInt(BASE58.indexOf(ch));
+   let bytes = 0;
+   while (n > 0n) {
+      n >>= 8n;
+      bytes += 1;
+   }
+   // Leading '1's are leading zero bytes.
+   const zeros = s.length - s.replace(/^1+/, '').length;
+   return bytes + zeros === 32;
+};
 
 const EVM_ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 const HASH = /^0x[0-9a-fA-F]{64}$/;
@@ -265,6 +287,33 @@ export const relayQuoteRepay = (args: { amountUsdt: string; recipient: string; r
          refundTo
       },
       BASE_USDC_DECIMALS
+   );
+};
+
+/**
+ * Send to Maya: `amountUsdc` of Base USDC from `user` → USDC on Solana to `recipient` (their Maya
+ * Solana address). Refunds go to `refundTo` on Base (their Moodeng wallet). Base is the origin, so the
+ * deposit address is an EVM address and needs no API key (only Solana-origin deposit addresses do).
+ */
+export const relayQuoteToSolana = (args: { amountUsdc: string; user: string; recipient: string; refundTo: string }) => {
+   const units = toUnits(args.amountUsdc, BASE_USDC_DECIMALS);
+   if (units <= 0n) throw new RelayError('Amount must be more than 0.', 'bad_amount', 400);
+   const recipient = String(args.recipient ?? '').trim();
+   if (!isSolanaAddress(recipient)) throw new RelayError('Invalid Maya address.', 'bad_recipient', 400);
+   return quote(
+      {
+         user: requireAddress('user', args.user),
+         recipient,
+         originChainId: BASE_CHAIN_ID,
+         destinationChainId: SOLANA_CHAIN_ID,
+         originCurrency: BASE_USDC,
+         destinationCurrency: SOLANA_USDC,
+         amount: units.toString(),
+         tradeType: 'EXACT_INPUT',
+         useDepositAddress: true,
+         refundTo: requireAddress('refund', args.refundTo)
+      },
+      SOLANA_USDC_DECIMALS
    );
 };
 

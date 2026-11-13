@@ -1,6 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { buildCashoutAlert, cashoutTxUrl, DEFAULT_CASHOUT_ALERT_CHAT_ID } from '../_shared/cashoutAlert.ts';
+import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { PaymentNotConfirmedError, type VerifiedTransfer, verifyPayment } from '../_shared/usdcTransfer.ts';
 
 // Server-side recorder for a borrower cash-out. The client used to insert `withdrawals` rows
@@ -23,13 +25,58 @@ const jsonResponse = (body: Record<string, unknown>, status = 200) =>
 
 // A plain transaction hash (embedded wallet) or a Base Account userOperation hash (Base Pay): try
 // the transaction receipt first, then the bundler.
-const verifyAny = async (hash: string): Promise<VerifiedTransfer> => {
+const verifyAny = async (hash: string): Promise<VerifiedTransfer & { wallet: 'embedded' | 'base' }> => {
    try {
-      return await verifyPayment('wallet', hash);
+      return { ...(await verifyPayment('wallet', hash)), wallet: 'embedded' };
    } catch (err) {
       if (!(err instanceof PaymentNotConfirmedError)) throw err;
    }
-   return await verifyPayment('base', hash);
+   return { ...(await verifyPayment('base', hash)), wallet: 'base' };
+};
+
+// deno-lint-ignore no-explicit-any
+type AdminClient = any;
+
+// Team alert in the Cash-outs group: who, how much, how, when. Never blocks the response.
+const postCashoutAlert = async (
+   admin: AdminClient,
+   args: { userId: string; amount: number; exchange: string; destination: string; txHash: string; wallet: 'embedded' | 'base' }
+) => {
+   try {
+      const [setting, user, count] = await Promise.all([
+         admin.from('telegram_bot_settings').select('value').eq('key', 'cashout_alert_chat_id').maybeSingle(),
+         admin.from('users').select('username, display_name, telegram_username, email, market').eq('id', args.userId).maybeSingle(),
+         admin.from('withdrawals').select('id', { count: 'exact', head: true }).eq('borrower_user_id', args.userId)
+      ]);
+      const chatId = ((setting.data as { value?: string } | null)?.value || '').trim() || DEFAULT_CASHOUT_ALERT_CHAT_ID;
+      const u = (user.data ?? {}) as {
+         username?: string | null;
+         display_name?: string | null;
+         telegram_username?: string | null;
+         email?: string | null;
+         market?: string | null;
+      };
+      const text = buildCashoutAlert({
+         amount: args.amount,
+         exchange: args.exchange,
+         destination: args.destination,
+         txHash: args.txHash,
+         wallet: args.wallet,
+         at: new Date(),
+         user: {
+            id: args.userId,
+            username: u.username,
+            displayName: u.display_name,
+            telegramUsername: u.telegram_username,
+            email: u.email,
+            market: u.market
+         },
+         cashoutNumber: count.count ?? 0
+      });
+      await sendTelegramMessage(chatId, text, { inlineKeyboard: [[{ text: '🔎 View on Basescan', url: cashoutTxUrl(args.txHash) }]] });
+   } catch (err) {
+      console.error('[record-withdrawal] cash-out alert failed:', err instanceof Error ? err.message : err);
+   }
 };
 
 serve(async (req) => {
@@ -62,7 +109,7 @@ serve(async (req) => {
       return jsonResponse({ withdrawalId: existing.id, duplicate: true });
    }
 
-   let transfer: VerifiedTransfer;
+   let transfer: VerifiedTransfer & { wallet: 'embedded' | 'base' };
    try {
       transfer = await verifyAny(txHash);
    } catch (err) {
@@ -108,7 +155,17 @@ serve(async (req) => {
       return jsonResponse({ error: 'Failed to record withdrawal' }, 500);
    }
 
-   const { error: notifyError } = await admin.functions.invoke('withdrawal-notification', { body: { withdrawalId: inserted.id } });
+   const [{ error: notifyError }] = await Promise.all([
+      admin.functions.invoke('withdrawal-notification', { body: { withdrawalId: inserted.id } }),
+      postCashoutAlert(admin, {
+         userId: callerId,
+         amount,
+         exchange,
+         destination: transfer.to,
+         txHash: transfer.txHash || txHash,
+         wallet: transfer.wallet
+      })
+   ]);
    if (notifyError) console.error('[record-withdrawal] notification failed:', notifyError.message);
 
    return jsonResponse({ withdrawalId: inserted.id, amount, destination: transfer.to });

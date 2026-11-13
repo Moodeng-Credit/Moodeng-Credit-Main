@@ -16,33 +16,55 @@
 // POST { relay: 'id_repay_sent', requestId } → "I've sent it" (Walt Transfer): asks the team to confirm.
 // POST { relay: 'id_walt_ready' } → onboarding Walt step: reads their @username from Telegram, marks Walt ready.
 //
+// Send to Maya (Philippines): Base USDC → Relay one-time address on Base → USDC on Solana → their Maya.
+// POST { relay: 'maya_save', address } → save their Maya "Receive USDC" Solana address (users.maya_address).
+// POST { relay: 'maya_quote', amount: "12.50" } → like cashout_quote, recipient ALWAYS users.maya_address.
+// POST { relay: 'latest', direction: 'maya' } → newest Maya transfer + mayaAddress + mayaEnabled.
+// cashout_sent / status work for Maya transfers too. Rollout switch, no deploy:
+// telegram_bot_settings.maya_bridge = 'admins' (default) | 'on' (everyone) | 'off'.
+//
 // Every address comes from the caller's own users row — never from the client: the cash-out
 // recipient is ALWAYS users.walt_address, the repay recipient ALWAYS users.wallet_address.
 // Only accounts with a Walt address can use it (only the Indonesia track can save one).
 // Kill switch, no deploy: telegram_bot_settings.walt_bridge = 'off'.
+import { claimSent, getOrCreateRepayRequest, repayRequestStatus } from '../_shared/idRepayments.ts';
+import { markWaltReady } from '../_shared/idWaltPayouts.ts';
 import {
    BASE_CHAIN_ID,
    BASE_USDC,
    BASE_USDC_DECIMALS,
    BSC_TOKEN_DECIMALS,
    fromUnits,
+   isSolanaAddress,
    RelayError,
    type RelayQuote,
    relayQuoteCashout,
    relayQuoteRepay,
+   relayQuoteToSolana,
    relayStatus,
    rowStatusFor,
    toUnits
 } from '../_shared/relay.ts';
 import { RPC_URL, rpcCall } from '../_shared/usdcTransfer.ts';
-import { claimSent, getOrCreateRepayRequest, repayRequestStatus } from '../_shared/idRepayments.ts';
-import { markWaltReady } from '../_shared/idWaltPayouts.ts';
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
 type Json = (body: Record<string, unknown>, status?: number) => Response;
 
-const ACTIONS = new Set(['cashout_quote', 'cashout_sent', 'repay_quote', 'status', 'latest', 'id_repay', 'id_repay_status', 'id_repay_sent', 'id_walt_ready']);
+const ACTIONS = new Set([
+   'cashout_quote',
+   'cashout_sent',
+   'repay_quote',
+   'status',
+   'latest',
+   'id_repay',
+   'id_repay_status',
+   'id_repay_sent',
+   'id_walt_ready',
+   'maya_save',
+   'maya_quote'
+]);
+type Direction = 'cashout' | 'repay' | 'maya';
 export const isRelayAction = (value: unknown) => typeof value === 'string' && ACTIONS.has(value);
 
 const EVM_ADDRESS = /^0x[0-9a-fA-F]{40}$/;
@@ -63,7 +85,7 @@ const ROW_FIELDS =
 
 type Row = {
    id: string;
-   direction: 'cashout' | 'repay';
+   direction: Direction;
    status: string;
    amount_in: string | number;
    amount_out_quoted: string | number | null;
@@ -97,7 +119,8 @@ const rowUnits = (row: Row): bigint => {
 
 /** What the app sees for a transfer. `amountIn` is human units of the origin token. */
 const view = (row: Row) => {
-   const decimals = row.direction === 'cashout' ? BASE_USDC_DECIMALS : BSC_TOKEN_DECIMALS;
+   // Cash-outs (Walt and Maya) start as Base USDC; only repay starts on BNB Chain.
+   const decimals = row.direction === 'repay' ? BSC_TOKEN_DECIMALS : BASE_USDC_DECIMALS;
    const units = rowUnits(row);
    return {
       transferId: row.id,
@@ -140,11 +163,29 @@ const bridgeOff = async (admin: SupabaseClient) => {
    );
 };
 
+/** Send to Maya rollout: 'admins' until a real Maya test passes, then 'on'. */
+const mayaAllowed = async (admin: SupabaseClient, userId: string): Promise<boolean> => {
+   const { data } = await admin.from('telegram_bot_settings').select('value').eq('key', 'maya_bridge').maybeSingle();
+   const mode = String(data?.value ?? 'admins')
+      .trim()
+      .toLowerCase();
+   if (mode === 'on') return true;
+   if (mode === 'off') return false;
+   const { data: adminRow } = await admin
+      .from('admin_users')
+      .select('user_id')
+      .eq('user_id', userId)
+      .eq('active', true)
+      .in('role', ['owner', 'admin'])
+      .maybeSingle();
+   return Boolean(adminRow);
+};
+
 /** An unused quote for exactly this transfer, still waiting at Relay, made in the last 30 minutes. */
 const reusableQuote = async (
    admin: SupabaseClient,
    userId: string,
-   direction: 'cashout' | 'repay',
+   direction: Direction,
    units: bigint,
    recipient: string,
    refundTo: string
@@ -176,7 +217,7 @@ const reusableQuote = async (
 const insertQuote = async (
    admin: SupabaseClient,
    userId: string,
-   direction: 'cashout' | 'repay',
+   direction: Direction,
    q: RelayQuote,
    recipient: string,
    refundTo: string
@@ -262,11 +303,12 @@ export const handleRelay = async (
 
       const { data: profile } = await admin
          .from('users')
-         .select('wallet_address, wallet_chain_id, walt_address')
+         .select('wallet_address, wallet_chain_id, walt_address, maya_address')
          .eq('id', userId)
          .maybeSingle();
       const wallet = String(profile?.wallet_address ?? '').trim();
       const walt = String(profile?.walt_address ?? '').trim();
+      const maya = String(profile?.maya_address ?? '').trim();
 
       if (action === 'status' || action === 'cashout_sent') {
          const transferId = String(body.transferId ?? '').trim();
@@ -286,7 +328,7 @@ export const handleRelay = async (
          if (action === 'cashout_sent') {
             const txHash = String(body.txHash ?? '').trim();
             if (!HASH.test(txHash)) return json({ ok: false, error: 'Invalid transaction.' }, 400);
-            if (row.direction !== 'cashout') return json({ ok: false, error: 'Not a cash-out.' }, 400);
+            if (row.direction === 'repay') return json({ ok: false, error: 'Not a cash-out.' }, 400);
             if (row.tx_hash && row.tx_hash.toLowerCase() !== txHash.toLowerCase())
                return json({ ok: false, error: 'This transfer was already sent.' }, 409);
             const status = row.status === 'quoted' ? 'sent' : row.status;
@@ -325,7 +367,7 @@ export const handleRelay = async (
       }
 
       if (action === 'latest') {
-         const direction = body.direction === 'repay' ? 'repay' : 'cashout';
+         const direction: Direction = body.direction === 'repay' ? 'repay' : body.direction === 'maya' ? 'maya' : 'cashout';
          const { data } = await admin
             .from('relay_transfers')
             .select(ROW_FIELDS)
@@ -335,7 +377,66 @@ export const handleRelay = async (
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle();
+         if (direction === 'maya') {
+            return json({
+               ok: true,
+               transfer: data ? view(data as Row) : null,
+               mayaAddress: maya || null,
+               mayaEnabled: await mayaAllowed(admin, userId)
+            });
+         }
          return json({ ok: true, transfer: data ? view(data as Row) : null, waltAddress: walt || null });
+      }
+
+      // ── Send to Maya ──
+      if (action === 'maya_save' || action === 'maya_quote') {
+         if (!(await mayaAllowed(admin, userId)))
+            return json({ ok: false, code: 'bridge_off', error: 'Send to Maya is not open yet.' }, 403);
+         if (action === 'maya_save') {
+            const address = String(body.address ?? '').trim();
+            if (EVM_ADDRESS.test(address)) {
+               return json(
+                  {
+                     ok: false,
+                     code: 'ethereum_address',
+                     error: 'That is an Ethereum address. In Maya, tap Change network, pick Solana, then copy the address.'
+                  },
+                  400
+               );
+            }
+            if (!isSolanaAddress(address))
+               return json({ ok: false, code: 'bad_address', error: 'That is not a Solana address. Copy it again from Maya.' }, 400);
+            const { error } = await admin.from('users').update({ maya_address: address }).eq('id', userId);
+            if (error) return json({ ok: false, error: 'Could not save it. Try again.' }, 500);
+            return json({ ok: true, mayaAddress: address });
+         }
+         if (!isSolanaAddress(maya)) return json({ ok: false, code: 'no_maya', error: 'Save your Maya address first.' }, 409);
+         if (!EVM_ADDRESS.test(wallet) || (profile?.wallet_chain_id && Number(profile.wallet_chain_id) !== BASE_CHAIN_ID)) {
+            return json({ ok: false, code: 'no_wallet', error: 'Set up your Moodeng wallet first.' }, 409);
+         }
+         const amount = String(body.amount ?? '').trim();
+         if (!USD_2DP.test(amount)) return json({ ok: false, code: 'bad_amount', error: 'Enter an amount like 10 or 10.50.' }, 400);
+         if (Number(amount) < MIN_USD) return json({ ok: false, code: 'amount_too_low', error: `The minimum is $${MIN_USD}.` }, 400);
+         if (Number(amount) > MAX_USD) return json({ ok: false, code: 'amount_too_high', error: `The maximum is $${MAX_USD}.` }, 400);
+         const units = toUnits(amount, BASE_USDC_DECIMALS);
+         const balance = await baseUsdcBalance(wallet);
+         if (balance != null && units > balance) {
+            return json(
+               {
+                  ok: false,
+                  code: 'insufficient',
+                  error: 'Not enough USDC in your wallet.',
+                  balance: fromUnits(balance, BASE_USDC_DECIMALS)
+               },
+               400
+            );
+         }
+         const reused = await reusableQuote(admin, userId, 'maya', units, maya, wallet);
+         if (reused) return json({ ok: true, reused: true, mayaAddress: maya, ...view(reused) });
+         const q = await relayQuoteToSolana({ amountUsdc: amount, user: wallet, recipient: maya, refundTo: wallet });
+         const row = await insertQuote(admin, userId, 'maya', q, maya, wallet);
+         if (!row) return json({ ok: false, error: 'Could not start the transfer. Try again.' }, 500);
+         return json({ ok: true, mayaAddress: maya, ...view(row) });
       }
 
       // New quotes from here on.

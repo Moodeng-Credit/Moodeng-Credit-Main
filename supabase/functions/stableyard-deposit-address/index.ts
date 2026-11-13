@@ -500,6 +500,11 @@ const handleQr = async (
       .eq('user_id', userId)
       .maybeSingle();
    const accountId = row?.account_id as string | undefined;
+   // 'status' must always carry the bankUp / qrCashout flags: the app hides the cash-out cards without
+   // them, and the account (plus the email + Share my ID setup) is only made when the person taps a card.
+   // Without this, everyone who hadn't set up yet never saw the QR card (2026-11-13).
+   const statusFlags = { bankUp: body.bankUp !== false, qrCashout: body.qrCashout === true };
+   if (!accountId && action === 'status') return json({ ok: true, step: 'status', noAccount: true, kyc: null, ...statusFlags });
    if (!accountId) return json({ error: 'No Stableyard account yet. Open the deposit test first to create one.' }, 409);
 
    const fail = (result: { status: number; error: string; code?: string; requestId?: string; data?: unknown }) =>
@@ -535,15 +540,18 @@ const handleQr = async (
 
    if (action === 'status') {
       const [source, kyc] = await Promise.all([stableyard.getPaymentSource(accountId), stableyard.getKyc(accountId)]);
-      if (!source.ok) return fail(source);
+      // A Stableyard hiccup on this read shouldn't hide the cash-out cards: still send the flags.
+      if (!source.ok) {
+         console.warn('[stableyard-deposit-address] status: payment source read failed', source.status, source.error);
+         return json({ ok: true, accountId, step: 'status', paymentSource: null, kyc: kyc.ok ? kyc.data : null, ...statusFlags });
+      }
       return json({
          ok: true,
          accountId,
          step: 'status',
          paymentSource: source.data,
          kyc: kyc.ok ? kyc.data : null,
-         bankUp: body.bankUp !== false,
-         qrCashout: body.qrCashout === true
+         ...statusFlags
       });
    }
 
