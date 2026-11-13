@@ -767,7 +767,7 @@ function QrPesoCard({ onSelect, spendable, recommended }: { onSelect: () => void
 
 /** Under the bank card: the QR option as one small row. */
 function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) => void; onLater: () => void }) {
-   const { spendable, walletConnected, repayUsdc: REPAY_USDC, dueDate: DUE_DATE, isPreview } = useWithdrawData();
+   const { spendable, walletConnected, isPreview } = useWithdrawData();
    const navigate = useNavigate();
    const isIndo = useIsIndo(isPreview);
    // Indonesians get Walt (first, recommended) + Binance; the Philippine rails and the peso payout are hidden.
@@ -817,7 +817,6 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
       : spendable == null
         ? 'Checking your balance…'
         : `${spendable} USDC available`;
-   const repayLine = REPAY_USDC != null && DUE_DATE ? `Repay ${REPAY_USDC} USDC by ${DUE_DATE}` : null;
 
    return (
       <div className="absolute inset-0 bg-[var(--surface)] flex flex-col">
@@ -857,13 +856,8 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                         {isIndo ? 'Tarik uang kamu' : 'Withdraw your USDC'}
                      </h1>
                      <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[6px]">
+                        {/* Balance only: a repay line here read as the next step right after funding (Nov 2026). */}
                         {balanceLine}
-                        {repayLine && (
-                           <>
-                              {' '}
-                              · Repay <span className="font-semibold text-[var(--primary)]">{REPAY_USDC} USDC</span> by {DUE_DATE}
-                           </>
-                        )}
                      </p>
                   </>
                )}
