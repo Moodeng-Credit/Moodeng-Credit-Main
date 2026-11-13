@@ -2874,6 +2874,31 @@ export interface PersonCard {
    signedUpAt: string | null;
    lastSignInAt: string | null;
    whatsappContactId: string | null;
+   // From the ID check (Didit).
+   identity?: {
+      gender: string | null;
+      birthDate: string | null;
+      age: number | null;
+      city: string | null;
+      province: string | null;
+      region: string | null;
+      country: string | null;
+   };
+   // What they wrote in the loan application.
+   application?: {
+      profession: string | null;
+      incomeType: string | null;
+      incomeDescription: string | null;
+      monthlyIncome: string | null;
+      monthlyExpenses: string | null;
+      otherIncome: string | null;
+      paydayType: string | null;
+      paydayStart: number | null;
+      paydayEnd: number | null;
+      location: string | null;
+   };
+   // Latest screening call answers.
+   call?: { role: string | null; loanUse: string | null; referral: string | null; notes: string | null; at: string | null } | null;
    loans: { repaid: number; repaidLate: number; totalBorrowed: number; requested: number; lastLoanAt: string | null };
    activeLoan: { amount: number; owed: number; dueDate: string | null; fundedAt: string | null; status: string } | null;
 }

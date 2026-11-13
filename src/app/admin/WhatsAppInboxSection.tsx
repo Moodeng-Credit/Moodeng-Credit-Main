@@ -19,7 +19,7 @@ import {
    type WhatsAppMessageRow,
    type WhatsAppTemplateRow
 } from '@/app/admin/adminSupabase';
-import WhatsAppPersonCard, { daysLate, LoanBadge, personName } from '@/app/admin/WhatsAppPersonCard';
+import WhatsAppPersonCard, { aboutLine, daysLate, LoanBadge, personName } from '@/app/admin/WhatsAppPersonCard';
 
 type Filter = 'all' | 'unread' | 'loan' | 'late' | 'linked' | 'unlinked';
 const FILTERS: Array<{ id: Filter; label: string; test: (c: WhatsAppChatRow) => boolean }> = [
@@ -329,6 +329,7 @@ export default function WhatsAppInboxSection() {
                                     <LoanBadge person={c.person} />
                                  </div>
                               ) : null}
+                              {aboutLine(c.person) ? <p className="truncate text-[11px] text-[#a89bb8]">{aboutLine(c.person)}</p> : null}
                            </div>
                         </button>
                      );
