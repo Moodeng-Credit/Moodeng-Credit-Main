@@ -5,18 +5,14 @@ import {
    ArrowRight,
    ArrowUpRight,
    Check,
-   CheckCircle2,
    ChevronLeft,
    ChevronRight,
    ClipboardCheck,
-   Clock,
    Copy,
-   CreditCard,
    Download,
    Info,
    Landmark,
    Loader2,
-   Lock,
    MessageCircle,
    PlayCircle,
    QrCode,
@@ -72,7 +68,7 @@ function track(event: string, props?: Record<string, unknown>) {
 type Screen = 'celebrate' | 'withdraw';
 // 'bank' = straight to GCash / any bank through Stableyard (testers only for now, see BankPayoutFlow).
 // 'walt' = Indonesia track: to their saved Walt (Telegram wallet) address through Relay (WaltCashoutFlow).
-type Provider = 'moneybees' | 'binance' | 'coinsph' | 'gcash' | 'pdax' | 'bank' | 'qr' | 'kraken' | 'coinbase' | 'walt';
+type Provider = 'binance' | 'coinsph' | 'gcash' | 'pdax' | 'bank' | 'qr' | 'kraken' | 'coinbase' | 'walt';
 
 // Indonesia-track borrowers (users.market = 'ID'). Preview: /withdraw-preview?market=id.
 function useIsIndo(isPreview: boolean) {
@@ -169,17 +165,6 @@ function PrimaryBtn({
    );
 }
 
-function SecondaryBtn({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
-   return (
-      <button
-         onClick={onClick}
-         className="w-full rounded-[16px] px-[20px] py-[14px] flex items-center justify-center gap-[8px] text-[15px] font-semibold leading-[22px] tracking-[-0.3px] text-[var(--primary)] border border-[var(--border-2)] bg-[var(--surface-1)] hover:bg-[var(--hover-1)] transition-all active:scale-[0.98]"
-      >
-         {children}
-      </button>
-   );
-}
-
 /* Live USDC → fiat rate — shared hook (also powers the balance card's peso line). */
 
 function ReceiveEstimate({ currency, usdcAmount }: { currency: string; usdcAmount: number }) {
@@ -215,31 +200,6 @@ function BinanceMarkGold({ className = '' }: { className?: string }) {
    );
 }
 
-function MoneybeesMark({ className = '' }: { className?: string }) {
-   return (
-      <svg viewBox="0 0 48 48" className={className} xmlns="http://www.w3.org/2000/svg">
-         <defs>
-            <linearGradient id="mbGold" x1="0" y1="0" x2="1" y2="1">
-               <stop offset="0" stopColor="#FFD23F" />
-               <stop offset="1" stopColor="#F5A300" />
-            </linearGradient>
-         </defs>
-         <path
-            d="M24 3 L42.18 13.5 L42.18 34.5 L24 45 L5.82 34.5 L5.82 13.5 Z"
-            fill="url(#mbGold)"
-            stroke="#0A0A0A"
-            strokeWidth="3"
-            strokeLinejoin="round"
-         />
-         <path d="M24 12.5 L33.7 18.1 L24 23.7 L14.3 18.1 Z" fill="#0A0A0A" />
-         <path d="M14.3 18.1 L24 23.7 L24 37.2 L14.3 31.6 Z" fill="#FFFFFF" />
-         <path d="M33.7 18.1 L33.7 31.6 L24 37.2 L24 23.7 Z" fill="#FFFFFF" />
-         <path d="M18 24 L24 27.5 L30 24 L30 27.1 L24 30.6 L18 27.1 Z" fill="#0A0A0A" />
-         <path d="M18 28.6 L24 32.1 L30 28.6 L30 31.7 L24 35.2 L18 31.7 Z" fill="#0A0A0A" />
-      </svg>
-   );
-}
-
 function GCashMark({ className = '' }: { className?: string }) {
    return (
       <svg viewBox="0 0 100 100" className={className} xmlns="http://www.w3.org/2000/svg">
@@ -261,11 +221,8 @@ function GCashMark({ className = '' }: { className?: string }) {
 function PdaxMark({ className = '' }: { className?: string }) {
    return (
       <svg viewBox="0 0 100 100" className={className} xmlns="http://www.w3.org/2000/svg">
-         <circle cx="50" cy="50" r="50" fill="#0E1A2B" />
-         <g fill="#19D86F">
-            <path d="M34 30 H49 L37 70 H22 Z" />
-            <path d="M59 30 H74 L62 70 H47 Z" />
-         </g>
+         <rect width="100" height="100" fill="#0A2756" />
+         <path d="M47 22 H76 L64 52 H52 L40 78 H24 L36 50 H36 Z" fill="#6FD65A" />
       </svg>
    );
 }
@@ -313,13 +270,6 @@ function BinanceAppIcon({ className = '' }: { className?: string }) {
       </div>
    );
 }
-function MoneybeesAppIcon({ className = '' }: { className?: string }) {
-   return (
-      <div className={`flex items-center justify-center ${className}`}>
-         <MoneybeesMark className="w-full h-full" />
-      </div>
-   );
-}
 function GCashAppIcon({ className = '' }: { className?: string }) {
    return (
       <div className={`rounded-[16px] bg-white flex items-center justify-center ${className}`}>
@@ -329,8 +279,8 @@ function GCashAppIcon({ className = '' }: { className?: string }) {
 }
 function PdaxAppIcon({ className = '' }: { className?: string }) {
    return (
-      <div className={`rounded-[16px] bg-[#0B1426] flex items-center justify-center overflow-hidden ${className}`}>
-         <PdaxMark className="w-[80%] h-[80%]" />
+      <div className={`rounded-[16px] bg-[#0A2756] flex items-center justify-center overflow-hidden ${className}`}>
+         <PdaxMark className="w-full h-full" />
       </div>
    );
 }
@@ -392,20 +342,6 @@ function AmountCard({ receive, payout }: { receive: React.ReactNode; payout: Rea
             <p className="text-[12px] text-[var(--text-2)]">{payout}</p>
          </div>
       </Card>
-   );
-}
-
-function HowThisWorks({ children }: { children: React.ReactNode }) {
-   const [open, setOpen] = useState(false);
-   return (
-      <div className="rounded-[14px] bg-[var(--surface-2)] border border-[var(--border-1)] overflow-hidden">
-         <button onClick={() => setOpen((v) => !v)} className="w-full flex items-center gap-[10px] p-[14px] text-left">
-            <Info className="w-[18px] h-[18px] text-[var(--accent)] shrink-0" />
-            <p className="flex-1 text-[14px] font-semibold text-[var(--accent-text)]">How this works</p>
-            <ChevronRight className={`w-[18px] h-[18px] text-[var(--accent)] shrink-0 transition-transform ${open ? 'rotate-90' : ''}`} />
-         </button>
-         {open && <p className="text-[13px] text-[var(--text-2)] leading-[19px] px-[14px] pb-[14px] -mt-[3px]">{children}</p>}
-      </div>
    );
 }
 
@@ -819,25 +755,6 @@ function QrPesoCard({ onSelect, spendable, recommended }: { onSelect: () => void
 }
 
 /** Under the bank card: the QR option as one small row. */
-/** The account-number route, as the small second choice under the recommended QR card. */
-function BankPesoRow({ onSelect }: { onSelect: () => void }) {
-   return (
-      <button
-         onClick={onSelect}
-         className="w-full rounded-[12px] border-2 border-[#e8e4ff] bg-[var(--surface,#fff)] px-[14px] py-[12px] flex items-center gap-[12px] text-left active:scale-[0.99] transition-all"
-      >
-         <span className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-[9px] bg-[var(--surface-2,#f1eeff)]">
-            <Landmark className="w-[20px] h-[20px] text-[#6b55f7] dark:text-[#a98bff]" strokeWidth={2.2} />
-         </span>
-         <span className="flex-1 min-w-0">
-            <span className="block text-[15px] font-bold text-[var(--ink)]">Or type your account number</span>
-            <span className="block text-[13px] text-[var(--text-muted)]">Any PH bank</span>
-         </span>
-         <ChevronRight className="w-[20px] h-[20px] text-[var(--text-faint)] shrink-0" />
-      </button>
-   );
-}
-
 function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) => void; onLater: () => void }) {
    const { spendable, walletConnected, repayUsdc: REPAY_USDC, dueDate: DUE_DATE, isPreview } = useWithdrawData();
    const navigate = useNavigate();
@@ -957,13 +874,14 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
             <div className="space-y-[10px]">
                {bankPayout && (
                   <>
-                     {/* The QR is the recommended way (no typing, no wrong account number); the account number is the second choice. */}
+                     {/* The QR is the one straight-to-bank way shown (2026-11-13: it's the route proven to pay out). The
+                         account-number card only shows if the QR cash-out is switched off; inside the QR flow it stays as
+                         the fallback when Stableyard won't take a QR. */}
                      {qrCard ? (
                         <QrPesoCard onSelect={() => selectProvider('qr')} spendable={spendable} recommended />
                      ) : (
                         <DirectPesoCard onSelect={() => selectProvider('bank')} spendable={spendable} />
                      )}
-                     {bankCard && qrCard ? <BankPesoRow onSelect={() => selectProvider('bank')} /> : null}
                      <p className="text-[18px] font-black italic leading-[1.2] tracking-[-0.3px] text-[var(--text-muted,#594d65)] pt-[10px] pb-[2px]">
                         Or sell on an exchange app
                      </p>
@@ -1050,14 +968,6 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                         name="Binance"
                         line1="Sell for local currency via P2P marketplace"
                         line2="GCash, Maya or Bank · 30 min–hours"
-                     />
-                     <PickerRow
-                        onSelect={selectProvider}
-                        id="moneybees"
-                        icon={<MoneybeesAppIcon className="w-[46px] h-[46px]" />}
-                        name="Moneybees"
-                        line1="External option · buy and sell via their own process"
-                        line2="You follow Moneybees' instructions directly"
                      />
                      {COINS_PH_SUSPENDED && coinsPhRow}
                   </>
@@ -1289,7 +1199,6 @@ function SentStatusCard({
 
 /* ─── Inline success banner shown after on-chain confirmation ───── */
 const PROVIDER_NAMES: Record<Provider, string> = {
-   moneybees: 'Moneybees',
    binance: 'Binance',
    coinsph: 'Coins.ph',
    gcash: 'GCrypto',
@@ -2564,212 +2473,6 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
    );
 }
 
-/* Telegram / Viber / WhatsApp icons for Moneybees */
-function TelegramIcon({ className = '' }: { className?: string }) {
-   return (
-      <svg viewBox="0 0 24 24" className={className} xmlns="http://www.w3.org/2000/svg">
-         <circle cx="12" cy="12" r="12" fill="#229ED9" />
-         <path
-            fill="#fff"
-            d="M5.5 11.8 17.2 7.3c.54-.2 1.01.13.84.95l-2 9.43c-.14.66-.53.82-1.08.51l-2.99-2.2-1.44 1.39c-.16.16-.3.3-.6.3l.21-3.06 5.56-5.02c.24-.21-.05-.33-.38-.12L8.1 13.2l-2.96-.92c-.64-.2-.66-.64.14-.95z"
-         />
-      </svg>
-   );
-}
-function ViberIcon({ className = '' }: { className?: string }) {
-   return (
-      <svg viewBox="0 0 48 48" className={className} xmlns="http://www.w3.org/2000/svg">
-         <circle cx="24" cy="24" r="24" fill="#7360F2" />
-         <path
-            fill="none"
-            stroke="#fff"
-            strokeWidth="2.6"
-            strokeLinejoin="round"
-            strokeLinecap="round"
-            d="M18 12 H31 A7 7 0 0 1 38 19 V24 A7 7 0 0 1 31 31 H17 L10.5 35.5 L11 27.5 V19 A7 7 0 0 1 18 12 Z"
-         />
-         <path
-            fill="#fff"
-            d="M21 17.4c-.8.1-1.4.9-1.3 1.7.6 4.6 4.3 8.3 8.9 8.9.8.1 1.6-.5 1.7-1.3l.2-1.9c.1-.6-.3-1.2-.9-1.5l-2.1-.9c-.5-.2-1.1-.1-1.5.3l-.7.7c-1.5-.8-2.7-2-3.5-3.5l.7-.7c.4-.4.5-1 .3-1.5l-.9-2.1c-.3-.6-.9-1-1.5-.9z"
-         />
-         <path
-            fill="none"
-            stroke="#fff"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            d="M26.6 16.9a3.4 3.4 0 0 1 3.2 3.2M27.3 14.5a5.6 5.6 0 0 1 5.2 5.2"
-         />
-      </svg>
-   );
-}
-function WhatsappIcon({ className = '' }: { className?: string }) {
-   return (
-      <svg viewBox="0 0 24 24" className={className} xmlns="http://www.w3.org/2000/svg">
-         <circle cx="12" cy="12" r="12" fill="#25D366" />
-         <path
-            fill="#fff"
-            d="M16.9 13.9c-.27-.14-1.58-.78-1.83-.87-.24-.09-.42-.13-.6.14-.17.26-.68.86-.83 1.04-.15.17-.3.2-.57.07-.27-.14-1.13-.42-2.16-1.33-.8-.71-1.34-1.59-1.49-1.86-.16-.27-.02-.41.12-.55.12-.12.27-.31.4-.47.13-.16.18-.27.27-.45.09-.18.04-.34-.02-.48-.07-.14-.6-1.45-.83-1.99-.22-.52-.44-.45-.6-.46l-.51-.01c-.18 0-.47.07-.71.34-.24.27-.94.92-.94 2.24 0 1.32.96 2.6 1.1 2.78.13.18 1.89 2.88 4.58 4.04.64.28 1.14.44 1.53.57.64.2 1.23.18 1.69.11.52-.08 1.58-.65 1.81-1.27.22-.62.22-1.16.16-1.27-.07-.11-.25-.18-.52-.32z"
-         />
-      </svg>
-   );
-}
-
-/* ─── Moneybees flow ─────────────────────────────────────────────── */
-// Moneybees KYB with Moodeng wasn't completed, so the integrated chat/KYC hand-off is
-// disabled: Moneybees is presented as an EXTERNAL option users drive themselves on
-// moneybees.ph. Flip this flag to bring the integrated flow back once a partnership
-// is in place (MoneybeesIntegratedFlow below is kept compiled for exactly that).
-const MONEYBEES_INTEGRATED_FLOW = false;
-
-function MoneybeesFlow() {
-   return MONEYBEES_INTEGRATED_FLOW ? <MoneybeesIntegratedFlow /> : <MoneybeesExternalFlow />;
-}
-
-function MoneybeesExternalFlow() {
-   const { available: LOAN_USDC } = useWithdrawData();
-
-   const steps: FlowStep[] = [
-      {
-         icon: <Landmark className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
-         title: 'Visit moneybees.ph',
-         desc: 'Start from their official website and follow their process.'
-      },
-      {
-         icon: <ClipboardCheck className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
-         title: 'Arrange your cash-out with them',
-         desc: 'Moneybees handles ID checks, the rate, and the payout directly with you.'
-      },
-      {
-         icon: <Lock className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
-         title: 'Send only after their instructions',
-         desc: `Send your ${LOAN_USDC} USDC only once Moneybees confirms the details.`
-      }
-   ];
-
-   return (
-      <div className="space-y-[12px]">
-         <HowThisWorks>
-            Moneybees is an external option some users may use to buy or sell crypto through Moneybees&rsquo; own process. It isn&rsquo;t
-            operated by Moodeng — you&rsquo;ll need to follow Moneybees&rsquo; instructions directly.
-         </HowThisWorks>
-
-         <div>
-            <p className="text-[16px] text-[var(--ink)] mb-[8px]" style={{ fontWeight: 590, letterSpacing: '-0.02em' }}>
-               How it works
-            </p>
-            <StepList steps={steps} />
-         </div>
-
-         <PrimaryBtn onClick={() => window.open('https://www.moneybees.ph/', '_blank', 'noopener,noreferrer')}>
-            Visit moneybees.ph <ArrowUpRight className="w-4 h-4" />
-         </PrimaryBtn>
-      </div>
-   );
-}
-
-function MoneybeesIntegratedFlow() {
-   const { available: LOAN_USDC } = useWithdrawData();
-   const [phase, setPhase] = useState<'form' | 'pending' | 'done'>('form');
-
-   const steps: FlowStep[] = [
-      {
-         icon: <CreditCard className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
-         title: 'Complete Moneybees KYC',
-         desc: 'A one-time ID check on their secure page.'
-      },
-      {
-         icon: <MessageCircle className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
-         title: 'Get assisted by chat',
-         desc: 'Via Telegram, Viber, or WhatsApp.',
-         extra: (
-            <div className="flex items-center gap-[8px] mt-[9px]">
-               <TelegramIcon className="w-[28px] h-[28px]" />
-               <ViberIcon className="w-[28px] h-[28px]" />
-               <WhatsappIcon className="w-[28px] h-[28px]" />
-            </div>
-         )
-      },
-      {
-         icon: <ClipboardCheck className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
-         title: 'Confirm your payout',
-         desc: 'They lock in the rate and payout method.'
-      },
-      {
-         icon: <Lock className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
-         title: 'Send only after instructions',
-         desc: 'Send USDC only once Moneybees confirms the details.'
-      }
-   ];
-
-   return (
-      <div className="space-y-[12px]">
-         <AmountCard
-            receive={
-               <>
-                  <p className="text-[19px] font-semibold text-[var(--ink)] tracking-[-0.4px] mt-[4px]">PHP</p>
-                  <p className="text-[11px] text-[var(--text-faint)] leading-[15px] mt-[2px]">Rate set by Moneybees</p>
-               </>
-            }
-            payout={
-               <>
-                  Payout to <span className="font-semibold text-[var(--ink)]">Bank</span>,{' '}
-                  <span className="font-semibold text-[var(--ink)]">GCash</span>, or{' '}
-                  <span className="font-semibold text-[var(--ink)]">Maya</span>
-               </>
-            }
-         />
-
-         <HowThisWorks>
-            Moneybees is a BSP/AMLC-registered cash-out provider. They handle KYC, exchange rate, transaction details, and PHP payout
-            directly with you.
-         </HowThisWorks>
-
-         <div>
-            <p className="text-[16px] text-[var(--ink)] mb-[8px]" style={{ fontWeight: 590, letterSpacing: '-0.02em' }}>
-               Your cash-out steps
-            </p>
-            <StepList steps={steps} />
-         </div>
-
-         {phase === 'done' ? (
-            <div className="rounded-[14px] bg-[var(--green-bg)] border border-[var(--green-border)] p-[16px] flex gap-[12px]">
-               <CheckCircle2 className="w-[22px] h-[22px] text-[var(--green-2)] shrink-0" />
-               <div>
-                  <p className="text-[14px] font-semibold text-[var(--green-text-2)] leading-[19px]">You're all set</p>
-                  <p className="text-[13px] text-[var(--green-text)] leading-[19px] mt-[2px]">
-                     Moneybees will message you on your chosen chat app to confirm the rate and complete your {LOAN_USDC} USDC cash-out.
-                  </p>
-               </div>
-            </div>
-         ) : phase === 'pending' ? (
-            <div className="space-y-[10px]">
-               <div className="bg-[var(--amber-bg-2)] rounded-[12px] px-[14px] py-[12px] flex gap-[8px]">
-                  <Clock className="w-[15px] h-[15px] text-[var(--amber-icon)] shrink-0 mt-[2px]" />
-                  <p className="text-[13px] leading-[19px] tracking-[-0.26px] text-[var(--amber-text)]">
-                     Finish verifying on the Moneybees page that opened, then tap below. Once Moneybees confirms your identity, they'll
-                     reach out by chat.
-                  </p>
-               </div>
-               <PrimaryBtn onClick={() => setPhase('done')}>I've completed Moneybees KYC</PrimaryBtn>
-               <button
-                  onClick={() => setPhase('pending')}
-                  className="w-full text-[13px] text-[var(--accent)] font-semibold tracking-[-0.26px] py-[4px] text-center hover:underline"
-               >
-                  Reopen Moneybees verification
-               </button>
-            </div>
-         ) : (
-            <>
-               <PrimaryBtn onClick={() => setPhase('pending')}>
-                  Continue to Moneybees KYC <ArrowRight className="w-4 h-4" />
-               </PrimaryBtn>
-               <SecondaryBtn onClick={() => setPhase('done')}>I already have Moneybees KYC</SecondaryBtn>
-            </>
-         )}
-      </div>
-   );
-}
-
 /* ─── Straight to GCash / bank (Stableyard) ─────────────────────── */
 // No "on its way to your exchange" toast here: the flow has its own payout status screen.
 function DirectBankFlow({ onDone }: { onDone: () => void }) {
@@ -2798,7 +2501,6 @@ function DirectQrFlow({ onDone, onUseBank }: { onDone: () => void; onUseBank: ()
 const STEP_BY_STEP_PROVIDERS: Provider[] = ['gcash', 'pdax', 'coinsph', 'kraken', 'coinbase', 'qr'];
 
 const PROVIDER_TITLES: Record<Provider, string> = {
-   moneybees: 'Cash out with Moneybees',
    binance: 'Send to Binance',
    coinsph: 'Cash out with Coins.ph',
    gcash: 'Cash out with GCrypto',
@@ -2860,8 +2562,6 @@ function WithdrawScreen({
                   <DirectBankFlow onDone={onDone} />
                ) : provider === 'qr' ? (
                   <DirectQrFlow onDone={onDone} onUseBank={() => onSwitch('bank')} />
-               ) : provider === 'moneybees' ? (
-                  <MoneybeesFlow />
                ) : provider === 'binance' ? (
                   <BinanceFlow onConfirmed={onConfirmed} onDone={onDone} />
                ) : provider === 'gcash' ? (
@@ -2898,7 +2598,7 @@ function WithdrawFlow() {
    const fromMoney = directBank || new URLSearchParams(location.search).get('from') === 'money';
    const [screen, setScreen] = useState<Screen>(directBank || directWalt || directQr ? 'withdraw' : 'celebrate');
    const [withdrawVisible, setWithdrawVisible] = useState(directBank || directWalt || directQr);
-   const [provider, setProvider] = useState<Provider>(directBank ? 'bank' : directWalt ? 'walt' : directQr ? 'qr' : 'moneybees');
+   const [provider, setProvider] = useState<Provider>(directBank ? 'bank' : directWalt ? 'walt' : directQr ? 'qr' : 'pdax');
 
    function goWithdraw(p: Provider) {
       track('withdraw_exchange_selected', { exchange: p });
