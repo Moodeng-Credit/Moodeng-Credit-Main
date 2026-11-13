@@ -1187,7 +1187,10 @@ For help, contact support@moodeng.app`);
 // wallet + a verifiable explorer link, mirroring what borrowers/lenders now see.
 export const buildRepaymentTeamFeedMessage = (
    loan: LoanNotificationLoan,
-   borrower: Pick<LoanNotificationRecipient, 'username' | 'telegram_username'> | null,
+   borrower: (Pick<LoanNotificationRecipient, 'username' | 'telegram_username'> & {
+      facebook_name?: string | null;
+      facebook_profile_url?: string | null;
+   }) | null,
    lender: Pick<LoanNotificationRecipient, 'username' | 'telegram_username'> | null
 ) => {
    const handleName = (u?: { username?: string | null; telegram_username?: string | null } | null) => {
@@ -1205,9 +1208,14 @@ export const buildRepaymentTeamFeedMessage = (
          .at(-1) ?? '';
    const verifyLine = explorerLink ? `Verify on-chain: ${explorerLink}` : '';
    const actionUrl = buildDashboardLink();
+   // Facebook name so the team can find them on Messenger and check in after they repay.
+   const fbName = borrower?.facebook_name?.trim();
+   const fbUrl = borrower?.facebook_profile_url?.trim();
+   const facebookLine = fbName || fbUrl ? `Facebook: ${[fbName, fbUrl].filter(Boolean).join(' — ')}` : '';
 
    const text = normalizeNotificationText(`✅ ${loan.market === 'ID' ? '🇮🇩 ' : ''}Loan repaid
 ${handleName(borrower)} repaid ${amountRepaid} for ${loan.tracking_id}.
+${facebookLine}
 Lender: ${handleName(lender)}
 ${walletLine}
 ${verifyLine}`);

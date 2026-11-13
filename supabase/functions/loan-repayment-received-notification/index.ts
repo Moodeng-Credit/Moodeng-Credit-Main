@@ -153,7 +153,7 @@ serve(async (req) => {
 
    const { data: borrower, error: borrowerError } = await supabase
       .from('users')
-      .select('id, username, telegram_username, email, cs, is_world_id, is_didit, chat_id, market, preferred_locale')
+      .select('id, username, telegram_username, email, cs, is_world_id, is_didit, chat_id, market, preferred_locale, facebook_name, facebook_profile_url')
       .eq('id', loan.borrower_user_id)
       .maybeSingle();
 
