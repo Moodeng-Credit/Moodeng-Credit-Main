@@ -307,6 +307,8 @@ export const stableyard = {
    // Bank codes accepted for an external_bank payout (PH/VN one-time beneficiary). Read-only.
    listBeneficiaryBanks: (country: string) => stableyardRequest('GET', '/v2/payments/external-bank/banks', { query: { country } }),
    getPayment: (paymentId: string) => stableyardRequest('GET', `/v2/payments/${encodeURIComponent(paymentId)}`),
+   // Hosted checkout link for a Payment that must collect its source funds (nextAction "payment_method").
+   getPaymentCheckout: (paymentId: string) => stableyardRequest('GET', `/v2/payments/${encodeURIComponent(paymentId)}/checkout`),
 
    getBalances: (accountId: string) => stableyardRequest('GET', `${accountPath(accountId)}/balances`),
    getTransactions: (accountId: string) => stableyardRequest('GET', `${accountPath(accountId)}/transactions`)
