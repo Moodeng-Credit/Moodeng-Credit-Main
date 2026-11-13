@@ -11,12 +11,25 @@ import {
    getWhatsAppChats,
    getWhatsAppMessages,
    getWhatsAppTemplates,
+   type PersonCard,
+   searchPeople,
    sendWhatsAppReply,
    sendWhatsAppTemplateMessage,
    type WhatsAppChatRow,
    type WhatsAppMessageRow,
    type WhatsAppTemplateRow
 } from '@/app/admin/adminSupabase';
+import WhatsAppPersonCard, { daysLate, LoanBadge, personName } from '@/app/admin/WhatsAppPersonCard';
+
+type Filter = 'all' | 'unread' | 'loan' | 'late' | 'linked' | 'unlinked';
+const FILTERS: Array<{ id: Filter; label: string; test: (c: WhatsAppChatRow) => boolean }> = [
+   { id: 'all', label: 'All', test: () => true },
+   { id: 'unread', label: 'Unread', test: (c) => c.unread > 0 },
+   { id: 'loan', label: 'Loan out', test: (c) => Boolean(c.person?.activeLoan) },
+   { id: 'late', label: 'Late', test: (c) => (daysLate(c.person?.activeLoan?.dueDate) ?? 0) > 0 },
+   { id: 'linked', label: 'Moodeng users', test: (c) => Boolean(c.person) },
+   { id: 'unlinked', label: 'Not linked', test: (c) => !c.person }
+];
 
 const BUSINESS_NUMBER = '+66 95 165 9077';
 const CHATS_POLL_MS = 30_000;
@@ -99,6 +112,12 @@ export default function WhatsAppInboxSection() {
    const [search, setSearch] = useState('');
    const [selectedId, setSelectedId] = useState<string | null>(null);
    const [newChat, setNewChat] = useState(false);
+   const [newChatPhone, setNewChatPhone] = useState('');
+   const [filter, setFilter] = useState<Filter>('all');
+   // A Moodeng user picked from search who has no WhatsApp chat with us yet.
+   const [pickedPerson, setPickedPerson] = useState<PersonCard | null>(null);
+   const [people, setPeople] = useState<PersonCard[] | null>(null);
+   const [searchingPeople, setSearchingPeople] = useState(false);
    const [templates, setTemplates] = useState<WhatsAppTemplateRow[] | null>(null);
 
    const chatsInFlight = useRef(false);
@@ -130,28 +149,77 @@ export default function WhatsAppInboxSection() {
    }, []);
 
    const filtered = useMemo(() => {
-      const q = search.trim().toLowerCase();
-      if (!q) return chats;
+      const test = FILTERS.find((f) => f.id === filter)?.test ?? (() => true);
+      const q = search.trim().toLowerCase().replace(/^@/, '');
       const qDigits = q.replace(/\D/g, '');
-      return chats.filter(
-         (c) =>
-            chatTitle(c).toLowerCase().includes(q) ||
-            (c.user?.username ?? '').toLowerCase().includes(q) ||
+      return chats.filter((c) => {
+         if (!test(c)) return false;
+         if (!q) return true;
+         const p = c.person;
+         return (
+            [chatTitle(c), p?.username, p?.displayName, p?.kycName, p?.facebookName, p?.email].some((v) =>
+               (v ?? '').toLowerCase().includes(q)
+            ) ||
             (qDigits.length >= 3 && (c.phone ?? '').includes(qDigits))
-      );
-   }, [chats, search]);
+         );
+      });
+   }, [chats, search, filter]);
+
+   // Everyone in Moodeng matching the search — including people we've never chatted with.
+   useEffect(() => {
+      const q = search.trim();
+      if (q.length < 2) {
+         setPeople(null);
+         return;
+      }
+      setSearchingPeople(true);
+      const t = window.setTimeout(() => {
+         void searchPeople(q).then((res) => {
+            setSearchingPeople(false);
+            setPeople(res.ok ? res.people : []);
+         });
+      }, 350);
+      return () => window.clearTimeout(t);
+   }, [search]);
+
+   const chatByUser = useMemo(() => new Map(chats.filter((c) => c.person).map((c) => [c.person!.userId, c])), [chats]);
+   const shownUserIds = new Set(filtered.map((c) => c.person?.userId).filter(Boolean));
+   const otherPeople = (people ?? []).filter((p) => !shownUserIds.has(p.userId));
+   const counts = useMemo(
+      () => Object.fromEntries(FILTERS.map((f) => [f.id, chats.filter(f.test).length])) as Record<Filter, number>,
+      [chats]
+   );
+
+   const pickPerson = (p: PersonCard) => {
+      const chat = chatByUser.get(p.userId);
+      if (chat) {
+         openChat(chat.contactId);
+         return;
+      }
+      setSelectedId(null);
+      setNewChat(false);
+      setPickedPerson(p);
+   };
+
+   const startChatWith = (phone: string | null) => {
+      setSelectedId(null);
+      setPickedPerson(null);
+      setNewChatPhone(phone ? `+${phone}` : '');
+      setNewChat(true);
+   };
 
    const selected = chats.find((c) => c.contactId === selectedId) ?? null;
    const unreadTotal = chats.reduce((n, c) => n + (c.unread > 0 ? 1 : 0), 0);
 
-   const openChat = (id: string) => {
+   function openChat(id: string) {
       setNewChat(false);
+      setPickedPerson(null);
       setSelectedId(id);
       // Opening marks it read on SendPulse; mirror that right away.
       setChats((prev) => prev.map((c) => (c.contactId === id ? { ...c, unread: 0 } : c)));
-   };
+   }
 
-   const showThreadOnMobile = Boolean(selectedId || newChat);
+   const showThreadOnMobile = Boolean(selectedId || newChat || pickedPerson);
 
    return (
       <section className="space-y-6">
@@ -173,10 +241,7 @@ export default function WhatsAppInboxSection() {
                </button>
                <button
                   type="button"
-                  onClick={() => {
-                     setSelectedId(null);
-                     setNewChat(true);
-                  }}
+                  onClick={() => startChatWith(null)}
                   className="rounded-xl bg-[#25D366] px-4 py-2.5 text-sm font-black text-[#0b2a17] hover:brightness-110"
                >
                   + New chat
@@ -184,7 +249,7 @@ export default function WhatsAppInboxSection() {
             </div>
          </div>
 
-         <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
+         <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)_270px] xl:grid-cols-[320px_minmax(0,1fr)_310px]">
             {/* Chat list */}
             <div
                className={`${cardClass} flex h-[78vh] min-h-[520px] flex-col overflow-hidden ${showThreadOnMobile ? 'hidden lg:flex' : 'flex'}`}
@@ -193,11 +258,25 @@ export default function WhatsAppInboxSection() {
                   <input
                      value={search}
                      onChange={(e) => setSearch(e.target.value)}
-                     placeholder="Search name, @username or number"
+                     placeholder="Search WhatsApp name, ID name, @username, email or number"
                      className="w-full rounded-xl border border-[#2a1453] bg-[#140726] px-3 py-2.5 text-sm text-white placeholder:text-[#6f6385] focus:border-[#8336f0] focus:outline-none"
                   />
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                     {FILTERS.map((f) => (
+                        <button
+                           key={f.id}
+                           type="button"
+                           onClick={() => setFilter(f.id)}
+                           className={`rounded-full px-2.5 py-1 text-[11px] font-black transition ${
+                              filter === f.id ? 'bg-[#8336f0] text-white' : 'bg-[#140726] text-[#a89bb8] hover:text-white'
+                           }`}
+                        >
+                           {f.label} {counts[f.id] ?? 0}
+                        </button>
+                     ))}
+                  </div>
                   <p className="mt-2 px-1 text-xs font-bold text-[#a89bb8]">
-                     {chats.length} chats{unreadTotal ? ` · ${unreadTotal} unread` : ''}
+                     {filtered.length} of {chats.length} chats{unreadTotal ? ` · ${unreadTotal} unread` : ''}
                   </p>
                </div>
                <div className="flex-1 overflow-y-auto">
@@ -241,15 +320,51 @@ export default function WhatsAppInboxSection() {
                                     </span>
                                  ) : null}
                               </div>
-                              {c.user ? (
-                                 <p className="mt-0.5 truncate text-[11px] font-bold text-[#c9a4ff]">
-                                    Moodeng: {c.user.username ? `@${c.user.username}` : c.user.displayName}
-                                 </p>
+                              {c.person ? (
+                                 <div className="mt-1 flex min-w-0 items-center gap-1.5">
+                                    <p className="truncate text-[11px] font-bold text-[#c9a4ff]">
+                                       {personName(c.person)}
+                                       {c.person.username ? ` · @${c.person.username}` : ''}
+                                    </p>
+                                    <LoanBadge person={c.person} />
+                                 </div>
                               ) : null}
                            </div>
                         </button>
                      );
                   })}
+                  {search.trim().length >= 2 ? (
+                     <div className="border-t border-[#2a1453] px-4 py-3">
+                        <p className="text-[11px] font-black uppercase tracking-wide text-[#c9a4ff]">
+                           Moodeng users{searchingPeople ? ' · searching…' : ''}
+                        </p>
+                        {people && !otherPeople.length && !searchingPeople ? (
+                           <p className="mt-1 text-xs text-[#a89bb8]">No other matches.</p>
+                        ) : null}
+                        {otherPeople.map((p) => {
+                           const chat = chatByUser.get(p.userId);
+                           return (
+                              <button
+                                 key={p.userId}
+                                 type="button"
+                                 onClick={() => pickPerson(p)}
+                                 className={`mt-1.5 flex w-full items-center justify-between gap-2 rounded-xl px-2 py-2 text-left hover:bg-[#20103e] ${
+                                    pickedPerson?.userId === p.userId ? 'bg-[#2a1453]' : ''
+                                 }`}
+                              >
+                                 <span className="min-w-0">
+                                    <span className="block truncate text-sm font-bold">{personName(p)}</span>
+                                    <span className="block truncate text-[11px] text-[#a89bb8]">
+                                       {p.username ? `@${p.username}` : ''}
+                                       {chat ? ' · has a WhatsApp chat' : p.phone ? ` · +${p.phone}` : ' · no number'}
+                                    </span>
+                                 </span>
+                                 <LoanBadge person={p} />
+                              </button>
+                           );
+                        })}
+                     </div>
+                  ) : null}
                </div>
             </div>
 
@@ -259,6 +374,8 @@ export default function WhatsAppInboxSection() {
             >
                {newChat ? (
                   <NewChatPanel
+                     key={newChatPhone}
+                     initialPhone={newChatPhone}
                      templates={templates}
                      onBack={() => setNewChat(false)}
                      onSent={() => {
@@ -266,6 +383,26 @@ export default function WhatsAppInboxSection() {
                         window.setTimeout(() => void loadChats(), 1500);
                      }}
                   />
+               ) : pickedPerson ? (
+                  <div className="flex-1 overflow-y-auto">
+                     <div className="flex items-center gap-2 border-b border-[#2a1453] px-4 py-3">
+                        <button
+                           type="button"
+                           onClick={() => setPickedPerson(null)}
+                           className="rounded-lg px-2 py-1 text-lg font-black text-purple-200 hover:bg-[#2a1453] lg:hidden"
+                           aria-label="Back"
+                        >
+                           ←
+                        </button>
+                        <p className="font-black">No WhatsApp chat with {personName(pickedPerson)} yet</p>
+                     </div>
+                     <WhatsAppPersonCard
+                        whatsappName={null}
+                        phone={pickedPerson.phone}
+                        person={pickedPerson}
+                        onMessage={() => startChatWith(pickedPerson.phone)}
+                     />
+                  </div>
                ) : selected ? (
                   <ThreadPanel
                      key={selected.contactId}
@@ -283,6 +420,19 @@ export default function WhatsAppInboxSection() {
                   </div>
                )}
             </div>
+
+            {/* Who is this? — beside the chat on wide screens, under it on smaller ones. */}
+            {selected && !newChat ? (
+               <div className={`${cardClass} overflow-y-auto lg:h-[78vh] lg:min-h-[520px]`}>
+                  <WhatsAppPersonCard
+                     whatsappName={selected.name}
+                     phone={selected.phone}
+                     person={selected.person}
+                     matchedBy={selected.matchedBy}
+                     lastWhatsAppAt={selected.lastActivityAt}
+                  />
+               </div>
+            ) : null}
          </div>
       </section>
    );
@@ -391,11 +541,12 @@ function ThreadPanel({
                <p className="truncate font-black">{chatTitle(chat)}</p>
                <p className="truncate text-xs text-[#a89bb8]">
                   {formatPhone(chat.phone)}
-                  {chat.user ? (
+                  {chat.person ? (
                      <>
                         {' · '}
                         <span className="font-bold text-[#c9a4ff]">
-                           Moodeng {chat.user.username ? `@${chat.user.username}` : chat.user.displayName}
+                           {personName(chat.person)}
+                           {chat.person.username ? ` · @${chat.person.username}` : ''}
                         </span>
                      </>
                   ) : (
@@ -497,8 +648,18 @@ function ThreadPanel({
    );
 }
 
-function NewChatPanel({ templates, onBack, onSent }: { templates: WhatsAppTemplateRow[] | null; onBack: () => void; onSent: () => void }) {
-   const [phone, setPhone] = useState('');
+function NewChatPanel({
+   templates,
+   initialPhone = '',
+   onBack,
+   onSent
+}: {
+   templates: WhatsAppTemplateRow[] | null;
+   initialPhone?: string;
+   onBack: () => void;
+   onSent: () => void;
+}) {
+   const [phone, setPhone] = useState(initialPhone);
    const digits = phone.replace(/\D/g, '');
    const phoneOk = digits.length >= 8 && digits.length <= 15;
 

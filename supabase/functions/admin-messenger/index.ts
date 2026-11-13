@@ -30,6 +30,7 @@ import {
 //   { action: 'wa_chats' }                         → recent chats + which Moodeng user each one is.
 //   { action: 'wa_messages', contactId, markRead?, size? } → one chat's messages (markRead when opened).
 //   { action: 'wa_send', contactId, text }         → free-text reply (only inside Meta's 24h window).
+//   { action: 'wa_people_search', query }           → Moodeng users by name / @username / email / phone.
 //   { action: 'wa_templates' }                     → approved templates.
 //   { action: 'wa_send_template', contactId | phone, name, language, params } → template to a chat or a new number.
 // Active admins only — re-checked here against admin_users, like the other admin-* functions — or
@@ -199,19 +200,25 @@ const handleWhatsApp = async (svc: Svc, body: any) => {
    if (body.action === 'wa_chats') {
       const res = await listWhatsAppChats(100);
       if (!res.ok) return res;
-      // Which Moodeng account each chat belongs to (set when they opted in to WhatsApp reminders).
-      const ids = res.data.map((c) => c.contactId);
-      const { data: users } = ids.length
-         ? await svc.from('users').select('id, username, display_name, whatsapp_contact_id').in('whatsapp_contact_id', ids)
-         : { data: [] };
-      const byContact = new Map(
-         ((users ?? []) as Array<{ id: string; username: string | null; display_name: string | null; whatsapp_contact_id: string }>).map((u) => [
-            u.whatsapp_contact_id,
-            { userId: u.id, username: u.username, displayName: u.display_name }
-         ])
-      );
+      // Who each chat is in Moodeng: by the WhatsApp contact they confirmed, else by phone number
+      // (private.admin_person_card — name, KYC name, activity, loans).
+      const { data: people, error } = await svc.rpc('admin_whatsapp_people', {
+         p_contacts: res.data.map((c) => ({ contactId: c.contactId, phone: c.phone }))
+      });
+      if (error) console.error('[wa] admin_whatsapp_people failed', error.message);
+      // deno-lint-ignore no-explicit-any
+      const byContact = new Map(((people ?? []) as any[]).map((p) => [p.contactId as string, p]));
       const chats = res.data
-         .map((c) => ({ ...c, user: byContact.get(c.contactId) ?? null }))
+         .map((c) => {
+            const match = byContact.get(c.contactId);
+            const card = match?.card ?? null;
+            return {
+               ...c,
+               user: card ? { userId: card.userId, username: card.username, displayName: card.displayName } : null,
+               person: card,
+               matchedBy: match?.matchedBy ?? null
+            };
+         })
          .sort((a, b) => Date.parse(b.lastAt ?? '') - Date.parse(a.lastAt ?? '') || 0);
       return { ok: true, chats };
    }
@@ -234,6 +241,14 @@ const handleWhatsApp = async (svc: Svc, body: any) => {
       if (!contactId || !text) return { ok: false, reason: 'missing_fields' };
       if (text.length > WA_TEXT_MAX) return { ok: false, reason: 'too_long' };
       return await replyWhatsAppText(contactId, text);
+   }
+
+   if (body.action === 'wa_people_search') {
+      const q = typeof body.query === 'string' ? body.query.trim().slice(0, 80) : '';
+      if (q.length < 2) return { ok: true, people: [] };
+      const { data, error } = await svc.rpc('admin_people_search', { p_query: q });
+      if (error) return { ok: false, reason: 'search_failed', detail: error.message };
+      return { ok: true, people: data ?? [] };
    }
 
    if (body.action === 'wa_templates') {

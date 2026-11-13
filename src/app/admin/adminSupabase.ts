@@ -2852,6 +2852,30 @@ export interface WhatsAppChatRow {
    lastDirection: number | null;
    lastAt: string | null;
    user: { userId: string; username: string | null; displayName: string | null } | null;
+   // Full "who is this" card when the chat matches a Moodeng user (by WhatsApp contact or phone).
+   person: PersonCard | null;
+   matchedBy: 'whatsapp' | 'phone' | null;
+}
+
+export interface PersonCard {
+   userId: string;
+   username: string | null;
+   displayName: string | null;
+   kycName: string | null;
+   facebookName: string | null;
+   email: string | null;
+   phone: string | null;
+   market: string | null;
+   role: string | null;
+   accountStatus: string | null;
+   loanAccess: string | null;
+   riskBand: string | null;
+   kycStatus: string | null;
+   signedUpAt: string | null;
+   lastSignInAt: string | null;
+   whatsappContactId: string | null;
+   loans: { repaid: number; repaidLate: number; totalBorrowed: number; requested: number; lastLoanAt: string | null };
+   activeLoan: { amount: number; owed: number; dueDate: string | null; fundedAt: string | null; status: string } | null;
 }
 
 export interface WhatsAppMessageRow {
@@ -2895,6 +2919,8 @@ export const getWhatsAppMessages = (contactId: string, opts: { markRead?: boolea
    });
 
 export const sendWhatsAppReply = (contactId: string, text: string) => invokeWhatsApp({ action: 'wa_send', contactId, text });
+
+export const searchPeople = (query: string) => invokeWhatsApp<{ people: PersonCard[] }>({ action: 'wa_people_search', query });
 
 export const getWhatsAppTemplates = () => invokeWhatsApp<{ templates: WhatsAppTemplateRow[] }>({ action: 'wa_templates' });
 
