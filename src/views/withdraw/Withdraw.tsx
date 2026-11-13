@@ -936,11 +936,13 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                {!isIndo && (
                   <>
                      {!COINS_PH_SUSPENDED && coinsPhRow}
-                     {COINS_PH_SUSPENDED && (
+                     {/* Under the bank QR card the order is GCrypto, PDAX, Maya (Nov 2026). Without the QR card,
+                         PDAX is the recommended route, so it stays on top. */}
+                     {COINS_PH_SUSPENDED && !bankPayout && (
                         <PickerRow
                            onSelect={selectProvider}
                            id="pdax"
-                           recommended={!bankPayout && !inEurope}
+                           recommended={!inEurope}
                            icon={<PdaxAppIcon className="w-[46px] h-[46px]" />}
                            name="PDAX"
                            line1="Sell for pesos, withdraw to bank or e-wallet"
@@ -955,7 +957,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                         line1="Cash out straight to your GCash"
                         line2="GCash balance · ~5 min"
                      />
-                     {!COINS_PH_SUSPENDED && (
+                     {(!COINS_PH_SUSPENDED || bankPayout) && (
                         <PickerRow
                            onSelect={selectProvider}
                            id="pdax"
