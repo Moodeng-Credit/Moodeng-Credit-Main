@@ -999,12 +999,13 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                )}
             </div>
 
-            {!isIndo && (
+            {/* The guide link only shows once "More options" is open, so the list ends with one quiet link, not three. */}
+            {!isIndo && showMore && (
                <button
                   onClick={() => navigate('/support/guides/withdrawing-to-your-bank')}
                   className="w-full text-center text-[13px] font-semibold text-[var(--accent)] py-[10px] hover:underline"
                >
-                  Learn more about withdrawal options
+                  Read the cash-out guide
                </button>
             )}
             <div className="h-[12px]" />
