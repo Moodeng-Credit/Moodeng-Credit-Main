@@ -538,6 +538,42 @@ export const listWhatsAppTemplates = async (): Promise<WaCall<WhatsAppTemplateIn
 };
 
 /** Sends an approved template to a chat (contactId) or straight to a phone number (new chat). */
+// The admin inbox's "write anything" template: after WhatsApp's 24h window closes, the team's message goes
+// out inside it ({{1}} first name, {{2}} their text). Once the person replies, free chat works again.
+export const FOLLOW_UP_TEMPLATE = {
+   name: 'moodeng_follow_up',
+   language: 'en',
+   category: 'UTILITY' as const,
+   body: "Hi {{1}}, this is the Moodeng Credit team with an update on your account:\n\n{{2}}\n\nReply to this message and we'll continue the chat here.",
+   example: ['Maria', 'Your loan is ready. Open the app to see the next step.']
+};
+
+/** Submits a template to Meta through SendPulse (review takes minutes to a day). */
+export const createWhatsAppTemplate = (t: { name: string; language: string; category: 'UTILITY' | 'MARKETING'; body: string; example: string[] }) =>
+   waCall('POST', '/templates', {
+      bot_id: WHATSAPP_BOT_ID,
+      name: t.name,
+      language: t.language,
+      category: t.category,
+      parameter_format: 'positional',
+      components: [{ type: 'BODY', text: t.body, example: { body_text: [t.example] } }]
+   });
+
+/** Every template on the bot with its review status (APPROVED / PENDING / REJECTED …). */
+export const listAllWhatsAppTemplates = async (): Promise<WaCall<Array<{ name: string; language: string; status: string; rejectedReason: string | null }>>> => {
+   const res = await waCall<Raw[]>('GET', `/templates?bot_id=${encodeURIComponent(WHATSAPP_BOT_ID)}`);
+   if (!res.ok) return res;
+   return {
+      ok: true,
+      data: (Array.isArray(res.data) ? res.data : []).map((t: Raw) => ({
+         name: String(t?.name ?? ''),
+         language: String(t?.language ?? ''),
+         status: String(t?.status ?? ''),
+         rejectedReason: t?.rejected_reason ?? null
+      }))
+   };
+};
+
 export const sendWhatsAppTemplateTo = (
    target: { contactId?: string; phone?: string },
    template: { name: string; language: string; params: string[] }

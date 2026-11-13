@@ -630,12 +630,12 @@ function ThreadPanel({
                <div>
                   <p className="mb-2 rounded-xl bg-[#3a2a0c] px-3 py-2 text-xs font-bold text-amber-200">
                      {lastInboundAt
-                        ? 'Over 24h since they last wrote, so WhatsApp only allows an approved template. Once they reply, you can chat freely again.'
-                        : 'They haven’t written to us yet, so WhatsApp only allows an approved template.'}
+                        ? 'Over 24h since they last wrote. Your message goes out in our approved follow-up template; once they reply, you can chat freely again.'
+                        : 'They haven’t written to us yet, so your message goes out in our approved follow-up template.'}
                   </p>
-                  <TemplateSender
+                  <FollowUpOrTemplate
                      templates={templates}
-                     defaultName={chat.name ?? chat.user?.displayName ?? ''}
+                     defaultName={chat.person?.kycName ?? chat.name ?? chat.user?.displayName ?? ''}
                      onSend={(t) => sendWhatsAppTemplateMessage({ contactId: chat.contactId, ...t })}
                      onSent={async () => {
                         await load();
@@ -696,7 +696,7 @@ function NewChatPanel({
             </p>
          ) : null}
          <div className="mt-5">
-            <TemplateSender
+            <FollowUpOrTemplate
                templates={templates}
                disabled={!phoneOk || digits.startsWith('0')}
                onSend={(t) => sendWhatsAppTemplateMessage({ phone: digits, ...t })}
@@ -795,3 +795,125 @@ function TemplateSender({
       </div>
    );
 }
+
+// After WhatsApp's 24h window: write normally and it goes out inside the approved "moodeng_follow_up"
+// template ("Hi {first name}, this is the Moodeng Credit team… {your text}… Reply to continue").
+// Until Meta approves that template, fall back to picking one of the fixed templates.
+const FOLLOW_UP = 'moodeng_follow_up';
+const FOLLOW_UP_MAX = 700;
+
+function FollowUpOrTemplate({
+   templates,
+   defaultName = '',
+   disabled = false,
+   onSend,
+   onSent
+}: {
+   templates: WhatsAppTemplateRow[] | null;
+   defaultName?: string;
+   disabled?: boolean;
+   onSend: (t: { name: string; language: string; params: string[] }) => Promise<{ ok: boolean; reason?: string; detail?: string }>;
+   onSent: () => void | Promise<void>;
+}) {
+   const followUp = templates?.find((t) => t.name === FOLLOW_UP) ?? null;
+   const [firstName, setFirstName] = useState(() => titleFirst(defaultName));
+   const [text, setText] = useState('');
+   const [sending, setSending] = useState(false);
+   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+   const [showTemplates, setShowTemplates] = useState(false);
+
+   if (templates === null) return <p className="text-sm text-[#a89bb8]">Loading templates…</p>;
+
+   if (!followUp) {
+      return (
+         <div className="space-y-2">
+            <p className="text-xs text-[#a89bb8]">
+               The free-text follow-up template is waiting for Meta&apos;s approval (minutes to a day). Until then, pick a fixed template:
+            </p>
+            <TemplateSender templates={templates} defaultName={defaultName} disabled={disabled} onSend={onSend} onSent={onSent} />
+         </div>
+      );
+   }
+
+   // WhatsApp template values can't contain line breaks, tabs or long runs of spaces.
+   const clean = text
+      .replace(/\s*\n+\s*/g, ' · ')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+   const send = async () => {
+      if (!clean || !firstName.trim() || sending || disabled) return;
+      setSending(true);
+      setResult(null);
+      const res = await onSend({ name: followUp.name, language: followUp.language, params: [firstName.trim(), clean] });
+      setSending(false);
+      if (!res.ok) {
+         setResult({ ok: false, text: reasonText(res.reason ?? 'send_failed', res.detail) });
+         return;
+      }
+      setText('');
+      setResult({ ok: true, text: 'Sent ✓ — when they reply you can chat freely.' });
+      await onSent();
+   };
+
+   return (
+      <div className="space-y-2">
+         <div className="flex items-end gap-2">
+            <div className="flex-1 space-y-2">
+               <input
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="Their first name"
+                  className="w-48 rounded-xl border border-[#2a1453] bg-[#140726] px-3 py-2 text-sm text-white placeholder:text-[#6f6385] focus:border-[#8336f0] focus:outline-none"
+               />
+               <textarea
+                  value={text}
+                  onChange={(e) => setText(e.target.value.slice(0, FOLLOW_UP_MAX))}
+                  onKeyDown={(e) => {
+                     if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        void send();
+                     }
+                  }}
+                  rows={2}
+                  placeholder="Type your message… (Enter to send)"
+                  className="min-h-[52px] w-full resize-y rounded-xl border border-[#2a1453] bg-[#140726] px-3 py-2.5 text-sm text-white placeholder:text-[#6f6385] focus:border-[#8336f0] focus:outline-none"
+               />
+            </div>
+            <button
+               type="button"
+               disabled={!clean || !firstName.trim() || sending || disabled}
+               onClick={() => void send()}
+               className="rounded-xl bg-[#25D366] px-5 py-3 text-sm font-black text-[#0b2a17] hover:brightness-110 disabled:opacity-40"
+            >
+               {sending ? 'Sending…' : 'Send'}
+            </button>
+         </div>
+         {clean ? (
+            <p className="whitespace-pre-wrap rounded-2xl rounded-br-md bg-[#1f6b45] px-3.5 py-2 text-xs text-white">
+               Hi {firstName.trim() || '…'}, this is the Moodeng Credit team with an update on your account:{'\n\n'}
+               {clean}
+               {'\n\n'}Reply to this message and we&apos;ll continue the chat here.
+            </p>
+         ) : null}
+         {result ? <p className={`text-sm font-bold ${result.ok ? 'text-[#25D366]' : 'text-red-300'}`}>{result.text}</p> : null}
+         <button type="button" onClick={() => setShowTemplates((v) => !v)} className="text-xs font-black text-[#c9a4ff] hover:underline">
+            {showTemplates ? 'Hide other templates' : 'Use another template instead'}
+         </button>
+         {showTemplates ? (
+            <TemplateSender
+               templates={templates.filter((t) => t.name !== FOLLOW_UP)}
+               defaultName={defaultName}
+               disabled={disabled}
+               onSend={onSend}
+               onSent={onSent}
+            />
+         ) : null}
+      </div>
+   );
+}
+
+/** "MARIA CLARA SANTOS" → "Maria". */
+const titleFirst = (name: string) => {
+   const first = name.trim().split(/[\s,]+/)[0] ?? '';
+   return first ? first.charAt(0).toUpperCase() + first.slice(1).toLowerCase() : '';
+};

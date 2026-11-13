@@ -7,6 +7,9 @@ import {
    getMessengerContact,
    isInsideMessagingWindow,
    isSendPulseConfigured,
+   createWhatsAppTemplate,
+   FOLLOW_UP_TEMPLATE,
+   listAllWhatsAppTemplates,
    listWhatsAppChats,
    listWhatsAppMessages,
    listWhatsAppTemplates,
@@ -32,6 +35,7 @@ import {
 //   { action: 'wa_send', contactId, text }         → free-text reply (only inside Meta's 24h window).
 //   { action: 'wa_people_search', query }           → Moodeng users by name / @username / email / phone.
 //   { action: 'wa_templates' }                     → approved templates.
+//   { action: 'wa_follow_up_status' | 'wa_follow_up_submit' } → the after-24h "write anything" template.
 //   { action: 'wa_send_template', contactId | phone, name, language, params } → template to a chat or a new number.
 // Active admins only — re-checked here against admin_users, like the other admin-* functions — or
 // X-Admin-Token for server-side calls (pg_net), like admin-send-email.
@@ -249,6 +253,20 @@ const handleWhatsApp = async (svc: Svc, body: any) => {
       const { data, error } = await svc.rpc('admin_people_search', { p_query: q });
       if (error) return { ok: false, reason: 'search_failed', detail: error.message };
       return { ok: true, people: data ?? [] };
+   }
+
+   // The follow-up template the inbox uses after 24h: its review status, and submitting it if it's missing
+   // or was rejected (re-submits the same text; edit FOLLOW_UP_TEMPLATE to change it).
+   if (body.action === 'wa_follow_up_status' || body.action === 'wa_follow_up_submit') {
+      const all = await listAllWhatsAppTemplates();
+      if (!all.ok) return all;
+      const found = all.data.find((t) => t.name === FOLLOW_UP_TEMPLATE.name && t.language === FOLLOW_UP_TEMPLATE.language) ?? null;
+      if (body.action === 'wa_follow_up_submit' && (!found || found.status === 'REJECTED')) {
+         const res = await createWhatsAppTemplate(FOLLOW_UP_TEMPLATE);
+         if (!res.ok) return res;
+         return { ok: true, status: 'PENDING', submitted: true, template: FOLLOW_UP_TEMPLATE.name };
+      }
+      return { ok: true, status: found?.status ?? 'MISSING', rejectedReason: found?.rejectedReason ?? null, template: FOLLOW_UP_TEMPLATE.name };
    }
 
    if (body.action === 'wa_templates') {
