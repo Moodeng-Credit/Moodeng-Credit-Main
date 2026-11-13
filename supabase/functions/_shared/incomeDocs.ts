@@ -2,11 +2,11 @@ import { extractText, getDocumentProxy } from 'npm:unpdf@1.8.1';
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { postDiscord } from './discord.ts';
-import { incomeDocKeyboard, postIncomeDocDiscordCard } from './incomeDocCards.ts';
+import { incomeDocKeyboard, incomeDocUrl, postIncomeDocDiscordCard } from './incomeDocCards.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
 import { fileMarkers, gcashRefIssues, type ImageInfo, imageInfo, isAiSize, rowKeys, rowOverlap } from './fileForensics.ts';
-import { sendTelegramMessage } from './telegram.ts';
+import { sendTelegramFiles, sendTelegramMessage, type TelegramInlineKeyboard, type TelegramUpload } from './telegram.ts';
 import { idLocaleOf, idResendReason, isIdTrackUser, loadIdStatus, notifyIdNextStep, sendIdTelegram } from './idTrack.ts';
 
 // Proof of income sent from moodeng.app/documents (see the income_documents migration).
@@ -31,7 +31,6 @@ const MODEL = 'deepseek-flash';
 const OPINION_MODEL = 'deepseek-v4-pro';
 const DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions';
 const TOO_LONG = 'document too long to read in one pass';
-const ADMIN_URL = 'https://moodeng.app/admin/income-docs';
 // Rough rates for the affordability checks only; close enough to compare sizes.
 const PER_USD: Record<string, number> = { USD: 1, PHP: 57, IDR: 16300, THB: 33 };
 
@@ -1073,28 +1072,40 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       askedAmount != null
          ? `${loan?.loan_status === 'Lent' && row.requested_amount == null ? 'Has a loan' : 'Asking'} $${askedAmount}${askedRepay ? ` → repay $${askedRepay}` : ''}${stepLine}`
          : 'No open request';
-   const ping = [`📄 Proof of income from ${who}`, `${files.length} file${files.length === 1 ? '' : 's'}${row.note ? ` · "${row.note}"` : ''}`, loanLine].join('\n');
+   const docUrl = incomeDocUrl(id);
+   // The link the team copies to the borrower (Messenger etc.) to send it again, with their ask kept.
+   const resendLink = `${DOCUMENTS_URL}${askedAmount != null ? `?back=loan&amount=${askedAmount}${askedRepay ? `&repay=${askedRepay}` : ''}` : ''}`;
+   const resendRow: TelegramInlineKeyboard[number] = [{ text: '📋 Copy resend link for them', copy_text: { text: resendLink } }];
+   const idName = kyc?.full_name?.trim();
+   const whoLine = [user?.username ? `@${user.username}` : null, idName && idName !== who ? `ID name: ${idName}` : null, user?.monthly_income ? `bio says ${user.monthly_income}/month` : null]
+      .filter(Boolean)
+      .join(' · ');
+   const ping = [`📄 Proof of income from ${who}`, whoLine || null, `${files.length} file${files.length === 1 ? '' : 's'}${row.note ? ` · "${row.note}"` : ''} (attached below)`, loanLine]
+      .filter(Boolean)
+      .join('\n');
    let pingId: number | undefined;
    if (chat?.value) {
       try {
-         const sent = (await sendTelegramMessage(chat.value, ping, { inlineKeyboard: [[{ text: '👀 Review', url: ADMIN_URL }]] })) as { message_id?: number } | undefined;
+         const sent = (await sendTelegramMessage(chat.value, ping, { inlineKeyboard: [[{ text: '👀 Open this document', url: docUrl }], resendRow] })) as { message_id?: number } | undefined;
          pingId = sent?.message_id;
       } catch (err) {
          console.error('income doc ping failed', err);
       }
    }
-   await postDiscord({ embeds: [{ title: `📄 Proof of income — ${who}`, description: `${ping.split('\n').slice(1).join('\n')}\n${ADMIN_URL}`, color: 0x6b55f7 }] }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }).catch(() => undefined);
+   await postDiscord({ embeds: [{ title: `📄 Proof of income — ${who}`, description: `${ping.split('\n').slice(1).join('\n')}\n${docUrl}`, color: 0x6b55f7 }] }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }).catch(() => undefined);
    // The result (read OK, couldn't read, resend asked…) goes to both places the ping went.
    // One that waits for the team carries 👀 Check + ✅ Approve / ❌ Reject on Telegram and, when the
    // Discord bot is set up, on Discord too (incomeDocCards.ts). Otherwise Discord gets a webhook post
    // that links to the same Admin page.
-   const reply = async (text: string, waiting = false) => {
+   // Telegram: always a link to this document + the resend link; Approve / Reject unless it already
+   // approved itself (a resend ask can still be approved anyway, like on the admin page).
+   const reply = async (text: string, waiting = false, decide = waiting) => {
       if (chat?.value) {
-         await sendTelegramMessage(chat.value, text, { replyToMessageId: pingId, ...(waiting ? { inlineKeyboard: incomeDocKeyboard(id) } : {}) }).catch((err) =>
+         await sendTelegramMessage(chat.value, text, { replyToMessageId: pingId, inlineKeyboard: [...incomeDocKeyboard(id, decide), resendRow] }).catch((err) =>
             console.error('income doc result failed', err)
          );
       }
-      const decisionEmbed = { title: `⚠️ Needs your decision — ${who}`, url: ADMIN_URL, description: text.slice(0, 3800), color: 0xf39c12 };
+      const decisionEmbed = { title: `⚠️ Needs your decision — ${who}`, url: docUrl, description: text.slice(0, 3800), color: 0xf39c12 };
       if (waiting && (await postIncomeDocDiscordCard(supabase, id, decisionEmbed))) return;
       await postDiscord(
          {
@@ -1102,11 +1113,11 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
                waiting
                   ? {
                        title: `⚠️ Needs your decision — ${who}`,
-                       url: ADMIN_URL,
-                       description: `${text.slice(0, 3800)}\n\n👀 Check, then ✅ Approve or ❌ Decline: ${ADMIN_URL}`,
+                       url: docUrl,
+                       description: `${text.slice(0, 3800)}\n\n👀 Check, then ✅ Approve or ❌ Decline: ${docUrl}`,
                        color: 0xf39c12
                     }
-                  : { title: `📄 Result — ${who}`, description: `${text.slice(0, 3900)}\n${ADMIN_URL}`, color: 0x6b55f7 }
+                  : { title: `📄 Result — ${who}`, description: `${text.slice(0, 3900)}\n${docUrl}`, color: 0x6b55f7 }
             ]
          },
          { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }
@@ -1116,7 +1127,7 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    const finish = async (patch: Record<string, unknown>, replyText?: string) => {
       await supabase.from('income_documents').update({ ...patch, analyzed_at: new Date().toISOString() }).eq('id', id);
       // Not a resend ask and not approved by itself → it waits for the team's Approve / Reject.
-      if (replyText) await reply(replyText, patch.verdict !== 'resend' && patch.decision !== 'approved');
+      if (replyText) await reply(replyText, patch.verdict !== 'resend' && patch.decision !== 'approved', patch.decision !== 'approved');
       // Indonesia track: "✅ Bukti penghasilan selesai — langkah berikutnya: …" on Telegram, unless
       // they're asked to resend it or it approved itself (those get their own message).
       if (patch.verdict !== 'resend' && patch.decision !== 'approved') await notifyIdNextStep(supabase, row.user_id, 'income');
@@ -1130,17 +1141,17 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       const fraud = ((patch.flags as Flag[] | undefined) ?? []).filter((f) => f.severity === 'red');
       const result = await finish(
          { ...patch, verdict: 'resend', resend_reason: reason, checks: patch.checks ?? buildSections([], { ok: false, note: teamNote }) },
-         `${fraud.length ? '🚨 Fraud signs · ' : ''}${VERDICT_LINE.resend}: ${RESEND_TEXT[reason]}\n(${teamNote})`
+         `${fraud.length ? '🚨 Fraud signs · ' : ''}${VERDICT_LINE.resend}: ${RESEND_TEXT[reason]}\n\n${teamNote}`.slice(0, 3900)
       );
       await notifyIncomeDecision(supabase, id);
       if (fraud.length) {
          const alert = `🚨 Possible fraud: ${who} sent this as proof of income\n${fraud.map((f) => `• ${f.detail}`).join('\n')}\n${loanLine}`;
          const { data: fraudChat } = await supabase.from('telegram_bot_settings').select('value').eq('key', 'fraud_alert_chat_id').maybeSingle();
          if (fraudChat?.value) {
-            await sendTelegramMessage(fraudChat.value, alert, { inlineKeyboard: [[{ text: '👀 Review', url: ADMIN_URL }]] }).catch(() => undefined);
+            await sendTelegramMessage(fraudChat.value, alert, { inlineKeyboard: [[{ text: '👀 Open this document', url: docUrl }], resendRow] }).catch(() => undefined);
          }
          await postDiscord(
-            { embeds: [{ title: `🚨 Possible fraud — ${who}`, description: `${alert.split('\n').slice(1).join('\n')}\n${ADMIN_URL}`, color: 0xe74c3c }] },
+            { embeds: [{ title: `🚨 Possible fraud — ${who}`, description: `${alert.split('\n').slice(1).join('\n')}\n${docUrl}`, color: 0xe74c3c }] },
             { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }
          ).catch(() => undefined);
       }
@@ -1158,6 +1169,7 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    const pdfs: PdfInfo[] = [];
    const hashes: string[] = [];
    const facts: FileFacts[] = [];
+   const uploads: TelegramUpload[] = [];
    let locked = false;
    let unsupported = false;
    for (const f of files) {
@@ -1167,6 +1179,7 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       hashes.push(await sha256(bytes));
       facts.push({ name: f.name ?? `file ${facts.length + 1}`, image: imageInfo(bytes), markers: fileMarkers(bytes) });
       const mime = f.mime && (f.mime === 'application/pdf' || IMAGE_TYPES.has(f.mime)) ? f.mime : blob.type;
+      uploads.push({ name: f.name ?? f.path.split('/').pop() ?? 'file', mime: mime || 'application/octet-stream', bytes });
       if (mime === 'application/pdf') {
          const info = readPdfInfo(bytes);
          if (info.encrypted) {
@@ -1180,6 +1193,9 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       }
       loaded.push({ name: f.name ?? f.path, mime, bytes });
    }
+
+   // The files themselves, under the ping, so the team opens them inside Telegram.
+   if (chat?.value) await sendTelegramFiles(chat.value, uploads, { replyToMessageId: pingId });
 
    // AI labels and generator tags are in the file itself: a fake sign, so it always goes to the team.
    const fileWarnings = facts
@@ -1299,8 +1315,9 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       ai_note: aiNote ? `${aiNote.direction} (${aiNote.votes.join(', ')}): ${aiNote.note}${aiNote.ask.length ? ` Ask: ${aiNote.ask.join(' ')}` : ''}` : null,
       model: MODEL
    };
-   if (verdict === 'resend' && reason) return askResend(patch, reason, `score ${score}/100`);
-   const checkLine = checks.map((c) => `${c.status === 'pass' ? '✅' : c.status === 'warn' ? '🟠' : '🔴'} ${c.label}`).join('\n');
+   const checkLine = checks.map((c) => `${c.status === 'pass' ? '✅' : c.status === 'warn' ? '🟠' : c.status === 'skip' ? '⚪' : '🔴'} ${c.label}`).join('\n');
+   // A resend ask still shows the team everything that was read: checks, what the document is, income, flags.
+   if (verdict === 'resend' && reason) return askResend(patch, reason, [`Score ${score}/100`, checkLine, memo].join('\n\n'));
    // Small steps ($40 today): every check passed → approved without a team decision.
    const stepAuto = verdict === 'looks_good' && step?.autoApprove === true;
    // Bigger asks: only when every AI opinion says lend and the score is high (income_doc_ai_auto).

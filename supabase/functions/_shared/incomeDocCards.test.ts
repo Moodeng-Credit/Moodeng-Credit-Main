@@ -25,9 +25,10 @@ Deno.test('other cards’ buttons are not ours', () => {
    }
 });
 
-Deno.test('keyboard: Check link first, then Approve / Reject', () => {
+Deno.test('keyboard: link to this document first, then Approve / Reject', () => {
    const [check, decide] = incomeDocKeyboard(DOC);
-   assertEquals(check, [{ text: '👀 Check', url: INCOME_DOCS_ADMIN_URL }]);
+   assertEquals(check, [{ text: '👀 Open this document', url: `${INCOME_DOCS_ADMIN_URL}?doc=${DOC}` }]);
+   assertEquals(incomeDocKeyboard(DOC, false).length, 1);
    assertEquals(decide.map((b) => b.text), ['✅ Approve', '❌ Reject']);
    assertEquals(incomeDocConfirmRows(DOC, 'decline').map((row) => row[0].text), ['❌ Yes, reject it', '◀ Back']);
    assertEquals(incomeDocConfirmRows(DOC, 'approve')[0][0], { text: '✅ Yes, approve it', callback_data: `pi:ya:${DOC}` });
