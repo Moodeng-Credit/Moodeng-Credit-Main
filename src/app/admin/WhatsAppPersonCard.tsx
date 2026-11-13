@@ -37,6 +37,42 @@ export const daysLate = (dueDate: string | null | undefined) => {
 export const personName = (p: PersonCard) =>
    p.kycName || p.displayName || p.facebookName || (p.username ? `@${p.username}` : 'Moodeng user');
 
+const titleCase = (s: string) => s.toLowerCase().replace(/\b\p{L}/gu, (c) => c.toUpperCase());
+
+/** Where they live, most specific first: "Cebu City, Cebu, Central Visayas". */
+export const placeOf = (p: PersonCard | null | undefined) => {
+   const id = p?.identity;
+   const parts = [id?.city, id?.province, id?.region].filter((v): v is string => Boolean(v?.trim())).map((v) => titleCase(v.trim()));
+   const unique = parts.filter((v, i) => parts.findIndex((x) => x.toLowerCase() === v.toLowerCase()) === i);
+   return unique.length ? unique.join(', ') : p?.application?.location || null;
+};
+
+const genderLabel = (g: string | null | undefined) => (g === 'M' ? 'Male' : g === 'F' ? 'Female' : g || null);
+
+/** "28 · F · Cebu" for the chat list. */
+export const aboutLine = (p: PersonCard | null | undefined) => {
+   if (!p) return null;
+   const city = p.identity?.city || p.identity?.province || p.application?.location;
+   const bits = [p.identity?.age ? String(p.identity.age) : null, p.identity?.gender || null, city ? titleCase(city) : null].filter(
+      Boolean
+   );
+   return bits.length ? bits.join(' · ') : null;
+};
+
+const incomeLabel: Record<string, string> = {
+   under_200: 'Under $200 / month',
+   '200_400': '$200–400 / month',
+   '400_700': '$400–700 / month',
+   '700_plus': '$700+ / month'
+};
+const workLabel: Record<string, string> = { 'full-time': 'Full-time', 'part-time': 'Part-time', freelance: 'Freelance', none: 'No job' };
+const paydayLabel = (a: NonNullable<PersonCard['application']>) => {
+   const base = { 'mid-month': 'Mid-month', 'end-of-month': 'End of month', irregular: 'Irregular' }[a.paydayType ?? ''] ?? a.paydayType;
+   if (!base) return null;
+   const days = a.paydayStart && a.paydayEnd ? ` (${a.paydayStart}–${a.paydayEnd})` : a.paydayStart ? ` (${a.paydayStart})` : '';
+   return `${base}${days}`;
+};
+
 /** Short loan line for the chat list: "Loan out · $40 due 15 Nov" / "3 days late". */
 export function LoanBadge({ person }: { person: PersonCard | null }) {
    const loan = person?.activeLoan;
@@ -175,6 +211,72 @@ export default function WhatsAppPersonCard({
                      {matchedBy === 'phone' ? <Row label="Matched by">phone number</Row> : null}
                   </div>
                </div>
+
+               {/* Who they are (ID check) — for picking affiliates and seeing which areas we reach. */}
+               {(() => {
+                  const id = person.identity;
+                  const place = placeOf(person);
+                  if (!id?.age && !id?.gender && !place) return null;
+                  return (
+                     <div className="rounded-2xl bg-[#140726] p-3">
+                        <p className="text-[11px] font-black uppercase tracking-wide text-[#a89bb8]">About them (ID check)</p>
+                        <div className="mt-1 divide-y divide-[#2a1453]">
+                           {id?.age ? (
+                              <Row label="Age">
+                                 {id.age}
+                                 {id.birthDate ? (
+                                    <span className="font-normal text-[#a89bb8]"> · born {bangkokDate(id.birthDate)}</span>
+                                 ) : null}
+                              </Row>
+                           ) : null}
+                           {genderLabel(id?.gender) ? <Row label="Gender">{genderLabel(id?.gender)}</Row> : null}
+                           {place ? <Row label="Lives in">{place}</Row> : null}
+                           {id?.country ? <Row label="ID country">{id.country}</Row> : null}
+                        </div>
+                     </div>
+                  );
+               })()}
+
+               {/* Job and income — what they wrote in the application, plus the screening call. */}
+               {(() => {
+                  const app = person.application;
+                  const call = person.call;
+                  const payday = app ? paydayLabel(app) : null;
+                  const has =
+                     app?.profession ||
+                     app?.incomeType ||
+                     app?.monthlyIncome ||
+                     app?.incomeDescription ||
+                     payday ||
+                     call?.role ||
+                     call?.loanUse;
+                  if (!has) return null;
+                  return (
+                     <div className="rounded-2xl bg-[#140726] p-3">
+                        <p className="text-[11px] font-black uppercase tracking-wide text-[#a89bb8]">Job & income (application)</p>
+                        <div className="mt-1 divide-y divide-[#2a1453]">
+                           {app?.profession ? <Row label="Job">{app.profession}</Row> : null}
+                           {call?.role && call.role.trim().toLowerCase() !== app?.profession?.trim().toLowerCase() ? (
+                              <Row label="Job (call)">{call.role}</Row>
+                           ) : null}
+                           {app?.incomeType ? <Row label="Work">{workLabel[app.incomeType] ?? app.incomeType}</Row> : null}
+                           {app?.monthlyIncome ? <Row label="Income">{incomeLabel[app.monthlyIncome] ?? app.monthlyIncome}</Row> : null}
+                           {app?.monthlyExpenses ? (
+                              <Row label="Expenses">{incomeLabel[app.monthlyExpenses] ?? app.monthlyExpenses}</Row>
+                           ) : null}
+                           {payday ? <Row label="Payday">{payday}</Row> : null}
+                           {app?.otherIncome ? <Row label="Other income">{app.otherIncome}</Row> : null}
+                           {call?.loanUse ? <Row label="Loan for">{call.loanUse}</Row> : null}
+                           {call?.referral ? <Row label="Heard via">{call.referral}</Row> : null}
+                        </div>
+                        {app?.incomeDescription ? (
+                           <p className="mt-2 whitespace-pre-wrap rounded-xl bg-[#1c0a3a] px-3 py-2 text-xs text-purple-100">
+                              “{app.incomeDescription}”
+                           </p>
+                        ) : null}
+                     </div>
+                  );
+               })()}
 
                {/* How active. */}
                <div className="rounded-2xl bg-[#140726] p-3">
