@@ -671,8 +671,8 @@ export const thaiCoverageC: Record<string, string> = {
    'A Credit Level is your borrowing limit. Everyone starts at Level 1 with a $15 limit, and the limit grows as you complete Credit-Building Loans.':
       'ระดับเครดิตคือวงเงินกู้ของคุณ ทุกคนเริ่มต้นที่ระดับ 1 ด้วยวงเงิน $15 และวงเงินจะเพิ่มขึ้นเมื่อคุณทำ Credit-Building Loan สำเร็จ',
    'How do I move to the next level?': 'ฉันจะไปสู่ระดับถัดไปได้อย่างไร?',
-   'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment unlocks the next limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
-      'กู้ Credit-Building Loan เต็มวงเงินปัจจุบันของคุณ แล้วชำระคืนให้ครบและตรงเวลา การชำระคืนที่ราบรื่นจะปลดล็อกวงเงินถัดไป — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140',
+   'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment adds $10 to your limit: $15, then $25, then $35, and so on.':
+      'กู้ Credit-Building Loan เต็มวงเงินปัจจุบันของคุณ แล้วชำระคืนให้ครบและตรงเวลา การชำระคืนที่ราบรื่นแต่ละครั้งจะเพิ่มวงเงินของคุณ $10: $15 แล้ว $25 แล้ว $35 ต่อไปเรื่อย ๆ',
    'Does borrowing a small amount level me up?': 'การยืมจำนวนน้อยจะทำให้ฉันเพิ่มระดับหรือไม่?',
    'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with moo-lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.':
       'ไม่ การยืมต่ำกว่าวงเงินของคุณคือ Trust-Building Loan ซึ่งช่วยเพิ่มความน่าเชื่อถือกับ Moo-lender แต่ไม่เพิ่มระดับเครดิตของคุณ มีเพียง Credit-Building Loan แบบเต็มวงเงินเท่านั้นที่จะทำให้คุณก้าวหน้า',

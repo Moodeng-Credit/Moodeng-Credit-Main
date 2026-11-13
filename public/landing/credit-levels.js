@@ -18,10 +18,10 @@
       },
       credit: {
          kicker: 'Credit-Building Loan',
-         title: 'A full-limit loan can unlock $20.',
+         title: 'A full-limit loan can unlock $25.',
          body: 'Borrow your full $15 limit and repay the accepted terms on time. Your history grows and your next Credit Level can unlock.',
          history: 'Stronger',
-         limit: '$20 unlocked',
+         limit: '$25 unlocked',
          type: 'Credit-Building',
          amount: '$15',
          repay: 'Example: $18 total'

@@ -557,8 +557,8 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'The rule': 'Ang rule',
    'Full limit': 'Buong limit',
    'On-time repayment': 'On-time na pagbabayad',
-   'If your limit is $15, a $15 credit-building loan can unlock $20. A smaller loan builds trust, but it does not level you up.':
-      'Kung $15 ang limit mo, puwedeng mag-unlock ng $20 ang $15 na credit-building loan. Bumubuo ng tiwala ang mas maliit na loan, pero hindi ka nito pinapa-level up.',
+   'If your limit is $15, a $15 credit-building loan can unlock $25. A smaller loan builds trust, but it does not level you up.':
+      'Kung $15 ang limit mo, puwedeng mag-unlock ng $25 ang $15 na credit-building loan. Bumubuo ng tiwala ang mas maliit na loan, pero hindi ka nito pinapa-level up.',
    'How it works': 'Paano ito gumagana',
    'The level-up path is simple': 'Simple ang daan para mag-level up',
    'Credit Leveling rewards one specific pattern: a full-limit request followed by a clean repayment.':

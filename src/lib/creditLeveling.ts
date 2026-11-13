@@ -26,6 +26,8 @@ type CreditProgressionInput = {
    /** The loan's saved zone (`loans.due_timezone`); Manila when missing. */
    dueTimezone?: string | null;
    paidAt: string;
+   /** When the loan was funded: one funded before the ladder switch keeps the old next step. */
+   fundedAt?: string | null;
 };
 
 type CreditProgressionResult = {
@@ -48,7 +50,8 @@ export const evaluateCreditProgression = ({
    loanAmount,
    dueDate,
    dueTimezone,
-   paidAt
+   paidAt,
+   fundedAt
 }: CreditProgressionInput): CreditProgressionResult => {
    const normalizedLimit = getEffectiveCreditLimit(currentLimit, isVerified);
    const repaid = toNumber(repaidAmount ?? 0);
@@ -65,7 +68,7 @@ export const evaluateCreditProgression = ({
 
    return {
       shouldLevelUp: canLevelUp,
-      nextLimit: getNextCreditTier(normalizedLimit),
+      nextLimit: getNextCreditTier(normalizedLimit, fundedAt),
       isLate,
       isFullyRepaid
    };

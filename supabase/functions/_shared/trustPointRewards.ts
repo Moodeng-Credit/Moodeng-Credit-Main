@@ -34,8 +34,12 @@ export type TrustPointMilestoneDefinition = {
 
 type EligibilityByMilestone = Record<string, boolean>;
 
-const CREDIT_TIERS = [15, 20, 40, 60, 80, 100, 120, 140];
-const MAX_CREDIT_LIMIT = CREDIT_TIERS[CREDIT_TIERS.length - 1];
+// Same ladder as creditAndPoints.ts: $15 start, $135 top.
+const STARTING_CREDIT_LIMIT = 15;
+const MAX_CREDIT_LIMIT = 135;
+// Level 3 on the ladder ($15, $25, $35): the "Reach Credit Level 3" milestone. Same as
+// private.is_trust_milestone_complete in the database.
+const LEVEL_THREE_LIMIT = 35;
 
 const toNumber = (value: number | string | null | undefined) => {
    const numberValue = Number(value ?? 0);
@@ -147,7 +151,7 @@ const getEligibilityByMilestone = (
       'full-limit-credit-builder': onTimePaidLoans.some((loan) => fullLimitLoans.has(loan)),
       'two-unique-lenders': uniqueLenderCount >= 2,
       'repay-100-total': totalRepaid >= 100,
-      'reach-level-three': isVerified && creditLimit >= 40,
+      'reach-level-three': isVerified && creditLimit >= LEVEL_THREE_LIMIT,
       'trusted-borrower-candidate': onTimePaidLoans.length >= 5 && uniqueLenderCount >= 3 && !hasUnresolvedDefault
    };
 };
@@ -203,7 +207,7 @@ export const calculateTrustPointRewardDelta = ({
    // A loan this projection marks repaid hasn't had its limit recorded yet: record the borrower's
    // current limit on it, as record_loan_payment will (an unverified borrower has none).
    const paidBefore = new Set(beforeLoans.filter((loan) => isPaid(loan) && isFullyRepaid(loan)).map((loan) => loan.id).filter(Boolean));
-   const currentLimit = Math.min(Math.max(toNumber(user.cs), CREDIT_TIERS[0]), MAX_CREDIT_LIMIT);
+   const currentLimit = Math.min(Math.max(toNumber(user.cs), STARTING_CREDIT_LIMIT), MAX_CREDIT_LIMIT);
    const projectedAfter = afterLoans.map((loan) =>
       isVerifiedUser(user) && loan.id && !paidBefore.has(loan.id) && isPaid(loan) && isFullyRepaid(loan) && !hasRecordedLimit(loan)
          ? { ...loan, credit_limit_at_repayment: currentLimit }

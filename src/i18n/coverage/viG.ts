@@ -551,5 +551,13 @@ export const vietnameseCoverageG: Record<string, string> = {
    "Confirm 1 hour before your call": "Xác nhận 1 giờ trước cuộc gọi",
    "We'll send you an “I'll be there” button on Messenger, and it shows up right here. Tap it, or the call is cancelled automatically.": "Chúng tôi sẽ gửi nút “I'll be there” qua Messenger, và nút cũng hiện ngay tại đây. Hãy nhấn nút, nếu không cuộc gọi sẽ tự động bị hủy.",
    "Your call is in under an hour — tap “I’ll be there” now to keep it.": "Còn chưa đầy một giờ nữa là đến cuộc gọi — nhấn “I’ll be there” ngay để giữ cuộc gọi.",
-   "You’re booked! You can apply right after the call.": "Bạn đã đặt lịch! Bạn có thể đăng ký ngay sau cuộc gọi."
+   "You’re booked! You can apply right after the call.": "Bạn đã đặt lịch! Bạn có thể đăng ký ngay sau cuộc gọi.",
+   // Credit ladder $15, $25, $35 … (Nov 2026).
+   "full-limit loan unlocks a $25 limit": "khoản vay toàn hạn mức sẽ mở khóa hạn mức $25",
+   "left to repay for a $25 limit": "còn phải trả để lên hạn mức $25",
+   "…and $10 more for each level after that.": "…và cộng thêm $10 cho mỗi hạng tiếp theo.",
+   "Top level for now": "Hạng cao nhất hiện tại",
+   "Top level": "Hạng cao nhất",
+   "Example: borrowing the full $25 limit to unlock the $35 level.": "Ví dụ: vay toàn bộ hạn mức $25 để mở khóa hạng $35.",
+   "Credit limit reaches $35 = +50 Pandesal points": "Hạn mức đạt $35 = +50 điểm Pandesal"
 };

@@ -51,7 +51,7 @@ Because your Pandesal points are tied to your wallet, they travel with you — t
       lastUpdated: 'Jun 9, 2026',
       body: `Credit Levels determine how much you can borrow at a time.
 
-Everyone starts at Level 1 with a $15 limit. As you borrow and fully repay, your limit grows — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 — and unlocks new levels.
+Everyone starts at Level 1 with a $15 limit. As you borrow and fully repay, each full-limit loan you repay adds $10 to your limit ($15, then $25, then $35) and unlocks a new level.
 
 You only advance by completing a Credit-Building Loan: a loan at your full current limit, repaid in full and on time.`
    },
@@ -92,7 +92,7 @@ Scoring Breakdown
 When you repay on time, the following benefits are applied to your profile:
 
 - More Pandesal Points: Your Pandesal points increase for either Credit-Building or Trust-Building loans, reflecting your reliability to the community.
-- Credit Limit Progression: For Credit-Building loans, your current borrowing limit increases, successfully unlocking the next credit level (e.g., advancing from $15 → $20).
+- Credit Limit Progression: For Credit-Building loans, your current borrowing limit increases, successfully unlocking the next credit level (e.g., advancing from $15 → $25).
 - Verified Lending History: Your successful repayment history becomes visible to potential moo-lenders, significantly streamlining the funding process for your future requests.
 
 Repayment Scoring Breakdown
@@ -277,7 +277,7 @@ Dahil nakatali sa wallet mo ang Pandesal points mo, dala mo ito kahit saan — h
       lastUpdated: 'Hunyo 9, 2026',
       body: `Tinutukoy ng Credit Level mo kung magkano ang puwede mong hiramin sa isang pagkakataon.
 
-Lahat nagsisimula sa Level 1 na may $15 limit. Habang humihiram ka at nagbabayad nang buo, lumalaki ang limit mo — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 — at nag-a-unlock ka ng mga bagong level.
+Lahat nagsisimula sa Level 1 na may $15 limit. Habang humihiram ka at nagbabayad nang buo, bawat full-limit na loan na nabayaran mo ay nagdadagdag ng $10 sa limit mo ($15, tapos $25, tapos $35) at nag-a-unlock ng bagong level.
 
 Aakyat ka lang ng level kapag nakumpleto mo ang isang Credit-Building Loan: loan na katumbas ng buong current limit mo, na binayaran nang buo at on time.`
    },
@@ -315,7 +315,7 @@ Paano binibilang ang points
 Kapag nagbayad ka on time, ito ang mga benepisyong makukuha ng profile mo:
 
 - Mas maraming Pandesal points: Tumataas ang Pandesal points mo para sa Credit-Building o Trust-Building loan, na nagpapakita sa komunidad na maaasahan ka.
-- Pagtaas ng credit limit: Para sa Credit-Building Loan, tataas ang current borrowing limit mo at maa-unlock ang susunod na Credit Level (halimbawa, mula $15 → $20).
+- Pagtaas ng credit limit: Para sa Credit-Building Loan, tataas ang current borrowing limit mo at maa-unlock ang susunod na Credit Level (halimbawa, mula $15 → $25).
 - Verified na lending history: Makikita ng mga posibleng moo-lender ang matagumpay mong repayment history, kaya mas mabilis mapondohan ang mga susunod mong request.
 
 Paano binibilang ang points sa pagbabayad
@@ -481,7 +481,7 @@ Karena poin Pandesal tertaut ke dompet kamu, poin ini ikut ke mana pun kamu perg
       lastUpdated: '9 Juni 2026',
       body: `Level Kredit menentukan berapa banyak yang bisa kamu pinjam dalam satu waktu.
 
-Semua orang mulai di Level 1 dengan limit $15. Saat kamu meminjam dan melunasi pinjaman, limit kamu bertambah, $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, dan level baru pun terbuka.
+Semua orang mulai di Level 1 dengan limit $15. Saat kamu meminjam dan melunasi pinjaman, setiap pinjaman sebesar limit penuh yang kamu lunasi menambah limit kamu $10 ($15, lalu $25, lalu $35) dan membuka level baru.
 
 Kamu hanya bisa naik level dengan menyelesaikan Credit-Building Loan: pinjaman sebesar limit penuh kamu saat ini, yang dibayar kembali secara penuh dan tepat waktu.`
    },
@@ -519,7 +519,7 @@ Rincian poin
 Saat kamu membayar kembali tepat waktu, manfaat berikut diterapkan ke profil kamu:
 
 - Poin Pandesal bertambah: Poin Pandesal kamu naik, baik untuk Credit-Building Loan maupun Trust-Building Loan, sebagai cerminan keandalan kamu di mata komunitas.
-- Kenaikan limit kredit: Untuk Credit-Building Loan, limit pinjaman kamu saat ini naik dan Level Kredit berikutnya terbuka (misalnya, naik dari $15 → $20).
+- Kenaikan limit kredit: Untuk Credit-Building Loan, limit pinjaman kamu saat ini naik dan Level Kredit berikutnya terbuka (misalnya, naik dari $15 → $25).
 - Riwayat pinjaman terverifikasi: Riwayat pembayaran kembali kamu yang berhasil terlihat oleh calon pemberi pinjaman, sehingga permintaan kamu berikutnya jauh lebih mudah didanai.
 
 Rincian poin pembayaran kembali
@@ -667,7 +667,7 @@ const THAI_GUIDES: Record<string, LocalizedGuideArticle> = {
       lastUpdated: '9 มิ.ย. 2026',
       body: `ระดับเครดิตกำหนดว่าคุณยืมได้มากเท่าใดในแต่ละครั้ง
 
-ทุกคนเริ่มที่ระดับ 1 ด้วยวงเงิน $15 เมื่อคุณยืมและชำระคืนครบถ้วน วงเงินของคุณจะเพิ่มขึ้น: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 และปลดล็อกระดับใหม่
+ทุกคนเริ่มที่ระดับ 1 ด้วยวงเงิน $15 เมื่อคุณยืมและชำระคืนครบถ้วน เงินกู้เต็มวงเงินแต่ละครั้งที่ชำระคืนจะเพิ่มวงเงินของคุณ $10 ($15 แล้ว $25 แล้ว $35) และปลดล็อกระดับใหม่
 
 คุณจะเลื่อนระดับได้ด้วยการทำ Credit-Building Loan ให้สำเร็จเท่านั้น นั่นคือเงินกู้เต็มวงเงินปัจจุบันที่ชำระคืนครบเต็มจำนวนและตรงเวลา`
    },
@@ -705,7 +705,7 @@ Credit-Building Loan คือเงินกู้เต็มวงเงิ�
 เมื่อคุณชำระคืนตรงเวลา โปรไฟล์ของคุณจะได้รับประโยชน์ดังนี้:
 
 - แต้ม Pandesal เพิ่มขึ้น: แต้ม Pandesal ของคุณจะเพิ่มขึ้นทั้งจาก Credit-Building Loan และ Trust-Building Loan สะท้อนความน่าเชื่อถือของคุณต่อชุมชน
-- วงเงินเพิ่มขึ้น: สำหรับ Credit-Building Loan วงเงินกู้ปัจจุบันของคุณจะเพิ่มขึ้นและปลดล็อกระดับเครดิตถัดไป (เช่น จาก $15 → $20)
+- วงเงินเพิ่มขึ้น: สำหรับ Credit-Building Loan วงเงินกู้ปัจจุบันของคุณจะเพิ่มขึ้นและปลดล็อกระดับเครดิตถัดไป (เช่น จาก $15 → $25)
 - ประวัติการกู้ยืมที่ตรวจสอบได้: ประวัติการชำระคืนที่ดีของคุณจะแสดงให้ผู้ให้กู้ที่สนใจเห็น ช่วยให้คำขอครั้งต่อไปได้รับการปล่อยกู้ง่ายขึ้นมาก
 
 การคิดแต้มจากการชำระคืน
@@ -850,7 +850,7 @@ Vì điểm Pandesal gắn với ví của bạn, điểm sẽ luôn đi cùng b
       lastUpdated: '9 tháng 6, 2026',
       body: `Hạng tín dụng xác định số tiền tối đa bạn có thể vay mỗi lần.
 
-Mọi người đều bắt đầu ở Hạng 1 với hạn mức $15. Khi bạn vay và trả đủ, hạn mức sẽ tăng dần — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 — và mở khóa các hạng mới.
+Mọi người đều bắt đầu ở Hạng 1 với hạn mức $15. Khi bạn vay và trả đủ, mỗi khoản vay bằng toàn bộ hạn mức mà bạn trả xong sẽ cộng thêm $10 vào hạn mức ($15, rồi $25, rồi $35) và mở khóa hạng mới.
 
 Bạn chỉ lên hạng khi hoàn thành một Credit-Building Loan (khoản vay xây dựng tín dụng): khoản vay bằng toàn bộ hạn mức hiện tại, được trả đủ và đúng hạn.`
    },
@@ -888,7 +888,7 @@ Cách tính điểm
 Khi bạn trả đúng hạn, hồ sơ của bạn nhận được các lợi ích sau:
 
 - Thêm điểm Pandesal: Điểm Pandesal của bạn tăng lên với cả Credit-Building Loan lẫn Trust-Building Loan, thể hiện sự đáng tin cậy của bạn với cộng đồng.
-- Tăng hạn mức tín dụng: Với Credit-Building Loan, hạn mức vay hiện tại của bạn sẽ tăng, mở khóa Hạng tín dụng tiếp theo (ví dụ: từ $15 → $20).
+- Tăng hạn mức tín dụng: Với Credit-Building Loan, hạn mức vay hiện tại của bạn sẽ tăng, mở khóa Hạng tín dụng tiếp theo (ví dụ: từ $15 → $25).
 - Lịch sử vay được xác thực: Lịch sử trả nợ thành công của bạn hiển thị với những người cho vay tiềm năng, giúp các yêu cầu vay sau này được cấp vốn nhanh chóng hơn nhiều.
 
 Cách tính điểm trả nợ

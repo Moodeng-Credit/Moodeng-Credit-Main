@@ -690,8 +690,8 @@ export const vietnameseCoverageC: Record<string, string> = {
    'A Credit Level is your borrowing limit. Everyone starts at Level 1 with a $15 limit, and the limit grows as you complete Credit-Building Loans.':
       'Hạng tín dụng chính là hạn mức vay của bạn. Mọi người đều bắt đầu ở Hạng 1 với hạn mức $15, và hạn mức này tăng lên khi bạn hoàn thành các Credit-Building Loan.',
    'How do I move to the next level?': 'Làm sao để lên hạng tiếp theo?',
-   'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment unlocks the next limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
-      'Vay một Credit-Building Loan bằng toàn bộ hạn mức hiện tại và trả đầy đủ, đúng hạn. Mỗi lần trả nợ như vậy sẽ mở khóa hạn mức tiếp theo — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
+   'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment adds $10 to your limit: $15, then $25, then $35, and so on.':
+      'Vay một Credit-Building Loan bằng toàn bộ hạn mức hiện tại và trả đầy đủ, đúng hạn. Mỗi lần trả nợ như vậy sẽ cộng thêm $10 vào hạn mức: $15, rồi $25, rồi $35, và cứ thế tiếp tục.',
    'Does borrowing a small amount level me up?': 'Vay một khoản nhỏ có giúp tôi lên hạng không?',
    'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with moo-lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.':
       'Không. Vay thấp hơn hạn mức của bạn là một Trust-Building Loan. Nó giúp cải thiện uy tín của bạn với moo-lender nhưng không nâng Hạng tín dụng của bạn. Chỉ một Credit-Building Loan bằng toàn bộ hạn mức mới giúp bạn tiến lên.',

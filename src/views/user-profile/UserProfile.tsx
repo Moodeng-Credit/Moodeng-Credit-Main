@@ -39,7 +39,7 @@ import { isLoanPastDue, isPublicDefault } from '@/utils/loanOverdue';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { calculateLenderDiversity, getDiversityStatus } from '@/utils/diversityScore';
 
-import { getCreditLevelNumber } from '@/config/creditTiers';
+import { CREDIT_STEP, CREDIT_TIERS, getCreditLevelNumber } from '@/config/creditTiers';
 import { getBorrowerUsedCreditAmount } from '@/lib/borrowerCreditUsage';
 import { getEffectiveCreditLimit, getFullLimitLoans } from '@/lib/creditLeveling';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
@@ -1796,12 +1796,19 @@ const CreditLevelBottomSheet = ({ isOpen, onClose }: { isOpen: boolean; onClose:
 
    if (!isOpen) return null;
 
-   const creditLevels = [
-      { level: 1, amount: 15, stars: '⭐', className: 'from-[#c4b5fd] to-[#b9a2fb] text-white' },
-      { level: 2, amount: 20, stars: '⭐⭐', className: 'from-[#a78bfa] to-[#9977f2] text-white' },
-      { level: 3, amount: 40, stars: '⭐⭐⭐', className: 'from-[#8b5cf6] to-[#7c4df1] text-white' },
-      { level: 4, amount: 60, stars: '⭐⭐⭐⭐', className: 'from-[#7c3aed] to-[#6d28d9] text-white' }
+   // The first four levels from the ladder, then "and so on": the full list would name the top.
+   const shades = [
+      'from-[#c4b5fd] to-[#b9a2fb] text-white',
+      'from-[#a78bfa] to-[#9977f2] text-white',
+      'from-[#8b5cf6] to-[#7c4df1] text-white',
+      'from-[#7c3aed] to-[#6d28d9] text-white'
    ];
+   const creditLevels = CREDIT_TIERS.slice(0, 4).map((amount, i) => ({
+      level: i + 1,
+      amount,
+      stars: '⭐'.repeat(i + 1),
+      className: shades[i]
+   }));
 
    const handleDragStart = (event: PointerEvent<HTMLDivElement>) => {
       dragStartY.current = event.clientY;
@@ -1896,6 +1903,7 @@ const CreditLevelBottomSheet = ({ isOpen, onClose }: { isOpen: boolean; onClose:
                      </div>
                   ))}
                </div>
+               <p className="mt-4 text-center text-[17px] font-semibold text-[#6b7280]">{`…and $${CREDIT_STEP} more for each level after that.`}</p>
             </div>
          </div>
       </div>
@@ -2182,7 +2190,7 @@ const LoanMixBottomSheet = ({
                      title="Credit Building"
                      label="Credit-level signal"
                      description="A full-limit loan. If it is repaid successfully, it can unlock the borrower’s next credit level."
-                     example="Example: borrowing the full $20 limit to unlock the $40 level."
+                     example="Example: borrowing the full $25 limit to unlock the $35 level."
                   />
                </div>
 

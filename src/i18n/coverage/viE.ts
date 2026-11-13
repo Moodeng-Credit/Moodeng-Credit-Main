@@ -144,8 +144,8 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Most borrowers use both — Trust-Building Loans to stay active, Credit-Building Loans to climb.':
       'Hầu hết người vay dùng cả hai — Trust-Building Loan để duy trì hoạt động, Credit-Building Loan để lên hạng.',
    'How Credit Levels Work on Moodeng Credit': 'Hạng tín dụng hoạt động như thế nào trên Moodeng Credit',
-   'Credit Levels set how much you can borrow on Moodeng Credit. Learn how limits grow $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, what a Credit-Building Loan is, and how to unlock your next level.':
-      'Hạng tín dụng quyết định số tiền bạn có thể vay trên Moodeng Credit. Tìm hiểu cách hạn mức tăng $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, Credit-Building Loan là gì và cách mở khóa hạng tiếp theo.',
+   'Credit Levels set how much you can borrow on Moodeng Credit. You start at $15 and each full-limit loan you repay adds $10. Learn what a Credit-Building Loan is and how to unlock your next level.':
+      'Hạng tín dụng quyết định số tiền bạn có thể vay trên Moodeng Credit. Bạn bắt đầu với $15 và mỗi khoản vay toàn hạn mức bạn trả xong sẽ cộng thêm $10. Tìm hiểu Credit-Building Loan là gì và cách mở khóa hạng tiếp theo.',
    'Verify, then make your first request': 'Xác minh, rồi gửi yêu cầu đầu tiên',
    'Repay your $15 loan on time': 'Trả khoản vay $15 đúng hạn',
    'Repay your $20 loan on time': 'Trả khoản vay $20 đúng hạn',
@@ -154,7 +154,7 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Repay your $80 loan on time': 'Trả khoản vay $80 đúng hạn',
    'Repay your $100 loan on time': 'Trả khoản vay $100 đúng hạn',
    'Repay your $120 loan on time': 'Trả khoản vay $120 đúng hạn',
-   'Limits step up $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.': 'Hạn mức tăng dần $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
+   'You start at $15. Each full-limit loan you repay adds $10.': 'Bạn bắt đầu với $15. Mỗi khoản vay toàn hạn mức bạn trả xong sẽ cộng thêm $10.',
    'How reliable repayment becomes a portable reputation moo-lenders trust.':
       'Việc trả nợ đáng tin cậy trở thành uy tín mang theo được mà moo-lender tin tưởng như thế nào.',
    'The difference between the two loan types and when to use each.': 'Sự khác nhau giữa hai loại khoản vay và khi nào nên dùng từng loại.',
@@ -307,8 +307,6 @@ export const vietnameseCoverageE: Record<string, string> = {
       'Bán USDC ở đó, rồi rút peso về ngân hàng hoặc ví điện tử của bạn.',
    'To move up a level, take a Credit-Building Loan — a loan at your full current limit — and repay it in full and on time.':
       'Để lên hạng, hãy vay một Credit-Building Loan — khoản vay bằng toàn bộ hạn mức hiện tại — và trả đầy đủ, đúng hạn.',
-   'Credit levels run $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
-      'Các Hạng tín dụng lần lượt là $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
    'A referral code tells us who invited you — entered at the start of the loan application.':
       'Mã giới thiệu cho chúng tôi biết ai đã mời bạn — nhập ở bước đầu của đơn vay.',
    'The first step of the application asks for a referral code — type it and tap "Apply code". (This step only appears for verified borrowers.)':

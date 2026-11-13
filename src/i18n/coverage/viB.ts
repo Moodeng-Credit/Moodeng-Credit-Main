@@ -102,8 +102,8 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Full limit': 'Toàn bộ hạn mức',
    'On-time repayment': 'Trả nợ đúng hạn',
    'Next level': 'Hạng tiếp theo',
-   'If your limit is $15, a $15 credit-building loan can unlock $20. A smaller loan builds trust, but it does not level you up.':
-      'Nếu hạn mức của bạn là $15, một Credit-Building Loan $15 có thể mở khóa $20. Khoản vay nhỏ hơn giúp xây dựng niềm tin, nhưng không giúp bạn lên hạng.',
+   'If your limit is $15, a $15 credit-building loan can unlock $25. A smaller loan builds trust, but it does not level you up.':
+      'Nếu hạn mức của bạn là $15, một Credit-Building Loan $15 có thể mở khóa $25. Khoản vay nhỏ hơn giúp xây dựng niềm tin, nhưng không giúp bạn lên hạng.',
    'The level-up path is simple': 'Con đường lên hạng rất đơn giản',
    'Credit Leveling rewards one specific pattern: a full-limit request followed by a clean repayment.':
       'Nâng hạng tín dụng chỉ ghi nhận một cách làm: yêu cầu vay toàn bộ hạn mức, sau đó trả nợ đầy đủ và đúng hạn.',
@@ -173,8 +173,8 @@ export const vietnameseCoverageB: Record<string, string> = {
    'A clean repayment can move you to the next borrowing limit. Smaller loans still build trust.':
       'Trả nợ đầy đủ, đúng hạn có thể đưa bạn lên hạn mức vay tiếp theo. Các khoản vay nhỏ hơn vẫn giúp xây dựng niềm tin.',
    'Credit Leveling Guide | Moodeng Credit': 'Hướng dẫn nâng hạng tín dụng | Moodeng Credit',
-   'How Moodeng credit levels work: repay a full-limit loan on time to unlock the next level, from $15 up to $140, plus trust-building vs credit-building loans.':
-      'Cách hạng tín dụng của Moodeng hoạt động: trả đúng hạn một khoản vay bằng toàn bộ hạn mức để mở khóa hạng tiếp theo, từ $15 lên đến $140, cùng sự khác biệt giữa Trust-Building Loan và Credit-Building Loan.',
+   'How Moodeng credit levels work: you start at $15 and each full-limit loan you repay on time adds $10, plus trust-building vs credit-building loans.':
+      'Cách hạng tín dụng của Moodeng hoạt động: bạn bắt đầu với $15 và mỗi khoản vay bằng toàn bộ hạn mức trả đúng hạn sẽ cộng thêm $10, cùng sự khác biệt giữa Trust-Building Loan và Credit-Building Loan.',
    'Main credit leveling rule': 'Quy tắc nâng hạng tín dụng chính',
    'How credit leveling works': 'Cách nâng hạng tín dụng hoạt động',
    'Credit level progression': 'Lộ trình Hạng tín dụng',
@@ -798,8 +798,8 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Can I get a small loan?': 'Tôi có thể vay một khoản nhỏ không?',
    'Yes — this is built for small loans': 'Có — đây chính là nơi dành cho các khoản vay nhỏ',
    'Can I get a small loan with Moodeng?': 'Tôi có thể vay một khoản nhỏ với Moodeng không?',
-   'Yes — small loans are exactly what Moodeng is for. New borrowers start at a $15 limit, with no minimum amount, no subscription, and no fees. You request what you need up to your current limit, set the date and interest, and moo-lenders decide whether to fund you. Each full-limit loan you repay on time grows your limit one step, from $15 up to a $140 maximum, so you can start small and grow into larger loans only when you are ready.':
-      'Có — các khoản vay nhỏ chính là mục đích của Moodeng. Người vay mới bắt đầu với hạn mức $15, không có số tiền tối thiểu, không phí đăng ký và không phí nào khác. Bạn yêu cầu số tiền cần thiết trong hạn mức hiện tại, đặt ngày trả nợ và lãi suất, rồi moo-lender sẽ quyết định có cấp vốn cho bạn hay không. Mỗi khoản vay bằng toàn bộ hạn mức mà bạn trả đúng hạn sẽ nâng hạn mức của bạn thêm một bậc, từ $15 lên đến mức tối đa $140, để bạn có thể bắt đầu từ số tiền nhỏ và phát triển lên các khoản vay lớn hơn chỉ khi bạn đã sẵn sàng.',
+   'Yes — small loans are exactly what Moodeng is for. New borrowers start at a $15 limit, with no minimum amount, no subscription, and no fees. You request what you need up to your current limit, set the date and interest, and moo-lenders decide whether to fund you. Each full-limit loan you repay on time adds $10 to your limit, so you can start small and grow into larger loans only when you are ready.':
+      'Có — các khoản vay nhỏ chính là mục đích của Moodeng. Người vay mới bắt đầu với hạn mức $15, không có số tiền tối thiểu, không phí đăng ký và không phí nào khác. Bạn yêu cầu số tiền cần thiết trong hạn mức hiện tại, đặt ngày trả nợ và lãi suất, rồi moo-lender sẽ quyết định có cấp vốn cho bạn hay không. Mỗi khoản vay bằng toàn bộ hạn mức mà bạn trả đúng hạn sẽ cộng thêm $10 vào hạn mức của bạn, để bạn có thể bắt đầu từ số tiền nhỏ và phát triển lên các khoản vay lớn hơn chỉ khi bạn đã sẵn sàng.',
    'The quick 3-minute check': 'Bước kiểm tra nhanh trong 3 phút',
    'In the app, tap "Verify Yourself".': 'Trong ứng dụng, hãy nhấn "Xác minh danh tính".',
    'Your ID is checked by our secure verification partner and is never stored by Moodeng. If it gets stuck, retry in Chrome or Safari — not a browser inside Facebook or Messenger — with a clear, well-lit photo.':
@@ -884,8 +884,8 @@ export const vietnameseCoverageB: Record<string, string> = {
    'More than one loan at a time': 'Nhiều hơn một khoản vay cùng lúc',
    'Yes, within your available limit': 'Có, trong phạm vi hạn mức khả dụng của bạn',
    'Can I have more than one loan at a time?': 'Tôi có thể có nhiều hơn một khoản vay cùng lúc không?',
-   "Yes — you can have more than one active loan at the same time, as long as the new amount fits within your available credit limit. Your available limit is your current level's limit (anywhere from $15 up to $140) minus what you already owe on active loans. If your current loans already use your whole limit, repay some or all before requesting more. Some accounts may also have a cap on how many loans can be active at once — if the app says you've reached your maximum, repay one first.":
-      'Có — bạn có thể có nhiều hơn một khoản vay đang hoạt động cùng lúc, miễn là số tiền mới nằm trong hạn mức tín dụng khả dụng của bạn. Hạn mức khả dụng của bạn là hạn mức của hạng hiện tại (từ $15 đến $140) trừ đi số tiền bạn đang nợ trên các khoản vay đang hoạt động. Nếu các khoản vay hiện tại của bạn đã dùng hết hạn mức, hãy trả một phần hoặc toàn bộ trước khi yêu cầu thêm. Một số tài khoản cũng có thể có giới hạn về số lượng khoản vay được hoạt động cùng lúc — nếu ứng dụng báo bạn đã đạt mức tối đa, hãy trả một khoản trước.',
+   "Yes — you can have more than one active loan at the same time, as long as the new amount fits within your available credit limit. Your available limit is your current level's limit (it starts at $15) minus what you already owe on active loans. If your current loans already use your whole limit, repay some or all before requesting more. Some accounts may also have a cap on how many loans can be active at once — if the app says you've reached your maximum, repay one first.":
+      'Có — bạn có thể có nhiều hơn một khoản vay đang hoạt động cùng lúc, miễn là số tiền mới nằm trong hạn mức tín dụng khả dụng của bạn. Hạn mức khả dụng của bạn là hạn mức của hạng hiện tại (bắt đầu từ $15) trừ đi số tiền bạn đang nợ trên các khoản vay đang hoạt động. Nếu các khoản vay hiện tại của bạn đã dùng hết hạn mức, hãy trả một phần hoặc toàn bộ trước khi yêu cầu thêm. Một số tài khoản cũng có thể có giới hạn về số lượng khoản vay được hoạt động cùng lúc — nếu ứng dụng báo bạn đã đạt mức tối đa, hãy trả một khoản trước.',
    'Cash out to GCash or a bank': 'Rút tiền về ví điện tử hoặc ngân hàng',
    'USDC → pesos, step by step': 'USDC → tiền mặt, từng bước',
    'How do I cash out to GCash or my bank?': 'Làm sao để rút tiền về ví điện tử hoặc ngân hàng của tôi?',
@@ -902,10 +902,10 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Your Pandesal points reflect how reliably you repay loans. They rise with on-time, in-full repayments and drop with late payments or defaults. Moo-lenders use them to gauge risk when deciding whether to fund your requests. Because they are tied to your wallet, they travel with you — they are not locked inside one app.':
       'Điểm Pandesal của bạn phản ánh mức độ đáng tin cậy khi trả nợ. Điểm sẽ tăng khi bạn trả nợ đúng hạn và đầy đủ, và giảm khi trả trễ hoặc vỡ nợ. Moo-lender dùng điểm này để đánh giá rủi ro khi quyết định có cấp vốn cho yêu cầu của bạn hay không. Vì điểm gắn liền với ví của bạn, nó sẽ đi theo bạn — không bị khóa chặt trong một ứng dụng duy nhất.',
    'What is a Credit Level?': 'Hạng tín dụng là gì?',
-   '$15 up to $140, step by step': 'Từ $15 đến $140, từng bước một',
+   'Start at $15, add $10 each level': 'Bắt đầu $15, thêm $10 mỗi hạng',
    'What is a Credit Level and how do I move up?': 'Hạng tín dụng là gì và làm sao để tôi lên hạng?',
-   'Credit Levels control how much you can borrow at a time. Everyone starts at Level 1 with a $15 limit. You move up by completing a Credit-Building Loan — a loan at your full current limit, repaid in full and on time. Each one raises your limit along the ladder: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, which is the current maximum.':
-      'Hạng tín dụng quyết định số tiền bạn có thể vay mỗi lần. Ai cũng bắt đầu ở Hạng 1 với hạn mức $15. Bạn lên hạng bằng cách hoàn thành một Credit-Building Loan — khoản vay bằng toàn bộ hạn mức hiện tại của bạn, được trả đủ và đúng hạn. Mỗi lần như vậy sẽ nâng hạn mức của bạn thêm một bậc trên thang: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, đây là mức tối đa hiện tại.',
+   'Credit Levels control how much you can borrow at a time. Everyone starts at Level 1 with a $15 limit. You move up by completing a Credit-Building Loan — a loan at your full current limit, repaid in full and on time. Each one adds $10 to your limit: $15, then $25, then $35, and so on.':
+      'Hạng tín dụng quyết định số tiền bạn có thể vay mỗi lần. Ai cũng bắt đầu ở Hạng 1 với hạn mức $15. Bạn lên hạng bằng cách hoàn thành một Credit-Building Loan — khoản vay bằng toàn bộ hạn mức hiện tại của bạn, được trả đủ và đúng hạn. Mỗi lần như vậy sẽ cộng thêm $10 vào hạn mức của bạn: $15, rồi $25, rồi $35, và cứ thế tiếp tục.',
    'Grow my credit limit': 'Tăng hạn mức tín dụng của tôi',
    'From $15 upward': 'Từ $15 trở lên',
    'Repay on time. On-time repayment earns Pandesal points, and repaying a full-limit loan on time moves you up a level.':

@@ -98,7 +98,7 @@ Reached only from the Dashboard's **Withdraw your USDC** card (not a nav tab). F
 
 From the **Request Board** tab, tap **Apply For A Loan** to open the application.
 
-1. Eligible verified borrowers first see a **Referral Boost** step — **Have a referral code?** field with **Apply code**, or **Continue to application** if you don't have one. A valid referral code adds **+$5 to your starting credit limit**. It's optional — no code just means no boost.
+1. Eligible verified borrowers first see an **Invited by someone?** step — a referral code field with **Apply code**, or **Continue to application** if you don't have one. A code only records who invited them; it does not change the credit limit. It's optional.
 2. If you're not verified yet, you'll be prompted to **Verify Yourself** first.
 3. Then **Set Your Own Terms**: **Borrow Amount** (up to your **Current Limit**), **Set Repayment Amount**, **Set Repayment Date** (up to 120 days out), and **Reason For Borrowing**. The reason must be **at least 40 characters and written in English** — lenders are in the US and Europe, so Tagalog or Taglish is not accepted and the form won't move on until it's rewritten. The field checks as you type and says what's missing; Mecha can translate it or help word it. Submit with **Make Your Request**.
 4. First-time borrowers also fill in a short bio (friendly name, optional photo, work type, payday window, income/expenses) — this is the same **Bio Info** editable later from Account Settings. The free-text **Describe your situation** answer also needs to be in English; the job title itself can use the local term (sari-sari store owner, jeepney driver).

@@ -33,14 +33,27 @@ export const isRepaidOnTime = (paidAt: string | Date, dueDate: string | Date, du
 
 // --- credit tiers (ported from src/config/creditTiers.ts) --------------------------------------
 
-export const CREDIT_TIERS = [15, 20, 40, 60, 80, 100, 120, 140] as const;
-export const STARTING_CREDIT_LIMIT = CREDIT_TIERS[0];
-export const MAX_CREDIT_LIMIT = CREDIT_TIERS[CREDIT_TIERS.length - 1];
+// $15, $25, $35, $45 … (+$10 a level), top $135 (never named to borrowers).
+export const STARTING_CREDIT_LIMIT = 15;
+export const CREDIT_STEP = 10;
+export const MAX_CREDIT_LIMIT = 135;
+export const CREDIT_TIERS: readonly number[] = Array.from(
+   { length: (MAX_CREDIT_LIMIT - STARTING_CREDIT_LIMIT) / CREDIT_STEP + 1 },
+   (_, i) => STARTING_CREDIT_LIMIT + i * CREDIT_STEP
+);
 
-export const getNextCreditTier = (currentAmount: number): number => {
-   const currentTierIndex = CREDIT_TIERS.findIndex((tier) => tier >= currentAmount);
-   if (currentTierIndex < 0) return MAX_CREDIT_LIMIT;
-   return CREDIT_TIERS[Math.min(currentTierIndex + 1, CREDIT_TIERS.length - 1)];
+// The ladder before 2026-11-15: a full-limit loan funded before the switch at an old limit ($20, $40 …)
+// was promised the old next step, so it still gets it.
+export const OLD_CREDIT_TIERS: readonly number[] = [15, 20, 40, 60, 80, 100, 120, 140];
+export const LADDER_SWITCH_AT = Date.parse('2026-11-15T00:00:00+07:00');
+
+export const getNextCreditTier = (currentAmount: number, fundedAt?: string | number | Date | null): number => {
+   const funded = fundedAt == null ? Number.NaN : new Date(fundedAt).getTime();
+   if (Number.isFinite(funded) && funded < LADDER_SWITCH_AT && !CREDIT_TIERS.includes(currentAmount)) {
+      const oldIndex = OLD_CREDIT_TIERS.indexOf(currentAmount);
+      if (oldIndex >= 0 && oldIndex < OLD_CREDIT_TIERS.length - 1) return Math.min(OLD_CREDIT_TIERS[oldIndex + 1], MAX_CREDIT_LIMIT);
+   }
+   return CREDIT_TIERS.find((tier) => tier > currentAmount) ?? MAX_CREDIT_LIMIT;
 };
 
 // --- credit progression (ported from src/lib/creditLeveling.ts) --------------------------------
@@ -61,6 +74,8 @@ type CreditProgressionInput = {
    /** The loan's saved zone (`loans.due_timezone`); Manila when missing. */
    dueTimezone?: string | null;
    paidAt: string;
+   /** When the loan was funded: one funded before the ladder switch keeps the old next step. */
+   fundedAt?: string | null;
 };
 
 type CreditProgressionResult = {
@@ -78,7 +93,8 @@ export const evaluateCreditProgression = ({
    loanAmount,
    dueDate,
    dueTimezone,
-   paidAt
+   paidAt,
+   fundedAt
 }: CreditProgressionInput): CreditProgressionResult => {
    const normalizedLimit = getEffectiveCreditLimit(currentLimit, isVerified);
    const repaid = toNumber(repaidAmount ?? 0);
@@ -95,7 +111,7 @@ export const evaluateCreditProgression = ({
 
    return {
       shouldLevelUp: canLevelUp,
-      nextLimit: getNextCreditTier(normalizedLimit),
+      nextLimit: getNextCreditTier(normalizedLimit, fundedAt),
       isLate,
       isFullyRepaid
    };

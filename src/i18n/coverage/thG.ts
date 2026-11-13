@@ -332,8 +332,8 @@ export const thaiCoverageG: Record<string, string> = {
    'Repay your $80 loan on time': 'ชำระคืนเงินกู้ $80 ของคุณตรงเวลา',
    'Repay your $100 loan on time': 'ชำระคืนเงินกู้ $100 ของคุณตรงเวลา',
    'Repay your $120 loan on time': 'ชำระคืนเงินกู้ $120 ของคุณตรงเวลา',
-   'Limits step up $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
-      'วงเงินเพิ่มขึ้นทีละขั้น $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140',
+   'You start at $15. Each full-limit loan you repay adds $10.':
+      'คุณเริ่มที่ $15 เงินกู้เต็มวงเงินแต่ละครั้งที่คุณชำระคืนจะเพิ่มวงเงิน $10',
    'you need a smaller amount, or want to build trust first.': 'คุณต้องการเงินจำนวนน้อยกว่า หรืออยากสร้างความน่าเชื่อถือก่อน',
    'also called a Credit Growth Loan': 'หรือที่เรียกว่า Credit Growth Loan',
    'you’re ready to grow your limit and sure you can repay on time.': 'คุณพร้อมจะเพิ่มวงเงินและมั่นใจว่าชำระคืนได้ตรงเวลา',
@@ -687,5 +687,13 @@ export const thaiCoverageG: Record<string, string> = {
    "Confirm 1 hour before your call": "ยืนยัน 1 ชั่วโมงก่อนคอล",
    "We'll send you an “I'll be there” button on Messenger, and it shows up right here. Tap it, or the call is cancelled automatically.": "เราจะส่งปุ่ม “I'll be there” ให้ทาง Messenger และปุ่มจะขึ้นที่หน้านี้ด้วย แตะปุ่มนั้น ไม่เช่นนั้นคอลจะถูกยกเลิกอัตโนมัติ",
    "Your call is in under an hour — tap “I’ll be there” now to keep it.": "อีกไม่ถึงชั่วโมงจะถึงเวลาคอล — แตะ “I’ll be there” ตอนนี้เพื่อเก็บคอลไว้",
-   "You’re booked! You can apply right after the call.": "จองแล้ว! คุณสมัครได้ทันทีหลังคอล"
+   "You’re booked! You can apply right after the call.": "จองแล้ว! คุณสมัครได้ทันทีหลังคอล",
+   // Credit ladder $15, $25, $35 … (Nov 2026).
+   "full-limit loan unlocks a $25 limit": "เงินกู้เต็มวงเงินจะปลดล็อกวงเงิน $25",
+   "left to repay for a $25 limit": "ที่เหลือต้องชำระเพื่อไปวงเงิน $25",
+   "…and $10 more for each level after that.": "…และเพิ่มอีก $10 ในแต่ละระดับถัดไป",
+   "Top level for now": "ระดับสูงสุดในตอนนี้",
+   "Top level": "ระดับสูงสุด",
+   "Example: borrowing the full $25 limit to unlock the $35 level.": "ตัวอย่าง: ยืมเต็มวงเงิน $25 เพื่อปลดล็อกระดับ $35",
+   "Credit limit reaches $35 = +50 Pandesal points": "วงเงินถึง $35 = +50 แต้ม Pandesal"
 };

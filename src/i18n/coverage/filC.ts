@@ -427,8 +427,8 @@ export const filipinoCoverageC: Record<string, string> = {
    'A Credit Level is your borrowing limit. Everyone starts at Level 1 with a $15 limit, and the limit grows as you complete Credit-Building Loans.':
       'Ang Credit Level ay ang borrowing limit mo. Lahat ay nagsisimula sa Level 1 na may $15 limit, at lumalaki ang limit habang natatapos mo ang mga Credit-Building Loan.',
    'How do I move to the next level?': 'Paano ako makakapunta sa susunod na level?',
-   'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment unlocks the next limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
-      'Kumuha ng Credit-Building Loan sa buo mong kasalukuyang limit at bayaran ito nang buo at on time. Ang malinis na bayad ang nag-a-unlock ng susunod na limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
+   'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment adds $10 to your limit: $15, then $25, then $35, and so on.':
+      'Kumuha ng Credit-Building Loan sa buo mong kasalukuyang limit at bayaran ito nang buo at on time. Bawat malinis na bayad ay nagdadagdag ng $10 sa limit mo: $15, tapos $25, tapos $35, at tuloy-tuloy.',
    'Does borrowing a small amount level me up?': 'Puwede ba akong mag-level up sa paghiram ng maliit na halaga?',
    'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with moo-lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.':
       'Hindi. Trust-Building Loan ang paghiram nang mas mababa sa limit mo. Pinapaganda nito ang reputasyon mo sa mga moo-lender pero hindi nito tinataas ang Credit Level mo. Full-limit na Credit-Building Loan lang ang nagpapaakyat sa iyo.',

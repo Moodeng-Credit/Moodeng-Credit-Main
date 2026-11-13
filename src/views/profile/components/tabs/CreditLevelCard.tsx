@@ -12,17 +12,16 @@ const CreditLevelCard = ({ level }: CreditLevelCardProps) => {
          <div className="bg-[#2563eb] rounded-xl p-6 min-w-[220px] text-center text-white text-xs font-semibold relative flex-shrink-0">
             <div className="absolute -top-3 -left-3 text-4xl">🎉</div>
             <div className="absolute -top-3 -right-3 text-4xl">🎉</div>
-            <div className="mb-2">{level.date ? `Unlocked on ${level.date}` : 'Max Credit Unlocked!'}</div>
+            <div className="mb-2">{level.date ? `Unlocked on ${level.date}` : 'Top level for now'}</div>
             <div className="text-5xl font-extrabold my-4">
                ${formatNumber(level.amount)}
-               <span className="text-2xl">+</span>
             </div>
             <div className="flex items-center justify-center gap-2 font-extrabold mb-2">
                <i className="fas fa-trophy text-yellow-400 text-3xl" />
                <div className="text-2xl text-left">
-                  Max Credit
+                  Top level
                   <br />
-                  <span className="font-normal text-base">Unlocked!</span>
+                  <span className="font-normal text-base">for now</span>
                </div>
             </div>
             {level.requestable ? (

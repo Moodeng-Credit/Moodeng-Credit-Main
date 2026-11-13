@@ -7,7 +7,7 @@ import { toNumber } from '@/utils/decimalHelpers';
 import { isLoanPastDue } from '@/utils/loanOverdue';
 import { calculateLenderDiversity } from '@/utils/diversityScore';
 
-import { getNextCreditTier } from '@/config/creditTiers';
+import { getNextCreditTier, getPastNextCreditTier, visibleCreditTiers } from '@/config/creditTiers';
 import { CREDIT_TIERS, getEffectiveCreditLimit, getFullLimitLoans, MAX_CREDIT_LIMIT } from '@/lib/creditLeveling';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { fetchUser } from '@/store/slices/authSlice';
@@ -36,12 +36,17 @@ export const buildCreditLevels = ({ user, loans }: CreditLevelInput): CreditLeve
    // Tiers raised any other way (referral, admin) fall back to a generic date.
    const unlockedByTier = new Map<number, Loan>();
    getFullLimitLoans(loans).forEach((limitBefore, loan) => {
-      if (limitBefore < MAX_CREDIT_LIMIT) unlockedByTier.set(getNextCreditTier(limitBefore), loan);
+      if (limitBefore < MAX_CREDIT_LIMIT) unlockedByTier.set(getPastNextCreditTier(limitBefore, loan.repaidAt ?? loan.updatedAt), loan);
    });
 
    const fallbackDate = buildUnlockDate(user.updatedAt || user.createdAt || new Date().toISOString());
 
-   return CREDIT_TIERS.map((amount) => {
+   // The levels they have plus the next two: the whole ladder is a long row of locked cards (and would
+   // show where it ends). A limit between levels ($20, $40 from before Nov 2026) gets its own card.
+   const tiers = visibleCreditTiers(isVerified ? currentLimit : CREDIT_TIERS[0]);
+   if (isVerified && !tiers.includes(currentLimit)) tiers.splice(tiers.findIndex((t) => t > currentLimit), 0, currentLimit);
+
+   return tiers.map((amount) => {
       const isUnlocked = isVerified && amount <= currentLimit;
       const isCurrentLimit = isVerified && amount === currentLimit;
       const isNextTier = isVerified && amount === getNextCreditTier(currentLimit) && currentLimit < MAX_CREDIT_LIMIT;

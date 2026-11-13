@@ -2,6 +2,8 @@ import { type CSSProperties, type JSX, useEffect, useMemo, useState } from 'reac
 
 import { Link } from 'react-router-dom';
 
+import { CREDIT_STEP, CREDIT_TIERS } from '@/config/creditTiers';
+
 import '@/views/academy/AcademyGuide.css';
 import '@/views/creditLevelingGuide/CreditLevelingGuide.css';
 import NeedMoreHelp from '@/views/support/components/NeedMoreHelp';
@@ -12,21 +14,18 @@ export type CreditLevelsVariant = 'support' | 'public';
 
 const PAGE_TITLE = 'How Credit Levels Work on Moodeng Credit';
 const PAGE_DESCRIPTION =
-   'Credit Levels set how much you can borrow on Moodeng Credit. Learn how limits grow $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, what a Credit-Building Loan is, and how to unlock your next level.';
+   'Credit Levels set how much you can borrow on Moodeng Credit. You start at $15 and each full-limit loan you repay adds $10. Learn what a Credit-Building Loan is and how to unlock your next level.';
 // The public marketing route is the canonical home for this content so search
 // engines index one URL even though it also renders inside the in-app support area.
 const CANONICAL_PATH = '/learn/how-credit-levels-work';
 
-const levels = [
-   { level: 'Level 1', limit: '$15', state: 'Start', unlock: 'Verify, then make your first request' },
-   { level: 'Level 2', limit: '$20', state: 'Next', unlock: 'Repay your $15 loan on time' },
-   { level: 'Level 3', limit: '$40', state: 'Locked', unlock: 'Repay your $20 loan on time' },
-   { level: 'Level 4', limit: '$60', state: 'Locked', unlock: 'Repay your $40 loan on time' },
-   { level: 'Level 5', limit: '$80', state: 'Locked', unlock: 'Repay your $60 loan on time' },
-   { level: 'Level 6', limit: '$100', state: 'Locked', unlock: 'Repay your $80 loan on time' },
-   { level: 'Level 7', limit: '$120', state: 'Locked', unlock: 'Repay your $100 loan on time' },
-   { level: 'Level 8', limit: '$140', state: 'Locked', unlock: 'Repay your $120 loan on time' }
-];
+// The first levels from the ladder (src/config/creditTiers.ts), then "and so on" (never the top).
+const levels = CREDIT_TIERS.slice(0, 4).map((amount, i) => ({
+   level: `Level ${i + 1}`,
+   limit: `$${amount}`,
+   state: i === 0 ? 'Start' : i === 1 ? 'Next' : 'Locked',
+   unlock: i === 0 ? 'Verify, then make your first request' : `Repay your $${CREDIT_TIERS[i - 1]} loan on time`
+}));
 
 const pillars = [
    {
@@ -49,7 +48,7 @@ const pillars = [
       icon: 'stairs',
       eyebrow: 'The pace',
       title: 'One level at a time',
-      lead: 'Limits step up $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
+      lead: 'You start at $15. Each full-limit loan you repay adds $10.',
       detail: 'No skipping or buying ahead — each level is earned from the one before.',
       shot: 'levelup' as const
    }
@@ -110,7 +109,7 @@ const faqs = [
    },
    {
       q: 'How do I move to the next level?',
-      a: 'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment unlocks the next limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.'
+      a: 'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment adds $10 to your limit: $15, then $25, then $35, and so on.'
    },
    {
       q: 'Does borrowing a small amount level me up?',
@@ -125,7 +124,7 @@ const faqs = [
       a: 'Small starting limits keep risk low for the moo-lenders funding someone with no track record yet. As you prove reliable repayment, your limit and moo-lender confidence grow together.'
    },
    {
-      q: 'How long does it take to reach the $60 level?',
+      q: 'How long does it take to reach the $55 level?',
       a: 'There is no fixed timeline. Each level needs one full-limit loan repaid on time, so the pace depends on how quickly you borrow and repay. Borrowers who repay cleanly can climb in just a few loan cycles.'
    },
    {
@@ -162,14 +161,14 @@ const quizQuestions: QuizQuestion[] = [
       wrongLine: 'Nice try! Only a full-limit Credit-Building Loan raises your level.'
    },
    {
-      q: 'Your limit is $20. You borrow $10 and repay on time. What happens?',
-      options: ['You jump to $40', 'Limit stays $20, trust grows', 'You drop to $15', 'Nothing, ever'],
+      q: 'Your limit is $25. You borrow $10 and repay on time. What happens?',
+      options: ['You jump to $35', 'Limit stays $25, trust grows', 'You drop to $15', 'Nothing, ever'],
       answer: 1,
       correctLine: 'Right! Small loans build trust — they just don’t raise your limit.',
-      wrongLine: 'Not quite — a sub-limit loan builds trust but keeps your limit at $20.'
+      wrongLine: 'Not quite — a sub-limit loan builds trust but keeps your limit at $25.'
    },
    {
-      q: 'Can you skip from $15 straight to $60?',
+      q: 'Can you skip from $15 straight to $55?',
       options: ['Yes, pay 4× up front', 'No — one level at a time', 'Only on weekends', 'Yes, with a coupon'],
       answer: 1,
       correctLine: 'Correct — Moodeng climbs one level at a time. No shortcuts.',
@@ -464,7 +463,7 @@ function PillarShot({ kind }: { kind: 'limit' | 'apply' | 'levelup' }): JSX.Elem
             <div className="hclw-shot__track">
                <i style={{ width: '25%' }} />
             </div>
-            <div className="hclw-shot__hint">$15 → $20 → $40 → $60</div>
+            <div className="hclw-shot__hint">$15 → $25 → $35 → $45</div>
          </Link>
       );
    }
@@ -481,7 +480,7 @@ function PillarShot({ kind }: { kind: 'limit' | 'apply' | 'levelup' }): JSX.Elem
             <div className="hclw-shot__chips">
                <i>$10</i>
                <i className="on">$15</i>
-               <i>$20</i>
+               <i>$25</i>
             </div>
             <div className="hclw-shot__cta">Apply for loan</div>
          </Link>
@@ -496,7 +495,7 @@ function PillarShot({ kind }: { kind: 'limit' | 'apply' | 'levelup' }): JSX.Elem
          <div className="hclw-shot__levelup">
             <span className="from">$15</span>
             <span className="arrow">→</span>
-            <span className="to">$20</span>
+            <span className="to">$25</span>
          </div>
          <div className="hclw-shot__unlocked">Level 2 unlocked</div>
       </Link>
@@ -583,9 +582,9 @@ export default function HowCreditLevelsWork({ variant = 'support' }: HowCreditLe
                   <line x1="24" y1="262" x2="396" y2="262" stroke="rgba(255,255,255,0.18)" strokeWidth="2" />
                   {[
                      { x: 40, h: 70, limit: '$15', lvl: 'L1' },
-                     { x: 138, h: 110, limit: '$20', lvl: 'L2' },
-                     { x: 236, h: 165, limit: '$40', lvl: 'L3' },
-                     { x: 334, h: 215, limit: '$60', lvl: 'L4' }
+                     { x: 138, h: 110, limit: '$25', lvl: 'L2' },
+                     { x: 236, h: 165, limit: '$35', lvl: 'L3' },
+                     { x: 334, h: 215, limit: '$45', lvl: 'L4' }
                   ].map((bar) => (
                      <g className="hclw-climb-step" key={bar.lvl}>
                         <rect x={bar.x} y={262 - bar.h} width="56" height={bar.h} rx="14" fill="url(#hclwBar)" />
@@ -653,6 +652,7 @@ export default function HowCreditLevelsWork({ variant = 'support' }: HowCreditLe
                   </article>
                ))}
             </div>
+            <p className="credit-leveling-ladder__more">{`…and $${CREDIT_STEP} more for each level after that.`}</p>
 
             <figure className="hclw-scene">
                <p className="hclw-scene__lead">Repay on time, and the next level unlocks itself.</p>

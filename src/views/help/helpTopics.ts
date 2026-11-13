@@ -170,8 +170,8 @@ export const HELP_TOPICS: HelpTopic[] = [
       subtitle: { en: 'Yes — this is built for small loans', fil: 'Oo — para dito ginawa ang Moodeng' },
       question: { en: 'Can I get a small loan with Moodeng?', fil: 'Puwede ba akong makakuha ng maliit na loan?' },
       intro: {
-         en: 'Yes — small loans are exactly what Moodeng is for. New borrowers start at a $15 limit, with no minimum amount, no subscription, and no fees. You request what you need up to your current limit, set the date and interest, and moo-lenders decide whether to fund you. Each full-limit loan you repay on time grows your limit one step, from $15 up to a $140 maximum, so you can start small and grow into larger loans only when you are ready.',
-         fil: 'Oo — para talaga sa maliliit na loan ginawa ang Moodeng. Nagsisimula ang mga bagong borrower sa $15 limit, walang minimum na halaga, walang subscription, at walang fee. Ire-request mo ang kailangan mo hanggang sa kasalukuyang limit mo, itatakda mo ang petsa at interes, at ang mga moo-lender ang magpapasya kung popondohan ka. Bawat full-limit na loan na nabayaran mo nang on time ay nagpapataas ng limit mo nang isang hakbang, mula $15 hanggang $140 na maximum, kaya puwede kang magsimula sa maliit at kumuha lang ng mas malalaking loan kapag handa ka na.'
+         en: 'Yes — small loans are exactly what Moodeng is for. New borrowers start at a $15 limit, with no minimum amount, no subscription, and no fees. You request what you need up to your current limit, set the date and interest, and moo-lenders decide whether to fund you. Each full-limit loan you repay on time adds $10 to your limit, so you can start small and grow into larger loans only when you are ready.',
+         fil: 'Oo — para talaga sa maliliit na loan ginawa ang Moodeng. Nagsisimula ang mga bagong borrower sa $15 limit, walang minimum na halaga, walang subscription, at walang fee. Ire-request mo ang kailangan mo hanggang sa kasalukuyang limit mo, itatakda mo ang petsa at interes, at ang mga moo-lender ang magpapasya kung popondohan ka. Bawat full-limit na loan na nabayaran mo nang on time ay nagdadagdag ng $10 sa limit mo, kaya puwede kang magsimula sa maliit at kumuha lang ng mas malalaking loan kapag handa ka na.'
       },
       keywords: ['minimum', 'smallest', 'first loan amount']
    },
@@ -511,8 +511,8 @@ export const HELP_TOPICS: HelpTopic[] = [
       subtitle: { en: 'Yes, within your available limit', fil: "Oo, hangga't kasya sa limit" },
       question: { en: 'Can I have more than one loan at a time?', fil: 'Puwede bang higit sa isang loan nang sabay?' },
       intro: {
-         en: "Yes — you can have more than one active loan at the same time, as long as the new amount fits within your available credit limit. Your available limit is your current level's limit (anywhere from $15 up to $140) minus what you already owe on active loans. If your current loans already use your whole limit, repay some or all before requesting more. Some accounts may also have a cap on how many loans can be active at once — if the app says you've reached your maximum, repay one first.",
-         fil: 'Oo — puwede kang magkaroon ng higit sa isang aktibong loan nang sabay, basta kasya ang bagong halaga sa available na limit mo. Ang available na limit ay ang limit ng kasalukuyang level mo (mula $15 hanggang $140) bawas ang utang mo sa mga aktibong loan. Kung nagamit na ng mga kasalukuyang loan mo ang buong limit, bayaran muna ang ilan o lahat bago mag-request ulit. May mga account din na may limitasyon kung ilang loan ang puwedeng aktibo nang sabay — kung sinabi ng app na naabot mo na ang maximum, bayaran muna ang isa.'
+         en: "Yes — you can have more than one active loan at the same time, as long as the new amount fits within your available credit limit. Your available limit is your current level's limit (it starts at $15) minus what you already owe on active loans. If your current loans already use your whole limit, repay some or all before requesting more. Some accounts may also have a cap on how many loans can be active at once — if the app says you've reached your maximum, repay one first.",
+         fil: 'Oo — puwede kang magkaroon ng higit sa isang aktibong loan nang sabay, basta kasya ang bagong halaga sa available na limit mo. Ang available na limit ay ang limit ng kasalukuyang level mo (nagsisimula sa $15) bawas ang utang mo sa mga aktibong loan. Kung nagamit na ng mga kasalukuyang loan mo ang buong limit, bayaran muna ang ilan o lahat bago mag-request ulit. May mga account din na may limitasyon kung ilang loan ang puwedeng aktibo nang sabay — kung sinabi ng app na naabot mo na ang maximum, bayaran muna ang isa.'
       },
       keywords: ['two loans', 'multiple', 'second loan', 'at once']
    },
@@ -584,11 +584,11 @@ export const HELP_TOPICS: HelpTopic[] = [
       category: 'credit',
       emoji: '🎚️',
       title: { en: 'What is a Credit Level?', fil: 'Ano ang Credit Level?' },
-      subtitle: { en: '$15 up to $140, step by step', fil: '$15 hanggang $140, hakbang-hakbang' },
+      subtitle: { en: 'Start at $15, add $10 each level', fil: 'Simula sa $15, dagdag $10 bawat level' },
       question: { en: 'What is a Credit Level and how do I move up?', fil: 'Ano ang Credit Level at paano ako aakyat ng level?' },
       intro: {
-         en: 'Credit Levels control how much you can borrow at a time. Everyone starts at Level 1 with a $15 limit. You move up by completing a Credit-Building Loan — a loan at your full current limit, repaid in full and on time. Each one raises your limit along the ladder: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, which is the current maximum.',
-         fil: 'Kinokontrol ng Credit Level kung magkano ang puwede mong hiramin sa isang pagkakataon. Lahat ay nagsisimula sa Level 1 na may $15 limit. Tumataas ka sa pamamagitan ng Credit-Building Loan — loan sa buong kasalukuyang limit mo, binayaran nang buo at on time. Bawat isa ay nagtataas ng limit sa hagdan: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, na siyang kasalukuyang maximum.'
+         en: 'Credit Levels control how much you can borrow at a time. Everyone starts at Level 1 with a $15 limit. You move up by completing a Credit-Building Loan — a loan at your full current limit, repaid in full and on time. Each one adds $10 to your limit: $15, then $25, then $35, and so on.',
+         fil: 'Kinokontrol ng Credit Level kung magkano ang puwede mong hiramin sa isang pagkakataon. Lahat ay nagsisimula sa Level 1 na may $15 limit. Tumataas ka sa pamamagitan ng Credit-Building Loan — loan sa buong kasalukuyang limit mo, binayaran nang buo at on time. Bawat isa ay nagdadagdag ng $10 sa limit mo: $15, tapos $25, tapos $35, at tuloy-tuloy.'
       },
       guide: { path: '/learn/how-credit-levels-work', label: { en: 'How Credit Levels work', fil: 'Paano gumagana ang Credit Level' } },
       keywords: ['credit level', 'limit', 'level up', 'increase limit']
@@ -604,13 +604,13 @@ export const HELP_TOPICS: HelpTopic[] = [
          en: [
             'Repay on time. On-time repayment earns Pandesal points, and repaying a full-limit loan on time moves you up a level.',
             'To move up a level, take a Credit-Building Loan — a loan at your full current limit — and repay it in full and on time.',
-            'Credit levels run $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
+            'You start at $15. Each full-limit loan you repay adds $10.',
             'A referral code tells us who invited you — entered at the start of the loan application.'
          ],
          fil: [
             'Magbayad on time. Nagdadagdag ng Pandesal points ang on-time na bayad, at kapag nabayaran mo nang on time ang full-limit na loan, aakyat ka ng isang level.',
             'Para tumaas ng level, kumuha ng Credit-Building Loan — loan sa buong kasalukuyang limit — at bayaran nang buo at on time.',
-            'Ang mga Credit Level ay $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
+            'Magsisimula ka sa $15. Bawat full-limit na loan na nabayaran mo ay dagdag na $10.',
             'Sinasabi ng referral code kung sino ang nag-invite sa iyo — inilalagay sa simula ng loan application.'
          ]
       },
