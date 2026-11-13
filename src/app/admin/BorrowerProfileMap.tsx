@@ -11,11 +11,14 @@ const PH_CENTER: [number, number] = [12.3, 122.3];
 
 export default function BorrowerProfileMap({ points }: { points: MapPoint[] }) {
    return (
-      <div className="overflow-hidden rounded-2xl border border-[#2a1453]">
+      <div className="overflow-hidden rounded-2xl border border-[#2a1453] bg-[#0e0620]">
+         <style>{'.bp-dark-tiles { filter: invert(1) hue-rotate(200deg) brightness(0.85) contrast(0.9) saturate(0.6); }'}</style>
          <MapContainer center={PH_CENTER} zoom={5} minZoom={3} style={{ height: 520, width: '100%' }} scrollWheelZoom>
+            {/* OpenStreetMap tiles (CARTO's dark tiles now need an API key), darkened to fit the admin theme. */}
             <TileLayer
-               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-               url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+               className="bp-dark-tiles"
             />
             {points.map((p) => {
                const color = rateColor(p.due, p.onTime);
