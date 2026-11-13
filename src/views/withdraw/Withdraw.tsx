@@ -777,11 +777,16 @@ function DirectPesoCard({ onSelect, spendable }: { onSelect: () => void; spendab
 }
 
 /** The same card for the cash-out to your own bank's QR (shown while the bank payout is down). */
-function QrPesoCard({ onSelect, spendable }: { onSelect: () => void; spendable: number | null }) {
+function QrPesoCard({ onSelect, spendable, recommended }: { onSelect: () => void; spendable: number | null; recommended?: boolean }) {
    const { value: phpRate } = useUsdcRate('php');
    const pesos = spendable != null && spendable > 0 ? Math.floor(spendable * phpRate * (1 - BANK_PAYOUT_FEE_SHARE)) : null;
    return (
       <button onClick={onSelect} className="relative w-full text-left outline-none">
+         {recommended ? (
+            <div className="absolute -top-[9px] left-[14px] z-10 bg-[var(--primary)] rounded-full px-[7px] py-[2px] shadow-sm flex items-center justify-center">
+               <span className="text-[8px] font-bold text-white uppercase tracking-[0.4px] leading-none">Recommended</span>
+            </div>
+         ) : null}
          <div
             className="rounded-[12px] border-2 border-[#6b55f7] bg-[var(--surface,#fff)] px-[14px] pt-[14px] pb-[14px] transition-all active:scale-[0.99]"
             style={{ boxShadow: '0px 6px 18px rgba(107,85,247,0.16)' }}
@@ -797,7 +802,7 @@ function QrPesoCard({ onSelect, spendable }: { onSelect: () => void; spendable: 
                   <QrCode className="w-[26px] h-[26px] text-[#6b55f7] dark:text-[#a98bff]" strokeWidth={2.2} />
                </span>
                <p className="text-[14px] leading-[18px] text-[var(--text-muted,#45556c)]">
-                  Save the InstaPay QR from your bank app, upload it here.
+                  Upload the QR from your bank app. No typing.
                </p>
             </div>
             {pesos != null ? (
@@ -814,18 +819,19 @@ function QrPesoCard({ onSelect, spendable }: { onSelect: () => void; spendable: 
 }
 
 /** Under the bank card: the QR option as one small row. */
-function QrPesoRow({ onSelect }: { onSelect: () => void }) {
+/** The account-number route, as the small second choice under the recommended QR card. */
+function BankPesoRow({ onSelect }: { onSelect: () => void }) {
    return (
       <button
          onClick={onSelect}
          className="w-full rounded-[12px] border-2 border-[#e8e4ff] bg-[var(--surface,#fff)] px-[14px] py-[12px] flex items-center gap-[12px] text-left active:scale-[0.99] transition-all"
       >
          <span className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-[9px] bg-[var(--surface-2,#f1eeff)]">
-            <QrCode className="w-[20px] h-[20px] text-[#6b55f7] dark:text-[#a98bff]" strokeWidth={2.2} />
+            <Landmark className="w-[20px] h-[20px] text-[#6b55f7] dark:text-[#a98bff]" strokeWidth={2.2} />
          </span>
          <span className="flex-1 min-w-0">
-            <span className="block text-[15px] font-bold text-[var(--ink)]">Or use your bank&apos;s QR</span>
-            <span className="block text-[13px] text-[var(--text-muted)]">Upload the InstaPay QR from your bank app</span>
+            <span className="block text-[15px] font-bold text-[var(--ink)]">Or type your account number</span>
+            <span className="block text-[13px] text-[var(--text-muted)]">Any PH bank</span>
          </span>
          <ChevronRight className="w-[20px] h-[20px] text-[var(--text-faint)] shrink-0" />
       </button>
@@ -951,12 +957,13 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
             <div className="space-y-[10px]">
                {bankPayout && (
                   <>
-                     {bankCard ? (
-                        <DirectPesoCard onSelect={() => selectProvider('bank')} spendable={spendable} />
+                     {/* The QR is the recommended way (no typing, no wrong account number); the account number is the second choice. */}
+                     {qrCard ? (
+                        <QrPesoCard onSelect={() => selectProvider('qr')} spendable={spendable} recommended />
                      ) : (
-                        <QrPesoCard onSelect={() => selectProvider('qr')} spendable={spendable} />
+                        <DirectPesoCard onSelect={() => selectProvider('bank')} spendable={spendable} />
                      )}
-                     {bankCard && qrCard ? <QrPesoRow onSelect={() => selectProvider('qr')} /> : null}
+                     {bankCard && qrCard ? <BankPesoRow onSelect={() => selectProvider('bank')} /> : null}
                      <p className="text-[18px] font-black italic leading-[1.2] tracking-[-0.3px] text-[var(--text-muted,#594d65)] pt-[10px] pb-[2px]">
                         Or sell on an exchange app
                      </p>

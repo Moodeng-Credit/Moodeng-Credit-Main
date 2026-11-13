@@ -1224,19 +1224,17 @@ export default function BankPayoutFlow({
    // tracking
    const done = DONE.has(status);
    const failed = FAILED.has(status);
-   // Stableyard only says waiting / processing / succeeded, so the cake rises on a clock while we wait
-   // (frames 1-5, holding at 5) and the finished cake shows when the payout succeeds. The bar is an
-   // estimate too: 15% once the USDC is sent, easing toward 92% (never stalls at a round number), 100% on success.
+   // Stableyard only says waiting / processing / succeeded, so there is no real percent to show: the cake
+   // rises on a clock while we wait (frames 1-5, holding at 5), the three steps turn green as they finish,
+   // and the whole card flips to the green "sent" screen the moment the payout succeeds.
    const realElapsed = Math.max(0, (clock - sentAt) / 1000);
    const elapsed = realElapsed / (isPreview ? 0.08 : 1); // the preview bakes ~12x faster
    const ovenFrame = elapsed < 10 ? 1 : elapsed < 40 ? 2 : elapsed < 90 ? 3 : elapsed < 150 ? 4 : 5;
-   const percent = done ? 100 : Math.round(15 + 77 * (1 - Math.exp(-elapsed / 90)));
    const slow = !done && !failed && realElapsed > 300;
-   const minutes = Math.floor(realElapsed / 60);
    const steps: { label: string; state: 'done' | 'active' | 'todo' }[] = [
-      { label: 'USDC sent from your wallet', state: 'done' },
-      { label: 'Converting to pesos', state: done ? 'done' : 'active' },
-      { label: qrMode ? 'Arrived in the bank' : `Arrived in ${accountLabel}`, state: done ? 'done' : 'todo' }
+      { label: 'USDC sent', state: 'done' },
+      { label: 'Changing to pesos', state: done ? 'done' : 'active' },
+      { label: 'In your bank', state: done ? 'done' : 'todo' }
    ];
    return (
       <div className="space-y-[12px]">
@@ -1250,12 +1248,17 @@ export default function BankPayoutFlow({
                   </p>
                </div>
             ) : (
-               <div className="flex flex-col items-center text-center">
+               <div className="flex flex-col items-center text-center" aria-live="polite">
                   {done ? (
-                     <img src="/withdraw-oven/cake.webp" alt="" aria-hidden="true" className="h-[96px] w-auto" />
+                     <div className="relative">
+                        <img src="/withdraw-oven/cake.webp" alt="" aria-hidden="true" className="h-[104px] w-auto" />
+                        <span className="absolute -right-[10px] -bottom-[4px] flex h-[34px] w-[34px] items-center justify-center rounded-full border-[3px] border-[var(--surface,#fff)] bg-[#2f9e44] text-white">
+                           <Check className="w-[18px] h-[18px]" strokeWidth={3.5} />
+                        </span>
+                     </div>
                   ) : (
                      // All frames stacked so they're preloaded; the current one fades in.
-                     <div className="relative w-[150px] aspect-[549/560]" aria-hidden="true">
+                     <div className="relative w-[140px] aspect-[549/560]" aria-hidden="true">
                         {[1, 2, 3, 4, 5].map((n) => (
                            <img
                               key={n}
@@ -1267,79 +1270,64 @@ export default function BankPayoutFlow({
                         ))}
                      </div>
                   )}
-                  <div className="mt-[12px] w-full">
-                     <div className="flex justify-between text-[12px] font-semibold text-[var(--text-muted)] mb-[4px]">
-                        <span>{done ? 'Done' : 'Sending…'}</span>
-                        <span className="text-[#6b55f7] dark:text-[#a98bff]">{percent}%</span>
-                     </div>
-                     <div
-                        className="h-[10px] w-full rounded-full bg-[var(--surface-2,#f1edff)] overflow-hidden"
-                        role="progressbar"
-                        aria-valuenow={percent}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                     >
-                        <div
-                           className="h-full rounded-full bg-[linear-gradient(85deg,#9584ff_0%,#6b55f7_98%)] transition-[width] duration-1000 ease-out"
-                           style={{ width: `${percent}%` }}
-                        />
-                     </div>
-                  </div>
                   <p
-                     className={
-                        done
-                           ? 'mt-[6px] text-[26px] font-black italic leading-[1.2] tracking-[-0.5px] text-[#6b55f7] dark:text-[#b3a6ff]'
-                           : 'mt-[6px] text-[20px] font-semibold text-[var(--ink)]'
-                     }
+                     className={`mt-[10px] text-[26px] font-black italic leading-[1.15] tracking-[-0.5px] ${
+                        done ? 'text-[#2f9e44] dark:text-[#6fdc8c]' : 'text-[#6b55f7] dark:text-[#b3a6ff]'
+                     }`}
                   >
-                     {done ? `${peso(amountNum)} sent to ${accountLabel}!` : `Baking your ${peso(amountNum)}…`}
+                     {done ? `${peso(amountNum)} sent!` : `Sending ${peso(amountNum)}…`}
                   </p>
-                  {done ? (
-                     <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[4px]">
-                        Check your app. It can take a few minutes to show.
-                     </p>
-                  ) : (
-                     <>
-                        <ol className="mt-[12px] w-full space-y-[8px] text-left">
-                           {steps.map((st) => (
-                              <li key={st.label} className="flex items-center gap-[10px] text-[14px]">
-                                 <span
-                                    className={`w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0 ${
-                                       st.state === 'done'
-                                          ? 'bg-[#6b55f7] text-white'
-                                          : st.state === 'active'
-                                            ? 'border-2 border-[#6b55f7]'
-                                            : 'border-2 border-[var(--border-input)]'
-                                    }`}
-                                 >
-                                    {st.state === 'done' ? (
-                                       <Check className="w-[13px] h-[13px]" strokeWidth={3} />
-                                    ) : st.state === 'active' ? (
-                                       <Loader2 className="w-[12px] h-[12px] text-[#6b55f7] animate-spin" />
-                                    ) : null}
-                                 </span>
-                                 <span className={st.state === 'todo' ? 'text-[var(--text-faint)]' : 'text-[var(--ink)] font-semibold'}>
-                                    {st.label}
-                                 </span>
-                              </li>
-                           ))}
-                        </ol>
-                        <p className="mt-[12px] text-[12px] text-[var(--text-muted)] leading-[17px]">
-                           {slow
-                              ? 'Taking longer than usual, but it’s on its way. You can leave this page; we’ll keep sending it.'
-                              : `Started ${minutes < 1 ? 'just now' : `${minutes} min ago`} · usually a few minutes. You can leave this page.`}
-                        </p>
-                     </>
-                  )}
+                  <p className="mt-[2px] text-[14px] leading-[19px] text-[var(--text-muted)]">
+                     {done
+                        ? `To ${accountLabel}. Check your bank app.`
+                        : slow
+                          ? 'Taking a bit longer. It’s still on its way.'
+                          : 'Usually a few minutes.'}
+                  </p>
+                  <ol className="mt-[14px] w-full space-y-[10px] text-left">
+                     {steps.map((st) => (
+                        <li key={st.label} className="flex items-center gap-[10px] text-[15px]">
+                           <span
+                              className={`w-[24px] h-[24px] rounded-full flex items-center justify-center shrink-0 ${
+                                 st.state === 'done'
+                                    ? 'bg-[#2f9e44] text-white'
+                                    : st.state === 'active'
+                                      ? 'border-2 border-[#6b55f7]'
+                                      : 'border-2 border-[var(--border-input)]'
+                              }`}
+                           >
+                              {st.state === 'done' ? (
+                                 <Check className="w-[14px] h-[14px]" strokeWidth={3.5} />
+                              ) : st.state === 'active' ? (
+                                 <Loader2 className="w-[13px] h-[13px] text-[#6b55f7] animate-spin" />
+                              ) : null}
+                           </span>
+                           <span className={st.state === 'todo' ? 'text-[var(--text-faint)]' : 'text-[var(--ink)] font-semibold'}>{st.label}</span>
+                        </li>
+                     ))}
+                  </ol>
                </div>
             )}
          </Panel>
-         {qrMode ? (
-            <GoldButton onClick={onDone}>Done</GoldButton>
+         {done || failed ? (
+            qrMode ? (
+               <GoldButton onClick={onDone}>Done</GoldButton>
+            ) : (
+               <button className={primaryClass} onClick={onDone}>
+                  Done
+               </button>
+            )
          ) : (
-            <button className={primaryClass} onClick={onDone}>
-               Done
-            </button>
+            // Not a gold "Done" while it's still sending: that read as "finished".
+            <>
+               <p className="text-center text-[13px] leading-[18px] text-[var(--text-muted)]">You can close this. We&apos;ll keep sending.</p>
+               <button
+                  onClick={onDone}
+                  className="w-full rounded-[36px] border-2 border-[#e8e4ff] bg-[var(--surface)] py-[13px] text-[16px] font-semibold text-[var(--text-muted)] active:scale-[0.99] transition-all"
+               >
+                  Close
+               </button>
+            </>
          )}
       </div>
    );
