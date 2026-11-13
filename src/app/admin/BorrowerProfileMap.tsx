@@ -1,7 +1,6 @@
 'use client';
 
 import 'leaflet/dist/leaflet.css';
-
 import { CircleMarker, MapContainer, TileLayer, Tooltip } from 'react-leaflet';
 
 import { type MapPoint, rateColor } from '@/app/admin/borrowerProfileModel';
@@ -13,7 +12,7 @@ export default function BorrowerProfileMap({ points }: { points: MapPoint[] }) {
    return (
       <div className="overflow-hidden rounded-2xl border border-[#2a1453] bg-[#0e0620]">
          <style>{'.bp-dark-tiles { filter: invert(1) hue-rotate(200deg) brightness(0.85) contrast(0.9) saturate(0.6); }'}</style>
-         <MapContainer center={PH_CENTER} zoom={5} minZoom={3} style={{ height: 520, width: '100%' }} scrollWheelZoom>
+         <MapContainer center={PH_CENTER} zoom={5} minZoom={3} style={{ height: 520, width: '100%' }} scrollWheelZoom={false}>
             {/* OpenStreetMap tiles (CARTO's dark tiles now need an API key), darkened to fit the admin theme. */}
             <TileLayer
                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
