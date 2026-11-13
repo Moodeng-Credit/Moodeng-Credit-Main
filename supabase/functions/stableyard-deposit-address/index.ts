@@ -491,6 +491,21 @@ const handleQr = async (
       if (!result.ok) return fail(result);
       // Only ever show the caller their own payments.
       if (!JSON.stringify(result.data).includes(accountId)) return json({ error: 'Not your payment.' }, 403);
+      // Since 2026-11-13 QR payments come back priced with nextAction "payment_method" and no deposit
+      // address. Stableyard's docs point those at a hosted checkout link, so read it alongside.
+      const nextType = (result.data as { nextAction?: { type?: string } | null })?.nextAction?.type;
+      if (nextType === 'payment_method') {
+         const checkout = await stableyard.getPaymentCheckout(paymentId);
+         return json({
+            ok: true,
+            accountId,
+            step: 'get',
+            result: result.data,
+            checkout: checkout.ok
+               ? checkout.data
+               : { error: checkout.error, code: checkout.code ?? null, status: checkout.status, requestId: checkout.requestId ?? null }
+         });
+      }
       return json({ ok: true, accountId, step: 'get', result: result.data });
    }
 
