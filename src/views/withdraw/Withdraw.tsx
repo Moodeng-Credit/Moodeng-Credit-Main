@@ -700,7 +700,7 @@ function DirectPesoCard({ onSelect, spendable }: { onSelect: () => void; spendab
 
             {pesos != null ? (
                <p className="mt-[10px] text-[14px] text-[var(--text-muted,#45556c)]">
-                  Up to <span className="font-bold text-[var(--ink)]">₱{pesos.toLocaleString('en-PH')}</span> · after Stableyard fees
+                  You get about <span className="font-bold text-[var(--ink)]">₱{pesos.toLocaleString('en-PH')}</span> · fees included
                </p>
             ) : null}
 
@@ -744,7 +744,7 @@ function QrPesoCard({ onSelect, spendable, recommended }: { onSelect: () => void
             </div>
             {pesos != null ? (
                <p className="mt-[10px] text-[14px] text-[var(--text-muted,#45556c)]">
-                  Up to <span className="font-bold text-[var(--ink)]">₱{pesos.toLocaleString('en-PH')}</span> · after Stableyard fees
+                  You get about <span className="font-bold text-[var(--ink)]">₱{pesos.toLocaleString('en-PH')}</span> · fees included
                </p>
             ) : null}
             <span className="mt-[12px] flex w-full items-center justify-center gap-[8px] rounded-[36px] bg-[linear-gradient(85deg,#ffe27a_0%,#ffbe1a_98%)] py-[12px] text-[16px] font-bold text-[#4a2a00] shadow-[0_6px_16px_rgba(255,180,0,0.35)]">
