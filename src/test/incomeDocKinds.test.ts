@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { askFor, EARN_TYPES, kindsFor, sendNote } from '@/app/documents/incomeDocKinds';
+import { askFor, EARN_TYPES, kindsFor, moreNeededHint, sendNote, slotCount, tooSmallToRead } from '@/app/documents/incomeDocKinds';
 
 const earn = (id: string) => EARN_TYPES.find((e) => e.id === id)!;
 
@@ -35,5 +35,21 @@ describe('proof-of-income documents by how you earn', () => {
       expect(sendNote(rider, rider.kinds[0], '  paid weekly ')).toBe('I drive or deliver · Earnings screen — paid weekly');
       expect(sendNote(rider, rider.kinds[0], '')).toBe('I drive or deliver · Earnings screen');
       expect(sendNote(rider, rider.kinds[0], 'x'.repeat(400)).length).toBe(300);
+   });
+
+   it('catches a photo too small to read', () => {
+      expect(tooSmallToRead(320, 640)).toBe(true);
+      expect(tooSmallToRead(1080, 2400)).toBe(false);
+      expect(tooSmallToRead(0, 0)).toBe(false);
+   });
+
+   it('shows three boxes and a nudge only when months are needed', () => {
+      expect(slotCount(0)).toBe(1);
+      expect(slotCount(2)).toBe(3);
+      expect(moreNeededHint(0, [{ isPdf: false }])).toBeNull();
+      expect(moreNeededHint(2, [])).toBeNull();
+      expect(moreNeededHint(2, [{ isPdf: false }])).toMatch(/2 months/);
+      expect(moreNeededHint(2, [{ isPdf: true }])).toBeNull();
+      expect(moreNeededHint(2, [{ isPdf: false }, { isPdf: false }])).toBeNull();
    });
 });

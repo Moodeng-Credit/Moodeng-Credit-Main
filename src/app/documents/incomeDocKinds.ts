@@ -271,3 +271,21 @@ export const askFor = (kind: DocKind, monthsNeeded: number) => (monthsNeeded > 0
 /** The note the team sees with the send: how they earn, what they picked, then their own words. Pure. */
 export const sendNote = (earn: EarnType, kind: DocKind, typed: string, max = 300) =>
    [`${earn.label} · ${kind.title}`, typed.trim()].filter(Boolean).join(' — ').slice(0, max);
+
+export const EXAMPLE_MUST_SHOW = ['Your name', 'The dates', 'The money coming in'];
+
+/** A photo this small can't be read (a thumbnail or a forwarded preview, not the real screenshot). Pure. */
+export const MIN_READABLE_PX = 480;
+export const tooSmallToRead = (width: number, height: number) => width > 0 && height > 0 && Math.min(width, height) < MIN_READABLE_PX;
+
+/** Empty boxes to fill: three when the loan needs months of history, one otherwise. Pure. */
+export const slotCount = (monthsNeeded: number) => (monthsNeeded > 0 ? 3 : 1);
+
+/**
+ * The nudge under the boxes, or null: months are needed and what's added so far (screenshots, no PDF)
+ * is unlikely to cover them. Never blocks sending. Pure.
+ */
+export const moreNeededHint = (monthsNeeded: number, files: Array<{ isPdf: boolean }>) =>
+   monthsNeeded > 0 && files.length > 0 && files.length < 2 && !files.some((f) => f.isPdf)
+      ? `Add more screenshots until ${monthsNeeded} months show.`
+      : null;
