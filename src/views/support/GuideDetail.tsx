@@ -37,6 +37,12 @@ const GUIDE_DETAIL_COPY = {
       createdBy: 'Tạo bởi',
       lastUpdated: 'Cập nhật lần cuối',
       team: 'Đội ngũ Moodeng'
+   },
+   es: {
+      title: 'Guía',
+      createdBy: 'Creado por',
+      lastUpdated: 'Última actualización',
+      team: 'Equipo de Moodeng'
    }
 } as const;
 

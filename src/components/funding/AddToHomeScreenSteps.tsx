@@ -175,6 +175,36 @@ const STEP_COPY: Record<
             Mở <b>Moodeng</b> từ Màn hình chính và nhấn <b>{turnOnLabel}</b>.
          </>
       )
+   },
+   es: {
+      openInSafariButton: 'Abrir en Safari',
+      openInSafariFallback: (appName) => (
+         <>
+            ¿No ha funcionado? Toca <Ellipsis className={inlineIcon} aria-label="el menú •••" />
+            {appName ? ` en ${appName}` : ''} y elige <b>Abrir en Safari</b>.
+         </>
+      ),
+      share: () => (
+         <>
+            Toca <b>Compartir</b> <Share className={inlineIcon} aria-hidden="true" /> en la parte inferior de Safari. En los iPhone más
+            nuevos, toca primero <Ellipsis className={inlineIcon} aria-label="•••" /> y luego <b>Compartir</b>.
+         </>
+      ),
+      addToHomeScreen: (
+         <>
+            Desplázate hacia abajo y toca <b>Añadir a pantalla de inicio</b> <SquarePlus className={inlineIcon} aria-hidden="true" />.
+         </>
+      ),
+      add: (
+         <>
+            Toca <b>Añadir</b> arriba a la derecha.
+         </>
+      ),
+      turnOn: (turnOnLabel) => (
+         <>
+            Abre <b>Moodeng</b> desde tu pantalla de inicio y toca <b>{turnOnLabel}</b>.
+         </>
+      )
    }
 };
 
@@ -185,7 +215,8 @@ const TURN_ON_LABEL: Record<LocaleCode, string> = {
    fil: 'I-on',
    id: 'Aktifkan',
    th: 'เปิด',
-   vi: 'Bật'
+   vi: 'Bật',
+   es: 'Activar'
 };
 
 export default function AddToHomeScreenSteps() {

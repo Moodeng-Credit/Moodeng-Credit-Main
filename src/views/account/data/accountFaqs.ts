@@ -566,7 +566,123 @@ Khi khoản vay đến hạn, người vay sẽ trả trực tiếp vào ví c�
    }
 ];
 
+const SPANISH_SHARED_FAQS: AccountFAQItem[] = [
+   {
+      id: 'does-moodeng-touch-money',
+      question: '¿Moodeng toca mi dinero?',
+      answer: `No. Moodeng no guarda, no custodia ni mueve los fondos de los usuarios por ti.
+
+Los préstamos van directamente de la cartera del Moo-lender a la cartera del prestatario. Los pagos van directamente de la cartera del prestatario de vuelta a la cartera del Moo-lender. Moodeng ayuda con el tablón de solicitudes, la verificación, el estado de los pagos y el registro, para que las dos partes vean con claridad lo que ha pasado.`
+   },
+   {
+      id: 'why-usdc',
+      question: '¿Por qué usa Moodeng USDC?',
+      answer: `USDC es una stablecoin ligada 1:1 al dólar estadounidense. La emite Circle, una empresa financiera regulada de EE. UU., y mantiene predecible el valor de los préstamos: un préstamo de $20 hoy sigue siendo de $20 al devolverlo, no de $15 ni de $30. Los Moo-lenders y los prestatarios no asumen riesgo de cambio solo por participar.
+
+USDC también se envía rápido a cualquier parte del mundo y, cuando se usa en Base con tu Instant Wallet o una cuenta Base, no tiene gas en absoluto. Esto significa que ninguna comisión de red se come tu pago: el 100 % de lo que envías llega a tu Moo-lender.
+
+Además, está muy aceptado: todos los grandes exchanges de criptomonedas admiten depósitos de USDC y puedes convertirlo a dinero tradicional (dólares estadounidenses, pesos, nairas, etc.) casi en cualquier parte. Así que, cuando recibes un préstamo o te devuelven el dinero, puedes gastarlo onchain, guardarlo o retirarlo: tú eliges.`
+   },
+   {
+      id: 'how-to-get-verified',
+      question: '¿Cómo me verifico?',
+      answer: `La verificación es una comprobación de identidad rápida que se hace una sola vez. La forma recomendada es «Verifica tu identidad»: una comprobación breve con una foto del documento nacional de identidad y un selfie que lleva unos 3 minutos y funciona en los países admitidos. Si ya usas World App, puedes verificarte con World ID en su lugar.
+
+Toca «Verificarme» en la app para empezar. La mayoría de las comprobaciones terminan en unos minutos.`,
+      readMorePath: '/academy/money/verify',
+      readMoreLabel: 'Leer la guía completa'
+   }
+];
+
+const SPANISH_BORROWER_FAQS: AccountFAQItem[] = [
+   {
+      id: 'convert-loan-to-bank',
+      question: '¿Cómo convierto mi préstamo en dinero en mi cuenta bancaria local?',
+      answer: `Envía tus USDC a un exchange o servicio local (Binance P2P, Coins.ph (en pausa temporalmente), PDAX, GCrypto (GCash) y más), véndelos allí y retira la moneda local directamente a tu banco o a tu monedero electrónico.
+
+El detalle clave: elige siempre Base como red al enviar USDC. La guía completa incluye un vídeo explicativo e instrucciones paso a paso para cada servicio.`,
+      readMorePath: '/academy/money/withdraw',
+      readMoreLabel: 'Leer la guía completa'
+   },
+   {
+      id: 'how-to-repay',
+      question: '¿Cómo devuelvo mi préstamo?',
+      answer: `Abre la pantalla Devolver: muestra el importe exacto que debes y la dirección de pago. Envía USDC allí desde cualquier cartera, exchange o servicio local. Si todavía no tienes USDC, cómpralos primero (Binance P2P, Coins.ph (en pausa temporalmente), PDAX, GCrypto y más), siempre en la red Base.
+
+Devuelve antes de la fecha de vencimiento: pagar a tiempo aumenta tus puntos Pandesal, y devolver a tiempo un préstamo por tu límite completo desbloquea el siguiente nivel de crédito. La guía completa explica cada forma de devolver.`,
+      readMorePath: '/academy/money/repay',
+      readMoreLabel: 'Leer la guía completa'
+   },
+   {
+      id: 'borrow-below-limit',
+      question: '¿Puedo pedir menos que mi límite de crédito?',
+      answer: `Sí, y de hecho te lo recomendamos, sobre todo al empezar. Pedir menos que tu límite se llama préstamo para generar confianza.
+
+Estos préstamos menores no cuentan para desbloquear el siguiente nivel de crédito (para eso tienes que pedir tu límite completo y devolverlo a tiempo), pero sí generan tu historial de pagos y te dan puntos Pandesal cada vez que devuelves a tiempo.
+
+Así que, si quieres hacer crecer tu reputación rápidamente, los préstamos para generar confianza son una gran forma de hacerlo.`
+   },
+   {
+      id: 'increase-credit-limit',
+      question: '¿Cómo aumento mi límite de crédito?',
+      answer: `Tu límite de crédito sube cuando pides tu límite completo y lo devuelves a tiempo. Son los llamados préstamos para generar crédito.
+
+Si tu límite es de $20 y solo pides $15, eso no cuenta para el siguiente nivel, aunque lo devuelvas a la perfección. El sistema necesita ver que puedes manejar el límite completo antes de subir el techo.
+
+La progresión es $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, que es el máximo actual. Un escalón cada vez: pide tu máximo, devuelve a tiempo y repite.`
+   }
+];
+
+const SPANISH_LENDER_FAQS: AccountFAQItem[] = [
+   {
+      id: 'what-are-iou-points',
+      question: '¿Qué son los puntos IOU?',
+      answer: `Los puntos IOU son puntos de reputación que ganan los Moo-lenders. En el modelo del primer año, cada préstamo financiado da puntos IOU base por el importe financiado más una bonificación según la etapa del prestatario. Reflejan quién está apoyando activamente a la comunidad.
+
+Ahora mismo IOU son solo puntos. Más adelante lanzaremos un token también llamado IOU y tus puntos acumulados se convertirán mediante un airdrop. Tener IOU desbloqueará ventajas adicionales vinculadas a la plataforma.
+
+IOU es solo para Moo-lenders: los prestatarios generan sus puntos Pandesal y su nivel de crédito. Así que, si quieres ganar IOU, financia una solicitud de préstamo del tablón de solicitudes.`
+   },
+   {
+      id: 'how-borrowers-verify',
+      question: '¿Cómo se verifican los prestatarios?',
+      answer: `Todos los prestatarios completan una verificación de identidad que se hace una sola vez: una comprobación con una foto del documento nacional de identidad y un selfie con detección de duplicados, o World ID para quienes usan World App. De cualquier forma, confirma que cada prestatario es una persona real y única, lo que evita cuentas falsas y bots.
+
+Cada persona solo puede verificar una cuenta, así que el perfil de prestatario y el historial de pagos que ves pertenecen a la misma persona real, y los usuarios bloqueados no pueden volver sin más con una cuenta nueva.`,
+      readMorePath: '/academy/money/verify',
+      readMoreLabel: 'Leer la guía completa'
+   },
+   {
+      id: 'how-borrowers-increase-credit-limit',
+      question: '¿Cómo aumentan los prestatarios su límite de crédito?',
+      answer: `Los prestatarios aumentan su límite de crédito pidiendo un préstamo para generar crédito por todo su límite actual. Si devuelven a tiempo ese préstamo por el límite completo, suben de nivel y desbloquean un límite de crédito más alto.
+
+Si piden menos que su límite, es un préstamo para generar confianza. No les sube de nivel, pero ayuda a construir un historial de pagos más sólido y mejores estadísticas de prestatario en la plataforma.`
+   },
+   {
+      id: 'how-to-fund-loan',
+      question: '¿Cómo financio un préstamo?',
+      answer: `Ve al tablón de solicitudes y consulta las solicitudes de préstamo abiertas. Cada solicitud muestra las estadísticas del prestatario, su límite de crédito, el importe solicitado y el plazo de pago.
+
+Cuando encuentres una que quieras financiar, toca Financiar y confirma. Los USDC salen de tu cartera (normalmente tu cuenta Base, o tu Instant Wallet si usas una) de inmediato y van directamente a la cartera del prestatario, sin intermediarios y sin demora.
+
+Puedes seguir todos tus préstamos activos y el estado de sus pagos desde tu panel de Moo-lender.`
+   },
+   {
+      id: 'when-do-i-get-repaid',
+      question: '¿Cuándo me devuelven el dinero?',
+      answer: `La fecha de vencimiento la fija el prestatario al publicar su solicitud: la verás claramente en la tarjeta del préstamo antes de financiar, así que siempre conoces el plazo de antemano.
+
+Cuando el préstamo vence, el prestatario paga directamente a tu cartera, normalmente tu cuenta Base (o tu Instant Wallet, si usas una). Puedes seguir el estado de todos tus préstamos activos en tu panel de Moo-lender.`
+   }
+];
+
 export function getAccountFaqsForLocale(locale: string, isLender: boolean): AccountFAQItem[] {
+   if (locale === 'es') {
+      const visibleSharedFaqs = isLender ? SPANISH_SHARED_FAQS.filter((item) => item.id !== 'how-to-get-verified') : SPANISH_SHARED_FAQS;
+      return [...visibleSharedFaqs, ...(isLender ? SPANISH_LENDER_FAQS : SPANISH_BORROWER_FAQS)];
+   }
+
    const sharedFaqs =
       locale === 'fil'
          ? FILIPINO_SHARED_FAQS

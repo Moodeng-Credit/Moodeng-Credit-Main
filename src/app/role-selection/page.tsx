@@ -84,6 +84,20 @@ const ROLE_SELECTION_COPY = {
       confirm: 'Xác nhận',
       footerLinks: ['Quyền riêng tư', 'Điều khoản', 'Tài liệu'],
       copyright: '© 2026 Moodeng Credit. Bảo lưu mọi quyền.'
+   },
+   es: {
+      errorTitle: 'Algo ha ido mal',
+      errorBody: 'No se ha podido guardar tu rol. Inténtalo de nuevo.',
+      title: '¿Cómo quieres usar Moodeng Credit?',
+      subtitle: 'Solicita préstamos a corto plazo, devuélvelos con claridad y genera confianza con el tiempo.',
+      borrowerTitle: 'Soy prestatario',
+      borrowerBody: 'Solicita préstamos en USDC y genera confianza pagando a tiempo.',
+      lenderTitle: 'Soy Moo-lender',
+      lenderBody: 'Financia solicitudes de préstamo y obtén rendimientos apoyando a prestatarios de confianza.',
+      confirming: 'Confirmando...',
+      confirm: 'Confirmar',
+      footerLinks: ['Privacidad', 'Términos', 'Docs'],
+      copyright: '© 2026 Moodeng Credit. Todos los derechos reservados.'
    }
 } satisfies Record<
    LocaleCode,

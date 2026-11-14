@@ -1,5 +1,5 @@
 // Notification copy for the push channel, in the three locales the app ships
-// (en / fil / id). Pure functions — no Supabase, no crypto — so the wording can
+// (en / fil / id / es). Pure functions — no Supabase, no crypto — so the wording can
 // be unit-tested and reviewed without standing anything up.
 //
 // Push copy is not email copy. A lock-screen notification gets roughly two lines
@@ -33,9 +33,9 @@ export type PushNotificationType =
    // Admin → Campaigns re-engagement message.
    | 'campaign';
 
-export type PushLocale = 'en' | 'fil' | 'id';
+export type PushLocale = 'en' | 'fil' | 'id' | 'es';
 
-export const PUSH_LOCALES: PushLocale[] = ['en', 'fil', 'id'];
+export const PUSH_LOCALES: PushLocale[] = ['en', 'fil', 'id', 'es'];
 
 export const resolvePushLocale = (value: string | null | undefined): PushLocale => {
    const normalized = (value ?? '').trim().toLowerCase().split(/[-_]/)[0];
@@ -115,14 +115,16 @@ const quotedReason = (reason: string | null | undefined, max = 34): string | nul
 const DUE_UNITS: Record<PushLocale, { hour: string; day: string }> = {
    en: { hour: 'hours', day: 'days' },
    fil: { hour: 'oras', day: 'araw' },
-   id: { hour: 'jam', day: 'hari' }
+   id: { hour: 'jam', day: 'hari' },
+   es: { hour: 'horas', day: 'días' }
 };
 
 const DUE_UNITS_SINGULAR: Record<PushLocale, { hour: string; day: string }> = {
    en: { hour: 'hour', day: 'day' },
    // Filipino and Indonesian don't inflect these for number.
    fil: { hour: 'oras', day: 'araw' },
-   id: { hour: 'jam', day: 'hari' }
+   id: { hour: 'jam', day: 'hari' },
+   es: { hour: 'hora', day: 'día' }
 };
 
 /**
@@ -149,7 +151,8 @@ const displayName = (username: string | null | undefined, fallback: Record<PushL
 const ANON_BORROWER: Record<PushLocale, string> = {
    en: 'A past borrower',
    fil: 'Isang dating borrower',
-   id: 'Peminjam sebelumnya'
+   id: 'Peminjam sebelumnya',
+   es: 'Un prestatario anterior'
 };
 
 /**
@@ -185,6 +188,12 @@ const buildRepeatBorrowerPush = (context: RepeatBorrowerPushContext, locale: Pus
          body: isRepeat
             ? `Sudah ${context.repaidLoanCount} kali melunasi ke kamu, total ${repaid}. Kini minta ${asking} USDC${reason ? ` — ${reason}` : ''}.`
             : `Sudah melunasi ${repaid} ke kamu. Kini minta ${asking} USDC${reason ? ` — ${reason}` : ''}.`
+      },
+      es: {
+         title: `${name} vuelve a pedir`,
+         body: isRepeat
+            ? `Te ha devuelto ${context.repaidLoanCount} préstamos, ${repaid} en total. Ahora pide ${asking} USDC${reason ? ` — ${reason}` : ''}.`
+            : `Te ha devuelto ${repaid} por completo. Ahora pide ${asking} USDC${reason ? ` — ${reason}` : ''}.`
       }
    };
 
@@ -294,6 +303,32 @@ const buildDuePush = (
                ? `${context.loanCount} pembayaran sudah lewat jatuh tempo. Bayar sekarang untuk menjaga good standing.`
                : `Pembayaran kamu sudah lewat jatuh tempo. Bayar sekarang untuk menjaga good standing.`
          }
+      },
+      es: {
+         final_reminder: {
+            title: `${amount} USDC vencen mañana`,
+            body: isMulti
+               ? `${context.loanCount} pagos vencen mañana. Paga a tiempo para mantener tu buen historial.`
+               : `Tu pago vence mañana. Paga a tiempo para mantener tu buen historial.`
+         },
+         urgent_reminder: {
+            title: `${amount} USDC vencen pronto`,
+            body: isMulti
+               ? `${context.loanCount} pagos vencen en ${dueLabel}. Toca para pagar antes y seguir al día.`
+               : `Vence en ${dueLabel}. Toca para pagar antes y seguir al día.`
+         },
+         due_today: {
+            title: `${amount} USDC vencen hoy`,
+            body: isMulti
+               ? `${context.loanCount} pagos vencen hoy. Tienes todo el día: toca para pagar y mantener tu buen historial.`
+               : `Tu pago vence hoy. Tienes todo el día: toca para pagar y mantener tu buen historial.`
+         },
+         overdue: {
+            title: `${amount} USDC vencidos`,
+            body: isMulti
+               ? `${context.loanCount} pagos han pasado su fecha de vencimiento. Paga ahora para proteger tu buen historial.`
+               : `Tu pago ha pasado su fecha de vencimiento. Paga ahora para proteger tu buen historial.`
+         }
       }
    };
 
@@ -315,7 +350,8 @@ const buildFundedPush = (context: { amount: number }, locale: PushLocale): PushP
    const copy: Record<PushLocale, { title: string; body: string }> = {
       en: { title: `${amount} USDC is on the way`, body: 'Your loan request was funded. Tap to see the repayment date.' },
       fil: { title: `Padating na ang ${amount} USDC`, body: 'Na-fund na ang request mo. Mag-tap para makita ang due date.' },
-      id: { title: `${amount} USDC sedang dikirim`, body: 'Pengajuanmu sudah didanai. Ketuk untuk melihat tanggal jatuh tempo.' }
+      id: { title: `${amount} USDC sedang dikirim`, body: 'Pengajuanmu sudah didanai. Ketuk untuk melihat tanggal jatuh tempo.' },
+      es: { title: `${amount} USDC van de camino`, body: 'Tu solicitud de préstamo ha sido financiada. Toca para ver la fecha de pago.' }
    };
 
    return {
@@ -332,7 +368,11 @@ const buildRepaymentReceivedPush = (context: { amount: number }, locale: PushLoc
    const copy: Record<PushLocale, { title: string; body: string }> = {
       en: { title: `${amount} USDC repaid to you`, body: 'A borrower you funded has paid you back. Tap to see the details.' },
       fil: { title: `Nabayaran ka ng ${amount} USDC`, body: 'Nagbayad na ang borrower na pinondohan mo. Mag-tap para sa detalye.' },
-      id: { title: `${amount} USDC dilunasi ke kamu`, body: 'Peminjam yang kamu danai sudah membayar. Ketuk untuk detailnya.' }
+      id: { title: `${amount} USDC dilunasi ke kamu`, body: 'Peminjam yang kamu danai sudah membayar. Ketuk untuk detailnya.' },
+      es: {
+         title: `Te han devuelto ${amount} USDC`,
+         body: 'Un prestatario al que financiaste te ha devuelto el dinero. Toca para ver los detalles.'
+      }
    };
 
    return {
@@ -352,7 +392,8 @@ const buildPartialRepaymentPush = (context: { paid: number; left: number }, loca
    const copy: Record<PushLocale, { title: string; body: string }> = {
       en: { title: `We got your ${paid} payment`, body: `${left} left on your loan. Didn't mean to pay? Message us right away.` },
       fil: { title: `Natanggap namin ang ${paid} mo`, body: `${left} pa ang natitira sa loan mo. Hindi sinasadya? I-message kami agad.` },
-      id: { title: `Pembayaran ${paid} diterima`, body: `Sisa pinjamanmu ${left}. Tidak sengaja bayar? Segera hubungi kami.` }
+      id: { title: `Pembayaran ${paid} diterima`, body: `Sisa pinjamanmu ${left}. Tidak sengaja bayar? Segera hubungi kami.` },
+      es: { title: `Hemos recibido tu pago de ${paid}`, body: `Te quedan ${left} de tu préstamo. ¿Fue sin querer? Escríbenos enseguida.` }
    };
 
    return {
@@ -368,7 +409,11 @@ const buildRequestExpiredPush = (locale: PushLocale): PushPayload => {
    const copy: Record<PushLocale, { title: string; body: string }> = {
       en: { title: 'Your loan request expired', body: 'No lender funded it in time. Tap to post it again or talk to support.' },
       fil: { title: 'Nag-expire ang request mo', body: 'Walang nag-fund sa oras. Mag-tap para mag-post ulit o kausapin ang support.' },
-      id: { title: 'Pengajuanmu kedaluwarsa', body: 'Belum ada yang mendanai. Ketuk untuk mengajukan lagi atau hubungi support.' }
+      id: { title: 'Pengajuanmu kedaluwarsa', body: 'Belum ada yang mendanai. Ketuk untuk mengajukan lagi atau hubungi support.' },
+      es: {
+         title: 'Tu solicitud de préstamo ha caducado',
+         body: 'Ningún prestamista la financió a tiempo. Toca para publicarla de nuevo o hablar con soporte.'
+      }
    };
 
    return {
@@ -394,11 +439,7 @@ const buildRequestExpiredPush = (locale: PushLocale): PushPayload => {
  */
 export type VerificationPushOutcome = 'approved' | 'review' | 'declined' | 'abandoned';
 
-const buildVerificationDecisionPush = (
-   outcome: VerificationPushOutcome,
-   locale: PushLocale,
-   reason?: string | null
-): PushPayload => {
+const buildVerificationDecisionPush = (outcome: VerificationPushOutcome, locale: PushLocale, reason?: string | null): PushPayload => {
    // Decline reason is Didit free text; keep it short so the body doesn't overflow.
    const declineReason = quotedReason(reason, 40);
    const withReason = (base: string) => (declineReason ? `${base} (${declineReason})` : base);
@@ -456,6 +497,24 @@ const buildVerificationDecisionPush = (
          abandoned: {
             title: 'Selesaikan verifikasimu',
             body: 'Hampir selesai — sesimu tertutup sebelum semua langkah selesai. Sekitar 3 menit. Ketuk untuk lanjut.'
+         }
+      },
+      es: {
+         approved: {
+            title: '¡Estás verificado! 🎉',
+            body: 'Tu comprobación de identidad está completa y tu cuenta de Moodeng está totalmente desbloqueada. Toca para solicitar un préstamo.'
+         },
+         review: {
+            title: 'Verificación en revisión',
+            body: 'Tus documentos necesitan una revisión humana rápida: normalmente unas horas y, como mucho, 1 día laborable. No tienes que hacer nada.'
+         },
+         declined: {
+            title: 'La verificación no se ha superado',
+            body: withReason('Esta vez no hemos podido verificar tu identidad. Toca para intentarlo de nuevo o escribir a nuestro equipo.')
+         },
+         abandoned: {
+            title: 'Termina tu verificación',
+            body: 'Casi lo tenías: tu sesión se cerró antes de terminar todos los pasos. Lleva unos 3 minutos. Toca para continuar.'
          }
       }
    };

@@ -27,6 +27,11 @@ const PICKER_COPY: Record<LocaleCode, { title: string; body: string; suggested: 
       title: 'Chọn ngôn ngữ của bạn',
       body: 'Bạn có thể đổi bất cứ lúc nào trong Cài đặt tài khoản.',
       suggested: 'Gợi ý'
+   },
+   es: {
+      title: 'Elige tu idioma',
+      body: 'Puedes cambiarlo cuando quieras en los ajustes de la cuenta.',
+      suggested: 'Sugerido'
    }
 };
 

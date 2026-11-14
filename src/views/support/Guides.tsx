@@ -69,6 +69,15 @@ const GUIDE_CATEGORY_LABELS = {
       [GUIDE_CATEGORIES.repayment]: 'Trả nợ',
       [GUIDE_CATEGORIES.wallet]: 'Ví',
       [GUIDE_CATEGORIES.security]: 'Bảo mật'
+   },
+   es: {
+      All: 'Todas',
+      [GUIDE_CATEGORIES.gettingStarted]: 'Primeros pasos',
+      [GUIDE_CATEGORIES.trustScore]: 'Puntos Pandesal',
+      [GUIDE_CATEGORIES.creditLevel]: 'Nivel de crédito',
+      [GUIDE_CATEGORIES.repayment]: 'Pagos',
+      [GUIDE_CATEGORIES.wallet]: 'Cartera',
+      [GUIDE_CATEGORIES.security]: 'Seguridad'
    }
 } as const;
 

@@ -96,6 +96,23 @@ const WELCOME_COPY = {
       checkFirstBody: 'Khám phá tính năng, so sánh lãi suất và xem mọi thứ hoạt động ra sao',
       previewItems: ['Xem tính năng', 'Xem lãi suất', 'Tìm hiểu cách hoạt động'],
       exploreMoodeng: 'Khám phá Moodeng'
+   },
+   es: {
+      title: 'Primeros pasos',
+      lenderHeadline: 'Presta a personas reales y ayúdalas a generar crédito.',
+      lenderSubtitle: 'Gana onchain, con la tecnología de Base.',
+      borrowerHeadline: 'Estás construyendo una reputación que tu cartera puede llevar a cualquier parte.',
+      borrowerSubtitle: 'Pide prestado con responsabilidad. Genera confianza. Desbloquea más con el tiempo.',
+      getStartedTitle: 'Empieza ahora',
+      recommended: 'Recomendado',
+      setupBody: 'Configura tu cuenta, conoce a nuestro equipo en una llamada rápida y verifica tu identidad para acceder al crédito',
+      startSetup: 'Empezar la configuración',
+      watchTutorial: 'Ver el tutorial',
+      checkFirstTitle: 'Échale un vistazo primero',
+      noCommitment: 'Sin compromiso',
+      checkFirstBody: 'Explora las funciones, compara tipos de interés y descubre cómo funciona todo',
+      previewItems: ['Explorar las funciones', 'Ver tipos de interés', '¡Descubre cómo funciona!'],
+      exploreMoodeng: 'Explorar Moodeng'
    }
 } satisfies Record<
    LocaleCode,
