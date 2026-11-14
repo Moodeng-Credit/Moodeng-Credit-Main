@@ -33,6 +33,7 @@ import { cancelCallButton, cancelUpcomingCall } from './callCancel.ts';
 import { formatCallTimeForTeam } from './videoCall.ts';
 import { describeHeldRequests } from './loanRequestHold.ts';
 import { sendEmail } from './email.ts';
+import { FB_GROUP_URL } from './facebookSteps.ts';
 import { loadNeedsIdCheck } from './preKycGate.ts';
 import { testAccountRow } from './testAccount.ts';
 import { idApprovalBlock, type IdEvent, isIdTrackUser, sendIdTelegram } from './idTrack.ts';
@@ -252,11 +253,12 @@ const BORROWER_MESSAGES = {
       body: 'Great meeting you! Tap to request your first $15 loan.\n⚠️ Pay on time: missed payments are flagged and close your account.\nPS: reply here with your other social media so we can reach you.',
       url: APPLY_URL
    },
-   // Emma's "Decline the loan request" script.
+   // Rejected after the call. Rejected is final, so no "contact Emma for funding" line; invite them
+   // to the Voices Against Unfair Loan group instead, and the button opens it (George, 2026-11-14).
    rejected: {
       title: 'About your Moodeng application',
-      body: "We're sorry to see you go — your application has been closed. If you have any questions or concerns, please let us know. Should you wish to pursue funding in the future, connect directly with Emma Moodeng on Facebook: facebook.com/emmamoodengcredit",
-      url: `${SITE_URL}/request-board`
+      body: "We're sorry — your application has been closed. You're welcome to join our Facebook group, Voices Against Unfair Loan, for tips on avoiding unfair loans: facebook.com/groups/voicesunfairloan",
+      url: FB_GROUP_URL
    },
    // Rejected before any screening call (no call attended, none missed): point them to other PH
    // lenders instead (George, 2026-11-11). Sent without a button — there's no next step with us.
@@ -383,7 +385,9 @@ const ctaLabel = (msg: BorrowerMessage, kind: BorrowerMessageKind) =>
         ? 'Pick a new time'
         : kind === 'approved'
           ? 'Request my loan'
-          : 'Open Moodeng';
+          : msg.url === FB_GROUP_URL
+            ? 'Join the group'
+            : 'Open Moodeng';
 
 // "You're approved" on WhatsApp, for when Messenger can't reach them. Template `moodeng_approved`
 // (Utility, en): "Hi {{1}}, your Moodeng Credit account is approved. You can now request your first
@@ -477,7 +481,9 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
                                ? kind === 'no_show' || kind === 'call_cancelled' || kind === 'spot_released'
                                   ? 'Book a new time'
                                   : 'Apply for a loan'
-                               : 'Open Moodeng',
+                               : msg.url === FB_GROUP_URL
+                                 ? 'Join the group'
+                                 : 'Open Moodeng',
                      url: msg.url
                   }
                ]
