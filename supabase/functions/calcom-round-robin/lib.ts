@@ -151,6 +151,20 @@ export type CalSchedule = {
 };
 const calTime = (hhmm: string) => (hhmm === '24:00' ? '23:59' : hhmm);
 const capitalize = (day: string) => day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
+
+// Calls only between 8 AM and 11 PM (the hosts' time, Bangkok): whatever the Calendly hours say, a
+// window is cut to fit and dropped if nothing is left. George 2026-11-14: a borrower moved her call
+// to 1:45 AM because his Calendly had 00:00–02:00 open. The last call starts at 22:45 and ends by 11.
+export const CALL_DAY_START = '08:00';
+export const CALL_DAY_END = '23:00';
+export const clipToCallDay = (from: string, to: string): { startTime: string; endTime: string } | null => {
+   // A window that runs to midnight ends at "00:00" (or "24:00") in Calendly.
+   const end = to === '00:00' || to === '24:00' ? '23:59' : to;
+   const startTime = from < CALL_DAY_START ? CALL_DAY_START : from;
+   const endTime = end > CALL_DAY_END ? CALL_DAY_END : end;
+   return startTime < endTime ? { startTime, endTime } : null;
+};
+
 export const calendlyToCalSchedule = (rules: CalendlyRule[], timeZone: string, today: string): CalSchedule => {
    const daysByWindow = new Map<string, string[]>();
    const overrides: CalSchedule['overrides'] = [];
@@ -158,13 +172,16 @@ export const calendlyToCalSchedule = (rules: CalendlyRule[], timeZone: string, t
       const intervals = rule.intervals ?? [];
       if (rule.type === 'wday' && rule.wday) {
          for (const iv of intervals) {
-            // A window that runs to midnight ends at "00:00" in Calendly; Cal.com needs 23:59.
-            const key = `${calTime(iv.from)}-${iv.to === '00:00' ? '23:59' : calTime(iv.to)}`;
+            const window = clipToCallDay(iv.from, iv.to);
+            if (!window) continue;
+            const key = `${window.startTime}-${window.endTime}`;
             daysByWindow.set(key, [...(daysByWindow.get(key) ?? []), capitalize(rule.wday)]);
          }
       } else if (rule.type === 'date' && rule.date && rule.date >= today) {
-         if (intervals.length === 0) overrides.push({ date: rule.date, startTime: '00:00', endTime: '00:00' });
-         for (const iv of intervals) overrides.push({ date: rule.date, startTime: calTime(iv.from), endTime: calTime(iv.to) });
+         const windows = intervals.map((iv) => clipToCallDay(iv.from, iv.to)).filter((w) => w !== null);
+         // No hours that day (or none left inside 8 AM–11 PM): the day is closed.
+         if (windows.length === 0) overrides.push({ date: rule.date, startTime: '00:00', endTime: '00:00' });
+         for (const w of windows) overrides.push({ date: rule.date, ...w });
       }
    }
    const availability = [...daysByWindow.entries()]
