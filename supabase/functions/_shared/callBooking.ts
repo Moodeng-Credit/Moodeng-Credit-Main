@@ -23,7 +23,9 @@ import {
    preferSoonSlots,
    recheckRange,
    teamGuests,
-   zoomFallbackWarning
+   zoomFallbackWarning,
+   isZoomJoinUrl,
+   zoomPaused
 } from '../calcom-round-robin/lib.ts';
 import { cancelCalBooking } from './calcomCancel.ts';
 import { callInboxFor, isPlaceholderEmail } from './placeholderEmail.ts';
@@ -187,6 +189,45 @@ const offerBotQuestions = async (svc: Svc, userId: string): Promise<boolean> => 
 
 type Resolved = Array<{ id: string; apiKey: string; eventTypeId: number }>;
 
+// No Cal Video (George, 2026-11-14): hosts whose last booking came back without a Zoom link are left out
+// for a while (lib.ts zoomPaused). Both cofounders' Cal.com on the one support@ Zoom login knock each
+// other's connection out — each needs their own Zoom login.
+const zoomKey = (hostId: string) => `zoom_broken_${hostId}`;
+const zoomPausedHosts = async (svc: Svc): Promise<Set<string>> => {
+   const { data, error } = await svc.from('telegram_bot_settings').select('key, value').in('key', HOSTS.map((h) => zoomKey(h.id)));
+   if (error) console.error('calcom-round-robin: could not read Zoom pauses', error.message);
+   const now = Date.now();
+   return new Set(
+      ((data ?? []) as Array<{ key: string; value: string | null }>)
+         .filter((r) => zoomPaused(r.value, now))
+         .map((r) => r.key.replace(/^zoom_broken_/, ''))
+   );
+};
+const pauseHostZoom = async (svc: Svc, hostId: string, joinUrl: string | null) => {
+   const { error } = await svc.from('telegram_bot_settings').upsert({ key: zoomKey(hostId), value: new Date().toISOString() }, { onConflict: 'key' });
+   if (error) console.error('calcom-round-robin: could not save Zoom pause', error.message);
+   const name = hostId === 'george' ? 'George' : 'Emma';
+   const text =
+      `⚠️ ${name}'s Zoom is disconnected in Cal.com — a booking came back ${joinUrl ? 'on Cal Video' : 'with no link'}, so it was cancelled and the borrower moved to a Zoom host (or asked to pick another time).\n` +
+      `${name}'s times are hidden for 3 hours, then tried again automatically.\n` +
+      `Fix: ${name}'s Cal.com → Settings → Apps → Zoom → reconnect with ${name}'s OWN Zoom login. Both Cal.coms on the shared support@ Zoom is why it keeps dropping.`;
+   const tgToken = Deno.env.get('TELEGRAM_BOT_TOKEN') || Deno.env.get('TELEGRAM_API_TOKEN');
+   const { data: setting } = await svc.from('telegram_bot_settings').select('value').eq('key', 'team_group_chat_id').maybeSingle();
+   const chat = Deno.env.get('TELEGRAM_TEAM_GROUP_CHAT_ID') || ((setting as { value?: string } | null)?.value ?? '');
+   if (tgToken && chat) {
+      try {
+         await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chat, text })
+         });
+      } catch (err) {
+         console.error('calcom-round-robin: Zoom alert failed', err);
+      }
+   }
+   await postDiscord({ content: text }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
+};
+
 const eitherHostOn = async (svc: Svc): Promise<boolean> => {
    const { data } = await svc.from('telegram_bot_settings').select('value').eq('key', 'calls_either_host').maybeSingle();
    return String((data as { value?: unknown } | null)?.value ?? '').toLowerCase() === 'true';
@@ -219,6 +260,12 @@ const prepare = async (svc: Svc, user: CallUser, pin?: string | null): Promise<C
       const pinned = resolved.filter((h) => h.id === pin);
       if (pinned.length > 0) resolved.splice(0, resolved.length, ...pinned);
       else console.error(`calcom-round-robin: host '${pin}' not configured — using every host`);
+   }
+   const paused = await zoomPausedHosts(svc);
+   if (paused.size) {
+      const usable = resolved.filter((h) => !paused.has(h.id));
+      if (usable.length === 0) return reply({ ok: false, error: 'no_zoom', slots: [] });
+      resolved.splice(0, resolved.length, ...usable);
    }
 
    // Two strikes: repeat no-shows wait a week before they can take another slot from the hosts.
@@ -344,6 +391,7 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
    );
 
    // Emma first when she's free, then the seeded order; the next one is tried if the first races and loses the slot.
+   let zoomFailed = false;
    for (const hostId of preferHost(orderHostsToTry(free, `${user.id}:${start}`))) {
       const host = resolved.find((h) => h.id === hostId);
       if (!host) continue;
@@ -354,6 +402,15 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
       if ('error' in result && result.error === 'other' && guests.length) {
          console.error('calcom-round-robin: booking with team guests failed — retrying without them');
          result = await createBooking(host.apiKey, host.eventTypeId, start, attendee, metadata);
+      }
+      // Cal Video (or no link) means this host's Zoom is broken: undo it, pause them, try the next free host.
+      if ('uid' in result && !isZoomJoinUrl(result.joinUrl)) {
+         console.error(`calcom-round-robin: ${hostId} booking came back without Zoom (${result.joinUrl ?? 'no link'}) — cancelling`);
+         const undone = await cancelCalBooking(hostId, result.uid, 'Zoom link could not be created — rebooking on Zoom.');
+         if (!undone) console.error(`calcom-round-robin: could not cancel non-Zoom booking ${result.uid}`);
+         await pauseHostZoom(svc, hostId, result.joinUrl);
+         zoomFailed = true;
+         continue;
       }
       if ('uid' in result) {
          // Source of truth: we made the booking, so stamp the gate directly (the signed webhook
@@ -423,5 +480,7 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
       }
       if (result.error !== 'taken') break;
    }
+   // Only Cal Video was on offer at that time: they pick another (the paused host's times are gone now).
+   if (zoomFailed) console.error('calcom-round-robin: no Zoom host free at that time — asking for another');
    return reply({ ok: false, error: 'slot_taken' });
 };
