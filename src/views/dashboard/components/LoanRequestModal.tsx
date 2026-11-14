@@ -195,7 +195,7 @@ const FRIEND_INVITE_ERRORS: Record<Exclude<RedeemInviteResult, 'joined' | 'inval
 };
 
 const REFERRAL_TEST_CODES: Record<string, AppliedReferralCode> = {
-   BELLE: { id: 'referral-test-belle', code: 'BELLE', boostAmount: 5 }
+   BELLE: { id: 'referral-test-belle', code: 'BELLE', boostAmount: 0 }
 };
 
 export const inputShellClass =
@@ -2242,11 +2242,6 @@ export default function LoanRequestModal({
       setShowVideoCallStep(false);
    }, [reasonWarning]);
 
-   const formatReferralBoost = (boostAmount: number) => {
-      const amount = Number(boostAmount);
-      return Number.isInteger(amount) ? amount.toFixed(0) : amount.toFixed(2);
-   };
-
    const handleReferralCodeChange = (value: string) => {
       setReferralCode(value);
       setReferralCodeError('');
@@ -3098,7 +3093,7 @@ export default function LoanRequestModal({
             >
                <div className="flex min-w-0 items-center gap-md-1 pr-3">
                   {shouldShowReferralStep ? (
-                     <h2 className="text-md-h6 text-md-heading">Referral Boost</h2>
+                     <h2 className="text-md-h6 text-md-heading">Invited by someone?</h2>
                   ) : isLoanAccessGated || showContactsStep || showIncomeGate ? (
                      // These screens carry their own hippo hero + title (Figma style) — no duplicate header.
                      <h2 className="sr-only">{showIncomeGate ? 'Show us your income first' : isLoanAccessPending ? 'Almost there' : showContactsStep ? (isExistingBorrower ? 'Add your Facebook' : 'How can we reach you') : "Let's connect"}</h2>
@@ -3159,7 +3154,7 @@ export default function LoanRequestModal({
                         <div>
                            <h3 className="text-md-h6 font-medium leading-[26px] text-md-heading">Have a referral code?</h3>
                            <p className="mt-md-0 text-md-b3 font-normal leading-[20px] text-md-neutral-1200">
-                              Add it now for a higher starting limit.
+                              Add it so we know who invited you.
                            </p>
                         </div>
                      </div>
@@ -3169,11 +3164,6 @@ export default function LoanRequestModal({
                         className="-my-md-1 h-[112px] w-[112px] shrink-0 self-center object-contain"
                         src="/hippos/referral-boost.png"
                      />
-                  </div>
-
-                  <div className="inline-flex w-fit items-center gap-md-1 rounded-full bg-[#d7f5df] px-md-2 py-md-0 text-md-b3 font-medium text-[#178447]">
-                     <CheckCircle aria-hidden="true" className="h-4 w-4" strokeWidth={2} />
-                     <span>+$5 Credit Limit Boost</span>
                   </div>
 
                   <label className="sr-only" htmlFor="referral-code">
@@ -3211,7 +3201,7 @@ export default function LoanRequestModal({
                      <div className="flex items-center gap-md-1 rounded-md-md bg-[#eefbf2] px-md-2 py-md-1 text-md-b3 font-normal text-[#178447]">
                         <CheckCircle aria-hidden="true" className="h-4 w-4" strokeWidth={2} />
                         <span>
-                           Code {appliedReferral.code} applied: +${formatReferralBoost(appliedReferral.boostAmount)} starting limit
+                           Code {appliedReferral.code} added. Thanks for telling us!
                         </span>
                      </div>
                   ) : friendInviteCode ? (

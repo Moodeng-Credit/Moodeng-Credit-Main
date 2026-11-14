@@ -53,7 +53,7 @@ function Stat({ label, value }: { label: string; value: number }) {
    );
 }
 
-function CodeCard({ code, boost, payout }: { code: string; boost: number; payout: number }) {
+function CodeCard({ code, payout }: { code: string; payout: number }) {
    const [copied, setCopied] = useState(false);
    const copy = () => {
       void navigator.clipboard?.writeText(code).then(() => {
@@ -77,7 +77,7 @@ function CodeCard({ code, boost, payout }: { code: string; boost: number; payout
             </button>
          </div>
          <p className="mt-2 text-[14px] leading-5 text-[#45556c] dark:text-[#b9adc9]">
-            Friends type <b>{code}</b> when they request their first loan and get <b>+{money(boost)}</b> credit. You earn{' '}
+            Friends type <b>{code}</b> when they request their first loan so we know you invited them. You earn{' '}
             <b>{money(payout)}</b> for each friend who takes a loan and repays it.
          </p>
       </div>
@@ -250,7 +250,7 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
 
                   <div className="mt-4 flex flex-col gap-3">
                      {codes.map((c) => (
-                        <CodeCard key={c.code} code={c.code} boost={c.boost_amount} payout={c.payout_amount} />
+                        <CodeCard key={c.code} code={c.code} payout={c.payout_amount} />
                      ))}
                   </div>
 

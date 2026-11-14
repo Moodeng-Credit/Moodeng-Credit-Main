@@ -1,6 +1,6 @@
 import { formatCurrency, formatNumber, toNumber } from '@/utils/decimalHelpers';
 
-import { getCreditLevelNumber, MAX_CREDIT_LIMIT } from '@/config/creditTiers';
+import { getCreditLevelNumber, getNextCreditTier, MAX_CREDIT_LIMIT } from '@/config/creditTiers';
 import type { ClaimableVoucher, MyRewards, VoucherClaimSummary, VoucherReward } from '@/lib/friendReferrals';
 import { trustPointMilestoneRuleById } from '@/shared/points';
 import type { Loan } from '@/types/loanTypes';
@@ -97,17 +97,18 @@ export const getCreditLevelProgress = ({
       return { level, progress: 1, hint: { highlight: 'Top', rest: ' level reached' } };
    }
 
-   const nextLevel = ` LV.${level + 1}`;
    const openLoan = findOpenFullLimitLoan(loans, creditLimit);
+   // Name the amount it unlocks ("a $25 limit"): with $10 steps the amount says more than the level.
+   const nextLimit = ` a $${formatNumber(getNextCreditTier(creditLimit, openLoan?.fundedAt))} limit`;
    if (openLoan) {
       const total = toNumber(openLoan.totalRepaymentAmount);
       const repaid = toNumber(openLoan.repaidAmount);
       const remaining = Math.max(total - repaid, 0);
       const progress = total > 0 ? Math.min(Math.max(repaid / total, 0), 1) : 0;
-      return { level, progress, hint: { highlight: `$${formatCurrency(remaining)}`, rest: ` left to repay for${nextLevel}` } };
+      return { level, progress, hint: { highlight: `$${formatCurrency(remaining)}`, rest: ` left to repay for${nextLimit}` } };
    }
 
-   return { level, progress: 0, hint: { highlight: `$${formatNumber(creditLimit)}`, rest: ` full-limit loan unlocks${nextLevel}` } };
+   return { level, progress: 0, hint: { highlight: `$${formatNumber(creditLimit)}`, rest: ` full-limit loan unlocks${nextLimit}` } };
 };
 
 /** The designer's shorter titles for the shared milestones (same rules, same points). */

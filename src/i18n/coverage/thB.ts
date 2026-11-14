@@ -103,8 +103,8 @@ export const thaiCoverageB: Record<string, string> = {
    'Full limit': 'เต็มวงเงิน',
    'On-time repayment': 'ชำระคืนตรงเวลา',
    'Next level': 'ระดับถัดไป',
-   'If your limit is $15, a $15 credit-building loan can unlock $20. A smaller loan builds trust, but it does not level you up.':
-      'หากวงเงินของคุณคือ $15 การกู้ Credit-Building Loan จำนวน $15 จะปลดล็อกวงเงิน $20 ได้ เงินกู้ที่น้อยกว่านั้นช่วยสร้างความน่าเชื่อถือ แต่ไม่ได้เพิ่มระดับของคุณ',
+   'If your limit is $15, a $15 credit-building loan can unlock $25. A smaller loan builds trust, but it does not level you up.':
+      'หากวงเงินของคุณคือ $15 การกู้ Credit-Building Loan จำนวน $15 จะปลดล็อกวงเงิน $25 ได้ เงินกู้ที่น้อยกว่านั้นช่วยสร้างความน่าเชื่อถือ แต่ไม่ได้เพิ่มระดับของคุณ',
    'The level-up path is simple': 'เส้นทางการเพิ่มระดับนั้นง่าย',
    'Credit Leveling rewards one specific pattern: a full-limit request followed by a clean repayment.':
       'การเพิ่มระดับเครดิตให้รางวัลกับรูปแบบเดียว: ขอกู้เต็มวงเงิน แล้วชำระคืนครบถ้วนตรงเวลา',
@@ -161,8 +161,8 @@ export const thaiCoverageB: Record<string, string> = {
    'A clean repayment can move you to the next borrowing limit. Smaller loans still build trust.':
       'การชำระคืนครบถ้วนตรงเวลาจะพาคุณไปสู่วงเงินกู้ถัดไป ส่วนเงินกู้ที่น้อยกว่านั้นก็ยังช่วยสร้างความน่าเชื่อถือ',
    'Credit Leveling Guide | Moodeng Credit': 'คู่มือการเพิ่มระดับเครดิต | Moodeng Credit',
-   'How Moodeng credit levels work: repay a full-limit loan on time to unlock the next level, from $15 up to $140, plus trust-building vs credit-building loans.':
-      'ระดับเครดิตของ Moodeng ทำงานอย่างไร: ชำระคืนเงินกู้เต็มวงเงินให้ตรงเวลาเพื่อปลดล็อกระดับถัดไป ตั้งแต่ $15 ถึง $140 พร้อมความแตกต่างระหว่าง Trust-Building Loan และ Credit-Building Loan',
+   'How Moodeng credit levels work: you start at $15 and each full-limit loan you repay on time adds $10, plus trust-building vs credit-building loans.':
+      'ระดับเครดิตของ Moodeng ทำงานอย่างไร: คุณเริ่มที่ $15 และเงินกู้เต็มวงเงินแต่ละครั้งที่ชำระคืนตรงเวลาจะเพิ่มวงเงิน $10 พร้อมความแตกต่างระหว่าง Trust-Building Loan และ Credit-Building Loan',
    'Main credit leveling rule': 'กฎหลักของการเพิ่มระดับเครดิต',
    'How credit leveling works': 'การเพิ่มระดับเครดิตทำงานอย่างไร',
    'Credit level progression': 'ลำดับขั้นของระดับเครดิต',
@@ -422,8 +422,8 @@ export const thaiCoverageB: Record<string, string> = {
       'สร้างบัญชีฟรีเพื่อยืมหรือให้กู้ เลือกบทบาทหลังสมัครสมาชิก แล้วเราจะแนะนำขั้นตอนที่เหลือให้',
    'This is the marketplace. Once a request is live, moo-lenders review the amount, repayment, and borrower before funding.':
       'ที่นี่คือตลาดกลาง เมื่อคำขอแสดงบนกระดานแล้ว Moo-lender จะตรวจดูจำนวนเงิน ยอดชำระคืน และผู้ยืมก่อนปล่อยกู้',
-   'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it for a higher starting limit.':
-      'เมื่อคุณพร้อมจะยืม การ์ดนี้จะเปิดขั้นตอนการขอเงินกู้ ได้รับโค้ดจากเพื่อนใช่ไหม? ใส่โค้ดเพื่อรับวงเงินเริ่มต้นที่สูงขึ้น',
+   'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it so we know who invited you.':
+      'เมื่อคุณพร้อมจะยืม การ์ดนี้จะเปิดขั้นตอนการขอเงินกู้ ได้รับโค้ดจากเพื่อนใช่ไหม? ใส่โค้ดเพื่อให้เรารู้ว่าใครชวนคุณมา',
    'Verify first': 'ยืนยันตัวตนก่อน',
    'Borrowers complete a one-time identity check before requesting a loan. It helps moo-lenders know they are funding a real person.':
       'ผู้ยืมต้องยืนยันตัวตนครั้งเดียวก่อนขอเงินกู้ เพื่อให้ Moo-lender มั่นใจว่ากำลังปล่อยกู้ให้คนจริง',
@@ -813,7 +813,7 @@ export const thaiCoverageB: Record<string, string> = {
       'ข้อมูลบางส่วนของคุณสั้นเกินไปจน Moo-lender อาจไม่เข้าใจ — แตะอีกครั้งหากต้องการดำเนินการต่อ',
    "Couldn't save — please try again.": 'บันทึกไม่ได้ — โปรดลองอีกครั้ง',
    'Swipe right to close loan form': 'ปัดไปทางขวาเพื่อปิดแบบฟอร์มขอเงินกู้',
-   'Referral Boost': 'สิทธิ์เพิ่มวงเงินจากโค้ดแนะนำ',
+   'Invited by someone?': 'มีคนชวนคุณมาไหม?',
    'Almost there': 'ใกล้เสร็จแล้ว',
    'Add your Facebook': 'เพิ่ม Facebook ของคุณ',
    'How can we reach you': 'เราจะติดต่อคุณได้ทางไหน',
@@ -826,8 +826,7 @@ export const thaiCoverageB: Record<string, string> = {
    'Close loan form': 'ปิดแบบฟอร์มขอเงินกู้',
    Optional: 'ไม่บังคับ',
    'Have a referral code?': 'มีโค้ดแนะนำไหม?',
-   'Add it now for a higher starting limit.': 'ใส่โค้ดตอนนี้เพื่อรับวงเงินเริ่มต้นที่สูงขึ้น',
-   '+$5 Credit Limit Boost': 'เพิ่มวงเงิน +$5',
+   'Add it so we know who invited you.': 'ใส่โค้ดเพื่อให้เรารู้ว่าใครชวนคุณมา',
    'Referral code': 'โค้ดแนะนำ',
    'Enter code': 'ใส่โค้ด',
    Code: 'โค้ด',
@@ -1166,8 +1165,8 @@ export const thaiCoverageB: Record<string, string> = {
    'Can I get a small loan?': 'ขอเงินกู้จำนวนน้อยได้ไหม?',
    'Yes — this is built for small loans': 'ได้ — เราสร้างมาเพื่อเงินกู้จำนวนน้อยโดยเฉพาะ',
    'Can I get a small loan with Moodeng?': 'ฉันขอเงินกู้จำนวนน้อยกับ Moodeng ได้ไหม?',
-   'Yes — small loans are exactly what Moodeng is for. New borrowers start at a $15 limit, with no minimum amount, no subscription, and no fees. You request what you need up to your current limit, set the date and interest, and moo-lenders decide whether to fund you. Each full-limit loan you repay on time grows your limit one step, from $15 up to a $140 maximum, so you can start small and grow into larger loans only when you are ready.':
-      'ได้ — Moodeng สร้างมาเพื่อเงินกู้จำนวนน้อยโดยเฉพาะ ผู้ยืมใหม่เริ่มต้นที่วงเงิน $15 โดยไม่มีจำนวนขั้นต่ำ ไม่มีค่าสมาชิก และไม่มีค่าธรรมเนียม คุณขอเท่าที่ต้องการได้ไม่เกินวงเงินปัจจุบัน กำหนดวันชำระและดอกเบี้ยเอง แล้ว Moo-lender จะตัดสินใจว่าจะปล่อยกู้ให้คุณหรือไม่ เงินกู้เต็มวงเงินแต่ละครั้งที่คุณชำระคืนตรงเวลาจะเพิ่มวงเงินของคุณหนึ่งขั้น จาก $15 จนถึงสูงสุด $140 คุณจึงเริ่มจากจำนวนน้อย แล้วค่อยขยับไปสู่เงินกู้ที่มากขึ้นเมื่อพร้อมเท่านั้น',
+   'Yes — small loans are exactly what Moodeng is for. New borrowers start at a $15 limit, with no minimum amount, no subscription, and no fees. You request what you need up to your current limit, set the date and interest, and moo-lenders decide whether to fund you. Each full-limit loan you repay on time adds $10 to your limit, so you can start small and grow into larger loans only when you are ready.':
+      'ได้ — Moodeng สร้างมาเพื่อเงินกู้จำนวนน้อยโดยเฉพาะ ผู้ยืมใหม่เริ่มต้นที่วงเงิน $15 โดยไม่มีจำนวนขั้นต่ำ ไม่มีค่าสมาชิก และไม่มีค่าธรรมเนียม คุณขอเท่าที่ต้องการได้ไม่เกินวงเงินปัจจุบัน กำหนดวันชำระและดอกเบี้ยเอง แล้ว Moo-lender จะตัดสินใจว่าจะปล่อยกู้ให้คุณหรือไม่ เงินกู้เต็มวงเงินแต่ละครั้งที่คุณชำระคืนตรงเวลาจะเพิ่มวงเงินของคุณ $10 คุณจึงเริ่มจากจำนวนน้อย แล้วค่อยขยับไปสู่เงินกู้ที่มากขึ้นเมื่อพร้อมเท่านั้น',
    'The quick 3-minute check': 'การตรวจสอบสั้น ๆ 3 นาที',
    'How do I verify my ID?': 'ฉันจะยืนยันตัวตนด้วยบัตรประชาชนได้อย่างไร?',
    'In the app, tap "Verify Yourself".': 'ในแอป แตะ "ยืนยันตัวตน"',
@@ -1399,8 +1398,8 @@ export const thaiCoverageB: Record<string, string> = {
    'More than one loan at a time': 'มีเงินกู้มากกว่าหนึ่งรายการพร้อมกัน',
    'Yes, within your available limit': 'ได้ ภายในวงเงินที่คุณใช้ได้',
    'Can I have more than one loan at a time?': 'ฉันสามารถมีเงินกู้มากกว่าหนึ่งรายการพร้อมกันได้ไหม',
-   "Yes — you can have more than one active loan at the same time, as long as the new amount fits within your available credit limit. Your available limit is your current level's limit (anywhere from $15 up to $140) minus what you already owe on active loans. If your current loans already use your whole limit, repay some or all before requesting more. Some accounts may also have a cap on how many loans can be active at once — if the app says you've reached your maximum, repay one first.":
-      'ได้ — คุณสามารถมีเงินกู้ที่กำลังดำเนินอยู่มากกว่าหนึ่งรายการพร้อมกัน ตราบใดที่จำนวนใหม่ยังอยู่ในวงเงินที่คุณใช้ได้ วงเงินที่ใช้ได้ของคุณคือวงเงินของระดับปัจจุบัน (ตั้งแต่ $15 ถึง $140) ลบด้วยยอดที่คุณเป็นหนี้อยู่แล้วในเงินกู้ที่กำลังดำเนินอยู่ หากเงินกู้ปัจจุบันของคุณใช้วงเงินเต็มแล้ว ให้ชำระคืนบางส่วนหรือทั้งหมดก่อนขอเพิ่ม บางบัญชีอาจมีการจำกัดจำนวนเงินกู้ที่เปิดพร้อมกันได้ด้วย — หากแอปแจ้งว่าคุณถึงจำนวนสูงสุดแล้ว ให้ชำระคืนสักรายการก่อน',
+   "Yes — you can have more than one active loan at the same time, as long as the new amount fits within your available credit limit. Your available limit is your current level's limit (it starts at $15) minus what you already owe on active loans. If your current loans already use your whole limit, repay some or all before requesting more. Some accounts may also have a cap on how many loans can be active at once — if the app says you've reached your maximum, repay one first.":
+      'ได้ — คุณสามารถมีเงินกู้ที่กำลังดำเนินอยู่มากกว่าหนึ่งรายการพร้อมกัน ตราบใดที่จำนวนใหม่ยังอยู่ในวงเงินที่คุณใช้ได้ วงเงินที่ใช้ได้ของคุณคือวงเงินของระดับปัจจุบัน (เริ่มต้นที่ $15) ลบด้วยยอดที่คุณเป็นหนี้อยู่แล้วในเงินกู้ที่กำลังดำเนินอยู่ หากเงินกู้ปัจจุบันของคุณใช้วงเงินเต็มแล้ว ให้ชำระคืนบางส่วนหรือทั้งหมดก่อนขอเพิ่ม บางบัญชีอาจมีการจำกัดจำนวนเงินกู้ที่เปิดพร้อมกันได้ด้วย — หากแอปแจ้งว่าคุณถึงจำนวนสูงสุดแล้ว ให้ชำระคืนสักรายการก่อน',
    'Cash out to GCash or a bank': 'ถอนเป็นเงินสดเข้า GCash หรือบัญชีธนาคาร',
    'USDC → pesos, step by step': 'USDC → เปโซ ทีละขั้นตอน',
    'How do I cash out to GCash or my bank?': 'ฉันจะถอนเป็นเงินสดเข้า GCash หรือบัญชีธนาคารได้อย่างไร',
@@ -1420,10 +1419,10 @@ export const thaiCoverageB: Record<string, string> = {
    'Your Pandesal points reflect how reliably you repay loans. They rise with on-time, in-full repayments and drop with late payments or defaults. Moo-lenders use them to gauge risk when deciding whether to fund your requests. Because they are tied to your wallet, they travel with you — they are not locked inside one app.':
       'แต้ม Pandesal ของคุณสะท้อนว่าคุณชำระคืนเงินกู้ได้น่าเชื่อถือแค่ไหน แต้มจะเพิ่มขึ้นเมื่อชำระคืนตรงเวลาและครบเต็มจำนวน และลดลงเมื่อชำระล่าช้าหรือผิดนัดชำระ Moo-lender ใช้แต้มนี้เพื่อประเมินความเสี่ยงเมื่อตัดสินใจว่าจะปล่อยกู้ตามคำขอของคุณหรือไม่ เนื่องจากแต้มนี้ผูกกับกระเป๋าเงินของคุณ จึงติดตัวคุณไปทุกที่ — ไม่ได้ถูกล็อกไว้ในแอปใดแอปหนึ่ง',
    'What is a Credit Level?': 'ระดับเครดิตคืออะไร',
-   '$15 up to $140, step by step': '$15 ถึง $140 ทีละขั้น',
+   'Start at $15, add $10 each level': 'เริ่มที่ $15 เพิ่ม $10 ทุกระดับ',
    'What is a Credit Level and how do I move up?': 'ระดับเครดิตคืออะไร และจะเลื่อนระดับได้อย่างไร',
-   'Credit Levels control how much you can borrow at a time. Everyone starts at Level 1 with a $15 limit. You move up by completing a Credit-Building Loan — a loan at your full current limit, repaid in full and on time. Each one raises your limit along the ladder: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, which is the current maximum.':
-      'ระดับเครดิตกำหนดว่าคุณสามารถยืมได้เท่าไรในแต่ละครั้ง ทุกคนเริ่มต้นที่ระดับ 1 ด้วยวงเงิน $15 คุณจะเลื่อนระดับขึ้นได้ด้วยการทำ Credit-Building Loan ให้สำเร็จ — เงินกู้เต็มวงเงินปัจจุบันของคุณ ที่ชำระคืนครบและตรงเวลา แต่ละครั้งจะเพิ่มวงเงินของคุณไปตามลำดับ: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 ซึ่งเป็นวงเงินสูงสุดในปัจจุบัน',
+   'Credit Levels control how much you can borrow at a time. Everyone starts at Level 1 with a $15 limit. You move up by completing a Credit-Building Loan — a loan at your full current limit, repaid in full and on time. Each one adds $10 to your limit: $15, then $25, then $35, and so on.':
+      'ระดับเครดิตกำหนดว่าคุณสามารถยืมได้เท่าไรในแต่ละครั้ง ทุกคนเริ่มต้นที่ระดับ 1 ด้วยวงเงิน $15 คุณจะเลื่อนระดับขึ้นได้ด้วยการทำ Credit-Building Loan ให้สำเร็จ — เงินกู้เต็มวงเงินปัจจุบันของคุณ ที่ชำระคืนครบและตรงเวลา แต่ละครั้งจะเพิ่มวงเงินของคุณ $10: $15 แล้ว $25 แล้ว $35 ต่อไปเรื่อย ๆ',
    'Grow my credit limit': 'เพิ่มวงเงินเครดิตของฉัน',
    'From $15 upward': 'จาก $15 ขึ้นไป',
    'Repay on time. On-time repayment earns Pandesal points, and repaying a full-limit loan on time moves you up a level.':
@@ -1439,11 +1438,11 @@ export const thaiCoverageB: Record<string, string> = {
    'Every repayment affects your Pandesal points, and small loans repaid cleanly are worth more than large loans repaid sloppily. On-time, full repayment earns the maximum 10 points. Partial repayments earn proportionally — 75% = 7, 50% = 5, 25% = 3. Any payment after the deadline earns 0 for that transaction. A default leaves a permanent mark on your public profile, visible to all future moo-lenders.':
       'การชำระคืนทุกครั้งส่งผลต่อแต้ม Pandesal ของคุณ และเงินกู้จำนวนน้อยที่ชำระคืนอย่างเรียบร้อยมีค่ามากกว่าเงินกู้จำนวนมากที่ชำระคืนไม่เรียบร้อย การชำระคืนเต็มจำนวนตรงเวลาจะได้แต้มสูงสุด 10 แต้ม การชำระคืนบางส่วนจะได้แต้มตามสัดส่วน — 75% = 7 แต้ม, 50% = 5 แต้ม, 25% = 3 แต้ม การชำระใด ๆ หลังกำหนดเวลาจะได้ 0 แต้มสำหรับรายการนั้น การผิดนัดชำระจะทิ้งรอยถาวรไว้บนโปรไฟล์สาธารณะของคุณ ซึ่ง Moo-lender ทุกคนในอนาคตจะมองเห็นได้',
    'Where do I put a referral code?': 'ฉันจะใส่โค้ดแนะนำเพื่อนได้ที่ไหน',
-   '+$5 to your starting limit': '+$5 เข้าวงเงินเริ่มต้นของคุณ',
+   'Tell us who invited you': 'บอกเราว่าใครชวนคุณมา',
    'Where do I enter a referral code?': 'ฉันจะกรอกโค้ดแนะนำเพื่อนได้ที่ไหน',
    'From the Request Board, tap to apply for a loan.': 'จากกระดานคำขอ แตะเพื่อสมัครขอเงินกู้',
-   'A valid referral code adds $5 to your starting credit limit — so a new borrower who normally starts at $15 would start at $20.':
-      'โค้ดแนะนำเพื่อนที่ใช้ได้จะเพิ่ม $5 ให้วงเงินเครดิตเริ่มต้นของคุณ — ดังนั้นผู้ยืมใหม่ที่ปกติเริ่มที่ $15 จะเริ่มที่ $20 แทน',
+   'A referral code just tells us who invited you. It does not change your credit limit.':
+      'โค้ดแนะนำเพื่อนแค่บอกเราว่าใครชวนคุณมา ไม่ได้เปลี่ยนวงเงินเครดิตของคุณ',
    'It says "write it in English"': '"write it in English" ขึ้นเตือน',
    'Why, and how to fix it': 'ทำไม และแก้ไขอย่างไร',
    'My loan reason says to write it in English — what should I do?': 'เหตุผลการขอกู้ของฉันบอกให้เขียนเป็นภาษาอังกฤษ — ฉันควรทำอย่างไร',

@@ -416,8 +416,8 @@ export const filipinoCoverageB: Record<string, string> = {
    'Ready to get started?': 'Handa ka na bang magsimula?',
    'This is the marketplace. Once a request is live, moo-lenders review the amount, repayment, and borrower before funding.':
       'Ito ang marketplace. Kapag live na ang request, sinusuri ng mga moo-lender ang halaga, bayad, at borrower bago ito pondohan.',
-   'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it for a higher starting limit.':
-      'Kapag handa ka nang humiram, bubuksan ng card na ito ang loan request flow. May code ka ba mula sa kaibigan? Idagdag ito para sa mas mataas na starting limit.',
+   'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it so we know who invited you.':
+      'Kapag handa ka nang humiram, bubuksan ng card na ito ang loan request flow. May code ka ba mula sa kaibigan? Idagdag ito para malaman namin kung sino ang nag-invite sa iyo.',
    'Verify first': 'Mag-verify muna',
    'Borrowers complete a one-time identity check before requesting a loan. It helps moo-lenders know they are funding a real person.':
       'Kumukumpleto ang mga borrower ng one-time identity check bago mag-request ng loan. Nakakatulong ito para malaman ng moo-lender na totoong tao ang pinopondohan nila.',
@@ -532,13 +532,13 @@ export const filipinoCoverageB: Record<string, string> = {
    'Be specific, for example teacher or market vendor.': 'Maging specific, halimbawa teacher o market vendor.',
    'Still needed: how you describe your work.': 'Kailangan pa: kung paano mo ilalarawan ang trabaho mo.',
    'For example tutoring, delivery, or market trading.': 'Halimbawa tutoring, delivery, o pagtitinda sa market.',
-   'Referral Boost': 'Referral Boost',
+   'Invited by someone?': 'May nag-invite ba sa iyo?',
    'Schedule a video call': 'Mag-iskedyul ng video call',
    'How moo-lenders see you': 'Kung paano ka nakikita ng mga moo-lender',
    'Set your loan terms': 'Itakda ang mga terms ng loan mo',
    Optional: 'Optional',
    'Have a referral code?': 'May referral code ka ba?',
-   'Add it now for a higher starting limit.': 'Idagdag ito ngayon para sa mas mataas na starting limit.',
+   'Add it so we know who invited you.': 'Idagdag ito para malaman namin kung sino ang nag-invite sa iyo.',
    'Referral code': 'Referral code',
    'No code needed. You can continue normally.': 'Hindi kailangan ng code. Puwede kang magpatuloy nang normal.',
    'Please add your Facebook so we can reach out to you. We also have a':

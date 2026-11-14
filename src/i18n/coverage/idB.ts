@@ -116,8 +116,8 @@ export const indonesianCoverageB: Record<string, string> = {
    'A clean repayment can move you to the next borrowing limit. Smaller loans still build trust.':
       'Pembayaran kembali yang lancar bisa menaikkanmu ke limit pinjaman berikutnya. Pinjaman yang lebih kecil tetap membangun kepercayaan.',
    'Credit Leveling Guide | Moodeng Credit': 'Panduan Naik Level Kredit | Moodeng Credit',
-   'How Moodeng credit levels work: repay a full-limit loan on time to unlock the next level, from $15 up to $140, plus trust-building vs credit-building loans.':
-      'Cara kerja Level Kredit di Moodeng: bayar kembali pinjaman sebesar limit penuh tepat waktu untuk membuka level berikutnya, dari $15 hingga $140, plus beda Trust-Building Loan dan Credit-Building Loan.',
+   'How Moodeng credit levels work: you start at $15 and each full-limit loan you repay on time adds $10, plus trust-building vs credit-building loans.':
+      'Cara kerja Level Kredit di Moodeng: kamu mulai dari $15 dan setiap pinjaman sebesar limit penuh yang kamu lunasi tepat waktu menambah $10, plus beda Trust-Building Loan dan Credit-Building Loan.',
    'How to unlock your next Credit Level': 'Cara membuka Level Kredit berikutnya',
    'Credit Leveling is not a list of buttons to press. It is one simple rule: use your full current limit, repay the funded terms on time, then unlock the next limit.':
       'Naik Level Kredit bukan soal menekan serangkaian tombol. Aturannya cuma satu: pakai limit penuhmu saat ini, bayar kembali sesuai ketentuan tepat waktu, lalu buka limit berikutnya.',
@@ -127,8 +127,8 @@ export const indonesianCoverageB: Record<string, string> = {
    'Full limit': 'Limit penuh',
    'On-time repayment': 'Pembayaran tepat waktu',
    'Next level': 'Level berikutnya',
-   'If your limit is $15, a $15 credit-building loan can unlock $20. A smaller loan builds trust, but it does not level you up.':
-      'Jika limit kamu $15, Credit-Building Loan sebesar $15 bisa membuka $20. Pinjaman yang lebih kecil membangun kepercayaan, tetapi tidak menaikkan level kamu.',
+   'If your limit is $15, a $15 credit-building loan can unlock $25. A smaller loan builds trust, but it does not level you up.':
+      'Jika limit kamu $15, Credit-Building Loan sebesar $15 bisa membuka $25. Pinjaman yang lebih kecil membangun kepercayaan, tetapi tidak menaikkan level kamu.',
    'The level-up path is simple': 'Jalan naik level itu sederhana',
    'Credit Leveling rewards one specific pattern: a full-limit request followed by a clean repayment.':
       'Naik Level Kredit menghargai satu pola khusus: permintaan sebesar limit penuh, lalu pembayaran kembali yang lancar.',
@@ -342,8 +342,8 @@ export const indonesianCoverageB: Record<string, string> = {
       'Buat akun gratis untuk meminjam atau memberi pinjaman. Pilih peranmu setelah mendaftar, dan kami akan memandumu untuk langkah selanjutnya.',
    'This is the marketplace. Once a request is live, moo-lenders review the amount, repayment, and borrower before funding.':
       'Inilah pasarnya. Setelah permintaan tayang, moo-lender menilai jumlah, pembayaran kembali, dan peminjamnya sebelum mendanai.',
-   'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it for a higher starting limit.':
-      'Saat kamu siap meminjam, kartu ini membuka alur permintaan pinjaman. Punya kode dari teman? Masukkan untuk limit awal yang lebih tinggi.',
+   'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it so we know who invited you.':
+      'Saat kamu siap meminjam, kartu ini membuka alur permintaan pinjaman. Punya kode dari teman? Masukkan agar kami tahu siapa yang mengundangmu.',
    'Verify first': 'Verifikasi dulu',
    'Borrowers complete a one-time identity check before requesting a loan. It helps moo-lenders know they are funding a real person.':
       'Peminjam menjalani pemeriksaan identitas satu kali sebelum mengajukan pinjaman. Ini membantu moo-lender tahu bahwa mereka mendanai orang sungguhan.',
@@ -746,7 +746,7 @@ export const indonesianCoverageB: Record<string, string> = {
       'Sebagian infomu terlalu singkat untuk dipahami moo-lender — ketuk lagi jika tetap ingin lanjut.',
    "Couldn't save — please try again.": 'Gagal menyimpan — silakan coba lagi.',
    'Swipe right to close loan form': 'Geser ke kanan untuk menutup formulir pinjaman',
-   'Referral Boost': 'Bonus referal',
+   'Invited by someone?': 'Diundang seseorang?',
    'Add your Facebook': 'Tambahkan Facebook kamu',
    'How can we reach you': 'Bagaimana kami bisa menghubungimu',
    "Let's connect": 'Yuk, terhubung',
@@ -758,8 +758,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'Close loan form': 'Tutup formulir pinjaman',
    Optional: 'Opsional',
    'Have a referral code?': 'Punya kode referal?',
-   'Add it now for a higher starting limit.': 'Masukkan sekarang untuk limit awal yang lebih tinggi.',
-   '+$5 Credit Limit Boost': 'Bonus limit kredit +$5',
+   'Add it so we know who invited you.': 'Masukkan agar kami tahu siapa yang mengundangmu.',
    'Enter code': 'Masukkan kode',
    Code: 'Kode',
    'applied: +$': 'diterapkan: +$',
@@ -1085,8 +1084,8 @@ export const indonesianCoverageB: Record<string, string> = {
    'Can I get a small loan?': 'Bisakah aku mendapatkan pinjaman kecil?',
    'Yes — this is built for small loans': 'Bisa — ini memang dibuat untuk pinjaman kecil',
    'Can I get a small loan with Moodeng?': 'Bisakah aku mendapatkan pinjaman kecil dengan Moodeng?',
-   'Yes — small loans are exactly what Moodeng is for. New borrowers start at a $15 limit, with no minimum amount, no subscription, and no fees. You request what you need up to your current limit, set the date and interest, and moo-lenders decide whether to fund you. Each full-limit loan you repay on time grows your limit one step, from $15 up to a $140 maximum, so you can start small and grow into larger loans only when you are ready.':
-      'Bisa — pinjaman kecil justru inti dari Moodeng. Peminjam baru mulai dengan limit $15, tanpa jumlah minimum, tanpa langganan, dan tanpa biaya. Kamu mengajukan sesuai kebutuhanmu hingga limit saat ini, menentukan tanggal dan suku bunga, dan moo-lender memutuskan apakah akan mendanaimu. Setiap pinjaman sebesar limit penuh yang kamu bayar kembali tepat waktu menaikkan limitmu satu tingkat, dari $15 hingga maksimum $140, jadi kamu bisa mulai dari kecil dan tumbuh ke pinjaman yang lebih besar hanya saat kamu sudah siap.',
+   'Yes — small loans are exactly what Moodeng is for. New borrowers start at a $15 limit, with no minimum amount, no subscription, and no fees. You request what you need up to your current limit, set the date and interest, and moo-lenders decide whether to fund you. Each full-limit loan you repay on time adds $10 to your limit, so you can start small and grow into larger loans only when you are ready.':
+      'Bisa — pinjaman kecil justru inti dari Moodeng. Peminjam baru mulai dengan limit $15, tanpa jumlah minimum, tanpa langganan, dan tanpa biaya. Kamu mengajukan sesuai kebutuhanmu hingga limit saat ini, menentukan tanggal dan suku bunga, dan moo-lender memutuskan apakah akan mendanaimu. Setiap pinjaman sebesar limit penuh yang kamu bayar kembali tepat waktu menambah limitmu $10, jadi kamu bisa mulai dari kecil dan tumbuh ke pinjaman yang lebih besar hanya saat kamu sudah siap.',
    'The quick 3-minute check': 'Pengecekan cepat 3 menit',
    'In the app, tap "Verify Yourself".': 'Di dalam aplikasi, ketuk "Verifikasi Diri".',
    'Your ID is checked by our secure verification partner and is never stored by Moodeng. If it gets stuck, retry in Chrome or Safari — not a browser inside Facebook or Messenger — with a clear, well-lit photo.':
@@ -1170,8 +1169,8 @@ export const indonesianCoverageB: Record<string, string> = {
    'More than one loan at a time': 'Lebih dari satu pinjaman sekaligus',
    'Yes, within your available limit': 'Bisa, selama masih dalam limit yang tersedia',
    'Can I have more than one loan at a time?': 'Bisakah aku punya lebih dari satu pinjaman sekaligus?',
-   "Yes — you can have more than one active loan at the same time, as long as the new amount fits within your available credit limit. Your available limit is your current level's limit (anywhere from $15 up to $140) minus what you already owe on active loans. If your current loans already use your whole limit, repay some or all before requesting more. Some accounts may also have a cap on how many loans can be active at once — if the app says you've reached your maximum, repay one first.":
-      'Bisa — kamu bisa punya lebih dari satu pinjaman aktif sekaligus, selama jumlah barunya masih muat dalam limit kredit yang tersedia. Limit yang tersedia adalah limit level kamu saat ini (mulai dari $15 hingga $140) dikurangi apa yang sudah kamu utang di pinjaman aktif. Jika pinjaman aktifmu sudah memakai seluruh limitmu, bayar kembali sebagian atau semuanya sebelum mengajukan lagi. Beberapa akun juga mungkin punya batas berapa banyak pinjaman yang bisa aktif sekaligus — jika aplikasi bilang kamu sudah mencapai batas maksimum, bayar kembali salah satunya dulu.',
+   "Yes — you can have more than one active loan at the same time, as long as the new amount fits within your available credit limit. Your available limit is your current level's limit (it starts at $15) minus what you already owe on active loans. If your current loans already use your whole limit, repay some or all before requesting more. Some accounts may also have a cap on how many loans can be active at once — if the app says you've reached your maximum, repay one first.":
+      'Bisa — kamu bisa punya lebih dari satu pinjaman aktif sekaligus, selama jumlah barunya masih muat dalam limit kredit yang tersedia. Limit yang tersedia adalah limit level kamu saat ini (mulai dari $15) dikurangi apa yang sudah kamu utang di pinjaman aktif. Jika pinjaman aktifmu sudah memakai seluruh limitmu, bayar kembali sebagian atau semuanya sebelum mengajukan lagi. Beberapa akun juga mungkin punya batas berapa banyak pinjaman yang bisa aktif sekaligus — jika aplikasi bilang kamu sudah mencapai batas maksimum, bayar kembali salah satunya dulu.',
    'Cash out to GCash or a bank': 'Cairkan dana ke GCash atau rekening bank',
    'USDC → pesos, step by step': 'USDC → peso, langkah demi langkah',
    'How do I cash out to GCash or my bank?': 'Bagaimana cara mencairkan dana ke GCash atau rekening bankku?',
@@ -1186,10 +1185,10 @@ export const indonesianCoverageB: Record<string, string> = {
    'Your Pandesal points reflect how reliably you repay loans. They rise with on-time, in-full repayments and drop with late payments or defaults. Moo-lenders use them to gauge risk when deciding whether to fund your requests. Because they are tied to your wallet, they travel with you — they are not locked inside one app.':
       'Poin Pandesal-mu mencerminkan seberapa bisa diandalkan kamu dalam membayar kembali pinjaman. Poin ini naik saat kamu membayar kembali tepat waktu dan lunas, dan turun saat pembayaran terlambat atau gagal bayar. Moo-lender memakainya untuk menilai risiko saat memutuskan apakah akan mendanai permintaanmu. Karena terhubung ke dompetmu, poin ini ikut ke mana pun kamu pergi — tidak terkunci di dalam satu aplikasi saja.',
    'What is a Credit Level?': 'Apa itu Level Kredit?',
-   '$15 up to $140, step by step': '$15 hingga $140, langkah demi langkah',
+   'Start at $15, add $10 each level': 'Mulai $15, tambah $10 tiap level',
    'What is a Credit Level and how do I move up?': 'Apa itu Level Kredit dan bagaimana cara naik level?',
-   'Credit Levels control how much you can borrow at a time. Everyone starts at Level 1 with a $15 limit. You move up by completing a Credit-Building Loan — a loan at your full current limit, repaid in full and on time. Each one raises your limit along the ladder: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, which is the current maximum.':
-      'Level Kredit menentukan berapa banyak yang bisa kamu pinjam dalam satu waktu. Semua orang mulai di Level 1 dengan limit $15. Kamu naik level dengan menyelesaikan Credit-Building Loan — pinjaman sebesar limit penuhmu saat ini, dibayar lunas dan tepat waktu. Setiap pinjaman seperti ini menaikkan limitmu di tangga berikut: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, yang merupakan maksimum saat ini.',
+   'Credit Levels control how much you can borrow at a time. Everyone starts at Level 1 with a $15 limit. You move up by completing a Credit-Building Loan — a loan at your full current limit, repaid in full and on time. Each one adds $10 to your limit: $15, then $25, then $35, and so on.':
+      'Level Kredit menentukan berapa banyak yang bisa kamu pinjam dalam satu waktu. Semua orang mulai di Level 1 dengan limit $15. Kamu naik level dengan menyelesaikan Credit-Building Loan — pinjaman sebesar limit penuhmu saat ini, dibayar lunas dan tepat waktu. Setiap pinjaman seperti ini menambah limitmu $10: $15, lalu $25, lalu $35, dan seterusnya.',
    'Grow my credit limit': 'Naikkan limit kreditku',
    'From $15 upward': 'Mulai dari $15 ke atas',
    'Repay on time. On-time repayment earns Pandesal points, and repaying a full-limit loan on time moves you up a level.':
@@ -1205,11 +1204,11 @@ export const indonesianCoverageB: Record<string, string> = {
    'Every repayment affects your Pandesal points, and small loans repaid cleanly are worth more than large loans repaid sloppily. On-time, full repayment earns the maximum 10 points. Partial repayments earn proportionally — 75% = 7, 50% = 5, 25% = 3. Any payment after the deadline earns 0 for that transaction. A default leaves a permanent mark on your public profile, visible to all future moo-lenders.':
       'Setiap pembayaran kembali memengaruhi poin Pandesal-mu, dan pinjaman kecil yang dibayar dengan rapi lebih berharga daripada pinjaman besar yang dibayar sembarangan. Pembayaran lunas tepat waktu menghasilkan poin maksimum, 10. Pembayaran sebagian menghasilkan poin secara proporsional — 75% = 7, 50% = 5, 25% = 3. Pembayaran apa pun setelah tenggat menghasilkan 0 poin untuk transaksi itu. Gagal bayar meninggalkan tanda permanen di profil publikmu, yang terlihat oleh semua calon moo-lender di masa depan.',
    'Where do I put a referral code?': 'Di mana aku memasukkan kode referal?',
-   '+$5 to your starting limit': '+$5 untuk limit awalmu',
+   'Tell us who invited you': 'Beri tahu siapa yang mengundangmu',
    'Where do I enter a referral code?': 'Di mana aku memasukkan kode referal?',
    'From the Request Board, tap to apply for a loan.': 'Dari Papan Permintaan, ketuk untuk mengajukan pinjaman.',
-   'A valid referral code adds $5 to your starting credit limit — so a new borrower who normally starts at $15 would start at $20.':
-      'Kode referal yang valid menambah $5 ke limit kredit awalmu — jadi peminjam baru yang biasanya mulai di $15 akan mulai di $20.',
+   'A referral code just tells us who invited you. It does not change your credit limit.':
+      'Kode referal hanya memberi tahu kami siapa yang mengundangmu. Kode ini tidak mengubah limit kreditmu.',
    'It says "write it in English"': 'Ada tulisan "tulis dalam bahasa Inggris"',
    'Why, and how to fix it': 'Kenapa, dan cara memperbaikinya',
    'My loan reason says to write it in English — what should I do?':

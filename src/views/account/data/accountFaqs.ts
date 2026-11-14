@@ -73,7 +73,7 @@ So if you want to grow your reputation quickly, Trust-Building Loans are a great
 
 If your limit is $20 and you only borrow $15, that doesn't count toward the next level — even if you repay it perfectly. The system needs to see you can handle the full limit before it raises the ceiling.
 
-Progression goes $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, which is the current maximum. One step at a time: borrow your max, repay on time, repeat.`
+Each step adds $10: $15, then $25, then $35, and so on. One step at a time: borrow your max, repay on time, repeat.`
    }
 ];
 
@@ -185,7 +185,7 @@ Kaya kung gusto mong mabilis na mapalago ang reputasyon mo, magandang paraan ang
 
 Kung $20 ang limit mo at $15 lang ang hiniram mo, hindi iyon bibilang para sa susunod na level — kahit perpekto pa ang pagbabayad mo. Kailangang makita ng system na kaya mo ang buong limit bago nito itaas ang limit mo.
 
-Ang pag-akyat ay $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, na siyang kasalukuyang maximum. Paisa-isang hakbang lang: hiramin ang max mo, magbayad on time, at ulitin.`
+Bawat hakbang ay dagdag na $10: $15, tapos $25, tapos $35, at tuloy-tuloy. Paisa-isang hakbang lang: hiramin ang max mo, magbayad on time, at ulitin.`
    }
 ];
 
@@ -296,7 +296,7 @@ Jadi, jika kamu ingin cepat membangun reputasi, Trust-Building Loan adalah cara 
 
 Jika limit kamu $20 dan kamu hanya meminjam $15, pinjaman itu tidak dihitung untuk naik ke level berikutnya, meskipun kamu melunasinya dengan sempurna. Sistem perlu melihat bahwa kamu sanggup menangani limit penuh sebelum menaikkan batasnya.
 
-Urutannya: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, yang saat ini merupakan limit maksimum. Naik satu langkah setiap kali: pinjam sebesar limit maksimum, bayar kembali tepat waktu, lalu ulangi.`
+Setiap langkah menambah $10: $15, lalu $25, lalu $35, dan seterusnya. Naik satu langkah setiap kali: pinjam sebesar limit maksimum, bayar kembali tepat waktu, lalu ulangi.`
    }
 ];
 
@@ -407,7 +407,7 @@ const THAI_BORROWER_FAQS: AccountFAQItem[] = [
 
 หากวงเงินของคุณคือ $20 แต่คุณยืมเพียง $15 เงินกู้นั้นจะไม่นับรวมในการเลื่อนระดับถัดไป แม้คุณจะชำระคืนครบถ้วนตรงเวลาก็ตาม ระบบต้องเห็นว่าคุณจัดการเงินกู้เต็มวงเงินได้ก่อน จึงจะเพิ่มเพดานวงเงินให้
 
-ลำดับขั้นของวงเงินคือ $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 ซึ่งเป็นวงเงินสูงสุดในขณะนี้ ค่อย ๆ ไปทีละขั้น: ยืมเต็มวงเงิน ชำระคืนตรงเวลา แล้วทำซ้ำ`
+แต่ละขั้นเพิ่มขึ้น $10: $15 แล้ว $25 แล้ว $35 ต่อไปเรื่อย ๆ ค่อย ๆ ไปทีละขั้น: ยืมเต็มวงเงิน ชำระคืนตรงเวลา แล้วทำซ้ำ`
    }
 ];
 
@@ -518,7 +518,7 @@ Vì vậy, nếu bạn muốn nhanh chóng xây dựng uy tín, Trust-Building L
 
 Nếu hạn mức của bạn là $20 mà bạn chỉ vay $15, khoản đó không được tính để lên hạng tiếp theo — kể cả khi bạn trả đầy đủ, đúng hạn. Hệ thống cần thấy bạn quản lý được toàn bộ hạn mức trước khi nâng hạn mức.
 
-Lộ trình là $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, đây là mức tối đa hiện tại. Từng bước một: vay tối đa hạn mức, trả đúng hạn, rồi lặp lại.`
+Mỗi bậc cộng thêm $10: $15, rồi $25, rồi $35, và cứ thế tiếp tục. Từng bước một: vay tối đa hạn mức, trả đúng hạn, rồi lặp lại.`
    }
 ];
 

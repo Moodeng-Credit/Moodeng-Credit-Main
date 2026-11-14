@@ -148,8 +148,8 @@ export const trustPointMilestoneRules: TrustPointMilestoneRule[] = [
       pointSourceId: '1e10653e-46ce-4c8d-b2ef-738f3c55a7c9',
       title: 'Repay a full-limit credit-builder',
       points: 30,
-      criteria: 'Borrower fully repays a credit-tier amount on time.',
-      example: 'On-time repayment of a $15, $20, $40, $60, $80, $100, $120, or $140 loan = +30 Pandesal points'
+      criteria: 'Borrower fully repays a loan at their full credit limit on time.',
+      example: 'On-time repayment of a full-limit loan ($15, $25, $35 …) = +30 Pandesal points'
    },
    {
       id: 'two-unique-lenders',
@@ -172,8 +172,8 @@ export const trustPointMilestoneRules: TrustPointMilestoneRule[] = [
       pointSourceId: 'fe748497-60b8-4545-b44c-3f77c7172dc6',
       title: 'Reach Credit Level 3',
       points: 50,
-      criteria: 'Borrower is verified and has unlocked a $40 or higher credit limit.',
-      example: 'Credit limit reaches $40 = +50 Pandesal points'
+      criteria: 'Borrower is verified and has unlocked a $35 or higher credit limit.',
+      example: 'Credit limit reaches $35 = +50 Pandesal points'
    },
    {
       id: 'trusted-borrower-candidate',

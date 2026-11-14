@@ -33,7 +33,7 @@ They go up with on-time, in-full repayments and drop with late payments or defau
       question: 'What is a Credit Level?',
       answer: `Credit Levels control how much you can borrow at a time.
 
-You start at Level 1 with a $15 limit. Each full repayment of a Credit-Building loan raises your limit and unlocks the next level — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, which is the current maximum.`
+You start at Level 1 with a $15 limit. Each full repayment of a Credit-Building loan adds $10 to your limit and unlocks the next level: $15, then $25, then $35, and so on.`
    },
    {
       id: 'what-is-a-base-wallet',
@@ -78,7 +78,7 @@ We don't claim to replace banks for everyone. But for the people currently using
       question: 'What is a credit-building loan?',
       answer: `A credit-building loan is a loan you take out specifically to grow your credit limit on Moodeng. To qualify as one, the loan must be at your full current Credit Level limit — not below it.
 
-Here's how it works. You start at Credit Level 1 with a $15 borrowing limit. Borrow the full $15 and repay it on time, and your limit moves up to $20. Borrow that full $20 next time and repay, you unlock $40. Then $60. The progression keeps going at higher levels.
+Here's how it works. You start at Credit Level 1 with a $15 borrowing limit. Borrow the full $15 and repay it on time, and your limit moves up to $25. Borrow that full $25 next time and repay, you unlock $35. Then $45. Each level adds $10.
 
 Smaller loans below your full limit are called Trust-Building Loans. Those still help — they grow your repayment record and reputation with moo-lenders — but they don't raise your Credit Level. So if your goal is to build credit and unlock larger loans, you specifically want to take out and repay full-limit Credit-Building Loans.
 
@@ -91,7 +91,7 @@ Unlike a bank credit card or traditional credit-builder product, Moodeng's credi
 
 There are no minimum loan amounts, no monthly subscriptions, no setup costs, and no fees. You request what you need (up to your current Credit Level limit), set the repayment date and interest rate, and moo-lenders decide whether to fund you.
 
-Each full-limit loan you repay on time grows your limit one step — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, which is the current maximum. So you can start small to test the platform with low stakes, build your reputation, and grow into larger loans only as you're ready.`
+Each full-limit loan you repay on time adds $10 to your limit. So you can start small to test the platform with low stakes, build your reputation, and grow into larger loans only as you're ready.`
    }
 ];
 
@@ -124,7 +124,7 @@ Tumataas ito kapag nagbabayad ka nang on time at buo, at bumababa kapag late ang
       question: 'Ano ang Credit Level?',
       answer: `Ang Credit Level ang nagtatakda kung magkano ang puwede mong hiramin sa isang pagkakataon.
 
-Magsisimula ka sa Level 1 na may $15 limit. Bawat Credit-Building Loan na nabayaran mo nang buo ay nagpapataas ng limit mo at nag-a-unlock ng susunod na level — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, na siyang kasalukuyang maximum.`
+Magsisimula ka sa Level 1 na may $15 limit. Bawat Credit-Building Loan na nabayaran mo nang buo ay nagdadagdag ng $10 sa limit mo at nag-a-unlock ng susunod na level: $15, tapos $25, tapos $35, at tuloy-tuloy.`
    },
    {
       id: 'what-is-a-base-wallet',
@@ -169,7 +169,7 @@ Hindi namin sinasabing papalitan namin ang mga bangko para sa lahat. Pero para s
       question: 'Ano ang credit-building loan?',
       answer: `Ang credit-building loan ay loan na kinukuha mo para mismo palakihin ang credit limit mo sa Moodeng. Para maituring na credit-building loan, dapat katumbas ito ng buong current Credit Level limit mo — hindi mas mababa.
 
-Ganito ito gumagana. Magsisimula ka sa Credit Level 1 na may $15 borrowing limit. Hiramin ang buong $15 at bayaran on time, at aakyat ang limit mo sa $20. Hiramin ang buong $20 sa susunod at bayaran, at maa-unlock mo ang $40. Tapos $60. Tuloy-tuloy ang pag-akyat sa mas matataas na level.
+Ganito ito gumagana. Magsisimula ka sa Credit Level 1 na may $15 borrowing limit. Hiramin ang buong $15 at bayaran on time, at aakyat ang limit mo sa $25. Hiramin ang buong $25 sa susunod at bayaran, at maa-unlock mo ang $35. Tapos $45. Bawat level ay dagdag na $10.
 
 Ang mas maliliit na loan na mas mababa sa buong limit mo ay tinatawag na Trust-Building Loan. Nakakatulong pa rin ang mga ito — pinapalago nila ang repayment record at reputasyon mo sa mga moo-lender — pero hindi nila tinataas ang Credit Level mo. Kaya kung goal mong bumuo ng credit at mag-unlock ng mas malalaking loan, full-limit na Credit-Building Loan ang dapat mong kunin at bayaran.
 
@@ -182,7 +182,7 @@ Hindi tulad ng bank credit card o traditional na credit-builder product, hindi n
 
 Walang minimum na halaga ng loan, walang monthly subscription, walang setup cost, at walang fee. Ire-request mo ang kailangan mo (hanggang sa current Credit Level limit mo), itatakda mo ang repayment date at interest rate, at ang mga moo-lender ang magpapasya kung popondohan ka nila.
 
-Bawat full-limit na loan na nabayaran mo on time ay nagpapataas ng limit mo nang isang hakbang — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, na siyang kasalukuyang maximum. Kaya puwede kang magsimula sa maliit para subukan ang platform nang mababa ang risk, bumuo ng reputasyon, at lumipat sa mas malalaking loan kapag handa ka na.`
+Bawat full-limit na loan na nabayaran mo on time ay nagdadagdag ng $10 sa limit mo. Kaya puwede kang magsimula sa maliit para subukan ang platform nang mababa ang risk, bumuo ng reputasyon, at lumipat sa mas malalaking loan kapag handa ka na.`
    }
 ];
 
@@ -215,7 +215,7 @@ Poin ini naik saat kamu membayar penuh dan tepat waktu, dan turun saat pembayara
       question: 'Apa itu Level Kredit?',
       answer: `Level Kredit menentukan berapa banyak yang bisa kamu pinjam dalam satu waktu.
 
-Kamu mulai dari Level 1 dengan limit $15. Setiap kali kamu melunasi Credit-Building Loan secara penuh, limit kamu naik dan level berikutnya terbuka: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, yang saat ini merupakan limit maksimum.`
+Kamu mulai dari Level 1 dengan limit $15. Setiap kali kamu melunasi Credit-Building Loan secara penuh, limit kamu bertambah $10 dan level berikutnya terbuka: $15, lalu $25, lalu $35, dan seterusnya.`
    },
    {
       id: 'what-is-a-base-wallet',
@@ -260,7 +260,7 @@ Kami tidak mengklaim bisa menggantikan bank untuk semua orang. Tetapi bagi orang
       question: 'Apa itu Credit-Building Loan?',
       answer: `Credit-Building Loan adalah pinjaman yang kamu ambil khusus untuk menaikkan limit kredit kamu di Moodeng. Agar terhitung sebagai Credit-Building Loan, pinjaman harus sebesar limit Level Kredit kamu saat ini secara penuh, bukan di bawahnya.
 
-Begini cara kerjanya. Kamu mulai di Level Kredit 1 dengan limit pinjaman $15. Pinjam penuh $15 dan bayar kembali tepat waktu, lalu limit kamu naik ke $20. Pinjam penuh $20 berikutnya dan bayar kembali, maka $40 terbuka. Lalu $60. Kenaikan ini terus berlanjut di level yang lebih tinggi.
+Begini cara kerjanya. Kamu mulai di Level Kredit 1 dengan limit pinjaman $15. Pinjam penuh $15 dan bayar kembali tepat waktu, lalu limit kamu naik ke $25. Pinjam penuh $25 berikutnya dan bayar kembali, maka $35 terbuka. Lalu $45. Setiap level menambah $10.
 
 Pinjaman yang lebih kecil dari limit penuh disebut Trust-Building Loan. Pinjaman ini tetap bermanfaat karena membangun riwayat pembayaran kembali dan reputasi kamu di mata pemberi pinjaman, tetapi tidak menaikkan Level Kredit. Jadi, jika tujuan kamu adalah membangun kredit dan membuka pinjaman yang lebih besar, kamu perlu mengambil dan melunasi Credit-Building Loan sebesar limit penuh.
 
@@ -273,7 +273,7 @@ Berbeda dari kartu kredit bank atau produk pembangun kredit tradisional, kredit 
 
 Tidak ada jumlah pinjaman minimum, tidak ada langganan bulanan, tidak ada biaya awal, dan tidak ada biaya apa pun. Kamu mengajukan jumlah yang kamu perlukan (sampai limit Level Kredit kamu saat ini), menentukan tanggal pembayaran kembali dan suku bunga, lalu pemberi pinjaman memutuskan apakah akan mendanaimu.
 
-Setiap pinjaman sebesar limit penuh yang kamu bayar kembali tepat waktu menaikkan limit kamu satu tingkat: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, yang saat ini merupakan limit maksimum. Jadi kamu bisa mulai dari yang kecil untuk mencoba platform dengan risiko rendah, membangun reputasi, lalu naik ke pinjaman yang lebih besar hanya saat kamu sudah siap.`
+Setiap pinjaman sebesar limit penuh yang kamu bayar kembali tepat waktu menambah limit kamu $10. Jadi kamu bisa mulai dari yang kecil untuk mencoba platform dengan risiko rendah, membangun reputasi, lalu naik ke pinjaman yang lebih besar hanya saat kamu sudah siap.`
    }
 ];
 
@@ -306,7 +306,7 @@ const THAI_FAQS: FAQItem[] = [
       question: 'ระดับเครดิตคืออะไร?',
       answer: `ระดับเครดิตกำหนดว่าคุณยืมได้มากเท่าใดในแต่ละครั้ง
 
-คุณเริ่มที่ระดับ 1 ด้วยวงเงิน $15 ทุกครั้งที่คุณชำระคืน Credit-Building Loan ครบเต็มจำนวน วงเงินของคุณจะเพิ่มขึ้นและปลดล็อกระดับถัดไป: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 ซึ่งเป็นวงเงินสูงสุดในขณะนี้`
+คุณเริ่มที่ระดับ 1 ด้วยวงเงิน $15 ทุกครั้งที่คุณชำระคืน Credit-Building Loan ครบเต็มจำนวน วงเงินของคุณจะเพิ่มขึ้น $10 และปลดล็อกระดับถัดไป: $15 แล้ว $25 แล้ว $35 ต่อไปเรื่อย ๆ`
    },
    {
       id: 'what-is-a-base-wallet',
@@ -351,7 +351,7 @@ Moodeng Credit ถูกสร้างขึ้นเป็นทางเล�
       question: 'Credit-Building Loan คืออะไร?',
       answer: `Credit-Building Loan คือเงินกู้ที่คุณยืมเพื่อเพิ่มวงเงินบน Moodeng โดยเฉพาะ เงินกู้จะนับเป็น Credit-Building Loan ได้ก็ต่อเมื่อเป็นจำนวนเต็มวงเงินตามระดับเครดิตปัจจุบันของคุณ ไม่ใช่ต่ำกว่านั้น
 
-วิธีการทำงานมีดังนี้ คุณเริ่มที่ระดับเครดิต 1 ด้วยวงเงิน $15 เมื่อยืมเต็ม $15 และชำระคืนตรงเวลา วงเงินของคุณจะเพิ่มเป็น $20 ครั้งถัดไปยืมเต็ม $20 และชำระคืน คุณจะปลดล็อก $40 จากนั้นเป็น $60 และลำดับขั้นนี้จะดำเนินต่อไปในระดับที่สูงขึ้น
+วิธีการทำงานมีดังนี้ คุณเริ่มที่ระดับเครดิต 1 ด้วยวงเงิน $15 เมื่อยืมเต็ม $15 และชำระคืนตรงเวลา วงเงินของคุณจะเพิ่มเป็น $25 ครั้งถัดไปยืมเต็ม $25 และชำระคืน คุณจะปลดล็อก $35 จากนั้นเป็น $45 แต่ละระดับเพิ่มขึ้น $10
 
 เงินกู้ที่น้อยกว่าวงเงินเต็มเรียกว่า Trust-Building Loan ซึ่งยังคงมีประโยชน์ เพราะช่วยสร้างประวัติการชำระคืนและความน่าเชื่อถือในสายตาผู้ให้กู้ แต่ไม่ได้เพิ่มระดับเครดิตของคุณ ดังนั้นหากเป้าหมายของคุณคือการสร้างเครดิตและปลดล็อกเงินกู้ที่ใหญ่ขึ้น คุณควรยืมและชำระคืน Credit-Building Loan แบบเต็มวงเงิน
 
@@ -364,7 +364,7 @@ Moodeng ไม่ได้รายงานข้อมูลเครดิต
 
 ไม่มียอดกู้ขั้นต่ำ ไม่มีค่าสมาชิกรายเดือน ไม่มีค่าธรรมเนียมแรกเข้า และไม่มีค่าธรรมเนียมใด ๆ คุณขอเท่าที่ต้องการ (ไม่เกินวงเงินตามระดับเครดิตปัจจุบัน) กำหนดวันชำระคืนและอัตราดอกเบี้ยเอง แล้วผู้ให้กู้จะตัดสินใจว่าจะปล่อยกู้ให้คุณหรือไม่
 
-ทุกครั้งที่คุณชำระคืนเงินกู้แบบเต็มวงเงินตรงเวลา วงเงินของคุณจะเพิ่มขึ้นหนึ่งขั้น: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 ซึ่งเป็นวงเงินสูงสุดในขณะนี้ คุณจึงเริ่มจากจำนวนน้อยเพื่อทดลองใช้แพลตฟอร์มโดยมีความเสี่ยงต่ำ สร้างความน่าเชื่อถือ แล้วค่อยขยับไปสู่เงินกู้ที่ใหญ่ขึ้นเมื่อคุณพร้อม`
+ทุกครั้งที่คุณชำระคืนเงินกู้แบบเต็มวงเงินตรงเวลา วงเงินของคุณจะเพิ่มขึ้น $10 คุณจึงเริ่มจากจำนวนน้อยเพื่อทดลองใช้แพลตฟอร์มโดยมีความเสี่ยงต่ำ สร้างความน่าเชื่อถือ แล้วค่อยขยับไปสู่เงินกู้ที่ใหญ่ขึ้นเมื่อคุณพร้อม`
    }
 ];
 
@@ -397,7 +397,7 @@ Người cho vay xem các yêu cầu đang mở và chọn yêu cầu muốn c�
       question: 'Hạng tín dụng là gì?',
       answer: `Hạng tín dụng quyết định số tiền tối đa bạn có thể vay mỗi lần.
 
-Bạn bắt đầu ở Hạng 1 với hạn mức $15. Mỗi lần trả đủ một Credit-Building Loan sẽ nâng hạn mức và mở khóa hạng tiếp theo — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, đây là mức tối đa hiện tại.`
+Bạn bắt đầu ở Hạng 1 với hạn mức $15. Mỗi lần trả đủ một Credit-Building Loan sẽ cộng thêm $10 vào hạn mức và mở khóa hạng tiếp theo: $15, rồi $25, rồi $35, và cứ thế tiếp tục.`
    },
    {
       id: 'what-is-a-base-wallet',
@@ -442,7 +442,7 @@ Chúng tôi không tuyên bố sẽ thay thế ngân hàng cho tất cả mọi 
       question: 'Khoản vay xây dựng tín dụng (Credit-Building Loan) là gì?',
       answer: `Khoản vay xây dựng tín dụng là khoản vay bạn thực hiện nhằm mục đích tăng hạn mức tín dụng trên Moodeng. Để được tính là khoản vay này, số tiền vay phải bằng toàn bộ hạn mức hiện tại của bạn — không được thấp hơn.
 
-Cách hoạt động như sau. Bạn bắt đầu ở Hạng tín dụng 1 với hạn mức vay $15. Vay đủ $15 và trả đúng hạn, hạn mức của bạn sẽ tăng lên $20. Lần sau vay đủ $20 và trả nợ, bạn mở khóa $40. Rồi đến $60. Lộ trình tiếp tục như vậy ở các hạng cao hơn.
+Cách hoạt động như sau. Bạn bắt đầu ở Hạng tín dụng 1 với hạn mức vay $15. Vay đủ $15 và trả đúng hạn, hạn mức của bạn sẽ tăng lên $25. Lần sau vay đủ $25 và trả nợ, bạn mở khóa $35. Rồi đến $45. Mỗi hạng cộng thêm $10.
 
 Các khoản vay nhỏ hơn toàn bộ hạn mức được gọi là Trust-Building Loan (khoản vay xây dựng niềm tin). Những khoản vay này vẫn có ích — chúng giúp bạn xây dựng lịch sử trả nợ và uy tín với người cho vay — nhưng không nâng Hạng tín dụng của bạn. Vì vậy, nếu mục tiêu của bạn là xây dựng tín dụng và mở khóa các khoản vay lớn hơn, bạn nên vay và trả các Credit-Building Loan bằng toàn bộ hạn mức.
 
@@ -455,7 +455,7 @@ Khác với thẻ tín dụng ngân hàng hay các sản phẩm xây dựng tín
 
 Không có số tiền vay tối thiểu, không có phí thuê bao hàng tháng, không có phí thiết lập và không có bất kỳ khoản phí nào. Bạn yêu cầu số tiền mình cần (trong phạm vi hạn mức của Hạng tín dụng hiện tại), đặt ngày trả và lãi suất, rồi người cho vay sẽ quyết định có cấp vốn cho bạn hay không.
 
-Mỗi khoản vay bằng toàn bộ hạn mức mà bạn trả đúng hạn sẽ nâng hạn mức lên một bậc — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, đây là mức tối đa hiện tại. Vì vậy, bạn có thể bắt đầu nhỏ để thử nền tảng với rủi ro thấp, xây dựng uy tín, và chỉ chuyển sang các khoản vay lớn hơn khi bạn đã sẵn sàng.`
+Mỗi khoản vay bằng toàn bộ hạn mức mà bạn trả đúng hạn sẽ cộng thêm $10 vào hạn mức. Vì vậy, bạn có thể bắt đầu nhỏ để thử nền tảng với rủi ro thấp, xây dựng uy tín, và chỉ chuyển sang các khoản vay lớn hơn khi bạn đã sẵn sàng.`
    }
 ];
 

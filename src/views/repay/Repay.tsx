@@ -2193,7 +2193,8 @@ export default function Repay() {
          loanAmount: toNumber(selectedLoan.loanAmount),
          dueDate: selectedLoan.dueDate,
          dueTimezone: selectedLoan.dueTimezone,
-         paidAt: new Date().toISOString()
+         paidAt: new Date().toISOString(),
+         fundedAt: selectedLoan.fundedAt ?? null
       });
       const currentLimit = user.cs || STARTING_CREDIT_LIMIT;
       const nextLimit = progression.shouldLevelUp ? progression.nextLimit : currentLimit;

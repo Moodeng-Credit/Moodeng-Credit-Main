@@ -304,7 +304,6 @@ export const filipinoCoverageG: Record<string, string> = {
    "Let's connect": 'Mag-connect tayo',
    'Add practical context without sharing private details.':
       'Magbigay ng praktikal na konteksto nang hindi nagbabahagi ng pribadong detalye.',
-   '+$5 Credit Limit Boost': '+$5 na dagdag sa credit limit',
    'applied: +$': 'na-apply: +$',
    'starting limit': 'sa starting limit',
    'Checking code...': 'Chine-check ang code...',
@@ -650,8 +649,8 @@ export const filipinoCoverageG: Record<string, string> = {
    'Repay your $80 loan on time': 'Bayaran on time ang $80 loan mo',
    'Repay your $100 loan on time': 'Bayaran on time ang $100 loan mo',
    'Repay your $120 loan on time': 'Bayaran on time ang $120 loan mo',
-   'Limits step up $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
-      'Tumataas ang limit nang paisa-isa: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
+   'You start at $15. Each full-limit loan you repay adds $10.':
+      'Magsisimula ka sa $15. Bawat full-limit na loan na nabayaran mo ay dagdag na $10.',
    'you need a smaller amount, or want to build trust first.': 'mas maliit na halaga ang kailangan mo, o gusto mo munang bumuo ng tiwala.',
    'also called a Credit Growth Loan': 'tinatawag ding Credit Growth Loan',
    'you’re ready to grow your limit and sure you can repay on time.':
@@ -1089,5 +1088,14 @@ export const filipinoCoverageG: Record<string, string> = {
    "Choose \"Base\" as the network. PDAX keeps USDC on Base separate from plain USDC — use the Base one.": "Piliin ang \"Base\" bilang network. Hiwalay sa PDAX ang USDC on Base at ang plain USDC — gamitin ang Base.",
    "Send USDC from your Moodeng wallet to your PDAX account. PDAX often changes it into pesos for you — then cash out to your bank or e-wallet.": "Magpadala ng USDC mula sa Moodeng wallet mo papunta sa PDAX account mo. Kadalasan, ginagawa itong piso ng PDAX para sa iyo — tapos i-cash out sa bangko o e-wallet mo.",
    "Once your USDC arrives in PDAX (usually under 1 minute), check your Portfolio. PDAX often changes it into pesos for you — if your PHP balance went up, skip to the last step.": "Kapag dumating na sa PDAX ang USDC mo (karaniwang wala pang 1 minuto), tingnan ang Portfolio mo. Kadalasan, ginagawa itong piso ng PDAX para sa iyo — kung tumaas ang PHP balance mo, dumiretso sa huling hakbang.",
-   "PHP went up? PDAX already changed it into pesos — go to the last step. Still shows USDC? Sell it first.": "Tumaas ang PHP? Ginawa na itong piso ng PDAX — pumunta sa huling hakbang. USDC pa rin ang nakikita? Ibenta muna ito."
+   "PHP went up? PDAX already changed it into pesos — go to the last step. Still shows USDC? Sell it first.": "Tumaas ang PHP? Ginawa na itong piso ng PDAX — pumunta sa huling hakbang. USDC pa rin ang nakikita? Ibenta muna ito.",
+   // Credit ladder $15, $25, $35 … (Nov 2026).
+   "full-limit loan unlocks a $25 limit": "na full-limit loan ang magbubukas ng $25 na limit",
+   "left to repay for a $25 limit": "na lang ang babayaran para sa $25 na limit",
+   "…and $10 more for each level after that.": "…at dagdag na $10 sa bawat susunod na level.",
+   "Start at $15, add $10 each level": "Simula sa $15, dagdag $10 bawat level",
+   "Top level for now": "Pinakamataas na level sa ngayon",
+   "Top level": "Pinakamataas na level",
+   "Example: borrowing the full $25 limit to unlock the $35 level.": "Halimbawa: hiramin ang buong $25 na limit para ma-unlock ang $35 na level.",
+   "Credit limit reaches $35 = +50 Pandesal points": "Umabot sa $35 ang credit limit = +50 Pandesal points"
 };
