@@ -152,10 +152,11 @@ export type CalSchedule = {
 const calTime = (hhmm: string) => (hhmm === '24:00' ? '23:59' : hhmm);
 const capitalize = (day: string) => day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
 
-// Calls only between 8 AM and 11 PM (the hosts' time, Bangkok): whatever the Calendly hours say, a
+// Calls only between 11 AM and 11 PM (the hosts' time, Bangkok): whatever the Calendly hours say, a
 // window is cut to fit and dropped if nothing is left. George 2026-11-14: a borrower moved her call
 // to 1:45 AM because his Calendly had 00:00–02:00 open. The last call starts at 22:45 and ends by 11.
-export const CALL_DAY_START = '08:00';
+// George 2026-11-15: nothing before 11 AM Bangkok either (was 8 AM).
+export const CALL_DAY_START = '11:00';
 export const CALL_DAY_END = '23:00';
 export const clipToCallDay = (from: string, to: string): { startTime: string; endTime: string } | null => {
    // A window that runs to midnight ends at "00:00" (or "24:00") in Calendly.
@@ -179,7 +180,7 @@ export const calendlyToCalSchedule = (rules: CalendlyRule[], timeZone: string, t
          }
       } else if (rule.type === 'date' && rule.date && rule.date >= today) {
          const windows = intervals.map((iv) => clipToCallDay(iv.from, iv.to)).filter((w) => w !== null);
-         // No hours that day (or none left inside 8 AM–11 PM): the day is closed.
+         // No hours that day (or none left inside 11 AM–11 PM): the day is closed.
          if (windows.length === 0) overrides.push({ date: rule.date, startTime: '00:00', endTime: '00:00' });
          for (const w of windows) overrides.push({ date: rule.date, ...w });
       }
