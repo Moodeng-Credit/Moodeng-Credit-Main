@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 
-import { CalendarPlus, Camera, Gift, IdCard, MessagesSquare, ShieldCheck, Sparkles, Unlock, Video, Wallet } from 'lucide-react';
+import { CalendarPlus, Camera, Gift, IdCard, MessagesSquare, ShieldCheck, Sparkles, TrendingUp, Unlock, Video, Wallet } from 'lucide-react';
 
 import { clarityEvent } from '@/lib/analytics/clarity';
 import { MoreCharactersLabel } from '@/i18n/SentenceLabels';
@@ -343,6 +343,11 @@ export default function ConnectStep({
                            trail={trail('call')}
                         />
                         <ul className="flex flex-col gap-2.5">
+                           {/* Said before they take a slot, so people hoping for fast cash don't (Nov 2026: "sorry
+                               I thought it was a fast loan" after booking). */}
+                           <PerkRow icon={<TrendingUp aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>
+                              First loan is $15 — pay on time and your limit grows
+                           </PerkRow>
                            {withEmma ? (
                               <>
                                  <PerkRow icon={<Wallet aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>
