@@ -126,8 +126,8 @@ async function call(isPreview: boolean, input: Record<string, string | boolean>)
       // ?sim=email / ?sim=verify show the one-time setup at the email / ID step; ?sim=compliance shows
       // Stableyard's one-time form after the first "Get my price".
       const sim = new URLSearchParams(window.location.search).get('sim');
-      // ?sim=slow holds the setup for 12s to show the "Getting your cash-out ready" card.
-      if (body.qr === 'setup' && sim === 'slow') await new Promise((r) => setTimeout(r, 12000));
+      // ?sim=slow holds the setup for 28s to show the "Getting your cash-out ready" card.
+      if (body.qr === 'setup' && sim === 'slow') await new Promise((r) => setTimeout(r, 28000));
       if (body.qr === 'setup' && sim === 'email') return { ok: true, emailVerified: false, kycApproved: false, kycStatus: 'not_started' };
       if (body.qr === 'setup' && sim === 'verify') return { ok: true, emailVerified: true, kycApproved: false, kycStatus: 'not_started' };
       // ?sim=reuse shows the "use your Moodeng ID check" step; ?sim=reused shows it under review.
@@ -328,7 +328,8 @@ function Panel({ children }: { children: React.ReactNode }) {
 
 // Shown while the cash-out connects to Stableyard (it can take several seconds). The ticks move on a
 // timer so the wait feels like progress; the last line keeps spinning until the setup answer is back.
-const CONNECT_STEPS_MS = [1200, 3200];
+// The setup usually takes 12–30s (what the card tells people), so the ticks are spread over that.
+const CONNECT_STEPS_MS = [4000, 10000];
 // Moodeng changes with each step: on the phone to Stableyard → plugging in → holding up the QR (bank form:
 // running with the peso bag). Still loading after CONNECT_SLOW_MS → the stopwatch one, "Almost there…".
 const CONNECTING_ART = {
@@ -338,7 +339,7 @@ const CONNECTING_ART = {
    bank: '/withdraw-setup/connecting-run.webp',
    slow: '/withdraw-setup/connecting-stopwatch.webp'
 };
-const CONNECT_SLOW_MS = 9000;
+const CONNECT_SLOW_MS = 22000;
 
 function ConnectingCard({ qrMode }: { qrMode: boolean }) {
    const [done, setDone] = useState(0);
@@ -407,7 +408,13 @@ function ConnectingCard({ qrMode }: { qrMode: boolean }) {
                   );
                })}
             </ul>
-            <p className="text-[12px] text-[var(--text-muted)]">This can take a few seconds.</p>
+            <p className="flex items-center gap-[8px] rounded-[10px] bg-[var(--surface-2,#f1eeff)] px-[12px] py-[8px] text-[14px] font-semibold text-[var(--ink)]">
+               <Clock className="h-[16px] w-[16px] shrink-0 text-[#6b55f7]" strokeWidth={2.4} />
+               <span>
+                  Takes 12–30 seconds
+                  <span className="block text-[12px] font-normal text-[var(--text-muted)]">Keep this page open</span>
+               </span>
+            </p>
             <div className="flex justify-center pt-[2px]">
                <PoweredByStableyard className="whitespace-nowrap" />
             </div>
