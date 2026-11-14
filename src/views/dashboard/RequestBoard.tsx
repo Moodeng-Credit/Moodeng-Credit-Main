@@ -2046,7 +2046,10 @@ function RequestBoard$() {
       (shouldShowGeneralTour || shouldShowBorrowerTour || shouldShowLenderTour) && displayedLoans.length === 0
          ? TOUR_SAMPLE_LOANS
          : displayedLoans;
-   const isListLoading = (!hasLoadedRequestBoardLoans || isLoading) && !shouldShowLenderTour;
+   // Only blank the list while there's nothing to show yet. Any later loans fetch (auto-refresh,
+   // wallet connect, a card's refresh) flips `isLoading`; swapping the cards for a spinner then
+   // unmounts every card — and any modal open on it, e.g. Vault Lend mid wallet-connect.
+   const isListLoading = !shouldShowLenderTour && (!hasLoadedRequestBoardLoans || (isLoading && visibleLoans.length === 0));
 
    useEffect(() => {
       if (!highlightedRequestId || lastScrolledHighlightedRequestIdRef.current === highlightedRequestId) return;
