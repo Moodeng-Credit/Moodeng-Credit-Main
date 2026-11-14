@@ -131,7 +131,7 @@ Deno.test('calendlyToCalSchedule groups weekly hours and keeps only upcoming one
       availability: [
          { days: ['Monday', 'Friday'], startTime: '10:00', endTime: '15:00' },
          { days: ['Sunday', 'Monday'], startTime: '20:00', endTime: '23:00' },
-         { days: ['Friday'], startTime: '21:30', endTime: '23:59' }
+         { days: ['Friday'], startTime: '21:30', endTime: '23:00' }
       ],
       overrides: [
          { date: '2026-11-02', startTime: '00:00', endTime: '00:00' },
@@ -211,11 +211,24 @@ Deno.test('preferHost puts Emma first whenever she is free', () => {
    assertEquals(preferHost(['george']), ['george']);
 });
 
-Deno.test('calendlyToCalSchedule: a window ending at midnight ("00:00") becomes 23:59', () => {
-   const s = calendlyToCalSchedule([{ type: 'wday', wday: 'sunday', intervals: [{ from: '00:00', to: '02:00' }, { from: '16:00', to: '00:00' }] }], 'Asia/Bangkok', '2026-10-29');
+Deno.test('calendlyToCalSchedule: no calls after 11 PM or before 8 AM, whatever Calendly says', () => {
+   const s = calendlyToCalSchedule(
+      [
+         { type: 'wday', wday: 'sunday', intervals: [{ from: '00:00', to: '02:00' }, { from: '16:00', to: '00:00' }] },
+         { type: 'wday', wday: 'monday', intervals: [{ from: '06:00', to: '09:00' }, { from: '23:00', to: '23:59' }] },
+         { type: 'date', date: '2026-11-15', intervals: [{ from: '00:30', to: '01:30' }] },
+         { type: 'date', date: '2026-11-16', intervals: [{ from: '22:00', to: '24:00' }] }
+      ],
+      'Asia/Bangkok',
+      '2026-10-29'
+   );
    assertEquals(s.availability, [
-      { days: ['Sunday'], startTime: '00:00', endTime: '02:00' },
-      { days: ['Sunday'], startTime: '16:00', endTime: '23:59' }
+      { days: ['Monday'], startTime: '08:00', endTime: '09:00' },
+      { days: ['Sunday'], startTime: '16:00', endTime: '23:00' }
+   ]);
+   assertEquals(s.overrides, [
+      { date: '2026-11-15', startTime: '00:00', endTime: '00:00' },
+      { date: '2026-11-16', startTime: '22:00', endTime: '23:00' }
    ]);
 });
 
