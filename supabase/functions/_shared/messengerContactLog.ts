@@ -62,8 +62,16 @@ export const logMessengerContact = async (
    at: number,
    payload: Record<string, unknown> | null = null
 ): Promise<{ userId: string; facebookName: string | null } | null> => {
-   const { data: users } = await svc.from('users').select('id, facebook_name').eq('messenger_psid', contactId).limit(1);
-   const user = (users as Array<{ id: string; facebook_name: string | null }> | null)?.[0] ?? null;
+   // Someone who signed up twice can have two accounts on one Messenger line: use the one with a call
+   // coming up, else the newest (an old empty account must not swallow their call replies).
+   const { data: users } = await svc
+      .from('users')
+      .select('id, facebook_name, video_call_starts_at')
+      .eq('messenger_psid', contactId)
+      .order('created_at', { ascending: false })
+      .limit(5);
+   const list = (users as Array<{ id: string; facebook_name: string | null; video_call_starts_at: string | null }> | null) ?? [];
+   const user = list.find((u) => u.video_call_starts_at && Date.parse(u.video_call_starts_at) > at - 2 * 3600_000) ?? list[0] ?? null;
    const { error } = await svc.from('messenger_contact_events').insert({
       user_id: user?.id ?? null,
       contact_id: contactId,
