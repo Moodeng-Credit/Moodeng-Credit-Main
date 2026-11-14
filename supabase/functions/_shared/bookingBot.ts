@@ -272,8 +272,8 @@ const T: Record<string, Record<'en' | 'fil', Text>> = {
       fil: (w) => `Pasensya, hindi ko nakuha ang araw o oras 🙏 Naka-book ka pa rin sa ${w}.\nPara palitan, subukan ang "bukas 3pm" o "Sabado umaga".`
    },
    cancelled: {
-      en: (w) => `OK, your call on ${w} is cancelled.\nWhenever you're ready, just tell me a day and time 🙂`,
-      fil: (w) => `Sige, kinansela na ang call mo sa ${w}.\nKapag handa ka na, sabihin lang ang araw at oras 🙂`
+      en: (w) => `OK, your call on ${w} is cancelled.\nWant a new time later? Just type BOOK 🙂`,
+      fil: (w) => `Sige, kinansela na ang call mo sa ${w}.\nGusto ng bagong oras mamaya? I-type lang ang BOOK 🙂`
    },
    tapOne: { en: 'Please tap one of the buttons 🙂', fil: 'Pakipindot ang isa sa mga button 🙂' },
    rangeNumber: { en: 'Is that in thousands? Please tap the closest range 🙂', fil: 'Libo ba iyan? Pakipindot ang pinakamalapit na range 🙂' },
@@ -379,7 +379,7 @@ const ID_TEXT: Record<string, Text> = {
    other: 'Tidak masalah! Hari atau jam lain yang cocok untukmu?',
    otherKeep: 'Tidak masalah! Hari atau jam lain yang cocok untukmu?\nPanggilanmu tetap terjadwal sampai kamu memilih jam baru.',
    unclearKeep: (w) => `Maaf, aku belum menangkap hari atau jamnya 🙏 Kamu masih terjadwal ${w}.\nUntuk menggantinya, coba seperti "besok jam 3 sore" atau "Sabtu pagi".`,
-   cancelled: (w) => `Oke, panggilanmu ${w} sudah dibatalkan.\nKapan pun kamu siap, sebutkan saja hari dan jamnya 🙂`,
+   cancelled: (w) => `Oke, panggilanmu ${w} sudah dibatalkan.\nMau jadwal baru nanti? Ketik saja BOOK 🙂`,
    tapOne: 'Silakan ketuk salah satu tombol 🙂',
    rangeNumber: 'Itu dalam ribuan? Silakan ketuk kisaran yang paling dekat 🙂',
    finishFirst: 'Maaf, aku belum menangkap hari atau jam baru. Kita selesaikan dulu pertanyaannya — jamnya bisa diganti di akhir 🙂',
@@ -630,7 +630,7 @@ const NOT_NAMES = new Set([
    ...['this', 'its', "it's", 'just', 'lol', 'haha', 'hehe', 'test', 'nope', 'none', 'wala'],
    ...['halo', 'hai', 'tidak', 'nggak', 'gak', 'saya', 'aku', 'nama', 'selamat', 'pagi', 'siang', 'sore', 'malam', 'wkwk']
 ]);
-const NEGATIVE = /^\s*(no|nope|hindi|ayoko|ayaw|wag|huwag|cancel|tidak|nggak|gak|enggak|jangan|batal)\b(?!\s*(problem|prob|worries|worry|problema|masalah|apa-apa|apa apa))/;
+export const NEGATIVE = /^\s*(no|nope|hindi|ayoko|ayaw|wag|huwag|cancel|tidak|nggak|gak|enggak|jangan|batal)\b(?!\s*(problem|prob|worries|worry|problema|masalah|apa-apa|apa apa))/;
 const cap = (w: string) => (w === w.toLowerCase() || w === w.toUpperCase() ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w[0].toUpperCase() + w.slice(1));
 
 /** A first name from "Maria", "my name is Maria", "ako si Maria", "Ma. Cristina". Null if it doesn't look like one. */

@@ -634,7 +634,7 @@ Deno.test('booked on the website, no chat: "Cancel my meeting" cancels, "resched
    await c.send('Cancel my meeting');
    assertEquals(cancelled, 1);
    assertEquals(c.state.booked, false);
-   assert(c.text.includes('is cancelled'), c.text);
+   assert(c.text.includes('is cancelled') && c.text.includes('type BOOK') && !c.text.includes('day and time'), c.text);
    const r = chat(atCall(), { cancel: async () => (cancelled++, true) });
    await r.send('Can I reschedule?');
    assertEquals(cancelled, 1);
