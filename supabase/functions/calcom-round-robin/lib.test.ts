@@ -16,7 +16,10 @@ import {
    preferSoonSlots,
    recheckRange,
    teamGuests,
-   zoomFallbackWarning
+   zoomFallbackWarning,
+   isZoomJoinUrl,
+   zoomPaused,
+   ZOOM_PAUSE_MS
 } from './lib.ts';
 
 Deno.test('mergeSlots unions hosts, de-dupes by instant, and sorts', () => {
@@ -220,6 +223,22 @@ Deno.test('zoomFallbackWarning: only for a Cal Video link', () => {
    assertEquals(zoomFallbackWarning('https://app.cal.com/video/8VWGe7EkEMWqiDL7AEkxGY', 'emma').includes("Emma's account"), true);
    assertEquals(zoomFallbackWarning('https://us06web.zoom.us/j/123', 'emma'), '');
    assertEquals(zoomFallbackWarning(null, 'emma'), '');
+});
+
+Deno.test('isZoomJoinUrl: Zoom links only', () => {
+   assertEquals(isZoomJoinUrl('https://us06web.zoom.us/j/123?pwd=x'), true);
+   assertEquals(isZoomJoinUrl('https://zoom.us/j/123'), true);
+   assertEquals(isZoomJoinUrl('https://app.cal.com/video/8VWGe7EkEMWqiDL7AEkxGY'), false);
+   assertEquals(isZoomJoinUrl('https://evil.com/zoom.us/j/1'), false);
+   assertEquals(isZoomJoinUrl(null), false);
+});
+
+Deno.test('zoomPaused: holds for ZOOM_PAUSE_MS after the failure', () => {
+   const now = Date.parse('2026-11-14T12:00:00Z');
+   assertEquals(zoomPaused('2026-11-14T11:00:00Z', now), true);
+   assertEquals(zoomPaused(new Date(now - ZOOM_PAUSE_MS - 1).toISOString(), now), false);
+   assertEquals(zoomPaused(null, now), false);
+   assertEquals(zoomPaused('', now), false);
 });
 
 Deno.test('isGoodCallTime: weekday evenings and weekend days, in the borrower\'s zone', () => {

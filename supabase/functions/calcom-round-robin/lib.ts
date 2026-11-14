@@ -264,6 +264,17 @@ export const PREFERRED_HOST = 'emma';
 export const preferHost = (order: string[], preferred = PREFERRED_HOST): string[] =>
    order.includes(preferred) ? [preferred, ...order.filter((h) => h !== preferred)] : order;
 
+// No Cal Video, ever (George, 2026-11-14). A booking that comes back without a Zoom link is cancelled and the
+// next free host tried; the host whose Zoom failed is hidden from the times for ZOOM_PAUSE_MS, then tried again
+// (one booking) — so once they reconnect Zoom in Cal.com their times come back on their own.
+export const isZoomJoinUrl = (joinUrl: string | null | undefined) => Boolean(joinUrl && /^https:\/\/([\w-]+\.)*zoom\.us\//i.test(joinUrl));
+export const ZOOM_PAUSE_MS = 3 * 3600 * 1000;
+/** Whether a host's Zoom pause (telegram_bot_settings `zoom_broken_<host>` = ISO time it failed) still holds. */
+export const zoomPaused = (failedAt: string | null | undefined, nowMs: number) => {
+   const t = failedAt ? Date.parse(failedAt) : NaN;
+   return !Number.isNaN(t) && nowMs - t < ZOOM_PAUSE_MS;
+};
+
 // Every booking asks Cal.com for Zoom (callBooking ZOOM_LOCATION). When Cal.com can't create the Zoom meeting it
 // still books, quietly on Cal Video — so the booking alert says so, and the host can fix their Zoom connection
 // before the call (Emma's kept dropping since 2026-10-30).
