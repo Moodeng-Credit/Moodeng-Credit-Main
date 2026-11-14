@@ -119,11 +119,14 @@ const setSetting = (svc: Svc, key: string, value: string): Promise<void> =>
       .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' })
       .then(() => undefined, () => undefined);
 
+// The Indonesia ops chat (telegram_bot_settings `id_alert_chat_id`) is last: it takes Walt watch
+// alerts (waltWatch.ts) and its buttons work there, while other alerts still go to the first chat.
 export const adminChatIds = async (svc: Svc): Promise<string[]> =>
    [
       await getSetting(svc, 'kyc_alert_chat_id'),
       Deno.env.get('TEAM_TELEGRAM_CHAT_ID') ?? null,
-      await getSetting(svc, 'team_group_chat_id')
+      await getSetting(svc, 'team_group_chat_id'),
+      await getSetting(svc, 'id_alert_chat_id')
    ].filter((v, i, a): v is string => !!v && a.indexOf(v) === i);
 
 const alertTeam = async (svc: Svc, text: string, keyboard?: TelegramInlineKeyboard) => {

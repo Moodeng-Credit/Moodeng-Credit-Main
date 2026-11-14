@@ -139,8 +139,10 @@ export const watchMode = async (svc: Svc): Promise<'off' | 'observe' | 'on'> => 
    return v === 'on' ? 'on' : v === 'off' ? 'off' : 'observe';
 };
 
+// Walt watch alerts (login lost, pot low) go to the Indonesia ops chat when one is set
+// (`id_alert_chat_id`), otherwise to the first admin chat.
 const tellTeam = async (svc: Svc, text: string, keyboard?: TelegramInlineKeyboard) => {
-   const [chat] = await adminChatIds(svc);
+   const chat = (await getSetting(svc, 'id_alert_chat_id'))?.trim() || (await adminChatIds(svc))[0];
    if (chat) await sendTelegramMessage(chat, text, keyboard ? { inlineKeyboard: keyboard } : {}).catch(() => undefined);
 };
 
