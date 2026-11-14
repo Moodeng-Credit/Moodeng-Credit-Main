@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { Check, ChevronLeft, ExternalLink, Landmark, Send, Wallet, X } from 'lucide-react';
@@ -6,6 +6,7 @@ import { keccak256, stringToHex } from 'viem';
 import { useAccount } from 'wagmi';
 
 import { PaymentProgressOverlay } from '@/components/loading/PaymentProgressRing';
+import { VAULT_LENS_MIN_MS, VaultLensLoader } from '@/components/loading/VaultLensLoader';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
@@ -171,14 +172,18 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
    })();
    const vaultReady = termsValid && Boolean(vault) && !vaultChecking && !vaultIssue;
 
-   // Race-track ring while the vault check runs (held at 100% for a beat when it lands) and while a draw is in flight.
+   // Magnifier loader while the vault check runs, kept up long enough to play every scene (and end
+   // on the lone pandesal) even when the check is instant. The draw itself uses the hippo runner.
    const [checkRingVisible, setCheckRingVisible] = useState(false);
+   const checkStartedAt = useRef(0);
    useEffect(() => {
       if (vaultChecking) {
+         checkStartedAt.current = performance.now();
          setCheckRingVisible(true);
          return undefined;
       }
-      const timer = window.setTimeout(() => setCheckRingVisible(false), 600);
+      const elapsed = performance.now() - checkStartedAt.current;
+      const timer = window.setTimeout(() => setCheckRingVisible(false), Math.max(900, VAULT_LENS_MIN_MS - elapsed));
       return () => window.clearTimeout(timer);
    }, [vaultChecking]);
    const [drawStage, setDrawStage] = useState<PaymentStage | null>(null);
@@ -433,6 +438,7 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
             onClick={(e) => e.stopPropagation()}
          >
             {method === 'vault' && drawStage ? <PaymentProgressOverlay percent={ringPercent} title={ringTitle} hint={ringHint} /> : null}
+            {method === 'vault' && !drawStage && ringStage ? <VaultLensLoader percent={ringPercent} title={ringTitle} hint={ringHint} /> : null}
 
             <div className="mb-md-3 flex items-center gap-2">
                {method !== 'choose' ? (
@@ -560,21 +566,6 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
                         </a>
                      </p>
                   </div>
-
-                  {!drawStage && ringStage ? (
-                     <div role="status" aria-live="polite">
-                        <div className="mb-1 flex items-center justify-between text-md-b3">
-                           <span className="font-medium text-md-neutral-1500">{ringTitle}</span>
-                           <span className="tabular-nums text-md-neutral-1000">{Math.round(ringPercent)}%</span>
-                        </div>
-                        <div className="h-1.5 overflow-hidden rounded-full bg-[#eee9f4]">
-                           <div
-                              className="h-full rounded-full bg-md-primary-1200 transition-[width] duration-300 ease-out"
-                              style={{ width: `${Math.min(100, Math.max(4, ringPercent))}%` }}
-                           />
-                        </div>
-                     </div>
-                  ) : null}
 
                   {warningBox(vaultError || vaultIssue)}
 
