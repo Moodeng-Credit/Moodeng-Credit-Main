@@ -2313,9 +2313,9 @@ function RequestBoard$() {
                                  </>
                               ) : showReferralCard ? (
                                  <>
-                                    <p className="text-md-b3 font-semibold uppercase tracking-wide text-md-primary-1200">Referral program</p>
-                                    <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Pay zero interest</p>
-                                    <p className="text-md-b2 font-medium text-md-neutral-700">Refer friends and we cover it.</p>
+                                    <p className="text-md-b3 font-semibold uppercase tracking-wide text-md-primary-1200">Affiliate</p>
+                                    <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Earn $5 per friend</p>
+                                    <p className="text-md-b2 font-medium text-md-neutral-700">Invite friends who borrow and repay.</p>
                                  </>
                               ) : journey.onboarding && journey.step ? (
                                  <>
@@ -2384,7 +2384,7 @@ function RequestBoard$() {
                                     ID_APPLY_CARD_TEXT.apply[idLang]
                                  )
                               ) : showReferralCard ? (
-                                 <>Refer a friend<span aria-hidden="true"> →</span></>
+                                 <>Invite<span aria-hidden="true"> →</span></>
                               ) : journey.onboarding ? (
                                  <>{journey.cta}<span aria-hidden="true"> →</span></>
                               ) : (

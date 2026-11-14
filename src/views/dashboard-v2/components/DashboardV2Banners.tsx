@@ -73,11 +73,11 @@ export function ConnectWalletBanner({ onConnect }: { onConnect: () => void }) {
 }
 
 const INTEREST_REFERRAL_COPY: Record<DashboardV2Language, { title: string; body: string; cta: string }> = {
-   en: { title: 'Pay zero interest', body: 'Refer friends and we cover it.', cta: 'Refer' },
-   fil: { title: 'Walang interes', body: 'Mag-refer ng kaibigan, sagot namin ang interes mo.', cta: 'Mag-refer' }
+   en: { title: 'Earn $5 per friend', body: 'Invite friends who borrow and repay.', cta: 'Invite' },
+   fil: { title: 'Kumita ng $5 bawat kaibigan', body: 'Mag-imbita ng kaibigang manghihiram at magbabayad.', cta: 'Mag-imbita' }
 };
 
-/** Referral entry point: invited friends who repay a loan earn back the interest (see /refer). */
+/** Affiliate entry point: $5 USDC for each invited friend who repays a loan (see /refer). */
 export function InterestReferralBanner({ language, onRefer }: { language: DashboardV2Language; onRefer: () => void }) {
    const copy = INTEREST_REFERRAL_COPY[language] ?? INTEREST_REFERRAL_COPY.en;
    return (
