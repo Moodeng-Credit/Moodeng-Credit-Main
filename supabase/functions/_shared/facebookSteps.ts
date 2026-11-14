@@ -36,8 +36,14 @@ export const fbStepsSentForCall = (sentAt: string | null | undefined, callStarts
 // something says the borrower is there, and the links still haven't gone out → send them now.
 // "Something says they're there" = Zoom saw someone arrive, the host tapped Showed up, or the host is
 // filling in the call sheet for this call.
+// Failing all of that, every borrower still booked gets them once the call's start time passes
+// (George 2026-11-15: "all calls"). Emma's Zoom never reports arrivals to us (0 of her 10 calls in
+// three weeks), so without this her borrowers never got the steps. A booked call already means they
+// tapped ✅ an hour before, so a no-show getting the links is the accepted cost.
 export const FB_CATCHUP_BEFORE_MS = 10 * 60 * 1000;
 export const FB_CATCHUP_AFTER_MS = 2 * 60 * 60 * 1000;
+// Start-time sends stop 20 min in: past that the 15-min call is over and "while we talk" is wrong.
+export const FB_START_SEND_UNTIL_MS = 20 * 60 * 1000;
 
 export type FbCatchUpCall = {
    startsAt: string | null;
@@ -48,7 +54,7 @@ export type FbCatchUpCall = {
    sheetUpdatedAt: string | null;
 };
 
-export const fbStepsCatchUpReason = (c: FbCatchUpCall, now = Date.now()): 'showed_up' | 'zoom' | 'call_sheet' | null => {
+export const fbStepsCatchUpReason = (c: FbCatchUpCall, now = Date.now()): 'showed_up' | 'zoom' | 'call_sheet' | 'call_started' | null => {
    const start = c.startsAt ? Date.parse(c.startsAt) : NaN;
    if (Number.isNaN(start) || now < start - FB_CATCHUP_BEFORE_MS || now > start + FB_CATCHUP_AFTER_MS) return null;
    if (c.outcome === 'no_show' || fbStepsSentForCall(c.sentAt, c.startsAt, now)) return null;
@@ -58,5 +64,6 @@ export const fbStepsCatchUpReason = (c: FbCatchUpCall, now = Date.now()): 'showe
    if (thisCall(c.arrivedAt) || thisCall(c.joinedAt)) return 'zoom';
    // The host may prepare the sheet before the call; only an edit once the call is on means "they're here".
    if (c.sheetUpdatedAt && Date.parse(c.sheetUpdatedAt) >= start - 2 * 60 * 1000) return 'call_sheet';
+   if (now >= start && now <= start + FB_START_SEND_UNTIL_MS) return 'call_started';
    return null;
 };
