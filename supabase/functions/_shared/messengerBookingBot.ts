@@ -237,8 +237,19 @@ export const handleBookingMessage = async (svc: Svc, userId: string, contactId: 
       const upcoming = user.video_call_booking_uid && user.video_call_starts_at && Date.parse(user.video_call_starts_at) > Date.now() ? user.video_call_starts_at : null;
       let started: Bot.BotState | null = null;
       // (An old chat that isn't on a booked call, e.g. one they stopped, is replaced.)
-      if ((!row || !(row.state as Bot.BotState).booked) && upcoming && Bot.PREP_START.test(text)) {
-         started = { ...Bot.newState(Bot.profileFromUser(user)), step: 'booked', booked: true, mine: { ...wallNow(zone, new Date(upcoming)), host: user.video_call_host === 'george' ? 'George' : 'Emma' } };
+      const atBookedCall = (): Bot.BotState => ({
+         ...Bot.newState(Bot.profileFromUser(user)),
+         step: 'booked',
+         booked: true,
+         mine: { ...wallNow(zone, new Date(upcoming!)), host: user.video_call_host === 'george' ? 'George' : 'Emma' }
+      });
+      if ((!row || !(row.state as Bot.BotState).booked) && upcoming && Bot.PREP_START.test(text)) started = atBookedCall();
+      // Booked (website, or moved with 🔄 Change time) and asks to cancel or move it, with no booking chat on that
+      // call: a chat that starts at their booked call, so "Cancel my meeting" really cancels it.
+      else if (upcoming && Bot.bookedCallIntent(text)) {
+         const st = row?.state as Bot.BotState | undefined;
+         const onCall = st?.booked && st.mine && Bot.slotKey(st.mine) === Bot.slotKey(wallNow(zone, new Date(upcoming)));
+         if (!onCall) started = atBookedCall();
       }
 
       if (!row && !started) {
