@@ -770,12 +770,16 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
    const { spendable, walletConnected, isPreview } = useWithdrawData();
    const navigate = useNavigate();
    const isIndo = useIsIndo(isPreview);
+   const { isLoading: marketLoading } = useIdOnboarding();
    // Indonesians get Walt (first, recommended) + Binance; the Philippine rails and the peso payout are hidden.
    const { available: phPayout, bankUp, qrCashout } = useBankPayoutStatus(isPreview);
    // Straight-to-pesos through Stableyard: to a bank account (when their bank payout is up) and/or to
    // your own bank's QR (their QR rail, which can work while the bank payout is down).
    const bankCard = Boolean(phPayout && bankUp) && !isIndo;
-   const qrCard = Boolean(phPayout && qrCashout) && !isIndo;
+   // The QR card shows right away, without waiting for the Stableyard status check (it once took 13s,
+   // 2026-11-14): tapping it opens a "Getting your cash-out ready" card while the setup loads. It only
+   // goes away if the check comes back saying the QR cash-out is off for them.
+   const qrCard = !isIndo && (isPreview || !marketLoading) && (phPayout === null || Boolean(phPayout && qrCashout));
    const bankPayout = bankCard || qrCard;
    const inEurope = useInEurope(isPreview);
    // Send to Maya (USDC on Solana through Relay): only once the server switch opens it for this account.
