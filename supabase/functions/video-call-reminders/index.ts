@@ -24,6 +24,7 @@ import { postDiscord } from '../_shared/discord.ts';
 import { getTelegramBotSettingEnabled } from '../_shared/borrowerNotificationDelivery.ts';
 import { sendWhatsAppTemplate } from '../_shared/sendpulse.ts';
 import { nudgeStalledChats } from '../_shared/messengerBookingBot.ts';
+import { runFacebookStepsCatchUp } from '../_shared/facebookStepsSend.ts';
 import { type IdEvent, type IdEventData, isIdTrackUser, runIdOnboardingNudges, sendIdTelegram } from '../_shared/idTrack.ts';
 import { runAutoPayouts, runWaltPayoutScan } from '../_shared/idManualFunding.ts';
 import { runWaltWatch } from '../_shared/waltWatch.ts';
@@ -344,6 +345,8 @@ serve(async (req) => {
    tally.sheet_alerts = await alertCallSheets(svc, now);
    // Messenger booking chats that stopped partway a few hours ago: one nudge each (no new function: free-plan cap).
    tally.booking_nudges = await nudgeStalledChats(svc);
+   // Safety net for the on-call Facebook steps: borrower is there, links never went out → send now.
+   tally.fb_steps_catchup = await runFacebookStepsCatchUp(svc, now);
    // Indonesia track: stalled onboarding → a Telegram nudge (max 3, one per 24h; idTrack.ts). This job
    // runs every 5 min, so the pass only runs in the first tick of each hour.
    if (new Date(now).getUTCMinutes() < 5) tally.id_nudges = await runIdOnboardingNudges(svc, now);

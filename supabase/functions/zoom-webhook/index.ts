@@ -212,7 +212,8 @@ serve(async (req) => {
 
    // The borrower is here (waiting room counts: that's the signal Zoom never misses): send the two
    // Facebook steps so the host can ask for them on the call. Once per call; never blocks the alert.
-   if (participantKind === 'borrower' && (firstArrival || borrowerJoinedNow)) {
+   // A name that doesn't match ("iPhone") still counts: the links go to the borrower's own Messenger.
+   if (firstArrival || borrowerJoinedNow) {
       const job = sendFacebookSteps(svc, booking, { force: false }).catch((err) =>
          console.error('zoom-webhook: facebook steps failed', err instanceof Error ? err.message : err)
       );
