@@ -20,6 +20,7 @@ import IndonesiaBadge from '@/components/IndonesiaBadge';
 import FilloutSection from '@/app/admin/FilloutSection';
 import { groupCallApprovals } from '@/app/admin/callApprovalsModel';
 import DirectoryApprovalControl from '@/app/admin/DirectoryApprovalControl';
+import DirectoryCreditLevelControl from '@/app/admin/DirectoryCreditLevelControl';
 import { TAB_HINTS } from '@/app/admin/adminSearchHints';
 import type { AdminSearchResult } from '@/app/admin/adminSearchModel';
 import GrabVouchersSection from '@/app/admin/GrabVouchersSection';
@@ -891,6 +892,7 @@ function AdminPanel() {
                                                : ''}
                                          </p>
                                          <DirectoryApprovalControl user={user} />
+                                         <DirectoryCreditLevelControl user={user} />
                                       </div>
                                    </div>
                                    <button

@@ -3261,6 +3261,14 @@ export async function decideAdminCall(input: AdminCallDecision): Promise<{ ok: b
    return invokeAdminCallApprovals<{ ok: boolean; summary: string }>({ action: 'decide', ...input });
 }
 
+// Move a borrower's credit limit one ladder step up or down (fix a mistake / an early repay level-up).
+export async function shiftAdminCreditLevel(
+   userId: string,
+   direction: 'up' | 'down'
+): Promise<{ ok: boolean; summary: string; cs?: number | null }> {
+   return invokeAdminCallApprovals<{ ok: boolean; summary: string; cs?: number | null }>({ action: 'credit_level', userId, direction });
+}
+
 // Approve from the Directory, with or without a call (decides a pending request if there is one).
 export async function approveAdminUser(userId: string): Promise<{ ok: boolean; summary: string }> {
    return invokeAdminCallApprovals<{ ok: boolean; summary: string }>({ action: 'approve_user', userId });
