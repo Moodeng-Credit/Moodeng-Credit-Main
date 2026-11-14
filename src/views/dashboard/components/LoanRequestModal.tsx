@@ -69,7 +69,7 @@ import {
    idRepayIdrChoices,
    idUsdForIdr
 } from '@/lib/loanMarket';
-import { minimumRepayment, suggestedReturnRange } from '@/lib/loanPricing';
+import { minimumRepayment, suggestedRepaymentRange, suggestedReturnRange } from '@/lib/loanPricing';
 import { checkLoanReason, getCachedReasonVerdict, type ReasonAttempt, type ReasonCategory, type ReasonCheckLocale } from '@/lib/loanReasonCheck';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
@@ -2430,13 +2430,11 @@ export default function LoanRequestModal({
    // What to put in the empty repayment field: the typical return for this size (and at least the
    // 10%-a-month minimum once a date is picked), so the first try is one lenders will fund instead
    // of "$16 back on $15", which opened the low-return popup. Shown as the placeholder only.
+   // A range, not one number ($15 for a month → "$16.50–$18"): one number read as the price to type.
    const suggestedRepayment = (() => {
       const borrow = Number(loanAmount);
       if (!loanAmount || !Number.isFinite(borrow) || borrow <= 0) return null;
-      const range = suggestedReturnRange(borrow);
-      const typical = borrow + Math.max(range?.lo ?? 1, 1);
-      const min = minimumRepayment(borrow, days)?.amount ?? 0;
-      return Math.ceil(Math.max(typical, min) * 2) / 2;
+      return suggestedRepaymentRange(borrow, days);
    })();
    const reasonMeetsLength = reason.trim().length >= REASON_MIN_LENGTH;
    const reasonQuality = checkReasonQuality(reason);
@@ -3487,7 +3485,7 @@ export default function LoanRequestModal({
                                  inputMode="decimal"
                                  placeholder={
                                     suggestedRepayment
-                                       ? `Suggested: $${Number.isInteger(suggestedRepayment) ? suggestedRepayment : suggestedRepayment.toFixed(2)}`
+                                       ? `Suggested: $${Number.isInteger(suggestedRepayment.lo) ? suggestedRepayment.lo : suggestedRepayment.lo.toFixed(2)}–$${Number.isInteger(suggestedRepayment.hi) ? suggestedRepayment.hi : suggestedRepayment.hi.toFixed(2)}`
                                        : 'Must be more than the borrowed amount'
                                  }
                                  type="text"
