@@ -306,6 +306,7 @@ serve(async (req) => {
       dry?: boolean;
       income_doc?: string;
       income_decision?: string;
+      income_card?: { chat?: string; message?: number };
       proof_request?: string;
       proof_request_send?: string;
    };
@@ -315,7 +316,7 @@ serve(async (req) => {
    if (body.income_decision) {
       if (!UUID_RE.test(body.income_decision)) return jsonResponse({ error: 'bad income_decision id' }, 400);
       const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
-      return jsonResponse(await notifyIncomeDecision(svc, body.income_decision));
+      return jsonResponse(await notifyIncomeDecision(svc, body.income_decision, body.income_card));
    }
    // Proof requests ride here too: {"proof_request": id} = tell the team it came in,
    // {"proof_request_send": id} = send the link to the applicant. See _shared/proofRequests.ts.

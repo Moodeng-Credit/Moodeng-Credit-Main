@@ -42,7 +42,7 @@ import { handleBridgeStart } from '../_shared/idWaBridge.ts';
 import { handleIdFreeText } from '../_shared/idHelper.ts';
 import { handleGuidePhotoCommand, isGuidePhotoCommand } from '../_shared/idGuides.ts';
 import { handleWaltPayoutCallback } from '../_shared/idWaltPayouts.ts';
-import { handleIncomeDocCallback } from '../_shared/incomeDocCards.ts';
+import { handleIncomeDocCallback, handleIncomeDocReasonReply } from '../_shared/incomeDocCards.ts';
 import { handleArrivedCommand, handleSweepCommand, handleWalletDepositCallback } from '../_shared/idRepayments.ts';
 import { handleWaltWatchCallback, handleWaltWatchCommand } from '../_shared/waltWatch.ts';
 import { handleVaultBridgeCallback, handleVaultCommand } from '../_shared/idVaultBridge.ts';
@@ -1513,6 +1513,11 @@ serve(async (req) => {
       // The Indonesia ops chat (Walt watch alerts) counts too, so /waltconnect works where the alert lands.
       const idChatId = await getSetting(supabase, 'id_alert_chat_id');
       const isAdminChannel = [teamChatId, kycChatId, idChatId].some((id) => id && String(message.chat.id) === String(id));
+
+      // Proof of income: a reply to "✍️ Why reject?" is the reject reason (team + KYC chats).
+      if (message.reply_to_message && (await handleIncomeDocReasonReply(supabase, message, [teamChatId, kycChatId].filter(Boolean).map(String)))) {
+         return jsonResponse({ message: 'Income document reason handled' });
+      }
 
       // Lender-roster commands are honored only in the private team channel.
       if (

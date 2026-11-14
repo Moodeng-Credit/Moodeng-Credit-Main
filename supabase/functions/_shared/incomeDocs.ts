@@ -2,7 +2,8 @@ import { extractText, getDocumentProxy } from 'npm:unpdf@1.8.1';
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { postDiscord } from './discord.ts';
-import { incomeDocKeyboard, incomeDocUrl, postIncomeDocDiscordCard } from './incomeDocCards.ts';
+import { sendEmail } from './email.ts';
+import { incomeDocKeyboard, incomeDocUrl, postIncomeDocDiscordCard, reachLine } from './incomeDocCards.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
 import { fileMarkers, gcashRefIssues, type ImageInfo, imageInfo, isAiSize, rowKeys, rowOverlap } from './fileForensics.ts';
@@ -1358,14 +1359,18 @@ export const decisionMessage = (kind: 'approved' | 'declined' | 'resend', reason
              body: `${reason ? `${reason} ` : ''}You can send a different one any time, or message us on Facebook if you have questions.`
           };
 
-/** Tell the borrower on push, Messenger and Telegram (whichever they have): a decision or a resend ask. */
-export const notifyIncomeDecision = async (supabase: SupabaseClient, id: string) => {
+/**
+ * Tell the borrower on push, Messenger, Telegram and email (whichever they have): a decision or a
+ * resend ask. With `card` (a decision tapped on the Telegram card), say under that card where it
+ * reached them — so a push-only send is visible and someone can message them by hand.
+ */
+export const notifyIncomeDecision = async (supabase: SupabaseClient, id: string, card?: { chat?: string; message?: number }) => {
    const { data: row } = await supabase.from('income_documents').select('id, user_id, decision, decision_reason, verdict, resend_reason').eq('id', id).maybeSingle();
    const kind: 'approved' | 'declined' | 'resend' | null = row?.decision ?? (row?.verdict === 'resend' ? 'resend' : null);
    if (!row || !kind) return { ok: false, error: 'nothing to tell' };
    const { data: user } = await supabase
       .from('users')
-      .select('id, chat_id, notif_account_activity, messenger_psid')
+      .select('id, chat_id, notif_account_activity, messenger_psid, email')
       .eq('id', row.user_id)
       .maybeSingle();
    const msg = decisionMessage(kind, kind === 'resend' ? (RESEND_TEXT[row.resend_reason as ResendReason] ?? null) : row.decision_reason);
@@ -1393,10 +1398,10 @@ export const notifyIncomeDecision = async (supabase: SupabaseClient, id: string)
    const sent: string[] = [];
 
    try {
-      await sendPushToUser(supabase, row.user_id, () => ({ type: 'income_doc_decision', title: msg.title, body: msg.body, url: DOCUMENTS_URL, tag: 'income-doc' }), {
+      const push = await sendPushToUser(supabase, row.user_id, () => ({ type: 'income_doc_decision', title: msg.title, body: msg.body, url: DOCUMENTS_URL, tag: 'income-doc' }), {
          urgency: 'high'
       });
-      sent.push('push');
+      if (push.sent > 0) sent.push('push');
    } catch (err) {
       console.error('income decision push failed', err);
    }
@@ -1414,6 +1419,21 @@ export const notifyIncomeDecision = async (supabase: SupabaseClient, id: string)
          console.error('income decision telegram failed', err);
       }
    }
+   // Email too: many borrowers have no Messenger ID or Telegram on file, and push alone is easy to miss.
+   // sendEmail refuses made-up addresses (phone/Telegram sign-ups), which lands in the catch.
+   if (user?.email) {
+      try {
+         await sendEmail(user.email, msg.title, `${msg.body}\n\n${button}: ${DOCUMENTS_URL}\n\nMoodeng Credit`);
+         sent.push('email');
+      } catch (err) {
+         if (!(err instanceof Error && err.message.includes('placeholder'))) console.error('income decision email failed', err);
+      }
+   }
    await supabase.from('income_documents').update({ notified_at: new Date().toISOString() }).eq('id', id);
+   if (card?.chat && card.message) {
+      await sendTelegramMessage(card.chat, reachLine(sent, kind), { replyToMessageId: card.message }).catch((err) =>
+         console.error('income decision: reach line failed', err instanceof Error ? err.message : err)
+      );
+   }
    return { ok: true, sent };
 };
