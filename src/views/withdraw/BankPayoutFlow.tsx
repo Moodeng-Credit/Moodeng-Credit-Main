@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 
-import { ArrowRight, Check, ChevronRight, Clock, Landmark, Loader2, QrCode, Search, Smartphone, Wallet, XCircle } from 'lucide-react';
+import { ArrowRight, Check, ChevronRight, Clock, Landmark, Loader2, QrCode, ScanFace, Search, Smartphone, Wallet, XCircle } from 'lucide-react';
 
 import PoweredByStableyard from '@/components/brand/PoweredByStableyard';
 
@@ -109,6 +109,9 @@ const PREVIEW: Record<string, FnResult> = {
    qr_cash_decode: { ok: true, result: { merchant: { name: 'JUAN DELA CRUZ' } } }
 };
 
+// "Use my Moodeng ID" (share the Didit check with Stableyard) is off: the first live share (2026-11-14) got
+// stuck in Stableyard's requires_reconciliation. Everyone does Stableyard's own ID check until they fix it.
+const OFFER_MOODENG_ID_SHARE = false;
 // A shared Moodeng ID check that Stableyard is still copying or reviewing.
 const REUSE_PENDING = new Set(['sharing', 'submitting', 'imported']);
 const PREVIEW_CONSENT = 'Sends your name, birthday, ID and selfie to Stableyard.';
@@ -497,6 +500,20 @@ function SetupStepper({ done }: { done: number }) {
 }
 
 const hintClass = 'text-center text-[12px] leading-[16px] text-[var(--text-faint)]';
+
+// Heads-up on the first setup screens: Stableyard does its own ID check, even for people Moodeng already
+// checked. Said before they start so the second ID check isn't a surprise.
+function IdCheckNote() {
+   return (
+      <div className="flex items-start gap-[10px] rounded-[12px] bg-[#f3f0ff] px-[12px] py-[10px] dark:bg-[#252035]">
+         <ScanFace className="mt-[1px] h-[20px] w-[20px] shrink-0 text-[#6b55f7] dark:text-[#b3a6ff]" />
+         <p className="text-[13px] leading-[18px] text-[var(--ink)]">
+            <span className="font-bold">One more ID check.</span> Stableyard sends your pesos, so they check your ID too. One time, about 5
+            minutes.
+         </p>
+      </div>
+   );
+}
 
 // 'compliance': Stableyard wants a one-time form (nextAction complete_compliance) before it prices the payout.
 // 'pricing': the Payment exists and Stableyard is still working out the quote.
@@ -892,7 +909,8 @@ export default function BankPayoutFlow({
       const emailDone = Boolean(setup?.emailVerified);
       const reusePending = REUSE_PENDING.has(setup?.reuseImportStatus ?? '');
       const reviewing = reusePending || setup?.kycStatus === 'requires_review' || setup?.kycStatus === 'in_review';
-      const offerReuse = Boolean(setup?.reuseAvailable && setup?.consentText) && !useHostedCheck && !reviewing;
+      const offerReuse =
+         OFFER_MOODENG_ID_SHARE && Boolean(setup?.reuseAvailable && setup?.consentText) && !useHostedCheck && !reviewing;
       const idStep = emailDone && !setup?.kycApproved;
       return (
          <div className="space-y-[12px]">
@@ -903,6 +921,7 @@ export default function BankPayoutFlow({
             <Panel>
                <SetupStepper done={emailDone ? (setup?.kycApproved ? 2 : 1) : 0} />
                {error ? <ErrorLine text={error} /> : null}
+               {!setup?.kycApproved && !reviewing ? <IdCheckNote /> : null}
                {!emailDone ? (
                   <div className="space-y-[8px]">
                      <input
