@@ -2007,6 +2007,8 @@ export default function LoanRequestModal({
       setTermErrors({});
       setBorrowerContext(emptyBorrowerContext);
       setBorrowerContextPromptSeen(false);
+      setShowJobStep(false);
+      setJobStepDone(false);
       setBorrowerProfileName(user.displayName ?? user.username ?? '');
       setBorrowerProfileError('');
       setShowBorrowerAvatarModal(false);
@@ -3324,7 +3326,7 @@ export default function LoanRequestModal({
                <JobStep initialValue={borrowerContext.profession ?? ''} onBack={handleJobStepBack} onSave={handleJobStepSave} />
             ) : showContactsStep ? (
                <ContactsStep
-                  requireAllLines
+                  requireAllLines={!user.hasMessengerLink || !user.whatsappVerified}
                   userId={user.id}
                   source="loan_request"
                   onBack={handleContactsStepBack}

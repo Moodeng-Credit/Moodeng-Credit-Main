@@ -400,7 +400,10 @@ export default function ContactsStep({
       };
    }, []);
    const pushCantWork = !push.isSupported || pushBlocked || pushUnavailable;
-   const offerWhatsAppReminders = whatsappRemindersEnabled && (pushCantWork || requireAllLines) && !isGuest;
+   const offerWhatsAppReminders = whatsappRemindersEnabled && pushCantWork && !isGuest;
+   // Loan request with a line missing: WhatsApp is its own required line (not just a reminder fallback),
+   // shown even where push works, with no "I don't have WhatsApp" way out. Push stays as it was.
+   const requireWhatsAppLine = requireAllLines && whatsappRemindersEnabled && !isGuest;
    // requireReminders: where push can't work, WhatsApp becomes required, with "I don't have WhatsApp" as
    // the way out so nobody is locked in (2026-10-13: ~30 taps on a reminder that could never turn on).
    // Without the WhatsApp card on, there's nothing else to ask for, so it's the old rule.
@@ -408,13 +411,13 @@ export default function ContactsStep({
    // Onboarding (George, 18 Oct): we need one way to remind every borrower. Where notifications can't
    // work (Facebook's / Messenger's browser), that's WhatsApp, required like at loan time, with the same
    // "I don't have WhatsApp" way out. Confirming it also gives us their phone number.
-   const remindersMandatory = requireReminders || requireAllLines || source === 'connect';
+   const remindersMandatory = requireReminders || source === 'connect';
    // Viber or Telegram on stands in for WhatsApp where notifications can't work.
    const otherReminderOn = viberVerified || telegramVerified;
-   const whatsappRequired = requireAllLines
-      ? offerWhatsAppReminders && !whatsappVerified
+   const whatsappRequired = requireWhatsAppLine
+      ? !whatsappVerified
       : remindersMandatory && offerWhatsAppReminders && !whatsappVerified && !otherReminderOn && !skippedNoWhatsApp;
-   const canContinue = contactVerified && (requireAllLines || pushOn || !pushRequired) && !whatsappRequired;
+   const canContinue = contactVerified && (pushOn || !pushRequired) && !whatsappRequired;
    // One way to remind them at a time (George, 18–19 Oct). Where notifications work: the bell card.
    // Where they can't: WhatsApp; after "I don't have WhatsApp": Telegram, Viber (when its relay is on)
    // and SMS greyed out as coming soon. A linked Viber or Telegram replaces the WhatsApp card.
@@ -429,7 +432,8 @@ export default function ContactsStep({
    // (whatsappFirst.ts), so the app shows no Messenger card that can't open without the Messenger app
    // (an Indonesian borrower got stuck there, 2026-10-26). It turns green on its own when the bot confirms Facebook (realtime below).
    const facebookOnWhatsApp = indoWhatsAppFirst && whatsappVerified && !skippedNoWhatsApp && !contactVerified;
-   const showWhatsAppCard = offerWhatsAppReminders && contactVerified && (requireAllLines || (!otherReminderOn && !skippedNoWhatsApp)) && !indoWhatsAppFirst;
+   const showWhatsAppCard =
+      contactVerified && !indoWhatsAppFirst && (requireWhatsAppLine || (offerWhatsAppReminders && !otherReminderOn && !skippedNoWhatsApp));
    const showTelegramCard = offerWhatsAppReminders && contactVerified && (telegramVerified || (afterNoWhatsApp && !viberVerified));
    const showViberCard =
       offerWhatsAppReminders && contactVerified && (viberVerified || (afterNoWhatsApp && viberRemindersEnabled && !telegramVerified));
@@ -437,7 +441,7 @@ export default function ContactsStep({
    // Two numbered steps whenever there's a reminders step: 1 Connect Facebook, 2 Payment reminders.
    // Step 2 stays locked until Facebook is connected, so nobody starts with reminders thinking that's
    // the Facebook step (WhatsApp in particular looks like a way to "reach you").
-   const hasReminderStep = pushRequired || pushBlocked || pushUnavailable || offerWhatsAppReminders;
+   const hasReminderStep = pushRequired || pushBlocked || pushUnavailable || offerWhatsAppReminders || requireWhatsAppLine;
 
    // Reminders can't turn on here — blocked, failing on this phone, or Facebook's browser on Android
    // (no push at all, but Chrome has it). Once they've connected Facebook, the bot messages them how
@@ -1531,13 +1535,13 @@ export default function ContactsStep({
             <LockedStepCard
                hint={indoWhatsAppFirst ? 'Unlocks after step 2' : 'Unlocks after step 1'}
                icon={
-                  offerWhatsAppReminders ? (
+                  offerWhatsAppReminders || requireWhatsAppLine ? (
                      <i aria-hidden="true" className="fab fa-whatsapp text-[38px] leading-none text-[#25D366]" />
                   ) : (
                      <BellRing aria-hidden="true" className="size-9 text-[#6b55f7]" strokeWidth={2} />
                   )
                }
-               title={offerWhatsAppReminders ? 'Get reminders on WhatsApp' : 'Turn on reminders'}
+               title={offerWhatsAppReminders || requireWhatsAppLine ? 'Get reminders on WhatsApp' : 'Turn on reminders'}
             />
          ) : null}
          {showPushCard ? (
@@ -1578,7 +1582,7 @@ export default function ContactsStep({
          {showWhatsAppCard ? (
             <WhatsAppRemindersCard
                onVerified={() => setWhatsappVerified(true)}
-               required={requireAllLines || (remindersMandatory && !skippedNoWhatsApp)}
+               required={requireWhatsAppLine || (remindersMandatory && !skippedNoWhatsApp)}
                source={source}
                userId={userId}
                verified={whatsappVerified}
@@ -1592,7 +1596,7 @@ export default function ContactsStep({
          {showSmsComingSoon ? (
             <ComingSoonChannel icon={<MessageSquareText aria-hidden="true" className="size-8" strokeWidth={2} />} title="SMS reminders" />
          ) : null}
-         {!requireAllLines && remindersMandatory && offerWhatsAppReminders && contactVerified && !whatsappVerified && !otherReminderOn && !skippedNoWhatsApp ? (
+         {!requireWhatsAppLine && remindersMandatory && offerWhatsAppReminders && contactVerified && !whatsappVerified && !otherReminderOn && !skippedNoWhatsApp ? (
             <button
                className="self-center text-md-b3 font-[590] text-[#877897] underline"
                onClick={() => {
