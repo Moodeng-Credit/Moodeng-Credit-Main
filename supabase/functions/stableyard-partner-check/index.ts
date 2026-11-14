@@ -12,6 +12,8 @@ import { stableyard } from '../_shared/stableyard.ts';
 // POST { raw: true } returns the full config instead of the summary.
 // POST { payment: 'payment_…' } returns one Payment as Stableyard sees it.
 // POST { kycReusePolicy: true } returns the Reusable KYC policy (is ID-check sharing on for our app?).
+// POST { kyc: 'acct_…', importId?: 'kyc_import_…' } returns one account's ID-check state as Stableyard sees it
+// (and one shared-ID import), for support: why a share is stuck. Read-only; Stableyard returns no documents here.
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -65,6 +67,23 @@ serve(async (req) => {
       return payment.ok
          ? json({ ok: true, stableyardStatus: payment.status, payment: payment.data })
          : json({ ok: false, stableyardStatus: payment.status, error: payment.error, code: payment.code ?? null }, 502);
+   }
+
+   // ---- POST { kyc: 'acct_…', importId? } → GET /v2/accounts/{id}/kyc (+ /kyc/imports/{importId}) (read-only) ----
+   const kycAccountId = String(body?.kyc ?? '').trim();
+   if (kycAccountId) {
+      const importId = String(body?.importId ?? '').trim();
+      if (!/^acct_[A-Za-z0-9_-]+$/.test(kycAccountId)) return json({ error: 'Invalid account ID.' }, 400);
+      if (importId && !/^kyc_import_[A-Za-z0-9_-]+$/.test(importId)) return json({ error: 'Invalid import ID.' }, 400);
+      const [kyc, kycImport] = await Promise.all([
+         stableyard.getKyc(kycAccountId),
+         importId ? stableyard.getKycImport(kycAccountId, importId) : Promise.resolve(null)
+      ]);
+      const view = (r: Awaited<ReturnType<typeof stableyard.getKyc>>) =>
+         r.ok
+            ? { ok: true, stableyardStatus: r.status, data: r.data }
+            : { ok: false, stableyardStatus: r.status, error: r.error, code: r.code ?? null, requestId: r.requestId ?? null };
+      return json({ ok: true, accountId: kycAccountId, kyc: view(kyc), import: kycImport ? view(kycImport) : null });
    }
 
    // ---- POST { kycReusePolicy: true } → GET /v2/partners/kyc-reuse-policy (read-only) ----------
