@@ -88,7 +88,10 @@ const postCashoutAlert = async (
          cashoutNumber: args.cashoutNumber ?? count.count ?? 0
       });
       const text = args.prefix ? `${args.prefix}\n${card}` : card;
-      await sendTelegramMessage(chatId, text, { inlineKeyboard: [[{ text: '🔎 View on Basescan', url: cashoutTxUrl(args.txHash) }]] });
+      const sent = (await sendTelegramMessage(chatId, text, {
+         inlineKeyboard: [[{ text: '🔎 View on Basescan', url: cashoutTxUrl(args.txHash) }]]
+      })) as { message_id?: number; chat?: { id?: number; title?: string } } | undefined;
+      return { chatId: sent?.chat?.id ?? chatId, chatTitle: sent?.chat?.title ?? null, messageId: sent?.message_id ?? null };
    } catch (err) {
       console.error('[record-withdrawal] cash-out alert failed:', err instanceof Error ? err.message : err);
       if (args.prefix) throw err;
@@ -119,7 +122,7 @@ const replayAlert = async (admin: AdminClient, withdrawalId: string) => {
       .eq('borrower_user_id', row.borrower_user_id)
       .lte('created_at', row.created_at);
    try {
-      await postCashoutAlert(admin, {
+      const sent = await postCashoutAlert(admin, {
          userId: row.borrower_user_id,
          amount: Number(row.amount),
          exchange: row.exchange || 'Other',
@@ -131,10 +134,10 @@ const replayAlert = async (admin: AdminClient, withdrawalId: string) => {
          cashoutNumber: count ?? 0,
          prefix: '🔁 Resent (missed when it happened)'
       });
+      return jsonResponse({ ok: true, withdrawalId: row.id, ...sent });
    } catch (err) {
       return jsonResponse({ error: err instanceof Error ? err.message : 'Send failed' }, 502);
    }
-   return jsonResponse({ ok: true, withdrawalId: row.id });
 };
 
 serve(async (req) => {
