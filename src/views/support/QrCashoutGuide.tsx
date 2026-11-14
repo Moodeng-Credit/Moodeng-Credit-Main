@@ -80,7 +80,7 @@ const COPY: Record<
       firstTitle: 'First time only',
       first: [
          'Type your email and the code we send.',
-         'Tap “Use my Moodeng ID” so you don’t do the ID check again.',
+         'Tap “Start ID check” and take a photo of your ID and a selfie. Takes about 5 minutes.',
          'Fill a short form: phone and nationality.'
       ],
       feesTitle: 'Fees',
@@ -135,7 +135,7 @@ const COPY: Record<
       firstTitle: 'Sa unang beses lang',
       first: [
          'I-type ang email mo at ang code na ipapadala namin.',
-         'I-tap ang “Use my Moodeng ID” para hindi ka na mag-ID check ulit.',
+         'I-tap ang “Start ID check” at kunan ng photo ang ID mo at mag-selfie. Mga 5 minuto lang.',
          'Sagutan ang maikling form: phone at nationality.'
       ],
       feesTitle: 'Mga fee',
