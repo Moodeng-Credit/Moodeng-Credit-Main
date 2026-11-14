@@ -1,3 +1,5 @@
+import { buildRepayRewardLine, type RepayRewardPreview } from './repayReward.ts';
+
 export type LoanNotificationType =
    | 'funded'
    | 'urgent_reminder'
@@ -73,6 +75,8 @@ export type LoanNotificationAggregate = {
    followUp?: boolean;
    /** Indonesia rupiah peg: rupiah left over these loans, when every one is pegged (else null/undefined). */
    totalIdr?: number | null;
+   /** Due reminders: what paying on time is worth (food voucher / streak), for the reward line. */
+   reward?: RepayRewardPreview | null;
 };
 
 type DetailTone = 'default' | 'good' | 'warn';
@@ -214,6 +218,14 @@ const normalizeNotificationText = (text: string) =>
       .replace(/\n[ \t]*\n+/g, '\n')
       .replace(/[ \t]+\n/g, '\n')
       .trimEnd();
+
+// Messenger can only message someone for 24 hours after their last message. Sending REWARD the day
+// before reopens it (messengerRewardReply.ts answers), so the due-day Messenger reminder gets through.
+const MESSENGER_PAGE_CHAT_URL = 'https://www.messenger.com/t/1148756028310286';
+export const buildMessengerReopenLine = (recipient: Pick<LoanNotificationRecipient, 'messenger_psid'>): string | null =>
+   recipient.messenger_psid
+      ? `Want tomorrow's reminder on Messenger? Send REWARD to our Facebook Page: ${MESSENGER_PAGE_CHAT_URL}`
+      : null;
 
 const formatLoanCount = (count: number) => `${count} ${count === 1 ? 'loan' : 'loans'}`;
 
@@ -640,6 +652,7 @@ const buildUrgentReminderContent = (recipient: LoanNotificationRecipient, aggreg
 You have ${formatLoanCount(count)} coming due in ${dueLabel}.
 Due date: ${nextDueDate}
 Total to repay: ${totalToRepay}
+${buildRepayRewardLine(aggregate?.reward, 'urgent_reminder') ?? ''}
 ${trustPointHighlight.textLine}
 Open Moodeng to repay before the due date: ${repayLink}
 For help, contact support@moodeng.app`);
@@ -647,7 +660,7 @@ For help, contact support@moodeng.app`);
    return {
       subject: 'Your loan is coming due',
       title: count === 1 ? 'Your loan is coming due' : 'Your loans are coming due',
-      intro: 'This is a quick reminder.',
+      intro: buildRepayRewardLine(aggregate?.reward, 'urgent_reminder') ?? 'This is a quick reminder.',
       amountLabel: 'Total to repay',
       amountValue: totalToRepay,
       details: [
@@ -682,14 +695,16 @@ const buildFinalReminderContent = (recipient: LoanNotificationRecipient, aggrega
 You have ${formatLoanCount(count)} due within ${dueLabel}.
 Due date: ${nextDueDate}
 Total due: ${totalDue}
+${buildRepayRewardLine(aggregate?.reward, 'final_reminder') ?? ''}
 ${trustPointHighlight.textLine}
 Please repay soon to keep the loan current: ${repayLink}
+${buildMessengerReopenLine(recipient) ?? ''}
 For help, contact support@moodeng.app`);
 
    return {
       subject: 'Your repayment is due soon',
       title: count === 1 ? 'Your loan is due soon' : 'Your loans are due soon',
-      intro: 'Please repay soon to keep your account in good standing.',
+      intro: buildRepayRewardLine(aggregate?.reward, 'final_reminder') ?? 'Please repay soon to keep your account in good standing.',
       amountLabel: 'Total due',
       amountValue: totalDue,
       details: [
@@ -703,7 +718,7 @@ For help, contact support@moodeng.app`);
       highlightValue: trustPointHighlight.value,
       ctaLabel: 'Repay now',
       ctaHref: repayLink,
-      supportText: 'Start a chat if you need help making this repayment.',
+      supportText: buildMessengerReopenLine(recipient) ?? 'Start a chat if you need help making this repayment.',
       telegramText: `Hi Moodeng Credit, I need help with ${formatLoanCount(count)} due within ${dueLabel}. My total due is ${totalDue}.`,
       text
    };
@@ -723,6 +738,7 @@ const buildDueTodayContent = (recipient: LoanNotificationRecipient, aggregate?: 
 ${formatLoanCount(count)} ${count === 1 ? 'is' : 'are'} due today.
 Due date: ${nextDueDate}
 Total due: ${totalDue}
+${buildRepayRewardLine(aggregate?.reward, 'due_today') ?? ''}
 ${trustPointHighlight.textLine}
 Repay any time today to stay in good standing: ${repayLink}
 For help, contact support@moodeng.app`);
@@ -730,7 +746,7 @@ For help, contact support@moodeng.app`);
    return {
       subject: count === 1 ? 'Your repayment is due today' : 'Your repayments are due today',
       title: count === 1 ? 'Your loan is due today' : 'Your loans are due today',
-      intro: 'A friendly heads-up — you have the full day to repay.',
+      intro: [buildRepayRewardLine(aggregate?.reward, 'due_today'), 'You have the full day to repay.'].filter(Boolean).join(' ') || 'A friendly heads-up — you have the full day to repay.',
       amountLabel: 'Total due',
       amountValue: totalDue,
       details: [
@@ -1005,7 +1021,7 @@ ${actionUrl}`);
       const text = normalizeNotificationText(`Amount coming due
 Hi ${name}, you have ${formatLoanCount(aggregate?.count ?? 0)} due in ${dueLabel}.
 Amount due: ${formatUsdcAmount(aggregate?.totalAmount ?? 0)}
-Repay on time to stay in good standing.
+${buildRepayRewardLine(aggregate?.reward, type) ?? 'Repay on time to stay in good standing.'}
 ${actionUrl}`);
 
       return { actionUrl, text };
@@ -1016,7 +1032,7 @@ ${actionUrl}`);
       const text = normalizeNotificationText(`Amount coming due
 Hi ${name}, you have ${formatLoanCount(aggregate?.count ?? 0)} due tomorrow.
 Amount due: ${formatUsdcAmount(aggregate?.totalAmount ?? 0)}
-Please make sure your wallet has the stablecoins ready so your Moodeng history stays on track.
+${buildRepayRewardLine(aggregate?.reward, type) ?? 'Please make sure your wallet has the stablecoins ready so your Moodeng history stays on track.'}
 ${actionUrl}`);
 
       return { actionUrl, text };
@@ -1028,6 +1044,7 @@ ${actionUrl}`);
 Hi ${name}, you have ${formatLoanCount(aggregate?.count ?? 0)} due today.
 Amount due: ${formatUsdcAmount(aggregate?.totalAmount ?? 0)}
 You have the full day to repay — settle any time today to stay in good standing.
+${buildRepayRewardLine(aggregate?.reward, type) ?? ''}
 ${actionUrl}`);
 
       return { actionUrl, text };

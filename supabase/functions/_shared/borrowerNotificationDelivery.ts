@@ -9,6 +9,7 @@ import {
    LoanNotificationType
 } from './loanNotifications.ts';
 import { sendPushToUser } from './pushDelivery.ts';
+import { buildRepayRewardLine } from './repayReward.ts';
 import {
    buildDuePushPayload,
    buildFundedPushPayload,
@@ -106,7 +107,8 @@ export const buildViberReminderText = (
          : type === 'due_today'
            ? `your Moodeng Credit payment of ${amount} is due today.`
            : `your Moodeng Credit payment of ${amount} is overdue${lateBy ? ` (${lateBy} late)` : ''}. Paying now protects your credit level.`;
-   return `Hi ${name}, ${line}\n\nRepay here: https://moodeng.app/repay`;
+   const rewardLine = buildRepayRewardLine(aggregate.reward, type);
+   return `Hi ${name}, ${line}${rewardLine ? `\n${rewardLine}` : ''}\n\nRepay here: https://moodeng.app/repay`;
 };
 
 /** Telegram/LINE/phone sign-ups get a placeholder address nobody reads (telegram_<id>@moodeng.app, line_<id>@…, phone_<id>@…). */
@@ -220,7 +222,7 @@ const buildPushPayloadForType = (
          }
          return buildDuePushPayload(
             type,
-            { loanCount: aggregate.count, totalAmount: aggregate.totalAmount, dueLabel: aggregate.dueLabel ?? '' },
+            { loanCount: aggregate.count, totalAmount: aggregate.totalAmount, dueLabel: aggregate.dueLabel ?? '', reward: aggregate.reward },
             locale
          );
       }

@@ -12,7 +12,7 @@ import { toNumber } from '@/utils/decimalHelpers';
 import { getBorrowerUsedCreditAmount } from '@/lib/borrowerCreditUsage';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { isUserVerified } from '@/lib/isUserVerified';
-import { getDaysUntilDueDay, getLoanTimezone } from '@/lib/loanDeadline';
+import { getDaysUntilDueDay, getDueDayEnd, getLoanTimezone } from '@/lib/loanDeadline';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { fetchUserProfiles } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -99,6 +99,7 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
             amount: Math.max(0, toNumber(loan.totalRepaymentAmount) - toNumber(loan.repaidAmount)),
             // Calendar days in the borrower's zone: 0 = due today, negative = overdue.
             daysRemaining: getDaysUntilDueDay(loan.dueDate, getLoanTimezone(loan)),
+            deadline: getDueDayEnd(loan.dueDate, getLoanTimezone(loan)).toISOString(),
             lenderName: lender?.displayName || lender?.username || 'a moo-lender',
             isOverdue
          };

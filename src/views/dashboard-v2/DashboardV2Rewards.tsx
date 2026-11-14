@@ -38,7 +38,9 @@ const CLAIM_HEADLINE: Record<VoucherReward, string> = {
    referral_invitee: 'You repaid on time. Free meal!',
    tier_rising: 'Moodeng grew to Rising. Treat yourself!',
    tier_prime: 'Moodeng grew to Prime. Treat yourself!',
-   tier_apex: 'Moodeng reached Apex. Feast time!'
+   tier_apex: 'Moodeng reached Apex. Feast time!',
+   streak_3: '3 on time in a row. Treat yourself!',
+   streak_5: '5 on time in a row. Treat yourself!'
 };
 
 /** The two Moo-Menu picks, drawn as the designer's referral voucher tickets. GrabMart only comes from ₱100 (its smallest card). */

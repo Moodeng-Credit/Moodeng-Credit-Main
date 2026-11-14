@@ -7,13 +7,14 @@ import { useFloatingParticles, useReplayClass } from '@/components/motion/TapDel
 
 import { formatCurrency } from '@/utils/decimalHelpers';
 
-import type { ClaimableVoucher, VoucherClaimSummary } from '@/lib/friendReferrals';
+import type { ClaimableVoucher, RepayStreak, VoucherClaimSummary } from '@/lib/friendReferrals';
 
 import { type LocaleCode, useLocalization } from '@/i18n';
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 import { TabbedCard } from '@/views/dashboard-v2/components/DashboardV2Graphics';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
-import { getVoucherState, OWN_VOUCHER, type VoucherState } from '@/views/dashboard-v2/dashboardV2Model';
+import { AddDueToCalendar, RepayStreakCard } from '@/views/dashboard-v2/components/RepayStreak';
+import { getRepayRewardLine, getVoucherState, OWN_VOUCHER, type VoucherState } from '@/views/dashboard-v2/dashboardV2Model';
 import type { DashboardV2Due, DashboardV2Milestone, DashboardV2Model } from '@/views/dashboard-v2/types';
 
 const PILL_BUTTON = 'flex h-[34px] w-[82px] shrink-0 items-center justify-center rounded-full text-[16px] font-semibold leading-6';
@@ -311,8 +312,10 @@ const formatDueLabel = (due: DashboardV2Due, locale: LocaleCode) => {
    return labels.dueIn(due.daysRemaining);
 };
 
-function DueRow({ due }: { due: DashboardV2Due }) {
+function DueRow({ due, streak }: { due: DashboardV2Due; streak: RepayStreak | null }) {
    const { locale } = useLocalization();
+   // What paying this one on time is worth: the food voucher, or the streak it grows / saves.
+   const rewardLine = streak ? getRepayRewardLine(streak, due.daysRemaining, locale) : null;
    return (
       <div
          className={clsx(
@@ -338,17 +341,25 @@ function DueRow({ due }: { due: DashboardV2Due }) {
             <span className={clsx('text-[16px] leading-[18px]', due.isOverdue ? 'text-[#ffb8b8]' : 'text-[#c0b9c8] dark:text-[#8f819e]')}>
                Lent by {due.lenderName}
             </span>
+            {rewardLine ? (
+               <span className="mt-1 text-[15px] font-bold leading-[18px] text-[#2f8a4a] dark:text-[#7fd693]" data-testid="due-reward-line">
+                  {rewardLine}
+               </span>
+            ) : null}
          </div>
          {due.isOverdue ? (
             <Link to="/repay" className={clsx(PILL_BUTTON, 'text-white')} style={{ backgroundImage: PRIMARY_GRADIENT }}>
                Pay Now
             </Link>
-         ) : null}
+         ) : (
+            <AddDueToCalendar due={due} rewardLine={rewardLine} />
+         )}
       </div>
    );
 }
 
 export function UpcomingDuesSection({ model }: { model: DashboardV2Model }) {
+   const nextDueId = [...model.dues].filter((due) => !due.isOverdue).sort((a, b) => a.daysRemaining - b.daysRemaining)[0]?.id;
    return (
       <section className="mx-5 rounded-[8px] bg-dv2-card px-2.5 pb-3.5 pt-5" aria-labelledby="dv2-dues-title">
          <div className="flex items-center justify-between">
@@ -366,6 +377,7 @@ export function UpcomingDuesSection({ model }: { model: DashboardV2Model }) {
                />
             </Link>
          </div>
+         <RepayStreakCard streak={model.rewards.streak} />
          <div className="mt-4">
             <Divider />
          </div>
@@ -375,7 +387,8 @@ export function UpcomingDuesSection({ model }: { model: DashboardV2Model }) {
             model.dues.map((due, index) => (
                <Fragment key={due.id}>
                   {index > 0 ? <Divider /> : null}
-                  <DueRow due={due} />
+                  {/* One on-time payment earns the reward, so only the next loan due carries the line. */}
+                  <DueRow due={due} streak={due.id === nextDueId ? model.rewards.streak : null} />
                </Fragment>
             ))
          )}

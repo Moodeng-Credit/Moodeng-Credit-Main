@@ -1,3 +1,5 @@
+import { buildRepayRewardLine, type RepayRewardPreview } from './repayReward.ts';
+
 // Notification copy for the push channel, in the three locales the app ships
 // (en / fil / id). Pure functions — no Supabase, no crypto — so the wording can
 // be unit-tested and reviewed without standing anything up.
@@ -74,6 +76,8 @@ export type RepeatBorrowerPushContext = {
 };
 
 export type DuePushContext = {
+   /** What paying on time is worth (food voucher / streak): leads the body when present. */
+   reward?: RepayRewardPreview | null;
    /** Number of loans rolled into this reminder. */
    loanCount: number;
    /** Combined outstanding amount across those loans, in USDC. */
@@ -297,10 +301,13 @@ const buildDuePush = (
       }
    };
 
+   // The reward goes first: it is the reason to pay on time, and lock screens cut long bodies short.
+   const rewardLine = buildRepayRewardLine(context.reward, type, locale);
+
    return {
       type,
       title: copy[locale][type].title,
-      body: copy[locale][type].body,
+      body: rewardLine ? `${rewardLine} ${copy[locale][type].body}` : copy[locale][type].body,
       url: buildAppUrl('/repay'),
       // Collapsed per type, so the hourly cron can retry without stacking.
       tag: `repayment:${type}`,

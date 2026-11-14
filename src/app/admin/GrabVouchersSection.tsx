@@ -29,7 +29,9 @@ const REWARD_LABEL: Record<AdminVoucherReward, string> = {
    referral_invitee: 'Referral — invited friend',
    tier_rising: 'Reached Rising',
    tier_prime: 'Reached Prime',
-   tier_apex: 'Reached Apex'
+   tier_apex: 'Reached Apex',
+   streak_3: '3 on time in a row',
+   streak_5: '5 on time in a row'
 };
 
 const EMAIL_SUBJECT = 'Your Moodeng food voucher';

@@ -12,7 +12,9 @@ export type VoucherReward =
    | 'referral_invitee'
    | 'tier_rising'
    | 'tier_prime'
-   | 'tier_apex';
+   | 'tier_apex'
+   | 'streak_3'
+   | 'streak_5';
 export type VoucherClaimStatus = 'pending' | 'sent' | 'rejected';
 /** Moo-Menu pick: 'food' = Xoxo link (Jollibee & co, anywhere in PH), 'grabmart' = GrabMart (₱100+, Metro Manila & Cebu). */
 export type VoucherBrand = 'food' | 'grabmart';
@@ -42,15 +44,41 @@ export interface VoucherClaimSummary {
    links: string[];
 }
 
+/**
+ * The on-time repayment streak, from app_private.repay_reward_preview() (migration 20261114150000).
+ * A loan repaid within a day of funding counts for nothing; a late repayment (or an overdue loan) resets it.
+ */
+export interface RepayStreak {
+   /** On-time repayments in a row right now. */
+   current: number;
+   /** The longest run ever: a streak voucher, once earned, stays earned. */
+   best: number;
+   /** The streak count that pays the next food voucher, or null when none is left. */
+   nextStep: number | null;
+   /** On-time repayments still needed to reach nextStep. */
+   toGo: number | null;
+   nextPhp: number | null;
+}
+
+export const EMPTY_STREAK: RepayStreak = { current: 0, best: 0, nextStep: null, toGo: null, nextPhp: null };
+
 export interface MyRewards {
    invitedCount: number;
    qualifiedCount: number;
    wasReferred: boolean;
+   streak: RepayStreak;
    claimable: ClaimableVoucher[];
    claims: VoucherClaimSummary[];
 }
 
-export const EMPTY_REWARDS: MyRewards = { invitedCount: 0, qualifiedCount: 0, wasReferred: false, claimable: [], claims: [] };
+export const EMPTY_REWARDS: MyRewards = {
+   invitedCount: 0,
+   qualifiedCount: 0,
+   wasReferred: false,
+   streak: EMPTY_STREAK,
+   claimable: [],
+   claims: []
+};
 
 const PENDING_INVITE_KEY = 'moodeng.pendingInviteCode';
 export const PENDING_INVITE_STORAGE_KEY = PENDING_INVITE_KEY;
@@ -78,6 +106,19 @@ export async function redeemFriendInvite(code: string): Promise<RedeemInviteResu
 }
 
 const toNumber = (value: unknown) => (typeof value === 'number' ? value : Number(value) || 0);
+const toNumberOrNull = (value: unknown) => (value === null || value === undefined ? null : toNumber(value));
+
+const parseStreak = (raw: unknown): RepayStreak => {
+   if (!raw || typeof raw !== 'object') return EMPTY_STREAK;
+   const value = raw as Record<string, unknown>;
+   return {
+      current: toNumber(value.current),
+      best: toNumber(value.best),
+      nextStep: toNumberOrNull(value.nextStep),
+      toGo: toNumberOrNull(value.toGo),
+      nextPhp: toNumberOrNull(value.nextPhp)
+   };
+};
 
 /** Parses the jsonb returned by get_my_rewards(), tolerating missing keys. */
 export function parseMyRewards(raw: unknown): MyRewards {
@@ -89,6 +130,7 @@ export function parseMyRewards(raw: unknown): MyRewards {
       invitedCount: toNumber(value.invitedCount),
       qualifiedCount: toNumber(value.qualifiedCount),
       wasReferred: value.wasReferred === true,
+      streak: parseStreak(value.streak),
       claimable: list('claimable').map((item) => ({
          reward: item.reward as VoucherReward,
          friendReferralId: typeof item.friendReferralId === 'string' ? item.friendReferralId : null,

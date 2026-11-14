@@ -2167,7 +2167,9 @@ export type AdminVoucherReward =
    | 'referral_invitee'
    | 'tier_rising'
    | 'tier_prime'
-   | 'tier_apex';
+   | 'tier_apex'
+   | 'streak_3'
+   | 'streak_5';
 
 export interface AdminVoucherClaim {
    id: string;

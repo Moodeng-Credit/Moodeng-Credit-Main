@@ -14,6 +14,7 @@ import { dueDayBounds, loanTimezone, localHour, QUIET_HOURS_END, resolveTimezone
 import { loadBorrowerTimezones, postDueTeamFeed } from '../_shared/loanDueTeamFeed.ts';
 import { postUpcomingDueDigest } from '../_shared/teamLoanFeed.ts';
 import { loadPushSubscriptions } from '../_shared/pushDelivery.ts';
+import { parseRepayRewardPreview, type RepayRewardPreview } from '../_shared/repayReward.ts';
 import { calculateTrustPointRewardDelta, markLoansRepaid } from '../_shared/trustPointRewards.ts';
 import type { TrustPointMilestoneDefinition, TrustPointRewardLoan, TrustPointRewardUser } from '../_shared/trustPointRewards.ts';
 
@@ -31,6 +32,8 @@ type MilestoneCompletionRow = { user_id: string; milestone_id: string };
 type SentLoanNotificationRow = { loan_id: string };
 
 type TrustPointRewardContext = {
+   /** What paying on time is worth per borrower (food voucher / streak). Empty if the lookup fails. */
+   repayRewardByBorrowerId: Map<string, RepayRewardPreview>;
    loansByBorrowerId: Map<string, TrustPointRewardLoan[]>;
    completedMilestoneIdsByBorrowerId: Map<string, Set<string>>;
    milestoneDefinitions: TrustPointMilestoneDefinition[];
@@ -106,6 +109,7 @@ const loadBorrowers = async (supabase: SupabaseClient, userIds: string[]): Promi
 const loadTrustPointRewardContext = async (supabase: SupabaseClient, userIds: string[]): Promise<TrustPointRewardContext> => {
    if (!userIds.length) {
       return {
+         repayRewardByBorrowerId: new Map(),
          loansByBorrowerId: new Map(),
          completedMilestoneIdsByBorrowerId: new Map(),
          milestoneDefinitions: []
@@ -159,7 +163,19 @@ const loadTrustPointRewardContext = async (supabase: SupabaseClient, userIds: st
       completedMilestoneIdsByBorrowerId.set(completion.user_id, completedIds);
    }
 
+   // The reward line is a nice-to-have: a failed lookup must never stop the reminders themselves.
+   const repayRewardByBorrowerId = new Map<string, RepayRewardPreview>();
+   const { data: previews, error: previewsError } = await supabase.rpc('repay_reward_previews', { p_user_ids: userIds });
+   if (previewsError) {
+      console.error('[loan-due-notifications] repay_reward_previews failed', previewsError.message);
+   }
+   for (const row of (previews ?? []) as Array<{ user_id: string; preview: unknown }>) {
+      const preview = parseRepayRewardPreview(row.preview);
+      if (preview) repayRewardByBorrowerId.set(row.user_id, preview);
+   }
+
    return {
+      repayRewardByBorrowerId,
       loansByBorrowerId,
       completedMilestoneIdsByBorrowerId,
       milestoneDefinitions: (milestoneDefinitions ?? []) as TrustPointMilestoneDefinition[]
@@ -242,7 +258,9 @@ const notifyBorrower = async (
       dueLabel,
       nextDueDate: getNextDueDate(pendingLoans),
       // Indonesia rupiah peg: rupiah left (only when every loan here is pegged).
-      totalIdr: sumRemainingIdr(pendingLoans)
+      totalIdr: sumRemainingIdr(pendingLoans),
+      // Food vouchers are for the Philippines: Indonesian borrowers get no reward line.
+      reward: (borrower as any).market === 'ID' ? null : (rewardContext.repayRewardByBorrowerId.get(borrower.id) ?? null)
    };
    const borrowerLoans = rewardContext.loansByBorrowerId.get(borrower.id) ?? [];
    const trustPointsReward = calculateTrustPointRewardDelta({

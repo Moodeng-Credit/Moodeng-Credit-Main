@@ -3,6 +3,9 @@ import { toDashboardV2MilestoneList, toDashboardV2Milestones } from '@/views/das
 import type { DashboardV2Model, DashboardV2PreviewState } from '@/views/dashboard-v2/types';
 import { buildReputationMilestones } from '@/views/dashboard/dashboardHelpers';
 
+/** End of the day `days` from now, like a real loan's deadline. */
+const sampleDeadline = (days: number) => new Date(new Date().setHours(24, 0, 0, 0) + days * 864e5).toISOString();
+
 // SAMPLE DATA: values copied from the Figma frames so each design state can be reviewed as drawn.
 
 // Milestones come from the real shared definitions, evaluated for a borrower with no loans yet.
@@ -65,12 +68,13 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
       creditHint: { highlight: '$15', rest: ' full-limit loan unlocks LV.2' },
       summary: { repaymentsTotal: 1, active: 5, pending: 1.68, defaulted: 0 },
       dues: [
-         { id: 'sample-due-1', amount: 5, daysRemaining: 5, lenderName: 'Maricar Cruz', isOverdue: false },
-         { id: 'sample-due-2', amount: 1.68, daysRemaining: 13, lenderName: 'Milagros Reyes', isOverdue: false }
+         { id: 'sample-due-1', amount: 5, daysRemaining: 5, deadline: sampleDeadline(5), lenderName: 'Maricar Cruz', isOverdue: false },
+         { id: 'sample-due-2', amount: 1.68, daysRemaining: 13, deadline: sampleDeadline(13), lenderName: 'Milagros Reyes', isOverdue: false }
       ],
       hasOverdue: false,
       // Not in the Figma: shows where the live dashboard's "Withdraw your USDC" button sits.
-      showWithdraw: true
+      showWithdraw: true,
+      rewards: { ...EMPTY_REWARDS, streak: { current: 0, best: 0, nextStep: 1, toGo: 1, nextPhp: 50 } }
    },
    defaulted: {
       ...SAMPLE_BASE,
@@ -83,9 +87,9 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
       creditHint: { highlight: '$15', rest: ' full-limit loan unlocks LV.2' },
       summary: { repaymentsTotal: 1, active: 5, pending: 1.68, defaulted: 3 },
       dues: [
-         { id: 'sample-due-0', amount: 3, daysRemaining: 0, lenderName: 'Maricar Cruz', isOverdue: true },
-         { id: 'sample-due-1', amount: 5, daysRemaining: 5, lenderName: 'Maricar Cruz', isOverdue: false },
-         { id: 'sample-due-2', amount: 1.68, daysRemaining: 13, lenderName: 'Milagros Reyes', isOverdue: false }
+         { id: 'sample-due-0', amount: 3, daysRemaining: 0, deadline: sampleDeadline(0), lenderName: 'Maricar Cruz', isOverdue: true },
+         { id: 'sample-due-1', amount: 5, daysRemaining: 5, deadline: sampleDeadline(5), lenderName: 'Maricar Cruz', isOverdue: false },
+         { id: 'sample-due-2', amount: 1.68, daysRemaining: 13, deadline: sampleDeadline(13), lenderName: 'Milagros Reyes', isOverdue: false }
       ],
       hasOverdue: true
    },
@@ -108,6 +112,7 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
          invitedCount: 2,
          qualifiedCount: 1,
          wasReferred: false,
+         streak: { current: 2, best: 2, nextStep: 3, toGo: 1, nextPhp: 50 },
          claimable: [
             { reward: 'first_on_time_repayment', friendReferralId: null, amountPhp: 50 },
             { reward: 'referral_inviter', friendReferralId: 'sample-referral-1', amountPhp: 100 },
@@ -158,8 +163,8 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
       creditHint: { highlight: '$35', rest: ' full-limit loan unlocks a $45 limit' },
       summary: { repaymentsTotal: 0, active: 35, pending: 0, defaulted: 0 },
       dues: [
-         { id: 'demo-due-1', amount: 15, daysRemaining: 4, lenderName: 'Maricar Cruz', isOverdue: false },
-         { id: 'demo-due-2', amount: 20, daysRemaining: 11, lenderName: 'Milagros Reyes', isOverdue: false }
+         { id: 'demo-due-1', amount: 15, daysRemaining: 4, deadline: sampleDeadline(4), lenderName: 'Maricar Cruz', isOverdue: false },
+         { id: 'demo-due-2', amount: 20, daysRemaining: 11, deadline: sampleDeadline(11), lenderName: 'Milagros Reyes', isOverdue: false }
       ],
       hasOverdue: false
    }
