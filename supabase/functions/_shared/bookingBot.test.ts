@@ -4,6 +4,7 @@ import type { CallTimeRead } from './bookingAi.ts';
 import {
    type BotEvent,
    type BotState,
+   bookedCallIntent,
    type Ctx,
    firstName,
    greet,
@@ -620,6 +621,25 @@ Deno.test('cancel: really cancelled, or kept when cancelling fails', async () =>
    await c.send('cancel my call');
    assertEquals(c.state.booked, false);
    assertEquals(c.state.mine, null);
+});
+
+Deno.test('booked on the website, no chat: "Cancel my meeting" cancels, "reschedule" asks for a new time', async () => {
+   for (const m of ['Cancel my meeting', 'cancel', 'pls cancel my call', "I can't make it", 'hindi ako makakapunta', 'batalkan']) assertEquals(bookedCallIntent(m), 'cancel', m);
+   for (const m of ['Can I reschedule?', 'change my call', 'change the time po', 'move my meeting', 'ibang araw na lang', 'cancel, can we do tuesday 3pm?']) assertEquals(bookedCallIntent(m), 'change', m);
+   for (const m of ['everything okay?', 'thanks', 'how do I pay?', 'I moved to Cebu', 'see you tomorrow']) assertEquals(bookedCallIntent(m), null, m);
+   // The chat the Messenger bot starts for them: at their booked call.
+   const atCall = (): BotState => ({ ...newState(), step: 'booked', booked: true, mine: { date: '2026-11-03', min: 21 * 60 + 15, host: 'Emma' } });
+   let cancelled = 0;
+   const c = chat(atCall(), { cancel: async () => (cancelled++, true) });
+   await c.send('Cancel my meeting');
+   assertEquals(cancelled, 1);
+   assertEquals(c.state.booked, false);
+   assert(c.text.includes('is cancelled'), c.text);
+   const r = chat(atCall(), { cancel: async () => (cancelled++, true) });
+   await r.send('Can I reschedule?');
+   assertEquals(cancelled, 1);
+   assertEquals(r.state.booked, true);
+   assertEquals(r.state.changing, true);
 });
 
 // ---------------------------------------------------------------------------------------------------

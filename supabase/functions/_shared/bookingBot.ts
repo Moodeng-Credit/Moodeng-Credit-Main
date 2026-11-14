@@ -608,6 +608,16 @@ export const looksLikeTime = (t: string) => TIME_WORD.test(norm(t)) || CLOCK.tes
 const CHANGE = /\b(change|resched\w*|move|instead|another (day|time)|other (day|time)|ibang (araw|oras)|iba ?ng (araw|oras)|palit\w*|ilipat|lipat|cancel|na lang|nalang|ganti|pindah|jam lain|hari lain|jadwal ulang|diganti)\b/;
 const wantsChange = (t: string) => CHANGE.test(norm(t));
 const CANCEL = /\b(cancel\w*|can'?t (make it|come|attend)|cannot (make it|come|attend)|hindi (na )?(ako )?makakapunta|di (ako )?makakapunta|hindi na lang|ayaw ko na|wag na lang|huwag na lang|batal\w*|(tidak|gak|nggak|enggak|ga) (jadi|bisa (datang|hadir|ikut)))\b/;
+// Someone with a booked call who isn't in a booking chat ("Cancel my meeting", "can I reschedule?"): the
+// Messenger bot picks it up at their booked call instead of sending it to the support inbox.
+const RESCHEDULE = /\b(resched\w*|re-sched\w*|(change|move|palitan|ilipat|ganti|pindah)( (my|the|ang|ng))? ?(call|meeting|schedule|sched|time|oras|araw|jadwal|jam|zoom)|ibang (araw|oras)|jadwal ulang)\b/;
+/** 'cancel' / 'change' for a message about their booked call, else null. A cancel with a time in it is a move. */
+export const bookedCallIntent = (text: string): 'cancel' | 'change' | null => {
+   const n = norm(text);
+   if (CANCEL.test(n) && !looksLikeTime(n)) return 'cancel';
+   if (RESCHEDULE.test(n) || (CANCEL.test(n) && looksLikeTime(n))) return 'change';
+   return null;
+};
 const YES_WORDS = new Set(['yes', 'yeah', 'yea', 'yep', 'yup', 'ye', 'oo', 'opo', 'oho', 'sige', 'ok', 'okay', 'okey', 'oki', 'k', 'sure', 'confirm', 'confirmed', 'go', 'game', 'ya', 'iya', 'g', 'oke', 'baik', 'siap', 'boleh', 'bisa', 'betul', 'benar', 'setuju']);
 // Words that can follow a YES without being a name.
 const FILLER = new Set(['po', 'naman', 'please', 'pls', 'plz', 'thanks', 'thank', 'you', 'ty', 'salamat', 'sure', 'confirm', 'confirmed', 'na', 'lang', 'i', 'will', 'be', 'there', 'see', 'tayo', 'then', 'terima', 'kasih', 'makasih', 'dong', 'kak', 'pak', 'bu', 'mas', 'mbak', 'good', 'great', 'nice', 'got', 'it', 'all', 'set', 'deal', 'noted', 'ill', "i'll", 'definitely', 'of', 'course', 'yes', 'oo', 'opo', 'sige', 'ok', 'okay', 'yep', 'yeah', 'kita']);
