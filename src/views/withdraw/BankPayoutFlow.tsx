@@ -126,8 +126,8 @@ async function call(isPreview: boolean, input: Record<string, string | boolean>)
       // ?sim=email / ?sim=verify show the one-time setup at the email / ID step; ?sim=compliance shows
       // Stableyard's one-time form after the first "Get my price".
       const sim = new URLSearchParams(window.location.search).get('sim');
-      // ?sim=slow holds the setup for 8s to show the "Getting your cash-out ready" card.
-      if (body.qr === 'setup' && sim === 'slow') await new Promise((r) => setTimeout(r, 8000));
+      // ?sim=slow holds the setup for 12s to show the "Getting your cash-out ready" card.
+      if (body.qr === 'setup' && sim === 'slow') await new Promise((r) => setTimeout(r, 12000));
       if (body.qr === 'setup' && sim === 'email') return { ok: true, emailVerified: false, kycApproved: false, kycStatus: 'not_started' };
       if (body.qr === 'setup' && sim === 'verify') return { ok: true, emailVerified: true, kycApproved: false, kycStatus: 'not_started' };
       // ?sim=reuse shows the "use your Moodeng ID check" step; ?sim=reused shows it under review.
@@ -329,30 +329,50 @@ function Panel({ children }: { children: React.ReactNode }) {
 // Shown while the cash-out connects to Stableyard (it can take several seconds). The ticks move on a
 // timer so the wait feels like progress; the last line keeps spinning until the setup answer is back.
 const CONNECT_STEPS_MS = [1200, 3200];
-// Art for the connecting card. Placeholder: the cash-out Moodeng until the "connecting" art lands.
-const CONNECTING_ART = '/dashboard-v2/moo-cashout.png';
+// Moodeng changes with each step: on the phone to Stableyard → plugging in → holding up the QR (bank form:
+// running with the peso bag). Still loading after CONNECT_SLOW_MS → the stopwatch one, "Almost there…".
+const CONNECTING_ART = {
+   connect: '/withdraw-setup/connecting-phone.webp',
+   check: '/withdraw-setup/connecting-plug.webp',
+   qr: '/withdraw-setup/connecting-qr.webp',
+   bank: '/withdraw-setup/connecting-run.webp',
+   slow: '/withdraw-setup/connecting-stopwatch.webp'
+};
+const CONNECT_SLOW_MS = 9000;
 
 function ConnectingCard({ qrMode }: { qrMode: boolean }) {
    const [done, setDone] = useState(0);
+   const [slow, setSlow] = useState(false);
    useEffect(() => {
+      // Warm the cache so each picture is ready when its step comes up.
+      Object.values(CONNECTING_ART).forEach((src) => {
+         new Image().src = src;
+      });
       const timers = CONNECT_STEPS_MS.map((ms, i) => window.setTimeout(() => setDone(i + 1), ms));
+      timers.push(window.setTimeout(() => setSlow(true), CONNECT_SLOW_MS));
       return () => timers.forEach((t) => window.clearTimeout(t));
    }, []);
+   const art = slow
+      ? CONNECTING_ART.slow
+      : [CONNECTING_ART.connect, CONNECTING_ART.check, qrMode ? CONNECTING_ART.qr : CONNECTING_ART.bank][done];
    const lines = ['Connecting to Stableyard', 'Checking your account', qrMode ? 'Getting your QR upload ready' : 'Loading your banks'];
    return (
       <div className="space-y-[12px]">
          <div className="relative w-full h-[124px] rounded-[12px] overflow-hidden bg-[linear-gradient(100deg,#efeaff_0%,#ddd5ff_100%)] dark:bg-[linear-gradient(100deg,#252035_0%,#30285a_100%)]">
             <img
-               src={CONNECTING_ART}
+               key={art}
+               src={art}
                alt=""
                aria-hidden="true"
-               className="moo-float absolute right-[10px] bottom-[-8px] h-[134px] w-auto pointer-events-none select-none"
+               className="moo-float absolute right-[10px] bottom-[-6px] h-[122px] w-auto pointer-events-none select-none"
             />
             <div className="relative flex h-full flex-col justify-center pl-[16px] pr-[150px]">
                <h2 className="text-[22px] font-black italic leading-[1.1] tracking-[-0.5px] text-[#6b55f7] dark:text-[#b3a6ff]">
-                  Getting ready…
+                  {slow ? 'Almost there…' : 'Getting ready…'}
                </h2>
-               <p className="mt-[4px] text-[15px] font-semibold text-[#594d65] dark:text-[#e6def0]">Your cash-out is on its way</p>
+               <p className="mt-[4px] text-[15px] font-semibold text-[#594d65] dark:text-[#e6def0]">
+                  {slow ? 'Just a few more seconds' : 'Your cash-out is on its way'}
+               </p>
             </div>
          </div>
          <Panel>
