@@ -47,7 +47,11 @@ export type StuckCode = { code: string; user_id: string; created_at: string; sug
 
 // How we reached the borrower: email when they have a real address; otherwise (Telegram sign-ups get a
 // placeholder like telegram_<id>@moodeng.app) a message from our Telegram bot.
-export type EmailOutcome = 'sent' | 'failed' | 'no_email' | 'telegram_sent' | 'telegram_failed';
+export type EmailOutcome = 'sent' | 'failed' | 'no_email' | 'telegram_sent' | 'telegram_failed' | 'twin_skipped';
+
+// Another account with the same email (one of the two a guest sign-up whose typed email it is):
+// same_email_accounts. Usually the person signed in again by email and got a second account.
+export type TwinAccount = { id: string; username: string | null; messenger_verified_at: string | null; is_guest: boolean };
 
 // Lenders are skipped like in sendpulse-messenger-verify (explicit 'lender' only — some real
 // borrowers still have a NULL role). Banned/blocked accounts can't borrow, so no point chasing them.
@@ -68,19 +72,39 @@ const EMAIL_LINE: Record<EmailOutcome, string> = {
    failed: "📧 Emailing them failed — they haven't heard from us.",
    no_email: "📧 No real email and no Telegram chat — they haven't heard from us.",
    telegram_sent: '💬 No real email, so our Telegram bot sent them the code and a link (code works for 24 h).',
-   telegram_failed: "💬 No real email, and our Telegram message to them failed — they haven't heard from us."
+   telegram_failed: "💬 No real email, and our Telegram message to them failed — they haven't heard from us.",
+   twin_skipped: "📧 We didn't email them: their other account already has Facebook connected."
 };
 
-export const buildMessengerStuckAlert = (borrower: StuckBorrower, code: StuckCode, now = Date.now(), email: EmailOutcome = 'no_email') => {
+// A same-email account that has Facebook connected: this one is a leftover duplicate, not stuck.
+export const connectedTwin = (twins: TwinAccount[] | null | undefined) => (twins ?? []).find((t) => t.messenger_verified_at) ?? null;
+
+const twinLine = (twin: TwinAccount) => {
+   const handle = twin.username ? `@${twin.username}` : 'another account';
+   const kind = twin.is_guest ? 'guest account (Facebook-browser sign-up)' : 'account';
+   return twin.messenger_verified_at
+      ? `👯 Same person as ${handle}: that ${kind} has the same email and Facebook IS connected. Nothing to do unless they write in.`
+      : `👯 Same email as ${handle}'s ${kind}, probably the same person.`;
+};
+
+export const buildMessengerStuckAlert = (
+   borrower: StuckBorrower,
+   code: StuckCode,
+   now = Date.now(),
+   email: EmailOutcome = 'no_email',
+   twin: TwinAccount | null = null
+) => {
    const who = [borrower.username ? `@${borrower.username}` : null, borrower.email].filter(Boolean).join(' · ');
    const minutes = Math.max(1, Math.round((now - Date.parse(code.created_at)) / 60_000));
+   const duplicate = Boolean(twin?.messenger_verified_at);
    return [
-      `📵 Facebook not confirmed — ${borrowerName(borrower)}`,
+      duplicate ? `👯 Second account — ${borrowerName(borrower)}` : `📵 Facebook not confirmed — ${borrowerName(borrower)}`,
+      twin ? twinLine(twin) : null,
       who || null,
       `Tapped "Verify via Messenger" ${minutes} min ago (code ${code.code}), and our bot never heard from them.`,
       code.suggested_contact_name ? `🤔 Possible match: "${code.suggested_contact_name}" messaged the Page without a code.` : null,
       EMAIL_LINE[email],
-      'If they stay stuck, find them in the Page inbox. Once you have them, tap ✅ Mark Facebook verified.'
+      duplicate ? null : 'If they stay stuck, find them in the Page inbox. Once you have them, tap ✅ Mark Facebook verified.'
    ]
       .filter(Boolean)
       .join('\n');

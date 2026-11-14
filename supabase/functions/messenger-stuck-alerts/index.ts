@@ -10,6 +10,7 @@ import {
    buildMessengerStuckAlert,
    buildStuckEmail,
    buildStuckTelegram,
+   connectedTwin,
    type EmailOutcome,
    EMAILED_CODE_TTL_MS,
    isEmailable,
@@ -19,7 +20,8 @@ import {
    shouldAlertStuck,
    STUCK_AFTER_MS,
    type StuckBorrower,
-   type StuckCode
+   type StuckCode,
+   type TwinAccount
 } from '../_shared/messengerStuckAlert.ts';
 import { sendDuePosters } from '../_shared/messengerBorrowPoster.ts';
 import { handleRemindersStuck, REMINDERS_CORS } from '../_shared/remindersStuckHandler.ts';
@@ -129,9 +131,18 @@ serve(async (req) => {
          .is('verified_at', null);
       if (extendError) console.error('messenger-stuck-alerts: extending code failed', extendError.message);
 
+      // Same email as another account (one a guest sign-up)? Usually they signed in again and got a
+      // second account. If the other one has Facebook connected, don't chase this one.
+      const { data: twinRows, error: twinError } = await svc.rpc('same_email_accounts', { p_user_id: borrower.id });
+      if (twinError) console.error('messenger-stuck-alerts: twin lookup failed', twinError.message);
+      const twins = (twinRows ?? []) as TwinAccount[];
+      const twin = connectedTwin(twins) ?? twins[0] ?? null;
+
       // Without a live code the link and code would fail — tell the team instead of sending them.
       let email: EmailOutcome = 'no_email';
-      if (isEmailable(borrower.email)) {
+      if (twin?.messenger_verified_at) {
+         email = 'twin_skipped';
+      } else if (isEmailable(borrower.email)) {
          email = 'failed';
          if (!extendError) {
             const { subject, text, html } = buildStuckEmail(borrower, code.code, {
@@ -168,7 +179,7 @@ serve(async (req) => {
 
       // How they signed up and where in onboarding they got stuck.
       const onboarding = await loadOnboardingTimeline(svc, borrower.id);
-      const text = [buildMessengerStuckAlert(borrower, code, now, email), ...signupLines(onboarding), ...timelineLines(onboarding)].join(
+      const text = [buildMessengerStuckAlert(borrower, code, now, email, twin), ...signupLines(onboarding), ...timelineLines(onboarding)].join(
          '\n'
       );
       if (kycChatId) {

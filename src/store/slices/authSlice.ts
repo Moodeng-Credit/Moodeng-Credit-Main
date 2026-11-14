@@ -620,7 +620,45 @@ export type OtpMode = 'signin' | 'signup';
 // What a stale-session cleanup before a code sign-in must NOT wipe: an invite code or shared
 // request they arrived with, attribution, where to go after signing in, testing flags.
 const KEEP_THROUGH_OTP_LOCAL = [PENDING_INVITE_STORAGE_KEY, FIRST_TOUCH_STORAGE_KEY, AUTH_NEXT_STORAGE_KEY, LAST_USED_AUTH_STORAGE_KEY, SMS_TEST_FLAG_KEY, 'force_ph'];
-const KEEP_THROUGH_OTP_SESSION = [PENDING_SHARED_REQUEST_KEY];
+// The email whose code was sent for a waiting guest account (checked as an email-change code).
+// sessionStorage so a reload of the code page in this tab still checks it the right way.
+const GUEST_CODE_EMAIL_KEY = 'moodeng.guestCodeEmail';
+const KEEP_THROUGH_OTP_SESSION = [PENDING_SHARED_REQUEST_KEY, GUEST_CODE_EMAIL_KEY];
+
+const writeGuestCodeEmail = (email: string | null) => {
+   try {
+      if (email) sessionStorage.setItem(GUEST_CODE_EMAIL_KEY, email.trim().toLowerCase());
+      else sessionStorage.removeItem(GUEST_CODE_EMAIL_KEY);
+   } catch {
+      // Storage blocked: the code is then checked as a normal sign-in code.
+   }
+};
+
+const isGuestCodeEmail = (email: string) => {
+   try {
+      return sessionStorage.getItem(GUEST_CODE_EMAIL_KEY) === email.trim().toLowerCase();
+   } catch {
+      return false;
+   }
+};
+
+/**
+ * True when a guest account was waiting on this email and a code for it was mailed (forgot-password
+ * edge function, guest_code action). Any failure → false, and the normal sign-in code goes out.
+ */
+const sendGuestAccountCode = async (email: string): Promise<boolean> => {
+   const supabase = supabaseClient();
+   try {
+      const { data: waiting } = await supabase.rpc('guest_awaiting_email', { p_email: email.trim() });
+      if (waiting !== true) return false;
+      const { data, error } = await supabase.functions.invoke('forgot-password', {
+         body: { action: 'guest_code', email: email.trim() }
+      });
+      return !error && (data as { guest?: boolean } | null)?.guest === true;
+   } catch {
+      return false;
+   }
+};
 
 /**
  * Sends a one-time sign-in code by SMS (PH numbers, through the Send SMS hook and UniSMS) or email.
@@ -636,22 +674,28 @@ export const requestOtpCode = createAsyncThunk('auth/requestOtpCode', async (par
       data: { session: staleSession }
    } = await supabase.auth.getSession();
 
+   // A guest account (email-first sign-up in Facebook's browser) waiting on this email: send them a
+   // code for THAT account, so signing in here doesn't create a second, empty one.
+   const guestCode = target.channel === 'email' && (await sendGuestAccountCode(target.email));
+   writeGuestCodeEmail(guestCode && target.channel === 'email' ? target.email : null);
+
    // user_metadata is only applied when the account is created. `passwordless` tells Account
    // settings and onboarding that this account has no password yet.
-   const { error } =
-      target.channel === 'sms'
-         ? await supabase.auth.signInWithOtp({
-              phone: target.phone,
-              options: { shouldCreateUser, data: { username: generatePhoneUsername(), passwordless: true } }
-           })
-         : await supabase.auth.signInWithOtp({
-              email: target.email,
-              options: {
-                 shouldCreateUser,
-                 emailRedirectTo: getAuthRedirectUrl(),
-                 data: { username: target.email.split('@')[0], passwordless: true }
-              }
-           });
+   const { error } = guestCode
+      ? { error: null }
+      : target.channel === 'sms'
+        ? await supabase.auth.signInWithOtp({
+             phone: target.phone,
+             options: { shouldCreateUser, data: { username: generatePhoneUsername(), passwordless: true } }
+          })
+        : await supabase.auth.signInWithOtp({
+             email: target.email,
+             options: {
+                shouldCreateUser,
+                emailRedirectTo: getAuthRedirectUrl(),
+                data: { username: target.email.split('@')[0], passwordless: true }
+             }
+          });
 
    // Nothing is signed out until the code is on its way: a refused request (no account for that
    // email, rate limit) must never cost the session they're in.
@@ -781,9 +825,13 @@ export const verifyOtpCode = createAsyncThunk('auth/verifyOtpCode', async (param
    const { data, error } =
       params.channel === 'sms'
          ? await supabase.auth.verifyOtp({ phone: params.phone, token: params.token, type: 'sms' })
-         : await supabase.auth.verifyOtp({ email: params.email, token: params.token, type: 'email' });
+         : isGuestCodeEmail(params.email)
+           ? // A waiting guest account's code: confirms its pending email and signs into it.
+             await supabase.auth.verifyOtp({ email: params.email.trim().toLowerCase(), token: params.token, type: 'email_change' })
+           : await supabase.auth.verifyOtp({ email: params.email, token: params.token, type: 'email' });
 
    if (error) throw error;
+   if (params.channel === 'email') writeGuestCodeEmail(null);
 
    // A guest session that requestOtpCode kept: the code worked, so drop that guest's cached data
    // now (the new session is in cookies, which this doesn't touch).
