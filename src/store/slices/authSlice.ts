@@ -273,6 +273,13 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
       (row as UserRow & { messenger_verified_at?: string | null }).messenger_verified_at ||
          (row as UserRow & { whatsapp_verified_at?: string | null }).whatsapp_verified_at
    ),
+   // Both lines a loan request needs (2026-11-15): Messenger with its ID (they sent the code — a hand
+   // /confirm stamp has no ID, so we can't message them) and a confirmed WhatsApp.
+   hasMessengerLink: Boolean(
+      (row as UserRow & { messenger_verified_at?: string | null }).messenger_verified_at &&
+         (row as UserRow & { messenger_psid?: string | null }).messenger_psid
+   ),
+   whatsappVerified: Boolean((row as UserRow & { whatsapp_verified_at?: string | null }).whatsapp_verified_at),
    incomeType: (row as UserRow & { income_type?: string | null }).income_type ?? undefined,
    paydayType: (row as UserRow & { payday_type?: string | null }).payday_type ?? undefined,
    paydayStart: (row as UserRow & { payday_start?: number | null }).payday_start ?? undefined,
@@ -1085,6 +1092,24 @@ export const updateBorrowerContext = createAsyncThunk(
    }
 );
 
+/** Save just their job (the loan request asks for it when the profile has none). */
+export const updateProfession = createAsyncThunk('auth/updateProfession', async (profession: string) => {
+   const supabase = supabaseClient();
+   const {
+      data: { user },
+      error: sessionError
+   } = await supabase.auth.getUser();
+   if (sessionError || !user) throw sessionError ?? new Error('Not authenticated');
+   const { data: updatedRow, error } = await supabase
+      .from('users')
+      .update({ profession: profession.trim().slice(0, 60) } as Record<string, unknown>)
+      .eq('id', user.id)
+      .select('*')
+      .single();
+   if (error || !updatedRow) throw error ?? new Error('Failed to save your job');
+   return mapSupabaseRowToUser(updatedRow);
+});
+
 /** Set user_role in Supabase. Single source of truth for role-based routing. */
 export const updateUserRole = createAsyncThunk('auth/updateUserRole', async (role: UserRole) => {
    const supabase = supabaseClient();
@@ -1310,6 +1335,9 @@ const authSlice = createSlice({
             state.error = (action.error.message as string) || null;
          })
          .addCase(updateBorrowerContext.fulfilled, (state, action) => {
+            state.user = action.payload;
+         })
+         .addCase(updateProfession.fulfilled, (state, action) => {
             state.user = action.payload;
          })
          .addCase(fetchUserProfiles.fulfilled, (state, action) => {

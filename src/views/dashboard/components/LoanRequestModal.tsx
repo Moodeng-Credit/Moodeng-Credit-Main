@@ -82,12 +82,13 @@ import { onlyEmailReaches, type ReminderReach, requestContactSteps } from '@/con
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { isValidInviteCode, redeemFriendInvite, type RedeemInviteResult } from '@/lib/friendReferrals';
 import { getVerificationUiState, VERIFICATION_STATE_CTA } from '@/lib/verificationUiState';
-import { fetchUser, updateBorrowerContext, updateUser } from '@/store/slices/authSlice';
+import { fetchUser, updateBorrowerContext, updateProfession, updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import { type User } from '@/types/authTypes';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
 import ConnectStep, { LoanAccessPendingCard, LoanAccessRejectedCard } from '@/views/dashboard/components/ConnectStep';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, PrimaryButton, stepAnimationClass, useStepDirection } from '@/views/dashboard/components/connectKit';
+import JobStep from '@/views/dashboard/components/JobStep';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
 import { SocialHandlesStep } from '@/views/dashboard/components/SocialHandlesStep';
 import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
@@ -1321,13 +1322,14 @@ function IdLoanTermsFields({
 // contact step only when they have no verified line yet, and — in the 'open' flow only — the
 // video call when there's no referral code. (In the call/approval flows, PART 1 · Connect happens
 // before any of this; see ConnectStep.)
-type RequestStepKey = 'terms' | 'bio1' | 'bio2' | 'contacts' | 'videocall';
+type RequestStepKey = 'terms' | 'bio1' | 'bio2' | 'job' | 'contacts' | 'videocall';
 
 // Human labels for each possible step key, used by the progress rail below.
 const STEP_KEY_LABEL: Record<RequestStepKey, string> = {
    terms: 'Your terms',
    bio1: 'About you',
    bio2: 'Repayment context',
+   job: 'Your job',
    contacts: 'Contact',
    videocall: 'Meet the team'
 };
@@ -1701,6 +1703,9 @@ export default function LoanRequestModal({
       };
    }, [user.id]);
    const [contactsStepDone, setContactsStepDone] = useState(false);
+   // Job question for profiles without one (see needsJobStep).
+   const [showJobStep, setShowJobStep] = useState(false);
+   const [jobStepDone, setJobStepDone] = useState(false);
    // Open flow only: the no-referral video call, booked (not attended) before the request posts.
    const [showVideoCallStep, setShowVideoCallStep] = useState(false);
    const [videoCallStepDone, setVideoCallStepDone] = useState(false);
@@ -1904,7 +1909,12 @@ export default function LoanRequestModal({
       hasAttendedCall: Boolean(user.attendedCall)
    });
    // Indonesia track: Telegram + WhatsApp + Messenger were verified in /id/onboarding.
-   const needsContactsStep = !isIdLoan && contactSteps.contacts && (!user.hasVerifiedContact || needsReminders);
+   // Every request needs both lines on the account (George, 2026-11-15): Messenger with its ID (sent the
+   // code) AND a confirmed WhatsApp. Whoever is missing either does the step; once both are saved it's skipped.
+   const needsContactsStep =
+      !isIdLoan && contactSteps.contacts && (!user.hasMessengerLink || !user.whatsappVerified || needsReminders);
+   // No job on the profile (and none typed in the bio step just now): ask once, saved to the profile.
+   const needsJobStep = !isIdLoan && !user.profession?.trim() && !borrowerContext.profession?.trim();
 
    // The real, path-aware list of steps for THIS borrower — drives the progress rail so the dot
    // count and "Step X of Y" match exactly what they'll go through.
@@ -1914,10 +1924,13 @@ export default function LoanRequestModal({
    const requestSteps: RequestStepKey[] = [
       'terms',
       ...(isMultiStepRequestFlow ? (['bio1', 'bio2'] as const) : []),
+      ...(needsJobStep ? (['job'] as const) : []),
       ...(needsContactsStep ? (['contacts'] as const) : []),
       ...(needsVideoCallStep ? (['videocall'] as const) : [])
    ];
-   const currentStepKey: RequestStepKey = showContactsStep
+   const currentStepKey: RequestStepKey = showJobStep
+      ? 'job'
+      : showContactsStep
       ? 'contacts'
       : showVideoCallStep
         ? 'videocall'
@@ -2752,6 +2765,14 @@ export default function LoanRequestModal({
          return;
       }
 
+      // No job on the profile: one question, saved, before the contact lines.
+      if (needsJobStep && !jobStepDone && !showJobStep) {
+         event.preventDefault();
+         setShowBorrowerContextStep(false);
+         setShowJobStep(true);
+         return;
+      }
+
       // Verified contact line (Messenger, or WhatsApp once live) — required before submitting, for
       // anyone who doesn't have one yet. ContactsStep's onContinue sets contactsStepDone and
       // re-fires this handler. (Borrowers approved through Connect already verified in PART 1.)
@@ -2890,6 +2911,20 @@ export default function LoanRequestModal({
       setSocialStepDone(true);
       setShowSocialStep(false);
       handleLoanFormSubmit({ preventDefault: () => {} } as React.FormEvent<HTMLFormElement>);
+   };
+
+   const handleJobStepSave = async (job: string) => {
+      await dispatch(updateProfession(job)).unwrap();
+      setBorrowerContext((prev) => ({ ...prev, profession: job }));
+      setJobStepDone(true);
+      setShowJobStep(false);
+      handleLoanFormSubmit({ preventDefault: () => {} } as React.FormEvent<HTMLFormElement>);
+   };
+
+   const handleJobStepBack = () => {
+      setShowJobStep(false);
+      setShowBorrowerContextStep(isMultiStepRequestFlow);
+      if (isMultiStepRequestFlow) setBioPage(2);
    };
 
    const handleContactsStepContinue = () => {
@@ -3120,7 +3155,7 @@ export default function LoanRequestModal({
             <div className="pointer-events-none absolute left-1/2 top-2 z-20 h-1 w-11 -translate-x-1/2 rounded-full bg-[#cec6d7] sm:hidden" />
             <header
                className={`flex touch-none cursor-grab select-none items-center justify-between px-5 active:cursor-grabbing ${
-                  isLoanAccessGated || showContactsStep
+                  isLoanAccessGated || showContactsStep || showJobStep
                      ? 'bg-[#f3ecff] pb-0 pt-5 sm:pt-3'
                      : 'border-b border-[#e7e0ec] pb-4 pt-6 sm:pt-4'
                }`}
@@ -3132,9 +3167,9 @@ export default function LoanRequestModal({
                <div className="flex min-w-0 items-center gap-md-1 pr-3">
                   {shouldShowReferralStep ? (
                      <h2 className="text-md-h6 text-md-heading">Invited by someone?</h2>
-                  ) : isLoanAccessGated || showContactsStep || showIncomeGate ? (
+                  ) : isLoanAccessGated || showContactsStep || showJobStep || showIncomeGate ? (
                      // These screens carry their own hippo hero + title (Figma style) — no duplicate header.
-                     <h2 className="sr-only">{showIncomeGate ? 'Show us your income first' : isLoanAccessPending ? 'Almost there' : showContactsStep ? (isExistingBorrower ? 'Add your Facebook' : 'How can we reach you') : "Let's connect"}</h2>
+                     <h2 className="sr-only">{showIncomeGate ? 'Show us your income first' : isLoanAccessPending ? 'Almost there' : showJobStep ? 'Your job' : showContactsStep ? (isExistingBorrower ? 'Add your Facebook and WhatsApp' : 'How can we reach you') : "Let's connect"}</h2>
                   ) : showVideoCallStep ? (
                      <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">
                         Schedule a video call
@@ -3285,8 +3320,11 @@ export default function LoanRequestModal({
                   onBack={handleConnectBack}
                   onSubmitted={handleLoanAccessSubmitted}
                />
+            ) : showJobStep ? (
+               <JobStep initialValue={borrowerContext.profession ?? ''} onBack={handleJobStepBack} onSave={handleJobStepSave} />
             ) : showContactsStep ? (
                <ContactsStep
+                  requireAllLines
                   userId={user.id}
                   source="loan_request"
                   onBack={handleContactsStepBack}
@@ -3305,8 +3343,8 @@ export default function LoanRequestModal({
                            image={CONNECT_HIPPOS.hello}
                            subtitle={
                               <>
-                                 Please add your Facebook so we can reach out to you. We also have a <b>$10 referral program</b> we&apos;d love to
-                                 tell you about!
+                                 Add your Facebook and WhatsApp so we can reach you. We also have a <b>$10 referral program</b> we&apos;d love to tell
+                                 you about!
                               </>
                            }
                            title="So we can help you more 💜"
