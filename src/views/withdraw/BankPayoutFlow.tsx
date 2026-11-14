@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 
-import { ArrowRight, Check, ChevronRight, Clock, Landmark, Loader2, QrCode, Search, Smartphone, Wallet, XCircle } from 'lucide-react';
+import { ArrowRight, Check, ChevronRight, Clock, Landmark, Loader2, QrCode, ScanFace, Search, Smartphone, Wallet, XCircle } from 'lucide-react';
 
 import PoweredByStableyard from '@/components/brand/PoweredByStableyard';
 
@@ -501,6 +501,20 @@ function SetupStepper({ done }: { done: number }) {
 
 const hintClass = 'text-center text-[12px] leading-[16px] text-[var(--text-faint)]';
 
+// Heads-up on the first setup screens: Stableyard does its own ID check, even for people Moodeng already
+// checked. Said before they start so the second ID check isn't a surprise.
+function IdCheckNote() {
+   return (
+      <div className="flex items-start gap-[10px] rounded-[12px] bg-[#f3f0ff] px-[12px] py-[10px] dark:bg-[#252035]">
+         <ScanFace className="mt-[1px] h-[20px] w-[20px] shrink-0 text-[#6b55f7] dark:text-[#b3a6ff]" />
+         <p className="text-[13px] leading-[18px] text-[var(--ink)]">
+            <span className="font-bold">One more ID check.</span> Stableyard sends your pesos, so they check your ID too. One time, about 5
+            minutes.
+         </p>
+      </div>
+   );
+}
+
 // 'compliance': Stableyard wants a one-time form (nextAction complete_compliance) before it prices the payout.
 // 'pricing': the Payment exists and Stableyard is still working out the quote.
 type Step = 'loading' | 'verify' | 'form' | 'compliance' | 'pricing' | 'quote' | 'sending' | 'tracking';
@@ -907,6 +921,7 @@ export default function BankPayoutFlow({
             <Panel>
                <SetupStepper done={emailDone ? (setup?.kycApproved ? 2 : 1) : 0} />
                {error ? <ErrorLine text={error} /> : null}
+               {!setup?.kycApproved && !reviewing ? <IdCheckNote /> : null}
                {!emailDone ? (
                   <div className="space-y-[8px]">
                      <input
