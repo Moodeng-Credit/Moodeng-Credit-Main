@@ -408,8 +408,10 @@ function ConnectingCard({ qrMode }: { qrMode: boolean }) {
                   );
                })}
             </ul>
-            <p className="flex items-center gap-[8px] rounded-[10px] bg-[var(--surface-2,#f1eeff)] px-[12px] py-[8px] text-[14px] font-semibold text-[var(--ink)]">
-               <Clock className="h-[16px] w-[16px] shrink-0 text-[#6b55f7]" strokeWidth={2.4} />
+            <p className="flex items-center gap-[10px] rounded-[10px] bg-[var(--surface-2,#f1eeff)] px-[10px] py-[8px] text-[14px] font-semibold text-[var(--ink)]">
+               <span className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-[10px] bg-[var(--surface,#fff)]">
+                  <img src="/withdraw-setup/clock.webp" alt="" aria-hidden="true" className="h-[24px] w-auto" />
+               </span>
                <span>
                   Takes 12–30 seconds
                   <span className="block text-[12px] font-normal text-[var(--text-muted)]">Keep this page open</span>
