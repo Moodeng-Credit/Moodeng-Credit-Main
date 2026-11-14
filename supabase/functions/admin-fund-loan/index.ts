@@ -40,6 +40,30 @@ const json = (body: unknown, status = 200) =>
     status,
   })
 
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void } | undefined
+
+// Keeps the worker alive for work that finishes after the response has gone out.
+const runAfterReply = (work: Promise<unknown>) => {
+  if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(work)
+}
+
+// The team's "Loan funded" post, then the borrower's notification, same as a lender funding it. Each
+// is sent once per loan (deduped inside), and neither failing undoes the recorded funding.
+// deno-lint-ignore no-explicit-any
+const announceFunding = async (supabase: any, loanId: string) => {
+  try {
+    await postLoanFundedToTeam(supabase, loanId)
+  } catch (err) {
+    console.error(`admin-fund-loan: team post failed for ${loanId}: ${(err as Error).message}`)
+  }
+  try {
+    const { error } = await supabase.functions.invoke('loan-funded-notification', { body: { loanId } })
+    if (error) console.error(`admin-fund-loan: borrower notification failed for ${loanId}: ${error.message}`)
+  } catch (err) {
+    console.error(`admin-fund-loan: borrower notification failed for ${loanId}: ${(err as Error).message}`)
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
@@ -139,6 +163,8 @@ serve(async (req) => {
     if (current.loan_status !== 'Requested' || current.lender_user_id || current.funded_at) {
       const existingHashes: string[] = Array.isArray(current.hash) ? current.hash : []
       if (txHash && current.loan_status === 'Lent' && existingHashes.includes(txHash)) {
+        // Both follow-ups run once per loan, so this only sends what a cut-off first attempt missed.
+        runAfterReply(announceFunding(supabase, loanId))
         return json({ message: 'Loan funding already recorded' }, 200)
       }
       return json({ error: 'This loan is not an open request (already funded or closed)' }, 409)
@@ -218,11 +244,9 @@ serve(async (req) => {
     if (error) return json({ error: 'Failed to record funding', details: error.message }, 500)
     if (!data) return json({ error: 'This loan was funded by someone else a moment ago' }, 409)
 
-    // #loans / admin channel "Loan funded" post, same as a lender funding it (once per loan).
-    await postLoanFundedToTeam(supabase, loanId)
-    // Tell the borrower, same as a lender funding it (deduped per loan inside the function).
-    const { error: notifyError } = await supabase.functions.invoke('loan-funded-notification', { body: { loanId } })
-    if (notifyError) console.error(`admin-fund-loan: borrower notification failed for ${loanId}: ${notifyError.message}`)
+    // Reply as soon as the loan is saved. The follow-ups took up to 20 seconds, and an admin whose tab
+    // dropped the request in that window saw no success message and a request still on the board.
+    runAfterReply(announceFunding(supabase, loanId))
 
     return json({ data, message: 'Loan funding recorded' }, 200)
   } catch (error) {
