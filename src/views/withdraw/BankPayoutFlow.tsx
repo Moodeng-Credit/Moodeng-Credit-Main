@@ -329,6 +329,9 @@ function Panel({ children }: { children: React.ReactNode }) {
 // Shown while the cash-out connects to Stableyard (it can take several seconds). The ticks move on a
 // timer so the wait feels like progress; the last line keeps spinning until the setup answer is back.
 const CONNECT_STEPS_MS = [1200, 3200];
+// Art for the connecting card. Placeholder: the cash-out Moodeng until the "connecting" art lands.
+const CONNECTING_ART = '/dashboard-v2/moo-cashout.png';
+
 function ConnectingCard({ qrMode }: { qrMode: boolean }) {
    const [done, setDone] = useState(0);
    useEffect(() => {
@@ -337,32 +340,59 @@ function ConnectingCard({ qrMode }: { qrMode: boolean }) {
    }, []);
    const lines = ['Connecting to Stableyard', 'Checking your account', qrMode ? 'Getting your QR upload ready' : 'Loading your banks'];
    return (
-      <Panel>
-         <p className="text-[16px] font-bold text-[var(--ink)]">Getting your cash-out ready</p>
-         <ul className="space-y-[10px]">
-            {lines.map((line, i) => {
-               const state = i < done ? 'done' : i === done ? 'active' : 'waiting';
-               return (
-                  <li
-                     key={line}
-                     className={`flex items-center gap-[10px] text-[14px] ${state === 'waiting' ? 'text-[var(--text-muted)] opacity-60' : 'text-[var(--ink)]'}`}
-                  >
-                     {state === 'done' ? (
-                        <span className="flex h-[20px] w-[20px] items-center justify-center rounded-full bg-[#22c55e]">
-                           <Check className="h-[13px] w-[13px] text-white" strokeWidth={3} />
-                        </span>
-                     ) : state === 'active' ? (
-                        <Loader2 className="h-[20px] w-[20px] animate-spin text-[#6b55f7]" />
-                     ) : (
-                        <span className="h-[20px] w-[20px] rounded-full border-2 border-[#e8e4ff]" />
-                     )}
-                     {line}
-                  </li>
-               );
-            })}
-         </ul>
-         <p className="text-[12px] text-[var(--text-muted)]">This can take a few seconds.</p>
-      </Panel>
+      <div className="space-y-[12px]">
+         <div className="relative w-full h-[124px] rounded-[12px] overflow-hidden bg-[linear-gradient(100deg,#efeaff_0%,#ddd5ff_100%)] dark:bg-[linear-gradient(100deg,#252035_0%,#30285a_100%)]">
+            <img
+               src={CONNECTING_ART}
+               alt=""
+               aria-hidden="true"
+               className="moo-float absolute right-[10px] bottom-[-8px] h-[134px] w-auto pointer-events-none select-none"
+            />
+            <div className="relative flex h-full flex-col justify-center pl-[16px] pr-[150px]">
+               <h2 className="text-[22px] font-black italic leading-[1.1] tracking-[-0.5px] text-[#6b55f7] dark:text-[#b3a6ff]">
+                  Getting ready…
+               </h2>
+               <p className="mt-[4px] text-[15px] font-semibold text-[#594d65] dark:text-[#e6def0]">Your cash-out is on its way</p>
+            </div>
+         </div>
+         <Panel>
+            <ul className="space-y-[12px]">
+               {lines.map((line, i) => {
+                  const state = i < done ? 'done' : i === done ? 'active' : 'waiting';
+                  return (
+                     <li
+                        key={line}
+                        className={`flex items-center gap-[10px] text-[15px] ${state === 'waiting' ? 'text-[var(--text-muted)] opacity-60' : 'text-[var(--ink)]'}`}
+                     >
+                        {state === 'done' ? (
+                           <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#22c55e]">
+                              <Check className="h-[14px] w-[14px] text-white" strokeWidth={3} />
+                           </span>
+                        ) : state === 'active' ? (
+                           <Loader2 className="h-[22px] w-[22px] shrink-0 animate-spin text-[#6b55f7]" />
+                        ) : (
+                           <span className="h-[22px] w-[22px] shrink-0 rounded-full border-2 border-[#e8e4ff]" />
+                        )}
+                        <span className="flex-1">{line}</span>
+                        {i === 0 ? (
+                           <img
+                              src="/brand/stableyard/stableyard-logomark.svg"
+                              alt="Stableyard"
+                              width={24}
+                              height={24}
+                              className="h-[24px] w-[24px] shrink-0 rounded-[6px]"
+                           />
+                        ) : null}
+                     </li>
+                  );
+               })}
+            </ul>
+            <p className="text-[12px] text-[var(--text-muted)]">This can take a few seconds.</p>
+            <div className="flex justify-center pt-[2px]">
+               <PoweredByStableyard className="whitespace-nowrap" />
+            </div>
+         </Panel>
+      </div>
    );
 }
 
