@@ -74,6 +74,7 @@ type ReminderUser = {
    video_call_booking_uid: string | null;
    video_call_meeting_id: string | null;
    video_call_arrived_at: string | null;
+   video_call_zoom_seen_at?: string | null;
    video_call_confirm_token: string | null;
    video_call_confirmed_at: string | null;
    video_call_keep_spot_asked_at: string | null;
@@ -82,7 +83,7 @@ type ReminderUser = {
 };
 
 const COLUMNS =
-   'id, username, chat_id, notif_account_activity, messenger_psid, whatsapp_contact_id, display_name, video_call_host, video_call_starts_at, video_call_scheduled_at, video_call_timezone, video_call_join_url, video_call_booking_uid, video_call_meeting_id, video_call_arrived_at, video_call_confirm_token, video_call_confirmed_at, video_call_keep_spot_asked_at, video_call_reminder_stage, loan_access_status';
+   'id, username, chat_id, notif_account_activity, messenger_psid, whatsapp_contact_id, display_name, video_call_host, video_call_starts_at, video_call_scheduled_at, video_call_timezone, video_call_join_url, video_call_booking_uid, video_call_meeting_id, video_call_arrived_at, video_call_zoom_seen_at, video_call_confirm_token, video_call_confirmed_at, video_call_keep_spot_asked_at, video_call_reminder_stage, loan_access_status';
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
@@ -277,7 +278,9 @@ const runRung = async (svc: Svc, u: ReminderUser, rung: Rung, zoomActive: boolea
          return 'prompt';
       }
       case RUNG.AUTO_NO_SHOW: {
-         if (!zoomMissing) return null;
+         // Only when our webhook heard this very meeting (the host joined, say) — a meeting on a Zoom we
+         // don't watch is silent whether or not the borrower came.
+         if (!zoomMissing || !u.video_call_zoom_seen_at) return null;
          return (await autoMarkNoShow(svc, u.id)) ? 'auto_no_show' : null;
       }
       default:

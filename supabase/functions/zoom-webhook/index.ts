@@ -170,6 +170,8 @@ serve(async (req) => {
    const booking = pickBooking((rows ?? []) as BookingRow[], atMs);
    if (!booking) return json({ ok: true, matched: false });
 
+   // This meeting is one our webhook hears: only then can silence from the borrower mean a no-show.
+   await svc.from('users').update({ video_call_zoom_seen_at: event.at }).eq('id', booking.id).is('video_call_zoom_seen_at', null);
    // Shared Zoom account: this booking's host gets its alerts through this app too.
    if (booking.video_call_host && booking.video_call_host !== host && HOSTS.has(booking.video_call_host)) {
       await markZoomSeen(svc, booking.video_call_host);
