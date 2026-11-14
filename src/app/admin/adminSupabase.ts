@@ -2055,12 +2055,15 @@ export async function setReferralPayoutStatus(id: string, status: 'unpaid' | 'pa
    return data as unknown as AdminReferralPayout;
 }
 
-/** "Pay zero interest" refunds owed to inviters (migration 20261101120000_referral_interest_refunds). */
+/** Affiliate payouts ($5 per friend) and old "Pay zero interest" refunds owed to inviters (migration 20261101120000_referral_interest_refunds). */
 export interface AdminInterestRefund {
    id: string;
-   status: 'pending' | 'sent';
+   /** voucher = they took a food/Grab voucher instead of USDC (see Vouchers). */
+   status: 'pending' | 'sent' | 'voucher';
    interest_usd: number;
    amount_usd: number;
+   /** 'cash' = $5 affiliate reward per friend; 'interest' = old interest refund. */
+   kind?: 'interest' | 'cash' | null;
    tx_hash: string | null;
    sent_at: string | null;
    sent_by: string | null;
@@ -2071,7 +2074,7 @@ export interface AdminInterestRefund {
 }
 
 const INTEREST_REFUND_SELECT =
-   'id, status, interest_usd, amount_usd, tx_hash, sent_at, sent_by, created_at, user:users!interest_refunds_user_id_fkey(id, username, display_name, email, wallet_address), loan:loans!interest_refunds_loan_id_fkey(id, loan_amount, total_repayment_amount), friend:friend_referrals!interest_refunds_friend_referral_id_fkey(referred:users!friend_referrals_referred_user_id_fkey(id, username, display_name))';
+   'id, status, interest_usd, amount_usd, kind, tx_hash, sent_at, sent_by, created_at, user:users!interest_refunds_user_id_fkey(id, username, display_name, email, wallet_address), loan:loans!interest_refunds_loan_id_fkey(id, loan_amount, total_repayment_amount), friend:friend_referrals!interest_refunds_friend_referral_id_fkey(referred:users!friend_referrals_referred_user_id_fkey(id, username, display_name))';
 
 export async function listInterestRefunds(): Promise<AdminInterestRefund[]> {
    const supabase = getSupabaseBrowserClient();
@@ -2088,17 +2091,23 @@ export async function setInterestRefundSent(id: string, txHash: string | null, s
          .from('interest_refunds')
          .update({ status: 'sent', tx_hash: txHash, sent_at: new Date().toISOString(), sent_by: sentBy })
          .eq('id', id)
+         // Never over a row the borrower turned into a voucher meanwhile (that would pay twice).
+         .eq('status', 'pending')
          .select(INTEREST_REFUND_SELECT)
          .single()
    );
    return data as unknown as AdminInterestRefund;
 }
 
-// Affiliate claims: friends a code owner added by name on /affiliate (tracking only, no payout).
+// Affiliate claims: friends a borrower added by name on /affiliate. On a team-made code (code set) it's
+// tracking only; on a personal code (code null) approving links the friend and can pay the $5.
 export interface AdminReferralClaim {
    id: string;
    friend_name: string;
    friend_contact: string | null;
+   friend_facebook_url: string | null;
+   /** The one account whose Facebook link or phone matched, if any. */
+   suggested: { id: string; username: string | null; display_name: string | null } | null;
    status: 'pending' | 'approved' | 'rejected';
    created_at: string;
    decided_at: string | null;
@@ -2114,7 +2123,7 @@ export async function listReferralClaims(): Promise<AdminReferralClaim[]> {
       supabase
          .from('referral_claims')
          .select(
-            'id, friend_name, friend_contact, status, created_at, decided_at, decided_by, code:referral_codes(code), owner:users!referral_claims_owner_user_id_fkey(username, display_name), matched:users!referral_claims_matched_user_id_fkey(username, display_name)'
+            'id, friend_name, friend_contact, friend_facebook_url, status, created_at, decided_at, decided_by, code:referral_codes(code), owner:users!referral_claims_owner_user_id_fkey(username, display_name), matched:users!referral_claims_matched_user_id_fkey(username, display_name), suggested:users!referral_claims_suggested_user_id_fkey(id, username, display_name)'
          )
          .order('created_at', { ascending: false })
          .limit(200)
@@ -2169,7 +2178,8 @@ export type AdminVoucherReward =
    | 'tier_prime'
    | 'tier_apex'
    | 'streak_3'
-   | 'streak_5';
+   | 'streak_5'
+   | 'affiliate_payout';
 
 export interface AdminVoucherClaim {
    id: string;

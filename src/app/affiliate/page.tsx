@@ -6,13 +6,16 @@ import { Check, ChevronDown, ChevronLeft, Copy, Lock, Share2, UserPlus } from 'l
 import { Link, useSearchParams } from 'react-router-dom';
 
 import {
+   AFFILIATE_PERSONAL_SAMPLE,
    AFFILIATE_SAMPLE,
    type AffiliateClaim,
    type AffiliateCode,
+   type AffiliateDashboardData,
    affiliateMilestones,
    type AffiliateReferral,
    type AffiliateStage,
    affiliateTotals,
+   claimErrorText,
    fetchAffiliateDashboard,
    newPayouts,
    referralStage,
@@ -21,17 +24,20 @@ import {
    submitReferralClaim
 } from '@/lib/affiliateDashboard';
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
-import { ShareSheet } from '@/views/dashboard-v2/DashboardV2Rewards';
+import { buildInviteLink } from '@/views/dashboard-v2/dashboardV2Model';
+import { ShareSheet, VoucherClaimPopup } from '@/views/dashboard-v2/DashboardV2Rewards';
 
 /*
- * /affiliate — styled after the Figma "Milestone_9.23version" invite screen (high-five hippos, purple
- * code card with ticket cut-outs, gold button), its Loan Summary row and its milestone rows.
- * The layout is borrowed; the words are the affiliate program's ($ cash per friend who repays), not
- * the voucher program's "Free meal".
+ * /affiliate (Moo affiliate) — styled after the Figma "Milestone_9.23version" invite screen (high-five hippos,
+ * purple code card with ticket cut-outs), its Loan Summary row and its milestone rows. The words are the
+ * affiliate program's ($ per friend who repays), not the voucher program's "Free meal".
+ *
+ * Colour rule: buttons are purple (white on the purple card), as in Figma. Gold is only for money owed to
+ * you — the "Owed to you" figure and owed rows — never for sharing.
  */
 
 const PURPLE = '#6b55f7';
-const GOLD_GRADIENT = 'linear-gradient(90deg, #ffe27a 0%, #f6b73c 100%)';
+const PURPLE_GRADIENT = 'linear-gradient(77deg, #9584ff, #6b55f7)';
 const CARD_GRADIENT = 'linear-gradient(160deg, #8f7dff 0%, #6b55f7 55%, #5a44e6 100%)';
 const HERO_GRADIENT = 'linear-gradient(180deg, #7f86f6 0%, #8c94f7 100%)';
 const SEEN_KEY = 'moodeng_affiliate_paid_seen';
@@ -84,7 +90,7 @@ function Hero({ payout }: { payout: number }) {
          </Link>
          <div className="px-6 pt-12 text-center">
             <p
-               className="text-[44px] font-black italic leading-none tracking-[-1px] text-[#fff6b8]"
+               className="text-[44px] font-black italic leading-none tracking-[-1px] text-white"
                style={{ textShadow: '0 3px 0 rgba(91,68,230,0.35)' }}
             >
                EARN {money(payout)}
@@ -116,7 +122,17 @@ function TicketNotch({ side }: { side: 'left' | 'right' }) {
    );
 }
 
-function CodeCard({ main, others, onShare }: { main: AffiliateCode; others: AffiliateCode[]; onShare: () => void }) {
+function CodeCard({
+   main,
+   others,
+   unlocked,
+   onShare
+}: {
+   main: AffiliateCode;
+   others: AffiliateCode[];
+   unlocked: boolean;
+   onShare: () => void;
+}) {
    const { copied, copy } = useCopy();
    const [showOthers, setShowOthers] = useState(false);
    return (
@@ -139,7 +155,13 @@ function CodeCard({ main, others, onShare }: { main: AffiliateCode; others: Affi
                <span className="inline-block -rotate-3 rounded-[6px] bg-[#e6dcff] px-2 py-0.5 text-[12px] font-extrabold italic text-[#6b55f7]">
                   Your code
                </span>
-               <span className="mt-1 block break-all font-mono text-[26px] font-black leading-8 tracking-wide text-[#3d2f8f]">
+               {/* Personal codes are 11 characters; shrink them so the ticket keeps its shape. */}
+               <span
+                  className={clsx(
+                     'mt-1 block break-all font-mono font-black tracking-wide text-[#3d2f8f]',
+                     main.code.length > 8 ? 'text-[19px] leading-7' : 'text-[26px] leading-8'
+                  )}
+               >
                   {main.code}
                </span>
                <span className="mt-2 block border-t border-dashed border-[#b9aeff]" />
@@ -153,10 +175,13 @@ function CodeCard({ main, others, onShare }: { main: AffiliateCode; others: Affi
 
             {/* Stub: what each friend is worth (and the friend's boost, only when there is one). */}
             <div className="flex w-[118px] shrink-0 flex-col gap-2">
-               <div className="flex flex-1 flex-col items-center justify-center rounded-[14px] bg-gradient-to-b from-white to-[#ece8ff] px-2 py-2 text-center">
-                  <span className="text-[30px] font-black italic leading-8 text-[#6b55f7]">{money(main.payout_amount)}</span>
+               <div className="relative flex flex-1 flex-col items-center justify-center rounded-[14px] bg-gradient-to-b from-white to-[#ece8ff] px-2 py-2 text-center">
+                  {!unlocked ? <Lock className="absolute right-2 top-2 h-3.5 w-3.5 text-[#8b7afa]" aria-label="Locked" /> : null}
+                  <span className={clsx('text-[30px] font-black italic leading-8', unlocked ? 'text-[#6b55f7]' : 'text-[#b9aeff]')}>
+                     {money(main.payout_amount)}
+                  </span>
                   <span className="text-[11px] font-semibold uppercase leading-3 tracking-wide text-[#8b7afa]">
-                     for you, per friend who repays
+                     {unlocked ? 'for you, per friend who repays' : 'unlocks when you repay a loan'}
                   </span>
                </div>
                {main.boost_amount > 0 ? (
@@ -171,16 +196,28 @@ function CodeCard({ main, others, onShare }: { main: AffiliateCode; others: Affi
          <button
             type="button"
             onClick={onShare}
-            className="mt-4 flex h-[50px] w-full items-center justify-center gap-2 rounded-full text-[17px] font-extrabold text-[#5a3b00] shadow-[0_4px_0_#d99a1f]"
-            style={{ backgroundImage: GOLD_GRADIENT }}
+            className="mt-4 flex h-[50px] w-full items-center justify-center gap-2 rounded-full bg-white text-[17px] font-extrabold text-[#6b55f7] shadow-[0_4px_0_rgba(60,40,140,0.35)] active:scale-[0.98]"
          >
             <Share2 className="h-5 w-5" strokeWidth={2.4} />
             Share my code
          </button>
 
          <p className="mt-3 px-1 text-center text-[13px] leading-[18px] text-white/85">
-            Friends type <b className="text-white">{main.code}</b> when they ask for their first loan.
+            {main.personal ? (
+               <>
+                  Friends sign up with your link, or type <b className="text-white">{main.code}</b>.
+               </>
+            ) : (
+               <>
+                  Friends type <b className="text-white">{main.code}</b> when they ask for their first loan.
+               </>
+            )}
          </p>
+         {!unlocked ? (
+            <p className="mt-2 rounded-[10px] bg-white/15 px-3 py-2 text-center text-[13px] font-semibold leading-[18px] text-white">
+               Repay your first loan to unlock. Friends who join now still count.
+            </p>
+         ) : null}
 
          {others.length ? (
             <div className="mt-3 rounded-[12px] bg-white/10 px-3 py-2">
@@ -218,7 +255,7 @@ function CodeCard({ main, others, onShare }: { main: AffiliateCode; others: Affi
 
 /* ---------- 4 · Money row (Figma "Loan Summary") ---------- */
 
-function MoneyRow({ owed, pending, paid }: { owed: number; pending: number; paid: number }) {
+function MoneyRow({ owed, pending, paid, paused }: { owed: number; pending: number; paid: number; paused: boolean }) {
    const cells = [
       { label: 'Owed to you', value: owed, strong: owed > 0 },
       { label: 'On the way', value: pending, strong: false },
@@ -246,7 +283,11 @@ function MoneyRow({ owed, pending, paid }: { owed: number; pending: number; paid
                </div>
             ))}
          </div>
-         {pending > 0 ? (
+         {paused ? (
+            <p className="mt-2 rounded-[10px] bg-[#fff3c4] px-3 py-2 text-[14px] font-semibold leading-[18px] text-[#7a4d00] dark:bg-[#3b3216] dark:text-[#ffd27a]">
+               Repay your loan first. Your money waits for you.
+            </p>
+         ) : pending > 0 ? (
             <p className="mt-2 px-1 text-[13px] leading-[18px] text-[#7b6b8c] dark:text-[#a99cba]">
                &ldquo;On the way&rdquo; becomes yours when those friends repay their loan.
             </p>
@@ -345,38 +386,64 @@ function StepTrack({ step, tone }: { step: 1 | 2 | 3; tone: 'purple' | 'gold' | 
 
 const PILL: Record<AffiliateStage, string> = {
    paid: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+   voucher: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
    repaid: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
    owed: 'bg-[#f6b73c] text-[#5a3b00]',
+   locked: 'bg-[#f1eff4] text-[#7b6b8c] dark:bg-[#2a2235] dark:text-[#cfc4dd]',
    borrowed: 'bg-[#ece9ff] text-[#6b55f7] dark:bg-[#2a2448] dark:text-[#b3a6ff]',
    signed_up: 'bg-[#f1eff4] text-[#7b6b8c] dark:bg-[#2a2235] dark:text-[#cfc4dd]'
 };
 
 function pillText(r: AffiliateReferral, stage: AffiliateStage) {
    if (stage === 'paid') return `Paid ${money(r.payout_amount)}`;
+   if (stage === 'voucher') return r.voucher_status === 'sent' ? 'Voucher sent' : 'Voucher coming';
    if (stage === 'owed') return `${money(r.payout_amount)} owed`;
+   if (stage === 'locked') return `${money(r.payout_amount)} locked`;
    if (stage === 'repaid') return 'Repaid';
    if (stage === 'borrowed') return 'Has a loan';
    return 'Signed up';
 }
 
-function hintText(r: AffiliateReferral, stage: AffiliateStage) {
+function hintText(r: AffiliateReferral, stage: AffiliateStage, paused: boolean) {
    if (stage === 'paid') return r.paid_at ? `We paid you on ${shortDate(r.paid_at)}` : 'We paid you';
-   if (stage === 'owed') return 'They repaid — we’ll send your money';
+   if (stage === 'voucher') return `₱${r.voucher_php ?? 250} food voucher instead of ${money(r.payout_amount)}`;
+   if (stage === 'owed') return paused ? 'Repay your loan first — then we send it' : 'They repaid — we’ll send your money';
+   if (stage === 'locked') return 'Repay a loan yourself to unlock it';
    if (r.claimed) return 'Added by you · tracked, no payout';
+   if (r.repaid_not_counted) return 'That loan was too short or funded by you. Their next one counts.';
    if (stage === 'borrowed') return `You get ${money(r.payout_amount)} when they repay`;
-   return 'Waiting for their first loan';
+   return r.added_by_you ? 'Added by you · waiting for their first loan' : 'Waiting for their first loan';
 }
 
-function FriendRow({ r, index, showCode }: { r: AffiliateReferral; index: number; showCode: boolean }) {
-   const stage = referralStage(r);
-   const tone = stage === 'owed' ? 'gold' : stage === 'paid' || stage === 'repaid' ? 'green' : 'purple';
+function FriendRow({
+   r,
+   index,
+   showCode,
+   unlocked,
+   paused,
+   voucherPhp,
+   onVoucher
+}: {
+   r: AffiliateReferral;
+   index: number;
+   showCode: boolean;
+   unlocked: boolean;
+   paused: boolean;
+   /** Set when this owed $5 can be taken as a voucher instead. */
+   voucherPhp: number | null;
+   onVoucher: (r: AffiliateReferral) => void;
+}) {
+   const stage = referralStage(r, unlocked);
+   const tone = stage === 'owed' ? 'gold' : stage === 'paid' || stage === 'repaid' || stage === 'voucher' ? 'green' : 'purple';
+   const canVoucher =
+      voucherPhp !== null && !paused && stage === 'owed' && r.personal === true && r.payout_status === 'unpaid' && Boolean(r.friend_referral_id);
    return (
       <li
          className={clsx(
             'px-3 py-3',
             index > 0 && 'border-t border-[#ece9f1] dark:border-[#2c2439]',
             stage === 'owed' && 'bg-gradient-to-r from-[#fff3c4] to-[#fffaf0] dark:from-[#3b3216] dark:to-transparent',
-            stage === 'paid' && 'bg-emerald-50/60 dark:bg-emerald-900/10'
+            (stage === 'paid' || stage === 'voucher') && 'bg-emerald-50/60 dark:bg-emerald-900/10'
          )}
       >
          <div className="flex items-center gap-3">
@@ -396,8 +463,17 @@ function FriendRow({ r, index, showCode }: { r: AffiliateReferral; index: number
                stage === 'owed' ? 'font-semibold text-[#a35f00] dark:text-[#ffd27a]' : 'text-[#7b6b8c] dark:text-[#a99cba]'
             )}
          >
-            {hintText(r, stage)}
+            {hintText(r, stage, paused)}
          </p>
+         {canVoucher ? (
+            <button
+               type="button"
+               onClick={() => onVoucher(r)}
+               className="mt-1.5 text-[14px] font-semibold text-[#6b55f7] underline underline-offset-2 dark:text-[#b3a6ff]"
+            >
+               Take a ₱{voucherPhp} food voucher instead
+            </button>
+         ) : null}
       </li>
    );
 }
@@ -406,11 +482,19 @@ function Friends({
    referrals,
    showCode,
    payout,
+   unlocked,
+   paused,
+   voucherPhp,
+   onVoucher,
    onShare
 }: {
    referrals: AffiliateReferral[];
    showCode: boolean;
    payout: number;
+   unlocked: boolean;
+   paused: boolean;
+   voucherPhp: number | null;
+   onVoucher: (r: AffiliateReferral) => void;
    onShare: () => void;
 }) {
    return (
@@ -422,7 +506,16 @@ function Friends({
          {referrals.length ? (
             <ul className="mt-3 overflow-hidden rounded-[14px] bg-dv2-card">
                {referrals.map((r, i) => (
-                  <FriendRow key={`${r.code}-${r.joined_at}-${i}`} r={r} index={i} showCode={showCode} />
+                  <FriendRow
+                     key={`${r.code}-${r.joined_at}-${i}`}
+                     r={r}
+                     index={i}
+                     showCode={showCode}
+                     unlocked={unlocked}
+                     paused={paused}
+                     voucherPhp={voucherPhp}
+                     onVoucher={onVoucher}
+                  />
                ))}
             </ul>
          ) : (
@@ -435,8 +528,8 @@ function Friends({
                <button
                   type="button"
                   onClick={onShare}
-                  className="mt-4 flex h-[46px] items-center gap-2 rounded-full px-6 text-[16px] font-extrabold text-[#5a3b00] shadow-[0_3px_0_#d99a1f]"
-                  style={{ backgroundImage: GOLD_GRADIENT }}
+                  className="mt-4 flex h-[46px] items-center gap-2 rounded-full px-6 text-[16px] font-extrabold text-white"
+                  style={{ backgroundImage: PURPLE_GRADIENT }}
                >
                   <Share2 className="h-4 w-4" strokeWidth={2.4} />
                   Share my code
@@ -449,23 +542,36 @@ function Friends({
 
 /* ---------- 8 · Add a friend (small, honest about no payout) ---------- */
 
-function ClaimFriend({ claims, sample }: { claims: AffiliateClaim[]; sample: boolean }) {
+function ClaimFriend({
+   claims,
+   sample,
+   personal,
+   payout
+}: {
+   claims: AffiliateClaim[];
+   sample: boolean;
+   /** Personal code: an approved friend can earn the payout. Team-made code: tracking only. */
+   personal: boolean;
+   payout: number;
+}) {
    const queryClient = useQueryClient();
    const [open, setOpen] = useState(false);
    const [name, setName] = useState('');
+   const [facebook, setFacebook] = useState('');
    const [contact, setContact] = useState('');
    const [sent, setSent] = useState<string | null>(null);
    const mutation = useMutation({
-      mutationFn: () => (sample ? Promise.resolve() : submitReferralClaim(name.trim(), contact.trim())),
+      mutationFn: () => (sample ? Promise.resolve() : submitReferralClaim(name.trim(), contact.trim(), facebook.trim())),
       onSuccess: () => {
          setSent(name.trim());
          setName('');
+         setFacebook('');
          setContact('');
          setOpen(false);
          void queryClient.invalidateQueries({ queryKey: ['affiliate-dashboard'] });
       }
    });
-   const errorText = (mutation.error as { message?: string } | null)?.message;
+   const errorText = claimErrorText((mutation.error as { message?: string } | null)?.message);
    const field =
       'h-[44px] rounded-[10px] border border-[#e1dbe8] bg-white px-3 text-[16px] text-[#594d65] dark:border-[#3a3047] dark:bg-[#1d1726] dark:text-[#e6def2]';
 
@@ -475,7 +581,9 @@ function ClaimFriend({ claims, sample }: { claims: AffiliateClaim[]; sample: boo
             <div className="rounded-[14px] bg-dv2-card p-4">
                <p className="text-[16px] font-semibold text-[#594d65] dark:text-[#e6def2]">Friend didn&apos;t type your code?</p>
                <p className="mt-1 text-[13px] leading-[18px] text-[#7b6b8c] dark:text-[#a99cba]">
-                  We&apos;ll find them and show them in your list so you can follow along. Only friends who typed your code earn you money.
+                  {personal
+                     ? `We'll find them. If they joined in the last 30 days, you earn ${money(payout)} when they repay.`
+                     : 'We’ll find them and show them in your list so you can follow along. Only friends who typed your code earn you money.'}
                </p>
                <form
                   className="mt-3 flex flex-col gap-2"
@@ -493,9 +601,19 @@ function ClaimFriend({ claims, sample }: { claims: AffiliateClaim[]; sample: boo
                      className={field}
                   />
                   <input
+                     value={facebook}
+                     onChange={(e) => setFacebook(e.target.value)}
+                     placeholder="Their Facebook profile link (optional)"
+                     inputMode="url"
+                     autoCapitalize="none"
+                     maxLength={300}
+                     className={field}
+                  />
+                  <input
                      value={contact}
                      onChange={(e) => setContact(e.target.value)}
-                     placeholder="Phone or Facebook link (optional)"
+                     placeholder="Their phone number (optional)"
+                     inputMode="tel"
                      maxLength={120}
                      className={field}
                   />
@@ -504,7 +622,7 @@ function ClaimFriend({ claims, sample }: { claims: AffiliateClaim[]; sample: boo
                      type="submit"
                      disabled={name.trim().length < 2 || mutation.isPending}
                      className="h-[44px] rounded-full text-[16px] font-semibold text-white disabled:opacity-50"
-                     style={{ backgroundImage: 'linear-gradient(77deg, #9584ff, #6b55f7)' }}
+                     style={{ backgroundImage: PURPLE_GRADIENT }}
                   >
                      {mutation.isPending ? 'Sending…' : 'Send to Moodeng'}
                   </button>
@@ -584,8 +702,8 @@ function PaidPopup({ amount, count, onClose }: { amount: number; count: number; 
             <button
                type="button"
                onClick={onClose}
-               className="mt-5 h-[48px] w-full rounded-full text-[17px] font-extrabold text-[#5a3b00] shadow-[0_3px_0_#d99a1f]"
-               style={{ backgroundImage: GOLD_GRADIENT }}
+               className="mt-5 h-[48px] w-full rounded-full text-[17px] font-extrabold text-white"
+               style={{ backgroundImage: PURPLE_GRADIENT }}
             >
                Nice!
             </button>
@@ -604,12 +722,25 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
       staleTime: 30_000,
       enabled: !sample
    });
-   // /affiliate-preview (dev only) renders made-up referrals so the page can be checked signed out.
-   const { data, isLoading, error } = sample ? { data: AFFILIATE_SAMPLE, isLoading: false, error: null } : query;
+   // /affiliate-preview (dev only) renders made-up referrals so the page can be checked signed out:
+   // ?as=belle for a team-made code, ?locked=1 before the first repaid loan, ?paused=1 with a past-due loan.
+   const sampleData: AffiliateDashboardData | null = sample
+      ? {
+           ...(searchParams.get('as') === 'belle' ? AFFILIATE_SAMPLE : AFFILIATE_PERSONAL_SAMPLE),
+           ...(searchParams.get('locked') === '1' ? { unlocked: false } : {}),
+           ...(searchParams.get('paused') === '1' ? { paused: true } : {})
+        }
+      : null;
+   const { data, isLoading, error } = sampleData ? { data: sampleData, isLoading: false, error: null } : query;
    const referrals = data?.referrals ?? [];
    const codes = data?.codes ?? [];
-   const totals = affiliateTotals(referrals);
+   const unlocked = data?.unlocked ?? true;
+   const paused = data?.paused ?? false;
+   const totals = affiliateTotals(referrals, unlocked);
    const { main, others } = splitCodes(codes, referrals);
+   const queryClient = useQueryClient();
+   const [voucherFor, setVoucherFor] = useState<AffiliateReferral | null>(null);
+   const voucherPhp = data?.voucher.available ? data.voucher.amountPhp : null;
 
    const [sharing, setSharing] = useState(false);
    const [shareCopied, setShareCopied] = useState(false);
@@ -631,10 +762,17 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
       setPaidPopup(null);
    };
 
-   const shareLink = typeof window !== 'undefined' ? window.location.origin : 'https://moodeng.app';
-   const shareText = main
-      ? `I use Moodeng Credit for small loans. Sign up and type my code ${main.code} when you ask for your first loan:`
-      : '';
+   // Personal codes share the invite link (it links the friend on sign-up); team-made codes are typed in the loan form.
+   const shareLink = main?.personal
+      ? buildInviteLink(main.code)
+      : typeof window !== 'undefined'
+        ? window.location.origin
+        : 'https://moodeng.app';
+   const shareText = !main
+      ? ''
+      : main.personal
+        ? `I use Moodeng Credit for small loans. Join with my link (code ${main.code}):`
+        : `I use Moodeng Credit for small loans. Sign up and type my code ${main.code} when you ask for your first loan:`;
 
    if (isLoading || error || !main) {
       return (
@@ -664,10 +802,9 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
                   </p>
                ) : (
                   <div className="mt-8 rounded-[12px] bg-dv2-card p-5 text-center">
-                     <p className="text-[20px] font-semibold text-[#594d65] dark:text-[#e6def2]">No affiliate code on this account</p>
+                     <p className="text-[20px] font-semibold text-[#594d65] dark:text-[#e6def2]">Your code isn&apos;t ready yet</p>
                      <p className="mt-2 text-[15px] leading-5 text-[#45556c] dark:text-[#b9adc9]">
-                        If you&apos;re a Moodeng affiliate, make sure you&apos;re signed in with the account we linked your code to, or
-                        message us and we&apos;ll set it up.
+                        Try again in a minute. If it still doesn&apos;t show, message us and we&apos;ll set it up.
                      </p>
                   </div>
                )}
@@ -679,14 +816,34 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
    return (
       <div className="min-h-screen bg-dv2-page">
          <div className="mx-auto max-w-[440px] px-5 pb-28">
-            <h1 className="sr-only">Affiliate dashboard</h1>
+            <h1 className="sr-only">Moo affiliate</h1>
             <Hero payout={main.payout_amount} />
-            <CodeCard main={main} others={others} onShare={() => setSharing(true)} />
-            <MoneyRow owed={totals.owed} pending={totals.pending} paid={totals.paid} />
-            <Friends referrals={referrals} showCode={codes.length > 1} payout={main.payout_amount} onShare={() => setSharing(true)} />
+            <CodeCard main={main} others={others} unlocked={unlocked || !main.personal} onShare={() => setSharing(true)} />
+            <MoneyRow owed={totals.owed} pending={totals.pending} paid={totals.paid} paused={paused} />
+            <Friends
+               referrals={referrals}
+               showCode={codes.length > 1}
+               payout={main.payout_amount}
+               unlocked={unlocked}
+               paused={paused}
+               voucherPhp={voucherPhp}
+               onVoucher={setVoucherFor}
+               onShare={() => setSharing(true)}
+            />
             <Milestones referrals={referrals} />
-            <ClaimFriend claims={data?.claims ?? []} sample={sample} />
+            <ClaimFriend claims={data?.claims ?? []} sample={sample} personal={main.personal === true} payout={main.payout_amount} />
          </div>
+
+         {voucherFor && voucherPhp !== null ? (
+            <VoucherClaimPopup
+               voucher={{ reward: 'affiliate_payout', friendReferralId: voucherFor.friend_referral_id ?? null, amountPhp: voucherPhp }}
+               isPreview={sample}
+               onClose={() => {
+                  setVoucherFor(null);
+                  void queryClient.invalidateQueries({ queryKey: ['affiliate-dashboard'] });
+               }}
+            />
+         ) : null}
 
          {sharing ? (
             <ShareSheet

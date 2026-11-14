@@ -202,7 +202,7 @@ export default function DashboardV2() {
             onClaim={() => setClaimingVoucher(ownVoucher.voucher)}
          />
          <div className="-mt-[5px]">
-            <InterestReferralBanner language={language} onRefer={() => navigate('/refer')} />
+            <InterestReferralBanner language={language} onRefer={() => navigate('/affiliate')} />
          </div>
       </div>
    );

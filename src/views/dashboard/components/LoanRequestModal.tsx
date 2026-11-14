@@ -53,6 +53,7 @@ import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
 import { useIncomeDocFacts } from '@/hooks/useIncomeDocRequirement';
 import { gateMessage, type IncomeDocGate, incomeDocGate } from '@/lib/incomeDocSteps';
+import { fetchMySocialHandles, needsSocialHandles, SOCIAL_HANDLES_MIN_USD, type SocialHandles } from '@/lib/socialHandles';
 import type { LoanFlow } from '@/hooks/useLoanFlow';
 
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
@@ -88,6 +89,7 @@ import AvatarUploadModal from '@/views/account/AvatarUploadModal';
 import ConnectStep, { LoanAccessPendingCard, LoanAccessRejectedCard } from '@/views/dashboard/components/ConnectStep';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, PrimaryButton, stepAnimationClass, useStepDirection } from '@/views/dashboard/components/connectKit';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
+import { SocialHandlesStep } from '@/views/dashboard/components/SocialHandlesStep';
 import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
 
 import { termsTooltipIconSrc } from './termsTooltipIcon';
@@ -1707,6 +1709,22 @@ export default function LoanRequestModal({
    const [incomeGate, setIncomeGate] = useState<Extract<IncomeDocGate, { ok: false }> | null>(null);
    const showIncomeGate = incomeGate !== null;
    const incomeDocFacts = useIncomeDocFacts(isOpen);
+   // $60 and up: Instagram / TikTok as more ways to reach them (asked once; "I don't use these" is saved too).
+   const [showSocialStep, setShowSocialStep] = useState(false);
+   const [socialStepDone, setSocialStepDone] = useState(false);
+   const [socialHandles, setSocialHandles] = useState<SocialHandles | null>(null);
+   useEffect(() => {
+      if (!isOpen) return;
+      let cancelled = false;
+      fetchMySocialHandles()
+         .then((handles) => {
+            if (!cancelled) setSocialHandles(handles);
+         })
+         .catch(() => undefined);
+      return () => {
+         cancelled = true;
+      };
+   }, [isOpen]);
    useEffect(() => {
       if (!showBorrowerContextStep) return;
       formRef.current?.scrollTo({ top: 0 });
@@ -2707,6 +2725,21 @@ export default function LoanRequestModal({
          return;
       }
 
+      // Instagram / TikTok from $60. Only when we know they have neither (a failed lookup never blocks the loan).
+      if (
+         !isIdLoan &&
+         Number(loanAmount) >= SOCIAL_HANDLES_MIN_USD &&
+         needsSocialHandles(socialHandles) &&
+         !socialStepDone &&
+         !showSocialStep
+      ) {
+         event.preventDefault();
+         setShowBorrowerContextStep(false);
+         setShowSocialStep(true);
+         trackLoanFormRule('loan_form_social_handles_step', { amount: Number(loanAmount) });
+         return;
+      }
+
       // Borrowers who already saved their bio context (income/payday/etc.) shouldn't be
       // re-prompted on every loan request — that data lives on their profile and persists.
       // Returning users can update it from Account Settings instead.
@@ -2850,6 +2883,13 @@ export default function LoanRequestModal({
       } finally {
          isBioSubmittingRef.current = false;
       }
+   };
+
+   const handleSocialStepContinue = (saved: SocialHandles) => {
+      setSocialHandles(saved);
+      setSocialStepDone(true);
+      setShowSocialStep(false);
+      handleLoanFormSubmit({ preventDefault: () => {} } as React.FormEvent<HTMLFormElement>);
    };
 
    const handleContactsStepContinue = () => {
@@ -3294,6 +3334,8 @@ export default function LoanRequestModal({
                      <GhostButton onClick={() => setIncomeGate(null)}>Change the amount</GhostButton>
                   </div>
                </div>
+            ) : showSocialStep ? (
+               <SocialHandlesStep initial={socialHandles} onContinue={handleSocialStepContinue} onBack={() => setShowSocialStep(false)} />
             ) : showVideoCallStep ? (
                <VideoCallStep
                   userId={user.id}
