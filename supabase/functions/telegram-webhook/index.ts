@@ -1510,7 +1510,9 @@ serve(async (req) => {
       // Admin channels: the private team channel and the KYC admin channel.
       const teamChatId = await getTeamChatId(supabase);
       const kycChatId = await getSetting(supabase, 'kyc_alert_chat_id');
-      const isAdminChannel = [teamChatId, kycChatId].some((id) => id && String(message.chat.id) === String(id));
+      // The Indonesia ops chat (Walt watch alerts) counts too, so /waltconnect works where the alert lands.
+      const idChatId = await getSetting(supabase, 'id_alert_chat_id');
+      const isAdminChannel = [teamChatId, kycChatId, idChatId].some((id) => id && String(message.chat.id) === String(id));
 
       // Lender-roster commands are honored only in the private team channel.
       if (
