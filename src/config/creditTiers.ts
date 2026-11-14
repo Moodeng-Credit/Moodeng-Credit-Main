@@ -19,11 +19,11 @@ export const CREDIT_TIERS: readonly number[] = Array.from(
 );
 
 /**
- * The ladder before 2026-11-15. Borrowers who were on it keep their limit ($20, $40 …). A full-limit loan
+ * The ladder before 2026-11-14 10:00 Bangkok. Borrowers who were on it keep their limit ($20, $40 …). A full-limit loan
  * funded before LADDER_SWITCH_AT was promised the old next step, so it still pays out that step.
  */
 export const OLD_CREDIT_TIERS: readonly number[] = [15, 20, 40, 60, 80, 100, 120, 140];
-export const LADDER_SWITCH_AT = Date.parse('2026-11-15T00:00:00+07:00');
+export const LADDER_SWITCH_AT = Date.parse('2026-11-14T10:00:00+07:00');
 
 /**
  * The next limit after `currentAmount`: the first ladder amount above it ($20 → $25, $25 → $35).

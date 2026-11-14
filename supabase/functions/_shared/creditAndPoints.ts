@@ -42,10 +42,10 @@ export const CREDIT_TIERS: readonly number[] = Array.from(
    (_, i) => STARTING_CREDIT_LIMIT + i * CREDIT_STEP
 );
 
-// The ladder before 2026-11-15: a full-limit loan funded before the switch at an old limit ($20, $40 …)
+// The ladder before 2026-11-14 10:00 Bangkok: a full-limit loan funded before the switch at an old limit ($20, $40 …)
 // was promised the old next step, so it still gets it.
 export const OLD_CREDIT_TIERS: readonly number[] = [15, 20, 40, 60, 80, 100, 120, 140];
-export const LADDER_SWITCH_AT = Date.parse('2026-11-15T00:00:00+07:00');
+export const LADDER_SWITCH_AT = Date.parse('2026-11-14T10:00:00+07:00');
 
 export const getNextCreditTier = (currentAmount: number, fundedAt?: string | number | Date | null): number => {
    const funded = fundedAt == null ? Number.NaN : new Date(fundedAt).getTime();
