@@ -1800,6 +1800,13 @@ function RequestBoard$() {
          }
       } catch (error) {
          console.error('Error creating loan:', (error as Error).message || error);
+         // The database wants both lines (Messenger with its ID + WhatsApp) first. Refresh the profile
+         // so the form's contact step opens for them next time they tap Send.
+         if (String((error as Error)?.message ?? '').includes('contact_lines_missing')) {
+            void dispatch(fetchUser());
+            showToast(TOAST_TYPES.ERROR, 'Add Messenger and WhatsApp first', 'Tap Send again to connect them, then your request goes out.', 'OK', 'acknowledge');
+            return;
+         }
          showToast(
             TOAST_TYPES.ERROR,
             "Request wasn't saved",

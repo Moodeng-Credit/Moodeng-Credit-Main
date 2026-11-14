@@ -408,7 +408,43 @@ describe('LoanRequestModal borrowing gate', () => {
       it('keeps today\u2019s open flow for referred borrowers: straight to the form, no call step', () => {
          const markup = render({ ...baseUser, loanAccessStatus: 'none', hasReferral: true }, 'open');
          expect(markup).toContain('Set your loan terms');
-         expect(markup).toContain('Step 1 of 4');
+         // terms, bio1, bio2, job (no job saved yet), contacts
+         expect(markup).toContain('Step 1 of 5');
+      });
+
+      it('skips the job and contact steps once the account has them (job, Messenger ID, WhatsApp)', () => {
+         const markup = render(
+            {
+               ...baseUser,
+               loanAccessStatus: 'none',
+               hasReferral: true,
+               incomeType: 'full-time',
+               profession: 'call center agent',
+               hasVerifiedContact: true,
+               hasMessengerLink: true,
+               whatsappVerified: true
+            },
+            'open'
+         );
+         expect(markup).toContain('Set your loan terms');
+         expect(markup).not.toContain('Step 1 of');
+      });
+
+      it('asks for both lines when Messenger was only marked verified by hand (no Messenger ID)', () => {
+         const markup = render(
+            {
+               ...baseUser,
+               loanAccessStatus: 'none',
+               hasReferral: true,
+               incomeType: 'full-time',
+               profession: 'call center agent',
+               hasVerifiedContact: true,
+               hasMessengerLink: false,
+               whatsappVerified: false
+            },
+            'open'
+         );
+         expect(markup).toContain('Step 1 of 2');
       });
 
       it('lets an approved borrower apply without a referral', () => {

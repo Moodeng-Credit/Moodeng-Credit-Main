@@ -238,7 +238,8 @@ export const handleIncomeDocCallback = async (svc: SupabaseClient, query: CardQu
          chat_id: card.chat.id,
          text: reasonPromptText(docId, card.message_id),
          reply_parameters: { message_id: card.message_id, allow_sending_without_reply: true },
-         reply_markup: { force_reply: true, selective: true, input_field_placeholder: 'Reason for the borrower…' }
+         // Not selective: that would aim the reply box at the card's sender (the bot), not the tapper.
+         reply_markup: { force_reply: true, input_field_placeholder: 'Reason for the borrower…' }
       }).catch((err) => console.error('income doc card: reason prompt failed', err instanceof Error ? err.message : err));
       return true;
    }

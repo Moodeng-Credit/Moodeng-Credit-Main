@@ -163,6 +163,12 @@ const PREPARED_CODE_TTL_MS = 20 * 60 * 1000;
 // Onboarding: how long the green "Verified" shows before moving on to the success screen.
 const AUTO_CONTINUE_MS = 900;
 
+// Messenger counts as connected only with its ID when both lines are required (requireAllLines).
+export const isMessengerLinked = (
+   row: { messenger_verified_at?: string | null; messenger_psid?: string | null } | null | undefined,
+   requireId: boolean
+) => Boolean(row?.messenger_verified_at && (!requireId || row?.messenger_psid));
+
 export default function ContactsStep({
    userId,
    onBack,
@@ -172,7 +178,8 @@ export default function ContactsStep({
    isSubmitting = false,
    source,
    backLabel = 'Back',
-   requireReminders = false
+   requireReminders = false,
+   requireAllLines = false
 }: {
    userId: string;
    onBack: () => void;
@@ -192,6 +199,11 @@ export default function ContactsStep({
    // Loan request for someone only email reaches (no working push, Messenger or WhatsApp): reminders
    // are required even where push can't work — WhatsApp instead, or "I don't have WhatsApp".
    requireReminders?: boolean;
+   // Loan request (George, 2026-11-15): both lines are required, every time one is missing — a real
+   // Messenger link (sent the code, so we hold their Messenger ID; a "verified" stamp from a hand
+   // /confirm doesn't count) AND a confirmed WhatsApp. No "I don't have WhatsApp" way out. Once both
+   // are saved on the account, the parent doesn't show this step again.
+   requireAllLines?: boolean;
 }) {
    const [whatsappVerified, setWhatsappVerified] = useState(false);
    // No-WhatsApp reminders: a Viber number they haven't turned off, or a linked Telegram (chat_id).
@@ -389,6 +401,9 @@ export default function ContactsStep({
    }, []);
    const pushCantWork = !push.isSupported || pushBlocked || pushUnavailable;
    const offerWhatsAppReminders = whatsappRemindersEnabled && pushCantWork && !isGuest;
+   // Loan request with a line missing: WhatsApp is its own required line (not just a reminder fallback),
+   // shown even where push works, with no "I don't have WhatsApp" way out. Push stays as it was.
+   const requireWhatsAppLine = requireAllLines && whatsappRemindersEnabled && !isGuest;
    // requireReminders: where push can't work, WhatsApp becomes required, with "I don't have WhatsApp" as
    // the way out so nobody is locked in (2026-10-13: ~30 taps on a reminder that could never turn on).
    // Without the WhatsApp card on, there's nothing else to ask for, so it's the old rule.
@@ -399,7 +414,9 @@ export default function ContactsStep({
    const remindersMandatory = requireReminders || source === 'connect';
    // Viber or Telegram on stands in for WhatsApp where notifications can't work.
    const otherReminderOn = viberVerified || telegramVerified;
-   const whatsappRequired = remindersMandatory && offerWhatsAppReminders && !whatsappVerified && !otherReminderOn && !skippedNoWhatsApp;
+   const whatsappRequired = requireWhatsAppLine
+      ? !whatsappVerified
+      : remindersMandatory && offerWhatsAppReminders && !whatsappVerified && !otherReminderOn && !skippedNoWhatsApp;
    const canContinue = contactVerified && (pushOn || !pushRequired) && !whatsappRequired;
    // One way to remind them at a time (George, 18–19 Oct). Where notifications work: the bell card.
    // Where they can't: WhatsApp; after "I don't have WhatsApp": Telegram, Viber (when its relay is on)
@@ -415,7 +432,8 @@ export default function ContactsStep({
    // (whatsappFirst.ts), so the app shows no Messenger card that can't open without the Messenger app
    // (an Indonesian borrower got stuck there, 2026-10-26). It turns green on its own when the bot confirms Facebook (realtime below).
    const facebookOnWhatsApp = indoWhatsAppFirst && whatsappVerified && !skippedNoWhatsApp && !contactVerified;
-   const showWhatsAppCard = offerWhatsAppReminders && contactVerified && !otherReminderOn && !skippedNoWhatsApp && !indoWhatsAppFirst;
+   const showWhatsAppCard =
+      contactVerified && !indoWhatsAppFirst && (requireWhatsAppLine || (offerWhatsAppReminders && !otherReminderOn && !skippedNoWhatsApp));
    const showTelegramCard = offerWhatsAppReminders && contactVerified && (telegramVerified || (afterNoWhatsApp && !viberVerified));
    const showViberCard =
       offerWhatsAppReminders && contactVerified && (viberVerified || (afterNoWhatsApp && viberRemindersEnabled && !telegramVerified));
@@ -423,7 +441,7 @@ export default function ContactsStep({
    // Two numbered steps whenever there's a reminders step: 1 Connect Facebook, 2 Payment reminders.
    // Step 2 stays locked until Facebook is connected, so nobody starts with reminders thinking that's
    // the Facebook step (WhatsApp in particular looks like a way to "reach you").
-   const hasReminderStep = pushRequired || pushBlocked || pushUnavailable || offerWhatsAppReminders;
+   const hasReminderStep = pushRequired || pushBlocked || pushUnavailable || offerWhatsAppReminders || requireWhatsAppLine;
 
    // Reminders can't turn on here — blocked, failing on this phone, or Facebook's browser on Android
    // (no push at all, but Chrome has it). Once they've connected Facebook, the bot messages them how
@@ -506,7 +524,7 @@ export default function ContactsStep({
       (async () => {
          const { data } = await getSupabaseBrowserClient()
             .from('users')
-            .select('whatsapp_verified_at, messenger_verified_at, viber_verified_at, notif_viber, chat_id')
+            .select('whatsapp_verified_at, messenger_verified_at, messenger_psid, viber_verified_at, notif_viber, chat_id')
             .eq('id', userId)
             .maybeSingle();
          if (cancelled || !data) return;
@@ -515,7 +533,7 @@ export default function ContactsStep({
          // requireReminders means WhatsApp can't reach them now (no linked contact, or they sent STOP), so
          // an old confirmation doesn't count: they send a fresh code.
          if (data.whatsapp_verified_at && !requireReminders) setWhatsappVerified(true);
-         if (data.messenger_verified_at) {
+         if (isMessengerLinked(data, requireAllLines)) {
             setMessengerVerified(true);
             return;
          }
@@ -529,7 +547,7 @@ export default function ContactsStep({
       };
       // Runs once per account: requestMessengerCode only picks the RPC, from the country at that moment.
       // eslint-disable-next-line react-hooks/exhaustive-deps
-   }, [userId, iosMessenger, requireReminders]);
+   }, [userId, iosMessenger, requireReminders, requireAllLines]);
 
    useEffect(() => {
       const onHide = () => {
@@ -591,8 +609,8 @@ export default function ContactsStep({
       const channel = client
          .channel(`contact-verify:${userId}`)
          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${userId}` }, (payload) => {
-            const row = payload.new as { messenger_verified_at?: string | null; whatsapp_verified_at?: string | null };
-            if (row.messenger_verified_at) setMessengerVerified(true);
+            const row = payload.new as { messenger_verified_at?: string | null; messenger_psid?: string | null; whatsapp_verified_at?: string | null };
+            if (isMessengerLinked(row, requireAllLines)) setMessengerVerified(true);
             // requireReminders: the WhatsApp card watches for its own fresh confirmation instead.
             if (row.whatsapp_verified_at && !requireReminders) setWhatsappVerified(true);
          })
@@ -600,7 +618,7 @@ export default function ContactsStep({
       return () => {
          void client.removeChannel(channel);
       };
-   }, [userId, contactVerified, requireReminders]);
+   }, [userId, contactVerified, requireReminders, requireAllLines]);
 
    // Onboarding: confirmed while they're here → a beat to see the green check, then straight on to the
    // "Facebook connected!" screen, no extra tap. If reminders are still required, the reminders card
@@ -652,15 +670,15 @@ export default function ContactsStep({
       pollRef.current = window.setInterval(async () => {
          const { data } = await getSupabaseBrowserClient()
             .from('users')
-            .select('whatsapp_verified_at, messenger_verified_at')
+            .select('whatsapp_verified_at, messenger_verified_at, messenger_psid')
             .eq('id', userId)
             .maybeSingle();
          if (data?.whatsapp_verified_at) setWhatsappVerified(true);
-         if (data?.messenger_verified_at) setMessengerVerified(true);
-         const done = channel === 'whatsapp' ? data?.whatsapp_verified_at : data?.messenger_verified_at;
+         if (isMessengerLinked(data, requireAllLines)) setMessengerVerified(true);
+         const done = channel === 'whatsapp' ? data?.whatsapp_verified_at : isMessengerLinked(data, requireAllLines);
          if (done) stopPolling();
       }, 3000);
-   }, [userId]);
+   }, [userId, requireAllLines]);
 
    // Back from a page that replaced this tab (Android without the Messenger app lands on Facebook's
    // messages page): pick the attempt back up with the same code showing, rather than a fresh card.
@@ -723,7 +741,7 @@ export default function ContactsStep({
          if (document.visibilityState !== 'visible') return;
          const { data } = await getSupabaseBrowserClient()
             .from('users')
-            .select('whatsapp_verified_at, messenger_verified_at')
+            .select('whatsapp_verified_at, messenger_verified_at, messenger_psid')
             .eq('id', userId)
             .maybeSingle();
          if (data?.whatsapp_verified_at) setWhatsappVerified(true);
@@ -739,11 +757,11 @@ export default function ContactsStep({
                away_ms: awayMs,
                bounced,
                android: isAndroidBrowser(),
-               confirmed: Boolean(data?.messenger_verified_at)
+               confirmed: isMessengerLinked(data, requireAllLines)
             });
             leftAtRef.current = null;
          }
-         if (data?.messenger_verified_at) {
+         if (isMessengerLinked(data, requireAllLines)) {
             setMessengerVerified(true);
             playSuccess();
             return;
@@ -763,7 +781,7 @@ export default function ContactsStep({
          window.removeEventListener('focus', recheck);
          if (graceTimer !== null) window.clearTimeout(graceTimer);
       };
-   }, [messengerLink, messengerVerified, userId, source, showBackup]);
+   }, [messengerLink, messengerVerified, userId, source, showBackup, requireAllLines]);
 
    const reopenMessenger = (location: 'card' | 'backup') => {
       if (!messengerLink) return;
@@ -1517,13 +1535,13 @@ export default function ContactsStep({
             <LockedStepCard
                hint={indoWhatsAppFirst ? 'Unlocks after step 2' : 'Unlocks after step 1'}
                icon={
-                  offerWhatsAppReminders ? (
+                  offerWhatsAppReminders || requireWhatsAppLine ? (
                      <i aria-hidden="true" className="fab fa-whatsapp text-[38px] leading-none text-[#25D366]" />
                   ) : (
                      <BellRing aria-hidden="true" className="size-9 text-[#6b55f7]" strokeWidth={2} />
                   )
                }
-               title={offerWhatsAppReminders ? 'Get reminders on WhatsApp' : 'Turn on reminders'}
+               title={offerWhatsAppReminders || requireWhatsAppLine ? 'Get reminders on WhatsApp' : 'Turn on reminders'}
             />
          ) : null}
          {showPushCard ? (
@@ -1564,7 +1582,7 @@ export default function ContactsStep({
          {showWhatsAppCard ? (
             <WhatsAppRemindersCard
                onVerified={() => setWhatsappVerified(true)}
-               required={remindersMandatory && !skippedNoWhatsApp}
+               required={requireWhatsAppLine || (remindersMandatory && !skippedNoWhatsApp)}
                source={source}
                userId={userId}
                verified={whatsappVerified}
@@ -1578,7 +1596,7 @@ export default function ContactsStep({
          {showSmsComingSoon ? (
             <ComingSoonChannel icon={<MessageSquareText aria-hidden="true" className="size-8" strokeWidth={2} />} title="SMS reminders" />
          ) : null}
-         {remindersMandatory && offerWhatsAppReminders && contactVerified && !whatsappVerified && !otherReminderOn && !skippedNoWhatsApp ? (
+         {!requireWhatsAppLine && remindersMandatory && offerWhatsAppReminders && contactVerified && !whatsappVerified && !otherReminderOn && !skippedNoWhatsApp ? (
             <button
                className="self-center text-md-b3 font-[590] text-[#877897] underline"
                onClick={() => {

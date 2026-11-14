@@ -100,6 +100,8 @@ export interface User {
    attendedCall?: boolean;
    /** True once the borrower has proven a contact line (Messenger or WhatsApp verification). */
    hasVerifiedContact?: boolean;
+   hasMessengerLink?: boolean;
+   whatsappVerified?: boolean;
    /** True once the borrower redeemed a referral code — their intro call is Emma's setup call. */
    hasReferral?: boolean;
    incomeType?: string;
