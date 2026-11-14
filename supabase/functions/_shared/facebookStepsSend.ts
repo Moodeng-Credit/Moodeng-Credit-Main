@@ -1,4 +1,12 @@
-import { FB_STEPS_CARD, FB_STEPS_TELEGRAM_KEYBOARD, FB_STEPS_TEXT, fbStepsStaleBefore } from './facebookSteps.ts';
+import {
+   FB_CATCHUP_AFTER_MS,
+   FB_CATCHUP_BEFORE_MS,
+   FB_STEPS_CARD,
+   FB_STEPS_TELEGRAM_KEYBOARD,
+   FB_STEPS_TEXT,
+   fbStepsCatchUpReason,
+   fbStepsStaleBefore
+} from './facebookSteps.ts';
 import { isIdTrackUser } from './idTrack.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
 import { sendTelegramMessage } from './telegram.ts';
@@ -55,4 +63,68 @@ export const sendFacebookSteps = async (svc: Svc, u: StepsUser, opts: { force: b
    if (!result.ok && !opts.force) await svc.from('users').update({ video_call_fb_steps_sent_at: null }).eq('id', u.id).eq('video_call_fb_steps_sent_at', nowIso);
    console.log(`facebook-steps: ${u.id.slice(0, 8)} ${opts.force ? 'button' : 'auto'} → ${result.ok ? result.channel : result.reason}`);
    return result;
+};
+
+type CatchUpRow = StepsUser & {
+   video_call_outcome: string | null;
+   video_call_arrived_at: string | null;
+   video_call_joined_at: string | null;
+   video_call_fb_steps_sent_at: string | null;
+};
+
+// The 5-minute safety net (video-call-reminders): finds calls that are on, where the borrower looks
+// present and the links never went out (fbStepsCatchUpReason), and sends them. Uses the same once-per-
+// call claim as the Zoom trigger, so the two can't double up. Returns how many it sent; never throws.
+export const runFacebookStepsCatchUp = async (svc: Svc, now = Date.now()): Promise<number> => {
+   try {
+      const { data, error } = await svc
+         .from('users')
+         .select('id, messenger_psid, chat_id, video_call_starts_at, video_call_outcome, video_call_arrived_at, video_call_joined_at, video_call_fb_steps_sent_at')
+         .not('video_call_booking_uid', 'is', null)
+         .gt('video_call_starts_at', new Date(now - FB_CATCHUP_AFTER_MS).toISOString())
+         .lt('video_call_starts_at', new Date(now + FB_CATCHUP_BEFORE_MS).toISOString())
+         .limit(50);
+      if (error) {
+         console.error('facebook-steps: catch-up query failed', error.message);
+         return 0;
+      }
+      const calls = (data ?? []) as CatchUpRow[];
+      if (!calls.length) return 0;
+
+      const { data: sheets } = await svc
+         .from('call_screenings')
+         .select('user_id, call_starts_at, updated_at')
+         .in('user_id', calls.map((c) => c.id))
+         .gt('updated_at', new Date(now - FB_CATCHUP_AFTER_MS - 60 * 60 * 1000).toISOString());
+      const sheetFor = (c: CatchUpRow): string | null => {
+         const start = c.video_call_starts_at ? Date.parse(c.video_call_starts_at) : NaN;
+         const row = ((sheets ?? []) as Array<{ user_id: string; call_starts_at: string | null; updated_at: string }>).find(
+            (s) => s.user_id === c.id && s.call_starts_at !== null && Date.parse(s.call_starts_at) === start
+         );
+         return row?.updated_at ?? null;
+      };
+
+      let sent = 0;
+      for (const c of calls) {
+         const reason = fbStepsCatchUpReason(
+            {
+               startsAt: c.video_call_starts_at,
+               sentAt: c.video_call_fb_steps_sent_at,
+               outcome: c.video_call_outcome,
+               arrivedAt: c.video_call_arrived_at,
+               joinedAt: c.video_call_joined_at,
+               sheetUpdatedAt: sheetFor(c)
+            },
+            now
+         );
+         if (!reason) continue;
+         const result = await sendFacebookSteps(svc, c, { force: false });
+         console.log(`facebook-steps: catch-up (${reason}) ${c.id.slice(0, 8)} → ${result.ok ? result.channel : result.reason}`);
+         if (result.ok) sent += 1;
+      }
+      return sent;
+   } catch (err) {
+      console.error('facebook-steps: catch-up threw', err instanceof Error ? err.message : err);
+      return 0;
+   }
 };

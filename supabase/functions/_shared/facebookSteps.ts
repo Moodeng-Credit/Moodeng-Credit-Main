@@ -29,3 +29,34 @@ export const fbStepsStaleBefore = (callStartsAt: string | null | undefined, now 
 };
 export const fbStepsSentForCall = (sentAt: string | null | undefined, callStartsAt: string | null | undefined, now = Date.now()): boolean =>
    Boolean(sentAt) && Date.parse(String(sentAt)) >= Date.parse(fbStepsStaleBefore(callStartsAt, now));
+
+// ── catch-up ───────────────────────────────────────────────────────────────────────────────────────
+// The automatic send rides on Zoom's arrival ping, which doesn't exist on Cal Video calls and can be
+// missed. Every 5 minutes video-call-reminders looks again: a call that is on (or just ended), where
+// something says the borrower is there, and the links still haven't gone out → send them now.
+// "Something says they're there" = Zoom saw someone arrive, the host tapped Showed up, or the host is
+// filling in the call sheet for this call.
+export const FB_CATCHUP_BEFORE_MS = 10 * 60 * 1000;
+export const FB_CATCHUP_AFTER_MS = 2 * 60 * 60 * 1000;
+
+export type FbCatchUpCall = {
+   startsAt: string | null;
+   sentAt: string | null;
+   outcome: string | null;
+   arrivedAt: string | null;
+   joinedAt: string | null;
+   sheetUpdatedAt: string | null;
+};
+
+export const fbStepsCatchUpReason = (c: FbCatchUpCall, now = Date.now()): 'showed_up' | 'zoom' | 'call_sheet' | null => {
+   const start = c.startsAt ? Date.parse(c.startsAt) : NaN;
+   if (Number.isNaN(start) || now < start - FB_CATCHUP_BEFORE_MS || now > start + FB_CATCHUP_AFTER_MS) return null;
+   if (c.outcome === 'no_show' || fbStepsSentForCall(c.sentAt, c.startsAt, now)) return null;
+   // A sighting or a sheet edit only counts when it belongs to this call, not an earlier booking.
+   const thisCall = (iso: string | null) => Boolean(iso) && Date.parse(String(iso)) >= start - 60 * 60 * 1000;
+   if (c.outcome === 'attended') return 'showed_up';
+   if (thisCall(c.arrivedAt) || thisCall(c.joinedAt)) return 'zoom';
+   // The host may prepare the sheet before the call; only an edit once the call is on means "they're here".
+   if (c.sheetUpdatedAt && Date.parse(c.sheetUpdatedAt) >= start - 2 * 60 * 1000) return 'call_sheet';
+   return null;
+};
