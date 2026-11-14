@@ -56,6 +56,15 @@ export const getNextCreditTier = (currentAmount: number, fundedAt?: string | num
    return CREDIT_TIERS.find((tier) => tier > currentAmount) ?? MAX_CREDIT_LIMIT;
 };
 
+// Admin "one level up / down" (Directory card): the next ladder step above or below the current
+// limit, clamped to $15–$135. An off-ladder limit (old $20/$40 …) snaps to the nearest step in that
+// direction. Returns the current limit when already at the end of the ladder.
+export const shiftCreditLevel = (cs: number | null | undefined, direction: 'up' | 'down'): number => {
+   const current = Math.min(Math.max(Number(cs ?? 0) || 0, STARTING_CREDIT_LIMIT), MAX_CREDIT_LIMIT);
+   if (direction === 'up') return CREDIT_TIERS.find((tier) => tier > current) ?? current;
+   return [...CREDIT_TIERS].reverse().find((tier) => tier < current) ?? current;
+};
+
 // --- credit progression (ported from src/lib/creditLeveling.ts) --------------------------------
 
 export const getEffectiveCreditLimit = (cs: number | null | undefined, isVerified: boolean): number => {
