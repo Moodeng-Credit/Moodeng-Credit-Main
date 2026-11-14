@@ -365,6 +365,7 @@ export function VoucherClaimPopup({
 
 const SHARE_TARGETS = [
    { id: 'embed', label: 'Embed', icon: DASHBOARD_V2_ASSETS.shareEmbed },
+   { id: 'instagram', label: 'Instagram', icon: DASHBOARD_V2_ASSETS.shareInstagram },
    { id: 'whatsapp', label: 'WhatsApp', icon: DASHBOARD_V2_ASSETS.shareWhatsapp },
    { id: 'facebook', label: 'Facebook', icon: DASHBOARD_V2_ASSETS.shareFacebook },
    { id: 'x', label: 'X', icon: DASHBOARD_V2_ASSETS.shareX },
@@ -374,9 +375,27 @@ const SHARE_TARGETS = [
 
 type ShareTargetId = (typeof SHARE_TARGETS)[number]['id'];
 
-const SHARE_TITLE = 'Free meal for both of us — Moodeng Credit';
+const SHARE_TITLE = 'Join me on Moodeng Credit';
 
-const getShareUrl = (target: Exclude<ShareTargetId, 'embed'>, link: string, text: string) => {
+// Short ?src= tag per share target, so sign-up tracking (src/lib/attribution.ts) says where the invite was shared.
+const SHARE_SRC: Record<ShareTargetId, string> = {
+   embed: 'invite-share',
+   instagram: 'invite-ig',
+   whatsapp: 'invite-wa',
+   facebook: 'invite-fb',
+   x: 'invite-x',
+   email: 'invite-email',
+   reddit: 'invite-reddit'
+};
+
+/** The invite link tagged with where it was shared (keeps any query string already on it). */
+export const tagInviteLink = (link: string, target: ShareTargetId) =>
+   `${link}${link.includes('?') ? '&' : '?'}src=${SHARE_SRC[target]}`;
+
+const isMobile = () => typeof navigator !== 'undefined' && /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+
+const getShareUrl = (target: Exclude<ShareTargetId, 'embed' | 'instagram'>, rawLink: string, text: string) => {
+   const link = tagInviteLink(rawLink, target);
    const url = encodeURIComponent(link);
    const message = encodeURIComponent(`${text} ${link}`);
    switch (target) {
@@ -396,12 +415,28 @@ const getShareUrl = (target: Exclude<ShareTargetId, 'embed'>, link: string, text
 /** Figma "invite_popup" share sheet. "Embed" hands off to the phone's own share menu (or copies the link). */
 export function ShareSheet({ link, text, onClose, onCopied }: { link: string; text: string; onClose: () => void; onCopied: () => void }) {
    const rowRef = useRef<HTMLDivElement>(null);
+   const [igNote, setIgNote] = useState(false);
    const shareNative = async () => {
+      const tagged = tagInviteLink(link, 'embed');
       if (navigator.share) {
-         await navigator.share({ title: SHARE_TITLE, text, url: link }).catch(() => undefined);
+         await navigator.share({ title: SHARE_TITLE, text, url: tagged }).catch(() => undefined);
          return;
       }
-      await navigator.clipboard.writeText(link).then(onCopied, () => undefined);
+      await navigator.clipboard.writeText(tagged).then(onCopied, () => undefined);
+   };
+   // Instagram has no web share link: copy the message, say so, then open Instagram (story camera on phones).
+   const shareInstagram = async () => {
+      const tagged = tagInviteLink(link, 'instagram');
+      await navigator.clipboard.writeText(`${text} ${tagged}`).catch(() => undefined);
+      setIgNote(true);
+      if (isMobile() && navigator.share) {
+         await navigator.share({ title: SHARE_TITLE, text, url: tagged }).catch(() => undefined);
+         return;
+      }
+      window.setTimeout(() => {
+         if (isMobile()) window.location.href = 'instagram://story-camera';
+         else window.open('https://www.instagram.com/', '_blank', 'noopener,noreferrer');
+      }, 900);
    };
 
    return (
@@ -430,11 +465,11 @@ export function ShareSheet({ link, text, onClose, onCopied }: { link: string; te
                style={{ scrollbarWidth: 'none' }}
             >
                {SHARE_TARGETS.map((target) =>
-                  target.id === 'embed' ? (
+                  target.id === 'embed' || target.id === 'instagram' ? (
                      <button
                         key={target.id}
                         type="button"
-                        onClick={shareNative}
+                        onClick={target.id === 'embed' ? shareNative : shareInstagram}
                         className="flex w-[52px] shrink-0 flex-col items-center gap-1.5"
                      >
                         <DesignImage src={target.icon} className="h-[52px] w-[52px]" />
@@ -462,6 +497,11 @@ export function ShareSheet({ link, text, onClose, onCopied }: { link: string; te
             >
                <DesignImage src={DASHBOARD_V2_ASSETS.shareNext} className="h-[52px] w-[52px]" />
             </button>
+            {igNote ? (
+               <p role="status" className="mx-5 mt-4 rounded-[12px] bg-[#f4efff] px-3 py-2 text-center text-[14px] font-medium text-[#594d65]">
+                  Link copied — paste it in your Instagram story or DM
+               </p>
+            ) : null}
          </div>
       </div>
    );

@@ -1,9 +1,9 @@
 import { useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, CheckCircle, Clock, Copy, UserPlus } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, Copy, Lock, UserPlus } from 'lucide-react';
 import { useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 import { useFriendReferrals } from '@/hooks/useFriendReferrals';
 
@@ -18,23 +18,28 @@ import type { RootState } from '@/store/store';
 import { buildInviteLink } from '@/views/dashboard-v2/dashboardV2Model';
 import { ShareSheet } from '@/views/dashboard-v2/DashboardV2Rewards';
 
-// The cap is enforced in the database (app_private.queue_interest_refunds); this is only the copy.
-const REFUND_CAP_USD = 5;
-
 const SAMPLE_CODE = 'MOODEN12345';
 const SAMPLE_REFUNDS: MyInterestRefunds = {
    friends: [
-      { joinedAt: '2026-10-29T08:00:00Z', repaid: true, refundUsd: 3, refundStatus: 'sent', sentAt: '2026-10-31T08:00:00Z', txHash: null },
+      { joinedAt: '2026-10-29T08:00:00Z', repaid: true, refundUsd: 5, refundStatus: 'sent', sentAt: '2026-10-31T08:00:00Z', txHash: null },
       { joinedAt: '2026-10-30T08:00:00Z', repaid: true, refundUsd: 5, refundStatus: 'pending', sentAt: null, txHash: null },
       { joinedAt: '2026-10-31T08:00:00Z', repaid: false, refundUsd: null, refundStatus: null, sentAt: null, txHash: null }
    ],
-   totalRefundedUsd: 3
+   totalRefundedUsd: 5,
+   totalEarnedUsd: 5,
+   owedUsd: 5,
+   isAffiliate: true,
+   rewardUsd: 5
+};
+const SAMPLE_LOCKED: MyInterestRefunds = {
+   ...EMPTY_INTEREST_REFUNDS,
+   friends: [{ joinedAt: '2026-10-31T08:00:00Z', repaid: false, refundUsd: null, refundStatus: null, sentAt: null, txHash: null }]
 };
 
-const STEPS = [
-   { title: 'Your friend signs up', body: 'With your link, or by typing your code when they ask for their first loan.' },
-   { title: 'Your friend repays a loan', body: 'Any loan, as long as you didn’t fund it.' },
-   { title: 'We send back your interest', body: `Up to $${REFUND_CAP_USD} in USDC to your wallet, for each friend.` }
+const steps = (rewardUsd: number) => [
+   { title: 'Your friend signs up', body: 'With your link or code.' },
+   { title: 'They repay a loan', body: 'One you didn’t fund.' },
+   { title: `We send you $${rewardUsd} USDC`, body: 'To your wallet, for each friend.' }
 ];
 
 const formatUsd = (value: number) => `$${value.toFixed(2).replace(/\.00$/, '')}`;
@@ -60,18 +65,21 @@ function FriendStatus({ friend }: { friend: InterestRefundFriend }) {
    }
    return (
       <span className="rounded-full bg-md-neutral-200 px-3 py-1 text-md-b3 font-semibold text-md-neutral-700">
-         {friend.repaid ? 'Repay your loan to unlock' : 'Waiting for them to repay'}
+         {friend.repaid ? 'Repay your first loan to unlock' : 'Waiting for them to repay'}
       </span>
    );
 }
 
 /**
- * "Pay zero interest": the referral page the Request Board's maxed-out card opens. Invite codes and the
- * refund queue live in the database (friend_referrals, interest_refunds); this page only shows them.
+ * Affiliate page: $5 USDC per friend who signs up with your code and repays a loan, unlocked by your
+ * first repaid loan. Invite codes and payouts live in the database (friend_referrals, interest_refunds,
+ * migration 20261115120000_affiliate_cash_per_friend); this page only shows them.
+ * Preview: /refer-preview (affiliate) or /refer-preview?locked=1 (before the first repaid loan).
  */
 export default function InterestReferralPage({ sample = false }: { sample?: boolean }) {
    const userId = useSelector((state: RootState) => state.auth.user?.id) ?? '';
    const isLive = !sample && Boolean(userId);
+   const [params] = useSearchParams();
    const { inviteCode, error: inviteError } = useFriendReferrals(isLive);
    const refundsQuery = useQuery({
       queryKey: ['friend-referrals', 'interest-refunds', userId],
@@ -79,7 +87,9 @@ export default function InterestReferralPage({ sample = false }: { sample?: bool
       enabled: isLive && isSupabaseBrowserConfigured(),
       staleTime: 60_000
    });
-   const refunds = sample ? SAMPLE_REFUNDS : (refundsQuery.data ?? EMPTY_INTEREST_REFUNDS);
+   const refunds = sample ? (params.get('locked') ? SAMPLE_LOCKED : SAMPLE_REFUNDS) : (refundsQuery.data ?? EMPTY_INTEREST_REFUNDS);
+   const reward = refunds.rewardUsd;
+   const isLocked = !refunds.isAffiliate && !(isLive && refundsQuery.isLoading);
    const code = sample ? SAMPLE_CODE : inviteCode;
    const inviteLink = code ? buildInviteLink(code) : null;
    const [copied, setCopied] = useState(false);
@@ -104,12 +114,24 @@ export default function InterestReferralPage({ sample = false }: { sample?: bool
 
             <div className="relative overflow-hidden rounded-md-lg border border-[#f0f0f0] bg-md-primary-100 p-4">
                <div className="relative z-10 flex max-w-[210px] flex-col gap-1">
-                  <p className="text-md-b3 font-semibold uppercase tracking-wide text-md-primary-1200">Referral program</p>
-                  <h1 className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Pay zero interest</h1>
-                  <p className="text-md-b2 font-medium text-md-neutral-700">Refer friends and we cover it.</p>
+                  <p className="text-md-b3 font-semibold uppercase tracking-wide text-md-primary-1200">Affiliate</p>
+                  <h1 className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Earn ${reward} per friend</h1>
+                  <p className="text-md-b2 font-medium text-md-neutral-700">Friend repays, you get ${reward} USDC.</p>
                </div>
                <img src="/hippos/thumb-up-right.png" alt="" className="pointer-events-none absolute right-0 top-0 h-full object-contain" />
             </div>
+
+            {isLocked ? (
+               <div className="flex items-center gap-3 rounded-md-lg border border-[#f0f0f0] bg-white p-4">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-md-neutral-200">
+                     <Lock className="h-5 w-5 text-md-neutral-700" aria-hidden="true" />
+                  </span>
+                  <span className="flex flex-col">
+                     <span className="text-md-b2 font-semibold text-md-heading">Repay your first loan to unlock</span>
+                     <span className="text-md-b3 text-md-neutral-700">Friends who join now still count.</span>
+                  </span>
+               </div>
+            ) : null}
 
             <section className="flex flex-col gap-3 rounded-md-lg border border-[#f0f0f0] bg-white p-4">
                <p className="text-md-b2 font-semibold text-md-neutral-700">Your code</p>
@@ -141,7 +163,7 @@ export default function InterestReferralPage({ sample = false }: { sample?: bool
             <section className="flex flex-col gap-3 rounded-md-lg border border-[#f0f0f0] bg-white p-4">
                <h2 className="text-md-b1 font-semibold text-md-heading">How it works</h2>
                <ol className="flex flex-col gap-3">
-                  {STEPS.map((step, index) => (
+                  {steps(reward).map((step, index) => (
                      <li key={step.title} className="flex gap-3">
                         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-md-primary-100 text-md-b3 font-bold text-md-primary-1200">
                            {index + 1}
@@ -153,16 +175,13 @@ export default function InterestReferralPage({ sample = false }: { sample?: bool
                      </li>
                   ))}
                </ol>
-               <p className="text-md-b3 text-md-neutral-700">
-                  The refund is the interest on your most recent repaid loan. Each friend refunds one loan.
-               </p>
             </section>
 
             <section className="flex flex-col gap-3 rounded-md-lg border border-[#f0f0f0] bg-white p-4">
                <div className="flex items-baseline justify-between gap-3">
                   <h2 className="text-md-b1 font-semibold text-md-heading">Your friends</h2>
-                  {refunds.totalRefundedUsd > 0 ? (
-                     <p className="text-md-b3 font-semibold text-[#178447]">{formatUsd(refunds.totalRefundedUsd)} refunded</p>
+                  {refunds.totalEarnedUsd > 0 ? (
+                     <p className="text-md-b3 font-semibold text-[#178447]">{formatUsd(refunds.totalEarnedUsd)} earned</p>
                   ) : null}
                </div>
                {refunds.friends.length ? (
@@ -188,7 +207,7 @@ export default function InterestReferralPage({ sample = false }: { sample?: bool
          {isShareOpen && inviteLink ? (
             <ShareSheet
                link={inviteLink}
-               text={`Join Moodeng Credit with my code ${code}:`}
+               text={`Join me on Moodeng Credit. Use my code ${code}:`}
                onClose={() => setIsShareOpen(false)}
                onCopied={flashCopied}
             />

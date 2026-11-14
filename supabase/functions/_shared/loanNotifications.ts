@@ -812,6 +812,9 @@ For help, contact support@moodeng.app`);
    };
 };
 
+// Affiliate program (migration 20261115120000_affiliate_cash_per_friend): every repaid message mentions it.
+const AFFILIATE_LINE = 'You can now earn $5 for each friend who borrows and repays → moodeng.app/refer';
+
 const buildRepaymentReceivedContent = (loan: LoanNotificationLoan, recipient: LoanNotificationRecipient): EmailContent => {
    const amountRepaid = formatUsdcAmount(loan.repaid_amount ?? loan.total_repayment_amount);
    const formattedDueDate = formatDate(loan.due_date);
@@ -835,6 +838,7 @@ Amount repaid: ${amountRepaid}
 Paid on: ${formattedPaidDate}
 Original due date: ${formattedDueDate}
 ${trustPointHighlight.textLine}
+${AFFILIATE_LINE}
 View your loan details: ${dashboardLink}
 For help, contact support@moodeng.app`);
 
@@ -848,7 +852,8 @@ For help, contact support@moodeng.app`);
          { label: 'Loan count', value: '1' },
          { label: 'Loan status', value: 'Paid', icon: '&#10003;', tone: 'good' },
          { label: 'Paid on', value: formattedPaidDate, icon: '&#10003;', tone: 'good' },
-         { label: 'Original due date', value: formattedDueDate }
+         { label: 'Original due date', value: formattedDueDate },
+         { label: 'Earn $5 per friend', value: 'moodeng.app/refer' }
       ],
       highlightTitle: trustPointHighlight.title,
       highlightCopy: trustPointHighlight.copy,
@@ -1070,6 +1075,7 @@ ${actionUrl}`);
       const text = normalizeNotificationText(`Repayment received
 Hi ${name}, your repayment for ${loan.tracking_id} was received.
 Amount repaid: ${formatUsdcAmount(loan.repaid_amount ?? loan.total_repayment_amount)}
+${AFFILIATE_LINE}
 ${actionUrl}`);
 
       return { actionUrl, text };
