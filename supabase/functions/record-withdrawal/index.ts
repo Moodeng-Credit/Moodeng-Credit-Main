@@ -13,6 +13,9 @@ import { PaymentNotConfirmedError, type VerifiedTransfer, verifyPayment } from '
 //
 // Body: { txHash: string, exchange?: string }
 // Response: { withdrawalId } | { error, retry?: true }
+//
+// Internal (secret key as Bearer/apikey): { replayAlert: <withdrawals.id> } re-posts that cash-out's
+// team alert, marked as a resend — for a card that never landed (e.g. bot not yet in the group).
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -40,7 +43,18 @@ type AdminClient = any;
 // Team alert in the Cash-outs group: who, how much, how, when. Never blocks the response.
 const postCashoutAlert = async (
    admin: AdminClient,
-   args: { userId: string; amount: number; exchange: string; destination: string; txHash: string; wallet: 'embedded' | 'base' }
+   args: {
+      userId: string;
+      amount: number;
+      exchange: string;
+      destination: string;
+      txHash: string;
+      wallet: 'embedded' | 'base';
+      // Replay only: when it happened, which cash-out it was, and a first line marking the resend.
+      at?: Date;
+      cashoutNumber?: number;
+      prefix?: string;
+   }
 ) => {
    try {
       const [setting, user, count] = await Promise.all([
@@ -56,13 +70,13 @@ const postCashoutAlert = async (
          email?: string | null;
          market?: string | null;
       };
-      const text = buildCashoutAlert({
+      const card = buildCashoutAlert({
          amount: args.amount,
          exchange: args.exchange,
          destination: args.destination,
          txHash: args.txHash,
          wallet: args.wallet,
-         at: new Date(),
+         at: args.at ?? new Date(),
          user: {
             id: args.userId,
             username: u.username,
@@ -71,19 +85,68 @@ const postCashoutAlert = async (
             email: u.email,
             market: u.market
          },
-         cashoutNumber: count.count ?? 0
+         cashoutNumber: args.cashoutNumber ?? count.count ?? 0
       });
+      const text = args.prefix ? `${args.prefix}\n${card}` : card;
       await sendTelegramMessage(chatId, text, { inlineKeyboard: [[{ text: '🔎 View on Basescan', url: cashoutTxUrl(args.txHash) }]] });
    } catch (err) {
       console.error('[record-withdrawal] cash-out alert failed:', err instanceof Error ? err.message : err);
+      if (args.prefix) throw err;
    }
+};
+
+const isInternalCaller = async (admin: AdminClient, req: Request) => {
+   const authorization = req.headers.get('Authorization') ?? '';
+   const secret = authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : (req.headers.get('apikey') ?? '').trim();
+   if (!secret) return false;
+   const expected = Deno.env.get('SUPABASE_SECRET_KEY') ?? Deno.env.get('TELEGRAM_NOTIFICATION_SECRET');
+   if (expected && secret === expected) return true;
+   const { data } = await admin.rpc('verify_internal_notification_secret', { candidate: secret });
+   return data === true;
+};
+
+// Re-post one recorded cash-out's team alert, marked as a resend.
+const replayAlert = async (admin: AdminClient, withdrawalId: string) => {
+   const { data: row } = await admin
+      .from('withdrawals')
+      .select('id, borrower_user_id, amount, exchange, destination_address, tx_hash, created_at')
+      .eq('id', withdrawalId)
+      .maybeSingle();
+   if (!row) return jsonResponse({ error: 'Withdrawal not found' }, 404);
+   const { count } = await admin
+      .from('withdrawals')
+      .select('id', { count: 'exact', head: true })
+      .eq('borrower_user_id', row.borrower_user_id)
+      .lte('created_at', row.created_at);
+   try {
+      await postCashoutAlert(admin, {
+         userId: row.borrower_user_id,
+         amount: Number(row.amount),
+         exchange: row.exchange || 'Other',
+         destination: row.destination_address || '',
+         txHash: row.tx_hash,
+         // The row doesn't keep which wallet sent it; most cash-outs are from the Moodeng wallet.
+         wallet: 'embedded',
+         at: new Date(row.created_at),
+         cashoutNumber: count ?? 0,
+         prefix: '🔁 Resent (missed when it happened)'
+      });
+   } catch (err) {
+      return jsonResponse({ error: err instanceof Error ? err.message : 'Send failed' }, 502);
+   }
+   return jsonResponse({ ok: true, withdrawalId: row.id });
 };
 
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
    if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405);
 
-   const body = (await req.json().catch(() => ({}))) as { txHash?: unknown; exchange?: unknown };
+   const body = (await req.json().catch(() => ({}))) as { txHash?: unknown; exchange?: unknown; replayAlert?: unknown };
+   if (typeof body.replayAlert === 'string') {
+      const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+      if (!(await isInternalCaller(admin, req))) return jsonResponse({ error: 'Unauthorized' }, 401);
+      return await replayAlert(admin, body.replayAlert);
+   }
    const txHash = typeof body.txHash === 'string' ? body.txHash.toLowerCase() : '';
    if (!/^0x[0-9a-f]{64}$/.test(txHash)) return jsonResponse({ error: 'Invalid transaction hash' }, 400);
    const exchange = (typeof body.exchange === 'string' ? body.exchange.trim() : '').slice(0, 80) || 'Other';
