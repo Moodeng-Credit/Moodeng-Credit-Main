@@ -46,6 +46,39 @@ const primaryButton =
 const backButton =
    'flex w-full items-center justify-center gap-1 rounded-md-lg border border-[#e6e1ec] py-md-3 text-md-b2 font-semibold text-md-neutral-1500 transition hover:bg-[#faf8fc] disabled:opacity-50';
 
+// Connecting a wallet can remount the request board (and drop this modal). Remember which loan's
+// modal was open, and on which tab, so the card can reopen it right where the admin left off.
+const FUND_RESUME_KEY = 'moodeng:fund-modal-resume';
+const FUND_RESUME_TTL_MS = 5 * 60 * 1000;
+
+export function readFundResume(loanId: string): Method | null {
+   try {
+      const raw = window.sessionStorage.getItem(FUND_RESUME_KEY);
+      if (!raw) return null;
+      const saved = JSON.parse(raw) as { loanId?: string; method?: Method; at?: number };
+      if (saved.loanId !== loanId || !saved.method || Date.now() - (saved.at ?? 0) > FUND_RESUME_TTL_MS) return null;
+      return saved.method;
+   } catch {
+      return null;
+   }
+}
+
+function saveFundResume(loanId: string, method: Method) {
+   try {
+      window.sessionStorage.setItem(FUND_RESUME_KEY, JSON.stringify({ loanId, method, at: Date.now() }));
+   } catch {
+      /* storage blocked: the modal just won't reopen on its own */
+   }
+}
+
+export function clearFundResume() {
+   try {
+      window.sessionStorage.removeItem(FUND_RESUME_KEY);
+   } catch {
+      /* ignore */
+   }
+}
+
 const shortAddress = (address?: string) => (address ? `${address.slice(0, 6)}…${address.slice(-4)}` : '');
 
 /**
@@ -71,7 +104,7 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
    const { openConnectModal } = useConnectModal();
    const connected = Boolean(address);
 
-   const [method, setMethod] = useState<Method>('choose');
+   const [method, setMethod] = useState<Method>(() => readFundResume(target.loanId) ?? 'choose');
    const [busy, setBusy] = useState(false);
    // Non-blocking status shown inline in the modal (replaces the old pile of error/warning toasts).
    const [notice, setNotice] = useState<{ tone: 'error' | 'pending'; message: ReactNode } | null>(null);
@@ -373,7 +406,7 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
       message ? <p className="rounded-[16px] bg-[rgba(255,237,161,0.35)] px-md-3 py-2.5 text-md-b3 text-[#8a6d00]">{message}</p> : null;
 
    const connectStep = (stepTitle: string) => (
-      <ChecklistStep number={1} state={connected ? 'done' : 'active'} title={stepTitle}>
+      <ChecklistStep number={1} state={connected ? 'done' : 'active'} title={connected ? 'Wallet connected' : stepTitle}>
          {connected ? (
             <span className="mt-1 inline-flex items-center gap-1.5 rounded-md-pill bg-md-green-100 px-3 py-1 text-md-b3 font-semibold text-md-green-800">
                <Wallet className="h-3.5 w-3.5" aria-hidden="true" /> {shortAddress(address)} connected
@@ -381,7 +414,10 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
          ) : (
             <button
                type="button"
-               onClick={() => openConnectModal?.()}
+               onClick={() => {
+                  saveFundResume(target.loanId, method);
+                  openConnectModal?.();
+               }}
                className="mt-2 inline-flex h-11 items-center justify-center gap-1.5 rounded-md-pill bg-md-primary-1200 px-md-4 text-md-b2 font-semibold text-md-neutral-100 transition active:scale-[0.98]"
             >
                <Wallet className="h-4 w-4" aria-hidden="true" /> Connect wallet
@@ -396,7 +432,7 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
             className="relative max-h-[92vh] w-full max-w-md overflow-y-auto rounded-[24px] border border-[#f0f0f0] bg-white p-md-4 shadow-[0px_11px_24px_0px_rgba(0,0,0,0.02)]"
             onClick={(e) => e.stopPropagation()}
          >
-            {method === 'vault' && ringStage ? <PaymentProgressOverlay percent={ringPercent} title={ringTitle} hint={ringHint} /> : null}
+            {method === 'vault' && drawStage ? <PaymentProgressOverlay percent={ringPercent} title={ringTitle} hint={ringHint} /> : null}
 
             <div className="mb-md-3 flex items-center gap-2">
                {method !== 'choose' ? (
@@ -525,22 +561,47 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
                      </p>
                   </div>
 
+                  {!drawStage && ringStage ? (
+                     <div role="status" aria-live="polite">
+                        <div className="mb-1 flex items-center justify-between text-md-b3">
+                           <span className="font-medium text-md-neutral-1500">{ringTitle}</span>
+                           <span className="tabular-nums text-md-neutral-1000">{Math.round(ringPercent)}%</span>
+                        </div>
+                        <div className="h-1.5 overflow-hidden rounded-full bg-[#eee9f4]">
+                           <div
+                              className="h-full rounded-full bg-md-primary-1200 transition-[width] duration-300 ease-out"
+                              style={{ width: `${Math.min(100, Math.max(4, ringPercent))}%` }}
+                           />
+                        </div>
+                     </div>
+                  ) : null}
+
                   {warningBox(vaultError || vaultIssue)}
 
                   <div>
                      {connectStep('Connect Moodeng’s lending wallet')}
                      <div className={`ml-[15px] h-4 w-0.5 ${connected ? 'bg-md-green-600' : 'bg-[#e6e1ec]'}`} aria-hidden="true" />
-                     <ChecklistStep number={2} state={connected ? 'active' : 'locked'} title="Draw from the vault">
-                        {connected ? null : <p className="text-md-b3 text-md-neutral-1000">Unlocks once your wallet is connected</p>}
+                     <ChecklistStep number={2} state={connected ? 'active' : 'locked'} title="Draw from the vault" highlight={connected}>
+                        {connected ? (
+                           <div className="mt-2 space-y-2">
+                              <p className="text-md-b3 text-md-neutral-1200">Next step: send the loan to the borrower.</p>
+                              <button
+                                 type="button"
+                                 onClick={handleVaultDraw}
+                                 disabled={busy || !vaultReady}
+                                 className={`${primaryButton} ${vaultReady && !busy ? 'shadow-[0_0_0_4px_rgba(103,30,226,0.18)]' : ''}`}
+                              >
+                                 {busy ? 'Sending…' : vaultChecking ? 'Checking the vault…' : `Send ${Number(principal) || 0} USDC to borrower`}
+                                 {!busy && !vaultChecking ? <Send className="h-5 w-5" aria-hidden="true" /> : null}
+                              </button>
+                           </div>
+                        ) : (
+                           <p className="text-md-b3 text-md-neutral-1000">Unlocks once your wallet is connected</p>
+                        )}
                      </ChecklistStep>
                   </div>
 
                   {noticeBox}
-
-                  <button type="button" onClick={handleVaultDraw} disabled={!connected || busy || !vaultReady} className={primaryButton}>
-                     {busy ? 'Sending…' : `Send ${Number(principal) || 0} USDC to borrower`}
-                     {!busy ? <Send className="h-5 w-5" aria-hidden="true" /> : null}
-                  </button>
                   <button type="button" onClick={backToChoose} disabled={busy} className={backButton}>
                      <ChevronLeft className="h-4 w-4" aria-hidden="true" /> Back
                   </button>
@@ -623,11 +684,14 @@ function ChecklistStep({
    number,
    state,
    title,
+   highlight,
    children
 }: {
    number: number;
    state: 'done' | 'active' | 'locked';
    title: string;
+   /** The step to do now: outlined card so it stands out from the done/locked ones. */
+   highlight?: boolean;
    children: ReactNode;
 }) {
    const badgeClass =
@@ -638,7 +702,9 @@ function ChecklistStep({
            : 'border border-[#e6e1ec] bg-[#faf8fc] text-md-neutral-1000';
 
    return (
-      <div className={`flex gap-3 py-1 ${state === 'locked' ? 'opacity-50' : ''}`}>
+      <div
+         className={`flex gap-3 ${state === 'locked' ? 'py-1 opacity-50' : highlight ? '-mx-2 rounded-[16px] border border-md-primary-1200/40 bg-md-primary-100/50 p-2' : 'py-1'}`}
+      >
          <span className={`flex h-8 w-8 flex-none items-center justify-center rounded-full text-md-b3 font-semibold ${badgeClass}`}>
             {state === 'done' ? <Check className="h-4 w-4" aria-hidden="true" /> : number}
          </span>

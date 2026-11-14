@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom';
 import { useAccount, useSwitchChain } from 'wagmi';
 import { getAccount } from 'wagmi/actions';
 
-import FundingMethodModal, { type FundLoanTarget } from '@/components/funding/FundingMethodModal';
+import FundingMethodModal, { type FundLoanTarget, clearFundResume, readFundResume } from '@/components/funding/FundingMethodModal';
 import IndonesiaBadge, { INDONESIA_CARD_ACCENT } from '@/components/IndonesiaBadge';
 import PaymentProgressRing from '@/components/loading/PaymentProgressRing';
 import { FlipFace, useFloatingParticles, useReplayClass, useTapFlip } from '@/components/motion/TapDelight';
@@ -180,6 +180,10 @@ export default function UserCard(loan: UserCardProps) {
    // Help"; everyone else falls through to the normal lend flow, byte-for-byte unchanged.
    const isFundingAdmin = useIsFundingAdmin();
    const [showFundingModal, setShowFundingModal] = useState(false);
+   // Reopen it if the card remounted while the admin was connecting a wallet inside it.
+   useEffect(() => {
+      if (isFundingAdmin && readFundResume(loanData.id) !== null) setShowFundingModal(true);
+   }, [isFundingAdmin, loanData.id]);
    // Borrower's own request on hold (missed video call): book a new call right from the card.
    const [showRebook, setShowRebook] = useState(false);
    const [showWalletChecklist, setShowWalletChecklist] = useState(false);
@@ -1019,7 +1023,10 @@ export default function UserCard(loan: UserCardProps) {
                      market: isIndoLoan ? 'ID' : null
                   } satisfies FundLoanTarget
                }
-               onClose={() => setShowFundingModal(false)}
+               onClose={() => {
+                  clearFundResume();
+                  setShowFundingModal(false);
+               }}
                onDirectLend={runDirectLend}
                onFunded={handleFetch}
             />
