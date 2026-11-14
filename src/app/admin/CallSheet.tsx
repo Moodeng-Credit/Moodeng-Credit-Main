@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { type AdminCallApprovalRow, recheckAdminCallForm } from '@/app/admin/adminSupabase';
+import { type AdminCallApprovalRow, recheckAdminCallForm, sendAdminCallFacebookSteps } from '@/app/admin/adminSupabase';
 import IndonesiaContactCard from '@/app/admin/IndonesiaContactCard';
 import { type CheckField, currentVerdict, type FormCheck, tallyCheck } from '@/app/admin/callFormCheck';
 import {
@@ -401,6 +401,8 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
    const [botAnswers, setBotAnswers] = useState<BotAnswers[]>([]);
    const [rechecking, setRechecking] = useState(false);
    const [askingProof, setAskingProof] = useState(false);
+   const [fbStepsSentAt, setFbStepsSentAt] = useState<string | null>(row.fbStepsSentAt ?? null);
+   const [sendingFbSteps, setSendingFbSteps] = useState(false);
    const savingRef = useRef(false);
    const idRef = useRef<string | null>(null);
 
@@ -489,6 +491,17 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
          setError(err instanceof Error ? err.message : 'Could not re-check the form.');
       } finally {
          setRechecking(false);
+      }
+   };
+   const sendFbSteps = async () => {
+      setSendingFbSteps(true);
+      setError('');
+      try {
+         setFbStepsSentAt((await sendAdminCallFacebookSteps(row.userId)).sentAt);
+      } catch (err) {
+         setError(err instanceof Error ? err.message : 'Could not send the Facebook steps.');
+      } finally {
+         setSendingFbSteps(false);
       }
    };
    const formCheck = transcript?.formCheck ?? null;
@@ -724,6 +737,21 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                               <Choice letter="C" onClick={() => set('addedEmma', !answers.addedEmma)} selected={Boolean(answers.addedEmma)}>
                                  Added Emma Moodeng and Voices Against Unfair Loan on Facebook
                               </Choice>
+                              <div className="flex items-center gap-2 pl-7 text-[11px] text-[#6f6f6f]">
+                                 <button
+                                    className="rounded-md border border-[#d9d4ff] bg-[#f4f1ff] px-2 py-1 font-semibold text-[#6b55f7] disabled:opacity-50"
+                                    disabled={sendingFbSteps}
+                                    onClick={() => void sendFbSteps()}
+                                    type="button"
+                                 >
+                                    {sendingFbSteps ? 'Sending…' : fbStepsSentAt ? 'Send again' : 'Send Facebook steps'}
+                                 </button>
+                                 <span>
+                                    {fbStepsSentAt
+                                       ? `Links sent ${new Date(fbStepsSentAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}. Accept both on Facebook, then tick.`
+                                       : 'Not sent yet. Sends the two links to their Messenger.'}
+                                 </span>
+                              </div>
                               {checkLine('addedEmma')}
                            </div>
                         </Question>

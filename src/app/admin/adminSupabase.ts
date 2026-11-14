@@ -3229,6 +3229,8 @@ export interface AdminCallApprovalRow {
    host: string | null;
    joinUrl: string | null;
    attendance: string | null;
+   /** When the "add Emma + join the group" message went out for this call (null = not yet). */
+   fbStepsSentAt?: string | null;
    outcome: 'attended' | 'no_show' | null;
    outcomeAt: string | null;
    request: { id: string; kind: string; reason: string | null; createdAt: string } | null;
@@ -3268,6 +3270,12 @@ export async function approveAdminUser(userId: string): Promise<{ ok: boolean; s
 export async function recheckAdminCallForm(userId: string): Promise<FormCheck> {
    const result = await invokeAdminCallApprovals<{ ok: boolean; check: FormCheck }>({ action: 'check_form', userId });
    return result.check;
+}
+
+// Send the "add Emma + join the group" message now (Messenger, else Telegram). Throws with a plain
+// reason when it can't reach the borrower.
+export async function sendAdminCallFacebookSteps(userId: string): Promise<{ channel: 'messenger' | 'telegram'; sentAt: string }> {
+   return invokeAdminCallApprovals<{ ok: boolean; channel: 'messenger' | 'telegram'; sentAt: string }>({ action: 'send_fb_steps', userId });
 }
 
 // Proof of income sent from /documents. The AI read + checks run in kyc-cross-check

@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { markZoomSeen } from '../_shared/attendance.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { BORROWER_COLUMNS, type BorrowerRow, getAdminChatId, who } from '../_shared/loanAccess.ts';
+import { sendFacebookSteps } from '../_shared/facebookStepsSend.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { formatCallTimeForTeam } from '../_shared/videoCall.ts';
 import { alertCallCheck, checkCallForm } from '../_shared/callFormCheck.ts';
@@ -207,6 +208,16 @@ serve(async (req) => {
          .select('id')
          .maybeSingle();
       borrowerJoinedNow = Boolean(joined);
+   }
+
+   // The borrower is here (waiting room counts: that's the signal Zoom never misses): send the two
+   // Facebook steps so the host can ask for them on the call. Once per call; never blocks the alert.
+   if (participantKind === 'borrower' && (firstArrival || borrowerJoinedNow)) {
+      const job = sendFacebookSteps(svc, booking, { force: false }).catch((err) =>
+         console.error('zoom-webhook: facebook steps failed', err instanceof Error ? err.message : err)
+      );
+      if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(job);
+      else await job;
    }
 
    // Alert on the first sighting, and again when the borrower is confirmed in the call after an
