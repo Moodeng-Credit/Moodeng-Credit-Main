@@ -15,6 +15,7 @@ import CalendarSection from '@/app/admin/CalendarSection';
 import CallApprovalsSection from '@/app/admin/CallApprovalsSection';
 import IdPayoutWalletPanel from '@/app/admin/IdPayoutWalletPanel';
 import IndonesiaContactCard from '@/app/admin/IndonesiaContactCard';
+import SocialHandlesLine from '@/app/admin/SocialHandlesLine';
 import WaltPayoutCard from '@/app/admin/WaltPayoutCard';
 import IndonesiaBadge from '@/components/IndonesiaBadge';
 import FilloutSection from '@/app/admin/FilloutSection';
@@ -1547,6 +1548,9 @@ function AdminPanel() {
                                  <strong className="mt-2 block text-3xl underline">
                                     {selectedRequest.borrower?.username ?? 'Unknown borrower'}
                                  </strong>
+                                 <div className="mt-1">
+                                    <SocialHandlesLine key={selectedRequest.borrower_user_id ?? ''} userId={selectedRequest.borrower_user_id} />
+                                 </div>
                                  {selectedRequest.market === 'ID' ? (
                                     <div className="mt-3">
                                        <IndonesiaContactCard key={selectedRequest.borrower_user_id ?? ''} userId={selectedRequest.borrower_user_id} />

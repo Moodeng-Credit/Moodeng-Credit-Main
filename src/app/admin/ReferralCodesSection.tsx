@@ -355,8 +355,9 @@ export default function ReferralCodesSection() {
                   </span>
                </h4>
                <p className="mt-1 text-sm font-medium text-[#a89bb8]">
-                  Code owners say they referred these people. Find the account and approve — it only adds them to the owner&apos;s
-                  /affiliate list (tracking, no payout).
+                  Borrowers say they referred these people. Find the account and approve. On a team code it&apos;s tracking only; on a
+                  personal code the friend is linked and earns the owner $5 when they repay (only if they joined within 30 days of the
+                  claim).
                </p>
                <ul className="mt-3 space-y-2">
                   {claims
@@ -369,11 +370,31 @@ export default function ReferralCodesSection() {
                                     🙋 {c.friend_name}
                                     {c.friend_contact ? <span className="font-medium text-[#cfc6dd]"> · {c.friend_contact}</span> : null}
                                  </p>
+                                 {c.friend_facebook_url && /^(https?:\/\/)?([a-z]+\.)?facebook\.com\//i.test(c.friend_facebook_url) ? (
+                                    <a
+                                       href={/^https?:\/\//i.test(c.friend_facebook_url) ? c.friend_facebook_url : `https://${c.friend_facebook_url}`}
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       className="text-sm font-bold text-[#c9a7ff] underline"
+                                    >
+                                       Facebook profile
+                                    </a>
+                                 ) : null}
                                  <p className="text-sm font-medium text-[#a89bb8]">
                                     claimed by {c.owner?.display_name?.trim() || c.owner?.username || 'owner'} ·{' '}
-                                    <span className="font-mono font-black text-[#cfc6dd]">{c.code?.code}</span> ·{' '}
+                                    <span className="font-mono font-black text-[#cfc6dd]">{c.code?.code ?? 'personal code'}</span> ·{' '}
                                     {new Date(c.created_at).toLocaleDateString()}
                                  </p>
+                                 {c.suggested ? (
+                                    <button
+                                       type="button"
+                                       onClick={() => decideClaim(c, true, c.suggested!.id)}
+                                       disabled={busy === c.id}
+                                       className="mt-1 rounded-lg bg-emerald-700 px-3 py-1 text-sm font-black text-white disabled:opacity-50"
+                                    >
+                                       ✅ Match found: {c.suggested.display_name?.trim() || `@${c.suggested.username ?? '?'}`} — approve
+                                    </button>
+                                 ) : null}
                               </div>
                               <div className="flex gap-2">
                                  <button

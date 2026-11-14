@@ -133,7 +133,6 @@ import IdOnboarding, { IdOnboardingPreview } from '@/views/indonesia/IdOnboardin
 import MoneyHub from '@/views/money/MoneyHub';
 import ContinuePage from '@/views/onboarding/ContinuePage';
 import MessengerHandoff from '@/views/onboarding/MessengerHandoff';
-import InterestReferralPage from '@/views/referral/InterestReferralPage';
 import DirectRepay, { WalletPaused, WalletSuspendedGate } from '@/views/repay/DirectRepay';
 import Repay from '@/views/repay/Repay';
 import TransactionDetail from '@/views/transactions/TransactionDetail';
@@ -493,22 +492,11 @@ export default function App() {
             />
             <Route
                path="/dashboard/refer"
-               // The referral program refunds interest now; old links land on its page.
-               element={<Navigate to="/refer" replace />}
+               // Old referral links (and the old "Pay zero interest" page) all land on the one affiliate page.
+               element={<Navigate to="/affiliate" replace />}
             />
-            {/* "Pay zero interest": the Request Board's card once the credit line is maxed out. */}
-            <Route
-               path="/refer"
-               element={
-                  <ProtectedRoute>
-                     <RoleGuard>
-                        <InterestReferralPage />
-                     </RoleGuard>
-                  </ProtectedRoute>
-               }
-            />
-            {import.meta.env.DEV ? <Route path="/refer-preview" element={<InterestReferralPage sample />} /> : null}
-            {/* Referral code owners (affiliates, e.g. Belle): their own signups and payouts, no admin needed. */}
+            <Route path="/refer" element={<Navigate to="/affiliate" replace />} />
+            {/* Moo affiliate, for every borrower ($5 per friend) and for code owners like Belle. */}
             <Route
                path="/affiliate"
                element={

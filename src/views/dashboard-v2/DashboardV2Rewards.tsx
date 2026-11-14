@@ -40,7 +40,8 @@ const CLAIM_HEADLINE: Record<VoucherReward, string> = {
    tier_prime: 'Moodeng grew to Prime. Treat yourself!',
    tier_apex: 'Moodeng reached Apex. Feast time!',
    streak_3: '3 on time in a row. Treat yourself!',
-   streak_5: '5 on time in a row. Treat yourself!'
+   streak_5: '5 on time in a row. Treat yourself!',
+   affiliate_payout: 'Your friend repaid. Enjoy!'
 };
 
 /** The two Moo-Menu picks, drawn as the designer's referral voucher tickets. GrabMart only comes from ₱100 (its smallest card). */
@@ -495,7 +496,8 @@ export function ShareSheet({
             </div>
             <div
                ref={rowRef}
-               className="mt-4 flex gap-[14.5px] overflow-x-auto px-[27px] pb-1 pr-16 sm:justify-between sm:gap-0 sm:overflow-visible sm:px-5"
+               // Eight apps don't fit side by side even on desktop: the row scrolls everywhere, with the arrow.
+               className="mt-4 flex gap-[14.5px] overflow-x-auto px-[27px] pb-1 pr-16"
                style={{ scrollbarWidth: 'none' }}
             >
                {SHARE_TARGETS.map((target) =>
@@ -530,7 +532,7 @@ export function ShareSheet({
             <button
                type="button"
                onClick={() => rowRef.current?.scrollBy({ left: 200, behavior: 'smooth' })}
-               className="absolute right-2 top-[62px] h-[52px] w-[52px] sm:hidden"
+               className="absolute right-2 top-[62px] h-[52px] w-[52px]"
                aria-label="More share options"
             >
                <DesignImage src={DASHBOARD_V2_ASSETS.shareNext} className="h-[52px] w-[52px]" />

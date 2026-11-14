@@ -98,6 +98,7 @@ export default function InterestRefundsSection() {
                            {r.status === 'pending' ? '💸 ' : ''}
                            Send ${Number(r.amount_usd).toFixed(2)} to {personLabel(r.user)}{' '}
                            {r.status === 'sent' ? <span className="text-emerald-300">sent</span> : null}
+                           {r.status === 'voucher' ? <span className="text-emerald-300">took a voucher</span> : null}
                         </p>
                         <p className="break-all font-mono text-sm font-black text-[#cfc6dd]">{r.user?.wallet_address || 'No wallet on file'}</p>
                         <p className="text-sm font-medium text-[#a89bb8]">

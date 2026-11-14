@@ -14,7 +14,8 @@ export type VoucherReward =
    | 'tier_prime'
    | 'tier_apex'
    | 'streak_3'
-   | 'streak_5';
+   | 'streak_5'
+   | 'affiliate_payout';
 export type VoucherClaimStatus = 'pending' | 'sent' | 'rejected';
 /** Moo-Menu pick: 'food' = Xoxo link (Jollibee & co, anywhere in PH), 'grabmart' = GrabMart (₱100+, Metro Manila & Cebu). */
 export type VoucherBrand = 'food' | 'grabmart';

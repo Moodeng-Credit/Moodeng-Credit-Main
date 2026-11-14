@@ -2363,7 +2363,7 @@ function RequestBoard$() {
                                  isIndo
                                     ? handleApplyLoanClick
                                     : showReferralCard
-                                    ? () => navigate('/refer')
+                                    ? () => navigate('/affiliate')
                                     : journey.onboarding
                                       ? (e) => { e.preventDefault(); journey.go(); }
                                       : handleApplyLoanClick

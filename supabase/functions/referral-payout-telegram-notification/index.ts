@@ -37,12 +37,13 @@ const isAuthorized = async (supabase: SupabaseClient, req: Request) => {
    return data === true;
 };
 
-// Tracking only — approving a claim adds the friend to the owner's /affiliate list, no payout.
+// A borrower added a friend by hand. Team-made code: tracking only. Personal code: approving links the
+// friend, and pays the $5 if they joined within 30 days of the claim (admin_decide_referral_claim).
 const postClaimCard = async (supabase: SupabaseClient, claimId: string) => {
    const { data: claim, error } = await supabase
       .from('referral_claims')
       .select(
-         'id, friend_name, friend_contact, owner_user_id, code:referral_codes(code), owner:users!referral_claims_owner_user_id_fkey(username, display_name)'
+         'id, friend_name, friend_contact, friend_facebook_url, owner_user_id, code:referral_codes(code), owner:users!referral_claims_owner_user_id_fkey(username, display_name), suggested:users!referral_claims_suggested_user_id_fkey(username, display_name)'
       )
       .eq('id', claimId)
       .maybeSingle();
@@ -55,18 +56,26 @@ const postClaimCard = async (supabase: SupabaseClient, claimId: string) => {
       id: string;
       friend_name: string;
       friend_contact: string | null;
+      friend_facebook_url: string | null;
       owner_user_id: string;
       code: { code: string } | null;
       owner: { username: string | null; display_name: string | null } | null;
+      suggested: { username: string | null; display_name: string | null } | null;
    };
    const owner = c.owner?.display_name?.trim() || (c.owner?.username ? `@${c.owner.username}` : 'An affiliate');
    const text = [
       `🙋 ${owner} says they referred someone`,
       '',
       `Friend: ${c.friend_name}${c.friend_contact ? ` · ${c.friend_contact}` : ''}`,
-      `Code: ${c.code?.code ?? '—'}`,
+      ...(c.friend_facebook_url ? [`Facebook: ${c.friend_facebook_url}`] : []),
+      `Code: ${c.code?.code ?? 'personal invite code'}`,
+      ...(c.suggested
+         ? [`Match found: ${c.suggested.display_name?.trim() || `@${c.suggested.username ?? '?'}`} (one tap to approve in admin)`]
+         : []),
       '',
-      'Find them in Admin → Referral codes → Friends to check, then ✅ Approve. Tracking only, no payout.'
+      c.code
+         ? 'Find them in Admin → Referral codes → Friends to check, then ✅ Approve. Tracking only, no payout.'
+         : 'Find them in Admin → Referral codes → Friends to check, then ✅ Approve. Pays $5 when they repay if they joined in the last 30 days.'
    ].join('\n');
    const siteUrl = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('SITE_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
    const keyboard: TelegramInlineKeyboard = [[{ text: '🔎 Check in admin', url: `${siteUrl}/admin/referrals` }]];

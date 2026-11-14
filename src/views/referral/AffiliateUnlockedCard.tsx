@@ -38,7 +38,7 @@ export function AffiliateUnlockedCard({ isPreview = false }: { isPreview?: boole
             </p>
             <button
                type="button"
-               onClick={() => navigate('/refer')}
+               onClick={() => navigate('/affiliate')}
                className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-full bg-[#6b55f7] px-4 py-2 text-[15px] font-bold text-white active:scale-[0.98]"
             >
                <UserPlus className="h-4 w-4" aria-hidden="true" />
