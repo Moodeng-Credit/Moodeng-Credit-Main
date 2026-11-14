@@ -2055,12 +2055,14 @@ export async function setReferralPayoutStatus(id: string, status: 'unpaid' | 'pa
    return data as unknown as AdminReferralPayout;
 }
 
-/** "Pay zero interest" refunds owed to inviters (migration 20261101120000_referral_interest_refunds). */
+/** Affiliate payouts ($5 per friend) and old "Pay zero interest" refunds owed to inviters (migration 20261101120000_referral_interest_refunds). */
 export interface AdminInterestRefund {
    id: string;
    status: 'pending' | 'sent';
    interest_usd: number;
    amount_usd: number;
+   /** 'cash' = $5 affiliate reward per friend; 'interest' = old interest refund. */
+   kind?: 'interest' | 'cash' | null;
    tx_hash: string | null;
    sent_at: string | null;
    sent_by: string | null;
@@ -2071,7 +2073,7 @@ export interface AdminInterestRefund {
 }
 
 const INTEREST_REFUND_SELECT =
-   'id, status, interest_usd, amount_usd, tx_hash, sent_at, sent_by, created_at, user:users!interest_refunds_user_id_fkey(id, username, display_name, email, wallet_address), loan:loans!interest_refunds_loan_id_fkey(id, loan_amount, total_repayment_amount), friend:friend_referrals!interest_refunds_friend_referral_id_fkey(referred:users!friend_referrals_referred_user_id_fkey(id, username, display_name))';
+   'id, status, interest_usd, amount_usd, kind, tx_hash, sent_at, sent_by, created_at, user:users!interest_refunds_user_id_fkey(id, username, display_name, email, wallet_address), loan:loans!interest_refunds_loan_id_fkey(id, loan_amount, total_repayment_amount), friend:friend_referrals!interest_refunds_friend_referral_id_fkey(referred:users!friend_referrals_referred_user_id_fkey(id, username, display_name))';
 
 export async function listInterestRefunds(): Promise<AdminInterestRefund[]> {
    const supabase = getSupabaseBrowserClient();

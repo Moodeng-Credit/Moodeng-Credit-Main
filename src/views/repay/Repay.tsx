@@ -60,6 +60,7 @@ import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
 import { RepayStreakCelebration } from '@/views/dashboard-v2/components/RepayStreak';
+import { AffiliateUnlockedCard } from '@/views/referral/AffiliateUnlockedCard';
 import { CONNECT_HIPPOS } from '@/views/dashboard/components/connectKit';
 import { Card, DoneRow, GoldButton, SoftButton, StepHead, WaitRow } from '@/views/indonesia/ui';
 import WaltRepaySteps from '@/views/indonesia/walt/WaltRepaySteps';
@@ -1984,6 +1985,7 @@ export default function Repay() {
                      {completion.trustPoints > 0 ? <DoneRow>+{completion.trustPoints} Pandesal points</DoneRow> : null}
                   </div>
                   <RepayStreakCelebration isPreview={usePreviewLoans} />
+                  <AffiliateUnlockedCard isPreview={usePreviewLoans} />
                   <div className="flex w-full flex-col gap-3">
                      {hasMoreLoans ? (
                         <GoldButton onClick={() => setCompletion(null)}>Pay next loan</GoldButton>
@@ -2039,6 +2041,9 @@ export default function Repay() {
 
                   <div className="mt-5 w-full empty:hidden">
                      <RepayStreakCelebration isPreview={usePreviewLoans} />
+                  </div>
+                  <div className="mt-3 w-full">
+                     <AffiliateUnlockedCard isPreview={usePreviewLoans} />
                   </div>
 
                   <div className="mt-5 w-full border-y border-md-neutral-400">

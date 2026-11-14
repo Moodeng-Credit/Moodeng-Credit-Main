@@ -250,11 +250,11 @@ export function clearPendingInvite(): void {
    }
 }
 
-/** One friend you invited, for the "Pay zero interest" tracker (no names: the database never sends them). */
+/** One friend you invited, for the affiliate tracker on /refer (no names: the database never sends them). */
 export interface InterestRefundFriend {
    joinedAt: string;
    repaid: boolean;
-   /** Set once both of you have repaid: the interest coming back to you (capped at $5). */
+   /** Set once you're an affiliate and they've repaid: $5 coming to you (old rows: interest refund). */
    refundUsd: number | null;
    refundStatus: 'pending' | 'sent' | null;
    sentAt: string | null;
@@ -264,11 +264,31 @@ export interface InterestRefundFriend {
 export interface MyInterestRefunds {
    friends: InterestRefundFriend[];
    totalRefundedUsd: number;
+   /** USDC already sent to you (affiliate rewards plus any old interest refunds). */
+   totalEarnedUsd: number;
+   /** USDC owed to you, not sent yet. */
+   owedUsd: number;
+   /** You've repaid a loan (held 24h+), so friends who repay earn you money. */
+   isAffiliate: boolean;
+   /** Reward per friend who repays. */
+   rewardUsd: number;
 }
 
-export const EMPTY_INTEREST_REFUNDS: MyInterestRefunds = { friends: [], totalRefundedUsd: 0 };
+export const AFFILIATE_REWARD_USD = 5;
 
-/** Parses the jsonb returned by get_my_interest_refunds() (migration 20261101120000), tolerating missing keys. */
+export const EMPTY_INTEREST_REFUNDS: MyInterestRefunds = {
+   friends: [],
+   totalRefundedUsd: 0,
+   totalEarnedUsd: 0,
+   owedUsd: 0,
+   isAffiliate: false,
+   rewardUsd: AFFILIATE_REWARD_USD
+};
+
+/**
+ * Parses the jsonb returned by get_my_interest_refunds() (migrations 20261101120000 and
+ * 20261115120000_affiliate_cash_per_friend), tolerating missing keys from the older shape.
+ */
 export function parseMyInterestRefunds(raw: unknown): MyInterestRefunds {
    if (!raw || typeof raw !== 'object') return EMPTY_INTEREST_REFUNDS;
    const value = raw as Record<string, unknown>;
@@ -284,7 +304,11 @@ export function parseMyInterestRefunds(raw: unknown): MyInterestRefunds {
          sentAt: text(item.sentAt),
          txHash: text(item.txHash)
       })),
-      totalRefundedUsd: toNumber(value.totalRefundedUsd)
+      totalRefundedUsd: toNumber(value.totalRefundedUsd),
+      totalEarnedUsd: toNumber(value.totalEarnedUsd ?? value.totalRefundedUsd),
+      owedUsd: toNumber(value.owedUsd),
+      isAffiliate: value.isAffiliate === true,
+      rewardUsd: value.rewardUsd === undefined || value.rewardUsd === null ? AFFILIATE_REWARD_USD : toNumber(value.rewardUsd)
    };
 }
 

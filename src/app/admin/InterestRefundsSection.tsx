@@ -71,7 +71,7 @@ export default function InterestRefundsSection() {
       <article className="rounded-2xl border border-emerald-700/60 bg-[#1c0a3a] p-5">
          <div className="flex flex-wrap items-center justify-between gap-3">
             <h4 className="text-xl font-black">
-               Interest refunds owed <span className="text-base font-bold text-emerald-300">({pending.length} to send)</span>
+               Affiliate payouts owed <span className="text-base font-bold text-emerald-300">({pending.length} to send)</span>
             </h4>
             <button
                type="button"
@@ -82,8 +82,8 @@ export default function InterestRefundsSection() {
             </button>
          </div>
          <p className="mt-1 text-sm font-medium text-[#a89bb8]">
-            &quot;Pay zero interest&quot;: their invited friend repaid a loan, so we send back the interest on their latest repaid loan
-            (max $5) in USDC on Base.
+            $5 USDC on Base for each friend who joined with their code and repaid a loan. Older rows marked &quot;interest refund&quot;
+            are from the old &quot;Pay zero interest&quot; program.
          </p>
          {error ? <p className="mt-2 text-sm font-bold text-red-300">{error}</p> : null}
          {shown.length ? (
@@ -101,8 +101,10 @@ export default function InterestRefundsSection() {
                         </p>
                         <p className="break-all font-mono text-sm font-black text-[#cfc6dd]">{r.user?.wallet_address || 'No wallet on file'}</p>
                         <p className="text-sm font-medium text-[#a89bb8]">
-                           friend {personLabel(r.friend?.referred)} repaid · their loan ${Number(r.loan?.loan_amount ?? 0).toFixed(2)} → $
-                           {Number(r.loan?.total_repayment_amount ?? 0).toFixed(2)} (interest ${Number(r.interest_usd).toFixed(2)}) ·{' '}
+                           {r.kind === 'cash' ? 'affiliate reward' : 'interest refund'} · friend {personLabel(r.friend?.referred)} repaid ·{' '}
+                           {r.kind === 'cash'
+                              ? ''
+                              : `their loan $${Number(r.loan?.loan_amount ?? 0).toFixed(2)} → $${Number(r.loan?.total_repayment_amount ?? 0).toFixed(2)} (interest $${Number(r.interest_usd).toFixed(2)}) · `}
                            {new Date(r.created_at).toLocaleDateString('en-US', { timeZone: 'Asia/Bangkok' })}
                            {r.status === 'sent' && r.sent_at
                               ? ` · sent ${new Date(r.sent_at).toLocaleDateString('en-US', { timeZone: 'Asia/Bangkok' })}`
@@ -133,7 +135,7 @@ export default function InterestRefundsSection() {
             </ul>
          ) : (
             <p className="mt-2 text-base font-bold text-[#6f6385]">
-               {loading ? 'Loading…' : 'Nothing to send right now. Refunds appear here once an invited friend repays a loan.'}
+               {loading ? 'Loading…' : 'Nothing to send right now. Payouts appear here once an invited friend repays a loan.'}
             </p>
          )}
       </article>

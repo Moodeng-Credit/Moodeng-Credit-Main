@@ -44,6 +44,8 @@ export const DASHBOARD_V2_ASSETS = {
    shareX: `${BASE}/share-x.png`,
    shareEmail: `${BASE}/share-email.png`,
    shareReddit: `${BASE}/share-reddit.png`, // raddit
+   shareInstagram: `${BASE}/share-instagram.svg`,
+   shareTiktok: `${BASE}/share-tiktok.svg`,
    // Banners are exported whole (440px frame incl. 20px side margins, copy baked in).
    verifyBanner: `${BASE}/banner-verify.png`, // banner_1
    connectWalletBanner: `${BASE}/banner-connect-wallet.png`, // banner_2
