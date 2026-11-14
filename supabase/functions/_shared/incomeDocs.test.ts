@@ -288,3 +288,25 @@ Deno.test('AI auto-approve: off by default, strict when on', () => {
    assert(!aiAutoApproves(rule, { ...ok, askedAmount: 61 }));
    assert(!aiAutoApproves(rule, { ...ok, askedAmount: null }));
 });
+
+Deno.test('proof of the work itself: earnings screens and SSS contributions are read as income documents', () => {
+   assertEquals(normalizeExtracted({ doc_type: 'gig_earnings' }).doc_type, 'gig_earnings');
+   assertEquals(normalizeExtracted({ doc_type: 'seller_payout' }).doc_type, 'seller_payout');
+   assertEquals(normalizeExtracted({ doc_type: 'freelance_earnings' }).doc_type, 'freelance_earnings');
+
+   // An SSS contributions list has no money coming in: it goes on without "we couldn't see money coming in".
+   const sss = base({ doc_type: 'sss_contributions', institution: 'SSS', transactions: [], opening_balance: null, closing_balance: null });
+   const flags = runChecks(sss, computeMetrics(sss), smallLoan);
+   assert(!flags.some((f) => f.code === 'no_income_rows'));
+   assert(verdictOf(flags, sss.doc_type).reason !== 'no_income');
+
+   // A rider's weekly earnings: rows of money in, no balance.
+   const rider = base({
+      doc_type: 'gig_earnings',
+      institution: 'Grab',
+      opening_balance: null,
+      closing_balance: null,
+      transactions: [tx('2026-09-28', 5480, null, 'Week'), tx('2026-10-05', 5120, null, 'Week'), tx('2026-10-12', 5760, null, 'Week')]
+   });
+   assert(verdictOf(runChecks(rider, computeMetrics(rider), smallLoan), rider.doc_type).verdict !== 'resend');
+});

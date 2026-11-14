@@ -50,7 +50,7 @@ import BlogDetailPage from '@/app/blogs/[slug]/page';
 import BlogsPage from '@/app/blogs/page';
 import CreditLevelingGuidePage from '@/app/credit-leveling-guide/page';
 import DataDeletionPage from '@/app/data-deletion/page';
-import DocumentsPage from '@/app/documents/page';
+import DocumentsPage, { DocumentsPreview } from '@/app/documents/page';
 import ForgotPassword from '@/app/forgot-password/page';
 import Guide from '@/app/guide/page';
 import HelpPage from '@/app/help/page';
@@ -518,6 +518,7 @@ export default function App() {
                }
             />
             {import.meta.env.DEV ? <Route path="/affiliate-preview" element={<AffiliateDashboardPage sample />} /> : null}
+            {import.meta.env.DEV ? <Route path="/documents-preview" element={<DocumentsPreview />} /> : null}
             <Route
                path="/documents"
                element={

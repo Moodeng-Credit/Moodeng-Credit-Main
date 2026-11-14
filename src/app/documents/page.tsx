@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { Check, ChevronLeft, FileText, ImagePlus, Loader2, Lock, MessageCircle, X } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, FileText, Loader2, Lock, MessageCircle, Plus, X } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useIncomeDocFacts } from '@/hooks/useIncomeDocRequirement';
+
+import { DocExample } from '@/app/documents/DocExample';
+import { askFor, EARN_TYPES, type EarnId, kindsFor, moreNeededHint, sendNote, slotCount, tooSmallToRead } from '@/app/documents/incomeDocKinds';
 
 import {
    ACCEPT,
@@ -15,12 +18,13 @@ import {
    uploadIncomeDocuments
 } from '@/app/documents/incomeDocUpload';
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
-import { stepAsk, stepFor } from '@/lib/incomeDocSteps';
+import { type IncomeDocStep, stepFor } from '@/lib/incomeDocSteps';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, PrimaryButton } from '@/views/dashboard/components/connectKit';
+import { GoldButton } from '@/views/indonesia/ui';
 
-// moodeng.app/documents — a borrower sends proof of income (GCash/Maya history, bank statement,
-// payslip) and follows it here. Cards, in order:
-//   pick       add photos/PDFs (up to 6) + what it is
+// moodeng.app/documents — a borrower sends proof of income and follows it here. Cards, in order:
+//   pick       1. "How do you earn?"  2. the documents that fit (incomeDocKinds.ts)
+//              3. a drawn example of a good one, then add photos/PDFs (up to 6)
 //   sending    each file ticks off as it uploads
 //   checking   Sent ✓ → Reading → Checking, while the AI reads it (get_my_income_document = checking)
 //   resend     "Let's try that again" with the exact fix — the automatic checks found something they can
@@ -43,12 +47,13 @@ const RESEND_FIX: Record<string, string> = {
    scanned_pdf: 'We couldn’t read your PDF. Please send screenshots of your history instead.',
    unsupported_file: 'We couldn’t open that photo type. Please send a screenshot or a JPG/PNG photo instead.',
    unreadable: 'We couldn’t read it clearly. Please retake it in good light with all 4 corners showing and the numbers sharp.',
-   not_financial: 'This doesn’t look like a GCash or Maya history, bank statement or payslip. Please send one of those.',
+   not_financial: 'This doesn’t look like proof of income. Please send one of the examples shown: a payslip, your earnings screen, or your GCash or Maya history.',
    old_document: 'This is more than 2 months old. Please send your latest one.',
    short_history: 'This shows less than 2 months. Please send your last 2–3 months of history.',
    no_income: 'We couldn’t see money coming in. Please send a history or statement that shows the money you receive.'
 };
-type Picked = { key: string; file: File; preview: string | null; error: string | null };
+// error = can't be sent (wrong type, too big); warn = can be sent but will likely bounce (too small to read).
+type Picked = { key: string; file: File; preview: string | null; error: string | null; warn?: string };
 type Status = IncomeDocStatus;
 
 const REVIEW_HOURS = 24;
@@ -86,11 +91,18 @@ export default function DocumentsPage({
       fileNames?: string[];
       sentAt?: number;
       fileCount?: number;
+      earn?: EarnId;
+      kind?: string;
+      step?: IncomeDocStep;
    };
 } = {}) {
    const [phase, setPhase] = useState<DocumentsPhase>(preview?.phase ?? 'loading');
    const [picked, setPicked] = useState<Picked[]>([]);
    const [note, setNote] = useState('');
+   const [noteOpen, setNoteOpen] = useState(false);
+   // The pick card's own steps: how they earn, then which document.
+   const [earnId, setEarnId] = useState<EarnId | null>(preview?.earn ?? null);
+   const [kindId, setKindId] = useState<string | null>(preview?.kind ?? null);
    const [sentCount, setSentCount] = useState(0);
    const [checkingStep, setCheckingStep] = useState<1 | 2 | 3>(preview?.checkingStep ?? 1);
    const [reason, setReason] = useState<string | null>(preview?.reason ?? null);
@@ -108,7 +120,17 @@ export default function DocumentsPage({
    const requestedAmount = Number(searchParams.get('amount')) || null;
    const requestedRepay = Number(searchParams.get('repay')) || null;
    const { steps } = useIncomeDocFacts(requestedAmount != null);
-   const step = requestedAmount != null ? stepFor(requestedAmount, steps) : null;
+   const step = preview?.step ?? (requestedAmount != null ? stepFor(requestedAmount, steps) : null);
+   const monthsNeeded = step?.months ?? 0;
+   const earn = EARN_TYPES.find((e) => e.id === earnId) ?? null;
+   const kinds = earn ? kindsFor(earn, monthsNeeded) : [];
+   // Only one document fits: skip the choice.
+   const kind = kinds.find((k) => k.id === kindId) ?? (kinds.length === 1 ? kinds[0] : null);
+   const backFromKind = () => {
+      setPicked([]);
+      setKindId(null);
+      if (kinds.length <= 1) setEarnId(null);
+   };
 
    const showStatus = useCallback((status: Status) => {
       if (!status) return setPhase('pick');
@@ -158,10 +180,26 @@ export default function DocumentsPage({
             error: !ACCEPTED.has(file.type) ? 'Use a photo or PDF' : file.size > MAX_BYTES ? 'Max 10 MB' : null
          }));
       setPicked((prev) => [...prev, ...next]);
+      // Check each photo on the spot, so a thumbnail is caught here and not a minute after sending.
+      for (const item of next) {
+         if (!item.preview || item.error) continue;
+         const img = new Image();
+         img.onload = () => {
+            if (!tooSmallToRead(img.naturalWidth, img.naturalHeight)) return;
+            setPicked((prev) => prev.map((x) => (x.key === item.key ? { ...x, warn: 'Too small to read' } : x)));
+         };
+         img.src = item.preview;
+      }
       if (inputRef.current) inputRef.current.value = '';
    };
 
    const good = picked.filter((p) => !p.error);
+   const emptySlots = Math.max(0, Math.min(MAX_FILES, slotCount(monthsNeeded)) - picked.length);
+   const moreHint = moreNeededHint(
+      monthsNeeded,
+      good.map((p) => ({ isPdf: p.file.type === 'application/pdf' }))
+   );
+   const openPicker = () => inputRef.current?.click();
    const sendingNames = good.length ? good.map((p) => p.file.name) : (preview?.fileNames ?? []);
 
    const send = async () => {
@@ -171,7 +209,7 @@ export default function DocumentsPage({
       setError(null);
       const result = await uploadIncomeDocuments(
          good.map((p) => p.file),
-         { note, amount: requestedAmount, repay: requestedRepay, onFileDone: () => setSentCount((n) => n + 1) }
+         { note: earn && kind ? sendNote(earn, kind, note) : note, amount: requestedAmount, repay: requestedRepay, onFileDone: () => setSentCount((n) => n + 1) }
       );
       if (!result.ok) {
          setError(
@@ -188,12 +226,15 @@ export default function DocumentsPage({
       setFileCount(result.count);
       setPicked([]);
       setNote('');
+      setNoteOpen(false);
       setCheckingStep(1);
       setPhase('checking');
    };
 
    const startOver = () => {
       setPicked([]);
+      setEarnId(null);
+      setKindId(null);
       setError(null);
       setPhase('pick');
    };
@@ -226,94 +267,140 @@ export default function DocumentsPage({
                <div className="mt-4 h-[220px] animate-pulse rounded-[16px] bg-[#ece9f1] dark:bg-dv2-card" aria-busy="true" />
             ) : null}
 
-            {phase === 'pick' ? (
-               <div className="flex flex-col gap-4 rounded-[20px] bg-white px-5 py-5 dark:bg-dv2-card">
+            {phase === 'pick' && !earn ? (
+               <div className="flex flex-col gap-3 rounded-[20px] bg-white px-5 py-5 dark:bg-dv2-card">
                   <ConnectHero
                      image={CONNECT_HIPPOS.cashout}
-                     title="Send your proof of income"
+                     title="How do you earn?"
                      subtitle={
-                        step
-                           ? `For a $${requestedAmount} loan, please send ${stepAsk(step)}.`
-                           : 'It helps you borrow more. Any one of these works:'
+                        requestedAmount && step ? `A $${requestedAmount} loan needs proof of income. Pick one first.` : 'Pick one. We’ll show you what to send.'
                      }
                   />
-                  {step ? null : (
-                     <ul className="flex flex-col gap-1.5 text-[15px] leading-[20px] text-[#594d65] dark:text-[#d9cfe8]">
-                        <li>📱 GCash or Maya history, last 2–3 months (screenshots are fine)</li>
-                        <li>🏦 Bank statement</li>
-                        <li>🧾 Latest payslip</li>
-                     </ul>
-                  )}
+                  {EARN_TYPES.map((e) => (
+                     <ChoiceRow key={e.id} emoji={e.emoji} title={e.label} onClick={() => setEarnId(e.id)} />
+                  ))}
+               </div>
+            ) : null}
 
-                  {picked.length ? (
-                     <ul className="grid grid-cols-3 gap-2">
-                        {picked.map((p) => (
-                           <li
-                              key={p.key}
-                              className={`relative aspect-[3/4] overflow-hidden rounded-[12px] border-2 ${p.error ? 'border-[#f2b8b5] bg-[#fff4f3]' : 'border-[#e2dcee] bg-[#f6f5f9] dark:border-[#3a2d4f] dark:bg-[#1b1526]'}`}
-                           >
-                              {p.preview ? (
-                                 <img alt="" className="size-full object-cover" src={p.preview} />
-                              ) : (
-                                 <span className="flex size-full flex-col items-center justify-center gap-1 px-1 text-center text-[11px] font-semibold text-[#7b6b8c]">
-                                    <FileText aria-hidden="true" className="size-6" strokeWidth={2} />
-                                    <span className="line-clamp-2 break-all">{p.file.name}</span>
-                                 </span>
-                              )}
-                              {p.error ? (
-                                 <span className="absolute inset-x-0 bottom-0 bg-[#c0392b] px-1 py-0.5 text-center text-[11px] font-bold text-white">
-                                    {p.error}
-                                 </span>
-                              ) : null}
-                              <button
-                                 aria-label={`Remove ${p.file.name}`}
-                                 className="absolute right-1 top-1 grid size-7 place-items-center rounded-full bg-black/60 text-white"
-                                 onClick={() => setPicked((prev) => prev.filter((x) => x.key !== p.key))}
-                                 type="button"
+            {phase === 'pick' && earn && !kind ? (
+               <div className="flex flex-col gap-3 rounded-[20px] bg-white px-5 py-5 dark:bg-dv2-card">
+                  <ConnectHero image={CONNECT_HIPPOS.cashout} title="What can you send?" subtitle="Any one of these works." />
+                  {kinds.map((k, i) => (
+                     <ChoiceRow key={k.id} badge={i === 0 ? 'Best pick' : undefined} emoji={k.emoji} title={k.title} hint={k.hint} onClick={() => setKindId(k.id)} />
+                  ))}
+                  <GhostButton onClick={() => setEarnId(null)}>Back</GhostButton>
+               </div>
+            ) : null}
+
+            {phase === 'pick' && earn && kind ? (
+               <div className="flex flex-col gap-4 rounded-[20px] bg-white px-5 py-5 dark:bg-dv2-card">
+                  <ConnectHero image={CONNECT_HIPPOS.cashout} title={kind.title} subtitle={askFor(kind, monthsNeeded)} />
+                  <DocExample spec={kind.example} mustShow={kind.mustShow} />
+
+                  <ul className="grid grid-cols-3 gap-2">
+                     {picked.map((p) => (
+                        <li
+                           key={p.key}
+                           className={`relative aspect-[3/4] overflow-hidden rounded-[12px] border-2 ${p.error ? 'border-[#f2b8b5] bg-[#fff4f3]' : p.warn ? 'border-[#e8b84a] bg-[#fff9e8]' : 'border-[#4aa256] bg-[#f6f5f9] dark:bg-[#1b1526]'}`}
+                        >
+                           {p.preview ? (
+                              <img alt="" className="size-full object-cover" src={p.preview} />
+                           ) : (
+                              <span className="flex size-full flex-col items-center justify-center gap-1 px-1 text-center text-[11px] font-semibold text-[#7b6b8c]">
+                                 <FileText aria-hidden="true" className="size-6" strokeWidth={2} />
+                                 <span className="line-clamp-2 break-all">{p.file.name}</span>
+                              </span>
+                           )}
+                           {p.error || p.warn ? (
+                              <span
+                                 className={`absolute inset-x-0 bottom-0 px-1 py-0.5 text-center text-[11px] font-bold ${p.error ? 'bg-[#c0392b] text-white' : 'bg-[#f5c542] text-[#5c3d00]'}`}
                               >
-                                 <X aria-hidden="true" className="size-4" strokeWidth={3} />
-                              </button>
-                           </li>
-                        ))}
-                     </ul>
+                                 {p.error ?? p.warn}
+                              </span>
+                           ) : (
+                              <span className="absolute bottom-1 left-1 grid size-6 place-items-center rounded-full bg-[#4aa256] text-white">
+                                 <Check aria-hidden="true" className="size-4" strokeWidth={3.5} />
+                              </span>
+                           )}
+                           <button
+                              aria-label={`Remove ${p.file.name}`}
+                              className="absolute right-1 top-1 grid size-7 place-items-center rounded-full bg-black/60 text-white"
+                              onClick={() => setPicked((prev) => prev.filter((x) => x.key !== p.key))}
+                              type="button"
+                           >
+                              <X aria-hidden="true" className="size-4" strokeWidth={3} />
+                           </button>
+                        </li>
+                     ))}
+                     {Array.from({ length: emptySlots }, (_, i) => (
+                        <li key={`slot-${i}`}>
+                           <button
+                              aria-label="Add a photo or PDF"
+                              className="grid aspect-[3/4] w-full place-items-center rounded-[12px] border-2 border-dashed border-[#c9bdf5] bg-[#faf7ff] text-[#6b55f7] active:scale-[0.98] dark:border-[#4a3d6b] dark:bg-transparent"
+                              onClick={openPicker}
+                              type="button"
+                           >
+                              <Plus aria-hidden="true" className="size-7" strokeWidth={2.5} />
+                           </button>
+                        </li>
+                     ))}
+                     {!emptySlots && picked.length < MAX_FILES ? (
+                        <li>
+                           <button
+                              className="grid aspect-[3/4] w-full place-items-center rounded-[12px] border-2 border-dashed border-[#e2dcee] text-[13px] font-bold text-[#6b55f7] active:scale-[0.98] dark:border-[#3a2d4f]"
+                              onClick={openPicker}
+                              type="button"
+                           >
+                              Add more
+                           </button>
+                        </li>
+                     ) : null}
+                  </ul>
+                  <input ref={inputRef} accept={ACCEPT} className="sr-only" multiple onChange={(e) => addFiles(e.target.files)} type="file" />
+
+                  {picked.some((p) => p.warn) ? (
+                     <p className="text-[14px] font-semibold leading-[19px] text-[#8a5a00] dark:text-[#f5c542]">
+                        One photo is too small to read. Send the full screenshot, not a preview.
+                     </p>
+                  ) : moreHint ? (
+                     <p className="text-[14px] font-semibold leading-[19px] text-[#6b55f7] dark:text-[#b4a6ff]">{moreHint}</p>
+                  ) : step?.autoApprove ? (
+                     <p className="text-[14px] font-semibold leading-[19px] text-[#2f7a3a] dark:text-[#7ee2a0]">
+                        ⚡ Clear photo = approved in about a minute.
+                     </p>
                   ) : null}
 
-                  {picked.length < MAX_FILES ? (
-                     <label className="flex min-h-[56px] cursor-pointer items-center justify-center gap-2 rounded-[16px] border-2 border-dashed border-[#7661f9] bg-white px-4 text-[16px] font-bold text-[#6b55f7] active:scale-[0.99] dark:bg-transparent">
-                        <ImagePlus aria-hidden="true" className="size-5" strokeWidth={2.2} />
-                        {picked.length ? 'Add more' : 'Add photos or PDF'}
-                        <input
-                           ref={inputRef}
-                           accept={ACCEPT}
-                           className="sr-only"
-                           multiple
-                           onChange={(e) => addFiles(e.target.files)}
-                           type="file"
-                        />
-                     </label>
-                  ) : null}
-
-                  <label className="flex flex-col gap-1.5 text-[14px] font-semibold text-[#594d65] dark:text-[#d9cfe8]">
-                     What is it? (optional)
+                  {noteOpen ? (
                      <input
+                        aria-label="Note for the team"
                         className="min-h-[48px] rounded-[12px] border-2 border-[#e2dcee] bg-white px-3 text-[16px] font-normal text-[#3b2f4a] dark:border-[#3a2d4f] dark:bg-[#1b1526] dark:text-[#f5f0ff]"
                         maxLength={300}
                         onChange={(e) => setNote(e.target.value)}
-                        placeholder="e.g. my GCash history for Sept–Oct"
+                        placeholder="e.g. I get paid on the 15th and 30th"
                         value={note}
                      />
-                  </label>
-
-                  <p className="flex items-start gap-2 text-[13px] leading-[18px] text-[#7b6b8c] dark:text-[#b9abcc]">
-                     <Lock aria-hidden="true" className="mt-0.5 size-4 shrink-0" strokeWidth={2} />
-                     Sent privately. Only the Moodeng team sees it, never lenders. A password-locked PDF can’t be opened, so send
-                     screenshots instead.
-                  </p>
+                  ) : null}
                   {error ? <p className="text-[14px] font-semibold text-[#c0392b]">{error}</p> : null}
 
-                  <PrimaryButton disabled={!good.length} onClick={() => void send()}>
-                     {good.length ? `Send ${good.length} ${good.length === 1 ? 'file' : 'files'}` : 'Add a document first'}
-                  </PrimaryButton>
+                  {good.length ? (
+                     <GoldButton onClick={() => void send()}>{`Send ${good.length} ${good.length === 1 ? 'photo' : 'photos'}`}</GoldButton>
+                  ) : (
+                     <GoldButton onClick={openPicker}>Add photos</GoldButton>
+                  )}
+                  <p className="flex items-center justify-center gap-1.5 text-[13px] leading-[18px] text-[#7b6b8c] dark:text-[#b9abcc]">
+                     <Lock aria-hidden="true" className="size-4 shrink-0" strokeWidth={2} />
+                     Only the Moodeng team sees it.
+                  </p>
+                  <div className="flex items-center justify-center gap-4 text-[14px] font-bold text-[#8a7c9c] dark:text-[#a99cbb]">
+                     {noteOpen ? null : (
+                        <button className="underline" onClick={() => setNoteOpen(true)} type="button">
+                           Add a note
+                        </button>
+                     )}
+                     <button className="underline" onClick={backFromKind} type="button">
+                        Send something else
+                     </button>
+                  </div>
                </div>
             ) : null}
 
@@ -438,6 +525,56 @@ export default function DocumentsPage({
             ) : null}
          </div>
       </div>
+   );
+}
+
+/** Dev only (/documents-preview?earn=rider&kind=gig_earnings&months=2): the pick cards without signing in. */
+export function DocumentsPreview() {
+   const [params] = useSearchParams();
+   const months = Number(params.get('months')) || 0;
+   const step: IncomeDocStep | undefined = params.has('months')
+      ? { min: months > 0 ? 60 : 40, months, fresh: false, autoApprove: months === 0, maxShare: null, balance: false, liveCall: false }
+      : undefined;
+   return (
+      <DocumentsPage
+         preview={{ phase: 'pick', earn: (params.get('earn') as EarnId | null) ?? undefined, kind: params.get('kind') ?? undefined, step }}
+      />
+   );
+}
+
+function ChoiceRow({
+   emoji,
+   title,
+   hint,
+   badge,
+   onClick
+}: {
+   emoji: string;
+   title: string;
+   hint?: string;
+   badge?: string;
+   onClick: () => void;
+}) {
+   return (
+      <button
+         className="flex min-h-[60px] w-full items-center gap-3 rounded-[16px] border-2 border-b-4 border-[#e2dcee] bg-white px-4 py-2.5 text-left transition duration-100 ease-out active:translate-y-[2px] active:border-b-2 dark:border-[#3a2d4f] dark:bg-[#1b1526]"
+         onClick={onClick}
+         type="button"
+      >
+         <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-[#f3ecff] text-[22px] leading-none dark:bg-[#2a2140]">
+            {emoji}
+         </span>
+         <span className="flex min-w-0 flex-1 flex-col">
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+               <span className="text-[17px] font-bold leading-[22px] text-[#3b2f4a] dark:text-[#f5f0ff]">{title}</span>
+               {badge ? (
+                  <span className="rounded-full bg-[#fff1c7] px-2 py-0.5 text-[12px] font-bold leading-[16px] text-[#8a5a00]">{badge}</span>
+               ) : null}
+            </span>
+            {hint ? <span className="text-[14px] leading-[18px] text-[#7b6b8c] dark:text-[#b9abcc]">{hint}</span> : null}
+         </span>
+         <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-[#a49cb5]" strokeWidth={2.5} />
+      </button>
    );
 }
 
