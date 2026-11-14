@@ -630,7 +630,12 @@ function PickerRow({ id, onSelect, icon, name, line1, line2, recommended, warn, 
 // headline, white cards with a 2px lavender border, the lavender banner.
 
 /** Page header for testers, in the Milestone banner style (copy left, Moodeng art right). Not tappable: nothing on it looks like a button. */
-function DirectPesoBanner({ balanceLine, repayLine }: { balanceLine: string; repayLine: string | null }) {
+// Only "₱X ready to cash out": no repay amount or due date here. A borrower funded minutes earlier read
+// the repay line as the next step and paid the loan straight back (Nov 2026). The dashboard shows the due date.
+function DirectPesoBanner({ balanceLine, spendable }: { balanceLine: string; spendable: number | null }) {
+   const { value: phpRate } = useUsdcRate('php');
+   // Same estimate as the bank / QR card below, so the two numbers always match.
+   const pesos = spendable != null && spendable > 0 ? Math.floor(spendable * phpRate * (1 - BANK_PAYOUT_FEE_SHARE)) : null;
    return (
       <div className="relative w-full h-[112px] mb-[16px] rounded-[12px] overflow-hidden text-left bg-[linear-gradient(100deg,#efeaff_0%,#ddd5ff_100%)] dark:bg-[linear-gradient(100deg,#252035_0%,#30285a_100%)]">
          <img
@@ -643,8 +648,13 @@ function DirectPesoBanner({ balanceLine, repayLine }: { balanceLine: string; rep
             <h1 className="text-[22px] font-black italic leading-[1.1] tracking-[-0.5px] text-[#6b55f7] dark:text-[#b3a6ff]">
                Cash out to pesos
             </h1>
-            <p className="mt-[4px] text-[14px] leading-[18px] text-[#594d65] dark:text-[#e6def0] font-semibold">{balanceLine}</p>
-            {repayLine && <p className="text-[13px] leading-[17px] text-[#594d65] dark:text-[#b6afc1]">{repayLine}</p>}
+            {pesos != null ? (
+               <p className="mt-[4px] text-[16px] leading-[20px] font-bold text-[#1c053d] dark:text-white">
+                  ₱{pesos.toLocaleString('en-PH')} ready to cash out
+               </p>
+            ) : (
+               <p className="mt-[4px] text-[14px] leading-[18px] text-[#594d65] dark:text-[#e6def0] font-semibold">{balanceLine}</p>
+            )}
          </div>
       </div>
    );
@@ -757,7 +767,7 @@ function QrPesoCard({ onSelect, spendable, recommended }: { onSelect: () => void
 
 /** Under the bank card: the QR option as one small row. */
 function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) => void; onLater: () => void }) {
-   const { spendable, walletConnected, repayUsdc: REPAY_USDC, dueDate: DUE_DATE, isPreview } = useWithdrawData();
+   const { spendable, walletConnected, isPreview } = useWithdrawData();
    const navigate = useNavigate();
    const isIndo = useIsIndo(isPreview);
    // Indonesians get Walt (first, recommended) + Binance; the Philippine rails and the peso payout are hidden.
@@ -807,7 +817,6 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
       : spendable == null
         ? 'Checking your balance…'
         : `${spendable} USDC available`;
-   const repayLine = REPAY_USDC != null && DUE_DATE ? `Repay ${REPAY_USDC} USDC by ${DUE_DATE}` : null;
 
    return (
       <div className="absolute inset-0 bg-[var(--surface)] flex flex-col">
@@ -826,7 +835,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                   />
                ))}
                {bankPayout ? (
-                  <DirectPesoBanner balanceLine={balanceLine} repayLine={repayLine} />
+                  <DirectPesoBanner balanceLine={balanceLine} spendable={spendable} />
                ) : (
                   <div
                      className="w-[64px] h-[64px] rounded-full bg-[var(--surface)] border-[5px] border-[var(--border-1)] flex items-center justify-center mb-[14px]"
@@ -847,13 +856,8 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                         {isIndo ? 'Tarik uang kamu' : 'Withdraw your USDC'}
                      </h1>
                      <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[6px]">
+                        {/* Balance only: a repay line here read as the next step right after funding (Nov 2026). */}
                         {balanceLine}
-                        {repayLine && (
-                           <>
-                              {' '}
-                              · Repay <span className="font-semibold text-[var(--primary)]">{REPAY_USDC} USDC</span> by {DUE_DATE}
-                           </>
-                        )}
                      </p>
                   </>
                )}
@@ -936,11 +940,13 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                {!isIndo && (
                   <>
                      {!COINS_PH_SUSPENDED && coinsPhRow}
-                     {COINS_PH_SUSPENDED && (
+                     {/* Under the bank QR card the order is GCrypto, PDAX, Maya (Nov 2026). Without the QR card,
+                         PDAX is the recommended route, so it stays on top. */}
+                     {COINS_PH_SUSPENDED && !bankPayout && (
                         <PickerRow
                            onSelect={selectProvider}
                            id="pdax"
-                           recommended={!bankPayout && !inEurope}
+                           recommended={!inEurope}
                            icon={<PdaxAppIcon className="w-[46px] h-[46px]" />}
                            name="PDAX"
                            line1="Sell for pesos, withdraw to bank or e-wallet"
@@ -955,7 +961,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                         line1="Cash out straight to your GCash"
                         line2="GCash balance · ~5 min"
                      />
-                     {!COINS_PH_SUSPENDED && (
+                     {(!COINS_PH_SUSPENDED || bankPayout) && (
                         <PickerRow
                            onSelect={selectProvider}
                            id="pdax"
