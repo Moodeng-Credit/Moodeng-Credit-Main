@@ -33,6 +33,8 @@ export const DASHBOARD_V2_ASSETS = {
    verifyHippo: `${BASE}/verify-hippo.png`, // hippo with ID card, cut from verify_popup (card bg #f8f1ff)
    // Invite ("FREE MEAL for both of you") — invite_1 export. The sample code is baked into invite-bg at 30,418.
    inviteBackground: `${BASE}/invite-bg.png`, // bg_2 (440×735)
+   // Affiliate dashboard hero: the two high-five hippos cut from invite-bg (rows 282–742), no "FREE MEAL" words.
+   affiliateHero: `${BASE}/affiliate-hero.jpg`,
    back: `${BASE}/icon-back.png`, // btn_back
    shareClose: `${BASE}/icon-share-close.png`, // btn_share_close
    shareNext: `${BASE}/icon-share-next.png`, // btn_next

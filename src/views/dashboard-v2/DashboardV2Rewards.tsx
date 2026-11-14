@@ -376,7 +376,7 @@ type ShareTargetId = (typeof SHARE_TARGETS)[number]['id'];
 
 const SHARE_TITLE = 'Free meal for both of us — Moodeng Credit';
 
-const getShareUrl = (target: Exclude<ShareTargetId, 'embed'>, link: string, text: string) => {
+const getShareUrl = (target: Exclude<ShareTargetId, 'embed'>, link: string, text: string, title = SHARE_TITLE) => {
    const url = encodeURIComponent(link);
    const message = encodeURIComponent(`${text} ${link}`);
    switch (target) {
@@ -387,21 +387,37 @@ const getShareUrl = (target: Exclude<ShareTargetId, 'embed'>, link: string, text
       case 'x':
          return `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${url}`;
       case 'email':
-         return `mailto:?subject=${encodeURIComponent(SHARE_TITLE)}&body=${message}`;
+         return `mailto:?subject=${encodeURIComponent(title)}&body=${message}`;
       case 'reddit':
-         return `https://www.reddit.com/submit?url=${url}&title=${encodeURIComponent(SHARE_TITLE)}`;
+         return `https://www.reddit.com/submit?url=${url}&title=${encodeURIComponent(title)}`;
    }
 };
 
 /** Figma "invite_popup" share sheet. "Embed" hands off to the phone's own share menu (or copies the link). */
-export function ShareSheet({ link, text, onClose, onCopied }: { link: string; text: string; onClose: () => void; onCopied: () => void }) {
+export function ShareSheet({
+   link,
+   text,
+   onClose,
+   onCopied,
+   title = SHARE_TITLE,
+   copyText = link
+}: {
+   link: string;
+   text: string;
+   onClose: () => void;
+   onCopied: () => void;
+   /** Share/email subject — the voucher invite's "Free meal" line unless a page passes its own. */
+   title?: string;
+   /** What "Embed" copies when the phone has no share menu (default: just the link). */
+   copyText?: string;
+}) {
    const rowRef = useRef<HTMLDivElement>(null);
    const shareNative = async () => {
       if (navigator.share) {
-         await navigator.share({ title: SHARE_TITLE, text, url: link }).catch(() => undefined);
+         await navigator.share({ title, text, url: link }).catch(() => undefined);
          return;
       }
-      await navigator.clipboard.writeText(link).then(onCopied, () => undefined);
+      await navigator.clipboard.writeText(copyText).then(onCopied, () => undefined);
    };
 
    return (
@@ -443,7 +459,7 @@ export function ShareSheet({ link, text, onClose, onCopied }: { link: string; te
                   ) : (
                      <a
                         key={target.id}
-                        href={getShareUrl(target.id, link, text)}
+                        href={getShareUrl(target.id, link, text, title)}
                         target="_blank"
                         rel="noreferrer"
                         className="flex w-[52px] shrink-0 flex-col items-center gap-1.5"
