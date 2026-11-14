@@ -109,6 +109,9 @@ const PREVIEW: Record<string, FnResult> = {
    qr_cash_decode: { ok: true, result: { merchant: { name: 'JUAN DELA CRUZ' } } }
 };
 
+// "Use my Moodeng ID" (share the Didit check with Stableyard) is off: the first live share (2026-11-14) got
+// stuck in Stableyard's requires_reconciliation. Everyone does Stableyard's own ID check until they fix it.
+const OFFER_MOODENG_ID_SHARE = false;
 // A shared Moodeng ID check that Stableyard is still copying or reviewing.
 const REUSE_PENDING = new Set(['sharing', 'submitting', 'imported']);
 const PREVIEW_CONSENT = 'Sends your name, birthday, ID and selfie to Stableyard.';
@@ -799,7 +802,8 @@ export default function BankPayoutFlow({
       const emailDone = Boolean(setup?.emailVerified);
       const reusePending = REUSE_PENDING.has(setup?.reuseImportStatus ?? '');
       const reviewing = reusePending || setup?.kycStatus === 'requires_review' || setup?.kycStatus === 'in_review';
-      const offerReuse = Boolean(setup?.reuseAvailable && setup?.consentText) && !useHostedCheck && !reviewing;
+      const offerReuse =
+         OFFER_MOODENG_ID_SHARE && Boolean(setup?.reuseAvailable && setup?.consentText) && !useHostedCheck && !reviewing;
       const idStep = emailDone && !setup?.kycApproved;
       return (
          <div className="space-y-[12px]">
