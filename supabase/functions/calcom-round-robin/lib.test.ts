@@ -120,8 +120,8 @@ Deno.test('teamGuests invites every other cofounder, never the host or the borro
 Deno.test('calendlyToCalSchedule groups weekly hours and keeps only upcoming one-off days', () => {
    const rules = [
       { type: 'wday', wday: 'sunday', intervals: [{ from: '20:00', to: '23:00' }] },
-      { type: 'wday', wday: 'monday', intervals: [{ from: '10:00', to: '15:00' }, { from: '20:00', to: '23:00' }] },
-      { type: 'wday', wday: 'friday', intervals: [{ from: '10:00', to: '15:00' }, { from: '21:30', to: '24:00' }] },
+      { type: 'wday', wday: 'monday', intervals: [{ from: '11:00', to: '15:00' }, { from: '20:00', to: '23:00' }] },
+      { type: 'wday', wday: 'friday', intervals: [{ from: '11:00', to: '15:00' }, { from: '21:30', to: '24:00' }] },
       { type: 'date', date: '2026-10-01', intervals: [] },
       { type: 'date', date: '2026-11-02', intervals: [] },
       { type: 'date', date: '2026-11-03', intervals: [{ from: '12:00', to: '13:00' }] }
@@ -129,7 +129,7 @@ Deno.test('calendlyToCalSchedule groups weekly hours and keeps only upcoming one
    assertEquals(calendlyToCalSchedule(rules, 'Asia/Bangkok', '2026-10-27'), {
       timeZone: 'Asia/Bangkok',
       availability: [
-         { days: ['Monday', 'Friday'], startTime: '10:00', endTime: '15:00' },
+         { days: ['Monday', 'Friday'], startTime: '11:00', endTime: '15:00' },
          { days: ['Sunday', 'Monday'], startTime: '20:00', endTime: '23:00' },
          { days: ['Friday'], startTime: '21:30', endTime: '23:00' }
       ],
@@ -211,11 +211,11 @@ Deno.test('preferHost puts Emma first whenever she is free', () => {
    assertEquals(preferHost(['george']), ['george']);
 });
 
-Deno.test('calendlyToCalSchedule: no calls after 11 PM or before 8 AM, whatever Calendly says', () => {
+Deno.test('calendlyToCalSchedule: no calls after 11 PM or before 11 AM, whatever Calendly says', () => {
    const s = calendlyToCalSchedule(
       [
          { type: 'wday', wday: 'sunday', intervals: [{ from: '00:00', to: '02:00' }, { from: '16:00', to: '00:00' }] },
-         { type: 'wday', wday: 'monday', intervals: [{ from: '06:00', to: '09:00' }, { from: '23:00', to: '23:59' }] },
+         { type: 'wday', wday: 'monday', intervals: [{ from: '06:00', to: '12:00' }, { from: '23:00', to: '23:59' }] },
          { type: 'date', date: '2026-11-15', intervals: [{ from: '00:30', to: '01:30' }] },
          { type: 'date', date: '2026-11-16', intervals: [{ from: '22:00', to: '24:00' }] }
       ],
@@ -223,7 +223,7 @@ Deno.test('calendlyToCalSchedule: no calls after 11 PM or before 8 AM, whatever 
       '2026-10-29'
    );
    assertEquals(s.availability, [
-      { days: ['Monday'], startTime: '08:00', endTime: '09:00' },
+      { days: ['Monday'], startTime: '11:00', endTime: '12:00' },
       { days: ['Sunday'], startTime: '16:00', endTime: '23:00' }
    ]);
    assertEquals(s.overrides, [
