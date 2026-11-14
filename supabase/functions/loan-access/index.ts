@@ -10,6 +10,8 @@ import { BORROWER_COLUMNS, getAdminChatId, notifyAdminsOfRequest, notifyBorrower
 import { needsPreKycGate } from '../_shared/preKycGate.ts';
 import { isIdStep, loadIdStatus, notifyIdNextStep, sendIdTelegram } from '../_shared/idTrack.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
+import { checkFacebookProfile } from '../_shared/facebookProfileCheck.ts';
+import { getMessengerContact } from '../_shared/sendpulse.ts';
 
 // Connect → Approve → Apply (docs/HANDOFF_BORROWER_VERIFICATION.md §13).
 //
@@ -305,6 +307,37 @@ const gateDigest = async (req: Request, svc: any) => {
    return json({ ok: true, sent: true, waiting: waiting.length, unbooked: unbooked.length });
 };
 
+// Dry run of the Facebook profile check (facebookProfileCheck.ts) over people already connected:
+// returns each one's flags and saves their picture hash (so the grey default is spotted from the
+// start), but never rejects anyone. Server only. {user_ids?: string[], limit?: number}
+// deno-lint-ignore no-explicit-any
+const fbProfileProbe = async (req: Request, svc: any, body: Record<string, unknown>) => {
+   if (!(await isInternalRequest(svc, req))) return json({ ok: false, error: 'unauthorized' }, 401);
+   const ids = Array.isArray(body.user_ids) ? (body.user_ids as unknown[]).map(String) : null;
+   const limit = Math.min(Math.max(Number(body.limit) || 40, 1), 150);
+   let query = svc.from('users').select('id, messenger_psid').not('messenger_psid', 'is', null);
+   query = ids ? query.in('id', ids) : query.order('messenger_verified_at', { ascending: false, nullsFirst: false }).limit(limit);
+   const { data: rows, error } = await query;
+   if (error) return json({ ok: false, error: error.message }, 500);
+   const results = [];
+   for (const row of (rows ?? []) as Array<{ id: string; messenger_psid: string }>) {
+      const contact = await getMessengerContact(row.messenger_psid);
+      const check = await checkFacebookProfile(svc, row.id, contact);
+      results.push({
+         user_id: row.id,
+         found: Boolean(contact),
+         keys: Object.keys(contact?.channel_data ?? {}),
+         photo_url_host: check.photoUrl ? new URL(check.photoUrl).host : null,
+         photo_error: check.photoError,
+         flags: check.flags,
+         hash: check.photoHash?.slice(0, 16) ?? null,
+         bytes: check.photoBytes,
+         shared: check.sharedWith
+      });
+   }
+   return json({ ok: true, results });
+};
+
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
    if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
@@ -323,6 +356,7 @@ serve(async (req) => {
       if (body.action === 'gate_digest') return await gateDigest(req, svc);
       if (body.action === 'id_step') return await idStep(req, svc, body);
       if (body.action === 'cancel_rejected_calls') return await cancelRejectedCalls(req, svc);
+      if (body.action === 'fb_profile_probe') return await fbProfileProbe(req, svc, body);
       return json({ error: 'unknown_action' }, 400);
    } catch (err) {
       console.error('loan-access failed:', err instanceof Error ? err.message : err);

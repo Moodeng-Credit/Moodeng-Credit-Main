@@ -6,6 +6,7 @@ import { postDiscord } from '../_shared/discord.ts';
 import { buildFacebookConnectedAlert, type LoanRecord } from '../_shared/facebookConnectedAlert.ts';
 import { loadOnboardingTimeline, signupLines, timelineLines } from '../_shared/onboardingTimeline.ts';
 import { extractMessengerCodes } from '../_shared/messengerCodes.ts';
+import { autoRejectForFacebookProfile, checkFacebookProfile } from '../_shared/facebookProfileCheck.ts';
 import { decideTimingMatch, type TimingAttempt } from '../_shared/messengerTimingMatch.ts';
 import { claimContactRows } from '../_shared/messengerContactLog.ts';
 import { messengerVerifiedStamp } from '../_shared/messengerStuckAlert.ts';
@@ -551,9 +552,8 @@ serve(async (req) => {
 
       const { data: before } = await svc.from('users').select('messenger_verified_at').eq('id', pending.user_id).maybeSingle();
       // Their Facebook name, from SendPulse's API (the flow's {{full_name}} is only a fallback).
-      const facebookName =
-         (contactId ? messengerDisplayName(await getMessengerContact(contactId)) : null) ??
-         (body.name ? String(body.name).trim() || null : null);
+      const contact = contactId ? await getMessengerContact(contactId) : null;
+      const facebookName = messengerDisplayName(contact) ?? (body.name ? String(body.name).trim() || null : null);
       const { error: userError } = await svc
          .from('users')
          .update({
@@ -567,18 +567,31 @@ serve(async (req) => {
          console.error('sendpulse-messenger-verify: user update failed', userError.message);
       } else if (!(before as { messenger_verified_at?: string | null } | null)?.messenger_verified_at) {
          await announceConnected(svc, pending.user_id, contactId, body.name ? String(body.name) : null);
-         // Indonesia track: the next step goes to them on Telegram (Facebook only counts as done once
-         // the profile link is saved too; the status RPC decides), and nothing on WhatsApp.
-         const idTrack = await isIdTrackUser(svc, pending.user_id);
-         const followUp = Promise.all(
-            idTrack
-               ? [notifyIdNextStep(svc, pending.user_id, 'facebook')]
-               : [
-                    followUpWithStatus(svc, pending.user_id, contactId),
-                    // Indonesia's WhatsApp-first sign-up: say so on WhatsApp too, with the next step.
-                    sendFacebookConnectedOnWhatsApp(svc, pending.user_id)
-                 ]
-         );
+         const userId = pending.user_id;
+         const followUp = (async () => {
+            // Facebook profile check (grey photo / no last name / lowercase name) → auto-reject before
+            // the call (facebookProfileCheck.ts). Rejected people get the "other lenders" message
+            // instead of the next step. Runs after the reply, since it downloads their picture.
+            const check = await checkFacebookProfile(svc, userId, contact);
+            console.log(
+               'sendpulse-messenger-verify: profile check',
+               userId,
+               JSON.stringify({ flags: check.flags, photo: Boolean(check.photoUrl), hash: check.photoHash?.slice(0, 12), bytes: check.photoBytes, shared: check.sharedWith, keys: Object.keys(contact?.channel_data ?? {}) })
+            );
+            if (await autoRejectForFacebookProfile(svc, userId, check, facebookName)) return;
+            // Indonesia track: the next step goes to them on Telegram (Facebook only counts as done once
+            // the profile link is saved too; the status RPC decides), and nothing on WhatsApp.
+            const idTrack = await isIdTrackUser(svc, userId);
+            await Promise.all(
+               idTrack
+                  ? [notifyIdNextStep(svc, userId, 'facebook')]
+                  : [
+                       followUpWithStatus(svc, userId, contactId),
+                       // Indonesia's WhatsApp-first sign-up: say so on WhatsApp too, with the next step.
+                       sendFacebookConnectedOnWhatsApp(svc, userId)
+                    ]
+            );
+         })().catch((err) => console.error('sendpulse-messenger-verify: follow-up failed', err instanceof Error ? err.message : err));
          if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(followUp);
       }
 
