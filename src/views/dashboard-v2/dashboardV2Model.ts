@@ -1,7 +1,7 @@
 import { formatCurrency, formatNumber, toNumber } from '@/utils/decimalHelpers';
 
 import { getCreditLevelNumber, getNextCreditTier, MAX_CREDIT_LIMIT } from '@/config/creditTiers';
-import type { ClaimableVoucher, MyRewards, VoucherClaimSummary, VoucherReward } from '@/lib/friendReferrals';
+import type { ClaimableVoucher, MyRewards, RepayStreak, VoucherClaimSummary, VoucherReward } from '@/lib/friendReferrals';
 import { trustPointMilestoneRuleById } from '@/shared/points';
 import type { Loan } from '@/types/loanTypes';
 import type { CreditLevelHint, DashboardV2Milestone, MoodengMood, MoodengTierId } from '@/views/dashboard-v2/types';
@@ -28,6 +28,87 @@ export const TIER_VOUCHERS: { reward: VoucherReward; tier: MoodengTierId; label:
    { reward: 'tier_apex', tier: 'apex', label: 'Apex', minPandesal: 400, amountPhp: 150 }
 ];
 export const TIER_VOUCHER_REWARDS: VoucherReward[] = TIER_VOUCHERS.map((voucher) => voucher.reward);
+
+/**
+ * The repay streak: a food voucher on the 1st on-time repayment, then at 3 and 5 in a row. Validated and
+ * paid out by the database; keep in sync with app_private.streak_voucher() and repay_reward_preview()
+ * (migration 20261114150000_repay_streak_rewards).
+ */
+export const STREAK_LENGTH = 5;
+export const STREAK_VOUCHERS: { reward: VoucherReward; step: number; amountPhp: number }[] = [
+   { reward: 'first_on_time_repayment', step: 1, amountPhp: 50 },
+   { reward: 'streak_3', step: 3, amountPhp: 50 },
+   { reward: 'streak_5', step: 5, amountPhp: 50 }
+];
+
+type StreakLocale = 'en' | 'fil';
+const streakLocale = (locale: string): StreakLocale => (locale === 'fil' ? 'fil' : 'en');
+
+const STREAK_COPY: Record<
+   StreakLocale,
+   {
+      payFor: (php: number) => string;
+      payTodayFor: (php: number) => string;
+      keep: (streak: number) => string;
+      grow: (streak: number) => string;
+      title: (streak: number) => string;
+      startTitle: string;
+      next: (php: number) => string;
+      toGo: (count: number, php: number) => string;
+      allEarned: string;
+   }
+> = {
+   en: {
+      payFor: (php) => `Pay on time → ₱${php} food`,
+      payTodayFor: (php) => `Pay today → ₱${php} food`,
+      keep: (streak) => `Pay today to keep your 🔥 ${streak} streak`,
+      grow: (streak) => `Pay on time → 🔥 streak ${streak}`,
+      title: (streak) => `🔥 ${streak} on time in a row`,
+      startTitle: 'Repay on time, eat on us',
+      next: (php) => `Next on-time payment → ₱${php} food`,
+      toGo: (count, php) => `${count} on-time payments to go → ₱${php} food`,
+      allEarned: 'Every streak treat earned. Keep it going!'
+   },
+   fil: {
+      payFor: (php) => `Magbayad on time → ₱${php} food`,
+      payTodayFor: (php) => `Magbayad ngayon → ₱${php} food`,
+      keep: (streak) => `Magbayad ngayon para hindi mawala ang 🔥 ${streak} streak mo`,
+      grow: (streak) => `Magbayad on time → 🔥 streak ${streak}`,
+      title: (streak) => `🔥 ${streak} sunod-sunod na on time`,
+      startTitle: 'Magbayad on time, libre ang kain',
+      next: (php) => `Susunod na on-time na bayad → ₱${php} food`,
+      toGo: (count, php) => `${count} on-time na bayad pa → ₱${php} food`,
+      allEarned: 'Nakuha mo na lahat ng streak treat. Tuloy lang!'
+   }
+};
+
+/**
+ * What paying this loan on time is worth, for the loan card: the food voucher when this payment earns
+ * it, otherwise the streak it grows (or, on the due day, the streak it saves). Null for an overdue
+ * loan (the streak is already gone) and for someone with no streak rewards.
+ */
+export const getRepayRewardLine = (streak: RepayStreak, daysRemaining: number, locale: string): string | null => {
+   if (daysRemaining < 0) return null;
+   const copy = STREAK_COPY[streakLocale(locale)];
+   const dueToday = daysRemaining === 0;
+   if (streak.nextStep !== null && streak.toGo === 1 && streak.nextPhp) {
+      return dueToday ? copy.payTodayFor(streak.nextPhp) : copy.payFor(streak.nextPhp);
+   }
+   if (streak.nextStep === null && streak.current === 0) return null;
+   if (dueToday && streak.current > 0) return copy.keep(streak.current);
+   return copy.grow(streak.current + 1);
+};
+
+/** Title + caption for the streak card. */
+export const getStreakCardCopy = (streak: RepayStreak, locale: string): { title: string; caption: string } => {
+   const copy = STREAK_COPY[streakLocale(locale)];
+   const title = streak.current > 0 ? copy.title(streak.current) : copy.startTitle;
+   if (streak.nextStep === null || !streak.toGo || !streak.nextPhp) return { title, caption: copy.allEarned };
+   return { title, caption: streak.toGo === 1 ? copy.next(streak.nextPhp) : copy.toGo(streak.toGo, streak.nextPhp) };
+};
+
+/** The streak card shows once there is a streak to grow or a streak reward left to earn. */
+export const hasStreakToShow = (streak: RepayStreak): boolean => streak.current > 0 || streak.nextStep !== null;
 
 /** Milestones the new design shows on the dashboard, in order. Verification has its own banner. */
 const DASHBOARD_MILESTONE_IDS = ['first-loan-request', 'first-funded-loan', 'first-on-time-repayment'];

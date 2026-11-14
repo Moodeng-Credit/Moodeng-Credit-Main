@@ -181,16 +181,16 @@ export function WithdrawBanner({ onWithdraw }: { onWithdraw: () => void }) {
 
 const REMINDERS_COPY = {
    en: {
-      title: 'Turn on repayment reminders',
-      body: 'Get a heads-up before your due date so you never pay late.',
+      title: 'Get your reward reminder',
+      body: 'We remind you before your due date, so you keep your streak and your food reward.',
       blockedTitle: 'Reminders are blocked',
       blockedBody: 'Allow notifications for moodeng.app in your browser settings.',
       homeScreenTitle: 'Get reminders on your iPhone',
       homeScreenBody: 'Tap Share, then "Add to Home Screen". Open Moodeng from your Home Screen, log in and turn on reminders.'
    },
    fil: {
-      title: 'I-on ang mga repayment reminder',
-      body: 'Makatanggap ng paalala bago ang due date para hindi ka ma-late.',
+      title: 'Kunin ang reward reminder mo',
+      body: 'Paalalahanan ka namin bago ang due date, para hindi mawala ang streak at food reward mo.',
       blockedTitle: 'Naka-block ang mga reminder',
       blockedBody: 'I-allow ang mga notification para sa moodeng.app sa browser settings mo.',
       homeScreenTitle: 'Makatanggap ng mga reminder sa iPhone mo',

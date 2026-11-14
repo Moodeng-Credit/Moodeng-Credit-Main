@@ -26,6 +26,8 @@ export interface DashboardV2Due {
    id: string;
    amount: number;
    daysRemaining: number;
+   /** When the loan becomes overdue (end of the due day in the borrower's zone), ISO. */
+   deadline: string;
    lenderName: string;
    isOverdue: boolean;
 }

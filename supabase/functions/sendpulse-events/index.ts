@@ -7,6 +7,7 @@ import { PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
 import { decideAutoMatch, MATCH_WINDOW_MS, type OpenAttempt } from '../_shared/messengerAutoMatch.ts';
 import { handleBookingMessage, handleReminderNumber } from '../_shared/messengerBookingBot.ts';
 import { logMessengerContact, rememberMessengerContact, saveFacebookName } from '../_shared/messengerContactLog.ts';
+import { handleRewardMessage } from '../_shared/messengerRewardReply.ts';
 import { CONNECTED_BY_TIMING_TEXT } from '../_shared/messengerStatusFollowUp.ts';
 import { isSupportMessage, openMessengerTicket, relayAgentReply } from '../_shared/messengerSupport.ts';
 import { buildMatchSuggestionCard, messengerStuckKeyboard } from '../_shared/messengerStuckAlert.ts';
@@ -325,6 +326,8 @@ serve(async (req) => {
          const forMenu = event.isPostback || /^\s*menu\s*$/i.test(event.text ?? '');
          const typed = known?.userId && event.text && !forMenu && !event.hasAttachment && !event.codes.length ? event.text : null;
          // Just a mobile number from someone with a call booked: their answer to "want a text reminder?".
+         // "REWARD": their repay streak and what paying on time earns (the day-before reminder asks for it).
+         if (typed && (await handleRewardMessage(svc, known!.userId, contactId, typed))) continue;
          if (typed && (await handleReminderNumber(svc, known!.userId, contactId, typed))) continue;
          if (typed && (await handleBookingMessage(svc, known!.userId, contactId, typed))) continue;
          if (isSupportMessage(event)) {

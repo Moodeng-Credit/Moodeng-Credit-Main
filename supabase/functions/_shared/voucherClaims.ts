@@ -43,7 +43,9 @@ export const VOUCHER_REWARD_LABELS: Record<string, string> = {
    referral_invitee: 'Referral (friend)',
    tier_rising: 'Moodeng reached Rising',
    tier_prime: 'Moodeng reached Prime',
-   tier_apex: 'Moodeng reached Apex'
+   tier_apex: 'Moodeng reached Apex',
+   streak_3: '3 on time in a row',
+   streak_5: '5 on time in a row'
 };
 
 // What the borrower reads in the email: why they got it.
@@ -53,7 +55,9 @@ const REWARD_REASONS: Record<string, string> = {
    referral_invitee: 'for joining with a friend’s invite and repaying on time',
    tier_rising: 'for growing your Moodeng to Rising',
    tier_prime: 'for growing your Moodeng to Prime',
-   tier_apex: 'for growing your Moodeng to Apex'
+   tier_apex: 'for growing your Moodeng to Apex',
+   streak_3: 'for repaying 3 loans on time in a row',
+   streak_5: 'for repaying 5 loans on time in a row'
 };
 
 export const FOOD_BRANDS = 'Jollibee, Chowking, Greenwich, Mang Inasal or Red Ribbon';
@@ -182,7 +186,9 @@ const REWARD_REASONS_FIL: Record<string, string> = {
    referral_invitee: 'dahil sumali ka gamit ang invite ng friend at nagbayad on time',
    tier_rising: 'dahil umabot na sa Rising ang Moodeng mo',
    tier_prime: 'dahil umabot na sa Prime ang Moodeng mo',
-   tier_apex: 'dahil umabot na sa Apex ang Moodeng mo'
+   tier_apex: 'dahil umabot na sa Apex ang Moodeng mo',
+   streak_3: 'dahil 3 sunod-sunod na on time ang bayad mo',
+   streak_5: 'dahil 5 sunod-sunod na on time ang bayad mo'
 };
 
 /** "Your reward is here": the Xoxo links as card buttons, or (Bitrefill) where to find the email. */
@@ -392,7 +398,9 @@ const REWARD_SHORT: Record<string, string> = {
    referral_invitee: 'Joined by invite',
    tier_rising: 'Rising',
    tier_prime: 'Prime',
-   tier_apex: 'Apex'
+   tier_apex: 'Apex',
+   streak_3: '3 in a row',
+   streak_5: '5 in a row'
 };
 
 const digestDetails = (person: VoucherDigestPerson) => {

@@ -246,7 +246,8 @@ export default function DashboardV2() {
                         onEnable={() => void push.enable()}
                      />
                   ) : null}
-                  {model.hasOverdue ? <UpcomingDuesSection model={model} /> : null}
+                  {/* Anything to repay sits near the top, with the streak and what paying on time earns. */}
+                  {model.dues.length ? <UpcomingDuesSection model={model} /> : null}
                   {voucherFollowUp ? (
                      <VoucherFollowUpCard
                         claim={voucherFollowUp}
@@ -258,7 +259,7 @@ export default function DashboardV2() {
                   ) : null}
                   {milestonesAndVoucher}
                   <LoanSummarySection model={model} />
-                  {!model.hasOverdue ? <UpcomingDuesSection model={model} /> : null}
+                  {!model.dues.length ? <UpcomingDuesSection model={model} /> : null}
                </div>
             )}
          </div>
