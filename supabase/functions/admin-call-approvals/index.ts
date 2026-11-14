@@ -14,6 +14,8 @@ import {
    who
 } from '../_shared/loanAccess.ts';
 import { checkCallForm } from '../_shared/callFormCheck.ts';
+import { fbStepsSentForCall } from '../_shared/facebookSteps.ts';
+import { sendFacebookSteps } from '../_shared/facebookStepsSend.ts';
 import { recordCallOutcome } from '../_shared/videoCallOutcome.ts';
 import { idApprovalBlock } from '../_shared/idTrack.ts';
 
@@ -31,6 +33,8 @@ import { idApprovalBlock } from '../_shared/idTrack.ts';
 //   { action: 'approve_user', userId }  approve from the Directory, call or not: decides their pending
 //                                       request if they have one, else approves them directly
 //                                                             → { ok, summary }
+//   { action: 'send_fb_steps', userId } send the "add Emma + join the group" message now (call sheet
+//                                       button; also the only way on Cal Video calls)  → { ok, channel, sentAt }
 //   { action: 'check_form', userId }    re-run the AI form check on their latest call transcript
 //                                       (after the host edits the sheet)  → { ok, check }
 // verify_jwt is on; the caller must also be an active admin.
@@ -47,7 +51,7 @@ const json = (body: Record<string, unknown>, status = 200) =>
 const LOOKBACK_H = 48;
 const LOOKAHEAD_H = 24;
 
-const USER_COLUMNS = `${BORROWER_COLUMNS}, video_call_outcome, video_call_outcome_at, video_call_join_url, ${ATTENDANCE_COLUMNS}`;
+const USER_COLUMNS = `${BORROWER_COLUMNS}, video_call_outcome, video_call_outcome_at, video_call_join_url, video_call_fb_steps_sent_at, ${ATTENDANCE_COLUMNS}`;
 
 type UserRow = {
    id: string;
@@ -59,6 +63,7 @@ type UserRow = {
    video_call_outcome: string | null;
    video_call_outcome_at: string | null;
    video_call_join_url: string | null;
+   video_call_fb_steps_sent_at: string | null;
    video_call_host: string | null;
    video_call_meeting_id: string | null;
    video_call_arrived_at: string | null;
@@ -132,6 +137,7 @@ serve(async (req) => {
                host: u.video_call_host,
                joinUrl: u.video_call_join_url,
                attendance: u.video_call_starts_at ? describeAttendance(u, zoomByHost.get(host) ?? false) : null,
+               fbStepsSentAt: fbStepsSentForCall(u.video_call_fb_steps_sent_at, u.video_call_starts_at) ? u.video_call_fb_steps_sent_at : null,
                outcome: u.video_call_outcome,
                outcomeAt: u.video_call_outcome_at,
                request: request ? { id: request.id, kind: request.kind, reason: request.reason, createdAt: request.created_at } : null
@@ -210,6 +216,24 @@ serve(async (req) => {
          const check = await checkCallForm(svc, (latest as { id: string }).id);
          if (!check) return json({ ok: false, error: 'The form check failed. Try again in a minute.' }, 502);
          return json({ ok: true, check });
+      }
+
+      if (body.action === 'send_fb_steps' && typeof body.userId === 'string') {
+         const { data: target } = await svc
+            .from('users')
+            .select('id, messenger_psid, chat_id, video_call_starts_at')
+            .eq('id', body.userId)
+            .maybeSingle();
+         if (!target) return json({ ok: false, error: 'Borrower not found.' }, 404);
+         const sent = await sendFacebookSteps(svc, target as { id: string; messenger_psid: string | null; chat_id: string | number | null; video_call_starts_at: string | null }, { force: true });
+         if (!sent.ok) {
+            const why =
+               sent.reason === 'no_contact' || sent.reason === 'no_channel'
+                  ? 'They have no Messenger or Telegram connected. Paste the two links in the Zoom chat.'
+                  : 'Messenger could not deliver it (they may not have messaged the Page in the last 24 hours). Paste the two links in the Zoom chat.';
+            return json({ ok: false, error: why }, 409);
+         }
+         return json({ ok: true, channel: sent.channel, sentAt: new Date().toISOString() });
       }
 
       return json({ error: 'Unknown action' }, 400);
