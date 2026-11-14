@@ -915,9 +915,11 @@ serve(async (req) => {
       if (String(body.qr) === 'status') {
          // Apps that know the QR cash-out send qrCashout:true and get bankUp / qrCashout back, so they can
          // still offer the QR while the bank payout is down. Older apps keep getting enabled:false then.
-         const bankUp = await bankPayoutUp();
          const wantsQr = body.qrCashout === true;
          const qrOn = wantsQr && ((await isQrCashoutOn(admin)) || (await isQrTester()));
+         // The account-number payout doesn't work yet (2026-11-15), so while the QR is on we skip Stableyard's
+         // bank list (it once took 11s and held the QR card back) and report the bank payout as down.
+         const bankUp = qrOn ? false : await bankPayoutUp();
          if (!bankUp && !qrOn) return json({ enabled: false, code: 'payout_unavailable', error: 'Cash-out is unavailable right now.' });
          body.bankUp = bankUp;
          body.qrCashout = qrOn;

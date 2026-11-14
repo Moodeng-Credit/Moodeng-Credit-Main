@@ -126,6 +126,8 @@ async function call(isPreview: boolean, input: Record<string, string | boolean>)
       // ?sim=email / ?sim=verify show the one-time setup at the email / ID step; ?sim=compliance shows
       // Stableyard's one-time form after the first "Get my price".
       const sim = new URLSearchParams(window.location.search).get('sim');
+      // ?sim=slow holds the setup for 8s to show the "Getting your cash-out ready" card.
+      if (body.qr === 'setup' && sim === 'slow') await new Promise((r) => setTimeout(r, 8000));
       if (body.qr === 'setup' && sim === 'email') return { ok: true, emailVerified: false, kycApproved: false, kycStatus: 'not_started' };
       if (body.qr === 'setup' && sim === 'verify') return { ok: true, emailVerified: true, kycApproved: false, kycStatus: 'not_started' };
       // ?sim=reuse shows the "use your Moodeng ID check" step; ?sim=reused shows it under review.
@@ -322,6 +324,46 @@ const primaryClass =
 const linkClass = 'w-full text-center text-[15px] font-semibold text-[#4492f1] py-[8px] hover:underline disabled:opacity-60';
 function Panel({ children }: { children: React.ReactNode }) {
    return <div className="rounded-[8px] border-2 border-[#e8e4ff] bg-[var(--surface)] p-[16px] space-y-[12px]">{children}</div>;
+}
+
+// Shown while the cash-out connects to Stableyard (it can take several seconds). The ticks move on a
+// timer so the wait feels like progress; the last line keeps spinning until the setup answer is back.
+const CONNECT_STEPS_MS = [1200, 3200];
+function ConnectingCard({ qrMode }: { qrMode: boolean }) {
+   const [done, setDone] = useState(0);
+   useEffect(() => {
+      const timers = CONNECT_STEPS_MS.map((ms, i) => window.setTimeout(() => setDone(i + 1), ms));
+      return () => timers.forEach((t) => window.clearTimeout(t));
+   }, []);
+   const lines = ['Connecting to Stableyard', 'Checking your account', qrMode ? 'Getting your QR upload ready' : 'Loading your banks'];
+   return (
+      <Panel>
+         <p className="text-[16px] font-bold text-[var(--ink)]">Getting your cash-out ready</p>
+         <ul className="space-y-[10px]">
+            {lines.map((line, i) => {
+               const state = i < done ? 'done' : i === done ? 'active' : 'waiting';
+               return (
+                  <li
+                     key={line}
+                     className={`flex items-center gap-[10px] text-[14px] ${state === 'waiting' ? 'text-[var(--text-muted)] opacity-60' : 'text-[var(--ink)]'}`}
+                  >
+                     {state === 'done' ? (
+                        <span className="flex h-[20px] w-[20px] items-center justify-center rounded-full bg-[#22c55e]">
+                           <Check className="h-[13px] w-[13px] text-white" strokeWidth={3} />
+                        </span>
+                     ) : state === 'active' ? (
+                        <Loader2 className="h-[20px] w-[20px] animate-spin text-[#6b55f7]" />
+                     ) : (
+                        <span className="h-[20px] w-[20px] rounded-full border-2 border-[#e8e4ff]" />
+                     )}
+                     {line}
+                  </li>
+               );
+            })}
+         </ul>
+         <p className="text-[12px] text-[var(--text-muted)]">This can take a few seconds.</p>
+      </Panel>
+   );
 }
 
 function ErrorLine({ text }: { text: string }) {
@@ -785,15 +827,7 @@ export default function BankPayoutFlow({
       return { ok: true, name };
    };
 
-   if (step === 'loading') {
-      return (
-         <Panel>
-            <div className="flex items-center gap-[10px] text-[14px] text-[var(--text-muted)]">
-               <Loader2 className="w-[18px] h-[18px] animate-spin" /> Getting things ready…
-            </div>
-         </Panel>
-      );
-   }
+   if (step === 'loading') return <ConnectingCard qrMode={qrMode} />;
 
    if (step === 'verify') {
       const emailDone = Boolean(setup?.emailVerified);
@@ -1302,7 +1336,9 @@ export default function BankPayoutFlow({
                                  <Loader2 className="w-[13px] h-[13px] text-[#6b55f7] animate-spin" />
                               ) : null}
                            </span>
-                           <span className={st.state === 'todo' ? 'text-[var(--text-faint)]' : 'text-[var(--ink)] font-semibold'}>{st.label}</span>
+                           <span className={st.state === 'todo' ? 'text-[var(--text-faint)]' : 'text-[var(--ink)] font-semibold'}>
+                              {st.label}
+                           </span>
                         </li>
                      ))}
                   </ol>
@@ -1320,7 +1356,9 @@ export default function BankPayoutFlow({
          ) : (
             // Not a gold "Done" while it's still sending: that read as "finished".
             <>
-               <p className="text-center text-[13px] leading-[18px] text-[var(--text-muted)]">You can close this. We&apos;ll keep sending.</p>
+               <p className="text-center text-[13px] leading-[18px] text-[var(--text-muted)]">
+                  You can close this. We&apos;ll keep sending.
+               </p>
                <button
                   onClick={onDone}
                   className="w-full rounded-[36px] border-2 border-[#e8e4ff] bg-[var(--surface)] py-[13px] text-[16px] font-semibold text-[var(--text-muted)] active:scale-[0.99] transition-all"
