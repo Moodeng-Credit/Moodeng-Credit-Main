@@ -328,6 +328,7 @@ const fbProfileProbe = async (req: Request, svc: any, body: Record<string, unkno
          found: Boolean(contact),
          keys: Object.keys(contact?.channel_data ?? {}),
          photo_url_host: check.photoUrl ? new URL(check.photoUrl).host : null,
+         photo_error: check.photoError,
          flags: check.flags,
          hash: check.photoHash?.slice(0, 16) ?? null,
          bytes: check.photoBytes,

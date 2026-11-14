@@ -84,7 +84,25 @@ export const contactPhotoUrl = (contact: SendPulseContact | null): string | null
    return url ?? null;
 };
 
-const toHex = (buf: ArrayBuffer) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+// SendPulse's Messenger contact has no picture (checked 2026-11-14: channel_data has id, name,
+// first/middle/last_name, email, phone, gender, link, location, hometown, locale). channel_data.id is
+// the page-scoped Facebook id, so the picture comes from the Graph API with the Page token.
+export const graphPhotoUrl = async (contact: SendPulseContact | null): Promise<{ url: string | null; error?: string }> => {
+   // deno-lint-ignore no-explicit-any
+   const psid = String((contact as any)?.channel_data?.id ?? '').trim();
+   const token = Deno.env.get('FACEBOOK_PAGE_TOKEN')?.trim();
+   if (!psid || !token) return { url: null, error: !psid ? 'no_psid' : 'no_token' };
+   try {
+      const res = await fetch(`https://graph.facebook.com/v21.0/${encodeURIComponent(psid)}?fields=profile_pic&access_token=${encodeURIComponent(token)}`);
+      const body = await res.json().catch(() => null);
+      if (!res.ok) return { url: null, error: String(body?.error?.message ?? res.status).slice(0, 160) };
+      return { url: typeof body?.profile_pic === 'string' ? body.profile_pic : null, error: body?.profile_pic ? undefined : 'no_profile_pic' };
+   } catch (err) {
+      return { url: null, error: err instanceof Error ? err.message : String(err) };
+   }
+};
+
+const toHex =(buf: ArrayBuffer) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 
 /** SHA-256 of the picture's bytes, or null if it can't be downloaded. */
 export const photoHash = async (url: string): Promise<{ hash: string; bytes: number } | null> => {
@@ -111,6 +129,7 @@ export type ProfileCheck = {
    first: string;
    last: string;
    photoUrl: string | null;
+   photoError: string | null;
    photoHash: string | null;
    photoBytes: number | null;
    sharedWith: number;
@@ -120,7 +139,13 @@ export type ProfileCheck = {
 export const checkFacebookProfile = async (svc: SupabaseClient, userId: string, contact: SendPulseContact | null): Promise<ProfileCheck> => {
    const { first, last } = splitFacebookName(contact?.channel_data);
    const flags = nameFlags(first, last);
-   const photoUrl = contactPhotoUrl(contact);
+   let photoUrl = contactPhotoUrl(contact);
+   let photoError: string | null = null;
+   if (!photoUrl) {
+      const graph = await graphPhotoUrl(contact);
+      photoUrl = graph.url;
+      photoError = graph.error ?? null;
+   }
    let hash: string | null = null;
    let bytes: number | null = null;
    let sharedWith = 0;
@@ -145,7 +170,7 @@ export const checkFacebookProfile = async (svc: SupabaseClient, userId: string, 
          if (KNOWN_DEFAULT_PHOTO_HASHES.has(hash) || sharedWith > 0) flags.unshift('no_photo');
       }
    }
-   return { flags, first, last, photoUrl, photoHash: hash, photoBytes: bytes, sharedWith };
+   return { flags, first, last, photoUrl, photoError, photoHash: hash, photoBytes: bytes, sharedWith };
 };
 
 export const loadRejectMode = async (svc: SupabaseClient): Promise<FbRejectMode> => {
