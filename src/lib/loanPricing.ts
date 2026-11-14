@@ -81,3 +81,12 @@ export function minimumRepayment(principal: number, dueDate: string | Date | nul
    const amount = Math.ceil(principal * (1 + MIN_MONTHLY_RETURN * months) * 2) / 2;
    return { amount, months };
 }
+
+// The range the loan form suggests for the total repayment: from the 10%-a-month minimum up to
+// twice that return ($15 for a month → $16.50–$18). With no due date yet, a month is assumed.
+export function suggestedRepaymentRange(principal: number, dueDate: string | Date | null | undefined, now: Date = new Date()): ReturnRange | null {
+   if (!Number.isFinite(principal) || principal <= 0) return null;
+   const lo = minimumRepayment(principal, dueDate, now)?.amount ?? Math.ceil(principal * (1 + MIN_MONTHLY_RETURN) * 2) / 2;
+   const hi = Math.ceil((principal + 2 * (lo - principal)) * 2) / 2;
+   return { lo, hi };
+}
