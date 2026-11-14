@@ -198,6 +198,12 @@ export const handleReminderNumber = async (svc: Svc, userId: string, contactId: 
    }
 };
 
+const ENDED_TEXT: Record<Bot.Lang, string> = {
+   en: 'OK 👍 No call booked. Type BOOK anytime to book one.',
+   fil: 'Sige 👍 Walang naka-book na call. I-type ang BOOK kahit kailan para mag-book.',
+   id: 'Oke 👍 Tidak ada panggilan terjadwal. Ketik BOOK kapan saja untuk menjadwalkan.'
+};
+
 const REJECTED_TEXT = "Sorry, we can't offer you a loan right now, so there's no call to book. We wish you all the best 🦛";
 
 /** True when the booking bot answered this message (so it isn't also a support ticket). Never throws. */
@@ -273,6 +279,14 @@ export const handleBookingMessage = async (svc: Svc, userId: string, contactId: 
          return true;
       }
 
+      // Waiting for a day and time with nothing held or booked (e.g. right after a cancel) and they say
+      // "no" / "just cancel": end the chat instead of asking for a time again and again.
+      if (state.step === 'ask' && !state.mine && !state.kept && (Bot.NEGATIVE.test(Bot.norm(text)) || Bot.bookedCallIntent(text) === 'cancel')) {
+         await svc.from('messenger_booking_chats').delete().eq('contact_id', contactId);
+         await say(contactId, [{ text: ENDED_TEXT[state.lang] }], state.lang, cfg.quick);
+         return true;
+      }
+
       const now = wallNow(zone);
       const listed = await listCallSlots(svc, { id: user.id, email: user.email }, zone);
       if (listed.body.error === 'cooldown') {
@@ -321,7 +335,10 @@ export const handleBookingMessage = async (svc: Svc, userId: string, contactId: 
       const r = await Bot.step(state, { text }, ctx);
       const extra: Bot.Reply[] = dry && r.events.some((e) => e.type === 'book') ? [{ text: '🧪 Practice mode: nothing was really booked.' }] : [];
       await say(contactId, [...r.replies, ...extra], r.state.lang, cfg.quick);
-      await save(r.state);
+      // A cancelled call ends the chat: what they say next goes to the team, not "I didn't catch a day or time".
+      if (r.events.some((e) => e.type === 'release' && e.why === 'cancel') && !r.state.mine && !r.state.kept) {
+         await svc.from('messenger_booking_chats').delete().eq('contact_id', contactId);
+      } else await save(r.state);
       for (const e of r.events) {
          const rec = answerRecord(e, r.state, zone, userId);
          if (!rec) continue;
