@@ -1057,10 +1057,28 @@ export default function ContactsStep({
          : defaultHero && stateHippo && isValidElement(intro)
            ? cloneElement(intro as ReactElement<{ image?: string }>, { image: stateHippo })
            : intro;
+   // Onboarding page (2026-11-15: an Android borrower had both steps green but Continue sat below the
+   // fold and the page wouldn't scroll). This box used to be its own scroller with overscroll-contain,
+   // but the page grows to fit it, so it never scrolled — and the contain setting swallowed the swipe
+   // instead of passing it to the page. Here the page scrolls, Continue is pinned to the bottom, and
+   // once she's connected the hippo's long explanation shrinks to one line.
+   const onboardingPage = source === 'connect';
+   const pinContinue = onboardingPage && (canContinue || continueTurnsOnPush);
+   const shownHero =
+      onboardingPage && canContinue && isValidElement(hero) && hero.type === ConnectHero
+         ? cloneElement(hero as ReactElement<{ title?: ReactNode; subtitle?: ReactNode }>, {
+              title: 'You’re connected!',
+              subtitle: 'Tap Continue for the next step.'
+           })
+         : hero;
 
    return (
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
-         {hero ?? (
+      <div
+         className={`flex flex-1 flex-col gap-4 px-5 pt-5 text-md-b2 text-md-heading ${
+            onboardingPage ? (pinContinue ? '' : 'pb-5') : 'min-h-0 overflow-y-auto overscroll-contain pb-5'
+         }`}
+      >
+         {shownHero ?? (
             <ConnectHero image={stateHippo ?? CONNECT_HIPPOS.hello} subtitle="Only Moodeng sees this — never moo-lenders." title="How can we reach you?" />
          )}
 
@@ -1625,14 +1643,13 @@ export default function ContactsStep({
             onClose={() => setShowUnblockGuide(false)}
          />
 
-         <div className="mt-auto flex flex-col gap-1 pt-2">
-            {/* Onboarding: someone who comes back here (e.g. the phone's back button from About you)
-                should see at a glance that this step is done, not think they have to connect again. */}
-            {source === 'connect' && canContinue ? (
-               <p className="mb-1 text-center text-md-b2 font-[590] text-[#1f7a3d]">
-                  You&apos;re connected ✓ Tap Continue for the next step.
-               </p>
-            ) : null}
+         <div
+            className={`mt-auto flex flex-col gap-1 pt-2 ${
+               pinContinue
+                  ? 'sticky bottom-0 z-10 -mx-5 bg-white px-5 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-10px_16px_-6px_rgba(89,77,101,0.12)] dark:bg-[#100d17]'
+                  : ''
+            }`}
+         >
             <PrimaryButton
                disabled={(!canContinue && !continueTurnsOnPush) || isSubmitting || (continueTurnsOnPush && push.isBusy)}
                onClick={() => void handleContinue()}
