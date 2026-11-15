@@ -150,7 +150,8 @@ export default function WhatsAppRemindersCard({
                      ? 'Getting your code…'
                      : connect
                        ? 'Tap, then hit send in WhatsApp. We’ll message you the next step there.'
-                       : 'Notifications can’t work here. Tap to get your code, then send it on WhatsApp.'
+                       : // Shown to everyone now (WhatsApp is required in onboarding), not only where notifications fail.
+                         'Tap to get your code, then send it on WhatsApp.'
                }
                title={connect ? 'Connect WhatsApp' : 'Get reminders on WhatsApp'}
             />
