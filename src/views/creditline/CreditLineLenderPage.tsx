@@ -1,10 +1,11 @@
-import { type FormEvent, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
 
 import { Eye, EyeOff } from 'lucide-react';
 
 import { downloadCreditLineExcel } from '@/lib/creditLineExcel';
 import { txExplorerUrl } from '@/lib/txExplorer';
-import { buildPeriodReport, type LenderLoan, type LenderReportData, loadLenderReport, periodsFor } from '@/lib/creditLineReport';
+import { buildPeriodReport, type LenderLoan, type LenderReportData, loadLenderReport, manilaToday, periodsFor } from '@/lib/creditLineReport';
+import { buildRollover, type ChainTransfer, listUsdcTransfersTo } from '@/lib/creditLineRollover';
 
 // moodeng.app/creditline — the facility lender (BitRepo) sees the live monthly report and downloads it as
 // Excel. Password-checked on the server (credit_line_lender_report); the password is kept for this tab only.
@@ -58,6 +59,9 @@ export default function CreditLineLenderPage() {
    const [fundedTo, setFundedTo] = useState('');
    const [search, setSearch] = useState('');
    const [showPassword, setShowPassword] = useState(false);
+   // USDC that actually reached BitRepo's return address on Base (same numbers as /repaidcreditline).
+   const [transfers, setTransfers] = useState<ChainTransfer[] | null>(null);
+   const [chainFailed, setChainFailed] = useState(false);
 
    const unlock = async (pw: string) => {
       setLoading(true);
@@ -81,6 +85,14 @@ export default function CreditLineLenderPage() {
       }
       setData(result.data);
    };
+
+   useEffect(() => {
+      if (!data) return;
+      listUsdcTransfersTo()
+         .then(setTransfers)
+         .catch(() => setChainFailed(true));
+   }, [data]);
+   const roll = useMemo(() => (data && transfers ? buildRollover(data, transfers, manilaToday()) : null), [data, transfers]);
 
    const periods = useMemo(() => (data ? periodsFor(data.facility) : []), [data]);
    const report = useMemo(() => (data && periods[periodIndex] ? buildPeriodReport(data, periods[periodIndex]) : null), [data, periods, periodIndex]);
@@ -202,6 +214,18 @@ export default function CreditLineLenderPage() {
                {/* A flat fee for the whole loan, not a monthly rate — said in words so nobody reads it as one. */}
                <Stat label="Typical borrower fee" sub="Flat fee for the whole loan (usually 30 days), e.g. $2 on $15" value={`${pct(m.feeStandard)} per loan`} />
                <Stat label="Lent / repaid" sub={`Fees collected: ${usd(report.feesCollected)}`} value={`${usd(report.lent, 0)} / ${usd(report.principalRepaid, 0)}`} />
+               {/* All time: USDC received at BitRepo's return address against the advance + interest (vault draws are repaid to the vault). */}
+               <Stat
+                  label="Advance paid back to you"
+                  sub={
+                     roll
+                        ? `Of ${usd(roll.owedProjected)} owed (${usd(roll.principal, 0)} advance + interest) · ${usd(roll.comingFromBorrowers)} still coming from ${roll.loans.filter((l) => l.open && l.paysBitrepo).length} loans`
+                        : chainFailed
+                          ? 'Couldn’t read Base just now. Reload to try again.'
+                          : 'Reading payments on Base…'
+                  }
+                  value={roll ? usd(roll.received) : '…'}
+               />
             </section>
             <p className="-mt-2 text-[12px] text-[#8a7c9c]">
                Borrower fees are a one-time flat fee on each loan, paid back with the principal — not a monthly or annual rate. Medians use
