@@ -52,6 +52,8 @@ const UNCLEAR: CallTimeRead = { windows: [], at: null, anytime: false, unclear: 
 // What DeepSeek returned for these messages in the live runs (stand-ins so tests don't call it).
 const AI: Record<string, CallTimeRead> = {
    'tuesday 3pm': read([['2026-11-03', '14:30', '15:30']], '15:00'),
+   'monday 3pm': read([['2026-11-02', '14:30', '15:30']], '15:00'), // taken: a list of the closest
+   'saturday nov 7 10:00 am': read([['2026-11-07', '09:30', '10:30']], '10:00'),
    'actually tuesday 3pm is bad': read([['2026-11-03', '14:30', '15:30']], '15:00'),
    'yes but can we do 4pm instead?': read([['2026-11-01', '15:30', '16:30']], '16:00'),
    'saturday morning': read([['2026-11-07', '08:00', '12:00']]),
@@ -140,7 +142,7 @@ const chat = (state: BotState = newState(), opts: { ai?: boolean; book?: Ctx['bo
       },
       async toConfirm(time = 'tuesday 3pm') {
          await api.send(time);
-         await api.tap(0);
+         if (api.state.step === 'offered') await api.tap(0);
          await api.quiz();
          await api.tap('Got it');
          return api;
@@ -191,11 +193,11 @@ Deno.test('"Yes Ana" / "Opo, Juan po" book in one go', async () => {
 Deno.test('"yes but can we do 4pm instead?" offers 4pm on the day they hold, and keeps the hold', async () => {
    const c = await chat().toConfirm();
    await c.send('yes but can we do 4pm instead?');
-   assertEquals(c.state.step, 'offered');
+   // 4pm that day is free: it's held straight away and they're asked for one YES.
+   assertEquals(c.state.step, 'held');
    assertEquals(c.state.mine?.date, '2026-11-03');
-   assert(c.state.offered.every((s) => s.date === '2026-11-03'));
-   assert(c.text.includes('Tue, Nov 3 at 4:00 PM is free'));
-   assert(c.last[0].buttons?.some((b) => b.payload === 'keep'));
+   assertEquals(c.state.mine?.min, 16 * 60);
+   assert(c.text.includes('YES'));
 });
 
 Deno.test('"no problem" at the confirm step does not cancel; "no" does', async () => {
@@ -287,7 +289,6 @@ Deno.test('cancel after booking frees the time', async () => {
 const toQuestion = async (key: string, s = newState()) => {
    const c = chat(s);
    await c.send('tuesday 3pm');
-   await c.tap(0);
    for (let i = 0; i < 12 && c.state.asked[c.state.asked.length - 1] !== key; i++) {
       const b = c.last.flatMap((r) => r.buttons ?? []);
       if (b.length === 1 && b[0].payload.endsWith(':skip')) await c.send('sari-sari store');
@@ -361,7 +362,6 @@ Deno.test('the app bio is never asked again', async () => {
    const p = profileFromUser({ income_type: 'full-time', monthly_income: '200_400', payday_type: 'mid-month', payday_start: 10, payday_end: 15 });
    const c = chat(newState(p));
    await c.send('tuesday 3pm');
-   await c.tap(0);
    await c.quiz();
    for (const k of ['work', 'income', 'payday']) assert(!c.state.asked.includes(k), k);
    assertEquals(c.state.answers.work, 'Employed (full-time) · from app');
@@ -375,7 +375,6 @@ Deno.test('the app bio is never asked again', async () => {
 Deno.test('the question count never jumps', async () => {
    const c = chat();
    await c.send('tuesday 3pm');
-   await c.tap(0);
    await c.quiz();
    const nums = c.all.map((r) => /^Question (\d+) · /.exec(r.text)?.[1]).filter(Boolean).map(Number);
    assertEquals(nums, nums.map((_, i) => i + 1));
@@ -385,14 +384,25 @@ Deno.test('the question count never jumps', async () => {
 // Offering times
 // ---------------------------------------------------------------------------------------------------
 
-Deno.test('while times are shown: "the second one", "6:30 pm", and "ok" re-shows them', async () => {
+Deno.test('while times are shown: "the second one", "6:30 pm", and "ok" takes the ⭐ one', async () => {
    const c = chat();
-   await c.send('tuesday 3pm');
+   await c.send('monday 3pm');
+   assertEquals(c.state.step, 'offered');
    const second = c.state.offered[1];
-   await c.send('ok');
-   assert(c.text.includes('Tap one of these times'));
    await c.send('the second one');
    assertEquals(c.state.mine?.min, second.min);
+   const k = chat();
+   await k.send('saturday morning');
+   const star = k.state.offered[0];
+   await k.send('ok');
+   assertEquals(slotKey(k.state.mine as Slot), slotKey(star));
+   // A "taken, the closest are…" list: "ok" / "salamat" don't pick a time nobody asked for.
+   const n = chat();
+   await n.send('monday 3pm');
+   await n.send('ok');
+   await n.send('salamat');
+   assertEquals(n.state.mine, null);
+   assertEquals(n.state.step, 'offered');
    const d = chat(newState(), { ai: false });
    await d.send('tomorrow after 6pm');
    await d.send('6:30 pm');
@@ -464,7 +474,7 @@ Deno.test('Indonesia: Jakarta time and Rupiah ranges', async () => {
    const c = chat(newState(profileFromUser({ whatsapp_number: '+6281234' })));
    const g = greet(c.state);
    assert(g.replies.length === 2);
-   await c.send('tuesday 3pm');
+   await c.send('monday 3pm');
    assert(c.text.includes('(Jakarta)'));
    await c.tap(0);
    await c.tap(0); // work
@@ -504,7 +514,8 @@ Deno.test('every button fits Messenger (≤ 20 characters, ≤ 13 per message), 
 Deno.test('plain text: options become letters, and a letter or the button text taps it', async () => {
    const c = await toQuestion('work');
    const txt = plainText(c.last[c.last.length - 1]);
-   assert(txt.includes('A) Employed') && txt.includes('D) Other') && txt.includes('Reply with a letter'));
+   assert(txt.includes('A. Employed') && txt.includes('D. Other') && txt.includes('Reply with a letter'));
+   assert(!/[A-M]\) /.test(txt)); // Messenger turns "B) " into 😎
    await c.send('b');
    assertEquals(c.state.answers.work, 'Own business');
    await c.send('Just myself');
@@ -515,7 +526,7 @@ Deno.test('plain text: time offers keep their numbers; letters go to Keep / Othe
    const c = await chat().toBooked();
    await c.send('saturday morning');
    const txt = plainText(c.last[0]);
-   assert(txt.includes('1. Sat, Nov 7') && txt.includes('A) 👍 Keep my time') && txt.includes('B) 🕐 Other time'));
+   assert(txt.includes('1. Sat, Nov 7') && txt.includes('A. 👍 Keep my time') && txt.includes('B. 🕐 Other time'));
    await c.send('A');
    assertEquals(c.state.step, 'booked');
    assertEquals(c.state.mine?.date, '2026-11-03');
@@ -608,7 +619,40 @@ Deno.test('moving a booked call: it stays booked until the new time is, and back
    await c.send('yes');
    assertEquals(c.state.booked, true);
    assertEquals(c.state.mine?.date, '2026-11-03');
-   assert(c.text.includes('Your time now'));
+   assert(c.text.includes('Your call is booked for'));
+});
+
+Deno.test('booked, they name a free exact time: moved and booked at once, no list or letters', async () => {
+   const c = await chat().toBooked();
+   await c.send('change my call');
+   assertEquals(c.state.changing, true);
+   await c.send('Saturday Nov 7 10:00 AM');
+   assertEquals(c.state.step, 'booked');
+   assertEquals(c.state.booked, true);
+   assertEquals(c.state.mine?.date, '2026-11-07');
+   assertEquals(c.state.mine?.min, 10 * 60);
+   assert(c.events.some((e) => e.type === 'book' && e.slot.date === '2026-11-07'));
+   assert(!c.last.some((r) => r.buttons?.some((b) => b.payload === 'keep')), c.text);
+});
+
+Deno.test('booked, chatting about a time ("I finish work at 5pm") never moves the call by itself', async () => {
+   AI['i finish work at 5pm'] = read([['2026-11-03', '16:30', '17:30']], '17:00');
+   const c = await chat().toBooked();
+   await c.send('I finish work at 5pm');
+   assert(!c.events.some((e) => e.type === 'book' && e.slot.min === 17 * 60));
+   assertEquals(c.state.kept?.min, 15 * 60); // the booked call stays booked until they say YES
+   assertEquals(c.state.step, 'held');
+   await c.send('no');
+   assertEquals(c.state.booked, true);
+   assertEquals(c.state.mine?.min, 15 * 60);
+});
+
+Deno.test('"thank you" to "type YES" is a yes', async () => {
+   const c = await chat().toConfirm();
+   await c.send('Thank you po');
+   assertEquals(c.state.step, 'name');
+   assertEquals(readConfirm('salamat'), { kind: 'yes', name: null });
+   assertEquals(readConfirm('thanks but can we do 4pm'), { kind: 'time' });
 });
 
 Deno.test('cancel: really cancelled, or kept when cancelling fails', async () => {
@@ -656,8 +700,7 @@ Deno.test('Indonesia: Indonesian by default (English only if they chose it), who
    const c = chat(s, { ai: false });
    await c.send('selasa jam 3 sore');
    assert(c.text.includes('waktu Jakarta') || c.text.includes('Jakarta'), c.text);
-   assert(c.text.includes('Ketuk salah satu jam'), c.text);
-   await c.tap(0);
+   // The exact time they asked for is free: held straight away, no list.
    assert(c.text.includes('Aku tahan') && c.text.includes('Pertanyaan 1'), c.text);
    await c.send('karyawan');
    assertEquals(c.state.answers.work, 'Employed');
@@ -739,7 +782,6 @@ Deno.test('a website booker who dodges twice keeps the call; the team sees the h
 Deno.test('the nudge repeats the question they stopped at, and their reply carries on', async () => {
    const c = chat();
    await c.send('tuesday 3pm');
-   await c.tap(0);
    await c.tap(0); // first question answered
    const before = c.state.asked.length;
    const n = nudge(c.state);
@@ -754,7 +796,7 @@ Deno.test('the nudge repeats the question they stopped at, and their reply carri
 
 Deno.test('the nudge on the times list shows the times again', async () => {
    const c = chat();
-   await c.send('tuesday 3pm');
+   await c.send('monday 3pm');
    assertEquals(c.state.step, 'offered');
    const n = nudge(c.state);
    assertEquals(n.replies.length, 2);

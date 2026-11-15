@@ -619,6 +619,7 @@ export const bookedCallIntent = (text: string): 'cancel' | 'change' | null => {
    return null;
 };
 const YES_WORDS = new Set(['yes', 'yeah', 'yea', 'yep', 'yup', 'ye', 'oo', 'opo', 'oho', 'sige', 'ok', 'okay', 'okey', 'oki', 'k', 'sure', 'confirm', 'confirmed', 'go', 'game', 'ya', 'iya', 'g', 'oke', 'baik', 'siap', 'boleh', 'bisa', 'betul', 'benar', 'setuju']);
+const THANKS = new Set(['thanks', 'thank', 'thankyou', 'ty', 'tysm', 'thx', 'tnx', 'salamat', 'maraming', 'makasih', 'terima', 'kasih']);
 // Words that can follow a YES without being a name.
 const FILLER = new Set(['po', 'naman', 'please', 'pls', 'plz', 'thanks', 'thank', 'you', 'ty', 'salamat', 'sure', 'confirm', 'confirmed', 'na', 'lang', 'i', 'will', 'be', 'there', 'see', 'tayo', 'then', 'terima', 'kasih', 'makasih', 'dong', 'kak', 'pak', 'bu', 'mas', 'mbak', 'good', 'great', 'nice', 'got', 'it', 'all', 'set', 'deal', 'noted', 'ill', "i'll", 'definitely', 'of', 'course', 'yes', 'oo', 'opo', 'sige', 'ok', 'okay', 'yep', 'yeah', 'kita']);
 // Common words that are never a first name.
@@ -650,6 +651,7 @@ export const readConfirm = (text: string): { kind: 'yes'; name: string | null } 
    if (/^\s*(👍|✅|👌|🙏)+\s*$/u.test(text)) return { kind: 'yes', name: null };
    const ws = words(text);
    if (!ws.length) return { kind: 'other' };
+   if (THANKS.has(ws[0]) && ws.every((w) => FILLER.has(w) || THANKS.has(w))) return { kind: 'yes', name: null };
    if (!YES_WORDS.has(ws[0])) {
       if (NEGATIVE.test(norm(text))) return { kind: 'no' };
       return looksLikeTime(text) || wantsChange(text) ? { kind: 'time' } : { kind: 'other' };
@@ -964,7 +966,8 @@ const askFinalConfirm = (t: Turn) => {
    send(t, say(t, 'confirmTime', when(t, s), s.host), heldButtons(t));
    t.st.step = 'held';
 };
-const hold = (t: Turn, s: Slot) => {
+/** Make s their time (not booked yet). A booked call they're moving stays booked until s is. */
+const takeSlot = (t: Turn, s: Slot) => {
    t.st.offered = [];
    t.st.changing = false;
    // Moving a booked call: it stays booked until the new time is (bookCall then cancels it).
@@ -973,6 +976,9 @@ const hold = (t: Turn, s: Slot) => {
    t.st.mine = s;
    t.st.booked = false;
    t.events.push({ type: 'hold', slot: s });
+};
+const hold = (t: Turn, s: Slot) => {
+   takeSlot(t, s);
    if (t.st.quizDone) return askFinalConfirm(t);
    if (t.st.asked.length) {
       send(t, say(t, 'resume', when(t, s), s.host));
@@ -1168,7 +1174,7 @@ const offer = (t: Turn, result: OfferResult, summary: string) => {
             : say(t, exact ? 'offer' : 'near');
    // Details live in the text (buttons are capped at 20 characters).
    const list = picks.map((s, i) => `${i + 1}. ${fmtDay(s.date, lang)} · ${fmtTime(s.min)}${asked ? gap(t, s, asked) : ''}${i === 0 ? ' ⭐' : ''}`).join('\n');
-   const mine = t.st.mine ? `\n${lang === 'fil' ? 'Oras mo ngayon' : lang === 'id' ? 'Jadwalmu sekarang' : 'Your time now'}: ${fmtDay(t.st.mine.date, lang)} · ${fmtTime(t.st.mine.min)}` : '';
+   const mine = t.st.mine ? `\n${lang === 'fil' ? (t.st.booked ? 'Naka-book ka sa' : 'Naka-hold para sa iyo') : lang === 'id' ? 'Jadwalmu sekarang' : t.st.booked ? 'Your call is booked for' : 'Held for you'}: ${fmtDay(t.st.mine.date, lang)} · ${fmtTime(t.st.mine.min)}` : '';
    send(t, `${intro}\n\n${list}\n${mine}\n${say(t, 'pickHint')} ${say(t, 'tzNote', t.st.zoneName)}`.replace(/\n\n\n/g, '\n\n'), offerButtons(t, picks));
    t.st.step = 'offered';
 };
@@ -1269,8 +1275,27 @@ const readAndOffer = async (t: Turn, text: string, from: Step): Promise<boolean>
    const result = match(parsed, t.ctx.free);
    // Everything they asked for is past the days we can book: say so, don't call it "fully booked".
    if (!parsed.anytime && t.ctx.lastDay && parsed.windows.every((w) => w.date > t.ctx.lastDay)) result.tooFar = true;
+   if (result.asked && result.exact && !result.tooFar && result.picks[0]) {
+      t.events.push({ type: 'offered', result, summary: parsed.summary });
+      // Only an ask to move ("other time", a reply to a list, "can we do…") moves a booked call at once.
+      await takeAsked(t, result.picks[0], t.st.changing || from === 'offered' || wantsChange(text));
+      return true;
+   }
    offer(t, result, parsed.summary);
    return true;
+};
+
+/**
+ * The exact time they asked for is free. Asked to move a call that's already booked (we have their name and answers):
+ * book it now. Otherwise hold it and carry on (questions, or one YES — so "I finish work at 5pm" never moves a call).
+ */
+const takeAsked = async (t: Turn, s: Slot, moving: boolean) => {
+   if (moving && t.st.booked && t.st.quizDone && t.st.name) {
+      send(t, say(t, 'askedFree', `${fmtDay(s.date, t.st.lang)} ${t.st.lang === 'fil' ? 'nang' : t.st.lang === 'id' ? 'jam' : 'at'} ${fmtTime(s.min)}`));
+      takeSlot(t, s);
+      return book(t, t.st.name);
+   }
+   hold(t, s);
 };
 
 /** They let go of the held time: ask for another (their booked call, if they were moving one, stays). */
@@ -1352,6 +1377,9 @@ const handleText = async (t: Turn, text: string) => {
    if (st.step === 'offered') {
       const s = pickOffered(t, text);
       if (s) return hold(t, s);
+      // "ok" / "yes" takes the ⭐ time, but only from a list of what they asked for (not "taken, closest are…"); thanks don't count.
+      const c = readConfirm(text);
+      if (c.kind === 'yes' && YES_WORDS.has(words(text)[0]) && st.lastOffer?.exact && st.offered[0]) return hold(t, st.offered[0]);
    }
    if (st.step === 'held' && st.mine) {
       const c = readConfirm(text);
@@ -1435,11 +1463,12 @@ export const buttonFor = (st: BotState, text: string): Button | null => {
    const m = /^\s*\(?([a-m])\)?[.)]?\s*$/i.exec(text);
    return m ? (lettered(b)[LETTERS.indexOf(m[1].toUpperCase())] ?? null) : null;
 };
-/** A reply as one plain message: its text, then "A) …" for each lettered button. */
+/** A reply as one plain message: its text, then "A. …" for each lettered button. */
 export const plainText = (reply: Reply, lang: Lang = 'en') => {
    const opts = lettered(reply.buttons ?? []);
    if (!opts.length) return reply.text;
-   const list = opts.map((b, i) => `${LETTERS[i]}) ${b.title}`).join('\n');
+   // "B) " becomes 😎 in Messenger, so never "letter + )".
+   const list = opts.map((b, i) => `${LETTERS[i]}. ${b.title}`).join('\n');
    const hint =
       lang === 'fil' ? 'Sumagot ng letra (A, B…) o i-type ang sagot mo.' : lang === 'id' ? 'Balas dengan huruf (A, B…) atau ketik jawabanmu.' : 'Reply with a letter (A, B…) or type your answer.';
    return `${reply.text}\n\n${list}\n\n${hint}`;
