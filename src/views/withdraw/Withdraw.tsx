@@ -664,6 +664,11 @@ function DirectPesoBanner({ balanceLine, spendable }: { balanceLine: string; spe
 // provider's cut. The first real payout (₱100, 2026-10-30) cost 0.035573 of 1.608695 USDC ≈ 2.2%.
 // The exact figure comes from Stableyard's quote on the next screen; this only sets expectations.
 const BANK_PAYOUT_FEE_SHARE = 0.022;
+// Most pesos one bank / QR cash-out sends (same as MAX_PHP in BankPayoutFlow and BANK_MAX in the
+// stableyard-deposit-address fn). Above it the QR route takes two cash-outs, two fees.
+const QR_MAX_PHP = 5000;
+const estimatePesos = (spendable: number | null, phpRate: number) =>
+   spendable != null && spendable > 0 ? Math.floor(spendable * phpRate * (1 - BANK_PAYOUT_FEE_SHARE)) : null;
 
 /** The direct payout (Stableyard): shows USDC turning straight into pesos, so it doesn't read like one more exchange. */
 // The bank logos people recognise, so it's obvious this sends straight to their bank. Banks only since
@@ -728,7 +733,8 @@ function DirectPesoCard({ onSelect, spendable }: { onSelect: () => void; spendab
 /** The same card for the cash-out to your own bank's QR (shown while the bank payout is down). */
 function QrPesoCard({ onSelect, spendable, recommended }: { onSelect: () => void; spendable: number | null; recommended?: boolean }) {
    const { value: phpRate } = useUsdcRate('php');
-   const pesos = spendable != null && spendable > 0 ? Math.floor(spendable * phpRate * (1 - BANK_PAYOUT_FEE_SHARE)) : null;
+   const pesos = estimatePesos(spendable, phpRate);
+   const overCap = pesos != null && pesos > QR_MAX_PHP;
    return (
       <button onClick={onSelect} className="relative w-full text-left outline-none">
          {recommended ? (
@@ -752,7 +758,12 @@ function QrPesoCard({ onSelect, spendable, recommended }: { onSelect: () => void
                </span>
                <p className="text-[14px] leading-[18px] text-[var(--text-muted,#45556c)]">Upload the QR from your bank app. No typing.</p>
             </div>
-            {pesos != null ? (
+            {overCap ? (
+               <p className="mt-[10px] text-[14px] text-[var(--text-muted,#45556c)]">
+                  Up to <span className="font-bold text-[var(--ink)]">₱{QR_MAX_PHP.toLocaleString('en-PH')}</span> per cash-out · a fee each
+                  time
+               </p>
+            ) : pesos != null ? (
                <p className="mt-[10px] text-[14px] text-[var(--text-muted,#45556c)]">
                   You get about <span className="font-bold text-[var(--ink)]">₱{pesos.toLocaleString('en-PH')}</span> · fees included
                </p>
@@ -781,6 +792,12 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
    // goes away if the check comes back saying the QR cash-out is off for them.
    const qrCard = !isIndo && (isPreview || !marketLoading) && (phPayout === null || Boolean(phPayout && qrCashout));
    const bankPayout = bankCard || qrCard;
+   // More than one QR cash-out's worth (₱5,000): two cash-outs = two fees, so the QR card drops to the
+   // bottom without the Recommended tag and the exchange apps lead, PDAX recommended (2026-11-15).
+   const { value: phpRate } = useUsdcRate('php');
+   const estPesos = estimatePesos(spendable, phpRate);
+   const qrLast = qrCard && estPesos != null && estPesos > QR_MAX_PHP;
+   const qrTop = bankPayout && !qrLast;
    const inEurope = useInEurope(isPreview);
    // Send to Maya (USDC on Solana through Relay): only once the server switch opens it for this account.
    const mayaOn = useMayaEnabled(isPreview) && !isIndo;
@@ -807,7 +824,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
       <PickerRow
          onSelect={selectProvider}
          id="coinsph"
-         recommended={!COINS_PH_SUSPENDED && !bankPayout && !inEurope}
+         recommended={!COINS_PH_SUSPENDED && !qrTop && !inEurope}
          paused={COINS_PH_SUSPENDED}
          icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />}
          name="Coins.ph"
@@ -884,7 +901,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                 the recommended default for everyone; a user genuinely abroad can still pick
                 Binance themselves. */}
             <div className="space-y-[10px]">
-               {bankPayout && (
+               {qrTop && (
                   <>
                      {/* The QR is the one straight-to-bank way shown (2026-11-13: it's the route proven to pay out). The
                          account-number card only shows if the QR cash-out is switched off; inside the QR flow it stays as
@@ -946,7 +963,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                      {!COINS_PH_SUSPENDED && coinsPhRow}
                      {/* Under the bank QR card the order is GCrypto, PDAX, Maya (Nov 2026). Without the QR card,
                          PDAX is the recommended route, so it stays on top. */}
-                     {COINS_PH_SUSPENDED && !bankPayout && (
+                     {COINS_PH_SUSPENDED && !qrTop && (
                         <PickerRow
                            onSelect={selectProvider}
                            id="pdax"
@@ -965,7 +982,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                         line1="Cash out straight to your GCash"
                         line2="GCash balance · ~5 min"
                      />
-                     {(!COINS_PH_SUSPENDED || bankPayout) && (
+                     {(!COINS_PH_SUSPENDED || qrTop) && (
                         <PickerRow
                            onSelect={selectProvider}
                            id="pdax"
@@ -986,6 +1003,8 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                            line2="Fee ≈ $0.03 · a few seconds"
                         />
                      )}
+                     {/* Over ₱5,000 the QR card sits last (two cash-outs, two fees), not recommended. */}
+                     {qrLast && <QrPesoCard onSelect={() => selectProvider('qr')} spendable={spendable} />}
                      {/* Binance P2P is the hardest route, so it waits behind "More options". A paused Coins.ph
                          isn't listed at all: a greyed-out row nobody can use only adds noise. */}
                      {showMore ? (
