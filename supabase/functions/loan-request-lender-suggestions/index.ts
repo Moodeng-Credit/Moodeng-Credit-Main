@@ -86,7 +86,7 @@ serve(async (req) => {
 
       // Preview the exact message the team would receive without touching the DB or Telegram.
       if (mock) {
-         const mockLoan = { id: 'mock', loan_amount: 20, coin: 'USDC', reason: 'Groceries for the week', borrower_user_id: 'b1' };
+         const mockLoan = { id: 'mock', loan_amount: 20, total_repayment_amount: 23, created_at: new Date().toISOString(), due_date: new Date(Date.now() + 30 * 86400000).toISOString(), coin: 'USDC', reason: 'Groceries for the week', borrower_user_id: 'b1' };
          const mockLenders: LenderRow[] = [
             { id: 'l1', username: 'jane', telegram_username: 'jane_tg', created_at: new Date().toISOString() },
             { id: 'l2', username: 'bob', line_id: 'bob123', created_at: new Date(Date.now() - 200 * 86400000).toISOString() },
@@ -115,7 +115,7 @@ serve(async (req) => {
 
       const { data: loan, error: loanError } = await supabase
          .from('loans')
-         .select('id, loan_amount, coin, reason, borrower_user_id, loan_status, on_hold_since, created_at, due_date, due_timezone, market')
+         .select('id, loan_amount, total_repayment_amount, coin, reason, borrower_user_id, loan_status, on_hold_since, created_at, due_date, due_timezone, market')
          .eq('id', loanId)
          .maybeSingle();
       if (loanError) throw new Error(loanError.message);
