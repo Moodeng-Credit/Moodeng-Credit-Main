@@ -231,14 +231,19 @@ const runRung = async (svc: Svc, u: ReminderUser, rung: Rung, zoomActive: boolea
             viaWhatsApp = sent.ok;
             console.log('video-call-reminders: whatsapp confirm for', u.id, sent.ok ? 'sent' : `not sent (${sent.reason})`);
          }
-         // The call is cancellable at the deadline even when the ask reached them nowhere (George,
-         // 2026-11-02): they were told at booking that an unconfirmed call is cancelled, they can still
-         // confirm in the app, and an unreachable borrower who kept the slot didn't come (Oct 29).
+         // Only cancel someone the ask actually reached (George 2026-11-15, "only if reached"; was: cancel
+         // even when unreached, 2026-11-02). Reached = Messenger, WhatsApp, Telegram or an app push went
+         // through. The text message alone doesn't count: delivery isn't confirmed (Maria, 2026-11-15,
+         // Messenger out of its 24h window and no WhatsApp, was cancelled on the SMS alone).
+         // No stamp → shouldReleaseSlot keeps the call.
          const viaSms = await callSms(svc, u, 'confirm');
-         const landed = viaMessenger.ok || viaWhatsApp || viaTelegram || viaPush || viaSms;
-         if (!landed) console.log('video-call-reminders: confirm ask reached no channel for', u.id, '— cancelled at the deadline unless they confirm in the app');
-         await svc.from('users').update({ video_call_keep_spot_asked_at: new Date().toISOString() }).eq('id', u.id);
-         return landed ? 'confirm_ask' : 'confirm_ask_unreached';
+         const reached = viaMessenger.ok || viaWhatsApp || viaTelegram || viaPush;
+         if (reached) {
+            await svc.from('users').update({ video_call_keep_spot_asked_at: new Date().toISOString() }).eq('id', u.id);
+            return 'confirm_ask';
+         }
+         console.log('video-call-reminders: confirm ask reached', viaSms ? 'only SMS' : 'no channel', 'for', u.id, '— the call is kept');
+         return 'confirm_ask_unreached';
       }
       case RUNG.RELEASE: {
          if (shouldReleaseSlot(u) && (await releaseSlot(svc, u))) return 'released';
