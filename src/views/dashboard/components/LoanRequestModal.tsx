@@ -1322,7 +1322,7 @@ function IdLoanTermsFields({
 // contact step only when they have no verified line yet, and — in the 'open' flow only — the
 // video call when there's no referral code. (In the call/approval flows, PART 1 · Connect happens
 // before any of this; see ConnectStep.)
-type RequestStepKey = 'terms' | 'bio1' | 'bio2' | 'job' | 'contacts' | 'videocall';
+type RequestStepKey = 'terms' | 'bio1' | 'bio2' | 'job' | 'contacts' | 'videocall' | 'income';
 
 // Human labels for each possible step key, used by the progress rail below.
 const STEP_KEY_LABEL: Record<RequestStepKey, string> = {
@@ -1331,7 +1331,8 @@ const STEP_KEY_LABEL: Record<RequestStepKey, string> = {
    bio2: 'Repayment context',
    job: 'Your job',
    contacts: 'Contact',
-   videocall: 'Meet the team'
+   videocall: 'Meet the team',
+   income: 'Proof of income'
 };
 
 // Progress rail shown at the bottom of the multi-step request flow. Path-aware: the number of
@@ -1921,14 +1922,22 @@ export default function LoanRequestModal({
    // Open flow only (today's rule): no referral → book (not attend) the round-robin call before the
    // request posts. In the call/approval flows the call happened before applying (PART 1).
    const needsVideoCallStep = !isIdLoan && loanFlow === 'open' && contactSteps.videoCall;
+   // This amount needs proof of income they haven't sent yet (shown on the terms card too, so the
+   // last step isn't a surprise).
+   const incomeGateNow = isIdLoan || !Number(loanAmount) ? null : incomeDocGate(Number(loanAmount), incomeDocFacts);
+   const needsIncomeStep = Boolean(incomeGateNow && !incomeGateNow.ok);
    const requestSteps: RequestStepKey[] = [
       'terms',
       ...(needsContactsStep ? (['contacts'] as const) : []),
       ...(isMultiStepRequestFlow ? (['bio1', 'bio2'] as const) : []),
       ...(needsJobStep ? (['job'] as const) : []),
-      ...(needsVideoCallStep ? (['videocall'] as const) : [])
+      ...(needsVideoCallStep ? (['videocall'] as const) : []),
+      // Last, because it's the one step that leaves the form (see handleLoanFormSubmit).
+      ...(needsIncomeStep ? (['income'] as const) : [])
    ];
-   const currentStepKey: RequestStepKey = showJobStep
+   const currentStepKey: RequestStepKey = showIncomeGate
+      ? 'income'
+      : showJobStep
       ? 'job'
       : showContactsStep
       ? 'contacts'
@@ -2048,6 +2057,9 @@ export default function LoanRequestModal({
       if (!loanAmount || !totalRepaymentAmount || !reason) return;
       // Wait until the restored date is on the form, or validation says "Choose when you will repay."
       if (!isRepaymentDateFilled) return;
+      // Back from /documents: wait for a fresh read of their proof of income. The cached one is from
+      // before they sent it and would bounce them straight back to "Show us your income first".
+      if (!incomeDocFacts.fresh) return;
       autoSubmittedRef.current = true;
       onAutoSubmitStarted?.();
       // They answered the "a little low" question before the ID check (or weren't asked) — don't
@@ -2055,7 +2067,7 @@ export default function LoanRequestModal({
       returnAckRef.current = `${loanAmount}|${totalRepaymentAmount}|${days}`;
       window.requestAnimationFrame(() => submitHandlerRef.current?.({ preventDefault: () => {} } as FormEvent<HTMLFormElement>));
       // eslint-disable-next-line react-hooks/exhaustive-deps
-   }, [autoSubmit, isOpen, isRepaymentDateFilled, isVerified, loanAmount, onAutoSubmitStarted, reason, totalRepaymentAmount]);
+   }, [autoSubmit, incomeDocFacts.fresh, isOpen, isRepaymentDateFilled, isVerified, loanAmount, onAutoSubmitStarted, reason, totalRepaymentAmount]);
 
    // Before leaving for the ID check, get a real verdict on the reason. The live check may still be
    // running (or have failed) — then the request went to Didit and the automatic send afterwards
@@ -2739,18 +2751,6 @@ export default function LoanRequestModal({
          }
       }
 
-      // Proof of income for this amount's step. The card sends them to /documents with what they
-      // typed kept (and the amount, so the checks use the right step), and back here after.
-      // Indonesia track: proof of income was sent (and not declined) in /id/onboarding.
-      const gate = isIdLoan ? ({ ok: true } as const) : incomeDocGate(Number(loanAmount), incomeDocFacts);
-      if (!gate.ok) {
-         event.preventDefault();
-         setShowBorrowerContextStep(false);
-         setIncomeGate(gate);
-         trackLoanFormRule('loan_form_income_doc_gate', { amount: Number(loanAmount), step: gate.step.min, missing: gate.missing });
-         return;
-      }
-
       // Instagram / TikTok from $60. Only when we know they have neither (a failed lookup never blocks the loan).
       if (
          !isIdLoan &&
@@ -2794,6 +2794,23 @@ export default function LoanRequestModal({
          setShowBorrowerContextStep(false);
          setShowContactsStep(false);
          setShowVideoCallStep(true);
+         return;
+      }
+
+      // Proof of income LAST (2026-11-15). It's the only step that leaves the form (for /documents)
+      // and can take a while, so everything else is answered first; the board then sends the request
+      // by itself once they're back with a document sent (sendAfterDocs). It used to sit in the
+      // middle: borrowers came back to a refilled form, still had to tap Send, then met the job and
+      // WhatsApp steps — and the documents page told them they didn't need to do anything.
+      // Indonesia track: proof of income was sent (and not declined) in /id/onboarding.
+      const gate = isIdLoan ? ({ ok: true } as const) : incomeDocGate(Number(loanAmount), incomeDocFacts);
+      if (!gate.ok) {
+         event.preventDefault();
+         setShowBorrowerContextStep(false);
+         setShowContactsStep(false);
+         setShowVideoCallStep(false);
+         setIncomeGate(gate);
+         trackLoanFormRule('loan_form_income_doc_gate', { amount: Number(loanAmount), step: gate.step.min, missing: gate.missing });
          return;
       }
 
@@ -3355,10 +3372,12 @@ export default function LoanRequestModal({
                <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
                   <ConnectHero
                      image={CONNECT_HIPPOS.cashout}
-                     title="Show us your income first"
+                     title="Last step: your income"
                      subtitle={incomeGate ? gateMessage(incomeGate) : undefined}
                   />
-                  <p className="text-[14px] leading-[19px] text-[#7b6b8c] dark:text-[#b9abcc]">What you typed is kept. Come back after sending and tap Send request.</p>
+                  <p className="text-[14px] leading-[19px] text-[#7b6b8c] dark:text-[#b9abcc]">
+                     Everything else is done. Send it and your loan request goes out by itself.
+                  </p>
                   <div className="mt-auto flex flex-col gap-1 pt-1">
                      <PrimaryButton
                         onClick={() => {
@@ -3520,6 +3539,12 @@ export default function LoanRequestModal({
                                  />
                               </div>
                               {termErrors.amount ? <FieldError message={termErrors.amount} /> : null}
+                              {!termErrors.amount && incomeGateNow && !incomeGateNow.ok ? (
+                                 // Said up front, so the last step isn't a surprise.
+                                 <p className="text-md-b3 font-medium text-md-heading">
+                                    {`$${incomeGateNow.step.min}+ needs proof of income — the last step.`}
+                                 </p>
+                              ) : null}
                               <div className="flex justify-end gap-md-1 text-md-b3 font-normal text-md-neutral-1200">
                                  <InfoTooltip
                                     activeTooltip={activeTooltip}

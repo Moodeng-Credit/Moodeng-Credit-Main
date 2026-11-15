@@ -779,7 +779,9 @@ function RequestBoard$() {
          // but don't pop the form open on every visit — there's nothing they can do until it clears.
          return;
       }
-      if (draft.sendAfterVerify) setAutoSendLoanRequest(true);
+      // Back from proof of income (the last step): send it. The modal waits for fresh income facts,
+      // and the gate still runs, so nothing goes out until a document is actually on file.
+      if (draft.sendAfterVerify || draft.sendAfterDocs) setAutoSendLoanRequest(true);
       // Verified and shown the filled-in form once: that's what the kept terms were for. Use them up
       // now, so dismissing the form any way (backdrop, leaving the page) doesn't reopen it on every
       // visit for the next 3 days.
@@ -814,10 +816,13 @@ function RequestBoard$() {
       });
    }, [appliedReferral, days, effectiveUser?.id, loanAmount, loanRequestFlowState, reason, totalRepaymentAmount]);
 
-   // "Send proof of income" (loans of $60+) leaves for /documents. Keep the terms to refill the form
-   // when they come back (/request-board?applyLoan=1), without sending anything by itself.
+   // "Send proof of income" ($40+) leaves for /documents. It's the LAST step (2026-11-15): Messenger,
+   // WhatsApp, job, bio and the call are all done by now, so keep the request and send it by itself
+   // once they're back with a document sent — they used to come back to a refilled form and had to
+   // find Send again (and were told "you don't need to do anything").
    const handleLeaveForDocuments = useCallback(() => {
       if (!effectiveUser?.id || (!loanAmount && !reason)) return;
+      const flow = loanRequestFlowState?.flow;
       saveLoanRequestDraft(effectiveUser.id, {
          terms: { loanAmount, totalRepaymentAmount, reason, days },
          referral: loanRequestFlowState?.referral ?? appliedReferral,
@@ -827,13 +832,14 @@ function RequestBoard$() {
             bioPage: 1,
             showContactsStep: false,
             showVideoCallStep: false,
-            contactsStepDone: false,
-            videoCallStepDone: false,
-            borrowerContextPromptSeen: loanRequestFlowState?.flow.borrowerContextPromptSeen ?? false
+            // What they finished stays finished, so the send doesn't stop on a screen they've done.
+            contactsStepDone: flow?.contactsStepDone ?? false,
+            videoCallStepDone: flow?.videoCallStepDone ?? false,
+            borrowerContextPromptSeen: flow?.borrowerContextPromptSeen ?? false
          },
          borrowerContext: loanRequestFlowState?.borrowerContext ?? { incomeSetup: '', paydayWindow: '', cashGaps: [] },
          profileName: loanRequestFlowState?.profileName ?? '',
-         prefillOnly: true
+         sendAfterDocs: true
       });
    }, [appliedReferral, days, effectiveUser?.id, loanAmount, loanRequestFlowState, reason, totalRepaymentAmount]);
 
@@ -843,7 +849,7 @@ function RequestBoard$() {
       setAutoSendLoanRequest(false);
       if (!effectiveUser?.id) return;
       const draft = loadLoanRequestDraft(effectiveUser.id);
-      if (draft?.sendAfterVerify) saveLoanRequestDraft(effectiveUser.id, { ...draft, sendAfterVerify: false });
+      if (draft?.sendAfterVerify || draft?.sendAfterDocs) saveLoanRequestDraft(effectiveUser.id, { ...draft, sendAfterVerify: false, sendAfterDocs: false });
    }, [effectiveUser?.id]);
 
    // Snapshot the in-progress request whenever the terms or the modal's step change, so a reload

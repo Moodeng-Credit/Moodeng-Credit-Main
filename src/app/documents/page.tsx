@@ -119,6 +119,17 @@ export default function DocumentsPage({
    // and used to say exactly what to send.
    const requestedAmount = Number(searchParams.get('amount')) || null;
    const requestedRepay = Number(searchParams.get('repay')) || null;
+   // Proof of income is the loan form's last step: once what they sent here is read (in review or
+   // approved — never "send a clearer one"), go straight back so the board sends the request by itself
+   // (sendAfterDocs). Only for a send made on this visit, so opening the page later to check on it
+   // doesn't bounce them away.
+   const [sentThisVisit, setSentThisVisit] = useState(false);
+   const loanPath = '/request-board?applyLoan=1';
+   useEffect(() => {
+      if (!fromLoan || !sentThisVisit || preview) return;
+      if (phase !== 'in_review' && phase !== 'approved') return;
+      navigate(loanPath, { replace: true });
+   }, [fromLoan, navigate, phase, preview, sentThisVisit]);
    const { steps } = useIncomeDocFacts(requestedAmount != null);
    const step = preview?.step ?? (requestedAmount != null ? stepFor(requestedAmount, steps) : null);
    const monthsNeeded = step?.months ?? 0;
@@ -223,6 +234,7 @@ export default function DocumentsPage({
          return;
       }
       setSentAt(Date.now());
+      setSentThisVisit(true);
       setFileCount(result.count);
       setPicked([]);
       setNote('');
@@ -426,7 +438,9 @@ export default function DocumentsPage({
                   <ConnectHero
                      image={CONNECT_HIPPOS.waiting}
                      title="Checking your document"
-                     subtitle="This takes about a minute. You can leave this page."
+                     subtitle={
+                        fromLoan ? 'About a minute. Then your loan request goes out by itself.' : 'This takes about a minute. You can leave this page.'
+                     }
                   />
                   <ul className="flex flex-col gap-3 rounded-[16px] border-2 border-[#e2dcee] px-4 py-4 dark:border-[#3a2d4f]">
                      <StepRow state="done" label="Uploaded" />
@@ -453,7 +467,12 @@ export default function DocumentsPage({
                      <StepRow state="active" label="Team review" />
                   </ul>
                   <div className="rounded-[16px] bg-[#f8f1ff] px-4 py-3 text-[15px] leading-[21px] text-[#594d65] dark:bg-[#221a31] dark:text-[#d9cfe8]">
-                     {sentAt && Date.now() > sentAt + REVIEW_HOURS * 3_600_000 ? (
+                     {fromLoan ? (
+                        // Came from the loan form: the request is the next thing, not waiting on us.
+                        <>
+                           <b>Next: send your loan request.</b> The team can check your document while lenders see it.
+                        </>
+                     ) : sentAt && Date.now() > sentAt + REVIEW_HOURS * 3_600_000 ? (
                         <>
                            <b>This is taking longer than usual.</b> Sorry! Message us on Facebook and we’ll check it right away.
                         </>
@@ -464,12 +483,11 @@ export default function DocumentsPage({
                         </>
                      )}
                   </div>
-                  {facebookButton}
                   {fromLoan ? (
-                     <PrimaryButton onClick={() => navigate('/request-board?applyLoan=1')}>Back to my loan request</PrimaryButton>
-                  ) : (
-                     <GhostButton onClick={() => navigate('/dashboard')}>Back to dashboard</GhostButton>
-                  )}
+                     <GoldButton onClick={() => navigate(loanPath)}>Send my loan request</GoldButton>
+                  ) : null}
+                  {facebookButton}
+                  {fromLoan ? null : <GhostButton onClick={() => navigate('/dashboard')}>Back to dashboard</GhostButton>}
                </div>
             ) : null}
 
@@ -484,9 +502,11 @@ export default function DocumentsPage({
                   <p className="text-[15px] leading-[21px] text-[#594d65] dark:text-[#d9cfe8]">
                      It helps your loan requests get funded. Repay on time to keep raising your limit.
                   </p>
-                  <PrimaryButton onClick={() => navigate(fromLoan ? '/request-board?applyLoan=1' : '/dashboard')}>
-                     {fromLoan ? 'Back to my loan request' : 'Go to dashboard'}
-                  </PrimaryButton>
+                  {fromLoan ? (
+                     <GoldButton onClick={() => navigate(loanPath)}>Send my loan request</GoldButton>
+                  ) : (
+                     <PrimaryButton onClick={() => navigate('/dashboard')}>Go to dashboard</PrimaryButton>
+                  )}
                </div>
             ) : null}
 
@@ -535,9 +555,18 @@ export function DocumentsPreview() {
    const step: IncomeDocStep | undefined = params.has('months')
       ? { min: months > 0 ? 60 : 40, months, fresh: false, autoApprove: months === 0, maxShare: null, balance: false, liveCall: false }
       : undefined;
+   // &phase=checking|in_review|approved (with &back=loan for the loan form's last step) shows the later screens.
+   const phaseParam = params.get('phase');
+   const phase: DocumentsPhase = phaseParam === 'checking' || phaseParam === 'in_review' || phaseParam === 'approved' ? phaseParam : 'pick';
    return (
       <DocumentsPage
-         preview={{ phase: 'pick', earn: (params.get('earn') as EarnId | null) ?? undefined, kind: params.get('kind') ?? undefined, step }}
+         preview={{
+            phase,
+            earn: (params.get('earn') as EarnId | null) ?? undefined,
+            kind: params.get('kind') ?? undefined,
+            step,
+            ...(phase !== 'pick' ? { sentAt: Date.now() - 60_000, fileCount: 1 } : {})
+         }}
       />
    );
 }
