@@ -81,6 +81,7 @@ import { clearVerifyFlow, readVerifyFlow, type VerifyMethod } from '@/lib/verify
 import { hasWalletAddressOnAccount } from '@/lib/walletProvider';
 import { formatPointsMajor } from '@/shared/points';
 import { fetchUser, fetchUserProfiles, updateBorrowerContext } from '@/store/slices/authSlice';
+import { buildTwoPartSchedule, canSplitRepayment } from '@/lib/repaymentSchedule';
 import { createLoan, deleteLoan, fetchLoanRequestRepostStatus, fetchLoans, getLenderRepaidCount } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
@@ -640,6 +641,8 @@ function RequestBoard$() {
    const lenderUserId = '';
    const [loanAmount, setLoanAmount] = useState('');
    const [totalRepaymentAmount, setTotalRepaymentAmount] = useState('');
+   // Loans over $60: pay back in 2 parts (one loan, src/lib/repaymentSchedule.ts).
+   const [payInParts, setPayInParts] = useState(false);
    // Indonesia track: the fixed rupiah total (loans.repay_idr). totalRepaymentAmount follows it at today's rate.
    const [repayIdr, setRepayIdr] = useState('');
    const [reason, setReason] = useState('');
@@ -748,6 +751,7 @@ function RequestBoard$() {
       setLoanAmount('');
       setReason('');
       setDays('');
+      setPayInParts(false);
       setAppliedReferral(null);
    };
 
@@ -767,6 +771,7 @@ function RequestBoard$() {
       setTotalRepaymentAmount(draft.terms.totalRepaymentAmount);
       setReason(draft.terms.reason);
       setDays(draft.terms.days);
+      setPayInParts(Boolean(draft.terms.payInParts));
       setAppliedReferral(draft.referral);
       setLoanRequestResume({
          flow: draft.flow,
@@ -850,7 +855,7 @@ function RequestBoard$() {
       if (!effectiveUser?.id || (!loanAmount && !reason)) return;
       writeTeamDraftNow('left_for_id_check');
       saveLoanRequestDraft(effectiveUser.id, {
-         terms: { loanAmount, totalRepaymentAmount, reason, days },
+         terms: { loanAmount, totalRepaymentAmount, reason, days, payInParts },
          referral: loanRequestFlowState?.referral ?? appliedReferral,
          flow: loanRequestFlowState?.flow ?? {
             showReferralStep: false,
@@ -866,7 +871,7 @@ function RequestBoard$() {
          profileName: loanRequestFlowState?.profileName ?? '',
          sendAfterVerify: true
       });
-   }, [appliedReferral, days, effectiveUser?.id, loanAmount, loanRequestFlowState, reason, totalRepaymentAmount, writeTeamDraftNow]);
+   }, [appliedReferral, days, effectiveUser?.id, loanAmount, loanRequestFlowState, payInParts, reason, totalRepaymentAmount, writeTeamDraftNow]);
 
    // "Send proof of income" ($40+) leaves for /documents. It's the LAST step (2026-11-15): Messenger,
    // WhatsApp, job, bio and the call are all done by now, so keep the request and send it by itself
@@ -877,7 +882,7 @@ function RequestBoard$() {
       writeTeamDraftNow('left_for_documents');
       const flow = loanRequestFlowState?.flow;
       saveLoanRequestDraft(effectiveUser.id, {
-         terms: { loanAmount, totalRepaymentAmount, reason, days },
+         terms: { loanAmount, totalRepaymentAmount, reason, days, payInParts },
          referral: loanRequestFlowState?.referral ?? appliedReferral,
          flow: {
             showReferralStep: false,
@@ -894,7 +899,7 @@ function RequestBoard$() {
          profileName: loanRequestFlowState?.profileName ?? '',
          sendAfterDocs: true
       });
-   }, [appliedReferral, days, effectiveUser?.id, loanAmount, loanRequestFlowState, reason, totalRepaymentAmount, writeTeamDraftNow]);
+   }, [appliedReferral, days, effectiveUser?.id, loanAmount, loanRequestFlowState, payInParts, reason, totalRepaymentAmount, writeTeamDraftNow]);
 
    // The auto-send fired: drop the "send after verify" mark so a failed send (reason check, cooldown)
    // can't re-fire on every reload. The terms stay on the open form for them to fix and send.
@@ -911,14 +916,14 @@ function RequestBoard$() {
    useEffect(() => {
       if (!showModal || !effectiveUser?.id || !loanRequestFlowState) return;
       const draft = {
-         terms: { loanAmount, totalRepaymentAmount, reason, days },
+         terms: { loanAmount, totalRepaymentAmount, reason, days, payInParts },
          referral: loanRequestFlowState.referral,
          flow: loanRequestFlowState.flow,
          borrowerContext: loanRequestFlowState.borrowerContext,
          profileName: loanRequestFlowState.profileName
       };
       if (draftIsResumable(draft)) saveLoanRequestDraft(effectiveUser.id, draft);
-   }, [showModal, effectiveUser?.id, loanRequestFlowState, loanAmount, totalRepaymentAmount, reason, days]);
+   }, [showModal, effectiveUser?.id, loanRequestFlowState, loanAmount, totalRepaymentAmount, reason, days, payInParts]);
 
    // What they typed on the first screen outlives closing the form (see saveKeptLoanTerms): a stop for
    // proof of income or for connecting Messenger/WhatsApp can take hours, and nobody should type their
@@ -1737,6 +1742,12 @@ function RequestBoard$() {
          }
          setReasonWarning('');
 
+         // "In 2 parts": half back halfway to the date, half on it. Only where the form offered it.
+         const repaymentSchedule =
+            payInParts && !isIdPegged && canSplitRepayment(parsedLoanAmount, today, days.slice(0, 10))
+               ? buildTwoPartSchedule(parsedRepaymentAmount, today, days.slice(0, 10))
+               : undefined;
+
          const loanData = {
             borrowerUserId: borrowerUserId || '',
             borrowerWallet,
@@ -1748,7 +1759,8 @@ function RequestBoard$() {
             referralCodeId: appliedReferral?.id,
             referralCode: appliedReferral?.code,
             referralBoostAmount: appliedReferral?.boostAmount,
-            ...(isIdPegged && parsedRepayIdr ? { repayIdr: parsedRepayIdr } : {})
+            ...(isIdPegged && parsedRepayIdr ? { repayIdr: parsedRepayIdr } : {}),
+            ...(repaymentSchedule ? { repaymentSchedule } : {})
          };
 
          if (
@@ -2757,6 +2769,8 @@ function RequestBoard$() {
                   days={days}
                   today={today}
                   handleDays={handleDays}
+                  payInParts={payInParts}
+                  setPayInParts={setPayInParts}
                   handleSubmit={handleSubmit}
                   onReferralApplied={setAppliedReferral}
                   onReferralRedeemed={handleReferralRedeemed}

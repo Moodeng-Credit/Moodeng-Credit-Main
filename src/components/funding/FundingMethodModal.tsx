@@ -15,6 +15,7 @@ import { type PaymentStage, holdAtFull, useStagedProgress } from '@/hooks/useSta
 import { ensureUsdcAllowance, getLoanManagerService } from '@/lib/web3/loanManager';
 import { recordAdminFunding, usdcToBaseUnits } from '@/lib/loanNotes/api';
 import IdBoardFund from '@/views/dashboard/components/IdBoardFund';
+import { type RepaymentMilestone, formatMilestoneDay } from '@/lib/repaymentSchedule';
 import { BITREPO_VAULT_URL, type VaultStatus, drawFromVault, readVaultStatus, vaultBorrowerId } from '@/lib/web3/bitrepoVault';
 
 export interface FundLoanTarget {
@@ -27,6 +28,12 @@ export interface FundLoanTarget {
    dueDate: string; // ISO
    /** 'ID' = Indonesia track: paid to the borrower's Walt on BNB Chain, never to a Base wallet. */
    market?: 'ID' | null;
+   /**
+    * Paid back in 2 parts (src/lib/repaymentSchedule.ts). The loan is still ONE draw: dueDate is the
+    * last payment and totalOwed the full total, so both are locked to match the schedule (the
+    * database refuses a funding record that would pull them apart).
+    */
+   repaymentSchedule?: RepaymentMilestone[] | null;
 }
 
 type Method = 'choose' | 'smart' | 'vault';
@@ -115,6 +122,7 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
    const [totalOwed, setTotalOwed] = useState(String(target.totalOwed || ''));
    const [salePrice, setSalePrice] = useState(String(target.principal || ''));
    const [dueDate, setDueDate] = useState(target.dueDate ? target.dueDate.slice(0, 10) : '');
+   const schedule = target.repaymentSchedule?.length ? target.repaymentSchedule : null;
 
    // Inline field validation — surfaced under each input, never as a toast. `termsValid` gates
    // the Fund button so a bad value can't be submitted in the first place.
@@ -467,8 +475,24 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
                <div className="mt-md-2 grid grid-cols-3 gap-2 text-center">
                   <SummaryStat label="Principal" value={`${target.principal} USDC`} />
                   <SummaryStat label="Total owed" value={`${target.totalOwed} USDC`} />
-                  <SummaryStat label="Due" value={target.dueDate ? target.dueDate.slice(0, 10) : '—'} />
+                  <SummaryStat label={schedule ? 'Last payment' : 'Due'} value={target.dueDate ? target.dueDate.slice(0, 10) : '—'} />
                </div>
+               {schedule ? (
+                  <div className="mt-md-2 rounded-[12px] bg-md-primary-100/60 px-md-2 py-2">
+                     <p className="text-md-b3 font-semibold text-md-heading">Paid back in {schedule.length} parts</p>
+                     <ul className="mt-1 space-y-0.5">
+                        {schedule.map((part, index) => (
+                           <li key={part.due} className="flex justify-between text-md-b3 text-md-neutral-1500 tabular-nums">
+                              <span>
+                                 Payment {index + 1} · {formatMilestoneDay(part.due)}
+                              </span>
+                              <span className="font-semibold text-md-heading">{part.amount.toFixed(2)} USDC</span>
+                           </li>
+                        ))}
+                     </ul>
+                     <p className="mt-1 text-md-b3 text-md-neutral-1200">One draw for the whole loan, due on the last payment. The vault takes part payments as they come in.</p>
+                  </div>
+               ) : null}
             </div>
 
             {/* Indonesia: the vault's USDC is bridged to BNB Chain and sent to the borrower's Walt. */}
@@ -537,10 +561,10 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
                         <input type="number" min="0" value={principal} onChange={(e) => setPrincipal(e.target.value)} className={fieldClass} />
                      </Field>
                      <Field label="Total owed (USDC)" error={errors.totalOwed}>
-                        <input type="number" min="0" value={totalOwed} onChange={(e) => setTotalOwed(e.target.value)} className={fieldClass} />
+                        <input type="number" min="0" value={totalOwed} onChange={(e) => setTotalOwed(e.target.value)} disabled={Boolean(schedule)} className={fieldClass} />
                      </Field>
                      <Field label="Due date" error={errors.dueDate} wide>
-                        <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={fieldClass} />
+                        <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} disabled={Boolean(schedule)} className={fieldClass} />
                      </Field>
                   </div>
 
@@ -606,13 +630,13 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
                         <input type="number" min="0" value={principal} onChange={(e) => setPrincipal(e.target.value)} className={fieldClass} />
                      </Field>
                      <Field label="Total owed (USDC)" error={errors.totalOwed}>
-                        <input type="number" min="0" value={totalOwed} onChange={(e) => setTotalOwed(e.target.value)} className={fieldClass} />
+                        <input type="number" min="0" value={totalOwed} onChange={(e) => setTotalOwed(e.target.value)} disabled={Boolean(schedule)} className={fieldClass} />
                      </Field>
                      <Field label="Sale price (USDC)" error={errors.salePrice}>
                         <input type="number" min="0" value={salePrice} onChange={(e) => setSalePrice(e.target.value)} className={fieldClass} />
                      </Field>
                      <Field label="Due date" error={errors.dueDate}>
-                        <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={fieldClass} />
+                        <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} disabled={Boolean(schedule)} className={fieldClass} />
                      </Field>
                   </div>
 

@@ -1,3 +1,5 @@
+import type { RepaymentMilestone } from '@/lib/repaymentSchedule';
+
 // Loan Types for Supabase
 // Amounts are stored as numbers in Supabase
 
@@ -57,6 +59,8 @@ export interface Loan {
    repayIdr?: number;
    repaidIdr?: number;
    fxRateAtRequest?: number;
+   // Paid back in milestones (src/lib/repaymentSchedule.ts). dueDate is the LAST payment's date.
+   repaymentSchedule?: RepaymentMilestone[];
 }
 
 /**
@@ -85,6 +89,8 @@ export interface CreateLoanData {
    referralBoostAmount?: number;
    /** Indonesia track: the fixed rupiah total (whole rupiah, multiple of 500). The server prices it. */
    repayIdr?: number;
+   /** Loans over $60: pay back in 2 parts. The last part's day must be dueDate's day. */
+   repaymentSchedule?: RepaymentMilestone[];
 }
 
 export interface LoanState {

@@ -53,6 +53,8 @@ export interface LoanRequestTerms {
    totalRepaymentAmount: string;
    reason: string;
    days: string;
+   /** "In 2 parts" picked (loans over $60). Missing on older drafts = all at once. */
+   payInParts?: boolean;
 }
 
 export interface LoanRequestDraft {

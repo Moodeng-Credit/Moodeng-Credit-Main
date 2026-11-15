@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { type ScheduleView, reminderRowCounts, reminderView } from '../_shared/repaymentSchedule.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { getBorrowerTelegramNotificationsEnabled, isPlaceholderEmail, sendBorrowerLoanNotification } from '../_shared/borrowerNotificationDelivery.ts';
@@ -182,14 +183,17 @@ const loadTrustPointRewardContext = async (supabase: SupabaseClient, userIds: st
    };
 };
 
-const loadSentLoanIds = async (supabase: SupabaseClient, payload: { loanIds: string[]; userId: string; type: LoanNotificationType }) => {
+const loadSentLoanIds = async (
+   supabase: SupabaseClient,
+   payload: { loanIds: string[]; userId: string; type: LoanNotificationType; countAfterByLoanId?: Map<string, string | null | undefined> }
+) => {
    if (!payload.loanIds.length) {
       return new Set<string>();
    }
 
    const { data, error } = await supabase
       .from('loan_notifications')
-      .select('loan_id')
+      .select('loan_id, email_sent_at')
       .in('loan_id', payload.loanIds)
       .eq('user_id', payload.userId)
       .eq('notification_type', payload.type);
@@ -198,7 +202,12 @@ const loadSentLoanIds = async (supabase: SupabaseClient, payload: { loanIds: str
       throw new Error(error.message);
    }
 
-   return new Set(((data ?? []) as SentLoanNotificationRow[]).map((item) => item.loan_id));
+   // Split loans: a reminder sent for an earlier payment doesn't count for the next one.
+   return new Set(
+      ((data ?? []) as Array<SentLoanNotificationRow & { email_sent_at?: string | null }>)
+         .filter((item) => reminderRowCounts(item.email_sent_at, payload.countAfterByLoanId?.get(item.loan_id)))
+         .map((item) => item.loan_id)
+   );
 };
 
 const recordNotification = async (supabase: SupabaseClient, borrowerId: string, type: LoanNotificationType, loanIds: string[]) => {
@@ -245,7 +254,8 @@ const notifyBorrower = async (
    telegramEnabled: boolean
 ) => {
    const loanIds = loans.map((loan) => loan.id);
-   const sentLoanIds = await loadSentLoanIds(supabase, { loanIds, userId: borrower.id, type });
+   const countAfterByLoanId = new Map(loans.map((loan) => [loan.id, (loan as ScheduleView<typeof loan>).reminders_count_after]));
+   const sentLoanIds = await loadSentLoanIds(supabase, { loanIds, userId: borrower.id, type, countAfterByLoanId });
    const pendingLoans = loans.filter((loan) => !sentLoanIds.has(loan.id));
 
    if (!pendingLoans.length) {
@@ -336,10 +346,10 @@ serve(async (req) => {
    const finalReminderHours = Number.parseInt(Deno.env.get('FINAL_REMINDER_HOURS') ?? `${body.finalReminderHours ?? 24}`, 10);
    const referenceDate = body.referenceDate ? new Date(body.referenceDate) : new Date();
 
-   const { data: loans, error } = await supabase
+   const { data: loanRows, error } = await supabase
       .from('loans')
       .select(
-         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, due_timezone, funded_at, lender_user_id, repayment_status, market, repay_idr, repaid_idr'
+         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, due_timezone, funded_at, lender_user_id, repayment_status, market, repay_idr, repaid_idr, repayment_schedule'
       )
       .eq('loan_status', 'Lent')
       .in('repayment_status', ['Unpaid', 'Partial'])
@@ -350,6 +360,9 @@ serve(async (req) => {
    if (error) {
       return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
    }
+
+   // Split loans (2 payments) are reminded about their next payment: its day and its amount.
+   const loans = (loanRows ?? []).map((loan) => reminderView(loan));
 
    const borrowerIds = Array.from(new Set((loans ?? []).map((loan) => loan.borrower_user_id).filter(Boolean))) as string[];
    const borrowers = await loadBorrowers(supabase, borrowerIds);

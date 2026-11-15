@@ -1,5 +1,6 @@
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { currentDueDate, currentMilestone } from '@/lib/repaymentSchedule';
 import { unwrapResult } from '@reduxjs/toolkit';
 import {
    AlertTriangle,
@@ -373,7 +374,8 @@ const getProgressPercent = (loan: Loan): number => {
 
 // The loan is due until the end of its due day in the borrower's zone (src/lib/loanDeadline.ts), so
 // the countdown runs to that moment, not to midnight UTC (8 AM Manila on the due day).
-const getLoanDeadline = (loan: Loan): Date => getDueDayEnd(loan.dueDate, getLoanTimezone(loan));
+// Split loans (2 payments) count down to the next payment, not the last one.
+const getLoanDeadline = (loan: Loan): Date => getDueDayEnd(currentDueDate(loan), getLoanTimezone(loan));
 
 const getDueCountdownCopy = (loan: Loan): string => {
    const totalMinutes = Math.round((getLoanDeadline(loan).getTime() - Date.now()) / (1000 * 60));
@@ -398,14 +400,19 @@ const getDueCountdownCopy = (loan: Loan): string => {
 // The calendar due date, read as stored (midnight UTC), so it never slips a day on a device set west
 // of UTC. No clock time: "Due Sep 30" means by the end of Sep 30 where the borrower is.
 const getDueDateShortCopy = (loan: Loan): string =>
-   parseDateSafely(loan.dueDate).toLocaleDateString(undefined, {
+   parseDateSafely(currentDueDate(loan)).toLocaleDateString(undefined, {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
       timeZone: 'UTC'
    });
 
-const isLoanOverdue = (loan: Loan): boolean => isPastDueDay(loan.dueDate, getLoanTimezone(loan));
+const isLoanOverdue = (loan: Loan): boolean => isPastDueDay(currentDueDate(loan), getLoanTimezone(loan));
+// "Payment 1 of 2 · " on a split loan, nothing otherwise.
+const getPaymentPrefix = (loan: Loan): string => {
+   const next = currentMilestone(loan);
+   return next ? `Payment ${next.index + 1} of ${next.count} · ` : '';
+};
 
 const isLoanDueSoon = (loan: Loan): boolean => {
    const totalHours = (getLoanDeadline(loan).getTime() - Date.now()) / (1000 * 60 * 60);
@@ -424,7 +431,7 @@ const getEstimatedTrustPoints = (loan: Loan, repaymentAmount: number): number =>
    // Mirrors private.award_repayment_pandesal: only a full, on-time payoff earns points
    // (10). Partial payments and late payoffs earn nothing, so never promise them.
    if (repaymentAmount < remainingAmount - 0.005) return 0;
-   if (isLoanOverdue(loan)) return 0;
+   if (isPastDueDay(loan.dueDate, getLoanTimezone(loan))) return 0;
    return 10;
 };
 
@@ -772,6 +779,8 @@ export default function Repay() {
 
    const selectedLoan = activeLoans.find((loan) => loan.id === selectedLoanId) ?? activeLoans[0];
    const selectedRemaining = selectedLoan ? getRemainingAmount(selectedLoan) : 0;
+   // Split loan: what the next payment still needs (the form starts there; "Full" still clears it all).
+   const selectedNextDue = selectedLoan ? (currentMilestone(selectedLoan)?.amountLeft ?? selectedRemaining) : 0;
    // The remaining balance is displayed rounded to cents, so validate against the rounded
    // value. Otherwise a remaining of e.g. 0.469 shows as "$0.47" but rejects a 0.47 "Full"
    // payment as exceeding the maximum, leaving the borrower unable to clear the loan.
@@ -1072,9 +1081,9 @@ export default function Repay() {
       if (saved && (WIZARD_STEPS as readonly string[]).includes(saved.step)) {
          setWizardStep(saved.step);
          if (fundSources.some((source) => source.id === saved.source) && !isPausedSource(saved.source)) setFundSource(saved.source);
-         setRepaymentAmount(saved.amount || formatCurrency(selectedRemaining));
+         setRepaymentAmount(saved.amount || formatCurrency(selectedNextDue));
       } else {
-         setRepaymentAmount(formatCurrency(selectedRemaining));
+         setRepaymentAmount(formatCurrency(selectedNextDue));
       }
       setRestoredLoanId(selectedLoanId);
       // Only when the loan changes, not as they edit the amount.
@@ -2295,6 +2304,7 @@ export default function Repay() {
             }`}
          >
             <Clock className="size-4 shrink-0" aria-hidden="true" />
+            {getPaymentPrefix(selectedLoan)}
             {isLoanOverdue(selectedLoan) ? 'Past due' : `Due ${getDueDateShortCopy(selectedLoan)} · ${getDueCountdownCopy(selectedLoan)}`}
          </span>
       );
@@ -3022,7 +3032,9 @@ export default function Repay() {
                            <Clock className="h-4 w-4 shrink-0" aria-hidden="true" />
                            {isLoanOverdue(selectedLoan) ? 'Past due' : `${getDueCountdownCopy(selectedLoan)}`}
                         </span>
-                        <span>Due {getDueDateShortCopy(selectedLoan)}</span>
+                        <span>
+                           {getPaymentPrefix(selectedLoan)}Due {getDueDateShortCopy(selectedLoan)}
+                        </span>
                      </div>
                   </section>
                </>
