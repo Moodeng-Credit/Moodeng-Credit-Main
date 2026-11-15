@@ -815,8 +815,14 @@ function RequestBoard$() {
       pendingTeamDraftRef.current = null;
    }, []);
    const currentStopStep: LoanRequestStopStep = loanRequestFlowState?.stopStep ?? 'terms';
+   // Set once the form hands them off the page (left_for_documents / left_for_id_check), so a last
+   // re-render on the way out can't overwrite that with the screen underneath. Reset on the next open.
+   const teamDraftHandedOffRef = useRef(false);
    useEffect(() => {
-      if (!showModal || !canMirrorTeamDraft) return;
+      if (showModal) teamDraftHandedOffRef.current = false;
+   }, [showModal]);
+   useEffect(() => {
+      if (!showModal || !canMirrorTeamDraft || teamDraftHandedOffRef.current) return;
       pendingTeamDraftRef.current = { loanAmount, totalRepaymentAmount, reason, days, step: currentStopStep };
       if (teamDraftTimerRef.current !== null) window.clearTimeout(teamDraftTimerRef.current);
       teamDraftTimerRef.current = window.setTimeout(flushTeamDraft, 4000);
@@ -829,6 +835,7 @@ function RequestBoard$() {
    const writeTeamDraftNow = useCallback(
       (step: LoanRequestStopStep) => {
          if (!canMirrorTeamDraft) return;
+         teamDraftHandedOffRef.current = true;
          pendingTeamDraftRef.current = { loanAmount, totalRepaymentAmount, reason, days, step };
          flushTeamDraft();
       },
