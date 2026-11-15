@@ -28,6 +28,8 @@ import {
    zoomPaused
 } from '../calcom-round-robin/lib.ts';
 import { cancelCalBooking } from './calcomCancel.ts';
+import { photoCheckLine } from './fbPhotoCheck.ts';
+import { PAGE_INBOX_URL } from './loanAccess.ts';
 import { callInboxFor, isPlaceholderEmail } from './placeholderEmail.ts';
 import { changeTimeButton } from './callReschedule.ts';
 import { testAccountRow } from './testAccount.ts';
@@ -105,11 +107,21 @@ const notifyTeamBooking = async (
    // deno-lint-ignore no-explicit-any
    borrower?: { svc: any; id: string; username?: string | null; isTest?: boolean | null }
 ) => {
+   let facebookName: string | null = null;
+   if (borrower) {
+      try {
+         const { data } = await borrower.svc.from('users').select('facebook_name').eq('id', borrower.id).maybeSingle();
+         facebookName = (data as { facebook_name?: string | null } | null)?.facebook_name ?? null;
+      } catch {
+         // the photo line still goes out, just without the name
+      }
+   }
    const text =
       `📅 New Moodeng call booked\nHost: ${hostId}\nWith: ${attendee.name} (${attendee.email})\nWhen: ${formatCallTimeForTeam(start, attendee.timeZone)}` +
       `\nJoin: ${joinUrl ?? 'no link on the booking — check the host’s Cal.com'}` +
       zoomFallbackWarning(joinUrl, hostId) +
-      (borrower?.isTest ? '\n🧪 Test account' : '');
+      (borrower?.isTest ? '\n🧪 Test account' : '') +
+      (borrower ? `\n${photoCheckLine(facebookName)}` : '');
 
    // tgChat is the admins-only channel (telegram_bot_settings.team_group_chat_id), resolved by the
    // caller — never the lender or support group.
@@ -124,7 +136,7 @@ const notifyTeamBooking = async (
             body: JSON.stringify({
                chat_id: tgChat,
                text,
-               ...(borrower ? { reply_markup: { inline_keyboard: [[changeTimeButton(borrower.id)], ...testAccountRow(borrower.id, borrower.isTest)] } } : {})
+               ...(borrower ? { reply_markup: { inline_keyboard: [[changeTimeButton(borrower.id), { text: '💬 Open Page inbox', url: PAGE_INBOX_URL }], ...testAccountRow(borrower.id, borrower.isTest)] } } : {})
             })
          });
       } catch (err) {
