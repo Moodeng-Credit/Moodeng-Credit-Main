@@ -391,7 +391,8 @@ export function StepCelebration({
    stats = NO_STATS,
    trail,
    continueLabel = 'Continue',
-   onDone
+   onDone,
+   children
 }: {
    image: string;
    title: ReactNode;
@@ -400,6 +401,8 @@ export function StepCelebration({
    trail?: ReactNode;
    continueLabel?: ReactNode;
    onDone: () => void;
+   // Extra content under the headline (e.g. the "what happens next" steps after approval).
+   children?: ReactNode;
 }) {
    // A little fanfare if they turned sounds on in the bio.
    useEffect(() => {
@@ -490,6 +493,8 @@ export function StepCelebration({
                </div>
             ) : null}
 
+            {children}
+
             {trail ? <div className="w-full max-w-[380px] pt-1">{trail}</div> : null}
          </div>
 
@@ -497,5 +502,38 @@ export function StepCelebration({
             {continueLabel}
          </PrimaryButton>
       </div>
+   );
+}
+
+// Right after the team approves a borrower: the three things left between them and the money, in as
+// few words as possible. A borrower approved on 2026-11-15 asked on Messenger "what's the process?"
+// and "is there a link to verify my ID?" — this answers both before they have to ask.
+const APPROVED_STEPS: { title: string; hint: string; id?: true }[] = [
+   { title: 'Ask for your loan', hint: 'Pick an amount · 1 min' },
+   { title: 'Verify your ID', hint: 'Have your ID ready · 2 min', id: true },
+   { title: 'Get your cash', hint: 'Cash out to GCash, Maya or bank' }
+];
+
+// idDone: already verified (approved in the loan flow, after KYC) — the ID step is left out.
+export function ApprovedNextSteps({ idDone = false }: { idDone?: boolean }) {
+   const steps = idDone ? APPROVED_STEPS.filter((step) => !step.id) : APPROVED_STEPS;
+   return (
+      <ol className="flex w-full max-w-[380px] flex-col gap-2.5 text-left">
+         {steps.map((step, index) => (
+            <li
+               className="connect-stat-in flex items-center gap-3 rounded-[16px] border-2 border-[#e5ddf0] bg-white px-3.5 py-3 dark:border-[#3a2d4f] dark:bg-[#1c1528]"
+               key={step.title}
+               style={{ animationDelay: `${0.25 + index * 0.08}s` }}
+            >
+               <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#6b55f7] text-[16px] font-extrabold text-white">
+                  {index + 1}
+               </span>
+               <span className="flex min-w-0 flex-col">
+                  <span className="text-[16px] font-bold leading-[20px] text-[#3b2f4a] dark:text-[#f5f0ff]">{step.title}</span>
+                  <span className="text-[13px] leading-[18px] text-[#7b6b8c] dark:text-[#b9abcc]">{step.hint}</span>
+               </span>
+            </li>
+         ))}
+      </ol>
    );
 }
