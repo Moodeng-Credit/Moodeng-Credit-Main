@@ -1,19 +1,20 @@
-// The two Facebook steps every new borrower does ON the screening call, while the host watches:
-// add Emma as a friend and join the community group. Facebook gives apps no way to check either
-// (Groups API removed April 2024; friend lists were never readable), so the host sees both requests
-// arrive, accepts them, and ticks "Added Emma…" on the call sheet. This file is only the content
+// The two Facebook steps every APPROVED borrower gets right after "You're approved": add Emma as a
+// friend and join the Voices Against Unfair Loan group. Sent only after approval (George 2026-11-15)
+// so rejected people never ask to join and wonder why they weren't let in. Facebook gives apps no way
+// to check either (Groups API removed April 2024; friend lists were never readable), so the team
+// accepts the requests by hand. This file is only the content
 // and the "already sent for this call?" rule — pure, so it's unit-testable. Sending lives in
 // facebookStepsSend.ts.
 
 export const FB_EMMA_URL = 'https://www.facebook.com/p/Emma-Moodeng-61587198479632/';
 export const FB_GROUP_URL = 'https://www.facebook.com/groups/voicesunfairloan/';
 
-export const FB_STEPS_TEXT = '📌 2 quick steps while we talk:\n1️⃣ Add Emma as a friend\n2️⃣ Join our group\nTap the buttons 👇';
+export const FB_STEPS_TEXT = '📌 2 quick steps now:\n1️⃣ Add Emma as a friend\n2️⃣ Join our group\nTap the buttons 👇';
 
 // Messenger caps button titles at 20 characters and card titles at 80.
 export const FB_STEPS_CARD = {
    title: 'Do these 2 steps now',
-   subtitle: 'Your host will accept both on the call.',
+   subtitle: "We'll accept both requests.",
    button: { title: '1. Add Emma', url: FB_EMMA_URL },
    moreButtons: [{ title: '2. Join the group', url: FB_GROUP_URL }]
 };
@@ -29,41 +30,3 @@ export const fbStepsStaleBefore = (callStartsAt: string | null | undefined, now 
 };
 export const fbStepsSentForCall = (sentAt: string | null | undefined, callStartsAt: string | null | undefined, now = Date.now()): boolean =>
    Boolean(sentAt) && Date.parse(String(sentAt)) >= Date.parse(fbStepsStaleBefore(callStartsAt, now));
-
-// ── catch-up ───────────────────────────────────────────────────────────────────────────────────────
-// The automatic send rides on Zoom's arrival ping, which doesn't exist on Cal Video calls and can be
-// missed. Every 5 minutes video-call-reminders looks again: a call that is on (or just ended), where
-// something says the borrower is there, and the links still haven't gone out → send them now.
-// "Something says they're there" = Zoom saw someone arrive, the host tapped Showed up, or the host is
-// filling in the call sheet for this call.
-// Failing all of that, every borrower still booked gets them once the call's start time passes
-// (George 2026-11-15: "all calls"). Emma's Zoom never reports arrivals to us (0 of her 10 calls in
-// three weeks), so without this her borrowers never got the steps. A booked call already means they
-// tapped ✅ an hour before, so a no-show getting the links is the accepted cost.
-export const FB_CATCHUP_BEFORE_MS = 10 * 60 * 1000;
-export const FB_CATCHUP_AFTER_MS = 2 * 60 * 60 * 1000;
-// Start-time sends stop 20 min in: past that the 15-min call is over and "while we talk" is wrong.
-export const FB_START_SEND_UNTIL_MS = 20 * 60 * 1000;
-
-export type FbCatchUpCall = {
-   startsAt: string | null;
-   sentAt: string | null;
-   outcome: string | null;
-   arrivedAt: string | null;
-   joinedAt: string | null;
-   sheetUpdatedAt: string | null;
-};
-
-export const fbStepsCatchUpReason = (c: FbCatchUpCall, now = Date.now()): 'showed_up' | 'zoom' | 'call_sheet' | 'call_started' | null => {
-   const start = c.startsAt ? Date.parse(c.startsAt) : NaN;
-   if (Number.isNaN(start) || now < start - FB_CATCHUP_BEFORE_MS || now > start + FB_CATCHUP_AFTER_MS) return null;
-   if (c.outcome === 'no_show' || fbStepsSentForCall(c.sentAt, c.startsAt, now)) return null;
-   // A sighting or a sheet edit only counts when it belongs to this call, not an earlier booking.
-   const thisCall = (iso: string | null) => Boolean(iso) && Date.parse(String(iso)) >= start - 60 * 60 * 1000;
-   if (c.outcome === 'attended') return 'showed_up';
-   if (thisCall(c.arrivedAt) || thisCall(c.joinedAt)) return 'zoom';
-   // The host may prepare the sheet before the call; only an edit once the call is on means "they're here".
-   if (c.sheetUpdatedAt && Date.parse(c.sheetUpdatedAt) >= start - 2 * 60 * 1000) return 'call_sheet';
-   if (now >= start && now <= start + FB_START_SEND_UNTIL_MS) return 'call_started';
-   return null;
-};

@@ -35,6 +35,7 @@ import { formatCallTimeForTeam } from './videoCall.ts';
 import { describeHeldRequests } from './loanRequestHold.ts';
 import { sendEmail } from './email.ts';
 import { FB_GROUP_URL } from './facebookSteps.ts';
+import { sendFacebookSteps } from './facebookStepsSend.ts';
 import { loadNeedsIdCheck } from './preKycGate.ts';
 import { testAccountRow } from './testAccount.ts';
 import { idApprovalBlock, type IdEvent, isIdTrackUser, sendIdTelegram } from './idTrack.ts';
@@ -460,6 +461,15 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
          const sent = await sendWhatsAppTemplate(borrower.whatsapp_contact_id, buildApprovedWhatsAppTemplate(firstName));
          console.log('loanAccess: whatsapp approved for', borrower.id, sent.ok ? 'sent' : `not sent (${sent.reason})`);
       }
+   }
+   // Approved: add Emma + join the group, right after "You're approved" and only for approved people,
+   // so nobody rejected asks to join (George, 2026-11-15). Once per call; Indonesia track skipped.
+   if (kind === 'approved' && !idTrack) {
+      const steps = await sendFacebookSteps(svc, { ...borrower, video_call_starts_at: borrower.video_call_starts_at ?? null }, { force: false }).catch((err) => ({
+         ok: false as const,
+         reason: err instanceof Error ? err.message : String(err)
+      }));
+      if (!steps.ok) console.log('loanAccess: facebook steps not sent for', borrower.id, steps.reason);
    }
    // Approved: the how-to videos right after, so they know how to get started, cash out and repay
    // before their first loan (George, 2026-10-13).
