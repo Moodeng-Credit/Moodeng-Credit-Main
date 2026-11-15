@@ -74,6 +74,7 @@ import {
    saveKeptLoanTerms,
    saveLoanRequestDraft
 } from '@/lib/loanRequestDraft';
+import { type LoanRequestDraftRow, type LoanRequestStopStep, syncLoanRequestDraft } from '@/lib/loanRequestDraftSync';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getVerificationUiState, VERIFICATION_STATE_CTA, VERIFICATION_STATE_LABEL } from '@/lib/verificationUiState';
 import { clearVerifyFlow, readVerifyFlow, type VerifyMethod } from '@/lib/verifyFlow';
@@ -791,12 +792,56 @@ function RequestBoard$() {
       // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [isAuthenticated, isBorrower, effectiveUser?.id]);
 
+   // The team's copy of a request that's started but not sent yet (see @/lib/loanRequestDraftSync):
+   // written a few seconds after the terms or the screen change, right away when the form sends them
+   // off the page (proof of income, ID check), and on close. Only for the real signed-in borrower,
+   // never the tour / referral test users. Closing never removes it; a new loan marks it sent.
+   const canMirrorTeamDraft = Boolean(user?.id) && effectiveUser?.id === user?.id && isBorrower;
+   const pendingTeamDraftRef = useRef<LoanRequestDraftRow | null>(null);
+   const teamDraftTimerRef = useRef<number | null>(null);
+   const flushTeamDraft = useCallback(() => {
+      if (teamDraftTimerRef.current !== null) {
+         window.clearTimeout(teamDraftTimerRef.current);
+         teamDraftTimerRef.current = null;
+      }
+      const row = pendingTeamDraftRef.current;
+      pendingTeamDraftRef.current = null;
+      if (row) syncLoanRequestDraft(row);
+   }, []);
+   // Sending: drop the pending copy, so a late write can't undo the database's "sent" mark.
+   const cancelTeamDraft = useCallback(() => {
+      if (teamDraftTimerRef.current !== null) window.clearTimeout(teamDraftTimerRef.current);
+      teamDraftTimerRef.current = null;
+      pendingTeamDraftRef.current = null;
+   }, []);
+   const currentStopStep: LoanRequestStopStep = loanRequestFlowState?.stopStep ?? 'terms';
+   useEffect(() => {
+      if (!showModal || !canMirrorTeamDraft) return;
+      pendingTeamDraftRef.current = { loanAmount, totalRepaymentAmount, reason, days, step: currentStopStep };
+      if (teamDraftTimerRef.current !== null) window.clearTimeout(teamDraftTimerRef.current);
+      teamDraftTimerRef.current = window.setTimeout(flushTeamDraft, 4000);
+   }, [showModal, canMirrorTeamDraft, loanAmount, totalRepaymentAmount, reason, days, currentStopStep, flushTeamDraft]);
+   // Leaving the page (or the form closing) mustn't drop the last few seconds of typing.
+   useEffect(() => flushTeamDraft, [flushTeamDraft]);
+   useEffect(() => {
+      if (!showModal) flushTeamDraft();
+   }, [showModal, flushTeamDraft]);
+   const writeTeamDraftNow = useCallback(
+      (step: LoanRequestStopStep) => {
+         if (!canMirrorTeamDraft) return;
+         pendingTeamDraftRef.current = { loanAmount, totalRepaymentAmount, reason, days, step };
+         flushTeamDraft();
+      },
+      [canMirrorTeamDraft, days, flushTeamDraft, loanAmount, reason, totalRepaymentAmount]
+   );
+
    // "Verify ID & send request" leaves for /verify and Didit, which unmounts this page and the form.
    // Save the terms now (the regular snapshot skips the terms screen) and mark them to be sent once
    // the borrower is back verified — the form promises "What you typed is kept".
    const handleVerifyToSend = useCallback(() => {
       // Nothing typed yet (e.g. "View status" on an empty form): nothing to keep or send.
       if (!effectiveUser?.id || (!loanAmount && !reason)) return;
+      writeTeamDraftNow('left_for_id_check');
       saveLoanRequestDraft(effectiveUser.id, {
          terms: { loanAmount, totalRepaymentAmount, reason, days },
          referral: loanRequestFlowState?.referral ?? appliedReferral,
@@ -814,7 +859,7 @@ function RequestBoard$() {
          profileName: loanRequestFlowState?.profileName ?? '',
          sendAfterVerify: true
       });
-   }, [appliedReferral, days, effectiveUser?.id, loanAmount, loanRequestFlowState, reason, totalRepaymentAmount]);
+   }, [appliedReferral, days, effectiveUser?.id, loanAmount, loanRequestFlowState, reason, totalRepaymentAmount, writeTeamDraftNow]);
 
    // "Send proof of income" ($40+) leaves for /documents. It's the LAST step (2026-11-15): Messenger,
    // WhatsApp, job, bio and the call are all done by now, so keep the request and send it by itself
@@ -822,6 +867,7 @@ function RequestBoard$() {
    // find Send again (and were told "you don't need to do anything").
    const handleLeaveForDocuments = useCallback(() => {
       if (!effectiveUser?.id || (!loanAmount && !reason)) return;
+      writeTeamDraftNow('left_for_documents');
       const flow = loanRequestFlowState?.flow;
       saveLoanRequestDraft(effectiveUser.id, {
          terms: { loanAmount, totalRepaymentAmount, reason, days },
@@ -841,7 +887,7 @@ function RequestBoard$() {
          profileName: loanRequestFlowState?.profileName ?? '',
          sendAfterDocs: true
       });
-   }, [appliedReferral, days, effectiveUser?.id, loanAmount, loanRequestFlowState, reason, totalRepaymentAmount]);
+   }, [appliedReferral, days, effectiveUser?.id, loanAmount, loanRequestFlowState, reason, totalRepaymentAmount, writeTeamDraftNow]);
 
    // The auto-send fired: drop the "send after verify" mark so a failed send (reason check, cooldown)
    // can't re-fire on every reload. The terms stay on the open form for them to fix and send.
@@ -1796,7 +1842,9 @@ function RequestBoard$() {
             const choice = await askLocationConsent();
             captured = await captureApplicationSignals(choice === 'share');
          }
+         cancelTeamDraft();
          const createdLoan = await dispatch(createLoan(loanData)).unwrap();
+         cancelTeamDraft();
          // Fire-and-forget: attach the captured signals so the fraud engine can
          // vet co-location / shared-device before the request is ever funded.
          if (captured) void sendApplicationSignals(createdLoan.id, captured);

@@ -3363,6 +3363,51 @@ export async function incomeDocumentUrl(storagePath: string): Promise<string> {
    return data.signedUrl;
 }
 
+// Loan requests a borrower started but never sent (public.loan_request_drafts, 2026-11-15): what they
+// typed and the screen they stopped on, mirrored from the request board. A new loan marks a row sent
+// in the database; rows from someone with a loan created since are dropped here too, as a backstop.
+export interface AdminLoanRequestDraft {
+   user_id: string;
+   amount: number | null;
+   repay: number | null;
+   reason: string | null;
+   due_date: string | null;
+   stopped_at: string | null;
+   started_at: string;
+   updated_at: string;
+   user: { id: string; username: string | null; display_name: string | null } | null;
+}
+
+export async function listUnsentLoanRequestDrafts(days = 14): Promise<AdminLoanRequestDraft[]> {
+   const supabase = getSupabaseBrowserClient();
+   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+   const drafts = ((await requireOk(
+      supabase
+         .from('loan_request_drafts')
+         .select(
+            'user_id, amount, repay, reason, due_date, stopped_at, started_at, updated_at, user:users!loan_request_drafts_user_id_fkey(id, username, display_name)'
+         )
+         .is('sent_at', null)
+         .gte('updated_at', since)
+         .order('updated_at', { ascending: false })
+         .limit(200)
+   )) ?? []) as unknown as AdminLoanRequestDraft[];
+   if (!drafts.length) return drafts;
+   const loans = ((await requireOk(
+      supabase
+         .from('loans')
+         .select('borrower_user_id, created_at')
+         .in(
+            'borrower_user_id',
+            drafts.map((d) => d.user_id)
+         )
+         .gte('created_at', since)
+   )) ?? []) as Array<{ borrower_user_id: string; created_at: string }>;
+   return drafts.filter(
+      (d) => !loans.some((l) => l.borrower_user_id === d.user_id && new Date(l.created_at).getTime() >= new Date(d.updated_at).getTime())
+   );
+}
+
 // Proof requests: after a call, ask a new applicant to back up what they said with one link
 // (moodeng.app/proof/<token>). No automatic checks — the team reads the answers and files here.
 export interface AdminProofRequest {
