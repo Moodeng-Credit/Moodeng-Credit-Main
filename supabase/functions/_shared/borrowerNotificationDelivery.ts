@@ -8,6 +8,7 @@ import {
    LoanNotificationRecipient,
    LoanNotificationType
 } from './loanNotifications.ts';
+import { CASH_OUT_BUTTON, CASH_OUT_QUESTION } from './messengerCashOutHelp.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import { buildRepayRewardLine } from './repayReward.ts';
 import {
@@ -142,29 +143,35 @@ export const buildMessengerContent = (
    loan: LoanNotificationLoan | null,
    aggregate: LoanNotificationAggregate | undefined,
    { firstLoan = false }: { firstLoan?: boolean } = {}
-): { text: string; card?: MessengerCard } | null => {
+): { text: string; card?: MessengerCard; followUpText?: string } | null => {
    if (type === 'funded' && loan) {
       const dashboardUrl = buildPushPayloadForType('funded', loan, aggregate, 'en')?.url;
       const due = formatDueDate(loan.due_date);
+      // Then "How will you cash out?" as its own message; the answer is handled in messengerCashOutHelp.ts.
+      // Not for Indonesia's Walt loans (their money is already in Walt).
+      const followUpText = loan.funding_method === 'walt_manual' ? undefined : CASH_OUT_QUESTION;
       const repay = toNumber(loan.total_repayment_amount) > 0 ? `Repay ${formatUsdcAmount(loan.total_repayment_amount)} USDC` : 'Repay on time';
       if (firstLoan) {
          return {
             text:
-               `🎉 Welcome to the community, Moo-borrower! Your first loan is funded: ${formatUsdcAmount(loan.loan_amount)} USDC has been sent to your wallet.\n\n` +
+               `🎉 Welcome to the community, Moo-borrower! Your first loan is funded: ${formatUsdcAmount(loan.loan_amount)} USDC (on Base) has been sent to your wallet.\n\n` +
                `${repay}${due ? ` by ${due}` : ''} to build your record and level up to bigger loans. We're cheering for you! 🦛`,
             card: {
                title: 'Welcome, Moo-borrower! 🎉',
                subtitle: 'Your first loan is funded. Repay on time to level up.',
                imageUrl: MOO_BORROWER_POSTER_URL,
-               button: { title: 'Open Moodeng', url: dashboardUrl ?? 'https://moodeng.app' }
-            }
+               button: { title: 'Open Moodeng', url: dashboardUrl ?? 'https://moodeng.app' },
+               moreButtons: [CASH_OUT_BUTTON]
+            },
+            followUpText
          };
       }
       return {
          text:
-            `🎉 Great news, your loan is funded! ${formatUsdcAmount(loan.loan_amount)} USDC has been sent to your wallet.\n\n` +
+            `🎉 Great news, your loan is funded! ${formatUsdcAmount(loan.loan_amount)} USDC (on Base) has been sent to your wallet.\n\n` +
             `${repay}${due ? ` by ${due}` : ''} to build your repayment record. Tip: borrow your full limit and repay it to unlock bigger loans.`,
-         ...(dashboardUrl ? { card: { title: 'Your loan is funded', button: { title: 'Open Moodeng', url: dashboardUrl } } } : {})
+         card: { title: 'Your loan is funded', button: { title: 'Open Moodeng', url: dashboardUrl ?? 'https://moodeng.app' }, moreButtons: [CASH_OUT_BUTTON] },
+         followUpText
       };
    }
 
@@ -433,8 +440,12 @@ export const sendBorrowerLoanNotification = async (
          : false;
    const messengerContent = recipient.messenger_psid ? buildMessengerContent(type, loan, aggregate, { firstLoan }) : null;
    if (recipient.messenger_psid && messengerContent) {
-      const result = await sendMessengerMessage(recipient.messenger_psid, messengerContent);
+      const result = await sendMessengerMessage(recipient.messenger_psid, { text: messengerContent.text, card: messengerContent.card });
       messengerSent = result.ok;
+      if (result.ok && messengerContent.followUpText) {
+         const followUp = await sendMessengerMessage(recipient.messenger_psid, { text: messengerContent.followUpText });
+         console.log(`[borrowerNotification] Messenger cash-out question → ${followUp.ok ? 'sent' : `not sent (${followUp.reason})`}`);
+      }
       // Every outcome is logged, so "did the bot tell them?" is one log search (kryshia's funded
       // message on 2026-10-01 was skipped with no trace).
       console.log(`[borrowerNotification] Messenger "${type}" for ${loan?.tracking_id ?? '?'} → ${result.ok ? 'sent' : `not sent (${result.reason})`}`);
