@@ -39,6 +39,8 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
    const [sheetRow, setSheetRow] = useState<AdminCallApprovalRow | null>(null);
    // Indonesia-track people in this list (🇮🇩 + how to reach them), read from users.market.
    const [indo, setIndo] = useState<Map<string, AdminIndoProfile>>(() => new Map());
+   // Search by name / username across every group.
+   const [query, setQuery] = useState('');
 
    const load = useCallback(async () => {
       try {
@@ -61,7 +63,11 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
    }, [load]);
    useAdminLiveReload(['users', 'loan_access_requests'], load);
 
-   const groups = useMemo(() => groupCallApprovals(rows ?? [], now), [rows, now]);
+   const groups = useMemo(() => {
+      const q = query.trim().toLowerCase();
+      const list = q ? (rows ?? []).filter((r) => `${r.name} ${r.username ?? ''}`.toLowerCase().includes(q)) : (rows ?? []);
+      return groupCallApprovals(list, now);
+   }, [rows, now, query]);
 
    // Opened from the pre-call Telegram / Discord alert: /admin/calls?sheet=<userId> opens that borrower's
    // call sheet. A call outside this tab's window still opens, with what we know from the link.
@@ -164,6 +170,22 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
             >
                ❌ No-show
             </button>
+            {row.request ? (
+               <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() =>
+                     decide(
+                        row,
+                        { requestId: row.request!.id, decision: 'rejected' },
+                        `Reject ${row.name}? Their call is cancelled and they're told they can't borrow.`
+                     )
+                  }
+                  className={`${base} border border-red-800 text-red-300 hover:bg-red-950`}
+               >
+                  🚫 Reject
+               </button>
+            ) : null}
          </>
       );
    };
@@ -311,10 +333,17 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
             </p>
          </div>
          {banners}
+         <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by name or username"
+            className="w-full max-w-md rounded-xl border border-[#3d1f6e] bg-[#1c0a3a] px-4 py-2.5 text-base text-white placeholder:text-[#a89bb8]"
+         />
          {rows ? (
             <>
-               {renderGroup('Needs a decision', groups.needsDecision, 'Nobody is waiting. 🎉')}
-               {renderGroup('Coming up', groups.upcoming, 'No calls booked in the next 24 hours.')}
+               {renderGroup('Needs a decision', groups.needsDecision, query ? 'No match.' : 'Nobody is waiting. 🎉')}
+               {renderGroup('Coming up (next 2 weeks)', groups.upcoming, query ? 'No match.' : 'No calls booked in the next 2 weeks.')}
                {renderGroup('Decided (last 2 days)', groups.decided, 'Nothing decided yet.')}
             </>
          ) : null}
