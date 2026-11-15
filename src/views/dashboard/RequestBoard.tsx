@@ -93,7 +93,7 @@ import LoanRequestModal, {
    type LoanRequestResume,
    mapBorrowerContextForSave
 } from '@/views/dashboard/components/LoanRequestModal';
-import { CONNECT_HIPPOS, markCelebrated, StepCelebration, StepTrail, wasCelebrated } from '@/views/dashboard/components/connectKit';
+import { ApprovedNextSteps, CONNECT_HIPPOS, markCelebrated, StepCelebration, wasCelebrated } from '@/views/dashboard/components/connectKit';
 import DeleteLoanRequestModal from '@/views/dashboard/components/DeleteLoanRequestModal';
 import LocationPrimingModal from '@/views/dashboard/components/LocationPrimingModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
@@ -2204,19 +2204,16 @@ function RequestBoard$() {
          {mooBorrowerShowing && !mooBorrowerDone ? (
             <div className="fixed inset-0 z-[100] overflow-y-auto bg-white">
                <div className="mx-auto flex min-h-full w-full max-w-[440px] flex-col">
+                  {/* What's left, step by step — so nobody has to ask "what's the process?" after the call. */}
                   <StepCelebration
-                     continueLabel="Apply for my first loan"
+                     continueLabel="Apply now"
                      image={CONNECT_HIPPOS.approved}
                      onDone={finishMooBorrower}
-                     stats={[
-                        { label: 'Facebook', value: 'Done ✓', tone: 'green' },
-                        { label: 'Profile', value: 'Done ✓', tone: 'purple' },
-                        { label: 'Call', value: 'Done ✓', tone: 'amber' }
-                     ]}
-                     subtitle="Welcome to the herd! You're all set — apply for your first loan now."
-                     title="You’re now a Moo-borrower! 🎉"
-                     trail={<StepTrail current={4} steps={['Messenger', 'About you', 'Your goal', 'Book call']} />}
-                  />
+                     subtitle="You can apply for your loan now."
+                     title="You’re approved! 🎉"
+                  >
+                     <ApprovedNextSteps idDone={isUserVerified(effectiveUser)} />
+                  </StepCelebration>
                </div>
             </div>
          ) : null}

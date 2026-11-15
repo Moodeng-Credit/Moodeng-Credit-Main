@@ -12,7 +12,7 @@ import type { WalletSetupPhase } from '@/lib/web3/openfort';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
-import { CONNECT_HIPPOS, StepCelebration, StepTrail } from '@/views/dashboard/components/connectKit';
+import { ApprovedNextSteps, CONNECT_HIPPOS, StepCelebration, StepTrail } from '@/views/dashboard/components/connectKit';
 import ConnectStep, { type ConnectPage, LoanAccessPendingCard, LoanAccessRejectedCard } from '@/views/dashboard/components/ConnectStep';
 import GrowingWalletHippo from '@/views/onboarding/GrowingWalletHippo';
 import OnboardingBio from '@/views/onboarding/OnboardingBio';
@@ -47,7 +47,7 @@ export default function ConnectBeforeKyc() {
    const location = useLocation();
    const dispatch = useDispatch<AppDispatch>();
    const authUser = useSelector((state: RootState) => state.auth.user);
-   // Dev-only /onboarding/connect-preview(?view=pending|about|celebrate|wallet-grow): the screens without an account.
+   // Dev-only /onboarding/connect-preview(?view=pending|about|celebrate|approved|wallet-grow): the screens without an account.
    const isPreview = import.meta.env.DEV && location.pathname.includes('preview');
    const user = isPreview ? PREVIEW_USER : authUser;
    const gate = usePreKycGate();
@@ -105,6 +105,11 @@ export default function ConnectBeforeKyc() {
             <TikTokPhoneStep onDone={() => setPhoneState('done')} preview={isPreview} userId={user.id} />
          ) : isPreview && new URLSearchParams(location.search).get('view') === 'wallet-grow' ? (
             <WalletGrowPreview />
+         ) : isPreview && new URLSearchParams(location.search).get('view') === 'approved' ? (
+            // The request board's full-screen "You're approved!" with the steps left (RequestBoard).
+            <StepCelebration continueLabel="Apply now" image={CONNECT_HIPPOS.approved} onDone={() => undefined} subtitle="You can apply for your loan now." title="You’re approved! 🎉">
+               <ApprovedNextSteps />
+            </StepCelebration>
          ) : isPreview && new URLSearchParams(location.search).get('view') === 'celebrate' ? (
             <StepCelebration
                image={CONNECT_HIPPOS.approved}
