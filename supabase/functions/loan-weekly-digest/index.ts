@@ -23,6 +23,7 @@ import type {
 import { isInternalRequest } from '../_shared/internalAuth.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { bangkokWeek, buildTeamLoansDue, type TeamDueLoan } from '../_shared/teamLoansDue.ts';
+import { buildUnsentRequestMessage, UNSENT_ADMIN_URL, UNSENT_IDLE_MINUTES, UNSENT_MAX_AGE_HOURS } from '../_shared/unsentLoanRequests.ts';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -40,6 +41,71 @@ type TrustPointRewardContext = {
    loansByBorrowerId: Map<string, TrustPointRewardLoan[]>;
    completedMilestoneIdsByBorrowerId: Map<string, Set<string>>;
    milestoneDefinitions: TrustPointMilestoneDefinition[];
+};
+
+// { event: 'unsent_requests', test? }: one Telegram card per loan request a borrower started but left
+// untouched for 30 min (see _shared/unsentLoanRequests.ts), cron every 15 min. Each row is claimed
+// (alerted_at) before sending, so overlapping runs never double-post; a failed send un-claims it to
+// retry next run. test:true posts a sample card (made-up borrower) and touches nothing.
+const sendUnsentRequestAlerts = async (supabase: SupabaseClient, test: boolean) => {
+   const { data: settings } = await supabase.from('telegram_bot_settings').select('key, value').in('key', ['unsent_requests_chat_id', 'kyc_alert_chat_id']);
+   const setting = (key: string) => ((settings ?? []).find((row: { key: string }) => row.key === key)?.value as string | undefined)?.trim();
+   const chatId = setting('unsent_requests_chat_id') || setting('kyc_alert_chat_id');
+   if (!chatId) return { ok: false, error: 'unsent_requests_chat_id / kyc_alert_chat_id not set' };
+   const keyboard = [[{ text: 'Open in admin', url: UNSENT_ADMIN_URL }]];
+
+   if (test) {
+      const now = new Date().toISOString();
+      await sendTelegramMessage(
+         chatId,
+         `🧪 Test\n${buildUnsentRequestMessage({ amount: 100, repay: 115, reason: 'Sample: school fees before payday', due_date: '2026-12-01', stopped_at: 'left_for_documents', started_at: now, updated_at: now, user: { username: 'sample_borrower', display_name: 'Sample Borrower' } })}`,
+         { inlineKeyboard: keyboard }
+      );
+      return { ok: true, test: true, chatId };
+   }
+
+   const now = new Date();
+   const idleBefore = new Date(now.getTime() - UNSENT_IDLE_MINUTES * 60_000).toISOString();
+   const notOlderThan = new Date(now.getTime() - UNSENT_MAX_AGE_HOURS * 3_600_000).toISOString();
+   const { data: drafts, error } = await supabase
+      .from('loan_request_drafts')
+      .select('user_id, amount, repay, reason, due_date, stopped_at, started_at, updated_at, user:users!loan_request_drafts_user_id_fkey(username, display_name)')
+      .is('sent_at', null)
+      .is('alerted_at', null)
+      .lte('updated_at', idleBefore)
+      .gte('updated_at', notOlderThan)
+      .order('updated_at', { ascending: true })
+      .limit(20);
+   if (error) throw error;
+
+   let sent = 0;
+   let skipped = 0;
+   for (const d of drafts ?? []) {
+      // Claim it first: only the run that flips alerted_at sends.
+      const { data: claimed } = await supabase
+         .from('loan_request_drafts')
+         .update({ alerted_at: now.toISOString() })
+         .eq('user_id', d.user_id)
+         .is('alerted_at', null)
+         .is('sent_at', null)
+         .lte('updated_at', idleBefore)
+         .select('user_id');
+      if (!claimed?.length) continue;
+      // Backstop: they've sent a loan since (the loans trigger should already have marked it sent).
+      const { count } = await supabase.from('loans').select('id', { count: 'exact', head: true }).eq('borrower_user_id', d.user_id).gte('created_at', d.updated_at);
+      if (count) {
+         skipped += 1;
+         continue;
+      }
+      try {
+         await sendTelegramMessage(chatId, buildUnsentRequestMessage(d), { inlineKeyboard: keyboard });
+         sent += 1;
+      } catch (err) {
+         console.error('unsent_requests send failed', err instanceof Error ? err.message : err);
+         await supabase.from('loan_request_drafts').update({ alerted_at: null }).eq('user_id', d.user_id);
+      }
+   }
+   return { ok: true, sent, skipped, candidates: drafts?.length ?? 0 };
 };
 
 // { event: 'team_due', force? }: the weekly team list of unpaid loans due this week + still overdue,
@@ -251,6 +317,15 @@ serve(async (req) => {
    }
 
    const body = await req.json().catch(() => ({}));
+   if (body.event === 'unsent_requests') {
+      const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+      try {
+         return new Response(JSON.stringify(await sendUnsentRequestAlerts(svc, body.test === true)), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      } catch (err) {
+         console.error('unsent_requests failed', err instanceof Error ? err.message : err);
+         return new Response(JSON.stringify({ error: err instanceof Error ? err.message : 'failed' }), { status: 500, headers: corsHeaders });
+      }
+   }
    if (body.event === 'team_due') {
       const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
       try {
