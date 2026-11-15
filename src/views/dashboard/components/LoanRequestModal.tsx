@@ -58,6 +58,7 @@ import type { LoanFlow } from '@/hooks/useLoanFlow';
 
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import type { LoanRequestFlowState } from '@/lib/loanRequestDraft';
+import { loanRequestStopStep, type LoanRequestStopStep } from '@/lib/loanRequestDraftSync';
 import { type IdLoanRules, idTermOptions } from '@/lib/idTrack';
 import {
    approxIdr,
@@ -169,6 +170,8 @@ export interface LoanRequestResume {
    referral: AppliedReferralCode | null;
    borrowerContext: BorrowerContextState;
    profileName: string;
+   /** The screen they're on, for the team's "Started, not sent" list. Not used to resume. */
+   stopStep?: LoanRequestStopStep;
 }
 
 export type AppliedReferralCode = {
@@ -2107,11 +2110,27 @@ export default function LoanRequestModal({
          },
          referral: appliedReferral,
          borrowerContext,
-         profileName: borrowerProfileName
+         profileName: borrowerProfileName,
+         stopStep: loanRequestStopStep({
+            showIncomeGate,
+            showReferralStep: shouldShowReferralStep,
+            isLoanAccessGated,
+            showSocialStep,
+            showJobStep,
+            showContactsStep,
+            showVideoCallStep,
+            showBorrowerContextStep,
+            bioPage
+         })
       });
    }, [
       isOpen,
       onFlowStateChange,
+      showIncomeGate,
+      shouldShowReferralStep,
+      isLoanAccessGated,
+      showSocialStep,
+      showJobStep,
       showReferralStep,
       showBorrowerContextStep,
       bioPage,

@@ -76,6 +76,7 @@ import MuleRiskSection from './MuleRiskSection';
 import OnChainSection from './OnChainSection';
 import PricingHealthSection from './PricingHealthSection';
 import IncomeDocsSection from './IncomeDocsSection';
+import UnsentLoanRequestsSection from './UnsentLoanRequestsSection';
 import ProgressSection from './ProgressSection';
 import ProofRequestsSection from './ProofRequestsSection';
 import InterestRefundsSection from './InterestRefundsSection';
@@ -1500,6 +1501,8 @@ function AdminPanel() {
          {activeTab === 'requests' ? (
             <CallApprovalsSection variant="waiting" onCountChange={setCallApprovalCount} onOpenCalls={() => setActiveTab('calls')} />
          ) : null}
+
+         {activeTab === 'requests' ? <UnsentLoanRequestsSection /> : null}
 
          {activeTab === 'requests' ? (
             <section className="mt-10 space-y-6">
