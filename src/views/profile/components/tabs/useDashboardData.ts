@@ -45,11 +45,21 @@ export const buildCreditLevels = ({ user, loans }: CreditLevelInput): CreditLeve
    // show where it ends). A limit between levels ($20, $40 from before Nov 2026) gets its own card.
    const tiers = visibleCreditTiers(isVerified ? currentLimit : CREDIT_TIERS[0]);
    if (isVerified && !tiers.includes(currentLimit)) tiers.splice(tiers.findIndex((t) => t > currentLimit), 0, currentLimit);
+   // An open full-limit loan funded before the Nov 2026 switch keeps the old next step ($20 → $40), so
+   // highlight (and if needed show) that one instead of the new ladder's next level.
+   const openFullLimitLoan = loans.find(
+      (loan) => loan.loanStatus === 'Lent' && loan.repaymentStatus !== 'Paid' && !loan.refundedAt && toNumber(loan.loanAmount) >= currentLimit
+   );
+   const nextTier = getNextCreditTier(currentLimit, openFullLimitLoan?.fundedAt);
+   if (isVerified && currentLimit < MAX_CREDIT_LIMIT && !tiers.includes(nextTier)) {
+      const at = tiers.findIndex((t) => t > nextTier);
+      tiers.splice(at < 0 ? tiers.length : at, 0, nextTier);
+   }
 
    return tiers.map((amount) => {
       const isUnlocked = isVerified && amount <= currentLimit;
       const isCurrentLimit = isVerified && amount === currentLimit;
-      const isNextTier = isVerified && amount === getNextCreditTier(currentLimit) && currentLimit < MAX_CREDIT_LIMIT;
+      const isNextTier = isVerified && amount === nextTier && currentLimit < MAX_CREDIT_LIMIT;
       const isMaxCredit = isUnlocked && amount === MAX_CREDIT_LIMIT;
 
       let unlockRequirement = '';
