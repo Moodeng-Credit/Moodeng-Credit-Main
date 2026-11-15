@@ -5,7 +5,7 @@ import { postDiscord } from '../_shared/discord.ts';
 import { getAdminChatId } from '../_shared/loanAccess.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { buildCallIcs, CALENDAR_CONFIRM_OPENS_MIN, googleCalendarUrl, isAndroid } from '../_shared/callCalendar.ts';
-import { buildCalendarConfirmUrl, formatCallTime, sendConfirmedMessenger } from '../_shared/videoCall.ts';
+import { buildCalendarConfirmUrl, buildRescheduleUrl, changeTimeTarget, formatCallTime, sendConfirmedMessenger } from '../_shared/videoCall.ts';
 
 // Target of the "✅ I'll be there" button in the Messenger booking confirmation / reminders.
 //
@@ -17,6 +17,10 @@ import { buildCalendarConfirmUrl, formatCallTime, sendConfirmedMessenger } from 
 // GET ?ics=<token>: "📅 Add to my calendar" (callCalendar.ts) — an .ics with 1h + 15m alarms, or on
 // Android a redirect to Google Calendar. Its ✅ link carries &src=cal and only counts in the last 2h
 // before the call; an earlier tap lands on ?callConfirmed=early ("come back 1 hour before").
+//
+// GET ?change=<booking uid>&c=<SendPulse contact id>: "🔄 Change time" (videoCall.changeTimeTarget).
+// Still booked → Cal.com's reschedule page for their current booking; call cancelled → our booking
+// page to book again; rejected → the app (it shows the rejected card). Only ever redirects.
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -45,8 +49,32 @@ const addToCalendar = async (req: Request, token: string): Promise<Response> => 
    });
 };
 
+const go = (url: string) => new Response(null, { status: 302, headers: { Location: url } });
+
+const changeTime = async (cardUid: string, contactId: string): Promise<Response> => {
+   const fallback = go(buildRescheduleUrl(cardUid));
+   if (!/^[A-Za-z0-9_-]{6,64}$/.test(cardUid)) return go(`${SITE_URL}/request-board`);
+   if (!contactId || !SUPABASE_URL || !SERVICE_KEY) return fallback;
+   try {
+      const { data: user } = await createClient(SUPABASE_URL, SERVICE_KEY)
+         .from('users')
+         .select('video_call_booking_uid, video_call_starts_at, loan_access_status')
+         .eq('messenger_psid', contactId)
+         .maybeSingle();
+      const target = changeTimeTarget(cardUid, user);
+      if (target.kind === 'reschedule' || target.kind === 'card') return go(buildRescheduleUrl(target.uid));
+      if (target.kind === 'rejected') return go(`${SITE_URL}/request-board`);
+      return go(`${SITE_URL}/request-board?applyLoan=1`);
+   } catch (err) {
+      console.error('video-call-confirm: change time lookup failed', err instanceof Error ? err.message : err);
+      return fallback;
+   }
+};
+
 serve(async (req) => {
    const params = new URL(req.url).searchParams;
+   const changeUid = params.get('change')?.trim();
+   if (changeUid) return await changeTime(changeUid, params.get('c')?.trim() ?? '');
    const icsToken = params.get('ics')?.trim();
    if (icsToken) return await addToCalendar(req, icsToken);
    const token = params.get('t')?.trim() ?? '';

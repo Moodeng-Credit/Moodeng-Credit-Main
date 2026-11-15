@@ -23,6 +23,32 @@ export const newConfirmToken = () => crypto.randomUUID().replace(/-/g, '');
 export const buildRescheduleUrl = (bookingUid: string) => `https://cal.com/reschedule/${encodeURIComponent(bookingUid)}`;
 const CHANGE_TIME = '🔄 Change time';
 
+// The 🔄 Change time button goes through video-call-confirm first (?change=), so an old card still
+// works after the call was cancelled or moved: Cal.com's page refuses a cancelled booking ("This event
+// is canceled", 2026-11-15, Maria). `c` is their SendPulse contact id (users.messenger_psid), which
+// finds them even once the booking on the card is gone.
+export const buildChangeTimeUrl = (bookingUid: string, contactId: string) =>
+   `${SUPABASE_URL}/functions/v1/video-call-confirm?change=${encodeURIComponent(bookingUid)}&c=${encodeURIComponent(contactId)}`;
+
+export type ChangeTimeTarget = { kind: 'reschedule'; uid: string } | { kind: 'rebook' } | { kind: 'rejected' } | { kind: 'card'; uid: string };
+
+/**
+ * Where a 🔄 Change time tap goes. Booked now → Cal.com's reschedule page for their CURRENT booking
+ * (the card may show an older one they already moved). No call → book again on our page, unless
+ * rejected (rejected is final). Borrower not found → Cal.com's page for the booking on the card.
+ */
+export const changeTimeTarget = (
+   cardUid: string,
+   user: { video_call_booking_uid?: string | null; video_call_starts_at?: string | null; loan_access_status?: string | null } | null,
+   now = Date.now()
+): ChangeTimeTarget => {
+   if (!user) return { kind: 'card', uid: cardUid };
+   if (user.loan_access_status === 'rejected') return { kind: 'rejected' };
+   const upcoming = user.video_call_booking_uid && user.video_call_starts_at && Date.parse(user.video_call_starts_at) > now;
+   if (upcoming) return { kind: 'reschedule', uid: user.video_call_booking_uid as string };
+   return { kind: 'rebook' };
+};
+
 // "Fri, Sep 25, 10:00 AM (Bangkok)" in the borrower's own time zone (falls back to Bangkok — most
 // borrowers are TH/PH, and the label always names the zone so it's never ambiguous).
 export const formatCallTime = (iso: string, timeZone?: string | null): string => {
@@ -72,7 +98,9 @@ export const formatCallTimeForTeam = (iso: string, borrowerZone?: string | null)
 // and 🔄 Change time, so a borrower who can't make it picks a new time instead of not showing up.
 const callCard = (title: string, u: CallUser, opts: { confirm?: boolean; calendar?: boolean } = {}): MessengerCard | undefined => {
    const confirm = opts.confirm === true && !u.video_call_confirmed_at && u.video_call_confirm_token;
-   const change = u.video_call_booking_uid ? { title: CHANGE_TIME, url: buildRescheduleUrl(u.video_call_booking_uid) } : null;
+   const change = u.video_call_booking_uid
+      ? { title: CHANGE_TIME, url: u.messenger_psid ? buildChangeTimeUrl(u.video_call_booking_uid, u.messenger_psid) : buildRescheduleUrl(u.video_call_booking_uid) }
+      : null;
    if (confirm) {
       return {
          title,
