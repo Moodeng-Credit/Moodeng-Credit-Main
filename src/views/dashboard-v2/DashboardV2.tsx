@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
+import ContactLinesCard from '@/components/ContactLinesCard';
 import { AddEmailCard } from '@/components/account/AddEmailCard';
 import { ConfirmEmailReminder } from '@/components/account/ConfirmEmailReminder';
 import GuidedTourPreview from '@/components/GuidedTourPreview';
@@ -232,6 +233,7 @@ export default function DashboardV2() {
                   {isReal && hasRequestedLoan ? <AddEmailCard /> : null}
                   {isReal ? <ConfirmEmailReminder placement="dashboard" /> : null}
                   {model.showWithdraw ? <WithdrawBanner onWithdraw={() => navigate('/withdraw')} /> : null}
+                  {isReal && !showConnectFacebook ? <ContactLinesCard className="mx-5" /> : null}
                   {showConnectFacebook ? <ConnectFacebookBanner declined={verificationState === 'declined'} language={language} onConnect={() => navigate('/verify')} /> : null}
                   {waitingRewards.length ? (
                      <RewardsWaitingCard claimable={waitingRewards} onClaim={() => setClaimingVoucher(waitingRewards[0])} />

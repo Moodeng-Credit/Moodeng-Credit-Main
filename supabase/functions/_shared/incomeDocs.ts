@@ -1347,11 +1347,15 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
 };
 
 const DOCUMENTS_URL = 'https://moodeng.app/documents';
+// Approved with no request posted yet: straight back to their loan form (it reopens filled in).
+const APPLY_URL = 'https://moodeng.app/request-board?applyLoan=1';
 
 /** What the borrower is told: the team's decision, or an automatic "please resend". Pure. */
-export const decisionMessage = (kind: 'approved' | 'declined' | 'resend', reason: string | null) =>
+export const decisionMessage = (kind: 'approved' | 'declined' | 'resend', reason: string | null, toSend = false) =>
    kind === 'approved'
-      ? { title: 'Proof of income approved ✅', body: 'Thanks! Your document is verified. It helps your loan requests get funded.' }
+      ? toSend
+         ? { title: 'Proof of income approved ✅', body: 'One more step: your loan request is not sent yet. Tap below to send it.' }
+         : { title: 'Proof of income approved ✅', body: 'Thanks! Your document is verified. It helps your loan requests get funded.' }
       : kind === 'resend'
         ? { title: 'Let’s try that again', body: `${reason ?? 'Please send a clearer document.'} Questions? Message us on Facebook.` }
         : {
@@ -1365,7 +1369,7 @@ export const decisionMessage = (kind: 'approved' | 'declined' | 'resend', reason
  * reached them — so a push-only send is visible and someone can message them by hand.
  */
 export const notifyIncomeDecision = async (supabase: SupabaseClient, id: string, card?: { chat?: string; message?: number }) => {
-   const { data: row } = await supabase.from('income_documents').select('id, user_id, decision, decision_reason, verdict, resend_reason').eq('id', id).maybeSingle();
+   const { data: row } = await supabase.from('income_documents').select('id, user_id, decision, decision_reason, verdict, resend_reason, loan_id').eq('id', id).maybeSingle();
    const kind: 'approved' | 'declined' | 'resend' | null = row?.decision ?? (row?.verdict === 'resend' ? 'resend' : null);
    if (!row || !kind) return { ok: false, error: 'nothing to tell' };
    const { data: user } = await supabase
@@ -1373,9 +1377,23 @@ export const notifyIncomeDecision = async (supabase: SupabaseClient, id: string,
       .select('id, chat_id, notif_account_activity, messenger_psid, email')
       .eq('id', row.user_id)
       .maybeSingle();
-   const msg = decisionMessage(kind, kind === 'resend' ? (RESEND_TEXT[row.resend_reason as ResendReason] ?? null) : row.decision_reason);
    // Indonesia track: in Bahasa on Telegram, always (instead of the English Telegram copy below).
    const idTrack = await isIdTrackUser(supabase, row.user_id);
+   // Approved before any request went out (the form stopped them for this document): the approval
+   // doesn't send anything by itself, so say so and link back to their form (2026-11-15: a borrower
+   // read "approved" as "sent" and waited).
+   let toSend = false;
+   if (kind === 'approved' && !row.loan_id && !idTrack) {
+      const { count } = await supabase
+         .from('loans')
+         .select('id', { count: 'exact', head: true })
+         .eq('borrower_user_id', row.user_id)
+         .eq('loan_status', 'Requested')
+         .gt('created_at', new Date(Date.now() - 7 * 86400_000).toISOString());
+      toSend = (count ?? 0) === 0;
+   }
+   const msg = decisionMessage(kind, kind === 'resend' ? (RESEND_TEXT[row.resend_reason as ResendReason] ?? null) : row.decision_reason, toSend);
+   const linkUrl = toSend ? APPLY_URL : DOCUMENTS_URL;
    let idSent = false;
    if (idTrack) {
       const { data: idUser } = await supabase.from('users').select('preferred_locale').eq('id', row.user_id).maybeSingle();
@@ -1394,11 +1412,11 @@ export const notifyIncomeDecision = async (supabase: SupabaseClient, id: string,
          next: status?.next ?? null
       });
    }
-   const button = kind === 'approved' ? 'Open Moodeng' : 'Send again';
+   const button = toSend ? 'Send my request' : kind === 'approved' ? 'Open Moodeng' : 'Send again';
    const sent: string[] = [];
 
    try {
-      const push = await sendPushToUser(supabase, row.user_id, () => ({ type: 'income_doc_decision', title: msg.title, body: msg.body, url: DOCUMENTS_URL, tag: 'income-doc' }), {
+      const push = await sendPushToUser(supabase, row.user_id, () => ({ type: 'income_doc_decision', title: msg.title, body: msg.body, url: linkUrl, tag: 'income-doc' }), {
          urgency: 'high'
       });
       if (push.sent > 0) sent.push('push');
@@ -1407,13 +1425,13 @@ export const notifyIncomeDecision = async (supabase: SupabaseClient, id: string,
    }
    const messenger = await sendMessengerMessage(user?.messenger_psid, {
       text: `${msg.title}\n${msg.body}`,
-      card: { title: msg.title, button: { title: button, url: DOCUMENTS_URL } }
+      card: { title: msg.title, button: { title: button, url: linkUrl } }
    });
    if (messenger.ok) sent.push('Messenger');
    if (idSent) sent.push('Telegram');
    if (user?.chat_id && user.notif_account_activity !== false && !idTrack) {
       try {
-         await sendTelegramMessage(user.chat_id, `${msg.title}\n\n${msg.body}`, { inlineKeyboard: [[{ text: button, url: DOCUMENTS_URL }]] });
+         await sendTelegramMessage(user.chat_id, `${msg.title}\n\n${msg.body}`, { inlineKeyboard: [[{ text: button, url: linkUrl }]] });
          sent.push('Telegram');
       } catch (err) {
          console.error('income decision telegram failed', err);
@@ -1423,7 +1441,7 @@ export const notifyIncomeDecision = async (supabase: SupabaseClient, id: string,
    // sendEmail refuses made-up addresses (phone/Telegram sign-ups), which lands in the catch.
    if (user?.email) {
       try {
-         await sendEmail(user.email, msg.title, `${msg.body}\n\n${button}: ${DOCUMENTS_URL}\n\nMoodeng Credit`);
+         await sendEmail(user.email, msg.title, `${msg.body}\n\n${button}: ${linkUrl}\n\nMoodeng Credit`);
          sent.push('email');
       } catch (err) {
          if (!(err instanceof Error && err.message.includes('placeholder'))) console.error('income decision email failed', err);

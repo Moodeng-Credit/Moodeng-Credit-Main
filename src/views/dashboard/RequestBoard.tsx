@@ -17,6 +17,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 
+import ContactLinesCard from '@/components/ContactLinesCard';
 import FilterSidebar from '@/components/filters/FilterSidebar';
 import GuidedTourPreview, { type TourRoleOption } from '@/components/GuidedTourPreview';
 import IouPointHistoryModal from '@/components/IouPointHistoryModal';
@@ -65,9 +66,12 @@ import { getLoanRequestCooldownMessage, type LoanRequestRepostStatus } from '@/l
 import { setPendingSharedRequestId } from '@/lib/pendingSharedRequest';
 import { captureApplicationSignals, type CapturedSignals, sendApplicationSignals } from '@/lib/recordApplicationSignals';
 import {
+   clearKeptLoanTerms,
    clearLoanRequestDraft,
    draftIsResumable,
+   loadKeptLoanTerms,
    loadLoanRequestDraft,
+   saveKeptLoanTerms,
    saveLoanRequestDraft
 } from '@/lib/loanRequestDraft';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -856,6 +860,23 @@ function RequestBoard$() {
       };
       if (draftIsResumable(draft)) saveLoanRequestDraft(effectiveUser.id, draft);
    }, [showModal, effectiveUser?.id, loanRequestFlowState, loanAmount, totalRepaymentAmount, reason, days]);
+
+   // What they typed on the first screen outlives closing the form (see saveKeptLoanTerms): a stop for
+   // proof of income or for connecting Messenger/WhatsApp can take hours, and nobody should type their
+   // request twice. Filled back in when the form next opens empty; cleared once the request posts.
+   useEffect(() => {
+      if (!showModal || !effectiveUser?.id || isIndo) return;
+      if (!loanAmount && !reason && !days && !totalRepaymentAmount) {
+         const kept = loadKeptLoanTerms(effectiveUser.id);
+         if (!kept) return;
+         setLoanAmount(kept.loanAmount);
+         setTotalRepaymentAmount(kept.totalRepaymentAmount);
+         setReason(kept.reason);
+         setDays(kept.days);
+         return;
+      }
+      saveKeptLoanTerms(effectiveUser.id, { loanAmount, totalRepaymentAmount, reason, days });
+   }, [showModal, effectiveUser?.id, isIndo, loanAmount, totalRepaymentAmount, reason, days]);
 
    // Straight to wallet setup, not Welcome: these borrowers already signed up and saw Welcome, and its
    // "Explore Moodeng" sent them right back here — a loop that let people skip setup entirely.
@@ -1776,6 +1797,7 @@ function RequestBoard$() {
          clear();
          // The request posted — the resumable snapshot is done its job, so drop it.
          clearLoanRequestDraft();
+         clearKeptLoanTerms();
          setLoanRequestResume(null);
          setLoanRequestFlowState(null);
          setSearchLoan('');
@@ -2294,6 +2316,9 @@ function RequestBoard$() {
                         />
                      </div>
                   ) : null}
+
+                  {/* Missing Messenger or WhatsApp: say so before they fill in a request. */}
+                  {isAuthenticated && isBorrower && hasSelectedRole && !isIndo && !isReferralTestMode ? <ContactLinesCard next="loan" /> : null}
 
                   {/* Apply Loan Card — visible for authenticated borrowers, or as CTA for public */}
                   {isAuthenticated && isBorrower && hasSelectedRole ? (

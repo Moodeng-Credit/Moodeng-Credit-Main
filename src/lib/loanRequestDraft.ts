@@ -162,3 +162,46 @@ export function draftIsResumable(draft: LoanRequestDraft): boolean {
    const { flow } = draft;
    return draft.sendAfterVerify === true || draft.prefillOnly === true || flow.showBorrowerContextStep || flow.showContactsStep || flow.showVideoCallStep || flow.contactsStepDone;
 }
+
+// What the borrower typed on the first screen (amount, repayment, date, reason), kept apart from the
+// resumable draft above: a stop in the form (proof of income, connecting Messenger/WhatsApp) can take
+// hours, and closing the form drops the draft. The next time the form opens empty it's filled back
+// in, so nobody types their request twice (2026-11-15). Same guards: per user, 3 days, cleared on send.
+const KEPT_TERMS_KEY = 'moodeng-loan-request-kept-terms';
+
+export function saveKeptLoanTerms(userId: string, terms: LoanRequestTerms): void {
+   const store = getStore();
+   if (!store || !userId || !terms.loanAmount || !terms.reason.trim()) return;
+   try {
+      store.setItem(KEPT_TERMS_KEY, JSON.stringify({ userId, savedAt: Date.now(), terms }));
+   } catch {
+      // Private mode / quota: they type it again.
+   }
+}
+
+export function loadKeptLoanTerms(userId: string): LoanRequestTerms | null {
+   const store = getStore();
+   if (!store || !userId) return null;
+   try {
+      const record = JSON.parse(store.getItem(KEPT_TERMS_KEY) ?? 'null') as { userId?: string; savedAt?: number; terms?: LoanRequestTerms } | null;
+      if (!record?.terms || record.userId !== userId) return null;
+      if (typeof record.savedAt !== 'number' || Date.now() - record.savedAt > SEND_AFTER_VERIFY_TTL_MS) {
+         store.removeItem(KEPT_TERMS_KEY);
+         return null;
+      }
+      const { loanAmount, totalRepaymentAmount, reason, days } = record.terms;
+      // A repayment date that has passed since is dropped; the rest still saves typing.
+      const dueStillAhead = Boolean(days) && new Date(days).getTime() > Date.now();
+      return { loanAmount: String(loanAmount ?? ''), totalRepaymentAmount: String(totalRepaymentAmount ?? ''), reason: String(reason ?? ''), days: dueStillAhead ? days : '' };
+   } catch {
+      return null;
+   }
+}
+
+export function clearKeptLoanTerms(): void {
+   try {
+      getStore()?.removeItem(KEPT_TERMS_KEY);
+   } catch {
+      // Stale terms still fail the user and age checks on load.
+   }
+}
