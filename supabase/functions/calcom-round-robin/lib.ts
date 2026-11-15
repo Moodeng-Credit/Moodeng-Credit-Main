@@ -55,9 +55,9 @@ export const teamGuests = (hostId: string, emailsByHost: Record<string, string |
 // Soonest-first slot offer. Calls booked inside a day or two get far fewer no-shows, and they're the
 // ones our Messenger reminders can reach (Messenger allows free messages for 24h after the
 // borrower's last interaction, which is the verify tap just before booking). So when there are at
-// least `minCount` open times within `windowHours`, offer those plus every Saturday/Sunday time
-// (Bangkok days) — some borrowers can only talk on weekends; otherwise fall back to the full list
-// so a quiet stretch never leaves a borrower with nothing to pick.
+// least `minCount` open times within `windowHours`, offer only those (George 2026-11-15: no extra
+// weekend days, "that is silly"); otherwise fall back to the full list so a quiet stretch never
+// leaves a borrower with nothing to pick.
 export const preferSoonSlots = (slots: string[], now: number, windowHours = 48, minCount = 3): string[] => {
    const cutoff = now + windowHours * 60 * 60 * 1000;
    const upcoming = slots.filter((s) => {
@@ -66,7 +66,7 @@ export const preferSoonSlots = (slots: string[], now: number, windowHours = 48, 
    });
    const soon = upcoming.filter((s) => Date.parse(s) <= cutoff);
    if (soon.length < minCount) return slots;
-   return upcoming.filter((s) => Date.parse(s) <= cutoff || isBangkokWeekend(s));
+   return soon;
 };
 
 /** The borrower's wall-clock hour (0–23) and weekday (0 = Sunday) at an instant. */
@@ -103,12 +103,6 @@ export const dropMorningAfterLateNight = (slots: string[], now: number, timeZone
    // The next local noon: today's after midnight, else tomorrow's (whole-hour zones).
    const noon = now - (now % 3600000) + (hour < 6 ? 12 - hour : 36 - hour) * 3600000;
    return slots.filter((s) => Date.parse(s) >= noon);
-};
-
-/** True when the instant falls on a Saturday or Sunday in Bangkok. */
-const isBangkokWeekend = (iso: string): boolean => {
-   const weekday = new Date(Date.parse(iso) + 7 * 3600000).getUTCDay();
-   return weekday === 0 || weekday === 6;
 };
 
 // Date range for re-checking one slot right before booking. Cal.com reads date-only bounds in the
