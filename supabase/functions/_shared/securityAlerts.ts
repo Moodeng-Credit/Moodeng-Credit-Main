@@ -15,7 +15,7 @@ import { type DiscordEmbed, postDiscord } from './discord.ts';
 import { sendEmail } from './email.ts';
 import { sendTelegramMessage } from './telegram.ts';
 
-export type SecuritySource = 'fraud-scan' | 'risk-score' | 'realtime' | 'heartbeat' | 'kyc' | 'vault';
+export type SecuritySource = 'fraud-scan' | 'risk-score' | 'realtime' | 'heartbeat' | 'kyc' | 'vault' | 'old-wallet';
 export type SecuritySeverity = 'critical' | 'high' | 'warning' | 'info';
 
 export type SecurityAlert = {
