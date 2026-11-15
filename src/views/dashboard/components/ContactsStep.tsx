@@ -403,7 +403,12 @@ export default function ContactsStep({
    const offerWhatsAppReminders = whatsappRemindersEnabled && pushCantWork && !isGuest;
    // Loan request with a line missing: WhatsApp is its own required line (not just a reminder fallback),
    // shown even where push works, with no "I don't have WhatsApp" way out. Push stays as it was.
-   const requireWhatsAppLine = requireAllLines && whatsappRemindersEnabled && !isGuest;
+   // Onboarding too (George, 2026-11-15, "make it the priority"): every new borrower connects WhatsApp
+   // after Facebook, no skip, so the 1-hour ✅ and reminders reach them when Messenger's 24h window has
+   // closed. Push stays a bonus on top. Not Indonesia (WhatsApp is already step 1 there, with its own
+   // way out) and not no-code guests (they can't get back from WhatsApp to the Facebook tab, #1387).
+   const onboardingWhatsApp = source === 'connect' && !indoCountry;
+   const requireWhatsAppLine = (requireAllLines || onboardingWhatsApp) && whatsappRemindersEnabled && !isGuest;
    // requireReminders: where push can't work, WhatsApp becomes required, with "I don't have WhatsApp" as
    // the way out so nobody is locked in (2026-10-13: ~30 taps on a reminder that could never turn on).
    // Without the WhatsApp card on, there's nothing else to ask for, so it's the old rule.

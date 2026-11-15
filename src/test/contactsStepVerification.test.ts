@@ -825,21 +825,30 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
             expect(container.textContent).toContain('Turn on WhatsApp reminders to continue.');
          });
 
-         it('onboarding (connect): WhatsApp is required where notifications can’t work, too', async () => {
+         it('onboarding (connect): WhatsApp is required for everyone, with no "I don’t have WhatsApp" way out', async () => {
             remindersOn();
             supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
             await render('user-1', undefined, false, 'connect');
             expect(continueButton(container).disabled).toBe(true);
             expect(channelCard(container, 'Get reminders on WhatsApp')?.textContent).toContain('Required');
-            expect(buttonByText(container, 'I don’t have WhatsApp'.replace('’', "'"))).toBeTruthy();
+            expect(buttonByText(container, "I don't have WhatsApp")).toBeFalsy();
          });
 
+         it('onboarding (connect): WhatsApp connected lets them continue', async () => {
+            remindersOn();
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            supa.state.usersRow.whatsapp_verified_at = '2026-11-15T00:00:00Z';
+            await render('user-1', undefined, false, 'connect');
+            expect(continueButton(container).disabled).toBe(false);
+         });
+
+         // Loan time (requireReminders): the "I don't have WhatsApp" fallback still exists there; onboarding has none.
          it('no WhatsApp: Telegram instead (Viber off), SMS greyed out, never the bell; Telegram linked turns it on', async () => {
             remindersOn();
             push.state.isSupported = true;
             push.state.permission = 'denied';
             supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
-            await render('user-1', undefined, false, 'connect');
+            await render('user-1', undefined, true);
             expect(channelCard(container, 'Get reminders on WhatsApp')).toBeTruthy();
             expect(channelCard(container, 'Turn on reminders')).toBeFalsy();
             await act(async () => {
@@ -858,7 +867,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
             remindersOn();
             supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
             (supa.state.usersRow as Record<string, unknown>).chat_id = 123456;
-            await render('user-1', undefined, false, 'connect');
+            await render('user-1', undefined, true);
             expect(channelCard(container, 'Get reminders on WhatsApp')).toBeFalsy();
             expect(container.textContent).toContain('Telegram reminders');
             expect(continueButton(container).disabled).toBe(false);
@@ -871,7 +880,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
                return supa.state.rpcResult;
             });
             supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
-            await render('user-1', undefined, false, 'connect');
+            await render('user-1', undefined, true);
             await act(async () => {
                buttonByText(container, "I don't have WhatsApp")?.click();
             });
@@ -898,7 +907,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
             remindersOn();
             supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
             supa.state.usersRow.viber_verified_at = '2026-10-19T00:00:00Z';
-            await render('user-1', undefined, false, 'connect');
+            await render('user-1', undefined, true);
             expect(channelCard(container, 'Get reminders on WhatsApp')).toBeFalsy();
             expect(continueButton(container).disabled).toBe(false);
          });
@@ -912,9 +921,11 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
             supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
             supa.state.usersRow.viber_verified_at = '2026-10-19T00:00:00Z';
             await render('user-1', undefined, false, 'connect');
+            // Onboarding: the bell is a bonus where notifications work; WhatsApp is still required.
             expect(channelCard(container, 'Turn on reminders')).toBeTruthy();
             expect(container.textContent).not.toContain('Viber reminders');
-            expect(remindersContinueButton(container)).toBeTruthy();
+            expect(channelCard(container, 'Get reminders on WhatsApp')?.textContent).toContain('Required');
+            expect(continueButton(container).disabled).toBe(true);
          });
 
          it('"I don’t have WhatsApp" lets them through', async () => {
