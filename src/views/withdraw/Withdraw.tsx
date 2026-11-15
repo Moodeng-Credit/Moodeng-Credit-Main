@@ -666,7 +666,7 @@ function DirectPesoBanner({ balanceLine, spendable }: { balanceLine: string; spe
 const BANK_PAYOUT_FEE_SHARE = 0.022;
 // Most pesos one bank / QR cash-out sends (same as MAX_PHP in BankPayoutFlow and BANK_MAX in the
 // stableyard-deposit-address fn). Above it the QR route takes two cash-outs, two fees.
-const QR_MAX_PHP = 5000;
+const QR_MAX_PHP = 25000;
 const estimatePesos = (spendable: number | null, phpRate: number) =>
    spendable != null && spendable > 0 ? Math.floor(spendable * phpRate * (1 - BANK_PAYOUT_FEE_SHARE)) : null;
 
@@ -792,7 +792,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
    // goes away if the check comes back saying the QR cash-out is off for them.
    const qrCard = !isIndo && (isPreview || !marketLoading) && (phPayout === null || Boolean(phPayout && qrCashout));
    const bankPayout = bankCard || qrCard;
-   // More than one QR cash-out's worth (₱5,000): two cash-outs = two fees, so the QR card drops to the
+   // More than one QR cash-out's worth (₱25,000): two cash-outs = two fees, so the QR card drops to the
    // bottom without the Recommended tag and the exchange apps lead, PDAX recommended (2026-11-15).
    const { value: phpRate } = useUsdcRate('php');
    const estPesos = estimatePesos(spendable, phpRate);
@@ -1003,7 +1003,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                            line2="Fee ≈ $0.03 · a few seconds"
                         />
                      )}
-                     {/* Over ₱5,000 the QR card sits last (two cash-outs, two fees), not recommended. */}
+                     {/* Over ₱25,000 the QR card sits last (two cash-outs, two fees), not recommended. */}
                      {qrLast && <QrPesoCard onSelect={() => selectProvider('qr')} spendable={spendable} />}
                      {/* Binance P2P is the hardest route, so it waits behind "More options". A paused Coins.ph
                          isn't listed at all: a greyed-out row nobody can use only adds noise. */}

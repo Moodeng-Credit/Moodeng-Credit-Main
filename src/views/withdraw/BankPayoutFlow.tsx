@@ -25,7 +25,7 @@ import QrCashoutSteps, { type DecodeReply, QrTrail } from '@/views/withdraw/QrCa
 
 const FN = 'stableyard-deposit-address';
 const MIN_PHP = 50;
-const MAX_PHP = 5000;
+const MAX_PHP = 25000;
 // Shown first in the bank list: what most borrowers use.
 // The picker asks "E-wallet or bank?" first; each side lists its own popular ones before searching.
 const POPULAR_WALLETS = ['GCASH', 'MAYA PHILIPPINES, INC./ MAYA WALLET', 'GRABPAY', 'SHOPEEPAY', 'DCPAY / COINS.PH', 'PALAWANPAY'];

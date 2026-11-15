@@ -402,9 +402,9 @@ const QR_COUNTRIES: Record<string, { currency: string; max: number }> = {
    PH: { currency: 'PHP', max: 2000 },
    VN: { currency: 'VND', max: 1_000_000 }
 };
-// Bank payout limits while it's tester-only (~$85 max, enough to cash out a loan). Stableyard's PH minimum is ₱50.
+// Bank payout limits. PH: ₱25,000 (~$430), under Stableyard's ~$500-per-transaction limit (confirmed 2026-11-15) with room for the rate to move. Stableyard's PH minimum is ₱50.
 const BANK_MIN: Record<string, number> = { PH: 50, VN: 20_000 };
-const BANK_MAX: Record<string, number> = { PH: 5000, VN: 2_000_000 };
+const BANK_MAX: Record<string, number> = { PH: 25_000, VN: 2_000_000 };
 const FIAT_AMOUNT = /^(0|[1-9][0-9]*)(\.[0-9]{1,2})?$/;
 
 // Stableyard's email / KYC / payment-source bodies aren't documented to us, so read them loosely:
