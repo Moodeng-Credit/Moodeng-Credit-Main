@@ -32,20 +32,23 @@ export const buildChangeTimeUrl = (bookingUid: string, contactId: string) =>
 
 export type ChangeTimeTarget = { kind: 'reschedule'; uid: string } | { kind: 'rebook' } | { kind: 'rejected' } | { kind: 'card'; uid: string };
 
+type ChangeTimeUser = { video_call_booking_uid?: string | null; video_call_starts_at?: string | null; loan_access_status?: string | null };
+
 /**
- * Where a 🔄 Change time tap goes. Booked now → Cal.com's reschedule page for their CURRENT booking
- * (the card may show an older one they already moved). No call → book again on our page, unless
- * rejected (rejected is final). Borrower not found → Cal.com's page for the booking on the card.
+ * Where a 🔄 Change time tap goes. `users` = every account on that Messenger contact (one person can
+ * have two, e.g. Maria 2026-11-15). Any account booked now → Cal.com's reschedule page for that
+ * CURRENT booking (the card may show an older one they already moved). No call → book again on our
+ * page, unless every account is rejected (rejected is final). None found → the booking on the card.
  */
-export const changeTimeTarget = (
-   cardUid: string,
-   user: { video_call_booking_uid?: string | null; video_call_starts_at?: string | null; loan_access_status?: string | null } | null,
-   now = Date.now()
-): ChangeTimeTarget => {
-   if (!user) return { kind: 'card', uid: cardUid };
-   if (user.loan_access_status === 'rejected') return { kind: 'rejected' };
-   const upcoming = user.video_call_booking_uid && user.video_call_starts_at && Date.parse(user.video_call_starts_at) > now;
-   if (upcoming) return { kind: 'reschedule', uid: user.video_call_booking_uid as string };
+export const changeTimeTarget = (cardUid: string, users: ChangeTimeUser | ChangeTimeUser[] | null, now = Date.now()): ChangeTimeTarget => {
+   const list = (Array.isArray(users) ? users : users ? [users] : []).filter(Boolean);
+   if (!list.length) return { kind: 'card', uid: cardUid };
+   const live = list.filter((u) => u.loan_access_status !== 'rejected');
+   if (!live.length) return { kind: 'rejected' };
+   const booked = live
+      .filter((u) => u.video_call_booking_uid && u.video_call_starts_at && Date.parse(u.video_call_starts_at) > now)
+      .sort((a, b) => (a.video_call_booking_uid === cardUid ? -1 : b.video_call_booking_uid === cardUid ? 1 : 0));
+   if (booked.length) return { kind: 'reschedule', uid: booked[0].video_call_booking_uid as string };
    return { kind: 'rebook' };
 };
 

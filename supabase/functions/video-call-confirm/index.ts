@@ -56,12 +56,14 @@ const changeTime = async (cardUid: string, contactId: string): Promise<Response>
    if (!/^[A-Za-z0-9_-]{6,64}$/.test(cardUid)) return go(`${SITE_URL}/request-board`);
    if (!contactId || !SUPABASE_URL || !SERVICE_KEY) return fallback;
    try {
-      const { data: user } = await createClient(SUPABASE_URL, SERVICE_KEY)
+      // Every account on this contact (one person can have two).
+      const { data: users, error } = await createClient(SUPABASE_URL, SERVICE_KEY)
          .from('users')
          .select('video_call_booking_uid, video_call_starts_at, loan_access_status')
          .eq('messenger_psid', contactId)
-         .maybeSingle();
-      const target = changeTimeTarget(cardUid, user);
+         .limit(10);
+      if (error) throw new Error(error.message);
+      const target = changeTimeTarget(cardUid, users ?? []);
       if (target.kind === 'reschedule' || target.kind === 'card') return go(buildRescheduleUrl(target.uid));
       if (target.kind === 'rejected') return go(`${SITE_URL}/request-board`);
       return go(`${SITE_URL}/request-board?applyLoan=1`);

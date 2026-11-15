@@ -28,3 +28,31 @@ Deno.test('rejected: no rebooking', () => {
 Deno.test('borrower not found: the booking on the card', () => {
    assertEquals(changeTimeTarget('uid', null, NOW), { kind: 'card', uid: 'uid' });
 });
+
+Deno.test('two accounts on one contact: the booked one wins', () => {
+   const users = [
+      { video_call_booking_uid: null, video_call_starts_at: null, loan_access_status: 'none' },
+      { video_call_booking_uid: 'live', video_call_starts_at: LATER, loan_access_status: 'pending' }
+   ];
+   assertEquals(changeTimeTarget('old', users, NOW), { kind: 'reschedule', uid: 'live' });
+});
+
+Deno.test('two accounts, neither booked (Maria): book again', () => {
+   const users = [
+      { video_call_booking_uid: null, video_call_starts_at: null, loan_access_status: 'none' },
+      { video_call_booking_uid: null, video_call_starts_at: null, loan_access_status: 'none' }
+   ];
+   assertEquals(changeTimeTarget('old', users, NOW), { kind: 'rebook' });
+});
+
+Deno.test('two accounts, one rejected one not: book again', () => {
+   const users = [
+      { video_call_booking_uid: null, video_call_starts_at: null, loan_access_status: 'rejected' },
+      { video_call_booking_uid: null, video_call_starts_at: null, loan_access_status: 'none' }
+   ];
+   assertEquals(changeTimeTarget('old', users, NOW), { kind: 'rebook' });
+});
+
+Deno.test('empty list: the booking on the card', () => {
+   assertEquals(changeTimeTarget('uid', [], NOW), { kind: 'card', uid: 'uid' });
+});
