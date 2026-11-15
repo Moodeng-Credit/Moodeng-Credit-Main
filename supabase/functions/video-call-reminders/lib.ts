@@ -66,7 +66,8 @@ export const skipsDayBeforeReminder = (scheduledAtIso: string | null, startsAtMs
 export const skipsConfirmAsk = (scheduledAtIso: string | null, startsAtMs: number): boolean =>
    leadMs(scheduledAtIso, startsAtMs) < 75 * 60 * 1000;
 
-// Release an unconfirmed slot only when the confirm ask was made (video_call_keep_spot_asked_at).
+// Release an unconfirmed slot only when the confirm ask reached them (video_call_keep_spot_asked_at is
+// stamped only then, see index.ts RUNG.CONFIRM).
 export const shouldReleaseSlot = (u: {
    video_call_confirmed_at: string | null;
    video_call_keep_spot_asked_at: string | null;
