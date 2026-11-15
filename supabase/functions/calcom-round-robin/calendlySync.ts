@@ -1,5 +1,6 @@
 // Daily copy of each host's Calendly hours onto the Cal.com schedule their call event uses, so they
-// only ever edit Calendly (Emma since 2026-10-27, George since 2026-10-29). Run by pg_cron (calcom-round-robin { action: 'sync_calendly_hours' }); pass
+// only ever edit Calendly (Emma since 2026-10-27). George keeps his hours in Cal.com itself since
+// 2026-11-15 ("i want to keep my hours in cal"), so his schedule is never overwritten. Run by pg_cron (calcom-round-robin { action: 'sync_calendly_hours' }); pass
 // dryRun to see the current and new schedule without changing anything.
 import { CAL_BASE, hostApiKey, resolveEventTypeId } from '../_shared/calcomSlots.ts';
 import { readCallSecret } from '../_shared/callSecrets.ts';
@@ -89,10 +90,9 @@ export const syncCalendlyHours = async (svc: any, host: SyncHost, dryRun = false
    return result;
 };
 
-/** Both hosts, one after the other (the nightly pg_cron job). */
+/** Emma only (the nightly pg_cron job). George sets his hours directly in Cal.com. */
 // deno-lint-ignore no-explicit-any
 export const syncAllCalendlyHours = async (svc: any, dryRun = false) => {
    const emma = await syncCalendlyHours(svc, 'emma', dryRun);
-   const george = await syncCalendlyHours(svc, 'george', dryRun);
-   return { ok: emma.ok && george.ok, emma, george };
+   return { ok: emma.ok, emma, george: { ok: true, skipped: 'hours kept in Cal.com' } };
 };
