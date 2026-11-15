@@ -190,7 +190,7 @@ The key detail: always select Base as the network when depositing to an exchange
 
 1. Open your bank app and save your Receive QR (Receive → QR Ph → Save QR).
 2. On Moodeng, go to Withdraw → Your bank's QR and upload it.
-3. Type the pesos (₱50 to ₱5,000) and tap Get my price.
+3. Type the pesos (₱50 to ₱25,000) and tap Get my price.
 4. Check the price and each fee, then tap Confirm.
 
 Moodeng takes ₱0. Stableyard and their payout partner charge about 2–3% in total.`

@@ -43,7 +43,7 @@ const COPY: Record<
       eyebrow: 'Cash out guide',
       title: 'Cash out to your bank with a QR',
       lead: 'Turn your USDC into pesos, straight to your own bank. All you need is the QR from your bank app.',
-      chips: ['₱50 – ₱5,000', 'Any InstaPay bank', 'Moodeng fee ₱0'],
+      chips: ['₱50 – ₱25,000', 'Any InstaPay bank', 'Moodeng fee ₱0'],
       needTitle: 'What you need',
       need: ['USDC in your Moodeng wallet', 'A PH bank app with InstaPay / QR Ph', 'The QR must be in your own name'],
       stepsTitle: 'How to do it',
@@ -66,7 +66,7 @@ const COPY: Record<
          },
          {
             title: 'Type the pesos',
-            text: 'From ₱50 up to ₱5,000. Then tap “Get my price”.'
+            text: 'From ₱50 up to ₱25,000. Then tap “Get my price”.'
          },
          {
             title: 'Check the price, then Confirm',
@@ -98,7 +98,7 @@ const COPY: Record<
       eyebrow: 'Gabay sa cash out',
       title: 'Mag-cash out sa bank mo gamit ang QR',
       lead: 'Gawing piso ang USDC mo, diretso sa sarili mong bank. Kailangan mo lang ang QR galing sa bank app mo.',
-      chips: ['₱50 – ₱5,000', 'Kahit anong InstaPay bank', 'Moodeng fee ₱0'],
+      chips: ['₱50 – ₱25,000', 'Kahit anong InstaPay bank', 'Moodeng fee ₱0'],
       needTitle: 'Kailangan mo',
       need: ['USDC sa Moodeng wallet mo', 'PH bank app na may InstaPay / QR Ph', 'Dapat nakapangalan sa iyo ang QR'],
       stepsTitle: 'Paano gawin',
@@ -121,7 +121,7 @@ const COPY: Record<
          },
          {
             title: 'I-type kung ilang piso',
-            text: 'Mula ₱50 hanggang ₱5,000. Tapos i-tap ang “Get my price”.'
+            text: 'Mula ₱50 hanggang ₱25,000. Tapos i-tap ang “Get my price”.'
          },
          {
             title: 'Tingnan ang presyo, tapos Confirm',
@@ -152,7 +152,7 @@ const COPY: Record<
 };
 
 const PAGE_DESCRIPTION =
-   'Turn USDC into pesos straight to your own Philippine bank: save the InstaPay / QR Ph Receive QR from your bank app, upload it on Moodeng, type the pesos and confirm. ₱50 to ₱5,000, Moodeng fee ₱0.';
+   'Turn USDC into pesos straight to your own Philippine bank: save the InstaPay / QR Ph Receive QR from your bank app, upload it on Moodeng, type the pesos and confirm. ₱50 to ₱25,000, Moodeng fee ₱0.';
 
 function initialLang(): Lang {
    if (typeof window === 'undefined') return 'en';
