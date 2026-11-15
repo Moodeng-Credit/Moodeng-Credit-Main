@@ -204,13 +204,11 @@ export const dropBusySlots = (slots: string[], busy: Array<{ start: string; end:
 
 // Onboarding calls per Bangkok day, across both hosts. Once a day has this many, it's full.
 export const DAILY_CALL_CAP = 8; // George 2026-11-15: "can do max of 8 calls per day" (was 4)
-// Clustering: on a day that already has calls, free times within CLUSTER_NEAR_MINUTES of one are
-// "⭐ Recommended", and times further than CLUSTER_MAX_MINUTES from every call are not offered, so
-// a day's calls land in one block instead of scattered from morning to night.
+// Clustering, as a nudge only (George 2026-11-15: "remove the bunching rule, but try to push them
+// into a cluster"): on a day that already has calls, every free time is still offered, and the ones
+// within CLUSTER_NEAR_MINUTES of a call are "⭐ Recommended" so most people pick a time next to one.
 export const CLUSTER_NEAR_MINUTES = 45;
-export const CLUSTER_MAX_MINUTES = 120;
-// If nothing that day is within CLUSTER_MAX_MINUTES (the block's hours have passed), offer this
-// many of the closest times instead of emptying the day.
+// If no free time that day is that close to a call, the closest few are recommended instead.
 const CLUSTER_FALLBACK_COUNT = 3;
 
 const BANGKOK_OFFSET_MS = 7 * 3600000;
@@ -267,11 +265,9 @@ export const clusterSlots = (
          continue;
       }
       const gap = (s: string) => Math.min(...booked.map((b) => Math.abs(Date.parse(s) - b))) / 60000;
-      let kept = daySlots.filter((s) => gap(s) <= CLUSTER_MAX_MINUTES);
-      if (kept.length === 0) kept = [...daySlots].sort((a, b) => gap(a) - gap(b)).slice(0, CLUSTER_FALLBACK_COUNT);
-      const near = kept.filter((s) => gap(s) <= CLUSTER_NEAR_MINUTES);
-      offered.push(...kept);
-      recommended.push(...(near.length ? near : kept));
+      const near = daySlots.filter((s) => gap(s) <= CLUSTER_NEAR_MINUTES);
+      offered.push(...daySlots);
+      recommended.push(...(near.length ? near : [...daySlots].sort((a, b) => gap(a) - gap(b)).slice(0, CLUSTER_FALLBACK_COUNT)));
    }
    const byTime = (a: string, b: string) => Date.parse(a) - Date.parse(b);
    return { slots: offered.sort(byTime), recommended: recommended.sort(byTime) };

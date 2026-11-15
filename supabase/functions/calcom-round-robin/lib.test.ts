@@ -169,11 +169,11 @@ Deno.test('a day with 8 calls is full: no times offered, and booking it is refus
    assertEquals(dayIsFull('2026-10-29T23:00:00Z', booked), false);
 });
 
-Deno.test('after the first call of a day, only times within 2h are offered and the nearest are recommended', () => {
+Deno.test('a day with a call still offers every free time; the ones next to it are recommended', () => {
    // Cal.com no longer lists 14:00 — that's the booked call.
-   const out = clusterSlots(dayOfSlots().filter((s) => s !== '2026-10-29T14:00:00+07:00'), ['2026-10-29T14:00:00+07:00']);
-   assertEquals(out.slots[0], '2026-10-29T12:00:00+07:00');
-   assertEquals(out.slots[out.slots.length - 1], '2026-10-29T16:00:00+07:00');
+   const free = dayOfSlots().filter((s) => s !== '2026-10-29T14:00:00+07:00');
+   const out = clusterSlots(free, ['2026-10-29T14:00:00+07:00']);
+   assertEquals(out.slots, free);
    assertEquals(out.recommended, [
       '2026-10-29T13:15:00+07:00',
       '2026-10-29T13:30:00+07:00',
@@ -191,10 +191,10 @@ Deno.test('the booked calls themselves are never returned, only the free times C
    assertEquals(out.recommended.includes('2026-10-29T14:00:00+07:00'), false);
 });
 
-Deno.test('when the block has passed, the closest few times are kept instead of emptying the day', () => {
+Deno.test('no free time near the day\'s calls: all offered, the closest few recommended', () => {
    const evening = ['2026-10-29T20:00:00+07:00', '2026-10-29T20:15:00+07:00', '2026-10-29T21:00:00+07:00', '2026-10-29T22:00:00+07:00'];
    const out = clusterSlots(evening, ['2026-10-29T10:00:00+07:00']);
-   assertEquals(out.slots, evening.slice(0, 3));
+   assertEquals(out.slots, evening);
    assertEquals(out.recommended, evening.slice(0, 3));
 });
 
