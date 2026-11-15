@@ -3573,10 +3573,9 @@ export default function LoanRequestModal({
                               </div>
                               {termErrors.amount ? <FieldError message={termErrors.amount} /> : null}
                               {!termErrors.amount && incomeGateNow && !incomeGateNow.ok ? (
-                                 // Said up front, so the last step isn't a surprise.
-                                 <p className="text-md-b3 font-medium text-md-heading">
-                                    {`$${incomeGateNow.step.min}+ needs proof of income — the last step.`}
-                                 </p>
+                                 // Said up front, so the last step isn't a surprise. Not "$100+ needs…": that
+                                 // read as "only big loans need it" when proof of income starts at $40.
+                                 <p className="text-md-b3 font-medium text-md-heading">This amount needs proof of income — the last step.</p>
                               ) : null}
                               <div className="flex justify-end gap-md-1 text-md-b3 font-normal text-md-neutral-1200">
                                  <InfoTooltip
