@@ -11,6 +11,7 @@
 // Every notification here is best-effort: the decision is persisted first, and a failed push,
 // Telegram or Discord ping is logged, never thrown.
 
+import { photoCheckLine } from './fbPhotoCheck.ts';
 import {
    adminUserUrl,
    approveAnywayButtons,
@@ -178,7 +179,7 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
       .join(' · ');
 
    // Referred borrowers' calls are Emma's setup calls (local exchange: deposit, cash out, repay).
-   const { data: ref } = await svc.from('users').select('redeemed_referral_code_id').eq('id', borrower.id).maybeSingle();
+   const { data: ref } = await svc.from('users').select('redeemed_referral_code_id, facebook_name').eq('id', borrower.id).maybeSingle();
    const { data: refCode } = ref?.redeemed_referral_code_id
       ? await svc.from('referral_codes').select('code').eq('id', ref.redeemed_referral_code_id).maybeSingle()
       : { data: null };
@@ -204,6 +205,7 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
       isCall && borrower.video_call_starts_at ? `Call: ${formatCallTimeForTeam(borrower.video_call_starts_at, borrower.video_call_timezone)}` : null,
       referral ? `Referral: ${referral}` : null,
       `Why: ${request.reason?.trim() || '—'}`,
+      photoCheckLine(ref?.facebook_name),
       ...timelineLines(onboarding),
       '',
       isCall
