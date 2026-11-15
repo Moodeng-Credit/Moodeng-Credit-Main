@@ -1286,14 +1286,14 @@ const readAndOffer = async (t: Turn, text: string, from: Step): Promise<boolean>
 };
 
 /**
- * The exact time they asked for is free. Asked to move a call that's already booked (we have their name and answers):
+ * The exact time they asked for is free. Asked to move a call that's already booked (in the chat or on the website):
  * book it now. Otherwise hold it and carry on (questions, or one YES — so "I finish work at 5pm" never moves a call).
  */
 const takeAsked = async (t: Turn, s: Slot, moving: boolean) => {
-   if (moving && t.st.booked && t.st.quizDone && t.st.name) {
+   if (moving && t.st.booked) {
       send(t, say(t, 'askedFree', `${fmtDay(s.date, t.st.lang)} ${t.st.lang === 'fil' ? 'nang' : t.st.lang === 'id' ? 'jam' : 'at'} ${fmtTime(s.min)}`));
       takeSlot(t, s);
-      return book(t, t.st.name);
+      return book(t, t.st.name || t.st.knownName || '');
    }
    hold(t, s);
 };

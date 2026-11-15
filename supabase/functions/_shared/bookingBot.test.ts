@@ -743,6 +743,17 @@ Deno.test('no bio: "Back" asks for the bio again until it is done, then the chat
 
 const websiteBooked = (): BotState => ({ ...newState(), step: 'booked', booked: true, mine: { date: '2026-11-03', min: 19 * 60, host: 'Emma' } });
 
+Deno.test('a website booker asks to move and names a free time: moved at once, no questions', async () => {
+   const c = chat(websiteBooked());
+   await c.send('change my call');
+   await c.send('Saturday Nov 7 10:00 AM');
+   assertEquals(c.state.step, 'booked');
+   assertEquals(c.state.booked, true);
+   assertEquals(c.state.mine?.date, '2026-11-07');
+   assert(has(c, 'book'));
+   assertEquals(c.state.asked.length, 0);
+});
+
 Deno.test('a website booker types QUESTIONS: same questions, the $15 note, and their call stays booked', async () => {
    const c = chat(websiteBooked());
    await c.send('Questions');
