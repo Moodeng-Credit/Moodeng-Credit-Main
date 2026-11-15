@@ -1061,16 +1061,9 @@ export default function ContactsStep({
    // fold and the page wouldn't scroll). This box used to be its own scroller with overscroll-contain,
    // but the page grows to fit it, so it never scrolled — and the contain setting swallowed the swipe
    // instead of passing it to the page. Here the page scrolls, Continue is pinned to the bottom, and
-   // once she's connected the hippo's long explanation shrinks to one line.
+   // a short line says she's connected.
    const onboardingPage = source === 'connect';
    const pinContinue = onboardingPage && (canContinue || continueTurnsOnPush);
-   const shownHero =
-      onboardingPage && canContinue && isValidElement(hero) && hero.type === ConnectHero
-         ? cloneElement(hero as ReactElement<{ title?: ReactNode; subtitle?: ReactNode }>, {
-              title: 'You’re connected!',
-              subtitle: 'Tap Continue for the next step.'
-           })
-         : hero;
 
    return (
       <div
@@ -1078,7 +1071,7 @@ export default function ContactsStep({
             onboardingPage ? (pinContinue ? '' : 'pb-5') : 'min-h-0 overflow-y-auto overscroll-contain pb-5'
          }`}
       >
-         {shownHero ?? (
+         {hero ?? (
             <ConnectHero image={stateHippo ?? CONNECT_HIPPOS.hello} subtitle="Only Moodeng sees this — never moo-lenders." title="How can we reach you?" />
          )}
 
@@ -1650,6 +1643,9 @@ export default function ContactsStep({
                   : ''
             }`}
          >
+            {onboardingPage && canContinue ? (
+               <p className="mb-1 text-center text-md-b2 font-[590] text-[#1f7a3d]">You&apos;re connected ✓</p>
+            ) : null}
             <PrimaryButton
                disabled={(!canContinue && !continueTurnsOnPush) || isSubmitting || (continueTurnsOnPush && push.isBusy)}
                onClick={() => void handleContinue()}
