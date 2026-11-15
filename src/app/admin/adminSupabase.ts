@@ -3284,6 +3284,12 @@ export async function approveAdminUser(userId: string): Promise<{ ok: boolean; s
    return invokeAdminCallApprovals<{ ok: boolean; summary: string }>({ action: 'approve_user', userId });
 }
 
+// Reject from the call sheet ("Lend to them?" = 1): same as Telegram's Reject — their request is
+// closed, they get the rejected message, and any booked call is cancelled.
+export async function rejectAdminUser(userId: string): Promise<{ ok: boolean; summary: string }> {
+   return invokeAdminCallApprovals<{ ok: boolean; summary: string }>({ action: 'reject_user', userId });
+}
+
 // Re-run the AI form check on the borrower's latest call transcript (after the host edits the sheet).
 export async function recheckAdminCallForm(userId: string): Promise<FormCheck> {
    const result = await invokeAdminCallApprovals<{ ok: boolean; check: FormCheck }>({ action: 'check_form', userId });

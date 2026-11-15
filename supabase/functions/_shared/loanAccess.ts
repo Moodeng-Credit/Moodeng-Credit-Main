@@ -681,6 +681,70 @@ export const decideLoanAccess = async (
    return { ok: true, request, borrower, summary, stamp };
 };
 
+/**
+ * Reject a person from the admin panel (the call sheet's "Lend to them?" = 1). Their pending request
+ * goes through decideLoanAccess, exactly like Telegram's Reject; with no pending request they are
+ * rejected directly with the same card stamp, call cancel, message and Discord line. Never undoes
+ * an approval — that stays a deliberate team decision.
+ */
+export const rejectUser = async (svc: SupabaseClient, userId: string, decidedBy: string): Promise<{ ok: boolean; summary: string }> => {
+   const { data: pending } = await svc
+      .from('loan_access_requests')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+   if (pending) {
+      const result = await decideLoanAccess(svc, (pending as { id: string }).id, 'rejected', decidedBy);
+      return { ok: result.ok, summary: result.summary };
+   }
+
+   const { data: borrower, error } = await svc
+      .from('users')
+      .update({ loan_access_status: 'rejected' })
+      .eq('id', userId)
+      .or('loan_access_status.is.null,loan_access_status.not.in.(approved,rejected)')
+      .select(BORROWER_COLUMNS)
+      .maybeSingle();
+   if (error) throw new Error(error.message);
+   if (!borrower) {
+      const { data: current } = await svc.from('users').select('loan_access_status').eq('id', userId).maybeSingle();
+      return {
+         ok: false,
+         summary:
+            current?.loan_access_status === 'approved'
+               ? 'They are already approved — not rejected. Reject them from Telegram if you mean it.'
+               : current?.loan_access_status === 'rejected'
+                 ? 'Already rejected — nothing changed.'
+                 : 'Borrower not found.'
+      };
+   }
+
+   await stampDecisionCards(
+      svc,
+      'loan_access',
+      userId,
+      { header: loanAccessStampHeader('rejected', personName(borrower)), detail: REJECT_FOLLOW_UP_ASK, by: decidedBy, buttons: rejectFollowUpButtons(userId) },
+      { final: false }
+   );
+   let callNote = '';
+   try {
+      const why = await cancelUpcomingCall(svc, userId, `${decidedBy} (rejected)`, { stamp: false });
+      if (!why) callNote = '\n🗑️ Their booked call was cancelled.';
+      else if (why !== 'No upcoming call.') callNote = `\n⚠️ Their booked call was NOT cancelled: ${why}`;
+   } catch (err) {
+      console.error('loanAccess: cancel call on reject failed', err instanceof Error ? err.message : err);
+      callNote = '\n⚠️ Their booked call was NOT cancelled — cancel it on Cal.com.';
+   }
+   const preCall = await isBeforeAnyCall(svc, borrower as BorrowerRow);
+   await notifyBorrower(svc, borrower as BorrowerRow, preCall ? 'rejected_pre_call' : 'rejected');
+   const summary = `🚫 Rejected ${who(borrower as BorrowerRow)} — by ${decidedBy}${callNote}`;
+   await postDiscord({ content: `🤝 Loan access ${summary}` }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
+   return { ok: true, summary };
+};
+
 // ---- After a Reject: for good / for now / approve after all ------------------------------------
 //
 // A rejected borrower can't book a call or reach out again (callBooking.prepare, loan-access submit).

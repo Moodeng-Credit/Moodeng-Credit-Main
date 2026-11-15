@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { type AdminCallApprovalRow, recheckAdminCallForm, sendAdminCallFacebookSteps } from '@/app/admin/adminSupabase';
+import { type AdminCallApprovalRow, recheckAdminCallForm, rejectAdminUser, sendAdminCallFacebookSteps } from '@/app/admin/adminSupabase';
 import IndonesiaContactCard from '@/app/admin/IndonesiaContactCard';
 import SocialHandlesLine from '@/app/admin/SocialHandlesLine';
 import { type CheckField, currentVerdict, type FormCheck, tallyCheck } from '@/app/admin/callFormCheck';
@@ -404,6 +404,7 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
    const [askingProof, setAskingProof] = useState(false);
    const [fbStepsSentAt, setFbStepsSentAt] = useState<string | null>(row.fbStepsSentAt ?? null);
    const [sendingFbSteps, setSendingFbSteps] = useState(false);
+   const [rejectNote, setRejectNote] = useState('');
    const savingRef = useRef(false);
    const idRef = useRef<string | null>(null);
 
@@ -479,6 +480,24 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
       const timer = window.setTimeout(() => void save(), AUTOSAVE_MS);
       return () => window.clearTimeout(timer);
    }, [status, save]);
+
+   // "Lend to them?" = 1 is a rejection (George, 2026-11-15): one confirm, then the same Reject as
+   // Telegram — request closed, rejected message sent, booked call cancelled.
+   const pickScore = async (n: number) => {
+      if (score === n) return (setScore(null), touch());
+      if (n !== 1) return (setScore(n), touch());
+      if (!window.confirm('1 = reject. They get the rejected message and can’t book or ask again. Reject them?')) return;
+      setScore(1);
+      touch();
+      setRejectNote('Rejecting…');
+      try {
+         const result = await rejectAdminUser(row.userId);
+         setRejectNote(result.summary);
+      } catch (err) {
+         setRejectNote('');
+         setError(err instanceof Error ? `Not rejected: ${err.message}` : 'Not rejected — try again.');
+      }
+   };
 
    // Save the sheet first so the check compares against what's on screen.
    const recheck = async () => {
@@ -773,7 +792,7 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                               />
                            </Question>
                         </div>
-                        <Question n={11} title="Lend to them?" hint="1 = no · 5 = great">
+                        <Question n={11} title="Lend to them?" hint="1 = reject · 5 = great">
                            <div className="flex gap-1.5">
                               {[1, 2, 3, 4, 5].map((n) => (
                                  <button
@@ -784,13 +803,14 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                                           : 'border-[#e3e3e3] bg-white text-[#37352f] hover:bg-[#fafafa]'
                                     }`}
                                     key={n}
-                                    onClick={() => (setScore(score === n ? null : n), touch())}
+                                    onClick={() => void pickScore(n)}
                                     type="button"
                                  >
                                     {n}
                                  </button>
                               ))}
                            </div>
+                           {rejectNote ? <p className="mt-1.5 whitespace-pre-line text-[13px] text-[#b42318]">{rejectNote}</p> : null}
                         </Question>
                      </div>
                   </div>
