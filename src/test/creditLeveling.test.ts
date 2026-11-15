@@ -492,6 +492,25 @@ describe('Dashboard credit level carousel', () => {
       expect(tiers[1].unlockRequirement).toBe('Borrow & repay the full $15 to unlock');
    });
 
+   it('an open $20 loan funded before the switch highlights the old next step ($40), not $25', () => {
+      const tiers = buildCreditLevels({
+         user: { ...baseUser, cs: 20 },
+         loans: [createLoan({ loanAmount: 20, loanStatus: 'Lent', repaymentStatus: 'Unpaid', fundedAt: '2026-11-05T10:05:00Z' })]
+      });
+      expect(tiers.map((tier) => tier.amount)).toEqual([15, 20, 25, 35, 40]);
+      expect(tiers.find((tier) => tier.amount === 40)?.unlockRequirement).toBe('Borrow & repay the full $20 to unlock');
+      expect(tiers.find((tier) => tier.amount === 25)?.unlockRequirement).toBe('Locked');
+   });
+
+   it('an open $20 loan funded after the switch highlights $25', () => {
+      const tiers = buildCreditLevels({
+         user: { ...baseUser, cs: 20 },
+         loans: [createLoan({ loanAmount: 20, loanStatus: 'Lent', repaymentStatus: 'Unpaid', fundedAt: '2026-11-15T10:00:00Z' })]
+      });
+      expect(tiers.map((tier) => tier.amount)).toEqual([15, 20, 25, 35]);
+      expect(tiers.find((tier) => tier.amount === 25)?.unlockRequirement).toBe('Borrow & repay the full $20 to unlock');
+   });
+
    it('builds tiers for an experienced user with multiple repayments', () => {
       const tiers = buildCreditLevels({
          user: { ...baseUser, cs: 60 },
