@@ -203,7 +203,7 @@ export const dropBusySlots = (slots: string[], busy: Array<{ start: string; end:
    });
 
 // Onboarding calls per Bangkok day, across both hosts. Once a day has this many, it's full.
-export const DAILY_CALL_CAP = 4;
+export const DAILY_CALL_CAP = 8; // George 2026-11-15: "can do max of 8 calls per day" (was 4)
 // Clustering: on a day that already has calls, free times within CLUSTER_NEAR_MINUTES of one are
 // "⭐ Recommended", and times further than CLUSTER_MAX_MINUTES from every call are not offered, so
 // a day's calls land in one block instead of scattered from morning to night.

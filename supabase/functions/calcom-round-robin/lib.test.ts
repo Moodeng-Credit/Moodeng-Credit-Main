@@ -158,8 +158,8 @@ const dayOfSlots = (day = '2026-10-29', from = 10, to = 18) => {
    return out;
 };
 
-Deno.test('a day with 4 calls is full: no times offered, and booking it is refused', () => {
-   const booked = ['2026-10-29T10:00:00+07:00', '2026-10-29T10:30:00+07:00', '2026-10-29T11:00:00+07:00', '2026-10-29T11:30:00+07:00'];
+Deno.test('a day with 8 calls is full: no times offered, and booking it is refused', () => {
+   const booked = ['10:00', '10:15', '10:30', '10:45', '11:00', '11:15', '11:30', '11:45'].map((t) => `2026-10-29T${t}:00+07:00`);
    const next = dayOfSlots('2026-10-30');
    const out = clusterSlots([...dayOfSlots(), ...next], booked);
    assertEquals(out.slots, next);
