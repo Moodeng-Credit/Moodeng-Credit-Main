@@ -1,5 +1,6 @@
 import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { describeSchedule } from '@/lib/repaymentSchedule';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { format, parseISO } from 'date-fns';
 import { BadgeCheck, ChevronRight, Clock, ExternalLink, Send, Share2, Sparkles, Trash2 } from 'lucide-react';
@@ -811,9 +812,14 @@ export default function UserCard(loan: UserCardProps) {
                   <img src="/icons/base-account.svg" alt="Base" className="w-6 h-6 rounded-[3.4px]" />
                   {/* Due Date */}
                   <div className="flex items-center gap-1 text-md-b2 font-semibold">
-                     <span className="text-[#585858]">Due On</span>
+                     <span className="text-[#585858]">{loanData.repaymentSchedule ? 'Last payment' : 'Due On'}</span>
                      <span className="text-md-red-600">{dueFormatted}</span>
                   </div>
+                  {loanData.repaymentSchedule ? (
+                     <p className="text-md-b3 font-medium text-[#585858]">
+                        Paid back in {loanData.repaymentSchedule.length} parts: {describeSchedule(loanData.repaymentSchedule)}
+                     </p>
+                  ) : null}
                </div>
 
                {/* Right: Amount Card */}
@@ -1020,7 +1026,8 @@ export default function UserCard(loan: UserCardProps) {
                      principal: Number(loanData.loanAmount ?? 0),
                      totalOwed: Number(loanData.totalRepaymentAmount ?? 0),
                      dueDate: loanData.dueDate ?? '',
-                     market: isIndoLoan ? 'ID' : null
+                     market: isIndoLoan ? 'ID' : null,
+                     repaymentSchedule: loanData.repaymentSchedule ?? null
                   } satisfies FundLoanTarget
                }
                onClose={() => {

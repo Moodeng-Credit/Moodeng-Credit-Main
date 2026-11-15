@@ -1,3 +1,5 @@
+import { describeSchedule, parseRepaymentSchedule } from './repaymentSchedule.ts';
+
 export type TelegramLoanRequest = {
    id: string;
    tracking_id?: string | null;
@@ -11,6 +13,8 @@ export type TelegramLoanRequest = {
    borrower_user_id?: string | null;
    /** 'ID' = Indonesia track: the post is marked 🇮🇩. */
    market?: string | null;
+   /** Paid back in parts (one loan): [{ due, amount }]. due_date is the last payment. */
+   repayment_schedule?: unknown;
 };
 
 export type TelegramLoanHistory = {
@@ -195,6 +199,12 @@ export const buildTelegramLoanRequestMessage = (
 
    if (durationDays !== null) {
       lines.push(`⏳ Duration: ${durationDays} days`);
+   }
+
+   // One loan paid back in parts (George, 2026-11-15): say when each part comes back.
+   const schedule = parseRepaymentSchedule(loan.repayment_schedule);
+   if (schedule) {
+      lines.push(`🗓 ${schedule.length} payments: ${describeSchedule(schedule)}`);
    }
 
    lines.push(

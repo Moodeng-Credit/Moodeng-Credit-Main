@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 
+import { currentDueDate } from '@/lib/repaymentSchedule';
 import { useSelector } from 'react-redux';
 import { Link, useSearchParams } from 'react-router-dom';
 
@@ -52,7 +53,7 @@ function LoanDueCard({ loan }: { loan: Loan & { isDefaulted: boolean } }) {
              };
    const lenderName = loan.lenderUser ? (userProfiles[loan.lenderUser]?.username ?? copy.unknown) : copy.unknown;
    // Calendar days to the due date on the borrower's own calendar (their zone), not UTC.
-   const daysRemaining = getDaysUntilDueDay(loan.dueDate, getLoanTimezone(loan, DEFAULT_LOAN_TIMEZONE));
+   const daysRemaining = getDaysUntilDueDay(currentDueDate(loan), getLoanTimezone(loan, DEFAULT_LOAN_TIMEZONE));
    const cardBg = loan.isDefaulted ? 'bg-md-red-100' : 'bg-[#fff6d0] dark:bg-[#3d2d12]';
 
    return (

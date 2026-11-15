@@ -3,7 +3,8 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
 import { getLoanRequestCooldownMessage, type LoanRequestRepostStatus } from '@/lib/loanRequestRepostStatus';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import type { Database } from '@/lib/supabase/types';
+import { parseRepaymentSchedule } from '@/lib/repaymentSchedule';
+import type { Database, Json } from '@/lib/supabase/types';
 import { fetchUser } from '@/store/slices/authSlice';
 import { type CreateLoanData, type Loan, type LoanState } from '@/types/loanTypes';
 import { trackMetaEvent } from '@/lib/metaPixel';
@@ -85,7 +86,8 @@ const mapSupabaseLoanToLoan = (row: LoanRow): Loan => ({
    offplatformSettledAt: row.offplatform_settled_at ?? undefined,
    offplatformSettlementNote: row.offplatform_settlement_note ?? undefined,
    market: (row as { market?: string | null }).market === 'ID' ? 'ID' : undefined,
-   ...mapIdrPeg(row as IdrPegRow)
+   ...mapIdrPeg(row as IdrPegRow),
+   repaymentSchedule: parseRepaymentSchedule((row as { repayment_schedule?: unknown }).repayment_schedule) ?? undefined
 });
 
 const initialState: LoanState = {
@@ -133,8 +135,9 @@ export const createLoan = createAsyncThunk('loans/create', async (loanData: Crea
    const trackingId = `LOAN-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
    // repay_idr: Indonesia rupiah peg — the server sets the USD total from it (enforce_new_loan_terms).
-   const loanInsert: LoanInsert & { repay_idr?: number } = {
+   const loanInsert: LoanInsert & { repay_idr?: number; repayment_schedule?: Json } = {
       ...(loanData.repayIdr != null ? { repay_idr: loanData.repayIdr } : {}),
+      ...(loanData.repaymentSchedule?.length ? { repayment_schedule: loanData.repaymentSchedule as unknown as Json } : {}),
       tracking_id: trackingId,
       borrower_wallet: loanData.borrowerWallet || null,
       borrower_user_id: loanData.borrowerUserId || null,

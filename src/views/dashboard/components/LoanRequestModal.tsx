@@ -53,6 +53,7 @@ import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
 import { useIncomeDocFacts } from '@/hooks/useIncomeDocRequirement';
 import { gateMessage, type IncomeDocGate, incomeDocGate } from '@/lib/incomeDocSteps';
+import { buildTwoPartSchedule, canSplitRepayment, formatMilestoneDay } from '@/lib/repaymentSchedule';
 import { fetchMySocialHandles, needsSocialHandles, SOCIAL_HANDLES_MIN_USD, type SocialHandles } from '@/lib/socialHandles';
 import type { LoanFlow } from '@/hooks/useLoanFlow';
 
@@ -159,6 +160,9 @@ interface LoanRequestModalProps {
    setRepayIdr?: (value: string) => void;
    /** The server's USD/IDR (get_usd_idr_rate); null = no fresh rate, so ID requests can't be sent. */
    usdIdrRate?: number | null;
+   /** Loans over $60: pay back in 2 parts (src/lib/repaymentSchedule.ts). Owned by RequestBoard. */
+   payInParts?: boolean;
+   setPayInParts?: (value: boolean) => void;
    isUsdIdrRateLoading?: boolean;
 }
 
@@ -1598,7 +1602,9 @@ export default function LoanRequestModal({
    repayIdr = '',
    setRepayIdr = noopSetString,
    usdIdrRate = null,
-   isUsdIdrRateLoading = false
+   isUsdIdrRateLoading = false,
+   payInParts = false,
+   setPayInParts
 }: LoanRequestModalProps) {
    const isIdLoan = idLoanRules !== null;
    const dispatch = useDispatch<AppDispatch>();
@@ -1760,7 +1766,7 @@ export default function LoanRequestModal({
    const lowRepaymentCheck = () => {
       // Indonesia loans are capped at 1.5× over 7–14 days; the 10%-a-month nudge doesn't apply.
       if (isIdLoan) return null;
-      const min = minimumRepayment(Number(loanAmount), days);
+      const min = minimumRepayment(Number(loanAmount), days, undefined, { split: splitOn });
       const repay = Number(totalRepaymentAmount);
       if (!min || !Number.isFinite(repay) || repay >= min.amount) return null;
       const key = `${loanAmount}|${totalRepaymentAmount}|${days}`;
@@ -1839,6 +1845,14 @@ export default function LoanRequestModal({
              : 'Your verification is still being checked — you can send this request once it clears.';
    const limitAmount = Math.max(availableCreditLimit, 0);
    const selectedDate = days ? days.slice(0, 10) : '';
+   // "Pay in 2 parts" (loans over $60, at least 4 weeks): one loan, half back halfway, half on the date.
+   const splitAvailable = !isIdLoan && Boolean(setPayInParts) && canSplitRepayment(Number(loanAmount), today, selectedDate);
+   const splitOn = splitAvailable && payInParts;
+   const splitPreview = (() => {
+      const total = Number(totalRepaymentAmount);
+      if (!splitAvailable || !Number.isFinite(total) || total <= 0) return null;
+      return buildTwoPartSchedule(total, today, selectedDate);
+   })();
    const selectedCalendarDate = parseIsoDate(selectedDate);
    const todayDate = parseIsoDate(today) ?? new Date();
    const maxLoanDate = addDays(todayDate, idLoanRules ? idLoanRules.maxTermDays : 120);
@@ -2498,7 +2512,7 @@ export default function LoanRequestModal({
    const suggestedRepayment = (() => {
       const borrow = Number(loanAmount);
       if (!loanAmount || !Number.isFinite(borrow) || borrow <= 0) return null;
-      return suggestedRepaymentRange(borrow, days);
+      return suggestedRepaymentRange(borrow, days, undefined, { split: splitOn });
    })();
    const reasonMeetsLength = reason.trim().length >= REASON_MIN_LENGTH;
    const reasonQuality = checkReasonQuality(reason);
@@ -3648,7 +3662,7 @@ export default function LoanRequestModal({
                                     offer >= 1 &&
                                     range !== null &&
                                     offer < range.lo;
-                                 const min = minimumRepayment(borrowNum, days);
+                                 const min = minimumRepayment(borrowNum, days, undefined, { split: splitOn });
                                  if (!termErrors.repayment && Boolean(totalRepaymentAmount) && min && Number.isFinite(repayNum) && repayNum < min.amount) {
                                     return (
                                        <div className="flex items-start gap-1.5 rounded-md-md bg-md-yellow-100 px-md-2 py-md-1 text-md-b3 font-normal leading-[18px] text-md-yellow-700">
@@ -3737,6 +3751,43 @@ export default function LoanRequestModal({
                                  })}
                               </div>
                            </div>
+
+                           {splitAvailable ? (
+                              <div className="flex flex-col gap-md-1" data-tour-target="loan-pay-in-parts">
+                                 <span className="text-md-b2 font-[590] text-md-heading">How will you pay it back?</span>
+                                 <div className="grid grid-cols-2 gap-md-1" role="radiogroup" aria-label="How will you pay it back?">
+                                    {[
+                                       { on: false, title: 'All at once', detail: selectedDateLabel ? `By ${selectedDateLabel}` : '' },
+                                       {
+                                          on: true,
+                                          title: 'In 2 parts',
+                                          detail: splitPreview
+                                             ? splitPreview.map((part) => `$${part.amount.toFixed(2)} ${formatMilestoneDay(part.due)}`).join(' + ')
+                                             : 'Half each time'
+                                       }
+                                    ].map((option) => {
+                                       const active = payInParts === option.on;
+                                       return (
+                                          <button
+                                             key={option.title}
+                                             type="button"
+                                             role="radio"
+                                             aria-checked={active}
+                                             onClick={() => setPayInParts?.(option.on)}
+                                             className={`flex min-h-[56px] flex-col items-start justify-center rounded-md-input border px-md-2 py-md-1 text-left transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 ${
+                                                active ? 'border-md-primary-900 bg-md-primary-100' : 'border-md-neutral-700 bg-md-neutral-100'
+                                             }`}
+                                          >
+                                             <span className={`text-md-b2 font-semibold ${active ? 'text-md-primary-1200' : 'text-md-heading'}`}>{option.title}</span>
+                                             {option.detail ? (
+                                                <span className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">{option.detail}</span>
+                                             ) : null}
+                                          </button>
+                                       );
+                                    })}
+                                 </div>
+                              </div>
+                           ) : null}
                            </>
                         )}
 

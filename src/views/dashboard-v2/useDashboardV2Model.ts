@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 
+import { currentDueDate, currentMilestone } from '@/lib/repaymentSchedule';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { useFriendReferrals } from '@/hooks/useFriendReferrals';
@@ -54,7 +55,7 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
          .map((loan) => ({ loan, isOverdue: overdueIds.has(loan.id) }))
          .sort((a, b) => {
             if (a.isOverdue !== b.isOverdue) return a.isOverdue ? -1 : 1;
-            return parseDateSafely(a.loan.dueDate).getTime() - parseDateSafely(b.loan.dueDate).getTime();
+            return parseDateSafely(currentDueDate(a.loan)).getTime() - parseDateSafely(currentDueDate(b.loan)).getTime();
          });
    }, [loanArrays.activeLoans, loanArrays.defaultedLoans]);
 
@@ -93,13 +94,16 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
       });
       const dues: DashboardV2Due[] = dueLoans.map(({ loan, isOverdue }) => {
          const lender = loan.lenderUser ? userProfiles[loan.lenderUser] : undefined;
+         // Split loan (2 payments): the row is the next payment — its amount and its day.
+         const nextPayment = currentMilestone(loan);
+         const dueDay = currentDueDate(loan);
          return {
             id: loan.id,
             // What's still owed (principal + interest − already repaid), not the amount borrowed.
-            amount: Math.max(0, toNumber(loan.totalRepaymentAmount) - toNumber(loan.repaidAmount)),
+            amount: nextPayment ? nextPayment.amountLeft : Math.max(0, toNumber(loan.totalRepaymentAmount) - toNumber(loan.repaidAmount)),
             // Calendar days in the borrower's zone: 0 = due today, negative = overdue.
-            daysRemaining: getDaysUntilDueDay(loan.dueDate, getLoanTimezone(loan)),
-            deadline: getDueDayEnd(loan.dueDate, getLoanTimezone(loan)).toISOString(),
+            daysRemaining: getDaysUntilDueDay(dueDay, getLoanTimezone(loan)),
+            deadline: getDueDayEnd(dueDay, getLoanTimezone(loan)).toISOString(),
             lenderName: lender?.displayName || lender?.username || 'a moo-lender',
             isOverdue
          };

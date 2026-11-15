@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { type ScheduleView, reminderRowCounts, reminderView } from '../_shared/repaymentSchedule.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import {
@@ -196,7 +197,10 @@ const loadTrustPointRewardContext = async (
    };
 };
 
-const loadSentStagesByLoanId = async (supabase: SupabaseClient, payload: { loanIds: string[]; userId: string }) => {
+const loadSentStagesByLoanId = async (
+   supabase: SupabaseClient,
+   payload: { loanIds: string[]; userId: string; countAfterByLoanId?: Map<string, string | null | undefined> }
+) => {
    const sent = new Map<string, Set<OverdueStage>>();
    if (!payload.loanIds.length) {
       return sent;
@@ -204,7 +208,7 @@ const loadSentStagesByLoanId = async (supabase: SupabaseClient, payload: { loanI
 
    const { data, error } = await supabase
       .from('loan_notifications')
-      .select('loan_id, notification_type')
+      .select('loan_id, notification_type, email_sent_at')
       .in('loan_id', payload.loanIds)
       .eq('user_id', payload.userId)
       .in('notification_type', OVERDUE_STAGES);
@@ -213,7 +217,9 @@ const loadSentStagesByLoanId = async (supabase: SupabaseClient, payload: { loanI
       throw new Error(error.message);
    }
 
-   for (const row of (data ?? []) as SentLoanNotificationRow[]) {
+   for (const row of (data ?? []) as Array<SentLoanNotificationRow & { email_sent_at?: string | null }>) {
+      // Split loans: overdue reminders for an earlier payment don't count for the next one.
+      if (!reminderRowCounts(row.email_sent_at, payload.countAfterByLoanId?.get(row.loan_id))) continue;
       const stages = sent.get(row.loan_id) ?? new Set<OverdueStage>();
       stages.add(row.notification_type);
       sent.set(row.loan_id, stages);
@@ -279,21 +285,25 @@ serve(async (req) => {
    const body = await req.json().catch(() => ({}));
    const referenceDate = body.referenceDate ? new Date(body.referenceDate) : new Date();
 
-   const { data: loans, error } = await supabase
+   // Every open funded loan (a few dozen): split loans (2 payments) can be late on their first
+   // payment while due_date (the last one) is still ahead, so the past-due test runs below, on each
+   // loan's next payment, instead of in this query.
+   const { data: loanRows, error } = await supabase
       .from('loans')
       .select(
-         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, due_timezone, funded_at, lender_user_id, repayment_status, market, repay_idr, repaid_idr'
+         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, due_timezone, funded_at, lender_user_id, repayment_status, market, repay_idr, repaid_idr, repayment_schedule'
       )
       .eq('loan_status', 'Lent')
       .in('repayment_status', ['Unpaid', 'Partial'])
       // Test loans don't get borrower reminders or team posts.
       .or('is_test.is.null,is_test.eq.false')
-      .not('due_date', 'is', null)
-      .lt('due_date', referenceDate.toISOString());
+      .not('due_date', 'is', null);
 
    if (error) {
       return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
    }
+
+   const loans = (loanRows ?? []).map((loan) => reminderView(loan));
 
    // `due_date < now` only says the due day has BEGUN (it is midnight UTC of that date). A loan is
    // overdue once the due day has ENDED in the borrower's own timezone.
@@ -345,7 +355,8 @@ serve(async (req) => {
          }
 
          const loanIds = borrowerLoans.map((loan) => loan.id);
-         const sentStages = await loadSentStagesByLoanId(supabase, { loanIds, userId: borrower.id });
+         const countAfterByLoanId = new Map(borrowerLoans.map((loan) => [loan.id, (loan as ScheduleView<typeof loan>).overdue_count_after]));
+         const sentStages = await loadSentStagesByLoanId(supabase, { loanIds, userId: borrower.id, countAfterByLoanId });
          const stageByLoanId = new Map(borrowerLoans.map((loan) => [loan.id, getOverdueStage(referenceDate, deadlineByLoanId.get(loan.id)?.toISOString() ?? loan.due_date ?? null)]));
          const pendingLoans = borrowerLoans.filter((loan) => !sentStages.get(loan.id)?.has(stageByLoanId.get(loan.id)!));
 
