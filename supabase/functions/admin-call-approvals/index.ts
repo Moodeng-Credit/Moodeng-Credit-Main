@@ -52,7 +52,8 @@ const json = (body: Record<string, unknown>, status = 200) =>
 
 // Calls from two days back (late decisions, no-show corrections) to a day ahead.
 const LOOKBACK_H = 48;
-const LOOKAHEAD_H = 24;
+// Two weeks ahead: every booked call is on the Calls tab (George 2026-11-15: "hard to keep track").
+const LOOKAHEAD_H = 14 * 24;
 
 const USER_COLUMNS = `${BORROWER_COLUMNS}, video_call_outcome, video_call_outcome_at, video_call_join_url, video_call_fb_steps_sent_at, ${ATTENDANCE_COLUMNS}`;
 
