@@ -1,9 +1,9 @@
-import ContactLinesCard from '@/components/ContactLinesCard';
 import { useState } from 'react';
 
 import { useSelector } from 'react-redux';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
+import ContactLinesCard from '@/components/ContactLinesCard';
 import { AddEmailCard } from '@/components/account/AddEmailCard';
 import { ConfirmEmailReminder } from '@/components/account/ConfirmEmailReminder';
 import GuidedTourPreview from '@/components/GuidedTourPreview';

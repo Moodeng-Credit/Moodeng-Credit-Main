@@ -1,4 +1,3 @@
-import ContactLinesCard from '@/components/ContactLinesCard';
 import {
    type ChangeEvent,
    type FormEvent,
@@ -18,6 +17,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 
+import ContactLinesCard from '@/components/ContactLinesCard';
 import FilterSidebar from '@/components/filters/FilterSidebar';
 import GuidedTourPreview, { type TourRoleOption } from '@/components/GuidedTourPreview';
 import IouPointHistoryModal from '@/components/IouPointHistoryModal';
