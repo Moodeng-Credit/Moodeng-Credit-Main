@@ -280,20 +280,20 @@ export default function ConnectStep({
                      image={missedCall ? CONNECT_HIPPOS.missed : CONNECT_HIPPOS.hello}
                      subtitle={
                         missedCall
-                             ? `No worries — life happens. Pick a new time for your 15-min call${withEmma ? ' with Emma' : ''}.`
+                             ? `Pick a new time for your 15-min call${withEmma ? ' with Emma' : ''}.`
                              : withEmma
-                               ? 'A quick 15-min call with Emma sets you up to cash out and repay easily.'
+                               ? 'Quick 15-min call with Emma before your first loan.'
                                : context === 'kyc'
-                                 ? "We only use it to message you about your loan — we never post, and we can't see your friends or messages."
+                                 ? 'Only to message you about your loan.'
                                  : mode === 'call'
-                                   ? 'We meet every borrower on a quick 15-min video call before their first loan.'
-                                   : 'Before your first loan, we like to meet every borrower — we approve within a day.'
+                                   ? 'Quick 15-min video call before your first loan.'
+                                   : 'We meet every borrower — approval within a day.'
                      }
                      title={
                         missedCall
                              ? 'We missed you!'
                              : context === 'kyc'
-                               ? 'Connect Facebook so we can reach you'
+                               ? 'Connect Facebook'
                                : "Glad you're here!"
                      }
                      trail={trail('contact')}

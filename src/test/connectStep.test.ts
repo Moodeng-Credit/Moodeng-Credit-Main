@@ -121,7 +121,7 @@ describe('ConnectStep — PART 1 of Connect → Approve → Apply', () => {
 
    it('opens with the "meet every borrower" pitch on the Messenger step', async () => {
       await render();
-      expect(container.textContent).toContain('we like to meet every borrower');
+      expect(container.textContent).toContain('We meet every borrower');
       expect(container.textContent).toContain('Messenger');
    });
 
