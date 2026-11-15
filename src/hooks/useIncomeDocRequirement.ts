@@ -32,13 +32,18 @@ export const fetchIncomeDocFacts = async (): Promise<IncomeDocFacts> => {
    };
 };
 
-export function useIncomeDocFacts(enabled: boolean): IncomeDocFacts {
-   const { data } = useQuery({
+/**
+ * `fresh` = read from the server since this screen mounted and not mid-refetch. The cached value can
+ * be from before they sent a document, so anything that acts on its own (the auto-send after coming
+ * back from /documents) waits for it; a tap can use the cached value as before.
+ */
+export function useIncomeDocFacts(enabled: boolean): IncomeDocFacts & { fresh: boolean } {
+   const { data, isFetchedAfterMount, isFetching } = useQuery({
       queryKey: ['income-doc-requirement'],
       queryFn: fetchIncomeDocFacts,
       enabled,
       staleTime: 0,
       refetchOnMount: 'always'
    });
-   return data ?? OFF;
+   return { ...(data ?? OFF), fresh: isFetchedAfterMount && !isFetching };
 }
