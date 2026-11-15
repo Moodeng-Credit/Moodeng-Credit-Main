@@ -68,6 +68,8 @@ import Login from '@/app/login/page';
 import MfaChallengePage from '@/app/mfa-challenge/page';
 import MilestonesPage from '@/app/milestones/page';
 import CongratulationsPage from '@/app/onboarding/congratulations/page';
+import ConnectLinesPreview from '@/app/connect/ConnectLinesPreview';
+import ConnectLinesPage from '@/app/connect/page';
 import ConnectBeforeKycPage from '@/app/onboarding/connect/page';
 import WalletBlocked from '@/app/onboarding/wallet/blocked/page';
 import WalletConnected from '@/app/onboarding/wallet/connected/page';
@@ -388,6 +390,14 @@ export default function App() {
                }
             />
             <Route
+               path="/connect"
+               element={
+                  <ProtectedRoute>
+                     <ConnectLinesPage />
+                  </ProtectedRoute>
+               }
+            />
+            <Route
                path="/onboarding/connect"
                element={
                   <ProtectedRoute>
@@ -411,6 +421,7 @@ export default function App() {
             {import.meta.env.DEV ? <Route path="/onboarding/wallet-blocked-preview" element={<WalletBlocked />} /> : null}
             {import.meta.env.DEV ? <Route path="/onboarding/congratulations-preview" element={<CongratulationsPage />} /> : null}
             {import.meta.env.DEV ? <Route path="/onboarding/connect-preview" element={<ConnectBeforeKycPage />} /> : null}
+            {import.meta.env.DEV ? <Route path="/connect-preview" element={<ConnectLinesPreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/account-wallet-preview" element={<AccountWalletPreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/account-settings-preview" element={<SettingsStylePreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/fund-wallet-preview" element={<FundWalletPreview />} /> : null}

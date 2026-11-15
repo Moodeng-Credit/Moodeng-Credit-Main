@@ -1923,9 +1923,9 @@ export default function LoanRequestModal({
    const needsVideoCallStep = !isIdLoan && loanFlow === 'open' && contactSteps.videoCall;
    const requestSteps: RequestStepKey[] = [
       'terms',
+      ...(needsContactsStep ? (['contacts'] as const) : []),
       ...(isMultiStepRequestFlow ? (['bio1', 'bio2'] as const) : []),
       ...(needsJobStep ? (['job'] as const) : []),
-      ...(needsContactsStep ? (['contacts'] as const) : []),
       ...(needsVideoCallStep ? (['videocall'] as const) : [])
    ];
    const currentStepKey: RequestStepKey = showJobStep
@@ -2718,6 +2718,17 @@ export default function LoanRequestModal({
          return;
       }
 
+      // Messenger + WhatsApp come FIRST, right after the terms (2026-11-15): they used to be the last
+      // step, so someone missing a line filled in everything else (and could be stopped for proof of
+      // income for hours) before ever being shown what they lacked. ContactsStep's onContinue sets
+      // contactsStepDone and re-fires this handler. (Approved through Connect: verified in PART 1.)
+      if (needsContactsStep && !contactsStepDone && !showContactsStep) {
+         event.preventDefault();
+         setShowBorrowerContextStep(false);
+         setShowContactsStep(true);
+         return;
+      }
+
       if (!showBorrowerContextStep) {
          const low = lowRepaymentCheck();
          if (low) {
@@ -2772,16 +2783,6 @@ export default function LoanRequestModal({
          event.preventDefault();
          setShowBorrowerContextStep(false);
          setShowJobStep(true);
-         return;
-      }
-
-      // Verified contact line (Messenger, or WhatsApp once live) — required before submitting, for
-      // anyone who doesn't have one yet. ContactsStep's onContinue sets contactsStepDone and
-      // re-fires this handler. (Borrowers approved through Connect already verified in PART 1.)
-      if (needsContactsStep && !contactsStepDone && !showContactsStep) {
-         event.preventDefault();
-         setShowBorrowerContextStep(false);
-         setShowContactsStep(true);
          return;
       }
 
@@ -2935,10 +2936,10 @@ export default function LoanRequestModal({
       handleLoanFormSubmit({ preventDefault: () => {} } as React.FormEvent<HTMLFormElement>);
    };
 
+   // The contacts step is the first stop after the terms, so Back returns to the terms.
    const handleContactsStepBack = () => {
       setShowContactsStep(false);
-      setShowBorrowerContextStep(true);
-      setBioPage(2);
+      setShowBorrowerContextStep(false);
    };
 
    const handleVideoCallStepContinue = () => {
@@ -2949,10 +2950,6 @@ export default function LoanRequestModal({
 
    const handleVideoCallStepBack = () => {
       setShowVideoCallStep(false);
-      if (needsContactsStep) {
-         setShowContactsStep(true);
-         return;
-      }
       setShowBorrowerContextStep(isMultiStepRequestFlow);
       if (isMultiStepRequestFlow) setBioPage(2);
    };

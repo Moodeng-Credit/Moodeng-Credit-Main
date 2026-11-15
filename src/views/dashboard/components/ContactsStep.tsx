@@ -74,7 +74,7 @@ function TikTokMessengerSteps() {
 }
 
 // Where this card is shown — sent with every analytics event so we can compare the flows.
-export type ContactsStepSource = 'verify_review' | 'verify_declined' | 'loan_request' | 'connect';
+export type ContactsStepSource = 'verify_review' | 'verify_declined' | 'loan_request' | 'connect' | 'connect_link';
 
 // Every step of the "connect your Facebook" flow is logged to PostHog (contact_verify_*), so a stuck
 // borrower's story is one query instead of a reconstruction from page views and DB timestamps, and
