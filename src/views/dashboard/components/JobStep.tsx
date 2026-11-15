@@ -37,11 +37,7 @@ export default function JobStep({
    // the box and buttons ran edge to edge.
    return (
       <div className="connect-ui flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overscroll-contain px-5 py-5">
-         <ConnectHero
-            image={CONNECT_HIPPOS.call}
-            subtitle="Moo-lenders like to know who they’re helping."
-            title="What do you do for work?"
-         />
+         <ConnectHero image={CONNECT_HIPPOS.call} title="What do you do for work?" />
          <div className="flex flex-col gap-2">
             <input
                autoFocus
@@ -54,11 +50,10 @@ export default function JobStep({
                      void save();
                   }
                }}
-               placeholder="e.g. teacher, call center agent"
+               placeholder="e.g. teacher"
                type="text"
                value={job}
             />
-            <p className="text-[12px] leading-[18px] text-md-neutral-1200">Be specific, and add where you work if you can.</p>
             {error ? <p className="text-md-b3 text-md-red-500">{error}</p> : null}
          </div>
          <div className="flex flex-col gap-2">
