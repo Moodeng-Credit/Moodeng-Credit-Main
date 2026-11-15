@@ -6,6 +6,9 @@ import { callTelegramApi } from '../_shared/telegram.ts';
 import { buildHeartbeat, HeartbeatInput } from '../_shared/securityHeartbeat.ts';
 import { recordJobRun } from '../_shared/securityJobRuns.ts';
 import { deliverSecurityAlert, resolveSecurityChatId } from '../_shared/securityAlerts.ts';
+import { adminUserUrl } from '../_shared/adminCards.ts';
+import { assessOldWallets, type OldWalletWatchState, pickOldWallets } from '../_shared/oldWalletWatch.ts';
+import { readOpenLoanBorrowers, readUsdcBalances } from '../_shared/oldWalletWatchRead.ts';
 import { ALCHEMY_BASE_URL } from '../_shared/usdcTransfer.ts';
 import { assessVault, type VaultWatchState } from '../_shared/vaultWatch.ts';
 import { readVaultSnapshot } from '../_shared/vaultWatchRead.ts';
@@ -45,6 +48,14 @@ serve(async (req) => {
    // Every 5 minutes (cron vault-watch-5min): BitRepo vault vs our recorded Vault Lend loans (_shared/vaultWatch.ts).
    const body = await req.json().catch(() => ({}));
    if (body?.action === 'vault_watch') return await runVaultWatch(supabase, startedAt);
+   // Hourly (cron old-wallet-watch-hourly): money a borrower sent to a wallet their account no longer points at
+   // (_shared/oldWalletWatch.ts). dryRun reports what it would flag without alerting or remembering it.
+   if (body?.action === 'old_wallet_watch') {
+      return await runOldWalletWatch(supabase, startedAt, {
+         dryRun: body?.dryRun === true,
+         minUsd: typeof body?.minUsd === 'number' && body.minUsd > 0 ? body.minUsd : undefined
+      });
+   }
 
    // --- Gather facts -------------------------------------------------------
    const { data: lastScan } = await supabase
@@ -167,6 +178,63 @@ async function runVaultWatch(supabase: any, startedAt: string): Promise<Response
       // A failed read is recorded (ok=false) so the next run still compares against the last good state.
       const message = err instanceof Error ? err.message : String(err);
       await recordJobRun(supabase, VAULT_JOB, { startedAt, ok: false, detail: { error: message } });
+      return new Response(JSON.stringify({ ok: false, error: message }), { status: 500, headers: corsHeaders });
+   }
+}
+
+const OLD_WALLET_JOB = 'old-wallet-watch';
+
+async function runOldWalletWatch(
+   // deno-lint-ignore no-explicit-any
+   supabase: any,
+   startedAt: string,
+   opts: { dryRun: boolean; minUsd?: number }
+): Promise<Response> {
+   // What the last good run already told the team about, so the same money is flagged once.
+   const { data: last } = await supabase
+      .from('security_job_runs')
+      .select('detail')
+      .eq('job_name', OLD_WALLET_JOB)
+      .eq('ok', true)
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+   const previous = ((last as { detail?: { state?: OldWalletWatchState } } | null)?.detail?.state ?? null) as OldWalletWatchState | null;
+
+   try {
+      const candidates = pickOldWallets(await readOpenLoanBorrowers(supabase));
+      const wallets = [...new Set(candidates.map((c) => c.wallet))];
+      const { balances, failed } = await readUsdcBalances(Deno.env.get('BASE_RPC_URL')?.trim() || ALCHEMY_BASE_URL, wallets);
+      const { findings, state } = assessOldWallets(candidates, balances, previous, { minUsd: opts.minUsd, adminUrl: adminUserUrl });
+      // A wallet we could not read keeps what we knew, so one flaky read never repeats an alert.
+      for (const wallet of failed) if (previous?.[wallet]) state[wallet] = previous[wallet];
+
+      const summary = findings.map((f) => ({ userId: f.userId, wallet: f.wallet, balance: f.balance }));
+      if (opts.dryRun) {
+         return new Response(
+            JSON.stringify({ ok: true, dryRun: true, walletsChecked: wallets.length, failed: failed.length, findings: summary }),
+            {
+               status: 200,
+               headers: corsHeaders
+            }
+         );
+      }
+      for (const f of findings) {
+         await deliverSecurityAlert(supabase, { source: 'old-wallet', severity: f.severity, title: f.title, body: f.body });
+      }
+      await recordJobRun(supabase, OLD_WALLET_JOB, {
+         startedAt,
+         ok: true,
+         signalCount: findings.length,
+         detail: { state, walletsChecked: wallets.length, failed: failed.length, findings: summary }
+      });
+      return new Response(JSON.stringify({ ok: true, walletsChecked: wallets.length, failed: failed.length, findings: summary }), {
+         status: 200,
+         headers: corsHeaders
+      });
+   } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (!opts.dryRun) await recordJobRun(supabase, OLD_WALLET_JOB, { startedAt, ok: false, detail: { error: message } });
       return new Response(JSON.stringify({ ok: false, error: message }), { status: 500, headers: corsHeaders });
    }
 }

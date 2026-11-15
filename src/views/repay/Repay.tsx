@@ -21,7 +21,7 @@ import posthog from 'posthog-js';
 import { useDispatch, useSelector, useStore } from 'react-redux';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { erc20Abi } from 'viem';
-import { useAccount, useConnect, useReadContract, useSwitchChain, useWatchContractEvent } from 'wagmi';
+import { useAccount, useConnect, useReadContract, useReadContracts, useSwitchChain, useWatchContractEvent } from 'wagmi';
 
 import { useBottomNavPrimaryAction } from '@/components/BottomNavActionContext';
 import RepayInAppBrowserGate from '@/components/RepayInAppBrowserGate';
@@ -60,10 +60,10 @@ import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
 import { RepayStreakCelebration } from '@/views/dashboard-v2/components/RepayStreak';
-import { AffiliateUnlockedCard } from '@/views/referral/AffiliateUnlockedCard';
 import { CONNECT_HIPPOS } from '@/views/dashboard/components/connectKit';
 import { Card, DoneRow, GoldButton, SoftButton, StepHead, WaitRow } from '@/views/indonesia/ui';
 import WaltRepaySteps from '@/views/indonesia/walt/WaltRepaySteps';
+import { AffiliateUnlockedCard } from '@/views/referral/AffiliateUnlockedCard';
 import AppGuideSteps from '@/views/repay/AppGuideSteps';
 import { suggestedBuyAmount as suggestedGcryptoBuyAmount } from '@/views/repay/gcryptoBuyAmount';
 import GcryptoPictureSteps from '@/views/repay/GcryptoPictureSteps';
@@ -941,6 +941,48 @@ export default function Repay() {
    const hasPartialFunds = usdcBalance !== null && usdcBalance > 0 && isShortOnFunds;
    // Under a cent counts as empty: exchanges leave dust like 0.0047 behind after a send.
    const isWalletEmpty = usdcBalance !== null && usdcBalance < 0.01 && isShortOnFunds;
+   // Money sent to a wallet this account no longer points at (an address still saved in the borrower's
+   // exchange app after their wallet changed) never shows above: we only watch the current wallet. So while
+   // they are short, also look at the wallets their earlier loans used and say so if the money is there.
+   // The team gets its own alert from the hourly old-wallet watch (supabase/functions/_shared/oldWalletWatch.ts).
+   const oldWalletAddresses = useMemo(() => {
+      const current = repayWalletAddress.toLowerCase();
+      const found = new Set<string>();
+      for (const loan of loans) {
+         const wallet = loan.borrowerUser === user.id ? (loan.borrowerWallet ?? '').trim().toLowerCase() : '';
+         if (/^0x[0-9a-f]{40}$/.test(wallet) && wallet !== current) found.add(wallet);
+      }
+      return [...found].slice(0, 5) as `0x${string}`[];
+   }, [loans, user.id, repayWalletAddress]);
+   const { data: oldWalletBalancesRaw } = useReadContracts({
+      contracts: oldWalletAddresses.map((wallet) => ({
+         abi: erc20Abi,
+         address: BASE_USDC_ADDRESS,
+         functionName: 'balanceOf' as const,
+         args: [wallet] as const,
+         chainId: ALLOWED_CHAIN_ID
+      })),
+      query: {
+         enabled: oldWalletAddresses.length > 0 && Boolean(selectedLoan) && !usePreviewLoans && isShortOnFunds,
+         refetchInterval: 60000
+      }
+   });
+   // Preview: ?oldwallet=1 (with ?empty=1) shows the card without a real wallet.
+   const previewOldWallet = usePreviewLoans && new URLSearchParams(location.search).get('oldwallet') === '1';
+   // Old wallets keep a little exchange dust, so only a real top-up counts.
+   const oldWalletAmount = previewOldWallet
+      ? 90.01
+      : (oldWalletBalancesRaw ?? []).reduce(
+           (max, entry) => (typeof entry.result === 'bigint' ? Math.max(max, Number(entry.result) / 1e6) : max),
+           0
+        );
+   const moneyInOldWallet = isShortOnFunds && oldWalletAmount >= 1;
+   const oldWalletTrackedRef = useRef(false);
+   useEffect(() => {
+      if (!moneyInOldWallet || oldWalletTrackedRef.current) return;
+      oldWalletTrackedRef.current = true;
+      trackRepay('repay_old_wallet_money_found', { amount: Math.round(oldWalletAmount * 100) / 100 });
+   }, [moneyInOldWallet, oldWalletAmount]);
    // True only for the loan that just crossed short→funded — drives the success handoff.
    // Subscribe to incoming USDC Transfer events on Base so the UI updates within ~1-2s
    // of the deposit landing — no polling delay. Only active while short on funds.
@@ -2443,6 +2485,16 @@ export default function Repay() {
                <DoneRow>${formatCurrency(usdcBalance)} USDC arrived</DoneRow>
                <GoldButton onClick={() => goTo('pay')}>Next · Pay</GoldButton>
             </>
+         ) : moneyInOldWallet ? (
+            <Card>
+               <StepHead image={CONNECT_HIPPOS.waiting} title="We found your money" subtitle="It went to your old wallet." />
+               <p className="text-center text-[28px] font-extrabold tracking-[-0.01em]">${formatCurrency(oldWalletAmount)} USDC</p>
+               <p className="text-center text-[16px] font-extrabold text-[#b91c1c] dark:text-[#fca5a5]">Don't send more.</p>
+               <p className="text-center text-[15px] font-bold text-[#7a6a4f] dark:text-[#bfb29a]">
+                  It is safe. Chat with us and we will fix it.
+               </p>
+               <GoldButton onClick={() => openSupportChat('Repay: money in old wallet')}>Chat with us</GoldButton>
+            </Card>
          ) : (
             <Card>
                <StepHead image={CONNECT_HIPPOS.waiting} title="Waiting for your USDC" subtitle="Shows here by itself." />
