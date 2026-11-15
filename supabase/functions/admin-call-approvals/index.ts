@@ -10,6 +10,7 @@ import {
    decideLoanAccess,
    loanAccessStampHeader,
    notifyBorrower,
+   rejectUser,
    REQUEST_COLUMNS,
    who
 } from '../_shared/loanAccess.ts';
@@ -34,6 +35,8 @@ import { getEffectiveCreditLimit, shiftCreditLevel } from '../_shared/creditAndP
 //   { action: 'approve_user', userId }  approve from the Directory, call or not: decides their pending
 //                                       request if they have one, else approves them directly
 //                                                             → { ok, summary }
+//   { action: 'reject_user', userId }  call sheet "Lend to them?" = 1: rejects their pending request (or
+//                                       them directly), same as Telegram's Reject  → { ok, summary }
 //   { action: 'send_fb_steps', userId } send the "add Emma + join the group" message now (call sheet
 //                                       button; also the only way on Cal Video calls)  → { ok, channel, sentAt }
 //   { action: 'check_form', userId }    re-run the AI form check on their latest call transcript
@@ -228,6 +231,10 @@ serve(async (req) => {
          const summary = `✅ Approved: ${who(approved as BorrowerRow)} — by ${decidedBy}`;
          await postDiscord({ content: `🔓 Loan access ${summary}` }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
          return json({ ok: true, summary });
+      }
+
+      if (body.action === 'reject_user' && typeof body.userId === 'string') {
+         return json(await rejectUser(svc, body.userId, decidedBy));
       }
 
       if (body.action === 'check_form' && typeof body.userId === 'string') {
