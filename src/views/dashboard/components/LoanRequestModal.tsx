@@ -1329,7 +1329,7 @@ function IdLoanTermsFields({
 // contact step only when they have no verified line yet, and — in the 'open' flow only — the
 // video call when there's no referral code. (In the call/approval flows, PART 1 · Connect happens
 // before any of this; see ConnectStep.)
-type RequestStepKey = 'terms' | 'bio1' | 'bio2' | 'job' | 'contacts' | 'videocall' | 'income';
+type RequestStepKey = 'terms' | 'bio1' | 'bio2' | 'job' | 'contacts' | 'social' | 'videocall' | 'income';
 
 // Human labels for each possible step key, used by the progress rail below.
 const STEP_KEY_LABEL: Record<RequestStepKey, string> = {
@@ -1338,6 +1338,7 @@ const STEP_KEY_LABEL: Record<RequestStepKey, string> = {
    bio2: 'Repayment context',
    job: 'Your job',
    contacts: 'Contact',
+   social: 'Instagram / TikTok',
    videocall: 'Meet the team',
    income: 'Proof of income'
 };
@@ -1943,17 +1944,24 @@ export default function LoanRequestModal({
    // last step isn't a surprise).
    const incomeGateNow = isIdLoan || !Number(loanAmount) ? null : incomeDocGate(Number(loanAmount), incomeDocFacts);
    const needsIncomeStep = Boolean(incomeGateNow && !incomeGateNow.ok);
+   // Same order as handleLoanFormSubmit asks them. A step stays on the rail once it's done (its "needs"
+   // flag flips off when the answer saves), so the count doesn't shrink under them mid-flow.
+   const needsSocialStep =
+      !isIdLoan && Number(loanAmount) >= SOCIAL_HANDLES_MIN_USD && (needsSocialHandles(socialHandles) || socialStepDone);
    const requestSteps: RequestStepKey[] = [
       'terms',
-      ...(needsContactsStep ? (['contacts'] as const) : []),
+      ...(needsContactsStep || contactsStepDone ? (['contacts'] as const) : []),
+      ...(needsSocialStep ? (['social'] as const) : []),
       ...(isMultiStepRequestFlow ? (['bio1', 'bio2'] as const) : []),
-      ...(needsJobStep ? (['job'] as const) : []),
+      ...(needsJobStep || jobStepDone ? (['job'] as const) : []),
       ...(needsVideoCallStep ? (['videocall'] as const) : []),
       // Last, because it's the one step that leaves the form (see handleLoanFormSubmit).
       ...(needsIncomeStep ? (['income'] as const) : [])
    ];
    const currentStepKey: RequestStepKey = showIncomeGate
       ? 'income'
+      : showSocialStep
+      ? 'social'
       : showJobStep
       ? 'job'
       : showContactsStep
@@ -3204,7 +3212,7 @@ export default function LoanRequestModal({
             <div className="pointer-events-none absolute left-1/2 top-2 z-20 h-1 w-11 -translate-x-1/2 rounded-full bg-[#cec6d7] sm:hidden" />
             <header
                className={`flex touch-none cursor-grab select-none items-center justify-between px-5 active:cursor-grabbing ${
-                  isLoanAccessGated || showContactsStep || showJobStep
+                  isLoanAccessGated || showContactsStep || showJobStep || showSocialStep
                      ? 'bg-[#f3ecff] pb-0 pt-5 sm:pt-3'
                      : 'border-b border-[#e7e0ec] pb-4 pt-6 sm:pt-4'
                }`}
@@ -3216,9 +3224,9 @@ export default function LoanRequestModal({
                <div className="flex min-w-0 items-center gap-md-1 pr-3">
                   {shouldShowReferralStep ? (
                      <h2 className="text-md-h6 text-md-heading">Invited by someone?</h2>
-                  ) : isLoanAccessGated || showContactsStep || showJobStep || showIncomeGate ? (
+                  ) : isLoanAccessGated || showContactsStep || showJobStep || showSocialStep || showIncomeGate ? (
                      // These screens carry their own hippo hero + title (Figma style) — no duplicate header.
-                     <h2 className="sr-only">{showIncomeGate ? 'Show us your income first' : isLoanAccessPending ? 'Almost there' : showJobStep ? 'Your job' : showContactsStep ? (isExistingBorrower ? 'Add your Facebook and WhatsApp' : 'How can we reach you') : "Let's connect"}</h2>
+                     <h2 className="sr-only">{showIncomeGate ? 'Last step: your income' : isLoanAccessPending ? 'Almost there' : showJobStep ? 'Your job' : showSocialStep ? 'More ways to reach you' : showContactsStep ? (isExistingBorrower ? 'Add your Facebook and WhatsApp' : 'How can we reach you') : "Let's connect"}</h2>
                   ) : showVideoCallStep ? (
                      <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">
                         Schedule a video call

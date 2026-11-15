@@ -33,8 +33,10 @@ export default function JobStep({
       }
    };
 
+   // Same padding and scroll as the other step cards (SocialHandlesStep, the income card): without it
+   // the box and buttons ran edge to edge.
    return (
-      <div className="connect-ui flex min-h-0 flex-col gap-5">
+      <div className="connect-ui flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overscroll-contain px-5 py-5">
          <ConnectHero
             image={CONNECT_HIPPOS.call}
             subtitle="Moo-lenders like to know who they’re helping."
