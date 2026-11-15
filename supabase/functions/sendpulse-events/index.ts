@@ -5,6 +5,7 @@ import { adminUserUrl, OPEN_IN_ADMIN_TEXT, sendAdminCard } from '../_shared/admi
 import { postDiscord } from '../_shared/discord.ts';
 import { PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
 import { decideAutoMatch, MATCH_WINDOW_MS, type OpenAttempt } from '../_shared/messengerAutoMatch.ts';
+import { handleCashOutMessage } from '../_shared/messengerCashOutHelp.ts';
 import { handleBookingMessage, handleReminderNumber } from '../_shared/messengerBookingBot.ts';
 import { logMessengerContact, rememberMessengerContact, saveFacebookName } from '../_shared/messengerContactLog.ts';
 import { handleRewardMessage } from '../_shared/messengerRewardReply.ts';
@@ -328,6 +329,8 @@ serve(async (req) => {
          // Just a mobile number from someone with a call booked: their answer to "want a text reminder?".
          // "REWARD": their repay streak and what paying on time earns (the day-before reminder asks for it).
          if (typed && (await handleRewardMessage(svc, known!.userId, contactId, typed))) continue;
+         // "1"–"4" / QR / GCrypto / PDAX / Maya: their answer to the funded message's "How will you cash out?".
+         if (typed && (await handleCashOutMessage(svc, known!.userId, contactId, typed))) continue;
          if (typed && (await handleReminderNumber(svc, known!.userId, contactId, typed))) continue;
          if (typed && (await handleBookingMessage(svc, known!.userId, contactId, typed))) continue;
          if (isSupportMessage(event)) {
