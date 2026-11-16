@@ -68,25 +68,25 @@ Deno.test('a shared personal-room id matches the booking closest to the event', 
    assertEquals(pickBooking([{ id: 'far', video_call_starts_at: '2026-09-25T10:00:00Z' }], at), null);
 });
 
-const kryshia = { display_name: 'kryshia gonzales', username: 'sleeptonight00-57e835', email: 'sleeptonight00@gmail.com' };
+const borrower = { display_name: 'liza ramos', username: 'moonlit42-7a1b2c', email: 'moonlit42@example.com' };
 
 Deno.test('note-taker bots are never the borrower', () => {
    for (const name of ["George's Notetaker (Otter.ai)", 'Fireflies.ai Notetaker', 'Read.ai meeting notes', 'Fathom', 'tl;dv recorder', 'Emma AI Notetaker']) {
-      assertEquals(classifyParticipant({ name, email: '' }, kryshia), 'bot', name);
+      assertEquals(classifyParticipant({ name, email: '' }, borrower), 'bot', name);
    }
 });
 
 Deno.test('teammates are never the borrower', () => {
-   assertEquals(classifyParticipant({ name: 'George Lerner', email: '' }, kryshia), 'team');
-   assertEquals(classifyParticipant({ name: 'Emma', email: '' }, kryshia), 'team');
-   assertEquals(classifyParticipant({ name: 'Moodeng Credit', email: '' }, kryshia), 'team');
-   assertEquals(classifyParticipant({ name: 'Anyone', email: 'ops@moodeng.app' }, kryshia), 'team');
+   assertEquals(classifyParticipant({ name: 'George Lerner', email: '' }, borrower), 'team');
+   assertEquals(classifyParticipant({ name: 'Emma', email: '' }, borrower), 'team');
+   assertEquals(classifyParticipant({ name: 'Moodeng Credit', email: '' }, borrower), 'team');
+   assertEquals(classifyParticipant({ name: 'Anyone', email: 'ops@moodeng.app' }, borrower), 'team');
 });
 
 Deno.test('the borrower is matched by any shared name word, or by email', () => {
-   assertEquals(classifyParticipant({ name: 'Kryshia Joyce', email: '' }, kryshia), 'borrower');
-   assertEquals(classifyParticipant({ name: 'sleeptonight00', email: '' }, kryshia), 'borrower');
-   assertEquals(classifyParticipant({ name: 'K', email: 'sleeptonight00@gmail.com' }, kryshia), 'borrower');
+   assertEquals(classifyParticipant({ name: 'Liza Joyce', email: '' }, borrower), 'borrower');
+   assertEquals(classifyParticipant({ name: 'moonlit42', email: '' }, borrower), 'borrower');
+   assertEquals(classifyParticipant({ name: 'K', email: 'moonlit42@example.com' }, borrower), 'borrower');
 });
 
 Deno.test('a borrower who shares a host first name is still the borrower', () => {
@@ -94,8 +94,8 @@ Deno.test('a borrower who shares a host first name is still the borrower', () =>
 });
 
 Deno.test('an unrecognised name is a maybe, not ignored', () => {
-   assertEquals(classifyParticipant({ name: 'iPhone', email: '' }, kryshia), 'unknown');
-   assertEquals(classifyParticipant({ name: '', email: '' }, kryshia), 'unknown');
+   assertEquals(classifyParticipant({ name: 'iPhone', email: '' }, borrower), 'unknown');
+   assertEquals(classifyParticipant({ name: '', email: '' }, borrower), 'unknown');
 });
 
 Deno.test('real names that contain bot-product words are never dropped as bots', () => {
@@ -111,7 +111,7 @@ Deno.test('real names that contain bot-product words are never dropped as bots',
 
 Deno.test('note-takers are caught, including brand-only names', () => {
    for (const name of ['Bubbles Notetaker', "jon's Loom Notetaker", 'Notta', 'Granola', 'Zoom AI Companion', 'Circleback']) {
-      assertEquals(classifyParticipant({ name, email: '' }, kryshia), 'bot', name);
+      assertEquals(classifyParticipant({ name, email: '' }, borrower), 'bot', name);
    }
 });
 

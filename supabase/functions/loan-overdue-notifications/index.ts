@@ -233,6 +233,20 @@ const recordOverdueNotifications = async (supabase: SupabaseClient, borrowerId: 
       return;
    }
 
+   // These stages were pending, so a row already here is an earlier payment's (split loans). The unique index
+   // (loan, user, type) would refuse the new row, leaving the notice unrecorded and re-sent every run.
+   for (const row of rows) {
+      const { error: clearError } = await supabase
+         .from('loan_notifications')
+         .delete()
+         .eq('loan_id', row.loanId)
+         .eq('user_id', borrowerId)
+         .eq('notification_type', row.stage);
+      if (clearError) {
+         throw new Error(clearError.message);
+      }
+   }
+
    const { error } = await supabase.from('loan_notifications').insert(
       rows.map((row) => ({
          loan_id: row.loanId,

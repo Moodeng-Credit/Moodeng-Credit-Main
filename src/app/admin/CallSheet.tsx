@@ -487,13 +487,22 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
       if (score === n) return (setScore(null), touch());
       if (n !== 1) return (setScore(n), touch());
       if (!window.confirm('1 = reject. They get the rejected message and can’t book or ask again. Reject them?')) return;
+      const before = score;
       setScore(1);
       touch();
       setRejectNote('Rejecting…');
       try {
          const result = await rejectAdminUser(row.userId);
          setRejectNote(result.summary);
+         // Not rejected (e.g. already approved): don't leave a 1 on the sheet that didn't happen.
+         if (!result.ok) {
+            setScore(before);
+            touch();
+         }
       } catch (err) {
+         // The reject didn't go through, so the 1 doesn't stand either.
+         setScore(before);
+         touch();
          setRejectNote('');
          setError(err instanceof Error ? `Not rejected: ${err.message}` : 'Not rejected — try again.');
       }

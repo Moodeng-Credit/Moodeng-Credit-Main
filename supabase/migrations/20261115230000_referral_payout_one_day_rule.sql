@@ -44,7 +44,7 @@ $$;
 
 revoke all on function private.create_referral_code_payout_on_repayment() from public, anon, authenticated;
 
--- The one unpaid payout that came from a loan repaid within a day (MAHJID, 53 minutes, 2026-11-13).
+-- The one unpaid payout that came from a loan repaid within a day (53 minutes, 2026-11-13).
 delete from public.referral_code_payouts p
 where p.status = 'unpaid'
   and exists (

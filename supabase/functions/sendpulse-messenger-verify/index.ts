@@ -147,7 +147,7 @@ const FOLLOW_UP_DELAY_MS = 5_000;
 
 // The SendPulse flow answers "✅ Your Facebook is confirmed! Head back to the Moodeng app" itself,
 // after this function returns. That's all a borrower heard, even when their ID review had already
-// been approved (kryshia, 2026-10-01: approved 14:39, connected Facebook 14:57, never told on
+// been approved (a borrower, 2026-10-01: approved 14:39, connected Facebook 14:57, never told on
 // Messenger). So once the first connection lands, follow up with where their verification stands.
 // Sent a few seconds later, so it reads after the flow's own confirmation; they've just messaged
 // the Page, so Meta's 24h window is open. Nothing is sent when there's nothing to add.

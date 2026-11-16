@@ -9,18 +9,22 @@
 // wrong network can lose the money.
 //
 // Numbers only count for a few days after a funded loan (a "2" later could be anything); the names
-// count any time for someone who has had a loan funded.
+// for two weeks. Plain "bank" / "gcash" are not answers: funded borrowers write those to support too.
+// Filipino (Taglish) for borrowers whose account language is 'fil'. Never for Indonesia (Walt, not pesos).
 import { sendMessengerMessage, type MessengerCard } from './sendpulse.ts';
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
 
 export type CashOutChoice = 'qr' | 'gcrypto' | 'pdax' | 'maya';
+export type CashOutLang = 'en' | 'fil';
 
 const SITE = 'https://moodeng.app';
 export const CASH_OUT_URL = `${SITE}/withdraw`;
 // How long after funding a bare "1"–"4" is read as an answer to the question.
 const NUMBER_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
+// How long after funding a name (QR, GCrypto, PDAX, Maya) is read as an answer.
+const NAME_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 
 export const CASH_OUT_QUESTION =
    '💸 How will you cash out to pesos?\n\n' +
@@ -30,12 +34,22 @@ export const CASH_OUT_QUESTION =
    '4️⃣ Maya\n\n' +
    'Reply 1, 2, 3 or 4 and I’ll show you exactly what to tap.';
 
+export const CASH_OUT_QUESTION_FIL =
+   '💸 Paano mo gagawing pesos?\n\n' +
+   '1️⃣ Bank QR (diretso sa bank mo)\n' +
+   '2️⃣ GCrypto (sa GCash)\n' +
+   '3️⃣ PDAX\n' +
+   '4️⃣ Maya\n\n' +
+   'Sagot ka ng 1, 2, 3 o 4 at ipapakita ko kung ano ang ita-tap.';
+
+export const cashOutQuestion = (lang: CashOutLang) => (lang === 'fil' ? CASH_OUT_QUESTION_FIL : CASH_OUT_QUESTION);
+
 // The funded card's second button.
 export const CASH_OUT_BUTTON = { title: '💸 How to cash out', url: CASH_OUT_URL };
 
 const NAMES: Array<[RegExp, CashOutChoice]> = [
-   [/^(bank\s*)?qr(\s*code)?$|^bank$/, 'qr'],
-   [/^g\s*crypto$|^gcash$/, 'gcrypto'],
+   [/^(bank\s*)?qr(\s*code)?$/, 'qr'],
+   [/^g\s*crypto$/, 'gcrypto'],
    [/^pdax$/, 'pdax'],
    [/^maya$|^paymaya$/, 'maya']
 ];
@@ -57,9 +71,57 @@ export const parseCashOutChoice = (text: string): { choice: CashOutChoice; by: '
 const NOT_THESE =
    '⚠️ You’ll see many USDCs (Ethereum, Avalanche, Solana…). Tap only USD Coin (Base). Not USDT, not Ethereum. The wrong one can lose your money.';
 const FOOTER = '\n\nStuck? Send a screenshot here and we’ll help 🦛\nAnother way? Reply 1, 2, 3 or 4.';
+const NOT_THESE_FIL =
+   '⚠️ Maraming USDC ang lalabas (Ethereum, Avalanche, Solana…). USD Coin (Base) lang ang i-tap. Hindi USDT, hindi Ethereum. Pwedeng mawala ang pera mo sa mali.';
+const FOOTER_FIL = '\n\nNa-stuck? Mag-send ng screenshot dito, tutulungan ka namin 🦛\nIbang paraan? Sagot ng 1, 2, 3 o 4.';
+
+const FIL_TEXT: Record<CashOutChoice, string> = {
+   qr:
+      '🏦 Bank QR: pesos diretso sa bank mo. Walang exchange app, walang network na pipiliin.\n\n' +
+      '1. Sa bank app mo, buksan ang Receive money / QR at i-save ang QR picture.\n' +
+      '2. Sa Moodeng, tap Cash out → Your bank’s QR.\n' +
+      '3. I-upload ang QR picture, tingnan ang pesos na matatanggap mo (kasama na ang fees) at i-confirm.\n\n' +
+      'Hanggang ₱25,000 bawat cash-out.' +
+      FOOTER_FIL,
+   gcrypto:
+      '📱 GCrypto (sa GCash). Ang loan mo ay USDC sa Base network.\n\n' +
+      '1. GCash → GCrypto (kailangan fully verified ang GCash mo).\n' +
+      '2. I-search ang USDC at i-tap ang USD Coin (Base). Tapos Receive.\n' +
+      '3. I-copy ang address.\n' +
+      '4. Sa Moodeng, tap Cash out → GCrypto, i-paste at i-send.\n' +
+      '5. Pagdating: GCrypto → Trade → Sell USDC (Base) para sa pesos.\n' +
+      '6. Peso Balance → Withdraw, papasok ang pesos sa GCash wallet mo.\n\n' +
+      NOT_THESE_FIL +
+      FOOTER_FIL,
+   pdax:
+      '📈 PDAX. Ang loan mo ay USDC sa Base network.\n\n' +
+      '1. PDAX → Portfolio → USDC → Receive (Deposit).\n' +
+      '2. Network: Base (USDCBASE sa PDAX). Hindi plain USDC.\n' +
+      '3. I-copy ang address.\n' +
+      '4. Sa Moodeng, tap Cash out → PDAX, i-paste at i-send.\n' +
+      '5. Tingnan muna ang peso (PHP) balance: madalas ginagawa na itong pesos ng PDAX. USDC pa rin? Markets → USDCBASE/PHP → Sell.\n' +
+      '6. Portfolio → Cash out → piliin ang bank o GCash mo.\n\n' +
+      NOT_THESE_FIL +
+      FOOTER_FIL,
+   maya:
+      '💜 Maya. USDC sa Solana lang ang tinatanggap ng Maya, kaya papalitan ito ng Moodeng para sa iyo.\n\n' +
+      '1. Maya → Crypto → tap ⋯ sa tabi ng Sell → Receive.\n' +
+      '2. I-search ang usdc → USD Coin → network: Solana.\n' +
+      '3. I-copy ang address.\n' +
+      '4. Sa Moodeng, tap Cash out → Maya, i-paste at i-send.\n' +
+      '5. Sa Maya, i-sell ang USDC para sa pesos.\n\n' +
+      '⚠️ Para sa Maya, USDC sa Solana ang piliin, hindi Ethereum at hindi USDT. Pwedeng mawala ang pera mo sa mali.\n' +
+      'Walang Maya sa Cash out? Hindi pa ito bukas sa account mo, kaya gamitin ang 1, 2 o 3.' +
+      FOOTER_FIL
+};
 
 /** The steps for one way, plus a card with its buttons. */
-export const buildCashOutReply = (choice: CashOutChoice): { text: string; card: MessengerCard } => {
+export const buildCashOutReply = (choice: CashOutChoice, lang: CashOutLang = 'en'): { text: string; card: MessengerCard } => {
+   const reply = buildEnglishReply(choice);
+   return lang === 'fil' ? { ...reply, text: FIL_TEXT[choice] } : reply;
+};
+
+const buildEnglishReply = (choice: CashOutChoice): { text: string; card: MessengerCard } => {
    switch (choice) {
       case 'qr':
          return {
@@ -133,7 +195,7 @@ export const handleCashOutMessage = async (svc: Svc, userId: string, contactId: 
    try {
       const parsed = parseCashOutChoice(text);
       if (!parsed) return false;
-      // Only borrowers with a funded loan; a bare number only within a few days of funding.
+      // Only borrowers with a funded loan; a bare number only within a few days of funding, a name two weeks.
       const { data } = await svc
          .from('loans')
          .select('funded_at')
@@ -143,9 +205,12 @@ export const handleCashOutMessage = async (svc: Svc, userId: string, contactId: 
          .limit(1);
       const fundedAt = (data as Array<{ funded_at: string }> | null)?.[0]?.funded_at;
       if (!fundedAt) return false;
-      if (parsed.by === 'number' && Date.now() - Date.parse(fundedAt) > NUMBER_WINDOW_MS) return false;
+      if (Date.now() - Date.parse(fundedAt) > (parsed.by === 'number' ? NUMBER_WINDOW_MS : NAME_WINDOW_MS)) return false;
+      const { data: user } = await svc.from('users').select('market, preferred_locale').eq('id', userId).maybeSingle();
+      if ((user as { market?: string | null } | null)?.market === 'ID') return false;
+      const lang: CashOutLang = (user as { preferred_locale?: string | null } | null)?.preferred_locale === 'fil' ? 'fil' : 'en';
 
-      const res = await sendMessengerMessage(contactId, buildCashOutReply(parsed.choice));
+      const res = await sendMessengerMessage(contactId, buildCashOutReply(parsed.choice, lang));
       console.log(`messenger-cashout-help: ${parsed.choice} → ${res.ok ? 'sent' : `not sent (${res.reason})`}`);
       return res.ok;
    } catch (err) {

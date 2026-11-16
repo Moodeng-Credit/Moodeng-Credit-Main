@@ -215,6 +215,18 @@ const recordNotification = async (supabase: SupabaseClient, borrowerId: string, 
       return;
    }
 
+   // These loans were pending, so any row already here is an earlier payment's (split loans). The unique
+   // index (loan, user, type) would refuse the new row, leaving the reminder unrecorded and re-sent every run.
+   const { error: clearError } = await supabase
+      .from('loan_notifications')
+      .delete()
+      .in('loan_id', loanIds)
+      .eq('user_id', borrowerId)
+      .eq('notification_type', type);
+   if (clearError) {
+      throw new Error(clearError.message);
+   }
+
    const { error } = await supabase.from('loan_notifications').insert(
       loanIds.map((loanId) => ({
          loan_id: loanId,

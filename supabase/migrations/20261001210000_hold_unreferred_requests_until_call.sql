@@ -1,6 +1,6 @@
 -- A borrower without a referral who has never had a loan funded must attend their video call before
 -- lenders see their request (George, 2026-10-01). Until now the request went on the board the moment
--- they BOOKED the call, which is how a no-show (kryshia) got funded.
+-- they BOOKED the call, which is how a no-show got funded.
 --
 -- Such a request is created ON HOLD (on_hold_reason 'awaiting_call'): hidden from lenders, not
 -- fundable, and the team gets a "waiting for their call" note instead of lender pings. When the call
