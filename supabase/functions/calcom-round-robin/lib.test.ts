@@ -56,16 +56,22 @@ Deno.test('different seeds can prefer different hosts (spreads load)', () => {
    assertEquals(seen.size, 2); // both hosts get picked first across borrowers
 });
 
-Deno.test('preferSoonSlots offers only the next 48 hours when there are enough', () => {
-   const now = Date.parse('2026-09-23T02:00:00Z'); // Wednesday
+Deno.test('preferSoonSlots offers only the next 23 hours when there are enough', () => {
+   const now = Date.parse('2026-09-23T02:00:00Z');
    const slots = [
-      '2026-09-23T04:00:00Z', // Wed
-      '2026-09-24T06:00:00Z', // Thu
-      '2026-09-24T09:00:00Z', // Thu, still inside 48h
-      '2026-09-25T04:00:00Z', // Fri, past 48h — dropped
-      '2026-09-26T13:00:00Z', // Sat — dropped too (no weekend add-on)
-      '2026-09-28T04:00:00Z' // Mon — dropped
+      '2026-09-23T04:00:00Z',
+      '2026-09-23T09:00:00Z',
+      '2026-09-24T00:30:00Z', // 22.5h away, still in
+      '2026-09-24T01:30:00Z', // 23.5h away — dropped
+      '2026-09-24T09:00:00Z', // dropped
+      '2026-09-26T13:00:00Z' // dropped
    ];
+   assertEquals(preferSoonSlots(slots, now), [slots[0], slots[1], slots[2]]);
+});
+
+Deno.test('preferSoonSlots widens to 48 hours when the next 23 are too thin', () => {
+   const now = Date.parse('2026-09-23T02:00:00Z');
+   const slots = ['2026-09-23T04:00:00Z', '2026-09-24T06:00:00Z', '2026-09-24T09:00:00Z', '2026-09-26T04:00:00Z'];
    assertEquals(preferSoonSlots(slots, now), [slots[0], slots[1], slots[2]]);
 });
 

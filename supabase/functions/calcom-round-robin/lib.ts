@@ -52,21 +52,23 @@ export const teamGuests = (hostId: string, emailsByHost: Record<string, string |
    return out;
 };
 
-// Soonest-first slot offer. Calls booked inside a day or two get far fewer no-shows, and they're the
-// ones our Messenger reminders can reach (Messenger allows free messages for 24h after the
-// borrower's last interaction, which is the verify tap just before booking). So when there are at
-// least `minCount` open times within `windowHours`, offer only those (George 2026-11-15: no extra
-// weekend days, "that is silly"); otherwise fall back to the full list so a quiet stretch never
-// leaves a borrower with nothing to pick.
-export const preferSoonSlots = (slots: string[], now: number, windowHours = 48, minCount = 3): string[] => {
-   const cutoff = now + windowHours * 60 * 60 * 1000;
+// Soonest-first slot offer. Only times in the next 23 hours (George 2026-11-16; was 48h): Messenger
+// allows free messages for 24h after the borrower's last message, which is the verify code just
+// before booking, so the 1h ✅ ask always reaches a call booked inside that window. A call booked
+// 34h ahead on 2026-11-16 got no ✅ ask and nobody came. Fewer than `minCount` times in 23h → the
+// next 48h; still too few → the full list, so a quiet stretch never leaves a borrower with nothing.
+export const SOON_WINDOW_HOURS = 23;
+export const preferSoonSlots = (slots: string[], now: number, windowHours = SOON_WINDOW_HOURS, minCount = 3): string[] => {
    const upcoming = slots.filter((s) => {
       const t = Date.parse(s);
       return !Number.isNaN(t) && t > now;
    });
-   const soon = upcoming.filter((s) => Date.parse(s) <= cutoff);
-   if (soon.length < minCount) return slots;
-   return soon;
+   for (const hours of [windowHours, 48]) {
+      const cutoff = now + hours * 60 * 60 * 1000;
+      const soon = upcoming.filter((s) => Date.parse(s) <= cutoff);
+      if (soon.length >= minCount) return soon;
+   }
+   return slots;
 };
 
 /** The borrower's wall-clock hour (0–23) and weekday (0 = Sunday) at an instant. */
