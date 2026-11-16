@@ -301,6 +301,10 @@ export default function VideoCallStep({
                      </div>
                   </div>
                ))}
+               {/* Only the next day is offered (calcom-round-robin preferSoonSlots), so say what to do when none fit. */}
+               <p className="text-center text-[13px] font-normal text-[#877897]">
+                  None of these work? New times open every day. Come back when you&apos;re free.
+               </p>
             </div>
          )}
 
