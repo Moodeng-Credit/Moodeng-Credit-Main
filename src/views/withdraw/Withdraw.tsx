@@ -667,6 +667,8 @@ const BANK_PAYOUT_FEE_SHARE = 0.022;
 // Most pesos one bank / QR cash-out sends (same as MAX_PHP in BankPayoutFlow and BANK_MAX in the
 // stableyard-deposit-address fn). Above it the QR route takes two cash-outs, two fees.
 const QR_MAX_PHP = 25000;
+// Below this many USDC available, the QR cash-out isn't recommended; GCrypto (no fees) is.
+const SMALL_CASHOUT_USDC = 35;
 const estimatePesos = (spendable: number | null, phpRate: number) =>
    spendable != null && spendable > 0 ? Math.floor(spendable * phpRate * (1 - BANK_PAYOUT_FEE_SHARE)) : null;
 
@@ -796,9 +798,14 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
    // bottom without the Recommended tag and the exchange apps lead, PDAX recommended (2026-11-15).
    const { value: phpRate } = useUsdcRate('php');
    const estPesos = estimatePesos(spendable, phpRate);
-   const qrLast = qrCard && estPesos != null && estPesos > QR_MAX_PHP;
+   // Under $35 the QR fee hurts (2026-11-16: small borrowers saw it and stopped), so GCrypto leads,
+   // recommended, and the QR card drops to the bottom without the tag. Unknown balance = no change.
+   const smallBalance = !isIndo && spendable != null && spendable < SMALL_CASHOUT_USDC;
+   const qrLast = qrCard && ((estPesos != null && estPesos > QR_MAX_PHP) || smallBalance);
    const qrTop = bankPayout && !qrLast;
+   const pesoBanner = bankPayout && !smallBalance;
    const inEurope = useInEurope(isPreview);
+   const gcryptoFirst = smallBalance && !inEurope;
    // Send to Maya (USDC on Solana through Relay): only once the server switch opens it for this account.
    const mayaOn = useMayaEnabled(isPreview) && !isIndo;
    // No region/IP check here (deliberately removed): `useRegion()` is an IP-based guess, not
@@ -824,7 +831,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
       <PickerRow
          onSelect={selectProvider}
          id="coinsph"
-         recommended={!COINS_PH_SUSPENDED && !qrTop && !inEurope}
+         recommended={!COINS_PH_SUSPENDED && !qrTop && !inEurope && !smallBalance}
          paused={COINS_PH_SUSPENDED}
          icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />}
          name="Coins.ph"
@@ -855,7 +862,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                      style={{ top: d.top, left: d.left, width: d.s, height: d.s, background: d.c, opacity: d.o }}
                   />
                ))}
-               {bankPayout ? (
+               {pesoBanner ? (
                   <DirectPesoBanner balanceLine={balanceLine} spendable={spendable} />
                ) : (
                   <div
@@ -871,7 +878,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                      </div>
                   </div>
                )}
-               {!bankPayout && (
+               {!pesoBanner && (
                   <>
                      <h1 className="text-[27px] text-[var(--ink)]" style={{ fontWeight: 590, lineHeight: 1.1, letterSpacing: '-0.04em' }}>
                         {isIndo ? 'Tarik uang kamu' : 'Withdraw your USDC'}
@@ -884,7 +891,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                )}
             </div>
 
-            {!bankPayout && (
+            {!pesoBanner && (
                <>
                   <p className="text-[18px] text-[var(--ink)] mt-[10px] mb-[6px]" style={{ fontWeight: 590, letterSpacing: '-0.02em' }}>
                      {isIndo ? 'Mau dicairkan ke mana?' : 'How would you like to cash out?'}
@@ -963,7 +970,8 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                      {!COINS_PH_SUSPENDED && coinsPhRow}
                      {/* Under the bank QR card the order is GCrypto, PDAX, Maya (Nov 2026). Without the QR card,
                          PDAX is the recommended route, so it stays on top. */}
-                     {COINS_PH_SUSPENDED && !qrTop && (
+                     {/* Under $35 GCrypto leads, recommended, with "No fees" (2026-11-16). */}
+                     {COINS_PH_SUSPENDED && !qrTop && !gcryptoFirst && (
                         <PickerRow
                            onSelect={selectProvider}
                            id="pdax"
@@ -977,12 +985,13 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                      <PickerRow
                         onSelect={selectProvider}
                         id="gcash"
+                        recommended={gcryptoFirst}
                         icon={<GCashAppIcon className="w-[46px] h-[46px]" />}
                         name="GCrypto"
                         line1="Cash out straight to your GCash"
-                        line2="GCash balance · ~5 min"
+                        line2={gcryptoFirst ? 'No fees · GCash balance · ~5 min' : 'GCash balance · ~5 min'}
                      />
-                     {(!COINS_PH_SUSPENDED || qrTop) && (
+                     {(!COINS_PH_SUSPENDED || qrTop || gcryptoFirst) && (
                         <PickerRow
                            onSelect={selectProvider}
                            id="pdax"
@@ -2809,12 +2818,14 @@ export default function Withdraw() {
    const walletConnected = isPreview ? true : Boolean(walletAddress);
    // Illustrative amount for estimate/instructional copy ONLY — never a balance claim. Falls
    // back to the funded-loan amount before/without an on-chain read; see the type comment.
-   const available = isPreview ? 50 : Math.round((onChainBalance ?? fundedTotal) * 100) / 100;
+   // Preview balance: 50, or /withdraw-preview?bal=20 to see the small-balance list.
+   const previewBal = isPreview ? Number(new URLSearchParams(window.location.search).get('bal')) || 50 : 50;
+   const available = isPreview ? previewBal : Math.round((onChainBalance ?? fundedTotal) * 100) / 100;
    // Hard send cap: verified on-chain balance only. `null` until it loads, which
    // disables the send button so we never authorise more than the wallet holds.
    // Floor (not round) to 2dp so "Max" can never land a hair above the real balance
    // and revert on-chain — sub-cent dust is left behind rather than over-sent.
-   const spendable = isPreview ? 50 : onChainBalance != null ? Math.floor(onChainBalance * 100) / 100 : null;
+   const spendable = isPreview ? previewBal : onChainBalance != null ? Math.floor(onChainBalance * 100) / 100 : null;
 
    const data = useMemo<WithdrawData>(
       () => ({
