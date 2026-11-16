@@ -16,8 +16,12 @@ import {
    loadBotAnswers,
    loadCallSheet,
    loadCallTranscript,
+   loadLoanCap,
+   type LoanCap,
    prefillAnswers,
+   removeLoanCap,
    saveCallScreening,
+   saveLoanCap,
    type ScreeningAnswers
 } from '@/app/admin/callSheetData';
 import ProofRequestComposer from '@/app/admin/ProofRequestComposer';
@@ -386,6 +390,92 @@ function BotAnswersCard({ records }: { records: BotAnswers[] }) {
             </div>
          ))}
       </section>
+   );
+}
+
+// Loan cap: a ceiling on top of their normal limit. Asking above it holds the request and alerts the
+// team; funding it then needs Override + a reason. Saved on its own (not part of the sheet autosave).
+function LoanCapBox({ userId }: { userId: string }) {
+   const [cap, setCap] = useState<LoanCap | null | undefined>(undefined);
+   const [amount, setAmount] = useState('');
+   const [note, setNote] = useState('');
+   const [busy, setBusy] = useState(false);
+   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+   useEffect(() => {
+      let cancelled = false;
+      loadLoanCap(userId)
+         .then((c) => {
+            if (cancelled) return;
+            setCap(c);
+            setAmount(c ? String(c.capUsd) : '');
+            setNote(c?.note ?? '');
+         })
+         .catch((err) => !cancelled && (setCap(null), setMsg({ ok: false, text: err instanceof Error ? err.message : 'Could not load the cap.' })));
+      return () => {
+         cancelled = true;
+      };
+   }, [userId]);
+
+   const run = async (work: () => Promise<void>, done: string, next: LoanCap | null) => {
+      setBusy(true);
+      setMsg(null);
+      try {
+         await work();
+         setCap(next);
+         setMsg({ ok: true, text: done });
+         return true;
+      } catch (err) {
+         setMsg({ ok: false, text: err instanceof Error ? err.message : 'Could not save the cap.' });
+         return false;
+      } finally {
+         setBusy(false);
+      }
+   };
+   const value = Number(amount);
+   const changed = cap ? value !== cap.capUsd || note.trim() !== cap.note : amount.trim() !== '';
+
+   if (cap === undefined) return <p className="text-[13px] text-[#9b9a97]">Loading…</p>;
+   return (
+      <div className="space-y-1.5">
+         <div className="flex gap-1.5">
+            <div className="relative w-[110px] shrink-0">
+               <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[14px] text-[#9b9a97]">$</span>
+               <input
+                  aria-label="Cap in USD"
+                  className={`${inputClass} pl-6`}
+                  inputMode="decimal"
+                  onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))}
+                  placeholder="none"
+                  value={amount}
+               />
+            </div>
+            <input aria-label="Why capped" className={inputClass} onChange={(e) => setNote(e.target.value)} placeholder="Why (the team sees this)" value={note} />
+         </div>
+         <div className="flex gap-1.5">
+            <button
+               className="h-9 flex-1 rounded-md bg-[#6b55f7] text-[14px] font-semibold text-white transition hover:brightness-110 disabled:opacity-40"
+               disabled={busy || !changed || !(value > 0)}
+               onClick={() =>
+                  void run(() => saveLoanCap(userId, value, note), `Capped at $${value}`, { capUsd: value, note: note.trim(), setAt: new Date().toISOString() })
+               }
+               type="button"
+            >
+               {busy ? 'Saving…' : cap ? 'Update cap' : 'Set cap'}
+            </button>
+            {cap ? (
+               <button
+                  className="h-9 rounded-md border border-[#e3e3e3] px-3 text-[14px] font-semibold text-[#37352f] hover:bg-[#fafafa] disabled:opacity-40"
+                  disabled={busy}
+                  onClick={() => void run(() => removeLoanCap(userId), 'Cap removed', null).then((ok) => ok && (setAmount(''), setNote('')))}
+                  type="button"
+               >
+                  Remove
+               </button>
+            ) : null}
+         </div>
+         {msg ? <p className={`text-[13px] ${msg.ok ? 'text-[#0f7b3f]' : 'text-[#b42318]'}`}>{msg.text}</p> : null}
+      </div>
    );
 }
 
@@ -820,6 +910,9 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                               ))}
                            </div>
                            {rejectNote ? <p className="mt-1.5 whitespace-pre-line text-[13px] text-[#b42318]">{rejectNote}</p> : null}
+                        </Question>
+                        <Question n={12} title="Loan cap" hint="optional · asking above it needs a team override">
+                           <LoanCapBox userId={row.userId} />
                         </Question>
                      </div>
                   </div>

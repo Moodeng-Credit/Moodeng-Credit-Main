@@ -275,3 +275,38 @@ export async function loadBotAnswers(userId: string): Promise<BotAnswers[]> {
       createdAt: r.created_at
    }));
 }
+
+// Per-borrower loan cap (public.borrower_loan_caps, admin-only). A request above it is held and the
+// team alerted; funding it needs Override + a reason in the Fund modal.
+export interface LoanCap {
+   capUsd: number;
+   note: string;
+   setAt: string;
+}
+
+export async function loadLoanCap(userId: string): Promise<LoanCap | null> {
+   const { data, error } = await getSupabaseBrowserClient()
+      .from('borrower_loan_caps' as never)
+      .select('cap_usd, note, set_at')
+      .eq('user_id', userId)
+      .maybeSingle();
+   if (error) throw new Error(error.message);
+   const row = data as AnyRow | null;
+   return row ? { capUsd: Number(row.cap_usd), note: row.note ?? '', setAt: row.set_at } : null;
+}
+
+export async function saveLoanCap(userId: string, capUsd: number, note: string): Promise<void> {
+   if (!(capUsd > 0)) throw new Error('Cap must be more than $0');
+   const { error } = await getSupabaseBrowserClient()
+      .from('borrower_loan_caps' as never)
+      .upsert({ user_id: userId, cap_usd: capUsd, note: note.trim() || null, set_at: new Date().toISOString() } as never);
+   if (error) throw new Error(error.message);
+}
+
+export async function removeLoanCap(userId: string): Promise<void> {
+   const { error } = await getSupabaseBrowserClient()
+      .from('borrower_loan_caps' as never)
+      .delete()
+      .eq('user_id', userId);
+   if (error) throw new Error(error.message);
+}
