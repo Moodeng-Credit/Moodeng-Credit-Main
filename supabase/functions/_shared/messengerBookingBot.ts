@@ -37,6 +37,7 @@ import { cancelUpcomingCall } from './callCancel.ts';
 import { openInAdminButton } from './adminCards.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
 import { sendTelegramMessage } from './telegram.ts';
+import { formatCallTime } from './videoCall.ts';
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
@@ -194,6 +195,36 @@ export const handleReminderNumber = async (svc: Svc, userId: string, contactId: 
       return true;
    } catch (err) {
       console.error('messenger-booking-bot: reminder number failed', err instanceof Error ? err.message : err);
+      return false;
+   }
+};
+
+// "Reply OK to keep your spot" (the day-before reminder, videoCall.sendReminderMessenger). Their reply
+// is what reopens Messenger's 24h window, so the 1h ✅ ask can reach them; this just answers it.
+export const KEEP_SPOT_REPLY = /^\s*(ok(ay)?|oki|okie|k|yes|yup|yep|oo|opo|sige|g|game|noted|👍|✅)\s*[.!👍]*\s*$/i;
+const KEEP_SPOT_WITHIN_MS = 36 * 60 * 60 * 1000;
+
+/** True when it was an OK to an upcoming call's reminder and we answered it. Never throws. */
+export const handleKeepSpotReply = async (svc: Svc, userId: string, contactId: string, text: string): Promise<boolean> => {
+   try {
+      if (!KEEP_SPOT_REPLY.test(text)) return false;
+      const { data: user } = await svc
+         .from('users')
+         .select('video_call_booking_uid, video_call_starts_at, video_call_timezone, loan_access_status')
+         .eq('id', userId)
+         .maybeSingle();
+      if (!user?.video_call_booking_uid || !user.video_call_starts_at || user.loan_access_status === 'rejected') return false;
+      const until = Date.parse(user.video_call_starts_at) - Date.now();
+      if (until <= 0 || until > KEEP_SPOT_WITHIN_MS) return false;
+      const when = formatCallTime(user.video_call_starts_at, user.video_call_timezone);
+      const res = await sendMessengerMessage(contactId, {
+         text: `👍 Got it! See you ${when}.\n⏰ 1 hour before, we'll send ✅ here. Tap it to keep your spot.`
+      });
+      if (!res.ok) console.error('messenger-booking-bot: keep-spot reply failed', res.reason);
+      console.log('messenger-booking-bot: keep-spot OK from', userId);
+      return true;
+   } catch (err) {
+      console.error('messenger-booking-bot: keep-spot reply failed', err instanceof Error ? err.message : err);
       return false;
    }
 };
