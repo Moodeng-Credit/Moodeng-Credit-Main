@@ -22,7 +22,7 @@ type PreScreening = {
    video_watched: boolean;
    questions: Question[];
    answers: Answer[];
-   grade: { summary?: string; answers?: GradedAnswer[] } | null;
+   grade: { summary?: string; unheard?: number; answers?: GradedAnswer[] } | null;
    score: number | null;
    verdict: 'good' | 'ok' | 'weak' | null;
    grade_error: string | null;
@@ -144,6 +144,7 @@ export default function PreScreeningSection() {
                         {verdict ? (
                            <span className={`rounded-full px-3 py-0.5 text-sm font-black ${verdict.className}`}>
                               {verdict.label} · {row.score}/100
+                              {row.grade?.unheard ? ` · ${row.grade.unheard} not heard` : ''}
                            </span>
                         ) : (
                            <span className="rounded-full bg-[#3a2d4f] px-3 py-0.5 text-sm font-black text-[#cfc6dd]">
@@ -192,16 +193,20 @@ export default function PreScreeningSection() {
                                        {answer?.seconds ? ` · ${answer.seconds}s` : ''}
                                     </button>
                                  ) : (
-                                    <p className="mt-2 text-sm text-[#6f6385]">Clip removed (older than 30 days, never signed up).</p>
+                                    <p className="mt-2 text-sm text-[#6f6385]">
+                                       {path ? 'Clip removed (older than 30 days, never signed up).' : 'No clip for this answer.'}
+                                    </p>
                                  )}
                               </li>
                            );
                         })}
                      </ol>
                      <div className="mt-3 flex flex-wrap items-center gap-3">
-                        <button className={pill} disabled={busy === row.id} onClick={() => void regrade(row.id)} type="button">
-                           {busy === row.id ? 'Asking…' : 'Grade again'}
-                        </button>
+                        {row.files_removed_at ? null : (
+                           <button className={pill} disabled={busy === row.id} onClick={() => void regrade(row.id)} type="button">
+                              {busy === row.id ? 'Asking…' : 'Grade again'}
+                           </button>
+                        )}
                         {row.grade_error ? <span className="text-sm text-amber-300">AI problem: {row.grade_error}</span> : null}
                      </div>
                   </li>
