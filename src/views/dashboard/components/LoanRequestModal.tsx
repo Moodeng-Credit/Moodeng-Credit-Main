@@ -3276,14 +3276,14 @@ export default function LoanRequestModal({
                   onPointerUp={endDismissGesture}
                   onPointerCancel={endDismissGesture}
                >
-                  <div className="flex items-start gap-md-2 rounded-md-lg border border-md-neutral-400 bg-[#faf7ff] p-md-2">
+                  <div className="flex items-start gap-md-2 rounded-md-lg border border-md-neutral-400 bg-[#faf7ff] p-md-2 dark:border-[#3a3046] dark:bg-[#241c30]">
                      <div className="flex min-w-0 flex-1 flex-col gap-md-1">
-                        <span className="w-fit rounded-full bg-md-primary-100 px-md-2 py-md-0 text-md-b3 font-normal text-md-primary-900">
+                        <span className="w-fit rounded-full bg-md-primary-100 px-md-2 py-md-0 text-md-b3 font-normal text-md-primary-900 dark:bg-[#3b2a5c] dark:text-[#d9c8ff]">
                            Optional
                         </span>
                         <div>
-                           <h3 className="text-md-h6 font-medium leading-[26px] text-md-heading">Have a referral code?</h3>
-                           <p className="mt-md-0 text-md-b3 font-normal leading-[20px] text-md-neutral-1200">
+                           <h3 className="text-md-h6 font-medium leading-[26px] text-md-heading dark:text-[#f8f4ff]">Have a referral code?</h3>
+                           <p className="mt-md-0 text-md-b3 font-normal leading-[20px] text-md-neutral-1200 dark:text-[#c9bfd6]">
                               Add it so we know who invited you.
                            </p>
                         </div>
@@ -3324,18 +3324,18 @@ export default function LoanRequestModal({
                   </div>
 
                   {hasReferralCodeError ? (
-                     <div className="rounded-md-md bg-md-red-100 px-md-2 py-md-1 text-md-b3 font-normal text-md-red-500">
+                     <div className="rounded-md-md bg-md-red-100 px-md-2 py-md-1 text-md-b3 font-normal text-md-red-500 dark:bg-[#3a1a1f] dark:text-[#ff9aa5]">
                         {referralCodeError}
                      </div>
                   ) : appliedReferral ? (
-                     <div className="flex items-center gap-md-1 rounded-md-md bg-[#eefbf2] px-md-2 py-md-1 text-md-b3 font-normal text-[#178447]">
+                     <div className="flex items-center gap-md-1 rounded-md-md bg-[#eefbf2] px-md-2 py-md-1 text-md-b3 font-normal text-[#178447] dark:bg-[#12301f] dark:text-[#7be0a0]">
                         <CheckCircle aria-hidden="true" className="h-4 w-4" strokeWidth={2} />
                         <span>
                            Code {appliedReferral.code} added. Thanks for telling us!
                         </span>
                      </div>
                   ) : friendInviteCode ? (
-                     <div className="flex items-center gap-md-1 rounded-md-md bg-[#eefbf2] px-md-2 py-md-1 text-md-b3 font-normal text-[#178447]">
+                     <div className="flex items-center gap-md-1 rounded-md-md bg-[#eefbf2] px-md-2 py-md-1 text-md-b3 font-normal text-[#178447] dark:bg-[#12301f] dark:text-[#7be0a0]">
                         <CheckCircle aria-hidden="true" className="h-4 w-4" strokeWidth={2} />
                         <span>Friend code {friendInviteCode} added. You both earn rewards when you repay.</span>
                      </div>
@@ -3350,7 +3350,7 @@ export default function LoanRequestModal({
                      {isApplyingReferralCode ? 'Checking code...' : referralPrimaryActionText}
                   </button>
 
-                  <p className="text-center text-md-b3 font-normal text-md-neutral-1200">No code needed. You can continue normally.</p>
+                  <p className="text-center text-md-b3 font-normal text-md-neutral-1200 dark:text-[#c9bfd6]">No code needed. You can continue normally.</p>
                </div>
             ) : isLoanAccessPending ? (
                <LoanAccessPendingCard mode={connectMode} withEmma={hasReferral} userId={user.id} onClose={onClose} />
