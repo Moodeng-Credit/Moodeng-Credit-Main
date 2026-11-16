@@ -68,13 +68,13 @@ const announceConnected = async (svc: Svc, userId: string, contactId: string | n
       const [{ data: borrower }, { data: loans }, { data: chatRow }, contact, { data: sharing }, onboarding] = await Promise.all([
          svc
             .from('users')
-            .select('username, display_name, email, is_didit, is_world_id, didit_id_status, didit_decline_reason, is_test')
+            .select('username, display_name, email, is_didit, is_world_id, didit_id_status, didit_decline_reason, is_test, loan_access_status')
             .eq('id', userId)
             .maybeSingle(),
          svc.from('loans').select('funded_at, due_date, repaid_at, is_test').eq('borrower_user_id', userId),
          svc.from('telegram_bot_settings').select('value').eq('key', 'kyc_alert_chat_id').maybeSingle(),
          contactId ? getMessengerContact(contactId) : Promise.resolve(null),
-         contactId ? svc.from('users').select('username').eq('messenger_psid', contactId).neq('id', userId) : Promise.resolve({ data: [] }),
+         contactId ? svc.from('users').select('username, loan_access_status').eq('messenger_psid', contactId).neq('id', userId) : Promise.resolve({ data: [] }),
          loadOnboardingTimeline(svc, userId)
       ]);
       if (!borrower) return;
@@ -85,9 +85,10 @@ const announceConnected = async (svc: Svc, userId: string, contactId: string | n
          userId,
          messengerVerifiedStamp(personName(borrower), 'auto (their code reached the bot)', messengerDisplayName(contact) ?? flowName)
       );
-      const alsoLinkedTo = ((sharing ?? []) as Array<{ username: string | null }>).map((u) =>
-         u.username ? `@${u.username}` : 'another account'
-      );
+      const siblings = (sharing ?? []) as Array<{ username: string | null; loan_access_status: string | null }>;
+      const alsoLinkedTo = siblings.map((u) => `${u.username ? `@${u.username}` : 'another account'}${u.loan_access_status === 'rejected' ? ' (rejected)' : ''}`);
+      // The DB trigger (reject_when_facebook_rejected) already rejected this account when its Facebook was linked.
+      const carriedReject = borrower.loan_access_status === 'rejected' && siblings.some((u) => u.loan_access_status === 'rejected');
       const text = buildFacebookConnectedAlert(
          borrower,
          messengerDisplayName(contact) ?? flowName,
@@ -97,11 +98,12 @@ const announceConnected = async (svc: Svc, userId: string, contactId: string | n
          [...signupLines(onboarding), ...timelineLines(onboarding)]
       );
       const chat = (chatRow as { value?: string } | null)?.value;
+      const fullText = carriedReject ? `${text}\n🚫 Rejected automatically: this Facebook was already rejected on another account.` : text;
       if (chat)
-         await sendTelegramMessage(chat, borrower.is_test ? `${text}\n🧪 Test account` : text, borrower.is_test ? {} : { inlineKeyboard: testAccountRow(userId) }).catch((err: unknown) =>
+         await sendTelegramMessage(chat, borrower.is_test ? `${fullText}\n🧪 Test account` : fullText, borrower.is_test ? {} : { inlineKeyboard: testAccountRow(userId) }).catch((err: unknown) =>
             console.error('sendpulse-messenger-verify: telegram ping failed', err)
          );
-      await postDiscord({ content: text }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
+      await postDiscord({ content: fullText }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
    } catch (err) {
       console.error('sendpulse-messenger-verify: announce failed', err instanceof Error ? err.message : err);
    }
