@@ -54,6 +54,9 @@ export interface CallSheetProfile {
    gapReasons: string[];
    location: string | null;
    facebookVerified: boolean;
+   /** Name on the Facebook/Messenger account they connected (often not their real name). */
+   facebookName: string | null;
+   facebookProfileUrl: string | null;
    idVerified: boolean;
    liveness: boolean;
    walletAddress: string | null;
@@ -69,6 +72,15 @@ export interface CallSheetProfile {
    }>;
 }
 
+/** A usable https link from a stored Facebook profile URL or handle, else null. */
+const facebookLink = (raw: unknown): string | null => {
+   if (typeof raw !== 'string' || !raw.trim()) return null;
+   const v = raw.trim();
+   if (/^https?:\/\/([a-z0-9-]+\.)*(facebook\.com|fb\.com|m\.me)\//i.test(v)) return v;
+   if (/^([a-z0-9-]+\.)*(facebook\.com|fb\.com)\//i.test(v)) return `https://${v}`;
+   return null;
+};
+
 const EMPTY_SCREENING: CallScreening = { id: null, answers: {}, notes: '', redFlags: '', score: null, updatedAt: null, updatedBy: null };
 
 export async function loadCallSheet(
@@ -82,7 +94,7 @@ export async function loadCallSheet(
       supabase
          .from('users')
          .select(
-            'id,username,display_name,email,created_at,profession,income_type,monthly_income,monthly_expenses,other_income,income_description,gap_reasons,location,messenger_verified_at,is_didit,is_world_id,liveness_status,wallet_address,redeemed_referral_code_id'
+            'id,username,display_name,email,created_at,profession,income_type,monthly_income,monthly_expenses,other_income,income_description,gap_reasons,location,messenger_verified_at,facebook_name,facebook_profile_url,facebook_contact,is_didit,is_world_id,liveness_status,wallet_address,redeemed_referral_code_id'
          )
          .eq('id', userId)
          .maybeSingle(),
@@ -120,6 +132,8 @@ export async function loadCallSheet(
          gapReasons: Array.isArray(u.gap_reasons) ? u.gap_reasons : [],
          location: u.location ?? null,
          facebookVerified: Boolean(u.messenger_verified_at),
+         facebookName: u.facebook_name?.trim() || null,
+         facebookProfileUrl: facebookLink(u.facebook_profile_url) ?? facebookLink(u.facebook_contact),
          idVerified: u.is_didit === 'ACTIVE' || u.is_world_id === 'ACTIVE',
          liveness: u.liveness_status === 'APPROVED',
          walletAddress: u.wallet_address ?? null,
@@ -152,6 +166,7 @@ export async function loadCallSheet(
 export const prefillAnswers = (profile: CallSheetProfile): ScreeningAnswers => ({
    fullName: profile.displayName ?? undefined,
    role: profile.profession ?? undefined,
+   facebookUrl: profile.facebookProfileUrl ?? undefined,
    referral: profile.referralCode ? `Referral code ${profile.referralCode}` : undefined,
    loanUse: profile.loans.find((l) => l.status === 'Requested')?.reason ?? undefined
 });

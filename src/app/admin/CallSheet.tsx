@@ -295,6 +295,29 @@ function ProfileCard({ profile }: { profile: CallSheetProfile }) {
             {chip(repaid > 0, funded.length ? `${funded.length} loans · ${repaid} repaid` : 'No loans yet')}
          </span>
          <span>
+            <b>Facebook:</b>{' '}
+            {profile.facebookName ? (
+               <a
+                  className="font-semibold text-[#6c5ce7] underline"
+                  href={
+                     profile.facebookProfileUrl ??
+                     `https://www.facebook.com/search/people/?q=${encodeURIComponent(profile.facebookName)}`
+                  }
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  title={profile.facebookProfileUrl ? 'Open their Facebook profile' : 'Search Facebook for this name'}
+               >
+                  {profile.facebookName}
+               </a>
+            ) : profile.facebookProfileUrl ? (
+               <a className="text-[#6c5ce7] underline" href={profile.facebookProfileUrl} rel="noopener noreferrer" target="_blank">
+                  profile
+               </a>
+            ) : (
+               <span className="text-[#9a9a9a]">not connected</span>
+            )}
+         </span>
+         <span>
             <b>Job:</b> {profile.profession ?? '—'} ({label(profile.incomeType)})
          </span>
          <span>
