@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 import { postLoanFundedToTeam } from '../_shared/teamLoanFeed.ts'
+import { alertFundedOverCapWithoutOverride, capBlock, capStatus, overrideCap } from '../_shared/loanCap.ts'
 import { checkNow, markSent, payNow, payoutStatus, recordByTxid, releasePayout } from '../_shared/idManualFunding.ts'
 import { createPayoutWallet, payoutWalletStatus } from '../_shared/idPayoutWallet.ts'
 import { recordVaultDraw, vaultBridgeStatus, vaultDrawQuote } from '../_shared/idVaultBridge.ts'
@@ -93,6 +94,24 @@ serve(async (req) => {
     if (!adminRow) return json({ error: 'Forbidden: admin account required' }, 403)
 
     const body = await req.json()
+
+    // Per-borrower cap (_shared/loanCap.ts): the Fund modal asks first, and an over-cap loan needs an
+    // override with a written reason before any money moves.
+    if (body?.action === 'cap_status' || body?.action === 'cap_override') {
+      const loanId = typeof body.loanId === 'string' ? body.loanId : ''
+      if (!loanId) return json({ error: 'Missing loanId' }, 400)
+      if (body.action === 'cap_status') return json(await capStatus(supabase, loanId))
+      const res = await overrideCap(supabase, loanId, callerId, body.reason)
+      return json(res, res.ok ? 200 : 400)
+    }
+    // Steps that move money on their own (Indonesia vault draw quote, automatic Walt payout) stop here.
+    if (body?.action === 'id_vault_quote' || body?.action === 'walt_payout_auto') {
+      const loanId = typeof body.loanId === 'string' ? body.loanId : ''
+      if (loanId) {
+        const blocked = capBlock(await capStatus(supabase, loanId))
+        if (blocked) return json({ error: blocked }, 409)
+      }
+    }
 
     // Indonesia track: Moodeng's Openfort payout wallet on BNB Chain (_shared/idPayoutWallet.ts).
     if (body?.action === 'payout_wallet_status') return json(await payoutWalletStatus(supabase))
@@ -247,6 +266,13 @@ serve(async (req) => {
     // Reply as soon as the loan is saved. The follow-ups took up to 20 seconds, and an admin whose tab
     // dropped the request in that window saw no success message and a request still on the board.
     runAfterReply(announceFunding(supabase, loanId))
+    // The money has already moved by now, so a capped loan with no override is recorded, not refused;
+    // the team is told so someone adds the reason.
+    runAfterReply(
+      capStatus(supabase, loanId, principal != null ? Number(principal) : null)
+        .then((s) => (capBlock(s) ? alertFundedOverCapWithoutOverride(supabase, loanId, s) : null))
+        .catch((err) => console.error(`admin-fund-loan: cap check failed for ${loanId}: ${(err as Error).message}`)),
+    )
 
     return json({ data, message: 'Loan funding recorded' }, 200)
   } catch (error) {

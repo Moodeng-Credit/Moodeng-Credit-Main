@@ -13,7 +13,7 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { txExplorerUrl } from '@/config/loanFundingConfig';
 import { type PaymentStage, holdAtFull, useStagedProgress } from '@/hooks/useStagedProgress';
 import { ensureUsdcAllowance, getLoanManagerService } from '@/lib/web3/loanManager';
-import { recordAdminFunding, usdcToBaseUnits } from '@/lib/loanNotes/api';
+import { type LoanCapStatus, getLoanCapStatus, overrideLoanCap, recordAdminFunding, usdcToBaseUnits } from '@/lib/loanNotes/api';
 import IdBoardFund from '@/views/dashboard/components/IdBoardFund';
 import { type RepaymentMilestone, formatMilestoneDay } from '@/lib/repaymentSchedule';
 import { BITREPO_VAULT_URL, type VaultStatus, drawFromVault, readVaultStatus, vaultBorrowerId } from '@/lib/web3/bitrepoVault';
@@ -116,6 +116,32 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
    const [busy, setBusy] = useState(false);
    // Non-blocking status shown inline in the modal (replaces the old pile of error/warning toasts).
    const [notice, setNotice] = useState<{ tone: 'error' | 'pending'; message: ReactNode } | null>(null);
+
+   // Per-borrower cap: a loan over it can't be funded until an admin taps Override and writes why.
+   const [cap, setCap] = useState<LoanCapStatus | 'checking' | 'error'>('checking');
+   const [capReason, setCapReason] = useState('');
+   const [capBusy, setCapBusy] = useState(false);
+   const [capError, setCapError] = useState<string | null>(null);
+   const checkCap = () => {
+      setCap('checking');
+      getLoanCapStatus(target.loanId)
+         .then(setCap)
+         .catch(() => setCap('error'));
+   };
+   // eslint-disable-next-line react-hooks/exhaustive-deps
+   useEffect(checkCap, [target.loanId]);
+   const submitOverride = async () => {
+      setCapBusy(true);
+      setCapError(null);
+      try {
+         setCap(await overrideLoanCap(target.loanId, capReason.trim()));
+         showToast(TOAST_TYPES.SUCCESS, 'Cap overridden', 'Saved and sent to the team. You can fund it now.');
+      } catch (err) {
+         setCapError(err instanceof Error ? err.message : 'Override failed');
+      } finally {
+         setCapBusy(false);
+      }
+   };
 
    // Smart-contract (relay) form. Sale price defaults to PRINCIPAL (not totalOwed).
    const [principal, setPrincipal] = useState(String(target.principal || ''));
@@ -418,6 +444,51 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
    const warningBox = (message: string | null) =>
       message ? <p className="rounded-[16px] bg-[rgba(255,237,161,0.35)] px-md-3 py-2.5 text-md-b3 text-[#8a6d00]">{message}</p> : null;
 
+   const usd = (n: number | null | undefined) => `$${Number(n ?? 0).toFixed(2).replace(/\.00$/, '')}`;
+   const capGate: ReactNode =
+      cap === 'checking' ? (
+         <p className="rounded-[16px] bg-[#faf8fc] px-md-3 py-2.5 text-md-b3 text-md-neutral-1500">Checking this borrower’s cap…</p>
+      ) : cap === 'error' ? (
+         <div className="space-y-md-2">
+            <p className="rounded-[16px] bg-[#fff1f1] px-md-3 py-2.5 text-md-b3 text-[#b42318]">Couldn’t check this borrower’s cap.</p>
+            <button type="button" onClick={checkCap} className={primaryButton}>
+               Try again
+            </button>
+         </div>
+      ) : cap.over && !cap.override ? (
+         <div className="space-y-md-2">
+            <div className="rounded-[16px] border border-[#f5c56b] bg-[#fff6e0] p-md-3">
+               <p className="text-md-b1 font-semibold text-[#8a5300]">Over this borrower’s cap</p>
+               <p className="mt-1 text-md-b3 text-[#8a5300] tabular-nums">
+                  Cap {usd(cap.cap)} · {usd(cap.inUse)} in use · this loan {usd(cap.amount)}
+               </p>
+               {cap.note ? <p className="mt-1 text-md-b3 text-[#8a5300]">Why capped: {cap.note}</p> : null}
+            </div>
+            <label className="block text-md-b2 font-semibold text-md-heading" htmlFor="cap-override-reason">
+               Why fund it anyway?
+            </label>
+            <textarea
+               id="cap-override-reason"
+               value={capReason}
+               onChange={(e) => setCapReason(e.target.value)}
+               rows={3}
+               placeholder="e.g. Repaid 3 loans on time, sent new payslips"
+               className={fieldClass}
+            />
+            {capError ? <p className="rounded-[16px] bg-[#fff1f1] px-md-3 py-2.5 text-md-b3 text-[#b42318]">{capError}</p> : null}
+            <button type="button" onClick={submitOverride} disabled={capBusy || capReason.trim().length < 10} className={primaryButton}>
+               {capBusy ? 'Saving…' : 'Override cap'}
+            </button>
+            <p className="text-center text-md-b3 text-md-neutral-1200">Your reason is saved on the loan and sent to the team.</p>
+         </div>
+      ) : null;
+   const capOverrideNote =
+      cap !== 'checking' && cap !== 'error' && cap.override ? (
+         <p className="mb-md-3 rounded-[16px] bg-[#faf8fc] px-md-3 py-2.5 text-md-b3 text-md-neutral-1500">
+            Cap {usd(cap.override.cap ?? cap.cap)} overridden: {cap.override.reason}
+         </p>
+      ) : null;
+
    const connectStep = (stepTitle: string) => (
       <ChecklistStep number={1} state={connected ? 'done' : 'active'} title={connected ? 'Wallet connected' : stepTitle}>
          {connected ? (
@@ -445,8 +516,8 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
             className="relative max-h-[92vh] w-full max-w-md overflow-y-auto rounded-[24px] border border-[#f0f0f0] bg-white p-md-4 shadow-[0px_11px_24px_0px_rgba(0,0,0,0.02)]"
             onClick={(e) => e.stopPropagation()}
          >
-            {method === 'vault' && drawStage ? <PaymentProgressOverlay percent={ringPercent} title={ringTitle} hint={ringHint} /> : null}
-            {method === 'vault' && !drawStage && ringStage ? <VaultLensLoader percent={ringPercent} title={ringTitle} hint={ringHint} /> : null}
+            {!capGate && method === 'vault' && drawStage ? <PaymentProgressOverlay percent={ringPercent} title={ringTitle} hint={ringHint} /> : null}
+            {!capGate && method === 'vault' && !drawStage && ringStage ? <VaultLensLoader percent={ringPercent} title={ringTitle} hint={ringHint} /> : null}
 
             <div className="mb-md-3 flex items-center gap-2">
                {method !== 'choose' ? (
@@ -495,6 +566,9 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
                ) : null}
             </div>
 
+            {capGate ?? (
+            <>
+            {capOverrideNote}
             {/* Indonesia: the vault's USDC is bridged to BNB Chain and sent to the borrower's Walt. */}
             {isIndo ? (
                <div className="space-y-md-2">
@@ -671,6 +745,8 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
                   </button>
                </div>
             ) : null}
+            </>
+            )}
          </div>
       </div>
    );

@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { adminUserUrl } from '../_shared/adminCards.ts';
+import { capStatus } from '../_shared/loanCap.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { buildTelegramLoanRequestMessage } from '../_shared/telegramLoanNotifications.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
@@ -195,8 +196,13 @@ serve(async (req) => {
 
       const loanUrl = buildLoanUrl(loan.id);
       // A request on hold isn't shown to lenders yet: tell the team why, and don't broadcast it.
+      const cap = loan.on_hold_reason === 'over_cap' ? await capStatus(supabase, loan.id).catch(() => null) : null;
       const holdNote =
-         loan.on_hold_since && loan.on_hold_reason === 'awaiting_call'
+         loan.on_hold_since && loan.on_hold_reason === 'over_cap'
+            ? `🚧 OVER THEIR CAP: cap $${cap?.cap ?? '?'}, $${cap?.inUse ?? '?'} already in use, asking $${loan.loan_amount}.` +
+              (cap?.note ? ` Cap note: ${cap.note}` : '') +
+              '\nHidden from lenders. To fund it: Fund on the board → Override → write why.\n\n'
+            : loan.on_hold_since && loan.on_hold_reason === 'awaiting_call'
             ? '⏸ On hold until their video call: not shown to lenders. It goes live (and lenders are pinged) when you tap ✅ Showed up.\n\n'
             : loan.on_hold_since
               ? '⏸ On hold (missed their video call): not shown to lenders until they book a new call.\n\n'

@@ -45,13 +45,16 @@ export const isRequestPastItsDueDay = (loan: Partial<Pick<Loan, 'dueDate' | 'due
  * borrower, who can still see it (and delete it to post a new one).
  */
 export const isRequestBoardLoanVisible = (
-   loan: Pick<Loan, 'createdAt' | 'loanStatus'> & Partial<Pick<Loan, 'onHoldSince' | 'borrowerUser' | 'dueDate' | 'dueTimezone'>>,
+   loan: Pick<Loan, 'createdAt' | 'loanStatus'> & Partial<Pick<Loan, 'onHoldSince' | 'onHoldReason' | 'borrowerUser' | 'dueDate' | 'dueTimezone'>>,
    now = new Date(),
-   viewerUserId?: string | null
+   viewerUserId?: string | null,
+   viewerIsFundingAdmin = false
 ) => {
    if (isExpiredUnfundedRequest(loan, now)) return false;
    if (Boolean(viewerUserId) && loan.borrowerUser === viewerUserId) return true;
-   return !loan.onHoldSince && !isRequestPastItsDueDay(loan, now);
+   // Over the borrower's cap: hidden from lenders, but the team sees it so they can Override and fund.
+   const heldForTeam = viewerIsFundingAdmin && loan.onHoldReason === 'over_cap';
+   return (!loan.onHoldSince || heldForTeam) && !isRequestPastItsDueDay(loan, now);
 };
 
 const HOUR_MS = 60 * 60 * 1000;

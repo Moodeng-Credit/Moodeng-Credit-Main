@@ -48,3 +48,20 @@ describe('request board: a request whose due day is over', () => {
       expect(isRequestBoardLoanVisible(due, new Date('2026-10-02T01:00:00Z'), 'borrower-1')).toBe(true);
    });
 });
+
+describe('request board: a request over the borrower cap', () => {
+   const overCap = { ...request, onHoldSince: '2026-10-01T11:00:00Z', onHoldReason: 'over_cap' };
+
+   it('is hidden from lenders', () => {
+      expect(isRequestBoardLoanVisible(overCap, now, 'lender-1')).toBe(false);
+      expect(isRequestBoardLoanVisible(overCap, now, 'lender-1', false)).toBe(false);
+   });
+
+   it('is shown to the funding team so they can override and fund', () => {
+      expect(isRequestBoardLoanVisible(overCap, now, 'admin-1', true)).toBe(true);
+   });
+
+   it('does not show other holds (missed call) to the team', () => {
+      expect(isRequestBoardLoanVisible({ ...overCap, onHoldReason: 'no_show' }, now, 'admin-1', true)).toBe(false);
+   });
+});
