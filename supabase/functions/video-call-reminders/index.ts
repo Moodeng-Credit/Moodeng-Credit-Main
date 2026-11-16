@@ -186,6 +186,27 @@ const hourBefore = async (svc: Svc, u: ReminderUser) => {
    await callSms(svc, u, 'hour');
 };
 
+// The ✅ ask reached nobody (Messenger's 24h window closed, no WhatsApp / Telegram / app), so the call is
+// kept but may well be a no-show: tell the team group + Discord #bookings so the host isn't waiting
+// blind (Emma, 2026-11-16: "No one showed up").
+const alertUnreached = async (svc: Svc, u: ReminderUser, viaSms: boolean) => {
+   const name = [u.display_name, u.username ? `@${u.username}` : null].filter(Boolean).join(' · ') || 'a borrower';
+   const host = u.video_call_host ? ` · with ${u.video_call_host[0].toUpperCase()}${u.video_call_host.slice(1)}` : '';
+   const text =
+      `⚠️ Couldn't reach ${name} for the ✅ — may not show\n${formatCallTimeForTeam(u.video_call_starts_at, u.video_call_timezone)}${host}\n\n` +
+      `Messenger is past its 24h window${u.whatsapp_contact_id ? ', WhatsApp failed' : ', no WhatsApp'}${viaSms ? ', only a text went out' : ''}. ` +
+      'The call is kept. Message them on Facebook if you can.';
+   const { data: chatRow } = await svc.from('telegram_bot_settings').select('value').eq('key', 'team_group_chat_id').maybeSingle();
+   const chatId = (chatRow?.value as string | undefined) ?? Deno.env.get('TEAM_TELEGRAM_CHAT_ID');
+   const sheetUrl = `${SITE_URL}/admin/calls?sheet=${u.id}`;
+   if (chatId) {
+      await sendTelegramMessage(chatId, text, { inlineKeyboard: [[{ text: '📋 Open call sheet', url: sheetUrl }], [cancelCallButton(u.id)]] }).catch((err) =>
+         console.error('video-call-reminders: unreached Telegram failed', err instanceof Error ? err.message : err)
+      );
+   }
+   await postDiscord({ content: `${text}\n📋 Call sheet: <${sheetUrl}>` }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
+};
+
 // Runs the one rung this booking just reached. Returns a short label for the response tally.
 const runRung = async (svc: Svc, u: ReminderUser, rung: Rung, zoomActive: boolean): Promise<string | null> => {
    const startsAt = Date.parse(u.video_call_starts_at);
@@ -242,6 +263,9 @@ const runRung = async (svc: Svc, u: ReminderUser, rung: Rung, zoomActive: boolea
             return 'confirm_ask';
          }
          console.log('video-call-reminders: confirm ask reached', viaSms ? 'only SMS' : 'no channel', 'for', u.id, '— the call is kept');
+         await alertUnreached(svc, u, viaSms).catch((err) =>
+            console.error('video-call-reminders: unreached alert failed for', u.id, err instanceof Error ? err.message : err)
+         );
          return 'confirm_ask_unreached';
       }
       case RUNG.RELEASE: {

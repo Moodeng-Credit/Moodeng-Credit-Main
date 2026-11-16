@@ -141,6 +141,13 @@ type CallUser = {
 // cancels the call. The borrower page (ConnectStep) says the same.
 const CONFIRM_NOTICE = "⚠️ 1 hour before, we'll message you here with a ✅ I'll be there button. Tap it to confirm you'll have your ID and video on, or the call is cancelled.\n📅 Tap Add to calendar below so your phone reminds you too.";
 
+// Messenger only lets us write for 24h after their last message. A call further away than that
+// needs them to reply to the day-before reminder, or the 1h ✅ ask can't reach them (2026-11-16: a
+// 10:00 call booked 34h ahead got nothing, and Emma waited for nobody).
+const REPLY_OK_NOTICE = '📩 The day before, we\'ll remind you here. Reply OK to it, so Messenger lets us send your ✅ button.';
+const NEEDS_REPLY_MS = 23 * 60 * 60 * 1000;
+const needsReplyOk = (startsAt: string) => Date.parse(startsAt) - Date.now() > NEEDS_REPLY_MS;
+
 // Right after booking — the borrower just tapped through Messenger, so the 24h window is open.
 // offerQuestions: booked on the website (no Messenger bot answers yet) → the bot's questions, on request.
 export const sendBookedMessenger = (u: CallUser, offerQuestions = false) => {
@@ -155,7 +162,7 @@ export const sendBookedMessenger = (u: CallUser, offerQuestions = false) => {
       text:
          `📅 You're booked! 15-min video call with ${withWhom}\n🗓️ ${when}\n${link}\n\n` +
          'Bring 🪪 your original ID or passport and 📷 camera on. That\'s it!\n\n' +
-         `${CONFIRM_NOTICE}\n\n` +
+         `${CONFIRM_NOTICE}\n${needsReplyOk(u.video_call_starts_at) ? `${REPLY_OK_NOTICE}\n` : ''}\n` +
          (offerQuestions ? '💬 Help Emma get ready: type QUESTIONS for a few quick ones (2 min).\n\n' : '') +
          'After the call, add Emma on Facebook so we can fund you: https://www.facebook.com/emmamoodengcredit',
       card: callCard('Will you make it?', u, { calendar: true })
@@ -189,7 +196,7 @@ export const sendReminderMessenger = (u: CallUser, stage: 1 | 2) => {
    const text =
       stage === 2
          ? `⏰ Starting soon: ${when}\n${u.video_call_join_url ? `Join: ${u.video_call_join_url}` : 'The Zoom link is in your email.'}\n🪪 Have your ID ready and 📷 video on.`
-         : `👋 Reminder: your call is ${when} on Zoom.\n⏰ 1 hour before, tap ✅ to keep your spot.`;
+         : `👋 Reminder: your call is ${when} on Zoom.\n👉 Reply OK to keep your spot.\n⏰ Then 1 hour before, tap ✅ here.`;
    return sendMessengerMessage(u.messenger_psid, {
       text,
       card: callCard('Still coming?', u)

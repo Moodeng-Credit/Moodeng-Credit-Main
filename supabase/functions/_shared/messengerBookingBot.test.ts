@@ -1,6 +1,6 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { alertTexts, answerRecord, freeFromSlots, holdColumns, isPhMobile, START, wallNow, withoutHeld, zonedIso } from './messengerBookingBot.ts';
+import { alertTexts, answerRecord, freeFromSlots, holdColumns, isPhMobile, KEEP_SPOT_REPLY, START, wallNow, withoutHeld, zonedIso } from './messengerBookingBot.ts';
 
 Deno.test('wallNow: the wall clock in a zone', () => {
    const at = new Date('2026-11-01T18:30:00Z');
@@ -91,4 +91,9 @@ Deno.test('answers are listed in asking order, whatever order the saved chat giv
 Deno.test('isPhMobile: only a Philippine mobile number on its own', () => {
    for (const yes of ['0917 123 4567', '09171234567', '+63 917 123 4567', '639171234567', '9171234567', '0917-123-4567', ' (0917) 123 4567 ']) assert(isPhMobile(yes), yes);
    for (const no of ['15000', '0917 123 456', '+66 81 234 5678', 'my number is 09171234567', '0817 123 4567', '09171234567890', 'book', '']) assert(!isPhMobile(no), no);
+});
+
+Deno.test('keep-spot reply: OK and its Taglish cousins match, real messages do not', () => {
+   for (const t of ['OK', 'ok', 'Okay!', 'oo', 'Opo', 'sige', 'yes', '👍', ' ok. ']) assertEquals(KEEP_SPOT_REPLY.test(t), true, t);
+   for (const t of ['ok pero late ako', 'can I move it?', '0917 123 4567', 'QUESTIONS', 'okay na ba?']) assertEquals(KEEP_SPOT_REPLY.test(t), false, t);
 });
