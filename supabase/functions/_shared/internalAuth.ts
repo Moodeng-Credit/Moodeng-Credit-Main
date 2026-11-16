@@ -25,3 +25,16 @@ export const isInternalRequest = async (supabase: SupabaseClient, req: Request):
    }
    return false;
 };
+
+/**
+ * True for our own server code: a service-role client's functions.invoke() (bearer or apikey = the
+ * service-role key), or the scheduler/DB triggers sending the internal secret (isInternalRequest).
+ * Use it on functions that only our code calls: the gateway's JWT check alone lets the public anon
+ * key, and any signed-in user, through.
+ */
+export const isServerCaller = async (supabase: SupabaseClient, req: Request): Promise<boolean> => {
+   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+   const bearer = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
+   if (serviceRoleKey && (bearer === serviceRoleKey || req.headers.get('apikey') === serviceRoleKey)) return true;
+   return await isInternalRequest(supabase, req);
+};
