@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { checkCronAuth } from '../_shared/cronAuth.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { analyseIncomeDocument, notifyIncomeDecision } from '../_shared/incomeDocs.ts';
+import { gradePreScreening, notifyPreScreeningClaimed } from '../_shared/preScreening.ts';
 import { pingProofRequest, sendProofRequest } from '../_shared/proofRequests.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
@@ -309,7 +310,20 @@ serve(async (req) => {
       income_card?: { chat?: string; message?: number };
       proof_request?: string;
       proof_request_send?: string;
+      prescreen?: string;
+      prescreen_claimed?: string;
+      quiet?: boolean;
    };
+
+   // Pre-screening rides here too: {"prescreen": id} = the clips are in, grade them;
+   // {"prescreen_claimed": id} = that person signed up. See _shared/preScreening.ts.
+   if (body.prescreen || body.prescreen_claimed) {
+      const id = body.prescreen ?? body.prescreen_claimed ?? '';
+      if (!UUID_RE.test(id)) return jsonResponse({ error: 'bad prescreen id' }, 400);
+      const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+      if (body.prescreen_claimed) return jsonResponse(await notifyPreScreeningClaimed(svc, id));
+      return jsonResponse(await gradePreScreening(svc, id, Deno.env.get('DEEPSEEK_API_KEY'), { quiet: body.quiet === true }));
+   }
 
    // Proof of income rides on this function (edge function cap): submit_income_document() sends
    // {"income_doc": id} and decide_income_document() sends {"income_decision": id}. See _shared/incomeDocs.ts.
