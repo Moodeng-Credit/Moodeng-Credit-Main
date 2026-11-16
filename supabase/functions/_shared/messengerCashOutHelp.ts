@@ -11,6 +11,11 @@
 // Numbers only count for a few days after a funded loan (a "2" later could be anything); the names
 // for two weeks. Plain "bank" / "gcash" are not answers: funded borrowers write those to support too.
 // Filipino (Taglish) for borrowers whose account language is 'fil'. Never for Indonesia (Walt, not pesos).
+//
+// First loan (George, 2026-11-16): the 1–4 menu confused new borrowers (one replied "1 2 3 4"). So a
+// first loan gets one recommendation, GCrypto, and "Reply YES" for its steps. YES / OK / OO / GO / HOW,
+// or a whole-list reply like "1 2 3 4", count as "show me GCrypto" within the number window. Repeat
+// borrowers keep the menu. The steps' footers name the other ways (QR, PDAX, Maya), not numbers.
 import { sendMessengerMessage, type MessengerCard } from './sendpulse.ts';
 
 // deno-lint-ignore no-explicit-any
@@ -42,7 +47,17 @@ export const CASH_OUT_QUESTION_FIL =
    '4️⃣ Maya\n\n' +
    'Sagot ka ng 1, 2, 3 o 4 at ipapakita ko kung ano ang ita-tap.';
 
-export const cashOutQuestion = (lang: CashOutLang) => (lang === 'fil' ? CASH_OUT_QUESTION_FIL : CASH_OUT_QUESTION);
+export const CASH_OUT_QUESTION_FIRST =
+   '💸 To turn it into pesos, we recommend GCrypto. It’s inside your GCash app, no fees from us.\n\n' +
+   'Reply YES and I’ll show you exactly what to tap.';
+
+export const CASH_OUT_QUESTION_FIRST_FIL =
+   '💸 Para gawing pesos, GCrypto ang recommended namin. Nasa loob ito ng GCash app mo, walang fee sa amin.\n\n' +
+   'Sagot ka ng YES at ipapakita ko kung ano ang ita-tap.';
+
+/** The question after the funded message: one GCrypto recommendation on a first loan, the menu after. */
+export const cashOutQuestion = (lang: CashOutLang, firstLoan = false) =>
+   firstLoan ? (lang === 'fil' ? CASH_OUT_QUESTION_FIRST_FIL : CASH_OUT_QUESTION_FIRST) : lang === 'fil' ? CASH_OUT_QUESTION_FIL : CASH_OUT_QUESTION;
 
 // The funded card's second button.
 export const CASH_OUT_BUTTON = { title: '💸 How to cash out', url: CASH_OUT_URL };
@@ -54,6 +69,10 @@ const NAMES: Array<[RegExp, CashOutChoice]> = [
    [/^maya$|^paymaya$/, 'maya']
 ];
 const NUMBERS: Record<string, CashOutChoice> = { '1': 'qr', '2': 'gcrypto', '3': 'pdax', '4': 'maya' };
+// "Yes, show me": the answer to the first loan's GCrypto recommendation. Read like a number (few days only).
+const YES = /^(yes|yes po|yep|yeah|ya|oo|opo|oo po|sige|ok|okay|okey|go|how|paano)$/;
+// The whole list typed back ("1 2 3 4", "1,2,3,4", "1234"): they didn't get it, so show the recommended way.
+const ALL_NUMBERS = /^1\s*[,/\s]?\s*2\s*[,/\s]?\s*3\s*[,/\s]?\s*4$/;
 
 /** The way they picked, from their message: a number ('number') or a name ('name'); null if neither. */
 export const parseCashOutChoice = (text: string): { choice: CashOutChoice; by: 'number' | 'name' } | null => {
@@ -64,16 +83,17 @@ export const parseCashOutChoice = (text: string): { choice: CashOutChoice; by: '
       .replace(/[⃣️]/g, '') // 1️⃣ → 1
       .trim();
    if (NUMBERS[t]) return { choice: NUMBERS[t], by: 'number' };
+   if (YES.test(t) || ALL_NUMBERS.test(t)) return { choice: 'gcrypto', by: 'number' };
    for (const [re, choice] of NAMES) if (re.test(t)) return { choice, by: 'name' };
    return null;
 };
 
 const NOT_THESE =
    '⚠️ You’ll see many USDCs (Ethereum, Avalanche, Solana…). Tap only USD Coin (Base). Not USDT, not Ethereum. The wrong one can lose your money.';
-const FOOTER = '\n\nStuck? Send a screenshot here and we’ll help 🦛\nAnother way? Reply 1, 2, 3 or 4.';
+const FOOTER = '\n\nStuck? Send a screenshot here and we’ll help 🦛\nAnother way? Reply QR, GCrypto, PDAX or Maya.';
 const NOT_THESE_FIL =
    '⚠️ Maraming USDC ang lalabas (Ethereum, Avalanche, Solana…). USD Coin (Base) lang ang i-tap. Hindi USDT, hindi Ethereum. Pwedeng mawala ang pera mo sa mali.';
-const FOOTER_FIL = '\n\nNa-stuck? Mag-send ng screenshot dito, tutulungan ka namin 🦛\nIbang paraan? Sagot ng 1, 2, 3 o 4.';
+const FOOTER_FIL = '\n\nNa-stuck? Mag-send ng screenshot dito, tutulungan ka namin 🦛\nIbang paraan? Sagot ng QR, GCrypto, PDAX o Maya.';
 
 const FIL_TEXT: Record<CashOutChoice, string> = {
    qr:
@@ -111,7 +131,7 @@ const FIL_TEXT: Record<CashOutChoice, string> = {
       '4. Sa Moodeng, tap Cash out → Maya, i-paste at i-send.\n' +
       '5. Sa Maya, i-sell ang USDC para sa pesos.\n\n' +
       '⚠️ Para sa Maya, USDC sa Solana ang piliin, hindi Ethereum at hindi USDT. Pwedeng mawala ang pera mo sa mali.\n' +
-      'Walang Maya sa Cash out? Hindi pa ito bukas sa account mo, kaya gamitin ang 1, 2 o 3.' +
+      'Walang Maya sa Cash out? Hindi pa ito bukas sa account mo, kaya sagot ng QR, GCrypto o PDAX.' +
       FOOTER_FIL
 };
 
@@ -183,7 +203,7 @@ const buildEnglishReply = (choice: CashOutChoice): { text: string; card: Messeng
                '4. In Moodeng tap Cash out → Maya, paste it and send.\n' +
                '5. In Maya, sell the USDC for pesos.\n\n' +
                '⚠️ For Maya pick USDC on Solana, not Ethereum and not USDT. The wrong one can lose your money.\n' +
-               'Don’t see Maya under Cash out? It isn’t open for your account yet, so use 1, 2 or 3.' +
+               'Don’t see Maya under Cash out? It isn’t open for your account yet, so reply QR, GCrypto or PDAX.' +
                FOOTER,
             card: { title: 'Maya: USDC on Solana', button: { title: 'Cash out now', url: `${CASH_OUT_URL}?to=maya` } }
          };

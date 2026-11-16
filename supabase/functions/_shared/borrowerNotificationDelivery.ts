@@ -149,7 +149,7 @@ export const buildMessengerContent = (
       const due = formatDueDate(loan.due_date);
       // Then "How will you cash out?" as its own message; the answer is handled in messengerCashOutHelp.ts.
       // Not for Indonesia (cashOut null) or Walt loans: their money isn't turned into pesos.
-      const followUpText = loan.funding_method === 'walt_manual' || !cashOut ? undefined : cashOutQuestion(cashOut);
+      const followUpText = loan.funding_method === 'walt_manual' || !cashOut ? undefined : cashOutQuestion(cashOut, firstLoan);
       const repay = toNumber(loan.total_repayment_amount) > 0 ? `Repay ${formatUsdcAmount(loan.total_repayment_amount)} USDC` : 'Repay on time';
       if (firstLoan) {
          return {
