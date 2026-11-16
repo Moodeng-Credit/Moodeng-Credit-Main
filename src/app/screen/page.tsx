@@ -172,6 +172,9 @@ function AnswerRecorder({ busy, onUse, previewState }: { busy: boolean; onUse: (
          return;
       }
       setState('starting');
+      // Made inside the tap, before anything is awaited: phones only let sound start from a tap.
+      const ctx = new Ctor();
+      void ctx.resume().catch(() => undefined);
       let stream: MediaStream;
       try {
          stream = await navigator.mediaDevices.getUserMedia({
@@ -180,6 +183,7 @@ function AnswerRecorder({ busy, onUse, previewState }: { busy: boolean; onUse: (
          });
       } catch {
          // Not allowed here (or no camera): the phone's own camera still works.
+         void ctx.close().catch(() => undefined);
          setUseCameraApp(true);
          setState('idle');
          setError('Tap Record again to open your camera.');
@@ -191,7 +195,6 @@ function AnswerRecorder({ busy, onUse, previewState }: { busy: boolean; onUse: (
       }
 
       // The sound, straight from the microphone, for the speech-to-text.
-      const ctx = new Ctor();
       const source = ctx.createMediaStreamSource(stream);
       const tap = ctx.createScriptProcessor(4096, 1, 1);
       const silent = ctx.createGain();
@@ -232,8 +235,19 @@ function AnswerRecorder({ busy, onUse, previewState }: { busy: boolean; onUse: (
          if (liveRef.current) liveRef.current.srcObject = null;
          const video = new Blob(parts, { type: baseType(type) });
          const samples = joinChunks(chunks);
-         setClip({ video, audio: samples.length ? wavBlob(samples, rate) : null, seconds, url: URL.createObjectURL(video) });
-         setState('review');
+         const url = URL.createObjectURL(video);
+         // No sound, or only silence, came through the microphone tap: read it out of the clip instead.
+         const heard = samples.some((v) => Math.abs(v) > 0.002);
+         if (heard) {
+            setClip({ video, audio: wavBlob(samples, rate), seconds, url });
+            setState('review');
+            return;
+         }
+         setState('starting');
+         void wavFromMediaFile(video).then((sound) => {
+            setClip({ video, audio: sound?.wav ?? null, seconds, url });
+            setState('review');
+         });
       };
       const end = () => {
          if (recorder.state !== 'inactive') recorder.stop();
@@ -461,7 +475,9 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       else void finish(next);
    };
 
-   const signUpHref = ref ? `/invite/${encodeURIComponent(ref)}` : '/signup';
+   // The token rides on the link too, so the result follows them into another browser.
+   const doneToken = token ?? readPreScreening()?.token ?? null;
+   const signUpHref = `${ref ? `/invite/${encodeURIComponent(ref)}` : '/signup'}${doneToken ? `?ps=${doneToken}` : ''}`;
    const trail = (current: number) => <StepTrail current={current} steps={['You', 'Watch', 'Answer', 'Done']} />;
    const question = questions[index];
    // The video must play to the end; if YouTube can't load here, don't trap them.

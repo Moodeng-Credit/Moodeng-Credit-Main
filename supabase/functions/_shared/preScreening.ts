@@ -25,7 +25,13 @@ export type PreScreenQuestion = { id: string; text: string; good?: string };
 export type PreScreenAnswer = { q: string; video?: string | null; audio?: string | null; seconds?: number };
 export type PreScreenVerdict = 'good' | 'ok' | 'weak';
 export type GradedAnswer = { q: string; transcript: string | null; score: number | null; note: string };
-export type PreScreenGrade = { overall: number | null; verdict: PreScreenVerdict | null; summary: string; answers: GradedAnswer[] };
+export type PreScreenGrade = {
+   overall: number | null;
+   verdict: PreScreenVerdict | null;
+   summary: string;
+   unheard: number;
+   answers: GradedAnswer[];
+};
 
 type Row = {
    id: string;
@@ -39,6 +45,7 @@ type Row = {
    score: number | null;
    verdict: PreScreenVerdict | null;
    user_id: string | null;
+   created_at: string | null;
 };
 
 const clamp = (n: unknown, min: number, max: number): number | null => {
@@ -52,9 +59,10 @@ export const verdictFor = (overall: number | null): PreScreenVerdict | null =>
 export const VERDICT_LABEL: Record<PreScreenVerdict, string> = { good: '🟢 Good', ok: '🟡 OK', weak: '🔴 Weak' };
 
 /**
- * Turns the model's JSON into a grade. The overall score is worked out here (the average of the three
- * answers, an unheard answer counting as 0), never taken from the model, so it can't disagree with
- * the per-answer scores the team sees.
+ * Turns the model's JSON into a grade. The overall score is worked out here (the average of the
+ * answers that were heard), never taken from the model, so it can't disagree with the per-answer
+ * scores the team sees. An answer the speech-to-text couldn't hear is left out, not counted as a bad
+ * answer: a phone's sound failing must not read as "Weak". `unheard` says how many.
  */
 export const buildGrade = (
    questions: PreScreenQuestion[],
@@ -79,11 +87,12 @@ export const buildGrade = (
    const overall =
       !heard.length || scored.length < heard.length
          ? null
-         : Math.round((scored.reduce((sum, a) => sum + (a.score ?? 0), 0) / questions.length) * 10);
+         : Math.round((scored.reduce((sum, a) => sum + (a.score ?? 0), 0) / heard.length) * 10);
    return {
       overall,
       verdict: verdictFor(overall),
       summary: typeof model?.summary === 'string' ? model.summary.trim().slice(0, 400) : '',
+      unheard: answers.length - heard.length,
       answers
    };
 };
@@ -156,8 +165,10 @@ const teamChat = async (svc: SupabaseClient) => {
    return (data as { value?: string } | null)?.value || null;
 };
 
-const scoreLine = (row: Pick<Row, 'score' | 'verdict'>) =>
-   row.verdict && row.score != null ? `${VERDICT_LABEL[row.verdict]} · ${row.score}/100` : '⚪ Not graded — watch the clips';
+const scoreLine = (row: Pick<Row, 'score' | 'verdict'>, unheard = 0) =>
+   row.verdict && row.score != null
+      ? `${VERDICT_LABEL[row.verdict]} · ${row.score}/100${unheard ? ` · ${unheard} answer${unheard === 1 ? '' : 's'} not heard (watch)` : ''}`
+      : '⚪ Not graded — watch the clips';
 
 async function tellTeam(svc: SupabaseClient, title: string, lines: string[], id: string) {
    const url = `${ADMIN_URL}?screen=${id}`;
@@ -174,21 +185,23 @@ async function tellTeam(svc: SupabaseClient, title: string, lines: string[], id:
    ).catch(() => undefined);
 }
 
-/** Removes the clips of old pre-screenings nobody signed up from. Best-effort, a few per run. */
+/**
+ * Removes the clips of old pre-screenings nobody signed up from, and whatever was uploaded to links
+ * that were started but never finished (after 2 days). Best-effort, a few per run. Works from the
+ * folder's contents, not the saved paths, so stray uploads go too.
+ */
 async function removeOldFiles(svc: SupabaseClient) {
-   const before = new Date(Date.now() - KEEP_FILES_DAYS * 86_400_000).toISOString();
-   const { data } = await svc
-      .from('pre_screenings')
-      .select('id, answers')
-      .is('user_id', null)
-      .is('files_removed_at', null)
-      .neq('status', 'open')
-      .lt('created_at', before)
-      .limit(10);
-   for (const old of (data ?? []) as Array<{ id: string; answers: PreScreenAnswer[] }>) {
-      const paths = (old.answers ?? []).flatMap((a) => [a.video, a.audio]).filter((p): p is string => Boolean(p));
-      if (paths.length) {
-         const { error } = await svc.storage.from(BUCKET).remove(paths);
+   const daysAgo = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
+   const base = () => svc.from('pre_screenings').select('id, token').is('user_id', null).is('files_removed_at', null).limit(10);
+   const [finished, abandoned] = await Promise.all([
+      base().neq('status', 'open').lt('created_at', daysAgo(KEEP_FILES_DAYS)),
+      base().eq('status', 'open').lt('created_at', daysAgo(2))
+   ]);
+   for (const old of [...(finished.data ?? []), ...(abandoned.data ?? [])] as Array<{ id: string; token: string }>) {
+      const { data: files, error: listError } = await svc.storage.from(BUCKET).list(old.token, { limit: 100 });
+      if (listError) continue;
+      if (files?.length) {
+         const { error } = await svc.storage.from(BUCKET).remove(files.map((f) => `${old.token}/${f.name}`));
          if (error) continue;
       }
       await svc.from('pre_screenings').update({ files_removed_at: new Date().toISOString() }).eq('id', old.id);
@@ -206,18 +219,21 @@ export async function gradePreScreening(svc: SupabaseClient, id: string, apiKey:
    let modelOut: { summary?: unknown; answers?: unknown } | null = null;
    if (!apiKey) problems.push('DEEPSEEK_API_KEY not set');
    else {
-      for (const q of row.questions) {
-         const answer = row.answers.find((a) => a.q === q.id);
-         transcripts[q.id] = null;
-         if (!answer?.audio) continue;
-         try {
-            const file = await svc.storage.from(BUCKET).download(answer.audio);
-            if (file.error || !file.data) throw new Error(file.error?.message ?? 'no file');
-            transcripts[q.id] = await transcribe(apiKey, file.data);
-         } catch (err) {
-            problems.push(`${q.id}: ${err instanceof Error ? err.message : String(err)}`);
-         }
-      }
+      // All at once: one after another could run past the function's time limit.
+      await Promise.all(
+         row.questions.map(async (q) => {
+            const answer = row.answers.find((a) => a.q === q.id);
+            transcripts[q.id] = null;
+            if (!answer?.audio) return;
+            try {
+               const file = await svc.storage.from(BUCKET).download(answer.audio);
+               if (file.error || !file.data) throw new Error(file.error?.message ?? 'no file');
+               transcripts[q.id] = await transcribe(apiKey, file.data);
+            } catch (err) {
+               problems.push(`${q.id}: ${err instanceof Error ? err.message : String(err)}`);
+            }
+         })
+      );
       if (Object.values(transcripts).some(Boolean)) {
          try {
             modelOut = await gradeWithModel(apiKey, row.name, row.questions, transcripts);
@@ -250,7 +266,7 @@ export async function gradePreScreening(svc: SupabaseClient, id: string, apiKey:
          svc,
          `🎥 Pre-screening — ${row.name}`,
          [
-            scoreLine({ score: grade.overall, verdict: grade.verdict }),
+            scoreLine({ score: grade.overall, verdict: grade.verdict }, grade.unheard),
             row.ref_code ? `From affiliate link: ${row.ref_code}` : 'No affiliate code on the link',
             row.video_watched ? 'Watched the video to the end' : '⚠️ Did not finish the video',
             grade.summary || null,
@@ -268,15 +284,20 @@ export async function notifyPreScreeningClaimed(svc: SupabaseClient, id: string)
    const { data } = await svc.from('pre_screenings').select('*').eq('id', id).maybeSingle();
    const row = data as Row | null;
    if (!row?.user_id) return { ok: false, error: 'not claimed' };
-   const { data: user } = await svc.from('users').select('username, email').eq('id', row.user_id).maybeSingle();
-   const u = user as { username?: string | null; email?: string | null } | null;
-   const who = u?.username ? `@${u.username}` : (u?.email ?? 'a new account');
+   const { data: user } = await svc.from('users').select('username, email, created_at').eq('id', row.user_id).maybeSingle();
+   const u = user as { username?: string | null; email?: string | null; created_at?: string | null } | null;
+   const who = u?.username ? `@${u.username}` : (u?.email ?? 'an account');
+   // An account older than the pre-screening didn't "sign up" from it (an affiliate trying their own link).
+   const isNew = !u?.created_at || !row.created_at || new Date(u.created_at).getTime() > new Date(row.created_at).getTime() - 3_600_000;
    await tellTeam(
       svc,
-      `✅ Pre-screened person signed up — ${row.name}`,
-      [`Account: ${who}`, scoreLine(row), row.ref_code ? `From affiliate link: ${row.ref_code}` : null, row.grade?.summary || null].filter(
-         (l): l is string => Boolean(l)
-      ),
+      isNew ? `✅ Pre-screened person signed up — ${row.name}` : `ℹ️ An existing account did the pre-screening — ${row.name}`,
+      [
+         `Account: ${who}`,
+         scoreLine(row, row.grade?.unheard ?? 0),
+         row.ref_code ? `From affiliate link: ${row.ref_code}` : null,
+         row.grade?.summary || null
+      ].filter((l): l is string => Boolean(l)),
       id
    );
    return { ok: true };

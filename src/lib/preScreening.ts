@@ -25,6 +25,20 @@ export const savePreScreening = (token: string, done: boolean) => {
    }
 };
 
+/**
+ * Call once on page load. The pre-screening's "Sign up" button carries ?ps=<token>, so the result
+ * still reaches the account when the sign-up happens in another browser than the one that recorded
+ * (a link copied out of Facebook's or Messenger's browser).
+ */
+export const capturePreScreeningToken = () => {
+   try {
+      const token = new URLSearchParams(window.location.search).get('ps');
+      if (token && /^[0-9a-f]{32}$/.test(token) && readPreScreening()?.token !== token) savePreScreening(token, true);
+   } catch {
+      // Storage blocked: skip.
+   }
+};
+
 /** Once per signed-in account on this browser. */
 export const claimPreScreening = (userId: string) => {
    try {

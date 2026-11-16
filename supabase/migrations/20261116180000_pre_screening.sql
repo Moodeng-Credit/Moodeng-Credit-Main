@@ -62,6 +62,7 @@ on conflict (key) do nothing;
 
 -- 3) Bucket ----------------------------------------------------------------------------------------
 -- Is this link still taking clips? (Used by the upload policy, so it must not need table access.)
+-- p_token is 32 hex characters, so it is safe inside LIKE.
 create or replace function app_private.pre_screening_open(p_token text)
 returns boolean
 language sql
@@ -69,10 +70,15 @@ stable
 security definer
 set search_path = ''
 as $$
+  -- At most 8 files per link (3 answers × video + sound, and a retry or two): the page is public and
+  -- storage is small.
   select exists (
     select 1 from public.pre_screenings s
-    where s.token = p_token and s.status = 'open' and s.created_at > now() - interval '1 day'
-  );
+    where s.token = p_token and p_token ~ '^[0-9a-f]{32}$' and s.status = 'open' and s.created_at > now() - interval '1 day'
+  ) and (
+    select count(*) from storage.objects o
+    where o.bucket_id = 'pre-screenings' and o.name like p_token || '/%'
+  ) < 8;
 $$;
 
 revoke all on function app_private.pre_screening_open(text) from public;
@@ -173,7 +179,7 @@ begin
     return jsonb_build_object('status', 'busy');
   end if;
   if caller_ip is not null
-     and (select count(*) from public.pre_screenings where ip = caller_ip and created_at > now() - interval '1 day') >= 3 then
+     and (select count(*) from public.pre_screenings where ip = caller_ip and created_at > now() - interval '1 day') >= 10 then
     return jsonb_build_object('status', 'busy');
   end if;
 

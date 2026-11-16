@@ -29,7 +29,7 @@ Deno.test('pre-screening: averages the three answers into a 0-100 score', () => 
    );
 });
 
-Deno.test('pre-screening: an unheard answer counts as 0 and is never given the model score', () => {
+Deno.test('pre-screening: an unheard answer is left out of the score, not counted as a bad answer', () => {
    const grade = buildGrade(
       QUESTIONS,
       { work: 'driver', purpose: null, repay: 'salary' },
@@ -41,8 +41,9 @@ Deno.test('pre-screening: an unheard answer counts as 0 and is never given the m
          ]
       }
    );
-   assertEquals(grade.overall, 60);
-   assertEquals(grade.verdict, 'ok');
+   assertEquals(grade.overall, 90);
+   assertEquals(grade.verdict, 'good');
+   assertEquals(grade.unheard, 1);
    assertEquals(grade.answers[1].transcript, null);
    assertEquals(grade.answers[1].score, null);
 });
