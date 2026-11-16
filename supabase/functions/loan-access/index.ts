@@ -6,7 +6,7 @@ import { postDiscord } from '../_shared/discord.ts';
 import { isInternalRequest } from '../_shared/internalAuth.ts';
 import { collectGateDigest, formatGateDigest } from '../_shared/gateDigest.ts';
 import { cancelUpcomingCall } from '../_shared/callCancel.ts';
-import { BORROWER_COLUMNS, getAdminChatId, notifyAdminsOfRequest, notifyBorrower, PAGE_INBOX_URL, REQUEST_COLUMNS, shortId, SITE_URL, who } from '../_shared/loanAccess.ts';
+import { BORROWER_COLUMNS, getAdminChatId, notifyAdminsOfRequest, notifyBorrower, PAGE_INBOX_URL, rejectUser, REQUEST_COLUMNS, shortId, SITE_URL, who } from '../_shared/loanAccess.ts';
 import { needsPreKycGate } from '../_shared/preKycGate.ts';
 import { isIdStep, loadIdStatus, notifyIdNextStep, sendIdTelegram } from '../_shared/idTrack.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
@@ -35,6 +35,10 @@ import { getMessengerContact } from '../_shared/sendpulse.ts';
 //   action=id_step (borrower JWT, Indonesia track) — the app finished a step it saves itself; the
 //                                   bot says "✅ done — next: …" on Telegram (_shared/idTrack.ts).
 //   action=cancel_rejected_calls (server only) — cancels calls still booked by rejected people.
+//   action=reject_user (server only) {user_id, by?} — the same reject as Telegram's 🚫 / the call
+//                                   sheet's 1 (rejectUser): decides their pending request, cancels the
+//                                   call, messages them, stamps cards. For the team when no admin
+//                                   session is at hand (George 2026-11-16).
 //   action=referral_alert (DB trigger on redeem) — posts "🎟️ code X used by …" to the admin
 //                                   Telegram + Discord. Deduped by referral_redemptions.alerted_at,
 //                                   so it can only ever fire once per real redemption.
@@ -356,6 +360,12 @@ serve(async (req) => {
       if (body.action === 'gate_digest') return await gateDigest(req, svc);
       if (body.action === 'id_step') return await idStep(req, svc, body);
       if (body.action === 'cancel_rejected_calls') return await cancelRejectedCalls(req, svc);
+      if (body.action === 'reject_user') {
+         if (!(await isInternalRequest(svc, req))) return json({ ok: false, error: 'unauthorized' }, 401);
+         if (typeof body.user_id !== 'string') return json({ ok: false, error: 'user_id required' }, 400);
+         const by = typeof body.by === 'string' && body.by.trim() ? body.by.trim().slice(0, 60) : 'team';
+         return json(await rejectUser(svc, body.user_id, by));
+      }
       if (body.action === 'fb_profile_probe') return await fbProfileProbe(req, svc, body);
       return json({ error: 'unknown_action' }, 400);
    } catch (err) {
