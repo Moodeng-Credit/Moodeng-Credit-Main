@@ -127,10 +127,37 @@ const awardFundingPoints = async (admin: Admin, loan: Record<string, unknown>): 
 const isKnownBorrowerWallet = async (admin: Admin, borrowerId: string | null, wallet: string): Promise<boolean> => {
    if (!borrowerId) return false;
    const target = wallet.toLowerCase();
-   const { data: user } = await admin.from('users').select('wallet_address').eq('id', borrowerId).maybeSingle();
-   if ((user?.wallet_address ?? '').toLowerCase() === target) return true;
-   const { data: loans } = await admin.from('loans').select('borrower_wallet').eq('borrower_user_id', borrowerId);
-   return ((loans ?? []) as { borrower_wallet: string | null }[]).some((row) => (row.borrower_wallet ?? '').toLowerCase() === target);
+   const [{ data: user }, { data: loans }, { data: usage }, { data: grants }] = await Promise.all([
+      admin.from('users').select('wallet_address').eq('id', borrowerId).maybeSingle(),
+      admin.from('loans').select('borrower_wallet').eq('borrower_user_id', borrowerId),
+      admin.from('wallet_usage_log').select('wallet_address').eq('user_id', borrowerId),
+      admin.from('embedded_wallet_grants').select('wallet_address').eq('user_id', borrowerId)
+   ]);
+   const known = [
+      user?.wallet_address,
+      ...((loans ?? []) as { borrower_wallet: string | null }[]).map((row) => row.borrower_wallet),
+      ...((usage ?? []) as { wallet_address: string | null }[]).map((row) => row.wallet_address),
+      ...((grants ?? []) as { wallet_address: string | null }[]).map((row) => row.wallet_address)
+   ];
+   return known.some((w) => (w ?? '').toLowerCase() === target);
+};
+
+/** True when other borrowers' loans also repay to this lender wallet (BitRepo, the team's lender wallets). */
+const isSharedLenderWallet = async (admin: Admin, lenderWallet: string, borrowerId: string): Promise<boolean> => {
+   const { data } = await admin.from('loans').select('id').ilike('lender_wallet', lenderWallet.toLowerCase()).neq('borrower_user_id', borrowerId).limit(1);
+   return (data?.length ?? 0) > 0;
+};
+
+/** True when the wallet is on file for a different Moodeng user (their own payment, or a team top-up). */
+const walletBelongsToAnotherUser = async (admin: Admin, wallet: string, borrowerId: string): Promise<boolean> => {
+   const target = wallet.toLowerCase();
+   if (!/^0x[0-9a-f]{40}$/.test(target)) return false;
+   const results = await Promise.all([
+      admin.from('users').select('id').ilike('wallet_address', target).neq('id', borrowerId).limit(1),
+      admin.from('wallet_usage_log').select('user_id').ilike('wallet_address', target).neq('user_id', borrowerId).limit(1),
+      admin.from('embedded_wallet_grants').select('user_id').ilike('wallet_address', target).neq('user_id', borrowerId).limit(1)
+   ]);
+   return results.some((r: { data?: unknown[] | null }) => (r.data?.length ?? 0) > 0);
 };
 
 serve(async (req) => {
@@ -373,6 +400,45 @@ serve(async (req) => {
       return jsonResponse({ error: `This payment couldn't be applied because ${closedReason}. Contact support for a refund.` }, 409);
    }
 
+   // Claim check (security review 2026-11-16). A repayment counts from ANY sender, and some lender
+   // wallets (BitRepo, the team's lender wallets) receive repayments from many borrowers, so a borrower
+   // could paste the hash of SOMEONE ELSE's payment to that wallet (or a team top-up) and close their
+   // own loan. When the sender isn't one of this borrower's wallets AND (the lender wallet is shared OR
+   // the sender is another Moodeng user's wallet), hold it for the team instead of recording it. The
+   // hash stays unspent, so the real payer can still confirm it, and the team can record it via the
+   // admin replay (X-Admin-Token) once they've checked it. Exchange payments to a lender wallet only
+   // this borrower uses still record as before.
+   const senderIsKnown = action === 'repay' ? await isKnownBorrowerWallet(admin, loan.borrower_user_id, transfer.from) : true;
+   if (action === 'repay' && !presentedAdminToken && !senderIsKnown) {
+      const [shared, otherUsersWallet] = await Promise.all([
+         isSharedLenderWallet(admin, expectedRecipient, callerId),
+         walletBelongsToAnotherUser(admin, transfer.from, callerId)
+      ]);
+      if (shared || otherUsersWallet) {
+         // One alert per payment, however often it's resubmitted.
+         const { error: firstTime } = await admin.from('orphan_payment_alerts').insert({ tx_hash: `held:${recordHash}` });
+         if (!firstTime) {
+            const why = otherUsersWallet ? "it came from ANOTHER Moodeng user's wallet" : 'it came from a wallet not on file, sent to a lender wallet several borrowers repay to';
+            await postDiscord(
+               {
+                  content:
+                     `🛑 ${loan.tracking_id}: repayment HELD, not recorded. ${(Number(transfer.micros) / 1e6).toFixed(2)} USDC (${recordHash}, ${method}) from ${transfer.from}: ${why}.\n` +
+                     `Someone may be claiming another person's payment. Check on Basescan that this borrower really sent it; if so, record it (admin replay) or mark the loan settled in Admin.${adminLine}`
+               },
+               { prefer: ['DISCORD_REPAY_WEBHOOK_URL'], ref: { svc: admin, kind: 'loan', refId: loan.id } }
+            );
+         }
+         return jsonResponse(
+            {
+               held: true,
+               error:
+                  "We got your payment, don't pay again. It came from a wallet that isn't on your account, so our team will check it and mark your loan paid, usually within a few hours."
+            },
+            409
+         );
+      }
+   }
+
    // Record it in one locked database transaction (public.record_loan_payment): it re-checks the loan
    // is still open for this action, spends this payment's hashes (see VerifiedTransfer.spendHashes)
    // and updates the loan. Two payments at once queue instead of overwriting each other, two lenders
@@ -413,7 +479,6 @@ serve(async (req) => {
    }
    // A repayment from a wallet we don't know for this borrower is still recorded (borrowers often pay
    // from an exchange), but the team should check it really came from them.
-   const senderIsKnown = action === 'repay' ? await isKnownBorrowerWallet(admin, loan.borrower_user_id, transfer.from) : true;
    if (!senderIsKnown) {
       await postDiscord(
          {

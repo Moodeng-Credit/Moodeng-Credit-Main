@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { sendEmail } from '../_shared/email.ts';
+import { isServerCaller } from '../_shared/internalAuth.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { sendIdTelegramTo } from '../_shared/idTrack.ts';
 
@@ -189,16 +190,21 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: corsHeaders });
    }
 
+   const supabase: SupabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+   );
+
+   // Server only (record-withdrawal invokes this with the service-role key).
+   if (!(await isServerCaller(supabase, req))) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+   }
+
    const { withdrawalId } = await req.json().catch(() => ({}));
 
    if (!withdrawalId) {
       return new Response(JSON.stringify({ error: 'withdrawalId is required' }), { status: 400, headers: corsHeaders });
    }
-
-   const supabase: SupabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-   );
 
    const { data: withdrawal, error: withdrawalError } = await supabase
       .from('withdrawals')
