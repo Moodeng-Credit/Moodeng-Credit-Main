@@ -37,7 +37,7 @@ Deno.test('two accounts on one contact: the booked one wins', () => {
    assertEquals(changeTimeTarget('old', users, NOW), { kind: 'reschedule', uid: 'live' });
 });
 
-Deno.test('two accounts, neither booked (Maria): book again', () => {
+Deno.test('two accounts, neither booked: book again', () => {
    const users = [
       { video_call_booking_uid: null, video_call_starts_at: null, loan_access_status: 'none' },
       { video_call_booking_uid: null, video_call_starts_at: null, loan_access_status: 'none' }

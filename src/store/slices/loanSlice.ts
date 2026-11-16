@@ -87,7 +87,8 @@ const mapSupabaseLoanToLoan = (row: LoanRow): Loan => ({
    offplatformSettlementNote: row.offplatform_settlement_note ?? undefined,
    market: (row as { market?: string | null }).market === 'ID' ? 'ID' : undefined,
    ...mapIdrPeg(row as IdrPegRow),
-   repaymentSchedule: parseRepaymentSchedule((row as { repayment_schedule?: unknown }).repayment_schedule) ?? undefined
+   repaymentSchedule: parseRepaymentSchedule((row as { repayment_schedule?: unknown }).repayment_schedule) ?? undefined,
+   repaymentScheduleLateAt: (row as { repayment_schedule_late_at?: string | null }).repayment_schedule_late_at ?? undefined
 });
 
 const initialState: LoanState = {

@@ -61,6 +61,8 @@ export interface Loan {
    fxRateAtRequest?: number;
    // Paid back in milestones (src/lib/repaymentSchedule.ts). dueDate is the LAST payment's date.
    repaymentSchedule?: RepaymentMilestone[];
+   // Set by the server when a payment of a split loan came in after its deadline: the loan isn't "on time".
+   repaymentScheduleLateAt?: string;
 }
 
 /**

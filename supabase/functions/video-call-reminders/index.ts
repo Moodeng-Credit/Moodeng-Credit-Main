@@ -232,7 +232,7 @@ const runRung = async (svc: Svc, u: ReminderUser, rung: Rung, zoomActive: boolea
          }
          // Only cancel someone the ask actually reached (George 2026-11-15, "only if reached"; was: cancel
          // even when unreached, 2026-11-02). Reached = Messenger, WhatsApp, Telegram or an app push went
-         // through. The text message alone doesn't count: delivery isn't confirmed (Maria, 2026-11-15,
+         // through. The text message alone doesn't count: delivery isn't confirmed (a borrower on 2026-11-15,
          // Messenger out of its 24h window and no WhatsApp, was cancelled on the SMS alone).
          // No stamp → shouldReleaseSlot keeps the call.
          const viaSms = await callSms(svc, u, 'confirm');

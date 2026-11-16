@@ -25,7 +25,7 @@ const CHANGE_TIME = '🔄 Change time';
 
 // The 🔄 Change time button goes through video-call-confirm first (?change=), so an old card still
 // works after the call was cancelled or moved: Cal.com's page refuses a cancelled booking ("This event
-// is canceled", 2026-11-15, Maria). `c` is their SendPulse contact id (users.messenger_psid), which
+// is canceled", a borrower on 2026-11-15). `c` is their SendPulse contact id (users.messenger_psid), which
 // finds them even once the booking on the card is gone.
 export const buildChangeTimeUrl = (bookingUid: string, contactId: string) =>
    `${SUPABASE_URL}/functions/v1/video-call-confirm?change=${encodeURIComponent(bookingUid)}&c=${encodeURIComponent(contactId)}`;
@@ -36,7 +36,7 @@ type ChangeTimeUser = { video_call_booking_uid?: string | null; video_call_start
 
 /**
  * Where a 🔄 Change time tap goes. `users` = every account on that Messenger contact (one person can
- * have two, e.g. Maria 2026-11-15). Any account booked now → Cal.com's reschedule page for that
+ * have two, seen 2026-11-15). Any account booked now → Cal.com's reschedule page for that
  * CURRENT booking (the card may show an older one they already moved). No call → book again on our
  * page, unless every account is rejected (rejected is final). None found → the booking on the card.
  */

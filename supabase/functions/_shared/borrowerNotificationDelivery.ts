@@ -8,7 +8,7 @@ import {
    LoanNotificationRecipient,
    LoanNotificationType
 } from './loanNotifications.ts';
-import { CASH_OUT_BUTTON, CASH_OUT_QUESTION } from './messengerCashOutHelp.ts';
+import { CASH_OUT_BUTTON, type CashOutLang, cashOutQuestion } from './messengerCashOutHelp.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import { buildRepayRewardLine } from './repayReward.ts';
 import {
@@ -142,14 +142,14 @@ export const buildMessengerContent = (
    type: LoanNotificationType,
    loan: LoanNotificationLoan | null,
    aggregate: LoanNotificationAggregate | undefined,
-   { firstLoan = false }: { firstLoan?: boolean } = {}
+   { firstLoan = false, cashOut = 'en' }: { firstLoan?: boolean; cashOut?: CashOutLang | null } = {}
 ): { text: string; card?: MessengerCard; followUpText?: string } | null => {
    if (type === 'funded' && loan) {
       const dashboardUrl = buildPushPayloadForType('funded', loan, aggregate, 'en')?.url;
       const due = formatDueDate(loan.due_date);
       // Then "How will you cash out?" as its own message; the answer is handled in messengerCashOutHelp.ts.
-      // Not for Indonesia's Walt loans (their money is already in Walt).
-      const followUpText = loan.funding_method === 'walt_manual' ? undefined : CASH_OUT_QUESTION;
+      // Not for Indonesia (cashOut null) or Walt loans: their money isn't turned into pesos.
+      const followUpText = loan.funding_method === 'walt_manual' || !cashOut ? undefined : cashOutQuestion(cashOut);
       const repay = toNumber(loan.total_repayment_amount) > 0 ? `Repay ${formatUsdcAmount(loan.total_repayment_amount)} USDC` : 'Repay on time';
       if (firstLoan) {
          return {
@@ -438,7 +438,10 @@ export const sendBorrowerLoanNotification = async (
       type === 'funded' && recipient.messenger_psid && options.push?.supabase && loan
          ? await isFirstFundedLoan(options.push.supabase, loan).catch(() => false)
          : false;
-   const messengerContent = recipient.messenger_psid ? buildMessengerContent(type, loan, aggregate, { firstLoan }) : null;
+   // The funded message's "How will you cash out?": in Filipino for 'fil' accounts, never for Indonesia.
+   const cashOutWho = type === 'funded' && recipient.messenger_psid ? (idRecipient ?? (await resolveIdRecipient(recipient, loan, options.push))) : null;
+   const cashOut: CashOutLang | null = cashOutWho?.market === 'ID' ? null : cashOutWho?.preferred_locale === 'fil' ? 'fil' : 'en';
+   const messengerContent = recipient.messenger_psid ? buildMessengerContent(type, loan, aggregate, { firstLoan, cashOut }) : null;
    if (recipient.messenger_psid && messengerContent) {
       const result = await sendMessengerMessage(recipient.messenger_psid, { text: messengerContent.text, card: messengerContent.card });
       messengerSent = result.ok;
@@ -446,7 +449,7 @@ export const sendBorrowerLoanNotification = async (
          const followUp = await sendMessengerMessage(recipient.messenger_psid, { text: messengerContent.followUpText });
          console.log(`[borrowerNotification] Messenger cash-out question → ${followUp.ok ? 'sent' : `not sent (${followUp.reason})`}`);
       }
-      // Every outcome is logged, so "did the bot tell them?" is one log search (kryshia's funded
+      // Every outcome is logged, so "did the bot tell them?" is one log search (a borrower's funded
       // message on 2026-10-01 was skipped with no trace).
       console.log(`[borrowerNotification] Messenger "${type}" for ${loan?.tracking_id ?? '?'} → ${result.ok ? 'sent' : `not sent (${result.reason})`}`);
    } else if (messengerContent) {

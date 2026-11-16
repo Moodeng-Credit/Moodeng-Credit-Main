@@ -1,6 +1,6 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { buildCashOutReply, CASH_OUT_QUESTION, parseCashOutChoice } from './messengerCashOutHelp.ts';
+import { buildCashOutReply, CASH_OUT_QUESTION, cashOutQuestion, parseCashOutChoice } from './messengerCashOutHelp.ts';
 
 Deno.test('numbers and names pick a cash-out way', () => {
    assertEquals(parseCashOutChoice('1'), { choice: 'qr', by: 'number' });
@@ -10,7 +10,6 @@ Deno.test('numbers and names pick a cash-out way', () => {
    assertEquals(parseCashOutChoice('QR'), { choice: 'qr', by: 'name' });
    assertEquals(parseCashOutChoice('bank qr'), { choice: 'qr', by: 'name' });
    assertEquals(parseCashOutChoice('GCrypto'), { choice: 'gcrypto', by: 'name' });
-   assertEquals(parseCashOutChoice('gcash'), { choice: 'gcrypto', by: 'name' });
    assertEquals(parseCashOutChoice('PDAX!'), { choice: 'pdax', by: 'name' });
    assertEquals(parseCashOutChoice('Maya'), { choice: 'maya', by: 'name' });
 });
@@ -38,4 +37,21 @@ Deno.test('card button titles fit Messenger (≤ 20 chars)', () => {
       for (const b of [card.button, ...(card.moreButtons ?? [])]) assert([...b.title].length <= 20, b.title);
       assert(card.title.length <= 80);
    }
+});
+
+Deno.test('plain "bank" / "gcash" stay with support', () => {
+   for (const text of ['bank', 'gcash', 'Gcash']) assertEquals(parseCashOutChoice(text), null, text);
+});
+
+Deno.test('Filipino copy: same ways, same coin warnings, same buttons', () => {
+   assert(cashOutQuestion('fil').includes('1, 2, 3 o 4'));
+   assertEquals(cashOutQuestion('en'), CASH_OUT_QUESTION);
+   for (const choice of ['qr', 'gcrypto', 'pdax', 'maya'] as const) {
+      const en = buildCashOutReply(choice);
+      const fil = buildCashOutReply(choice, 'fil');
+      assert(fil.text !== en.text, choice);
+      assertEquals(fil.card, en.card);
+   }
+   assert(buildCashOutReply('gcrypto', 'fil').text.includes('Hindi USDT, hindi Ethereum'));
+   assert(buildCashOutReply('maya', 'fil').text.includes('Solana'));
 });

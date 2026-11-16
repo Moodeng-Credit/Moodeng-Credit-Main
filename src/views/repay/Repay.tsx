@@ -431,7 +431,8 @@ const getEstimatedTrustPoints = (loan: Loan, repaymentAmount: number): number =>
    // Mirrors private.award_repayment_pandesal: only a full, on-time payoff earns points
    // (10). Partial payments and late payoffs earn nothing, so never promise them.
    if (repaymentAmount < remainingAmount - 0.005) return 0;
-   if (isPastDueDay(loan.dueDate, getLoanTimezone(loan))) return 0;
+   // Split loans: a part paid late (stamped by the server) or the current part past due = not on time.
+   if (loan.repaymentScheduleLateAt || isLoanOverdue(loan) || isPastDueDay(loan.dueDate, getLoanTimezone(loan))) return 0;
    return 10;
 };
 

@@ -85,7 +85,7 @@ export const classifyZoomEvent = (body: ZoomBody): ZoomEvent => {
 };
 
 // Who a non-host participant is. Zoom only tells us the host apart, so on the shared team account the
-// other teammate and any AI note-taker joining also looked like "the borrower is here" (kryshia,
+// other teammate and any AI note-taker joining also looked like "the borrower is here" (a borrower,
 // 2026-10-01: George, Emma and two note-taker bots joined, she never did — and the false sighting
 // also marked her as attended, hiding the no-show).
 //   * bot      — a note-taker/recorder; ignored.
