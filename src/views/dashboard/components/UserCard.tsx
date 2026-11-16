@@ -858,6 +858,12 @@ export default function UserCard(loan: UserCardProps) {
 
             {/* CTA + Borrower Link */}
             <div className="flex flex-col gap-4">
+               {isFundingAdmin && !isOwnLoan && loanData.onHoldReason === 'over_cap' && loanData.loanStatus === 'Requested' ? (
+                  // Team only: lenders can't see this request. Fund → Override → reason.
+                  <p className="rounded-md-lg border border-[#f5c56b] bg-[#fff6e0] px-md-3 py-2 text-md-b3 font-semibold text-[#8a5300]">
+                     🚧 Over this borrower&apos;s cap · hidden from lenders
+                  </p>
+               ) : null}
                {!isAuthenticated ? (
                   <Link
                      to="/sign-in"
@@ -869,7 +875,12 @@ export default function UserCard(loan: UserCardProps) {
                ) : isOwnLoan && loanData.onHoldSince && loanData.loanStatus === 'Requested' ? (
                   // Hidden from lenders until they rebook; booking a new call puts it straight back.
                   <div className="flex flex-col gap-md-2 rounded-md-lg border border-[#f5c56b] bg-[#fff6e0] p-md-3">
-                     {loanData.onHoldReason === 'awaiting_call' ? (
+                     {loanData.onHoldReason === 'over_cap' ? (
+                        <>
+                           <p className="text-md-b2 font-semibold text-[#8a5300]">Our team is checking this amount</p>
+                           <p className="text-md-b3 text-[#8a5300]">We&apos;ll message you soon.</p>
+                        </>
+                     ) : loanData.onHoldReason === 'awaiting_call' ? (
                         <>
                            <p className="text-md-b2 font-semibold text-[#8a5300]">Waiting for your video call</p>
                            <p className="text-md-b3 text-[#8a5300]">
@@ -885,13 +896,15 @@ export default function UserCard(loan: UserCardProps) {
                            </p>
                         </>
                      )}
-                     <button
-                        type="button"
-                        onClick={() => setShowRebook(true)}
-                        className="w-full rounded-md-lg bg-md-primary-1200 py-md-3 text-md-b1 font-semibold text-md-neutral-100 transition-all duration-150 hover:brightness-110 active:scale-[0.98]"
-                     >
-                        {loanData.onHoldReason === 'awaiting_call' ? 'Book or change your call' : 'Book a new call'}
-                     </button>
+                     {loanData.onHoldReason === 'over_cap' ? null : (
+                        <button
+                           type="button"
+                           onClick={() => setShowRebook(true)}
+                           className="w-full rounded-md-lg bg-md-primary-1200 py-md-3 text-md-b1 font-semibold text-md-neutral-100 transition-all duration-150 hover:brightness-110 active:scale-[0.98]"
+                        >
+                           {loanData.onHoldReason === 'awaiting_call' ? 'Book or change your call' : 'Book a new call'}
+                        </button>
+                     )}
                   </div>
                ) : isOwnLoan ? (
                   <div className="bg-md-neutral-500 text-md-neutral-1200 text-md-b1 font-semibold py-md-3 rounded-md-lg text-center cursor-not-allowed">

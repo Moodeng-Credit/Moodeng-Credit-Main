@@ -32,6 +32,7 @@ import { useClickOutside } from '@/hooks/useClickOutside';
 import { useIdOnboarding } from '@/hooks/useIdOnboarding';
 import { useUsdIdrPeg } from '@/hooks/useUsdIdrPeg';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
+import { useIsFundingAdmin } from '@/hooks/useIsFundingAdmin';
 import { useLoanFlow } from '@/hooks/useLoanFlow';
 import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 import { usePagination } from '@/hooks/usePagination';
@@ -506,6 +507,7 @@ function RequestBoard$() {
    const [sharedRequestId, setSharedRequestId] = useState<string | null>(null);
 
    const user = useSelector((state: RootState) => state.auth.user);
+   const isFundingAdmin = useIsFundingAdmin();
    const username = useSelector((state: RootState) => state.auth.username);
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const isLoading = useSelector((state: RootState) => state.loans.isLoading);
@@ -2031,13 +2033,13 @@ function RequestBoard$() {
    const filteredLoans = useMemo(() => {
       const allFilters: LoanFilters = { ...filters, search: searchLoan, sortBy: filters.sortBy };
       return filterLoans(
-         // On-hold requests (missed video call) stay visible only to their own borrower.
-         requestBoardLoans.filter((loan) => isRequestBoardLoanVisible(loan, new Date(), user?.id)),
+         // On-hold requests (missed video call) stay visible only to their own borrower; over-cap ones also to the team.
+         requestBoardLoans.filter((loan) => isRequestBoardLoanVisible(loan, new Date(), user?.id, isFundingAdmin)),
          allFilters,
          customAmount,
          userProfiles
       );
-   }, [filters, searchLoan, requestBoardLoans, customAmount, userProfiles, user?.id]);
+   }, [filters, searchLoan, requestBoardLoans, customAmount, userProfiles, user?.id, isFundingAdmin]);
 
    const {
       displayedItems: displayedLoans,
