@@ -63,6 +63,8 @@ type CheckoutDeposit = {
    data: Record<string, unknown>;
    optionId: string | null;
    clientSecret: string | null;
+   /** Stableyard's fee / rate fields from the payment and the chosen option (saved on the quote). */
+   pricing?: Record<string, unknown> | null;
    problem?: { code: string; detail: string; status?: number; requestId?: string | null };
 };
 
@@ -73,6 +75,21 @@ type CheckoutDeposit = {
 // nextAction.depositInstructions shape a bank payout gives, so the app needs no second path.
 // Only the wallet linked as the account's payment source may fund it; that is the Moodeng wallet.
 // The clientSecret is kept server-side (stableyard_qr_quotes) and never returned to the browser.
+// Every fee / rate / spread / amount field in Stableyard's reply, by path (e.g. "option.providerFee"), so a
+// quote can be split into their fee and their exchange rate later. Secrets and addresses are skipped.
+const PRICING_KEY = /fee|rate|spread|amount|price/i;
+const SKIP_KEY = /secret|address|token|signature|calldata|data$/i;
+export const pickPricing = (value: unknown, path = '', out: Record<string, unknown> = {}, depth = 0): Record<string, unknown> => {
+   if (!value || typeof value !== 'object' || depth > 4) return out;
+   for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+      if (SKIP_KEY.test(key)) continue;
+      const at = path ? `${path}.${key}` : key;
+      if (PRICING_KEY.test(key) && (child === null || typeof child !== 'object' || /fee/i.test(key))) out[at] = child;
+      else if (child && typeof child === 'object' && !Array.isArray(child)) pickPricing(child, at, out, depth + 1);
+   }
+   return out;
+};
+
 const withBaseDeposit = async (raw: unknown): Promise<CheckoutDeposit> => {
    const source = (raw && typeof raw === 'object' ? raw : {}) as {
       payment?: { id?: string; status?: string };
@@ -159,7 +176,8 @@ const withBaseDeposit = async (raw: unknown): Promise<CheckoutDeposit> => {
       }
    };
    data.checkoutOption = { id: option.id, methodId: method.id, providerFee: option.providerFee ?? null };
-   return { data, optionId: option.id, clientSecret };
+   const pricing = { ...pickPricing(source.payment, 'payment'), ...pickPricing(option, 'option') };
+   return { data, optionId: option.id, clientSecret, pricing: Object.keys(pricing).length ? pricing : null };
 };
 
 // deno-lint-ignore no-explicit-any
@@ -818,7 +836,8 @@ const handleQr = async (
       market_rate_at: quote.marketRateAt,
       merchant_name: merchant || null,
       option_id: resolved.optionId,
-      checkout_secret: resolved.optionId ? resolved.clientSecret : null
+      checkout_secret: resolved.optionId ? resolved.clientSecret : null,
+      pricing: resolved.pricing ?? pickPricing((result.data as { payment?: unknown } | null)?.payment, 'payment')
    });
    if (logError) console.error('[stableyard-deposit-address] log qr quote failed', logError.message);
    return json({ ok: true, accountId, step: action, result: resolved.data, quote });
