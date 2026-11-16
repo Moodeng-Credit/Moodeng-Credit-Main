@@ -48,6 +48,8 @@ import AuthVerifyCode from '@/app/auth/verify-code/page';
 import Benefits from '@/app/benefits/page';
 import BlogDetailPage from '@/app/blogs/[slug]/page';
 import BlogsPage from '@/app/blogs/page';
+import ConnectLinesPreview from '@/app/connect/ConnectLinesPreview';
+import ConnectLinesPage from '@/app/connect/page';
 import CreditLevelingGuidePage from '@/app/credit-leveling-guide/page';
 import DataDeletionPage from '@/app/data-deletion/page';
 import DocumentsPage, { DocumentsPreview } from '@/app/documents/page';
@@ -68,8 +70,6 @@ import Login from '@/app/login/page';
 import MfaChallengePage from '@/app/mfa-challenge/page';
 import MilestonesPage from '@/app/milestones/page';
 import CongratulationsPage from '@/app/onboarding/congratulations/page';
-import ConnectLinesPreview from '@/app/connect/ConnectLinesPreview';
-import ConnectLinesPage from '@/app/connect/page';
 import ConnectBeforeKycPage from '@/app/onboarding/connect/page';
 import WalletBlocked from '@/app/onboarding/wallet/blocked/page';
 import WalletConnected from '@/app/onboarding/wallet/connected/page';
@@ -85,6 +85,7 @@ import ProofRequestPage from '@/app/proof/page';
 import { PROOF_PAGE_SAMPLE } from '@/app/proof/sample';
 import ResetPassword from '@/app/reset-password/page';
 import RoleSelection from '@/app/role-selection/page';
+import PreScreeningPage, { type ScreenStage } from '@/app/screen/page';
 import SignOutPage from '@/app/sign-out/page';
 import SignUp from '@/app/signup/page';
 import Simple from '@/app/simple/page';
@@ -112,6 +113,7 @@ import WhyLend from '@/app/whylend/page';
 import { clarityEvent, clarityTag, identifyClarity, isClarityEnabled, signupMethodLabel } from '@/lib/analytics/clarity';
 import { describeBrowser, recordSignupContext, recordSignupSource } from '@/lib/attribution';
 import { trackNewAccount } from '@/lib/metaPixel';
+import { claimPreScreening } from '@/lib/preScreening';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { type RootState } from '@/store/store';
 import MoneyGuide from '@/views/academy/MoneyGuide';
@@ -240,6 +242,7 @@ export default function App() {
       if (user?.id) {
          recordSignupSource(user.id);
          recordSignupContext(user.id);
+         claimPreScreening(user.id);
          trackNewAccount(user.id, user.createdAt);
       }
    }, [user?.id, user?.createdAt]);
@@ -531,6 +534,22 @@ export default function App() {
             {showPreviewRoutes ? <Route path="/proof-preview" element={<ProofRequestPage preview={PROOF_PAGE_SAMPLE} />} /> : null}
             {/* Public: the Sprint SMS test link the team sends testers (moodeng.app/sms-test?t=TOKEN). */}
             <Route path="/sms-test" element={<SmsTestPage />} />
+            {/* Public: the optional pre-screening link affiliates send (moodeng.app/screen/CODE). */}
+            <Route path="/screen" element={<PreScreeningPage />} />
+            <Route path="/screen/:code" element={<PreScreeningPage />} />
+            {import.meta.env.DEV ? (
+               <Route
+                  path="/screen-preview"
+                  element={
+                     <PreScreeningPage
+                        preview={{
+                           stage: (new URLSearchParams(window.location.search).get('stage') as ScreenStage | null) ?? 'intro',
+                           question: Number(new URLSearchParams(window.location.search).get('q') ?? 0)
+                        }}
+                     />
+                  }
+               />
+            ) : null}
             {showPreviewRoutes ? (
                <Route
                   path="/sms-test-preview"

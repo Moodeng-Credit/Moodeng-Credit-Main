@@ -76,6 +76,7 @@ import MuleRiskSection from './MuleRiskSection';
 import OnChainSection from './OnChainSection';
 import PricingHealthSection from './PricingHealthSection';
 import IncomeDocsSection from './IncomeDocsSection';
+import PreScreeningSection from './PreScreeningSection';
 import UnsentLoanRequestsSection from './UnsentLoanRequestsSection';
 import ProgressSection from './ProgressSection';
 import ProofRequestsSection from './ProofRequestsSection';
@@ -1803,6 +1804,7 @@ function AdminPanel() {
          {activeTab === 'grab-vouchers' ? <GrabVouchersSection /> : null}
 
          {activeTab === 'income-docs' ? <IncomeDocsSection /> : null}
+         {activeTab === 'pre-screening' ? <PreScreeningSection /> : null}
 
          {activeTab === 'proof-requests' ? <ProofRequestsSection /> : null}
 
