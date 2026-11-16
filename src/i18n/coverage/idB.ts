@@ -515,6 +515,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'for every friend you refer': 'untuk setiap teman yang kamu ajak',
    'Meet the team, ask anything': 'Kenalan dengan tim, tanya apa saja',
    'Apply right after the call': 'Ajukan pinjaman tepat setelah panggilan',
+   'First loan is $15 — pay on time and your limit grows': 'Pinjaman pertama $15 — bayar tepat waktu dan limitmu naik',
    'A quick note so the team knows how to help.': 'Catatan singkat agar tim tahu cara membantumu.',
    "What's the loan for?": 'Pinjamannya untuk apa?',
    'Quick picks': 'Pilihan cepat',

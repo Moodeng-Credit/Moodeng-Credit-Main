@@ -1179,6 +1179,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Set up cash-out to your local currency': 'Thiết lập rút tiền về đơn vị tiền tệ địa phương của bạn',
    'Meet the team, ask anything': 'Gặp gỡ đội ngũ, hỏi bất cứ điều gì',
    'Apply right after the call': 'Đăng ký ngay sau cuộc gọi',
+   'First loan is $15 — pay on time and your limit grows': 'Khoản vay đầu tiên là $15 — trả đúng hạn và hạn mức sẽ tăng',
    'What do you need a loan for?': 'Bạn cần khoản vay để làm gì?',
    'We’ll message you the time': 'Chúng tôi sẽ nhắn tin cho bạn giờ hẹn',
    'Join the meeting': 'Tham gia cuộc họp',
