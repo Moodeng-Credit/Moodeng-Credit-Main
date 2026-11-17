@@ -59,6 +59,37 @@ const SAMPLE_VIDEOS: ScreenVideo[] = [
 const videosOf = (res: { video?: string | null; videos?: ScreenVideo[] | null } | null): ScreenVideo[] =>
    Array.isArray(res?.videos) && res.videos.length ? res.videos.filter((v) => v?.id) : res?.video ? [{ id: res.video, title: '', tall: true }] : [];
 
+// Progress on this browser, so a reload (Facebook's browser drops pages when they switch apps to find a
+// screenshot) picks up where they were instead of starting over. Same token; kept for 20 hours.
+const PROGRESS_KEY = 'md_prescreen_progress';
+type SavedProgress = {
+   token: string;
+   at: number;
+   stage: 'question' | 'proof';
+   index: number;
+   questions: ScreenQuestion[];
+   askProof: boolean;
+   typed: Record<string, string>;
+   uploaded: UploadedAnswer[];
+   uploadedDocs: UploadedDoc[] | null;
+};
+const readProgress = (token: string | undefined): SavedProgress | null => {
+   try {
+      const saved = JSON.parse(window.localStorage.getItem(PROGRESS_KEY) ?? 'null') as SavedProgress | null;
+      return saved && token && saved.token === token && Date.now() - saved.at < 20 * 3_600_000 && saved.questions?.length ? saved : null;
+   } catch {
+      return null;
+   }
+};
+const writeProgress = (progress: SavedProgress | null) => {
+   try {
+      if (progress) window.localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+      else window.localStorage.removeItem(PROGRESS_KEY);
+   } catch {
+      // Storage blocked: a reload starts over, as before.
+   }
+};
+
 const card = 'flex flex-col gap-4 rounded-[20px] bg-white px-5 py-5 dark:bg-dv2-card';
 const fieldClass =
    'w-full rounded-[12px] border-2 border-[#e2dcee] bg-white px-3 py-2.5 text-[16px] text-[#3b2f4a] placeholder:text-[#b3a9c2] focus:border-[#7661f9] focus:outline-none dark:border-[#3a2d4f] dark:bg-[#1b1526] dark:text-[#f5f0ff]';
@@ -327,11 +358,33 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
    const [busy, setBusy] = useState(false);
    const [error, setError] = useState<string | null>(null);
+   // Typed answers per question id, kept while they move through the questions (and saved, see PROGRESS_KEY).
+   const [typed, setTyped] = useState<Record<string, string>>({});
+
+   useEffect(() => {
+      if (preview || !token) return;
+      if (stage === 'done') return writeProgress(null);
+      if (stage !== 'question' && stage !== 'proof') return;
+      writeProgress({ token, at: Date.now(), stage, index, questions, askProof, typed, uploaded, uploadedDocs });
+   }, [preview, token, stage, index, questions, askProof, typed, uploaded, uploadedDocs]);
 
    useEffect(() => {
       if (preview) return;
-      if (readPreScreening()?.done) {
+      const saved = readPreScreening();
+      if (saved?.done) {
          setStage('done');
+         return;
+      }
+      const progress = readProgress(saved?.token);
+      if (progress) {
+         setToken(progress.token);
+         setQuestions(progress.questions);
+         setAskProof(progress.askProof);
+         setTyped(progress.typed ?? {});
+         setUploaded(progress.uploaded ?? []);
+         setUploadedDocs(progress.uploadedDocs ?? null);
+         setIndex(Math.min(progress.index, progress.questions.length - 1));
+         setStage(progress.stage);
          return;
       }
       let gone = false;
@@ -440,8 +493,13 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       void finish(uploaded, done);
    };
 
-   // Typed answers per question id, kept while they move through the questions.
-   const [typed, setTyped] = useState<Record<string, string>>({});
+
+   const goBack = () => {
+      setError(null);
+      if (stage === 'proof') return setStage('question');
+      if (index > 0) setIndex(index - 1);
+   };
+   const backButton = <GhostButton onClick={goBack}>Back</GhostButton>;
 
    const nextAfter = (next: UploadedAnswer[]) => {
       if (index + 1 < questions.length) setIndex(index + 1);
@@ -467,8 +525,6 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          else setStage('proof');
          return;
       }
-      // The last answer is already up (only the final send failed): on to the proof, or send again.
-      if (uploaded.some((a) => a.q === question.id)) return askProof ? setStage('proof') : void finish(uploaded, []);
       setBusy(true);
       setError(null);
       const storage = getSupabaseBrowserClient().storage.from('pre-screenings');
@@ -490,7 +546,8 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          setError('Could not send. Check your connection and tap Next again.');
          return;
       }
-      const next = [...uploaded, answer];
+      // Recorded again after going Back: the new one replaces the old.
+      const next = [...uploaded.filter((a) => a.q !== question.id), answer];
       setUploaded(next);
       if (index + 1 < questions.length) setIndex(index + 1);
       else if (askProof) setStage('proof');
@@ -544,19 +601,21 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                <div className={card}>
                   <ConnectHero
                      image={CONNECT_HIPPOS.hello}
-                     subtitle={[
-                        videos.length ? (videos.length === 1 ? '1 short video' : `${videos.length} short videos`) : null,
-                        `${questions.length || 4} quick answers`,
-                        askProof ? 'Proof of income' : null
-                     ]
-                        .filter(Boolean)
-                        .join('. ') + '.'}
+                     subtitle="About 5 minutes. It helps the team get to know you before you apply."
                      title="Say hi to Moodeng!"
                      trail={trail('You')}
                   />
+                  <ul className="flex flex-col gap-1.5 text-[15px] text-[#594d65] dark:text-[#d9cfe8]">
+                     {videos.length ? <li>▶️ Watch {videos.length === 1 ? '1 short video' : `${videos.length} short videos`}</li> : null}
+                     {questions.some((q) => q.kind === 'text') ? (
+                        <li>✍️ Answer {questions.filter((q) => q.kind === 'text').length} quick questions</li>
+                     ) : null}
+                     {questions.some((q) => q.kind !== 'text') ? <li>🤳 Record a short video of yourself (camera needed)</li> : null}
+                     {askProof ? <li>📄 Send 1 month of proof of income</li> : null}
+                  </ul>
                   <div>
                      <label className="mb-1.5 block text-[14px] font-bold text-[#594d65] dark:text-[#d9cfe8]" htmlFor="screen-name">
-                        Your name
+                        Your full name
                      </label>
                      <input
                         autoComplete="name"
@@ -598,7 +657,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                <div className={card} key={question.id}>
                   <ConnectHero
                      image={CONNECT_HIPPOS.cashout}
-                     subtitle={`Question ${index + 1} of ${questions.length}${question.hint ? ` · ${question.hint}` : ''}`}
+                     subtitle={`Question ${index + 1} of ${questions.length}${question.hint && question.kind === 'text' ? ` · ${question.hint}` : ''}`}
                      title={question.text}
                      trail={trail('Answer')}
                   />
@@ -622,9 +681,22 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                         <PrimaryButton disabled={(typed[question.id] ?? '').trim().length < minFor(question)} onClick={acceptText}>
                            Next
                         </PrimaryButton>
+                        {index > 0 ? backButton : null}
                      </>
                   ) : (
-                     <AnswerRecorder busy={busy} onUse={(clip) => void acceptClip(clip)} />
+                     <>
+                        {/* 3) What to say, big and plain — the hint alone was easy to miss. */}
+                        {question.hint ? (
+                           <div className="rounded-[14px] bg-[#f4f1fb] px-4 py-3 text-[15px] leading-[21px] text-[#3b2f4a] dark:bg-[#221a31] dark:text-[#f5f0ff]">
+                              <b>Say:</b> {question.hint}
+                              <span className="mt-1 block text-[13px] text-[#8a7f99] dark:text-[#a89bb8]">
+                                 Look at the camera. Tap Allow if your phone asks.
+                              </span>
+                           </div>
+                        ) : null}
+                        <AnswerRecorder busy={busy} onUse={(clip) => void acceptClip(clip)} />
+                        {index > 0 && !busy ? backButton : null}
+                     </>
                   )}
                </div>
             ) : null}
@@ -695,6 +767,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                   ) : (
                      <PrimaryButton onClick={() => docInput.current?.click()}>Add my proof</PrimaryButton>
                   )}
+                  {busy ? null : backButton}
                </div>
             ) : null}
 
@@ -709,7 +782,12 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
 
             {stage === 'done' ? (
                <div className={card}>
-                  <ConnectHero image={CONNECT_HIPPOS.approved} subtitle="Now make your account." title="All done! 🎉" trail={trail('end')} />
+                  <ConnectHero
+                     image={CONNECT_HIPPOS.approved}
+                     subtitle="The team will look at your answers. Make your account now so we can reach you."
+                     title="All done! 🎉"
+                     trail={trail('end')}
+                  />
                   <a className="block" href={signUpHref}>
                      <PrimaryButton>Sign up</PrimaryButton>
                   </a>
