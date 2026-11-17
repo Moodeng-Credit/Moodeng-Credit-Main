@@ -35,7 +35,7 @@ import { BOOKING_BOT_SETTING, type BookingBotMode, bookingBotAnswers, readBookin
 import { bookCall, listCallSlots } from './callBooking.ts';
 import { cancelUpcomingCall } from './callCancel.ts';
 import { openInAdminButton } from './adminCards.ts';
-import { sendMessengerMessage } from './sendpulse.ts';
+import { lastPageInboxTypedAt, sendMessengerMessage } from './sendpulse.ts';
 import { sendTelegramMessage } from './telegram.ts';
 import { formatCallTime } from './videoCall.ts';
 
@@ -85,6 +85,40 @@ export const holdColumns = (state: Bot.BotState, zone: string, now = Date.now())
    state.mine && !state.booked
       ? { held_start: zonedIso(state.mine, zone), held_until: new Date(now + HOLD_MS).toISOString() }
       : { held_start: null, held_until: null };
+
+// ---- A person is talking in this chat: the bot steps aside ----
+// 2026-11-15: George was booking Jayne-Anne by hand while the bot ran its own chat in the same thread,
+// so it re-offered times over him and saved her replies to him as screening answers. Now, when George or
+// Emma typed in the chat (Page inbox echo, or a Discord Reply) after the bot's chat began, the bot ends its
+// chat and the message goes to the team instead. A chat the bot would start by itself (QUESTIONS, "cancel my
+// call") waits TEAM_QUIET_MS after a team message; BOOK typed by the borrower always starts one.
+export const TEAM_QUIET_MS = 12 * 3600_000;
+
+/**
+ * Should the bot stay out of this message? teamAt: when a team member last typed to them (null = never,
+ * undefined = couldn't tell). chatStartedAt: when the bot's current chat began (null = no chat).
+ */
+export const teamHasChat = (o: { teamAt: number | null | undefined; chatStartedAt: number | null; explicitStart: boolean; now?: number }): boolean => {
+   const now = o.now ?? Date.now();
+   // Couldn't read the chat log: a wrong pause costs a support ticket, a wrong answer is the 2026-11-15 mess.
+   if (o.teamAt === undefined) return true;
+   if (o.teamAt === null) return false;
+   if (o.explicitStart) return false;
+   if (o.chatStartedAt !== null) return o.teamAt > o.chatStartedAt;
+   return now - o.teamAt < TEAM_QUIET_MS;
+};
+
+/** When a team member last wrote to this contact: typed in the Page inbox, or a Discord Reply relayed by us. */
+export const lastTeamMessageAt = async (svc: Svc, contactId: string): Promise<number | null | undefined> => {
+   const typed = await lastPageInboxTypedAt(contactId);
+   if (typed === undefined) return undefined;
+   const { data: conv } = await svc.from('widget_conversations').select('id').eq('messenger_contact_id', contactId).maybeSingle();
+   const { data } = conv?.id
+      ? await svc.from('widget_messages').select('created_at').eq('conversation_id', conv.id).eq('sender', 'agent').order('created_at', { ascending: false }).limit(1)
+      : { data: null };
+   const relayed = data?.[0]?.created_at ? Date.parse(data[0].created_at) : null;
+   return typed === null && relayed === null ? null : Math.max(typed ?? 0, relayed ?? 0);
+};
 
 type Settings = { mode: BookingBotMode; quick: boolean; alertChat: string };
 const ALERT_KEYS = ['booking_bot_alert_chat_id', 'call_changes_chat_id', 'kyc_alert_chat_id'];
@@ -251,23 +285,49 @@ export const handleBookingMessage = async (svc: Svc, userId: string, contactId: 
          .eq('id', userId)
          .maybeSingle();
       if (!user || !bookingBotAnswers(cfg.mode, user.is_test)) return false;
-      const { data: row, error } = await svc.from('messenger_booking_chats').select('state, held_until').eq('contact_id', contactId).maybeSingle();
+      const { data: found, error } = await svc.from('messenger_booking_chats').select('state, held_until, started_at').eq('contact_id', contactId).maybeSingle();
+      let row = found;
       if (error) {
          console.error('messenger-booking-bot: state lookup failed', error.message);
          return false;
       }
+      const explicitStart = START.test(text);
+      // A team member is talking to them in this chat: end the bot's chat, the message goes to the team.
+      // BOOK after the team spoke starts a fresh chat (they may have told them to type it).
+      const teamInChat = async (autoStart: boolean): Promise<boolean> => {
+         const teamAt = await lastTeamMessageAt(svc, contactId);
+         const chatStartedAt = autoStart || !row ? null : Date.parse(row.started_at ?? '') || 0;
+         if (explicitStart && row && teamAt && teamAt > (Date.parse(row.started_at ?? '') || 0)) {
+            await svc.from('messenger_booking_chats').delete().eq('contact_id', contactId);
+            row = null;
+            return false;
+         }
+         if (!teamHasChat({ teamAt, chatStartedAt, explicitStart })) return false;
+         if (row) await svc.from('messenger_booking_chats').delete().eq('contact_id', contactId);
+         console.log('messenger-booking-bot: a team member is in the chat, stepping aside for', userId, teamAt === undefined ? '(chat log unreachable)' : '');
+         return true;
+      };
       // Rejected is final: no booking chat. Anything that isn't BOOK (or a chat they had open) goes
       // on to the support inbox as usual.
       if (user.loan_access_status === 'rejected') {
          if (!row && !START.test(text)) return false;
+         if (await teamInChat(false)) return false;
          if (row) await svc.from('messenger_booking_chats').delete().eq('contact_id', contactId);
          await say(contactId, [{ text: REJECTED_TEXT }], (row?.state as Bot.BotState | undefined)?.lang ?? Bot.newState(Bot.profileFromUser(user)).lang, cfg.quick);
          return true;
       }
       const zone = Bot.profileFromUser(user).zone;
       const bioDone = !!(user.income_type && user.monthly_income && user.payday_type);
-      const save = (state: Bot.BotState) =>
-         svc.from('messenger_booking_chats').upsert({ contact_id: contactId, user_id: userId, state, ...holdColumns(state, zone), updated_at: new Date().toISOString() });
+      // fresh: a new chat (it may replace an old row), so the team check counts from now.
+      const save = (state: Bot.BotState, fresh = false) =>
+         svc.from('messenger_booking_chats').upsert({
+            contact_id: contactId,
+            user_id: userId,
+            state,
+            ...holdColumns(state, zone),
+            updated_at: new Date().toISOString(),
+            ...(fresh ? { started_at: new Date().toISOString() } : {})
+         });
 
       // Booked on the website and typed QUESTIONS (their "You're booked" message offers it): a chat that
       // starts at their booked call, so the bot goes straight to the questions.
@@ -289,8 +349,9 @@ export const handleBookingMessage = async (svc: Svc, userId: string, contactId: 
          if (!onCall) started = atBookedCall();
       }
 
+      if (!row && !started && !explicitStart) return false;
+      if (await teamInChat(!!started)) return false;
       if (!row && !started) {
-         if (!START.test(text)) return false;
          const g = Bot.greet(Bot.newState(Bot.profileFromUser(user)), bioDone);
          const notice = dry
             ? '🧪 Test account, practice mode: nothing gets really booked. Type STOP to end.'
@@ -299,7 +360,7 @@ export const handleBookingMessage = async (svc: Svc, userId: string, contactId: 
               : null;
          // Not greet's "✅ Messenger connected" line: they connected long ago and just typed BOOK.
          await say(contactId, [...g.replies.slice(1), ...(notice ? [{ text: notice }] : [])], g.state.lang, cfg.quick);
-         await save(g.state);
+         await save(g.state, true);
          return true;
       }
       const state = started ?? (row.state as Bot.BotState);
@@ -369,7 +430,7 @@ export const handleBookingMessage = async (svc: Svc, userId: string, contactId: 
       // A cancelled call ends the chat: what they say next goes to the team, not "I didn't catch a day or time".
       if (r.events.some((e) => e.type === 'release' && e.why === 'cancel') && !r.state.mine && !r.state.kept) {
          await svc.from('messenger_booking_chats').delete().eq('contact_id', contactId);
-      } else await save(r.state);
+      } else await save(r.state, !!started);
       for (const e of r.events) {
          const rec = answerRecord(e, r.state, zone, userId);
          if (!rec) continue;
@@ -409,14 +470,14 @@ export const nudgeStalledChats = async (svc: Svc, now = Date.now()): Promise<num
       if (cfg.mode === 'off') return 0;
       const { data: rows, error } = await svc
          .from('messenger_booking_chats')
-         .select('contact_id, user_id, state, updated_at, nudged_at')
+         .select('contact_id, user_id, state, updated_at, nudged_at, started_at')
          .lt('updated_at', new Date(now - NUDGE_AFTER_MS).toISOString())
          .gt('updated_at', new Date(now - NUDGE_BEFORE_MS).toISOString());
       if (error) {
          console.error('messenger-booking-bot: nudge lookup failed', error.message);
          return 0;
       }
-      const due = ((rows ?? []) as Array<{ contact_id: string; user_id: string; state: Bot.BotState; updated_at: string; nudged_at: string | null }>).filter(
+      const due = ((rows ?? []) as Array<{ contact_id: string; user_id: string; state: Bot.BotState; updated_at: string; nudged_at: string | null; started_at: string | null }>).filter(
          (r) => Bot.STALLED_STEPS.includes(r.state.step) && !r.state.booked && !r.state.kept && (!r.nudged_at || Date.parse(r.nudged_at) < Date.parse(r.updated_at))
       );
       if (!due.length) return 0;
@@ -434,6 +495,9 @@ export const nudgeStalledChats = async (svc: Svc, now = Date.now()): Promise<num
             .select('contact_id')
             .maybeSingle();
          if (!claimed) continue;
+         // A team member took the chat over: no nudge into it (claimed above, so it isn't checked again).
+         const teamAt = await lastTeamMessageAt(svc, r.contact_id);
+         if (teamHasChat({ teamAt, chatStartedAt: Date.parse(r.started_at ?? '') || 0, explicitStart: false, now })) continue;
          const n = Bot.nudge(r.state);
          await say(r.contact_id, n.replies, n.state.lang, cfg.quick);
          await svc.from('messenger_booking_chats').update({ state: n.state }).eq('contact_id', r.contact_id);

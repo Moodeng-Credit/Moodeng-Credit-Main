@@ -1,6 +1,20 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { alertTexts, answerRecord, freeFromSlots, holdColumns, isPhMobile, KEEP_SPOT_REPLY, START, wallNow, withoutHeld, zonedIso } from './messengerBookingBot.ts';
+import { lastTypedAt } from './sendpulse.ts';
+import {
+   alertTexts,
+   answerRecord,
+   freeFromSlots,
+   holdColumns,
+   isPhMobile,
+   KEEP_SPOT_REPLY,
+   START,
+   TEAM_QUIET_MS,
+   teamHasChat,
+   wallNow,
+   withoutHeld,
+   zonedIso
+} from './messengerBookingBot.ts';
 
 Deno.test('wallNow: the wall clock in a zone', () => {
    const at = new Date('2026-11-01T18:30:00Z');
@@ -96,4 +110,34 @@ Deno.test('isPhMobile: only a Philippine mobile number on its own', () => {
 Deno.test('keep-spot reply: OK and its Taglish cousins match, real messages do not', () => {
    for (const t of ['OK', 'ok', 'Okay!', 'oo', 'Opo', 'sige', 'yes', '👍', ' ok. ']) assertEquals(KEEP_SPOT_REPLY.test(t), true, t);
    for (const t of ['ok pero late ako', 'can I move it?', '0917 123 4567', 'QUESTIONS', 'okay na ba?']) assertEquals(KEEP_SPOT_REPLY.test(t), false, t);
+});
+
+// The shape SendPulse returned for the 2026-11-15 chat: George typing in the Page inbox is an echo
+// (app_id of Meta's inbox), the bot's own API sends are not.
+Deno.test('lastTypedAt: only Page-inbox echoes count as a person typing', () => {
+   const log = [
+      { direction: 2, created_at: '2026-11-15T10:29:50Z', data: { is_echo: true, app_id: '263902037430900', text: 'so, monday what time?' } },
+      { direction: 2, created_at: '2026-11-15T10:30:39Z', data: { text: 'Question 6' } },
+      { direction: 1, created_at: '2026-11-15T10:30:30Z', data: { text: '10am po' } },
+      { direction: 2, created_at: '2026-11-15T10:31:00Z', data: null }
+   ];
+   assertEquals(lastTypedAt(log), Date.parse('2026-11-15T10:29:50Z'));
+   assertEquals(lastTypedAt(log.slice(1)), null);
+   assertEquals(lastTypedAt([{ direction: 2, created_at: '2026-11-15T10:00:00Z', data: { is_echo: 'true' } }]), Date.parse('2026-11-15T10:00:00Z'));
+});
+
+Deno.test('teamHasChat: the bot steps aside when a person is talking in the chat', () => {
+   const now = Date.parse('2026-11-15T10:30:00Z');
+   const started = now - 60 * 60_000;
+   // Team typed after the bot's chat began: step aside (the 2026-11-15 case).
+   assertEquals(teamHasChat({ teamAt: now - 60_000, chatStartedAt: started, explicitStart: false, now }), true);
+   // Team typed before the chat began (they told them to type BOOK): the chat carries on.
+   assertEquals(teamHasChat({ teamAt: started - 60_000, chatStartedAt: started, explicitStart: false, now }), false);
+   // No chat yet: QUESTIONS / "cancel my call" wait after a team message; BOOK always starts.
+   assertEquals(teamHasChat({ teamAt: now - 60_000, chatStartedAt: null, explicitStart: false, now }), true);
+   assertEquals(teamHasChat({ teamAt: now - TEAM_QUIET_MS - 1, chatStartedAt: null, explicitStart: false, now }), false);
+   assertEquals(teamHasChat({ teamAt: now - 60_000, chatStartedAt: null, explicitStart: true, now }), false);
+   // Nobody typed; chat log unreachable = stay out.
+   assertEquals(teamHasChat({ teamAt: null, chatStartedAt: started, explicitStart: false, now }), false);
+   assertEquals(teamHasChat({ teamAt: undefined, chatStartedAt: started, explicitStart: true, now }), true);
 });

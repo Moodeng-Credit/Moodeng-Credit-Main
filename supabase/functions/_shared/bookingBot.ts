@@ -607,6 +607,18 @@ const DAY_WORD = /\b(today|tonight|tomorrow|tmrw|tmr|bukas|mamaya|ngayon|ngayong
 export const looksLikeTime = (t: string) => TIME_WORD.test(norm(t)) || CLOCK.test(norm(t));
 const CHANGE = /\b(change|resched\w*|move|instead|another (day|time)|other (day|time)|ibang (araw|oras)|iba ?ng (araw|oras)|palit\w*|ilipat|lipat|cancel|na lang|nalang|ganti|pindah|jam lain|hari lain|jadwal ulang|diganti)\b/;
 const wantsChange = (t: string) => CHANGE.test(norm(t));
+// About being free for the call, not an answer to a question.
+const AVAILABILITY = /\b(not available|unavailable|not free|busy|(hindi|di) pa? ?(ako )?(pwede|puwede|available|free)|(can'?t|cannot) (make it|join|attend)|at (the )?(training|class|work) pa)\b/;
+const CLOCK_ONLY = /\b\d{1,2}(:\d{2})?\s*(am|pm)\b|\b\d{1,2}:\d{2}\b/;
+/**
+ * A free-text quiz reply that's really about the call time: a short clock time ("10am po"), a bare day
+ * ("Monday po") or "not available". Job answers like "night shift" or "work at 7 eleven" still count.
+ */
+export const notAnAnswer = (t: string) => {
+   const n = norm(t);
+   const w = words(n).length;
+   return AVAILABILITY.test(n) || (CLOCK_ONLY.test(n) && w <= 5) || (DAY_WORD.test(n) && w <= 2);
+};
 const CANCEL = /\b(cancel\w*|can'?t (make it|come|attend)|cannot (make it|come|attend)|hindi (na )?(ako )?makakapunta|di (ako )?makakapunta|hindi na lang|ayaw ko na|wag na lang|huwag na lang|batal\w*|(tidak|gak|nggak|enggak|ga) (jadi|bisa (datang|hadir|ikut)))\b/;
 // Someone with a booked call who isn't in a booking chat ("Cancel my meeting", "can I reschedule?"): the
 // Messenger bot picks it up at their booked call instead of sending it to the support inbox.
@@ -1124,6 +1136,9 @@ const handlePrep = async (t: Turn, text: string) => {
    if (q.free) {
       if (DODGE.test(n) && n.split(/\s+/).length <= 4) return answerPrep(t, null);
       if (wantsChange(n) && looksLikeTime(n)) return changeMidQuiz(t, text);
+      // Not an answer to this question: a bare time ("10am po") or "I'm not available" is about the call,
+      // usually said to a team member in the same chat (2026-11-15: both were saved as job / loan use).
+      if (notAnAnswer(n)) return send(t, say(t, 'question', String(t.st.asked.length), q[t.st.lang]), prepButtons(t, key));
       return answerPrep(t, text.trim().slice(0, 120));
    }
    const r = readTyped(q, key, text, t.m);

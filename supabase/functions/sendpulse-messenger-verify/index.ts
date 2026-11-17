@@ -18,7 +18,8 @@ import {
    messengerDisplayName,
    normalizeWhatsAppPhone,
    sendMessengerMessage,
-   sendWhatsAppText
+   sendWhatsAppText,
+   listMessengerMessages
 } from '../_shared/sendpulse.ts';
 import { loadBorrowSteps, loadNextStep } from '../_shared/botNextStep.ts';
 import { botMessageStats } from '../_shared/botMessageStats.ts';
@@ -420,6 +421,11 @@ serve(async (req) => {
       const expected = (Deno.env.get('ADMIN_API_TOKEN') ?? '').trim();
       if (!expected || req.headers.get('x-admin-token')!.trim() !== expected) return json({ ok: false, error: 'unauthorized' }, 401);
       const p = await req.json().catch(() => ({}));
+      // One contact's raw chat log (newest first): what each outgoing message carries, to tell team-typed from ours.
+      if (p?.action === 'chat_history' && typeof p.contactId === 'string') {
+         const msgs = await listMessengerMessages(p.contactId, Math.min(Number(p.size ?? 60), 200));
+         return json({ ok: true, messages: msgs });
+      }
       if (p?.action !== 'message_stats') return json({ ok: false, error: 'unknown_action' }, 400);
       return json(await botMessageStats(String(p.since ?? new Date(Date.now() - 21 * 86400_000).toISOString()), Number(p.maxChats ?? 120)));
    }
