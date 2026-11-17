@@ -94,6 +94,46 @@ describe('admin live reload batching', () => {
       expect(reload).toHaveBeenCalledTimes(1);
    });
 
+   it('runs one reload at a time and queues one more for changes during it', async () => {
+      let finish: () => void = () => undefined;
+      reload.mockImplementation(() => new Promise<void>((resolve) => (finish = resolve)));
+      act(() => {
+         change('loans');
+         vi.advanceTimersByTime(5000);
+      });
+      expect(reload).toHaveBeenCalledTimes(1);
+      for (let i = 0; i < 3; i++) {
+         act(() => {
+            change('loans');
+            vi.advanceTimersByTime(5000);
+         });
+      }
+      expect(reload).toHaveBeenCalledTimes(1);
+      await act(async () => finish());
+      expect(reload).toHaveBeenCalledTimes(2);
+      reload.mockReset();
+   });
+
+   it('backs off polling while realtime is down', () => {
+      act(() => onStatus?.('CHANNEL_ERROR'));
+      // 30 s, 60 s, 120 s, 240 s, then capped at 300 s.
+      const at = [30_000, 90_000, 210_000, 450_000, 750_000, 1_050_000];
+      let elapsed = 0;
+      for (const t of at) {
+         act(() => vi.advanceTimersByTime(t - elapsed - 1));
+         const before = reload.mock.calls.length;
+         act(() => vi.advanceTimersByTime(1 + 5000));
+         elapsed = t + 5000;
+         expect(reload.mock.calls.length).toBe(before + 1);
+         act(() => vi.advanceTimersByTime(0));
+      }
+      // Reconnecting stops polling.
+      act(() => onStatus?.('SUBSCRIBED'));
+      const calls = reload.mock.calls.length;
+      act(() => vi.advanceTimersByTime(600_000));
+      expect(reload.mock.calls.length).toBe(calls);
+   });
+
    it('ignores changes to tables the section does not watch', () => {
       act(() => {
          change('voucher_claims');
