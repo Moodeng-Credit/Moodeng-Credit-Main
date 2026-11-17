@@ -5,6 +5,7 @@ import { postDiscord } from './discord.ts';
 import { sendEmail } from './email.ts';
 import { incomeDocKeyboard, incomeDocUrl, postIncomeDocDiscordCard, reachLine } from './incomeDocCards.ts';
 import { sendPushToUser } from './pushDelivery.ts';
+import { askOnMessengerIfWaiting } from './messengerIncomeDocReply.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
 import { fileMarkers, gcashRefIssues, type ImageInfo, imageInfo, isAiSize, rowKeys, rowOverlap } from './fileForensics.ts';
 import { sendTelegramFiles, sendTelegramMessage, type TelegramInlineKeyboard, type TelegramUpload } from './telegram.ts';
@@ -910,7 +911,7 @@ export const combineOpinions = (opinions: AiOpinion[]): AiDirection | null => {
  */
 const OPINION_SYSTEM = `You help a small lender decide on loans of $20–$150 to Filipino and Indonesian borrowers, repaid in one payment within about a month. Their target is 90% repaid on time. Be fair to people with low or irregular incomes: small loans for bills, food, medicine or a pay gap are normal here.
 
-You get: the loan they're asking for, what their proof-of-income document shows (money in and out, regular deposits, checks that passed or failed, a score), and the borrower's own record with us: what they told us about their work and income, their past loans (amount, when due, when repaid, days late), and the AI summary of their onboarding video call if there was one. Sometimes also what was said about their earlier documents: take it into account, but judge this send on its own evidence.
+You get: the loan they're asking for, what their proof-of-income document shows (money in and out, regular deposits, checks that passed or failed, a score), and the borrower's own record with us: what they told us about their work and income, their past loans (amount, when due, when repaid, days late), and the AI summary of their onboarding video call if there was one. Sometimes also what was said about their earlier documents: take it into account, but judge this send on its own evidence. Sometimes also their own answers to questions we asked them about this document: weigh them, but they are their word, not proof; an answer that contradicts the document is a red flag, and an answer that explains a gap can count in their favour.
 
 Weigh them together: does the document match what they told us and said on the call? Can the money that comes in cover this repayment by the due date? Does their repayment history with us (on time, late, how late) support a bigger or smaller loan? Note any red flag (document contradicts their story, income too small, late before, signs the account isn't theirs).
 
@@ -1005,6 +1006,71 @@ export const opinionText = (o: AiDirection) =>
 
 const OPINION_READS = 3;
 
+/** One AI question as the borrower sees it (income_documents.questions). `team` is the AI's original wording. */
+export type BorrowerQuestion = { id: string; team: string; en: string; local: string | null; kind: 'text' | 'file' };
+export type BorrowerAnswer = { id: string; a: string; at: string; via: 'page' | 'messenger' };
+
+const QUESTIONS_SYSTEM = `A small lender's team has questions about a borrower's proof-of-income document. The borrowers are Filipino or Indonesian, often not strong readers. Rewrite each team question as the message we send the borrower:
+- one question, at most 20 words, everyday words, warm and polite
+- never mention fraud, suspicion, AI, a score, checks, a "top-up", a loan from someone else, or that anything looks wrong; just ask plainly
+- keep exact amounts with their currency and dates as on the document (e.g. "Rp 2,100,000 on Nov 14")
+- if the team wants more documents (a longer statement, payslips, more months), ask if they can add them and set kind "file"; otherwise kind "text"
+- "local": the same message in light everyday Taglish for the Philippines, or simple Bahasa Indonesia for Indonesia
+- leave out a question only the team can answer (e.g. "check their records")
+Reply with only a json object: {"questions": [{"team": "<the team question>", "en": "...", "local": "...", "kind": "text" | "file"}]}`;
+
+/** Whatever the model sent back, as at most 2 clean questions with ids q1, q2. Pure. */
+export const parseBorrowerQuestions = (raw: unknown): BorrowerQuestion[] => {
+   const list = Array.isArray((raw as { questions?: unknown } | null)?.questions) ? ((raw as { questions: unknown[] }).questions) : [];
+   return list
+      .map((q) => (q && typeof q === 'object' ? (q as Record<string, unknown>) : {}))
+      .map((q) => ({
+         team: strOrNull(q.team)?.slice(0, 300) ?? '',
+         en: strOrNull(q.en)?.slice(0, 200) ?? '',
+         local: strOrNull(q.local)?.slice(0, 200) ?? null,
+         kind: q.kind === 'file' ? ('file' as const) : ('text' as const)
+      }))
+      .filter((q) => q.en)
+      .slice(0, 2)
+      .map((q, i) => ({ id: `q${i + 1}`, ...q }));
+};
+
+/** The AI's team questions rewritten for the borrower. Empty when there are none or the call fails. */
+const QUESTIONS_BUDGET_MS = 15_000;
+const borrowerQuestions = async (apiKey: string, ask: string[], ctx: Record<string, unknown>): Promise<BorrowerQuestion[]> => {
+   if (!ask.length) return [];
+   try {
+      // A hard cap (the JSON retry inside deepseekJson could double it): the whole check must finish
+      // inside the 150 s the database gives it, and the result matters more than the questions.
+      const out = await Promise.race([
+         deepseekJson<unknown>(apiKey, QUESTIONS_SYSTEM, JSON.stringify({ team_questions: ask, ...ctx }), 1200, {
+            model: OPINION_MODEL,
+            timeoutMs: QUESTIONS_BUDGET_MS
+         }),
+         new Promise<never>((_, reject) => setTimeout(() => reject(new Error('questions took too long')), QUESTIONS_BUDGET_MS))
+      ]);
+      return parseBorrowerQuestions(out);
+   } catch (err) {
+      console.warn('income doc borrower questions failed', err instanceof Error ? err.message : err);
+      return [];
+   }
+};
+
+/** Each question with their answer, for the AI re-read and the team post. Pure. */
+export const pairAnswers = (questions: BorrowerQuestion[], answers: BorrowerAnswer[]) =>
+   questions.map((q) => {
+      const a = answers.find((x) => x.id === q.id);
+      return { question: q.team || q.en, asked_them: q.en, answer: a?.a ?? null, via: a?.via ?? null };
+   });
+
+/** The team post after they answered. Pure. */
+export const answersText = (who: string, pairs: ReturnType<typeof pairAnswers>, ai: AiDirection | null) =>
+   [
+      `💬 ${who} answered the AI's questions`,
+      ...pairs.map((p) => `❓ ${p.asked_them}\n💬 ${p.answer ?? '(no answer)'}${p.via === 'messenger' ? ' · on Messenger' : ''}`),
+      ai ? `With the answers → ${opinionText(ai)}` : 'The AI couldn’t re-read it — decide from the answers above.'
+   ].join('\n\n');
+
 /** OPINION_READS opinions at once (same time as one), combined. Earlier opinions on this borrower go in too. */
 const writeDirection = async (apiKey: string, input: Record<string, unknown>): Promise<AiDirection | null> => {
    const reads = await Promise.all(
@@ -1026,6 +1092,7 @@ const personOf = (user: { username?: string | null; display_name?: string | null
 
 /** One send end to end: ping the team, read it, check it, save the result, reply under the ping. */
 export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string, apiKey: string | null | undefined) => {
+   const startedAt = Date.now();
    const { data: row, error: rowError } = await supabase
       .from('income_documents')
       .select('id, user_id, files, note, status, requested_amount, requested_repay')
@@ -1036,7 +1103,7 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
 
    const files = (row.files ?? []) as Array<{ path: string; name?: string; mime?: string }>;
    const [{ data: user }, { data: kyc }, { data: loan }, { data: chat }, { data: stepsRow }, { data: aiAutoRow }] = await Promise.all([
-      supabase.from('users').select('username, display_name, monthly_income').eq('id', row.user_id).maybeSingle(),
+      supabase.from('users').select('username, display_name, monthly_income, market').eq('id', row.user_id).maybeSingle(),
       supabase
          .from('kyc_identities')
          .select('full_name')
@@ -1328,6 +1395,18 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    const aiRule = parseAiAutoRule(aiAutoRow?.value);
    const aiAuto = !stepAuto && aiAutoApproves(aiRule, { verdict, votes: aiNote?.votes ?? null, score, askedAmount });
    const autoApprove = stepAuto || aiAuto;
+   // The AI's questions, worded for the borrower: they answer on /documents or on Messenger (DOCS), and
+   // the answers go back into the opinion (reviewWithAnswers). Not when it approved itself, and not on
+   // fraud signs (those are the team's to raise).
+   // Skipped when the check has already run long (the opinion's thinking pass can take most of the time).
+   const questions =
+      !autoApprove && risk !== 'red' && aiNote?.ask.length && Date.now() - startedAt < 100_000
+         ? await borrowerQuestions(apiKey, aiNote.ask, {
+              country: user?.market === 'ID' ? 'Indonesia' : 'Philippines',
+              document: { type: doc.doc_type, institution: doc.institution, currency: doc.currency, period: [doc.period_start, doc.period_end] },
+              rows: doc.transactions.slice(0, 60).map((t, i) => ({ row: `T${i + 1}`, date: t.date, description: t.description, amount: t.amount }))
+           })
+         : [];
    const decidedBy = stepAuto ? `auto ($${step!.min} step)` : `auto (AI lend x${aiNote?.votes.length ?? 0}, score ${score})`;
    const headline = stepAuto
       ? `✅ Approved automatically ($${step!.min} step)`
@@ -1338,12 +1417,115 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       {
          ...patch,
          verdict,
+         questions: questions.length ? questions : null,
          ...(autoApprove ? { decision: 'approved', decided_at: new Date().toISOString(), decided_by: decidedBy } : {})
       },
       [`${headline} · score ${score}/100${aiNote ? ` · AI: ${aiNote.direction.toLowerCase()}` : ''}`, aiNote ? opinionText(aiNote) : null, checkLine, memo].filter(Boolean).join('\n\n').slice(0, 3900)
    );
    if (autoApprove) await notifyIncomeDecision(supabase, id);
+   // They already sent DOCS on Messenger while this was being read: the bot asks the first question there.
+   if (questions.length) await askOnMessengerIfWaiting(supabase, id);
    return result;
+};
+
+/**
+ * Borrower questions for a send checked before they existed (kyc-cross-check {"income_questions": id}):
+ * from the "Ask:" part of its AI note. dry = return them without saving (to read the wording first).
+ */
+export const backfillBorrowerQuestions = async (supabase: SupabaseClient, id: string, apiKey: string | null | undefined, dry = true) => {
+   if (!apiKey) return { ok: false, error: 'no AI key' };
+   const { data: row } = await supabase
+      .from('income_documents')
+      .select('id, user_id, ai_note, extracted, questions, decision, verdict')
+      .eq('id', id)
+      .maybeSingle();
+   if (!row) return { ok: false, error: 'not found' };
+   const ask = String(row.ai_note ?? '').split(' Ask: ')[1]?.trim();
+   if (!ask) return { ok: true, skipped: 'no questions in the AI note' };
+   const { data: user } = await supabase.from('users').select('market').eq('id', row.user_id).maybeSingle();
+   const doc = row.extracted as Extracted | null;
+   const questions = await borrowerQuestions(apiKey, [ask], {
+      country: user?.market === 'ID' ? 'Indonesia' : 'Philippines',
+      document: doc ? { type: doc.doc_type, institution: doc.institution, currency: doc.currency, period: [doc.period_start, doc.period_end] } : null,
+      rows: (doc?.transactions ?? []).slice(0, 60).map((t, i) => ({ row: `T${i + 1}`, date: t.date, description: t.description, amount: t.amount }))
+   });
+   if (!dry && questions.length && !row.questions && !row.decision && row.verdict !== 'resend') {
+      await supabase.from('income_documents').update({ questions }).eq('id', id).is('questions', null);
+   }
+   return { ok: true, dry, questions };
+};
+
+/**
+ * Every question answered (save_income_doc_answer → kyc-cross-check {"income_answers": id}): the AI
+ * opinion again, now with their answers, saved on the row and posted to the team (Telegram reply under
+ * the KYC chat + Discord). Runs once per send. Never approves by itself — answers are their word.
+ */
+export const reviewWithAnswers = async (supabase: SupabaseClient, id: string, apiKey: string | null | undefined) => {
+   // Claim it first, so a double call doesn't post twice.
+   const { data: claimed } = await supabase
+      .from('income_documents')
+      .update({ answers_reviewed_at: new Date().toISOString() })
+      .eq('id', id)
+      .is('answers_reviewed_at', null)
+      .is('decision', null)
+      .select('id, user_id, questions, answers, extracted, metrics, flags, score, ai_note, requested_amount, requested_repay, created_at')
+      .maybeSingle();
+   if (!claimed) return { ok: true, skipped: 'already reviewed or decided' };
+   const questions = (claimed.questions ?? []) as BorrowerQuestion[];
+   const pairs = pairAnswers(questions, (claimed.answers ?? []) as BorrowerAnswer[]);
+   if (!pairs.length) return { ok: true, skipped: 'no questions' };
+
+   const [{ data: user }, { data: chat }, { data: loan }] = await Promise.all([
+      supabase.from('users').select('username, display_name').eq('id', claimed.user_id).maybeSingle(),
+      supabase.from('telegram_bot_settings').select('value').eq('key', 'kyc_alert_chat_id').maybeSingle(),
+      supabase
+         .from('loans')
+         .select('loan_amount, total_repayment_amount, due_date')
+         .eq('borrower_user_id', claimed.user_id)
+         .eq('repayment_status', 'Unpaid')
+         .order('created_at', { ascending: false })
+         .limit(1)
+         .maybeSingle()
+   ]);
+   const who = personOf(user, claimed.user_id);
+   const doc = claimed.extracted as Extracted | null;
+   const metrics = claimed.metrics as Metrics | null;
+
+   let ai: AiDirection | null = null;
+   if (apiKey && doc && metrics) {
+      const amount = claimed.requested_amount != null ? Number(claimed.requested_amount) : loan ? Number(loan.loan_amount) : null;
+      const repay = claimed.requested_repay != null ? Number(claimed.requested_repay) : loan ? Number(loan.total_repayment_amount) : null;
+      ai = await writeDirection(apiKey, {
+         borrower: await borrowerContext(supabase, claimed.user_id),
+         earlier_opinions_on_this_borrower: claimed.ai_note ? [{ on: String(claimed.created_at).slice(0, 10), said: claimed.ai_note }] : [],
+         loan_usd: amount != null ? { amount, repay: repay ?? amount, due: claimed.requested_amount == null ? (loan?.due_date ?? null) : 'about 30 days after funding' } : null,
+         monthly_income_usd: monthlyIncomeUsd(doc, metrics),
+         document: { type: doc.doc_type, institution: doc.institution, period: [doc.period_start, doc.period_end], currency: doc.currency },
+         metrics,
+         checks: claimed.flags,
+         score: claimed.score,
+         their_answers_to_our_questions: pairs.map(({ question, answer }) => ({ question, answer }))
+      }).catch((err) => {
+         console.error('income doc re-read failed', err);
+         return null;
+      });
+   }
+   if (ai) {
+      await supabase
+         .from('income_documents')
+         .update({ ai_note: `${ai.direction} (${ai.votes.join(', ')}, with their answers): ${ai.note}${ai.ask.length ? ` Ask: ${ai.ask.join(' ')}` : ''}` })
+         .eq('id', id);
+   }
+
+   const text = answersText(who, pairs, ai).slice(0, 3900);
+   if (chat?.value) {
+      await sendTelegramMessage(chat.value, text, { inlineKeyboard: incomeDocKeyboard(id, true) }).catch((err) => console.error('income doc answers post failed', err));
+   }
+   await postDiscord(
+      { embeds: [{ title: `💬 Answers — ${who}`, url: incomeDocUrl(id), description: `${text.slice(0, 3800)}\n${incomeDocUrl(id)}`, color: 0x6b55f7 }] },
+      { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }
+   ).catch(() => undefined);
+   return { ok: true, direction: ai?.direction ?? null };
 };
 
 const DOCUMENTS_URL = 'https://moodeng.app/documents';

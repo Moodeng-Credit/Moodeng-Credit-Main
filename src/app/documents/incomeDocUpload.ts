@@ -9,8 +9,13 @@ export const MAX_BYTES = 10 * 1024 * 1024;
 export const ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf';
 export const ACCEPTED = new Set(ACCEPT.split(','));
 
+/** One of the AI's questions about their send, in their language (kind 'file' = "can you add more?"). */
+export type IncomeDocQuestion = { id: string; q: string; kind: 'text' | 'file' };
+
 export type IncomeDocStatus = {
+   id: string;
    stage: 'checking' | 'resend' | 'in_review' | 'approved' | 'declined';
+   questions: IncomeDocQuestion[];
    file_count: number;
    sent_at: string;
    reason: string | null;
@@ -21,7 +26,20 @@ export const fetchIncomeDocStatus = async (): Promise<IncomeDocStatus> => {
    const { data, error } = await getSupabaseBrowserClient().rpc('get_my_income_document');
    if (error) return null;
    const row = (Array.isArray(data) ? data[0] : data) as IncomeDocStatus | undefined;
-   return row ?? null;
+   return row ? { ...row, questions: Array.isArray(row.questions) ? row.questions : [] } : null;
+};
+
+/**
+ * Their answer to one of the AI's questions (answer_my_income_doc_question). Returns how many are still
+ * open, or null when it couldn't be saved. The last answer sends them all to the team with a fresh AI read.
+ */
+export const answerIncomeDocQuestion = async (docId: string, questionId: string, answer: string): Promise<number | null> => {
+   const { data, error } = await getSupabaseBrowserClient().rpc('answer_my_income_doc_question', {
+      p_doc: docId,
+      p_qid: questionId,
+      p_answer: answer
+   });
+   return error || typeof data !== 'number' || data < 0 ? null : data;
 };
 
 /**

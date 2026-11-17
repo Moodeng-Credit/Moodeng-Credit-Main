@@ -250,6 +250,38 @@ const lastOutgoingAt = async (service: 'messenger' | 'tiktok', contactId: string
    }
 };
 
+/**
+ * When a person last typed to this contact from the Page inbox (Meta Business Suite / the Pages app), from
+ * SendPulse's chat history: those come back as Messenger echoes (data.is_echo), and our API sends never do
+ * (checked on the 2026-11-15 chat). null = none in the last `size` messages; undefined = history
+ * unreachable. Never throws.
+ */
+export const lastPageInboxTypedAt = async (contactId: string, size = 40): Promise<number | null | undefined> => {
+   if (!isSendPulseConfigured()) return undefined;
+   try {
+      const token = await getToken();
+      if (!token) return undefined;
+      const res = await fetch(`${API}/messenger/chats/messages?contact_id=${encodeURIComponent(contactId)}&size=${size}&order=desc`, {
+         headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) return undefined;
+      const body = await res.json().catch(() => null);
+      if (!Array.isArray(body?.data)) return undefined;
+      return lastTypedAt(body.data);
+   } catch {
+      return undefined;
+   }
+};
+
+/** The newest Page-inbox-typed (echo) outgoing message's time in a chat log, or null. */
+export const lastTypedAt = (messages: Array<{ direction?: number; created_at?: string; data?: { is_echo?: unknown } | null }>): number | null => {
+   const times = messages
+      .filter((m) => m.direction === 2 && (m.data?.is_echo === true || m.data?.is_echo === 'true') && m.created_at)
+      .map((m) => Date.parse(String(m.created_at)))
+      .filter((t) => !Number.isNaN(t));
+   return times.length ? Math.max(...times) : null;
+};
+
 export const sendMessengerMessage = async (
    contactId: string | null | undefined,
    content: { text?: string; card?: MessengerCard; quickReplies?: string[] }

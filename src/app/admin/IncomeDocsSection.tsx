@@ -326,6 +326,24 @@ export default function IncomeDocsSection() {
                      {doc.ai_note ? (
                         <p className="mt-2 rounded-xl bg-white/5 px-3 py-2 text-[15px] leading-6 text-[#e8e0f2]">🤖 {doc.ai_note}</p>
                      ) : null}
+                     {doc.questions?.length ? (
+                        <div className="mt-2 flex flex-col gap-2 rounded-xl bg-white/5 px-3 py-2 text-[15px] leading-6 text-[#e8e0f2]">
+                           <p className="text-sm font-semibold text-[#a89bb8]">
+                              Asked them{doc.messenger_confirmed_at ? ' · 💬 sent DOCS on Messenger' : ''}
+                           </p>
+                           {doc.questions.map((q) => {
+                              const a = doc.answers?.find((x) => x.id === q.id);
+                              return (
+                                 <div key={q.id}>
+                                    <p>❓ {q.en}</p>
+                                    <p className={a ? 'text-white' : 'text-[#a89bb8]'}>
+                                       💬 {a ? `${a.a}${a.via === 'messenger' ? ' (Messenger)' : ''}` : 'No answer yet'}
+                                    </p>
+                                 </div>
+                              );
+                           })}
+                        </div>
+                     ) : null}
 
                      {openRows === doc.id ? (
                         <div className="mt-3 overflow-x-auto">
