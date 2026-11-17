@@ -7,14 +7,17 @@
 //
 // Answers: the bot asks one open question and waits (messenger_asked_at / messenger_asked_id). Only the
 // first text they send after that question, within ANSWER_WINDOW_MS, counts as the answer, and the bot
-// steps aside as soon as a team member writes in that chat (lesson from the booking bot, Nov 15:
-// it filed replies meant for George as screening answers).
-import { sendMessengerMessage } from './sendpulse.ts';
+// steps aside as soon as a team member writes in that chat — a Discord ticket reply or a message typed in
+// the Page inbox (SendPulse echo) — or when the chat history can't be checked (lesson from the booking
+// bot, Nov 15: it filed replies meant for George as screening answers).
+import { lastPageInboxTypedAt, sendMessengerMessage } from './sendpulse.ts';
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
 
-const ANSWER_WINDOW_MS = 12 * 60 * 60 * 1000;
+const ANSWER_WINDOW_MS = 2 * 60 * 60 * 1000;
+// They sent DOCS this recently (Meta's window is 24h; keep a margin): the bot may ask when the check ends.
+const CONFIRMED_WINDOW_MS = 20 * 60 * 60 * 1000;
 const LOOKBACK_MS = 30 * 24 * 60 * 60 * 1000;
 const DOCUMENTS_URL = 'https://moodeng.app/documents';
 
@@ -101,7 +104,7 @@ export const docsReply = (doc: Doc | null, lang: Lang): { text: string; asks: st
    return { text: T.review[lang], asks: null };
 };
 
-/** Is this message the answer the bot is waiting for? Pure. */
+/** Is this message the answer the bot is waiting for? (within 2 hours of the question) Pure. */
 export const isAwaitedAnswer = (doc: Doc | null, now: number) =>
    !!doc &&
    !doc.decision &&
@@ -110,8 +113,13 @@ export const isAwaitedAnswer = (doc: Doc | null, now: number) =>
    now - Date.parse(doc.messenger_asked_at) < ANSWER_WINDOW_MS &&
    openQuestions(doc).some((q) => q.id === doc.messenger_asked_id);
 
-/** A team member wrote in this Messenger chat (Discord ticket reply) since the bot asked, or is typing. */
+/**
+ * A team member wrote in this Messenger chat since the bot asked: typed in the Page inbox (SendPulse echo),
+ * replied from the Discord ticket, or is typing there. Unknown (history unreachable) counts as yes.
+ */
 const teamStepIn = async (svc: Svc, contactId: string, since: string) => {
+   const typed = await lastPageInboxTypedAt(contactId);
+   if (typed === undefined || (typed !== null && typed > Date.parse(since))) return true;
    const { data: conv } = await svc
       .from('widget_conversations')
       .select('id, agent_typing_until')
@@ -136,6 +144,30 @@ const markAsked = (svc: Svc, docId: string, questionId: string | null) =>
       .from('income_documents')
       .update({ messenger_asked_at: questionId ? new Date().toISOString() : null, messenger_asked_id: questionId })
       .eq('id', docId);
+
+/**
+ * The check just wrote questions and they already sent DOCS for this send (while it was being read): ask
+ * the first open one on Messenger now. Nothing when they didn't, or the bot is already waiting. Never throws.
+ */
+export const askOnMessengerIfWaiting = async (svc: Svc, docId: string) => {
+   try {
+      const { data: doc } = (await svc
+         .from('income_documents')
+         .select('id, user_id, status, decision, verdict, questions, answers, messenger_asked_at, messenger_asked_id, messenger_confirmed_at')
+         .eq('id', docId)
+         .maybeSingle()) as { data: (Doc & { user_id: string; messenger_confirmed_at: string | null }) | null };
+      if (!doc?.messenger_confirmed_at || doc.messenger_asked_id || Date.now() - Date.parse(doc.messenger_confirmed_at) > CONFIRMED_WINDOW_MS) return;
+      const reply = docsReply(doc, 'en');
+      if (!reply.asks) return;
+      const { data: user } = await svc.from('users').select('messenger_psid, preferred_locale, market').eq('id', doc.user_id).maybeSingle();
+      if (!user?.messenger_psid) return;
+      const res = await sendMessengerMessage(user.messenger_psid, { text: docsReply(doc, langOf(user.preferred_locale, user.market)).text });
+      if (!res.ok) return console.error('messenger-income-doc: ask after check failed', res.reason);
+      await markAsked(svc, doc.id, reply.asks);
+   } catch (err) {
+      console.error('messenger-income-doc: ask after check failed', err instanceof Error ? err.message : err);
+   }
+};
 
 /** True when the message was DOCS or an awaited answer and we handled it (so it isn't also a support ticket). */
 export const handleIncomeDocMessage = async (svc: Svc, userId: string, contactId: string, text: string): Promise<boolean> => {

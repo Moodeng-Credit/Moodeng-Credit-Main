@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { checkCronAuth } from '../_shared/cronAuth.ts';
 import { postDiscord } from '../_shared/discord.ts';
-import { analyseIncomeDocument, notifyIncomeDecision, reviewWithAnswers } from '../_shared/incomeDocs.ts';
+import { analyseIncomeDocument, backfillBorrowerQuestions, notifyIncomeDecision, reviewWithAnswers } from '../_shared/incomeDocs.ts';
 import { gradePreScreening, notifyPreScreeningClaimed } from '../_shared/preScreening.ts';
 import { pingProofRequest, sendProofRequest } from '../_shared/proofRequests.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
@@ -308,6 +308,7 @@ serve(async (req) => {
       income_doc?: string;
       income_decision?: string;
       income_answers?: string;
+      income_questions?: string;
       income_card?: { chat?: string; message?: number };
       proof_request?: string;
       proof_request_send?: string;
@@ -346,6 +347,12 @@ serve(async (req) => {
       if (!UUID_RE.test(body.income_answers)) return jsonResponse({ error: 'bad income_answers id' }, 400);
       const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
       return jsonResponse(await reviewWithAnswers(svc, body.income_answers, Deno.env.get('DEEPSEEK_API_KEY')));
+   }
+   // Borrower questions for an older send: {"income_questions": id, "dry": false} saves them (dry by default).
+   if (body.income_questions) {
+      if (!UUID_RE.test(body.income_questions)) return jsonResponse({ error: 'bad income_questions id' }, 400);
+      const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+      return jsonResponse(await backfillBorrowerQuestions(svc, body.income_questions, Deno.env.get('DEEPSEEK_API_KEY'), body.dry !== false));
    }
    if (body.income_doc) {
       if (!UUID_RE.test(body.income_doc)) return jsonResponse({ error: 'bad income_doc id' }, 400);

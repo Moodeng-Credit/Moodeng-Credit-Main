@@ -49,12 +49,12 @@ Deno.test('DOCS reply: asks the first open question once checked', () => {
    assertStringIncludes(docsReply(null, 'en').text, 'moodeng.app/documents');
 });
 
-Deno.test('an answer counts only right after our question, within 12 hours, while undecided', () => {
+Deno.test('an answer counts only right after our question, within 2 hours, while undecided', () => {
    const now = Date.parse('2026-11-17T10:00:00Z');
    const asked = doc({ messenger_asked_at: '2026-11-17T09:00:00Z', messenger_asked_id: 'q1' });
    assert(isAwaitedAnswer(asked, now));
    assertFalse(isAwaitedAnswer(doc(), now));
-   assertFalse(isAwaitedAnswer({ ...asked, messenger_asked_at: '2026-11-16T20:00:00Z' }, now));
+   assertFalse(isAwaitedAnswer({ ...asked, messenger_asked_at: '2026-11-17T07:30:00Z' }, now));
    assertFalse(isAwaitedAnswer({ ...asked, decision: 'approved' }, now));
    assertFalse(isAwaitedAnswer({ ...asked, answers: [{ id: 'q1' }] }, now));
 });

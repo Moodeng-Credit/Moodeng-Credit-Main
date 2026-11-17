@@ -566,6 +566,15 @@ export default function DocumentsPage({
                   <GoldButton busy={answering} disabled={!answer.trim()} onClick={() => void sendAnswer()}>
                      Send answer
                   </GoldButton>
+                  <a
+                     className="text-center text-[14px] font-semibold text-[#7b6b8c] underline dark:text-[#b9abcc]"
+                     href={facebookHref()}
+                     onClick={() => void navigator.clipboard?.writeText(DOCS_WORD).catch(() => undefined)}
+                     rel="noreferrer"
+                     target="_blank"
+                  >
+                     {`Or answer on Messenger: send “${DOCS_WORD}”`}
+                  </a>
                   {currentQuestion.kind === 'file' ? (
                      <button
                         className="text-center text-[14px] font-bold text-[#6b55f7] underline dark:text-[#b4a6ff]"

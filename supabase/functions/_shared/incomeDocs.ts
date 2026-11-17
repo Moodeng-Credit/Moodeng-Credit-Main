@@ -5,6 +5,7 @@ import { postDiscord } from './discord.ts';
 import { sendEmail } from './email.ts';
 import { incomeDocKeyboard, incomeDocUrl, postIncomeDocDiscordCard, reachLine } from './incomeDocCards.ts';
 import { sendPushToUser } from './pushDelivery.ts';
+import { askOnMessengerIfWaiting } from './messengerIncomeDocReply.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
 import { fileMarkers, gcashRefIssues, type ImageInfo, imageInfo, isAiSize, rowKeys, rowOverlap } from './fileForensics.ts';
 import { sendTelegramFiles, sendTelegramMessage, type TelegramInlineKeyboard, type TelegramUpload } from './telegram.ts';
@@ -1035,13 +1036,19 @@ export const parseBorrowerQuestions = (raw: unknown): BorrowerQuestion[] => {
 };
 
 /** The AI's team questions rewritten for the borrower. Empty when there are none or the call fails. */
+const QUESTIONS_BUDGET_MS = 15_000;
 const borrowerQuestions = async (apiKey: string, ask: string[], ctx: Record<string, unknown>): Promise<BorrowerQuestion[]> => {
    if (!ask.length) return [];
    try {
-      const out = await deepseekJson<unknown>(apiKey, QUESTIONS_SYSTEM, JSON.stringify({ team_questions: ask, ...ctx }), 1200, {
-         model: OPINION_MODEL,
-         timeoutMs: 25_000
-      });
+      // A hard cap (the JSON retry inside deepseekJson could double it): the whole check must finish
+      // inside the 150 s the database gives it, and the result matters more than the questions.
+      const out = await Promise.race([
+         deepseekJson<unknown>(apiKey, QUESTIONS_SYSTEM, JSON.stringify({ team_questions: ask, ...ctx }), 1200, {
+            model: OPINION_MODEL,
+            timeoutMs: QUESTIONS_BUDGET_MS
+         }),
+         new Promise<never>((_, reject) => setTimeout(() => reject(new Error('questions took too long')), QUESTIONS_BUDGET_MS))
+      ]);
       return parseBorrowerQuestions(out);
    } catch (err) {
       console.warn('income doc borrower questions failed', err instanceof Error ? err.message : err);
@@ -1085,6 +1092,7 @@ const personOf = (user: { username?: string | null; display_name?: string | null
 
 /** One send end to end: ping the team, read it, check it, save the result, reply under the ping. */
 export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string, apiKey: string | null | undefined) => {
+   const startedAt = Date.now();
    const { data: row, error: rowError } = await supabase
       .from('income_documents')
       .select('id, user_id, files, note, status, requested_amount, requested_repay')
@@ -1390,8 +1398,9 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    // The AI's questions, worded for the borrower: they answer on /documents or on Messenger (DOCS), and
    // the answers go back into the opinion (reviewWithAnswers). Not when it approved itself, and not on
    // fraud signs (those are the team's to raise).
+   // Skipped when the check has already run long (the opinion's thinking pass can take most of the time).
    const questions =
-      !autoApprove && risk !== 'red' && aiNote?.ask.length
+      !autoApprove && risk !== 'red' && aiNote?.ask.length && Date.now() - startedAt < 100_000
          ? await borrowerQuestions(apiKey, aiNote.ask, {
               country: user?.market === 'ID' ? 'Indonesia' : 'Philippines',
               document: { type: doc.doc_type, institution: doc.institution, currency: doc.currency, period: [doc.period_start, doc.period_end] },
@@ -1414,7 +1423,36 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       [`${headline} · score ${score}/100${aiNote ? ` · AI: ${aiNote.direction.toLowerCase()}` : ''}`, aiNote ? opinionText(aiNote) : null, checkLine, memo].filter(Boolean).join('\n\n').slice(0, 3900)
    );
    if (autoApprove) await notifyIncomeDecision(supabase, id);
+   // They already sent DOCS on Messenger while this was being read: the bot asks the first question there.
+   if (questions.length) await askOnMessengerIfWaiting(supabase, id);
    return result;
+};
+
+/**
+ * Borrower questions for a send checked before they existed (kyc-cross-check {"income_questions": id}):
+ * from the "Ask:" part of its AI note. dry = return them without saving (to read the wording first).
+ */
+export const backfillBorrowerQuestions = async (supabase: SupabaseClient, id: string, apiKey: string | null | undefined, dry = true) => {
+   if (!apiKey) return { ok: false, error: 'no AI key' };
+   const { data: row } = await supabase
+      .from('income_documents')
+      .select('id, user_id, ai_note, extracted, questions, decision, verdict')
+      .eq('id', id)
+      .maybeSingle();
+   if (!row) return { ok: false, error: 'not found' };
+   const ask = String(row.ai_note ?? '').split(' Ask: ')[1]?.trim();
+   if (!ask) return { ok: true, skipped: 'no questions in the AI note' };
+   const { data: user } = await supabase.from('users').select('market').eq('id', row.user_id).maybeSingle();
+   const doc = row.extracted as Extracted | null;
+   const questions = await borrowerQuestions(apiKey, [ask], {
+      country: user?.market === 'ID' ? 'Indonesia' : 'Philippines',
+      document: doc ? { type: doc.doc_type, institution: doc.institution, currency: doc.currency, period: [doc.period_start, doc.period_end] } : null,
+      rows: (doc?.transactions ?? []).slice(0, 60).map((t, i) => ({ row: `T${i + 1}`, date: t.date, description: t.description, amount: t.amount }))
+   });
+   if (!dry && questions.length && !row.questions && !row.decision && row.verdict !== 'resend') {
+      await supabase.from('income_documents').update({ questions }).eq('id', id).is('questions', null);
+   }
+   return { ok: true, dry, questions };
 };
 
 /**
