@@ -37,6 +37,7 @@ import {
    getRequestBoardExpiry,
    isExpiredUnfundedRequest,
    isRequestPastItsDueDay,
+   SILENT_TEAM_HOLD,
    type RequestBoardExpiry
 } from '@/lib/borrowerCreditUsage';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
@@ -872,7 +873,7 @@ export default function UserCard(loan: UserCardProps) {
                      View Request
                      <ChevronRight className="w-5 h-5" />
                   </Link>
-               ) : isOwnLoan && loanData.onHoldSince && loanData.loanStatus === 'Requested' ? (
+               ) : isOwnLoan && loanData.onHoldSince && loanData.onHoldReason !== SILENT_TEAM_HOLD && loanData.loanStatus === 'Requested' ? (
                   // Hidden from lenders until they rebook; booking a new call puts it straight back.
                   <div className="flex flex-col gap-md-2 rounded-md-lg border border-[#f5c56b] bg-[#fff6e0] p-md-3">
                      {loanData.onHoldReason === 'over_cap' ? (
