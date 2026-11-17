@@ -223,8 +223,11 @@ const teamChat = async (svc: SupabaseClient) => {
    return (data as { value?: string } | null)?.value || null;
 };
 
+// No videos on the link (videos_watched 0, nothing to watch): no line at all.
 const videosLine = (row: Pick<Row, 'video_watched' | 'videos_watched'>) =>
-   row.videos_watched != null
+   row.videos_watched === 0 && row.video_watched
+      ? null
+      : row.videos_watched != null
       ? row.video_watched
          ? `Watched all ${row.videos_watched} videos to the end`
          : `⚠️ Watched ${row.videos_watched} video${row.videos_watched === 1 ? '' : 's'} to the end`

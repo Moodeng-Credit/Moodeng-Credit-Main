@@ -183,8 +183,11 @@ export default function PreScreeningSection() {
                         )}
                      </div>
                      <p className="mt-1 text-sm text-[#a89bb8]">
-                        {bkk(row.created_at)} · {row.ref_code ? `affiliate ${row.ref_code}` : 'no affiliate code'} ·{' '}
-                        {row.videos_watched != null
+                        {bkk(row.created_at)} · {row.ref_code ? `affiliate ${row.ref_code}` : 'no affiliate code'}
+                        {row.videos_watched === 0 && row.video_watched ? '' : ' · '}
+                        {row.videos_watched === 0 && row.video_watched
+                           ? null
+                           : row.videos_watched != null
                            ? row.video_watched
                               ? `watched all ${row.videos_watched} videos`
                               : `⚠️ watched ${row.videos_watched} video${row.videos_watched === 1 ? '' : 's'} to the end`
