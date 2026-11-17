@@ -32,3 +32,24 @@ describe('getJourney — onboarding is wallet → Messenger → bio → call →
       expect(getJourney({ ...base, isDidit: 'ACTIVE' }, false).stage).toBe('verified');
    });
 });
+
+describe('getJourney — journey v2: proof of income + 3 videos first, wallet after the ✅', () => {
+   const v2 = (over: Record<string, unknown> = {}) => ({ applies: true, income: 'none' as const, videos_watched: 0, done: false, ...over });
+
+   it('held by the gate with v2 steps left: verify first, no wallet asked yet', () => {
+      expect(getJourney({ ...base }, true, v2())).toMatchObject({ stage: 'verify', step: 1, action: 'verify_first', cta: 'Send proof of income' });
+      expect(getJourney({ ...base }, true, v2({ income: 'checking' }))).toMatchObject({ stage: 'verify', cta: 'See your check' });
+   });
+
+   it('v2 done: on to Messenger without a wallet', () => {
+      expect(getJourney({ ...base }, true, v2({ income: 'pass', done: true }))).toMatchObject({ stage: 'messenger', action: 'connect' });
+   });
+
+   it('approved (gate lets go): the wallet comes back before applying', () => {
+      expect(getJourney({ ...base, loanAccessStatus: 'approved' }, false, null)).toMatchObject({ stage: 'wallet', action: 'wallet' });
+   });
+
+   it('v2 off for this person: the old order (wallet first)', () => {
+      expect(getJourney({ ...base }, true, { applies: false })).toMatchObject({ stage: 'wallet' });
+   });
+});

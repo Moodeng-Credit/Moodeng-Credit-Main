@@ -3,6 +3,7 @@ import { isUserVerified } from '@/lib/isUserVerified';
 import { getVerificationUiState } from '@/lib/verificationUiState';
 import { hasWalletAddressOnAccount } from '@/lib/walletProvider';
 import type { User } from '@/types/authTypes';
+import { type JourneyV2, needsJourneyV2 } from '@/hooks/usePreKycGate';
 
 /**
  * A borrower's way to their first loan (the pre-KYC gate, src/hooks/usePreKycGate.ts):
@@ -17,6 +18,7 @@ import type { User } from '@/types/authTypes';
  * board, dashboard, Account settings, the loan form and the app-wide "next step" bar never disagree.
  */
 export type JourneyStage =
+   | 'verify' // journey v2: proof of income + the 3 videos, then the AI check (/onboarding/verify)
    | 'wallet' // no wallet yet
    | 'messenger' // held by the gate, Messenger not connected
    | 'about' // held by the gate, Messenger connected, bio not filled in
@@ -27,7 +29,7 @@ export type JourneyStage =
    | 'id_track' // Indonesia track (src/lib/idTrack.ts): their own 8-step onboarding at /id/onboarding
    | 'verified';
 
-export type JourneyAction = 'wallet' | 'connect' | 'apply' | 'verify_status' | 'id_onboarding' | 'none';
+export type JourneyAction = 'verify_first' | 'wallet' | 'connect' | 'apply' | 'verify_status' | 'id_onboarding' | 'none';
 
 export const ONBOARDING_STEPS = 3;
 
@@ -66,11 +68,24 @@ const onboardingStage = (
    action: JourneyAction
 ): Journey => ({ stage, step, onboarding: true, cta, title, body, action });
 
-export function getJourney(user: JourneyUser | null | undefined, isGated: boolean): Journey {
+export function getJourney(user: JourneyUser | null | undefined, isGated: boolean, v2?: JourneyV2 | null): Journey {
    if (user && isUserVerified(user)) {
       return { stage: 'verified', step: null, onboarding: false, cta: 'Apply for a loan', title: "You're verified", body: 'You can request loans.', action: 'apply' };
    }
-   if (user && !hasWalletAddressOnAccount(user)) {
+   // Journey v2: proof of income + 3 short videos come first; the wallet waits until the team's ✅.
+   const v2Gated = Boolean(user && isGated && v2?.applies);
+   if (user && v2Gated && needsJourneyV2(v2)) {
+      const waiting = v2?.income === 'checking' || v2?.income === 'hold';
+      return onboardingStage(
+         'verify',
+         1,
+         waiting ? 'See your check' : 'Send proof of income',
+         waiting ? 'We’re checking your proof' : 'Show us your income',
+         waiting ? 'Usually a few minutes — we’ll message you.' : '1 month of income + 3 short videos.',
+         'verify_first'
+      );
+   }
+   if (user && !v2Gated && !hasWalletAddressOnAccount(user)) {
       return onboardingStage('wallet', 1, 'Set up your wallet', 'Set up your wallet', 'Your loans arrive here — it takes a few seconds.', 'wallet');
    }
    if (user && isGated) {

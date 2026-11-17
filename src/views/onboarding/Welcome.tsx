@@ -1,7 +1,9 @@
+import { useQuery } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import { useLocalization } from '@/i18n/LocalizationProvider';
+import { fetchJourneyV2, JOURNEY_V2_PATH, needsJourneyV2 } from '@/hooks/usePreKycGate';
 import { ID_PATHS } from '@/lib/idTrack';
 import type { LocaleCode } from '@/i18n/translations';
 import type { RootState } from '@/store/store';
@@ -128,7 +130,9 @@ export default function Welcome() {
    const requestBoardTourPath = import.meta.env.DEV ? '/request-board?tourPreview=1' : '/request-board?tour=1';
    const returnTo =
       (location.state as { returnTo?: string } | null)?.returnTo || new URLSearchParams(location.search).get('returnTo') || undefined;
-   const walletPath = isPreview ? '/onboarding/wallet-preview' : '/onboarding/wallet';
+   // Journey v2: no wallet yet — proof of income + the 3 videos come first (the wallet waits for the team's ✅).
+   const { data: v2 } = useQuery({ queryKey: ['journey-v2-welcome', user?.id], queryFn: fetchJourneyV2, enabled: Boolean(user) && !isPreview, staleTime: 15_000 });
+   const walletPath = isPreview ? '/onboarding/wallet-preview' : needsJourneyV2(v2) ? JOURNEY_V2_PATH : '/onboarding/wallet';
    // Indonesia track: its own onboarding (/id/onboarding) replaces this welcome.
    const idTrack = useIdTrackStatus();
    if (!isPreview && idTrack.isIndo) return <Navigate replace to={ID_PATHS.onboarding} />;

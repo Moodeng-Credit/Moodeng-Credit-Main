@@ -39,16 +39,20 @@ export const capturePreScreeningToken = () => {
    }
 };
 
-/** Once per signed-in account on this browser. */
+/**
+ * Once per signed-in account on this browser (again once they finish one they had only started).
+ * An unfinished one is tied too, so the team sees "started the pre-screening, didn't finish".
+ */
 export const claimPreScreening = (userId: string) => {
    try {
       const saved = readPreScreening();
-      if (!saved?.done || window.localStorage.getItem(CLAIMED_KEY) === userId) return;
+      const claimedAs = `${userId}:${saved?.done ? 'done' : 'open'}`;
+      if (!saved || window.localStorage.getItem(CLAIMED_KEY) === claimedAs) return;
       void getSupabaseBrowserClient()
          .rpc('claim_pre_screening', { p_token: saved.token })
          .then(({ error }) => {
             if (error) console.warn('claim_pre_screening failed', error.message);
-            else window.localStorage.setItem(CLAIMED_KEY, userId);
+            else window.localStorage.setItem(CLAIMED_KEY, claimedAs);
          });
    } catch {
       // Storage blocked: skip.
