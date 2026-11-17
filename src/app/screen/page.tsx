@@ -324,6 +324,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    // prescreen_config.proof = false: no proof-of-income step here (journey v2 asks for it after sign-up).
    const [askProof, setAskProof] = useState(true);
    const docInput = useRef<HTMLInputElement>(null);
+   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
    const [busy, setBusy] = useState(false);
    const [error, setError] = useState<string | null>(null);
 
@@ -398,10 +399,12 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    };
 
    const addDocs = (list: FileList | null) => {
+      // Copy the files out BEFORE clearing the input: the FileList is live, and clearing the input
+      // empties it — every pick was silently dropped (George's test, 2026-11-17).
+      const picked = list ? Array.from(list) : [];
       if (docInput.current) docInput.current.value = '';
-      if (!list?.length) return;
+      if (!picked.length) return;
       setError(null);
-      const picked = Array.from(list);
       const bad = picked.find((f) => !DOC_TYPES.has(f.type));
       const big = picked.find((f) => f.size > MAX_DOC_BYTES);
       if (bad) setError('Please send a photo (JPG or PNG) or a PDF.');
@@ -419,13 +422,16 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       setError(null);
       const storage = getSupabaseBrowserClient().storage.from('pre-screenings');
       const done: UploadedDoc[] = [];
+      setUploadProgress({ done: 0, total: docs.length });
       for (const file of docs) {
          const ext = file.type === 'application/pdf' ? 'pdf' : file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
          const path = `${token}/income-${crypto.randomUUID()}.${ext}`;
          const { error: upError } = await storage.upload(path, file, { contentType: file.type, upsert: false });
          if (!upError) done.push({ path, name: file.name.slice(0, 200), mime: file.type, size: file.size });
+         setUploadProgress((prev) => (prev ? { ...prev, done: prev.done + 1 } : prev));
       }
       setBusy(false);
+      setUploadProgress(null);
       if (done.length < docs.length) {
          setError('Could not send your files. Check your connection and tap Send again.');
          return;
@@ -675,7 +681,14 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                   {docs.length ? (
                      <>
                         <PrimaryButton disabled={busy} onClick={() => void sendProof()}>
-                           {busy ? <Loader2 aria-label="Sending" className="mx-auto size-5 animate-spin" /> : 'Send'}
+                           {busy ? (
+                              <span className="flex items-center justify-center gap-2">
+                                 <Loader2 aria-hidden className="size-5 animate-spin" />
+                                 {uploadProgress ? `Uploading ${Math.min(uploadProgress.done + 1, uploadProgress.total)} of ${uploadProgress.total}…` : 'Sending…'}
+                              </span>
+                           ) : (
+                              `Send ${docs.length} file${docs.length === 1 ? '' : 's'}`
+                           )}
                         </PrimaryButton>
                         {busy || docs.length >= MAX_DOCS ? null : <GhostButton onClick={() => docInput.current?.click()}>Add more</GhostButton>}
                      </>
