@@ -12,7 +12,7 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
  */
 
 type Question = { id: string; text: string };
-type Answer = { q: string; video: string | null; audio: string | null; seconds: number };
+type Answer = { q: string; video: string | null; audio: string | null; seconds: number; text?: string | null };
 type GradedAnswer = { q: string; transcript: string | null; score: number | null; note: string };
 type IncomeFile = { path: string; name: string; mime: string; size: number };
 type IncomeRead = {
@@ -216,7 +216,15 @@ export default function PreScreeningSection() {
                                     <span className="text-[#a89bb8]">{graded?.score != null ? `· ${graded.score}/10` : '· no score'}</span>
                                  </p>
                                  <p className="mt-1 text-base text-white">
-                                    {graded?.transcript ? `“${graded.transcript}”` : <span className="text-[#a89bb8]">Not heard.</span>}
+                                    {answer?.text ? (
+                                       <>
+                                          <span className="mr-1 rounded bg-[#241044] px-1.5 py-0.5 text-xs font-bold text-[#a89bb8]">typed</span>“{answer.text}”
+                                       </>
+                                    ) : graded?.transcript ? (
+                                       `“${graded.transcript}”`
+                                    ) : (
+                                       <span className="text-[#a89bb8]">Not heard.</span>
+                                    )}
                                  </p>
                                  {graded?.note ? <p className="mt-1 text-sm text-[#a89bb8]">{graded.note}</p> : null}
                                  {path && clips[path] ? (
@@ -232,7 +240,7 @@ export default function PreScreeningSection() {
                                     </button>
                                  ) : (
                                     <p className="mt-2 text-sm text-[#6f6385]">
-                                       {path ? 'Clip removed (older than 30 days, never signed up).' : 'No clip for this answer.'}
+                                       {path ? 'Clip removed (older than 30 days, never signed up).' : answer?.text ? 'Typed answer.' : 'No clip for this answer.'}
                                     </p>
                                  )}
                               </li>

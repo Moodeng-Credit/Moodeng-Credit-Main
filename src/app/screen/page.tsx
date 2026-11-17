@@ -19,13 +19,17 @@ import { CONNECT_HIPPOS, ConnectHero, GhostButton, PrimaryButton, StepTrail } fr
 // Database + switch: supabase/migrations/20261116180000_pre_screening.sql.
 
 export type ScreenStage = 'loading' | 'closed' | 'busy' | 'intro' | 'video' | 'question' | 'proof' | 'sending' | 'done';
-export type ScreenQuestion = { id: string; text: string; hint?: string };
+/** kind 'text' = a typed answer; anything else = a short recorded video. */
+export type ScreenQuestion = { id: string; text: string; hint?: string; kind?: 'text' | 'video' };
 /** `tall` = a YouTube Short (9:16); otherwise a normal 16:9 video. */
 type ScreenVideo = { id: string; title: string; tall?: boolean };
 type UploadedDoc = { path: string; name: string; mime: string; size: number };
 export type ScreenPreview = { stage: ScreenStage; question?: number };
 
-type UploadedAnswer = { q: string; video: string | null; audio: string | null; seconds: number };
+type UploadedAnswer = { q: string; video: string | null; audio: string | null; seconds: number; text?: string };
+// Typed answers: long enough to say something real, short enough to read on the call.
+const MIN_TEXT = 15;
+const MAX_TEXT = 600;
 
 const MAX_SECONDS = 45;
 const MIN_SECONDS = 3;
@@ -39,9 +43,9 @@ const MAX_DOC_BYTES = 10 * 1024 * 1024;
 
 const SAMPLE_QUESTIONS: ScreenQuestion[] = [
    { id: 'intro', text: 'Introduce yourself in English.', hint: 'Your full name, age and job. If you are a student, what do you do for work?' },
-   { id: 'borrowed', text: 'Have you borrowed before, like Maya, Tala or Salmon?' },
-   { id: 'purpose', text: 'What is this loan for?' },
-   { id: 'grow', text: 'How will you use the loan to build up your income?' }
+   { id: 'borrowed', text: 'Have you borrowed before, like Maya, Tala or Salmon?', kind: 'text' },
+   { id: 'purpose', text: 'What is this loan for?', kind: 'text' },
+   { id: 'grow', text: 'How will you use the loan to build up your income?', kind: 'text' }
 ];
 const SAMPLE_VIDEOS: ScreenVideo[] = [
    { id: 'G4hibvp-T9g', title: 'How to get started (6 simple steps)', tall: true },
@@ -428,6 +432,26 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       void finish(uploaded, done);
    };
 
+   // Typed answers per question id, kept while they move through the questions.
+   const [typed, setTyped] = useState<Record<string, string>>({});
+
+   const nextAfter = (next: UploadedAnswer[]) => {
+      if (index + 1 < questions.length) setIndex(index + 1);
+      else if (askProof) setStage('proof');
+      else void finish(next, []);
+   };
+
+   const acceptText = () => {
+      const question = questions[index];
+      const text = (typed[question.id] ?? '').trim().slice(0, MAX_TEXT);
+      if (text.length < MIN_TEXT) return setError('Please write a little more.');
+      setError(null);
+      if (preview) return nextAfter(uploaded);
+      const next = [...uploaded.filter((a) => a.q !== question.id), { q: question.id, video: null, audio: null, seconds: 0, text }];
+      setUploaded(next);
+      nextAfter(next);
+   };
+
    const acceptClip = async (clip: Clip) => {
       const question = questions[index];
       if (preview) {
@@ -571,7 +595,23 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                      trail={trail('Answer')}
                   />
                   {error ? <p className={errorClass}>{error}</p> : null}
-                  <AnswerRecorder busy={busy} onUse={(clip) => void acceptClip(clip)} />
+                  {question.kind === 'text' ? (
+                     <>
+                        <textarea
+                           aria-label="Your answer"
+                           className={`${fieldClass} min-h-[140px] resize-none`}
+                           maxLength={MAX_TEXT}
+                           onChange={(e) => setTyped((prev) => ({ ...prev, [question.id]: e.target.value }))}
+                           placeholder="Type your answer"
+                           value={typed[question.id] ?? ''}
+                        />
+                        <PrimaryButton disabled={(typed[question.id] ?? '').trim().length < MIN_TEXT} onClick={acceptText}>
+                           Next
+                        </PrimaryButton>
+                     </>
+                  ) : (
+                     <AnswerRecorder busy={busy} onUse={(clip) => void acceptClip(clip)} />
+                  )}
                </div>
             ) : null}
 
