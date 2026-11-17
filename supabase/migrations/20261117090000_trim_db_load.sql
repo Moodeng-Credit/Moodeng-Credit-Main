@@ -119,9 +119,11 @@ begin
   if v_job is not null then perform cron.alter_job(v_job, schedule := '*/5 * * * *'); end if;
 end $$;
 
--- cron.job_run_details grows by a row per run forever; keep 3 days.
-select cron.schedule('cron-run-log-trim-daily', '40 3 * * *',
-  $$ delete from cron.job_run_details where end_time < now() - interval '3 days' $$);
+-- cron.job_run_details grows by a row per run forever; keep 3 days. Small batches every hour, so
+-- the first runs never delete weeks of rows in one statement.
+select cron.schedule('cron-run-log-trim-hourly', '50 * * * *',
+  $$ delete from cron.job_run_details where runid in (
+       select runid from cron.job_run_details where end_time < now() - interval '3 days' limit 5000) $$);
 
 -- ── 3a. Milestones: an already-recorded milestone returns at once ───────────────────────────────
 -- The dashboard calls this for every unlocked milestone on every load. Before, each call re-ran
