@@ -12,6 +12,7 @@ export type AdminTab =
    | 'borrower-profile'
    | 'post-links'
    | 'calls'
+   | 'rejected'
    | 'fillout'
    | 'calendar'
    | 'analytics'
@@ -62,6 +63,7 @@ export const navGroups: NavGroup[] = [
       items: [
          { id: 'users', label: 'Directory' },
          { id: 'calls', label: 'Call approvals' },
+         { id: 'rejected', label: 'Rejected' },
          { id: 'proof-requests', label: 'Proof requests' },
          { id: 'fillout', label: 'Fillout' },
          { id: 'borrower-contacts', label: 'Borrower contacts' },
@@ -155,6 +157,7 @@ export const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'credit-line-cost',
    'marketing',
    'calls',
+   'rejected',
    'fillout',
    'calendar',
    'signups',
