@@ -3234,6 +3234,8 @@ export interface AdminCallApprovalRow {
    userId: string;
    name: string;
    username: string | null;
+   /** Their Facebook name (users.facebook_name, from Messenger). */
+   facebookName?: string | null;
    loanAccessStatus: string | null;
    callStartsAt: string | null;
    host: string | null;
