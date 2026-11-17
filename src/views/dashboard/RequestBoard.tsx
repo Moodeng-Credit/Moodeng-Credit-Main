@@ -34,6 +34,7 @@ import { useUsdIdrPeg } from '@/hooks/useUsdIdrPeg';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 import { useIsFundingAdmin } from '@/hooks/useIsFundingAdmin';
 import { useLoanFlow } from '@/hooks/useLoanFlow';
+import { useWalletLast } from '@/hooks/useWalletLast';
 import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 import { usePagination } from '@/hooks/usePagination';
 import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
@@ -98,6 +99,7 @@ import { ApprovedNextSteps, CONNECT_HIPPOS, markCelebrated, StepCelebration, was
 import DeleteLoanRequestModal from '@/views/dashboard/components/DeleteLoanRequestModal';
 import LocationPrimingModal from '@/views/dashboard/components/LocationPrimingModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
+import WalletLastStep from '@/views/dashboard/components/WalletLastStep';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
 import UserCard from '@/views/dashboard/components/UserCard';
 import FundWalletSheet from '@/views/fund/FundWalletSheet';
@@ -697,6 +699,16 @@ function RequestBoard$() {
          effectiveCreditLimit <= STARTING_CREDIT_LIMIT &&
          borrowerCreditLoans.length === 0);
    const hasBorrowerBaseWallet = !IS_BORROWER_BASE_WALLET_GATE_ENABLED || hasWalletAddressOnAccount(effectiveUser);
+   // Wallet last (src/hooks/useWalletLast.ts): no wallet needed to open the loan form — it's made as the
+   // very last step of sending (WalletLastStep), after the ID check. Not Indonesia (Walt, its own step).
+   const { walletLast } = useWalletLast();
+   const walletMadeAtSend = walletLast && !isIndo;
+   const canOpenLoanForm = hasBorrowerBaseWallet || walletMadeAtSend;
+   const [showWalletLast, setShowWalletLast] = useState(false);
+   // The wallet WalletLastStep just made (the profile may not have refreshed yet), and the submit it
+   // interrupted, which runs again once the wallet exists.
+   const walletOverrideRef = useRef<string | null>(null);
+   const pendingWalletSubmitRef = useRef<{ borrowerContext?: import('@/lib/borrowerContextFit').BorrowerContextState } | null>(null);
    // A wallet the borrower JUST connected is live in wagmi before its address finishes
    // saving to their profile (useWalletSync → updateUser is async). During that window
    // `hasBorrowerBaseWallet` is still false; we use this to hold the "apply loan" intent
@@ -1033,12 +1045,12 @@ function RequestBoard$() {
       setIsOpeningLoanRequest(true);
 
       try {
-         if (!isWorldIdVerified && !hasBorrowerBaseWallet) {
+         if (!isWorldIdVerified && !canOpenLoanForm) {
             goToBorrowerOnboardingStart('loan-request');
             return;
          }
 
-         if (!hasBorrowerBaseWallet) {
+         if (!canOpenLoanForm) {
             handleMissingBorrowerWallet();
             return;
          }
@@ -1559,12 +1571,12 @@ function RequestBoard$() {
       // useWalletSync disconnects, isWalletLiveConnected flips false, and the redirects apply.
       if (!hasBorrowerBaseWallet && isWalletLiveConnected) return;
 
-      if (!isWorldIdVerified && !hasBorrowerBaseWallet) {
+      if (!isWorldIdVerified && !canOpenLoanForm) {
          navigate('/onboarding/welcome', { replace: true, state: { returnTo: 'loan-request' } });
          return;
       }
 
-      if (!hasBorrowerBaseWallet) {
+      if (!canOpenLoanForm) {
          goToBorrowerWalletSetup('loan-request', true);
          return;
       }
@@ -1621,7 +1633,8 @@ function RequestBoard$() {
       isSubmittingRef.current = true;
 
       try {
-         const borrowerWallet = effectiveUser.walletAddress?.trim();
+         const borrowerWallet = walletOverrideRef.current ?? effectiveUser.walletAddress?.trim();
+         const hasWalletNow = hasBorrowerBaseWallet || Boolean(walletOverrideRef.current);
          const trimmedReason = reason.trim();
          const parsedLoanAmount = Number.parseFloat(loanAmount);
          // Indonesia rupiah peg: the rupiah total is what they promise; the USD is that at today's
@@ -1638,7 +1651,7 @@ function RequestBoard$() {
                : Number.parseFloat(totalRepaymentAmount);
          const parsedDueDate = days ? new Date(days) : null;
 
-         if (!isWorldIdVerified && !hasBorrowerBaseWallet) {
+         if (!isWorldIdVerified && !hasWalletNow && !walletMadeAtSend) {
             goToBorrowerOnboardingStart('loan-request');
             return;
          }
@@ -1646,7 +1659,13 @@ function RequestBoard$() {
             showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WORLDID_REQUIRED));
             return;
          }
-         if (!hasBorrowerBaseWallet) {
+         if (!hasWalletNow) {
+            // Wallet last: everything else is done — make the wallet now, then this submit runs again.
+            if (walletMadeAtSend) {
+               pendingWalletSubmitRef.current = { borrowerContext };
+               setShowWalletLast(true);
+               return;
+            }
             handleMissingBorrowerWallet();
             return;
          }
@@ -1767,7 +1786,7 @@ function RequestBoard$() {
 
          if (
             isUserVerified(effectiveUser) &&
-            hasBorrowerBaseWallet &&
+            hasWalletNow &&
             !hasReachedActiveLoanLimit &&
             parsedLoanAmount <= availableCreditLimit &&
             parsedLoanAmount > 0 &&
@@ -1815,7 +1834,7 @@ function RequestBoard$() {
             // isUserVerified() is still false. Never let "Make Your Request" silently no-op.
             console.warn('Loan request fell through the create guard with no matching reason', {
                verified: isUserVerified(effectiveUser),
-               hasBorrowerBaseWallet,
+               hasBorrowerBaseWallet: hasWalletNow,
                hasReachedActiveLoanLimit,
                withinLimit: parsedLoanAmount <= availableCreditLimit,
                positiveAmount: parsedLoanAmount > 0,
@@ -2793,6 +2812,21 @@ function RequestBoard$() {
                    Request" was closing this before they registered the request went through. They
                    dismiss it deliberately via "Go to dashboard" or a swipe down. */}
                <SuccessModal isOpen={showPurple} onClose={handleSuccessModalClose} clickOutsideRef={undefined} />
+               {showWalletLast ? (
+                  <WalletLastStep
+                     onClose={() => {
+                        pendingWalletSubmitRef.current = null;
+                        setShowWalletLast(false);
+                     }}
+                     onDone={(address) => {
+                        walletOverrideRef.current = address;
+                        setShowWalletLast(false);
+                        const pending = pendingWalletSubmitRef.current;
+                        pendingWalletSubmitRef.current = null;
+                        void handleSubmit({ preventDefault: () => undefined } as FormEvent<HTMLFormElement>, pending?.borrowerContext);
+                     }}
+                  />
+               ) : null}
                <LocationPrimingModal
                   open={showLocationPriming}
                   onShare={() => resolveLocationConsent('share')}

@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import { JOURNEY_V2_PATH, PRE_KYC_CONNECT_PATH, usePreKycGate } from '@/hooks/usePreKycGate';
+import { useWalletLast } from '@/hooks/useWalletLast';
 
 import { ID_PATHS } from '@/lib/idTrack';
 import { getIdJourney, getJourney, type Journey } from '@/lib/verificationJourney';
@@ -25,12 +26,13 @@ export function useVerificationJourney(
    const user = userOverride ?? storeUser;
    const navigate = useNavigate();
    const { isGated, isLoading: gateLoading, v2 } = usePreKycGate();
+   const { walletLast, isLoading: walletLastLoading } = useWalletLast();
    // Indonesia track: until the team approves them, their next step is in /id/onboarding.
    const idTrack = useIdTrackStatus();
    const idLang = useIdLang();
    const idData = idTrack.isIndo ? idTrack.data : undefined;
-   const journey = idData && idData.next !== 'apply' ? getIdJourney(idData, idLang) : getJourney(user, isGated, v2);
-   const isLoading = gateLoading || idTrack.isLoading;
+   const journey = idData && idData.next !== 'apply' ? getIdJourney(idData, idLang) : getJourney(user, isGated, v2, walletLast);
+   const isLoading = gateLoading || idTrack.isLoading || walletLastLoading;
 
    const go = useCallback(() => {
       if (journey.action === 'id_onboarding') navigate(ID_PATHS.onboarding);
