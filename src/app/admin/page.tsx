@@ -13,6 +13,7 @@ import AdminShell from '@/app/admin/AdminShell';
 import { type AdminTab, isAdminTab, navGroups } from '@/app/admin/adminNav';
 import CalendarSection from '@/app/admin/CalendarSection';
 import CallApprovalsSection from '@/app/admin/CallApprovalsSection';
+import RejectedSection from '@/app/admin/RejectedSection';
 import IdPayoutWalletPanel from '@/app/admin/IdPayoutWalletPanel';
 import IndonesiaContactCard from '@/app/admin/IndonesiaContactCard';
 import SocialHandlesLine from '@/app/admin/SocialHandlesLine';
@@ -1895,6 +1896,8 @@ function AdminPanel() {
          ) : null}
 
          {activeTab === 'calls' ? <CallApprovalsSection onCountChange={setCallApprovalCount} /> : null}
+
+         {activeTab === 'rejected' ? <RejectedSection /> : null}
 
          {activeTab === 'fillout' ? <FilloutSection /> : null}
 
