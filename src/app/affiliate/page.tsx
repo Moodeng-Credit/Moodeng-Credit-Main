@@ -300,33 +300,35 @@ function PosterQr({ code }: { code: string }) {
    return (
       <section className="mt-6" aria-label="QR code for posters">
          <h2 className="text-[20px] font-bold italic leading-6 text-[#594d65] dark:text-[#d9cfe6]">QR for your posters</h2>
-         <div className="mt-3 flex items-center gap-4 rounded-[14px] bg-dv2-card p-4">
-            <div className="shrink-0 rounded-[10px] bg-white p-2">
-               <QRCodeCanvas id={canvasId} value={link} size={720} level="M" style={{ width: 120, height: 120 }} />
-            </div>
-            <div className="min-w-0 flex-1">
-               <p className="break-all text-[13px] font-semibold leading-[18px] text-[#6b55f7] dark:text-[#b3a6ff]">{link.replace(/^https?:\/\//, '')}</p>
-               <p className="mt-1 text-[13px] leading-[18px] text-[#7b6b8c] dark:text-[#a99cba]">
-                  Friends who scan it and sign up are linked to you.
-               </p>
-               <div className="mt-3 flex gap-2">
-                  <button
-                     type="button"
-                     onClick={() => void copyLink()}
-                     className="flex h-9 items-center gap-1.5 rounded-full bg-[#efeaff] px-3 text-[14px] font-bold text-[#6b55f7] dark:bg-[#2c2439] dark:text-[#b3a6ff]"
-                  >
-                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                     {copied ? 'Copied' : 'Copy link'}
-                  </button>
-                  <button
-                     type="button"
-                     onClick={download}
-                     className="flex h-9 items-center gap-1.5 rounded-full bg-[#6b55f7] px-3 text-[14px] font-bold text-white"
-                  >
-                     <Download className="h-4 w-4" />
-                     Download
-                  </button>
+         <div className="mt-3 rounded-[14px] bg-dv2-card p-4">
+            <div className="flex items-center gap-4">
+               <div className="shrink-0 rounded-[10px] bg-white p-2">
+                  <QRCodeCanvas id={canvasId} value={link} size={720} level="M" style={{ width: 112, height: 112 }} />
                </div>
+               <div className="min-w-0 flex-1">
+                  <p className="break-all text-[14px] font-semibold leading-[18px] text-[#6b55f7] dark:text-[#b3a6ff]">{link.replace(/^https?:\/\//, '')}</p>
+                  <p className="mt-1 text-[13px] leading-[18px] text-[#7b6b8c] dark:text-[#a99cba]">
+                     Friends who scan it and sign up are linked to you.
+                  </p>
+               </div>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+               <button
+                  type="button"
+                  onClick={() => void copyLink()}
+                  className="flex h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[#efeaff] text-[15px] font-bold text-[#6b55f7] dark:bg-[#2c2439] dark:text-[#b3a6ff]"
+               >
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  {copied ? 'Copied' : 'Copy link'}
+               </button>
+               <button
+                  type="button"
+                  onClick={download}
+                  className="flex h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[#6b55f7] text-[15px] font-bold text-white"
+               >
+                  <Download className="h-4 w-4" />
+                  Download
+               </button>
             </div>
          </div>
       </section>
