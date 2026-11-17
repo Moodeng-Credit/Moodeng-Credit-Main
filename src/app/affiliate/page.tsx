@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { Check, ChevronDown, ChevronLeft, Copy, Lock, Share2, UserPlus } from 'lucide-react';
+import { Check, ChevronDown, ChevronLeft, Copy, Download, Lock, Share2, UserPlus } from 'lucide-react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import {
@@ -209,7 +210,7 @@ function CodeCard({
                </>
             ) : (
                <>
-                  Friends type <b className="text-white">{main.code}</b> when they ask for their first loan.
+                  Friends sign up with your link or QR, or type <b className="text-white">{main.code}</b> when they ask for their first loan.
                </>
             )}
          </p>
@@ -249,6 +250,85 @@ function CodeCard({
                ) : null}
             </div>
          ) : null}
+      </section>
+   );
+}
+
+/* ---------- 3b · Poster QR: the invite link as a QR to print on posters ---------- */
+
+const POSTER_ORIGIN = 'https://moodeng.app';
+
+function PosterQr({ code }: { code: string }) {
+   const link = buildInviteLink(code, POSTER_ORIGIN);
+   const [copied, setCopied] = useState(false);
+   const canvasId = `poster-qr-${code}`;
+
+   const copyLink = async () => {
+      try {
+         await navigator.clipboard.writeText(link);
+         setCopied(true);
+         window.setTimeout(() => setCopied(false), 1500);
+      } catch {
+         window.prompt('Copy this link', link);
+      }
+   };
+
+   // A print-ready PNG: white border, the QR, and the link written under it.
+   const download = () => {
+      const qr = document.getElementById(canvasId) as HTMLCanvasElement | null;
+      if (!qr) return;
+      const pad = 64;
+      const textH = 96;
+      const out = document.createElement('canvas');
+      out.width = qr.width + pad * 2;
+      out.height = qr.height + pad * 2 + textH;
+      const ctx = out.getContext('2d');
+      if (!ctx) return;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, out.width, out.height);
+      ctx.drawImage(qr, pad, pad);
+      ctx.fillStyle = '#3d2f8f';
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 44px sans-serif';
+      ctx.fillText(link.replace(/^https?:\/\//, ''), out.width / 2, qr.height + pad + 70, out.width - pad);
+      const a = document.createElement('a');
+      a.href = out.toDataURL('image/png');
+      a.download = `moodeng-qr-${code}.png`;
+      a.click();
+   };
+
+   return (
+      <section className="mt-6" aria-label="QR code for posters">
+         <h2 className="text-[20px] font-bold italic leading-6 text-[#594d65] dark:text-[#d9cfe6]">QR for your posters</h2>
+         <div className="mt-3 flex items-center gap-4 rounded-[14px] bg-dv2-card p-4">
+            <div className="shrink-0 rounded-[10px] bg-white p-2">
+               <QRCodeCanvas id={canvasId} value={link} size={720} level="M" style={{ width: 120, height: 120 }} />
+            </div>
+            <div className="min-w-0 flex-1">
+               <p className="break-all text-[13px] font-semibold leading-[18px] text-[#6b55f7] dark:text-[#b3a6ff]">{link.replace(/^https?:\/\//, '')}</p>
+               <p className="mt-1 text-[13px] leading-[18px] text-[#7b6b8c] dark:text-[#a99cba]">
+                  Friends who scan it and sign up are linked to you.
+               </p>
+               <div className="mt-3 flex gap-2">
+                  <button
+                     type="button"
+                     onClick={() => void copyLink()}
+                     className="flex h-9 items-center gap-1.5 rounded-full bg-[#efeaff] px-3 text-[14px] font-bold text-[#6b55f7] dark:bg-[#2c2439] dark:text-[#b3a6ff]"
+                  >
+                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                     {copied ? 'Copied' : 'Copy link'}
+                  </button>
+                  <button
+                     type="button"
+                     onClick={download}
+                     className="flex h-9 items-center gap-1.5 rounded-full bg-[#6b55f7] px-3 text-[14px] font-bold text-white"
+                  >
+                     <Download className="h-4 w-4" />
+                     Download
+                  </button>
+               </div>
+            </div>
+         </div>
       </section>
    );
 }
@@ -762,17 +842,13 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
       setPaidPopup(null);
    };
 
-   // Personal codes share the invite link (it links the friend on sign-up); team-made codes are typed in the loan form.
-   const shareLink = main?.personal
-      ? buildInviteLink(main.code)
-      : typeof window !== 'undefined'
-        ? window.location.origin
-        : 'https://moodeng.app';
+      // Every owned code has an invite link now (influencer codes too): it links the friend on sign-up.
+   const shareLink = main ? buildInviteLink(main.code) : 'https://moodeng.app';
    const shareText = !main
       ? ''
       : main.personal
         ? `I use Moodeng Credit for small loans. Join with my link (code ${main.code}):`
-        : `I use Moodeng Credit for small loans. Sign up and type my code ${main.code} when you ask for your first loan:`;
+        : `I use Moodeng Credit for small loans. Join with my link (code ${main.code}):`;
 
    if (isLoading || error || !main) {
       return (
@@ -819,6 +895,7 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
             <h1 className="sr-only">Moo affiliate</h1>
             <Hero payout={main.payout_amount} />
             <CodeCard main={main} others={others} unlocked={unlocked || !main.personal} onShare={() => setSharing(true)} />
+            <PosterQr code={main.code} />
             <MoneyRow owed={totals.owed} pending={totals.pending} paid={totals.paid} paused={paused} />
             <Friends
                referrals={referrals}
