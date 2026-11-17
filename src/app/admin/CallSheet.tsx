@@ -13,6 +13,9 @@ import {
    type CallTranscript,
    CASH_VIDEOS,
    EXCHANGES,
+   influencerFor,
+   INFLUENCERS,
+   linkReferral,
    loadBotAnswers,
    loadCallSheet,
    loadCallTranscript,
@@ -518,6 +521,7 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
    const [fbStepsSentAt, setFbStepsSentAt] = useState<string | null>(row.fbStepsSentAt ?? null);
    const [sendingFbSteps, setSendingFbSteps] = useState(false);
    const [rejectNote, setRejectNote] = useState('');
+   const [referralMsg, setReferralMsg] = useState<{ ok: boolean; text: string } | null>(null);
    const savingRef = useRef(false);
    const idRef = useRef<string | null>(null);
 
@@ -553,6 +557,22 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
       setAnswers((a) => ({ ...a, [key]: value }));
       touch();
    };
+   // "Referred by": picking Irish or Mahjid links them to that code right away (not on save).
+   const pickReferrer = async (value: string) => {
+      set('referredBy', value || undefined);
+      setReferralMsg(null);
+      const influencer = INFLUENCERS.find((i) => i.code === value);
+      if (!influencer || influencerFor(profile?.referralCode ?? null) === influencer.code) return;
+      try {
+         const code = await linkReferral(row.userId, influencer.code);
+         setProfile((p) => (p ? { ...p, referralCode: code } : p));
+         setReferralMsg({ ok: true, text: `Linked to ${code}. ${influencer.label} gets paid when they repay.` });
+      } catch (err) {
+         setReferralMsg({ ok: false, text: err instanceof Error ? err.message : 'Could not link the code.' });
+      }
+   };
+   const referredBy = answers.referredBy ?? influencerFor(profile?.referralCode ?? null) ?? '';
+
    const toggleExchange = (name: string) =>
       set(
          'exchanges',
@@ -813,6 +833,25 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                            </Question>
                         </div>
                         <Question n={5} title="How do they know us?" hint="referred by / where they saw us">
+                           <label className="mb-2 flex items-center gap-2 text-[14px] font-semibold">
+                              Referred by
+                              <select
+                                 className={inputClass.replace('w-full', 'w-auto')}
+                                 onChange={(e) => void pickReferrer(e.target.value)}
+                                 value={referredBy}
+                              >
+                                 <option value="">—</option>
+                                 {INFLUENCERS.map((i) => (
+                                    <option key={i.code} value={i.code}>
+                                       {i.label}
+                                    </option>
+                                 ))}
+                                 <option value="other">Someone else / nobody</option>
+                              </select>
+                           </label>
+                           {referralMsg ? (
+                              <p className={`mb-2 text-[13px] ${referralMsg.ok ? 'text-[#0f7b3f]' : 'text-[#b42318]'}`}>{referralMsg.text}</p>
+                           ) : null}
                            <input
                               className={inputClass}
                               onChange={(e) => set('referral', e.target.value)}

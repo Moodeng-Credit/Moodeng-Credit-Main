@@ -13,11 +13,30 @@ export interface ScreeningAnswers {
    facebookUrl?: string;
    tiktokUrl?: string;
    referral?: string;
+   /** "Referred by" dropdown: an influencer's code (INFLUENCERS), or 'other'. */
+   referredBy?: string;
    loanUse?: string;
    exchanges?: string[];
    showedCashInOut?: boolean;
    informedTerms?: boolean;
    addedEmma?: boolean;
+}
+
+// The big influencers the host picks from in "Referred by". Picking one links the borrower to that
+// code (admin_link_referral), so the influencer earns their payout when this friend repays.
+export const INFLUENCERS = [
+   { label: 'Irish', code: 'IRISH2026', codes: ['IRISH', 'IRISH2026'] },
+   { label: 'Mahjid', code: 'MAHJID', codes: ['MAHJID'] }
+];
+
+/** The influencer code this borrower is already linked to, if it's one of INFLUENCERS. */
+export const influencerFor = (referralCode: string | null) =>
+   INFLUENCERS.find((i) => referralCode && i.codes.includes(referralCode.toUpperCase()))?.code;
+
+export async function linkReferral(userId: string, code: string): Promise<string> {
+   const { data, error } = await getSupabaseBrowserClient().rpc('admin_link_referral' as never, { p_user_id: userId, p_code: code } as never);
+   if (error) throw error;
+   return data as unknown as string;
 }
 
 export const EXCHANGES = ['Coins.ph', 'PDAX', 'GCash (GCrypto)', 'Maya', 'Binance', 'Bybit', 'OKX', 'Tokocrypto', 'Other'];
