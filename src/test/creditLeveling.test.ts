@@ -16,7 +16,15 @@ import { buildBorrowerTimelineEvents } from '@/views/user-profile/ProgressHistor
 // The pre-KYC gate reads its RPC through react-query; these tests cover borrowers it doesn't hold.
 vi.mock('@/hooks/usePreKycGate', () => ({
    PRE_KYC_CONNECT_PATH: '/onboarding/connect',
-   usePreKycGate: () => ({ isGated: false, isLoading: false })
+   JOURNEY_V2_PATH: '/onboarding/verify',
+   needsJourneyV2: () => false,
+   usePreKycGate: () => ({ isGated: false, isLoading: false, v2: null })
+}));
+
+// Wallet last switch (react-query, no provider here): off, so the wallet-first rules below still hold.
+vi.mock('@/hooks/useWalletLast', () => ({
+   fetchWalletLast: async () => false,
+   useWalletLast: () => ({ walletLast: false, isLoading: false })
 }));
 
 // Proof-of-income steps: none in these tests (and no QueryClientProvider to fetch them with).

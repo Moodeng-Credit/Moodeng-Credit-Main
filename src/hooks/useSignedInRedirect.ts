@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import { JOURNEY_V2_PATH, type JourneyV2, PRE_KYC_CONNECT_PATH, usePreKycGate } from '@/hooks/usePreKycGate';
+import { fetchWalletLast } from '@/hooks/useWalletLast';
 import { getPostSignInPath } from '@/lib/postSignInPath';
 import { getJourney } from '@/lib/verificationJourney';
 import type { RootState } from '@/store/store';
@@ -17,7 +18,7 @@ export const getSignedInReturnPath = async (user: User, isGated: boolean, v2?: J
    if (idTrackPath) return idTrackPath;
    if (!user.userRole) return '/onboarding/role';
    if (user.userRole === 'borrower') {
-      const journey = getJourney(user, isGated, v2);
+      const journey = getJourney(user, isGated, v2, await fetchWalletLast().catch(() => false));
       if (journey.action === 'verify_first') return JOURNEY_V2_PATH;
       if (journey.onboarding && journey.action === 'wallet') return '/onboarding/wallet';
       if (journey.onboarding && journey.action === 'connect') return PRE_KYC_CONNECT_PATH;

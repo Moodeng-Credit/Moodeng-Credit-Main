@@ -4,6 +4,7 @@ import { currentDueDate, currentMilestone } from '@/lib/repaymentSchedule';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { useFriendReferrals } from '@/hooks/useFriendReferrals';
+import { useWalletLast } from '@/hooks/useWalletLast';
 import { useRecordedMilestones } from '@/hooks/useRecordedMilestones';
 import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
 
@@ -47,6 +48,8 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
    const borrowerLoans = useMemo(() => getBorrowerLoans(gloanRequests, user.id), [gloanRequests, user.id]);
    // Same rule as the live dashboard's "Withdraw your USDC" button.
    const hasFundedLoan = gloanRequests.some((loan) => loan.borrowerUser === user.id && loan.loanStatus === 'Lent');
+   // Wallet last: no "connect a wallet" nudge before their first request — the loan form makes it.
+   const { walletLast } = useWalletLast();
 
    const dueLoans = useMemo(() => {
       const overdueIds = new Set(loanArrays.defaultedLoans.map((loan) => loan.id));
@@ -125,7 +128,7 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
          creditLimit,
          creditInUse,
          creditHint: credit.hint,
-         showConnectWallet: !getBaseWalletLockStatus(user).isConfirmedBorrowerWallet,
+         showConnectWallet: !getBaseWalletLockStatus(user).isConfirmedBorrowerWallet && !(walletLast && borrowerLoans.length === 0),
          showWithdraw: hasFundedLoan && !getBaseWalletLockStatus(user).isConfirmedOpenfort,
          milestones: toDashboardV2Milestones(sharedMilestones),
          allMilestones: toDashboardV2MilestoneList(sharedMilestones),
@@ -158,7 +161,8 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
       sharedMilestones,
       stats,
       user,
-      userProfiles
+      userProfiles,
+      walletLast
    ]);
 
    return { model, isSignedIn, isReady };

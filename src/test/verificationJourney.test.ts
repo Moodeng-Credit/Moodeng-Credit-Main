@@ -53,3 +53,14 @@ describe('getJourney — journey v2: proof of income + 3 videos first, wallet af
       expect(getJourney({ ...base }, true, { applies: false })).toMatchObject({ stage: 'wallet' });
    });
 });
+
+describe('getJourney — wallet last: the wallet is part of sending the request, never a stage', () => {
+   it('no wallet and the switch on: straight to the gate steps, then apply', () => {
+      expect(getJourney({ ...base }, true, null, true)).toMatchObject({ stage: 'messenger', action: 'connect' });
+      expect(getJourney({ ...base, loanAccessStatus: 'approved' }, false, null, true)).toMatchObject({ stage: 'apply', action: 'apply' });
+   });
+
+   it('switch off: wallet first, as before', () => {
+      expect(getJourney({ ...base }, true, null, false)).toMatchObject({ stage: 'wallet' });
+   });
+});

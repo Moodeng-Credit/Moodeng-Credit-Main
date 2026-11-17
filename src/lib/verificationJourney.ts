@@ -68,7 +68,11 @@ const onboardingStage = (
    action: JourneyAction
 ): Journey => ({ stage, step, onboarding: true, cta, title, body, action });
 
-export function getJourney(user: JourneyUser | null | undefined, isGated: boolean, v2?: JourneyV2 | null): Journey {
+/**
+ * `walletLast` (src/hooks/useWalletLast.ts): the Instant Wallet is made as the last step of sending the
+ * loan request, so it's never a journey stage of its own.
+ */
+export function getJourney(user: JourneyUser | null | undefined, isGated: boolean, v2?: JourneyV2 | null, walletLast = false): Journey {
    if (user && isUserVerified(user)) {
       return { stage: 'verified', step: null, onboarding: false, cta: 'Apply for a loan', title: "You're verified", body: 'You can request loans.', action: 'apply' };
    }
@@ -85,7 +89,7 @@ export function getJourney(user: JourneyUser | null | undefined, isGated: boolea
          'verify_first'
       );
    }
-   if (user && !v2Gated && !hasWalletAddressOnAccount(user)) {
+   if (user && !walletLast && !v2Gated && !hasWalletAddressOnAccount(user)) {
       return onboardingStage('wallet', 1, 'Set up your wallet', 'Set up your wallet', 'Your loans arrive here — it takes a few seconds.', 'wallet');
    }
    if (user && isGated) {
