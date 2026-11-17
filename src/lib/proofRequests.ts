@@ -69,3 +69,26 @@ export const proofLink = (token: string) => `https://moodeng.app/proof/${token}`
 /** The message the team pastes into Messenger when they send the link by hand. Pure. */
 export const proofLinkMessage = (firstName: string | null, token: string) =>
    `Hi${firstName ? ` ${firstName}` : ''}! Thanks for the call 😊 To finish your application, please send the proof we talked about here (about 2 minutes, no sign-in needed):\n${proofLink(token)}`;
+
+/** The bits of an open link the admin sees again when they reopen "Ask for proof". */
+export type OpenProofLink = {
+   id: string;
+   token: string;
+   created_at: string;
+   sent_at: string | null;
+   sent_via: string[] | null;
+   opened_at: string | null;
+   expires_at: string;
+};
+
+const bkk = (iso: string) =>
+   new Date(iso).toLocaleString('en-US', { timeZone: 'Asia/Bangkok', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+/** One line about an open link: when it was made, whether we sent it, whether they opened it. Bangkok time. Pure. */
+export const openProofLinkStatus = (r: OpenProofLink) =>
+   [
+      `Made ${bkk(r.created_at)}`,
+      r.sent_at ? `sent${r.sent_via?.length ? ` on ${r.sent_via.join(', ')}` : ''}` : 'not sent by us yet',
+      r.opened_at ? `opened ${bkk(r.opened_at)}` : 'not opened yet',
+      `works until ${bkk(r.expires_at)}`
+   ].join(' · ');

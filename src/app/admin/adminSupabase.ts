@@ -1,7 +1,7 @@
 import type { CalAvailability, CalOverride, CalSchedule } from '@/app/admin/calendarModel';
 import type { FormCheck } from '@/app/admin/callFormCheck';
 import { DEFAULT_LOAN_TIMEZONE, getDaysUntilDueDay, getLoanTimezone, isPastDueDay } from '@/lib/loanDeadline';
-import type { ProofAnswers, ProofItem } from '@/lib/proofRequests';
+import type { OpenProofLink, ProofAnswers, ProofItem } from '@/lib/proofRequests';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 
 export type AdminRole = 'owner' | 'admin' | 'support';
@@ -225,7 +225,10 @@ async function requireOk<T>(request: PromiseLike<{ data: T; error: unknown }>): 
 
 // loans.market comes with the Indonesia-track migration (20261107120000). Until it's applied the
 // query is retried without the extra columns, so the admin keeps working either way.
-async function requireOkWithExtraColumns<T>(make: (extraColumns: string) => PromiseLike<{ data: T; error: unknown }>, extraColumns: string): Promise<T> {
+async function requireOkWithExtraColumns<T>(
+   make: (extraColumns: string) => PromiseLike<{ data: T; error: unknown }>,
+   extraColumns: string
+): Promise<T> {
    const first = await make(extraColumns);
    if (!first.error) return first.data;
    return requireOk(make(''));
@@ -2957,8 +2960,13 @@ export const searchPeople = (query: string) => invokeWhatsApp<{ people: PersonCa
 
 export const getWhatsAppTemplates = () => invokeWhatsApp<{ templates: WhatsAppTemplateRow[] }>({ action: 'wa_templates' });
 
-export const sendWhatsAppTemplateMessage = (input: { contactId?: string; phone?: string; name: string; language: string; params: string[] }) =>
-   invokeWhatsApp({ action: 'wa_send_template', ...input });
+export const sendWhatsAppTemplateMessage = (input: {
+   contactId?: string;
+   phone?: string;
+   name: string;
+   language: string;
+   params: string[];
+}) => invokeWhatsApp({ action: 'wa_send_template', ...input });
 
 // ---------------------------------------------------------------------------
 // Email users — write once, tick people, each gets it by name (admin-send-email edge function).
@@ -3454,6 +3462,21 @@ export async function listProofRequests(userId?: string): Promise<AdminProofRequ
    return ((await requireOk(query)) ?? []) as unknown as AdminProofRequest[];
 }
 
+/** Their newest link that still works (open, not expired), so the admin can copy it again instead of making a new one. */
+export async function latestOpenProofLink(userId: string): Promise<OpenProofLink | null> {
+   const rows = await requireOk(
+      getSupabaseBrowserClient()
+         .from('proof_requests')
+         .select('id, token, created_at, sent_at, sent_via, opened_at, expires_at')
+         .eq('user_id', userId)
+         .eq('status', 'open')
+         .gt('expires_at', new Date().toISOString())
+         .order('created_at', { ascending: false })
+         .limit(1)
+   );
+   return ((rows ?? []) as OpenProofLink[])[0] ?? null;
+}
+
 /** Make the link; with send = true it also goes to them on push / Messenger / Telegram right away. */
 export async function createProofRequest(input: {
    userId: string;
@@ -3515,7 +3538,9 @@ export interface AudienceSummary {
       late: number;
       new30d: number;
    };
-   groups: Partial<Record<'country' | 'region' | 'province' | 'ipCity' | 'age' | 'gender' | 'ageGender' | 'work' | 'income', AudienceRow[]>>;
+   groups: Partial<
+      Record<'country' | 'region' | 'province' | 'ipCity' | 'age' | 'gender' | 'ageGender' | 'work' | 'income', AudienceRow[]>
+   >;
 }
 
 export async function getAudienceSummary(): Promise<AudienceSummary | null> {
