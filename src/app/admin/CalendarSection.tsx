@@ -35,6 +35,11 @@ import { CALCOM_EMBED_ORIGIN, VIDEO_CALL_HOSTS } from '@/config/contactVerificat
 // hours and one-off dates, saved straight to Cal.com through the admin-calendar edge function.
 // Whatever is saved here is exactly what borrowers can book in the video-call step.
 
+// The link to send a borrower who needs a new time but can't do it in the app (e.g. stuck in
+// Facebook's browser): Cal.com's own reschedule page, no sign-in needed. The new time comes back as a
+// reschedule of their current booking, which calcom-webhook accepts (same URL as videoCall.ts uses).
+const rescheduleLink = (uid: string) => `https://cal.com/reschedule/${encodeURIComponent(uid)}`;
+
 const HOUR_PX = 44;
 const BROWSER_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -125,6 +130,18 @@ export default function CalendarSection() {
    const [draft, setDraft] = useState<Draft | null>(null);
    const [draftKey, setDraftKey] = useState('');
    const [selectedBooking, setSelectedBooking] = useState<AdminCalendarBooking | null>(null);
+   const [copiedUid, setCopiedUid] = useState<string | null>(null);
+
+   const copyRescheduleLink = async (uid: string) => {
+      const link = rescheduleLink(uid);
+      try {
+         await navigator.clipboard.writeText(link);
+         setCopiedUid(uid);
+         window.setTimeout(() => setCopiedUid((current) => (current === uid ? null : current)), 2500);
+      } catch {
+         window.prompt('Copy this link:', link);
+      }
+   };
 
    const [newOverrideDate, setNewOverrideDate] = useState('');
    const [newOverrideOff, setNewOverrideOff] = useState(true);
@@ -256,6 +273,10 @@ export default function CalendarSection() {
             <h2 className="break-words text-2xl font-black sm:text-3xl">Calendar</h2>
             <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
                Your Cal.com hours and booked calls. Changes save straight to Cal.com and are what borrowers can book.
+            </p>
+            <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+               🔄 Someone needs a new time? Tap their call below → <span className="font-black text-white">Copy reschedule link</span> and
+               send it to them. It opens in any browser (Facebook too), no sign-in.
             </p>
          </div>
 
@@ -481,6 +502,15 @@ export default function CalendarSection() {
                         </button>
                      </div>
                      <div className="mt-4 flex flex-wrap gap-2">
+                        {selectedBooking.status !== 'cancelled' && selectedBooking.status !== 'rejected' ? (
+                           <button
+                              type="button"
+                              onClick={() => void copyRescheduleLink(selectedBooking.uid)}
+                              className="rounded-xl bg-[#ffc83d] px-4 py-2 text-sm font-black text-[#1c0a3a] hover:bg-[#ffd666]"
+                           >
+                              {copiedUid === selectedBooking.uid ? '✓ Link copied' : '🔄 Copy reschedule link'}
+                           </button>
+                        ) : null}
                         {selectedBooking.location ? (
                            <a
                               href={selectedBooking.location}
