@@ -26,8 +26,9 @@ const ADMIN_URL = 'https://moodeng.app/admin/pre-screening';
 // grade stay.
 const KEEP_FILES_DAYS = 30;
 
-export type PreScreenQuestion = { id: string; text: string; good?: string };
-export type PreScreenAnswer = { q: string; video?: string | null; audio?: string | null; seconds?: number };
+export type PreScreenQuestion = { id: string; text: string; good?: string; kind?: 'text' | 'video' };
+/** `text` = a typed answer (graded as written, no speech-to-text). */
+export type PreScreenAnswer = { q: string; video?: string | null; audio?: string | null; seconds?: number; text?: string | null };
 export type PreScreenVerdict = 'good' | 'ok' | 'weak';
 export type PreScreenIncomeFile = { path: string; name: string; mime: string; size: number };
 export type GradedAnswer = { q: string; transcript: string | null; score: number | null; note: string };
@@ -134,7 +135,7 @@ export const buildGrade = (
    };
 };
 
-const SYSTEM = `You help a small lender (Moodeng Credit: first loans of about $15 to people in the Philippines and Indonesia) screen people BEFORE they sign up. Each person recorded a short spoken answer to each question. You get the speech-to-text of each answer (English, Tagalog, Taglish or Indonesian; it can contain recognition mistakes) and, for each question, what a good answer sounds like.
+const SYSTEM = `You help a small lender (Moodeng Credit: first loans of about $15 to people in the Philippines and Indonesia) screen people BEFORE they sign up. Each person answered each question either with a short recorded video (you get its speech-to-text, which can contain recognition mistakes) or by typing (marked "typed": true; judge the words as written, simple or broken English is fine). Answers can be English, Tagalog, Taglish or Indonesian. For each question you also get what a good answer sounds like. A typed answer that reads like it was copied from an AI tool or a template (polished, generic, no personal detail) is weaker; say so in the note.
 
 Score each answer 0-10 against that description only:
 - 8-10: specific and believable, clearly fits the description
@@ -186,7 +187,13 @@ async function gradeWithModel(
 ) {
    const user = JSON.stringify({
       name,
-      questions: questions.map((q) => ({ q: q.id, question: q.text, good_answer: q.good ?? '', transcript: transcripts[q.id] ?? null })),
+      questions: questions.map((q) => ({
+         q: q.id,
+         question: q.text,
+         good_answer: q.good ?? '',
+         typed: q.kind === 'text',
+         transcript: transcripts[q.id] ?? null
+      })),
       income_proof: income
    });
    const res = await fetch(CHAT_URL, {
@@ -315,6 +322,11 @@ export async function gradePreScreening(svc: SupabaseClient, id: string, apiKey:
          ...row.questions.map(async (q) => {
             const answer = row.answers.find((a) => a.q === q.id);
             transcripts[q.id] = null;
+            // Typed: the words are already here.
+            if (answer?.text?.trim()) {
+               transcripts[q.id] = answer.text.trim();
+               return;
+            }
             if (!answer?.audio) return;
             try {
                const file = await svc.storage.from(BUCKET).download(answer.audio);
