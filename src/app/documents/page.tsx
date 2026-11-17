@@ -6,12 +6,22 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useIncomeDocFacts } from '@/hooks/useIncomeDocRequirement';
 
 import { DocExample } from '@/app/documents/DocExample';
-import { askFor, EARN_TYPES, type EarnId, kindsFor, moreNeededHint, sendNote, slotCount, tooSmallToRead } from '@/app/documents/incomeDocKinds';
-
+import {
+   askFor,
+   EARN_TYPES,
+   type EarnId,
+   kindsFor,
+   moreNeededHint,
+   sendNote,
+   slotCount,
+   tooSmallToRead
+} from '@/app/documents/incomeDocKinds';
 import {
    ACCEPT,
    ACCEPTED,
+   answerIncomeDocQuestion,
    fetchIncomeDocStatus,
+   type IncomeDocQuestion,
    type IncomeDocStatus,
    MAX_BYTES,
    MAX_FILES,
@@ -29,15 +39,20 @@ import { GoldButton } from '@/views/indonesia/ui';
 //   checking   Sent ✓ → Reading → Checking, while the AI reads it (get_my_income_document = checking)
 //   resend     "Let's try that again" with the exact fix — the automatic checks found something they can
 //              fix (blurry, locked PDF, wrong document, too old, too short); no team decision needed
-//   in_review  "We'll let you know within 24 hours" + message us on Facebook
+//   in_review  first the AI's questions about it, if any ("1 quick question", one at a time; answers go
+//              to the team with a fresh AI read), then "We'll let you know within 24 hours" + send DOCS
+//              to us on Messenger (opens Meta's 24h window so the bot / team can reach them there)
 //   approved   / declined (with the team's reason) — what they see when they come back, and what the
 //              push / Messenger / Telegram message opens
 // Files go to the private income-docs bucket; submit_income_document() records the send and pings the
 // team. Borrowers never see scores or flags — only the stage and, if declined, the team's reason.
 
 const POLL_MS = 3000;
-// The AI read usually takes under a minute; after this the card moves on to "in review" anyway.
-const CHECKING_MAX_MS = 75_000;
+// The AI read usually takes about a minute (its questions are written last); after this the card moves on
+// to "in review" anyway. Matches the 150 s the database gives the check.
+const CHECKING_MAX_MS = 150_000;
+// What they type to the Page so Messenger lets us write back (messengerIncomeDocReply.ts).
+const DOCS_WORD = 'DOCS';
 
 export type DocumentsPhase = 'loading' | 'pick' | 'sending' | 'checking' | 'resend' | 'in_review' | 'approved' | 'declined';
 
@@ -47,7 +62,8 @@ const RESEND_FIX: Record<string, string> = {
    scanned_pdf: 'We couldn’t read your PDF. Please send screenshots of your history instead.',
    unsupported_file: 'We couldn’t open that photo type. Please send a screenshot or a JPG/PNG photo instead.',
    unreadable: 'We couldn’t read it clearly. Please retake it in good light with all 4 corners showing and the numbers sharp.',
-   not_financial: 'This doesn’t look like proof of income. Please send one of the examples shown: a payslip, your earnings screen, or your GCash or Maya history.',
+   not_financial:
+      'This doesn’t look like proof of income. Please send one of the examples shown: a payslip, your earnings screen, or your GCash or Maya history.',
    old_document: 'This is more than 2 months old. Please send your latest one.',
    short_history: 'This shows less than 2 months. Please send your last 2–3 months of history.',
    no_income: 'We couldn’t see money coming in. Please send a history or statement that shows the money you receive.'
@@ -94,6 +110,7 @@ export default function DocumentsPage({
       earn?: EarnId;
       kind?: string;
       step?: IncomeDocStep;
+      questions?: IncomeDocQuestion[];
    };
 } = {}) {
    const [phase, setPhase] = useState<DocumentsPhase>(preview?.phase ?? 'loading');
@@ -110,6 +127,14 @@ export default function DocumentsPage({
    const [sentAt, setSentAt] = useState<number | null>(preview?.sentAt ?? null);
    const [fileCount, setFileCount] = useState<number>(preview?.fileCount ?? 0);
    const [error, setError] = useState<string | null>(null);
+   // The AI's open questions about their latest send, answered one at a time before "in review".
+   const [docId, setDocId] = useState<string | null>(null);
+   const [questions, setQuestions] = useState<IncomeDocQuestion[]>(preview?.questions ?? []);
+   const [questionTotal, setQuestionTotal] = useState(preview?.questions?.length ?? 0);
+   const [answer, setAnswer] = useState('');
+   const [answering, setAnswering] = useState(false);
+   const [answerError, setAnswerError] = useState<string | null>(null);
+   const [answeredAll, setAnsweredAll] = useState(false);
    const inputRef = useRef<HTMLInputElement>(null);
    const navigate = useNavigate();
    // Sent here from the loan form ("Send proof of income", loans of $60+): offer the way back to it.
@@ -128,8 +153,11 @@ export default function DocumentsPage({
    useEffect(() => {
       if (!fromLoan || !sentThisVisit || preview) return;
       if (phase !== 'in_review' && phase !== 'approved') return;
+      // The AI has questions: they answer first (and then go back with the button, so they also see the
+      // Messenger step).
+      if (questionTotal > 0) return;
       navigate(loanPath, { replace: true });
-   }, [fromLoan, navigate, phase, preview, sentThisVisit]);
+   }, [fromLoan, navigate, phase, preview, questionTotal, sentThisVisit]);
    const { steps } = useIncomeDocFacts(requestedAmount != null);
    const step = preview?.step ?? (requestedAmount != null ? stepFor(requestedAmount, steps) : null);
    const monthsNeeded = step?.months ?? 0;
@@ -148,6 +176,9 @@ export default function DocumentsPage({
       setReason(status.reason);
       setSentAt(Date.parse(status.sent_at));
       setFileCount(status.file_count);
+      setDocId(status.id);
+      setQuestions(status.questions);
+      setQuestionTotal(status.questions.length);
       setPhase(status.stage);
    }, []);
 
@@ -220,7 +251,12 @@ export default function DocumentsPage({
       setError(null);
       const result = await uploadIncomeDocuments(
          good.map((p) => p.file),
-         { note: earn && kind ? sendNote(earn, kind, note) : note, amount: requestedAmount, repay: requestedRepay, onFileDone: () => setSentCount((n) => n + 1) }
+         {
+            note: earn && kind ? sendNote(earn, kind, note) : note,
+            amount: requestedAmount,
+            repay: requestedRepay,
+            onFileDone: () => setSentCount((n) => n + 1)
+         }
       );
       if (!result.ok) {
          setError(
@@ -243,6 +279,22 @@ export default function DocumentsPage({
       setPhase('checking');
    };
 
+   const sendAnswer = async () => {
+      const current = questions[0];
+      if (!current || !docId || !answer.trim()) return;
+      setAnswering(true);
+      setAnswerError(null);
+      const left = await answerIncomeDocQuestion(docId, current.id, answer.trim());
+      setAnswering(false);
+      if (left === null) {
+         setAnswerError('Couldn’t send. Check your connection and try again.');
+         return;
+      }
+      setAnswer('');
+      setQuestions((prev) => prev.slice(1));
+      if (left === 0) setAnsweredAll(true);
+   };
+
    const startOver = () => {
       setPicked([]);
       setEarnId(null);
@@ -262,6 +314,24 @@ export default function DocumentsPage({
          Message us on Facebook
       </a>
    );
+
+   // Proof of income in review: they type DOCS to the Page, which opens Meta's 24 hours so the bot can
+   // ask what's still open and the team can reach them there. Copied on tap; a real link (iOS opens
+   // Messenger in place only from a tap on <a>).
+   const docsButton = (
+      <a
+         className="flex min-h-[48px] items-center justify-center gap-2 rounded-[16px] border-2 border-[#e2dcee] bg-white px-4 text-[15px] font-bold text-[#6b55f7] dark:border-[#3a2d4f] dark:bg-transparent dark:text-[#b4a6ff]"
+         href={facebookHref()}
+         onClick={() => void navigator.clipboard?.writeText(DOCS_WORD).catch(() => undefined)}
+         rel="noreferrer"
+         target="_blank"
+      >
+         <MessageCircle aria-hidden="true" className="size-5" strokeWidth={2.2} />
+         {`Send “${DOCS_WORD}” on Messenger`}
+      </a>
+   );
+   const currentQuestion = questions[0] ?? null;
+   const questionNumber = questionTotal - questions.length + 1;
 
    return (
       <div className="min-h-screen bg-dv2-page">
@@ -285,7 +355,9 @@ export default function DocumentsPage({
                      image={CONNECT_HIPPOS.cashout}
                      title="How do you earn?"
                      subtitle={
-                        requestedAmount && step ? `A $${requestedAmount} loan needs proof of income. Pick one first.` : 'Pick one. We’ll show you what to send.'
+                        requestedAmount && step
+                           ? `A $${requestedAmount} loan needs proof of income. Pick one first.`
+                           : 'Pick one. We’ll show you what to send.'
                      }
                   />
                   {EARN_TYPES.map((e) => (
@@ -298,7 +370,14 @@ export default function DocumentsPage({
                <div className="flex flex-col gap-3 rounded-[20px] bg-white px-5 py-5 dark:bg-dv2-card">
                   <ConnectHero image={CONNECT_HIPPOS.cashout} title="What can you send?" subtitle="Any one of these works." />
                   {kinds.map((k, i) => (
-                     <ChoiceRow key={k.id} badge={i === 0 ? 'Best pick' : undefined} emoji={k.emoji} title={k.title} hint={k.hint} onClick={() => setKindId(k.id)} />
+                     <ChoiceRow
+                        key={k.id}
+                        badge={i === 0 ? 'Best pick' : undefined}
+                        emoji={k.emoji}
+                        title={k.title}
+                        hint={k.hint}
+                        onClick={() => setKindId(k.id)}
+                     />
                   ))}
                   <GhostButton onClick={() => setEarnId(null)}>Back</GhostButton>
                </div>
@@ -368,7 +447,14 @@ export default function DocumentsPage({
                         </li>
                      ) : null}
                   </ul>
-                  <input ref={inputRef} accept={ACCEPT} className="sr-only" multiple onChange={(e) => addFiles(e.target.files)} type="file" />
+                  <input
+                     ref={inputRef}
+                     accept={ACCEPT}
+                     className="sr-only"
+                     multiple
+                     onChange={(e) => addFiles(e.target.files)}
+                     type="file"
+                  />
 
                   {picked.some((p) => p.warn) ? (
                      <p className="text-[14px] font-semibold leading-[19px] text-[#8a5a00] dark:text-[#f5c542]">
@@ -439,7 +525,9 @@ export default function DocumentsPage({
                      image={CONNECT_HIPPOS.waiting}
                      title="Checking your document"
                      subtitle={
-                        fromLoan ? 'About a minute. Then your loan request goes out by itself.' : 'This takes about a minute. You can leave this page.'
+                        fromLoan
+                           ? 'About a minute. Then your loan request goes out by itself.'
+                           : 'This takes about a minute. You can leave this page.'
                      }
                   />
                   <ul className="flex flex-col gap-3 rounded-[16px] border-2 border-[#e2dcee] px-4 py-4 dark:border-[#3a2d4f]">
@@ -451,9 +539,52 @@ export default function DocumentsPage({
                </div>
             ) : null}
 
-            {phase === 'in_review' ? (
+            {phase === 'in_review' && currentQuestion ? (
                <div className="flex flex-col gap-4 rounded-[20px] bg-white px-5 py-5 dark:bg-dv2-card">
-                  <ConnectHero image={CONNECT_HIPPOS.waiting} title="Thanks, we got it!" subtitle="The team is reviewing your document." />
+                  <ConnectHero
+                     image={CONNECT_HIPPOS.waiting}
+                     title={questionTotal > 1 ? `${questionTotal} quick questions` : '1 quick question'}
+                     subtitle="About your document. Your answer helps the team decide faster."
+                  />
+                  <div className="flex flex-col gap-2 rounded-[16px] bg-[#f8f1ff] px-4 py-3 dark:bg-[#221a31]">
+                     {questionTotal > 1 ? (
+                        <span className="text-[13px] font-bold uppercase tracking-[0.4px] text-[#8a7c9c] dark:text-[#a99cbb]">
+                           {`Question ${questionNumber} of ${questionTotal}`}
+                        </span>
+                     ) : null}
+                     <p className="text-[17px] font-bold leading-[23px] text-[#3b2f4a] dark:text-[#f5f0ff]">{currentQuestion.q}</p>
+                  </div>
+                  <textarea
+                     aria-label="Your answer"
+                     className="min-h-[96px] rounded-[12px] border-2 border-[#e2dcee] bg-white px-3 py-2.5 text-[16px] leading-[22px] text-[#3b2f4a] dark:border-[#3a2d4f] dark:bg-[#1b1526] dark:text-[#f5f0ff]"
+                     maxLength={500}
+                     onChange={(e) => setAnswer(e.target.value)}
+                     placeholder="Type your answer"
+                     value={answer}
+                  />
+                  {answerError ? <p className="text-[14px] font-semibold text-[#c0392b]">{answerError}</p> : null}
+                  <GoldButton busy={answering} disabled={!answer.trim()} onClick={() => void sendAnswer()}>
+                     Send answer
+                  </GoldButton>
+                  {currentQuestion.kind === 'file' ? (
+                     <button
+                        className="text-center text-[14px] font-bold text-[#6b55f7] underline dark:text-[#b4a6ff]"
+                        onClick={startOver}
+                        type="button"
+                     >
+                        Add files instead
+                     </button>
+                  ) : null}
+               </div>
+            ) : null}
+
+            {phase === 'in_review' && !currentQuestion ? (
+               <div className="flex flex-col gap-4 rounded-[20px] bg-white px-5 py-5 dark:bg-dv2-card">
+                  <ConnectHero
+                     image={CONNECT_HIPPOS.waiting}
+                     title={answeredAll ? 'Thanks for your answers!' : 'Thanks, we got it!'}
+                     subtitle="The team is reviewing your document."
+                  />
                   <ul className="flex flex-col gap-3 rounded-[16px] border-2 border-[#e2dcee] px-4 py-4 dark:border-[#3a2d4f]">
                      <StepRow
                         state="done"
@@ -483,10 +614,11 @@ export default function DocumentsPage({
                         </>
                      )}
                   </div>
-                  {fromLoan ? (
-                     <GoldButton onClick={() => navigate(loanPath)}>Send my loan request</GoldButton>
-                  ) : null}
-                  {facebookButton}
+                  {fromLoan ? <GoldButton onClick={() => navigate(loanPath)}>Send my loan request</GoldButton> : null}
+                  <p className="text-center text-[14px] leading-[19px] text-[#7b6b8c] dark:text-[#b9abcc]">
+                     {`Send “${DOCS_WORD}” to us on Messenger so we can reach you there.`}
+                  </p>
+                  {docsButton}
                   {fromLoan ? null : <GhostButton onClick={() => navigate('/dashboard')}>Back to dashboard</GhostButton>}
                </div>
             ) : null}
@@ -538,7 +670,7 @@ export default function DocumentsPage({
                </div>
             ) : null}
 
-            {phase === 'in_review' || phase === 'approved' ? (
+            {(phase === 'in_review' && !currentQuestion) || phase === 'approved' ? (
                <button className="text-center text-[14px] font-semibold text-[#7b6b8c] underline" onClick={startOver} type="button">
                   Send another document
                </button>
@@ -565,7 +697,16 @@ export function DocumentsPreview() {
             earn: (params.get('earn') as EarnId | null) ?? undefined,
             kind: params.get('kind') ?? undefined,
             step,
-            ...(phase !== 'pick' ? { sentAt: Date.now() - 60_000, fileCount: 1 } : {})
+            ...(phase !== 'pick' ? { sentAt: Date.now() - 60_000, fileCount: 1 } : {}),
+            // &q=1: the AI's questions card (in_review).
+            ...(params.get('q')
+               ? {
+                    questions: [
+                       { id: 'q1', q: 'What was the Rp 2,100,000 you got on Nov 14 for?', kind: 'text' as const },
+                       { id: 'q2', q: 'Can you add 2 more months of your SeaBank history?', kind: 'file' as const }
+                    ]
+                 }
+               : {})
          }}
       />
    );
@@ -590,7 +731,10 @@ function ChoiceRow({
          onClick={onClick}
          type="button"
       >
-         <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-[#f3ecff] text-[22px] leading-none dark:bg-[#2a2140]">
+         <span
+            aria-hidden="true"
+            className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-[#f3ecff] text-[22px] leading-none dark:bg-[#2a2140]"
+         >
             {emoji}
          </span>
          <span className="flex min-w-0 flex-1 flex-col">

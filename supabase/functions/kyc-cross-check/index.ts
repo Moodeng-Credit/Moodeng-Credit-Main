@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { checkCronAuth } from '../_shared/cronAuth.ts';
 import { postDiscord } from '../_shared/discord.ts';
-import { analyseIncomeDocument, notifyIncomeDecision } from '../_shared/incomeDocs.ts';
+import { analyseIncomeDocument, notifyIncomeDecision, reviewWithAnswers } from '../_shared/incomeDocs.ts';
 import { gradePreScreening, notifyPreScreeningClaimed } from '../_shared/preScreening.ts';
 import { pingProofRequest, sendProofRequest } from '../_shared/proofRequests.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
@@ -307,6 +307,7 @@ serve(async (req) => {
       dry?: boolean;
       income_doc?: string;
       income_decision?: string;
+      income_answers?: string;
       income_card?: { chat?: string; message?: number };
       proof_request?: string;
       proof_request_send?: string;
@@ -339,6 +340,12 @@ serve(async (req) => {
       if (!UUID_RE.test(id)) return jsonResponse({ error: 'bad proof request id' }, 400);
       const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
       return jsonResponse(body.proof_request ? await pingProofRequest(svc, id) : await sendProofRequest(svc, id));
+   }
+   // Every AI question answered (save_income_doc_answer): the opinion again with the answers.
+   if (body.income_answers) {
+      if (!UUID_RE.test(body.income_answers)) return jsonResponse({ error: 'bad income_answers id' }, 400);
+      const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+      return jsonResponse(await reviewWithAnswers(svc, body.income_answers, Deno.env.get('DEEPSEEK_API_KEY')));
    }
    if (body.income_doc) {
       if (!UUID_RE.test(body.income_doc)) return jsonResponse({ error: 'bad income_doc id' }, 400);

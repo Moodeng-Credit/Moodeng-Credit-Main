@@ -3411,11 +3411,15 @@ export interface AdminIncomeDocument {
    verdict: 'resend' | 'needs_review' | 'looks_good' | null;
    resend_reason: string | null;
    checks: Array<{ key: string; label: string; status: 'pass' | 'warn' | 'fail' | 'skip'; notes: string[] }> | null;
+   // The AI's questions as the borrower saw them, and their answers (page or Messenger).
+   questions: Array<{ id: string; team: string; en: string; local: string | null; kind: 'text' | 'file' }> | null;
+   answers: Array<{ id: string; a: string; at: string; via: 'page' | 'messenger' }> | null;
+   messenger_confirmed_at: string | null;
    user: { id: string; username: string | null; display_name: string | null; monthly_income: string | null } | null;
 }
 
 const INCOME_DOC_SELECT =
-   'id, files, note, status, doc_type, risk, score, memo, ai_note, flags, extracted, error, created_at, decision, decision_reason, decided_at, decided_by, notified_at, verdict, resend_reason, checks, requested_amount, tier, user:users!income_documents_user_id_fkey(id, username, display_name, monthly_income)';
+   'id, files, note, status, doc_type, risk, score, memo, ai_note, flags, extracted, error, created_at, decision, decision_reason, decided_at, decided_by, notified_at, verdict, resend_reason, checks, requested_amount, tier, questions, answers, messenger_confirmed_at, user:users!income_documents_user_id_fkey(id, username, display_name, monthly_income)';
 
 export async function listIncomeDocuments(): Promise<AdminIncomeDocument[]> {
    const supabase = getSupabaseBrowserClient();
