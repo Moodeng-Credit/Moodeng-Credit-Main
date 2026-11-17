@@ -32,7 +32,8 @@ export const ADMIN_LIVE_TABLES: AdminLiveTable[] = [
    'account_status_audit_logs'
 ];
 
-const DEBOUNCE_MS = 800;
+// One reload per window, however many rows change in it. Own actions still flash instantly via markChanged.
+const BATCH_MS = 5000;
 const POLL_MS = 30000;
 const FLASH_MS = 6000;
 
@@ -115,15 +116,34 @@ export function AdminLiveProvider({ enabled = true, children }: { enabled?: bool
    const timer = useRef<number | null>(null);
    const names = useRef(new Map<string, string | null>());
 
-   const emit = useCallback((tables: Iterable<AdminLiveTable>) => {
-      for (const t of tables) pending.current.add(t);
-      if (timer.current) window.clearTimeout(timer.current);
-      timer.current = window.setTimeout(() => {
-         const batch = new Set(pending.current);
-         pending.current.clear();
-         listeners.current.forEach((listener) => listener(batch));
-      }, DEBOUNCE_MS);
+   // Run the queued reloads. While the tab is hidden, keep them queued: the visibilitychange
+   // listener below flushes them once the admin comes back, so a background tab costs no queries.
+   const flush = useCallback(() => {
+      timer.current = null;
+      if (!pending.current.size || document.visibilityState === 'hidden') return;
+      const batch = new Set(pending.current);
+      pending.current.clear();
+      listeners.current.forEach((listener) => listener(batch));
    }, []);
+
+   // Batch changes into at most one reload per BATCH_MS. The timer is not reset by later
+   // changes, so a steady stream of writes still reloads every BATCH_MS instead of on every row.
+   const emit = useCallback(
+      (tables: Iterable<AdminLiveTable>) => {
+         for (const t of tables) pending.current.add(t);
+         if (timer.current) return;
+         timer.current = window.setTimeout(flush, BATCH_MS);
+      },
+      [flush]
+   );
+
+   useEffect(() => {
+      const onVisible = () => {
+         if (document.visibilityState === 'visible' && !timer.current) flush();
+      };
+      document.addEventListener('visibilitychange', onVisible);
+      return () => document.removeEventListener('visibilitychange', onVisible);
+   }, [flush]);
 
    const flash = useCallback((ids: string[], value: AdminLiveFlash) => {
       if (!ids.length) return;
