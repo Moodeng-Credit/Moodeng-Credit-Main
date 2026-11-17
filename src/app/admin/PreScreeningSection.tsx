@@ -14,15 +14,38 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 type Question = { id: string; text: string };
 type Answer = { q: string; video: string | null; audio: string | null; seconds: number };
 type GradedAnswer = { q: string; transcript: string | null; score: number | null; note: string };
+type IncomeFile = { path: string; name: string; mime: string; size: number };
+type IncomeRead = {
+   readable: boolean;
+   doc_type: string | null;
+   holder_name: string | null;
+   institution: string | null;
+   currency: string | null;
+   period_start: string | null;
+   period_end: string | null;
+   months_covered: number | null;
+   transactions: number;
+   monthly_in: number | null;
+   monthly_income_usd: number | null;
+   warnings: string[];
+};
 type PreScreening = {
    id: string;
    name: string;
    ref_code: string | null;
    status: 'open' | 'sent' | 'graded' | 'failed';
    video_watched: boolean;
+   videos_watched: number | null;
    questions: Question[];
    answers: Answer[];
-   grade: { summary?: string; unheard?: number; answers?: GradedAnswer[] } | null;
+   income_files: IncomeFile[] | null;
+   grade: {
+      summary?: string;
+      unheard?: number;
+      answers?: GradedAnswer[];
+      income?: { files: number; read: IncomeRead | null; score: number | null; note: string } | null;
+      flags?: string[];
+   } | null;
    score: number | null;
    verdict: 'good' | 'ok' | 'weak' | null;
    grade_error: string | null;
@@ -34,7 +57,7 @@ type PreScreening = {
 };
 
 const SELECT =
-   'id, name, ref_code, status, video_watched, questions, answers, grade, score, verdict, grade_error, user_id, browser, files_removed_at, created_at, user:users(username, email)';
+   'id, name, ref_code, status, video_watched, videos_watched, income_files, questions, answers, grade, score, verdict, grade_error, user_id, browser, files_removed_at, created_at, user:users(username, email)';
 
 const VERDICT: Record<string, { label: string; className: string }> = {
    good: { label: '🟢 Good', className: 'bg-emerald-600 text-white' },
@@ -161,10 +184,25 @@ export default function PreScreeningSection() {
                      </div>
                      <p className="mt-1 text-sm text-[#a89bb8]">
                         {bkk(row.created_at)} · {row.ref_code ? `affiliate ${row.ref_code}` : 'no affiliate code'} ·{' '}
-                        {row.video_watched ? 'watched the video' : '⚠️ did not finish the video'}
+                        {row.videos_watched != null
+                           ? row.video_watched
+                              ? `watched all ${row.videos_watched} videos`
+                              : `⚠️ watched ${row.videos_watched} video${row.videos_watched === 1 ? '' : 's'} to the end`
+                           : row.video_watched
+                             ? 'watched the video'
+                             : '⚠️ did not finish the video'}
                         {row.browser ? ` · ${row.browser}` : ''}
                      </p>
                      {row.grade?.summary ? <p className="mt-2 text-base font-bold text-[#e6def5]">{row.grade.summary}</p> : null}
+                     {row.grade?.flags?.length ? (
+                        <ul className="mt-2 space-y-1">
+                           {row.grade.flags.map((f) => (
+                              <li className="text-sm font-bold text-amber-300" key={f}>
+                                 ⚠️ {f}
+                              </li>
+                           ))}
+                        </ul>
+                     ) : null}
 
                      <ol className="mt-3 space-y-3">
                         {row.questions.map((q, i) => {
@@ -201,6 +239,7 @@ export default function PreScreeningSection() {
                            );
                         })}
                      </ol>
+                     <IncomeProof clips={clips} onOpen={play} row={row} />
                      <div className="mt-3 flex flex-wrap items-center gap-3">
                         {row.files_removed_at ? null : (
                            <button className={pill} disabled={busy === row.id} onClick={() => void regrade(row.id)} type="button">
@@ -214,5 +253,64 @@ export default function PreScreeningSection() {
             })}
          </ul>
       </section>
+   );
+}
+
+/** The proof of income they sent: what the AI read from it, its 0-10, and the files to open. */
+function IncomeProof({ row, clips, onOpen }: { row: PreScreening; clips: Record<string, string>; onOpen: (path: string) => Promise<void> }) {
+   const files = row.income_files ?? [];
+   const income = row.grade?.income ?? null;
+   const read = income?.read ?? null;
+   if (!files.length) {
+      // Pre-screenings from before the proof step (Nov 17) never had one.
+      return row.videos_watched != null ? <p className="mt-3 text-sm font-bold text-[#a89bb8]">📄 No proof of income sent.</p> : null;
+   }
+   return (
+      <div className="mt-3 rounded-xl bg-[#1b1030] p-3">
+         <p className="text-sm font-black text-[#cfc6dd]">
+            📄 Proof of income · {files.length} file{files.length === 1 ? '' : 's'}{' '}
+            <span className="text-[#a89bb8]">{income?.score != null ? `· ${income.score}/10` : '· no score'}</span>
+         </p>
+         {read?.readable ? (
+            <p className="mt-1 text-base text-white">
+               {[
+                  read.doc_type?.replace(/_/g, ' '),
+                  read.holder_name,
+                  read.institution,
+                  read.period_start && read.period_end ? `${read.period_start} → ${read.period_end}` : null,
+                  `${read.transactions} rows`,
+                  read.monthly_in != null ? `${read.monthly_in.toLocaleString()} ${read.currency ?? ''} in/month` : null,
+                  read.monthly_income_usd != null ? `~$${Math.round(read.monthly_income_usd)}/month` : null
+               ]
+                  .filter(Boolean)
+                  .join(' · ')}
+            </p>
+         ) : null}
+         {income?.note ? <p className="mt-1 text-sm text-[#a89bb8]">{income.note}</p> : null}
+         {read?.warnings?.length ? <p className="mt-1 text-sm font-bold text-red-300">🚩 {read.warnings.join(' · ')}</p> : null}
+         {row.files_removed_at ? (
+            <p className="mt-2 text-sm text-[#6f6385]">Files removed (older than 30 days, never signed up).</p>
+         ) : (
+            <div className="mt-2 flex flex-wrap gap-2">
+               {files.map((f, i) =>
+                  clips[f.path] ? (
+                     f.mime === 'application/pdf' ? (
+                        <a className={pill} href={clips[f.path]} key={f.path} rel="noreferrer" target="_blank">
+                           📄 Open {f.name || `file ${i + 1}`}
+                        </a>
+                     ) : (
+                        <a href={clips[f.path]} key={f.path} rel="noreferrer" target="_blank">
+                           <img alt={f.name} className="max-h-[360px] rounded-lg" src={clips[f.path]} />
+                        </a>
+                     )
+                  ) : (
+                     <button className={pill} key={f.path} onClick={() => void onOpen(f.path)} type="button">
+                        👀 {f.name || `File ${i + 1}`}
+                     </button>
+                  )
+               )}
+            </div>
+         )}
+      </div>
    );
 }

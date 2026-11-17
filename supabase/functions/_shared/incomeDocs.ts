@@ -876,6 +876,90 @@ const extract = async (apiKey: string, files: LoadedFile[]): Promise<Extracted> 
    return mergeExtracted((await Promise.all(batches)).flat());
 };
 
+/** What the pre-screening (no account yet, _shared/preScreening.ts) keeps from a proof-of-income read. */
+export type IncomeProofRead = {
+   readable: boolean;
+   problem: string | null;
+   doc_type: Extracted['doc_type'] | null;
+   holder_name: string | null;
+   institution: string | null;
+   currency: string | null;
+   period_start: string | null;
+   period_end: string | null;
+   months_covered: number | null;
+   transactions: number;
+   monthly_in: number | null;
+   monthly_income_usd: number | null;
+   net_pay: number | null;
+   warnings: string[];
+};
+
+/**
+ * Reads proof-of-income files the same way /documents does (images as images, PDFs by their text or
+ * scanned pages), without an income_documents row, a user, or any message. Never throws: a file it
+ * can't open comes back as readable=false with the reason.
+ */
+export const readIncomeProof = async (apiKey: string, files: Array<{ name: string; mime: string; bytes: Uint8Array<ArrayBuffer> }>): Promise<IncomeProofRead> => {
+   const warnings: string[] = [];
+   const loaded: LoadedFile[] = [];
+   for (const f of files) {
+      const markers = fileMarkers(f.bytes);
+      if (markers.aiLabel) warnings.push(`${f.name} is ${markers.aiLabel}`);
+      if (markers.generator) warnings.push(`${f.name} carries a ${markers.generator} tag`);
+      if (f.mime === 'application/pdf') {
+         if (readPdfInfo(f.bytes).encrypted) {
+            warnings.push(`${f.name} is a password-protected PDF`);
+            continue;
+         }
+      } else if (!IMAGE_TYPES.has(f.mime)) {
+         warnings.push(`${f.name}: file type the AI can’t open`);
+         continue;
+      }
+      loaded.push(f);
+   }
+   const empty = (problem: string): IncomeProofRead => ({
+      readable: false,
+      problem,
+      doc_type: null,
+      holder_name: null,
+      institution: null,
+      currency: null,
+      period_start: null,
+      period_end: null,
+      months_covered: null,
+      transactions: 0,
+      monthly_in: null,
+      monthly_income_usd: null,
+      net_pay: null,
+      warnings
+   });
+   if (!loaded.length) return empty('no file the AI can open');
+   let doc: Extracted;
+   try {
+      doc = await extract(apiKey, loaded);
+   } catch (err) {
+      return empty(err instanceof Error ? err.message.slice(0, 200) : String(err));
+   }
+   if (!doc.readable) return empty(doc.unreadable_reason ?? 'could not read it');
+   const metrics = computeMetrics(doc);
+   return {
+      readable: true,
+      problem: null,
+      doc_type: doc.doc_type,
+      holder_name: doc.holder_name,
+      institution: doc.institution,
+      currency: doc.currency,
+      period_start: doc.period_start,
+      period_end: doc.period_end,
+      months_covered: metrics.months_covered,
+      transactions: metrics.transaction_count,
+      monthly_in: round2(metrics.monthly_in),
+      monthly_income_usd: monthlyIncomeUsd(doc, metrics),
+      net_pay: metrics.net_pay,
+      warnings: [...warnings, ...doc.visual_anomalies.map((a) => `looks edited: ${a}`)].slice(0, 8)
+   };
+};
+
 export type AiOpinion = { verdict: 'lend' | 'maybe' | 'decline'; note: string; ask: string[] };
 /** Several opinions on the same send, combined into one direction. */
 export type AiDirection = {

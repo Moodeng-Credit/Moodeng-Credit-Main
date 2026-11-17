@@ -79,3 +79,60 @@ Deno.test('pre-screening: maps scores to verdicts', () => {
    assertEquals(verdictFor(44), 'weak');
    assertEquals(verdictFor(null), null);
 });
+
+const READ = {
+   readable: true,
+   problem: null,
+   doc_type: 'gcash_history' as const,
+   holder_name: 'Sample Person',
+   institution: 'GCash',
+   currency: 'PHP',
+   period_start: '2026-10-15',
+   period_end: '2026-11-14',
+   months_covered: 1,
+   transactions: 30,
+   monthly_in: 12000,
+   monthly_income_usd: 210,
+   net_pay: null,
+   warnings: []
+};
+
+Deno.test('pre-screening: a read proof of income counts as one more item in the score', () => {
+   const grade = buildGrade(
+      QUESTIONS,
+      { work: 'driver', purpose: 'stock', repay: 'salary' },
+      {
+         answers: [
+            { q: 'work', score: 8 },
+            { q: 'purpose', score: 8 },
+            { q: 'repay', score: 8 }
+         ],
+         income: { score: 4, note: 'Thin.' },
+         flags: ['Said ₱30k a month, document shows ₱12k', '', 7]
+      },
+      { files: 2, read: READ }
+   );
+   assertEquals(grade.overall, 70);
+   assertEquals(grade.income?.score, 4);
+   assertEquals(grade.income?.files, 2);
+   assertEquals(grade.flags, ['Said ₱30k a month, document shows ₱12k']);
+});
+
+Deno.test('pre-screening: a proof of income the AI could not read is not scored and does not pull the score down', () => {
+   const grade = buildGrade(
+      QUESTIONS,
+      { work: 'driver', purpose: 'stock', repay: 'salary' },
+      { answers: QUESTIONS.map((q) => ({ q: q.id, score: 9 })), income: { score: 0 } },
+      { files: 1, read: { ...READ, readable: false, problem: 'password-protected' } }
+   );
+   assertEquals(grade.overall, 90);
+   assertEquals(grade.income?.score, null);
+   assertEquals(grade.income?.note.includes('password-protected'), true);
+});
+
+Deno.test('pre-screening: no proof of income sent = no income part', () => {
+   const grade = buildGrade(QUESTIONS, { work: 'a', purpose: 'b', repay: 'c' }, { answers: QUESTIONS.map((q) => ({ q: q.id, score: 5 })) });
+   assertEquals(grade.overall, 50);
+   assertEquals(grade.income, null);
+   assertEquals(grade.flags, []);
+});
