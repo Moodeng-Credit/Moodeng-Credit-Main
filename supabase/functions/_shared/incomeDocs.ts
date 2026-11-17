@@ -1011,12 +1011,12 @@ export type BorrowerQuestion = { id: string; team: string; en: string; local: st
 export type BorrowerAnswer = { id: string; a: string; at: string; via: 'page' | 'messenger' };
 
 const QUESTIONS_SYSTEM = `A small lender's team has questions about a borrower's proof-of-income document. The borrowers are Filipino or Indonesian, often not strong readers. Rewrite each team question as the message we send the borrower:
-- one question, at most 20 words, everyday words, warm and polite
+- ONE question, at most 20 words, everyday words, warm and polite; if a team question asks two things, keep only the more important one
 - never mention fraud, suspicion, AI, a score, checks, a "top-up", a loan from someone else, or that anything looks wrong; just ask plainly
-- keep exact amounts with their currency and dates as on the document (e.g. "Rp 2,100,000 on Nov 14")
+- keep exact amounts with their currency; write dates like "Nov 14", never "2026-11-14" (e.g. "Rp 2,100,000 on Nov 14")
 - if the team wants more documents (a longer statement, payslips, more months), ask if they can add them and set kind "file"; otherwise kind "text"
 - "local": the same message in light everyday Taglish for the Philippines, or simple Bahasa Indonesia for Indonesia
-- leave out a question only the team can answer (e.g. "check their records")
+- leave out a question about things we already know from our own records (their loans with us, due dates, what they owe, repayment history) or that only the team can check; it is fine to return no questions
 Reply with only a json object: {"questions": [{"team": "<the team question>", "en": "...", "local": "...", "kind": "text" | "file"}]}`;
 
 /** Whatever the model sent back, as at most 2 clean questions with ids q1, q2. Pure. */
@@ -1036,6 +1036,10 @@ export const parseBorrowerQuestions = (raw: unknown): BorrowerQuestion[] => {
 };
 
 /** The AI's team questions rewritten for the borrower. Empty when there are none or the call fails. */
+/** Which local language the questions get: Indonesia for an ID account or a rupiah document. Pure. */
+export const countryOf = (market: string | null | undefined, currency: string | null | undefined) =>
+   market === 'ID' || currency === 'IDR' ? 'Indonesia' : 'Philippines';
+
 const QUESTIONS_BUDGET_MS = 15_000;
 const borrowerQuestions = async (apiKey: string, ask: string[], ctx: Record<string, unknown>): Promise<BorrowerQuestion[]> => {
    if (!ask.length) return [];
@@ -1402,7 +1406,7 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    const questions =
       !autoApprove && risk !== 'red' && aiNote?.ask.length && Date.now() - startedAt < 100_000
          ? await borrowerQuestions(apiKey, aiNote.ask, {
-              country: user?.market === 'ID' ? 'Indonesia' : 'Philippines',
+              country: countryOf(user?.market, doc?.currency),
               document: { type: doc.doc_type, institution: doc.institution, currency: doc.currency, period: [doc.period_start, doc.period_end] },
               rows: doc.transactions.slice(0, 60).map((t, i) => ({ row: `T${i + 1}`, date: t.date, description: t.description, amount: t.amount }))
            })
@@ -1445,7 +1449,7 @@ export const backfillBorrowerQuestions = async (supabase: SupabaseClient, id: st
    const { data: user } = await supabase.from('users').select('market').eq('id', row.user_id).maybeSingle();
    const doc = row.extracted as Extracted | null;
    const questions = await borrowerQuestions(apiKey, [ask], {
-      country: user?.market === 'ID' ? 'Indonesia' : 'Philippines',
+      country: countryOf(user?.market, doc?.currency),
       document: doc ? { type: doc.doc_type, institution: doc.institution, currency: doc.currency, period: [doc.period_start, doc.period_end] } : null,
       rows: (doc?.transactions ?? []).slice(0, 60).map((t, i) => ({ row: `T${i + 1}`, date: t.date, description: t.description, amount: t.amount }))
    });

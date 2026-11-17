@@ -1,6 +1,6 @@
 import { assert, assertEquals, assertFalse, assertStringIncludes } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { answersText, pairAnswers, parseBorrowerQuestions } from './incomeDocs.ts';
+import { answersText, countryOf, pairAnswers, parseBorrowerQuestions } from './incomeDocs.ts';
 import { docsReply, isAwaitedAnswer, isDocsKeyword, langOf, openQuestions, questionLine } from './messengerIncomeDocReply.ts';
 
 const Q1 = { id: 'q1', team: 'What was the 2.1M IDR deposit?', en: 'What was the Rp 2,100,000 on Nov 14 for?', local: 'Untuk apa Rp 2.100.000 tanggal 14 Nov?', kind: 'text' as const };
@@ -80,4 +80,11 @@ Deno.test('team post lists each question with the answer', () => {
    const text = answersText('Louiz', pairs, null);
    assertStringIncludes(text, 'Salary from my boss · on Messenger');
    assertStringIncludes(text, '(no answer)');
+});
+
+Deno.test('question language: Indonesia for an ID account or a rupiah document', () => {
+   assertEquals(countryOf('ID', 'PHP'), 'Indonesia');
+   assertEquals(countryOf(null, 'IDR'), 'Indonesia');
+   assertEquals(countryOf(null, 'PHP'), 'Philippines');
+   assertEquals(countryOf(null, null), 'Philippines');
 });
