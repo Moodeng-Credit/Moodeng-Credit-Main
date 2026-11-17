@@ -298,12 +298,31 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    updatedAt: row.updated_at
 });
 
-const fetchCurrentUserProfile = async (): Promise<User> => {
-   const supabase = supabaseClient();
+// getUser() is a round trip to the auth server (and 5 queries on our database) every time; the profile
+// refreshes it on (polls, every step of onboarding) were most of the app's /auth/v1/user traffic. Check
+// with the server at most every few minutes and use the signed-in session in between. Safe: every
+// database read and write still verifies the session token, and sign-out clears the session.
+const AUTH_SERVER_CHECK_MS = 5 * 60_000;
+let lastAuthServerCheck = { at: 0, userId: '' };
+
+const getAuthUser = async (supabase: ReturnType<typeof supabaseClient>) => {
+   if (Date.now() - lastAuthServerCheck.at < AUTH_SERVER_CHECK_MS) {
+      const {
+         data: { session }
+      } = await supabase.auth.getSession();
+      if (session?.user && session.user.id === lastAuthServerCheck.userId) return { user: session.user, error: null };
+   }
    const {
       data: { user },
-      error: sessionError
+      error
    } = await supabase.auth.getUser();
+   lastAuthServerCheck = user && !error ? { at: Date.now(), userId: user.id } : { at: 0, userId: '' };
+   return { user, error };
+};
+
+const fetchCurrentUserProfile = async (): Promise<User> => {
+   const supabase = supabaseClient();
+   const { user, error: sessionError } = await getAuthUser(supabase);
 
    if (sessionError || !user) {
       throw sessionError ?? new Error('Unable to resolve authenticated user');
@@ -1061,10 +1080,7 @@ export const updateBorrowerContext = createAsyncThunk(
    'auth/updateBorrowerContext',
    async (payload: BorrowerContextPayload) => {
       const supabase = supabaseClient();
-      const {
-         data: { user },
-         error: sessionError
-      } = await supabase.auth.getUser();
+      const { user, error: sessionError } = await getAuthUser(supabase);
 
       if (sessionError || !user) throw sessionError ?? new Error('Not authenticated');
 
@@ -1095,10 +1111,7 @@ export const updateBorrowerContext = createAsyncThunk(
 /** Save just their job (the loan request asks for it when the profile has none). */
 export const updateProfession = createAsyncThunk('auth/updateProfession', async (profession: string) => {
    const supabase = supabaseClient();
-   const {
-      data: { user },
-      error: sessionError
-   } = await supabase.auth.getUser();
+   const { user, error: sessionError } = await getAuthUser(supabase);
    if (sessionError || !user) throw sessionError ?? new Error('Not authenticated');
    const { data: updatedRow, error } = await supabase
       .from('users')
@@ -1113,10 +1126,7 @@ export const updateProfession = createAsyncThunk('auth/updateProfession', async 
 /** Set user_role in Supabase. Single source of truth for role-based routing. */
 export const updateUserRole = createAsyncThunk('auth/updateUserRole', async (role: UserRole) => {
    const supabase = supabaseClient();
-   const {
-      data: { user },
-      error: sessionError
-   } = await supabase.auth.getUser();
+   const { user, error: sessionError } = await getAuthUser(supabase);
 
    if (sessionError || !user) {
       throw sessionError ?? new Error('Not authenticated');

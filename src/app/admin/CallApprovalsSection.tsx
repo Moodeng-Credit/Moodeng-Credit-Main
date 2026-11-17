@@ -42,26 +42,45 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
    // Search by name / username across every group.
    const [query, setQuery] = useState('');
 
-   const load = useCallback(async () => {
+   // The people whose 🇮🇩 profiles are loaded; only re-read when the list of people changes.
+   const indoIdsKey = useRef('');
+   const load = useCallback(async (maxAgeMs?: number) => {
       try {
-         const next = await getAdminCallApprovals();
+         const next = await getAdminCallApprovals({ maxAgeMs });
          setRows(next);
          setError(null);
-         void fetchIndonesiaProfiles(next.map((r) => r.userId))
-            .then(setIndo)
-            .catch(() => undefined);
+         const ids = next.map((r) => r.userId);
+         const key = [...ids].sort().join(',');
+         if (key !== indoIdsKey.current) {
+            indoIdsKey.current = key;
+            void fetchIndonesiaProfiles(ids)
+               .then(setIndo)
+               .catch(() => {
+                  indoIdsKey.current = '';
+               });
+         }
       } catch (err) {
          setError(err instanceof Error ? err.message : 'Could not load calls.');
       }
       setNow(Date.now());
    }, []);
 
+   // Timer refresh (call times tick past, Zoom arrivals). Nothing while the tab is hidden; coming back
+   // refreshes at once. A list another section loaded within the last ~25 s is reused, so the Calls
+   // tab and the Requests card don't each call the server.
    useEffect(() => {
       void load();
-      const timer = window.setInterval(() => void load(), REFRESH_MS);
-      return () => window.clearInterval(timer);
+      const tick = () => {
+         if (document.visibilityState === 'visible') void load(REFRESH_MS - 5000);
+      };
+      const timer = window.setInterval(tick, REFRESH_MS);
+      document.addEventListener('visibilitychange', tick);
+      return () => {
+         window.clearInterval(timer);
+         document.removeEventListener('visibilitychange', tick);
+      };
    }, [load]);
-   useAdminLiveReload(['users', 'loan_access_requests'], load);
+   useAdminLiveReload(['users', 'loan_access_requests'], () => load());
 
    const groups = useMemo(() => {
       const q = query.trim().toLowerCase();

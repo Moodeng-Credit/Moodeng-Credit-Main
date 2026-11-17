@@ -22,11 +22,20 @@ export const meetingIdFromJoinUrl = (url?: string | null): string | null => {
 const SEEN_KEY = (host: string) => `zoom_seen:${host}`;
 export const ZOOM_ACTIVE_DAYS = 14;
 
+// "Wired up" = a signed event in the last 14 days, so minutes of staleness change nothing. The admin
+// call list asked for it twice per load (~10k reads a day); a warm function now reads each host's value
+// at most every 5 minutes, and the webhook skips re-writing a value it wrote within the hour.
+const ZOOM_SEEN_READ_MS = 5 * 60_000;
+const ZOOM_SEEN_WRITE_MS = 60 * 60_000;
+const zoomSeenCache = new Map<string, { at: number; value: string | null }>();
+
 export const markZoomSeen = async (svc: SupabaseClient, host: string) => {
-   const { error } = await svc
-      .from('telegram_bot_settings')
-      .upsert({ key: SEEN_KEY(host), value: new Date().toISOString() }, { onConflict: 'key' });
+   const cached = zoomSeenCache.get(host)?.value;
+   if (cached && Date.now() - Date.parse(cached) < ZOOM_SEEN_WRITE_MS) return;
+   const value = new Date().toISOString();
+   const { error } = await svc.from('telegram_bot_settings').upsert({ key: SEEN_KEY(host), value }, { onConflict: 'key' });
    if (error) console.error('attendance: markZoomSeen failed', error.message);
+   else zoomSeenCache.set(host, { at: Date.now(), value });
 };
 
 export const isZoomActive = (lastSeenIso: string | null | undefined, now: number): boolean => {
@@ -36,8 +45,13 @@ export const isZoomActive = (lastSeenIso: string | null | undefined, now: number
 
 export const zoomActiveForHost = async (svc: SupabaseClient, host: string | null | undefined): Promise<boolean> => {
    if (!host) return false;
-   const { data } = await svc.from('telegram_bot_settings').select('value').eq('key', SEEN_KEY(host)).maybeSingle();
-   return isZoomActive((data as { value?: string } | null)?.value, Date.now());
+   const hit = zoomSeenCache.get(host);
+   if (hit && Date.now() - hit.at < ZOOM_SEEN_READ_MS) return isZoomActive(hit.value, Date.now());
+   const { data, error } = await svc.from('telegram_bot_settings').select('value').eq('key', SEEN_KEY(host)).maybeSingle();
+   const value = (data as { value?: string } | null)?.value ?? null;
+   // A failed read isn't cached: it would hide "never joined" for five minutes.
+   if (!error) zoomSeenCache.set(host, { at: Date.now(), value });
+   return isZoomActive(value, Date.now());
 };
 
 export type AttendanceFields = {
