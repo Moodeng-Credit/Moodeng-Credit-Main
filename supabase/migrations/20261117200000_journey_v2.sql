@@ -5,8 +5,8 @@
 --   Pre-screening (moodeng.app/screen/CODE) stays ONLY for people an affiliate sends that link to.
 --   Proof of income uses /documents as it is (income_documents + its AI checks + team Approve/Decline).
 --   "AI check" = that document's result:
---     pass     the team approved it, or the AI read it as looks_good
---     hold     the AI wants a person (needs_review) → the team's existing ✅ Approve / ❌ Decline card
+--     pass     the team approved it, or the AI scored it 60+ (0–100) with no fraud signs
+--     hold     score under 60, fraud signs, or the read failed → the team's ✅ Approve / ❌ Decline card
 --     resend   fixable problem → they send it again (the page already says what to fix)
 --     declined the team declined it → they can send a new one
 --
@@ -62,13 +62,16 @@ security definer
 set search_path = ''
 as $$
   select coalesce((
+    -- George 2026-11-17: the AI's score 60+ passes by itself; anything lower waits for the team.
+    -- Fraud signs (risk red) always wait for the team, whatever the score.
     select case
              when d.decision = 'approved' then 'pass'
              when d.decision = 'declined' then 'declined'
              when d.verdict = 'resend' then 'resend'
-             when d.verdict = 'looks_good' then 'pass'
-             when d.verdict = 'needs_review' then 'hold'
-             else 'checking'
+             when d.status in ('pending', 'processing') then 'checking'
+             when d.risk = 'red' then 'hold'
+             when d.score >= 60 then 'pass'
+             else 'hold'
            end
     from public.income_documents d
     where d.user_id = p_user_id
