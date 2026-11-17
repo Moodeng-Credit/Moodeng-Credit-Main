@@ -10,7 +10,7 @@ import {
    type ClaimableVoucher,
    getInviteInviter,
    GRABMART_MIN_PHP,
-   isValidInviteCode,
+   isLinkableInviteCode,
    normalizeInviteCode,
    rememberPendingInvite,
    type VoucherBrand,
@@ -681,7 +681,7 @@ export function DashboardV2InviteLanding() {
    const { code: rawCode = '' } = useParams();
    // useParams already decodes the segment; decoding again would throw on codes like "%".
    const code = normalizeInviteCode(rawCode);
-   const isCodeValid = isValidInviteCode(code);
+   const isCodeValid = isLinkableInviteCode(code);
    const inviterQuery = useQuery({
       queryKey: ['friend-referrals', 'inviter', code],
       queryFn: () => getInviteInviter(code),

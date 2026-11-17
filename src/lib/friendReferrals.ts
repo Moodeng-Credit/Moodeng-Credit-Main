@@ -87,6 +87,8 @@ const INVITE_CODE_PATTERN = /^[A-Z]{6}[0-9]{5}$/;
 
 export const normalizeInviteCode = (code: string) => code.trim().toUpperCase();
 export const isValidInviteCode = (code: string) => INVITE_CODE_PATTERN.test(normalizeInviteCode(code));
+/** What /invite/:code accepts: a personal invite code or an influencer's code (IRISH2026); the server decides. */
+export const isLinkableInviteCode = (code: string) => /^[A-Z0-9]{3,24}$/.test(normalizeInviteCode(code));
 
 export async function getMyInviteCode(): Promise<string> {
    const { data, error } = await getSupabaseBrowserClient().rpc('get_my_invite_code');
