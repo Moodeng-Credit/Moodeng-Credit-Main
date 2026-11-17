@@ -65,7 +65,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
 
    const groups = useMemo(() => {
       const q = query.trim().toLowerCase();
-      const list = q ? (rows ?? []).filter((r) => `${r.name} ${r.username ?? ''}`.toLowerCase().includes(q)) : (rows ?? []);
+      const list = q ? (rows ?? []).filter((r) => `${r.name} ${r.username ?? ''} ${r.facebookName ?? ''}`.toLowerCase().includes(q)) : (rows ?? []);
       return groupCallApprovals(list, now);
    }, [rows, now, query]);
 
@@ -198,6 +198,11 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                   {row.name}
                   {indo.has(row.userId) ? <IndonesiaBadge /> : null}
                </p>
+               {row.username || row.facebookName ? (
+                  <p className="break-words text-sm text-[#c9bde0]">
+                     {[row.username ? `@${row.username}` : null, row.facebookName ? `FB: ${row.facebookName}` : null].filter(Boolean).join(' · ')}
+                  </p>
+               ) : null}
                {(() => {
                   const p = indo.get(row.userId);
                   if (!p) return null;
@@ -337,7 +342,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name or username"
+            placeholder="Search by name, username or Facebook name"
             className="w-full max-w-md rounded-xl border border-[#3d1f6e] bg-[#1c0a3a] px-4 py-2.5 text-base text-white placeholder:text-[#a89bb8]"
          />
          {rows ? (

@@ -670,6 +670,12 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
    );
 
    const name = profile?.displayName || profile?.username || row.name;
+   const sheetUsername = profile?.username || row.username;
+   const sheetFacebook = profile?.facebookName || row.facebookName;
+   // Title shows every name they go by, so the team can match them to Facebook / Messenger.
+   const aliases = [sheetUsername && sheetUsername !== name ? `@${sheetUsername}` : null, sheetFacebook ? `FB: ${sheetFacebook}` : null]
+      .filter(Boolean)
+      .join(' · ');
    const checks = [
       Boolean(answers.fullName?.trim()),
       Boolean(answers.role?.trim()),
@@ -705,6 +711,7 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
             </div>
             <div className="mx-auto flex max-w-[1100px] flex-wrap items-center gap-x-3 gap-y-1 px-5 py-2">
                <h1 className="min-w-0 truncate text-[18px] font-bold">{name}</h1>
+               {aliases ? <span className="min-w-0 truncate text-[14px] font-semibold text-[#37352f]">{aliases}</span> : null}
                <span className="text-[13px] text-[#7a7a7a]">
                   {row.callStartsAt
                      ? new Date(row.callStartsAt).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' })

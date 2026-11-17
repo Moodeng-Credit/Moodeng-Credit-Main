@@ -58,13 +58,14 @@ const LOOKBACK_H = 48;
 // Two weeks ahead: every booked call is on the Calls tab (George 2026-11-15: "hard to keep track").
 const LOOKAHEAD_H = 14 * 24;
 
-const USER_COLUMNS = `${BORROWER_COLUMNS}, video_call_outcome, video_call_outcome_at, video_call_join_url, video_call_fb_steps_sent_at, ${ATTENDANCE_COLUMNS}`;
+const USER_COLUMNS = `${BORROWER_COLUMNS}, facebook_name, video_call_outcome, video_call_outcome_at, video_call_join_url, video_call_fb_steps_sent_at, ${ATTENDANCE_COLUMNS}`;
 
 type UserRow = {
    id: string;
    username: string | null;
    email: string | null;
    display_name: string | null;
+   facebook_name: string | null;
    loan_access_status: string | null;
    video_call_starts_at: string | null;
    video_call_outcome: string | null;
@@ -139,6 +140,7 @@ serve(async (req) => {
                userId: u.id,
                name: who(u, request?.display_name),
                username: u.username,
+               facebookName: u.facebook_name?.trim() || null,
                loanAccessStatus: u.loan_access_status,
                callStartsAt: u.video_call_starts_at,
                host: u.video_call_host,
