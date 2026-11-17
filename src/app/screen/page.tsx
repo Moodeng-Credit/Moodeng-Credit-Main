@@ -20,7 +20,8 @@ import { CONNECT_HIPPOS, ConnectHero, GhostButton, PrimaryButton, StepTrail } fr
 
 export type ScreenStage = 'loading' | 'closed' | 'busy' | 'intro' | 'video' | 'question' | 'proof' | 'sending' | 'done';
 /** kind 'text' = a typed answer; anything else = a short recorded video. */
-export type ScreenQuestion = { id: string; text: string; hint?: string; kind?: 'text' | 'video' };
+/** `min` = fewest characters a typed answer needs (default MIN_TEXT; 1 lets "No" through). */
+export type ScreenQuestion = { id: string; text: string; hint?: string; kind?: 'text' | 'video'; min?: number };
 /** `tall` = a YouTube Short (9:16); otherwise a normal 16:9 video. */
 type ScreenVideo = { id: string; title: string; tall?: boolean };
 type UploadedDoc = { path: string; name: string; mime: string; size: number };
@@ -29,6 +30,7 @@ export type ScreenPreview = { stage: ScreenStage; question?: number };
 type UploadedAnswer = { q: string; video: string | null; audio: string | null; seconds: number; text?: string };
 // Typed answers: long enough to say something real, short enough to read on the call.
 const MIN_TEXT = 15;
+const minFor = (q: ScreenQuestion) => Math.max(1, q.min ?? MIN_TEXT);
 const MAX_TEXT = 600;
 
 const MAX_SECONDS = 45;
@@ -444,7 +446,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    const acceptText = () => {
       const question = questions[index];
       const text = (typed[question.id] ?? '').trim().slice(0, MAX_TEXT);
-      if (text.length < MIN_TEXT) return setError('Please write a little more.');
+      if (text.length < minFor(question)) return setError('Please write a little more.');
       setError(null);
       if (preview) return nextAfter(uploaded);
       const next = [...uploaded.filter((a) => a.q !== question.id), { q: question.id, video: null, audio: null, seconds: 0, text }];
@@ -602,10 +604,16 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                            className={`${fieldClass} min-h-[140px] resize-none`}
                            maxLength={MAX_TEXT}
                            onChange={(e) => setTyped((prev) => ({ ...prev, [question.id]: e.target.value }))}
-                           placeholder="Type your answer"
+                           placeholder={minFor(question) > 3 ? 'Write 1–2 sentences' : 'Type your answer'}
                            value={typed[question.id] ?? ''}
                         />
-                        <PrimaryButton disabled={(typed[question.id] ?? '').trim().length < MIN_TEXT} onClick={acceptText}>
+                        {(() => {
+                           const left = minFor(question) - (typed[question.id] ?? '').trim().length;
+                           return minFor(question) > 3 && left > 0 && (typed[question.id] ?? '').trim() ? (
+                              <p className="text-[14px] text-[#8a7f99] dark:text-[#a89bb8]">A bit more please — 1 or 2 sentences.</p>
+                           ) : null;
+                        })()}
+                        <PrimaryButton disabled={(typed[question.id] ?? '').trim().length < minFor(question)} onClick={acceptText}>
                            Next
                         </PrimaryButton>
                      </>
