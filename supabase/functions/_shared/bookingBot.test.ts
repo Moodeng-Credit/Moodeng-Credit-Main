@@ -308,6 +308,23 @@ Deno.test('typed amounts map to ranges by value; a bare "5" is asked about', asy
    assertEquals(c.state.answers.leftover, '₱1–3k');
 });
 
+// 2026-11-15: replies meant for a team member in the same chat were saved as answers.
+Deno.test('a time or "not available" is not saved as a typed answer; real job answers still are', async () => {
+   for (const key of ['job', 'loanUse']) {
+      const c = await toQuestion(key);
+      for (const t of ['10am po', 'I am not available po am still at the training', 'Monday po']) {
+         await c.send(t);
+         assertEquals(c.state.answers[key], undefined, `${key}: ${t}`);
+         assertEquals(c.state.asked[c.state.asked.length - 1], key, `${key}: re-asked after ${t}`);
+      }
+   }
+   for (const t of ['night shift call center agent', 'work at 7 eleven', 'sari-sari store']) {
+      const c = await toQuestion('job');
+      await c.send(t);
+      assertEquals(c.state.answers.job, t);
+   }
+});
+
 Deno.test('typed answers are matched by meaning', async () => {
    const c = await toQuestion('work');
    await c.send('wala akong trabaho');
