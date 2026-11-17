@@ -531,6 +531,26 @@ export async function getCurrentAdmin(fallbackUserId?: string | null): Promise<A
 }
 
 export async function getAdminOverview(): Promise<AdminOverview> {
+   // One request for all nine counts (admin_overview_counts, 20261117150000); per-count HEADs as fallback.
+   const { data: counts, error: countsError } = await getSupabaseBrowserClient().rpc('admin_overview_counts');
+   if (!countsError && counts && typeof counts === 'object') {
+      const c = counts as Record<string, unknown>;
+      return {
+         allUserCount: toNumber(c.all_users),
+         openLoanRequestCount: toNumber(c.open_requests),
+         activeLoanCount: toNumber(c.active_loans),
+         defaultedLoanCount: toNumber(c.defaulted_loans),
+         recoveryReviewCount: toNumber(c.recovery_reviews),
+         bannedUserCount: toNumber(c.banned_users),
+         watchlistUserCount: toNumber(c.watchlist_users),
+         loanRequestReviewCount: toNumber(c.loan_request_reviews),
+         highRiskProfileCount: toNumber(c.high_risk_profiles)
+      };
+   }
+   return getAdminOverviewByCount();
+}
+
+async function getAdminOverviewByCount(): Promise<AdminOverview> {
    const supabase = getSupabaseBrowserClient();
    const now = new Date().toISOString();
 
@@ -613,6 +633,30 @@ async function queryByIdChunks(ids: string[], run: (chunk: string[]) => PromiseL
 // Loads the whole directory (newest sign-ups first) so the panel's sort/verification/country
 // filters see every user, not just a recent slice.
 export async function listAdminDirectoryUsers(search?: string): Promise<AdminDirectoryUser[]> {
+   // One request for the whole directory (admin_directory_bundle, 20261117150000). The per-table
+   // path below stays as the fallback if the function is missing or fails.
+   const { data: bundle, error: bundleError } = await getSupabaseBrowserClient().rpc('admin_directory_bundle', {
+      p_search: search?.trim() || null
+   });
+   if (!bundleError && bundle && typeof bundle === 'object') {
+      const b = bundle as Record<string, AnyRow[] | null>;
+      const rows = (key: string) => (Array.isArray(b[key]) ? (b[key] as AnyRow[]) : []);
+      return buildDirectoryRows(
+         rows('users'),
+         rows('loans'),
+         rows('restrictions'),
+         rows('risk_profiles'),
+         rows('points'),
+         rows('point_events'),
+         rows('trust_points'),
+         rows('trust_point_events'),
+         rows('ip_log')
+      );
+   }
+   return listAdminDirectoryUsersByTable(search);
+}
+
+async function listAdminDirectoryUsersByTable(search?: string): Promise<AdminDirectoryUser[]> {
    const supabase = getSupabaseBrowserClient();
    let query = supabase
       .from('users')
@@ -3260,7 +3304,13 @@ export type AdminCallDecision =
    | { userId: string; decision: 'attended' | 'no_show' }
    | { requestId: string; decision: 'approved' | 'rejected' };
 
+// The list is shown in up to three places at once (Calls tab, the "waiting" card on Requests, the tab
+// badge), and each reloads on the same live change. One request serves them all: callers share the
+// request in flight and reuse a result younger than `maxAgeMs`. Any decision clears it.
+let callApprovalsCache: { at: number; rows: Promise<AdminCallApprovalRow[]> } | null = null;
+
 async function invokeAdminCallApprovals<T>(body: Record<string, unknown>): Promise<T> {
+   if (body.action !== 'list') callApprovalsCache = null;
    const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-call-approvals', { body });
    if (error) {
       const ctx = (error as { context?: Response }).context;
@@ -3272,9 +3322,17 @@ async function invokeAdminCallApprovals<T>(body: Record<string, unknown>): Promi
    return result;
 }
 
-export async function getAdminCallApprovals(): Promise<AdminCallApprovalRow[]> {
-   const result = await invokeAdminCallApprovals<{ rows: AdminCallApprovalRow[] }>({ action: 'list' });
-   return result.rows ?? [];
+export async function getAdminCallApprovals({ maxAgeMs = 2000 }: { maxAgeMs?: number } = {}): Promise<AdminCallApprovalRow[]> {
+   const cached = callApprovalsCache;
+   if (cached && Date.now() - cached.at < maxAgeMs) return cached.rows;
+   const rows = invokeAdminCallApprovals<{ rows: AdminCallApprovalRow[] }>({ action: 'list' }).then((result) => result.rows ?? []);
+   const entry = { at: Date.now(), rows };
+   callApprovalsCache = entry;
+   // A failed load is not reused.
+   rows.catch(() => {
+      if (callApprovalsCache === entry) callApprovalsCache = null;
+   });
+   return rows;
 }
 
 export async function decideAdminCall(input: AdminCallDecision): Promise<{ ok: boolean; summary: string }> {
