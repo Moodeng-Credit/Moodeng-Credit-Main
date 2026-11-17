@@ -216,8 +216,8 @@ export const AFFILIATE_SAMPLE: AffiliateDashboardData = {
    paused: false,
    voucher: { available: true, amountPhp: AFFILIATE_VOUCHER_PHP },
    codes: [
-      { code: 'BELLE2', boost_amount: 0, payout_amount: 10, is_active: true },
-      { code: 'BELLE', boost_amount: 5, payout_amount: 10, is_active: true }
+      { code: 'BELLE2', boost_amount: 0, payout_amount: 5, is_active: true },
+      { code: 'BELLE', boost_amount: 5, payout_amount: 5, is_active: true }
    ],
    claims: [{ id: 'c1', friend_name: 'Lito', status: 'pending', created_at: '2026-10-26T03:00:00Z' }],
    referrals: [
@@ -238,7 +238,7 @@ export const AFFILIATE_SAMPLE: AffiliateDashboardData = {
          joined_at: '2026-10-20T03:00:00Z',
          borrowed: false,
          repaid: false,
-         payout_amount: 10,
+         payout_amount: 5,
          payout_status: null,
          paid_at: null
       },
@@ -248,7 +248,7 @@ export const AFFILIATE_SAMPLE: AffiliateDashboardData = {
          joined_at: '2026-10-12T03:00:00Z',
          borrowed: true,
          repaid: false,
-         payout_amount: 10,
+         payout_amount: 5,
          payout_status: null,
          paid_at: null
       },
@@ -258,7 +258,7 @@ export const AFFILIATE_SAMPLE: AffiliateDashboardData = {
          joined_at: '2026-10-05T03:00:00Z',
          borrowed: true,
          repaid: true,
-         payout_amount: 10,
+         payout_amount: 5,
          payout_status: 'unpaid',
          paid_at: null
       },
@@ -268,7 +268,7 @@ export const AFFILIATE_SAMPLE: AffiliateDashboardData = {
          joined_at: '2026-09-21T03:00:00Z',
          borrowed: true,
          repaid: true,
-         payout_amount: 10,
+         payout_amount: 5,
          payout_status: 'paid',
          paid_at: '2026-10-08T03:00:00Z'
       }

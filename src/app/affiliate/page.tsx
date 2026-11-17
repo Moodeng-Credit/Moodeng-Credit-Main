@@ -258,7 +258,7 @@ function CodeCard({
 function MoneyRow({ owed, pending, paid, paused }: { owed: number; pending: number; paid: number; paused: boolean }) {
    const cells = [
       { label: 'Owed to you', value: owed, strong: owed > 0 },
-      { label: 'On the way', value: pending, strong: false },
+      { label: 'If they repay', value: pending, strong: false },
       { label: 'Paid so far', value: paid, strong: false }
    ];
    return (
@@ -289,7 +289,7 @@ function MoneyRow({ owed, pending, paid, paused }: { owed: number; pending: numb
             </p>
          ) : pending > 0 ? (
             <p className="mt-2 px-1 text-[13px] leading-[18px] text-[#7b6b8c] dark:text-[#a99cba]">
-               &ldquo;On the way&rdquo; becomes yours when those friends repay their loan.
+               Not yours yet. You only get this if those friends repay their loan.
             </p>
          ) : null}
       </section>
@@ -411,7 +411,7 @@ function hintText(r: AffiliateReferral, stage: AffiliateStage, paused: boolean) 
    if (stage === 'locked') return 'Repay a loan yourself to unlock it';
    if (r.claimed) return 'Added by you · tracked, no payout';
    if (r.repaid_not_counted) return 'That loan was too short or funded by you. Their next one counts.';
-   if (stage === 'borrowed') return `You get ${money(r.payout_amount)} when they repay`;
+   if (stage === 'borrowed') return `You get ${money(r.payout_amount)} only if they repay`;
    return r.added_by_you ? 'Added by you · waiting for their first loan' : 'Waiting for their first loan';
 }
 
