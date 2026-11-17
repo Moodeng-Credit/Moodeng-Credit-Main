@@ -130,6 +130,12 @@ const submit = async (req: Request, svc: any, body: Record<string, unknown>) => 
    // Referred → Emma's setup call, even in the approval flow.
    const isCallRequest = idTrack || preKyc || flow === 'call' || Boolean(borrower.redeemed_referral_code_id);
 
+   // Journey v2 (migration 20261117200000): proof of income + the 3 videos come before the call.
+   if (!idTrack) {
+      const { data: v2Blocking } = await svc.rpc('team_journey_v2_blocking', { p_user_id: userId });
+      if (v2Blocking === true) return json({ ok: false, error: 'verify_first' }, 409);
+   }
+
    // Call request: the reach-out IS the booked call, so there must be one coming up.
    if (isCallRequest && !(borrower.video_call_starts_at && Date.parse(borrower.video_call_starts_at) > Date.now())) {
       return json({ ok: false, error: 'call_not_booked' }, 400);

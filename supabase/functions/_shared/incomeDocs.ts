@@ -1239,7 +1239,9 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    const whoLine = [user?.username ? `@${user.username}` : null, idName && idName !== who ? `ID name: ${idName}` : null, user?.monthly_income ? `bio says ${user.monthly_income}/month` : null]
       .filter(Boolean)
       .join(' · ');
-   const ping = [`📄 Proof of income from ${who}`, whoLine || null, `${files.length} file${files.length === 1 ? '' : 's'}${row.note ? ` · "${row.note}"` : ''} (attached below)`, loanLine]
+   // Affiliate link + pre-screening (journey v2: this send is their AI check before onboarding).
+   const { data: screening } = await supabase.rpc('team_screening_line', { p_user_id: row.user_id });
+   const ping = [`📄 Proof of income from ${who}`, whoLine || null, typeof screening === 'string' && screening ? screening : null, `${files.length} file${files.length === 1 ? '' : 's'}${row.note ? ` · "${row.note}"` : ''} (attached below)`, loanLine]
       .filter(Boolean)
       .join('\n');
    let pingId: number | undefined;

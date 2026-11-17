@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
-import { usePreKycGate } from '@/hooks/usePreKycGate';
+import { JOURNEY_V2_PATH, needsJourneyV2, usePreKycGate } from '@/hooks/usePreKycGate';
 import { ID_PATHS } from '@/lib/idTrack';
 import { isTikTokAccountEmail } from '@/lib/phoneAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -92,6 +92,8 @@ export default function ConnectBeforeKyc() {
    // Through onboarding (the team approved them, or the gate is off): straight to the loan form —
    // the ID check is the last step of sending their first request.
    if (!isGated) return <Navigate replace state={{ openLoanRequest: true }} to="/request-board" />;
+   // Journey v2: proof of income + the 3 videos (and the AI check) come before onboarding.
+   if (!isPreview && needsJourneyV2(gate.v2) && !isPending) return <Navigate replace to={JOURNEY_V2_PATH} />;
    if (isTikTok && phoneState === 'checking') return null;
 
    return (

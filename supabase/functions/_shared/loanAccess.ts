@@ -186,6 +186,9 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
       : { data: null };
    const referral = refCode?.code ?? request.referral_code ?? null;
 
+   // Affiliate link + pre-screening: "Pre-screen: 🟢 Good · 86/100 · from X's link" or "⚠️ … no pre-screening".
+   const { data: screening } = await svc.rpc('team_screening_line', { p_user_id: borrower.id });
+
    const isCall = request.kind === 'call';
    // Not KYC'd yet → this is the pre-KYC gate: Showed up unlocks ID verification, not the loan.
    const preKyc = await loadNeedsIdCheck(svc, borrower.id, borrower);
@@ -205,6 +208,7 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
       money ? `Money: ${money}` : null,
       isCall && borrower.video_call_starts_at ? `Call: ${formatCallTimeForTeam(borrower.video_call_starts_at, borrower.video_call_timezone)}` : null,
       referral ? `Referral: ${referral}` : null,
+      typeof screening === 'string' && screening ? screening : null,
       `Why: ${request.reason?.trim() || '—'}`,
       photoCheckLine(ref?.facebook_name),
       ...timelineLines(onboarding),

@@ -60,6 +60,7 @@ const ERROR_COPY: Record<string, string> = {
    reason_required: 'Tell us a little about what you need.',
    not_borrower: 'Only borrower accounts can apply for loans.',
    call_not_booked: 'Please book your call first.',
+   verify_first: 'Please send your proof of income and watch the 3 videos first.',
    account_inactive: "Your account can't apply right now. Message us on Messenger for help."
 };
 

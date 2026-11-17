@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 
+import BrandedVideo from '@/components/BrandedVideo';
 import { describeBrowser } from '@/lib/attribution';
 import { readPreScreening, savePreScreening } from '@/lib/preScreening';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -64,87 +65,6 @@ const pickRecorderType = () => {
 
 const baseType = (type: string) => type.split(';')[0].trim().toLowerCase();
 const extensionFor = (type: string) => (type === 'video/webm' ? 'webm' : type === 'video/quicktime' ? 'mov' : 'mp4');
-
-// ── The video they watch ────────────────────────────────────────────────────────────────────────────
-
-type YTPlayer = { destroy: () => void };
-type YTApi = {
-   Player: new (
-      el: HTMLElement,
-      opts: {
-         videoId: string;
-         playerVars: Record<string, number | string>;
-         events: { onStateChange?: (e: { data: number }) => void; onError?: () => void };
-      }
-   ) => YTPlayer;
-};
-type YTWindow = Window & { YT?: YTApi; onYouTubeIframeAPIReady?: () => void };
-
-const loadYouTube = () =>
-   new Promise<YTApi>((resolve, reject) => {
-      const w = window as YTWindow;
-      if (w.YT?.Player) return resolve(w.YT);
-      const previous = w.onYouTubeIframeAPIReady;
-      w.onYouTubeIframeAPIReady = () => {
-         previous?.();
-         if (w.YT) resolve(w.YT);
-      };
-      if (!document.querySelector('script[data-yt-api]')) {
-         const script = document.createElement('script');
-         script.src = 'https://www.youtube.com/iframe_api';
-         script.dataset.ytApi = '1';
-         script.onerror = () => reject(new Error('youtube blocked'));
-         document.head.appendChild(script);
-      }
-      window.setTimeout(() => reject(new Error('youtube timeout')), 12000);
-   });
-
-/** The Moodeng-framed player. `onEnded` fires when the video plays to the end; `onBroken` if it can't load. */
-function BrandedVideo({ videoId, tall = true, onEnded, onBroken }: { videoId: string; tall?: boolean; onEnded: () => void; onBroken: () => void }) {
-   const holder = useRef<HTMLDivElement>(null);
-   const ended = useRef(onEnded);
-   const broken = useRef(onBroken);
-   ended.current = onEnded;
-   broken.current = onBroken;
-
-   useEffect(() => {
-      let player: YTPlayer | null = null;
-      let gone = false;
-      loadYouTube()
-         .then((YT) => {
-            if (gone || !holder.current) return;
-            const el = document.createElement('div');
-            holder.current.appendChild(el);
-            player = new YT.Player(el, {
-               videoId,
-               playerVars: { playsinline: 1, rel: 0, modestbranding: 1 },
-               events: {
-                  onStateChange: (e) => {
-                     if (e.data === 0) ended.current();
-                  },
-                  onError: () => broken.current()
-               }
-            });
-         })
-         .catch(() => {
-            if (!gone) broken.current();
-         });
-      return () => {
-         gone = true;
-         player?.destroy();
-      };
-   }, [videoId]);
-
-   return (
-      <div className="overflow-hidden rounded-[18px] border-2 border-[#7661f9] bg-[#1b1230] shadow-[0_4px_0_#4a35c9]">
-         <div className="flex items-center gap-2 bg-[#6b55f7] px-3 py-2">
-            <img alt="" className="size-6 rounded-full bg-white object-contain" src="/moodenglogo.png" />
-            <span className="text-[14px] font-extrabold tracking-[0.01em] text-white">Moodeng Credit</span>
-         </div>
-         <div className={`${tall ? 'aspect-[9/16] max-h-[60vh]' : 'aspect-video'} w-full [&_iframe]:size-full`} ref={holder} />
-      </div>
-   );
-}
 
 // ── Recording one answer ────────────────────────────────────────────────────────────────────────────
 
@@ -395,6 +315,8 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    const [uploaded, setUploaded] = useState<UploadedAnswer[]>([]);
    const [docs, setDocs] = useState<File[]>([]);
    const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[] | null>(null);
+   // prescreen_config.proof = false: no proof-of-income step here (journey v2 asks for it after sign-up).
+   const [askProof, setAskProof] = useState(true);
    const docInput = useRef<HTMLInputElement>(null);
    const [busy, setBusy] = useState(false);
    const [error, setError] = useState<string | null>(null);
@@ -410,12 +332,13 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          .rpc('pre_screening_start', { p_name: null, p_ref: null, p_browser: null })
          .then(({ data, error: rpcError }) => {
             if (gone) return;
-            const res = data as { status?: string; video?: string; videos?: ScreenVideo[]; questions?: ScreenQuestion[] } | null;
+            const res = data as { status?: string; video?: string; videos?: ScreenVideo[]; questions?: ScreenQuestion[]; proof?: boolean } | null;
             if (rpcError || res?.status !== 'ready') {
                setStage('closed');
                return;
             }
             setVideos(videosOf(res));
+            setAskProof(res.proof !== false);
             setQuestions(res.questions ?? []);
             setStage('intro');
          });
@@ -435,7 +358,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          p_browser: `${browser} · ${os}`
       });
       setBusy(false);
-      const res = data as { status?: string; token?: string; video?: string; videos?: ScreenVideo[]; questions?: ScreenQuestion[] } | null;
+      const res = data as { status?: string; token?: string; video?: string; videos?: ScreenVideo[]; questions?: ScreenQuestion[]; proof?: boolean } | null;
       if (rpcError)
          return setError(/bad_name/.test(rpcError.message) ? 'Please type your name.' : 'Something went wrong. Please try again.');
       if (res?.status === 'busy') return setStage('busy');
@@ -443,6 +366,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       setToken(res.token);
       savePreScreening(res.token, false);
       const list = videosOf(res);
+      setAskProof(res.proof !== false);
       setVideos(list);
       setVideoIndex(0);
       setQuestions(res.questions ?? []);
@@ -459,8 +383,8 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          p_videos: videos.filter((v) => watched.has(v.id)).length
       });
       if (rpcError) {
-         setError('Could not send. Check your connection and try again.');
-         setStage('proof');
+         setError(askProof ? 'Could not send. Check your connection and try again.' : 'Could not send. Check your connection and tap Next again.');
+         setStage(askProof ? 'proof' : 'question');
          return;
       }
       if (token) savePreScreening(token, true);
@@ -511,8 +435,8 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          else setStage('proof');
          return;
       }
-      // The last answer is already up: on to the proof of income.
-      if (uploaded.some((a) => a.q === question.id)) return setStage('proof');
+      // The last answer is already up (only the final send failed): on to the proof, or send again.
+      if (uploaded.some((a) => a.q === question.id)) return askProof ? setStage('proof') : void finish(uploaded, []);
       setBusy(true);
       setError(null);
       const storage = getSupabaseBrowserClient().storage.from('pre-screenings');
@@ -537,13 +461,15 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       const next = [...uploaded, answer];
       setUploaded(next);
       if (index + 1 < questions.length) setIndex(index + 1);
-      else setStage('proof');
+      else if (askProof) setStage('proof');
+      else void finish(next, []);
    };
 
    // The token rides on the link too, so the result follows them into another browser.
    const doneToken = token ?? readPreScreening()?.token ?? null;
    const signUpHref = `${ref ? `/invite/${encodeURIComponent(ref)}` : '/signup'}${doneToken ? `?ps=${doneToken}` : ''}`;
-   const trail = (current: number) => <StepTrail current={current} steps={['You', 'Watch', 'Answer', 'Income', 'Done']} />;
+   const trailSteps = ['You', ...(videos.length ? ['Watch'] : []), 'Answer', ...(askProof ? ['Income'] : []), 'Done'];
+   const trail = (step: string) => <StepTrail current={step === 'end' ? trailSteps.length : Math.max(0, trailSteps.indexOf(step))} steps={trailSteps} />;
    const question = questions[index];
    const video = videos[videoIndex];
    // Each video must play to the end; if YouTube can't load here, don't trap them.
@@ -586,9 +512,15 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                <div className={card}>
                   <ConnectHero
                      image={CONNECT_HIPPOS.hello}
-                     subtitle={`${videos.length === 1 ? '1 short video' : `${videos.length || 3} short videos`}. ${questions.length || 4} quick answers. Proof of income.`}
+                     subtitle={[
+                        videos.length ? (videos.length === 1 ? '1 short video' : `${videos.length} short videos`) : null,
+                        `${questions.length || 4} quick answers`,
+                        askProof ? 'Proof of income' : null
+                     ]
+                        .filter(Boolean)
+                        .join('. ') + '.'}
                      title="Say hi to Moodeng!"
-                     trail={trail(0)}
+                     trail={trail('You')}
                   />
                   <div>
                      <label className="mb-1.5 block text-[14px] font-bold text-[#594d65] dark:text-[#d9cfe8]" htmlFor="screen-name">
@@ -616,7 +548,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                      image={CONNECT_HIPPOS.call}
                      subtitle={videos.length > 1 ? `Video ${videoIndex + 1} of ${videos.length}` : undefined}
                      title={video.title || 'Watch this first'}
-                     trail={trail(1)}
+                     trail={trail('Watch')}
                   />
                   <BrandedVideo
                      onBroken={() => setBroken((prev) => new Set(prev).add(video.id))}
@@ -636,7 +568,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                      image={CONNECT_HIPPOS.cashout}
                      subtitle={`Question ${index + 1} of ${questions.length}${question.hint ? ` · ${question.hint}` : ''}`}
                      title={question.text}
-                     trail={trail(2)}
+                     trail={trail('Answer')}
                   />
                   {error ? <p className={errorClass}>{error}</p> : null}
                   <AnswerRecorder busy={busy} onUse={(clip) => void acceptClip(clip)} />
@@ -649,7 +581,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                      image={CONNECT_HIPPOS.cashout}
                      subtitle="Show us 1 month of your income."
                      title="Last step: proof of income"
-                     trail={trail(3)}
+                     trail={trail('Income')}
                   />
                   <ul className="flex flex-col gap-1.5 text-[15px] text-[#594d65] dark:text-[#d9cfe8]">
                      <li>📱 GCash, Maya or bank history (last 30 days)</li>
@@ -707,7 +639,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
 
             {stage === 'sending' ? (
                <div className={card}>
-                  <ConnectHero image={CONNECT_HIPPOS.waiting} title="Sending your answers…" trail={trail(4)} />
+                  <ConnectHero image={CONNECT_HIPPOS.waiting} title="Sending your answers…" trail={trail('Done')} />
                   <div className="flex justify-center py-4">
                      <Loader2 className="size-7 animate-spin text-[#7661f9]" />
                   </div>
@@ -716,7 +648,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
 
             {stage === 'done' ? (
                <div className={card}>
-                  <ConnectHero image={CONNECT_HIPPOS.approved} subtitle="Now make your account." title="All done! 🎉" trail={trail(5)} />
+                  <ConnectHero image={CONNECT_HIPPOS.approved} subtitle="Now make your account." title="All done! 🎉" trail={trail('end')} />
                   <a className="block" href={signUpHref}>
                      <PrimaryButton>Sign up</PrimaryButton>
                   </a>

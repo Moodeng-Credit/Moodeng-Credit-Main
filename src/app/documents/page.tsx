@@ -140,6 +140,8 @@ export default function DocumentsPage({
    // Sent here from the loan form ("Send proof of income", loans of $60+): offer the way back to it.
    const [searchParams] = useSearchParams();
    const fromLoan = searchParams.get('back') === 'loan';
+   // Journey v2 (/onboarding/verify): back to their steps once it's sent.
+   const fromVerify = searchParams.get('back') === 'verify';
    // The amount they're asking for (from the loan form): sent along so the checks use that step,
    // and used to say exactly what to send.
    const requestedAmount = Number(searchParams.get('amount')) || null;
@@ -150,6 +152,10 @@ export default function DocumentsPage({
    // doesn't bounce them away.
    const [sentThisVisit, setSentThisVisit] = useState(false);
    const loanPath = '/request-board?applyLoan=1';
+   useEffect(() => {
+      if (!fromVerify || !sentThisVisit || preview || questionTotal > 0) return;
+      if (phase === 'checking' || phase === 'in_review' || phase === 'approved') navigate('/onboarding/verify', { replace: true });
+   }, [fromVerify, navigate, phase, preview, questionTotal, sentThisVisit]);
    useEffect(() => {
       if (!fromLoan || !sentThisVisit || preview) return;
       if (phase !== 'in_review' && phase !== 'approved') return;
@@ -628,7 +634,11 @@ export default function DocumentsPage({
                      {`Send “${DOCS_WORD}” to us on Messenger so we can reach you there.`}
                   </p>
                   {docsButton}
-                  {fromLoan ? null : <GhostButton onClick={() => navigate('/dashboard')}>Back to dashboard</GhostButton>}
+                  {fromLoan ? null : (
+                     <GhostButton onClick={() => navigate(fromVerify ? '/onboarding/verify' : '/dashboard')}>
+                        {fromVerify ? 'Back to my steps' : 'Back to dashboard'}
+                     </GhostButton>
+                  )}
                </div>
             ) : null}
 
@@ -646,7 +656,9 @@ export default function DocumentsPage({
                   {fromLoan ? (
                      <GoldButton onClick={() => navigate(loanPath)}>Send my loan request</GoldButton>
                   ) : (
-                     <PrimaryButton onClick={() => navigate('/dashboard')}>Go to dashboard</PrimaryButton>
+                     <PrimaryButton onClick={() => navigate(fromVerify ? '/onboarding/verify' : '/dashboard')}>
+                        {fromVerify ? 'Next step' : 'Go to dashboard'}
+                     </PrimaryButton>
                   )}
                </div>
             ) : null}
