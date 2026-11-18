@@ -199,6 +199,18 @@
    max-width: 450px;
 }
 
+.founder-ludi .founder-media figcaption {
+   max-width: 450px;
+}
+
+.founder-ludi figcaption > .founder-x {
+   margin-top: -6px;
+}
+
+.founder-x .linkedin-mark {
+   background: #111;
+}
+
 .founder-grid {
    display: grid;
    gap: clamp(52px, 8vw, 120px);
