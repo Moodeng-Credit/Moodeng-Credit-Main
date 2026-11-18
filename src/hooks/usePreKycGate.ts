@@ -47,7 +47,26 @@ export const fetchJourneyV2 = async (): Promise<JourneyV2> => {
 /** Still has journey v2 steps to do (only ever true while the pre-KYC gate holds them). */
 export const needsJourneyV2 = (v2: JourneyV2 | null | undefined) => Boolean(v2?.applies && !v2.done);
 
-export function usePreKycGate(): { isGated: boolean; isLoading: boolean; v2: JourneyV2 | null } {
+/** Pre-screening after sign-up (migration 20261118090000): affiliate-link people do it after Facebook. */
+export type PrescreenPath = {
+   on_path: boolean;
+   status?: 'none' | 'open' | 'sent' | 'graded' | 'failed';
+   decision?: 'good' | 'not_fit' | null;
+   done?: boolean;
+};
+
+export const PRESCREEN_PATH = '/screen';
+
+export const fetchPrescreenPath = async (): Promise<PrescreenPath> => {
+   const { data, error } = await getSupabaseBrowserClient().rpc('my_prescreen_path');
+   if (error || !data || typeof data !== 'object') return { on_path: false };
+   return data as PrescreenPath;
+};
+
+/** Still has the pre-screening (or the team's ✅) ahead of them. */
+export const needsPrescreen = (p: PrescreenPath | null | undefined) => Boolean(p?.on_path && !p.done);
+
+export function usePreKycGate(): { isGated: boolean; isLoading: boolean; v2: JourneyV2 | null; prescreen: PrescreenPath | null } {
    const user = useSelector((state: RootState) => state.auth.user);
    // Verified or approved users are never gated — no round trip needed. Nor is anyone whose ID is
    // already with Didit (in review / processing): that check is paid for, so there's nothing to save
@@ -76,6 +95,17 @@ export function usePreKycGate(): { isGated: boolean; isLoading: boolean; v2: Jou
       enabled: isGated,
       staleTime: 15_000
    });
-   if (cleared) return { isGated: false, isLoading: false, v2: null };
-   return { isGated, isLoading: isLoading || (isGated && v2Query.isLoading), v2: isGated ? (v2Query.data ?? null) : null };
+   const prescreenQuery = useQuery({
+      queryKey: ['prescreen-path', user?.id, user?.loanAccessStatus],
+      queryFn: fetchPrescreenPath,
+      enabled: isGated,
+      staleTime: 15_000
+   });
+   if (cleared) return { isGated: false, isLoading: false, v2: null, prescreen: null };
+   return {
+      isGated,
+      isLoading: isLoading || (isGated && (v2Query.isLoading || prescreenQuery.isLoading)),
+      v2: isGated ? (v2Query.data ?? null) : null,
+      prescreen: isGated ? (prescreenQuery.data ?? null) : null
+   };
 }

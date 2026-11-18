@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
-import { JOURNEY_V2_PATH, type JourneyV2, PRE_KYC_CONNECT_PATH, usePreKycGate } from '@/hooks/usePreKycGate';
+import { JOURNEY_V2_PATH, type JourneyV2, PRE_KYC_CONNECT_PATH, PRESCREEN_PATH, type PrescreenPath, usePreKycGate } from '@/hooks/usePreKycGate';
 import { fetchWalletLast } from '@/hooks/useWalletLast';
 import { getPostSignInPath } from '@/lib/postSignInPath';
 import { getJourney } from '@/lib/verificationJourney';
@@ -12,14 +12,15 @@ import type { User } from '@/types/authTypes';
 import { fetchIdTrackPath } from '@/views/indonesia/idFlow';
 
 /** Where someone already signed in goes instead of the sign-in / sign-up form. */
-export const getSignedInReturnPath = async (user: User, isGated: boolean, v2?: JourneyV2 | null): Promise<string> => {
+export const getSignedInReturnPath = async (user: User, isGated: boolean, v2?: JourneyV2 | null, prescreen?: PrescreenPath | null): Promise<string> => {
    // Indonesia track: always borrowers (no role picker), and their own onboarding until it's done.
    const idTrackPath = user.userRole === 'lender' ? null : await fetchIdTrackPath();
    if (idTrackPath) return idTrackPath;
    if (!user.userRole) return '/onboarding/role';
    if (user.userRole === 'borrower') {
-      const journey = getJourney(user, isGated, v2, await fetchWalletLast().catch(() => false));
+      const journey = getJourney(user, isGated, v2, await fetchWalletLast().catch(() => false), prescreen);
       if (journey.action === 'verify_first') return JOURNEY_V2_PATH;
+      if (journey.action === 'prescreen') return PRESCREEN_PATH;
       if (journey.onboarding && journey.action === 'wallet') return '/onboarding/wallet';
       if (journey.onboarding && journey.action === 'connect') return PRE_KYC_CONNECT_PATH;
    }
@@ -55,7 +56,7 @@ export function useSignedInRedirect(): boolean {
    useEffect(() => {
       if (!redirecting || gate.isLoading) return;
       let cancelled = false;
-      void getSignedInReturnPath(user, gate.isGated, gate.v2)
+      void getSignedInReturnPath(user, gate.isGated, gate.v2, gate.prescreen)
          .catch(() => '/request-board')
          .then((path) => {
             if (!cancelled) navigate(path, { replace: true });

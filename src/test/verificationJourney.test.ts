@@ -64,3 +64,26 @@ describe('getJourney — wallet last: the wallet is part of sending the request,
       expect(getJourney({ ...base }, true, null, false)).toMatchObject({ stage: 'wallet' });
    });
 });
+
+describe('getJourney — pre-screening path (affiliate link): Facebook → answers → team ✅ → wallet', () => {
+   const path = (over: Record<string, unknown> = {}) => ({ on_path: true, status: 'none' as const, decision: null, done: false, ...over });
+
+   it('no wallet asked before the team says yes', () => {
+      expect(getJourney({ ...base }, true, null, false, path())).toMatchObject({ stage: 'messenger', action: 'connect' });
+      expect(getJourney({ ...base, hasVerifiedContact: true }, true, null, false, path())).toMatchObject({ stage: 'prescreen', action: 'prescreen' });
+      expect(getJourney({ ...base, hasVerifiedContact: true }, true, null, false, path({ status: 'graded' }))).toMatchObject({
+         stage: 'prescreen_wait',
+         action: 'prescreen'
+      });
+   });
+
+   it('after the ✅: the wallet first, then the rest', () => {
+      expect(getJourney({ ...base, hasVerifiedContact: true }, true, null, false, path({ status: 'graded', decision: 'good', done: true }))).toMatchObject({
+         stage: 'wallet'
+      });
+   });
+
+   it('rejected: no pre-screening nudge', () => {
+      expect(getJourney({ ...base, hasVerifiedContact: true, loanAccessStatus: 'rejected' }, true, null, false, path()).stage).not.toBe('prescreen');
+   });
+});

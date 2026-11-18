@@ -3,7 +3,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
-import { JOURNEY_V2_PATH, needsJourneyV2, usePreKycGate } from '@/hooks/usePreKycGate';
+import { JOURNEY_V2_PATH, needsJourneyV2, needsPrescreen, PRESCREEN_PATH, usePreKycGate } from '@/hooks/usePreKycGate';
+import { hasWalletAddressOnAccount } from '@/lib/walletProvider';
 import { ID_PATHS } from '@/lib/idTrack';
 import { isTikTokAccountEmail } from '@/lib/phoneAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -61,7 +62,15 @@ export default function ConnectBeforeKyc() {
    const [searchParams] = useSearchParams();
    const stepParam = searchParams.get('step');
    const page: ConnectPage = stepParam === 'about' || stepParam === 'intro' || stepParam === 'call' ? stepParam : 'contact';
-   const setPage = useCallback((next: ConnectPage) => navigate(next === 'contact' ? '?' : `?step=${next}`), [navigate]);
+   const prescreenAhead = !isPreview && needsPrescreen(gate.prescreen);
+   const setPage = useCallback(
+      (next: ConnectPage) => {
+         // Pre-screening path: right after Facebook comes the pre-screening, not "about you".
+         if (next !== 'contact' && prescreenAhead) return navigate(PRESCREEN_PATH);
+         navigate(next === 'contact' ? '?' : `?step=${next}`);
+      },
+      [navigate, prescreenAhead]
+   );
 
    // TikTok sign-ups (no email or phone from TikTok) add a phone for texts before Messenger: TikTokPhoneStep.
    const isTikTok = isPreview ? new URLSearchParams(location.search).get('view') === 'tiktok-phone' : isTikTokAccountEmail(user?.email);
@@ -94,6 +103,14 @@ export default function ConnectBeforeKyc() {
    if (!isGated) return <Navigate replace state={{ openLoanRequest: true }} to="/request-board" />;
    // Journey v2: proof of income + the 3 videos (and the AI check) come before onboarding.
    if (!isPreview && needsJourneyV2(gate.v2) && !isPending) return <Navigate replace to={JOURNEY_V2_PATH} />;
+   // Pre-screening path (affiliate link): Facebook first (the contact page below), then the pre-screening,
+   // then the team's ✅. After the ✅, the wallet comes before the rest (about you, goal, call).
+   if (!isPreview && !isPending && !isRejected) {
+      if (needsPrescreen(gate.prescreen) && user.hasVerifiedContact) return <Navigate replace to={PRESCREEN_PATH} />;
+      if (gate.prescreen?.on_path && gate.prescreen.done && !hasWalletAddressOnAccount(user)) {
+         return <Navigate replace state={{ returnTo: 'connect' }} to="/onboarding/wallet" />;
+      }
+   }
    if (isTikTok && phoneState === 'checking') return null;
 
    return (
