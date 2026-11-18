@@ -1,6 +1,6 @@
 import { assertEquals, assertStringIncludes } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { buildNextLoanReadText, describeTiming } from './repayNextLoanRead.ts';
+import { buildNextLoanReadText, describeOnboarding, describeTiming } from './repayNextLoanRead.ts';
 
 const funded = '2026-11-16T15:04:22Z';
 const due = '2026-12-16T00:00:00Z';
@@ -41,4 +41,22 @@ Deno.test('message shows verdict, next amount and reasons', () => {
    assertStringIncludes(text, '⚠️ suspiciously early');
    assertStringIncludes(text, 'Ask: What did you restock?');
    assertEquals(text.includes('• d'), false);
+});
+
+Deno.test('onboarding line: sign-up → call → approval → first loan', () => {
+   const line = describeOnboarding({
+      signedUpAt: '2026-11-16T09:34:08Z',
+      callAt: '2026-11-16T13:45:00Z',
+      approvedAt: '2026-11-16T13:55:44Z',
+      firstRequestedAt: '2026-11-16T14:16:03Z',
+      firstFundedAt: '2026-11-16T15:04:22Z'
+   });
+   assertEquals(
+      line,
+      'call 4h after sign-up → approved 11 min after the call → first loan asked 20 min after approval → funded 48 min later (sign-up to cash: 6h)'
+   );
+});
+
+Deno.test('onboarding line without a call', () => {
+   assertStringIncludes(describeOnboarding({ signedUpAt: '2026-11-16T09:00:00Z' }), 'no call on record');
 });

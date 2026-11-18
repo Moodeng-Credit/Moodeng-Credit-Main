@@ -50,6 +50,33 @@ const describeGap = (ms: number) => {
    return `${Math.round(ms / DAY_MS)} days`;
 };
 
+const gap = (fromIso?: string | null, toIso?: string | null) => {
+   if (!fromIso || !toIso) return null;
+   const ms = new Date(toIso).getTime() - new Date(fromIso).getTime();
+   if (!Number.isFinite(ms)) return null;
+   const abs = Math.abs(ms);
+   const text = abs < HOUR_MS ? `${Math.max(1, Math.round(abs / 60000))} min` : abs < 2 * DAY_MS ? `${Math.round(abs / HOUR_MS)}h` : `${Math.round(abs / DAY_MS)} days`;
+   return ms < 0 ? `${text} before` : text;
+};
+
+/** Sign-up → call → approval → first loan, as one line. Fast isn't bad alone; with a fast repay and a fast referral group it's a signal. */
+export const describeOnboarding = (t: {
+   signedUpAt?: string | null;
+   callAt?: string | null;
+   approvedAt?: string | null;
+   firstRequestedAt?: string | null;
+   firstFundedAt?: string | null;
+}) => {
+   const steps = [
+      t.callAt ? `call ${gap(t.signedUpAt, t.callAt) ?? '?'} after sign-up` : 'no call on record',
+      t.approvedAt ? `approved ${gap(t.callAt ?? t.signedUpAt, t.approvedAt) ?? '?'} after ${t.callAt ? 'the call' : 'sign-up'}` : 'approval time unknown',
+      t.firstRequestedAt ? `first loan asked ${gap(t.approvedAt, t.firstRequestedAt) ?? '?'} after approval` : '',
+      t.firstFundedAt ? `funded ${gap(t.firstRequestedAt, t.firstFundedAt) ?? '?'} later` : ''
+   ].filter(Boolean);
+   const total = gap(t.signedUpAt, t.firstFundedAt);
+   return `${steps.join(' → ')}${total ? ` (sign-up to cash: ${total})` : ''}`;
+};
+
 /** How the repayment sat inside the loan's term — computed here so DeepSeek doesn't do date maths. */
 export const describeTiming = (loan: Loan, now = new Date()) => {
    const funded = loan.funded_at ? new Date(loan.funded_at).getTime() : NaN;
@@ -73,7 +100,7 @@ export const describeTiming = (loan: Loan, now = new Date()) => {
 
 const SYSTEM_PROMPT = `You help a small micro-lender in the Philippines decide if a borrower who just repaid is ready for a bigger next loan. Loans are small ($15-$140 USDC, about 58 PHP per USD), 10% interest, usually 1 month. Each full repayment raises the limit.
 
-The known scam: a group of people (often recruited by one person via the same referral code) take the smallest loan and repay it within a day or two, just to climb to bigger limits, then stop paying. Real borrowers who need money for a business or bills usually hold it for a while and pay near the due date. Repaying early is NOT bad by itself — weigh it with the rest: does the call sheet story make sense for holding the money that briefly (e.g. stock bought and sold fast), do others on the same referral code show the same fast pattern, does the income cover the next loan.
+The known scam: a group of people (often recruited by one person via the same referral code) take the smallest loan and repay it within a day or two, just to climb to bigger limits, then stop paying. Real borrowers who need money for a business or bills usually hold it for a while and pay near the due date. Repaying early is NOT bad by itself — weigh it with the rest: does the call sheet story make sense for holding the money that briefly (e.g. stock bought and sold fast), do others on the same referral code show the same fast pattern, does the income cover the next loan. Very fast onboarding (signed up, approved and cashed out the same day) is normal for eager borrowers, but together with a very fast repay and a referral group doing the same it adds to the concern.
 
 Judge:
 1. timing: "suspicious_early" | "early_ok" | "on_time" | "late"
@@ -88,12 +115,12 @@ const loadContext = async (svc: SupabaseClient, loan: Loan) => {
    const [userRes, sheetRes, transcriptRes, loansRes, capRes, docRes] = await Promise.all([
       svc
          .from('users')
-         .select('username, created_at, profession, income_type, income_description, monthly_income, monthly_expenses, other_income, payday_type, cs, is_didit, is_world_id, redeemed_referral_code_id')
+         .select('username, created_at, profession, income_type, income_description, monthly_income, monthly_expenses, other_income, payday_type, cs, is_didit, is_world_id, redeemed_referral_code_id, loan_access_approved_at, video_call_starts_at')
          .eq('id', uid)
          .maybeSingle(),
       svc.from('call_screenings').select('answers, notes, red_flags, score, call_starts_at').eq('user_id', uid).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
       svc.from('call_transcripts').select('summary, risk_level').eq('user_id', uid).not('summary', 'is', null).order('call_started_at', { ascending: false }).limit(1).maybeSingle(),
-      svc.from('loans').select('id, loan_amount, funded_at, due_date, repaid_at, repayment_status, loan_status').eq('borrower_user_id', uid).not('funded_at', 'is', null).order('funded_at'),
+      svc.from('loans').select('id, loan_amount, created_at, funded_at, due_date, repaid_at, repayment_status, loan_status').eq('borrower_user_id', uid).not('funded_at', 'is', null).order('funded_at'),
       svc.from('borrower_loan_caps').select('cap_usd, note').eq('user_id', uid).maybeSingle(),
       svc.from('income_documents').select('verdict, decision, score').eq('user_id', uid).order('created_at', { ascending: false }).limit(1).maybeSingle()
    ]);
@@ -125,11 +152,22 @@ const loadContext = async (svc: SupabaseClient, loan: Loan) => {
       }
    }
 
+   const history = (loansRes.data ?? []) as Array<Record<string, unknown>>;
+   const first = history[0] as { created_at?: string; funded_at?: string } | undefined;
+   const onboarding = describeOnboarding({
+      signedUpAt: user.created_at,
+      callAt: sheetRes.data?.call_starts_at ?? user.video_call_starts_at,
+      approvedAt: user.loan_access_approved_at,
+      firstRequestedAt: first?.created_at,
+      firstFundedAt: first?.funded_at
+   });
+
    return {
       user,
+      onboarding,
       sheet: sheetRes.data ?? null,
       transcript: transcriptRes.data ?? null,
-      history: (loansRes.data ?? []) as Array<Record<string, unknown>>,
+      history,
       doc: docRes.data ?? null,
       verified,
       nextAmount,
@@ -180,6 +218,7 @@ export const buildNextLoanReadText = (args: {
    verified: boolean;
    cap: number | null;
    timingLine: string;
+   onboardingLine?: string;
    hasSheet: boolean;
    siblingsLine: string;
    read: Read;
@@ -193,6 +232,7 @@ export const buildNextLoanReadText = (args: {
       `🤖 Next-loan read · ${args.username}`,
       VERDICT[String(read.verdict)] ?? `Verdict: ${read.verdict ?? 'unclear'}`,
       nextLine,
+      args.onboardingLine ? `Onboarding: ${args.onboardingLine}` : '',
       `Timing: ${args.timingLine} → ${TIMING[String(read.timing)] ?? read.timing ?? '?'}`,
       `Income vs next repayment: ${AFFORD[String(read.afford)] ?? read.afford ?? '?'}`,
       args.siblingsLine,
@@ -232,6 +272,7 @@ export const postRepayNextLoanRead = async (
          `THIS LOAN: ${usd(loanAmount)} borrowed, repaid ${usd(num(loan.repaid_amount ?? loan.total_repayment_amount))}. Reason given: ${loan.reason ?? '—'}`,
          `TIMING: ${timing.line} (label: ${timing.label})`,
          `NEXT LOAN: ${ctx.verified ? `up to ${usd(ctx.nextAmount)}, repay about ${usd(Math.round(ctx.nextAmount * 1.1 * 100) / 100)}` : 'not ID-verified, no increase'}`,
+         `ONBOARDING: ${ctx.onboarding}`,
          `LOAN HISTORY (oldest first): ${JSON.stringify(ctx.history)}`,
          `SIGN-UP FORM: ${JSON.stringify(ctx.user)}`,
          `HOST CALL SHEET: ${ctx.sheet ? JSON.stringify(ctx.sheet) : 'none'}`,
@@ -250,6 +291,8 @@ export const postRepayNextLoanRead = async (
          verified: ctx.verified,
          cap: ctx.cap,
          timingLine: timing.line,
+         // Only worth showing while they're new; the model always gets it.
+         onboardingLine: ctx.history.length <= 2 ? ctx.onboarding : undefined,
          hasSheet: Boolean(ctx.sheet),
          siblingsLine,
          read
