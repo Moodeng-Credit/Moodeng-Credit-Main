@@ -15,6 +15,7 @@ import {
 import { sendPushToUser } from '../_shared/pushDelivery.ts';
 import { buildRepaymentReceivedPushPayload } from '../_shared/pushMessages.ts';
 import { postLoanRepaidToTeam } from '../_shared/teamLoanFeed.ts';
+import { postRepayNextLoanRead } from '../_shared/repayNextLoanRead.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import {
    calculateTrustPointRewardDelta,
@@ -33,6 +34,7 @@ const corsHeaders = {
 };
 
 type SupabaseClient = any;
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void } | undefined;
 type MilestoneCompletionRow = { milestone_id: string; completed_at: string };
 
 const hasNotificationBeenSent = async (
@@ -136,7 +138,7 @@ serve(async (req) => {
    const { data: loan, error: loanError } = await supabase
       .from('loans')
       .select(
-         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, funded_at, lender_user_id, lender_wallet, hash, repayment_status, updated_at, market, repay_idr, repaid_idr'
+         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, funded_at, lender_user_id, lender_wallet, hash, repayment_status, updated_at, market, repay_idr, repaid_idr, repaid_at, reason, referral_code_id, is_test'
       )
       .eq('id', loanId)
       .maybeSingle();
@@ -214,13 +216,21 @@ serve(async (req) => {
       });
       if (teamFeedEnabled && teamChatId && !teamAlreadySent) {
          const { text, actionUrl } = buildRepaymentTeamFeedMessage(loan, borrower, lender);
-         await sendTelegramMessage(teamChatId, text, {
+         const card = await sendTelegramMessage(teamChatId, text, {
             inlineKeyboard: [[{ text: 'View loan', url: actionUrl }]]
          });
          await supabase
             .from('loan_notifications')
             .insert({ loan_id: loan.id, user_id: borrower.id, notification_type: 'repayment_team_feed' });
          teamFeedSent = true;
+         // DeepSeek "ready for the next loan?" read, as a reply under the card. Runs after the response
+         // so the borrower/lender messages aren't held up by the AI call.
+         if (!loan.is_test) {
+            const replyTo = (card as { message_id?: number } | null)?.message_id;
+            const work = postRepayNextLoanRead(supabase, loan, teamChatId, replyTo);
+            if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(work);
+            else await work;
+         }
       }
    } catch (teamFeedError) {
       console.error('repayment team feed failed', teamFeedError instanceof Error ? teamFeedError.message : teamFeedError);
