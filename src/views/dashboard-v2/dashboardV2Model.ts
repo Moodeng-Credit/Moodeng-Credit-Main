@@ -56,6 +56,13 @@ const STREAK_COPY: Record<
       next: (php: number) => string;
       toGo: (count: number, php: number) => string;
       allEarned: string;
+      window: (from: string, to: string, reward: string) => string;
+      earlyNote: string;
+      halfwayRule: string;
+      earlyPaidTitle: string;
+      earlyPaidBody: string;
+      earlyPaidButton: string;
+      countsFrom: (from: string) => string;
    }
 > = {
    en: {
@@ -67,7 +74,14 @@ const STREAK_COPY: Record<
       startTitle: 'Repay on time, eat on us',
       next: (php) => `Next on-time payment → ₱${php} food`,
       toGo: (count, php) => `${count} on-time payments to go → ₱${php} food`,
-      allEarned: 'Every streak treat earned. Keep it going!'
+      allEarned: 'Every streak treat earned. Keep it going!',
+      window: (from, to, reward) => `Pay ${from} – ${to} → ${reward}`,
+      earlyNote: 'Paying earlier is fine, but earns no reward',
+      halfwayRule: 'Counts when you pay in the 2nd half of your loan',
+      earlyPaidTitle: 'Paid early, thank you! 🎉',
+      earlyPaidBody: "Early payments don't get the food reward. Want it anyway? Message us.",
+      earlyPaidButton: 'Message us',
+      countsFrom: (from) => `🍗 Food reward counts from ${from}. Paying now is fine.`
    },
    fil: {
       payFor: (php) => `Magbayad on time → ₱${php} food`,
@@ -78,25 +92,78 @@ const STREAK_COPY: Record<
       startTitle: 'Magbayad on time, libre ang kain',
       next: (php) => `Susunod na on-time na bayad → ₱${php} food`,
       toGo: (count, php) => `${count} on-time na bayad pa → ₱${php} food`,
-      allEarned: 'Nakuha mo na lahat ng streak treat. Tuloy lang!'
+      allEarned: 'Nakuha mo na lahat ng streak treat. Tuloy lang!',
+      window: (from, to, reward) => `Magbayad ${from} – ${to} → ${reward}`,
+      earlyNote: 'Puwedeng magbayad nang mas maaga, pero walang reward',
+      halfwayRule: 'Bilang kapag nagbayad ka sa 2nd half ng loan mo',
+      earlyPaidTitle: 'Maagang bayad, salamat! 🎉',
+      earlyPaidBody: 'Walang food reward ang maagang bayad. Gusto mo pa rin? Mag-message sa amin.',
+      earlyPaidButton: 'Mag-message sa amin',
+      countsFrom: (from) => `🍗 Bilang ang food reward simula ${from}. Okay lang magbayad ngayon.`
+   }
+};
+
+/** "Dec 1" in the loan's own zone. */
+const shortDate = (at: Date, zone?: string) => {
+   try {
+      return at.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: zone });
+   } catch {
+      return at.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
    }
 };
 
 /**
- * What paying this loan on time is worth, for the loan card: the food voucher when this payment earns
- * it, otherwise the streak it grows (or, on the due day, the streak it saves). Null for an overdue
- * loan (the streak is already gone) and for someone with no streak rewards.
+ * Before a loan's halfway day, paying it earns no food voucher or streak step: the dates when it does
+ * ("Dec 1" – "Dec 16", the due day). Null once that window is open, or when the dates are unknown.
  */
-export const getRepayRewardLine = (streak: RepayStreak, daysRemaining: number, locale: string): string | null => {
+export const getRewardWindow = (
+   due: { rewardFrom?: string | null; deadline: string; zone?: string },
+   now: number = Date.now()
+): { from: string; to: string } | null => {
+   if (!due.rewardFrom) return null;
+   const from = new Date(due.rewardFrom);
+   const deadline = new Date(due.deadline);
+   if (Number.isNaN(from.getTime()) || Number.isNaN(deadline.getTime()) || now >= from.getTime() || from >= deadline) return null;
+   // The deadline is 00:00 after the due day, so a minute earlier is still the due day.
+   return { from: shortDate(from, due.zone), to: shortDate(new Date(deadline.getTime() - 60_000), due.zone) };
+};
+
+/**
+ * What paying this loan on time is worth, for the loan card: the food voucher when this payment earns
+ * it, otherwise the streak it grows (or, on the due day, the streak it saves). Before the loan's halfway
+ * day it names the dates that count ("Pay Dec 1 – Dec 16 → ₱50 food"). Null for an overdue loan (the
+ * streak is already gone) and for someone with no streak rewards.
+ */
+export const getRepayRewardLine = (
+   streak: RepayStreak,
+   daysRemaining: number,
+   locale: string,
+   window: { from: string; to: string } | null = null
+): string | null => {
    if (daysRemaining < 0) return null;
    const copy = STREAK_COPY[streakLocale(locale)];
    const dueToday = daysRemaining === 0;
-   if (streak.nextStep !== null && streak.toGo === 1 && streak.nextPhp) {
-      return dueToday ? copy.payTodayFor(streak.nextPhp) : copy.payFor(streak.nextPhp);
+   const earnsVoucher = streak.nextStep !== null && streak.toGo === 1 && streak.nextPhp;
+   if (!earnsVoucher && streak.nextStep === null && streak.current === 0) return null;
+   if (window) {
+      return copy.window(window.from, window.to, earnsVoucher ? `₱${streak.nextPhp} food` : `🔥 streak ${streak.current + 1}`);
    }
-   if (streak.nextStep === null && streak.current === 0) return null;
+   if (earnsVoucher) return dueToday ? copy.payTodayFor(streak.nextPhp as number) : copy.payFor(streak.nextPhp as number);
    if (dueToday && streak.current > 0) return copy.keep(streak.current);
    return copy.grow(streak.current + 1);
+};
+
+/** Small print for the halfway rule: under an early loan's reward line, the streak card, the paid screen. */
+export const getRewardRuleCopy = (locale: string) => {
+   const copy = STREAK_COPY[streakLocale(locale)];
+   return {
+      earlyNote: copy.earlyNote,
+      halfwayRule: copy.halfwayRule,
+      earlyPaidTitle: copy.earlyPaidTitle,
+      earlyPaidBody: copy.earlyPaidBody,
+      earlyPaidButton: copy.earlyPaidButton,
+      countsFrom: copy.countsFrom
+   };
 };
 
 /** Title + caption for the streak card. */

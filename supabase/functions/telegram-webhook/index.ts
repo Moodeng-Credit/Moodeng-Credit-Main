@@ -795,6 +795,49 @@ const handleReopenCommand = async (supabase: SupabaseClient, message: TelegramMe
    return true;
 };
 
+// Food vouchers only count a repayment made in the loan's second half. When an early repayer asks
+// (the app sends them to Messenger), an admin counts their latest early repayment after all:
+//   /unlockreward @username
+const handleUnlockRewardCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
+   const match = (message.text ?? '').trim().match(/^\/unlockreward(?:@\w+)?(?:\s+(\S+))?/i);
+   if (!match) return false;
+   const chatId = message.chat.id;
+   const arg = (match[1] ?? '').trim().replace(/^@/, '');
+   if (!arg) {
+      await sendTelegramMessage(chatId, 'Usage: /unlockreward @username — counts their latest early repayment for food vouchers');
+      return true;
+   }
+   const { data: user } = /^[0-9a-f-]{36}$/i.test(arg)
+      ? await supabase.from('users').select('id, username').eq('id', arg).maybeSingle()
+      : await supabase.from('users').select('id, username').ilike('username', escapeLike(arg)).maybeSingle();
+   if (!user) {
+      await sendTelegramMessage(chatId, `No user found for ${arg}.`);
+      return true;
+   }
+   const who = user.username ? `@${user.username}` : user.id;
+   const { data, error } = await supabase.rpc('unlock_early_reward', { p_user_id: user.id, p_by: adminHandle(message.from) });
+   if (error) {
+      await sendTelegramMessage(chatId, `Couldn't unlock for ${who}: ${error.message}`);
+      return true;
+   }
+   const result = (data ?? {}) as { ok?: boolean; reason?: string; trackingId?: string; claimable?: string[] };
+   if (!result.ok) {
+      await sendTelegramMessage(chatId, `Nothing to unlock for ${who}: ${result.reason ?? 'no early repayment'}.`);
+      return true;
+   }
+   const claimable = result.claimable ?? [];
+   await sendTelegramMessage(
+      chatId,
+      [
+         `🔓 Early repayment ${result.trackingId ?? ''} now counts for ${who} — by ${adminHandle(message.from)}`,
+         claimable.length
+            ? `They can claim it in the app now (${claimable.join(', ')}): Rewards → Claim. Tell them on Messenger.`
+            : 'It counts toward their streak, but no voucher is claimable yet.'
+      ].join('\n')
+   );
+   return true;
+};
+
 // Test accounts (users.is_test): left out of the ☀️ Onboarding check-in, /pending and the money
 // stats, so team test sign-ups don't read as real people to chase.
 //   /testaccount                      list them
@@ -1585,6 +1628,12 @@ serve(async (req) => {
       if (isAdminChannel && /^\/reopen\b/i.test(message.text ?? '')) {
          await handleReopenCommand(supabase, message);
          return jsonResponse({ message: 'Reopen command handled' });
+      }
+
+      // Count an early repayment for food vouchers — either admin channel.
+      if (isAdminChannel && /^\/unlockreward\b/i.test(message.text ?? '')) {
+         await handleUnlockRewardCommand(supabase, message);
+         return jsonResponse({ message: 'Unlock reward command handled' });
       }
 
       // Test-account flag — either admin channel.

@@ -14,7 +14,7 @@ import { toNumber } from '@/utils/decimalHelpers';
 import { getBorrowerUsedCreditAmount } from '@/lib/borrowerCreditUsage';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { isUserVerified } from '@/lib/isUserVerified';
-import { getDaysUntilDueDay, getDueDayEnd, getLoanTimezone } from '@/lib/loanDeadline';
+import { getDaysUntilDueDay, getDueDayEnd, getLoanTimezone, getRewardFromAt } from '@/lib/loanDeadline';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { fetchUserProfiles } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -107,6 +107,8 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
             // Calendar days in the borrower's zone: 0 = due today, negative = overdue.
             daysRemaining: getDaysUntilDueDay(dueDay, getLoanTimezone(loan)),
             deadline: getDueDayEnd(dueDay, getLoanTimezone(loan)).toISOString(),
+            rewardFrom: loan.fundedAt ? (getRewardFromAt(loan.fundedAt, loan.dueDate, getLoanTimezone(loan))?.toISOString() ?? null) : null,
+            zone: getLoanTimezone(loan),
             lenderName: lender?.displayName || lender?.username || 'a moo-lender',
             isOverdue
          };

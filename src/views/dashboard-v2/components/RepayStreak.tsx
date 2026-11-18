@@ -7,10 +7,17 @@ import { useRewardsAfterRepayment } from '@/hooks/useFriendReferrals';
 
 import { formatCurrency } from '@/utils/decimalHelpers';
 
+import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { useLocalization } from '@/i18n';
 import { buildCalendarLinks, prefersIcsCalendar } from '@/lib/calendarLinks';
 import type { ClaimableVoucher, MyRewards, RepayStreak } from '@/lib/friendReferrals';
-import { getStreakCardCopy, hasStreakToShow, STREAK_LENGTH, STREAK_VOUCHERS } from '@/views/dashboard-v2/dashboardV2Model';
+import {
+   getRewardRuleCopy,
+   getStreakCardCopy,
+   hasStreakToShow,
+   STREAK_LENGTH,
+   STREAK_VOUCHERS
+} from '@/views/dashboard-v2/dashboardV2Model';
 import { VoucherClaimPopup } from '@/views/dashboard-v2/DashboardV2Rewards';
 import type { DashboardV2Due } from '@/views/dashboard-v2/types';
 
@@ -69,7 +76,36 @@ export function RepayStreakCard({ streak }: { streak: RepayStreak }) {
          <p className="text-[18px] font-black italic leading-6 text-[#3c8248]">{copy.title}</p>
          <StreakSteps streak={streak} />
          <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">{copy.caption}</p>
+         {streak.nextStep !== null ? (
+            <p className="text-[12px] leading-[16px] text-[#6f7d1d]">{getRewardRuleCopy(locale).halfwayRule}</p>
+         ) : null}
       </div>
+   );
+}
+
+// Android Chrome can't open m.me links; messenger.com/t works there.
+const earlyRewardHref = () =>
+   typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent)
+      ? EXTERNAL_LINKS.support.messengerLoginCodeAndroid
+      : EXTERNAL_LINKS.support.messengerEarlyReward;
+
+/** Repaid before the loan's halfway day: say plainly there's no food reward, and how to ask for it. */
+function EarlyPaidCard({ locale }: { locale: string }) {
+   const copy = getRewardRuleCopy(locale);
+   return (
+      <section
+         className="flex w-full flex-col gap-3 rounded-[16px] px-4 py-4 text-left"
+         style={{ backgroundImage: 'linear-gradient(90deg, #fff3a3 0%, #ffe27a 100%)' }}
+         aria-label="Paid early"
+         data-testid="early-paid-card"
+      >
+         <p className="text-[20px] font-black italic leading-6 text-[#3c8248]">{copy.earlyPaidTitle}</p>
+         <p className="text-[15px] font-medium leading-[20px] text-[#5c6a14]">{copy.earlyPaidBody}</p>
+         <a href={earlyRewardHref()} target="_blank" rel="noreferrer" className={CLAIM_BUTTON}>
+            💬 {copy.earlyPaidButton}
+         </a>
+         <p className="text-[12px] leading-[16px] text-[#6f7d1d]">{copy.halfwayRule}</p>
+      </section>
    );
 }
 
@@ -114,6 +150,18 @@ const SAMPLE_AFTER_REPAY: Pick<MyRewards, 'streak' | 'claimable'> = {
    claimable: [{ reward: 'first_on_time_repayment', friendReferralId: null, amountPhp: 50 }]
 };
 
+const SAMPLE_EARLY_REPAY: Pick<MyRewards, 'streak' | 'claimable'> = {
+   streak: {
+      current: 0,
+      best: 0,
+      nextStep: 1,
+      toGo: 1,
+      nextPhp: 50,
+      earlyPaid: { rewardFrom: new Date(Date.now() + 12 * 864e5).toISOString() }
+   },
+   claimable: []
+};
+
 /**
  * Right after a repayment: the streak it built and, when it earned a food voucher, the button to claim
  * it on the spot (the reward used to arrive as a bot message the next morning).
@@ -123,11 +171,16 @@ export function RepayStreakCelebration({ isPreview = false }: { isPreview?: bool
    const live = useRewardsAfterRepayment(!isPreview);
    // Snapshot the voucher: claiming removes it from `claimable`, and the popup must stay for its thank-you.
    const [claiming, setClaiming] = useState<ClaimableVoucher | null>(null);
-   const rewards = isPreview ? SAMPLE_AFTER_REPAY : live.rewards;
+   // Preview: /repay-preview?paid=1&early=1 shows the paid-early card.
+   const previewEarly = isPreview && typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('early');
+   const rewards = isPreview ? (previewEarly ? SAMPLE_EARLY_REPAY : SAMPLE_AFTER_REPAY) : live.rewards;
    const isReady = isPreview || live.isReady;
    const voucher = rewards.claimable[0] ?? null;
 
-   if (!isReady || (!hasStreakToShow(rewards.streak) && !voucher)) return null;
+   if (!isReady) return null;
+   // Paid before halfway and nothing to claim: no streak dots, just why there's no reward.
+   if (rewards.streak.earlyPaid && !voucher) return <EarlyPaidCard locale={locale} />;
+   if (!hasStreakToShow(rewards.streak) && !voucher) return null;
    const copy = getStreakCardCopy(rewards.streak, locale);
 
    return (
@@ -146,7 +199,9 @@ export function RepayStreakCelebration({ isPreview = false }: { isPreview?: bool
             <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">{copy.caption}</p>
          )}
          {rewards.streak.current === 0 ? (
-            <p className="text-[12px] leading-[16px] text-[#6f7d1d]">Late payments and loans repaid within a day don&apos;t count.</p>
+            <p className="text-[12px] leading-[16px] text-[#6f7d1d]">
+               Late payments and payments before your loan&apos;s halfway day don&apos;t count.
+            </p>
          ) : null}
          {claiming ? <VoucherClaimPopup voucher={claiming} isPreview={isPreview} onClose={() => setClaiming(null)} /> : null}
       </section>
