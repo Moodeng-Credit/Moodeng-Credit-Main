@@ -232,10 +232,14 @@ async function gradeWithModel(
    return JSON.parse(json.choices?.[0]?.message?.content ?? '{}') as { summary?: unknown; answers?: unknown; income?: unknown; flags?: unknown };
 }
 
-const teamChat = async (svc: SupabaseClient) => {
-   const { data } = await svc.from('telegram_bot_settings').select('value').eq('key', 'kyc_alert_chat_id').maybeSingle();
-   return (data as { value?: string } | null)?.value || null;
+// The "Pre Screening" Telegram group (telegram_bot_settings.prescreen_chat_id, George 2026-11-18);
+// the KYC group until it's set.
+export const preScreeningChat = async (svc: SupabaseClient) => {
+   const { data } = await svc.from('telegram_bot_settings').select('key, value').in('key', ['prescreen_chat_id', 'kyc_alert_chat_id']);
+   const rows = (data ?? []) as Array<{ key: string; value: string | null }>;
+   return rows.find((r) => r.key === 'prescreen_chat_id')?.value?.trim() || rows.find((r) => r.key === 'kyc_alert_chat_id')?.value?.trim() || null;
 };
+const teamChat = preScreeningChat;
 
 // No videos on the link (videos_watched 0, nothing to watch): no line at all.
 const videosLine = (row: Pick<Row, 'video_watched' | 'videos_watched'>) =>

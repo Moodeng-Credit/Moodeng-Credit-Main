@@ -1368,7 +1368,8 @@ serve(async (req) => {
             return jsonResponse({ message: 'Income document callback handled' });
          }
          // Pre-screening card: ✅ Good fit / ❌ Not a fit (ps:).
-         if (await handlePreScreeningCallback(supabase, update.callback_query, [teamChatId, kycChatId].filter(Boolean).map(String))) {
+         const prescreenChatId = await getSetting(supabase, 'prescreen_chat_id');
+         if (await handlePreScreeningCallback(supabase, update.callback_query, [teamChatId, kycChatId, prescreenChatId].filter(Boolean).map(String))) {
             return jsonResponse({ message: 'Pre-screening decision handled' });
          }
          // 🔄 Change time picker: the admin chats and the call-changes group.
