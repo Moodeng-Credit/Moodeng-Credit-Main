@@ -164,3 +164,12 @@ Deno.test('pre-screening: 3 reads are averaged per answer, flags merged without 
    assertEquals(out?.flags, ['x', 'y']);
    assertEquals(combineReads([]), null);
 });
+
+Deno.test('pre-screening: reads that disagree a lot are flagged for a human look', () => {
+   const out = combineReads([
+      { summary: 'A', answers: [{ q: 'purpose', score: 9 }], flags: [] },
+      { summary: 'B', answers: [{ q: 'purpose', score: 3 }], flags: [] }
+   ]);
+   assertEquals(out?.answers, [{ q: 'purpose', score: 6, note: '' }]);
+   assertEquals((out?.flags as string[])[0].includes('disagreed on: purpose'), true);
+});

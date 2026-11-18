@@ -279,14 +279,22 @@ export const combineReads = (reads: ModelRead[]): ModelRead | null => {
    };
    const answerLists = ok.map((r) => (Array.isArray(r.answers) ? (r.answers as Array<{ q?: unknown; score?: unknown; note?: unknown }>) : []));
    const ids = [...new Set(answerLists.flat().map((a) => a?.q).filter((q): q is string => typeof q === 'string'))];
+   // Reads that disagree by 4+ points (out of 10) on the same item: the AI isn't sure — say so.
+   const spread = (vals: unknown[]) => {
+      const nums = vals.map((v) => (typeof v === 'number' ? v : Number(v))).filter((v) => Number.isFinite(v));
+      return nums.length > 1 ? Math.max(...nums) - Math.min(...nums) : 0;
+   };
+   const unsureOn: string[] = [];
    const answers = ids.map((q) => {
       const all = answerLists.map((list) => list.find((a) => a?.q === q)).filter(Boolean) as Array<{ score?: unknown; note?: unknown }>;
+      if (spread(all.map((a) => a.score)) >= 4) unsureOn.push(q);
       return { q, score: avg(all.map((a) => a.score)), note: all.find((a) => typeof a.note === 'string')?.note ?? '' };
    });
    const incomes = ok.map((r) => r.income as { score?: unknown; note?: unknown } | null | undefined).filter(Boolean) as Array<{ score?: unknown; note?: unknown }>;
    const income = incomes.length
       ? { score: avg(incomes.map((i) => i.score)), note: incomes.find((i) => typeof i.note === 'string')?.note ?? '' }
       : null;
+   if (spread(incomes.map((i) => i.score)) >= 4) unsureOn.push('proof of income');
    const flags = [
       ...new Set(
          ok
@@ -295,7 +303,8 @@ export const combineReads = (reads: ModelRead[]): ModelRead | null => {
             .map((f) => f.trim())
       )
    ].slice(0, 6);
-   return { summary: ok[0].summary, answers, income, flags };
+   if (unsureOn.length) flags.unshift(`🤔 The AI’s ${ok.length} reads disagreed on: ${unsureOn.join(', ')} — check this one yourself`);
+   return { summary: ok[0].summary, answers, income, flags: flags.slice(0, 7) };
 };
 
 async function gradeOnce(apiKey: string, model: string, user: string): Promise<ModelRead> {
