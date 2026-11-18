@@ -72,6 +72,8 @@ export interface AffiliateDashboardData {
    paused: boolean;
    /** Take a $5 as a voucher instead (Giftaway on, Philippines only). */
    voucher: { available: boolean; amountPhp: number };
+   /** Set only when an admin opens someone else's dashboard (admin_affiliate_dashboard). */
+   viewing?: { id: string; username: string | null; display_name: string | null } | null;
 }
 
 /** locked = their friend repaid, but the $5 waits until they repay a loan themself. */
@@ -204,7 +206,8 @@ export function parseAffiliateDashboard(data: unknown): AffiliateDashboardData {
       voucher: {
          available: raw.voucher?.available === true,
          amountPhp: Number(raw.voucher?.amountPhp) || AFFILIATE_VOUCHER_PHP
-      }
+      },
+      viewing: raw.viewing ?? null
    };
 }
 
@@ -213,6 +216,13 @@ export const AFFILIATE_VOUCHER_PHP = 250;
 
 export async function fetchAffiliateDashboard(): Promise<AffiliateDashboardData> {
    const { data, error } = await getSupabaseBrowserClient().rpc('my_affiliate_dashboard');
+   if (error) throw error;
+   return parseAffiliateDashboard(data);
+}
+
+/** Admins only: someone else's dashboard, read-only. who = user id or @username. */
+export async function fetchAdminAffiliateDashboard(who: string): Promise<AffiliateDashboardData> {
+   const { data, error } = await getSupabaseBrowserClient().rpc('admin_affiliate_dashboard', { p_who: who });
    if (error) throw error;
    return parseAffiliateDashboard(data);
 }

@@ -17,6 +17,7 @@ import {
    type AffiliateStage,
    affiliateTotals,
    claimErrorText,
+   fetchAdminAffiliateDashboard,
    fetchAffiliateDashboard,
    newPayouts,
    referralStage,
@@ -210,7 +211,8 @@ function CodeCard({
                </>
             ) : (
                <>
-                  Friends sign up with your link or QR, or type <b className="text-white">{main.code}</b> when they ask for their first loan.
+                  Friends sign up with your link or QR, or type <b className="text-white">{main.code}</b> when they ask for their first
+                  loan.
                </>
             )}
          </p>
@@ -306,7 +308,9 @@ function PosterQr({ code }: { code: string }) {
                   <QRCodeCanvas id={canvasId} value={link} size={720} level="M" style={{ width: 112, height: 112 }} />
                </div>
                <div className="min-w-0 flex-1">
-                  <p className="break-all text-[14px] font-semibold leading-[18px] text-[#6b55f7] dark:text-[#b3a6ff]">{link.replace(/^https?:\/\//, '')}</p>
+                  <p className="break-all text-[14px] font-semibold leading-[18px] text-[#6b55f7] dark:text-[#b3a6ff]">
+                     {link.replace(/^https?:\/\//, '')}
+                  </p>
                   <p className="mt-1 text-[13px] leading-[18px] text-[#7b6b8c] dark:text-[#a99cba]">
                      Friends who scan it and sign up are linked to you.
                   </p>
@@ -567,7 +571,12 @@ function FriendRow({
    const stage = referralStage(r, unlocked);
    const tone = stage === 'owed' ? 'gold' : stage === 'paid' || stage === 'repaid' || stage === 'voucher' ? 'green' : 'purple';
    const canVoucher =
-      voucherPhp !== null && !paused && stage === 'owed' && r.personal === true && r.payout_status === 'unpaid' && Boolean(r.friend_referral_id);
+      voucherPhp !== null &&
+      !paused &&
+      stage === 'owed' &&
+      r.personal === true &&
+      r.payout_status === 'unpaid' &&
+      Boolean(r.friend_referral_id);
    return (
       <li
          className={clsx(
@@ -580,7 +589,9 @@ function FriendRow({
       >
          <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1">
-               <p className="truncate text-[17px] font-medium leading-5 text-[#2f2540] dark:text-[#e6def2]">{r.full_name || r.first_name}</p>
+               <p className="truncate text-[17px] font-medium leading-5 text-[#2f2540] dark:text-[#e6def2]">
+                  {r.full_name || r.first_name}
+               </p>
                <p className="text-[13px] leading-4 text-[#7b6b8c] dark:text-[#a99cba]">
                   Joined {shortDate(r.joined_at)}
                   {showCode ? ` · ${r.code}` : ''}
@@ -845,14 +856,37 @@ function PaidPopup({ amount, count, onClose }: { amount: number; count: number; 
    );
 }
 
+/* ---------- Admin view ---------- */
+
+function AdminViewBanner({ viewing, who }: { viewing: AffiliateDashboardData['viewing']; who: string }) {
+   const name = viewing?.display_name?.trim() || (viewing?.username ? `@${viewing.username}` : who);
+   return (
+      <div className="sticky top-0 z-20 -mx-5 mb-2 flex items-center justify-between gap-3 bg-[#2f2540] px-5 py-2.5 text-[14px] text-white">
+         <span className="min-w-0 truncate">
+            Admin view: <strong>{name}</strong>
+            {viewing?.username && viewing.display_name ? <span className="text-[#cfc6dd]"> · @{viewing.username}</span> : null}
+            <span className="text-[#cfc6dd]"> · read-only</span>
+         </span>
+         <Link to="/admin" className="shrink-0 font-semibold underline underline-offset-2">
+            Admin
+         </Link>
+      </div>
+   );
+}
+
 /* ---------- Page ---------- */
 
 export default function AffiliateDashboardPage({ sample = false }: { sample?: boolean }) {
    const [searchParams] = useSearchParams();
+   // /affiliate?user=@username (or a user id): admins see that person's dashboard, read-only.
+   const viewAs = sample ? '' : (searchParams.get('user') ?? '').trim();
+   const adminView = viewAs !== '';
    const query = useQuery({
-      queryKey: ['affiliate-dashboard'],
-      queryFn: fetchAffiliateDashboard,
+      // '' = your own; the voucher pop-up's invalidate of ['affiliate-dashboard'] still matches by prefix.
+      queryKey: ['affiliate-dashboard', viewAs],
+      queryFn: () => (viewAs ? fetchAdminAffiliateDashboard(viewAs) : fetchAffiliateDashboard()),
       staleTime: 30_000,
+      retry: adminView ? false : 3,
       enabled: !sample
    });
    // /affiliate-preview (dev only) renders made-up referrals so the page can be checked signed out:
@@ -873,7 +907,7 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
    const { main, others } = splitCodes(codes, referrals);
    const queryClient = useQueryClient();
    const [voucherFor, setVoucherFor] = useState<AffiliateReferral | null>(null);
-   const voucherPhp = data?.voucher.available ? data.voucher.amountPhp : null;
+   const voucherPhp = !adminView && data?.voucher.available ? data.voucher.amountPhp : null;
 
    const [sharing, setSharing] = useState(false);
    const [shareCopied, setShareCopied] = useState(false);
@@ -882,20 +916,21 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
    useEffect(() => {
       if (!data) return;
       // ?popup=1 forces the pop-up in the preview so it can be checked.
+      if (adminView) return;
       if (sample) {
          if (searchParams.get('popup') === '1') setPaidPopup({ amount: 10, count: 1, latest: new Date().toISOString() });
          return;
       }
       const fresh = newPayouts(data.referrals, readSeen());
       if (fresh.count && fresh.latest) setPaidPopup({ amount: fresh.amount, count: fresh.count, latest: fresh.latest });
-   }, [data, sample, searchParams]);
+   }, [data, sample, searchParams, adminView]);
 
    const closePaidPopup = () => {
       if (paidPopup && !sample) writeSeen(paidPopup.latest);
       setPaidPopup(null);
    };
 
-      // Every owned code has an invite link now (influencer codes too): it links the friend on sign-up.
+   // Every owned code has an invite link now (influencer codes too): it links the friend on sign-up.
    const shareLink = main ? buildInviteLink(main.code) : 'https://moodeng.app';
    const shareText = !main
       ? ''
@@ -927,11 +962,15 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
                   </div>
                ) : error ? (
                   <p className="mt-8 rounded-[12px] bg-dv2-card p-4 text-[16px] text-[#45556c] dark:text-[#b9adc9]">
-                     We couldn&apos;t load your dashboard. Pull to refresh or try again in a minute.
+                     {adminView
+                        ? `Couldn't open ${viewAs}'s dashboard: ${error instanceof Error ? error.message : ((error as { message?: string }).message ?? 'unknown error')}`
+                        : 'We couldn\u2019t load your dashboard. Pull to refresh or try again in a minute.'}
                   </p>
                ) : (
                   <div className="mt-8 rounded-[12px] bg-dv2-card p-5 text-center">
-                     <p className="text-[20px] font-semibold text-[#594d65] dark:text-[#e6def2]">Your code isn&apos;t ready yet</p>
+                     <p className="text-[20px] font-semibold text-[#594d65] dark:text-[#e6def2]">
+                        {adminView ? `${viewAs} has no invite code yet` : 'Your code isn\u2019t ready yet'}
+                     </p>
                      <p className="mt-2 text-[15px] leading-5 text-[#45556c] dark:text-[#b9adc9]">
                         Try again in a minute. If it still doesn&apos;t show, message us and we&apos;ll set it up.
                      </p>
@@ -946,6 +985,7 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
       <div className="min-h-screen bg-dv2-page">
          <div className="mx-auto max-w-[440px] px-5 pb-28">
             <h1 className="sr-only">Moo affiliate</h1>
+            {adminView ? <AdminViewBanner viewing={data?.viewing ?? null} who={viewAs} /> : null}
             <Hero payout={main.payout_amount} />
             <CodeCard main={main} others={others} unlocked={unlocked || !main.personal} onShare={() => setSharing(true)} />
             <PosterQr code={main.code} />
@@ -961,7 +1001,9 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
                onShare={() => setSharing(true)}
             />
             <Milestones referrals={referrals} />
-            <ClaimFriend claims={data?.claims ?? []} sample={sample} personal={main.personal === true} payout={main.payout_amount} />
+            {adminView ? null : (
+               <ClaimFriend claims={data?.claims ?? []} sample={sample} personal={main.personal === true} payout={main.payout_amount} />
+            )}
          </div>
 
          {voucherFor && voucherPhp !== null ? (

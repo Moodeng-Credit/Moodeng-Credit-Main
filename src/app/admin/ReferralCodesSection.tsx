@@ -68,6 +68,7 @@ export default function ReferralCodesSection() {
    const [codes, setCodes] = useState<AdminReferralCode[]>([]);
    const [payouts, setPayouts] = useState<AdminReferralPayout[]>([]);
    const [claims, setClaims] = useState<AdminReferralClaim[]>([]);
+   const [affiliateWho, setAffiliateWho] = useState('');
    const [pickingClaim, setPickingClaim] = useState<string | null>(null);
    const [showPaid, setShowPaid] = useState(false);
    const [loading, setLoading] = useState(false);
@@ -346,6 +347,29 @@ export default function ReferralCodesSection() {
 
          {error ? <div className="rounded-2xl border border-red-900 bg-red-950/40 p-4 text-lg font-bold text-red-300">{error}</div> : null}
 
+         <form
+            className="flex flex-wrap items-center gap-2 rounded-2xl border border-[#2a1453] bg-[#1c0a3a] px-4 py-3"
+            onSubmit={(e) => {
+               e.preventDefault();
+               const who = affiliateWho.trim();
+               if (who) window.open(`/affiliate?user=${encodeURIComponent(who)}`, '_blank', 'noopener');
+            }}
+         >
+            <label htmlFor="affiliate-who" className="text-base font-black">
+               See anyone&apos;s affiliate page
+            </label>
+            <input
+               id="affiliate-who"
+               value={affiliateWho}
+               onChange={(e) => setAffiliateWho(e.target.value)}
+               placeholder="@username"
+               className="min-w-0 flex-1 rounded-xl bg-[#241044] px-3 py-2 text-base text-white placeholder:text-[#6f6385]"
+            />
+            <button type="submit" className="rounded-xl bg-[#34234f] px-4 py-2 text-base font-black text-white">
+               Open
+            </button>
+         </form>
+
          {claims.some((c) => c.status === 'pending') ? (
             <article className="rounded-2xl border border-[#8336f0]/60 bg-[#1c0a3a] p-5">
                <h4 className="text-xl font-black">
@@ -372,7 +396,11 @@ export default function ReferralCodesSection() {
                                  </p>
                                  {c.friend_facebook_url && /^(https?:\/\/)?([a-z]+\.)?facebook\.com\//i.test(c.friend_facebook_url) ? (
                                     <a
-                                       href={/^https?:\/\//i.test(c.friend_facebook_url) ? c.friend_facebook_url : `https://${c.friend_facebook_url}`}
+                                       href={
+                                          /^https?:\/\//i.test(c.friend_facebook_url)
+                                             ? c.friend_facebook_url
+                                             : `https://${c.friend_facebook_url}`
+                                       }
                                        target="_blank"
                                        rel="noopener noreferrer"
                                        className="text-sm font-bold text-[#c9a7ff] underline"
@@ -607,6 +635,16 @@ export default function ReferralCodesSection() {
                            >
                               {c.owner ? 'Change owner' : 'Link owner'}
                            </button>
+                           {c.owner ? (
+                              <a
+                                 href={`/affiliate?user=${c.owner.id}`}
+                                 target="_blank"
+                                 rel="noopener noreferrer"
+                                 className="rounded-xl bg-[#34234f] px-4 py-2 text-base font-black text-white"
+                              >
+                                 Their affiliate page
+                              </a>
+                           ) : null}
                            {c.owner ? (
                               <button
                                  type="button"
