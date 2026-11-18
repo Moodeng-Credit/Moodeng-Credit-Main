@@ -13,7 +13,15 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 type Question = { id: string; text: string };
 type Answer = { q: string; video: string | null; audio: string | null; seconds: number; text?: string | null };
-type GradedAnswer = { q: string; transcript: string | null; score: number | null; note: string };
+type ClipCheck = {
+   person_visible: boolean | null;
+   one_person: boolean | null;
+   live_person: boolean | null;
+   reading: boolean | null;
+   language: string | null;
+   note: string;
+};
+type GradedAnswer = { q: string; transcript: string | null; score: number | null; note: string; seen?: ClipCheck | null };
 type IncomeFile = { path: string; name: string; mime: string; size: number };
 type IncomeRead = {
    readable: boolean;
@@ -262,6 +270,12 @@ export default function PreScreeningSection() {
                                     )}
                                  </p>
                                  {graded?.note ? <p className="mt-1 text-sm text-[#a89bb8]">{graded.note}</p> : null}
+                                 {graded?.seen?.note ? (
+                                    <p className="mt-1 text-sm text-[#cfc6dd]">
+                                       🎥 {graded.seen.note}
+                                       {graded.seen.language ? <span className="text-[#a89bb8]"> · {graded.seen.language}</span> : null}
+                                    </p>
+                                 ) : null}
                                  {path && clips[path] ? (
                                     answer?.video ? (
                                        <video className="mt-2 max-h-[360px] rounded-lg" controls playsInline src={clips[path]} />

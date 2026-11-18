@@ -4,7 +4,10 @@
 //                              review it all together, grade it, tell the team
 //   {"prescreen_claimed": id}  that person just signed up → tell the team the new account was pre-screened
 //
-// The AI hears the answers, it does not watch them: the page sends the sound of each clip as a small
+// Since 2026-11-19 Gemini grades (geminiPreScreen.ts): it watches each clip (picture + sound), reads
+// the proof of income and grades it all in one go. Everything below about DeepSeek is the fallback,
+// used when Gemini has no key, fails or times out.
+// DeepSeek hears the answers, it does not watch them: the page sends the sound of each clip as a small
 // WAV (DeepSeek speech-to-text takes WAV, not phone video), and the grade is made from that text
 // against "what a good answer sounds like" for each question. The clips themselves stay for the team
 // to watch in Admin → Pre-screening. The proof of income (about 1 month, photos or PDF) is read the
@@ -14,6 +17,7 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { postDiscord } from './discord.ts';
+import { type ClipCheck, clipWarnings, GEMINI_MODEL, type GeminiResult, gradeWithGemini } from './geminiPreScreen.ts';
 import { type IncomeProofRead, readIncomeProof } from './incomeDocs.ts';
 import { sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
 
@@ -67,7 +71,7 @@ export type PreScreenQuestion = { id: string; text: string; good?: string; kind?
 export type PreScreenAnswer = { q: string; video?: string | null; audio?: string | null; seconds?: number; text?: string | null };
 export type PreScreenVerdict = 'good' | 'ok' | 'weak';
 export type PreScreenIncomeFile = { path: string; name: string; mime: string; size: number };
-export type GradedAnswer = { q: string; transcript: string | null; score: number | null; note: string };
+export type GradedAnswer = { q: string; transcript: string | null; score: number | null; note: string; seen?: ClipCheck | null };
 /** The proof-of-income part of the grade: the read itself, and the AI's 0-10 against the answers. */
 export type GradedIncome = { files: number; read: IncomeProofRead | null; score: number | null; note: string };
 export type PreScreenGrade = {
@@ -79,6 +83,8 @@ export type PreScreenGrade = {
    income?: GradedIncome | null;
    /** Things that don't add up across the answers and the document (name, job, income). */
    flags?: string[];
+   /** Which AI graded it ('gemini-…' watched the clips; 'deepseek' only heard them). */
+   graded_by?: string;
 };
 
 type Row = {
@@ -450,7 +456,49 @@ export async function gradePreScreening(svc: SupabaseClient, id: string, apiKey:
    const incomeFiles = Array.isArray(row.income_files) ? row.income_files : [];
    let incomeRead: IncomeProofRead | null = null;
    let modelOut: { summary?: unknown; answers?: unknown; income?: unknown; flags?: unknown } | null = null;
-   if (!apiKey) problems.push('DEEPSEEK_API_KEY not set');
+   let gemini: GeminiResult | null = null;
+   const geminiKey = await svc.rpc('gemini_api_key').then(
+      (r) => (typeof r.data === 'string' && r.data.trim() ? r.data.trim() : null),
+      () => null
+   );
+   if (geminiKey) {
+      try {
+         const download = async (path: string) => {
+            const file = await svc.storage.from(BUCKET).download(path);
+            if (file.error || !file.data) throw new Error(`download failed: ${path.split('/').pop()}`);
+            return { mime: file.data.type, bytes: new Uint8Array(await file.data.arrayBuffer()) };
+         };
+         const [answers, files, examples] = await Promise.all([
+            Promise.all(
+               row.questions.map(async (q) => {
+                  const a = row.answers.find((x) => x.q === q.id);
+                  if (a?.text?.trim() || !a?.video) return { q: q.id, text: a?.text ?? null, video: null };
+                  const v = await download(a.video);
+                  return { q: q.id, text: null, video: { mime: v.mime || 'video/mp4', bytes: v.bytes } };
+               })
+            ),
+            Promise.all(
+               incomeFiles.map(async (f) => {
+                  const d = await download(f.path);
+                  return { name: f.name || f.path.split('/').pop() || 'file', mime: f.mime || d.mime, bytes: d.bytes };
+               })
+            ),
+            loadTeamExamples(svc, row.id).catch(() => [] as TeamExample[])
+         ]);
+         gemini = await gradeWithGemini(geminiKey, { name: row.name, questions: row.questions, answers, incomeFiles: files, examples });
+         Object.assign(transcripts, gemini.transcripts);
+         incomeRead = gemini.income;
+         if (incomeRead && !incomeRead.readable && incomeRead.problem) problems.push(`income proof: ${incomeRead.problem}`);
+         modelOut = combineReads(gemini.reads);
+      } catch (err) {
+         // DeepSeek takes over below; say why on the row.
+         problems.push(`gemini: ${err instanceof Error ? err.message : String(err)}`);
+         gemini = null;
+      }
+   }
+   if (gemini) {
+      // Graded by Gemini above.
+   } else if (!apiKey) problems.push('DEEPSEEK_API_KEY not set');
    else {
       // The document, read alongside the speech-to-text (one after another could run past the
       // function's time limit). Its failure never stops the answers from being graded.
@@ -501,7 +549,15 @@ export async function gradePreScreening(svc: SupabaseClient, id: string, apiKey:
       }
    }
 
-   const grade = buildGrade(row.questions, transcripts, modelOut, incomeFiles.length ? { files: incomeFiles.length, read: incomeRead } : null);
+   const built = buildGrade(row.questions, transcripts, modelOut, incomeFiles.length ? { files: incomeFiles.length, read: incomeRead } : null);
+   const seenFor = (q: string) => (gemini ? (gemini.seen[q] ?? null) : null);
+   const cameraFlags = gemini ? built.answers.flatMap((a) => clipWarnings(seenFor(a.q)).map((w) => `🎥 ${a.q}: ${w}`)) : [];
+   const grade: PreScreenGrade = {
+      ...built,
+      answers: built.answers.map((a) => (gemini ? { ...a, seen: seenFor(a.q) } : a)),
+      flags: [...cameraFlags, ...(built.flags ?? [])].slice(0, 9),
+      graded_by: gemini ? GEMINI_MODEL : 'deepseek'
+   };
    const failed = grade.overall == null;
    await svc
       .from('pre_screenings')
@@ -518,7 +574,7 @@ export async function gradePreScreening(svc: SupabaseClient, id: string, apiKey:
    if (!opts.quiet) {
       const perAnswer = row.questions.map((q, i) => {
          const a = grade.answers[i];
-         return `${i + 1}. ${q.text}\n   ${a.score != null ? `${a.score}/10` : '—'}${a.transcript ? ` · “${a.transcript.slice(0, 160)}${a.transcript.length > 160 ? '…' : ''}”` : ' · not heard'}`;
+         return `${i + 1}. ${q.text}\n   ${a.score != null ? `${a.score}/10` : '—'}${a.transcript ? ` · “${a.transcript.slice(0, 160)}${a.transcript.length > 160 ? '…' : ''}”` : ' · not heard'}${a.seen?.note ? `\n   🎥 ${a.seen.note}` : ''}`;
       });
       await tellTeam(
          svc,
