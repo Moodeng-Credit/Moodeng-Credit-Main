@@ -73,7 +73,7 @@ async function tellGoodFit(svc: SupabaseClient, userId: string): Promise<string>
    const { data } = await svc.from('users').select('messenger_psid, prescreen_path').eq('id', userId).maybeSingle();
    const u = data as { messenger_psid?: string | null; prescreen_path?: boolean } | null;
    if (!u?.prescreen_path) return 'Shows on their call card.';
-   const [msg, push] = await Promise.all([
+   const [msg, push, sms] = await Promise.all([
       sendMessengerMessage(u.messenger_psid, { text: GOOD_FIT_TEXT }).catch(() => ({ ok: false })),
       sendPushToUser(svc, userId, () => ({
          type: 'loan_access_decision',
@@ -81,10 +81,20 @@ async function tellGoodFit(svc: SupabaseClient, userId: string): Promise<string>
          body: 'The team looked at your answers. Set up your wallet and book your call.',
          url: 'https://moodeng.app/onboarding/connect',
          tag: 'prescreen-good'
-      })).catch(() => null)
+      })).catch(() => null),
+      // A text too: Messenger can't reach them after 24h; a text can (migration 20261118150000).
+      svc.rpc('prescreen_good_sms', { p_user: userId }).then(
+         ({ data }) => (typeof data === 'string' ? data : 'failed'),
+         () => 'failed'
+      )
    ]);
    const pushed = Boolean(push && (push as { sent?: number }).sent);
-   return msg.ok || pushed ? `They were told to keep going (${[msg.ok ? 'Messenger' : null, pushed ? 'push' : null].filter(Boolean).join(' + ')}).` : '⚠️ Could not message them — they see it next time they open the app.';
+   const texted = sms === 'sent' || sms === 'unconfirmed';
+   const ways = [msg.ok ? 'Messenger' : null, pushed ? 'push' : null, texted ? 'text' : null].filter(Boolean);
+   const smsNote = sms === 'rejected_network' ? ' (no text: Smart/TNT/Sun number)' : sms === 'no_number' ? ' (no number to text)' : '';
+   return ways.length
+      ? `They were told to keep going (${ways.join(' + ')})${smsNote}.`
+      : `⚠️ Could not reach them${smsNote} — they see it next time they open the app.`;
 }
 
 const STAMP: Record<Decision, string> = { good: '✅ GOOD FIT', not_fit: '❌ NOT A FIT' };
