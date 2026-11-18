@@ -6,7 +6,7 @@ import { postDiscord } from '../_shared/discord.ts';
 import { isInternalRequest } from '../_shared/internalAuth.ts';
 import { collectGateDigest, formatGateDigest } from '../_shared/gateDigest.ts';
 import { cancelUpcomingCall } from '../_shared/callCancel.ts';
-import { BORROWER_COLUMNS, getAdminChatId, notifyAdminsOfRequest, notifyBorrower, PAGE_INBOX_URL, rejectUser, REQUEST_COLUMNS, shortId, SITE_URL, who } from '../_shared/loanAccess.ts';
+import { BORROWER_COLUMNS, decideRejectFollowUp, getAdminChatId, notifyAdminsOfRequest, notifyBorrower, PAGE_INBOX_URL, rejectUser, REQUEST_COLUMNS, shortId, SITE_URL, who } from '../_shared/loanAccess.ts';
 import { needsPreKycGate } from '../_shared/preKycGate.ts';
 import { isIdStep, loadIdStatus, notifyIdNextStep, sendIdTelegram } from '../_shared/idTrack.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
@@ -377,6 +377,24 @@ serve(async (req) => {
          if (typeof body.user_id !== 'string') return json({ ok: false, error: 'user_id required' }, 400);
          const by = typeof body.by === 'string' && body.by.trim() ? body.by.trim().slice(0, 60) : 'team';
          return json(await rejectUser(svc, body.user_id, by));
+      }
+      if (body.action === 'approve_user') {
+         // Same as the rejected card's "✅ Approve after all" (stamps cards, sends "You're approved",
+         // Discord line), for when the team approves someone they rejected and asks me to do it.
+         // Also counts as the intro call, like the admin panel's approve_user, so the loan form
+         // doesn't ask them to book another call.
+         if (!(await isInternalRequest(svc, req))) return json({ ok: false, error: 'unauthorized' }, 401);
+         if (typeof body.user_id !== 'string') return json({ ok: false, error: 'user_id required' }, 400);
+         const by = typeof body.by === 'string' && body.by.trim() ? body.by.trim().slice(0, 60) : 'team';
+         const result = await decideRejectFollowUp(svc, body.user_id, 'approve', by);
+         if (result.ok) {
+            await svc
+               .from('users')
+               .update({ video_call_outcome: 'attended', video_call_outcome_at: new Date().toISOString() })
+               .eq('id', body.user_id)
+               .is('video_call_outcome', null);
+         }
+         return json(result);
       }
       if (body.action === 'fb_profile_probe') return await fbProfileProbe(req, svc, body);
       return json({ error: 'unknown_action' }, 400);
