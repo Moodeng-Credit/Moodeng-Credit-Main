@@ -136,3 +136,14 @@ Deno.test('pre-screening: no proof of income sent = no income part', () => {
    assertEquals(grade.income, null);
    assertEquals(grade.flags, []);
 });
+
+import { parsePreScreeningCallback } from './preScreeningDecision.ts';
+
+Deno.test('pre-screening: decision buttons parse, and nothing else does', () => {
+   const id = '0df3967b-1633-48ed-a5a6-17df9940e020';
+   assertEquals(parsePreScreeningCallback(`ps:good:${id}`), { step: 'good', id });
+   assertEquals(parsePreScreeningCallback(`ps:no_yes:${id}`), { step: 'no_yes', id });
+   assertEquals(parsePreScreeningCallback(`pi:approve:${id}`), null);
+   assertEquals(parsePreScreeningCallback(`ps:delete:${id}`), null);
+   assertEquals(parsePreScreeningCallback(undefined), null);
+});
