@@ -68,7 +68,8 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
       creditHint: { highlight: '$15', rest: ' full-limit loan unlocks LV.2' },
       summary: { repaymentsTotal: 1, active: 5, pending: 1.68, defaulted: 0 },
       dues: [
-         { id: 'sample-due-1', amount: 5, daysRemaining: 5, deadline: sampleDeadline(5), lenderName: 'Maricar Cruz', isOverdue: false },
+         // Not halfway yet: the reward line names the dates that count.
+         { id: 'sample-due-1', amount: 5, daysRemaining: 5, deadline: sampleDeadline(5), rewardFrom: sampleDeadline(1), lenderName: 'Maricar Cruz', isOverdue: false },
          { id: 'sample-due-2', amount: 1.68, daysRemaining: 13, deadline: sampleDeadline(13), lenderName: 'Milagros Reyes', isOverdue: false }
       ],
       hasOverdue: false,

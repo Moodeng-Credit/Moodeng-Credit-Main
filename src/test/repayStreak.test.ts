@@ -50,8 +50,14 @@ describe('repay streak: loan card', () => {
          best: 3,
          nextStep: 5,
          toGo: 3,
-         nextPhp: 50
+         nextPhp: 50,
+         earlyPaid: null
       });
+      expect(
+         parseMyRewards({
+            streak: { current: 0, best: 0, nextStep: 1, toGo: 1, nextPhp: 50, earlyPaid: { rewardFrom: '2026-12-01T16:00:00Z' } }
+         }).streak.earlyPaid
+      ).toEqual({ rewardFrom: '2026-12-01T16:00:00Z' });
       expect(parseMyRewards({}).streak).toEqual(EMPTY_STREAK);
    });
 });

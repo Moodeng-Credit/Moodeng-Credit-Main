@@ -59,6 +59,11 @@ export interface RepayStreak {
    /** On-time repayments still needed to reach nextStep. */
    toGo: number | null;
    nextPhp: number | null;
+   /**
+    * Their latest repayment (last 3 days) was on time but before the loan's halfway day, so it earned
+    * no voucher: when that loan would have started counting. Null otherwise. The team can unlock it.
+    */
+   earlyPaid?: { rewardFrom: string } | null;
 }
 
 export const EMPTY_STREAK: RepayStreak = { current: 0, best: 0, nextStep: null, toGo: null, nextPhp: null };
@@ -119,7 +124,13 @@ const parseStreak = (raw: unknown): RepayStreak => {
       best: toNumber(value.best),
       nextStep: toNumberOrNull(value.nextStep),
       toGo: toNumberOrNull(value.toGo),
-      nextPhp: toNumberOrNull(value.nextPhp)
+      nextPhp: toNumberOrNull(value.nextPhp),
+      earlyPaid:
+         value.earlyPaid &&
+         typeof value.earlyPaid === 'object' &&
+         typeof (value.earlyPaid as Record<string, unknown>).rewardFrom === 'string'
+            ? { rewardFrom: (value.earlyPaid as Record<string, string>).rewardFrom }
+            : null
    };
 };
 

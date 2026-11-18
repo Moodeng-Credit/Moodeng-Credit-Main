@@ -16,6 +16,7 @@ import { sendPushToUser } from '../_shared/pushDelivery.ts';
 import { buildRepaymentReceivedPushPayload } from '../_shared/pushMessages.ts';
 import { postLoanRepaidToTeam } from '../_shared/teamLoanFeed.ts';
 import { postRepayNextLoanRead } from '../_shared/repayNextLoanRead.ts';
+import { loadRewardTiming, repaidTimingLines } from '../_shared/rewardTiming.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import {
    calculateTrustPointRewardDelta,
@@ -215,7 +216,11 @@ serve(async (req) => {
          type: 'repayment_team_feed'
       });
       if (teamFeedEnabled && teamChatId && !teamAlreadySent) {
-         const { text, actionUrl } = buildRepaymentTeamFeedMessage(loan, borrower, lender);
+         const { text: feedText, actionUrl } = buildRepaymentTeamFeedMessage(loan, borrower, lender);
+         // How long they held it; before the halfway day it earns no voucher, and the team can unlock it.
+         const unlockHandle = borrower.username && !/\s/.test(borrower.username) ? `@${borrower.username}` : borrower.id;
+         const timingLines = repaidTimingLines(await loadRewardTiming(supabase, loan.id), unlockHandle);
+         const text = [feedText, ...timingLines].join('\n');
          const card = await sendTelegramMessage(teamChatId, text, {
             inlineKeyboard: [[{ text: 'View loan', url: actionUrl }]]
          });

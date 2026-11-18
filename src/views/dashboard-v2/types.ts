@@ -28,6 +28,10 @@ export interface DashboardV2Due {
    daysRemaining: number;
    /** When the loan becomes overdue (end of the due day in the borrower's zone), ISO. */
    deadline: string;
+   /** From when paying it counts for food vouchers (the loan's halfway day), ISO; null when unknown. */
+   rewardFrom?: string | null;
+   /** The zone its due day is measured in, for showing dates. */
+   zone?: string;
    lenderName: string;
    isOverdue: boolean;
 }

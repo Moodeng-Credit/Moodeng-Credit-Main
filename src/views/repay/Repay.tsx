@@ -1,6 +1,5 @@
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { currentDueDate, currentMilestone } from '@/lib/repaymentSchedule';
 import { unwrapResult } from '@reduxjs/toolkit';
 import {
    AlertTriangle,
@@ -49,8 +48,9 @@ import { evaluateCreditProgression } from '@/lib/creditLeveling';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { detectInAppBrowser, shouldBlockRepayForInAppBrowser } from '@/lib/inAppBrowser';
 import { isUserVerified } from '@/lib/isUserVerified';
-import { getDueDayEnd, getLoanTimezone, isPastDueDay } from '@/lib/loanDeadline';
+import { getDueDayEnd, getLoanTimezone, getRewardFromAt, isPastDueDay } from '@/lib/loanDeadline';
 import { formatIdr, remainingIdr } from '@/lib/loanMarket';
+import { currentDueDate, currentMilestone } from '@/lib/repaymentSchedule';
 import { clearStep, readStep, writeStep } from '@/lib/stepMemory';
 import { openSupportChat } from '@/lib/support/liveChat';
 import { useUsdcRate } from '@/lib/useUsdcRate';
@@ -61,6 +61,7 @@ import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
 import { RepayStreakCelebration } from '@/views/dashboard-v2/components/RepayStreak';
+import { getRewardRuleCopy, getRewardWindow } from '@/views/dashboard-v2/dashboardV2Model';
 import { CONNECT_HIPPOS } from '@/views/dashboard/components/connectKit';
 import { Card, DoneRow, GoldButton, SoftButton, StepHead, WaitRow } from '@/views/indonesia/ui';
 import WaltRepaySteps from '@/views/indonesia/walt/WaltRepaySteps';
@@ -577,7 +578,18 @@ export default function Repay() {
    const refreshAfterWaltRepay = useCallback(() => {
       if (user?.id) void dispatch(getUserLoans({ userId: user.id }));
    }, [dispatch, user?.id]);
-   const repayLoans = usePreviewLoans ? previewLoans : loans;
+   // /repay-preview?early=1: a loan funded yesterday, so the "food reward counts from …" note shows.
+   const repayLoans = usePreviewLoans
+      ? new URLSearchParams(location.search).has('early')
+         ? [
+              {
+                 ...previewLoans[0],
+                 fundedAt: new Date(Date.now() - 864e5).toISOString(),
+                 dueDate: new Date(Date.now() + 28 * 864e5).toISOString()
+              }
+           ]
+         : previewLoans
+      : loans;
    const { hasFetched: hasCheckedRepayLoans, isLoading: isCheckingRepayLoans } = useLoanData({
       userId: user.id,
       enabled: Boolean(user.id) && !usePreviewLoans
@@ -2320,6 +2332,21 @@ export default function Repay() {
             ) : null}
          </div>
       );
+      // Before the loan's halfway day, paying earns no food voucher: say so before they pay.
+      const loanZone = getLoanTimezone(selectedLoan);
+      const rewardWindow =
+         clearsLoan && selectedLoan.fundedAt
+            ? getRewardWindow({
+                 rewardFrom: getRewardFromAt(selectedLoan.fundedAt, selectedLoan.dueDate, loanZone)?.toISOString() ?? null,
+                 deadline: getDueDayEnd(selectedLoan.dueDate, loanZone).toISOString(),
+                 zone: loanZone
+              })
+            : null;
+      const earlyRewardNote = rewardWindow ? (
+         <span className="text-[13px] font-medium leading-[17px] text-[#7a6a4f] dark:text-[#bfb29a]" data-testid="repay-early-reward-note">
+            {getRewardRuleCopy(locale).countsFrom(rewardWindow.from)}
+         </span>
+      ) : null;
       const rewardChip = clearsLoan ? (
          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff1c2] px-3 py-1.5 text-[15px] font-extrabold text-[#6b4a00] dark:bg-[#3a2e10] dark:text-[#ffe27a]">
             🎁 {nextLimit > currentLimit ? `Next loan: up to $${nextLimit}` : 'Borrow again right after'}
@@ -2365,6 +2392,7 @@ export default function Repay() {
                   </span>
                )}
                {dueLine}
+               {earlyRewardNote}
             </Card>
             {payLess ? (
                <Card>

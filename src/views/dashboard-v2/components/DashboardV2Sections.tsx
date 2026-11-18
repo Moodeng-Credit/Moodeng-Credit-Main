@@ -7,14 +7,20 @@ import { useFloatingParticles, useReplayClass } from '@/components/motion/TapDel
 
 import { formatCurrency } from '@/utils/decimalHelpers';
 
-import type { ClaimableVoucher, RepayStreak, VoucherClaimSummary } from '@/lib/friendReferrals';
-
 import { type LocaleCode, useLocalization } from '@/i18n';
+import type { ClaimableVoucher, RepayStreak, VoucherClaimSummary } from '@/lib/friendReferrals';
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 import { TabbedCard } from '@/views/dashboard-v2/components/DashboardV2Graphics';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
 import { AddDueToCalendar, RepayStreakCard } from '@/views/dashboard-v2/components/RepayStreak';
-import { getRepayRewardLine, getVoucherState, OWN_VOUCHER, type VoucherState } from '@/views/dashboard-v2/dashboardV2Model';
+import {
+   getRepayRewardLine,
+   getRewardRuleCopy,
+   getRewardWindow,
+   getVoucherState,
+   OWN_VOUCHER,
+   type VoucherState
+} from '@/views/dashboard-v2/dashboardV2Model';
 import type { DashboardV2Due, DashboardV2Milestone, DashboardV2Model } from '@/views/dashboard-v2/types';
 
 const PILL_BUTTON = 'flex h-[34px] w-[82px] shrink-0 items-center justify-center rounded-full text-[16px] font-semibold leading-6';
@@ -315,7 +321,9 @@ const formatDueLabel = (due: DashboardV2Due, locale: LocaleCode) => {
 function DueRow({ due, streak }: { due: DashboardV2Due; streak: RepayStreak | null }) {
    const { locale } = useLocalization();
    // What paying this one on time is worth: the food voucher, or the streak it grows / saves.
-   const rewardLine = streak ? getRepayRewardLine(streak, due.daysRemaining, locale) : null;
+   // Before the loan's halfway day the line names the dates that count ("Pay Dec 1 – Dec 16 → ₱50 food").
+   const rewardWindow = getRewardWindow(due);
+   const rewardLine = streak ? getRepayRewardLine(streak, due.daysRemaining, locale, rewardWindow) : null;
    return (
       <div
          className={clsx(
@@ -344,6 +352,11 @@ function DueRow({ due, streak }: { due: DashboardV2Due; streak: RepayStreak | nu
             {rewardLine ? (
                <span className="mt-1 text-[15px] font-bold leading-[18px] text-[#2f8a4a] dark:text-[#7fd693]" data-testid="due-reward-line">
                   {rewardLine}
+               </span>
+            ) : null}
+            {rewardLine && rewardWindow ? (
+               <span className="text-[13px] leading-[16px] text-[#8a8494] dark:text-[#a99cb8]" data-testid="due-reward-early-note">
+                  {getRewardRuleCopy(locale).earlyNote}
                </span>
             ) : null}
          </div>
@@ -633,9 +646,7 @@ export function RewardsWaitingCard({ claimable, onClaim }: { claimable: Claimabl
          <div className="flex items-center gap-3">
             <DesignImage src={DASHBOARD_V2_ASSETS.coupon} className="h-12 w-12 shrink-0 object-contain" />
             <div className="min-w-0 flex-1">
-               <p className="text-[18px] font-black italic leading-6 text-[#3c8248]">
-                  You have ₱{total} in rewards!
-               </p>
+               <p className="text-[18px] font-black italic leading-6 text-[#3c8248]">You have ₱{total} in rewards!</p>
                <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">
                   {claimable.length} {claimable.length === 1 ? 'food voucher is waiting for you' : 'food vouchers are waiting for you'}
                </p>
