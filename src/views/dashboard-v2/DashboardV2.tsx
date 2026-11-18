@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
 import ContactLinesCard from '@/components/ContactLinesCard';
+import LimitStaysCard from '@/views/dashboard-v2/components/LimitStaysCard';
 import { AddEmailCard } from '@/components/account/AddEmailCard';
 import { ConfirmEmailReminder } from '@/components/account/ConfirmEmailReminder';
 import GuidedTourPreview from '@/components/GuidedTourPreview';
@@ -248,6 +249,8 @@ export default function DashboardV2() {
                         onEnable={() => void push.enable()}
                      />
                   ) : null}
+                  {/* The 48-hour rule: why their limit didn't go up, and how to talk to us about it. */}
+                  {isReal || new URLSearchParams(window.location.search).has('limit') ? <LimitStaysCard language={language} preview={!isReal} /> : null}
                   {/* Anything to repay sits near the top, with the streak and what paying on time earns. */}
                   {model.dues.length ? <UpcomingDuesSection model={model} /> : null}
                   {voucherFollowUp ? (
