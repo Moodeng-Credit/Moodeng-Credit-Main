@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { checkCronAuth } from '../_shared/cronAuth.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { analyseIncomeDocument, backfillBorrowerQuestions, notifyIncomeDecision, reviewWithAnswers } from '../_shared/incomeDocs.ts';
-import { gradePreScreening, notifyPreScreeningClaimed } from '../_shared/preScreening.ts';
+import { gradePreScreening, notifyPreScreeningClaimed, preScreeningWeekly } from '../_shared/preScreening.ts';
 import { applyPreScreeningDecision } from '../_shared/preScreeningDecision.ts';
 import { pingProofRequest, sendProofRequest } from '../_shared/proofRequests.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
@@ -316,11 +316,17 @@ serve(async (req) => {
       prescreen?: string;
       prescreen_claimed?: string;
       prescreen_decided?: string;
+      prescreen_weekly?: boolean;
       quiet?: boolean;
    };
 
    // Pre-screening rides here too: {"prescreen": id} = the clips are in, grade them;
    // {"prescreen_claimed": id} = that person signed up. See _shared/preScreening.ts.
+   // Monday cron: how often the AI agreed with the team's ✅ / ❌ last week.
+   if (body.prescreen_weekly === true) {
+      const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+      return jsonResponse(await preScreeningWeekly(svc));
+   }
    if (body.prescreen || body.prescreen_claimed || body.prescreen_decided) {
       const id = body.prescreen ?? body.prescreen_claimed ?? body.prescreen_decided ?? '';
       if (!UUID_RE.test(id)) return jsonResponse({ error: 'bad prescreen id' }, 400);
