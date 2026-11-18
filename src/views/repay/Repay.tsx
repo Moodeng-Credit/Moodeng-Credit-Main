@@ -44,7 +44,7 @@ import { COINS_PH_SUSPENDED, COINS_PH_SUSPENDED_MESSAGE, COINS_PH_SUSPENDED_TITL
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
 import { useLocalization } from '@/i18n';
 import { clearPendingBasePayment, hasPendingPaymentForLoan, registerPendingBasePayment } from '@/lib/basePayReconciliation';
-import { evaluateCreditProgression } from '@/lib/creditLeveling';
+import { countsFromAt, evaluateCreditProgression, isFastRepay } from '@/lib/creditLeveling';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { detectInAppBrowser, shouldBlockRepayForInAppBrowser } from '@/lib/inAppBrowser';
 import { isUserVerified } from '@/lib/isUserVerified';
@@ -614,6 +614,8 @@ export default function Repay() {
       coin: string;
       trustPoints: number;
       creditLevelUp?: { toLevel: number; newLimit: number } | null;
+      /** Repaid within 48h of getting it: their limit stays (the 48-hour rule). */
+      fastRepayLimit?: number | null;
    } | null>(() =>
       // Preview: ?paid=1 shows the "you're paid" screen (screenshots / design review).
       usePreviewLoans && new URLSearchParams(location.search).get('paid') === '1'
@@ -1358,7 +1360,9 @@ export default function Repay() {
                trustPoints: earnedTrustPoints,
                creditLevelUp: serverLevelUp
                   ? { toLevel: getCreditLevelNumber(serverLevelUp.toLimit), newLimit: serverLevelUp.toLimit }
-                  : null
+                  : null,
+               fastRepayLimit:
+                  !serverLevelUp && isFastRepay(selectedLoan.fundedAt ?? null, new Date().toISOString()) ? user.cs || STARTING_CREDIT_LIMIT : null
             });
          } else {
             // Partial payment: the loan stays active, so acknowledge it inline instead of
@@ -2046,6 +2050,12 @@ export default function Repay() {
                   </div>
                   <div className="flex w-full flex-col gap-2 text-left">
                      {completion.creditLevelUp ? <DoneRow>New limit: ${completion.creditLevelUp.newLimit}</DoneRow> : null}
+                     {completion.fastRepayLimit ? (
+                        <p className="rounded-[14px] bg-[#fff6dc] px-4 py-3 text-[14px] leading-[20px] text-[#6b4a00] dark:bg-[#3a2e10] dark:text-[#ffe27a]" data-testid="repay-fast-note">
+                           <b>Thanks for paying early!</b> Loans paid back within 2 days of getting them don’t raise your limit or earn
+                           rewards, so it stays ${completion.fastRepayLimit}. Next time, pay from day 3 onward to level up.
+                        </p>
+                     ) : null}
                      {completion.trustPoints > 0 ? <DoneRow>+{completion.trustPoints} Pandesal points</DoneRow> : null}
                   </div>
                   <RepayStreakCelebration isPreview={usePreviewLoans} />
@@ -2273,6 +2283,15 @@ export default function Repay() {
       });
       const currentLimit = user.cs || STARTING_CREDIT_LIMIT;
       const nextLimit = progression.shouldLevelUp ? progression.nextLimit : currentLimit;
+      // The 48-hour rule: paying now won't level them up — say so before they pay, with when it would.
+      const fastCountsFrom = clearsLoan && isFastRepay(selectedLoan.fundedAt ?? null, new Date().toISOString()) ? countsFromAt(selectedLoan.fundedAt) : null;
+      const fastNote = fastCountsFrom ? (
+         <span className="text-[13px] font-medium leading-[17px] text-[#7a6a4f] dark:text-[#bfb29a]" data-testid="repay-fast-before-note">
+            ⏳ Paying now is fine, but it won’t raise your limit. From{' '}
+            {fastCountsFrom.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: getLoanTimezone(selectedLoan) })} it
+            will.
+         </span>
+      ) : null;
       const goTo = (next: WizardStep) => {
          setWizardStep(next);
          window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2393,6 +2412,7 @@ export default function Repay() {
                )}
                {dueLine}
                {earlyRewardNote}
+               {fastNote}
             </Card>
             {payLess ? (
                <Card>

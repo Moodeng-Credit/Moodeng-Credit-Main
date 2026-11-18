@@ -1,6 +1,6 @@
 // How long a loan was held before it was repaid, for the team cards, and whether it came before the
 // loan's halfway day (then it earns no food voucher). From public.loan_reward_timing()
-// (migration 20261118120000_voucher_halfway_rule). The team can count an early one with /unlockreward.
+// (migration 20261118121000_voucher_halfway_rule). The team can count an early one with /unlockreward.
 
 type SupabaseClient = any;
 

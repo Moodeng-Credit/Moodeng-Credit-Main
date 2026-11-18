@@ -18,9 +18,9 @@ describe('food vouchers: halfway rule', () => {
       expect(getRewardFromAt(funded, due, zone)?.toISOString()).toBe('2026-11-30T16:00:00.000Z');
    });
 
-   it('never sooner than a day after funding', () => {
+   it('never sooner than 48 hours after funding (the fast-repay rule)', () => {
       const shortDue = '2026-11-17T00:00:00Z'; // due the next day
-      expect(getRewardFromAt(funded, shortDue, zone)?.toISOString()).toBe('2026-11-17T14:04:22.000Z');
+      expect(getRewardFromAt(funded, shortDue, zone)?.toISOString()).toBe('2026-11-18T14:04:22.000Z');
    });
 
    it('names the dates that count on the loan card before halfway, the plain line after', () => {
