@@ -115,7 +115,7 @@ import WhyLend from '@/app/whylend/page';
 import { clarityEvent, clarityTag, identifyClarity, isClarityEnabled, signupMethodLabel } from '@/lib/analytics/clarity';
 import { describeBrowser, recordSignupContext, recordSignupSource } from '@/lib/attribution';
 import { trackNewAccount } from '@/lib/metaPixel';
-import { claimPreScreening, joinPrescreenPath } from '@/lib/preScreening';
+import { claimPreScreening, joinPrescreenPath, redeemParkedTeamCode } from '@/lib/preScreening';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { type RootState } from '@/store/store';
 import MoneyGuide from '@/views/academy/MoneyGuide';
@@ -246,6 +246,8 @@ export default function App() {
          recordSignupSource(user.id);
          recordSignupContext(user.id);
          claimPreScreening(user.id);
+         // Came from a team-code pre-screening link (moodeng.app/screen/MAHJID): attach that code.
+         void redeemParkedTeamCode(user.createdAt);
          // Came from an affiliate's pre-screening link: Facebook → pre-screening → team ✅ → wallet.
          void joinPrescreenPath().then((joined) => {
             if (joined) void queryClient.invalidateQueries({ queryKey: ['prescreen-path'] });

@@ -8,7 +8,14 @@ import { useParams } from 'react-router-dom';
 import BrandedVideo from '@/components/BrandedVideo';
 import { describeBrowser } from '@/lib/attribution';
 import { fetchPrescreenPath, PRE_KYC_CONNECT_PATH } from '@/hooks/usePreKycGate';
-import { joinPrescreenPath, markPrescreenPath, readPreScreening, savePreScreening } from '@/lib/preScreening';
+import {
+   isPersonalInviteCode,
+   joinPrescreenPath,
+   markPrescreenPath,
+   parkTeamCode,
+   readPreScreening,
+   savePreScreening
+} from '@/lib/preScreening';
 import type { RootState } from '@/store/store';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { audioContextCtor, joinChunks, wavBlob, wavFromMediaFile } from '@/lib/wavAudio';
@@ -398,6 +405,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       // Account + Facebook come first now: someone signed out makes their account, then comes back.
       if (!authUser?.id) {
          markPrescreenPath();
+         if (ref) parkTeamCode(ref);
          setStage('signup');
          return;
       }
@@ -601,7 +609,10 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
 
    // The token rides on the link too, so the result follows them into another browser.
    const doneToken = token ?? readPreScreening()?.token ?? null;
-   const signUpHref = `${ref ? `/invite/${encodeURIComponent(ref)}` : '/sign-up'}${doneToken ? `?ps=${doneToken}` : ''}`;
+   // Personal invite code → its invite page; a team code (MAHJID, IRISH…) → plain sign-up, and the code is
+   // attached after sign-up (parkTeamCode).
+   const signUpBase = ref && isPersonalInviteCode(ref) ? `/invite/${encodeURIComponent(ref.toUpperCase())}` : '/sign-up';
+   const signUpHref = `${signUpBase}${doneToken ? `?ps=${doneToken}` : ''}`;
    const trailSteps = ['You', ...(videos.length ? ['Watch'] : []), 'Answer', ...(askProof ? ['Income'] : []), 'Done'];
    const trail = (step: string) => <StepTrail current={step === 'end' ? trailSteps.length : Math.max(0, trailSteps.indexOf(step))} steps={trailSteps} />;
    const question = questions[index];
@@ -643,7 +654,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                      subtitle="Then connect Facebook and answer a few quick questions. About 5 minutes."
                      title="First, make your Moodeng account"
                   />
-                  <a className="block" href={`${ref ? `/invite/${encodeURIComponent(ref)}` : '/sign-up'}?prescreen=1`}>
+                  <a className="block" href={`${signUpBase}?prescreen=1`}>
                      <PrimaryButton>Make my account</PrimaryButton>
                   </a>
                   <a className="block" href="/sign-in?prescreen=1">

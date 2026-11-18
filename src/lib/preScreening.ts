@@ -104,3 +104,49 @@ export const joinPrescreenPath = async (): Promise<boolean> => {
    }
    return data === true;
 };
+
+// Team codes on the pre-screening link (moodeng.app/screen/MAHJID, /screen/irish — George 2026-11-18).
+// A personal invite code (6 letters + 5 digits) goes through /invite/CODE as before. Anything else is a
+// team code (referral_codes): parked here when the link opens, then attached to the new account right
+// after sign-up with redeem_referral_code — the same thing as typing it in the loan form's code box.
+const TEAM_KEY = 'md_team_code';
+const PERSONAL_CODE = /^[A-Z]{6}[0-9]{5}$/;
+
+export const isPersonalInviteCode = (code: string) => PERSONAL_CODE.test(code.trim().toUpperCase());
+
+export const parkTeamCode = (code: string) => {
+   const clean = code.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 40);
+   if (!clean || isPersonalInviteCode(clean)) return;
+   try {
+      window.localStorage.setItem(TEAM_KEY, JSON.stringify({ code: clean, at: Date.now() }));
+   } catch {
+      // Storage blocked: the code just isn't attached.
+   }
+};
+
+/**
+ * After sign-in: attach a parked team code to an account made after the link was opened (never to an
+ * older account, and never over a code they already have — the server keeps the first one). Cleared
+ * on any definite answer; a network error leaves it for the next page load.
+ */
+export const redeemParkedTeamCode = async (accountCreatedAt: string | null | undefined) => {
+   let parked: { code?: string; at?: number } | null = null;
+   try {
+      parked = JSON.parse(window.localStorage.getItem(TEAM_KEY) ?? 'null');
+   } catch {
+      return;
+   }
+   if (!parked?.code || !parked.at) return;
+   const clear = () => {
+      try {
+         window.localStorage.removeItem(TEAM_KEY);
+      } catch {
+         // skip
+      }
+   };
+   const created = accountCreatedAt ? Date.parse(accountCreatedAt) : NaN;
+   // Made before the link was opened (an old account): not a referral.
+   if (!Number.isFinite(created) || created < parked.at - 10 * 60_000 || Date.now() - parked.at > 7 * 86_400_000) return clear();
+   const { error } = await getSupabaseBrowserClient().rpc('redeem_referral_code', { code_input: parked.code });
+   if (!error || !/network|fetch/i.test(error.message)) clear();
+};
