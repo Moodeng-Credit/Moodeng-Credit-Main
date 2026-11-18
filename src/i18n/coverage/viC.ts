@@ -854,6 +854,8 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Waiting for moo-lender acceptance': 'Đang chờ moo-lender chấp nhận',
    'This loan is not funded yet. Repayment starts only after a moo-lender accepts.':
       'Khoản vay này chưa được cấp vốn. Việc trả nợ chỉ bắt đầu sau khi có moo-lender chấp nhận.',
+   'Waiting for a moo-lender': 'Đang chờ moo-lender',
+   'Nothing to pay until it’s funded.': 'Chưa phải trả gì cho đến khi được cấp vốn.',
    'View on explorer': 'Xem trên trình khám phá blockchain',
 
    // src/views/transactions/TransactionHistory.tsx

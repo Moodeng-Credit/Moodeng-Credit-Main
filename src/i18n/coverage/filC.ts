@@ -519,6 +519,8 @@ export const filipinoCoverageC: Record<string, string> = {
    'Waiting for moo-lender acceptance': 'Naghihintay ng pag-accept ng moo-lender',
    'This loan is not funded yet. Repayment starts only after a moo-lender accepts.':
       'Hindi pa napopondohan ang loan na ito. Magsisimula lang ang pagbabayad kapag tinanggap na ito ng moo-lender.',
+   'Waiting for a moo-lender': 'Naghihintay ng moo-lender',
+   'Nothing to pay until it’s funded.': 'Wala kang babayaran hangga’t hindi pa napopondohan.',
    'Loan Amount': 'Halaga ng loan',
    Outstanding: 'Natitirang utang',
    'View on explorer': 'Tingnan sa explorer',
