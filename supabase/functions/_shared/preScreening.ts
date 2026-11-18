@@ -15,7 +15,19 @@ import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { postDiscord } from './discord.ts';
 import { type IncomeProofRead, readIncomeProof } from './incomeDocs.ts';
-import { sendTelegramMessage } from './telegram.ts';
+import { sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
+
+// The team's decision buttons (handled in telegram-webhook via preScreeningDecision.ts).
+export const preScreeningDecisionRow = (id: string): TelegramInlineKeyboard[number] => [
+   { text: '✅ Good fit', callback_data: `ps:good:${id}` },
+   { text: '❌ Not a fit', callback_data: `ps:no:${id}` }
+];
+export const preScreeningConfirmRows = (id: string): TelegramInlineKeyboard => [
+   [
+      { text: '❌ Yes, not a fit', callback_data: `ps:no_yes:${id}` },
+      { text: '↩️ Back', callback_data: `ps:back:${id}` }
+   ]
+];
 
 const ASR_URL = 'https://api.deepseek.com/v1/tools/asr';
 const CHAT_URL = 'https://api.deepseek.com/chat/completions';
@@ -60,6 +72,8 @@ type Row = {
    verdict: PreScreenVerdict | null;
    user_id: string | null;
    created_at: string | null;
+   team_decision?: 'good' | 'not_fit' | null;
+   team_decided_by?: string | null;
 };
 
 const clamp = (n: unknown, min: number, max: number): number | null => {
@@ -250,12 +264,13 @@ const scoreLine = (row: Pick<Row, 'score' | 'verdict'>, unheard = 0) =>
       ? `${VERDICT_LABEL[row.verdict]} · ${row.score}/100${unheard ? ` · ${unheard} answer${unheard === 1 ? '' : 's'} not heard (watch)` : ''}`
       : '⚪ Not graded — watch the clips';
 
-async function tellTeam(svc: SupabaseClient, title: string, lines: string[], id: string) {
+async function tellTeam(svc: SupabaseClient, title: string, lines: string[], id: string, decide = false) {
    const url = `${ADMIN_URL}?screen=${id}`;
    const text = [title, ...lines].filter(Boolean).join('\n');
    const chat = await teamChat(svc);
    if (chat) {
-      await sendTelegramMessage(chat, text, { inlineKeyboard: [[{ text: '▶️ Watch the answers', url }]] }).catch((err) =>
+      const keyboard: TelegramInlineKeyboard = [...(decide ? [preScreeningDecisionRow(id)] : []), [{ text: '▶️ Watch the answers', url }]];
+      await sendTelegramMessage(chat, text, { inlineKeyboard: keyboard }).catch((err) =>
          console.error('pre-screening telegram failed', err)
       );
    }
@@ -381,7 +396,8 @@ export async function gradePreScreening(svc: SupabaseClient, id: string, apiKey:
             ...(grade.flags ?? []).map((f) => `⚠️ ${f}`),
             'No account yet — we will say so here when they sign up.'
          ].filter((l): l is string => Boolean(l)),
-         id
+         id,
+         true
       );
    }
    await removeOldFiles(svc).catch((err) => console.error('pre-screening cleanup failed', err));
@@ -404,9 +420,15 @@ export async function notifyPreScreeningClaimed(svc: SupabaseClient, id: string)
          `Account: ${who}`,
          scoreLine(row, row.grade?.unheard ?? 0),
          row.ref_code ? `From affiliate link: ${row.ref_code}` : null,
+         row.team_decision === 'good'
+            ? `✅ Team said good fit (${row.team_decided_by ?? 'team'})`
+            : row.team_decision === 'not_fit'
+              ? `❌ Team said not a fit (${row.team_decided_by ?? 'team'}) — turning the account down`
+              : null,
          row.grade?.summary || null
       ].filter((l): l is string => Boolean(l)),
-      id
+      id,
+      !row.team_decision
    );
    return { ok: true };
 }

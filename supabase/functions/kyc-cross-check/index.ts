@@ -4,6 +4,7 @@ import { checkCronAuth } from '../_shared/cronAuth.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { analyseIncomeDocument, backfillBorrowerQuestions, notifyIncomeDecision, reviewWithAnswers } from '../_shared/incomeDocs.ts';
 import { gradePreScreening, notifyPreScreeningClaimed } from '../_shared/preScreening.ts';
+import { applyPreScreeningDecision } from '../_shared/preScreeningDecision.ts';
 import { pingProofRequest, sendProofRequest } from '../_shared/proofRequests.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
@@ -314,16 +315,24 @@ serve(async (req) => {
       proof_request_send?: string;
       prescreen?: string;
       prescreen_claimed?: string;
+      prescreen_decided?: string;
       quiet?: boolean;
    };
 
    // Pre-screening rides here too: {"prescreen": id} = the clips are in, grade them;
    // {"prescreen_claimed": id} = that person signed up. See _shared/preScreening.ts.
-   if (body.prescreen || body.prescreen_claimed) {
-      const id = body.prescreen ?? body.prescreen_claimed ?? '';
+   if (body.prescreen || body.prescreen_claimed || body.prescreen_decided) {
+      const id = body.prescreen ?? body.prescreen_claimed ?? body.prescreen_decided ?? '';
       if (!UUID_RE.test(id)) return jsonResponse({ error: 'bad prescreen id' }, 400);
       const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
-      if (body.prescreen_claimed) return jsonResponse(await notifyPreScreeningClaimed(svc, id));
+      // The team's ✅/❌ from Admin (decide_pre_screening); Telegram taps act in telegram-webhook.
+      if (body.prescreen_decided) return jsonResponse(await applyPreScreeningDecision(svc, id));
+      if (body.prescreen_claimed) {
+         const told = await notifyPreScreeningClaimed(svc, id);
+         // ❌ decided before they had an account: turn it down now.
+         const applied = await applyPreScreeningDecision(svc, id);
+         return jsonResponse({ ...told, decision: applied.summary });
+      }
       return jsonResponse(await gradePreScreening(svc, id, Deno.env.get('DEEPSEEK_API_KEY'), { quiet: body.quiet === true }));
    }
 

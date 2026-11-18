@@ -53,11 +53,13 @@ type PreScreening = {
    browser: string | null;
    files_removed_at: string | null;
    created_at: string;
+   team_decision: 'good' | 'not_fit' | null;
+   team_decided_by: string | null;
    user: { username: string | null; email: string | null } | null;
 };
 
 const SELECT =
-   'id, name, ref_code, status, video_watched, videos_watched, income_files, questions, answers, grade, score, verdict, grade_error, user_id, browser, files_removed_at, created_at, user:users(username, email)';
+   'id, name, ref_code, status, video_watched, videos_watched, income_files, questions, answers, grade, score, verdict, grade_error, user_id, browser, files_removed_at, created_at, team_decision, team_decided_by, user:users(username, email)';
 
 const VERDICT: Record<string, { label: string; className: string }> = {
    good: { label: '🟢 Good', className: 'bg-emerald-600 text-white' },
@@ -118,6 +120,23 @@ export default function PreScreeningSection() {
          const { error: rpcError } = await getSupabaseBrowserClient().rpc('regrade_pre_screening', { p_id: id });
          if (rpcError) setError(rpcError.message);
          else window.setTimeout(() => void load(), 15000);
+         setBusy(null);
+      },
+      [load]
+   );
+
+   // ✅ Good fit / ❌ Not a fit — same as the Telegram card's buttons (❌ turns their account down).
+   const decide = useCallback(
+      async (row: PreScreening, decision: 'good' | 'not_fit') => {
+         if (
+            decision === 'not_fit' &&
+            !window.confirm(`Not a fit: ${row.name}. ${row.user_id ? 'Their account is turned down now' : 'If they sign up, the account is turned down'}. Continue?`)
+         )
+            return;
+         setBusy(row.id);
+         const { error: rpcError } = await getSupabaseBrowserClient().rpc('decide_pre_screening', { p_id: row.id, p_decision: decision });
+         if (rpcError) setError(rpcError.message);
+         else await load();
          setBusy(null);
       },
       [load]
@@ -252,6 +271,23 @@ export default function PreScreeningSection() {
                      </ol>
                      <IncomeProof clips={clips} onOpen={play} row={row} />
                      <div className="mt-3 flex flex-wrap items-center gap-3">
+                        {row.team_decision ? (
+                           <span
+                              className={`rounded-full px-3 py-1 text-sm font-black ${row.team_decision === 'good' ? 'bg-emerald-900/60 text-emerald-200' : 'bg-red-900/60 text-red-200'}`}
+                           >
+                              {row.team_decision === 'good' ? '✅ Good fit' : '❌ Not a fit'}
+                              {row.team_decided_by ? ` · ${row.team_decided_by}` : ''}
+                           </span>
+                        ) : (
+                           <>
+                              <button className={pill} disabled={busy === row.id} onClick={() => void decide(row, 'good')} type="button">
+                                 ✅ Good fit
+                              </button>
+                              <button className={pill} disabled={busy === row.id} onClick={() => void decide(row, 'not_fit')} type="button">
+                                 ❌ Not a fit
+                              </button>
+                           </>
+                        )}
                         {row.files_removed_at ? null : (
                            <button className={pill} disabled={busy === row.id} onClick={() => void regrade(row.id)} type="button">
                               {busy === row.id ? 'Asking…' : 'Grade again'}
