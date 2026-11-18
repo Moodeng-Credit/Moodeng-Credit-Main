@@ -173,3 +173,22 @@ Deno.test('pre-screening: reads that disagree a lot are flagged for a human look
    assertEquals(out?.answers, [{ q: 'purpose', score: 6, note: '' }]);
    assertEquals((out?.flags as string[])[0].includes('disagreed on: purpose'), true);
 });
+
+Deno.test('pre-screening: a clip with nobody on camera and nothing said scores 0, not "not heard"', () => {
+   const grade = buildGrade(
+      QUESTIONS,
+      { work: 'I sell rice', purpose: 'stock', repay: null },
+      {
+         summary: 'x',
+         answers: [
+            { q: 'work', score: 8, note: 'clear' },
+            { q: 'purpose', score: 6, note: 'ok' }
+         ]
+      },
+      null,
+      new Set(['repay'])
+   );
+   assertEquals(grade.answers[2].score, 0);
+   assertEquals(grade.unheard, 0);
+   assertEquals(grade.overall, 47);
+});
