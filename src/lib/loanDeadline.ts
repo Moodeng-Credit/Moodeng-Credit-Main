@@ -131,9 +131,9 @@ export const formatDeadlineForViewer = (
 
 /**
  * When paying a loan starts to count for food vouchers: 00:00 (in `zone`) on the day the loan is halfway
- * from funding to the end of its final due day, and never sooner than a day after funding. Earlier
+ * from funding to the end of its final due day, and never sooner than 48 hours after funding. Earlier
  * repayments are welcome but earn no reward. Mirrors app_private.loan_reward_from_at()
- * (migration 20261118120000_voucher_halfway_rule).
+ * (migration 20261118121000_voucher_halfway_rule).
  */
 export const getRewardFromAt = (fundedAt: string | Date, dueDate: string | Date, zone: string): Date | null => {
    const funded = new Date(fundedAt).getTime();
@@ -141,5 +141,5 @@ export const getRewardFromAt = (fundedAt: string | Date, dueDate: string | Date,
    const halfway = new Date(funded + (getDueDayEnd(dueDate, zone).getTime() - funded) / 2);
    const day = new Date(zonedDate(halfway, zone));
    const dayStart = zonedMidnight(day.getUTCFullYear(), day.getUTCMonth() + 1, day.getUTCDate(), zone);
-   return new Date(Math.max(dayStart.getTime(), funded + 24 * 3_600_000));
+   return new Date(Math.max(dayStart.getTime(), funded + 48 * 3_600_000));
 };

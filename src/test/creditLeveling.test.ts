@@ -644,3 +644,22 @@ describe('ladder copies stay in sync', () => {
       expect(rewards).toContain(`const LEVEL_THREE_LIMIT = ${CREDIT_TIERS[2]};`);
    });
 });
+
+describe('the 48-hour rule: a loan repaid within 2 days of funding never levels up', () => {
+   const base = {
+      currentLimit: 15,
+      isVerified: true,
+      repaidAmount: 16.5,
+      totalRepaymentAmount: 16.5,
+      loanAmount: 15,
+      dueDate: '2026-12-16T00:00:00Z',
+      dueTimezone: 'Asia/Manila',
+      fundedAt: '2026-11-16T08:00:00Z'
+   };
+   it('repaid 30 hours after funding: no level-up', () => {
+      expect(evaluateCreditProgression({ ...base, paidAt: '2026-11-17T14:00:00Z' }).shouldLevelUp).toBe(false);
+   });
+   it('repaid 49 hours after funding: levels up as before', () => {
+      expect(evaluateCreditProgression({ ...base, paidAt: '2026-11-18T09:00:00Z' }).shouldLevelUp).toBe(true);
+   });
+});

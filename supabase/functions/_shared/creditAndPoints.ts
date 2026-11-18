@@ -94,6 +94,15 @@ type CreditProgressionResult = {
    isFullyRepaid: boolean;
 };
 
+// A loan repaid within 48 hours of getting it doesn't count (George, 2026-11-18): no level-up, no
+// affiliate $5, no food voucher. People were borrowing for 30 days and repaying on day 1–2 to climb fast.
+export const FAST_REPAY_HOURS = 48;
+export const isFastRepay = (fundedAt: string | null | undefined, paidAt: string | null | undefined) => {
+   const funded = fundedAt ? Date.parse(fundedAt) : NaN;
+   const paid = paidAt ? Date.parse(paidAt) : NaN;
+   return Number.isFinite(funded) && Number.isFinite(paid) && paid - funded < FAST_REPAY_HOURS * 3_600_000;
+};
+
 export const evaluateCreditProgression = ({
    currentLimit,
    isVerified,
@@ -116,7 +125,8 @@ export const evaluateCreditProgression = ({
    // reaches the limit or several small loans add up to it. Lateness doesn't block it: most late
    // repayments are tech trouble (wallets, exchanges), not the borrower's fault.
    const isFullLimitLoan = principal >= normalizedLimit;
-   const canLevelUp = isVerified && isFullyRepaid && isFullLimitLoan && normalizedLimit < MAX_CREDIT_LIMIT;
+   const tooFast = isFastRepay(fundedAt, paidAt);
+   const canLevelUp = isVerified && isFullyRepaid && isFullLimitLoan && normalizedLimit < MAX_CREDIT_LIMIT && !tooFast;
 
    return {
       shouldLevelUp: canLevelUp,
