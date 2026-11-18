@@ -933,6 +933,8 @@ export const indonesianCoverageC: Record<string, string> = {
    'Waiting for moo-lender acceptance': 'Menunggu persetujuan moo-lender',
    'This loan is not funded yet. Repayment starts only after a moo-lender accepts.':
       'Pinjaman ini belum didanai. Pembayaran kembali dimulai setelah moo-lender menyetujui.',
+   'Waiting for a moo-lender': 'Menunggu moo-lender',
+   'Nothing to pay until it’s funded.': 'Belum ada yang perlu dibayar sampai didanai.',
    'View on explorer': 'Lihat di explorer',
 
    // src/views/transactions/TransactionHistory.tsx

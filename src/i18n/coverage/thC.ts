@@ -835,6 +835,8 @@ export const thaiCoverageC: Record<string, string> = {
    'Waiting for moo-lender acceptance': 'รอ Moo-lender ยอมรับ',
    'This loan is not funded yet. Repayment starts only after a moo-lender accepts.':
       'เงินกู้นี้ยังไม่ได้รับการปล่อยกู้ การชำระคืนจะเริ่มก็ต่อเมื่อ Moo-lender ยอมรับแล้วเท่านั้น',
+   'Waiting for a moo-lender': 'รอ Moo-lender',
+   'Nothing to pay until it’s funded.': 'ยังไม่ต้องจ่ายอะไรจนกว่าจะได้รับเงิน',
    'View on explorer': 'ดูบน explorer',
 
    // src/views/transactions/TransactionHistory.tsx

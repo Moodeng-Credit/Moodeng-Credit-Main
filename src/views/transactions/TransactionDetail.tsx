@@ -780,13 +780,12 @@ export default function TransactionDetail() {
                   <div className="h-px bg-md-neutral-300" />
 
                   {isPendingFunding ? (
-                     <div className="rounded-md-md border border-md-yellow-700/40 bg-md-yellow-700/10 px-md-3 py-md-2 flex gap-md-2">
-                        <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-md-yellow-700" strokeWidth={2.3} />
-                        <div className="flex flex-col gap-1">
-                           <span className="text-md-b3 font-semibold text-md-yellow-700">Waiting for moo-lender acceptance</span>
-                           <span className="text-md-b4 text-md-neutral-1000">
-                              This loan is not funded yet. Repayment starts only after a moo-lender accepts.
-                           </span>
+                     // New-dashboard (Figma) look: lavender card + the "waiting" Moodeng, a few words.
+                     <div className="flex items-center gap-md-3 rounded-[16px] bg-[#f8f1ff] py-2 pl-2 pr-md-4">
+                        <img src="/dashboard-v2/moodeng-rookie-1.png" alt="" className="h-[72px] w-[72px] shrink-0 object-contain" />
+                        <div className="flex min-w-0 flex-col gap-0.5">
+                           <span className="text-[17px] font-black italic leading-6 text-[#735dfa]">Waiting for a moo-lender</span>
+                           <span className="text-[14px] leading-5 text-[#6e6680]">Nothing to pay until it’s funded.</span>
                         </div>
                      </div>
                   ) : null}
