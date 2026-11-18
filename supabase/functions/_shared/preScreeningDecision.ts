@@ -10,7 +10,7 @@ import { type CardStamp, linkRows, stampCard } from './adminCards.ts';
 import { rejectUser } from './loanAccess.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
-import { preScreeningConfirmRows, preScreeningDecisionRow } from './preScreening.ts';
+import { NOT_FIT_REASONS, preScreeningConfirmRows, preScreeningDecisionRow } from './preScreening.ts';
 import { callTelegramApi, type TelegramInlineKeyboard } from './telegram.ts';
 
 type Decision = 'good' | 'not_fit';
@@ -31,10 +31,14 @@ const UUID = /^[0-9a-f-]{36}$/i;
 const nameOf = (from?: TgUser) =>
    from?.username ? `@${from.username}` : [from?.first_name, from?.last_name].filter(Boolean).join(' ') || 'the team';
 
-/** ps:<good|no|no_yes|back>:<id> */
+/** ps:<good|no|no_yes|back>:<id>, or ps:nr:<reason>:<id> (❌ with a reason; no_yes = older cards). */
 export const parsePreScreeningCallback = (data: string | undefined) => {
+   const withReason = /^ps:nr:([a-z]+):([0-9a-f-]{36})$/i.exec(data ?? '');
+   if (withReason) {
+      return NOT_FIT_REASONS[withReason[1]] ? { step: 'no_yes' as const, id: withReason[2], reason: NOT_FIT_REASONS[withReason[1]] } : null;
+   }
    const m = /^ps:(good|no|no_yes|back):([0-9a-f-]{36})$/i.exec(data ?? '');
-   return m ? { step: m[1] as 'good' | 'no' | 'no_yes' | 'back', id: m[2] } : null;
+   return m ? { step: m[1] as 'good' | 'no' | 'no_yes' | 'back', id: m[2], reason: null as string | null } : null;
 };
 
 /** Acts on a saved decision. Safe to run again: a reject that already ran is skipped. */
@@ -106,7 +110,7 @@ export const handlePreScreeningCallback = async (svc: SupabaseClient, query: Car
 
    if (parsed.step === 'no' || parsed.step === 'back') {
       await Promise.all([
-         answer(parsed.step === 'no' ? 'Tap ❌ Yes, not a fit to confirm. If they have an account, it is turned down.' : ''),
+         answer(parsed.step === 'no' ? 'Why? Tap a reason — that confirms it. If they have an account, it is turned down.' : ''),
          setButtons(parsed.step === 'no' ? preScreeningConfirmRows(parsed.id) : [preScreeningDecisionRow(parsed.id)])
       ]);
       return true;
@@ -116,7 +120,12 @@ export const handlePreScreeningCallback = async (svc: SupabaseClient, query: Car
    const by = nameOf(query.from);
    const { data: saved } = await svc
       .from('pre_screenings')
-      .update({ team_decision: decision, team_decided_by: by, team_decided_at: new Date().toISOString() })
+      .update({
+         team_decision: decision,
+         team_decided_by: by,
+         team_decided_at: new Date().toISOString(),
+         team_reason: decision === 'not_fit' ? parsed.reason : null
+      })
       .eq('id', parsed.id)
       .neq('status', 'open')
       .select('id')
@@ -126,7 +135,7 @@ export const handlePreScreeningCallback = async (svc: SupabaseClient, query: Car
       return true;
    }
    const result = await applyPreScreeningDecision(svc, parsed.id);
-   const stamp: CardStamp = { header: STAMP[decision], detail: result.summary, by };
+   const stamp: CardStamp = { header: `${STAMP[decision]}${parsed.reason ? ` — ${parsed.reason}` : ''}`, detail: result.summary, by };
    await Promise.all([answer(result.summary), stampCard(card.chat.id, card.message_id, card.text ?? '', links, stamp)]);
    return true;
 };

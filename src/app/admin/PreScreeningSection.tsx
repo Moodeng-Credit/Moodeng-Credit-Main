@@ -55,11 +55,12 @@ type PreScreening = {
    created_at: string;
    team_decision: 'good' | 'not_fit' | null;
    team_decided_by: string | null;
+   team_reason: string | null;
    user: { username: string | null; email: string | null } | null;
 };
 
 const SELECT =
-   'id, name, ref_code, status, video_watched, videos_watched, income_files, questions, answers, grade, score, verdict, grade_error, user_id, browser, files_removed_at, created_at, team_decision, team_decided_by, user:users(username, email)';
+   'id, name, ref_code, status, video_watched, videos_watched, income_files, questions, answers, grade, score, verdict, grade_error, user_id, browser, files_removed_at, created_at, team_decision, team_decided_by, team_reason, user:users(username, email)';
 
 const VERDICT: Record<string, { label: string; className: string }> = {
    good: { label: '🟢 Good', className: 'bg-emerald-600 text-white' },
@@ -71,6 +72,9 @@ const bkk = (iso: string) =>
    new Date(iso).toLocaleString('en-US', { timeZone: 'Asia/Bangkok', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 
 const errorMessage = (err: unknown) => (err instanceof Error ? err.message : String((err as { message?: string })?.message ?? err));
+
+// Same reasons as the Telegram card (_shared/preScreening.ts NOT_FIT_REASONS).
+const NOT_FIT_REASONS = ['Vague answers', 'Loan for sick family', 'Paying other loans', 'Income doesn’t match', 'Fake-looking document', 'Other'];
 
 const pill = 'rounded-full bg-[#241044] px-4 py-1.5 text-sm font-black text-[#a89bb8]';
 
@@ -126,15 +130,24 @@ export default function PreScreeningSection() {
    );
 
    // ✅ Good fit / ❌ Not a fit — same as the Telegram card's buttons (❌ turns their account down).
+   // ❌ asks why first (the reason teaches the AI, same list as the Telegram card).
+   const [askingReason, setAskingReason] = useState<string | null>(null);
    const decide = useCallback(
-      async (row: PreScreening, decision: 'good' | 'not_fit') => {
+      async (row: PreScreening, decision: 'good' | 'not_fit', reason?: string) => {
          if (
             decision === 'not_fit' &&
-            !window.confirm(`Not a fit: ${row.name}. ${row.user_id ? 'Their account is turned down now' : 'If they sign up, the account is turned down'}. Continue?`)
+            !window.confirm(
+               `Not a fit (${reason ?? 'no reason'}): ${row.name}. ${row.user_id ? 'Their account is turned down now' : 'If they sign up, the account is turned down'}. Continue?`
+            )
          )
             return;
+         setAskingReason(null);
          setBusy(row.id);
-         const { error: rpcError } = await getSupabaseBrowserClient().rpc('decide_pre_screening', { p_id: row.id, p_decision: decision });
+         const { error: rpcError } = await getSupabaseBrowserClient().rpc('decide_pre_screening', {
+            p_id: row.id,
+            p_decision: decision,
+            p_reason: reason ?? null
+         });
          if (rpcError) setError(rpcError.message);
          else await load();
          setBusy(null);
@@ -276,6 +289,7 @@ export default function PreScreeningSection() {
                               className={`rounded-full px-3 py-1 text-sm font-black ${row.team_decision === 'good' ? 'bg-emerald-900/60 text-emerald-200' : 'bg-red-900/60 text-red-200'}`}
                            >
                               {row.team_decision === 'good' ? '✅ Good fit' : '❌ Not a fit'}
+                              {row.team_reason ? ` — ${row.team_reason}` : ''}
                               {row.team_decided_by ? ` · ${row.team_decided_by}` : ''}
                            </span>
                         ) : (
@@ -283,9 +297,17 @@ export default function PreScreeningSection() {
                               <button className={pill} disabled={busy === row.id} onClick={() => void decide(row, 'good')} type="button">
                                  ✅ Good fit
                               </button>
-                              <button className={pill} disabled={busy === row.id} onClick={() => void decide(row, 'not_fit')} type="button">
-                                 ❌ Not a fit
-                              </button>
+                              {askingReason === row.id ? (
+                                 NOT_FIT_REASONS.map((reason) => (
+                                    <button className={pill} disabled={busy === row.id} key={reason} onClick={() => void decide(row, 'not_fit', reason)} type="button">
+                                       ❌ {reason}
+                                    </button>
+                                 ))
+                              ) : (
+                                 <button className={pill} disabled={busy === row.id} onClick={() => setAskingReason(row.id)} type="button">
+                                    ❌ Not a fit
+                                 </button>
+                              )}
                            </>
                         )}
                         {row.files_removed_at ? null : (

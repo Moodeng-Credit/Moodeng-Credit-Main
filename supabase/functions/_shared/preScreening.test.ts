@@ -141,9 +141,26 @@ import { parsePreScreeningCallback } from './preScreeningDecision.ts';
 
 Deno.test('pre-screening: decision buttons parse, and nothing else does', () => {
    const id = '0df3967b-1633-48ed-a5a6-17df9940e020';
-   assertEquals(parsePreScreeningCallback(`ps:good:${id}`), { step: 'good', id });
-   assertEquals(parsePreScreeningCallback(`ps:no_yes:${id}`), { step: 'no_yes', id });
+   assertEquals(parsePreScreeningCallback(`ps:good:${id}`), { step: 'good', id, reason: null });
+   assertEquals(parsePreScreeningCallback(`ps:no_yes:${id}`), { step: 'no_yes', id, reason: null });
+   assertEquals(parsePreScreeningCallback(`ps:nr:family:${id}`), { step: 'no_yes', id, reason: 'Loan for sick family' });
+   assertEquals(parsePreScreeningCallback(`ps:nr:madeup:${id}`), null);
    assertEquals(parsePreScreeningCallback(`pi:approve:${id}`), null);
    assertEquals(parsePreScreeningCallback(`ps:delete:${id}`), null);
    assertEquals(parsePreScreeningCallback(undefined), null);
+});
+
+import { combineReads } from './preScreening.ts';
+
+Deno.test('pre-screening: 3 reads are averaged per answer, flags merged without repeats', () => {
+   const out = combineReads([
+      { summary: 'A', answers: [{ q: 'work', score: 8, note: 'n1' }], income: { score: 6, note: 'i1' }, flags: ['x'] },
+      { summary: 'B', answers: [{ q: 'work', score: 6 }], income: { score: 8 }, flags: ['x', 'y'] },
+      { summary: 'C', answers: [{ q: 'work', score: 7 }], flags: [] }
+   ]);
+   assertEquals(out?.summary, 'A');
+   assertEquals(out?.answers, [{ q: 'work', score: 7, note: 'n1' }]);
+   assertEquals(out?.income, { score: 7, note: 'i1' });
+   assertEquals(out?.flags, ['x', 'y']);
+   assertEquals(combineReads([]), null);
 });
