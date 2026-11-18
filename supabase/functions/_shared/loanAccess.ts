@@ -153,6 +153,53 @@ export const who = (u: Pick<BorrowerRow, 'display_name' | 'username' | 'email' |
 
 // ---- Admin ping (on submit) -------------------------------------------------------------------
 
+/**
+ * Call prep from their pre-screening (if they did one): what they typed, what their proof of income
+ * showed, and what to ask on the call (the AI's flags). Short, so the call card stays readable.
+ */
+const preScreeningCallPrep = async (svc: SupabaseClient, userId: string): Promise<string[]> => {
+   const { data } = await svc
+      .from('pre_screenings')
+      .select('id, questions, grade')
+      .eq('user_id', userId)
+      .neq('status', 'open')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+   const row = data as {
+      id: string;
+      questions: Array<{ id: string; text: string; kind?: string }> | null;
+      grade: {
+         summary?: string;
+         flags?: string[];
+         answers?: Array<{ q: string; transcript: string | null }>;
+         income?: { read?: { readable?: boolean; doc_type?: string | null; monthly_income_usd?: number | null; holder_name?: string | null } | null } | null;
+      } | null;
+   } | null;
+   if (!row?.grade) return [];
+   const clip = (t: string, n: number) => (t.length > n ? `${t.slice(0, n - 1)}…` : t);
+   const answers = (row.questions ?? [])
+      .map((q) => {
+         const said = row.grade?.answers?.find((a) => a.q === q.id)?.transcript;
+         return said ? `  • ${clip(q.text, 40)} — “${clip(said, 140)}”` : null;
+      })
+      .filter((l): l is string => Boolean(l));
+   const read = row.grade.income?.read;
+   const income = read?.readable
+      ? `  • Proof of income: ${[read.doc_type?.replace(/_/g, ' '), read.holder_name, read.monthly_income_usd != null ? `~$${Math.round(read.monthly_income_usd)}/month` : null].filter(Boolean).join(' · ')}`
+      : null;
+   const ask = (row.grade.flags ?? []).slice(0, 3).map((f) => `  • ${clip(f, 160)}`);
+   return [
+      '',
+      '📝 Their pre-screening:',
+      ...answers,
+      ...(income ? [income] : []),
+      ...(ask.length ? ['❓ Ask on the call:', ...ask] : []),
+      `  ▶️ Full answers + video: ${SITE_URL}/admin/pre-screening?screen=${row.id}`,
+      ''
+   ];
+};
+
 export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: RequestRow, borrower: BorrowerRow) => {
    const kyc = borrower.is_didit ?? borrower.didit_id_status ?? 'unknown';
    // The Facebook profile name, straight from SendPulse — compare it with the KYC name.
@@ -188,6 +235,7 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
 
    // Affiliate link + pre-screening: "Pre-screen: 🟢 Good · 86/100 · from X's link" or "⚠️ … no pre-screening".
    const { data: screening } = await svc.rpc('team_screening_line', { p_user_id: borrower.id });
+   const prep = await preScreeningCallPrep(svc, borrower.id).catch(() => [] as string[]);
 
    const isCall = request.kind === 'call';
    // Not KYC'd yet → this is the pre-KYC gate: Showed up unlocks ID verification, not the loan.
@@ -209,6 +257,7 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
       isCall && borrower.video_call_starts_at ? `Call: ${formatCallTimeForTeam(borrower.video_call_starts_at, borrower.video_call_timezone)}` : null,
       referral ? `Referral: ${referral}` : null,
       typeof screening === 'string' && screening ? screening : null,
+      ...prep,
       `Why: ${request.reason?.trim() || '—'}`,
       photoCheckLine(ref?.facebook_name),
       ...timelineLines(onboarding),
