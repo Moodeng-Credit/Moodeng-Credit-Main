@@ -922,6 +922,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Loan / moo-lender': 'Khoản vay / moo-lender',
    'No funded loans yet': 'Chưa có khoản vay nào được cấp vốn',
    'Not enough loan history yet': 'Chưa đủ lịch sử vay',
+   'Shows after a few loans.': 'Hiển thị sau vài khoản vay.',
    "Once this borrower completes more loans, you'll see repayment timing, usual loan size, repeat moo-lenders, and borrowing patterns here.":
       'Khi người vay này hoàn tất thêm nhiều khoản vay, bạn sẽ thấy thời gian trả nợ, quy mô vay thông thường, những moo-lender lặp lại và mô hình vay ở đây.',
    'Default History': 'Lịch sử vỡ nợ',

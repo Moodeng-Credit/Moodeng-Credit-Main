@@ -1493,14 +1493,13 @@ const InsightRow = ({
 );
 
 const NewBorrowerInsightsCard = () => (
-   <div className="flex items-start gap-3 dv2-card rounded-[8px] bg-white bg-gradient-to-b from-[#f8f6ff] to-white to-[48px] p-4 shadow-[0_1px_2px_rgba(28,5,61,0.06)]">
-      <img src="/icons/no-history-3d.png" alt="" className="h-12 w-12 shrink-0 object-contain" />
+   <div className="flex items-center gap-3 dv2-card rounded-[16px] bg-white px-4 py-3 shadow-[0_1px_2px_rgba(28,5,61,0.06)]">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#f3eeff]">
+         <img src="/icons/no-history-3d.png" alt="" className="h-6 w-6 object-contain" />
+      </span>
       <div className="min-w-0 flex-1">
-         <p className="text-[15px] font-[590] leading-5 text-md-heading">Not enough loan history yet</p>
-         <p className="mt-1 text-[13px] leading-5 text-md-neutral-1200">
-            Once this borrower completes more loans, you'll see repayment timing, usual loan size, repeat moo-lenders, and borrowing patterns
-            here.
-         </p>
+         <p className="text-[14px] font-[590] leading-5 text-md-heading">Not enough loan history yet</p>
+         <p className="text-[12px] leading-[18px] text-md-neutral-1200">Shows after a few loans.</p>
       </div>
    </div>
 );

@@ -990,6 +990,7 @@ export const indonesianCoverageC: Record<string, string> = {
    'Loan / moo-lender': 'Pinjaman / moo-lender',
    'No funded loans yet': 'Belum ada pinjaman yang didanai',
    'Not enough loan history yet': 'Riwayat pinjaman belum cukup',
+   'Shows after a few loans.': 'Muncul setelah beberapa pinjaman.',
    "Once this borrower completes more loans, you'll see repayment timing, usual loan size, repeat moo-lenders, and borrowing patterns here.":
       'Setelah peminjam ini menyelesaikan lebih banyak pinjaman, kamu akan melihat waktu pembayaran, ukuran pinjaman yang umum, moo-lender berulang, dan pola peminjaman di sini.',
    'Default History': 'Riwayat Gagal Bayar',

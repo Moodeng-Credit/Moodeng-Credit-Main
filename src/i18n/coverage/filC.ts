@@ -674,6 +674,7 @@ export const filipinoCoverageC: Record<string, string> = {
    'Loan / moo-lender': 'Loan / moo-lender',
    'No funded loans yet': 'Wala pang napondohang loan',
    'Not enough loan history yet': 'Hindi pa sapat ang loan history',
+   'Shows after a few loans.': 'Lalabas pagkatapos ng ilang loan.',
    'Default History': 'History ng default',
    'Missed repayments on this borrower’s past loans.': 'Mga na-miss na bayad sa mga nakaraang loan ng borrower na ito.',
    'A default happens when a repayment deadline passes without full repayment.':

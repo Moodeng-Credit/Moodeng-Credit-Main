@@ -902,6 +902,7 @@ export const thaiCoverageC: Record<string, string> = {
    'Loan / moo-lender': 'เงินกู้ / Moo-lender',
    'No funded loans yet': 'ยังไม่มีเงินกู้ที่ได้รับการปล่อยกู้',
    'Not enough loan history yet': 'ยังมีประวัติเงินกู้ไม่เพียงพอ',
+   'Shows after a few loans.': 'จะแสดงหลังจากกู้ไม่กี่ครั้ง',
    "Once this borrower completes more loans, you'll see repayment timing, usual loan size, repeat moo-lenders, and borrowing patterns here.":
       'เมื่อผู้ยืมรายนี้ทำเงินกู้เสร็จสิ้นมากขึ้น คุณจะเห็นจังหวะการชำระคืน ขนาดเงินกู้ทั่วไป Moo-lender ที่ยืมซ้ำ และรูปแบบการยืมที่นี่',
    'Default History': 'ประวัติการผิดนัดชำระ',
