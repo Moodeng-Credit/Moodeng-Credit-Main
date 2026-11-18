@@ -3,7 +3,6 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import {
    AlertTriangle,
    ArrowRight,
-   ArrowUpRight,
    Check,
    ChevronDown,
    ChevronLeft,
@@ -18,7 +17,6 @@ import {
    PlayCircle,
    QrCode,
    ShieldAlert,
-   Wallet,
    X
 } from 'lucide-react';
 import posthog from 'posthog-js';
@@ -632,10 +630,23 @@ function PickerRow({ id, onSelect, icon, name, line1, line2, recommended, warn, 
 /** Page header for testers, in the Milestone banner style (copy left, Moodeng art right). Not tappable: nothing on it looks like a button. */
 // Only "₱X ready to cash out": no repay amount or due date here. A borrower funded minutes earlier read
 // the repay line as the next step and paid the loan straight back (Nov 2026). The dashboard shows the due date.
-function DirectPesoBanner({ balanceLine, spendable }: { balanceLine: string; spendable: number | null }) {
+// Without the bank QR route (small balance, Indonesia, Europe) the same banner shows `title` and the
+// plain balance line instead of the peso estimate, which only applies to the QR cash-out (2026-11-19).
+function DirectPesoBanner({
+   balanceLine,
+   spendable,
+   title = 'Cash out to pesos',
+   showPesos = true
+}: {
+   balanceLine: string;
+   spendable: number | null;
+   title?: string;
+   showPesos?: boolean;
+}) {
    const { value: phpRate } = useUsdcRate('php');
    // Same estimate as the bank / QR card below, so the two numbers always match.
-   const pesos = spendable != null && spendable > 0 ? Math.floor(spendable * phpRate * (1 - BANK_PAYOUT_FEE_SHARE)) : null;
+   const pesos =
+      showPesos && spendable != null && spendable > 0 ? Math.floor(spendable * phpRate * (1 - BANK_PAYOUT_FEE_SHARE)) : null;
    return (
       <div className="relative w-full h-[112px] mb-[16px] rounded-[12px] overflow-hidden text-left bg-[linear-gradient(100deg,#efeaff_0%,#ddd5ff_100%)] dark:bg-[linear-gradient(100deg,#252035_0%,#30285a_100%)]">
          <img
@@ -646,7 +657,7 @@ function DirectPesoBanner({ balanceLine, spendable }: { balanceLine: string; spe
          />
          <div className="relative flex h-full flex-col justify-center pl-[16px] pr-[136px]">
             <h1 className="text-[22px] font-black italic leading-[1.1] tracking-[-0.5px] text-[#6b55f7] dark:text-[#b3a6ff]">
-               Cash out to pesos
+               {title}
             </h1>
             {pesos != null ? (
                <p className="mt-[4px] text-[16px] leading-[20px] font-bold text-[#1c053d] dark:text-white">
@@ -862,33 +873,14 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                      style={{ top: d.top, left: d.left, width: d.s, height: d.s, background: d.c, opacity: d.o }}
                   />
                ))}
-               {pesoBanner ? (
-                  <DirectPesoBanner balanceLine={balanceLine} spendable={spendable} />
-               ) : (
-                  <div
-                     className="w-[64px] h-[64px] rounded-full bg-[var(--surface)] border-[5px] border-[var(--border-1)] flex items-center justify-center mb-[14px]"
-                     style={{ boxShadow: '0px 6px 18px rgba(96,16,210,0.14)' }}
-                  >
-                     <div className="relative">
-                        <Wallet className="w-[26px] h-[26px] text-[var(--primary)]" strokeWidth={2.2} />
-                        <ArrowUpRight
-                           className="w-[13px] h-[13px] text-[var(--primary)] absolute -top-[3px] -right-[5px]"
-                           strokeWidth={3}
-                        />
-                     </div>
-                  </div>
-               )}
-               {!pesoBanner && (
-                  <>
-                     <h1 className="text-[27px] text-[var(--ink)]" style={{ fontWeight: 590, lineHeight: 1.1, letterSpacing: '-0.04em' }}>
-                        {isIndo ? 'Tarik uang kamu' : 'Withdraw your USDC'}
-                     </h1>
-                     <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[6px]">
-                        {/* Balance only: a repay line here read as the next step right after funding (Nov 2026). */}
-                        {balanceLine}
-                     </p>
-                  </>
-               )}
+               {/* Moodeng banner on every cash-out list (the old wallet-arrow icon looked bad, 2026-11-19).
+                   Balance only: a repay line here read as the next step right after funding (Nov 2026). */}
+               <DirectPesoBanner
+                  balanceLine={balanceLine}
+                  spendable={spendable}
+                  showPesos={pesoBanner}
+                  title={pesoBanner ? undefined : isIndo ? 'Tarik uang kamu' : inEurope ? 'Cash out your USDC' : 'Cash out to pesos'}
+               />
             </div>
 
             {!pesoBanner && (
