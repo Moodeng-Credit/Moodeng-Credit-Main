@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { Check, ChevronDown, ChevronLeft, Copy, Download, Lock, Share2, UserPlus } from 'lucide-react';
+import { Check, ChevronDown, ChevronLeft, Copy, Download, Facebook, Lock, Share2, UserPlus } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Link, useSearchParams } from 'react-router-dom';
 
@@ -438,31 +438,71 @@ function Milestones({ referrals }: { referrals: AffiliateReferral[] }) {
    );
 }
 
-/* ---------- 5–6 · Friends with a 3-step track ---------- */
+/* ---------- 5–6 · Friends with a 4-step track ---------- */
 
-const STEP_LABELS = ['Signed up', 'Took a loan', 'Repaid'] as const;
+const STEP_LABELS = ['Signed up', 'Approved', 'Has a loan', 'Repaid'] as const;
+const REJECTED_RED = '#e5484d';
 
-function StepTrack({ step, tone }: { step: 1 | 2 | 3; tone: 'purple' | 'gold' | 'green' }) {
+function StepTrack({ step, tone, rejected }: { step: 1 | 2 | 3 | 4; tone: 'purple' | 'gold' | 'green'; rejected: boolean }) {
    const on = tone === 'gold' ? '#f6b73c' : tone === 'green' ? '#10b981' : PURPLE;
+   const labels = STEP_LABELS.map((label, i) => (i === 1 && rejected ? 'Rejected' : label));
    return (
-      <div className="mt-2 flex items-center" aria-label={`Step ${step} of 3: ${STEP_LABELS[step - 1]}`}>
-         {STEP_LABELS.map((label, i) => {
+      <div className="mt-2.5 grid grid-cols-4" aria-label={`Step ${step} of 4: ${labels[step - 1]}`}>
+         {labels.map((label, i) => {
             const reached = i < step;
+            const color = rejected && i === 1 ? REJECTED_RED : on;
             return (
-               <div key={label} className="flex flex-1 items-center last:flex-none">
-                  <div className="flex flex-col items-center">
+               <div key={label} className="relative flex flex-col items-center">
+                  {i < labels.length - 1 ? (
                      <span
-                        className="h-3 w-3 rounded-full border-2"
-                        style={{ backgroundColor: reached ? on : 'transparent', borderColor: reached ? on : '#d6cfe0' }}
+                        className="absolute left-1/2 top-[5px] h-[2px] w-full"
+                        style={{ backgroundColor: i + 1 < step ? on : '#e4dfeb' }}
+                        aria-hidden
                      />
-                  </div>
-                  {i < STEP_LABELS.length - 1 ? (
-                     <span className="mx-1 h-[2px] flex-1 rounded-full" style={{ backgroundColor: i + 1 < step ? on : '#e4dfeb' }} />
                   ) : null}
+                  <span
+                     className="relative h-3 w-3 rounded-full border-2 bg-dv2-card"
+                     style={reached ? { backgroundColor: color, borderColor: color } : { borderColor: '#d6cfe0' }}
+                  />
+                  <span
+                     className={clsx(
+                        'mt-1 text-center text-[11px] leading-3',
+                        reached ? 'font-semibold' : 'text-[#b0a6bc] dark:text-[#6f6480]'
+                     )}
+                     style={reached ? { color } : undefined}
+                  >
+                     {label}
+                  </span>
                </div>
             );
          })}
       </div>
+   );
+}
+
+/** Their Facebook (a link to the profile, or a Facebook search for their name) and @username, so you know who it is. */
+function FriendWho({ r }: { r: AffiliateReferral }) {
+   const fbHref = r.facebook_url
+      ? r.facebook_url
+      : r.facebook_name
+        ? `https://www.facebook.com/search/people/?q=${encodeURIComponent(r.facebook_name)}`
+        : null;
+   if (!fbHref && !r.username) return null;
+   return (
+      <p className="mt-0.5 flex min-w-0 items-center gap-2 text-[13px] leading-4 text-[#7b6b8c] dark:text-[#a99cba]">
+         {fbHref ? (
+            <a
+               href={fbHref}
+               target="_blank"
+               rel="noopener noreferrer"
+               className="inline-flex min-w-0 items-center gap-1 font-medium text-[#1877f2] dark:text-[#6aa8ff]"
+            >
+               <Facebook className="h-3.5 w-3.5 shrink-0" aria-hidden />
+               <span className="truncate">{r.facebook_name || 'Facebook'}</span>
+            </a>
+         ) : null}
+         {r.username ? <span className="shrink-0">@{r.username}</span> : null}
+      </p>
    );
 }
 
@@ -473,6 +513,9 @@ const PILL: Record<AffiliateStage, string> = {
    owed: 'bg-[#f6b73c] text-[#5a3b00]',
    locked: 'bg-[#f1eff4] text-[#7b6b8c] dark:bg-[#2a2235] dark:text-[#cfc4dd]',
    borrowed: 'bg-[#ece9ff] text-[#6b55f7] dark:bg-[#2a2448] dark:text-[#b3a6ff]',
+   approved: 'bg-[#ece9ff] text-[#6b55f7] dark:bg-[#2a2448] dark:text-[#b3a6ff]',
+   rejected: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+   checking: 'bg-[#f1eff4] text-[#7b6b8c] dark:bg-[#2a2235] dark:text-[#cfc4dd]',
    signed_up: 'bg-[#f1eff4] text-[#7b6b8c] dark:bg-[#2a2235] dark:text-[#cfc4dd]'
 };
 
@@ -483,6 +526,9 @@ function pillText(r: AffiliateReferral, stage: AffiliateStage) {
    if (stage === 'locked') return `${money(r.payout_amount)} locked`;
    if (stage === 'repaid') return 'Repaid';
    if (stage === 'borrowed') return 'Has a loan';
+   if (stage === 'approved') return 'Approved';
+   if (stage === 'rejected') return 'Rejected';
+   if (stage === 'checking') return 'Being checked';
    return 'Signed up';
 }
 
@@ -491,10 +537,13 @@ function hintText(r: AffiliateReferral, stage: AffiliateStage, paused: boolean) 
    if (stage === 'voucher') return `₱${r.voucher_php ?? 250} food voucher instead of ${money(r.payout_amount)}`;
    if (stage === 'owed') return paused ? 'Repay your loan first — then we send it' : 'They repaid — we’ll send your money';
    if (stage === 'locked') return 'Repay a loan yourself to unlock it';
+   if (stage === 'rejected') return 'Not approved by our team — they can’t borrow';
+   if (stage === 'checking') return 'Our team is checking them now';
+   if (stage === 'approved') return r.claimed ? 'Approved · tracked, no payout' : 'Approved — they can take a loan now';
    if (r.claimed) return 'Added by you · tracked, no payout';
    if (r.repaid_not_counted) return 'That loan was too short or funded by you. Their next one counts.';
    if (stage === 'borrowed') return `You get ${money(r.payout_amount)} only if they repay`;
-   return r.added_by_you ? 'Added by you · waiting for their first loan' : 'Waiting for their first loan';
+   return r.added_by_you ? 'Added by you · hasn’t finished signing up' : 'Hasn’t finished signing up yet';
 }
 
 function FriendRow({
@@ -525,20 +574,22 @@ function FriendRow({
             'px-3 py-3',
             index > 0 && 'border-t border-[#ece9f1] dark:border-[#2c2439]',
             stage === 'owed' && 'bg-gradient-to-r from-[#fff3c4] to-[#fffaf0] dark:from-[#3b3216] dark:to-transparent',
-            (stage === 'paid' || stage === 'voucher') && 'bg-emerald-50/60 dark:bg-emerald-900/10'
+            (stage === 'paid' || stage === 'voucher') && 'bg-emerald-50/60 dark:bg-emerald-900/10',
+            stage === 'rejected' && 'bg-red-50/60 dark:bg-red-900/10'
          )}
       >
          <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1">
-               <p className="truncate text-[17px] font-medium leading-5 text-[#2f2540] dark:text-[#e6def2]">{r.first_name}</p>
+               <p className="truncate text-[17px] font-medium leading-5 text-[#2f2540] dark:text-[#e6def2]">{r.full_name || r.first_name}</p>
                <p className="text-[13px] leading-4 text-[#7b6b8c] dark:text-[#a99cba]">
                   Joined {shortDate(r.joined_at)}
                   {showCode ? ` · ${r.code}` : ''}
                </p>
+               <FriendWho r={r} />
             </div>
             <span className={clsx('shrink-0 rounded-full px-3 py-1 text-[13px] font-semibold', PILL[stage])}>{pillText(r, stage)}</span>
          </div>
-         <StepTrack step={referralStep(r)} tone={tone} />
+         <StepTrack step={referralStep(r)} tone={tone} rejected={stage === 'rejected'} />
          <p
             className={clsx(
                'mt-1.5 text-[13px] leading-4',
@@ -583,7 +634,7 @@ function Friends({
       <section className="mt-6" aria-label="Your friends">
          <h2 className="text-[20px] font-bold italic leading-6 text-[#594d65] dark:text-[#d9cfe6]">Your Friends</h2>
          <p className="mt-1 text-[13px] leading-4 text-[#7b6b8c] dark:text-[#a99cba]">
-            Signed up → Took a loan → Repaid = <b className="text-[#6b55f7] dark:text-[#b3a6ff]">{money(payout)} for you</b>
+            Signed up → Approved → Has a loan → Repaid = <b className="text-[#6b55f7] dark:text-[#b3a6ff]">{money(payout)} for you</b>
          </p>
          {referrals.length ? (
             <ul className="mt-3 overflow-hidden rounded-[14px] bg-dv2-card">

@@ -64,10 +64,22 @@ describe('affiliate dashboard', () => {
       expect(splitCodes([], []).main).toBeNull();
    });
 
-   it('puts each friend on step 1, 2 or 3', () => {
+   it('puts each friend on step 1–4: signed up → approved/rejected → has a loan → repaid', () => {
       expect(referralStep(base)).toBe(1);
-      expect(referralStep({ ...base, borrowed: true })).toBe(2);
-      expect(referralStep({ ...base, borrowed: true, repaid: true })).toBe(3);
+      expect(referralStep({ ...base, access: 'pending' })).toBe(1);
+      expect(referralStep({ ...base, access: 'approved' })).toBe(2);
+      expect(referralStep({ ...base, access: 'rejected' })).toBe(2);
+      expect(referralStep({ ...base, access: 'approved', borrowed: true })).toBe(3);
+      expect(referralStep({ ...base, borrowed: true, repaid: true })).toBe(4);
+   });
+
+   it('shows the team’s call before the first loan', () => {
+      expect(referralStage({ ...base, access: 'none' })).toBe('signed_up');
+      expect(referralStage({ ...base, access: 'pending' })).toBe('checking');
+      expect(referralStage({ ...base, access: 'approved' })).toBe('approved');
+      expect(referralStage({ ...base, access: 'rejected' })).toBe('rejected');
+      // A loan already taken outranks a later status change.
+      expect(referralStage({ ...base, access: 'rejected', borrowed: true })).toBe('borrowed');
    });
 
    it('counts milestones from code friends who repaid, never claimed ones', () => {

@@ -43,7 +43,16 @@ export interface AffiliateReferral {
    paid_at: string | null;
    voucher_status?: 'pending' | 'sent' | 'rejected' | null;
    voucher_php?: number | null;
+   /** Who they are, so the person who invited them can tell (full name, @username, Facebook). */
+   full_name?: string | null;
+   username?: string | null;
+   facebook_name?: string | null;
+   facebook_url?: string | null;
+   /** The team's call on them: none = hasn't reached the check yet, pending = being checked. */
+   access?: AffiliateAccess | null;
 }
+
+export type AffiliateAccess = 'none' | 'pending' | 'approved' | 'rejected';
 
 /** A friend the owner added by name that the team hasn't approved (or turned down, last 30 days). */
 export interface AffiliateClaim {
@@ -66,7 +75,17 @@ export interface AffiliateDashboardData {
 }
 
 /** locked = their friend repaid, but the $5 waits until they repay a loan themself. */
-export type AffiliateStage = 'paid' | 'owed' | 'voucher' | 'locked' | 'repaid' | 'borrowed' | 'signed_up';
+export type AffiliateStage =
+   | 'paid'
+   | 'owed'
+   | 'voucher'
+   | 'locked'
+   | 'repaid'
+   | 'borrowed'
+   | 'approved'
+   | 'rejected'
+   | 'checking'
+   | 'signed_up';
 
 export function referralStage(r: AffiliateReferral, unlocked = true): AffiliateStage {
    if (r.repaid && r.claimed) return 'repaid';
@@ -76,7 +95,11 @@ export function referralStage(r: AffiliateReferral, unlocked = true): AffiliateS
       if (r.personal && !r.payout_status && !unlocked) return 'locked';
       return 'owed';
    }
-   return r.borrowed ? 'borrowed' : 'signed_up';
+   if (r.borrowed) return 'borrowed';
+   if (r.access === 'rejected') return 'rejected';
+   if (r.access === 'approved') return 'approved';
+   if (r.access === 'pending') return 'checking';
+   return 'signed_up';
 }
 
 export interface AffiliateTotals {
@@ -122,10 +145,11 @@ export function splitCodes(
    return { main: ranked[0], others: ranked.slice(1) };
 }
 
-/** 1 = signed up, 2 = took a loan, 3 = repaid (the three dots on each friend's row). */
-export function referralStep(r: AffiliateReferral): 1 | 2 | 3 {
-   if (r.repaid) return 3;
-   return r.borrowed ? 2 : 1;
+/** 1 = signed up, 2 = approved (or rejected), 3 = has a loan, 4 = repaid (the four dots on each friend's row). */
+export function referralStep(r: AffiliateReferral): 1 | 2 | 3 | 4 {
+   if (r.repaid) return 4;
+   if (r.borrowed) return 3;
+   return r.access === 'approved' || r.access === 'rejected' ? 2 : 1;
 }
 
 /** Badges only — reaching one pays nothing extra. Counts friends who used a code and repaid. */
@@ -284,11 +308,45 @@ export const AFFILIATE_PERSONAL_SAMPLE: AffiliateDashboardData = {
    claims: [{ id: 'c2', friend_name: 'Lito', status: 'pending', created_at: '2026-11-12T03:00:00Z' }],
    referrals: [
       {
+         first_name: 'Lea',
+         code: 'MOODEN12345',
+         joined_at: '2026-11-14T03:00:00Z',
+         personal: true,
+         friend_referral_id: 'fr-lea',
+         full_name: 'Lea Santos',
+         facebook_name: 'Lea Santos',
+         access: 'rejected',
+         borrowed: false,
+         repaid: false,
+         payout_amount: 5,
+         payout_status: null,
+         paid_at: null
+      },
+      {
+         first_name: 'Ben',
+         code: 'MOODEN12345',
+         joined_at: '2026-11-12T03:00:00Z',
+         personal: true,
+         friend_referral_id: 'fr-ben',
+         full_name: 'Ben Reyes',
+         username: 'benr',
+         access: 'pending',
+         borrowed: false,
+         repaid: false,
+         payout_amount: 5,
+         payout_status: null,
+         paid_at: null
+      },
+      {
          first_name: 'Ana',
          code: 'MOODEN12345',
          joined_at: '2026-11-10T03:00:00Z',
          personal: true,
          friend_referral_id: 'fr-ana',
+         full_name: 'Ana Cruz',
+         facebook_name: 'Ana Cruz',
+         facebook_url: 'https://www.facebook.com/example.ana',
+         access: 'approved',
          borrowed: false,
          repaid: false,
          payout_amount: 5,
