@@ -23,8 +23,9 @@ const formatCallTime = (iso: string | null) =>
 const formatCallDate = (iso: string | null) =>
    iso ? new Date(iso).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '';
 
-type CallsTab = 'upcoming' | 'completed';
 type ResultFilter = 'all' | CallResult;
+// Upcoming, or one of the finished-call tabs ('all' = every finished call, not-marked ones included).
+type CallsTab = 'upcoming' | ResultFilter;
 
 const RESULT_LABEL: Record<CallResult, string> = {
    approved: '✅ Approved',
@@ -38,7 +39,12 @@ const RESULT_COLOR: Record<CallResult, string> = {
    rejected: 'text-red-300',
    unmarked: 'text-[#a89bb8]'
 };
-const FILTERS: ResultFilter[] = ['all', 'approved', 'no_show', 'rejected', 'unmarked'];
+const RESULT_TABS: { id: ResultFilter; label: string }[] = [
+   { id: 'approved', label: '✅ Approved' },
+   { id: 'rejected', label: '🚫 Rejected' },
+   { id: 'no_show', label: '❌ No-show' },
+   { id: 'all', label: 'All finished' }
+];
 
 interface CallApprovalsSectionProps {
    // How many people are waiting on a decision, for the tab badge.
@@ -63,7 +69,6 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
    const [query, setQuery] = useState('');
    // Upcoming (needs a decision + booked calls, soonest first) or Completed (newest first).
    const [tab, setTab] = useState<CallsTab>('upcoming');
-   const [resultFilter, setResultFilter] = useState<ResultFilter>('all');
    const [newestFirst, setNewestFirst] = useState(true);
 
    // The people whose 🇮🇩 profiles are loaded; only re-read when the list of people changes.
@@ -113,9 +118,10 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
    }, [rows, now, query]);
 
    const completedShown = useMemo(() => {
-      const list = resultFilter === 'all' ? groups.completed : groups.completed.filter((r) => callResult(r) === resultFilter);
+      if (tab === 'upcoming') return [];
+      const list = tab === 'all' ? groups.completed : groups.completed.filter((r) => callResult(r) === tab);
       return newestFirst ? list : [...list].sort((a, b) => completedAtMs(a) - completedAtMs(b));
-   }, [groups.completed, resultFilter, newestFirst]);
+   }, [groups.completed, tab, newestFirst]);
    const resultCounts = useMemo(() => {
       const counts: Record<ResultFilter, number> = { all: groups.completed.length, approved: 0, no_show: 0, rejected: 0, unmarked: 0 };
       for (const r of groups.completed) counts[callResult(r)] += 1;
@@ -281,7 +287,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                })()}
                {row.callStartsAt ? (
                   <p className="mt-0.5 text-sm font-bold text-[#c9a7ff]">
-                     {tab === 'completed' && variant === 'full'
+                     {tab !== 'upcoming' && variant === 'full'
                         ? formatCallDate(row.callStartsAt)
                         : `${formatCallTime(row.callStartsAt)} · ${relativeStart(row.callStartsAt, now)}`}
                      {row.host ? ` · with ${row.host}` : ''}
@@ -401,12 +407,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
             className="w-full max-w-md rounded-xl border border-[#3d1f6e] bg-[#1c0a3a] px-4 py-2.5 text-base text-white placeholder:text-[#a89bb8]"
          />
          <div className="flex flex-wrap gap-2" role="tablist">
-            {(
-               [
-                  ['upcoming', 'Upcoming', groups.needsDecision.length + groups.upcoming.length],
-                  ['completed', 'Completed', groups.completed.length]
-               ] as const
-            ).map(([id, label, count]) => (
+            {([{ id: 'upcoming', label: 'Upcoming' }, ...RESULT_TABS] as { id: CallsTab; label: string }[]).map(({ id, label }) => (
                <button
                   key={id}
                   type="button"
@@ -415,7 +416,10 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                   onClick={() => setTab(id)}
                   className={`rounded-xl px-5 py-2.5 text-base font-black ${tab === id ? 'bg-[#8336f0] text-white' : 'border border-[#3d1f6e] text-[#c9bde0] hover:bg-[#2a1453]'}`}
                >
-                  {label} {rows ? <span className="opacity-70">{count}</span> : null}
+                  {label}{' '}
+                  {rows ? (
+                     <span className="opacity-70">{id === 'upcoming' ? groups.needsDecision.length + groups.upcoming.length : resultCounts[id]}</span>
+                  ) : null}
                </button>
             ))}
          </div>
@@ -425,23 +429,14 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                {renderGroup('Coming up (soonest first)', groups.upcoming, query ? 'No match.' : 'No calls booked in the next 2 weeks.')}
             </>
          ) : null}
-         {rows && tab === 'completed' ? (
+         {rows && tab !== 'upcoming' ? (
             <div className="space-y-4">
-               <div className="flex flex-wrap items-center gap-2">
-                  {FILTERS.map((f) => (
-                     <button
-                        key={f}
-                        type="button"
-                        onClick={() => setResultFilter(f)}
-                        className={`rounded-full px-3.5 py-1.5 text-sm font-black ${resultFilter === f ? 'bg-white text-[#1c0a3a]' : 'border border-[#3d1f6e] text-[#c9bde0] hover:bg-[#2a1453]'}`}
-                     >
-                        {f === 'all' ? 'All' : RESULT_LABEL[f]} <span className="opacity-60">{resultCounts[f]}</span>
-                     </button>
-                  ))}
+               <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-base text-[#a89bb8]">Last 30 days{tab === 'all' && resultCounts.unmarked ? ` · ${resultCounts.unmarked} never marked` : ''}</p>
                   <button
                      type="button"
                      onClick={() => setNewestFirst((v) => !v)}
-                     className="ml-auto rounded-full border border-[#8336f0] px-3.5 py-1.5 text-sm font-black text-white hover:bg-[#2a1453]"
+                     className="rounded-full border border-[#8336f0] px-3.5 py-1.5 text-sm font-black text-white hover:bg-[#2a1453]"
                   >
                      {newestFirst ? '↓ Newest first' : '↑ Oldest first'}
                   </button>
@@ -449,7 +444,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                {completedShown.length ? (
                   <ul className="space-y-3">{completedShown.map(renderRow)}</ul>
                ) : (
-                  <p className="text-base text-[#a89bb8]">{query ? 'No match.' : 'No completed calls in the last 30 days.'}</p>
+                  <p className="text-base text-[#a89bb8]">{query ? 'No match.' : 'None in the last 30 days.'}</p>
                )}
             </div>
          ) : null}
