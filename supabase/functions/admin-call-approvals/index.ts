@@ -53,8 +53,9 @@ const CORS = {
 const json = (body: Record<string, unknown>, status = 200) =>
    new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
 
-// Calls from two days back (late decisions, no-show corrections) to a day ahead.
-const LOOKBACK_H = 48;
+// Calls from 30 days back: the Completed tab (approved / no-show / rejected) — George 2026-11-18:
+// "hard to search for the previous calls". Only the last 2 days can still need a decision.
+const LOOKBACK_H = 30 * 24;
 // Two weeks ahead: every booked call is on the Calls tab (George 2026-11-15: "hard to keep track").
 const LOOKAHEAD_H = 14 * 24;
 
@@ -114,7 +115,7 @@ serve(async (req) => {
                .gt('video_call_starts_at', new Date(now - LOOKBACK_H * 3600000).toISOString())
                .lt('video_call_starts_at', new Date(now + LOOKAHEAD_H * 3600000).toISOString())
                .order('video_call_starts_at', { ascending: true })
-               .limit(200),
+               .limit(500),
             svc.from('loan_access_requests').select(REQUEST_COLUMNS).eq('status', 'pending').order('created_at', { ascending: true }).limit(100)
          ]);
          if (callsError) throw new Error(callsError.message);
