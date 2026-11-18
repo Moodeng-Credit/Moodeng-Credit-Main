@@ -3,8 +3,9 @@ import { useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import { useLocalization } from '@/i18n/LocalizationProvider';
-import { fetchJourneyV2, JOURNEY_V2_PATH, needsJourneyV2, PRE_KYC_CONNECT_PATH } from '@/hooks/usePreKycGate';
+import { fetchJourneyV2, fetchPrescreenPath, JOURNEY_V2_PATH, needsJourneyV2, PRE_KYC_CONNECT_PATH } from '@/hooks/usePreKycGate';
 import { useWalletLast } from '@/hooks/useWalletLast';
+import { hasPrescreenPathFlag } from '@/lib/preScreening';
 import { ID_PATHS } from '@/lib/idTrack';
 import type { LocaleCode } from '@/i18n/translations';
 import type { RootState } from '@/store/store';
@@ -135,11 +136,18 @@ export default function Welcome() {
    const { data: v2 } = useQuery({ queryKey: ['journey-v2-welcome', user?.id], queryFn: fetchJourneyV2, enabled: Boolean(user) && !isPreview, staleTime: 15_000 });
    // Wallet last: no wallet at sign-up either — it's made as the last step of the loan request.
    const { walletLast } = useWalletLast();
+   // Pre-screening path (affiliate link): Facebook + the pre-screening first, the wallet after the team's ✅.
+   const { data: prescreenPath } = useQuery({
+      queryKey: ['prescreen-path-welcome', user?.id],
+      queryFn: fetchPrescreenPath,
+      enabled: Boolean(user) && !isPreview,
+      staleTime: 15_000
+   });
    const walletPath = isPreview
       ? '/onboarding/wallet-preview'
       : needsJourneyV2(v2)
         ? JOURNEY_V2_PATH
-        : walletLast
+        : walletLast || hasPrescreenPathFlag() || prescreenPath?.on_path
           ? PRE_KYC_CONNECT_PATH
           : '/onboarding/wallet';
    // Indonesia track: its own onboarding (/id/onboarding) replaces this welcome.

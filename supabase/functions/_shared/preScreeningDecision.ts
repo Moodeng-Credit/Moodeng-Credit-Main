@@ -8,6 +8,8 @@ import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { type CardStamp, linkRows, stampCard } from './adminCards.ts';
 import { rejectUser } from './loanAccess.ts';
+import { sendPushToUser } from './pushDelivery.ts';
+import { sendMessengerMessage } from './sendpulse.ts';
 import { preScreeningConfirmRows, preScreeningDecisionRow } from './preScreening.ts';
 import { callTelegramApi, type TelegramInlineKeyboard } from './telegram.ts';
 
@@ -45,13 +47,40 @@ export async function applyPreScreeningDecision(svc: SupabaseClient, id: string)
       .maybeSingle();
    const row = data as { user_id: string | null; team_decision: Decision | null; team_decided_by: string | null; team_rejected_at: string | null } | null;
    if (!row?.team_decision) return { ok: false, summary: 'no decision' };
-   if (row.team_decision === 'good') return { ok: true, summary: 'Marked good fit — shows on their call card.' };
+   if (row.team_decision === 'good') {
+      if (!row.user_id) return { ok: true, summary: 'Marked good fit — shows on their call card when they sign up.' };
+      const told = await tellGoodFit(svc, row.user_id);
+      return { ok: true, summary: `Marked good fit. ${told}` };
+   }
    if (!row.user_id) return { ok: true, summary: 'Not a fit — no account yet; they’ll be turned down if they sign up.' };
    if (row.team_rejected_at) return { ok: true, summary: 'Already turned down.' };
    const result = await rejectUser(svc, row.user_id, `${row.team_decided_by ?? 'team'} (pre-screening)`);
    // Stamped even when nothing changed (e.g. already approved): don't keep retrying on every run.
    await svc.from('pre_screenings').update({ team_rejected_at: new Date().toISOString() }).eq('id', id);
    return result;
+}
+
+// ✅ for someone on the pre-screening path (signed up, Facebook connected, waiting): tell them to keep
+// going. Messenger (their 24h window is usually open: they just connected) + a push. Never throws.
+const GOOD_FIT_TEXT =
+   '🎉 Good news! The Moodeng team looked at your answers. You can keep going: open moodeng.app to set up your wallet and book your 15-min call.\n\n' +
+   '🎉 Magandang balita! Pwede ka nang tumuloy: buksan ang moodeng.app para i-set up ang wallet mo at mag-book ng 15-min call.';
+async function tellGoodFit(svc: SupabaseClient, userId: string): Promise<string> {
+   const { data } = await svc.from('users').select('messenger_psid, prescreen_path').eq('id', userId).maybeSingle();
+   const u = data as { messenger_psid?: string | null; prescreen_path?: boolean } | null;
+   if (!u?.prescreen_path) return 'Shows on their call card.';
+   const [msg, push] = await Promise.all([
+      sendMessengerMessage(u.messenger_psid, { text: GOOD_FIT_TEXT }).catch(() => ({ ok: false })),
+      sendPushToUser(svc, userId, () => ({
+         type: 'loan_access_decision',
+         title: 'Good news! 🎉',
+         body: 'The team looked at your answers. Set up your wallet and book your call.',
+         url: 'https://moodeng.app/onboarding/connect',
+         tag: 'prescreen-good'
+      })).catch(() => null)
+   ]);
+   const pushed = Boolean(push && (push as { sent?: number }).sent);
+   return msg.ok || pushed ? `They were told to keep going (${[msg.ok ? 'Messenger' : null, pushed ? 'push' : null].filter(Boolean).join(' + ')}).` : '⚠️ Could not message them — they see it next time they open the app.';
 }
 
 const STAMP: Record<Decision, string> = { good: '✅ GOOD FIT', not_fit: '❌ NOT A FIT' };

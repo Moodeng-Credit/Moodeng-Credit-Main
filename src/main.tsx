@@ -20,7 +20,7 @@ import App from './App.tsx';
 import './globals.css';
 import { captureFirstTouch } from '@/lib/attribution';
 import { hasStoredSession, resolveFbCodeAddress } from '@/lib/inAppHandoff';
-import { capturePreScreeningToken } from '@/lib/preScreening';
+import { capturePreScreeningToken, capturePrescreenPathFlag } from '@/lib/preScreening';
 
 // Telegram sign-in data out of the URL before Clarity / PostHog can record it (telegramCallbackStash.ts).
 stashTelegramCallback();
@@ -210,6 +210,7 @@ if (fbCodeAddress) window.history.replaceState(window.history.state, '', fbCodeA
 captureFirstTouch();
 // A finished pre-screening (moodeng.app/screen) rides on the sign-up link as ?ps=.
 capturePreScreeningToken();
+capturePrescreenPathFlag();
 
 createRoot(document.getElementById('root')!).render(
    <StrictMode>

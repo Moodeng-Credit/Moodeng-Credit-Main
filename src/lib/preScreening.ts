@@ -58,3 +58,49 @@ export const claimPreScreening = (userId: string) => {
       // Storage blocked: skip.
    }
 };
+
+// Pre-screening after sign-up (migration 20261118090000): opening an affiliate's /screen link marks this
+// browser; the first signed-in visit joins the account to the path (join_prescreen_path), so its
+// onboarding goes Facebook → pre-screening → team ✅ → wallet. The flag also rides on the sign-up link
+// (?prescreen=1), for a sign-up that finishes in another browser.
+const PATH_KEY = 'md_prescreen_path';
+
+export const markPrescreenPath = () => {
+   try {
+      window.localStorage.setItem(PATH_KEY, String(Date.now()));
+   } catch {
+      // Storage blocked: the ?prescreen=1 on the sign-up link still carries it.
+   }
+};
+
+export const hasPrescreenPathFlag = () => {
+   try {
+      if (new URLSearchParams(window.location.search).get('prescreen') === '1') return true;
+      const at = Number(window.localStorage.getItem(PATH_KEY));
+      return Number.isFinite(at) && at > 0 && Date.now() - at < 7 * 86_400_000;
+   } catch {
+      return false;
+   }
+};
+
+/** Call once on page load: keeps ?prescreen=1 from the sign-up link. */
+export const capturePrescreenPathFlag = () => {
+   try {
+      if (new URLSearchParams(window.location.search).get('prescreen') === '1') markPrescreenPath();
+   } catch {
+      // skip
+   }
+};
+
+/** After sign-in on a flagged browser: put the account on the path (server decides if it may). */
+export const joinPrescreenPath = async (): Promise<boolean> => {
+   if (!hasPrescreenPathFlag()) return false;
+   const { data, error } = await getSupabaseBrowserClient().rpc('join_prescreen_path');
+   if (error) return false;
+   try {
+      window.localStorage.removeItem(PATH_KEY);
+   } catch {
+      // skip
+   }
+   return data === true;
+};

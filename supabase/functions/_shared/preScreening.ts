@@ -268,8 +268,15 @@ const scoreLine = (row: Pick<Row, 'score' | 'verdict'>, unheard = 0) =>
       ? `${VERDICT_LABEL[row.verdict]} · ${row.score}/100${unheard ? ` · ${unheard} answer${unheard === 1 ? '' : 's'} not heard (watch)` : ''}`
       : '⚪ Not graded — watch the clips';
 
-async function tellTeam(svc: SupabaseClient, title: string, lines: string[], id: string, decide = false) {
+async function tellTeam(svc: SupabaseClient, title: string, lines: string[], id: string, decide = false, accountId: string | null = null) {
    const url = `${ADMIN_URL}?screen=${id}`;
+   // Done after sign-up (the normal path since 2026-11-18): say whose account it is.
+   if (accountId) {
+      const { data: acct } = await svc.from('users').select('username, display_name, facebook_name').eq('id', accountId).maybeSingle();
+      const a = acct as { username?: string | null; display_name?: string | null; facebook_name?: string | null } | null;
+      const label = [a?.username ? `@${a.username}` : null, a?.facebook_name ? `Facebook: ${a.facebook_name}` : null].filter(Boolean).join(' · ');
+      if (label) lines = [`Account: ${label}`, ...lines];
+   }
    const text = [title, ...lines].filter(Boolean).join('\n');
    const chat = await teamChat(svc);
    if (chat) {
@@ -398,10 +405,11 @@ export async function gradePreScreening(svc: SupabaseClient, id: string, apiKey:
             ...perAnswer,
             incomeLine(grade.income ?? null),
             ...(grade.flags ?? []).map((f) => `⚠️ ${f}`),
-            'No account yet — we will say so here when they sign up.'
+            row.user_id ? null : 'No account yet — we will say so here when they sign up.'
          ].filter((l): l is string => Boolean(l)),
          id,
-         true
+         true,
+         row.user_id
       );
    }
    await removeOldFiles(svc).catch((err) => console.error('pre-screening cleanup failed', err));

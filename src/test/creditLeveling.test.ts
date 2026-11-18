@@ -18,7 +18,10 @@ vi.mock('@/hooks/usePreKycGate', () => ({
    PRE_KYC_CONNECT_PATH: '/onboarding/connect',
    JOURNEY_V2_PATH: '/onboarding/verify',
    needsJourneyV2: () => false,
-   usePreKycGate: () => ({ isGated: false, isLoading: false, v2: null })
+   needsPrescreen: () => false,
+   PRESCREEN_PATH: '/screen',
+   fetchPrescreenPath: async () => ({ on_path: false }),
+   usePreKycGate: () => ({ isGated: false, isLoading: false, v2: null, prescreen: null })
 }));
 
 // Wallet last switch (react-query, no provider here): off, so the wallet-first rules below still hold.

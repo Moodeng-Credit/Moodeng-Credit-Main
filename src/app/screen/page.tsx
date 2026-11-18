@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
+import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 
 import BrandedVideo from '@/components/BrandedVideo';
 import { describeBrowser } from '@/lib/attribution';
-import { readPreScreening, savePreScreening } from '@/lib/preScreening';
+import { fetchPrescreenPath, PRE_KYC_CONNECT_PATH } from '@/hooks/usePreKycGate';
+import { joinPrescreenPath, markPrescreenPath, readPreScreening, savePreScreening } from '@/lib/preScreening';
+import type { RootState } from '@/store/store';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { audioContextCtor, joinChunks, wavBlob, wavFromMediaFile } from '@/lib/wavAudio';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, PrimaryButton, StepTrail } from '@/views/dashboard/components/connectKit';
@@ -18,7 +22,23 @@ import { CONNECT_HIPPOS, ConnectHero, GhostButton, PrimaryButton, StepTrail } fr
 // (lib/preScreening.ts). The AI grade is for the team only and is never shown here.
 // Database + switch: supabase/migrations/20261116180000_pre_screening.sql.
 
-export type ScreenStage = 'loading' | 'closed' | 'busy' | 'intro' | 'video' | 'question' | 'proof' | 'sending' | 'done';
+// signup / facebook / waiting / good / notneeded: the after-sign-up path (migration 20261118090000) —
+// make the account and connect Facebook first, then answer, then wait for the team's ✅.
+export type ScreenStage =
+   | 'loading'
+   | 'closed'
+   | 'busy'
+   | 'signup'
+   | 'facebook'
+   | 'intro'
+   | 'video'
+   | 'question'
+   | 'proof'
+   | 'sending'
+   | 'done'
+   | 'waiting'
+   | 'good'
+   | 'notneeded';
 /** kind 'text' = a typed answer; anything else = a short recorded video. */
 /** `min` = fewest characters a typed answer needs (default MIN_TEXT; 1 lets "No" through). */
 export type ScreenQuestion = { id: string; text: string; hint?: string; kind?: 'text' | 'video'; min?: number };
@@ -368,13 +388,41 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       writeProgress({ token, at: Date.now(), stage, index, questions, askProof, typed, uploaded, uploadedDocs });
    }, [preview, token, stage, index, questions, askProof, typed, uploaded, uploadedDocs]);
 
+   const authUser = useSelector((state: RootState) => state.auth.user);
+   const isAuthChecked = useSelector((state: RootState) => state.auth.isAuthChecked);
+   const queryClient = useQueryClient();
+   const signedIn = Boolean(authUser?.id);
+
    useEffect(() => {
-      if (preview) return;
-      const saved = readPreScreening();
-      if (saved?.done) {
-         setStage('done');
+      if (preview || !isAuthChecked) return;
+      // Account + Facebook come first now: someone signed out makes their account, then comes back.
+      if (!authUser?.id) {
+         markPrescreenPath();
+         setStage('signup');
          return;
       }
+      let gone = false;
+      void (async () => {
+         markPrescreenPath();
+         await joinPrescreenPath();
+         const path = await fetchPrescreenPath();
+         if (gone) return;
+         if (!path.on_path || path.decision === 'not_fit') return setStage('notneeded');
+         if (path.decision === 'good') return setStage('good');
+         if (path.status && path.status !== 'none' && path.status !== 'open') return setStage('waiting');
+         if (!authUser.hasVerifiedContact) return setStage('facebook');
+         setName((current) => current || authUser.displayName || '');
+         startForm();
+      })();
+      return () => {
+         gone = true;
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [preview, isAuthChecked, authUser?.id, authUser?.hasVerifiedContact]);
+
+   // The questions: resume this browser's progress, or load them to start.
+   const startForm = () => {
+      const saved = readPreScreening();
       const progress = readProgress(saved?.token);
       if (progress) {
          setToken(progress.token);
@@ -387,11 +435,9 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          setStage(progress.stage);
          return;
       }
-      let gone = false;
       void getSupabaseBrowserClient()
          .rpc('pre_screening_start', { p_name: null, p_ref: null, p_browser: null })
          .then(({ data, error: rpcError }) => {
-            if (gone) return;
             const res = data as { status?: string; video?: string; videos?: ScreenVideo[]; questions?: ScreenQuestion[]; proof?: boolean } | null;
             if (rpcError || res?.status !== 'ready') {
                setStage('closed');
@@ -402,10 +448,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
             setQuestions(res.questions ?? []);
             setStage('intro');
          });
-      return () => {
-         gone = true;
-      };
-   }, [preview]);
+   };
 
    const begin = async () => {
       if (preview) return setStage('video');
@@ -422,6 +465,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       if (rpcError)
          return setError(/bad_name/.test(rpcError.message) ? 'Please type your name.' : 'Something went wrong. Please try again.');
       if (res?.status === 'busy') return setStage('busy');
+      if (res?.status === 'sent') return setStage('waiting');
       if (res?.status !== 'open' || !res.token) return setStage('closed');
       setToken(res.token);
       savePreScreening(res.token, false);
@@ -448,7 +492,8 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          return;
       }
       if (token) savePreScreening(token, true);
-      setStage('done');
+      void queryClient.invalidateQueries({ queryKey: ['prescreen-path'] });
+      setStage(signedIn ? 'waiting' : 'done');
    };
 
    const addDocs = (list: FileList | null) => {
@@ -556,7 +601,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
 
    // The token rides on the link too, so the result follows them into another browser.
    const doneToken = token ?? readPreScreening()?.token ?? null;
-   const signUpHref = `${ref ? `/invite/${encodeURIComponent(ref)}` : '/signup'}${doneToken ? `?ps=${doneToken}` : ''}`;
+   const signUpHref = `${ref ? `/invite/${encodeURIComponent(ref)}` : '/sign-up'}${doneToken ? `?ps=${doneToken}` : ''}`;
    const trailSteps = ['You', ...(videos.length ? ['Watch'] : []), 'Answer', ...(askProof ? ['Income'] : []), 'Done'];
    const trail = (step: string) => <StepTrail current={step === 'end' ? trailSteps.length : Math.max(0, trailSteps.indexOf(step))} steps={trailSteps} />;
    const question = questions[index];
@@ -587,6 +632,62 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                   <ConnectHero image={CONNECT_HIPPOS.waiting} subtitle="You can still sign up." title="This link is closed" />
                   <a className="block" href={signUpHref}>
                      <PrimaryButton>Sign up</PrimaryButton>
+                  </a>
+               </div>
+            ) : null}
+
+            {stage === 'signup' ? (
+               <div className={card}>
+                  <ConnectHero
+                     image={CONNECT_HIPPOS.hello}
+                     subtitle="Then connect Facebook and answer a few quick questions. About 5 minutes."
+                     title="First, make your Moodeng account"
+                  />
+                  <a className="block" href={`${ref ? `/invite/${encodeURIComponent(ref)}` : '/sign-up'}?prescreen=1`}>
+                     <PrimaryButton>Make my account</PrimaryButton>
+                  </a>
+                  <a className="block" href="/sign-in?prescreen=1">
+                     <GhostButton>I already have an account</GhostButton>
+                  </a>
+               </div>
+            ) : null}
+
+            {stage === 'facebook' ? (
+               <div className={card}>
+                  <ConnectHero image={CONNECT_HIPPOS.hello} subtitle="So the team can message you about your answers." title="Connect Facebook first" />
+                  <a className="block" href={PRE_KYC_CONNECT_PATH}>
+                     <PrimaryButton>Connect Facebook</PrimaryButton>
+                  </a>
+               </div>
+            ) : null}
+
+            {stage === 'waiting' ? (
+               <div className={card}>
+                  <ConnectHero
+                     image={CONNECT_HIPPOS.waiting}
+                     subtitle="We’ll message you on Messenger, usually within a day. You don’t need to do anything until then."
+                     title="Thanks! The team is looking at your answers"
+                  />
+                  <a className="block" href="/dashboard">
+                     <GhostButton>Look around meanwhile</GhostButton>
+                  </a>
+               </div>
+            ) : null}
+
+            {stage === 'good' ? (
+               <div className={card}>
+                  <ConnectHero image={CONNECT_HIPPOS.approved} subtitle="The team says you can keep going." title="Good news! 🎉" />
+                  <a className="block" href={PRE_KYC_CONNECT_PATH}>
+                     <PrimaryButton>Keep going</PrimaryButton>
+                  </a>
+               </div>
+            ) : null}
+
+            {stage === 'notneeded' ? (
+               <div className={card}>
+                  <ConnectHero image={CONNECT_HIPPOS.hello} subtitle="There’s nothing to do on this page." title="You’re all set here" />
+                  <a className="block" href="/dashboard">
+                     <PrimaryButton>Go to Moodeng</PrimaryButton>
                   </a>
                </div>
             ) : null}

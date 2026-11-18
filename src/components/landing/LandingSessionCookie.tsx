@@ -21,7 +21,7 @@ export function LandingSessionCookie() {
    useEffect(() => {
       if (!signedIn || gate.isLoading) return;
       const midFlow =
-         !user.userRole || isGuestEmail(user.email) || (user.userRole === 'borrower' && getJourney(user, gate.isGated, gate.v2, walletLast).stage !== 'verified');
+         !user.userRole || isGuestEmail(user.email) || (user.userRole === 'borrower' && getJourney(user, gate.isGated, gate.v2, walletLast, gate.prescreen).stage !== 'verified');
       setLandingSessionCookie(midFlow ? 'continue' : 'signout', user.userRole);
    }, [signedIn, gate.isLoading, gate.isGated, gate.v2, walletLast, user]);
 

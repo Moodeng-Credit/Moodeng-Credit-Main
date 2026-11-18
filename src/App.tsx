@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
 import posthog from 'posthog-js';
@@ -114,7 +115,7 @@ import WhyLend from '@/app/whylend/page';
 import { clarityEvent, clarityTag, identifyClarity, isClarityEnabled, signupMethodLabel } from '@/lib/analytics/clarity';
 import { describeBrowser, recordSignupContext, recordSignupSource } from '@/lib/attribution';
 import { trackNewAccount } from '@/lib/metaPixel';
-import { claimPreScreening } from '@/lib/preScreening';
+import { claimPreScreening, joinPrescreenPath } from '@/lib/preScreening';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { type RootState } from '@/store/store';
 import MoneyGuide from '@/views/academy/MoneyGuide';
@@ -195,6 +196,7 @@ export default function App() {
    usePostLoginReturn();
    usePendingInviteRedemption();
    const { user, username, isAuthChecked } = useSelector((state: RootState) => state.auth);
+   const queryClient = useQueryClient();
    // A new loan's due day is measured in the borrower's own time zone, so keep it current.
    useRecordDeviceTimezone(user?.id);
    const userLoansFetchedAt = useSelector((state: RootState) => state.loans.userLoansFetchedAt);
@@ -244,6 +246,10 @@ export default function App() {
          recordSignupSource(user.id);
          recordSignupContext(user.id);
          claimPreScreening(user.id);
+         // Came from an affiliate's pre-screening link: Facebook → pre-screening → team ✅ → wallet.
+         void joinPrescreenPath().then((joined) => {
+            if (joined) void queryClient.invalidateQueries({ queryKey: ['prescreen-path'] });
+         });
          trackNewAccount(user.id, user.createdAt);
       }
    }, [user?.id, user?.createdAt]);

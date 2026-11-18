@@ -136,6 +136,12 @@ const submit = async (req: Request, svc: any, body: Record<string, unknown>) => 
       if (v2Blocking === true) return json({ ok: false, error: 'verify_first' }, 409);
    }
 
+   // Pre-screening path (affiliate link, migration 20261118090000): the team's ✅ comes before the call.
+   if (!idTrack) {
+      const { data: prescreenBlocking } = await svc.rpc('team_prescreen_blocking', { p_user_id: userId });
+      if (prescreenBlocking === true) return json({ ok: false, error: 'prescreen_first' }, 409);
+   }
+
    // Call request: the reach-out IS the booked call, so there must be one coming up.
    if (isCallRequest && !(borrower.video_call_starts_at && Date.parse(borrower.video_call_starts_at) > Date.now())) {
       return json({ ok: false, error: 'call_not_booked' }, 400);
