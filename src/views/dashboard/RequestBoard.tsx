@@ -50,6 +50,7 @@ import type { BorrowerContextProfileData } from '@/lib/borrowerContextFit';
 import { getBorrowerActiveLoanCount, getBorrowerUsedCreditAmount, isRequestBoardLoanVisible } from '@/lib/borrowerCreditUsage';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
+import { maximumRepayment } from '@/lib/loanPricing';
 import {
    BORROWER_GUIDED_TOUR_ID,
    GENERAL_GUIDED_TOUR_ID,
@@ -1688,6 +1689,18 @@ function RequestBoard$() {
             parsedRepaymentAmount < parsedLoanAmount + 1
          ) {
             showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_REPAYMENT_TOO_LOW));
+            return;
+         }
+         // At most 20% on top per 31 days (George, 2026-11-18). Mirrors app_private.enforce_new_loan_terms.
+         const maxRepay = isIndo ? null : maximumRepayment(parsedLoanAmount, days);
+         if (maxRepay !== null && parsedRepaymentAmount > maxRepay) {
+            showToast(
+               TOAST_TYPES.ERROR,
+               'Repayment too high',
+               `For this date you can repay at most $${maxRepay.toFixed(2)} (20% on top per month). Lower your repayment and try again.`,
+               'OK',
+               'acknowledge'
+            );
             return;
          }
          if (isIndo && idLoanRules) {
