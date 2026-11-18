@@ -121,12 +121,15 @@ export const VERDICT_LABEL: Record<PreScreenVerdict, string> = { good: '🟢 Goo
  * answers that were heard), never taken from the model, so it can't disagree with the per-answer
  * scores the team sees. An answer the speech-to-text couldn't hear is left out, not counted as a bad
  * answer: a phone's sound failing must not read as "Weak". `unheard` says how many.
+ * `empty` = clips Gemini watched with nobody on camera and nothing said: those score 0 (it's not the
+ * phone's sound failing, there was no answer).
  */
 export const buildGrade = (
    questions: PreScreenQuestion[],
    transcripts: Record<string, string | null>,
    model: { summary?: unknown; answers?: unknown; income?: unknown; flags?: unknown } | null,
-   income: { files: number; read: IncomeProofRead | null } | null = null
+   income: { files: number; read: IncomeProofRead | null } | null = null,
+   empty: ReadonlySet<string> = new Set()
 ): PreScreenGrade => {
    const byId = new Map<string, { score?: unknown; note?: unknown }>();
    if (model && Array.isArray(model.answers)) {
@@ -136,11 +139,12 @@ export const buildGrade = (
    }
    const answers: GradedAnswer[] = questions.map((q) => {
       const transcript = transcripts[q.id]?.trim() || null;
+      if (!transcript && empty.has(q.id)) return { q: q.id, transcript: null, score: 0, note: 'Nobody on camera and nothing said.' };
       if (!transcript) return { q: q.id, transcript: null, score: null, note: 'Could not hear this answer — watch the clip.' };
       const m = byId.get(q.id);
       return { q: q.id, transcript, score: clamp(m?.score, 0, 10), note: typeof m?.note === 'string' ? m.note.trim().slice(0, 300) : '' };
    });
-   const heard = answers.filter((a) => a.transcript);
+   const heard = answers.filter((a) => a.transcript || empty.has(a.q));
    const scored = heard.filter((a) => a.score != null);
    // The document counts as one more item, only when the AI could read it: a file our side couldn't
    // open must not drag the score down (the team opens it instead).
@@ -549,7 +553,11 @@ export async function gradePreScreening(svc: SupabaseClient, id: string, apiKey:
       }
    }
 
-   const built = buildGrade(row.questions, transcripts, modelOut, incomeFiles.length ? { files: incomeFiles.length, read: incomeRead } : null);
+   // Watched with nobody on camera and nothing said: a 0, not "not heard".
+   const empty = new Set(
+      gemini ? row.questions.filter((q) => !transcripts[q.id] && gemini?.seen[q.id]?.person_visible === false).map((q) => q.id) : []
+   );
+   const built = buildGrade(row.questions, transcripts, modelOut, incomeFiles.length ? { files: incomeFiles.length, read: incomeRead } : null, empty);
    const seenFor = (q: string) => (gemini ? (gemini.seen[q] ?? null) : null);
    const cameraFlags = gemini ? built.answers.flatMap((a) => clipWarnings(seenFor(a.q)).map((w) => `🎥 ${a.q}: ${w}`)) : [];
    const grade: PreScreenGrade = {
