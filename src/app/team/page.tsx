@@ -62,10 +62,12 @@ const foundingTeam = [
    },
    {
       name: 'Ludi',
-      role: 'Working on Indonesia',
+      role: 'Community Lead',
       image: '/team/ludi.jpeg',
       bio: 'Brings hands-on experience in Indonesia, where he has seen loan sharks trap families with crushing interest. He is bringing Moodeng Credit there so people have a fair, safe way to borrow instead.',
-      credentials: ['Indonesia', 'Fair Lending', 'Stopping Loan Sharks']
+      credentials: ['Indonesia', 'Fair Lending', 'Stopping Loan Sharks'],
+      linkedIn: 'https://www.linkedin.com/in/ludi/',
+      x: 'https://x.com/duitkripto'
    }
 ];
 
@@ -232,14 +234,21 @@ export default function TeamPage() {
                            </div>
                         ) : null}
                         <div className="mt-auto pt-md-2 md:pt-md-3">
-                           {'website' in member && member.website ? (
+                           {('website' in member && member.website) || ('x' in member && member.x) ? (
                               <div className="flex flex-wrap justify-center gap-2">
                                  <ProfileButton href={member.linkedIn} compact>
                                     LinkedIn
                                  </ProfileButton>
-                                 <ProfileButton href={member.website} compact>
-                                    Website
-                                 </ProfileButton>
+                                 {'website' in member && member.website ? (
+                                    <ProfileButton href={member.website} compact>
+                                       Website
+                                    </ProfileButton>
+                                 ) : null}
+                                 {'x' in member && member.x ? (
+                                    <ProfileButton href={member.x} compact>
+                                       X
+                                    </ProfileButton>
+                                 ) : null}
                               </div>
                            ) : 'linkedIn' in member && member.linkedIn ? (
                               <LinkedInButton href={member.linkedIn} className="mx-auto" />
