@@ -113,6 +113,35 @@ export async function redeemFriendInvite(code: string): Promise<RedeemInviteResu
    return data as RedeemInviteResult;
 }
 
+export type ApplyCodeResult =
+   | { ok: true; code: string }
+   | { ok: false; reason: 'invalid' | 'already' | 'self' | 'old_account' | 'error'; linkedCode?: string };
+
+/**
+ * The "Who invited you?" box on the welcome step: a personal invite code (ABCDEF12345) links the friend,
+ * anything else is a team/affiliate code (MAHJID). The server keeps the first code an account gets.
+ */
+export async function applyInviteCode(raw: string): Promise<ApplyCodeResult> {
+   const code = normalizeInviteCode(raw).replace(/[^A-Z0-9]/g, '');
+   if (!code) return { ok: false, reason: 'invalid' };
+   try {
+      if (isValidInviteCode(code)) {
+         const result = await redeemFriendInvite(code);
+         if (result === 'joined') return { ok: true, code };
+         if (result === 'already_referred') return { ok: false, reason: 'already' };
+         if (result === 'self_referral') return { ok: false, reason: 'self' };
+         if (result === 'not_a_new_account') return { ok: false, reason: 'old_account' };
+      }
+      const { data, error } = await getSupabaseBrowserClient().rpc('redeem_referral_code', { code_input: code }).single();
+      if (error) return { ok: false, reason: /incorrect|required/i.test(error.message) ? 'invalid' : 'error' };
+      if (!data) return { ok: false, reason: 'invalid' };
+      if (data.already_redeemed && data.code !== code) return { ok: false, reason: 'already', linkedCode: data.code };
+      return { ok: true, code: data.code };
+   } catch {
+      return { ok: false, reason: 'error' };
+   }
+}
+
 const toNumber = (value: unknown) => (typeof value === 'number' ? value : Number(value) || 0);
 const toNumberOrNull = (value: unknown) => (value === null || value === undefined ? null : toNumber(value));
 
