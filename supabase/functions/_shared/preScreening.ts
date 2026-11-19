@@ -51,7 +51,8 @@ export const preScreeningConfirmRows = (id: string): TelegramInlineKeyboard => [
    ],
    [
       { text: NOT_FIT_REASONS.fake, callback_data: `ps:nr:fake:${id}` },
-      { text: NOT_FIT_REASONS.other, callback_data: `ps:nr:other:${id}` }
+      // Other: the team types the reason, then confirms it (preScreeningDecision.ts). Old cards' ps:nr:other still decides at once.
+      { text: `✍️ ${NOT_FIT_REASONS.other} (type it)`, callback_data: `ps:type:${id}` }
    ],
    [{ text: '↩️ Back', callback_data: `ps:back:${id}` }]
 ];
