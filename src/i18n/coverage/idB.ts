@@ -1307,7 +1307,7 @@ export const indonesianCoverageB: Record<string, string> = {
       'Peminjam baru menyiapkan akun, melakukan panggilan singkat dengan tim, lalu mengisi permintaan. Cek ID singkat adalah langkah terakhir saat mengirimnya.',
    // VideoCallStep / ConnectStep: confirm the call 1 hour before
    "Confirm 1 hour before your call": "Konfirmasi 1 jam sebelum panggilanmu",
-   "We'll send you an “I'll be there” button on Messenger, and it shows up right here. Tap it, or the call is cancelled automatically.": "Kami akan mengirim tombol “I'll be there” di Messenger, dan tombolnya juga muncul di sini. Ketuk tombol itu, atau panggilan otomatis dibatalkan.",
+   "Tap “I'll be there” here or on Messenger — or it's cancelled.": "Ketuk “I'll be there” di sini atau di Messenger — kalau tidak, dibatalkan.",
    "Your call is in under an hour — tap “I’ll be there” now to keep it.": "Panggilanmu kurang dari satu jam lagi — ketuk “I’ll be there” sekarang agar tidak dibatalkan.",
    "You’re booked! You can apply right after the call.": "Jadwal kamu sudah dipesan! Kamu bisa mengajukan tepat setelah panggilan."
 };

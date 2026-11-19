@@ -549,7 +549,7 @@ export const vietnameseCoverageG: Record<string, string> = {
    "My Instant Wallet payment failed": "Thanh toán từ Instant Wallet của tôi bị lỗi",
    // VideoCallStep / ConnectStep: confirm the call 1 hour before
    "Confirm 1 hour before your call": "Xác nhận 1 giờ trước cuộc gọi",
-   "We'll send you an “I'll be there” button on Messenger, and it shows up right here. Tap it, or the call is cancelled automatically.": "Chúng tôi sẽ gửi nút “I'll be there” qua Messenger, và nút cũng hiện ngay tại đây. Hãy nhấn nút, nếu không cuộc gọi sẽ tự động bị hủy.",
+   "Tap “I'll be there” here or on Messenger — or it's cancelled.": "Nhấn “I'll be there” tại đây hoặc trên Messenger — nếu không cuộc gọi sẽ bị hủy.",
    "Your call is in under an hour — tap “I’ll be there” now to keep it.": "Còn chưa đầy một giờ nữa là đến cuộc gọi — nhấn “I’ll be there” ngay để giữ cuộc gọi.",
    "You’re booked! You can apply right after the call.": "Bạn đã đặt lịch! Bạn có thể đăng ký ngay sau cuộc gọi.",
    // Credit ladder $15, $25, $35 … (Nov 2026).

@@ -685,7 +685,7 @@ export const thaiCoverageG: Record<string, string> = {
    "My Instant Wallet payment failed": "การชำระเงินจาก Instant Wallet ของฉันไม่สำเร็จ",
    // VideoCallStep / ConnectStep: confirm the call 1 hour before
    "Confirm 1 hour before your call": "ยืนยัน 1 ชั่วโมงก่อนคอล",
-   "We'll send you an “I'll be there” button on Messenger, and it shows up right here. Tap it, or the call is cancelled automatically.": "เราจะส่งปุ่ม “I'll be there” ให้ทาง Messenger และปุ่มจะขึ้นที่หน้านี้ด้วย แตะปุ่มนั้น ไม่เช่นนั้นคอลจะถูกยกเลิกอัตโนมัติ",
+   "Tap “I'll be there” here or on Messenger — or it's cancelled.": "แตะ “I'll be there” ที่นี่หรือใน Messenger — ไม่งั้นคอลจะถูกยกเลิก",
    "Your call is in under an hour — tap “I’ll be there” now to keep it.": "อีกไม่ถึงชั่วโมงจะถึงเวลาคอล — แตะ “I’ll be there” ตอนนี้เพื่อเก็บคอลไว้",
    "You’re booked! You can apply right after the call.": "จองแล้ว! คุณสมัครได้ทันทีหลังคอล",
    // Credit ladder $15, $25, $35 … (Nov 2026).

@@ -1072,7 +1072,7 @@ export const filipinoCoverageG: Record<string, string> = {
    "My Instant Wallet payment failed": "Pumalya ang bayad mula sa Instant Wallet ko",
    // VideoCallStep / ConnectStep: confirm the call 1 hour before
    "Confirm 1 hour before your call": "Kumpirmahin 1 oras bago ang call mo",
-   "We'll send you an “I'll be there” button on Messenger, and it shows up right here. Tap it, or the call is cancelled automatically.": "Magpapadala kami ng “I'll be there” button sa Messenger, at lalabas din ito dito mismo. I-tap ito, kung hindi ay awtomatikong makakansela ang call.",
+   "Tap “I'll be there” here or on Messenger — or it's cancelled.": "I-tap ang “I'll be there” dito o sa Messenger — kung hindi, kakanselahin ito.",
    "Your call is in under an hour — tap “I’ll be there” now to keep it.": "Wala nang isang oras bago ang call mo — i-tap ang “I’ll be there” ngayon para manatili ito.",
    "You’re booked! You can apply right after the call.": "Naka-book ka na! Puwede kang mag-apply pagkatapos ng call.",
    "Not showing up after 10 minutes?": "Wala pa rin pagkalipas ng 10 minuto?",

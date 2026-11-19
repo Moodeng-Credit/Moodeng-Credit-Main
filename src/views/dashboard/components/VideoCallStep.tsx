@@ -327,7 +327,7 @@ export function ConfirmLaterNotice() {
          <span className="flex flex-col gap-0.5">
             <b className="text-[14px] leading-[19px] text-[#7a4b00]">Confirm 1 hour before your call</b>
             <span className="text-[13px] leading-[18px] text-[#7a4b00]">
-               We&apos;ll send you an “I&apos;ll be there” button on Messenger, and it shows up right here. Tap it, or the call is cancelled automatically.
+               Tap “I&apos;ll be there” here or on Messenger — or it&apos;s cancelled.
             </span>
          </span>
       </div>
