@@ -11,11 +11,13 @@ import {
    needsNudge,
    parseAskCallback,
    parseAskPrompt,
+   plainRedFlags,
    reminderState,
    shouldAutoGood,
    splitTyped,
    teamDaytime,
    toAnswerRead,
+   toRedFlags,
    waitingOnThem
 } from './preScreeningAsk.ts';
 
@@ -116,4 +118,21 @@ Deno.test('sweep: daytime in Bangkok', () => {
    assertEquals(teamDaytime(Date.parse('2026-11-19T01:00:00Z')), true);
    assertEquals(borrowerDaytime(Date.parse('2026-11-19T14:30:00Z')), false);
    assertEquals(borrowerDaytime(Date.parse('2026-11-19T05:00:00Z')), true);
+});
+
+Deno.test('red flags: plain ones and the AI list', () => {
+   assertEquals(plainRedFlags(null), []);
+   assertEquals(
+      plainRedFlags({
+         answers: [{ q: 'q1', transcript: null, note: '', seen: { person_visible: false } }],
+         income: { read: { warnings: ['pay.png is labelled as AI-made (Content Credentials)'] } }
+      }),
+      ['nobody on camera in an answer', 'document tagged as AI-made']
+   );
+   assertEquals(plainRedFlags({ income: { read: { warnings: ['blurry photo'] } } }), []);
+   assertEquals(toRedFlags({ red_flags: [{ code: 'sick_family', why: 'mother in hospital' }, { code: 'vague' }] }), [
+      'loan for a sick family member (mother in hospital)'
+   ]);
+   assertEquals(toRedFlags({ red_flags: [] }), []);
+   assertEquals(toRedFlags('junk'), []);
 });
