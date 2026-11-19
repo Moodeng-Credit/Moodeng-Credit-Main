@@ -1,6 +1,7 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
 import {
+   autoAskThreshold,
    cleanQuestions,
    draftText,
    isWaitingForReply,
@@ -55,4 +56,12 @@ Deno.test('isWaitingForReply: 24h, undecided, with a card', () => {
    assertEquals(isWaitingForReply({ followup_sent_at: '2026-11-18T11:00:00Z', team_decision: null, followup_card: card }, now), false);
    assertEquals(isWaitingForReply({ followup_sent_at: '2026-11-19T00:00:00Z', team_decision: 'good', followup_card: card }, now), false);
    assertEquals(isWaitingForReply(null, now), false);
+});
+
+Deno.test('autoAskThreshold: 50 by default, a number, or off', () => {
+   assertEquals(autoAskThreshold(null), 50);
+   assertEquals(autoAskThreshold(''), 50);
+   assertEquals(autoAskThreshold('60'), 60);
+   assertEquals(autoAskThreshold('off'), null);
+   assertEquals(autoAskThreshold('0'), null);
 });
