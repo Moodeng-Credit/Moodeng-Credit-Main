@@ -240,6 +240,102 @@ async function postDraft(svc: SupabaseClient, row: Row, chat: number | string, c
    await sendTelegramMessage(chat, draftText(row.name, qs, !!typed), { replyToMessageId: cardMsg, inlineKeyboard: draftButtons(row.id) });
 }
 
+/** Sends the questions on Messenger (+ a push) and opens the 24h reply window under the card. */
+async function sendFollowup(
+   svc: SupabaseClient,
+   row: Row,
+   questions: FollowupQuestion[],
+   card: { chat: number | string; msg: number },
+   by: string
+): Promise<{ ok: boolean; why: string; text: string; pushed: boolean }> {
+   const m = await messengerOf(svc, row.user_id);
+   const text = messengerText(row.name, questions, langOf(m?.preferred_locale, m?.market));
+   const sent = await sendMessengerMessage(m?.messenger_psid, { text }).catch(() => ({ ok: false, reason: 'error' }));
+   if (!sent.ok) return { ok: false, why: (sent as { reason?: string }).reason ?? 'failed', text, pushed: false };
+   await svc
+      .from('pre_screenings')
+      .update({
+         followup_questions: questions,
+         followup_sent_at: new Date().toISOString(),
+         followup_sent_by: by,
+         followup_card: card,
+         followup_draft: null
+      })
+      .eq('id', row.id);
+   const push = row.user_id
+      ? await sendPushToUser(svc, row.user_id, () => ({
+           type: 'loan_access_decision',
+           title: 'A quick question from the team 💬',
+           body: 'Open Messenger and reply to Moodeng Credit.',
+           url: MESSENGER_CHAT_URL,
+           tag: 'prescreen-ask'
+        })).catch(() => null)
+      : null;
+   return { ok: true, why: '', text, pushed: Boolean(push && (push as { sent?: number }).sent) };
+}
+
+/** Score under this (telegram_bot_settings.prescreen_auto_ask_below, default 50; "off" = never): ask on its own. Pure. */
+export const autoAskThreshold = (setting: string | null | undefined) => {
+   const v = (setting ?? '').trim().toLowerCase();
+   if (v === 'off' || v === '0') return null;
+   const n = Number(v);
+   return v && Number.isFinite(n) && n > 0 ? n : 50;
+};
+
+/**
+ * Right after a weak grade's card is posted (preScreening.ts): the AI writes the questions and sends
+ * them on Messenger by itself, and says what it sent under the card. Once per pre-screening; nothing
+ * when it is already decided, has no account / Messenger, or scored at or above the threshold.
+ * Never throws.
+ */
+export async function autoAskIfWeak(svc: SupabaseClient, id: string, card: { chat: number | string; msg: number }) {
+   try {
+      const row = await loadRow(svc, id);
+      if (!row || row.score == null || row.team_decision || row.followup_sent_at || !row.user_id) return;
+      const { data: setting } = await svc.from('telegram_bot_settings').select('value').eq('key', 'prescreen_auto_ask_below').maybeSingle();
+      const below = autoAskThreshold((setting as { value?: string | null } | null)?.value);
+      if (below == null || row.score >= below) return;
+      const m = await messengerOf(svc, row.user_id);
+      if (!m?.messenger_psid) {
+         await sendTelegramMessage(
+            card.chat,
+            `🤖 Under ${below}/100, but they have no Messenger connected — couldn’t ask more on their own.`,
+            {
+               replyToMessageId: card.msg
+            }
+         ).catch(() => undefined);
+         return;
+      }
+      const qs = await draftQuestions(svc, row, null);
+      if (!qs.length) {
+         await sendTelegramMessage(card.chat, `🤖 Under ${below}/100 — the AI couldn’t write questions just now. Tap 💬 Ask more.`, {
+            replyToMessageId: card.msg
+         }).catch(() => undefined);
+         return;
+      }
+      const result = await sendFollowup(svc, row, qs, card, 'AI (auto, under ' + below + ')');
+      const list = qs.flatMap((q, i) => [`${i + 1}. ${q.en}`, ...(q.local && q.local !== q.en ? [`   ${q.local}`] : [])]);
+      await sendTelegramMessage(
+         card.chat,
+         result.ok
+            ? [
+                 `🤖 Under ${below}/100, so the AI asked them on Messenger${result.pushed ? ' (+ push)' : ''}:`,
+                 ...list,
+                 '',
+                 'Their replies show up here for 24 hours.'
+              ].join('\n')
+            : [
+                 `⚠️ Under ${below}/100 — the AI tried to ask on Messenger but it failed (${result.why}). Send it yourself:`,
+                 '',
+                 result.text
+              ].join('\n'),
+         { replyToMessageId: card.msg }
+      ).catch((err) => console.error('pre-screening auto-ask: post failed', err instanceof Error ? err.message : err));
+   } catch (err) {
+      console.error('pre-screening auto-ask failed', err instanceof Error ? err.message : err);
+   }
+}
+
 /** Taps on 💬 Ask more and on the draft's buttons. True when it was one of ours. */
 export const handlePreScreeningAskCallback = async (svc: SupabaseClient, query: CardQuery, adminChatIds: string[]): Promise<boolean> => {
    const parsed = parseAskCallback(query.data);
@@ -329,40 +425,16 @@ export const handlePreScreeningAskCallback = async (svc: SupabaseClient, query: 
       await answer('That draft is gone — tap 💬 Ask more again.');
       return true;
    }
-   const m = await messengerOf(svc, row.user_id);
-   const lang = langOf(m?.preferred_locale, m?.market);
-   const text = messengerText(row.name, draft.questions, lang);
    await answer('📤 Sending…');
-   const sent = await sendMessengerMessage(m?.messenger_psid, { text }).catch(() => ({ ok: false, reason: 'error' }));
-   if (!sent.ok) {
-      const why = (sent as { reason?: string }).reason ?? 'failed';
+   const result = await sendFollowup(svc, row, draft.questions, { chat: draft.card_chat, msg: draft.card_msg }, by);
+   if (!result.ok) {
       await editDraft(
-         `${msg.text ?? ''}\n\n⚠️ Couldn’t send on Messenger (${why}) — usually their 24-hour window has closed. Copy this and send it yourself:\n\n${text}`
+         `${msg.text ?? ''}\n\n⚠️ Couldn’t send on Messenger (${result.why}) — usually their 24-hour window has closed. Copy this and send it yourself:\n\n${result.text}`
       );
       return true;
    }
-   await svc
-      .from('pre_screenings')
-      .update({
-         followup_questions: draft.questions,
-         followup_sent_at: new Date().toISOString(),
-         followup_sent_by: by,
-         followup_card: { chat: draft.card_chat, msg: draft.card_msg },
-         followup_draft: null
-      })
-      .eq('id', row.id);
-   const push = row.user_id
-      ? await sendPushToUser(svc, row.user_id, () => ({
-           type: 'loan_access_decision',
-           title: 'A quick question from the team 💬',
-           body: 'Open Messenger and reply to Moodeng Credit.',
-           url: MESSENGER_CHAT_URL,
-           tag: 'prescreen-ask'
-        })).catch(() => null)
-      : null;
-   const pushed = Boolean(push && (push as { sent?: number }).sent);
    await editDraft(
-      `${msg.text?.replace(/ — draft.*\nNothing is sent until you tap 📤 Send\./, '') ?? ''}\n\n📤 Sent on Messenger by ${by}${pushed ? ' (+ push)' : ''}. Their replies show up here for 24 hours.`
+      `${msg.text?.replace(/ — draft.*\nNothing is sent until you tap 📤 Send\./, '') ?? ''}\n\n📤 Sent on Messenger by ${by}${result.pushed ? ' (+ push)' : ''}. Their replies show up here for 24 hours.`
    );
    return true;
 };

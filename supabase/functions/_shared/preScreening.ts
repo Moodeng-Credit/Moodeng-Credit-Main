@@ -292,8 +292,17 @@ export const combineReads = (reads: ModelRead[]): ModelRead | null => {
       const nums = vals.map((v) => (typeof v === 'number' ? v : Number(v))).filter((v) => Number.isFinite(v));
       return nums.length ? Math.round(nums.reduce((a, b) => a + b, 0) / nums.length) : null;
    };
-   const answerLists = ok.map((r) => (Array.isArray(r.answers) ? (r.answers as Array<{ q?: unknown; score?: unknown; note?: unknown }>) : []));
-   const ids = [...new Set(answerLists.flat().map((a) => a?.q).filter((q): q is string => typeof q === 'string'))];
+   const answerLists = ok.map((r) =>
+      Array.isArray(r.answers) ? (r.answers as Array<{ q?: unknown; score?: unknown; note?: unknown }>) : []
+   );
+   const ids = [
+      ...new Set(
+         answerLists
+            .flat()
+            .map((a) => a?.q)
+            .filter((q): q is string => typeof q === 'string')
+      )
+   ];
    // Reads that disagree by 4+ points (out of 10) on the same item: the AI isn't sure — say so.
    const spread = (vals: unknown[]) => {
       const nums = vals.map((v) => (typeof v === 'number' ? v : Number(v))).filter((v) => Number.isFinite(v));
@@ -305,7 +314,10 @@ export const combineReads = (reads: ModelRead[]): ModelRead | null => {
       if (spread(all.map((a) => a.score)) >= 4) unsureOn.push(q);
       return { q, score: avg(all.map((a) => a.score)), note: all.find((a) => typeof a.note === 'string')?.note ?? '' };
    });
-   const incomes = ok.map((r) => r.income as { score?: unknown; note?: unknown } | null | undefined).filter(Boolean) as Array<{ score?: unknown; note?: unknown }>;
+   const incomes = ok.map((r) => r.income as { score?: unknown; note?: unknown } | null | undefined).filter(Boolean) as Array<{
+      score?: unknown;
+      note?: unknown;
+   }>;
    const income = incomes.length
       ? { score: avg(incomes.map((i) => i.score)), note: incomes.find((i) => typeof i.note === 'string')?.note ?? '' }
       : null;
@@ -377,7 +389,11 @@ async function gradeWithModel(
 export const preScreeningChat = async (svc: SupabaseClient) => {
    const { data } = await svc.from('telegram_bot_settings').select('key, value').in('key', ['prescreen_chat_id', 'kyc_alert_chat_id']);
    const rows = (data ?? []) as Array<{ key: string; value: string | null }>;
-   return rows.find((r) => r.key === 'prescreen_chat_id')?.value?.trim() || rows.find((r) => r.key === 'kyc_alert_chat_id')?.value?.trim() || null;
+   return (
+      rows.find((r) => r.key === 'prescreen_chat_id')?.value?.trim() ||
+      rows.find((r) => r.key === 'kyc_alert_chat_id')?.value?.trim() ||
+      null
+   );
 };
 const teamChat = preScreeningChat;
 
@@ -386,12 +402,12 @@ const videosLine = (row: Pick<Row, 'video_watched' | 'videos_watched'>) =>
    row.videos_watched === 0 && row.video_watched
       ? null
       : row.videos_watched != null
-      ? row.video_watched
-         ? `Watched all ${row.videos_watched} videos to the end`
-         : `⚠️ Watched ${row.videos_watched} video${row.videos_watched === 1 ? '' : 's'} to the end`
-      : row.video_watched
-        ? 'Watched the video to the end'
-        : '⚠️ Did not finish the video';
+        ? row.video_watched
+           ? `Watched all ${row.videos_watched} videos to the end`
+           : `⚠️ Watched ${row.videos_watched} video${row.videos_watched === 1 ? '' : 's'} to the end`
+        : row.video_watched
+          ? 'Watched the video to the end'
+          : '⚠️ Did not finish the video';
 
 const incomeLine = (income: GradedIncome | null) => {
    if (!income) return '📄 No proof of income sent';
@@ -414,21 +430,31 @@ async function tellTeam(svc: SupabaseClient, title: string, lines: string[], id:
    if (accountId) {
       const { data: acct } = await svc.from('users').select('username, display_name, facebook_name').eq('id', accountId).maybeSingle();
       const a = acct as { username?: string | null; display_name?: string | null; facebook_name?: string | null } | null;
-      const label = [a?.username ? `@${a.username}` : null, a?.facebook_name ? `Facebook: ${a.facebook_name}` : null].filter(Boolean).join(' · ');
+      const label = [a?.username ? `@${a.username}` : null, a?.facebook_name ? `Facebook: ${a.facebook_name}` : null]
+         .filter(Boolean)
+         .join(' · ');
       if (label) lines = [`Account: ${label}`, ...lines];
    }
    const text = [title, ...lines].filter(Boolean).join('\n');
    const chat = await teamChat(svc);
+   let card: { chat: string; msg: number } | null = null;
    if (chat) {
       const keyboard: TelegramInlineKeyboard = [...(decide ? preScreeningDecisionRows(id) : []), [{ text: '▶️ Watch the answers', url }]];
-      await sendTelegramMessage(chat, text, { inlineKeyboard: keyboard }).catch((err) =>
-         console.error('pre-screening telegram failed', err)
-      );
+      const sent = (await sendTelegramMessage(chat, text, { inlineKeyboard: keyboard }).catch((err) => {
+         console.error('pre-screening telegram failed', err);
+         return null;
+      })) as { message_id?: number } | null;
+      if (sent?.message_id) card = { chat, msg: sent.message_id };
    }
    await postDiscord(
       { embeds: [{ title, description: `${lines.filter(Boolean).join('\n')}\n${url}`, color: 0x6b55f7 }] },
       { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }
    ).catch(() => undefined);
+   // A weak grade with buttons: the AI asks more on Messenger by itself (preScreeningAsk.ts).
+   if (decide && card) {
+      const { autoAskIfWeak } = await import('./preScreeningAsk.ts');
+      await autoAskIfWeak(svc, id, card);
+   }
 }
 
 /**
@@ -518,7 +544,11 @@ export async function gradePreScreening(svc: SupabaseClient, id: string, apiKey:
                     incomeFiles.map(async (f) => {
                        const file = await svc.storage.from(BUCKET).download(f.path);
                        if (file.error || !file.data) throw new Error(`download failed: ${f.name}`);
-                       return { name: f.name || f.path.split('/').pop() || 'file', mime: f.mime || file.data.type, bytes: new Uint8Array(await file.data.arrayBuffer()) };
+                       return {
+                          name: f.name || f.path.split('/').pop() || 'file',
+                          mime: f.mime || file.data.type,
+                          bytes: new Uint8Array(await file.data.arrayBuffer())
+                       };
                     })
                  );
                  incomeRead = await readIncomeProof(apiKey, loaded);
@@ -562,7 +592,13 @@ export async function gradePreScreening(svc: SupabaseClient, id: string, apiKey:
    const empty = new Set(
       gemini ? row.questions.filter((q) => !transcripts[q.id] && gemini?.seen[q.id]?.person_visible === false).map((q) => q.id) : []
    );
-   const built = buildGrade(row.questions, transcripts, modelOut, incomeFiles.length ? { files: incomeFiles.length, read: incomeRead } : null, empty);
+   const built = buildGrade(
+      row.questions,
+      transcripts,
+      modelOut,
+      incomeFiles.length ? { files: incomeFiles.length, read: incomeRead } : null,
+      empty
+   );
    const seenFor = (q: string) => (gemini ? (gemini.seen[q] ?? null) : null);
    const cameraFlags = gemini ? built.answers.flatMap((a) => clipWarnings(seenFor(a.q)).map((w) => `🎥 ${a.q}: ${w}`)) : [];
    const grade: PreScreenGrade = {
@@ -651,17 +687,36 @@ export async function preScreeningWeekly(svc: SupabaseClient) {
       .select('id, name, score, verdict, team_decision, team_reason')
       .not('team_decision', 'is', null)
       .gte('team_decided_at', since);
-   const rows = (data ?? []) as Array<{ id: string; name: string; score: number | null; verdict: PreScreenVerdict | null; team_decision: 'good' | 'not_fit'; team_reason: string | null }>;
+   const rows = (data ?? []) as Array<{
+      id: string;
+      name: string;
+      score: number | null;
+      verdict: PreScreenVerdict | null;
+      team_decision: 'good' | 'not_fit';
+      team_reason: string | null;
+   }>;
    if (!rows.length) return { ok: true, sent: false, decided: 0 };
-   const agree = rows.filter((r) => (r.verdict === 'good' && r.team_decision === 'good') || (r.verdict === 'weak' && r.team_decision === 'not_fit'));
+   const agree = rows.filter(
+      (r) => (r.verdict === 'good' && r.team_decision === 'good') || (r.verdict === 'weak' && r.team_decision === 'not_fit')
+   );
    const unsure = rows.filter((r) => r.verdict === 'ok' || !r.verdict);
    const disagree = rows.filter((r) => !agree.includes(r) && !unsure.includes(r));
-   const team = (d: 'good' | 'not_fit', reason: string | null) => (d === 'good' ? '✅ good fit' : `❌ not a fit${reason ? ` (${reason})` : ''}`);
+   const team = (d: 'good' | 'not_fit', reason: string | null) =>
+      d === 'good' ? '✅ good fit' : `❌ not a fit${reason ? ` (${reason})` : ''}`;
    const lines = [
       '📊 Pre-screening: AI vs team, last 7 days',
       `Decided: ${rows.length} · AI agreed: ${agree.length} · AI unsure (🟡): ${unsure.length} · AI disagreed: ${disagree.length}`,
       ...(disagree.length
-         ? ['', 'Where the AI got it wrong:', ...disagree.slice(0, 10).map((r) => `• ${r.name}: AI ${r.verdict === 'good' ? '🟢' : '🔴'} ${r.score ?? '?'}/100 → team ${team(r.team_decision, r.team_reason)}`)]
+         ? [
+              '',
+              'Where the AI got it wrong:',
+              ...disagree
+                 .slice(0, 10)
+                 .map(
+                    (r) =>
+                       `• ${r.name}: AI ${r.verdict === 'good' ? '🟢' : '🔴'} ${r.score ?? '?'}/100 → team ${team(r.team_decision, r.team_reason)}`
+                 )
+           ]
          : []),
       '',
       'Every ✅ / ❌ you tap is used as an example for the AI on the next pre-screenings.'
