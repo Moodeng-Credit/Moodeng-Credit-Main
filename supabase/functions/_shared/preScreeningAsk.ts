@@ -55,7 +55,7 @@ type Row = {
    grade: {
       summary?: string;
       flags?: string[];
-      answers?: Array<{ q: string; transcript: string | null; note: string }>;
+      answers?: Array<{ q: string; transcript: string | null; note: string; seen?: { person_visible?: boolean | null } | null }>;
       income?: { note?: string; read?: Record<string, unknown> | null } | null;
    } | null;
    score: number | null;
@@ -299,6 +299,106 @@ export const autoAskThreshold = (setting: string | null | undefined) => {
    const n = Number(v);
    return v && Number.isFinite(n) && n > 0 ? n : 50;
 };
+
+// ---- Red flags: never auto ✅ (George, 2026-11-19) ------------------------------------------
+// A good score doesn't count when one of these is there; the card waits for the team instead.
+
+const FLAG_SYSTEM = `A small lender auto-approves people whose pre-screening scored well, UNLESS there is a red flag. You get their recorded answers, the AI's notes, the proof-of-income read (holder name, warnings) and maybe their later Messenger replies. Report ONLY these red flags, and only when the evidence is clear:
+- "name_mismatch": the name on the proof of income is clearly a different person from the name they gave (nicknames, missing middle names, extra surnames, spelling and order differences are NOT a mismatch)
+- "fake_document": the document looks made up, edited or AI-generated (a named warning or clear signs in the notes), not just blurry or short
+- "sick_family": the loan is for a sick or hospitalised family member's medical costs (their OWN illness does not count)
+Reply with only json: {"red_flags": [{"code": "name_mismatch" | "fake_document" | "sick_family", "why": "a few plain words"}]} — an empty list when there are none.`;
+
+const FLAG_LABEL: Record<string, string> = {
+   name_mismatch: 'name on the document doesn’t match',
+   fake_document: 'document looks fake or edited',
+   sick_family: 'loan for a sick family member'
+};
+
+/** Red flags we can see without asking the AI: nobody on camera, a document tagged as AI-made. Pure. */
+export const plainRedFlags = (grade: Row['grade']): string[] => {
+   const out: string[] = [];
+   if ((grade?.answers ?? []).some((a) => a.seen?.person_visible === false)) out.push('nobody on camera in an answer');
+   const warnings = ((grade?.income?.read as { warnings?: unknown } | null)?.warnings ?? []) as unknown[];
+   if (warnings.some((w) => typeof w === 'string' && /labelled as AI-made|carries an? .+ tag/i.test(w)))
+      out.push('document tagged as AI-made');
+   return out;
+};
+
+/** The AI's red flags, cleaned to the known ones. Pure. */
+export const toRedFlags = (raw: unknown): string[] => {
+   const list = Array.isArray((raw as { red_flags?: unknown } | null)?.red_flags) ? (raw as { red_flags: unknown[] }).red_flags : [];
+   return list
+      .map((f) => {
+         const o = (f ?? {}) as { code?: unknown; why?: unknown };
+         const label = typeof o.code === 'string' ? FLAG_LABEL[o.code] : null;
+         if (!label) return null;
+         const why = typeof o.why === 'string' && o.why.trim() ? ` (${o.why.trim().slice(0, 80)})` : '';
+         return label + why;
+      })
+      .filter((f): f is string => !!f);
+};
+
+/** Every red flag on this one. When the AI check fails it says so: that counts as a flag (fail closed). */
+async function redFlags(svc: SupabaseClient, row: Row, replies: string[] = []): Promise<string[]> {
+   const plain = plainRedFlags(row.grade);
+   try {
+      const raw = await geminiJson(
+         svc,
+         FLAG_SYSTEM,
+         { ...context(row, null), name_given: row.name, ...(replies.length ? { messenger_replies: replies } : {}) },
+         25_000
+      );
+      return [...plain, ...toRedFlags(raw)];
+   } catch (err) {
+      console.warn('pre-screening red flags: check failed', err instanceof Error ? err.message : err);
+      return [...plain, 'the AI red-flag check didn’t run'];
+   }
+}
+
+/** Saves ✅ Good fit by the AI (only if nobody decided first), tells them, notes it under the card. */
+async function autoGood(svc: SupabaseClient, row: Row, card: { chat: number | string; msg: number }, by: string, line: string) {
+   const { data: saved } = await svc
+      .from('pre_screenings')
+      .update({ team_decision: 'good', team_decided_by: by, team_decided_at: new Date().toISOString(), team_reason: null })
+      .eq('id', row.id)
+      .is('team_decision', null)
+      .select('id')
+      .maybeSingle();
+   if (!saved) return false;
+   const result = await applyPreScreeningDecision(svc, row.id);
+   await sendTelegramMessage(card.chat, `✅ Auto good fit — ${line}. ${result.summary}\nTap ❌ Not a fit on the card to overrule.`, {
+      replyToMessageId: card.msg
+   }).catch(() => undefined);
+   return true;
+}
+
+const redFlagNote = (score: number, flags: string[], after: string) =>
+   `🚩 ${score}/100${after}, but not auto-approved — red flag: ${flags.join('; ')}. Your call: ✅ or ❌ on the card.`;
+
+/**
+ * Right after a card with ✅/❌ is posted (preScreening.ts): at or above the bar with no red flags →
+ * ✅ Good fit on its own; at or above with a red flag → left for the team (says why); under the bar →
+ * the AI asks more on Messenger (autoAskIfWeak). Never throws.
+ */
+export async function autoDecideOrAsk(svc: SupabaseClient, id: string, card: { chat: number | string; msg: number }) {
+   try {
+      const row = await loadRow(svc, id);
+      if (!row || row.score == null || row.team_decision) return;
+      const { data: setting } = await svc.from('telegram_bot_settings').select('value').eq('key', 'prescreen_auto_ask_below').maybeSingle();
+      const bar = autoAskThreshold((setting as { value?: string | null } | null)?.value);
+      if (bar == null) return;
+      if (row.score < bar) return await autoAskIfWeak(svc, id, card);
+      const flags = await redFlags(svc, row);
+      if (flags.length) {
+         await sendTelegramMessage(card.chat, redFlagNote(row.score, flags, ''), { replyToMessageId: card.msg }).catch(() => undefined);
+         return;
+      }
+      await autoGood(svc, row, card, `AI (${row.score}/100, no red flags)`, `${row.score}/100 (needs ${bar}), no red flags`);
+   } catch (err) {
+      console.error('pre-screening auto-decide failed', err instanceof Error ? err.message : err);
+   }
+}
 
 /**
  * Right after a weak grade's card is posted (preScreening.ts): the AI writes the questions and sends
@@ -547,25 +647,24 @@ export const handlePreScreeningAnswer = async (svc: SupabaseClient, userId: stri
       const { data: setting } = await svc.from('telegram_bot_settings').select('value').eq('key', 'prescreen_auto_ask_below').maybeSingle();
       const bar = autoAskThreshold((setting as { value?: string | null } | null)?.value) ?? 50;
       if (shouldAutoGood(read, bar)) {
-         const { data: saved } = await svc
-            .from('pre_screenings')
-            .update({
-               team_decision: 'good',
-               team_decided_by: `AI (${read!.score}/100 after Messenger answers)`,
-               team_decided_at: new Date().toISOString(),
-               team_reason: null
-            })
-            .eq('id', row.id)
-            .is('team_decision', null)
-            .select('id')
-            .maybeSingle();
-         if (saved) {
-            const result = await applyPreScreeningDecision(svc, row.id);
-            await sendTelegramMessage(
-               card.chat,
-               `✅ Auto good fit — ${read!.score}/100 after their answers (needs ${bar}). ${result.summary}\nTap ❌ Not a fit on the card to overrule.`,
-               { replyToMessageId: card.msg }
-            ).catch(() => undefined);
+         const flags = await redFlags(
+            svc,
+            row,
+            answers.map((a) => a.text)
+         );
+         if (flags.length) {
+            await sendTelegramMessage(card.chat, redFlagNote(read!.score!, flags, ' after their answers'), {
+               replyToMessageId: card.msg
+            }).catch(() => undefined);
+         } else if (
+            await autoGood(
+               svc,
+               row,
+               card,
+               `AI (${read!.score}/100 after Messenger answers)`,
+               `${read!.score}/100 after their answers (needs ${bar}), no red flags`
+            )
+         ) {
             return true;
          }
       }

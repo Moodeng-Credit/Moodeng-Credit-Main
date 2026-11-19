@@ -450,12 +450,12 @@ async function tellTeam(svc: SupabaseClient, title: string, lines: string[], id:
       { embeds: [{ title, description: `${lines.filter(Boolean).join('\n')}\n${url}`, color: 0x6b55f7 }] },
       { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }
    ).catch(() => undefined);
-   // A weak grade with buttons: the AI asks more on Messenger by itself (preScreeningAsk.ts).
+   // 50+ and no red flags → ✅ on its own; under 50 → the AI asks more on Messenger (preScreeningAsk.ts).
    if (decide && card) {
       // Where the ⏰ team reminder and the AI's notes reply (preScreeningSweep).
       await svc.from('pre_screenings').update({ team_card: card, team_reminded_at: null }).eq('id', id);
-      const { autoAskIfWeak } = await import('./preScreeningAsk.ts');
-      await autoAskIfWeak(svc, id, card);
+      const { autoDecideOrAsk } = await import('./preScreeningAsk.ts');
+      await autoDecideOrAsk(svc, id, card);
    }
 }
 
