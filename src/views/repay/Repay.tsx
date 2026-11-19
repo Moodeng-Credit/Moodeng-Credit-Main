@@ -157,6 +157,12 @@ const quickRepaymentFractions = [
 // the Philippine rails and Binance aren't offered there. All four Indonesian exchanges support
 // USDC withdrawals on Base (checked 2026-09-30); they have no deep link because their app URL
 // schemes aren't documented — the web URL hands off to the app where it's installed.
+// The photo under the "Pick USDCBASE" warning: the coin list in each app, with USDCBASE marked.
+const USDCBASE_PHOTO: Record<string, string> = {
+   pdax: '/repay-guides/pdax/step8-coin.webp',
+   gcrypto: '/repay-guides/gcrypto/step4-confirm.webp'
+};
+
 const fundSources = [
    { id: 'coinsph', label: 'Coins.ph', action: 'Open Coins.ph', href: 'https://coins.ph', deepLink: 'coinsph://' },
    { id: 'moneybees', label: 'Moneybees', action: 'Visit Moneybees', href: 'https://www.moneybees.ph', deepLink: null },
@@ -658,6 +664,7 @@ export default function Repay() {
    // The two recommended sources (Moneybees, Coins.ph) show by default; GCrypto/PDAX stay
    // collapsed so a first-timer isn't asked to evaluate four exchanges at once.
    const [showMoreSources, setShowMoreSources] = useState(false);
+   const [showUsdcbasePhoto, setShowUsdcbasePhoto] = useState(false);
    // Records which loan crossed short→funded so we can show an explicit "money arrived"
    // confirmation. Tying it to the loan id (rather than a bare boolean) means it clears
    // itself on loan switch and never flags borrowers who already had enough on arrival.
@@ -1683,10 +1690,39 @@ export default function Repay() {
          {/* Wrong-network sends lose funds and can't be recovered — make BASE unmissable
                                         at the exact moment the borrower copies the address to paste as a destination. */}
          <div className="mt-3 rounded-xl bg-[#fef2f2] p-3 ring-1 ring-[#fca5a5] dark:bg-[#3a1414] dark:ring-[#7f1d1d]">
-            <p className="text-[13px] font-extrabold leading-snug text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Send on the BASE network only</p>
-            <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#b91c1c] dark:text-[#fca5a5]">
-               Choose the Base network. Any other network and your money is lost.
-            </p>
+            {/* PDAX and GCrypto don't ask for a network: Base is its own coin there, USDCBASE. */}
+            {USDCBASE_PHOTO[activeSource.id] ? (
+               <>
+                  <p className="text-[13px] font-extrabold leading-snug text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Pick USDCBASE</p>
+                  <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#b91c1c] dark:text-[#fca5a5]">
+                     Any other USDC (USDCPOL, USDCSOL…) and your money is lost.
+                  </p>
+                  {/* Photo stays folded away behind a small pill; tap to open it in this card. */}
+                  <button
+                     type="button"
+                     onClick={() => setShowUsdcbasePhoto((open) => !open)}
+                     aria-expanded={showUsdcbasePhoto}
+                     className="mt-2 inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[12px] font-bold text-[#b91c1c] ring-1 ring-[#fca5a5] dark:bg-[#2a0f0f] dark:text-[#fca5a5] dark:ring-[#7f1d1d]"
+                  >
+                     See it in {activeSource.label}
+                     <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showUsdcbasePhoto ? 'rotate-180' : ''}`} aria-hidden />
+                  </button>
+                  {showUsdcbasePhoto ? (
+                     <img
+                        src={USDCBASE_PHOTO[activeSource.id]}
+                        alt={`USDCBASE in ${activeSource.label}`}
+                        className="mt-2 block max-h-[260px] w-full rounded-lg object-contain ring-1 ring-[#fca5a5] dark:ring-[#7f1d1d]"
+                     />
+                  ) : null}
+               </>
+            ) : (
+               <>
+                  <p className="text-[13px] font-extrabold leading-snug text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Send on the BASE network only</p>
+                  <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#b91c1c] dark:text-[#fca5a5]">
+                     Choose the Base network. Any other network and your money is lost.
+                  </p>
+               </>
+            )}
          </div>
       </>
    );
@@ -2525,7 +2561,29 @@ export default function Repay() {
                   {copiedAddress ? 'Copied' : 'Copy'}
                </span>
             </button>
-            <p className="text-center text-[15px] font-extrabold text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Base network only</p>
+            {USDCBASE_PHOTO[activeSource.id] ? (
+               <div className="flex flex-col items-center gap-2">
+                  <p className="text-center text-[15px] font-extrabold text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Pick USDCBASE</p>
+                  <button
+                     type="button"
+                     onClick={() => setShowUsdcbasePhoto((open) => !open)}
+                     aria-expanded={showUsdcbasePhoto}
+                     className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-[13px] font-bold text-[#b91c1c] ring-1 ring-[#fca5a5] dark:bg-[#2a0f0f] dark:text-[#fca5a5] dark:ring-[#7f1d1d]"
+                  >
+                     See it in {activeSource.label}
+                     <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showUsdcbasePhoto ? 'rotate-180' : ''}`} aria-hidden />
+                  </button>
+                  {showUsdcbasePhoto ? (
+                     <img
+                        src={USDCBASE_PHOTO[activeSource.id]}
+                        alt={`USDCBASE in ${activeSource.label}`}
+                        className="block max-h-[280px] w-full rounded-[14px] object-contain ring-1 ring-[#fca5a5] dark:ring-[#7f1d1d]"
+                     />
+                  ) : null}
+               </div>
+            ) : (
+               <p className="text-center text-[15px] font-extrabold text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Base network only</p>
+            )}
          </div>
       ) : null;
       // Last card of the app guide: watch their wallet until the money lands.

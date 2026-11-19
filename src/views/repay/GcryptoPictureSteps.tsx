@@ -9,17 +9,17 @@ import { suggestedBuyAmount } from '@/views/repay/gcryptoBuyAmount';
 const STEPS = [
    { title: 'Top up pesos', text: 'Tap Top Up and add pesos from GCash.', img: '/repay-guides/gcrypto/step1-topup.webp' },
    {
-      title: 'Buy USDC (Base)',
-      text: 'Tap Trade → Buy → USDC (Base). Pesos can’t be sent, only USDC.',
+      title: 'Buy USDCBASE',
+      text: 'Tap Trade → Buy → USDCBASE. Pesos can’t be sent, only USDC.',
       img: '/repay-guides/gcrypto/step2-trade.webp'
    },
    {
       title: 'Send to your Moodeng wallet',
-      text: 'Open Send USDC (Base). Paste your Moodeng address, then tap MAX.',
+      text: 'Open Send USDCBASE. Paste your Moodeng address, then tap MAX.',
       img: '/repay-guides/gcrypto/step3-send.webp'
    },
    {
-      title: 'Check it says Base, then Send',
+      title: 'Check it says USDCBASE, then Send',
       text: 'It arrives in a few minutes. Then come back here and tap Pay.',
       img: '/repay-guides/gcrypto/step4-confirm.webp'
    }
