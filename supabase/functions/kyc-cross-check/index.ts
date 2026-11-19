@@ -4,6 +4,7 @@ import { checkCronAuth } from '../_shared/cronAuth.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { analyseIncomeDocument, backfillBorrowerQuestions, notifyIncomeDecision, reviewWithAnswers } from '../_shared/incomeDocs.ts';
 import { gradePreScreening, notifyPreScreeningClaimed, preScreeningWeekly } from '../_shared/preScreening.ts';
+import { preScreeningSweep } from '../_shared/preScreeningAsk.ts';
 import { applyPreScreeningDecision } from '../_shared/preScreeningDecision.ts';
 import { pingProofRequest, sendProofRequest } from '../_shared/proofRequests.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
@@ -317,6 +318,7 @@ serve(async (req) => {
       prescreen_claimed?: string;
       prescreen_decided?: string;
       prescreen_weekly?: boolean;
+      prescreen_sweep?: boolean;
       quiet?: boolean;
    };
 
@@ -326,6 +328,12 @@ serve(async (req) => {
    if (body.prescreen_weekly === true) {
       const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
       return jsonResponse(await preScreeningWeekly(svc));
+   }
+   // Every 30 min (cron prescreen-sweep): nudge people who haven't answered the follow-up questions,
+   // remind the team about cards still without ✅/❌. {"dry": true} = say what it would do.
+   if (body.prescreen_sweep === true) {
+      const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+      return jsonResponse(await preScreeningSweep(svc, { dry: body.dry === true }));
    }
    if (body.prescreen || body.prescreen_claimed || body.prescreen_decided) {
       const id = body.prescreen ?? body.prescreen_claimed ?? body.prescreen_decided ?? '';
