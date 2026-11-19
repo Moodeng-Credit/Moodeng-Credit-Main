@@ -1685,8 +1685,7 @@ export default function Repay() {
          <div className="mt-3 rounded-xl bg-[#fef2f2] p-3 ring-1 ring-[#fca5a5] dark:bg-[#3a1414] dark:ring-[#7f1d1d]">
             <p className="text-[13px] font-extrabold leading-snug text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Send on the BASE network only</p>
             <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#b91c1c] dark:text-[#fca5a5]">
-               USDC sent on Ethereum, Polygon, or any other network goes to this address on the wrong chain and is lost forever — it cannot
-               be recovered. When {activeSource.label} asks which network, choose <span className="font-extrabold underline">Base</span>.
+               Choose the Base network. Any other network and your money is lost.
             </p>
          </div>
       </>
@@ -1791,8 +1790,7 @@ export default function Repay() {
                      <span className="font-extrabold text-[#6c3fe0] dark:text-[#c4b5fd]">${formatCurrency(amountToBuy)}</span> of USDC
                   </p>
                   <p className="mt-1.5 text-[12px] leading-snug text-[#6b6090] dark:text-[#a095c8]">
-                     {activeSource.label} takes about {breakdown.feeLabel.replace('~', '')} to send your USDC. If you only buy $
-                     {formatCurrency(amount)}, less than that arrives and your repayment falls short.
+                     {activeSource.label} keeps about {breakdown.feeLabel.replace('~', '')} to send it.
                   </p>
                   {breakdown.depositTip ? (
                      <p className="mt-1.5 text-[12px] leading-snug text-[#6b6090] dark:text-[#a095c8]">{breakdown.depositTip}</p>
@@ -2052,8 +2050,8 @@ export default function Repay() {
                      {completion.creditLevelUp ? <DoneRow>New limit: ${completion.creditLevelUp.newLimit}</DoneRow> : null}
                      {completion.fastRepayLimit ? (
                         <p className="rounded-[14px] bg-[#fff6dc] px-4 py-3 text-[14px] leading-[20px] text-[#6b4a00] dark:bg-[#3a2e10] dark:text-[#ffe27a]" data-testid="repay-fast-note">
-                           <b>Thanks for paying early!</b> Loans paid back within 2 days of getting them don’t raise your limit or earn
-                           rewards, so it stays ${completion.fastRepayLimit}. Next time, pay from day 3 onward to level up.
+                           <b>Your limit stays ${completion.fastRepayLimit}.</b> Loans paid back in under 2 days don’t count. Next time, keep it
+                           at least 2 days to level up.
                         </p>
                      ) : null}
                      {completion.trustPoints > 0 ? <DoneRow>+{completion.trustPoints} Pandesal points</DoneRow> : null}
@@ -2287,9 +2285,9 @@ export default function Repay() {
       const fastCountsFrom = clearsLoan && isFastRepay(selectedLoan.fundedAt ?? null, new Date().toISOString()) ? countsFromAt(selectedLoan.fundedAt) : null;
       const fastNote = fastCountsFrom ? (
          <span className="text-[13px] font-medium leading-[17px] text-[#7a6a4f] dark:text-[#bfb29a]" data-testid="repay-fast-before-note">
-            ⏳ Paying now is fine, but it won’t raise your limit. From{' '}
-            {fastCountsFrom.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: getLoanTimezone(selectedLoan) })} it
-            will.
+            ⏳ Pay from{' '}
+            {fastCountsFrom.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: getLoanTimezone(selectedLoan) })} to
+            raise your limit — keep loans at least 2 days.
          </span>
       ) : null;
       const goTo = (next: WizardStep) => {

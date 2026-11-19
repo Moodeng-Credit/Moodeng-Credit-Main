@@ -268,8 +268,8 @@ export const vietnameseCoverageC: Record<string, string> = {
 
    // src/views/onboarding/WalletConnected.tsx
    'Use Your Instant Wallet or a Base Account': 'Dùng Instant Wallet hoặc Base Account',
-   'Borrowers use the Moodeng Instant Wallet, created from your login — or you can connect a Base Account instead. Other wallet connectors cannot be locked for Moodeng borrowing.':
-      'Người vay dùng Instant Wallet của Moodeng, được tạo từ tài khoản đăng nhập của bạn — hoặc bạn có thể kết nối Base Account thay thế. Các loại ví khác không thể được khóa để vay trên Moodeng.',
+   'Use your Moodeng Instant Wallet or a Base Account. Other wallets can’t be used to borrow.':
+      'Hãy dùng Moodeng Instant Wallet hoặc Base Account. Ví khác không dùng được để vay.',
    'Confirm Saved Base Account': 'Xác nhận Base Account đã lưu',
    'Confirm Your Base Account': 'Xác nhận Base Account của bạn',
    "We couldn't detect a wallet. Set up your Instant Wallet (or connect a Base Account if you prefer) to continue.":
@@ -294,8 +294,8 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Connect a wallet I already own': 'Kết nối ví tôi đã có',
    'Could not start the face check. Please try again.': 'Không thể bắt đầu quét khuôn mặt. Vui lòng thử lại.',
    'Quick face check': 'Quét khuôn mặt nhanh',
-   'A short liveness scan keeps Instant Wallets to one per person, which is what lets us cover the network fees. We never store your photo, and it is only needed to create the wallet — not to sign in, send or repay.':
-      'Một lần quét người thật ngắn giúp đảm bảo mỗi người chỉ có một Instant Wallet — nhờ vậy chúng tôi có thể chi trả phí mạng cho bạn. Chúng tôi không bao giờ lưu ảnh của bạn, và việc quét chỉ cần khi tạo ví — không cần khi đăng nhập, chuyển tiền hay trả nợ.',
+   'A quick face scan — one wallet per person. We don’t keep your photo.':
+      'Quét khuôn mặt nhanh — mỗi người một ví. Chúng tôi không lưu ảnh của bạn.',
    "We couldn't finish creating your wallet. Please try again.": 'Chúng tôi chưa thể tạo xong ví của bạn. Vui lòng thử lại.',
    'Creating your wallet': 'Đang tạo ví của bạn',
    'Checking your scan': 'Đang kiểm tra ảnh quét',
@@ -510,8 +510,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Now open Moneybees below →': 'Giờ hãy mở Moneybees bên dưới →',
    'Now paste it into the app below →': 'Giờ hãy dán vào ứng dụng bên dưới →',
    '⚠️ Send on the BASE network only': '⚠️ Chỉ gửi trên mạng BASE',
-   'USDC sent on Ethereum, Polygon, or any other network goes to this address on the wrong chain and is lost forever — it cannot be recovered. When':
-      'USDC gửi qua Ethereum, Polygon hay bất kỳ mạng nào khác sẽ đến địa chỉ này trên sai chuỗi và bị mất vĩnh viễn — không thể khôi phục. Khi',
+   'Choose the Base network. Any other network and your money is lost.': 'Chọn mạng Base. Gửi qua mạng khác là mất tiền.',
    'asks which network, choose': 'hỏi chọn mạng nào, hãy chọn',
    'How it works': 'Cách hoạt động',
    'Visit moneybees.ph and follow their own process': 'Truy cập moneybees.ph và làm theo quy trình riêng của họ',
@@ -1047,8 +1046,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Send only': 'Chỉ gửi',
    'Verify Base first': 'Xác minh Base trước',
    'How would you like to cash out?': 'Bạn muốn rút tiền mặt bằng cách nào?',
-   'Your loan funds are in your wallet. Withdraw or convert them using an exchange, P2P platform, or a supported local crypto service.':
-      'Tiền vay của bạn đang ở trong ví. Hãy rút hoặc quy đổi bằng một sàn giao dịch, nền tảng P2P, hoặc dịch vụ crypto địa phương được hỗ trợ.',
+   'Pick where to get your cash.': 'Chọn nơi để nhận tiền mặt.',
    'Learn more about withdrawal options': 'Tìm hiểu thêm về các cách rút tiền',
    "I'll do this later": 'Tôi sẽ làm việc này sau',
    'Contact support': 'Liên hệ hỗ trợ',

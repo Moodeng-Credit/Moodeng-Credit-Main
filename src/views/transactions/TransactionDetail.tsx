@@ -862,9 +862,7 @@ export default function TransactionDetail() {
                         <div className="flex gap-md-2 rounded-md-md border border-md-yellow-700/40 bg-md-yellow-700/10 px-md-3 py-md-2">
                            <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-md-yellow-700" strokeWidth={2.3} />
                            <span className="text-md-b4 text-md-neutral-1000">
-                              This differs from the wallet you have connected now ({shortAddr(connectedWallet)}). That is
-                              expected — repayments go to the wallet used to fund each loan, not your current one. Open{' '}
-                              {shortAddr(repaymentWallet)} to find these funds.
+                              This money went to {shortAddr(repaymentWallet)}, the wallet that funded this loan.
                            </span>
                         </div>
                      ) : null}

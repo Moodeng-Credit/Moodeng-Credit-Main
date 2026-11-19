@@ -431,9 +431,8 @@ export const indonesianCoverageG: Record<string, string> = {
       'Pembayaran kembali ini dikirim ke dompet yang kamu pakai untuk mendanai pinjaman ini:',
    'When repaid, funds return to the wallet you funded this loan from:':
       'Saat dibayar kembali, dana akan masuk ke dompet yang kamu pakai untuk mendanai pinjaman ini:',
-   'This differs from the wallet you have connected now (': 'Dompet ini berbeda dengan dompet yang terhubung sekarang (',
-   '). That is expected — repayments go to the wallet used to fund each loan, not your current one. Open':
-      '). Ini wajar — pembayaran kembali masuk ke dompet yang dipakai untuk mendanai tiap pinjaman, bukan dompetmu saat ini. Buka',
+   'This money went to': 'Uang ini masuk ke',
+   ', the wallet that funded this loan.': ', dompet yang mendanai pinjaman ini.',
    'to find these funds.': 'untuk menemukan dana ini.',
    // src/views/transactions/TransactionHistory.tsx
    'Awaiting moo-lender': 'Menunggu moo-lender',

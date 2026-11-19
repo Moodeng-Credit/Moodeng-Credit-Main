@@ -484,8 +484,8 @@ export const filipinoCoverageG: Record<string, string> = {
    '. Stripe handles ID checks and payment — USDC lands on Base.':
       '. Ang Stripe ang bahala sa ID check at bayad — sa Base papasok ang USDC.',
    '~1.5% fee': '~1.5% na fee',
-   'Prefer another way? You can also buy USDC on an exchange (Binance P2P, Coins.ph, PDAX, GCrypto), through an external service like Moneybees, or send it from any wallet — always on the Base network.':
-      'Mas gusto mo ng ibang paraan? Puwede ka ring bumili ng USDC sa isang exchange (Binance P2P, Coins.ph, PDAX, GCrypto), sa isang external service tulad ng Moneybees, o magpadala mula sa kahit anong wallet — laging sa Base network.',
+   'Prefer another way? Buy USDC on an exchange like PDAX or GCrypto, or send it from any wallet — on the Base network.':
+      'Iba ang gusto mo? Bumili ng USDC sa exchange tulad ng PDAX o GCrypto, o ipadala mula sa kahit anong wallet — sa Base network.',
 
    // src/views/fund/StripeOnrampModal.tsx
    'Stripe card purchases aren’t available in your country yet. Try the Coinbase option below — it covers more regions.':
@@ -761,9 +761,8 @@ export const filipinoCoverageG: Record<string, string> = {
       'Ipinadala ang bayad na ito sa wallet na ginamit mo sa pagpondo ng loan na ito:',
    'When repaid, funds return to the wallet you funded this loan from:':
       'Kapag nabayaran, babalik ang pondo sa wallet na ginamit mo sa pagpondo ng loan na ito:',
-   'This differs from the wallet you have connected now (': 'Iba ito sa wallet na nakakonekta sa iyo ngayon (',
-   '). That is expected — repayments go to the wallet used to fund each loan, not your current one. Open':
-      '). Normal iyan — napupunta ang mga bayad sa wallet na ginamit sa pagpondo ng bawat loan, hindi sa kasalukuyan mong wallet. Buksan ang',
+   'This money went to': 'Napunta ang perang ito sa',
+   ', the wallet that funded this loan.': ', ang wallet na ginamit sa pagpondo ng loan na ito.',
    'to find these funds.': 'para makita ang mga pondong ito.',
 
    // src/views/transactions/TransactionHistory.tsx
