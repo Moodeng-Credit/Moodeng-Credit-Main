@@ -74,3 +74,8 @@ Deno.test('step footers name the other ways, not menu numbers', () => {
       }
    }
 });
+
+Deno.test('first-loan GCrypto message ends with the cash-out link', () => {
+   assert(CASH_OUT_QUESTION_FIRST.endsWith('https://moodeng.app/withdraw'));
+   assert(cashOutQuestion('fil', true).endsWith('https://moodeng.app/withdraw'));
+});
