@@ -18,6 +18,7 @@ import { linkRows } from './adminCards.ts';
 import { GEMINI_MODEL } from './geminiPreScreen.ts';
 import { type Lang, langOf, teamStepIn } from './messengerIncomeDocReply.ts';
 import { preScreeningDecisionRows } from './preScreening.ts';
+import { applyPreScreeningDecision } from './preScreeningDecision.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
@@ -157,7 +158,24 @@ Each question: one short sentence, 8th-grade English, friendly and not accusing,
 "team" = what the question checks, in a few English words, for the team.
 Reply with only json: {"questions": [{"team": "...", "en": "...", "local": "..."}]}`;
 
-const READ_SYSTEM = `A small lender (first loans of about $15) asked someone a few more questions on Messenger after their pre-screening. You get the questions, what the AI already thought of them, and their replies so far (Tagalog, Taglish, Indonesian or English; may be split over several messages or not finished yet). In at most 2 short plain English sentences: do the replies answer the questions, and does anything make repaying more or less likely? Say plainly if they dodged a question or haven't answered it yet. Reply with only json: {"read": "..."}`;
+const READ_SYSTEM = `A small lender (first loans of about $15) asked someone a few more questions on Messenger after their pre-screening. You get the questions, what the AI already thought of them (summary, flags, score), and their replies so far (Tagalog, Taglish, Indonesian or English; may be split over several messages or not finished yet).
+"read": at most 2 short plain English sentences: do the replies answer the questions, and does anything make repaying more or less likely? Say plainly if they dodged a question or haven't answered it yet.
+"answered_all": true only if every question has a real answer (not a dodge, not "ok", not a question back).
+"score": 0-100, how good a fit they are to lend to now, taking the pre-screening AND these replies together (50 = borderline). Clear, specific, believable replies that explain the worries raise it; vague, copied-looking, contradicting or dodged replies don't. Never above 50 if answered_all is false.
+Reply with only json: {"read": "...", "answered_all": true | false, "score": 0-100}`;
+
+export type AnswerRead = { read: string | null; answered_all: boolean; score: number | null };
+/** Gemini's read of their replies, cleaned. Pure. */
+export const toAnswerRead = (raw: unknown): AnswerRead | null => {
+   const o = (raw ?? {}) as Record<string, unknown>;
+   const read = typeof o.read === 'string' && o.read.trim() ? o.read.trim().slice(0, 400) : null;
+   const n = typeof o.score === 'number' ? o.score : Number(o.score);
+   const score = Number.isFinite(n) && o.score !== null && o.score !== '' ? Math.max(0, Math.min(100, Math.round(n))) : null;
+   if (!read && score == null) return null;
+   return { read, answered_all: o.answered_all === true, score };
+};
+/** Auto ✅: every question answered and the new score at or above the bar. Pure. */
+export const shouldAutoGood = (r: AnswerRead | null, bar: number) => !!r && r.answered_all && r.score != null && r.score >= bar;
 
 async function geminiJson(svc: SupabaseClient, system: string, input: unknown, timeoutMs: number): Promise<unknown> {
    const { data: key } = await svc.rpc('gemini_api_key');
@@ -494,24 +512,63 @@ export const handlePreScreeningAnswer = async (svc: SupabaseClient, userId: stri
       await svc.from('pre_screenings').update({ followup_answers: answers }).eq('id', row.id);
 
       const qs = row.followup_questions ?? [];
-      let read: string | null = null;
+      let read: AnswerRead | null = null;
       try {
-         const raw = (await geminiJson(
-            svc,
-            READ_SYSTEM,
-            { questions: qs.map((q) => q.en), ai_summary_before: row.grade?.summary ?? null, their_replies: answers.map((a) => a.text) },
-            20_000
-         )) as { read?: unknown };
-         read = typeof raw?.read === 'string' && raw.read.trim() ? raw.read.trim().slice(0, 400) : null;
+         read = toAnswerRead(
+            await geminiJson(
+               svc,
+               READ_SYSTEM,
+               {
+                  questions: qs.map((q) => q.en),
+                  ai_summary_before: row.grade?.summary ?? null,
+                  flags_before: row.grade?.flags ?? [],
+                  score_before: row.score,
+                  their_replies: answers.map((a) => a.text)
+               },
+               20_000
+            )
+         );
       } catch (err) {
          console.warn('pre-screening ask: read failed', err instanceof Error ? err.message : err);
       }
       const card = row.followup_card!;
       await sendTelegramMessage(
          card.chat,
-         [`💬 ${row.name} replied on Messenger:`, `“${text.slice(0, 1500)}”`, ...(read ? ['', `🤖 ${read}`] : [])].join('\n'),
+         [
+            `💬 ${row.name} replied on Messenger:`,
+            `“${text.slice(0, 1500)}”`,
+            ...(read?.read ? ['', `🤖 ${read.read}${read.score != null ? ` · now ${read.score}/100` : ''}`] : [])
+         ].join('\n'),
          { replyToMessageId: card.msg }
       ).catch((err) => console.error('pre-screening ask: post reply failed', err instanceof Error ? err.message : err));
+
+      // Answered everything and Gemini now puts them at the threshold or above: ✅ Good fit on its own
+      // (they're told to keep going, same as a team ✅). Below stays with the team; ❌ is never automatic.
+      const { data: setting } = await svc.from('telegram_bot_settings').select('value').eq('key', 'prescreen_auto_ask_below').maybeSingle();
+      const bar = autoAskThreshold((setting as { value?: string | null } | null)?.value) ?? 50;
+      if (shouldAutoGood(read, bar)) {
+         const { data: saved } = await svc
+            .from('pre_screenings')
+            .update({
+               team_decision: 'good',
+               team_decided_by: `AI (${read!.score}/100 after Messenger answers)`,
+               team_decided_at: new Date().toISOString(),
+               team_reason: null
+            })
+            .eq('id', row.id)
+            .is('team_decision', null)
+            .select('id')
+            .maybeSingle();
+         if (saved) {
+            const result = await applyPreScreeningDecision(svc, row.id);
+            await sendTelegramMessage(
+               card.chat,
+               `✅ Auto good fit — ${read!.score}/100 after their answers (needs ${bar}). ${result.summary}\nTap ❌ Not a fit on the card to overrule.`,
+               { replyToMessageId: card.msg }
+            ).catch(() => undefined);
+            return true;
+         }
+      }
 
       // Thank them once they've sent about one message per question.
       if (answers.length === Math.max(1, qs.length)) {

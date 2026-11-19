@@ -8,7 +8,9 @@ import {
    messengerText,
    parseAskCallback,
    parseAskPrompt,
-   splitTyped
+   shouldAutoGood,
+   splitTyped,
+   toAnswerRead
 } from './preScreeningAsk.ts';
 
 const ID = '0f8fad5b-d9cb-469f-a165-70867728950e';
@@ -64,4 +66,14 @@ Deno.test('autoAskThreshold: 50 by default, a number, or off', () => {
    assertEquals(autoAskThreshold('60'), 60);
    assertEquals(autoAskThreshold('off'), null);
    assertEquals(autoAskThreshold('0'), null);
+});
+
+Deno.test('auto good fit: all answered and at the bar', () => {
+   assertEquals(toAnswerRead({ read: ' ok ', answered_all: true, score: 61.4 }), { read: 'ok', answered_all: true, score: 61 });
+   assertEquals(toAnswerRead({ read: 'x', score: null }), { read: 'x', answered_all: false, score: null });
+   assertEquals(toAnswerRead({}), null);
+   assertEquals(shouldAutoGood({ read: 'x', answered_all: true, score: 50 }, 50), true);
+   assertEquals(shouldAutoGood({ read: 'x', answered_all: true, score: 49 }, 50), false);
+   assertEquals(shouldAutoGood({ read: 'x', answered_all: false, score: 90 }, 50), false);
+   assertEquals(shouldAutoGood(null, 50), false);
 });
