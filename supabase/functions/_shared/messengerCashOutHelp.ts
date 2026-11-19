@@ -49,11 +49,13 @@ export const CASH_OUT_QUESTION_FIL =
 
 export const CASH_OUT_QUESTION_FIRST =
    '💸 To turn it into pesos, we recommend GCrypto. It’s inside your GCash app, no fees from us.\n\n' +
-   'Reply YES and I’ll show you exactly what to tap.';
+   'Reply YES and I’ll show you exactly what to tap.\n\n' +
+   `Cash out here 👉 ${CASH_OUT_URL}`;
 
 export const CASH_OUT_QUESTION_FIRST_FIL =
    '💸 Para gawing pesos, GCrypto ang recommended namin. Nasa loob ito ng GCash app mo, walang fee sa amin.\n\n' +
-   'Sagot ka ng YES at ipapakita ko kung ano ang ita-tap.';
+   'Sagot ka ng YES at ipapakita ko kung ano ang ita-tap.\n\n' +
+   `Mag-cash out dito 👉 ${CASH_OUT_URL}`;
 
 /** The question after the funded message: one GCrypto recommendation on a first loan, the menu after. */
 export const cashOutQuestion = (lang: CashOutLang, firstLoan = false) =>
