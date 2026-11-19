@@ -38,6 +38,8 @@ export interface AffiliateReferral {
    repaid: boolean;
    /** They repaid, but only a loan that doesn't count (held under 24h, or funded by you). */
    repaid_not_counted?: boolean;
+   /** They repaid, but held every loan under 48 hours — too early to count (no $5). */
+   repaid_too_early?: boolean;
    payout_amount: number;
    payout_status: AffiliatePayoutStatus;
    paid_at: string | null;
@@ -83,6 +85,7 @@ export type AffiliateStage =
    | 'voucher'
    | 'locked'
    | 'repaid'
+   | 'too_early'
    | 'borrowed'
    | 'approved'
    | 'rejected'
@@ -97,6 +100,7 @@ export function referralStage(r: AffiliateReferral, unlocked = true): AffiliateS
       if (r.personal && !r.payout_status && !unlocked) return 'locked';
       return 'owed';
    }
+   if (r.repaid_too_early) return 'too_early';
    if (r.borrowed) return 'borrowed';
    if (r.access === 'rejected') return 'rejected';
    if (r.access === 'approved') return 'approved';
@@ -149,7 +153,7 @@ export function splitCodes(
 
 /** 1 = signed up, 2 = approved (or rejected), 3 = has a loan, 4 = repaid (the four dots on each friend's row). */
 export function referralStep(r: AffiliateReferral): 1 | 2 | 3 | 4 {
-   if (r.repaid) return 4;
+   if (r.repaid || r.repaid_too_early) return 4;
    if (r.borrowed) return 3;
    return r.access === 'approved' || r.access === 'rejected' ? 2 : 1;
 }
@@ -372,6 +376,7 @@ export const AFFILIATE_PERSONAL_SAMPLE: AffiliateDashboardData = {
          borrowed: true,
          repaid: false,
          repaid_not_counted: true,
+         repaid_too_early: true,
          payout_amount: 5,
          payout_status: null,
          paid_at: null
