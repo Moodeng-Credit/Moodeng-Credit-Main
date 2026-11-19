@@ -38,7 +38,7 @@ export interface AffiliateReferral {
    repaid: boolean;
    /** They repaid, but only a loan that doesn't count (held under 24h, or funded by you). */
    repaid_not_counted?: boolean;
-   /** They repaid, but held every loan under 48 hours — too early to count (no $5). */
+   /** They repaid, but paid every loan off more than 2 weeks before it was due — too early to count (no $5). */
    repaid_too_early?: boolean;
    payout_amount: number;
    payout_status: AffiliatePayoutStatus;

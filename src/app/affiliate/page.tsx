@@ -555,11 +555,11 @@ function hintText(r: AffiliateReferral, stage: AffiliateStage, paused: boolean) 
    if (stage === 'locked') return 'Repay a loan yourself to unlock it';
    if (stage === 'rejected') return 'Not approved by our team — they can’t borrow';
    if (stage === 'too_early')
-      return `Repaid in under 2 days — doesn’t count. If they keep their next loan at least 2 days, you get ${money(r.payout_amount)}.`;
+      return `Paid more than 2 weeks before it was due — doesn’t count. If they pay their next loan in its last 2 weeks, you get ${money(r.payout_amount)}.`;
    if (stage === 'checking') return 'Our team is checking them now';
    if (stage === 'approved') return r.claimed ? 'Approved · tracked, no payout' : 'Approved — they can take a loan now';
    if (r.claimed) return 'Added by you · tracked, no payout';
-   if (r.repaid_not_counted) return 'That loan was too short or funded by you. Their next one counts.';
+   if (r.repaid_not_counted) return 'That loan was paid too early or funded by you. Their next one can count.';
    if (stage === 'borrowed') return `You get ${money(r.payout_amount)} only if they repay`;
    return r.added_by_you ? 'Added by you · hasn’t finished signing up' : 'Hasn’t finished signing up yet';
 }
@@ -675,6 +675,9 @@ function Friends({
          <h2 className="text-[20px] font-bold italic leading-6 text-[#594d65] dark:text-[#d9cfe6]">Your Friends</h2>
          <p className="mt-1 text-[13px] leading-4 text-[#7b6b8c] dark:text-[#a99cba]">
             Signed up → Approved → Has a loan → Repaid = <b className="text-[#6b55f7] dark:text-[#b3a6ff]">{money(payout)} for you</b>
+         </p>
+         <p className="mt-1 text-[13px] font-medium leading-4 text-orange-700 dark:text-orange-300">
+            ⏱ Repaid counts only in the last 2 weeks before it’s due. Paying earlier doesn’t count.
          </p>
          {referrals.length ? (
             <ul className="mt-3 overflow-hidden rounded-[14px] bg-dv2-card">
