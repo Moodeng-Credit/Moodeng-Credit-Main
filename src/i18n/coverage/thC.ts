@@ -490,6 +490,7 @@ export const thaiCoverageC: Record<string, string> = {
    '⚠️ Send on the BASE network only': '⚠️ ส่งบนเครือข่าย BASE เท่านั้น',
    'Choose the Base network. Any other network and your money is lost.': 'เลือกเครือข่าย Base ถ้าใช้เครือข่ายอื่น เงินจะหายไป',
    '⚠️ Pick USDCBASE': '⚠️ เลือก USDCBASE',
+   'See it in': 'ดูใน',
    'Any other USDC (USDCPOL, USDCSOL…) and your money is lost.': 'ถ้าเป็น USDC อื่น (USDCPOL, USDCSOL…) เงินจะหายไป',
    'asks which network, choose': 'ถามว่าจะใช้เครือข่ายใด ให้เลือก',
    'Visit moneybees.ph and follow their own process': 'ไปที่ moneybees.ph และทำตามขั้นตอนของพวกเขา',

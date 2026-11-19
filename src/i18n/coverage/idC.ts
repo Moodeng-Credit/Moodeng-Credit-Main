@@ -617,6 +617,7 @@ export const indonesianCoverageC: Record<string, string> = {
    '⚠️ Send on the BASE network only': '⚠️ Kirim hanya lewat jaringan BASE',
    'Choose the Base network. Any other network and your money is lost.': 'Pilih jaringan Base. Kalau jaringan lain, uangmu hilang.',
    '⚠️ Pick USDCBASE': '⚠️ Pilih USDCBASE',
+   'See it in': 'Lihat di',
    'Any other USDC (USDCPOL, USDCSOL…) and your money is lost.': 'Kalau USDC lain (USDCPOL, USDCSOL…), uangmu hilang.',
    'asks which network, choose': 'menanyakan jaringan, pilih',
    'Visit moneybees.ph and follow their own process': 'Kunjungi moneybees.ph dan ikuti proses mereka',

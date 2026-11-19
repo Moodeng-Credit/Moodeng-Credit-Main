@@ -664,6 +664,7 @@ export default function Repay() {
    // The two recommended sources (Moneybees, Coins.ph) show by default; GCrypto/PDAX stay
    // collapsed so a first-timer isn't asked to evaluate four exchanges at once.
    const [showMoreSources, setShowMoreSources] = useState(false);
+   const [showUsdcbasePhoto, setShowUsdcbasePhoto] = useState(false);
    // Records which loan crossed short→funded so we can show an explicit "money arrived"
    // confirmation. Tying it to the loan id (rather than a bare boolean) means it clears
    // itself on loan switch and never flags borrowers who already had enough on arrival.
@@ -1696,12 +1697,23 @@ export default function Repay() {
                   <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#b91c1c] dark:text-[#fca5a5]">
                      Any other USDC (USDCPOL, USDCSOL…) and your money is lost.
                   </p>
-                  <img
-                     src={USDCBASE_PHOTO[activeSource.id]}
-                     alt="USDCBASE"
-                     loading="lazy"
-                     className="mt-2 block max-h-[260px] w-full rounded-lg object-contain ring-1 ring-[#fca5a5] dark:ring-[#7f1d1d]"
-                  />
+                  {/* Photo stays folded away behind a small pill; tap to open it in this card. */}
+                  <button
+                     type="button"
+                     onClick={() => setShowUsdcbasePhoto((open) => !open)}
+                     aria-expanded={showUsdcbasePhoto}
+                     className="mt-2 inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[12px] font-bold text-[#b91c1c] ring-1 ring-[#fca5a5] dark:bg-[#2a0f0f] dark:text-[#fca5a5] dark:ring-[#7f1d1d]"
+                  >
+                     See it in {activeSource.label}
+                     <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showUsdcbasePhoto ? 'rotate-180' : ''}`} aria-hidden />
+                  </button>
+                  {showUsdcbasePhoto ? (
+                     <img
+                        src={USDCBASE_PHOTO[activeSource.id]}
+                        alt={`USDCBASE in ${activeSource.label}`}
+                        className="mt-2 block max-h-[260px] w-full rounded-lg object-contain ring-1 ring-[#fca5a5] dark:ring-[#7f1d1d]"
+                     />
+                  ) : null}
                </>
             ) : (
                <>

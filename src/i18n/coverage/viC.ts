@@ -512,6 +512,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    '⚠️ Send on the BASE network only': '⚠️ Chỉ gửi trên mạng BASE',
    'Choose the Base network. Any other network and your money is lost.': 'Chọn mạng Base. Gửi qua mạng khác là mất tiền.',
    '⚠️ Pick USDCBASE': '⚠️ Chọn USDCBASE',
+   'See it in': 'Xem trong',
    'Any other USDC (USDCPOL, USDCSOL…) and your money is lost.': 'Chọn USDC khác (USDCPOL, USDCSOL…) là mất tiền.',
    'asks which network, choose': 'hỏi chọn mạng nào, hãy chọn',
    'How it works': 'Cách hoạt động',

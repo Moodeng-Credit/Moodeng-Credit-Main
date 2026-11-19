@@ -219,6 +219,7 @@ export const filipinoCoverageC: Record<string, string> = {
    'Choose the Base network. Any other network and your money is lost.':
       'Piliin ang Base network. Kapag ibang network, mawawala ang pera mo.',
    '⚠️ Pick USDCBASE': '⚠️ Pumili ng USDCBASE',
+   'See it in': 'Tingnan sa',
    'Any other USDC (USDCPOL, USDCSOL…) and your money is lost.': 'Kapag ibang USDC (USDCPOL, USDCSOL…), mawawala ang pera mo.',
    'asks which network, choose': 'kung aling network, piliin ang',
    'Visit moneybees.ph and follow their own process': 'Pumunta sa moneybees.ph at sundin ang sarili nilang proseso',
