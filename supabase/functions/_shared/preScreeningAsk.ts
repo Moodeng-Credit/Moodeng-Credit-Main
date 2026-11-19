@@ -581,3 +581,170 @@ export const handlePreScreeningAnswer = async (svc: SupabaseClient, userId: stri
       return false;
    }
 };
+
+// ---- Sweep: nudge them, remind the team (cron prescreen-sweep, every 30 min) -------------------
+
+const HOUR = 3_600_000;
+const NUDGE_AFTER_MS = 6 * HOUR;
+// Their 24h Messenger window is counted from their last message, which is before we asked: past this,
+// a nudge would mostly fail.
+const NUDGE_UNTIL_MS = 20 * HOUR;
+const REMIND_TEAM_AFTER_MS = 3 * HOUR;
+const REMIND_LOOKBACK_MS = 72 * HOUR;
+
+const NUDGE: Record<Lang, (first: string) => string> = {
+   en: (f) => `Hi ${f}! 👋 Did you see our questions above? Just reply here so we can continue 🙏`,
+   fil: (f) => `Hi ${f}! 👋 Nakita mo ba ang mga tanong namin sa taas? Reply ka lang dito para makapagpatuloy tayo 🙏`,
+   id: (f) => `Hai ${f}! 👋 Sudah lihat pertanyaan kami di atas? Balas di sini ya supaya bisa lanjut 🙏`
+};
+
+/** Hour of the day in Bangkok (UTC+7). Pure. */
+export const bangkokHour = (now: number) => new Date(now + 7 * HOUR).getUTCHours();
+/** Borrowers: 08:00–21:59 Manila (07:00–20:59 Bangkok). Team: 08:00–23:59 Bangkok. Pure. */
+export const borrowerDaytime = (now: number) => {
+   const h = bangkokHour(now);
+   return h >= 7 && h < 21;
+};
+export const teamDaytime = (now: number) => bangkokHour(now) >= 8;
+
+type SweepRow = {
+   id: string;
+   name: string;
+   user_id: string | null;
+   score: number | null;
+   status: string;
+   graded_at: string | null;
+   team_card: { chat: number | string; msg: number } | null;
+   followup_card: { chat: number | string; msg: number } | null;
+   followup_sent_at: string | null;
+   followup_answers: Array<{ text: string }> | null;
+   followup_nudged_at: string | null;
+};
+
+/** Does this one get a Messenger nudge now? Pure. */
+export const needsNudge = (r: SweepRow, now: number) =>
+   !!r.followup_sent_at &&
+   !r.followup_nudged_at &&
+   !(r.followup_answers ?? []).length &&
+   now - Date.parse(r.followup_sent_at) >= NUDGE_AFTER_MS &&
+   now - Date.parse(r.followup_sent_at) < NUDGE_UNTIL_MS;
+
+/** Still waiting on their Messenger answers (the AI is handling it): no team reminder yet. Pure. */
+export const waitingOnThem = (r: SweepRow, now: number) =>
+   !!r.followup_sent_at && !(r.followup_answers ?? []).length && now - Date.parse(r.followup_sent_at) < ANSWER_WINDOW_MS;
+
+/** The line under the card / in the list: where it stands. Pure. */
+export const reminderState = (r: SweepRow, now: number) => {
+   const answers = (r.followup_answers ?? []).length;
+   if (r.followup_sent_at && answers)
+      return `they answered on Messenger (${answers} message${answers === 1 ? '' : 's'}) but it’s still under the bar`;
+   if (r.followup_sent_at) return 'asked on Messenger, no reply in 24 hours';
+   if (!r.user_id) return 'no account yet';
+   return `${r.score != null ? `${r.score}/100` : 'not graded'}, nobody has decided`;
+};
+
+export async function preScreeningSweep(svc: SupabaseClient, opts: { dry?: boolean; now?: number } = {}) {
+   const now = opts.now ?? Date.now();
+   const dry = opts.dry === true;
+   const out = {
+      nudged: [] as string[],
+      nudge_failed: [] as string[],
+      reminded: [] as string[],
+      listed: [] as string[],
+      skipped_night: false
+   };
+   const { data } = await svc
+      .from('pre_screenings')
+      .select(
+         'id, name, user_id, score, status, graded_at, team_card, followup_card, followup_sent_at, followup_answers, followup_nudged_at, team_reminded_at'
+      )
+      .is('team_decision', null)
+      .in('status', ['graded', 'failed'])
+      .gte('graded_at', new Date(now - REMIND_LOOKBACK_MS).toISOString())
+      .order('graded_at', { ascending: true })
+      .limit(50);
+   const rows = (data ?? []) as Array<SweepRow & { team_reminded_at: string | null }>;
+
+   // 1) Nudge them on Messenger.
+   if (borrowerDaytime(now)) {
+      for (const r of rows.filter((x) => needsNudge(x, now))) {
+         if (dry) {
+            out.nudged.push(r.name);
+            continue;
+         }
+         await svc
+            .from('pre_screenings')
+            .update({ followup_nudged_at: new Date(now).toISOString() })
+            .eq('id', r.id);
+         const m = await messengerOf(svc, r.user_id);
+         const sent = await sendMessengerMessage(m?.messenger_psid, {
+            text: NUDGE[langOf(m?.preferred_locale, m?.market)](firstName(r.name))
+         }).catch(() => ({ ok: false, reason: 'error' }));
+         if (sent.ok && r.user_id) {
+            await sendPushToUser(svc, r.user_id, () => ({
+               type: 'loan_access_decision',
+               title: 'We’re waiting for your reply 💬',
+               body: 'Open Messenger and answer Moodeng Credit’s questions.',
+               url: MESSENGER_CHAT_URL,
+               tag: 'prescreen-ask'
+            })).catch(() => null);
+         }
+         (sent.ok ? out.nudged : out.nudge_failed).push(r.name);
+         const card = r.followup_card ?? r.team_card;
+         if (card) {
+            await sendTelegramMessage(
+               card.chat,
+               sent.ok
+                  ? `🔔 No reply after 6 hours, so we reminded ${r.name} on Messenger (+ push).`
+                  : `🔔 No reply after 6 hours, and the Messenger reminder didn’t go through (${(sent as { reason?: string }).reason ?? 'failed'}) — their 24-hour window has probably closed. Text or call them if they matter.`,
+               { replyToMessageId: card.msg }
+            ).catch(() => undefined);
+         }
+      }
+   }
+
+   // 2) Remind the team about cards still without ✅/❌.
+   if (!teamDaytime(now)) {
+      out.skipped_night = true;
+      return { ok: true, dry, ...out };
+   }
+   const due = rows.filter(
+      (r) => !r.team_reminded_at && r.graded_at && now - Date.parse(r.graded_at) >= REMIND_TEAM_AFTER_MS && !waitingOnThem(r, now)
+   );
+   const unlinked: string[] = [];
+   for (const r of due) {
+      const card = r.team_card ?? r.followup_card;
+      const line = `${r.name} — ${reminderState(r, now)}`;
+      if (dry) {
+         (card ? out.reminded : out.listed).push(line);
+         continue;
+      }
+      await svc
+         .from('pre_screenings')
+         .update({ team_reminded_at: new Date(now).toISOString() })
+         .eq('id', r.id);
+      if (card) {
+         const ok = await sendTelegramMessage(card.chat, `⏰ Still waiting for ✅ / ❌ — ${line}.`, { replyToMessageId: card.msg }).then(
+            () => true,
+            () => false
+         );
+         if (ok) {
+            out.reminded.push(line);
+            continue;
+         }
+      }
+      unlinked.push(`• ${line}\n  https://moodeng.app/admin/pre-screening?screen=${r.id}`);
+      out.listed.push(line);
+   }
+   if (unlinked.length && !dry) {
+      const { preScreeningChat } = await import('./preScreening.ts');
+      const chat = await preScreeningChat(svc);
+      if (chat) {
+         await sendTelegramMessage(
+            chat,
+            [`⏰ Pre-screenings still waiting for ✅ / ❌ (${unlinked.length}):`, ...unlinked].join('\n')
+         ).catch(() => undefined);
+      }
+   }
+   return { ok: true, dry, ...out };
+}

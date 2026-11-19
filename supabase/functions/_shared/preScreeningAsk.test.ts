@@ -2,15 +2,21 @@ import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
 import {
    autoAskThreshold,
+   bangkokHour,
+   borrowerDaytime,
    cleanQuestions,
    draftText,
    isWaitingForReply,
    messengerText,
+   needsNudge,
    parseAskCallback,
    parseAskPrompt,
+   reminderState,
    shouldAutoGood,
    splitTyped,
-   toAnswerRead
+   teamDaytime,
+   toAnswerRead,
+   waitingOnThem
 } from './preScreeningAsk.ts';
 
 const ID = '0f8fad5b-d9cb-469f-a165-70867728950e';
@@ -76,4 +82,38 @@ Deno.test('auto good fit: all answered and at the bar', () => {
    assertEquals(shouldAutoGood({ read: 'x', answered_all: true, score: 49 }, 50), false);
    assertEquals(shouldAutoGood({ read: 'x', answered_all: false, score: 90 }, 50), false);
    assertEquals(shouldAutoGood(null, 50), false);
+});
+
+Deno.test('sweep: nudge after 6h, before 20h, once, only with no reply', () => {
+   const sent = Date.parse('2026-11-19T00:00:00Z');
+   const base = {
+      id: 'x',
+      name: 'A',
+      user_id: 'u',
+      score: 40,
+      status: 'graded',
+      graded_at: null,
+      team_card: null,
+      followup_card: null,
+      followup_sent_at: '2026-11-19T00:00:00Z',
+      followup_answers: [],
+      followup_nudged_at: null
+   };
+   assertEquals(needsNudge(base, sent + 5 * 3.6e6), false);
+   assertEquals(needsNudge(base, sent + 7 * 3.6e6), true);
+   assertEquals(needsNudge(base, sent + 21 * 3.6e6), false);
+   assertEquals(needsNudge({ ...base, followup_nudged_at: 'y' }, sent + 7 * 3.6e6), false);
+   assertEquals(needsNudge({ ...base, followup_answers: [{ text: 'hi' }] }, sent + 7 * 3.6e6), false);
+   assertEquals(waitingOnThem(base, sent + 23 * 3.6e6), true);
+   assertEquals(waitingOnThem(base, sent + 25 * 3.6e6), false);
+   assertEquals(reminderState(base, sent), 'asked on Messenger, no reply in 24 hours');
+   assertEquals(reminderState({ ...base, followup_sent_at: null }, sent), '40/100, nobody has decided');
+});
+
+Deno.test('sweep: daytime in Bangkok', () => {
+   assertEquals(bangkokHour(Date.parse('2026-11-19T01:00:00Z')), 8);
+   assertEquals(teamDaytime(Date.parse('2026-11-18T23:00:00Z')), false);
+   assertEquals(teamDaytime(Date.parse('2026-11-19T01:00:00Z')), true);
+   assertEquals(borrowerDaytime(Date.parse('2026-11-19T14:30:00Z')), false);
+   assertEquals(borrowerDaytime(Date.parse('2026-11-19T05:00:00Z')), true);
 });
