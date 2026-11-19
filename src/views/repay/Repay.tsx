@@ -157,6 +157,12 @@ const quickRepaymentFractions = [
 // the Philippine rails and Binance aren't offered there. All four Indonesian exchanges support
 // USDC withdrawals on Base (checked 2026-09-30); they have no deep link because their app URL
 // schemes aren't documented — the web URL hands off to the app where it's installed.
+// The photo under the "Pick USDCBASE" warning: the coin list in each app, with USDCBASE marked.
+const USDCBASE_PHOTO: Record<string, string> = {
+   pdax: '/repay-guides/pdax/step8-coin.webp',
+   gcrypto: '/repay-guides/gcrypto/step4-confirm.webp'
+};
+
 const fundSources = [
    { id: 'coinsph', label: 'Coins.ph', action: 'Open Coins.ph', href: 'https://coins.ph', deepLink: 'coinsph://' },
    { id: 'moneybees', label: 'Moneybees', action: 'Visit Moneybees', href: 'https://www.moneybees.ph', deepLink: null },
@@ -1683,10 +1689,28 @@ export default function Repay() {
          {/* Wrong-network sends lose funds and can't be recovered — make BASE unmissable
                                         at the exact moment the borrower copies the address to paste as a destination. */}
          <div className="mt-3 rounded-xl bg-[#fef2f2] p-3 ring-1 ring-[#fca5a5] dark:bg-[#3a1414] dark:ring-[#7f1d1d]">
-            <p className="text-[13px] font-extrabold leading-snug text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Send on the BASE network only</p>
-            <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#b91c1c] dark:text-[#fca5a5]">
-               Choose the Base network. Any other network and your money is lost.
-            </p>
+            {/* PDAX and GCrypto don't ask for a network: Base is its own coin there, USDCBASE. */}
+            {USDCBASE_PHOTO[activeSource.id] ? (
+               <>
+                  <p className="text-[13px] font-extrabold leading-snug text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Pick USDCBASE</p>
+                  <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#b91c1c] dark:text-[#fca5a5]">
+                     Any other USDC (USDCPOL, USDCSOL…) and your money is lost.
+                  </p>
+                  <img
+                     src={USDCBASE_PHOTO[activeSource.id]}
+                     alt="USDCBASE"
+                     loading="lazy"
+                     className="mt-2 block max-h-[260px] w-full rounded-lg object-contain ring-1 ring-[#fca5a5] dark:ring-[#7f1d1d]"
+                  />
+               </>
+            ) : (
+               <>
+                  <p className="text-[13px] font-extrabold leading-snug text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Send on the BASE network only</p>
+                  <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#b91c1c] dark:text-[#fca5a5]">
+                     Choose the Base network. Any other network and your money is lost.
+                  </p>
+               </>
+            )}
          </div>
       </>
    );
