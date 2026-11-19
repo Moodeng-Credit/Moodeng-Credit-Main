@@ -559,5 +559,22 @@ export const vietnameseCoverageG: Record<string, string> = {
    "Top level for now": "Hạng cao nhất hiện tại",
    "Top level": "Hạng cao nhất",
    "Example: borrowing the full $25 limit to unlock the $35 level.": "Ví dụ: vay toàn bộ hạn mức $25 để mở khóa hạng $35.",
-   "Credit limit reaches $35 = +50 Pandesal points": "Hạn mức đạt $35 = +50 điểm Pandesal"
+   "Credit limit reaches $35 = +50 Pandesal points": "Hạn mức đạt $35 = +50 điểm Pandesal",
+   "Pending approval": "Đang chờ duyệt",
+   "Call in progress": "Đang gọi",
+   "Not approved": "Chưa được duyệt",
+   "Call booked": "Đã đặt cuộc gọi",
+   "Video call": "Cuộc gọi video",
+   "Done": "Xong",
+   "Team approval": "Đội ngũ duyệt",
+   "Team decision": "Quyết định của đội ngũ",
+   "Apply for your loan": "Đăng ký khoản vay",
+   "Send your loan request": "Gửi yêu cầu vay",
+   "Usually within a day": "Thường trong vòng một ngày",
+   "Right after the call": "Ngay sau cuộc gọi",
+   "Opens when you’re approved": "Mở khi bạn được duyệt",
+   "Thanks for joining! We’ll message you on Messenger.": "Cảm ơn bạn đã tham gia! Chúng tôi sẽ nhắn bạn qua Messenger.",
+   "Your call is on now. Join below if you’re not in yet.": "Cuộc gọi đang diễn ra. Tham gia bên dưới nếu bạn chưa vào.",
+   "Thank you for your time.": "Cảm ơn bạn đã dành thời gian.",
+   "With Emma · Zoom": "Với Emma · Zoom"
 };

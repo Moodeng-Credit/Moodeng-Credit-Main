@@ -1096,5 +1096,22 @@ export const filipinoCoverageG: Record<string, string> = {
    "Top level for now": "Pinakamataas na level sa ngayon",
    "Top level": "Pinakamataas na level",
    "Example: borrowing the full $25 limit to unlock the $35 level.": "Halimbawa: hiramin ang buong $25 na limit para ma-unlock ang $35 na level.",
-   "Credit limit reaches $35 = +50 Pandesal points": "Umabot sa $35 ang credit limit = +50 Pandesal points"
+   "Credit limit reaches $35 = +50 Pandesal points": "Umabot sa $35 ang credit limit = +50 Pandesal points",
+   "Pending approval": "Hinihintay ang approval",
+   "Call in progress": "Nasa call ngayon",
+   "Not approved": "Hindi na-approve",
+   "Call booked": "Naka-book ang call",
+   "Video call": "Video call",
+   "Done": "Tapos na",
+   "Team approval": "Approval ng team",
+   "Team decision": "Desisyon ng team",
+   "Apply for your loan": "Mag-apply ng loan",
+   "Send your loan request": "Ipadala ang loan request",
+   "Usually within a day": "Kadalasan within a day",
+   "Right after the call": "Pagkatapos ng call",
+   "Opens when you’re approved": "Bubukas kapag approved ka na",
+   "Thanks for joining! We’ll message you on Messenger.": "Salamat sa pag-join! Magme-message kami sa Messenger.",
+   "Your call is on now. Join below if you’re not in yet.": "Nagsimula na ang call mo. Mag-join sa baba kung wala ka pa.",
+   "Thank you for your time.": "Salamat sa oras mo.",
+   "With Emma · Zoom": "Kasama si Emma · Zoom"
 };

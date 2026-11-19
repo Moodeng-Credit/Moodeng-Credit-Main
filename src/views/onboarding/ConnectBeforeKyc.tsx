@@ -48,12 +48,22 @@ export default function ConnectBeforeKyc() {
    const location = useLocation();
    const dispatch = useDispatch<AppDispatch>();
    const authUser = useSelector((state: RootState) => state.auth.user);
-   // Dev-only /onboarding/connect-preview(?view=pending|about|celebrate|approved|wallet-grow): the screens without an account.
+   // Dev-only /onboarding/connect-preview(?view=pending|in-call|review|rejected|about|celebrate|approved|wallet-grow): the screens without an account.
    const isPreview = import.meta.env.DEV && location.pathname.includes('preview');
    const user = isPreview ? PREVIEW_USER : authUser;
    const gate = usePreKycGate();
    const { isGated, isLoading } = isPreview ? { isGated: true, isLoading: false } : gate;
-   const isPending = isPreview ? new URLSearchParams(location.search).get('view') === 'pending' : user?.loanAccessStatus === 'pending';
+   const previewPendingView = isPreview ? new URLSearchParams(location.search).get('view') : null;
+   const isPending = isPreview
+      ? previewPendingView === 'pending' || previewPendingView === 'in-call' || previewPendingView === 'review'
+      : user?.loanAccessStatus === 'pending';
+   // Dev preview: ?view=in-call (call started 5 min ago) and ?view=review (call over, waiting on the team).
+   const previewStartsAt =
+      previewPendingView === 'in-call'
+         ? new Date(Date.now() - 5 * 60000).toISOString()
+         : previewPendingView === 'review'
+           ? new Date(Date.now() - 2 * 3600000).toISOString()
+           : undefined;
    // Dev preview: ?view=rejected (for good) and ?view=rejected-for-now (with a retry day).
    const previewView = isPreview ? new URLSearchParams(location.search).get('view') : null;
    const isRejected = isPreview ? previewView === 'rejected' || previewView === 'rejected-for-now' : user?.loanAccessStatus === 'rejected';
@@ -152,6 +162,7 @@ export default function ConnectBeforeKyc() {
                context="kyc"
                mode="call"
                onClose={() => navigate('/request-board')}
+               previewStartsAt={previewStartsAt}
                userId={user.id}
                withEmma={Boolean(user.hasReferral)}
             />

@@ -1309,5 +1309,22 @@ export const indonesianCoverageB: Record<string, string> = {
    "Confirm 1 hour before your call": "Konfirmasi 1 jam sebelum panggilanmu",
    "Tap “I'll be there” here or on Messenger — or it's cancelled.": "Ketuk “I'll be there” di sini atau di Messenger — kalau tidak, dibatalkan.",
    "Your call is in under an hour — tap “I’ll be there” now to keep it.": "Panggilanmu kurang dari satu jam lagi — ketuk “I’ll be there” sekarang agar tidak dibatalkan.",
-   "You’re booked! You can apply right after the call.": "Jadwal kamu sudah dipesan! Kamu bisa mengajukan tepat setelah panggilan."
+   "You’re booked! You can apply right after the call.": "Jadwal kamu sudah dipesan! Kamu bisa mengajukan tepat setelah panggilan.",
+   "Pending approval": "Menunggu persetujuan",
+   "Call in progress": "Panggilan sedang berlangsung",
+   "Not approved": "Tidak disetujui",
+   "Call booked": "Panggilan sudah dipesan",
+   "Video call": "Panggilan video",
+   "Done": "Selesai",
+   "Team approval": "Persetujuan tim",
+   "Team decision": "Keputusan tim",
+   "Apply for your loan": "Ajukan pinjamanmu",
+   "Send your loan request": "Kirim permintaan pinjaman",
+   "Usually within a day": "Biasanya dalam sehari",
+   "Right after the call": "Tepat setelah panggilan",
+   "Opens when you’re approved": "Terbuka setelah kamu disetujui",
+   "Thanks for joining! We’ll message you on Messenger.": "Terima kasih sudah bergabung! Kami akan mengirim pesan lewat Messenger.",
+   "Your call is on now. Join below if you’re not in yet.": "Panggilanmu sedang berlangsung. Gabung di bawah kalau belum masuk.",
+   "Thank you for your time.": "Terima kasih atas waktumu.",
+   "With Emma · Zoom": "Bersama Emma · Zoom"
 };
