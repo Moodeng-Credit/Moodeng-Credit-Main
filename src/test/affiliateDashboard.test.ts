@@ -4,6 +4,7 @@ import {
    affiliateMilestones,
    type AffiliateReferral,
    affiliateTotals,
+   friendChecks,
    newPayouts,
    referralStage,
    referralStep,
@@ -101,5 +102,23 @@ describe('affiliate dashboard', () => {
       ];
       expect(newPayouts(list, null, now)).toEqual({ count: 1, amount: 10, latest: '2026-11-13T00:00:00Z' });
       expect(newPayouts(list, '2026-11-13T00:00:00Z', now).count).toBe(0);
+   });
+
+   it('shows documents then call status for friends not approved yet', () => {
+      const now = new Date('2026-11-19T12:00:00Z');
+      const labels = (r: AffiliateReferral) => friendChecks(r, now).checks.map((c) => c.label);
+      expect(labels({ ...base, screening: 'not_started' })).toEqual(['Pre-screening not done']);
+      expect(friendChecks({ ...base, screening: 'need_more' }, now).todo).toBe('Ask them to answer our questions on Messenger');
+      expect(labels({ ...base, screening: 'under_review' })).toEqual(['Documents under review']);
+      expect(labels({ ...base, screening: 'validated' })).toEqual(['Documents validated', 'Call to be booked']);
+      const booked = friendChecks({ ...base, screening: 'validated', access: 'pending', call_at: '2026-11-20T05:00:00Z' }, now);
+      expect(booked.checks[1]).toMatchObject({ label: 'Call booked', at: '2026-11-20T05:00:00Z' });
+      expect(labels({ ...base, screening: 'validated', access: 'pending', call_at: '2026-11-18T05:00:00Z' })).toEqual([
+         'Documents validated',
+         'Call done'
+      ]);
+      expect(labels({ ...base, call_missed: true })).toEqual(['Missed the call']);
+      expect(friendChecks({ ...base, access: 'approved', screening: 'validated' }, now).checks).toEqual([]);
+      expect(friendChecks({ ...base, borrowed: true }, now).checks).toEqual([]);
    });
 });

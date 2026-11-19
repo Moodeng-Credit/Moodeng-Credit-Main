@@ -52,6 +52,70 @@ export interface AffiliateReferral {
    facebook_url?: string | null;
    /** The team's call on them: none = hasn't reached the check yet, pending = being checked. */
    access?: AffiliateAccess | null;
+   /** Their pre-screening (videos + questions + proof of income); null = not on that path. */
+   screening?: AffiliateScreening | null;
+   /** Their booked video call (start time). */
+   call_at?: string | null;
+   /** They missed their last call and haven't rebooked. */
+   call_missed?: boolean;
+}
+
+export type AffiliateScreening = 'not_started' | 'under_review' | 'need_more' | 'validated' | 'not_fit';
+
+export type AffiliateCheckTone = 'gray' | 'purple' | 'orange' | 'green' | 'red';
+
+/** One status chip under a friend who isn't approved yet. */
+export interface AffiliateCheck {
+   kind: 'docs' | 'call';
+   label: string;
+   tone: AffiliateCheckTone;
+   /** Set on a call booked for later: format it on the page in the viewer's time. */
+   at?: string;
+}
+
+/**
+ * Where a not-yet-approved friend is: their documents (pre-screening) and their call,
+ * plus what the person who invited them can tell them to do next.
+ */
+export function friendChecks(r: AffiliateReferral, now: Date = new Date()): { checks: AffiliateCheck[]; todo: string | null } {
+   const stage = referralStage(r);
+   if (stage !== 'signed_up' && stage !== 'checking') return { checks: [], todo: null };
+   const checks: AffiliateCheck[] = [];
+   let todo: string | null = null;
+   const s = r.screening ?? null;
+   if (s === 'not_started') {
+      checks.push({ kind: 'docs', label: 'Pre-screening not done', tone: 'gray' });
+      todo = 'Ask them to finish the videos and questions';
+   } else if (s === 'under_review') {
+      checks.push({ kind: 'docs', label: 'Documents under review', tone: 'purple' });
+      todo = 'Our team is checking their documents';
+   } else if (s === 'need_more') {
+      checks.push({ kind: 'docs', label: 'Needs to answer more questions', tone: 'orange' });
+      todo = 'Ask them to answer our questions on Messenger';
+   } else if (s === 'validated') {
+      checks.push({ kind: 'docs', label: 'Documents validated', tone: 'green' });
+   } else if (s === 'not_fit') {
+      checks.push({ kind: 'docs', label: 'Not a fit', tone: 'red' });
+      return { checks, todo: 'Our team said no after their documents' };
+   }
+   // The call comes after documents; show it once they're validated (or they're not on that path).
+   if (s === null || s === 'validated' || r.call_at) {
+      const at = r.call_at ? new Date(r.call_at) : null;
+      if (at && at.getTime() > now.getTime() - 60 * 60 * 1000) {
+         checks.push({ kind: 'call', label: 'Call booked', tone: 'purple', at: r.call_at as string });
+         todo = 'Remind them to join their call';
+      } else if (at && stage === 'checking') {
+         checks.push({ kind: 'call', label: 'Call done', tone: 'green' });
+         todo = null;
+      } else if (r.call_missed) {
+         checks.push({ kind: 'call', label: 'Missed the call', tone: 'orange' });
+         todo = 'Ask them to book a new call';
+      } else {
+         checks.push({ kind: 'call', label: 'Call to be booked', tone: 'gray' });
+         todo = 'Ask them to book their call';
+      }
+   }
+   return { checks, todo };
 }
 
 export type AffiliateAccess = 'none' | 'pending' | 'approved' | 'rejected';

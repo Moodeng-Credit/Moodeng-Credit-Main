@@ -10,6 +10,8 @@ import { AffiliatePayoutPanel } from '@/app/admin/AffiliatePayCard';
 import {
    AFFILIATE_PERSONAL_SAMPLE,
    AFFILIATE_SAMPLE,
+   type AffiliateCheck,
+   type AffiliateCheckTone,
    type AffiliateClaim,
    type AffiliateCode,
    type AffiliateDashboardData,
@@ -20,6 +22,7 @@ import {
    claimErrorText,
    fetchAdminAffiliateDashboard,
    fetchAffiliateDashboard,
+   friendChecks,
    newPayouts,
    referralStage,
    referralStep,
@@ -548,7 +551,34 @@ function pillText(r: AffiliateReferral, stage: AffiliateStage) {
    return 'Signed up';
 }
 
-function hintText(r: AffiliateReferral, stage: AffiliateStage, paused: boolean) {
+const CHECK_TONE: Record<AffiliateCheckTone, string> = {
+   gray: 'bg-[#f1eff4] text-[#7b6b8c] dark:bg-[#2a2235] dark:text-[#cfc4dd]',
+   purple: 'bg-[#ece9ff] text-[#6b55f7] dark:bg-[#2a2448] dark:text-[#b3a6ff]',
+   orange: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+   green: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+   red: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+};
+
+const callTime = (iso: string) =>
+   new Date(iso).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+/** Documents + call status for a friend who isn't approved yet. */
+function FriendChecks({ checks }: { checks: AffiliateCheck[] }) {
+   if (checks.length === 0) return null;
+   return (
+      <div className="mt-2 flex flex-wrap gap-1.5">
+         {checks.map((c) => (
+            <span key={c.kind} className={clsx('rounded-full px-2.5 py-0.5 text-[12px] font-semibold leading-5', CHECK_TONE[c.tone])}>
+               {c.kind === 'docs' ? '📄' : '📞'} {c.label}
+               {c.at ? ` · ${callTime(c.at)}` : ''}
+            </span>
+         ))}
+      </div>
+   );
+}
+
+function hintText(r: AffiliateReferral, stage: AffiliateStage, paused: boolean, todo: string | null = null) {
+   if (todo && (stage === 'signed_up' || stage === 'checking')) return r.added_by_you ? `Added by you · ${todo}` : todo;
    if (stage === 'paid') return r.paid_at ? `We paid you on ${shortDate(r.paid_at)}` : 'We paid you';
    if (stage === 'voucher') return `₱${r.voucher_php ?? 250} food voucher instead of ${money(r.payout_amount)}`;
    if (stage === 'owed') return paused ? 'Repay your loan first — then we send it' : 'They repaid — we’ll send your money';
@@ -583,6 +613,7 @@ function FriendRow({
    onVoucher: (r: AffiliateReferral) => void;
 }) {
    const stage = referralStage(r, unlocked);
+   const { checks, todo } = friendChecks(r);
    const tone = stage === 'owed' ? 'gold' : stage === 'paid' || stage === 'repaid' || stage === 'voucher' ? 'green' : 'purple';
    const canVoucher =
       voucherPhp !== null &&
@@ -626,6 +657,7 @@ function FriendRow({
                     : undefined
             }
          />
+         <FriendChecks checks={checks} />
          <p
             className={clsx(
                'mt-1.5 text-[13px] leading-4',
@@ -636,7 +668,7 @@ function FriendRow({
                     : 'text-[#7b6b8c] dark:text-[#a99cba]'
             )}
          >
-            {hintText(r, stage, paused)}
+            {hintText(r, stage, paused, todo)}
          </p>
          {canVoucher ? (
             <button
