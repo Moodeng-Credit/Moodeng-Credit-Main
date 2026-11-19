@@ -44,7 +44,7 @@ import { handleGuidePhotoCommand, isGuidePhotoCommand } from '../_shared/idGuide
 import { handleWaltPayoutCallback } from '../_shared/idWaltPayouts.ts';
 import { handleIncomeDocCallback, handleIncomeDocReasonReply } from '../_shared/incomeDocCards.ts';
 import { handlePreScreeningAskCallback, handlePreScreeningAskReply } from '../_shared/preScreeningAsk.ts';
-import { handlePreScreeningCallback } from '../_shared/preScreeningDecision.ts';
+import { handlePreScreeningCallback, handlePreScreeningReasonReply } from '../_shared/preScreeningDecision.ts';
 import { handleArrivedCommand, handleSweepCommand, handleWalletDepositCallback } from '../_shared/idRepayments.ts';
 import { handleWaltWatchCallback, handleWaltWatchCommand } from '../_shared/waltWatch.ts';
 import { handleVaultBridgeCallback, handleVaultCommand } from '../_shared/idVaultBridge.ts';
@@ -1578,6 +1578,10 @@ serve(async (req) => {
          const prescreenChatId = await getSetting(supabase, 'prescreen_chat_id');
          if (await handlePreScreeningAskReply(supabase, message, [teamChatId, kycChatId, prescreenChatId].filter(Boolean).map(String))) {
             return jsonResponse({ message: 'Pre-screening questions handled' });
+         }
+         // ❌ → ✍️ Other: the typed reason, shown back with Confirm / Cancel.
+         if (await handlePreScreeningReasonReply(supabase, message, [teamChatId, kycChatId, prescreenChatId].filter(Boolean).map(String))) {
+            return jsonResponse({ message: 'Pre-screening reason handled' });
          }
       }
 

@@ -11,7 +11,7 @@ import { rejectUser } from './loanAccess.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
 import { NOT_FIT_REASONS, preScreeningConfirmRows, preScreeningDecisionRows } from './preScreening.ts';
-import { callTelegramApi, type TelegramInlineKeyboard } from './telegram.ts';
+import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
 
 type Decision = 'good' | 'not_fit';
 type TgUser = { id?: number; username?: string; first_name?: string; last_name?: string };
@@ -24,21 +24,52 @@ type CardQuery = {
       message_id: number;
       text?: string;
       reply_markup?: { inline_keyboard?: TelegramInlineKeyboard };
+      // On the "confirm the reason" message: the pre-screening card it answers.
+      reply_to_message?: { message_id: number; text?: string; reply_markup?: { inline_keyboard?: TelegramInlineKeyboard } };
    };
+};
+type ReplyMessage = {
+   message_id: number;
+   chat: { id: number | string };
+   text?: string;
+   from?: TgUser;
+   reply_to_message?: { message_id: number; text?: string; from?: { is_bot?: boolean } };
 };
 
 const UUID = /^[0-9a-f-]{36}$/i;
 const nameOf = (from?: TgUser) =>
    from?.username ? `@${from.username}` : [from?.first_name, from?.last_name].filter(Boolean).join(' ') || 'the team';
 
-/** ps:<good|no|no_yes|back>:<id>, or ps:nr:<reason>:<id> (❌ with a reason; no_yes = older cards). */
+/**
+ * ps:<good|no|no_yes|back>:<id>, or ps:nr:<reason>:<id> (❌ with a reason; no_yes = older cards).
+ * ❌ → ✍️ Other: ps:type (asks for the reason in a reply), then ps:oc (confirm) / ps:ox (cancel)
+ * on the "confirm" message.
+ */
 export const parsePreScreeningCallback = (data: string | undefined) => {
    const withReason = /^ps:nr:([a-z]+):([0-9a-f-]{36})$/i.exec(data ?? '');
    if (withReason) {
       return NOT_FIT_REASONS[withReason[1]] ? { step: 'no_yes' as const, id: withReason[2], reason: NOT_FIT_REASONS[withReason[1]] } : null;
    }
-   const m = /^ps:(good|no|no_yes|back):([0-9a-f-]{36})$/i.exec(data ?? '');
-   return m ? { step: m[1] as 'good' | 'no' | 'no_yes' | 'back', id: m[2], reason: null as string | null } : null;
+   const m = /^ps:(good|no|no_yes|back|type|oc|ox):([0-9a-f-]{36})$/i.exec(data ?? '');
+   return m
+      ? { step: m[1] as 'good' | 'no' | 'no_yes' | 'back' | 'type' | 'oc' | 'ox', id: m[2], reason: null as string | null }
+      : null;
+};
+
+// The typed-reason prompt and the confirm message carry what they belong to in their own text. Pure.
+const REASON_TAG = (id: string, cardMsg: number) => `(not-fit ${id} · card ${cardMsg})`;
+export const parseReasonPrompt = (text: string | undefined) => {
+   const m = /\(not-fit ([0-9a-f-]{36}) · card (\d+)\)/i.exec(text ?? '');
+   return m ? { id: m[1], cardMsg: Number(m[2]) } : null;
+};
+const REASON_MAX = 200; // decide_pre_screening keeps 200 too
+export const confirmText = (name: string, reason: string) =>
+   `❌ Not a fit: ${name}\nReason: ${reason}\n\nConfirm? This turns them down and sends the rejection message.`;
+/** The reason back out of confirmText. Pure. */
+export const reasonFromConfirm = (text: string | undefined) => {
+   const m = /\nReason: ([\s\S]*?)\n\nConfirm\?/.exec(text ?? '');
+   const reason = m?.[1]?.trim();
+   return reason ? reason.slice(0, REASON_MAX) : null;
 };
 
 /** Acts on a saved decision. Safe to run again: a reject that already ran is skipped. */
@@ -118,6 +149,62 @@ export const handlePreScreeningCallback = async (svc: SupabaseClient, query: Car
          reply_markup: { inline_keyboard: [...rows, ...links] }
       }).catch((err) => console.error('pre-screening card: buttons failed', err instanceof Error ? err.message : err));
 
+   if (parsed.step === 'type') {
+      const { data: ps } = await svc.from('pre_screenings').select('name').eq('id', parsed.id).maybeSingle();
+      const name = (ps as { name?: string } | null)?.name ?? 'them';
+      await Promise.all([
+         answer('Type the reason in the reply box 👇'),
+         setButtons(preScreeningDecisionRows(parsed.id)),
+         callTelegramApi('sendMessage', {
+            chat_id: card.chat.id,
+            text: `✍️ ${nameOf(query.from)}: why is ${name} not a fit? Reply with the reason. You confirm before anything happens.\n${REASON_TAG(parsed.id, card.message_id)}`,
+            reply_parameters: { message_id: card.message_id, allow_sending_without_reply: true },
+            reply_markup: { force_reply: true, input_field_placeholder: 'Why not a fit…' }
+         }).catch((err) => console.error('pre-screening: reason prompt failed', err instanceof Error ? err.message : err))
+      ]);
+      return true;
+   }
+
+   if (parsed.step === 'ox') {
+      await Promise.all([
+         answer('Cancelled — nothing changed.'),
+         callTelegramApi('editMessageText', {
+            chat_id: card.chat.id,
+            message_id: card.message_id,
+            text: `${card.text ?? ''}\n\n✖️ Cancelled by ${nameOf(query.from)} — nothing changed.`,
+            reply_markup: { inline_keyboard: [] }
+         }).catch(() => undefined)
+      ]);
+      return true;
+   }
+
+   if (parsed.step === 'oc') {
+      const reason = reasonFromConfirm(card.text);
+      if (!reason) {
+         await answer('Couldn’t read the reason — tap ❌ Not a fit on the card again.');
+         return true;
+      }
+      const by = nameOf(query.from);
+      const decided = await decide(svc, parsed.id, 'not_fit', by, reason);
+      if (!decided) {
+         await answer('Couldn’t find that pre-screening.');
+         return true;
+      }
+      const orig = card.reply_to_message;
+      const stamp: CardStamp = { header: `${STAMP.not_fit} — ${reason}`, detail: decided.summary, by };
+      await Promise.all([
+         answer(decided.summary),
+         orig?.text ? stampCard(card.chat.id, orig.message_id, orig.text, linkRows(orig.reply_markup?.inline_keyboard), stamp) : null,
+         callTelegramApi('editMessageText', {
+            chat_id: card.chat.id,
+            message_id: card.message_id,
+            text: `❌ Not a fit — ${reason}\n${decided.summary}\n— by ${by}`,
+            reply_markup: { inline_keyboard: [] }
+         }).catch(() => undefined)
+      ]);
+      return true;
+   }
+
    if (parsed.step === 'no' || parsed.step === 'back') {
       await Promise.all([
          answer(parsed.step === 'no' ? 'Why? Tap a reason — that confirms it. If they have an account, it is turned down.' : ''),
@@ -128,24 +215,59 @@ export const handlePreScreeningCallback = async (svc: SupabaseClient, query: Car
 
    const decision: Decision = parsed.step === 'good' ? 'good' : 'not_fit';
    const by = nameOf(query.from);
+   const result = await decide(svc, parsed.id, decision, by, parsed.reason);
+   if (!result) {
+      await answer('Couldn’t find that pre-screening.');
+      return true;
+   }
+   const stamp: CardStamp = { header: `${STAMP[decision]}${parsed.reason ? ` — ${parsed.reason}` : ''}`, detail: result.summary, by };
+   await Promise.all([answer(result.summary), stampCard(card.chat.id, card.message_id, card.text ?? '', links, stamp)]);
+   return true;
+};
+
+/** Saves the team's decision and acts on it. Null when there's no such (finished) pre-screening. */
+async function decide(svc: SupabaseClient, id: string, decision: Decision, by: string, reason: string | null) {
    const { data: saved } = await svc
       .from('pre_screenings')
       .update({
          team_decision: decision,
          team_decided_by: by,
          team_decided_at: new Date().toISOString(),
-         team_reason: decision === 'not_fit' ? parsed.reason : null
+         team_reason: decision === 'not_fit' ? reason : null
       })
-      .eq('id', parsed.id)
+      .eq('id', id)
       .neq('status', 'open')
       .select('id')
       .maybeSingle();
-   if (!saved) {
-      await answer('Couldn’t find that pre-screening.');
+   return saved ? applyPreScreeningDecision(svc, id) : null;
+}
+
+/** A reply to "✍️ why is X not a fit?": shows the reason back with ✅ Confirm / ↩️ Cancel. True when it was one. */
+export const handlePreScreeningReasonReply = async (svc: SupabaseClient, message: ReplyMessage, adminChatIds: string[]): Promise<boolean> => {
+   const prompt = message.reply_to_message;
+   if (!prompt?.from?.is_bot) return false;
+   const ref = parseReasonPrompt(prompt.text);
+   if (!ref) return false;
+   if (!adminChatIds.includes(String(message.chat.id))) return true;
+   const reason = (message.text ?? '').trim().replace(/\s*\n\s*/g, ' ').slice(0, REASON_MAX);
+   if (!reason || reason.startsWith('/')) {
+      await sendTelegramMessage(message.chat.id, 'Reply with the reason as plain text.', { replyToMessageId: message.message_id }).catch(
+         () => undefined
+      );
       return true;
    }
-   const result = await applyPreScreeningDecision(svc, parsed.id);
-   const stamp: CardStamp = { header: `${STAMP[decision]}${parsed.reason ? ` — ${parsed.reason}` : ''}`, detail: result.summary, by };
-   await Promise.all([answer(result.summary), stampCard(card.chat.id, card.message_id, card.text ?? '', links, stamp)]);
+   const { data: ps } = await svc.from('pre_screenings').select('name').eq('id', ref.id).maybeSingle();
+   const name = (ps as { name?: string } | null)?.name ?? 'them';
+   await sendTelegramMessage(message.chat.id, confirmText(name, reason), {
+      replyToMessageId: ref.cardMsg,
+      inlineKeyboard: [
+         [
+            { text: '✅ Yes, not a fit', callback_data: `ps:oc:${ref.id}` },
+            { text: '↩️ Cancel', callback_data: `ps:ox:${ref.id}` }
+         ]
+      ]
+   }).catch((err) => console.error('pre-screening: confirm failed', err instanceof Error ? err.message : err));
+   // The prompt has done its job; gone so nobody replies to it twice.
+   await callTelegramApi('deleteMessage', { chat_id: message.chat.id, message_id: prompt.message_id }).catch(() => undefined);
    return true;
 };

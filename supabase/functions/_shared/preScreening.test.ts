@@ -137,7 +137,7 @@ Deno.test('pre-screening: no proof of income sent = no income part', () => {
    assertEquals(grade.flags, []);
 });
 
-import { parsePreScreeningCallback } from './preScreeningDecision.ts';
+import { confirmText, parsePreScreeningCallback, parseReasonPrompt, reasonFromConfirm } from './preScreeningDecision.ts';
 
 Deno.test('pre-screening: decision buttons parse, and nothing else does', () => {
    const id = '0df3967b-1633-48ed-a5a6-17df9940e020';
@@ -147,6 +147,9 @@ Deno.test('pre-screening: decision buttons parse, and nothing else does', () => 
    assertEquals(parsePreScreeningCallback(`ps:nr:madeup:${id}`), null);
    assertEquals(parsePreScreeningCallback(`pi:approve:${id}`), null);
    assertEquals(parsePreScreeningCallback(`ps:delete:${id}`), null);
+   assertEquals(parsePreScreeningCallback(`ps:type:${id}`), { step: 'type', id, reason: null });
+   assertEquals(parsePreScreeningCallback(`ps:oc:${id}`), { step: 'oc', id, reason: null });
+   assertEquals(parsePreScreeningCallback(`ps:ox:${id}`), { step: 'ox', id, reason: null });
    assertEquals(parsePreScreeningCallback(undefined), null);
 });
 
@@ -191,4 +194,12 @@ Deno.test('pre-screening: a clip with nobody on camera and nothing said scores 0
    assertEquals(grade.answers[2].score, 0);
    assertEquals(grade.unheard, 0);
    assertEquals(grade.overall, 47);
+});
+
+Deno.test('❌ Other: typed reason round-trips through the prompt tag and confirm text', () => {
+   const id = '0b5c7f3e-1d2a-4c8e-9f00-123456789abc';
+   assertEquals(parseReasonPrompt(`✍️ @x: why is A not a fit? Reply with the reason.\n(not-fit ${id} · card 42)`), { id, cardMsg: 42 });
+   assertEquals(parseReasonPrompt('(ref nope · card 1)'), null);
+   assertEquals(reasonFromConfirm(confirmText('Ana B', 'Too many loans: ₱3.7k left')), 'Too many loans: ₱3.7k left');
+   assertEquals(reasonFromConfirm('something else'), null);
 });
