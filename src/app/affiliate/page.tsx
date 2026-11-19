@@ -446,21 +446,30 @@ function Milestones({ referrals }: { referrals: AffiliateReferral[] }) {
 
 const STEP_LABELS = ['Signed up', 'Approved', 'Has a loan', 'Repaid'] as const;
 const REJECTED_RED = '#e5484d';
+const TOO_EARLY_ORANGE = '#f97316';
 
-function StepTrack({ step, tone, rejected }: { step: 1 | 2 | 3 | 4; tone: 'purple' | 'gold' | 'green'; rejected: boolean }) {
+/** One dot drawn differently: Rejected (step 2, red) or Too early (step 4, orange, dashed line into it). */
+type StepFlag = { index: number; label: string; color: string; dashed?: boolean };
+
+function StepTrack({ step, tone, flag }: { step: 1 | 2 | 3 | 4; tone: 'purple' | 'gold' | 'green'; flag?: StepFlag }) {
    const on = tone === 'gold' ? '#f6b73c' : tone === 'green' ? '#10b981' : PURPLE;
-   const labels = STEP_LABELS.map((label, i) => (i === 1 && rejected ? 'Rejected' : label));
+   const labels = STEP_LABELS.map((label, i) => (flag && i === flag.index ? flag.label : label));
    return (
       <div className="mt-2.5 grid grid-cols-4" aria-label={`Step ${step} of 4: ${labels[step - 1]}`}>
          {labels.map((label, i) => {
             const reached = i < step;
-            const color = rejected && i === 1 ? REJECTED_RED : on;
+            const color = flag && i === flag.index ? flag.color : on;
+            const dashedNext = Boolean(flag?.dashed && i + 1 === flag.index);
             return (
                <div key={label} className="relative flex flex-col items-center">
                   {i < labels.length - 1 ? (
                      <span
                         className="absolute left-1/2 top-[5px] h-[2px] w-full"
-                        style={{ backgroundColor: i + 1 < step ? on : '#e4dfeb' }}
+                        style={
+                           dashedNext
+                              ? { backgroundImage: `repeating-linear-gradient(90deg, ${flag?.color} 0 4px, transparent 4px 7px)` }
+                              : { backgroundColor: i + 1 < step ? on : '#e4dfeb' }
+                        }
                         aria-hidden
                      />
                   ) : null}
@@ -519,6 +528,7 @@ const PILL: Record<AffiliateStage, string> = {
    borrowed: 'bg-[#ece9ff] text-[#6b55f7] dark:bg-[#2a2448] dark:text-[#b3a6ff]',
    approved: 'bg-[#ece9ff] text-[#6b55f7] dark:bg-[#2a2448] dark:text-[#b3a6ff]',
    rejected: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+   too_early: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
    checking: 'bg-[#f1eff4] text-[#7b6b8c] dark:bg-[#2a2235] dark:text-[#cfc4dd]',
    signed_up: 'bg-[#f1eff4] text-[#7b6b8c] dark:bg-[#2a2235] dark:text-[#cfc4dd]'
 };
@@ -529,6 +539,7 @@ function pillText(r: AffiliateReferral, stage: AffiliateStage) {
    if (stage === 'owed') return `${money(r.payout_amount)} owed`;
    if (stage === 'locked') return `${money(r.payout_amount)} locked`;
    if (stage === 'repaid') return 'Repaid';
+   if (stage === 'too_early') return '⏱ Repaid too early';
    if (stage === 'borrowed') return 'Has a loan';
    if (stage === 'approved') return 'Approved';
    if (stage === 'rejected') return 'Rejected';
@@ -542,6 +553,7 @@ function hintText(r: AffiliateReferral, stage: AffiliateStage, paused: boolean) 
    if (stage === 'owed') return paused ? 'Repay your loan first — then we send it' : 'They repaid — we’ll send your money';
    if (stage === 'locked') return 'Repay a loan yourself to unlock it';
    if (stage === 'rejected') return 'Not approved by our team — they can’t borrow';
+   if (stage === 'too_early') return `Repaid in under 2 days — doesn’t count. If they keep their next loan 2+ days, you get ${money(r.payout_amount)}.`;
    if (stage === 'checking') return 'Our team is checking them now';
    if (stage === 'approved') return r.claimed ? 'Approved · tracked, no payout' : 'Approved — they can take a loan now';
    if (r.claimed) return 'Added by you · tracked, no payout';
@@ -584,7 +596,8 @@ function FriendRow({
             index > 0 && 'border-t border-[#ece9f1] dark:border-[#2c2439]',
             stage === 'owed' && 'bg-gradient-to-r from-[#fff3c4] to-[#fffaf0] dark:from-[#3b3216] dark:to-transparent',
             (stage === 'paid' || stage === 'voucher') && 'bg-emerald-50/60 dark:bg-emerald-900/10',
-            stage === 'rejected' && 'bg-red-50/60 dark:bg-red-900/10'
+            stage === 'rejected' && 'bg-red-50/60 dark:bg-red-900/10',
+            stage === 'too_early' && 'bg-orange-50/70 dark:bg-orange-900/10'
          )}
       >
          <div className="flex items-center gap-3">
@@ -600,11 +613,25 @@ function FriendRow({
             </div>
             <span className={clsx('shrink-0 rounded-full px-3 py-1 text-[13px] font-semibold', PILL[stage])}>{pillText(r, stage)}</span>
          </div>
-         <StepTrack step={referralStep(r)} tone={tone} rejected={stage === 'rejected'} />
+         <StepTrack
+            step={referralStep(r)}
+            tone={tone}
+            flag={
+               stage === 'rejected'
+                  ? { index: 1, label: 'Rejected', color: REJECTED_RED }
+                  : stage === 'too_early'
+                    ? { index: 3, label: 'Too early', color: TOO_EARLY_ORANGE, dashed: true }
+                    : undefined
+            }
+         />
          <p
             className={clsx(
                'mt-1.5 text-[13px] leading-4',
-               stage === 'owed' ? 'font-semibold text-[#a35f00] dark:text-[#ffd27a]' : 'text-[#7b6b8c] dark:text-[#a99cba]'
+               stage === 'owed'
+                  ? 'font-semibold text-[#a35f00] dark:text-[#ffd27a]'
+                  : stage === 'too_early'
+                    ? 'font-medium text-orange-700 dark:text-orange-300'
+                    : 'text-[#7b6b8c] dark:text-[#a99cba]'
             )}
          >
             {hintText(r, stage, paused)}
