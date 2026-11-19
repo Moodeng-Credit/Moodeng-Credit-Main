@@ -14,6 +14,7 @@ import { stableyard } from '../_shared/stableyard.ts';
 // POST { kycReusePolicy: true } returns the Reusable KYC policy (is ID-check sharing on for our app?).
 // POST { kyc: 'acct_…', importId?: 'kyc_import_…' } returns one account's ID-check state as Stableyard sees it
 // (and one shared-ID import), for support: why a share is stuck. Read-only; Stableyard returns no documents here.
+// POST { account: 'acct_…' } returns one account's linked wallets, payment source and capabilities (read-only).
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -84,6 +85,23 @@ serve(async (req) => {
             ? { ok: true, stableyardStatus: r.status, data: r.data }
             : { ok: false, stableyardStatus: r.status, error: r.error, code: r.code ?? null, requestId: r.requestId ?? null };
       return json({ ok: true, accountId: kycAccountId, kyc: view(kyc), import: kycImport ? view(kycImport) : null });
+   }
+
+   // ---- POST { account: 'acct_…' } → linked wallets + payment source + capabilities (read-only) ----
+   // Support: why one account's QR / bank payments never get a price while another's do.
+   const accountId = String(body?.account ?? '').trim();
+   if (accountId) {
+      if (!/^acct_[A-Za-z0-9_-]+$/.test(accountId)) return json({ error: 'Invalid account ID.' }, 400);
+      const [bundle, source, capabilities] = await Promise.all([
+         stableyard.getAccountBundle(accountId),
+         stableyard.getPaymentSource(accountId),
+         stableyard.listCapabilities(accountId)
+      ]);
+      const view = (r: Awaited<ReturnType<typeof stableyard.getPaymentSource>>) =>
+         r.ok
+            ? { ok: true, stableyardStatus: r.status, data: r.data }
+            : { ok: false, stableyardStatus: r.status, error: r.error, code: r.code ?? null, requestId: r.requestId ?? null };
+      return json({ ok: true, accountId, account: view(bundle), paymentSource: view(source), capabilities: view(capabilities) });
    }
 
    // ---- POST { kycReusePolicy: true } → GET /v2/partners/kyc-reuse-policy (read-only) ----------
