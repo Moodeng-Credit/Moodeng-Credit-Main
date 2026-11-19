@@ -34,6 +34,7 @@ export type AdminTab =
    | 'pre-screening'
    | 'proof-requests'
    | 'referrals'
+   | 'affiliates'
    | 'grab-vouchers'
    | 'borrower-contacts'
    | 'email'
@@ -117,6 +118,7 @@ export const navGroups: NavGroup[] = [
          { id: 'ux-health', label: 'UX health' },
          { id: 'on-chain', label: 'On-chain' },
          { id: 'referrals', label: 'Referrals' },
+         { id: 'affiliates', label: 'Affiliate payouts' },
          { id: 'grab-vouchers', label: 'Food vouchers' },
          { id: 'notifications', label: 'Notifications' },
          { id: 'points', label: 'IOU points' },
@@ -183,6 +185,7 @@ export const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'pre-screening',
    'proof-requests',
    'referrals',
+   'affiliates',
    'grab-vouchers',
    'borrower-contacts',
    'email',

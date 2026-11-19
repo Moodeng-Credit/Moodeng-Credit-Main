@@ -6,6 +6,7 @@ import { Check, ChevronDown, ChevronLeft, Copy, Download, Facebook, Lock, Share2
 import { QRCodeCanvas } from 'qrcode.react';
 import { Link, useSearchParams } from 'react-router-dom';
 
+import { AffiliatePayoutPanel } from '@/app/admin/AffiliatePayCard';
 import {
    AFFILIATE_PERSONAL_SAMPLE,
    AFFILIATE_SAMPLE,
@@ -553,7 +554,8 @@ function hintText(r: AffiliateReferral, stage: AffiliateStage, paused: boolean) 
    if (stage === 'owed') return paused ? 'Repay your loan first — then we send it' : 'They repaid — we’ll send your money';
    if (stage === 'locked') return 'Repay a loan yourself to unlock it';
    if (stage === 'rejected') return 'Not approved by our team — they can’t borrow';
-   if (stage === 'too_early') return `Repaid in under 2 days — doesn’t count. If they keep their next loan at least 2 days, you get ${money(r.payout_amount)}.`;
+   if (stage === 'too_early')
+      return `Repaid in under 2 days — doesn’t count. If they keep their next loan at least 2 days, you get ${money(r.payout_amount)}.`;
    if (stage === 'checking') return 'Our team is checking them now';
    if (stage === 'approved') return r.claimed ? 'Approved · tracked, no payout' : 'Approved — they can take a loan now';
    if (r.claimed) return 'Added by you · tracked, no payout';
@@ -892,7 +894,7 @@ function AdminViewBanner({ viewing, who }: { viewing: AffiliateDashboardData['vi
          <span className="min-w-0 truncate">
             Admin view: <strong>{name}</strong>
             {viewing?.username && viewing.display_name ? <span className="text-[#cfc6dd]"> · @{viewing.username}</span> : null}
-            <span className="text-[#cfc6dd]"> · read-only</span>
+            <span className="text-[#cfc6dd]"> · pay out below</span>
          </span>
          <Link to="/admin" className="shrink-0 font-semibold underline underline-offset-2">
             Admin
@@ -1028,6 +1030,7 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
                onShare={() => setSharing(true)}
             />
             <Milestones referrals={referrals} />
+            {adminView && data?.viewing?.id ? <AffiliatePayoutPanel userId={data.viewing.id} /> : null}
             {adminView ? null : (
                <ClaimFriend claims={data?.claims ?? []} sample={sample} personal={main.personal === true} payout={main.payout_amount} />
             )}
