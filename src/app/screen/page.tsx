@@ -373,9 +373,8 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    const [videoIndex, setVideoIndex] = useState(0);
    const [questions, setQuestions] = useState<ScreenQuestion[]>(preview ? SAMPLE_QUESTIONS : []);
    const [index, setIndex] = useState(preview?.question ?? 0);
-   // Videos that played to the end / couldn't load here.
+   // Videos that played to the end (counted for the team; nobody has to finish one).
    const [watched, setWatched] = useState<Set<string>>(new Set());
-   const [broken, setBroken] = useState<Set<string>>(new Set());
    const [uploaded, setUploaded] = useState<UploadedAnswer[]>([]);
    const [docs, setDocs] = useState<File[]>([]);
    const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[] | null>(null);
@@ -617,8 +616,6 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    const trail = (step: string) => <StepTrail current={step === 'end' ? trailSteps.length : Math.max(0, trailSteps.indexOf(step))} steps={trailSteps} />;
    const question = questions[index];
    const video = videos[videoIndex];
-   // Each video must play to the end; if YouTube can't load here, don't trap them.
-   const canContinue = Boolean(preview) || (video ? watched.has(video.id) || broken.has(video.id) : true);
    const nextVideo = () => {
       if (videoIndex + 1 < videos.length) setVideoIndex(videoIndex + 1);
       else setStage('question');
@@ -754,13 +751,12 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                      trail={trail('Watch')}
                   />
                   <BrandedVideo
-                     onBroken={() => setBroken((prev) => new Set(prev).add(video.id))}
                      onEnded={() => setWatched((prev) => new Set(prev).add(video.id))}
                      tall={video.tall ?? false}
                      videoId={video.id}
                   />
-                  <PrimaryButton disabled={!canContinue} onClick={nextVideo}>
-                     {canContinue ? (videoIndex + 1 < videos.length ? 'Next video' : 'Continue') : 'Watch to the end'}
+                  <PrimaryButton onClick={nextVideo}>
+                     {videoIndex + 1 < videos.length ? 'Next video' : 'Continue'}
                   </PrimaryButton>
                </div>
             ) : null}

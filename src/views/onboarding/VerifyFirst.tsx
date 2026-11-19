@@ -57,8 +57,6 @@ export default function VerifyFirst() {
    });
    const v2 = preview ?? data;
    const [videoIndex, setVideoIndex] = useState<number | null>(null);
-   const [ended, setEnded] = useState(false);
-   const [broken, setBroken] = useState(false);
    const [saving, setSaving] = useState(false);
 
    if (!preview && (!user || isLoading)) {
@@ -88,8 +86,6 @@ export default function VerifyFirst() {
             });
       }
       setSaving(false);
-      setEnded(false);
-      setBroken(false);
       if (index + 1 < videos.length) setVideoIndex(index + 1);
       else {
          setVideoIndex(null);
@@ -122,7 +118,6 @@ export default function VerifyFirst() {
          </div>
       );
    } else if (video && index < videos.length && (videoIndex !== null || watched < videos.length)) {
-      const canGo = ended || broken || Boolean(preview);
       body = (
          <div className={card} key={video.id}>
             <ConnectHero
@@ -131,9 +126,9 @@ export default function VerifyFirst() {
                title={video.title || 'Watch this'}
                trail={<StepTrail current={1} steps={STEPS} />}
             />
-            <BrandedVideo onBroken={() => setBroken(true)} onEnded={() => setEnded(true)} tall={video.tall ?? false} videoId={video.id} />
-            <PrimaryButton disabled={!canGo || saving} onClick={() => void nextVideo()}>
-               {saving ? <Loader2 aria-label="Saving" className="mx-auto size-5 animate-spin" /> : canGo ? (index + 1 < videos.length ? 'Next video' : 'Done') : 'Watch to the end'}
+            <BrandedVideo tall={video.tall ?? false} videoId={video.id} />
+            <PrimaryButton disabled={saving} onClick={() => void nextVideo()}>
+               {saving ? <Loader2 aria-label="Saving" className="mx-auto size-5 animate-spin" /> : index + 1 < videos.length ? 'Next video' : 'Done'}
             </PrimaryButton>
          </div>
       );

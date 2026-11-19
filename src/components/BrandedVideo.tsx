@@ -24,7 +24,7 @@ const parse = (raw: unknown): YTMessage | null => {
 };
 
 /** The Moodeng-framed player. `onEnded` fires when the video plays to the end; `onBroken` if it can't load. */
-export default function BrandedVideo({ videoId, tall = true, onEnded, onBroken }: { videoId: string; tall?: boolean; onEnded: () => void; onBroken: () => void }) {
+export default function BrandedVideo({ videoId, tall = true, onEnded, onBroken }: { videoId: string; tall?: boolean; onEnded?: () => void; onBroken?: () => void }) {
    const frame = useRef<HTMLIFrameElement>(null);
    const ended = useRef(onEnded);
    const broken = useRef(onBroken);
@@ -37,14 +37,14 @@ export default function BrandedVideo({ videoId, tall = true, onEnded, onBroken }
       const finish = () => {
          if (done) return;
          done = true;
-         ended.current();
+         ended.current?.();
       };
       const onMessage = (e: MessageEvent) => {
          if (!YT_ORIGINS.includes(e.origin) || e.source !== frame.current?.contentWindow) return;
          const msg = parse(e.data);
          if (!msg?.event) return;
          heard = true;
-         if (msg.event === 'onError') return broken.current();
+         if (msg.event === 'onError') return broken.current?.();
          if (msg.event === 'onStateChange' && msg.info === 0) return finish();
          if (msg.event === 'infoDelivery' && (msg.info as { playerState?: number } | null)?.playerState === 0) finish();
       };
@@ -52,9 +52,9 @@ export default function BrandedVideo({ videoId, tall = true, onEnded, onBroken }
       // Ask the embed to send its events; repeat until it answers (it ignores us before it's ready).
       const listen = () => frame.current?.contentWindow?.postMessage(JSON.stringify({ event: 'listening', id: videoId }), '*');
       const poll = window.setInterval(() => (heard ? window.clearInterval(poll) : listen()), 500);
-      // Never heard from YouTube: let them continue rather than trap them.
+      // Never heard from YouTube: tell the page it couldn't load.
       const giveUp = window.setTimeout(() => {
-         if (!heard) broken.current();
+         if (!heard) broken.current?.();
       }, NO_REPLY_MS);
       return () => {
          window.removeEventListener('message', onMessage);
