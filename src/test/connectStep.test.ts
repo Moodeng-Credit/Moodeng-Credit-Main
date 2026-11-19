@@ -352,8 +352,33 @@ describe('ConnectStep — call mode (request unlocks only after the call)', () =
          await Promise.resolve();
       });
       expect(container.textContent).toContain('Thanks for joining!');
+      expect(container.textContent).toContain('Pending approval');
+      expect(container.textContent).toContain('Team approval');
       expect(container.textContent).not.toContain('See you on the call');
+      expect(container.textContent).not.toContain('Confirm 1 hour before your call');
       expect(Array.from(container.querySelectorAll('a')).some((a) => a.textContent === 'Join the meeting')).toBe(false);
+   });
+
+   it('turns into the "Pending approval" card once the call starts, keeping Join while it runs', async () => {
+      supa.state.usersRow = {
+         ...supa.state.usersRow,
+         video_call_starts_at: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+         video_call_join_url: 'https://us06web.zoom.us/j/123',
+         video_call_confirm_token: 'abc123',
+         video_call_confirmed_at: null
+      } as typeof supa.state.usersRow;
+      await act(async () => {
+         root.render(createElement(LoanAccessPendingCard, { onClose: vi.fn(), mode: 'call', withEmma: true, userId: 'user-1' }));
+      });
+      await act(async () => {
+         await Promise.resolve();
+      });
+      expect(container.textContent).toContain('Pending approval');
+      expect(container.textContent).toContain('Call in progress');
+      expect(container.textContent).not.toContain('See you on the call');
+      expect(Array.from(container.querySelectorAll('a')).some((a) => a.textContent?.includes("I'll be there"))).toBe(false);
+      const join = Array.from(container.querySelectorAll('a')).find((a) => a.textContent === 'Join the meeting');
+      expect(join?.getAttribute('href')).toBe('https://us06web.zoom.us/j/123');
    });
 
    it('shows the "see you on the call" pending card in call mode', async () => {

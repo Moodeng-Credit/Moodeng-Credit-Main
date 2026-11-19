@@ -694,5 +694,22 @@ export const thaiCoverageG: Record<string, string> = {
    "Top level for now": "ระดับสูงสุดในตอนนี้",
    "Top level": "ระดับสูงสุด",
    "Example: borrowing the full $25 limit to unlock the $35 level.": "ตัวอย่าง: ยืมเต็มวงเงิน $25 เพื่อปลดล็อกระดับ $35",
-   "Credit limit reaches $35 = +50 Pandesal points": "วงเงินถึง $35 = +50 แต้ม Pandesal"
+   "Credit limit reaches $35 = +50 Pandesal points": "วงเงินถึง $35 = +50 แต้ม Pandesal",
+   "Pending approval": "รอการอนุมัติ",
+   "Call in progress": "กำลังคอลอยู่",
+   "Not approved": "ไม่ผ่านการอนุมัติ",
+   "Call booked": "จองคอลแล้ว",
+   "Video call": "วิดีโอคอล",
+   "Done": "เสร็จแล้ว",
+   "Team approval": "ทีมอนุมัติ",
+   "Team decision": "การตัดสินของทีม",
+   "Apply for your loan": "สมัครขอสินเชื่อ",
+   "Send your loan request": "ส่งคำขอสินเชื่อ",
+   "Usually within a day": "ปกติภายใน 1 วัน",
+   "Right after the call": "ทันทีหลังคอล",
+   "Opens when you’re approved": "เปิดเมื่อคุณได้รับอนุมัติ",
+   "Thanks for joining! We’ll message you on Messenger.": "ขอบคุณที่เข้าร่วม! เราจะส่งข้อความหาคุณทาง Messenger",
+   "Your call is on now. Join below if you’re not in yet.": "คอลของคุณเริ่มแล้ว กดเข้าร่วมด้านล่างถ้ายังไม่ได้เข้า",
+   "Thank you for your time.": "ขอบคุณที่สละเวลา",
+   "With Emma · Zoom": "กับ Emma · Zoom"
 };
