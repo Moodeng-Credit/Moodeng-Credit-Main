@@ -13,6 +13,7 @@ import { testAccountRow } from '../_shared/testAccount.ts';
 import { formatCallTimeForTeam, sendMovedMessenger } from '../_shared/videoCall.ts';
 import { extractBooking, verifySignature, type CalcomWebhookBody } from './parse.ts';
 import { sendIdTelegram } from '../_shared/idTrack.ts';
+import { autoRejectForStrikes, logCallEvent, teamMovedRecently } from '../_shared/callStrikes.ts';
 
 // Cal.com webhook — the server-side "did they actually book it" gate for the no-referral video
 // call, replacing the client-asserted mark_video_call_scheduled RPC.
@@ -125,6 +126,12 @@ serve(async (req) => {
 
       // Moved (by the borrower or by us, via 🔄 Change time or Cal.com): tell the call-changes group.
       const previousStart = (current as { video_call_starts_at?: string | null } | null)?.video_call_starts_at ?? null;
+      // They moved it themselves (Cal.com's reschedule link): a reschedule strike. The 3rd one
+      // rejects them automatically (the moved call is cancelled, they're told why).
+      if (!error && rescheduleOfCurrent && timeMoved && previousStart && booking.startsAt && !(await teamMovedRecently(supabase, booking.userId))) {
+         await logCallEvent(supabase, booking.userId, 'moved', booking.startsAt);
+         if (await autoRejectForStrikes(supabase, booking.userId)) return jsonResponse({ ok: true, rejected: true });
+      }
       if (!error && rescheduleOfCurrent && timeMoved && previousStart && booking.startsAt) {
          const { data: borrower } = await supabase.from('users').select(BORROWER_COLUMNS).eq('id', booking.userId).maybeSingle();
          if (borrower) {

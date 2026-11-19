@@ -16,6 +16,7 @@
 // callback_data (max 64 bytes): "rs:<o|b|x>:<user id>", "rs:d:<user id>:<YYYYMMDD>",
 // "rs:<s|y>:<user id>:<start in base-36 minutes>".
 import { CALL_MINUTES, CALL_TIME_ZONE, rescheduleCalBooking } from './calcomSlots.ts';
+import { logCallEvent } from './callStrikes.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
 import { formatCallTimeForTeam } from './videoCall.ts';
 
@@ -215,6 +216,8 @@ export const handleRescheduleStep = async (
          return 'That time has passed — pick another.';
       }
       await edit(chatId, messageId, { text: `${header(u)}\n\n⏳ Moving it to ${formatCallTimeForTeam(start, u.video_call_timezone)}…`, keyboard: [] });
+      // Logged first, so the Cal.com reschedule webhook knows this move is ours, not theirs.
+      await logCallEvent(svc, u.id, 'team_moved', start);
       const result = await rescheduleCalBooking(u.video_call_host || DEFAULT_HOST, u.video_call_booking_uid, start, `Moved by ${by} (Moodeng team)`);
       if ('uid' in result) {
          await edit(

@@ -28,6 +28,7 @@ import {
    zoomPaused
 } from '../calcom-round-robin/lib.ts';
 import { cancelCalBooking } from './calcomCancel.ts';
+import { autoRejectForStrikes, loadCallStrikes, logCallEvent, strikeVerdict } from './callStrikes.ts';
 import { photoCheckLine } from './fbPhotoCheck.ts';
 import { PAGE_INBOX_URL } from './loanAccess.ts';
 import { callInboxFor, isPlaceholderEmail } from './placeholderEmail.ts';
@@ -253,6 +254,9 @@ const prepare = async (svc: Svc, user: CallUser, pin?: string | null): Promise<C
    if ((access as { loan_access_status?: string | null } | null)?.loan_access_status === 'rejected') {
       return reply({ ok: false, error: 'rejected', slots: [] });
    }
+   // 2 missed calls (or 3 reschedules) and never attended: rejected automatically and told why
+   // (callStrikes.ts) — also catches people who got there before the rule existed.
+   if (await autoRejectForStrikes(svc, user.id)) return reply({ ok: false, error: 'rejected', slots: [] });
 
    // Resolve each host's event type id once per request.
    const resolved: Array<{ id: string; apiKey: string; eventTypeId: number }> = [];
@@ -384,6 +388,12 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
    if (prof?.video_call_scheduled_at && Date.now() - Date.parse(prof.video_call_scheduled_at) < 60_000) {
       return reply({ ok: false, error: 'too_fast' });
    }
+   // Booking again counts as a reschedule: the 3rd is refused and they're rejected automatically.
+   const strikes = await loadCallStrikes(svc, user.id);
+   const rebook = { extraReschedule: strikes.bookings > 0 };
+   if (strikeVerdict(strikes, rebook) && (await autoRejectForStrikes(svc, user.id, rebook))) {
+      return reply({ ok: false, error: 'rejected', slots: [] });
+   }
    const previousBooking =
       prof?.video_call_booking_uid && prof.video_call_starts_at && Date.parse(prof.video_call_starts_at) > Date.now()
          ? { uid: prof.video_call_booking_uid as string, host: (prof.video_call_host as string | null) ?? null }
@@ -457,6 +467,7 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
                'messenger_psid, video_call_host, video_call_starts_at, video_call_timezone, video_call_join_url, video_call_confirm_token, video_call_confirmed_at, video_call_booking_uid'
             )
             .maybeSingle();
+         await logCallEvent(svc, user.id, 'booked', start);
          // Indonesia track: the confirmation on Telegram, in WIB, with the join link.
          if (idStatus?.market === 'ID') {
             await sendIdTelegram(svc, user.id, 'call_booked', { callAt: start, joinUrl: booked?.video_call_join_url ?? result.joinUrl ?? null });

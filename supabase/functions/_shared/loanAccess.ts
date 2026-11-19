@@ -39,6 +39,7 @@ import { sendFacebookSteps } from './facebookStepsSend.ts';
 import { loadNeedsIdCheck } from './preKycGate.ts';
 import { testAccountRow } from './testAccount.ts';
 import { idApprovalBlock, type IdEvent, isIdTrackUser, sendIdTelegram } from './idTrack.ts';
+import { autoRejectForStrikes, loadCallStrikes, type StrikeReason, strikeVerdict } from './callStrikes.ts';
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
@@ -329,6 +330,17 @@ const BORROWER_MESSAGES = {
          'We wish you all the best! 🦛',
       url: SITE_URL
    },
+   // Automatic rejections (callStrikes.ts): just the reason, no button (George, 2026-11-19).
+   rejected_missed_calls: {
+      title: 'About your Moodeng application',
+      body: "We're sorry — you missed 2 of your booked calls, so your application has been closed.",
+      url: SITE_URL
+   },
+   rejected_reschedules: {
+      title: 'About your Moodeng application',
+      body: "We're sorry — your call was rescheduled too many times, so your application has been closed.",
+      url: SITE_URL
+   },
    // Emma's "Decline the loan request" script (no-show).
    no_show: {
       title: 'We missed you on the call',
@@ -379,6 +391,13 @@ const BORROWER_MESSAGES = {
 } as const;
 
 type BorrowerMessageKind = keyof typeof BORROWER_MESSAGES;
+const STRIKE_MESSAGE: Record<StrikeReason, BorrowerMessageKind> = {
+   missed_calls: 'rejected_missed_calls',
+   too_many_reschedules: 'rejected_reschedules'
+};
+// What the borrower is told on a reject: the strike reason, else before/after the call.
+const rejectMessage = (preCall: boolean, strikeReason?: StrikeReason | null): BorrowerMessageKind =>
+   strikeReason ? STRIKE_MESSAGE[strikeReason] : preCall ? 'rejected_pre_call' : 'rejected';
 type BorrowerMessage = { title: string; body: string; url: string };
 
 // Pre-KYC gate: the borrower isn't ID-verified yet, so approval unlocks ID verification (not the
@@ -461,6 +480,8 @@ const ID_EVENT: Record<BorrowerMessageKind, IdEvent> = {
    approved: 'access_approved',
    rejected: 'access_rejected',
    rejected_pre_call: 'access_rejected',
+   rejected_missed_calls: 'access_rejected',
+   rejected_reschedules: 'access_rejected',
    no_show: 'call_no_show',
    call_cancelled: 'call_cancelled',
    spot_released: 'call_released',
@@ -475,8 +496,8 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
    const idTrack = await isIdTrackUser(svc, borrower.id);
    // The other-lenders list is Philippine apps: Indonesia-track people keep the plain closed message.
    const kind: BorrowerMessageKind = requestedKind === 'rejected_pre_call' && idTrack ? 'rejected' : requestedKind;
-   // No button under the pre-call rejection: there's nothing for them to do on Moodeng.
-   const noButton = kind === 'rejected_pre_call';
+   // No button under the pre-call or automatic rejections: there's nothing for them to do on Moodeng.
+   const noButton = kind === 'rejected_pre_call' || kind === 'rejected_missed_calls' || kind === 'rejected_reschedules';
    if (idTrack) await sendIdTelegram(svc, borrower.id, ID_EVENT[kind]);
    const preKycMsg = PRE_KYC_MESSAGES[kind] && (await loadNeedsIdCheck(svc, borrower.id, borrower)) ? PRE_KYC_MESSAGES[kind] : undefined;
    const msg: BorrowerMessage = preKycMsg ?? BORROWER_MESSAGES[kind];
@@ -576,7 +597,7 @@ const isBeforeAnyCall = async (svc: SupabaseClient, borrower: BorrowerRow): Prom
 
 // `stamp` is the after-state written on the person's admin cards (adminCards.ts).
 export type DecideResult =
-   | { ok: true; request: RequestRow; borrower: BorrowerRow; summary: string; stamp: CardStamp }
+   | { ok: true; request: RequestRow; borrower: BorrowerRow; summary: string; stamp: CardStamp; autoRejected?: StrikeReason }
    // retry: nothing changed and the card keeps its buttons (e.g. an Indonesian whose KYC isn't approved yet).
    | { ok: false; summary: string; stamp?: CardStamp; retry?: boolean };
 
@@ -621,7 +642,9 @@ export const decideLoanAccess = async (
    svc: SupabaseClient,
    requestId: string,
    decision: LoanAccessDecision,
-   decidedBy: string
+   decidedBy: string,
+   // An automatic reject (callStrikes.ts): its own message, and the reason recorded on the user.
+   opts: { strikeReason?: StrikeReason | null } = {}
 ): Promise<DecideResult> => {
    const now = new Date().toISOString();
 
@@ -674,6 +697,7 @@ export const decideLoanAccess = async (
       .update({
          loan_access_status: decision === 'no_show' ? 'none' : decision,
          ...(decision === 'approved' ? { loan_access_approved_at: now, loan_access_seen_at: null } : {}),
+         ...(decision === 'rejected' ? { loan_access_reject_reason: opts.strikeReason ?? null } : {}),
          ...attendance
       })
       .eq('id', request.user_id)
@@ -687,7 +711,7 @@ export const decideLoanAccess = async (
 
    // Flip every card about this person (request card, call-start and "Did they show up?" cards) to
    // its after-state before the slower borrower messages go out.
-   const stamp: CardStamp = {
+   let stamp: CardStamp = {
       header: loanAccessStampHeader(decision, personName(borrower, request.display_name), { call: request.kind === 'call' }),
       detail: held || null,
       by: decidedBy,
@@ -717,7 +741,9 @@ export const decideLoanAccess = async (
       }
    }
 
-   await notifyBorrower(svc, borrower, preCall ? 'rejected_pre_call' : decision);
+   // A no-show that is their 2nd missed call: no "book a new time" — they're rejected just below.
+   const strikeOut = decision === 'no_show' ? strikeVerdict(await loadCallStrikes(svc, request.user_id)) : null;
+   if (!strikeOut) await notifyBorrower(svc, borrower, decision === 'rejected' ? rejectMessage(preCall, opts.strikeReason) : decision);
 
    const verb =
       decision === 'approved'
@@ -726,12 +752,22 @@ export const decideLoanAccess = async (
             : '✅ Approved'
          : decision === 'no_show'
            ? '❌ No-show:'
-           : preCall
+           : opts.strikeReason
+             ? `🚫 Rejected automatically (${opts.strikeReason === 'missed_calls' ? 'missed 2 calls' : 'rescheduled 3 times'}):`
+             : preCall
              ? '🚫 Rejected before the call (sent other lenders):'
              : '🚫 Rejected';
-   const summary = `${verb} ${who(borrower, request.display_name)} — by ${decidedBy}${held ? `\n${held}` : ''}${callNote}`;
+   let summary = `${verb} ${who(borrower, request.display_name)} — by ${decidedBy}${held ? `\n${held}` : ''}${callNote}`;
    await postDiscord({ content: `🤝 Loan access ${summary}` }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
-   return { ok: true, request, borrower, summary, stamp };
+   const autoRejected = strikeOut ? await autoRejectForStrikes(svc, request.user_id) : null;
+   if (autoRejected) {
+      summary += '\n🤖 That was their 2nd missed call, so they were rejected automatically and told why.';
+      stamp = { header: `${loanAccessStampHeader('rejected', personName(borrower, request.display_name))} (missed 2 calls)`, detail: REJECT_FOLLOW_UP_ASK, by: decidedBy, buttons: rejectFollowUpButtons(request.user_id) };
+   } else if (strikeOut) {
+      // The reject didn't go through after all: send the no-show message we held back.
+      await notifyBorrower(svc, borrower, decision);
+   }
+   return { ok: true, request, borrower, summary, stamp, ...(autoRejected ? { autoRejected } : {}) };
 };
 
 /**
@@ -740,7 +776,12 @@ export const decideLoanAccess = async (
  * rejected directly with the same card stamp, call cancel, message and Discord line. Never undoes
  * an approval — that stays a deliberate team decision.
  */
-export const rejectUser = async (svc: SupabaseClient, userId: string, decidedBy: string): Promise<{ ok: boolean; summary: string }> => {
+export const rejectUser = async (
+   svc: SupabaseClient,
+   userId: string,
+   decidedBy: string,
+   opts: { strikeReason?: StrikeReason | null } = {}
+): Promise<{ ok: boolean; summary: string }> => {
    const { data: pending } = await svc
       .from('loan_access_requests')
       .select('id')
@@ -750,13 +791,13 @@ export const rejectUser = async (svc: SupabaseClient, userId: string, decidedBy:
       .limit(1)
       .maybeSingle();
    if (pending) {
-      const result = await decideLoanAccess(svc, (pending as { id: string }).id, 'rejected', decidedBy);
+      const result = await decideLoanAccess(svc, (pending as { id: string }).id, 'rejected', decidedBy, opts);
       return { ok: result.ok, summary: result.summary };
    }
 
    const { data: borrower, error } = await svc
       .from('users')
-      .update({ loan_access_status: 'rejected' })
+      .update({ loan_access_status: 'rejected', loan_access_reject_reason: opts.strikeReason ?? null })
       .eq('id', userId)
       .or('loan_access_status.is.null,loan_access_status.not.in.(approved,rejected)')
       .select(BORROWER_COLUMNS)
@@ -792,8 +833,8 @@ export const rejectUser = async (svc: SupabaseClient, userId: string, decidedBy:
       callNote = '\n⚠️ Their booked call was NOT cancelled — cancel it on Cal.com.';
    }
    const preCall = await isBeforeAnyCall(svc, borrower as BorrowerRow);
-   await notifyBorrower(svc, borrower as BorrowerRow, preCall ? 'rejected_pre_call' : 'rejected');
-   const summary = `🚫 Rejected ${who(borrower as BorrowerRow)} — by ${decidedBy}${callNote}`;
+   await notifyBorrower(svc, borrower as BorrowerRow, rejectMessage(preCall, opts.strikeReason));
+   const summary = `🚫 Rejected${opts.strikeReason ? ' automatically' : ''} ${who(borrower as BorrowerRow)} — by ${decidedBy}${callNote}`;
    await postDiscord({ content: `🤝 Loan access ${summary}` }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
    return { ok: true, summary };
 };
