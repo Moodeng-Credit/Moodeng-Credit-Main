@@ -2561,7 +2561,29 @@ export default function Repay() {
                   {copiedAddress ? 'Copied' : 'Copy'}
                </span>
             </button>
-            <p className="text-center text-[15px] font-extrabold text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Base network only</p>
+            {USDCBASE_PHOTO[activeSource.id] ? (
+               <div className="flex flex-col items-center gap-2">
+                  <p className="text-center text-[15px] font-extrabold text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Pick USDCBASE</p>
+                  <button
+                     type="button"
+                     onClick={() => setShowUsdcbasePhoto((open) => !open)}
+                     aria-expanded={showUsdcbasePhoto}
+                     className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-[13px] font-bold text-[#b91c1c] ring-1 ring-[#fca5a5] dark:bg-[#2a0f0f] dark:text-[#fca5a5] dark:ring-[#7f1d1d]"
+                  >
+                     See it in {activeSource.label}
+                     <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showUsdcbasePhoto ? 'rotate-180' : ''}`} aria-hidden />
+                  </button>
+                  {showUsdcbasePhoto ? (
+                     <img
+                        src={USDCBASE_PHOTO[activeSource.id]}
+                        alt={`USDCBASE in ${activeSource.label}`}
+                        className="block max-h-[280px] w-full rounded-[14px] object-contain ring-1 ring-[#fca5a5] dark:ring-[#7f1d1d]"
+                     />
+                  ) : null}
+               </div>
+            ) : (
+               <p className="text-center text-[15px] font-extrabold text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Base network only</p>
+            )}
          </div>
       ) : null;
       // Last card of the app guide: watch their wallet until the money lands.
