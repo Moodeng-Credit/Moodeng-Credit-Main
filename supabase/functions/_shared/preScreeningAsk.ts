@@ -1,0 +1,454 @@
+// Pre-screening "💬 Ask more" (migration 20261119190000). On the Telegram pre-screening card:
+//   💬 Ask more → 🤖 AI writes them   Gemini reads the grade (summary, answers, flags, proof of income)
+//                                     and drafts up to 3 short questions
+//               → ✍️ I'll type them  a reply box; what the team types is kept (same questions, same
+//                                     meaning) and made simple + Taglish/Bahasa by the AI
+// Either way a draft is posted under the card first: 📤 Send on Messenger / ✍️ Write my own / ✖️ Cancel.
+// Nothing reaches the person before the team taps Send.
+//
+// Their replies: sendpulse-events → handlePreScreeningAnswer. For 24 hours after Send, while the team
+// hasn't decided and hasn't started typing in that chat themselves, what they write on Messenger is
+// saved (followup_answers) and posted under the card with a short AI read. ✅ / ❌ on the card stay
+// the team's call.
+//
+// Callbacks: pq:<ask|ai|type|send|x>:<pre_screening id>.
+import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+import { linkRows } from './adminCards.ts';
+import { GEMINI_MODEL } from './geminiPreScreen.ts';
+import { type Lang, langOf, teamStepIn } from './messengerIncomeDocReply.ts';
+import { preScreeningDecisionRows } from './preScreening.ts';
+import { sendPushToUser } from './pushDelivery.ts';
+import { sendMessengerMessage } from './sendpulse.ts';
+import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
+import { MESSENGER_CHAT_URL } from './whatsappFirst.ts';
+
+export type FollowupQuestion = { team: string; en: string; local: string | null };
+type Draft = { questions: FollowupQuestion[]; card_chat: number | string; card_msg: number; by: string };
+type TgUser = { id?: number; username?: string; first_name?: string; last_name?: string };
+type CardQuery = {
+   id: string;
+   data?: string;
+   from?: TgUser;
+   message?: {
+      chat: { id: number | string };
+      message_id: number;
+      text?: string;
+      reply_markup?: { inline_keyboard?: TelegramInlineKeyboard };
+      reply_to_message?: { message_id: number };
+   };
+};
+type ReplyMessage = {
+   message_id: number;
+   chat: { id: number | string };
+   from?: TgUser & { is_bot?: boolean };
+   text?: string;
+   reply_to_message?: { message_id: number; text?: string; from?: { is_bot?: boolean } };
+};
+type Row = {
+   id: string;
+   name: string;
+   status: string;
+   user_id: string | null;
+   questions: Array<{ id: string; text: string }> | null;
+   grade: {
+      summary?: string;
+      flags?: string[];
+      answers?: Array<{ q: string; transcript: string | null; note: string }>;
+      income?: { note?: string; read?: Record<string, unknown> | null } | null;
+   } | null;
+   score: number | null;
+   team_decision: string | null;
+   followup_draft: Draft | null;
+   followup_questions: FollowupQuestion[] | null;
+   followup_sent_at: string | null;
+   followup_card: { chat: number | string; msg: number } | null;
+   followup_answers: Array<{ text: string; at: string }> | null;
+};
+
+const ROW_FIELDS =
+   'id, name, status, user_id, questions, grade, score, team_decision, followup_draft, followup_questions, followup_sent_at, followup_card, followup_answers';
+const ANSWER_WINDOW_MS = 24 * 60 * 60 * 1000;
+const MAX_QUESTIONS = 3;
+const nameOf = (from?: TgUser) =>
+   from?.username ? `@${from.username}` : [from?.first_name, from?.last_name].filter(Boolean).join(' ') || 'the team';
+const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
+
+/** pq:<step>:<id>. Pure. */
+export const parseAskCallback = (data: string | undefined) => {
+   const m = /^pq:(ask|ai|type|send|x):([0-9a-f-]{36})$/i.exec(data ?? '');
+   return m ? { step: m[1] as 'ask' | 'ai' | 'type' | 'send' | 'x', id: m[2] } : null;
+};
+
+// The "✍️ type your questions" prompt carries what the reply needs. Pure.
+const PROMPT_TAG = (id: string, cardMsg: number) => `(ref ${id} · card ${cardMsg})`;
+export const parseAskPrompt = (text: string | undefined) => {
+   const m = /\(ref ([0-9a-f-]{36}) · card (\d+)\)/i.exec(text ?? '');
+   return m ? { id: m[1], cardMsg: Number(m[2]) } : null;
+};
+
+/** The team's typed text as separate questions: one per line, numbering stripped. Pure. */
+export const splitTyped = (text: string) =>
+   text
+      .split(/\n+/)
+      .map((l) => l.replace(/^\s*(?:\d+[.)]|[-•*])\s*/, '').trim())
+      .filter((l) => l.length > 1)
+      .slice(0, MAX_QUESTIONS);
+
+/** What the model sent back, as at most 3 clean questions. Pure. */
+export const cleanQuestions = (raw: unknown): FollowupQuestion[] => {
+   const list = Array.isArray((raw as { questions?: unknown } | null)?.questions) ? (raw as { questions: unknown[] }).questions : [];
+   const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 400) : null);
+   return list
+      .map((q) => {
+         const o = (q ?? {}) as Record<string, unknown>;
+         const en = str(o.en);
+         return en ? { team: str(o.team) ?? en, en, local: str(o.local) } : null;
+      })
+      .filter((q): q is FollowupQuestion => !!q)
+      .slice(0, MAX_QUESTIONS);
+};
+
+/** The draft as the team sees it. Pure. */
+export const draftText = (name: string, qs: FollowupQuestion[], typed: boolean) =>
+   [
+      `💬 Questions for ${name} — draft${typed ? ' (your questions, made simple)' : ' (AI)'}`,
+      'Nothing is sent until you tap 📤 Send.',
+      '',
+      ...qs.flatMap((q, i) => [`${i + 1}. ${q.en}`, ...(q.local && q.local !== q.en ? [`   ${q.local}`] : [])])
+   ].join('\n');
+
+const draftButtons = (id: string): TelegramInlineKeyboard => [
+   [{ text: '📤 Send on Messenger', callback_data: `pq:send:${id}` }],
+   [
+      { text: '✍️ Write my own', callback_data: `pq:type:${id}` },
+      { text: '✖️ Cancel', callback_data: `pq:x:${id}` }
+   ]
+];
+
+const INTRO: Record<Lang, (first: string) => string> = {
+   en: (f) =>
+      `Hi ${f}! 👋 This is the Moodeng team. Thanks for your answers. We have a few more questions before you continue — just reply here 🙏`,
+   fil: (f) =>
+      `Hi ${f}! 👋 Si Moodeng team ito. Salamat sa mga sagot mo. May ilang tanong pa kami bago ka magpatuloy — reply ka lang dito 🙏`,
+   id: (f) =>
+      `Hai ${f}! 👋 Ini tim Moodeng. Terima kasih atas jawabanmu. Ada beberapa pertanyaan lagi sebelum kamu lanjut — balas di sini saja 🙏`
+};
+const THANKS: Record<Lang, string> = {
+   en: 'Thank you! 🙏 The team will look at your answers and message you here.',
+   fil: 'Salamat! 🙏 Titingnan ng team ang mga sagot mo at magme-message kami dito.',
+   id: 'Terima kasih! 🙏 Tim kami akan melihat jawabanmu dan mengabari kamu di sini.'
+};
+
+/** The Messenger message, in their language. Pure. */
+export const messengerText = (name: string, qs: FollowupQuestion[], lang: Lang) =>
+   [INTRO[lang](firstName(name)), '', ...qs.map((q, i) => `${i + 1}. ${lang !== 'en' && q.local ? q.local : q.en}`)].join('\n');
+
+// ---- AI ---------------------------------------------------------------------------------------
+
+const DRAFT_SYSTEM = `You help a small lender (Moodeng Credit: first loans of about $15 to people in the Philippines and Indonesia) decide whether to lend to someone after a short pre-screening (recorded answers + a proof of income). The team wants to ask the person a few more questions by Facebook Messenger before deciding.
+
+You get the person's answers, the AI grade (summary, flags, proof-of-income read) and maybe "team_wrote": questions the team typed.
+- If team_wrote is there: keep exactly the team's questions (same number, same meaning, same order). Only make each one short and simple and add the local version. Do not add questions of your own.
+- If not: write 2 or 3 questions about what matters most for whether they can and will repay: what doesn't add up, what is vague, or what worries the team (other loans, take-home pay, what the money is really for, how they repay). Specific to them, not generic.
+
+Each question: one short sentence, 8th-grade English, friendly and not accusing, open (not yes/no), answerable by typing a few lines on a phone. Never ask for passwords, codes, ID numbers or bank details. Don't ask what we already know from the document unless it doesn't add up.
+"local" = the same question in natural Taglish (Philippines) or simple Bahasa Indonesia (market "ID").
+"team" = what the question checks, in a few English words, for the team.
+Reply with only json: {"questions": [{"team": "...", "en": "...", "local": "..."}]}`;
+
+const READ_SYSTEM = `A small lender (first loans of about $15) asked someone a few more questions on Messenger after their pre-screening. You get the questions, what the AI already thought of them, and their replies so far (Tagalog, Taglish, Indonesian or English; may be split over several messages or not finished yet). In at most 2 short plain English sentences: do the replies answer the questions, and does anything make repaying more or less likely? Say plainly if they dodged a question or haven't answered it yet. Reply with only json: {"read": "..."}`;
+
+async function geminiJson(svc: SupabaseClient, system: string, input: unknown, timeoutMs: number): Promise<unknown> {
+   const { data: key } = await svc.rpc('gemini_api_key');
+   if (typeof key !== 'string' || !key) throw new Error('no Gemini key');
+   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+      signal: AbortSignal.timeout(timeoutMs),
+      body: JSON.stringify({
+         systemInstruction: { parts: [{ text: system }] },
+         contents: [{ role: 'user', parts: [{ text: JSON.stringify(input) }] }],
+         generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.4,
+            maxOutputTokens: 2000,
+            thinkingConfig: { thinkingLevel: 'low' }
+         }
+      })
+   });
+   if (!res.ok) throw new Error(`gemini ${res.status}: ${(await res.text().catch(() => '')).slice(0, 200)}`);
+   const json = (await res.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string; thought?: boolean }> } }> };
+   const text = (json.candidates?.[0]?.content?.parts ?? [])
+      .filter((p) => !p.thought && typeof p.text === 'string')
+      .map((p) => p.text)
+      .join('');
+   return JSON.parse(text || '{}');
+}
+
+const context = (row: Row, market: string | null) => ({
+   name: row.name,
+   market: market ?? 'PH',
+   score: row.score,
+   ai_summary: row.grade?.summary ?? null,
+   flags: row.grade?.flags ?? [],
+   answers: (row.questions ?? []).map((q) => {
+      const a = row.grade?.answers?.find((x) => x.q === q.id);
+      return { question: q.text, said: a?.transcript ?? null, ai_note: a?.note ?? null };
+   }),
+   proof_of_income: row.grade?.income ? { note: row.grade.income.note ?? null, read: row.grade.income.read ?? null } : null
+});
+
+async function draftQuestions(svc: SupabaseClient, row: Row, typed: string[] | null): Promise<FollowupQuestion[]> {
+   const market = row.user_id
+      ? (((await svc.from('users').select('market').eq('id', row.user_id).maybeSingle()).data as { market?: string } | null)?.market ??
+        null)
+      : null;
+   try {
+      const raw = await geminiJson(svc, DRAFT_SYSTEM, { ...context(row, market), ...(typed ? { team_wrote: typed } : {}) }, 40_000);
+      const qs = cleanQuestions(raw);
+      // Typed: never lose one of the team's questions to a model that dropped it.
+      if (typed && qs.length !== typed.length) return typed.map((t) => ({ team: t, en: t, local: null }));
+      return qs;
+   } catch (err) {
+      console.error('pre-screening ask: draft failed', err instanceof Error ? err.message : err);
+      return typed ? typed.map((t) => ({ team: t, en: t, local: null })) : [];
+   }
+}
+
+// ---- Telegram ---------------------------------------------------------------------------------
+
+const loadRow = async (svc: SupabaseClient, id: string) =>
+   ((await svc.from('pre_screenings').select(ROW_FIELDS).eq('id', id).maybeSingle()).data as Row | null) ?? null;
+
+const messengerOf = async (svc: SupabaseClient, userId: string | null) => {
+   if (!userId) return null;
+   const { data } = await svc.from('users').select('messenger_psid, preferred_locale, market').eq('id', userId).maybeSingle();
+   return (data as { messenger_psid: string | null; preferred_locale: string | null; market: string | null } | null) ?? null;
+};
+
+async function postDraft(svc: SupabaseClient, row: Row, chat: number | string, cardMsg: number, by: string, typed: string[] | null) {
+   const qs = await draftQuestions(svc, row, typed);
+   if (!qs.length) {
+      await sendTelegramMessage(chat, '⚠️ The AI couldn’t write questions just now. Tap 💬 Ask more → ✍️ I’ll type them.', {
+         replyToMessageId: cardMsg
+      });
+      return;
+   }
+   const draft: Draft = { questions: qs, card_chat: chat, card_msg: cardMsg, by };
+   await svc.from('pre_screenings').update({ followup_draft: draft }).eq('id', row.id);
+   await sendTelegramMessage(chat, draftText(row.name, qs, !!typed), { replyToMessageId: cardMsg, inlineKeyboard: draftButtons(row.id) });
+}
+
+/** Taps on 💬 Ask more and on the draft's buttons. True when it was one of ours. */
+export const handlePreScreeningAskCallback = async (svc: SupabaseClient, query: CardQuery, adminChatIds: string[]): Promise<boolean> => {
+   const parsed = parseAskCallback(query.data);
+   if (!parsed) return false;
+   const answer = (text: string) =>
+      callTelegramApi('answerCallbackQuery', { callback_query_id: query.id, text: text.slice(0, 190) }).catch(() => undefined);
+   const msg = query.message;
+   if (!msg || !adminChatIds.includes(String(msg.chat.id))) {
+      await answer('Not allowed here.');
+      return true;
+   }
+   const row = await loadRow(svc, parsed.id);
+   if (!row) {
+      await answer('Couldn’t find that pre-screening.');
+      return true;
+   }
+   const by = nameOf(query.from);
+   const setButtons = (rows: TelegramInlineKeyboard) =>
+      callTelegramApi('editMessageReplyMarkup', {
+         chat_id: msg.chat.id,
+         message_id: msg.message_id,
+         reply_markup: { inline_keyboard: [...rows, ...linkRows(msg.reply_markup?.inline_keyboard)] }
+      }).catch(() => undefined);
+   const editDraft = (text: string) =>
+      callTelegramApi('editMessageText', {
+         chat_id: msg.chat.id,
+         message_id: msg.message_id,
+         text,
+         reply_markup: { inline_keyboard: [] }
+      }).catch(() => undefined);
+   // On the card: ask/ai/type. On the draft: send/x, and type ("✍️ Write my own") — whose card is the draft's.
+   const onDraft = parsed.step === 'send' || parsed.step === 'x' || (parsed.step === 'type' && !!msg.text?.startsWith('💬 Questions for'));
+   const cardMsg = onDraft ? (row.followup_draft?.card_msg ?? msg.reply_to_message?.message_id ?? msg.message_id) : msg.message_id;
+
+   if (parsed.step === 'ask') {
+      if (row.team_decision) {
+         await answer('Already decided on this one.');
+         return true;
+      }
+      const m = await messengerOf(svc, row.user_id);
+      if (!m?.messenger_psid) {
+         await answer(row.user_id ? 'They haven’t connected Messenger — can’t ask there.' : 'No account yet — can’t message them.');
+         return true;
+      }
+      await Promise.all([
+         answer('Who writes the questions?'),
+         setButtons([
+            [
+               { text: '🤖 AI writes them', callback_data: `pq:ai:${row.id}` },
+               { text: '✍️ I’ll type them', callback_data: `pq:type:${row.id}` }
+            ],
+            [{ text: '↩️ Back', callback_data: `ps:back:${row.id}` }]
+         ])
+      ]);
+      return true;
+   }
+
+   if (parsed.step === 'ai') {
+      await Promise.all([answer('🤖 Writing questions… (a few seconds)'), setButtons(preScreeningDecisionRows(row.id))]);
+      await postDraft(svc, row, msg.chat.id, cardMsg, by, null);
+      return true;
+   }
+
+   if (parsed.step === 'type') {
+      await Promise.all([
+         answer('Type them in the reply box 👇'),
+         onDraft ? editDraft(`${msg.text ?? ''}\n\n✍️ ${by} is writing their own instead.`) : setButtons(preScreeningDecisionRows(row.id)),
+         callTelegramApi('sendMessage', {
+            chat_id: msg.chat.id,
+            text: `✍️ ${by}: type your questions for ${row.name}, one per line (up to ${MAX_QUESTIONS}). Any language is fine — the AI makes them short and simple and adds Taglish. You see the draft before anything is sent.\n${PROMPT_TAG(row.id, cardMsg)}`,
+            reply_parameters: { message_id: cardMsg, allow_sending_without_reply: true },
+            reply_markup: { force_reply: true, input_field_placeholder: 'Your questions, one per line…' }
+         }).catch((err) => console.error('pre-screening ask: prompt failed', err instanceof Error ? err.message : err))
+      ]);
+      return true;
+   }
+
+   if (parsed.step === 'x') {
+      await svc.from('pre_screenings').update({ followup_draft: null }).eq('id', row.id);
+      await Promise.all([answer('Cancelled.'), editDraft(`${msg.text ?? ''}\n\n✖️ Cancelled by ${by} — not sent.`)]);
+      return true;
+   }
+
+   // send
+   const draft = row.followup_draft;
+   if (!draft?.questions?.length) {
+      await answer('That draft is gone — tap 💬 Ask more again.');
+      return true;
+   }
+   const m = await messengerOf(svc, row.user_id);
+   const lang = langOf(m?.preferred_locale, m?.market);
+   const text = messengerText(row.name, draft.questions, lang);
+   await answer('📤 Sending…');
+   const sent = await sendMessengerMessage(m?.messenger_psid, { text }).catch(() => ({ ok: false, reason: 'error' }));
+   if (!sent.ok) {
+      const why = (sent as { reason?: string }).reason ?? 'failed';
+      await editDraft(
+         `${msg.text ?? ''}\n\n⚠️ Couldn’t send on Messenger (${why}) — usually their 24-hour window has closed. Copy this and send it yourself:\n\n${text}`
+      );
+      return true;
+   }
+   await svc
+      .from('pre_screenings')
+      .update({
+         followup_questions: draft.questions,
+         followup_sent_at: new Date().toISOString(),
+         followup_sent_by: by,
+         followup_card: { chat: draft.card_chat, msg: draft.card_msg },
+         followup_draft: null
+      })
+      .eq('id', row.id);
+   const push = row.user_id
+      ? await sendPushToUser(svc, row.user_id, () => ({
+           type: 'loan_access_decision',
+           title: 'A quick question from the team 💬',
+           body: 'Open Messenger and reply to Moodeng Credit.',
+           url: MESSENGER_CHAT_URL,
+           tag: 'prescreen-ask'
+        })).catch(() => null)
+      : null;
+   const pushed = Boolean(push && (push as { sent?: number }).sent);
+   await editDraft(
+      `${msg.text?.replace(/ — draft.*\nNothing is sent until you tap 📤 Send\./, '') ?? ''}\n\n📤 Sent on Messenger by ${by}${pushed ? ' (+ push)' : ''}. Their replies show up here for 24 hours.`
+   );
+   return true;
+};
+
+/** A reply to the "✍️ type your questions" prompt. True when it was one (handled or refused). */
+export const handlePreScreeningAskReply = async (svc: SupabaseClient, message: ReplyMessage, adminChatIds: string[]): Promise<boolean> => {
+   const prompt = message.reply_to_message;
+   if (!prompt?.from?.is_bot) return false;
+   const ref = parseAskPrompt(prompt.text);
+   if (!ref) return false;
+   if (!adminChatIds.includes(String(message.chat.id))) return true;
+   const typed = splitTyped(message.text ?? '');
+   if (!typed.length || (message.text ?? '').trim().startsWith('/')) {
+      await sendTelegramMessage(message.chat.id, 'Reply with your questions as plain text, one per line.', {
+         replyToMessageId: message.message_id
+      });
+      return true;
+   }
+   const row = await loadRow(svc, ref.id);
+   if (!row) return true;
+   await callTelegramApi('editMessageText', {
+      chat_id: message.chat.id,
+      message_id: prompt.message_id,
+      text: '✍️ Got it — making them simple…'
+   }).catch(() => undefined);
+   await postDraft(svc, row, message.chat.id, ref.cardMsg, nameOf(message.from), typed);
+   await callTelegramApi('deleteMessage', { chat_id: message.chat.id, message_id: prompt.message_id }).catch(() => undefined);
+   return true;
+};
+
+// ---- Their replies on Messenger ---------------------------------------------------------------
+
+/** Is this pre-screening waiting for their Messenger reply right now? Pure. */
+export const isWaitingForReply = (row: Pick<Row, 'followup_sent_at' | 'team_decision' | 'followup_card'> | null, now: number) =>
+   !!row?.followup_sent_at && !!row.followup_card && !row.team_decision && now - Date.parse(row.followup_sent_at) < ANSWER_WINDOW_MS;
+
+/**
+ * sendpulse-events: a typed Messenger message from someone the team asked follow-up questions. Saved,
+ * posted under the card with a short AI read, and not also a support ticket. Never throws.
+ */
+export const handlePreScreeningAnswer = async (svc: SupabaseClient, userId: string, contactId: string, text: string): Promise<boolean> => {
+   try {
+      const { data } = await svc
+         .from('pre_screenings')
+         .select(ROW_FIELDS)
+         .eq('user_id', userId)
+         .not('followup_sent_at', 'is', null)
+         .order('followup_sent_at', { ascending: false })
+         .limit(1)
+         .maybeSingle();
+      const row = data as Row | null;
+      if (!row || !isWaitingForReply(row, Date.now())) return false;
+      // The team took over the chat (typed in the Page inbox / Discord ticket): their conversation now.
+      if (await teamStepIn(svc, contactId, row.followup_sent_at!)) return false;
+
+      const answers = [...(row.followup_answers ?? []), { text: text.slice(0, 2000), at: new Date().toISOString() }];
+      await svc.from('pre_screenings').update({ followup_answers: answers }).eq('id', row.id);
+
+      const qs = row.followup_questions ?? [];
+      let read: string | null = null;
+      try {
+         const raw = (await geminiJson(
+            svc,
+            READ_SYSTEM,
+            { questions: qs.map((q) => q.en), ai_summary_before: row.grade?.summary ?? null, their_replies: answers.map((a) => a.text) },
+            20_000
+         )) as { read?: unknown };
+         read = typeof raw?.read === 'string' && raw.read.trim() ? raw.read.trim().slice(0, 400) : null;
+      } catch (err) {
+         console.warn('pre-screening ask: read failed', err instanceof Error ? err.message : err);
+      }
+      const card = row.followup_card!;
+      await sendTelegramMessage(
+         card.chat,
+         [`💬 ${row.name} replied on Messenger:`, `“${text.slice(0, 1500)}”`, ...(read ? ['', `🤖 ${read}`] : [])].join('\n'),
+         { replyToMessageId: card.msg }
+      ).catch((err) => console.error('pre-screening ask: post reply failed', err instanceof Error ? err.message : err));
+
+      // Thank them once they've sent about one message per question.
+      if (answers.length === Math.max(1, qs.length)) {
+         const m = await messengerOf(svc, userId);
+         await sendMessengerMessage(contactId, { text: THANKS[langOf(m?.preferred_locale, m?.market)] }).catch(() => undefined);
+      }
+      return true;
+   } catch (err) {
+      console.error('pre-screening ask: answer failed', err instanceof Error ? err.message : err);
+      return false;
+   }
+};

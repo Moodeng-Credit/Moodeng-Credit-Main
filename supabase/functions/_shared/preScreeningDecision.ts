@@ -10,7 +10,7 @@ import { type CardStamp, linkRows, stampCard } from './adminCards.ts';
 import { rejectUser } from './loanAccess.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
-import { NOT_FIT_REASONS, preScreeningConfirmRows, preScreeningDecisionRow } from './preScreening.ts';
+import { NOT_FIT_REASONS, preScreeningConfirmRows, preScreeningDecisionRows } from './preScreening.ts';
 import { callTelegramApi, type TelegramInlineKeyboard } from './telegram.ts';
 
 type Decision = 'good' | 'not_fit';
@@ -121,7 +121,7 @@ export const handlePreScreeningCallback = async (svc: SupabaseClient, query: Car
    if (parsed.step === 'no' || parsed.step === 'back') {
       await Promise.all([
          answer(parsed.step === 'no' ? 'Why? Tap a reason — that confirms it. If they have an account, it is turned down.' : ''),
-         setButtons(parsed.step === 'no' ? preScreeningConfirmRows(parsed.id) : [preScreeningDecisionRow(parsed.id)])
+         setButtons(parsed.step === 'no' ? preScreeningConfirmRows(parsed.id) : preScreeningDecisionRows(parsed.id))
       ]);
       return true;
    }

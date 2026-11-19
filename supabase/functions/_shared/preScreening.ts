@@ -26,6 +26,11 @@ export const preScreeningDecisionRow = (id: string): TelegramInlineKeyboard[numb
    { text: '✅ Good fit', callback_data: `ps:good:${id}` },
    { text: '❌ Not a fit', callback_data: `ps:no:${id}` }
 ];
+// 💬 Ask more: more questions on Messenger first (preScreeningAsk.ts, pq:).
+export const preScreeningDecisionRows = (id: string): TelegramInlineKeyboard => [
+   preScreeningDecisionRow(id),
+   [{ text: '💬 Ask more', callback_data: `pq:ask:${id}` }]
+];
 // ❌ asks why (one tap) — the reason teaches the AI (loadTeamExamples) and shows on the card.
 export const NOT_FIT_REASONS: Record<string, string> = {
    vague: 'Vague answers',
@@ -415,7 +420,7 @@ async function tellTeam(svc: SupabaseClient, title: string, lines: string[], id:
    const text = [title, ...lines].filter(Boolean).join('\n');
    const chat = await teamChat(svc);
    if (chat) {
-      const keyboard: TelegramInlineKeyboard = [...(decide ? [preScreeningDecisionRow(id)] : []), [{ text: '▶️ Watch the answers', url }]];
+      const keyboard: TelegramInlineKeyboard = [...(decide ? preScreeningDecisionRows(id) : []), [{ text: '▶️ Watch the answers', url }]];
       await sendTelegramMessage(chat, text, { inlineKeyboard: keyboard }).catch((err) =>
          console.error('pre-screening telegram failed', err)
       );

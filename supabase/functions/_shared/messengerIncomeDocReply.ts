@@ -117,7 +117,7 @@ export const isAwaitedAnswer = (doc: Doc | null, now: number) =>
  * A team member wrote in this Messenger chat since the bot asked: typed in the Page inbox (SendPulse echo),
  * replied from the Discord ticket, or is typing there. Unknown (history unreachable) counts as yes.
  */
-const teamStepIn = async (svc: Svc, contactId: string, since: string) => {
+export const teamStepIn = async (svc: Svc, contactId: string, since: string) => {
    const typed = await lastPageInboxTypedAt(contactId);
    if (typed === undefined || (typed !== null && typed > Date.parse(since))) return true;
    const { data: conv } = await svc
