@@ -43,6 +43,7 @@ import { handleIdFreeText } from '../_shared/idHelper.ts';
 import { handleGuidePhotoCommand, isGuidePhotoCommand } from '../_shared/idGuides.ts';
 import { handleWaltPayoutCallback } from '../_shared/idWaltPayouts.ts';
 import { handleIncomeDocCallback, handleIncomeDocReasonReply } from '../_shared/incomeDocCards.ts';
+import { handlePreScreeningAskCallback, handlePreScreeningAskReply } from '../_shared/preScreeningAsk.ts';
 import { handlePreScreeningCallback } from '../_shared/preScreeningDecision.ts';
 import { handleArrivedCommand, handleSweepCommand, handleWalletDepositCallback } from '../_shared/idRepayments.ts';
 import { handleWaltWatchCallback, handleWaltWatchCommand } from '../_shared/waltWatch.ts';
@@ -1415,6 +1416,10 @@ serve(async (req) => {
          if (await handlePreScreeningCallback(supabase, update.callback_query, [teamChatId, kycChatId, prescreenChatId].filter(Boolean).map(String))) {
             return jsonResponse({ message: 'Pre-screening decision handled' });
          }
+         // Pre-screening card: 💬 Ask more and its draft (pq:).
+         if (await handlePreScreeningAskCallback(supabase, update.callback_query, [teamChatId, kycChatId, prescreenChatId].filter(Boolean).map(String))) {
+            return jsonResponse({ message: 'Pre-screening ask handled' });
+         }
          // 🔄 Change time picker: the admin chats and the call-changes group.
          const reschedule = parseRescheduleCallback(update.callback_query.data);
          if (reschedule) {
@@ -1566,6 +1571,14 @@ serve(async (req) => {
       // Proof of income: a reply to "✍️ Why reject?" is the reject reason (team + KYC chats).
       if (message.reply_to_message && (await handleIncomeDocReasonReply(supabase, message, [teamChatId, kycChatId].filter(Boolean).map(String)))) {
          return jsonResponse({ message: 'Income document reason handled' });
+      }
+
+      // Pre-screening: a reply to "✍️ type your questions" (💬 Ask more) — team, KYC and pre-screening chats.
+      if (message.reply_to_message) {
+         const prescreenChatId = await getSetting(supabase, 'prescreen_chat_id');
+         if (await handlePreScreeningAskReply(supabase, message, [teamChatId, kycChatId, prescreenChatId].filter(Boolean).map(String))) {
+            return jsonResponse({ message: 'Pre-screening questions handled' });
+         }
       }
 
       // Lender-roster commands are honored only in the private team channel.

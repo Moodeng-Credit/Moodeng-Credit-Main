@@ -9,6 +9,7 @@ import { handleCashOutMessage } from '../_shared/messengerCashOutHelp.ts';
 import { handleBookingMessage, handleKeepSpotReply, handleReminderNumber } from '../_shared/messengerBookingBot.ts';
 import { logMessengerContact, rememberMessengerContact, saveFacebookName } from '../_shared/messengerContactLog.ts';
 import { handleIncomeDocMessage } from '../_shared/messengerIncomeDocReply.ts';
+import { handlePreScreeningAnswer } from '../_shared/preScreeningAsk.ts';
 import { handleRewardMessage } from '../_shared/messengerRewardReply.ts';
 import { CONNECTED_BY_TIMING_TEXT } from '../_shared/messengerStatusFollowUp.ts';
 import { isSupportMessage, openMessengerTicket, relayAgentReply } from '../_shared/messengerSupport.ts';
@@ -332,6 +333,8 @@ serve(async (req) => {
          if (typed && (await handleRewardMessage(svc, known!.userId, contactId, typed))) continue;
          // "1"–"4" / QR / GCrypto / PDAX / Maya: their answer to the funded message's "How will you cash out?".
          if (typed && (await handleCashOutMessage(svc, known!.userId, contactId, typed))) continue;
+         // Their reply to the team's 💬 Ask more questions after pre-screening: posted under the Telegram card.
+         if (typed && (await handlePreScreeningAnswer(svc, known!.userId, contactId, typed))) continue;
          // "DOCS" (sent from /documents) and their answers to the AI's questions about their proof of income.
          if (typed && (await handleIncomeDocMessage(svc, known!.userId, contactId, typed))) continue;
          if (typed && (await handleReminderNumber(svc, known!.userId, contactId, typed))) continue;
