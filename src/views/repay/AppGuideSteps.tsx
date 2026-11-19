@@ -32,7 +32,12 @@ const buildCards = ({
       key: 'copy',
       title: 'Copy your Moodeng address',
       content: addressCard,
-      confirm: appId === 'moneybees' ? 'I’ll ask Moneybees to send USDC on Base' : `I’ll pick the Base network in ${appName}`,
+      confirm:
+         appId === 'moneybees'
+            ? 'I’ll ask Moneybees to send USDC on Base'
+            : appId === 'pdax' || appId === 'gcrypto'
+              ? `I’ll pick USDCBASE in ${appName}`
+              : `I’ll pick the Base network in ${appName}`,
       doneLabel: 'Copied, next'
    };
 
@@ -45,10 +50,10 @@ const buildCards = ({
             img: `${GCRYPTO_IMG}/step1-topup.webp`,
             open: true
          },
-         { key: 'buy', title: 'Buy USDC (Base)', text: 'Trade → Buy → USDC (Base).', img: `${GCRYPTO_IMG}/step2-trade.webp`, tip: buyTip },
+         { key: 'buy', title: 'Buy USDCBASE', text: 'Trade → Buy → USDCBASE.', img: `${GCRYPTO_IMG}/step2-trade.webp`, tip: buyTip },
          copy,
          { key: 'send', title: 'Paste it, tap MAX', text: 'Send → paste → MAX.', img: `${GCRYPTO_IMG}/step3-send.webp` },
-         { key: 'confirm', title: 'Check it says Base, then Send', img: `${GCRYPTO_IMG}/step4-confirm.webp` },
+         { key: 'confirm', title: 'Check it says USDCBASE, then Send', img: `${GCRYPTO_IMG}/step4-confirm.webp` },
          {
             key: 'processing',
             title: 'You’ll see “processing”',
