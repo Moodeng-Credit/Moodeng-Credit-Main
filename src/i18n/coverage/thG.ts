@@ -476,9 +476,8 @@ export const thaiCoverageG: Record<string, string> = {
    'This repayment was sent to the wallet you funded this loan from:': 'การชำระคืนนี้ถูกส่งไปยังกระเป๋าเงินที่คุณใช้ปล่อยกู้รายการนี้:',
    'When repaid, funds return to the wallet you funded this loan from:':
       'เมื่อมีการชำระคืน เงินจะกลับเข้าสู่กระเป๋าเงินที่คุณใช้ปล่อยกู้รายการนี้:',
-   'This differs from the wallet you have connected now (': 'กระเป๋าเงินนี้ไม่ใช่กระเป๋าเงินที่คุณเชื่อมต่ออยู่ตอนนี้ (',
-   '). That is expected — repayments go to the wallet used to fund each loan, not your current one. Open':
-      ') ซึ่งเป็นเรื่องปกติ — การชำระคืนจะเข้ากระเป๋าเงินที่ใช้ปล่อยกู้แต่ละรายการ ไม่ใช่กระเป๋าเงินปัจจุบันของคุณ เปิด',
+   'This money went to': 'เงินนี้เข้าไปที่',
+   ', the wallet that funded this loan.': ' ซึ่งเป็นกระเป๋าเงินที่ใช้ปล่อยกู้นี้',
    'to find these funds.': 'เพื่อดูเงินเหล่านี้',
 
    // src/views/transactions/TransactionHistory.tsx

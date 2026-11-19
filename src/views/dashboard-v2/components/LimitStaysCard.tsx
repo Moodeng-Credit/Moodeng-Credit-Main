@@ -16,14 +16,14 @@ const PAGE_ID = '61589106561061';
 const COPY: Record<DashboardV2Language, { title: (limit: number) => string; body: string; ask: string; button: string; docs: string }> = {
    en: {
       title: (limit) => `Your limit stays at $${limit}`,
-      body: 'Loans paid back within 2 days don’t raise your limit. By local lending rules we can only raise it about once a month — going faster would break the 15% monthly interest cap.',
+      body: 'Loans paid back in under 2 days don’t raise your limit. Keep your next loan at least 2 days.',
       ask: 'Want to talk about it, or show us more about your income?',
       button: 'Message us on Messenger',
       docs: 'Add proof of income'
    },
    fil: {
       title: (limit) => `Mananatili sa $${limit} ang limit mo`,
-      body: 'Hindi tumataas ang limit kapag nabayaran ang loan sa loob ng 2 araw. Ayon sa lokal na patakaran sa pagpapautang, mga isang beses lang kada buwan namin ito puwedeng itaas — kapag mas mabilis, lalampas sa 15% na buwanang limit sa interes.',
+      body: 'Hindi tumataas ang limit kapag nabayaran ang loan nang wala pang 2 araw. Bayaran ang susunod mong loan pagkalipas ng 2 araw o higit pa.',
       ask: 'Gusto mo bang pag-usapan, o magpakita pa tungkol sa kita mo?',
       button: 'Mag-message sa Messenger',
       docs: 'Magdagdag ng proof of income'

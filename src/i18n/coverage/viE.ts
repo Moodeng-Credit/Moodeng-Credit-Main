@@ -125,8 +125,8 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Connect a wallet first so we know where to send your USDC.': 'Hãy kết nối ví trước để chúng tôi biết gửi USDC của bạn đến đâu.',
    'Could not start Coinbase.': 'Không khởi động được Coinbase.',
    'Card purchases aren’t available just yet — try a bridge below.': 'Hiện chưa thể mua bằng thẻ — hãy thử bắc cầu bên dưới.',
-   'Prefer another way? You can also buy USDC on an exchange (Binance P2P, Coins.ph, PDAX, GCrypto), through an external service like Moneybees, or send it from any wallet — always on the Base network.':
-      'Muốn dùng cách khác? Bạn cũng có thể mua USDC trên sàn giao dịch (Binance P2P, Coins.ph, PDAX, GCrypto), qua dịch vụ bên ngoài như Moneybees, hoặc gửi từ bất kỳ ví nào — luôn trên mạng Base.',
+   'Prefer another way? Buy USDC on an exchange like PDAX or GCrypto, or send it from any wallet — on the Base network.':
+      'Muốn cách khác? Mua USDC trên sàn như PDAX hoặc GCrypto, hoặc gửi từ ví bất kỳ — trên mạng Base.',
    'Visa / Mastercard · Apple Pay · no account needed': 'Visa / Mastercard · Apple Pay · không cần tài khoản',
    '~30 sec': '~30 giây',
    'SOL and USDC to Base · opens Superbridge': 'SOL và USDC sang Base · mở Superbridge',
@@ -1226,9 +1226,8 @@ export const vietnameseCoverageE: Record<string, string> = {
       'Khoản trả nợ này đã được gửi đến ví bạn dùng để cấp vốn cho khoản vay:',
    'When repaid, funds return to the wallet you funded this loan from:':
       'Khi được trả, tiền sẽ về ví bạn dùng để cấp vốn cho khoản vay này:',
-   'This differs from the wallet you have connected now (': 'Ví này khác với ví bạn đang kết nối (',
-   '). That is expected — repayments go to the wallet used to fund each loan, not your current one. Open':
-      '). Điều này là bình thường — khoản trả nợ sẽ về ví đã dùng để cấp vốn cho từng khoản vay, không phải ví hiện tại của bạn. Mở',
+   'This money went to': 'Số tiền này đã về ví',
+   ', the wallet that funded this loan.': ', ví đã dùng để cho vay khoản này.',
    'to find these funds.': 'để tìm các khoản tiền này.',
    Return: 'Hoàn lại',
 

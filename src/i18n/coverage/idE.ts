@@ -396,8 +396,8 @@ export const indonesianCoverageE: Record<string, string> = {
    '~1.5% fee': 'biaya ~1.5%',
    '< 0.5% fee': 'biaya < 0.5%',
    'SOL and USDC to Base · opens Superbridge': 'SOL dan USDC ke Base · membuka Superbridge',
-   'Prefer another way? You can also buy USDC on an exchange (Binance P2P, Coins.ph, PDAX, GCrypto), through an external service like Moneybees, or send it from any wallet — always on the Base network.':
-      'Mau cara lain? Kamu juga bisa membeli USDC di exchange (Binance P2P, Coins.ph, PDAX, GCrypto), lewat layanan eksternal seperti Moneybees, atau mengirimnya dari dompet mana pun — selalu lewat jaringan Base.',
+   'Prefer another way? Buy USDC on an exchange like PDAX or GCrypto, or send it from any wallet — on the Base network.':
+      'Mau cara lain? Beli USDC di exchange seperti PDAX atau GCrypto, atau kirim dari dompet mana pun — di jaringan Base.',
 
    // src/views/fund/StripeOnrampModal.tsx
    'Stripe card purchases aren’t available in your country yet. Try the Coinbase option below — it covers more regions.':

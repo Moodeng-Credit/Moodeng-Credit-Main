@@ -1082,8 +1082,8 @@ export const thaiCoverageB: Record<string, string> = {
    'Bridge from Solana': 'โอนข้ามจาก Solana',
    'SOL and USDC to Base · opens Superbridge': 'SOL และ USDC ไปยัง Base · เปิด Superbridge',
    'Gas only': 'เฉพาะค่า gas',
-   'Prefer another way? You can also buy USDC on an exchange (Binance P2P, Coins.ph, PDAX, GCrypto), through an external service like Moneybees, or send it from any wallet — always on the Base network.':
-      'อยากใช้วิธีอื่นใช่ไหม? คุณยังซื้อ USDC ได้บนแพลตฟอร์มแลกเปลี่ยนคริปโต (Binance P2P, Coins.ph, PDAX, GCrypto) ผ่านบริการภายนอกอย่าง Moneybees หรือส่งจากกระเป๋าเงินใดก็ได้ — โดยต้องส่งบนเครือข่าย Base เสมอ',
+   'Prefer another way? Buy USDC on an exchange like PDAX or GCrypto, or send it from any wallet — on the Base network.':
+      'อยากใช้วิธีอื่น? ซื้อ USDC บน exchange อย่าง PDAX หรือ GCrypto หรือส่งจากกระเป๋าเงินใดก็ได้ — บนเครือข่าย Base',
    'Learn more': 'ดูข้อมูลเพิ่มเติม',
 
    // src/views/fund/StripeOnrampModal.tsx

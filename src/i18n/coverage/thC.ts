@@ -240,8 +240,8 @@ export const thaiCoverageC: Record<string, string> = {
 
    // src/views/onboarding/WalletConnected.tsx
    'Use Your Instant Wallet or a Base Account': 'ใช้ Instant Wallet หรือ Base Account ของคุณ',
-   'Borrowers use the Moodeng Instant Wallet, created from your login — or you can connect a Base Account instead. Other wallet connectors cannot be locked for Moodeng borrowing.':
-      'ผู้ยืมใช้ Instant Wallet ของ Moodeng ซึ่งสร้างจากบัญชีที่คุณใช้เข้าสู่ระบบ หรือจะเชื่อมต่อ Base Account แทนก็ได้ กระเป๋าเงินแบบอื่นไม่สามารถล็อกไว้ใช้สำหรับการยืมกับ Moodeng ได้',
+   'Use your Moodeng Instant Wallet or a Base Account. Other wallets can’t be used to borrow.':
+      'ใช้ Moodeng Instant Wallet หรือ Base Account กระเป๋าเงินอื่นใช้กู้ไม่ได้',
    'Confirm Saved Base Account': 'ยืนยัน Base Account ที่บันทึกไว้',
    'Confirm Your Base Account': 'ยืนยัน Base Account ของคุณ',
    "We couldn't detect a wallet. Set up your Instant Wallet (or connect a Base Account if you prefer) to continue.":
@@ -266,8 +266,7 @@ export const thaiCoverageC: Record<string, string> = {
    'Connect a wallet I already own': 'เชื่อมต่อกระเป๋าเงินที่ฉันมีอยู่แล้ว',
    'Could not start the face check. Please try again.': 'เริ่มการสแกนใบหน้าไม่สำเร็จ โปรดลองอีกครั้ง',
    'Quick face check': 'สแกนใบหน้าสั้น ๆ',
-   'A short liveness scan keeps Instant Wallets to one per person, which is what lets us cover the network fees. We never store your photo, and it is only needed to create the wallet — not to sign in, send or repay.':
-      'การสแกนตรวจสอบบุคคลจริงสั้น ๆ ช่วยจำกัด Instant Wallet ให้มีหนึ่งใบต่อหนึ่งคน ซึ่งทำให้เราออกค่าธรรมเนียมเครือข่ายให้ได้ เราไม่จัดเก็บรูปภาพของคุณ และใช้เพียงตอนสร้างกระเป๋าเงินเท่านั้น ไม่ต้องใช้ตอนเข้าสู่ระบบ ส่งเงิน หรือชำระคืน',
+   'A quick face scan — one wallet per person. We don’t keep your photo.': 'สแกนใบหน้าสั้นๆ — หนึ่งคนหนึ่งกระเป๋า เราไม่เก็บรูปของคุณ',
    "We couldn't finish creating your wallet. Please try again.": 'เราสร้างกระเป๋าเงินของคุณไม่สำเร็จ โปรดลองอีกครั้ง',
    'Creating your wallet': 'กำลังสร้างกระเป๋าเงินของคุณ',
    'This takes a few seconds. Keep this screen open.': 'ใช้เวลาเพียงไม่กี่วินาที โปรดเปิดหน้านี้ค้างไว้',
@@ -489,8 +488,7 @@ export const thaiCoverageC: Record<string, string> = {
    'Now open Moneybees below →': 'จากนั้นเปิด Moneybees ด้านล่าง →',
    'Now paste it into the app below →': 'จากนั้นวางในแอปด้านล่าง →',
    '⚠️ Send on the BASE network only': '⚠️ ส่งบนเครือข่าย BASE เท่านั้น',
-   'USDC sent on Ethereum, Polygon, or any other network goes to this address on the wrong chain and is lost forever — it cannot be recovered. When':
-      'USDC ที่ส่งบน Ethereum Polygon หรือเครือข่ายอื่นจะไปถึงที่อยู่นี้บนเชนที่ผิด และสูญหายถาวรโดยกู้คืนไม่ได้ เมื่อ',
+   'Choose the Base network. Any other network and your money is lost.': 'เลือกเครือข่าย Base ถ้าใช้เครือข่ายอื่น เงินจะหายไป',
    'asks which network, choose': 'ถามว่าจะใช้เครือข่ายใด ให้เลือก',
    'Visit moneybees.ph and follow their own process': 'ไปที่ moneybees.ph และทำตามขั้นตอนของพวกเขา',
    'They handle ID checks and the rate directly with you': 'Moneybees จะตรวจสอบตัวตนและตกลงอัตราแลกเปลี่ยนกับคุณโดยตรง',
@@ -1023,8 +1021,7 @@ export const thaiCoverageC: Record<string, string> = {
    'Send only': 'ส่งเฉพาะ',
    'Verify Base first': 'ยืนยัน Base ก่อน',
    'How would you like to cash out?': 'คุณต้องการถอนเงินด้วยวิธีใด?',
-   'Your loan funds are in your wallet. Withdraw or convert them using an exchange, P2P platform, or a supported local crypto service.':
-      'เงินกู้ของคุณอยู่ในกระเป๋าเงินของคุณแล้ว คุณสามารถถอนหรือแปลงเงินได้โดยใช้แพลตฟอร์มแลกเปลี่ยน แพลตฟอร์ม P2P หรือบริการคริปโตท้องถิ่นที่รองรับ',
+   'Pick where to get your cash.': 'เลือกช่องทางรับเงินสด',
    'Learn more about withdrawal options': 'เรียนรู้เพิ่มเติมเกี่ยวกับตัวเลือกการถอนเงิน',
    "I'll do this later": 'ไว้ทำภายหลัง',
    'Contact support': 'ติดต่อฝ่ายช่วยเหลือ',

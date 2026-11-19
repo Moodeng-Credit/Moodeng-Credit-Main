@@ -891,7 +891,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                   <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mb-[14px]">
                      {isIndo
                         ? 'Kirim ke Walt di Telegram, lalu jual ke Rupiah.'
-                        : 'Your loan funds are in your wallet. Withdraw or convert them using an exchange, P2P platform, or a supported local crypto service.'}
+                        : 'Pick where to get your cash.'}
                   </p>
                </>
             )}
