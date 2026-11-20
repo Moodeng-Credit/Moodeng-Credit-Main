@@ -1,6 +1,6 @@
-import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
+import { useQueryClient } from '@tanstack/react-query';
 import posthog from 'posthog-js';
 import { useSelector } from 'react-redux';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
@@ -72,7 +72,6 @@ import MfaChallengePage from '@/app/mfa-challenge/page';
 import MilestonesPage from '@/app/milestones/page';
 import CongratulationsPage from '@/app/onboarding/congratulations/page';
 import ConnectBeforeKycPage from '@/app/onboarding/connect/page';
-import VerifyFirst from '@/views/onboarding/VerifyFirst';
 import WalletBlocked from '@/app/onboarding/wallet/blocked/page';
 import WalletConnected from '@/app/onboarding/wallet/connected/page';
 import WalletFaceCheckPage from '@/app/onboarding/wallet/face-check/page';
@@ -80,6 +79,7 @@ import WalletConnect from '@/app/onboarding/wallet/page';
 import OnboardingWelcome from '@/app/onboarding/welcome/page';
 // Import pages
 import Home from '@/app/page';
+import PartnerInvitePage from '@/app/partner/page';
 import PrivacyPolicyPage from '@/app/privacy-policy/page';
 import PrivacyPage from '@/app/privacy/page';
 import Profile from '@/app/profile/page';
@@ -139,6 +139,7 @@ import IdOnboarding, { IdOnboardingPreview } from '@/views/indonesia/IdOnboardin
 import MoneyHub from '@/views/money/MoneyHub';
 import ContinuePage from '@/views/onboarding/ContinuePage';
 import MessengerHandoff from '@/views/onboarding/MessengerHandoff';
+import VerifyFirst from '@/views/onboarding/VerifyFirst';
 import DirectRepay, { WalletPaused, WalletSuspendedGate } from '@/views/repay/DirectRepay';
 import Repay from '@/views/repay/Repay';
 import TransactionDetail from '@/views/transactions/TransactionDetail';
@@ -178,6 +179,17 @@ const REPAY_CONTINUATION_ROUTES = [
    // here from Repay must not be bounced to /account-restricted mid-scan.
    '/onboarding/wallet/face-check',
    '/verify-world-id'
+];
+
+// Borrower / lender homes and onboarding steps an affiliate is sent away from (to /affiliate).
+const AFFILIATE_BOUNCE_ROUTES = [
+   '/dashboard',
+   '/request-board',
+   '/lender/dashboard',
+   '/onboarding/role',
+   '/onboarding/welcome',
+   '/onboarding/connect',
+   '/onboarding/congratulations'
 ];
 
 // An account this young when the app first sees it signed in is a fresh sign-up (same as the Meta pixel).
@@ -305,6 +317,11 @@ export default function App() {
 
       posthog.reset();
    }, [isPosthogEnabled, user?.email, user?.id, user?.username, username]);
+
+   // Affiliates (signed up from a /partner link) never borrow or lend: their home is /affiliate.
+   if (user?.userRole === 'affiliate' && AFFILIATE_BOUNCE_ROUTES.includes(location.pathname)) {
+      return <Navigate to="/affiliate" replace />;
+   }
 
    if (isAccountRestricted && !canRepayWhileBlocked && location.pathname !== '/account-restricted') {
       return <Navigate to="/account-restricted" replace />;
@@ -555,6 +572,8 @@ export default function App() {
             {/* Public: the Sprint SMS test link the team sends testers (moodeng.app/sms-test?t=TOKEN). */}
             <Route path="/sms-test" element={<SmsTestPage />} />
             {/* Public: the optional pre-screening link affiliates send (moodeng.app/screen/CODE). */}
+            {/* Public: the affiliate-only sign-up link the team makes on /admin (moodeng.app/partner/TOKEN). */}
+            <Route path="/partner/:token" element={<PartnerInvitePage />} />
             <Route path="/screen" element={<PreScreeningPage />} />
             <Route path="/screen/:code" element={<PreScreeningPage />} />
             {import.meta.env.DEV ? (

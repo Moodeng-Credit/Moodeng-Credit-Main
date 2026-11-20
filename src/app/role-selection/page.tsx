@@ -7,8 +7,9 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
 
 import { useLocalization } from '@/i18n/LocalizationProvider';
-import { ID_PATHS } from '@/lib/idTrack';
 import type { LocaleCode } from '@/i18n/translations';
+import { partnerPath, readParkedAffiliateInvite } from '@/lib/affiliateInvite';
+import { ID_PATHS } from '@/lib/idTrack';
 import { updateUserRole } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { UserRole } from '@/types/authTypes';
@@ -119,8 +120,12 @@ export default function RoleSelectionPage() {
    if (idTrack.isIndo) return <Navigate to={ID_PATHS.onboarding} replace />;
 
    if (user?.userRole) {
-      return <Navigate to={user.userRole === 'lender' ? '/lender/dashboard' : '/dashboard'} replace />;
+      const home = user.userRole === 'lender' ? '/lender/dashboard' : user.userRole === 'affiliate' ? '/affiliate' : '/dashboard';
+      return <Navigate to={home} replace />;
    }
+   // Signed up from an affiliate /partner link: finish there (no role picker).
+   const parkedInvite = readParkedAffiliateInvite();
+   if (parkedInvite) return <Navigate to={partnerPath(parkedInvite)} replace />;
 
    const handleConfirm = async () => {
       if (!selectedRole || isSubmitting) return;

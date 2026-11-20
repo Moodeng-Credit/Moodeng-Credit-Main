@@ -8,7 +8,7 @@ import { fetchIdTrackPath } from '@/views/indonesia/idFlow';
  * Where a freshly signed-in user should land. Shared by the email/Google/Telegram sign-in page and
  * the TikTok/LINE OAuth callbacks so every provider applies the same restricted/defaulted check.
  */
-export const getPostSignInPath = async (user: { id: string; accountStatus?: string }) => {
+export const getPostSignInPath = async (user: { id: string; accountStatus?: string; userRole?: string }) => {
    if (user.accountStatus === 'blocked' || user.accountStatus === 'banned') {
       return '/account-restricted';
    }
@@ -35,5 +35,6 @@ export const getPostSignInPath = async (user: { id: string; accountStatus?: stri
       return `/request-board?highlight=${encodeURIComponent(sharedRequestId)}`;
    }
 
-   return '/dashboard';
+   // Affiliates (signed up from a /partner link) have no borrower dashboard.
+   return user.userRole === 'affiliate' ? '/affiliate' : '/dashboard';
 };

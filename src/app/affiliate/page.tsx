@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Check, ChevronDown, ChevronLeft, Copy, Download, Facebook, Lock, Share2, UserPlus } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
+import { useSelector } from 'react-redux';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { AffiliatePayoutPanel } from '@/app/admin/AffiliatePayCard';
@@ -29,6 +30,7 @@ import {
    splitCodes,
    submitReferralClaim
 } from '@/lib/affiliateDashboard';
+import type { RootState } from '@/store/store';
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 import { buildInviteLink } from '@/views/dashboard-v2/dashboardV2Model';
 import { ShareSheet, VoucherClaimPopup } from '@/views/dashboard-v2/DashboardV2Rewards';
@@ -66,6 +68,11 @@ const writeSeen = (iso: string) => {
    }
 };
 
+/** Back arrow target: affiliates (signed up from a /partner link) have no dashboard, so their Account. */
+function useBackPath() {
+   return useSelector((state: RootState) => (state.auth.user?.userRole === 'affiliate' ? '/account' : '/dashboard'));
+}
+
 function useCopy() {
    const [copied, setCopied] = useState<string | null>(null);
    const copy = (value: string) => {
@@ -80,6 +87,7 @@ function useCopy() {
 /* ---------- 1 · Hero ---------- */
 
 function Hero({ payout }: { payout: number }) {
+   const backPath = useBackPath();
    return (
       <section
          className="relative -mx-5 overflow-hidden"
@@ -91,7 +99,7 @@ function Hero({ payout }: { payout: number }) {
          }}
          aria-label="Earn by inviting friends"
       >
-         <Link to="/dashboard" className="absolute left-4 top-5 z-10 text-white" aria-label="Back to dashboard">
+         <Link to={backPath} className="absolute left-4 top-5 z-10 text-white" aria-label="Back to dashboard">
             <ChevronLeft className="h-7 w-7" strokeWidth={2.4} />
          </Link>
          <div className="px-6 pt-12 text-center">
@@ -113,6 +121,44 @@ function Hero({ payout }: { payout: number }) {
             }}
          />
       </section>
+   );
+}
+
+/* ---------- Guide: how it works (open for new affiliates) ---------- */
+
+const GUIDE_STEPS: Array<[string, string]> = [
+   ['📣', 'Share your code. Tap Share, or show your QR poster.'],
+   ['📝', 'Your friend signs up with your code and gets approved.'],
+   ['💸', 'They borrow and pay back on time. Paying back too early doesn’t count.'],
+   ['🎉', 'You earn your reward. We send it to your Moodeng wallet.']
+];
+
+function HowItWorks({ payout, open }: { payout: number; open: boolean }) {
+   return (
+      <details
+         open={open}
+         className="group mt-4 rounded-[20px] border border-[#ece6f7] bg-white px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/5"
+      >
+         <summary className="flex cursor-pointer list-none items-center justify-between text-[17px] font-bold text-[#2d2438] dark:text-white">
+            How it works
+            <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
+         </summary>
+         <ol className="mt-3 flex flex-col gap-2">
+            {GUIDE_STEPS.map(([icon, text], i) => (
+               <li key={text} className="flex gap-3 text-[15px] font-medium leading-6 text-[#594d65] dark:text-[#d9cfe6]">
+                  <span className="shrink-0" aria-hidden>
+                     {icon}
+                  </span>
+                  <span>
+                     <b className="text-[#2d2438] dark:text-white">{i + 1}.</b> {i === 3 ? text.replace('your reward', money(payout)) : text}
+                  </span>
+               </li>
+            ))}
+         </ol>
+         <p className="mt-3 rounded-[14px] bg-[#f3f0ff] px-3 py-2 text-[14px] font-medium leading-5 text-[#594d65] dark:bg-white/5 dark:text-[#d9cfe6]">
+            👇 Below you can see each friend and what they still need to do. Friend forgot your code? Use “Add a friend” at the bottom.
+         </p>
+      </details>
    );
 }
 
@@ -942,6 +988,8 @@ function AdminViewBanner({ viewing, who }: { viewing: AffiliateDashboardData['vi
 
 export default function AffiliateDashboardPage({ sample = false }: { sample?: boolean }) {
    const [searchParams] = useSearchParams();
+   const backPath = useBackPath();
+   const isAffiliateOnly = useSelector((state: RootState) => state.auth.user?.userRole === 'affiliate');
    // /affiliate?user=@username (or a user id): admins see that person's dashboard, read-only.
    const viewAs = sample ? '' : (searchParams.get('user') ?? '').trim();
    const adminView = viewAs !== '';
@@ -998,9 +1046,11 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
    const shareLink = main ? buildInviteLink(main.code) : 'https://moodeng.app';
    const shareText = !main
       ? ''
-      : main.personal
-        ? `I use Moodeng Credit for small loans. Join with my link (code ${main.code}):`
-        : `I use Moodeng Credit for small loans. Join with my link (code ${main.code}):`;
+      : isAffiliateOnly && !adminView
+        ? `Need a small loan? Try Moodeng Credit. Join with my link (code ${main.code}):`
+        : main.personal
+          ? `I use Moodeng Credit for small loans. Join with my link (code ${main.code}):`
+          : `I use Moodeng Credit for small loans. Join with my link (code ${main.code}):`;
 
    if (isLoading || error || !main) {
       return (
@@ -1008,7 +1058,7 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
             <div className="mx-auto max-w-[440px] px-5 pb-28">
                <header className="relative flex h-16 items-end justify-center pb-1">
                   <Link
-                     to="/dashboard"
+                     to={backPath}
                      className="absolute bottom-1 left-0 text-[#594d65] dark:text-[#d9cfe6]"
                      aria-label="Back to dashboard"
                   >
@@ -1052,6 +1102,7 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
             {adminView ? <AdminViewBanner viewing={data?.viewing ?? null} who={viewAs} /> : null}
             <Hero payout={main.payout_amount} />
             <CodeCard main={main} others={others} unlocked={unlocked || !main.personal} onShare={() => setSharing(true)} />
+            {adminView ? null : <HowItWorks payout={main.payout_amount} open={isAffiliateOnly || referrals.length === 0} />}
             <PosterQr code={main.code} />
             <MoneyRow owed={totals.owed} pending={totals.pending} paid={totals.paid} paused={paused} />
             <Friends

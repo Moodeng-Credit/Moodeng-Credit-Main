@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { createAffiliateInviteLink } from '@/lib/affiliateInvite';
+
 import {
    type AdminReferralClaim,
    type AdminReferralCode,
@@ -74,6 +76,22 @@ export default function ReferralCodesSection() {
    const [loading, setLoading] = useState(false);
    const [busy, setBusy] = useState<string | null>(null);
    const [error, setError] = useState<string | null>(null);
+   // Affiliate-only sign-up links (moodeng.app/partner/TOKEN), by code id, once made.
+   const [inviteLinks, setInviteLinks] = useState<Record<string, string>>({});
+
+   const makeInviteLink = async (c: AdminReferralCode) => {
+      setBusy(c.id);
+      setError(null);
+      try {
+         const link = await createAffiliateInviteLink(c.code);
+         setInviteLinks((prev) => ({ ...prev, [c.id]: link }));
+         await navigator.clipboard?.writeText(link).catch(() => undefined);
+      } catch (err) {
+         setError(errorMessage(err));
+      } finally {
+         setBusy(null);
+      }
+   };
    const [filter, setFilter] = useState<CodeFilter>('all');
 
    const [newCode, setNewCode] = useState('');
@@ -635,6 +653,20 @@ export default function ReferralCodesSection() {
                            >
                               {c.owner ? 'Change owner' : 'Link owner'}
                            </button>
+                           {!c.owner ? (
+                              <button
+                                 type="button"
+                                 onClick={() => void makeInviteLink(c)}
+                                 disabled={busy === c.id}
+                                 title="A one-time sign-up link: whoever opens it and signs up owns this code, as an affiliate (no borrower steps)"
+                                 className="rounded-xl bg-[#8336f0] px-4 py-2 text-base font-black text-white disabled:opacity-50"
+                              >
+                                 {inviteLinks[c.id] ? 'Copied ✓' : 'Affiliate sign-up link'}
+                              </button>
+                           ) : null}
+                           {!c.owner && inviteLinks[c.id] ? (
+                              <span className="w-full select-all break-all text-sm font-semibold text-[#cfc6dd]">{inviteLinks[c.id]}</span>
+                           ) : null}
                            {c.owner ? (
                               <a
                                  href={`/affiliate?user=${c.owner.id}`}
