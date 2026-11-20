@@ -20,6 +20,8 @@ import {
    ACCEPT,
    ACCEPTED,
    answerIncomeDocQuestion,
+   answerIncomeDocQuestionWithPhoto,
+   PHOTO_ACCEPT,
    fetchIncomeDocStatus,
    type IncomeDocQuestion,
    type IncomeDocStatus,
@@ -134,6 +136,8 @@ export default function DocumentsPage({
    const [answer, setAnswer] = useState('');
    const [answering, setAnswering] = useState(false);
    const [answerError, setAnswerError] = useState<string | null>(null);
+   const [answerPhoto, setAnswerPhoto] = useState<File | null>(null);
+   const answerPhotoRef = useRef<HTMLInputElement>(null);
    const [answeredAll, setAnsweredAll] = useState(false);
    const inputRef = useRef<HTMLInputElement>(null);
    const navigate = useNavigate();
@@ -287,16 +291,20 @@ export default function DocumentsPage({
 
    const sendAnswer = async () => {
       const current = questions[0];
-      if (!current || !docId || !answer.trim()) return;
+      const isPhoto = current?.kind === 'photo';
+      if (!current || !docId || (isPhoto ? !answerPhoto : !answer.trim())) return;
       setAnswering(true);
       setAnswerError(null);
-      const left = await answerIncomeDocQuestion(docId, current.id, answer.trim());
+      const left = isPhoto
+         ? await answerIncomeDocQuestionWithPhoto(docId, current.id, answerPhoto!)
+         : await answerIncomeDocQuestion(docId, current.id, answer.trim());
       setAnswering(false);
       if (left === null) {
          setAnswerError('Couldn’t send. Check your connection and try again.');
          return;
       }
       setAnswer('');
+      setAnswerPhoto(null);
       setQuestions((prev) => prev.slice(1));
       if (left === 0) setAnsweredAll(true);
    };
@@ -560,18 +568,46 @@ export default function DocumentsPage({
                      ) : null}
                      <p className="text-[17px] font-bold leading-[23px] text-[#3b2f4a] dark:text-[#f5f0ff]">{currentQuestion.q}</p>
                   </div>
-                  <textarea
-                     aria-label="Your answer"
-                     className="min-h-[96px] rounded-[12px] border-2 border-[#e2dcee] bg-white px-3 py-2.5 text-[16px] leading-[22px] text-[#3b2f4a] dark:border-[#3a2d4f] dark:bg-[#1b1526] dark:text-[#f5f0ff]"
-                     maxLength={500}
-                     onChange={(e) => setAnswer(e.target.value)}
-                     placeholder="Type your answer"
-                     value={answer}
-                  />
+                  {currentQuestion.kind === 'photo' ? (
+                     <>
+                        <input
+                           accept={PHOTO_ACCEPT}
+                           className="hidden"
+                           onChange={(e) => {
+                              setAnswerPhoto(e.target.files?.[0] ?? null);
+                              e.target.value = '';
+                           }}
+                           ref={answerPhotoRef}
+                           type="file"
+                        />
+                        <button
+                           className="flex min-h-[56px] items-center justify-center gap-2 rounded-[12px] border-2 border-dashed border-[#c9bce0] bg-white px-3 text-[16px] font-bold text-[#6b55f7] dark:border-[#4a3a63] dark:bg-[#1b1526] dark:text-[#b4a6ff]"
+                           onClick={() => answerPhotoRef.current?.click()}
+                           type="button"
+                        >
+                           {answerPhoto ? <Check className="h-5 w-5" aria-hidden="true" /> : <Plus className="h-5 w-5" aria-hidden="true" />}
+                           <span className="truncate">{answerPhoto ? answerPhoto.name : 'Add screenshot'}</span>
+                        </button>
+                     </>
+                  ) : (
+                     <textarea
+                        aria-label="Your answer"
+                        className="min-h-[96px] rounded-[12px] border-2 border-[#e2dcee] bg-white px-3 py-2.5 text-[16px] leading-[22px] text-[#3b2f4a] dark:border-[#3a2d4f] dark:bg-[#1b1526] dark:text-[#f5f0ff]"
+                        maxLength={500}
+                        onChange={(e) => setAnswer(e.target.value)}
+                        placeholder="Type your answer"
+                        value={answer}
+                     />
+                  )}
                   {answerError ? <p className="text-[14px] font-semibold text-[#c0392b]">{answerError}</p> : null}
-                  <GoldButton busy={answering} disabled={!answer.trim()} onClick={() => void sendAnswer()}>
-                     Send answer
+                  <GoldButton
+                     busy={answering}
+                     disabled={currentQuestion.kind === 'photo' ? !answerPhoto : !answer.trim()}
+                     onClick={() => void sendAnswer()}
+                  >
+                     {currentQuestion.kind === 'photo' ? 'Send screenshot' : 'Send answer'}
                   </GoldButton>
+                  {currentQuestion.kind === 'photo' ? null : (
                   <a
                      className="text-center text-[14px] font-semibold text-[#7b6b8c] underline dark:text-[#b9abcc]"
                      href={facebookHref()}
@@ -581,6 +617,7 @@ export default function DocumentsPage({
                   >
                      {`Or answer on Messenger: send “${DOCS_WORD}”`}
                   </a>
+                  )}
                   {currentQuestion.kind === 'file' ? (
                      <button
                         className="text-center text-[14px] font-bold text-[#6b55f7] underline dark:text-[#b4a6ff]"
@@ -590,6 +627,18 @@ export default function DocumentsPage({
                         Add files instead
                      </button>
                   ) : null}
+                  {/* Questions never hold them up: skipping leaves them open (here later, or on Messenger) and
+                      the team just sees no answer yet. */}
+                  <button
+                     className="text-center text-[14px] font-semibold text-[#7b6b8c] underline dark:text-[#b9abcc]"
+                     onClick={() => {
+                        setQuestions([]);
+                        setAnswerError(null);
+                     }}
+                     type="button"
+                  >
+                     Skip for now
+                  </button>
                </div>
             ) : null}
 
@@ -719,8 +768,17 @@ export function DocumentsPreview() {
             kind: params.get('kind') ?? undefined,
             step,
             ...(phase !== 'pick' ? { sentAt: Date.now() - 60_000, fileCount: 1 } : {}),
-            // &q=1: the AI's questions card (in_review).
-            ...(params.get('q')
+            // &q=1: the AI's questions card (in_review). &q=payslip: the fixed payslip questions; &q=photo: just the screenshot one.
+            ...(params.get('q') === 'payslip' || params.get('q') === 'photo'
+               ? {
+                    questions: [
+                       ...(params.get('q') === 'payslip'
+                          ? [{ id: 'p1', q: 'Did you edit or enhance this photo in any app before sending it to us?', kind: 'text' as const }]
+                          : []),
+                       { id: 'p2', q: 'Please send a screenshot of the chat or email where you got this payslip, with the date showing.', kind: 'photo' as const }
+                    ]
+                 }
+               : params.get('q')
                ? {
                     questions: [
                        { id: 'q1', q: 'What was the Rp 2,100,000 you got on Nov 14 for?', kind: 'text' as const },

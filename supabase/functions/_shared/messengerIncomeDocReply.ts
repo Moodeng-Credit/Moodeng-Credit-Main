@@ -21,7 +21,7 @@ const CONFIRMED_WINDOW_MS = 20 * 60 * 60 * 1000;
 const LOOKBACK_MS = 30 * 24 * 60 * 60 * 1000;
 const DOCUMENTS_URL = 'https://moodeng.app/documents';
 
-type Question = { id: string; team?: string; en: string; local?: string | null; kind?: 'text' | 'file' };
+type Question = { id: string; team?: string; en: string; local?: string | null; kind?: 'text' | 'file' | 'photo' };
 type Answer = { id: string };
 type Doc = {
    id: string;
@@ -42,6 +42,12 @@ export const isDocsKeyword = (text: string) => /^\s*docs?\s*[.!]*\s*$/i.test(tex
 export const langOf = (locale: string | null | undefined, market: string | null | undefined): Lang =>
    locale === 'en' ? 'en' : market === 'ID' ? 'id' : locale === 'fil' ? 'fil' : 'en';
 
+/**
+ * The question the bot waits on after asking `q`: none for a photo one — Messenger photos don't reach
+ * the bot, so they send it on /documents. Pure.
+ */
+export const awaitIdFor = (q: Question | null | undefined) => (q && q.kind !== 'photo' ? q.id : null);
+
 /** The open questions, in order. Pure. */
 export const openQuestions = (doc: Pick<Doc, 'questions' | 'answers'>): Question[] => {
    const answered = new Set((doc.answers ?? []).map((a) => a.id));
@@ -51,6 +57,11 @@ export const openQuestions = (doc: Pick<Doc, 'questions' | 'answers'>): Question
 /** One question in their language, with the files hint for a "can you add…" one. Pure. */
 export const questionLine = (q: Question, lang: Lang) => {
    const text = lang !== 'en' && q.local ? q.local : q.en;
+   const photo =
+      q.kind === 'photo'
+         ? { en: `Please send it here: ${DOCUMENTS_URL}`, fil: `Paki-send dito: ${DOCUMENTS_URL}`, id: `Kirim di sini: ${DOCUMENTS_URL}` }[lang]
+         : null;
+   if (photo) return `${text}\n(${photo})`;
    const files =
       q.kind === 'file'
          ? { en: `You can add files at ${DOCUMENTS_URL}`, fil: `Pwede mong i-add ang files sa ${DOCUMENTS_URL}`, id: `Kamu bisa tambah file di ${DOCUMENTS_URL}` }[lang]
@@ -100,7 +111,7 @@ export const docsReply = (doc: Doc | null, lang: Lang): { text: string; asks: st
    if (doc.decision || doc.verdict === 'resend') return { text: T.other[lang], asks: null };
    if (doc.status === 'pending' || doc.status === 'processing') return { text: T.reading[lang], asks: null };
    const next = openQuestions(doc)[0];
-   if (next) return { text: `${T.first[lang]}\n\n${questionLine(next, lang)}`, asks: next.id };
+   if (next) return { text: `${T.first[lang]}\n\n${questionLine(next, lang)}`, asks: awaitIdFor(next) };
    return { text: T.review[lang], asks: null };
 };
 
@@ -158,7 +169,7 @@ export const askOnMessengerIfWaiting = async (svc: Svc, docId: string) => {
          .maybeSingle()) as { data: (Doc & { user_id: string; messenger_confirmed_at: string | null }) | null };
       if (!doc?.messenger_confirmed_at || doc.messenger_asked_id || Date.now() - Date.parse(doc.messenger_confirmed_at) > CONFIRMED_WINDOW_MS) return;
       const reply = docsReply(doc, 'en');
-      if (!reply.asks) return;
+      if (!openQuestions(doc).length) return;
       const { data: user } = await svc.from('users').select('messenger_psid, preferred_locale, market').eq('id', doc.user_id).maybeSingle();
       if (!user?.messenger_psid) return;
       const res = await sendMessengerMessage(user.messenger_psid, { text: docsReply(doc, langOf(user.preferred_locale, user.market)).text });
@@ -220,7 +231,7 @@ export const handleIncomeDocMessage = async (svc: Svc, userId: string, contactId
          return false;
       }
       const next = remaining > 0 ? openQuestions({ ...awaited, answers: [...(awaited.answers ?? []), { id: awaited.messenger_asked_id! }] })[0] : null;
-      if (next) await markAsked(svc, awaited.id, next.id);
+      await markAsked(svc, awaited.id, awaitIdFor(next));
       const res = await sendMessengerMessage(contactId, { text: next ? `${T.next[lang]}\n\n${questionLine(next, lang)}` : T.done[lang] });
       if (!res.ok) console.error('messenger-income-doc: reply failed', res.reason);
       return true;
