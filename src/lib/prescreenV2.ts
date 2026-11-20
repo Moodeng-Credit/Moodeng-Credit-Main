@@ -53,6 +53,24 @@ export const coachHint = async (token: string, q: string, answer: string, locale
    }
 };
 
+/**
+ * The AI's look at a document they just uploaded for a 'doc' question (COE, work permit): one sentence on
+ * what to send instead when it doesn't fit, or '' (fine, or the AI was slow). Advice only.
+ */
+export const docHint = async (token: string, q: string, path: string, locale: string): Promise<string> => {
+   try {
+      const call = getSupabaseBrowserClient().functions.invoke('check-loan-input', {
+         body: { kind: 'prescreen_doc', token, q, path, locale: ['fil', 'id'].includes(locale) ? locale : 'en' }
+      });
+      const timeout = new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 15000));
+      const result = (await Promise.race([call, timeout])) as { data?: { ok?: boolean; hint?: string } | null } | null;
+      const verdict = result?.data;
+      return verdict?.ok === false && typeof verdict.hint === 'string' ? verdict.hint.slice(0, 220) : '';
+   } catch {
+      return '';
+   }
+};
+
 /** A photo, made small enough for the AI and Telegram (longest side 1280 px, JPEG). */
 export const shrinkImage = async (
    source: CanvasImageSource & { width?: number; height?: number },

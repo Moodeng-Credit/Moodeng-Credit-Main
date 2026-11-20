@@ -20,7 +20,7 @@ import { linkedRedFlag, loadLinkedAccounts } from './linkedAccounts.ts';
 import { type Lang, langOf, teamStepIn } from './messengerIncomeDocReply.ts';
 import { preScreeningDecisionRows } from './preScreening.ts';
 import { applyPreScreeningDecision } from './preScreeningDecision.ts';
-import { jobRedFlags, type MedicalRead, medicalRedFlag, type PhotoCheck, type PhotoMeta, photoRedFlags } from './prescreenV2.ts';
+import { jobRedFlags, type MedicalRead, medicalRedFlag, permitProblem, type PhotoCheck, type PhotoMeta, photoRedFlags } from './prescreenV2.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
@@ -358,6 +358,8 @@ const FLAG_LABEL: Record<string, string> = {
 export const plainRedFlags = (grade: Row['grade'], job?: { questions?: unknown; asks?: unknown }): string[] => {
    const out: string[] = [];
    if (job) out.push(...jobRedFlags(job.questions as Parameters<typeof jobRedFlags>[0], job.asks as Parameters<typeof jobRedFlags>[1]));
+   const permit = job ? permitProblem(job.questions as Parameters<typeof permitProblem>[0], grade?.answers as Parameters<typeof permitProblem>[1]) : null;
+   if (permit) out.push(permit);
    if ((grade?.answers ?? []).some((a) => a.seen?.person_visible === false)) out.push('nobody on camera in an answer');
    const medical = medicalRedFlag(grade?.medical);
    if (medical) out.push(medical);

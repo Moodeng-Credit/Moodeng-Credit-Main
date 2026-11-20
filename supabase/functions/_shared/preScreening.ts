@@ -32,7 +32,9 @@ import {
    type PhotoMeta,
    photoWarnings,
    toMedical,
-   worstMedical
+   worstMedical,
+   capForPermit,
+   permitProblem
 } from './prescreenV2.ts';
 import { sendTelegramFiles, sendTelegramMessage, type TelegramInlineKeyboard, type TelegramUpload } from './telegram.ts';
 import { withToday } from './aiToday.ts';
@@ -787,15 +789,21 @@ export async function gradePreScreening(svc: SupabaseClient, id: string, apiKey:
       photoNo += 1;
       return photoWarnings(a.photo, a.photo_check).map((w) => `📸 job photo ${photoNo}: ${w}`);
    });
+   const permit = permitProblem(row.questions, answers);
    const v2Flags = [
+      ...(permit ? [`🛂 ${permit}`] : []),
       ...(noIncomeLine(row.questions as Parameters<typeof noIncomeLine>[0]) ? [noIncomeLine(row.questions as Parameters<typeof noIncomeLine>[0])!] : []),
       ...jobRedFlags(row.questions as Parameters<typeof jobRedFlags>[0]).map((f) => `💼 ${f}`),
       ...(medicalRedFlag(medical) ? [`🩺 ${medicalRedFlag(medical)}`] : []),
       ...photoFlags,
       ...(!gemini && fileQuestions.some(sentFile) ? ['📸 Job photos / certificate not checked by the AI (backup grader) — open them'] : [])
    ];
+   // Emma's rule (2026-11-21): an OFW without a valid work permit stays under 50 (no auto ✅).
+   const overall = capForPermit(built.overall, permit);
    const grade: PreScreenGrade = {
       ...built,
+      overall,
+      verdict: verdictFor(overall),
       answers,
       flags: [...v2Flags, ...cameraFlags, ...(built.flags ?? [])].slice(0, 12),
       graded_by: gemini ? GEMINI_MODEL : 'deepseek',
