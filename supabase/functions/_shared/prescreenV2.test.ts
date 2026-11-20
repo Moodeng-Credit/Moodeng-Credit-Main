@@ -2,6 +2,7 @@ import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asse
 
 import { buildGrade, type PreScreenQuestion } from './preScreening.ts';
 import { plainRedFlags } from './preScreeningAsk.ts';
+import { fallbackPlan as fallbackPlanV2, jobRedFlags, noIncomeLine } from './prescreenV2.ts';
 import {
    cleanPlan,
    fallbackPlan,
@@ -178,4 +179,24 @@ Deno.test('grade: medical is never in the score; photos the AI saw count', () =>
    });
    assertEquals(backup.overall, 80);
    assertEquals(backup.unheard, 0);
+});
+
+Deno.test('job keyword list: no-income, OFW family and gambling groups; "business" is not a bus', () => {
+   assertEquals(fallbackPlanV2('housewife').noIncome, true);
+   assertEquals(fallbackPlanV2('housewife').photos.length, 0);
+   assertEquals(fallbackPlanV2('my husband is a seaman').category, 'ofw_family');
+   assertEquals(fallbackPlanV2('online casino agent').sensitive, true);
+   assertEquals(fallbackPlanV2('vending machine').sensitive, undefined);
+   assertEquals(fallbackPlanV2('small business').category !== 'driver', true);
+   assertEquals(fallbackPlanV2('babuyan, pig raiser').category, 'farmer');
+   assertEquals(fallbackPlanV2('insurance agent').category !== 'bpo', true);
+});
+
+Deno.test('jobRedFlags / noIncomeLine: sensitive work and a job typed over and over', () => {
+   assertEquals(jobRedFlags([{ kind: 'job', typed_job: 'sabungero', sensitive: true }]).length, 1);
+   assertEquals(jobRedFlags([{ kind: 'job', typed_job: 'farmer' }]), []);
+   assertEquals(jobRedFlags([{ kind: 'job' }], { _jobs: ['farmer', 'student', 'farmer', 'teacher'] }).length, 1);
+   assertEquals(jobRedFlags([{ kind: 'job' }], { _jobs: ['farmer', 'Farmer'] }), []);
+   assertEquals(noIncomeLine([{ kind: 'job', no_income: true }]) !== null, true);
+   assertEquals(noIncomeLine([{ kind: 'job' }]), null);
 });

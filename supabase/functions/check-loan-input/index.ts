@@ -312,7 +312,7 @@ const handlePrescreen = async (req: Request, body: Record<string, unknown>) => {
    const svc = createClient(url, key);
    const token = typeof body.token === 'string' ? body.token : '';
    if (body.kind === 'prescreen_job') {
-      const result = await planJob(svc, userId, token, typeof body.job === 'string' ? body.job : '');
+      const result = await planJob(svc, userId, token, typeof body.job === 'string' ? body.job : '', typeof body.locale === 'string' ? body.locale : 'en');
       return jsonResponse(result, result.ok ? 200 : 400);
    }
    const answer = typeof body.answer === 'string' ? body.answer.trim() : '';

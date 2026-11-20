@@ -27,9 +27,9 @@ export const saidNo = (text: string | null | undefined) => NO_WORDS.test((text ?
 export type PlannedQuestion = { id: string; text: string; hint?: string; kind?: string; min?: number; alt?: string; optional?: boolean };
 
 /** After "What is your job?": the AI's follow-ups + photo asks, written into the row. Null = try again. */
-export const planJobQuestions = async (token: string, job: string): Promise<PlannedQuestion[] | null> => {
+export const planJobQuestions = async (token: string, job: string, locale = 'en'): Promise<PlannedQuestion[] | null> => {
    const { data, error } = await getSupabaseBrowserClient().functions.invoke('check-loan-input', {
-      body: { kind: 'prescreen_job', token, job }
+      body: { kind: 'prescreen_job', token, job, locale: ['fil', 'id'].includes(locale) ? locale : 'en' }
    });
    const res = data as { ok?: boolean; questions?: PlannedQuestion[] } | null;
    if (error || !res?.ok || !Array.isArray(res.questions) || !res.questions.length) return null;

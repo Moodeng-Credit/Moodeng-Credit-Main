@@ -24,7 +24,9 @@ import {
    medicalFromAnswer,
    medicalLine,
    type MedicalRead,
+   jobRedFlags,
    medicalRedFlag,
+   noIncomeLine,
    type PhotoCheck,
    photoLine,
    type PhotoMeta,
@@ -785,6 +787,8 @@ export async function gradePreScreening(svc: SupabaseClient, id: string, apiKey:
       return photoWarnings(a.photo, a.photo_check).map((w) => `📸 job photo ${photoNo}: ${w}`);
    });
    const v2Flags = [
+      ...(noIncomeLine(row.questions as Parameters<typeof noIncomeLine>[0]) ? [noIncomeLine(row.questions as Parameters<typeof noIncomeLine>[0])!] : []),
+      ...jobRedFlags(row.questions as Parameters<typeof jobRedFlags>[0]).map((f) => `💼 ${f}`),
       ...(medicalRedFlag(medical) ? [`🩺 ${medicalRedFlag(medical)}`] : []),
       ...photoFlags,
       ...(!gemini && fileQuestions.some(sentFile) ? ['📸 Job photos / certificate not checked by the AI (backup grader) — open them'] : [])

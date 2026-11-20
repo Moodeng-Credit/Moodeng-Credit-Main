@@ -725,10 +725,10 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       if (preview) return nextAfter(uploaded);
       let list = questions;
       let kept = uploaded;
-      if (plannedFor !== job.toLowerCase() || !questions.some((q) => q.kind === 'photo')) {
+      if (plannedFor !== job.toLowerCase() || !questions.some((q) => /^job_q/.test(q.id))) {
          if (!token) return;
          setBusy(true);
-         const planned = await planJobQuestions(token, job);
+         const planned = await planJobQuestions(token, job, locale);
          setBusy(false);
          if (!planned) return setError('Could not load the next step. Check your connection and tap Next again.');
          list = planned as ScreenQuestion[];
