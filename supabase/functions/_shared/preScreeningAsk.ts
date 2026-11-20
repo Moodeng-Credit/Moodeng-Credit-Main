@@ -3,8 +3,8 @@
 //                                     and drafts up to 3 short questions
 //               → ✍️ I'll type them  a reply box; what the team types is kept (same questions, same
 //                                     meaning) and made simple + Taglish/Bahasa by the AI
-// Either way a draft is posted under the card first: 📤 Send on Messenger / ✍️ Write my own / ✖️ Cancel.
-// Nothing reaches the person before the team taps Send.
+// Since 2026-11-20 one tap sends: 💬 Ask more → the AI writes them and they go out on Messenger at once;
+// ✍️ Ask something else (under what was sent) → typed, cleaned up, sent. Old cards' drafts still work.
 //
 // Their replies: sendpulse-events → handlePreScreeningAnswer. For 24 hours after Send, while the team
 // hasn't decided and hasn't started typing in that chat themselves, what they write on Messenger is
@@ -258,6 +258,28 @@ async function postDraft(svc: SupabaseClient, row: Row, chat: number | string, c
    await sendTelegramMessage(chat, draftText(row.name, qs, !!typed), { replyToMessageId: cardMsg, inlineKeyboard: draftButtons(row.id) });
 }
 
+/**
+ * One tap (George 2026-11-20: "can clicking ask questions just automatically send the questions"): the
+ * AI writes the questions (or cleans up the team's typed ones) and they go straight out on Messenger.
+ * What was sent is posted under the card, with ✍️ to ask something else.
+ */
+async function askNow(svc: SupabaseClient, row: Row, chat: number | string, cardMsg: number, by: string, typed: string[] | null) {
+   const qs = await draftQuestions(svc, row, typed);
+   if (!qs.length) {
+      await sendTelegramMessage(chat, '⚠️ The AI couldn’t write questions just now. Tap 💬 Ask more again in a minute.', { replyToMessageId: cardMsg });
+      return;
+   }
+   const result = await sendFollowup(svc, row, qs, { chat, msg: cardMsg }, by);
+   const list = qs.flatMap((q, i) => [`${i + 1}. ${q.en}`, ...(q.local && q.local !== q.en ? [`   ${q.local}`] : [])]);
+   await sendTelegramMessage(
+      chat,
+      result.ok
+         ? [`📤 Sent on Messenger by ${by}${typed ? '' : ' (AI questions)'}${result.pushed ? ' (+ push)' : ''}:`, ...list, '', 'Their replies show up here for 24 hours.'].join('\n')
+         : [`⚠️ Couldn’t send on Messenger (${result.why}) — usually their 24-hour window has closed. Copy this and send it yourself:`, '', result.text].join('\n'),
+      { replyToMessageId: cardMsg, inlineKeyboard: [[{ text: '✍️ Ask something else', callback_data: `pq:type:${row.id}` }]] }
+   );
+}
+
 /** Sends the questions on Messenger (+ a push) and opens the 24h reply window under the card. */
 async function sendFollowup(
    svc: SupabaseClient,
@@ -486,7 +508,13 @@ export const handlePreScreeningAskCallback = async (svc: SupabaseClient, query: 
       }).catch(() => undefined);
    // On the card: ask/ai/type. On the draft: send/x, and type ("✍️ Write my own") — whose card is the draft's.
    const onDraft = parsed.step === 'send' || parsed.step === 'x' || (parsed.step === 'type' && !!msg.text?.startsWith('💬 Questions for'));
-   const cardMsg = onDraft ? (row.followup_draft?.card_msg ?? msg.reply_to_message?.message_id ?? msg.message_id) : msg.message_id;
+   // "✍️ Ask something else" sits under what was sent, which replies to the card.
+   const onSent = parsed.step === 'type' && (!!msg.text?.startsWith('📤 Sent on Messenger') || !!msg.text?.startsWith('⚠️ Couldn’t send'));
+   const cardMsg = onDraft
+      ? (row.followup_draft?.card_msg ?? msg.reply_to_message?.message_id ?? msg.message_id)
+      : onSent
+        ? (msg.reply_to_message?.message_id ?? row.followup_card?.msg ?? msg.message_id)
+        : msg.message_id;
 
    if (parsed.step === 'ask') {
       if (row.team_decision) {
@@ -498,19 +526,17 @@ export const handlePreScreeningAskCallback = async (svc: SupabaseClient, query: 
          await answer(row.user_id ? 'They haven’t connected Messenger — can’t ask there.' : 'No account yet — can’t message them.');
          return true;
       }
-      await Promise.all([
-         answer('Who writes the questions?'),
-         setButtons([
-            [
-               { text: '🤖 AI writes them', callback_data: `pq:ai:${row.id}` },
-               { text: '✍️ I’ll type them', callback_data: `pq:type:${row.id}` }
-            ],
-            [{ text: '↩️ Back', callback_data: `ps:back:${row.id}` }]
-         ])
-      ]);
+      // A double tap mustn't send the questions twice.
+      if (row.followup_sent_at && Date.now() - Date.parse(row.followup_sent_at) < 2 * 60_000) {
+         await answer('Just sent — wait for their reply.');
+         return true;
+      }
+      await answer('🤖 Writing and sending questions… (a few seconds)');
+      await askNow(svc, row, msg.chat.id, cardMsg, by, null);
       return true;
    }
 
+   // Old cards from before one-tap asking still have 🤖 AI writes them → a draft with 📤 Send.
    if (parsed.step === 'ai') {
       await Promise.all([answer('🤖 Writing questions… (a few seconds)'), setButtons(preScreeningDecisionRows(row.id))]);
       await postDraft(svc, row, msg.chat.id, cardMsg, by, null);
@@ -520,10 +546,14 @@ export const handlePreScreeningAskCallback = async (svc: SupabaseClient, query: 
    if (parsed.step === 'type') {
       await Promise.all([
          answer('Type them in the reply box 👇'),
-         onDraft ? editDraft(`${msg.text ?? ''}\n\n✍️ ${by} is writing their own instead.`) : setButtons(preScreeningDecisionRows(row.id)),
+         onDraft
+            ? editDraft(`${msg.text ?? ''}\n\n✍️ ${by} is writing their own instead.`)
+            : onSent
+              ? setButtons([])
+              : setButtons(preScreeningDecisionRows(row.id)),
          callTelegramApi('sendMessage', {
             chat_id: msg.chat.id,
-            text: `✍️ ${by}: type your questions for ${row.name}, one per line (up to ${MAX_QUESTIONS}). Any language is fine — the AI makes them short and simple and adds Taglish. You see the draft before anything is sent.\n${PROMPT_TAG(row.id, cardMsg)}`,
+            text: `✍️ ${by}: type your questions for ${row.name}, one per line (up to ${MAX_QUESTIONS}). Any language is fine — the AI makes them short and simple, adds Taglish, and sends them on Messenger right away.\n${PROMPT_TAG(row.id, cardMsg)}`,
             reply_parameters: { message_id: cardMsg, allow_sending_without_reply: true },
             reply_markup: { force_reply: true, input_field_placeholder: 'Your questions, one per line…' }
          }).catch((err) => console.error('pre-screening ask: prompt failed', err instanceof Error ? err.message : err))
@@ -576,9 +606,9 @@ export const handlePreScreeningAskReply = async (svc: SupabaseClient, message: R
    await callTelegramApi('editMessageText', {
       chat_id: message.chat.id,
       message_id: prompt.message_id,
-      text: '✍️ Got it — making them simple…'
+      text: '✍️ Got it — making them simple and sending…'
    }).catch(() => undefined);
-   await postDraft(svc, row, message.chat.id, ref.cardMsg, nameOf(message.from), typed);
+   await askNow(svc, row, message.chat.id, ref.cardMsg, nameOf(message.from), typed);
    await callTelegramApi('deleteMessage', { chat_id: message.chat.id, message_id: prompt.message_id }).catch(() => undefined);
    return true;
 };
