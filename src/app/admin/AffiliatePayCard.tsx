@@ -65,6 +65,31 @@ export function AffiliatePayCard({ affiliate, onPaid }: { affiliate: OwedAffilia
          await onPaid();
       }, 'Could not save it. Try again.');
 
+   // Items the money paid ahead fully covers, oldest first.
+   const coverable = (() => {
+      let left = affiliate.ahead;
+      const out: OwedAffiliate['items'] = [];
+      for (const i of affiliate.items) {
+         if (i.amount <= left + 0.001) {
+            out.push(i);
+            left -= i.amount;
+         }
+      }
+      return out;
+   })();
+   const spendAhead = () =>
+      run(async () => {
+         const total = coverable.reduce((s, i) => s + i.amount, 0);
+         if (
+            !window.confirm(
+               `Mark ${usd(total)} to ${name} as paid from the ${usd(affiliate.ahead)} you already sent ahead? Nothing new is sent.`
+            )
+         )
+            return;
+         await markPayoutsPaid(affiliate, coverable, null, { fromAhead: true });
+         await onPaid();
+      }, 'Could not save it. Try again.');
+
    const copy = async () => {
       if (!wallet) return;
       try {
@@ -120,6 +145,22 @@ export function AffiliatePayCard({ affiliate, onPaid }: { affiliate: OwedAffilia
                </li>
             ))}
          </ul>
+
+         {affiliate.ahead > 0 ? (
+            <div className="mt-3 rounded-xl bg-emerald-900/40 p-3 text-sm text-emerald-200">
+               💳 {usd(affiliate.ahead)} already sent ahead.
+               {coverable.length ? (
+                  <button
+                     type="button"
+                     disabled={busy}
+                     onClick={() => void spendAhead()}
+                     className="ml-2 rounded-lg bg-emerald-500 px-3 py-1 font-bold text-[#0b2a1a] disabled:opacity-50"
+                  >
+                     Use it for {usd(coverable.reduce((s, i) => s + i.amount, 0))}
+                  </button>
+               ) : null}
+            </div>
+         ) : null}
 
          <div className="mt-4 flex flex-wrap items-center gap-2">
             {!wallet ? null : !address ? (
