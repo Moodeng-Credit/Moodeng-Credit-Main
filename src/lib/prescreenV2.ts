@@ -1,4 +1,4 @@
-// Pre-screening v2 on moodeng.app/screen (migration 20261120170000_prescreen_v2.sql): the job questions,
+// Pre-screening v2 on moodeng.app/screen (migration 20261120170500_prescreen_v2.sql): the job questions,
 // live job photos, the optional certificate of employment, the medical question and answer coaching.
 // The AI calls ride on check-loan-input (supabase/functions/_shared/prescreenV2.ts). Everything here
 // fails open: a slow or broken AI never blocks anyone.
