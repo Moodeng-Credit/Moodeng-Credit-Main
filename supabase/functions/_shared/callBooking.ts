@@ -33,7 +33,7 @@ import { autoRejectForStrikes, loadCallStrikes, logCallEvent, strikeVerdict } fr
 import { photoCheckLine } from './fbPhotoCheck.ts';
 import { PAGE_INBOX_URL } from './loanAccess.ts';
 import { callInboxFor, isPlaceholderEmail } from './placeholderEmail.ts';
-import { changeTimeButton } from './callReschedule.ts';
+import { changeTimeLinkButton } from './callReschedule.ts';
 import { testAccountRow } from './testAccount.ts';
 import { loadIdStatus, sendIdTelegram } from './idTrack.ts';
 import { CAL_BASE, CALL_MINUTES, fetchAccountEmail, fetchSlots, resolveEventTypeId } from './calcomSlots.ts';
@@ -133,12 +133,12 @@ const notifyTeamBooking = async (
          await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            // 🔄 Change time: the bot lists the free times and moves the booking (callReschedule.ts).
+            // 🔄 Change time: opens the booking's Cal.com reschedule page via calcom-webhook (callReschedule.ts).
             // 🧪 Test account?: one tap (+ confirm) marks a team test booking (testAccount.ts).
             body: JSON.stringify({
                chat_id: tgChat,
                text,
-               ...(borrower ? { reply_markup: { inline_keyboard: [[changeTimeButton(borrower.id), { text: '💬 Open Page inbox', url: PAGE_INBOX_URL }], ...testAccountRow(borrower.id, borrower.isTest)] } } : {})
+               ...(borrower ? { reply_markup: { inline_keyboard: [[await changeTimeLinkButton(borrower.id), { text: '💬 Open Page inbox', url: PAGE_INBOX_URL }], ...testAccountRow(borrower.id, borrower.isTest)] } } : {})
             })
          });
       } catch (err) {

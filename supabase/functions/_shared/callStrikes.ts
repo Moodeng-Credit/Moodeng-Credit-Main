@@ -25,7 +25,8 @@ export const RESCHEDULE_LIMIT = 3;
 // One missed call can be logged twice (a request and the no-show log), seconds apart: one strike.
 const SAME_CALL_MS = 2 * 60 * 60 * 1000;
 // A Cal.com reschedule this soon after the team's 🔄 Change time is the team's own move.
-const TEAM_MOVE_WINDOW_MS = 15 * 60 * 1000;
+// 30 min: the Cal.com 🔄 Change time link logs the team move when it's opened, not when the time is picked.
+const TEAM_MOVE_WINDOW_MS = 30 * 60 * 1000;
 // Bookings weren't logged before this shipped: until then, each call request stands for one booking.
 export const BOOKING_LOG_START = '2026-11-19T17:00:00Z';
 
