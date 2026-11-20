@@ -22,6 +22,7 @@ import type {
 
 import { isInternalRequest } from '../_shared/internalAuth.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
+import { buildSignalReport, type SignalRow } from '../_shared/signalReport.ts';
 import { bangkokWeek, buildTeamLoansDue, type TeamDueLoan } from '../_shared/teamLoansDue.ts';
 import { buildUnsentRequestMessage, UNSENT_ADMIN_URL, UNSENT_IDLE_MINUTES, UNSENT_MAX_AGE_HOURS } from '../_shared/unsentLoanRequests.ts';
 
@@ -153,7 +154,24 @@ const sendTeamLoansDue = async (supabase: SupabaseClient, force: boolean) => {
    const { text, keyboard } = buildTeamLoansDue(rows, now);
    await sendTelegramMessage(chatId, text, keyboard.length ? { inlineKeyboard: keyboard } : {});
    await supabase.from('telegram_bot_settings').upsert({ key: 'loans_due_last_week', value: week.key }, { onConflict: 'key' });
-   return { ok: true, week: week.key, loans: rows.length };
+   // Then the weekly "what predicts repayment" report, to the same chat. Never breaks the due list.
+   const report = await sendSignalReport(supabase, chatId, false).catch((err) => {
+      console.error('signal report failed', err instanceof Error ? err.message : err);
+      return { ok: false };
+   });
+   return { ok: true, week: week.key, loans: rows.length, signal_report: report.ok };
+};
+
+// { event: 'signal_report', dry? }: which signals at funding (AI pre-screen, income doc, call, referral…)
+// went with on-time repayment (public.loan_signal_rows, _shared/signalReport.ts). Sent every Monday after
+// the due list; dry = return the text without sending.
+const sendSignalReport = async (supabase: SupabaseClient, chatId: string | undefined, dry: boolean) => {
+   const { data, error } = await supabase.rpc('loan_signal_rows');
+   if (error) throw new Error(error.message);
+   const text = buildSignalReport((data ?? []) as SignalRow[]);
+   if (dry || !chatId) return { ok: true, dry: true, text };
+   await sendTelegramMessage(chatId, text);
+   return { ok: true, sent: true };
 };
 
 const loadBorrowers = async (supabase: SupabaseClient, userIds: string[]): Promise<Map<string, BorrowerRecord>> => {
@@ -323,6 +341,18 @@ serve(async (req) => {
          return new Response(JSON.stringify(await sendUnsentRequestAlerts(svc, body.test === true)), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       } catch (err) {
          console.error('unsent_requests failed', err instanceof Error ? err.message : err);
+         return new Response(JSON.stringify({ error: err instanceof Error ? err.message : 'failed' }), { status: 500, headers: corsHeaders });
+      }
+   }
+   if (body.event === 'signal_report') {
+      const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+      try {
+         const { data: chat } = await svc.from('telegram_bot_settings').select('value').eq('key', 'loans_due_chat_id').maybeSingle();
+         return new Response(JSON.stringify(await sendSignalReport(svc, chat?.value as string | undefined, body.dry !== false)), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+         });
+      } catch (err) {
+         console.error('signal_report failed', err instanceof Error ? err.message : err);
          return new Response(JSON.stringify({ error: err instanceof Error ? err.message : 'failed' }), { status: 500, headers: corsHeaders });
       }
    }
