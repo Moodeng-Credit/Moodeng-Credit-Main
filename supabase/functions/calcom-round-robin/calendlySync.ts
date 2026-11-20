@@ -5,7 +5,8 @@
 import { CAL_BASE, hostApiKey, resolveEventTypeId } from '../_shared/calcomSlots.ts';
 import { readCallSecret } from '../_shared/callSecrets.ts';
 import { postDiscord } from '../_shared/discord.ts';
-import { calendlyToCalSchedule, type CalendlyRule } from './lib.ts';
+import { loadCallBlocks } from '../_shared/callBooking.ts';
+import { blockedDays, calendlyToCalSchedule, type CalendlyRule } from './lib.ts';
 
 const CALENDLY_BASE = 'https://api.calendly.com';
 
@@ -62,6 +63,12 @@ const run = async (svc: any, dryRun: boolean, host: SyncHost): Promise<SyncResul
 
    const today = new Date().toLocaleDateString('en-CA', { timeZone: source.timezone || 'Asia/Bangkok' });
    const next = calendlyToCalSchedule(source.rules, source.timezone || 'Asia/Bangkok', today);
+   // Time off (call_blocks): whole days blocked for this host are closed on Cal.com too, so Cal.com's own
+   // reschedule page can't put a call there (our slot list already hides them).
+   const closed = blockedDays(await loadCallBlocks(svc), host, next.timeZone);
+   if (closed.length) {
+      next.overrides = [...next.overrides.filter((o) => !closed.includes(o.date)), ...closed.map((date) => ({ date, startTime: '00:00', endTime: '00:00' }))];
+   }
    const current = (await getJson(`${CAL_BASE}/schedules/${scheduleId}`, cal('2024-06-11'))).body?.data;
    if (dryRun) return { ok: true, scheduleId, current, next };
 

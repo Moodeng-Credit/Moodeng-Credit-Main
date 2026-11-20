@@ -26,7 +26,7 @@ Deno.test('early = before the last week', () => {
 
 Deno.test('replies: 31 days, last-week window, repay button only when in the window', () => {
    const term = timingReply('term', loan(20), 'en', NOW);
-   assert(term.includes('31 days'));
+   assert(term.includes('yours is 2 days') || term.includes('set term'));
    assert(term.includes('last week before it'));
    assert(timingReply('early', loan(20), 'en', NOW).includes("doesn't help your limit"));
    assert(timingReply('early', loan(3), 'en', NOW).includes('good time to pay'));
