@@ -26,7 +26,7 @@ import { postDiscord } from './discord.ts';
 import { loadOnboardingTimeline, signupLines, timelineLines } from './onboardingTimeline.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import type { PushLocale, PushPayload } from './pushMessages.ts';
-import { getMessengerContact, messengerDisplayName, sendMessengerMessage, sendWhatsAppTemplate, type MessengerCard } from './sendpulse.ts';
+import { getMessengerContact, messengerDisplayName, sendMessengerMessage, sendWhatsAppTemplate, setMessengerContactEnabled, type MessengerCard } from './sendpulse.ts';
 import { getTelegramBotSettingEnabled } from './borrowerNotificationDelivery.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
 import { changeTimeButton } from './callReschedule.ts';
@@ -947,6 +947,75 @@ export const reopenLoanAccess = async (svc: SupabaseClient, userId: string, by: 
    const summary = `🔓 Reopened ${who(reopened)} — they can book a call and ask again. We didn't message them. — by ${by}`;
    await postDiscord({ content: `🤝 Loan access ${summary}` }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
    return { ok: true, summary };
+};
+
+// ---- Ghost: a quiet reject ---------------------------------------------------------------------
+//
+// /ghost @username — for a borrower we don't want to tell anything (begging, pushy, suspicious).
+// Every account on the same Facebook (messenger_psid) becomes rejected with no message, card or
+// Discord line; pending requests close; a booked call is cancelled; and the SendPulse bot is turned
+// off for their Messenger contact, so the menu/welcome flows and all our sends stop. Their messages
+// still reach the inbox. /unghost turns the bot back on (they stay rejected; /reopen to let them back).
+
+type GhostRow = { id: string; username: string | null; email: string | null; display_name: string | null; messenger_psid: string | null; loan_access_status: string | null };
+
+const ghostFamily = async (svc: SupabaseClient, userId: string): Promise<GhostRow[]> => {
+   const cols = 'id, username, email, display_name, messenger_psid, loan_access_status';
+   const { data: me } = await svc.from('users').select(cols).eq('id', userId).maybeSingle();
+   if (!me) return [];
+   if (!me.messenger_psid) return [me as GhostRow];
+   const { data: all } = await svc.from('users').select(cols).eq('messenger_psid', me.messenger_psid);
+   return ((all ?? []) as GhostRow[]).length ? (all as GhostRow[]) : [me as GhostRow];
+};
+
+export const ghostUser = async (svc: SupabaseClient, userId: string, by: string): Promise<{ ok: boolean; summary: string }> => {
+   const family = await ghostFamily(svc, userId);
+   if (!family.length) return { ok: false, summary: 'Borrower not found.' };
+   const now = new Date().toISOString();
+   const ids = family.map((u) => u.id);
+   await svc
+      .from('loan_access_requests')
+      .update({ status: 'rejected', decided_at: now, decided_by: `${by} (ghosted)` })
+      .in('user_id', ids)
+      .eq('status', 'pending');
+   const { error } = await svc
+      .from('users')
+      .update({ loan_access_status: 'rejected', loan_access_retry_at: null, ghosted_at: now, ghosted_by: by })
+      .in('id', ids);
+   if (error) throw new Error(error.message);
+
+   const notes: string[] = [];
+   for (const u of family) {
+      try {
+         const why = await cancelUpcomingCall(svc, u.id, `${by} (ghosted)`, { stamp: false });
+         if (!why) notes.push(`🗑️ ${who(u)}'s booked call was cancelled.`);
+         else if (why !== 'No upcoming call.') notes.push(`⚠️ ${who(u)}'s call was NOT cancelled: ${why}`);
+      } catch (err) {
+         notes.push(`⚠️ ${who(u)}'s call cancel failed — cancel it on Cal.com.`);
+         console.error('ghostUser: cancel call failed', err instanceof Error ? err.message : err);
+      }
+   }
+   const psids = [...new Set(family.map((u) => u.messenger_psid).filter((x): x is string => !!x))];
+   for (const psid of psids) {
+      const res = await setMessengerContactEnabled(psid, false);
+      notes.push(res.ok ? '🤖 Messenger bot turned off for them (no menu, no replies).' : `⚠️ Couldn't turn off the Messenger bot (${res.reason}) — pause it in SendPulse.`);
+   }
+   if (!psids.length) notes.push('No Messenger linked, so no bot to turn off.');
+   const names = family.map((u) => who(u)).join(', ');
+   return { ok: true, summary: `👻 Ghosted ${names} — rejected quietly, nothing sent to them. — by ${by}\n${notes.join('\n')}\nUndo bot: /unghost · let back in: /reopen` };
+};
+
+export const unghostUser = async (svc: SupabaseClient, userId: string, by: string): Promise<{ ok: boolean; summary: string }> => {
+   const family = await ghostFamily(svc, userId);
+   if (!family.length) return { ok: false, summary: 'Borrower not found.' };
+   await svc.from('users').update({ ghosted_at: null, ghosted_by: null }).in('id', family.map((u) => u.id));
+   const psids = [...new Set(family.map((u) => u.messenger_psid).filter((x): x is string => !!x))];
+   const notes: string[] = [];
+   for (const psid of psids) {
+      const res = await setMessengerContactEnabled(psid, true);
+      notes.push(res.ok ? '🤖 Messenger bot back on for them.' : `⚠️ Couldn't turn the bot back on (${res.reason}) — do it in SendPulse.`);
+   }
+   return { ok: true, summary: `🔈 Unghosted ${family.map((u) => who(u)).join(', ')} — still rejected (use /reopen to let them ask again). — by ${by}\n${notes.join('\n')}` };
 };
 
 // ---- Telegram plumbing for the admin card -----------------------------------------------------
