@@ -54,13 +54,14 @@ export const coachHint = async (token: string, q: string, answer: string, locale
 };
 
 /**
- * The AI's look at a document they just uploaded for a 'doc' question (COE, work permit): one sentence on
- * what to send instead when it doesn't fit, or '' (fine, or the AI was slow). Advice only.
+ * The AI's look at a file they just uploaded: a document for a 'doc' question (COE, work permit) or a job
+ * photo (`alt` = the "not at work right now?" ask). One sentence on what to send or take instead when it
+ * doesn't fit, or '' (fine, or the AI was slow). Advice only.
  */
-export const docHint = async (token: string, q: string, path: string, locale: string): Promise<string> => {
+export const docHint = async (token: string, q: string, path: string, locale: string, alt = false): Promise<string> => {
    try {
       const call = getSupabaseBrowserClient().functions.invoke('check-loan-input', {
-         body: { kind: 'prescreen_doc', token, q, path, locale: ['fil', 'id'].includes(locale) ? locale : 'en' }
+         body: { kind: 'prescreen_doc', token, q, path, alt, locale: ['fil', 'id'].includes(locale) ? locale : 'en' }
       });
       const timeout = new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 15000));
       const result = (await Promise.race([call, timeout])) as { data?: { ok?: boolean; hint?: string } | null } | null;

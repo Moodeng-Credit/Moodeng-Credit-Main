@@ -1190,6 +1190,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                            onUseAlt={() => setUseAlt((prev) => ({ ...prev, [question.id]: true }))}
                            onExpired={(expired) => markPhotoExpired(question.id, expired)}
                            preview={preview?.photo ?? (preview ? 'ready' : undefined)}
+                           locale={locale}
                            questionId={question.id}
                            text={question.text}
                            token={token}

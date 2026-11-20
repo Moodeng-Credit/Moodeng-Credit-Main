@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Loader2, SwitchCamera } from 'lucide-react';
 
-import { clock, GALLERY_MAX_AGE_MS, OLD_FILE_MS, PHOTO_SECONDS, shrinkFile, shrinkImage } from '@/lib/prescreenV2';
+import { clock, docHint, GALLERY_MAX_AGE_MS, OLD_FILE_MS, PHOTO_SECONDS, shrinkFile, shrinkImage } from '@/lib/prescreenV2';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { GhostButton, PrimaryButton } from '@/views/dashboard/components/connectKit';
 
@@ -21,7 +21,7 @@ export type PhotoAnswer = {
    skip_reason?: string;
 };
 
-export type PhotoPreview = 'ready' | 'live' | 'review' | 'expired';
+export type PhotoPreview = 'ready' | 'live' | 'review' | 'expired' | 'tip';
 type State = 'asking' | 'ready' | 'starting' | 'live' | 'review' | 'expired' | 'uploading';
 
 const errorClass = 'text-center text-[14px] font-semibold text-[#c2410c]';
@@ -35,7 +35,8 @@ export default function LivePhoto({
    onUseAlt,
    onDone,
    onExpired,
-   preview
+   preview,
+   locale = 'en'
 }: {
    token: string | null;
    questionId: string;
@@ -48,14 +49,20 @@ export default function LivePhoto({
    /** Time ran out (true) or they started again (false) — the page swaps in the "time's up" hippo. */
    onExpired?: (expired: boolean) => void;
    preview?: PhotoPreview;
+   locale?: string;
 }) {
-   const [state, setState] = useState<State>(preview ?? 'asking');
+   const [state, setState] = useState<State>(preview === 'tip' ? 'review' : (preview ?? 'asking'));
+   // The AI's tip on the photo they sent (once per question): retake it, or use it anyway (never blocks).
+   const [tip, setTip] = useState<{ hint: string; answer: PhotoAnswer } | null>(
+      preview === 'tip' ? { hint: 'We can’t see you in this photo. Please take one of you at your farm.', answer: { source: 'camera' } } : null
+   );
+   const [tipped, setTipped] = useState(preview === 'tip');
    const [deadline, setDeadline] = useState<number>(() => Date.now() + PHOTO_SECONDS * 1000);
    const [now, setNow] = useState(Date.now());
    const [askedAt, setAskedAt] = useState<number>(Date.now());
    const [facing, setFacing] = useState<'environment' | 'user'>('environment');
    const [shot, setShot] = useState<{ blob: Blob; url: string; source: 'camera' | 'file'; takenAt: number; fileModified?: number } | null>(
-      preview === 'review' ? { blob: new Blob(), url: '/hippos/connect/cashout.png', source: 'camera', takenAt: Date.now() } : null
+      preview === 'review' || preview === 'tip' ? { blob: new Blob(), url: '/hippos/connect/cashout.png', source: 'camera', takenAt: Date.now() } : null
    );
    const [error, setError] = useState<string | null>(null);
    const [cameraFailed, setCameraFailed] = useState(false);
@@ -190,6 +197,7 @@ export default function LivePhoto({
    const retake = () => {
       if (shot?.url.startsWith('blob:')) URL.revokeObjectURL(shot.url);
       setShot(null);
+      setTip(null);
       if (Date.now() >= deadline) return setState('expired');
       void openCamera();
    };
@@ -208,13 +216,24 @@ export default function LivePhoto({
          setState('review');
          return;
       }
-      onDone({
+      const answer: PhotoAnswer = {
          photo: path,
          source: shot.source,
          taken_at: new Date(shot.takenAt).toISOString(),
          ...(shot.fileModified ? { file_modified_at: new Date(shot.fileModified).toISOString() } : {}),
          ...(useAlt ? { alt: true } : {})
-      });
+      };
+      // First photo for this question: the AI says what to take instead if it doesn't show what we asked.
+      if (!tipped) {
+         setTipped(true);
+         const hint = await docHint(token, questionId, path, locale, useAlt);
+         if (hint) {
+            setTip({ hint, answer });
+            setState('review');
+            return;
+         }
+      }
+      onDone(answer);
    };
 
    const ask_ = useAlt && alt ? alt : text;
@@ -280,6 +299,11 @@ export default function LivePhoto({
          />
          <input accept="image/*" className="hidden" onChange={(e) => void onFile(e.target.files?.[0], true)} ref={galleryRef} type="file" />
          {error ? <p className={errorClass}>{error}</p> : null}
+         {tip && state === 'review' ? (
+            <div className="rounded-[14px] bg-[#fff6e0] px-4 py-3 text-[15px] leading-[21px] text-[#5a4300] dark:bg-[#2e2512] dark:text-[#f3dfa8]">
+               💡 {tip.hint}
+            </div>
+         ) : null}
 
          {state === 'ready' || state === 'starting' || state === 'asking' ? (
             <PrimaryButton disabled={state !== 'ready'} onClick={() => void openCamera()}>
@@ -287,7 +311,12 @@ export default function LivePhoto({
             </PrimaryButton>
          ) : null}
          {state === 'live' ? <PrimaryButton onClick={() => void snap()}>Take photo</PrimaryButton> : null}
-         {state === 'review' || state === 'uploading' ? (
+         {tip && state === 'review' ? (
+            <>
+               <PrimaryButton onClick={retake}>Take again</PrimaryButton>
+               <GhostButton onClick={() => onDone(tip.answer)}>Use this photo anyway</GhostButton>
+            </>
+         ) : state === 'review' || state === 'uploading' ? (
             <>
                <PrimaryButton disabled={state === 'uploading'} onClick={() => void use()}>
                   {state === 'uploading' ? <Loader2 aria-label="Sending" className="mx-auto size-5 animate-spin" /> : 'Use this photo'}

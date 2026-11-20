@@ -317,7 +317,9 @@ const handlePrescreen = async (req: Request, body: Record<string, unknown>) => {
    }
    const locale = typeof body.locale === 'string' && ['en', 'fil', 'id'].includes(body.locale) ? body.locale : 'en';
    if (body.kind === 'prescreen_doc') {
-      return jsonResponse(await coachDoc(svc, userId, token, typeof body.q === 'string' ? body.q : '', typeof body.path === 'string' ? body.path : '', locale));
+      return jsonResponse(
+         await coachDoc(svc, userId, token, typeof body.q === 'string' ? body.q : '', typeof body.path === 'string' ? body.path : '', locale, body.alt === true)
+      );
    }
    const answer = typeof body.answer === 'string' ? body.answer.trim() : '';
    const verdict = await coachAnswer(svc, userId, token, typeof body.q === 'string' ? body.q : '', answer, locale);

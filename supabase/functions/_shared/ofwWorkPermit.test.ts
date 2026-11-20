@@ -46,3 +46,14 @@ Deno.test("Emma's rule: a permit problem keeps the score under 50", () => {
    assertEquals(capForPermit(82, null), 82);
    assertEquals(capForPermit(null, 'x'), null);
 });
+
+Deno.test('photo coach: same gentle one-sentence tip, in their language, never blocking words', async () => {
+   const { photoCoachSystem, docCoachSystem } = await import('./prescreenV2.ts');
+   for (const sys of [photoCoachSystem('fil'), docCoachSystem('fil')]) {
+      assert(sys.includes('Taglish'));
+      assert(sys.includes('When unsure, "ok": true'));
+      assert(sys.includes('No blame'));
+   }
+   assert(photoCoachSystem('id').includes('Bahasa Indonesia'));
+   assert(photoCoachSystem('en').includes('screen'));
+});
