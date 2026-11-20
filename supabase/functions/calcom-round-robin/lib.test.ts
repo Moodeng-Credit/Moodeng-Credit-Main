@@ -1,6 +1,7 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
 import {
+   blockedDays,
    bangkokDay,
    bookingCooldownUntil,
    calendlyToCalSchedule,
@@ -289,4 +290,10 @@ Deno.test("clusterSlots with isGood: Emma's good times first, else anyone's", ()
    assertEquals(clusterSlots(day, [], [day[2], day[3]], good).recommended, [day[2]]);
    // Emma only free at 11 PM that day: George's good times are starred instead.
    assertEquals(clusterSlots(day, [], [day[3]], good).recommended, [day[1], day[2]]);
+});
+
+Deno.test('blockedDays: only whole days in the host timezone', () => {
+   const blocks = [{ host: 'emma', from: '2026-11-20T17:00:00Z', to: '2026-11-23T17:00:00Z' }, { host: 'george', from: '2026-11-22T04:45:00Z', to: '2026-11-23T06:00:00Z' }];
+   assertEquals(blockedDays(blocks, 'emma', 'Asia/Bangkok'), ['2026-11-21', '2026-11-22', '2026-11-23']);
+   assertEquals(blockedDays(blocks, 'george', 'Asia/Bangkok'), []);
 });

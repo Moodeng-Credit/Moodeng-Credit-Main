@@ -344,7 +344,8 @@ serve(async (req) => {
          if (typed && (await handleBookingMessage(svc, known!.userId, contactId, typed))) continue;
          // "When do I pay back?" / "I want to repay now" / "can I borrow again?": 31-day term, pay in the
          // last week before the due date, no fast borrow-repay loops (flags possible limit-gaming to the team).
-         if (typed && (await handleLoanTimingMessage(svc, known!.userId, contactId, typed))) continue;
+         // Answers, then still falls through to the ticket below.
+         if (typed) await handleLoanTimingMessage(svc, known!.userId, contactId, typed);
          if (isSupportMessage(event)) {
             await openMessengerTicket(svc, {
                contactId,

@@ -292,3 +292,23 @@ export const zoomFallbackWarning = (joinUrl: string | null, hostId: string) =>
    joinUrl && /cal\.com\/video|cal\.video/i.test(joinUrl)
       ? `\n⚠️ Cal Video link, not Zoom: Cal.com couldn't create the Zoom meeting on ${hostId === 'george' ? 'George' : 'Emma'}'s account. Reconnect Zoom in their Cal.com (Settings → Apps → Zoom) before the call.`
       : '';
+
+
+/**
+ * Dates (YYYY-MM-DD in `timeZone`) that call_blocks cover from 00:00 to 24:00 for `host`. Partly blocked
+ * days are left alone (our slot list handles those). Pure.
+ */
+export const blockedDays = (blocks: Array<{ host: string; from: string; to: string }>, host: string, timeZone: string): string[] => {
+   const out = new Set<string>();
+   const dayOf = (ms: number) => new Date(ms).toLocaleDateString('en-CA', { timeZone });
+   for (const b of blocks.filter((x) => x.host === 'all' || x.host === host)) {
+      const from = Date.parse(b.from);
+      const to = Date.parse(b.to);
+      if (Number.isNaN(from) || Number.isNaN(to)) continue;
+      // Walk each hour; a date counts when all 24 of its hours are inside the block.
+      const hours = new Map<string, number>();
+      for (let t = from; t < to; t += 3_600_000) hours.set(dayOf(t), (hours.get(dayOf(t)) ?? 0) + 1);
+      for (const [date, n] of hours) if (n >= 24) out.add(date);
+   }
+   return [...out].sort();
+};

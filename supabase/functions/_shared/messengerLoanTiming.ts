@@ -1,15 +1,15 @@
 // Loan-timing questions typed to the Page by a known borrower (George 2026-11-20):
 //
-//   "kailan ko babayaran?" / "can I pay in 1 week?"   → we're not loan sharks: every loan is 31 days,
+//   "kailan ko babayaran?" / "can I pay in 1 week?"   → we're not loan sharks: every loan has a set term (theirs),
 //                                                       pay in the last week before your due date
 //   "I want to repay now" (days after borrowing)       → please pay in the week before your due date;
 //                                                       paying right away doesn't help your limit
 //   "can I borrow again?" / 2 loans in one month        → we're for long-term credit builders; fast
 //                                                       borrow-repay loops to push the limit don't work
 //
-// A cheap word check first, then Gemini says which one it is (fallback: the word check). Early repays
-// and quick re-borrows are flagged to the team (⚠️ may be gaming the limit). Extension / can't-pay
-// messages are NOT answered here: they stay a support ticket for a person.
+// A cheap word check first, then Gemini says which one it is (no AI answer → a person handles it). Early repays
+// and quick re-borrows are flagged to the team (⚠️ may be gaming the limit). Every message still becomes
+// a support ticket; extension / can't-pay / problems aren't answered here at all.
 import { GEMINI_MODEL } from './geminiPreScreen.ts';
 import { getAdminChatId } from './loanAccess.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
@@ -54,9 +54,11 @@ export const timingReply = (intent: Exclude<TimingIntent, 'other'>, loan: OpenLo
    const fil = locale === 'fil';
    const due = loan?.due_date ? fmtDate(loan.due_date, loan.due_timezone, locale) : null;
    const from = loan?.due_date ? fmtDate(new Date(Date.parse(loan.due_date) - REPAY_WINDOW_DAYS * DAY).toISOString(), loan.due_timezone, locale) : null;
+   // Terms differ per loan (mostly ~30 days, some shorter): quote theirs, never one fixed number.
+   const termDays = loan?.funded_at && loan.due_date ? Math.round((Date.parse(loan.due_date) - Date.parse(loan.funded_at)) / DAY) : null;
    const notShark = fil
-      ? `Hindi kami loan shark 🙂 Lahat ng Moodeng loan ay ${LOAN_TERM_DAYS} araw, at sumusunod kami sa patakaran para sa mga nagpapautang.`
-      : `We're not a loan shark 🙂 Every Moodeng loan is ${LOAN_TERM_DAYS} days, and we follow the rules for lenders.`;
+      ? `Hindi kami loan shark 🙂 May takdang haba ang bawat Moodeng loan${termDays ? ` (ang sa iyo ay ${termDays} araw)` : ` (kadalasan mga isang buwan, hanggang ${LOAN_TERM_DAYS} araw)`}, at sumusunod kami sa patakaran para sa mga nagpapautang.`
+      : `We're not a loan shark 🙂 Every Moodeng loan has a set term${termDays ? ` (yours is ${termDays} days)` : ` (usually about a month, up to ${LOAN_TERM_DAYS} days)`}, and we follow the rules for lenders.`;
    const window = due
       ? fil
          ? `Ang due date mo ay ${due}. Pinakamainam magbayad sa huling linggo bago nito: ${from} hanggang ${due}.`
@@ -90,7 +92,7 @@ export const timingReply = (intent: Exclude<TimingIntent, 'other'>, loan: OpenLo
          ? 'Puwede kang humiram ulit, pero hindi maganda ang 2 loan sa isang buwan para sa credit mo. Tinatanggap namin ito, pero hindi kung para lang i-game ang system.'
          : "You can borrow again, but 2 loans in one month isn't good for your credit. We can accept it, just not when it's to game the system.",
       builder,
-      loan?.due_date ? window : fil ? `Ang bawat loan ay ${LOAN_TERM_DAYS} araw.` : `Each loan is ${LOAN_TERM_DAYS} days.`
+      loan?.due_date ? window : fil ? 'Pinakamainam magbayad sa huling linggo bago ang due date.' : 'The best time to pay is the last week before your due date.'
    ].join('\n\n');
 };
 
@@ -109,8 +111,8 @@ async function askGemini(svc: Svc, text: string): Promise<TimingIntent | null> {
                      text:
                         'A borrower of a small-loan app (Philippines, English/Tagalog/Taglish) messaged the support page. Classify the message. ' +
                         'Return JSON {"intent": one of "term" (asks how long the loan is / when they must pay back / how many days), ' +
-                        '"early" (wants to pay back now or early, soon after borrowing), "again" (wants another loan right away, a second loan this month, or asks how to raise the limit fast), ' +
-                        '"other" (anything else, INCLUDING asking for more time, an extension, saying they cannot pay, a payment problem, or a complaint)}.'
+                        '"early" (wants to pay back now or early, soon after borrowing), "again" (ONLY a plain question whether or when they can borrow again / take a second loan this month), ' +
+                        '"other" (anything else, INCLUDING an app error or cooldown, uploading documents, asking for a higher limit, a limit that went down, vouchers or rewards, asking for more time, an extension, saying they cannot pay, a payment problem, or a complaint)}.'
                   }
                ]
             },
@@ -128,15 +130,16 @@ async function askGemini(svc: Svc, text: string): Promise<TimingIntent | null> {
    }
 }
 
-/** True when it was a loan-timing question and we answered it (so it isn't also a support ticket). */
+/** Answers loan-timing questions. Always false, so the message still becomes a support ticket for the team. */
 export const handleLoanTimingMessage = async (svc: Svc, userId: string, contactId: string, text: string): Promise<boolean> => {
    try {
       if (text.trim().length < 6 || !mentionsLoanTiming(text)) return false;
       const { data: switchRow } = await svc.from('telegram_bot_settings').select('value').eq('key', 'bot_loan_timing').maybeSingle();
       if (String((switchRow as { value?: string } | null)?.value ?? 'on').toLowerCase() === 'off') return false;
 
-      const intent = (await askGemini(svc, text)) ?? guessIntent(text);
-      if (intent === 'other') return false;
+      // No AI answer → leave it to a person (the word check alone would swallow real support questions).
+      const intent = await askGemini(svc, text);
+      if (!intent || intent === 'other') return false;
 
       const now = Date.now();
       const [{ data: user }, { data: contact }, { data: loans }] = await Promise.all([
@@ -144,15 +147,17 @@ export const handleLoanTimingMessage = async (svc: Svc, userId: string, contactI
          svc.from('messenger_contacts').select('locale').eq('contact_id', contactId).maybeSingle(),
          svc
             .from('loans')
-            .select('funded_at, due_date, due_timezone, total_repayment_amount, repaid_amount, repayment_status, loan_status, repaid_at')
+            .select('funded_at, due_date, due_timezone, total_repayment_amount, repaid_amount, repayment_status, loan_status, repaid_at, repayment_schedule')
             .eq('borrower_user_id', userId)
             .is('refunded_at', null)
             .order('created_at', { ascending: false })
             .limit(6)
       ]);
-      type L = { funded_at: string | null; due_date: string | null; due_timezone: string | null; total_repayment_amount: number | string | null; repaid_amount: number | string | null; repayment_status: string | null; loan_status: string | null; repaid_at: string | null };
+      type L = { repayment_schedule?: unknown; funded_at: string | null; due_date: string | null; due_timezone: string | null; total_repayment_amount: number | string | null; repaid_amount: number | string | null; repayment_status: string | null; loan_status: string | null; repaid_at: string | null };
       const rows = (loans ?? []) as L[];
       const openRow = rows.find((l) => l.loan_status === 'Lent' && l.repayment_status !== 'Paid');
+      // Two-payment loans have their own part dates: a person answers those.
+      if (openRow && (openRow as { repayment_schedule?: unknown }).repayment_schedule) return false;
       const open: OpenLoan | null = openRow
          ? {
               funded_at: openRow.funded_at,
@@ -195,7 +200,8 @@ export const handleLoanTimingMessage = async (svc: Svc, userId: string, contactI
             ).catch(() => undefined);
          }
       }
-      return true;
+      // Still a support ticket: the team sees the question and the bot's answer never hides a real problem.
+      return false;
    } catch (err) {
       console.error('messenger-loan-timing: failed', err instanceof Error ? err.message : err);
       return false;
