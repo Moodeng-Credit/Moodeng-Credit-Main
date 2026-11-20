@@ -816,9 +816,9 @@ export const photoWarnings = (meta: PhotoMeta | null | undefined, check: PhotoCh
       const sec = secondsBetween(meta.asked_at, meta.uploaded_at);
       out.push(meta.asked_at ? `LATE: sent ${sec != null ? mmss(sec) : '?'} after the ask` : 'no ask time recorded');
    }
-   // From the gallery: fine when taken in the last day (the browser's file date; can be off).
+   // From the gallery: fine when taken in the last 2 months (the browser's file date; can be off).
    const fileAge = secondsBetween(meta.file_modified_at, meta.asked_at);
-   if (meta.source === 'file' && fileAge != null && fileAge > 24 * 3600) out.push('photo is older than a day');
+   if (meta.source === 'file' && fileAge != null && fileAge > 60 * 86400) out.push('photo is older than 2 months');
    if (check?.screen_or_print === true) out.push('looks like a photo of a screen or a printout');
    else if (check?.live_scene === false) out.push('may not be a live photo');
    if (check?.fits_ask === false) out.push('doesn’t show what was asked');
@@ -843,7 +843,7 @@ export const photoLine = (
       sec != null && (!meta.late || (meta.source === 'file' && (fileAge ?? 0) > 120)) ? `${mmss(Math.max(0, sec))} after the ask` : null,
       meta.source === 'file'
          ? fileAge != null && fileAge > 120
-            ? `from gallery, taken ${fileAge >= 3600 ? `${Math.round(fileAge / 3600)}h` : `${Math.round(fileAge / 60)} min`} before`
+            ? `from gallery, taken ${fileAge >= 2 * 86400 ? `${Math.round(fileAge / 86400)} days` : fileAge >= 3600 ? `${Math.round(fileAge / 3600)}h` : `${Math.round(fileAge / 60)} min`} before`
             : 'camera app'
          : meta.source === 'camera'
            ? 'in-page camera'

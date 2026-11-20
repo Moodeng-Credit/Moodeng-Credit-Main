@@ -1038,7 +1038,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                      image={prescreenHippo(question, { expired: Boolean(photoExpired[question.id]) })}
                      subtitle={
                         question.kind === 'photo'
-                           ? 'Take it now, or pick a photo from today.'
+                           ? 'Take it now, or pick a photo from the last 2 months.'
                            : `Question ${index + 1} of ${questions.length}${question.hint && question.kind !== 'video' && question.kind ? ` · ${question.hint}` : ''}`
                      }
                      title={question.kind === 'photo' && useAlt[question.id] && question.alt ? question.alt : question.text}

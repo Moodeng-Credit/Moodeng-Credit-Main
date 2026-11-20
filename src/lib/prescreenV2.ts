@@ -11,8 +11,8 @@ export const PRESCREEN_CAPS = ['v2'];
 export const PHOTO_SECONDS = 300;
 /** A camera-app file older than this before the ask is an old photo (gallery), not one taken now. */
 export const OLD_FILE_MS = 2 * 60_000;
-/** A photo picked from the gallery counts if it was taken in the last day (farmers already have today's crop photos). */
-export const GALLERY_MAX_AGE_MS = 24 * 3600_000;
+/** A photo picked from the gallery counts if it was taken in the last 2 months (farmers already have crop and harvest photos). */
+export const GALLERY_MAX_AGE_MS = 60 * 86_400_000;
 
 export type MedicalChoice = 'none' | 'paid' | 'future' | 'ongoing';
 export const MEDICAL_CHOICES: Array<{ id: MedicalChoice; label: string }> = [

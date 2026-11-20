@@ -168,12 +168,12 @@ export default function LivePhoto({
       if (galleryRef.current) galleryRef.current.value = '';
       if (!file) return;
       setError(null);
-      // Camera app: must be new. Gallery: any photo taken in the last day is fine.
+      // Camera app: must be new. Gallery: any photo from the last 2 months is fine.
       const oldest = fromGallery ? Date.now() - GALLERY_MAX_AGE_MS : askedAt - OLD_FILE_MS;
       if (file.lastModified && file.lastModified < oldest) {
          setError(
             fromGallery
-               ? 'That photo is older than a day. Pick one from today, or take a new one.'
+               ? 'That photo is older than 2 months. Pick a newer one, or take a new one.'
                : 'That photo is old. Please take a new one now.'
          );
          return;
@@ -265,7 +265,7 @@ export default function LivePhoto({
                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center text-[#cfc6dd]">
                   <span className="text-[44px]">⏰</span>
                   <span className="text-[15px] font-bold text-white">Time’s up</span>
-                  <span className="text-[13px]">Start again for 5 more minutes, or pick a photo from today.</span>
+                  <span className="text-[13px]">Start again for 5 more minutes, or pick a recent photo.</span>
                </div>
             ) : null}
          </div>
@@ -297,7 +297,7 @@ export default function LivePhoto({
          ) : null}
          {state === 'expired' ? <PrimaryButton onClick={() => void ask()}>Start again</PrimaryButton> : null}
          {state === 'ready' || state === 'live' || state === 'expired' ? (
-            <GhostButton onClick={() => galleryRef.current?.click()}>Pick a photo from today instead</GhostButton>
+            <GhostButton onClick={() => galleryRef.current?.click()}>Pick a recent photo instead</GhostButton>
          ) : null}
          {state === 'expired' || (cameraFailed && error) ? (
             <button

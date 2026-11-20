@@ -125,13 +125,16 @@ Deno.test('photos: late, skipped, old file and screen are flagged; on time is cl
    assert(photoLine(1, 'x', onTime, 8, null).includes('14:02 BKK'));
    const late = { ...onTime, uploaded_at: '2026-11-20T07:07:30Z', late: true };
    assertEquals(photoWarnings(late, null), ['LATE: sent 7m30s after the ask']);
-   // Gallery photos taken in the last day are fine; older ones are flagged.
+   // Gallery photos from the last 2 months are fine; older ones are flagged.
    const todayFile = { ...onTime, source: 'file' as const, file_modified_at: '2026-11-19T09:00:00Z' };
    assertEquals(photoWarnings(todayFile, null), []);
    assertEquals(photoWarnings({ ...todayFile, late: true, uploaded_at: '2026-11-20T07:09:00Z' }, null), []);
    assert(photoLine(1, 'x', todayFile, 8, null).includes('from gallery, taken'));
-   const oldFile = { ...onTime, source: 'file' as const, file_modified_at: '2026-11-18T07:00:00Z' };
-   assertEquals(photoWarnings(oldFile, null), ['photo is older than a day']);
+   const monthOld = { ...onTime, source: 'file' as const, file_modified_at: '2026-10-20T07:00:00Z' };
+   assertEquals(photoWarnings(monthOld, null), []);
+   assert(photoLine(1, 'x', monthOld, 8, null).includes('31 days before'));
+   const oldFile = { ...onTime, source: 'file' as const, file_modified_at: '2026-09-01T07:00:00Z' };
+   assertEquals(photoWarnings(oldFile, null), ['photo is older than 2 months']);
    assertEquals(photoWarnings(onTime, { fits_ask: true, live_scene: false, screen_or_print: true, note: '' }), [
       'looks like a photo of a screen or a printout'
    ]);
