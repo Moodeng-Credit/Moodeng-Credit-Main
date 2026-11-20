@@ -55,3 +55,16 @@ Deno.test('picker: every 15 min 10:00–21:45 Bangkok, today + 2 days, minus tak
    assert(!sat.includes(new Date(current).toISOString()));
    assert(!sat.includes(new Date('2026-10-17T15:00:00+07:00').toISOString()));
 });
+
+Deno.test('Cal.com 🔄 Change time link is signed per borrower', async () => {
+   Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || 'test-key');
+   const { changeTimeLinkButton, changeTimeToken, isValidChangeTimeToken } = await import('./callReschedule.ts');
+   const other = '0b7f9d1e-1111-4a2b-9c3d-222233334444';
+   const token = await changeTimeToken(USER);
+   assert(await isValidChangeTimeToken(USER, token));
+   assert(!(await isValidChangeTimeToken(other, token)));
+   assert(!(await isValidChangeTimeToken(USER, token.slice(1))));
+   const button = await changeTimeLinkButton(USER);
+   assertEquals(button.text, '🔄 Change time');
+   assert(button.url.includes(`/functions/v1/calcom-webhook?move=${USER}&t=${token}`), button.url);
+});
