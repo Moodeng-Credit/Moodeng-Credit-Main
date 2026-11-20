@@ -543,6 +543,16 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    const isAuthChecked = useSelector((state: RootState) => state.auth.isAuthChecked);
    const queryClient = useQueryClient();
    const signedIn = Boolean(authUser?.id);
+   // The job they already gave at loan request (users.profession) fills in "What is your job?" once.
+   // Only a starting value: empty or wrong, they just type, nothing waits on it.
+   const jobPrefilled = useRef(false);
+   useEffect(() => {
+      const q = stage === 'question' ? questions[index] : undefined;
+      const saved = authUser?.profession?.trim();
+      if (jobPrefilled.current || !q || q.kind !== 'job' || !saved) return;
+      jobPrefilled.current = true;
+      setTyped((prev) => (prev[q.id]?.trim() ? prev : { ...prev, [q.id]: saved.slice(0, 80) }));
+   }, [stage, index, questions, authUser?.profession]);
 
    useEffect(() => {
       if (preview || !isAuthChecked) return;
