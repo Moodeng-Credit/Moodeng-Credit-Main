@@ -187,6 +187,20 @@ export const sendMovedMessenger = (u: CallUser) => {
    });
 };
 
+// The team moved the call to a NEW time with another host (move_host with `start`): new time, new
+// Zoom link, and the ✅ / 🔄 card so they can pick another time if this one doesn't work.
+export const sendMovedSoonerMessenger = (u: CallUser, hostName: string) => {
+   if (!u.video_call_starts_at) return Promise.resolve({ ok: false as const, reason: 'no_call' });
+   const when = formatCallTime(u.video_call_starts_at, u.video_call_timezone);
+   return sendMessengerMessage(u.messenger_psid, {
+      text:
+         `📅 Good news, we found you an earlier time! Your call is now with ${hostName}:\n🗓️ ${when}\n\n` +
+         `🔗 NEW Zoom link (the old one won't work):\n${u.video_call_join_url ?? 'in your email'}\n\n` +
+         "Can't make it? Tap 🔄 Change time below to pick another.",
+      card: callCard('Can you make it?', u, { calendar: true })
+   });
+};
+
 // Day-before (stage 1) and hour-before (stage 2). Only lands if we're still inside the 24h window
 // (sendMessengerMessage checks); push + Telegram cover the rest.
 export const sendReminderMessenger = (u: CallUser, stage: 1 | 2) => {
