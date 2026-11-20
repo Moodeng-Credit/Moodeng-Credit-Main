@@ -1,3 +1,4 @@
+import { withToday } from './aiToday.ts';
 // The two AI steps of the Messenger call-booking bot, on DeepSeek v4-flash (no thinking, JSON mode):
 //   readCallTime: "bukas after 6pm" → the time windows the borrower means, in their own zone
 //   writePrepNote: the "get to know you" answers → a short prep note for the call host
@@ -25,7 +26,7 @@ const ask = async (system: string, user: string, maxTokens: number): Promise<{ d
             max_tokens: maxTokens,
             response_format: { type: 'json_object' },
             messages: [
-               { role: 'system', content: system },
+               { role: 'system', content: withToday(system) },
                { role: 'user', content: user }
             ]
          })

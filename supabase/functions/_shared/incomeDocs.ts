@@ -10,6 +10,7 @@ import { sendMessengerMessage } from './sendpulse.ts';
 import { fileMarkers, gcashRefIssues, type ImageInfo, imageInfo, isAiSize, rowKeys, rowOverlap } from './fileForensics.ts';
 import { sendTelegramFiles, sendTelegramMessage, type TelegramInlineKeyboard, type TelegramUpload } from './telegram.ts';
 import { idLocaleOf, idResendReason, isIdTrackUser, loadIdStatus, notifyIdNextStep, sendIdTelegram } from './idTrack.ts';
+import { withToday } from './aiToday.ts';
 
 // Proof of income sent from moodeng.app/documents (see the income_documents migration).
 //   0. ping     Telegram admin chat + Discord #kyc right away: who sent what, open it in Admin
@@ -663,7 +664,7 @@ const deepseekJson = async <T>(
             max_tokens: maxTokens,
             response_format: { type: 'json_object' },
             messages: [
-               { role: 'system', content: system },
+               { role: 'system', content: withToday(system) },
                { role: 'user', content }
             ]
          })
