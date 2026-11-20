@@ -415,6 +415,19 @@ function AnswerRecorder({
    );
 }
 
+/**
+ * pre_screening_start, saying the page can show v2. A database without the v2 migration has no p_caps
+ * argument: ask again without it, so this page never closes pre-screening there.
+ */
+const startRpc = async (args: { p_name: string | null; p_ref: string | null; p_browser: string | null }) => {
+   const client = getSupabaseBrowserClient();
+   const first = await client.rpc('pre_screening_start', { ...args, p_caps: PRESCREEN_CAPS });
+   if (first.error && /PGRST202|p_caps|pre_screening_start|function/i.test(`${first.error.code ?? ''} ${first.error.message}`)) {
+      return client.rpc('pre_screening_start', args);
+   }
+   return first;
+};
+
 // ── The page ────────────────────────────────────────────────────────────────────────────────────────
 
 export default function PreScreeningPage({ preview }: { preview?: ScreenPreview }) {
@@ -515,27 +528,25 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          setStage(progress.stage);
          return;
       }
-      void getSupabaseBrowserClient()
-         .rpc('pre_screening_start', { p_name: null, p_ref: null, p_browser: null, p_caps: PRESCREEN_CAPS })
-         .then(({ data, error: rpcError }) => {
-            const res = data as {
-               status?: string;
-               video?: string;
-               videos?: ScreenVideo[];
-               questions?: ScreenQuestion[];
-               proof?: boolean;
-               v2?: boolean;
-            } | null;
-            if (rpcError || res?.status !== 'ready') {
-               setStage('closed');
-               return;
-            }
-            setVideos(videosOf(res));
-            setAskProof(res.proof !== false);
-            setQuestions(res.questions ?? []);
-            setV2(res.v2 === true);
-            setStage('intro');
-         });
+      void startRpc({ p_name: null, p_ref: null, p_browser: null }).then(({ data, error: rpcError }) => {
+         const res = data as {
+            status?: string;
+            video?: string;
+            videos?: ScreenVideo[];
+            questions?: ScreenQuestion[];
+            proof?: boolean;
+            v2?: boolean;
+         } | null;
+         if (rpcError || res?.status !== 'ready') {
+            setStage('closed');
+            return;
+         }
+         setVideos(videosOf(res));
+         setAskProof(res.proof !== false);
+         setQuestions(res.questions ?? []);
+         setV2(res.v2 === true);
+         setStage('intro');
+      });
    };
 
    const begin = async () => {
@@ -543,12 +554,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       setBusy(true);
       setError(null);
       const { browser, os } = describeBrowser();
-      const { data, error: rpcError } = await getSupabaseBrowserClient().rpc('pre_screening_start', {
-         p_name: name,
-         p_ref: ref || null,
-         p_browser: `${browser} · ${os}`,
-         p_caps: PRESCREEN_CAPS
-      });
+      const { data, error: rpcError } = await startRpc({ p_name: name, p_ref: ref || null, p_browser: `${browser} · ${os}` });
       setBusy(false);
       const res = data as {
          status?: string;

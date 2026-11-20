@@ -592,6 +592,8 @@ export type MedicalRead = {
    size: 'small' | 'medium' | 'large' | null;
    severity: MedicalSeverity;
    note: string;
+   /** No AI read came back: made from their answer alone (always a red flag when they said something). */
+   ungraded?: boolean;
 };
 
 export const MEDICAL_PROMPT = `For the "medical" question (Do you or your family have a medical problem?) they typed "no" or what it is, and maybe picked what the loan is for about it ("choice": none = the loan is not for it, paid = a bill already paid (a pay gap), future = a cost coming up, ongoing = a cost every month). Do NOT score it 0-10. Instead fill "medical":
@@ -649,7 +651,8 @@ export const medicalFromAnswer = (text: string | null | undefined, choice: strin
       size: null,
       // Not graded: future/ongoing is high on their own word; anything else is left for a person to read.
       severity: loanFor === 'future' || loanFor === 'ongoing' ? 'high' : 'medium',
-      note: 'Not graded by the AI — read their answer.'
+      note: 'Not graded by the AI — read their answer.',
+      ungraded: true
    };
 };
 
@@ -674,19 +677,14 @@ export const medicalLine = (m: MedicalRead | null | undefined, said: string | nu
    return `🩺 Medical: ${MEDICAL_LABEL[m.severity]} · ${bits.join(' · ')}${m.note ? `\n   ${m.note}` : ''}`;
 };
 
-/** High severity = a red flag (stops auto ✅, never rejects). Pure. */
-export const medicalRedFlag = (m: MedicalRead | null | undefined): string | null =>
-   m?.severity === 'high'
-      ? `medical: ${
-           [
-              m.who && m.who !== 'self' ? m.who : m.who === 'self' ? 'their own' : null,
-              m.condition,
-              m.loan_for ? LOAN_FOR_LABEL[m.loan_for] : null
-           ]
-              .filter(Boolean)
-              .join(', ') || 'big or ongoing cost'
-        }`
-      : null;
+/** High severity (or an answer the AI never graded) = a red flag: stops auto ✅, never rejects. Pure. */
+export const medicalRedFlag = (m: MedicalRead | null | undefined): string | null => {
+   if (!m) return null;
+   if (m.ungraded && m.has_problem && m.severity !== 'high') return 'medical: not graded by the AI — read their answer';
+   if (m.severity !== 'high') return null;
+   const who = m.who && m.who !== 'self' ? m.who : m.who === 'self' ? 'their own' : null;
+   return `medical: ${[who, m.condition, m.loan_for ? LOAN_FOR_LABEL[m.loan_for] : null].filter(Boolean).join(', ') || 'big or ongoing cost'}`;
+};
 
 // ---- Grading: photos ----------------------------------------------------------------------------
 

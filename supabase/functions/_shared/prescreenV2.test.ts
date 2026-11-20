@@ -104,6 +104,9 @@ Deno.test('medical: without the AI, their own "future / ongoing" choice is high'
    assertEquals(medicalFromAnswer('lola has asthma', 'ongoing').severity, 'high');
    assertEquals(medicalFromAnswer('lola has asthma', 'future').severity, 'high');
    assertEquals(medicalFromAnswer('lola has asthma', 'none').severity, 'medium');
+   // Not graded and not "no": still stops auto ✅.
+   assertEquals(medicalRedFlag(medicalFromAnswer('lola has asthma', 'paid')), 'medical: not graded by the AI — read their answer');
+   assertEquals(medicalRedFlag(medicalFromAnswer('wala', null)), null);
 });
 
 Deno.test('photos: late, skipped, old file and screen are flagged; on time is clean', () => {
