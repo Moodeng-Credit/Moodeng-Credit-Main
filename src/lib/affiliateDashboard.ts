@@ -144,17 +144,7 @@ export interface AffiliateDashboardData {
 
 /** locked = their friend repaid, but the $5 waits until they repay a loan themself. */
 export type AffiliateStage =
-   | 'paid'
-   | 'owed'
-   | 'voucher'
-   | 'locked'
-   | 'repaid'
-   | 'too_early'
-   | 'borrowed'
-   | 'approved'
-   | 'rejected'
-   | 'checking'
-   | 'signed_up';
+   'paid' | 'owed' | 'voucher' | 'locked' | 'repaid' | 'too_early' | 'borrowed' | 'approved' | 'rejected' | 'checking' | 'signed_up';
 
 export function referralStage(r: AffiliateReferral, unlocked = true): AffiliateStage {
    if (r.repaid && r.claimed) return 'repaid';
@@ -286,6 +276,27 @@ export async function fetchAffiliateDashboard(): Promise<AffiliateDashboardData>
    const { data, error } = await getSupabaseBrowserClient().rpc('my_affiliate_dashboard');
    if (error) throw error;
    return parseAffiliateDashboard(data);
+}
+
+/** Money actually sent to the affiliate (affiliate_payments), and what of it is paid ahead of friends who haven't repaid yet. */
+export type AffiliatePayments = {
+   payments: Array<{ amount: number; tx_hash: string | null; sent_at: string; note: string | null }>;
+   sent: number;
+   ahead: number;
+};
+
+export async function fetchAffiliatePayments(who?: string): Promise<AffiliatePayments> {
+   const supabase = getSupabaseBrowserClient();
+   const { data, error } = who
+      ? await supabase.rpc('admin_affiliate_payments', { p_who: who })
+      : await supabase.rpc('my_affiliate_payments');
+   if (error) throw error;
+   const d = (data ?? {}) as Partial<AffiliatePayments>;
+   return {
+      payments: Array.isArray(d.payments) ? d.payments.map((p) => ({ ...p, amount: Number(p.amount) || 0 })) : [],
+      sent: Number(d.sent) || 0,
+      ahead: Number(d.ahead) || 0
+   };
 }
 
 /** Admins only: someone else's dashboard, read-only. who = user id or @username. */

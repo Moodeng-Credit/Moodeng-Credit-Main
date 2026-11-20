@@ -23,6 +23,7 @@ import {
    claimErrorText,
    fetchAdminAffiliateDashboard,
    fetchAffiliateDashboard,
+   fetchAffiliatePayments,
    friendChecks,
    newPayouts,
    referralStage,
@@ -30,6 +31,7 @@ import {
    splitCodes,
    submitReferralClaim
 } from '@/lib/affiliateDashboard';
+import { txExplorerUrl } from '@/lib/txExplorer';
 import type { RootState } from '@/store/store';
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 import { buildInviteLink } from '@/views/dashboard-v2/dashboardV2Model';
@@ -150,7 +152,8 @@ function HowItWorks({ payout, open }: { payout: number; open: boolean }) {
                      {icon}
                   </span>
                   <span>
-                     <b className="text-[#2d2438] dark:text-white">{i + 1}.</b> {i === 3 ? text.replace('your reward', money(payout)) : text}
+                     <b className="text-[#2d2438] dark:text-white">{i + 1}.</b>{' '}
+                     {i === 3 ? text.replace('your reward', money(payout)) : text}
                   </span>
                </li>
             ))}
@@ -930,6 +933,56 @@ function ClaimFriend({
    );
 }
 
+/* ---------- Money we sent (each transfer, and what's paid ahead) ---------- */
+
+function PaymentsSent({
+   payments,
+   aheadLeft,
+   payout
+}: {
+   payments: Array<{ amount: number; tx_hash: string | null; sent_at: string }>;
+   aheadLeft: number;
+   payout: number;
+}) {
+   const friends = payout > 0 ? Math.floor(aheadLeft / payout + 0.001) : 0;
+   return (
+      <section className="mt-4 rounded-[14px] bg-dv2-card px-4 py-3" aria-label="Money we sent you">
+         <h3 className="text-[15px] font-bold text-[#594d65] dark:text-[#d9cfe6]">💸 Money we sent you</h3>
+         <ul className="mt-2 flex flex-col gap-1.5">
+            {payments.map((p) => (
+               <li
+                  key={`${p.sent_at}-${p.amount}`}
+                  className="flex items-center justify-between gap-3 text-[14px] text-[#594d65] dark:text-[#d9cfe6]"
+               >
+                  <span>
+                     <b className="text-[#6b55f7] dark:text-[#b3a6ff]">{money(p.amount)}</b> · {shortDate(p.sent_at)}
+                  </span>
+                  {p.tx_hash ? (
+                     <a
+                        className="text-[13px] font-semibold text-[#7661f9] underline"
+                        href={txExplorerUrl(p.tx_hash)}
+                        rel="noreferrer"
+                        target="_blank"
+                     >
+                        See transfer
+                     </a>
+                  ) : null}
+               </li>
+            ))}
+         </ul>
+         {aheadLeft > 0 ? (
+            <p className="mt-2 rounded-[10px] bg-emerald-50 px-3 py-2 text-[13px] font-medium leading-5 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200">
+               🎉 {money(aheadLeft)} is paid ahead
+               {friends > 0
+                  ? ` — it covers your next ${friends === 1 ? 'friend' : `${friends} friends`} who repay${friends === 1 ? 's' : ''}`
+                  : ''}
+               . You already have it.
+            </p>
+         ) : null}
+      </section>
+   );
+}
+
 /* ---------- 11 · "You got paid" pop-up ---------- */
 
 function PaidPopup({ amount, count, onClose }: { amount: number; count: number; onClose: () => void }) {
@@ -1016,6 +1069,27 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
    const unlocked = data?.unlocked ?? true;
    const paused = data?.paused ?? false;
    const totals = affiliateTotals(referrals, unlocked);
+   const paymentsQuery = useQuery({
+      queryKey: ['affiliate-payments', viewAs],
+      queryFn: () => fetchAffiliatePayments(viewAs || undefined),
+      staleTime: 30_000,
+      retry: false,
+      enabled: !sample
+   });
+   // /affiliate-preview?sent=1: a $20 transfer with $15 paid ahead, to check the card signed out.
+   const sent =
+      sample && searchParams.get('sent') === '1'
+         ? {
+              payments: [{ amount: 20, tx_hash: '0x' + 'a'.repeat(64), sent_at: new Date().toISOString(), note: null }],
+              sent: 20,
+              ahead: 15
+           }
+         : paymentsQuery.data;
+   // Money sent ahead covers what's owed first; the rest waits for their next friends.
+   const ahead = sent?.ahead ?? 0;
+   const shownOwed = Math.max(0, totals.owed - ahead);
+   const aheadLeft = Math.max(0, ahead - totals.owed);
+   const shownPaid = Math.max(totals.paid, sent?.sent ?? 0);
    const { main, others } = splitCodes(codes, referrals);
    const queryClient = useQueryClient();
    const [voucherFor, setVoucherFor] = useState<AffiliateReferral | null>(null);
@@ -1104,7 +1178,8 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
             <CodeCard main={main} others={others} unlocked={unlocked || !main.personal} onShare={() => setSharing(true)} />
             {adminView ? null : <HowItWorks payout={main.payout_amount} open={isAffiliateOnly || referrals.length === 0} />}
             <PosterQr code={main.code} />
-            <MoneyRow owed={totals.owed} pending={totals.pending} paid={totals.paid} paused={paused} />
+            <MoneyRow owed={shownOwed} pending={totals.pending} paid={shownPaid} paused={paused} />
+            {sent?.payments.length ? <PaymentsSent payments={sent.payments} aheadLeft={aheadLeft} payout={main.payout_amount} /> : null}
             <Friends
                referrals={referrals}
                showCode={codes.length > 1}

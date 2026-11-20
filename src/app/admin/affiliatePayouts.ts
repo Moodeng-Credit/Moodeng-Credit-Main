@@ -19,6 +19,8 @@ export interface OwedAffiliate {
    display_name: string | null;
    wallet_address: string | null;
    owed: number;
+   /** Money sent earlier beyond what it covered (affiliate_payments); use it before sending again. */
+   ahead: number;
    items: OwedPayout[];
 }
 
@@ -61,6 +63,7 @@ export async function listOwedAffiliates(userId?: string): Promise<OwedAffiliate
          display_name: person.display_name,
          wallet_address: person.wallet_address,
          owed: 0,
+         ahead: 0,
          items: []
       };
       row.owed = Math.round((row.owed + item.amount) * 100) / 100;
@@ -102,6 +105,12 @@ export async function listOwedAffiliates(userId?: string): Promise<OwedAffiliate
       });
    }
    for (const row of byUser.values()) row.items.sort((a, b) => a.created_at.localeCompare(b.created_at));
+   await Promise.all(
+      [...byUser.values()].map(async (row) => {
+         const { data } = await supabase.rpc('admin_affiliate_payments', { p_who: row.user_id });
+         row.ahead = Number((data as { ahead?: number } | null)?.ahead ?? 0) || 0;
+      })
+   );
    return [...byUser.values()].sort((a, b) => b.owed - a.owed);
 }
 
@@ -109,10 +118,25 @@ export async function listOwedAffiliates(userId?: string): Promise<OwedAffiliate
  * Marks these payouts paid (one transfer covers them all). A $5 the person turned into a voucher
  * meanwhile is skipped, never marked twice. Returns how many were marked.
  */
-export async function markPayoutsPaid(affiliate: OwedAffiliate, items: OwedPayout[], txHash: string | null): Promise<number> {
+export async function markPayoutsPaid(
+   affiliate: OwedAffiliate,
+   items: OwedPayout[],
+   txHash: string | null,
+   opts: { fromAhead?: boolean } = {}
+): Promise<number> {
    const supabase = getSupabaseBrowserClient();
    const now = new Date().toISOString();
-   const by = txHash ? `admin panel · ${txHash}` : 'admin panel';
+   const by = opts.fromAhead ? 'admin panel · covered by money paid ahead' : txHash ? `admin panel · ${txHash}` : 'admin panel';
+   // Real money went out: one row per transfer, so the affiliate sees it and any extra counts as paid ahead.
+   if (!opts.fromAhead) {
+      const amount = Math.round(items.reduce((s, i) => s + i.amount, 0) * 100) / 100;
+      if (amount > 0) {
+         const { error } = await supabase
+            .from('affiliate_payments')
+            .insert({ owner_user_id: affiliate.user_id, amount, tx_hash: txHash, created_by: 'admin panel' });
+         if (error) throw error;
+      }
+   }
    let marked = 0;
    const codeIds = items.filter((i) => i.source === 'code').map((i) => i.id);
    const refundIds = items.filter((i) => i.source === 'refund').map((i) => i.id);
