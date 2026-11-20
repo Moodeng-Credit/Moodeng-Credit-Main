@@ -25,6 +25,7 @@ import {
    coachHint,
    MEDICAL_CHOICES,
    type MedicalChoice,
+   docHint,
    minutesLeft,
    planJobQuestions,
    PRESCREEN_CAPS,
@@ -123,7 +124,8 @@ const SAMPLE_QUESTIONS: ScreenQuestion[] = [
    { id: 'purpose', text: 'What is this loan for?', kind: 'text' },
    { id: 'grow', text: 'How will you use the loan to build up your income?', kind: 'text' }
 ];
-// /screen-preview?stage=question&q=4…9 shows the v2 steps (photo=ready|live|review|expired, coach=1, med=1).
+// /screen-preview?stage=question&q=4…10 shows the v2 steps (photo=ready|live|review|expired, coach=1, med=1).
+// coach=1 also shows the AI's tip on the work permit step.
 const SAMPLE_V2: ScreenQuestion[] = [
    { id: 'job', kind: 'job', text: 'What is your job?', hint: 'Like farmer, teacher, Grab driver, sari-sari store', min: 3 },
    { id: 'job_q1', kind: 'text', text: 'What do you farm?', hint: 'Like rice, corn, vegetables, pigs', min: 3 },
@@ -134,6 +136,13 @@ const SAMPLE_V2: ScreenQuestion[] = [
       kind: 'doc',
       text: 'Do you have a certificate of employment?',
       hint: 'Optional. A photo or PDF of your COE.',
+      optional: true
+   },
+   {
+      id: 'work_permit',
+      kind: 'doc',
+      text: 'Send a photo of your work permit or visa',
+      hint: 'The page with your name and the end date.',
       optional: true
    },
    { id: 'medical', kind: 'medical', text: 'Do you or your family have a medical problem?', hint: 'Type “no”, or what it is', min: 2 }
@@ -500,6 +509,12 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       []
    );
    const [coeFile, setCoeFile] = useState<File | null>(null);
+   // The AI's tip on an uploaded document (once per question): they send a different one or go on anyway.
+   const [docTip, setDocTip] = useState<Record<string, { path: string; mime: string; hint: string }>>(
+      preview?.coach
+         ? { work_permit: { path: '', mime: 'image/jpeg', hint: 'This permit ended in September 2026. Please send your new permit, with the end date showing.' } }
+         : {}
+   );
    const coeInput = useRef<HTMLInputElement>(null);
    const { locale } = useLocalization();
 
@@ -804,7 +819,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          setQuestions(list);
          setPlannedFor(job.toLowerCase());
          // Answers to the old follow-ups don't fit the new job.
-         kept = uploaded.filter((a) => list.some((q) => q.id === a.q) && !/^job_|^coe$/.test(a.q));
+         kept = uploaded.filter((a) => list.some((q) => q.id === a.q) && !/^job_|^coe$|^work_permit$/.test(a.q));
       }
       const next = [...kept.filter((a) => a.q !== question.id), { ...blank(question.id), text: job }];
       setUploaded(next);
@@ -832,9 +847,30 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       const { error: upError } = await getSupabaseBrowserClient()
          .storage.from('pre-screenings')
          .upload(path, coeFile, { contentType: type, upsert: false });
+      if (upError) {
+         setBusy(false);
+         return setError('Could not send. Check your connection and try again.');
+      }
+      // First upload for this question: the AI says what to send instead if it doesn't fit (never blocks).
+      if (v2 && !docTip[question.id]) {
+         const hint = await docHint(token, question.id, path, locale);
+         if (hint) {
+            setBusy(false);
+            setDocTip((prev) => ({ ...prev, [question.id]: { path, mime: type, hint } }));
+            setCoeFile(null);
+            return;
+         }
+      }
       setBusy(false);
-      if (upError) return setError('Could not send. Check your connection and try again.');
       nextAfter(save({ ...blank(question.id), doc: path, doc_mime: type }));
+   };
+
+   /** After the AI's tip: keep the document they already sent. */
+   const keepTippedDoc = () => {
+      const question = questions[index];
+      const tip = docTip[question.id];
+      if (!tip) return;
+      nextAfter(save({ ...blank(question.id), doc: tip.path, doc_mime: tip.mime }));
    };
 
    const acceptClip = async (clip: Clip) => {
@@ -885,7 +921,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          ? 'Answer'
          : q.kind === 'medical'
            ? 'Health'
-           : q.kind === 'job' || q.kind === 'photo' || q.kind === 'doc' || /^job_|^coe$/.test(q.id)
+           : q.kind === 'job' || q.kind === 'photo' || q.kind === 'doc' || /^job_|^coe$|^work_permit$/.test(q.id)
              ? 'Job'
              : 'Answer';
    const trail = (step: string) => (
@@ -1194,14 +1230,31 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                               )}
                            </div>
                         ) : null}
+                        {docTip[question.id] && !coeFile ? (
+                           <div className="rounded-[14px] bg-[#fff6e0] px-4 py-3 text-[15px] leading-[21px] text-[#5a4300] dark:bg-[#2e2512] dark:text-[#f3dfa8]">
+                              💡 {docTip[question.id].hint}
+                           </div>
+                        ) : null}
                         {coeFile ? (
                            <PrimaryButton disabled={busy} onClick={() => void sendCoe(false)}>
-                              {busy ? <Loader2 aria-label="Sending" className="mx-auto size-5 animate-spin" /> : 'Send my COE'}
+                              {busy ? (
+                                 <Loader2 aria-label="Sending" className="mx-auto size-5 animate-spin" />
+                              ) : question.id === 'work_permit' ? (
+                                 'Send my permit'
+                              ) : (
+                                 'Send my COE'
+                              )}
                            </PrimaryButton>
                         ) : (
-                           <PrimaryButton onClick={() => coeInput.current?.click()}>Add my COE</PrimaryButton>
+                           <PrimaryButton onClick={() => coeInput.current?.click()}>
+                              {docTip[question.id] ? 'Send a different one' : question.id === 'work_permit' ? 'Add my work permit' : 'Add my COE'}
+                           </PrimaryButton>
                         )}
-                        {busy ? null : <GhostButton onClick={() => void sendCoe(true)}>I don’t have one</GhostButton>}
+                        {busy ? null : docTip[question.id] && !coeFile ? (
+                           <GhostButton onClick={keepTippedDoc}>Continue with the one I sent</GhostButton>
+                        ) : (
+                           <GhostButton onClick={() => void sendCoe(true)}>I don’t have one</GhostButton>
+                        )}
                      </>
                   ) : (
                      <>

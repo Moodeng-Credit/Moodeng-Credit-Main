@@ -3,7 +3,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { alertDeepSeekFailure } from '../_shared/deepseekAlert.ts';
-import { coachAnswer, planJob } from '../_shared/prescreenV2.ts';
+import { coachAnswer, coachDoc, planJob } from '../_shared/prescreenV2.ts';
 import { LOAN_REASON_GUIDE } from './loanReasonGuide.ts';
 
 const corsHeaders = {
@@ -301,7 +301,7 @@ const recordCheck = async (row: {
 // Pre-screening v2 rides here (edge-function cap; this one already takes the borrower's JWT): the job
 // follow-ups and the answer coach on moodeng.app/screen. Gemini, not DeepSeek. Only for the caller's own
 // open pre-screening (token + user), so it's no free AI for anyone else. See _shared/prescreenV2.ts.
-const PRESCREEN_KINDS = new Set(['prescreen_job', 'prescreen_coach']);
+const PRESCREEN_KINDS = new Set(['prescreen_job', 'prescreen_coach', 'prescreen_doc']);
 
 const handlePrescreen = async (req: Request, body: Record<string, unknown>) => {
    const userId = callerUserId(req);
@@ -315,8 +315,11 @@ const handlePrescreen = async (req: Request, body: Record<string, unknown>) => {
       const result = await planJob(svc, userId, token, typeof body.job === 'string' ? body.job : '', typeof body.locale === 'string' ? body.locale : 'en');
       return jsonResponse(result, result.ok ? 200 : 400);
    }
-   const answer = typeof body.answer === 'string' ? body.answer.trim() : '';
    const locale = typeof body.locale === 'string' && ['en', 'fil', 'id'].includes(body.locale) ? body.locale : 'en';
+   if (body.kind === 'prescreen_doc') {
+      return jsonResponse(await coachDoc(svc, userId, token, typeof body.q === 'string' ? body.q : '', typeof body.path === 'string' ? body.path : '', locale));
+   }
+   const answer = typeof body.answer === 'string' ? body.answer.trim() : '';
    const verdict = await coachAnswer(svc, userId, token, typeof body.q === 'string' ? body.q : '', answer, locale);
    if (!('skipped' in verdict)) {
       await recordCheck({ user_id: userId, kind: 'prescreen_coach', text: answer.slice(0, 600), ok: verdict.ok, category: null, hint: verdict.hint, suggestion: '', model: 'gemini' });
