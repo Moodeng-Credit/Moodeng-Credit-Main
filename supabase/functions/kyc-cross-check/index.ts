@@ -4,6 +4,7 @@ import { checkCronAuth } from '../_shared/cronAuth.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { analyseIncomeDocument, backfillBorrowerQuestions, notifyIncomeDecision, reviewWithAnswers } from '../_shared/incomeDocs.ts';
 import { gradePreScreening, notifyPreScreeningClaimed, preScreeningWeekly } from '../_shared/preScreening.ts';
+import { linkedSweep } from '../_shared/linkedAccounts.ts';
 import { preScreeningSweep } from '../_shared/preScreeningAsk.ts';
 import { applyPreScreeningDecision } from '../_shared/preScreeningDecision.ts';
 import { pingProofRequest, sendProofRequest } from '../_shared/proofRequests.ts';
@@ -319,6 +320,7 @@ serve(async (req) => {
       prescreen_decided?: string;
       prescreen_weekly?: boolean;
       prescreen_sweep?: boolean;
+      linked_sweep?: boolean;
       quiet?: boolean;
    };
 
@@ -331,6 +333,11 @@ serve(async (req) => {
    }
    // Every 30 min (cron prescreen-sweep): nudge people who haven't answered the follow-up questions,
    // remind the team about cards still without ✅/❌. {"dry": true} = say what it would do.
+   // New accounts linked to rejected / ghosted / overdue ones (every 30 min; "dry": true previews).
+   if (body.linked_sweep === true) {
+      const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+      return jsonResponse(await linkedSweep(svc, { dry: body.dry === true }));
+   }
    if (body.prescreen_sweep === true) {
       const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
       return jsonResponse(await preScreeningSweep(svc, { dry: body.dry === true }));

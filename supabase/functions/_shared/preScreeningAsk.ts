@@ -16,6 +16,7 @@ import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { linkRows } from './adminCards.ts';
 import { GEMINI_MODEL } from './geminiPreScreen.ts';
+import { linkedRedFlag, loadLinkedAccounts } from './linkedAccounts.ts';
 import { type Lang, langOf, teamStepIn } from './messengerIncomeDocReply.ts';
 import { preScreeningDecisionRows } from './preScreening.ts';
 import { applyPreScreeningDecision } from './preScreeningDecision.ts';
@@ -364,6 +365,15 @@ export const toRedFlags = (raw: unknown): string[] => {
 /** Every red flag on this one. When the AI check fails it says so: that counts as a flag (fail closed). */
 async function redFlags(svc: SupabaseClient, row: Row, replies: string[] = []): Promise<string[]> {
    const plain = plainRedFlags(row.grade);
+   // Same device / WhatsApp / Facebook / wallet / home internet as a rejected, ghosted or overdue account.
+   if (row.user_id) {
+      try {
+         const linked = linkedRedFlag(await loadLinkedAccounts(svc, row.user_id));
+         if (linked) plain.push(linked);
+      } catch (err) {
+         console.warn('pre-screening red flags: linked accounts failed', err instanceof Error ? err.message : err);
+      }
+   }
    try {
       const raw = await geminiJson(
          svc,
