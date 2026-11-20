@@ -206,6 +206,9 @@ export default function ContactsStep({
    requireAllLines?: boolean;
 }) {
    const [whatsappVerified, setWhatsappVerified] = useState(false);
+   // The confirmed WhatsApp number and test flag, so the page knows whether the bot will walk them
+   // through Facebook on WhatsApp (it only does for +62 numbers and test accounts, whatsappFirst.ts).
+   const [whatsappLine, setWhatsappLine] = useState<{ number: string | null; isTest: boolean } | null>(null);
    // No-WhatsApp reminders: a Viber number they haven't turned off, or a linked Telegram (chat_id).
    const [viberVerified, setViberVerified] = useState(false);
    const [telegramVerified, setTelegramVerified] = useState(false);
@@ -431,7 +434,12 @@ export default function ContactsStep({
    // Indonesia's sign-up (George, 25 Oct): WhatsApp is step 1 (most have it; many lack the Messenger
    // app), then the bot sends the Facebook steps on WhatsApp. Facebook stays required, and unlocks once
    // WhatsApp is connected or they say they don't have it.
-   const indoWhatsAppFirst = indoCountry && source === 'connect';
+   // The bot only sends those steps to an Indonesian (+62) number or a test account. Someone in
+   // Indonesia with another country's number (a +61 visitor in Bali, 2026-11-18) got "Keep going on
+   // WhatsApp" and no messages, so once their WhatsApp is confirmed they get the normal Facebook card.
+   // No number known yet = keep the bot path (unchanged behaviour); only a known non-+62 number leaves it.
+   const botWalksFacebook = !whatsappLine?.number || whatsappLine.isTest || whatsappLine.number.replace(/\D/g, '').startsWith('62');
+   const indoWhatsAppFirst = indoCountry && source === 'connect' && !(whatsappVerified && !botWalksFacebook);
    const facebookLocked = indoWhatsAppFirst && !whatsappVerified && !skippedNoWhatsApp && !contactVerified;
    // Once WhatsApp is connected, the bot walks them through Facebook there, one message at a time
    // (whatsappFirst.ts), so the app shows no Messenger card that can't open without the Messenger app
@@ -529,7 +537,7 @@ export default function ContactsStep({
       (async () => {
          const { data } = await getSupabaseBrowserClient()
             .from('users')
-            .select('whatsapp_verified_at, messenger_verified_at, messenger_psid, viber_verified_at, notif_viber, chat_id')
+            .select('whatsapp_verified_at, whatsapp_number, is_test, messenger_verified_at, messenger_psid, viber_verified_at, notif_viber, chat_id')
             .eq('id', userId)
             .maybeSingle();
          if (cancelled || !data) return;
@@ -538,6 +546,7 @@ export default function ContactsStep({
          // requireReminders means WhatsApp can't reach them now (no linked contact, or they sent STOP), so
          // an old confirmation doesn't count: they send a fresh code.
          if (data.whatsapp_verified_at && !requireReminders) setWhatsappVerified(true);
+         setWhatsappLine({ number: data.whatsapp_number ?? null, isTest: data.is_test === true });
          if (isMessengerLinked(data, requireAllLines)) {
             setMessengerVerified(true);
             return;
@@ -614,8 +623,16 @@ export default function ContactsStep({
       const channel = client
          .channel(`contact-verify:${userId}`)
          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${userId}` }, (payload) => {
-            const row = payload.new as { messenger_verified_at?: string | null; messenger_psid?: string | null; whatsapp_verified_at?: string | null };
+            const row = payload.new as {
+               messenger_verified_at?: string | null;
+               messenger_psid?: string | null;
+               whatsapp_verified_at?: string | null;
+               whatsapp_number?: string | null;
+               is_test?: boolean | null;
+            };
             if (isMessengerLinked(row, requireAllLines)) setMessengerVerified(true);
+            // Only when the payload carries the number: a missing field must not drop a +62 borrower off the bot path.
+            if ('whatsapp_number' in row) setWhatsappLine({ number: row.whatsapp_number ?? null, isTest: row.is_test === true });
             // requireReminders: the WhatsApp card watches for its own fresh confirmation instead.
             if (row.whatsapp_verified_at && !requireReminders) setWhatsappVerified(true);
          })
@@ -675,10 +692,11 @@ export default function ContactsStep({
       pollRef.current = window.setInterval(async () => {
          const { data } = await getSupabaseBrowserClient()
             .from('users')
-            .select('whatsapp_verified_at, messenger_verified_at, messenger_psid')
+            .select('whatsapp_verified_at, whatsapp_number, is_test, messenger_verified_at, messenger_psid')
             .eq('id', userId)
             .maybeSingle();
          if (data?.whatsapp_verified_at) setWhatsappVerified(true);
+         if (data?.whatsapp_number) setWhatsappLine({ number: data.whatsapp_number, isTest: data.is_test === true });
          if (isMessengerLinked(data, requireAllLines)) setMessengerVerified(true);
          const done = channel === 'whatsapp' ? data?.whatsapp_verified_at : isMessengerLinked(data, requireAllLines);
          if (done) stopPolling();
@@ -746,10 +764,11 @@ export default function ContactsStep({
          if (document.visibilityState !== 'visible') return;
          const { data } = await getSupabaseBrowserClient()
             .from('users')
-            .select('whatsapp_verified_at, messenger_verified_at, messenger_psid')
+            .select('whatsapp_verified_at, whatsapp_number, is_test, messenger_verified_at, messenger_psid')
             .eq('id', userId)
             .maybeSingle();
          if (data?.whatsapp_verified_at) setWhatsappVerified(true);
+         if (data?.whatsapp_number) setWhatsappLine({ number: data.whatsapp_number, isTest: data.is_test === true });
          let bounced = false;
          if (leftAtRef.current !== null) {
             const awayMs = Date.now() - leftAtRef.current;
