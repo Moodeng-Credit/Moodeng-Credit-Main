@@ -18,6 +18,7 @@ type Svc = any;
 export type BotStage =
    | 'unlinked'
    | 'lender'
+   | 'rejected'
    | 'wallet'
    | 'messenger'
    | 'about'
@@ -49,6 +50,8 @@ export type BotUserRow = {
 // Same order as getJourney() in the app, so the bot and the app's "next step" bar always agree.
 export const botStage = (user: BotUserRow | null, gated: boolean, triesLeft: number): BotStage => {
    if (!user) return 'unlinked';
+   // Rejected (or ghosted) borrowers get no borrower steps: the bot used to send them "Tell us about you".
+   if (user.user_role !== 'lender' && user.loan_access_status === 'rejected') return 'rejected';
    if (isKycVerified(user)) return 'verified';
    if (user.user_role === 'lender') return 'lender';
    if (!user.wallet_address?.trim()) return 'wallet';
@@ -109,6 +112,12 @@ export const nextStepReply = (stage: BotStage, locale: BotLocale, firstName: str
                { title: say('Sign up free', 'Mag-sign up'), url: signUpUrl(locale) },
                { title: say('I have an account', 'May account na ako'), url: connect }
             ]
+         );
+      case 'rejected':
+         return reply(
+            'Thank you for your interest in Moodeng. We can\'t offer you a loan right now.',
+            'Salamat sa interes mo sa Moodeng. Hindi ka pa namin mabibigyan ng loan sa ngayon.',
+            []
          );
       case 'lender':
          return reply(
@@ -319,6 +328,9 @@ export const borrowReply = (
    const hi = firstName ? `Hi ${firstName}! ` : '';
    const back = BACK[locale];
    const cardTitle = say('👇 Your next step', '👇 Ang susunod mong hakbang');
+
+   // Rejected: no steps, no buttons — just the polite "not right now".
+   if (stage === 'rejected' && !loans.active) return nextStepReply(stage, locale, firstName, triesLeft);
 
    if (stage === 'unlinked' || stage === 'lender') {
       return {

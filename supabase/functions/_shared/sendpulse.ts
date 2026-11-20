@@ -72,6 +72,32 @@ export const getMessengerContact = async (contactId: string): Promise<SendPulseC
    }
 };
 
+/**
+ * Turn the SendPulse bot off (or back on) for one Messenger contact. A disabled contact (status 3)
+ * gets nothing: no SendPulse flows (menu, welcome) and none of our sends (sendMessengerMessage skips
+ * status 2/3). Their messages still arrive in the inbox. Used by /ghost and /unghost.
+ */
+export const setMessengerContactEnabled = async (contactId: string, enabled: boolean): Promise<SendPulseResult> => {
+   try {
+      const token = await getToken();
+      if (!token) return { ok: false, reason: 'auth_failed' };
+      const res = await fetch(`${API}/messenger/contacts/${enabled ? 'enable' : 'disable'}`, {
+         method: 'POST',
+         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+         body: JSON.stringify({ contact_id: contactId })
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || body?.success === false) {
+         console.error('[sendpulse] contacts enable/disable failed', res.status, JSON.stringify(body)?.slice(0, 200));
+         return { ok: false, reason: `http_${res.status}` };
+      }
+      return { ok: true };
+   } catch (err) {
+      console.error('[sendpulse] contacts enable/disable threw', err instanceof Error ? err.message : err);
+      return { ok: false, reason: 'send_failed' };
+   }
+};
+
 // One message in a contact's chat log. direction 1 = from the person, 2 = from us (bot or operator).
 export type SendPulseChatMessage = { id?: string; direction?: number; created_at?: string };
 

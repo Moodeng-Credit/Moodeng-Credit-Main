@@ -32,6 +32,8 @@ import {
    parseDecisionCallback,
    parseRejectFollowUpCallback,
    reopenLoanAccess,
+   ghostUser,
+   unghostUser,
    setCardButtons,
    shortId
 } from '../_shared/loanAccess.ts';
@@ -792,6 +794,34 @@ const handleReopenCommand = async (supabase: SupabaseClient, message: TelegramMe
       return true;
    }
    const result = await reopenLoanAccess(supabase, user.id, adminHandle(message.from));
+   await sendTelegramMessage(chatId, result.summary);
+   return true;
+};
+
+// Quiet reject for someone we don't want to tell anything (begging, pushy, suspicious):
+//   /ghost @username     rejected with no message + Messenger bot off for every account on that Facebook
+//   /unghost @username   Messenger bot back on (still rejected; /reopen to let them ask again)
+const handleGhostCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
+   const match = (message.text ?? '').trim().match(/^\/(un)?ghost(?:@\w+)?(?:\s+(\S+))?/i);
+   if (!match) return false;
+   const chatId = message.chat.id;
+   const undo = !!match[1];
+   const arg = (match[2] ?? '').trim().replace(/^@/, '');
+   if (!arg) {
+      await sendTelegramMessage(
+         chatId,
+         undo ? 'Usage: /unghost @username — turns the Messenger bot back on for them' : 'Usage: /ghost @username — rejects them quietly (no message) and turns the Messenger bot off for them'
+      );
+      return true;
+   }
+   const { data: user } = /^[0-9a-f-]{36}$/i.test(arg)
+      ? await supabase.from('users').select('id').eq('id', arg).maybeSingle()
+      : await supabase.from('users').select('id').ilike('username', escapeLike(arg)).maybeSingle();
+   if (!user) {
+      await sendTelegramMessage(chatId, `No user found for ${arg}.`);
+      return true;
+   }
+   const result = undo ? await unghostUser(supabase, user.id, adminHandle(message.from)) : await ghostUser(supabase, user.id, adminHandle(message.from));
    await sendTelegramMessage(chatId, result.summary);
    return true;
 };
@@ -1645,6 +1675,12 @@ serve(async (req) => {
       if (isAdminChannel && /^\/reopen\b/i.test(message.text ?? '')) {
          await handleReopenCommand(supabase, message);
          return jsonResponse({ message: 'Reopen command handled' });
+      }
+
+      // Quiet reject (no message) + Messenger bot off, or bot back on — either admin channel.
+      if (isAdminChannel && /^\/(un)?ghost\b/i.test(message.text ?? '')) {
+         await handleGhostCommand(supabase, message);
+         return jsonResponse({ message: 'Ghost command handled' });
       }
 
       // Count an early repayment for food vouchers — either admin channel.
