@@ -208,3 +208,12 @@ Deno.test('jobRedFlags / noIncomeLine: sensitive work and a job typed over and o
    assertEquals(noIncomeLine([{ kind: 'job', no_income: true }]) !== null, true);
    assertEquals(noIncomeLine([{ kind: 'job' }]), null);
 });
+
+Deno.test('job keyword list: any job abroad is an OFW worker; family of one is ofw_family; local jobs stay local', () => {
+   for (const job of ['factory worker in Kuwait', 'OFW sa Saudi', 'driver in Dubai', 'nurse in Saudi Arabia', 'DH sa Saudi', 'TKI di Malaysia'])
+      assertEquals(fallbackPlan(job).category, 'ofw_worker', job);
+   for (const job of ['my husband is OFW in Dubai', 'suami saya TKI di Malaysia', 'my wife is a domestic helper in HK'])
+      assertEquals(fallbackPlan(job).category, 'ofw_family', job);
+   for (const job of ['helper sa Maynila', 'factory worker', 'Grab driver', 'tricycle driver', 'small business'])
+      assert(!fallbackPlan(job).category.startsWith('ofw'), job);
+});
