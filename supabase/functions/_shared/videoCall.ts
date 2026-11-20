@@ -172,7 +172,7 @@ export const sendBookedMessenger = (u: CallUser, offerQuestions = false) => {
 // Right after the booked message, as its own message so it isn't lost in it: people we have no mobile
 // number for can reply with one and get the call texted to them (messengerBookingBot.handleReminderNumber).
 export const TEXT_REMINDER_ASK =
-   '📱 Want a TEXT REMINDER 1 hour before your call?\n\nReply with your mobile number, like 0917 123 4567.\n(Globe, TM, GOMO or DITO for now.)';
+   '📱 Want a TEXT REMINDER 1 hour before your call?\n\nReply with just your mobile number, like 0917 123 4567.';
 export const sendTextReminderAsk = (u: Pick<CallUser, 'messenger_psid'>) => sendMessengerMessage(u.messenger_psid, { text: TEXT_REMINDER_ASK });
 
 // The call moved (the borrower or the team rescheduled it on Cal.com): the new time, the join link,

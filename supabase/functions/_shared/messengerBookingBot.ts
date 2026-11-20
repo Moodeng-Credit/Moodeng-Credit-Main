@@ -198,6 +198,21 @@ export const isPhMobile = (text: string): boolean => {
    return /^(63|0)?9\d{9}$/.test(t.replace(/\D/g, ''));
 };
 
+// People add their network or a few words ("0917 123 4567 Globe", "my number is 09171234567 po"), which
+// used to fail isPhMobile and land as a support ticket. Pull the number out of a SHORT message; the
+// network is worked out from the number afterwards (call_sms_save_for), never asked for. Pure.
+export const extractPhMobile = (text: string): string | null => {
+   const t = text.trim();
+   if (isPhMobile(t)) return t;
+   if (t.length > 60) return null;
+   const m = t.match(/\+?(?:63|0)?[\s.-]*9(?:[\s().-]*\d){9}/);
+   if (!m) return null;
+   const rest = t.replace(m[0], '').replace(/[^a-z]/gi, ' ').trim();
+   // Only a few words around it (a network name, "po", "my number is"), not a whole message.
+   if (rest.split(/\s+/).filter(Boolean).length > 5) return null;
+   return isPhMobile(m[0].trim()) ? m[0].trim() : null;
+};
+
 const NUMBER_REPLY: Record<string, string> = {
    network: "Sorry, our texts don't reach Smart, TNT or Sun numbers yet 🙏 We'll remind you here on Messenger. Have a Globe, TM, GOMO or DITO number? Send that one.",
    too_many: "You've changed your number a few times already, so we kept the last one. We'll also remind you here on Messenger.",
@@ -211,10 +226,11 @@ const NUMBER_REPLY: Record<string, string> = {
  */
 export const handleReminderNumber = async (svc: Svc, userId: string, contactId: string, text: string): Promise<boolean> => {
    try {
-      if (!isPhMobile(text)) return false;
+      const number = extractPhMobile(text);
+      if (!number) return false;
       const { data: user } = await svc.from('users').select('video_call_booking_uid, video_call_starts_at').eq('id', userId).maybeSingle();
       if (!user?.video_call_booking_uid || !user.video_call_starts_at || Date.parse(user.video_call_starts_at) <= Date.now()) return false;
-      const { data, error } = await svc.rpc('call_sms_save_for', { p_user: userId, p_phone: text });
+      const { data, error } = await svc.rpc('call_sms_save_for', { p_user: userId, p_phone: number });
       if (error) throw new Error(error.message);
       const r = (data ?? {}) as { ok?: boolean; error?: string; number?: string; texted?: boolean };
       if (!r.ok && r.error === 'off') return false;
