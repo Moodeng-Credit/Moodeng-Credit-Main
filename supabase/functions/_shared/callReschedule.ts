@@ -46,8 +46,41 @@ export const parseRescheduleCallback = (data?: string | null): RescheduleAction 
    return { step: STEP[match[1].toLowerCase()], userId: match[2].toLowerCase(), arg: match[3]?.toLowerCase() ?? null };
 };
 
-// The button on call cards.
+// The in-chat picker (still behind /move @username and on cards posted before the Cal.com link).
 export const changeTimeButton = (userId: string) => ({ text: '🔄 Change time', callback_data: buildRescheduleCallback('open', userId) });
+
+// 🔄 Change time on call cards: opens the booking's own Cal.com reschedule page (George, 2026-11-20),
+// so the team sees the real host's free times on any date. It goes through calcom-webhook's signed
+// GET (?move=<user id>&t=<token>), which records a team move first (so the move isn't counted as the
+// borrower's reschedule strike) and looks up their current booking uid at tap time (a reschedule
+// gives the booking a new uid, so a uid baked into an old card would be stale).
+const SUPABASE_URL = (Deno.env.get('SUPABASE_URL') ?? '').replace(/\/$/, '');
+const moveKeyBytes = () => new TextEncoder().encode(Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+const toBase64Url = (bytes: Uint8Array) =>
+   btoa(String.fromCharCode(...bytes))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+export const changeTimeToken = async (userId: string): Promise<string> => {
+   const key = await crypto.subtle.importKey('raw', moveKeyBytes(), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+   const sig = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`calmove:${userId.toLowerCase()}`)));
+   return toBase64Url(sig.slice(0, 18));
+};
+
+// Constant-time compare.
+export const isValidChangeTimeToken = async (userId: string, token: string): Promise<boolean> => {
+   const expected = await changeTimeToken(userId);
+   if (token.length !== expected.length) return false;
+   let diff = 0;
+   for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ token.charCodeAt(i);
+   return diff === 0;
+};
+
+export const changeTimeLinkButton = async (userId: string) => ({
+   text: '🔄 Change time',
+   url: `${SUPABASE_URL}/functions/v1/calcom-webhook?move=${encodeURIComponent(userId)}&t=${await changeTimeToken(userId)}`
+});
 
 export const startKey = (iso: string) => Math.floor(Date.parse(iso) / 60000).toString(36);
 const startFromKey = (key: string) => new Date(parseInt(key, 36) * 60000).toISOString();

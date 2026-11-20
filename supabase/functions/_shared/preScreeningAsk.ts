@@ -25,6 +25,7 @@ import { sendPushToUser } from './pushDelivery.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
 import { MESSENGER_CHAT_URL } from './whatsappFirst.ts';
+import { withToday } from './aiToday.ts';
 
 export type FollowupQuestion = { team: string; en: string; local: string | null };
 type Draft = { questions: FollowupQuestion[]; card_chat: number | string; card_msg: number; by: string };
@@ -196,7 +197,7 @@ async function geminiJson(svc: SupabaseClient, system: string, input: unknown, t
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
       signal: AbortSignal.timeout(timeoutMs),
       body: JSON.stringify({
-         systemInstruction: { parts: [{ text: system }] },
+         systemInstruction: { parts: [{ text: withToday(system) }] },
          contents: [{ role: 'user', parts: [{ text: JSON.stringify(input) }] }],
          generationConfig: {
             responseMimeType: 'application/json',

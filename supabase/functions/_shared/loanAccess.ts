@@ -29,7 +29,7 @@ import type { PushLocale, PushPayload } from './pushMessages.ts';
 import { getMessengerContact, messengerDisplayName, sendMessengerMessage, sendWhatsAppTemplate, setMessengerContactEnabled, type MessengerCard } from './sendpulse.ts';
 import { getTelegramBotSettingEnabled } from './borrowerNotificationDelivery.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
-import { changeTimeButton } from './callReschedule.ts';
+import { changeTimeLinkButton } from './callReschedule.ts';
 import { cancelCallButton, cancelUpcomingCall } from './callCancel.ts';
 import { formatCallTimeForTeam } from './videoCall.ts';
 import { describeHeldRequests } from './loanRequestHold.ts';
@@ -282,7 +282,7 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
                ...decisionKeyboard(request),
                [{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }, openInAdminButton(borrower.id, borrower.username)],
                // Move or drop the call from right here (callReschedule.ts / callCancel.ts).
-               ...(isCall && borrower.video_call_booking_uid ? [[changeTimeButton(borrower.id), cancelCallButton(borrower.id)]] : []),
+               ...(isCall && borrower.video_call_booking_uid ? [[await changeTimeLinkButton(borrower.id), cancelCallButton(borrower.id)]] : []),
                ...testAccountRow(borrower.id, borrower.is_test)
             ]
          });

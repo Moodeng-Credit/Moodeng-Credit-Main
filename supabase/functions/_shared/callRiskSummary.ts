@@ -1,3 +1,4 @@
+import { withToday } from './aiToday.ts';
 // AI risk summary of a borrower's onboarding call (call_transcripts), shown on the admin call sheet.
 // DeepSeek reads the Zoom transcript next to what the borrower told us in their bio and what the host
 // wrote on the call sheet, and answers in plain JSON. It's a second pair of ears for the team, never a
@@ -81,7 +82,7 @@ export const summarizeCallTranscript = async (svc: SupabaseClient, transcriptId:
                temperature: 0.2,
                max_tokens: 1200,
                response_format: { type: 'json_object' },
-               messages: [{ role: 'system', content: SYSTEM_PROMPT }, user]
+               messages: [{ role: 'system', content: withToday(SYSTEM_PROMPT) }, user]
             })
          });
       } finally {

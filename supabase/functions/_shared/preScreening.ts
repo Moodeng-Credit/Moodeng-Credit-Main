@@ -35,6 +35,7 @@ import {
    worstMedical
 } from './prescreenV2.ts';
 import { sendTelegramFiles, sendTelegramMessage, type TelegramInlineKeyboard, type TelegramUpload } from './telegram.ts';
+import { withToday } from './aiToday.ts';
 
 // The team's decision buttons (handled in telegram-webhook via preScreeningDecision.ts).
 export const preScreeningDecisionRow = (id: string): TelegramInlineKeyboard[number] => [
@@ -415,7 +416,7 @@ async function gradeOnce(apiKey: string, model: string, user: string): Promise<M
          temperature: model === MODEL ? 0 : 0.3,
          response_format: { type: 'json_object' },
          messages: [
-            { role: 'system', content: SYSTEM },
+            { role: 'system', content: withToday(SYSTEM) },
             { role: 'user', content: user }
          ]
       })

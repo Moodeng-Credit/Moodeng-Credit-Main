@@ -333,12 +333,20 @@ export default function IncomeDocsSection() {
                            </p>
                            {doc.questions.map((q) => {
                               const a = doc.answers?.find((x) => x.id === q.id);
+                              // A screenshot answer is saved as photo:<path in income-docs>.
+                              const photoPath = a?.a.startsWith('photo:') ? a.a.slice('photo:'.length) : null;
                               return (
                                  <div key={q.id}>
                                     <p>❓ {q.en}</p>
-                                    <p className={a ? 'text-white' : 'text-[#a89bb8]'}>
-                                       💬 {a ? `${a.a}${a.via === 'messenger' ? ' (Messenger)' : ''}` : 'No answer yet'}
-                                    </p>
+                                    {photoPath ? (
+                                       <button className="text-left font-semibold text-[#b4a6ff] underline" onClick={() => void openFile(photoPath)} type="button">
+                                          📸 Open their screenshot
+                                       </button>
+                                    ) : (
+                                       <p className={a ? 'text-white' : 'text-[#a89bb8]'}>
+                                          💬 {a ? `${a.a}${a.via === 'messenger' ? ' (Messenger)' : ''}` : 'No answer yet'}
+                                       </p>
+                                    )}
                                  </div>
                               );
                            })}

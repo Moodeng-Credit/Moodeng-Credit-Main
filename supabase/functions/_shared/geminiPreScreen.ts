@@ -7,6 +7,7 @@
 import { GEMINI_MODEL } from './geminiModel.ts';
 import type { IncomeProofRead } from './incomeDocs.ts';
 import { MEDICAL_PROMPT, type MedicalRead, PHOTO_PROMPT, type PhotoCheck, toMedical, toPhotoCheck, worstMedical } from './prescreenV2.ts';
+import { withToday } from './aiToday.ts';
 
 export { GEMINI_MODEL };
 const URL_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
@@ -167,7 +168,7 @@ async function readOnce(key: string, parts: unknown[]): Promise<RawRead> {
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
       signal: AbortSignal.timeout(75_000),
       body: JSON.stringify({
-         systemInstruction: { parts: [{ text: SYSTEM }] },
+         systemInstruction: { parts: [{ text: withToday(SYSTEM) }] },
          contents: [{ role: 'user', parts }],
          generationConfig: {
             responseMimeType: 'application/json',

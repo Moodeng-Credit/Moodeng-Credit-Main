@@ -10,6 +10,7 @@ import { sendMessengerMessage } from './sendpulse.ts';
 import { fileMarkers, gcashRefIssues, type ImageInfo, imageInfo, isAiSize, rowKeys, rowOverlap } from './fileForensics.ts';
 import { sendTelegramFiles, sendTelegramMessage, type TelegramInlineKeyboard, type TelegramUpload } from './telegram.ts';
 import { idLocaleOf, idResendReason, isIdTrackUser, loadIdStatus, notifyIdNextStep, sendIdTelegram } from './idTrack.ts';
+import { withToday } from './aiToday.ts';
 
 // Proof of income sent from moodeng.app/documents (see the income_documents migration).
 //   0. ping     Telegram admin chat + Discord #kyc right away: who sent what, open it in Admin
@@ -581,7 +582,7 @@ export type CheckSection = { key: string; label: string; status: 'pass' | 'warn'
 
 // Which flag belongs to which named check. Anything that could mean a fake is in FAKE_SECTIONS.
 const SECTIONS: Array<{ key: string; label: string; codes: string[] }> = [
-   { key: 'authentic', label: 'Not edited', codes: ['balance_math', 'running_balance', 'payslip_math', 'made_in_editor', 'edited_after_creation', 'visual_anomaly', 'edited_image'] },
+   { key: 'authentic', label: 'Not edited', codes: ['balance_math', 'running_balance', 'payslip_math', 'made_in_editor', 'edited_after_creation', 'visual_anomaly', 'edited_image', 'payslip_sent_before_period_end'] },
    { key: 'not_ai', label: 'Not AI-made', codes: ['ai_label', 'ai_generator', 'ai_image_size', 'gcash_ref_repeated', 'gcash_ref_format'] },
    { key: 'identity', label: 'Name matches ID', codes: ['name_mismatch'] },
    { key: 'unique', label: 'Not used by another account', codes: ['same_file_other_account', 'same_rows_other_account'] },
@@ -663,7 +664,7 @@ const deepseekJson = async <T>(
             max_tokens: maxTokens,
             response_format: { type: 'json_object' },
             messages: [
-               { role: 'system', content: system },
+               { role: 'system', content: withToday(system) },
                { role: 'user', content }
             ]
          })
@@ -1091,7 +1092,9 @@ export const opinionText = (o: AiDirection) =>
 const OPINION_READS = 3;
 
 /** One AI question as the borrower sees it (income_documents.questions). `team` is the AI's original wording. */
-export type BorrowerQuestion = { id: string; team: string; en: string; local: string | null; kind: 'text' | 'file' };
+// kind: 'text' = typed answer; 'file' = "can you add more?" (they send new files); 'photo' = one screenshot
+// attached as the answer itself (saved as `photo:<storage path>`, see PHOTO_ANSWER_PREFIX).
+export type BorrowerQuestion = { id: string; team: string; en: string; local: string | null; kind: 'text' | 'file' | 'photo' };
 export type BorrowerAnswer = { id: string; a: string; at: string; via: 'page' | 'messenger' };
 
 const QUESTIONS_SYSTEM = `A small lender's team has questions about a borrower's proof-of-income document. The borrowers are Filipino or Indonesian, often not strong readers. Rewrite each team question as the message we send the borrower:
@@ -1117,6 +1120,129 @@ export const parseBorrowerQuestions = (raw: unknown): BorrowerQuestion[] => {
       .filter((q) => q.en)
       .slice(0, 2)
       .map((q, i) => ({ id: `q${i + 1}`, ...q }));
+};
+
+// ---- Payslip proof questions --------------------------------------------------------------------
+// A payslip is just a picture: totals can add up and the name can match while the dates or amounts were
+// changed (Nov 2026: an AI-cleaned payslip passed every check; the chat it came from showed it sent on
+// the first day of the pay period it claimed to cover). So every payslip send gets the same two
+// questions, written here (not by the AI) so they're always asked and always worded the same.
+
+/** A photo answer is saved as this prefix + its path in the income-docs bucket. */
+export const PHOTO_ANSWER_PREFIX = 'photo:';
+
+/** The fixed payslip questions, in their language (ids p1, p2 — the AI's are q1, q2). Pure. */
+export const payslipProofQuestions = (country: 'Philippines' | 'Indonesia'): BorrowerQuestion[] => [
+   {
+      id: 'p1',
+      team: 'Did they edit or enhance the payslip photo in any app before sending it?',
+      en: 'Did you edit or enhance this photo in any app before sending it to us?',
+      local:
+         country === 'Indonesia'
+            ? 'Apakah kamu mengedit atau memperjelas foto ini di aplikasi apa pun sebelum mengirimnya ke kami?'
+            : 'Na-edit o na-enhance mo ba ang photo na ito sa kahit anong app bago mo i-send sa amin?',
+      kind: 'text'
+   },
+   {
+      id: 'p2',
+      team: 'Screenshot of the chat or email where they got this payslip, with the date showing.',
+      en: 'Please send a screenshot of the chat or email where you got this payslip, with the date showing.',
+      local:
+         country === 'Indonesia'
+            ? 'Tolong kirim screenshot chat atau email tempat kamu menerima slip gaji ini, dengan tanggalnya terlihat.'
+            : 'Paki-send ng screenshot ng chat o email kung saan mo natanggap ang payslip na ito, kita dapat ang date.',
+      kind: 'photo'
+   }
+];
+
+/** The storage path of a photo answer, only if it's in the borrower's own folder. Pure. */
+export const photoAnswerPath = (answer: string | null | undefined, userId: string) => {
+   if (!answer?.startsWith(PHOTO_ANSWER_PREFIX)) return null;
+   const path = answer.slice(PHOTO_ANSWER_PREFIX.length).trim();
+   return path.startsWith(`${userId}/`) && !path.includes('..') ? path : null;
+};
+
+export type PayslipSourceRead = { sent_date: string | null; shows_payslip: boolean; notes: string };
+
+const SOURCE_SYSTEM = `A borrower sent a payslip as proof of income. We asked them for a screenshot of the chat or email where they received it. You get that screenshot and what the payslip says. Read:
+- sent_date: the date the payslip (image, file or message) was sent in that chat, as YYYY-MM-DD. Chat apps often show a date like "OCT 15 AT 9:39 AM" with no year: use the most recent such date that is not after today. Use the date shown just above or next to the payslip, not today's date or the phone's clock. null if no date is visible for it.
+- shows_payslip: true only if a payslip is actually visible in the chat.
+- notes: at most 2 short plain sentences on anything that doesn't fit: the payslip in the chat looks different from the one described, the chat reads like a job application or recruitment rather than payroll, it's not a chat at all. Empty string if nothing.
+Reply with only a json object: {"sent_date": "YYYY-MM-DD" | null, "shows_payslip": true | false, "notes": "..."}`;
+
+/** Whatever the model sent back, cleaned. Pure. */
+export const parseSourceRead = (raw: unknown): PayslipSourceRead => {
+   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+   const date = typeof r.sent_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.sent_date) ? r.sent_date : null;
+   return { sent_date: date, shows_payslip: r.shows_payslip === true, notes: strOrNull(r.notes)?.slice(0, 300) ?? '' };
+};
+
+const DAY_MS_DOCS = 86_400_000;
+
+/**
+ * The chat date against the pay period: a payslip can't be sent days before the period it covers has
+ * ended. Up to 3 days early is normal (prepared before payday); more is a red flag. Pure.
+ */
+export const sourceDateFlag = (sentDate: string | null, periodEnd: string | null): Flag | null => {
+   if (!sentDate || !periodEnd) return null;
+   const sent = Date.parse(sentDate);
+   const end = Date.parse(periodEnd);
+   if (!Number.isFinite(sent) || !Number.isFinite(end)) return null;
+   const early = Math.round((end - sent) / DAY_MS_DOCS);
+   if (early > 3) {
+      return {
+         code: 'payslip_sent_before_period_end',
+         severity: 'red',
+         detail: `Their chat shows the payslip sent on ${sentDate}, ${early} days BEFORE the pay period it covers ends (${periodEnd}). A real payslip for that period couldn't exist yet.`
+      };
+   }
+   if (early > 0) {
+      return { code: 'payslip_sent_early', severity: 'info', detail: `Chat shows it sent on ${sentDate}, ${early} day(s) before the period ends (${periodEnd}) — normal for a payslip made before payday.` };
+   }
+   return null;
+};
+
+/** Read the chat screenshot they sent as a photo answer. Null when it can't be loaded or read. */
+const readPayslipSource = async (supabase: SupabaseClient, apiKey: string, path: string, doc: Extracted): Promise<PayslipSourceRead | null> => {
+   try {
+      const { data: blob, error } = await supabase.storage.from('income-docs').download(path);
+      if (error || !blob) return null;
+      const mime = blob.type && IMAGE_TYPES.has(blob.type) ? blob.type : 'image/jpeg';
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      const out = await deepseekJson<unknown>(
+         apiKey,
+         SOURCE_SYSTEM,
+         [
+            {
+               type: 'text',
+               text: JSON.stringify({
+                  payslip: { employer: doc.payslip?.employer ?? doc.institution, pay_period: [doc.period_start, doc.period_end], net_pay: doc.payslip?.net_pay ?? null, currency: doc.currency }
+               })
+            },
+            { type: 'image_url', image_url: { url: `data:${mime};base64,${toBase64(bytes)}`, detail: 'high' } }
+         ],
+         600,
+         { timeoutMs: 60_000 }
+      );
+      return parseSourceRead(out);
+   } catch (err) {
+      console.warn('payslip source read failed', err instanceof Error ? err.message : err);
+      return null;
+   }
+};
+
+/** The team line for the chat-screenshot check. Pure. */
+export const sourceLine = (read: PayslipSourceRead | null, flag: Flag | null) => {
+   if (!read) return '📸 Chat screenshot: couldn’t read it — open it in Admin → Income docs.';
+   const parts = [
+      flag?.severity === 'red' ? `🔴 ${flag.detail}` : null,
+      !read.shows_payslip ? '🟠 No payslip visible in the chat screenshot.' : null,
+      !read.sent_date ? '🟠 No date visible next to the payslip in the chat.' : null,
+      flag?.severity === 'info' ? `✅ ${flag.detail}` : null,
+      read.sent_date && !flag ? `✅ Chat shows it sent on ${read.sent_date}, after the pay period ended.` : null,
+      read.notes ? `📝 ${read.notes}` : null
+   ].filter(Boolean);
+   return `📸 Chat screenshot check\n${parts.join('\n')}`;
 };
 
 /** The AI's team questions rewritten for the borrower. Empty when there are none or the call fails. */
@@ -1148,7 +1274,8 @@ const borrowerQuestions = async (apiKey: string, ask: string[], ctx: Record<stri
 export const pairAnswers = (questions: BorrowerQuestion[], answers: BorrowerAnswer[]) =>
    questions.map((q) => {
       const a = answers.find((x) => x.id === q.id);
-      return { question: q.team || q.en, asked_them: q.en, answer: a?.a ?? null, via: a?.via ?? null };
+      const answer = a?.a?.startsWith(PHOTO_ANSWER_PREFIX) ? '📸 sent a screenshot' : (a?.a ?? null);
+      return { question: q.team || q.en, asked_them: q.en, answer, via: a?.via ?? null };
    });
 
 /** The team post after they answered. Pure. */
@@ -1489,14 +1616,19 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    // the answers go back into the opinion (reviewWithAnswers). Not when it approved itself, and not on
    // fraud signs (those are the team's to raise).
    // Skipped when the check has already run long (the opinion's thinking pass can take most of the time).
-   const questions =
+   // Payslips also get the two fixed proof questions (first, whatever the risk): asking where it came
+   // from gives nothing away, and the chat's date is what catches a changed payslip.
+   const country = countryOf(user?.market, doc?.currency);
+   const proofQuestions = !autoApprove && doc.doc_type === 'payslip' ? payslipProofQuestions(country) : [];
+   const aiQuestions =
       !autoApprove && risk !== 'red' && aiNote?.ask.length && Date.now() - startedAt < 100_000
          ? await borrowerQuestions(apiKey, aiNote.ask, {
-              country: countryOf(user?.market, doc?.currency),
+              country,
               document: { type: doc.doc_type, institution: doc.institution, currency: doc.currency, period: [doc.period_start, doc.period_end] },
               rows: doc.transactions.slice(0, 60).map((t, i) => ({ row: `T${i + 1}`, date: t.date, description: t.description, amount: t.amount }))
            })
          : [];
+   const questions = [...proofQuestions, ...aiQuestions];
    const decidedBy = stepAuto ? `auto ($${step!.min} step)` : `auto (AI lend x${aiNote?.votes.length ?? 0}, score ${score})`;
    const headline = stepAuto
       ? `✅ Approved automatically ($${step!.min} step)`
@@ -1558,7 +1690,7 @@ export const reviewWithAnswers = async (supabase: SupabaseClient, id: string, ap
       .eq('id', id)
       .is('answers_reviewed_at', null)
       .is('decision', null)
-      .select('id, user_id, questions, answers, extracted, metrics, flags, score, ai_note, requested_amount, requested_repay, created_at')
+      .select('id, user_id, questions, answers, extracted, metrics, flags, checks, score, ai_note, requested_amount, requested_repay, created_at')
       .maybeSingle();
    if (!claimed) return { ok: true, skipped: 'already reviewed or decided' };
    const questions = (claimed.questions ?? []) as BorrowerQuestion[];
@@ -1581,6 +1713,23 @@ export const reviewWithAnswers = async (supabase: SupabaseClient, id: string, ap
    const doc = claimed.extracted as Extracted | null;
    const metrics = claimed.metrics as Metrics | null;
 
+   // The chat screenshot for a payslip (question p2): read its date and hold it against the pay period.
+   const photoPath = photoAnswerPath(((claimed.answers ?? []) as BorrowerAnswer[]).find((a) => a.id === 'p2')?.a, claimed.user_id);
+   let source: { read: PayslipSourceRead | null; flag: Flag | null } | null = null;
+   if (photoPath && apiKey && doc) {
+      const read = await readPayslipSource(supabase, apiKey, photoPath, doc);
+      const flag = read ? sourceDateFlag(read.sent_date, doc.period_end) : null;
+      source = { read, flag };
+      if (flag?.severity === 'red') {
+         const flags = [...((claimed.flags ?? []) as Flag[]), flag];
+         const checks = ((claimed.checks ?? []) as CheckSection[]).map((c) =>
+            c.key === 'authentic' ? { ...c, status: 'fail' as const, notes: [...c.notes, flag.detail] } : c
+         );
+         await supabase.from('income_documents').update({ flags, checks, risk: 'red' }).eq('id', id);
+         claimed.flags = flags;
+      }
+   }
+
    let ai: AiDirection | null = null;
    if (apiKey && doc && metrics) {
       const amount = claimed.requested_amount != null ? Number(claimed.requested_amount) : loan ? Number(loan.loan_amount) : null;
@@ -1594,7 +1743,8 @@ export const reviewWithAnswers = async (supabase: SupabaseClient, id: string, ap
          metrics,
          checks: claimed.flags,
          score: claimed.score,
-         their_answers_to_our_questions: pairs.map(({ question, answer }) => ({ question, answer }))
+         their_answers_to_our_questions: pairs.map(({ question, answer }) => ({ question, answer })),
+         ...(source ? { payslip_chat_screenshot: { read: source.read, date_check: source.flag?.detail ?? null } } : {})
       }).catch((err) => {
          console.error('income doc re-read failed', err);
          return null;
@@ -1607,7 +1757,7 @@ export const reviewWithAnswers = async (supabase: SupabaseClient, id: string, ap
          .eq('id', id);
    }
 
-   const text = answersText(who, pairs, ai).slice(0, 3900);
+   const text = [answersText(who, pairs, ai), source ? sourceLine(source.read, source.flag) : null].filter(Boolean).join('\n\n').slice(0, 3900);
    if (chat?.value) {
       await sendTelegramMessage(chat.value, text, { inlineKeyboard: incomeDocKeyboard(id, true) }).catch((err) => console.error('income doc answers post failed', err));
    }

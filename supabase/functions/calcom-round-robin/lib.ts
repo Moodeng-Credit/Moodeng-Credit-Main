@@ -58,6 +58,25 @@ export const teamGuests = (hostId: string, emailsByHost: Record<string, string |
 // 34h ahead on 2026-11-16 got no ✅ ask and nobody came. Fewer than `minCount` times in 23h → the
 // next 48h; still too few → the full list, so a quiet stretch never leaves a borrower with nothing.
 export const SOON_WINDOW_HOURS = 23;
+
+// A host pinned for a borrower (referred borrowers → Emma) but away most of the next 2 days
+// (call_blocks) would push them days out: on 2026-11-20 every referred borrower got Tuesday while
+// Emma was off Sat–Mon and George was free. Away ≥ 24h of the next 48h → offer every host instead.
+export const pinnedHostAway = (blocks: Array<{ start: string; end: string }>, now: number, windowHours = 48, awayHours = 24): boolean => {
+   const until = now + windowHours * 3600000;
+   const ranges = blocks
+      .map((b) => [Math.max(Date.parse(b.start), now), Math.min(Date.parse(b.end), until)] as const)
+      .filter(([a, b]) => !Number.isNaN(a) && !Number.isNaN(b) && b > a)
+      .sort((x, y) => x[0] - y[0]);
+   let away = 0;
+   let reach = now;
+   for (const [a, b] of ranges) {
+      const from = Math.max(a, reach);
+      if (b > from) away += b - from;
+      reach = Math.max(reach, b);
+   }
+   return away >= awayHours * 3600000;
+};
 export const preferSoonSlots = (slots: string[], now: number, windowHours = SOON_WINDOW_HOURS, minCount = 3): string[] => {
    const upcoming = slots.filter((s) => {
       const t = Date.parse(s);
