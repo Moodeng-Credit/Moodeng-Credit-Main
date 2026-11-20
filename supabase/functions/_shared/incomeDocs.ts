@@ -593,7 +593,8 @@ export const runChecks = (doc: Extracted, metrics: Metrics, ctx: CheckContext): 
  * published ranking (regular income on statements > cash flow & balances > payslip > ID). Re-weight
  * once ~30 loans above $60 have come due and we can compare scores with what actually happened.
  */
-export const scoreOf = (doc: Extracted, metrics: Metrics, flags: Flag[]) => {
+export const scoreOf = (doc: Extracted, metrics: Metrics, all: Flag[]) => {
+   const flags = gating(all);
    let score = 50;
    if (metrics.regular_deposits.length || doc.payslip?.net_pay) score += 20;
    if (metrics.months_covered >= 2) score += 10;
@@ -637,8 +638,18 @@ export const buildMemo = (doc: Extracted, metrics: Metrics, flags: Flag[]): stri
    return lines.join('\n');
 };
 
-export const riskOf = (flags: Flag[]): 'green' | 'orange' | 'red' =>
-   flags.some((f) => f.severity === 'red') ? 'red' : flags.some((f) => f.severity === 'orange') ? 'orange' : 'green';
+/**
+ * Flags the team sees but that never hold the borrower (George 2026-11-20: "dont block them just give us
+ * a flag"). They show on the named checks and in the posts, but don't change risk, score or verdict —
+ * those decide whether onboarding goes on by itself (journey_income_check) or auto-approves. Pure.
+ */
+export const FLAG_ONLY = new Set(['payslip_sent_before_period_end', 'salary_not_landed', 'same_id_other_account']);
+const gating = (flags: Flag[]) => flags.filter((f) => !FLAG_ONLY.has(f.code));
+
+export const riskOf = (all: Flag[]): 'green' | 'orange' | 'red' => {
+   const flags = gating(all);
+   return flags.some((f) => f.severity === 'red') ? 'red' : flags.some((f) => f.severity === 'orange') ? 'orange' : 'green';
+};
 
 // ---- Verdict (Didit-style) ---------------------------------------------------------------------
 // Every send ends with one verdict, plus a list of named checks that each pass, warn or fail:
@@ -703,7 +714,7 @@ export const verdictOf = (flags: Flag[], docType: Extracted['doc_type']): { verd
    // they're asked for a real one even if it also carries fake signs — the team still sees those.
    if (docType === 'other') return { verdict: 'resend', reason: 'not_financial' };
    const fakeCodes = new Set(SECTIONS.filter((x) => FAKE_SECTIONS.has(x.key)).flatMap((x) => x.codes));
-   const serious = flags.filter((f) => f.severity !== 'info');
+   const serious = gating(flags).filter((f) => f.severity !== 'info');
    if (serious.some((f) => fakeCodes.has(f.code))) return { verdict: 'needs_review', reason: null };
    const has = (code: string) => serious.some((f) => f.code === code);
    if (has('no_income_rows')) return { verdict: 'resend', reason: 'no_income' };
@@ -1848,7 +1859,8 @@ export const reviewWithAnswers = async (supabase: SupabaseClient, id: string, ap
          const checks = ((claimed.checks ?? []) as CheckSection[]).map((c) =>
             c.key === 'authentic' ? { ...c, status: 'fail' as const, notes: [...c.notes, flag.detail] } : c
          );
-         await supabase.from('income_documents').update({ flags, checks, risk: 'red' }).eq('id', id);
+         // Flag only: risk stays as it was, so a borrower already through isn't pulled back to "hold".
+         await supabase.from('income_documents').update({ flags, checks }).eq('id', id);
          claimed.flags = flags;
       }
    }

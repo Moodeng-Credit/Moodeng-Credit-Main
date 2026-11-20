@@ -1,6 +1,6 @@
 import { assert, assertEquals, assertNotEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { buildSections, type Extracted, hasHistoryForPayday, idKeys, payslipProofQuestions, salaryCheck, salaryFlags, verdictOf } from './incomeDocs.ts';
+import { buildSections, computeMetrics, type Extracted, FLAG_ONLY, hasHistoryForPayday, idKeys, payslipProofQuestions, riskOf, salaryCheck, salaryFlags, scoreOf, verdictOf } from './incomeDocs.ts';
 
 // Made-up documents; no real borrower data.
 const payslip = (net = 8000, end = '2026-10-31'): Extracted => ({
@@ -55,10 +55,22 @@ Deno.test('salary check works either way round and one landing is enough', () =>
    assertEquals(salaryFlags(payslip(), []), []);
 });
 
-Deno.test('a missing salary is a team warning, never a fake sign or a resend', () => {
-   const flags = salaryFlags(payslip(), [gcash([['2026-10-05', 300]])]);
-   assertEquals(verdictOf(flags, 'payslip'), { verdict: 'needs_review', reason: null });
-   assertEquals(buildSections(flags, { ok: true }).find((c) => c.key === 'income')?.status, 'warn');
+Deno.test('new flags are team-only: shown on the checks, but risk, score and verdict ignore them', () => {
+   const doc = payslip();
+   const metrics = computeMetrics(doc);
+   const flags = [
+      ...salaryFlags(doc, [gcash([['2026-10-05', 300]])]),
+      { code: 'same_id_other_account', severity: 'red' as const, detail: 'x' },
+      { code: 'payslip_sent_before_period_end', severity: 'red' as const, detail: 'x' }
+   ];
+   assert(flags.every((f) => FLAG_ONLY.has(f.code)));
+   assertEquals(verdictOf(flags, 'payslip'), { verdict: 'looks_good', reason: null });
+   assertEquals(riskOf(flags), 'green');
+   assertEquals(scoreOf(doc, metrics, flags), scoreOf(doc, metrics, []));
+   const sections = buildSections(flags, { ok: true });
+   assertEquals(sections.find((c) => c.key === 'income')?.status, 'warn');
+   assertEquals(sections.find((c) => c.key === 'unique')?.status, 'fail');
+   assertEquals(sections.find((c) => c.key === 'authentic')?.status, 'fail');
 });
 
 Deno.test('payslip asks for a history only when none covers payday', () => {
@@ -83,7 +95,7 @@ Deno.test('ID numbers: same number however it is printed = same hash; junk is sk
 });
 
 Deno.test('the same ID on another account is a red flag under Not used by another account', async () => {
-   const { runChecks, computeMetrics } = await import('./incomeDocs.ts');
+   const { runChecks } = await import('./incomeDocs.ts');
    const doc = payslip();
    const flags = runChecks(doc, computeMetrics(doc), { pdfs: [], duplicateOf: [], idMatches: 2, kycName: 'Juan Dela Cruz', statedMonthlyIncome: null, loan: null });
    assertEquals(flags.find((f) => f.code === 'same_id_other_account')?.severity, 'red');
