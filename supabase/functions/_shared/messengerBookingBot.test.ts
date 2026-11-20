@@ -6,6 +6,7 @@ import {
    answerRecord,
    freeFromSlots,
    holdColumns,
+   extractPhMobile,
    isPhMobile,
    KEEP_SPOT_REPLY,
    START,
@@ -140,4 +141,13 @@ Deno.test('teamHasChat: the bot steps aside when a person is talking in the chat
    // Nobody typed; chat log unreachable = stay out.
    assertEquals(teamHasChat({ teamAt: null, chatStartedAt: started, explicitStart: false, now }), false);
    assertEquals(teamHasChat({ teamAt: undefined, chatStartedAt: started, explicitStart: true, now }), true);
+});
+
+Deno.test('extractPhMobile: the number out of a short reply with a network or a few words', () => {
+   assertEquals(extractPhMobile('0917 123 4567 Globe'), '0917 123 4567');
+   assertEquals(extractPhMobile('my number is 09171234567 po'), '09171234567');
+   assertEquals(extractPhMobile('Smart 0918-123-4567'), '0918-123-4567');
+   assertEquals(extractPhMobile('+63 917 123 4567'), '+63 917 123 4567');
+   assertEquals(extractPhMobile('hi po I need help with my loan payment, my number 09171234567 is not getting texts from you guys'), null);
+   assertEquals(extractPhMobile('15000 pesos'), null);
 });
