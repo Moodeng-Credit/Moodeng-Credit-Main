@@ -80,7 +80,8 @@ export default function ConnectWallet() {
    // one wallet per person on mint).
    const instantForAll = import.meta.env.VITE_INSTANT_WALLET_FOR_ALL === 'true';
    const instantAvailable =
-      openfort.isConfigured && (instantForAll || role === 'lender' || isLikelyPhilippines(locale) || inApp.isInApp);
+      openfort.isConfigured &&
+      (instantForAll || role === 'lender' || role === 'affiliate' || isLikelyPhilippines(locale) || inApp.isInApp);
 
    const connectorsByName = useMemo(() => {
       const map = new Map<string, (typeof connectors)[number]>();

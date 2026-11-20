@@ -87,6 +87,11 @@ export default function WalletConnected() {
          navigate('/verify-world-id-preview', { replace: true });
          return;
       }
+      // Affiliates get a wallet only so payouts have somewhere to go: back to their dashboard.
+      if (user?.userRole === 'affiliate') {
+         navigate('/affiliate', { replace: true });
+         return;
+      }
       if (returnTo === 'account-settings') {
          navigate('/account/settings', { replace: true });
          return;
