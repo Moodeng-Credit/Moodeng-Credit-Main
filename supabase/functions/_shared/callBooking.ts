@@ -21,6 +21,7 @@ import {
    orderHostsToTry,
    preferHost,
    PREFERRED_HOST,
+   pinnedHostAway,
    preferSoonSlots,
    recheckRange,
    teamGuests,
@@ -294,6 +295,8 @@ const prepare = async (svc: Svc, user: CallUser, pin?: string | null): Promise<C
    // (preferHost). The other cofounder is still invited as a guest. A request can pin one host.
    // Until telegram_bot_settings `calls_either_host` is 'true' (George's Cal.com needs Zoom first,
    // or his calls get Cal Video links), every call stays on Emma's calendar as before.
+   // A pinned host who's away most of the next 2 days gives way to every host (pinnedHostAway).
+   if (pin && pinnedHostAway(blocksFor(await loadCallBlocks(svc), pin), Date.now())) pin = null;
    if (!pin && !(await eitherHostOn(svc))) pin = 'emma';
    if (pin) {
       const pinned = resolved.filter((h) => h.id === pin);

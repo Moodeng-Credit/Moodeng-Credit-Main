@@ -10,6 +10,7 @@ import {
    dropBusySlots,
    dropMorningAfterLateNight,
    hostsFreeAt,
+   pinnedHostAway,
    isGoodCallTime,
    mergeSlots,
    orderHostsToTry,
@@ -296,4 +297,17 @@ Deno.test('blockedDays: only whole days in the host timezone', () => {
    const blocks = [{ host: 'emma', from: '2026-11-20T17:00:00Z', to: '2026-11-23T17:00:00Z' }, { host: 'george', from: '2026-11-22T04:45:00Z', to: '2026-11-23T06:00:00Z' }];
    assertEquals(blockedDays(blocks, 'emma', 'Asia/Bangkok'), ['2026-11-21', '2026-11-22', '2026-11-23']);
    assertEquals(blockedDays(blocks, 'george', 'Asia/Bangkok'), []);
+});
+
+Deno.test('pinnedHostAway: away most of the next 48h → unpin; a short block keeps the pin', () => {
+   const now = Date.parse('2026-11-20T14:48:00Z'); // Fri 21:48 BKK
+   const satToMon = [{ start: '2026-11-20T17:00:00Z', end: '2026-11-23T17:00:00Z' }];
+   assertEquals(pinnedHostAway(satToMon, now), true);
+   assertEquals(pinnedHostAway([{ start: '2026-11-21T07:00:00Z', end: '2026-11-21T09:00:00Z' }], now), false);
+   // Monday 20:00 BKK: only 4h of the block left → Emma pinned again (she's open Tuesday).
+   assertEquals(pinnedHostAway(satToMon, Date.parse('2026-11-23T13:00:00Z')), false);
+   // Overlapping blocks aren't double-counted.
+   const twice = [{ start: '2026-11-21T00:00:00Z', end: '2026-11-21T14:00:00Z' }, { start: '2026-11-21T00:00:00Z', end: '2026-11-21T14:00:00Z' }];
+   assertEquals(pinnedHostAway(twice, now), false);
+   assertEquals(pinnedHostAway([], now), false);
 });
