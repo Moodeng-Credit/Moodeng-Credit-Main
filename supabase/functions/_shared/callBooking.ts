@@ -7,7 +7,8 @@ import { ATTENDANCE_RESET, meetingIdFromJoinUrl } from './attendance.ts';
 import { adminUserUrl, OPEN_IN_ADMIN_TEXT } from './adminCards.ts';
 import { postDiscord } from './discord.ts';
 import { bookingBotAnswers, loadBookingBotMode } from './bookingBotSwitch.ts';
-import { formatCallTimeForTeam, newConfirmToken, sendBookedMessenger, sendTextReminderAsk } from './videoCall.ts';
+import { formatCallTime, formatCallTimeForTeam, newConfirmToken, sendBookedMessenger, sendTextReminderAsk } from './videoCall.ts';
+import { sendMessengerMessage } from './sendpulse.ts';
 import {
    bookingCooldownUntil,
    clusterSlots,
@@ -548,7 +549,7 @@ export const moveCallToHost = async (svc: Svc, userId: string, toHost: string): 
    if (!host) return { ok: false, summary: `Host ${toHost} not configured.` };
    const { data: u } = await svc
       .from('users')
-      .select('id, email, display_name, username, video_call_booking_uid, video_call_starts_at, video_call_host, video_call_timezone')
+      .select('id, email, display_name, username, messenger_psid, video_call_booking_uid, video_call_starts_at, video_call_host, video_call_timezone')
       .eq('id', userId)
       .maybeSingle();
    if (!u?.video_call_booking_uid || !u.video_call_starts_at || Date.parse(u.video_call_starts_at) <= Date.now()) return { ok: false, summary: 'No upcoming call.' };
@@ -566,25 +567,40 @@ export const moveCallToHost = async (svc: Svc, userId: string, toHost: string): 
    await Promise.all(HOSTS.map(async (h) => (emailsByHost[h.id] = await fetchAccountEmail(h.apiKey))));
    const metadata = { moodeng_user_id: u.id, moodeng_host: toHost };
    const guests = teamGuests(toHost, emailsByHost, email);
-   const oldUid = u.video_call_booking_uid as string;
+   // A move that already cancelled the old booking but couldn't book the new host leaves the row on
+   // `moving-<uid>`: a second try just books (there's nothing left to cancel).
+   const resumed = String(u.video_call_booking_uid).startsWith('moving-');
+   const oldUid = resumed ? String(u.video_call_booking_uid).slice('moving-'.length) : (u.video_call_booking_uid as string);
    const oldHost = (u.video_call_host as string | null) ?? 'emma';
    const book = async () => {
       let r = await createBooking(host.apiKey, eventTypeId, start, attendee, metadata, guests);
       if ('error' in r && r.error === 'other' && guests.length) r = await createBooking(host.apiKey, eventTypeId, start, attendee, metadata);
       return r;
    };
-   let result = await book();
-   let oldCancelled = false;
+   // The cancelled call's invite lingers on the new host's calendar for a while (3s wasn't enough,
+   // 2026-11-20), so wait until Cal.com itself offers the new host that exact time — up to ~80s.
+   const waitUntilFree = async () => {
+      const day = start.slice(0, 10);
+      const next = new Date(Date.parse(start) + 86400000).toISOString().slice(0, 10);
+      for (let i = 0; i < 10; i++) {
+         const slots = await fetchSlots(host.apiKey, eventTypeId, day, next, 'UTC');
+         if (slots.some((s) => Date.parse(s) === Date.parse(start))) return true;
+         await new Promise((r) => setTimeout(r, 8000));
+      }
+      return false;
+   };
+   let result = resumed ? (await waitUntilFree(), await book()) : await book();
+   let oldCancelled = resumed;
    // The other cofounder is a guest on every call, so the old booking itself makes the new host look busy
    // at that time. Free it first, then book; if the new host still can't take it, put it back on the old host.
-   if ('error' in result && result.error === 'taken') {
+   if (!resumed && 'error' in result && result.error === 'taken') {
       // Point the row away from the old uid first, so Cal.com's cancel webhook matches nobody and the
       // borrower isn't told "your call was cancelled".
       await svc.from('users').update({ video_call_booking_uid: `moving-${oldUid}` }).eq('id', u.id);
       oldCancelled = await cancelCalBooking(oldHost, oldUid, `Same time — moving to ${toHost === 'george' ? 'George' : 'Emma'}. A new invite is on its way.`);
       if (!oldCancelled) await svc.from('users').update({ video_call_booking_uid: oldUid }).eq('id', u.id);
       if (oldCancelled) {
-         await new Promise((r) => setTimeout(r, 3000));
+         await waitUntilFree();
          result = await book();
          if ('error' in result) {
             const back = HOSTS.find((h) => h.id === oldHost);
@@ -614,8 +630,12 @@ export const moveCallToHost = async (svc: Svc, userId: string, toHost: string): 
       .eq('id', u.id);
    if (error) return { ok: false, summary: `${who}: booked on ${toHost} but saving failed (${error.message}) — check by hand.` };
    const cancelled = oldCancelled || (await cancelCalBooking(oldHost, oldUid, `Same time — moved to ${toHost === 'george' ? 'George' : 'Emma'}. Use the new invite's link.`));
+   // The old Zoom link is dead now, and a placeholder-email borrower never sees Cal.com's new invite.
+   const told = await sendMessengerMessage(u.messenger_psid, {
+      text: `🔗 Your Moodeng call is still ${formatCallTime(start, u.video_call_timezone)} — but it has a NEW Zoom link. Please use this one:\n${result.joinUrl}`
+   });
    return {
       ok: true,
-      summary: `🔀 ${who}'s call (${formatCallTimeForTeam(start, 'Asia/Bangkok')}) moved ${oldHost} → ${toHost}. New link: ${result.joinUrl}${cancelled ? '' : `\n⚠️ Old ${oldHost} booking NOT cancelled — cancel ${oldUid} in Cal.com.`}`
+      summary: `🔀 ${who}'s call (${formatCallTimeForTeam(start, 'Asia/Bangkok')}) moved ${oldHost} → ${toHost}. New link: ${result.joinUrl}${told.ok ? ' (sent on Messenger)' : ' ⚠️ new link NOT sent on Messenger'}${cancelled ? '' : `\n⚠️ Old ${oldHost} booking NOT cancelled — cancel ${oldUid} in Cal.com.`}`
    };
 };
