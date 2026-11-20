@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Loader2, SwitchCamera } from 'lucide-react';
 
+import PhotoCheckStory from '@/app/screen/PhotoCheckStory';
 import { clock, docHint, GALLERY_MAX_AGE_MS, OLD_FILE_MS, PHOTO_SECONDS, shrinkFile, shrinkImage } from '@/lib/prescreenV2';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { GhostButton, PrimaryButton } from '@/views/dashboard/components/connectKit';
@@ -21,8 +22,8 @@ export type PhotoAnswer = {
    skip_reason?: string;
 };
 
-export type PhotoPreview = 'ready' | 'live' | 'review' | 'expired' | 'tip';
-type State = 'asking' | 'ready' | 'starting' | 'live' | 'review' | 'expired' | 'uploading';
+export type PhotoPreview = 'ready' | 'live' | 'review' | 'expired' | 'tip' | 'checking';
+type State = 'asking' | 'ready' | 'starting' | 'live' | 'review' | 'expired' | 'uploading' | 'checked';
 
 const errorClass = 'text-center text-[14px] font-semibold text-[#c2410c]';
 
@@ -51,10 +52,15 @@ export default function LivePhoto({
    preview?: PhotoPreview;
    locale?: string;
 }) {
-   const [state, setState] = useState<State>(preview === 'tip' ? 'review' : (preview ?? 'asking'));
+   const [state, setState] = useState<State>(preview === 'tip' ? 'review' : preview === 'checking' ? 'uploading' : (preview ?? 'asking'));
    // The AI's tip on the photo they sent (once per question): retake it, or use it anyway (never blocks).
    const [tip, setTip] = useState<{ hint: string; answer: PhotoAnswer } | null>(
-      preview === 'tip' ? { hint: 'We can’t see you in this photo. Please take one of you at your farm.', answer: { source: 'camera' } } : null
+      preview === 'tip'
+         ? {
+              hint: 'We can’t see you in this photo yet. A photo of you at your farm, or your crops, works great 🙂',
+              answer: { source: 'camera' }
+           }
+         : null
    );
    const [tipped, setTipped] = useState(preview === 'tip');
    const [deadline, setDeadline] = useState<number>(() => Date.now() + PHOTO_SECONDS * 1000);
@@ -62,7 +68,9 @@ export default function LivePhoto({
    const [askedAt, setAskedAt] = useState<number>(Date.now());
    const [facing, setFacing] = useState<'environment' | 'user'>('environment');
    const [shot, setShot] = useState<{ blob: Blob; url: string; source: 'camera' | 'file'; takenAt: number; fileModified?: number } | null>(
-      preview === 'review' || preview === 'tip' ? { blob: new Blob(), url: '/hippos/connect/cashout.png', source: 'camera', takenAt: Date.now() } : null
+      preview === 'review' || preview === 'tip'
+         ? { blob: new Blob(), url: '/hippos/connect/cashout.png', source: 'camera', takenAt: Date.now() }
+         : null
    );
    const [error, setError] = useState<string | null>(null);
    const [cameraFailed, setCameraFailed] = useState(false);
@@ -233,7 +241,9 @@ export default function LivePhoto({
             return;
          }
       }
-      onDone(answer);
+      // A short "Looks good!" with the framed photo on the wall, then the next step.
+      setState('checked');
+      window.setTimeout(() => onDone(answer), 900);
    };
 
    const ask_ = useAlt && alt ? alt : text;
@@ -250,7 +260,7 @@ export default function LivePhoto({
          ) : null}
 
          <div
-            className={`relative mx-auto w-full max-w-[300px] overflow-hidden rounded-[18px] bg-[#1b1230] ${state === 'live' || state === 'review' || state === 'uploading' ? 'aspect-[3/4]' : 'aspect-[16/10]'}`}
+            className={`relative mx-auto w-full max-w-[300px] overflow-hidden rounded-[18px] bg-[#1b1230] ${state === 'live' || state === 'review' || state === 'uploading' || state === 'checked' ? 'aspect-[3/4]' : 'aspect-[16/10]'}`}
          >
             <video
                className={`size-full object-cover ${facing === 'user' ? '-scale-x-100' : ''} ${state === 'live' ? '' : 'hidden'}`}
@@ -269,11 +279,12 @@ export default function LivePhoto({
                   <SwitchCamera className="size-5" />
                </button>
             ) : null}
-            {state === 'asking' || state === 'starting' || state === 'uploading' ? (
+            {state === 'asking' || state === 'starting' ? (
                <div className="absolute inset-0 grid place-items-center text-[#cfc6dd]">
                   <Loader2 className="size-8 animate-spin" />
                </div>
             ) : null}
+            {state === 'uploading' || state === 'checked' ? <PhotoCheckStory done={state === 'checked'} /> : null}
             {state === 'ready' ? (
                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center text-[#cfc6dd]">
                   <span className="text-[44px]">📸</span>
@@ -313,14 +324,12 @@ export default function LivePhoto({
          {state === 'live' ? <PrimaryButton onClick={() => void snap()}>Take photo</PrimaryButton> : null}
          {tip && state === 'review' ? (
             <>
-               <PrimaryButton onClick={retake}>Take again</PrimaryButton>
-               <GhostButton onClick={() => onDone(tip.answer)}>Use this photo anyway</GhostButton>
+               <PrimaryButton onClick={retake}>Try another photo</PrimaryButton>
+               <GhostButton onClick={() => onDone(tip.answer)}>Use this one</GhostButton>
             </>
-         ) : state === 'review' || state === 'uploading' ? (
+         ) : state === 'review' ? (
             <>
-               <PrimaryButton disabled={state === 'uploading'} onClick={() => void use()}>
-                  {state === 'uploading' ? <Loader2 aria-label="Sending" className="mx-auto size-5 animate-spin" /> : 'Use this photo'}
-               </PrimaryButton>
+               <PrimaryButton onClick={() => void use()}>Use this photo</PrimaryButton>
                {state === 'review' ? <GhostButton onClick={retake}>Take again</GhostButton> : null}
             </>
          ) : null}
