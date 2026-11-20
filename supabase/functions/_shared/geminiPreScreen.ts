@@ -5,6 +5,7 @@
 // GEMINI_API_KEY via public.gemini_api_key() (service_role only). Any failure throws, and
 // gradePreScreening falls back to the DeepSeek path.
 import type { IncomeProofRead } from './incomeDocs.ts';
+import { withToday } from './aiToday.ts';
 
 const URL_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 export const GEMINI_MODEL = 'gemini-3.8-flash';
@@ -144,7 +145,7 @@ async function readOnce(key: string, parts: unknown[]): Promise<RawRead> {
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
       signal: AbortSignal.timeout(75_000),
       body: JSON.stringify({
-         systemInstruction: { parts: [{ text: SYSTEM }] },
+         systemInstruction: { parts: [{ text: withToday(SYSTEM) }] },
          contents: [{ role: 'user', parts }],
          generationConfig: {
             responseMimeType: 'application/json',

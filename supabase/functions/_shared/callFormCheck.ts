@@ -12,6 +12,7 @@
 // Never throws; a failure is saved on the row (form_check_error) so the sheet can say so.
 import { postDiscord } from './discord.ts';
 import { sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
+import { withToday } from './aiToday.ts';
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
@@ -197,7 +198,7 @@ export const checkCallForm = async (svc: SupabaseClient, transcriptId: string): 
                max_tokens: 1500,
                response_format: { type: 'json_object' },
                messages: [
-                  { role: 'system', content: SYSTEM_PROMPT },
+                  { role: 'system', content: withToday(SYSTEM_PROMPT) },
                   {
                      role: 'user',
                      content: `HOST'S FORM:\n${JSON.stringify(hostAnswers, null, 1)}\n\nTRANSCRIPT:\n${clip(row.transcript ?? '', MAX_TRANSCRIPT_CHARS)}`

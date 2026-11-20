@@ -20,6 +20,7 @@ import { postDiscord } from './discord.ts';
 import { type ClipCheck, clipWarnings, GEMINI_MODEL, type GeminiResult, gradeWithGemini } from './geminiPreScreen.ts';
 import { type IncomeProofRead, readIncomeProof } from './incomeDocs.ts';
 import { sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
+import { withToday } from './aiToday.ts';
 
 // The team's decision buttons (handled in telegram-webhook via preScreeningDecision.ts).
 export const preScreeningDecisionRow = (id: string): TelegramInlineKeyboard[number] => [
@@ -348,7 +349,7 @@ async function gradeOnce(apiKey: string, model: string, user: string): Promise<M
          temperature: model === MODEL ? 0 : 0.3,
          response_format: { type: 'json_object' },
          messages: [
-            { role: 'system', content: SYSTEM },
+            { role: 'system', content: withToday(SYSTEM) },
             { role: 'user', content: user }
          ]
       })

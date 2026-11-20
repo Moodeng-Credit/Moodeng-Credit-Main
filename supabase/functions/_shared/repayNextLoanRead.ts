@@ -1,5 +1,6 @@
 import { sendTelegramMessage } from './telegram.ts';
 import { alertDeepSeekFailure } from './deepseekAlert.ts';
+import { withToday } from './aiToday.ts';
 
 // "Ready for a bigger loan?" read, posted as a reply under each "✅ Loan repaid" card in the team
 // Telegram group. DeepSeek gets the borrower's call sheet (+ the Zoom summary if there is one), their
@@ -191,7 +192,7 @@ const askDeepSeek = async (apiKey: string, userContent: string): Promise<Read | 
             max_tokens: 600,
             response_format: { type: 'json_object' },
             messages: [
-               { role: 'system', content: SYSTEM_PROMPT },
+               { role: 'system', content: withToday(SYSTEM_PROMPT) },
                { role: 'user', content: userContent }
             ]
          })
