@@ -627,6 +627,18 @@ export default function DocumentsPage({
                         Add files instead
                      </button>
                   ) : null}
+                  {/* Questions never hold them up: skipping leaves them open (here later, or on Messenger) and
+                      the team just sees no answer yet. */}
+                  <button
+                     className="text-center text-[14px] font-semibold text-[#7b6b8c] underline dark:text-[#b9abcc]"
+                     onClick={() => {
+                        setQuestions([]);
+                        setAnswerError(null);
+                     }}
+                     type="button"
+                  >
+                     Skip for now
+                  </button>
                </div>
             ) : null}
 
