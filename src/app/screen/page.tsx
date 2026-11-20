@@ -5,7 +5,9 @@ import { Loader2 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 
+import LivePhoto, { type PhotoAnswer, type PhotoPreview } from '@/app/screen/LivePhoto';
 import BrandedVideo from '@/components/BrandedVideo';
+import { useLocalization } from '@/i18n/LocalizationProvider';
 import { describeBrowser } from '@/lib/attribution';
 import { fetchPrescreenPath, PRE_KYC_CONNECT_PATH } from '@/hooks/usePreKycGate';
 import {
@@ -16,6 +18,7 @@ import {
    readPreScreening,
    savePreScreening
 } from '@/lib/preScreening';
+import { coachHint, MEDICAL_CHOICES, type MedicalChoice, planJobQuestions, PRESCREEN_CAPS, saidNo } from '@/lib/prescreenV2';
 import type { RootState } from '@/store/store';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { audioContextCtor, joinChunks, wavBlob, wavFromMediaFile } from '@/lib/wavAudio';
@@ -46,21 +49,49 @@ export type ScreenStage =
    | 'waiting'
    | 'good'
    | 'notneeded';
-/** kind 'text' = a typed answer; anything else = a short recorded video. */
+/** kind 'text' = a typed answer; none / 'video' = a short recorded video. */
 /** `min` = fewest characters a typed answer needs (default MIN_TEXT; 1 lets "No" through). */
-export type ScreenQuestion = { id: string; text: string; hint?: string; kind?: 'text' | 'video'; min?: number };
+/**
+ * v2 (lib/prescreenV2.ts): 'job' = typed job, then the AI's follow-ups are added after it; 'photo' = a
+ * live job photo (`alt` = what to take when not at work); 'doc' = the certificate of employment
+ * (`optional`); 'medical' = typed "no" or what it is, + what the loan is for.
+ */
+export type ScreenQuestion = {
+   id: string;
+   text: string;
+   hint?: string;
+   kind?: 'text' | 'video' | 'job' | 'medical' | 'photo' | 'doc';
+   min?: number;
+   alt?: string;
+   optional?: boolean;
+};
 /** `tall` = a YouTube Short (9:16); otherwise a normal 16:9 video. */
 type ScreenVideo = { id: string; title: string; tall?: boolean };
 type UploadedDoc = { path: string; name: string; mime: string; size: number };
-export type ScreenPreview = { stage: ScreenStage; question?: number };
+export type ScreenPreview = { stage: ScreenStage; question?: number; photo?: PhotoPreview; coach?: boolean; med?: boolean };
 
-type UploadedAnswer = { q: string; video: string | null; audio: string | null; seconds: number; text?: string };
+type UploadedAnswer = PhotoAnswer & {
+   q: string;
+   video: string | null;
+   audio: string | null;
+   seconds: number;
+   text?: string;
+   // v2: the first try + the hint shown, the medical choice, the certificate.
+   first?: string;
+   coach?: string;
+   choice?: MedicalChoice;
+   doc?: string;
+   doc_mime?: string;
+};
+type Coached = { first: string; hint: string };
 // Typed answers: long enough to say something real, short enough to read on the call.
 const MIN_TEXT = 15;
 const minFor = (q: ScreenQuestion) => Math.max(1, q.min ?? MIN_TEXT);
 const MAX_TEXT = 600;
 
 const MAX_SECONDS = 45;
+// The live clip at the job step: short, so it stays small for the AI.
+const JOB_VIDEO_SECONDS = 15;
 const MIN_SECONDS = 3;
 const MAX_VIDEO_BYTES = 20 * 1024 * 1024;
 const VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
@@ -75,6 +106,15 @@ const SAMPLE_QUESTIONS: ScreenQuestion[] = [
    { id: 'borrowed', text: 'Have you borrowed before, like Maya, Tala or Salmon?', kind: 'text' },
    { id: 'purpose', text: 'What is this loan for?', kind: 'text' },
    { id: 'grow', text: 'How will you use the loan to build up your income?', kind: 'text' }
+];
+// /screen-preview?stage=question&q=4…9 shows the v2 steps (photo=ready|live|review|expired, coach=1, med=1).
+const SAMPLE_V2: ScreenQuestion[] = [
+   { id: 'job', kind: 'job', text: 'What is your job?', hint: 'Like farmer, teacher, Grab driver, sari-sari store', min: 3 },
+   { id: 'job_q1', kind: 'text', text: 'What do you farm?', hint: 'Like rice, corn, vegetables, pigs', min: 3 },
+   { id: 'job_photo1', kind: 'photo', text: 'Take a photo of you at your farm', alt: 'Not at the farm now? A photo of your farm tools' },
+   { id: 'job_video', text: 'Show us your work', hint: '10 seconds: say your job, then show your work place, tools or uniform.' },
+   { id: 'coe', kind: 'doc', text: 'Do you have a certificate of employment?', hint: 'Optional. A photo or PDF of your COE.', optional: true },
+   { id: 'medical', kind: 'medical', text: 'Do you or your family have a medical problem?', hint: 'Type “no”, or what it is', min: 2 }
 ];
 const SAMPLE_VIDEOS: ScreenVideo[] = [
    { id: 'G4hibvp-T9g', title: 'How to get started (6 simple steps)', tall: true },
@@ -99,6 +139,10 @@ type SavedProgress = {
    typed: Record<string, string>;
    uploaded: UploadedAnswer[];
    uploadedDocs: UploadedDoc[] | null;
+   v2?: boolean;
+   coached?: Record<string, Coached>;
+   choices?: Record<string, MedicalChoice>;
+   plannedFor?: string | null;
 };
 const readProgress = (token: string | undefined): SavedProgress | null => {
    try {
@@ -139,10 +183,20 @@ type RecorderState = 'idle' | 'starting' | 'recording' | 'review';
  * One question: Record → Stop → watch it back → Next (or record again). Records in the page when the
  * browser allows it; otherwise (some in-app browsers) the same button opens the phone's own camera.
  */
-function AnswerRecorder({ busy, onUse, previewState }: { busy: boolean; onUse: (clip: Clip) => void; previewState?: RecorderState }) {
+function AnswerRecorder({
+   busy,
+   onUse,
+   previewState,
+   maxSeconds = MAX_SECONDS
+}: {
+   busy: boolean;
+   onUse: (clip: Clip) => void;
+   previewState?: RecorderState;
+   maxSeconds?: number;
+}) {
    const [state, setState] = useState<RecorderState>(previewState ?? 'idle');
    const [clip, setClip] = useState<Clip | null>(null);
-   const [left, setLeft] = useState(MAX_SECONDS);
+   const [left, setLeft] = useState(maxSeconds);
    const [error, setError] = useState<string | null>(null);
    const [useCameraApp, setUseCameraApp] = useState(false);
    const liveRef = useRef<HTMLVideoElement>(null);
@@ -215,7 +269,7 @@ function AnswerRecorder({ busy, onUse, previewState }: { busy: boolean; onUse: (
       };
       const startedAt = Date.now();
       const timer = window.setInterval(() => {
-         const remaining = MAX_SECONDS - Math.floor((Date.now() - startedAt) / 1000);
+         const remaining = maxSeconds - Math.floor((Date.now() - startedAt) / 1000);
          setLeft(Math.max(0, remaining));
          if (remaining <= 0 && recorder.state === 'recording') recorder.stop();
       }, 250);
@@ -262,7 +316,7 @@ function AnswerRecorder({ busy, onUse, previewState }: { busy: boolean; onUse: (
             end();
          }
       };
-      setLeft(MAX_SECONDS);
+      setLeft(maxSeconds);
       recorder.start(1000);
       setState('recording');
    };
@@ -309,7 +363,7 @@ function AnswerRecorder({ busy, onUse, previewState }: { busy: boolean; onUse: (
             {state === 'idle' || state === 'starting' ? (
                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[#cfc6dd]">
                   {state === 'starting' ? <Loader2 className="size-8 animate-spin" /> : <span className="text-[44px]">🎥</span>}
-                  <span className="text-[14px] font-semibold">Up to {MAX_SECONDS} seconds</span>
+                  <span className="text-[14px] font-semibold">Up to {maxSeconds} seconds</span>
                </div>
             ) : null}
             {state === 'recording' ? (
@@ -371,7 +425,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    const [token, setToken] = useState<string | null>(null);
    const [videos, setVideos] = useState<ScreenVideo[]>(preview ? SAMPLE_VIDEOS : []);
    const [videoIndex, setVideoIndex] = useState(0);
-   const [questions, setQuestions] = useState<ScreenQuestion[]>(preview ? SAMPLE_QUESTIONS : []);
+   const [questions, setQuestions] = useState<ScreenQuestion[]>(preview ? [...SAMPLE_QUESTIONS, ...SAMPLE_V2] : []);
    const [index, setIndex] = useState(preview?.question ?? 0);
    // Videos that played to the end (counted for the team; nobody has to finish one).
    const [watched, setWatched] = useState<Set<string>>(new Set());
@@ -385,14 +439,29 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    const [busy, setBusy] = useState(false);
    const [error, setError] = useState<string | null>(null);
    // Typed answers per question id, kept while they move through the questions (and saved, see PROGRESS_KEY).
-   const [typed, setTyped] = useState<Record<string, string>>({});
+   const [typed, setTyped] = useState<Record<string, string>>(
+      preview?.coach ? { purpose: 'For my bills this month' } : preview?.med ? { medical: 'My mother has diabetes' } : {}
+   );
+   // v2 (lib/prescreenV2.ts): the server added the job + medical questions to this one.
+   const [v2, setV2] = useState(Boolean(preview));
+   // The one hint each typed answer can get, with the first try (both are sent).
+   const [coached, setCoached] = useState<Record<string, Coached>>(
+      preview?.coach ? { purpose: { first: 'For my bills this month', hint: 'Tell us which bills, like electricity or rent, so we understand.' } } : {}
+   );
+   const [choices, setChoices] = useState<Record<string, MedicalChoice>>({});
+   // The job the follow-ups were made for (same job after Back = no new questions).
+   const [plannedFor, setPlannedFor] = useState<string | null>(preview ? 'farmer' : null);
+   const [useAlt, setUseAlt] = useState<Record<string, boolean>>({});
+   const [coeFile, setCoeFile] = useState<File | null>(null);
+   const coeInput = useRef<HTMLInputElement>(null);
+   const { locale } = useLocalization();
 
    useEffect(() => {
       if (preview || !token) return;
       if (stage === 'done') return writeProgress(null);
       if (stage !== 'question' && stage !== 'proof') return;
-      writeProgress({ token, at: Date.now(), stage, index, questions, askProof, typed, uploaded, uploadedDocs });
-   }, [preview, token, stage, index, questions, askProof, typed, uploaded, uploadedDocs]);
+      writeProgress({ token, at: Date.now(), stage, index, questions, askProof, typed, uploaded, uploadedDocs, v2, coached, choices, plannedFor });
+   }, [preview, token, stage, index, questions, askProof, typed, uploaded, uploadedDocs, v2, coached, choices, plannedFor]);
 
    const authUser = useSelector((state: RootState) => state.auth.user);
    const isAuthChecked = useSelector((state: RootState) => state.auth.isAuthChecked);
@@ -438,14 +507,25 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          setTyped(progress.typed ?? {});
          setUploaded(progress.uploaded ?? []);
          setUploadedDocs(progress.uploadedDocs ?? null);
+         setV2(progress.v2 === true);
+         setCoached(progress.coached ?? {});
+         setChoices(progress.choices ?? {});
+         setPlannedFor(progress.plannedFor ?? null);
          setIndex(Math.min(progress.index, progress.questions.length - 1));
          setStage(progress.stage);
          return;
       }
       void getSupabaseBrowserClient()
-         .rpc('pre_screening_start', { p_name: null, p_ref: null, p_browser: null })
+         .rpc('pre_screening_start', { p_name: null, p_ref: null, p_browser: null, p_caps: PRESCREEN_CAPS })
          .then(({ data, error: rpcError }) => {
-            const res = data as { status?: string; video?: string; videos?: ScreenVideo[]; questions?: ScreenQuestion[]; proof?: boolean } | null;
+            const res = data as {
+               status?: string;
+               video?: string;
+               videos?: ScreenVideo[];
+               questions?: ScreenQuestion[];
+               proof?: boolean;
+               v2?: boolean;
+            } | null;
             if (rpcError || res?.status !== 'ready') {
                setStage('closed');
                return;
@@ -453,6 +533,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
             setVideos(videosOf(res));
             setAskProof(res.proof !== false);
             setQuestions(res.questions ?? []);
+            setV2(res.v2 === true);
             setStage('intro');
          });
    };
@@ -465,10 +546,19 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       const { data, error: rpcError } = await getSupabaseBrowserClient().rpc('pre_screening_start', {
          p_name: name,
          p_ref: ref || null,
-         p_browser: `${browser} · ${os}`
+         p_browser: `${browser} · ${os}`,
+         p_caps: PRESCREEN_CAPS
       });
       setBusy(false);
-      const res = data as { status?: string; token?: string; video?: string; videos?: ScreenVideo[]; questions?: ScreenQuestion[]; proof?: boolean } | null;
+      const res = data as {
+         status?: string;
+         token?: string;
+         video?: string;
+         videos?: ScreenVideo[];
+         questions?: ScreenQuestion[];
+         proof?: boolean;
+         v2?: boolean;
+      } | null;
       if (rpcError)
          return setError(/bad_name/.test(rpcError.message) ? 'Please type your name.' : 'Something went wrong. Please try again.');
       if (res?.status === 'busy') return setStage('busy');
@@ -481,6 +571,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       setVideos(list);
       setVideoIndex(0);
       setQuestions(res.questions ?? []);
+      setV2(res.v2 === true);
       setStage(list.length ? 'video' : 'question');
    };
 
@@ -519,10 +610,16 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       setUploadedDocs(null);
    };
 
+   // v2: the proof of income sits between the job and the medical question.
+   const afterProof = (docsUp: UploadedDoc[]) => {
+      if (questions[index]?.kind === 'medical') return setStage('question');
+      void finish(uploaded, docsUp);
+   };
+
    const sendProof = async () => {
-      if (preview) return setStage('done');
-      // Already up (only the final send failed): just send again.
-      if (uploadedDocs) return void finish(uploaded, uploadedDocs);
+      if (preview) return questions[index]?.kind === 'medical' ? setStage('question') : setStage('done');
+      // Already up (only the final send failed, or they came Back from the medical question): carry on.
+      if (uploadedDocs) return afterProof(uploadedDocs);
       setBusy(true);
       setError(null);
       const storage = getSupabaseBrowserClient().storage.from('pre-screenings');
@@ -542,41 +639,126 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          return;
       }
       setUploadedDocs(done);
-      void finish(uploaded, done);
+      afterProof(done);
    };
 
 
    const goBack = () => {
       setError(null);
-      if (stage === 'proof') return setStage('question');
+      if (stage === 'proof') {
+         // v2: proof comes before the medical question, so Back goes to the job step before it.
+         if (questions[index]?.kind === 'medical' && index > 0) setIndex(index - 1);
+         return setStage('question');
+      }
+      if (questions[index]?.kind === 'medical' && askProof) return setStage('proof');
       if (index > 0) setIndex(index - 1);
    };
    const backButton = <GhostButton onClick={goBack}>Back</GhostButton>;
 
-   const nextAfter = (next: UploadedAnswer[]) => {
-      if (index + 1 < questions.length) setIndex(index + 1);
-      else if (askProof) setStage('proof');
-      else void finish(next, []);
+   const nextAfter = (next: UploadedAnswer[], list: ScreenQuestion[] = questions) => {
+      const i = index + 1;
+      if (i < list.length) {
+         setIndex(i);
+         // v2: job first, then income, then the medical question.
+         if (askProof && list[i].kind === 'medical' && !uploadedDocs) setStage('proof');
+         return;
+      }
+      if (askProof && !uploadedDocs) setStage('proof');
+      else void finish(next, uploadedDocs ?? []);
    };
 
-   const acceptText = () => {
+   const save = (answer: UploadedAnswer) => {
+      const next = [...uploaded.filter((a) => a.q !== answer.q), answer];
+      setUploaded(next);
+      return next;
+   };
+   const blank = (q: string): UploadedAnswer => ({ q, video: null, audio: null, seconds: 0 });
+
+   // v2 coaching: typed answers that aren't yes/no (and a medical answer that isn't "no").
+   const wantsCoach = (q: ScreenQuestion, text: string) =>
+      v2 && ((q.kind === 'text' && minFor(q) > 1) || (q.kind === 'medical' && !saidNo(text)));
+
+   const acceptText = async () => {
       const question = questions[index];
       const text = (typed[question.id] ?? '').trim().slice(0, MAX_TEXT);
       if (text.length < minFor(question)) return setError('Please write a little more.');
+      const choice = choices[question.id];
+      if (question.kind === 'medical' && !saidNo(text) && !choice) return setError('Please pick one.');
       setError(null);
       if (preview) return nextAfter(uploaded);
-      const next = [...uploaded.filter((a) => a.q !== question.id), { q: question.id, video: null, audio: null, seconds: 0, text }];
+      // One gentle hint, once: they can improve it or keep it.
+      if (token && wantsCoach(question, text) && !coached[question.id]) {
+         setBusy(true);
+         const hint = await coachHint(token, question.id, text, locale);
+         setBusy(false);
+         if (hint) return setCoached((prev) => ({ ...prev, [question.id]: { first: text, hint } }));
+      }
+      const tip = coached[question.id];
+      nextAfter(
+         save({
+            ...blank(question.id),
+            text,
+            ...(tip ? { first: tip.first, coach: tip.hint } : {}),
+            ...(question.kind === 'medical' ? { choice: saidNo(text) ? 'none' : choice } : {})
+         })
+      );
+   };
+
+   // v2: the job → the AI's follow-ups and photo asks, written into this pre-screening by the server.
+   const acceptJob = async () => {
+      const question = questions[index];
+      const job = (typed[question.id] ?? '').trim().slice(0, 80);
+      if (job.length < minFor(question)) return setError('Please write your job.');
+      setError(null);
+      if (preview) return nextAfter(uploaded);
+      let list = questions;
+      let kept = uploaded;
+      if (plannedFor !== job.toLowerCase() || !questions.some((q) => q.kind === 'photo')) {
+         if (!token) return;
+         setBusy(true);
+         const planned = await planJobQuestions(token, job);
+         setBusy(false);
+         if (!planned) return setError('Could not load the next step. Check your connection and tap Next again.');
+         list = planned as ScreenQuestion[];
+         setQuestions(list);
+         setPlannedFor(job.toLowerCase());
+         // Answers to the old follow-ups don't fit the new job.
+         kept = uploaded.filter((a) => list.some((q) => q.id === a.q) && !/^job_|^coe$/.test(a.q));
+      }
+      const next = [...kept.filter((a) => a.q !== question.id), { ...blank(question.id), text: job }];
       setUploaded(next);
-      nextAfter(next);
+      nextAfter(next, list);
+   };
+
+   const acceptPhoto = (answer: PhotoAnswer) => {
+      const question = questions[index];
+      if (preview) return nextAfter(uploaded);
+      nextAfter(save({ ...blank(question.id), ...answer }));
+   };
+
+   const sendCoe = async (skip: boolean) => {
+      const question = questions[index];
+      setError(null);
+      if (preview) return nextAfter(uploaded);
+      if (skip || !coeFile || !token) {
+         setCoeFile(null);
+         return nextAfter(save({ ...blank(question.id), skip: true }));
+      }
+      setBusy(true);
+      const type = coeFile.type;
+      const ext = type === 'application/pdf' ? 'pdf' : type === 'image/png' ? 'png' : type === 'image/webp' ? 'webp' : 'jpg';
+      const path = `${token}/${question.id}-${crypto.randomUUID()}.${ext}`;
+      const { error: upError } = await getSupabaseBrowserClient()
+         .storage.from('pre-screenings')
+         .upload(path, coeFile, { contentType: type, upsert: false });
+      setBusy(false);
+      if (upError) return setError('Could not send. Check your connection and try again.');
+      nextAfter(save({ ...blank(question.id), doc: path, doc_mime: type }));
    };
 
    const acceptClip = async (clip: Clip) => {
       const question = questions[index];
-      if (preview) {
-         if (index + 1 < questions.length) setIndex(index + 1);
-         else setStage('proof');
-         return;
-      }
+      if (preview) return nextAfter(uploaded);
       setBusy(true);
       setError(null);
       const storage = getSupabaseBrowserClient().storage.from('pre-screenings');
@@ -599,11 +781,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          return;
       }
       // Recorded again after going Back: the new one replaces the old.
-      const next = [...uploaded.filter((a) => a.q !== question.id), answer];
-      setUploaded(next);
-      if (index + 1 < questions.length) setIndex(index + 1);
-      else if (askProof) setStage('proof');
-      else void finish(next, []);
+      nextAfter(save(answer));
    };
 
    // The token rides on the link too, so the result follows them into another browser.
@@ -612,7 +790,17 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    // attached after sign-up (parkTeamCode).
    const signUpBase = ref && isPersonalInviteCode(ref) ? `/invite/${encodeURIComponent(ref.toUpperCase())}` : '/sign-up';
    const signUpHref = `${signUpBase}${doneToken ? `?ps=${doneToken}` : ''}`;
-   const trailSteps = ['You', ...(videos.length ? ['Watch'] : []), 'Answer', ...(askProof ? ['Income'] : []), 'Done'];
+   const trailSteps = [
+      'You',
+      ...(videos.length ? ['Watch'] : []),
+      'Answer',
+      ...(v2 ? ['Job'] : []),
+      ...(askProof ? ['Income'] : []),
+      ...(v2 ? ['Health'] : []),
+      'Done'
+   ];
+   const stepOf = (q: ScreenQuestion | undefined) =>
+      !v2 || !q ? 'Answer' : q.kind === 'medical' ? 'Health' : q.kind === 'job' || q.kind === 'photo' || q.kind === 'doc' || /^job_|^coe$/.test(q.id) ? 'Job' : 'Answer';
    const trail = (step: string) => <StepTrail current={step === 'end' ? trailSteps.length : Math.max(0, trailSteps.indexOf(step))} steps={trailSteps} />;
    const question = questions[index];
    const video = videos[videoIndex];
@@ -720,7 +908,9 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                         <li>✍️ Answer {questions.filter((q) => q.kind === 'text').length} quick questions</li>
                      ) : null}
                      {questions.some((q) => q.kind !== 'text') ? <li>🤳 Record a short video of yourself (camera needed)</li> : null}
+                     {v2 ? <li>💼 Show us your job with your camera</li> : null}
                      {askProof ? <li>📄 Send 1 month of proof of income</li> : null}
+                     {v2 ? <li>🩺 One health question</li> : null}
                   </ul>
                   <div>
                      <label className="mb-1.5 block text-[14px] font-bold text-[#594d65] dark:text-[#d9cfe8]" htmlFor="screen-name">
@@ -765,19 +955,23 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                <div className={card} key={question.id}>
                   <ConnectHero
                      image={CONNECT_HIPPOS.cashout}
-                     subtitle={`Question ${index + 1} of ${questions.length}${question.hint && question.kind === 'text' ? ` · ${question.hint}` : ''}`}
-                     title={question.text}
-                     trail={trail('Answer')}
+                     subtitle={
+                        question.kind === 'photo'
+                           ? 'Use your camera now. You have 5 minutes.'
+                           : `Question ${index + 1} of ${questions.length}${question.hint && question.kind !== 'video' && question.kind ? ` · ${question.hint}` : ''}`
+                     }
+                     title={question.kind === 'photo' && useAlt[question.id] && question.alt ? question.alt : question.text}
+                     trail={trail(stepOf(question))}
                   />
                   {error ? <p className={errorClass}>{error}</p> : null}
-                  {question.kind === 'text' ? (
+                  {question.kind === 'text' || question.kind === 'medical' ? (
                      <>
                         <textarea
                            aria-label="Your answer"
-                           className={`${fieldClass} min-h-[140px] resize-none`}
+                           className={`${fieldClass} ${question.kind === 'medical' ? 'min-h-[96px]' : 'min-h-[140px]'} resize-none`}
                            maxLength={MAX_TEXT}
                            onChange={(e) => setTyped((prev) => ({ ...prev, [question.id]: e.target.value }))}
-                           placeholder={minFor(question) > 3 ? 'Write 1–2 sentences' : 'Type your answer'}
+                           placeholder={question.kind === 'medical' ? 'Type “no”, or what it is' : minFor(question) > 3 ? 'Write 1–2 sentences' : 'Type your answer'}
                            value={typed[question.id] ?? ''}
                         />
                         {(() => {
@@ -786,10 +980,120 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                               <p className="text-[14px] text-[#8a7f99] dark:text-[#a89bb8]">A bit more please — 1 or 2 sentences.</p>
                            ) : null;
                         })()}
-                        <PrimaryButton disabled={(typed[question.id] ?? '').trim().length < minFor(question)} onClick={acceptText}>
-                           Next
+                        {question.kind === 'medical' && (typed[question.id] ?? '').trim().length >= 2 && !saidNo(typed[question.id]) ? (
+                           <div className="flex flex-col gap-2" role="radiogroup" aria-label="Is this loan for it?">
+                              <p className="text-[15px] font-bold text-[#3b2f4a] dark:text-[#f5f0ff]">Is this loan for it?</p>
+                              {MEDICAL_CHOICES.map((c) => {
+                                 const picked = (choices[question.id] ?? (preview?.med && c.id === 'ongoing' ? 'ongoing' : null)) === c.id;
+                                 return (
+                                    <button
+                                       aria-checked={picked}
+                                       className={`rounded-[14px] border-2 px-4 py-3 text-left text-[15px] font-semibold ${
+                                          picked
+                                             ? 'border-[#7661f9] bg-[#f4f1fb] text-[#3b2f4a] dark:bg-[#2a2140] dark:text-[#f5f0ff]'
+                                             : 'border-[#e2dcee] bg-white text-[#594d65] dark:border-[#3a2d4f] dark:bg-[#1b1526] dark:text-[#d9cfe8]'
+                                       }`}
+                                       key={c.id}
+                                       onClick={() => setChoices((prev) => ({ ...prev, [question.id]: c.id }))}
+                                       role="radio"
+                                       type="button"
+                                    >
+                                       {c.label}
+                                    </button>
+                                 );
+                              })}
+                           </div>
+                        ) : null}
+                        {coached[question.id] ? (
+                           <div className="rounded-[14px] bg-[#fff6e0] px-4 py-3 text-[15px] leading-[21px] text-[#5c4300] dark:bg-[#3a2f12] dark:text-[#ffe6a3]">
+                              💡 {coached[question.id].hint}
+                              <span className="mt-1 block text-[13px] opacity-80">Add it above, then tap Next.</span>
+                           </div>
+                        ) : null}
+                        <PrimaryButton
+                           disabled={busy || (typed[question.id] ?? '').trim().length < minFor(question)}
+                           onClick={() => void acceptText()}
+                        >
+                           {busy ? <Loader2 aria-label="Checking" className="mx-auto size-5 animate-spin" /> : 'Next'}
                         </PrimaryButton>
+                        {index > 0 && !busy ? backButton : null}
+                     </>
+                  ) : question.kind === 'job' ? (
+                     <>
+                        <input
+                           aria-label="Your job"
+                           autoComplete="organization-title"
+                           className={fieldClass}
+                           maxLength={80}
+                           onChange={(e) => setTyped((prev) => ({ ...prev, [question.id]: e.target.value }))}
+                           placeholder="Your job"
+                           value={typed[question.id] ?? ''}
+                        />
+                        <PrimaryButton
+                           disabled={busy || (typed[question.id] ?? '').trim().length < minFor(question)}
+                           onClick={() => void acceptJob()}
+                        >
+                           {busy ? (
+                              <span className="flex items-center justify-center gap-2">
+                                 <Loader2 aria-hidden className="size-5 animate-spin" />
+                                 Getting your next questions…
+                              </span>
+                           ) : (
+                              'Next'
+                           )}
+                        </PrimaryButton>
+                        {index > 0 && !busy ? backButton : null}
+                     </>
+                  ) : question.kind === 'photo' ? (
+                     <>
+                        <LivePhoto
+                           alt={question.alt}
+                           onDone={acceptPhoto}
+                           onUseAlt={() => setUseAlt((prev) => ({ ...prev, [question.id]: true }))}
+                           preview={preview?.photo ?? (preview ? 'ready' : undefined)}
+                           questionId={question.id}
+                           text={question.text}
+                           token={token}
+                           useAlt={Boolean(useAlt[question.id])}
+                        />
                         {index > 0 ? backButton : null}
+                     </>
+                  ) : question.kind === 'doc' ? (
+                     <>
+                        <input
+                           accept={DOC_ACCEPT}
+                           className="hidden"
+                           onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (coeInput.current) coeInput.current.value = '';
+                              if (!file) return;
+                              if (!DOC_TYPES.has(file.type)) return setError('Please send a photo (JPG or PNG) or a PDF.');
+                              if (file.size > MAX_DOC_BYTES) return setError('That file is too big. Send a photo instead.');
+                              setError(null);
+                              setCoeFile(file);
+                           }}
+                           ref={coeInput}
+                           type="file"
+                        />
+                        {coeFile ? (
+                           <div className="flex items-center gap-2 rounded-[12px] bg-[#f4f1fb] px-3 py-2 text-[14px] text-[#3b2f4a] dark:bg-[#1b1526] dark:text-[#f5f0ff]">
+                              <span>{coeFile.type === 'application/pdf' ? '📄' : '🖼️'}</span>
+                              <span className="min-w-0 flex-1 truncate">{coeFile.name}</span>
+                              {busy ? null : (
+                                 <button aria-label="Remove" className="px-1 text-[16px] font-bold text-[#8a7f99]" onClick={() => setCoeFile(null)} type="button">
+                                    ✕
+                                 </button>
+                              )}
+                           </div>
+                        ) : null}
+                        {coeFile ? (
+                           <PrimaryButton disabled={busy} onClick={() => void sendCoe(false)}>
+                              {busy ? <Loader2 aria-label="Sending" className="mx-auto size-5 animate-spin" /> : 'Send my COE'}
+                           </PrimaryButton>
+                        ) : (
+                           <PrimaryButton onClick={() => coeInput.current?.click()}>Add my COE</PrimaryButton>
+                        )}
+                        {busy ? null : <GhostButton onClick={() => void sendCoe(true)}>I don’t have one</GhostButton>}
                      </>
                   ) : (
                      <>
@@ -802,7 +1106,11 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                               </span>
                            </div>
                         ) : null}
-                        <AnswerRecorder busy={busy} onUse={(clip) => void acceptClip(clip)} />
+                        <AnswerRecorder
+                           busy={busy}
+                           maxSeconds={question.id === 'job_video' ? JOB_VIDEO_SECONDS : MAX_SECONDS}
+                           onUse={(clip) => void acceptClip(clip)}
+                        />
                         {index > 0 && !busy ? backButton : null}
                      </>
                   )}
@@ -814,7 +1122,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                   <ConnectHero
                      image={CONNECT_HIPPOS.cashout}
                      subtitle="Show us 1 month of your income."
-                     title="Last step: proof of income"
+                     title={v2 ? 'Now: proof of income' : 'Last step: proof of income'}
                      trail={trail('Income')}
                   />
                   <ul className="flex flex-col gap-1.5 text-[15px] text-[#594d65] dark:text-[#d9cfe8]">
@@ -871,6 +1179,13 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                            )}
                         </PrimaryButton>
                         {busy || docs.length >= MAX_DOCS ? null : <GhostButton onClick={() => docInput.current?.click()}>Add more</GhostButton>}
+                     </>
+                  ) : uploadedDocs?.length ? (
+                     <>
+                        <p className="text-center text-[15px] font-semibold text-[#2f7a3a] dark:text-[#8fe0a0]">
+                           ✓ {uploadedDocs.length} file{uploadedDocs.length === 1 ? '' : 's'} sent
+                        </p>
+                        <PrimaryButton onClick={() => void sendProof()}>Next</PrimaryButton>
                      </>
                   ) : (
                      <PrimaryButton onClick={() => docInput.current?.click()}>Add my proof</PrimaryButton>

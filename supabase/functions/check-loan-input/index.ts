@@ -3,6 +3,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { alertDeepSeekFailure } from '../_shared/deepseekAlert.ts';
+import { coachAnswer, planJob } from '../_shared/prescreenV2.ts';
 import { LOAN_REASON_GUIDE } from './loanReasonGuide.ts';
 
 const corsHeaders = {
@@ -278,7 +279,7 @@ const callerUserId = (req: Request): string | null => {
 // affects the borrower.
 const recordCheck = async (row: {
    user_id: string | null;
-   kind: Kind;
+   kind: Kind | 'prescreen_coach';
    text: string;
    ok: boolean;
    category: string | null;
@@ -297,10 +298,40 @@ const recordCheck = async (row: {
    }
 };
 
+// Pre-screening v2 rides here (edge-function cap; this one already takes the borrower's JWT): the job
+// follow-ups and the answer coach on moodeng.app/screen. Gemini, not DeepSeek. Only for the caller's own
+// open pre-screening (token + user), so it's no free AI for anyone else. See _shared/prescreenV2.ts.
+const PRESCREEN_KINDS = new Set(['prescreen_job', 'prescreen_coach']);
+
+const handlePrescreen = async (req: Request, body: Record<string, unknown>) => {
+   const userId = callerUserId(req);
+   if (!userId) return jsonResponse({ ok: false, error: 'sign_in' }, 401);
+   const url = Deno.env.get('SUPABASE_URL');
+   const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+   if (!url || !key) return jsonResponse({ ok: false, error: 'not_configured' }, 500);
+   const svc = createClient(url, key);
+   const token = typeof body.token === 'string' ? body.token : '';
+   if (body.kind === 'prescreen_job') {
+      const result = await planJob(svc, userId, token, typeof body.job === 'string' ? body.job : '');
+      return jsonResponse(result, result.ok ? 200 : 400);
+   }
+   const answer = typeof body.answer === 'string' ? body.answer.trim() : '';
+   const locale = typeof body.locale === 'string' && ['en', 'fil', 'id'].includes(body.locale) ? body.locale : 'en';
+   const verdict = await coachAnswer(svc, userId, token, typeof body.q === 'string' ? body.q : '', answer, locale);
+   if (!('skipped' in verdict)) {
+      await recordCheck({ user_id: userId, kind: 'prescreen_coach', text: answer.slice(0, 600), ok: verdict.ok, category: null, hint: verdict.hint, suggestion: '', model: 'gemini' });
+   }
+   return jsonResponse(verdict);
+};
+
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
    try {
+      if (req.headers.get('content-type')?.includes('application/json')) {
+         const peek = (await req.clone().json().catch(() => null)) as Record<string, unknown> | null;
+         if (peek && typeof peek.kind === 'string' && PRESCREEN_KINDS.has(peek.kind)) return await handlePrescreen(req, peek);
+      }
       const apiKey = Deno.env.get('DEEPSEEK_API_KEY');
       // Fail open — if the key isn't configured, never block a borrower's input.
       if (!apiKey) {

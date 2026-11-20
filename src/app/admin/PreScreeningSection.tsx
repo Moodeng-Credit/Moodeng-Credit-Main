@@ -11,8 +11,45 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
  * Database: supabase/migrations/20261116180000_pre_screening.sql.
  */
 
-type Question = { id: string; text: string };
-type Answer = { q: string; video: string | null; audio: string | null; seconds: number; text?: string | null };
+type Question = { id: string; text: string; kind?: string };
+// v2 (migration 20261120120000): job photos (photo + timing), the certificate (doc), coached answers
+// (first + coach) and the medical choice.
+type Answer = {
+   q: string;
+   video: string | null;
+   audio: string | null;
+   seconds: number;
+   text?: string | null;
+   first?: string | null;
+   coach?: string | null;
+   choice?: string | null;
+   photo?: string | null;
+   doc?: string | null;
+   source?: string | null;
+   asked_at?: string | null;
+   uploaded_at?: string | null;
+   late?: boolean | null;
+   alt?: boolean | null;
+   skip?: boolean | null;
+   skip_reason?: string | null;
+};
+type Medical = { severity: 'none' | 'low' | 'medium' | 'high'; loan_for: string | null; condition: string | null; note: string };
+const MEDICAL_BADGE: Record<Medical['severity'], string> = { none: '🟢 none', low: '🟢 low', medium: '🟡 medium', high: '🔴 HIGH' };
+const photoTiming = (a: Answer) => {
+   if (a.skip) return `⚠️ Skipped${a.skip_reason ? ` (${a.skip_reason})` : ''}`;
+   const asked = a.asked_at ? Date.parse(a.asked_at) : NaN;
+   const sent = a.uploaded_at ? Date.parse(a.uploaded_at) : NaN;
+   const gap = Number.isFinite(asked) && Number.isFinite(sent) ? Math.round((sent - asked) / 1000) : null;
+   return [
+      a.uploaded_at ? `Sent ${bkk(a.uploaded_at)} BKK` : null,
+      gap != null ? `${Math.floor(gap / 60)}m${String(gap % 60).padStart(2, '0')}s after the ask` : null,
+      a.source === 'file' ? 'camera app' : a.source === 'camera' ? 'in-page camera' : null,
+      a.alt ? '“not at work” option' : null,
+      a.late ? '⚠️ LATE' : null
+   ]
+      .filter(Boolean)
+      .join(' · ');
+};
 type ClipCheck = {
    person_visible: boolean | null;
    one_person: boolean | null;
@@ -53,6 +90,7 @@ type PreScreening = {
       answers?: GradedAnswer[];
       income?: { files: number; read: IncomeRead | null; score: number | null; note: string } | null;
       flags?: string[];
+      medical?: Medical | null;
    } | null;
    score: number | null;
    verdict: 'good' | 'ok' | 'weak' | null;
@@ -251,12 +289,15 @@ export default function PreScreeningSection() {
                         {row.questions.map((q, i) => {
                            const answer = row.answers.find((a) => a.q === q.id);
                            const graded = row.grade?.answers?.find((a) => a.q === q.id);
-                           const path = answer?.video ?? answer?.audio ?? null;
+                           const path = answer?.video ?? answer?.audio ?? answer?.photo ?? answer?.doc ?? null;
+                           const isFile = Boolean(answer?.photo || answer?.doc);
                            return (
                               <li className="rounded-xl bg-[#1b1030] p-3" key={q.id}>
                                  <p className="text-sm font-black text-[#cfc6dd]">
                                     {i + 1}. {q.text}{' '}
-                                    <span className="text-[#a89bb8]">{graded?.score != null ? `· ${graded.score}/10` : '· no score'}</span>
+                                    <span className="text-[#a89bb8]">
+                                       {q.kind === 'medical' ? '· graded apart' : graded?.score != null ? `· ${graded.score}/10` : '· no score'}
+                                    </span>
                                  </p>
                                  <p className="mt-1 text-base text-white">
                                     {answer?.text ? (
@@ -265,10 +306,30 @@ export default function PreScreeningSection() {
                                        </>
                                     ) : graded?.transcript ? (
                                        `“${graded.transcript}”`
+                                    ) : answer?.photo ? (
+                                       <span className="text-[#cfc6dd]">📸 {photoTiming(answer)}</span>
+                                    ) : answer?.skip ? (
+                                       <span className="text-[#a89bb8]">{q.kind === 'photo' ? photoTiming(answer) : 'Skipped (optional).'}</span>
+                                    ) : answer?.doc ? (
+                                       <span className="text-[#cfc6dd]">📄 Sent</span>
                                     ) : (
                                        <span className="text-[#a89bb8]">Not heard.</span>
                                     )}
                                  </p>
+                                 {answer?.first && answer.first !== answer.text ? (
+                                    <p className="mt-1 text-sm text-[#cfc6dd]">
+                                       ✍️ First try: “{answer.first}” <span className="text-[#a89bb8]">· hint: {answer.coach}</span>
+                                    </p>
+                                 ) : answer?.coach ? (
+                                    <p className="mt-1 text-sm text-[#a89bb8]">✍️ Got a hint ({answer.coach}), kept the answer.</p>
+                                 ) : null}
+                                 {q.kind === 'medical' && row.grade?.medical ? (
+                                    <p className="mt-1 text-sm font-bold text-[#e6def5]">
+                                       🩺 {MEDICAL_BADGE[row.grade.medical.severity]}
+                                       {row.grade.medical.loan_for ? ` · loan: ${row.grade.medical.loan_for}` : ''}
+                                       {row.grade.medical.note ? <span className="font-normal text-[#a89bb8]"> · {row.grade.medical.note}</span> : null}
+                                    </p>
+                                 ) : null}
                                  {graded?.note ? <p className="mt-1 text-sm text-[#a89bb8]">{graded.note}</p> : null}
                                  {graded?.seen?.note ? (
                                     <p className="mt-1 text-sm text-[#cfc6dd]">
@@ -276,7 +337,19 @@ export default function PreScreeningSection() {
                                        {graded.seen.language ? <span className="text-[#a89bb8]"> · {graded.seen.language}</span> : null}
                                     </p>
                                  ) : null}
-                                 {path && clips[path] ? (
+                                 {path && clips[path] && isFile ? (
+                                    answer?.photo ? (
+                                       <img alt="Job photo" className="mt-2 max-h-[360px] rounded-lg" src={clips[path]} />
+                                    ) : (
+                                       <a className={`${pill} mt-2 inline-block`} href={clips[path]} rel="noreferrer" target="_blank">
+                                          📄 Open the file
+                                       </a>
+                                    )
+                                 ) : path && isFile && !row.files_removed_at ? (
+                                    <button className={`${pill} mt-2`} onClick={() => void play(path)} type="button">
+                                       {answer?.photo ? '📸 Show photo' : '📄 Get the file'}
+                                    </button>
+                                 ) : path && clips[path] ? (
                                     answer?.video ? (
                                        <video className="mt-2 max-h-[360px] rounded-lg" controls playsInline src={clips[path]} />
                                     ) : (
