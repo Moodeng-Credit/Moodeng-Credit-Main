@@ -241,6 +241,28 @@ const pauseHostZoom = async (svc: Svc, hostId: string, joinUrl: string | null) =
    await postDiscord({ content: text }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
 };
 
+// Time off (George 2026-11-20: "place all calls from Saturday until Monday under George"): the
+// telegram_bot_settings `call_blocks` JSON list [{host: 'emma'|'george'|'all', from, to}] hides that
+// host's times inside each window — in the list, and again when booking. Past windows are ignored.
+type CallBlock = { host: string; from: string; to: string };
+export const loadCallBlocks = async (svc: Svc): Promise<CallBlock[]> => {
+   const { data } = await svc.from('telegram_bot_settings').select('value').eq('key', 'call_blocks').maybeSingle();
+   const raw = (data as { value?: string | null } | null)?.value;
+   if (!raw) return [];
+   try {
+      const list = JSON.parse(raw);
+      const now = Date.now();
+      return (Array.isArray(list) ? list : []).filter(
+         (b): b is CallBlock => b && typeof b.host === 'string' && !Number.isNaN(Date.parse(b.from)) && Date.parse(b.to) > now
+      );
+   } catch {
+      console.error('calcom-round-robin: call_blocks is not valid JSON — ignored');
+      return [];
+   }
+};
+export const blocksFor = (blocks: CallBlock[], hostId: string) =>
+   blocks.filter((b) => b.host === 'all' || b.host === hostId).map((b) => ({ start: b.from, end: b.to }));
+
 const eitherHostOn = async (svc: Svc): Promise<boolean> => {
    const { data } = await svc.from('telegram_bot_settings').select('value').eq('key', 'calls_either_host').maybeSingle();
    return String((data as { value?: unknown } | null)?.value ?? '').toLowerCase() === 'true';
@@ -314,15 +336,18 @@ export const listCallSlots = async (svc: Svc, user: CallUser, timeZone: string, 
    // never returns past times anyway — so this can't lose "later today" for anyone.
    const start = ymd(new Date(Date.now() - 86400000));
    const end = ymd(new Date(Date.now() + DAYS_AHEAD * 86400000));
-   const [perHost, georgeBusy, booked] = await Promise.all([
+   const [perHost, georgeBusy, booked, blocks] = await Promise.all([
       Promise.all(resolved.map((h) => fetchSlots(h.apiKey, h.eventTypeId, start, end, timeZone))),
       fetchGeorgeBusy(svc, new Date().toISOString(), new Date(Date.now() + (DAYS_AHEAD + 1) * 86400000).toISOString()),
-      bookedCallStarts(svc, user.id, new Date(Date.now() - 86400000).toISOString(), new Date(Date.now() + (DAYS_AHEAD + 2) * 86400000).toISOString())
+      bookedCallStarts(svc, user.id, new Date(Date.now() - 86400000).toISOString(), new Date(Date.now() + (DAYS_AHEAD + 2) * 86400000).toISOString()),
+      loadCallBlocks(svc)
    ]);
    // Max 4 calls a Bangkok day, and on a day that has calls only the times around them (the
    // nearest ones ⭐ recommended), so calls come in one block. `recommended` is a subset of `slots`.
    // George's own Google busy times only take away George's times; Emma's stand on their own.
-   const hostSlots = perHost.map((slots, i) => (resolved[i].id === 'george' ? dropBusySlots(slots, georgeBusy, CALL_MINUTES) : slots));
+   const hostSlots = perHost.map((slots, i) =>
+      dropBusySlots(resolved[i].id === 'george' ? dropBusySlots(slots, georgeBusy, CALL_MINUTES) : slots, blocksFor(blocks, resolved[i].id), CALL_MINUTES)
+   );
    const free = mergeSlots(hostSlots);
    const emmaIndex = resolved.findIndex((h) => h.id === PREFERRED_HOST);
    // Evenings and weekend days lead as ⭐ (isGoodCallTime); late-night bookers get nothing before noon.
@@ -376,6 +401,9 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
       const georgeBusy = await fetchGeorgeBusy(svc, start, new Date(startMs + CALL_MINUTES * 60000).toISOString());
       if (dropBusySlots([start], georgeBusy, CALL_MINUTES).length === 0) free = free.filter((h) => h !== 'george');
    }
+   // Time off (call_blocks): a host away at this instant isn't free, whatever Cal.com says.
+   const blocks = await loadCallBlocks(svc);
+   free = free.filter((h) => dropBusySlots([start], blocksFor(blocks, h), CALL_MINUTES).length > 0);
    if (free.length === 0) return reply({ ok: false, error: 'slot_taken' });
 
    const { data: prof } = await svc
@@ -506,4 +534,60 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
    // Only Cal Video was on offer at that time: they pick another (the paused host's times are gone now).
    if (zoomFailed) console.error('calcom-round-robin: no Zoom host free at that time — asking for another');
    return reply({ ok: false, error: 'slot_taken' });
+};
+
+
+/**
+ * Move a borrower's booked call to another host at the SAME time (admin: calcom-round-robin
+ * { action: 'move_host', user_id, host }). Books it on the new host's Cal.com (Zoom only), points
+ * the user's row at it (confirm state and reminders kept), then cancels the old booking. The borrower
+ * gets Cal.com's emails (new invite + the old one cancelled); every reminder carries the new link.
+ */
+export const moveCallToHost = async (svc: Svc, userId: string, toHost: string): Promise<{ ok: boolean; summary: string }> => {
+   const host = HOSTS.find((h) => h.id === toHost);
+   if (!host) return { ok: false, summary: `Host ${toHost} not configured.` };
+   const { data: u } = await svc
+      .from('users')
+      .select('id, email, display_name, username, video_call_booking_uid, video_call_starts_at, video_call_host, video_call_timezone')
+      .eq('id', userId)
+      .maybeSingle();
+   if (!u?.video_call_booking_uid || !u.video_call_starts_at || Date.parse(u.video_call_starts_at) <= Date.now()) return { ok: false, summary: 'No upcoming call.' };
+   const who = u.username ? `@${u.username}` : u.display_name || u.id;
+   if (u.video_call_host === toHost) return { ok: true, summary: `${who} is already with ${toHost}.` };
+   const eventTypeId = await resolveEventTypeId(host.apiKey);
+   if (!eventTypeId) return { ok: false, summary: `No event type for ${toHost}.` };
+   const start = new Date(Date.parse(u.video_call_starts_at)).toISOString();
+   const timeZone = u.video_call_timezone || 'Asia/Manila';
+   const signInEmail = u.email as string | null;
+   if (!signInEmail) return { ok: false, summary: `${who} has no email.` };
+   const email = isPlaceholderEmail(signInEmail) ? callInboxFor(u.id) : signInEmail;
+   const attendee: Attendee = { name: u.display_name || u.username || 'Moodeng borrower', email, timeZone, language: 'en' };
+   const emailsByHost: Record<string, string | null> = {};
+   await Promise.all(HOSTS.map(async (h) => (emailsByHost[h.id] = await fetchAccountEmail(h.apiKey))));
+   const metadata = { moodeng_user_id: u.id, moodeng_host: toHost };
+   const guests = teamGuests(toHost, emailsByHost, email);
+   let result = await createBooking(host.apiKey, eventTypeId, start, attendee, metadata, guests);
+   if ('error' in result && result.error === 'other' && guests.length) result = await createBooking(host.apiKey, eventTypeId, start, attendee, metadata);
+   if ('error' in result) return { ok: false, summary: `${who}: ${toHost} isn't free at that time in Cal.com (${result.error}) — open those hours in Cal.com first.` };
+   if (!isZoomJoinUrl(result.joinUrl)) {
+      await cancelCalBooking(toHost, result.uid, 'Zoom link could not be created.');
+      return { ok: false, summary: `${who}: ${toHost}'s booking came back without Zoom — reconnect Zoom in Cal.com. Call left as it was.` };
+   }
+   const oldUid = u.video_call_booking_uid as string;
+   const oldHost = (u.video_call_host as string | null) ?? 'emma';
+   const { error } = await svc
+      .from('users')
+      .update({
+         video_call_host: toHost,
+         video_call_booking_uid: result.uid,
+         video_call_join_url: result.joinUrl,
+         video_call_meeting_id: meetingIdFromJoinUrl(result.joinUrl)
+      })
+      .eq('id', u.id);
+   if (error) return { ok: false, summary: `${who}: booked on ${toHost} but saving failed (${error.message}) — check by hand.` };
+   const cancelled = await cancelCalBooking(oldHost, oldUid, `Same time — moved to ${toHost === 'george' ? 'George' : 'Emma'}. Use the new invite's link.`);
+   return {
+      ok: true,
+      summary: `🔀 ${who}'s call (${formatCallTimeForTeam(start, 'Asia/Bangkok')}) moved ${oldHost} → ${toHost}. New link: ${result.joinUrl}${cancelled ? '' : `\n⚠️ Old ${oldHost} booking NOT cancelled — cancel ${oldUid} in Cal.com.`}`
+   };
 };

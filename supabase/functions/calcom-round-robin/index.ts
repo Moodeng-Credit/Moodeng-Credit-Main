@@ -1,9 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import { bookCall, HOSTS, listCallSlots } from '../_shared/callBooking.ts';
+import { bookCall, HOSTS, listCallSlots, moveCallToHost } from '../_shared/callBooking.ts';
 import { CRON_TOKEN_HEADER } from '../_shared/cronAuth.ts';
-import { syncAllCalendlyHours } from './calendlySync.ts';
+import { setHostDateOverrides, syncAllCalendlyHours } from './calendlySync.ts';
 import { readCallTime, writePrepNote } from '../_shared/bookingAi.ts';
 
 // Free round-robin booking for the no-referral video call — the paid Cal.com Teams feature, built
@@ -41,7 +41,7 @@ serve(async (req) => {
       return json({ error: 'not_configured' }, 500);
    }
 
-   let payload: { action?: string; start?: string; timeZone?: string; host?: string; dryRun?: boolean };
+   let payload: { action?: string; start?: string; timeZone?: string; host?: string; dryRun?: boolean; user_id?: string; overrides?: Array<{ date: string; startTime: string; endTime: string }> };
    try {
       payload = await req.json();
    } catch {
@@ -83,13 +83,21 @@ serve(async (req) => {
       return json({ times, prep });
    }
 
-   if (payload.action === 'sync_calendly_hours' || payload.action === 'preview_slots') {
+   if (payload.action === 'sync_calendly_hours' || payload.action === 'preview_slots' || payload.action === 'cal_overrides' || payload.action === 'move_host') {
       // Fails closed (unlike checkCronAuth): no configured token, no sync.
       const expected = (Deno.env.get('ADMIN_API_TOKEN') ?? '').trim();
       if (!expected || (req.headers.get(CRON_TOKEN_HEADER) ?? '').trim() !== expected) return json({ error: 'unauthorized' }, 401);
       const adminSvc = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
       // Read-only: the free times a borrower with no call and no strikes would see right now (for
       // testing the Messenger booking bot against the real calendar). Books nothing.
+      if (payload.action === 'cal_overrides') {
+         if (payload.host !== 'george' && payload.host !== 'emma') return json({ error: 'host must be george or emma' }, 400);
+         return json(await setHostDateOverrides(payload.host, Array.isArray(payload.overrides) ? payload.overrides : [], payload.dryRun === true));
+      }
+      if (payload.action === 'move_host') {
+         if (typeof payload.user_id !== 'string' || typeof payload.host !== 'string') return json({ error: 'user_id and host required' }, 400);
+         return json(await moveCallToHost(adminSvc, payload.user_id, payload.host));
+      }
       if (payload.action === 'preview_slots') {
          const result = await listCallSlots(adminSvc, { id: '00000000-0000-0000-0000-000000000000', email: null }, payload.timeZone || 'Asia/Manila', payload.host, true);
          return json(result.body, result.status);
