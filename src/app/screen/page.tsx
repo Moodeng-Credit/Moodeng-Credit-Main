@@ -5,11 +5,14 @@ import { Loader2 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 
-import LivePhoto, { type PhotoAnswer, type PhotoPreview } from '@/app/screen/LivePhoto';
 import BrandedVideo from '@/components/BrandedVideo';
-import { useLocalization } from '@/i18n/LocalizationProvider';
-import { describeBrowser } from '@/lib/attribution';
+
 import { fetchPrescreenPath, PRE_KYC_CONNECT_PATH } from '@/hooks/usePreKycGate';
+
+import LivePhoto, { type PhotoAnswer, type PhotoPreview } from '@/app/screen/LivePhoto';
+import { useLocalization } from '@/i18n/LocalizationProvider';
+import { trackPrescreenStep } from '@/lib/analytics/prescreenSteps';
+import { describeBrowser } from '@/lib/attribution';
 import {
    isPersonalInviteCode,
    joinPrescreenPath,
@@ -18,10 +21,19 @@ import {
    readPreScreening,
    savePreScreening
 } from '@/lib/preScreening';
-import { coachHint, MEDICAL_CHOICES, type MedicalChoice, planJobQuestions, PRESCREEN_CAPS, prescreenHippo, saidNo } from '@/lib/prescreenV2';
-import type { RootState } from '@/store/store';
+import {
+   coachHint,
+   MEDICAL_CHOICES,
+   type MedicalChoice,
+   minutesLeft,
+   planJobQuestions,
+   PRESCREEN_CAPS,
+   prescreenHippo,
+   saidNo
+} from '@/lib/prescreenV2';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { audioContextCtor, joinChunks, wavBlob, wavFromMediaFile } from '@/lib/wavAudio';
+import type { RootState } from '@/store/store';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, PrimaryButton, StepTrail } from '@/views/dashboard/components/connectKit';
 
 // moodeng.app/screen/<affiliate code> — the optional pre-screening link affiliates send people before
@@ -102,7 +114,11 @@ const MAX_DOCS = 6;
 const MAX_DOC_BYTES = 10 * 1024 * 1024;
 
 const SAMPLE_QUESTIONS: ScreenQuestion[] = [
-   { id: 'intro', text: 'Introduce yourself in English.', hint: 'Your full name, age and job. If you are a student, what do you do for work?' },
+   {
+      id: 'intro',
+      text: 'Introduce yourself in English.',
+      hint: 'Your full name, age and job. If you are a student, what do you do for work?'
+   },
    { id: 'borrowed', text: 'Have you borrowed before, like Maya, Tala or Salmon?', kind: 'text' },
    { id: 'purpose', text: 'What is this loan for?', kind: 'text' },
    { id: 'grow', text: 'How will you use the loan to build up your income?', kind: 'text' }
@@ -113,7 +129,13 @@ const SAMPLE_V2: ScreenQuestion[] = [
    { id: 'job_q1', kind: 'text', text: 'What do you farm?', hint: 'Like rice, corn, vegetables, pigs', min: 3 },
    { id: 'job_photo1', kind: 'photo', text: 'Take a photo of you at your farm', alt: 'Not at the farm now? A photo of your farm tools' },
    { id: 'job_video', text: 'Show us your work', hint: '10 seconds: say your job, then show your work place, tools or uniform.' },
-   { id: 'coe', kind: 'doc', text: 'Do you have a certificate of employment?', hint: 'Optional. A photo or PDF of your COE.', optional: true },
+   {
+      id: 'coe',
+      kind: 'doc',
+      text: 'Do you have a certificate of employment?',
+      hint: 'Optional. A photo or PDF of your COE.',
+      optional: true
+   },
    { id: 'medical', kind: 'medical', text: 'Do you or your family have a medical problem?', hint: 'Type “no”, or what it is', min: 2 }
 ];
 const SAMPLE_VIDEOS: ScreenVideo[] = [
@@ -124,7 +146,11 @@ const SAMPLE_VIDEOS: ScreenVideo[] = [
 
 /** The start call's video list; yesterday's database sends one `video` id only. */
 const videosOf = (res: { video?: string | null; videos?: ScreenVideo[] | null } | null): ScreenVideo[] =>
-   Array.isArray(res?.videos) && res.videos.length ? res.videos.filter((v) => v?.id) : res?.video ? [{ id: res.video, title: '', tall: true }] : [];
+   Array.isArray(res?.videos) && res.videos.length
+      ? res.videos.filter((v) => v?.id)
+      : res?.video
+        ? [{ id: res.video, title: '', tall: true }]
+        : [];
 
 // Progress on this browser, so a reload (Facebook's browser drops pages when they switch apps to find a
 // screenshot) picks up where they were instead of starting over. Same token; kept for 20 hours.
@@ -459,7 +485,9 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    const [v2, setV2] = useState(Boolean(preview));
    // The one hint each typed answer can get, with the first try (both are sent).
    const [coached, setCoached] = useState<Record<string, Coached>>(
-      preview?.coach ? { purpose: { first: 'For my bills this month', hint: 'Tell us which bills, like electricity or rent, so we understand.' } } : {}
+      preview?.coach
+         ? { purpose: { first: 'For my bills this month', hint: 'Tell us which bills, like electricity or rent, so we understand.' } }
+         : {}
    );
    const [choices, setChoices] = useState<Record<string, MedicalChoice>>({});
    // The job the follow-ups were made for (same job after Back = no new questions).
@@ -479,8 +507,37 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       if (preview || !token) return;
       if (stage === 'done') return writeProgress(null);
       if (stage !== 'question' && stage !== 'proof') return;
-      writeProgress({ token, at: Date.now(), stage, index, questions, askProof, typed, uploaded, uploadedDocs, v2, coached, choices, plannedFor });
+      writeProgress({
+         token,
+         at: Date.now(),
+         stage,
+         index,
+         questions,
+         askProof,
+         typed,
+         uploaded,
+         uploadedDocs,
+         v2,
+         coached,
+         choices,
+         plannedFor
+      });
    }, [preview, token, stage, index, questions, askProof, typed, uploaded, uploadedDocs, v2, coached, choices, plannedFor]);
+
+   // One analytics event per screen they reach, so we see which step people stop at.
+   const stepKey = stage === 'question' ? `q:${questions[index]?.id ?? index}` : stage;
+   useEffect(() => {
+      if (preview || stage === 'loading') return;
+      const q = stage === 'question' ? questions[index] : undefined;
+      trackPrescreenStep(stepKey, {
+         v2,
+         index,
+         of: questions.length,
+         kind: q?.kind ?? null,
+         category: (questions.find((x) => x.kind === 'job') as { category?: string } | undefined)?.category ?? null
+      });
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- once per screen
+   }, [stepKey]);
 
    const authUser = useSelector((state: RootState) => state.auth.user);
    const isAuthChecked = useSelector((state: RootState) => state.auth.isAuthChecked);
@@ -597,7 +654,9 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          p_videos: videos.filter((v) => watched.has(v.id)).length
       });
       if (rpcError) {
-         setError(askProof ? 'Could not send. Check your connection and try again.' : 'Could not send. Check your connection and tap Next again.');
+         setError(
+            askProof ? 'Could not send. Check your connection and try again.' : 'Could not send. Check your connection and tap Next again.'
+         );
          setStage(askProof ? 'proof' : 'question');
          return;
       }
@@ -638,7 +697,8 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       const done: UploadedDoc[] = [];
       setUploadProgress({ done: 0, total: docs.length });
       for (const file of docs) {
-         const ext = file.type === 'application/pdf' ? 'pdf' : file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+         const ext =
+            file.type === 'application/pdf' ? 'pdf' : file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
          const path = `${token}/income-${crypto.randomUUID()}.${ext}`;
          const { error: upError } = await storage.upload(path, file, { contentType: file.type, upsert: false });
          if (!upError) done.push({ path, name: file.name.slice(0, 200), mime: file.type, size: file.size });
@@ -653,7 +713,6 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       setUploadedDocs(done);
       afterProof(done);
    };
-
 
    const goBack = () => {
       setError(null);
@@ -812,8 +871,16 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       'Done'
    ];
    const stepOf = (q: ScreenQuestion | undefined) =>
-      !v2 || !q ? 'Answer' : q.kind === 'medical' ? 'Health' : q.kind === 'job' || q.kind === 'photo' || q.kind === 'doc' || /^job_|^coe$/.test(q.id) ? 'Job' : 'Answer';
-   const trail = (step: string) => <StepTrail current={step === 'end' ? trailSteps.length : Math.max(0, trailSteps.indexOf(step))} steps={trailSteps} />;
+      !v2 || !q
+         ? 'Answer'
+         : q.kind === 'medical'
+           ? 'Health'
+           : q.kind === 'job' || q.kind === 'photo' || q.kind === 'doc' || /^job_|^coe$/.test(q.id)
+             ? 'Job'
+             : 'Answer';
+   const trail = (step: string) => (
+      <StepTrail current={step === 'end' ? trailSteps.length : Math.max(0, trailSteps.indexOf(step))} steps={trailSteps} />
+   );
    const question = questions[index];
    const video = videos[videoIndex];
    const nextVideo = () => {
@@ -862,7 +929,11 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
 
             {stage === 'facebook' ? (
                <div className={card}>
-                  <ConnectHero image={CONNECT_HIPPOS.hello} subtitle="So the team can message you about your answers." title="Connect Facebook first" />
+                  <ConnectHero
+                     image={CONNECT_HIPPOS.hello}
+                     subtitle="So the team can message you about your answers."
+                     title="Connect Facebook first"
+                  />
                   <a className="block" href={PRE_KYC_CONNECT_PATH}>
                      <PrimaryButton>Connect Facebook</PrimaryButton>
                   </a>
@@ -957,9 +1028,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                      tall={video.tall ?? false}
                      videoId={video.id}
                   />
-                  <PrimaryButton onClick={nextVideo}>
-                     {videoIndex + 1 < videos.length ? 'Next video' : 'Continue'}
-                  </PrimaryButton>
+                  <PrimaryButton onClick={nextVideo}>{videoIndex + 1 < videos.length ? 'Next video' : 'Continue'}</PrimaryButton>
                </div>
             ) : null}
 
@@ -969,12 +1038,17 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                      image={prescreenHippo(question, { expired: Boolean(photoExpired[question.id]) })}
                      subtitle={
                         question.kind === 'photo'
-                           ? 'Use your camera now. You have 5 minutes.'
+                           ? 'Take it now, or pick a photo from today.'
                            : `Question ${index + 1} of ${questions.length}${question.hint && question.kind !== 'video' && question.kind ? ` · ${question.hint}` : ''}`
                      }
                      title={question.kind === 'photo' && useAlt[question.id] && question.alt ? question.alt : question.text}
                      trail={trail(stepOf(question))}
                   />
+                  {v2 && question.kind !== 'photo' ? (
+                     <p className="-mt-1 text-center text-[13px] font-semibold text-[#8a7f99] dark:text-[#a89bb8]">
+                        ⏱ About {minutesLeft(questions, index, askProof && !uploadedDocs)} min left
+                     </p>
+                  ) : null}
                   {error ? <p className={errorClass}>{error}</p> : null}
                   {question.kind === 'text' || question.kind === 'medical' ? (
                      <>
@@ -983,7 +1057,13 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                            className={`${fieldClass} ${question.kind === 'medical' ? 'min-h-[96px]' : 'min-h-[140px]'} resize-none`}
                            maxLength={MAX_TEXT}
                            onChange={(e) => setTyped((prev) => ({ ...prev, [question.id]: e.target.value }))}
-                           placeholder={question.kind === 'medical' ? 'Type “no”, or what it is' : minFor(question) > 3 ? 'Write 1–2 sentences' : 'Type your answer'}
+                           placeholder={
+                              question.kind === 'medical'
+                                 ? 'Type “no”, or what it is'
+                                 : minFor(question) > 3
+                                   ? 'Write 1–2 sentences'
+                                   : 'Type your answer'
+                           }
                            value={typed[question.id] ?? ''}
                         />
                         {(() => {
@@ -1093,7 +1173,12 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                               <span>{coeFile.type === 'application/pdf' ? '📄' : '🖼️'}</span>
                               <span className="min-w-0 flex-1 truncate">{coeFile.name}</span>
                               {busy ? null : (
-                                 <button aria-label="Remove" className="px-1 text-[16px] font-bold text-[#8a7f99]" onClick={() => setCoeFile(null)} type="button">
+                                 <button
+                                    aria-label="Remove"
+                                    className="px-1 text-[16px] font-bold text-[#8a7f99]"
+                                    onClick={() => setCoeFile(null)}
+                                    type="button"
+                                 >
                                     ✕
                                  </button>
                               )}
@@ -1185,13 +1270,17 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                            {busy ? (
                               <span className="flex items-center justify-center gap-2">
                                  <Loader2 aria-hidden className="size-5 animate-spin" />
-                                 {uploadProgress ? `Uploading ${Math.min(uploadProgress.done + 1, uploadProgress.total)} of ${uploadProgress.total}…` : 'Sending…'}
+                                 {uploadProgress
+                                    ? `Uploading ${Math.min(uploadProgress.done + 1, uploadProgress.total)} of ${uploadProgress.total}…`
+                                    : 'Sending…'}
                               </span>
                            ) : (
                               `Send ${docs.length} file${docs.length === 1 ? '' : 's'}`
                            )}
                         </PrimaryButton>
-                        {busy || docs.length >= MAX_DOCS ? null : <GhostButton onClick={() => docInput.current?.click()}>Add more</GhostButton>}
+                        {busy || docs.length >= MAX_DOCS ? null : (
+                           <GhostButton onClick={() => docInput.current?.click()}>Add more</GhostButton>
+                        )}
                      </>
                   ) : uploadedDocs?.length ? (
                      <>

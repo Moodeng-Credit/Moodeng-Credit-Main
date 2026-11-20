@@ -452,7 +452,8 @@ export const planQuestions = (plan: JobPlan, opts: { jobVideo: boolean }): V2Que
       min: 3,
       dynamic: true as const
    })),
-   ...plan.photos.map((p, i) => ({
+   // One photo: each extra step loses people (George, 2026-11-20).
+   ...plan.photos.slice(0, 1).map((p, i) => ({
       id: `job_photo${i + 1}`,
       kind: 'photo' as const,
       text: p.text,
@@ -595,9 +596,9 @@ export async function planJob(svc: SupabaseClient, userId: string, token: string
    if (clean.length < 2) return { ok: false, error: 'bad_job' };
    const plans = Number((row.asks as { _plans?: unknown } | null)?._plans ?? 0) || 0;
    const { data: cfgRow } = await svc.from('telegram_bot_settings').select('value').eq('key', 'prescreen_config').maybeSingle();
-   let jobVideo = true;
+   let jobVideo = false;
    try {
-      jobVideo = (JSON.parse((cfgRow as { value?: string } | null)?.value ?? '{}') as { v2_job_video?: unknown }).v2_job_video !== false;
+      jobVideo = (JSON.parse((cfgRow as { value?: string } | null)?.value ?? '{}') as { v2_job_video?: unknown }).v2_job_video === true;
    } catch {
       // keep the default
    }
@@ -809,12 +810,15 @@ export const photoWarnings = (meta: PhotoMeta | null | undefined, check: PhotoCh
    if (!meta) return [];
    if (meta.skip) return [`skipped${meta.skip_reason ? ` (${meta.skip_reason})` : ''}`];
    const out: string[] = [];
-   if (meta.late) {
+   // A gallery photo (taken before the ask) isn't "late": the 5-minute clock is for live photos.
+   const fromGallery = meta.source === 'file' && (secondsBetween(meta.file_modified_at, meta.asked_at) ?? 0) > 120;
+   if (meta.late && !fromGallery) {
       const sec = secondsBetween(meta.asked_at, meta.uploaded_at);
       out.push(meta.asked_at ? `LATE: sent ${sec != null ? mmss(sec) : '?'} after the ask` : 'no ask time recorded');
    }
+   // From the gallery: fine when taken in the last day (the browser's file date; can be off).
    const fileAge = secondsBetween(meta.file_modified_at, meta.asked_at);
-   if (meta.source === 'file' && fileAge != null && fileAge > 120) out.push('picked an older file (gallery?)');
+   if (meta.source === 'file' && fileAge != null && fileAge > 24 * 3600) out.push('photo is older than a day');
    if (check?.screen_or_print === true) out.push('looks like a photo of a screen or a printout');
    else if (check?.live_scene === false) out.push('may not be a live photo');
    if (check?.fits_ask === false) out.push('doesn’t show what was asked');
@@ -831,12 +835,19 @@ export const photoLine = (
 ) => {
    if (!meta) return `📸 ${n}. ${ask}\n   — not sent`;
    const warn = photoWarnings(meta, check);
+   const fileAge = secondsBetween(meta.file_modified_at, meta.asked_at);
    if (meta.skip) return `📸 ${n}. ${ask}\n   ⚠️ ${warn.join(' · ')}`;
    const sec = secondsBetween(meta.asked_at, meta.uploaded_at);
    const when = [
       bangkokTime(meta.uploaded_at) ? `${bangkokTime(meta.uploaded_at)} BKK` : null,
-      sec != null && !meta.late ? `${mmss(Math.max(0, sec))} after the ask` : null,
-      meta.source === 'file' ? 'camera app' : meta.source === 'camera' ? 'in-page camera' : null,
+      sec != null && (!meta.late || (meta.source === 'file' && (fileAge ?? 0) > 120)) ? `${mmss(Math.max(0, sec))} after the ask` : null,
+      meta.source === 'file'
+         ? fileAge != null && fileAge > 120
+            ? `from gallery, taken ${fileAge >= 3600 ? `${Math.round(fileAge / 3600)}h` : `${Math.round(fileAge / 60)} min`} before`
+            : 'camera app'
+         : meta.source === 'camera'
+           ? 'in-page camera'
+           : null,
       meta.alt ? 'the “not at work” option' : null
    ]
       .filter(Boolean)

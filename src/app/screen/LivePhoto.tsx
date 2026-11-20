@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Loader2, SwitchCamera } from 'lucide-react';
 
-import { clock, OLD_FILE_MS, PHOTO_SECONDS, shrinkFile, shrinkImage } from '@/lib/prescreenV2';
+import { clock, GALLERY_MAX_AGE_MS, OLD_FILE_MS, PHOTO_SECONDS, shrinkFile, shrinkImage } from '@/lib/prescreenV2';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { GhostButton, PrimaryButton } from '@/views/dashboard/components/connectKit';
 
@@ -63,6 +63,7 @@ export default function LivePhoto({
    const videoRef = useRef<HTMLVideoElement>(null);
    const streamRef = useRef<MediaStream | null>(null);
    const fileRef = useRef<HTMLInputElement>(null);
+   const galleryRef = useRef<HTMLInputElement>(null);
 
    const stopCamera = useCallback(() => {
       streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -162,13 +163,19 @@ export default function LivePhoto({
       setState('review');
    };
 
-   const onFile = async (file: File | undefined) => {
+   const onFile = async (file: File | undefined, fromGallery = false) => {
       if (fileRef.current) fileRef.current.value = '';
+      if (galleryRef.current) galleryRef.current.value = '';
       if (!file) return;
       setError(null);
-      // An older picture from the gallery: they need to take a new one now.
-      if (file.lastModified && file.lastModified < askedAt - OLD_FILE_MS) {
-         setError('That photo is old. Please take a new one now.');
+      // Camera app: must be new. Gallery: any photo taken in the last day is fine.
+      const oldest = fromGallery ? Date.now() - GALLERY_MAX_AGE_MS : askedAt - OLD_FILE_MS;
+      if (file.lastModified && file.lastModified < oldest) {
+         setError(
+            fromGallery
+               ? 'That photo is older than a day. Pick one from today, or take a new one.'
+               : 'That photo is old. Please take a new one now.'
+         );
          return;
       }
       const blob = await shrinkFile(file);
@@ -223,7 +230,9 @@ export default function LivePhoto({
             </div>
          ) : null}
 
-         <div className="relative mx-auto aspect-[3/4] w-full max-w-[300px] overflow-hidden rounded-[18px] bg-[#1b1230]">
+         <div
+            className={`relative mx-auto w-full max-w-[300px] overflow-hidden rounded-[18px] bg-[#1b1230] ${state === 'live' || state === 'review' || state === 'uploading' ? 'aspect-[3/4]' : 'aspect-[16/10]'}`}
+         >
             <video
                className={`size-full object-cover ${facing === 'user' ? '-scale-x-100' : ''} ${state === 'live' ? '' : 'hidden'}`}
                muted
@@ -256,7 +265,7 @@ export default function LivePhoto({
                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center text-[#cfc6dd]">
                   <span className="text-[44px]">⏰</span>
                   <span className="text-[15px] font-bold text-white">Time’s up</span>
-                  <span className="text-[13px]">Start again when you’re ready. You get 5 minutes.</span>
+                  <span className="text-[13px]">Start again for 5 more minutes, or pick a photo from today.</span>
                </div>
             ) : null}
          </div>
@@ -269,6 +278,7 @@ export default function LivePhoto({
             ref={fileRef}
             type="file"
          />
+         <input accept="image/*" className="hidden" onChange={(e) => void onFile(e.target.files?.[0], true)} ref={galleryRef} type="file" />
          {error ? <p className={errorClass}>{error}</p> : null}
 
          {state === 'ready' || state === 'starting' || state === 'asking' ? (
@@ -286,6 +296,9 @@ export default function LivePhoto({
             </>
          ) : null}
          {state === 'expired' ? <PrimaryButton onClick={() => void ask()}>Start again</PrimaryButton> : null}
+         {state === 'ready' || state === 'live' || state === 'expired' ? (
+            <GhostButton onClick={() => galleryRef.current?.click()}>Pick a photo from today instead</GhostButton>
+         ) : null}
          {state === 'expired' || (cameraFailed && error) ? (
             <button
                className="text-center text-[14px] font-semibold text-[#8a7f99] underline dark:text-[#a89bb8]"

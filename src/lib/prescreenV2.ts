@@ -11,6 +11,8 @@ export const PRESCREEN_CAPS = ['v2'];
 export const PHOTO_SECONDS = 300;
 /** A camera-app file older than this before the ask is an old photo (gallery), not one taken now. */
 export const OLD_FILE_MS = 2 * 60_000;
+/** A photo picked from the gallery counts if it was taken in the last day (farmers already have today's crop photos). */
+export const GALLERY_MAX_AGE_MS = 24 * 3600_000;
 
 export type MedicalChoice = 'none' | 'paid' | 'future' | 'ongoing';
 export const MEDICAL_CHOICES: Array<{ id: MedicalChoice; label: string }> = [
@@ -106,6 +108,21 @@ export const prescreenHippo = (q: { id: string; kind?: string } | null | undefin
            ? 'timesup'
            : 'photo'
         : (HIPPO_BY_ID[q.id] ??
-          (/^job_q/.test(q.id) ? 'followup' : q.kind === 'video' || !q.kind ? 'intro' : q.kind === 'medical' ? 'medical' : q.kind === 'doc' ? 'coe' : 'followup'));
+          (/^job_q/.test(q.id)
+             ? 'followup'
+             : q.kind === 'video' || !q.kind
+               ? 'intro'
+               : q.kind === 'medical'
+                 ? 'medical'
+                 : q.kind === 'doc'
+                   ? 'coe'
+                   : 'followup'));
    return `${PRESCREEN_HIPPO_DIR}/${name}.webp`;
+};
+
+/** Rough minutes left from this question on (incl. proof of income when still to do). Pure. */
+export const minutesLeft = (questions: Array<{ kind?: string }>, index: number, proofLeft: boolean): number => {
+   const per = (k?: string) => (k === 'photo' ? 1.5 : k === 'video' || !k ? 1 : k === 'doc' ? 1 : 0.5);
+   const total = questions.slice(index).reduce((sum, q) => sum + per(q.kind), 0) + (proofLeft ? 2 : 0);
+   return Math.max(1, Math.round(total));
 };
