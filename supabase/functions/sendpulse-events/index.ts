@@ -13,6 +13,7 @@ import { handlePreScreeningAnswer } from '../_shared/preScreeningAsk.ts';
 import { handleRewardMessage } from '../_shared/messengerRewardReply.ts';
 import { CONNECTED_BY_TIMING_TEXT } from '../_shared/messengerStatusFollowUp.ts';
 import { isSupportMessage, openMessengerTicket, relayAgentReply } from '../_shared/messengerSupport.ts';
+import { handleLoanTimingMessage } from '../_shared/messengerLoanTiming.ts';
 import { buildMatchSuggestionCard, messengerStuckKeyboard } from '../_shared/messengerStuckAlert.ts';
 import { decideTimingMatch, TIMING_WINDOW_MS, type TimingAttempt } from '../_shared/messengerTimingMatch.ts';
 import {
@@ -341,6 +342,9 @@ serve(async (req) => {
          // "OK" to the day-before reminder's "Reply OK to keep your spot".
          if (typed && (await handleKeepSpotReply(svc, known!.userId, contactId, typed))) continue;
          if (typed && (await handleBookingMessage(svc, known!.userId, contactId, typed))) continue;
+         // "When do I pay back?" / "I want to repay now" / "can I borrow again?": 31-day term, pay in the
+         // last week before the due date, no fast borrow-repay loops (flags possible limit-gaming to the team).
+         if (typed && (await handleLoanTimingMessage(svc, known!.userId, contactId, typed))) continue;
          if (isSupportMessage(event)) {
             await openMessengerTicket(svc, {
                contactId,
