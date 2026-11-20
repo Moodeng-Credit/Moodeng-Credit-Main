@@ -96,3 +96,36 @@ export const syncAllCalendlyHours = async (svc: any, dryRun = false) => {
    const emma = await syncCalendlyHours(svc, 'emma', dryRun);
    return { ok: emma.ok, emma, george: { ok: true, skipped: 'hours kept in Cal.com' } };
 };
+
+
+/**
+ * One-off date overrides on a host's Cal.com schedule (admin: { action: 'cal_overrides', host,
+ * overrides: [{date:'YYYY-MM-DD', startTime:'HH:MM', endTime:'HH:MM'}], dryRun }). Replaces any
+ * override on the same dates; '00:00'–'00:00' = closed all day. Use for George (Emma's schedule is
+ * rewritten nightly from Calendly — block her with call_blocks instead).
+ */
+// deno-lint-ignore no-explicit-any
+export const setHostDateOverrides = async (host: SyncHost, overrides: Array<{ date: string; startTime: string; endTime: string }>, dryRun = false) => {
+   const calKey = hostApiKey(host);
+   if (!calKey) return { ok: false, error: 'not_configured' };
+   const eventTypeId = await resolveEventTypeId(calKey);
+   if (!eventTypeId) return { ok: false, error: 'cal_event_type' };
+   const cal = (version: string) => ({ Authorization: `Bearer ${calKey}`, 'cal-api-version': version });
+   const eventType = await getJson(`${CAL_BASE}/event-types/${eventTypeId}`, cal('2024-06-14'));
+   let scheduleId = eventType.body?.data?.scheduleId as number | null | undefined;
+   if (!scheduleId) scheduleId = (await getJson(`${CAL_BASE}/schedules/default`, cal('2024-06-11'))).body?.data?.id;
+   if (!scheduleId) return { ok: false, error: 'cal_schedule' };
+   const current = (await getJson(`${CAL_BASE}/schedules/${scheduleId}`, cal('2024-06-11'))).body?.data;
+   const dates = new Set(overrides.map((o) => o.date));
+   const kept = ((current?.overrides ?? []) as Array<{ date: string; startTime: string; endTime: string }>).filter((o) => !dates.has(o.date));
+   const next = [...kept, ...overrides].sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime));
+   if (dryRun) return { ok: true, scheduleId, timeZone: current?.timeZone, current: current?.overrides, next };
+   const res = await fetch(`${CAL_BASE}/schedules/${scheduleId}`, {
+      method: 'PATCH',
+      headers: { ...cal('2024-06-11'), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ overrides: next })
+   });
+   if (!res.ok) return { ok: false, error: `cal_patch_${res.status}: ${(await res.text()).slice(0, 200)}` };
+   const after = (await getJson(`${CAL_BASE}/schedules/${scheduleId}`, cal('2024-06-11'))).body?.data;
+   return { ok: true, scheduleId, timeZone: after?.timeZone, overrides: after?.overrides };
+};
