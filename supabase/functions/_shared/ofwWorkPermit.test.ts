@@ -9,6 +9,10 @@ Deno.test('OFW workers abroad get the ofw_worker plan; family of an OFW and help
    assert(fallbackPlan('helper').category !== 'ofw_worker');
    assertEquals(fallbackPlan('my husband is OFW').category, 'ofw_family');
    assertEquals(fallbackPlan('OFW').category, 'ofw_family');
+   // Indonesian migrant workers are workers; their family at home is not.
+   assertEquals(fallbackPlan('TKI di Taiwan').category, 'ofw_worker');
+   assertEquals(fallbackPlan('PMI Hong Kong').category, 'ofw_worker');
+   assertEquals(fallbackPlan('suami saya TKI').category, 'ofw_family');
 });
 
 Deno.test('the ofw_worker plan asks for the work permit (skippable, never sticks anyone)', () => {

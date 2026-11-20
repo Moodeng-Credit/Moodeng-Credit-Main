@@ -54,7 +54,11 @@ type Fallback = { match: RegExp; plan: Omit<JobPlan, 'by'> };
 const ABROAD = String.raw`abroad|overseas|hong ?kong|\bhk\b|singapore|\bsg\b|dubai|abu dhabi|\buae\b|saudi|\bksa\b|riyadh|jeddah|kuwait|qatar|doha|taiwan|oman|bahrain|malaysia|japan|korea|israel|cyprus|macau|\bofw\b`;
 const HELPER = String.raw`helper|maid|yaya|nanny|caregiver|kasambahay|\bdh\b|\bfdh\b|domestic worker`;
 /** An OFW working abroad themselves (not family of one): "DH in HK", "domestic helper", "caregiver abroad". */
-export const OFW_WORKER_RE = new RegExp(String.raw`domestic helper|\bfdh\b|(${HELPER})[\s\S]*(${ABROAD})|(${ABROAD})[\s\S]*(${HELPER})`, 'i');
+// TKI / TKW / PMI: an Indonesian migrant worker (the worker, not family) — unless it says husband/wife/family.
+export const OFW_WORKER_RE = new RegExp(
+   String.raw`domestic helper|\bfdh\b|(${HELPER})[\s\S]*(${ABROAD})|(${ABROAD})[\s\S]*(${HELPER})|^(?![\s\S]*(suami|istri|keluarga|husband|wife|asawa|family|anak))[\s\S]*\b(tki|tkw|pmi)\b`,
+   'i'
+);
 
 /** Common jobs, for when Gemini is down or slow. First match wins; the last one matches anything. */
 export const JOB_FALLBACKS: Fallback[] = [
@@ -549,7 +553,7 @@ Give:
 - "category": one short word for the job (farmer, teacher, driver_app, driver, store, online_seller, bpo, health, trades, household, student, freelancer, employee, ofw_worker, ofw_family, no_income, sensitive, other).
 - "permit": true when THEY work abroad themselves (OFW: domestic helper / DH, caregiver, factory, construction or any job in Hong Kong, Singapore, the Middle East, Taiwan…). We ask for their work permit separately. false for family of an OFW and for jobs at home.
 - "salaried": true only if they work for an employer who could give a certificate of employment (teacher at a school, call center agent, office or shop staff, nurse at a hospital). false for farmers, drivers on apps, own business, freelancers, day labor.
-- "no_income": true when they have NO job or business of their own: housewife or househusband, jobless, retired, student with no work, someone whose family member abroad (OFW, seafarer) supports them, "wala". Then ask who supports them and how they will repay, and use 0 or 1 photo.
+- "no_income": true when they have NO job or business of their own: housewife or househusband, jobless, retired, student with no work, someone whose family member abroad (OFW, seafarer) supports them, "wala". Someone who WORKS abroad themselves (OFW domestic helper, caregiver, TKI) is NOT no_income: set "permit" true instead. Then ask who supports them and how they will repay, and use 0 or 1 photo.
 - "sensitive": true when the work is gambling or betting (online casino, sabong, jueteng, lotto collector), an adult or nightlife venue (KTV, GRO, bar girl), or something plainly illegal. Still ask the normal questions; the team looks at these by hand.
 - "questions": exactly 2 short follow-ups, in order: first the kind of job (what exactly: "What do you farm?", "Where do you teach, and what grade?", "Which apps do you drive for?"), then their role or set-up (owner or worker, full-time, whose vehicle). Each: "text" (at most 10 simple words), "hint" (at most 8 words, example answers), "good" (one sentence for the grader: what a specific, believable answer contains).
 - "photos": 1 or 2 photos they can take RIGHT NOW with the phone camera, of the REAL WORLD, that prove this job. Specific to the job: a farmer = "Take a photo of you at your farm" + "Take a photo of your harvest or animals"; a barber = "Take a photo of your barber chair and tools"; a teacher = "Take a photo of you in your classroom"; a Grab or Lalamove driver = "Take a photo of you with your motor" + "Take a photo of your helmet, jacket or delivery bag". Each: "text" (starts with "Take a photo of", or the same words in the requested language; at most 12 words), "alt" (what to photograph instead if they are not at work right now, e.g. tools, uniform, produce, stock, the vehicle; at most 12 words), "good" (one sentence for the grader: what the photo must show).
