@@ -87,6 +87,7 @@ import ProofRequestPage from '@/app/proof/page';
 import { PROOF_PAGE_SAMPLE } from '@/app/proof/sample';
 import ResetPassword from '@/app/reset-password/page';
 import RoleSelection from '@/app/role-selection/page';
+import type { PhotoPreview } from '@/app/screen/LivePhoto';
 import PreScreeningPage, { type ScreenStage } from '@/app/screen/page';
 import SignOutPage from '@/app/sign-out/page';
 import SignUp from '@/app/signup/page';
@@ -583,7 +584,11 @@ export default function App() {
                      <PreScreeningPage
                         preview={{
                            stage: (new URLSearchParams(window.location.search).get('stage') as ScreenStage | null) ?? 'intro',
-                           question: Number(new URLSearchParams(window.location.search).get('q') ?? 0)
+                           question: Number(new URLSearchParams(window.location.search).get('q') ?? 0),
+                           // v2 steps: photo=ready|live|review|expired, coach=1 (the hint), med=1 (the medical choices).
+                           photo: (new URLSearchParams(window.location.search).get('photo') as PhotoPreview | null) ?? undefined,
+                           coach: new URLSearchParams(window.location.search).get('coach') === '1',
+                           med: new URLSearchParams(window.location.search).get('med') === '1'
                         }}
                      />
                   }

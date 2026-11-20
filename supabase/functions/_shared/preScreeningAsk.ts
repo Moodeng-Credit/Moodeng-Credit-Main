@@ -20,6 +20,7 @@ import { linkedRedFlag, loadLinkedAccounts } from './linkedAccounts.ts';
 import { type Lang, langOf, teamStepIn } from './messengerIncomeDocReply.ts';
 import { preScreeningDecisionRows } from './preScreening.ts';
 import { applyPreScreeningDecision } from './preScreeningDecision.ts';
+import { jobRedFlags, type MedicalRead, medicalRedFlag, type PhotoCheck, type PhotoMeta, photoRedFlags } from './prescreenV2.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
@@ -54,11 +55,20 @@ type Row = {
    status: string;
    user_id: string | null;
    questions: Array<{ id: string; text: string }> | null;
+   asks?: Record<string, unknown> | null;
    grade: {
       summary?: string;
       flags?: string[];
-      answers?: Array<{ q: string; transcript: string | null; note: string; seen?: { person_visible?: boolean | null } | null }>;
+      answers?: Array<{
+         q: string;
+         transcript: string | null;
+         note: string;
+         seen?: { person_visible?: boolean | null } | null;
+         photo?: PhotoMeta | null;
+         photo_check?: PhotoCheck | null;
+      }>;
       income?: { note?: string; read?: Record<string, unknown> | null } | null;
+      medical?: MedicalRead | null;
    } | null;
    score: number | null;
    team_decision: string | null;
@@ -70,7 +80,7 @@ type Row = {
 };
 
 const ROW_FIELDS =
-   'id, name, status, user_id, questions, grade, score, team_decision, followup_draft, followup_questions, followup_sent_at, followup_card, followup_answers';
+   'id, name, status, user_id, questions, asks, grade, score, team_decision, followup_draft, followup_questions, followup_sent_at, followup_card, followup_answers';
 const ANSWER_WINDOW_MS = 24 * 60 * 60 * 1000;
 const MAX_QUESTIONS = 3;
 const nameOf = (from?: TgUser) =>
@@ -216,7 +226,9 @@ const context = (row: Row, market: string | null) => ({
       const a = row.grade?.answers?.find((x) => x.q === q.id);
       return { question: q.text, said: a?.transcript ?? null, ai_note: a?.note ?? null };
    }),
-   proof_of_income: row.grade?.income ? { note: row.grade.income.note ?? null, read: row.grade.income.read ?? null } : null
+   proof_of_income: row.grade?.income ? { note: row.grade.income.note ?? null, read: row.grade.income.read ?? null } : null,
+   // v2: the medical grade (prescreenV2.ts), when they were asked.
+   ...(row.grade?.medical ? { medical: row.grade.medical } : {})
 });
 
 async function draftQuestions(svc: SupabaseClient, row: Row, typed: string[] | null): Promise<FollowupQuestion[]> {
@@ -339,10 +351,17 @@ const FLAG_LABEL: Record<string, string> = {
    sick_family: 'loan for a sick family member'
 };
 
-/** Red flags we can see without asking the AI: nobody on camera, a document tagged as AI-made. Pure. */
-export const plainRedFlags = (grade: Row['grade']): string[] => {
+/**
+ * Red flags we can see without asking the AI: nobody on camera, a document tagged as AI-made, and (v2)
+ * a high medical grade or a job photo that was late, skipped, an old file or a screen/printout. Pure.
+ */
+export const plainRedFlags = (grade: Row['grade'], job?: { questions?: unknown; asks?: unknown }): string[] => {
    const out: string[] = [];
+   if (job) out.push(...jobRedFlags(job.questions as Parameters<typeof jobRedFlags>[0], job.asks as Parameters<typeof jobRedFlags>[1]));
    if ((grade?.answers ?? []).some((a) => a.seen?.person_visible === false)) out.push('nobody on camera in an answer');
+   const medical = medicalRedFlag(grade?.medical);
+   if (medical) out.push(medical);
+   out.push(...photoRedFlags(grade?.answers ?? []));
    const warnings = ((grade?.income?.read as { warnings?: unknown } | null)?.warnings ?? []) as unknown[];
    if (warnings.some((w) => typeof w === 'string' && /labelled as AI-made|carries an? .+ tag/i.test(w)))
       out.push('document tagged as AI-made');
@@ -365,7 +384,7 @@ export const toRedFlags = (raw: unknown): string[] => {
 
 /** Every red flag on this one. When the AI check fails it says so: that counts as a flag (fail closed). */
 async function redFlags(svc: SupabaseClient, row: Row, replies: string[] = []): Promise<string[]> {
-   const plain = plainRedFlags(row.grade);
+   const plain = plainRedFlags(row.grade, { questions: row.questions, asks: row.asks });
    // Same device / WhatsApp / Facebook / wallet / home internet as a rejected, ghosted or overdue account.
    if (row.user_id) {
       try {
@@ -382,7 +401,9 @@ async function redFlags(svc: SupabaseClient, row: Row, replies: string[] = []): 
          { ...context(row, null), name_given: row.name, ...(replies.length ? { messenger_replies: replies } : {}) },
          25_000
       );
-      return [...plain, ...toRedFlags(raw)];
+      // The medical grade already covers a sick relative: don't say it twice.
+      const ai = toRedFlags(raw).filter((f) => !(plain.some((p) => p.startsWith('medical:')) && f.startsWith(FLAG_LABEL.sick_family)));
+      return [...plain, ...ai];
    } catch (err) {
       console.warn('pre-screening red flags: check failed', err instanceof Error ? err.message : err);
       return [...plain, 'the AI red-flag check didn’t run'];
