@@ -70,6 +70,11 @@ export type Extracted = {
    fields: ExtractedField[];
    transactions: ExtractedTransaction[];
    visual_anomalies: string[];
+   /**
+    * Government ID numbers printed on a payslip / SSS record (SSS, PhilHealth, Pag-IBIG, TIN). Only ever
+    * held in memory: hashed into income_documents.id_hashes (idKeys) and emptied before anything is saved.
+    */
+   id_numbers?: Array<{ type: string; value: string }>;
 };
 
 export type Flag = { code: string; severity: 'red' | 'orange' | 'info'; detail: string };
@@ -107,7 +112,8 @@ const EXAMPLE_JSON = {
    payslip: null,
    fields: [{ key: 'account_last4', label: 'Account', value: '1234', page: 1, source_text: '0917 *** 1234' }],
    transactions: [{ date: '2026-08-15', description: 'Received from ACME Trading', amount: 12000, balance: 13000, page: 1, source_text: 'Aug 15 Received from ACME Trading +12,000.00 13,000.00' }],
-   visual_anomalies: []
+   visual_anomalies: [],
+   id_numbers: []
 };
 
 const SYSTEM = `You read proof-of-income documents for a small lender in the Philippines, Indonesia and Thailand: GCash, Maya, DANA, OVO or PromptPay/bank-app transaction history (PDF export or app screenshots), bank statements (often bilingual, e.g. Thai + English — read the English labels and the numbers), payslips, remittance receipts, business permits, and proof of the work itself: a rider's or driver's earnings screen (Grab, Lalamove, foodpanda, Angkas, Gojek), an online shop's income or payout screen (Shopee, Lazada, TikTok Shop, Tokopedia), a freelancer's earnings or payout history (Upwork, OnlineJobs, PayPal, Wise, Payoneer), or an SSS contributions record (My.SSS). Several files from one person are usually screenshots of the SAME history: read them as one document, merge the rows, and drop rows that appear twice because screenshots overlap.
@@ -123,6 +129,7 @@ Copy what the document says. Never guess or fill in a number that is not printed
 - gig_earnings, seller_payout, freelance_earnings: each day, week or payout shown is one transaction with a positive amount (what they earned or were paid), dated at the end of that day or week; balance is null. institution is the app.
 - sss_contributions: put the employer and each month's contribution in fields, leave transactions empty (a contribution is not money in), and set period_start / period_end to the first and last month shown.
 - payslip is null unless it is a payslip, else {"employer", "gross_pay", "total_deductions", "net_pay"} (numbers or null).
+- id_numbers: only on a payslip or SSS record, the worker's government ID numbers exactly as printed, as [{"type": "sss" | "philhealth" | "pagibig" | "tin", "value": "05-1234567-8"}]. (They are only used to check one person isn't on several accounts and are never shown or stored; the "never copy a full ID number" rule is for fields.) Empty for other documents.
 
 Reply with ONLY a json object in exactly this shape (values here are just an example):
 ${JSON.stringify(EXAMPLE_JSON)}`;
@@ -296,6 +303,10 @@ export type CheckContext = {
    /** Other accounts' documents sharing this history's rows: share of our rows they also have. */
    rowMatches?: Array<{ user_id: string; share: number }>;
    duplicateOf: Array<{ user_id: string }>;
+   /** How many other accounts sent a document with one of the same government ID numbers (id_hashes). */
+   idMatches?: number;
+   /** Their own other recent sends (a payslip checks their histories, a history checks their payslips). */
+   otherDocs?: Array<Pick<Extracted, 'doc_type' | 'institution' | 'currency' | 'period_start' | 'period_end' | 'payslip' | 'transactions'>>;
    kycName: string | null;
    statedMonthlyIncome: number | null;
    loan: LoanContext | null;
@@ -309,6 +320,71 @@ export const monthlyIncomeUsd = (doc: Extracted, metrics: Metrics) => {
    const monthly = metrics.net_pay ?? (metrics.regular_deposits[0]?.amount || metrics.monthly_in);
    return monthly > 0 ? round2(monthly / rate) : null;
 };
+
+// ---- Cross-checks across their own sends and other accounts --------------------------------------
+
+const HISTORY_TYPES = new Set<Extracted['doc_type']>(['gcash_history', 'maya_history', 'bank_statement']);
+const ID_TYPES: Record<string, string> = { sss: 'sss', philhealth: 'philhealth', pagibig: 'pagibig', 'pag-ibig': 'pagibig', hdmf: 'pagibig', tin: 'tin' };
+
+/** Government ID numbers → hashes to compare across accounts (the numbers themselves are never kept). */
+export const idKeys = async (ids: Array<{ type: string; value: string }>) => {
+   const keys = new Set<string>();
+   for (const id of ids) {
+      const type = ID_TYPES[id.type.toLowerCase().replace(/\s+/g, '')];
+      const digits = id.value.replace(/\D/g, '');
+      if (!type || digits.length < 8 || /^(\d)\1+$/.test(digits)) continue;
+      const bytes = new TextEncoder().encode(`moodeng-id:${type}:${digits}`);
+      keys.add([...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map((b) => b.toString(16).padStart(2, '0')).join(''));
+   }
+   return [...keys];
+};
+
+type SalaryDoc = NonNullable<CheckContext['otherDocs']>[number];
+const dayMs = (date: string | null) => (date && /^\d{4}-\d{2}-\d{2}/.test(date) ? Date.parse(date.slice(0, 10)) : NaN);
+
+/**
+ * Did the payslip's net pay land in a wallet or bank history around payday (3 days before the period
+ * ends to 10 days after, within 2%)? Only judged when the history covers that window. Pure.
+ */
+export const salaryCheck = (payslip: SalaryDoc, history: SalaryDoc): Flag | null => {
+   const net = payslip.payslip?.net_pay;
+   const end = dayMs(payslip.period_end);
+   if (!net || net <= 0 || !Number.isFinite(end)) return null;
+   if (payslip.currency && history.currency && payslip.currency.toUpperCase() !== history.currency.toUpperCase()) return null;
+   const from = end - 3 * 86_400_000;
+   const to = end + 10 * 86_400_000;
+   const covers = dayMs(history.period_start) <= from + 3 * 86_400_000 && dayMs(history.period_end) >= end + 7 * 86_400_000;
+   const hit = history.transactions.find((t) => {
+      const d = dayMs(t.date);
+      return t.amount > 0 && d >= from && d <= to && Math.abs(t.amount - net) <= Math.max(net * 0.02, 1);
+   });
+   const where = history.institution ?? 'their history';
+   if (hit) return { code: 'salary_landed', severity: 'info', detail: `Payslip net pay ${net} landed on ${hit.date} in ${where} ✅` };
+   if (!covers) return null;
+   return {
+      code: 'salary_not_landed',
+      severity: 'orange',
+      detail: `Payslip net pay ${net} (period ending ${payslip.period_end}) doesn't show up in ${where} around payday — paid in cash, or the payslip isn't theirs.`
+   };
+};
+
+/** The salary check between this send and their other recent sends, whichever way round. Pure. */
+export const salaryFlags = (doc: SalaryDoc, others: SalaryDoc[]): Flag[] => {
+   const pairs: Array<[SalaryDoc, SalaryDoc]> =
+      doc.doc_type === 'payslip'
+         ? others.filter((o) => HISTORY_TYPES.has(o.doc_type)).map((h) => [doc, h])
+         : HISTORY_TYPES.has(doc.doc_type)
+           ? others.filter((o) => o.doc_type === 'payslip').map((p) => [p, doc])
+           : [];
+   const found = pairs.map(([p, h]) => salaryCheck(p, h)).filter((f): f is Flag => f !== null);
+   // One landing anywhere is enough; otherwise report each history that should have shown it.
+   const landed = found.find((f) => f.code === 'salary_landed');
+   return landed ? [landed] : found.slice(0, 2);
+};
+
+/** Does any of their histories cover this payslip's payday? (If not, we ask for one.) Pure. */
+export const hasHistoryForPayday = (payslip: SalaryDoc, others: SalaryDoc[]) =>
+   others.some((h) => HISTORY_TYPES.has(h.doc_type) && salaryCheck(payslip, h) !== null);
 
 /** Rule checks: edits, identity, and ability to repay. Pure. */
 export const runChecks = (doc: Extracted, metrics: Metrics, ctx: CheckContext): Flag[] => {
@@ -419,6 +495,15 @@ export const runChecks = (doc: Extracted, metrics: Metrics, ctx: CheckContext): 
       }
    }
 
+   if (ctx.idMatches) {
+      flags.push({
+         code: 'same_id_other_account',
+         severity: 'red',
+         detail: `The same SSS / PhilHealth / Pag-IBIG / TIN number is on a document from ${ctx.idMatches} other account(s) — a shared payslip template or one person on several accounts.`
+      });
+   }
+   flags.push(...salaryFlags(doc, ctx.otherDocs ?? []));
+
    // --- Identity ----------------------------------------------------------------------------------
    if (!namesMatch(doc.holder_name, ctx.kycName)) {
       flags.push({ code: 'name_mismatch', severity: 'red', detail: `Name on document "${doc.holder_name}" doesn't match the ID name "${ctx.kycName}".` });
@@ -508,7 +593,8 @@ export const runChecks = (doc: Extracted, metrics: Metrics, ctx: CheckContext): 
  * published ranking (regular income on statements > cash flow & balances > payslip > ID). Re-weight
  * once ~30 loans above $60 have come due and we can compare scores with what actually happened.
  */
-export const scoreOf = (doc: Extracted, metrics: Metrics, flags: Flag[]) => {
+export const scoreOf = (doc: Extracted, metrics: Metrics, all: Flag[]) => {
+   const flags = gating(all);
    let score = 50;
    if (metrics.regular_deposits.length || doc.payslip?.net_pay) score += 20;
    if (metrics.months_covered >= 2) score += 10;
@@ -552,8 +638,18 @@ export const buildMemo = (doc: Extracted, metrics: Metrics, flags: Flag[]): stri
    return lines.join('\n');
 };
 
-export const riskOf = (flags: Flag[]): 'green' | 'orange' | 'red' =>
-   flags.some((f) => f.severity === 'red') ? 'red' : flags.some((f) => f.severity === 'orange') ? 'orange' : 'green';
+/**
+ * Flags the team sees but that never hold the borrower (George 2026-11-20: "dont block them just give us
+ * a flag"). They show on the named checks and in the posts, but don't change risk, score or verdict —
+ * those decide whether onboarding goes on by itself (journey_income_check) or auto-approves. Pure.
+ */
+export const FLAG_ONLY = new Set(['payslip_sent_before_period_end', 'salary_not_landed', 'same_id_other_account']);
+const gating = (flags: Flag[]) => flags.filter((f) => !FLAG_ONLY.has(f.code));
+
+export const riskOf = (all: Flag[]): 'green' | 'orange' | 'red' => {
+   const flags = gating(all);
+   return flags.some((f) => f.severity === 'red') ? 'red' : flags.some((f) => f.severity === 'orange') ? 'orange' : 'green';
+};
 
 // ---- Verdict (Didit-style) ---------------------------------------------------------------------
 // Every send ends with one verdict, plus a list of named checks that each pass, warn or fail:
@@ -585,9 +681,9 @@ const SECTIONS: Array<{ key: string; label: string; codes: string[] }> = [
    { key: 'authentic', label: 'Not edited', codes: ['balance_math', 'running_balance', 'payslip_math', 'made_in_editor', 'edited_after_creation', 'visual_anomaly', 'edited_image', 'payslip_sent_before_period_end'] },
    { key: 'not_ai', label: 'Not AI-made', codes: ['ai_label', 'ai_generator', 'ai_image_size', 'gcash_ref_repeated', 'gcash_ref_format'] },
    { key: 'identity', label: 'Name matches ID', codes: ['name_mismatch'] },
-   { key: 'unique', label: 'Not used by another account', codes: ['same_file_other_account', 'same_rows_other_account'] },
+   { key: 'unique', label: 'Not used by another account', codes: ['same_file_other_account', 'same_rows_other_account', 'same_id_other_account'] },
    { key: 'recent', label: 'Recent and 2+ months', codes: ['old_document', 'short_history'] },
-   { key: 'income', label: 'Regular income', codes: ['no_income_rows', 'no_regular_income', 'income_below_stated', 'one_big_deposit'] },
+   { key: 'income', label: 'Regular income', codes: ['no_income_rows', 'no_regular_income', 'income_below_stated', 'one_big_deposit', 'salary_landed', 'salary_not_landed'] },
    { key: 'afford', label: 'Can afford the repayment', codes: ['repayment_vs_income', 'balance_below_repayment', 'due_far_from_payday', 'live_call'] }
 ];
 const FAKE_SECTIONS = new Set(['authentic', 'not_ai', 'identity', 'unique']);
@@ -618,7 +714,7 @@ export const verdictOf = (flags: Flag[], docType: Extracted['doc_type']): { verd
    // they're asked for a real one even if it also carries fake signs — the team still sees those.
    if (docType === 'other') return { verdict: 'resend', reason: 'not_financial' };
    const fakeCodes = new Set(SECTIONS.filter((x) => FAKE_SECTIONS.has(x.key)).flatMap((x) => x.codes));
-   const serious = flags.filter((f) => f.severity !== 'info');
+   const serious = gating(flags).filter((f) => f.severity !== 'info');
    if (serious.some((f) => fakeCodes.has(f.code))) return { verdict: 'needs_review', reason: null };
    const has = (code: string) => serious.some((f) => f.code === code);
    if (has('no_income_rows')) return { verdict: 'resend', reason: 'no_income' };
@@ -722,7 +818,8 @@ export const normalizeExtracted = (raw: Record<string, unknown>): Extracted => {
             source_text: String(t.source_text ?? '')
          }))
          .filter((t) => Number.isFinite(t.amount)),
-      visual_anomalies: arr<unknown>(raw.visual_anomalies).map(String).filter(Boolean)
+      visual_anomalies: arr<unknown>(raw.visual_anomalies).map(String).filter(Boolean),
+      id_numbers: arr<Record<string, unknown>>(raw.id_numbers).map((x) => ({ type: String(x.type ?? '').toLowerCase(), value: String(x.value ?? '') }))
    };
 };
 
@@ -805,7 +902,8 @@ export const mergeExtracted = (parts: Extracted[]): Extracted => {
       payslip: first('payslip') as Extracted['payslip'],
       fields: read.flatMap((p) => p.fields),
       transactions,
-      visual_anomalies: [...new Set(read.flatMap((p) => p.visual_anomalies))]
+      visual_anomalies: [...new Set(read.flatMap((p) => p.visual_anomalies))],
+      id_numbers: read.flatMap((p) => p.id_numbers ?? [])
    };
 };
 
@@ -1131,8 +1229,8 @@ export const parseBorrowerQuestions = (raw: unknown): BorrowerQuestion[] => {
 /** A photo answer is saved as this prefix + its path in the income-docs bucket. */
 export const PHOTO_ANSWER_PREFIX = 'photo:';
 
-/** The fixed payslip questions, in their language (ids p1, p2 — the AI's are q1, q2). Pure. */
-export const payslipProofQuestions = (country: 'Philippines' | 'Indonesia'): BorrowerQuestion[] => [
+/** The fixed payslip questions, in their language (ids p1–p3 — the AI's are q1, q2). Pure. */
+export const payslipProofQuestions = (country: 'Philippines' | 'Indonesia', opts: { askHistory?: boolean } = {}): BorrowerQuestion[] => [
    {
       id: 'p1',
       team: 'Did they edit or enhance the payslip photo in any app before sending it?',
@@ -1152,7 +1250,22 @@ export const payslipProofQuestions = (country: 'Philippines' | 'Indonesia'): Bor
             ? 'Tolong kirim screenshot chat atau email tempat kamu menerima slip gaji ini, dengan tanggalnya terlihat.'
             : 'Paki-send ng screenshot ng chat o email kung saan mo natanggap ang payslip na ito, kita dapat ang date.',
       kind: 'photo'
-   }
+   },
+   // No wallet/bank history of theirs covers this payday yet: ask for one, so the salary check can run.
+   ...(opts.askHistory
+      ? [
+           {
+              id: 'p3',
+              team: 'Does their salary go to GCash or a bank? Ask for the history showing this payday (salary landed check).',
+              en: 'Does your salary go to GCash or a bank? If yes, please send the history that shows this payday.',
+              local:
+                 country === 'Indonesia'
+                    ? 'Apakah gajimu masuk ke e-wallet atau bank? Kalau iya, tolong kirim riwayat yang menunjukkan gaji ini masuk.'
+                    : 'Pumapasok ba ang sahod mo sa GCash o bank? Kung oo, paki-send ang history na makikita ang sahod na ito.',
+              kind: 'file' as const
+           }
+        ]
+      : [])
 ];
 
 /** The storage path of a photo answer, only if it's in the borrower's own folder. Pure. */
@@ -1521,6 +1634,9 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       if (/scanned PDF/.test(message) && !fileWarnings) return askResend(unreadablePatch(message), 'scanned_pdf', message);
       return finish({ ...unreadablePatch(`read failed: ${message}`), verdict: 'needs_review' }, `${VERDICT_LINE.needs_review}: AI couldn’t read it.${fileWarnings ? `\n${fileWarnings}` : ''}`);
    }
+   // ID numbers become hashes right away; the numbers themselves are never saved.
+   const idHashes = await idKeys(doc.id_numbers ?? []);
+   doc = { ...doc, id_numbers: [] };
    if (!doc.readable) {
       const note = `unreadable: ${doc.unreadable_reason ?? 'no reason given'}`;
       const patch = unreadablePatch(note, { doc_type: doc.doc_type, extracted: doc, model: MODEL });
@@ -1531,12 +1647,26 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    }
 
    const keys = rowKeys(doc.transactions);
-   const [{ data: dupes }, { data: sameRows }] = await Promise.all([
+   const [{ data: dupes }, { data: sameRows }, { data: sameIds }, { data: mine }] = await Promise.all([
       supabase.from('income_documents').select('user_id').overlaps('file_hashes', hashes).neq('user_id', row.user_id),
       keys.length >= 5
          ? supabase.from('income_documents').select('user_id, row_keys').overlaps('row_keys', keys).neq('user_id', row.user_id).limit(20)
-         : Promise.resolve({ data: [] as Array<{ user_id: string; row_keys: string[] }> })
+         : Promise.resolve({ data: [] as Array<{ user_id: string; row_keys: string[] }> }),
+      idHashes.length
+         ? supabase.from('income_documents').select('user_id').overlaps('id_hashes', idHashes).neq('user_id', row.user_id).limit(20)
+         : Promise.resolve({ data: [] as Array<{ user_id: string }> }),
+      // Their own other recent sends, for the payslip ↔ history salary check.
+      supabase
+         .from('income_documents')
+         .select('extracted')
+         .eq('user_id', row.user_id)
+         .neq('id', id)
+         .eq('status', 'done')
+         .gte('created_at', new Date(Date.now() - 120 * 86_400_000).toISOString())
+         .order('created_at', { ascending: false })
+         .limit(8)
    ]);
+   const otherDocs = ((mine ?? []) as Array<{ extracted: Extracted | null }>).map((r) => r.extracted).filter((e): e is Extracted => !!e && Array.isArray(e.transactions));
    const loanCtx: LoanContext | null =
       askedAmount != null ? { amount: askedAmount, total_repayment: askedRepay ?? askedAmount, due_date: row.requested_amount == null ? (loan?.due_date ?? null) : null } : null;
    const metrics = computeMetrics(doc);
@@ -1546,6 +1676,8 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       files: facts,
       rowMatches: (sameRows ?? []).map((r) => ({ user_id: r.user_id, share: rowOverlap(keys, r.row_keys ?? []) })),
       duplicateOf: dupes ?? [],
+      idMatches: new Set((sameIds ?? []).map((r: { user_id: string }) => r.user_id)).size,
+      otherDocs,
       kycName: kyc?.full_name ?? null,
       statedMonthlyIncome: parseStatedIncome(user?.monthly_income),
       loan: loanCtx
@@ -1592,6 +1724,7 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       tier: step,
       file_hashes: hashes,
       row_keys: keys,
+      id_hashes: idHashes,
       doc_type: doc.doc_type,
       extracted: doc,
       metrics,
@@ -1619,7 +1752,8 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    // Payslips also get the two fixed proof questions (first, whatever the risk): asking where it came
    // from gives nothing away, and the chat's date is what catches a changed payslip.
    const country = countryOf(user?.market, doc?.currency);
-   const proofQuestions = !autoApprove && doc.doc_type === 'payslip' ? payslipProofQuestions(country) : [];
+   const proofQuestions =
+      !autoApprove && doc.doc_type === 'payslip' ? payslipProofQuestions(country, { askHistory: !hasHistoryForPayday(doc, otherDocs) }) : [];
    const aiQuestions =
       !autoApprove && risk !== 'red' && aiNote?.ask.length && Date.now() - startedAt < 100_000
          ? await borrowerQuestions(apiKey, aiNote.ask, {
@@ -1725,7 +1859,8 @@ export const reviewWithAnswers = async (supabase: SupabaseClient, id: string, ap
          const checks = ((claimed.checks ?? []) as CheckSection[]).map((c) =>
             c.key === 'authentic' ? { ...c, status: 'fail' as const, notes: [...c.notes, flag.detail] } : c
          );
-         await supabase.from('income_documents').update({ flags, checks, risk: 'red' }).eq('id', id);
+         // Flag only: risk stays as it was, so a borrower already through isn't pulled back to "hold".
+         await supabase.from('income_documents').update({ flags, checks }).eq('id', id);
          claimed.flags = flags;
       }
    }
