@@ -1,6 +1,6 @@
 // Repeat / mule / family accounts: other accounts tied to this one by a strong signal (same device,
 // home internet, WhatsApp, Facebook, wallet, payout address, or the ID check's identity matches) —
-// SQL public.linked_accounts (migration 20261120170500). "bad" = rejected, ghosted, blocked,
+// SQL public.linked_accounts (migration 20261120170000). "bad" = rejected, ghosted, blocked,
 // blacklisted, or a loan 3+ days overdue.
 //
 //   preScreeningAsk.redFlags   a bad link is a red flag: no auto ✅ Good fit
