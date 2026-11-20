@@ -9,8 +9,13 @@ export const MAX_BYTES = 10 * 1024 * 1024;
 export const ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf';
 export const ACCEPTED = new Set(ACCEPT.split(','));
 
-/** One of the AI's questions about their send, in their language (kind 'file' = "can you add more?"). */
-export type IncomeDocQuestion = { id: string; q: string; kind: 'text' | 'file' };
+/**
+ * One question about their send, in their language: 'text' = typed answer, 'file' = "can you add more?"
+ * (a new send), 'photo' = one screenshot attached as the answer (payslips: the chat they got it in).
+ */
+export type IncomeDocQuestion = { id: string; q: string; kind: 'text' | 'file' | 'photo' };
+
+export const PHOTO_ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif';
 
 export type IncomeDocStatus = {
    id: string;
@@ -40,6 +45,22 @@ export const answerIncomeDocQuestion = async (docId: string, questionId: string,
       p_answer: answer
    });
    return error || typeof data !== 'number' || data < 0 ? null : data;
+};
+
+/**
+ * A screenshot as the answer to a 'photo' question: uploaded to their own folder in income-docs, then
+ * saved as `photo:<path>` (the check reads it from there). Same return as answerIncomeDocQuestion.
+ */
+export const answerIncomeDocQuestionWithPhoto = async (docId: string, questionId: string, file: File): Promise<number | null> => {
+   const supabase = getSupabaseBrowserClient();
+   const { data: auth } = await supabase.auth.getUser();
+   const userId = auth.user?.id;
+   if (!userId || file.size > MAX_BYTES) return null;
+   const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(-80) || 'screenshot';
+   const path = `${userId}/answers/${crypto.randomUUID()}-${safeName}`;
+   const { error } = await supabase.storage.from('income-docs').upload(path, file, { contentType: file.type, upsert: false });
+   if (error) return null;
+   return answerIncomeDocQuestion(docId, questionId, `photo:${path}`);
 };
 
 /**
