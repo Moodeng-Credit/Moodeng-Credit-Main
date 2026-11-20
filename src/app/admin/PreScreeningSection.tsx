@@ -12,7 +12,7 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
  */
 
 type Question = { id: string; text: string; kind?: string };
-// v2 (migration 20261120120000): job photos (photo + timing), the certificate (doc), coached answers
+// v2 (migration 20261120170000): job photos (photo + timing), the certificate (doc), coached answers
 // (first + coach) and the medical choice.
 type Answer = {
    q: string;

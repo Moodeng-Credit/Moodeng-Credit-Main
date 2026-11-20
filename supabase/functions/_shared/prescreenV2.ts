@@ -1,4 +1,4 @@
-// Pre-screening v2 (migration 20261120120000_prescreen_v2.sql): the job questions, live job photos,
+// Pre-screening v2 (migration 20261120170000_prescreen_v2.sql): the job questions, live job photos,
 // the optional certificate of employment, answer coaching and the medical grade.
 //
 // Browser side (check-loan-input, the user's JWT; the edge-function cap rules out a new function):
@@ -702,7 +702,7 @@ export const toPhotoCheck = (raw: unknown): PhotoCheck | null => {
    return { fits_ask: b(r.fits_ask), live_scene: b(r.live_scene), screen_or_print: b(r.screen_or_print), note: s(r.note, 200) ?? '' };
 };
 
-/** The submit-side facts about a photo answer (migration 20261120120000). */
+/** The submit-side facts about a photo answer (migration 20261120170000). */
 export type PhotoMeta = {
    photo?: string | null;
    source?: 'camera' | 'file' | null;

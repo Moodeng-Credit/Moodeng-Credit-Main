@@ -576,7 +576,7 @@ const PHOTO_FIELDS = [
    'skip',
    'skip_reason'
 ] as const;
-/** The photo facts saved at submit (migration 20261120120000). Pure. */
+/** The photo facts saved at submit (migration 20261120170000). Pure. */
 export const photoMetaOf = (a: PreScreenAnswer | undefined): PhotoMeta | null => {
    if (!a) return null;
    const out: Record<string, unknown> = {};
