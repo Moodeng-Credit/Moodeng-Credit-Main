@@ -505,6 +505,11 @@ export const runChecks = (doc: Extracted, metrics: Metrics, ctx: CheckContext): 
    flags.push(...salaryFlags(doc, ctx.otherDocs ?? []));
 
    // --- Identity ----------------------------------------------------------------------------------
+   // No ID check yet (proof of income comes before Didit): say so, instead of a ✅ for a name nothing
+   // was compared with. recheckIncomeNamesAfterId compares it once Didit has their name.
+   if (!ctx.kycName?.trim() && doc.holder_name?.trim()) {
+      flags.push({ code: 'name_not_checked', severity: 'info', detail: 'No ID check yet — the name is compared automatically when they finish Didit.' });
+   }
    if (!namesMatch(doc.holder_name, ctx.kycName)) {
       flags.push({ code: 'name_mismatch', severity: 'red', detail: `Name on document "${doc.holder_name}" doesn't match the ID name "${ctx.kycName}".` });
    }
@@ -643,7 +648,7 @@ export const buildMemo = (doc: Extracted, metrics: Metrics, flags: Flag[]): stri
  * a flag"). They show on the named checks and in the posts, but don't change risk, score or verdict —
  * those decide whether onboarding goes on by itself (journey_income_check) or auto-approves. Pure.
  */
-export const FLAG_ONLY = new Set(['payslip_sent_before_period_end', 'salary_not_landed', 'same_id_other_account']);
+export const FLAG_ONLY = new Set(['payslip_sent_before_period_end', 'salary_not_landed', 'same_id_other_account', 'name_mismatch_after_id']);
 const gating = (flags: Flag[]) => flags.filter((f) => !FLAG_ONLY.has(f.code));
 
 export const riskOf = (all: Flag[]): 'green' | 'orange' | 'red' => {
@@ -680,7 +685,7 @@ export type CheckSection = { key: string; label: string; status: 'pass' | 'warn'
 const SECTIONS: Array<{ key: string; label: string; codes: string[] }> = [
    { key: 'authentic', label: 'Not edited', codes: ['balance_math', 'running_balance', 'payslip_math', 'made_in_editor', 'edited_after_creation', 'visual_anomaly', 'edited_image', 'payslip_sent_before_period_end'] },
    { key: 'not_ai', label: 'Not AI-made', codes: ['ai_label', 'ai_generator', 'ai_image_size', 'gcash_ref_repeated', 'gcash_ref_format'] },
-   { key: 'identity', label: 'Name matches ID', codes: ['name_mismatch'] },
+   { key: 'identity', label: 'Name matches ID', codes: ['name_mismatch', 'name_not_checked', 'name_mismatch_after_id', 'name_matched_after_id'] },
    { key: 'unique', label: 'Not used by another account', codes: ['same_file_other_account', 'same_rows_other_account', 'same_id_other_account'] },
    { key: 'recent', label: 'Recent and 2+ months', codes: ['old_document', 'short_history'] },
    { key: 'income', label: 'Regular income', codes: ['no_income_rows', 'no_regular_income', 'income_below_stated', 'one_big_deposit', 'salary_landed', 'salary_not_landed'] },
@@ -701,7 +706,7 @@ export const buildSections = (flags: Flag[], read: { ok: boolean; note?: string 
          ? 'fail'
          : mine.some((f) => f.severity === 'orange')
            ? 'warn'
-           : read.ok
+           : read.ok && !mine.some((f) => f.code === 'name_not_checked')
              ? 'pass'
              : 'skip';
       return { key, label, status, notes: mine.map((f) => f.detail) };
@@ -1390,6 +1395,81 @@ export const pairAnswers = (questions: BorrowerQuestion[], answers: BorrowerAnsw
       const answer = a?.a?.startsWith(PHOTO_ANSWER_PREFIX) ? '📸 sent a screenshot' : (a?.a ?? null);
       return { question: q.team || q.en, asked_them: q.en, answer, via: a?.via ?? null };
    });
+
+// ---- Name check once Didit has their name ---------------------------------------------------------
+
+/**
+ * A send whose name couldn't be checked (no Didit yet), now that Didit has their name: the new checks
+ * and flags, or null when there's nothing to do (already checked, no name on the document). A mismatch
+ * found this late only flags the team (FLAG_ONLY): they may already be through onboarding. Pure.
+ */
+export const nameRecheck = (
+   doc: { flags: Flag[] | null; checks: CheckSection[] | null; extracted: { holder_name?: string | null } | null },
+   kycName: string
+): { flags: Flag[]; checks: CheckSection[]; matched: boolean; holder: string } | null => {
+   const flags = doc.flags ?? [];
+   const holder = doc.extracted?.holder_name?.trim() ?? '';
+   if (!holder || !kycName.trim() || !flags.some((f) => f.code === 'name_not_checked')) return null;
+   const matched = namesMatch(holder, kycName);
+   const flag: Flag = matched
+      ? { code: 'name_matched_after_id', severity: 'info', detail: `Matches their ID name “${kycName}” (checked after Didit).` }
+      : { code: 'name_mismatch_after_id', severity: 'red', detail: `Name on document “${holder}” doesn't match their ID name “${kycName}” (checked after Didit).` };
+   const nextFlags = [...flags.filter((f) => f.code !== 'name_not_checked'), flag];
+   const checks = (doc.checks ?? []).map((c) =>
+      c.key === 'identity' ? { ...c, status: matched ? ('pass' as const) : ('fail' as const), notes: [flag.detail] } : c
+   );
+   return { flags: nextFlags, checks, matched, holder };
+};
+
+/**
+ * kyc-cross-check, right after it stores Didit results: their proof-of-income sends from the last 120
+ * days that said "name not checked yet" get compared with the ID name now. Matches update quietly; a
+ * mismatch is posted to the KYC Telegram group + Discord. Never changes risk, score or a decision.
+ */
+export const recheckIncomeNamesAfterId = async (supabase: SupabaseClient, userId: string, kycName: string) => {
+   const { data: docs } = await supabase
+      .from('income_documents')
+      .select('id, flags, checks, extracted')
+      .eq('user_id', userId)
+      .eq('status', 'done')
+      .gte('created_at', new Date(Date.now() - 120 * 86_400_000).toISOString());
+   const mismatches: string[] = [];
+   let updated = 0;
+   for (const d of (docs ?? []) as Array<{ id: string; flags: Flag[] | null; checks: CheckSection[] | null; extracted: { holder_name?: string | null } | null }>) {
+      const next = nameRecheck(d, kycName);
+      if (!next) continue;
+      // Only if it still says "not checked" (two runs at once don't both post).
+      const { data: saved } = await supabase
+         .from('income_documents')
+         .update({ flags: next.flags, checks: next.checks })
+         .eq('id', d.id)
+         .contains('flags', [{ code: 'name_not_checked' }])
+         .select('id')
+         .maybeSingle();
+      if (!saved) continue;
+      updated += 1;
+      if (!next.matched) mismatches.push(`${d.id}|${next.holder}`);
+   }
+   if (mismatches.length) {
+      const [{ data: user }, { data: chat }] = await Promise.all([
+         supabase.from('users').select('username, display_name').eq('id', userId).maybeSingle(),
+         supabase.from('telegram_bot_settings').select('value').eq('key', 'kyc_alert_chat_id').maybeSingle()
+      ]);
+      const who = personOf(user, userId);
+      for (const m of mismatches) {
+         const [docId, holder] = m.split('|');
+         const text = `🪪 ${who}: name on their proof of income “${holder}” doesn't match their ID name “${kycName}”.
+Checked now that Didit is done. Nothing was blocked — look before funding.`;
+         if (chat?.value) await sendTelegramMessage(chat.value, text, { inlineKeyboard: incomeDocKeyboard(docId, true) }).catch(() => undefined);
+         await postDiscord(
+            { embeds: [{ title: `🪪 Name doesn't match ID — ${who}`, url: incomeDocUrl(docId), description: `${text}
+${incomeDocUrl(docId)}`, color: 0xe74c3c }] },
+            { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }
+         ).catch(() => undefined);
+      }
+   }
+   return { updated, mismatches: mismatches.length };
+};
 
 /** The team post after they answered. Pure. */
 export const answersText = (who: string, pairs: ReturnType<typeof pairAnswers>, ai: AiDirection | null) =>

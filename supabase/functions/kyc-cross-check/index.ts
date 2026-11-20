@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { checkCronAuth } from '../_shared/cronAuth.ts';
 import { postDiscord } from '../_shared/discord.ts';
-import { analyseIncomeDocument, backfillBorrowerQuestions, notifyIncomeDecision, reviewWithAnswers } from '../_shared/incomeDocs.ts';
+import { analyseIncomeDocument, backfillBorrowerQuestions, notifyIncomeDecision, recheckIncomeNamesAfterId, reviewWithAnswers } from '../_shared/incomeDocs.ts';
 import { gradePreScreening, notifyPreScreeningClaimed, preScreeningWeekly } from '../_shared/preScreening.ts';
 import { linkedSweep } from '../_shared/linkedAccounts.ts';
 import { preScreeningSweep } from '../_shared/preScreeningAsk.ts';
@@ -440,6 +440,13 @@ serve(async (req) => {
          .from('kyc_identities')
          .upsert(fetched.map((f) => ({ ...f, fetched_at: new Date().toISOString() })), { onConflict: 'session_id' });
       if (error) return jsonResponse({ error: `store identities: ${error.message}` }, 500);
+      // Proof of income sent before Didit: compare its name now (never blocks; a mismatch pings the team).
+      for (const f of fetched) {
+         const uid = (f as { user_id?: string | null }).user_id;
+         const name = (f as { full_name?: string | null }).full_name;
+         if (!uid || !name?.trim() || body.dry) continue;
+         await recheckIncomeNamesAfterId(supabase, uid, name).catch((err) => console.error('income name recheck failed', err instanceof Error ? err.message : err));
+      }
    }
 
    // ---- 3. Compare everyone, keep what's new ----------------------------------------------------------
