@@ -72,7 +72,7 @@ import {
    idRepayIdrChoices,
    idUsdForIdr
 } from '@/lib/loanMarket';
-import { minimumRepayment, suggestedRepaymentRange, suggestedReturnRange } from '@/lib/loanPricing';
+import { maximumRepayment, minimumRepayment, suggestedRepaymentRange, suggestedReturnRange } from '@/lib/loanPricing';
 import { checkLoanReason, getCachedReasonVerdict, type ReasonAttempt, type ReasonCategory, type ReasonCheckLocale } from '@/lib/loanReasonCheck';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
@@ -2502,11 +2502,15 @@ export default function LoanRequestModal({
    const parsedAmountNum = Number(loanAmount);
    const parsedRepayNum = Number(totalRepaymentAmount);
    const amountValid = Boolean(loanAmount) && !Number.isNaN(parsedAmountNum) && parsedAmountNum > 0 && parsedAmountNum <= limitAmount;
+   // At most 20% on top per 31 days (George, 2026-11-18). Indonesia keeps its own 1.5× cap.
+   const maxRepayment = isIdLoan ? null : maximumRepayment(parsedAmountNum, days);
+   const repaymentOverCap = maxRepayment !== null && Boolean(totalRepaymentAmount) && Number.isFinite(parsedRepayNum) && parsedRepayNum > maxRepayment;
    const repaymentValid =
       Boolean(totalRepaymentAmount) &&
       !Number.isNaN(parsedRepayNum) &&
       !Number.isNaN(parsedAmountNum) &&
-      parsedRepayNum >= parsedAmountNum + 1;
+      parsedRepayNum >= parsedAmountNum + 1 &&
+      !repaymentOverCap;
    // Length is necessary but not sufficient: 46 characters of "dwadwadwad" used to earn a
    // green "Looks good". Two checks now stand between the borrower and that tick:
    //   1. checkReasonQuality — instant, offline, catches text that isn't words yet;
@@ -3635,8 +3639,12 @@ export default function LoanRequestModal({
                                  type="text"
                                  value={totalRepaymentAmount}
                               />
-                              {termErrors.repayment ? <FieldError message={termErrors.repayment} /> : null}
-                              {(() => {
+                              {termErrors.repayment ? (
+                                 <FieldError message={termErrors.repayment} />
+                              ) : repaymentOverCap && maxRepayment !== null ? (
+                                 <FieldError message={`Too high. For this date you can repay at most $${maxRepayment.toFixed(2)} (20% on top per month).`} />
+                              ) : null}
+                              {repaymentOverCap ? null : (() => {
                                  // Live clarity: once both amounts are valid, spell out what the borrower will
                                  // repay and how much of that is the lender's return — Moodeng adds $0, so this
                                  // makes the deal transparent while they set their own terms.

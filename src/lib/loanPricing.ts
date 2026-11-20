@@ -108,6 +108,24 @@ export function suggestedRepaymentRange(
 ): ReturnRange | null {
    if (!Number.isFinite(principal) || principal <= 0) return null;
    const lo = minimumRepayment(principal, dueDate, now, options)?.amount ?? Math.ceil(principal * (1 + MIN_MONTHLY_RETURN) * 2) / 2;
-   const hi = Math.ceil((principal + 2 * (lo - principal)) * 2) / 2;
-   return { lo, hi };
+   const max = maximumRepayment(principal, dueDate, now) ?? Infinity;
+   const hi = Math.min(Math.ceil((principal + 2 * (lo - principal)) * 2) / 2, max);
+   return { lo: Math.min(lo, hi), hi };
+}
+
+// ---- Maximum return: 20% per 31 days ------------------------------------------------------------
+// George, 2026-11-18: a borrower can pick any repayment, but never more than 20% on top for up to
+// 31 days ($15 → at most $18). Longer loans get 20% per 31 days, prorated by day. Never below the
+// $1 minimum, so tiny loans can still be requested. Same formula as the DB guard in
+// app_private.enforce_new_loan_terms (20261118170000_repay_cap_20pct.sql). Indonesia keeps its own cap.
+
+export const MAX_RETURN_PER_31_DAYS = 0.2;
+
+export function maximumRepayment(principal: number, dueDate: string | Date | null | undefined, now: Date = new Date()): number | null {
+   if (!Number.isFinite(principal) || principal <= 0) return null;
+   const due = dueDate ? (dueDate instanceof Date ? dueDate : new Date(dueDate)) : null;
+   const days = due && !Number.isNaN(due.getTime()) ? Math.max(0, Math.ceil((due.getTime() - now.getTime()) / 86400000)) : 31;
+   const periods = Math.max(1, days / 31);
+   const cap = Math.floor(principal * (1 + MAX_RETURN_PER_31_DAYS * periods) * 100 + 1e-6) / 100;
+   return Math.max(cap, principal + 1);
 }
