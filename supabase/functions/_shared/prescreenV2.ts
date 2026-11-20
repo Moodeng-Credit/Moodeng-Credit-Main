@@ -53,10 +53,14 @@ type Fallback = { match: RegExp; plan: Omit<JobPlan, 'by'> };
 
 const ABROAD = String.raw`abroad|overseas|hong ?kong|\bhk\b|singapore|\bsg\b|dubai|abu dhabi|\buae\b|saudi|\bksa\b|riyadh|jeddah|kuwait|qatar|doha|taiwan|oman|bahrain|malaysia|japan|korea|israel|cyprus|macau|\bofw\b`;
 const HELPER = String.raw`helper|maid|yaya|nanny|caregiver|kasambahay|\bdh\b|\bfdh\b|domestic worker`;
+// Any job word: "factory worker in Kuwait", "OFW sa Saudi", "driver in Dubai" (2026-11-21).
+const WORKER = String.raw`${HELPER}|worker|factory|construction|nurse|driver|cook|chef|waiter|waitress|cleaner|welder|electrician|mason|carpenter|engineer|technician|operator|staff|employee|labou?rer|janitor|guard|\bofw\b`;
+// "my husband is OFW in Dubai", "wife of a DH in HK": family of a worker abroad, not the worker.
+const FAMILY = String.raw`suami|istri|keluarga|husband|wife|asawa|family|anak|mother|father|nanay|tatay|kapatid|son\b|daughter`;
 /** An OFW working abroad themselves (not family of one): "DH in HK", "domestic helper", "caregiver abroad". */
 // TKI / TKW / PMI: an Indonesian migrant worker (the worker, not family) — unless it says husband/wife/family.
 export const OFW_WORKER_RE = new RegExp(
-   String.raw`domestic helper|\bfdh\b|(${HELPER})[\s\S]*(${ABROAD})|(${ABROAD})[\s\S]*(${HELPER})|^(?![\s\S]*(suami|istri|keluarga|husband|wife|asawa|family|anak))[\s\S]*\b(tki|tkw|pmi)\b`,
+   String.raw`^(?![\s\S]*(${FAMILY}))[\s\S]*(domestic helper|\bfdh\b|(${WORKER})[\s\S]*(${ABROAD})|(${ABROAD})[\s\S]*(${WORKER})|\b(tki|tkw|pmi)\b)`,
    'i'
 );
 
@@ -91,7 +95,8 @@ export const JOB_FALLBACKS: Fallback[] = [
       }
    },
    {
-      match: /\bofw\b|seaman|seafarer|seaman's wife|husband abroad|wife abroad|asawa.*abroad|remittance|tki\b|tkw\b/i,
+      // Family of someone abroad ("my wife is a DH in HK"); the worker themselves matched above.
+      match: new RegExp(String.raw`\bofw\b|seaman|seafarer|remittance|\btki\b|\btkw\b|\bpmi\b|(${FAMILY})[\s\S]*(${ABROAD})|(${ABROAD})[\s\S]*(${FAMILY})`, 'i'),
       plan: {
          category: 'ofw_family',
          salaried: false,
