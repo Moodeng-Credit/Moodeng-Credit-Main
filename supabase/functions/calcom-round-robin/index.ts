@@ -96,7 +96,7 @@ serve(async (req) => {
       }
       if (payload.action === 'move_host') {
          if (typeof payload.user_id !== 'string' || typeof payload.host !== 'string') return json({ error: 'user_id and host required' }, 400);
-         return json(await moveCallToHost(adminSvc, payload.user_id, payload.host));
+         return json(await moveCallToHost(adminSvc, payload.user_id, payload.host, typeof payload.start === 'string' ? payload.start : null));
       }
       if (payload.action === 'preview_slots') {
          const result = await listCallSlots(adminSvc, { id: '00000000-0000-0000-0000-000000000000', email: null }, payload.timeZone || 'Asia/Manila', payload.host, true);
