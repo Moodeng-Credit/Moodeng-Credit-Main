@@ -566,15 +566,43 @@ export const moveCallToHost = async (svc: Svc, userId: string, toHost: string): 
    await Promise.all(HOSTS.map(async (h) => (emailsByHost[h.id] = await fetchAccountEmail(h.apiKey))));
    const metadata = { moodeng_user_id: u.id, moodeng_host: toHost };
    const guests = teamGuests(toHost, emailsByHost, email);
-   let result = await createBooking(host.apiKey, eventTypeId, start, attendee, metadata, guests);
-   if ('error' in result && result.error === 'other' && guests.length) result = await createBooking(host.apiKey, eventTypeId, start, attendee, metadata);
+   const oldUid = u.video_call_booking_uid as string;
+   const oldHost = (u.video_call_host as string | null) ?? 'emma';
+   const book = async () => {
+      let r = await createBooking(host.apiKey, eventTypeId, start, attendee, metadata, guests);
+      if ('error' in r && r.error === 'other' && guests.length) r = await createBooking(host.apiKey, eventTypeId, start, attendee, metadata);
+      return r;
+   };
+   let result = await book();
+   let oldCancelled = false;
+   // The other cofounder is a guest on every call, so the old booking itself makes the new host look busy
+   // at that time. Free it first, then book; if the new host still can't take it, put it back on the old host.
+   if ('error' in result && result.error === 'taken') {
+      // Point the row away from the old uid first, so Cal.com's cancel webhook matches nobody and the
+      // borrower isn't told "your call was cancelled".
+      await svc.from('users').update({ video_call_booking_uid: `moving-${oldUid}` }).eq('id', u.id);
+      oldCancelled = await cancelCalBooking(oldHost, oldUid, `Same time — moving to ${toHost === 'george' ? 'George' : 'Emma'}. A new invite is on its way.`);
+      if (!oldCancelled) await svc.from('users').update({ video_call_booking_uid: oldUid }).eq('id', u.id);
+      if (oldCancelled) {
+         await new Promise((r) => setTimeout(r, 3000));
+         result = await book();
+         if ('error' in result) {
+            const back = HOSTS.find((h) => h.id === oldHost);
+            const backType = back ? await resolveEventTypeId(back.apiKey) : null;
+            const restored = back && backType ? await createBooking(back.apiKey, backType, start, attendee, { moodeng_user_id: u.id, moodeng_host: oldHost }, teamGuests(oldHost, emailsByHost, email)) : null;
+            if (restored && 'uid' in restored) {
+               await svc.from('users').update({ video_call_booking_uid: restored.uid, video_call_join_url: restored.joinUrl, video_call_meeting_id: meetingIdFromJoinUrl(restored.joinUrl) }).eq('id', u.id);
+               return { ok: false, summary: `${who}: ${toHost} couldn't take it even after freeing the slot — rebooked with ${oldHost} at the same time (new link ${restored.joinUrl}).` };
+            }
+            return { ok: false, summary: `⚠️ ${who}: old ${oldHost} booking cancelled but ${toHost} couldn't take it and re-booking ${oldHost} failed — rebook them by hand.` };
+         }
+      }
+   }
    if ('error' in result) return { ok: false, summary: `${who}: ${toHost} isn't free at that time in Cal.com (${result.error}) — open those hours in Cal.com first.` };
    if (!isZoomJoinUrl(result.joinUrl)) {
       await cancelCalBooking(toHost, result.uid, 'Zoom link could not be created.');
-      return { ok: false, summary: `${who}: ${toHost}'s booking came back without Zoom — reconnect Zoom in Cal.com. Call left as it was.` };
+      return { ok: false, summary: `${who}: ${toHost}'s booking came back without Zoom — reconnect Zoom in Cal.com.${oldCancelled ? ' ⚠️ Old booking already cancelled — rebook them by hand.' : ' Call left as it was.'}` };
    }
-   const oldUid = u.video_call_booking_uid as string;
-   const oldHost = (u.video_call_host as string | null) ?? 'emma';
    const { error } = await svc
       .from('users')
       .update({
@@ -585,7 +613,7 @@ export const moveCallToHost = async (svc: Svc, userId: string, toHost: string): 
       })
       .eq('id', u.id);
    if (error) return { ok: false, summary: `${who}: booked on ${toHost} but saving failed (${error.message}) — check by hand.` };
-   const cancelled = await cancelCalBooking(oldHost, oldUid, `Same time — moved to ${toHost === 'george' ? 'George' : 'Emma'}. Use the new invite's link.`);
+   const cancelled = oldCancelled || (await cancelCalBooking(oldHost, oldUid, `Same time — moved to ${toHost === 'george' ? 'George' : 'Emma'}. Use the new invite's link.`));
    return {
       ok: true,
       summary: `🔀 ${who}'s call (${formatCallTimeForTeam(start, 'Asia/Bangkok')}) moved ${oldHost} → ${toHost}. New link: ${result.joinUrl}${cancelled ? '' : `\n⚠️ Old ${oldHost} booking NOT cancelled — cancel ${oldUid} in Cal.com.`}`
