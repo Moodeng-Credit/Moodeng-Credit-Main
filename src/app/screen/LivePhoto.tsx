@@ -34,6 +34,7 @@ export default function LivePhoto({
    useAlt,
    onUseAlt,
    onDone,
+   onExpired,
    preview
 }: {
    token: string | null;
@@ -44,6 +45,8 @@ export default function LivePhoto({
    useAlt: boolean;
    onUseAlt: () => void;
    onDone: (answer: PhotoAnswer) => void;
+   /** Time ran out (true) or they started again (false) — the page swaps in the "time's up" hippo. */
+   onExpired?: (expired: boolean) => void;
    preview?: PhotoPreview;
 }) {
    const [state, setState] = useState<State>(preview ?? 'asking');
@@ -56,6 +59,7 @@ export default function LivePhoto({
    );
    const [error, setError] = useState<string | null>(null);
    const [cameraFailed, setCameraFailed] = useState(false);
+   useEffect(() => onExpired?.(state === 'expired'), [state, onExpired]);
    const videoRef = useRef<HTMLVideoElement>(null);
    const streamRef = useRef<MediaStream | null>(null);
    const fileRef = useRef<HTMLInputElement>(null);

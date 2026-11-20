@@ -18,7 +18,7 @@ import {
    readPreScreening,
    savePreScreening
 } from '@/lib/preScreening';
-import { coachHint, MEDICAL_CHOICES, type MedicalChoice, planJobQuestions, PRESCREEN_CAPS, saidNo } from '@/lib/prescreenV2';
+import { coachHint, MEDICAL_CHOICES, type MedicalChoice, planJobQuestions, PRESCREEN_CAPS, prescreenHippo, saidNo } from '@/lib/prescreenV2';
 import type { RootState } from '@/store/store';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { audioContextCtor, joinChunks, wavBlob, wavFromMediaFile } from '@/lib/wavAudio';
@@ -465,6 +465,12 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    // The job the follow-ups were made for (same job after Back = no new questions).
    const [plannedFor, setPlannedFor] = useState<string | null>(preview ? 'farmer' : null);
    const [useAlt, setUseAlt] = useState<Record<string, boolean>>({});
+   // LivePhoto reports "time's up" so the hero can show the alarm-clock hippo.
+   const [photoExpired, setPhotoExpired] = useState<Record<string, boolean>>({});
+   const markPhotoExpired = useCallback(
+      (id: string, expired: boolean) => setPhotoExpired((prev) => (Boolean(prev[id]) === expired ? prev : { ...prev, [id]: expired })),
+      []
+   );
    const [coeFile, setCoeFile] = useState<File | null>(null);
    const coeInput = useRef<HTMLInputElement>(null);
    const { locale } = useLocalization();
@@ -960,7 +966,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
             {stage === 'question' && question ? (
                <div className={card} key={question.id}>
                   <ConnectHero
-                     image={CONNECT_HIPPOS.cashout}
+                     image={prescreenHippo(question, { expired: Boolean(photoExpired[question.id]) })}
                      subtitle={
                         question.kind === 'photo'
                            ? 'Use your camera now. You have 5 minutes.'
@@ -1056,6 +1062,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                            alt={question.alt}
                            onDone={acceptPhoto}
                            onUseAlt={() => setUseAlt((prev) => ({ ...prev, [question.id]: true }))}
+                           onExpired={(expired) => markPhotoExpired(question.id, expired)}
                            preview={preview?.photo ?? (preview ? 'ready' : undefined)}
                            questionId={question.id}
                            text={question.text}
@@ -1126,7 +1133,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
             {stage === 'proof' ? (
                <div className={card}>
                   <ConnectHero
-                     image={CONNECT_HIPPOS.cashout}
+                     image={prescreenHippo(null)}
                      subtitle="Show us 1 month of your income."
                      title={v2 ? 'Now: proof of income' : 'Last step: proof of income'}
                      trail={trail('Income')}

@@ -84,3 +84,28 @@ export const clock = (ms: number) => {
    const sec = Math.max(0, Math.ceil(ms / 1000));
    return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 };
+
+// A different hippo for each kind of question on /screen (Gemini-made, 2026-11-20), so the same one
+// isn't on every step. Unknown ids fall back by kind.
+const PRESCREEN_HIPPO_DIR = '/hippos/prescreen';
+const HIPPO_BY_ID: Record<string, string> = {
+   intro: 'intro',
+   borrowed: 'borrowed',
+   purpose: 'purpose',
+   grow: 'grow',
+   job: 'job',
+   job_video: 'jobvideo',
+   coe: 'coe',
+   medical: 'medical'
+};
+export const prescreenHippo = (q: { id: string; kind?: string } | null | undefined, opts: { expired?: boolean } = {}): string => {
+   const name = !q
+      ? 'income'
+      : q.kind === 'photo'
+        ? opts.expired
+           ? 'timesup'
+           : 'photo'
+        : (HIPPO_BY_ID[q.id] ??
+          (/^job_q/.test(q.id) ? 'followup' : q.kind === 'video' || !q.kind ? 'intro' : q.kind === 'medical' ? 'medical' : q.kind === 'doc' ? 'coe' : 'followup'));
+   return `${PRESCREEN_HIPPO_DIR}/${name}.webp`;
+};
