@@ -63,7 +63,7 @@ export const docHint = async (token: string, q: string, path: string, locale: st
       const call = getSupabaseBrowserClient().functions.invoke('check-loan-input', {
          body: { kind: 'prescreen_doc', token, q, path, alt, locale: ['fil', 'id'].includes(locale) ? locale : 'en' }
       });
-      const timeout = new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 15000));
+      const timeout = new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 8000));
       const result = (await Promise.race([call, timeout])) as { data?: { ok?: boolean; hint?: string } | null } | null;
       const verdict = result?.data;
       return verdict?.ok === false && typeof verdict.hint === 'string' ? verdict.hint.slice(0, 220) : '';
