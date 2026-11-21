@@ -1173,7 +1173,11 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
            ? 'Health'
            : q.kind === 'job' || q.kind === 'photo' || q.kind === 'doc' || /^job_|^coe$|^work_permit$/.test(q.id)
              ? 'Job'
-             : 'Answer';
+             : /^money_q/.test(q.id)
+               ? askProof
+                  ? 'Income'
+                  : 'Job'
+               : 'Answer';
    const trail = (step: string) => (
       <StepTrail current={step === 'end' ? trailSteps.length : Math.max(0, trailSteps.indexOf(step))} steps={trailSteps} />
    );
