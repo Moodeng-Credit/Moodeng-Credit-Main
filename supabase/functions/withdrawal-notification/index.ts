@@ -1,12 +1,12 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import { sendEmail } from '../_shared/email.ts';
-import { isServerCaller } from '../_shared/internalAuth.ts';
-import { sendTelegramMessage } from '../_shared/telegram.ts';
-import { sendIdTelegramTo } from '../_shared/idTrack.ts';
 import { buildCashoutMessengerText, type NextRepay, pickNextRepay, REPAY_URL, repayLine } from '../_shared/cashoutRepayReminder.ts';
+import { sendEmail } from '../_shared/email.ts';
+import { sendIdTelegramTo } from '../_shared/idTrack.ts';
+import { isServerCaller } from '../_shared/internalAuth.ts';
 import { sendMessengerMessage } from '../_shared/sendpulse.ts';
+import { sendTelegramMessage } from '../_shared/telegram.ts';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -20,11 +20,7 @@ type SupabaseClient = ReturnType<typeof createClient>;
 // Inlined from borrowerNotificationDelivery.ts so this function doesn't drag in
 // the loan-notification builder graph it would otherwise pull through.
 const getBorrowerTelegramNotificationsEnabled = async (supabase: SupabaseClient) => {
-   const { data } = await supabase
-      .from('telegram_bot_settings')
-      .select('value')
-      .eq('key', 'borrower_notifications_enabled')
-      .maybeSingle();
+   const { data } = await supabase.from('telegram_bot_settings').select('value').eq('key', 'borrower_notifications_enabled').maybeSingle();
    return data?.value === 'true';
 };
 
@@ -43,7 +39,7 @@ const facebookUrl = 'https://www.facebook.com/profile.php?id=61589106561061';
 
 // Same palette and type scale as the branded loan emails in _shared/loanNotifications.ts.
 const fontFamily = "-apple-system,BlinkMacSystemFont,'SF Pro','SF Pro Display','SF Pro Text','Segoe UI',Roboto,Arial,sans-serif";
-const monoFamily = "ui-monospace,SFMono-Regular,Menlo,Consolas,monospace";
+const monoFamily = 'ui-monospace,SFMono-Regular,Menlo,Consolas,monospace';
 
 const detailRow = (icon: string, label: string, value: string, tone: 'default' | 'good', first = false) => {
    const colors = tone === 'good' ? { bg: '#d9f7e5', color: '#148240' } : { bg: '#f5ecff', color: '#6010d2' };
@@ -206,10 +202,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: corsHeaders });
    }
 
-   const supabase: SupabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-   );
+   const supabase: SupabaseClient = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 
    // Server only (record-withdrawal invokes this with the service-role key).
    if (!(await isServerCaller(supabase, req))) {
@@ -253,7 +246,12 @@ serve(async (req) => {
 
    // Indonesia track: cash-outs go to Walt. Told on Telegram in Bahasa, always (their one channel);
    // a placeholder Telegram sign-up address gets no email.
-   const idBorrower = borrower as { id: string; chat_id: string | number | null; market?: string | null; preferred_locale?: string | null } | null;
+   const idBorrower = borrower as {
+      id: string;
+      chat_id: string | number | null;
+      market?: string | null;
+      preferred_locale?: string | null;
+   } | null;
    const idWithdrawal = withdrawal as { id: string; amount: number | string; exchange: string | null };
    if (idBorrower?.market === 'ID' && /walt/i.test(String(idWithdrawal.exchange ?? ''))) {
       const sent = await sendIdTelegramTo(idBorrower, 'cashout_walt', { amount: Number(idWithdrawal.amount) });
@@ -262,7 +260,10 @@ serve(async (req) => {
       }
       // deno-lint-ignore no-explicit-any
       await (supabase as any).from('withdrawals').update({ notified_at: new Date().toISOString() }).eq('id', idWithdrawal.id);
-      return new Response(JSON.stringify({ message: 'Notification sent', emailSent: false, telegramSent: true }), { status: 200, headers: corsHeaders });
+      return new Response(JSON.stringify({ message: 'Notification sent', emailSent: false, telegramSent: true }), {
+         status: 200,
+         headers: corsHeaders
+      });
    }
 
    // Respect the borrower's money-movement notification preference.

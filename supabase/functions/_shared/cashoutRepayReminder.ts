@@ -1,7 +1,6 @@
 // After a borrower cashes out, remind them what they owe and when (George, 2026-11-21): the funded
 // notice names the due date, but by cash-out time it's scrolled away. Pure helpers, used by
 // withdrawal-notification for the Messenger message and the repay line on email + Telegram.
-
 import { effectiveAmountDue, effectiveDueDate } from './repaymentSchedule.ts';
 
 export type OpenLoan = {
