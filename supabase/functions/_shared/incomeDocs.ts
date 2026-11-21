@@ -648,7 +648,7 @@ export const buildMemo = (doc: Extracted, metrics: Metrics, flags: Flag[]): stri
  * a flag"). They show on the named checks and in the posts, but don't change risk, score or verdict —
  * those decide whether onboarding goes on by itself (journey_income_check) or auto-approves. Pure.
  */
-export const FLAG_ONLY = new Set(['payslip_sent_before_period_end', 'salary_not_landed', 'same_id_other_account', 'name_mismatch_after_id']);
+export const FLAG_ONLY = new Set(['payslip_sent_before_period_end', 'salary_not_landed', 'same_id_other_account', 'name_mismatch_after_id', 'story_mismatch']);
 const gating = (flags: Flag[]) => flags.filter((f) => !FLAG_ONLY.has(f.code));
 
 export const riskOf = (all: Flag[]): 'green' | 'orange' | 'red' => {
@@ -1066,7 +1066,15 @@ export const readIncomeProof = async (apiKey: string, files: Array<{ name: strin
 
 // repayChance: the AI's 0–100 estimate that they repay this loan in full by the due date (George
 // 2026-11-21: save a real prediction so the weekly report can check the AI against what happened).
-export type AiOpinion = { verdict: 'lend' | 'maybe' | 'decline'; note: string; ask: string[]; repayChance?: number | null; reasons?: string[] };
+export type AiOpinion = {
+   verdict: 'lend' | 'maybe' | 'decline';
+   note: string;
+   ask: string[];
+   repayChance?: number | null;
+   reasons?: string[];
+   /** Concrete things that don't fit across their sources (job typed, job photo, answers, call, document, ID). */
+   mismatches?: string[];
+};
 /** Several opinions on the same send, combined into one direction. */
 export type AiDirection = {
    direction: 'LEND' | 'LEAN LEND' | 'MAYBE' | 'LEAN DECLINE' | 'DECLINE';
@@ -1077,6 +1085,8 @@ export type AiDirection = {
    repayChance: number | null;
    /** Up to 2 short reasons, from the read closest to that average. */
    reasons: string[];
+   /** Story mismatches, only when most reads found some (one jumpy read can't flag anyone). */
+   mismatches: string[];
 };
 
 const VOTE: Record<AiOpinion['verdict'], number> = { lend: 1, maybe: 0, decline: -1 };
@@ -1097,7 +1107,17 @@ export const combineOpinions = (opinions: AiOpinion[]): AiDirection | null => {
    const chances = opinions.map((o) => o.repayChance).filter((c): c is number => typeof c === 'number');
    const repayChance = chances.length ? Math.round(chances.reduce((a, b) => a + b, 0) / chances.length) : null;
    const byChance = repayChance == null ? [] : [...opinions].filter((o) => o.reasons?.length).sort((a, b) => Math.abs((a.repayChance ?? 0) - repayChance) - Math.abs((b.repayChance ?? 0) - repayChance));
-   return { direction, votes: opinions.map((o) => o.verdict), note: closest.note, ask, repayChance, reasons: (byChance[0]?.reasons ?? closest.reasons ?? []).slice(0, 2) };
+   const withMismatch = opinions.filter((o) => o.mismatches?.length);
+   const mismatches = withMismatch.length * 2 > opinions.length ? (withMismatch.find((o) => o === closest) ?? withMismatch[0]).mismatches!.slice(0, 3) : [];
+   return {
+      direction,
+      votes: opinions.map((o) => o.verdict),
+      note: closest.note,
+      ask,
+      repayChance,
+      reasons: (byChance[0]?.reasons ?? closest.reasons ?? []).slice(0, 2),
+      mismatches
+   };
 };
 
 
@@ -1112,13 +1132,15 @@ You get: the loan they're asking for, what their proof-of-income document shows 
 
 Weigh them together: does the document match what they told us and said on the call? Can the money that comes in cover this repayment by the due date? Does their repayment history with us (on time, late, how late) support a bigger or smaller loan? Note any red flag (document contradicts their story, income too small, late before, signs the account isn't theirs).
 
+Check that their story fits across every source you have: the job they typed in pre-screening and their answers there, what their job photo showed, what they told us (work, income), the call summary, the document (whose name, which employer or kind of income, how much), and the name on their ID. List in "mismatches" each concrete thing that does not fit, e.g. "Says teacher, but GCash shows only sari-sari sales" or "Payslip name differs from ID name", at most 3, each at most 15 words. Leave it empty when everything fits or there is too little to compare; a missing source is not a mismatch, and small differences in wording or spelling are fine.
+
 Also estimate "repay_chance": a whole number 0–100, your honest chance that THIS borrower repays THIS loan in full by the due date. For reference, about 83% of this lender's loans so far were repaid on time; move up or down from that on the evidence, and don't round to 100 or 0. Give "reasons": the 1–2 things that moved it most, each at most 8 words.
 
 Cite document rows like [T3] when you mention a number from them. Do not invent numbers. Reply with only a json object:
-{"verdict": "lend" | "maybe" | "decline", "note": "at most 4 short plain sentences", "ask": ["up to 2 questions for the team to ask them"], "repay_chance": 0-100, "reasons": ["short reason", "short reason"]}`;
+{"verdict": "lend" | "maybe" | "decline", "note": "at most 4 short plain sentences", "ask": ["up to 2 questions for the team to ask them"], "repay_chance": 0-100, "reasons": ["short reason", "short reason"], "mismatches": ["short", "short"]}`;
 
 const writeOpinion = async (apiKey: string, input: Record<string, unknown>): Promise<AiOpinion | null> => {
-   type Out = { verdict?: string; note?: string; ask?: unknown; repay_chance?: unknown; reasons?: unknown };
+   type Out = { verdict?: string; note?: string; ask?: unknown; repay_chance?: unknown; reasons?: unknown; mismatches?: unknown };
    const body = JSON.stringify(input);
    // Thinking first (it weighs things better); if that's slow, a quick answer, so the whole check stays
    // inside the edge function's time limit.
@@ -1128,7 +1150,8 @@ const writeOpinion = async (apiKey: string, input: Record<string, unknown>): Pro
    });
    const verdict = (['lend', 'maybe', 'decline'].includes(String(out.verdict)) ? String(out.verdict) : 'maybe') as AiOpinion['verdict'];
    const ask = Array.isArray(out.ask) ? out.ask.map(String).filter(Boolean).slice(0, 2) : [];
-   return out.note ? { verdict, note: String(out.note), ask, ...parseRepayChance(out) } : null;
+   const mismatches = Array.isArray(out.mismatches) ? out.mismatches.map((m) => String(m).trim().slice(0, 140)).filter(Boolean).slice(0, 3) : [];
+   return out.note ? { verdict, note: String(out.note), ask, ...parseRepayChance(out), mismatches } : null;
 };
 
 /** The model's repay_chance (0–100, clamped to 1–99) and up to 2 short reasons. Pure. */
@@ -1148,7 +1171,7 @@ const dayDiff = (from: string | null | undefined, to: string | null | undefined)
 
 /** What we know about the borrower, for the opinion: their own answers, loans with us, and the call summary. No names. */
 export const borrowerContext = async (supabase: SupabaseClient, userId: string) => {
-   const [{ data: u }, { data: loans }, { data: call }] = await Promise.all([
+   const [{ data: u }, { data: loans }, { data: call }, { data: ps }, { data: kyc }] = await Promise.all([
       supabase
          .from('users')
          .select(
@@ -1168,6 +1191,22 @@ export const borrowerContext = async (supabase: SupabaseClient, userId: string) 
          .eq('user_id', userId)
          .not('summary', 'is', null)
          .order('call_started_at', { ascending: false })
+         .limit(1)
+         .maybeSingle(),
+      supabase
+         .from('pre_screenings')
+         .select('name, questions, answers, grade')
+         .eq('user_id', userId)
+         .not('grade', 'is', null)
+         .order('created_at', { ascending: false })
+         .limit(1)
+         .maybeSingle(),
+      supabase
+         .from('kyc_identities')
+         .select('full_name')
+         .eq('user_id', userId)
+         .not('full_name', 'is', null)
+         .order('session_created_at', { ascending: false })
          .limit(1)
          .maybeSingle()
    ]);
@@ -1207,13 +1246,44 @@ export const borrowerContext = async (supabase: SupabaseClient, userId: string) 
       loans_with_us: history,
       repaid_count: history.filter((h) => h.status === 'repaid').length,
       late_count: history.filter((h) => h.days_late > 0).length,
-      call_summary: call?.summary ? { risk_level: call.risk_level, ...(call.summary as Record<string, unknown>) } : null
+      call_summary: call?.summary ? { risk_level: call.risk_level, ...(call.summary as Record<string, unknown>) } : null,
+      // For the story check: their pre-screening (job, answers, what the job photo showed) and ID name.
+      pre_screening: preScreeningContext(ps),
+      id_name: (kyc as { full_name?: string | null } | null)?.full_name ?? null
    };
+};
+
+type PsRow = {
+   name?: string | null;
+   questions?: Array<{ id: string; kind?: string; text?: string; typed_job?: string }> | null;
+   answers?: Array<{ q: string; text?: string | null }> | null;
+   grade?: { summary?: string; answers?: Array<{ q: string; note?: string; transcript?: string | null; photo_check?: { note?: string } | null }> } | null;
+};
+
+/** Their latest graded pre-screening, boiled down for the story check (no files, no scores). Pure. */
+export const preScreeningContext = (ps: PsRow | null | undefined) => {
+   if (!ps) return null;
+   const qText = new Map((ps.questions ?? []).map((q) => [q.id, q.text ?? q.id]));
+   const job = (ps.questions ?? []).find((q) => q.kind === 'job')?.typed_job ?? null;
+   const typed = (ps.answers ?? [])
+      .filter((a) => a.text?.trim() && a.q !== 'medical')
+      .map((a) => ({ question: qText.get(a.q) ?? a.q, answer: a.text!.trim().slice(0, 200) }))
+      .slice(0, 8);
+   const graded = ps.grade?.answers ?? [];
+   const photo = graded.filter((a) => a.q.startsWith('job_photo')).map((a) => a.photo_check?.note || a.note).filter(Boolean)[0] ?? null;
+   const spoken = graded.filter((a) => a.transcript).map((a) => ({ question: qText.get(a.q) ?? a.q, said: a.transcript!.slice(0, 200) })).slice(0, 4);
+   return { name_given: ps.name ?? null, job_typed: job, answers: typed, said_on_video: spoken, job_photo_showed: photo, ai_summary: ps.grade?.summary ?? null };
 };
 
 /** The opinion as it goes out in the Telegram reply and the Discord post. Pure. */
 export const opinionText = (o: AiDirection) =>
-   [`🧠 AI opinion: ${o.direction} (${o.votes.length} reads: ${o.votes.join(', ')} · with their history)`, repayChanceLine(o), o.note, ...o.ask.map((q) => `❓ ${q}`)]
+   [
+      `🧠 AI opinion: ${o.direction} (${o.votes.length} reads: ${o.votes.join(', ')} · with their history)`,
+      repayChanceLine(o),
+      o.note,
+      ...(o.mismatches ?? []).map((m) => `🔀 Doesn't fit: ${m}`),
+      ...o.ask.map((q) => `❓ ${q}`)
+   ]
       .filter(Boolean)
       .join('\n');
 
@@ -1824,6 +1894,18 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       }
    }
 
+   // Story check (from the same AI reads): a team-only flag + its own named check. Never gates anything.
+   if (aiNote?.mismatches.length) {
+      flags.push({ code: 'story_mismatch', severity: 'orange', detail: `Doesn't fit across their answers: ${aiNote.mismatches.join(' · ')}` });
+   }
+   if (aiNote) {
+      checks.push({
+         key: 'consistent',
+         label: 'Story fits across sources',
+         status: aiNote.mismatches.length ? 'warn' : 'pass',
+         notes: aiNote.mismatches
+      });
+   }
    const patch = {
       status: 'done',
       tier: step,
