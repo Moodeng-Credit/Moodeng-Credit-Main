@@ -6,6 +6,7 @@ import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 
 import BrandedVideo from '@/components/BrandedVideo';
+import InviteCodeStep from '@/components/invite/InviteCodeStep';
 
 import { fetchPrescreenPath, PRE_KYC_CONNECT_PATH } from '@/hooks/usePreKycGate';
 
@@ -17,6 +18,7 @@ import RecordReadyCard from '@/app/screen/RecordReadyCard';
 import { useLocalization } from '@/i18n/LocalizationProvider';
 import { trackPrescreenStep } from '@/lib/analytics/prescreenSteps';
 import { describeBrowser } from '@/lib/attribution';
+import { markCodeStepDone, shouldAskInviteCodeSignedIn, shouldAskInviteCodeSignedOut } from '@/lib/inviteCodeStep';
 import { EMPTY_MEDICAL, medicalAnswerText, type MedicalPick } from '@/lib/medicalPick';
 import {
    isPersonalInviteCode,
@@ -728,6 +730,17 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    const isAuthChecked = useSelector((state: RootState) => state.auth.isAuthChecked);
    const queryClient = useQueryClient();
    const signedIn = Boolean(authUser?.id);
+   // "Who invited you?" first (src/lib/inviteCodeStep.ts), unless the link already has the code.
+   const [codeAnswered, setCodeAnswered] = useState(false);
+   useEffect(() => {
+      if (ref && !preview) markCodeStepDone();
+   }, [ref, preview]);
+   const askCode =
+      !preview &&
+      !ref &&
+      isAuthChecked &&
+      !codeAnswered &&
+      (signedIn ? shouldAskInviteCodeSignedIn(authUser) : shouldAskInviteCodeSignedOut());
    // The job they already gave at loan request (users.profession) fills in "What is your job?" once.
    // Only a starting value: empty or wrong, they just type, nothing waits on it.
    const jobPrefilled = useRef(false);
@@ -1127,6 +1140,8 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       if (videoIndex + 1 < videos.length) setVideoIndex(videoIndex + 1);
       else setStage('question');
    };
+
+   if (askCode) return <InviteCodeStep onDone={() => setCodeAnswered(true)} signedIn={signedIn} source="screen" />;
 
    return (
       <div className="min-h-screen bg-dv2-page">

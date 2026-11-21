@@ -52,6 +52,8 @@ describe('sign-up inside TikTok', () => {
    };
 
    beforeEach(() => {
+      // These tests are about the sign-up form, so skip the "Who invited you?" screen before it.
+      window.localStorage.setItem('md_code_step', String(Date.now()));
       vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'test-client-id');
       container = document.createElement('div');
       document.body.appendChild(container);

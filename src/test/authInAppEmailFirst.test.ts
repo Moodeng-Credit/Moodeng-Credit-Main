@@ -80,6 +80,8 @@ describe('email first inside Facebook/Messenger', () => {
    };
 
    beforeEach(() => {
+      // These tests are about the sign-up form, so skip the "Who invited you?" screen before it.
+      window.localStorage.setItem('md_code_step', String(Date.now()));
       vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'test-client-id');
       vi.stubEnv('PROD', true);
       analytics.capture.mockClear();
