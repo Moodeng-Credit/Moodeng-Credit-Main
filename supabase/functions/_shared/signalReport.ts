@@ -17,10 +17,15 @@ export const SIGNAL_NAMES: Array<[key: string, name: string]> = [
    ['video_call', 'Video call'],
    ['id_check', 'ID check'],
    ['referred', 'Referral'],
+   ['past_record', 'Their record before'],
+   ['referrer_record', 'Who referred them'],
+   ['payday_fit', 'Payday vs due date'],
    ['loan_no', 'Loan number'],
    ['amount', 'Amount'],
    ['two_part', 'Payment plan'],
    ['signup_to_loan', 'Signup to loan'],
+   ['request_time', 'When they asked'],
+   ['due_day', 'Due day'],
    ['market', 'Country']
 ];
 
