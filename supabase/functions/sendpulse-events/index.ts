@@ -9,7 +9,7 @@ import { handleCashOutMessage } from '../_shared/messengerCashOutHelp.ts';
 import { handleBookingMessage, handleKeepSpotReply, handleReminderNumber } from '../_shared/messengerBookingBot.ts';
 import { logMessengerContact, rememberMessengerContact, saveFacebookName } from '../_shared/messengerContactLog.ts';
 import { handleIncomeDocMessage } from '../_shared/messengerIncomeDocReply.ts';
-import { intakeMessengerPhotos, photoIntakeReason } from '../_shared/messengerPhotoIntake.ts';
+import { handleProofKeyword, intakeMessengerPhotos, photoIntakeReason } from '../_shared/messengerPhotoIntake.ts';
 import { handlePreScreeningAnswer } from '../_shared/preScreeningAsk.ts';
 import { handleRewardMessage } from '../_shared/messengerRewardReply.ts';
 import { CONNECTED_BY_TIMING_TEXT } from '../_shared/messengerStatusFollowUp.ts';
@@ -330,6 +330,9 @@ serve(async (req) => {
          // answers isn't also a support ticket. "menu" and ☰ / card-button taps belong to the SendPulse menu flow.
          const forMenu = event.isPostback || /^\s*menu\s*$/i.test(event.text ?? '');
          const typed = known?.userId && event.text && !forMenu && !event.hasAttachment && !event.codes.length ? event.text : null;
+         // "PROOF" (the "Open our Messenger chat" button when the photo picker won't open): ask for the photo here.
+         // First: it's an exact keyword, and an earlier handler waiting for an answer mustn't take it.
+         if (typed && (await handleProofKeyword(svc, known!.userId, contactId, typed))) continue;
          // Just a mobile number from someone with a call booked: their answer to "want a text reminder?".
          // "REWARD": their repay streak and what paying on time earns (the day-before reminder asks for it).
          if (typed && (await handleRewardMessage(svc, known!.userId, contactId, typed))) continue;

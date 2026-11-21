@@ -1,6 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
 
+import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { buildAndroidIntentUrl } from '@/lib/inAppBrowser';
+import { copyTextFromTap } from '@/lib/inAppHandoff';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { GhostButton } from '@/views/dashboard/components/connectKit';
 
@@ -48,6 +50,14 @@ export const expectMessengerPhotos = async () => {
    }
 };
 
+/** What they send in our Messenger chat so the bot asks for the photo (sendpulse-events → handleProofKeyword). */
+export const PROOF_WORD = 'PROOF';
+// Same as /documents: Android Chrome can't open m.me links, so Android opens the chat on messenger.com.
+const messengerProofHref = () =>
+   typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent)
+      ? EXTERNAL_LINKS.support.messengerLoginCodeAndroid
+      : EXTERNAL_LINKS.support.messengerProof;
+
 /** What to do when the file picker won't open. */
 export function PickerHelp({
    onCamera,
@@ -73,23 +83,33 @@ export function PickerHelp({
             Like your payslip on paper, or your GCash screen on another phone.
          </p>
          {messenger ? (
-            messengerChosen ? (
-               <p className="rounded-[12px] bg-[#eaf8ee] px-3 py-2 text-[14px] leading-[20px] text-[#1f5c2e] dark:bg-[#123320] dark:text-[#a7e8b8]">
-                  ✅ <b>Great!</b> Close this page and send the photo in our Moodeng Messenger chat 📎. We pick it up automatically and
-                  check it for you.
-               </p>
-            ) : (
-               <button
-                  className="rounded-[14px] border-2 border-[#6b55f7] bg-white px-4 py-3 text-[16px] font-bold text-[#6b55f7] dark:bg-[#1b1526]"
+            <div className="flex flex-col gap-2">
+               {/* A real link (iOS opens Messenger in place only from a tap on <a>). PROOF is copied on tap: sending it
+                   is a message from them, so the bot may answer right away (a link tap alone isn't). */}
+               <a
+                  className="flex items-center justify-center gap-2 rounded-[14px] border-2 border-[#6b55f7] bg-white px-4 py-3 text-[16px] font-bold text-[#6b55f7] dark:bg-[#1b1526]"
+                  href={messengerProofHref()}
                   onClick={() => {
+                     void copyTextFromTap(PROOF_WORD);
                      void expectMessengerPhotos();
                      setMessengerChosen(true);
                   }}
-                  type="button"
+                  rel="noreferrer"
+                  target="_blank"
                >
                   💬 Send it in our Messenger chat
-               </button>
-            )
+               </a>
+               <p className="text-[14px] leading-[20px] text-[#5a4300] dark:text-[#f3dfa8]">
+                  Then send <b className="rounded bg-white px-1.5 py-0.5 font-black tracking-wide dark:bg-black/30">{PROOF_WORD}</b> in the
+                  chat (we copy it when you tap). Our bot answers right away. Then send your photo 📎 and we check it automatically.
+               </p>
+               {messengerChosen ? (
+                  <p className="rounded-[12px] bg-white/70 px-3 py-2 text-[13px] leading-[19px] text-[#5a4300] dark:bg-black/20 dark:text-[#f3dfa8]">
+                     <b>Chat didn’t open?</b> Open the <b>Messenger</b> app, search <b>Moodeng Credit</b>, send <b>{PROOF_WORD}</b>, then
+                     your photo.
+                  </p>
+               ) : null}
+            </div>
          ) : null}
          {meta ? (
             <div className="rounded-[12px] bg-white/70 px-3 py-2 text-[14px] leading-[20px] text-[#5a4300] dark:bg-black/20 dark:text-[#f3dfa8]">

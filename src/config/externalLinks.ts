@@ -29,6 +29,8 @@ export const EXTERNAL_LINKS = {
       messengerLoginCodeAndroid: 'https://www.messenger.com/t/61589106561061',
       // Questions about a proof-of-income send (/documents).
       messengerDocuments: 'https://m.me/61589106561061?ref=income_docs',
+      // Proof of income sent as a photo in the chat (the photo picker didn't open): they send PROOF.
+      messengerProof: 'https://m.me/61589106561061?ref=proof_photo',
       // Repaid before the loan's halfway day, so no food voucher: they can ask the team to unlock it.
       messengerEarlyReward: 'https://m.me/61589106561061?ref=early_reward'
    },
