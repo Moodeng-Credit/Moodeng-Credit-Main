@@ -326,6 +326,12 @@ export default function IncomeDocsSection() {
                      {doc.ai_note ? (
                         <p className="mt-2 rounded-xl bg-white/5 px-3 py-2 text-[15px] leading-6 text-[#e8e0f2]">🤖 {doc.ai_note}</p>
                      ) : null}
+                     {doc.repay_chance != null ? (
+                        <p className="mt-1 text-sm text-[#cfc6dd]">
+                           🎯 AI: {doc.repay_chance}% chance of repaying on time
+                           {doc.repay_reasons?.length ? ` — ${doc.repay_reasons.join('; ')}` : ''}
+                        </p>
+                     ) : null}
                      {doc.questions?.length ? (
                         <div className="mt-2 flex flex-col gap-2 rounded-xl bg-white/5 px-3 py-2 text-[15px] leading-6 text-[#e8e0f2]">
                            <p className="text-sm font-semibold text-[#a89bb8]">

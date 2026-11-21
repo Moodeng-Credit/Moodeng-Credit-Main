@@ -1064,13 +1064,19 @@ export const readIncomeProof = async (apiKey: string, files: Array<{ name: strin
    };
 };
 
-export type AiOpinion = { verdict: 'lend' | 'maybe' | 'decline'; note: string; ask: string[] };
+// repayChance: the AI's 0–100 estimate that they repay this loan in full by the due date (George
+// 2026-11-21: save a real prediction so the weekly report can check the AI against what happened).
+export type AiOpinion = { verdict: 'lend' | 'maybe' | 'decline'; note: string; ask: string[]; repayChance?: number | null; reasons?: string[] };
 /** Several opinions on the same send, combined into one direction. */
 export type AiDirection = {
    direction: 'LEND' | 'LEAN LEND' | 'MAYBE' | 'LEAN DECLINE' | 'DECLINE';
    votes: AiOpinion['verdict'][];
    note: string;
    ask: string[];
+   /** Average of the reads' chances (0–100), or null when none gave one. */
+   repayChance: number | null;
+   /** Up to 2 short reasons, from the read closest to that average. */
+   reasons: string[];
 };
 
 const VOTE: Record<AiOpinion['verdict'], number> = { lend: 1, maybe: 0, decline: -1 };
@@ -1088,7 +1094,10 @@ export const combineOpinions = (opinions: AiOpinion[]): AiDirection | null => {
       mean >= 0.8 ? 'LEND' : mean > 0.15 ? 'LEAN LEND' : mean <= -0.8 ? 'DECLINE' : mean < -0.15 ? 'LEAN DECLINE' : 'MAYBE';
    const closest = [...opinions].sort((a, b) => Math.abs(VOTE[a.verdict] - mean) - Math.abs(VOTE[b.verdict] - mean))[0];
    const ask = [...new Set([closest, ...opinions].flatMap((o) => o.ask))].slice(0, 2);
-   return { direction, votes: opinions.map((o) => o.verdict), note: closest.note, ask };
+   const chances = opinions.map((o) => o.repayChance).filter((c): c is number => typeof c === 'number');
+   const repayChance = chances.length ? Math.round(chances.reduce((a, b) => a + b, 0) / chances.length) : null;
+   const byChance = repayChance == null ? [] : [...opinions].filter((o) => o.reasons?.length).sort((a, b) => Math.abs((a.repayChance ?? 0) - repayChance) - Math.abs((b.repayChance ?? 0) - repayChance));
+   return { direction, votes: opinions.map((o) => o.verdict), note: closest.note, ask, repayChance, reasons: (byChance[0]?.reasons ?? closest.reasons ?? []).slice(0, 2) };
 };
 
 
@@ -1103,11 +1112,13 @@ You get: the loan they're asking for, what their proof-of-income document shows 
 
 Weigh them together: does the document match what they told us and said on the call? Can the money that comes in cover this repayment by the due date? Does their repayment history with us (on time, late, how late) support a bigger or smaller loan? Note any red flag (document contradicts their story, income too small, late before, signs the account isn't theirs).
 
+Also estimate "repay_chance": a whole number 0–100, your honest chance that THIS borrower repays THIS loan in full by the due date. For reference, about 83% of this lender's loans so far were repaid on time; move up or down from that on the evidence, and don't round to 100 or 0. Give "reasons": the 1–2 things that moved it most, each at most 8 words.
+
 Cite document rows like [T3] when you mention a number from them. Do not invent numbers. Reply with only a json object:
-{"verdict": "lend" | "maybe" | "decline", "note": "at most 4 short plain sentences", "ask": ["up to 2 questions for the team to ask them"]}`;
+{"verdict": "lend" | "maybe" | "decline", "note": "at most 4 short plain sentences", "ask": ["up to 2 questions for the team to ask them"], "repay_chance": 0-100, "reasons": ["short reason", "short reason"]}`;
 
 const writeOpinion = async (apiKey: string, input: Record<string, unknown>): Promise<AiOpinion | null> => {
-   type Out = { verdict?: string; note?: string; ask?: unknown };
+   type Out = { verdict?: string; note?: string; ask?: unknown; repay_chance?: unknown; reasons?: unknown };
    const body = JSON.stringify(input);
    // Thinking first (it weighs things better); if that's slow, a quick answer, so the whole check stays
    // inside the edge function's time limit.
@@ -1117,8 +1128,20 @@ const writeOpinion = async (apiKey: string, input: Record<string, unknown>): Pro
    });
    const verdict = (['lend', 'maybe', 'decline'].includes(String(out.verdict)) ? String(out.verdict) : 'maybe') as AiOpinion['verdict'];
    const ask = Array.isArray(out.ask) ? out.ask.map(String).filter(Boolean).slice(0, 2) : [];
-   return out.note ? { verdict, note: String(out.note), ask } : null;
+   return out.note ? { verdict, note: String(out.note), ask, ...parseRepayChance(out) } : null;
 };
+
+/** The model's repay_chance (0–100, clamped to 1–99) and up to 2 short reasons. Pure. */
+export const parseRepayChance = (out: { repay_chance?: unknown; reasons?: unknown } | null | undefined) => {
+   const n = typeof out?.repay_chance === 'number' ? out.repay_chance : Number(out?.repay_chance);
+   const repayChance = Number.isFinite(n) ? Math.min(99, Math.max(1, Math.round(n))) : null;
+   const reasons = Array.isArray(out?.reasons) ? out!.reasons.map((r) => String(r).trim().slice(0, 80)).filter(Boolean).slice(0, 2) : [];
+   return { repayChance, reasons };
+};
+
+/** The team line for the AI's repay chance. Pure. */
+export const repayChanceLine = (o: Pick<AiDirection, 'repayChance' | 'reasons'>) =>
+   o.repayChance == null ? null : `🎯 Chance of repaying on time: ${o.repayChance}%${o.reasons.length ? ` — ${o.reasons.join('; ')}` : ''}`;
 
 const dayDiff = (from: string | null | undefined, to: string | null | undefined) =>
    from && to ? Math.round((Date.parse(to) - Date.parse(from)) / 86400000) : null;
@@ -1190,7 +1213,9 @@ export const borrowerContext = async (supabase: SupabaseClient, userId: string) 
 
 /** The opinion as it goes out in the Telegram reply and the Discord post. Pure. */
 export const opinionText = (o: AiDirection) =>
-   [`🧠 AI opinion: ${o.direction} (${o.votes.length} reads: ${o.votes.join(', ')} · with their history)`, o.note, ...o.ask.map((q) => `❓ ${q}`)].join('\n');
+   [`🧠 AI opinion: ${o.direction} (${o.votes.length} reads: ${o.votes.join(', ')} · with their history)`, repayChanceLine(o), o.note, ...o.ask.map((q) => `❓ ${q}`)]
+      .filter(Boolean)
+      .join('\n');
 
 const OPINION_READS = 3;
 
@@ -1814,6 +1839,8 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       score,
       checks,
       ai_note: aiNote ? `${aiNote.direction} (${aiNote.votes.join(', ')}): ${aiNote.note}${aiNote.ask.length ? ` Ask: ${aiNote.ask.join(' ')}` : ''}` : null,
+      repay_chance: aiNote?.repayChance ?? null,
+      repay_reasons: aiNote?.reasons.length ? aiNote.reasons : null,
       model: MODEL
    };
    const checkLine = checks.map((c) => `${c.status === 'pass' ? '✅' : c.status === 'warn' ? '🟠' : c.status === 'skip' ? '⚪' : '🔴'} ${c.label}`).join('\n');
@@ -1970,7 +1997,11 @@ export const reviewWithAnswers = async (supabase: SupabaseClient, id: string, ap
    if (ai) {
       await supabase
          .from('income_documents')
-         .update({ ai_note: `${ai.direction} (${ai.votes.join(', ')}, with their answers): ${ai.note}${ai.ask.length ? ` Ask: ${ai.ask.join(' ')}` : ''}` })
+         .update({
+            ai_note: `${ai.direction} (${ai.votes.join(', ')}, with their answers): ${ai.note}${ai.ask.length ? ` Ask: ${ai.ask.join(' ')}` : ''}`,
+            // The re-read with their answers replaces the first prediction (it knows more).
+            ...(ai.repayChance != null ? { repay_chance: ai.repayChance, repay_reasons: ai.reasons.length ? ai.reasons : null } : {})
+         })
          .eq('id', id);
    }
 

@@ -91,6 +91,9 @@ type PreScreening = {
       income?: { files: number; read: IncomeRead | null; score: number | null; note: string } | null;
       flags?: string[];
       medical?: Medical | null;
+      /** The AI's 0–100 chance they'd repay a first loan on time, and why. */
+      repay_chance?: number | null;
+      repay_reasons?: string[];
    } | null;
    score: number | null;
    verdict: 'good' | 'ok' | 'weak' | null;
@@ -275,6 +278,12 @@ export default function PreScreeningSection() {
                         {row.browser ? ` · ${row.browser}` : ''}
                      </p>
                      {row.grade?.summary ? <p className="mt-2 text-base font-bold text-[#e6def5]">{row.grade.summary}</p> : null}
+                     {row.grade?.repay_chance != null ? (
+                        <p className="mt-1 text-sm text-[#cfc6dd]">
+                           🎯 AI: {row.grade.repay_chance}% chance of repaying a first loan on time
+                           {row.grade.repay_reasons?.length ? ` — ${row.grade.repay_reasons.join('; ')}` : ''}
+                        </p>
+                     ) : null}
                      {row.grade?.flags?.length ? (
                         <ul className="mt-2 space-y-1">
                            {row.grade.flags.map((f) => (
