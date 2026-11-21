@@ -37,6 +37,7 @@ import {
    setCardButtons,
    shortId
 } from '../_shared/loanAccess.ts';
+import { handleBlockCallback } from '../_shared/blockForGood.ts';
 import { markMessengerVerified, messengerVerifiedStamp, parseMessengerVerifyCallback } from '../_shared/messengerStuckAlert.ts';
 import { payoutWalletStatus } from '../_shared/idPayoutWallet.ts';
 import { findIdUserByTelegram, handleIdBotCallback, handleIdMenuMessage, handleIdWaltAddressMessage } from '../_shared/idBot.ts';
@@ -1445,6 +1446,10 @@ serve(async (req) => {
          const prescreenChatId = await getSetting(supabase, 'prescreen_chat_id');
          if (await handlePreScreeningCallback(supabase, update.callback_query, [teamChatId, kycChatId, prescreenChatId].filter(Boolean).map(String))) {
             return jsonResponse({ message: 'Pre-screening decision handled' });
+         }
+         // 🚫 Block for good under a "linked to bad accounts" note (bk:).
+         if (await handleBlockCallback(supabase, update.callback_query, [teamChatId, kycChatId, prescreenChatId].filter(Boolean).map(String))) {
+            return jsonResponse({ message: 'Block for good handled' });
          }
          // Pre-screening card: 💬 Ask more and its draft (pq:).
          if (await handlePreScreeningAskCallback(supabase, update.callback_query, [teamChatId, kycChatId, prescreenChatId].filter(Boolean).map(String))) {

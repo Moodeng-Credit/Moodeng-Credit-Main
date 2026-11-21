@@ -15,6 +15,7 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { linkRows } from './adminCards.ts';
+import { blockRows, hasLinkedFlag } from './blockForGood.ts';
 import { GEMINI_MODEL } from './geminiPreScreen.ts';
 import { autoRejectLinked, linkedRedFlag, loadLinkedAccounts } from './linkedAccounts.ts';
 import { type Lang, langOf, teamStepIn } from './messengerIncomeDocReply.ts';
@@ -461,7 +462,10 @@ export async function autoDecideOrAsk(svc: SupabaseClient, id: string, card: { c
       if (row.score < bar) return await autoAskIfWeak(svc, id, card);
       const flags = await redFlags(svc, row);
       if (flags.length) {
-         await sendTelegramMessage(card.chat, redFlagNote(row.score, flags, ''), { replyToMessageId: card.msg }).catch(() => undefined);
+         await sendTelegramMessage(card.chat, redFlagNote(row.score, flags, ''), {
+            replyToMessageId: card.msg,
+            ...(hasLinkedFlag(flags) && row.user_id ? { inlineKeyboard: blockRows(row.user_id) } : {})
+         }).catch(() => undefined);
          return;
       }
       await autoGood(svc, row, card, `AI (${row.score}/100, no red flags)`, `${row.score}/100 (needs ${bar}), no red flags`);
@@ -732,7 +736,8 @@ export const handlePreScreeningAnswer = async (svc: SupabaseClient, userId: stri
          );
          if (flags.length) {
             await sendTelegramMessage(card.chat, redFlagNote(read!.score!, flags, ' after their answers'), {
-               replyToMessageId: card.msg
+               replyToMessageId: card.msg,
+               ...(hasLinkedFlag(flags) && row.user_id ? { inlineKeyboard: blockRows(row.user_id) } : {})
             }).catch(() => undefined);
          } else if (
             await autoGood(

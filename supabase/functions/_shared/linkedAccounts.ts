@@ -17,6 +17,7 @@
 // for the team. Setting linked_auto_reject: reject (default) | observe (say what it would do) | off.
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { blockRows } from './blockForGood.ts';
 import { REJECT_LABEL } from './callStrikes.ts';
 import { getAdminChatId, rejectUser } from './loanAccess.ts';
 import { sendTelegramMessage } from './telegram.ts';
@@ -264,9 +265,9 @@ export async function linkedSweep(svc: SupabaseClient, opts: { dry?: boolean } =
          `⚠️ New account ${who} is linked to ${bad.length === 1 ? 'a bad account' : `${bad.length} bad accounts`} — maybe the same person coming back, a mule or family:`,
          ...bad.slice(0, 6).map((a) => `• ${linkedLine(a)}`),
          '',
-         `Quietly reject: /ghost @${u.username ?? u.id} · Admin: https://moodeng.app/admin?user=${u.id}`
+         `🚫 Block for good = quiet reject, plus later accounts on the same WhatsApp. Or /ghost @${u.username ?? u.id} · Admin: https://moodeng.app/admin?user=${u.id}`
       ].join('\n');
-      if (chat) await sendTelegramMessage(chat, text).catch((err) => console.error('linked sweep: telegram failed', err));
+      if (chat) await sendTelegramMessage(chat, text, { inlineKeyboard: blockRows(u.id) }).catch((err) => console.error('linked sweep: telegram failed', err));
       await svc.from('linked_account_alerts').upsert({ user_id: u.id, detail: bad });
    }
    return { ok: true, checked: (fresh ?? []).length, rejected, flagged: found };
