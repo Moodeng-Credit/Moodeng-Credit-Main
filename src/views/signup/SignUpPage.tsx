@@ -2,7 +2,7 @@ import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from '
 
 import { Mail } from 'lucide-react';
 import posthog from 'posthog-js';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
@@ -15,6 +15,7 @@ import {
    SocialButton,
    useFacebookPrimary
 } from '@/components/auth';
+import InviteCodeStep from '@/components/invite/InviteCodeStep';
 import Loading from '@/components/Loading';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -23,12 +24,13 @@ import { useSignedInRedirect } from '@/hooks/useSignedInRedirect';
 
 import { buildEmailConfirmationPath } from '@/lib/authPaths';
 import { detectInAppBrowser, isFacebookInApp } from '@/lib/inAppBrowser';
+import { cleanInviteInput, parkInviteCode, shouldAskInviteCodeSignedOut } from '@/lib/inviteCodeStep';
 import { showPasswordlessSignup, showPhoneFirst } from '@/lib/phoneAuth';
 import { registerUser, registerWithGoogle, registerWithTelegram } from '@/store/slices/authSlice';
-import type { AppDispatch } from '@/store/store';
+import type { AppDispatch, RootState } from '@/store/store';
 import { WorldId } from '@/types/authTypes';
 import IdEntryBanner from '@/views/indonesia/IdEntryBanner';
-import { clearIdTrackIntent } from '@/views/indonesia/idFlow';
+import { clearIdTrackIntent, hasIdTrackIntent } from '@/views/indonesia/idFlow';
 import { Icons } from '@/views/login/components/Icons';
 import PasswordlessSignUpScreen from '@/views/signup/PasswordlessSignUpScreen';
 import '@/views/signup/styles/signup.css';
@@ -68,9 +70,22 @@ function getErrorMessage(err: unknown, fallback: string): string {
 export default function SignUpPage() {
    const passwordless = useMemo(() => showPasswordlessSignup(detectInAppBrowser().isInApp), []);
    const phoneFirst = useMemo(() => showPhoneFirst(detectInAppBrowser().isInApp), []);
+   const [searchParams] = useSearchParams();
+   const signedIn = useSelector((state: RootState) => Boolean(state.auth.user?.id));
+   // "Who invited you?" comes first (src/lib/inviteCodeStep.ts) — unless a link already carries the
+   // code (/sign-up?ref=MAHJID is parked here), they answered it already, or they're from /id.
+   const [askCode, setAskCode] = useState(() => {
+      const ref = cleanInviteInput(searchParams.get('ref') ?? searchParams.get('code') ?? '');
+      if (ref.length >= 2) {
+         parkInviteCode(ref);
+         return false;
+      }
+      return !hasIdTrackIntent() && shouldAskInviteCodeSignedOut();
+   });
    // Already signed in (often a guest whose Facebook page reloaded): straight to their next step.
    const redirectingSignedIn = useSignedInRedirect();
    if (redirectingSignedIn) return <Loading />;
+   if (askCode && !signedIn) return <InviteCodeStep onDone={() => setAskCode(false)} signedIn={false} source="signup" />;
    return (
       <>
          {/* From Indonesia: the Telegram sign-up at /id (other methods stay below). */}

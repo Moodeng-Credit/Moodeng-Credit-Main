@@ -109,7 +109,8 @@ export const joinPrescreenPath = async (): Promise<boolean> => {
 // A personal invite code (6 letters + 5 digits) goes through /invite/CODE as before. Anything else is a
 // team code (referral_codes): parked here when the link opens, then attached to the new account right
 // after sign-up with redeem_referral_code — the same thing as typing it in the loan form's code box.
-const TEAM_KEY = 'md_team_code';
+export const TEAM_CODE_STORAGE_KEY = 'md_team_code';
+const TEAM_KEY = TEAM_CODE_STORAGE_KEY;
 const PERSONAL_CODE = /^[A-Z]{6}[0-9]{5}$/;
 
 export const isPersonalInviteCode = (code: string) => PERSONAL_CODE.test(code.trim().toUpperCase());
@@ -121,6 +122,17 @@ export const parkTeamCode = (code: string) => {
       window.localStorage.setItem(TEAM_KEY, JSON.stringify({ code: clean, at: Date.now() }));
    } catch {
       // Storage blocked: the code just isn't attached.
+   }
+};
+
+/** The team code waiting to be attached after sign-up (fresh: under 7 days), or null. */
+export const readParkedTeamCode = (now = Date.now()): string | null => {
+   try {
+      const parked = JSON.parse(window.localStorage.getItem(TEAM_KEY) ?? 'null') as { code?: unknown; at?: unknown } | null;
+      if (!parked || typeof parked.code !== 'string' || typeof parked.at !== 'number' || now - parked.at > 7 * 86_400_000) return null;
+      return parked.code;
+   } catch {
+      return null;
    }
 };
 

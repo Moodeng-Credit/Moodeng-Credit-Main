@@ -9,6 +9,8 @@ import { setLastUsedAuth } from '@/lib/lastUsedAuth';
 import { FIRST_TOUCH_STORAGE_KEY } from '@/lib/attribution';
 import { AUTH_NEXT_STORAGE_KEY } from '@/lib/authNext';
 import { PENDING_INVITE_STORAGE_KEY } from '@/lib/friendReferrals';
+import { CODE_STEP_KEY } from '@/lib/inviteCodeStep';
+import { TEAM_CODE_STORAGE_KEY } from '@/lib/preScreening';
 import { LAST_USED_AUTH_STORAGE_KEY } from '@/lib/lastUsedAuth';
 import { PENDING_SHARED_REQUEST_KEY } from '@/lib/pendingSharedRequest';
 import {
@@ -645,7 +647,7 @@ export type OtpMode = 'signin' | 'signup';
 
 // What a stale-session cleanup before a code sign-in must NOT wipe: an invite code or shared
 // request they arrived with, attribution, where to go after signing in, testing flags.
-const KEEP_THROUGH_OTP_LOCAL = [PENDING_INVITE_STORAGE_KEY, FIRST_TOUCH_STORAGE_KEY, AUTH_NEXT_STORAGE_KEY, LAST_USED_AUTH_STORAGE_KEY, SMS_TEST_FLAG_KEY, 'force_ph'];
+const KEEP_THROUGH_OTP_LOCAL = [PENDING_INVITE_STORAGE_KEY, TEAM_CODE_STORAGE_KEY, CODE_STEP_KEY, FIRST_TOUCH_STORAGE_KEY, AUTH_NEXT_STORAGE_KEY, LAST_USED_AUTH_STORAGE_KEY, SMS_TEST_FLAG_KEY, 'force_ph'];
 // The email whose code was sent for a waiting guest account (checked as an email-change code).
 // sessionStorage so a reload of the code page in this tab still checks it the right way.
 const GUEST_CODE_EMAIL_KEY = 'moodeng.guestCodeEmail';
