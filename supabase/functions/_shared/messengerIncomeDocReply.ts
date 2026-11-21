@@ -27,6 +27,7 @@ type Doc = {
    id: string;
    status: string;
    decision: string | null;
+   decided_by?: string | null;
    verdict: string | null;
    questions: Question[] | null;
    answers: Answer[] | null;
@@ -47,6 +48,10 @@ export const langOf = (locale: string | null | undefined, market: string | null 
  * the bot, so they send it on /documents. Pure.
  */
 export const awaitIdFor = (q: Question | null | undefined) => (q && q.kind !== 'photo' ? q.id : null);
+
+/** Can they still answer? Undecided, or approved by itself; a team decision closes it. Pure. */
+export const questionsOpen = (doc: Pick<Doc, 'decision' | 'decided_by'>) =>
+   !doc.decision || (doc.decision === 'approved' && (doc.decided_by ?? '').startsWith('auto'));
 
 /** The open questions, in order. Pure. */
 export const openQuestions = (doc: Pick<Doc, 'questions' | 'answers'>): Question[] => {
@@ -97,6 +102,11 @@ const T = {
       id: 'Siap ✅ Tim kami sedang memeriksa dokumen kamu. Kami kabari di sini.'
    },
    approved: { en: 'Your proof of income is approved ✅', fil: 'Approved na ang proof of income mo ✅', id: 'Bukti penghasilan kamu sudah disetujui ✅' },
+   approvedAsk: {
+      en: 'Your proof of income is approved ✅ One quick question for the team, just reply here:',
+      fil: 'Approved na ang proof of income mo ✅ May isang tanong lang para sa team, reply ka lang dito:',
+      id: 'Bukti penghasilan kamu sudah disetujui ✅ Satu pertanyaan singkat untuk tim, balas di sini saja:'
+   },
    other: {
       en: `Please open ${DOCUMENTS_URL} to see what we need.`,
       fil: `Buksan mo ang ${DOCUMENTS_URL} para makita kung ano ang kailangan namin.`,
@@ -107,7 +117,13 @@ const T = {
 /** What the bot says to DOCS, and which question it then waits on. Pure. */
 export const docsReply = (doc: Doc | null, lang: Lang): { text: string; asks: string | null } => {
    if (!doc) return { text: T.noDoc[lang], asks: null };
-   if (doc.decision === 'approved') return { text: T.approved[lang], asks: null };
+   if (doc.decision === 'approved') {
+      // Approved by itself (a small step): the payslip questions are still open.
+      const open = questionsOpen(doc) ? openQuestions(doc)[0] : null;
+      return open
+         ? { text: `${T.approvedAsk[lang]}\n\n${questionLine(open, lang)}`, asks: awaitIdFor(open) }
+         : { text: T.approved[lang], asks: null };
+   }
    if (doc.decision || doc.verdict === 'resend') return { text: T.other[lang], asks: null };
    if (doc.status === 'pending' || doc.status === 'processing') return { text: T.reading[lang], asks: null };
    const next = openQuestions(doc)[0];
@@ -118,7 +134,7 @@ export const docsReply = (doc: Doc | null, lang: Lang): { text: string; asks: st
 /** Is this message the answer the bot is waiting for? (within 2 hours of the question) Pure. */
 export const isAwaitedAnswer = (doc: Doc | null, now: number) =>
    !!doc &&
-   !doc.decision &&
+   questionsOpen(doc) &&
    !!doc.messenger_asked_at &&
    !!doc.messenger_asked_id &&
    now - Date.parse(doc.messenger_asked_at) < ANSWER_WINDOW_MS &&
@@ -164,7 +180,7 @@ export const askOnMessengerIfWaiting = async (svc: Svc, docId: string) => {
    try {
       const { data: doc } = (await svc
          .from('income_documents')
-         .select('id, user_id, status, decision, verdict, questions, answers, messenger_asked_at, messenger_asked_id, messenger_confirmed_at')
+         .select('id, user_id, status, decision, decided_by, verdict, questions, answers, messenger_asked_at, messenger_asked_id, messenger_confirmed_at')
          .eq('id', docId)
          .maybeSingle()) as { data: (Doc & { user_id: string; messenger_confirmed_at: string | null }) | null };
       if (!doc?.messenger_confirmed_at || doc.messenger_asked_id || Date.now() - Date.parse(doc.messenger_confirmed_at) > CONFIRMED_WINDOW_MS) return;
@@ -186,7 +202,7 @@ export const handleIncomeDocMessage = async (svc: Svc, userId: string, contactId
       const keyword = isDocsKeyword(text);
       const { data: doc } = (await svc
          .from('income_documents')
-         .select('id, status, decision, verdict, questions, answers, messenger_asked_at, messenger_asked_id')
+         .select('id, status, decision, decided_by, verdict, questions, answers, messenger_asked_at, messenger_asked_id')
          .eq('user_id', userId)
          .gte('created_at', new Date(Date.now() - LOOKBACK_MS).toISOString())
          .order('created_at', { ascending: false })
