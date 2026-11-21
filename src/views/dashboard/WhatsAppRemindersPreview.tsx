@@ -37,7 +37,7 @@ export default function WhatsAppRemindersPreview() {
                   title="Get reminders on WhatsApp"
                />
             ) : state === 'code' ? (
-               <WhatsAppCodePanel code="MDNG-4F2A9C" copied={false} onCopy={() => {}} />
+               <WhatsAppCodePanel code="MDNG-4F2A9C" copied={null} onCopy={() => {}} />
             ) : (
                <WhatsAppRemindersCard onVerified={() => {}} source="preview" userId="preview" verified={state === 'on'} />
             )}

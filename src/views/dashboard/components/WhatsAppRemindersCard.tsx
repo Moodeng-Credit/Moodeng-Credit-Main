@@ -2,8 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import posthog from 'posthog-js';
 
-import { clarityEvent } from '@/lib/analytics/clarity';
 import { buildWhatsAppVerifyLink, WHATSAPP_BUSINESS_NUMBER_DISPLAY } from '@/config/contactVerification';
+import { clarityEvent } from '@/lib/analytics/clarity';
+import { copyTextFromTap } from '@/lib/inAppHandoff';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { OptionCard } from '@/views/dashboard/components/connectKit';
 
@@ -47,7 +48,7 @@ export default function WhatsAppRemindersCard({
    const [code, setCode] = useState<string | null>(null);
    const [starting, setStarting] = useState(false);
    const [error, setError] = useState('');
-   const [copied, setCopied] = useState(false);
+   const [copied, setCopied] = useState<'yes' | 'no' | null>(null);
    const pollRef = useRef<number | null>(null);
    // Required (they can't be reached on WhatsApp today, e.g. they sent STOP): an old
    // whatsapp_verified_at doesn't count, only a new one stamped by this code.
@@ -93,7 +94,11 @@ export default function WhatsAppRemindersCard({
       clarityEvent('tapped_connect_whatsapp');
       try {
          if (required && staleVerifiedAtRef.current === null) {
-            const { data: row } = await getSupabaseBrowserClient().from('users').select('whatsapp_verified_at').eq('id', userId).maybeSingle();
+            const { data: row } = await getSupabaseBrowserClient()
+               .from('users')
+               .select('whatsapp_verified_at')
+               .eq('id', userId)
+               .maybeSingle();
             staleVerifiedAtRef.current = row?.whatsapp_verified_at ?? null;
          }
          const { data, error: rpcError } = await getSupabaseBrowserClient().rpc('start_whatsapp_verification');
@@ -114,16 +119,17 @@ export default function WhatsAppRemindersCard({
       }
    };
 
+   // Meta's in-app browsers refuse navigator.clipboard silently; copyTextFromTap tries the old copy command
+   // first (works there). If nothing copied, say so: the code is selected on screen to hold and copy.
    const copyCode = async () => {
       if (!code) return;
-      try {
-         await navigator.clipboard.writeText(code);
-         setCopied(true);
-         track('contact_whatsapp_reminders_code_copied', { source });
-         window.setTimeout(() => setCopied(false), 2000);
-      } catch {
-         // Clipboard blocked: the code is on screen to type by hand.
-      }
+      const result = await copyTextFromTap(code);
+      track(result.ok ? 'contact_whatsapp_reminders_code_copied' : 'contact_whatsapp_reminders_copy_failed', {
+         source,
+         method: result.method
+      });
+      setCopied(result.ok ? 'yes' : 'no');
+      window.setTimeout(() => setCopied(null), result.ok ? 2000 : 6000);
    };
 
    if (verified) {
@@ -180,13 +186,17 @@ export function WhatsAppCodePanel({
    title = 'Turn on WhatsApp reminders'
 }: {
    code: string;
-   copied: boolean;
+   /** 'no' = this browser refused to copy: the code gets selected so they can hold and copy it. */
+   copied: 'yes' | 'no' | null;
    onCopy: () => void;
    onOpenTap?: () => void;
    title?: string;
 }) {
    return (
-      <div aria-live="polite" className="flex w-full flex-col gap-3 rounded-[18px] border-2 border-[#9fe3b4] bg-[#eefbf2] px-4 py-4 text-left">
+      <div
+         aria-live="polite"
+         className="flex w-full flex-col gap-3 rounded-[18px] border-2 border-[#9fe3b4] bg-[#eefbf2] px-4 py-4 text-left"
+      >
          <span className="text-[18px] font-bold leading-[22px] text-[#1f7a3d]">{title}</span>
          {/* A real link the borrower taps: from script, some in-app browsers never hand wa.me to WhatsApp. */}
          <a
@@ -200,18 +210,26 @@ export function WhatsAppCodePanel({
             Open WhatsApp and hit send
          </a>
          <p className="text-[14px] leading-[19px] text-[#3f5a47]">
-            WhatsApp didn&apos;t open? Send this code to <b className="whitespace-nowrap">{WHATSAPP_BUSINESS_NUMBER_DISPLAY}</b> on WhatsApp yourself:
+            WhatsApp didn&apos;t open? Send this code to <b className="whitespace-nowrap">{WHATSAPP_BUSINESS_NUMBER_DISPLAY}</b> on WhatsApp
+            yourself:
          </p>
          <div className="flex items-center gap-2">
-            <code className="flex-1 rounded-lg bg-white px-3 py-2 text-center text-[20px] font-bold tracking-wide text-md-heading">{code}</code>
+            <code className="flex-1 select-all rounded-lg bg-white px-3 py-2 text-center text-[20px] font-bold tracking-wide text-md-heading">
+               {code}
+            </code>
             <button
                type="button"
                onClick={onCopy}
                className="rounded-lg border border-[#9fe3b4] bg-white px-3 py-2 text-[13px] font-bold text-[#1f7a3d]"
             >
-               {copied ? 'Copied' : 'Copy'}
+               {copied === 'yes' ? 'Copied' : 'Copy'}
             </button>
          </div>
+         {copied === 'no' ? (
+            <p className="text-[14px] font-semibold leading-[19px] text-[#8a5a00]">
+               This app won’t let us copy. Hold your finger on the code to copy it, or type it in WhatsApp.
+            </p>
+         ) : null}
          <p className="text-[13px] leading-[17px] text-[#5f7a66]">Keep this screen open. It turns green as soon as your message arrives.</p>
       </div>
    );

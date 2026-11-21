@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 
+import { buildAndroidIntentUrl } from '@/lib/inAppBrowser';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { GhostButton } from '@/views/dashboard/components/connectKit';
 
@@ -45,12 +46,6 @@ export const expectMessengerPhotos = async () => {
    } catch {
       // not signed in yet (pre-screening link): a pre-screening sent without proof is picked up anyway
    }
-};
-
-/** This page in Chrome (Android), where photos work. They may need to sign in again there. Pure. */
-export const chromeIntentUrl = (href: string) => {
-   const u = new URL(href);
-   return `intent://${u.host}${u.pathname}${u.search}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(href)};end`;
 };
 
 /** What to do when the file picker won't open. */
@@ -107,7 +102,7 @@ export function PickerHelp({
          {meta ? (
             <a
                className="text-center text-[14px] font-semibold text-[#7661f9] underline"
-               href={typeof window !== 'undefined' ? chromeIntentUrl(window.location.href) : '#'}
+               href={typeof window !== 'undefined' ? buildAndroidIntentUrl(window.location.href) : '#'}
             >
                Or open this page in Chrome (you may need to sign in again)
             </a>
