@@ -9,10 +9,13 @@ import BrandedVideo from '@/components/BrandedVideo';
 
 import { fetchPrescreenPath, PRE_KYC_CONNECT_PATH } from '@/hooks/usePreKycGate';
 
+import HippoStory from '@/app/screen/HippoStory';
 import LivePhoto, { type PhotoAnswer, type PhotoPreview } from '@/app/screen/LivePhoto';
+import MedicalBodyMap from '@/app/screen/MedicalBodyMap';
 import { useLocalization } from '@/i18n/LocalizationProvider';
 import { trackPrescreenStep } from '@/lib/analytics/prescreenSteps';
 import { describeBrowser } from '@/lib/attribution';
+import { EMPTY_MEDICAL, medicalAnswerText, type MedicalPick } from '@/lib/medicalPick';
 import {
    isPersonalInviteCode,
    joinPrescreenPath,
@@ -23,9 +26,9 @@ import {
 } from '@/lib/preScreening';
 import {
    coachHint,
+   docHint,
    MEDICAL_CHOICES,
    type MedicalChoice,
-   docHint,
    minutesLeft,
    planJobQuestions,
    PRESCREEN_CAPS,
@@ -499,6 +502,10 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          : {}
    );
    const [choices, setChoices] = useState<Record<string, MedicalChoice>>({});
+   // v2 medical as the tap-the-hippo game; it writes the same plain answer into `typed`.
+   const [medPick, setMedPick] = useState<MedicalPick>(
+      preview?.med ? { who: 'family', relation: 'Mother', parts: ['Tummy'], detail: 'She has diabetes since last year' } : EMPTY_MEDICAL
+   );
    // The job the follow-ups were made for (same job after Back = no new questions).
    const [plannedFor, setPlannedFor] = useState<string | null>(preview ? 'farmer' : null);
    const [useAlt, setUseAlt] = useState<Record<string, boolean>>({});
@@ -512,7 +519,13 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    // The AI's tip on an uploaded document (once per question): they send a different one or go on anyway.
    const [docTip, setDocTip] = useState<Record<string, { path: string; mime: string; hint: string }>>(
       preview?.coach
-         ? { work_permit: { path: '', mime: 'image/jpeg', hint: 'This permit ended in September 2026. Please send your new permit, with the end date showing.' } }
+         ? {
+              work_permit: {
+                 path: '',
+                 mime: 'image/jpeg',
+                 hint: 'This permit ended in September 2026. Please send your new permit, with the end date showing.'
+              }
+           }
          : {}
    );
    const coeInput = useRef<HTMLInputElement>(null);
@@ -1098,20 +1111,30 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                   {error ? <p className={errorClass}>{error}</p> : null}
                   {question.kind === 'text' || question.kind === 'medical' ? (
                      <>
-                        <textarea
-                           aria-label="Your answer"
-                           className={`${fieldClass} ${question.kind === 'medical' ? 'min-h-[96px]' : 'min-h-[140px]'} resize-none`}
-                           maxLength={MAX_TEXT}
-                           onChange={(e) => setTyped((prev) => ({ ...prev, [question.id]: e.target.value }))}
-                           placeholder={
-                              question.kind === 'medical'
-                                 ? 'Type “no”, or what it is'
-                                 : minFor(question) > 3
-                                   ? 'Write 1–2 sentences'
-                                   : 'Type your answer'
-                           }
-                           value={typed[question.id] ?? ''}
-                        />
+                        {v2 && question.kind === 'medical' ? (
+                           <MedicalBodyMap
+                              onChange={(next) => {
+                                 setMedPick(next);
+                                 setTyped((prev) => ({ ...prev, [question.id]: medicalAnswerText(next) }));
+                              }}
+                              value={medPick}
+                           />
+                        ) : (
+                           <textarea
+                              aria-label="Your answer"
+                              className={`${fieldClass} ${question.kind === 'medical' ? 'min-h-[96px]' : 'min-h-[140px]'} resize-none`}
+                              maxLength={MAX_TEXT}
+                              onChange={(e) => setTyped((prev) => ({ ...prev, [question.id]: e.target.value }))}
+                              placeholder={
+                                 question.kind === 'medical'
+                                    ? 'Type “no”, or what it is'
+                                    : minFor(question) > 3
+                                      ? 'Write 1–2 sentences'
+                                      : 'Type your answer'
+                              }
+                              value={typed[question.id] ?? ''}
+                           />
+                        )}
                         {(() => {
                            const left = minFor(question) - (typed[question.id] ?? '').trim().length;
                            return minFor(question) > 3 && left > 0 && (typed[question.id] ?? '').trim() ? (
@@ -1231,6 +1254,11 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                               )}
                            </div>
                         ) : null}
+                        {busy ? (
+                           <div className="rounded-[16px] bg-[#f4f1fb] px-4 py-4 dark:bg-[#221a31]">
+                              <HippoStory kind="doc" tone="light" />
+                           </div>
+                        ) : null}
                         {docTip[question.id] && !coeFile ? (
                            <div className="rounded-[14px] bg-[#fff6e0] px-4 py-3 text-[15px] leading-[21px] text-[#5a4300] dark:bg-[#2e2512] dark:text-[#f3dfa8]">
                               💡 {docTip[question.id].hint}
@@ -1248,7 +1276,11 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                            </PrimaryButton>
                         ) : (
                            <PrimaryButton onClick={() => coeInput.current?.click()}>
-                              {docTip[question.id] ? 'Send a different one' : question.id === 'work_permit' ? 'Add my work permit' : 'Add my COE'}
+                              {docTip[question.id]
+                                 ? 'Send a different one'
+                                 : question.id === 'work_permit'
+                                   ? 'Add my work permit'
+                                   : 'Add my COE'}
                            </PrimaryButton>
                         )}
                         {busy ? null : docTip[question.id] && !coeFile ? (
@@ -1328,6 +1360,19 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                      </ul>
                   ) : null}
                   {error ? <p className={errorClass}>{error}</p> : null}
+                  {busy && docs.length ? (
+                     <div className="rounded-[16px] bg-[#f4f1fb] px-4 py-4 dark:bg-[#221a31]">
+                        <HippoStory
+                           caption={
+                              uploadProgress && uploadProgress.total > 1
+                                 ? `Uploading ${Math.min(uploadProgress.done + 1, uploadProgress.total)} of ${uploadProgress.total}…`
+                                 : undefined
+                           }
+                           kind="doc"
+                           tone="light"
+                        />
+                     </div>
+                  ) : null}
                   {docs.length ? (
                      <>
                         <PrimaryButton disabled={busy} onClick={() => void sendProof()}>
