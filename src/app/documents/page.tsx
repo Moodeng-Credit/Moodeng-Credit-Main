@@ -30,6 +30,7 @@ import {
    uploadIncomeDocuments
 } from '@/app/documents/incomeDocUpload';
 import HippoStory from '@/app/screen/HippoStory';
+import { PickerHelp, usePickerWatch } from '@/app/screen/PickerHelp';
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { type IncomeDocStep, stepFor } from '@/lib/incomeDocSteps';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, PrimaryButton } from '@/views/dashboard/components/connectKit';
@@ -141,6 +142,12 @@ export default function DocumentsPage({
    const answerPhotoRef = useRef<HTMLInputElement>(null);
    const [answeredAll, setAnsweredAll] = useState(false);
    const inputRef = useRef<HTMLInputElement>(null);
+   // Messenger on Android may block the photo picker ("Please allow all media…"): notice it and offer the
+   // camera instead (PickerHelp, same as pre-screening #1680).
+   const picker = usePickerWatch();
+   const answerPicker = usePickerWatch();
+   const cameraRef = useRef<HTMLInputElement>(null);
+   const answerCameraRef = useRef<HTMLInputElement>(null);
    const navigate = useNavigate();
    // Sent here from the loan form ("Send proof of income", loans of $60+): offer the way back to it.
    const [searchParams] = useSearchParams();
@@ -252,7 +259,7 @@ export default function DocumentsPage({
       monthsNeeded,
       good.map((p) => ({ isPdf: p.file.type === 'application/pdf' }))
    );
-   const openPicker = () => inputRef.current?.click();
+   const openPicker = () => picker.open(inputRef.current);
    const sendingNames = good.length ? good.map((p) => p.file.name) : (preview?.fileNames ?? []);
 
    const send = async () => {
@@ -470,6 +477,18 @@ export default function DocumentsPage({
                      onChange={(e) => addFiles(e.target.files)}
                      type="file"
                   />
+                  <input
+                     ref={cameraRef}
+                     accept="image/*"
+                     capture="environment"
+                     className="sr-only"
+                     onChange={(e) => {
+                        picker.setBlocked(false);
+                        addFiles(e.target.files);
+                     }}
+                     type="file"
+                  />
+                  {picker.blocked && !good.length ? <PickerHelp onCamera={() => cameraRef.current?.click()} /> : null}
 
                   {picked.some((p) => p.warn) ? (
                      <p className="text-[14px] font-semibold leading-[19px] text-[#8a5a00] dark:text-[#f5c542]">
@@ -498,7 +517,18 @@ export default function DocumentsPage({
                   {good.length ? (
                      <GoldButton onClick={() => void send()}>{`Send ${good.length} ${good.length === 1 ? 'photo' : 'photos'}`}</GoldButton>
                   ) : (
-                     <GoldButton onClick={openPicker}>Add photos</GoldButton>
+                     <>
+                        <GoldButton onClick={openPicker}>Add photos</GoldButton>
+                        {picker.blocked ? null : (
+                           <button
+                              className="text-center text-[14px] font-semibold text-[#6b55f7] underline dark:text-[#b4a6ff]"
+                              onClick={() => picker.setBlocked(true)}
+                              type="button"
+                           >
+                              Can’t open your photos?
+                           </button>
+                        )}
+                     </>
                   )}
                   <p className="flex items-center justify-center gap-1.5 text-[13px] leading-[18px] text-[#7b6b8c] dark:text-[#b9abcc]">
                      <Lock aria-hidden="true" className="size-4 shrink-0" strokeWidth={2} />
@@ -598,9 +628,21 @@ export default function DocumentsPage({
                            ref={answerPhotoRef}
                            type="file"
                         />
+                        <input
+                           accept="image/*"
+                           capture="environment"
+                           className="hidden"
+                           onChange={(e) => {
+                              answerPicker.setBlocked(false);
+                              setAnswerPhoto(e.target.files?.[0] ?? null);
+                              e.target.value = '';
+                           }}
+                           ref={answerCameraRef}
+                           type="file"
+                        />
                         <button
                            className="flex min-h-[56px] items-center justify-center gap-2 rounded-[12px] border-2 border-dashed border-[#c9bce0] bg-white px-3 text-[16px] font-bold text-[#6b55f7] dark:border-[#4a3a63] dark:bg-[#1b1526] dark:text-[#b4a6ff]"
-                           onClick={() => answerPhotoRef.current?.click()}
+                           onClick={() => answerPicker.open(answerPhotoRef.current)}
                            type="button"
                         >
                            {answerPhoto ? (
@@ -610,6 +652,7 @@ export default function DocumentsPage({
                            )}
                            <span className="truncate">{answerPhoto ? answerPhoto.name : 'Add screenshot'}</span>
                         </button>
+                        {answerPicker.blocked && !answerPhoto ? <PickerHelp onCamera={() => answerCameraRef.current?.click()} /> : null}
                      </>
                   ) : (
                      <textarea
