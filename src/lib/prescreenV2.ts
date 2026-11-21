@@ -72,6 +72,25 @@ export const docHint = async (token: string, q: string, path: string, locale: st
    }
 };
 
+/**
+ * The AI's look and listen at an answer they just recorded (prescreen_clip): one warm sentence on what
+ * would help (face not visible, hard to hear, didn't answer), or '' (fine, too big, or the AI was slow).
+ * Advice only — they can always use the clip.
+ */
+export const clipHint = async (token: string, q: string, path: string, locale: string): Promise<string> => {
+   try {
+      const call = getSupabaseBrowserClient().functions.invoke('check-loan-input', {
+         body: { kind: 'prescreen_clip', token, q, path, locale: ['fil', 'id'].includes(locale) ? locale : 'en' }
+      });
+      const timeout = new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 11000));
+      const result = (await Promise.race([call, timeout])) as { data?: { ok?: boolean; hint?: string } | null } | null;
+      const verdict = result?.data;
+      return verdict?.ok === false && typeof verdict.hint === 'string' ? verdict.hint.slice(0, 220) : '';
+   } catch {
+      return '';
+   }
+};
+
 /** A photo, made small enough for the AI and Telegram (longest side 1280 px, JPEG). */
 export const shrinkImage = async (
    source: CanvasImageSource & { width?: number; height?: number },
