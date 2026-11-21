@@ -69,7 +69,8 @@ Deno.test('photo answers show as a screenshot, not a storage path', () => {
 Deno.test('Messenger: a photo question points to /documents and the bot does not wait for a reply', () => {
    const [p1, p2] = payslipProofQuestions('Philippines');
    assertStringIncludes(questionLine(p2, 'en'), 'moodeng.app/documents');
-   assertStringIncludes(questionLine(p2, 'fil'), 'Paki-send dito');
+   assertStringIncludes(questionLine(p2, 'fil'), 'dito sa chat');
+   assertStringIncludes(questionLine(p2, 'en'), 'here in this chat');
    assertEquals(awaitIdFor(p1), 'p1');
    assertEquals(awaitIdFor(p2), null);
    const doc = { id: 'd', status: 'done', decision: null, verdict: 'looks_good', questions: [p1, p2], answers: [{ id: 'p1' }], messenger_asked_at: null, messenger_asked_id: null };

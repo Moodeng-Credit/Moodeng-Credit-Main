@@ -10,9 +10,12 @@
 //   opted_in           they tapped "Send it in Messenger" (users.messenger_photo_intake_until, 2 days)
 //   prescreen_skipped  their pre-screening went in without proof (last 14 days) and nothing came since
 //   docs               they typed DOCS in the last 24 hours
+//   payslip_screenshot their latest proof of income has the payslip question "screenshot of the chat where you
+//                      got it" (p2) still open: the photo becomes that ANSWER, not a new document, and the
+//                      chat-date check runs (incomeDocs.reviewWithAnswers)
 // Several photos sent together arrive as separate messages seconds apart: they join one document, and the
 // check starts ~40 s after the first one.
-import { langOf } from './messengerIncomeDocReply.ts';
+import { langOf, questionsOpen } from './messengerIncomeDocReply.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
 import { sendTelegramMessage } from './telegram.ts';
 
@@ -20,7 +23,7 @@ import { sendTelegramMessage } from './telegram.ts';
 type Svc = any;
 declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void } | undefined;
 
-export type IntakeReason = 'opted_in' | 'prescreen_skipped' | 'docs';
+export type IntakeReason = 'opted_in' | 'prescreen_skipped' | 'docs' | 'payslip_screenshot';
 
 const DAY = 86_400_000;
 const NOTE = 'Sent on Messenger';
@@ -39,10 +42,41 @@ const REPLY: Record<Lang, (n: number) => string> = {
    id: (n) => `Sudah kami terima ✅ ${n === 1 ? 'fotonya' : `${n} foto`}. Sedang kami cek, nanti kami kabari di sini. Terima kasih! 🦛`
 };
 
+const SCREENSHOT_QID = 'p2';
+const SCREENSHOT_REPLY: Record<Lang, string> = {
+   en: 'Got your screenshot ✅ Thank you! The team will look at it with your payslip and message you here. 🦛',
+   fil: 'Natanggap na namin ang screenshot mo ✅ Salamat! Titingnan ito ng team kasama ng payslip mo at magme-message kami dito. 🦛',
+   id: 'Screenshot kamu sudah kami terima ✅ Terima kasih! Tim kami akan melihatnya bersama slip gajimu dan mengabari di sini. 🦛'
+};
+
+type DocQs = { id: string; decision: string | null; decided_by: string | null; questions: Array<{ id: string; kind?: string }> | null; answers: Array<{ id: string }> | null };
+
+/** Their latest proof of income (14 days) whose payslip screenshot question is still open, or null. */
+export async function openPayslipScreenshot(svc: Svc, userId: string, now = Date.now()): Promise<string | null> {
+   const { data: doc } = (await svc
+      .from('income_documents')
+      .select('id, decision, decided_by, questions, answers')
+      .eq('user_id', userId)
+      .eq('status', 'done')
+      .gte('created_at', new Date(now - 14 * DAY).toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()) as { data: DocQs | null };
+   return doc && screenshotOpen(doc) ? doc.id : null;
+}
+
+/** The payslip screenshot question is asked and not answered, and answers are still taken. Pure. */
+export const screenshotOpen = (doc: DocQs) =>
+   questionsOpen(doc) &&
+   (doc.questions ?? []).some((q) => q.id === SCREENSHOT_QID && q.kind === 'photo') &&
+   !(doc.answers ?? []).some((a) => a.id === SCREENSHOT_QID);
+
 /** Are we expecting proof from them right now? Pure parts are in the queries' order. */
 export async function photoIntakeReason(svc: Svc, userId: string, now = Date.now()): Promise<IntakeReason | null> {
    const { data: user } = await svc.from('users').select('messenger_photo_intake_until, user_role').eq('id', userId).maybeSingle();
    if (!user || user.user_role === 'lender') return null;
+   // Asked for the screenshot of the chat their payslip came in: a photo now is that answer.
+   if (await openPayslipScreenshot(svc, userId, now)) return 'payslip_screenshot';
    if (user.messenger_photo_intake_until && Date.parse(user.messenger_photo_intake_until) > now) return 'opted_in';
 
    const { data: ps } = await svc
@@ -116,6 +150,8 @@ export async function intakeMessengerPhotos(
    urls: string[],
    reason: IntakeReason
 ): Promise<boolean> {
+   // The payslip screenshot question: the first photo is the answer (no new document).
+   if (reason === 'payslip_screenshot') return await answerPayslipScreenshot(svc, userId, contactId, urls);
    const saved: Array<{ path: string; name: string; mime: string; size: number }> = [];
    for (const url of urls.slice(0, MAX_FILES)) {
       const img = await download(url);
@@ -188,5 +224,43 @@ export async function intakeMessengerPhotos(
          ).catch(() => undefined);
       }
    }
+   return true;
+}
+
+/**
+ * A photo sent on Messenger as the answer to "screenshot of the chat where you got this payslip" (p2): saved
+ * to income-docs/<user>/answers/ and recorded with save_income_doc_answer, so the last answer starts the AI
+ * re-read and the chat-date check, same as an upload on /documents. False when nothing could be saved.
+ */
+async function answerPayslipScreenshot(svc: Svc, userId: string, contactId: string, urls: string[]): Promise<boolean> {
+   const docId = await openPayslipScreenshot(svc, userId);
+   if (!docId) return false;
+   let img: { bytes: Uint8Array; mime: string } | null = null;
+   for (const url of urls.slice(0, MAX_FILES)) {
+      img = await download(url);
+      if (img) break;
+   }
+   if (!img) return false;
+   const ext = img.mime === 'image/png' ? 'png' : img.mime === 'image/webp' ? 'webp' : 'jpg';
+   const path = `${userId}/answers/messenger-${crypto.randomUUID()}.${ext}`;
+   const { error } = await svc.storage.from('income-docs').upload(path, img.bytes, { contentType: img.mime, upsert: false });
+   if (error) {
+      console.error('messenger photo intake: screenshot upload failed', error.message);
+      return false;
+   }
+   const { data: left, error: saveError } = await svc.rpc('save_income_doc_answer', {
+      p_doc: docId,
+      p_user: userId,
+      p_qid: SCREENSHOT_QID,
+      p_answer: `photo:${path}`,
+      p_via: 'messenger'
+   });
+   if (saveError || typeof left !== 'number' || left < 0) {
+      if (saveError) console.error('messenger photo intake: screenshot answer failed', saveError.message);
+      return false;
+   }
+   const { data: user } = await svc.from('users').select('preferred_locale, market').eq('id', userId).maybeSingle();
+   const sent = await sendMessengerMessage(contactId, { text: SCREENSHOT_REPLY[langOf(user?.preferred_locale, user?.market) as Lang] });
+   if (!sent.ok) console.error('messenger photo intake: screenshot reply failed', sent.reason);
    return true;
 }
