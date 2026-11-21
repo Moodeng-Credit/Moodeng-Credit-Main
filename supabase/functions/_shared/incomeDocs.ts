@@ -1597,6 +1597,32 @@ const sha256 = async (bytes: Uint8Array<ArrayBuffer>) =>
 const personOf = (user: { username?: string | null; display_name?: string | null } | null, id: string) =>
    user?.display_name?.trim() || (user?.username ? `@${user.username}` : id.slice(0, 8));
 
+/** The note messengerPhotoIntake.ts puts on income documents made from photos sent in the Messenger chat. */
+export const MESSENGER_PHOTO_NOTE = 'Sent on Messenger';
+
+/**
+ * A Messenger photo we took as proof of income but isn't one: open (or add to) their Messenger support
+ * ticket, so a question sent as a screenshot isn't lost. Never throws.
+ */
+const ticketForMessengerPhoto = async (supabase: SupabaseClient, userId: string, docUrl: string) => {
+   try {
+      const { data: u } = await supabase.from('users').select('messenger_psid').eq('id', userId).maybeSingle();
+      if (!u?.messenger_psid) return;
+      // Loaded here (not at the top): messengerSupport pulls in a lot, and only this path needs it.
+      const { openMessengerTicket } = await import('./messengerSupport.ts');
+      await openMessengerTicket(supabase, {
+         contactId: u.messenger_psid,
+         facebookName: null,
+         userId,
+         text: `📷 Photo sent on Messenger isn't a financial document (a question? a screenshot?): ${docUrl}`,
+         hasAttachment: true,
+         at: Date.now()
+      });
+   } catch (err) {
+      console.error('messenger photo ticket failed', err instanceof Error ? err.message : err);
+   }
+};
+
 /** One send end to end: ping the team, read it, check it, save the result, reply under the ping. */
 export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string, apiKey: string | null | undefined) => {
    const startedAt = Date.now();
@@ -1724,6 +1750,9 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
          `${fraud.length ? '🚨 Fraud signs · ' : ''}${VERDICT_LINE.resend}: ${RESEND_TEXT[reason]}\n\n${teamNote}`.slice(0, 3900)
       );
       await notifyIncomeDecision(supabase, id);
+      // A photo picked up from their Messenger chat that isn't a financial document (a selfie, an error
+      // screenshot, a job photo) may really be a question: also open a support ticket so the team sees it.
+      if (reason === 'not_financial' && row.note === MESSENGER_PHOTO_NOTE) await ticketForMessengerPhoto(supabase, row.user_id, docUrl);
       if (fraud.length) {
          const alert = `🚨 Possible fraud: ${who} sent this as proof of income\n${fraud.map((f) => `• ${f.detail}`).join('\n')}\n${loanLine}`;
          const { data: fraudChat } = await supabase.from('telegram_bot_settings').select('value').eq('key', 'fraud_alert_chat_id').maybeSingle();
