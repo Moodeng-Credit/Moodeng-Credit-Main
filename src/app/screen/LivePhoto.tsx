@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2, SwitchCamera } from 'lucide-react';
 
 import PhotoCheckStory from '@/app/screen/PhotoCheckStory';
+import { usePickerWatch } from '@/app/screen/PickerHelp';
 import { clock, docHint, GALLERY_MAX_AGE_MS, OLD_FILE_MS, PHOTO_SECONDS, shrinkFile, shrinkImage } from '@/lib/prescreenV2';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { GhostButton, PrimaryButton } from '@/views/dashboard/components/connectKit';
@@ -74,6 +75,8 @@ export default function LivePhoto({
    );
    const [error, setError] = useState<string | null>(null);
    const [cameraFailed, setCameraFailed] = useState(false);
+   // The phone's own camera / photos didn't open either (Messenger blocks them for some).
+   const picker = usePickerWatch();
    useEffect(() => onExpired?.(state === 'expired'), [state, onExpired]);
    const videoRef = useRef<HTMLVideoElement>(null);
    const streamRef = useRef<MediaStream | null>(null);
@@ -134,7 +137,7 @@ export default function LivePhoto({
    const openCamera = async (mode = facing) => {
       setError(null);
       if (!navigator.mediaDevices?.getUserMedia || cameraFailed) {
-         fileRef.current?.click();
+         picker.open(fileRef.current);
          return;
       }
       setState('starting');
@@ -310,6 +313,9 @@ export default function LivePhoto({
          />
          <input accept="image/*" className="hidden" onChange={(e) => void onFile(e.target.files?.[0], true)} ref={galleryRef} type="file" />
          {error ? <p className={errorClass}>{error}</p> : null}
+         {picker.blocked && state !== 'review' ? (
+            <p className={errorClass}>Your camera won’t open in this app. Tap “I can’t take this photo” below to go on.</p>
+         ) : null}
          {tip && state === 'review' ? (
             <div className="rounded-[14px] bg-[#fff6e0] px-4 py-3 text-[15px] leading-[21px] text-[#5a4300] dark:bg-[#2e2512] dark:text-[#f3dfa8]">
                💡 {tip.hint}
@@ -335,15 +341,16 @@ export default function LivePhoto({
          ) : null}
          {state === 'expired' ? <PrimaryButton onClick={() => void ask()}>Start again</PrimaryButton> : null}
          {state === 'ready' || state === 'live' || state === 'expired' ? (
-            <GhostButton onClick={() => galleryRef.current?.click()}>Pick a recent photo instead</GhostButton>
+            <GhostButton onClick={() => picker.open(galleryRef.current)}>Pick a recent photo instead</GhostButton>
          ) : null}
-         {state === 'expired' || (cameraFailed && error) ? (
+         {state === 'expired' || cameraFailed || picker.blocked ? (
             <button
                className="text-center text-[14px] font-semibold text-[#8a7f99] underline dark:text-[#a89bb8]"
                onClick={() =>
                   onDone({
                      skip: true,
-                     skip_reason: state === 'expired' ? 'ran out of time' : 'camera did not open',
+                     skip_reason:
+                        state === 'expired' ? 'ran out of time' : picker.blocked ? 'camera blocked in this app' : 'camera did not open',
                      alt: useAlt || undefined
                   })
                }

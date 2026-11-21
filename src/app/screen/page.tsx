@@ -106,6 +106,10 @@ type Coached = { first: string; hint: string };
 // Typed answers: long enough to say something real, short enough to read on the call.
 const MIN_TEXT = 15;
 const minFor = (q: ScreenQuestion) => Math.max(1, q.min ?? MIN_TEXT);
+// A video answer typed because the camera wouldn't work here: about what they'd say in 20 seconds.
+const MIN_TYPED_INSTEAD = 20;
+// Once the camera wouldn't open on this page, the next questions offer typing straight away.
+let cameraBlockedHere = false;
 const MAX_TEXT = 600;
 
 const MAX_SECONDS = 45;
@@ -229,7 +233,8 @@ function AnswerRecorder({
    onUse,
    previewState,
    maxSeconds = MAX_SECONDS,
-   useLabel = 'Next'
+   useLabel = 'Next',
+   onTypeInstead
 }: {
    busy: boolean;
    onUse: (clip: Clip) => void;
@@ -237,12 +242,20 @@ function AnswerRecorder({
    maxSeconds?: number;
    /** "Use this one" after the AI's tip on this clip. */
    useLabel?: string;
+   /** Camera won't work in this browser (Messenger / Facebook): they type the answer instead. */
+   onTypeInstead?: (text: string) => void;
 }) {
    const [state, setState] = useState<RecorderState>(previewState ?? 'idle');
    const [clip, setClip] = useState<Clip | null>(null);
    const [left, setLeft] = useState(maxSeconds);
    const [error, setError] = useState<string | null>(null);
    const [useCameraApp, setUseCameraApp] = useState(false);
+   // The phone's own camera didn't open either (Messenger blocks it for some): never a dead end.
+   const cameraApp = usePickerWatch();
+   const [typing, setTyping] = useState(false);
+   const canType = cameraApp.blocked || cameraBlockedHere;
+   if (cameraApp.blocked) cameraBlockedHere = true;
+   const [typedText, setTypedText] = useState('');
    const liveRef = useRef<HTMLVideoElement>(null);
    const fileRef = useRef<HTMLInputElement>(null);
    // The recording in progress: finish() keeps the clip, cancel() throws it away (leaving the page).
@@ -269,7 +282,7 @@ function AnswerRecorder({
       const Ctor = audioContextCtor();
       if (useCameraApp || !type || !Ctor || !navigator.mediaDevices?.getUserMedia) {
          setUseCameraApp(true);
-         fileRef.current?.click();
+         cameraApp.open(fileRef.current);
          return;
       }
       setState('starting');
@@ -428,10 +441,35 @@ function AnswerRecorder({
          />
          {error ? <p className={errorClass}>{error}</p> : null}
 
-         {state === 'idle' || state === 'starting' ? (
+         {typing && onTypeInstead ? (
+            <div className="flex flex-col gap-3">
+               <p className="text-[15px] font-bold text-[#3b2f4a] dark:text-[#f5f0ff]">Type your answer instead ✍️</p>
+               <textarea
+                  aria-label="Your answer"
+                  className={`${fieldClass} min-h-[140px] resize-none`}
+                  maxLength={MAX_TEXT}
+                  onChange={(e) => setTypedText(e.target.value)}
+                  placeholder="Write 2–3 sentences, like you would say it"
+                  value={typedText}
+               />
+               <PrimaryButton
+                  disabled={busy || typedText.trim().length < MIN_TYPED_INSTEAD}
+                  onClick={() => onTypeInstead(typedText.trim())}
+               >
+                  {useLabel}
+               </PrimaryButton>
+               <GhostButton onClick={() => setTyping(false)}>Try the camera again</GhostButton>
+            </div>
+         ) : null}
+
+         {!typing && (state === 'idle' || state === 'starting') ? (
             <PrimaryButton disabled={state === 'starting'} onClick={() => void start()}>
                Record my answer
             </PrimaryButton>
+         ) : null}
+         {/* Only once even the phone's own camera didn't open: a video answer stays the normal way. */}
+         {!typing && onTypeInstead && state === 'idle' && canType ? (
+            <GhostButton onClick={() => setTyping(true)}>Camera won’t open? Type your answer instead</GhostButton>
          ) : null}
          {state === 'recording' ? (
             <PrimaryButton className="!bg-[#e5484d] !shadow-[0_4px_0_#b3261e]" onClick={stop}>
@@ -1408,6 +1446,11 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                            onUse={(clip) => void acceptClip(clip)}
                            previewState={preview?.coach && clipTip[question.id] ? 'review' : undefined}
                            useLabel={clipTip[question.id] ? 'Use this one' : 'Next'}
+                           onTypeInstead={(text) => {
+                              trackPrescreenStep('typed_instead', { q: question.id });
+                              if (preview) return nextAfter(uploaded);
+                              nextAfter(save({ ...blank(question.id), text: text.slice(0, MAX_TEXT) }));
+                           }}
                         />
                         {index > 0 && !busy ? backButton : null}
                      </>
