@@ -17,7 +17,7 @@ import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { linkRows } from './adminCards.ts';
 import { blockRows, hasLinkedFlag } from './blockForGood.ts';
 import { GEMINI_MODEL } from './geminiPreScreen.ts';
-import { linkedRedFlag, loadLinkedAccounts } from './linkedAccounts.ts';
+import { autoRejectLinked, linkedRedFlag, loadLinkedAccounts } from './linkedAccounts.ts';
 import { type Lang, langOf, teamStepIn } from './messengerIncomeDocReply.ts';
 import { preScreeningDecisionRows } from './preScreening.ts';
 import { applyPreScreeningDecision, autoDeclineForCosts } from './preScreeningDecision.ts';
@@ -444,6 +444,18 @@ export async function autoDecideOrAsk(svc: SupabaseClient, id: string, card: { c
    try {
       const row = await loadRow(svc, id);
       if (!row || row.score == null || row.team_decision) return;
+      // Same person as an account we already turned down → rejected, whatever the score.
+      if (row.user_id && (await autoRejectLinked(svc, row.user_id))?.done === 'rejected') {
+         await svc
+            .from('pre_screenings')
+            .update({ team_decision: 'not_fit', team_decided_by: 'auto: same person as a rejected account', team_decided_at: new Date().toISOString() })
+            .eq('id', row.id)
+            .is('team_decision', null);
+         await sendTelegramMessage(card.chat, '🤖 Auto-rejected — same person as an account we already turned down (details in the admin chat). Wrong? /reopen', {
+            replyToMessageId: card.msg
+         }).catch(() => undefined);
+         return;
+      }
       const { data: setting } = await svc.from('telegram_bot_settings').select('value').eq('key', 'prescreen_auto_ask_below').maybeSingle();
       const bar = autoAskThreshold((setting as { value?: string | null } | null)?.value);
       if (bar == null) return;

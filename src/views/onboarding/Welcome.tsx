@@ -10,6 +10,7 @@ import { useWalletLast } from '@/hooks/useWalletLast';
 import { useLocalization } from '@/i18n/LocalizationProvider';
 import type { LocaleCode } from '@/i18n/translations';
 import { applyInviteCode } from '@/lib/friendReferrals';
+import { codeStepDone } from '@/lib/inviteCodeStep';
 import { ID_PATHS } from '@/lib/idTrack';
 import { hasPrescreenPathFlag } from '@/lib/preScreening';
 import type { RootState } from '@/store/store';
@@ -296,7 +297,9 @@ export default function Welcome() {
    // Indonesia track: its own onboarding (/id/onboarding) replaces this welcome.
    const idTrack = useIdTrackStatus();
    // Borrowers with no code yet (hasReferral is read at sign-in, so the ✅ stays after they add one here).
-   const showCodeBox = isPreview || (Boolean(user) && user?.userRole !== 'lender' && !user?.hasReferral);
+   // Not again for someone who answered "Who invited you?" on the first screen: their code is attached
+   // a moment after sign-in, after hasReferral was read, so the box would ask a second time.
+   const showCodeBox = isPreview || (Boolean(user) && user?.userRole !== 'lender' && !user?.hasReferral && !codeStepDone());
    if (!isPreview && idTrack.isIndo) return <Navigate replace to={ID_PATHS.onboarding} />;
 
    return (

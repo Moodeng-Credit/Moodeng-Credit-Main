@@ -133,7 +133,11 @@ export async function applyInviteCode(raw: string): Promise<ApplyCodeResult> {
          if (result === 'not_a_new_account') return { ok: false, reason: 'old_account' };
       }
       const { data, error } = await getSupabaseBrowserClient().rpc('redeem_referral_code', { code_input: code }).single();
-      if (error) return { ok: false, reason: /incorrect|required/i.test(error.message) ? 'invalid' : 'error' };
+      if (error) {
+         // One inviter per person: a friend's invite is already on this account (migration 20261121200000).
+         if (/already/i.test(error.message)) return { ok: false, reason: 'already' };
+         return { ok: false, reason: /incorrect|required/i.test(error.message) ? 'invalid' : 'error' };
+      }
       if (!data) return { ok: false, reason: 'invalid' };
       if (data.already_redeemed && data.code !== code) return { ok: false, reason: 'already', linkedCode: data.code };
       return { ok: true, code: data.code };

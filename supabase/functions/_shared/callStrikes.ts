@@ -32,13 +32,15 @@ export const BOOKING_LOG_START = '2026-11-19T17:00:00Z';
 
 // income_costs: pre-screening medical costs still to come are too high for their income, and nobody on the
 // team decided within 2 hours (George, 2026-11-21). Same automatic path, its own message.
-export type StrikeReason = 'missed_calls' | 'too_many_reschedules' | 'income_costs';
+// linked_account: the same person as an account we already turned down (linkedAccounts.ts autoRejectLinked).
+export type StrikeReason = 'missed_calls' | 'too_many_reschedules' | 'income_costs' | 'linked_account';
 export const UNCONFIRMED_DECIDED_BY = 'unconfirmed-slot-released';
 
 export const REJECT_LABEL: Record<StrikeReason, string> = {
    missed_calls: `auto: missed ${MISSED_CALLS_LIMIT} calls`,
    too_many_reschedules: `auto: rescheduled ${RESCHEDULE_LIMIT} times`,
-   income_costs: 'auto: costs too high for their income'
+   income_costs: 'auto: costs too high for their income',
+   linked_account: 'auto: same person as a rejected account'
 };
 
 /** Distinct missed calls from their timestamps (records within 2 hours are the same call). */
