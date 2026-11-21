@@ -145,7 +145,13 @@ const SAMPLE_QUESTIONS: ScreenQuestion[] = [
    },
    { id: 'borrowed', text: 'Have you borrowed before, like Maya, Tala or Salmon?', kind: 'text' },
    { id: 'purpose', text: 'What is this loan for?', kind: 'text' },
-   { id: 'grow', text: 'How will you use the loan to build up your income?', kind: 'text' }
+   {
+      id: 'grow',
+      text: 'Do you also have a side job or small business?',
+      hint: 'If yes, what is it? If no, just type "No".',
+      kind: 'text',
+      min: 1
+   }
 ];
 // /screen-preview?stage=question&q=4…10 shows the v2 steps (photo=ready|live|review|expired, coach=1, med=1).
 // coach=1 also shows the AI's tip on the work permit step. send=1 shows a video answer sending.

@@ -835,7 +835,7 @@ export const insertMoney = (questions: StoredQuestion[], planned: V2Question[]):
 
 export const MONEY_SYSTEM = `You help a small lender (Moodeng Credit: first loans of about $15-$40 to people in the Philippines and Indonesia, many of them young or students) ask two short questions before they upload their proof of income. The goal: find out if the money to repay is really theirs (work, not only an allowance) and if this loan will be paid first.
 
-You get what they typed so far: "borrowed" (have they borrowed before), "purpose" (what this loan is for), "grow" (how the loan builds their income), "job" and its follow-ups, and "category" (the kind of job).
+You get what they typed so far: "borrowed" (have they borrowed before), "purpose" (what this loan is for), "grow" (do they have a side job or small business; "No" is fine), "job" and its follow-ups, and "category" (the kind of job).
 
 Give exactly 2 questions, in order:
 1. code "income_split" (always first): ask how much money they get each month, how much from their own work and how much from family. Base wording: "How much money do you get each month? How much from work, and how much from family?"
