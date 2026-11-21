@@ -51,3 +51,12 @@ Deno.test('a signal with one group only is listed as not comparable yet', () => 
 Deno.test('no rows: still a valid message', () => {
    assertStringIncludes(buildSignalReport([]), '0 loans finished');
 });
+
+Deno.test('the newer signals are named in the report', () => {
+   const text = buildSignalReport([
+      row('on_time', { past_record: 'always on time before', due_day: 'due on a weekday' }),
+      row('late', { past_record: 'missed a due date before', due_day: 'due on a weekend' })
+   ]);
+   assertStringIncludes(text, 'Their record before');
+   assertStringIncludes(text, 'Due day');
+});
