@@ -825,13 +825,15 @@ export type MedicalRead = {
    future_php_month?: number | null;
    /** future_php_month ÷ their monthly money in from the proof of income, 0-1+, when known. */
    income_share?: number | null;
+   /** false = the taps don't add up (random tapping?) → never auto-declined; ask on the call. */
+   consistent?: boolean | null;
    note: string;
    /** No AI read came back: made from their answer alone (always a red flag when they said something). */
    ungraded?: boolean;
 };
 
 export const MEDICAL_PROMPT = `For the "medical" question (Do you or your family have a medical problem?) they answered "no", or tapped who, where, what it is, since when, doctor, monthly medicine and "more costs" (none/done, one more cost, every month, not sure) with an amount and who pays, plus maybe a few words; and picked what the loan is for about it ("choice": none = the loan is not for it, paid = a bill already paid (a pay gap), future = a cost coming up, ongoing = a cost every month). Do NOT score it 0-10. Instead fill "medical":
-{"has_problem": bool, "who": "self" | "<relation, e.g. mother>" | null, "condition": "<few words>" | null, "loan_for": "none" | "paid" | "future" | "ongoing" | null, "chronic": bool | null, "size": "small" | "medium" | "large" | null, "future_cost": "none" | "once" | "monthly" | "unknown", "future_php_month": <number or null>, "income_share": <number or null>, "severity": "none" | "low" | "medium" | "high", "note": "<one short plain-English sentence for the team: what it is, what is still to pay, and how that compares with their income>"}
+{"has_problem": bool, "who": "self" | "<relation, e.g. mother>" | null, "condition": "<few words>" | null, "loan_for": "none" | "paid" | "future" | "ongoing" | null, "chronic": bool | null, "size": "small" | "medium" | "large" | null, "future_cost": "none" | "once" | "monthly" | "unknown", "future_php_month": <number or null>, "income_share": <number or null>, "consistent": bool, "severity": "none" | "low" | "medium" | "high", "note": "<one short plain-English sentence for the team: what it is, what is still to pay, and how that compares with their income>"}
 What decides it is COSTS STILL TO COME, not whether someone is sick. A bill that is already paid only leaves a pay gap this month, and the team approves those (past calls: "children were hospitalized last month, short this month" → approved; "father has stage-5 kidney disease, hospital twice a month" → rejected).
 - future_php_month: your best rough estimate in pesos per month of what is still to pay for this, using their amount if they gave one, else typical Philippine costs after PhilHealth/free government programs (TB treatment at DOTS centers is free; maintenance pills for high blood are cheap; dialysis, chemo and stroke rehab are expensive). A one-off cost due within about a month counts in full. 0 when nothing is left to pay. If someone else (other family, PhilHealth, a free program) pays, count only what THEY pay.
 - income_share: future_php_month divided by their monthly money in from income_proof (convert to pesos if needed); null when there is no readable income.
@@ -840,6 +842,7 @@ Severity is how likely costs STILL TO COME stop them repaying:
 - medium: some costs still to come but small (under about 30% of income) or the amount is unknown; or "not sure yet".
 - low: nothing left to pay — it's done or already paid and now only a pay gap; or something minor.
 - none: they said no and nothing else hints at a medical problem.
+- consistent: false when the answers don't add up and look like random tapping (many unrelated organs, "nothing left to pay" next to dialysis or cancer treatment, a tiny cost next to a huge condition, or the words contradict the taps); then add "answers don't add up — ask on the call" to the note. true otherwise.
 Be honest about uncertainty; when costs are still coming but they give no amount, lean higher.`;
 
 const SEVERITY_RANK: Record<MedicalSeverity, number> = { none: 0, low: 1, medium: 2, high: 3 };
@@ -867,6 +870,7 @@ export const toMedical = (raw: unknown): MedicalRead | null => {
             : null,
       future_php_month: typeof r.future_php_month === 'number' && r.future_php_month >= 0 ? Math.round(r.future_php_month) : null,
       income_share: typeof r.income_share === 'number' && r.income_share >= 0 ? Math.round(r.income_share * 100) / 100 : null,
+      consistent: typeof r.consistent === 'boolean' ? r.consistent : null,
       note: s(r.note, 240) ?? ''
    };
 };
@@ -923,7 +927,13 @@ export const medicalLine = (m: MedicalRead | null | undefined, said: string | nu
              ? `${m.size} cost`
              : null
    ].filter(Boolean);
-   return `🩺 Medical: ${MEDICAL_LABEL[m.severity]} · ${bits.join(' · ')}${m.note ? `\n   ${m.note}` : ''}`;
+   const tail =
+      m.consistent === false
+         ? '\n   ⚠️ Answers don’t add up — ask on the call (not auto-declined).'
+         : m.severity === 'high' && !m.ungraded
+           ? '\n   ⏳ Auto-declines 2 hours after grading unless you tap ✅ / ❌.'
+           : '';
+   return `🩺 Medical: ${MEDICAL_LABEL[m.severity]} · ${bits.join(' · ')}${m.note ? `\n   ${m.note}` : ''}${tail}`;
 };
 
 /** High severity (or an answer the AI never graded) = a red flag: stops auto ✅, never rejects. Pure. */

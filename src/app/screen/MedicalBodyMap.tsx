@@ -3,16 +3,22 @@
 // tell us more honestly. It only builds the same plain-text answer the server already grades
 // ("no", or "My mother — chest (heart, lungs) — heart problem since March"), so grading and the
 // team card don't change.
+import { useState } from 'react';
+
 import {
    AREA_PROBLEMS,
    DOCTOR,
    EMPTY_MEDICAL,
    FUTURE,
    FUTURE_AMOUNT,
+   MAX_ORGANS,
    type MedicalPick,
    medicalReady,
+   medicalSummary,
    type MedicalWho,
    MEDICINE,
+   ORGAN_SPOTS,
+   ORGANS,
    PAYER,
    SINCE
 } from '@/lib/medicalPick';
@@ -47,16 +53,27 @@ const bigChoice = (on: boolean) =>
    }`;
 
 export default function MedicalBodyMap({ value, onChange }: { value: MedicalPick; onChange: (next: MedicalPick) => void }) {
-   const set = (patch: Partial<MedicalPick>) => onChange({ ...value, ...patch });
-   const togglePart = (part: string) =>
-      value.parts.includes(part)
-         ? set({ parts: value.parts.filter((p) => p !== part), conditions: value.conditions.filter((c) => !c.startsWith(`${part}: `)) })
-         : set({ parts: [...value.parts, part] });
+   // Any change means they have to look at the summary again.
+   const set = (patch: Partial<MedicalPick>) => onChange({ ...value, confirmed: false, ...patch });
+   const organCount = value.parts.filter((p) => ORGANS.includes(p)).length;
+   const [inside, setInside] = useState(organCount > 0);
+   const [tooMany, setTooMany] = useState(false);
+   const togglePart = (part: string) => {
+      setTooMany(false);
+      if (value.parts.includes(part))
+         return set({
+            parts: value.parts.filter((p) => p !== part),
+            conditions: value.conditions.filter((c) => !c.startsWith(`${part}: `))
+         });
+      if (ORGANS.includes(part) && organCount >= MAX_ORGANS) return setTooMany(true);
+      set({ parts: [...value.parts, part] });
+   };
    const toggleCondition = (c: string) =>
       set({ conditions: value.conditions.includes(c) ? value.conditions.filter((x) => x !== c) : [...value.conditions, c] });
    const whoReady = value.who === 'me' || (value.who === 'family' && !!value.relation);
    const whose = value.who === 'me' ? 'your' : value.relation ? `your ${value.relation.toLowerCase()}'s` : 'their';
    const sorry = medicalReady(value);
+   const confirmable = !value.confirmed && medicalReady({ ...value, confirmed: true });
 
    return (
       <div className="flex flex-col gap-4">
@@ -123,12 +140,60 @@ export default function MedicalBodyMap({ value, onChange }: { value: MedicalPick
                   })}
                </div>
                <div className="flex flex-wrap justify-center gap-2">
-                  {CHIPS.map((c) => (
-                     <button className={pill(value.parts.includes(c))} key={c} onClick={() => togglePart(c)} type="button">
-                        {c}
-                     </button>
-                  ))}
+                  {CHIPS.map((c) =>
+                     c === 'Inside the body' ? (
+                        <button className={pill(inside)} key={c} onClick={() => setInside((v) => !v)} type="button">
+                           🫀 Inside the body
+                        </button>
+                     ) : (
+                        <button className={pill(value.parts.includes(c))} key={c} onClick={() => togglePart(c)} type="button">
+                           {c}
+                        </button>
+                     )
+                  )}
                </div>
+               {inside ? (
+                  <div className="flex flex-col gap-2 rounded-[16px] bg-[#f8f5fd] px-2 py-3 dark:bg-[#1f182c]">
+                     <p className="text-center text-[15px] font-bold text-[#3b2f4a] dark:text-[#f5f0ff]">
+                        Which part inside? <span className="font-medium text-[#8a7f99]">Up to {MAX_ORGANS}</span>
+                     </p>
+                     <div className="relative mx-auto w-full max-w-[300px]">
+                        <img alt="" className="w-full select-none" draggable={false} src="/hippos/body/hippo-organs.webp" />
+                        {ORGAN_SPOTS.map((s) => {
+                           const on = value.parts.includes(s.organ);
+                           return (
+                              <button
+                                 aria-label={s.organ}
+                                 aria-pressed={on}
+                                 className={`absolute grid size-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 text-[13px] font-black transition ${
+                                    on
+                                       ? 'border-white bg-[#7661f9] text-white shadow-[0_0_0_5px_rgba(118,97,249,0.3)]'
+                                       : 'border-white/90 bg-white/10 text-transparent'
+                                 }`}
+                                 key={s.id}
+                                 onClick={() => togglePart(s.organ)}
+                                 style={{ left: `${s.x}%`, top: `${s.y}%` }}
+                                 type="button"
+                              >
+                                 ✓
+                              </button>
+                           );
+                        })}
+                     </div>
+                     <div className="flex flex-wrap justify-center gap-2">
+                        {ORGANS.map((o) => (
+                           <button className={pill(value.parts.includes(o))} key={o} onClick={() => togglePart(o)} type="button">
+                              {o}
+                           </button>
+                        ))}
+                     </div>
+                     {tooMany ? (
+                        <p className="text-center text-[13px] font-semibold text-[#c2410c]">
+                           Pick up to {MAX_ORGANS}: the main ones only 🙂
+                        </p>
+                     ) : null}
+                  </div>
+               ) : null}
                {value.parts.length ? (
                   <p className="text-center text-[14px] font-semibold text-[#7661f9] dark:text-[#b3a6ff]">{value.parts.join(' · ')}</p>
                ) : null}
@@ -247,6 +312,22 @@ export default function MedicalBodyMap({ value, onChange }: { value: MedicalPick
                   placeholder={value.conditions.length ? 'Like what the doctor said' : 'What is it? Like what the doctor said'}
                   value={value.detail}
                />
+            </div>
+         ) : null}
+
+         {confirmable ? (
+            <div className="flex flex-col gap-3 rounded-[16px] border-2 border-[#7661f9] bg-[#f4f1fb] px-4 py-4 dark:bg-[#2a2140]">
+               <p className="text-[15px] font-bold text-[#3b2f4a] dark:text-[#f5f0ff]">So you’re telling us:</p>
+               <p className="text-[16px] leading-[23px] text-[#3b2f4a] dark:text-[#f5f0ff]">{medicalSummary(value)}</p>
+               <p className="text-[15px] font-bold text-[#3b2f4a] dark:text-[#f5f0ff]">Is that right?</p>
+               <div className="flex gap-2">
+                  <button className={pill(false) + ' flex-1'} onClick={() => onChange({ ...value, confirmed: true })} type="button">
+                     ✅ Yes, that’s right
+                  </button>
+                  <button className={pill(false) + ' flex-1'} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} type="button">
+                     ✏️ Change it
+                  </button>
+               </div>
             </div>
          ) : null}
 

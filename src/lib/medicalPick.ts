@@ -20,6 +20,8 @@ export type MedicalPick = {
    futureAmount: string | null;
    payer: string | null;
    detail: string;
+   /** They read "So you're telling us…" back and said it's right. */
+   confirmed: boolean;
 };
 export type FutureCost = 'done' | 'once' | 'monthly' | 'unsure';
 export const EMPTY_MEDICAL: MedicalPick = {
@@ -33,7 +35,8 @@ export const EMPTY_MEDICAL: MedicalPick = {
    future: null,
    futureAmount: null,
    payer: null,
-   detail: ''
+   detail: '',
+   confirmed: false
 };
 
 export const MIN_DETAIL = 3;
@@ -48,16 +51,35 @@ export const AREA_PROBLEMS: Record<string, string[]> = {
    Back: ['Back pain', 'Spine / slipped disc'],
    Skin: ['Rash / allergy', 'Burn', 'Infection'],
    'Feelings / stress': ['Stress / anxiety', 'Depression / sadness', 'Can’t sleep'],
-   'Inside the body': [
-      'Diabetes / sugar',
-      'High blood / altapresyon',
-      'Cancer',
-      'Anemia / blood',
-      'Dengue / fever',
-      'Thyroid',
-      'Not sure yet'
-   ]
+   // Inside the body → the organ hippo. Each organ mixes cheap/one-off answers with the serious ones, because
+   // the organ alone doesn't decide; what's wrong and what's still to pay does.
+   Brain: ['Headaches / migraine', 'Seizures / epilepsy', 'Stroke', 'Mental health'],
+   Lungs: ['Asthma (inhaler)', 'Cough / bronchitis', 'TB', 'Pneumonia', 'Lung cancer'],
+   Heart: ['High blood / altapresyon', 'Heart problem (needs a procedure)', 'Had a heart attack'],
+   Liver: ['Hepatitis B (no treatment)', 'Fatty liver', 'Liver failure / cirrhosis', 'Liver cancer'],
+   Stomach: ['Gastritis / ulcer / acid', 'Food poisoning (once)', 'Stomach cancer'],
+   Kidneys: ['Kidney infection / UTI', 'Kidney stones', 'Kidney failure / dialysis'],
+   Intestines: ['Diarrhea (once)', 'Appendix', 'Hernia', 'Colon cancer'],
+   Bladder: ['UTI / infection', 'Prostate'],
+   'Blood / all over': ['Diabetes / sugar', 'Anemia', 'Dengue / fever', 'Thyroid', 'Cancer (other)', 'Not sure yet']
 };
+
+/** Organs on /hippos/body/hippo-organs.webp, in % of the picture (checked against the image). */
+export const ORGAN_SPOTS: Array<{ id: string; organ: string; x: number; y: number }> = [
+   { id: 'brain', organ: 'Brain', x: 51, y: 12 },
+   { id: 'lung_l', organ: 'Lungs', x: 41, y: 50 },
+   { id: 'lung_r', organ: 'Lungs', x: 61, y: 50 },
+   { id: 'heart', organ: 'Heart', x: 51.5, y: 54 },
+   { id: 'liver', organ: 'Liver', x: 38, y: 61.5 },
+   { id: 'stomach', organ: 'Stomach', x: 59, y: 60 },
+   { id: 'kidney_l', organ: 'Kidneys', x: 33, y: 68.5 },
+   { id: 'kidney_r', organ: 'Kidneys', x: 66, y: 67 },
+   { id: 'intestines', organ: 'Intestines', x: 50, y: 71 },
+   { id: 'bladder', organ: 'Bladder', x: 51, y: 78 }
+];
+export const ORGANS = ['Brain', 'Lungs', 'Heart', 'Liver', 'Stomach', 'Kidneys', 'Intestines', 'Bladder', 'Blood / all over'];
+/** At most this many organs: more than that usually means random tapping. */
+export const MAX_ORGANS = 3;
 
 export const SINCE = ['This week', 'This month', 'A few months', 'A year or more'];
 export const DOCTOR = ['Yes, regularly', 'Sometimes', 'Not yet', 'Can’t afford it'];
@@ -82,7 +104,8 @@ export const medicalReady = (m: MedicalPick) =>
    (m.conditions.length > 0 || m.detail.trim().length >= MIN_DETAIL) &&
    !!m.since &&
    !!m.future &&
-   (m.future === 'done' || m.future === 'unsure' || (!!m.futureAmount && !!m.payer));
+   (m.future === 'done' || m.future === 'unsure' || (!!m.futureAmount && !!m.payer)) &&
+   m.confirmed;
 
 /** The answer text the server grades. '' until it's complete (so Next stays off). Pure. */
 export const medicalAnswerText = (m: MedicalPick): string => {
@@ -106,4 +129,27 @@ export const medicalAnswerText = (m: MedicalPick): string => {
       m.detail.trim() || null
    ].filter(Boolean);
    return bits.join(' — ').slice(0, 600);
+};
+
+/** "So you're telling us…": the picks read back in plain words, before they confirm. Pure. */
+export const medicalSummary = (m: MedicalPick): string => {
+   const who = m.who === 'me' ? 'You' : `Your ${(m.relation ?? 'family member').toLowerCase()}`;
+   const what = m.conditions.length ? m.conditions.map((c) => c.split(': ').pop()).join(', ') : m.parts.join(', ');
+   const since = m.since
+      ? /week|month$/i.test(m.since) && !/few/i.test(m.since)
+         ? `since ${m.since.toLowerCase()}`
+         : `for ${m.since.toLowerCase()}`
+      : '';
+   const amount = (m.futureAmount ?? '').replace(/ a month$/i, '').toLowerCase();
+   const more =
+      m.future === 'done'
+         ? 'nothing more to pay'
+         : m.future === 'unsure'
+           ? 'not sure about more costs'
+           : m.future === 'monthly'
+             ? `${amount} every month, paid by ${(m.payer ?? '').toLowerCase()}`
+             : m.future === 'once'
+               ? `one more cost of ${amount}, paid by ${(m.payer ?? '').toLowerCase()}`
+               : '';
+   return [`${who} · ${what}`, since, more].filter(Boolean).join(' · ');
 };
