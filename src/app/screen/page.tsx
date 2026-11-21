@@ -12,6 +12,7 @@ import { fetchPrescreenPath, PRE_KYC_CONNECT_PATH } from '@/hooks/usePreKycGate'
 import HippoStory from '@/app/screen/HippoStory';
 import LivePhoto, { type PhotoAnswer, type PhotoPreview } from '@/app/screen/LivePhoto';
 import MedicalBodyMap from '@/app/screen/MedicalBodyMap';
+import { PickerHelp, usePickerWatch } from '@/app/screen/PickerHelp';
 import RecordReadyCard from '@/app/screen/RecordReadyCard';
 import { useLocalization } from '@/i18n/LocalizationProvider';
 import { trackPrescreenStep } from '@/lib/analytics/prescreenSteps';
@@ -556,7 +557,15 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    // The AI's tip on an uploaded document (once per question): they send a different one or go on anyway.
    // The AI's tip on a recorded answer (once per question): record again, or use this one.
    const [clipTip, setClipTip] = useState<Record<string, { hint: string; clip: Clip | null; answer: UploadedAnswer }>>(
-      preview?.coach ? { intro: { hint: 'It’s a bit hard to hear you — a quieter spot would really help.', clip: null, answer: { q: 'intro', video: null, audio: null, seconds: 0 } } } : {}
+      preview?.coach
+         ? {
+              intro: {
+                 hint: 'It’s a bit hard to hear you — a quieter spot would really help.',
+                 clip: null,
+                 answer: { q: 'intro', video: null, audio: null, seconds: 0 }
+              }
+           }
+         : {}
    );
    const [docTip, setDocTip] = useState<Record<string, { path: string; mime: string; hint: string }>>(
       preview?.coach
@@ -570,6 +579,11 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          : {}
    );
    const coeInput = useRef<HTMLInputElement>(null);
+   // Messenger on Android may block the photo picker: notice it and offer the camera / a skip (PickerHelp).
+   const proofPicker = usePickerWatch();
+   const coePicker = usePickerWatch();
+   const proofCamera = useRef<HTMLInputElement>(null);
+   const coeCamera = useRef<HTMLInputElement>(null);
    const { locale } = useLocalization();
 
    useEffect(() => {
@@ -791,6 +805,16 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       }
       setUploadedDocs(done);
       afterProof(done);
+   };
+
+   // No proof right now (photos blocked, nothing to send): they still finish; the card says "No proof of
+   // income sent" and they can send it later on Messenger (DOCS) — George, 2026-11-21: never block a borrower here.
+   const skipProof = () => {
+      if (preview) return questions[index]?.kind === 'medical' ? setStage('question') : setStage('done');
+      setError(null);
+      proofPicker.setBlocked(false);
+      setUploadedDocs([]);
+      afterProof([]);
    };
 
    const goBack = () => {
@@ -1293,6 +1317,21 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                            ref={coeInput}
                            type="file"
                         />
+                        <input
+                           accept="image/*"
+                           capture="environment"
+                           className="hidden"
+                           onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (coeCamera.current) coeCamera.current.value = '';
+                              if (!file) return;
+                              setError(null);
+                              coePicker.setBlocked(false);
+                              setCoeFile(file);
+                           }}
+                           ref={coeCamera}
+                           type="file"
+                        />
                         {coeFile ? (
                            <div className="flex items-center gap-2 rounded-[12px] bg-[#f4f1fb] px-3 py-2 text-[14px] text-[#3b2f4a] dark:bg-[#1b1526] dark:text-[#f5f0ff]">
                               <span>{coeFile.type === 'application/pdf' ? '📄' : '🖼️'}</span>
@@ -1330,7 +1369,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                               )}
                            </PrimaryButton>
                         ) : (
-                           <PrimaryButton onClick={() => coeInput.current?.click()}>
+                           <PrimaryButton onClick={() => coePicker.open(coeInput.current)}>
                               {docTip[question.id]
                                  ? 'Send a different one'
                                  : question.id === 'work_permit'
@@ -1338,6 +1377,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                                    : 'Add my COE'}
                            </PrimaryButton>
                         )}
+                        {coePicker.blocked && !coeFile && !busy ? <PickerHelp onCamera={() => coeCamera.current?.click()} /> : null}
                         {busy ? null : docTip[question.id] && !coeFile ? (
                            <GhostButton onClick={keepTippedDoc}>Continue with the one I sent</GhostButton>
                         ) : (
@@ -1437,6 +1477,18 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                         />
                      </div>
                   ) : null}
+                  <input
+                     accept="image/*"
+                     capture="environment"
+                     className="hidden"
+                     onChange={(e) => {
+                        proofPicker.setBlocked(false);
+                        addDocs(e.target.files);
+                        if (proofCamera.current) proofCamera.current.value = '';
+                     }}
+                     ref={proofCamera}
+                     type="file"
+                  />
                   {docs.length ? (
                      <>
                         <PrimaryButton disabled={busy} onClick={() => void sendProof()}>
@@ -1452,7 +1504,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                            )}
                         </PrimaryButton>
                         {busy || docs.length >= MAX_DOCS ? null : (
-                           <GhostButton onClick={() => docInput.current?.click()}>Add more</GhostButton>
+                           <GhostButton onClick={() => proofPicker.open(docInput.current)}>Add more</GhostButton>
                         )}
                      </>
                   ) : uploadedDocs?.length ? (
@@ -1463,7 +1515,27 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                         <PrimaryButton onClick={() => void sendProof()}>Next</PrimaryButton>
                      </>
                   ) : (
-                     <PrimaryButton onClick={() => docInput.current?.click()}>Add my proof</PrimaryButton>
+                     <>
+                        <PrimaryButton onClick={() => proofPicker.open(docInput.current)}>Add my proof</PrimaryButton>
+                        <p className="-mt-1 text-center text-[13px] text-[#8a7f99] dark:text-[#a89bb8]">
+                           ⚡ Sending it now usually gets you a faster answer.
+                        </p>
+                        {proofPicker.blocked ? (
+                           <PickerHelp
+                              onCamera={() => proofCamera.current?.click()}
+                              onSkip={skipProof}
+                              skipLabel="Skip for now — send it later on Messenger"
+                           />
+                        ) : (
+                           <button
+                              className="text-center text-[14px] font-semibold text-[#7661f9] underline"
+                              onClick={() => proofPicker.setBlocked(true)}
+                              type="button"
+                           >
+                              Can’t add a file right now?
+                           </button>
+                        )}
+                     </>
                   )}
                   {busy ? null : backButton}
                </div>
