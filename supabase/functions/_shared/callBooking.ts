@@ -6,6 +6,7 @@
 import { ATTENDANCE_RESET, meetingIdFromJoinUrl } from './attendance.ts';
 import { adminUserUrl, OPEN_IN_ADMIN_TEXT } from './adminCards.ts';
 import { postDiscord } from './discord.ts';
+import { sendTelegramMessage } from './telegram.ts';
 import { bookingBotAnswers, loadBookingBotMode } from './bookingBotSwitch.ts';
 import { formatCallTime, formatCallTimeForTeam, newConfirmToken, sendBookedMessenger, sendMovedSoonerMessenger, sendTextReminderAsk } from './videoCall.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
@@ -131,16 +132,12 @@ const notifyTeamBooking = async (
    const tgToken = Deno.env.get('TELEGRAM_BOT_TOKEN') || Deno.env.get('TELEGRAM_API_TOKEN');
    if (tgToken && tgChat) {
       try {
-         await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            // 🔄 Change time: opens the booking's Cal.com reschedule page via calcom-webhook (callReschedule.ts).
-            // 🧪 Test account?: one tap (+ confirm) marks a team test booking (testAccount.ts).
-            body: JSON.stringify({
-               chat_id: tgChat,
-               text,
-               ...(borrower ? { reply_markup: { inline_keyboard: [[await changeTimeLinkButton(borrower.id), { text: '💬 Open Page inbox', url: PAGE_INBOX_URL }], ...testAccountRow(borrower.id, borrower.isTest)] } } : {})
-            })
+         // 🔄 Change time: opens the booking's Cal.com reschedule page via calcom-webhook (callReschedule.ts).
+         // 🧪 Test account?: one tap (+ confirm) marks a team test booking (testAccount.ts).
+         // aboutUserIds: the text names them by name + email only, so the Facebook line needs the id.
+         await sendTelegramMessage(tgChat, text, {
+            ...(borrower ? { inlineKeyboard: [[await changeTimeLinkButton(borrower.id), { text: '💬 Open Page inbox', url: PAGE_INBOX_URL }], ...testAccountRow(borrower.id, borrower.isTest)] } : {}),
+            ...(borrower ? { aboutUserIds: [borrower.id] } : {})
          });
       } catch (err) {
          console.error('calcom-round-robin: telegram booking notify failed', err);

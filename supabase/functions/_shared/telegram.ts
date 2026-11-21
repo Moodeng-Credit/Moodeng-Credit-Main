@@ -14,9 +14,16 @@ type TelegramApiResult<T> = {
    description?: string;
 };
 
+import { withTeamFacebook } from './teamFacebook.ts';
+
 const getTelegramToken = () => Deno.env.get('TELEGRAM_API_TOKEN') ?? Deno.env.get('TELEGRAM_BOT_TOKEN');
 
-export const callTelegramApi = async <T = unknown>(method: string, payload: Record<string, unknown>) => {
+// aboutUserIds: the borrower(s) a team post is about, when the text has no @username or email to find
+// them by — gets them the Facebook line (teamFacebook.ts) all the same.
+export const callTelegramApi = async <T = unknown>(method: string, payload: Record<string, unknown>, options: { aboutUserIds?: string[] } = {}) => {
+   if ((method === 'sendMessage' || method === 'editMessageText') && typeof payload.text === 'string') {
+      payload = { ...payload, text: await withTeamFacebook(payload.chat_id, payload.text, options.aboutUserIds) };
+   }
    const telegramApiUrl = Deno.env.get('TELEGRAM_API_URL');
    const telegramToken = getTelegramToken();
    const url =
@@ -47,7 +54,7 @@ export const callTelegramApi = async <T = unknown>(method: string, payload: Reco
 export const sendTelegramMessage = async (
    chatId: number | string,
    text: string,
-   options: { inlineKeyboard?: TelegramInlineKeyboard; messageThreadId?: number; replyToMessageId?: number } = {}
+   options: { inlineKeyboard?: TelegramInlineKeyboard; messageThreadId?: number; replyToMessageId?: number; aboutUserIds?: string[] } = {}
 ) => {
    return callTelegramApi('sendMessage', {
       chat_id: chatId,
@@ -57,7 +64,7 @@ export const sendTelegramMessage = async (
       // allow_sending_without_reply: still post if the card was deleted.
       ...(options.replyToMessageId ? { reply_to_message_id: options.replyToMessageId, allow_sending_without_reply: true } : {}),
       ...(options.inlineKeyboard ? { reply_markup: { inline_keyboard: options.inlineKeyboard } } : {})
-   });
+   }, { aboutUserIds: options.aboutUserIds });
 };
 
 export type TelegramUpload = { name: string; mime: string; bytes: Uint8Array<ArrayBuffer> };
