@@ -1017,7 +1017,14 @@ export const ghostUser = async (svc: SupabaseClient, userId: string, by: string)
 export const unghostUser = async (svc: SupabaseClient, userId: string, by: string): Promise<{ ok: boolean; summary: string }> => {
    const family = await ghostFamily(svc, userId);
    if (!family.length) return { ok: false, summary: 'Borrower not found.' };
-   await svc.from('users').update({ ghosted_at: null, ghosted_by: null }).in('id', family.map((u) => u.id));
+   // blocked_for_good_at too: their WhatsApp number stops blocking new accounts (🚫 Block for good).
+   await svc
+      .from('users')
+      .update({ ghosted_at: null, ghosted_by: null, blocked_for_good_at: null })
+      .in(
+         'id',
+         family.map((u) => u.id)
+      );
    const psids = [...new Set(family.map((u) => u.messenger_psid).filter((x): x is string => !!x))];
    const notes: string[] = [];
    for (const psid of psids) {
