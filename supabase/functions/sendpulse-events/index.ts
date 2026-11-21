@@ -9,6 +9,7 @@ import { handleCashOutMessage } from '../_shared/messengerCashOutHelp.ts';
 import { handleBookingMessage, handleKeepSpotReply, handleReminderNumber } from '../_shared/messengerBookingBot.ts';
 import { logMessengerContact, rememberMessengerContact, saveFacebookName } from '../_shared/messengerContactLog.ts';
 import { handleIncomeDocMessage } from '../_shared/messengerIncomeDocReply.ts';
+import { intakeMessengerPhotos, photoIntakeReason } from '../_shared/messengerPhotoIntake.ts';
 import { handlePreScreeningAnswer } from '../_shared/preScreeningAsk.ts';
 import { handleRewardMessage } from '../_shared/messengerRewardReply.ts';
 import { CONNECTED_BY_TIMING_TEXT } from '../_shared/messengerStatusFollowUp.ts';
@@ -346,6 +347,18 @@ serve(async (req) => {
          // last week before the due date, no fast borrow-repay loops (flags possible limit-gaming to the team).
          // Answers, then still falls through to the ticket below.
          if (typed) await handleLoanTimingMessage(svc, known!.userId, contactId, typed);
+         // Photos from someone we're expecting proof of income from (couldn't upload in Messenger's browser):
+         // straight into an income document + its checks (messengerPhotoIntake.ts), not a support ticket.
+         if (known?.userId && event.imageUrls.length) {
+            const reason = await photoIntakeReason(svc, known.userId).catch(() => null);
+            const taken =
+               reason &&
+               (await intakeMessengerPhotos(svc, known.userId, contactId, event.imageUrls, reason).catch((err) => {
+                  console.error('sendpulse-events: photo intake failed', err instanceof Error ? err.message : err);
+                  return false;
+               }));
+            if (taken) continue;
+         }
          if (isSupportMessage(event)) {
             await openMessengerTicket(svc, {
                contactId,

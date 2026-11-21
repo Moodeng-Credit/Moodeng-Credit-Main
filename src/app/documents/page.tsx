@@ -488,7 +488,7 @@ export default function DocumentsPage({
                      }}
                      type="file"
                   />
-                  {picker.blocked && !good.length ? <PickerHelp onCamera={() => cameraRef.current?.click()} /> : null}
+                  {picker.blocked && !good.length ? <PickerHelp onCamera={() => cameraRef.current?.click()} messenger /> : null}
 
                   {picked.some((p) => p.warn) ? (
                      <p className="text-[14px] font-semibold leading-[19px] text-[#8a5a00] dark:text-[#f5c542]">

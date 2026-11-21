@@ -12,7 +12,7 @@ import { fetchPrescreenPath, PRE_KYC_CONNECT_PATH } from '@/hooks/usePreKycGate'
 import HippoStory from '@/app/screen/HippoStory';
 import LivePhoto, { type PhotoAnswer, type PhotoPreview } from '@/app/screen/LivePhoto';
 import MedicalBodyMap from '@/app/screen/MedicalBodyMap';
-import { PickerHelp, usePickerWatch } from '@/app/screen/PickerHelp';
+import { expectMessengerPhotos, PickerHelp, usePickerWatch } from '@/app/screen/PickerHelp';
 import RecordReadyCard from '@/app/screen/RecordReadyCard';
 import { useLocalization } from '@/i18n/LocalizationProvider';
 import { trackPrescreenStep } from '@/lib/analytics/prescreenSteps';
@@ -1523,8 +1523,12 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                         {proofPicker.blocked ? (
                            <PickerHelp
                               onCamera={() => proofCamera.current?.click()}
-                              onSkip={skipProof}
-                              skipLabel="Skip for now — send it later on Messenger"
+                              messenger
+                              onSkip={() => {
+                                 void expectMessengerPhotos();
+                                 skipProof();
+                              }}
+                              skipLabel="Continue — I’ll send it on Messenger"
                            />
                         ) : (
                            <button

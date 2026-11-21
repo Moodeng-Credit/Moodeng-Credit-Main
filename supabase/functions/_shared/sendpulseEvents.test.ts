@@ -26,6 +26,7 @@ Deno.test('a first-time "Get Started" without a code', () => {
          fromPerson: true,
          text: null,
          hasAttachment: false,
+         imageUrls: [],
          isButtonTap: false,
          isPostback: false,
          payload: null
@@ -98,6 +99,27 @@ Deno.test('what the person wrote: platform text first, then last_message; attach
    const photo = { ...subscribe, title: 'incoming_message', contact: { ...subscribe.contact, last_message: null }, info: { message: { channel_data: { message: { attachments: [{ type: 'image' }] } } } } };
    const [b] = parseSendPulseEvents([photo], NOW);
    assertEquals([b.text, b.hasAttachment], [null, true]);
+   assertEquals(b.imageUrls, []); // no URL in that one
+
+   const photos = {
+      ...subscribe,
+      title: 'incoming_message',
+      contact: { ...subscribe.contact, last_message: null },
+      info: {
+         message: {
+            channel_data: {
+               message: {
+                  attachments: [
+                     { type: 'image', payload: { url: 'https://scontent.xx.fbcdn.net/v/a.jpg?x=1' } },
+                     { type: 'image', payload: { url: 'https://scontent.xx.fbcdn.net/v/b.jpg?x=2' } },
+                     { type: 'audio', payload: { url: 'https://cdn.fbsbx.com/v/c.mp4' } }
+                  ]
+               }
+            }
+         }
+      }
+   };
+   assertEquals(parseSendPulseEvents([photos], NOW)[0].imageUrls, ['https://scontent.xx.fbcdn.net/v/a.jpg?x=1', 'https://scontent.xx.fbcdn.net/v/b.jpg?x=2']);
 
    const tap = { ...subscribe, title: 'incoming_message', info: { message: { channel_data: { postback: { payload: 'GET_STARTED' } } } } };
    assertEquals(parseSendPulseEvents([tap], NOW)[0].isButtonTap, true);
