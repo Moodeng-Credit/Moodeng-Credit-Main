@@ -110,6 +110,8 @@ const minFor = (q: ScreenQuestion) => Math.max(1, q.min ?? MIN_TEXT);
 const MIN_TYPED_INSTEAD = 20;
 // Once the camera wouldn't open on this page, the next questions offer typing straight away.
 let cameraBlockedHere = false;
+// The camera permission prompt can sit unanswered (or never show): don't leave a spinner forever.
+const CAMERA_START_TIMEOUT_MS = 10_000;
 const MAX_TEXT = 600;
 
 const MAX_SECONDS = 45;
@@ -253,8 +255,13 @@ function AnswerRecorder({
    // The phone's own camera didn't open either (Messenger blocks it for some): never a dead end.
    const cameraApp = usePickerWatch();
    const [typing, setTyping] = useState(false);
-   const canType = cameraApp.blocked || cameraBlockedHere;
+   // The in-page camera never started (prompt ignored or stuck): offer the phone's camera or typing.
+   const [stalled, setStalled] = useState(false);
+   const canType = cameraApp.blocked || cameraBlockedHere || stalled;
    if (cameraApp.blocked) cameraBlockedHere = true;
+   useEffect(() => {
+      if (cameraApp.blocked) trackPrescreenStep('record_problem', { reason: 'picker_blocked' });
+   }, [cameraApp.blocked]);
    const [typedText, setTypedText] = useState('');
    const liveRef = useRef<HTMLVideoElement>(null);
    const fileRef = useRef<HTMLInputElement>(null);
@@ -290,17 +297,37 @@ function AnswerRecorder({
       const ctx = new Ctor();
       void ctx.resume().catch(() => undefined);
       let stream: MediaStream;
+      let timedOut = false;
+      const stallTimer = window.setTimeout(() => {
+         timedOut = true;
+         void ctx.close().catch(() => undefined);
+         trackPrescreenStep('record_problem', { reason: 'timeout' });
+         setUseCameraApp(true);
+         setStalled(true);
+         setState('idle');
+         setError('Your camera didn’t start. Use your phone’s camera, or type your answer.');
+      }, CAMERA_START_TIMEOUT_MS);
       try {
          stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: 'user', width: { ideal: 480 }, height: { ideal: 640 } },
             audio: { echoCancellation: true, noiseSuppression: true }
          });
-      } catch {
+      } catch (err) {
+         window.clearTimeout(stallTimer);
+         if (timedOut) return;
          // Not allowed here (or no camera): the phone's own camera still works.
+         trackPrescreenStep('record_problem', { reason: 'denied', error: err instanceof Error ? err.name : 'unknown' });
          void ctx.close().catch(() => undefined);
          setUseCameraApp(true);
          setState('idle');
          setError('Tap Record again to open your camera.');
+         return;
+      }
+      window.clearTimeout(stallTimer);
+      if (timedOut) {
+         // Allowed after we gave up: free the camera; the next tap records here straight away.
+         stream.getTracks().forEach((t) => t.stop());
+         setUseCameraApp(false);
          return;
       }
       if (liveRef.current) {
@@ -464,7 +491,7 @@ function AnswerRecorder({
 
          {!typing && (state === 'idle' || state === 'starting') ? (
             <PrimaryButton disabled={state === 'starting'} onClick={() => void start()}>
-               Record my answer
+               {stalled && useCameraApp ? 'Use my phone’s camera' : 'Record my answer'}
             </PrimaryButton>
          ) : null}
          {/* Only once even the phone's own camera didn't open: a video answer stays the normal way. */}
