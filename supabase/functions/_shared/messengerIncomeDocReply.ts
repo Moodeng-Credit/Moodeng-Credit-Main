@@ -64,7 +64,11 @@ export const questionLine = (q: Question, lang: Lang) => {
    const text = lang !== 'en' && q.local ? q.local : q.en;
    const photo =
       q.kind === 'photo'
-         ? { en: `Please send it here: ${DOCUMENTS_URL}`, fil: `Paki-send dito: ${DOCUMENTS_URL}`, id: `Kirim di sini: ${DOCUMENTS_URL}` }[lang]
+         ? {
+              en: `Just send the photo here in this chat, or at ${DOCUMENTS_URL}`,
+              fil: `I-send lang ang photo dito sa chat, o sa ${DOCUMENTS_URL}`,
+              id: `Kirim fotonya di chat ini saja, atau di ${DOCUMENTS_URL}`
+           }[lang]
          : null;
    if (photo) return `${text}\n(${photo})`;
    const files =
