@@ -21,14 +21,15 @@ import {
    ACCEPTED,
    answerIncomeDocQuestion,
    answerIncomeDocQuestionWithPhoto,
-   PHOTO_ACCEPT,
    fetchIncomeDocStatus,
    type IncomeDocQuestion,
    type IncomeDocStatus,
    MAX_BYTES,
    MAX_FILES,
+   PHOTO_ACCEPT,
    uploadIncomeDocuments
 } from '@/app/documents/incomeDocUpload';
+import HippoStory from '@/app/screen/HippoStory';
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { type IncomeDocStep, stepFor } from '@/lib/incomeDocSteps';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, PrimaryButton } from '@/views/dashboard/components/connectKit';
@@ -519,6 +520,11 @@ export default function DocumentsPage({
             {phase === 'sending' ? (
                <div className="flex flex-col gap-4 rounded-[20px] bg-white px-5 py-5 dark:bg-dv2-card">
                   <ConnectHero image={CONNECT_HIPPOS.waiting} title="Uploading…" subtitle="Keep this screen open for a moment." />
+                  <HippoStory
+                     caption={`Uploading ${Math.min(sentCount + 1, Math.max(1, sendingNames.length))} of ${Math.max(1, sendingNames.length)}…`}
+                     kind="doc"
+                     tone="light"
+                  />
                   <div className="h-3 w-full overflow-hidden rounded-full bg-[#ece6f6] dark:bg-[#2a2235]">
                      <div
                         className="h-full rounded-full bg-[#6b55f7] transition-[width] duration-300"
@@ -544,6 +550,7 @@ export default function DocumentsPage({
                            : 'This takes about a minute. You can leave this page.'
                      }
                   />
+                  <HippoStory done={checkingStep >= 3} kind="doc" tone="light" />
                   <ul className="flex flex-col gap-3 rounded-[16px] border-2 border-[#e2dcee] px-4 py-4 dark:border-[#3a2d4f]">
                      <StepRow state="done" label="Uploaded" />
                      <StepRow state={checkingStep >= 2 ? 'done' : 'active'} label="Reading your document" />
@@ -585,7 +592,11 @@ export default function DocumentsPage({
                            onClick={() => answerPhotoRef.current?.click()}
                            type="button"
                         >
-                           {answerPhoto ? <Check className="h-5 w-5" aria-hidden="true" /> : <Plus className="h-5 w-5" aria-hidden="true" />}
+                           {answerPhoto ? (
+                              <Check className="h-5 w-5" aria-hidden="true" />
+                           ) : (
+                              <Plus className="h-5 w-5" aria-hidden="true" />
+                           )}
                            <span className="truncate">{answerPhoto ? answerPhoto.name : 'Add screenshot'}</span>
                         </button>
                      </>
@@ -608,15 +619,15 @@ export default function DocumentsPage({
                      {currentQuestion.kind === 'photo' ? 'Send screenshot' : 'Send answer'}
                   </GoldButton>
                   {currentQuestion.kind === 'photo' ? null : (
-                  <a
-                     className="text-center text-[14px] font-semibold text-[#7b6b8c] underline dark:text-[#b9abcc]"
-                     href={facebookHref()}
-                     onClick={() => void navigator.clipboard?.writeText(DOCS_WORD).catch(() => undefined)}
-                     rel="noreferrer"
-                     target="_blank"
-                  >
-                     {`Or answer on Messenger: send “${DOCS_WORD}”`}
-                  </a>
+                     <a
+                        className="text-center text-[14px] font-semibold text-[#7b6b8c] underline dark:text-[#b9abcc]"
+                        href={facebookHref()}
+                        onClick={() => void navigator.clipboard?.writeText(DOCS_WORD).catch(() => undefined)}
+                        rel="noreferrer"
+                        target="_blank"
+                     >
+                        {`Or answer on Messenger: send “${DOCS_WORD}”`}
+                     </a>
                   )}
                   {currentQuestion.kind === 'file' ? (
                      <button
@@ -773,19 +784,29 @@ export function DocumentsPreview() {
                ? {
                     questions: [
                        ...(params.get('q') === 'payslip'
-                          ? [{ id: 'p1', q: 'Did you edit or enhance this photo in any app before sending it to us?', kind: 'text' as const }]
+                          ? [
+                               {
+                                  id: 'p1',
+                                  q: 'Did you edit or enhance this photo in any app before sending it to us?',
+                                  kind: 'text' as const
+                               }
+                            ]
                           : []),
-                       { id: 'p2', q: 'Please send a screenshot of the chat or email where you got this payslip, with the date showing.', kind: 'photo' as const }
+                       {
+                          id: 'p2',
+                          q: 'Please send a screenshot of the chat or email where you got this payslip, with the date showing.',
+                          kind: 'photo' as const
+                       }
                     ]
                  }
                : params.get('q')
-               ? {
-                    questions: [
-                       { id: 'q1', q: 'What was the Rp 2,100,000 you got on Nov 14 for?', kind: 'text' as const },
-                       { id: 'q2', q: 'Can you add 2 more months of your SeaBank history?', kind: 'file' as const }
-                    ]
-                 }
-               : {})
+                 ? {
+                      questions: [
+                         { id: 'q1', q: 'What was the Rp 2,100,000 you got on Nov 14 for?', kind: 'text' as const },
+                         { id: 'q2', q: 'Can you add 2 more months of your SeaBank history?', kind: 'file' as const }
+                      ]
+                   }
+                 : {})
          }}
       />
    );
