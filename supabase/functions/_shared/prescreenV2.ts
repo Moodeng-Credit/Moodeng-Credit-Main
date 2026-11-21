@@ -819,19 +819,28 @@ export type MedicalRead = {
    chronic: boolean | null;
    size: 'small' | 'medium' | 'large' | null;
    severity: MedicalSeverity;
+   /** Costs still to come (what decides a loan; a bill already paid is only a pay gap). */
+   future_cost?: 'none' | 'once' | 'monthly' | 'unknown' | null;
+   /** Rough pesos a month still to pay (a one-off within the next month counts in full). */
+   future_php_month?: number | null;
+   /** future_php_month ÷ their monthly money in from the proof of income, 0-1+, when known. */
+   income_share?: number | null;
    note: string;
    /** No AI read came back: made from their answer alone (always a red flag when they said something). */
    ungraded?: boolean;
 };
 
-export const MEDICAL_PROMPT = `For the "medical" question (Do you or your family have a medical problem?) they typed "no" or what it is, and maybe picked what the loan is for about it ("choice": none = the loan is not for it, paid = a bill already paid (a pay gap), future = a cost coming up, ongoing = a cost every month). Do NOT score it 0-10. Instead fill "medical":
-{"has_problem": bool, "who": "self" | "<relation, e.g. mother>" | null, "condition": "<few words>" | null, "loan_for": "none" | "paid" | "future" | "ongoing" | null, "chronic": bool | null, "size": "small" | "medium" | "large" | null, "severity": "none" | "low" | "medium" | "high", "note": "<one short plain-English sentence for the team>"}
-Severity is about how likely medical costs stop them repaying:
-- high: any of the loan goes to a future or ongoing medical cost; OR a chronic or serious illness in the household (dialysis, cancer, stroke, diabetes with complications, heart disease, a long hospital stay) with costs still coming; OR large bills (hospital, surgery). Also high when the other answers (like "what is this loan for") say the money is for medicine, a hospital or a sick relative.
-- medium: an ongoing condition with small regular costs, but the loan is not for it; or a recent big bill that is already paid.
-- low: minor or past (a cold, a healed injury), already paid, and the loan is not for it.
+export const MEDICAL_PROMPT = `For the "medical" question (Do you or your family have a medical problem?) they answered "no", or tapped who, where, what it is, since when, doctor, monthly medicine and "more costs" (none/done, one more cost, every month, not sure) with an amount and who pays, plus maybe a few words; and picked what the loan is for about it ("choice": none = the loan is not for it, paid = a bill already paid (a pay gap), future = a cost coming up, ongoing = a cost every month). Do NOT score it 0-10. Instead fill "medical":
+{"has_problem": bool, "who": "self" | "<relation, e.g. mother>" | null, "condition": "<few words>" | null, "loan_for": "none" | "paid" | "future" | "ongoing" | null, "chronic": bool | null, "size": "small" | "medium" | "large" | null, "future_cost": "none" | "once" | "monthly" | "unknown", "future_php_month": <number or null>, "income_share": <number or null>, "severity": "none" | "low" | "medium" | "high", "note": "<one short plain-English sentence for the team: what it is, what is still to pay, and how that compares with their income>"}
+What decides it is COSTS STILL TO COME, not whether someone is sick. A bill that is already paid only leaves a pay gap this month, and the team approves those (past calls: "children were hospitalized last month, short this month" → approved; "father has stage-5 kidney disease, hospital twice a month" → rejected).
+- future_php_month: your best rough estimate in pesos per month of what is still to pay for this, using their amount if they gave one, else typical Philippine costs after PhilHealth/free government programs (TB treatment at DOTS centers is free; maintenance pills for high blood are cheap; dialysis, chemo and stroke rehab are expensive). A one-off cost due within about a month counts in full. 0 when nothing is left to pay. If someone else (other family, PhilHealth, a free program) pays, count only what THEY pay.
+- income_share: future_php_month divided by their monthly money in from income_proof (convert to pesos if needed); null when there is no readable income.
+Severity is how likely costs STILL TO COME stop them repaying:
+- high: the loan is for a cost coming up or an ongoing cost; OR costs still to come are about 30% or more of their income; OR a serious long-term condition that keeps costing (dialysis, cancer treatment, stroke care, heart disease needing procedures, TB still under paid treatment); OR they can't afford the doctor and costs are still coming.
+- medium: some costs still to come but small (under about 30% of income) or the amount is unknown; or "not sure yet".
+- low: nothing left to pay — it's done or already paid and now only a pay gap; or something minor.
 - none: they said no and nothing else hints at a medical problem.
-Be honest about uncertainty; when they give few details but it sounds chronic or costly, lean higher.`;
+Be honest about uncertainty; when costs are still coming but they give no amount, lean higher.`;
 
 const SEVERITY_RANK: Record<MedicalSeverity, number> = { none: 0, low: 1, medium: 2, high: 3 };
 const SEVERITIES = new Set(Object.keys(SEVERITY_RANK));
@@ -852,6 +861,12 @@ export const toMedical = (raw: unknown): MedicalRead | null => {
       chronic: typeof r.chronic === 'boolean' ? r.chronic : null,
       size: size as MedicalRead['size'],
       severity,
+      future_cost:
+         typeof r.future_cost === 'string' && ['none', 'once', 'monthly', 'unknown'].includes(r.future_cost)
+            ? (r.future_cost as MedicalRead['future_cost'])
+            : null,
+      future_php_month: typeof r.future_php_month === 'number' && r.future_php_month >= 0 ? Math.round(r.future_php_month) : null,
+      income_share: typeof r.income_share === 'number' && r.income_share >= 0 ? Math.round(r.income_share * 100) / 100 : null,
       note: s(r.note, 240) ?? ''
    };
 };
@@ -900,7 +915,13 @@ export const medicalLine = (m: MedicalRead | null | undefined, said: string | nu
       said ? `“${said.slice(0, 120)}${said.length > 120 ? '…' : ''}”` : m.condition,
       m.loan_for ? LOAN_FOR_LABEL[m.loan_for] : null,
       m.chronic ? 'chronic' : null,
-      m.size ? `${m.size} cost` : null
+      m.future_cost === 'none'
+         ? 'nothing left to pay'
+         : m.future_php_month != null
+           ? `still to pay ≈ ₱${m.future_php_month.toLocaleString('en-US')}/mo${m.income_share != null ? ` (${Math.round(m.income_share * 100)}% of income)` : ''}`
+           : m.size
+             ? `${m.size} cost`
+             : null
    ].filter(Boolean);
    return `🩺 Medical: ${MEDICAL_LABEL[m.severity]} · ${bits.join(' · ')}${m.note ? `\n   ${m.note}` : ''}`;
 };
