@@ -4,7 +4,7 @@ import { Home, Lightbulb, Shirt, Video, Wifi } from 'lucide-react';
 // screen (ConnectStep). Calls kept failing on the basics: borrowers outside on the street where we
 // couldn't hear them, dark rooms, no Zoom installed. Few words per row, one picture.
 
-export const CALL_READY_IMAGE = '/hippos/connect/call.png';
+export const CALL_READY_IMAGE = '/hippos/connect/call-ready.webp';
 
 export const CALL_READY_ITEMS = [
    { icon: Home, title: 'Be inside', hint: 'A quiet room, not the street' },
@@ -42,7 +42,7 @@ export function CallReadyCard() {
    return (
       <div className="flex flex-col gap-3 rounded-[18px] border-2 border-[#e2dcee] bg-white px-4 py-4 dark:border-[#40354f] dark:bg-[#1b1526]">
          <img
-            alt="Moodeng on a video call"
+            alt="Moodeng on a video call, inside a bright room"
             className="mx-auto h-[190px] w-auto rounded-[14px] object-contain"
             decoding="async"
             src={CALL_READY_IMAGE}
