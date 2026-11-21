@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { useQueryClient } from '@tanstack/react-query';
 import posthog from 'posthog-js';
@@ -206,6 +206,8 @@ const canShowPreviewRoutes = () => {
 export default function App() {
    const location = useLocation();
    const isPosthogEnabled = import.meta.env.PROD && Boolean(import.meta.env.VITE_PUBLIC_POSTHOG_KEY);
+   // The PostHog person we identified, so reset() runs only on a real sign-out (see below).
+   const posthogUserRef = useRef<string | null>(null);
    usePostLoginReturn();
    usePendingInviteRedemption();
    const { user, username, isAuthChecked } = useSelector((state: RootState) => state.auth);
@@ -313,10 +315,17 @@ export default function App() {
             posthog.setPersonProperties(personProperties);
          }
          identifyClarity(user.id);
+         posthogUserRef.current = user.id;
          return;
       }
 
-      posthog.reset();
+      // Only when someone who was signed in signs out. On every page load the user is briefly null while
+      // the session loads; resetting then gave each visit a fresh anonymous id, so one visit showed up in
+      // PostHog as 2–3 people (Nov 2026: 6 of 18 "people" on /screen were such duplicates).
+      if (posthogUserRef.current) {
+         posthog.reset();
+         posthogUserRef.current = null;
+      }
    }, [isPosthogEnabled, user?.email, user?.id, user?.username, username]);
 
    // Affiliates (signed up from a /partner link) never borrow or lend: their home is /affiliate.
