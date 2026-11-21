@@ -8,7 +8,10 @@
 //
 // Only when we are expecting proof from them — otherwise a selfie or a meme would become a "payslip":
 //   opted_in           they tapped "Send it in Messenger" (users.messenger_photo_intake_until, 2 days)
+//   prescreen_open     they're in the middle of pre-screening (started in the last 24 hours), no proof yet
 //   prescreen_skipped  their pre-screening went in without proof (last 14 days) and nothing came since
+//   prescreen_recent   their pre-screening went in WITH proof in the last 48 hours: a photo now is more proof
+//                      (George, 2026-11-21: "during and after … it is clear that would be for that purpose")
 //   docs               they typed DOCS in the last 24 hours
 //   payslip_screenshot their latest proof of income has the payslip question "screenshot of the chat where you
 //                      got it" (p2) still open: the photo becomes that ANSWER, not a new document, and the
@@ -23,7 +26,7 @@ import { sendTelegramMessage } from './telegram.ts';
 type Svc = any;
 declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void } | undefined;
 
-export type IntakeReason = 'opted_in' | 'prescreen_skipped' | 'docs' | 'payslip_screenshot';
+export type IntakeReason = 'opted_in' | 'prescreen_open' | 'prescreen_skipped' | 'prescreen_recent' | 'docs' | 'payslip_screenshot';
 
 const DAY = 86_400_000;
 const NOTE = 'Sent on Messenger';
@@ -77,6 +80,19 @@ export const screenshotOpen = (doc: DocQs) =>
    (doc.questions ?? []).some((q) => q.id === SCREENSHOT_QID && q.kind === 'photo') &&
    !(doc.answers ?? []).some((a) => a.id === SCREENSHOT_QID);
 
+/** Their latest pre-screening (last 14 days) → why a photo now is proof, or null. Pure. */
+export const prescreenReason = (
+   ps: { created_at: string; sent_at?: string | null; income_files: unknown; status: string },
+   docsSince: number,
+   now: number
+): IntakeReason | null => {
+   const hadProof = Array.isArray(ps.income_files) && ps.income_files.length > 0;
+   if (ps.status === 'open') return now - Date.parse(ps.created_at) < DAY && !docsSince ? 'prescreen_open' : null;
+   if (!hadProof) return docsSince ? null : 'prescreen_skipped';
+   const sentAt = Date.parse(ps.sent_at ?? ps.created_at);
+   return now - sentAt < 2 * DAY ? 'prescreen_recent' : null;
+};
+
 /** Are we expecting proof from them right now? Pure parts are in the queries' order. */
 export async function photoIntakeReason(svc: Svc, userId: string, now = Date.now()): Promise<IntakeReason | null> {
    const { data: user } = await svc.from('users').select('messenger_photo_intake_until, user_role').eq('id', userId).maybeSingle();
@@ -87,20 +103,21 @@ export async function photoIntakeReason(svc: Svc, userId: string, now = Date.now
 
    const { data: ps } = await svc
       .from('pre_screenings')
-      .select('created_at, income_files, status')
+      .select('created_at, sent_at, income_files, status')
       .eq('user_id', userId)
-      .in('status', ['sent', 'graded', 'failed'])
+      .in('status', ['open', 'sent', 'graded', 'failed'])
       .gte('created_at', new Date(now - 14 * DAY).toISOString())
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
-   if (ps && !(Array.isArray(ps.income_files) && ps.income_files.length)) {
+   if (ps) {
       const { count } = await svc
          .from('income_documents')
          .select('id', { count: 'exact', head: true })
          .eq('user_id', userId)
          .gte('created_at', ps.created_at);
-      if (!count) return 'prescreen_skipped';
+      const reason = prescreenReason(ps, count ?? 0, now);
+      if (reason) return reason;
    }
 
    const { data: events } = await svc
@@ -232,8 +249,8 @@ export async function intakeMessengerPhotos(
    const sent = await sendMessengerMessage(contactId, { text: REPLY[lang](total) });
    if (!sent.ok) console.error('messenger photo intake: reply failed', sent.reason);
 
-   // Their pre-screening went in without proof: say so under its card (once, on the first photo batch).
-   if (reason === 'prescreen_skipped' && total === saved.length) {
+   // Proof for a pre-screening that went in (without it, or more of it): say so under its card (once, on the first batch).
+   if ((reason === 'prescreen_skipped' || reason === 'prescreen_recent') && total === saved.length) {
       const { data: ps } = await svc
          .from('pre_screenings')
          .select('team_card')
@@ -246,7 +263,7 @@ export async function intakeMessengerPhotos(
       if (card?.chat && card.msg) {
          await sendTelegramMessage(
             card.chat,
-            `📄 ${who} sent their proof of income on Messenger (${total} photo${total === 1 ? '' : 's'}). It's being checked now — the income document card follows.`,
+            `📄 ${who} sent ${reason === 'prescreen_recent' ? 'more' : 'their'} proof of income on Messenger (${total} photo${total === 1 ? '' : 's'}). It's being checked now — the income document card follows.`,
             {
                replyToMessageId: card.msg
             }
