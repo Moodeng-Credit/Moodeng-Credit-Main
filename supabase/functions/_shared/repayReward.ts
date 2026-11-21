@@ -14,7 +14,7 @@ export type RepayRewardPreview = {
    nextPhp: number | null;
 };
 
-export type RepayRewardLocale = 'en' | 'fil' | 'id';
+export type RepayRewardLocale = 'en' | 'fil' | 'id' | 'es';
 type ReminderMoment = 'urgent_reminder' | 'final_reminder' | 'due_today';
 
 const COPY: Record<
@@ -62,7 +62,8 @@ export const buildRepayRewardLine = (
    type: string,
    locale: RepayRewardLocale = 'en'
 ): string | null => {
-   if (!reward || locale === 'id') return null;
+   // The food reward is a Philippines programme, so Indonesian and Spanish reminders leave it out.
+   if (!reward || locale === 'id' || locale === 'es') return null;
    if (type !== 'urgent_reminder' && type !== 'final_reminder' && type !== 'due_today') return null;
    const moment = type as ReminderMoment;
    const copy = COPY[locale];

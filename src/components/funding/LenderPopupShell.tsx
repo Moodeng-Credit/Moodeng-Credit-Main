@@ -17,7 +17,8 @@ const CLOSE_LABEL: Record<LocaleCode, string> = {
    fil: 'Isara',
    id: 'Tutup',
    th: 'ปิด',
-   vi: 'Đóng'
+   vi: 'Đóng',
+   es: 'Cerrar'
 };
 
 const TURN_ON_BUTTON_COPY: Record<LocaleCode, { notificationsOn: string; turningOn: string; saveFailed: string; done: string }> = {
@@ -50,6 +51,12 @@ const TURN_ON_BUTTON_COPY: Record<LocaleCode, { notificationsOn: string; turning
       turningOn: 'Đang bật…',
       saveFailed: 'Chúng tôi không lưu được. Bạn có thể bật thông báo sau trong Settings → Notifications.',
       done: 'Xong'
+   },
+   es: {
+      notificationsOn: 'Notificaciones activadas',
+      turningOn: 'Activando…',
+      saveFailed: 'No hemos podido guardarlo. Puedes activar las notificaciones más tarde en Ajustes → Notificaciones.',
+      done: 'Hecho'
    }
 };
 
@@ -143,7 +150,10 @@ export default function LenderPopupShell({ title, labelledBy, onClose, children 
          aria-labelledby={labelledBy}
          onClick={onClose}
       >
-         <div className="m-auto flex w-full max-w-[400px] flex-col items-center md:max-w-[460px]" onClick={(event) => event.stopPropagation()}>
+         <div
+            className="m-auto flex w-full max-w-[400px] flex-col items-center md:max-w-[460px]"
+            onClick={(event) => event.stopPropagation()}
+         >
             {/* Usernames run to 45 characters with no spaces, so let them break anywhere and cap at two lines.
                 Phones show the title above the card; on desktop the dark purple vanished on the dim
                 backdrop, so there it moves inside the card (below). */}

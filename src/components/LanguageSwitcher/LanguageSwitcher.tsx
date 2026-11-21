@@ -13,7 +13,8 @@ const LANGUAGE_NAME_KEYS: Record<LocaleCode, TranslationKey> = {
    fil: 'language.filipino',
    id: 'language.indonesian',
    th: 'language.thai',
-   vi: 'language.vietnamese'
+   vi: 'language.vietnamese',
+   es: 'language.spanish'
 };
 
 export default function LanguageSwitcher({ className = '', tone = 'dark', variant = 'compact' }: LanguageSwitcherProps) {

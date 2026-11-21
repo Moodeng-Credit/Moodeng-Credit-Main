@@ -29,6 +29,11 @@ const MODAL_HEADER_COPY = {
       goBack: 'Kembali',
       verifyWorldId: 'Verifikasi World ID',
       defaultTitle: 'Verifikasi bahwa kamu manusia'
+   },
+   es: {
+      goBack: 'Volver',
+      verifyWorldId: 'Verificar World ID',
+      defaultTitle: 'Demuestra que eres humano'
    }
 } satisfies Record<LocaleCode, { goBack: string; verifyWorldId: string; defaultTitle: string }>;
 

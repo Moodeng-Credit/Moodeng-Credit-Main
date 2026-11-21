@@ -30,6 +30,13 @@ const VERIFICATION_MODAL_HEADER_COPY = {
       title: 'Verifikasi World ID',
       mainTitle: 'Verifikasi bahwa kamu manusia',
       description: 'Buktikan bahwa kamu orang sungguhan dengan World ID'
+   },
+   es: {
+      goBack: 'Volver',
+      viewInformation: 'Ver información',
+      title: 'Verificar World ID',
+      mainTitle: 'Demuestra que eres humano',
+      description: 'Demuestra que eres una persona real con World ID'
    }
 } satisfies Record<
    LocaleCode,

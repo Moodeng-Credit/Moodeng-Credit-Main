@@ -35,6 +35,12 @@ export const SUPPORTED_LOCALES = [
       htmlLang: 'vi',
       label: 'Tiếng Việt',
       shortLabel: 'VI'
+   },
+   {
+      code: 'es',
+      htmlLang: 'es',
+      label: 'Español',
+      shortLabel: 'ES'
    }
 ] as const;
 
@@ -71,6 +77,7 @@ const englishTranslations = {
    'language.indonesian': 'Indonesian',
    'language.thai': 'Thai',
    'language.vietnamese': 'Vietnamese',
+   'language.spanish': 'Spanish',
    'language.label': 'Language',
    'language.selector': 'Language selector',
    'language.settingsDescription': 'Choose the language used across Moodeng.',
@@ -171,6 +178,7 @@ const filipinoTranslations: Record<TranslationKey, string> = {
    'language.indonesian': 'Indonesian',
    'language.thai': 'Thai',
    'language.vietnamese': 'Vietnamese',
+   'language.spanish': 'Spanish',
    'language.label': 'Wika',
    'language.selector': 'Piliin ang wika',
    'language.settingsDescription': 'Piliin ang wikang gagamitin sa Moodeng.',
@@ -269,6 +277,7 @@ const indonesianTranslations: Record<TranslationKey, string> = {
    'language.indonesian': 'Indonesia',
    'language.thai': 'Thai',
    'language.vietnamese': 'Vietnam',
+   'language.spanish': 'Spanyol',
    'language.label': 'Bahasa',
    'language.selector': 'Pilih bahasa',
    'language.settingsDescription': 'Pilih bahasa yang digunakan di Moodeng.',
@@ -367,6 +376,7 @@ const thaiTranslations: Record<TranslationKey, string> = {
    'language.indonesian': 'อินโดนีเซีย',
    'language.thai': 'ไทย',
    'language.vietnamese': 'เวียดนาม',
+   'language.spanish': 'สเปน',
    'language.label': 'ภาษา',
    'language.selector': 'เลือกภาษา',
    'language.settingsDescription': 'เลือกภาษาที่ใช้ใน Moodeng',
@@ -465,6 +475,7 @@ const vietnameseTranslations: Record<TranslationKey, string> = {
    'language.indonesian': 'Tiếng Indonesia',
    'language.thai': 'Tiếng Thái',
    'language.vietnamese': 'Tiếng Việt',
+   'language.spanish': 'Tiếng Tây Ban Nha',
    'language.label': 'Ngôn ngữ',
    'language.selector': 'Chọn ngôn ngữ',
    'language.settingsDescription': 'Chọn ngôn ngữ dùng trong Moodeng.',
@@ -532,12 +543,113 @@ const vietnameseTranslations: Record<TranslationKey, string> = {
    'wallet.network': 'Mạng'
 };
 
+const spanishTranslations: Record<TranslationKey, string> = {
+   'actions.borrow': 'Pedir prestado',
+   'actions.chat': 'Chat',
+   'actions.getHelp': 'Obtener ayuda',
+   'actions.lend': 'Prestar',
+   'actions.readDocs': 'Leer la documentación',
+   'actions.seeHowItWorks': 'Ver cómo funciona',
+   'actions.seeMoreBenefits': 'Ver más ventajas',
+   'actions.seeRequestBoard': 'Ver el tablón de solicitudes',
+   'actions.seeWhy': 'Ver por qué',
+   'actions.startLending': 'Empezar a prestar',
+   'auth.login': 'Iniciar sesión',
+   'auth.openApp': 'Abrir la app',
+   'auth.signIn': 'Iniciar sesión',
+   'auth.signOut': 'Cerrar sesión',
+   'auth.signup': 'Registrarse',
+   'auth.verify': 'Verificar',
+   'bottomNav.account': 'Cuenta',
+   'bottomNav.chooseRoleFirst': 'Elige primero un rol',
+   'bottomNav.dashboard': 'Panel',
+   'bottomNav.history': 'Historial',
+   'bottomNav.paying': 'Pagando',
+   'bottomNav.repay': 'Devolver',
+   'bottomNav.requestBoard': 'Tablón de solicitudes',
+   'footer.copyright': 'Copyright © 2026 Moodeng Credit | Todos los derechos reservados',
+   'footer.tagline': 'EL FUTURO DEL CRÉDITO ONCHAIN',
+   'language.english': 'Inglés',
+   'language.filipino': 'Filipino',
+   'language.indonesian': 'Indonesio',
+   'language.thai': 'Tailandés',
+   'language.vietnamese': 'Vietnamita',
+   'language.spanish': 'Español',
+   'language.label': 'Idioma',
+   'language.selector': 'Selector de idioma',
+   'language.settingsDescription': 'Elige el idioma que se usa en toda la app de Moodeng.',
+   'language.switchTo': 'Cambiar el idioma a {language}',
+   'nav.about': 'Acerca de',
+   'nav.academy': 'Academia',
+   'nav.benefits': 'Ventajas',
+   'nav.blog': 'Blog',
+   'nav.borrow': 'Pedir prestado',
+   'nav.community': 'Comunidad',
+   'nav.company': 'Empresa',
+   'nav.contact': 'Contacto',
+   'nav.contactSupport': 'Contactar con soporte',
+   'nav.dashboard': 'Panel',
+   'nav.docs': 'Documentación',
+   'nav.documentation': 'Documentación',
+   'nav.explore': 'Explorar',
+   'nav.faq': 'Preguntas frecuentes',
+   'nav.guide': 'Guía',
+   'nav.lend': 'Prestar',
+   'nav.nextStep': 'Siguiente paso',
+   'nav.platform': 'Plataforma',
+   'nav.privacyPolicy': 'Política de privacidad',
+   'nav.support': 'Soporte',
+   'nav.termsOfService': 'Condiciones del servicio',
+   'nav.toggleMenu': 'Abrir o cerrar el menú de navegación',
+   'nav.whyLend': 'Por qué prestar',
+   'points.loading': 'Cargando IOU',
+   'points.total': 'IOU {points}',
+   'requestBoard.applyForLoan': 'Solicitar un préstamo',
+   'requestBoard.authenticatedSubtitle':
+      'Consulta las solicitudes publicadas en Moodeng, o verifícate ya para empezar a pedir prestado en USDC.',
+   'requestBoard.borrowerCardBody': 'Pide prestado en USDC para generar confianza y desbloquear niveles de préstamo más altos.',
+   'requestBoard.borrowerCardBodyShort': 'Pide en USDC y desbloquea niveles más altos.',
+   'requestBoard.browseLatest': 'Ver las últimas solicitudes',
+   'requestBoard.empty': 'No se han encontrado solicitudes de préstamo.',
+   'requestBoard.openQuestions': 'Abrir preguntas frecuentes',
+   'requestBoard.closeQuestions': 'Cerrar preguntas frecuentes',
+   'requestBoard.publicEmpty': 'Las solicitudes públicas aparecerán aquí cuando haya alguna.',
+   'requestBoard.publicSubtitle': 'Consulta solicitudes reales, descubre cómo funciona Moodeng o solicita un préstamo cuando estés listo.',
+   'requestBoard.roleSubtitle': 'Consulta las solicitudes ahora. Elige un rol cuando estés listo para pedir prestado o prestar.',
+   'requestBoard.searchPlaceholder': 'Buscar solicitudes',
+   'requestBoard.shortTermSupport': '¿Necesitas ayuda a corto plazo?',
+   'requestBoard.takeTour': 'Haz un recorrido rápido',
+   'requestBoard.title': 'Tablón de solicitudes de micropréstamos',
+   'site.footerBlurb':
+      'Pequeños préstamos en USDC, verificación de identidad rápida e historial de pagos portátil para prestatarios que construyen su crédito en el extranjero.',
+   'user.accountSettings': 'Ajustes de la cuenta',
+   'user.app': 'App',
+   'user.connectAccount': 'Conectar cuenta',
+   'user.guest': 'Usuario invitado',
+   'user.howToGetVerified': '¿Cómo me verifico?',
+   'user.increaseCreditLimit': 'Aumentar el límite de crédito',
+   'user.information': 'Información',
+   'user.more': 'Más',
+   'user.moodengCredit': 'Moodeng Credit',
+   'user.notifications': 'Notificaciones',
+   'user.privacyPolicy': 'Política de privacidad',
+   'user.profile': 'Perfil',
+   'user.repayLoans': 'Devolver préstamos',
+   'user.termsAndConditions': 'Términos y condiciones',
+   'user.userProfile': 'Perfil de usuario',
+   'user.viewLendingHistory': 'Ver el historial de préstamos concedidos',
+   'user.viewLoanHistory': 'Ver el historial de préstamos',
+   'user.whatAreIouPoints': '¿Qué son los puntos IOU?',
+   'wallet.network': 'Red'
+};
+
 export const translations: Record<LocaleCode, Record<TranslationKey, string>> = {
    en: englishTranslations,
    fil: filipinoTranslations,
    id: indonesianTranslations,
    th: thaiTranslations,
-   vi: vietnameseTranslations
+   vi: vietnameseTranslations,
+   es: spanishTranslations
 };
 
 export function resolveLocaleCode(value?: string | null): LocaleCode | null {
@@ -550,6 +662,7 @@ export function resolveLocaleCode(value?: string | null): LocaleCode | null {
    if (primarySubtag === 'fil' || primarySubtag === 'tl' || normalized === 'tagalog') return 'fil';
    if (primarySubtag === 'id' || normalized === 'indonesian' || normalized === 'bahasa-indonesia') return 'id';
    if (primarySubtag === 'th' || normalized === 'thai') return 'th';
+   if (primarySubtag === 'es' || normalized === 'spanish' || normalized === 'espanol' || normalized === 'español') return 'es';
    if (primarySubtag === 'vi' || normalized === 'vietnamese' || normalized === 'tieng-viet') return 'vi';
 
    return null;

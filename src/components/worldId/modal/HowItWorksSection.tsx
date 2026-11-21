@@ -57,6 +57,23 @@ const HOW_IT_WORKS_COPY = {
             description: 'Terverifikasi secara instan'
          }
       ]
+   },
+   es: {
+      sectionTitle: '¿Cómo verificarse?',
+      steps: [
+         {
+            title: 'Pulsa «Verificar con World ID»',
+            description: 'Se abre la ventana de verificación'
+         },
+         {
+            title: 'Escanea el QR con World App',
+            description: 'Usa la cámara de tu teléfono'
+         },
+         {
+            title: 'Confirma y completa',
+            description: 'Verificado al instante'
+         }
+      ]
    }
 } satisfies Record<LocaleCode, { sectionTitle: string; steps: Array<{ title: string; description: string }> }>;
 
