@@ -311,6 +311,11 @@ async function transcribe(apiKey: string, wav: Blob): Promise<string | null> {
 }
 
 type ModelRead = { summary?: unknown; answers?: unknown; income?: unknown; flags?: unknown; medical?: unknown; repay_chance?: unknown; reasons?: unknown };
+/** team_reason of a pre-screening closed by 🚫 Block for good (blockForGood.ts): about who they are,
+ *  not their answers, so it's left out of the AI's examples and the AI-vs-team report. */
+export const BLOCKED_FOR_GOOD_REASON = 'Blocked for good — same person as a rejected account';
+const notBlocked = (r: { team_reason: string | null }) => r.team_reason !== BLOCKED_FOR_GOOD_REASON;
+
 export type TeamExample = {
    decision: 'good' | 'not_fit';
    reason: string | null;
@@ -339,7 +344,7 @@ export async function loadTeamExamples(svc: SupabaseClient, excludeId: string): 
       grade: PreScreenGrade;
       questions: PreScreenQuestion[] | null;
    }>;
-   const pick = (d: 'good' | 'not_fit') => rows.filter((r) => r.team_decision === d).slice(0, EXAMPLES_EACH);
+   const pick = (d: 'good' | 'not_fit') => rows.filter((r) => r.team_decision === d && notBlocked(r)).slice(0, EXAMPLES_EACH);
    return [...pick('good'), ...pick('not_fit')].map((r) => ({
       decision: r.team_decision,
       reason: r.team_reason,
@@ -943,17 +948,18 @@ export async function preScreeningWeekly(svc: SupabaseClient) {
       team_decision: 'good' | 'not_fit';
       team_reason: string | null;
    }>;
-   if (!rows.length) return { ok: true, sent: false, decided: 0 };
-   const agree = rows.filter(
+   const decided = rows.filter(notBlocked);
+   if (!decided.length) return { ok: true, sent: false, decided: 0 };
+   const agree = decided.filter(
       (r) => (r.verdict === 'good' && r.team_decision === 'good') || (r.verdict === 'weak' && r.team_decision === 'not_fit')
    );
-   const unsure = rows.filter((r) => r.verdict === 'ok' || !r.verdict);
-   const disagree = rows.filter((r) => !agree.includes(r) && !unsure.includes(r));
+   const unsure = decided.filter((r) => r.verdict === 'ok' || !r.verdict);
+   const disagree = decided.filter((r) => !agree.includes(r) && !unsure.includes(r));
    const team = (d: 'good' | 'not_fit', reason: string | null) =>
       d === 'good' ? '✅ good fit' : `❌ not a fit${reason ? ` (${reason})` : ''}`;
    const lines = [
       '📊 Pre-screening: AI vs team, last 7 days',
-      `Decided: ${rows.length} · AI agreed: ${agree.length} · AI unsure (🟡): ${unsure.length} · AI disagreed: ${disagree.length}`,
+      `Decided: ${decided.length} · AI agreed: ${agree.length} · AI unsure (🟡): ${unsure.length} · AI disagreed: ${disagree.length}`,
       ...(disagree.length
          ? [
               '',
@@ -971,5 +977,5 @@ export async function preScreeningWeekly(svc: SupabaseClient) {
    ];
    const chat = await preScreeningChat(svc);
    if (chat) await sendTelegramMessage(chat, lines.join('\n')).catch((err) => console.error('pre-screening weekly failed', err));
-   return { ok: true, sent: Boolean(chat), decided: rows.length, agree: agree.length, disagree: disagree.length };
+   return { ok: true, sent: Boolean(chat), decided: decided.length, agree: agree.length, disagree: disagree.length };
 }

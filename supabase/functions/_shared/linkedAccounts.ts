@@ -267,8 +267,61 @@ export async function linkedSweep(svc: SupabaseClient, opts: { dry?: boolean } =
          '',
          `🚫 Block for good = quiet reject, plus later accounts on the same WhatsApp. Or /ghost @${u.username ?? u.id} · Admin: https://moodeng.app/admin?user=${u.id}`
       ].join('\n');
-      if (chat) await sendTelegramMessage(chat, text, { inlineKeyboard: blockRows(u.id) }).catch((err) => console.error('linked sweep: telegram failed', err));
+      if (chat)
+         await sendTelegramMessage(chat, text, { inlineKeyboard: blockRows(u.id) }).catch((err) =>
+            console.error('linked sweep: telegram failed', err)
+         );
       await svc.from('linked_account_alerts').upsert({ user_id: u.id, detail: bad });
    }
-   return { ok: true, checked: (fresh ?? []).length, rejected, flagged: found };
+   const autoBlocked = await alertAutoBlocked(svc, since, opts.dry ? null : chat, !!opts.dry);
+   return { ok: true, checked: (fresh ?? []).length, rejected, flagged: found, autoBlocked };
+}
+
+/**
+ * New accounts the DB trigger blocked on their own (same verified WhatsApp as a 🚫 Block for good
+ * account): the team hears once, so a wrong match (a shared family phone) gets undone. Never throws.
+ */
+async function alertAutoBlocked(svc: SupabaseClient, since: string, chat: string | null, dry: boolean) {
+   const { data } = await svc
+      .from('users')
+      .select('id, username, display_name, facebook_name')
+      .gte('created_at', since)
+      .like('ghosted_by', 'auto:%')
+      .not('blocked_for_good_at', 'is', null)
+      .limit(50);
+   const rows = (data ?? []) as Array<{ id: string; username: string | null; display_name: string | null; facebook_name: string | null }>;
+   if (!rows.length) return [];
+   const { data: done } = await svc
+      .from('linked_account_alerts')
+      .select('user_id')
+      .in(
+         'user_id',
+         rows.map((u) => u.id)
+      );
+   const already = new Set(((done ?? []) as Array<{ user_id: string }>).map((r) => r.user_id));
+   const out: string[] = [];
+   for (const u of rows) {
+      if (already.has(u.id)) continue;
+      const who = u.username ? `@${u.username}` : (u.display_name ?? u.id.slice(0, 8));
+      out.push(who);
+      if (dry) continue;
+      let links: LinkedAccount[] = [];
+      try {
+         links = await loadLinkedAccounts(svc, u.id);
+      } catch {
+         // the alert still goes, just without the list
+      }
+      const text = [
+         `🚫 Blocked automatically: ${who}${u.facebook_name ? ` (Facebook: ${u.facebook_name})` : ''} verified the same WhatsApp number as an account the team blocked for good. Rejected quietly, nothing sent.`,
+         ...links
+            .filter((a) => a.bad)
+            .slice(0, 6)
+            .map((a) => `• ${linkedLine(a)}`),
+         '',
+         `Not the same person (e.g. a shared family phone)? /unghost @${u.username ?? u.id} then /reopen @${u.username ?? u.id} · Admin: https://moodeng.app/admin?user=${u.id}`
+      ].join('\n');
+      if (chat) await sendTelegramMessage(chat, text).catch((err) => console.error('linked sweep: auto-block alert failed', err));
+      await svc.from('linked_account_alerts').upsert({ user_id: u.id, detail: links.filter((a) => a.bad) });
+   }
+   return out;
 }
