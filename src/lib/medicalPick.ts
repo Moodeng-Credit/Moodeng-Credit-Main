@@ -15,8 +15,13 @@ export type MedicalPick = {
    since: string | null;
    doctor: string | null;
    medicine: string | null;
+   /** The part that decides a loan (George, 2026-11-21): costs still to come, not a bill already paid. */
+   future: FutureCost | null;
+   futureAmount: string | null;
+   payer: string | null;
    detail: string;
 };
+export type FutureCost = 'done' | 'once' | 'monthly' | 'unsure';
 export const EMPTY_MEDICAL: MedicalPick = {
    who: null,
    relation: null,
@@ -25,6 +30,9 @@ export const EMPTY_MEDICAL: MedicalPick = {
    since: null,
    doctor: null,
    medicine: null,
+   future: null,
+   futureAmount: null,
+   payer: null,
    detail: ''
 };
 
@@ -55,12 +63,26 @@ export const SINCE = ['This week', 'This month', 'A few months', 'A year or more
 export const DOCTOR = ['Yes, regularly', 'Sometimes', 'Not yet', 'Can’t afford it'];
 export const MEDICINE = ['Yes, every month', 'Sometimes', 'No'];
 
+export const FUTURE: Array<[FutureCost, string]> = [
+   ['done', 'No, it’s done or already paid'],
+   ['once', 'Yes, one more cost coming'],
+   ['monthly', 'Yes, a cost every month'],
+   ['unsure', 'Not sure yet']
+];
+export const FUTURE_AMOUNT: Record<'once' | 'monthly', string[]> = {
+   once: ['Under ₱2,000', '₱2,000–10,000', '₱10,000–50,000', 'Over ₱50,000', 'Not sure'],
+   monthly: ['Under ₱1,000', '₱1,000–3,000', '₱3,000–10,000', 'Over ₱10,000 a month', 'Not sure']
+};
+export const PAYER = ['Me', 'Other family', 'PhilHealth / free program', 'Not sure'];
+
 /** Enough to send: who, where, what (a tap or a few words) and since when. */
 export const medicalReady = (m: MedicalPick) =>
    (m.who === 'me' || (m.who === 'family' && !!m.relation)) &&
    m.parts.length > 0 &&
    (m.conditions.length > 0 || m.detail.trim().length >= MIN_DETAIL) &&
-   !!m.since;
+   !!m.since &&
+   !!m.future &&
+   (m.future === 'done' || m.future === 'unsure' || (!!m.futureAmount && !!m.payer));
 
 /** The answer text the server grades. '' until it's complete (so Next stays off). Pure. */
 export const medicalAnswerText = (m: MedicalPick): string => {
@@ -74,6 +96,13 @@ export const medicalAnswerText = (m: MedicalPick): string => {
       `since: ${m.since!.toLowerCase()}`,
       m.doctor ? `doctor: ${m.doctor.toLowerCase()}` : null,
       m.medicine ? `medicine: ${m.medicine.toLowerCase()}` : null,
+      m.future === 'done'
+         ? 'more costs: no, done or already paid'
+         : m.future === 'unsure'
+           ? 'more costs: not sure yet'
+           : m.future
+             ? `more costs: ${m.future === 'monthly' ? 'every month' : 'one more'}, about ${m.futureAmount!.toLowerCase()}, paid by ${m.payer!.toLowerCase()}`
+             : null,
       m.detail.trim() || null
    ].filter(Boolean);
    return bits.join(' — ').slice(0, 600);

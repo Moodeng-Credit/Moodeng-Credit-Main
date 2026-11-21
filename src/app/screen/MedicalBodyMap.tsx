@@ -3,7 +3,19 @@
 // tell us more honestly. It only builds the same plain-text answer the server already grades
 // ("no", or "My mother — chest (heart, lungs) — heart problem since March"), so grading and the
 // team card don't change.
-import { AREA_PROBLEMS, DOCTOR, EMPTY_MEDICAL, type MedicalPick, medicalReady, type MedicalWho, MEDICINE, SINCE } from '@/lib/medicalPick';
+import {
+   AREA_PROBLEMS,
+   DOCTOR,
+   EMPTY_MEDICAL,
+   FUTURE,
+   FUTURE_AMOUNT,
+   type MedicalPick,
+   medicalReady,
+   type MedicalWho,
+   MEDICINE,
+   PAYER,
+   SINCE
+} from '@/lib/medicalPick';
 
 const RELATIONS = ['Mother', 'Father', 'Child', 'Husband / wife', 'Brother / sister', 'Grandparent', 'Other family'];
 
@@ -167,6 +179,58 @@ export default function MedicalBodyMap({ value, onChange }: { value: MedicalPick
                      </div>
                   </div>
                ))}
+            </div>
+         ) : null}
+
+         {whoReady && value.parts.length && value.since ? (
+            <div className="flex flex-col gap-3 rounded-[16px] border-2 border-[#7661f9]/40 bg-white px-3 py-3 dark:bg-[#1b1526]">
+               <div className="flex flex-col gap-2">
+                  <p className="text-[16px] font-bold text-[#3b2f4a] dark:text-[#f5f0ff]">Will there be more costs for this?</p>
+                  <p className="-mt-1 text-[13px] text-[#8a7f99]">Like hospital, check-ups or medicine still to pay</p>
+                  <div className="flex flex-col gap-2">
+                     {FUTURE.map(([id, label]) => (
+                        <button
+                           className={bigChoice(value.future === id)}
+                           key={id}
+                           onClick={() => set({ future: id, futureAmount: null, payer: null })}
+                           type="button"
+                        >
+                           {label}
+                        </button>
+                     ))}
+                  </div>
+               </div>
+               {value.future === 'once' || value.future === 'monthly' ? (
+                  <>
+                     <div className="flex flex-col gap-2">
+                        <p className="text-[15px] font-bold text-[#3b2f4a] dark:text-[#f5f0ff]">
+                           {value.future === 'monthly' ? 'About how much a month?' : 'About how much?'}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                           {FUTURE_AMOUNT[value.future].map((a) => (
+                              <button
+                                 className={pill(value.futureAmount === a)}
+                                 key={a}
+                                 onClick={() => set({ futureAmount: a })}
+                                 type="button"
+                              >
+                                 {a}
+                              </button>
+                           ))}
+                        </div>
+                     </div>
+                     <div className="flex flex-col gap-2">
+                        <p className="text-[15px] font-bold text-[#3b2f4a] dark:text-[#f5f0ff]">Who will pay for it?</p>
+                        <div className="flex flex-wrap gap-2">
+                           {PAYER.map((p) => (
+                              <button className={pill(value.payer === p)} key={p} onClick={() => set({ payer: p })} type="button">
+                                 {p}
+                              </button>
+                           ))}
+                        </div>
+                     </div>
+                  </>
+               ) : null}
             </div>
          ) : null}
 

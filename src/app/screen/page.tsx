@@ -513,7 +513,10 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
               conditions: ['Inside the body: Diabetes / sugar'],
               since: 'A year or more',
               doctor: 'Sometimes',
-              medicine: 'Yes, every month'
+              medicine: 'Yes, every month',
+              future: 'monthly',
+              futureAmount: '₱1,000–3,000',
+              payer: 'Me'
            }
          : EMPTY_MEDICAL
    );
