@@ -594,10 +594,12 @@ export default function App() {
                         preview={{
                            stage: (new URLSearchParams(window.location.search).get('stage') as ScreenStage | null) ?? 'intro',
                            question: Number(new URLSearchParams(window.location.search).get('q') ?? 0),
-                           // v2 steps: photo=ready|live|review|expired, coach=1 (the hint), med=1 (the medical choices).
+                           // v2 steps: photo=ready|live|review|expired, coach=1 (the hint), med=1 (the medical choices),
+                           // send=1 (a video answer sending).
                            photo: (new URLSearchParams(window.location.search).get('photo') as PhotoPreview | null) ?? undefined,
                            coach: new URLSearchParams(window.location.search).get('coach') === '1',
-                           med: new URLSearchParams(window.location.search).get('med') === '1'
+                           med: new URLSearchParams(window.location.search).get('med') === '1',
+                           send: new URLSearchParams(window.location.search).get('send') === '1'
                         }}
                      />
                   }

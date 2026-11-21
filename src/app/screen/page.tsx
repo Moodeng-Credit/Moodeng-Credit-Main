@@ -9,7 +9,7 @@ import BrandedVideo from '@/components/BrandedVideo';
 
 import { fetchPrescreenPath, PRE_KYC_CONNECT_PATH } from '@/hooks/usePreKycGate';
 
-import HippoStory from '@/app/screen/HippoStory';
+import HippoStory, { preloadHippoStory } from '@/app/screen/HippoStory';
 import LivePhoto, { type PhotoAnswer, type PhotoPreview } from '@/app/screen/LivePhoto';
 import MedicalBodyMap from '@/app/screen/MedicalBodyMap';
 import { expectMessengerPhotos, PickerHelp, usePickerWatch } from '@/app/screen/PickerHelp';
@@ -87,7 +87,15 @@ export type ScreenQuestion = {
 /** `tall` = a YouTube Short (9:16); otherwise a normal 16:9 video. */
 type ScreenVideo = { id: string; title: string; tall?: boolean };
 type UploadedDoc = { path: string; name: string; mime: string; size: number };
-export type ScreenPreview = { stage: ScreenStage; question?: number; photo?: PhotoPreview; coach?: boolean; med?: boolean };
+export type ScreenPreview = {
+   stage: ScreenStage;
+   question?: number;
+   photo?: PhotoPreview;
+   coach?: boolean;
+   med?: boolean;
+   /** A video answer sending (the hippo send story). */
+   send?: boolean;
+};
 
 type UploadedAnswer = PhotoAnswer & {
    q: string;
@@ -137,7 +145,7 @@ const SAMPLE_QUESTIONS: ScreenQuestion[] = [
    { id: 'grow', text: 'How will you use the loan to build up your income?', kind: 'text' }
 ];
 // /screen-preview?stage=question&q=4…10 shows the v2 steps (photo=ready|live|review|expired, coach=1, med=1).
-// coach=1 also shows the AI's tip on the work permit step.
+// coach=1 also shows the AI's tip on the work permit step. send=1 shows a video answer sending.
 const SAMPLE_V2: ScreenQuestion[] = [
    { id: 'job', kind: 'job', text: 'What is your job?', hint: 'Like farmer, teacher, Grab driver, sari-sari store', min: 3 },
    { id: 'job_q1', kind: 'text', text: 'What do you farm?', hint: 'Like rice, corn, vegetables, pigs', min: 3 },
@@ -263,7 +271,18 @@ function AnswerRecorder({
       if (cameraApp.blocked) trackPrescreenStep('record_problem', { reason: 'picker_blocked' });
    }, [cameraApp.blocked]);
    const [typedText, setTypedText] = useState('');
+   // 'starting' also covers reading the sound out of a finished clip: same hippo, different words.
+   const [readingClip, setReadingClip] = useState(false);
    const liveRef = useRef<HTMLVideoElement>(null);
+   const reviewRef = useRef<HTMLVideoElement>(null);
+   useEffect(() => {
+      preloadHippoStory('camera');
+      preloadHippoStory('send');
+   }, []);
+   // The send story covers the clip: don't let it keep talking underneath.
+   useEffect(() => {
+      if (busy) reviewRef.current?.pause();
+   }, [busy]);
    const fileRef = useRef<HTMLInputElement>(null);
    // The recording in progress: finish() keeps the clip, cancel() throws it away (leaving the page).
    const session = useRef<{ finish: () => void; cancel: () => void } | null>(null);
@@ -292,6 +311,7 @@ function AnswerRecorder({
          cameraApp.open(fileRef.current);
          return;
       }
+      setReadingClip(false);
       setState('starting');
       // Made inside the tap, before anything is awaited: phones only let sound start from a tap.
       const ctx = new Ctor();
@@ -384,6 +404,7 @@ function AnswerRecorder({
             setState('review');
             return;
          }
+         setReadingClip(true);
          setState('starting');
          void wavFromMediaFile(video).then((sound) => {
             setClip({ video, audio: sound?.wav ?? null, seconds, url });
@@ -413,6 +434,7 @@ function AnswerRecorder({
    const onFile = async (file: File | undefined) => {
       if (fileRef.current) fileRef.current.value = '';
       if (!file) return;
+      setReadingClip(true);
       setState('starting');
       const sound = await wavFromMediaFile(file);
       const type = baseType(file.type);
@@ -435,7 +457,7 @@ function AnswerRecorder({
       <div className="flex flex-col gap-4">
          <div className="relative mx-auto aspect-[3/4] w-full max-w-[300px] overflow-hidden rounded-[18px] bg-[#1b1230]">
             {state === 'review' && clip?.url ? (
-               <video className="size-full object-cover" controls playsInline src={clip.url} />
+               <video className="size-full object-cover" controls playsInline ref={reviewRef} src={clip.url} />
             ) : (
                <video
                   className={`size-full -scale-x-100 object-cover ${state === 'recording' ? '' : 'opacity-0'}`}
@@ -444,10 +466,20 @@ function AnswerRecorder({
                   ref={liveRef}
                />
             )}
-            {state === 'idle' || state === 'starting' ? (
+            {state === 'idle' ? (
                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-[#cfc6dd]">
-                  {state === 'starting' ? <Loader2 className="size-8 animate-spin" /> : <span className="text-[44px]">🎥</span>}
+                  <span className="text-[44px]">🎥</span>
                   <span className="text-[14px] font-semibold">Up to {maxSeconds} seconds</span>
+               </div>
+            ) : null}
+            {state === 'starting' ? (
+               <div className="absolute inset-0 flex items-center justify-center bg-[#1b1230] px-4">
+                  <HippoStory caption={readingClip ? 'Getting your video ready…' : undefined} kind="camera" />
+               </div>
+            ) : null}
+            {state === 'review' && busy ? (
+               <div className="absolute inset-0 flex items-center justify-center bg-[#1b1230] px-4">
+                  <HippoStory kind="send" />
                </div>
             ) : null}
             {state === 'recording' ? (
@@ -505,8 +537,13 @@ function AnswerRecorder({
          ) : null}
          {state === 'review' ? (
             <>
-               <PrimaryButton disabled={busy || !clip} onClick={() => clip && onUse(clip)}>
-                  {busy ? <Loader2 aria-label="Sending" className="mx-auto size-5 animate-spin" /> : useLabel}
+               <PrimaryButton
+                  aria-busy={busy}
+                  aria-label={busy ? 'Sending your answer' : undefined}
+                  disabled={busy || !clip}
+                  onClick={() => clip && onUse(clip)}
+               >
+                  {busy ? 'Sending…' : useLabel}
                </PrimaryButton>
                {busy ? null : (
                   <GhostButton
@@ -1468,10 +1505,10 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                            </div>
                         ) : null}
                         <AnswerRecorder
-                           busy={busy}
+                           busy={busy || !!preview?.send}
                            maxSeconds={question.id === 'job_video' ? JOB_VIDEO_SECONDS : MAX_SECONDS}
                            onUse={(clip) => void acceptClip(clip)}
-                           previewState={preview?.coach && clipTip[question.id] ? 'review' : undefined}
+                           previewState={preview?.send || (preview?.coach && clipTip[question.id]) ? 'review' : undefined}
                            useLabel={clipTip[question.id] ? 'Use this one' : 'Next'}
                            onTypeInstead={(text) => {
                               trackPrescreenStep('typed_instead', { q: question.id });
