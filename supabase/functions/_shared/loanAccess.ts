@@ -39,7 +39,7 @@ import { sendFacebookSteps } from './facebookStepsSend.ts';
 import { loadNeedsIdCheck } from './preKycGate.ts';
 import { testAccountRow } from './testAccount.ts';
 import { idApprovalBlock, type IdEvent, isIdTrackUser, sendIdTelegram } from './idTrack.ts';
-import { autoRejectForStrikes, loadCallStrikes, type StrikeReason, strikeVerdict } from './callStrikes.ts';
+import { autoRejectForStrikes, loadCallStrikes, REJECT_LABEL, type StrikeReason, strikeVerdict } from './callStrikes.ts';
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
@@ -342,6 +342,12 @@ const BORROWER_MESSAGES = {
       body: "Thank you for your answers. We're sorry, we can't offer you a loan right now: your monthly costs are high compared with your income, and we don't want a loan to make things harder for you. We wish you all the best 🦛",
       url: SITE_URL
    },
+   // Same person as an account we already turned down. Says nothing about how we know.
+   rejected_linked: {
+      title: 'About your Moodeng application',
+      body: "We're sorry, we can't offer you a loan, so your application has been closed.",
+      url: SITE_URL
+   },
    rejected_reschedules: {
       title: 'About your Moodeng application',
       body: "We're sorry — your call was rescheduled too many times, so your application has been closed.",
@@ -400,7 +406,8 @@ type BorrowerMessageKind = keyof typeof BORROWER_MESSAGES;
 const STRIKE_MESSAGE: Record<StrikeReason, BorrowerMessageKind> = {
    missed_calls: 'rejected_missed_calls',
    too_many_reschedules: 'rejected_reschedules',
-   income_costs: 'rejected_income'
+   income_costs: 'rejected_income',
+   linked_account: 'rejected_linked'
 };
 // What the borrower is told on a reject: the strike reason, else before/after the call.
 const rejectMessage = (preCall: boolean, strikeReason?: StrikeReason | null): BorrowerMessageKind =>
@@ -490,6 +497,7 @@ const ID_EVENT: Record<BorrowerMessageKind, IdEvent> = {
    rejected_missed_calls: 'access_rejected',
    rejected_reschedules: 'access_rejected',
    rejected_income: 'access_rejected',
+   rejected_linked: 'access_rejected',
    no_show: 'call_no_show',
    call_cancelled: 'call_cancelled',
    spot_released: 'call_released',
@@ -506,7 +514,7 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
    const kind: BorrowerMessageKind = requestedKind === 'rejected_pre_call' && idTrack ? 'rejected' : requestedKind;
    // No button under the pre-call or automatic rejections: there's nothing for them to do on Moodeng.
    const noButton =
-      kind === 'rejected_pre_call' || kind === 'rejected_missed_calls' || kind === 'rejected_reschedules' || kind === 'rejected_income';
+      kind === 'rejected_pre_call' || kind === 'rejected_missed_calls' || kind === 'rejected_reschedules' || kind === 'rejected_income' || kind === 'rejected_linked';
    if (idTrack) await sendIdTelegram(svc, borrower.id, ID_EVENT[kind]);
    const preKycMsg = PRE_KYC_MESSAGES[kind] && (await loadNeedsIdCheck(svc, borrower.id, borrower)) ? PRE_KYC_MESSAGES[kind] : undefined;
    const msg: BorrowerMessage = preKycMsg ?? BORROWER_MESSAGES[kind];
@@ -762,7 +770,7 @@ export const decideLoanAccess = async (
          : decision === 'no_show'
            ? '❌ No-show:'
            : opts.strikeReason
-             ? `🚫 Rejected automatically (${opts.strikeReason === 'missed_calls' ? 'missed 2 calls' : 'rescheduled 3 times'}):`
+             ? `🚫 Rejected automatically (${REJECT_LABEL[opts.strikeReason].replace(/^auto: /, '')}):`
              : preCall
              ? '🚫 Rejected before the call (sent other lenders):'
              : '🚫 Rejected';
@@ -952,6 +960,8 @@ export const reopenLoanAccess = async (svc: SupabaseClient, userId: string, by: 
       .maybeSingle();
    if (error) throw new Error(error.message);
    if (!reopened) return { ok: false, summary: "They aren't rejected — nothing to reopen." };
+   // The team let them back in: the linked-accounts auto-reject leaves them alone from now on.
+   await svc.from('linked_account_alerts').upsert({ user_id: userId, team_cleared_at: new Date().toISOString() });
    await stampDecisionCards(svc, 'loan_access', userId, { header: `🔓 REOPENED — ${personName(reopened)} can book a call and ask again`, by });
    const summary = `🔓 Reopened ${who(reopened)} — they can book a call and ask again. We didn't message them. — by ${by}`;
    await postDiscord({ content: `🤝 Loan access ${summary}` }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
