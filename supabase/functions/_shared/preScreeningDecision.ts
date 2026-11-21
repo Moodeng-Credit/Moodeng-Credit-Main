@@ -73,7 +73,11 @@ export const reasonFromConfirm = (text: string | undefined) => {
 };
 
 /** Acts on a saved decision. Safe to run again: a reject that already ran is skipped. */
-export async function applyPreScreeningDecision(svc: SupabaseClient, id: string): Promise<{ ok: boolean; summary: string }> {
+export async function applyPreScreeningDecision(
+   svc: SupabaseClient,
+   id: string,
+   opts: { strikeReason?: 'income_costs' } = {}
+): Promise<{ ok: boolean; summary: string }> {
    if (!UUID.test(id)) return { ok: false, summary: 'bad id' };
    const { data } = await svc
       .from('pre_screenings')
@@ -89,7 +93,7 @@ export async function applyPreScreeningDecision(svc: SupabaseClient, id: string)
    }
    if (!row.user_id) return { ok: true, summary: 'Not a fit — no account yet; they’ll be turned down if they sign up.' };
    if (row.team_rejected_at) return { ok: true, summary: 'Already turned down.' };
-   const result = await rejectUser(svc, row.user_id, `${row.team_decided_by ?? 'team'} (pre-screening)`);
+   const result = await rejectUser(svc, row.user_id, `${row.team_decided_by ?? 'team'} (pre-screening)`, opts);
    // Stamped even when nothing changed (e.g. already approved): don't keep retrying on every run.
    await svc.from('pre_screenings').update({ team_rejected_at: new Date().toISOString() }).eq('id', id);
    return result;
@@ -226,7 +230,14 @@ export const handlePreScreeningCallback = async (svc: SupabaseClient, query: Car
 };
 
 /** Saves the team's decision and acts on it. Null when there's no such (finished) pre-screening. */
-async function decide(svc: SupabaseClient, id: string, decision: Decision, by: string, reason: string | null) {
+async function decide(
+   svc: SupabaseClient,
+   id: string,
+   decision: Decision,
+   by: string,
+   reason: string | null,
+   opts: { strikeReason?: 'income_costs' } = {}
+) {
    const { data: saved } = await svc
       .from('pre_screenings')
       .update({
@@ -239,7 +250,7 @@ async function decide(svc: SupabaseClient, id: string, decision: Decision, by: s
       .neq('status', 'open')
       .select('id')
       .maybeSingle();
-   return saved ? applyPreScreeningDecision(svc, id) : null;
+   return saved ? applyPreScreeningDecision(svc, id, opts) : null;
 }
 
 /** A reply to "✍️ why is X not a fit?": shows the reason back with ✅ Confirm / ↩️ Cancel. True when it was one. */
@@ -271,3 +282,30 @@ export const handlePreScreeningReasonReply = async (svc: SupabaseClient, message
    await callTelegramApi('deleteMessage', { chat_id: message.chat.id, message_id: prompt.message_id }).catch(() => undefined);
    return true;
 };
+
+/**
+ * High medical costs still to come (vs their income) and no team decision 2 hours after grading:
+ * declined automatically with the income message (George, 2026-11-21). The card gets a reply saying so;
+ * the Reject card's buttons (for good / for now / approve after all) still let the team undo it.
+ */
+export async function autoDeclineForCosts(
+   svc: SupabaseClient,
+   row: { id: string; name: string; team_card: { chat: number | string; msg: number } | null },
+   why: string
+): Promise<{ ok: boolean; summary: string }> {
+   const result = await decide(svc, row.id, 'not_fit', 'auto (2h, no team decision)', `Costs too high for income — ${why}`.slice(0, 200), {
+      strikeReason: 'income_costs'
+   });
+   if (!result) return { ok: false, summary: 'not found' };
+   if (row.team_card) {
+      await callTelegramApi('sendMessage', {
+         chat_id: row.team_card.chat,
+         reply_to_message_id: row.team_card.msg,
+         text: `❌ Auto-declined (no decision in 2 hours): ${row.name}
+Costs still to come are too high for their income — ${why}
+${result.summary}
+They were told it's because their costs are high compared with their income (no mention of health).`
+      }).catch(() => undefined);
+   }
+   return result;
+}

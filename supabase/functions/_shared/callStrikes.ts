@@ -30,12 +30,15 @@ const TEAM_MOVE_WINDOW_MS = 30 * 60 * 1000;
 // Bookings weren't logged before this shipped: until then, each call request stands for one booking.
 export const BOOKING_LOG_START = '2026-11-19T17:00:00Z';
 
-export type StrikeReason = 'missed_calls' | 'too_many_reschedules';
+// income_costs: pre-screening medical costs still to come are too high for their income, and nobody on the
+// team decided within 2 hours (George, 2026-11-21). Same automatic path, its own message.
+export type StrikeReason = 'missed_calls' | 'too_many_reschedules' | 'income_costs';
 export const UNCONFIRMED_DECIDED_BY = 'unconfirmed-slot-released';
 
 export const REJECT_LABEL: Record<StrikeReason, string> = {
    missed_calls: `auto: missed ${MISSED_CALLS_LIMIT} calls`,
-   too_many_reschedules: `auto: rescheduled ${RESCHEDULE_LIMIT} times`
+   too_many_reschedules: `auto: rescheduled ${RESCHEDULE_LIMIT} times`,
+   income_costs: 'auto: costs too high for their income'
 };
 
 /** Distinct missed calls from their timestamps (records within 2 hours are the same call). */

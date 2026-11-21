@@ -19,7 +19,7 @@ import { GEMINI_MODEL } from './geminiPreScreen.ts';
 import { linkedRedFlag, loadLinkedAccounts } from './linkedAccounts.ts';
 import { type Lang, langOf, teamStepIn } from './messengerIncomeDocReply.ts';
 import { preScreeningDecisionRows } from './preScreening.ts';
-import { applyPreScreeningDecision } from './preScreeningDecision.ts';
+import { applyPreScreeningDecision, autoDeclineForCosts } from './preScreeningDecision.ts';
 import { jobRedFlags, type MedicalRead, medicalRedFlag, permitProblem, type PhotoCheck, type PhotoMeta, photoRedFlags } from './prescreenV2.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
@@ -806,6 +806,36 @@ export const reminderState = (r: SweepRow, now: number) => {
    return `${r.score != null ? `${r.score}/100` : 'not graded'}, nobody has decided`;
 };
 
+const AUTO_DECLINE_AFTER_MS = 2 * HOUR;
+
+/**
+ * Medical costs still to come are high for their income (the AI's "high"), the AI really graded it and
+ * the answers add up, and nobody on the team decided within 2 hours of grading → decline it (George,
+ * 2026-11-21). Pure.
+ */
+export const autoDeclineDue = (
+   r: { status: string; user_id: string | null; graded_at: string | null; medical?: MedicalRead | null },
+   now: number
+) =>
+   r.status === 'graded' &&
+   !!r.user_id &&
+   !!r.graded_at &&
+   now - Date.parse(r.graded_at) >= AUTO_DECLINE_AFTER_MS &&
+   r.medical?.severity === 'high' &&
+   !r.medical.ungraded &&
+   r.medical.consistent !== false;
+
+/** The why for the card: what it is and what's still to pay. Pure. */
+export const costsWhy = (m: MedicalRead) =>
+   [
+      m.who && m.who !== 'self' ? m.who : m.who === 'self' ? 'their own' : null,
+      m.condition,
+      m.future_php_month != null ? `≈ ₱${m.future_php_month.toLocaleString('en-US')}/mo still to pay` : null,
+      m.income_share != null ? `${Math.round(m.income_share * 100)}% of income` : null
+   ]
+      .filter(Boolean)
+      .join(', ') || 'big or ongoing costs';
+
 export async function preScreeningSweep(svc: SupabaseClient, opts: { dry?: boolean; now?: number } = {}) {
    const now = opts.now ?? Date.now();
    const dry = opts.dry === true;
@@ -814,19 +844,28 @@ export async function preScreeningSweep(svc: SupabaseClient, opts: { dry?: boole
       nudge_failed: [] as string[],
       reminded: [] as string[],
       listed: [] as string[],
+      auto_declined: [] as string[],
       skipped_night: false
    };
    const { data } = await svc
       .from('pre_screenings')
       .select(
-         'id, name, user_id, score, status, graded_at, team_card, followup_card, followup_sent_at, followup_answers, followup_nudged_at, team_reminded_at'
+         'id, name, user_id, score, status, graded_at, team_card, followup_card, followup_sent_at, followup_answers, followup_nudged_at, team_reminded_at, medical:grade->medical'
       )
       .is('team_decision', null)
       .in('status', ['graded', 'failed'])
       .gte('graded_at', new Date(now - REMIND_LOOKBACK_MS).toISOString())
       .order('graded_at', { ascending: true })
       .limit(50);
-   const rows = (data ?? []) as Array<SweepRow & { team_reminded_at: string | null }>;
+   const all = (data ?? []) as Array<SweepRow & { team_reminded_at: string | null; medical: MedicalRead | null }>;
+
+   // 0) High medical costs vs income, no team decision in 2 hours: decline (any time of day).
+   for (const r of all.filter((x) => autoDeclineDue(x, now))) {
+      const why = costsWhy(r.medical!);
+      out.auto_declined.push(`${r.name}: ${why}`);
+      if (!dry) await autoDeclineForCosts(svc, r, why).catch((err) => console.error('prescreen sweep: auto-decline failed', r.id, err));
+   }
+   const rows = dry ? all : all.filter((x) => !autoDeclineDue(x, now));
 
    // 1) Nudge them on Messenger.
    if (borrowerDaytime(now)) {

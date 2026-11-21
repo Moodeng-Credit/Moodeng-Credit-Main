@@ -18,7 +18,9 @@ import {
    teamDaytime,
    toAnswerRead,
    toRedFlags,
-   waitingOnThem
+   waitingOnThem,
+   autoDeclineDue,
+   costsWhy
 } from './preScreeningAsk.ts';
 
 const ID = '0f8fad5b-d9cb-469f-a165-70867728950e';
@@ -135,4 +137,18 @@ Deno.test('red flags: plain ones and the AI list', () => {
    ]);
    assertEquals(toRedFlags({ red_flags: [] }), []);
    assertEquals(toRedFlags('junk'), []);
+});
+
+Deno.test('auto-decline: high medical costs, AI-graded, answers add up, 2h after grading, no team decision', () => {
+   const now = Date.parse('2026-11-21T12:00:00Z');
+   const high = { has_problem: true, who: 'mother', condition: 'dialysis', loan_for: 'ongoing' as const, chronic: true, size: 'large' as const, severity: 'high' as const, future_php_month: 10000, income_share: 0.67, note: '' };
+   const row = { status: 'graded', user_id: 'u1', graded_at: '2026-11-21T09:30:00Z', medical: high };
+   assertEquals(autoDeclineDue(row, now), true);
+   assertEquals(autoDeclineDue({ ...row, graded_at: '2026-11-21T10:30:00Z' }, now), false); // only 1.5h
+   assertEquals(autoDeclineDue({ ...row, medical: { ...high, severity: 'medium' as const } }, now), false);
+   assertEquals(autoDeclineDue({ ...row, medical: { ...high, ungraded: true } }, now), false); // AI never read it
+   assertEquals(autoDeclineDue({ ...row, medical: { ...high, consistent: false } }, now), false); // random taps
+   assertEquals(autoDeclineDue({ ...row, user_id: null }, now), false);
+   assertEquals(autoDeclineDue({ ...row, status: 'failed' }, now), false);
+   assertEquals(costsWhy(high), 'mother, dialysis, ≈ ₱10,000/mo still to pay, 67% of income');
 });

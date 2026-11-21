@@ -509,14 +509,15 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
               ...EMPTY_MEDICAL,
               who: 'family',
               relation: 'Mother',
-              parts: ['Inside the body'],
-              conditions: ['Inside the body: Diabetes / sugar'],
+              parts: ['Kidneys', 'Blood / all over'],
+              conditions: ['Kidneys: Kidney failure / dialysis', 'Blood / all over: Diabetes / sugar'],
               since: 'A year or more',
               doctor: 'Sometimes',
               medicine: 'Yes, every month',
               future: 'monthly',
               futureAmount: '₱1,000–3,000',
-              payer: 'Me'
+              payer: 'Me',
+              confirmed: true
            }
          : EMPTY_MEDICAL
    );

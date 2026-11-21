@@ -336,6 +336,12 @@ const BORROWER_MESSAGES = {
       body: "We're sorry — you missed 2 of your booked calls, so your application has been closed.",
       url: SITE_URL
    },
+   // Pre-screening: costs still to come are too high for their income. Never mentions health.
+   rejected_income: {
+      title: 'About your Moodeng application',
+      body: "Thank you for your answers. We're sorry, we can't offer you a loan right now: your monthly costs are high compared with your income, and we don't want a loan to make things harder for you. We wish you all the best 🦛",
+      url: SITE_URL
+   },
    rejected_reschedules: {
       title: 'About your Moodeng application',
       body: "We're sorry — your call was rescheduled too many times, so your application has been closed.",
@@ -393,7 +399,8 @@ const BORROWER_MESSAGES = {
 type BorrowerMessageKind = keyof typeof BORROWER_MESSAGES;
 const STRIKE_MESSAGE: Record<StrikeReason, BorrowerMessageKind> = {
    missed_calls: 'rejected_missed_calls',
-   too_many_reschedules: 'rejected_reschedules'
+   too_many_reschedules: 'rejected_reschedules',
+   income_costs: 'rejected_income'
 };
 // What the borrower is told on a reject: the strike reason, else before/after the call.
 const rejectMessage = (preCall: boolean, strikeReason?: StrikeReason | null): BorrowerMessageKind =>
@@ -482,6 +489,7 @@ const ID_EVENT: Record<BorrowerMessageKind, IdEvent> = {
    rejected_pre_call: 'access_rejected',
    rejected_missed_calls: 'access_rejected',
    rejected_reschedules: 'access_rejected',
+   rejected_income: 'access_rejected',
    no_show: 'call_no_show',
    call_cancelled: 'call_cancelled',
    spot_released: 'call_released',
@@ -497,7 +505,8 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
    // The other-lenders list is Philippine apps: Indonesia-track people keep the plain closed message.
    const kind: BorrowerMessageKind = requestedKind === 'rejected_pre_call' && idTrack ? 'rejected' : requestedKind;
    // No button under the pre-call or automatic rejections: there's nothing for them to do on Moodeng.
-   const noButton = kind === 'rejected_pre_call' || kind === 'rejected_missed_calls' || kind === 'rejected_reschedules';
+   const noButton =
+      kind === 'rejected_pre_call' || kind === 'rejected_missed_calls' || kind === 'rejected_reschedules' || kind === 'rejected_income';
    if (idTrack) await sendIdTelegram(svc, borrower.id, ID_EVENT[kind]);
    const preKycMsg = PRE_KYC_MESSAGES[kind] && (await loadNeedsIdCheck(svc, borrower.id, borrower)) ? PRE_KYC_MESSAGES[kind] : undefined;
    const msg: BorrowerMessage = preKycMsg ?? BORROWER_MESSAGES[kind];
