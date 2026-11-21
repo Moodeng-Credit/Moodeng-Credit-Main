@@ -5,6 +5,8 @@ import { sendEmail } from '../_shared/email.ts';
 import { isServerCaller } from '../_shared/internalAuth.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { sendIdTelegramTo } from '../_shared/idTrack.ts';
+import { buildCashoutMessengerText, type NextRepay, pickNextRepay, REPAY_URL, repayLine } from '../_shared/cashoutRepayReminder.ts';
+import { sendMessengerMessage } from '../_shared/sendpulse.ts';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -62,7 +64,15 @@ const addressEnding = (address?: string | null) => {
    return /^0x[0-9a-fA-F]{40}$/.test(a) ? a.slice(-4) : null;
 };
 
-const buildEmail = (amount: number, exchange: string, txHash: string, username?: string | null, destinationAddress?: string | null) => {
+const buildEmail = (
+   amount: number,
+   exchange: string,
+   txHash: string,
+   username?: string | null,
+   destinationAddress?: string | null,
+   repay: NextRepay | null = null
+) => {
+   const repayText = repay ? repayLine(repay) : null;
    const amt = formatAmount(amount);
    const name = username?.trim() || 'there';
    const ending = addressEnding(destinationAddress);
@@ -81,6 +91,7 @@ const buildEmail = (amount: number, exchange: string, txHash: string, username?:
       `Hi ${name},\n\n` +
       `Your withdrawal of ${amt} USDC to ${exchange} has been sent and is on its way. ` +
       `It usually arrives within a few minutes.\n\n` +
+      (repayText ? `${repayText}\nRepay here: ${REPAY_URL}\n\n` : '') +
       `Not in ${exchange} after 10 minutes? Your money is safe.\n` +
       steps.map((step, i) => `${i + 1}. ${step}${i === txStep ? ` ${txHash}` : ''}`).join('\n') +
       `\n\n` +
@@ -110,7 +121,11 @@ const buildEmail = (amount: number, exchange: string, txHash: string, username?:
                     <span style="display:inline-block;margin:0 0 10px;padding:3px 10px;border-radius:999px;background:#d9f7e5;color:#148240;font-size:12px;line-height:18px;font-weight:590;">&#10003; Sent</span>
                     <p style="margin:0 0 4px;color:#5d24e8;font-size:16px;line-height:20px;font-weight:500;">Hi ${escapeHtml(name)},</p>
                     <h1 style="margin:0 0 6px;color:#1c053d;font-size:24px;line-height:28px;font-weight:590;">Your withdrawal is on its way</h1>
-                    <p style="margin:0;color:#33294c;font-size:14px;line-height:20px;">It usually arrives within a few minutes.</p>
+                    <p style="margin:0;color:#33294c;font-size:14px;line-height:20px;">It usually arrives within a few minutes.</p>${
+                       repayText
+                          ? `\n                    <p style="margin:8px 0 0;color:#1c053d;font-size:14px;line-height:20px;font-weight:590;">&#128197; ${escapeHtml(repayText)} <a href="${REPAY_URL}" style="color:#6010d2;">Repay here</a></p>`
+                          : ''
+                    }
                   </td>
                   <td align="right" style="padding:0 0 14px;vertical-align:top;width:116px;">
                     <img class="moodeng-hero-img" src="${escapeHtml(heroImageUrl)}" alt="Moodeng mascot" width="116" style="display:block;width:116px;max-width:116px;height:auto;border:0;" />
@@ -177,8 +192,9 @@ const buildEmail = (amount: number, exchange: string, txHash: string, username?:
    return { subject, text, html };
 };
 
-const buildTelegram = (amount: number, exchange: string, txHash: string) =>
+const buildTelegram = (amount: number, exchange: string, txHash: string, repay: NextRepay | null) =>
    `✅ Your ${formatAmount(amount)} USDC withdrawal to ${exchange} is on its way — it usually arrives within a few minutes.\n\n` +
+   (repay ? `📅 ${repayLine(repay)}\nRepay here: ${REPAY_URL}\n\n` : '') +
    `Reference: ${shortRef(txHash)}`;
 
 serve(async (req) => {
@@ -227,7 +243,7 @@ serve(async (req) => {
 
    const { data: borrower, error: borrowerError } = await supabase
       .from('users')
-      .select('id, email, username, chat_id, notif_transaction_activity, market, preferred_locale')
+      .select('id, email, username, chat_id, messenger_psid, notif_transaction_activity, market, preferred_locale')
       .eq('id', withdrawal.borrower_user_id)
       .maybeSingle();
 
@@ -255,13 +271,35 @@ serve(async (req) => {
       return new Response(JSON.stringify({ message: 'Notifications disabled for user' }), { status: 200, headers: corsHeaders });
    }
 
-   if (!borrower?.email && !borrower?.chat_id) {
+   if (!borrower?.email && !borrower?.chat_id && !borrower?.messenger_psid) {
       return new Response(JSON.stringify({ error: 'Borrower notification target not found' }), { status: 404, headers: corsHeaders });
    }
 
    const amount = Number(withdrawal.amount);
    let emailSent = false;
    let telegramSent = false;
+   let messengerSent = false;
+
+   // What they owe next and when, so the cash-out notice doubles as a repay reminder.
+   const { data: openLoans, error: openLoansError } = await supabase
+      .from('loans')
+      .select('due_date, total_repayment_amount, repaid_amount, repayment_schedule')
+      .eq('borrower_user_id', borrower.id)
+      .eq('loan_status', 'Lent')
+      .eq('is_test', false)
+      .neq('repayment_status', 'Paid');
+   if (openLoansError) console.error('Open loans lookup failed:', openLoansError.message);
+   const repay = pickNextRepay((openLoans ?? []) as Parameters<typeof pickNextRepay>[0]);
+
+   // Messenger, for borrowers who connected their Facebook (most of them). SendPulse/Meta reject it
+   // outside 24h of their last message; email + Telegram still go out.
+   if (borrower.messenger_psid) {
+      const result = await sendMessengerMessage(borrower.messenger_psid, {
+         text: buildCashoutMessengerText(amount, withdrawal.exchange, repay)
+      });
+      messengerSent = result.ok;
+      console.log(`[withdrawal-notification] Messenger for ${withdrawal.id} → ${result.ok ? 'sent' : `not sent (${result.reason})`}`);
+   }
 
    // Route by whatever channel the borrower actually has — email if they signed
    // up with email, Telegram if they connected it (most borrowers have one).
@@ -272,7 +310,8 @@ serve(async (req) => {
             withdrawal.exchange,
             withdrawal.tx_hash,
             borrower.username,
-            withdrawal.destination_address
+            withdrawal.destination_address,
+            repay
          );
          await sendEmail(borrower.email, subject, text, html);
          emailSent = true;
@@ -285,7 +324,7 @@ serve(async (req) => {
       try {
          const telegramEnabled = await getBorrowerTelegramNotificationsEnabled(supabase);
          if (telegramEnabled) {
-            await sendTelegramMessage(borrower.chat_id, buildTelegram(amount, withdrawal.exchange, withdrawal.tx_hash));
+            await sendTelegramMessage(borrower.chat_id, buildTelegram(amount, withdrawal.exchange, withdrawal.tx_hash, repay));
             telegramSent = true;
          }
       } catch (err) {
@@ -293,13 +332,13 @@ serve(async (req) => {
       }
    }
 
-   if (!emailSent && !telegramSent) {
+   if (!emailSent && !telegramSent && !messengerSent) {
       return new Response(JSON.stringify({ error: 'No notification could be delivered' }), { status: 502, headers: corsHeaders });
    }
 
    await supabase.from('withdrawals').update({ notified_at: new Date().toISOString() }).eq('id', withdrawal.id);
 
-   return new Response(JSON.stringify({ message: 'Notification sent', emailSent, telegramSent }), {
+   return new Response(JSON.stringify({ message: 'Notification sent', emailSent, telegramSent, messengerSent }), {
       status: 200,
       headers: corsHeaders
    });
