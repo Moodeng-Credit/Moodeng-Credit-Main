@@ -12,6 +12,7 @@ import { fetchPrescreenPath, PRE_KYC_CONNECT_PATH } from '@/hooks/usePreKycGate'
 import HippoStory from '@/app/screen/HippoStory';
 import LivePhoto, { type PhotoAnswer, type PhotoPreview } from '@/app/screen/LivePhoto';
 import MedicalBodyMap from '@/app/screen/MedicalBodyMap';
+import RecordReadyCard from '@/app/screen/RecordReadyCard';
 import { useLocalization } from '@/i18n/LocalizationProvider';
 import { trackPrescreenStep } from '@/lib/analytics/prescreenSteps';
 import { describeBrowser } from '@/lib/attribution';
@@ -502,6 +503,23 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          : {}
    );
    const [choices, setChoices] = useState<Record<string, MedicalChoice>>({});
+   // "Before you record" card: once, before their first video answer (kept for this browser tab).
+   const [readyToRecord, setReadyToRecord] = useState(() => {
+      if (preview) return new URLSearchParams(window.location.search).get('ready') !== '1';
+      try {
+         return window.sessionStorage.getItem('moodeng_record_ready') === '1';
+      } catch {
+         return false;
+      }
+   });
+   const markReadyToRecord = () => {
+      setReadyToRecord(true);
+      try {
+         window.sessionStorage.setItem('moodeng_record_ready', '1');
+      } catch {
+         // fine: it just shows again next time
+      }
+   };
    // v2 medical as the tap-the-hippo game; it writes the same plain answer into `typed`.
    const [medPick, setMedPick] = useState<MedicalPick>(
       preview?.med
@@ -1304,6 +1322,8 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                            <GhostButton onClick={() => void sendCoe(true)}>I don’t have one</GhostButton>
                         )}
                      </>
+                  ) : !readyToRecord ? (
+                     <RecordReadyCard onReady={markReadyToRecord} />
                   ) : (
                      <>
                         {/* 3) What to say, big and plain — the hint alone was easy to miss. */}
