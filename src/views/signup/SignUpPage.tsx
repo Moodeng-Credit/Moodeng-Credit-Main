@@ -2,7 +2,7 @@ import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from '
 
 import { Mail } from 'lucide-react';
 import posthog from 'posthog-js';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
@@ -27,7 +27,7 @@ import { detectInAppBrowser, isFacebookInApp } from '@/lib/inAppBrowser';
 import { cleanInviteInput, parkInviteCode, shouldAskInviteCodeSignedOut } from '@/lib/inviteCodeStep';
 import { showPasswordlessSignup, showPhoneFirst } from '@/lib/phoneAuth';
 import { registerUser, registerWithGoogle, registerWithTelegram } from '@/store/slices/authSlice';
-import type { AppDispatch, RootState } from '@/store/store';
+import type { AppDispatch } from '@/store/store';
 import { WorldId } from '@/types/authTypes';
 import IdEntryBanner from '@/views/indonesia/IdEntryBanner';
 import { clearIdTrackIntent, hasIdTrackIntent } from '@/views/indonesia/idFlow';
@@ -71,7 +71,6 @@ export default function SignUpPage() {
    const passwordless = useMemo(() => showPasswordlessSignup(detectInAppBrowser().isInApp), []);
    const phoneFirst = useMemo(() => showPhoneFirst(detectInAppBrowser().isInApp), []);
    const [searchParams] = useSearchParams();
-   const signedIn = useSelector((state: RootState) => Boolean(state.auth.user?.id));
    // "Who invited you?" comes first (src/lib/inviteCodeStep.ts) — unless a link already carries the
    // code (/sign-up?ref=MAHJID is parked here), they answered it already, or they're from /id.
    const [askCode, setAskCode] = useState(() => {
@@ -85,7 +84,8 @@ export default function SignUpPage() {
    // Already signed in (often a guest whose Facebook page reloaded): straight to their next step.
    const redirectingSignedIn = useSignedInRedirect();
    if (redirectingSignedIn) return <Loading />;
-   if (askCode && !signedIn) return <InviteCodeStep onDone={() => setAskCode(false)} signedIn={false} source="signup" />;
+   // Signed-in people never reach it: useSignedInRedirect sends them on first.
+   if (askCode) return <InviteCodeStep onDone={() => setAskCode(false)} signedIn={false} source="signup" />;
    return (
       <>
          {/* From Indonesia: the Telegram sign-up at /id (other methods stay below). */}
