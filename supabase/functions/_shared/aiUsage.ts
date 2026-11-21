@@ -28,9 +28,14 @@ export const logAiUsage = (feature: string, model: string, tokens: AiTokens | nu
    const url = Deno.env.get('SUPABASE_URL');
    const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
    if (!url || !key) return;
-   void fetch(`${url}/rest/v1/ai_usage`, {
+   const write = fetch(`${url}/rest/v1/ai_usage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', apikey: key, Authorization: `Bearer ${key}`, Prefer: 'return=minimal' },
       body: JSON.stringify({ feature: feature.slice(0, 40), model: model.slice(0, 60), input_tokens: Math.round(tokens.input), output_tokens: Math.round(tokens.output) })
    }).catch(() => undefined);
+   // The function may reply (and be stopped) right after the AI call, e.g. a quick tip: keep it alive
+   // until the row is written. Same pattern as admin-fund-loan.
+   if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(write);
 };
+
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void } | undefined;
