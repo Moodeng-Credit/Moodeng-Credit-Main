@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 
-import { CalendarPlus, Camera, Check, Gift, Hourglass, IdCard, Lock, MessagesSquare, ShieldCheck, Sparkles, Unlock, Video, Wallet, X } from 'lucide-react';
+import { CalendarPlus, Check, Gift, Hourglass, IdCard, Lock, MessagesSquare, ShieldCheck, Sparkles, Unlock, Video, Wallet, X } from 'lucide-react';
 
 import { clarityEvent } from '@/lib/analytics/clarity';
 import { MoreCharactersLabel } from '@/i18n/SentenceLabels';
@@ -23,6 +23,7 @@ import {
 } from '@/views/dashboard/components/connectKit';
 import CallTextReminder from '@/views/dashboard/components/CallTextReminder';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
+import { CALL_READY_ITEMS } from '@/views/dashboard/components/CallReadyCheck';
 import VideoCallStep, { ConfirmLaterNotice } from '@/views/dashboard/components/VideoCallStep';
 
 // PART 1 of Connect → Approve → Apply (docs/HANDOFF_BORROWER_VERIFICATION.md §13) — shown in the
@@ -669,9 +670,11 @@ export function LoanAccessPendingCard({
                         <PerkRow icon={<IdCard aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>
                            Your original ID or passport
                         </PerkRow>
-                        <PerkRow icon={<Camera aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>
-                           Camera on, good light, phone nearby
-                        </PerkRow>
+                        {CALL_READY_ITEMS.map(({ icon: Icon, title, hint }) => (
+                           <PerkRow icon={<Icon aria-hidden="true" className="size-[18px]" strokeWidth={2} />} key={title}>
+                              <b>{title}</b> · {hint}
+                           </PerkRow>
+                        ))}
                      </ul>
                   </div>
                )}

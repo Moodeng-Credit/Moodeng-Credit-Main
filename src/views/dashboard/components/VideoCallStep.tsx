@@ -7,6 +7,7 @@ import { FlipFace, useFloatingParticles, useReplayClass, useTapFlip } from '@/co
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { playDing } from '@/lib/uiSounds';
+import { CallReadyCard, CallReadyReminder } from '@/views/dashboard/components/CallReadyCheck';
 import { GhostButton, PrimaryButton } from '@/views/dashboard/components/connectKit';
 
 // The no-referral-code gate: a borrower with nobody at Moodeng to vouch for them has to SCHEDULE a
@@ -199,6 +200,10 @@ export default function VideoCallStep({
    }, [bookedStartsAt]);
 
    const isScheduled = phase === 'scheduled';
+   // "Before your call" checklist (be inside, bright room, look neat, Zoom, internet): one tap on
+   // "I'll be ready" before the times show. Times keep loading underneath.
+   const [ready, setReady] = useState(false);
+   const showChecklist = !ready && !isScheduled && phase !== 'cooldown';
 
    return (
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
@@ -208,6 +213,7 @@ export default function VideoCallStep({
             <div className="flex flex-col gap-3">
                <BookedCallCard host={host} bookedStartsAt={bookedStartsAt} formattedBooked={formattedBooked} />
                <ConfirmLaterNotice />
+               <CallReadyReminder />
                {calendarLinks ? (
                   <div className="grid grid-cols-2 gap-2">
                      <a
@@ -230,6 +236,8 @@ export default function VideoCallStep({
                   </div>
                ) : null}
             </div>
+         ) : showChecklist ? (
+            <CallReadyCard />
          ) : phase === 'loading' ? (
             <p className="text-center text-[14px] font-normal text-[#877897]">Finding open times…</p>
          ) : phase === 'cooldown' ? (
@@ -309,9 +317,20 @@ export default function VideoCallStep({
          )}
 
          <div className="mt-auto flex flex-col gap-1 pt-1">
-            <PrimaryButton disabled={!isScheduled || isSubmitting} onClick={() => isScheduled && !isSubmitting && onContinue()}>
-               {isSubmitting ? 'Submitting…' : isScheduled ? continueLabel : phase === 'cooldown' ? 'Booking paused' : 'Pick a time above'}
-            </PrimaryButton>
+            {showChecklist ? (
+               <PrimaryButton
+                  onClick={() => {
+                     setReady(true);
+                     clarityEvent('call_ready_agreed');
+                  }}
+               >
+                  I&apos;ll be ready ✓
+               </PrimaryButton>
+            ) : (
+               <PrimaryButton disabled={!isScheduled || isSubmitting} onClick={() => isScheduled && !isSubmitting && onContinue()}>
+                  {isSubmitting ? 'Submitting…' : isScheduled ? continueLabel : phase === 'cooldown' ? 'Booking paused' : 'Pick a time above'}
+               </PrimaryButton>
+            )}
             <GhostButton onClick={onBack}>Back</GhostButton>
          </div>
       </div>

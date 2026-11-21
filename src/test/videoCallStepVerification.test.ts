@@ -61,14 +61,36 @@ describe('VideoCallStep — free round-robin anonymous booking', () => {
       container.remove();
    });
 
-   const render = async () => {
+   // Renders, then taps "I'll be ready ✓" on the "Before your call" checklist (when shown) so the
+   // times appear — pass skipReady to stay on the checklist.
+   const render = async ({ skipReady = false } = {}) => {
       await act(async () => {
          root.render(createElement(VideoCallStep, { userId: 'user-1', onBack: vi.fn(), onContinue }));
       });
       await act(async () => {
          await new Promise((r) => setTimeout(r, 0));
       });
+      const ready = allButtons(container).find((b) => b.textContent?.trim().startsWith("I'll be ready"));
+      if (ready && !skipReady) {
+         await act(async () => {
+            ready.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+         });
+      }
    };
+
+   it('shows the "Before your call" checklist first, times only after "I\'ll be ready"', async () => {
+      await render({ skipReady: true });
+      expect(container.textContent).toContain('Before your call');
+      expect(container.textContent).toContain('Be inside');
+      expect(container.textContent).not.toContain('Your time zone');
+      await act(async () => {
+         allButtons(container)
+            .find((b) => b.textContent?.trim().startsWith("I'll be ready"))
+            ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      });
+      expect(container.textContent).not.toContain('Before your call');
+      expect(timeButtons(container).length).toBe(2);
+   });
 
    it('shows anonymous team time slots (no host name) and books server-side on pick', async () => {
       await render();
