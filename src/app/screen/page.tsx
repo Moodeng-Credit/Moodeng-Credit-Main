@@ -25,6 +25,7 @@ import {
    savePreScreening
 } from '@/lib/preScreening';
 import {
+   clipHint,
    coachHint,
    docHint,
    MEDICAL_CHOICES,
@@ -225,12 +226,15 @@ function AnswerRecorder({
    busy,
    onUse,
    previewState,
-   maxSeconds = MAX_SECONDS
+   maxSeconds = MAX_SECONDS,
+   useLabel = 'Next'
 }: {
    busy: boolean;
    onUse: (clip: Clip) => void;
    previewState?: RecorderState;
    maxSeconds?: number;
+   /** "Use this one" after the AI's tip on this clip. */
+   useLabel?: string;
 }) {
    const [state, setState] = useState<RecorderState>(previewState ?? 'idle');
    const [clip, setClip] = useState<Clip | null>(null);
@@ -435,7 +439,7 @@ function AnswerRecorder({
          {state === 'review' ? (
             <>
                <PrimaryButton disabled={busy || !clip} onClick={() => clip && onUse(clip)}>
-                  {busy ? <Loader2 aria-label="Sending" className="mx-auto size-5 animate-spin" /> : 'Next'}
+                  {busy ? <Loader2 aria-label="Sending" className="mx-auto size-5 animate-spin" /> : useLabel}
                </PrimaryButton>
                {busy ? null : (
                   <GhostButton
@@ -532,6 +536,10 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    );
    const [coeFile, setCoeFile] = useState<File | null>(null);
    // The AI's tip on an uploaded document (once per question): they send a different one or go on anyway.
+   // The AI's tip on a recorded answer (once per question): record again, or use this one.
+   const [clipTip, setClipTip] = useState<Record<string, { hint: string; clip: Clip | null; answer: UploadedAnswer }>>(
+      preview?.coach ? { intro: { hint: 'It’s a bit hard to hear you — a quieter spot would really help.', clip: null, answer: { q: 'intro', video: null, audio: null, seconds: 0 } } } : {}
+   );
    const [docTip, setDocTip] = useState<Record<string, { path: string; mime: string; hint: string }>>(
       preview?.coach
          ? {
@@ -904,6 +912,9 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    const acceptClip = async (clip: Clip) => {
       const question = questions[index];
       if (preview) return nextAfter(uploaded);
+      // "Use this one" after the AI's tip: the same clip, already uploaded.
+      const tipped = clipTip[question.id];
+      if (tipped && tipped.clip === clip) return nextAfter(save(tipped.answer));
       setBusy(true);
       setError(null);
       const storage = getSupabaseBrowserClient().storage.from('pre-screenings');
@@ -920,11 +931,22 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          const { error: upError } = await storage.upload(path, clip.video, { contentType: type, upsert: false });
          if (!upError) answer.video = path;
       }
-      setBusy(false);
       if (!answer.audio && !answer.video) {
+         setBusy(false);
          setError('Could not send. Check your connection and tap Next again.');
          return;
       }
+      // First take of this answer: the AI looks and listens once and, if it can't be used (face not
+      // visible, hard to hear, didn't answer), says kindly what would help. Never blocks, never twice.
+      if (v2 && token && !clipTip[question.id]) {
+         const hint = await clipHint(token, question.id, answer.video ?? answer.audio!, locale);
+         if (hint) {
+            setBusy(false);
+            setClipTip((prev) => ({ ...prev, [question.id]: { hint, clip, answer } }));
+            return;
+         }
+      }
+      setBusy(false);
       // Recorded again after going Back: the new one replaces the old.
       nextAfter(save(answer));
    };
@@ -1315,10 +1337,17 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                               </span>
                            </div>
                         ) : null}
+                        {clipTip[question.id] ? (
+                           <div className="rounded-[14px] bg-[#fff6e0] px-4 py-3 text-[15px] leading-[21px] text-[#5a4300] dark:bg-[#2e2512] dark:text-[#f3dfa8]">
+                              💡 {clipTip[question.id].hint}
+                           </div>
+                        ) : null}
                         <AnswerRecorder
                            busy={busy}
                            maxSeconds={question.id === 'job_video' ? JOB_VIDEO_SECONDS : MAX_SECONDS}
                            onUse={(clip) => void acceptClip(clip)}
+                           previewState={preview?.coach && clipTip[question.id] ? 'review' : undefined}
+                           useLabel={clipTip[question.id] ? 'Use this one' : 'Next'}
                         />
                         {index > 0 && !busy ? backButton : null}
                      </>
