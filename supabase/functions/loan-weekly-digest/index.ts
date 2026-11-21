@@ -22,7 +22,7 @@ import type {
 
 import { isInternalRequest } from '../_shared/internalAuth.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
-import { buildSignalReport, type SignalRow } from '../_shared/signalReport.ts';
+import { type AiCostSummary, aiCostLines, buildSignalReport, type SignalRow } from '../_shared/signalReport.ts';
 import { bangkokWeek, buildTeamLoansDue, type TeamDueLoan } from '../_shared/teamLoansDue.ts';
 import { buildUnsentRequestMessage, UNSENT_ADMIN_URL, UNSENT_IDLE_MINUTES, UNSENT_MAX_AGE_HOURS } from '../_shared/unsentLoanRequests.ts';
 
@@ -168,7 +168,12 @@ const sendTeamLoansDue = async (supabase: SupabaseClient, force: boolean) => {
 const sendSignalReport = async (supabase: SupabaseClient, chatId: string | undefined, dry: boolean) => {
    const { data, error } = await supabase.rpc('loan_signal_rows');
    if (error) throw new Error(error.message);
-   const text = buildSignalReport((data ?? []) as SignalRow[]);
+   // What the AI cost this week (ai_usage), under the report. Never breaks it.
+   const { data: cost } = await supabase.rpc('ai_cost_summary', { p_days: 7 }).then(
+      (r: { data: unknown }) => r,
+      () => ({ data: null })
+   );
+   const text = [buildSignalReport((data ?? []) as SignalRow[]), '', ...aiCostLines(cost as AiCostSummary | null)].join('\n').slice(0, 4000);
    if (dry || !chatId) return { ok: true, dry: true, text };
    await sendTelegramMessage(chatId, text);
    return { ok: true, sent: true };

@@ -5,6 +5,7 @@
 // GEMINI_API_KEY via public.gemini_api_key() (service_role only). Any failure throws, and
 // gradePreScreening falls back to the DeepSeek path.
 import { GEMINI_MODEL } from './geminiModel.ts';
+import { geminiTokens, logAiUsage } from './aiUsage.ts';
 import type { IncomeProofRead } from './incomeDocs.ts';
 import { MEDICAL_PROMPT, type MedicalRead, PHOTO_PROMPT, type PhotoCheck, toMedical, toPhotoCheck, worstMedical } from './prescreenV2.ts';
 import { withToday } from './aiToday.ts';
@@ -183,6 +184,7 @@ async function readOnce(key: string, parts: unknown[]): Promise<RawRead> {
    });
    if (!res.ok) throw new Error(`gemini ${res.status}: ${(await res.text().catch(() => '')).slice(0, 200)}`);
    const json = (await res.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string; thought?: boolean }> } }> };
+   logAiUsage('prescreen_grade', GEMINI_MODEL, geminiTokens(json));
    const text = (json.candidates?.[0]?.content?.parts ?? [])
       .filter((p) => !p.thought && typeof p.text === 'string')
       .map((p) => p.text)
