@@ -346,12 +346,16 @@ const FLAG_SYSTEM = `A small lender auto-approves people whose pre-screening sco
 - "name_mismatch": the name on the proof of income is clearly a different person from the name they gave (nicknames, missing middle names, extra surnames, spelling and order differences are NOT a mismatch)
 - "fake_document": the document looks made up, edited or AI-generated (a named warning or clear signs in the notes), not just blurry or short
 - "sick_family": the loan is for a sick or hospitalised family member's medical costs (their OWN illness does not count)
-Reply with only json: {"red_flags": [{"code": "name_mismatch" | "fake_document" | "sick_family", "why": "a few plain words"}]} — an empty list when there are none.`;
+- "debt_cycle": this loan is to pay off another loan or debt, or they are paying other lending apps now (Tala, GLoan, Billease, SLoan…), from their answers or the proof of income
+- "allowance_only": their money is ONLY an allowance or family support, with no income from their own work (work plus some family money is fine)
+Reply with only json: {"red_flags": [{"code": "name_mismatch" | "fake_document" | "sick_family" | "debt_cycle" | "allowance_only", "why": "a few plain words"}]} — an empty list when there are none.`;
 
 const FLAG_LABEL: Record<string, string> = {
    name_mismatch: 'name on the document doesn’t match',
    fake_document: 'document looks fake or edited',
-   sick_family: 'loan for a sick family member'
+   sick_family: 'loan for a sick family member',
+   debt_cycle: 'borrowing to repay other loans',
+   allowance_only: 'money is only allowance / family support'
 };
 
 /**
