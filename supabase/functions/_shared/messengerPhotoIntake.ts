@@ -49,7 +49,13 @@ const SCREENSHOT_REPLY: Record<Lang, string> = {
    id: 'Screenshot kamu sudah kami terima ✅ Terima kasih! Tim kami akan melihatnya bersama slip gajimu dan mengabari di sini. 🦛'
 };
 
-type DocQs = { id: string; decision: string | null; decided_by: string | null; questions: Array<{ id: string; kind?: string }> | null; answers: Array<{ id: string }> | null };
+type DocQs = {
+   id: string;
+   decision: string | null;
+   decided_by: string | null;
+   questions: Array<{ id: string; kind?: string }> | null;
+   answers: Array<{ id: string }> | null;
+};
 
 /** Their latest proof of income (14 days) whose payslip screenshot question is still open, or null. */
 export async function openPayslipScreenshot(svc: Svc, userId: string, now = Date.now()): Promise<string | null> {
@@ -107,6 +113,29 @@ export async function photoIntakeReason(svc: Svc, userId: string, now = Date.now
       (e) => typeof e.payload?.last_message === 'string' && DOCS_RE.test(e.payload.last_message)
    );
    return typedDocs ? 'docs' : null;
+}
+
+// "PROOF", sent from the page's "Open our Messenger chat" button (or typed): a real message, so Meta's 24 hours
+// open and the bot can ask for the photo right away. An m.me link tap alone isn't a message.
+export const isProofKeyword = (text: string) => /^\s*(proofs?|photos?|litrato)\s*[.!]*\s*$/i.test(text);
+const PROOF_ASK: Record<Lang, string> = {
+   en: 'Great, send your proof of income here 📎 Tap the 📷 or + below and pick the photo (payslip, GCash history, bank statement…). We check it automatically 🦛',
+   fil: 'Sige, ipadala mo dito ang proof of income mo 📎 Pindutin ang 📷 o + sa baba at piliin ang photo (payslip, GCash history, bank statement…). Kami na ang magche-check 🦛',
+   id: 'Oke, kirim bukti penghasilanmu di sini 📎 Tekan 📷 atau + di bawah dan pilih fotonya (slip gaji, riwayat e-wallet, rekening koran…). Kami cek otomatis 🦛'
+};
+
+/** PROOF typed: expect their photos for 2 days and tell them how to send one. True when handled. */
+export async function handleProofKeyword(svc: Svc, userId: string, contactId: string, text: string): Promise<boolean> {
+   if (!isProofKeyword(text)) return false;
+   const { data: user } = await svc.from('users').select('user_role, preferred_locale, market').eq('id', userId).maybeSingle();
+   if (!user || user.user_role === 'lender') return false;
+   await svc
+      .from('users')
+      .update({ messenger_photo_intake_until: new Date(Date.now() + 2 * DAY).toISOString() })
+      .eq('id', userId);
+   const sent = await sendMessengerMessage(contactId, { text: PROOF_ASK[langOf(user.preferred_locale, user.market) as Lang] });
+   if (!sent.ok) console.error('messenger photo intake: PROOF reply failed', sent.reason);
+   return true;
 }
 
 /** Download one Messenger photo. Null when it isn't a usable image. */
