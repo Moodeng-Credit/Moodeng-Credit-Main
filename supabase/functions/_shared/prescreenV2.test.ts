@@ -1,8 +1,18 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
 import { buildGrade, type PreScreenQuestion } from './preScreening.ts';
-import { plainRedFlags } from './preScreeningAsk.ts';
-import { fallbackPlan as fallbackPlanV2, jobRedFlags, noIncomeLine } from './prescreenV2.ts';
+import { plainRedFlags, toRedFlags } from './preScreeningAsk.ts';
+import {
+   cleanMoneyPlan,
+   fallbackMoneySecond,
+   fallbackPlan as fallbackPlanV2,
+   insertMoney,
+   jobRedFlags,
+   MONEY_QUESTIONS,
+   moneyInput,
+   moneyQuestions,
+   noIncomeLine
+} from './prescreenV2.ts';
 import {
    cleanPlan,
    fallbackPlan,
@@ -216,4 +226,48 @@ Deno.test('job keyword list: any job abroad is an OFW worker; family of one is o
       assertEquals(fallbackPlan(job).category, 'ofw_family', job);
    for (const job of ['helper sa Maynila', 'factory worker', 'Grab driver', 'tricycle driver', 'small business'])
       assert(!fallbackPlan(job).category.startsWith('ofw'), job);
+});
+
+Deno.test('money follow-ups: the second question comes from their own words', () => {
+   assertEquals(fallbackMoneySecond({ purpose: 'Pambayad sa utang ko sa kaibigan', borrowed: 'no' }), 'debts');
+   assertEquals(fallbackMoneySecond({ purpose: 'To pay my Tala before payday' }), 'debts');
+   assertEquals(fallbackMoneySecond({ purpose: 'School project materials', borrowed: 'Yes, GCash GLoan last month' }), 'last_loan');
+   assertEquals(fallbackMoneySecond({ purpose: 'Food until payday', borrowed: 'Wala pa po' }), 'backup');
+   assertEquals(fallbackMoneySecond({}), 'backup');
+});
+
+Deno.test('money follow-ups: Gemini must give income_split + one more; good lines are ours', () => {
+   assertEquals(cleanMoneyPlan({ questions: [{ code: 'debts', text: 'Who do you owe?' }] }), null);
+   assertEquals(cleanMoneyPlan({ questions: [{ code: 'income_split', text: 'How much a month?' }, { code: 'hack', text: 'x' }] }), null);
+   const plan = cleanMoneyPlan({
+      questions: [
+         { code: 'income_split', text: 'Magkano ang pera mo bawat buwan?', hint: '₱9,000 sa trabaho' },
+         { code: 'backup', text: 'Kung late ang sahod mo?' }
+      ]
+   });
+   assert(plan);
+   const qs = moneyQuestions(plan);
+   assertEquals(qs.map((q) => q.id), ['money_q1', 'money_q2']);
+   assertEquals(qs[1].good, MONEY_QUESTIONS.backup.good);
+   assertEquals(qs[0].money, 'income_split');
+});
+
+Deno.test('money follow-ups: go before medical, replace an earlier set, and only typed answers are read', () => {
+   const base = [{ id: 'purpose', kind: 'text' }, { id: 'job', kind: 'job' }, { id: 'job_q1', kind: 'text', dynamic: true }, { id: 'medical', kind: 'medical' }];
+   const plan = moneyQuestions([
+      { code: 'income_split', text: 'a' },
+      { code: 'debts', text: 'b' }
+   ]);
+   const once = insertMoney(base, plan);
+   assertEquals(once.map((q) => q.id), ['purpose', 'job', 'job_q1', 'money_q1', 'money_q2', 'medical']);
+   assertEquals(insertMoney(once, plan).map((q) => q.id), once.map((q) => q.id));
+   assertEquals(insertMoney(base.slice(0, 3), plan).map((q) => q.id), ['purpose', 'job', 'job_q1', 'money_q1', 'money_q2']);
+   assertEquals(moneyInput({ purpose: '  pay   my loan ', intro: 'x', medical: 'no', job_q2: 'sorter', other: 5 }), { purpose: 'pay my loan', job_q2: 'sorter' });
+});
+
+Deno.test('auto ✅ red flags: borrowing to repay and allowance-only are known flags', () => {
+   assertEquals(
+      toRedFlags({ red_flags: [{ code: 'debt_cycle', why: 'loan to pay a friend' }, { code: 'allowance_only' }, { code: 'made_up' }] }),
+      ['borrowing to repay other loans (loan to pay a friend)', 'money is only allowance / family support']
+   );
 });

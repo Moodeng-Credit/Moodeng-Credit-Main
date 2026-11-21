@@ -38,6 +38,33 @@ export const planJobQuestions = async (token: string, job: string, locale = 'en'
    return res.questions;
 };
 
+/**
+ * Right before the proof of income: 2 money questions (work vs family money, then debts / last loan /
+ * back-up plan), picked from what they typed so far and written into the row before 'medical'.
+ * Null = off, slow or failed: carry on without them (never blocks anyone).
+ */
+export const planMoneyQuestions = async (
+   token: string,
+   answers: Record<string, string>,
+   locale = 'en'
+): Promise<PlannedQuestion[] | null> => {
+   try {
+      const call = getSupabaseBrowserClient().functions.invoke('check-loan-input', {
+         body: { kind: 'prescreen_money', token, answers, locale: ['fil', 'id'].includes(locale) ? locale : 'en' }
+      });
+      const timeout = new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 14000));
+      const result = (await Promise.race([call, timeout])) as {
+         data?: { ok?: boolean; off?: boolean; questions?: PlannedQuestion[] } | null;
+         error?: unknown;
+      } | null;
+      const res = result?.data;
+      if (!result || result.error || !res?.ok || res.off || !Array.isArray(res.questions)) return null;
+      return res.questions.some((q) => /^money_q/.test(q.id)) ? res.questions : null;
+   } catch {
+      return null;
+   }
+};
+
 /** One gentle hint when a typed answer is too vague for its question; '' = fine (or the AI was slow). */
 export const coachHint = async (token: string, q: string, answer: string, locale: string): Promise<string> => {
    try {

@@ -3,7 +3,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { alertDeepSeekFailure } from '../_shared/deepseekAlert.ts';
-import { coachAnswer, coachClip, coachDoc, planJob } from '../_shared/prescreenV2.ts';
+import { coachAnswer, coachClip, coachDoc, planJob, planMoney } from '../_shared/prescreenV2.ts';
 import { LOAN_REASON_GUIDE } from './loanReasonGuide.ts';
 
 const corsHeaders = {
@@ -301,7 +301,7 @@ const recordCheck = async (row: {
 // Pre-screening v2 rides here (edge-function cap; this one already takes the borrower's JWT): the job
 // follow-ups and the answer coach on moodeng.app/screen. Gemini, not DeepSeek. Only for the caller's own
 // open pre-screening (token + user), so it's no free AI for anyone else. See _shared/prescreenV2.ts.
-const PRESCREEN_KINDS = new Set(['prescreen_job', 'prescreen_coach', 'prescreen_doc', 'prescreen_clip']);
+const PRESCREEN_KINDS = new Set(['prescreen_job', 'prescreen_money', 'prescreen_coach', 'prescreen_doc', 'prescreen_clip']);
 
 const handlePrescreen = async (req: Request, body: Record<string, unknown>) => {
    const userId = callerUserId(req);
@@ -313,6 +313,10 @@ const handlePrescreen = async (req: Request, body: Record<string, unknown>) => {
    const token = typeof body.token === 'string' ? body.token : '';
    if (body.kind === 'prescreen_job') {
       const result = await planJob(svc, userId, token, typeof body.job === 'string' ? body.job : '', typeof body.locale === 'string' ? body.locale : 'en');
+      return jsonResponse(result, result.ok ? 200 : 400);
+   }
+   if (body.kind === 'prescreen_money') {
+      const result = await planMoney(svc, userId, token, body.answers, typeof body.locale === 'string' ? body.locale : 'en');
       return jsonResponse(result, result.ok ? 200 : 400);
    }
    const locale = typeof body.locale === 'string' && ['en', 'fil', 'id'].includes(body.locale) ? body.locale : 'en';

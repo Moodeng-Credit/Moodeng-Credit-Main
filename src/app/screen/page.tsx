@@ -36,6 +36,7 @@ import {
    type MedicalChoice,
    minutesLeft,
    planJobQuestions,
+   planMoneyQuestions,
    PRESCREEN_CAPS,
    prescreenHippo,
    saidNo
@@ -200,6 +201,8 @@ type SavedProgress = {
    coached?: Record<string, Coached>;
    choices?: Record<string, MedicalChoice>;
    plannedFor?: string | null;
+   /** The job the money questions were planned for (or tried): once per job. */
+   moneyFor?: string | null;
 };
 const readProgress = (token: string | undefined): SavedProgress | null => {
    try {
@@ -650,6 +653,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    );
    // The job the follow-ups were made for (same job after Back = no new questions).
    const [plannedFor, setPlannedFor] = useState<string | null>(preview ? 'farmer' : null);
+   const [moneyFor, setMoneyFor] = useState<string | null>(null);
    const [useAlt, setUseAlt] = useState<Record<string, boolean>>({});
    // LivePhoto reports "time's up" so the hero can show the alarm-clock hippo.
    const [photoExpired, setPhotoExpired] = useState<Record<string, boolean>>({});
@@ -707,9 +711,10 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          v2,
          coached,
          choices,
-         plannedFor
+         plannedFor,
+         moneyFor
       });
-   }, [preview, token, stage, index, questions, askProof, typed, uploaded, uploadedDocs, v2, coached, choices, plannedFor]);
+   }, [preview, token, stage, index, questions, askProof, typed, uploaded, uploadedDocs, v2, coached, choices, plannedFor, moneyFor]);
 
    // One analytics event per screen they reach, so we see which step people stop at.
    const stepKey = stage === 'question' ? `q:${questions[index]?.id ?? index}` : stage;
@@ -795,6 +800,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          setCoached(progress.coached ?? {});
          setChoices(progress.choices ?? {});
          setPlannedFor(progress.plannedFor ?? null);
+         setMoneyFor(progress.moneyFor ?? null);
          setIndex(Math.min(progress.index, progress.questions.length - 1));
          setStage(progress.stage);
          return;
@@ -946,6 +952,43 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
 
    const nextAfter = (next: UploadedAnswer[], list: ScreenQuestion[] = questions) => {
       const i = index + 1;
+      // v2: right before the proof of income (next is 'medical' or the end), the 2 money questions, once per job.
+      const beforeProof = i >= list.length || list[i].kind === 'medical';
+      if (
+         v2 &&
+         !preview &&
+         token &&
+         beforeProof &&
+         moneyFor !== (plannedFor ?? '') &&
+         list.some((q) => q.kind === 'job') &&
+         !list.some((q) => /^money_q/.test(q.id))
+      ) {
+         void addMoney(token, next, list);
+         return;
+      }
+      goOn(next, list, i);
+   };
+
+   // Fails open: off, slow or broken → straight on to the proof of income, as before.
+   const moneyPending = useRef(false);
+   const addMoney = async (link: string, next: UploadedAnswer[], list: ScreenQuestion[]) => {
+      // A second tap while the first is still out (photo / document steps have their own buttons).
+      if (moneyPending.current) return;
+      moneyPending.current = true;
+      const answers: Record<string, string> = {};
+      for (const a of next) if (typeof a.text === 'string' && a.text.trim()) answers[a.q] = a.text;
+      setBusy(true);
+      const planned = await planMoneyQuestions(link, answers, locale);
+      moneyPending.current = false;
+      setBusy(false);
+      setMoneyFor(plannedFor ?? '');
+      const at = planned ? planned.findIndex((q) => /^money_q/.test(q.id)) : -1;
+      if (!planned || at < 0) return goOn(next, list, index + 1);
+      setQuestions(planned as ScreenQuestion[]);
+      setIndex(at);
+   };
+
+   const goOn = (next: UploadedAnswer[], list: ScreenQuestion[], i: number) => {
       if (i < list.length) {
          setIndex(i);
          // v2: job first, then income, then the medical question.
@@ -1012,7 +1055,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          setQuestions(list);
          setPlannedFor(job.toLowerCase());
          // Answers to the old follow-ups don't fit the new job.
-         kept = uploaded.filter((a) => list.some((q) => q.id === a.q) && !/^job_|^coe$|^work_permit$/.test(a.q));
+         kept = uploaded.filter((a) => list.some((q) => q.id === a.q) && !/^job_|^coe$|^work_permit$|^money_/.test(a.q));
       }
       const next = [...kept.filter((a) => a.q !== question.id), { ...blank(question.id), text: job }];
       setUploaded(next);
