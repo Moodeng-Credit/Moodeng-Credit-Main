@@ -17,6 +17,10 @@ const h = vi.hoisted(() => ({
       error: null
    })),
    rpc: vi.fn<(name: string, args?: unknown) => Promise<{ data: unknown; error: null }>>(async () => ({ data: false, error: null })),
+   invoke: vi.fn<(name: string, options?: unknown) => Promise<{ data: unknown; error: null }>>(async () => ({
+      data: { guest: true },
+      error: null
+   })),
    signUp: vi.fn<(args: unknown) => Promise<{ data: { user: unknown }; error: null }>>(async () => ({
       data: { user: { id: 'u-new', identities: [{ id: 'i-1' }] } },
       error: null
@@ -39,6 +43,7 @@ vi.mock('@/lib/supabase/client', () => ({
          getUser: async () => ({ data: { user: h.authUser }, error: null })
       },
       rpc: h.rpc,
+      functions: { invoke: h.invoke },
       from: () => {
          const builder = {
             select: () => builder,
@@ -72,6 +77,7 @@ describe('passwordless OTP thunks', () => {
       h.rpc.mockReset();
       h.rpc.mockImplementation(async () => ({ data: false, error: null }));
       h.signUp.mockClear();
+      h.invoke.mockClear();
       localStorage.clear();
       sessionStorage.clear();
    });
@@ -152,6 +158,32 @@ describe('passwordless OTP thunks', () => {
       expect(h.signInWithOtp).toHaveBeenCalledTimes(2);
       expect(h.signOut).not.toHaveBeenCalled();
       expect(localStorage.getItem('persist:root')).toBe('guest progress');
+   });
+
+   it('email code for an email a guest account is waiting on: code for that guest, checked as an email change', async () => {
+      h.rpc.mockImplementation(async (name: string) => ({ data: name === 'guest_awaiting_email', error: null }));
+      await run(requestOtpCode({ channel: 'email', email: 'Carms@Example.com', mode: 'signup' }));
+      expect(h.signInWithOtp).not.toHaveBeenCalled();
+      expect(h.invoke).toHaveBeenCalledWith('forgot-password', { body: { action: 'guest_code', email: 'Carms@Example.com' } });
+      h.authUser = { id: 'guest-1', email: 'carms@example.com', user_metadata: {}, app_metadata: { provider: 'email' } };
+      await run(verifyOtpCode({ channel: 'email', email: 'Carms@Example.com', token: '12345678' }));
+      expect(h.verifyOtp).toHaveBeenCalledWith({ email: 'carms@example.com', token: '12345678', type: 'email_change' });
+      // Used up: the next code for this email is a normal one.
+      await run(verifyOtpCode({ channel: 'email', email: 'carms@example.com', token: '12345678' }));
+      expect(h.verifyOtp).toHaveBeenLastCalledWith({ email: 'carms@example.com', token: '12345678', type: 'email' });
+   });
+
+   it('no guest waiting (or the guest code fails): the normal sign-in code, checked as type email', async () => {
+      await run(requestOtpCode({ channel: 'email', email: 'maria@example.com', mode: 'signup' }));
+      expect(h.invoke).not.toHaveBeenCalled();
+      expect(h.signInWithOtp).toHaveBeenCalledTimes(1);
+
+      h.rpc.mockImplementation(async (name: string) => ({ data: name === 'guest_awaiting_email', error: null }));
+      h.invoke.mockResolvedValueOnce({ data: { guest: false }, error: null });
+      await run(requestOtpCode({ channel: 'email', email: 'maria@example.com', mode: 'signup' }));
+      expect(h.signInWithOtp).toHaveBeenCalledTimes(2);
+      await run(verifyOtpCode({ channel: 'email', email: 'maria@example.com', token: '87654321' }));
+      expect(h.verifyOtp).toHaveBeenCalledWith({ email: 'maria@example.com', token: '87654321', type: 'email' });
    });
 
    it("a kept guest session's cached data is cleared once the code signs someone else in", async () => {

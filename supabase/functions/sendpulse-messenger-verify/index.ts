@@ -6,6 +6,7 @@ import { postDiscord } from '../_shared/discord.ts';
 import { buildFacebookConnectedAlert, type LoanRecord } from '../_shared/facebookConnectedAlert.ts';
 import { loadOnboardingTimeline, signupLines, timelineLines } from '../_shared/onboardingTimeline.ts';
 import { extractMessengerCodes } from '../_shared/messengerCodes.ts';
+import { autoRejectForFacebookProfile, checkFacebookProfile } from '../_shared/facebookProfileCheck.ts';
 import { decideTimingMatch, type TimingAttempt } from '../_shared/messengerTimingMatch.ts';
 import { claimContactRows } from '../_shared/messengerContactLog.ts';
 import { messengerVerifiedStamp } from '../_shared/messengerStuckAlert.ts';
@@ -17,7 +18,8 @@ import {
    messengerDisplayName,
    normalizeWhatsAppPhone,
    sendMessengerMessage,
-   sendWhatsAppText
+   sendWhatsAppText,
+   listMessengerMessages
 } from '../_shared/sendpulse.ts';
 import { loadBorrowSteps, loadNextStep } from '../_shared/botNextStep.ts';
 import { botMessageStats } from '../_shared/botMessageStats.ts';
@@ -67,13 +69,13 @@ const announceConnected = async (svc: Svc, userId: string, contactId: string | n
       const [{ data: borrower }, { data: loans }, { data: chatRow }, contact, { data: sharing }, onboarding] = await Promise.all([
          svc
             .from('users')
-            .select('username, display_name, email, is_didit, is_world_id, didit_id_status, didit_decline_reason, is_test')
+            .select('username, display_name, email, is_didit, is_world_id, didit_id_status, didit_decline_reason, is_test, loan_access_status')
             .eq('id', userId)
             .maybeSingle(),
          svc.from('loans').select('funded_at, due_date, repaid_at, is_test').eq('borrower_user_id', userId),
          svc.from('telegram_bot_settings').select('value').eq('key', 'kyc_alert_chat_id').maybeSingle(),
          contactId ? getMessengerContact(contactId) : Promise.resolve(null),
-         contactId ? svc.from('users').select('username').eq('messenger_psid', contactId).neq('id', userId) : Promise.resolve({ data: [] }),
+         contactId ? svc.from('users').select('username, loan_access_status').eq('messenger_psid', contactId).neq('id', userId) : Promise.resolve({ data: [] }),
          loadOnboardingTimeline(svc, userId)
       ]);
       if (!borrower) return;
@@ -84,9 +86,10 @@ const announceConnected = async (svc: Svc, userId: string, contactId: string | n
          userId,
          messengerVerifiedStamp(personName(borrower), 'auto (their code reached the bot)', messengerDisplayName(contact) ?? flowName)
       );
-      const alsoLinkedTo = ((sharing ?? []) as Array<{ username: string | null }>).map((u) =>
-         u.username ? `@${u.username}` : 'another account'
-      );
+      const siblings = (sharing ?? []) as Array<{ username: string | null; loan_access_status: string | null }>;
+      const alsoLinkedTo = siblings.map((u) => `${u.username ? `@${u.username}` : 'another account'}${u.loan_access_status === 'rejected' ? ' (rejected)' : ''}`);
+      // The DB trigger (reject_when_facebook_rejected) already rejected this account when its Facebook was linked.
+      const carriedReject = borrower.loan_access_status === 'rejected' && siblings.some((u) => u.loan_access_status === 'rejected');
       const text = buildFacebookConnectedAlert(
          borrower,
          messengerDisplayName(contact) ?? flowName,
@@ -96,11 +99,12 @@ const announceConnected = async (svc: Svc, userId: string, contactId: string | n
          [...signupLines(onboarding), ...timelineLines(onboarding)]
       );
       const chat = (chatRow as { value?: string } | null)?.value;
+      const fullText = carriedReject ? `${text}\n🚫 Rejected automatically: this Facebook was already rejected on another account.` : text;
       if (chat)
-         await sendTelegramMessage(chat, borrower.is_test ? `${text}\n🧪 Test account` : text, borrower.is_test ? {} : { inlineKeyboard: testAccountRow(userId) }).catch((err: unknown) =>
+         await sendTelegramMessage(chat, borrower.is_test ? `${fullText}\n🧪 Test account` : fullText, borrower.is_test ? {} : { inlineKeyboard: testAccountRow(userId) }).catch((err: unknown) =>
             console.error('sendpulse-messenger-verify: telegram ping failed', err)
          );
-      await postDiscord({ content: text }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
+      await postDiscord({ content: fullText }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
    } catch (err) {
       console.error('sendpulse-messenger-verify: announce failed', err instanceof Error ? err.message : err);
    }
@@ -146,7 +150,7 @@ const FOLLOW_UP_DELAY_MS = 5_000;
 
 // The SendPulse flow answers "✅ Your Facebook is confirmed! Head back to the Moodeng app" itself,
 // after this function returns. That's all a borrower heard, even when their ID review had already
-// been approved (kryshia, 2026-10-01: approved 14:39, connected Facebook 14:57, never told on
+// been approved (a borrower, 2026-10-01: approved 14:39, connected Facebook 14:57, never told on
 // Messenger). So once the first connection lands, follow up with where their verification stands.
 // Sent a few seconds later, so it reads after the flow's own confirmation; they've just messaged
 // the Page, so Meta's 24h window is open. Nothing is sent when there's nothing to add.
@@ -417,6 +421,11 @@ serve(async (req) => {
       const expected = (Deno.env.get('ADMIN_API_TOKEN') ?? '').trim();
       if (!expected || req.headers.get('x-admin-token')!.trim() !== expected) return json({ ok: false, error: 'unauthorized' }, 401);
       const p = await req.json().catch(() => ({}));
+      // One contact's raw chat log (newest first): what each outgoing message carries, to tell team-typed from ours.
+      if (p?.action === 'chat_history' && typeof p.contactId === 'string') {
+         const msgs = await listMessengerMessages(p.contactId, Math.min(Number(p.size ?? 60), 200));
+         return json({ ok: true, messages: msgs });
+      }
       if (p?.action !== 'message_stats') return json({ ok: false, error: 'unknown_action' }, 400);
       return json(await botMessageStats(String(p.since ?? new Date(Date.now() - 21 * 86400_000).toISOString()), Number(p.maxChats ?? 120)));
    }
@@ -551,9 +560,8 @@ serve(async (req) => {
 
       const { data: before } = await svc.from('users').select('messenger_verified_at').eq('id', pending.user_id).maybeSingle();
       // Their Facebook name, from SendPulse's API (the flow's {{full_name}} is only a fallback).
-      const facebookName =
-         (contactId ? messengerDisplayName(await getMessengerContact(contactId)) : null) ??
-         (body.name ? String(body.name).trim() || null : null);
+      const contact = contactId ? await getMessengerContact(contactId) : null;
+      const facebookName = messengerDisplayName(contact) ?? (body.name ? String(body.name).trim() || null : null);
       const { error: userError } = await svc
          .from('users')
          .update({
@@ -567,18 +575,31 @@ serve(async (req) => {
          console.error('sendpulse-messenger-verify: user update failed', userError.message);
       } else if (!(before as { messenger_verified_at?: string | null } | null)?.messenger_verified_at) {
          await announceConnected(svc, pending.user_id, contactId, body.name ? String(body.name) : null);
-         // Indonesia track: the next step goes to them on Telegram (Facebook only counts as done once
-         // the profile link is saved too; the status RPC decides), and nothing on WhatsApp.
-         const idTrack = await isIdTrackUser(svc, pending.user_id);
-         const followUp = Promise.all(
-            idTrack
-               ? [notifyIdNextStep(svc, pending.user_id, 'facebook')]
-               : [
-                    followUpWithStatus(svc, pending.user_id, contactId),
-                    // Indonesia's WhatsApp-first sign-up: say so on WhatsApp too, with the next step.
-                    sendFacebookConnectedOnWhatsApp(svc, pending.user_id)
-                 ]
-         );
+         const userId = pending.user_id;
+         const followUp = (async () => {
+            // Facebook profile check (grey photo / no last name / lowercase name) → auto-reject before
+            // the call (facebookProfileCheck.ts). Rejected people get the "other lenders" message
+            // instead of the next step. Runs after the reply, since it downloads their picture.
+            const check = await checkFacebookProfile(svc, userId, contact);
+            console.log(
+               'sendpulse-messenger-verify: profile check',
+               userId,
+               JSON.stringify({ flags: check.flags, photo: Boolean(check.photoUrl), hash: check.photoHash?.slice(0, 12), bytes: check.photoBytes, shared: check.sharedWith, keys: Object.keys(contact?.channel_data ?? {}) })
+            );
+            if (await autoRejectForFacebookProfile(svc, userId, check, facebookName)) return;
+            // Indonesia track: the next step goes to them on Telegram (Facebook only counts as done once
+            // the profile link is saved too; the status RPC decides), and nothing on WhatsApp.
+            const idTrack = await isIdTrackUser(svc, userId);
+            await Promise.all(
+               idTrack
+                  ? [notifyIdNextStep(svc, userId, 'facebook')]
+                  : [
+                       followUpWithStatus(svc, userId, contactId),
+                       // Indonesia's WhatsApp-first sign-up: say so on WhatsApp too, with the next step.
+                       sendFacebookConnectedOnWhatsApp(svc, userId)
+                    ]
+            );
+         })().catch((err) => console.error('sendpulse-messenger-verify: follow-up failed', err instanceof Error ? err.message : err));
          if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(followUp);
       }
 

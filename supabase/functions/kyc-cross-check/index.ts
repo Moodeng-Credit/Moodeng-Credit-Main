@@ -2,7 +2,11 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { checkCronAuth } from '../_shared/cronAuth.ts';
 import { postDiscord } from '../_shared/discord.ts';
-import { analyseIncomeDocument, notifyIncomeDecision } from '../_shared/incomeDocs.ts';
+import { analyseIncomeDocument, backfillBorrowerQuestions, notifyIncomeDecision, recheckIncomeNamesAfterId, reviewWithAnswers } from '../_shared/incomeDocs.ts';
+import { gradePreScreening, notifyPreScreeningClaimed, preScreeningWeekly } from '../_shared/preScreening.ts';
+import { linkedSweep } from '../_shared/linkedAccounts.ts';
+import { preScreeningSweep } from '../_shared/preScreeningAsk.ts';
+import { applyPreScreeningDecision } from '../_shared/preScreeningDecision.ts';
 import { pingProofRequest, sendProofRequest } from '../_shared/proofRequests.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
@@ -59,6 +63,11 @@ type Identity = {
    longitude: number | null;
    geo_precision: string | null;
    nik_district: string | null;
+   gender: string | null;
+   marital_status: string | null;
+   region: string | null;
+   province: string | null;
+   city: string | null;
    warnings: string[];
 };
 
@@ -143,6 +152,15 @@ const collectWarnings = (decision: any): string[] => {
    return [...codes];
 };
 
+// Google's address parts from Didit's address lookup: level 1 = region ("Cagayan Valley"),
+// level 2 = province ("Nueva Vizcaya"), locality = city. Feeds Admin → Borrower profile.
+// deno-lint-ignore no-explicit-any
+const addressPart = (parsed: any, type: string): string | null => {
+   // deno-lint-ignore no-explicit-any
+   const part = (parsed?.raw_results?.address_components ?? []).find((c: any) => Array.isArray(c?.types) && c.types.includes(type));
+   return typeof part?.long_name === 'string' && part.long_name.trim() ? part.long_name.trim() : null;
+};
+
 // deno-lint-ignore no-explicit-any
 const toIdentity = (decision: any, userIds: Set<string>): Identity => {
    const iv = decision?.id_verifications?.[0] ?? null;
@@ -170,6 +188,11 @@ const toIdentity = (decision: any, userIds: Set<string>): Identity => {
       longitude: typeof location?.lng === 'number' ? location.lng : null,
       geo_precision: parsed?.raw_results?.geometry?.location_type ?? null,
       nik_district: iv?.issuing_state === 'IDN' && docNumber && /^\d{16}$/.test(docNumber) ? docNumber.slice(0, 6) : null,
+      gender: typeof iv?.gender === 'string' && /^[MF]/i.test(iv.gender) ? iv.gender.slice(0, 1).toUpperCase() : null,
+      marital_status: typeof iv?.marital_status === 'string' && iv.marital_status.trim() ? iv.marital_status.trim() : null,
+      region: addressPart(parsed, 'administrative_area_level_1') ?? (typeof parsed?.region === 'string' ? parsed.region : null),
+      province: addressPart(parsed, 'administrative_area_level_2'),
+      city: addressPart(parsed, 'locality'),
       warnings: collectWarnings(decision)
    };
 };
@@ -287,16 +310,59 @@ serve(async (req) => {
       dry?: boolean;
       income_doc?: string;
       income_decision?: string;
+      income_answers?: string;
+      income_questions?: string;
+      income_card?: { chat?: string; message?: number };
       proof_request?: string;
       proof_request_send?: string;
+      prescreen?: string;
+      prescreen_claimed?: string;
+      prescreen_decided?: string;
+      prescreen_weekly?: boolean;
+      prescreen_sweep?: boolean;
+      linked_sweep?: boolean;
+      quiet?: boolean;
    };
+
+   // Pre-screening rides here too: {"prescreen": id} = the clips are in, grade them;
+   // {"prescreen_claimed": id} = that person signed up. See _shared/preScreening.ts.
+   // Monday cron: how often the AI agreed with the team's ✅ / ❌ last week.
+   if (body.prescreen_weekly === true) {
+      const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+      return jsonResponse(await preScreeningWeekly(svc));
+   }
+   // Every 30 min (cron prescreen-sweep): nudge people who haven't answered the follow-up questions,
+   // remind the team about cards still without ✅/❌. {"dry": true} = say what it would do.
+   // New accounts linked to rejected / ghosted / overdue ones (every 30 min; "dry": true previews).
+   if (body.linked_sweep === true) {
+      const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+      return jsonResponse(await linkedSweep(svc, { dry: body.dry === true }));
+   }
+   if (body.prescreen_sweep === true) {
+      const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+      return jsonResponse(await preScreeningSweep(svc, { dry: body.dry === true }));
+   }
+   if (body.prescreen || body.prescreen_claimed || body.prescreen_decided) {
+      const id = body.prescreen ?? body.prescreen_claimed ?? body.prescreen_decided ?? '';
+      if (!UUID_RE.test(id)) return jsonResponse({ error: 'bad prescreen id' }, 400);
+      const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+      // The team's ✅/❌ from Admin (decide_pre_screening); Telegram taps act in telegram-webhook.
+      if (body.prescreen_decided) return jsonResponse(await applyPreScreeningDecision(svc, id));
+      if (body.prescreen_claimed) {
+         const told = await notifyPreScreeningClaimed(svc, id);
+         // ❌ decided before they had an account: turn it down now.
+         const applied = await applyPreScreeningDecision(svc, id);
+         return jsonResponse({ ...told, decision: applied.summary });
+      }
+      return jsonResponse(await gradePreScreening(svc, id, Deno.env.get('DEEPSEEK_API_KEY'), { quiet: body.quiet === true }));
+   }
 
    // Proof of income rides on this function (edge function cap): submit_income_document() sends
    // {"income_doc": id} and decide_income_document() sends {"income_decision": id}. See _shared/incomeDocs.ts.
    if (body.income_decision) {
       if (!UUID_RE.test(body.income_decision)) return jsonResponse({ error: 'bad income_decision id' }, 400);
       const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
-      return jsonResponse(await notifyIncomeDecision(svc, body.income_decision));
+      return jsonResponse(await notifyIncomeDecision(svc, body.income_decision, body.income_card));
    }
    // Proof requests ride here too: {"proof_request": id} = tell the team it came in,
    // {"proof_request_send": id} = send the link to the applicant. See _shared/proofRequests.ts.
@@ -305,6 +371,18 @@ serve(async (req) => {
       if (!UUID_RE.test(id)) return jsonResponse({ error: 'bad proof request id' }, 400);
       const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
       return jsonResponse(body.proof_request ? await pingProofRequest(svc, id) : await sendProofRequest(svc, id));
+   }
+   // Every AI question answered (save_income_doc_answer): the opinion again with the answers.
+   if (body.income_answers) {
+      if (!UUID_RE.test(body.income_answers)) return jsonResponse({ error: 'bad income_answers id' }, 400);
+      const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+      return jsonResponse(await reviewWithAnswers(svc, body.income_answers, Deno.env.get('DEEPSEEK_API_KEY')));
+   }
+   // Borrower questions for an older send: {"income_questions": id, "dry": false} saves them (dry by default).
+   if (body.income_questions) {
+      if (!UUID_RE.test(body.income_questions)) return jsonResponse({ error: 'bad income_questions id' }, 400);
+      const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+      return jsonResponse(await backfillBorrowerQuestions(svc, body.income_questions, Deno.env.get('DEEPSEEK_API_KEY'), body.dry !== false));
    }
    if (body.income_doc) {
       if (!UUID_RE.test(body.income_doc)) return jsonResponse({ error: 'bad income_doc id' }, 400);
@@ -362,6 +440,13 @@ serve(async (req) => {
          .from('kyc_identities')
          .upsert(fetched.map((f) => ({ ...f, fetched_at: new Date().toISOString() })), { onConflict: 'session_id' });
       if (error) return jsonResponse({ error: `store identities: ${error.message}` }, 500);
+      // Proof of income sent before Didit: compare its name now (never blocks; a mismatch pings the team).
+      for (const f of fetched) {
+         const uid = (f as { user_id?: string | null }).user_id;
+         const name = (f as { full_name?: string | null }).full_name;
+         if (!uid || !name?.trim() || body.dry) continue;
+         await recheckIncomeNamesAfterId(supabase, uid, name).catch((err) => console.error('income name recheck failed', err instanceof Error ? err.message : err));
+      }
    }
 
    // ---- 3. Compare everyone, keep what's new ----------------------------------------------------------

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAdminLiveReload } from '@/app/admin/useAdminLive';
 
 import { type AdminCallApprovalRow, type AdminCallDecision, decideAdminCall, getAdminCallApprovals } from '@/app/admin/adminSupabase';
-import { groupCallApprovals, isApprovalRequest, relativeStart } from '@/app/admin/callApprovalsModel';
+import { type CallResult, callResult, completedAtMs, groupCallApprovals, isApprovalRequest, relativeStart } from '@/app/admin/callApprovalsModel';
 import CallSheet from '@/app/admin/CallSheet';
 import { type AdminIndoProfile, fetchIndonesiaProfiles, telegramUrl, whatsappChatUrl } from '@/app/admin/indonesiaAdmin';
 import IndonesiaBadge from '@/components/IndonesiaBadge';
@@ -19,6 +19,32 @@ const REFRESH_MS = 30000;
 
 const formatCallTime = (iso: string | null) =>
    iso ? new Date(iso).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : '';
+// Completed calls go back further, so they also show the date.
+const formatCallDate = (iso: string | null) =>
+   iso ? new Date(iso).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '';
+
+type ResultFilter = 'all' | CallResult;
+// Upcoming, or one of the finished-call tabs ('all' = every finished call, not-marked ones included).
+type CallsTab = 'upcoming' | ResultFilter;
+
+const RESULT_LABEL: Record<CallResult, string> = {
+   approved: '✅ Approved',
+   no_show: '❌ No-show',
+   rejected: '🚫 Rejected',
+   unmarked: '❔ Not marked'
+};
+const RESULT_COLOR: Record<CallResult, string> = {
+   approved: 'text-emerald-300',
+   no_show: 'text-amber-300',
+   rejected: 'text-red-300',
+   unmarked: 'text-[#a89bb8]'
+};
+const RESULT_TABS: { id: ResultFilter; label: string }[] = [
+   { id: 'approved', label: '✅ Approved' },
+   { id: 'rejected', label: '🚫 Rejected' },
+   { id: 'no_show', label: '❌ No-show' },
+   { id: 'all', label: 'All finished' }
+];
 
 interface CallApprovalsSectionProps {
    // How many people are waiting on a decision, for the tab badge.
@@ -39,29 +65,68 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
    const [sheetRow, setSheetRow] = useState<AdminCallApprovalRow | null>(null);
    // Indonesia-track people in this list (🇮🇩 + how to reach them), read from users.market.
    const [indo, setIndo] = useState<Map<string, AdminIndoProfile>>(() => new Map());
+   // Search by name / username across every group.
+   const [query, setQuery] = useState('');
+   // Upcoming (needs a decision + booked calls, soonest first) or Completed (newest first).
+   const [tab, setTab] = useState<CallsTab>('upcoming');
+   const [newestFirst, setNewestFirst] = useState(true);
 
-   const load = useCallback(async () => {
+   // The people whose 🇮🇩 profiles are loaded; only re-read when the list of people changes.
+   const indoIdsKey = useRef('');
+   const load = useCallback(async (maxAgeMs?: number) => {
       try {
-         const next = await getAdminCallApprovals();
+         const next = await getAdminCallApprovals({ maxAgeMs });
          setRows(next);
          setError(null);
-         void fetchIndonesiaProfiles(next.map((r) => r.userId))
-            .then(setIndo)
-            .catch(() => undefined);
+         const ids = next.map((r) => r.userId);
+         const key = [...ids].sort().join(',');
+         if (key !== indoIdsKey.current) {
+            indoIdsKey.current = key;
+            void fetchIndonesiaProfiles(ids)
+               .then(setIndo)
+               .catch(() => {
+                  indoIdsKey.current = '';
+               });
+         }
       } catch (err) {
          setError(err instanceof Error ? err.message : 'Could not load calls.');
       }
       setNow(Date.now());
    }, []);
 
+   // Timer refresh (call times tick past, Zoom arrivals). Nothing while the tab is hidden; coming back
+   // refreshes at once. A list another section loaded within the last ~25 s is reused, so the Calls
+   // tab and the Requests card don't each call the server.
    useEffect(() => {
       void load();
-      const timer = window.setInterval(() => void load(), REFRESH_MS);
-      return () => window.clearInterval(timer);
+      const tick = () => {
+         if (document.visibilityState === 'visible') void load(REFRESH_MS - 5000);
+      };
+      const timer = window.setInterval(tick, REFRESH_MS);
+      document.addEventListener('visibilitychange', tick);
+      return () => {
+         window.clearInterval(timer);
+         document.removeEventListener('visibilitychange', tick);
+      };
    }, [load]);
-   useAdminLiveReload(['users', 'loan_access_requests'], load);
+   useAdminLiveReload(['users', 'loan_access_requests'], () => load());
 
-   const groups = useMemo(() => groupCallApprovals(rows ?? [], now), [rows, now]);
+   const groups = useMemo(() => {
+      const q = query.trim().toLowerCase();
+      const list = q ? (rows ?? []).filter((r) => `${r.name} ${r.username ?? ''} ${r.facebookName ?? ''}`.toLowerCase().includes(q)) : (rows ?? []);
+      return groupCallApprovals(list, now);
+   }, [rows, now, query]);
+
+   const completedShown = useMemo(() => {
+      if (tab === 'upcoming') return [];
+      const list = tab === 'all' ? groups.completed : groups.completed.filter((r) => callResult(r) === tab);
+      return newestFirst ? list : [...list].sort((a, b) => completedAtMs(a) - completedAtMs(b));
+   }, [groups.completed, tab, newestFirst]);
+   const resultCounts = useMemo(() => {
+      const counts: Record<ResultFilter, number> = { all: groups.completed.length, approved: 0, no_show: 0, rejected: 0, unmarked: 0 };
+      for (const r of groups.completed) counts[callResult(r)] += 1;
+      return counts;
+   }, [groups.completed]);
 
    // Opened from the pre-call Telegram / Discord alert: /admin/calls?sheet=<userId> opens that borrower's
    // call sheet. A call outside this tab's window still opens, with what we know from the link.
@@ -133,7 +198,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
             </>
          );
       }
-      if (row.outcome === 'attended') return null;
+      if (row.outcome === 'attended' || row.loanAccessStatus === 'rejected') return null;
       if (row.outcome === 'no_show') {
          return (
             <button
@@ -164,6 +229,22 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
             >
                ❌ No-show
             </button>
+            {row.request ? (
+               <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() =>
+                     decide(
+                        row,
+                        { requestId: row.request!.id, decision: 'rejected' },
+                        `Reject ${row.name}? Their call is cancelled and they're told they can't borrow.`
+                     )
+                  }
+                  className={`${base} border border-red-800 text-red-300 hover:bg-red-950`}
+               >
+                  🚫 Reject
+               </button>
+            ) : null}
          </>
       );
    };
@@ -176,6 +257,11 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                   {row.name}
                   {indo.has(row.userId) ? <IndonesiaBadge /> : null}
                </p>
+               {row.username || row.facebookName ? (
+                  <p className="break-words text-sm text-[#c9bde0]">
+                     {[row.username ? `@${row.username}` : null, row.facebookName ? `FB: ${row.facebookName}` : null].filter(Boolean).join(' · ')}
+                  </p>
+               ) : null}
                {(() => {
                   const p = indo.get(row.userId);
                   if (!p) return null;
@@ -201,7 +287,9 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                })()}
                {row.callStartsAt ? (
                   <p className="mt-0.5 text-sm font-bold text-[#c9a7ff]">
-                     {formatCallTime(row.callStartsAt)} · {relativeStart(row.callStartsAt, now)}
+                     {tab !== 'upcoming' && variant === 'full'
+                        ? formatCallDate(row.callStartsAt)
+                        : `${formatCallTime(row.callStartsAt)} · ${relativeStart(row.callStartsAt, now)}`}
                      {row.host ? ` · with ${row.host}` : ''}
                   </p>
                ) : (
@@ -209,10 +297,10 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                )}
                {row.attendance ? <p className="mt-1 text-sm text-[#a89bb8]">{row.attendance}</p> : null}
                {row.request?.reason ? <p className="mt-1 break-words text-sm text-[#a89bb8]">“{row.request.reason}”</p> : null}
-               {row.outcome ? (
-                  <p className={`mt-1 text-sm font-black ${row.outcome === 'attended' ? 'text-emerald-300' : 'text-amber-300'}`}>
-                     {row.outcome === 'attended' ? 'Showed up' : 'No-show'}
-                     {row.loanAccessStatus === 'approved' ? ' · approved' : ''}
+               {row.outcome || row.loanAccessStatus === 'rejected' ? (
+                  <p className={`mt-1 text-sm font-black ${RESULT_COLOR[callResult(row)]}`}>
+                     {RESULT_LABEL[callResult(row)]}
+                     {row.outcomeAt ? ` · ${formatCallDate(row.outcomeAt)}` : ''}
                   </p>
                ) : null}
             </div>
@@ -224,7 +312,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                >
                   📋 Call sheet
                </button>
-               {row.joinUrl && !row.outcome ? (
+               {row.joinUrl && !row.outcome && row.loanAccessStatus !== 'rejected' ? (
                   <a
                      href={row.joinUrl}
                      target="_blank"
@@ -311,12 +399,54 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
             </p>
          </div>
          {banners}
-         {rows ? (
+         <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by name, username or Facebook name"
+            className="w-full max-w-md rounded-xl border border-[#3d1f6e] bg-[#1c0a3a] px-4 py-2.5 text-base text-white placeholder:text-[#a89bb8]"
+         />
+         <div className="flex flex-wrap gap-2" role="tablist">
+            {([{ id: 'upcoming', label: 'Upcoming' }, ...RESULT_TABS] as { id: CallsTab; label: string }[]).map(({ id, label }) => (
+               <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === id}
+                  onClick={() => setTab(id)}
+                  className={`rounded-xl px-5 py-2.5 text-base font-black ${tab === id ? 'bg-[#8336f0] text-white' : 'border border-[#3d1f6e] text-[#c9bde0] hover:bg-[#2a1453]'}`}
+               >
+                  {label}{' '}
+                  {rows ? (
+                     <span className="opacity-70">{id === 'upcoming' ? groups.needsDecision.length + groups.upcoming.length : resultCounts[id]}</span>
+                  ) : null}
+               </button>
+            ))}
+         </div>
+         {rows && tab === 'upcoming' ? (
             <>
-               {renderGroup('Needs a decision', groups.needsDecision, 'Nobody is waiting. 🎉')}
-               {renderGroup('Coming up', groups.upcoming, 'No calls booked in the next 24 hours.')}
-               {renderGroup('Decided (last 2 days)', groups.decided, 'Nothing decided yet.')}
+               {renderGroup('Needs a decision', groups.needsDecision, query ? 'No match.' : 'Nobody is waiting. 🎉')}
+               {renderGroup('Coming up (soonest first)', groups.upcoming, query ? 'No match.' : 'No calls booked in the next 2 weeks.')}
             </>
+         ) : null}
+         {rows && tab !== 'upcoming' ? (
+            <div className="space-y-4">
+               <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-base text-[#a89bb8]">Last 30 days{tab === 'all' && resultCounts.unmarked ? ` · ${resultCounts.unmarked} never marked` : ''}</p>
+                  <button
+                     type="button"
+                     onClick={() => setNewestFirst((v) => !v)}
+                     className="rounded-full border border-[#8336f0] px-3.5 py-1.5 text-sm font-black text-white hover:bg-[#2a1453]"
+                  >
+                     {newestFirst ? '↓ Newest first' : '↑ Oldest first'}
+                  </button>
+               </div>
+               {completedShown.length ? (
+                  <ul className="space-y-3">{completedShown.map(renderRow)}</ul>
+               ) : (
+                  <p className="text-base text-[#a89bb8]">{query ? 'No match.' : 'None in the last 30 days.'}</p>
+               )}
+            </div>
          ) : null}
       </section>
    );

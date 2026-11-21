@@ -52,21 +52,42 @@ export const teamGuests = (hostId: string, emailsByHost: Record<string, string |
    return out;
 };
 
-// Soonest-first slot offer. Calls booked inside a day or two get far fewer no-shows, and they're the
-// ones our Messenger reminders can reach (Messenger allows free messages for 24h after the
-// borrower's last interaction, which is the verify tap just before booking). So when there are at
-// least `minCount` open times within `windowHours`, offer those plus every Saturday/Sunday time
-// (Bangkok days) — some borrowers can only talk on weekends; otherwise fall back to the full list
-// so a quiet stretch never leaves a borrower with nothing to pick.
-export const preferSoonSlots = (slots: string[], now: number, windowHours = 48, minCount = 3): string[] => {
-   const cutoff = now + windowHours * 60 * 60 * 1000;
+// Soonest-first slot offer. Only times in the next 23 hours (George 2026-11-16; was 48h): Messenger
+// allows free messages for 24h after the borrower's last message, which is the verify code just
+// before booking, so the 1h ✅ ask always reaches a call booked inside that window. A call booked
+// 34h ahead on 2026-11-16 got no ✅ ask and nobody came. Fewer than `minCount` times in 23h → the
+// next 48h; still too few → the full list, so a quiet stretch never leaves a borrower with nothing.
+export const SOON_WINDOW_HOURS = 23;
+
+// A host pinned for a borrower (referred borrowers → Emma) but away most of the next 2 days
+// (call_blocks) would push them days out: on 2026-11-20 every referred borrower got Tuesday while
+// Emma was off Sat–Mon and George was free. Away ≥ 24h of the next 48h → offer every host instead.
+export const pinnedHostAway = (blocks: Array<{ start: string; end: string }>, now: number, windowHours = 48, awayHours = 24): boolean => {
+   const until = now + windowHours * 3600000;
+   const ranges = blocks
+      .map((b) => [Math.max(Date.parse(b.start), now), Math.min(Date.parse(b.end), until)] as const)
+      .filter(([a, b]) => !Number.isNaN(a) && !Number.isNaN(b) && b > a)
+      .sort((x, y) => x[0] - y[0]);
+   let away = 0;
+   let reach = now;
+   for (const [a, b] of ranges) {
+      const from = Math.max(a, reach);
+      if (b > from) away += b - from;
+      reach = Math.max(reach, b);
+   }
+   return away >= awayHours * 3600000;
+};
+export const preferSoonSlots = (slots: string[], now: number, windowHours = SOON_WINDOW_HOURS, minCount = 3): string[] => {
    const upcoming = slots.filter((s) => {
       const t = Date.parse(s);
       return !Number.isNaN(t) && t > now;
    });
-   const soon = upcoming.filter((s) => Date.parse(s) <= cutoff);
-   if (soon.length < minCount) return slots;
-   return upcoming.filter((s) => Date.parse(s) <= cutoff || isBangkokWeekend(s));
+   for (const hours of [windowHours, 48]) {
+      const cutoff = now + hours * 60 * 60 * 1000;
+      const soon = upcoming.filter((s) => Date.parse(s) <= cutoff);
+      if (soon.length >= minCount) return soon;
+   }
+   return slots;
 };
 
 /** The borrower's wall-clock hour (0–23) and weekday (0 = Sunday) at an instant. */
@@ -103,12 +124,6 @@ export const dropMorningAfterLateNight = (slots: string[], now: number, timeZone
    // The next local noon: today's after midnight, else tomorrow's (whole-hour zones).
    const noon = now - (now % 3600000) + (hour < 6 ? 12 - hour : 36 - hour) * 3600000;
    return slots.filter((s) => Date.parse(s) >= noon);
-};
-
-/** True when the instant falls on a Saturday or Sunday in Bangkok. */
-const isBangkokWeekend = (iso: string): boolean => {
-   const weekday = new Date(Date.parse(iso) + 7 * 3600000).getUTCDay();
-   return weekday === 0 || weekday === 6;
 };
 
 // Date range for re-checking one slot right before booking. Cal.com reads date-only bounds in the
@@ -151,6 +166,21 @@ export type CalSchedule = {
 };
 const calTime = (hhmm: string) => (hhmm === '24:00' ? '23:59' : hhmm);
 const capitalize = (day: string) => day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
+
+// Calls only between 11 AM and 11 PM (the hosts' time, Bangkok): whatever the Calendly hours say, a
+// window is cut to fit and dropped if nothing is left. George 2026-11-14: a borrower moved her call
+// to 1:45 AM because his Calendly had 00:00–02:00 open. The last call starts at 22:45 and ends by 11.
+// George 2026-11-15: nothing before 11 AM Bangkok either (was 8 AM).
+export const CALL_DAY_START = '11:00';
+export const CALL_DAY_END = '23:00';
+export const clipToCallDay = (from: string, to: string): { startTime: string; endTime: string } | null => {
+   // A window that runs to midnight ends at "00:00" (or "24:00") in Calendly.
+   const end = to === '00:00' || to === '24:00' ? '23:59' : to;
+   const startTime = from < CALL_DAY_START ? CALL_DAY_START : from;
+   const endTime = end > CALL_DAY_END ? CALL_DAY_END : end;
+   return startTime < endTime ? { startTime, endTime } : null;
+};
+
 export const calendlyToCalSchedule = (rules: CalendlyRule[], timeZone: string, today: string): CalSchedule => {
    const daysByWindow = new Map<string, string[]>();
    const overrides: CalSchedule['overrides'] = [];
@@ -158,13 +188,16 @@ export const calendlyToCalSchedule = (rules: CalendlyRule[], timeZone: string, t
       const intervals = rule.intervals ?? [];
       if (rule.type === 'wday' && rule.wday) {
          for (const iv of intervals) {
-            // A window that runs to midnight ends at "00:00" in Calendly; Cal.com needs 23:59.
-            const key = `${calTime(iv.from)}-${iv.to === '00:00' ? '23:59' : calTime(iv.to)}`;
+            const window = clipToCallDay(iv.from, iv.to);
+            if (!window) continue;
+            const key = `${window.startTime}-${window.endTime}`;
             daysByWindow.set(key, [...(daysByWindow.get(key) ?? []), capitalize(rule.wday)]);
          }
       } else if (rule.type === 'date' && rule.date && rule.date >= today) {
-         if (intervals.length === 0) overrides.push({ date: rule.date, startTime: '00:00', endTime: '00:00' });
-         for (const iv of intervals) overrides.push({ date: rule.date, startTime: calTime(iv.from), endTime: calTime(iv.to) });
+         const windows = intervals.map((iv) => clipToCallDay(iv.from, iv.to)).filter((w) => w !== null);
+         // No hours that day (or none left inside 11 AM–11 PM): the day is closed.
+         if (windows.length === 0) overrides.push({ date: rule.date, startTime: '00:00', endTime: '00:00' });
+         for (const w of windows) overrides.push({ date: rule.date, ...w });
       }
    }
    const availability = [...daysByWindow.entries()]
@@ -185,14 +218,12 @@ export const dropBusySlots = (slots: string[], busy: Array<{ start: string; end:
    });
 
 // Onboarding calls per Bangkok day, across both hosts. Once a day has this many, it's full.
-export const DAILY_CALL_CAP = 4;
-// Clustering: on a day that already has calls, free times within CLUSTER_NEAR_MINUTES of one are
-// "⭐ Recommended", and times further than CLUSTER_MAX_MINUTES from every call are not offered, so
-// a day's calls land in one block instead of scattered from morning to night.
+export const DAILY_CALL_CAP = 8; // George 2026-11-15: "can do max of 8 calls per day" (was 4)
+// Clustering, as a nudge only (George 2026-11-15: "remove the bunching rule, but try to push them
+// into a cluster"): on a day that already has calls, every free time is still offered, and the ones
+// within CLUSTER_NEAR_MINUTES of a call are "⭐ Recommended" so most people pick a time next to one.
 export const CLUSTER_NEAR_MINUTES = 45;
-export const CLUSTER_MAX_MINUTES = 120;
-// If nothing that day is within CLUSTER_MAX_MINUTES (the block's hours have passed), offer this
-// many of the closest times instead of emptying the day.
+// If no free time that day is that close to a call, the closest few are recommended instead.
 const CLUSTER_FALLBACK_COUNT = 3;
 
 const BANGKOK_OFFSET_MS = 7 * 3600000;
@@ -249,11 +280,9 @@ export const clusterSlots = (
          continue;
       }
       const gap = (s: string) => Math.min(...booked.map((b) => Math.abs(Date.parse(s) - b))) / 60000;
-      let kept = daySlots.filter((s) => gap(s) <= CLUSTER_MAX_MINUTES);
-      if (kept.length === 0) kept = [...daySlots].sort((a, b) => gap(a) - gap(b)).slice(0, CLUSTER_FALLBACK_COUNT);
-      const near = kept.filter((s) => gap(s) <= CLUSTER_NEAR_MINUTES);
-      offered.push(...kept);
-      recommended.push(...(near.length ? near : kept));
+      const near = daySlots.filter((s) => gap(s) <= CLUSTER_NEAR_MINUTES);
+      offered.push(...daySlots);
+      recommended.push(...(near.length ? near : [...daySlots].sort((a, b) => gap(a) - gap(b)).slice(0, CLUSTER_FALLBACK_COUNT)));
    }
    const byTime = (a: string, b: string) => Date.parse(a) - Date.parse(b);
    return { slots: offered.sort(byTime), recommended: recommended.sort(byTime) };
@@ -264,6 +293,17 @@ export const PREFERRED_HOST = 'emma';
 export const preferHost = (order: string[], preferred = PREFERRED_HOST): string[] =>
    order.includes(preferred) ? [preferred, ...order.filter((h) => h !== preferred)] : order;
 
+// No Cal Video, ever (George, 2026-11-14). A booking that comes back without a Zoom link is cancelled and the
+// next free host tried; the host whose Zoom failed is hidden from the times for ZOOM_PAUSE_MS, then tried again
+// (one booking) — so once they reconnect Zoom in Cal.com their times come back on their own.
+export const isZoomJoinUrl = (joinUrl: string | null | undefined) => Boolean(joinUrl && /^https:\/\/([\w-]+\.)*zoom\.us\//i.test(joinUrl));
+export const ZOOM_PAUSE_MS = 3 * 3600 * 1000;
+/** Whether a host's Zoom pause (telegram_bot_settings `zoom_broken_<host>` = ISO time it failed) still holds. */
+export const zoomPaused = (failedAt: string | null | undefined, nowMs: number) => {
+   const t = failedAt ? Date.parse(failedAt) : NaN;
+   return !Number.isNaN(t) && nowMs - t < ZOOM_PAUSE_MS;
+};
+
 // Every booking asks Cal.com for Zoom (callBooking ZOOM_LOCATION). When Cal.com can't create the Zoom meeting it
 // still books, quietly on Cal Video — so the booking alert says so, and the host can fix their Zoom connection
 // before the call (Emma's kept dropping since 2026-10-30).
@@ -271,3 +311,23 @@ export const zoomFallbackWarning = (joinUrl: string | null, hostId: string) =>
    joinUrl && /cal\.com\/video|cal\.video/i.test(joinUrl)
       ? `\n⚠️ Cal Video link, not Zoom: Cal.com couldn't create the Zoom meeting on ${hostId === 'george' ? 'George' : 'Emma'}'s account. Reconnect Zoom in their Cal.com (Settings → Apps → Zoom) before the call.`
       : '';
+
+
+/**
+ * Dates (YYYY-MM-DD in `timeZone`) that call_blocks cover from 00:00 to 24:00 for `host`. Partly blocked
+ * days are left alone (our slot list handles those). Pure.
+ */
+export const blockedDays = (blocks: Array<{ host: string; from: string; to: string }>, host: string, timeZone: string): string[] => {
+   const out = new Set<string>();
+   const dayOf = (ms: number) => new Date(ms).toLocaleDateString('en-CA', { timeZone });
+   for (const b of blocks.filter((x) => x.host === 'all' || x.host === host)) {
+      const from = Date.parse(b.from);
+      const to = Date.parse(b.to);
+      if (Number.isNaN(from) || Number.isNaN(to)) continue;
+      // Walk each hour; a date counts when all 24 of its hours are inside the block.
+      const hours = new Map<string, number>();
+      for (let t = from; t < to; t += 3_600_000) hours.set(dayOf(t), (hours.get(dayOf(t)) ?? 0) + 1);
+      for (const [date, n] of hours) if (n >= 24) out.add(date);
+   }
+   return [...out].sort();
+};

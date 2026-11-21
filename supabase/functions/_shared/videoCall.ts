@@ -23,6 +23,35 @@ export const newConfirmToken = () => crypto.randomUUID().replace(/-/g, '');
 export const buildRescheduleUrl = (bookingUid: string) => `https://cal.com/reschedule/${encodeURIComponent(bookingUid)}`;
 const CHANGE_TIME = '🔄 Change time';
 
+// The 🔄 Change time button goes through video-call-confirm first (?change=), so an old card still
+// works after the call was cancelled or moved: Cal.com's page refuses a cancelled booking ("This event
+// is canceled", a borrower on 2026-11-15). `c` is their SendPulse contact id (users.messenger_psid), which
+// finds them even once the booking on the card is gone.
+export const buildChangeTimeUrl = (bookingUid: string, contactId: string) =>
+   `${SUPABASE_URL}/functions/v1/video-call-confirm?change=${encodeURIComponent(bookingUid)}&c=${encodeURIComponent(contactId)}`;
+
+export type ChangeTimeTarget = { kind: 'reschedule'; uid: string } | { kind: 'rebook' } | { kind: 'rejected' } | { kind: 'card'; uid: string };
+
+type ChangeTimeUser = { video_call_booking_uid?: string | null; video_call_starts_at?: string | null; loan_access_status?: string | null };
+
+/**
+ * Where a 🔄 Change time tap goes. `users` = every account on that Messenger contact (one person can
+ * have two, seen 2026-11-15). Any account booked now → Cal.com's reschedule page for that
+ * CURRENT booking (the card may show an older one they already moved). No call → book again on our
+ * page, unless every account is rejected (rejected is final). None found → the booking on the card.
+ */
+export const changeTimeTarget = (cardUid: string, users: ChangeTimeUser | ChangeTimeUser[] | null, now = Date.now()): ChangeTimeTarget => {
+   const list = (Array.isArray(users) ? users : users ? [users] : []).filter(Boolean);
+   if (!list.length) return { kind: 'card', uid: cardUid };
+   const live = list.filter((u) => u.loan_access_status !== 'rejected');
+   if (!live.length) return { kind: 'rejected' };
+   const booked = live
+      .filter((u) => u.video_call_booking_uid && u.video_call_starts_at && Date.parse(u.video_call_starts_at) > now)
+      .sort((a, b) => (a.video_call_booking_uid === cardUid ? -1 : b.video_call_booking_uid === cardUid ? 1 : 0));
+   if (booked.length) return { kind: 'reschedule', uid: booked[0].video_call_booking_uid as string };
+   return { kind: 'rebook' };
+};
+
 // "Fri, Sep 25, 10:00 AM (Bangkok)" in the borrower's own time zone (falls back to Bangkok — most
 // borrowers are TH/PH, and the label always names the zone so it's never ambiguous).
 export const formatCallTime = (iso: string, timeZone?: string | null): string => {
@@ -72,7 +101,9 @@ export const formatCallTimeForTeam = (iso: string, borrowerZone?: string | null)
 // and 🔄 Change time, so a borrower who can't make it picks a new time instead of not showing up.
 const callCard = (title: string, u: CallUser, opts: { confirm?: boolean; calendar?: boolean } = {}): MessengerCard | undefined => {
    const confirm = opts.confirm === true && !u.video_call_confirmed_at && u.video_call_confirm_token;
-   const change = u.video_call_booking_uid ? { title: CHANGE_TIME, url: buildRescheduleUrl(u.video_call_booking_uid) } : null;
+   const change = u.video_call_booking_uid
+      ? { title: CHANGE_TIME, url: u.messenger_psid ? buildChangeTimeUrl(u.video_call_booking_uid, u.messenger_psid) : buildRescheduleUrl(u.video_call_booking_uid) }
+      : null;
    if (confirm) {
       return {
          title,
@@ -110,6 +141,13 @@ type CallUser = {
 // cancels the call. The borrower page (ConnectStep) says the same.
 const CONFIRM_NOTICE = "⚠️ 1 hour before, we'll message you here with a ✅ I'll be there button. Tap it to confirm you'll have your ID and video on, or the call is cancelled.\n📅 Tap Add to calendar below so your phone reminds you too.";
 
+// Messenger only lets us write for 24h after their last message. A call further away than that
+// needs them to reply to the day-before reminder, or the 1h ✅ ask can't reach them (2026-11-16: a
+// 10:00 call booked 34h ahead got nothing, and Emma waited for nobody).
+const REPLY_OK_NOTICE = '📩 The day before, we\'ll remind you here. Reply OK to it, so Messenger lets us send your ✅ button.';
+const NEEDS_REPLY_MS = 23 * 60 * 60 * 1000;
+const needsReplyOk = (startsAt: string) => Date.parse(startsAt) - Date.now() > NEEDS_REPLY_MS;
+
 // Right after booking — the borrower just tapped through Messenger, so the 24h window is open.
 // offerQuestions: booked on the website (no Messenger bot answers yet) → the bot's questions, on request.
 export const sendBookedMessenger = (u: CallUser, offerQuestions = false) => {
@@ -124,12 +162,18 @@ export const sendBookedMessenger = (u: CallUser, offerQuestions = false) => {
       text:
          `📅 You're booked! 15-min video call with ${withWhom}\n🗓️ ${when}\n${link}\n\n` +
          'Bring 🪪 your original ID or passport and 📷 camera on. That\'s it!\n\n' +
-         `${CONFIRM_NOTICE}\n\n` +
+         `${CONFIRM_NOTICE}\n${needsReplyOk(u.video_call_starts_at) ? `${REPLY_OK_NOTICE}\n` : ''}\n` +
          (offerQuestions ? '💬 Help Emma get ready: type QUESTIONS for a few quick ones (2 min).\n\n' : '') +
          'After the call, add Emma on Facebook so we can fund you: https://www.facebook.com/emmamoodengcredit',
       card: callCard('Will you make it?', u, { calendar: true })
    });
 };
+
+// Right after the booked message, as its own message so it isn't lost in it: people we have no mobile
+// number for can reply with one and get the call texted to them (messengerBookingBot.handleReminderNumber).
+export const TEXT_REMINDER_ASK =
+   '📱 Want a TEXT REMINDER 1 hour before your call?\n\nReply with just your mobile number, like 0917 123 4567.';
+export const sendTextReminderAsk = (u: Pick<CallUser, 'messenger_psid'>) => sendMessengerMessage(u.messenger_psid, { text: TEXT_REMINDER_ASK });
 
 // The call moved (the borrower or the team rescheduled it on Cal.com): the new time, the join link,
 // and the ✅ / 🔄 card again (the move cleared their "I'll be there").
@@ -143,6 +187,20 @@ export const sendMovedMessenger = (u: CallUser) => {
    });
 };
 
+// The team moved the call to a NEW time with another host (move_host with `start`): new time, new
+// Zoom link, and the ✅ / 🔄 card so they can pick another time if this one doesn't work.
+export const sendMovedSoonerMessenger = (u: CallUser, hostName: string) => {
+   if (!u.video_call_starts_at) return Promise.resolve({ ok: false as const, reason: 'no_call' });
+   const when = formatCallTime(u.video_call_starts_at, u.video_call_timezone);
+   return sendMessengerMessage(u.messenger_psid, {
+      text:
+         `📅 Good news, we found you an earlier time! Your call is now with ${hostName}:\n🗓️ ${when}\n\n` +
+         `🔗 NEW Zoom link (the old one won't work):\n${u.video_call_join_url ?? 'in your email'}\n\n` +
+         "Can't make it? Tap 🔄 Change time below to pick another.",
+      card: callCard('Can you make it?', u, { calendar: true })
+   });
+};
+
 // Day-before (stage 1) and hour-before (stage 2). Only lands if we're still inside the 24h window
 // (sendMessengerMessage checks); push + Telegram cover the rest.
 export const sendReminderMessenger = (u: CallUser, stage: 1 | 2) => {
@@ -152,7 +210,7 @@ export const sendReminderMessenger = (u: CallUser, stage: 1 | 2) => {
    const text =
       stage === 2
          ? `⏰ Starting soon: ${when}\n${u.video_call_join_url ? `Join: ${u.video_call_join_url}` : 'The Zoom link is in your email.'}\n🪪 Have your ID ready and 📷 video on.`
-         : `👋 Reminder: your call is ${when} on Zoom.\n⏰ 1 hour before, tap ✅ to keep your spot.`;
+         : `👋 Reminder: your call is ${when} on Zoom.\n👉 Reply OK to keep your spot.\n⏰ Then 1 hour before, tap ✅ here.`;
    return sendMessengerMessage(u.messenger_psid, {
       text,
       card: callCard('Still coming?', u)

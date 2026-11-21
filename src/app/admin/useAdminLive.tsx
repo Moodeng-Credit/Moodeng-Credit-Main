@@ -32,8 +32,12 @@ export const ADMIN_LIVE_TABLES: AdminLiveTable[] = [
    'account_status_audit_logs'
 ];
 
-const DEBOUNCE_MS = 800;
+// One reload per window, however many rows change in it. Own actions still flash instantly via markChanged.
+const BATCH_MS = 5000;
+// Fallback polling while realtime is down: 30 s, then doubling to 5 min. Realtime down usually means
+// the database is struggling, and a fixed 30 s reload of every section only adds to it.
 const POLL_MS = 30000;
+const POLL_MAX_MS = 5 * 60_000;
 const FLASH_MS = 6000;
 
 export interface AdminLiveFlash {
@@ -115,15 +119,34 @@ export function AdminLiveProvider({ enabled = true, children }: { enabled?: bool
    const timer = useRef<number | null>(null);
    const names = useRef(new Map<string, string | null>());
 
-   const emit = useCallback((tables: Iterable<AdminLiveTable>) => {
-      for (const t of tables) pending.current.add(t);
-      if (timer.current) window.clearTimeout(timer.current);
-      timer.current = window.setTimeout(() => {
-         const batch = new Set(pending.current);
-         pending.current.clear();
-         listeners.current.forEach((listener) => listener(batch));
-      }, DEBOUNCE_MS);
+   // Run the queued reloads. While the tab is hidden, keep them queued: the visibilitychange
+   // listener below flushes them once the admin comes back, so a background tab costs no queries.
+   const flush = useCallback(() => {
+      timer.current = null;
+      if (!pending.current.size || document.visibilityState === 'hidden') return;
+      const batch = new Set(pending.current);
+      pending.current.clear();
+      listeners.current.forEach((listener) => listener(batch));
    }, []);
+
+   // Batch changes into at most one reload per BATCH_MS. The timer is not reset by later
+   // changes, so a steady stream of writes still reloads every BATCH_MS instead of on every row.
+   const emit = useCallback(
+      (tables: Iterable<AdminLiveTable>) => {
+         for (const t of tables) pending.current.add(t);
+         if (timer.current) return;
+         timer.current = window.setTimeout(flush, BATCH_MS);
+      },
+      [flush]
+   );
+
+   useEffect(() => {
+      const onVisible = () => {
+         if (document.visibilityState === 'visible' && !timer.current) flush();
+      };
+      document.addEventListener('visibilitychange', onVisible);
+      return () => document.removeEventListener('visibilitychange', onVisible);
+   }, [flush]);
 
    const flash = useCallback((ids: string[], value: AdminLiveFlash) => {
       if (!ids.length) return;
@@ -152,13 +175,22 @@ export function AdminLiveProvider({ enabled = true, children }: { enabled?: bool
       if (!enabled || !isSupabaseBrowserConfigured()) return;
       const supabase = getSupabaseBrowserClient();
       let poll: number | null = null;
+      let pollDelay = POLL_MS;
+      const schedulePoll = () => {
+         poll = window.setTimeout(() => {
+            emit(ADMIN_LIVE_TABLES);
+            pollDelay = Math.min(pollDelay * 2, POLL_MAX_MS);
+            schedulePoll();
+         }, pollDelay);
+      };
       const startPolling = () => {
          if (poll) return;
-         poll = window.setInterval(() => emit(ADMIN_LIVE_TABLES), POLL_MS);
+         schedulePoll();
       };
       const stopPolling = () => {
-         if (poll) window.clearInterval(poll);
+         if (poll) window.clearTimeout(poll);
          poll = null;
+         pollDelay = POLL_MS;
       };
 
       let channel = supabase.channel('admin-live');
@@ -221,14 +253,39 @@ export function useAdminLiveReload(tables: AdminLiveTable[], reload: () => unkno
    const live = useContext(AdminLiveContext);
    const reloadRef = useRef(reload);
    reloadRef.current = reload;
+   const inFlight = useRef({ running: false, again: false });
    const key = tables.join(',');
    useEffect(() => {
       if (!live) return;
       const watched = new Set(key.split(','));
+      // One reload at a time: when the database is slow, a reload can outlast the next batch, and
+      // stacking them is what turns slowness into an outage. A change during a reload queues one more.
+      // (State lives in a ref: this effect re-subscribes whenever the context value changes.)
+      const state = inFlight.current;
+      const done = () => {
+         state.running = false;
+         if (state.again) run();
+      };
+      const run = () => {
+         state.running = true;
+         state.again = false;
+         let result: unknown;
+         try {
+            result = reloadRef.current();
+         } catch {
+            result = undefined;
+         }
+         if (result && typeof (result as PromiseLike<unknown>).then === 'function') {
+            void Promise.resolve(result).catch(() => undefined).finally(done);
+         } else {
+            done();
+         }
+      };
       return live.subscribe((changed) => {
          for (const t of changed) {
             if (watched.has(t)) {
-               void reloadRef.current();
+               if (state.running) state.again = true;
+               else run();
                return;
             }
          }

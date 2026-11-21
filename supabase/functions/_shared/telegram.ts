@@ -14,9 +14,16 @@ type TelegramApiResult<T> = {
    description?: string;
 };
 
+import { withTeamFacebook } from './teamFacebook.ts';
+
 const getTelegramToken = () => Deno.env.get('TELEGRAM_API_TOKEN') ?? Deno.env.get('TELEGRAM_BOT_TOKEN');
 
-export const callTelegramApi = async <T = unknown>(method: string, payload: Record<string, unknown>) => {
+// aboutUserIds: the borrower(s) a team post is about, when the text has no @username or email to find
+// them by — gets them the Facebook line (teamFacebook.ts) all the same.
+export const callTelegramApi = async <T = unknown>(method: string, payload: Record<string, unknown>, options: { aboutUserIds?: string[] } = {}) => {
+   if ((method === 'sendMessage' || method === 'editMessageText') && typeof payload.text === 'string') {
+      payload = { ...payload, text: await withTeamFacebook(payload.chat_id, payload.text, options.aboutUserIds) };
+   }
    const telegramApiUrl = Deno.env.get('TELEGRAM_API_URL');
    const telegramToken = getTelegramToken();
    const url =
@@ -47,7 +54,7 @@ export const callTelegramApi = async <T = unknown>(method: string, payload: Reco
 export const sendTelegramMessage = async (
    chatId: number | string,
    text: string,
-   options: { inlineKeyboard?: TelegramInlineKeyboard; messageThreadId?: number; replyToMessageId?: number } = {}
+   options: { inlineKeyboard?: TelegramInlineKeyboard; messageThreadId?: number; replyToMessageId?: number; aboutUserIds?: string[] } = {}
 ) => {
    return callTelegramApi('sendMessage', {
       chat_id: chatId,
@@ -57,7 +64,54 @@ export const sendTelegramMessage = async (
       // allow_sending_without_reply: still post if the card was deleted.
       ...(options.replyToMessageId ? { reply_to_message_id: options.replyToMessageId, allow_sending_without_reply: true } : {}),
       ...(options.inlineKeyboard ? { reply_markup: { inline_keyboard: options.inlineKeyboard } } : {})
-   });
+   }, { aboutUserIds: options.aboutUserIds });
+};
+
+export type TelegramUpload = { name: string; mime: string; bytes: Uint8Array<ArrayBuffer> };
+
+const PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+/**
+ * Uploads files into a chat so they open inside Telegram: photos as an album (≤10 each), anything
+ * else (PDF, HEIC…) as documents. A photo Telegram refuses (too big, odd shape) goes again as a
+ * document. Returns how many were posted; never throws.
+ */
+export const sendTelegramFiles = async (chatId: number | string, files: TelegramUpload[], options: { replyToMessageId?: number } = {}) => {
+   const token = getTelegramToken();
+   if (!token || !files.length) return 0;
+   const post = async (method: string, kind: 'photo' | 'document', group: TelegramUpload[]) => {
+      const form = new FormData();
+      form.append('chat_id', String(chatId));
+      if (options.replyToMessageId) {
+         form.append('reply_parameters', JSON.stringify({ message_id: options.replyToMessageId, allow_sending_without_reply: true }));
+      }
+      if (method === 'sendMediaGroup') {
+         group.forEach((f, i) => form.append(`f${i}`, new Blob([f.bytes], { type: f.mime }), f.name));
+         form.append('media', JSON.stringify(group.map((_, i) => ({ type: kind, media: `attach://f${i}` }))));
+      } else {
+         form.append(kind, new Blob([group[0].bytes], { type: group[0].mime }), group[0].name);
+      }
+      const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, { method: 'POST', body: form });
+      const json = (await res.json().catch(() => null)) as TelegramApiResult<unknown> | null;
+      if (!res.ok || !json?.ok) throw new Error(json?.description ?? `Telegram ${method} failed with ${res.status}`);
+   };
+   const send = async (kind: 'photo' | 'document', list: TelegramUpload[]): Promise<number> => {
+      let sent = 0;
+      for (let i = 0; i < list.length; i += 10) {
+         const group = list.slice(i, i + 10);
+         try {
+            await post(group.length > 1 ? 'sendMediaGroup' : kind === 'photo' ? 'sendPhoto' : 'sendDocument', kind, group);
+            sent += group.length;
+         } catch (err) {
+            console.warn(`telegram ${kind} upload failed`, err instanceof Error ? err.message : err);
+            if (kind === 'photo') sent += await send('document', group);
+         }
+      }
+      return sent;
+   };
+   const photos = files.filter((f) => PHOTO_TYPES.has(f.mime) && f.bytes.byteLength <= 10_000_000);
+   const others = files.filter((f) => !photos.includes(f) && f.bytes.byteLength <= 50_000_000);
+   return (await send('photo', photos)) + (await send('document', others));
 };
 
 export type TelegramForumTopic = {

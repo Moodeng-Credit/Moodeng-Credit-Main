@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
@@ -48,6 +48,31 @@ export function useFriendReferrals(enabled = true) {
       isLoading: isEnabled && (inviteCode.isLoading || rewards.isLoading),
       error: inviteCode.error ?? rewards.error ?? null
    };
+}
+
+/**
+ * Rewards right after a repayment: the cached copy predates it, so refetch once and only report
+ * ready when the fresh streak is in (the repay success screen must not flash the old streak).
+ */
+export function useRewardsAfterRepayment(enabled = true) {
+   const queryClient = useQueryClient();
+   const userId = useSelector((state: RootState) => state.auth.user?.id) ?? '';
+   const isEnabled = enabled && Boolean(userId) && isSupabaseBrowserConfigured();
+   const [isRefreshed, setIsRefreshed] = useState(false);
+
+   useEffect(() => {
+      if (!isEnabled) return;
+      let isCurrent = true;
+      void queryClient.invalidateQueries({ queryKey: rewardsKey(userId) }).finally(() => {
+         if (isCurrent) setIsRefreshed(true);
+      });
+      return () => {
+         isCurrent = false;
+      };
+   }, [isEnabled, queryClient, userId]);
+
+   const rewards = useQuery({ queryKey: rewardsKey(userId), queryFn: getMyRewards, enabled: isEnabled, staleTime: 60_000 });
+   return { rewards: rewards.data ?? EMPTY_REWARDS, isReady: isEnabled && isRefreshed && rewards.isSuccess };
 }
 
 export function useSubmitVoucherClaim() {

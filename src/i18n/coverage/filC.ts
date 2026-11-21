@@ -80,8 +80,8 @@ export const filipinoCoverageC: Record<string, string> = {
    'Connect a wallet I already own': 'Ikonekta ang wallet na mayroon na ako',
    'Could not start the face check. Please try again.': 'Hindi masimulan ang face check. Subukan ulit.',
    'Quick face check': 'Mabilis na face check',
-   'A short liveness scan keeps Instant Wallets to one per person, which is what lets us cover the network fees. We never store your photo, and it is only needed to create the wallet — not to sign in, send or repay.':
-      'Tinitiyak ng maikling liveness scan na isa lang ang Instant Wallet bawat tao — ito ang dahilan kung bakit kaya naming sagutin ang network fees. Hindi namin sine-save ang photo mo, at kailangan lang ito sa paggawa ng wallet — hindi sa pag-sign in, pagpapadala, o pagbabayad.',
+   'A quick face scan — one wallet per person. We don’t keep your photo.':
+      'Mabilis na face scan — isang wallet bawat tao. Hindi namin itinatago ang litrato mo.',
    "We couldn't finish creating your wallet. Please try again.": 'Hindi namin natapos gawin ang wallet mo. Subukan ulit.',
    'Creating your wallet': 'Ginagawa ang wallet mo',
    'Checking your scan': 'Sinusuri ang scan mo',
@@ -216,8 +216,11 @@ export const filipinoCoverageC: Record<string, string> = {
    'Now open Moneybees below →': 'Buksan na ang Moneybees sa ibaba →',
    'Now paste it into the app below →': 'I-paste na ito sa app sa ibaba →',
    '⚠️ Send on the BASE network only': '⚠️ Sa BASE network ka lang magpadala',
-   'USDC sent on Ethereum, Polygon, or any other network goes to this address on the wrong chain and is lost forever — it cannot be recovered. When':
-      'Ang USDC na ipinadala sa Ethereum, Polygon, o anumang ibang network ay mapupunta sa address na ito sa maling chain at tuluyang mawawala — hindi na ito mababawi. Kapag tinanong ng',
+   'Choose the Base network. Any other network and your money is lost.':
+      'Piliin ang Base network. Kapag ibang network, mawawala ang pera mo.',
+   '⚠️ Pick USDCBASE': '⚠️ Pumili ng USDCBASE',
+   'See it in': 'Tingnan sa',
+   'Any other USDC (USDCPOL, USDCSOL…) and your money is lost.': 'Kapag ibang USDC (USDCPOL, USDCSOL…), mawawala ang pera mo.',
    'asks which network, choose': 'kung aling network, piliin ang',
    'Visit moneybees.ph and follow their own process': 'Pumunta sa moneybees.ph at sundin ang sarili nilang proseso',
    'They handle ID checks and the rate directly with you': 'Sila mismo ang bahala sa ID check at sa rate, direkta sa iyo',
@@ -427,8 +430,8 @@ export const filipinoCoverageC: Record<string, string> = {
    'A Credit Level is your borrowing limit. Everyone starts at Level 1 with a $15 limit, and the limit grows as you complete Credit-Building Loans.':
       'Ang Credit Level ay ang borrowing limit mo. Lahat ay nagsisimula sa Level 1 na may $15 limit, at lumalaki ang limit habang natatapos mo ang mga Credit-Building Loan.',
    'How do I move to the next level?': 'Paano ako makakapunta sa susunod na level?',
-   'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment unlocks the next limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
-      'Kumuha ng Credit-Building Loan sa buo mong kasalukuyang limit at bayaran ito nang buo at on time. Ang malinis na bayad ang nag-a-unlock ng susunod na limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
+   'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment adds $10 to your limit: $15, then $25, then $35, and so on.':
+      'Kumuha ng Credit-Building Loan sa buo mong kasalukuyang limit at bayaran ito nang buo at on time. Bawat malinis na bayad ay nagdadagdag ng $10 sa limit mo: $15, tapos $25, tapos $35, at tuloy-tuloy.',
    'Does borrowing a small amount level me up?': 'Puwede ba akong mag-level up sa paghiram ng maliit na halaga?',
    'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with moo-lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.':
       'Hindi. Trust-Building Loan ang paghiram nang mas mababa sa limit mo. Pinapaganda nito ang reputasyon mo sa mga moo-lender pero hindi nito tinataas ang Credit Level mo. Full-limit na Credit-Building Loan lang ang nagpapaakyat sa iyo.',
@@ -519,6 +522,8 @@ export const filipinoCoverageC: Record<string, string> = {
    'Waiting for moo-lender acceptance': 'Naghihintay ng pag-accept ng moo-lender',
    'This loan is not funded yet. Repayment starts only after a moo-lender accepts.':
       'Hindi pa napopondohan ang loan na ito. Magsisimula lang ang pagbabayad kapag tinanggap na ito ng moo-lender.',
+   'Waiting for a moo-lender': 'Naghihintay ng moo-lender',
+   'Nothing to pay until it’s funded.': 'Wala kang babayaran hangga’t hindi pa napopondohan.',
    'Loan Amount': 'Halaga ng loan',
    Outstanding: 'Natitirang utang',
    'View on explorer': 'Tingnan sa explorer',
@@ -572,8 +577,7 @@ export const filipinoCoverageC: Record<string, string> = {
    'Send only': 'Magpadala lang ng',
    'Verify Base first': 'I-verify muna ang Base',
    'How would you like to cash out?': 'Paano mo gustong mag-cash out?',
-   'Your loan funds are in your wallet. Withdraw or convert them using an exchange, P2P platform, or a supported local crypto service.':
-      'Nasa wallet mo ang mga pondo ng loan mo. I-withdraw o i-convert ang mga ito gamit ang isang exchange, P2P platform, o suportadong local crypto service.',
+   'Pick where to get your cash.': 'Piliin kung saan mo kukunin ang pera mo.',
    'Learn more about withdrawal options': 'Alamin pa ang mga opsyon sa pag-withdraw',
    "I'll do this later": 'Gagawin ko na lang ito mamaya',
    'Contact support': 'Makipag-ugnayan sa support',
@@ -672,6 +676,7 @@ export const filipinoCoverageC: Record<string, string> = {
    'Loan / moo-lender': 'Loan / moo-lender',
    'No funded loans yet': 'Wala pang napondohang loan',
    'Not enough loan history yet': 'Hindi pa sapat ang loan history',
+   'Shows after a few loans.': 'Lalabas pagkatapos ng ilang loan.',
    'Default History': 'History ng default',
    'Missed repayments on this borrower’s past loans.': 'Mga na-miss na bayad sa mga nakaraang loan ng borrower na ito.',
    'A default happens when a repayment deadline passes without full repayment.':

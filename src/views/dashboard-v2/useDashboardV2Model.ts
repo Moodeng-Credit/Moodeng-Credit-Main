@@ -1,8 +1,10 @@
 import { useEffect, useMemo } from 'react';
 
+import { currentDueDate, currentMilestone } from '@/lib/repaymentSchedule';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { useFriendReferrals } from '@/hooks/useFriendReferrals';
+import { useWalletLast } from '@/hooks/useWalletLast';
 import { useRecordedMilestones } from '@/hooks/useRecordedMilestones';
 import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
 
@@ -12,7 +14,7 @@ import { toNumber } from '@/utils/decimalHelpers';
 import { getBorrowerUsedCreditAmount } from '@/lib/borrowerCreditUsage';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { isUserVerified } from '@/lib/isUserVerified';
-import { getDaysUntilDueDay, getLoanTimezone } from '@/lib/loanDeadline';
+import { getDaysUntilDueDay, getDueDayEnd, getLoanTimezone, getRewardFromAt } from '@/lib/loanDeadline';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { fetchUserProfiles } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -46,6 +48,8 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
    const borrowerLoans = useMemo(() => getBorrowerLoans(gloanRequests, user.id), [gloanRequests, user.id]);
    // Same rule as the live dashboard's "Withdraw your USDC" button.
    const hasFundedLoan = gloanRequests.some((loan) => loan.borrowerUser === user.id && loan.loanStatus === 'Lent');
+   // Wallet last: no "connect a wallet" nudge before their first request — the loan form makes it.
+   const { walletLast } = useWalletLast();
 
    const dueLoans = useMemo(() => {
       const overdueIds = new Set(loanArrays.defaultedLoans.map((loan) => loan.id));
@@ -54,7 +58,7 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
          .map((loan) => ({ loan, isOverdue: overdueIds.has(loan.id) }))
          .sort((a, b) => {
             if (a.isOverdue !== b.isOverdue) return a.isOverdue ? -1 : 1;
-            return parseDateSafely(a.loan.dueDate).getTime() - parseDateSafely(b.loan.dueDate).getTime();
+            return parseDateSafely(currentDueDate(a.loan)).getTime() - parseDateSafely(currentDueDate(b.loan)).getTime();
          });
    }, [loanArrays.activeLoans, loanArrays.defaultedLoans]);
 
@@ -93,12 +97,18 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
       });
       const dues: DashboardV2Due[] = dueLoans.map(({ loan, isOverdue }) => {
          const lender = loan.lenderUser ? userProfiles[loan.lenderUser] : undefined;
+         // Split loan (2 payments): the row is the next payment — its amount and its day.
+         const nextPayment = currentMilestone(loan);
+         const dueDay = currentDueDate(loan);
          return {
             id: loan.id,
             // What's still owed (principal + interest − already repaid), not the amount borrowed.
-            amount: Math.max(0, toNumber(loan.totalRepaymentAmount) - toNumber(loan.repaidAmount)),
+            amount: nextPayment ? nextPayment.amountLeft : Math.max(0, toNumber(loan.totalRepaymentAmount) - toNumber(loan.repaidAmount)),
             // Calendar days in the borrower's zone: 0 = due today, negative = overdue.
-            daysRemaining: getDaysUntilDueDay(loan.dueDate, getLoanTimezone(loan)),
+            daysRemaining: getDaysUntilDueDay(dueDay, getLoanTimezone(loan)),
+            deadline: getDueDayEnd(dueDay, getLoanTimezone(loan)).toISOString(),
+            rewardFrom: loan.fundedAt ? (getRewardFromAt(loan.fundedAt, loan.dueDate, getLoanTimezone(loan))?.toISOString() ?? null) : null,
+            zone: getLoanTimezone(loan),
             lenderName: lender?.displayName || lender?.username || 'a moo-lender',
             isOverdue
          };
@@ -120,7 +130,7 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
          creditLimit,
          creditInUse,
          creditHint: credit.hint,
-         showConnectWallet: !getBaseWalletLockStatus(user).isConfirmedBorrowerWallet,
+         showConnectWallet: !getBaseWalletLockStatus(user).isConfirmedBorrowerWallet && !(walletLast && borrowerLoans.length === 0),
          showWithdraw: hasFundedLoan && !getBaseWalletLockStatus(user).isConfirmedOpenfort,
          milestones: toDashboardV2Milestones(sharedMilestones),
          allMilestones: toDashboardV2MilestoneList(sharedMilestones),
@@ -153,7 +163,8 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
       sharedMilestones,
       stats,
       user,
-      userProfiles
+      userProfiles,
+      walletLast
    ]);
 
    return { model, isSignedIn, isReady };

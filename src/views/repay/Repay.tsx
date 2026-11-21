@@ -21,7 +21,7 @@ import posthog from 'posthog-js';
 import { useDispatch, useSelector, useStore } from 'react-redux';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { erc20Abi } from 'viem';
-import { useAccount, useConnect, useReadContract, useSwitchChain, useWatchContractEvent } from 'wagmi';
+import { useAccount, useConnect, useReadContract, useReadContracts, useSwitchChain, useWatchContractEvent } from 'wagmi';
 
 import { useBottomNavPrimaryAction } from '@/components/BottomNavActionContext';
 import RepayInAppBrowserGate from '@/components/RepayInAppBrowserGate';
@@ -44,12 +44,13 @@ import { COINS_PH_SUSPENDED, COINS_PH_SUSPENDED_MESSAGE, COINS_PH_SUSPENDED_TITL
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
 import { useLocalization } from '@/i18n';
 import { clearPendingBasePayment, hasPendingPaymentForLoan, registerPendingBasePayment } from '@/lib/basePayReconciliation';
-import { evaluateCreditProgression } from '@/lib/creditLeveling';
+import { countsFromAt, evaluateCreditProgression, isFastRepay } from '@/lib/creditLeveling';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { detectInAppBrowser, shouldBlockRepayForInAppBrowser } from '@/lib/inAppBrowser';
 import { isUserVerified } from '@/lib/isUserVerified';
-import { getDueDayEnd, getLoanTimezone, isPastDueDay } from '@/lib/loanDeadline';
+import { getDueDayEnd, getLoanTimezone, getRewardFromAt, isPastDueDay } from '@/lib/loanDeadline';
 import { formatIdr, remainingIdr } from '@/lib/loanMarket';
+import { currentDueDate, currentMilestone } from '@/lib/repaymentSchedule';
 import { clearStep, readStep, writeStep } from '@/lib/stepMemory';
 import { openSupportChat } from '@/lib/support/liveChat';
 import { useUsdcRate } from '@/lib/useUsdcRate';
@@ -59,9 +60,12 @@ import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
+import { RepayStreakCelebration } from '@/views/dashboard-v2/components/RepayStreak';
+import { getRewardRuleCopy, getRewardWindow } from '@/views/dashboard-v2/dashboardV2Model';
 import { CONNECT_HIPPOS } from '@/views/dashboard/components/connectKit';
 import { Card, DoneRow, GoldButton, SoftButton, StepHead, WaitRow } from '@/views/indonesia/ui';
 import WaltRepaySteps from '@/views/indonesia/walt/WaltRepaySteps';
+import { AffiliateUnlockedCard } from '@/views/referral/AffiliateUnlockedCard';
 import AppGuideSteps from '@/views/repay/AppGuideSteps';
 import { suggestedBuyAmount as suggestedGcryptoBuyAmount } from '@/views/repay/gcryptoBuyAmount';
 import GcryptoPictureSteps from '@/views/repay/GcryptoPictureSteps';
@@ -153,6 +157,12 @@ const quickRepaymentFractions = [
 // the Philippine rails and Binance aren't offered there. All four Indonesian exchanges support
 // USDC withdrawals on Base (checked 2026-09-30); they have no deep link because their app URL
 // schemes aren't documented — the web URL hands off to the app where it's installed.
+// The photo under the "Pick USDCBASE" warning: the coin list in each app, with USDCBASE marked.
+const USDCBASE_PHOTO: Record<string, string> = {
+   pdax: '/repay-guides/pdax/step8-coin.webp',
+   gcrypto: '/repay-guides/gcrypto/step4-confirm.webp'
+};
+
 const fundSources = [
    { id: 'coinsph', label: 'Coins.ph', action: 'Open Coins.ph', href: 'https://coins.ph', deepLink: 'coinsph://' },
    { id: 'moneybees', label: 'Moneybees', action: 'Visit Moneybees', href: 'https://www.moneybees.ph', deepLink: null },
@@ -371,7 +381,8 @@ const getProgressPercent = (loan: Loan): number => {
 
 // The loan is due until the end of its due day in the borrower's zone (src/lib/loanDeadline.ts), so
 // the countdown runs to that moment, not to midnight UTC (8 AM Manila on the due day).
-const getLoanDeadline = (loan: Loan): Date => getDueDayEnd(loan.dueDate, getLoanTimezone(loan));
+// Split loans (2 payments) count down to the next payment, not the last one.
+const getLoanDeadline = (loan: Loan): Date => getDueDayEnd(currentDueDate(loan), getLoanTimezone(loan));
 
 const getDueCountdownCopy = (loan: Loan): string => {
    const totalMinutes = Math.round((getLoanDeadline(loan).getTime() - Date.now()) / (1000 * 60));
@@ -396,14 +407,19 @@ const getDueCountdownCopy = (loan: Loan): string => {
 // The calendar due date, read as stored (midnight UTC), so it never slips a day on a device set west
 // of UTC. No clock time: "Due Sep 30" means by the end of Sep 30 where the borrower is.
 const getDueDateShortCopy = (loan: Loan): string =>
-   parseDateSafely(loan.dueDate).toLocaleDateString(undefined, {
+   parseDateSafely(currentDueDate(loan)).toLocaleDateString(undefined, {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
       timeZone: 'UTC'
    });
 
-const isLoanOverdue = (loan: Loan): boolean => isPastDueDay(loan.dueDate, getLoanTimezone(loan));
+const isLoanOverdue = (loan: Loan): boolean => isPastDueDay(currentDueDate(loan), getLoanTimezone(loan));
+// "Payment 1 of 2 · " on a split loan, nothing otherwise.
+const getPaymentPrefix = (loan: Loan): string => {
+   const next = currentMilestone(loan);
+   return next ? `Payment ${next.index + 1} of ${next.count} · ` : '';
+};
 
 const isLoanDueSoon = (loan: Loan): boolean => {
    const totalHours = (getLoanDeadline(loan).getTime() - Date.now()) / (1000 * 60 * 60);
@@ -422,7 +438,8 @@ const getEstimatedTrustPoints = (loan: Loan, repaymentAmount: number): number =>
    // Mirrors private.award_repayment_pandesal: only a full, on-time payoff earns points
    // (10). Partial payments and late payoffs earn nothing, so never promise them.
    if (repaymentAmount < remainingAmount - 0.005) return 0;
-   if (isLoanOverdue(loan)) return 0;
+   // Split loans: a part paid late (stamped by the server) or the current part past due = not on time.
+   if (loan.repaymentScheduleLateAt || isLoanOverdue(loan) || isPastDueDay(loan.dueDate, getLoanTimezone(loan))) return 0;
    return 10;
 };
 
@@ -567,7 +584,18 @@ export default function Repay() {
    const refreshAfterWaltRepay = useCallback(() => {
       if (user?.id) void dispatch(getUserLoans({ userId: user.id }));
    }, [dispatch, user?.id]);
-   const repayLoans = usePreviewLoans ? previewLoans : loans;
+   // /repay-preview?early=1: a loan funded yesterday, so the "food reward counts from …" note shows.
+   const repayLoans = usePreviewLoans
+      ? new URLSearchParams(location.search).has('early')
+         ? [
+              {
+                 ...previewLoans[0],
+                 fundedAt: new Date(Date.now() - 864e5).toISOString(),
+                 dueDate: new Date(Date.now() + 28 * 864e5).toISOString()
+              }
+           ]
+         : previewLoans
+      : loans;
    const { hasFetched: hasCheckedRepayLoans, isLoading: isCheckingRepayLoans } = useLoanData({
       userId: user.id,
       enabled: Boolean(user.id) && !usePreviewLoans
@@ -592,6 +620,8 @@ export default function Repay() {
       coin: string;
       trustPoints: number;
       creditLevelUp?: { toLevel: number; newLimit: number } | null;
+      /** Repaid within 48h of getting it: their limit stays (the 48-hour rule). */
+      fastRepayLimit?: number | null;
    } | null>(() =>
       // Preview: ?paid=1 shows the "you're paid" screen (screenshots / design review).
       usePreviewLoans && new URLSearchParams(location.search).get('paid') === '1'
@@ -634,6 +664,7 @@ export default function Repay() {
    // The two recommended sources (Moneybees, Coins.ph) show by default; GCrypto/PDAX stay
    // collapsed so a first-timer isn't asked to evaluate four exchanges at once.
    const [showMoreSources, setShowMoreSources] = useState(false);
+   const [showUsdcbasePhoto, setShowUsdcbasePhoto] = useState(false);
    // Records which loan crossed short→funded so we can show an explicit "money arrived"
    // confirmation. Tying it to the loan id (rather than a bare boolean) means it clears
    // itself on loan switch and never flags borrowers who already had enough on arrival.
@@ -770,6 +801,8 @@ export default function Repay() {
 
    const selectedLoan = activeLoans.find((loan) => loan.id === selectedLoanId) ?? activeLoans[0];
    const selectedRemaining = selectedLoan ? getRemainingAmount(selectedLoan) : 0;
+   // Split loan: what the next payment still needs (the form starts there; "Full" still clears it all).
+   const selectedNextDue = selectedLoan ? (currentMilestone(selectedLoan)?.amountLeft ?? selectedRemaining) : 0;
    // The remaining balance is displayed rounded to cents, so validate against the rounded
    // value. Otherwise a remaining of e.g. 0.469 shows as "$0.47" but rejects a 0.47 "Full"
    // payment as exceeding the maximum, leaving the borrower unable to clear the loan.
@@ -939,6 +972,48 @@ export default function Repay() {
    const hasPartialFunds = usdcBalance !== null && usdcBalance > 0 && isShortOnFunds;
    // Under a cent counts as empty: exchanges leave dust like 0.0047 behind after a send.
    const isWalletEmpty = usdcBalance !== null && usdcBalance < 0.01 && isShortOnFunds;
+   // Money sent to a wallet this account no longer points at (an address still saved in the borrower's
+   // exchange app after their wallet changed) never shows above: we only watch the current wallet. So while
+   // they are short, also look at the wallets their earlier loans used and say so if the money is there.
+   // The team gets its own alert from the hourly old-wallet watch (supabase/functions/_shared/oldWalletWatch.ts).
+   const oldWalletAddresses = useMemo(() => {
+      const current = repayWalletAddress.toLowerCase();
+      const found = new Set<string>();
+      for (const loan of loans) {
+         const wallet = loan.borrowerUser === user.id ? (loan.borrowerWallet ?? '').trim().toLowerCase() : '';
+         if (/^0x[0-9a-f]{40}$/.test(wallet) && wallet !== current) found.add(wallet);
+      }
+      return [...found].slice(0, 5) as `0x${string}`[];
+   }, [loans, user.id, repayWalletAddress]);
+   const { data: oldWalletBalancesRaw } = useReadContracts({
+      contracts: oldWalletAddresses.map((wallet) => ({
+         abi: erc20Abi,
+         address: BASE_USDC_ADDRESS,
+         functionName: 'balanceOf' as const,
+         args: [wallet] as const,
+         chainId: ALLOWED_CHAIN_ID
+      })),
+      query: {
+         enabled: oldWalletAddresses.length > 0 && Boolean(selectedLoan) && !usePreviewLoans && isShortOnFunds,
+         refetchInterval: 60000
+      }
+   });
+   // Preview: ?oldwallet=1 (with ?empty=1) shows the card without a real wallet.
+   const previewOldWallet = usePreviewLoans && new URLSearchParams(location.search).get('oldwallet') === '1';
+   // Old wallets keep a little exchange dust, so only a real top-up counts.
+   const oldWalletAmount = previewOldWallet
+      ? 90.01
+      : (oldWalletBalancesRaw ?? []).reduce(
+           (max, entry) => (typeof entry.result === 'bigint' ? Math.max(max, Number(entry.result) / 1e6) : max),
+           0
+        );
+   const moneyInOldWallet = isShortOnFunds && oldWalletAmount >= 1;
+   const oldWalletTrackedRef = useRef(false);
+   useEffect(() => {
+      if (!moneyInOldWallet || oldWalletTrackedRef.current) return;
+      oldWalletTrackedRef.current = true;
+      trackRepay('repay_old_wallet_money_found', { amount: Math.round(oldWalletAmount * 100) / 100 });
+   }, [moneyInOldWallet, oldWalletAmount]);
    // True only for the loan that just crossed short→funded — drives the success handoff.
    // Subscribe to incoming USDC Transfer events on Base so the UI updates within ~1-2s
    // of the deposit landing — no polling delay. Only active while short on funds.
@@ -1028,9 +1103,9 @@ export default function Repay() {
       if (saved && (WIZARD_STEPS as readonly string[]).includes(saved.step)) {
          setWizardStep(saved.step);
          if (fundSources.some((source) => source.id === saved.source) && !isPausedSource(saved.source)) setFundSource(saved.source);
-         setRepaymentAmount(saved.amount || formatCurrency(selectedRemaining));
+         setRepaymentAmount(saved.amount || formatCurrency(selectedNextDue));
       } else {
-         setRepaymentAmount(formatCurrency(selectedRemaining));
+         setRepaymentAmount(formatCurrency(selectedNextDue));
       }
       setRestoredLoanId(selectedLoanId);
       // Only when the loan changes, not as they edit the amount.
@@ -1292,7 +1367,9 @@ export default function Repay() {
                trustPoints: earnedTrustPoints,
                creditLevelUp: serverLevelUp
                   ? { toLevel: getCreditLevelNumber(serverLevelUp.toLimit), newLimit: serverLevelUp.toLimit }
-                  : null
+                  : null,
+               fastRepayLimit:
+                  !serverLevelUp && isFastRepay(selectedLoan.fundedAt ?? null, new Date().toISOString()) ? user.cs || STARTING_CREDIT_LIMIT : null
             });
          } else {
             // Partial payment: the loan stays active, so acknowledge it inline instead of
@@ -1613,11 +1690,39 @@ export default function Repay() {
          {/* Wrong-network sends lose funds and can't be recovered — make BASE unmissable
                                         at the exact moment the borrower copies the address to paste as a destination. */}
          <div className="mt-3 rounded-xl bg-[#fef2f2] p-3 ring-1 ring-[#fca5a5] dark:bg-[#3a1414] dark:ring-[#7f1d1d]">
-            <p className="text-[13px] font-extrabold leading-snug text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Send on the BASE network only</p>
-            <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#b91c1c] dark:text-[#fca5a5]">
-               USDC sent on Ethereum, Polygon, or any other network goes to this address on the wrong chain and is lost forever — it cannot
-               be recovered. When {activeSource.label} asks which network, choose <span className="font-extrabold underline">Base</span>.
-            </p>
+            {/* PDAX and GCrypto don't ask for a network: Base is its own coin there, USDCBASE. */}
+            {USDCBASE_PHOTO[activeSource.id] ? (
+               <>
+                  <p className="text-[13px] font-extrabold leading-snug text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Pick USDCBASE</p>
+                  <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#b91c1c] dark:text-[#fca5a5]">
+                     Any other USDC (USDCPOL, USDCSOL…) and your money is lost.
+                  </p>
+                  {/* Photo stays folded away behind a small pill; tap to open it in this card. */}
+                  <button
+                     type="button"
+                     onClick={() => setShowUsdcbasePhoto((open) => !open)}
+                     aria-expanded={showUsdcbasePhoto}
+                     className="mt-2 inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[12px] font-bold text-[#b91c1c] ring-1 ring-[#fca5a5] dark:bg-[#2a0f0f] dark:text-[#fca5a5] dark:ring-[#7f1d1d]"
+                  >
+                     See it in {activeSource.label}
+                     <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showUsdcbasePhoto ? 'rotate-180' : ''}`} aria-hidden />
+                  </button>
+                  {showUsdcbasePhoto ? (
+                     <img
+                        src={USDCBASE_PHOTO[activeSource.id]}
+                        alt={`USDCBASE in ${activeSource.label}`}
+                        className="mt-2 block max-h-[260px] w-full rounded-lg object-contain ring-1 ring-[#fca5a5] dark:ring-[#7f1d1d]"
+                     />
+                  ) : null}
+               </>
+            ) : (
+               <>
+                  <p className="text-[13px] font-extrabold leading-snug text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Send on the BASE network only</p>
+                  <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#b91c1c] dark:text-[#fca5a5]">
+                     Choose the Base network. Any other network and your money is lost.
+                  </p>
+               </>
+            )}
          </div>
       </>
    );
@@ -1721,8 +1826,7 @@ export default function Repay() {
                      <span className="font-extrabold text-[#6c3fe0] dark:text-[#c4b5fd]">${formatCurrency(amountToBuy)}</span> of USDC
                   </p>
                   <p className="mt-1.5 text-[12px] leading-snug text-[#6b6090] dark:text-[#a095c8]">
-                     {activeSource.label} takes about {breakdown.feeLabel.replace('~', '')} to send your USDC. If you only buy $
-                     {formatCurrency(amount)}, less than that arrives and your repayment falls short.
+                     {activeSource.label} keeps about {breakdown.feeLabel.replace('~', '')} to send it.
                   </p>
                   {breakdown.depositTip ? (
                      <p className="mt-1.5 text-[12px] leading-snug text-[#6b6090] dark:text-[#a095c8]">{breakdown.depositTip}</p>
@@ -1980,8 +2084,16 @@ export default function Repay() {
                   </div>
                   <div className="flex w-full flex-col gap-2 text-left">
                      {completion.creditLevelUp ? <DoneRow>New limit: ${completion.creditLevelUp.newLimit}</DoneRow> : null}
+                     {completion.fastRepayLimit ? (
+                        <p className="rounded-[14px] bg-[#fff6dc] px-4 py-3 text-[14px] leading-[20px] text-[#6b4a00] dark:bg-[#3a2e10] dark:text-[#ffe27a]" data-testid="repay-fast-note">
+                           <b>Your limit stays ${completion.fastRepayLimit}.</b> Loans paid back in under 2 days don’t count. Next time, keep it
+                           at least 2 days to level up.
+                        </p>
+                     ) : null}
                      {completion.trustPoints > 0 ? <DoneRow>+{completion.trustPoints} Pandesal points</DoneRow> : null}
                   </div>
+                  <RepayStreakCelebration isPreview={usePreviewLoans} />
+                  <AffiliateUnlockedCard isPreview={usePreviewLoans} />
                   <div className="flex w-full flex-col gap-3">
                      {hasMoreLoans ? (
                         <GoldButton onClick={() => setCompletion(null)}>Pay next loan</GoldButton>
@@ -2034,6 +2146,13 @@ export default function Repay() {
                         </div>
                      </div>
                   ) : null}
+
+                  <div className="mt-5 w-full empty:hidden">
+                     <RepayStreakCelebration isPreview={usePreviewLoans} />
+                  </div>
+                  <div className="mt-3 w-full">
+                     <AffiliateUnlockedCard isPreview={usePreviewLoans} />
+                  </div>
 
                   <div className="mt-5 w-full border-y border-md-neutral-400">
                      <button
@@ -2193,10 +2312,20 @@ export default function Repay() {
          loanAmount: toNumber(selectedLoan.loanAmount),
          dueDate: selectedLoan.dueDate,
          dueTimezone: selectedLoan.dueTimezone,
-         paidAt: new Date().toISOString()
+         paidAt: new Date().toISOString(),
+         fundedAt: selectedLoan.fundedAt ?? null
       });
       const currentLimit = user.cs || STARTING_CREDIT_LIMIT;
       const nextLimit = progression.shouldLevelUp ? progression.nextLimit : currentLimit;
+      // The 48-hour rule: paying now won't level them up — say so before they pay, with when it would.
+      const fastCountsFrom = clearsLoan && isFastRepay(selectedLoan.fundedAt ?? null, new Date().toISOString()) ? countsFromAt(selectedLoan.fundedAt) : null;
+      const fastNote = fastCountsFrom ? (
+         <span className="text-[13px] font-medium leading-[17px] text-[#7a6a4f] dark:text-[#bfb29a]" data-testid="repay-fast-before-note">
+            ⏳ Pay from{' '}
+            {fastCountsFrom.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: getLoanTimezone(selectedLoan) })} to
+            raise your limit — keep loans at least 2 days.
+         </span>
+      ) : null;
       const goTo = (next: WizardStep) => {
          setWizardStep(next);
          window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2241,6 +2370,7 @@ export default function Repay() {
             }`}
          >
             <Clock className="size-4 shrink-0" aria-hidden="true" />
+            {getPaymentPrefix(selectedLoan)}
             {isLoanOverdue(selectedLoan) ? 'Past due' : `Due ${getDueDateShortCopy(selectedLoan)} · ${getDueCountdownCopy(selectedLoan)}`}
          </span>
       );
@@ -2255,6 +2385,21 @@ export default function Repay() {
             ) : null}
          </div>
       );
+      // Before the loan's halfway day, paying earns no food voucher: say so before they pay.
+      const loanZone = getLoanTimezone(selectedLoan);
+      const rewardWindow =
+         clearsLoan && selectedLoan.fundedAt
+            ? getRewardWindow({
+                 rewardFrom: getRewardFromAt(selectedLoan.fundedAt, selectedLoan.dueDate, loanZone)?.toISOString() ?? null,
+                 deadline: getDueDayEnd(selectedLoan.dueDate, loanZone).toISOString(),
+                 zone: loanZone
+              })
+            : null;
+      const earlyRewardNote = rewardWindow ? (
+         <span className="text-[13px] font-medium leading-[17px] text-[#7a6a4f] dark:text-[#bfb29a]" data-testid="repay-early-reward-note">
+            {getRewardRuleCopy(locale).countsFrom(rewardWindow.from)}
+         </span>
+      ) : null;
       const rewardChip = clearsLoan ? (
          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff1c2] px-3 py-1.5 text-[15px] font-extrabold text-[#6b4a00] dark:bg-[#3a2e10] dark:text-[#ffe27a]">
             🎁 {nextLimit > currentLimit ? `Next loan: up to $${nextLimit}` : 'Borrow again right after'}
@@ -2300,6 +2445,8 @@ export default function Repay() {
                   </span>
                )}
                {dueLine}
+               {earlyRewardNote}
+               {fastNote}
             </Card>
             {payLess ? (
                <Card>
@@ -2414,7 +2561,29 @@ export default function Repay() {
                   {copiedAddress ? 'Copied' : 'Copy'}
                </span>
             </button>
-            <p className="text-center text-[15px] font-extrabold text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Base network only</p>
+            {USDCBASE_PHOTO[activeSource.id] ? (
+               <div className="flex flex-col items-center gap-2">
+                  <p className="text-center text-[15px] font-extrabold text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Pick USDCBASE</p>
+                  <button
+                     type="button"
+                     onClick={() => setShowUsdcbasePhoto((open) => !open)}
+                     aria-expanded={showUsdcbasePhoto}
+                     className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-[13px] font-bold text-[#b91c1c] ring-1 ring-[#fca5a5] dark:bg-[#2a0f0f] dark:text-[#fca5a5] dark:ring-[#7f1d1d]"
+                  >
+                     See it in {activeSource.label}
+                     <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showUsdcbasePhoto ? 'rotate-180' : ''}`} aria-hidden />
+                  </button>
+                  {showUsdcbasePhoto ? (
+                     <img
+                        src={USDCBASE_PHOTO[activeSource.id]}
+                        alt={`USDCBASE in ${activeSource.label}`}
+                        className="block max-h-[280px] w-full rounded-[14px] object-contain ring-1 ring-[#fca5a5] dark:ring-[#7f1d1d]"
+                     />
+                  ) : null}
+               </div>
+            ) : (
+               <p className="text-center text-[15px] font-extrabold text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Base network only</p>
+            )}
          </div>
       ) : null;
       // Last card of the app guide: watch their wallet until the money lands.
@@ -2431,6 +2600,16 @@ export default function Repay() {
                <DoneRow>${formatCurrency(usdcBalance)} USDC arrived</DoneRow>
                <GoldButton onClick={() => goTo('pay')}>Next · Pay</GoldButton>
             </>
+         ) : moneyInOldWallet ? (
+            <Card>
+               <StepHead image={CONNECT_HIPPOS.waiting} title="We found your money" subtitle="It went to your old wallet." />
+               <p className="text-center text-[28px] font-extrabold tracking-[-0.01em]">${formatCurrency(oldWalletAmount)} USDC</p>
+               <p className="text-center text-[16px] font-extrabold text-[#b91c1c] dark:text-[#fca5a5]">Don't send more.</p>
+               <p className="text-center text-[15px] font-bold text-[#7a6a4f] dark:text-[#bfb29a]">
+                  It is safe. Chat with us and we will fix it.
+               </p>
+               <GoldButton onClick={() => openSupportChat('Repay: money in old wallet')}>Chat with us</GoldButton>
+            </Card>
          ) : (
             <Card>
                <StepHead image={CONNECT_HIPPOS.waiting} title="Waiting for your USDC" subtitle="Shows here by itself." />
@@ -2958,7 +3137,9 @@ export default function Repay() {
                            <Clock className="h-4 w-4 shrink-0" aria-hidden="true" />
                            {isLoanOverdue(selectedLoan) ? 'Past due' : `${getDueCountdownCopy(selectedLoan)}`}
                         </span>
-                        <span>Due {getDueDateShortCopy(selectedLoan)}</span>
+                        <span>
+                           {getPaymentPrefix(selectedLoan)}Due {getDueDateShortCopy(selectedLoan)}
+                        </span>
                      </div>
                   </section>
                </>

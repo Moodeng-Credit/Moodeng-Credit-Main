@@ -18,6 +18,7 @@
 import { formatRp, ID_GUIDE_KEYS, type IdGuideKey, idCallback } from './idLoanMath.ts';
 import { idLocaleOf, type IdLocale } from './idTrack.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramButton, type TelegramInlineKeyboard } from './telegram.ts';
+import { roundRp, waltP2pPrice } from './waltP2p.ts';
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
@@ -371,7 +372,13 @@ export const sendCashOutGuideOffer = async (svc: Svc, userId: string, amountUsd:
    } catch {
       // no rate: the message just leaves out the rupiah
    }
-   const approx = Number.isFinite(rate) && rate > 0 ? ` (≈ ${formatRp(Math.round((amountUsd * rate) / 1000) * 1000)})` : '';
+   // What a Walt P2P merchant pays for it right now (what they'll really get); else the official rate.
+   const p2p = await waltP2pPrice(svc, 'cashout', Number.isFinite(rate) && rate > 0 ? amountUsd * rate : 100_000);
+   const approx = p2p
+      ? ` (≈ ${formatRp(roundRp(amountUsd * p2p))} ${l === 'en' ? 'on Walt P2P now' : 'di Walt P2P sekarang'})`
+      : Number.isFinite(rate) && rate > 0
+        ? ` (≈ ${formatRp(Math.round((amountUsd * rate) / 1000) * 1000)})`
+        : '';
    const text =
       l === 'en'
          ? `💸 ${amountUsd} USDT${approx} is now in your Walt.\n\nWant rupiah in your bank or e-wallet? Follow the steps — one at a time.`

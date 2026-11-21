@@ -33,6 +33,7 @@ const borrower = {
 
 // The BitRepo vault card reads the vault on Base through wagmi; these tests cover our own records only.
 vi.mock('@/app/admin/VaultLoansCard', () => ({ default: () => null }));
+vi.mock('@/app/admin/BitrepoReturnCard', () => ({ default: () => null }));
 
 vi.mock('@/app/admin/adminFinance', () => ({
    DEFAULT_GOALS: { lent_usd: 500, marketing_budget_usd: 50, cac_target_usd: 5 },

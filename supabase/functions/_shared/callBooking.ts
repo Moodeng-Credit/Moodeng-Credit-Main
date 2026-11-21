@@ -6,8 +6,10 @@
 import { ATTENDANCE_RESET, meetingIdFromJoinUrl } from './attendance.ts';
 import { adminUserUrl, OPEN_IN_ADMIN_TEXT } from './adminCards.ts';
 import { postDiscord } from './discord.ts';
+import { sendTelegramMessage } from './telegram.ts';
 import { bookingBotAnswers, loadBookingBotMode } from './bookingBotSwitch.ts';
-import { formatCallTimeForTeam, newConfirmToken, sendBookedMessenger } from './videoCall.ts';
+import { formatCallTime, formatCallTimeForTeam, newConfirmToken, sendBookedMessenger, sendMovedSoonerMessenger, sendTextReminderAsk } from './videoCall.ts';
+import { sendMessengerMessage } from './sendpulse.ts';
 import {
    bookingCooldownUntil,
    clusterSlots,
@@ -20,13 +22,20 @@ import {
    orderHostsToTry,
    preferHost,
    PREFERRED_HOST,
+   pinnedHostAway,
    preferSoonSlots,
    recheckRange,
    teamGuests,
-   zoomFallbackWarning
+   zoomFallbackWarning,
+   isZoomJoinUrl,
+   zoomPaused
 } from '../calcom-round-robin/lib.ts';
 import { cancelCalBooking } from './calcomCancel.ts';
-import { changeTimeButton } from './callReschedule.ts';
+import { autoRejectForStrikes, loadCallStrikes, logCallEvent, strikeVerdict } from './callStrikes.ts';
+import { photoCheckLine } from './fbPhotoCheck.ts';
+import { PAGE_INBOX_URL } from './loanAccess.ts';
+import { callInboxFor, isPlaceholderEmail } from './placeholderEmail.ts';
+import { changeTimeLinkButton } from './callReschedule.ts';
 import { testAccountRow } from './testAccount.ts';
 import { loadIdStatus, sendIdTelegram } from './idTrack.ts';
 import { CAL_BASE, CALL_MINUTES, fetchAccountEmail, fetchSlots, resolveEventTypeId } from './calcomSlots.ts';
@@ -102,27 +111,33 @@ const notifyTeamBooking = async (
    // deno-lint-ignore no-explicit-any
    borrower?: { svc: any; id: string; username?: string | null; isTest?: boolean | null }
 ) => {
+   let facebookName: string | null = null;
+   if (borrower) {
+      try {
+         const { data } = await borrower.svc.from('users').select('facebook_name').eq('id', borrower.id).maybeSingle();
+         facebookName = (data as { facebook_name?: string | null } | null)?.facebook_name ?? null;
+      } catch {
+         // the photo line still goes out, just without the name
+      }
+   }
    const text =
       `📅 New Moodeng call booked\nHost: ${hostId}\nWith: ${attendee.name} (${attendee.email})\nWhen: ${formatCallTimeForTeam(start, attendee.timeZone)}` +
       `\nJoin: ${joinUrl ?? 'no link on the booking — check the host’s Cal.com'}` +
       zoomFallbackWarning(joinUrl, hostId) +
-      (borrower?.isTest ? '\n🧪 Test account' : '');
+      (borrower?.isTest ? '\n🧪 Test account' : '') +
+      (borrower ? `\n${photoCheckLine(facebookName)}` : '');
 
    // tgChat is the admins-only channel (telegram_bot_settings.team_group_chat_id), resolved by the
    // caller — never the lender or support group.
    const tgToken = Deno.env.get('TELEGRAM_BOT_TOKEN') || Deno.env.get('TELEGRAM_API_TOKEN');
    if (tgToken && tgChat) {
       try {
-         await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            // 🔄 Change time: the bot lists the free times and moves the booking (callReschedule.ts).
-            // 🧪 Test account?: one tap (+ confirm) marks a team test booking (testAccount.ts).
-            body: JSON.stringify({
-               chat_id: tgChat,
-               text,
-               ...(borrower ? { reply_markup: { inline_keyboard: [[changeTimeButton(borrower.id)], ...testAccountRow(borrower.id, borrower.isTest)] } } : {})
-            })
+         // 🔄 Change time: opens the booking's Cal.com reschedule page via calcom-webhook (callReschedule.ts).
+         // 🧪 Test account?: one tap (+ confirm) marks a team test booking (testAccount.ts).
+         // aboutUserIds: the text names them by name + email only, so the Facebook line needs the id.
+         await sendTelegramMessage(tgChat, text, {
+            ...(borrower ? { inlineKeyboard: [[await changeTimeLinkButton(borrower.id), { text: '💬 Open Page inbox', url: PAGE_INBOX_URL }], ...testAccountRow(borrower.id, borrower.isTest)] } : {}),
+            ...(borrower ? { aboutUserIds: [borrower.id] } : {})
          });
       } catch (err) {
          console.error('calcom-round-robin: telegram booking notify failed', err);
@@ -159,6 +174,17 @@ const bookedCallStarts = async (svc: Svc, userId: string, from: string, to: stri
 
 // The "You're booked" message offers the Messenger bot's questions ("type QUESTIONS") to people the bot
 // answers who haven't answered them in the last 30 days (a bot booking already has). Best-effort: false on error.
+// Text reminders are on, we could text them (they book in Manila time) and we have no number yet.
+const wantsTextReminderAsk = async (svc: Svc, userId: string): Promise<boolean> => {
+   try {
+      const { data } = await svc.rpc('call_sms_status', { p_user: userId });
+      const s = (data ?? {}) as { enabled?: boolean; eligible?: boolean; number?: string | null };
+      return s.enabled === true && s.eligible === true && !s.number;
+   } catch {
+      return false;
+   }
+};
+
 const offerBotQuestions = async (svc: Svc, userId: string): Promise<boolean> => {
    try {
       const since = new Date(Date.now() - 30 * 86400000).toISOString();
@@ -175,6 +201,67 @@ const offerBotQuestions = async (svc: Svc, userId: string): Promise<boolean> => 
 
 type Resolved = Array<{ id: string; apiKey: string; eventTypeId: number }>;
 
+// No Cal Video (George, 2026-11-14): hosts whose last booking came back without a Zoom link are left out
+// for a while (lib.ts zoomPaused). Both cofounders' Cal.com on the one support@ Zoom login knock each
+// other's connection out — each needs their own Zoom login.
+const zoomKey = (hostId: string) => `zoom_broken_${hostId}`;
+const zoomPausedHosts = async (svc: Svc): Promise<Set<string>> => {
+   const { data, error } = await svc.from('telegram_bot_settings').select('key, value').in('key', HOSTS.map((h) => zoomKey(h.id)));
+   if (error) console.error('calcom-round-robin: could not read Zoom pauses', error.message);
+   const now = Date.now();
+   return new Set(
+      ((data ?? []) as Array<{ key: string; value: string | null }>)
+         .filter((r) => zoomPaused(r.value, now))
+         .map((r) => r.key.replace(/^zoom_broken_/, ''))
+   );
+};
+const pauseHostZoom = async (svc: Svc, hostId: string, joinUrl: string | null) => {
+   const { error } = await svc.from('telegram_bot_settings').upsert({ key: zoomKey(hostId), value: new Date().toISOString() }, { onConflict: 'key' });
+   if (error) console.error('calcom-round-robin: could not save Zoom pause', error.message);
+   const name = hostId === 'george' ? 'George' : 'Emma';
+   const text =
+      `⚠️ ${name}'s Zoom is disconnected in Cal.com — a booking came back ${joinUrl ? 'on Cal Video' : 'with no link'}, so it was cancelled and the borrower moved to a Zoom host (or asked to pick another time).\n` +
+      `${name}'s times are hidden for 3 hours, then tried again automatically.\n` +
+      `Fix: ${name}'s Cal.com → Settings → Apps → Zoom → reconnect with ${name}'s OWN Zoom login. Both Cal.coms on the shared support@ Zoom is why it keeps dropping.`;
+   const tgToken = Deno.env.get('TELEGRAM_BOT_TOKEN') || Deno.env.get('TELEGRAM_API_TOKEN');
+   const { data: setting } = await svc.from('telegram_bot_settings').select('value').eq('key', 'team_group_chat_id').maybeSingle();
+   const chat = Deno.env.get('TELEGRAM_TEAM_GROUP_CHAT_ID') || ((setting as { value?: string } | null)?.value ?? '');
+   if (tgToken && chat) {
+      try {
+         await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chat, text })
+         });
+      } catch (err) {
+         console.error('calcom-round-robin: Zoom alert failed', err);
+      }
+   }
+   await postDiscord({ content: text }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
+};
+
+// Time off (George 2026-11-20: "place all calls from Saturday until Monday under George"): the
+// telegram_bot_settings `call_blocks` JSON list [{host: 'emma'|'george'|'all', from, to}] hides that
+// host's times inside each window — in the list, and again when booking. Past windows are ignored.
+type CallBlock = { host: string; from: string; to: string };
+export const loadCallBlocks = async (svc: Svc): Promise<CallBlock[]> => {
+   const { data } = await svc.from('telegram_bot_settings').select('value').eq('key', 'call_blocks').maybeSingle();
+   const raw = (data as { value?: string | null } | null)?.value;
+   if (!raw) return [];
+   try {
+      const list = JSON.parse(raw);
+      const now = Date.now();
+      return (Array.isArray(list) ? list : []).filter(
+         (b): b is CallBlock => b && typeof b.host === 'string' && !Number.isNaN(Date.parse(b.from)) && Date.parse(b.to) > now
+      );
+   } catch {
+      console.error('calcom-round-robin: call_blocks is not valid JSON — ignored');
+      return [];
+   }
+};
+export const blocksFor = (blocks: CallBlock[], hostId: string) =>
+   blocks.filter((b) => b.host === 'all' || b.host === hostId).map((b) => ({ start: b.from, end: b.to }));
+
 const eitherHostOn = async (svc: Svc): Promise<boolean> => {
    const { data } = await svc.from('telegram_bot_settings').select('value').eq('key', 'calls_either_host').maybeSingle();
    return String((data as { value?: unknown } | null)?.value ?? '').toLowerCase() === 'true';
@@ -188,6 +275,9 @@ const prepare = async (svc: Svc, user: CallUser, pin?: string | null): Promise<C
    if ((access as { loan_access_status?: string | null } | null)?.loan_access_status === 'rejected') {
       return reply({ ok: false, error: 'rejected', slots: [] });
    }
+   // 2 missed calls (or 3 reschedules) and never attended: rejected automatically and told why
+   // (callStrikes.ts) — also catches people who got there before the rule existed.
+   if (await autoRejectForStrikes(svc, user.id)) return reply({ ok: false, error: 'rejected', slots: [] });
 
    // Resolve each host's event type id once per request.
    const resolved: Array<{ id: string; apiKey: string; eventTypeId: number }> = [];
@@ -202,11 +292,19 @@ const prepare = async (svc: Svc, user: CallUser, pin?: string | null): Promise<C
    // (preferHost). The other cofounder is still invited as a guest. A request can pin one host.
    // Until telegram_bot_settings `calls_either_host` is 'true' (George's Cal.com needs Zoom first,
    // or his calls get Cal Video links), every call stays on Emma's calendar as before.
+   // A pinned host who's away most of the next 2 days gives way to every host (pinnedHostAway).
+   if (pin && pinnedHostAway(blocksFor(await loadCallBlocks(svc), pin), Date.now())) pin = null;
    if (!pin && !(await eitherHostOn(svc))) pin = 'emma';
    if (pin) {
       const pinned = resolved.filter((h) => h.id === pin);
       if (pinned.length > 0) resolved.splice(0, resolved.length, ...pinned);
       else console.error(`calcom-round-robin: host '${pin}' not configured — using every host`);
+   }
+   const paused = await zoomPausedHosts(svc);
+   if (paused.size) {
+      const usable = resolved.filter((h) => !paused.has(h.id));
+      if (usable.length === 0) return reply({ ok: false, error: 'no_zoom', slots: [] });
+      resolved.splice(0, resolved.length, ...usable);
    }
 
    // Two strikes: repeat no-shows wait a week before they can take another slot from the hosts.
@@ -239,15 +337,18 @@ export const listCallSlots = async (svc: Svc, user: CallUser, timeZone: string, 
    // never returns past times anyway — so this can't lose "later today" for anyone.
    const start = ymd(new Date(Date.now() - 86400000));
    const end = ymd(new Date(Date.now() + DAYS_AHEAD * 86400000));
-   const [perHost, georgeBusy, booked] = await Promise.all([
+   const [perHost, georgeBusy, booked, blocks] = await Promise.all([
       Promise.all(resolved.map((h) => fetchSlots(h.apiKey, h.eventTypeId, start, end, timeZone))),
       fetchGeorgeBusy(svc, new Date().toISOString(), new Date(Date.now() + (DAYS_AHEAD + 1) * 86400000).toISOString()),
-      bookedCallStarts(svc, user.id, new Date(Date.now() - 86400000).toISOString(), new Date(Date.now() + (DAYS_AHEAD + 2) * 86400000).toISOString())
+      bookedCallStarts(svc, user.id, new Date(Date.now() - 86400000).toISOString(), new Date(Date.now() + (DAYS_AHEAD + 2) * 86400000).toISOString()),
+      loadCallBlocks(svc)
    ]);
    // Max 4 calls a Bangkok day, and on a day that has calls only the times around them (the
    // nearest ones ⭐ recommended), so calls come in one block. `recommended` is a subset of `slots`.
    // George's own Google busy times only take away George's times; Emma's stand on their own.
-   const hostSlots = perHost.map((slots, i) => (resolved[i].id === 'george' ? dropBusySlots(slots, georgeBusy, CALL_MINUTES) : slots));
+   const hostSlots = perHost.map((slots, i) =>
+      dropBusySlots(resolved[i].id === 'george' ? dropBusySlots(slots, georgeBusy, CALL_MINUTES) : slots, blocksFor(blocks, resolved[i].id), CALL_MINUTES)
+   );
    const free = mergeSlots(hostSlots);
    const emmaIndex = resolved.findIndex((h) => h.id === PREFERRED_HOST);
    // Evenings and weekend days lead as ⭐ (isGoodCallTime); late-night bookers get nothing before noon.
@@ -301,6 +402,9 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
       const georgeBusy = await fetchGeorgeBusy(svc, start, new Date(startMs + CALL_MINUTES * 60000).toISOString());
       if (dropBusySlots([start], georgeBusy, CALL_MINUTES).length === 0) free = free.filter((h) => h !== 'george');
    }
+   // Time off (call_blocks): a host away at this instant isn't free, whatever Cal.com says.
+   const blocks = await loadCallBlocks(svc);
+   free = free.filter((h) => dropBusySlots([start], blocksFor(blocks, h), CALL_MINUTES).length > 0);
    if (free.length === 0) return reply({ ok: false, error: 'slot_taken' });
 
    const { data: prof } = await svc
@@ -313,12 +417,20 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
    if (prof?.video_call_scheduled_at && Date.now() - Date.parse(prof.video_call_scheduled_at) < 60_000) {
       return reply({ ok: false, error: 'too_fast' });
    }
+   // Booking again counts as a reschedule: the 3rd is refused and they're rejected automatically.
+   const strikes = await loadCallStrikes(svc, user.id);
+   const rebook = { extraReschedule: strikes.bookings > 0 };
+   if (strikeVerdict(strikes, rebook) && (await autoRejectForStrikes(svc, user.id, rebook))) {
+      return reply({ ok: false, error: 'rejected', slots: [] });
+   }
    const previousBooking =
       prof?.video_call_booking_uid && prof.video_call_starts_at && Date.parse(prof.video_call_starts_at) > Date.now()
          ? { uid: prof.video_call_booking_uid as string, host: (prof.video_call_host as string | null) ?? null }
          : null;
-   const email = prof?.email || user.email;
-   if (!email) return reply({ ok: false, error: 'no_email' });
+   const signInEmail = prof?.email || user.email;
+   if (!signInEmail) return reply({ ok: false, error: 'no_email' });
+   // A made-up sign-up address (phone, guest, Telegram…) would bounce Cal.com's invite: use our call inbox.
+   const email = isPlaceholderEmail(signInEmail) ? callInboxFor(user.id) : signInEmail;
    const attendee: Attendee = { name: prof?.display_name || prof?.username || 'Moodeng borrower', email, timeZone, language: 'en' };
 
    // Every configured host (not just the pinned/free ones), so the other cofounder is always invited.
@@ -330,6 +442,7 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
    );
 
    // Emma first when she's free, then the seeded order; the next one is tried if the first races and loses the slot.
+   let zoomFailed = false;
    for (const hostId of preferHost(orderHostsToTry(free, `${user.id}:${start}`))) {
       const host = resolved.find((h) => h.id === hostId);
       if (!host) continue;
@@ -340,6 +453,15 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
       if ('error' in result && result.error === 'other' && guests.length) {
          console.error('calcom-round-robin: booking with team guests failed — retrying without them');
          result = await createBooking(host.apiKey, host.eventTypeId, start, attendee, metadata);
+      }
+      // Cal Video (or no link) means this host's Zoom is broken: undo it, pause them, try the next free host.
+      if ('uid' in result && !isZoomJoinUrl(result.joinUrl)) {
+         console.error(`calcom-round-robin: ${hostId} booking came back without Zoom (${result.joinUrl ?? 'no link'}) — cancelling`);
+         const undone = await cancelCalBooking(hostId, result.uid, 'Zoom link could not be created — rebooking on Zoom.');
+         if (!undone) console.error(`calcom-round-robin: could not cancel non-Zoom booking ${result.uid}`);
+         await pauseHostZoom(svc, hostId, result.joinUrl);
+         zoomFailed = true;
+         continue;
       }
       if ('uid' in result) {
          // Source of truth: we made the booking, so stamp the gate directly (the signed webhook
@@ -374,6 +496,7 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
                'messenger_psid, video_call_host, video_call_starts_at, video_call_timezone, video_call_join_url, video_call_confirm_token, video_call_confirmed_at, video_call_booking_uid'
             )
             .maybeSingle();
+         await logCallEvent(svc, user.id, 'booked', start);
          // Indonesia track: the confirmation on Telegram, in WIB, with the join link.
          if (idStatus?.market === 'ID') {
             await sendIdTelegram(svc, user.id, 'call_booked', { callAt: start, joinUrl: booked?.video_call_join_url ?? result.joinUrl ?? null });
@@ -384,6 +507,11 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
             const sent = await sendBookedMessenger(booked, await offerBotQuestions(svc, user.id));
             messengerSent = sent.ok;
             if (!sent.ok) console.log('calcom-round-robin: messenger confirmation skipped:', sent.reason);
+            // No mobile number on file (they didn't sign up by phone): ask for one, for the text reminder.
+            if (sent.ok && (await wantsTextReminderAsk(svc, user.id))) {
+               const asked = await sendTextReminderAsk(booked);
+               if (!asked.ok) console.log('calcom-round-robin: text reminder ask skipped:', asked.reason);
+            }
          }
          // Bookings go to the call-changes ("rearrange meetings") group with their 🔄 Change time
          // button; the team group only until that group is set.
@@ -404,5 +532,185 @@ export const bookCall = async (svc: Svc, user: CallUser, startRaw: string | null
       }
       if (result.error !== 'taken') break;
    }
+   // Only Cal Video was on offer at that time: they pick another (the paused host's times are gone now).
+   if (zoomFailed) console.error('calcom-round-robin: no Zoom host free at that time — asking for another');
    return reply({ ok: false, error: 'slot_taken' });
+};
+
+
+/**
+ * Move a borrower's booked call to another host at the SAME time (admin: calcom-round-robin
+ * { action: 'move_host', user_id, host }). Books it on the new host's Cal.com (Zoom only), points
+ * the user's row at it (confirm state and reminders kept), then cancels the old booking. The borrower
+ * gets Cal.com's emails (new invite + the old one cancelled); every reminder carries the new link.
+ * With `start` it's a move to a NEW time too (moveCallToHostAt).
+ */
+export const moveCallToHost = async (svc: Svc, userId: string, toHost: string, newStart?: string | null): Promise<{ ok: boolean; summary: string }> => {
+   if (newStart) return moveCallToHostAt(svc, userId, toHost, newStart);
+   const host = HOSTS.find((h) => h.id === toHost);
+   if (!host) return { ok: false, summary: `Host ${toHost} not configured.` };
+   const { data: u } = await svc
+      .from('users')
+      .select('id, email, display_name, username, messenger_psid, video_call_booking_uid, video_call_starts_at, video_call_host, video_call_timezone')
+      .eq('id', userId)
+      .maybeSingle();
+   if (!u?.video_call_booking_uid || !u.video_call_starts_at || Date.parse(u.video_call_starts_at) <= Date.now()) return { ok: false, summary: 'No upcoming call.' };
+   const who = u.username ? `@${u.username}` : u.display_name || u.id;
+   if (u.video_call_host === toHost) return { ok: true, summary: `${who} is already with ${toHost}.` };
+   const eventTypeId = await resolveEventTypeId(host.apiKey);
+   if (!eventTypeId) return { ok: false, summary: `No event type for ${toHost}.` };
+   const start = new Date(Date.parse(u.video_call_starts_at)).toISOString();
+   const timeZone = u.video_call_timezone || 'Asia/Manila';
+   const signInEmail = u.email as string | null;
+   if (!signInEmail) return { ok: false, summary: `${who} has no email.` };
+   const email = isPlaceholderEmail(signInEmail) ? callInboxFor(u.id) : signInEmail;
+   const attendee: Attendee = { name: u.display_name || u.username || 'Moodeng borrower', email, timeZone, language: 'en' };
+   const emailsByHost: Record<string, string | null> = {};
+   await Promise.all(HOSTS.map(async (h) => (emailsByHost[h.id] = await fetchAccountEmail(h.apiKey))));
+   const metadata = { moodeng_user_id: u.id, moodeng_host: toHost };
+   const guests = teamGuests(toHost, emailsByHost, email);
+   // A move that already cancelled the old booking but couldn't book the new host leaves the row on
+   // `moving-<uid>`: a second try just books (there's nothing left to cancel).
+   const resumed = String(u.video_call_booking_uid).startsWith('moving-');
+   const oldUid = resumed ? String(u.video_call_booking_uid).slice('moving-'.length) : (u.video_call_booking_uid as string);
+   const oldHost = (u.video_call_host as string | null) ?? 'emma';
+   const book = async () => {
+      let r = await createBooking(host.apiKey, eventTypeId, start, attendee, metadata, guests);
+      if ('error' in r && r.error === 'other' && guests.length) r = await createBooking(host.apiKey, eventTypeId, start, attendee, metadata);
+      return r;
+   };
+   // The cancelled call's invite lingers on the new host's calendar for a while (3s wasn't enough,
+   // 2026-11-20), so wait until Cal.com itself offers the new host that exact time — up to ~80s.
+   const waitUntilFree = async () => {
+      const day = start.slice(0, 10);
+      const next = new Date(Date.parse(start) + 86400000).toISOString().slice(0, 10);
+      for (let i = 0; i < 10; i++) {
+         const slots = await fetchSlots(host.apiKey, eventTypeId, day, next, 'UTC');
+         if (slots.some((s) => Date.parse(s) === Date.parse(start))) return true;
+         await new Promise((r) => setTimeout(r, 8000));
+      }
+      return false;
+   };
+   let result = resumed ? (await waitUntilFree(), await book()) : await book();
+   let oldCancelled = resumed;
+   // The other cofounder is a guest on every call, so the old booking itself makes the new host look busy
+   // at that time. Free it first, then book; if the new host still can't take it, put it back on the old host.
+   if (!resumed && 'error' in result && result.error === 'taken') {
+      // Point the row away from the old uid first, so Cal.com's cancel webhook matches nobody and the
+      // borrower isn't told "your call was cancelled".
+      await svc.from('users').update({ video_call_booking_uid: `moving-${oldUid}` }).eq('id', u.id);
+      oldCancelled = await cancelCalBooking(oldHost, oldUid, `Same time — moving to ${toHost === 'george' ? 'George' : 'Emma'}. A new invite is on its way.`);
+      if (!oldCancelled) await svc.from('users').update({ video_call_booking_uid: oldUid }).eq('id', u.id);
+      if (oldCancelled) {
+         await waitUntilFree();
+         result = await book();
+         if ('error' in result) {
+            const back = HOSTS.find((h) => h.id === oldHost);
+            const backType = back ? await resolveEventTypeId(back.apiKey) : null;
+            const restored = back && backType ? await createBooking(back.apiKey, backType, start, attendee, { moodeng_user_id: u.id, moodeng_host: oldHost }, teamGuests(oldHost, emailsByHost, email)) : null;
+            if (restored && 'uid' in restored) {
+               await svc.from('users').update({ video_call_booking_uid: restored.uid, video_call_join_url: restored.joinUrl, video_call_meeting_id: meetingIdFromJoinUrl(restored.joinUrl) }).eq('id', u.id);
+               return { ok: false, summary: `${who}: ${toHost} couldn't take it even after freeing the slot — rebooked with ${oldHost} at the same time (new link ${restored.joinUrl}).` };
+            }
+            return { ok: false, summary: `⚠️ ${who}: old ${oldHost} booking cancelled but ${toHost} couldn't take it and re-booking ${oldHost} failed — rebook them by hand.` };
+         }
+      }
+   }
+   if ('error' in result) return { ok: false, summary: `${who}: ${toHost} isn't free at that time in Cal.com (${result.error}) — open those hours in Cal.com first.` };
+   if (!isZoomJoinUrl(result.joinUrl)) {
+      await cancelCalBooking(toHost, result.uid, 'Zoom link could not be created.');
+      return { ok: false, summary: `${who}: ${toHost}'s booking came back without Zoom — reconnect Zoom in Cal.com.${oldCancelled ? ' ⚠️ Old booking already cancelled — rebook them by hand.' : ' Call left as it was.'}` };
+   }
+   const { error } = await svc
+      .from('users')
+      .update({
+         video_call_host: toHost,
+         video_call_booking_uid: result.uid,
+         video_call_join_url: result.joinUrl,
+         video_call_meeting_id: meetingIdFromJoinUrl(result.joinUrl)
+      })
+      .eq('id', u.id);
+   if (error) return { ok: false, summary: `${who}: booked on ${toHost} but saving failed (${error.message}) — check by hand.` };
+   const cancelled = oldCancelled || (await cancelCalBooking(oldHost, oldUid, `Same time — moved to ${toHost === 'george' ? 'George' : 'Emma'}. Use the new invite's link.`));
+   // The old Zoom link is dead now, and a placeholder-email borrower never sees Cal.com's new invite.
+   const told = await sendMessengerMessage(u.messenger_psid, {
+      text: `🔗 Your Moodeng call is still ${formatCallTime(start, u.video_call_timezone)} — but it has a NEW Zoom link. Please use this one:\n${result.joinUrl}`
+   });
+   return {
+      ok: true,
+      summary: `🔀 ${who}'s call (${formatCallTimeForTeam(start, 'Asia/Bangkok')}) moved ${oldHost} → ${toHost}. New link: ${result.joinUrl}${told.ok ? ' (sent on Messenger)' : ' ⚠️ new link NOT sent on Messenger'}${cancelled ? '' : `\n⚠️ Old ${oldHost} booking NOT cancelled — cancel ${oldUid} in Cal.com.`}`
+   };
+};
+
+/**
+ * The team moves a borrower's call to another host AND a new time (admin: move_host with `start`;
+ * George 2026-11-20: referred borrowers stuck on Tuesday while Emma was away → George on Saturday).
+ * Books the new host first (nothing changes if that fails), points the row at it with a fresh ✅ ask
+ * and reminder ladder, cancels the old booking, and tells them on Messenger. Logged as 'team_moved',
+ * so it never counts as the borrower rescheduling.
+ */
+const moveCallToHostAt = async (svc: Svc, userId: string, toHost: string, newStart: string): Promise<{ ok: boolean; summary: string }> => {
+   const host = HOSTS.find((h) => h.id === toHost);
+   if (!host) return { ok: false, summary: `Host ${toHost} not configured.` };
+   const startMs = Date.parse(newStart);
+   if (Number.isNaN(startMs) || startMs < Date.now() + 30 * 60_000) return { ok: false, summary: 'start must be a valid time at least 30 min from now.' };
+   const start = new Date(startMs).toISOString();
+   const { data: u } = await svc
+      .from('users')
+      .select('id, email, display_name, username, messenger_psid, video_call_booking_uid, video_call_starts_at, video_call_host, video_call_timezone')
+      .eq('id', userId)
+      .maybeSingle();
+   if (!u?.video_call_booking_uid || !u.video_call_starts_at || Date.parse(u.video_call_starts_at) <= Date.now()) return { ok: false, summary: 'No upcoming call.' };
+   const who = u.username ? `@${u.username}` : u.display_name || u.id;
+   if (String(u.video_call_booking_uid).startsWith('moving-')) return { ok: false, summary: `${who}: a same-time move is half done — finish it first.` };
+   const eventTypeId = await resolveEventTypeId(host.apiKey);
+   if (!eventTypeId) return { ok: false, summary: `No event type for ${toHost}.` };
+   const timeZone = u.video_call_timezone || 'Asia/Manila';
+   const signInEmail = u.email as string | null;
+   if (!signInEmail) return { ok: false, summary: `${who} has no email.` };
+   const email = isPlaceholderEmail(signInEmail) ? callInboxFor(u.id) : signInEmail;
+   const attendee: Attendee = { name: u.display_name || u.username || 'Moodeng borrower', email, timeZone, language: 'en' };
+   const emailsByHost: Record<string, string | null> = {};
+   await Promise.all(HOSTS.map(async (h) => (emailsByHost[h.id] = await fetchAccountEmail(h.apiKey))));
+   const metadata = { moodeng_user_id: u.id, moodeng_host: toHost };
+   const guests = teamGuests(toHost, emailsByHost, email);
+   let result = await createBooking(host.apiKey, eventTypeId, start, attendee, metadata, guests);
+   if ('error' in result && result.error === 'other' && guests.length) result = await createBooking(host.apiKey, eventTypeId, start, attendee, metadata);
+   if ('error' in result) return { ok: false, summary: `${who}: ${toHost} isn't free at ${formatCallTimeForTeam(start, 'Asia/Bangkok')} (${result.error}). Call left as it was.` };
+   if (!isZoomJoinUrl(result.joinUrl)) {
+      await cancelCalBooking(toHost, result.uid, 'Zoom link could not be created.');
+      return { ok: false, summary: `${who}: ${toHost}'s booking came back without Zoom. Call left as it was.` };
+   }
+   const oldUid = u.video_call_booking_uid as string;
+   const oldHost = (u.video_call_host as string | null) ?? 'emma';
+   const oldStart = u.video_call_starts_at as string;
+   // Logged first, so the webhooks treat this as the team's move, not theirs.
+   await logCallEvent(svc, u.id, 'team_moved', start);
+   const { data: moved, error } = await svc
+      .from('users')
+      .update({
+         video_call_host: toHost,
+         video_call_starts_at: start,
+         video_call_scheduled_at: new Date().toISOString(),
+         video_call_booking_uid: result.uid,
+         video_call_join_url: result.joinUrl,
+         video_call_meeting_id: meetingIdFromJoinUrl(result.joinUrl),
+         ...ATTENDANCE_RESET,
+         video_call_reminder_stage: 0,
+         video_call_confirm_token: newConfirmToken(),
+         video_call_confirmed_at: null
+      })
+      .eq('id', u.id)
+      .select('messenger_psid, video_call_host, video_call_starts_at, video_call_timezone, video_call_join_url, video_call_confirm_token, video_call_confirmed_at, video_call_booking_uid')
+      .maybeSingle();
+   if (error || !moved) {
+      await cancelCalBooking(toHost, result.uid, 'Could not save the move.');
+      return { ok: false, summary: `${who}: saving the move failed (${error?.message ?? 'no row'}). Call left as it was.` };
+   }
+   const cancelled = await cancelCalBooking(oldHost, oldUid, `Moved to an earlier time with ${toHost === 'george' ? 'George' : 'Emma'}. A new invite is on its way.`);
+   const told = await sendMovedSoonerMessenger(moved, toHost === 'george' ? 'George' : 'Emma');
+   return {
+      ok: true,
+      summary: `🔀 ${who}: ${formatCallTimeForTeam(oldStart, 'Asia/Bangkok')} (${oldHost}) → ${formatCallTimeForTeam(start, 'Asia/Bangkok')} (${toHost}). ${result.joinUrl}${told.ok ? ' (told on Messenger)' : ` ⚠️ NOT told on Messenger (${'reason' in told ? told.reason : 'failed'})`}${cancelled ? '' : `\n⚠️ Old ${oldHost} booking NOT cancelled — cancel ${oldUid} in Cal.com.`}`
+   };
 };

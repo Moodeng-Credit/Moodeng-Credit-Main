@@ -14,6 +14,7 @@
 
 import { approveAnywayButtons, type CardStamp, openInAdminButton, personName, sendAdminCard, stampDecisionCards } from './adminCards.ts';
 import { ATTENDANCE_COLUMNS, type AttendanceFields, describeAttendance, zoomActiveForHost } from './attendance.ts';
+import { autoRejectForStrikes, loadCallStrikes, logCallEvent, type StrikeReason, strikeVerdict } from './callStrikes.ts';
 import { postDiscord } from './discord.ts';
 import { describeHeldRequests } from './loanRequestHold.ts';
 import {
@@ -150,7 +151,7 @@ export const recordCallOutcome = async (
    decidedBy: string,
    // From a card's button: the call it was sent for. A mismatch means they've rebooked since.
    expectedCallKey?: string | null
-): Promise<{ ok: boolean; summary: string; stamp?: CardStamp; retry?: boolean }> => {
+): Promise<{ ok: boolean; summary: string; stamp?: CardStamp; retry?: boolean; autoRejected?: StrikeReason }> => {
    if (expectedCallKey) {
       const current = await loadUser(svc, userId);
       if (callKeyFor(current?.video_call_starts_at) !== expectedCallKey) {
@@ -166,7 +167,13 @@ export const recordCallOutcome = async (
    const pendingRequest = await findPendingCallRequest(svc, userId);
    if (pendingRequest) {
       const decided = await decideLoanAccess(svc, pendingRequest.id, outcome === 'attended' ? 'approved' : 'no_show', decidedBy);
-      return { ok: decided.ok, summary: decided.summary, stamp: decided.stamp, retry: (decided as { retry?: boolean }).retry };
+      return {
+         ok: decided.ok,
+         summary: decided.summary,
+         stamp: decided.stamp,
+         retry: (decided as { retry?: boolean }).retry,
+         autoRejected: (decided as { autoRejected?: StrikeReason }).autoRejected
+      };
    }
    // Read before the outcome is written: the pre-KYC gate makes this tap the approval too.
    const preKyc = await needsPreKycGate(svc, userId);
@@ -274,9 +281,11 @@ export const recordCallOutcome = async (
    if (correctingNoShow && !approvedNow) {
       await notifyBorrower(svc, updated as BorrowerRow, 'no_show_corrected');
    }
-   if (outcome === 'no_show') {
-      await notifyBorrower(svc, updated as BorrowerRow, gateOn && unapproved ? 'no_show' : held.includes('until they attend') ? 'missed_call_request_waiting' : held ? 'missed_call_request_paused' : 'missed_call');
-   }
+   // Their 2nd missed call (and never attended one): rejected just below instead of "book again".
+   const strikeOut = outcome === 'no_show' ? strikeVerdict(await loadCallStrikes(svc, userId)) : null;
+   const noShowMessage = () =>
+      notifyBorrower(svc, updated as BorrowerRow, gateOn && unapproved ? 'no_show' : held.includes('until they attend') ? 'missed_call_request_waiting' : held ? 'missed_call_request_paused' : 'missed_call');
+   if (outcome === 'no_show' && !strikeOut) await noShowMessage();
 
    const name = personName(updated as BorrowerRow);
    const stamp: CardStamp = {
@@ -294,8 +303,14 @@ export const recordCallOutcome = async (
    // A no-show keeps its cards remembered, so ✅ Approve anyway can stamp them all again later.
    await stampDecisionCards(svc, 'loan_access', userId, stamp, { final: outcome !== 'no_show' && !(idBlocked && unapproved) });
 
-   const summary = `${outcome === 'attended' ? (approvedNow ? '✅ Showed up → approved' : '✅ Showed up') : '❌ No-show'}: ${who(updated as BorrowerRow)} — by ${decidedBy}${held ? `\n${held}` : ''}${idBlocked && unapproved ? `\n${idBlocked} Tap ✅ Approve anyway (or /showed) once KYC is approved.` : ''}`;
+   let summary = `${outcome === 'attended' ? (approvedNow ? '✅ Showed up → approved' : '✅ Showed up') : '❌ No-show'}: ${who(updated as BorrowerRow)} — by ${decidedBy}${held ? `\n${held}` : ''}${idBlocked && unapproved ? `\n${idBlocked} Tap ✅ Approve anyway (or /showed) once KYC is approved.` : ''}`;
    await postDiscord({ content: `📞 Video call ${summary}` }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
+   const autoRejected = strikeOut ? await autoRejectForStrikes(svc, userId) : null;
+   if (autoRejected) {
+      summary += '\n🤖 That was their 2nd missed call, so they were rejected automatically and told why.';
+      return { ok: true, summary, stamp: { header: `${loanAccessStampHeader('rejected', name)} (missed 2 calls)`, by: decidedBy }, autoRejected };
+   }
+   if (strikeOut) await noShowMessage();
    return { ok: true, summary, stamp };
 };
 
@@ -311,6 +326,7 @@ export const autoMarkNoShow = async (svc: SupabaseClient, userId: string): Promi
    }
    const result = request ? await decideLoanAccess(svc, request.id, 'no_show', decidedBy) : await recordCallOutcome(svc, userId, 'no_show', decidedBy);
    if (!result.ok) return null;
+   if ((result as { autoRejected?: StrikeReason }).autoRejected) return result.summary;
    // With a request, or held by the pre-KYC gate, /showed approves them; otherwise (open flow) it
    // puts their loan request back on the board.
    const approves = Boolean(request) || (await needsPreKycGate(svc, userId));
@@ -341,6 +357,9 @@ export const closeReleasedCall = async (svc: SupabaseClient, userId: string, whe
    }
    const { data: borrower } = await svc.from('users').select(BORROWER_COLUMNS).eq('id', userId).maybeSingle();
    if (!borrower) return;
+   // A freed slot is a missed call. Their 2nd: rejected automatically (and told why) instead.
+   await logCallEvent(svc, userId, 'unconfirmed', (borrower as BorrowerRow).video_call_starts_at ?? null);
+   if (await autoRejectForStrikes(svc, userId)) return;
    await stampDecisionCards(svc, 'loan_access', userId, {
       header: `🗓️ SLOT FREED — ${personName(borrower as BorrowerRow)} never confirmed and was asked to pick a new time`,
       by: 'auto (never confirmed)'

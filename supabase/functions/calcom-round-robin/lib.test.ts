@@ -1,6 +1,7 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
 import {
+   blockedDays,
    bangkokDay,
    bookingCooldownUntil,
    calendlyToCalSchedule,
@@ -9,6 +10,7 @@ import {
    dropBusySlots,
    dropMorningAfterLateNight,
    hostsFreeAt,
+   pinnedHostAway,
    isGoodCallTime,
    mergeSlots,
    orderHostsToTry,
@@ -16,7 +18,10 @@ import {
    preferSoonSlots,
    recheckRange,
    teamGuests,
-   zoomFallbackWarning
+   zoomFallbackWarning,
+   isZoomJoinUrl,
+   zoomPaused,
+   ZOOM_PAUSE_MS
 } from './lib.ts';
 
 Deno.test('mergeSlots unions hosts, de-dupes by instant, and sorts', () => {
@@ -53,26 +58,23 @@ Deno.test('different seeds can prefer different hosts (spreads load)', () => {
    assertEquals(seen.size, 2); // both hosts get picked first across borrowers
 });
 
-Deno.test('preferSoonSlots offers the next 48 hours plus weekend times when there are enough', () => {
-   const now = Date.parse('2026-09-23T02:00:00Z'); // Wednesday
+Deno.test('preferSoonSlots offers only the next 23 hours when there are enough', () => {
+   const now = Date.parse('2026-09-23T02:00:00Z');
    const slots = [
-      '2026-09-23T04:00:00Z', // Wed
-      '2026-09-24T06:00:00Z', // Thu
-      '2026-09-24T09:00:00Z', // Thu, still inside 48h
-      '2026-09-25T04:00:00Z', // Fri, past 48h — dropped
-      '2026-09-26T13:00:00Z', // Sat 8 PM Bangkok — kept
-      '2026-09-27T14:00:00Z', // Sun 9 PM Bangkok — kept
-      '2026-09-28T04:00:00Z' // Mon — dropped
+      '2026-09-23T04:00:00Z',
+      '2026-09-23T09:00:00Z',
+      '2026-09-24T00:30:00Z', // 22.5h away, still in
+      '2026-09-24T01:30:00Z', // 23.5h away — dropped
+      '2026-09-24T09:00:00Z', // dropped
+      '2026-09-26T13:00:00Z' // dropped
    ];
-   assertEquals(preferSoonSlots(slots, now), [slots[0], slots[1], slots[2], slots[4], slots[5]]);
+   assertEquals(preferSoonSlots(slots, now), [slots[0], slots[1], slots[2]]);
 });
 
-Deno.test('preferSoonSlots judges the weekend by the Bangkok day', () => {
+Deno.test('preferSoonSlots widens to 48 hours when the next 23 are too thin', () => {
    const now = Date.parse('2026-09-23T02:00:00Z');
-   const soon = ['2026-09-23T04:00:00Z', '2026-09-23T06:00:00Z', '2026-09-23T09:00:00Z'];
-   // Fri 18:00 UTC = Sat 1 AM Bangkok (kept); Sun 17:30 UTC = Mon 12:30 AM Bangkok (dropped).
-   const slots = [...soon, '2026-09-25T18:00:00Z', '2026-09-27T17:30:00Z'];
-   assertEquals(preferSoonSlots(slots, now), [...soon, '2026-09-25T18:00:00Z']);
+   const slots = ['2026-09-23T04:00:00Z', '2026-09-24T06:00:00Z', '2026-09-24T09:00:00Z', '2026-09-26T04:00:00Z'];
+   assertEquals(preferSoonSlots(slots, now), [slots[0], slots[1], slots[2]]);
 });
 
 Deno.test('preferSoonSlots falls back to every slot when the next two days are too thin', () => {
@@ -117,8 +119,8 @@ Deno.test('teamGuests invites every other cofounder, never the host or the borro
 Deno.test('calendlyToCalSchedule groups weekly hours and keeps only upcoming one-off days', () => {
    const rules = [
       { type: 'wday', wday: 'sunday', intervals: [{ from: '20:00', to: '23:00' }] },
-      { type: 'wday', wday: 'monday', intervals: [{ from: '10:00', to: '15:00' }, { from: '20:00', to: '23:00' }] },
-      { type: 'wday', wday: 'friday', intervals: [{ from: '10:00', to: '15:00' }, { from: '21:30', to: '24:00' }] },
+      { type: 'wday', wday: 'monday', intervals: [{ from: '11:00', to: '15:00' }, { from: '20:00', to: '23:00' }] },
+      { type: 'wday', wday: 'friday', intervals: [{ from: '11:00', to: '15:00' }, { from: '21:30', to: '24:00' }] },
       { type: 'date', date: '2026-10-01', intervals: [] },
       { type: 'date', date: '2026-11-02', intervals: [] },
       { type: 'date', date: '2026-11-03', intervals: [{ from: '12:00', to: '13:00' }] }
@@ -126,9 +128,9 @@ Deno.test('calendlyToCalSchedule groups weekly hours and keeps only upcoming one
    assertEquals(calendlyToCalSchedule(rules, 'Asia/Bangkok', '2026-10-27'), {
       timeZone: 'Asia/Bangkok',
       availability: [
-         { days: ['Monday', 'Friday'], startTime: '10:00', endTime: '15:00' },
+         { days: ['Monday', 'Friday'], startTime: '11:00', endTime: '15:00' },
          { days: ['Sunday', 'Monday'], startTime: '20:00', endTime: '23:00' },
-         { days: ['Friday'], startTime: '21:30', endTime: '23:59' }
+         { days: ['Friday'], startTime: '21:30', endTime: '23:00' }
       ],
       overrides: [
          { date: '2026-11-02', startTime: '00:00', endTime: '00:00' },
@@ -155,8 +157,8 @@ const dayOfSlots = (day = '2026-10-29', from = 10, to = 18) => {
    return out;
 };
 
-Deno.test('a day with 4 calls is full: no times offered, and booking it is refused', () => {
-   const booked = ['2026-10-29T10:00:00+07:00', '2026-10-29T10:30:00+07:00', '2026-10-29T11:00:00+07:00', '2026-10-29T11:30:00+07:00'];
+Deno.test('a day with 8 calls is full: no times offered, and booking it is refused', () => {
+   const booked = ['10:00', '10:15', '10:30', '10:45', '11:00', '11:15', '11:30', '11:45'].map((t) => `2026-10-29T${t}:00+07:00`);
    const next = dayOfSlots('2026-10-30');
    const out = clusterSlots([...dayOfSlots(), ...next], booked);
    assertEquals(out.slots, next);
@@ -166,11 +168,11 @@ Deno.test('a day with 4 calls is full: no times offered, and booking it is refus
    assertEquals(dayIsFull('2026-10-29T23:00:00Z', booked), false);
 });
 
-Deno.test('after the first call of a day, only times within 2h are offered and the nearest are recommended', () => {
+Deno.test('a day with a call still offers every free time; the ones next to it are recommended', () => {
    // Cal.com no longer lists 14:00 — that's the booked call.
-   const out = clusterSlots(dayOfSlots().filter((s) => s !== '2026-10-29T14:00:00+07:00'), ['2026-10-29T14:00:00+07:00']);
-   assertEquals(out.slots[0], '2026-10-29T12:00:00+07:00');
-   assertEquals(out.slots[out.slots.length - 1], '2026-10-29T16:00:00+07:00');
+   const free = dayOfSlots().filter((s) => s !== '2026-10-29T14:00:00+07:00');
+   const out = clusterSlots(free, ['2026-10-29T14:00:00+07:00']);
+   assertEquals(out.slots, free);
    assertEquals(out.recommended, [
       '2026-10-29T13:15:00+07:00',
       '2026-10-29T13:30:00+07:00',
@@ -188,10 +190,10 @@ Deno.test('the booked calls themselves are never returned, only the free times C
    assertEquals(out.recommended.includes('2026-10-29T14:00:00+07:00'), false);
 });
 
-Deno.test('when the block has passed, the closest few times are kept instead of emptying the day', () => {
+Deno.test('no free time near the day\'s calls: all offered, the closest few recommended', () => {
    const evening = ['2026-10-29T20:00:00+07:00', '2026-10-29T20:15:00+07:00', '2026-10-29T21:00:00+07:00', '2026-10-29T22:00:00+07:00'];
    const out = clusterSlots(evening, ['2026-10-29T10:00:00+07:00']);
-   assertEquals(out.slots, evening.slice(0, 3));
+   assertEquals(out.slots, evening);
    assertEquals(out.recommended, evening.slice(0, 3));
 });
 
@@ -208,11 +210,24 @@ Deno.test('preferHost puts Emma first whenever she is free', () => {
    assertEquals(preferHost(['george']), ['george']);
 });
 
-Deno.test('calendlyToCalSchedule: a window ending at midnight ("00:00") becomes 23:59', () => {
-   const s = calendlyToCalSchedule([{ type: 'wday', wday: 'sunday', intervals: [{ from: '00:00', to: '02:00' }, { from: '16:00', to: '00:00' }] }], 'Asia/Bangkok', '2026-10-29');
+Deno.test('calendlyToCalSchedule: no calls after 11 PM or before 11 AM, whatever Calendly says', () => {
+   const s = calendlyToCalSchedule(
+      [
+         { type: 'wday', wday: 'sunday', intervals: [{ from: '00:00', to: '02:00' }, { from: '16:00', to: '00:00' }] },
+         { type: 'wday', wday: 'monday', intervals: [{ from: '06:00', to: '12:00' }, { from: '23:00', to: '23:59' }] },
+         { type: 'date', date: '2026-11-15', intervals: [{ from: '00:30', to: '01:30' }] },
+         { type: 'date', date: '2026-11-16', intervals: [{ from: '22:00', to: '24:00' }] }
+      ],
+      'Asia/Bangkok',
+      '2026-10-29'
+   );
    assertEquals(s.availability, [
-      { days: ['Sunday'], startTime: '00:00', endTime: '02:00' },
-      { days: ['Sunday'], startTime: '16:00', endTime: '23:59' }
+      { days: ['Monday'], startTime: '11:00', endTime: '12:00' },
+      { days: ['Sunday'], startTime: '16:00', endTime: '23:00' }
+   ]);
+   assertEquals(s.overrides, [
+      { date: '2026-11-15', startTime: '00:00', endTime: '00:00' },
+      { date: '2026-11-16', startTime: '22:00', endTime: '23:00' }
    ]);
 });
 
@@ -220,6 +235,22 @@ Deno.test('zoomFallbackWarning: only for a Cal Video link', () => {
    assertEquals(zoomFallbackWarning('https://app.cal.com/video/8VWGe7EkEMWqiDL7AEkxGY', 'emma').includes("Emma's account"), true);
    assertEquals(zoomFallbackWarning('https://us06web.zoom.us/j/123', 'emma'), '');
    assertEquals(zoomFallbackWarning(null, 'emma'), '');
+});
+
+Deno.test('isZoomJoinUrl: Zoom links only', () => {
+   assertEquals(isZoomJoinUrl('https://us06web.zoom.us/j/123?pwd=x'), true);
+   assertEquals(isZoomJoinUrl('https://zoom.us/j/123'), true);
+   assertEquals(isZoomJoinUrl('https://app.cal.com/video/8VWGe7EkEMWqiDL7AEkxGY'), false);
+   assertEquals(isZoomJoinUrl('https://evil.com/zoom.us/j/1'), false);
+   assertEquals(isZoomJoinUrl(null), false);
+});
+
+Deno.test('zoomPaused: holds for ZOOM_PAUSE_MS after the failure', () => {
+   const now = Date.parse('2026-11-14T12:00:00Z');
+   assertEquals(zoomPaused('2026-11-14T11:00:00Z', now), true);
+   assertEquals(zoomPaused(new Date(now - ZOOM_PAUSE_MS - 1).toISOString(), now), false);
+   assertEquals(zoomPaused(null, now), false);
+   assertEquals(zoomPaused('', now), false);
 });
 
 Deno.test('isGoodCallTime: weekday evenings and weekend days, in the borrower\'s zone', () => {
@@ -260,4 +291,23 @@ Deno.test("clusterSlots with isGood: Emma's good times first, else anyone's", ()
    assertEquals(clusterSlots(day, [], [day[2], day[3]], good).recommended, [day[2]]);
    // Emma only free at 11 PM that day: George's good times are starred instead.
    assertEquals(clusterSlots(day, [], [day[3]], good).recommended, [day[1], day[2]]);
+});
+
+Deno.test('blockedDays: only whole days in the host timezone', () => {
+   const blocks = [{ host: 'emma', from: '2026-11-20T17:00:00Z', to: '2026-11-23T17:00:00Z' }, { host: 'george', from: '2026-11-22T04:45:00Z', to: '2026-11-23T06:00:00Z' }];
+   assertEquals(blockedDays(blocks, 'emma', 'Asia/Bangkok'), ['2026-11-21', '2026-11-22', '2026-11-23']);
+   assertEquals(blockedDays(blocks, 'george', 'Asia/Bangkok'), []);
+});
+
+Deno.test('pinnedHostAway: away most of the next 48h → unpin; a short block keeps the pin', () => {
+   const now = Date.parse('2026-11-20T14:48:00Z'); // Fri 21:48 BKK
+   const satToMon = [{ start: '2026-11-20T17:00:00Z', end: '2026-11-23T17:00:00Z' }];
+   assertEquals(pinnedHostAway(satToMon, now), true);
+   assertEquals(pinnedHostAway([{ start: '2026-11-21T07:00:00Z', end: '2026-11-21T09:00:00Z' }], now), false);
+   // Monday 20:00 BKK: only 4h of the block left → Emma pinned again (she's open Tuesday).
+   assertEquals(pinnedHostAway(satToMon, Date.parse('2026-11-23T13:00:00Z')), false);
+   // Overlapping blocks aren't double-counted.
+   const twice = [{ start: '2026-11-21T00:00:00Z', end: '2026-11-21T14:00:00Z' }, { start: '2026-11-21T00:00:00Z', end: '2026-11-21T14:00:00Z' }];
+   assertEquals(pinnedHostAway(twice, now), false);
+   assertEquals(pinnedHostAway([], now), false);
 });

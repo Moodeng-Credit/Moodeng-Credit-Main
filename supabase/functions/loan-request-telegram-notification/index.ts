@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { adminUserUrl } from '../_shared/adminCards.ts';
+import { capStatus } from '../_shared/loanCap.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { buildTelegramLoanRequestMessage } from '../_shared/telegramLoanNotifications.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
@@ -48,6 +49,45 @@ const authorizeInternalRequest = async (supabase: SupabaseClient, req: Request) 
    }
 
    return { authorized: true, status: 200, error: null };
+};
+
+const INCOME_DOCS_URL = 'https://moodeng.app/admin/income-docs';
+
+type IncomeDoc = { status: string; verdict: string | null; decision: string | null; files: unknown[] | null; created_at: string };
+
+// The team's view of the borrower's proof of income, for the admin copy only (lenders never see it):
+// "📄 Income proof: 5 files · ⚠️ needs review (AI couldn't read) · today". Null when we couldn't look.
+const incomeProofLine = async (supabase: SupabaseClient, userId: string): Promise<{ line: string; doc: boolean } | null> => {
+   const { data, error } = await supabase
+      .from('income_documents')
+      .select('status, verdict, decision, files, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1);
+   if (error) {
+      console.error('loan-request: income proof lookup failed:', error.message);
+      return null;
+   }
+   const doc = (data?.[0] ?? null) as IncomeDoc | null;
+   if (!doc) return { line: '📄 Income proof: none', doc: false };
+   const count = Array.isArray(doc.files) ? doc.files.length : 0;
+   const state =
+      doc.decision === 'approved'
+         ? '✅ approved'
+         : doc.decision === 'declined'
+           ? '❌ declined'
+           : doc.status === 'pending' || doc.status === 'processing'
+             ? '⏳ AI still checking'
+             : doc.verdict === 'looks_good'
+               ? '👍 AI: looks good'
+               : doc.verdict === 'resend'
+                 ? '🔁 asked to send again'
+                 : doc.status === 'failed'
+                   ? "⚠️ needs review (AI couldn't read)"
+                   : '⚠️ needs review';
+   const days = Math.floor((Date.now() - new Date(doc.created_at).getTime()) / 86400000);
+   const when = days <= 0 ? 'today' : days === 1 ? 'yesterday' : `${days}d ago`;
+   return { line: `📄 Income proof: ${count} file${count === 1 ? '' : 's'} · ${state} · ${when}`, doc: true };
 };
 
 const buildLoanUrl = (loanId: string) => {
@@ -127,7 +167,7 @@ serve(async (req) => {
 
       const { data: loan, error: loanError } = await supabase
          .from('loans')
-         .select('id, tracking_id, loan_amount, coin, due_date, created_at, reason, borrower_user_id, loan_status, on_hold_since, on_hold_reason, market')
+         .select('id, tracking_id, loan_amount, total_repayment_amount, coin, due_date, created_at, reason, borrower_user_id, loan_status, on_hold_since, on_hold_reason, market, repayment_schedule')
          .eq('id', loanId)
          .maybeSingle();
 
@@ -156,16 +196,24 @@ serve(async (req) => {
 
       const loanUrl = buildLoanUrl(loan.id);
       // A request on hold isn't shown to lenders yet: tell the team why, and don't broadcast it.
+      const cap = loan.on_hold_reason === 'over_cap' ? await capStatus(supabase, loan.id).catch(() => null) : null;
       const holdNote =
-         loan.on_hold_since && loan.on_hold_reason === 'awaiting_call'
+         loan.on_hold_since && loan.on_hold_reason === 'over_cap'
+            ? `🚧 OVER THEIR CAP: cap $${cap?.cap ?? '?'}, $${cap?.inUse ?? '?'} already in use, asking $${loan.loan_amount}.` +
+              (cap?.note ? ` Cap note: ${cap.note}` : '') +
+              '\nHidden from lenders. To fund it: Fund on the board → Override → write why.\n\n'
+            : loan.on_hold_since && loan.on_hold_reason === 'awaiting_call'
             ? '⏸ On hold until their video call: not shown to lenders. It goes live (and lenders are pinged) when you tap ✅ Showed up.\n\n'
             : loan.on_hold_since
               ? '⏸ On hold (missed their video call): not shown to lenders until they book a new call.\n\n'
               : '';
       const message = holdNote + buildTelegramLoanRequestMessage(loan, history ?? [], borrower, loanUrl);
+      // Admin copy (team Telegram + Discord) also says what proof of income they sent; the lender copy doesn't.
+      const income = loan.borrower_user_id ? await incomeProofLine(supabase, loan.borrower_user_id).catch(() => null) : null;
+      const adminMessage = income ? `${income.line}\n\n${message}` : message;
 
       if (dryRun) {
-         return new Response(JSON.stringify({ message, loanUrl }), {
+         return new Response(JSON.stringify({ message, adminMessage, loanUrl }), {
             status: 200,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
          });
@@ -176,8 +224,8 @@ serve(async (req) => {
       //    Both are best-effort so neither can block the other or the lender broadcast below.
       const adminChatId = await getSetting(supabase, 'kyc_alert_chat_id');
       if (adminChatId) {
-         await sendTelegramMessage(adminChatId, message, {
-            inlineKeyboard: [[{ text: 'View request', url: loanUrl }]]
+         await sendTelegramMessage(adminChatId, adminMessage, {
+            inlineKeyboard: [[{ text: 'View request', url: loanUrl }, ...(income?.doc ? [{ text: '📄 Income proof', url: INCOME_DOCS_URL }] : [])]]
          }).catch((err) => console.error('loan-request admin Telegram failed:', err instanceof Error ? err.message : err));
       }
       await postDiscord(
@@ -185,7 +233,7 @@ serve(async (req) => {
             embeds: [
                {
                   title: loan.market === 'ID' ? '🇮🇩 New loan request · Indonesia' : '💸 New loan request',
-                  description: message,
+                  description: income?.doc ? `${adminMessage}\n[📄 Income proof](${INCOME_DOCS_URL})` : adminMessage,
                   // Title links to the borrower in the admin panel (👤 Open in admin).
                   ...(loan.borrower_user_id ? { url: adminUserUrl(loan.borrower_user_id, borrower?.username) } : {}),
                   color: 0x5865f2,

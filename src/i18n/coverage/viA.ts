@@ -1180,7 +1180,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Meet the team, ask anything': 'Gặp gỡ đội ngũ, hỏi bất cứ điều gì',
    'Apply right after the call': 'Đăng ký ngay sau cuộc gọi',
    'What do you need a loan for?': 'Bạn cần khoản vay để làm gì?',
-   'Your time is in your email': 'Lịch hẹn đã được gửi vào email của bạn',
+   'We’ll message you the time': 'Chúng tôi sẽ nhắn tin cho bạn giờ hẹn',
    'Join the meeting': 'Tham gia cuộc họp',
    'Have ready': 'Chuẩn bị sẵn',
    'Your original ID or passport': 'Giấy tờ tùy thân bản gốc hoặc hộ chiếu của bạn',

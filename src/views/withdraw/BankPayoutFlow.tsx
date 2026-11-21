@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 
-import { ArrowRight, Check, ChevronRight, Clock, Landmark, Loader2, QrCode, Search, Smartphone, Wallet, XCircle } from 'lucide-react';
+import { ArrowRight, Check, ChevronRight, Clock, Landmark, Loader2, QrCode, ScanFace, Search, Smartphone, Wallet, XCircle } from 'lucide-react';
 
 import PoweredByStableyard from '@/components/brand/PoweredByStableyard';
 
@@ -25,7 +25,7 @@ import QrCashoutSteps, { type DecodeReply, QrTrail } from '@/views/withdraw/QrCa
 
 const FN = 'stableyard-deposit-address';
 const MIN_PHP = 50;
-const MAX_PHP = 5000;
+const MAX_PHP = 25000;
 // Shown first in the bank list: what most borrowers use.
 // The picker asks "E-wallet or bank?" first; each side lists its own popular ones before searching.
 const POPULAR_WALLETS = ['GCASH', 'MAYA PHILIPPINES, INC./ MAYA WALLET', 'GRABPAY', 'SHOPEEPAY', 'DCPAY / COINS.PH', 'PALAWANPAY'];
@@ -109,6 +109,9 @@ const PREVIEW: Record<string, FnResult> = {
    qr_cash_decode: { ok: true, result: { merchant: { name: 'JUAN DELA CRUZ' } } }
 };
 
+// "Use my Moodeng ID" (share the Didit check with Stableyard) is off: the first live share (2026-11-14) got
+// stuck in Stableyard's requires_reconciliation. Everyone does Stableyard's own ID check until they fix it.
+const OFFER_MOODENG_ID_SHARE = false;
 // A shared Moodeng ID check that Stableyard is still copying or reviewing.
 const REUSE_PENDING = new Set(['sharing', 'submitting', 'imported']);
 const PREVIEW_CONSENT = 'Sends your name, birthday, ID and selfie to Stableyard.';
@@ -126,6 +129,8 @@ async function call(isPreview: boolean, input: Record<string, string | boolean>)
       // ?sim=email / ?sim=verify show the one-time setup at the email / ID step; ?sim=compliance shows
       // Stableyard's one-time form after the first "Get my price".
       const sim = new URLSearchParams(window.location.search).get('sim');
+      // ?sim=slow holds the setup for 28s to show the "Getting your cash-out ready" card.
+      if (body.qr === 'setup' && sim === 'slow') await new Promise((r) => setTimeout(r, 28000));
       if (body.qr === 'setup' && sim === 'email') return { ok: true, emailVerified: false, kycApproved: false, kycStatus: 'not_started' };
       if (body.qr === 'setup' && sim === 'verify') return { ok: true, emailVerified: true, kycApproved: false, kycStatus: 'not_started' };
       // ?sim=reuse shows the "use your Moodeng ID check" step; ?sim=reused shows it under review.
@@ -324,6 +329,105 @@ function Panel({ children }: { children: React.ReactNode }) {
    return <div className="rounded-[8px] border-2 border-[#e8e4ff] bg-[var(--surface)] p-[16px] space-y-[12px]">{children}</div>;
 }
 
+// Shown while the cash-out connects to Stableyard (it can take several seconds). The ticks move on a
+// timer so the wait feels like progress; the last line keeps spinning until the setup answer is back.
+// The setup usually takes 12–30s (what the card tells people), so the ticks are spread over that.
+const CONNECT_STEPS_MS = [4000, 10000];
+// Moodeng changes with each step: on the phone to Stableyard → plugging in → holding up the QR (bank form:
+// running with the peso bag). Still loading after CONNECT_SLOW_MS → the stopwatch one, "Almost there…".
+const CONNECTING_ART = {
+   connect: '/withdraw-setup/connecting-phone.webp',
+   check: '/withdraw-setup/connecting-plug.webp',
+   qr: '/withdraw-setup/connecting-qr.webp',
+   bank: '/withdraw-setup/connecting-run.webp',
+   slow: '/withdraw-setup/connecting-stopwatch.webp'
+};
+const CONNECT_SLOW_MS = 22000;
+
+function ConnectingCard({ qrMode }: { qrMode: boolean }) {
+   const [done, setDone] = useState(0);
+   const [slow, setSlow] = useState(false);
+   useEffect(() => {
+      // Warm the cache so each picture is ready when its step comes up.
+      Object.values(CONNECTING_ART).forEach((src) => {
+         new Image().src = src;
+      });
+      const timers = CONNECT_STEPS_MS.map((ms, i) => window.setTimeout(() => setDone(i + 1), ms));
+      timers.push(window.setTimeout(() => setSlow(true), CONNECT_SLOW_MS));
+      return () => timers.forEach((t) => window.clearTimeout(t));
+   }, []);
+   const art = slow
+      ? CONNECTING_ART.slow
+      : [CONNECTING_ART.connect, CONNECTING_ART.check, qrMode ? CONNECTING_ART.qr : CONNECTING_ART.bank][done];
+   const lines = ['Connecting to Stableyard', 'Checking your account', qrMode ? 'Getting your QR upload ready' : 'Loading your banks'];
+   return (
+      <div className="space-y-[12px]">
+         <div className="relative w-full h-[124px] rounded-[12px] overflow-hidden bg-[linear-gradient(100deg,#efeaff_0%,#ddd5ff_100%)] dark:bg-[linear-gradient(100deg,#252035_0%,#30285a_100%)]">
+            <img
+               key={art}
+               src={art}
+               alt=""
+               aria-hidden="true"
+               className="moo-float absolute right-[10px] bottom-[-6px] h-[122px] w-auto pointer-events-none select-none"
+            />
+            <div className="relative flex h-full flex-col justify-center pl-[16px] pr-[150px]">
+               <h2 className="text-[22px] font-black italic leading-[1.1] tracking-[-0.5px] text-[#6b55f7] dark:text-[#b3a6ff]">
+                  {slow ? 'Almost there…' : 'Getting ready…'}
+               </h2>
+               <p className="mt-[4px] text-[15px] font-semibold text-[#594d65] dark:text-[#e6def0]">
+                  {slow ? 'Just a few more seconds' : 'Your cash-out is on its way'}
+               </p>
+            </div>
+         </div>
+         <Panel>
+            <ul className="space-y-[12px]">
+               {lines.map((line, i) => {
+                  const state = i < done ? 'done' : i === done ? 'active' : 'waiting';
+                  return (
+                     <li
+                        key={line}
+                        className={`flex items-center gap-[10px] text-[15px] ${state === 'waiting' ? 'text-[var(--text-muted)] opacity-60' : 'text-[var(--ink)]'}`}
+                     >
+                        {state === 'done' ? (
+                           <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#22c55e]">
+                              <Check className="h-[14px] w-[14px] text-white" strokeWidth={3} />
+                           </span>
+                        ) : state === 'active' ? (
+                           <Loader2 className="h-[22px] w-[22px] shrink-0 animate-spin text-[#6b55f7]" />
+                        ) : (
+                           <span className="h-[22px] w-[22px] shrink-0 rounded-full border-2 border-[#e8e4ff]" />
+                        )}
+                        <span className="flex-1">{line}</span>
+                        {i === 0 ? (
+                           <img
+                              src="/brand/stableyard/stableyard-logomark.svg"
+                              alt="Stableyard"
+                              width={24}
+                              height={24}
+                              className="h-[24px] w-[24px] shrink-0 rounded-[6px]"
+                           />
+                        ) : null}
+                     </li>
+                  );
+               })}
+            </ul>
+            <p className="flex items-center gap-[10px] rounded-[10px] bg-[var(--surface-2,#f1eeff)] px-[10px] py-[8px] text-[14px] font-semibold text-[var(--ink)]">
+               <span className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-[10px] bg-[var(--surface,#fff)]">
+                  <img src="/withdraw-setup/clock.webp" alt="" aria-hidden="true" className="h-[24px] w-auto" />
+               </span>
+               <span>
+                  Takes 12–30 seconds
+                  <span className="block text-[12px] font-normal text-[var(--text-muted)]">Keep this page open</span>
+               </span>
+            </p>
+            <div className="flex justify-center pt-[2px]">
+               <PoweredByStableyard className="whitespace-nowrap" />
+            </div>
+         </Panel>
+      </div>
+   );
+}
+
 function ErrorLine({ text }: { text: string }) {
    return (
       <p className="rounded-[12px] border border-[var(--danger-border)] bg-[var(--danger-bg)] px-[12px] py-[10px] text-[13px] text-[var(--danger-text)]">
@@ -396,6 +500,20 @@ function SetupStepper({ done }: { done: number }) {
 }
 
 const hintClass = 'text-center text-[12px] leading-[16px] text-[var(--text-faint)]';
+
+// Heads-up on the first setup screens: Stableyard does its own ID check, even for people Moodeng already
+// checked. Said before they start so the second ID check isn't a surprise.
+function IdCheckNote() {
+   return (
+      <div className="flex items-start gap-[10px] rounded-[12px] bg-[#f3f0ff] px-[12px] py-[10px] dark:bg-[#252035]">
+         <ScanFace className="mt-[1px] h-[20px] w-[20px] shrink-0 text-[#6b55f7] dark:text-[#b3a6ff]" />
+         <p className="text-[13px] leading-[18px] text-[var(--ink)]">
+            <span className="font-bold">One more ID check.</span> Stableyard sends your pesos, so they check your ID too. One time, about 5
+            minutes.
+         </p>
+      </div>
+   );
+}
 
 // 'compliance': Stableyard wants a one-time form (nextAction complete_compliance) before it prices the payout.
 // 'pricing': the Payment exists and Stableyard is still working out the quote.
@@ -621,9 +739,11 @@ export default function BankPayoutFlow({
             // The preview answers 'succeeded' at once; hold it ~12s so the oven tracker can be seen.
             if (isPreview && next && DONE.has(next) && Date.now() - sentAt < 12_000) return setNow(Date.now());
             if (next) setStatus(next);
-            else setNow(Date.now()); // re-arm the poll on a failed read
+            // Always re-arm: the same status twice in a row ('processing' → 'processing') changes no state,
+            // so without this the poll stopped after its second read and the success screen never came.
+            setNow(Date.now());
          },
-         isPreview ? 1500 : 8000
+         isPreview ? 1500 : 5000
       );
       return () => clearTimeout(t);
    }, [step, paymentId, status, now, isPreview, sentAt]);
@@ -783,21 +903,14 @@ export default function BankPayoutFlow({
       return { ok: true, name };
    };
 
-   if (step === 'loading') {
-      return (
-         <Panel>
-            <div className="flex items-center gap-[10px] text-[14px] text-[var(--text-muted)]">
-               <Loader2 className="w-[18px] h-[18px] animate-spin" /> Getting things ready…
-            </div>
-         </Panel>
-      );
-   }
+   if (step === 'loading') return <ConnectingCard qrMode={qrMode} />;
 
    if (step === 'verify') {
       const emailDone = Boolean(setup?.emailVerified);
       const reusePending = REUSE_PENDING.has(setup?.reuseImportStatus ?? '');
       const reviewing = reusePending || setup?.kycStatus === 'requires_review' || setup?.kycStatus === 'in_review';
-      const offerReuse = Boolean(setup?.reuseAvailable && setup?.consentText) && !useHostedCheck && !reviewing;
+      const offerReuse =
+         OFFER_MOODENG_ID_SHARE && Boolean(setup?.reuseAvailable && setup?.consentText) && !useHostedCheck && !reviewing;
       const idStep = emailDone && !setup?.kycApproved;
       return (
          <div className="space-y-[12px]">
@@ -808,6 +921,7 @@ export default function BankPayoutFlow({
             <Panel>
                <SetupStepper done={emailDone ? (setup?.kycApproved ? 2 : 1) : 0} />
                {error ? <ErrorLine text={error} /> : null}
+               {!setup?.kycApproved && !reviewing ? <IdCheckNote /> : null}
                {!emailDone ? (
                   <div className="space-y-[8px]">
                      <input
@@ -1222,19 +1336,17 @@ export default function BankPayoutFlow({
    // tracking
    const done = DONE.has(status);
    const failed = FAILED.has(status);
-   // Stableyard only says waiting / processing / succeeded, so the cake rises on a clock while we wait
-   // (frames 1-5, holding at 5) and the finished cake shows when the payout succeeds. The bar is an
-   // estimate too: 15% once the USDC is sent, easing toward 92% (never stalls at a round number), 100% on success.
+   // Stableyard only says waiting / processing / succeeded, so there is no real percent to show: the cake
+   // rises on a clock while we wait (frames 1-5, holding at 5), the three steps turn green as they finish,
+   // and the whole card flips to the green "sent" screen the moment the payout succeeds.
    const realElapsed = Math.max(0, (clock - sentAt) / 1000);
    const elapsed = realElapsed / (isPreview ? 0.08 : 1); // the preview bakes ~12x faster
    const ovenFrame = elapsed < 10 ? 1 : elapsed < 40 ? 2 : elapsed < 90 ? 3 : elapsed < 150 ? 4 : 5;
-   const percent = done ? 100 : Math.round(15 + 77 * (1 - Math.exp(-elapsed / 90)));
    const slow = !done && !failed && realElapsed > 300;
-   const minutes = Math.floor(realElapsed / 60);
    const steps: { label: string; state: 'done' | 'active' | 'todo' }[] = [
-      { label: 'USDC sent from your wallet', state: 'done' },
-      { label: 'Converting to pesos', state: done ? 'done' : 'active' },
-      { label: qrMode ? 'Arrived in the bank' : `Arrived in ${accountLabel}`, state: done ? 'done' : 'todo' }
+      { label: 'USDC sent', state: 'done' },
+      { label: 'Changing to pesos', state: done ? 'done' : 'active' },
+      { label: 'In your bank', state: done ? 'done' : 'todo' }
    ];
    return (
       <div className="space-y-[12px]">
@@ -1248,12 +1360,17 @@ export default function BankPayoutFlow({
                   </p>
                </div>
             ) : (
-               <div className="flex flex-col items-center text-center">
+               <div className="flex flex-col items-center text-center" aria-live="polite">
                   {done ? (
-                     <img src="/withdraw-oven/cake.webp" alt="" aria-hidden="true" className="h-[96px] w-auto" />
+                     <div className="relative">
+                        <img src="/withdraw-oven/cake.webp" alt="" aria-hidden="true" className="h-[104px] w-auto" />
+                        <span className="absolute -right-[10px] -bottom-[4px] flex h-[34px] w-[34px] items-center justify-center rounded-full border-[3px] border-[var(--surface,#fff)] bg-[#2f9e44] text-white">
+                           <Check className="w-[18px] h-[18px]" strokeWidth={3.5} />
+                        </span>
+                     </div>
                   ) : (
                      // All frames stacked so they're preloaded; the current one fades in.
-                     <div className="relative w-[150px] aspect-[549/560]" aria-hidden="true">
+                     <div className="relative w-[140px] aspect-[549/560]" aria-hidden="true">
                         {[1, 2, 3, 4, 5].map((n) => (
                            <img
                               key={n}
@@ -1265,79 +1382,68 @@ export default function BankPayoutFlow({
                         ))}
                      </div>
                   )}
-                  <div className="mt-[12px] w-full">
-                     <div className="flex justify-between text-[12px] font-semibold text-[var(--text-muted)] mb-[4px]">
-                        <span>{done ? 'Done' : 'Sending…'}</span>
-                        <span className="text-[#6b55f7] dark:text-[#a98bff]">{percent}%</span>
-                     </div>
-                     <div
-                        className="h-[10px] w-full rounded-full bg-[var(--surface-2,#f1edff)] overflow-hidden"
-                        role="progressbar"
-                        aria-valuenow={percent}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                     >
-                        <div
-                           className="h-full rounded-full bg-[linear-gradient(85deg,#9584ff_0%,#6b55f7_98%)] transition-[width] duration-1000 ease-out"
-                           style={{ width: `${percent}%` }}
-                        />
-                     </div>
-                  </div>
                   <p
-                     className={
-                        done
-                           ? 'mt-[6px] text-[26px] font-black italic leading-[1.2] tracking-[-0.5px] text-[#6b55f7] dark:text-[#b3a6ff]'
-                           : 'mt-[6px] text-[20px] font-semibold text-[var(--ink)]'
-                     }
+                     className={`mt-[10px] text-[26px] font-black italic leading-[1.15] tracking-[-0.5px] ${
+                        done ? 'text-[#2f9e44] dark:text-[#6fdc8c]' : 'text-[#6b55f7] dark:text-[#b3a6ff]'
+                     }`}
                   >
-                     {done ? `${peso(amountNum)} sent to ${accountLabel}!` : `Baking your ${peso(amountNum)}…`}
+                     {done ? `${peso(amountNum)} sent!` : `Sending ${peso(amountNum)}…`}
                   </p>
-                  {done ? (
-                     <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[4px]">
-                        Check your app. It can take a few minutes to show.
-                     </p>
-                  ) : (
-                     <>
-                        <ol className="mt-[12px] w-full space-y-[8px] text-left">
-                           {steps.map((st) => (
-                              <li key={st.label} className="flex items-center gap-[10px] text-[14px]">
-                                 <span
-                                    className={`w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0 ${
-                                       st.state === 'done'
-                                          ? 'bg-[#6b55f7] text-white'
-                                          : st.state === 'active'
-                                            ? 'border-2 border-[#6b55f7]'
-                                            : 'border-2 border-[var(--border-input)]'
-                                    }`}
-                                 >
-                                    {st.state === 'done' ? (
-                                       <Check className="w-[13px] h-[13px]" strokeWidth={3} />
-                                    ) : st.state === 'active' ? (
-                                       <Loader2 className="w-[12px] h-[12px] text-[#6b55f7] animate-spin" />
-                                    ) : null}
-                                 </span>
-                                 <span className={st.state === 'todo' ? 'text-[var(--text-faint)]' : 'text-[var(--ink)] font-semibold'}>
-                                    {st.label}
-                                 </span>
-                              </li>
-                           ))}
-                        </ol>
-                        <p className="mt-[12px] text-[12px] text-[var(--text-muted)] leading-[17px]">
-                           {slow
-                              ? 'Taking longer than usual, but it’s on its way. You can leave this page; we’ll keep sending it.'
-                              : `Started ${minutes < 1 ? 'just now' : `${minutes} min ago`} · usually a few minutes. You can leave this page.`}
-                        </p>
-                     </>
-                  )}
+                  <p className="mt-[2px] text-[14px] leading-[19px] text-[var(--text-muted)]">
+                     {done
+                        ? `To ${accountLabel}. Check your bank app.`
+                        : slow
+                          ? 'Taking a bit longer. It’s still on its way.'
+                          : 'Usually a few minutes.'}
+                  </p>
+                  <ol className="mt-[14px] w-full space-y-[10px] text-left">
+                     {steps.map((st) => (
+                        <li key={st.label} className="flex items-center gap-[10px] text-[15px]">
+                           <span
+                              className={`w-[24px] h-[24px] rounded-full flex items-center justify-center shrink-0 ${
+                                 st.state === 'done'
+                                    ? 'bg-[#2f9e44] text-white'
+                                    : st.state === 'active'
+                                      ? 'border-2 border-[#6b55f7]'
+                                      : 'border-2 border-[var(--border-input)]'
+                              }`}
+                           >
+                              {st.state === 'done' ? (
+                                 <Check className="w-[14px] h-[14px]" strokeWidth={3.5} />
+                              ) : st.state === 'active' ? (
+                                 <Loader2 className="w-[13px] h-[13px] text-[#6b55f7] animate-spin" />
+                              ) : null}
+                           </span>
+                           <span className={st.state === 'todo' ? 'text-[var(--text-faint)]' : 'text-[var(--ink)] font-semibold'}>
+                              {st.label}
+                           </span>
+                        </li>
+                     ))}
+                  </ol>
                </div>
             )}
          </Panel>
-         {qrMode ? (
-            <GoldButton onClick={onDone}>Done</GoldButton>
+         {done || failed ? (
+            qrMode ? (
+               <GoldButton onClick={onDone}>Done</GoldButton>
+            ) : (
+               <button className={primaryClass} onClick={onDone}>
+                  Done
+               </button>
+            )
          ) : (
-            <button className={primaryClass} onClick={onDone}>
-               Done
-            </button>
+            // Not a gold "Done" while it's still sending: that read as "finished".
+            <>
+               <p className="text-center text-[13px] leading-[18px] text-[var(--text-muted)]">
+                  You can close this. We&apos;ll keep sending.
+               </p>
+               <button
+                  onClick={onDone}
+                  className="w-full rounded-[36px] border-2 border-[#e8e4ff] bg-[var(--surface)] py-[13px] text-[16px] font-semibold text-[var(--text-muted)] active:scale-[0.99] transition-all"
+               >
+                  Close
+               </button>
+            </>
          )}
       </div>
    );

@@ -17,6 +17,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 
+import ContactLinesCard from '@/components/ContactLinesCard';
 import FilterSidebar from '@/components/filters/FilterSidebar';
 import GuidedTourPreview, { type TourRoleOption } from '@/components/GuidedTourPreview';
 import IouPointHistoryModal from '@/components/IouPointHistoryModal';
@@ -31,7 +32,9 @@ import { useClickOutside } from '@/hooks/useClickOutside';
 import { useIdOnboarding } from '@/hooks/useIdOnboarding';
 import { useUsdIdrPeg } from '@/hooks/useUsdIdrPeg';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
+import { useIsFundingAdmin } from '@/hooks/useIsFundingAdmin';
 import { useLoanFlow } from '@/hooks/useLoanFlow';
+import { useWalletLast } from '@/hooks/useWalletLast';
 import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 import { usePagination } from '@/hooks/usePagination';
 import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
@@ -47,6 +50,7 @@ import type { BorrowerContextProfileData } from '@/lib/borrowerContextFit';
 import { getBorrowerActiveLoanCount, getBorrowerUsedCreditAmount, isRequestBoardLoanVisible } from '@/lib/borrowerCreditUsage';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
+import { maximumRepayment } from '@/lib/loanPricing';
 import {
    BORROWER_GUIDED_TOUR_ID,
    GENERAL_GUIDED_TOUR_ID,
@@ -65,17 +69,22 @@ import { getLoanRequestCooldownMessage, type LoanRequestRepostStatus } from '@/l
 import { setPendingSharedRequestId } from '@/lib/pendingSharedRequest';
 import { captureApplicationSignals, type CapturedSignals, sendApplicationSignals } from '@/lib/recordApplicationSignals';
 import {
+   clearKeptLoanTerms,
    clearLoanRequestDraft,
    draftIsResumable,
+   loadKeptLoanTerms,
    loadLoanRequestDraft,
+   saveKeptLoanTerms,
    saveLoanRequestDraft
 } from '@/lib/loanRequestDraft';
+import { type LoanRequestDraftRow, type LoanRequestStopStep, syncLoanRequestDraft } from '@/lib/loanRequestDraftSync';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getVerificationUiState, VERIFICATION_STATE_CTA, VERIFICATION_STATE_LABEL } from '@/lib/verificationUiState';
 import { clearVerifyFlow, readVerifyFlow, type VerifyMethod } from '@/lib/verifyFlow';
 import { hasWalletAddressOnAccount } from '@/lib/walletProvider';
 import { formatPointsMajor } from '@/shared/points';
 import { fetchUser, fetchUserProfiles, updateBorrowerContext } from '@/store/slices/authSlice';
+import { buildTwoPartSchedule, canSplitRepayment } from '@/lib/repaymentSchedule';
 import { createLoan, deleteLoan, fetchLoanRequestRepostStatus, fetchLoans, getLenderRepaidCount } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
@@ -87,10 +96,11 @@ import LoanRequestModal, {
    type LoanRequestResume,
    mapBorrowerContextForSave
 } from '@/views/dashboard/components/LoanRequestModal';
-import { CONNECT_HIPPOS, markCelebrated, StepCelebration, StepTrail, wasCelebrated } from '@/views/dashboard/components/connectKit';
+import { ApprovedNextSteps, CONNECT_HIPPOS, markCelebrated, StepCelebration, wasCelebrated } from '@/views/dashboard/components/connectKit';
 import DeleteLoanRequestModal from '@/views/dashboard/components/DeleteLoanRequestModal';
 import LocationPrimingModal from '@/views/dashboard/components/LocationPrimingModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
+import WalletLastStep from '@/views/dashboard/components/WalletLastStep';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
 import UserCard from '@/views/dashboard/components/UserCard';
 import FundWalletSheet from '@/views/fund/FundWalletSheet';
@@ -499,6 +509,7 @@ function RequestBoard$() {
    const [sharedRequestId, setSharedRequestId] = useState<string | null>(null);
 
    const user = useSelector((state: RootState) => state.auth.user);
+   const isFundingAdmin = useIsFundingAdmin();
    const username = useSelector((state: RootState) => state.auth.username);
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const isLoading = useSelector((state: RootState) => state.loans.isLoading);
@@ -634,6 +645,8 @@ function RequestBoard$() {
    const lenderUserId = '';
    const [loanAmount, setLoanAmount] = useState('');
    const [totalRepaymentAmount, setTotalRepaymentAmount] = useState('');
+   // Loans over $60: pay back in 2 parts (one loan, src/lib/repaymentSchedule.ts).
+   const [payInParts, setPayInParts] = useState(false);
    // Indonesia track: the fixed rupiah total (loans.repay_idr). totalRepaymentAmount follows it at today's rate.
    const [repayIdr, setRepayIdr] = useState('');
    const [reason, setReason] = useState('');
@@ -686,6 +699,16 @@ function RequestBoard$() {
          effectiveCreditLimit <= STARTING_CREDIT_LIMIT &&
          borrowerCreditLoans.length === 0);
    const hasBorrowerBaseWallet = !IS_BORROWER_BASE_WALLET_GATE_ENABLED || hasWalletAddressOnAccount(effectiveUser);
+   // Wallet last (src/hooks/useWalletLast.ts): no wallet needed to open the loan form — it's made as the
+   // very last step of sending (WalletLastStep), after the ID check. Not Indonesia (Walt, its own step).
+   const { walletLast } = useWalletLast();
+   const walletMadeAtSend = walletLast && !isIndo;
+   const canOpenLoanForm = hasBorrowerBaseWallet || walletMadeAtSend;
+   const [showWalletLast, setShowWalletLast] = useState(false);
+   // The wallet WalletLastStep just made (the profile may not have refreshed yet), and the submit it
+   // interrupted, which runs again once the wallet exists.
+   const walletOverrideRef = useRef<string | null>(null);
+   const pendingWalletSubmitRef = useRef<{ borrowerContext?: import('@/lib/borrowerContextFit').BorrowerContextState } | null>(null);
    // A wallet the borrower JUST connected is live in wagmi before its address finishes
    // saving to their profile (useWalletSync → updateUser is async). During that window
    // `hasBorrowerBaseWallet` is still false; we use this to hold the "apply loan" intent
@@ -742,6 +765,7 @@ function RequestBoard$() {
       setLoanAmount('');
       setReason('');
       setDays('');
+      setPayInParts(false);
       setAppliedReferral(null);
    };
 
@@ -761,6 +785,7 @@ function RequestBoard$() {
       setTotalRepaymentAmount(draft.terms.totalRepaymentAmount);
       setReason(draft.terms.reason);
       setDays(draft.terms.days);
+      setPayInParts(Boolean(draft.terms.payInParts));
       setAppliedReferral(draft.referral);
       setLoanRequestResume({
          flow: draft.flow,
@@ -774,7 +799,9 @@ function RequestBoard$() {
          // but don't pop the form open on every visit — there's nothing they can do until it clears.
          return;
       }
-      if (draft.sendAfterVerify) setAutoSendLoanRequest(true);
+      // Back from proof of income (the last step): send it. The modal waits for fresh income facts,
+      // and the gate still runs, so nothing goes out until a document is actually on file.
+      if (draft.sendAfterVerify || draft.sendAfterDocs) setAutoSendLoanRequest(true);
       // Verified and shown the filled-in form once: that's what the kept terms were for. Use them up
       // now, so dismissing the form any way (backdrop, leaving the page) doesn't reopen it on every
       // visit for the next 3 days.
@@ -784,14 +811,65 @@ function RequestBoard$() {
       // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [isAuthenticated, isBorrower, effectiveUser?.id]);
 
+   // The team's copy of a request that's started but not sent yet (see @/lib/loanRequestDraftSync):
+   // written a few seconds after the terms or the screen change, right away when the form sends them
+   // off the page (proof of income, ID check), and on close. Only for the real signed-in borrower,
+   // never the tour / referral test users. Closing never removes it; a new loan marks it sent.
+   const canMirrorTeamDraft = Boolean(user?.id) && effectiveUser?.id === user?.id && isBorrower;
+   const pendingTeamDraftRef = useRef<LoanRequestDraftRow | null>(null);
+   const teamDraftTimerRef = useRef<number | null>(null);
+   const flushTeamDraft = useCallback(() => {
+      if (teamDraftTimerRef.current !== null) {
+         window.clearTimeout(teamDraftTimerRef.current);
+         teamDraftTimerRef.current = null;
+      }
+      const row = pendingTeamDraftRef.current;
+      pendingTeamDraftRef.current = null;
+      if (row) syncLoanRequestDraft(row);
+   }, []);
+   // Sending: drop the pending copy, so a late write can't undo the database's "sent" mark.
+   const cancelTeamDraft = useCallback(() => {
+      if (teamDraftTimerRef.current !== null) window.clearTimeout(teamDraftTimerRef.current);
+      teamDraftTimerRef.current = null;
+      pendingTeamDraftRef.current = null;
+   }, []);
+   const currentStopStep: LoanRequestStopStep = loanRequestFlowState?.stopStep ?? 'terms';
+   // Set once the form hands them off the page (left_for_documents / left_for_id_check), so a last
+   // re-render on the way out can't overwrite that with the screen underneath. Reset on the next open.
+   const teamDraftHandedOffRef = useRef(false);
+   useEffect(() => {
+      if (showModal) teamDraftHandedOffRef.current = false;
+   }, [showModal]);
+   useEffect(() => {
+      if (!showModal || !canMirrorTeamDraft || teamDraftHandedOffRef.current) return;
+      pendingTeamDraftRef.current = { loanAmount, totalRepaymentAmount, reason, days, step: currentStopStep };
+      if (teamDraftTimerRef.current !== null) window.clearTimeout(teamDraftTimerRef.current);
+      teamDraftTimerRef.current = window.setTimeout(flushTeamDraft, 4000);
+   }, [showModal, canMirrorTeamDraft, loanAmount, totalRepaymentAmount, reason, days, currentStopStep, flushTeamDraft]);
+   // Leaving the page (or the form closing) mustn't drop the last few seconds of typing.
+   useEffect(() => flushTeamDraft, [flushTeamDraft]);
+   useEffect(() => {
+      if (!showModal) flushTeamDraft();
+   }, [showModal, flushTeamDraft]);
+   const writeTeamDraftNow = useCallback(
+      (step: LoanRequestStopStep) => {
+         if (!canMirrorTeamDraft) return;
+         teamDraftHandedOffRef.current = true;
+         pendingTeamDraftRef.current = { loanAmount, totalRepaymentAmount, reason, days, step };
+         flushTeamDraft();
+      },
+      [canMirrorTeamDraft, days, flushTeamDraft, loanAmount, reason, totalRepaymentAmount]
+   );
+
    // "Verify ID & send request" leaves for /verify and Didit, which unmounts this page and the form.
    // Save the terms now (the regular snapshot skips the terms screen) and mark them to be sent once
    // the borrower is back verified — the form promises "What you typed is kept".
    const handleVerifyToSend = useCallback(() => {
       // Nothing typed yet (e.g. "View status" on an empty form): nothing to keep or send.
       if (!effectiveUser?.id || (!loanAmount && !reason)) return;
+      writeTeamDraftNow('left_for_id_check');
       saveLoanRequestDraft(effectiveUser.id, {
-         terms: { loanAmount, totalRepaymentAmount, reason, days },
+         terms: { loanAmount, totalRepaymentAmount, reason, days, payInParts },
          referral: loanRequestFlowState?.referral ?? appliedReferral,
          flow: loanRequestFlowState?.flow ?? {
             showReferralStep: false,
@@ -807,14 +885,18 @@ function RequestBoard$() {
          profileName: loanRequestFlowState?.profileName ?? '',
          sendAfterVerify: true
       });
-   }, [appliedReferral, days, effectiveUser?.id, loanAmount, loanRequestFlowState, reason, totalRepaymentAmount]);
+   }, [appliedReferral, days, effectiveUser?.id, loanAmount, loanRequestFlowState, payInParts, reason, totalRepaymentAmount, writeTeamDraftNow]);
 
-   // "Send proof of income" (loans of $60+) leaves for /documents. Keep the terms to refill the form
-   // when they come back (/request-board?applyLoan=1), without sending anything by itself.
+   // "Send proof of income" ($40+) leaves for /documents. It's the LAST step (2026-11-15): Messenger,
+   // WhatsApp, job, bio and the call are all done by now, so keep the request and send it by itself
+   // once they're back with a document sent — they used to come back to a refilled form and had to
+   // find Send again (and were told "you don't need to do anything").
    const handleLeaveForDocuments = useCallback(() => {
       if (!effectiveUser?.id || (!loanAmount && !reason)) return;
+      writeTeamDraftNow('left_for_documents');
+      const flow = loanRequestFlowState?.flow;
       saveLoanRequestDraft(effectiveUser.id, {
-         terms: { loanAmount, totalRepaymentAmount, reason, days },
+         terms: { loanAmount, totalRepaymentAmount, reason, days, payInParts },
          referral: loanRequestFlowState?.referral ?? appliedReferral,
          flow: {
             showReferralStep: false,
@@ -822,15 +904,16 @@ function RequestBoard$() {
             bioPage: 1,
             showContactsStep: false,
             showVideoCallStep: false,
-            contactsStepDone: false,
-            videoCallStepDone: false,
-            borrowerContextPromptSeen: loanRequestFlowState?.flow.borrowerContextPromptSeen ?? false
+            // What they finished stays finished, so the send doesn't stop on a screen they've done.
+            contactsStepDone: flow?.contactsStepDone ?? false,
+            videoCallStepDone: flow?.videoCallStepDone ?? false,
+            borrowerContextPromptSeen: flow?.borrowerContextPromptSeen ?? false
          },
          borrowerContext: loanRequestFlowState?.borrowerContext ?? { incomeSetup: '', paydayWindow: '', cashGaps: [] },
          profileName: loanRequestFlowState?.profileName ?? '',
-         prefillOnly: true
+         sendAfterDocs: true
       });
-   }, [appliedReferral, days, effectiveUser?.id, loanAmount, loanRequestFlowState, reason, totalRepaymentAmount]);
+   }, [appliedReferral, days, effectiveUser?.id, loanAmount, loanRequestFlowState, payInParts, reason, totalRepaymentAmount, writeTeamDraftNow]);
 
    // The auto-send fired: drop the "send after verify" mark so a failed send (reason check, cooldown)
    // can't re-fire on every reload. The terms stay on the open form for them to fix and send.
@@ -838,7 +921,7 @@ function RequestBoard$() {
       setAutoSendLoanRequest(false);
       if (!effectiveUser?.id) return;
       const draft = loadLoanRequestDraft(effectiveUser.id);
-      if (draft?.sendAfterVerify) saveLoanRequestDraft(effectiveUser.id, { ...draft, sendAfterVerify: false });
+      if (draft?.sendAfterVerify || draft?.sendAfterDocs) saveLoanRequestDraft(effectiveUser.id, { ...draft, sendAfterVerify: false, sendAfterDocs: false });
    }, [effectiveUser?.id]);
 
    // Snapshot the in-progress request whenever the terms or the modal's step change, so a reload
@@ -847,14 +930,31 @@ function RequestBoard$() {
    useEffect(() => {
       if (!showModal || !effectiveUser?.id || !loanRequestFlowState) return;
       const draft = {
-         terms: { loanAmount, totalRepaymentAmount, reason, days },
+         terms: { loanAmount, totalRepaymentAmount, reason, days, payInParts },
          referral: loanRequestFlowState.referral,
          flow: loanRequestFlowState.flow,
          borrowerContext: loanRequestFlowState.borrowerContext,
          profileName: loanRequestFlowState.profileName
       };
       if (draftIsResumable(draft)) saveLoanRequestDraft(effectiveUser.id, draft);
-   }, [showModal, effectiveUser?.id, loanRequestFlowState, loanAmount, totalRepaymentAmount, reason, days]);
+   }, [showModal, effectiveUser?.id, loanRequestFlowState, loanAmount, totalRepaymentAmount, reason, days, payInParts]);
+
+   // What they typed on the first screen outlives closing the form (see saveKeptLoanTerms): a stop for
+   // proof of income or for connecting Messenger/WhatsApp can take hours, and nobody should type their
+   // request twice. Filled back in when the form next opens empty; cleared once the request posts.
+   useEffect(() => {
+      if (!showModal || !effectiveUser?.id || isIndo) return;
+      if (!loanAmount && !reason && !days && !totalRepaymentAmount) {
+         const kept = loadKeptLoanTerms(effectiveUser.id);
+         if (!kept) return;
+         setLoanAmount(kept.loanAmount);
+         setTotalRepaymentAmount(kept.totalRepaymentAmount);
+         setReason(kept.reason);
+         setDays(kept.days);
+         return;
+      }
+      saveKeptLoanTerms(effectiveUser.id, { loanAmount, totalRepaymentAmount, reason, days });
+   }, [showModal, effectiveUser?.id, isIndo, loanAmount, totalRepaymentAmount, reason, days]);
 
    // Straight to wallet setup, not Welcome: these borrowers already signed up and saw Welcome, and its
    // "Explore Moodeng" sent them right back here — a loop that let people skip setup entirely.
@@ -945,12 +1045,12 @@ function RequestBoard$() {
       setIsOpeningLoanRequest(true);
 
       try {
-         if (!isWorldIdVerified && !hasBorrowerBaseWallet) {
+         if (!isWorldIdVerified && !canOpenLoanForm) {
             goToBorrowerOnboardingStart('loan-request');
             return;
          }
 
-         if (!hasBorrowerBaseWallet) {
+         if (!canOpenLoanForm) {
             handleMissingBorrowerWallet();
             return;
          }
@@ -1245,7 +1345,7 @@ function RequestBoard$() {
             {
                target: '[data-tour-target="request-apply-card"]',
                title: 'Apply for a loan',
-               body: 'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it for a higher starting limit.',
+               body: 'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it so we know who invited you.',
                durationMs: 6500
             },
             {
@@ -1471,12 +1571,12 @@ function RequestBoard$() {
       // useWalletSync disconnects, isWalletLiveConnected flips false, and the redirects apply.
       if (!hasBorrowerBaseWallet && isWalletLiveConnected) return;
 
-      if (!isWorldIdVerified && !hasBorrowerBaseWallet) {
+      if (!isWorldIdVerified && !canOpenLoanForm) {
          navigate('/onboarding/welcome', { replace: true, state: { returnTo: 'loan-request' } });
          return;
       }
 
-      if (!hasBorrowerBaseWallet) {
+      if (!canOpenLoanForm) {
          goToBorrowerWalletSetup('loan-request', true);
          return;
       }
@@ -1533,7 +1633,8 @@ function RequestBoard$() {
       isSubmittingRef.current = true;
 
       try {
-         const borrowerWallet = effectiveUser.walletAddress?.trim();
+         const borrowerWallet = walletOverrideRef.current ?? effectiveUser.walletAddress?.trim();
+         const hasWalletNow = hasBorrowerBaseWallet || Boolean(walletOverrideRef.current);
          const trimmedReason = reason.trim();
          const parsedLoanAmount = Number.parseFloat(loanAmount);
          // Indonesia rupiah peg: the rupiah total is what they promise; the USD is that at today's
@@ -1550,7 +1651,7 @@ function RequestBoard$() {
                : Number.parseFloat(totalRepaymentAmount);
          const parsedDueDate = days ? new Date(days) : null;
 
-         if (!isWorldIdVerified && !hasBorrowerBaseWallet) {
+         if (!isWorldIdVerified && !hasWalletNow && !walletMadeAtSend) {
             goToBorrowerOnboardingStart('loan-request');
             return;
          }
@@ -1558,7 +1659,13 @@ function RequestBoard$() {
             showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WORLDID_REQUIRED));
             return;
          }
-         if (!hasBorrowerBaseWallet) {
+         if (!hasWalletNow) {
+            // Wallet last: everything else is done — make the wallet now, then this submit runs again.
+            if (walletMadeAtSend) {
+               pendingWalletSubmitRef.current = { borrowerContext };
+               setShowWalletLast(true);
+               return;
+            }
             handleMissingBorrowerWallet();
             return;
          }
@@ -1581,6 +1688,18 @@ function RequestBoard$() {
             parsedRepaymentAmount < parsedLoanAmount + 1
          ) {
             showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_REPAYMENT_TOO_LOW));
+            return;
+         }
+         // At most 20% on top per 31 days (George, 2026-11-18). Mirrors app_private.enforce_new_loan_terms.
+         const maxRepay = isIndo ? null : maximumRepayment(parsedLoanAmount, days);
+         if (maxRepay !== null && parsedRepaymentAmount > maxRepay) {
+            showToast(
+               TOAST_TYPES.ERROR,
+               'Repayment too high',
+               `For this date you can repay at most $${maxRepay.toFixed(2)} (20% on top per month). Lower your repayment and try again.`,
+               'OK',
+               'acknowledge'
+            );
             return;
          }
          if (isIndo && idLoanRules) {
@@ -1656,6 +1775,12 @@ function RequestBoard$() {
          }
          setReasonWarning('');
 
+         // "In 2 parts": half back halfway to the date, half on it. Only where the form offered it.
+         const repaymentSchedule =
+            payInParts && !isIdPegged && canSplitRepayment(parsedLoanAmount, today, days.slice(0, 10))
+               ? buildTwoPartSchedule(parsedRepaymentAmount, today, days.slice(0, 10))
+               : undefined;
+
          const loanData = {
             borrowerUserId: borrowerUserId || '',
             borrowerWallet,
@@ -1667,12 +1792,13 @@ function RequestBoard$() {
             referralCodeId: appliedReferral?.id,
             referralCode: appliedReferral?.code,
             referralBoostAmount: appliedReferral?.boostAmount,
-            ...(isIdPegged && parsedRepayIdr ? { repayIdr: parsedRepayIdr } : {})
+            ...(isIdPegged && parsedRepayIdr ? { repayIdr: parsedRepayIdr } : {}),
+            ...(repaymentSchedule ? { repaymentSchedule } : {})
          };
 
          if (
             isUserVerified(effectiveUser) &&
-            hasBorrowerBaseWallet &&
+            hasWalletNow &&
             !hasReachedActiveLoanLimit &&
             parsedLoanAmount <= availableCreditLimit &&
             parsedLoanAmount > 0 &&
@@ -1720,7 +1846,7 @@ function RequestBoard$() {
             // isUserVerified() is still false. Never let "Make Your Request" silently no-op.
             console.warn('Loan request fell through the create guard with no matching reason', {
                verified: isUserVerified(effectiveUser),
-               hasBorrowerBaseWallet,
+               hasBorrowerBaseWallet: hasWalletNow,
                hasReachedActiveLoanLimit,
                withinLimit: parsedLoanAmount <= availableCreditLimit,
                positiveAmount: parsedLoanAmount > 0,
@@ -1768,13 +1894,16 @@ function RequestBoard$() {
             const choice = await askLocationConsent();
             captured = await captureApplicationSignals(choice === 'share');
          }
+         cancelTeamDraft();
          const createdLoan = await dispatch(createLoan(loanData)).unwrap();
+         cancelTeamDraft();
          // Fire-and-forget: attach the captured signals so the fraud engine can
          // vet co-location / shared-device before the request is ever funded.
          if (captured) void sendApplicationSignals(createdLoan.id, captured);
          clear();
          // The request posted — the resumable snapshot is done its job, so drop it.
          clearLoanRequestDraft();
+         clearKeptLoanTerms();
          setLoanRequestResume(null);
          setLoanRequestFlowState(null);
          setSearchLoan('');
@@ -1799,6 +1928,13 @@ function RequestBoard$() {
          }
       } catch (error) {
          console.error('Error creating loan:', (error as Error).message || error);
+         // The database wants both lines (Messenger with its ID + WhatsApp) first. Refresh the profile
+         // so the form's contact step opens for them next time they tap Send.
+         if (String((error as Error)?.message ?? '').includes('contact_lines_missing')) {
+            void dispatch(fetchUser());
+            showToast(TOAST_TYPES.ERROR, 'Add Messenger and WhatsApp first', 'Tap Send again to connect them, then your request goes out.', 'OK', 'acknowledge');
+            return;
+         }
          showToast(
             TOAST_TYPES.ERROR,
             "Request wasn't saved",
@@ -1928,13 +2064,13 @@ function RequestBoard$() {
    const filteredLoans = useMemo(() => {
       const allFilters: LoanFilters = { ...filters, search: searchLoan, sortBy: filters.sortBy };
       return filterLoans(
-         // On-hold requests (missed video call) stay visible only to their own borrower.
-         requestBoardLoans.filter((loan) => isRequestBoardLoanVisible(loan, new Date(), user?.id)),
+         // On-hold requests (missed video call) stay visible only to their own borrower; over-cap ones also to the team.
+         requestBoardLoans.filter((loan) => isRequestBoardLoanVisible(loan, new Date(), user?.id, isFundingAdmin)),
          allFilters,
          customAmount,
          userProfiles
       );
-   }, [filters, searchLoan, requestBoardLoans, customAmount, userProfiles, user?.id]);
+   }, [filters, searchLoan, requestBoardLoans, customAmount, userProfiles, user?.id, isFundingAdmin]);
 
    const {
       displayedItems: displayedLoans,
@@ -2045,7 +2181,10 @@ function RequestBoard$() {
       (shouldShowGeneralTour || shouldShowBorrowerTour || shouldShowLenderTour) && displayedLoans.length === 0
          ? TOUR_SAMPLE_LOANS
          : displayedLoans;
-   const isListLoading = (!hasLoadedRequestBoardLoans || isLoading) && !shouldShowLenderTour;
+   // Only blank the list while there's nothing to show yet. Any later loans fetch (auto-refresh,
+   // wallet connect, a card's refresh) flips `isLoading`; swapping the cards for a spinner then
+   // unmounts every card — and any modal open on it, e.g. Vault Lend mid wallet-connect.
+   const isListLoading = !shouldShowLenderTour && (!hasLoadedRequestBoardLoans || (isLoading && visibleLoans.length === 0));
 
    useEffect(() => {
       if (!highlightedRequestId || lastScrolledHighlightedRequestIdRef.current === highlightedRequestId) return;
@@ -2098,19 +2237,16 @@ function RequestBoard$() {
          {mooBorrowerShowing && !mooBorrowerDone ? (
             <div className="fixed inset-0 z-[100] overflow-y-auto bg-white">
                <div className="mx-auto flex min-h-full w-full max-w-[440px] flex-col">
+                  {/* What's left, step by step — so nobody has to ask "what's the process?" after the call. */}
                   <StepCelebration
-                     continueLabel="Apply for my first loan"
+                     continueLabel="Apply now"
                      image={CONNECT_HIPPOS.approved}
                      onDone={finishMooBorrower}
-                     stats={[
-                        { label: 'Facebook', value: 'Done ✓', tone: 'green' },
-                        { label: 'Profile', value: 'Done ✓', tone: 'purple' },
-                        { label: 'Call', value: 'Done ✓', tone: 'amber' }
-                     ]}
-                     subtitle="Welcome to the herd! You're all set — apply for your first loan now."
-                     title="You’re now a Moo-borrower! 🎉"
-                     trail={<StepTrail current={4} steps={['Messenger', 'About you', 'Your goal', 'Book call']} />}
-                  />
+                     subtitle="You can apply for your loan now."
+                     title="You’re approved! 🎉"
+                  >
+                     <ApprovedNextSteps idDone={isUserVerified(effectiveUser)} />
+                  </StepCelebration>
                </div>
             </div>
          ) : null}
@@ -2284,6 +2420,9 @@ function RequestBoard$() {
                      </div>
                   ) : null}
 
+                  {/* Missing Messenger or WhatsApp: say so before they fill in a request. */}
+                  {isAuthenticated && isBorrower && hasSelectedRole && !isIndo && !isReferralTestMode ? <ContactLinesCard next="loan" /> : null}
+
                   {/* Apply Loan Card — visible for authenticated borrowers, or as CTA for public */}
                   {isAuthenticated && isBorrower && hasSelectedRole ? (
                      <div
@@ -2312,9 +2451,9 @@ function RequestBoard$() {
                                  </>
                               ) : showReferralCard ? (
                                  <>
-                                    <p className="text-md-b3 font-semibold uppercase tracking-wide text-md-primary-1200">Referral program</p>
-                                    <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Pay zero interest</p>
-                                    <p className="text-md-b2 font-medium text-md-neutral-700">Refer friends and we cover it.</p>
+                                    <p className="text-md-b3 font-semibold uppercase tracking-wide text-md-primary-1200">Affiliate</p>
+                                    <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Earn $5 per friend</p>
+                                    <p className="text-md-b2 font-medium text-md-neutral-700">Invite friends who borrow and repay.</p>
                                  </>
                               ) : journey.onboarding && journey.step ? (
                                  <>
@@ -2359,7 +2498,7 @@ function RequestBoard$() {
                                  isIndo
                                     ? handleApplyLoanClick
                                     : showReferralCard
-                                    ? () => navigate('/refer')
+                                    ? () => navigate('/affiliate')
                                     : journey.onboarding
                                       ? (e) => { e.preventDefault(); journey.go(); }
                                       : handleApplyLoanClick
@@ -2383,7 +2522,7 @@ function RequestBoard$() {
                                     ID_APPLY_CARD_TEXT.apply[idLang]
                                  )
                               ) : showReferralCard ? (
-                                 <>Refer a friend<span aria-hidden="true"> →</span></>
+                                 <>Invite<span aria-hidden="true"> →</span></>
                               ) : journey.onboarding ? (
                                  <>{journey.cta}<span aria-hidden="true"> →</span></>
                               ) : (
@@ -2660,6 +2799,8 @@ function RequestBoard$() {
                   days={days}
                   today={today}
                   handleDays={handleDays}
+                  payInParts={payInParts}
+                  setPayInParts={setPayInParts}
                   handleSubmit={handleSubmit}
                   onReferralApplied={setAppliedReferral}
                   onReferralRedeemed={handleReferralRedeemed}
@@ -2683,6 +2824,21 @@ function RequestBoard$() {
                    Request" was closing this before they registered the request went through. They
                    dismiss it deliberately via "Go to dashboard" or a swipe down. */}
                <SuccessModal isOpen={showPurple} onClose={handleSuccessModalClose} clickOutsideRef={undefined} />
+               {showWalletLast ? (
+                  <WalletLastStep
+                     onClose={() => {
+                        pendingWalletSubmitRef.current = null;
+                        setShowWalletLast(false);
+                     }}
+                     onDone={(address) => {
+                        walletOverrideRef.current = address;
+                        setShowWalletLast(false);
+                        const pending = pendingWalletSubmitRef.current;
+                        pendingWalletSubmitRef.current = null;
+                        void handleSubmit({ preventDefault: () => undefined } as FormEvent<HTMLFormElement>, pending?.borrowerContext);
+                     }}
+                  />
+               ) : null}
                <LocationPrimingModal
                   open={showLocationPriming}
                   onShare={() => resolveLocationConsent('share')}

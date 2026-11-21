@@ -5,6 +5,8 @@ import { type BottomNavPrimaryAction, useBottomNavActionState } from '@/componen
 
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 
+import { shouldShowCashOutTab } from '@/lib/bottomNavCashOut';
+
 import type { RootState } from '@/store/store';
 
 interface NavTab {
@@ -23,6 +25,9 @@ const BORROWER_TABS: NavTab[] = [
    { label: 'History', path: '/history', icon: 'history.png', requiresRole: true },
    { label: 'Account', path: '/account', icon: 'account.png' }
 ];
+
+// Shown in Repay's slot for the first 24h after a loan is funded (see shouldShowCashOutTab).
+const CASH_OUT_TAB: NavTab = { label: 'Cash out', path: '/withdraw', icon: 'wallet.png', requiresRole: true };
 
 const LENDER_TABS: NavTab[] = [
    { label: 'Request Board', path: '/request-board', icon: 'request-board.png' },
@@ -129,11 +134,15 @@ function StandardTab({ tab, isActive, isBorrower, isLocked }: { tab: NavTab; isA
 export default function BottomNav() {
    const isBorrower = useIsBorrower();
    const userRole = useSelector((state: RootState) => state.auth.user?.userRole);
+   const userId = useSelector((state: RootState) => state.auth.user?.id);
+   const loans = useSelector((state: RootState) => state.loans.loans.gloans);
    const location = useLocation();
    const { primaryAction } = useBottomNavActionState();
    const activePrimaryAction =
       isBorrower && location.pathname === '/repay' && primaryAction?.path === location.pathname ? primaryAction : null;
-   const navItems: NavItem[] = activePrimaryAction ? REPAY_ACTION_TABS : isBorrower ? BORROWER_TABS : LENDER_TABS;
+   const showCashOut = isBorrower && shouldShowCashOutTab(loans || [], userId);
+   const borrowerTabs = showCashOut ? BORROWER_TABS.map((tab) => (tab.path === '/repay' ? CASH_OUT_TAB : tab)) : BORROWER_TABS;
+   const navItems: NavItem[] = activePrimaryAction ? REPAY_ACTION_TABS : isBorrower ? borrowerTabs : LENDER_TABS;
    const needsRoleSelection = !userRole;
 
    return (

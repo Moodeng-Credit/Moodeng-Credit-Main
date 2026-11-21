@@ -73,6 +73,24 @@ describe('loanRequestDraft store', () => {
       expect(loadLoanRequestDraft('user-1')).toBeNull();
    });
 
+   it('keeps a request waiting on proof of income through a day of team review, with its finished steps', () => {
+      saveLoanRequestDraft(
+         'user-1',
+         makeDraft({
+            sendAfterDocs: true,
+            flow: { ...makeDraft().flow, showContactsStep: false, contactsStepDone: true, videoCallStepDone: true, borrowerContextPromptSeen: true }
+         })
+      );
+      vi.advanceTimersByTime(LOAN_REQUEST_DRAFT_TTL_MS * 4);
+      const draft = loadLoanRequestDraft('user-1');
+      expect(draft?.sendAfterDocs).toBe(true);
+      expect(draft?.sendAfterVerify).toBeUndefined();
+      expect(draft?.flow.contactsStepDone).toBe(true);
+      expect(draft?.flow.videoCallStepDone).toBe(true);
+      vi.advanceTimersByTime(SEND_AFTER_VERIFY_TTL_MS);
+      expect(loadLoanRequestDraft('user-1')).toBeNull();
+   });
+
    it('keeps terms the borrower closed the form on while their ID is checked, without arming the auto-send', () => {
       saveLoanRequestDraft('user-1', makeDraft({ prefillOnly: true }));
       vi.advanceTimersByTime(LOAN_REQUEST_DRAFT_TTL_MS * 4);
@@ -162,6 +180,9 @@ describe('loanRequestDraft store', () => {
          });
          expect(draftIsResumable({ ...termsOnly, sendAfterVerify: true })).toBe(true);
          expect(draftIsResumable({ ...termsOnly, sendAfterVerify: false })).toBe(false);
+         // Back from /documents (proof of income, the last step): reopen and send.
+         expect(draftIsResumable({ ...termsOnly, sendAfterDocs: true })).toBe(true);
+         expect(draftIsResumable({ ...termsOnly, sendAfterDocs: false })).toBe(false);
       });
 
       it('is true on the contacts step (the Messenger-hop case)', () => {

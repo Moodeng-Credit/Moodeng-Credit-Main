@@ -45,10 +45,49 @@ export function buildPhraseMap(locale: LocaleCode, coverage?: Record<string, str
    return phraseMap;
 }
 
+// Sentences built from a number ("Repay on time to reach Level 3 — up to $35.") have one translation
+// per number someone wrote down. When a new number has none, reuse the sentence's translation for
+// another number: "…Level 2 — up to $20." teaches "…Level {0} — up to ${1}.". Only translations that
+// carry every number of the English (each once) become templates, so nothing is guessed.
+const NUMBER = /\d+(?:[.,]\d+)*/g;
+// Placeholders use private-use characters, which never appear in real text.
+const slot = (index: number) => `\uE000${index}\uE001`;
+const numberTemplateCache = new WeakMap<Map<string, string>, Map<string, string>>();
+
+function getNumberTemplates(phraseMap: Map<string, string>) {
+   let templates = numberTemplateCache.get(phraseMap);
+   if (templates) return templates;
+   templates = new Map<string, string>();
+   for (const [english, translated] of phraseMap) {
+      const numbers = english.match(NUMBER);
+      if (!numbers || new Set(numbers).size !== numbers.length) continue;
+      let foreign = false;
+      const value = translated.replace(NUMBER, (found) => {
+         const index = numbers.indexOf(found);
+         if (index < 0) foreign = true;
+         return index < 0 ? found : slot(index);
+      });
+      if (foreign || !numbers.every((_, index) => value.includes(slot(index)))) continue;
+      let index = 0;
+      const key = english.replace(NUMBER, () => slot(index++));
+      if (!templates.has(key)) templates.set(key, value);
+   }
+   numberTemplateCache.set(phraseMap, templates);
+   return templates;
+}
+
+function getNumberTemplateTranslation(phraseMap: Map<string, string>, normalized: string) {
+   const numbers = normalized.match(NUMBER);
+   if (!numbers) return null;
+   let index = 0;
+   const template = getNumberTemplates(phraseMap).get(normalized.replace(NUMBER, () => slot(index++)));
+   return template ? template.replace(/\uE000(\d+)\uE001/g, (_match, at: string) => numbers[Number(at)] ?? '') : null;
+}
+
 export function getTranslation(phraseMap: Map<string, string>, value: string) {
    const normalized = normalizePhrase(value);
    if (!normalized) return null;
-   return phraseMap.get(normalized) ?? null;
+   return phraseMap.get(normalized) ?? getNumberTemplateTranslation(phraseMap, normalized);
 }
 
 // Replaces known phrases inside a longer string that has no full translation of its own. Only

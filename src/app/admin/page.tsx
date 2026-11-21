@@ -13,13 +13,16 @@ import AdminShell from '@/app/admin/AdminShell';
 import { type AdminTab, isAdminTab, navGroups } from '@/app/admin/adminNav';
 import CalendarSection from '@/app/admin/CalendarSection';
 import CallApprovalsSection from '@/app/admin/CallApprovalsSection';
+import RejectedSection from '@/app/admin/RejectedSection';
 import IdPayoutWalletPanel from '@/app/admin/IdPayoutWalletPanel';
 import IndonesiaContactCard from '@/app/admin/IndonesiaContactCard';
+import SocialHandlesLine from '@/app/admin/SocialHandlesLine';
 import WaltPayoutCard from '@/app/admin/WaltPayoutCard';
 import IndonesiaBadge from '@/components/IndonesiaBadge';
 import FilloutSection from '@/app/admin/FilloutSection';
 import { groupCallApprovals } from '@/app/admin/callApprovalsModel';
 import DirectoryApprovalControl from '@/app/admin/DirectoryApprovalControl';
+import DirectoryCreditLevelControl from '@/app/admin/DirectoryCreditLevelControl';
 import { TAB_HINTS } from '@/app/admin/adminSearchHints';
 import type { AdminSearchResult } from '@/app/admin/adminSearchModel';
 import GrabVouchersSection from '@/app/admin/GrabVouchersSection';
@@ -66,14 +69,19 @@ import EmailUsersSection from './EmailUsersSection';
 import GrowthAnalyticsSection from './GrowthAnalyticsSection';
 import PostLinksSection from './PostLinksSection';
 import SignupSourcesSection from './SignupSourcesSection';
+import AudienceSection from './AudienceSection';
+import BorrowerProfileSection from '@/app/admin/BorrowerProfileSection';
 import LoanExplorerSection from './LoanExplorerSection';
 import LoanExtensionSection from './LoanExtensionSection';
 import MuleRiskSection from './MuleRiskSection';
 import OnChainSection from './OnChainSection';
 import PricingHealthSection from './PricingHealthSection';
 import IncomeDocsSection from './IncomeDocsSection';
+import PreScreeningSection from './PreScreeningSection';
+import UnsentLoanRequestsSection from './UnsentLoanRequestsSection';
 import ProgressSection from './ProgressSection';
 import ProofRequestsSection from './ProofRequestsSection';
+import AffiliatePayoutsSection from './AffiliatePayoutsSection';
 import InterestRefundsSection from './InterestRefundsSection';
 import RemoveLoanRequestDialog from '@/app/admin/RemoveLoanRequestDialog';
 import ReferralCodesSection from './ReferralCodesSection';
@@ -82,6 +90,7 @@ import RelayLinksSection from './RelayLinksSection';
 import RiskAssessmentSection from './RiskAssessmentSection';
 import SelfLendingSection from './SelfLendingSection';
 import SupportChatSection from './SupportChatSection';
+import WhatsAppInboxSection from './WhatsAppInboxSection';
 import TestLabSection from './TestLabSection';
 import UxHealthSection from './UxHealthSection';
 
@@ -888,6 +897,7 @@ function AdminPanel() {
                                                : ''}
                                          </p>
                                          <DirectoryApprovalControl user={user} />
+                                         <DirectoryCreditLevelControl user={user} />
                                       </div>
                                    </div>
                                    <button
@@ -1495,6 +1505,8 @@ function AdminPanel() {
             <CallApprovalsSection variant="waiting" onCountChange={setCallApprovalCount} onOpenCalls={() => setActiveTab('calls')} />
          ) : null}
 
+         {activeTab === 'requests' ? <UnsentLoanRequestsSection /> : null}
+
          {activeTab === 'requests' ? (
             <section className="mt-10 space-y-6">
                <div>
@@ -1542,6 +1554,9 @@ function AdminPanel() {
                                  <strong className="mt-2 block text-3xl underline">
                                     {selectedRequest.borrower?.username ?? 'Unknown borrower'}
                                  </strong>
+                                 <div className="mt-1">
+                                    <SocialHandlesLine key={selectedRequest.borrower_user_id ?? ''} userId={selectedRequest.borrower_user_id} />
+                                 </div>
                                  {selectedRequest.market === 'ID' ? (
                                     <div className="mt-3">
                                        <IndonesiaContactCard key={selectedRequest.borrower_user_id ?? ''} userId={selectedRequest.borrower_user_id} />
@@ -1676,6 +1691,8 @@ function AdminPanel() {
             </section>
          ) : null}
 
+         {activeTab === 'audience' ? <AudienceSection /> : null}
+
          {activeTab === 'signups' ? (
             <section className="space-y-6">
                <div>
@@ -1685,6 +1702,18 @@ function AdminPanel() {
                   </p>
                </div>
                <SignupSourcesSection />
+            </section>
+         ) : null}
+
+         {activeTab === 'borrower-profile' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Borrower profile</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Who our users are — age, gender, where they live, income — and which groups repay best, to decide who to target next.
+                  </p>
+               </div>
+               <BorrowerProfileSection />
             </section>
          ) : null}
 
@@ -1774,9 +1803,12 @@ function AdminPanel() {
             </section>
          ) : null}
 
+         {activeTab === 'affiliates' ? <AffiliatePayoutsSection /> : null}
+
          {activeTab === 'grab-vouchers' ? <GrabVouchersSection /> : null}
 
          {activeTab === 'income-docs' ? <IncomeDocsSection /> : null}
+         {activeTab === 'pre-screening' ? <PreScreeningSection /> : null}
 
          {activeTab === 'proof-requests' ? <ProofRequestsSection /> : null}
 
@@ -1868,11 +1900,15 @@ function AdminPanel() {
 
          {activeTab === 'calls' ? <CallApprovalsSection onCountChange={setCallApprovalCount} /> : null}
 
+         {activeTab === 'rejected' ? <RejectedSection /> : null}
+
          {activeTab === 'fillout' ? <FilloutSection /> : null}
 
          {activeTab === 'calendar' ? <CalendarSection /> : null}
 
          {activeTab === 'chat' ? <SupportChatSection /> : null}
+
+         {activeTab === 'whatsapp' ? <WhatsAppInboxSection /> : null}
 
          {activeTab === 'relay' && isFundingAdmin ? <RelayLinksSection /> : null}
 

@@ -1,13 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-import { createProofRequest } from '@/app/admin/adminSupabase';
-import { customItemId, MAX_ITEMS, PROOF_PRESETS, type ProofItem, proofLink, proofLinkMessage, QUESTION_PRESETS } from '@/lib/proofRequests';
+import { createProofRequest, latestOpenProofLink } from '@/app/admin/adminSupabase';
+import {
+   customItemId,
+   MAX_ITEMS,
+   type OpenProofLink,
+   openProofLinkStatus,
+   PROOF_PRESETS,
+   type ProofItem,
+   proofLink,
+   proofLinkMessage,
+   QUESTION_PRESETS
+} from '@/lib/proofRequests';
 
 // "Ask for proof": pick what they said on the call (works at a company, visa abroad, business…), add
 // any questions, write a short note, and get one link for them — sent on push / Messenger / Telegram
-// right away, and ready to copy into the chat too. Used from the Call sheet and Admin → Proof requests.
+// right away, and ready to copy into the chat too. If they already have a link that still works, it's
+// shown at the top to copy again, so nobody makes a second one by accident. Used from the Call sheet and Admin → Proof requests.
 
 const inputClass =
    'w-full rounded-md border border-[#e3e3e3] bg-white px-2.5 py-1.5 text-[14px] text-[#1f1f1f] placeholder:text-[#b3b3b3] focus:border-[#6b55f7] focus:outline-none focus:ring-2 focus:ring-[#6b55f7]/20';
@@ -39,6 +50,67 @@ function Tick({ on, onClick, title, hint }: { on: boolean; onClick: () => void; 
    );
 }
 
+/** The borrower's link in a read-only field, with Copy link and the ready-made Messenger message. */
+function LinkBox({ token, firstName }: { token: string; firstName: string | null }) {
+   // 'manual' = the browser blocked copying, so the text is selected and they press ⌘C / Ctrl+C.
+   const [copied, setCopied] = useState<{ what: 'link' | 'message'; how: 'done' | 'manual' } | null>(null);
+   const linkRef = useRef<HTMLInputElement>(null);
+   const messageRef = useRef<HTMLTextAreaElement>(null);
+   const copy = async (what: 'link' | 'message') => {
+      const field = what === 'link' ? linkRef.current : messageRef.current;
+      let how: 'done' | 'manual' = 'done';
+      try {
+         await navigator.clipboard.writeText(what === 'link' ? proofLink(token) : proofLinkMessage(firstName, token));
+      } catch {
+         how = 'manual';
+         field?.focus();
+         field?.select();
+      }
+      setCopied({ what, how });
+      window.setTimeout(() => setCopied(null), how === 'done' ? 1800 : 4000);
+   };
+   const label = (what: 'link' | 'message', idle: string) =>
+      copied?.what === what ? (copied.how === 'done' ? 'Copied ✓' : 'Selected — press ⌘C / Ctrl+C') : idle;
+   return (
+      <div className="space-y-3">
+         <div className="flex items-center gap-2">
+            <input
+               aria-label="Their link"
+               className={`${inputClass} font-mono text-[13px]`}
+               onFocus={(e) => e.currentTarget.select()}
+               readOnly
+               ref={linkRef}
+               value={proofLink(token)}
+            />
+            <button
+               className="shrink-0 rounded-md bg-[#1f1f1f] px-3 py-1.5 text-[13px] font-semibold text-white"
+               onClick={() => void copy('link')}
+               type="button"
+            >
+               {label('link', 'Copy link')}
+            </button>
+         </div>
+         <div>
+            <p className="mb-1 text-[12px] font-semibold text-[#7a7a7a]">Or paste this in your Messenger / WhatsApp chat with them:</p>
+            <textarea
+               aria-label="Message with their link"
+               className={`${inputClass} h-[92px] resize-none text-[13px]`}
+               readOnly
+               ref={messageRef}
+               value={proofLinkMessage(firstName, token)}
+            />
+            <button
+               className="mt-1 rounded-md border border-[#e3e3e3] px-3 py-1 text-[13px] font-semibold"
+               onClick={() => void copy('message')}
+               type="button"
+            >
+               {label('message', 'Copy message')}
+            </button>
+         </div>
+      </div>
+   );
+}
+
 export default function ProofRequestComposer({
    userId,
    name,
@@ -59,7 +131,18 @@ export default function ProofRequestComposer({
    const [busy, setBusy] = useState(false);
    const [error, setError] = useState('');
    const [made, setMade] = useState<{ token: string } | null>(null);
-   const [copied, setCopied] = useState<'link' | 'message' | null>(null);
+   // undefined = still checking; null = no open link. One read when the modal opens, no polling.
+   const [existing, setExisting] = useState<OpenProofLink | null | undefined>(undefined);
+
+   useEffect(() => {
+      let live = true;
+      latestOpenProofLink(userId)
+         .then((r) => live && setExisting(r))
+         .catch(() => live && setExisting(null));
+      return () => {
+         live = false;
+      };
+   }, [userId]);
 
    const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
    const addCustom = (kind: ProofItem['kind']) =>
@@ -90,13 +173,6 @@ export default function ProofRequestComposer({
       }
    };
 
-   const copy = async (what: 'link' | 'message') => {
-      if (!made) return;
-      await navigator.clipboard.writeText(what === 'link' ? proofLink(made.token) : proofLinkMessage(firstName ?? null, made.token));
-      setCopied(what);
-      window.setTimeout(() => setCopied(null), 1800);
-   };
-
    return (
       <div
          aria-modal="true"
@@ -120,33 +196,11 @@ export default function ProofRequestComposer({
             {made ? (
                <div className="mt-4 space-y-3">
                   <p className="rounded-md bg-[#eefbf2] p-3 text-[14px] font-semibold text-[#1f6b33]">
-                     ✅ Link made{send ? ' — sending it to them on Messenger, Telegram and app notifications (whichever they have).' : '.'}
+                     {send
+                        ? '✅ Link made — sending it to them on Messenger, Telegram and app notifications (whichever they have). You can also copy it below.'
+                        : '✅ Link made — not sent. Copy it below and send it to them yourself.'}
                   </p>
-                  <div className="flex items-center gap-2">
-                     <input className={`${inputClass} font-mono text-[13px]`} readOnly value={proofLink(made.token)} />
-                     <button
-                        className="shrink-0 rounded-md bg-[#1f1f1f] px-3 py-1.5 text-[13px] font-semibold text-white"
-                        onClick={() => void copy('link')}
-                        type="button"
-                     >
-                        {copied === 'link' ? 'Copied ✓' : 'Copy link'}
-                     </button>
-                  </div>
-                  <div>
-                     <p className="mb-1 text-[12px] font-semibold text-[#7a7a7a]">Or paste this in your Messenger chat with them:</p>
-                     <textarea
-                        className={`${inputClass} h-[92px] resize-none text-[13px]`}
-                        readOnly
-                        value={proofLinkMessage(firstName ?? null, made.token)}
-                     />
-                     <button
-                        className="mt-1 rounded-md border border-[#e3e3e3] px-3 py-1 text-[13px] font-semibold"
-                        onClick={() => void copy('message')}
-                        type="button"
-                     >
-                        {copied === 'message' ? 'Copied ✓' : 'Copy message'}
-                     </button>
-                  </div>
+                  <LinkBox firstName={firstName ?? null} token={made.token} />
                   <p className="text-[12px] text-[#9a9a9a]">
                      You’ll get a ping in the KYC Telegram group and Discord #kyc when they send it. Review in Admin → People → Proof
                      requests.
@@ -154,6 +208,14 @@ export default function ProofRequestComposer({
                </div>
             ) : (
                <div className="mt-4 space-y-4">
+                  {existing ? (
+                     <section className="rounded-lg border border-[#d9d2ff] bg-[#f7f5ff] p-3">
+                        <p className="text-[14px] font-bold">They already have a link that works</p>
+                        <p className="mb-2 text-[12px] text-[#7a7a7a]">{openProofLinkStatus(existing)}</p>
+                        <LinkBox firstName={firstName ?? null} token={existing.token} />
+                        <p className="mt-2 text-[12px] text-[#7a7a7a]">Need to ask for something different? Make a new link below.</p>
+                     </section>
+                  ) : null}
                   <section>
                      <p className="mb-1.5 text-[13px] font-bold uppercase tracking-wide text-[#6b55f7]">Proof to upload</p>
                      <div className="grid gap-1.5 sm:grid-cols-2">
@@ -260,15 +322,19 @@ export default function ProofRequestComposer({
 
                   <button
                      className="h-10 w-full rounded-md bg-[#6b55f7] text-[15px] font-bold text-white disabled:opacity-40"
-                     disabled={busy || !items.length || tooMany}
+                     disabled={busy || existing === undefined || !items.length || tooMany}
                      onClick={() => void create()}
                      type="button"
                   >
                      {busy
                         ? 'Making the link…'
-                        : items.length
-                          ? `Make the link · ${items.length} ${items.length === 1 ? 'thing' : 'things'}`
-                          : 'Pick at least one thing'}
+                        : existing === undefined
+                          ? 'Checking for a link they already have…'
+                          : items.length
+                            ? existing
+                               ? `Make a new link · ${items.length} ${items.length === 1 ? 'thing' : 'things'}`
+                               : `Make the link · ${items.length} ${items.length === 1 ? 'thing' : 'things'}`
+                            : 'Pick at least one thing'}
                   </button>
                </div>
             )}

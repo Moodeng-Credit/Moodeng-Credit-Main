@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { isServerCaller } from '../_shared/internalAuth.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
 // Hourly credit watch for the shared DeepSeek account (Mecha support-chat +
@@ -22,15 +23,18 @@ const CHAT_KEY = 'kyc_alert_chat_id';
 const jsonResponse = (body: Record<string, unknown>, status = 200) =>
    new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-serve(async () => {
+serve(async (req) => {
    try {
-      const apiKey = Deno.env.get('DEEPSEEK_API_KEY');
-      if (!apiKey) return jsonResponse({ ok: false, error: 'no_api_key' });
-
       const url = Deno.env.get('SUPABASE_URL') ?? '';
       const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
       if (!url || !serviceKey) return jsonResponse({ ok: false, error: 'no_supabase_env' });
       const supabase = createClient(url, serviceKey);
+
+      // pg_cron only (vault secret key). The anon key must not be able to read the balance or ping the group.
+      if (!(await isServerCaller(supabase, req))) return jsonResponse({ error: 'Unauthorized' }, 401);
+
+      const apiKey = Deno.env.get('DEEPSEEK_API_KEY');
+      if (!apiKey) return jsonResponse({ ok: false, error: 'no_api_key' });
 
       const balRes = await fetch('https://api.deepseek.com/user/balance', {
          headers: { Authorization: `Bearer ${apiKey}` }

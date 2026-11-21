@@ -26,6 +26,8 @@ type CreditProgressionInput = {
    /** The loan's saved zone (`loans.due_timezone`); Manila when missing. */
    dueTimezone?: string | null;
    paidAt: string;
+   /** When the loan was funded: one funded before the ladder switch keeps the old next step. */
+   fundedAt?: string | null;
 };
 
 type CreditProgressionResult = {
@@ -40,6 +42,21 @@ export const getEffectiveCreditLimit = (cs: number | null | undefined, isVerifie
    return Math.min(Math.max(toNumber(cs ?? 0), MIN_CREDIT_LIMIT), MAX_CREDIT_LIMIT);
 };
 
+// A loan repaid within 48 hours of getting it doesn't count (George, 2026-11-18): no level-up, no
+// affiliate $5, no food voucher. People were borrowing for 30 days and repaying on day 1–2 to climb fast.
+export const FAST_REPAY_HOURS = 48;
+/** True when paying at `paidAt` is within 48h of funding: it won't level them up. */
+export const isFastRepay = (fundedAt: string | null | undefined, paidAt: string | null | undefined) => {
+   const funded = fundedAt ? Date.parse(fundedAt) : NaN;
+   const paid = paidAt ? Date.parse(paidAt) : NaN;
+   return Number.isFinite(funded) && Number.isFinite(paid) && paid - funded < FAST_REPAY_HOURS * 3_600_000;
+};
+/** When a repayment starts counting (48h after funding). */
+export const countsFromAt = (fundedAt: string | null | undefined) => {
+   const funded = fundedAt ? Date.parse(fundedAt) : NaN;
+   return Number.isFinite(funded) ? new Date(funded + FAST_REPAY_HOURS * 3_600_000) : null;
+};
+
 export const evaluateCreditProgression = ({
    currentLimit,
    isVerified,
@@ -48,7 +65,8 @@ export const evaluateCreditProgression = ({
    loanAmount,
    dueDate,
    dueTimezone,
-   paidAt
+   paidAt,
+   fundedAt
 }: CreditProgressionInput): CreditProgressionResult => {
    const normalizedLimit = getEffectiveCreditLimit(currentLimit, isVerified);
    const repaid = toNumber(repaidAmount ?? 0);
@@ -61,11 +79,11 @@ export const evaluateCreditProgression = ({
    // reaches the limit or several small loans add up to it. Lateness doesn't block it: most late
    // repayments are tech trouble (wallets, exchanges), not the borrower's fault.
    const isFullLimitLoan = principal >= normalizedLimit;
-   const canLevelUp = isVerified && isFullyRepaid && isFullLimitLoan && normalizedLimit < MAX_CREDIT_LIMIT;
+   const canLevelUp = isVerified && isFullyRepaid && isFullLimitLoan && normalizedLimit < MAX_CREDIT_LIMIT && !isFastRepay(fundedAt, paidAt);
 
    return {
       shouldLevelUp: canLevelUp,
-      nextLimit: getNextCreditTier(normalizedLimit),
+      nextLimit: getNextCreditTier(normalizedLimit, fundedAt),
       isLate,
       isFullyRepaid
    };

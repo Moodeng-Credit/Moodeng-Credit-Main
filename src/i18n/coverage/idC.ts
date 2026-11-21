@@ -394,8 +394,8 @@ export const indonesianCoverageC: Record<string, string> = {
 
    // src/views/onboarding/WalletConnected.tsx
    'Use Your Instant Wallet or a Base Account': 'Gunakan Instant Wallet atau Base Account kamu',
-   'Borrowers use the Moodeng Instant Wallet, created from your login — or you can connect a Base Account instead. Other wallet connectors cannot be locked for Moodeng borrowing.':
-      'Peminjam memakai Instant Wallet Moodeng yang dibuat dari login kamu — atau kamu bisa menghubungkan Base Account sebagai gantinya. Konektor dompet lain tidak bisa dikunci untuk meminjam di Moodeng.',
+   'Use your Moodeng Instant Wallet or a Base Account. Other wallets can’t be used to borrow.':
+      'Pakai Moodeng Instant Wallet atau Base Account. Dompet lain tidak bisa dipakai untuk meminjam.',
    'Confirm Saved Base Account': 'Konfirmasi Base Account tersimpan',
    'Confirm Your Base Account': 'Konfirmasi Base Account kamu',
    "We couldn't detect a wallet. Set up your Instant Wallet (or connect a Base Account if you prefer) to continue.":
@@ -411,8 +411,8 @@ export const indonesianCoverageC: Record<string, string> = {
    "We couldn't finish creating your wallet. Please try again.": 'Kami belum berhasil membuat dompet kamu. Silakan coba lagi.',
    'Could not start the face check. Please try again.': 'Tidak bisa memulai cek wajah. Silakan coba lagi.',
    'Quick face check': 'Cek wajah singkat',
-   'A short liveness scan keeps Instant Wallets to one per person, which is what lets us cover the network fees. We never store your photo, and it is only needed to create the wallet — not to sign in, send or repay.':
-      'Pemindaian liveness singkat memastikan setiap orang hanya punya satu Instant Wallet, dan karena itulah kami bisa menanggung biaya jaringan. Kami tidak pernah menyimpan fotomu, dan pemindaian ini hanya diperlukan untuk membuat dompet — bukan untuk masuk, mengirim, atau membayar kembali.',
+   'A quick face scan — one wallet per person. We don’t keep your photo.':
+      'Pindai wajah sebentar — satu dompet per orang. Kami tidak menyimpan fotomu.',
    'Try the scan again': 'Coba pindai lagi',
    'Connect a wallet instead': 'Hubungkan dompet lain saja',
    'Creating your wallet': 'Membuat dompet kamu',
@@ -615,8 +615,10 @@ export const indonesianCoverageC: Record<string, string> = {
    'Now open Moneybees below →': 'Sekarang buka Moneybees di bawah →',
    'Now paste it into the app below →': 'Sekarang tempel di aplikasi di bawah →',
    '⚠️ Send on the BASE network only': '⚠️ Kirim hanya lewat jaringan BASE',
-   'USDC sent on Ethereum, Polygon, or any other network goes to this address on the wrong chain and is lost forever — it cannot be recovered. When':
-      'USDC yang dikirim lewat Ethereum, Polygon, atau jaringan lain akan masuk ke alamat ini di chain yang salah dan hilang selamanya — tidak bisa dipulihkan. Saat',
+   'Choose the Base network. Any other network and your money is lost.': 'Pilih jaringan Base. Kalau jaringan lain, uangmu hilang.',
+   '⚠️ Pick USDCBASE': '⚠️ Pilih USDCBASE',
+   'See it in': 'Lihat di',
+   'Any other USDC (USDCPOL, USDCSOL…) and your money is lost.': 'Kalau USDC lain (USDCPOL, USDCSOL…), uangmu hilang.',
    'asks which network, choose': 'menanyakan jaringan, pilih',
    'Visit moneybees.ph and follow their own process': 'Kunjungi moneybees.ph dan ikuti proses mereka',
    'They handle ID checks and the rate directly with you': 'Mereka mengurus pemeriksaan ID dan kurs langsung denganmu',
@@ -767,8 +769,8 @@ export const indonesianCoverageC: Record<string, string> = {
    'A Credit Level is your borrowing limit. Everyone starts at Level 1 with a $15 limit, and the limit grows as you complete Credit-Building Loans.':
       'Level Kredit adalah limit pinjamanmu. Semua orang mulai dari Level 1 dengan limit $15, dan limitnya naik seiring kamu menyelesaikan Credit-Building Loan.',
    'How do I move to the next level?': 'Bagaimana cara naik ke level berikutnya?',
-   'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment unlocks the next limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
-      'Ambil Credit-Building Loan senilai limit penuhmu saat ini dan bayar kembali secara penuh dan tepat waktu. Pembayaran yang lancar akan membuka limit berikutnya — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
+   'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment adds $10 to your limit: $15, then $25, then $35, and so on.':
+      'Ambil Credit-Building Loan senilai limit penuhmu saat ini dan bayar kembali secara penuh dan tepat waktu. Setiap pembayaran yang lancar menambah limitmu $10: $15, lalu $25, lalu $35, dan seterusnya.',
    'Does borrowing a small amount level me up?': 'Apakah meminjam jumlah kecil bisa menaikkan levelku?',
    'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with moo-lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.':
       'Tidak. Meminjam di bawah limitmu disebut Trust-Building Loan. Ini meningkatkan reputasimu di mata moo-lender, tetapi tidak menaikkan Level Kredit-mu. Hanya Credit-Building Loan senilai limit penuh yang menaikkan levelmu.',
@@ -933,6 +935,8 @@ export const indonesianCoverageC: Record<string, string> = {
    'Waiting for moo-lender acceptance': 'Menunggu persetujuan moo-lender',
    'This loan is not funded yet. Repayment starts only after a moo-lender accepts.':
       'Pinjaman ini belum didanai. Pembayaran kembali dimulai setelah moo-lender menyetujui.',
+   'Waiting for a moo-lender': 'Menunggu moo-lender',
+   'Nothing to pay until it’s funded.': 'Belum ada yang perlu dibayar sampai didanai.',
    'View on explorer': 'Lihat di explorer',
 
    // src/views/transactions/TransactionHistory.tsx
@@ -988,6 +992,7 @@ export const indonesianCoverageC: Record<string, string> = {
    'Loan / moo-lender': 'Pinjaman / moo-lender',
    'No funded loans yet': 'Belum ada pinjaman yang didanai',
    'Not enough loan history yet': 'Riwayat pinjaman belum cukup',
+   'Shows after a few loans.': 'Muncul setelah beberapa pinjaman.',
    "Once this borrower completes more loans, you'll see repayment timing, usual loan size, repeat moo-lenders, and borrowing patterns here.":
       'Setelah peminjam ini menyelesaikan lebih banyak pinjaman, kamu akan melihat waktu pembayaran, ukuran pinjaman yang umum, moo-lender berulang, dan pola peminjaman di sini.',
    'Default History': 'Riwayat Gagal Bayar',
@@ -1114,8 +1119,7 @@ export const indonesianCoverageC: Record<string, string> = {
    'Send only': 'Kirim saja',
    'Verify Base first': 'Verifikasi Base dulu',
    'How would you like to cash out?': 'Bagaimana kamu ingin mencairkan dana?',
-   'Your loan funds are in your wallet. Withdraw or convert them using an exchange, P2P platform, or a supported local crypto service.':
-      'Dana pinjamanmu ada di dompetmu. Tarik atau ubah dananya lewat exchange, platform P2P, atau layanan kripto lokal yang didukung.',
+   'Pick where to get your cash.': 'Pilih tempat mencairkan uangmu.',
    'Learn more about withdrawal options': 'Pelajari lebih lanjut tentang opsi penarikan',
    "I'll do this later": 'Nanti saja',
    'Contact support': 'Hubungi dukungan',

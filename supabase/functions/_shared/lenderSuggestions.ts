@@ -32,6 +32,10 @@ export type ProspectRow = {
 export type LoanForMatch = {
    id: string;
    loan_amount?: number | string | null;
+   /** What the borrower pays back in total (principal + the lender's return). */
+   total_repayment_amount?: number | string | null;
+   created_at?: string | null;
+   due_date?: string | null;
    coin?: string | null;
    reason?: string | null;
    borrower_user_id?: string | null;
@@ -186,6 +190,19 @@ export const rankLenders = (
 
 const formatAmount = (value: number | string | null | undefined) => toAmount(value).toFixed(2);
 
+// What they pay back and how long they have (George, 2026-11-15): "💵 Repays $17.25 USDC (+$2.25 to
+// the lender) · 14 days". Null when the repay amount is missing.
+export const buildRepayLine = (loan: LoanForMatch, coin = loan.coin || 'USDC'): string | null => {
+   const repay = toAmount(loan.total_repayment_amount);
+   if (!(repay > 0)) return null;
+   const extra = repay - toAmount(loan.loan_amount);
+   const extraText = extra > 0.004 ? ` (+$${extra.toFixed(2)} to the lender)` : '';
+   const start = toDate(loan.created_at);
+   const due = toDate(loan.due_date);
+   const days = start && due ? Math.max(1, Math.ceil((due.getTime() - start.getTime()) / MS_PER_DAY)) : null;
+   return `💵 Repays $${repay.toFixed(2)} ${coin}${extraText}${days ? ` · ${days} day${days === 1 ? '' : 's'}` : ''}`;
+};
+
 // When the request went in and when it's due, already worded for the team (formatInstantForTeam /
 // formatDeadlineForTeam). Funding isn't known yet: the posted message is remembered as a 'loan' card,
 // so state-events-dispatch stamps it "✅ FUNDED by …" with the time once a lender funds it.
@@ -203,6 +220,8 @@ export const buildLenderSuggestionMessage = (
 
    lines.push(loan.market === 'ID' ? '🇮🇩 New loan request · Indonesia' : '💸 New loan request');
    lines.push(`$${formatAmount(loan.loan_amount)} ${coin}${loan.reason ? ` — "${loan.reason}"` : ''}`);
+   const repayLine = buildRepayLine(loan, coin);
+   if (repayLine) lines.push(repayLine);
    lines.push(`Borrower: ${borrowerUsername ? `@${borrowerUsername}` : 'unknown'}`);
    if (timing.submitted) lines.push(`🕒 Submitted ${timing.submitted}`);
    if (timing.due) lines.push(`⏳ Due ${timing.due}`);

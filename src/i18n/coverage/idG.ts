@@ -286,8 +286,8 @@ export const indonesianCoverageG: Record<string, string> = {
    'Repay your $80 loan on time': 'Bayar kembali pinjaman $80 kamu tepat waktu',
    'Repay your $100 loan on time': 'Bayar kembali pinjaman $100 kamu tepat waktu',
    'Repay your $120 loan on time': 'Bayar kembali pinjaman $120 kamu tepat waktu',
-   'Limits step up $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
-      'Limit naik bertahap $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
+   'You start at $15. Each full-limit loan you repay adds $10.':
+      'Kamu mulai dari $15. Setiap pinjaman limit penuh yang kamu lunasi menambah $10.',
    'you need a smaller amount, or want to build trust first.': 'kamu butuh jumlah yang lebih kecil, atau ingin membangun kepercayaan dulu.',
    'also called a Credit Growth Loan': 'disebut juga Credit Growth Loan',
    'you’re ready to grow your limit and sure you can repay on time.':
@@ -431,9 +431,8 @@ export const indonesianCoverageG: Record<string, string> = {
       'Pembayaran kembali ini dikirim ke dompet yang kamu pakai untuk mendanai pinjaman ini:',
    'When repaid, funds return to the wallet you funded this loan from:':
       'Saat dibayar kembali, dana akan masuk ke dompet yang kamu pakai untuk mendanai pinjaman ini:',
-   'This differs from the wallet you have connected now (': 'Dompet ini berbeda dengan dompet yang terhubung sekarang (',
-   '). That is expected — repayments go to the wallet used to fund each loan, not your current one. Open':
-      '). Ini wajar — pembayaran kembali masuk ke dompet yang dipakai untuk mendanai tiap pinjaman, bukan dompetmu saat ini. Buka',
+   'This money went to': 'Uang ini masuk ke',
+   ', the wallet that funded this loan.': ', dompet yang mendanai pinjaman ini.',
    'to find these funds.': 'untuk menemukan dana ini.',
    // src/views/transactions/TransactionHistory.tsx
    'Awaiting moo-lender': 'Menunggu moo-lender',
@@ -666,4 +665,12 @@ export const indonesianCoverageG: Record<string, string> = {
       'Kami sudah mengirim pesan ke WhatsApp-mu. Buka dan ikuti langkahnya satu per satu. Kamu tidak perlu melakukan apa pun di sini.',
    'Open WhatsApp': 'Buka WhatsApp',
    'This page moves on by itself when you’re done.': 'Halaman ini akan lanjut sendiri setelah kamu selesai.',
+   // Credit ladder $15, $25, $35 … (Nov 2026).
+   "full-limit loan unlocks a $25 limit": "pinjaman limit penuh membuka limit $25",
+   "left to repay for a $25 limit": "lagi yang harus dibayar untuk limit $25",
+   "…and $10 more for each level after that.": "…dan tambah $10 untuk setiap level berikutnya.",
+   "Top level for now": "Level tertinggi untuk saat ini",
+   "Top level": "Level tertinggi",
+   "Example: borrowing the full $25 limit to unlock the $35 level.": "Contoh: meminjam limit penuh $25 untuk membuka level $35.",
+   "Credit limit reaches $35 = +50 Pandesal points": "Limit kredit mencapai $35 = +50 poin Pandesal"
 };

@@ -87,6 +87,11 @@ export default function WalletConnected() {
          navigate('/verify-world-id-preview', { replace: true });
          return;
       }
+      // Affiliates get a wallet only so payouts have somewhere to go: back to their dashboard.
+      if (user?.userRole === 'affiliate') {
+         navigate('/affiliate', { replace: true });
+         return;
+      }
       if (returnTo === 'account-settings') {
          navigate('/account/settings', { replace: true });
          return;
@@ -147,7 +152,7 @@ export default function WalletConnected() {
          return (
             <FailureView
                title="Use Your Instant Wallet or a Base Account"
-               body="Borrowers use the Moodeng Instant Wallet, created from your login — or you can connect a Base Account instead. Other wallet connectors cannot be locked for Moodeng borrowing."
+               body="Use your Moodeng Instant Wallet or a Base Account. Other wallets can’t be used to borrow."
                onRetry={() => navigate('/onboarding/wallet')}
             />
          );
@@ -157,7 +162,7 @@ export default function WalletConnected() {
          return (
             <FailureView
                title="Confirm Saved Base Account"
-               body={`Moodeng has ${formatWalletAddressShort(baseWalletLock.address)} saved for this account. Connect that Base Account, or update the saved wallet from Account Settings if this account should use a different one.`}
+               body={`This account uses ${formatWalletAddressShort(baseWalletLock.address)}. Connect that one, or change it in Account Settings.`}
                onRetry={() => {
                   disconnect();
                   navigate('/onboarding/wallet');

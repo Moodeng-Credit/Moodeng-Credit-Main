@@ -3,7 +3,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
-import { usePreKycGate } from '@/hooks/usePreKycGate';
+import { JOURNEY_V2_PATH, needsJourneyV2, needsPrescreen, PRESCREEN_PATH, usePreKycGate } from '@/hooks/usePreKycGate';
+import { hasWalletAddressOnAccount } from '@/lib/walletProvider';
 import { ID_PATHS } from '@/lib/idTrack';
 import { isTikTokAccountEmail } from '@/lib/phoneAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -12,7 +13,7 @@ import type { WalletSetupPhase } from '@/lib/web3/openfort';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
-import { CONNECT_HIPPOS, StepCelebration, StepTrail } from '@/views/dashboard/components/connectKit';
+import { ApprovedNextSteps, CONNECT_HIPPOS, StepCelebration, StepTrail } from '@/views/dashboard/components/connectKit';
 import ConnectStep, { type ConnectPage, LoanAccessPendingCard, LoanAccessRejectedCard } from '@/views/dashboard/components/ConnectStep';
 import GrowingWalletHippo from '@/views/onboarding/GrowingWalletHippo';
 import OnboardingBio from '@/views/onboarding/OnboardingBio';
@@ -47,12 +48,22 @@ export default function ConnectBeforeKyc() {
    const location = useLocation();
    const dispatch = useDispatch<AppDispatch>();
    const authUser = useSelector((state: RootState) => state.auth.user);
-   // Dev-only /onboarding/connect-preview(?view=pending|about|celebrate|wallet-grow): the screens without an account.
+   // Dev-only /onboarding/connect-preview(?view=pending|in-call|review|rejected|about|celebrate|approved|wallet-grow): the screens without an account.
    const isPreview = import.meta.env.DEV && location.pathname.includes('preview');
    const user = isPreview ? PREVIEW_USER : authUser;
    const gate = usePreKycGate();
    const { isGated, isLoading } = isPreview ? { isGated: true, isLoading: false } : gate;
-   const isPending = isPreview ? new URLSearchParams(location.search).get('view') === 'pending' : user?.loanAccessStatus === 'pending';
+   const previewPendingView = isPreview ? new URLSearchParams(location.search).get('view') : null;
+   const isPending = isPreview
+      ? previewPendingView === 'pending' || previewPendingView === 'in-call' || previewPendingView === 'review'
+      : user?.loanAccessStatus === 'pending';
+   // Dev preview: ?view=in-call (call started 5 min ago) and ?view=review (call over, waiting on the team).
+   const previewStartsAt =
+      previewPendingView === 'in-call'
+         ? new Date(Date.now() - 5 * 60000).toISOString()
+         : previewPendingView === 'review'
+           ? new Date(Date.now() - 2 * 3600000).toISOString()
+           : undefined;
    // Dev preview: ?view=rejected (for good) and ?view=rejected-for-now (with a retry day).
    const previewView = isPreview ? new URLSearchParams(location.search).get('view') : null;
    const isRejected = isPreview ? previewView === 'rejected' || previewView === 'rejected-for-now' : user?.loanAccessStatus === 'rejected';
@@ -61,7 +72,15 @@ export default function ConnectBeforeKyc() {
    const [searchParams] = useSearchParams();
    const stepParam = searchParams.get('step');
    const page: ConnectPage = stepParam === 'about' || stepParam === 'intro' || stepParam === 'call' ? stepParam : 'contact';
-   const setPage = useCallback((next: ConnectPage) => navigate(next === 'contact' ? '?' : `?step=${next}`), [navigate]);
+   const prescreenAhead = !isPreview && needsPrescreen(gate.prescreen);
+   const setPage = useCallback(
+      (next: ConnectPage) => {
+         // Pre-screening path: right after Facebook comes the pre-screening, not "about you".
+         if (next !== 'contact' && prescreenAhead) return navigate(PRESCREEN_PATH);
+         navigate(next === 'contact' ? '?' : `?step=${next}`);
+      },
+      [navigate, prescreenAhead]
+   );
 
    // TikTok sign-ups (no email or phone from TikTok) add a phone for texts before Messenger: TikTokPhoneStep.
    const isTikTok = isPreview ? new URLSearchParams(location.search).get('view') === 'tiktok-phone' : isTikTokAccountEmail(user?.email);
@@ -92,6 +111,16 @@ export default function ConnectBeforeKyc() {
    // Through onboarding (the team approved them, or the gate is off): straight to the loan form —
    // the ID check is the last step of sending their first request.
    if (!isGated) return <Navigate replace state={{ openLoanRequest: true }} to="/request-board" />;
+   // Journey v2: proof of income + the 3 videos (and the AI check) come before onboarding.
+   if (!isPreview && needsJourneyV2(gate.v2) && !isPending) return <Navigate replace to={JOURNEY_V2_PATH} />;
+   // Pre-screening path (affiliate link): Facebook first (the contact page below), then the pre-screening,
+   // then the team's ✅. After the ✅, the wallet comes before the rest (about you, goal, call).
+   if (!isPreview && !isPending && !isRejected) {
+      if (needsPrescreen(gate.prescreen) && user.hasVerifiedContact) return <Navigate replace to={PRESCREEN_PATH} />;
+      if (gate.prescreen?.on_path && gate.prescreen.done && !hasWalletAddressOnAccount(user)) {
+         return <Navigate replace state={{ returnTo: 'connect' }} to="/onboarding/wallet" />;
+      }
+   }
    if (isTikTok && phoneState === 'checking') return null;
 
    return (
@@ -105,6 +134,11 @@ export default function ConnectBeforeKyc() {
             <TikTokPhoneStep onDone={() => setPhoneState('done')} preview={isPreview} userId={user.id} />
          ) : isPreview && new URLSearchParams(location.search).get('view') === 'wallet-grow' ? (
             <WalletGrowPreview />
+         ) : isPreview && new URLSearchParams(location.search).get('view') === 'approved' ? (
+            // The request board's full-screen "You're approved!" with the steps left (RequestBoard).
+            <StepCelebration continueLabel="Apply now" image={CONNECT_HIPPOS.approved} onDone={() => undefined} subtitle="You can apply for your loan now." title="You’re approved! 🎉">
+               <ApprovedNextSteps />
+            </StepCelebration>
          ) : isPreview && new URLSearchParams(location.search).get('view') === 'celebrate' ? (
             <StepCelebration
                image={CONNECT_HIPPOS.approved}
@@ -128,6 +162,7 @@ export default function ConnectBeforeKyc() {
                context="kyc"
                mode="call"
                onClose={() => navigate('/request-board')}
+               previewStartsAt={previewStartsAt}
                userId={user.id}
                withEmma={Boolean(user.hasReferral)}
             />

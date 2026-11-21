@@ -6,6 +6,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { deliverSecurityAlert } from '../_shared/securityAlerts.ts';
 import { buildFundingAlert, FundingOverlap } from '../_shared/fundingOverlap.ts';
+import { isServerCaller } from '../_shared/internalAuth.ts';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -21,16 +22,22 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: corsHeaders });
    }
 
+   const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+   );
+
+   // Only the loans funding trigger calls this (with the vault secret key). Without this check the
+   // public anon key could fire critical security alerts on demand.
+   if (!(await isServerCaller(supabase, req))) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+   }
+
    const body = await req.json().catch(() => ({}));
    const loanId = body.loanId ?? body.loan_id;
    if (!loanId) {
       return new Response(JSON.stringify({ error: 'loanId is required' }), { status: 400, headers: corsHeaders });
    }
-
-   const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-   );
 
    const { data, error } = await supabase.rpc('check_loan_funding_overlap', { p_loan_id: loanId });
    if (error) {

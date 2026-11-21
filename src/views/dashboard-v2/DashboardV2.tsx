@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
+import ContactLinesCard from '@/components/ContactLinesCard';
+import LimitStaysCard from '@/views/dashboard-v2/components/LimitStaysCard';
 import { AddEmailCard } from '@/components/account/AddEmailCard';
 import { ConfirmEmailReminder } from '@/components/account/ConfirmEmailReminder';
 import GuidedTourPreview from '@/components/GuidedTourPreview';
@@ -202,7 +204,7 @@ export default function DashboardV2() {
             onClaim={() => setClaimingVoucher(ownVoucher.voucher)}
          />
          <div className="-mt-[5px]">
-            <InterestReferralBanner language={language} onRefer={() => navigate('/refer')} />
+            <InterestReferralBanner language={language} onRefer={() => navigate('/affiliate')} />
          </div>
       </div>
    );
@@ -232,6 +234,7 @@ export default function DashboardV2() {
                   {isReal && hasRequestedLoan ? <AddEmailCard /> : null}
                   {isReal ? <ConfirmEmailReminder placement="dashboard" /> : null}
                   {model.showWithdraw ? <WithdrawBanner onWithdraw={() => navigate('/withdraw')} /> : null}
+                  {isReal && !showConnectFacebook ? <ContactLinesCard className="mx-5" /> : null}
                   {showConnectFacebook ? <ConnectFacebookBanner declined={verificationState === 'declined'} language={language} onConnect={() => navigate('/verify')} /> : null}
                   {waitingRewards.length ? (
                      <RewardsWaitingCard claimable={waitingRewards} onClaim={() => setClaimingVoucher(waitingRewards[0])} />
@@ -246,7 +249,10 @@ export default function DashboardV2() {
                         onEnable={() => void push.enable()}
                      />
                   ) : null}
-                  {model.hasOverdue ? <UpcomingDuesSection model={model} /> : null}
+                  {/* The 48-hour rule: why their limit didn't go up, and how to talk to us about it. */}
+                  {isReal || new URLSearchParams(window.location.search).has('limit') ? <LimitStaysCard language={language} preview={!isReal} /> : null}
+                  {/* Anything to repay sits near the top, with the streak and what paying on time earns. */}
+                  {model.dues.length ? <UpcomingDuesSection model={model} /> : null}
                   {voucherFollowUp ? (
                      <VoucherFollowUpCard
                         claim={voucherFollowUp}
@@ -258,7 +264,7 @@ export default function DashboardV2() {
                   ) : null}
                   {milestonesAndVoucher}
                   <LoanSummarySection model={model} />
-                  {!model.hasOverdue ? <UpcomingDuesSection model={model} /> : null}
+                  {!model.dues.length ? <UpcomingDuesSection model={model} /> : null}
                </div>
             )}
          </div>

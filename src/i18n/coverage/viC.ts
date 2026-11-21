@@ -268,8 +268,8 @@ export const vietnameseCoverageC: Record<string, string> = {
 
    // src/views/onboarding/WalletConnected.tsx
    'Use Your Instant Wallet or a Base Account': 'Dùng Instant Wallet hoặc Base Account',
-   'Borrowers use the Moodeng Instant Wallet, created from your login — or you can connect a Base Account instead. Other wallet connectors cannot be locked for Moodeng borrowing.':
-      'Người vay dùng Instant Wallet của Moodeng, được tạo từ tài khoản đăng nhập của bạn — hoặc bạn có thể kết nối Base Account thay thế. Các loại ví khác không thể được khóa để vay trên Moodeng.',
+   'Use your Moodeng Instant Wallet or a Base Account. Other wallets can’t be used to borrow.':
+      'Hãy dùng Moodeng Instant Wallet hoặc Base Account. Ví khác không dùng được để vay.',
    'Confirm Saved Base Account': 'Xác nhận Base Account đã lưu',
    'Confirm Your Base Account': 'Xác nhận Base Account của bạn',
    "We couldn't detect a wallet. Set up your Instant Wallet (or connect a Base Account if you prefer) to continue.":
@@ -294,8 +294,8 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Connect a wallet I already own': 'Kết nối ví tôi đã có',
    'Could not start the face check. Please try again.': 'Không thể bắt đầu quét khuôn mặt. Vui lòng thử lại.',
    'Quick face check': 'Quét khuôn mặt nhanh',
-   'A short liveness scan keeps Instant Wallets to one per person, which is what lets us cover the network fees. We never store your photo, and it is only needed to create the wallet — not to sign in, send or repay.':
-      'Một lần quét người thật ngắn giúp đảm bảo mỗi người chỉ có một Instant Wallet — nhờ vậy chúng tôi có thể chi trả phí mạng cho bạn. Chúng tôi không bao giờ lưu ảnh của bạn, và việc quét chỉ cần khi tạo ví — không cần khi đăng nhập, chuyển tiền hay trả nợ.',
+   'A quick face scan — one wallet per person. We don’t keep your photo.':
+      'Quét khuôn mặt nhanh — mỗi người một ví. Chúng tôi không lưu ảnh của bạn.',
    "We couldn't finish creating your wallet. Please try again.": 'Chúng tôi chưa thể tạo xong ví của bạn. Vui lòng thử lại.',
    'Creating your wallet': 'Đang tạo ví của bạn',
    'Checking your scan': 'Đang kiểm tra ảnh quét',
@@ -510,8 +510,10 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Now open Moneybees below →': 'Giờ hãy mở Moneybees bên dưới →',
    'Now paste it into the app below →': 'Giờ hãy dán vào ứng dụng bên dưới →',
    '⚠️ Send on the BASE network only': '⚠️ Chỉ gửi trên mạng BASE',
-   'USDC sent on Ethereum, Polygon, or any other network goes to this address on the wrong chain and is lost forever — it cannot be recovered. When':
-      'USDC gửi qua Ethereum, Polygon hay bất kỳ mạng nào khác sẽ đến địa chỉ này trên sai chuỗi và bị mất vĩnh viễn — không thể khôi phục. Khi',
+   'Choose the Base network. Any other network and your money is lost.': 'Chọn mạng Base. Gửi qua mạng khác là mất tiền.',
+   '⚠️ Pick USDCBASE': '⚠️ Chọn USDCBASE',
+   'See it in': 'Xem trong',
+   'Any other USDC (USDCPOL, USDCSOL…) and your money is lost.': 'Chọn USDC khác (USDCPOL, USDCSOL…) là mất tiền.',
    'asks which network, choose': 'hỏi chọn mạng nào, hãy chọn',
    'How it works': 'Cách hoạt động',
    'Visit moneybees.ph and follow their own process': 'Truy cập moneybees.ph và làm theo quy trình riêng của họ',
@@ -690,8 +692,8 @@ export const vietnameseCoverageC: Record<string, string> = {
    'A Credit Level is your borrowing limit. Everyone starts at Level 1 with a $15 limit, and the limit grows as you complete Credit-Building Loans.':
       'Hạng tín dụng chính là hạn mức vay của bạn. Mọi người đều bắt đầu ở Hạng 1 với hạn mức $15, và hạn mức này tăng lên khi bạn hoàn thành các Credit-Building Loan.',
    'How do I move to the next level?': 'Làm sao để lên hạng tiếp theo?',
-   'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment unlocks the next limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
-      'Vay một Credit-Building Loan bằng toàn bộ hạn mức hiện tại và trả đầy đủ, đúng hạn. Mỗi lần trả nợ như vậy sẽ mở khóa hạn mức tiếp theo — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
+   'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment adds $10 to your limit: $15, then $25, then $35, and so on.':
+      'Vay một Credit-Building Loan bằng toàn bộ hạn mức hiện tại và trả đầy đủ, đúng hạn. Mỗi lần trả nợ như vậy sẽ cộng thêm $10 vào hạn mức: $15, rồi $25, rồi $35, và cứ thế tiếp tục.',
    'Does borrowing a small amount level me up?': 'Vay một khoản nhỏ có giúp tôi lên hạng không?',
    'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with moo-lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.':
       'Không. Vay thấp hơn hạn mức của bạn là một Trust-Building Loan. Nó giúp cải thiện uy tín của bạn với moo-lender nhưng không nâng Hạng tín dụng của bạn. Chỉ một Credit-Building Loan bằng toàn bộ hạn mức mới giúp bạn tiến lên.',
@@ -854,6 +856,8 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Waiting for moo-lender acceptance': 'Đang chờ moo-lender chấp nhận',
    'This loan is not funded yet. Repayment starts only after a moo-lender accepts.':
       'Khoản vay này chưa được cấp vốn. Việc trả nợ chỉ bắt đầu sau khi có moo-lender chấp nhận.',
+   'Waiting for a moo-lender': 'Đang chờ moo-lender',
+   'Nothing to pay until it’s funded.': 'Chưa phải trả gì cho đến khi được cấp vốn.',
    'View on explorer': 'Xem trên trình khám phá blockchain',
 
    // src/views/transactions/TransactionHistory.tsx
@@ -920,6 +924,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Loan / moo-lender': 'Khoản vay / moo-lender',
    'No funded loans yet': 'Chưa có khoản vay nào được cấp vốn',
    'Not enough loan history yet': 'Chưa đủ lịch sử vay',
+   'Shows after a few loans.': 'Hiển thị sau vài khoản vay.',
    "Once this borrower completes more loans, you'll see repayment timing, usual loan size, repeat moo-lenders, and borrowing patterns here.":
       'Khi người vay này hoàn tất thêm nhiều khoản vay, bạn sẽ thấy thời gian trả nợ, quy mô vay thông thường, những moo-lender lặp lại và mô hình vay ở đây.',
    'Default History': 'Lịch sử vỡ nợ',
@@ -1044,8 +1049,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Send only': 'Chỉ gửi',
    'Verify Base first': 'Xác minh Base trước',
    'How would you like to cash out?': 'Bạn muốn rút tiền mặt bằng cách nào?',
-   'Your loan funds are in your wallet. Withdraw or convert them using an exchange, P2P platform, or a supported local crypto service.':
-      'Tiền vay của bạn đang ở trong ví. Hãy rút hoặc quy đổi bằng một sàn giao dịch, nền tảng P2P, hoặc dịch vụ crypto địa phương được hỗ trợ.',
+   'Pick where to get your cash.': 'Chọn nơi để nhận tiền mặt.',
    'Learn more about withdrawal options': 'Tìm hiểu thêm về các cách rút tiền',
    "I'll do this later": 'Tôi sẽ làm việc này sau',
    'Contact support': 'Liên hệ hỗ trợ',

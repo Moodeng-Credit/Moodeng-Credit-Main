@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { AdminCallApprovalRow } from '@/app/admin/adminSupabase';
-import { groupCallApprovals, relativeStart } from '@/app/admin/callApprovalsModel';
+import { callResult, groupCallApprovals, relativeStart } from '@/app/admin/callApprovalsModel';
 
 const NOW = Date.parse('2026-10-10T12:00:00Z');
 const at = (minFromNow: number) => new Date(NOW + minFromNow * 60000).toISOString();
@@ -31,7 +31,7 @@ describe('groupCallApprovals', () => {
       expect(groups.upcoming.map((r) => r.userId)).toEqual(['later']);
    });
 
-   it('moves decided calls to decided, newest decision first', () => {
+   it('moves decided calls to completed, newest decision first', () => {
       const groups = groupCallApprovals(
          [
             row({ userId: 'a', callStartsAt: at(-90), outcome: 'attended', outcomeAt: at(-70) }),
@@ -40,10 +40,10 @@ describe('groupCallApprovals', () => {
          NOW
       );
       expect(groups.needsDecision).toEqual([]);
-      expect(groups.decided.map((r) => r.userId)).toEqual(['b', 'a']);
+      expect(groups.completed.map((r) => r.userId)).toEqual(['b', 'a']);
    });
 
-   it('always shows a no-call approval request, and hides rejected borrowers', () => {
+   it('always shows a no-call approval request, and puts rejected borrowers under completed', () => {
       const groups = groupCallApprovals(
          [
             row({ userId: 'ask', request: { id: 'r1', kind: 'approval', reason: null, createdAt: at(-5) } }),
@@ -53,7 +53,23 @@ describe('groupCallApprovals', () => {
       );
       expect(groups.needsDecision.map((r) => r.userId)).toEqual(['ask']);
       expect(groups.upcoming).toEqual([]);
-      expect(groups.decided).toEqual([]);
+      expect(groups.completed.map((r) => r.userId)).toEqual(['rejected']);
+      expect(callResult(groups.completed[0])).toBe('rejected');
+   });
+
+   it('moves undecided calls older than 2 days to completed as not marked', () => {
+      const groups = groupCallApprovals(
+         [row({ userId: 'recent', callStartsAt: at(-60 * 47) }), row({ userId: 'old', callStartsAt: at(-60 * 49) })],
+         NOW
+      );
+      expect(groups.needsDecision.map((r) => r.userId)).toEqual(['recent']);
+      expect(groups.completed.map((r) => r.userId)).toEqual(['old']);
+      expect(callResult(groups.completed[0])).toBe('unmarked');
+   });
+
+   it('labels showed-up calls approved and no-shows no-show', () => {
+      expect(callResult(row({ outcome: 'attended' }))).toBe('approved');
+      expect(callResult(row({ outcome: 'no_show' }))).toBe('no_show');
    });
 });
 

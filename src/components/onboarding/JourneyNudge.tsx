@@ -11,6 +11,7 @@ import { PRE_KYC_CONNECT_PATH } from '@/hooks/usePreKycGate';
 import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
 import { ID_PATHS } from '@/lib/idTrack';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 
@@ -96,6 +97,25 @@ export function JourneyNudge({ bottomNavVisible }: { bottomNavVisible: boolean }
    const isBorrower = user?.userRole === 'borrower';
    const loanAccessStatus = user?.loanAccessStatus;
    const isWaitingOnApproval = isBorrower && loanAccessStatus === 'pending';
+
+   // The instant the team taps ✅ (admin panel, Telegram or the call sheet all write
+   // users.loan_access_status), the database pushes the change here (Supabase Realtime, own row only
+   // via RLS) and the screen moves on within a second. The poll below is the backup if the socket drops.
+   const userId = user?.id;
+   useEffect(() => {
+      if (!isWaitingOnApproval || !userId) return undefined;
+      const client = getSupabaseBrowserClient();
+      const channel = client
+         .channel(`loan-access-live:${userId}`)
+         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${userId}` }, (payload) => {
+            const row = payload.new as { loan_access_status?: string | null };
+            if (row.loan_access_status && row.loan_access_status !== 'pending') void dispatch(fetchUser());
+         })
+         .subscribe();
+      return () => {
+         void client.removeChannel(channel);
+      };
+   }, [dispatch, isWaitingOnApproval, userId]);
 
    // iPhone Safari rarely fires window focus on an app switch, so also listen for visibility and
    // pageshow (back-forward cache), and poll while the screen stays open.

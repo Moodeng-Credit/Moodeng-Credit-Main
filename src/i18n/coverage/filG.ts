@@ -304,7 +304,6 @@ export const filipinoCoverageG: Record<string, string> = {
    "Let's connect": 'Mag-connect tayo',
    'Add practical context without sharing private details.':
       'Magbigay ng praktikal na konteksto nang hindi nagbabahagi ng pribadong detalye.',
-   '+$5 Credit Limit Boost': '+$5 na dagdag sa credit limit',
    'applied: +$': 'na-apply: +$',
    'starting limit': 'sa starting limit',
    'Checking code...': 'Chine-check ang code...',
@@ -485,8 +484,8 @@ export const filipinoCoverageG: Record<string, string> = {
    '. Stripe handles ID checks and payment — USDC lands on Base.':
       '. Ang Stripe ang bahala sa ID check at bayad — sa Base papasok ang USDC.',
    '~1.5% fee': '~1.5% na fee',
-   'Prefer another way? You can also buy USDC on an exchange (Binance P2P, Coins.ph, PDAX, GCrypto), through an external service like Moneybees, or send it from any wallet — always on the Base network.':
-      'Mas gusto mo ng ibang paraan? Puwede ka ring bumili ng USDC sa isang exchange (Binance P2P, Coins.ph, PDAX, GCrypto), sa isang external service tulad ng Moneybees, o magpadala mula sa kahit anong wallet — laging sa Base network.',
+   'Prefer another way? Buy USDC on an exchange like PDAX or GCrypto, or send it from any wallet — on the Base network.':
+      'Iba ang gusto mo? Bumili ng USDC sa exchange tulad ng PDAX o GCrypto, o ipadala mula sa kahit anong wallet — sa Base network.',
 
    // src/views/fund/StripeOnrampModal.tsx
    'Stripe card purchases aren’t available in your country yet. Try the Coinbase option below — it covers more regions.':
@@ -650,8 +649,8 @@ export const filipinoCoverageG: Record<string, string> = {
    'Repay your $80 loan on time': 'Bayaran on time ang $80 loan mo',
    'Repay your $100 loan on time': 'Bayaran on time ang $100 loan mo',
    'Repay your $120 loan on time': 'Bayaran on time ang $120 loan mo',
-   'Limits step up $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
-      'Tumataas ang limit nang paisa-isa: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
+   'You start at $15. Each full-limit loan you repay adds $10.':
+      'Magsisimula ka sa $15. Bawat full-limit na loan na nabayaran mo ay dagdag na $10.',
    'you need a smaller amount, or want to build trust first.': 'mas maliit na halaga ang kailangan mo, o gusto mo munang bumuo ng tiwala.',
    'also called a Credit Growth Loan': 'tinatawag ding Credit Growth Loan',
    'you’re ready to grow your limit and sure you can repay on time.':
@@ -762,9 +761,8 @@ export const filipinoCoverageG: Record<string, string> = {
       'Ipinadala ang bayad na ito sa wallet na ginamit mo sa pagpondo ng loan na ito:',
    'When repaid, funds return to the wallet you funded this loan from:':
       'Kapag nabayaran, babalik ang pondo sa wallet na ginamit mo sa pagpondo ng loan na ito:',
-   'This differs from the wallet you have connected now (': 'Iba ito sa wallet na nakakonekta sa iyo ngayon (',
-   '). That is expected — repayments go to the wallet used to fund each loan, not your current one. Open':
-      '). Normal iyan — napupunta ang mga bayad sa wallet na ginamit sa pagpondo ng bawat loan, hindi sa kasalukuyan mong wallet. Buksan ang',
+   'This money went to': 'Napunta ang perang ito sa',
+   ', the wallet that funded this loan.': ', ang wallet na ginamit sa pagpondo ng loan na ito.',
    'to find these funds.': 'para makita ang mga pondong ito.',
 
    // src/views/transactions/TransactionHistory.tsx
@@ -1073,7 +1071,7 @@ export const filipinoCoverageG: Record<string, string> = {
    "My Instant Wallet payment failed": "Pumalya ang bayad mula sa Instant Wallet ko",
    // VideoCallStep / ConnectStep: confirm the call 1 hour before
    "Confirm 1 hour before your call": "Kumpirmahin 1 oras bago ang call mo",
-   "We'll send you an “I'll be there” button on Messenger, and it shows up right here. Tap it, or the call is cancelled automatically.": "Magpapadala kami ng “I'll be there” button sa Messenger, at lalabas din ito dito mismo. I-tap ito, kung hindi ay awtomatikong makakansela ang call.",
+   "Tap “I'll be there” here or on Messenger — or it's cancelled.": "I-tap ang “I'll be there” dito o sa Messenger — kung hindi, kakanselahin ito.",
    "Your call is in under an hour — tap “I’ll be there” now to keep it.": "Wala nang isang oras bago ang call mo — i-tap ang “I’ll be there” ngayon para manatili ito.",
    "You’re booked! You can apply right after the call.": "Naka-book ka na! Puwede kang mag-apply pagkatapos ng call.",
    "Not showing up after 10 minutes?": "Wala pa rin pagkalipas ng 10 minuto?",
@@ -1089,5 +1087,31 @@ export const filipinoCoverageG: Record<string, string> = {
    "Choose \"Base\" as the network. PDAX keeps USDC on Base separate from plain USDC — use the Base one.": "Piliin ang \"Base\" bilang network. Hiwalay sa PDAX ang USDC on Base at ang plain USDC — gamitin ang Base.",
    "Send USDC from your Moodeng wallet to your PDAX account. PDAX often changes it into pesos for you — then cash out to your bank or e-wallet.": "Magpadala ng USDC mula sa Moodeng wallet mo papunta sa PDAX account mo. Kadalasan, ginagawa itong piso ng PDAX para sa iyo — tapos i-cash out sa bangko o e-wallet mo.",
    "Once your USDC arrives in PDAX (usually under 1 minute), check your Portfolio. PDAX often changes it into pesos for you — if your PHP balance went up, skip to the last step.": "Kapag dumating na sa PDAX ang USDC mo (karaniwang wala pang 1 minuto), tingnan ang Portfolio mo. Kadalasan, ginagawa itong piso ng PDAX para sa iyo — kung tumaas ang PHP balance mo, dumiretso sa huling hakbang.",
-   "PHP went up? PDAX already changed it into pesos — go to the last step. Still shows USDC? Sell it first.": "Tumaas ang PHP? Ginawa na itong piso ng PDAX — pumunta sa huling hakbang. USDC pa rin ang nakikita? Ibenta muna ito."
+   "PHP went up? PDAX already changed it into pesos — go to the last step. Still shows USDC? Sell it first.": "Tumaas ang PHP? Ginawa na itong piso ng PDAX — pumunta sa huling hakbang. USDC pa rin ang nakikita? Ibenta muna ito.",
+   // Credit ladder $15, $25, $35 … (Nov 2026).
+   "full-limit loan unlocks a $25 limit": "na full-limit loan ang magbubukas ng $25 na limit",
+   "left to repay for a $25 limit": "na lang ang babayaran para sa $25 na limit",
+   "…and $10 more for each level after that.": "…at dagdag na $10 sa bawat susunod na level.",
+   "Start at $15, add $10 each level": "Simula sa $15, dagdag $10 bawat level",
+   "Top level for now": "Pinakamataas na level sa ngayon",
+   "Top level": "Pinakamataas na level",
+   "Example: borrowing the full $25 limit to unlock the $35 level.": "Halimbawa: hiramin ang buong $25 na limit para ma-unlock ang $35 na level.",
+   "Credit limit reaches $35 = +50 Pandesal points": "Umabot sa $35 ang credit limit = +50 Pandesal points",
+   "Pending approval": "Hinihintay ang approval",
+   "Call in progress": "Nasa call ngayon",
+   "Not approved": "Hindi na-approve",
+   "Call booked": "Naka-book ang call",
+   "Video call": "Video call",
+   "Done": "Tapos na",
+   "Team approval": "Approval ng team",
+   "Team decision": "Desisyon ng team",
+   "Apply for your loan": "Mag-apply ng loan",
+   "Send your loan request": "Ipadala ang loan request",
+   "Usually within a day": "Kadalasan within a day",
+   "Right after the call": "Pagkatapos ng call",
+   "Opens when you’re approved": "Bubukas kapag approved ka na",
+   "Thanks for joining! We’ll message you on Messenger.": "Salamat sa pag-join! Magme-message kami sa Messenger.",
+   "Your call is on now. Join below if you’re not in yet.": "Nagsimula na ang call mo. Mag-join sa baba kung wala ka pa.",
+   "Thank you for your time.": "Salamat sa oras mo.",
+   "With Emma · Zoom": "Kasama si Emma · Zoom"
 };

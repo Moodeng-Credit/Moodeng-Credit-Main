@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { isValidReferralBoost, REFERRAL_BOOST_OPTIONS, STARTING_CREDIT_LIMIT } from '../../config/creditTiers';
+import { createAffiliateInviteLink } from '@/lib/affiliateInvite';
+
 import {
    type AdminReferralClaim,
    type AdminReferralCode,
@@ -20,8 +21,6 @@ import {
    updateReferralCode
 } from './adminSupabase';
 import UserPicker from './UserPicker';
-
-const boostErrorMessage = `Boost must land the $${STARTING_CREDIT_LIMIT} start on a credit level: ${REFERRAL_BOOST_OPTIONS.map((b) => `+$${b}`).join(', ')}.`;
 
 type CodeFilter = 'active' | 'inactive' | 'all';
 
@@ -71,15 +70,31 @@ export default function ReferralCodesSection() {
    const [codes, setCodes] = useState<AdminReferralCode[]>([]);
    const [payouts, setPayouts] = useState<AdminReferralPayout[]>([]);
    const [claims, setClaims] = useState<AdminReferralClaim[]>([]);
+   const [affiliateWho, setAffiliateWho] = useState('');
    const [pickingClaim, setPickingClaim] = useState<string | null>(null);
    const [showPaid, setShowPaid] = useState(false);
    const [loading, setLoading] = useState(false);
    const [busy, setBusy] = useState<string | null>(null);
    const [error, setError] = useState<string | null>(null);
+   // Affiliate-only sign-up links (moodeng.app/partner/TOKEN), by code id, once made.
+   const [inviteLinks, setInviteLinks] = useState<Record<string, string>>({});
+
+   const makeInviteLink = async (c: AdminReferralCode) => {
+      setBusy(c.id);
+      setError(null);
+      try {
+         const link = await createAffiliateInviteLink(c.code);
+         setInviteLinks((prev) => ({ ...prev, [c.id]: link }));
+         await navigator.clipboard?.writeText(link).catch(() => undefined);
+      } catch (err) {
+         setError(errorMessage(err));
+      } finally {
+         setBusy(null);
+      }
+   };
    const [filter, setFilter] = useState<CodeFilter>('all');
 
    const [newCode, setNewCode] = useState('');
-   const [newBoost, setNewBoost] = useState('5');
    const [newMaxUses, setNewMaxUses] = useState('');
    const [newExpiresAt, setNewExpiresAt] = useState('');
    const [creating, setCreating] = useState(false);
@@ -105,13 +120,8 @@ export default function ReferralCodesSection() {
 
    const create = useCallback(async () => {
       const code = newCode.trim().toUpperCase();
-      const boost = Number(newBoost);
       if (!code) {
          setError('Enter a code first.');
-         return;
-      }
-      if (!isValidReferralBoost(boost)) {
-         setError(boostErrorMessage);
          return;
       }
       const maxUses = newMaxUses.trim() === '' ? null : Number(newMaxUses);
@@ -127,7 +137,6 @@ export default function ReferralCodesSection() {
       try {
          const created = await createReferralCode({
             code,
-            boost_amount: boost,
             max_uses: maxUses,
             expires_at: expiresAt
          });
@@ -135,11 +144,10 @@ export default function ReferralCodesSection() {
             action: 'referral_code_created',
             target_table: 'referral_codes',
             target_id: created.id,
-            metadata: { code: created.code, boost_amount: boost, max_uses: maxUses, expires_at: expiresAt }
+            metadata: { code: created.code, max_uses: maxUses, expires_at: expiresAt }
          });
          setCodes((prev) => [created, ...prev]);
          setNewCode('');
-         setNewBoost('5');
          setNewMaxUses('');
          setNewExpiresAt('');
       } catch (err) {
@@ -147,7 +155,7 @@ export default function ReferralCodesSection() {
       } finally {
          setCreating(false);
       }
-   }, [newBoost, newCode, newExpiresAt, newMaxUses]);
+   }, [newCode, newExpiresAt, newMaxUses]);
 
    const toggleActive = useCallback(async (c: AdminReferralCode) => {
       setBusy(c.id);
@@ -262,7 +270,6 @@ export default function ReferralCodesSection() {
    }, []);
 
    const [editingId, setEditingId] = useState<string | null>(null);
-   const [editBoost, setEditBoost] = useState('');
    const [editPayout, setEditPayout] = useState('');
    const [editMaxUses, setEditMaxUses] = useState('');
    const [editExpiresAt, setEditExpiresAt] = useState('');
@@ -270,7 +277,6 @@ export default function ReferralCodesSection() {
    const startEdit = useCallback((c: AdminReferralCode) => {
       setError(null);
       setEditingId(c.id);
-      setEditBoost(String(c.boost_amount));
       setEditPayout(String(c.payout_amount));
       setEditMaxUses(c.max_uses != null ? String(c.max_uses) : '');
       setEditExpiresAt(isoToDateInput(c.expires_at));
@@ -280,11 +286,6 @@ export default function ReferralCodesSection() {
 
    const saveEdit = useCallback(
       async (c: AdminReferralCode) => {
-         const boost = Number(editBoost);
-         if (!isValidReferralBoost(boost)) {
-            setError(boostErrorMessage);
-            return;
-         }
          const payout = Number(editPayout);
          if (editPayout.trim() === '' || !Number.isFinite(payout) || payout < 0) {
             setError('Pay per friend must be a dollar amount, 0 or more.');
@@ -305,7 +306,6 @@ export default function ReferralCodesSection() {
          setError(null);
          try {
             const updated = await updateReferralCode(c.id, {
-               boost_amount: boost,
                payout_amount: payout,
                max_uses: maxUses,
                expires_at: expiresAt
@@ -314,7 +314,7 @@ export default function ReferralCodesSection() {
                action: 'referral_code_updated',
                target_table: 'referral_codes',
                target_id: c.id,
-               metadata: { code: c.code, boost_amount: boost, payout_amount: payout, max_uses: maxUses, expires_at: expiresAt }
+               metadata: { code: c.code, payout_amount: payout, max_uses: maxUses, expires_at: expiresAt }
             });
             setCodes((prev) => prev.map((row) => (row.id === c.id ? updated : row)));
             setEditingId(null);
@@ -324,7 +324,7 @@ export default function ReferralCodesSection() {
             setBusy(null);
          }
       },
-      [editBoost, editExpiresAt, editMaxUses, editPayout]
+      [editExpiresAt, editMaxUses, editPayout]
    );
 
    const shown = useMemo(() => {
@@ -334,12 +334,6 @@ export default function ReferralCodesSection() {
    }, [codes, filter]);
 
    const activeCount = useMemo(() => codes.filter((c) => c.is_active).length, [codes]);
-
-   // New borrowers start at STARTING_CREDIT_LIMIT; a boost lands them at start + boost.
-   const newTotalLimit = useMemo(() => {
-      const boost = Number(newBoost);
-      return Number.isFinite(boost) && boost > 0 ? STARTING_CREDIT_LIMIT + boost : null;
-   }, [newBoost]);
 
    return (
       <div className="space-y-4">
@@ -371,6 +365,29 @@ export default function ReferralCodesSection() {
 
          {error ? <div className="rounded-2xl border border-red-900 bg-red-950/40 p-4 text-lg font-bold text-red-300">{error}</div> : null}
 
+         <form
+            className="flex flex-wrap items-center gap-2 rounded-2xl border border-[#2a1453] bg-[#1c0a3a] px-4 py-3"
+            onSubmit={(e) => {
+               e.preventDefault();
+               const who = affiliateWho.trim();
+               if (who) window.open(`/affiliate?user=${encodeURIComponent(who)}`, '_blank', 'noopener');
+            }}
+         >
+            <label htmlFor="affiliate-who" className="text-base font-black">
+               See anyone&apos;s affiliate page
+            </label>
+            <input
+               id="affiliate-who"
+               value={affiliateWho}
+               onChange={(e) => setAffiliateWho(e.target.value)}
+               placeholder="@username"
+               className="min-w-0 flex-1 rounded-xl bg-[#241044] px-3 py-2 text-base text-white placeholder:text-[#6f6385]"
+            />
+            <button type="submit" className="rounded-xl bg-[#34234f] px-4 py-2 text-base font-black text-white">
+               Open
+            </button>
+         </form>
+
          {claims.some((c) => c.status === 'pending') ? (
             <article className="rounded-2xl border border-[#8336f0]/60 bg-[#1c0a3a] p-5">
                <h4 className="text-xl font-black">
@@ -380,8 +397,9 @@ export default function ReferralCodesSection() {
                   </span>
                </h4>
                <p className="mt-1 text-sm font-medium text-[#a89bb8]">
-                  Code owners say they referred these people. Find the account and approve — it only adds them to the owner&apos;s
-                  /affiliate list (tracking, no payout).
+                  Borrowers say they referred these people. Find the account and approve. On a team code it&apos;s tracking only; on a
+                  personal code the friend is linked and earns the owner $5 when they repay (only if they joined within 30 days of the
+                  claim).
                </p>
                <ul className="mt-3 space-y-2">
                   {claims
@@ -394,11 +412,35 @@ export default function ReferralCodesSection() {
                                     🙋 {c.friend_name}
                                     {c.friend_contact ? <span className="font-medium text-[#cfc6dd]"> · {c.friend_contact}</span> : null}
                                  </p>
+                                 {c.friend_facebook_url && /^(https?:\/\/)?([a-z]+\.)?facebook\.com\//i.test(c.friend_facebook_url) ? (
+                                    <a
+                                       href={
+                                          /^https?:\/\//i.test(c.friend_facebook_url)
+                                             ? c.friend_facebook_url
+                                             : `https://${c.friend_facebook_url}`
+                                       }
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       className="text-sm font-bold text-[#c9a7ff] underline"
+                                    >
+                                       Facebook profile
+                                    </a>
+                                 ) : null}
                                  <p className="text-sm font-medium text-[#a89bb8]">
                                     claimed by {c.owner?.display_name?.trim() || c.owner?.username || 'owner'} ·{' '}
-                                    <span className="font-mono font-black text-[#cfc6dd]">{c.code?.code}</span> ·{' '}
+                                    <span className="font-mono font-black text-[#cfc6dd]">{c.code?.code ?? 'personal code'}</span> ·{' '}
                                     {new Date(c.created_at).toLocaleDateString()}
                                  </p>
+                                 {c.suggested ? (
+                                    <button
+                                       type="button"
+                                       onClick={() => decideClaim(c, true, c.suggested!.id)}
+                                       disabled={busy === c.id}
+                                       className="mt-1 rounded-lg bg-emerald-700 px-3 py-1 text-sm font-black text-white disabled:opacity-50"
+                                    >
+                                       ✅ Match found: {c.suggested.display_name?.trim() || `@${c.suggested.username ?? '?'}`} — approve
+                                    </button>
+                                 ) : null}
                               </div>
                               <div className="flex gap-2">
                                  <button
@@ -513,15 +555,6 @@ export default function ReferralCodesSection() {
                      className="rounded-xl border border-[#3d1f6e] bg-[#241044] px-3 py-2 font-mono text-base font-bold uppercase text-white placeholder:normal-case placeholder:text-[#6f6385]"
                   />
                </label>
-               <label className="flex w-28 flex-col gap-1 text-sm font-bold text-[#a89bb8]">
-                  Boost ($)
-                  <input
-                     value={newBoost}
-                     onChange={(e) => setNewBoost(e.target.value)}
-                     inputMode="decimal"
-                     className="rounded-xl border border-[#3d1f6e] bg-[#241044] px-3 py-2 text-base font-bold text-white"
-                  />
-               </label>
                <label className="flex w-32 flex-col gap-1 text-sm font-bold text-[#a89bb8]">
                   Max uses
                   <input
@@ -550,18 +583,9 @@ export default function ReferralCodesSection() {
                   {creating ? 'Adding…' : 'Add code'}
                </button>
             </div>
-            {newTotalLimit != null ? (
-               <p className="mt-3 rounded-xl bg-[#241044] px-3 py-2 text-base font-black text-[#cfc6dd]">
-                  New borrower total credit limit:{' '}
-                  <span className="text-white">
-                     ${STARTING_CREDIT_LIMIT} start + ${Number(newBoost)} boost = ${newTotalLimit}
-                  </span>
-               </p>
-            ) : null}
             <p className="mt-2 text-sm font-medium text-[#6f6385]">
-               Leave max uses and expiry empty for a code that works forever. Expiry is end of that day, your local time. Boost is the
-               starting-limit bump in USDC — a new borrower starts at ${STARTING_CREDIT_LIMIT} and lands at ${STARTING_CREDIT_LIMIT} +
-               boost.
+               Leave max uses and expiry empty for a code that works forever. Expiry is end of that day, your local time. A code only
+               records who invited the borrower — it doesn&apos;t change their credit limit.
             </p>
          </article>
 
@@ -575,12 +599,6 @@ export default function ReferralCodesSection() {
                            <div className="min-w-0">
                               <div className="flex items-center gap-3">
                                  <span className="font-mono text-2xl font-black tracking-wide">{c.code}</span>
-                                 <span className="rounded-full bg-[#241044] px-2 py-0.5 text-sm font-black text-[#cfc6dd]">
-                                    +${c.boost_amount} boost
-                                 </span>
-                                 <span className="rounded-full bg-emerald-900/50 px-2 py-0.5 text-sm font-black text-emerald-300">
-                                    ${STARTING_CREDIT_LIMIT + Number(c.boost_amount)} total limit
-                                 </span>
                                  {c.owner ? (
                                     <span className="rounded-full bg-amber-900/50 px-2 py-0.5 text-sm font-black text-amber-300">
                                        pays ${c.payout_amount} / repaying friend
@@ -635,6 +653,30 @@ export default function ReferralCodesSection() {
                            >
                               {c.owner ? 'Change owner' : 'Link owner'}
                            </button>
+                           {!c.owner ? (
+                              <button
+                                 type="button"
+                                 onClick={() => void makeInviteLink(c)}
+                                 disabled={busy === c.id}
+                                 title="A one-time sign-up link: whoever opens it and signs up owns this code, as an affiliate (no borrower steps)"
+                                 className="rounded-xl bg-[#8336f0] px-4 py-2 text-base font-black text-white disabled:opacity-50"
+                              >
+                                 {inviteLinks[c.id] ? 'Copied ✓' : 'Affiliate sign-up link'}
+                              </button>
+                           ) : null}
+                           {!c.owner && inviteLinks[c.id] ? (
+                              <span className="w-full select-all break-all text-sm font-semibold text-[#cfc6dd]">{inviteLinks[c.id]}</span>
+                           ) : null}
+                           {c.owner ? (
+                              <a
+                                 href={`/affiliate?user=${c.owner.id}`}
+                                 target="_blank"
+                                 rel="noopener noreferrer"
+                                 className="rounded-xl bg-[#34234f] px-4 py-2 text-base font-black text-white"
+                              >
+                                 Their affiliate page
+                              </a>
+                           ) : null}
                            {c.owner ? (
                               <button
                                  type="button"
@@ -679,15 +721,6 @@ export default function ReferralCodesSection() {
                         {editingId === c.id ? (
                            <div className="mt-3 rounded-xl border border-[#3d1f6e] bg-[#150730] p-4">
                               <div className="flex flex-wrap items-end gap-3">
-                                 <label className="flex w-28 flex-col gap-1 text-sm font-bold text-[#a89bb8]">
-                                    Boost ($)
-                                    <input
-                                       value={editBoost}
-                                       onChange={(e) => setEditBoost(e.target.value)}
-                                       inputMode="decimal"
-                                       className="rounded-xl border border-[#3d1f6e] bg-[#241044] px-3 py-2 text-base font-bold text-white"
-                                    />
-                                 </label>
                                  <label className="flex w-36 flex-col gap-1 text-sm font-bold text-[#a89bb8]">
                                     Pay per friend ($)
                                     <input

@@ -12,7 +12,8 @@ export interface AuthState {
    mal?: number;
    userProfiles: Record<string, User>; // Map of userId -> User profile for batch fetched users
 }
-export type UserRole = 'borrower' | 'lender';
+/** 'affiliate': signed up from a /partner link — no borrowing or lending, just their code (lib/affiliateInvite). */
+export type UserRole = 'borrower' | 'lender' | 'affiliate';
 export type AccountStatus = 'active' | 'blocked' | 'banned';
 export type WalletProvider =
    | 'argent'
@@ -100,6 +101,8 @@ export interface User {
    attendedCall?: boolean;
    /** True once the borrower has proven a contact line (Messenger or WhatsApp verification). */
    hasVerifiedContact?: boolean;
+   hasMessengerLink?: boolean;
+   whatsappVerified?: boolean;
    /** True once the borrower redeemed a referral code — their intro call is Emma's setup call. */
    hasReferral?: boolean;
    incomeType?: string;

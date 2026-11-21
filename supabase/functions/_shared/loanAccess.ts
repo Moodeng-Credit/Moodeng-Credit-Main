@@ -11,6 +11,7 @@
 // Every notification here is best-effort: the decision is persisted first, and a failed push,
 // Telegram or Discord ping is logged, never thrown.
 
+import { photoCheckLine } from './fbPhotoCheck.ts';
 import {
    adminUserUrl,
    approveAnywayButtons,
@@ -25,17 +26,20 @@ import { postDiscord } from './discord.ts';
 import { loadOnboardingTimeline, signupLines, timelineLines } from './onboardingTimeline.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import type { PushLocale, PushPayload } from './pushMessages.ts';
-import { getMessengerContact, messengerDisplayName, sendMessengerMessage, sendWhatsAppTemplate, type MessengerCard } from './sendpulse.ts';
+import { getMessengerContact, messengerDisplayName, sendMessengerMessage, sendWhatsAppTemplate, setMessengerContactEnabled, type MessengerCard } from './sendpulse.ts';
 import { getTelegramBotSettingEnabled } from './borrowerNotificationDelivery.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
-import { changeTimeButton } from './callReschedule.ts';
+import { changeTimeLinkButton } from './callReschedule.ts';
 import { cancelCallButton, cancelUpcomingCall } from './callCancel.ts';
 import { formatCallTimeForTeam } from './videoCall.ts';
 import { describeHeldRequests } from './loanRequestHold.ts';
 import { sendEmail } from './email.ts';
+import { FB_GROUP_URL } from './facebookSteps.ts';
+import { sendFacebookSteps } from './facebookStepsSend.ts';
 import { loadNeedsIdCheck } from './preKycGate.ts';
 import { testAccountRow } from './testAccount.ts';
 import { idApprovalBlock, type IdEvent, isIdTrackUser, sendIdTelegram } from './idTrack.ts';
+import { autoRejectForStrikes, loadCallStrikes, REJECT_LABEL, type StrikeReason, strikeVerdict } from './callStrikes.ts';
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
@@ -150,6 +154,53 @@ export const who = (u: Pick<BorrowerRow, 'display_name' | 'username' | 'email' |
 
 // ---- Admin ping (on submit) -------------------------------------------------------------------
 
+/**
+ * Call prep from their pre-screening (if they did one): what they typed, what their proof of income
+ * showed, and what to ask on the call (the AI's flags). Short, so the call card stays readable.
+ */
+const preScreeningCallPrep = async (svc: SupabaseClient, userId: string): Promise<string[]> => {
+   const { data } = await svc
+      .from('pre_screenings')
+      .select('id, questions, grade')
+      .eq('user_id', userId)
+      .neq('status', 'open')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+   const row = data as {
+      id: string;
+      questions: Array<{ id: string; text: string; kind?: string }> | null;
+      grade: {
+         summary?: string;
+         flags?: string[];
+         answers?: Array<{ q: string; transcript: string | null }>;
+         income?: { read?: { readable?: boolean; doc_type?: string | null; monthly_income_usd?: number | null; holder_name?: string | null } | null } | null;
+      } | null;
+   } | null;
+   if (!row?.grade) return [];
+   const clip = (t: string, n: number) => (t.length > n ? `${t.slice(0, n - 1)}…` : t);
+   const answers = (row.questions ?? [])
+      .map((q) => {
+         const said = row.grade?.answers?.find((a) => a.q === q.id)?.transcript;
+         return said ? `  • ${clip(q.text, 40)} — “${clip(said, 140)}”` : null;
+      })
+      .filter((l): l is string => Boolean(l));
+   const read = row.grade.income?.read;
+   const income = read?.readable
+      ? `  • Proof of income: ${[read.doc_type?.replace(/_/g, ' '), read.holder_name, read.monthly_income_usd != null ? `~$${Math.round(read.monthly_income_usd)}/month` : null].filter(Boolean).join(' · ')}`
+      : null;
+   const ask = (row.grade.flags ?? []).slice(0, 3).map((f) => `  • ${clip(f, 160)}`);
+   return [
+      '',
+      '📝 Their pre-screening:',
+      ...answers,
+      ...(income ? [income] : []),
+      ...(ask.length ? ['❓ Ask on the call:', ...ask] : []),
+      `  ▶️ Full answers + video: ${SITE_URL}/admin/pre-screening?screen=${row.id}`,
+      ''
+   ];
+};
+
 export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: RequestRow, borrower: BorrowerRow) => {
    const kyc = borrower.is_didit ?? borrower.didit_id_status ?? 'unknown';
    // The Facebook profile name, straight from SendPulse — compare it with the KYC name.
@@ -177,11 +228,15 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
       .join(' · ');
 
    // Referred borrowers' calls are Emma's setup calls (local exchange: deposit, cash out, repay).
-   const { data: ref } = await svc.from('users').select('redeemed_referral_code_id').eq('id', borrower.id).maybeSingle();
+   const { data: ref } = await svc.from('users').select('redeemed_referral_code_id, facebook_name').eq('id', borrower.id).maybeSingle();
    const { data: refCode } = ref?.redeemed_referral_code_id
       ? await svc.from('referral_codes').select('code').eq('id', ref.redeemed_referral_code_id).maybeSingle()
       : { data: null };
    const referral = refCode?.code ?? request.referral_code ?? null;
+
+   // Affiliate link + pre-screening: "Pre-screen: 🟢 Good · 86/100 · from X's link" or "⚠️ … no pre-screening".
+   const { data: screening } = await svc.rpc('team_screening_line', { p_user_id: borrower.id });
+   const prep = await preScreeningCallPrep(svc, borrower.id).catch(() => [] as string[]);
 
    const isCall = request.kind === 'call';
    // Not KYC'd yet → this is the pre-KYC gate: Showed up unlocks ID verification, not the loan.
@@ -202,7 +257,10 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
       money ? `Money: ${money}` : null,
       isCall && borrower.video_call_starts_at ? `Call: ${formatCallTimeForTeam(borrower.video_call_starts_at, borrower.video_call_timezone)}` : null,
       referral ? `Referral: ${referral}` : null,
+      typeof screening === 'string' && screening ? screening : null,
+      ...prep,
       `Why: ${request.reason?.trim() || '—'}`,
+      photoCheckLine(ref?.facebook_name),
       ...timelineLines(onboarding),
       '',
       isCall
@@ -224,7 +282,7 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
                ...decisionKeyboard(request),
                [{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }, openInAdminButton(borrower.id, borrower.username)],
                // Move or drop the call from right here (callReschedule.ts / callCancel.ts).
-               ...(isCall && borrower.video_call_booking_uid ? [[changeTimeButton(borrower.id), cancelCallButton(borrower.id)]] : []),
+               ...(isCall && borrower.video_call_booking_uid ? [[await changeTimeLinkButton(borrower.id), cancelCallButton(borrower.id)]] : []),
                ...testAccountRow(borrower.id, borrower.is_test)
             ]
          });
@@ -252,11 +310,12 @@ const BORROWER_MESSAGES = {
       body: 'Great meeting you! Tap to request your first $15 loan.\n⚠️ Pay on time: missed payments are flagged and close your account.\nPS: reply here with your other social media so we can reach you.',
       url: APPLY_URL
    },
-   // Emma's "Decline the loan request" script.
+   // Rejected after the call. Rejected is final, so no "contact Emma for funding" line; invite them
+   // to the Voices Against Unfair Loan group instead, and the button opens it (George, 2026-11-14).
    rejected: {
       title: 'About your Moodeng application',
-      body: "We're sorry to see you go — your application has been closed. If you have any questions or concerns, please let us know. Should you wish to pursue funding in the future, connect directly with Emma Moodeng on Facebook: facebook.com/emmamoodengcredit",
-      url: `${SITE_URL}/request-board`
+      body: "We're sorry — your application has been closed. You're welcome to join our Facebook group, Voices Against Unfair Loan, for tips on avoiding unfair loans: facebook.com/groups/voicesunfairloan",
+      url: FB_GROUP_URL
    },
    // Rejected before any screening call (no call attended, none missed): point them to other PH
    // lenders instead (George, 2026-11-11). Sent without a button — there's no next step with us.
@@ -269,6 +328,29 @@ const BORROWER_MESSAGES = {
          '• GCash (GLoan / GCredit): gcash.com\n' +
          '• BillEase: billease.ph\n' +
          'We wish you all the best! 🦛',
+      url: SITE_URL
+   },
+   // Automatic rejections (callStrikes.ts): just the reason, no button (George, 2026-11-19).
+   rejected_missed_calls: {
+      title: 'About your Moodeng application',
+      body: "We're sorry — you missed 2 of your booked calls, so your application has been closed.",
+      url: SITE_URL
+   },
+   // Pre-screening: costs still to come are too high for their income. Never mentions health.
+   rejected_income: {
+      title: 'About your Moodeng application',
+      body: "Thank you for your answers. We're sorry, we can't offer you a loan right now: your monthly costs are high compared with your income, and we don't want a loan to make things harder for you. We wish you all the best 🦛",
+      url: SITE_URL
+   },
+   // Same person as an account we already turned down. Says nothing about how we know.
+   rejected_linked: {
+      title: 'About your Moodeng application',
+      body: "We're sorry, we can't offer you a loan, so your application has been closed.",
+      url: SITE_URL
+   },
+   rejected_reschedules: {
+      title: 'About your Moodeng application',
+      body: "We're sorry — your call was rescheduled too many times, so your application has been closed.",
       url: SITE_URL
    },
    // Emma's "Decline the loan request" script (no-show).
@@ -321,6 +403,15 @@ const BORROWER_MESSAGES = {
 } as const;
 
 type BorrowerMessageKind = keyof typeof BORROWER_MESSAGES;
+const STRIKE_MESSAGE: Record<StrikeReason, BorrowerMessageKind> = {
+   missed_calls: 'rejected_missed_calls',
+   too_many_reschedules: 'rejected_reschedules',
+   income_costs: 'rejected_income',
+   linked_account: 'rejected_linked'
+};
+// What the borrower is told on a reject: the strike reason, else before/after the call.
+const rejectMessage = (preCall: boolean, strikeReason?: StrikeReason | null): BorrowerMessageKind =>
+   strikeReason ? STRIKE_MESSAGE[strikeReason] : preCall ? 'rejected_pre_call' : 'rejected';
 type BorrowerMessage = { title: string; body: string; url: string };
 
 // Pre-KYC gate: the borrower isn't ID-verified yet, so approval unlocks ID verification (not the
@@ -383,7 +474,9 @@ const ctaLabel = (msg: BorrowerMessage, kind: BorrowerMessageKind) =>
         ? 'Pick a new time'
         : kind === 'approved'
           ? 'Request my loan'
-          : 'Open Moodeng';
+          : msg.url === FB_GROUP_URL
+            ? 'Join the group'
+            : 'Open Moodeng';
 
 // "You're approved" on WhatsApp, for when Messenger can't reach them. Template `moodeng_approved`
 // (Utility, en): "Hi {{1}}, your Moodeng Credit account is approved. You can now request your first
@@ -401,6 +494,10 @@ const ID_EVENT: Record<BorrowerMessageKind, IdEvent> = {
    approved: 'access_approved',
    rejected: 'access_rejected',
    rejected_pre_call: 'access_rejected',
+   rejected_missed_calls: 'access_rejected',
+   rejected_reschedules: 'access_rejected',
+   rejected_income: 'access_rejected',
+   rejected_linked: 'access_rejected',
    no_show: 'call_no_show',
    call_cancelled: 'call_cancelled',
    spot_released: 'call_released',
@@ -415,8 +512,9 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
    const idTrack = await isIdTrackUser(svc, borrower.id);
    // The other-lenders list is Philippine apps: Indonesia-track people keep the plain closed message.
    const kind: BorrowerMessageKind = requestedKind === 'rejected_pre_call' && idTrack ? 'rejected' : requestedKind;
-   // No button under the pre-call rejection: there's nothing for them to do on Moodeng.
-   const noButton = kind === 'rejected_pre_call';
+   // No button under the pre-call or automatic rejections: there's nothing for them to do on Moodeng.
+   const noButton =
+      kind === 'rejected_pre_call' || kind === 'rejected_missed_calls' || kind === 'rejected_reschedules' || kind === 'rejected_income' || kind === 'rejected_linked';
    if (idTrack) await sendIdTelegram(svc, borrower.id, ID_EVENT[kind]);
    const preKycMsg = PRE_KYC_MESSAGES[kind] && (await loadNeedsIdCheck(svc, borrower.id, borrower)) ? PRE_KYC_MESSAGES[kind] : undefined;
    const msg: BorrowerMessage = preKycMsg ?? BORROWER_MESSAGES[kind];
@@ -455,6 +553,15 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
          console.log('loanAccess: whatsapp approved for', borrower.id, sent.ok ? 'sent' : `not sent (${sent.reason})`);
       }
    }
+   // Approved: add Emma + join the group, right after "You're approved" and only for approved people,
+   // so nobody rejected asks to join (George, 2026-11-15). Once per call; Indonesia track skipped.
+   if (kind === 'approved' && !idTrack) {
+      const steps = await sendFacebookSteps(svc, { ...borrower, video_call_starts_at: borrower.video_call_starts_at ?? null }, { force: false }).catch((err) => ({
+         ok: false as const,
+         reason: err instanceof Error ? err.message : String(err)
+      }));
+      if (!steps.ok) console.log('loanAccess: facebook steps not sent for', borrower.id, steps.reason);
+   }
    // Approved: the how-to videos right after, so they know how to get started, cash out and repay
    // before their first loan (George, 2026-10-13).
    if (kind === 'approved' && messenger.ok) {
@@ -477,7 +584,9 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
                                ? kind === 'no_show' || kind === 'call_cancelled' || kind === 'spot_released'
                                   ? 'Book a new time'
                                   : 'Apply for a loan'
-                               : 'Open Moodeng',
+                               : msg.url === FB_GROUP_URL
+                                 ? 'Join the group'
+                                 : 'Open Moodeng',
                      url: msg.url
                   }
                ]
@@ -505,7 +614,7 @@ const isBeforeAnyCall = async (svc: SupabaseClient, borrower: BorrowerRow): Prom
 
 // `stamp` is the after-state written on the person's admin cards (adminCards.ts).
 export type DecideResult =
-   | { ok: true; request: RequestRow; borrower: BorrowerRow; summary: string; stamp: CardStamp }
+   | { ok: true; request: RequestRow; borrower: BorrowerRow; summary: string; stamp: CardStamp; autoRejected?: StrikeReason }
    // retry: nothing changed and the card keeps its buttons (e.g. an Indonesian whose KYC isn't approved yet).
    | { ok: false; summary: string; stamp?: CardStamp; retry?: boolean };
 
@@ -550,7 +659,9 @@ export const decideLoanAccess = async (
    svc: SupabaseClient,
    requestId: string,
    decision: LoanAccessDecision,
-   decidedBy: string
+   decidedBy: string,
+   // An automatic reject (callStrikes.ts): its own message, and the reason recorded on the user.
+   opts: { strikeReason?: StrikeReason | null } = {}
 ): Promise<DecideResult> => {
    const now = new Date().toISOString();
 
@@ -603,6 +714,7 @@ export const decideLoanAccess = async (
       .update({
          loan_access_status: decision === 'no_show' ? 'none' : decision,
          ...(decision === 'approved' ? { loan_access_approved_at: now, loan_access_seen_at: null } : {}),
+         ...(decision === 'rejected' ? { loan_access_reject_reason: opts.strikeReason ?? null } : {}),
          ...attendance
       })
       .eq('id', request.user_id)
@@ -616,7 +728,7 @@ export const decideLoanAccess = async (
 
    // Flip every card about this person (request card, call-start and "Did they show up?" cards) to
    // its after-state before the slower borrower messages go out.
-   const stamp: CardStamp = {
+   let stamp: CardStamp = {
       header: loanAccessStampHeader(decision, personName(borrower, request.display_name), { call: request.kind === 'call' }),
       detail: held || null,
       by: decidedBy,
@@ -646,7 +758,9 @@ export const decideLoanAccess = async (
       }
    }
 
-   await notifyBorrower(svc, borrower, preCall ? 'rejected_pre_call' : decision);
+   // A no-show that is their 2nd missed call: no "book a new time" — they're rejected just below.
+   const strikeOut = decision === 'no_show' ? strikeVerdict(await loadCallStrikes(svc, request.user_id)) : null;
+   if (!strikeOut) await notifyBorrower(svc, borrower, decision === 'rejected' ? rejectMessage(preCall, opts.strikeReason) : decision);
 
    const verb =
       decision === 'approved'
@@ -655,12 +769,91 @@ export const decideLoanAccess = async (
             : '✅ Approved'
          : decision === 'no_show'
            ? '❌ No-show:'
-           : preCall
+           : opts.strikeReason
+             ? `🚫 Rejected automatically (${REJECT_LABEL[opts.strikeReason].replace(/^auto: /, '')}):`
+             : preCall
              ? '🚫 Rejected before the call (sent other lenders):'
              : '🚫 Rejected';
-   const summary = `${verb} ${who(borrower, request.display_name)} — by ${decidedBy}${held ? `\n${held}` : ''}${callNote}`;
+   let summary = `${verb} ${who(borrower, request.display_name)} — by ${decidedBy}${held ? `\n${held}` : ''}${callNote}`;
    await postDiscord({ content: `🤝 Loan access ${summary}` }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
-   return { ok: true, request, borrower, summary, stamp };
+   const autoRejected = strikeOut ? await autoRejectForStrikes(svc, request.user_id) : null;
+   if (autoRejected) {
+      summary += '\n🤖 That was their 2nd missed call, so they were rejected automatically and told why.';
+      stamp = { header: `${loanAccessStampHeader('rejected', personName(borrower, request.display_name))} (missed 2 calls)`, detail: REJECT_FOLLOW_UP_ASK, by: decidedBy, buttons: rejectFollowUpButtons(request.user_id) };
+   } else if (strikeOut) {
+      // The reject didn't go through after all: send the no-show message we held back.
+      await notifyBorrower(svc, borrower, decision);
+   }
+   return { ok: true, request, borrower, summary, stamp, ...(autoRejected ? { autoRejected } : {}) };
+};
+
+/**
+ * Reject a person from the admin panel (the call sheet's "Lend to them?" = 1). Their pending request
+ * goes through decideLoanAccess, exactly like Telegram's Reject; with no pending request they are
+ * rejected directly with the same card stamp, call cancel, message and Discord line. Never undoes
+ * an approval — that stays a deliberate team decision.
+ */
+export const rejectUser = async (
+   svc: SupabaseClient,
+   userId: string,
+   decidedBy: string,
+   opts: { strikeReason?: StrikeReason | null } = {}
+): Promise<{ ok: boolean; summary: string }> => {
+   const { data: pending } = await svc
+      .from('loan_access_requests')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+   if (pending) {
+      const result = await decideLoanAccess(svc, (pending as { id: string }).id, 'rejected', decidedBy, opts);
+      return { ok: result.ok, summary: result.summary };
+   }
+
+   const { data: borrower, error } = await svc
+      .from('users')
+      .update({ loan_access_status: 'rejected', loan_access_reject_reason: opts.strikeReason ?? null })
+      .eq('id', userId)
+      .or('loan_access_status.is.null,loan_access_status.not.in.(approved,rejected)')
+      .select(BORROWER_COLUMNS)
+      .maybeSingle();
+   if (error) throw new Error(error.message);
+   if (!borrower) {
+      const { data: current } = await svc.from('users').select('loan_access_status').eq('id', userId).maybeSingle();
+      return {
+         ok: false,
+         summary:
+            current?.loan_access_status === 'approved'
+               ? 'They are already approved — not rejected. Reject them from Telegram if you mean it.'
+               : current?.loan_access_status === 'rejected'
+                 ? 'Already rejected — nothing changed.'
+                 : 'Borrower not found.'
+      };
+   }
+
+   await stampDecisionCards(
+      svc,
+      'loan_access',
+      userId,
+      { header: loanAccessStampHeader('rejected', personName(borrower)), detail: REJECT_FOLLOW_UP_ASK, by: decidedBy, buttons: rejectFollowUpButtons(userId) },
+      { final: false }
+   );
+   let callNote = '';
+   try {
+      const why = await cancelUpcomingCall(svc, userId, `${decidedBy} (rejected)`, { stamp: false });
+      if (!why) callNote = '\n🗑️ Their booked call was cancelled.';
+      else if (why !== 'No upcoming call.') callNote = `\n⚠️ Their booked call was NOT cancelled: ${why}`;
+   } catch (err) {
+      console.error('loanAccess: cancel call on reject failed', err instanceof Error ? err.message : err);
+      callNote = '\n⚠️ Their booked call was NOT cancelled — cancel it on Cal.com.';
+   }
+   const preCall = await isBeforeAnyCall(svc, borrower as BorrowerRow);
+   await notifyBorrower(svc, borrower as BorrowerRow, rejectMessage(preCall, opts.strikeReason));
+   const summary = `🚫 Rejected${opts.strikeReason ? ' automatically' : ''} ${who(borrower as BorrowerRow)} — by ${decidedBy}${callNote}`;
+   await postDiscord({ content: `🤝 Loan access ${summary}` }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
+   return { ok: true, summary };
 };
 
 // ---- After a Reject: for good / for now / approve after all ------------------------------------
@@ -767,10 +960,88 @@ export const reopenLoanAccess = async (svc: SupabaseClient, userId: string, by: 
       .maybeSingle();
    if (error) throw new Error(error.message);
    if (!reopened) return { ok: false, summary: "They aren't rejected — nothing to reopen." };
+   // The team let them back in: the linked-accounts auto-reject leaves them alone from now on.
+   await svc.from('linked_account_alerts').upsert({ user_id: userId, team_cleared_at: new Date().toISOString() });
    await stampDecisionCards(svc, 'loan_access', userId, { header: `🔓 REOPENED — ${personName(reopened)} can book a call and ask again`, by });
    const summary = `🔓 Reopened ${who(reopened)} — they can book a call and ask again. We didn't message them. — by ${by}`;
    await postDiscord({ content: `🤝 Loan access ${summary}` }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
    return { ok: true, summary };
+};
+
+// ---- Ghost: a quiet reject ---------------------------------------------------------------------
+//
+// /ghost @username — for a borrower we don't want to tell anything (begging, pushy, suspicious).
+// Every account on the same Facebook (messenger_psid) becomes rejected with no message, card or
+// Discord line; pending requests close; a booked call is cancelled; and the SendPulse bot is turned
+// off for their Messenger contact, so the menu/welcome flows and all our sends stop. Their messages
+// still reach the inbox. /unghost turns the bot back on (they stay rejected; /reopen to let them back).
+
+type GhostRow = { id: string; username: string | null; email: string | null; display_name: string | null; messenger_psid: string | null; loan_access_status: string | null };
+
+const ghostFamily = async (svc: SupabaseClient, userId: string): Promise<GhostRow[]> => {
+   const cols = 'id, username, email, display_name, messenger_psid, loan_access_status';
+   const { data: me } = await svc.from('users').select(cols).eq('id', userId).maybeSingle();
+   if (!me) return [];
+   if (!me.messenger_psid) return [me as GhostRow];
+   const { data: all } = await svc.from('users').select(cols).eq('messenger_psid', me.messenger_psid);
+   return ((all ?? []) as GhostRow[]).length ? (all as GhostRow[]) : [me as GhostRow];
+};
+
+export const ghostUser = async (svc: SupabaseClient, userId: string, by: string): Promise<{ ok: boolean; summary: string }> => {
+   const family = await ghostFamily(svc, userId);
+   if (!family.length) return { ok: false, summary: 'Borrower not found.' };
+   const now = new Date().toISOString();
+   const ids = family.map((u) => u.id);
+   await svc
+      .from('loan_access_requests')
+      .update({ status: 'rejected', decided_at: now, decided_by: `${by} (ghosted)` })
+      .in('user_id', ids)
+      .eq('status', 'pending');
+   const { error } = await svc
+      .from('users')
+      .update({ loan_access_status: 'rejected', loan_access_retry_at: null, ghosted_at: now, ghosted_by: by })
+      .in('id', ids);
+   if (error) throw new Error(error.message);
+
+   const notes: string[] = [];
+   for (const u of family) {
+      try {
+         const why = await cancelUpcomingCall(svc, u.id, `${by} (ghosted)`, { stamp: false });
+         if (!why) notes.push(`🗑️ ${who(u)}'s booked call was cancelled.`);
+         else if (why !== 'No upcoming call.') notes.push(`⚠️ ${who(u)}'s call was NOT cancelled: ${why}`);
+      } catch (err) {
+         notes.push(`⚠️ ${who(u)}'s call cancel failed — cancel it on Cal.com.`);
+         console.error('ghostUser: cancel call failed', err instanceof Error ? err.message : err);
+      }
+   }
+   const psids = [...new Set(family.map((u) => u.messenger_psid).filter((x): x is string => !!x))];
+   for (const psid of psids) {
+      const res = await setMessengerContactEnabled(psid, false);
+      notes.push(res.ok ? '🤖 Messenger bot turned off for them (no menu, no replies).' : `⚠️ Couldn't turn off the Messenger bot (${res.reason}) — pause it in SendPulse.`);
+   }
+   if (!psids.length) notes.push('No Messenger linked, so no bot to turn off.');
+   const names = family.map((u) => who(u)).join(', ');
+   return { ok: true, summary: `👻 Ghosted ${names} — rejected quietly, nothing sent to them. — by ${by}\n${notes.join('\n')}\nUndo bot: /unghost · let back in: /reopen` };
+};
+
+export const unghostUser = async (svc: SupabaseClient, userId: string, by: string): Promise<{ ok: boolean; summary: string }> => {
+   const family = await ghostFamily(svc, userId);
+   if (!family.length) return { ok: false, summary: 'Borrower not found.' };
+   // blocked_for_good_at too: their WhatsApp number stops blocking new accounts (🚫 Block for good).
+   await svc
+      .from('users')
+      .update({ ghosted_at: null, ghosted_by: null, blocked_for_good_at: null })
+      .in(
+         'id',
+         family.map((u) => u.id)
+      );
+   const psids = [...new Set(family.map((u) => u.messenger_psid).filter((x): x is string => !!x))];
+   const notes: string[] = [];
+   for (const psid of psids) {
+      const res = await setMessengerContactEnabled(psid, true);
+      notes.push(res.ok ? '🤖 Messenger bot back on for them.' : `⚠️ Couldn't turn the bot back on (${res.reason}) — do it in SendPulse.`);
+   }
+   return { ok: true, summary: `🔈 Unghosted ${family.map((u) => who(u)).join(', ')} — still rejected (use /reopen to let them ask again). — by ${by}\n${notes.join('\n')}` };
 };
 
 // ---- Telegram plumbing for the admin card -----------------------------------------------------

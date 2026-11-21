@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { Check, ChevronLeft, ExternalLink, Landmark, Send, Wallet, X } from 'lucide-react';
@@ -6,13 +6,16 @@ import { keccak256, stringToHex } from 'viem';
 import { useAccount } from 'wagmi';
 
 import { PaymentProgressOverlay } from '@/components/loading/PaymentProgressRing';
+import { VAULT_LENS_MIN_MS, VaultLensLoader } from '@/components/loading/VaultLensLoader';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { txExplorerUrl } from '@/config/loanFundingConfig';
 import { type PaymentStage, holdAtFull, useStagedProgress } from '@/hooks/useStagedProgress';
 import { ensureUsdcAllowance, getLoanManagerService } from '@/lib/web3/loanManager';
-import { recordAdminFunding, usdcToBaseUnits } from '@/lib/loanNotes/api';
+import { type LoanCapStatus, getLoanCapStatus, overrideLoanCap, recordAdminFunding, usdcToBaseUnits } from '@/lib/loanNotes/api';
+import IdBoardFund from '@/views/dashboard/components/IdBoardFund';
+import { type RepaymentMilestone, formatMilestoneDay } from '@/lib/repaymentSchedule';
 import { BITREPO_VAULT_URL, type VaultStatus, drawFromVault, readVaultStatus, vaultBorrowerId } from '@/lib/web3/bitrepoVault';
 
 export interface FundLoanTarget {
@@ -23,6 +26,14 @@ export interface FundLoanTarget {
    principal: number; // USDC
    totalOwed: number; // USDC
    dueDate: string; // ISO
+   /** 'ID' = Indonesia track: paid to the borrower's Walt on BNB Chain, never to a Base wallet. */
+   market?: 'ID' | null;
+   /**
+    * Paid back in 2 parts (src/lib/repaymentSchedule.ts). The loan is still ONE draw: dueDate is the
+    * last payment and totalOwed the full total, so both are locked to match the schedule (the
+    * database refuses a funding record that would pull them apart).
+    */
+   repaymentSchedule?: RepaymentMilestone[] | null;
 }
 
 type Method = 'choose' | 'smart' | 'vault';
@@ -42,6 +53,39 @@ const primaryButton =
    'flex w-full items-center justify-center gap-2 rounded-md-lg bg-md-primary-1200 py-md-3 text-md-b1 font-semibold text-md-neutral-100 transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90 disabled:cursor-not-allowed disabled:opacity-50';
 const backButton =
    'flex w-full items-center justify-center gap-1 rounded-md-lg border border-[#e6e1ec] py-md-3 text-md-b2 font-semibold text-md-neutral-1500 transition hover:bg-[#faf8fc] disabled:opacity-50';
+
+// Connecting a wallet can remount the request board (and drop this modal). Remember which loan's
+// modal was open, and on which tab, so the card can reopen it right where the admin left off.
+const FUND_RESUME_KEY = 'moodeng:fund-modal-resume';
+const FUND_RESUME_TTL_MS = 5 * 60 * 1000;
+
+export function readFundResume(loanId: string): Method | null {
+   try {
+      const raw = window.sessionStorage.getItem(FUND_RESUME_KEY);
+      if (!raw) return null;
+      const saved = JSON.parse(raw) as { loanId?: string; method?: Method; at?: number };
+      if (saved.loanId !== loanId || !saved.method || Date.now() - (saved.at ?? 0) > FUND_RESUME_TTL_MS) return null;
+      return saved.method;
+   } catch {
+      return null;
+   }
+}
+
+function saveFundResume(loanId: string, method: Method) {
+   try {
+      window.sessionStorage.setItem(FUND_RESUME_KEY, JSON.stringify({ loanId, method, at: Date.now() }));
+   } catch {
+      /* storage blocked: the modal just won't reopen on its own */
+   }
+}
+
+export function clearFundResume() {
+   try {
+      window.sessionStorage.removeItem(FUND_RESUME_KEY);
+   } catch {
+      /* ignore */
+   }
+}
 
 const shortAddress = (address?: string) => (address ? `${address.slice(0, 6)}…${address.slice(-4)}` : '');
 
@@ -68,16 +112,43 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
    const { openConnectModal } = useConnectModal();
    const connected = Boolean(address);
 
-   const [method, setMethod] = useState<Method>('choose');
+   const [method, setMethod] = useState<Method>(() => readFundResume(target.loanId) ?? 'choose');
    const [busy, setBusy] = useState(false);
    // Non-blocking status shown inline in the modal (replaces the old pile of error/warning toasts).
    const [notice, setNotice] = useState<{ tone: 'error' | 'pending'; message: ReactNode } | null>(null);
+
+   // Per-borrower cap: a loan over it can't be funded until an admin taps Override and writes why.
+   const [cap, setCap] = useState<LoanCapStatus | 'checking' | 'error'>('checking');
+   const [capReason, setCapReason] = useState('');
+   const [capBusy, setCapBusy] = useState(false);
+   const [capError, setCapError] = useState<string | null>(null);
+   const checkCap = () => {
+      setCap('checking');
+      getLoanCapStatus(target.loanId)
+         .then(setCap)
+         .catch(() => setCap('error'));
+   };
+   // eslint-disable-next-line react-hooks/exhaustive-deps
+   useEffect(checkCap, [target.loanId]);
+   const submitOverride = async () => {
+      setCapBusy(true);
+      setCapError(null);
+      try {
+         setCap(await overrideLoanCap(target.loanId, capReason.trim()));
+         showToast(TOAST_TYPES.SUCCESS, 'Cap overridden', 'Saved and sent to the team. You can fund it now.');
+      } catch (err) {
+         setCapError(err instanceof Error ? err.message : 'Override failed');
+      } finally {
+         setCapBusy(false);
+      }
+   };
 
    // Smart-contract (relay) form. Sale price defaults to PRINCIPAL (not totalOwed).
    const [principal, setPrincipal] = useState(String(target.principal || ''));
    const [totalOwed, setTotalOwed] = useState(String(target.totalOwed || ''));
    const [salePrice, setSalePrice] = useState(String(target.principal || ''));
    const [dueDate, setDueDate] = useState(target.dueDate ? target.dueDate.slice(0, 10) : '');
+   const schedule = target.repaymentSchedule?.length ? target.repaymentSchedule : null;
 
    // Inline field validation — surfaced under each input, never as a toast. `termsValid` gates
    // the Fund button so a bad value can't be submitted in the first place.
@@ -135,14 +206,18 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
    })();
    const vaultReady = termsValid && Boolean(vault) && !vaultChecking && !vaultIssue;
 
-   // Race-track ring while the vault check runs (held at 100% for a beat when it lands) and while a draw is in flight.
+   // Magnifier loader while the vault check runs, kept up long enough to play every scene (and end
+   // on the lone pandesal) even when the check is instant. The draw itself uses the hippo runner.
    const [checkRingVisible, setCheckRingVisible] = useState(false);
+   const checkStartedAt = useRef(0);
    useEffect(() => {
       if (vaultChecking) {
+         checkStartedAt.current = performance.now();
          setCheckRingVisible(true);
          return undefined;
       }
-      const timer = window.setTimeout(() => setCheckRingVisible(false), 600);
+      const elapsed = performance.now() - checkStartedAt.current;
+      const timer = window.setTimeout(() => setCheckRingVisible(false), Math.max(900, VAULT_LENS_MIN_MS - elapsed));
       return () => window.clearTimeout(timer);
    }, [vaultChecking]);
    const [drawStage, setDrawStage] = useState<PaymentStage | null>(null);
@@ -332,7 +407,8 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
       setNotice(null);
    };
 
-   const title = method === 'smart' ? 'Smart Contract Lend' : method === 'vault' ? 'Vault Lend' : 'How do you want to fund this?';
+   const isIndo = target.market === 'ID';
+   const title = isIndo || method === 'vault' ? 'Vault Lend' : method === 'smart' ? 'Smart Contract Lend' : 'How do you want to fund this?';
 
    const ringTitle = drawStage
       ? drawStage === 'signing'
@@ -368,8 +444,53 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
    const warningBox = (message: string | null) =>
       message ? <p className="rounded-[16px] bg-[rgba(255,237,161,0.35)] px-md-3 py-2.5 text-md-b3 text-[#8a6d00]">{message}</p> : null;
 
+   const usd = (n: number | null | undefined) => `$${Number(n ?? 0).toFixed(2).replace(/\.00$/, '')}`;
+   const capGate: ReactNode =
+      cap === 'checking' ? (
+         <p className="rounded-[16px] bg-[#faf8fc] px-md-3 py-2.5 text-md-b3 text-md-neutral-1500">Checking this borrower’s cap…</p>
+      ) : cap === 'error' ? (
+         <div className="space-y-md-2">
+            <p className="rounded-[16px] bg-[#fff1f1] px-md-3 py-2.5 text-md-b3 text-[#b42318]">Couldn’t check this borrower’s cap.</p>
+            <button type="button" onClick={checkCap} className={primaryButton}>
+               Try again
+            </button>
+         </div>
+      ) : cap.over && !cap.override ? (
+         <div className="space-y-md-2">
+            <div className="rounded-[16px] border border-[#f5c56b] bg-[#fff6e0] p-md-3">
+               <p className="text-md-b1 font-semibold text-[#8a5300]">Over this borrower’s cap</p>
+               <p className="mt-1 text-md-b3 text-[#8a5300] tabular-nums">
+                  Cap {usd(cap.cap)} · {usd(cap.inUse)} in use · this loan {usd(cap.amount)}
+               </p>
+               {cap.note ? <p className="mt-1 text-md-b3 text-[#8a5300]">Why capped: {cap.note}</p> : null}
+            </div>
+            <label className="block text-md-b2 font-semibold text-md-heading" htmlFor="cap-override-reason">
+               Why fund it anyway?
+            </label>
+            <textarea
+               id="cap-override-reason"
+               value={capReason}
+               onChange={(e) => setCapReason(e.target.value)}
+               rows={3}
+               placeholder="e.g. Repaid 3 loans on time, sent new payslips"
+               className={fieldClass}
+            />
+            {capError ? <p className="rounded-[16px] bg-[#fff1f1] px-md-3 py-2.5 text-md-b3 text-[#b42318]">{capError}</p> : null}
+            <button type="button" onClick={submitOverride} disabled={capBusy || capReason.trim().length < 10} className={primaryButton}>
+               {capBusy ? 'Saving…' : 'Override cap'}
+            </button>
+            <p className="text-center text-md-b3 text-md-neutral-1200">Your reason is saved on the loan and sent to the team.</p>
+         </div>
+      ) : null;
+   const capOverrideNote =
+      cap !== 'checking' && cap !== 'error' && cap.override ? (
+         <p className="mb-md-3 rounded-[16px] bg-[#faf8fc] px-md-3 py-2.5 text-md-b3 text-md-neutral-1500">
+            Cap {usd(cap.override.cap ?? cap.cap)} overridden: {cap.override.reason}
+         </p>
+      ) : null;
+
    const connectStep = (stepTitle: string) => (
-      <ChecklistStep number={1} state={connected ? 'done' : 'active'} title={stepTitle}>
+      <ChecklistStep number={1} state={connected ? 'done' : 'active'} title={connected ? 'Wallet connected' : stepTitle}>
          {connected ? (
             <span className="mt-1 inline-flex items-center gap-1.5 rounded-md-pill bg-md-green-100 px-3 py-1 text-md-b3 font-semibold text-md-green-800">
                <Wallet className="h-3.5 w-3.5" aria-hidden="true" /> {shortAddress(address)} connected
@@ -377,7 +498,10 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
          ) : (
             <button
                type="button"
-               onClick={() => openConnectModal?.()}
+               onClick={() => {
+                  saveFundResume(target.loanId, method);
+                  openConnectModal?.();
+               }}
                className="mt-2 inline-flex h-11 items-center justify-center gap-1.5 rounded-md-pill bg-md-primary-1200 px-md-4 text-md-b2 font-semibold text-md-neutral-100 transition active:scale-[0.98]"
             >
                <Wallet className="h-4 w-4" aria-hidden="true" /> Connect wallet
@@ -392,7 +516,8 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
             className="relative max-h-[92vh] w-full max-w-md overflow-y-auto rounded-[24px] border border-[#f0f0f0] bg-white p-md-4 shadow-[0px_11px_24px_0px_rgba(0,0,0,0.02)]"
             onClick={(e) => e.stopPropagation()}
          >
-            {method === 'vault' && ringStage ? <PaymentProgressOverlay percent={ringPercent} title={ringTitle} hint={ringHint} /> : null}
+            {!capGate && method === 'vault' && drawStage ? <PaymentProgressOverlay percent={ringPercent} title={ringTitle} hint={ringHint} /> : null}
+            {!capGate && method === 'vault' && !drawStage && ringStage ? <VaultLensLoader percent={ringPercent} title={ringTitle} hint={ringHint} /> : null}
 
             <div className="mb-md-3 flex items-center gap-2">
                {method !== 'choose' ? (
@@ -421,11 +546,47 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
                <div className="mt-md-2 grid grid-cols-3 gap-2 text-center">
                   <SummaryStat label="Principal" value={`${target.principal} USDC`} />
                   <SummaryStat label="Total owed" value={`${target.totalOwed} USDC`} />
-                  <SummaryStat label="Due" value={target.dueDate ? target.dueDate.slice(0, 10) : '—'} />
+                  <SummaryStat label={schedule ? 'Last payment' : 'Due'} value={target.dueDate ? target.dueDate.slice(0, 10) : '—'} />
                </div>
+               {schedule ? (
+                  <div className="mt-md-2 rounded-[12px] bg-md-primary-100/60 px-md-2 py-2">
+                     <p className="text-md-b3 font-semibold text-md-heading">Paid back in {schedule.length} parts</p>
+                     <ul className="mt-1 space-y-0.5">
+                        {schedule.map((part, index) => (
+                           <li key={part.due} className="flex justify-between text-md-b3 text-md-neutral-1500 tabular-nums">
+                              <span>
+                                 Payment {index + 1} · {formatMilestoneDay(part.due)}
+                              </span>
+                              <span className="font-semibold text-md-heading">{part.amount.toFixed(2)} USDC</span>
+                           </li>
+                        ))}
+                     </ul>
+                     <p className="mt-1 text-md-b3 text-md-neutral-1200">One draw for the whole loan, due on the last payment. The vault takes part payments as they come in.</p>
+                  </div>
+               ) : null}
             </div>
 
-            {method === 'choose' ? (
+            {capGate ?? (
+            <>
+            {capOverrideNote}
+            {/* Indonesia: the vault's USDC is bridged to BNB Chain and sent to the borrower's Walt. */}
+            {isIndo ? (
+               <div className="space-y-md-2">
+                  <p className="text-md-b3 text-md-neutral-1500">
+                     The vault’s USDC goes from Base to BNB Chain and lands in the borrower’s Walt as the exact loan amount. They repay us in Walt as usual.
+                  </p>
+                  <IdBoardFund
+                     loanId={target.loanId}
+                     amount={target.principal}
+                     onFunded={() => {
+                        onFunded?.();
+                        onClose();
+                     }}
+                  />
+               </div>
+            ) : null}
+
+            {method === 'choose' && !isIndo ? (
                <div className="space-y-md-2">
                   {/* BitRepo vault — recommended: the money comes straight from the vault, not our wallet */}
                   <button
@@ -474,10 +635,10 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
                         <input type="number" min="0" value={principal} onChange={(e) => setPrincipal(e.target.value)} className={fieldClass} />
                      </Field>
                      <Field label="Total owed (USDC)" error={errors.totalOwed}>
-                        <input type="number" min="0" value={totalOwed} onChange={(e) => setTotalOwed(e.target.value)} className={fieldClass} />
+                        <input type="number" min="0" value={totalOwed} onChange={(e) => setTotalOwed(e.target.value)} disabled={Boolean(schedule)} className={fieldClass} />
                      </Field>
                      <Field label="Due date" error={errors.dueDate} wide>
-                        <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={fieldClass} />
+                        <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} disabled={Boolean(schedule)} className={fieldClass} />
                      </Field>
                   </div>
 
@@ -509,17 +670,27 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
                   <div>
                      {connectStep('Connect Moodeng’s lending wallet')}
                      <div className={`ml-[15px] h-4 w-0.5 ${connected ? 'bg-md-green-600' : 'bg-[#e6e1ec]'}`} aria-hidden="true" />
-                     <ChecklistStep number={2} state={connected ? 'active' : 'locked'} title="Draw from the vault">
-                        {connected ? null : <p className="text-md-b3 text-md-neutral-1000">Unlocks once your wallet is connected</p>}
+                     <ChecklistStep number={2} state={connected ? 'active' : 'locked'} title="Draw from the vault" highlight={connected}>
+                        {connected ? (
+                           <div className="mt-2 space-y-2">
+                              <p className="text-md-b3 text-md-neutral-1200">Next step: send the loan to the borrower.</p>
+                              <button
+                                 type="button"
+                                 onClick={handleVaultDraw}
+                                 disabled={busy || !vaultReady}
+                                 className={`${primaryButton} ${vaultReady && !busy ? 'shadow-[0_0_0_4px_rgba(103,30,226,0.18)]' : ''}`}
+                              >
+                                 {busy ? 'Sending…' : vaultChecking ? 'Checking the vault…' : `Send ${Number(principal) || 0} USDC to borrower`}
+                                 {!busy && !vaultChecking ? <Send className="h-5 w-5" aria-hidden="true" /> : null}
+                              </button>
+                           </div>
+                        ) : (
+                           <p className="text-md-b3 text-md-neutral-1000">Unlocks once your wallet is connected</p>
+                        )}
                      </ChecklistStep>
                   </div>
 
                   {noticeBox}
-
-                  <button type="button" onClick={handleVaultDraw} disabled={!connected || busy || !vaultReady} className={primaryButton}>
-                     {busy ? 'Sending…' : `Send ${Number(principal) || 0} USDC to borrower`}
-                     {!busy ? <Send className="h-5 w-5" aria-hidden="true" /> : null}
-                  </button>
                   <button type="button" onClick={backToChoose} disabled={busy} className={backButton}>
                      <ChevronLeft className="h-4 w-4" aria-hidden="true" /> Back
                   </button>
@@ -533,13 +704,13 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
                         <input type="number" min="0" value={principal} onChange={(e) => setPrincipal(e.target.value)} className={fieldClass} />
                      </Field>
                      <Field label="Total owed (USDC)" error={errors.totalOwed}>
-                        <input type="number" min="0" value={totalOwed} onChange={(e) => setTotalOwed(e.target.value)} className={fieldClass} />
+                        <input type="number" min="0" value={totalOwed} onChange={(e) => setTotalOwed(e.target.value)} disabled={Boolean(schedule)} className={fieldClass} />
                      </Field>
                      <Field label="Sale price (USDC)" error={errors.salePrice}>
                         <input type="number" min="0" value={salePrice} onChange={(e) => setSalePrice(e.target.value)} className={fieldClass} />
                      </Field>
                      <Field label="Due date" error={errors.dueDate}>
-                        <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={fieldClass} />
+                        <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} disabled={Boolean(schedule)} className={fieldClass} />
                      </Field>
                   </div>
 
@@ -574,6 +745,8 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
                   </button>
                </div>
             ) : null}
+            </>
+            )}
          </div>
       </div>
    );
@@ -602,11 +775,14 @@ function ChecklistStep({
    number,
    state,
    title,
+   highlight,
    children
 }: {
    number: number;
    state: 'done' | 'active' | 'locked';
    title: string;
+   /** The step to do now: outlined card so it stands out from the done/locked ones. */
+   highlight?: boolean;
    children: ReactNode;
 }) {
    const badgeClass =
@@ -617,7 +793,9 @@ function ChecklistStep({
            : 'border border-[#e6e1ec] bg-[#faf8fc] text-md-neutral-1000';
 
    return (
-      <div className={`flex gap-3 py-1 ${state === 'locked' ? 'opacity-50' : ''}`}>
+      <div
+         className={`flex gap-3 ${state === 'locked' ? 'py-1 opacity-50' : highlight ? '-mx-2 rounded-[16px] border border-md-primary-1200/40 bg-md-primary-100/50 p-2' : 'py-1'}`}
+      >
          <span className={`flex h-8 w-8 flex-none items-center justify-center rounded-full text-md-b3 font-semibold ${badgeClass}`}>
             {state === 'done' ? <Check className="h-4 w-4" aria-hidden="true" /> : number}
          </span>

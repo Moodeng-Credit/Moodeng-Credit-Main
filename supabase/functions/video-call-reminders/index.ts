@@ -26,8 +26,10 @@ import { sendWhatsAppTemplate } from '../_shared/sendpulse.ts';
 import { nudgeStalledChats } from '../_shared/messengerBookingBot.ts';
 import { type IdEvent, type IdEventData, isIdTrackUser, runIdOnboardingNudges, sendIdTelegram } from '../_shared/idTrack.ts';
 import { runAutoPayouts, runWaltPayoutScan } from '../_shared/idManualFunding.ts';
+import { runWaltWatch } from '../_shared/waltWatch.ts';
+import { runVaultBridges, runVaultPaybackDigest } from '../_shared/idVaultBridge.ts';
 import { runIdrRepricing } from '../_shared/fxRates.ts';
-import { runIdRepayNudges, runIdRepayments } from '../_shared/idRepayments.ts';
+import { runIdRepayNudges, runIdRepayments, runWaltArrivedDigest } from '../_shared/idRepayments.ts';
 import { runIdWaBridgeNudges } from '../_shared/idWaBridge.ts';
 import { runWaltTransferPayoutCards } from '../_shared/idWaltPayouts.ts';
 
@@ -71,6 +73,7 @@ type ReminderUser = {
    video_call_booking_uid: string | null;
    video_call_meeting_id: string | null;
    video_call_arrived_at: string | null;
+   video_call_zoom_seen_at?: string | null;
    video_call_confirm_token: string | null;
    video_call_confirmed_at: string | null;
    video_call_keep_spot_asked_at: string | null;
@@ -79,7 +82,7 @@ type ReminderUser = {
 };
 
 const COLUMNS =
-   'id, username, chat_id, notif_account_activity, messenger_psid, whatsapp_contact_id, display_name, video_call_host, video_call_starts_at, video_call_scheduled_at, video_call_timezone, video_call_join_url, video_call_booking_uid, video_call_meeting_id, video_call_arrived_at, video_call_confirm_token, video_call_confirmed_at, video_call_keep_spot_asked_at, video_call_reminder_stage, loan_access_status';
+   'id, username, chat_id, notif_account_activity, messenger_psid, whatsapp_contact_id, display_name, video_call_host, video_call_starts_at, video_call_scheduled_at, video_call_timezone, video_call_join_url, video_call_booking_uid, video_call_meeting_id, video_call_arrived_at, video_call_zoom_seen_at, video_call_confirm_token, video_call_confirmed_at, video_call_keep_spot_asked_at, video_call_reminder_stage, loan_access_status';
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
@@ -157,6 +160,19 @@ const releaseSlot = async (svc: Svc, u: ReminderUser): Promise<boolean> => {
    return true;
 };
 
+// The 1-hour text (UniSMS, PH numbers on file; see 20261111220000_call_sms_reminders.sql). True when it went out.
+const callSms = async (svc: Svc, u: ReminderUser, kind: 'confirm' | 'hour'): Promise<boolean> => {
+   try {
+      const { data, error } = await svc.rpc('call_sms_remind', { p_user: u.id, p_kind: kind });
+      if (error) throw new Error(error.message);
+      if (data !== 'no_number' && data !== 'off') console.log('video-call-reminders: text reminder for', u.id, kind, data);
+      return data === 'sent' || data === 'unconfirmed';
+   } catch (err) {
+      console.error('video-call-reminders: text reminder failed for', u.id, err instanceof Error ? err.message : err);
+      return false;
+   }
+};
+
 const hourBefore = async (svc: Svc, u: ReminderUser) => {
    const at = formatCallTime(u.video_call_starts_at, u.video_call_timezone);
    const body = `Your quick video hello with the Moodeng team starts in under an hour: ${at}. Have your ID ready and video on.`;
@@ -167,6 +183,28 @@ const hourBefore = async (svc: Svc, u: ReminderUser) => {
       data: { callAt: u.video_call_starts_at, joinUrl: u.video_call_join_url }
    });
    logMessenger(u, await sendReminderMessenger(u, 2));
+   await callSms(svc, u, 'hour');
+};
+
+// The ✅ ask reached nobody (Messenger's 24h window closed, no WhatsApp / Telegram / app), so the call is
+// kept but may well be a no-show: tell the team group + Discord #bookings so the host isn't waiting
+// blind (Emma, 2026-11-16: "No one showed up").
+const alertUnreached = async (svc: Svc, u: ReminderUser, viaSms: boolean) => {
+   const name = [u.display_name, u.username ? `@${u.username}` : null].filter(Boolean).join(' · ') || 'a borrower';
+   const host = u.video_call_host ? ` · with ${u.video_call_host[0].toUpperCase()}${u.video_call_host.slice(1)}` : '';
+   const text =
+      `⚠️ Couldn't reach ${name} for the ✅ — may not show\n${formatCallTimeForTeam(u.video_call_starts_at, u.video_call_timezone)}${host}\n\n` +
+      `Messenger is past its 24h window${u.whatsapp_contact_id ? ', WhatsApp failed' : ', no WhatsApp'}${viaSms ? ', only a text went out' : ''}. ` +
+      'The call is kept. Message them on Facebook if you can.';
+   const { data: chatRow } = await svc.from('telegram_bot_settings').select('value').eq('key', 'team_group_chat_id').maybeSingle();
+   const chatId = (chatRow?.value as string | undefined) ?? Deno.env.get('TEAM_TELEGRAM_CHAT_ID');
+   const sheetUrl = `${SITE_URL}/admin/calls?sheet=${u.id}`;
+   if (chatId) {
+      await sendTelegramMessage(chatId, text, { inlineKeyboard: [[{ text: '📋 Open call sheet', url: sheetUrl }], [cancelCallButton(u.id)]] }).catch((err) =>
+         console.error('video-call-reminders: unreached Telegram failed', err instanceof Error ? err.message : err)
+      );
+   }
+   await postDiscord({ content: `${text}\n📋 Call sheet: <${sheetUrl}>` }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
 };
 
 // Runs the one rung this booking just reached. Returns a short label for the response tally.
@@ -213,13 +251,22 @@ const runRung = async (svc: Svc, u: ReminderUser, rung: Rung, zoomActive: boolea
             viaWhatsApp = sent.ok;
             console.log('video-call-reminders: whatsapp confirm for', u.id, sent.ok ? 'sent' : `not sent (${sent.reason})`);
          }
-         // The call is cancellable at the deadline even when the ask reached them nowhere (George,
-         // 2026-11-02): they were told at booking that an unconfirmed call is cancelled, they can still
-         // confirm in the app, and an unreachable borrower who kept the slot didn't come (Oct 29).
-         const landed = viaMessenger.ok || viaWhatsApp || viaTelegram || viaPush;
-         if (!landed) console.log('video-call-reminders: confirm ask reached no channel for', u.id, '— cancelled at the deadline unless they confirm in the app');
-         await svc.from('users').update({ video_call_keep_spot_asked_at: new Date().toISOString() }).eq('id', u.id);
-         return landed ? 'confirm_ask' : 'confirm_ask_unreached';
+         // Only cancel someone the ask actually reached (George 2026-11-15, "only if reached"; was: cancel
+         // even when unreached, 2026-11-02). Reached = Messenger, WhatsApp, Telegram or an app push went
+         // through. The text message alone doesn't count: delivery isn't confirmed (a borrower on 2026-11-15,
+         // Messenger out of its 24h window and no WhatsApp, was cancelled on the SMS alone).
+         // No stamp → shouldReleaseSlot keeps the call.
+         const viaSms = await callSms(svc, u, 'confirm');
+         const reached = viaMessenger.ok || viaWhatsApp || viaTelegram || viaPush;
+         if (reached) {
+            await svc.from('users').update({ video_call_keep_spot_asked_at: new Date().toISOString() }).eq('id', u.id);
+            return 'confirm_ask';
+         }
+         console.log('video-call-reminders: confirm ask reached', viaSms ? 'only SMS' : 'no channel', 'for', u.id, '— the call is kept');
+         await alertUnreached(svc, u, viaSms).catch((err) =>
+            console.error('video-call-reminders: unreached alert failed for', u.id, err instanceof Error ? err.message : err)
+         );
+         return 'confirm_ask_unreached';
       }
       case RUNG.RELEASE: {
          if (shouldReleaseSlot(u) && (await releaseSlot(svc, u))) return 'released';
@@ -259,7 +306,9 @@ const runRung = async (svc: Svc, u: ReminderUser, rung: Rung, zoomActive: boolea
          return 'prompt';
       }
       case RUNG.AUTO_NO_SHOW: {
-         if (!zoomMissing) return null;
+         // Only when our webhook heard this very meeting (the host joined, say) — a meeting on a Zoom we
+         // don't watch is silent whether or not the borrower came.
+         if (!zoomMissing || !u.video_call_zoom_seen_at) return null;
          return (await autoMarkNoShow(svc, u.id)) ? 'auto_no_show' : null;
       }
       default:
@@ -350,6 +399,27 @@ serve(async (req) => {
    } catch (err) {
       console.error('video-call-reminders: auto payouts failed', err);
    }
+   // Walt watch: Moodeng's Walt history (read-only) confirms Walt Transfer payouts and repayments by itself.
+   try {
+      const w = await runWaltWatch(svc, Math.min(idDeadline, Date.now() + 30_000));
+      tally.walt_watch_seen = w.seen;
+      tally.walt_watch_acted = w.acted;
+      if (w.error) console.error('video-call-reminders: walt watch', w.error);
+   } catch (err) {
+      console.error('video-call-reminders: walt watch failed', err);
+   }
+   // Vault-funded loans bridging Base → BNB Chain (LI.FI), and repayments going back (/idvault).
+   try {
+      tally.vault_bridges = await runVaultBridges(svc, Math.min(idDeadline, Date.now() + 45_000));
+   } catch (err) {
+      console.error('video-call-reminders: vault bridges failed', err);
+   }
+   // Mondays 09:00 Bangkok: what the vault is still owed for repaid Indonesian loans, and how to pay it.
+   try {
+      tally.vault_payback_card = (await runVaultPaybackDigest(svc, now)) ? 1 : 0;
+   } catch (err) {
+      console.error('video-call-reminders: vault payback card failed', err);
+   }
    // Walt Transfer mode (the default): one "send X USDT to @user" card per open request for the team.
    try {
       const cards = await runWaltTransferPayoutCards(svc, now, Math.max(Date.now() + 10_000, idDeadline - 40_000));
@@ -373,6 +443,12 @@ serve(async (req) => {
       tally.walt_repay_nudged = await runIdRepayNudges(svc, now);
    } catch (err) {
       console.error('video-call-reminders: wallet repayments failed', err);
+   }
+   // 20:00 Bangkok: one "✅ All arrived" card for every Walt repayment still waiting for a tap.
+   try {
+      tally.walt_arrived_digest = (await runWaltArrivedDigest(svc, now)) ? 1 : 0;
+   } catch (err) {
+      console.error('video-call-reminders: arrived digest failed', err);
    }
    // Rupiah peg — refresh USD/IDR (stored at most every 6h; ID requests are refused while no rate under
    // 36h old exists) and re-price open ID loans; team ping on a >5% move.

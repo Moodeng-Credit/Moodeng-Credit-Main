@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { type AdminIncomeDocument, decideIncomeDocument, incomeDocumentUrl, listIncomeDocuments } from '@/app/admin/adminSupabase';
 
@@ -99,6 +99,8 @@ export default function IncomeDocsSection() {
    const [busy, setBusy] = useState<string | null>(null);
    const [declining, setDeclining] = useState<string | null>(null);
    const [reasons, setReasons] = useState<Record<string, string>>({});
+   // ?doc=<id> (the Telegram / Discord card's link): that send first, highlighted, even if decided.
+   const focusId = useMemo(() => new URLSearchParams(window.location.search).get('doc'), []);
 
    const load = useCallback(async () => {
       setLoading(true);
@@ -146,7 +148,12 @@ export default function IncomeDocsSection() {
    // Sent back to fix: still listed (newest first, like everything else) so the upload can be seen
    // and approved anyway, but not counted as "to review".
    const resent = docs.filter((d) => !d.decision && d.verdict === 'resend' && d.risk !== 'red');
-   const shown = showReviewed ? docs : docs.filter((d) => !d.decision);
+   const focused = docs.find((d) => d.id === focusId);
+   const shown = [...(focused ? [focused] : []), ...(showReviewed ? docs : docs.filter((d) => !d.decision)).filter((d) => d !== focused)];
+
+   useEffect(() => {
+      if (focused) document.getElementById(`income-doc-${focused.id}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+   }, [focused]);
 
    return (
       <section className="space-y-4">
@@ -189,7 +196,11 @@ export default function IncomeDocsSection() {
                const rows = doc.extracted?.transactions ?? [];
                const currency = doc.extracted?.currency ?? 'PHP';
                return (
-                  <li key={doc.id} className={`rounded-2xl border p-4 ${RISK_STYLE[doc.risk ?? ''] ?? 'border-[#3a2d4f] bg-[#1c0a3a]'}`}>
+                  <li
+                     key={doc.id}
+                     id={`income-doc-${doc.id}`}
+                     className={`scroll-mt-4 rounded-2xl border p-4 ${RISK_STYLE[doc.risk ?? ''] ?? 'border-[#3a2d4f] bg-[#1c0a3a]'} ${doc === focused ? 'ring-4 ring-[#f5c542]' : ''}`}
+                  >
                      <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="min-w-0">
                            <p className="text-lg font-black text-white">
@@ -314,6 +325,38 @@ export default function IncomeDocsSection() {
                      ) : null}
                      {doc.ai_note ? (
                         <p className="mt-2 rounded-xl bg-white/5 px-3 py-2 text-[15px] leading-6 text-[#e8e0f2]">🤖 {doc.ai_note}</p>
+                     ) : null}
+                     {doc.repay_chance != null ? (
+                        <p className="mt-1 text-sm text-[#cfc6dd]">
+                           🎯 AI: {doc.repay_chance}% chance of repaying on time
+                           {doc.repay_reasons?.length ? ` — ${doc.repay_reasons.join('; ')}` : ''}
+                        </p>
+                     ) : null}
+                     {doc.questions?.length ? (
+                        <div className="mt-2 flex flex-col gap-2 rounded-xl bg-white/5 px-3 py-2 text-[15px] leading-6 text-[#e8e0f2]">
+                           <p className="text-sm font-semibold text-[#a89bb8]">
+                              Asked them{doc.messenger_confirmed_at ? ' · 💬 sent DOCS on Messenger' : ''}
+                           </p>
+                           {doc.questions.map((q) => {
+                              const a = doc.answers?.find((x) => x.id === q.id);
+                              // A screenshot answer is saved as photo:<path in income-docs>.
+                              const photoPath = a?.a.startsWith('photo:') ? a.a.slice('photo:'.length) : null;
+                              return (
+                                 <div key={q.id}>
+                                    <p>❓ {q.en}</p>
+                                    {photoPath ? (
+                                       <button className="text-left font-semibold text-[#b4a6ff] underline" onClick={() => void openFile(photoPath)} type="button">
+                                          📸 Open their screenshot
+                                       </button>
+                                    ) : (
+                                       <p className={a ? 'text-white' : 'text-[#a89bb8]'}>
+                                          💬 {a ? `${a.a}${a.via === 'messenger' ? ' (Messenger)' : ''}` : 'No answer yet'}
+                                       </p>
+                                    )}
+                                 </div>
+                              );
+                           })}
+                        </div>
                      ) : null}
 
                      {openRows === doc.id ? (

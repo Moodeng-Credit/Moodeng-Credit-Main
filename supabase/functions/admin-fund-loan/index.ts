@@ -2,8 +2,10 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 import { postLoanFundedToTeam } from '../_shared/teamLoanFeed.ts'
+import { alertFundedOverCapWithoutOverride, capBlock, capStatus, overrideCap } from '../_shared/loanCap.ts'
 import { checkNow, markSent, payNow, payoutStatus, recordByTxid, releasePayout } from '../_shared/idManualFunding.ts'
 import { createPayoutWallet, payoutWalletStatus } from '../_shared/idPayoutWallet.ts'
+import { recordVaultDraw, vaultBridgeStatus, vaultDrawQuote } from '../_shared/idVaultBridge.ts'
 import { decodeUsdcTransfers, RPC_URL, rpcCall } from '../_shared/usdcTransfer.ts'
 
 // BitRepo originator vault on Base (OriginatorVault). Moodeng's lending wallet draws loans from it straight to
@@ -39,6 +41,30 @@ const json = (body: unknown, status = 200) =>
     status,
   })
 
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void } | undefined
+
+// Keeps the worker alive for work that finishes after the response has gone out.
+const runAfterReply = (work: Promise<unknown>) => {
+  if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(work)
+}
+
+// The team's "Loan funded" post, then the borrower's notification, same as a lender funding it. Each
+// is sent once per loan (deduped inside), and neither failing undoes the recorded funding.
+// deno-lint-ignore no-explicit-any
+const announceFunding = async (supabase: any, loanId: string) => {
+  try {
+    await postLoanFundedToTeam(supabase, loanId)
+  } catch (err) {
+    console.error(`admin-fund-loan: team post failed for ${loanId}: ${(err as Error).message}`)
+  }
+  try {
+    const { error } = await supabase.functions.invoke('loan-funded-notification', { body: { loanId } })
+    if (error) console.error(`admin-fund-loan: borrower notification failed for ${loanId}: ${error.message}`)
+  } catch (err) {
+    console.error(`admin-fund-loan: borrower notification failed for ${loanId}: ${(err as Error).message}`)
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
@@ -69,9 +95,37 @@ serve(async (req) => {
 
     const body = await req.json()
 
+    // Per-borrower cap (_shared/loanCap.ts): the Fund modal asks first, and an over-cap loan needs an
+    // override with a written reason before any money moves.
+    if (body?.action === 'cap_status' || body?.action === 'cap_override') {
+      const loanId = typeof body.loanId === 'string' ? body.loanId : ''
+      if (!loanId) return json({ error: 'Missing loanId' }, 400)
+      if (body.action === 'cap_status') return json(await capStatus(supabase, loanId))
+      const res = await overrideCap(supabase, loanId, callerId, body.reason)
+      return json(res, res.ok ? 200 : 400)
+    }
+    // Steps that move money on their own (Indonesia vault draw quote, automatic Walt payout) stop here.
+    if (body?.action === 'id_vault_quote' || body?.action === 'walt_payout_auto') {
+      const loanId = typeof body.loanId === 'string' ? body.loanId : ''
+      if (loanId) {
+        const blocked = capBlock(await capStatus(supabase, loanId))
+        if (blocked) return json({ error: blocked }, 409)
+      }
+    }
+
     // Indonesia track: Moodeng's Openfort payout wallet on BNB Chain (_shared/idPayoutWallet.ts).
     if (body?.action === 'payout_wallet_status') return json(await payoutWalletStatus(supabase))
     if (body?.action === 'payout_wallet_create') return json(await createPayoutWallet(supabase))
+
+    // Indonesia track: fund from the BitRepo vault on Base, bridged to BNB Chain by LI.FI (_shared/idVaultBridge.ts).
+    if (typeof body?.action === 'string' && body.action.startsWith('id_vault_')) {
+      const loanId = typeof body.loanId === 'string' ? body.loanId : ''
+      if (!loanId) return json({ error: 'Missing loanId' }, 400)
+      if (body.action === 'id_vault_quote') return json(await vaultDrawQuote(supabase, loanId))
+      if (body.action === 'id_vault_draw') return json(await recordVaultDraw(supabase, loanId, String(body.txHash ?? '').trim(), callerId))
+      if (body.action === 'id_vault_status') return json(await vaultBridgeStatus(supabase, loanId))
+      return json({ error: 'Unknown action' }, 400)
+    }
 
     // Indonesia track: paid by hand from Binance TH to the borrower's Walt (USDC on BNB Chain), or
     // automatically from the payout wallet (walt_payout_auto). The app confirms it on-chain itself
@@ -128,6 +182,8 @@ serve(async (req) => {
     if (current.loan_status !== 'Requested' || current.lender_user_id || current.funded_at) {
       const existingHashes: string[] = Array.isArray(current.hash) ? current.hash : []
       if (txHash && current.loan_status === 'Lent' && existingHashes.includes(txHash)) {
+        // Both follow-ups run once per loan, so this only sends what a cut-off first attempt missed.
+        runAfterReply(announceFunding(supabase, loanId))
         return json({ message: 'Loan funding already recorded' }, 200)
       }
       return json({ error: 'This loan is not an open request (already funded or closed)' }, 409)
@@ -207,11 +263,16 @@ serve(async (req) => {
     if (error) return json({ error: 'Failed to record funding', details: error.message }, 500)
     if (!data) return json({ error: 'This loan was funded by someone else a moment ago' }, 409)
 
-    // #loans / admin channel "Loan funded" post, same as a lender funding it (once per loan).
-    await postLoanFundedToTeam(supabase, loanId)
-    // Tell the borrower, same as a lender funding it (deduped per loan inside the function).
-    const { error: notifyError } = await supabase.functions.invoke('loan-funded-notification', { body: { loanId } })
-    if (notifyError) console.error(`admin-fund-loan: borrower notification failed for ${loanId}: ${notifyError.message}`)
+    // Reply as soon as the loan is saved. The follow-ups took up to 20 seconds, and an admin whose tab
+    // dropped the request in that window saw no success message and a request still on the board.
+    runAfterReply(announceFunding(supabase, loanId))
+    // The money has already moved by now, so a capped loan with no override is recorded, not refused;
+    // the team is told so someone adds the reason.
+    runAfterReply(
+      capStatus(supabase, loanId, principal != null ? Number(principal) : null)
+        .then((s) => (capBlock(s) ? alertFundedOverCapWithoutOverride(supabase, loanId, s) : null))
+        .catch((err) => console.error(`admin-fund-loan: cap check failed for ${loanId}: ${(err as Error).message}`)),
+    )
 
     return json({ data, message: 'Loan funding recorded' }, 200)
   } catch (error) {

@@ -26,7 +26,47 @@ export const fetchPreKycGate = async (): Promise<boolean> => {
    return data === true;
 };
 
-export function usePreKycGate(): { isGated: boolean; isLoading: boolean } {
+/** Journey v2 (supabase/migrations/20261117200000_journey_v2.sql): proof of income + 3 videos first. */
+export type JourneyV2 = {
+   applies: boolean;
+   income?: 'none' | 'checking' | 'resend' | 'hold' | 'pass' | 'declined';
+   videos?: Array<{ id: string; title: string; tall?: boolean }>;
+   videos_watched?: number;
+   done?: boolean;
+};
+
+export const JOURNEY_V2_PATH = '/onboarding/verify';
+
+/** Fails open like the gate: an error reads as "v2 doesn't apply". */
+export const fetchJourneyV2 = async (): Promise<JourneyV2> => {
+   const { data, error } = await getSupabaseBrowserClient().rpc('my_journey_v2');
+   if (error || !data || typeof data !== 'object') return { applies: false };
+   return data as JourneyV2;
+};
+
+/** Still has journey v2 steps to do (only ever true while the pre-KYC gate holds them). */
+export const needsJourneyV2 = (v2: JourneyV2 | null | undefined) => Boolean(v2?.applies && !v2.done);
+
+/** Pre-screening after sign-up (migration 20261118090000): affiliate-link people do it after Facebook. */
+export type PrescreenPath = {
+   on_path: boolean;
+   status?: 'none' | 'open' | 'sent' | 'graded' | 'failed';
+   decision?: 'good' | 'not_fit' | null;
+   done?: boolean;
+};
+
+export const PRESCREEN_PATH = '/screen';
+
+export const fetchPrescreenPath = async (): Promise<PrescreenPath> => {
+   const { data, error } = await getSupabaseBrowserClient().rpc('my_prescreen_path');
+   if (error || !data || typeof data !== 'object') return { on_path: false };
+   return data as PrescreenPath;
+};
+
+/** Still has the pre-screening (or the team's ✅) ahead of them. */
+export const needsPrescreen = (p: PrescreenPath | null | undefined) => Boolean(p?.on_path && !p.done);
+
+export function usePreKycGate(): { isGated: boolean; isLoading: boolean; v2: JourneyV2 | null; prescreen: PrescreenPath | null } {
    const user = useSelector((state: RootState) => state.auth.user);
    // Verified or approved users are never gated — no round trip needed. Nor is anyone whose ID is
    // already with Didit (in review / processing): that check is paid for, so there's nothing to save
@@ -48,6 +88,24 @@ export function usePreKycGate(): { isGated: boolean; isLoading: boolean } {
       enabled: !cleared,
       staleTime: 30_000
    });
-   if (cleared) return { isGated: false, isLoading: false };
-   return { isGated: data === true, isLoading };
+   const isGated = !cleared && data === true;
+   const v2Query = useQuery({
+      queryKey: ['journey-v2', user?.id, user?.loanAccessStatus],
+      queryFn: fetchJourneyV2,
+      enabled: isGated,
+      staleTime: 15_000
+   });
+   const prescreenQuery = useQuery({
+      queryKey: ['prescreen-path', user?.id, user?.loanAccessStatus],
+      queryFn: fetchPrescreenPath,
+      enabled: isGated,
+      staleTime: 15_000
+   });
+   if (cleared) return { isGated: false, isLoading: false, v2: null, prescreen: null };
+   return {
+      isGated,
+      isLoading: isLoading || (isGated && (v2Query.isLoading || prescreenQuery.isLoading)),
+      v2: isGated ? (v2Query.data ?? null) : null,
+      prescreen: isGated ? (prescreenQuery.data ?? null) : null
+   };
 }

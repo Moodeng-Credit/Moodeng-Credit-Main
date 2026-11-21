@@ -19,6 +19,8 @@ export type LenderLoan = FacilityLoan & {
    borrowerWallet: string | null;
    kycProvider: string | null;
    kycDate: string | null;
+   vaultAddress: string | null; // drawn from the lender's vault (not the original advance)
+   lenderWallet: string | null; // where the borrower repays
 };
 
 export interface LenderReportData {
@@ -31,6 +33,8 @@ export type LenderReportError = 'wrong_password' | 'locked' | 'failed';
 
 type RpcLoan = Omit<FacilityLoanInput, 'borrower'> & {
    borrower_wallet: string | null;
+   vault_address?: string | null;
+   lender_wallet?: string | null;
    borrower: {
       username: string | null;
       kyc_passed: boolean;
@@ -88,6 +92,8 @@ export async function loadLenderReport(password: string): Promise<{ data: Lender
          ...loan,
          borrowerWallet: r?.borrower_wallet ?? null,
          kycProvider: r?.borrower.kyc_provider ?? null,
+         vaultAddress: r?.vault_address ?? null,
+         lenderWallet: r?.lender_wallet ?? null,
          kycDate: r?.borrower.kyc_date ? new Date(Date.parse(r.borrower.kyc_date) + MANILA_OFFSET_MS).toISOString().slice(0, 10) : null
       };
    });

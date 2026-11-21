@@ -211,7 +211,7 @@ export default function WalletFaceCheck() {
       <div className={SCREEN_CLASS}>
          <OnboardingHeader
             title="Quick face check"
-            tooltip="A short liveness scan keeps Instant Wallets to one per person, which is what lets us cover the network fees. We never store your photo, and it is only needed to create the wallet — not to sign in, send or repay."
+            tooltip="A quick face scan — one wallet per person. We don’t keep your photo."
          />
 
          <div className="flex flex-1 flex-col items-center justify-center gap-md-3 px-md-4 text-center">

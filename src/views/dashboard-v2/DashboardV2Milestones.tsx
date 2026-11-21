@@ -13,7 +13,7 @@ import { VerifyIdentityBanner } from '@/views/dashboard-v2/components/DashboardV
 import { MilestonePopup } from '@/views/dashboard-v2/components/DashboardV2Popups';
 import { VoucherStatusPill } from '@/views/dashboard-v2/components/DashboardV2Sections';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
-import { getVoucherState, OWN_VOUCHER, TIER_VOUCHERS, type VoucherState } from '@/views/dashboard-v2/dashboardV2Model';
+import { getVoucherState, OWN_VOUCHER, STREAK_VOUCHERS, TIER_VOUCHERS, type VoucherState } from '@/views/dashboard-v2/dashboardV2Model';
 import DashboardV2PreviewBar from '@/views/dashboard-v2/DashboardV2Preview';
 import { VoucherClaimPopup } from '@/views/dashboard-v2/DashboardV2Rewards';
 import type { DashboardV2Milestone } from '@/views/dashboard-v2/types';
@@ -129,6 +129,27 @@ export default function DashboardV2Milestones() {
    const [isVerifyOpen, setIsVerifyOpen] = useState(false);
    const [claimingVoucher, setClaimingVoucher] = useState<ClaimableVoucher | null>(null);
    const ownVoucher = getVoucherState(model.rewards, OWN_VOUCHER, model.referralLoading);
+   const streak = model.rewards.streak;
+   // The 1st on-time repayment is a milestone row above. Rising's voucher is retired: it only shows
+   // for someone who can still claim it (or already did).
+   const voucherRows = [
+      ...STREAK_VOUCHERS.filter((voucher) => voucher.step > 1).map((voucher) => ({
+         reward: voucher.reward,
+         step: voucher.step as number | null,
+         label: '',
+         amountPhp: voucher.amountPhp,
+         isReached: streak.best >= voucher.step,
+         lockLabel: `${Math.min(streak.current, voucher.step)}/${voucher.step}`
+      })),
+      ...TIER_VOUCHERS.map((tier) => ({
+         reward: tier.reward,
+         step: null as number | null,
+         label: tier.label,
+         amountPhp: tier.amountPhp,
+         isReached: model.pandesal >= tier.minPandesal,
+         lockLabel: String(tier.minPandesal)
+      }))
+   ].filter((row) => row.reward !== 'tier_rising' || getVoucherState(model.rewards, [row.reward]).state !== 'none');
    const goal = model.pandesalGoal;
    const goalProgress = goal ? Math.min(model.pandesal / goal, 1) : 1;
 
@@ -221,14 +242,14 @@ export default function DashboardV2Milestones() {
                      ))}
                   </div>
 
-                  {/* A food voucher for each Moodeng tier (Rising / Prime / Apex). */}
+                  {/* Food vouchers still ahead: the repay streak (3 and 5 in a row), then Prime / Apex. */}
                   <h2 className="mt-8 text-[20px] font-bold italic leading-6 text-[#594d65] dark:text-[#d9cfe6]">
                      Grow Moodeng, eat on us
                   </h2>
                   <div className="mt-3 rounded-[8px] bg-dv2-card px-1.5 py-2">
-                     {TIER_VOUCHERS.map((tier, index) => {
+                     {voucherRows.map((tier, index) => {
                         const tierVoucher = getVoucherState(model.rewards, [tier.reward], model.referralLoading);
-                        const isReached = model.pandesal >= tier.minPandesal;
+                        const isReached = tier.isReached;
                         return (
                            <Fragment key={tier.reward}>
                               {index > 0 ? <div className="h-px bg-[#ece9f1] dark:bg-[#2c2439]" aria-hidden="true" /> : null}
@@ -241,7 +262,7 @@ export default function DashboardV2Milestones() {
                                  <DesignImage src={DASHBOARD_V2_ASSETS.coupon} className="h-10 w-10 shrink-0 object-contain" />
                                  <div className="min-w-0 flex-1">
                                     <p className="text-[18px] font-medium leading-6 text-[#833000] dark:text-[#ffc46b]">
-                                       Grow Moodeng to {tier.label}
+                                       {tier.step ? <>Repay {tier.step} loans on time in a row</> : <>Grow Moodeng to {tier.label}</>}
                                     </p>
                                     <p className="text-[16px] leading-[18px] text-[#f90]">Reward: ₱{tier.amountPhp} food voucher</p>
                                  </div>
@@ -250,7 +271,7 @@ export default function DashboardV2Milestones() {
                                  ) : (
                                     <span className="flex shrink-0 flex-col items-center text-[12px] font-semibold text-[#c0b9c8] dark:text-[#75688a]">
                                        <DesignImage src={DASHBOARD_V2_ASSETS.lock} className="h-5 w-5 object-contain" />
-                                       {tier.minPandesal}
+                                       {tier.lockLabel}
                                     </span>
                                  )}
                               </div>

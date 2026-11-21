@@ -4,6 +4,7 @@ import { spanishCoverageC } from '@/i18n/coverage/esC';
 import { spanishCoverageD } from '@/i18n/coverage/esD';
 import { spanishCoverageE } from '@/i18n/coverage/esE';
 import { spanishCoverageF } from '@/i18n/coverage/esF';
+import { spanishCoverageG } from '@/i18n/coverage/esG';
 
 export const screenCoverage: Record<string, string> = {
    ...spanishCoverageA,
@@ -11,5 +12,6 @@ export const screenCoverage: Record<string, string> = {
    ...spanishCoverageC,
    ...spanishCoverageD,
    ...spanishCoverageE,
-   ...spanishCoverageF
+   ...spanishCoverageF,
+   ...spanishCoverageG
 };

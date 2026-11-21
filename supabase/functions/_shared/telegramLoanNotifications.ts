@@ -1,7 +1,11 @@
+import { describeSchedule, parseRepaymentSchedule } from './repaymentSchedule.ts';
+
 export type TelegramLoanRequest = {
    id: string;
    tracking_id?: string | null;
    loan_amount: number | string;
+   /** What the borrower offers to pay back in total (principal + the lender's return). */
+   total_repayment_amount?: number | string | null;
    coin?: string | null;
    due_date?: string | null;
    created_at?: string | null;
@@ -9,6 +13,8 @@ export type TelegramLoanRequest = {
    borrower_user_id?: string | null;
    /** 'ID' = Indonesia track: the post is marked 🇮🇩. */
    market?: string | null;
+   /** Paid back in parts (one loan): [{ due, amount }]. due_date is the last payment. */
+   repayment_schedule?: unknown;
 };
 
 export type TelegramLoanHistory = {
@@ -183,8 +189,22 @@ export const buildTelegramLoanRequestMessage = (
    const durationDays = calculateDurationDays(loan);
    const lines = [loan.market === 'ID' ? '🇮🇩 New Loan Request · Indonesia' : '🚀 New Loan Request', '', `💰 Amount: ${formatAmount(loan.loan_amount)} ${loan.coin ?? 'USDC'}`];
 
+   // What they offer to pay back, and how much of it is the lender's return (George, 2026-11-14).
+   const repay = Number(loan.total_repayment_amount);
+   if (Number.isFinite(repay) && repay > 0) {
+      const extra = repay - Number(loan.loan_amount);
+      const extraText = Number.isFinite(extra) && extra > 0 ? ` (+${formatAmount(extra)} to the lender)` : '';
+      lines.push(`💵 Repays: ${formatAmount(repay)} ${loan.coin ?? 'USDC'}${extraText}`);
+   }
+
    if (durationDays !== null) {
       lines.push(`⏳ Duration: ${durationDays} days`);
+   }
+
+   // One loan paid back in parts (George, 2026-11-15): say when each part comes back.
+   const schedule = parseRepaymentSchedule(loan.repayment_schedule);
+   if (schedule) {
+      lines.push(`🗓 ${schedule.length} payments: ${describeSchedule(schedule)}`);
    }
 
    lines.push(

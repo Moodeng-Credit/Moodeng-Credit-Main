@@ -272,8 +272,8 @@ const T: Record<string, Record<'en' | 'fil', Text>> = {
       fil: (w) => `Pasensya, hindi ko nakuha ang araw o oras 🙏 Naka-book ka pa rin sa ${w}.\nPara palitan, subukan ang "bukas 3pm" o "Sabado umaga".`
    },
    cancelled: {
-      en: (w) => `OK, your call on ${w} is cancelled.\nWhenever you're ready, just tell me a day and time 🙂`,
-      fil: (w) => `Sige, kinansela na ang call mo sa ${w}.\nKapag handa ka na, sabihin lang ang araw at oras 🙂`
+      en: (w) => `OK, your call on ${w} is cancelled.\nWant a new time later? Just type BOOK 🙂`,
+      fil: (w) => `Sige, kinansela na ang call mo sa ${w}.\nGusto ng bagong oras mamaya? I-type lang ang BOOK 🙂`
    },
    tapOne: { en: 'Please tap one of the buttons 🙂', fil: 'Pakipindot ang isa sa mga button 🙂' },
    rangeNumber: { en: 'Is that in thousands? Please tap the closest range 🙂', fil: 'Libo ba iyan? Pakipindot ang pinakamalapit na range 🙂' },
@@ -379,7 +379,7 @@ const ID_TEXT: Record<string, Text> = {
    other: 'Tidak masalah! Hari atau jam lain yang cocok untukmu?',
    otherKeep: 'Tidak masalah! Hari atau jam lain yang cocok untukmu?\nPanggilanmu tetap terjadwal sampai kamu memilih jam baru.',
    unclearKeep: (w) => `Maaf, aku belum menangkap hari atau jamnya 🙏 Kamu masih terjadwal ${w}.\nUntuk menggantinya, coba seperti "besok jam 3 sore" atau "Sabtu pagi".`,
-   cancelled: (w) => `Oke, panggilanmu ${w} sudah dibatalkan.\nKapan pun kamu siap, sebutkan saja hari dan jamnya 🙂`,
+   cancelled: (w) => `Oke, panggilanmu ${w} sudah dibatalkan.\nMau jadwal baru nanti? Ketik saja BOOK 🙂`,
    tapOne: 'Silakan ketuk salah satu tombol 🙂',
    rangeNumber: 'Itu dalam ribuan? Silakan ketuk kisaran yang paling dekat 🙂',
    finishFirst: 'Maaf, aku belum menangkap hari atau jam baru. Kita selesaikan dulu pertanyaannya — jamnya bisa diganti di akhir 🙂',
@@ -607,8 +607,31 @@ const DAY_WORD = /\b(today|tonight|tomorrow|tmrw|tmr|bukas|mamaya|ngayon|ngayong
 export const looksLikeTime = (t: string) => TIME_WORD.test(norm(t)) || CLOCK.test(norm(t));
 const CHANGE = /\b(change|resched\w*|move|instead|another (day|time)|other (day|time)|ibang (araw|oras)|iba ?ng (araw|oras)|palit\w*|ilipat|lipat|cancel|na lang|nalang|ganti|pindah|jam lain|hari lain|jadwal ulang|diganti)\b/;
 const wantsChange = (t: string) => CHANGE.test(norm(t));
+// About being free for the call, not an answer to a question.
+const AVAILABILITY = /\b(not available|unavailable|not free|busy|(hindi|di) pa? ?(ako )?(pwede|puwede|available|free)|(can'?t|cannot) (make it|join|attend)|at (the )?(training|class|work) pa)\b/;
+const CLOCK_ONLY = /\b\d{1,2}(:\d{2})?\s*(am|pm)\b|\b\d{1,2}:\d{2}\b/;
+/**
+ * A free-text quiz reply that's really about the call time: a short clock time ("10am po"), a bare day
+ * ("Monday po") or "not available". Job answers like "night shift" or "work at 7 eleven" still count.
+ */
+export const notAnAnswer = (t: string) => {
+   const n = norm(t);
+   const w = words(n).length;
+   return AVAILABILITY.test(n) || (CLOCK_ONLY.test(n) && w <= 5) || (DAY_WORD.test(n) && w <= 2);
+};
 const CANCEL = /\b(cancel\w*|can'?t (make it|come|attend)|cannot (make it|come|attend)|hindi (na )?(ako )?makakapunta|di (ako )?makakapunta|hindi na lang|ayaw ko na|wag na lang|huwag na lang|batal\w*|(tidak|gak|nggak|enggak|ga) (jadi|bisa (datang|hadir|ikut)))\b/;
+// Someone with a booked call who isn't in a booking chat ("Cancel my meeting", "can I reschedule?"): the
+// Messenger bot picks it up at their booked call instead of sending it to the support inbox.
+const RESCHEDULE = /\b(resched\w*|re-sched\w*|(change|move|palitan|ilipat|ganti|pindah)( (my|the|ang|ng))? ?(call|meeting|schedule|sched|time|oras|araw|jadwal|jam|zoom)|ibang (araw|oras)|jadwal ulang)\b/;
+/** 'cancel' / 'change' for a message about their booked call, else null. A cancel with a time in it is a move. */
+export const bookedCallIntent = (text: string): 'cancel' | 'change' | null => {
+   const n = norm(text);
+   if (CANCEL.test(n) && !looksLikeTime(n)) return 'cancel';
+   if (RESCHEDULE.test(n) || (CANCEL.test(n) && looksLikeTime(n))) return 'change';
+   return null;
+};
 const YES_WORDS = new Set(['yes', 'yeah', 'yea', 'yep', 'yup', 'ye', 'oo', 'opo', 'oho', 'sige', 'ok', 'okay', 'okey', 'oki', 'k', 'sure', 'confirm', 'confirmed', 'go', 'game', 'ya', 'iya', 'g', 'oke', 'baik', 'siap', 'boleh', 'bisa', 'betul', 'benar', 'setuju']);
+const THANKS = new Set(['thanks', 'thank', 'thankyou', 'ty', 'tysm', 'thx', 'tnx', 'salamat', 'maraming', 'makasih', 'terima', 'kasih']);
 // Words that can follow a YES without being a name.
 const FILLER = new Set(['po', 'naman', 'please', 'pls', 'plz', 'thanks', 'thank', 'you', 'ty', 'salamat', 'sure', 'confirm', 'confirmed', 'na', 'lang', 'i', 'will', 'be', 'there', 'see', 'tayo', 'then', 'terima', 'kasih', 'makasih', 'dong', 'kak', 'pak', 'bu', 'mas', 'mbak', 'good', 'great', 'nice', 'got', 'it', 'all', 'set', 'deal', 'noted', 'ill', "i'll", 'definitely', 'of', 'course', 'yes', 'oo', 'opo', 'sige', 'ok', 'okay', 'yep', 'yeah', 'kita']);
 // Common words that are never a first name.
@@ -620,7 +643,7 @@ const NOT_NAMES = new Set([
    ...['this', 'its', "it's", 'just', 'lol', 'haha', 'hehe', 'test', 'nope', 'none', 'wala'],
    ...['halo', 'hai', 'tidak', 'nggak', 'gak', 'saya', 'aku', 'nama', 'selamat', 'pagi', 'siang', 'sore', 'malam', 'wkwk']
 ]);
-const NEGATIVE = /^\s*(no|nope|hindi|ayoko|ayaw|wag|huwag|cancel|tidak|nggak|gak|enggak|jangan|batal)\b(?!\s*(problem|prob|worries|worry|problema|masalah|apa-apa|apa apa))/;
+export const NEGATIVE = /^\s*(no|nope|hindi|ayoko|ayaw|wag|huwag|cancel|tidak|nggak|gak|enggak|jangan|batal)\b(?!\s*(problem|prob|worries|worry|problema|masalah|apa-apa|apa apa))/;
 const cap = (w: string) => (w === w.toLowerCase() || w === w.toUpperCase() ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w[0].toUpperCase() + w.slice(1));
 
 /** A first name from "Maria", "my name is Maria", "ako si Maria", "Ma. Cristina". Null if it doesn't look like one. */
@@ -640,6 +663,7 @@ export const readConfirm = (text: string): { kind: 'yes'; name: string | null } 
    if (/^\s*(👍|✅|👌|🙏)+\s*$/u.test(text)) return { kind: 'yes', name: null };
    const ws = words(text);
    if (!ws.length) return { kind: 'other' };
+   if (THANKS.has(ws[0]) && ws.every((w) => FILLER.has(w) || THANKS.has(w))) return { kind: 'yes', name: null };
    if (!YES_WORDS.has(ws[0])) {
       if (NEGATIVE.test(norm(text))) return { kind: 'no' };
       return looksLikeTime(text) || wantsChange(text) ? { kind: 'time' } : { kind: 'other' };
@@ -954,7 +978,8 @@ const askFinalConfirm = (t: Turn) => {
    send(t, say(t, 'confirmTime', when(t, s), s.host), heldButtons(t));
    t.st.step = 'held';
 };
-const hold = (t: Turn, s: Slot) => {
+/** Make s their time (not booked yet). A booked call they're moving stays booked until s is. */
+const takeSlot = (t: Turn, s: Slot) => {
    t.st.offered = [];
    t.st.changing = false;
    // Moving a booked call: it stays booked until the new time is (bookCall then cancels it).
@@ -963,6 +988,9 @@ const hold = (t: Turn, s: Slot) => {
    t.st.mine = s;
    t.st.booked = false;
    t.events.push({ type: 'hold', slot: s });
+};
+const hold = (t: Turn, s: Slot) => {
+   takeSlot(t, s);
    if (t.st.quizDone) return askFinalConfirm(t);
    if (t.st.asked.length) {
       send(t, say(t, 'resume', when(t, s), s.host));
@@ -1108,6 +1136,9 @@ const handlePrep = async (t: Turn, text: string) => {
    if (q.free) {
       if (DODGE.test(n) && n.split(/\s+/).length <= 4) return answerPrep(t, null);
       if (wantsChange(n) && looksLikeTime(n)) return changeMidQuiz(t, text);
+      // Not an answer to this question: a bare time ("10am po") or "I'm not available" is about the call,
+      // usually said to a team member in the same chat (2026-11-15: both were saved as job / loan use).
+      if (notAnAnswer(n)) return send(t, say(t, 'question', String(t.st.asked.length), q[t.st.lang]), prepButtons(t, key));
       return answerPrep(t, text.trim().slice(0, 120));
    }
    const r = readTyped(q, key, text, t.m);
@@ -1158,7 +1189,7 @@ const offer = (t: Turn, result: OfferResult, summary: string) => {
             : say(t, exact ? 'offer' : 'near');
    // Details live in the text (buttons are capped at 20 characters).
    const list = picks.map((s, i) => `${i + 1}. ${fmtDay(s.date, lang)} · ${fmtTime(s.min)}${asked ? gap(t, s, asked) : ''}${i === 0 ? ' ⭐' : ''}`).join('\n');
-   const mine = t.st.mine ? `\n${lang === 'fil' ? 'Oras mo ngayon' : lang === 'id' ? 'Jadwalmu sekarang' : 'Your time now'}: ${fmtDay(t.st.mine.date, lang)} · ${fmtTime(t.st.mine.min)}` : '';
+   const mine = t.st.mine ? `\n${lang === 'fil' ? (t.st.booked ? 'Naka-book ka sa' : 'Naka-hold para sa iyo') : lang === 'id' ? 'Jadwalmu sekarang' : t.st.booked ? 'Your call is booked for' : 'Held for you'}: ${fmtDay(t.st.mine.date, lang)} · ${fmtTime(t.st.mine.min)}` : '';
    send(t, `${intro}\n\n${list}\n${mine}\n${say(t, 'pickHint')} ${say(t, 'tzNote', t.st.zoneName)}`.replace(/\n\n\n/g, '\n\n'), offerButtons(t, picks));
    t.st.step = 'offered';
 };
@@ -1259,8 +1290,27 @@ const readAndOffer = async (t: Turn, text: string, from: Step): Promise<boolean>
    const result = match(parsed, t.ctx.free);
    // Everything they asked for is past the days we can book: say so, don't call it "fully booked".
    if (!parsed.anytime && t.ctx.lastDay && parsed.windows.every((w) => w.date > t.ctx.lastDay)) result.tooFar = true;
+   if (result.asked && result.exact && !result.tooFar && result.picks[0]) {
+      t.events.push({ type: 'offered', result, summary: parsed.summary });
+      // Only an ask to move ("other time", a reply to a list, "can we do…") moves a booked call at once.
+      await takeAsked(t, result.picks[0], t.st.changing || from === 'offered' || wantsChange(text));
+      return true;
+   }
    offer(t, result, parsed.summary);
    return true;
+};
+
+/**
+ * The exact time they asked for is free. Asked to move a call that's already booked (in the chat or on the website):
+ * book it now. Otherwise hold it and carry on (questions, or one YES — so "I finish work at 5pm" never moves a call).
+ */
+const takeAsked = async (t: Turn, s: Slot, moving: boolean) => {
+   if (moving && t.st.booked) {
+      send(t, say(t, 'askedFree', `${fmtDay(s.date, t.st.lang)} ${t.st.lang === 'fil' ? 'nang' : t.st.lang === 'id' ? 'jam' : 'at'} ${fmtTime(s.min)}`));
+      takeSlot(t, s);
+      return book(t, t.st.name || t.st.knownName || '');
+   }
+   hold(t, s);
 };
 
 /** They let go of the held time: ask for another (their booked call, if they were moving one, stays). */
@@ -1342,6 +1392,9 @@ const handleText = async (t: Turn, text: string) => {
    if (st.step === 'offered') {
       const s = pickOffered(t, text);
       if (s) return hold(t, s);
+      // "ok" / "yes" takes the ⭐ time, but only from a list of what they asked for (not "taken, closest are…"); thanks don't count.
+      const c = readConfirm(text);
+      if (c.kind === 'yes' && YES_WORDS.has(words(text)[0]) && st.lastOffer?.exact && st.offered[0]) return hold(t, st.offered[0]);
    }
    if (st.step === 'held' && st.mine) {
       const c = readConfirm(text);
@@ -1425,11 +1478,12 @@ export const buttonFor = (st: BotState, text: string): Button | null => {
    const m = /^\s*\(?([a-m])\)?[.)]?\s*$/i.exec(text);
    return m ? (lettered(b)[LETTERS.indexOf(m[1].toUpperCase())] ?? null) : null;
 };
-/** A reply as one plain message: its text, then "A) …" for each lettered button. */
+/** A reply as one plain message: its text, then "A. …" for each lettered button. */
 export const plainText = (reply: Reply, lang: Lang = 'en') => {
    const opts = lettered(reply.buttons ?? []);
    if (!opts.length) return reply.text;
-   const list = opts.map((b, i) => `${LETTERS[i]}) ${b.title}`).join('\n');
+   // "B) " becomes 😎 in Messenger, so never "letter + )".
+   const list = opts.map((b, i) => `${LETTERS[i]}. ${b.title}`).join('\n');
    const hint =
       lang === 'fil' ? 'Sumagot ng letra (A, B…) o i-type ang sagot mo.' : lang === 'id' ? 'Balas dengan huruf (A, B…) atau ketik jawabanmu.' : 'Reply with a letter (A, B…) or type your answer.';
    return `${reply.text}\n\n${list}\n\n${hint}`;

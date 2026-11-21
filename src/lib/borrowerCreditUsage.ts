@@ -40,18 +40,28 @@ export const isRequestPastItsDueDay = (loan: Partial<Pick<Loan, 'dueDate' | 'due
    loan.loanStatus === LoanStatus.REQUESTED && isLoanPastDue(loan.dueDate, now, loan.dueTimezone);
 
 /**
+ * on_hold_reason for a request the team has pulled quietly (e.g. about to reject): hidden from
+ * lenders and the team like any hold, but its borrower sees a normal request with no hold notice.
+ * Set by hand: update loans set on_hold_since = now(), on_hold_reason = 'team_hidden' where id = …
+ */
+export const SILENT_TEAM_HOLD = 'team_hidden';
+
+/**
  * Shown on the request board: not expired, not on hold, and its due day not yet over. A request on
  * hold (the borrower missed their video call) or past its due day is hidden from everyone but its
  * borrower, who can still see it (and delete it to post a new one).
  */
 export const isRequestBoardLoanVisible = (
-   loan: Pick<Loan, 'createdAt' | 'loanStatus'> & Partial<Pick<Loan, 'onHoldSince' | 'borrowerUser' | 'dueDate' | 'dueTimezone'>>,
+   loan: Pick<Loan, 'createdAt' | 'loanStatus'> & Partial<Pick<Loan, 'onHoldSince' | 'onHoldReason' | 'borrowerUser' | 'dueDate' | 'dueTimezone'>>,
    now = new Date(),
-   viewerUserId?: string | null
+   viewerUserId?: string | null,
+   viewerIsFundingAdmin = false
 ) => {
    if (isExpiredUnfundedRequest(loan, now)) return false;
    if (Boolean(viewerUserId) && loan.borrowerUser === viewerUserId) return true;
-   return !loan.onHoldSince && !isRequestPastItsDueDay(loan, now);
+   // Over the borrower's cap: hidden from lenders, but the team sees it so they can Override and fund.
+   const heldForTeam = viewerIsFundingAdmin && loan.onHoldReason === 'over_cap';
+   return (!loan.onHoldSince || heldForTeam) && !isRequestPastItsDueDay(loan, now);
 };
 
 const HOUR_MS = 60 * 60 * 1000;

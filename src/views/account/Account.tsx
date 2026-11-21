@@ -31,7 +31,9 @@ const ICON_MASK_BASE: React.CSSProperties = {
 
 const ACCOUNT_ITEMS = [
    { id: 'settings', path: '/account/settings', icon: '/icons/account-settings-3d.png' },
-   { id: 'loanHistory', path: '/history', icon: '/icons/loan-history-3d.png' }
+   { id: 'loanHistory', path: '/history', icon: '/icons/loan-history-3d.png' },
+   // Moo affiliate: every borrower has a code ($5 per friend who repays).
+   { id: 'affiliate', path: '/affiliate', icon: '/icons/hippo-repaid-coin-3d.png' }
 ] as const;
 
 // The same 3D icon family as the Settings page, so each row is recognisable at a glance.
@@ -83,7 +85,8 @@ const ACCOUNT_COPY: Record<
       accountInformation: 'Account Information',
       accountItems: {
          settings: 'Account Settings',
-         loanHistory: 'View Loan Transaction History'
+         loanHistory: 'View Loan Transaction History',
+         affiliate: 'Earn $5 per friend'
       },
       contactItems: {
          community: 'Join Our Community',
@@ -110,7 +113,8 @@ const ACCOUNT_COPY: Record<
       accountInformation: 'Impormasyon ng account',
       accountItems: {
          settings: 'Mga setting ng account',
-         loanHistory: 'Tingnan ang history ng mga loan transaction'
+         loanHistory: 'Tingnan ang history ng mga loan transaction',
+         affiliate: 'Kumita ng $5 bawat kaibigan'
       },
       contactItems: {
          community: 'Sumali sa komunidad namin',
@@ -137,7 +141,8 @@ const ACCOUNT_COPY: Record<
       accountInformation: 'Informasi akun',
       accountItems: {
          settings: 'Pengaturan akun',
-         loanHistory: 'Lihat riwayat transaksi pinjaman'
+         loanHistory: 'Lihat riwayat transaksi pinjaman',
+         affiliate: 'Dapat $5 per teman'
       },
       contactItems: {
          community: 'Bergabung dengan komunitas',
@@ -164,7 +169,8 @@ const ACCOUNT_COPY: Record<
       accountInformation: 'ข้อมูลบัญชี',
       accountItems: {
          settings: 'การตั้งค่าบัญชี',
-         loanHistory: 'ดูประวัติธุรกรรมเงินกู้'
+         loanHistory: 'ดูประวัติธุรกรรมเงินกู้',
+         affiliate: 'รับ $5 ต่อเพื่อนหนึ่งคน'
       },
       contactItems: {
          community: 'เข้าร่วมชุมชน',
@@ -191,7 +197,8 @@ const ACCOUNT_COPY: Record<
       accountInformation: 'Thông tin tài khoản',
       accountItems: {
          settings: 'Cài đặt tài khoản',
-         loanHistory: 'Xem lịch sử giao dịch khoản vay'
+         loanHistory: 'Xem lịch sử giao dịch khoản vay',
+         affiliate: 'Nhận $5 cho mỗi người bạn'
       },
       contactItems: {
          community: 'Tham gia cộng đồng',

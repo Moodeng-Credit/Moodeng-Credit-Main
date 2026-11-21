@@ -5,29 +5,34 @@ import { getLoanRequestCooldownMinutes, getLoanRequestRepostStatusFromDeletedAt 
 describe('loan request repost cooldown', () => {
    const now = new Date('2026-05-31T12:00:00.000Z');
 
-   it('allows another request after fewer than two deletes in 24 hours', () => {
-      const status = getLoanRequestRepostStatusFromDeletedAt(['2026-05-31T11:50:00.000Z'], now);
+   const four = ['2026-05-31T11:50:00.000Z', '2026-05-31T11:40:00.000Z', '2026-05-31T10:00:00.000Z', '2026-05-31T09:00:00.000Z'];
+
+   it('lets a borrower fix and repost up to four times in 24 hours with no wait', () => {
+      const status = getLoanRequestRepostStatusFromDeletedAt(four, now);
 
       expect(status).toEqual({
-         deleteCount24h: 1,
+         deleteCount24h: 4,
          cooldownUntil: null,
          canCreate: true
       });
    });
 
-   it('blocks reposting for 30 minutes after the second recent delete', () => {
-      const status = getLoanRequestRepostStatusFromDeletedAt(['2026-05-31T11:50:00.000Z', '2026-05-31T09:00:00.000Z'], now);
+   it('blocks reposting for 30 minutes after the fifth recent delete', () => {
+      const status = getLoanRequestRepostStatusFromDeletedAt([...four, '2026-05-31T08:00:00.000Z'], now);
 
-      expect(status.deleteCount24h).toBe(2);
+      expect(status.deleteCount24h).toBe(5);
       expect(status.canCreate).toBe(false);
       expect(status.cooldownUntil).toBe('2026-05-31T12:20:00.000Z');
       expect(getLoanRequestCooldownMinutes(status.cooldownUntil, now)).toBe(20);
    });
 
    it('allows reposting when the latest delete is outside the cooldown', () => {
-      const status = getLoanRequestRepostStatusFromDeletedAt(['2026-05-31T11:20:00.000Z', '2026-05-31T09:00:00.000Z'], now);
+      const status = getLoanRequestRepostStatusFromDeletedAt(
+         ['2026-05-31T11:20:00.000Z', '2026-05-31T11:00:00.000Z', '2026-05-31T10:00:00.000Z', '2026-05-31T09:30:00.000Z', '2026-05-31T09:00:00.000Z'],
+         now
+      );
 
-      expect(status.deleteCount24h).toBe(2);
+      expect(status.deleteCount24h).toBe(5);
       expect(status.cooldownUntil).toBeNull();
       expect(status.canCreate).toBe(true);
    });

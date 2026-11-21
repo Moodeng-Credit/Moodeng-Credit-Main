@@ -121,7 +121,7 @@ They aren't verified yet. Tapping the greyed button now shakes it and highlights
 ## Where do I put a referral code?
 
 - Referral codes are entered at the **start of the loan application**: from the Request Board, tap to apply for a loan, and the first step asks for a referral code — type it and tap **Apply code**. (The step only appears for verified borrowers.)
-- What a code does: a valid referral code adds **+$5 to your starting credit limit**. So a new borrower who normally starts at $15 would start at $20 with a valid code.
+- What a code does: it tells us who invited the borrower. It does **not** change the credit limit (no +$5 boost any more): everyone starts at $15.
 - If a user doesn't have a code, they just tap **Continue to application** — the code is optional and there's no penalty for skipping it.
 
 ## ⚠️ Coins.ph is temporarily paused (since 30 Sep 2026)
@@ -144,7 +144,7 @@ If a user doesn't hold USDC yet and needs to repay:
 
 ## Can I have more than one loan at a time?
 
-Yes — you can have more than one active loan at the same time, as long as the new amount fits within your **available credit limit**. Your available limit is your level's limit (from $15 up to $140) minus what you already owe on any active loans. So if your current loans already use up your whole limit, you'll need to repay (fully or partly) before you can request more. (Some accounts may also have a cap on how many loans can be active at once — if the app says you've reached your maximum number of active loans, repay one first.)
+Yes — you can have more than one active loan at the same time, as long as the new amount fits within your **available credit limit**. Your available limit is your level's limit (it starts at $15 and grows $10 a level) minus what you already owe on any active loans. So if your current loans already use up your whole limit, you'll need to repay (fully or partly) before you can request more. (Some accounts may also have a cap on how many loans can be active at once — if the app says you've reached your maximum number of active loans, repay one first.)
 
 ## Paying in parts (some now, some later)
 

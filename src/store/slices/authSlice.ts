@@ -9,6 +9,8 @@ import { setLastUsedAuth } from '@/lib/lastUsedAuth';
 import { FIRST_TOUCH_STORAGE_KEY } from '@/lib/attribution';
 import { AUTH_NEXT_STORAGE_KEY } from '@/lib/authNext';
 import { PENDING_INVITE_STORAGE_KEY } from '@/lib/friendReferrals';
+import { CODE_STEP_KEY } from '@/lib/inviteCodeStep';
+import { TEAM_CODE_STORAGE_KEY } from '@/lib/preScreening';
 import { LAST_USED_AUTH_STORAGE_KEY } from '@/lib/lastUsedAuth';
 import { PENDING_SHARED_REQUEST_KEY } from '@/lib/pendingSharedRequest';
 import {
@@ -273,6 +275,13 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
       (row as UserRow & { messenger_verified_at?: string | null }).messenger_verified_at ||
          (row as UserRow & { whatsapp_verified_at?: string | null }).whatsapp_verified_at
    ),
+   // Both lines a loan request needs (2026-11-15): Messenger with its ID (they sent the code — a hand
+   // /confirm stamp has no ID, so we can't message them) and a confirmed WhatsApp.
+   hasMessengerLink: Boolean(
+      (row as UserRow & { messenger_verified_at?: string | null }).messenger_verified_at &&
+         (row as UserRow & { messenger_psid?: string | null }).messenger_psid
+   ),
+   whatsappVerified: Boolean((row as UserRow & { whatsapp_verified_at?: string | null }).whatsapp_verified_at),
    incomeType: (row as UserRow & { income_type?: string | null }).income_type ?? undefined,
    paydayType: (row as UserRow & { payday_type?: string | null }).payday_type ?? undefined,
    paydayStart: (row as UserRow & { payday_start?: number | null }).payday_start ?? undefined,
@@ -291,12 +300,31 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    updatedAt: row.updated_at
 });
 
-const fetchCurrentUserProfile = async (): Promise<User> => {
-   const supabase = supabaseClient();
+// getUser() is a round trip to the auth server (and 5 queries on our database) every time; the profile
+// refreshes it on (polls, every step of onboarding) were most of the app's /auth/v1/user traffic. Check
+// with the server at most every few minutes and use the signed-in session in between. Safe: every
+// database read and write still verifies the session token, and sign-out clears the session.
+const AUTH_SERVER_CHECK_MS = 5 * 60_000;
+let lastAuthServerCheck = { at: 0, userId: '' };
+
+const getAuthUser = async (supabase: ReturnType<typeof supabaseClient>) => {
+   if (Date.now() - lastAuthServerCheck.at < AUTH_SERVER_CHECK_MS) {
+      const {
+         data: { session }
+      } = await supabase.auth.getSession();
+      if (session?.user && session.user.id === lastAuthServerCheck.userId) return { user: session.user, error: null };
+   }
    const {
       data: { user },
-      error: sessionError
+      error
    } = await supabase.auth.getUser();
+   lastAuthServerCheck = user && !error ? { at: Date.now(), userId: user.id } : { at: 0, userId: '' };
+   return { user, error };
+};
+
+const fetchCurrentUserProfile = async (): Promise<User> => {
+   const supabase = supabaseClient();
+   const { user, error: sessionError } = await getAuthUser(supabase);
 
    if (sessionError || !user) {
       throw sessionError ?? new Error('Unable to resolve authenticated user');
@@ -619,8 +647,46 @@ export type OtpMode = 'signin' | 'signup';
 
 // What a stale-session cleanup before a code sign-in must NOT wipe: an invite code or shared
 // request they arrived with, attribution, where to go after signing in, testing flags.
-const KEEP_THROUGH_OTP_LOCAL = [PENDING_INVITE_STORAGE_KEY, FIRST_TOUCH_STORAGE_KEY, AUTH_NEXT_STORAGE_KEY, LAST_USED_AUTH_STORAGE_KEY, SMS_TEST_FLAG_KEY, 'force_ph'];
-const KEEP_THROUGH_OTP_SESSION = [PENDING_SHARED_REQUEST_KEY];
+const KEEP_THROUGH_OTP_LOCAL = [PENDING_INVITE_STORAGE_KEY, TEAM_CODE_STORAGE_KEY, CODE_STEP_KEY, FIRST_TOUCH_STORAGE_KEY, AUTH_NEXT_STORAGE_KEY, LAST_USED_AUTH_STORAGE_KEY, SMS_TEST_FLAG_KEY, 'force_ph'];
+// The email whose code was sent for a waiting guest account (checked as an email-change code).
+// sessionStorage so a reload of the code page in this tab still checks it the right way.
+const GUEST_CODE_EMAIL_KEY = 'moodeng.guestCodeEmail';
+const KEEP_THROUGH_OTP_SESSION = [PENDING_SHARED_REQUEST_KEY, GUEST_CODE_EMAIL_KEY];
+
+const writeGuestCodeEmail = (email: string | null) => {
+   try {
+      if (email) sessionStorage.setItem(GUEST_CODE_EMAIL_KEY, email.trim().toLowerCase());
+      else sessionStorage.removeItem(GUEST_CODE_EMAIL_KEY);
+   } catch {
+      // Storage blocked: the code is then checked as a normal sign-in code.
+   }
+};
+
+const isGuestCodeEmail = (email: string) => {
+   try {
+      return sessionStorage.getItem(GUEST_CODE_EMAIL_KEY) === email.trim().toLowerCase();
+   } catch {
+      return false;
+   }
+};
+
+/**
+ * True when a guest account was waiting on this email and a code for it was mailed (forgot-password
+ * edge function, guest_code action). Any failure → false, and the normal sign-in code goes out.
+ */
+const sendGuestAccountCode = async (email: string): Promise<boolean> => {
+   const supabase = supabaseClient();
+   try {
+      const { data: waiting } = await supabase.rpc('guest_awaiting_email', { p_email: email.trim() });
+      if (waiting !== true) return false;
+      const { data, error } = await supabase.functions.invoke('forgot-password', {
+         body: { action: 'guest_code', email: email.trim() }
+      });
+      return !error && (data as { guest?: boolean } | null)?.guest === true;
+   } catch {
+      return false;
+   }
+};
 
 /**
  * Sends a one-time sign-in code by SMS (PH numbers, through the Send SMS hook and UniSMS) or email.
@@ -636,22 +702,28 @@ export const requestOtpCode = createAsyncThunk('auth/requestOtpCode', async (par
       data: { session: staleSession }
    } = await supabase.auth.getSession();
 
+   // A guest account (email-first sign-up in Facebook's browser) waiting on this email: send them a
+   // code for THAT account, so signing in here doesn't create a second, empty one.
+   const guestCode = target.channel === 'email' && (await sendGuestAccountCode(target.email));
+   writeGuestCodeEmail(guestCode && target.channel === 'email' ? target.email : null);
+
    // user_metadata is only applied when the account is created. `passwordless` tells Account
    // settings and onboarding that this account has no password yet.
-   const { error } =
-      target.channel === 'sms'
-         ? await supabase.auth.signInWithOtp({
-              phone: target.phone,
-              options: { shouldCreateUser, data: { username: generatePhoneUsername(), passwordless: true } }
-           })
-         : await supabase.auth.signInWithOtp({
-              email: target.email,
-              options: {
-                 shouldCreateUser,
-                 emailRedirectTo: getAuthRedirectUrl(),
-                 data: { username: target.email.split('@')[0], passwordless: true }
-              }
-           });
+   const { error } = guestCode
+      ? { error: null }
+      : target.channel === 'sms'
+        ? await supabase.auth.signInWithOtp({
+             phone: target.phone,
+             options: { shouldCreateUser, data: { username: generatePhoneUsername(), passwordless: true } }
+          })
+        : await supabase.auth.signInWithOtp({
+             email: target.email,
+             options: {
+                shouldCreateUser,
+                emailRedirectTo: getAuthRedirectUrl(),
+                data: { username: target.email.split('@')[0], passwordless: true }
+             }
+          });
 
    // Nothing is signed out until the code is on its way: a refused request (no account for that
    // email, rate limit) must never cost the session they're in.
@@ -781,9 +853,13 @@ export const verifyOtpCode = createAsyncThunk('auth/verifyOtpCode', async (param
    const { data, error } =
       params.channel === 'sms'
          ? await supabase.auth.verifyOtp({ phone: params.phone, token: params.token, type: 'sms' })
-         : await supabase.auth.verifyOtp({ email: params.email, token: params.token, type: 'email' });
+         : isGuestCodeEmail(params.email)
+           ? // A waiting guest account's code: confirms its pending email and signs into it.
+             await supabase.auth.verifyOtp({ email: params.email.trim().toLowerCase(), token: params.token, type: 'email_change' })
+           : await supabase.auth.verifyOtp({ email: params.email, token: params.token, type: 'email' });
 
    if (error) throw error;
+   if (params.channel === 'email') writeGuestCodeEmail(null);
 
    // A guest session that requestOtpCode kept: the code worked, so drop that guest's cached data
    // now (the new session is in cookies, which this doesn't touch).
@@ -1006,10 +1082,7 @@ export const updateBorrowerContext = createAsyncThunk(
    'auth/updateBorrowerContext',
    async (payload: BorrowerContextPayload) => {
       const supabase = supabaseClient();
-      const {
-         data: { user },
-         error: sessionError
-      } = await supabase.auth.getUser();
+      const { user, error: sessionError } = await getAuthUser(supabase);
 
       if (sessionError || !user) throw sessionError ?? new Error('Not authenticated');
 
@@ -1037,13 +1110,25 @@ export const updateBorrowerContext = createAsyncThunk(
    }
 );
 
+/** Save just their job (the loan request asks for it when the profile has none). */
+export const updateProfession = createAsyncThunk('auth/updateProfession', async (profession: string) => {
+   const supabase = supabaseClient();
+   const { user, error: sessionError } = await getAuthUser(supabase);
+   if (sessionError || !user) throw sessionError ?? new Error('Not authenticated');
+   const { data: updatedRow, error } = await supabase
+      .from('users')
+      .update({ profession: profession.trim().slice(0, 60) } as Record<string, unknown>)
+      .eq('id', user.id)
+      .select('*')
+      .single();
+   if (error || !updatedRow) throw error ?? new Error('Failed to save your job');
+   return mapSupabaseRowToUser(updatedRow);
+});
+
 /** Set user_role in Supabase. Single source of truth for role-based routing. */
 export const updateUserRole = createAsyncThunk('auth/updateUserRole', async (role: UserRole) => {
    const supabase = supabaseClient();
-   const {
-      data: { user },
-      error: sessionError
-   } = await supabase.auth.getUser();
+   const { user, error: sessionError } = await getAuthUser(supabase);
 
    if (sessionError || !user) {
       throw sessionError ?? new Error('Not authenticated');
@@ -1262,6 +1347,9 @@ const authSlice = createSlice({
             state.error = (action.error.message as string) || null;
          })
          .addCase(updateBorrowerContext.fulfilled, (state, action) => {
+            state.user = action.payload;
+         })
+         .addCase(updateProfession.fulfilled, (state, action) => {
             state.user = action.payload;
          })
          .addCase(fetchUserProfiles.fulfilled, (state, action) => {

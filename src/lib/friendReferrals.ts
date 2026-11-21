@@ -12,7 +12,10 @@ export type VoucherReward =
    | 'referral_invitee'
    | 'tier_rising'
    | 'tier_prime'
-   | 'tier_apex';
+   | 'tier_apex'
+   | 'streak_3'
+   | 'streak_5'
+   | 'affiliate_payout';
 export type VoucherClaimStatus = 'pending' | 'sent' | 'rejected';
 /** Moo-Menu pick: 'food' = Xoxo link (Jollibee & co, anywhere in PH), 'grabmart' = GrabMart (₱100+, Metro Manila & Cebu). */
 export type VoucherBrand = 'food' | 'grabmart';
@@ -42,15 +45,46 @@ export interface VoucherClaimSummary {
    links: string[];
 }
 
+/**
+ * The on-time repayment streak, from app_private.repay_reward_preview() (migration 20261114150000).
+ * A loan repaid within a day of funding counts for nothing; a late repayment (or an overdue loan) resets it.
+ */
+export interface RepayStreak {
+   /** On-time repayments in a row right now. */
+   current: number;
+   /** The longest run ever: a streak voucher, once earned, stays earned. */
+   best: number;
+   /** The streak count that pays the next food voucher, or null when none is left. */
+   nextStep: number | null;
+   /** On-time repayments still needed to reach nextStep. */
+   toGo: number | null;
+   nextPhp: number | null;
+   /**
+    * Their latest repayment (last 3 days) was on time but before the loan's halfway day, so it earned
+    * no voucher: when that loan would have started counting. Null otherwise. The team can unlock it.
+    */
+   earlyPaid?: { rewardFrom: string } | null;
+}
+
+export const EMPTY_STREAK: RepayStreak = { current: 0, best: 0, nextStep: null, toGo: null, nextPhp: null };
+
 export interface MyRewards {
    invitedCount: number;
    qualifiedCount: number;
    wasReferred: boolean;
+   streak: RepayStreak;
    claimable: ClaimableVoucher[];
    claims: VoucherClaimSummary[];
 }
 
-export const EMPTY_REWARDS: MyRewards = { invitedCount: 0, qualifiedCount: 0, wasReferred: false, claimable: [], claims: [] };
+export const EMPTY_REWARDS: MyRewards = {
+   invitedCount: 0,
+   qualifiedCount: 0,
+   wasReferred: false,
+   streak: EMPTY_STREAK,
+   claimable: [],
+   claims: []
+};
 
 const PENDING_INVITE_KEY = 'moodeng.pendingInviteCode';
 export const PENDING_INVITE_STORAGE_KEY = PENDING_INVITE_KEY;
@@ -58,6 +92,8 @@ const INVITE_CODE_PATTERN = /^[A-Z]{6}[0-9]{5}$/;
 
 export const normalizeInviteCode = (code: string) => code.trim().toUpperCase();
 export const isValidInviteCode = (code: string) => INVITE_CODE_PATTERN.test(normalizeInviteCode(code));
+/** What /invite/:code accepts: a personal invite code or an influencer's code (IRISH2026); the server decides. */
+export const isLinkableInviteCode = (code: string) => /^[A-Z0-9]{3,24}$/.test(normalizeInviteCode(code));
 
 export async function getMyInviteCode(): Promise<string> {
    const { data, error } = await getSupabaseBrowserClient().rpc('get_my_invite_code');
@@ -77,7 +113,59 @@ export async function redeemFriendInvite(code: string): Promise<RedeemInviteResu
    return data as RedeemInviteResult;
 }
 
+export type ApplyCodeResult =
+   | { ok: true; code: string }
+   | { ok: false; reason: 'invalid' | 'already' | 'self' | 'old_account' | 'error'; linkedCode?: string };
+
+/**
+ * The "Who invited you?" box on the welcome step: a personal invite code (ABCDEF12345) links the friend,
+ * anything else is a team/affiliate code (MAHJID). The server keeps the first code an account gets.
+ */
+export async function applyInviteCode(raw: string): Promise<ApplyCodeResult> {
+   const code = normalizeInviteCode(raw).replace(/[^A-Z0-9]/g, '');
+   if (!code) return { ok: false, reason: 'invalid' };
+   try {
+      if (isValidInviteCode(code)) {
+         const result = await redeemFriendInvite(code);
+         if (result === 'joined') return { ok: true, code };
+         if (result === 'already_referred') return { ok: false, reason: 'already' };
+         if (result === 'self_referral') return { ok: false, reason: 'self' };
+         if (result === 'not_a_new_account') return { ok: false, reason: 'old_account' };
+      }
+      const { data, error } = await getSupabaseBrowserClient().rpc('redeem_referral_code', { code_input: code }).single();
+      if (error) {
+         // One inviter per person: a friend's invite is already on this account (migration 20261121200000).
+         if (/already/i.test(error.message)) return { ok: false, reason: 'already' };
+         return { ok: false, reason: /incorrect|required/i.test(error.message) ? 'invalid' : 'error' };
+      }
+      if (!data) return { ok: false, reason: 'invalid' };
+      if (data.already_redeemed && data.code !== code) return { ok: false, reason: 'already', linkedCode: data.code };
+      return { ok: true, code: data.code };
+   } catch {
+      return { ok: false, reason: 'error' };
+   }
+}
+
 const toNumber = (value: unknown) => (typeof value === 'number' ? value : Number(value) || 0);
+const toNumberOrNull = (value: unknown) => (value === null || value === undefined ? null : toNumber(value));
+
+const parseStreak = (raw: unknown): RepayStreak => {
+   if (!raw || typeof raw !== 'object') return EMPTY_STREAK;
+   const value = raw as Record<string, unknown>;
+   return {
+      current: toNumber(value.current),
+      best: toNumber(value.best),
+      nextStep: toNumberOrNull(value.nextStep),
+      toGo: toNumberOrNull(value.toGo),
+      nextPhp: toNumberOrNull(value.nextPhp),
+      earlyPaid:
+         value.earlyPaid &&
+         typeof value.earlyPaid === 'object' &&
+         typeof (value.earlyPaid as Record<string, unknown>).rewardFrom === 'string'
+            ? { rewardFrom: (value.earlyPaid as Record<string, string>).rewardFrom }
+            : null
+   };
+};
 
 /** Parses the jsonb returned by get_my_rewards(), tolerating missing keys. */
 export function parseMyRewards(raw: unknown): MyRewards {
@@ -89,6 +177,7 @@ export function parseMyRewards(raw: unknown): MyRewards {
       invitedCount: toNumber(value.invitedCount),
       qualifiedCount: toNumber(value.qualifiedCount),
       wasReferred: value.wasReferred === true,
+      streak: parseStreak(value.streak),
       claimable: list('claimable').map((item) => ({
          reward: item.reward as VoucherReward,
          friendReferralId: typeof item.friendReferralId === 'string' ? item.friendReferralId : null,
@@ -208,11 +297,11 @@ export function clearPendingInvite(): void {
    }
 }
 
-/** One friend you invited, for the "Pay zero interest" tracker (no names: the database never sends them). */
+/** One friend you invited, for the affiliate tracker on /refer (no names: the database never sends them). */
 export interface InterestRefundFriend {
    joinedAt: string;
    repaid: boolean;
-   /** Set once both of you have repaid: the interest coming back to you (capped at $5). */
+   /** Set once you're an affiliate and they've repaid: $5 coming to you (old rows: interest refund). */
    refundUsd: number | null;
    refundStatus: 'pending' | 'sent' | null;
    sentAt: string | null;
@@ -222,11 +311,31 @@ export interface InterestRefundFriend {
 export interface MyInterestRefunds {
    friends: InterestRefundFriend[];
    totalRefundedUsd: number;
+   /** USDC already sent to you (affiliate rewards plus any old interest refunds). */
+   totalEarnedUsd: number;
+   /** USDC owed to you, not sent yet. */
+   owedUsd: number;
+   /** You've repaid a loan (held 24h+), so friends who repay earn you money. */
+   isAffiliate: boolean;
+   /** Reward per friend who repays. */
+   rewardUsd: number;
 }
 
-export const EMPTY_INTEREST_REFUNDS: MyInterestRefunds = { friends: [], totalRefundedUsd: 0 };
+export const AFFILIATE_REWARD_USD = 5;
 
-/** Parses the jsonb returned by get_my_interest_refunds() (migration 20261101120000), tolerating missing keys. */
+export const EMPTY_INTEREST_REFUNDS: MyInterestRefunds = {
+   friends: [],
+   totalRefundedUsd: 0,
+   totalEarnedUsd: 0,
+   owedUsd: 0,
+   isAffiliate: false,
+   rewardUsd: AFFILIATE_REWARD_USD
+};
+
+/**
+ * Parses the jsonb returned by get_my_interest_refunds() (migrations 20261101120000 and
+ * 20261115120000_affiliate_cash_per_friend), tolerating missing keys from the older shape.
+ */
 export function parseMyInterestRefunds(raw: unknown): MyInterestRefunds {
    if (!raw || typeof raw !== 'object') return EMPTY_INTEREST_REFUNDS;
    const value = raw as Record<string, unknown>;
@@ -242,7 +351,11 @@ export function parseMyInterestRefunds(raw: unknown): MyInterestRefunds {
          sentAt: text(item.sentAt),
          txHash: text(item.txHash)
       })),
-      totalRefundedUsd: toNumber(value.totalRefundedUsd)
+      totalRefundedUsd: toNumber(value.totalRefundedUsd),
+      totalEarnedUsd: toNumber(value.totalEarnedUsd ?? value.totalRefundedUsd),
+      owedUsd: toNumber(value.owedUsd),
+      isAffiliate: value.isAffiliate === true,
+      rewardUsd: value.rewardUsd === undefined || value.rewardUsd === null ? AFFILIATE_REWARD_USD : toNumber(value.rewardUsd)
    };
 }
 

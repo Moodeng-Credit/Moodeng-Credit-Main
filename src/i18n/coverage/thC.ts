@@ -240,8 +240,8 @@ export const thaiCoverageC: Record<string, string> = {
 
    // src/views/onboarding/WalletConnected.tsx
    'Use Your Instant Wallet or a Base Account': 'ใช้ Instant Wallet หรือ Base Account ของคุณ',
-   'Borrowers use the Moodeng Instant Wallet, created from your login — or you can connect a Base Account instead. Other wallet connectors cannot be locked for Moodeng borrowing.':
-      'ผู้ยืมใช้ Instant Wallet ของ Moodeng ซึ่งสร้างจากบัญชีที่คุณใช้เข้าสู่ระบบ หรือจะเชื่อมต่อ Base Account แทนก็ได้ กระเป๋าเงินแบบอื่นไม่สามารถล็อกไว้ใช้สำหรับการยืมกับ Moodeng ได้',
+   'Use your Moodeng Instant Wallet or a Base Account. Other wallets can’t be used to borrow.':
+      'ใช้ Moodeng Instant Wallet หรือ Base Account กระเป๋าเงินอื่นใช้กู้ไม่ได้',
    'Confirm Saved Base Account': 'ยืนยัน Base Account ที่บันทึกไว้',
    'Confirm Your Base Account': 'ยืนยัน Base Account ของคุณ',
    "We couldn't detect a wallet. Set up your Instant Wallet (or connect a Base Account if you prefer) to continue.":
@@ -266,8 +266,7 @@ export const thaiCoverageC: Record<string, string> = {
    'Connect a wallet I already own': 'เชื่อมต่อกระเป๋าเงินที่ฉันมีอยู่แล้ว',
    'Could not start the face check. Please try again.': 'เริ่มการสแกนใบหน้าไม่สำเร็จ โปรดลองอีกครั้ง',
    'Quick face check': 'สแกนใบหน้าสั้น ๆ',
-   'A short liveness scan keeps Instant Wallets to one per person, which is what lets us cover the network fees. We never store your photo, and it is only needed to create the wallet — not to sign in, send or repay.':
-      'การสแกนตรวจสอบบุคคลจริงสั้น ๆ ช่วยจำกัด Instant Wallet ให้มีหนึ่งใบต่อหนึ่งคน ซึ่งทำให้เราออกค่าธรรมเนียมเครือข่ายให้ได้ เราไม่จัดเก็บรูปภาพของคุณ และใช้เพียงตอนสร้างกระเป๋าเงินเท่านั้น ไม่ต้องใช้ตอนเข้าสู่ระบบ ส่งเงิน หรือชำระคืน',
+   'A quick face scan — one wallet per person. We don’t keep your photo.': 'สแกนใบหน้าสั้นๆ — หนึ่งคนหนึ่งกระเป๋า เราไม่เก็บรูปของคุณ',
    "We couldn't finish creating your wallet. Please try again.": 'เราสร้างกระเป๋าเงินของคุณไม่สำเร็จ โปรดลองอีกครั้ง',
    'Creating your wallet': 'กำลังสร้างกระเป๋าเงินของคุณ',
    'This takes a few seconds. Keep this screen open.': 'ใช้เวลาเพียงไม่กี่วินาที โปรดเปิดหน้านี้ค้างไว้',
@@ -489,8 +488,10 @@ export const thaiCoverageC: Record<string, string> = {
    'Now open Moneybees below →': 'จากนั้นเปิด Moneybees ด้านล่าง →',
    'Now paste it into the app below →': 'จากนั้นวางในแอปด้านล่าง →',
    '⚠️ Send on the BASE network only': '⚠️ ส่งบนเครือข่าย BASE เท่านั้น',
-   'USDC sent on Ethereum, Polygon, or any other network goes to this address on the wrong chain and is lost forever — it cannot be recovered. When':
-      'USDC ที่ส่งบน Ethereum Polygon หรือเครือข่ายอื่นจะไปถึงที่อยู่นี้บนเชนที่ผิด และสูญหายถาวรโดยกู้คืนไม่ได้ เมื่อ',
+   'Choose the Base network. Any other network and your money is lost.': 'เลือกเครือข่าย Base ถ้าใช้เครือข่ายอื่น เงินจะหายไป',
+   '⚠️ Pick USDCBASE': '⚠️ เลือก USDCBASE',
+   'See it in': 'ดูใน',
+   'Any other USDC (USDCPOL, USDCSOL…) and your money is lost.': 'ถ้าเป็น USDC อื่น (USDCPOL, USDCSOL…) เงินจะหายไป',
    'asks which network, choose': 'ถามว่าจะใช้เครือข่ายใด ให้เลือก',
    'Visit moneybees.ph and follow their own process': 'ไปที่ moneybees.ph และทำตามขั้นตอนของพวกเขา',
    'They handle ID checks and the rate directly with you': 'Moneybees จะตรวจสอบตัวตนและตกลงอัตราแลกเปลี่ยนกับคุณโดยตรง',
@@ -671,8 +672,8 @@ export const thaiCoverageC: Record<string, string> = {
    'A Credit Level is your borrowing limit. Everyone starts at Level 1 with a $15 limit, and the limit grows as you complete Credit-Building Loans.':
       'ระดับเครดิตคือวงเงินกู้ของคุณ ทุกคนเริ่มต้นที่ระดับ 1 ด้วยวงเงิน $15 และวงเงินจะเพิ่มขึ้นเมื่อคุณทำ Credit-Building Loan สำเร็จ',
    'How do I move to the next level?': 'ฉันจะไปสู่ระดับถัดไปได้อย่างไร?',
-   'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment unlocks the next limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
-      'กู้ Credit-Building Loan เต็มวงเงินปัจจุบันของคุณ แล้วชำระคืนให้ครบและตรงเวลา การชำระคืนที่ราบรื่นจะปลดล็อกวงเงินถัดไป — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140',
+   'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment adds $10 to your limit: $15, then $25, then $35, and so on.':
+      'กู้ Credit-Building Loan เต็มวงเงินปัจจุบันของคุณ แล้วชำระคืนให้ครบและตรงเวลา การชำระคืนที่ราบรื่นแต่ละครั้งจะเพิ่มวงเงินของคุณ $10: $15 แล้ว $25 แล้ว $35 ต่อไปเรื่อย ๆ',
    'Does borrowing a small amount level me up?': 'การยืมจำนวนน้อยจะทำให้ฉันเพิ่มระดับหรือไม่?',
    'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with moo-lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.':
       'ไม่ การยืมต่ำกว่าวงเงินของคุณคือ Trust-Building Loan ซึ่งช่วยเพิ่มความน่าเชื่อถือกับ Moo-lender แต่ไม่เพิ่มระดับเครดิตของคุณ มีเพียง Credit-Building Loan แบบเต็มวงเงินเท่านั้นที่จะทำให้คุณก้าวหน้า',
@@ -835,6 +836,8 @@ export const thaiCoverageC: Record<string, string> = {
    'Waiting for moo-lender acceptance': 'รอ Moo-lender ยอมรับ',
    'This loan is not funded yet. Repayment starts only after a moo-lender accepts.':
       'เงินกู้นี้ยังไม่ได้รับการปล่อยกู้ การชำระคืนจะเริ่มก็ต่อเมื่อ Moo-lender ยอมรับแล้วเท่านั้น',
+   'Waiting for a moo-lender': 'รอ Moo-lender',
+   'Nothing to pay until it’s funded.': 'ยังไม่ต้องจ่ายอะไรจนกว่าจะได้รับเงิน',
    'View on explorer': 'ดูบน explorer',
 
    // src/views/transactions/TransactionHistory.tsx
@@ -900,6 +903,7 @@ export const thaiCoverageC: Record<string, string> = {
    'Loan / moo-lender': 'เงินกู้ / Moo-lender',
    'No funded loans yet': 'ยังไม่มีเงินกู้ที่ได้รับการปล่อยกู้',
    'Not enough loan history yet': 'ยังมีประวัติเงินกู้ไม่เพียงพอ',
+   'Shows after a few loans.': 'จะแสดงหลังจากกู้ไม่กี่ครั้ง',
    "Once this borrower completes more loans, you'll see repayment timing, usual loan size, repeat moo-lenders, and borrowing patterns here.":
       'เมื่อผู้ยืมรายนี้ทำเงินกู้เสร็จสิ้นมากขึ้น คุณจะเห็นจังหวะการชำระคืน ขนาดเงินกู้ทั่วไป Moo-lender ที่ยืมซ้ำ และรูปแบบการยืมที่นี่',
    'Default History': 'ประวัติการผิดนัดชำระ',
@@ -1020,8 +1024,7 @@ export const thaiCoverageC: Record<string, string> = {
    'Send only': 'ส่งเฉพาะ',
    'Verify Base first': 'ยืนยัน Base ก่อน',
    'How would you like to cash out?': 'คุณต้องการถอนเงินด้วยวิธีใด?',
-   'Your loan funds are in your wallet. Withdraw or convert them using an exchange, P2P platform, or a supported local crypto service.':
-      'เงินกู้ของคุณอยู่ในกระเป๋าเงินของคุณแล้ว คุณสามารถถอนหรือแปลงเงินได้โดยใช้แพลตฟอร์มแลกเปลี่ยน แพลตฟอร์ม P2P หรือบริการคริปโตท้องถิ่นที่รองรับ',
+   'Pick where to get your cash.': 'เลือกช่องทางรับเงินสด',
    'Learn more about withdrawal options': 'เรียนรู้เพิ่มเติมเกี่ยวกับตัวเลือกการถอนเงิน',
    "I'll do this later": 'ไว้ทำภายหลัง',
    'Contact support': 'ติดต่อฝ่ายช่วยเหลือ',

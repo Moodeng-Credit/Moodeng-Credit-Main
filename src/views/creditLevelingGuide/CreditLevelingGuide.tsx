@@ -3,21 +3,21 @@ import { Link } from 'react-router-dom';
 
 import { usePageSeo } from '@/hooks/usePageSeo';
 
+import { CREDIT_STEP, CREDIT_TIERS } from '@/config/creditTiers';
+
 import '@/views/academy/AcademyGuide.css';
 import '@/views/creditLevelingGuide/CreditLevelingGuide.css';
 
-// Mirrors CREDIT_TIERS in src/config/creditTiers.ts — [15, 20, 40, 60, 80, 100, 120, 140].
-// Keep in sync with that config if the tiers change.
-const levels = [
-   { level: 'Level 1', limit: '$15', note: 'Start here', unlock: 'Verify and make your first request', state: 'Current' },
-   { level: 'Level 2', limit: '$20', note: 'Next unlock', unlock: 'Borrow $15 and repay funded terms on time', state: 'Next' },
-   { level: 'Level 3', limit: '$40', note: 'After that', unlock: 'Borrow $20 and repay funded terms on time', state: 'Locked' },
-   { level: 'Level 4', limit: '$60', note: 'Keep building', unlock: 'Borrow $40 and repay funded terms on time', state: 'Locked' },
-   { level: 'Level 5', limit: '$80', note: 'Keep building', unlock: 'Borrow $60 and repay funded terms on time', state: 'Locked' },
-   { level: 'Level 6', limit: '$100', note: 'Keep building', unlock: 'Borrow $80 and repay funded terms on time', state: 'Locked' },
-   { level: 'Level 7', limit: '$120', note: 'Keep building', unlock: 'Borrow $100 and repay funded terms on time', state: 'Locked' },
-   { level: 'Level 8', limit: '$140', note: 'Current maximum', unlock: 'Borrow $120 and repay funded terms on time', state: 'Locked' }
-];
+// The first levels from the ladder (src/config/creditTiers.ts), then "and so on". The full list would
+// name the top limit, which borrower copy never does.
+const NOTES = ['Start here', 'Next unlock', 'After that', 'Keep building', 'Keep building'];
+const levels = CREDIT_TIERS.slice(0, 4).map((amount, i) => ({
+   level: `Level ${i + 1}`,
+   limit: `$${amount}`,
+   note: NOTES[i],
+   unlock: i === 0 ? 'Verify and make your first request' : `Borrow $${CREDIT_TIERS[i - 1]} and repay funded terms on time`,
+   state: i === 0 ? 'Current' : i === 1 ? 'Next' : 'Locked'
+}));
 
 const examples = [
    {
@@ -30,7 +30,7 @@ const examples = [
    {
       title: 'Credit-building loan',
       amount: '$15 of $15',
-      result: 'Can unlock $20',
+      result: 'Can unlock $25',
       body: 'This is the level-up loan. You borrow your full current limit and repay the funded terms on time.',
       tone: 'credit'
    },
@@ -74,7 +74,7 @@ export default function CreditLevelingGuide(): JSX.Element {
    usePageSeo({
       title: 'Credit Leveling Guide | Moodeng Credit',
       description:
-         'How Moodeng credit levels work: repay a full-limit loan on time to unlock the next level, from $15 up to $140, plus trust-building vs credit-building loans.',
+         'How Moodeng credit levels work: you start at $15 and each full-limit loan you repay on time adds $10, plus trust-building vs credit-building loans.',
       canonicalPath: '/credit-leveling-guide'
    });
 
@@ -135,7 +135,7 @@ export default function CreditLevelingGuide(): JSX.Element {
                   <b>=</b>
                   <strong>Next level</strong>
                </div>
-               <p>If your limit is $15, a $15 credit-building loan can unlock $20. A smaller loan builds trust, but it does not level you up.</p>
+               <p>If your limit is $15, a $15 credit-building loan can unlock $25. A smaller loan builds trust, but it does not level you up.</p>
             </div>
          </section>
 
@@ -179,6 +179,7 @@ export default function CreditLevelingGuide(): JSX.Element {
                   </article>
                ))}
             </div>
+            <p className="credit-leveling-ladder__more">{`…and $${CREDIT_STEP} more for each level after that.`}</p>
          </section>
 
          <section className="credit-leveling-section">

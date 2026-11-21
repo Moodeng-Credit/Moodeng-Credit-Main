@@ -15,6 +15,7 @@ import { fallback, webSocket } from 'viem';
 import { arbitrum, base, baseSepolia, bsc, type Chain, optimism, polygon, sepolia } from 'wagmi/chains';
 
 import { installBaseAccountPopupSizePatch } from '@/lib/baseAccountPopup';
+import { BASE_ALCHEMY_ID } from '@/lib/web3/baseAlchemy';
 import { type CustomChainConfig } from '@/types/wagmiTypes';
 
 export type { CustomChainConfig };
@@ -265,7 +266,10 @@ const chainsTuple = chainsWithIcons as unknown as [Chain, ...Chain[]];
 // was bare `fallback([webSocket(), http()])` with no URL, so both legs pointed
 // at the same public infra — meaning a public-RPC outage took down every wallet
 // read, the USDC transfer, and the confirmation watch with no real failover.
-const ALCHEMY_ID = import.meta.env.VITE_ALCHEMY_ID ?? '';
+// BASE_ALCHEMY_ID swaps prod's placeholder "your_alchemy_id" for a working key. Reading the raw env
+// value here sent every Base read to a 401 first, then a failing websocket that kept reconnecting
+// (thousands of console errors a day), before it landed on the rate-limited public RPC.
+const ALCHEMY_ID = BASE_ALCHEMY_ID;
 const transportForChain = (chain: Chain) => {
    if (chain.id === base.id && ALCHEMY_ID) {
       return fallback([

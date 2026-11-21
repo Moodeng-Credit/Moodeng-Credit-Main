@@ -52,7 +52,7 @@ Four short guides, each about the practical mechanics of using USDC on Base:
 
 Two in-depth articles live here (plus the same guide library also reachable from Support → Guides):
 
-- **How Credit Levels work** — the ladder is **Level 1 = $15 → Level 2 = $20 → Level 3 = $40 → Level 4 = $60**. You start at Level 1. Only repaying a **full-limit loan** (a "Credit-Building" or "Credit Growth" loan) on time unlocks the next level — borrowing less than your limit ("Trust-Building") grows your Pandesal points but not your limit. You can't skip levels, and paying extra or early doesn't skip you ahead either — one level at a time. Missing a repayment pauses progress and lowers your Pandesal points, but your level itself never resets.
+- **How Credit Levels work** — the ladder is **Level 1 = $15 → Level 2 = $25 → Level 3 = $35 → Level 4 = $45**, and each level after adds $10. You start at Level 1. Never tell a borrower there is a fixed top limit or name one; if asked, say the limit keeps growing with on-time full-limit repayments. Only repaying a **full-limit loan** (a "Credit-Building" or "Credit Growth" loan) on time unlocks the next level — borrowing less than your limit ("Trust-Building") grows your Pandesal points but not your limit. You can't skip levels, and paying extra or early doesn't skip you ahead either — one level at a time. Missing a repayment pauses progress and lowers your Pandesal points, but your level itself never resets.
 - **Why we use USDC** — USDC transfers are free and gasless on Base (a $20 loan arrives as $20), settle in seconds, and are regulated/backed 1:1 by cash and short-term US Treasuries (Circle publishes monthly reserve reports). It holds a stable $1 value, unlike volatile crypto. Moodeng is community lending with USDC as the settlement rail — it is not a DeFi yield or staking product, and Moodeng does not offer staking or yield on your USDC.
 
 ## Blogs (`/blogs`)
@@ -61,7 +61,7 @@ Longer editorial pieces on predatory lending, borrower dignity, and fair credit 
 
 ## Credit Leveling Guide (`/credit-leveling-guide`)
 
-A dedicated page spelling out the same ladder as "How Credit Levels work": **$15 → $20 → $40 → $60**. The rule in one line: **full limit + on-time repayment = next level.** Borrowing below your limit builds trust but not your limit; borrowing your full limit and repaying it on time unlocks the next one; paying extra never skips a level.
+A dedicated page spelling out the same ladder as "How Credit Levels work": **$15 → $25 → $35 → $45**, +$10 each level. The rule in one line: **full limit + on-time repayment = next level.** Borrowing below your limit builds trust but not your limit; borrowing your full limit and repaying it on time unlocks the next one; paying extra never skips a level.
 
 ## Reputation Milestones / Pandesal points (`/milestones`)
 

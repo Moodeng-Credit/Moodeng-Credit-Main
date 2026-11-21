@@ -125,8 +125,8 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Connect a wallet first so we know where to send your USDC.': 'Hãy kết nối ví trước để chúng tôi biết gửi USDC của bạn đến đâu.',
    'Could not start Coinbase.': 'Không khởi động được Coinbase.',
    'Card purchases aren’t available just yet — try a bridge below.': 'Hiện chưa thể mua bằng thẻ — hãy thử bắc cầu bên dưới.',
-   'Prefer another way? You can also buy USDC on an exchange (Binance P2P, Coins.ph, PDAX, GCrypto), through an external service like Moneybees, or send it from any wallet — always on the Base network.':
-      'Muốn dùng cách khác? Bạn cũng có thể mua USDC trên sàn giao dịch (Binance P2P, Coins.ph, PDAX, GCrypto), qua dịch vụ bên ngoài như Moneybees, hoặc gửi từ bất kỳ ví nào — luôn trên mạng Base.',
+   'Prefer another way? Buy USDC on an exchange like PDAX or GCrypto, or send it from any wallet — on the Base network.':
+      'Muốn cách khác? Mua USDC trên sàn như PDAX hoặc GCrypto, hoặc gửi từ ví bất kỳ — trên mạng Base.',
    'Visa / Mastercard · Apple Pay · no account needed': 'Visa / Mastercard · Apple Pay · không cần tài khoản',
    '~30 sec': '~30 giây',
    'SOL and USDC to Base · opens Superbridge': 'SOL và USDC sang Base · mở Superbridge',
@@ -144,8 +144,8 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Most borrowers use both — Trust-Building Loans to stay active, Credit-Building Loans to climb.':
       'Hầu hết người vay dùng cả hai — Trust-Building Loan để duy trì hoạt động, Credit-Building Loan để lên hạng.',
    'How Credit Levels Work on Moodeng Credit': 'Hạng tín dụng hoạt động như thế nào trên Moodeng Credit',
-   'Credit Levels set how much you can borrow on Moodeng Credit. Learn how limits grow $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, what a Credit-Building Loan is, and how to unlock your next level.':
-      'Hạng tín dụng quyết định số tiền bạn có thể vay trên Moodeng Credit. Tìm hiểu cách hạn mức tăng $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, Credit-Building Loan là gì và cách mở khóa hạng tiếp theo.',
+   'Credit Levels set how much you can borrow on Moodeng Credit. You start at $15 and each full-limit loan you repay adds $10. Learn what a Credit-Building Loan is and how to unlock your next level.':
+      'Hạng tín dụng quyết định số tiền bạn có thể vay trên Moodeng Credit. Bạn bắt đầu với $15 và mỗi khoản vay toàn hạn mức bạn trả xong sẽ cộng thêm $10. Tìm hiểu Credit-Building Loan là gì và cách mở khóa hạng tiếp theo.',
    'Verify, then make your first request': 'Xác minh, rồi gửi yêu cầu đầu tiên',
    'Repay your $15 loan on time': 'Trả khoản vay $15 đúng hạn',
    'Repay your $20 loan on time': 'Trả khoản vay $20 đúng hạn',
@@ -154,7 +154,7 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Repay your $80 loan on time': 'Trả khoản vay $80 đúng hạn',
    'Repay your $100 loan on time': 'Trả khoản vay $100 đúng hạn',
    'Repay your $120 loan on time': 'Trả khoản vay $120 đúng hạn',
-   'Limits step up $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.': 'Hạn mức tăng dần $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
+   'You start at $15. Each full-limit loan you repay adds $10.': 'Bạn bắt đầu với $15. Mỗi khoản vay toàn hạn mức bạn trả xong sẽ cộng thêm $10.',
    'How reliable repayment becomes a portable reputation moo-lenders trust.':
       'Việc trả nợ đáng tin cậy trở thành uy tín mang theo được mà moo-lender tin tưởng như thế nào.',
    'The difference between the two loan types and when to use each.': 'Sự khác nhau giữa hai loại khoản vay và khi nào nên dùng từng loại.',
@@ -307,10 +307,8 @@ export const vietnameseCoverageE: Record<string, string> = {
       'Bán USDC ở đó, rồi rút peso về ngân hàng hoặc ví điện tử của bạn.',
    'To move up a level, take a Credit-Building Loan — a loan at your full current limit — and repay it in full and on time.':
       'Để lên hạng, hãy vay một Credit-Building Loan — khoản vay bằng toàn bộ hạn mức hiện tại — và trả đầy đủ, đúng hạn.',
-   'Credit levels run $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
-      'Các Hạng tín dụng lần lượt là $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
-   'A referral code adds $5 to your starting limit — entered at the start of the loan application.':
-      'Mã giới thiệu cộng thêm $5 vào hạn mức khởi điểm của bạn — nhập ở bước đầu của đơn vay.',
+   'A referral code tells us who invited you — entered at the start of the loan application.':
+      'Mã giới thiệu cho chúng tôi biết ai đã mời bạn — nhập ở bước đầu của đơn vay.',
    'The first step of the application asks for a referral code — type it and tap "Apply code". (This step only appears for verified borrowers.)':
       'Bước đầu tiên của đơn vay sẽ hỏi mã giới thiệu — nhập mã và nhấn "Áp dụng mã". (Bước này chỉ hiện với người vay đã xác minh.)',
    'No code? Just tap "Continue to application" — the code is optional and there is no penalty for skipping it.':
@@ -442,7 +440,6 @@ export const vietnameseCoverageE: Record<string, string> = {
    'How can we reach you': 'Chúng tôi có thể liên hệ với bạn qua đâu',
    "Let's connect": 'Cùng kết nối nhé',
    'Add practical context without sharing private details.': 'Thêm thông tin thực tế mà không cần chia sẻ chi tiết riêng tư.',
-   '+$5 Credit Limit Boost': 'Tăng +$5 hạn mức tín dụng',
    Code: 'Mã',
    'applied: +$': 'đã được áp dụng: +$',
    'starting limit': 'hạn mức khởi điểm',
@@ -1229,9 +1226,8 @@ export const vietnameseCoverageE: Record<string, string> = {
       'Khoản trả nợ này đã được gửi đến ví bạn dùng để cấp vốn cho khoản vay:',
    'When repaid, funds return to the wallet you funded this loan from:':
       'Khi được trả, tiền sẽ về ví bạn dùng để cấp vốn cho khoản vay này:',
-   'This differs from the wallet you have connected now (': 'Ví này khác với ví bạn đang kết nối (',
-   '). That is expected — repayments go to the wallet used to fund each loan, not your current one. Open':
-      '). Điều này là bình thường — khoản trả nợ sẽ về ví đã dùng để cấp vốn cho từng khoản vay, không phải ví hiện tại của bạn. Mở',
+   'This money went to': 'Số tiền này đã về ví',
+   ', the wallet that funded this loan.': ', ví đã dùng để cho vay khoản này.',
    'to find these funds.': 'để tìm các khoản tiền này.',
    Return: 'Hoàn lại',
 

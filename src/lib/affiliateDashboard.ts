@@ -1,33 +1,124 @@
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 /**
- * Affiliate dashboard (/affiliate) — a referral code owner's own referrals and payouts, from
- * public.my_affiliate_dashboard() (supabase/migrations/20261026150000_affiliate_dashboard.sql).
- * The owner earns a code's payout_amount once a referred friend takes a loan and repays it; the
- * team marks each payout Paid in Admin → Referral codes (or the Telegram card).
+ * Moo affiliate (/affiliate) — every borrower's referrals and payouts, from public.my_affiliate_dashboard()
+ * (migrations 20261026150000_affiliate_dashboard, 20261115140000_moo_affiliate_for_everyone).
  *
- * Friends who never typed the code can be claimed (submitReferralClaim → Telegram → the team approves
- * in Admin → Referral codes). Claimed friends are tracked only: `claimed`, no payout.
+ * Two kinds of code, one page:
+ * - the personal invite code every borrower has: $5 USDC per friend who repays, once the borrower has
+ *   repaid a loan themself (`unlocked`); the $5 can be taken as a food/Grab voucher instead.
+ * - Belle-style referral codes the team makes: the code's payout_amount, marked Paid in Admin → Referral codes.
+ *
+ * Friends who never typed the code can be added by hand (submitReferralClaim → Telegram → the team approves).
+ * On a Belle-style code that's tracking only; on the personal code it pays if they joined in the last 30 days.
  */
 export interface AffiliateCode {
    code: string;
    boost_amount: number;
    payout_amount: number;
    is_active: boolean;
+   /** The borrower's own invite code (link /invite/CODE), not a team-made one. */
+   personal?: boolean;
 }
+
+export type AffiliatePayoutStatus = 'unpaid' | 'paid' | 'voucher' | null;
 
 export interface AffiliateReferral {
    first_name: string;
    code: string;
    joined_at: string;
-   /** Added by a claim the team approved — tracking only, never paid. */
+   /** Tracked only, never paid (a hand-added friend on a Belle code, or one who joined long before the claim). */
    claimed?: boolean;
+   personal?: boolean;
+   /** A hand-added friend the team approved. */
+   added_by_you?: boolean;
+   /** Personal-code friends: what a voucher claim for their $5 points at. */
+   friend_referral_id?: string | null;
    borrowed: boolean;
    repaid: boolean;
+   /** They repaid, but only a loan that doesn't count (held under 24h, or funded by you). */
+   repaid_not_counted?: boolean;
+   /** They repaid, but paid every loan off more than 2 weeks before it was due — too early to count (no $5). */
+   repaid_too_early?: boolean;
    payout_amount: number;
-   payout_status: 'unpaid' | 'paid' | null;
+   payout_status: AffiliatePayoutStatus;
    paid_at: string | null;
+   voucher_status?: 'pending' | 'sent' | 'rejected' | null;
+   voucher_php?: number | null;
+   /** Who they are, so the person who invited them can tell (full name, @username, Facebook). */
+   full_name?: string | null;
+   username?: string | null;
+   facebook_name?: string | null;
+   facebook_url?: string | null;
+   /** The team's call on them: none = hasn't reached the check yet, pending = being checked. */
+   access?: AffiliateAccess | null;
+   /** Their pre-screening (videos + questions + proof of income); null = not on that path. */
+   screening?: AffiliateScreening | null;
+   /** Their booked video call (start time). */
+   call_at?: string | null;
+   /** They missed their last call and haven't rebooked. */
+   call_missed?: boolean;
 }
+
+export type AffiliateScreening = 'not_started' | 'under_review' | 'need_more' | 'validated' | 'not_fit';
+
+export type AffiliateCheckTone = 'gray' | 'purple' | 'orange' | 'green' | 'red';
+
+/** One status chip under a friend who isn't approved yet. */
+export interface AffiliateCheck {
+   kind: 'docs' | 'call';
+   label: string;
+   tone: AffiliateCheckTone;
+   /** Set on a call booked for later: format it on the page in the viewer's time. */
+   at?: string;
+}
+
+/**
+ * Where a not-yet-approved friend is: their documents (pre-screening) and their call,
+ * plus what the person who invited them can tell them to do next.
+ */
+export function friendChecks(r: AffiliateReferral, now: Date = new Date()): { checks: AffiliateCheck[]; todo: string | null } {
+   const stage = referralStage(r);
+   if (stage !== 'signed_up' && stage !== 'checking') return { checks: [], todo: null };
+   const checks: AffiliateCheck[] = [];
+   let todo: string | null = null;
+   const s = r.screening ?? null;
+   if (s === 'not_started') {
+      checks.push({ kind: 'docs', label: 'Pre-screening not done', tone: 'gray' });
+      todo = 'Ask them to finish the videos and questions';
+   } else if (s === 'under_review') {
+      checks.push({ kind: 'docs', label: 'Documents under review', tone: 'purple' });
+      todo = 'Our team is checking their documents';
+   } else if (s === 'need_more') {
+      checks.push({ kind: 'docs', label: 'Needs to answer more questions', tone: 'orange' });
+      todo = 'Ask them to answer our questions on Messenger';
+   } else if (s === 'validated') {
+      checks.push({ kind: 'docs', label: 'Documents validated', tone: 'green' });
+   } else if (s === 'not_fit') {
+      checks.push({ kind: 'docs', label: 'Not a fit', tone: 'red' });
+      return { checks, todo: 'Our team said no after their documents' };
+   }
+   // The call comes after documents; show it once they're validated (or they're not on that path).
+   if (s === null || s === 'validated' || r.call_at) {
+      const at = r.call_at ? new Date(r.call_at) : null;
+      if (at && at.getTime() > now.getTime() - 60 * 60 * 1000) {
+         checks.push({ kind: 'call', label: 'Call booked', tone: 'purple', at: r.call_at as string });
+         todo = 'Remind them to join their call';
+      } else if (at && stage === 'checking') {
+         checks.push({ kind: 'call', label: 'Call done', tone: 'green' });
+         todo = null;
+      } else if (r.call_missed) {
+         checks.push({ kind: 'call', label: 'Missed the call', tone: 'orange' });
+         todo = 'Ask them to book a new call';
+      } else {
+         checks.push({ kind: 'call', label: 'Call to be booked', tone: 'gray' });
+         todo = 'Ask them to book their call';
+      }
+   }
+   return { checks, todo };
+}
+
+export type AffiliateAccess = 'none' | 'pending' | 'approved' | 'rejected';
 
 /** A friend the owner added by name that the team hasn't approved (or turned down, last 30 days). */
 export interface AffiliateClaim {
@@ -41,14 +132,34 @@ export interface AffiliateDashboardData {
    codes: AffiliateCode[];
    referrals: AffiliateReferral[];
    claims: AffiliateClaim[];
+   /** Personal code pays out: they've repaid a loan themself (or own a team-made code). */
+   unlocked: boolean;
+   /** Payouts wait while they have a past-due loan (or are blocked from rewards). */
+   paused: boolean;
+   /** Take a $5 as a voucher instead (Giftaway on, Philippines only). */
+   voucher: { available: boolean; amountPhp: number };
+   /** Set only when an admin opens someone else's dashboard (admin_affiliate_dashboard). */
+   viewing?: { id: string; username: string | null; display_name: string | null } | null;
 }
 
-export type AffiliateStage = 'paid' | 'owed' | 'repaid' | 'borrowed' | 'signed_up';
+/** locked = their friend repaid, but the $5 waits until they repay a loan themself. */
+export type AffiliateStage =
+   'paid' | 'owed' | 'voucher' | 'locked' | 'repaid' | 'too_early' | 'borrowed' | 'approved' | 'rejected' | 'checking' | 'signed_up';
 
-export function referralStage(r: AffiliateReferral): AffiliateStage {
+export function referralStage(r: AffiliateReferral, unlocked = true): AffiliateStage {
    if (r.repaid && r.claimed) return 'repaid';
-   if (r.repaid) return r.payout_status === 'paid' ? 'paid' : 'owed';
-   return r.borrowed ? 'borrowed' : 'signed_up';
+   if (r.repaid) {
+      if (r.payout_status === 'paid') return 'paid';
+      if (r.payout_status === 'voucher') return 'voucher';
+      if (r.personal && !r.payout_status && !unlocked) return 'locked';
+      return 'owed';
+   }
+   if (r.repaid_too_early) return 'too_early';
+   if (r.borrowed) return 'borrowed';
+   if (r.access === 'rejected') return 'rejected';
+   if (r.access === 'approved') return 'approved';
+   if (r.access === 'pending') return 'checking';
+   return 'signed_up';
 }
 
 export interface AffiliateTotals {
@@ -62,45 +173,165 @@ export interface AffiliateTotals {
    pending: number;
 }
 
-export function affiliateTotals(referrals: AffiliateReferral[]): AffiliateTotals {
+export function affiliateTotals(referrals: AffiliateReferral[], unlocked = true): AffiliateTotals {
    const totals: AffiliateTotals = { signedUp: referrals.length, borrowed: 0, repaid: 0, earned: 0, paid: 0, owed: 0, pending: 0 };
    for (const r of referrals) {
       const amount = Number(r.payout_amount) || 0;
-      const stage = referralStage(r);
+      const stage = referralStage(r, unlocked);
       if (r.borrowed || r.repaid) totals.borrowed += 1;
       if (r.repaid) {
          totals.repaid += 1;
          totals.earned += amount;
       }
-      if (stage === 'paid') totals.paid += amount;
+      // A $5 taken as a voucher counts as paid: it's theirs, just not in USDC.
+      if (stage === 'paid' || stage === 'voucher') totals.paid += amount;
       if (stage === 'owed') totals.owed += amount;
-      if (stage === 'borrowed' && !r.claimed) totals.pending += amount;
+      if ((stage === 'borrowed' || stage === 'locked') && !r.claimed) totals.pending += amount;
    }
    return totals;
 }
 
-export async function fetchAffiliateDashboard(): Promise<AffiliateDashboardData> {
-   const { data, error } = await getSupabaseBrowserClient().rpc('my_affiliate_dashboard');
-   if (error) throw error;
+/**
+ * The code shown big on the page: the one most friends signed up with (ties → the first active one).
+ * Any other codes are tucked under "Other codes" so an unused one doesn't compete with the real one.
+ */
+export function splitCodes(
+   codes: AffiliateCode[],
+   referrals: AffiliateReferral[]
+): { main: AffiliateCode | null; others: AffiliateCode[] } {
+   if (!codes.length) return { main: null, others: [] };
+   const uses = (code: string) => referrals.filter((r) => !r.claimed && r.code === code).length;
+   const ranked = [...codes].sort((a, b) => uses(b.code) - uses(a.code) || Number(b.is_active) - Number(a.is_active));
+   return { main: ranked[0], others: ranked.slice(1) };
+}
+
+/** 1 = signed up, 2 = approved (or rejected), 3 = has a loan, 4 = repaid (the four dots on each friend's row). */
+export function referralStep(r: AffiliateReferral): 1 | 2 | 3 | 4 {
+   if (r.repaid || r.repaid_too_early) return 4;
+   if (r.borrowed) return 3;
+   return r.access === 'approved' || r.access === 'rejected' ? 2 : 1;
+}
+
+/** Badges only — reaching one pays nothing extra. Counts friends who used a code and repaid. */
+export const AFFILIATE_MILESTONES = [
+   { goal: 1, title: 'First friend repaid' },
+   { goal: 3, title: '3 friends repaid' },
+   { goal: 5, title: '5 friends repaid' },
+   { goal: 10, title: '10 friends repaid' }
+] as const;
+
+export function affiliateMilestones(referrals: AffiliateReferral[]) {
+   const repaid = referrals.filter((r) => r.repaid && !r.claimed).length;
+   return AFFILIATE_MILESTONES.map((m) => ({ ...m, progress: Math.min(repaid, m.goal), done: repaid >= m.goal }));
+}
+
+/**
+ * Payouts marked Paid after `seenAt` (ISO, or null on first visit) — drives the "You got paid" pop-up.
+ * On a first visit nothing older than 14 days counts, so long-paid money doesn't pop up as news.
+ */
+export function newPayouts(
+   referrals: AffiliateReferral[],
+   seenAt: string | null,
+   now = Date.now()
+): { count: number; amount: number; latest: string | null } {
+   const floor = seenAt ? Date.parse(seenAt) : now - 14 * 24 * 60 * 60 * 1000;
+   let count = 0;
+   let amount = 0;
+   let latest: string | null = null;
+   for (const r of referrals) {
+      if (r.payout_status !== 'paid' || !r.paid_at || Date.parse(r.paid_at) <= floor) continue;
+      count += 1;
+      amount += Number(r.payout_amount) || 0;
+      if (!latest || r.paid_at > latest) latest = r.paid_at;
+   }
+   return { count, amount, latest };
+}
+
+/** Raw RPC answer → typed data. Older servers (before the "for everyone" migration) omit the new keys. */
+export function parseAffiliateDashboard(data: unknown): AffiliateDashboardData {
    const raw = (data ?? {}) as Partial<AffiliateDashboardData>;
+   const codes = (raw.codes ?? []).map((c) => ({ ...c, boost_amount: Number(c.boost_amount), payout_amount: Number(c.payout_amount) }));
    return {
-      codes: (raw.codes ?? []).map((c) => ({ ...c, boost_amount: Number(c.boost_amount), payout_amount: Number(c.payout_amount) })),
-      referrals: (raw.referrals ?? []).map((r) => ({ ...r, payout_amount: Number(r.payout_amount) })),
-      claims: raw.claims ?? []
+      codes,
+      referrals: (raw.referrals ?? []).map((r) => ({
+         ...r,
+         payout_amount: Number(r.payout_amount),
+         voucher_php: r.voucher_php == null ? null : Number(r.voucher_php)
+      })),
+      claims: raw.claims ?? [],
+      unlocked: raw.unlocked ?? codes.some((c) => !c.personal),
+      paused: raw.paused === true,
+      voucher: {
+         available: raw.voucher?.available === true,
+         amountPhp: Number(raw.voucher?.amountPhp) || AFFILIATE_VOUCHER_PHP
+      },
+      viewing: raw.viewing ?? null
    };
 }
 
-export async function submitReferralClaim(friendName: string, friendContact: string): Promise<void> {
+/** What a $5 becomes as a voucher (set in the database: app_private.affiliate_voucher_php). */
+export const AFFILIATE_VOUCHER_PHP = 250;
+
+export async function fetchAffiliateDashboard(): Promise<AffiliateDashboardData> {
+   const { data, error } = await getSupabaseBrowserClient().rpc('my_affiliate_dashboard');
+   if (error) throw error;
+   return parseAffiliateDashboard(data);
+}
+
+/** Money actually sent to the affiliate (affiliate_payments), and what of it is paid ahead of friends who haven't repaid yet. */
+export type AffiliatePayments = {
+   payments: Array<{ amount: number; tx_hash: string | null; sent_at: string; note: string | null }>;
+   sent: number;
+   ahead: number;
+};
+
+export async function fetchAffiliatePayments(who?: string): Promise<AffiliatePayments> {
+   const supabase = getSupabaseBrowserClient();
+   const { data, error } = who
+      ? await supabase.rpc('admin_affiliate_payments', { p_who: who })
+      : await supabase.rpc('my_affiliate_payments');
+   if (error) throw error;
+   const d = (data ?? {}) as Partial<AffiliatePayments>;
+   return {
+      payments: Array.isArray(d.payments) ? d.payments.map((p) => ({ ...p, amount: Number(p.amount) || 0 })) : [],
+      sent: Number(d.sent) || 0,
+      ahead: Number(d.ahead) || 0
+   };
+}
+
+/** Admins only: someone else's dashboard, read-only. who = user id or @username. */
+export async function fetchAdminAffiliateDashboard(who: string): Promise<AffiliateDashboardData> {
+   const { data, error } = await getSupabaseBrowserClient().rpc('admin_affiliate_dashboard', { p_who: who });
+   if (error) throw error;
+   return parseAffiliateDashboard(data);
+}
+
+export async function submitReferralClaim(friendName: string, friendContact: string, facebookUrl = ''): Promise<void> {
    const { error } = await getSupabaseBrowserClient().rpc('submit_referral_claim', {
       p_friend_name: friendName,
-      p_friend_contact: friendContact || null
+      p_friend_contact: friendContact || null,
+      p_facebook_url: facebookUrl || null
    });
    if (error) throw error;
 }
 
-/** Made-up data for the dev-only /affiliate-preview route. */
+/** The database's claim errors, in plain words. */
+export function claimErrorText(message: string | undefined): string | null {
+   if (!message) return null;
+   if (message.includes('facebook_invalid')) return 'Paste their Facebook profile link (facebook.com/…).';
+   if (message.includes('self_claim')) return 'That looks like your own account.';
+   return message;
+}
+
+/** Made-up data for the dev-only /affiliate-preview route (?as=belle for a team-made code, ?locked=1 before the first repay). */
 export const AFFILIATE_SAMPLE: AffiliateDashboardData = {
-   codes: [{ code: 'BELLE', boost_amount: 5, payout_amount: 10, is_active: true }],
+   unlocked: true,
+   paused: false,
+   voucher: { available: true, amountPhp: AFFILIATE_VOUCHER_PHP },
+   codes: [
+      { code: 'BELLE2', boost_amount: 0, payout_amount: 5, is_active: true },
+      { code: 'BELLE', boost_amount: 5, payout_amount: 5, is_active: true }
+   ],
    claims: [{ id: 'c1', friend_name: 'Lito', status: 'pending', created_at: '2026-10-26T03:00:00Z' }],
    referrals: [
       {
@@ -120,7 +351,7 @@ export const AFFILIATE_SAMPLE: AffiliateDashboardData = {
          joined_at: '2026-10-20T03:00:00Z',
          borrowed: false,
          repaid: false,
-         payout_amount: 10,
+         payout_amount: 5,
          payout_status: null,
          paid_at: null
       },
@@ -130,7 +361,7 @@ export const AFFILIATE_SAMPLE: AffiliateDashboardData = {
          joined_at: '2026-10-12T03:00:00Z',
          borrowed: true,
          repaid: false,
-         payout_amount: 10,
+         payout_amount: 5,
          payout_status: null,
          paid_at: null
       },
@@ -140,7 +371,7 @@ export const AFFILIATE_SAMPLE: AffiliateDashboardData = {
          joined_at: '2026-10-05T03:00:00Z',
          borrowed: true,
          repaid: true,
-         payout_amount: 10,
+         payout_amount: 5,
          payout_status: 'unpaid',
          paid_at: null
       },
@@ -150,9 +381,119 @@ export const AFFILIATE_SAMPLE: AffiliateDashboardData = {
          joined_at: '2026-09-21T03:00:00Z',
          borrowed: true,
          repaid: true,
-         payout_amount: 10,
+         payout_amount: 5,
          payout_status: 'paid',
          paid_at: '2026-10-08T03:00:00Z'
+      }
+   ]
+};
+
+/** A regular borrower's view: their personal code, $5 per friend (the default /affiliate-preview). */
+export const AFFILIATE_PERSONAL_SAMPLE: AffiliateDashboardData = {
+   unlocked: true,
+   paused: false,
+   voucher: { available: true, amountPhp: AFFILIATE_VOUCHER_PHP },
+   codes: [{ code: 'MOODEN12345', boost_amount: 0, payout_amount: 5, is_active: true, personal: true }],
+   claims: [{ id: 'c2', friend_name: 'Lito', status: 'pending', created_at: '2026-11-12T03:00:00Z' }],
+   referrals: [
+      {
+         first_name: 'Lea',
+         code: 'MOODEN12345',
+         joined_at: '2026-11-14T03:00:00Z',
+         personal: true,
+         friend_referral_id: 'fr-lea',
+         full_name: 'Lea Santos',
+         facebook_name: 'Lea Santos',
+         access: 'rejected',
+         borrowed: false,
+         repaid: false,
+         payout_amount: 5,
+         payout_status: null,
+         paid_at: null
+      },
+      {
+         first_name: 'Ben',
+         code: 'MOODEN12345',
+         joined_at: '2026-11-12T03:00:00Z',
+         personal: true,
+         friend_referral_id: 'fr-ben',
+         full_name: 'Ben Reyes',
+         username: 'benr',
+         access: 'pending',
+         borrowed: false,
+         repaid: false,
+         payout_amount: 5,
+         payout_status: null,
+         paid_at: null
+      },
+      {
+         first_name: 'Ana',
+         code: 'MOODEN12345',
+         joined_at: '2026-11-10T03:00:00Z',
+         personal: true,
+         friend_referral_id: 'fr-ana',
+         full_name: 'Ana Cruz',
+         facebook_name: 'Ana Cruz',
+         facebook_url: 'https://www.facebook.com/example.ana',
+         access: 'approved',
+         borrowed: false,
+         repaid: false,
+         payout_amount: 5,
+         payout_status: null,
+         paid_at: null
+      },
+      {
+         first_name: 'Marco',
+         code: 'MOODEN12345',
+         joined_at: '2026-11-04T03:00:00Z',
+         personal: true,
+         friend_referral_id: 'fr-marco',
+         borrowed: true,
+         repaid: false,
+         repaid_not_counted: true,
+         repaid_too_early: true,
+         payout_amount: 5,
+         payout_status: null,
+         paid_at: null
+      },
+      {
+         first_name: 'Joy',
+         code: 'MOODEN12345',
+         joined_at: '2026-10-28T03:00:00Z',
+         personal: true,
+         added_by_you: true,
+         friend_referral_id: 'fr-joy',
+         borrowed: true,
+         repaid: true,
+         payout_amount: 5,
+         payout_status: 'unpaid',
+         paid_at: null
+      },
+      {
+         first_name: 'Rica',
+         code: 'MOODEN12345',
+         joined_at: '2026-10-20T03:00:00Z',
+         personal: true,
+         friend_referral_id: 'fr-rica',
+         borrowed: true,
+         repaid: true,
+         payout_amount: 5,
+         payout_status: 'voucher',
+         paid_at: null,
+         voucher_status: 'sent',
+         voucher_php: 250
+      },
+      {
+         first_name: 'Dan',
+         code: 'MOODEN12345',
+         joined_at: '2026-10-12T03:00:00Z',
+         personal: true,
+         friend_referral_id: 'fr-dan',
+         borrowed: true,
+         repaid: true,
+         payout_amount: 5,
+         payout_status: 'paid',
+         paid_at: '2026-10-30T03:00:00Z'
       }
    ]
 };

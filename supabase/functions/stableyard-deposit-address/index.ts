@@ -50,6 +50,135 @@ const json = (body: Record<string, unknown>, status = 200) =>
    new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
 const EVM_ADDRESS = /^0x[a-fA-F0-9]{40}$/;
+const BASE_USDC_ADDRESS = '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913';
+
+// "1827428" (USDC, 6 decimals) → "1.827428"
+const usdcFromAtomic = (atomic: string): string => {
+   const padded = atomic.padStart(7, '0');
+   const fraction = padded.slice(-6).replace(/0+$/, '');
+   return fraction ? `${padded.slice(0, -6)}.${fraction}` : padded.slice(0, -6);
+};
+
+type CheckoutDeposit = {
+   data: Record<string, unknown>;
+   optionId: string | null;
+   clientSecret: string | null;
+   /** Stableyard's fee / rate fields from the payment and the chosen option (saved on the quote). */
+   pricing?: Record<string, unknown> | null;
+   problem?: { code: string; detail: string; status?: number; requestId?: string | null };
+};
+
+// Since 2026-11-13 Stableyard prices a QR payout but answers nextAction "payment_method" with no deposit
+// address. Their flow (Raj, Stableyard): with the create response's checkout.clientSecret, list the
+// payment methods, select Base USDC ("routing", 8453), and the returned option carries the Base deposit
+// address and the exact amount (routing fee included). We do that here and hand the app the same
+// nextAction.depositInstructions shape a bank payout gives, so the app needs no second path.
+// Only the wallet linked as the account's payment source may fund it; that is the Moodeng wallet.
+// The clientSecret is kept server-side (stableyard_qr_quotes) and never returned to the browser.
+// Every fee / rate / spread / amount field in Stableyard's reply, by path (e.g. "option.providerFee"), so a
+// quote can be split into their fee and their exchange rate later. Secrets and addresses are skipped.
+const PRICING_KEY = /fee|rate|spread|amount|price/i;
+const SKIP_KEY = /secret|address|token|signature|calldata|data$/i;
+export const pickPricing = (value: unknown, path = '', out: Record<string, unknown> = {}, depth = 0): Record<string, unknown> => {
+   if (!value || typeof value !== 'object' || depth > 4) return out;
+   for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+      if (SKIP_KEY.test(key)) continue;
+      const at = path ? `${path}.${key}` : key;
+      if (PRICING_KEY.test(key) && (child === null || typeof child !== 'object' || /fee/i.test(key))) out[at] = child;
+      else if (child && typeof child === 'object' && !Array.isArray(child)) pickPricing(child, at, out, depth + 1);
+   }
+   return out;
+};
+
+const withBaseDeposit = async (raw: unknown): Promise<CheckoutDeposit> => {
+   const source = (raw && typeof raw === 'object' ? raw : {}) as {
+      payment?: { id?: string; status?: string };
+      nextAction?: { type?: string; expiresAt?: string | null } | null;
+      checkout?: { clientSecret?: string } | null;
+   };
+   const clientSecret = typeof source.checkout?.clientSecret === 'string' ? source.checkout.clientSecret : null;
+   const data: Record<string, unknown> = { ...(source as Record<string, unknown>) };
+   if (source.checkout) data.checkout = { ...source.checkout, clientSecret: undefined };
+   const paymentId = source.payment?.id ?? '';
+   // The create response usually has no nextAction yet (a re-read then says "payment_method"), so go by
+   // the payment's state: waiting for a payment method, and no other step asked of us.
+   const nextType = source.nextAction?.type;
+   const needsMethod = source.payment?.status === 'requires_payment_method' && (!nextType || nextType === 'payment_method');
+   if (!needsMethod) return { data, optionId: null, clientSecret };
+
+   const stop = (code: string, detail: string, status?: number, requestId?: string | null): CheckoutDeposit => ({
+      data,
+      optionId: null,
+      clientSecret,
+      problem: { code, detail, status, requestId: requestId ?? null }
+   });
+   // No secret = nothing we can select: leave the reply as it is and let the app re-read the payment.
+   if (!clientSecret || !paymentId) {
+      console.warn('[stableyard-deposit-address] payment needs a method but create gave no clientSecret', paymentId);
+      return { data, optionId: null, clientSecret };
+   }
+
+   // The methods can lag the create call by a moment; give them two more tries.
+   let methods = await stableyard.listCheckoutMethods(paymentId, clientSecret);
+   for (let attempt = 0; attempt < 2 && (!methods.ok || !(methods.data?.paymentMethods ?? []).length); attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      methods = await stableyard.listCheckoutMethods(paymentId, clientSecret);
+   }
+   if (!methods.ok) return stop(methods.code ?? 'payment_methods_failed', methods.error, methods.status, methods.requestId);
+   const offered = methods.data?.paymentMethods ?? [];
+   const onBase = offered.filter(
+      (m) => m.chainId === BASE_CHAIN_ID && String(m.tokenAddress ?? '').toLowerCase() === BASE_USDC_ADDRESS && m.available !== false
+   );
+   const method = onBase.find((m) => m.providerCode === 'routing') ?? onBase[0];
+   if (!method) {
+      const seen = offered.map((m) => `${m.id}:${m.chainId}:${m.available}`).join(', ');
+      return stop('base_usdc_not_offered', `no Base USDC method (offered: ${seen || 'none'})`);
+   }
+
+   // A routing option is quoted live and can take several seconds: Stableyard answers "request_in_progress"
+   // meanwhile, and the same call (same Idempotency-Key) returns the option once it is ready.
+   const select = () => stableyard.selectCheckoutMethod(paymentId, clientSecret, method.id, `moodeng-opt:${paymentId}`);
+   let selected = await select();
+   for (let attempt = 0; attempt < 8 && !selected.ok && selected.code === 'request_in_progress'; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      selected = await select();
+   }
+   if (!selected.ok) return stop(selected.code ?? 'select_method_failed', selected.error, selected.status, selected.requestId);
+   const option = selected.data?.option;
+   const execution = option?.execution;
+   const atomic = String(option?.payerAmount?.amountAtomic ?? execution?.amountAtomic ?? '');
+   if (
+      !option?.id ||
+      execution?.type !== 'deposit_address' ||
+      !EVM_ADDRESS.test(String(execution.address ?? '')) ||
+      execution.chainId !== BASE_CHAIN_ID ||
+      String(execution.tokenAddress ?? '').toLowerCase() !== BASE_USDC_ADDRESS ||
+      !/^[1-9][0-9]*$/.test(atomic)
+   ) {
+      return stop('unexpected_option', `option ${option?.id ?? '?'} is not a Base USDC deposit address`);
+   }
+   if (execution.amountAtomic && execution.amountAtomic !== atomic) {
+      console.warn('[stableyard-deposit-address] option amounts differ', paymentId, execution.amountAtomic, atomic);
+   }
+
+   data.nextAction = {
+      id: paymentId,
+      type: 'transaction',
+      expiresAt: option.expiresAt ?? execution.expiresAt ?? option.actionExpiresAt ?? option.quoteExpiresAt ?? source.nextAction?.expiresAt ?? null,
+      depositInstructions: {
+         address: execution.address,
+         chainId: BASE_CHAIN_ID,
+         tokenAddress: execution.tokenAddress,
+         assetCode: 'USDC',
+         decimals: 6,
+         amount: usdcFromAtomic(atomic),
+         amountAtomic: atomic
+      }
+   };
+   data.checkoutOption = { id: option.id, methodId: method.id, providerFee: option.providerFee ?? null };
+   const pricing = { ...pickPricing(source.payment, 'payment'), ...pickPricing(option, 'option') };
+   return { data, optionId: option.id, clientSecret, pricing: Object.keys(pricing).length ? pricing : null };
+};
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
@@ -291,9 +420,9 @@ const QR_COUNTRIES: Record<string, { currency: string; max: number }> = {
    PH: { currency: 'PHP', max: 2000 },
    VN: { currency: 'VND', max: 1_000_000 }
 };
-// Bank payout limits while it's tester-only (~$85 max, enough to cash out a loan). Stableyard's PH minimum is ₱50.
+// Bank payout limits. PH: ₱25,000 (~$430), under Stableyard's ~$500-per-transaction limit (confirmed 2026-11-15) with room for the rate to move. Stableyard's PH minimum is ₱50.
 const BANK_MIN: Record<string, number> = { PH: 50, VN: 20_000 };
-const BANK_MAX: Record<string, number> = { PH: 5000, VN: 2_000_000 };
+const BANK_MAX: Record<string, number> = { PH: 25_000, VN: 2_000_000 };
 const FIAT_AMOUNT = /^(0|[1-9][0-9]*)(\.[0-9]{1,2})?$/;
 
 // Stableyard's email / KYC / payment-source bodies aren't documented to us, so read them loosely:
@@ -389,6 +518,11 @@ const handleQr = async (
       .eq('user_id', userId)
       .maybeSingle();
    const accountId = row?.account_id as string | undefined;
+   // 'status' must always carry the bankUp / qrCashout flags: the app hides the cash-out cards without
+   // them, and the account (plus the email + Share my ID setup) is only made when the person taps a card.
+   // Without this, everyone who hadn't set up yet never saw the QR card (2026-11-13).
+   const statusFlags = { bankUp: body.bankUp !== false, qrCashout: body.qrCashout === true };
+   if (!accountId && action === 'status') return json({ ok: true, step: 'status', noAccount: true, kyc: null, ...statusFlags });
    if (!accountId) return json({ error: 'No Stableyard account yet. Open the deposit test first to create one.' }, 409);
 
    const fail = (result: { status: number; error: string; code?: string; requestId?: string; data?: unknown }) =>
@@ -405,17 +539,37 @@ const handleQr = async (
          502
       );
 
+   // The payment exists but we couldn't get its Base deposit address: say so plainly instead of leaving
+   // the app waiting on a price that will never come.
+   const depositProblem = (problem: NonNullable<CheckoutDeposit['problem']>) => {
+      console.warn('[stableyard-deposit-address] no Base deposit', problem.code, problem.status, problem.requestId, problem.detail);
+      return json(
+         {
+            ok: false,
+            accountId,
+            error: 'Could not get a price right now. Try again in a minute.',
+            code: problem.code,
+            detail: problem.detail,
+            requestId: problem.requestId ?? null
+         },
+         502
+      );
+   };
+
    if (action === 'status') {
       const [source, kyc] = await Promise.all([stableyard.getPaymentSource(accountId), stableyard.getKyc(accountId)]);
-      if (!source.ok) return fail(source);
+      // A Stableyard hiccup on this read shouldn't hide the cash-out cards: still send the flags.
+      if (!source.ok) {
+         console.warn('[stableyard-deposit-address] status: payment source read failed', source.status, source.error);
+         return json({ ok: true, accountId, step: 'status', paymentSource: null, kyc: kyc.ok ? kyc.data : null, ...statusFlags });
+      }
       return json({
          ok: true,
          accountId,
          step: 'status',
          paymentSource: source.data,
          kyc: kyc.ok ? kyc.data : null,
-         bankUp: body.bankUp !== false,
-         qrCashout: body.qrCashout === true
+         ...statusFlags
       });
    }
 
@@ -480,8 +634,34 @@ const handleQr = async (
       if (!/^payment_[A-Za-z0-9_-]+$/.test(paymentId) || !/^0x[0-9a-fA-F]{64}$/.test(txHash)) {
          return json({ error: 'Invalid payment ID or transaction.' }, 400);
       }
-      await admin.from('stableyard_qr_quotes').update({ sent_tx_hash: txHash }).eq('user_id', userId).eq('payment_id', paymentId);
-      return json({ ok: true, accountId, step: 'sent' });
+      const { data: quoteRows } = await admin
+         .from('stableyard_qr_quotes')
+         .update({ sent_tx_hash: txHash })
+         .eq('user_id', userId)
+         .eq('payment_id', paymentId)
+         .select('option_id, checkout_secret');
+      // A payment funded through a checkout option (see withBaseDeposit) is only matched once we report
+      // the payer's transaction. Safe to repeat: calling 'sent' again re-submits the same hash.
+      const quoteRow = (quoteRows ?? [])[0] as { option_id?: string | null; checkout_secret?: string | null } | undefined;
+      let submitted: boolean | null = null;
+      if (quoteRow?.option_id && quoteRow.checkout_secret) {
+         for (let attempt = 0; attempt < 3 && !submitted; attempt += 1) {
+            if (attempt) await new Promise((resolve) => setTimeout(resolve, 2000));
+            const report = await stableyard.submitCheckoutTransaction(paymentId, quoteRow.checkout_secret, quoteRow.option_id, txHash);
+            submitted = report.ok;
+            if (!report.ok) {
+               console.error(
+                  '[stableyard-deposit-address] submit transaction failed',
+                  paymentId,
+                  report.status,
+                  report.code,
+                  report.requestId,
+                  report.error
+               );
+            }
+         }
+      }
+      return json({ ok: true, accountId, step: 'sent', submitted });
    }
 
    if (action === 'get') {
@@ -555,8 +735,10 @@ const handleQr = async (
          `moodeng-bank:${accountId}:${requestKey}`
       );
       if (!result.ok) return fail(result);
+      const resolved = await withBaseDeposit(result.data);
+      if (resolved.problem) return depositProblem(resolved.problem);
 
-      const data = result.data as {
+      const data = resolved.data as {
          payment?: { id?: string };
          nextAction?: { depositInstructions?: { amount?: string } } | null;
       };
@@ -580,10 +762,12 @@ const handleQr = async (
          usdc_amount: quote.usdc,
          market_rate: quote.marketRate,
          market_rate_at: quote.marketRateAt,
-         merchant_name: `Bank payout: ${bankName} ••${accountNumber.slice(-4)}`
+         merchant_name: `Bank payout: ${bankName} ••${accountNumber.slice(-4)}`,
+         option_id: resolved.optionId,
+         checkout_secret: resolved.optionId ? resolved.clientSecret : null
       });
       if (logError) console.error('[stableyard-deposit-address] log bank quote failed', logError.message);
-      return json({ ok: true, accountId, step: 'bank_create', result: result.data, quote });
+      return json({ ok: true, accountId, step: 'bank_create', result: resolved.data, quote });
    }
 
    const qrPayload = String(body.qrPayload ?? '').trim();
@@ -621,9 +805,11 @@ const handleQr = async (
       `moodeng-qr:${accountId}:${requestKey}`
    );
    if (!result.ok) return fail(result);
+   const resolved = await withBaseDeposit(result.data);
+   if (resolved.problem) return depositProblem(resolved.problem);
 
    // Log the quote next to the market rate so we can see Stableyard's real spread.
-   const data = result.data as {
+   const data = resolved.data as {
       payment?: { id?: string; destination?: { merchant?: { name?: string } | null } };
       nextAction?: { depositInstructions?: { amount?: string; assetCode?: string } } | null;
    };
@@ -648,10 +834,13 @@ const handleQr = async (
       usdc_amount: quote.usdc,
       market_rate: quote.marketRate,
       market_rate_at: quote.marketRateAt,
-      merchant_name: merchant || null
+      merchant_name: merchant || null,
+      option_id: resolved.optionId,
+      checkout_secret: resolved.optionId ? resolved.clientSecret : null,
+      pricing: resolved.pricing ?? pickPricing((result.data as { payment?: unknown } | null)?.payment, 'payment')
    });
    if (logError) console.error('[stableyard-deposit-address] log qr quote failed', logError.message);
-   return json({ ok: true, accountId, step: action, result: result.data, quote });
+   return json({ ok: true, accountId, step: action, result: resolved.data, quote });
 };
 
 // EMVCo QR (QR Ph): "ID(2) LEN(2) VALUE" records. Returns the payee name (tag 59), or null if it isn't one.
@@ -745,9 +934,11 @@ serve(async (req) => {
       if (String(body.qr) === 'status') {
          // Apps that know the QR cash-out send qrCashout:true and get bankUp / qrCashout back, so they can
          // still offer the QR while the bank payout is down. Older apps keep getting enabled:false then.
-         const bankUp = await bankPayoutUp();
          const wantsQr = body.qrCashout === true;
          const qrOn = wantsQr && ((await isQrCashoutOn(admin)) || (await isQrTester()));
+         // The account-number payout doesn't work yet (2026-11-15), so while the QR is on we skip Stableyard's
+         // bank list (it once took 11s and held the QR card back) and report the bank payout as down.
+         const bankUp = qrOn ? false : await bankPayoutUp();
          if (!bankUp && !qrOn) return json({ enabled: false, code: 'payout_unavailable', error: 'Cash-out is unavailable right now.' });
          body.bankUp = bankUp;
          body.qrCashout = qrOn;

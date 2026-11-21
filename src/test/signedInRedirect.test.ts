@@ -34,7 +34,15 @@ vi.mock('react-redux', async () => {
          )
    };
 });
-vi.mock('@/hooks/usePreKycGate', () => ({ PRE_KYC_CONNECT_PATH: '/onboarding/connect', usePreKycGate: () => h.gate }));
+vi.mock('@/hooks/usePreKycGate', () => ({
+   PRE_KYC_CONNECT_PATH: '/onboarding/connect',
+   JOURNEY_V2_PATH: '/onboarding/verify',
+   PRESCREEN_PATH: '/screen',
+   needsJourneyV2: () => false,
+   needsPrescreen: () => false,
+   usePreKycGate: () => h.gate
+}));
+vi.mock('@/hooks/useWalletLast', () => ({ fetchWalletLast: async () => false, useWalletLast: () => ({ walletLast: false, isLoading: false }) }));
 vi.mock('@/lib/postSignInPath', () => ({ getPostSignInPath: async () => '/dashboard' }));
 
 const { useSignedInRedirect } = await import('@/hooks/useSignedInRedirect');

@@ -1,152 +1,897 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { Check, ChevronLeft, Copy, UserPlus } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Check, ChevronDown, ChevronLeft, Copy, Download, Facebook, Lock, Share2, UserPlus } from 'lucide-react';
+import { QRCodeCanvas } from 'qrcode.react';
+import { useSelector } from 'react-redux';
+import { Link, useSearchParams } from 'react-router-dom';
 
+import { AffiliatePayoutPanel } from '@/app/admin/AffiliatePayCard';
 import {
+   AFFILIATE_PERSONAL_SAMPLE,
    AFFILIATE_SAMPLE,
+   type AffiliateCheck,
+   type AffiliateCheckTone,
    type AffiliateClaim,
+   type AffiliateCode,
+   type AffiliateDashboardData,
+   affiliateMilestones,
    type AffiliateReferral,
    type AffiliateStage,
    affiliateTotals,
+   claimErrorText,
+   fetchAdminAffiliateDashboard,
    fetchAffiliateDashboard,
+   fetchAffiliatePayments,
+   friendChecks,
+   newPayouts,
    referralStage,
+   referralStep,
+   splitCodes,
    submitReferralClaim
 } from '@/lib/affiliateDashboard';
+import { txExplorerUrl } from '@/lib/txExplorer';
+import type { RootState } from '@/store/store';
+import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
+import { buildInviteLink } from '@/views/dashboard-v2/dashboardV2Model';
+import { ShareSheet, VoucherClaimPopup } from '@/views/dashboard-v2/DashboardV2Rewards';
 
-const PRIMARY_GRADIENT = 'linear-gradient(77.58deg, #9584ff 0.5%, #6b55f7 98.16%)';
+/*
+ * /affiliate (Moo affiliate) — styled after the Figma "Milestone_9.23version" invite screen (high-five hippos,
+ * purple code card with ticket cut-outs), its Loan Summary row and its milestone rows. The words are the
+ * affiliate program's ($ per friend who repays), not the voucher program's "Free meal".
+ *
+ * Colour rule: buttons are purple (white on the purple card), as in Figma. Gold is only for money owed to
+ * you — the "Owed to you" figure and owed rows — never for sharing.
+ */
+
+const PURPLE = '#6b55f7';
+const PURPLE_GRADIENT = 'linear-gradient(77deg, #9584ff, #6b55f7)';
+const CARD_GRADIENT = 'linear-gradient(160deg, #8f7dff 0%, #6b55f7 55%, #5a44e6 100%)';
+const HERO_GRADIENT = 'linear-gradient(180deg, #7f86f6 0%, #8c94f7 100%)';
+const SEEN_KEY = 'moodeng_affiliate_paid_seen';
 
 const money = (n: number) => `$${Number.isInteger(n) ? n : n.toFixed(2)}`;
+const shortDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
-const STAGE_PILL: Record<AffiliateStage, string> = {
+const readSeen = () => {
+   try {
+      return window.localStorage.getItem(SEEN_KEY);
+   } catch {
+      return null;
+   }
+};
+const writeSeen = (iso: string) => {
+   try {
+      window.localStorage.setItem(SEEN_KEY, iso);
+   } catch {
+      /* private mode — the pop-up may show again, which is harmless */
+   }
+};
+
+/** Back arrow target: affiliates (signed up from a /partner link) have no dashboard, so their Account. */
+function useBackPath() {
+   return useSelector((state: RootState) => (state.auth.user?.userRole === 'affiliate' ? '/account' : '/dashboard'));
+}
+
+function useCopy() {
+   const [copied, setCopied] = useState<string | null>(null);
+   const copy = (value: string) => {
+      void navigator.clipboard?.writeText(value).then(() => {
+         setCopied(value);
+         window.setTimeout(() => setCopied(null), 1500);
+      });
+   };
+   return { copied, copy };
+}
+
+/* ---------- 1 · Hero ---------- */
+
+function Hero({ payout }: { payout: number }) {
+   const backPath = useBackPath();
+   return (
+      <section
+         className="relative -mx-5 overflow-hidden"
+         // Fade the purple out at the bottom so it melts into the page behind the code card (no hard edge).
+         style={{
+            backgroundImage: HERO_GRADIENT,
+            maskImage: 'linear-gradient(180deg, #000 72%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(180deg, #000 72%, transparent 100%)'
+         }}
+         aria-label="Earn by inviting friends"
+      >
+         <Link to={backPath} className="absolute left-4 top-5 z-10 text-white" aria-label="Back to dashboard">
+            <ChevronLeft className="h-7 w-7" strokeWidth={2.4} />
+         </Link>
+         <div className="px-6 pt-12 text-center">
+            <p
+               className="text-[44px] font-black italic leading-none tracking-[-1px] text-white"
+               style={{ textShadow: '0 3px 0 rgba(91,68,230,0.35)' }}
+            >
+               EARN {money(payout)}
+            </p>
+            <p className="mt-1 text-[20px] font-extrabold italic leading-6 text-white">for every friend who repays</p>
+         </div>
+         <img
+            src={DASHBOARD_V2_ASSETS.affiliateHero}
+            alt="Two Moodeng hippos high-fiving"
+            className="-mt-2 block w-full"
+            style={{
+               maskImage: 'linear-gradient(180deg, transparent 0%, #000 16%)',
+               WebkitMaskImage: 'linear-gradient(180deg, transparent 0%, #000 16%)'
+            }}
+         />
+      </section>
+   );
+}
+
+/* ---------- Guide: how it works (open for new affiliates) ---------- */
+
+const GUIDE_STEPS: Array<[string, string]> = [
+   ['📣', 'Share your code. Tap Share, or show your QR poster.'],
+   ['📝', 'Your friend signs up with your code and gets approved.'],
+   ['💸', 'They borrow and pay back on time. Paying back too early doesn’t count.'],
+   ['🎉', 'You earn your reward. We send it to your Moodeng wallet.']
+];
+
+function HowItWorks({ payout, open }: { payout: number; open: boolean }) {
+   return (
+      <details
+         open={open}
+         className="group mt-4 rounded-[20px] border border-[#ece6f7] bg-white px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/5"
+      >
+         <summary className="flex cursor-pointer list-none items-center justify-between text-[17px] font-bold text-[#2d2438] dark:text-white">
+            How it works
+            <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
+         </summary>
+         <ol className="mt-3 flex flex-col gap-2">
+            {GUIDE_STEPS.map(([icon, text], i) => (
+               <li key={text} className="flex gap-3 text-[15px] font-medium leading-6 text-[#594d65] dark:text-[#d9cfe6]">
+                  <span className="shrink-0" aria-hidden>
+                     {icon}
+                  </span>
+                  <span>
+                     <b className="text-[#2d2438] dark:text-white">{i + 1}.</b>{' '}
+                     {i === 3 ? text.replace('your reward', money(payout)) : text}
+                  </span>
+               </li>
+            ))}
+         </ol>
+         <p className="mt-3 rounded-[14px] bg-[#f3f0ff] px-3 py-2 text-[14px] font-medium leading-5 text-[#594d65] dark:bg-white/5 dark:text-[#d9cfe6]">
+            👇 Below you can see each friend and what they still need to do. Friend forgot your code? Use “Add a friend” at the bottom.
+         </p>
+      </details>
+   );
+}
+
+/* ---------- 2–3 · Code ticket + other codes ---------- */
+
+function TicketNotch({ side }: { side: 'left' | 'right' }) {
+   return (
+      <span
+         aria-hidden
+         className={clsx('absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full', side === 'left' ? '-left-2' : '-right-2')}
+         style={{ backgroundColor: PURPLE }}
+      />
+   );
+}
+
+function CodeCard({
+   main,
+   others,
+   unlocked,
+   onShare
+}: {
+   main: AffiliateCode;
+   others: AffiliateCode[];
+   unlocked: boolean;
+   onShare: () => void;
+}) {
+   const { copied, copy } = useCopy();
+   const [showOthers, setShowOthers] = useState(false);
+   return (
+      <section
+         className="relative z-10 -mt-10 rounded-[22px] p-4 pb-5 shadow-[0_12px_30px_rgba(107,85,247,0.28)]"
+         style={{ backgroundImage: CARD_GRADIENT }}
+      >
+         <h2 className="px-1 text-[22px] font-black italic leading-7 text-white" style={{ textShadow: '0 2px 0 rgba(60,40,140,0.45)' }}>
+            My Referral Code
+         </h2>
+
+         <div className="mt-3 flex gap-2.5">
+            {/* Main ticket: the code. Tap to copy. */}
+            <button
+               type="button"
+               onClick={() => copy(main.code)}
+               className="relative flex-1 overflow-visible rounded-[14px] bg-gradient-to-b from-white to-[#ece8ff] px-3 pb-3 pt-2.5 text-left"
+               aria-label={`Copy code ${main.code}`}
+            >
+               <span className="inline-block -rotate-3 rounded-[6px] bg-[#e6dcff] px-2 py-0.5 text-[12px] font-extrabold italic text-[#6b55f7]">
+                  Your code
+               </span>
+               {/* Personal codes are 11 characters; shrink them so the ticket keeps its shape. */}
+               <span
+                  className={clsx(
+                     'mt-1 block break-all font-mono font-black tracking-wide text-[#3d2f8f]',
+                     main.code.length > 8 ? 'text-[19px] leading-7' : 'text-[26px] leading-8'
+                  )}
+               >
+                  {main.code}
+               </span>
+               <span className="mt-2 block border-t border-dashed border-[#b9aeff]" />
+               <TicketNotch side="left" />
+               <TicketNotch side="right" />
+               <span className="mt-2 flex items-center gap-1 text-[13px] font-semibold text-[#6b55f7]">
+                  {copied === main.code ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                  {copied === main.code ? 'Copied!' : 'Tap to copy'}
+               </span>
+            </button>
+
+            {/* Stub: what each friend is worth (and the friend's boost, only when there is one). */}
+            <div className="flex w-[118px] shrink-0 flex-col gap-2">
+               <div className="relative flex flex-1 flex-col items-center justify-center rounded-[14px] bg-gradient-to-b from-white to-[#ece8ff] px-2 py-2 text-center">
+                  {!unlocked ? <Lock className="absolute right-2 top-2 h-3.5 w-3.5 text-[#8b7afa]" aria-label="Locked" /> : null}
+                  <span className={clsx('text-[30px] font-black italic leading-8', unlocked ? 'text-[#6b55f7]' : 'text-[#b9aeff]')}>
+                     {money(main.payout_amount)}
+                  </span>
+                  <span className="text-[11px] font-semibold uppercase leading-3 tracking-wide text-[#8b7afa]">
+                     {unlocked ? 'for you, per friend who repays' : 'unlocks when you repay a loan'}
+                  </span>
+               </div>
+               {main.boost_amount > 0 ? (
+                  <div className="rounded-[14px] bg-gradient-to-b from-[#fff7c9] to-[#ffe27a] px-2 py-1.5 text-center">
+                     <span className="block text-[11px] font-extrabold italic text-[#7a4d00]">For your friend</span>
+                     <span className="block text-[13px] font-bold leading-4 text-[#6b55f7]">+{money(main.boost_amount)} loan limit</span>
+                  </div>
+               ) : null}
+            </div>
+         </div>
+
+         <button
+            type="button"
+            onClick={onShare}
+            className="mt-4 flex h-[50px] w-full items-center justify-center gap-2 rounded-full bg-white text-[17px] font-extrabold text-[#6b55f7] shadow-[0_4px_0_rgba(60,40,140,0.35)] active:scale-[0.98]"
+         >
+            <Share2 className="h-5 w-5" strokeWidth={2.4} />
+            Share my code
+         </button>
+
+         <p className="mt-3 px-1 text-center text-[13px] leading-[18px] text-white/85">
+            {main.personal ? (
+               <>
+                  Friends sign up with your link, or type <b className="text-white">{main.code}</b>.
+               </>
+            ) : (
+               <>
+                  Friends sign up with your link or QR, or type <b className="text-white">{main.code}</b> when they ask for their first
+                  loan.
+               </>
+            )}
+         </p>
+         {!unlocked ? (
+            <p className="mt-2 rounded-[10px] bg-white/15 px-3 py-2 text-center text-[13px] font-semibold leading-[18px] text-white">
+               Repay your first loan to unlock. Friends who join now still count.
+            </p>
+         ) : null}
+
+         {others.length ? (
+            <div className="mt-3 rounded-[12px] bg-white/10 px-3 py-2">
+               <button
+                  type="button"
+                  onClick={() => setShowOthers((v) => !v)}
+                  className="flex w-full items-center justify-between text-[13px] font-semibold text-white/90"
+                  aria-expanded={showOthers}
+               >
+                  Other codes ({others.length})
+                  <ChevronDown className={clsx('h-4 w-4 transition-transform', showOthers && 'rotate-180')} />
+               </button>
+               {showOthers ? (
+                  <ul className="mt-2 flex flex-col gap-1.5">
+                     {others.map((c) => (
+                        <li key={c.code} className="flex items-center justify-between gap-2">
+                           <span className="font-mono text-[15px] font-bold text-white">{c.code}</span>
+                           <button
+                              type="button"
+                              onClick={() => copy(c.code)}
+                              className="flex items-center gap-1 text-[13px] font-semibold text-[#fff6b8]"
+                           >
+                              {copied === c.code ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                              {copied === c.code ? 'Copied' : 'Copy'}
+                           </button>
+                        </li>
+                     ))}
+                  </ul>
+               ) : null}
+            </div>
+         ) : null}
+      </section>
+   );
+}
+
+/* ---------- 3b · Poster QR: the invite link as a QR to print on posters ---------- */
+
+const POSTER_ORIGIN = 'https://moodeng.app';
+
+function PosterQr({ code }: { code: string }) {
+   const link = buildInviteLink(code, POSTER_ORIGIN);
+   const [copied, setCopied] = useState(false);
+   const canvasId = `poster-qr-${code}`;
+
+   const copyLink = async () => {
+      try {
+         await navigator.clipboard.writeText(link);
+         setCopied(true);
+         window.setTimeout(() => setCopied(false), 1500);
+      } catch {
+         window.prompt('Copy this link', link);
+      }
+   };
+
+   // A print-ready PNG: white border, the QR, and the link written under it.
+   const download = () => {
+      const qr = document.getElementById(canvasId) as HTMLCanvasElement | null;
+      if (!qr) return;
+      const pad = 64;
+      const textH = 96;
+      const out = document.createElement('canvas');
+      out.width = qr.width + pad * 2;
+      out.height = qr.height + pad * 2 + textH;
+      const ctx = out.getContext('2d');
+      if (!ctx) return;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, out.width, out.height);
+      ctx.drawImage(qr, pad, pad);
+      ctx.fillStyle = '#3d2f8f';
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 44px sans-serif';
+      ctx.fillText(link.replace(/^https?:\/\//, ''), out.width / 2, qr.height + pad + 70, out.width - pad);
+      const a = document.createElement('a');
+      a.href = out.toDataURL('image/png');
+      a.download = `moodeng-qr-${code}.png`;
+      a.click();
+   };
+
+   return (
+      <section className="mt-6" aria-label="QR code for posters">
+         <h2 className="text-[20px] font-bold italic leading-6 text-[#594d65] dark:text-[#d9cfe6]">QR for your posters</h2>
+         <div className="mt-3 rounded-[14px] bg-dv2-card p-4">
+            <div className="flex items-center gap-4">
+               <div className="shrink-0 rounded-[10px] bg-white p-2">
+                  <QRCodeCanvas id={canvasId} value={link} size={720} level="M" style={{ width: 112, height: 112 }} />
+               </div>
+               <div className="min-w-0 flex-1">
+                  <p className="break-all text-[14px] font-semibold leading-[18px] text-[#6b55f7] dark:text-[#b3a6ff]">
+                     {link.replace(/^https?:\/\//, '')}
+                  </p>
+                  <p className="mt-1 text-[13px] leading-[18px] text-[#7b6b8c] dark:text-[#a99cba]">
+                     Friends who scan it and sign up are linked to you.
+                  </p>
+               </div>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+               <button
+                  type="button"
+                  onClick={() => void copyLink()}
+                  className="flex h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[#efeaff] text-[15px] font-bold text-[#6b55f7] dark:bg-[#2c2439] dark:text-[#b3a6ff]"
+               >
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  {copied ? 'Copied' : 'Copy link'}
+               </button>
+               <button
+                  type="button"
+                  onClick={download}
+                  className="flex h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[#6b55f7] text-[15px] font-bold text-white"
+               >
+                  <Download className="h-4 w-4" />
+                  Download
+               </button>
+            </div>
+         </div>
+      </section>
+   );
+}
+
+/* ---------- 4 · Money row (Figma "Loan Summary") ---------- */
+
+function MoneyRow({ owed, pending, paid, paused }: { owed: number; pending: number; paid: number; paused: boolean }) {
+   const cells = [
+      { label: 'Owed to you', value: owed, strong: owed > 0 },
+      { label: 'If they repay', value: pending, strong: false },
+      { label: 'Paid so far', value: paid, strong: false }
+   ];
+   return (
+      <section className="mt-6" aria-label="Your money">
+         <h2 className="text-[20px] font-bold italic leading-6 text-[#594d65] dark:text-[#d9cfe6]">Your Money</h2>
+         <div className="mt-3 flex rounded-[14px] bg-dv2-card px-2 py-4">
+            {cells.map((c, i) => (
+               <div key={c.label} className={clsx('flex-1 px-2', i > 0 && 'border-l border-[#ece9f1] dark:border-[#2c2439]')}>
+                  <p
+                     className={clsx(
+                        'text-[26px] font-bold leading-8',
+                        c.strong
+                           ? 'text-[#e39b12]'
+                           : c.value > 0
+                             ? 'text-[#6b55f7] dark:text-[#b3a6ff]'
+                             : 'text-[#c9c1d4] dark:text-[#5b5068]'
+                     )}
+                  >
+                     {money(c.value)}
+                  </p>
+                  <p className="text-[13px] font-medium leading-4 text-[#7b6b8c] dark:text-[#cfc4dd]">{c.label}</p>
+               </div>
+            ))}
+         </div>
+         {paused ? (
+            <p className="mt-2 rounded-[10px] bg-[#fff3c4] px-3 py-2 text-[14px] font-semibold leading-[18px] text-[#7a4d00] dark:bg-[#3b3216] dark:text-[#ffd27a]">
+               Repay your loan first. Your money waits for you.
+            </p>
+         ) : pending > 0 ? (
+            <p className="mt-2 px-1 text-[13px] leading-[18px] text-[#7b6b8c] dark:text-[#a99cba]">
+               Not yours yet. You only get this if those friends repay their loan.
+            </p>
+         ) : null}
+      </section>
+   );
+}
+
+/* ---------- 10 · Milestones (badges only) ---------- */
+
+function Milestones({ referrals }: { referrals: AffiliateReferral[] }) {
+   const items = affiliateMilestones(referrals);
+   const nextIndex = items.findIndex((m) => !m.done);
+   return (
+      <section className="mt-6" aria-label="Affiliate milestones">
+         <h2 className="text-[20px] font-bold italic leading-6 text-[#594d65] dark:text-[#d9cfe6]">Milestones</h2>
+         <ul className="mt-3 overflow-hidden rounded-[14px] bg-dv2-card">
+            {items.map((m, i) => {
+               const isNext = i === nextIndex;
+               return (
+                  <li
+                     key={m.goal}
+                     className={clsx(
+                        'flex items-center gap-3 px-3 py-3',
+                        i > 0 && 'border-t border-[#ece9f1] dark:border-[#2c2439]',
+                        isNext && 'bg-gradient-to-r from-[#fff3c4] to-transparent dark:from-[#3b3216]'
+                     )}
+                  >
+                     <img
+                        src={DASHBOARD_V2_ASSETS.pandesal}
+                        alt=""
+                        className={clsx('h-9 w-9 shrink-0', !m.done && !isNext && 'opacity-50 grayscale')}
+                     />
+                     <div className="min-w-0 flex-1">
+                        <p
+                           className={clsx(
+                              'text-[16px] font-medium leading-5',
+                              isNext ? 'text-[#a35f00] dark:text-[#ffd27a]' : 'text-[#2f2540] dark:text-[#e6def2]'
+                           )}
+                        >
+                           {m.title}
+                        </p>
+                        <p className={clsx('text-[13px] leading-4', isNext ? 'text-[#e39b12]' : 'text-[#7b6b8c] dark:text-[#a99cba]')}>
+                           {m.progress}/{m.goal} friends
+                        </p>
+                     </div>
+                     {m.done ? (
+                        <span className="rounded-full bg-emerald-100 px-3 py-1 text-[13px] font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                           Done
+                        </span>
+                     ) : isNext ? (
+                        <span
+                           className="rounded-full px-3 py-1 text-[13px] font-semibold text-white"
+                           style={{ backgroundImage: 'linear-gradient(77deg, #9584ff, #6b55f7)' }}
+                        >
+                           Next
+                        </span>
+                     ) : (
+                        <Lock className="h-4 w-4 text-[#c0b9c8]" aria-label="Locked" />
+                     )}
+                  </li>
+               );
+            })}
+         </ul>
+      </section>
+   );
+}
+
+/* ---------- 5–6 · Friends with a 4-step track ---------- */
+
+const STEP_LABELS = ['Signed up', 'Approved', 'Has a loan', 'Repaid'] as const;
+const REJECTED_RED = '#e5484d';
+const TOO_EARLY_ORANGE = '#f97316';
+
+/** One dot drawn differently: Rejected (step 2, red) or Too early (step 4, orange, dashed line into it). */
+type StepFlag = { index: number; label: string; color: string; dashed?: boolean };
+
+function StepTrack({ step, tone, flag }: { step: 1 | 2 | 3 | 4; tone: 'purple' | 'gold' | 'green'; flag?: StepFlag }) {
+   const on = tone === 'gold' ? '#f6b73c' : tone === 'green' ? '#10b981' : PURPLE;
+   const labels = STEP_LABELS.map((label, i) => (flag && i === flag.index ? flag.label : label));
+   return (
+      <div className="mt-2.5 grid grid-cols-4" aria-label={`Step ${step} of 4: ${labels[step - 1]}`}>
+         {labels.map((label, i) => {
+            const reached = i < step;
+            const color = flag && i === flag.index ? flag.color : on;
+            const dashedNext = Boolean(flag?.dashed && i + 1 === flag.index);
+            return (
+               <div key={label} className="relative flex flex-col items-center">
+                  {i < labels.length - 1 ? (
+                     <span
+                        className="absolute left-1/2 top-[5px] h-[2px] w-full"
+                        style={
+                           dashedNext
+                              ? { backgroundImage: `repeating-linear-gradient(90deg, ${flag?.color} 0 4px, transparent 4px 7px)` }
+                              : { backgroundColor: i + 1 < step ? on : '#e4dfeb' }
+                        }
+                        aria-hidden
+                     />
+                  ) : null}
+                  <span
+                     className="relative h-3 w-3 rounded-full border-2 bg-dv2-card"
+                     style={reached ? { backgroundColor: color, borderColor: color } : { borderColor: '#d6cfe0' }}
+                  />
+                  <span
+                     className={clsx(
+                        'mt-1 text-center text-[11px] leading-3',
+                        reached ? 'font-semibold' : 'text-[#b0a6bc] dark:text-[#6f6480]'
+                     )}
+                     style={reached ? { color } : undefined}
+                  >
+                     {label}
+                  </span>
+               </div>
+            );
+         })}
+      </div>
+   );
+}
+
+/** Their Facebook (a link to the profile, or a Facebook search for their name) and @username, so you know who it is. */
+function FriendWho({ r }: { r: AffiliateReferral }) {
+   const fbHref = r.facebook_url
+      ? r.facebook_url
+      : r.facebook_name
+        ? `https://www.facebook.com/search/people/?q=${encodeURIComponent(r.facebook_name)}`
+        : null;
+   if (!fbHref && !r.username) return null;
+   return (
+      <p className="mt-0.5 flex min-w-0 items-center gap-2 text-[13px] leading-4 text-[#7b6b8c] dark:text-[#a99cba]">
+         {fbHref ? (
+            <a
+               href={fbHref}
+               target="_blank"
+               rel="noopener noreferrer"
+               className="inline-flex min-w-0 items-center gap-1 font-medium text-[#1877f2] dark:text-[#6aa8ff]"
+            >
+               <Facebook className="h-3.5 w-3.5 shrink-0" aria-hidden />
+               <span className="truncate">{r.facebook_name || 'Facebook'}</span>
+            </a>
+         ) : null}
+         {r.username ? <span className="shrink-0">@{r.username}</span> : null}
+      </p>
+   );
+}
+
+const PILL: Record<AffiliateStage, string> = {
    paid: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+   voucher: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
    repaid: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-   owed: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+   owed: 'bg-[#f6b73c] text-[#5a3b00]',
+   locked: 'bg-[#f1eff4] text-[#7b6b8c] dark:bg-[#2a2235] dark:text-[#cfc4dd]',
    borrowed: 'bg-[#ece9ff] text-[#6b55f7] dark:bg-[#2a2448] dark:text-[#b3a6ff]',
+   approved: 'bg-[#ece9ff] text-[#6b55f7] dark:bg-[#2a2448] dark:text-[#b3a6ff]',
+   rejected: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+   too_early: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+   checking: 'bg-[#f1eff4] text-[#7b6b8c] dark:bg-[#2a2235] dark:text-[#cfc4dd]',
    signed_up: 'bg-[#f1eff4] text-[#7b6b8c] dark:bg-[#2a2235] dark:text-[#cfc4dd]'
 };
 
-function stageLabel(r: AffiliateReferral, stage: AffiliateStage): string {
-   if (stage === 'paid') return `Paid you ${money(r.payout_amount)}`;
-   if (stage === 'owed') return `${money(r.payout_amount)} owed to you`;
+function pillText(r: AffiliateReferral, stage: AffiliateStage) {
+   if (stage === 'paid') return `Paid ${money(r.payout_amount)}`;
+   if (stage === 'voucher') return r.voucher_status === 'sent' ? 'Voucher sent' : 'Voucher coming';
+   if (stage === 'owed') return `${money(r.payout_amount)} owed`;
+   if (stage === 'locked') return `${money(r.payout_amount)} locked`;
    if (stage === 'repaid') return 'Repaid';
+   if (stage === 'too_early') return '⏱ Repaid too early';
    if (stage === 'borrowed') return 'Has a loan';
+   if (stage === 'approved') return 'Approved';
+   if (stage === 'rejected') return 'Rejected';
+   if (stage === 'checking') return 'Being checked';
    return 'Signed up';
 }
 
-function stageHint(r: AffiliateReferral, stage: AffiliateStage): string {
-   if (stage === 'paid') return r.paid_at ? `Paid ${new Date(r.paid_at).toLocaleDateString()}` : 'Paid';
-   if (stage === 'owed') return 'Repaid their loan — we will send your money';
-   if (r.claimed) return stage === 'signed_up' ? 'Added by you · no loan yet' : 'Added by you';
-   if (stage === 'borrowed') return `You earn ${money(r.payout_amount)} when they repay`;
-   return 'Waiting for their first loan';
-}
+const CHECK_TONE: Record<AffiliateCheckTone, string> = {
+   gray: 'bg-[#f1eff4] text-[#7b6b8c] dark:bg-[#2a2235] dark:text-[#cfc4dd]',
+   purple: 'bg-[#ece9ff] text-[#6b55f7] dark:bg-[#2a2448] dark:text-[#b3a6ff]',
+   orange: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+   green: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+   red: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+};
 
-function Stat({ label, value }: { label: string; value: number }) {
+const callTime = (iso: string) =>
+   new Date(iso).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+/** Documents + call status for a friend who isn't approved yet. */
+function FriendChecks({ checks }: { checks: AffiliateCheck[] }) {
+   if (checks.length === 0) return null;
    return (
-      <div className="flex-1 rounded-[12px] bg-dv2-card px-3 py-3 text-center">
-         <p className="text-[28px] font-bold leading-8 text-[#594d65] dark:text-[#e6def2]">{value}</p>
-         <p className="text-[13px] font-medium leading-4 text-[#7b6b8c] dark:text-[#cfc4dd]">{label}</p>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+         {checks.map((c) => (
+            <span key={c.kind} className={clsx('rounded-full px-2.5 py-0.5 text-[12px] font-semibold leading-5', CHECK_TONE[c.tone])}>
+               {c.kind === 'docs' ? '📄' : '📞'} {c.label}
+               {c.at ? ` · ${callTime(c.at)}` : ''}
+            </span>
+         ))}
       </div>
    );
 }
 
-function CodeCard({ code, boost, payout }: { code: string; boost: number; payout: number }) {
-   const [copied, setCopied] = useState(false);
-   const copy = () => {
-      void navigator.clipboard?.writeText(code).then(() => {
-         setCopied(true);
-         window.setTimeout(() => setCopied(false), 1500);
-      });
-   };
+function hintText(r: AffiliateReferral, stage: AffiliateStage, paused: boolean, todo: string | null = null) {
+   if (todo && (stage === 'signed_up' || stage === 'checking')) return r.added_by_you ? `Added by you · ${todo}` : todo;
+   if (stage === 'paid') return r.paid_at ? `We paid you on ${shortDate(r.paid_at)}` : 'We paid you';
+   if (stage === 'voucher') return `₱${r.voucher_php ?? 250} food voucher instead of ${money(r.payout_amount)}`;
+   if (stage === 'owed') return paused ? 'Repay your loan first — then we send it' : 'They repaid — we’ll send your money';
+   if (stage === 'locked') return 'Repay a loan yourself to unlock it';
+   if (stage === 'rejected') return 'Not approved by our team — they can’t borrow';
+   if (stage === 'too_early')
+      return `Paid more than 2 weeks before it was due — doesn’t count. If they pay their next loan in its last 2 weeks, you get ${money(r.payout_amount)}.`;
+   if (stage === 'checking') return 'Our team is checking them now';
+   if (stage === 'approved') return r.claimed ? 'Approved · tracked, no payout' : 'Approved — they can take a loan now';
+   if (r.claimed) return 'Added by you · tracked, no payout';
+   if (r.repaid_not_counted) return 'That loan was paid too early or funded by you. Their next one can count.';
+   if (stage === 'borrowed') return `You get ${money(r.payout_amount)} only if they repay`;
+   return r.added_by_you ? 'Added by you · hasn’t finished signing up' : 'Hasn’t finished signing up yet';
+}
+
+function FriendRow({
+   r,
+   index,
+   showCode,
+   unlocked,
+   paused,
+   voucherPhp,
+   onVoucher
+}: {
+   r: AffiliateReferral;
+   index: number;
+   showCode: boolean;
+   unlocked: boolean;
+   paused: boolean;
+   /** Set when this owed $5 can be taken as a voucher instead. */
+   voucherPhp: number | null;
+   onVoucher: (r: AffiliateReferral) => void;
+}) {
+   const stage = referralStage(r, unlocked);
+   const { checks, todo } = friendChecks(r);
+   const tone = stage === 'owed' ? 'gold' : stage === 'paid' || stage === 'repaid' || stage === 'voucher' ? 'green' : 'purple';
+   const canVoucher =
+      voucherPhp !== null &&
+      !paused &&
+      stage === 'owed' &&
+      r.personal === true &&
+      r.payout_status === 'unpaid' &&
+      Boolean(r.friend_referral_id);
    return (
-      <div className="rounded-[12px] bg-dv2-card p-4">
-         <p className="text-[14px] font-medium text-[#7b6b8c] dark:text-[#cfc4dd]">Your code</p>
-         <div className="mt-1 flex items-center justify-between gap-3">
-            <span className="font-mono text-[28px] font-bold tracking-wide text-[#594d65] dark:text-[#e6def2]">{code}</span>
+      <li
+         className={clsx(
+            'px-3 py-3',
+            index > 0 && 'border-t border-[#ece9f1] dark:border-[#2c2439]',
+            stage === 'owed' && 'bg-gradient-to-r from-[#fff3c4] to-[#fffaf0] dark:from-[#3b3216] dark:to-transparent',
+            (stage === 'paid' || stage === 'voucher') && 'bg-emerald-50/60 dark:bg-emerald-900/10',
+            stage === 'rejected' && 'bg-red-50/60 dark:bg-red-900/10',
+            stage === 'too_early' && 'bg-orange-50/70 dark:bg-orange-900/10'
+         )}
+      >
+         <div className="flex items-center gap-3">
+            <div className="min-w-0 flex-1">
+               <p className="truncate text-[17px] font-medium leading-5 text-[#2f2540] dark:text-[#e6def2]">
+                  {r.full_name || r.first_name}
+               </p>
+               <p className="text-[13px] leading-4 text-[#7b6b8c] dark:text-[#a99cba]">
+                  Joined {shortDate(r.joined_at)}
+                  {showCode ? ` · ${r.code}` : ''}
+               </p>
+               <FriendWho r={r} />
+            </div>
+            <span className={clsx('shrink-0 rounded-full px-3 py-1 text-[13px] font-semibold', PILL[stage])}>{pillText(r, stage)}</span>
+         </div>
+         <StepTrack
+            step={referralStep(r)}
+            tone={tone}
+            flag={
+               stage === 'rejected'
+                  ? { index: 1, label: 'Rejected', color: REJECTED_RED }
+                  : stage === 'too_early'
+                    ? { index: 3, label: 'Too early', color: TOO_EARLY_ORANGE, dashed: true }
+                    : undefined
+            }
+         />
+         <FriendChecks checks={checks} />
+         <p
+            className={clsx(
+               'mt-1.5 text-[13px] leading-4',
+               stage === 'owed'
+                  ? 'font-semibold text-[#a35f00] dark:text-[#ffd27a]'
+                  : stage === 'too_early'
+                    ? 'font-medium text-orange-700 dark:text-orange-300'
+                    : 'text-[#7b6b8c] dark:text-[#a99cba]'
+            )}
+         >
+            {hintText(r, stage, paused, todo)}
+         </p>
+         {canVoucher ? (
             <button
                type="button"
-               onClick={copy}
-               className="flex h-[36px] items-center gap-1.5 rounded-full px-4 text-[15px] font-semibold text-white"
-               style={{ backgroundImage: PRIMARY_GRADIENT }}
+               onClick={() => onVoucher(r)}
+               className="mt-1.5 text-[14px] font-semibold text-[#6b55f7] underline underline-offset-2 dark:text-[#b3a6ff]"
             >
-               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-               {copied ? 'Copied' : 'Copy'}
+               Take a ₱{voucherPhp} food voucher instead
             </button>
-         </div>
-         <p className="mt-2 text-[14px] leading-5 text-[#45556c] dark:text-[#b9adc9]">
-            Friends type <b>{code}</b> when they request their first loan and get <b>+{money(boost)}</b> credit. You earn{' '}
-            <b>{money(payout)}</b> for each friend who takes a loan and repays it.
-         </p>
-      </div>
+         ) : null}
+      </li>
    );
 }
 
-/** Friends who never typed the code: the owner adds them by name, the team checks and approves. */
-function ClaimFriend({ claims, sample }: { claims: AffiliateClaim[]; sample: boolean }) {
+function Friends({
+   referrals,
+   showCode,
+   payout,
+   unlocked,
+   paused,
+   voucherPhp,
+   onVoucher,
+   onShare
+}: {
+   referrals: AffiliateReferral[];
+   showCode: boolean;
+   payout: number;
+   unlocked: boolean;
+   paused: boolean;
+   voucherPhp: number | null;
+   onVoucher: (r: AffiliateReferral) => void;
+   onShare: () => void;
+}) {
+   return (
+      <section className="mt-6" aria-label="Your friends">
+         <h2 className="text-[20px] font-bold italic leading-6 text-[#594d65] dark:text-[#d9cfe6]">Your Friends</h2>
+         <p className="mt-1 text-[13px] leading-4 text-[#7b6b8c] dark:text-[#a99cba]">
+            Signed up → Approved → Has a loan → Repaid = <b className="text-[#6b55f7] dark:text-[#b3a6ff]">{money(payout)} for you</b>
+         </p>
+         <p className="mt-1 text-[13px] font-medium leading-4 text-orange-700 dark:text-orange-300">
+            ⏱ Repaid counts only in the last 2 weeks before it’s due. Paying earlier doesn’t count.
+         </p>
+         {referrals.length ? (
+            <ul className="mt-3 overflow-hidden rounded-[14px] bg-dv2-card">
+               {referrals.map((r, i) => (
+                  <FriendRow
+                     key={`${r.code}-${r.joined_at}-${i}`}
+                     r={r}
+                     index={i}
+                     showCode={showCode}
+                     unlocked={unlocked}
+                     paused={paused}
+                     voucherPhp={voucherPhp}
+                     onVoucher={onVoucher}
+                  />
+               ))}
+            </ul>
+         ) : (
+            /* 7 · Empty state */
+            <div className="mt-3 flex flex-col items-center rounded-[14px] bg-dv2-card px-5 py-6 text-center">
+               <img src={DASHBOARD_V2_ASSETS.emptyMoodeng} alt="" className="h-[110px] w-auto" />
+               <p className="mt-3 text-[17px] font-semibold text-[#594d65] dark:text-[#e6def2]">
+                  Share your code to earn your first {money(payout)}
+               </p>
+               <button
+                  type="button"
+                  onClick={onShare}
+                  className="mt-4 flex h-[46px] items-center gap-2 rounded-full px-6 text-[16px] font-extrabold text-white"
+                  style={{ backgroundImage: PURPLE_GRADIENT }}
+               >
+                  <Share2 className="h-4 w-4" strokeWidth={2.4} />
+                  Share my code
+               </button>
+            </div>
+         )}
+      </section>
+   );
+}
+
+/* ---------- 8 · Add a friend (small, honest about no payout) ---------- */
+
+function ClaimFriend({
+   claims,
+   sample,
+   personal,
+   payout
+}: {
+   claims: AffiliateClaim[];
+   sample: boolean;
+   /** Personal code: an approved friend can earn the payout. Team-made code: tracking only. */
+   personal: boolean;
+   payout: number;
+}) {
    const queryClient = useQueryClient();
    const [open, setOpen] = useState(false);
    const [name, setName] = useState('');
+   const [facebook, setFacebook] = useState('');
    const [contact, setContact] = useState('');
    const [sent, setSent] = useState<string | null>(null);
    const mutation = useMutation({
-      mutationFn: () => (sample ? Promise.resolve() : submitReferralClaim(name.trim(), contact.trim())),
+      mutationFn: () => (sample ? Promise.resolve() : submitReferralClaim(name.trim(), contact.trim(), facebook.trim())),
       onSuccess: () => {
          setSent(name.trim());
          setName('');
+         setFacebook('');
          setContact('');
          setOpen(false);
          void queryClient.invalidateQueries({ queryKey: ['affiliate-dashboard'] });
       }
    });
-   const errorText = (mutation.error as { message?: string } | null)?.message;
+   const errorText = claimErrorText((mutation.error as { message?: string } | null)?.message);
+   const field =
+      'h-[44px] rounded-[10px] border border-[#e1dbe8] bg-white px-3 text-[16px] text-[#594d65] dark:border-[#3a3047] dark:bg-[#1d1726] dark:text-[#e6def2]';
 
    return (
-      <section className="mt-4 rounded-[12px] bg-dv2-card p-4" aria-label="Add a friend you referred">
-         <p className="text-[17px] font-semibold text-[#594d65] dark:text-[#e6def2]">Friend didn&apos;t use your code?</p>
-         <p className="mt-1 text-[14px] leading-5 text-[#45556c] dark:text-[#b9adc9]">
-            Tell us who they are. We&apos;ll find their account and add them to your list.
-         </p>
-         {sent ? (
-            <p className="mt-3 rounded-[10px] bg-emerald-50 px-3 py-2 text-[14px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-               Got it — we&apos;re checking {sent}. They&apos;ll show up below once we find them.
-            </p>
-         ) : null}
+      <section className="mt-6 px-1" aria-label="Add a friend you referred">
          {open ? (
-            <form
-               className="mt-3 flex flex-col gap-2"
-               onSubmit={(e) => {
-                  e.preventDefault();
-                  if (name.trim().length >= 2) mutation.mutate();
-               }}
-            >
-               <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Their name (as on Facebook)"
-                  maxLength={80}
-                  autoFocus
-                  className="h-[44px] rounded-[10px] border border-[#e1dbe8] bg-white px-3 text-[16px] text-[#594d65] dark:border-[#3a3047] dark:bg-[#1d1726] dark:text-[#e6def2]"
-               />
-               <input
-                  value={contact}
-                  onChange={(e) => setContact(e.target.value)}
-                  placeholder="Phone or Facebook link (optional)"
-                  maxLength={120}
-                  className="h-[44px] rounded-[10px] border border-[#e1dbe8] bg-white px-3 text-[16px] text-[#594d65] dark:border-[#3a3047] dark:bg-[#1d1726] dark:text-[#e6def2]"
-               />
-               {errorText ? <p className="text-[14px] text-red-600 dark:text-red-400">{errorText}</p> : null}
-               <button
-                  type="submit"
-                  disabled={name.trim().length < 2 || mutation.isPending}
-                  className="h-[44px] rounded-full text-[16px] font-semibold text-white disabled:opacity-50"
-                  style={{ backgroundImage: PRIMARY_GRADIENT }}
+            <div className="rounded-[14px] bg-dv2-card p-4">
+               <p className="text-[16px] font-semibold text-[#594d65] dark:text-[#e6def2]">Friend didn&apos;t type your code?</p>
+               <p className="mt-1 text-[13px] leading-[18px] text-[#7b6b8c] dark:text-[#a99cba]">
+                  {personal
+                     ? `We'll find them. If they joined in the last 30 days, you earn ${money(payout)} when they repay.`
+                     : 'We’ll find them and show them in your list so you can follow along. Only friends who typed your code earn you money.'}
+               </p>
+               <form
+                  className="mt-3 flex flex-col gap-2"
+                  onSubmit={(e) => {
+                     e.preventDefault();
+                     if (name.trim().length >= 2) mutation.mutate();
+                  }}
                >
-                  {mutation.isPending ? 'Sending…' : 'Send to Moodeng'}
-               </button>
-            </form>
+                  <input
+                     value={name}
+                     onChange={(e) => setName(e.target.value)}
+                     placeholder="Their name (as on Facebook)"
+                     maxLength={80}
+                     autoFocus
+                     className={field}
+                  />
+                  <input
+                     value={facebook}
+                     onChange={(e) => setFacebook(e.target.value)}
+                     placeholder="Their Facebook profile link (optional)"
+                     inputMode="url"
+                     autoCapitalize="none"
+                     maxLength={300}
+                     className={field}
+                  />
+                  <input
+                     value={contact}
+                     onChange={(e) => setContact(e.target.value)}
+                     placeholder="Their phone number (optional)"
+                     inputMode="tel"
+                     maxLength={120}
+                     className={field}
+                  />
+                  {errorText ? <p className="text-[14px] text-red-600 dark:text-red-400">{errorText}</p> : null}
+                  <button
+                     type="submit"
+                     disabled={name.trim().length < 2 || mutation.isPending}
+                     className="h-[44px] rounded-full text-[16px] font-semibold text-white disabled:opacity-50"
+                     style={{ backgroundImage: PURPLE_GRADIENT }}
+                  >
+                     {mutation.isPending ? 'Sending…' : 'Send to Moodeng'}
+                  </button>
+                  <button
+                     type="button"
+                     onClick={() => setOpen(false)}
+                     className="text-[14px] font-medium text-[#7b6b8c] dark:text-[#a99cba]"
+                  >
+                     Cancel
+                  </button>
+               </form>
+            </div>
          ) : (
             <button
                type="button"
@@ -154,12 +899,17 @@ function ClaimFriend({ claims, sample }: { claims: AffiliateClaim[]; sample: boo
                   setSent(null);
                   setOpen(true);
                }}
-               className="mt-3 flex h-[40px] items-center gap-1.5 rounded-full border border-[#6b55f7] px-4 text-[15px] font-semibold text-[#6b55f7] dark:border-[#b3a6ff] dark:text-[#b3a6ff]"
+               className="mx-auto flex items-center gap-1.5 text-[14px] font-semibold text-[#6b55f7] dark:text-[#b3a6ff]"
             >
                <UserPlus className="h-4 w-4" />
-               Add a friend
+               Friend didn&apos;t type your code? Add them
             </button>
          )}
+         {sent ? (
+            <p className="mt-3 rounded-[10px] bg-emerald-50 px-3 py-2 text-[14px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+               Got it — we&apos;re checking {sent}. They&apos;ll show up above once we find them.
+            </p>
+         ) : null}
          {claims.length ? (
             <ul className="mt-3 flex flex-col gap-1.5">
                {claims.map((c) => (
@@ -183,114 +933,300 @@ function ClaimFriend({ claims, sample }: { claims: AffiliateClaim[]; sample: boo
    );
 }
 
-/** /affiliate — a referral code owner's own dashboard: signups, pay per person, what we owe them. */
+/* ---------- Money we sent (each transfer, and what's paid ahead) ---------- */
+
+function PaymentsSent({
+   payments,
+   aheadLeft,
+   payout
+}: {
+   payments: Array<{ amount: number; tx_hash: string | null; sent_at: string }>;
+   aheadLeft: number;
+   payout: number;
+}) {
+   const friends = payout > 0 ? Math.floor(aheadLeft / payout + 0.001) : 0;
+   return (
+      <section className="mt-4 rounded-[14px] bg-dv2-card px-4 py-3" aria-label="Money we sent you">
+         <h3 className="text-[15px] font-bold text-[#594d65] dark:text-[#d9cfe6]">💸 Money we sent you</h3>
+         <ul className="mt-2 flex flex-col gap-1.5">
+            {payments.map((p) => (
+               <li
+                  key={`${p.sent_at}-${p.amount}`}
+                  className="flex items-center justify-between gap-3 text-[14px] text-[#594d65] dark:text-[#d9cfe6]"
+               >
+                  <span>
+                     <b className="text-[#6b55f7] dark:text-[#b3a6ff]">{money(p.amount)}</b> · {shortDate(p.sent_at)}
+                  </span>
+                  {p.tx_hash ? (
+                     <a
+                        className="text-[13px] font-semibold text-[#7661f9] underline"
+                        href={txExplorerUrl(p.tx_hash)}
+                        rel="noreferrer"
+                        target="_blank"
+                     >
+                        See transfer
+                     </a>
+                  ) : null}
+               </li>
+            ))}
+         </ul>
+         {aheadLeft > 0 ? (
+            <p className="mt-2 rounded-[10px] bg-emerald-50 px-3 py-2 text-[13px] font-medium leading-5 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200">
+               🎉 {money(aheadLeft)} is paid ahead
+               {friends > 0
+                  ? ` — it covers your next ${friends === 1 ? 'friend' : `${friends} friends`} who repay${friends === 1 ? 's' : ''}`
+                  : ''}
+               . You already have it.
+            </p>
+         ) : null}
+      </section>
+   );
+}
+
+/* ---------- 11 · "You got paid" pop-up ---------- */
+
+function PaidPopup({ amount, count, onClose }: { amount: number; count: number; onClose: () => void }) {
+   return (
+      <div
+         className="fixed inset-0 z-[90] flex items-center justify-center bg-black/50 px-6"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="aff-paid-title"
+         onClick={onClose}
+      >
+         <div
+            className="w-full max-w-[340px] rounded-[24px] bg-white px-5 pb-6 pt-5 text-center dark:bg-[#1d1726]"
+            onClick={(e) => e.stopPropagation()}
+         >
+            <img src="/hippos/party.png" alt="" className="mx-auto h-[130px] w-auto" />
+            <p id="aff-paid-title" className="mt-2 text-[30px] font-black italic leading-9 text-[#6b55f7] dark:text-[#b3a6ff]">
+               You got paid {money(amount)}!
+            </p>
+            <p className="mt-1 text-[15px] leading-5 text-[#594d65] dark:text-[#cfc4dd]">
+               {count === 1 ? 'A friend you invited repaid their loan.' : `${count} friends you invited repaid their loans.`} Thank you for
+               spreading the word!
+            </p>
+            <button
+               type="button"
+               onClick={onClose}
+               className="mt-5 h-[48px] w-full rounded-full text-[17px] font-extrabold text-white"
+               style={{ backgroundImage: PURPLE_GRADIENT }}
+            >
+               Nice!
+            </button>
+         </div>
+      </div>
+   );
+}
+
+/* ---------- Admin view ---------- */
+
+function AdminViewBanner({ viewing, who }: { viewing: AffiliateDashboardData['viewing']; who: string }) {
+   const name = viewing?.display_name?.trim() || (viewing?.username ? `@${viewing.username}` : who);
+   return (
+      <div className="sticky top-0 z-20 -mx-5 mb-2 flex items-center justify-between gap-3 bg-[#2f2540] px-5 py-2.5 text-[14px] text-white">
+         <span className="min-w-0 truncate">
+            Admin view: <strong>{name}</strong>
+            {viewing?.username && viewing.display_name ? <span className="text-[#cfc6dd]"> · @{viewing.username}</span> : null}
+            <span className="text-[#cfc6dd]"> · pay out below</span>
+         </span>
+         <Link to="/admin" className="shrink-0 font-semibold underline underline-offset-2">
+            Admin
+         </Link>
+      </div>
+   );
+}
+
+/* ---------- Page ---------- */
+
 export default function AffiliateDashboardPage({ sample = false }: { sample?: boolean }) {
+   const [searchParams] = useSearchParams();
+   const backPath = useBackPath();
+   const isAffiliateOnly = useSelector((state: RootState) => state.auth.user?.userRole === 'affiliate');
+   // /affiliate?user=@username (or a user id): admins see that person's dashboard, read-only.
+   const viewAs = sample ? '' : (searchParams.get('user') ?? '').trim();
+   const adminView = viewAs !== '';
    const query = useQuery({
-      queryKey: ['affiliate-dashboard'],
-      queryFn: fetchAffiliateDashboard,
+      // '' = your own; the voucher pop-up's invalidate of ['affiliate-dashboard'] still matches by prefix.
+      queryKey: ['affiliate-dashboard', viewAs],
+      queryFn: () => (viewAs ? fetchAdminAffiliateDashboard(viewAs) : fetchAffiliateDashboard()),
       staleTime: 30_000,
+      retry: adminView ? false : 3,
       enabled: !sample
    });
-   // /affiliate-preview (dev only) renders made-up referrals so the page can be checked signed out.
-   const { data, isLoading, error } = sample ? { data: AFFILIATE_SAMPLE, isLoading: false, error: null } : query;
-   const totals = affiliateTotals(data?.referrals ?? []);
+   // /affiliate-preview (dev only) renders made-up referrals so the page can be checked signed out:
+   // ?as=belle for a team-made code, ?locked=1 before the first repaid loan, ?paused=1 with a past-due loan.
+   const sampleData: AffiliateDashboardData | null = sample
+      ? {
+           ...(searchParams.get('as') === 'belle' ? AFFILIATE_SAMPLE : AFFILIATE_PERSONAL_SAMPLE),
+           ...(searchParams.get('locked') === '1' ? { unlocked: false } : {}),
+           ...(searchParams.get('paused') === '1' ? { paused: true } : {})
+        }
+      : null;
+   const { data, isLoading, error } = sampleData ? { data: sampleData, isLoading: false, error: null } : query;
+   const referrals = data?.referrals ?? [];
    const codes = data?.codes ?? [];
+   const unlocked = data?.unlocked ?? true;
+   const paused = data?.paused ?? false;
+   const totals = affiliateTotals(referrals, unlocked);
+   const paymentsQuery = useQuery({
+      queryKey: ['affiliate-payments', viewAs],
+      queryFn: () => fetchAffiliatePayments(viewAs || undefined),
+      staleTime: 30_000,
+      retry: false,
+      enabled: !sample
+   });
+   // /affiliate-preview?sent=1: a $20 transfer with $15 paid ahead, to check the card signed out.
+   const sent =
+      sample && searchParams.get('sent') === '1'
+         ? {
+              payments: [{ amount: 20, tx_hash: '0x' + 'a'.repeat(64), sent_at: new Date().toISOString(), note: null }],
+              sent: 20,
+              ahead: 15
+           }
+         : paymentsQuery.data;
+   // Money sent ahead covers what's owed first; the rest waits for their next friends.
+   const ahead = sent?.ahead ?? 0;
+   const shownOwed = Math.max(0, totals.owed - ahead);
+   const aheadLeft = Math.max(0, ahead - totals.owed);
+   const shownPaid = Math.max(totals.paid, sent?.sent ?? 0);
+   const { main, others } = splitCodes(codes, referrals);
+   const queryClient = useQueryClient();
+   const [voucherFor, setVoucherFor] = useState<AffiliateReferral | null>(null);
+   const voucherPhp = !adminView && data?.voucher.available ? data.voucher.amountPhp : null;
+
+   const [sharing, setSharing] = useState(false);
+   const [shareCopied, setShareCopied] = useState(false);
+   const [paidPopup, setPaidPopup] = useState<{ amount: number; count: number; latest: string } | null>(null);
+
+   useEffect(() => {
+      if (!data) return;
+      // ?popup=1 forces the pop-up in the preview so it can be checked.
+      if (adminView) return;
+      if (sample) {
+         if (searchParams.get('popup') === '1') setPaidPopup({ amount: 10, count: 1, latest: new Date().toISOString() });
+         return;
+      }
+      const fresh = newPayouts(data.referrals, readSeen());
+      if (fresh.count && fresh.latest) setPaidPopup({ amount: fresh.amount, count: fresh.count, latest: fresh.latest });
+   }, [data, sample, searchParams, adminView]);
+
+   const closePaidPopup = () => {
+      if (paidPopup && !sample) writeSeen(paidPopup.latest);
+      setPaidPopup(null);
+   };
+
+   // Every owned code has an invite link now (influencer codes too): it links the friend on sign-up.
+   const shareLink = main ? buildInviteLink(main.code) : 'https://moodeng.app';
+   const shareText = !main
+      ? ''
+      : isAffiliateOnly && !adminView
+        ? `Need a small loan? Try Moodeng Credit. Join with my link (code ${main.code}):`
+        : main.personal
+          ? `I use Moodeng Credit for small loans. Join with my link (code ${main.code}):`
+          : `I use Moodeng Credit for small loans. Join with my link (code ${main.code}):`;
+
+   if (isLoading || error || !main) {
+      return (
+         <div className="min-h-screen bg-dv2-page">
+            <div className="mx-auto max-w-[440px] px-5 pb-28">
+               <header className="relative flex h-16 items-end justify-center pb-1">
+                  <Link
+                     to={backPath}
+                     className="absolute bottom-1 left-0 text-[#594d65] dark:text-[#d9cfe6]"
+                     aria-label="Back to dashboard"
+                  >
+                     <ChevronLeft className="h-6 w-6" strokeWidth={2} />
+                  </Link>
+                  <h1 className="text-[24px] font-semibold leading-[1.1] tracking-[-0.48px] text-[#594d65] dark:text-[#e6def2]">
+                     Affiliate dashboard
+                  </h1>
+               </header>
+               {isLoading ? (
+                  <div className="mt-8 flex flex-col gap-3" aria-busy="true" aria-label="Loading affiliate dashboard">
+                     {['a1', 'a2', 'a3'].map((id) => (
+                        <div key={id} className="h-[90px] animate-pulse rounded-[12px] bg-[#ece9f1] dark:bg-dv2-card" />
+                     ))}
+                  </div>
+               ) : error ? (
+                  <p className="mt-8 rounded-[12px] bg-dv2-card p-4 text-[16px] text-[#45556c] dark:text-[#b9adc9]">
+                     {adminView
+                        ? `Couldn't open ${viewAs}'s dashboard: ${error instanceof Error ? error.message : ((error as { message?: string }).message ?? 'unknown error')}`
+                        : 'We couldn\u2019t load your dashboard. Pull to refresh or try again in a minute.'}
+                  </p>
+               ) : (
+                  <div className="mt-8 rounded-[12px] bg-dv2-card p-5 text-center">
+                     <p className="text-[20px] font-semibold text-[#594d65] dark:text-[#e6def2]">
+                        {adminView ? `${viewAs} has no invite code yet` : 'Your code isn\u2019t ready yet'}
+                     </p>
+                     <p className="mt-2 text-[15px] leading-5 text-[#45556c] dark:text-[#b9adc9]">
+                        Try again in a minute. If it still doesn&apos;t show, message us and we&apos;ll set it up.
+                     </p>
+                  </div>
+               )}
+            </div>
+         </div>
+      );
+   }
 
    return (
       <div className="min-h-screen bg-dv2-page">
          <div className="mx-auto max-w-[440px] px-5 pb-28">
-            <header className="relative flex h-16 items-end justify-center pb-1">
-               <Link to="/dashboard" className="absolute bottom-1 left-0 text-[#594d65] dark:text-[#d9cfe6]" aria-label="Back to dashboard">
-                  <ChevronLeft className="h-6 w-6" strokeWidth={2} />
-               </Link>
-               <h1 className="text-[24px] font-semibold leading-[1.1] tracking-[-0.48px] text-[#594d65] dark:text-[#e6def2]">
-                  Affiliate dashboard
-               </h1>
-            </header>
-
-            {isLoading ? (
-               <div className="mt-8 flex flex-col gap-3" aria-busy="true" aria-label="Loading affiliate dashboard">
-                  {['a1', 'a2', 'a3'].map((id) => (
-                     <div key={id} className="h-[90px] animate-pulse rounded-[12px] bg-[#ece9f1] dark:bg-dv2-card" />
-                  ))}
-               </div>
-            ) : error ? (
-               <p className="mt-8 rounded-[12px] bg-dv2-card p-4 text-[16px] text-[#45556c] dark:text-[#b9adc9]">
-                  We couldn&apos;t load your dashboard. Pull to refresh or try again in a minute.
-               </p>
-            ) : !codes.length ? (
-               <div className="mt-8 rounded-[12px] bg-dv2-card p-5 text-center">
-                  <p className="text-[20px] font-semibold text-[#594d65] dark:text-[#e6def2]">No affiliate code on this account</p>
-                  <p className="mt-2 text-[15px] leading-5 text-[#45556c] dark:text-[#b9adc9]">
-                     If you&apos;re a Moodeng affiliate, make sure you&apos;re signed in with the account we linked your code to, or message
-                     us and we&apos;ll set it up.
-                  </p>
-               </div>
-            ) : (
-               <>
-                  <section
-                     className="mt-6 rounded-[16px] p-5 text-white"
-                     style={{ backgroundImage: PRIMARY_GRADIENT }}
-                     aria-label="What we owe you"
-                  >
-                     <p className="text-[15px] font-medium opacity-90">We owe you</p>
-                     <p className="text-[44px] font-bold leading-[1.1]">{money(totals.owed)}</p>
-                     <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[14px] font-medium opacity-90">
-                        <span>Paid so far {money(totals.paid)}</span>
-                        <span>Earned total {money(totals.earned)}</span>
-                        {totals.pending > 0 ? <span>On the way {money(totals.pending)}</span> : null}
-                     </div>
-                  </section>
-
-                  <div className="mt-4 flex gap-2">
-                     <Stat label="Signed up" value={totals.signedUp} />
-                     <Stat label="Took a loan" value={totals.borrowed} />
-                     <Stat label="Repaid" value={totals.repaid} />
-                  </div>
-
-                  <div className="mt-4 flex flex-col gap-3">
-                     {codes.map((c) => (
-                        <CodeCard key={c.code} code={c.code} boost={c.boost_amount} payout={c.payout_amount} />
-                     ))}
-                  </div>
-
-                  <ClaimFriend claims={data?.claims ?? []} sample={sample} />
-
-                  <h2 className="mt-8 text-[20px] font-bold italic leading-6 text-[#594d65] dark:text-[#d9cfe6]">Your referrals</h2>
-                  {data?.referrals.length ? (
-                     <ul className="mt-3 rounded-[12px] bg-dv2-card px-3 py-1">
-                        {data.referrals.map((r, index) => {
-                           const stage = referralStage(r);
-                           return (
-                              <li
-                                 key={`${r.code}-${r.joined_at}-${index}`}
-                                 className={clsx(
-                                    'flex items-center gap-3 py-3',
-                                    index > 0 && 'border-t border-[#ece9f1] dark:border-[#2c2439]'
-                                 )}
-                              >
-                                 <div className="min-w-0 flex-1">
-                                    <p className="truncate text-[17px] font-medium text-[#594d65] dark:text-[#e6def2]">{r.first_name}</p>
-                                    <p className="text-[13px] leading-4 text-[#7b6b8c] dark:text-[#a99cba]">
-                                       Joined {new Date(r.joined_at).toLocaleDateString()}
-                                       {codes.length > 1 ? ` · ${r.code}` : ''} · {stageHint(r, stage)}
-                                    </p>
-                                 </div>
-                                 <span className={clsx('shrink-0 rounded-full px-3 py-1 text-[13px] font-semibold', STAGE_PILL[stage])}>
-                                    {stageLabel(r, stage)}
-                                 </span>
-                              </li>
-                           );
-                        })}
-                     </ul>
-                  ) : (
-                     <p className="mt-3 rounded-[12px] bg-dv2-card p-4 text-[15px] text-[#45556c] dark:text-[#b9adc9]">
-                        No one has used your code yet. Share it with friends who need a small loan.
-                     </p>
-                  )}
-               </>
+            <h1 className="sr-only">Moo affiliate</h1>
+            {adminView ? <AdminViewBanner viewing={data?.viewing ?? null} who={viewAs} /> : null}
+            <Hero payout={main.payout_amount} />
+            <CodeCard main={main} others={others} unlocked={unlocked || !main.personal} onShare={() => setSharing(true)} />
+            {adminView ? null : <HowItWorks payout={main.payout_amount} open={isAffiliateOnly || referrals.length === 0} />}
+            <PosterQr code={main.code} />
+            <MoneyRow owed={shownOwed} pending={totals.pending} paid={shownPaid} paused={paused} />
+            {sent?.payments.length ? <PaymentsSent payments={sent.payments} aheadLeft={aheadLeft} payout={main.payout_amount} /> : null}
+            <Friends
+               referrals={referrals}
+               showCode={codes.length > 1}
+               payout={main.payout_amount}
+               unlocked={unlocked}
+               paused={paused}
+               voucherPhp={voucherPhp}
+               onVoucher={setVoucherFor}
+               onShare={() => setSharing(true)}
+            />
+            <Milestones referrals={referrals} />
+            {adminView && data?.viewing?.id ? <AffiliatePayoutPanel userId={data.viewing.id} /> : null}
+            {adminView ? null : (
+               <ClaimFriend claims={data?.claims ?? []} sample={sample} personal={main.personal === true} payout={main.payout_amount} />
             )}
          </div>
+
+         {voucherFor && voucherPhp !== null ? (
+            <VoucherClaimPopup
+               voucher={{ reward: 'affiliate_payout', friendReferralId: voucherFor.friend_referral_id ?? null, amountPhp: voucherPhp }}
+               isPreview={sample}
+               onClose={() => {
+                  setVoucherFor(null);
+                  void queryClient.invalidateQueries({ queryKey: ['affiliate-dashboard'] });
+               }}
+            />
+         ) : null}
+
+         {sharing ? (
+            <ShareSheet
+               link={shareLink}
+               text={shareText}
+               title="Small loans on Moodeng Credit"
+               copyText={`${shareText} ${shareLink}`}
+               onClose={() => setSharing(false)}
+               onCopied={() => {
+                  setShareCopied(true);
+                  window.setTimeout(() => setShareCopied(false), 1500);
+               }}
+            />
+         ) : null}
+         {shareCopied ? (
+            <div className="fixed bottom-24 left-1/2 z-[95] -translate-x-1/2 rounded-full bg-[#2f2540] px-4 py-2 text-[14px] font-semibold text-white">
+               Message copied
+            </div>
+         ) : null}
+         {paidPopup ? <PaidPopup amount={paidPopup.amount} count={paidPopup.count} onClose={closePaidPopup} /> : null}
       </div>
    );
 }

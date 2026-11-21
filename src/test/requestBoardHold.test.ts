@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isRequestBoardLoanVisible } from '@/lib/borrowerCreditUsage';
+import { isRequestBoardLoanVisible, SILENT_TEAM_HOLD } from '@/lib/borrowerCreditUsage';
 import { LoanStatus } from '@/types/loanTypes';
 
 const now = new Date('2026-10-01T12:00:00Z');
@@ -46,5 +46,36 @@ describe('request board: a request whose due day is over', () => {
 
    it('stays visible to its own borrower so they can delete it and post again', () => {
       expect(isRequestBoardLoanVisible(due, new Date('2026-10-02T01:00:00Z'), 'borrower-1')).toBe(true);
+   });
+});
+
+describe('request board: a request the team hid quietly', () => {
+   const hidden = { ...request, onHoldSince: '2026-10-01T11:00:00Z', onHoldReason: SILENT_TEAM_HOLD };
+
+   it('is hidden from lenders and the funding team', () => {
+      expect(isRequestBoardLoanVisible(hidden, now, 'lender-1')).toBe(false);
+      expect(isRequestBoardLoanVisible(hidden, now, 'admin-1', true)).toBe(false);
+      expect(isRequestBoardLoanVisible(hidden, now)).toBe(false);
+   });
+
+   it('stays visible to its own borrower', () => {
+      expect(isRequestBoardLoanVisible(hidden, now, 'borrower-1')).toBe(true);
+   });
+});
+
+describe('request board: a request over the borrower cap', () => {
+   const overCap = { ...request, onHoldSince: '2026-10-01T11:00:00Z', onHoldReason: 'over_cap' };
+
+   it('is hidden from lenders', () => {
+      expect(isRequestBoardLoanVisible(overCap, now, 'lender-1')).toBe(false);
+      expect(isRequestBoardLoanVisible(overCap, now, 'lender-1', false)).toBe(false);
+   });
+
+   it('is shown to the funding team so they can override and fund', () => {
+      expect(isRequestBoardLoanVisible(overCap, now, 'admin-1', true)).toBe(true);
+   });
+
+   it('does not show other holds (missed call) to the team', () => {
+      expect(isRequestBoardLoanVisible({ ...overCap, onHoldReason: 'no_show' }, now, 'admin-1', true)).toBe(false);
    });
 });

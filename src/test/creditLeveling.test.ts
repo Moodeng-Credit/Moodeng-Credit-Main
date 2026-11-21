@@ -5,7 +5,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { formatDate } from '@/utils/dateFormatters';
 
-import { isValidReferralBoost, REFERRAL_BOOST_OPTIONS } from '@/config/creditTiers';
 import { evaluateCreditProgression, getFullLimitLoans, isRepaidOnTime } from '@/lib/creditLeveling';
 import type { User } from '@/types/authTypes';
 import type { Loan } from '@/types/loanTypes';
@@ -17,7 +16,18 @@ import { buildBorrowerTimelineEvents } from '@/views/user-profile/ProgressHistor
 // The pre-KYC gate reads its RPC through react-query; these tests cover borrowers it doesn't hold.
 vi.mock('@/hooks/usePreKycGate', () => ({
    PRE_KYC_CONNECT_PATH: '/onboarding/connect',
-   usePreKycGate: () => ({ isGated: false, isLoading: false })
+   JOURNEY_V2_PATH: '/onboarding/verify',
+   needsJourneyV2: () => false,
+   needsPrescreen: () => false,
+   PRESCREEN_PATH: '/screen',
+   fetchPrescreenPath: async () => ({ on_path: false }),
+   usePreKycGate: () => ({ isGated: false, isLoading: false, v2: null, prescreen: null })
+}));
+
+// Wallet last switch (react-query, no provider here): off, so the wallet-first rules below still hold.
+vi.mock('@/hooks/useWalletLast', () => ({
+   fetchWalletLast: async () => false,
+   useWalletLast: () => ({ walletLast: false, isLoading: false })
 }));
 
 // Proof-of-income steps: none in these tests (and no QueryClientProvider to fetch them with).
@@ -119,22 +129,68 @@ describe('Credit leveling logic', () => {
       });
 
       expect(evaluation.shouldLevelUp).toBe(true);
-      expect(evaluation.nextLimit).toBe(20);
+      expect(evaluation.nextLimit).toBe(25);
    });
 
-   it('progresses from the second tier to the next 20-dollar step', () => {
+   it('progresses $10 a level', () => {
+      const evaluation = evaluateCreditProgression({
+         currentLimit: 25,
+         isVerified: true,
+         repaidAmount: 30,
+         totalRepaymentAmount: 30,
+         loanAmount: 25,
+         dueDate: '2025-02-01T00:00:00.000Z',
+         paidAt: '2025-01-31T00:00:00.000Z'
+      });
+
+      expect(evaluation.shouldLevelUp).toBe(true);
+      expect(evaluation.nextLimit).toBe(35);
+   });
+
+   it('moves an old-ladder limit to the next new level ($20 → $25)', () => {
       const evaluation = evaluateCreditProgression({
          currentLimit: 20,
          isVerified: true,
          repaidAmount: 25,
          totalRepaymentAmount: 25,
          loanAmount: 20,
-         dueDate: '2025-02-01T00:00:00.000Z',
-         paidAt: '2025-01-31T00:00:00.000Z'
+         dueDate: '2026-12-01T00:00:00.000Z',
+         paidAt: '2026-11-30T00:00:00.000Z',
+         fundedAt: '2026-11-20T00:00:00.000Z'
+      });
+
+      expect(evaluation.nextLimit).toBe(25);
+   });
+
+   it('keeps the old promise for a full-limit loan funded before the switch ($20 → $40)', () => {
+      const evaluation = evaluateCreditProgression({
+         currentLimit: 20,
+         isVerified: true,
+         repaidAmount: 25,
+         totalRepaymentAmount: 25,
+         loanAmount: 20,
+         dueDate: '2026-12-01T00:00:00.000Z',
+         paidAt: '2026-11-30T00:00:00.000Z',
+         fundedAt: '2026-11-10T00:00:00.000Z'
       });
 
       expect(evaluation.shouldLevelUp).toBe(true);
       expect(evaluation.nextLimit).toBe(40);
+   });
+
+   it('stops at the top limit', () => {
+      const evaluation = evaluateCreditProgression({
+         currentLimit: 135,
+         isVerified: true,
+         repaidAmount: 150,
+         totalRepaymentAmount: 150,
+         loanAmount: 135,
+         dueDate: '2026-12-01T00:00:00.000Z',
+         paidAt: '2026-11-30T00:00:00.000Z'
+      });
+
+      expect(evaluation.shouldLevelUp).toBe(false);
+      expect(evaluation.nextLimit).toBe(135);
    });
 
    it('still levels up a full-limit loan that was repaid late', () => {
@@ -150,7 +206,7 @@ describe('Credit leveling logic', () => {
 
       expect(evaluation.isLate).toBe(true);
       expect(evaluation.shouldLevelUp).toBe(true);
-      expect(evaluation.nextLimit).toBe(40);
+      expect(evaluation.nextLimit).toBe(25);
    });
 
    it('does not level up until the full-limit loan is fully repaid', () => {
@@ -201,17 +257,17 @@ describe('Credit leveling logic', () => {
 
    it('levels up a request above the current limit', () => {
       const evaluation = evaluateCreditProgression({
-         currentLimit: 40,
+         currentLimit: 35,
          isVerified: true,
          repaidAmount: 50,
          totalRepaymentAmount: 50,
-         loanAmount: 45,
+         loanAmount: 40,
          dueDate: '2025-02-01T00:00:00.000Z',
          paidAt: '2025-01-31T00:00:00.000Z'
       });
 
       expect(evaluation.shouldLevelUp).toBe(true);
-      expect(evaluation.nextLimit).toBe(60);
+      expect(evaluation.nextLimit).toBe(45);
    });
 });
 
@@ -363,7 +419,43 @@ describe('LoanRequestModal borrowing gate', () => {
       it('keeps today\u2019s open flow for referred borrowers: straight to the form, no call step', () => {
          const markup = render({ ...baseUser, loanAccessStatus: 'none', hasReferral: true }, 'open');
          expect(markup).toContain('Set your loan terms');
-         expect(markup).toContain('Step 1 of 4');
+         // terms, bio1, bio2, job (no job saved yet), contacts
+         expect(markup).toContain('Step 1 of 5');
+      });
+
+      it('skips the job and contact steps once the account has them (job, Messenger ID, WhatsApp)', () => {
+         const markup = render(
+            {
+               ...baseUser,
+               loanAccessStatus: 'none',
+               hasReferral: true,
+               incomeType: 'full-time',
+               profession: 'call center agent',
+               hasVerifiedContact: true,
+               hasMessengerLink: true,
+               whatsappVerified: true
+            },
+            'open'
+         );
+         expect(markup).toContain('Set your loan terms');
+         expect(markup).not.toContain('Step 1 of');
+      });
+
+      it('asks for both lines when Messenger was only marked verified by hand (no Messenger ID)', () => {
+         const markup = render(
+            {
+               ...baseUser,
+               loanAccessStatus: 'none',
+               hasReferral: true,
+               incomeType: 'full-time',
+               profession: 'call center agent',
+               hasVerifiedContact: true,
+               hasMessengerLink: false,
+               whatsappVerified: false
+            },
+            'open'
+         );
+         expect(markup).toContain('Step 1 of 2');
       });
 
       it('lets an approved borrower apply without a referral', () => {
@@ -405,9 +497,29 @@ describe('Dashboard credit level carousel', () => {
    it('builds tiers for a new verified user with a $15 limit', () => {
       const tiers = buildCreditLevels({ user: baseUser, loans: [] });
 
-      expect(tiers).toHaveLength(8);
+      // The level they have plus the next two, never the whole ladder.
+      expect(tiers.map((tier) => tier.amount)).toEqual([15, 25, 35]);
       expect(tiers[0].unlocked).toBe(true);
       expect(tiers[1].unlockRequirement).toBe('Borrow & repay the full $15 to unlock');
+   });
+
+   it('an open $20 loan funded before the switch highlights the old next step ($40), not $25', () => {
+      const tiers = buildCreditLevels({
+         user: { ...baseUser, cs: 20 },
+         loans: [createLoan({ loanAmount: 20, loanStatus: 'Lent', repaymentStatus: 'Unpaid', fundedAt: '2026-11-05T10:05:00Z' })]
+      });
+      expect(tiers.map((tier) => tier.amount)).toEqual([15, 20, 25, 35, 40]);
+      expect(tiers.find((tier) => tier.amount === 40)?.unlockRequirement).toBe('Borrow & repay the full $20 to unlock');
+      expect(tiers.find((tier) => tier.amount === 25)?.unlockRequirement).toBe('Locked');
+   });
+
+   it('an open $20 loan funded after the switch highlights $25', () => {
+      const tiers = buildCreditLevels({
+         user: { ...baseUser, cs: 20 },
+         loans: [createLoan({ loanAmount: 20, loanStatus: 'Lent', repaymentStatus: 'Unpaid', fundedAt: '2026-11-15T10:00:00Z' })]
+      });
+      expect(tiers.map((tier) => tier.amount)).toEqual([15, 20, 25, 35]);
+      expect(tiers.find((tier) => tier.amount === 25)?.unlockRequirement).toBe('Borrow & repay the full $20 to unlock');
    });
 
    it('builds tiers for an experienced user with multiple repayments', () => {
@@ -426,8 +538,10 @@ describe('Dashboard credit level carousel', () => {
          ]
       });
 
+      // $60 is from the old ladder: it gets its own card, then the next new levels.
+      expect(tiers.map((tier) => tier.amount)).toEqual([15, 25, 35, 45, 55, 60, 65, 75]);
       expect(tiers.find((tier) => tier.amount === 60)?.unlocked).toBe(true);
-      expect(tiers.find((tier) => tier.amount === 80)?.unlockRequirement).toBe('Borrow & repay the full $60 to unlock');
+      expect(tiers.find((tier) => tier.amount === 65)?.unlockRequirement).toBe('Borrow & repay the full $60 to unlock');
    });
 
    it('locks tiers for unverified users', () => {
@@ -450,9 +564,9 @@ describe('Dashboard credit level carousel', () => {
          ]
       });
 
-      expect(tiers.find((tier) => tier.amount === 20)?.date).toBe(formatDate('2025-01-10T00:00:00.000Z'));
+      // Repaid before the switch: $20 unlocked $40 on the old ladder.
       expect(tiers.find((tier) => tier.amount === 40)?.date).toBe(formatDate('2025-03-10T00:00:00.000Z'));
-      expect(tiers.find((tier) => tier.amount === 60)?.unlockRequirement).toBe('Borrow & repay the full $40 to unlock');
+      expect(tiers.find((tier) => tier.amount === 45)?.unlockRequirement).toBe('Borrow & repay the full $40 to unlock');
    });
 });
 
@@ -513,14 +627,39 @@ describe('Borrower progress timeline', () => {
    });
 });
 
-describe('referral boosts', () => {
-   it('only allows a boost that lands the $15 start exactly on a credit level', () => {
-      expect([...REFERRAL_BOOST_OPTIONS]).toEqual([5, 25, 45, 65, 85, 105, 125]);
-      expect(isValidReferralBoost(5)).toBe(true);
-      expect(isValidReferralBoost(25)).toBe(true);
+describe('ladder copies stay in sync', () => {
+   it('the edge functions use the same ladder and level-3 limit as the website', async () => {
+      const { CREDIT_TIERS, MAX_CREDIT_LIMIT, getNextCreditTier } = await import('@/config/creditTiers');
+      const server = await import('../../supabase/functions/_shared/creditAndPoints.ts');
+      expect([...server.CREDIT_TIERS]).toEqual([...CREDIT_TIERS]);
+      expect(server.MAX_CREDIT_LIMIT).toBe(MAX_CREDIT_LIMIT);
+      for (const limit of [15, 20, 25, 40, 60, 100, 120, 135]) {
+         for (const fundedAt of [undefined, '2026-11-10T00:00:00Z', '2026-11-20T00:00:00Z']) {
+            expect(server.getNextCreditTier(limit, fundedAt)).toBe(getNextCreditTier(limit, fundedAt));
+         }
+      }
+      const { readFileSync } = await import('node:fs');
+      const rewards = readFileSync('supabase/functions/_shared/trustPointRewards.ts', 'utf8');
+      expect(rewards).toContain(`const MAX_CREDIT_LIMIT = ${MAX_CREDIT_LIMIT};`);
+      expect(rewards).toContain(`const LEVEL_THREE_LIMIT = ${CREDIT_TIERS[2]};`);
    });
+});
 
-   it('rejects a boost that would land between levels, which would make the next level skip one', () => {
-      [0, -5, 10, 15, 20, 30, 5.5, Number.NaN].forEach((boost) => expect(isValidReferralBoost(boost)).toBe(false));
+describe('the 48-hour rule: a loan repaid within 2 days of funding never levels up', () => {
+   const base = {
+      currentLimit: 15,
+      isVerified: true,
+      repaidAmount: 16.5,
+      totalRepaymentAmount: 16.5,
+      loanAmount: 15,
+      dueDate: '2026-12-16T00:00:00Z',
+      dueTimezone: 'Asia/Manila',
+      fundedAt: '2026-11-16T08:00:00Z'
+   };
+   it('repaid 30 hours after funding: no level-up', () => {
+      expect(evaluateCreditProgression({ ...base, paidAt: '2026-11-17T14:00:00Z' }).shouldLevelUp).toBe(false);
+   });
+   it('repaid 49 hours after funding: levels up as before', () => {
+      expect(evaluateCreditProgression({ ...base, paidAt: '2026-11-18T09:00:00Z' }).shouldLevelUp).toBe(true);
    });
 });

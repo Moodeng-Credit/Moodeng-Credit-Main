@@ -32,7 +32,7 @@ import { formatDate, parseDateSafely } from '@/utils/dateFormatters';
 import { getLoanPastDueAt, isLoanPastDue, isPublicDefault, wasRepaidPublicLate } from '@/utils/loanOverdue';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 
-import { getCreditLevelNumber, getNextCreditTier, MAX_CREDIT_LIMIT } from '@/config/creditTiers';
+import { getCreditLevelNumber, getPastNextCreditTier, MAX_CREDIT_LIMIT } from '@/config/creditTiers';
 import { getEffectiveCreditLimit, getFullLimitLoans } from '@/lib/creditLeveling';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { fetchUserProfiles, getUserProfile } from '@/store/slices/authSlice';
@@ -395,7 +395,7 @@ export function buildBorrowerTimelineEvents(borrower: User, loans: Loan[]): Borr
          // A repaid full-limit loan levels up, late or not (most late payments are tech trouble).
          const limitBefore = fullLimitLoans.get(loan);
          if (limitBefore !== undefined && limitBefore < MAX_CREDIT_LIMIT) {
-            const nextLimit = getNextCreditTier(limitBefore);
+            const nextLimit = getPastNextCreditTier(limitBefore, loan.repaidAt ?? loan.updatedAt);
             if (nextLimit > limitBefore) {
                events.push({
                   id: `${loan.id}-credit-unlocked-${nextLimit}`,

@@ -59,6 +59,15 @@ const foundingTeam = [
       bio: 'Builds stories and visual direction for Moodeng Credit, helping turn community ideas into growth narratives people can understand, share, and rally around.',
       credentials: ['Storytelling', 'Visual Direction', 'Growth Hacking', 'Narrative Setting'],
       linkedIn: 'https://www.linkedin.com/in/ogunjana-adeleke-lexioneth-2a75b2238/'
+   },
+   {
+      name: 'Ludi',
+      role: 'Community Lead',
+      image: '/team/ludi.jpeg',
+      bio: 'Brings hands-on experience in Indonesia, where he has seen loan sharks trap families with crushing interest. He is bringing Moodeng Credit there so people have a fair, safe way to borrow instead.',
+      credentials: ['Indonesia', 'Fair Lending', 'Stopping Loan Sharks'],
+      linkedIn: 'https://www.linkedin.com/in/ludi/',
+      x: 'https://x.com/duitkripto'
    }
 ];
 
@@ -203,7 +212,7 @@ export default function TeamPage() {
             </section>
 
             <section aria-label="Additional team members" className="mt-md-1 border-t-[8px] border-[#0d2f6f] pt-md-4 md:mt-md-2 md:pt-md-6">
-               <div className="grid gap-md-3 md:grid-cols-3">
+               <div className="grid gap-md-3 md:grid-cols-6 md:[&>*]:col-span-2 md:[&>*:last-child:nth-child(3n+1)]:col-start-3">
                   {foundingTeam.map((member) => (
                      <article
                         key={member.name}
@@ -225,18 +234,25 @@ export default function TeamPage() {
                            </div>
                         ) : null}
                         <div className="mt-auto pt-md-2 md:pt-md-3">
-                           {'website' in member && member.website ? (
+                           {('website' in member && member.website) || ('x' in member && member.x) ? (
                               <div className="flex flex-wrap justify-center gap-2">
                                  <ProfileButton href={member.linkedIn} compact>
                                     LinkedIn
                                  </ProfileButton>
-                                 <ProfileButton href={member.website} compact>
-                                    Website
-                                 </ProfileButton>
+                                 {'website' in member && member.website ? (
+                                    <ProfileButton href={member.website} compact>
+                                       Website
+                                    </ProfileButton>
+                                 ) : null}
+                                 {'x' in member && member.x ? (
+                                    <ProfileButton href={member.x} compact>
+                                       X
+                                    </ProfileButton>
+                                 ) : null}
                               </div>
-                           ) : (
+                           ) : 'linkedIn' in member && member.linkedIn ? (
                               <LinkedInButton href={member.linkedIn} className="mx-auto" />
-                           )}
+                           ) : null}
                         </div>
                      </article>
                   ))}

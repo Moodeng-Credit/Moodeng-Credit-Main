@@ -13,11 +13,30 @@ export interface ScreeningAnswers {
    facebookUrl?: string;
    tiktokUrl?: string;
    referral?: string;
+   /** "Referred by" dropdown: an influencer's code (INFLUENCERS), or 'other'. */
+   referredBy?: string;
    loanUse?: string;
    exchanges?: string[];
    showedCashInOut?: boolean;
    informedTerms?: boolean;
    addedEmma?: boolean;
+}
+
+// The big influencers the host picks from in "Referred by". Picking one links the borrower to that
+// code (admin_link_referral), so the influencer earns their payout when this friend repays.
+export const INFLUENCERS = [
+   { label: 'Irish', code: 'IRISH2026', codes: ['IRISH', 'IRISH2026'] },
+   { label: 'Mahjid', code: 'MAHJID', codes: ['MAHJID'] }
+];
+
+/** The influencer code this borrower is already linked to, if it's one of INFLUENCERS. */
+export const influencerFor = (referralCode: string | null) =>
+   INFLUENCERS.find((i) => referralCode && i.codes.includes(referralCode.toUpperCase()))?.code;
+
+export async function linkReferral(userId: string, code: string): Promise<string> {
+   const { data, error } = await getSupabaseBrowserClient().rpc('admin_link_referral' as never, { p_user_id: userId, p_code: code } as never);
+   if (error) throw error;
+   return data as unknown as string;
 }
 
 export const EXCHANGES = ['Coins.ph', 'PDAX', 'GCash (GCrypto)', 'Maya', 'Binance', 'Bybit', 'OKX', 'Tokocrypto', 'Other'];
@@ -54,6 +73,9 @@ export interface CallSheetProfile {
    gapReasons: string[];
    location: string | null;
    facebookVerified: boolean;
+   /** Name on the Facebook/Messenger account they connected (often not their real name). */
+   facebookName: string | null;
+   facebookProfileUrl: string | null;
    idVerified: boolean;
    liveness: boolean;
    walletAddress: string | null;
@@ -69,6 +91,15 @@ export interface CallSheetProfile {
    }>;
 }
 
+/** A usable https link from a stored Facebook profile URL or handle, else null. */
+const facebookLink = (raw: unknown): string | null => {
+   if (typeof raw !== 'string' || !raw.trim()) return null;
+   const v = raw.trim();
+   if (/^https?:\/\/([a-z0-9-]+\.)*(facebook\.com|fb\.com|m\.me)\//i.test(v)) return v;
+   if (/^([a-z0-9-]+\.)*(facebook\.com|fb\.com)\//i.test(v)) return `https://${v}`;
+   return null;
+};
+
 const EMPTY_SCREENING: CallScreening = { id: null, answers: {}, notes: '', redFlags: '', score: null, updatedAt: null, updatedBy: null };
 
 export async function loadCallSheet(
@@ -82,7 +113,7 @@ export async function loadCallSheet(
       supabase
          .from('users')
          .select(
-            'id,username,display_name,email,created_at,profession,income_type,monthly_income,monthly_expenses,other_income,income_description,gap_reasons,location,messenger_verified_at,is_didit,is_world_id,liveness_status,wallet_address,redeemed_referral_code_id'
+            'id,username,display_name,email,created_at,profession,income_type,monthly_income,monthly_expenses,other_income,income_description,gap_reasons,location,messenger_verified_at,facebook_name,facebook_profile_url,facebook_contact,is_didit,is_world_id,liveness_status,wallet_address,redeemed_referral_code_id'
          )
          .eq('id', userId)
          .maybeSingle(),
@@ -120,6 +151,8 @@ export async function loadCallSheet(
          gapReasons: Array.isArray(u.gap_reasons) ? u.gap_reasons : [],
          location: u.location ?? null,
          facebookVerified: Boolean(u.messenger_verified_at),
+         facebookName: u.facebook_name?.trim() || null,
+         facebookProfileUrl: facebookLink(u.facebook_profile_url) ?? facebookLink(u.facebook_contact),
          idVerified: u.is_didit === 'ACTIVE' || u.is_world_id === 'ACTIVE',
          liveness: u.liveness_status === 'APPROVED',
          walletAddress: u.wallet_address ?? null,
@@ -152,6 +185,7 @@ export async function loadCallSheet(
 export const prefillAnswers = (profile: CallSheetProfile): ScreeningAnswers => ({
    fullName: profile.displayName ?? undefined,
    role: profile.profession ?? undefined,
+   facebookUrl: profile.facebookProfileUrl ?? undefined,
    referral: profile.referralCode ? `Referral code ${profile.referralCode}` : undefined,
    loanUse: profile.loans.find((l) => l.status === 'Requested')?.reason ?? undefined
 });
@@ -274,4 +308,39 @@ export async function loadBotAnswers(userId: string): Promise<BotAnswers[]> {
       holdingAt: r.holding_at ?? null,
       createdAt: r.created_at
    }));
+}
+
+// Per-borrower loan cap (public.borrower_loan_caps, admin-only). A request above it is held and the
+// team alerted; funding it needs Override + a reason in the Fund modal.
+export interface LoanCap {
+   capUsd: number;
+   note: string;
+   setAt: string;
+}
+
+export async function loadLoanCap(userId: string): Promise<LoanCap | null> {
+   const { data, error } = await getSupabaseBrowserClient()
+      .from('borrower_loan_caps' as never)
+      .select('cap_usd, note, set_at')
+      .eq('user_id', userId)
+      .maybeSingle();
+   if (error) throw new Error(error.message);
+   const row = data as AnyRow | null;
+   return row ? { capUsd: Number(row.cap_usd), note: row.note ?? '', setAt: row.set_at } : null;
+}
+
+export async function saveLoanCap(userId: string, capUsd: number, note: string): Promise<void> {
+   if (!(capUsd > 0)) throw new Error('Cap must be more than $0');
+   const { error } = await getSupabaseBrowserClient()
+      .from('borrower_loan_caps' as never)
+      .upsert({ user_id: userId, cap_usd: capUsd, note: note.trim() || null, set_at: new Date().toISOString() } as never);
+   if (error) throw new Error(error.message);
+}
+
+export async function removeLoanCap(userId: string): Promise<void> {
+   const { error } = await getSupabaseBrowserClient()
+      .from('borrower_loan_caps' as never)
+      .delete()
+      .eq('user_id', userId);
+   if (error) throw new Error(error.message);
 }

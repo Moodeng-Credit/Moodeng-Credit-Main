@@ -1,0 +1,67 @@
+import { useState } from 'react';
+
+import { CONNECT_HIPPOS, ConnectHero, GhostButton, PrimaryButton } from '@/views/dashboard/components/connectKit';
+
+/**
+ * Loan request, for borrowers whose profile has no job saved (George, 2026-11-15): one question,
+ * saved to their profile, so it's asked once. Lenders and the call sheet read it.
+ */
+export default function JobStep({
+   initialValue = '',
+   onBack,
+   onSave
+}: {
+   initialValue?: string;
+   onBack: () => void;
+   // Saves the job; rejects with a message to show when it didn't save.
+   onSave: (job: string) => Promise<void>;
+}) {
+   const [job, setJob] = useState(initialValue);
+   const [saving, setSaving] = useState(false);
+   const [error, setError] = useState('');
+   const ready = job.trim().length >= 3;
+
+   const save = async () => {
+      if (!ready || saving) return;
+      setSaving(true);
+      setError('');
+      try {
+         await onSave(job.trim());
+      } catch {
+         setError('That didn’t save. Please try again.');
+         setSaving(false);
+      }
+   };
+
+   // Same padding and scroll as the other step cards (SocialHandlesStep, the income card): without it
+   // the box and buttons ran edge to edge.
+   return (
+      <div className="connect-ui flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overscroll-contain px-5 py-5">
+         <ConnectHero image={CONNECT_HIPPOS.call} title="What do you do for work?" />
+         <div className="flex flex-col gap-2">
+            <input
+               autoFocus
+               className="min-h-[48px] w-full rounded-[14px] border border-[#d8d0e2] bg-white px-3 py-2 text-md-b2 text-md-heading placeholder:text-md-neutral-600 focus:border-md-primary-900 focus:outline-none focus:ring-2 focus:ring-md-primary-100"
+               maxLength={60}
+               onChange={(e) => setJob(e.target.value)}
+               onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                     e.preventDefault();
+                     void save();
+                  }
+               }}
+               placeholder="e.g. teacher"
+               type="text"
+               value={job}
+            />
+            {error ? <p className="text-md-b3 text-md-red-500">{error}</p> : null}
+         </div>
+         <div className="flex flex-col gap-2">
+            <PrimaryButton disabled={!ready || saving} onClick={() => void save()}>
+               {saving ? 'Saving…' : 'Continue'}
+            </PrimaryButton>
+            <GhostButton onClick={onBack}>Back</GhostButton>
+         </div>
+      </div>
+   );
+}

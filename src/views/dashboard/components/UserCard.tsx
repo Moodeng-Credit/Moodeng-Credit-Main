@@ -1,5 +1,6 @@
 import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { describeSchedule } from '@/lib/repaymentSchedule';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { format, parseISO } from 'date-fns';
 import { BadgeCheck, ChevronRight, Clock, ExternalLink, Send, Share2, Sparkles, Trash2 } from 'lucide-react';
@@ -8,7 +9,7 @@ import { Link } from 'react-router-dom';
 import { useAccount, useSwitchChain } from 'wagmi';
 import { getAccount } from 'wagmi/actions';
 
-import FundingMethodModal, { type FundLoanTarget } from '@/components/funding/FundingMethodModal';
+import FundingMethodModal, { type FundLoanTarget, clearFundResume, readFundResume } from '@/components/funding/FundingMethodModal';
 import IndonesiaBadge, { INDONESIA_CARD_ACCENT } from '@/components/IndonesiaBadge';
 import PaymentProgressRing from '@/components/loading/PaymentProgressRing';
 import { FlipFace, useFloatingParticles, useReplayClass, useTapFlip } from '@/components/motion/TapDelight';
@@ -36,6 +37,7 @@ import {
    getRequestBoardExpiry,
    isExpiredUnfundedRequest,
    isRequestPastItsDueDay,
+   SILENT_TEAM_HOLD,
    type RequestBoardExpiry
 } from '@/lib/borrowerCreditUsage';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
@@ -180,6 +182,10 @@ export default function UserCard(loan: UserCardProps) {
    // Help"; everyone else falls through to the normal lend flow, byte-for-byte unchanged.
    const isFundingAdmin = useIsFundingAdmin();
    const [showFundingModal, setShowFundingModal] = useState(false);
+   // Reopen it if the card remounted while the admin was connecting a wallet inside it.
+   useEffect(() => {
+      if (isFundingAdmin && readFundResume(loanData.id) !== null) setShowFundingModal(true);
+   }, [isFundingAdmin, loanData.id]);
    // Borrower's own request on hold (missed video call): book a new call right from the card.
    const [showRebook, setShowRebook] = useState(false);
    const [showWalletChecklist, setShowWalletChecklist] = useState(false);
@@ -570,7 +576,8 @@ export default function UserCard(loan: UserCardProps) {
 
    const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
-      if (isIndonesianLoan(loanData)) return;
+      // Indonesia: only Moodeng's funding accounts can fund (Vault Lend → bridge → their Walt).
+      if (isIndonesianLoan(loanData) && !isFundingAdmin) return;
       // Internal accounts get to choose Direct Lend vs Smart Contract Lend (Liquidity Relay).
       if (isFundingAdmin) {
          setShowFundingModal(true);
@@ -806,9 +813,14 @@ export default function UserCard(loan: UserCardProps) {
                   <img src="/icons/base-account.svg" alt="Base" className="w-6 h-6 rounded-[3.4px]" />
                   {/* Due Date */}
                   <div className="flex items-center gap-1 text-md-b2 font-semibold">
-                     <span className="text-[#585858]">Due On</span>
+                     <span className="text-[#585858]">{loanData.repaymentSchedule ? 'Last payment' : 'Due On'}</span>
                      <span className="text-md-red-600">{dueFormatted}</span>
                   </div>
+                  {loanData.repaymentSchedule ? (
+                     <p className="text-md-b3 font-medium text-[#585858]">
+                        Paid back in {loanData.repaymentSchedule.length} parts: {describeSchedule(loanData.repaymentSchedule)}
+                     </p>
+                  ) : null}
                </div>
 
                {/* Right: Amount Card */}
@@ -847,6 +859,12 @@ export default function UserCard(loan: UserCardProps) {
 
             {/* CTA + Borrower Link */}
             <div className="flex flex-col gap-4">
+               {isFundingAdmin && !isOwnLoan && loanData.onHoldReason === 'over_cap' && loanData.loanStatus === 'Requested' ? (
+                  // Team only: lenders can't see this request. Fund → Override → reason.
+                  <p className="rounded-md-lg border border-[#f5c56b] bg-[#fff6e0] px-md-3 py-2 text-md-b3 font-semibold text-[#8a5300]">
+                     🚧 Over this borrower&apos;s cap · hidden from lenders
+                  </p>
+               ) : null}
                {!isAuthenticated ? (
                   <Link
                      to="/sign-in"
@@ -855,10 +873,15 @@ export default function UserCard(loan: UserCardProps) {
                      View Request
                      <ChevronRight className="w-5 h-5" />
                   </Link>
-               ) : isOwnLoan && loanData.onHoldSince && loanData.loanStatus === 'Requested' ? (
+               ) : isOwnLoan && loanData.onHoldSince && loanData.onHoldReason !== SILENT_TEAM_HOLD && loanData.loanStatus === 'Requested' ? (
                   // Hidden from lenders until they rebook; booking a new call puts it straight back.
                   <div className="flex flex-col gap-md-2 rounded-md-lg border border-[#f5c56b] bg-[#fff6e0] p-md-3">
-                     {loanData.onHoldReason === 'awaiting_call' ? (
+                     {loanData.onHoldReason === 'over_cap' ? (
+                        <>
+                           <p className="text-md-b2 font-semibold text-[#8a5300]">Our team is checking this amount</p>
+                           <p className="text-md-b3 text-[#8a5300]">We&apos;ll message you soon.</p>
+                        </>
+                     ) : loanData.onHoldReason === 'awaiting_call' ? (
                         <>
                            <p className="text-md-b2 font-semibold text-[#8a5300]">Waiting for your video call</p>
                            <p className="text-md-b3 text-[#8a5300]">
@@ -874,13 +897,15 @@ export default function UserCard(loan: UserCardProps) {
                            </p>
                         </>
                      )}
-                     <button
-                        type="button"
-                        onClick={() => setShowRebook(true)}
-                        className="w-full rounded-md-lg bg-md-primary-1200 py-md-3 text-md-b1 font-semibold text-md-neutral-100 transition-all duration-150 hover:brightness-110 active:scale-[0.98]"
-                     >
-                        {loanData.onHoldReason === 'awaiting_call' ? 'Book or change your call' : 'Book a new call'}
-                     </button>
+                     {loanData.onHoldReason === 'over_cap' ? null : (
+                        <button
+                           type="button"
+                           onClick={() => setShowRebook(true)}
+                           className="w-full rounded-md-lg bg-md-primary-1200 py-md-3 text-md-b1 font-semibold text-md-neutral-100 transition-all duration-150 hover:brightness-110 active:scale-[0.98]"
+                        >
+                           {loanData.onHoldReason === 'awaiting_call' ? 'Book or change your call' : 'Book a new call'}
+                        </button>
+                     )}
                   </div>
                ) : isOwnLoan ? (
                   <div className="bg-md-neutral-500 text-md-neutral-1200 text-md-b1 font-semibold py-md-3 rounded-md-lg text-center cursor-not-allowed">
@@ -906,8 +931,9 @@ export default function UserCard(loan: UserCardProps) {
                      View Details
                      <ExternalLink className="w-5 h-5" />
                   </Link>
-               ) : isIndoLoan && !isOwnLoan ? (
+               ) : isIndoLoan && !isOwnLoan && !isFundingAdmin ? (
                   // Indonesia requests are paid to the borrower's Walt by Moodeng, never by a lender on Base.
+                  // Moodeng's funding accounts get the normal buttons below; Send Your Help opens Vault Lend.
                   <div className="w-full rounded-md-lg bg-md-neutral-500 py-md-3 text-center text-md-b2 font-semibold text-md-neutral-1200">
                      Dibayar oleh Moodeng · Paid by Moodeng
                   </div>
@@ -1013,10 +1039,15 @@ export default function UserCard(loan: UserCardProps) {
                      borrowerName: borrowerDisplayName,
                      principal: Number(loanData.loanAmount ?? 0),
                      totalOwed: Number(loanData.totalRepaymentAmount ?? 0),
-                     dueDate: loanData.dueDate ?? ''
+                     dueDate: loanData.dueDate ?? '',
+                     market: isIndoLoan ? 'ID' : null,
+                     repaymentSchedule: loanData.repaymentSchedule ?? null
                   } satisfies FundLoanTarget
                }
-               onClose={() => setShowFundingModal(false)}
+               onClose={() => {
+                  clearFundResume();
+                  setShowFundingModal(false);
+               }}
                onDirectLend={runDirectLend}
                onFunded={handleFetch}
             />

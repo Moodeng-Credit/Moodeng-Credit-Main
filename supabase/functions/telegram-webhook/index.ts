@@ -32,17 +32,26 @@ import {
    parseDecisionCallback,
    parseRejectFollowUpCallback,
    reopenLoanAccess,
+   ghostUser,
+   unghostUser,
    setCardButtons,
    shortId
 } from '../_shared/loanAccess.ts';
+import { handleBlockCallback } from '../_shared/blockForGood.ts';
 import { markMessengerVerified, messengerVerifiedStamp, parseMessengerVerifyCallback } from '../_shared/messengerStuckAlert.ts';
 import { payoutWalletStatus } from '../_shared/idPayoutWallet.ts';
-import { findIdUserByTelegram, handleIdBotCallback, handleIdMenuMessage } from '../_shared/idBot.ts';
+import { findIdUserByTelegram, handleIdBotCallback, handleIdMenuMessage, handleIdWaltAddressMessage } from '../_shared/idBot.ts';
 import { handleBridgeStart } from '../_shared/idWaBridge.ts';
 import { handleIdFreeText } from '../_shared/idHelper.ts';
 import { handleGuidePhotoCommand, isGuidePhotoCommand } from '../_shared/idGuides.ts';
 import { handleWaltPayoutCallback } from '../_shared/idWaltPayouts.ts';
-import { handleSweepCommand, handleWalletDepositCallback } from '../_shared/idRepayments.ts';
+import { handleIncomeDocCallback, handleIncomeDocReasonReply } from '../_shared/incomeDocCards.ts';
+import { handlePreScreeningAskCallback, handlePreScreeningAskReply } from '../_shared/preScreeningAsk.ts';
+import { handlePreScreeningCallback, handlePreScreeningReasonReply } from '../_shared/preScreeningDecision.ts';
+import { handleArrivedCommand, handleSweepCommand, handleWalletDepositCallback } from '../_shared/idRepayments.ts';
+import { handleWaltWatchCallback, handleWaltWatchCommand } from '../_shared/waltWatch.ts';
+import { handleVaultBridgeCallback, handleVaultCommand } from '../_shared/idVaultBridge.ts';
+import { handleReadyCallback, handleReadyCommand } from '../_shared/idReady.ts';
 import { formatCallTime } from '../_shared/videoCall.ts';
 import { handleRescheduleStep, parseRescheduleCallback, postReschedulePicker } from '../_shared/callReschedule.ts';
 import { handleCancelStep, parseCancelCallback } from '../_shared/callCancel.ts';
@@ -790,6 +799,77 @@ const handleReopenCommand = async (supabase: SupabaseClient, message: TelegramMe
    return true;
 };
 
+// Quiet reject for someone we don't want to tell anything (begging, pushy, suspicious):
+//   /ghost @username     rejected with no message + Messenger bot off for every account on that Facebook
+//   /unghost @username   Messenger bot back on (still rejected; /reopen to let them ask again)
+const handleGhostCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
+   const match = (message.text ?? '').trim().match(/^\/(un)?ghost(?:@\w+)?(?:\s+(\S+))?/i);
+   if (!match) return false;
+   const chatId = message.chat.id;
+   const undo = !!match[1];
+   const arg = (match[2] ?? '').trim().replace(/^@/, '');
+   if (!arg) {
+      await sendTelegramMessage(
+         chatId,
+         undo ? 'Usage: /unghost @username — turns the Messenger bot back on for them' : 'Usage: /ghost @username — rejects them quietly (no message) and turns the Messenger bot off for them'
+      );
+      return true;
+   }
+   const { data: user } = /^[0-9a-f-]{36}$/i.test(arg)
+      ? await supabase.from('users').select('id').eq('id', arg).maybeSingle()
+      : await supabase.from('users').select('id').ilike('username', escapeLike(arg)).maybeSingle();
+   if (!user) {
+      await sendTelegramMessage(chatId, `No user found for ${arg}.`);
+      return true;
+   }
+   const result = undo ? await unghostUser(supabase, user.id, adminHandle(message.from)) : await ghostUser(supabase, user.id, adminHandle(message.from));
+   await sendTelegramMessage(chatId, result.summary);
+   return true;
+};
+
+// Food vouchers only count a repayment made in the loan's second half. When an early repayer asks
+// (the app sends them to Messenger), an admin counts their latest early repayment after all:
+//   /unlockreward @username
+const handleUnlockRewardCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
+   const match = (message.text ?? '').trim().match(/^\/unlockreward(?:@\w+)?(?:\s+(\S+))?/i);
+   if (!match) return false;
+   const chatId = message.chat.id;
+   const arg = (match[1] ?? '').trim().replace(/^@/, '');
+   if (!arg) {
+      await sendTelegramMessage(chatId, 'Usage: /unlockreward @username — counts their latest early repayment for food vouchers');
+      return true;
+   }
+   const { data: user } = /^[0-9a-f-]{36}$/i.test(arg)
+      ? await supabase.from('users').select('id, username').eq('id', arg).maybeSingle()
+      : await supabase.from('users').select('id, username').ilike('username', escapeLike(arg)).maybeSingle();
+   if (!user) {
+      await sendTelegramMessage(chatId, `No user found for ${arg}.`);
+      return true;
+   }
+   const who = user.username ? `@${user.username}` : user.id;
+   const { data, error } = await supabase.rpc('unlock_early_reward', { p_user_id: user.id, p_by: adminHandle(message.from) });
+   if (error) {
+      await sendTelegramMessage(chatId, `Couldn't unlock for ${who}: ${error.message}`);
+      return true;
+   }
+   const result = (data ?? {}) as { ok?: boolean; reason?: string; trackingId?: string; claimable?: string[] };
+   if (!result.ok) {
+      await sendTelegramMessage(chatId, `Nothing to unlock for ${who}: ${result.reason ?? 'no early repayment'}.`);
+      return true;
+   }
+   const claimable = result.claimable ?? [];
+   await sendTelegramMessage(
+      chatId,
+      [
+         `🔓 Early repayment ${result.trackingId ?? ''} now counts for ${who} — by ${adminHandle(message.from)}`,
+         claimable.length
+            ? `They can claim it in the app now (${claimable.join(', ')}): Rewards → Claim. Tell them on Messenger.`
+            : 'It counts toward their streak, but no voucher is claimable yet.'
+      ].join('\n')
+   );
+   return true;
+};
+
 // Test accounts (users.is_test): left out of the ☀️ Onboarding check-in, /pending and the money
 // stats, so team test sign-ups don't read as real people to chase.
 //   /testaccount                      list them
@@ -1344,8 +1424,37 @@ serve(async (req) => {
          if (await handleWalletDepositCallback(supabase, update.callback_query)) {
             return jsonResponse({ message: 'Indonesia wallet callback handled' });
          }
+         // Walt pot card: 🔄 check balance now / 😴 snooze (admin chats only; idww:).
+         if (await handleWaltWatchCallback(supabase, update.callback_query)) {
+            return jsonResponse({ message: 'Walt watch callback handled' });
+         }
+         // Indonesia: /idvault "↩️ Send back to Base" (admin chats only; LI.FI bridge to the lending wallet).
+         if (await handleVaultBridgeCallback(supabase, update.callback_query)) {
+            return jsonResponse({ message: 'Indonesia vault bridge handled' });
+         }
+         // Indonesia: /idready card buttons (🧪 Test gas, 🔄 Check again; admin chats only; idrd:).
+         if (await handleReadyCallback(supabase, update.callback_query)) {
+            return jsonResponse({ message: 'Indonesia readiness handled' });
+         }
          const teamChatId = await getTeamChatId(supabase);
          const kycChatId = await getSetting(supabase, 'kyc_alert_chat_id');
+         // Proof of income: ✅ Approve / ❌ Reject under a result that waits for the team (pi:).
+         if (await handleIncomeDocCallback(supabase, update.callback_query, [teamChatId, kycChatId].filter(Boolean).map(String))) {
+            return jsonResponse({ message: 'Income document callback handled' });
+         }
+         // Pre-screening card: ✅ Good fit / ❌ Not a fit (ps:).
+         const prescreenChatId = await getSetting(supabase, 'prescreen_chat_id');
+         if (await handlePreScreeningCallback(supabase, update.callback_query, [teamChatId, kycChatId, prescreenChatId].filter(Boolean).map(String))) {
+            return jsonResponse({ message: 'Pre-screening decision handled' });
+         }
+         // 🚫 Block for good under a "linked to bad accounts" note (bk:).
+         if (await handleBlockCallback(supabase, update.callback_query, [teamChatId, kycChatId, prescreenChatId].filter(Boolean).map(String))) {
+            return jsonResponse({ message: 'Block for good handled' });
+         }
+         // Pre-screening card: 💬 Ask more and its draft (pq:).
+         if (await handlePreScreeningAskCallback(supabase, update.callback_query, [teamChatId, kycChatId, prescreenChatId].filter(Boolean).map(String))) {
+            return jsonResponse({ message: 'Pre-screening ask handled' });
+         }
          // 🔄 Change time picker: the admin chats and the call-changes group.
          const reschedule = parseRescheduleCallback(update.callback_query.data);
          if (reschedule) {
@@ -1459,6 +1568,10 @@ serve(async (req) => {
          if (await handleIdMenuMessage(supabase, message)) {
             return jsonResponse({ message: 'Indonesia bot menu sent' });
          }
+         // Indonesia track: a pasted 0x address → saved as their Walt deposit address (automatic payouts).
+         if (await handleIdWaltAddressMessage(supabase, message)) {
+            return jsonResponse({ message: 'Indonesia Walt address handled' });
+         }
 
          // Indonesia track: a typed question with no human support chat open → the AI helper answers
          // from the guides (_shared/idHelper.ts); when it can't, a support chat is opened for the team.
@@ -1486,7 +1599,26 @@ serve(async (req) => {
       // Admin channels: the private team channel and the KYC admin channel.
       const teamChatId = await getTeamChatId(supabase);
       const kycChatId = await getSetting(supabase, 'kyc_alert_chat_id');
-      const isAdminChannel = [teamChatId, kycChatId].some((id) => id && String(message.chat.id) === String(id));
+      // The Indonesia ops chat (Walt watch alerts) counts too, so /waltconnect works where the alert lands.
+      const idChatId = await getSetting(supabase, 'id_alert_chat_id');
+      const isAdminChannel = [teamChatId, kycChatId, idChatId].some((id) => id && String(message.chat.id) === String(id));
+
+      // Proof of income: a reply to "✍️ Why reject?" is the reject reason (team + KYC chats).
+      if (message.reply_to_message && (await handleIncomeDocReasonReply(supabase, message, [teamChatId, kycChatId].filter(Boolean).map(String)))) {
+         return jsonResponse({ message: 'Income document reason handled' });
+      }
+
+      // Pre-screening: a reply to "✍️ type your questions" (💬 Ask more) — team, KYC and pre-screening chats.
+      if (message.reply_to_message) {
+         const prescreenChatId = await getSetting(supabase, 'prescreen_chat_id');
+         if (await handlePreScreeningAskReply(supabase, message, [teamChatId, kycChatId, prescreenChatId].filter(Boolean).map(String))) {
+            return jsonResponse({ message: 'Pre-screening questions handled' });
+         }
+         // ❌ → ✍️ Other: the typed reason, shown back with Confirm / Cancel.
+         if (await handlePreScreeningReasonReply(supabase, message, [teamChatId, kycChatId, prescreenChatId].filter(Boolean).map(String))) {
+            return jsonResponse({ message: 'Pre-screening reason handled' });
+         }
+      }
 
       // Lender-roster commands are honored only in the private team channel.
       if (
@@ -1550,6 +1682,18 @@ serve(async (req) => {
          return jsonResponse({ message: 'Reopen command handled' });
       }
 
+      // Quiet reject (no message) + Messenger bot off, or bot back on — either admin channel.
+      if (isAdminChannel && /^\/(un)?ghost\b/i.test(message.text ?? '')) {
+         await handleGhostCommand(supabase, message);
+         return jsonResponse({ message: 'Ghost command handled' });
+      }
+
+      // Count an early repayment for food vouchers — either admin channel.
+      if (isAdminChannel && /^\/unlockreward\b/i.test(message.text ?? '')) {
+         await handleUnlockRewardCommand(supabase, message);
+         return jsonResponse({ message: 'Unlock reward command handled' });
+      }
+
       // Test-account flag — either admin channel.
       if (isAdminChannel && /^\/testaccount\b/i.test(message.text ?? '')) {
          await handleTestAccountCommand(supabase, message);
@@ -1579,6 +1723,30 @@ serve(async (req) => {
       if (isAdminChannel && /^\/idsweep\b/i.test(message.text ?? '')) {
          await handleSweepCommand(supabase, message);
          return jsonResponse({ message: 'Indonesia sweep command handled' });
+      }
+
+      // Indonesia: one card with every Walt repayment still waiting for ✅ (also posted daily at 20:00 BKK).
+      if (isAdminChannel && /^\/idarrived\b/i.test(message.text ?? '')) {
+         await handleArrivedCommand(supabase, message);
+         return jsonResponse({ message: 'Indonesia arrived command handled' });
+      }
+
+      // Walt watch (read-only Walt history): /waltwatch on|observe|off, /waltconnect <tgWebAppData>, /waltpot.
+      if (isAdminChannel && /^\/walt(watch|connect|pot)\b/i.test(message.text ?? '')) {
+         await handleWaltWatchCommand(supabase, message as never);
+         return jsonResponse({ message: 'Walt watch command handled' });
+      }
+
+      // Indonesia: repayments (USDT on BNB Chain) back to USDC on Base for the vault, via LI.FI.
+      // Indonesia: is everything in place to fund a request from the board? (_shared/idReady.ts)
+      if (isAdminChannel && /^\/idready\b/i.test(message.text ?? '')) {
+         await handleReadyCommand(supabase, message);
+         return jsonResponse({ message: 'Indonesia readiness sent' });
+      }
+
+      if (isAdminChannel && /^\/idvault\b/i.test(message.text ?? '')) {
+         await handleVaultCommand(supabase, message);
+         return jsonResponse({ message: 'Indonesia vault command handled' });
       }
 
       if (isAdminChannel && /^\/idautopay\b/i.test(message.text ?? '')) {

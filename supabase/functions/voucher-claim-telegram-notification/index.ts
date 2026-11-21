@@ -33,6 +33,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { openInAdminButton, sendAdminCard, stampDecisionCards } from '../_shared/adminCards.ts';
 import { mirrorToDiscord } from '../_shared/discord.ts';
 import { getGiftawayBalance, getGiftawayConfig, parseGiftawaySource, resendGiftawayOrder } from '../_shared/giftaway.ts';
+import { heldLine, loadRewardTiming } from '../_shared/rewardTiming.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import {
    buildVoucherCallback,
@@ -317,16 +318,32 @@ serve(async (req) => {
       const facebook = await loadMessengerContact(supabase, claim.user_id);
       const chatButton = messengerChatButton(facebook, claim.full_name);
 
+      // Repay rewards: how long they held the loan that earned it (the latest repaid one).
+      let timingLine: string | null = null;
+      if (claim.reward === 'first_on_time_repayment' || String(claim.reward).startsWith('streak_')) {
+         const { data: lastLoan } = await supabase
+            .from('loans')
+            .select('id')
+            .eq('borrower_user_id', claim.user_id)
+            .eq('repayment_status', 'Paid')
+            .order('repaid_at', { ascending: false, nullsFirst: false })
+            .limit(1)
+            .maybeSingle();
+         const timing = await loadRewardTiming(supabase, lastLoan?.id);
+         timingLine = timing ? heldLine(timing) : null;
+      }
+      const withTiming = (text: string) => (timingLine ? `${text}\n${timingLine}` : text);
+
       // Send it now; the card only asks for a tap when that didn't work.
       const sent = claim.status === 'pending' ? await sendVoucherCode(supabase, claim.id, 'auto') : null;
       if (sent?.ok) {
-         const sentCard = { text: buildVoucherSentCard(row, sent.summary, facebook), keyboard: [...(chatButton ? [[chatButton]] : []), [openInAdminButton(claim.user_id, username)]] };
+         const sentCard = { text: withTiming(buildVoucherSentCard(row, sent.summary, facebook)), keyboard: [...(chatButton ? [[chatButton]] : []), [openInAdminButton(claim.user_id, username)]] };
          await sendAdminCard(supabase, chatId, { kind: 'voucher', refId: claim.id, ...sentCard });
          await toDiscord(supabase, sentCard.text, sentCard.keyboard);
          return json({ ok: true, sent: true });
       }
 
-      const claimCard = buildVoucherClaimCard(row, sent?.summary ?? null, facebook);
+      const claimCard = withTiming(buildVoucherClaimCard(row, sent?.summary ?? null, facebook));
       const links = [...(chatButton ? [[chatButton]] : []), [openInAdminButton(claim.user_id, username)]];
       await sendAdminCard(supabase, chatId, {
          kind: 'voucher',

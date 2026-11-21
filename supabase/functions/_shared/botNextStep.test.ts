@@ -96,3 +96,12 @@ Deno.test('withBookHere: the BOOK line goes just above "Type menu to go back"', 
    assertEquals(i > 0 && j > i, true);
    assertEquals(withBookHere(nextStepReply('book_call', 'fil'), 'fil').text.includes('i-type lang ang BOOK'), true);
 });
+
+Deno.test('botStage: a rejected borrower gets no borrower steps', () => {
+   const user = { wallet_address: '0xabc', loan_access_status: 'rejected', income_type: 'salaried', messenger_verified_at: 'x' };
+   assertEquals(botStage(user, true, 0), 'rejected');
+   assertEquals(botStage({ ...user, user_role: 'lender' }, true, 0), 'lender');
+   const reply = nextStepReply('rejected', 'en');
+   assertEquals(reply.buttons.length, 0);
+   assertEquals(borrowReply('rejected', NO_LOANS, 'en').buttons.length, 0);
+});

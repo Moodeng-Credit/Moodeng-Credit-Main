@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { type ScheduleView, reminderRowCounts, reminderView } from '../_shared/repaymentSchedule.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { getBorrowerTelegramNotificationsEnabled, isPlaceholderEmail, sendBorrowerLoanNotification } from '../_shared/borrowerNotificationDelivery.ts';
@@ -14,6 +15,7 @@ import { dueDayBounds, loanTimezone, localHour, QUIET_HOURS_END, resolveTimezone
 import { loadBorrowerTimezones, postDueTeamFeed } from '../_shared/loanDueTeamFeed.ts';
 import { postUpcomingDueDigest } from '../_shared/teamLoanFeed.ts';
 import { loadPushSubscriptions } from '../_shared/pushDelivery.ts';
+import { parseRepayRewardPreview, type RepayRewardPreview } from '../_shared/repayReward.ts';
 import { calculateTrustPointRewardDelta, markLoansRepaid } from '../_shared/trustPointRewards.ts';
 import type { TrustPointMilestoneDefinition, TrustPointRewardLoan, TrustPointRewardUser } from '../_shared/trustPointRewards.ts';
 
@@ -31,6 +33,8 @@ type MilestoneCompletionRow = { user_id: string; milestone_id: string };
 type SentLoanNotificationRow = { loan_id: string };
 
 type TrustPointRewardContext = {
+   /** What paying on time is worth per borrower (food voucher / streak). Empty if the lookup fails. */
+   repayRewardByBorrowerId: Map<string, RepayRewardPreview>;
    loansByBorrowerId: Map<string, TrustPointRewardLoan[]>;
    completedMilestoneIdsByBorrowerId: Map<string, Set<string>>;
    milestoneDefinitions: TrustPointMilestoneDefinition[];
@@ -106,6 +110,7 @@ const loadBorrowers = async (supabase: SupabaseClient, userIds: string[]): Promi
 const loadTrustPointRewardContext = async (supabase: SupabaseClient, userIds: string[]): Promise<TrustPointRewardContext> => {
    if (!userIds.length) {
       return {
+         repayRewardByBorrowerId: new Map(),
          loansByBorrowerId: new Map(),
          completedMilestoneIdsByBorrowerId: new Map(),
          milestoneDefinitions: []
@@ -159,21 +164,36 @@ const loadTrustPointRewardContext = async (supabase: SupabaseClient, userIds: st
       completedMilestoneIdsByBorrowerId.set(completion.user_id, completedIds);
    }
 
+   // The reward line is a nice-to-have: a failed lookup must never stop the reminders themselves.
+   const repayRewardByBorrowerId = new Map<string, RepayRewardPreview>();
+   const { data: previews, error: previewsError } = await supabase.rpc('repay_reward_previews', { p_user_ids: userIds });
+   if (previewsError) {
+      console.error('[loan-due-notifications] repay_reward_previews failed', previewsError.message);
+   }
+   for (const row of (previews ?? []) as Array<{ user_id: string; preview: unknown }>) {
+      const preview = parseRepayRewardPreview(row.preview);
+      if (preview) repayRewardByBorrowerId.set(row.user_id, preview);
+   }
+
    return {
+      repayRewardByBorrowerId,
       loansByBorrowerId,
       completedMilestoneIdsByBorrowerId,
       milestoneDefinitions: (milestoneDefinitions ?? []) as TrustPointMilestoneDefinition[]
    };
 };
 
-const loadSentLoanIds = async (supabase: SupabaseClient, payload: { loanIds: string[]; userId: string; type: LoanNotificationType }) => {
+const loadSentLoanIds = async (
+   supabase: SupabaseClient,
+   payload: { loanIds: string[]; userId: string; type: LoanNotificationType; countAfterByLoanId?: Map<string, string | null | undefined> }
+) => {
    if (!payload.loanIds.length) {
       return new Set<string>();
    }
 
    const { data, error } = await supabase
       .from('loan_notifications')
-      .select('loan_id')
+      .select('loan_id, email_sent_at')
       .in('loan_id', payload.loanIds)
       .eq('user_id', payload.userId)
       .eq('notification_type', payload.type);
@@ -182,12 +202,29 @@ const loadSentLoanIds = async (supabase: SupabaseClient, payload: { loanIds: str
       throw new Error(error.message);
    }
 
-   return new Set(((data ?? []) as SentLoanNotificationRow[]).map((item) => item.loan_id));
+   // Split loans: a reminder sent for an earlier payment doesn't count for the next one.
+   return new Set(
+      ((data ?? []) as Array<SentLoanNotificationRow & { email_sent_at?: string | null }>)
+         .filter((item) => reminderRowCounts(item.email_sent_at, payload.countAfterByLoanId?.get(item.loan_id)))
+         .map((item) => item.loan_id)
+   );
 };
 
 const recordNotification = async (supabase: SupabaseClient, borrowerId: string, type: LoanNotificationType, loanIds: string[]) => {
    if (!loanIds.length) {
       return;
+   }
+
+   // These loans were pending, so any row already here is an earlier payment's (split loans). The unique
+   // index (loan, user, type) would refuse the new row, leaving the reminder unrecorded and re-sent every run.
+   const { error: clearError } = await supabase
+      .from('loan_notifications')
+      .delete()
+      .in('loan_id', loanIds)
+      .eq('user_id', borrowerId)
+      .eq('notification_type', type);
+   if (clearError) {
+      throw new Error(clearError.message);
    }
 
    const { error } = await supabase.from('loan_notifications').insert(
@@ -229,7 +266,8 @@ const notifyBorrower = async (
    telegramEnabled: boolean
 ) => {
    const loanIds = loans.map((loan) => loan.id);
-   const sentLoanIds = await loadSentLoanIds(supabase, { loanIds, userId: borrower.id, type });
+   const countAfterByLoanId = new Map(loans.map((loan) => [loan.id, (loan as ScheduleView<typeof loan>).reminders_count_after]));
+   const sentLoanIds = await loadSentLoanIds(supabase, { loanIds, userId: borrower.id, type, countAfterByLoanId });
    const pendingLoans = loans.filter((loan) => !sentLoanIds.has(loan.id));
 
    if (!pendingLoans.length) {
@@ -242,7 +280,9 @@ const notifyBorrower = async (
       dueLabel,
       nextDueDate: getNextDueDate(pendingLoans),
       // Indonesia rupiah peg: rupiah left (only when every loan here is pegged).
-      totalIdr: sumRemainingIdr(pendingLoans)
+      totalIdr: sumRemainingIdr(pendingLoans),
+      // Food vouchers are for the Philippines: Indonesian borrowers get no reward line.
+      reward: (borrower as any).market === 'ID' ? null : (rewardContext.repayRewardByBorrowerId.get(borrower.id) ?? null)
    };
    const borrowerLoans = rewardContext.loansByBorrowerId.get(borrower.id) ?? [];
    const trustPointsReward = calculateTrustPointRewardDelta({
@@ -318,10 +358,10 @@ serve(async (req) => {
    const finalReminderHours = Number.parseInt(Deno.env.get('FINAL_REMINDER_HOURS') ?? `${body.finalReminderHours ?? 24}`, 10);
    const referenceDate = body.referenceDate ? new Date(body.referenceDate) : new Date();
 
-   const { data: loans, error } = await supabase
+   const { data: loanRows, error } = await supabase
       .from('loans')
       .select(
-         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, due_timezone, funded_at, lender_user_id, repayment_status, market, repay_idr, repaid_idr'
+         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, due_timezone, funded_at, lender_user_id, repayment_status, market, repay_idr, repaid_idr, repayment_schedule'
       )
       .eq('loan_status', 'Lent')
       .in('repayment_status', ['Unpaid', 'Partial'])
@@ -332,6 +372,9 @@ serve(async (req) => {
    if (error) {
       return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
    }
+
+   // Split loans (2 payments) are reminded about their next payment: its day and its amount.
+   const loans = (loanRows ?? []).map((loan) => reminderView(loan));
 
    const borrowerIds = Array.from(new Set((loans ?? []).map((loan) => loan.borrower_user_id).filter(Boolean))) as string[];
    const borrowers = await loadBorrowers(supabase, borrowerIds);

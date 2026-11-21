@@ -3,6 +3,7 @@ import { isUserVerified } from '@/lib/isUserVerified';
 import { getVerificationUiState } from '@/lib/verificationUiState';
 import { hasWalletAddressOnAccount } from '@/lib/walletProvider';
 import type { User } from '@/types/authTypes';
+import { type JourneyV2, needsJourneyV2, needsPrescreen, type PrescreenPath } from '@/hooks/usePreKycGate';
 
 /**
  * A borrower's way to their first loan (the pre-KYC gate, src/hooks/usePreKycGate.ts):
@@ -17,6 +18,9 @@ import type { User } from '@/types/authTypes';
  * board, dashboard, Account settings, the loan form and the app-wide "next step" bar never disagree.
  */
 export type JourneyStage =
+   | 'prescreen' // pre-screening path: Facebook done, answer the pre-screening (/screen)
+   | 'prescreen_wait' // pre-screening sent, waiting for the team's ✅
+   | 'verify' // journey v2: proof of income + the 3 videos, then the AI check (/onboarding/verify)
    | 'wallet' // no wallet yet
    | 'messenger' // held by the gate, Messenger not connected
    | 'about' // held by the gate, Messenger connected, bio not filled in
@@ -27,7 +31,7 @@ export type JourneyStage =
    | 'id_track' // Indonesia track (src/lib/idTrack.ts): their own 8-step onboarding at /id/onboarding
    | 'verified';
 
-export type JourneyAction = 'wallet' | 'connect' | 'apply' | 'verify_status' | 'id_onboarding' | 'none';
+export type JourneyAction = 'prescreen' | 'verify_first' | 'wallet' | 'connect' | 'apply' | 'verify_status' | 'id_onboarding' | 'none';
 
 export const ONBOARDING_STEPS = 3;
 
@@ -66,11 +70,45 @@ const onboardingStage = (
    action: JourneyAction
 ): Journey => ({ stage, step, onboarding: true, cta, title, body, action });
 
-export function getJourney(user: JourneyUser | null | undefined, isGated: boolean): Journey {
+/**
+ * `walletLast` (src/hooks/useWalletLast.ts): the Instant Wallet is made as the last step of sending the
+ * loan request, so it's never a journey stage of its own.
+ */
+export function getJourney(
+   user: JourneyUser | null | undefined,
+   isGated: boolean,
+   v2?: JourneyV2 | null,
+   walletLast = false,
+   prescreen?: PrescreenPath | null
+): Journey {
    if (user && isUserVerified(user)) {
       return { stage: 'verified', step: null, onboarding: false, cta: 'Apply for a loan', title: "You're verified", body: 'You can request loans.', action: 'apply' };
    }
-   if (user && !hasWalletAddressOnAccount(user)) {
+   // Pre-screening path (affiliate link): Facebook first, then the pre-screening, then the team's ✅ —
+   // only after that the wallet and the rest. No wallet until then (saves Openfort wallets).
+   if (user && isGated && needsPrescreen(prescreen) && user.loanAccessStatus !== 'rejected') {
+      if (!user.hasVerifiedContact) {
+         return onboardingStage('messenger', 1, 'Connect Messenger', 'Connect Messenger', 'So the team can reach you about your answers.', 'connect');
+      }
+      const sent = prescreen?.status && prescreen.status !== 'none' && prescreen.status !== 'open';
+      return sent
+         ? onboardingStage('prescreen_wait', 2, 'See your status', 'The team is looking at your answers', 'We’ll message you on Messenger, usually within a day.', 'prescreen')
+         : onboardingStage('prescreen', 2, 'Answer a few questions', 'A few quick questions', 'About 5 minutes, then the team takes a look.', 'prescreen');
+   }
+   // Journey v2: proof of income + 3 short videos come first; the wallet waits until the team's ✅.
+   const v2Gated = Boolean(user && isGated && v2?.applies);
+   if (user && v2Gated && needsJourneyV2(v2)) {
+      const waiting = v2?.income === 'checking' || v2?.income === 'hold';
+      return onboardingStage(
+         'verify',
+         1,
+         waiting ? 'See your check' : 'Send proof of income',
+         waiting ? 'We’re checking your proof' : 'Show us your income',
+         waiting ? 'Usually a few minutes — we’ll message you.' : '1 month of income + 3 short videos.',
+         'verify_first'
+      );
+   }
+   if (user && !walletLast && !v2Gated && !hasWalletAddressOnAccount(user)) {
       return onboardingStage('wallet', 1, 'Set up your wallet', 'Set up your wallet', 'Your loans arrive here — it takes a few seconds.', 'wallet');
    }
    if (user && isGated) {

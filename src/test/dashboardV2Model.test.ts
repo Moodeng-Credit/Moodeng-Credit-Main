@@ -93,7 +93,7 @@ describe('dashboard v2 credit level progress', () => {
       const result = getCreditLevelProgress({ creditLimit: 15, isVerified: true, loans: [] });
       expect(result.level).toBe(1);
       expect(result.progress).toBe(0);
-      expect(result.hint).toEqual({ highlight: '$15', rest: ' full-limit loan unlocks LV.2' });
+      expect(result.hint).toEqual({ highlight: '$15', rest: ' full-limit loan unlocks a $25 limit' });
    });
 
    it('ignores repaid trust-building loans however much they add up to', () => {
@@ -101,7 +101,7 @@ describe('dashboard v2 credit level progress', () => {
       const loans = [buildPaidLoan({ id: 'a', loanAmount: 15 }), buildPaidLoan({ id: 'b', loanAmount: 17 })];
       expect(getCreditLevelProgress({ creditLimit: 20, isVerified: true, loans }).hint).toEqual({
          highlight: '$20',
-         rest: ' full-limit loan unlocks LV.3'
+         rest: ' full-limit loan unlocks a $25 limit'
       });
    });
 
@@ -112,16 +112,16 @@ describe('dashboard v2 credit level progress', () => {
       const result = getCreditLevelProgress({ creditLimit: 20, isVerified: true, loans });
       expect(result.level).toBe(2);
       expect(result.progress).toBeCloseTo(0.5);
-      expect(result.hint).toEqual({ highlight: '$12.00', rest: ' left to repay for LV.3' });
+      expect(result.hint).toEqual({ highlight: '$12.00', rest: ' left to repay for a $25 limit' });
    });
 
    it('does not treat an open trust-building loan as progress', () => {
       const loans = [buildPaidLoan({ id: 'small', loanAmount: 10, repaidAmount: 0, repaymentStatus: RepaymentStatus.UNPAID })];
-      expect(getCreditLevelProgress({ creditLimit: 20, isVerified: true, loans }).hint.rest).toBe(' full-limit loan unlocks LV.3');
+      expect(getCreditLevelProgress({ creditLimit: 20, isVerified: true, loans }).hint.rest).toBe(' full-limit loan unlocks a $25 limit');
    });
 
    it('handles the top level', () => {
-      expect(getCreditLevelProgress({ creditLimit: 140, isVerified: true, loans: [] }).hint.highlight).toBe('Top');
+      expect(getCreditLevelProgress({ creditLimit: 135, isVerified: true, loans: [] }).hint.highlight).toBe('Top');
    });
 });
 

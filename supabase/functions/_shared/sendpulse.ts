@@ -72,6 +72,32 @@ export const getMessengerContact = async (contactId: string): Promise<SendPulseC
    }
 };
 
+/**
+ * Turn the SendPulse bot off (or back on) for one Messenger contact. A disabled contact (status 3)
+ * gets nothing: no SendPulse flows (menu, welcome) and none of our sends (sendMessengerMessage skips
+ * status 2/3). Their messages still arrive in the inbox. Used by /ghost and /unghost.
+ */
+export const setMessengerContactEnabled = async (contactId: string, enabled: boolean): Promise<SendPulseResult> => {
+   try {
+      const token = await getToken();
+      if (!token) return { ok: false, reason: 'auth_failed' };
+      const res = await fetch(`${API}/messenger/contacts/${enabled ? 'enable' : 'disable'}`, {
+         method: 'POST',
+         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+         body: JSON.stringify({ contact_id: contactId })
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || body?.success === false) {
+         console.error('[sendpulse] contacts enable/disable failed', res.status, JSON.stringify(body)?.slice(0, 200));
+         return { ok: false, reason: `http_${res.status}` };
+      }
+      return { ok: true };
+   } catch (err) {
+      console.error('[sendpulse] contacts enable/disable threw', err instanceof Error ? err.message : err);
+      return { ok: false, reason: 'send_failed' };
+   }
+};
+
 // One message in a contact's chat log. direction 1 = from the person, 2 = from us (bot or operator).
 export type SendPulseChatMessage = { id?: string; direction?: number; created_at?: string };
 
@@ -250,6 +276,38 @@ const lastOutgoingAt = async (service: 'messenger' | 'tiktok', contactId: string
    }
 };
 
+/**
+ * When a person last typed to this contact from the Page inbox (Meta Business Suite / the Pages app), from
+ * SendPulse's chat history: those come back as Messenger echoes (data.is_echo), and our API sends never do
+ * (checked on the 2026-11-15 chat). null = none in the last `size` messages; undefined = history
+ * unreachable. Never throws.
+ */
+export const lastPageInboxTypedAt = async (contactId: string, size = 40): Promise<number | null | undefined> => {
+   if (!isSendPulseConfigured()) return undefined;
+   try {
+      const token = await getToken();
+      if (!token) return undefined;
+      const res = await fetch(`${API}/messenger/chats/messages?contact_id=${encodeURIComponent(contactId)}&size=${size}&order=desc`, {
+         headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) return undefined;
+      const body = await res.json().catch(() => null);
+      if (!Array.isArray(body?.data)) return undefined;
+      return lastTypedAt(body.data);
+   } catch {
+      return undefined;
+   }
+};
+
+/** The newest Page-inbox-typed (echo) outgoing message's time in a chat log, or null. */
+export const lastTypedAt = (messages: Array<{ direction?: number; created_at?: string; data?: { is_echo?: unknown } | null }>): number | null => {
+   const times = messages
+      .filter((m) => m.direction === 2 && (m.data?.is_echo === true || m.data?.is_echo === 'true') && m.created_at)
+      .map((m) => Date.parse(String(m.created_at)))
+      .filter((t) => !Number.isNaN(t));
+   return times.length ? Math.max(...times) : null;
+};
+
 export const sendMessengerMessage = async (
    contactId: string | null | undefined,
    content: { text?: string; card?: MessengerCard; quickReplies?: string[] }
@@ -382,6 +440,212 @@ export const sendWhatsAppText = async (contactId: string | null | undefined, tex
       console.error('[sendpulse] whatsapp send threw', err instanceof Error ? err.message : err);
       return { ok: false, reason: 'send_failed' };
    }
+};
+
+// ---- WhatsApp inbox (Admin → Support → WhatsApp): read chats and answer them from our own admin ----
+// The team can read and reply here without the WhatsApp Business app or the SendPulse login.
+
+export const WHATSAPP_BOT_ID = Deno.env.get('SENDPULSE_WHATSAPP_BOT_ID')?.trim() || '6ad10bbcbd345e7b0f09c494';
+
+type WaCall<T> = { ok: true; data: T } | { ok: false; reason: string; detail?: string };
+
+// One request to the SendPulse WhatsApp API. Keeps SendPulse's error text so the admin sees why a send
+// failed (usually "outside the 24h window"). Never throws.
+const waCall = async <T = unknown>(method: 'GET' | 'POST' | 'PUT', path: string, body?: unknown): Promise<WaCall<T>> => {
+   if (!isSendPulseConfigured()) return { ok: false, reason: 'not_configured' };
+   try {
+      const token = await getToken();
+      if (!token) return { ok: false, reason: 'auth_failed' };
+      const res = await fetch(`${WHATSAPP_API}${path}`, {
+         method,
+         headers: { Authorization: `Bearer ${token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+         body: body ? JSON.stringify(body) : undefined
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || json?.success === false) {
+         const detail = JSON.stringify(json?.errors ?? json?.message ?? json?.error ?? json)?.slice(0, 400);
+         console.error('[sendpulse] whatsapp', method, path.split('?')[0], res.status, detail);
+         return { ok: false, reason: 'sendpulse_error', detail };
+      }
+      return { ok: true, data: (json?.data ?? json) as T };
+   } catch (err) {
+      return { ok: false, reason: 'request_failed', detail: err instanceof Error ? err.message : String(err) };
+   }
+};
+
+// deno-lint-ignore no-explicit-any
+type Raw = any;
+
+/** Best-effort readable text for any WhatsApp message payload SendPulse stores. */
+export const whatsAppMessageText = (type: string | undefined, data: Raw): string => {
+   const d = data && typeof data === 'object' ? data : {};
+   const pick = (...values: unknown[]) => values.find((v) => typeof v === 'string' && v.trim()) as string | undefined;
+   const text = pick(
+      d.text?.body,
+      typeof d.text === 'string' ? d.text : undefined,
+      d.body,
+      d.interactive?.body?.text,
+      d.interactive?.button_reply?.title,
+      d.interactive?.list_reply?.title,
+      d.button?.text,
+      d.image?.caption,
+      d.video?.caption,
+      d.document?.caption,
+      d.reaction?.emoji
+   );
+   if (text) return text;
+   const tplName = pick(d.template?.name, d.name);
+   if (type === 'template' || d.template) return `📋 Template${tplName ? `: ${tplName}` : ''}`;
+   if (d.image || type === 'image') return '🖼️ Photo';
+   if (d.video || type === 'video') return '🎬 Video';
+   if (d.document || type === 'document') return `📎 ${pick(d.document?.filename) ?? 'File'}`;
+   if (d.audio || d.voice || type === 'audio' || type === 'voice') return '🎤 Voice message';
+   if (type === 'sticker') return '🙂 Sticker';
+   if (type === 'location') return '📍 Location';
+   // Meta error 131051: WhatsApp never hands these to the API (polls, view-once media, some calls…),
+   // so the content can't be shown anywhere but the phone.
+   if (type === 'unsupported' || type === 'unknown')
+      return '⚠️ A message WhatsApp can’t show here (e.g. a poll, view-once photo or call). Check WhatsApp on the phone.';
+   if (type === 'call') return '📞 Call';
+   return type ? `[${type}]` : '';
+};
+
+export type WhatsAppChat = {
+   contactId: string;
+   name: string | null;
+   phone: string | null;
+   lastActivityAt: string | null;
+   unread: number;
+   lastText: string;
+   lastDirection: number | null;
+   lastAt: string | null;
+};
+
+/** Recent WhatsApp chats, newest activity first. */
+export const listWhatsAppChats = async (size = 100): Promise<WaCall<WhatsAppChat[]>> => {
+   const res = await waCall<Raw[]>('GET', `/chats?bot_id=${encodeURIComponent(WHATSAPP_BOT_ID)}&size=${size}&skip=0`);
+   if (!res.ok) return res;
+   const chats = (Array.isArray(res.data) ? res.data : []).map((row: Raw): WhatsAppChat => {
+      const c = row?.contact ?? {};
+      const last = row?.inbox_last_message ?? null;
+      return {
+         contactId: String(c.id ?? row?.contact_id ?? ''),
+         name: c.channel_data?.name?.trim?.() || c.channel_data?.username || null,
+         phone: normalizeWhatsAppPhone(c.channel_data?.phone),
+         lastActivityAt: c.last_activity_at ?? null,
+         unread: Number(row?.inbox_unread ?? c.unread ?? 0) || 0,
+         lastText: last ? whatsAppMessageText(last.type, last.data) : '',
+         lastDirection: last?.direction ?? null,
+         lastAt: last?.created_at ?? c.last_activity_at ?? null
+      };
+   });
+   return { ok: true, data: chats.filter((c) => c.contactId) };
+};
+
+export type WhatsAppThreadMessage = {
+   id: string;
+   direction: number;
+   type: string;
+   text: string;
+   status: number | null;
+   createdAt: string | null;
+   raw?: unknown;
+};
+
+/** Latest messages of one chat, oldest first (ready to render top-to-bottom). */
+export const listWhatsAppMessages = async (contactId: string, size = 100, withRaw = false): Promise<WaCall<WhatsAppThreadMessage[]>> => {
+   const res = await waCall<Raw[]>('GET', `/chats/messages?contact_id=${encodeURIComponent(contactId)}&size=${size}&order=desc`);
+   if (!res.ok) return res;
+   const msgs = (Array.isArray(res.data) ? res.data : [])
+      .map(
+         (m: Raw): WhatsAppThreadMessage => ({
+            id: String(m?.id ?? ''),
+            direction: Number(m?.direction ?? 0),
+            type: String(m?.type ?? ''),
+            text: whatsAppMessageText(m?.type, m?.data),
+            status: m?.status ?? null,
+            createdAt: m?.created_at ?? null,
+            ...(withRaw ? { raw: m } : {})
+         })
+      )
+      // Typing indicators / internal markers aren't messages anyone wrote.
+      .filter((m) => m.text && !['typing', 'system', 'request_welcome', 'operator_group_assigned'].includes(m.type))
+      .reverse();
+   return { ok: true, data: msgs };
+};
+
+export const markWhatsAppRead = (contactId: string) => waCall('PUT', `/contacts/mark-read?contact_id=${encodeURIComponent(contactId)}`);
+
+/** Free text to an existing chat (Meta only delivers it within 24h of their last message). */
+export const replyWhatsAppText = (contactId: string, text: string) =>
+   waCall('POST', '/contacts/send', { contact_id: contactId, message: { type: 'text', text: { body: text.slice(0, 1024) } } });
+
+export type WhatsAppTemplateInfo = { name: string; language: string; category: string; content: string; params: number };
+
+/** Approved templates — the only thing that can open (or reopen) a conversation. */
+export const listWhatsAppTemplates = async (): Promise<WaCall<WhatsAppTemplateInfo[]>> => {
+   const res = await waCall<Raw[]>('GET', `/templates?bot_id=${encodeURIComponent(WHATSAPP_BOT_ID)}&status=APPROVED`);
+   if (!res.ok) return res;
+   const list = (Array.isArray(res.data) ? res.data : []).map((t: Raw): WhatsAppTemplateInfo => {
+      const bodyComponent = (Array.isArray(t?.components) ? t.components : []).find((c: Raw) => String(c?.type).toUpperCase() === 'BODY');
+      const content = String(t?.content ?? bodyComponent?.text ?? '');
+      const params = new Set(content.match(/\{\{\s*\d+\s*\}\}/g) ?? []).size;
+      return { name: String(t?.name ?? ''), language: String(t?.language ?? 'en'), category: String(t?.category ?? ''), content, params };
+   });
+   return { ok: true, data: list.filter((t) => t.name) };
+};
+
+/** Sends an approved template to a chat (contactId) or straight to a phone number (new chat). */
+// The admin inbox's "write anything" template: after WhatsApp's 24h window closes, the team's message goes
+// out inside it ({{1}} first name, {{2}} their text). Once the person replies, free chat works again.
+export const FOLLOW_UP_TEMPLATE = {
+   name: 'moodeng_follow_up',
+   language: 'en',
+   category: 'UTILITY' as const,
+   body: "Hi {{1}}, this is the Moodeng Credit team with an update on your account:\n\n{{2}}\n\nReply to this message and we'll continue the chat here.",
+   example: ['Maria', 'Your loan is ready. Open the app to see the next step.']
+};
+
+/** Submits a template to Meta through SendPulse (review takes minutes to a day). */
+export const createWhatsAppTemplate = (t: { name: string; language: string; category: 'UTILITY' | 'MARKETING'; body: string; example: string[] }) =>
+   waCall('POST', '/templates', {
+      bot_id: WHATSAPP_BOT_ID,
+      name: t.name,
+      language: t.language,
+      category: t.category,
+      parameter_format: 'positional',
+      components: [{ type: 'BODY', text: t.body, example: { body_text: [t.example] } }]
+   });
+
+/** Every template on the bot with its review status (APPROVED / PENDING / REJECTED …). */
+export const listAllWhatsAppTemplates = async (): Promise<WaCall<Array<{ name: string; language: string; status: string; rejectedReason: string | null }>>> => {
+   const res = await waCall<Raw[]>('GET', `/templates?bot_id=${encodeURIComponent(WHATSAPP_BOT_ID)}`);
+   if (!res.ok) return res;
+   return {
+      ok: true,
+      data: (Array.isArray(res.data) ? res.data : []).map((t: Raw) => ({
+         name: String(t?.name ?? ''),
+         language: String(t?.language ?? ''),
+         status: String(t?.status ?? ''),
+         rejectedReason: t?.rejected_reason ?? null
+      }))
+   };
+};
+
+export const sendWhatsAppTemplateTo = (
+   target: { contactId?: string; phone?: string },
+   template: { name: string; language: string; params: string[] }
+) => {
+   const payload = {
+      name: template.name,
+      language: { code: template.language },
+      ...(template.params.length
+         ? { components: [{ type: 'body', parameters: template.params.map((text) => ({ type: 'text', text })) }] }
+         : {})
+   };
+   return target.contactId
+      ? waCall('POST', '/contacts/sendTemplate', { contact_id: target.contactId, template: payload })
+      : waCall('POST', '/contacts/sendTemplateByPhone', { bot_id: WHATSAPP_BOT_ID, phone: target.phone, template: payload });
 };
 
 // ---------------------------------------------------------------------------------------------------

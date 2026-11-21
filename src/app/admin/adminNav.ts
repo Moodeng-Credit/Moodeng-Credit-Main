@@ -8,8 +8,11 @@ export type AdminTab =
    | 'credit-line-cost'
    | 'marketing'
    | 'signups'
+   | 'audience'
+   | 'borrower-profile'
    | 'post-links'
    | 'calls'
+   | 'rejected'
    | 'fillout'
    | 'calendar'
    | 'analytics'
@@ -28,14 +31,17 @@ export type AdminTab =
    | 'self-lending'
    | 'mule-risk'
    | 'income-docs'
+   | 'pre-screening'
    | 'proof-requests'
    | 'referrals'
+   | 'affiliates'
    | 'grab-vouchers'
    | 'borrower-contacts'
    | 'email'
    | 'campaigns'
    | 'notifications'
    | 'chat'
+   | 'whatsapp'
    | 'relay'
    | 'test-lab'
    | 'progress'
@@ -58,6 +64,7 @@ export const navGroups: NavGroup[] = [
       items: [
          { id: 'users', label: 'Directory' },
          { id: 'calls', label: 'Call approvals' },
+         { id: 'rejected', label: 'Rejected' },
          { id: 'proof-requests', label: 'Proof requests' },
          { id: 'fillout', label: 'Fillout' },
          { id: 'borrower-contacts', label: 'Borrower contacts' },
@@ -94,7 +101,8 @@ export const navGroups: NavGroup[] = [
          { id: 'risk', label: 'Assessment' },
          { id: 'self-lending', label: 'Self-lending' },
          { id: 'mule-risk', label: 'Mule risk' },
-         { id: 'income-docs', label: 'Income docs' }
+         { id: 'income-docs', label: 'Income docs' },
+         { id: 'pre-screening', label: 'Pre-screening' }
       ]
    },
    {
@@ -103,11 +111,14 @@ export const navGroups: NavGroup[] = [
       items: [
          { id: 'marketing', label: 'Marketing' },
          { id: 'signups', label: 'Sign-up sources' },
+         { id: 'borrower-profile', label: 'Borrower profile' },
          { id: 'post-links', label: 'Post links' },
+         { id: 'audience', label: 'Audience' },
          { id: 'analytics', label: 'Analytics' },
          { id: 'ux-health', label: 'UX health' },
          { id: 'on-chain', label: 'On-chain' },
          { id: 'referrals', label: 'Referrals' },
+         { id: 'affiliates', label: 'Affiliate payouts' },
          { id: 'grab-vouchers', label: 'Food vouchers' },
          { id: 'notifications', label: 'Notifications' },
          { id: 'points', label: 'IOU points' },
@@ -119,6 +130,7 @@ export const navGroups: NavGroup[] = [
       label: 'Support',
       items: [
          { id: 'chat', label: 'Live chat' },
+         { id: 'whatsapp', label: 'WhatsApp' },
          { id: 'calendar', label: 'Calendar' }
       ]
    },
@@ -147,9 +159,12 @@ export const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'credit-line-cost',
    'marketing',
    'calls',
+   'rejected',
    'fillout',
    'calendar',
    'signups',
+   'audience',
+   'borrower-profile',
    'post-links',
    'analytics',
    'ux-health',
@@ -167,14 +182,17 @@ export const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'self-lending',
    'mule-risk',
    'income-docs',
+   'pre-screening',
    'proof-requests',
    'referrals',
+   'affiliates',
    'grab-vouchers',
    'borrower-contacts',
    'email',
    'campaigns',
    'notifications',
    'chat',
+   'whatsapp',
    'relay',
    'test-lab',
    'progress',

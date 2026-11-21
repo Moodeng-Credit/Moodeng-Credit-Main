@@ -1,6 +1,21 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { alertTexts, answerRecord, freeFromSlots, holdColumns, START, wallNow, withoutHeld, zonedIso } from './messengerBookingBot.ts';
+import { lastTypedAt } from './sendpulse.ts';
+import {
+   alertTexts,
+   answerRecord,
+   freeFromSlots,
+   holdColumns,
+   extractPhMobile,
+   isPhMobile,
+   KEEP_SPOT_REPLY,
+   START,
+   TEAM_QUIET_MS,
+   teamHasChat,
+   wallNow,
+   withoutHeld,
+   zonedIso
+} from './messengerBookingBot.ts';
 
 Deno.test('wallNow: the wall clock in a zone', () => {
    const at = new Date('2026-11-01T18:30:00Z');
@@ -86,4 +101,53 @@ Deno.test('answers are listed in asking order, whatever order the saved chat giv
    assertEquals(rec?.items.map((i) => i.a), ['Employed', 'My parents', 'No', '₱10–20k', '₱1–3k', 'cashier', '15th & 30th', 'food', 'Next payday', '1–3 years']);
    const [alert] = alertTexts([{ type: 'answers', answers, fit: { verdict: 'good', reason: 'x' } }], st, { name: 'T' });
    assert(alert.indexOf('Are you working') < alert.indexOf('Who do you support') && alert.indexOf('pay it back') < alert.indexOf('How long'));
+});
+
+Deno.test('isPhMobile: only a Philippine mobile number on its own', () => {
+   for (const yes of ['0917 123 4567', '09171234567', '+63 917 123 4567', '639171234567', '9171234567', '0917-123-4567', ' (0917) 123 4567 ']) assert(isPhMobile(yes), yes);
+   for (const no of ['15000', '0917 123 456', '+66 81 234 5678', 'my number is 09171234567', '0817 123 4567', '09171234567890', 'book', '']) assert(!isPhMobile(no), no);
+});
+
+Deno.test('keep-spot reply: OK and its Taglish cousins match, real messages do not', () => {
+   for (const t of ['OK', 'ok', 'Okay!', 'oo', 'Opo', 'sige', 'yes', '👍', ' ok. ']) assertEquals(KEEP_SPOT_REPLY.test(t), true, t);
+   for (const t of ['ok pero late ako', 'can I move it?', '0917 123 4567', 'QUESTIONS', 'okay na ba?']) assertEquals(KEEP_SPOT_REPLY.test(t), false, t);
+});
+
+// The shape SendPulse returned for the 2026-11-15 chat: George typing in the Page inbox is an echo
+// (app_id of Meta's inbox), the bot's own API sends are not.
+Deno.test('lastTypedAt: only Page-inbox echoes count as a person typing', () => {
+   const log = [
+      { direction: 2, created_at: '2026-11-15T10:29:50Z', data: { is_echo: true, app_id: '263902037430900', text: 'so, monday what time?' } },
+      { direction: 2, created_at: '2026-11-15T10:30:39Z', data: { text: 'Question 6' } },
+      { direction: 1, created_at: '2026-11-15T10:30:30Z', data: { text: '10am po' } },
+      { direction: 2, created_at: '2026-11-15T10:31:00Z', data: null }
+   ];
+   assertEquals(lastTypedAt(log), Date.parse('2026-11-15T10:29:50Z'));
+   assertEquals(lastTypedAt(log.slice(1)), null);
+   assertEquals(lastTypedAt([{ direction: 2, created_at: '2026-11-15T10:00:00Z', data: { is_echo: 'true' } }]), Date.parse('2026-11-15T10:00:00Z'));
+});
+
+Deno.test('teamHasChat: the bot steps aside when a person is talking in the chat', () => {
+   const now = Date.parse('2026-11-15T10:30:00Z');
+   const started = now - 60 * 60_000;
+   // Team typed after the bot's chat began: step aside (the 2026-11-15 case).
+   assertEquals(teamHasChat({ teamAt: now - 60_000, chatStartedAt: started, explicitStart: false, now }), true);
+   // Team typed before the chat began (they told them to type BOOK): the chat carries on.
+   assertEquals(teamHasChat({ teamAt: started - 60_000, chatStartedAt: started, explicitStart: false, now }), false);
+   // No chat yet: QUESTIONS / "cancel my call" wait after a team message; BOOK always starts.
+   assertEquals(teamHasChat({ teamAt: now - 60_000, chatStartedAt: null, explicitStart: false, now }), true);
+   assertEquals(teamHasChat({ teamAt: now - TEAM_QUIET_MS - 1, chatStartedAt: null, explicitStart: false, now }), false);
+   assertEquals(teamHasChat({ teamAt: now - 60_000, chatStartedAt: null, explicitStart: true, now }), false);
+   // Nobody typed; chat log unreachable = stay out.
+   assertEquals(teamHasChat({ teamAt: null, chatStartedAt: started, explicitStart: false, now }), false);
+   assertEquals(teamHasChat({ teamAt: undefined, chatStartedAt: started, explicitStart: true, now }), true);
+});
+
+Deno.test('extractPhMobile: the number out of a short reply with a network or a few words', () => {
+   assertEquals(extractPhMobile('0917 123 4567 Globe'), '0917 123 4567');
+   assertEquals(extractPhMobile('my number is 09171234567 po'), '09171234567');
+   assertEquals(extractPhMobile('Smart 0918-123-4567'), '0918-123-4567');
+   assertEquals(extractPhMobile('+63 917 123 4567'), '+63 917 123 4567');
+   assertEquals(extractPhMobile('hi po I need help with my loan payment, my number 09171234567 is not getting texts from you guys'), null);
+   assertEquals(extractPhMobile('15000 pesos'), null);
 });

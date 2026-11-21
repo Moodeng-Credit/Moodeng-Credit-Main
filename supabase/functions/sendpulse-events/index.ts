@@ -5,10 +5,16 @@ import { adminUserUrl, OPEN_IN_ADMIN_TEXT, sendAdminCard } from '../_shared/admi
 import { postDiscord } from '../_shared/discord.ts';
 import { PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
 import { decideAutoMatch, MATCH_WINDOW_MS, type OpenAttempt } from '../_shared/messengerAutoMatch.ts';
-import { handleBookingMessage } from '../_shared/messengerBookingBot.ts';
+import { handleCashOutMessage } from '../_shared/messengerCashOutHelp.ts';
+import { handleBookingMessage, handleKeepSpotReply, handleReminderNumber } from '../_shared/messengerBookingBot.ts';
 import { logMessengerContact, rememberMessengerContact, saveFacebookName } from '../_shared/messengerContactLog.ts';
+import { handleIncomeDocMessage } from '../_shared/messengerIncomeDocReply.ts';
+import { handleProofKeyword, intakeMessengerPhotos, photoIntakeReason } from '../_shared/messengerPhotoIntake.ts';
+import { handlePreScreeningAnswer } from '../_shared/preScreeningAsk.ts';
+import { handleRewardMessage } from '../_shared/messengerRewardReply.ts';
 import { CONNECTED_BY_TIMING_TEXT } from '../_shared/messengerStatusFollowUp.ts';
 import { isSupportMessage, openMessengerTicket, relayAgentReply } from '../_shared/messengerSupport.ts';
+import { handleLoanTimingMessage } from '../_shared/messengerLoanTiming.ts';
 import { buildMatchSuggestionCard, messengerStuckKeyboard } from '../_shared/messengerStuckAlert.ts';
 import { decideTimingMatch, TIMING_WINDOW_MS, type TimingAttempt } from '../_shared/messengerTimingMatch.ts';
 import {
@@ -323,7 +329,39 @@ serve(async (req) => {
          // The call-booking bot (who it answers: 'messenger_booking_bot', see bookingBotSwitch.ts): a message it
          // answers isn't also a support ticket. "menu" and ☰ / card-button taps belong to the SendPulse menu flow.
          const forMenu = event.isPostback || /^\s*menu\s*$/i.test(event.text ?? '');
-         if (known?.userId && event.text && !forMenu && !event.hasAttachment && !event.codes.length && (await handleBookingMessage(svc, known.userId, contactId, event.text))) continue;
+         const typed = known?.userId && event.text && !forMenu && !event.hasAttachment && !event.codes.length ? event.text : null;
+         // "PROOF" (the "Open our Messenger chat" button when the photo picker won't open): ask for the photo here.
+         // First: it's an exact keyword, and an earlier handler waiting for an answer mustn't take it.
+         if (typed && (await handleProofKeyword(svc, known!.userId, contactId, typed))) continue;
+         // Just a mobile number from someone with a call booked: their answer to "want a text reminder?".
+         // "REWARD": their repay streak and what paying on time earns (the day-before reminder asks for it).
+         if (typed && (await handleRewardMessage(svc, known!.userId, contactId, typed))) continue;
+         // "1"–"4" / QR / GCrypto / PDAX / Maya: their answer to the funded message's "How will you cash out?".
+         if (typed && (await handleCashOutMessage(svc, known!.userId, contactId, typed))) continue;
+         // Their reply to the team's 💬 Ask more questions after pre-screening: posted under the Telegram card.
+         if (typed && (await handlePreScreeningAnswer(svc, known!.userId, contactId, typed))) continue;
+         // "DOCS" (sent from /documents) and their answers to the AI's questions about their proof of income.
+         if (typed && (await handleIncomeDocMessage(svc, known!.userId, contactId, typed))) continue;
+         if (typed && (await handleReminderNumber(svc, known!.userId, contactId, typed))) continue;
+         // "OK" to the day-before reminder's "Reply OK to keep your spot".
+         if (typed && (await handleKeepSpotReply(svc, known!.userId, contactId, typed))) continue;
+         if (typed && (await handleBookingMessage(svc, known!.userId, contactId, typed))) continue;
+         // "When do I pay back?" / "I want to repay now" / "can I borrow again?": 31-day term, pay in the
+         // last week before the due date, no fast borrow-repay loops (flags possible limit-gaming to the team).
+         // Answers, then still falls through to the ticket below.
+         if (typed) await handleLoanTimingMessage(svc, known!.userId, contactId, typed);
+         // Photos from someone we're expecting proof of income from (couldn't upload in Messenger's browser):
+         // straight into an income document + its checks (messengerPhotoIntake.ts), not a support ticket.
+         if (known?.userId && event.imageUrls.length) {
+            const reason = await photoIntakeReason(svc, known.userId).catch(() => null);
+            const taken =
+               reason &&
+               (await intakeMessengerPhotos(svc, known.userId, contactId, event.imageUrls, reason).catch((err) => {
+                  console.error('sendpulse-events: photo intake failed', err instanceof Error ? err.message : err);
+                  return false;
+               }));
+            if (taken) continue;
+         }
          if (isSupportMessage(event)) {
             await openMessengerTicket(svc, {
                contactId,

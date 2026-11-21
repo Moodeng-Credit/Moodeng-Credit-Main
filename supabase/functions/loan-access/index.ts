@@ -6,10 +6,12 @@ import { postDiscord } from '../_shared/discord.ts';
 import { isInternalRequest } from '../_shared/internalAuth.ts';
 import { collectGateDigest, formatGateDigest } from '../_shared/gateDigest.ts';
 import { cancelUpcomingCall } from '../_shared/callCancel.ts';
-import { BORROWER_COLUMNS, getAdminChatId, notifyAdminsOfRequest, notifyBorrower, PAGE_INBOX_URL, REQUEST_COLUMNS, shortId, SITE_URL, who } from '../_shared/loanAccess.ts';
+import { BORROWER_COLUMNS, decideRejectFollowUp, getAdminChatId, ghostUser, notifyAdminsOfRequest, notifyBorrower, PAGE_INBOX_URL, rejectUser, REQUEST_COLUMNS, shortId, SITE_URL, unghostUser, who } from '../_shared/loanAccess.ts';
 import { needsPreKycGate } from '../_shared/preKycGate.ts';
 import { isIdStep, loadIdStatus, notifyIdNextStep, sendIdTelegram } from '../_shared/idTrack.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
+import { checkFacebookProfile } from '../_shared/facebookProfileCheck.ts';
+import { getMessengerContact } from '../_shared/sendpulse.ts';
 
 // Connect → Approve → Apply (docs/HANDOFF_BORROWER_VERIFICATION.md §13).
 //
@@ -33,6 +35,11 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 //   action=id_step (borrower JWT, Indonesia track) — the app finished a step it saves itself; the
 //                                   bot says "✅ done — next: …" on Telegram (_shared/idTrack.ts).
 //   action=cancel_rejected_calls (server only) — cancels calls still booked by rejected people.
+//   action=ghost_user / unghost_user (server only) {user_id, by?} — /ghost and /unghost
+//   action=reject_user (server only) {user_id, by?} — the same reject as Telegram's 🚫 / the call
+//                                   sheet's 1 (rejectUser): decides their pending request, cancels the
+//                                   call, messages them, stamps cards. For the team when no admin
+//                                   session is at hand (George 2026-11-16).
 //   action=referral_alert (DB trigger on redeem) — posts "🎟️ code X used by …" to the admin
 //                                   Telegram + Discord. Deduped by referral_redemptions.alerted_at,
 //                                   so it can only ever fire once per real redemption.
@@ -123,6 +130,18 @@ const submit = async (req: Request, svc: any, body: Record<string, unknown>) => 
    if (flow === 'open' && !preKyc && !idTrack) return json({ ok: false, error: 'gate_off' }, 409);
    // Referred → Emma's setup call, even in the approval flow.
    const isCallRequest = idTrack || preKyc || flow === 'call' || Boolean(borrower.redeemed_referral_code_id);
+
+   // Journey v2 (migration 20261117200000): proof of income + the 3 videos come before the call.
+   if (!idTrack) {
+      const { data: v2Blocking } = await svc.rpc('team_journey_v2_blocking', { p_user_id: userId });
+      if (v2Blocking === true) return json({ ok: false, error: 'verify_first' }, 409);
+   }
+
+   // Pre-screening path (affiliate link, migration 20261118090000): the team's ✅ comes before the call.
+   if (!idTrack) {
+      const { data: prescreenBlocking } = await svc.rpc('team_prescreen_blocking', { p_user_id: userId });
+      if (prescreenBlocking === true) return json({ ok: false, error: 'prescreen_first' }, 409);
+   }
 
    // Call request: the reach-out IS the booked call, so there must be one coming up.
    if (isCallRequest && !(borrower.video_call_starts_at && Date.parse(borrower.video_call_starts_at) > Date.now())) {
@@ -305,6 +324,37 @@ const gateDigest = async (req: Request, svc: any) => {
    return json({ ok: true, sent: true, waiting: waiting.length, unbooked: unbooked.length });
 };
 
+// Dry run of the Facebook profile check (facebookProfileCheck.ts) over people already connected:
+// returns each one's flags and saves their picture hash (so the grey default is spotted from the
+// start), but never rejects anyone. Server only. {user_ids?: string[], limit?: number}
+// deno-lint-ignore no-explicit-any
+const fbProfileProbe = async (req: Request, svc: any, body: Record<string, unknown>) => {
+   if (!(await isInternalRequest(svc, req))) return json({ ok: false, error: 'unauthorized' }, 401);
+   const ids = Array.isArray(body.user_ids) ? (body.user_ids as unknown[]).map(String) : null;
+   const limit = Math.min(Math.max(Number(body.limit) || 40, 1), 150);
+   let query = svc.from('users').select('id, messenger_psid').not('messenger_psid', 'is', null);
+   query = ids ? query.in('id', ids) : query.order('messenger_verified_at', { ascending: false, nullsFirst: false }).limit(limit);
+   const { data: rows, error } = await query;
+   if (error) return json({ ok: false, error: error.message }, 500);
+   const results = [];
+   for (const row of (rows ?? []) as Array<{ id: string; messenger_psid: string }>) {
+      const contact = await getMessengerContact(row.messenger_psid);
+      const check = await checkFacebookProfile(svc, row.id, contact);
+      results.push({
+         user_id: row.id,
+         found: Boolean(contact),
+         keys: Object.keys(contact?.channel_data ?? {}),
+         photo_url_host: check.photoUrl ? new URL(check.photoUrl).host : null,
+         photo_error: check.photoError,
+         flags: check.flags,
+         hash: check.photoHash?.slice(0, 16) ?? null,
+         bytes: check.photoBytes,
+         shared: check.sharedWith
+      });
+   }
+   return json({ ok: true, results });
+};
+
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
    if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
@@ -323,6 +373,38 @@ serve(async (req) => {
       if (body.action === 'gate_digest') return await gateDigest(req, svc);
       if (body.action === 'id_step') return await idStep(req, svc, body);
       if (body.action === 'cancel_rejected_calls') return await cancelRejectedCalls(req, svc);
+      if (body.action === 'reject_user') {
+         if (!(await isInternalRequest(svc, req))) return json({ ok: false, error: 'unauthorized' }, 401);
+         if (typeof body.user_id !== 'string') return json({ ok: false, error: 'user_id required' }, 400);
+         const by = typeof body.by === 'string' && body.by.trim() ? body.by.trim().slice(0, 60) : 'team';
+         return json(await rejectUser(svc, body.user_id, by));
+      }
+      if (body.action === 'ghost_user' || body.action === 'unghost_user') {
+         // Same as /ghost and /unghost in the admin Telegram channels (quiet reject + Messenger bot off).
+         if (!(await isInternalRequest(svc, req))) return json({ ok: false, error: 'unauthorized' }, 401);
+         if (typeof body.user_id !== 'string') return json({ ok: false, error: 'user_id required' }, 400);
+         const by = typeof body.by === 'string' && body.by.trim() ? body.by.trim().slice(0, 60) : 'team';
+         return json(body.action === 'ghost_user' ? await ghostUser(svc, body.user_id, by) : await unghostUser(svc, body.user_id, by));
+      }
+      if (body.action === 'approve_user') {
+         // Same as the rejected card's "✅ Approve after all" (stamps cards, sends "You're approved",
+         // Discord line), for when the team approves someone they rejected and asks me to do it.
+         // Also counts as the intro call, like the admin panel's approve_user, so the loan form
+         // doesn't ask them to book another call.
+         if (!(await isInternalRequest(svc, req))) return json({ ok: false, error: 'unauthorized' }, 401);
+         if (typeof body.user_id !== 'string') return json({ ok: false, error: 'user_id required' }, 400);
+         const by = typeof body.by === 'string' && body.by.trim() ? body.by.trim().slice(0, 60) : 'team';
+         const result = await decideRejectFollowUp(svc, body.user_id, 'approve', by);
+         if (result.ok) {
+            await svc
+               .from('users')
+               .update({ video_call_outcome: 'attended', video_call_outcome_at: new Date().toISOString() })
+               .eq('id', body.user_id)
+               .is('video_call_outcome', null);
+         }
+         return json(result);
+      }
+      if (body.action === 'fb_profile_probe') return await fbProfileProbe(req, svc, body);
       return json({ error: 'unknown_action' }, 400);
    } catch (err) {
       console.error('loan-access failed:', err instanceof Error ? err.message : err);

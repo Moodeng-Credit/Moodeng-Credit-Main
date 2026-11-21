@@ -53,10 +53,13 @@ import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
 import { useIncomeDocFacts } from '@/hooks/useIncomeDocRequirement';
 import { gateMessage, type IncomeDocGate, incomeDocGate } from '@/lib/incomeDocSteps';
+import { buildTwoPartSchedule, canSplitRepayment, formatMilestoneDay } from '@/lib/repaymentSchedule';
+import { fetchMySocialHandles, needsSocialHandles, SOCIAL_HANDLES_MIN_USD, type SocialHandles } from '@/lib/socialHandles';
 import type { LoanFlow } from '@/hooks/useLoanFlow';
 
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import type { LoanRequestFlowState } from '@/lib/loanRequestDraft';
+import { loanRequestStopStep, type LoanRequestStopStep } from '@/lib/loanRequestDraftSync';
 import { type IdLoanRules, idTermOptions } from '@/lib/idTrack';
 import {
    approxIdr,
@@ -69,7 +72,7 @@ import {
    idRepayIdrChoices,
    idUsdForIdr
 } from '@/lib/loanMarket';
-import { minimumRepayment, suggestedReturnRange } from '@/lib/loanPricing';
+import { maximumRepayment, minimumRepayment, suggestedRepaymentRange, suggestedReturnRange } from '@/lib/loanPricing';
 import { checkLoanReason, getCachedReasonVerdict, type ReasonAttempt, type ReasonCategory, type ReasonCheckLocale } from '@/lib/loanReasonCheck';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
@@ -81,13 +84,15 @@ import { onlyEmailReaches, type ReminderReach, requestContactSteps } from '@/con
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { isValidInviteCode, redeemFriendInvite, type RedeemInviteResult } from '@/lib/friendReferrals';
 import { getVerificationUiState, VERIFICATION_STATE_CTA } from '@/lib/verificationUiState';
-import { fetchUser, updateBorrowerContext, updateUser } from '@/store/slices/authSlice';
+import { fetchUser, updateBorrowerContext, updateProfession, updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import { type User } from '@/types/authTypes';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
 import ConnectStep, { LoanAccessPendingCard, LoanAccessRejectedCard } from '@/views/dashboard/components/ConnectStep';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, PrimaryButton, stepAnimationClass, useStepDirection } from '@/views/dashboard/components/connectKit';
+import JobStep from '@/views/dashboard/components/JobStep';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
+import { SocialHandlesStep } from '@/views/dashboard/components/SocialHandlesStep';
 import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
 
 import { termsTooltipIconSrc } from './termsTooltipIcon';
@@ -155,6 +160,9 @@ interface LoanRequestModalProps {
    setRepayIdr?: (value: string) => void;
    /** The server's USD/IDR (get_usd_idr_rate); null = no fresh rate, so ID requests can't be sent. */
    usdIdrRate?: number | null;
+   /** Loans over $60: pay back in 2 parts (src/lib/repaymentSchedule.ts). Owned by RequestBoard. */
+   payInParts?: boolean;
+   setPayInParts?: (value: boolean) => void;
    isUsdIdrRateLoading?: boolean;
 }
 
@@ -166,6 +174,8 @@ export interface LoanRequestResume {
    referral: AppliedReferralCode | null;
    borrowerContext: BorrowerContextState;
    profileName: string;
+   /** The screen they're on, for the team's "Started, not sent" list. Not used to resume. */
+   stopStep?: LoanRequestStopStep;
 }
 
 export type AppliedReferralCode = {
@@ -195,7 +205,7 @@ const FRIEND_INVITE_ERRORS: Record<Exclude<RedeemInviteResult, 'joined' | 'inval
 };
 
 const REFERRAL_TEST_CODES: Record<string, AppliedReferralCode> = {
-   BELLE: { id: 'referral-test-belle', code: 'BELLE', boostAmount: 5 }
+   BELLE: { id: 'referral-test-belle', code: 'BELLE', boostAmount: 0 }
 };
 
 export const inputShellClass =
@@ -1319,15 +1329,18 @@ function IdLoanTermsFields({
 // contact step only when they have no verified line yet, and — in the 'open' flow only — the
 // video call when there's no referral code. (In the call/approval flows, PART 1 · Connect happens
 // before any of this; see ConnectStep.)
-type RequestStepKey = 'terms' | 'bio1' | 'bio2' | 'contacts' | 'videocall';
+type RequestStepKey = 'terms' | 'bio1' | 'bio2' | 'job' | 'contacts' | 'social' | 'videocall' | 'income';
 
 // Human labels for each possible step key, used by the progress rail below.
 const STEP_KEY_LABEL: Record<RequestStepKey, string> = {
    terms: 'Your terms',
    bio1: 'About you',
    bio2: 'Repayment context',
+   job: 'Your job',
    contacts: 'Contact',
-   videocall: 'Meet the team'
+   social: 'Instagram / TikTok',
+   videocall: 'Meet the team',
+   income: 'Proof of income'
 };
 
 // Progress rail shown at the bottom of the multi-step request flow. Path-aware: the number of
@@ -1590,7 +1603,9 @@ export default function LoanRequestModal({
    repayIdr = '',
    setRepayIdr = noopSetString,
    usdIdrRate = null,
-   isUsdIdrRateLoading = false
+   isUsdIdrRateLoading = false,
+   payInParts = false,
+   setPayInParts
 }: LoanRequestModalProps) {
    const isIdLoan = idLoanRules !== null;
    const dispatch = useDispatch<AppDispatch>();
@@ -1699,6 +1714,9 @@ export default function LoanRequestModal({
       };
    }, [user.id]);
    const [contactsStepDone, setContactsStepDone] = useState(false);
+   // Job question for profiles without one (see needsJobStep).
+   const [showJobStep, setShowJobStep] = useState(false);
+   const [jobStepDone, setJobStepDone] = useState(false);
    // Open flow only: the no-referral video call, booked (not attended) before the request posts.
    const [showVideoCallStep, setShowVideoCallStep] = useState(false);
    const [videoCallStepDone, setVideoCallStepDone] = useState(false);
@@ -1707,6 +1725,22 @@ export default function LoanRequestModal({
    const [incomeGate, setIncomeGate] = useState<Extract<IncomeDocGate, { ok: false }> | null>(null);
    const showIncomeGate = incomeGate !== null;
    const incomeDocFacts = useIncomeDocFacts(isOpen);
+   // $60 and up: Instagram / TikTok as more ways to reach them (asked once; "I don't use these" is saved too).
+   const [showSocialStep, setShowSocialStep] = useState(false);
+   const [socialStepDone, setSocialStepDone] = useState(false);
+   const [socialHandles, setSocialHandles] = useState<SocialHandles | null>(null);
+   useEffect(() => {
+      if (!isOpen) return;
+      let cancelled = false;
+      fetchMySocialHandles()
+         .then((handles) => {
+            if (!cancelled) setSocialHandles(handles);
+         })
+         .catch(() => undefined);
+      return () => {
+         cancelled = true;
+      };
+   }, [isOpen]);
    useEffect(() => {
       if (!showBorrowerContextStep) return;
       formRef.current?.scrollTo({ top: 0 });
@@ -1733,7 +1767,7 @@ export default function LoanRequestModal({
    const lowRepaymentCheck = () => {
       // Indonesia loans are capped at 1.5× over 7–14 days; the 10%-a-month nudge doesn't apply.
       if (isIdLoan) return null;
-      const min = minimumRepayment(Number(loanAmount), days);
+      const min = minimumRepayment(Number(loanAmount), days, undefined, { split: splitOn });
       const repay = Number(totalRepaymentAmount);
       if (!min || !Number.isFinite(repay) || repay >= min.amount) return null;
       const key = `${loanAmount}|${totalRepaymentAmount}|${days}`;
@@ -1812,6 +1846,14 @@ export default function LoanRequestModal({
              : 'Your verification is still being checked — you can send this request once it clears.';
    const limitAmount = Math.max(availableCreditLimit, 0);
    const selectedDate = days ? days.slice(0, 10) : '';
+   // "Pay in 2 parts" (loans over $60, at least 4 weeks): one loan, half back halfway, half on the date.
+   const splitAvailable = !isIdLoan && Boolean(setPayInParts) && canSplitRepayment(Number(loanAmount), today, selectedDate);
+   const splitOn = splitAvailable && payInParts;
+   const splitPreview = (() => {
+      const total = Number(totalRepaymentAmount);
+      if (!splitAvailable || !Number.isFinite(total) || total <= 0) return null;
+      return buildTwoPartSchedule(total, today, selectedDate);
+   })();
    const selectedCalendarDate = parseIsoDate(selectedDate);
    const todayDate = parseIsoDate(today) ?? new Date();
    const maxLoanDate = addDays(todayDate, idLoanRules ? idLoanRules.maxTermDays : 120);
@@ -1886,20 +1928,43 @@ export default function LoanRequestModal({
       hasAttendedCall: Boolean(user.attendedCall)
    });
    // Indonesia track: Telegram + WhatsApp + Messenger were verified in /id/onboarding.
-   const needsContactsStep = !isIdLoan && contactSteps.contacts && (!user.hasVerifiedContact || needsReminders);
+   // Every request needs both lines on the account (George, 2026-11-15): Messenger with its ID (sent the
+   // code) AND a confirmed WhatsApp. Whoever is missing either does the step; once both are saved it's skipped.
+   const needsContactsStep =
+      !isIdLoan && contactSteps.contacts && (!user.hasMessengerLink || !user.whatsappVerified || needsReminders);
+   // No job on the profile (and none typed in the bio step just now): ask once, saved to the profile.
+   const needsJobStep = !isIdLoan && !user.profession?.trim() && !borrowerContext.profession?.trim();
 
    // The real, path-aware list of steps for THIS borrower — drives the progress rail so the dot
    // count and "Step X of Y" match exactly what they'll go through.
    // Open flow only (today's rule): no referral → book (not attend) the round-robin call before the
    // request posts. In the call/approval flows the call happened before applying (PART 1).
    const needsVideoCallStep = !isIdLoan && loanFlow === 'open' && contactSteps.videoCall;
+   // This amount needs proof of income they haven't sent yet (shown on the terms card too, so the
+   // last step isn't a surprise).
+   const incomeGateNow = isIdLoan || !Number(loanAmount) ? null : incomeDocGate(Number(loanAmount), incomeDocFacts);
+   const needsIncomeStep = Boolean(incomeGateNow && !incomeGateNow.ok);
+   // Same order as handleLoanFormSubmit asks them. A step stays on the rail once it's done (its "needs"
+   // flag flips off when the answer saves), so the count doesn't shrink under them mid-flow.
+   const needsSocialStep =
+      !isIdLoan && Number(loanAmount) >= SOCIAL_HANDLES_MIN_USD && (needsSocialHandles(socialHandles) || socialStepDone);
    const requestSteps: RequestStepKey[] = [
       'terms',
+      ...(needsContactsStep || contactsStepDone ? (['contacts'] as const) : []),
+      ...(needsSocialStep ? (['social'] as const) : []),
       ...(isMultiStepRequestFlow ? (['bio1', 'bio2'] as const) : []),
-      ...(needsContactsStep ? (['contacts'] as const) : []),
-      ...(needsVideoCallStep ? (['videocall'] as const) : [])
+      ...(needsJobStep || jobStepDone ? (['job'] as const) : []),
+      ...(needsVideoCallStep ? (['videocall'] as const) : []),
+      // Last, because it's the one step that leaves the form (see handleLoanFormSubmit).
+      ...(needsIncomeStep ? (['income'] as const) : [])
    ];
-   const currentStepKey: RequestStepKey = showContactsStep
+   const currentStepKey: RequestStepKey = showIncomeGate
+      ? 'income'
+      : showSocialStep
+      ? 'social'
+      : showJobStep
+      ? 'job'
+      : showContactsStep
       ? 'contacts'
       : showVideoCallStep
         ? 'videocall'
@@ -1976,6 +2041,8 @@ export default function LoanRequestModal({
       setTermErrors({});
       setBorrowerContext(emptyBorrowerContext);
       setBorrowerContextPromptSeen(false);
+      setShowJobStep(false);
+      setJobStepDone(false);
       setBorrowerProfileName(user.displayName ?? user.username ?? '');
       setBorrowerProfileError('');
       setShowBorrowerAvatarModal(false);
@@ -2015,6 +2082,9 @@ export default function LoanRequestModal({
       if (!loanAmount || !totalRepaymentAmount || !reason) return;
       // Wait until the restored date is on the form, or validation says "Choose when you will repay."
       if (!isRepaymentDateFilled) return;
+      // Back from /documents: wait for a fresh read of their proof of income. The cached one is from
+      // before they sent it and would bounce them straight back to "Show us your income first".
+      if (!incomeDocFacts.fresh) return;
       autoSubmittedRef.current = true;
       onAutoSubmitStarted?.();
       // They answered the "a little low" question before the ID check (or weren't asked) — don't
@@ -2022,7 +2092,7 @@ export default function LoanRequestModal({
       returnAckRef.current = `${loanAmount}|${totalRepaymentAmount}|${days}`;
       window.requestAnimationFrame(() => submitHandlerRef.current?.({ preventDefault: () => {} } as FormEvent<HTMLFormElement>));
       // eslint-disable-next-line react-hooks/exhaustive-deps
-   }, [autoSubmit, isOpen, isRepaymentDateFilled, isVerified, loanAmount, onAutoSubmitStarted, reason, totalRepaymentAmount]);
+   }, [autoSubmit, incomeDocFacts.fresh, isOpen, isRepaymentDateFilled, isVerified, loanAmount, onAutoSubmitStarted, reason, totalRepaymentAmount]);
 
    // Before leaving for the ID check, get a real verdict on the reason. The live check may still be
    // running (or have failed) — then the request went to Didit and the automatic send afterwards
@@ -2062,11 +2132,27 @@ export default function LoanRequestModal({
          },
          referral: appliedReferral,
          borrowerContext,
-         profileName: borrowerProfileName
+         profileName: borrowerProfileName,
+         stopStep: loanRequestStopStep({
+            showIncomeGate,
+            showReferralStep: shouldShowReferralStep,
+            isLoanAccessGated,
+            showSocialStep,
+            showJobStep,
+            showContactsStep,
+            showVideoCallStep,
+            showBorrowerContextStep,
+            bioPage
+         })
       });
    }, [
       isOpen,
       onFlowStateChange,
+      showIncomeGate,
+      shouldShowReferralStep,
+      isLoanAccessGated,
+      showSocialStep,
+      showJobStep,
       showReferralStep,
       showBorrowerContextStep,
       bioPage,
@@ -2242,11 +2328,6 @@ export default function LoanRequestModal({
       setShowVideoCallStep(false);
    }, [reasonWarning]);
 
-   const formatReferralBoost = (boostAmount: number) => {
-      const amount = Number(boostAmount);
-      return Number.isInteger(amount) ? amount.toFixed(0) : amount.toFixed(2);
-   };
-
    const handleReferralCodeChange = (value: string) => {
       setReferralCode(value);
       setReferralCodeError('');
@@ -2289,6 +2370,13 @@ export default function LoanRequestModal({
                setFriendInviteCode(cleanCode);
                return true;
             }
+            // Someone already invited them (one inviter per person): nothing to do, just carry on.
+            if (result === 'already_referred') {
+               setReferralCode('');
+               setReferralCodeError('');
+               setShowReferralStep(false);
+               return true;
+            }
             if (result !== 'invalid_code') {
                setReferralCodeError(FRIEND_INVITE_ERRORS[result]);
                return false;
@@ -2298,6 +2386,13 @@ export default function LoanRequestModal({
          const supabase = getSupabaseBrowserClient();
          const { data, error } = await supabase.rpc('redeem_referral_code', { code_input: cleanCode }).single();
 
+         // A friend's invite is already on the account (migration 20261121200000): carry on, no error.
+         if (error && /already/i.test(error.message)) {
+            setReferralCode('');
+            setReferralCodeError('');
+            setShowReferralStep(false);
+            return true;
+         }
          if (error) throw error;
 
          if (!data) {
@@ -2421,11 +2516,15 @@ export default function LoanRequestModal({
    const parsedAmountNum = Number(loanAmount);
    const parsedRepayNum = Number(totalRepaymentAmount);
    const amountValid = Boolean(loanAmount) && !Number.isNaN(parsedAmountNum) && parsedAmountNum > 0 && parsedAmountNum <= limitAmount;
+   // At most 20% on top per 31 days (George, 2026-11-18). Indonesia keeps its own 1.5× cap.
+   const maxRepayment = isIdLoan ? null : maximumRepayment(parsedAmountNum, days);
+   const repaymentOverCap = maxRepayment !== null && Boolean(totalRepaymentAmount) && Number.isFinite(parsedRepayNum) && parsedRepayNum > maxRepayment;
    const repaymentValid =
       Boolean(totalRepaymentAmount) &&
       !Number.isNaN(parsedRepayNum) &&
       !Number.isNaN(parsedAmountNum) &&
-      parsedRepayNum >= parsedAmountNum + 1;
+      parsedRepayNum >= parsedAmountNum + 1 &&
+      !repaymentOverCap;
    // Length is necessary but not sufficient: 46 characters of "dwadwadwad" used to earn a
    // green "Looks good". Two checks now stand between the borrower and that tick:
    //   1. checkReasonQuality — instant, offline, catches text that isn't words yet;
@@ -2435,13 +2534,11 @@ export default function LoanRequestModal({
    // What to put in the empty repayment field: the typical return for this size (and at least the
    // 10%-a-month minimum once a date is picked), so the first try is one lenders will fund instead
    // of "$16 back on $15", which opened the low-return popup. Shown as the placeholder only.
+   // A range, not one number ($15 for a month → "$16.50–$18"): one number read as the price to type.
    const suggestedRepayment = (() => {
       const borrow = Number(loanAmount);
       if (!loanAmount || !Number.isFinite(borrow) || borrow <= 0) return null;
-      const range = suggestedReturnRange(borrow);
-      const typical = borrow + Math.max(range?.lo ?? 1, 1);
-      const min = minimumRepayment(borrow, days)?.amount ?? 0;
-      return Math.ceil(Math.max(typical, min) * 2) / 2;
+      return suggestedRepaymentRange(borrow, days, undefined, { split: splitOn });
    })();
    const reasonMeetsLength = reason.trim().length >= REASON_MIN_LENGTH;
    const reasonQuality = checkReasonQuality(reason);
@@ -2692,6 +2789,17 @@ export default function LoanRequestModal({
          return;
       }
 
+      // Messenger + WhatsApp come FIRST, right after the terms (2026-11-15): they used to be the last
+      // step, so someone missing a line filled in everything else (and could be stopped for proof of
+      // income for hours) before ever being shown what they lacked. ContactsStep's onContinue sets
+      // contactsStepDone and re-fires this handler. (Approved through Connect: verified in PART 1.)
+      if (needsContactsStep && !contactsStepDone && !showContactsStep) {
+         event.preventDefault();
+         setShowBorrowerContextStep(false);
+         setShowContactsStep(true);
+         return;
+      }
+
       if (!showBorrowerContextStep) {
          const low = lowRepaymentCheck();
          if (low) {
@@ -2702,15 +2810,18 @@ export default function LoanRequestModal({
          }
       }
 
-      // Proof of income for this amount's step. The card sends them to /documents with what they
-      // typed kept (and the amount, so the checks use the right step), and back here after.
-      // Indonesia track: proof of income was sent (and not declined) in /id/onboarding.
-      const gate = isIdLoan ? ({ ok: true } as const) : incomeDocGate(Number(loanAmount), incomeDocFacts);
-      if (!gate.ok) {
+      // Instagram / TikTok from $60. Only when we know they have neither (a failed lookup never blocks the loan).
+      if (
+         !isIdLoan &&
+         Number(loanAmount) >= SOCIAL_HANDLES_MIN_USD &&
+         needsSocialHandles(socialHandles) &&
+         !socialStepDone &&
+         !showSocialStep
+      ) {
          event.preventDefault();
          setShowBorrowerContextStep(false);
-         setIncomeGate(gate);
-         trackLoanFormRule('loan_form_income_doc_gate', { amount: Number(loanAmount), step: gate.step.min, missing: gate.missing });
+         setShowSocialStep(true);
+         trackLoanFormRule('loan_form_social_handles_step', { amount: Number(loanAmount) });
          return;
       }
 
@@ -2726,13 +2837,11 @@ export default function LoanRequestModal({
          return;
       }
 
-      // Verified contact line (Messenger, or WhatsApp once live) — required before submitting, for
-      // anyone who doesn't have one yet. ContactsStep's onContinue sets contactsStepDone and
-      // re-fires this handler. (Borrowers approved through Connect already verified in PART 1.)
-      if (needsContactsStep && !contactsStepDone && !showContactsStep) {
+      // No job on the profile: one question, saved, before the contact lines.
+      if (needsJobStep && !jobStepDone && !showJobStep) {
          event.preventDefault();
          setShowBorrowerContextStep(false);
-         setShowContactsStep(true);
+         setShowJobStep(true);
          return;
       }
 
@@ -2744,6 +2853,23 @@ export default function LoanRequestModal({
          setShowBorrowerContextStep(false);
          setShowContactsStep(false);
          setShowVideoCallStep(true);
+         return;
+      }
+
+      // Proof of income LAST (2026-11-15). It's the only step that leaves the form (for /documents)
+      // and can take a while, so everything else is answered first; the board then sends the request
+      // by itself once they're back with a document sent (sendAfterDocs). It used to sit in the
+      // middle: borrowers came back to a refilled form, still had to tap Send, then met the job and
+      // WhatsApp steps — and the documents page told them they didn't need to do anything.
+      // Indonesia track: proof of income was sent (and not declined) in /id/onboarding.
+      const gate = isIdLoan ? ({ ok: true } as const) : incomeDocGate(Number(loanAmount), incomeDocFacts);
+      if (!gate.ok) {
+         event.preventDefault();
+         setShowBorrowerContextStep(false);
+         setShowContactsStep(false);
+         setShowVideoCallStep(false);
+         setIncomeGate(gate);
+         trackLoanFormRule('loan_form_income_doc_gate', { amount: Number(loanAmount), step: gate.step.min, missing: gate.missing });
          return;
       }
 
@@ -2859,16 +2985,37 @@ export default function LoanRequestModal({
       }
    };
 
+   const handleSocialStepContinue = (saved: SocialHandles) => {
+      setSocialHandles(saved);
+      setSocialStepDone(true);
+      setShowSocialStep(false);
+      handleLoanFormSubmit({ preventDefault: () => {} } as React.FormEvent<HTMLFormElement>);
+   };
+
+   const handleJobStepSave = async (job: string) => {
+      await dispatch(updateProfession(job)).unwrap();
+      setBorrowerContext((prev) => ({ ...prev, profession: job }));
+      setJobStepDone(true);
+      setShowJobStep(false);
+      handleLoanFormSubmit({ preventDefault: () => {} } as React.FormEvent<HTMLFormElement>);
+   };
+
+   const handleJobStepBack = () => {
+      setShowJobStep(false);
+      setShowBorrowerContextStep(isMultiStepRequestFlow);
+      if (isMultiStepRequestFlow) setBioPage(2);
+   };
+
    const handleContactsStepContinue = () => {
       setContactsStepDone(true);
       setShowContactsStep(false);
       handleLoanFormSubmit({ preventDefault: () => {} } as React.FormEvent<HTMLFormElement>);
    };
 
+   // The contacts step is the first stop after the terms, so Back returns to the terms.
    const handleContactsStepBack = () => {
       setShowContactsStep(false);
-      setShowBorrowerContextStep(true);
-      setBioPage(2);
+      setShowBorrowerContextStep(false);
    };
 
    const handleVideoCallStepContinue = () => {
@@ -2879,10 +3026,6 @@ export default function LoanRequestModal({
 
    const handleVideoCallStepBack = () => {
       setShowVideoCallStep(false);
-      if (needsContactsStep) {
-         setShowContactsStep(true);
-         return;
-      }
       setShowBorrowerContextStep(isMultiStepRequestFlow);
       if (isMultiStepRequestFlow) setBioPage(2);
    };
@@ -3087,7 +3230,7 @@ export default function LoanRequestModal({
             <div className="pointer-events-none absolute left-1/2 top-2 z-20 h-1 w-11 -translate-x-1/2 rounded-full bg-[#cec6d7] sm:hidden" />
             <header
                className={`flex touch-none cursor-grab select-none items-center justify-between px-5 active:cursor-grabbing ${
-                  isLoanAccessGated || showContactsStep
+                  isLoanAccessGated || showContactsStep || showJobStep || showSocialStep
                      ? 'bg-[#f3ecff] pb-0 pt-5 sm:pt-3'
                      : 'border-b border-[#e7e0ec] pb-4 pt-6 sm:pt-4'
                }`}
@@ -3098,10 +3241,10 @@ export default function LoanRequestModal({
             >
                <div className="flex min-w-0 items-center gap-md-1 pr-3">
                   {shouldShowReferralStep ? (
-                     <h2 className="text-md-h6 text-md-heading">Referral Boost</h2>
-                  ) : isLoanAccessGated || showContactsStep || showIncomeGate ? (
+                     <h2 className="text-md-h6 text-md-heading">Invited by someone?</h2>
+                  ) : isLoanAccessGated || showContactsStep || showJobStep || showSocialStep || showIncomeGate ? (
                      // These screens carry their own hippo hero + title (Figma style) — no duplicate header.
-                     <h2 className="sr-only">{showIncomeGate ? 'Show us your income first' : isLoanAccessPending ? 'Almost there' : showContactsStep ? (isExistingBorrower ? 'Add your Facebook' : 'How can we reach you') : "Let's connect"}</h2>
+                     <h2 className="sr-only">{showIncomeGate ? 'Last step: your income' : isLoanAccessPending ? 'Almost there' : showJobStep ? 'Your job' : showSocialStep ? 'More ways to reach you' : showContactsStep ? (isExistingBorrower ? 'Add your Facebook and WhatsApp' : 'How can we reach you') : "Let's connect"}</h2>
                   ) : showVideoCallStep ? (
                      <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">
                         Schedule a video call
@@ -3151,15 +3294,15 @@ export default function LoanRequestModal({
                   onPointerUp={endDismissGesture}
                   onPointerCancel={endDismissGesture}
                >
-                  <div className="flex items-start gap-md-2 rounded-md-lg border border-md-neutral-400 bg-[#faf7ff] p-md-2">
+                  <div className="flex items-start gap-md-2 rounded-md-lg border border-md-neutral-400 bg-[#faf7ff] p-md-2 dark:border-[#3a3046] dark:bg-[#241c30]">
                      <div className="flex min-w-0 flex-1 flex-col gap-md-1">
-                        <span className="w-fit rounded-full bg-md-primary-100 px-md-2 py-md-0 text-md-b3 font-normal text-md-primary-900">
+                        <span className="w-fit rounded-full bg-md-primary-100 px-md-2 py-md-0 text-md-b3 font-normal text-md-primary-900 dark:bg-[#3b2a5c] dark:text-[#d9c8ff]">
                            Optional
                         </span>
                         <div>
-                           <h3 className="text-md-h6 font-medium leading-[26px] text-md-heading">Have a referral code?</h3>
-                           <p className="mt-md-0 text-md-b3 font-normal leading-[20px] text-md-neutral-1200">
-                              Add it now for a higher starting limit.
+                           <h3 className="text-md-h6 font-medium leading-[26px] text-md-heading dark:text-[#f8f4ff]">Have a referral code?</h3>
+                           <p className="mt-md-0 text-md-b3 font-normal leading-[20px] text-md-neutral-1200 dark:text-[#c9bfd6]">
+                              Add it so we know who invited you.
                            </p>
                         </div>
                      </div>
@@ -3169,11 +3312,6 @@ export default function LoanRequestModal({
                         className="-my-md-1 h-[112px] w-[112px] shrink-0 self-center object-contain"
                         src="/hippos/referral-boost.png"
                      />
-                  </div>
-
-                  <div className="inline-flex w-fit items-center gap-md-1 rounded-full bg-[#d7f5df] px-md-2 py-md-0 text-md-b3 font-medium text-[#178447]">
-                     <CheckCircle aria-hidden="true" className="h-4 w-4" strokeWidth={2} />
-                     <span>+$5 Credit Limit Boost</span>
                   </div>
 
                   <label className="sr-only" htmlFor="referral-code">
@@ -3204,18 +3342,18 @@ export default function LoanRequestModal({
                   </div>
 
                   {hasReferralCodeError ? (
-                     <div className="rounded-md-md bg-md-red-100 px-md-2 py-md-1 text-md-b3 font-normal text-md-red-500">
+                     <div className="rounded-md-md bg-md-red-100 px-md-2 py-md-1 text-md-b3 font-normal text-md-red-500 dark:bg-[#3a1a1f] dark:text-[#ff9aa5]">
                         {referralCodeError}
                      </div>
                   ) : appliedReferral ? (
-                     <div className="flex items-center gap-md-1 rounded-md-md bg-[#eefbf2] px-md-2 py-md-1 text-md-b3 font-normal text-[#178447]">
+                     <div className="flex items-center gap-md-1 rounded-md-md bg-[#eefbf2] px-md-2 py-md-1 text-md-b3 font-normal text-[#178447] dark:bg-[#12301f] dark:text-[#7be0a0]">
                         <CheckCircle aria-hidden="true" className="h-4 w-4" strokeWidth={2} />
                         <span>
-                           Code {appliedReferral.code} applied: +${formatReferralBoost(appliedReferral.boostAmount)} starting limit
+                           Code {appliedReferral.code} added. Thanks for telling us!
                         </span>
                      </div>
                   ) : friendInviteCode ? (
-                     <div className="flex items-center gap-md-1 rounded-md-md bg-[#eefbf2] px-md-2 py-md-1 text-md-b3 font-normal text-[#178447]">
+                     <div className="flex items-center gap-md-1 rounded-md-md bg-[#eefbf2] px-md-2 py-md-1 text-md-b3 font-normal text-[#178447] dark:bg-[#12301f] dark:text-[#7be0a0]">
                         <CheckCircle aria-hidden="true" className="h-4 w-4" strokeWidth={2} />
                         <span>Friend code {friendInviteCode} added. You both earn rewards when you repay.</span>
                      </div>
@@ -3230,7 +3368,7 @@ export default function LoanRequestModal({
                      {isApplyingReferralCode ? 'Checking code...' : referralPrimaryActionText}
                   </button>
 
-                  <p className="text-center text-md-b3 font-normal text-md-neutral-1200">No code needed. You can continue normally.</p>
+                  <p className="text-center text-md-b3 font-normal text-md-neutral-1200 dark:text-[#c9bfd6]">No code needed. You can continue normally.</p>
                </div>
             ) : isLoanAccessPending ? (
                <LoanAccessPendingCard mode={connectMode} withEmma={hasReferral} userId={user.id} onClose={onClose} />
@@ -3257,8 +3395,11 @@ export default function LoanRequestModal({
                   onBack={handleConnectBack}
                   onSubmitted={handleLoanAccessSubmitted}
                />
+            ) : showJobStep ? (
+               <JobStep initialValue={borrowerContext.profession ?? ''} onBack={handleJobStepBack} onSave={handleJobStepSave} />
             ) : showContactsStep ? (
                <ContactsStep
+                  requireAllLines={!user.hasMessengerLink || !user.whatsappVerified}
                   userId={user.id}
                   source="loan_request"
                   onBack={handleContactsStepBack}
@@ -3277,8 +3418,8 @@ export default function LoanRequestModal({
                            image={CONNECT_HIPPOS.hello}
                            subtitle={
                               <>
-                                 Please add your Facebook so we can reach out to you. We also have a <b>$10 referral program</b> we&apos;d love to
-                                 tell you about!
+                                 Add your Facebook and WhatsApp so we can reach you. We also have a <b>$10 referral program</b> we&apos;d love to tell
+                                 you about!
                               </>
                            }
                            title="So we can help you more 💜"
@@ -3290,10 +3431,12 @@ export default function LoanRequestModal({
                <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
                   <ConnectHero
                      image={CONNECT_HIPPOS.cashout}
-                     title="Show us your income first"
+                     title="Last step: your income"
                      subtitle={incomeGate ? gateMessage(incomeGate) : undefined}
                   />
-                  <p className="text-[14px] leading-[19px] text-[#7b6b8c] dark:text-[#b9abcc]">What you typed is kept. Come back after sending and tap Send request.</p>
+                  <p className="text-[14px] leading-[19px] text-[#7b6b8c] dark:text-[#b9abcc]">
+                     Everything else is done. Send it and your loan request goes out by itself.
+                  </p>
                   <div className="mt-auto flex flex-col gap-1 pt-1">
                      <PrimaryButton
                         onClick={() => {
@@ -3306,6 +3449,8 @@ export default function LoanRequestModal({
                      <GhostButton onClick={() => setIncomeGate(null)}>Change the amount</GhostButton>
                   </div>
                </div>
+            ) : showSocialStep ? (
+               <SocialHandlesStep initial={socialHandles} onContinue={handleSocialStepContinue} onBack={() => setShowSocialStep(false)} />
             ) : showVideoCallStep ? (
                <VideoCallStep
                   userId={user.id}
@@ -3453,6 +3598,11 @@ export default function LoanRequestModal({
                                  />
                               </div>
                               {termErrors.amount ? <FieldError message={termErrors.amount} /> : null}
+                              {!termErrors.amount && incomeGateNow && !incomeGateNow.ok ? (
+                                 // Said up front, so the last step isn't a surprise. Not "$100+ needs…": that
+                                 // read as "only big loans need it" when proof of income starts at $40.
+                                 <p className="text-md-b3 font-medium text-md-heading">This amount needs proof of income — the last step.</p>
+                              ) : null}
                               <div className="flex justify-end gap-md-1 text-md-b3 font-normal text-md-neutral-1200">
                                  <InfoTooltip
                                     activeTooltip={activeTooltip}
@@ -3497,14 +3647,18 @@ export default function LoanRequestModal({
                                  inputMode="decimal"
                                  placeholder={
                                     suggestedRepayment
-                                       ? `Suggested: $${Number.isInteger(suggestedRepayment) ? suggestedRepayment : suggestedRepayment.toFixed(2)}`
+                                       ? `Suggested: $${Number.isInteger(suggestedRepayment.lo) ? suggestedRepayment.lo : suggestedRepayment.lo.toFixed(2)}–$${Number.isInteger(suggestedRepayment.hi) ? suggestedRepayment.hi : suggestedRepayment.hi.toFixed(2)}`
                                        : 'Must be more than the borrowed amount'
                                  }
                                  type="text"
                                  value={totalRepaymentAmount}
                               />
-                              {termErrors.repayment ? <FieldError message={termErrors.repayment} /> : null}
-                              {(() => {
+                              {termErrors.repayment ? (
+                                 <FieldError message={termErrors.repayment} />
+                              ) : repaymentOverCap && maxRepayment !== null ? (
+                                 <FieldError message={`Too high. For this date you can repay at most $${maxRepayment.toFixed(2)} (20% on top per month).`} />
+                              ) : null}
+                              {repaymentOverCap ? null : (() => {
                                  // Live clarity: once both amounts are valid, spell out what the borrower will
                                  // repay and how much of that is the lender's return — Moodeng adds $0, so this
                                  // makes the deal transparent while they set their own terms.
@@ -3537,7 +3691,7 @@ export default function LoanRequestModal({
                                     offer >= 1 &&
                                     range !== null &&
                                     offer < range.lo;
-                                 const min = minimumRepayment(borrowNum, days);
+                                 const min = minimumRepayment(borrowNum, days, undefined, { split: splitOn });
                                  if (!termErrors.repayment && Boolean(totalRepaymentAmount) && min && Number.isFinite(repayNum) && repayNum < min.amount) {
                                     return (
                                        <div className="flex items-start gap-1.5 rounded-md-md bg-md-yellow-100 px-md-2 py-md-1 text-md-b3 font-normal leading-[18px] text-md-yellow-700">
@@ -3626,6 +3780,43 @@ export default function LoanRequestModal({
                                  })}
                               </div>
                            </div>
+
+                           {splitAvailable ? (
+                              <div className="flex flex-col gap-md-1" data-tour-target="loan-pay-in-parts">
+                                 <span className="text-md-b2 font-[590] text-md-heading">How will you pay it back?</span>
+                                 <div className="grid grid-cols-2 gap-md-1" role="radiogroup" aria-label="How will you pay it back?">
+                                    {[
+                                       { on: false, title: 'All at once', detail: selectedDateLabel ? `By ${selectedDateLabel}` : '' },
+                                       {
+                                          on: true,
+                                          title: 'In 2 parts',
+                                          detail: splitPreview
+                                             ? splitPreview.map((part) => `$${part.amount.toFixed(2)} ${formatMilestoneDay(part.due)}`).join(' + ')
+                                             : 'Half each time'
+                                       }
+                                    ].map((option) => {
+                                       const active = payInParts === option.on;
+                                       return (
+                                          <button
+                                             key={option.title}
+                                             type="button"
+                                             role="radio"
+                                             aria-checked={active}
+                                             onClick={() => setPayInParts?.(option.on)}
+                                             className={`flex min-h-[56px] flex-col items-start justify-center rounded-md-input border px-md-2 py-md-1 text-left transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 ${
+                                                active ? 'border-md-primary-900 bg-md-primary-100' : 'border-md-neutral-700 bg-md-neutral-100'
+                                             }`}
+                                          >
+                                             <span className={`text-md-b2 font-semibold ${active ? 'text-md-primary-1200' : 'text-md-heading'}`}>{option.title}</span>
+                                             {option.detail ? (
+                                                <span className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">{option.detail}</span>
+                                             ) : null}
+                                          </button>
+                                       );
+                                    })}
+                                 </div>
+                              </div>
+                           ) : null}
                            </>
                         )}
 

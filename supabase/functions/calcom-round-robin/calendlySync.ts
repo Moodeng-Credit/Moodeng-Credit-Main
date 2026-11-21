@@ -1,10 +1,12 @@
 // Daily copy of each host's Calendly hours onto the Cal.com schedule their call event uses, so they
-// only ever edit Calendly (Emma since 2026-10-27, George since 2026-10-29). Run by pg_cron (calcom-round-robin { action: 'sync_calendly_hours' }); pass
+// only ever edit Calendly (Emma since 2026-10-27). George keeps his hours in Cal.com itself since
+// 2026-11-15 ("i want to keep my hours in cal"), so his schedule is never overwritten. Run by pg_cron (calcom-round-robin { action: 'sync_calendly_hours' }); pass
 // dryRun to see the current and new schedule without changing anything.
 import { CAL_BASE, hostApiKey, resolveEventTypeId } from '../_shared/calcomSlots.ts';
 import { readCallSecret } from '../_shared/callSecrets.ts';
 import { postDiscord } from '../_shared/discord.ts';
-import { calendlyToCalSchedule, type CalendlyRule } from './lib.ts';
+import { loadCallBlocks } from '../_shared/callBooking.ts';
+import { blockedDays, calendlyToCalSchedule, type CalendlyRule } from './lib.ts';
 
 const CALENDLY_BASE = 'https://api.calendly.com';
 
@@ -61,6 +63,12 @@ const run = async (svc: any, dryRun: boolean, host: SyncHost): Promise<SyncResul
 
    const today = new Date().toLocaleDateString('en-CA', { timeZone: source.timezone || 'Asia/Bangkok' });
    const next = calendlyToCalSchedule(source.rules, source.timezone || 'Asia/Bangkok', today);
+   // Time off (call_blocks): whole days blocked for this host are closed on Cal.com too, so Cal.com's own
+   // reschedule page can't put a call there (our slot list already hides them).
+   const closed = blockedDays(await loadCallBlocks(svc), host, next.timeZone);
+   if (closed.length) {
+      next.overrides = [...next.overrides.filter((o) => !closed.includes(o.date)), ...closed.map((date) => ({ date, startTime: '00:00', endTime: '00:00' }))];
+   }
    const current = (await getJson(`${CAL_BASE}/schedules/${scheduleId}`, cal('2024-06-11'))).body?.data;
    if (dryRun) return { ok: true, scheduleId, current, next };
 
@@ -89,10 +97,42 @@ export const syncCalendlyHours = async (svc: any, host: SyncHost, dryRun = false
    return result;
 };
 
-/** Both hosts, one after the other (the nightly pg_cron job). */
+/** Emma only (the nightly pg_cron job). George sets his hours directly in Cal.com. */
 // deno-lint-ignore no-explicit-any
 export const syncAllCalendlyHours = async (svc: any, dryRun = false) => {
    const emma = await syncCalendlyHours(svc, 'emma', dryRun);
-   const george = await syncCalendlyHours(svc, 'george', dryRun);
-   return { ok: emma.ok && george.ok, emma, george };
+   return { ok: emma.ok, emma, george: { ok: true, skipped: 'hours kept in Cal.com' } };
+};
+
+
+/**
+ * One-off date overrides on a host's Cal.com schedule (admin: { action: 'cal_overrides', host,
+ * overrides: [{date:'YYYY-MM-DD', startTime:'HH:MM', endTime:'HH:MM'}], dryRun }). Replaces any
+ * override on the same dates; '00:00'–'00:00' = closed all day. Use for George (Emma's schedule is
+ * rewritten nightly from Calendly — block her with call_blocks instead).
+ */
+// deno-lint-ignore no-explicit-any
+export const setHostDateOverrides = async (host: SyncHost, overrides: Array<{ date: string; startTime: string; endTime: string }>, dryRun = false) => {
+   const calKey = hostApiKey(host);
+   if (!calKey) return { ok: false, error: 'not_configured' };
+   const eventTypeId = await resolveEventTypeId(calKey);
+   if (!eventTypeId) return { ok: false, error: 'cal_event_type' };
+   const cal = (version: string) => ({ Authorization: `Bearer ${calKey}`, 'cal-api-version': version });
+   const eventType = await getJson(`${CAL_BASE}/event-types/${eventTypeId}`, cal('2024-06-14'));
+   let scheduleId = eventType.body?.data?.scheduleId as number | null | undefined;
+   if (!scheduleId) scheduleId = (await getJson(`${CAL_BASE}/schedules/default`, cal('2024-06-11'))).body?.data?.id;
+   if (!scheduleId) return { ok: false, error: 'cal_schedule' };
+   const current = (await getJson(`${CAL_BASE}/schedules/${scheduleId}`, cal('2024-06-11'))).body?.data;
+   const dates = new Set(overrides.map((o) => o.date));
+   const kept = ((current?.overrides ?? []) as Array<{ date: string; startTime: string; endTime: string }>).filter((o) => !dates.has(o.date));
+   const next = [...kept, ...overrides].sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime));
+   if (dryRun) return { ok: true, scheduleId, timeZone: current?.timeZone, current: current?.overrides, next };
+   const res = await fetch(`${CAL_BASE}/schedules/${scheduleId}`, {
+      method: 'PATCH',
+      headers: { ...cal('2024-06-11'), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ overrides: next })
+   });
+   if (!res.ok) return { ok: false, error: `cal_patch_${res.status}: ${(await res.text()).slice(0, 200)}` };
+   const after = (await getJson(`${CAL_BASE}/schedules/${scheduleId}`, cal('2024-06-11'))).body?.data;
+   return { ok: true, scheduleId, timeZone: after?.timeZone, overrides: after?.overrides };
 };

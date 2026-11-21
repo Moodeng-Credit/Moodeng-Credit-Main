@@ -106,7 +106,9 @@ Deno.serve(async (req) => {
     // users.line_id is client-writable, so only trust a profile that really is this LINE user's
     // login account (their verified LINE email or the synthetic one); otherwise someone could tag their
     // own account with a victim's LINE id and the victim's first LINE login would land in it.
-    const ownLineEmails = [`line_${lineId}@moodeng.app`, ...(payload.email ? [String(payload.email).toLowerCase()] : [])]
+    // Auth stores emails lowercased, but LINE ids start with a capital "U" (then lowercase hex, so
+    // folding case can't make two ids collide): compare both sides lowercased.
+    const ownLineEmails = [`line_${lineId}@moodeng.app`.toLowerCase(), ...(payload.email ? [String(payload.email).toLowerCase()] : [])]
     let trustedProfile =
       existingProfile && ownLineEmails.includes(String(existingProfile.email ?? '').toLowerCase()) ? existingProfile : null
     // Also their own account if the login function recorded this LINE id on it (app_metadata is
@@ -114,7 +116,10 @@ Deno.serve(async (req) => {
     let trustedEmail: string | null = trustedProfile?.email ?? null
     if (existingProfile && !trustedProfile) {
       const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(existingProfile.id)
-      if (authUser?.user?.app_metadata?.line_id === String(lineId) && authUser.user.email) {
+      if (
+        String(authUser?.user?.app_metadata?.line_id ?? '').toLowerCase() === String(lineId).toLowerCase() &&
+        authUser?.user?.email
+      ) {
         trustedProfile = existingProfile
         trustedEmail = authUser.user.email
       }

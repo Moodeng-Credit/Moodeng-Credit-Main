@@ -8,7 +8,9 @@ import {
    LoanNotificationRecipient,
    LoanNotificationType
 } from './loanNotifications.ts';
+import { CASH_OUT_BUTTON, type CashOutLang, cashOutQuestion } from './messengerCashOutHelp.ts';
 import { sendPushToUser } from './pushDelivery.ts';
+import { buildRepayRewardLine } from './repayReward.ts';
 import {
    buildDuePushPayload,
    buildFundedPushPayload,
@@ -106,12 +108,13 @@ export const buildViberReminderText = (
          : type === 'due_today'
            ? `your Moodeng Credit payment of ${amount} is due today.`
            : `your Moodeng Credit payment of ${amount} is overdue${lateBy ? ` (${lateBy} late)` : ''}. Paying now protects your credit level.`;
-   return `Hi ${name}, ${line}\n\nRepay here: https://moodeng.app/repay`;
+   const rewardLine = buildRepayRewardLine(aggregate.reward, type);
+   return `Hi ${name}, ${line}${rewardLine ? `\n${rewardLine}` : ''}\n\nRepay here: https://moodeng.app/repay`;
 };
 
 /** Telegram/LINE/phone sign-ups get a placeholder address nobody reads (telegram_<id>@moodeng.app, line_<id>@…, phone_<id>@…). */
 export const isPlaceholderEmail = (email: string | null | undefined): boolean =>
-   /^(telegram|line|phone)_[^@]+@moodeng\.(app|credit)$/i.test((email ?? '').trim());
+   /^(telegram|line|phone|guest|tiktok)_[^@]+@moodeng\.(app|credit)$/i.test((email ?? '').trim());
 
 export type BorrowerNotificationDeliveryResult = {
    emailSent: boolean;
@@ -139,30 +142,36 @@ export const buildMessengerContent = (
    type: LoanNotificationType,
    loan: LoanNotificationLoan | null,
    aggregate: LoanNotificationAggregate | undefined,
-   { firstLoan = false }: { firstLoan?: boolean } = {}
-): { text: string; card?: MessengerCard } | null => {
+   { firstLoan = false, cashOut = 'en' }: { firstLoan?: boolean; cashOut?: CashOutLang | null } = {}
+): { text: string; card?: MessengerCard; followUpText?: string } | null => {
    if (type === 'funded' && loan) {
       const dashboardUrl = buildPushPayloadForType('funded', loan, aggregate, 'en')?.url;
       const due = formatDueDate(loan.due_date);
+      // Then "How will you cash out?" as its own message; the answer is handled in messengerCashOutHelp.ts.
+      // Not for Indonesia (cashOut null) or Walt loans: their money isn't turned into pesos.
+      const followUpText = loan.funding_method === 'walt_manual' || !cashOut ? undefined : cashOutQuestion(cashOut, firstLoan);
       const repay = toNumber(loan.total_repayment_amount) > 0 ? `Repay ${formatUsdcAmount(loan.total_repayment_amount)} USDC` : 'Repay on time';
       if (firstLoan) {
          return {
             text:
-               `🎉 Welcome to the community, Moo-borrower! Your first loan is funded: ${formatUsdcAmount(loan.loan_amount)} USDC has been sent to your wallet.\n\n` +
+               `🎉 Welcome to the community, Moo-borrower! Your first loan is funded: ${formatUsdcAmount(loan.loan_amount)} USDC (on Base) has been sent to your wallet.\n\n` +
                `${repay}${due ? ` by ${due}` : ''} to build your record and level up to bigger loans. We're cheering for you! 🦛`,
             card: {
                title: 'Welcome, Moo-borrower! 🎉',
                subtitle: 'Your first loan is funded. Repay on time to level up.',
                imageUrl: MOO_BORROWER_POSTER_URL,
-               button: { title: 'Open Moodeng', url: dashboardUrl ?? 'https://moodeng.app' }
-            }
+               button: { title: 'Open Moodeng', url: dashboardUrl ?? 'https://moodeng.app' },
+               moreButtons: [CASH_OUT_BUTTON]
+            },
+            followUpText
          };
       }
       return {
          text:
-            `🎉 Great news, your loan is funded! ${formatUsdcAmount(loan.loan_amount)} USDC has been sent to your wallet.\n\n` +
+            `🎉 Great news, your loan is funded! ${formatUsdcAmount(loan.loan_amount)} USDC (on Base) has been sent to your wallet.\n\n` +
             `${repay}${due ? ` by ${due}` : ''} to build your repayment record. Tip: borrow your full limit and repay it to unlock bigger loans.`,
-         ...(dashboardUrl ? { card: { title: 'Your loan is funded', button: { title: 'Open Moodeng', url: dashboardUrl } } } : {})
+         card: { title: 'Your loan is funded', button: { title: 'Open Moodeng', url: dashboardUrl ?? 'https://moodeng.app' }, moreButtons: [CASH_OUT_BUTTON] },
+         followUpText
       };
    }
 
@@ -220,7 +229,7 @@ const buildPushPayloadForType = (
          }
          return buildDuePushPayload(
             type,
-            { loanCount: aggregate.count, totalAmount: aggregate.totalAmount, dueLabel: aggregate.dueLabel ?? '' },
+            { loanCount: aggregate.count, totalAmount: aggregate.totalAmount, dueLabel: aggregate.dueLabel ?? '', reward: aggregate.reward },
             locale
          );
       }
@@ -429,11 +438,18 @@ export const sendBorrowerLoanNotification = async (
       type === 'funded' && recipient.messenger_psid && options.push?.supabase && loan
          ? await isFirstFundedLoan(options.push.supabase, loan).catch(() => false)
          : false;
-   const messengerContent = recipient.messenger_psid ? buildMessengerContent(type, loan, aggregate, { firstLoan }) : null;
+   // The funded message's "How will you cash out?": in Filipino for 'fil' accounts, never for Indonesia.
+   const cashOutWho = type === 'funded' && recipient.messenger_psid ? (idRecipient ?? (await resolveIdRecipient(recipient, loan, options.push))) : null;
+   const cashOut: CashOutLang | null = cashOutWho?.market === 'ID' ? null : cashOutWho?.preferred_locale === 'fil' ? 'fil' : 'en';
+   const messengerContent = recipient.messenger_psid ? buildMessengerContent(type, loan, aggregate, { firstLoan, cashOut }) : null;
    if (recipient.messenger_psid && messengerContent) {
-      const result = await sendMessengerMessage(recipient.messenger_psid, messengerContent);
+      const result = await sendMessengerMessage(recipient.messenger_psid, { text: messengerContent.text, card: messengerContent.card });
       messengerSent = result.ok;
-      // Every outcome is logged, so "did the bot tell them?" is one log search (kryshia's funded
+      if (result.ok && messengerContent.followUpText) {
+         const followUp = await sendMessengerMessage(recipient.messenger_psid, { text: messengerContent.followUpText });
+         console.log(`[borrowerNotification] Messenger cash-out question → ${followUp.ok ? 'sent' : `not sent (${followUp.reason})`}`);
+      }
+      // Every outcome is logged, so "did the bot tell them?" is one log search (a borrower's funded
       // message on 2026-10-01 was skipped with no trace).
       console.log(`[borrowerNotification] Messenger "${type}" for ${loan?.tracking_id ?? '?'} → ${result.ok ? 'sent' : `not sent (${result.reason})`}`);
    } else if (messengerContent) {

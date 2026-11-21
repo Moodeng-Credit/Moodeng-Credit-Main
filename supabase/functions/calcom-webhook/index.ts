@@ -7,12 +7,13 @@ import { postDiscord } from '../_shared/discord.ts';
 import { BORROWER_COLUMNS, type BorrowerRow, getCallChangesChatId, notifyBorrower, PAGE_INBOX_URL, who } from '../_shared/loanAccess.ts';
 import { needsPreKycGate } from '../_shared/preKycGate.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
-import { changeTimeButton } from '../_shared/callReschedule.ts';
+import { changeTimeLinkButton, isValidChangeTimeToken } from '../_shared/callReschedule.ts';
 import { cancelCallButton } from '../_shared/callCancel.ts';
 import { testAccountRow } from '../_shared/testAccount.ts';
-import { formatCallTimeForTeam, sendMovedMessenger } from '../_shared/videoCall.ts';
+import { buildRescheduleUrl, formatCallTimeForTeam, sendMovedMessenger } from '../_shared/videoCall.ts';
 import { extractBooking, verifySignature, type CalcomWebhookBody } from './parse.ts';
 import { sendIdTelegram } from '../_shared/idTrack.ts';
+import { autoRejectForStrikes, logCallEvent, teamMovedRecently } from '../_shared/callStrikes.ts';
 
 // Cal.com webhook — the server-side "did they actually book it" gate for the no-referral video
 // call, replacing the client-asserted mark_video_call_scheduled RPC.
@@ -35,7 +36,31 @@ const jsonResponse = (body: Record<string, unknown>, status = 200) =>
 const SCHEDULED_EVENTS = new Set(['BOOKING_CREATED', 'BOOKING_RESCHEDULED']);
 const CANCELLED_EVENTS = new Set(['BOOKING_CANCELLED', 'BOOKING_REJECTED']);
 
+// Plain text: Supabase serves function responses on its own domain as text, not HTML.
+const textResponse = (message: string, status = 200) => new Response(message, { status, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+
+// 🔄 Change time on the team's Telegram call cards (changeTimeLinkButton): note it as a team move,
+// so the coming BOOKING_RESCHEDULED isn't a strike against the borrower, then open the booking's
+// Cal.com reschedule page.
+const openCalReschedule = async (url: URL): Promise<Response> => {
+   const userId = (url.searchParams.get('move') ?? '').toLowerCase();
+   const token = url.searchParams.get('t') ?? '';
+   if (!/^[0-9a-f-]{36}$/.test(userId) || !(await isValidChangeTimeToken(userId, token))) return textResponse('This link isn’t valid.', 403);
+   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+   const { data } = await supabase.from('users').select('video_call_booking_uid, video_call_starts_at').eq('id', userId).maybeSingle();
+   const row = data as { video_call_booking_uid?: string | null; video_call_starts_at?: string | null } | null;
+   if (!row?.video_call_booking_uid || !row.video_call_starts_at || Date.parse(row.video_call_starts_at) <= Date.now()) {
+      return textResponse('They don’t have an upcoming call booked anymore.');
+   }
+   await logCallEvent(supabase, userId, 'team_moved', row.video_call_starts_at);
+   return new Response(null, { status: 302, headers: { Location: buildRescheduleUrl(row.video_call_booking_uid) } });
+};
+
 serve(async (req) => {
+   if (req.method === 'GET' && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+      const url = new URL(req.url);
+      if (url.searchParams.has('move')) return await openCalReschedule(url);
+   }
    if (req.method !== 'POST') {
       return new Response('Method Not Allowed', { status: 405 });
    }
@@ -125,6 +150,12 @@ serve(async (req) => {
 
       // Moved (by the borrower or by us, via 🔄 Change time or Cal.com): tell the call-changes group.
       const previousStart = (current as { video_call_starts_at?: string | null } | null)?.video_call_starts_at ?? null;
+      // They moved it themselves (Cal.com's reschedule link): a reschedule strike. The 3rd one
+      // rejects them automatically (the moved call is cancelled, they're told why).
+      if (!error && rescheduleOfCurrent && timeMoved && previousStart && booking.startsAt && !(await teamMovedRecently(supabase, booking.userId))) {
+         await logCallEvent(supabase, booking.userId, 'moved', booking.startsAt);
+         if (await autoRejectForStrikes(supabase, booking.userId)) return jsonResponse({ ok: true, rejected: true });
+      }
       if (!error && rescheduleOfCurrent && timeMoved && previousStart && booking.startsAt) {
          const { data: borrower } = await supabase.from('users').select(BORROWER_COLUMNS).eq('id', booking.userId).maybeSingle();
          if (borrower) {
@@ -140,7 +171,7 @@ serve(async (req) => {
                if (chat) {
                   await sendTelegramMessage(chat, text, {
                      inlineKeyboard: [
-                        [changeTimeButton(b.id), cancelCallButton(b.id)],
+                        [await changeTimeLinkButton(b.id), cancelCallButton(b.id)],
                         [{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }, openInAdminButton(b.id, b.username)],
                         ...testAccountRow(b.id, b.is_test)
                      ]

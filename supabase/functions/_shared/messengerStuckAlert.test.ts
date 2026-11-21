@@ -6,6 +6,7 @@ import {
    buildMessengerVerifyCallback,
    buildStuckEmail,
    buildStuckTelegram,
+   connectedTwin,
    isEmailable,
    markMessengerVerified,
    parseMessengerVerifyCallback,
@@ -209,4 +210,24 @@ Deno.test('markMessengerVerified: already verified is a friendly no-op', async (
 Deno.test('markMessengerVerified: unknown borrower', async () => {
    const result = await markMessengerVerified(fakeDb(null, null), USER_ID, '@george');
    assertEquals(result, { ok: false, summary: 'Borrower not found.' });
+});
+
+Deno.test('alert: a same-email guest account with Facebook connected = second account, not stuck', () => {
+   const code = { code: 'MDNG-044A1B', user_id: USER_ID, created_at: '2026-09-29T07:22:25Z' };
+   const twins = [
+      { id: 'g-2', username: 'aya-old', messenger_verified_at: null, is_guest: true },
+      { id: 'g-1', username: 'aya', messenger_verified_at: '2026-09-29T07:00:00Z', is_guest: true }
+   ];
+   const twin = connectedTwin(twins);
+   assertEquals(twin?.id, 'g-1');
+   const text = buildMessengerStuckAlert(borrower(), code, NOW, 'twin_skipped', twin);
+   assertEquals(text.startsWith('👯 Second account — Aya'), true);
+   assertEquals(text.includes('Same person as @aya: that guest account (Facebook-browser sign-up) has the same email and Facebook IS connected.'), true);
+   assertEquals(text.includes("We didn't email them"), true);
+   assertEquals(text.includes('Mark Facebook verified'), false);
+
+   const unconnected = buildMessengerStuckAlert(borrower(), code, NOW, 'sent', twins[0]);
+   assertEquals(unconnected.startsWith('📵 Facebook not confirmed — Aya'), true);
+   assertEquals(unconnected.includes("👯 Same email as @aya-old's guest account"), true);
+   assertEquals(connectedTwin([]), null);
 });

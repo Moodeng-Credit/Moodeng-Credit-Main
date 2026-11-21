@@ -431,8 +431,8 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Wallet Not Added': 'Hindi pa naidagdag ang wallet',
    'Change wallet': 'Palitan ang wallet',
    'Connection Failed': 'Hindi nakakonekta',
-   'Borrowers use the Moodeng Instant Wallet, created from your login — or you can connect a Base Account instead. Other wallet connectors cannot be locked for Moodeng borrowing.':
-      'Ginagamit ng mga borrower ang Moodeng Instant Wallet, na ginagawa mula sa login mo — o puwede ka ring magkonekta ng Base Account. Hindi puwedeng i-lock ang ibang wallet connector para sa paghiram sa Moodeng.',
+   'Use your Moodeng Instant Wallet or a Base Account. Other wallets can’t be used to borrow.':
+      'Gamitin ang Moodeng Instant Wallet mo o isang Base Account. Hindi puwedeng gamitin ang ibang wallet sa paghiram.',
    "We couldn't detect a wallet. Set up your Instant Wallet (or connect a Base Account if you prefer) to continue.":
       'Walang nakitang wallet. I-set up ang Instant Wallet mo (o magkonekta ng Base Account kung mas gusto mo) para magpatuloy.',
    'Browse Guides': 'Tingnan ang mga gabay',
@@ -557,8 +557,8 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'The rule': 'Ang rule',
    'Full limit': 'Buong limit',
    'On-time repayment': 'On-time na pagbabayad',
-   'If your limit is $15, a $15 credit-building loan can unlock $20. A smaller loan builds trust, but it does not level you up.':
-      'Kung $15 ang limit mo, puwedeng mag-unlock ng $20 ang $15 na credit-building loan. Bumubuo ng tiwala ang mas maliit na loan, pero hindi ka nito pinapa-level up.',
+   'If your limit is $15, a $15 credit-building loan can unlock $25. A smaller loan builds trust, but it does not level you up.':
+      'Kung $15 ang limit mo, puwedeng mag-unlock ng $25 ang $15 na credit-building loan. Bumubuo ng tiwala ang mas maliit na loan, pero hindi ka nito pinapa-level up.',
    'How it works': 'Paano ito gumagana',
    'The level-up path is simple': 'Simple ang daan para mag-level up',
    'Credit Leveling rewards one specific pattern: a full-limit request followed by a clean repayment.':

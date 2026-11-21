@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { sendEmail } from '../_shared/email.ts';
+import { isServerCaller } from '../_shared/internalAuth.ts';
 import { isPlaceholderEmail } from '../_shared/placeholderEmail.ts';
 import { getTelegramBotSettingEnabled } from '../_shared/borrowerNotificationDelivery.ts';
 import {
@@ -14,6 +15,8 @@ import {
 import { sendPushToUser } from '../_shared/pushDelivery.ts';
 import { buildRepaymentReceivedPushPayload } from '../_shared/pushMessages.ts';
 import { postLoanRepaidToTeam } from '../_shared/teamLoanFeed.ts';
+import { postRepayNextLoanRead } from '../_shared/repayNextLoanRead.ts';
+import { loadRewardTiming, repaidTimingLines } from '../_shared/rewardTiming.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import {
    calculateTrustPointRewardDelta,
@@ -32,6 +35,7 @@ const corsHeaders = {
 };
 
 type SupabaseClient = any;
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void } | undefined;
 type MilestoneCompletionRow = { milestone_id: string; completed_at: string };
 
 const hasNotificationBeenSent = async (
@@ -119,18 +123,23 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: corsHeaders });
    }
 
+   const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+
+   // Server only (confirm-loan-payment / Indonesia repayments invoke this with the service-role key).
+   if (!(await isServerCaller(supabase, req))) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+   }
+
    const { loanId } = await req.json().catch(() => ({}));
 
    if (!loanId) {
       return new Response(JSON.stringify({ error: 'loanId is required' }), { status: 400, headers: corsHeaders });
    }
 
-   const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
-
    const { data: loan, error: loanError } = await supabase
       .from('loans')
       .select(
-         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, funded_at, lender_user_id, lender_wallet, hash, repayment_status, updated_at, market, repay_idr, repaid_idr'
+         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, funded_at, lender_user_id, lender_wallet, hash, repayment_status, updated_at, market, repay_idr, repaid_idr, repaid_at, reason, referral_code_id, is_test'
       )
       .eq('id', loanId)
       .maybeSingle();
@@ -153,7 +162,7 @@ serve(async (req) => {
 
    const { data: borrower, error: borrowerError } = await supabase
       .from('users')
-      .select('id, username, telegram_username, email, cs, is_world_id, is_didit, chat_id, market, preferred_locale')
+      .select('id, username, telegram_username, email, cs, is_world_id, is_didit, chat_id, market, preferred_locale, facebook_name, facebook_profile_url')
       .eq('id', loan.borrower_user_id)
       .maybeSingle();
 
@@ -207,14 +216,26 @@ serve(async (req) => {
          type: 'repayment_team_feed'
       });
       if (teamFeedEnabled && teamChatId && !teamAlreadySent) {
-         const { text, actionUrl } = buildRepaymentTeamFeedMessage(loan, borrower, lender);
-         await sendTelegramMessage(teamChatId, text, {
+         const { text: feedText, actionUrl } = buildRepaymentTeamFeedMessage(loan, borrower, lender);
+         // How long they held it; before the halfway day it earns no voucher, and the team can unlock it.
+         const unlockHandle = borrower.username && !/\s/.test(borrower.username) ? `@${borrower.username}` : borrower.id;
+         const timingLines = repaidTimingLines(await loadRewardTiming(supabase, loan.id), unlockHandle);
+         const text = [feedText, ...timingLines].join('\n');
+         const card = await sendTelegramMessage(teamChatId, text, {
             inlineKeyboard: [[{ text: 'View loan', url: actionUrl }]]
          });
          await supabase
             .from('loan_notifications')
             .insert({ loan_id: loan.id, user_id: borrower.id, notification_type: 'repayment_team_feed' });
          teamFeedSent = true;
+         // DeepSeek "ready for the next loan?" read, as a reply under the card. Runs after the response
+         // so the borrower/lender messages aren't held up by the AI call.
+         if (!loan.is_test) {
+            const replyTo = (card as { message_id?: number } | null)?.message_id;
+            const work = postRepayNextLoanRead(supabase, loan, teamChatId, replyTo);
+            if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(work);
+            else await work;
+         }
       }
    } catch (teamFeedError) {
       console.error('repayment team feed failed', teamFeedError instanceof Error ? teamFeedError.message : teamFeedError);

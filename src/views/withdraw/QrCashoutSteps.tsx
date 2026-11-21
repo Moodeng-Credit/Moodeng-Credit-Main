@@ -1,15 +1,13 @@
 import { useCallback, useRef, useState } from 'react';
 
-import { Camera, Check, ImageUp, Loader2, QrCode } from 'lucide-react';
-
-import GuideCards, { type GuideCard } from '@/components/guide/GuideCards';
+import { Camera, Check, ChevronDown, ImageUp, Loader2, QrCode } from 'lucide-react';
 
 import { useUsdcRate } from '@/lib/useUsdcRate';
 import { Card, DoneRow, GoldButton, SoftButton, StepHead } from '@/views/indonesia/ui';
 import { readQrFromImage, useQrCamera } from '@/views/payQr/qrReader';
 
-// Cash out to your own bank's QR (InstaPay / QR Ph "Receive" QR), in the same gold step-by-step look as
-// the PDAX / GCrypto guides: 1 get your QR from your bank app (picture cards), 2 type the pesos. The
+// Cash out to your own bank's QR (InstaPay / QR Ph "Receive" QR), in the same gold look as the PDAX /
+// GCrypto guides: 1 add your QR (an example picture, 3 short lines, one gold button), 2 type the pesos. The
 // price, the send and the payout tracker come after, from BankPayoutFlow (same Stableyard account and
 // one-time setup as the bank cash-out). Money only moves on its Confirm.
 
@@ -18,6 +16,12 @@ export type DecodeReply = { ok: boolean; name?: string; code?: string | null; er
 const TRAIL = ['Your QR', 'Pesos', 'Cash out'];
 // Same rough fee share as the bank card (Stableyard 0.5% + their payout partner); the real figure is on the price screen.
 const FEE_SHARE = 0.022;
+// How to get the QR, in as few words as it takes. The pictures open under "Where is my QR?".
+const HOW = ['Open your bank app', 'Tap Receive or QR', 'Save it or screenshot'];
+const HELP_PICTURES = [
+   { img: '/cashout-guides/qr/step1-receive.svg', text: 'Tap Receive' },
+   { img: '/cashout-guides/qr/step2-save.svg', text: 'Tap Save QR' }
+];
 
 /** The 3 dots on top (same look as the exchange cash-out trail). */
 export function QrTrail({ step }: { step: 0 | 1 | 2 }) {
@@ -109,6 +113,7 @@ export default function QrCashoutSteps({
    const [scanning, setScanning] = useState(false);
    const [qrError, setQrError] = useState('');
    const [notTaken, setNotTaken] = useState(false);
+   const [showHelp, setShowHelp] = useState(false);
    const fileRef = useRef<HTMLInputElement>(null);
    const { value: phpPerUsdc } = useUsdcRate('php');
 
@@ -141,77 +146,96 @@ export default function QrCashoutSteps({
       setQrError('No QR in that picture. Try a clearer screenshot.');
    };
 
-   // ── Step 1: get your QR from your bank app, then add it ──────────
+   // ── Step 1: add your QR. One card: what it looks like, 3 short lines, one gold button. ──
    if (!hasQr) {
-      const cards: GuideCard[] = [
-         {
-            key: 'open',
-            title: 'Open your bank app',
-            text: 'Any PH bank with InstaPay.',
-            img: '/cashout-guides/qr/step1-receive.svg'
-         },
-         {
-            key: 'save',
-            title: 'Tap Receive, then Save QR',
-            path: 'Receive → QR Ph → Save QR',
-            text: 'A screenshot works too.',
-            img: '/cashout-guides/qr/step2-save.svg'
-         }
-      ];
-      const addQr = (
-         <Card>
-            <div className="flex items-start gap-3">
-               <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#ffd75a] text-[17px] font-extrabold text-[#4a2a00]">
-                  3
-               </span>
-               <div className="min-w-0 flex-1">
-                  <h3 className="text-[20px] font-extrabold leading-[24px] tracking-[-0.01em]">Add your QR here</h3>
-                  <p className="mt-1 text-[16px] leading-[21px] text-[#5c4d36] dark:text-[#d8ccb4]">Your own QR, in your name.</p>
-               </div>
-            </div>
-            {scanning ? (
-               <CameraView onCode={read} onClose={() => setScanning(false)} />
-            ) : (
-               <>
-                  <input
-                     ref={fileRef}
-                     type="file"
-                     accept="image/*"
-                     className="hidden"
-                     onChange={(e) => {
-                        void onPhoto(e.target.files?.[0]);
-                        e.target.value = '';
-                     }}
-                  />
-                  {reading ? (
-                     <p className="flex items-center justify-center gap-2 py-3 text-[16px] font-bold text-[#6b4a00] dark:text-[#ffd36b]">
-                        <Loader2 aria-hidden="true" className="size-5 animate-spin" strokeWidth={3} /> Reading your QR…
-                     </p>
-                  ) : (
-                     <>
-                        <GoldButton onClick={() => fileRef.current?.click()}>
-                           <ImageUp aria-hidden="true" className="size-5" strokeWidth={2.6} /> Upload your QR
-                        </GoldButton>
-                        <SoftButton onClick={() => setScanning(true)}>
-                           <Camera aria-hidden="true" className="size-5" /> Scan it with the camera
-                        </SoftButton>
-                     </>
-                  )}
-                  {qrError ? (
-                     <div className="flex flex-col gap-2 rounded-[14px] bg-[#fff1f0] px-3 py-3 dark:bg-[#3a1614]">
-                        <p className="text-center text-[15px] font-bold text-[#c0392b] dark:text-[#ff8a7a]">{qrError}</p>
-                        {notTaken && onUseBank ? <SoftButton onClick={onUseBank}>Use my account number instead</SoftButton> : null}
-                     </div>
-                  ) : null}
-               </>
-            )}
-         </Card>
-      );
       return (
          <div className="flex flex-col gap-4 pb-6 text-[#2b2116] dark:text-[#f5efe3]">
             <QrTrail step={0} />
-            <StepHead image="/hippos/connect/code-copied.png" title="Your bank's QR" subtitle="Pesos go straight to your bank." />
-            <GuideCards appName="Your QR" cards={cards} finalStep={addQr} memoryKey="moodeng-cashout-guide:qr" />
+            <StepHead image="/hippos/connect/code-copied.png" title="Add your bank's QR" subtitle="Pesos go straight to your bank." />
+            <Card>
+               {scanning ? (
+                  <CameraView onCode={read} onClose={() => setScanning(false)} />
+               ) : (
+                  <>
+                     <div className="flex items-center gap-4">
+                        <figure className="w-[104px] shrink-0">
+                           <img
+                              src="/cashout-guides/qr/example-qr.webp"
+                              alt="Example of a bank QR"
+                              width={104}
+                              height={131}
+                              className="w-full rounded-[12px] border-2 border-[#ecdfb8] bg-white dark:border-[#4a3d1c]"
+                           />
+                           <figcaption className="mt-1 text-center text-[12px] font-bold uppercase tracking-[0.04em] text-[#9a8a6a] dark:text-[#bfb29a]">
+                              Example
+                           </figcaption>
+                        </figure>
+                        <ol className="flex min-w-0 flex-1 flex-col gap-3">
+                           {HOW.map((line, i) => (
+                              <li key={line} className="flex items-center gap-2.5 text-[16px] font-bold leading-[20px]">
+                                 <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#fff1c2] text-[14px] font-extrabold text-[#6b4a00] dark:bg-[#3a2e10] dark:text-[#ffe27a]">
+                                    {i + 1}
+                                 </span>
+                                 {line}
+                              </li>
+                           ))}
+                        </ol>
+                     </div>
+                     <input
+                        ref={fileRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                           void onPhoto(e.target.files?.[0]);
+                           e.target.value = '';
+                        }}
+                     />
+                     {reading ? (
+                        <p className="flex items-center justify-center gap-2 py-3 text-[16px] font-bold text-[#6b4a00] dark:text-[#ffd36b]">
+                           <Loader2 aria-hidden="true" className="size-5 animate-spin" strokeWidth={3} /> Reading your QR…
+                        </p>
+                     ) : (
+                        <>
+                           <GoldButton onClick={() => fileRef.current?.click()}>
+                              <ImageUp aria-hidden="true" className="size-5" strokeWidth={2.6} /> Upload my QR
+                           </GoldButton>
+                           <SoftButton onClick={() => setScanning(true)}>
+                              <Camera aria-hidden="true" className="size-5" /> Scan with camera
+                           </SoftButton>
+                        </>
+                     )}
+                     {qrError ? (
+                        <div className="flex flex-col gap-2 rounded-[14px] bg-[#fff1f0] px-3 py-3 dark:bg-[#3a1614]">
+                           <p className="text-center text-[15px] font-bold text-[#c0392b] dark:text-[#ff8a7a]">{qrError}</p>
+                           {notTaken && onUseBank ? <SoftButton onClick={onUseBank}>Use my account number instead</SoftButton> : null}
+                        </div>
+                     ) : null}
+                     <button
+                        type="button"
+                        onClick={() => setShowHelp((v) => !v)}
+                        aria-expanded={showHelp}
+                        className="flex min-h-[44px] items-center justify-center gap-1 text-[15px] font-bold text-[#6b55f7] dark:text-[#b3a6ff]"
+                     >
+                        Where is my QR?
+                        <ChevronDown aria-hidden="true" className={`size-4 transition-transform ${showHelp ? 'rotate-180' : ''}`} strokeWidth={3} />
+                     </button>
+                     {showHelp ? (
+                        <div className="grid grid-cols-2 gap-3">
+                           {HELP_PICTURES.map((pic) => (
+                              <figure key={pic.img}>
+                                 <img src={pic.img} alt="" className="aspect-[10/7] w-full rounded-[12px] bg-[#fff4d6] object-cover dark:bg-[#2a2335]" />
+                                 <figcaption className="mt-1.5 text-center text-[14px] font-bold leading-[18px]">{pic.text}</figcaption>
+                              </figure>
+                           ))}
+                           <p className="col-span-2 text-center text-[14px] leading-[19px] text-[#7a6a4f] dark:text-[#bfb29a]">
+                              It must be your own QR, in your name.
+                           </p>
+                        </div>
+                     ) : null}
+                  </>
+               )}
+            </Card>
          </div>
       );
    }

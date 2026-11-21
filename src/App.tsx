@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
+import { useQueryClient } from '@tanstack/react-query';
 import posthog from 'posthog-js';
 import { useSelector } from 'react-redux';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
@@ -48,9 +49,11 @@ import AuthVerifyCode from '@/app/auth/verify-code/page';
 import Benefits from '@/app/benefits/page';
 import BlogDetailPage from '@/app/blogs/[slug]/page';
 import BlogsPage from '@/app/blogs/page';
+import ConnectLinesPreview from '@/app/connect/ConnectLinesPreview';
+import ConnectLinesPage from '@/app/connect/page';
 import CreditLevelingGuidePage from '@/app/credit-leveling-guide/page';
 import DataDeletionPage from '@/app/data-deletion/page';
-import DocumentsPage from '@/app/documents/page';
+import DocumentsPage, { DocumentsPreview } from '@/app/documents/page';
 import ForgotPassword from '@/app/forgot-password/page';
 import Guide from '@/app/guide/page';
 import HelpPage from '@/app/help/page';
@@ -76,6 +79,7 @@ import WalletConnect from '@/app/onboarding/wallet/page';
 import OnboardingWelcome from '@/app/onboarding/welcome/page';
 // Import pages
 import Home from '@/app/page';
+import PartnerInvitePage from '@/app/partner/page';
 import PrivacyPolicyPage from '@/app/privacy-policy/page';
 import PrivacyPage from '@/app/privacy/page';
 import Profile from '@/app/profile/page';
@@ -83,6 +87,8 @@ import ProofRequestPage from '@/app/proof/page';
 import { PROOF_PAGE_SAMPLE } from '@/app/proof/sample';
 import ResetPassword from '@/app/reset-password/page';
 import RoleSelection from '@/app/role-selection/page';
+import type { PhotoPreview } from '@/app/screen/LivePhoto';
+import PreScreeningPage, { type ScreenStage } from '@/app/screen/page';
 import SignOutPage from '@/app/sign-out/page';
 import SignUp from '@/app/signup/page';
 import Simple from '@/app/simple/page';
@@ -110,6 +116,7 @@ import WhyLend from '@/app/whylend/page';
 import { clarityEvent, clarityTag, identifyClarity, isClarityEnabled, signupMethodLabel } from '@/lib/analytics/clarity';
 import { describeBrowser, recordSignupContext, recordSignupSource } from '@/lib/attribution';
 import { trackNewAccount } from '@/lib/metaPixel';
+import { claimPreScreening, joinPrescreenPath, redeemParkedTeamCode } from '@/lib/preScreening';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { type RootState } from '@/store/store';
 import MoneyGuide from '@/views/academy/MoneyGuide';
@@ -120,6 +127,7 @@ import AccountSettings from '@/views/account/AccountSettings';
 import AccountWalletPreview from '@/views/account/AccountWalletPreview';
 import SettingsStylePreview from '@/views/account/SettingsStylePreview';
 import CreditLineLenderPage from '@/views/creditline/CreditLineLenderPage';
+import RepaidCreditLinePage from '@/views/creditline/RepaidCreditLinePage';
 import DashboardV2 from '@/views/dashboard-v2/DashboardV2';
 import DashboardV2Milestones from '@/views/dashboard-v2/DashboardV2Milestones';
 import { DashboardV2InviteLanding, DashboardV2Referral } from '@/views/dashboard-v2/DashboardV2Rewards';
@@ -132,7 +140,7 @@ import IdOnboarding, { IdOnboardingPreview } from '@/views/indonesia/IdOnboardin
 import MoneyHub from '@/views/money/MoneyHub';
 import ContinuePage from '@/views/onboarding/ContinuePage';
 import MessengerHandoff from '@/views/onboarding/MessengerHandoff';
-import InterestReferralPage from '@/views/referral/InterestReferralPage';
+import VerifyFirst from '@/views/onboarding/VerifyFirst';
 import DirectRepay, { WalletPaused, WalletSuspendedGate } from '@/views/repay/DirectRepay';
 import Repay from '@/views/repay/Repay';
 import TransactionDetail from '@/views/transactions/TransactionDetail';
@@ -174,6 +182,17 @@ const REPAY_CONTINUATION_ROUTES = [
    '/verify-world-id'
 ];
 
+// Borrower / lender homes and onboarding steps an affiliate is sent away from (to /affiliate).
+const AFFILIATE_BOUNCE_ROUTES = [
+   '/dashboard',
+   '/request-board',
+   '/lender/dashboard',
+   '/onboarding/role',
+   '/onboarding/welcome',
+   '/onboarding/connect',
+   '/onboarding/congratulations'
+];
+
 // An account this young when the app first sees it signed in is a fresh sign-up (same as the Meta pixel).
 const CLARITY_NEW_ACCOUNT_WINDOW_MS = 30 * 60 * 1000;
 
@@ -187,9 +206,12 @@ const canShowPreviewRoutes = () => {
 export default function App() {
    const location = useLocation();
    const isPosthogEnabled = import.meta.env.PROD && Boolean(import.meta.env.VITE_PUBLIC_POSTHOG_KEY);
+   // The PostHog person we identified, so reset() runs only on a real sign-out (see below).
+   const posthogUserRef = useRef<string | null>(null);
    usePostLoginReturn();
    usePendingInviteRedemption();
    const { user, username, isAuthChecked } = useSelector((state: RootState) => state.auth);
+   const queryClient = useQueryClient();
    // A new loan's due day is measured in the borrower's own time zone, so keep it current.
    useRecordDeviceTimezone(user?.id);
    const userLoansFetchedAt = useSelector((state: RootState) => state.loans.userLoansFetchedAt);
@@ -238,6 +260,13 @@ export default function App() {
       if (user?.id) {
          recordSignupSource(user.id);
          recordSignupContext(user.id);
+         claimPreScreening(user.id);
+         // Came from a team-code pre-screening link (moodeng.app/screen/MAHJID): attach that code.
+         void redeemParkedTeamCode(user.createdAt);
+         // Came from an affiliate's pre-screening link: Facebook → pre-screening → team ✅ → wallet.
+         void joinPrescreenPath().then((joined) => {
+            if (joined) void queryClient.invalidateQueries({ queryKey: ['prescreen-path'] });
+         });
          trackNewAccount(user.id, user.createdAt);
       }
    }, [user?.id, user?.createdAt]);
@@ -286,11 +315,23 @@ export default function App() {
             posthog.setPersonProperties(personProperties);
          }
          identifyClarity(user.id);
+         posthogUserRef.current = user.id;
          return;
       }
 
-      posthog.reset();
+      // Only when someone who was signed in signs out. On every page load the user is briefly null while
+      // the session loads; resetting then gave each visit a fresh anonymous id, so one visit showed up in
+      // PostHog as 2–3 people (Nov 2026: 6 of 18 "people" on /screen were such duplicates).
+      if (posthogUserRef.current) {
+         posthog.reset();
+         posthogUserRef.current = null;
+      }
    }, [isPosthogEnabled, user?.email, user?.id, user?.username, username]);
+
+   // Affiliates (signed up from a /partner link) never borrow or lend: their home is /affiliate.
+   if (user?.userRole === 'affiliate' && AFFILIATE_BOUNCE_ROUTES.includes(location.pathname)) {
+      return <Navigate to="/affiliate" replace />;
+   }
 
    if (isAccountRestricted && !canRepayWhileBlocked && location.pathname !== '/account-restricted') {
       return <Navigate to="/account-restricted" replace />;
@@ -329,6 +370,8 @@ export default function App() {
             <Route path="/sign-out" element={<SignOutPage />} />
             {/* Facility lender's report (BitRepo): password-protected, no account needed. */}
             <Route path="/creditline" element={<CreditLineLenderPage />} />
+            <Route path="/repaidcreditline" element={<RepaidCreditLinePage />} />
+            <Route path="/creditline/repaid" element={<RepaidCreditLinePage />} />
             {/* Desktop Messenger QR lands here on the phone (no sign-in; the code is the key). */}
             <Route path="/fb/:code" element={<MessengerHandoff />} />
             {/* "Pick up where you left off": the Messenger bot's link back, and the home page's. */}
@@ -386,11 +429,29 @@ export default function App() {
                }
             />
             <Route
+               path="/connect"
+               element={
+                  <ProtectedRoute>
+                     <ConnectLinesPage />
+                  </ProtectedRoute>
+               }
+            />
+            <Route
                path="/onboarding/connect"
                element={
                   <ProtectedRoute>
                      <RoleGuard>
                         <ConnectBeforeKycPage />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/onboarding/verify"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <VerifyFirst />
                      </RoleGuard>
                   </ProtectedRoute>
                }
@@ -409,6 +470,8 @@ export default function App() {
             {import.meta.env.DEV ? <Route path="/onboarding/wallet-blocked-preview" element={<WalletBlocked />} /> : null}
             {import.meta.env.DEV ? <Route path="/onboarding/congratulations-preview" element={<CongratulationsPage />} /> : null}
             {import.meta.env.DEV ? <Route path="/onboarding/connect-preview" element={<ConnectBeforeKycPage />} /> : null}
+            {import.meta.env.DEV ? <Route path="/onboarding/verify-preview" element={<VerifyFirst />} /> : null}
+            {import.meta.env.DEV ? <Route path="/connect-preview" element={<ConnectLinesPreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/account-wallet-preview" element={<AccountWalletPreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/account-settings-preview" element={<SettingsStylePreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/fund-wallet-preview" element={<FundWalletPreview />} /> : null}
@@ -490,22 +553,11 @@ export default function App() {
             />
             <Route
                path="/dashboard/refer"
-               // The referral program refunds interest now; old links land on its page.
-               element={<Navigate to="/refer" replace />}
+               // Old referral links (and the old "Pay zero interest" page) all land on the one affiliate page.
+               element={<Navigate to="/affiliate" replace />}
             />
-            {/* "Pay zero interest": the Request Board's card once the credit line is maxed out. */}
-            <Route
-               path="/refer"
-               element={
-                  <ProtectedRoute>
-                     <RoleGuard>
-                        <InterestReferralPage />
-                     </RoleGuard>
-                  </ProtectedRoute>
-               }
-            />
-            {import.meta.env.DEV ? <Route path="/refer-preview" element={<InterestReferralPage sample />} /> : null}
-            {/* Referral code owners (affiliates, e.g. Belle): their own signups and payouts, no admin needed. */}
+            <Route path="/refer" element={<Navigate to="/affiliate" replace />} />
+            {/* Moo affiliate, for every borrower ($5 per friend) and for code owners like Belle. */}
             <Route
                path="/affiliate"
                element={
@@ -515,6 +567,7 @@ export default function App() {
                }
             />
             {import.meta.env.DEV ? <Route path="/affiliate-preview" element={<AffiliateDashboardPage sample />} /> : null}
+            {import.meta.env.DEV ? <Route path="/documents-preview" element={<DocumentsPreview />} /> : null}
             <Route
                path="/documents"
                element={
@@ -528,6 +581,30 @@ export default function App() {
             {showPreviewRoutes ? <Route path="/proof-preview" element={<ProofRequestPage preview={PROOF_PAGE_SAMPLE} />} /> : null}
             {/* Public: the Sprint SMS test link the team sends testers (moodeng.app/sms-test?t=TOKEN). */}
             <Route path="/sms-test" element={<SmsTestPage />} />
+            {/* Public: the optional pre-screening link affiliates send (moodeng.app/screen/CODE). */}
+            {/* Public: the affiliate-only sign-up link the team makes on /admin (moodeng.app/partner/TOKEN). */}
+            <Route path="/partner/:token" element={<PartnerInvitePage />} />
+            <Route path="/screen" element={<PreScreeningPage />} />
+            <Route path="/screen/:code" element={<PreScreeningPage />} />
+            {import.meta.env.DEV ? (
+               <Route
+                  path="/screen-preview"
+                  element={
+                     <PreScreeningPage
+                        preview={{
+                           stage: (new URLSearchParams(window.location.search).get('stage') as ScreenStage | null) ?? 'intro',
+                           question: Number(new URLSearchParams(window.location.search).get('q') ?? 0),
+                           // v2 steps: photo=ready|live|review|expired, coach=1 (the hint), med=1 (the medical choices),
+                           // send=1 (a video answer sending).
+                           photo: (new URLSearchParams(window.location.search).get('photo') as PhotoPreview | null) ?? undefined,
+                           coach: new URLSearchParams(window.location.search).get('coach') === '1',
+                           med: new URLSearchParams(window.location.search).get('med') === '1',
+                           send: new URLSearchParams(window.location.search).get('send') === '1'
+                        }}
+                     />
+                  }
+               />
+            ) : null}
             {showPreviewRoutes ? (
                <Route
                   path="/sms-test-preview"

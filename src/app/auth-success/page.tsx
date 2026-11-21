@@ -2,13 +2,14 @@ import { type JSX, type ReactNode, useState } from 'react';
 
 import { CheckCircle2, ChevronRight, HelpCircle, KeyRound } from 'lucide-react';
 import { useDispatch } from 'react-redux';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { SetPasswordForm } from '@/components/auth/SetPasswordForm';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
 import { useAuthProvider } from '@/hooks/useAuthProvider';
 
+import { partnerPath, readParkedAffiliateInvite } from '@/lib/affiliateInvite';
 import { buildEmailConfirmationPath } from '@/lib/authPaths';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { logoutUser } from '@/store/slices/authSlice';
@@ -178,6 +179,9 @@ function AccountCreatedView(): JSX.Element {
       navigate('/onboarding/role', { replace: true });
    };
 
+   // Signed up from an affiliate /partner link: straight back there to finish (they aren't a borrower).
+   const parkedInvite = readParkedAffiliateInvite();
+   if (parkedInvite) return <Navigate to={partnerPath(parkedInvite)} replace />;
    if (askReturning) return <ReturningUserQuestion onNew={() => setAskReturning(false)} />;
 
    return (

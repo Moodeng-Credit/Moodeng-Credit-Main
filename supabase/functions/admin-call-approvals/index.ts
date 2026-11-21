@@ -10,12 +10,16 @@ import {
    decideLoanAccess,
    loanAccessStampHeader,
    notifyBorrower,
+   rejectUser,
    REQUEST_COLUMNS,
    who
 } from '../_shared/loanAccess.ts';
 import { checkCallForm } from '../_shared/callFormCheck.ts';
+import { fbStepsSentForCall } from '../_shared/facebookSteps.ts';
+import { sendFacebookSteps } from '../_shared/facebookStepsSend.ts';
 import { recordCallOutcome } from '../_shared/videoCallOutcome.ts';
 import { idApprovalBlock } from '../_shared/idTrack.ts';
+import { getEffectiveCreditLimit, shiftCreditLevel } from '../_shared/creditAndPoints.ts';
 
 // Call approvals in the admin panel — the same decisions as the Telegram card's buttons and
 // /showed · /noshow · /approve · /reject, so the host can approve a borrower the moment the call
@@ -31,8 +35,14 @@ import { idApprovalBlock } from '../_shared/idTrack.ts';
 //   { action: 'approve_user', userId }  approve from the Directory, call or not: decides their pending
 //                                       request if they have one, else approves them directly
 //                                                             → { ok, summary }
+//   { action: 'reject_user', userId }  call sheet "Lend to them?" = 1: rejects their pending request (or
+//                                       them directly), same as Telegram's Reject  → { ok, summary }
+//   { action: 'send_fb_steps', userId } send the "add Emma + join the group" message now (call sheet
+//                                       button; also the only way on Cal Video calls)  → { ok, channel, sentAt }
 //   { action: 'check_form', userId }    re-run the AI form check on their latest call transcript
 //                                       (after the host edits the sheet)  → { ok, check }
+//   { action: 'credit_level', userId, direction: 'up' | 'down' }  move their limit one ladder step
+//                                       (mistakes, early repay) → { ok, summary, cs }
 // verify_jwt is on; the caller must also be an active admin.
 
 const CORS = {
@@ -43,22 +53,26 @@ const CORS = {
 const json = (body: Record<string, unknown>, status = 200) =>
    new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
 
-// Calls from two days back (late decisions, no-show corrections) to a day ahead.
-const LOOKBACK_H = 48;
-const LOOKAHEAD_H = 24;
+// Calls from 30 days back: the Completed tab (approved / no-show / rejected) — George 2026-11-18:
+// "hard to search for the previous calls". Only the last 2 days can still need a decision.
+const LOOKBACK_H = 30 * 24;
+// Two weeks ahead: every booked call is on the Calls tab (George 2026-11-15: "hard to keep track").
+const LOOKAHEAD_H = 14 * 24;
 
-const USER_COLUMNS = `${BORROWER_COLUMNS}, video_call_outcome, video_call_outcome_at, video_call_join_url, ${ATTENDANCE_COLUMNS}`;
+const USER_COLUMNS = `${BORROWER_COLUMNS}, facebook_name, video_call_outcome, video_call_outcome_at, video_call_join_url, video_call_fb_steps_sent_at, ${ATTENDANCE_COLUMNS}`;
 
 type UserRow = {
    id: string;
    username: string | null;
    email: string | null;
    display_name: string | null;
+   facebook_name: string | null;
    loan_access_status: string | null;
    video_call_starts_at: string | null;
    video_call_outcome: string | null;
    video_call_outcome_at: string | null;
    video_call_join_url: string | null;
+   video_call_fb_steps_sent_at: string | null;
    video_call_host: string | null;
    video_call_meeting_id: string | null;
    video_call_arrived_at: string | null;
@@ -101,7 +115,7 @@ serve(async (req) => {
                .gt('video_call_starts_at', new Date(now - LOOKBACK_H * 3600000).toISOString())
                .lt('video_call_starts_at', new Date(now + LOOKAHEAD_H * 3600000).toISOString())
                .order('video_call_starts_at', { ascending: true })
-               .limit(200),
+               .limit(500),
             svc.from('loan_access_requests').select(REQUEST_COLUMNS).eq('status', 'pending').order('created_at', { ascending: true }).limit(100)
          ]);
          if (callsError) throw new Error(callsError.message);
@@ -127,11 +141,13 @@ serve(async (req) => {
                userId: u.id,
                name: who(u, request?.display_name),
                username: u.username,
+               facebookName: u.facebook_name?.trim() || null,
                loanAccessStatus: u.loan_access_status,
                callStartsAt: u.video_call_starts_at,
                host: u.video_call_host,
                joinUrl: u.video_call_join_url,
                attendance: u.video_call_starts_at ? describeAttendance(u, zoomByHost.get(host) ?? false) : null,
+               fbStepsSentAt: fbStepsSentForCall(u.video_call_fb_steps_sent_at, u.video_call_starts_at) ? u.video_call_fb_steps_sent_at : null,
                outcome: u.video_call_outcome,
                outcomeAt: u.video_call_outcome_at,
                request: request ? { id: request.id, kind: request.kind, reason: request.reason, createdAt: request.created_at } : null
@@ -151,6 +167,28 @@ serve(async (req) => {
             return json({ ok: result.ok, summary: result.summary });
          }
          return json({ error: 'Invalid decision' }, 400);
+      }
+
+      if (body.action === 'credit_level' && typeof body.userId === 'string' && (body.direction === 'up' || body.direction === 'down')) {
+         const { data: row, error: readError } = await svc.from('users').select('id, username, display_name, email, cs').eq('id', body.userId).maybeSingle();
+         if (readError) throw new Error(readError.message);
+         if (!row) return json({ ok: false, summary: 'User not found.' });
+         const person = row as { id: string; username: string | null; display_name: string | null; email: string | null; cs: number | null };
+         const before = person.cs;
+         const shown = getEffectiveCreditLimit(before, true);
+         const next = shiftCreditLevel(before, body.direction);
+         if (next === shown) {
+            return json({ ok: false, summary: `Already at the ${body.direction === 'up' ? 'top' : 'bottom'} ($${shown}) — nothing changed.`, cs: before });
+         }
+         // Compare-and-set on the value we read, so a repayment level-up landing at the same moment
+         // isn't silently overwritten (same pattern as repaymentFollowUps.ts).
+         const update = svc.from('users').update({ cs: next }).eq('id', body.userId);
+         const { data: saved, error: saveError } = await (before === null ? update.is('cs', null) : update.eq('cs', before)).select('id');
+         if (saveError) throw new Error(saveError.message);
+         if (!saved?.length) return json({ ok: false, summary: 'Their limit just changed — reload and try again.' });
+         const summary = `Credit limit $${shown} → $${next} for ${who(person)}.`;
+         await postDiscord({ content: `🎚️ ${summary} (${decidedBy})` }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
+         return json({ ok: true, summary, cs: next });
       }
 
       if (body.action === 'approve_user' && typeof body.userId === 'string') {
@@ -198,6 +236,10 @@ serve(async (req) => {
          return json({ ok: true, summary });
       }
 
+      if (body.action === 'reject_user' && typeof body.userId === 'string') {
+         return json(await rejectUser(svc, body.userId, decidedBy));
+      }
+
       if (body.action === 'check_form' && typeof body.userId === 'string') {
          const { data: latest } = await svc
             .from('call_transcripts')
@@ -210,6 +252,24 @@ serve(async (req) => {
          const check = await checkCallForm(svc, (latest as { id: string }).id);
          if (!check) return json({ ok: false, error: 'The form check failed. Try again in a minute.' }, 502);
          return json({ ok: true, check });
+      }
+
+      if (body.action === 'send_fb_steps' && typeof body.userId === 'string') {
+         const { data: target } = await svc
+            .from('users')
+            .select('id, messenger_psid, chat_id, video_call_starts_at')
+            .eq('id', body.userId)
+            .maybeSingle();
+         if (!target) return json({ ok: false, error: 'Borrower not found.' }, 404);
+         const sent = await sendFacebookSteps(svc, target as { id: string; messenger_psid: string | null; chat_id: string | number | null; video_call_starts_at: string | null }, { force: true });
+         if (!sent.ok) {
+            const why =
+               sent.reason === 'no_contact' || sent.reason === 'no_channel'
+                  ? 'They have no Messenger or Telegram connected. Paste the two links in the Zoom chat.'
+                  : 'Messenger could not deliver it (they may not have messaged the Page in the last 24 hours). Paste the two links in the Zoom chat.';
+            return json({ ok: false, error: why }, 409);
+         }
+         return json({ ok: true, channel: sent.channel, sentAt: new Date().toISOString() });
       }
 
       return json({ error: 'Unknown action' }, 400);

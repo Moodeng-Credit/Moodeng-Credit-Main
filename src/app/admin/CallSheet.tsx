@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { type AdminCallApprovalRow, recheckAdminCallForm } from '@/app/admin/adminSupabase';
+import { type AdminCallApprovalRow, recheckAdminCallForm, rejectAdminUser, sendAdminCallFacebookSteps } from '@/app/admin/adminSupabase';
 import IndonesiaContactCard from '@/app/admin/IndonesiaContactCard';
+import SocialHandlesLine from '@/app/admin/SocialHandlesLine';
 import { type CheckField, currentVerdict, type FormCheck, tallyCheck } from '@/app/admin/callFormCheck';
 import {
    type BotAnswers,
@@ -12,11 +13,18 @@ import {
    type CallTranscript,
    CASH_VIDEOS,
    EXCHANGES,
+   influencerFor,
+   INFLUENCERS,
+   linkReferral,
    loadBotAnswers,
    loadCallSheet,
    loadCallTranscript,
+   loadLoanCap,
+   type LoanCap,
    prefillAnswers,
+   removeLoanCap,
    saveCallScreening,
+   saveLoanCap,
    type ScreeningAnswers
 } from '@/app/admin/callSheetData';
 import ProofRequestComposer from '@/app/admin/ProofRequestComposer';
@@ -294,6 +302,29 @@ function ProfileCard({ profile }: { profile: CallSheetProfile }) {
             {chip(repaid > 0, funded.length ? `${funded.length} loans · ${repaid} repaid` : 'No loans yet')}
          </span>
          <span>
+            <b>Facebook:</b>{' '}
+            {profile.facebookName ? (
+               <a
+                  className="font-semibold text-[#6c5ce7] underline"
+                  href={
+                     profile.facebookProfileUrl ??
+                     `https://www.facebook.com/search/people/?q=${encodeURIComponent(profile.facebookName)}`
+                  }
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  title={profile.facebookProfileUrl ? 'Open their Facebook profile' : 'Search Facebook for this name'}
+               >
+                  {profile.facebookName}
+               </a>
+            ) : profile.facebookProfileUrl ? (
+               <a className="text-[#6c5ce7] underline" href={profile.facebookProfileUrl} rel="noopener noreferrer" target="_blank">
+                  profile
+               </a>
+            ) : (
+               <span className="text-[#9a9a9a]">not connected</span>
+            )}
+         </span>
+         <span>
             <b>Job:</b> {profile.profession ?? '—'} ({label(profile.incomeType)})
          </span>
          <span>
@@ -388,6 +419,92 @@ function BotAnswersCard({ records }: { records: BotAnswers[] }) {
    );
 }
 
+// Loan cap: a ceiling on top of their normal limit. Asking above it holds the request and alerts the
+// team; funding it then needs Override + a reason. Saved on its own (not part of the sheet autosave).
+function LoanCapBox({ userId }: { userId: string }) {
+   const [cap, setCap] = useState<LoanCap | null | undefined>(undefined);
+   const [amount, setAmount] = useState('');
+   const [note, setNote] = useState('');
+   const [busy, setBusy] = useState(false);
+   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+   useEffect(() => {
+      let cancelled = false;
+      loadLoanCap(userId)
+         .then((c) => {
+            if (cancelled) return;
+            setCap(c);
+            setAmount(c ? String(c.capUsd) : '');
+            setNote(c?.note ?? '');
+         })
+         .catch((err) => !cancelled && (setCap(null), setMsg({ ok: false, text: err instanceof Error ? err.message : 'Could not load the cap.' })));
+      return () => {
+         cancelled = true;
+      };
+   }, [userId]);
+
+   const run = async (work: () => Promise<void>, done: string, next: LoanCap | null) => {
+      setBusy(true);
+      setMsg(null);
+      try {
+         await work();
+         setCap(next);
+         setMsg({ ok: true, text: done });
+         return true;
+      } catch (err) {
+         setMsg({ ok: false, text: err instanceof Error ? err.message : 'Could not save the cap.' });
+         return false;
+      } finally {
+         setBusy(false);
+      }
+   };
+   const value = Number(amount);
+   const changed = cap ? value !== cap.capUsd || note.trim() !== cap.note : amount.trim() !== '';
+
+   if (cap === undefined) return <p className="text-[13px] text-[#9b9a97]">Loading…</p>;
+   return (
+      <div className="space-y-1.5">
+         <div className="flex gap-1.5">
+            <div className="relative w-[110px] shrink-0">
+               <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[14px] text-[#9b9a97]">$</span>
+               <input
+                  aria-label="Cap in USD"
+                  className={`${inputClass} pl-6`}
+                  inputMode="decimal"
+                  onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))}
+                  placeholder="none"
+                  value={amount}
+               />
+            </div>
+            <input aria-label="Why capped" className={inputClass} onChange={(e) => setNote(e.target.value)} placeholder="Why (the team sees this)" value={note} />
+         </div>
+         <div className="flex gap-1.5">
+            <button
+               className="h-9 flex-1 rounded-md bg-[#6b55f7] text-[14px] font-semibold text-white transition hover:brightness-110 disabled:opacity-40"
+               disabled={busy || !changed || !(value > 0)}
+               onClick={() =>
+                  void run(() => saveLoanCap(userId, value, note), `Capped at $${value}`, { capUsd: value, note: note.trim(), setAt: new Date().toISOString() })
+               }
+               type="button"
+            >
+               {busy ? 'Saving…' : cap ? 'Update cap' : 'Set cap'}
+            </button>
+            {cap ? (
+               <button
+                  className="h-9 rounded-md border border-[#e3e3e3] px-3 text-[14px] font-semibold text-[#37352f] hover:bg-[#fafafa] disabled:opacity-40"
+                  disabled={busy}
+                  onClick={() => void run(() => removeLoanCap(userId), 'Cap removed', null).then((ok) => ok && (setAmount(''), setNote('')))}
+                  type="button"
+               >
+                  Remove
+               </button>
+            ) : null}
+         </div>
+         {msg ? <p className={`text-[13px] ${msg.ok ? 'text-[#0f7b3f]' : 'text-[#b42318]'}`}>{msg.text}</p> : null}
+      </div>
+   );
+}
+
 export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow; onClose: () => void }) {
    const [profile, setProfile] = useState<CallSheetProfile | null>(null);
    const [screening, setScreening] = useState<CallScreening | null>(null);
@@ -401,6 +518,10 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
    const [botAnswers, setBotAnswers] = useState<BotAnswers[]>([]);
    const [rechecking, setRechecking] = useState(false);
    const [askingProof, setAskingProof] = useState(false);
+   const [fbStepsSentAt, setFbStepsSentAt] = useState<string | null>(row.fbStepsSentAt ?? null);
+   const [sendingFbSteps, setSendingFbSteps] = useState(false);
+   const [rejectNote, setRejectNote] = useState('');
+   const [referralMsg, setReferralMsg] = useState<{ ok: boolean; text: string } | null>(null);
    const savingRef = useRef(false);
    const idRef = useRef<string | null>(null);
 
@@ -436,6 +557,22 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
       setAnswers((a) => ({ ...a, [key]: value }));
       touch();
    };
+   // "Referred by": picking Irish or Mahjid links them to that code right away (not on save).
+   const pickReferrer = async (value: string) => {
+      set('referredBy', value || undefined);
+      setReferralMsg(null);
+      const influencer = INFLUENCERS.find((i) => i.code === value);
+      if (!influencer || influencerFor(profile?.referralCode ?? null) === influencer.code) return;
+      try {
+         const code = await linkReferral(row.userId, influencer.code);
+         setProfile((p) => (p ? { ...p, referralCode: code } : p));
+         setReferralMsg({ ok: true, text: `Linked to ${code}. ${influencer.label} gets paid when they repay.` });
+      } catch (err) {
+         setReferralMsg({ ok: false, text: err instanceof Error ? err.message : 'Could not link the code.' });
+      }
+   };
+   const referredBy = answers.referredBy ?? influencerFor(profile?.referralCode ?? null) ?? '';
+
    const toggleExchange = (name: string) =>
       set(
          'exchanges',
@@ -477,6 +614,33 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
       return () => window.clearTimeout(timer);
    }, [status, save]);
 
+   // "Lend to them?" = 1 is a rejection (George, 2026-11-15): one confirm, then the same Reject as
+   // Telegram — request closed, rejected message sent, booked call cancelled.
+   const pickScore = async (n: number) => {
+      if (score === n) return (setScore(null), touch());
+      if (n !== 1) return (setScore(n), touch());
+      if (!window.confirm('1 = reject. They get the rejected message and can’t book or ask again. Reject them?')) return;
+      const before = score;
+      setScore(1);
+      touch();
+      setRejectNote('Rejecting…');
+      try {
+         const result = await rejectAdminUser(row.userId);
+         setRejectNote(result.summary);
+         // Not rejected (e.g. already approved): don't leave a 1 on the sheet that didn't happen.
+         if (!result.ok) {
+            setScore(before);
+            touch();
+         }
+      } catch (err) {
+         // The reject didn't go through, so the 1 doesn't stand either.
+         setScore(before);
+         touch();
+         setRejectNote('');
+         setError(err instanceof Error ? `Not rejected: ${err.message}` : 'Not rejected — try again.');
+      }
+   };
+
    // Save the sheet first so the check compares against what's on screen.
    const recheck = async () => {
       setRechecking(true);
@@ -489,6 +653,17 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
          setError(err instanceof Error ? err.message : 'Could not re-check the form.');
       } finally {
          setRechecking(false);
+      }
+   };
+   const sendFbSteps = async () => {
+      setSendingFbSteps(true);
+      setError('');
+      try {
+         setFbStepsSentAt((await sendAdminCallFacebookSteps(row.userId)).sentAt);
+      } catch (err) {
+         setError(err instanceof Error ? err.message : 'Could not send the Facebook steps.');
+      } finally {
+         setSendingFbSteps(false);
       }
    };
    const formCheck = transcript?.formCheck ?? null;
@@ -515,6 +690,12 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
    );
 
    const name = profile?.displayName || profile?.username || row.name;
+   const sheetUsername = profile?.username || row.username;
+   const sheetFacebook = profile?.facebookName || row.facebookName;
+   // Title shows every name they go by, so the team can match them to Facebook / Messenger.
+   const aliases = [sheetUsername && sheetUsername !== name ? `@${sheetUsername}` : null, sheetFacebook ? `FB: ${sheetFacebook}` : null]
+      .filter(Boolean)
+      .join(' · ');
    const checks = [
       Boolean(answers.fullName?.trim()),
       Boolean(answers.role?.trim()),
@@ -550,6 +731,7 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
             </div>
             <div className="mx-auto flex max-w-[1100px] flex-wrap items-center gap-x-3 gap-y-1 px-5 py-2">
                <h1 className="min-w-0 truncate text-[18px] font-bold">{name}</h1>
+               {aliases ? <span className="min-w-0 truncate text-[14px] font-semibold text-[#37352f]">{aliases}</span> : null}
                <span className="text-[13px] text-[#7a7a7a]">
                   {row.callStartsAt
                      ? new Date(row.callStartsAt).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' })
@@ -606,6 +788,7 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                   <ProfileCard profile={profile} />
                   {/* Indonesia track: how to reach them (WhatsApp/Telegram/Facebook), Walt address, KYC + income doc. */}
                   <IndonesiaContactCard userId={row.userId} />
+                  <SocialHandlesLine userId={row.userId} />
                   <BotAnswersCard records={botAnswers} />
                   <FormCheckBar answers={answers} busy={rechecking} onRecheck={() => void recheck()} transcript={transcript} />
 
@@ -650,6 +833,25 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                            </Question>
                         </div>
                         <Question n={5} title="How do they know us?" hint="referred by / where they saw us">
+                           <label className="mb-2 flex items-center gap-2 text-[14px] font-semibold">
+                              Referred by
+                              <select
+                                 className={inputClass.replace('w-full', 'w-auto')}
+                                 onChange={(e) => void pickReferrer(e.target.value)}
+                                 value={referredBy}
+                              >
+                                 <option value="">—</option>
+                                 {INFLUENCERS.map((i) => (
+                                    <option key={i.code} value={i.code}>
+                                       {i.label}
+                                    </option>
+                                 ))}
+                                 <option value="other">Someone else / nobody</option>
+                              </select>
+                           </label>
+                           {referralMsg ? (
+                              <p className={`mb-2 text-[13px] ${referralMsg.ok ? 'text-[#0f7b3f]' : 'text-[#b42318]'}`}>{referralMsg.text}</p>
+                           ) : null}
                            <input
                               className={inputClass}
                               onChange={(e) => set('referral', e.target.value)}
@@ -724,6 +926,21 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                               <Choice letter="C" onClick={() => set('addedEmma', !answers.addedEmma)} selected={Boolean(answers.addedEmma)}>
                                  Added Emma Moodeng and Voices Against Unfair Loan on Facebook
                               </Choice>
+                              <div className="flex items-center gap-2 pl-7 text-[11px] text-[#6f6f6f]">
+                                 <button
+                                    className="rounded-md border border-[#d9d4ff] bg-[#f4f1ff] px-2 py-1 font-semibold text-[#6b55f7] disabled:opacity-50"
+                                    disabled={sendingFbSteps}
+                                    onClick={() => void sendFbSteps()}
+                                    type="button"
+                                 >
+                                    {sendingFbSteps ? 'Sending…' : fbStepsSentAt ? 'Send again' : 'Send Facebook steps'}
+                                 </button>
+                                 <span>
+                                    {fbStepsSentAt
+                                       ? `Links sent ${new Date(fbStepsSentAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}. Accept both on Facebook, then tick.`
+                                       : 'Not sent yet. Sends the two links to their Messenger.'}
+                                 </span>
+                              </div>
                               {checkLine('addedEmma')}
                            </div>
                         </Question>
@@ -743,7 +960,7 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                               />
                            </Question>
                         </div>
-                        <Question n={11} title="Lend to them?" hint="1 = no · 5 = great">
+                        <Question n={11} title="Lend to them?" hint="1 = reject · 5 = great">
                            <div className="flex gap-1.5">
                               {[1, 2, 3, 4, 5].map((n) => (
                                  <button
@@ -754,13 +971,17 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                                           : 'border-[#e3e3e3] bg-white text-[#37352f] hover:bg-[#fafafa]'
                                     }`}
                                     key={n}
-                                    onClick={() => (setScore(score === n ? null : n), touch())}
+                                    onClick={() => void pickScore(n)}
                                     type="button"
                                  >
                                     {n}
                                  </button>
                               ))}
                            </div>
+                           {rejectNote ? <p className="mt-1.5 whitespace-pre-line text-[13px] text-[#b42318]">{rejectNote}</p> : null}
+                        </Question>
+                        <Question n={12} title="Loan cap" hint="optional · asking above it needs a team override">
+                           <LoanCapBox userId={row.userId} />
                         </Question>
                      </div>
                   </div>

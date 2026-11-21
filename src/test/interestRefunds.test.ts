@@ -32,3 +32,28 @@ describe('parseMyInterestRefunds', () => {
       expect(parsed.friends[0].refundStatus).toBeNull();
    });
 });
+
+describe('parseMyInterestRefunds affiliate fields', () => {
+   it('defaults affiliate fields when an older database shape is returned', () => {
+      const parsed = parseMyInterestRefunds({ friends: [], totalRefundedUsd: 4 });
+      expect(parsed.isAffiliate).toBe(false);
+      expect(parsed.rewardUsd).toBe(5);
+      expect(parsed.totalEarnedUsd).toBe(4);
+      expect(parsed.owedUsd).toBe(0);
+   });
+
+   it('reads the affiliate shape', () => {
+      const parsed = parseMyInterestRefunds({
+         friends: [{ joinedAt: '2026-11-15T00:00:00Z', repaid: true, refundUsd: '5.00', refundStatus: 'pending', kind: 'cash' }],
+         totalRefundedUsd: '10.00',
+         totalEarnedUsd: '10.00',
+         owedUsd: '5.00',
+         isAffiliate: true,
+         rewardUsd: 5
+      });
+      expect(parsed.isAffiliate).toBe(true);
+      expect(parsed.totalEarnedUsd).toBe(10);
+      expect(parsed.owedUsd).toBe(5);
+      expect(parsed.friends[0].refundUsd).toBe(5);
+   });
+});

@@ -31,7 +31,8 @@ const SCHEMA_VERSION = 1;
 export const LOAN_REQUEST_DRAFT_TTL_MS = 30 * 60 * 1000;
 // A request waiting on the ID check ("Verify ID & send request") can sit through a Didit manual
 // review, which takes hours — over a weekend, days. Keep it 3 days; the send re-validates the terms
-// (e.g. a due date that has since passed) before anything is created.
+// (e.g. a due date that has since passed) before anything is created. Same for a request waiting on
+// proof of income (sendAfterDocs): the team can take a day to review.
 export const SEND_AFTER_VERIFY_TTL_MS = 3 * 24 * 60 * 60 * 1000;
 
 // Which screen of the request flow the borrower was on. Mirrors the boolean step flags inside
@@ -52,6 +53,8 @@ export interface LoanRequestTerms {
    totalRepaymentAmount: string;
    reason: string;
    days: string;
+   /** "In 2 parts" picked (loans over $60). Missing on older drafts = all at once. */
+   payInParts?: boolean;
 }
 
 export interface LoanRequestDraft {
@@ -62,6 +65,11 @@ export interface LoanRequestDraft {
    profileName: string;
    /** Set when the borrower tapped "Verify ID & send request": send it once they're back verified. */
    sendAfterVerify?: boolean;
+   /**
+    * Set when proof of income (the last step) sent them to /documents: every other step is done, so
+    * the request goes out by itself once they're back with a document sent (2026-11-15).
+    */
+   sendAfterDocs?: boolean;
    /**
     * Terms waiting on the ID check that the borrower closed the form on: keep them so the form comes
     * back filled in once they're verified, but let them tap send themselves.
@@ -121,7 +129,7 @@ export function loadLoanRequestDraft(userId: string): LoanRequestDraft | null {
       return null;
    }
 
-   const ttl = record?.sendAfterVerify || record?.prefillOnly ? SEND_AFTER_VERIFY_TTL_MS : LOAN_REQUEST_DRAFT_TTL_MS;
+   const ttl = record?.sendAfterVerify || record?.sendAfterDocs || record?.prefillOnly ? SEND_AFTER_VERIFY_TTL_MS : LOAN_REQUEST_DRAFT_TTL_MS;
    const isStale = typeof record?.savedAt !== 'number' || Date.now() - record.savedAt > ttl;
    if (!record || record.v !== SCHEMA_VERSION || record.userId !== userId || isStale || !record.flow || !record.terms) {
       // A mismatch on account or version is a good moment to drop the dead record; a fresh draft for
@@ -137,6 +145,7 @@ export function loadLoanRequestDraft(userId: string): LoanRequestDraft | null {
       borrowerContext: record.borrowerContext ?? { incomeSetup: '', paydayWindow: '', cashGaps: [] },
       profileName: record.profileName ?? '',
       ...(record.sendAfterVerify ? { sendAfterVerify: true } : {}),
+      ...(record.sendAfterDocs ? { sendAfterDocs: true } : {}),
       ...(record.prefillOnly ? { prefillOnly: true } : {})
    };
 }
@@ -160,5 +169,48 @@ export function clearLoanRequestDraft(): void {
  */
 export function draftIsResumable(draft: LoanRequestDraft): boolean {
    const { flow } = draft;
-   return draft.sendAfterVerify === true || draft.prefillOnly === true || flow.showBorrowerContextStep || flow.showContactsStep || flow.showVideoCallStep || flow.contactsStepDone;
+   return draft.sendAfterVerify === true || draft.sendAfterDocs === true || draft.prefillOnly === true || flow.showBorrowerContextStep || flow.showContactsStep || flow.showVideoCallStep || flow.contactsStepDone;
+}
+
+// What the borrower typed on the first screen (amount, repayment, date, reason), kept apart from the
+// resumable draft above: a stop in the form (proof of income, connecting Messenger/WhatsApp) can take
+// hours, and closing the form drops the draft. The next time the form opens empty it's filled back
+// in, so nobody types their request twice (2026-11-15). Same guards: per user, 3 days, cleared on send.
+const KEPT_TERMS_KEY = 'moodeng-loan-request-kept-terms';
+
+export function saveKeptLoanTerms(userId: string, terms: LoanRequestTerms): void {
+   const store = getStore();
+   if (!store || !userId || !terms.loanAmount || !terms.reason.trim()) return;
+   try {
+      store.setItem(KEPT_TERMS_KEY, JSON.stringify({ userId, savedAt: Date.now(), terms }));
+   } catch {
+      // Private mode / quota: they type it again.
+   }
+}
+
+export function loadKeptLoanTerms(userId: string): LoanRequestTerms | null {
+   const store = getStore();
+   if (!store || !userId) return null;
+   try {
+      const record = JSON.parse(store.getItem(KEPT_TERMS_KEY) ?? 'null') as { userId?: string; savedAt?: number; terms?: LoanRequestTerms } | null;
+      if (!record?.terms || record.userId !== userId) return null;
+      if (typeof record.savedAt !== 'number' || Date.now() - record.savedAt > SEND_AFTER_VERIFY_TTL_MS) {
+         store.removeItem(KEPT_TERMS_KEY);
+         return null;
+      }
+      const { loanAmount, totalRepaymentAmount, reason, days } = record.terms;
+      // A repayment date that has passed since is dropped; the rest still saves typing.
+      const dueStillAhead = Boolean(days) && new Date(days).getTime() > Date.now();
+      return { loanAmount: String(loanAmount ?? ''), totalRepaymentAmount: String(totalRepaymentAmount ?? ''), reason: String(reason ?? ''), days: dueStillAhead ? days : '' };
+   } catch {
+      return null;
+   }
+}
+
+export function clearKeptLoanTerms(): void {
+   try {
+      getStore()?.removeItem(KEPT_TERMS_KEY);
+   } catch {
+      // Stale terms still fail the user and age checks on load.
+   }
 }

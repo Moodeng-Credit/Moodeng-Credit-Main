@@ -156,6 +156,32 @@ export async function recordAdminFunding(payload: {
    if (error) throw new Error(error.message || 'Failed to record funding');
 }
 
+/** Per-borrower cap check for a loan (admin-fund-loan cap_status). */
+export interface LoanCapStatus {
+   capped: boolean;
+   cap: number | null;
+   note: string | null;
+   inUse: number;
+   amount: number;
+   over: boolean;
+   override: { reason: string; at: string; by: string | null; cap: number | null } | null;
+}
+
+export async function getLoanCapStatus(loanId: string): Promise<LoanCapStatus> {
+   const supabase = getSupabaseBrowserClient();
+   const { data, error } = await supabase.functions.invoke('admin-fund-loan', { body: { action: 'cap_status', loanId } });
+   if (error) throw new Error(error.message || 'Could not check the cap');
+   return data as LoanCapStatus;
+}
+
+/** Override a borrower's cap for this loan, with a reason (saved and posted to the team). */
+export async function overrideLoanCap(loanId: string, reason: string): Promise<LoanCapStatus> {
+   const supabase = getSupabaseBrowserClient();
+   const { data, error } = await supabase.functions.invoke('admin-fund-loan', { body: { action: 'cap_override', loanId, reason } });
+   if (error || !data?.ok) throw new Error(data?.error || error?.message || 'Override failed');
+   return data.status as LoanCapStatus;
+}
+
 /** Records a confirmed Loan Note purchase and triggers IOU point award. Returns awarded points (major units). */
 export async function recordLoanNotePurchase(payload: {
    loanId: string;

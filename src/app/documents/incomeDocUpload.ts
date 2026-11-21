@@ -9,8 +9,18 @@ export const MAX_BYTES = 10 * 1024 * 1024;
 export const ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf';
 export const ACCEPTED = new Set(ACCEPT.split(','));
 
+/**
+ * One question about their send, in their language: 'text' = typed answer, 'file' = "can you add more?"
+ * (a new send), 'photo' = one screenshot attached as the answer (payslips: the chat they got it in).
+ */
+export type IncomeDocQuestion = { id: string; q: string; kind: 'text' | 'file' | 'photo' };
+
+export const PHOTO_ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif';
+
 export type IncomeDocStatus = {
+   id: string;
    stage: 'checking' | 'resend' | 'in_review' | 'approved' | 'declined';
+   questions: IncomeDocQuestion[];
    file_count: number;
    sent_at: string;
    reason: string | null;
@@ -21,7 +31,36 @@ export const fetchIncomeDocStatus = async (): Promise<IncomeDocStatus> => {
    const { data, error } = await getSupabaseBrowserClient().rpc('get_my_income_document');
    if (error) return null;
    const row = (Array.isArray(data) ? data[0] : data) as IncomeDocStatus | undefined;
-   return row ?? null;
+   return row ? { ...row, questions: Array.isArray(row.questions) ? row.questions : [] } : null;
+};
+
+/**
+ * Their answer to one of the AI's questions (answer_my_income_doc_question). Returns how many are still
+ * open, or null when it couldn't be saved. The last answer sends them all to the team with a fresh AI read.
+ */
+export const answerIncomeDocQuestion = async (docId: string, questionId: string, answer: string): Promise<number | null> => {
+   const { data, error } = await getSupabaseBrowserClient().rpc('answer_my_income_doc_question', {
+      p_doc: docId,
+      p_qid: questionId,
+      p_answer: answer
+   });
+   return error || typeof data !== 'number' || data < 0 ? null : data;
+};
+
+/**
+ * A screenshot as the answer to a 'photo' question: uploaded to their own folder in income-docs, then
+ * saved as `photo:<path>` (the check reads it from there). Same return as answerIncomeDocQuestion.
+ */
+export const answerIncomeDocQuestionWithPhoto = async (docId: string, questionId: string, file: File): Promise<number | null> => {
+   const supabase = getSupabaseBrowserClient();
+   const { data: auth } = await supabase.auth.getUser();
+   const userId = auth.user?.id;
+   if (!userId || file.size > MAX_BYTES) return null;
+   const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(-80) || 'screenshot';
+   const path = `${userId}/answers/${crypto.randomUUID()}-${safeName}`;
+   const { error } = await supabase.storage.from('income-docs').upload(path, file, { contentType: file.type, upsert: false });
+   if (error) return null;
+   return answerIncomeDocQuestion(docId, questionId, `photo:${path}`);
 };
 
 /**

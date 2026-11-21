@@ -51,7 +51,8 @@ export const applyCreditProgression = async (
       loanAmount: toNumber(loan.loan_amount as number | string | null),
       dueDate: String(loan.due_date),
       dueTimezone: (loan.due_timezone as string | null | undefined) ?? null,
-      paidAt: String(loan.repaid_at ?? loan.updated_at ?? new Date().toISOString())
+      paidAt: String(loan.repaid_at ?? loan.updated_at ?? new Date().toISOString()),
+      fundedAt: (loan.funded_at as string | null | undefined) ?? null
    });
 
    if (!evaluation.shouldLevelUp) return { errors, levelUp: null };

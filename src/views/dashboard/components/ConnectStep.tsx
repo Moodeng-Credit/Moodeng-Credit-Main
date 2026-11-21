@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 
-import { CalendarPlus, Camera, Gift, IdCard, MessagesSquare, ShieldCheck, Sparkles, Unlock, Video, Wallet } from 'lucide-react';
+import { CalendarPlus, Check, Gift, Hourglass, IdCard, Lock, MessagesSquare, ShieldCheck, Sparkles, Unlock, Video, Wallet, X } from 'lucide-react';
 
 import { clarityEvent } from '@/lib/analytics/clarity';
 import { MoreCharactersLabel } from '@/i18n/SentenceLabels';
@@ -21,7 +21,9 @@ import {
    useStepDirection,
    wasCelebrated
 } from '@/views/dashboard/components/connectKit';
+import CallTextReminder from '@/views/dashboard/components/CallTextReminder';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
+import { CALL_READY_ITEMS } from '@/views/dashboard/components/CallReadyCheck';
 import VideoCallStep, { ConfirmLaterNotice } from '@/views/dashboard/components/VideoCallStep';
 
 // PART 1 of Connect → Approve → Apply (docs/HANDOFF_BORROWER_VERIFICATION.md §13) — shown in the
@@ -59,6 +61,8 @@ const ERROR_COPY: Record<string, string> = {
    reason_required: 'Tell us a little about what you need.',
    not_borrower: 'Only borrower accounts can apply for loans.',
    call_not_booked: 'Please book your call first.',
+   verify_first: 'Please send your proof of income and watch the 3 videos first.',
+   prescreen_first: 'Please finish the few questions first — the team looks at them before your call.',
    account_inactive: "Your account can't apply right now. Message us on Messenger for help."
 };
 
@@ -279,20 +283,20 @@ export default function ConnectStep({
                      image={missedCall ? CONNECT_HIPPOS.missed : CONNECT_HIPPOS.hello}
                      subtitle={
                         missedCall
-                             ? `No worries — life happens. Pick a new time for your 15-min call${withEmma ? ' with Emma' : ''}.`
+                             ? `Pick a new time for your 15-min call${withEmma ? ' with Emma' : ''}.`
                              : withEmma
-                               ? 'A quick 15-min call with Emma sets you up to cash out and repay easily.'
+                               ? 'Quick 15-min call with Emma before your first loan.'
                                : context === 'kyc'
-                                 ? "We only use it to message you about your loan — we never post, and we can't see your friends or messages."
+                                 ? 'Only to message you about your loan.'
                                  : mode === 'call'
-                                   ? 'We meet every borrower on a quick 15-min video call before their first loan.'
-                                   : 'Before your first loan, we like to meet every borrower — we approve within a day.'
+                                   ? 'Quick 15-min video call before your first loan.'
+                                   : 'We meet every borrower — approval within a day.'
                      }
                      title={
                         missedCall
                              ? 'We missed you!'
                              : context === 'kyc'
-                               ? 'Connect Facebook so we can reach you'
+                               ? 'Connect Facebook'
                                : "Glad you're here!"
                      }
                      trail={trail('contact')}
@@ -464,6 +468,7 @@ export function LoanAccessRejectedCard({ onClose, retryAt, closeLabel = 'Got it'
             subtitle={retryDay ? `You can ask again from ${retryDay}.` : 'Thank you for your interest in Moodeng.'}
             title={retryDay ? "We can't offer you a loan yet" : "Sorry, we can't offer you a loan"}
          />
+         <ReviewStatusPanel state="rejected" retryDay={retryDay} />
          <div className="mt-auto pt-1">
             <PrimaryButton onClick={onClose}>{closeLabel}</PrimaryButton>
          </div>
@@ -477,9 +482,12 @@ export function LoanAccessPendingCard({
    withEmma = false,
    userId,
    context = 'loan',
-   closeLabel = 'Got it'
+   closeLabel = 'Got it',
+   previewStartsAt
 }: {
    onClose: () => void;
+   // Dev preview only (/onboarding/connect-preview): a fake call time instead of reading the account.
+   previewStartsAt?: string;
    // 'kyc': waiting in onboarding (pre-KYC gate) — they apply right after the call.
    context?: 'loan' | 'kyc';
    closeLabel?: string;
@@ -504,6 +512,10 @@ export function LoanAccessPendingCard({
       confirmed: boolean;
    } | null>(null);
    useEffect(() => {
+      if (previewStartsAt) {
+         setMeeting({ startsAt: previewStartsAt, joinUrl: 'https://zoom.us', confirmToken: null, confirmed: true });
+         return;
+      }
       if (mode !== 'call' || !userId) return;
       let cancelled = false;
       (async () => {
@@ -529,7 +541,7 @@ export function LoanAccessPendingCard({
       return () => {
          cancelled = true;
       };
-   }, [mode, userId]);
+   }, [mode, userId, previewStartsAt]);
    // Shown in the device's own time zone ("your local time"), like Calendly.
    const meetingDay = meeting?.startsAt
       ? new Date(meeting.startsAt).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })
@@ -542,10 +554,13 @@ export function LoanAccessPendingCard({
    // (15-min call + grace) instead of still saying "see you" with a Join button.
    const [now, setNow] = useState(() => Date.now());
    useEffect(() => {
-      const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+      const timer = window.setInterval(() => setNow(Date.now()), 30_000);
       return () => window.clearInterval(timer);
    }, []);
    const startsMs = meeting?.startsAt ? Date.parse(meeting.startsAt) : NaN;
+   // From the call's start time the card stops being a booking card and becomes "Pending approval":
+   // during the call (start → +30 min) with the Join button still there, then waiting on the team.
+   const callStarted = mode === 'call' && !Number.isNaN(startsMs) && now >= startsMs;
    const callOver = mode === 'call' && !Number.isNaN(startsMs) && now > startsMs + CALL_OVER_AFTER_MS;
    const needsConfirm = Boolean(meeting?.confirmToken) && !meeting?.confirmed && !callOver;
    const confirmOpen = needsConfirm && !Number.isNaN(startsMs) && now >= startsMs - CONFIRM_OPENS_MS;
@@ -557,9 +572,9 @@ export function LoanAccessPendingCard({
             image={justBooked ? CONNECT_HIPPOS.approved : CONNECT_HIPPOS.waiting}
             subtitle={
                callOver
-                  ? context === 'kyc'
-                     ? 'The team is approving you — we’ll message you the moment you can apply.'
-                     : 'The team is unlocking your loan request — we’ll message you the moment it’s ready.'
+                  ? 'Thanks for joining! We’ll message you on Messenger.'
+                  : callStarted
+                    ? 'Your call is on now. Join below if you’re not in yet.'
                   : mode === 'call'
                     ? confirmOpen
                        ? 'Your call is in under an hour — tap “I’ll be there” now to keep it.'
@@ -569,8 +584,8 @@ export function LoanAccessPendingCard({
                     : 'Thanks for reaching out! We usually reply within a day on Messenger.'
             }
             title={
-               callOver
-                  ? 'Thanks for joining!'
+               callStarted
+                  ? 'Pending approval'
                   : justBooked
                     ? 'Yeahh! You’re booked 🎉'
                     : mode === 'call'
@@ -581,7 +596,15 @@ export function LoanAccessPendingCard({
             }
          />
 
-         {mode === 'call' ? (
+         {callStarted ? (
+            <ReviewStatusPanel
+               context={context}
+               joinUrl={callOver ? null : meeting?.joinUrl ?? null}
+               meetingLabel={meetingDay && meetingTime ? `${meetingDay} · ${meetingTime}` : null}
+               state={callOver ? 'pending' : 'in_call'}
+               withEmma={withEmma}
+            />
+         ) : mode === 'call' ? (
             <>
                <div className="flex flex-col items-center gap-3 rounded-[18px] border-2 border-[#7661f9] bg-[#f8f1ff] px-4 py-4">
                   <span className="flex items-center gap-2 text-[14px] font-semibold text-[#6b55f7]">
@@ -594,7 +617,7 @@ export function LoanAccessPendingCard({
                         <span className="text-[14px] text-[#7b6b8c]">{meetingDay} · your local time</span>
                      </span>
                   ) : (
-                     <span className="text-[15px] text-[#7b6b8c]">Your time is in your email</span>
+                     <span className="text-[15px] text-[#7b6b8c]">We’ll message you the time</span>
                   )}
                   {/* Same "I'll be there" as the Messenger button (video-call-confirm) — so confirming,
                       and keeping the call from being cancelled, never depends on Messenger alone.
@@ -637,6 +660,9 @@ export function LoanAccessPendingCard({
                   ) : null}
                </div>
 
+               {/* The call texted to their phone (PH numbers): asks for a number when we have none. */}
+               {callOver ? null : <CallTextReminder />}
+
                {callOver ? null : (
                   <div className="text-left">
                      <p className="mb-2 text-[13px] font-bold uppercase tracking-[0.06em] text-[#877897]">Have ready</p>
@@ -644,9 +670,11 @@ export function LoanAccessPendingCard({
                         <PerkRow icon={<IdCard aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>
                            Your original ID or passport
                         </PerkRow>
-                        <PerkRow icon={<Camera aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>
-                           Camera on, good light, phone nearby
-                        </PerkRow>
+                        {CALL_READY_ITEMS.map(({ icon: Icon, title, hint }) => (
+                           <PerkRow icon={<Icon aria-hidden="true" className="size-[18px]" strokeWidth={2} />} key={title}>
+                              <b>{title}</b> · {hint}
+                           </PerkRow>
+                        ))}
                      </ul>
                   </div>
                )}
@@ -665,6 +693,134 @@ export function LoanAccessPendingCard({
          <div className="mt-auto pt-1">
             <PrimaryButton onClick={onClose}>{closeLabel}</PrimaryButton>
          </div>
+      </div>
+   );
+}
+
+// The card after the call has started: a status pill on top and the four steps from booking to
+// applying, with the team's decision as the live one. Same panel on the rejected card, in red, so
+// the card visibly changes when the decision lands (approval moves them on to "You're approved 🎉").
+type ReviewState = 'in_call' | 'pending' | 'rejected';
+
+const REVIEW_PILL: Record<ReviewState, { label: string; className: string; icon: ReactNode }> = {
+   in_call: {
+      label: 'Call in progress',
+      className: 'bg-[#efeaff] text-[#4b36d6] dark:bg-[#2a1f45] dark:text-[#c9bcff]',
+      icon: <span aria-hidden="true" className="size-2 animate-pulse rounded-full bg-[#6b55f7]" />
+   },
+   pending: {
+      label: 'Pending approval',
+      className: 'bg-[#fff1cc] text-[#8a5a00] dark:bg-[#3a2a0c] dark:text-[#ffd27a]',
+      icon: <Hourglass aria-hidden="true" className="size-3.5" strokeWidth={2.4} />
+   },
+   rejected: {
+      label: 'Not approved',
+      className: 'bg-[#ffe4e4] text-[#b42323] dark:bg-[#3d1717] dark:text-[#ffaaaa]',
+      icon: <X aria-hidden="true" className="size-3.5" strokeWidth={2.6} />
+   }
+};
+
+const REVIEW_BORDER: Record<ReviewState, string> = {
+   in_call: 'border-[#7661f9] bg-[#f8f1ff] dark:bg-[#1c1528]',
+   pending: 'border-[#f5b83d] bg-[#fffaf0] dark:bg-[#1f1910]',
+   rejected: 'border-[#f0a3a3] bg-[#fff6f6] dark:bg-[#1f1314]'
+};
+
+type RowTone = 'done' | 'live' | 'waiting' | 'locked' | 'no';
+
+function ReviewRow({ tone, title, hint, children }: { tone: RowTone; title: string; hint?: ReactNode; children?: ReactNode }) {
+   const dot = {
+      done: 'bg-[#4aa256] text-white',
+      live: 'bg-[#6b55f7] text-white ring-4 ring-[#6b55f7]/20',
+      waiting: 'bg-[#f5b83d] text-white ring-4 ring-[#f5b83d]/25',
+      locked: 'bg-[#ece6f3] text-[#a497b3] dark:bg-[#2a2236]',
+      no: 'bg-[#e05252] text-white'
+   }[tone];
+   const icon = {
+      done: <Check className="size-4" strokeWidth={3} />,
+      live: <Video className="size-4" strokeWidth={2.4} />,
+      waiting: <Hourglass className="size-4 animate-pulse" strokeWidth={2.4} />,
+      locked: <Lock className="size-3.5" strokeWidth={2.4} />,
+      no: <X className="size-4" strokeWidth={3} />
+   }[tone];
+   return (
+      <li className="flex items-start gap-3">
+         <span aria-hidden="true" className={`grid size-8 shrink-0 place-items-center rounded-full ${dot}`}>
+            {icon}
+         </span>
+         <span className="flex min-w-0 flex-1 flex-col pt-0.5 text-left">
+            <span
+               className={`text-[16px] font-bold leading-[20px] ${tone === 'locked' ? 'text-[#a497b3]' : 'text-[#3b2f4a] dark:text-[#f5f0ff]'}`}
+            >
+               {title}
+            </span>
+            {hint ? <span className="text-[13px] leading-[18px] text-[#7b6b8c] dark:text-[#b9abcc]">{hint}</span> : null}
+            {children}
+         </span>
+      </li>
+   );
+}
+
+function ReviewStatusPanel({
+   state,
+   context = 'loan',
+   withEmma = false,
+   meetingLabel = null,
+   joinUrl = null,
+   retryDay = null
+}: {
+   state: ReviewState;
+   context?: 'loan' | 'kyc';
+   withEmma?: boolean;
+   meetingLabel?: string | null;
+   joinUrl?: string | null;
+   retryDay?: string | null;
+}) {
+   const pill = REVIEW_PILL[state];
+   const applyTitle = context === 'kyc' ? 'Apply for your loan' : 'Send your loan request';
+   return (
+      <div className={`connect-stat-in flex flex-col gap-4 rounded-[18px] border-2 px-4 py-4 ${REVIEW_BORDER[state]}`}>
+         <span className={`flex w-fit items-center gap-1.5 self-center rounded-full px-3 py-1 text-[13px] font-bold ${pill.className}`}>
+            {pill.icon}
+            {pill.label}
+         </span>
+         {state === 'rejected' ? (
+            <ul className="flex flex-col gap-3">
+               <ReviewRow
+                  hint={retryDay ? 'Not this time' : 'Thank you for your time.'}
+                  title="Team decision"
+                  tone="no"
+               />
+            </ul>
+         ) : (
+            <ul className="flex flex-col gap-3">
+               <ReviewRow hint={meetingLabel ?? undefined} title="Call booked" tone="done" />
+               {state === 'in_call' ? (
+                  <ReviewRow hint={withEmma ? 'With Emma · Zoom' : 'Moodeng team · Zoom'} title="Video call" tone="live">
+                     {joinUrl ? (
+                        <a
+                           className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full text-[16px] font-semibold text-white shadow-[0_6px_16px_rgba(107,85,247,0.35)] active:scale-[0.98]"
+                           href={joinUrl}
+                           rel="noreferrer"
+                           style={{ backgroundImage: 'linear-gradient(85deg, #9584ff 0%, #6b55f7 98%)' }}
+                           target="_blank"
+                        >
+                           <Video aria-hidden="true" className="size-4" strokeWidth={2.2} />
+                           Join the meeting
+                        </a>
+                     ) : null}
+                  </ReviewRow>
+               ) : (
+                  <ReviewRow hint="Done" title="Video call" tone="done" />
+               )}
+               <ReviewRow
+                  hint={state === 'in_call' ? 'Right after the call' : 'Usually within a day'}
+                  title="Team approval"
+                  tone={state === 'in_call' ? 'locked' : 'waiting'}
+               />
+               <ReviewRow hint="Opens when you’re approved" title={applyTitle} tone="locked" />
+            </ul>
+         )}
       </div>
    );
 }

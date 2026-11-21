@@ -14,6 +14,7 @@ import { GUIDES, guideButton, helpButton, waltButton } from './idGuides.ts';
 import { formatRp, ID_GUIDE_KEYS, type IdGuideKey, idCallback, idUsdLeft, isIdMenuText, isIdQuestionText } from './idLoanMath.ts';
 import { idLocaleOf, type IdLocale, loadIdStatus } from './idTrack.ts';
 import { sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
+import { withToday } from './aiToday.ts';
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
@@ -99,7 +100,7 @@ const ask = async (system: string, user: string): Promise<{ data: unknown; ms: n
             max_tokens: 400,
             response_format: { type: 'json_object' },
             messages: [
-               { role: 'system', content: system },
+               { role: 'system', content: withToday(system) },
                { role: 'user', content: user }
             ]
          })
