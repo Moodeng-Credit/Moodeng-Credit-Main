@@ -3397,6 +3397,9 @@ export interface AdminIncomeDocument {
    score: number | null;
    memo: string | null;
    ai_note: string | null;
+   /** The AI's 0–100 chance they repay this loan on time, and its 1–2 reasons. */
+   repay_chance?: number | null;
+   repay_reasons?: string[] | null;
    flags: AdminIncomeDocFlag[];
    extracted: { currency?: string | null; transactions?: AdminIncomeDocRow[] } | null;
    error: string | null;
@@ -3419,7 +3422,7 @@ export interface AdminIncomeDocument {
 }
 
 const INCOME_DOC_SELECT =
-   'id, files, note, status, doc_type, risk, score, memo, ai_note, flags, extracted, error, created_at, decision, decision_reason, decided_at, decided_by, notified_at, verdict, resend_reason, checks, requested_amount, tier, questions, answers, messenger_confirmed_at, user:users!income_documents_user_id_fkey(id, username, display_name, monthly_income)';
+   'id, files, note, status, doc_type, risk, score, memo, ai_note, repay_chance, repay_reasons, flags, extracted, error, created_at, decision, decision_reason, decided_at, decided_by, notified_at, verdict, resend_reason, checks, requested_amount, tier, questions, answers, messenger_confirmed_at, user:users!income_documents_user_id_fkey(id, username, display_name, monthly_income)';
 
 export async function listIncomeDocuments(): Promise<AdminIncomeDocument[]> {
    const supabase = getSupabaseBrowserClient();

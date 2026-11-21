@@ -60,3 +60,17 @@ Deno.test('the newer signals are named in the report', () => {
    assertStringIncludes(text, 'Their record before');
    assertStringIncludes(text, 'Due day');
 });
+
+Deno.test('AI prediction check: predicted average vs actual on-time share', async () => {
+   const { aiCalibration } = await import('./signalReport.ts');
+   const rows = [
+      row('on_time', { ai_chance: 'AI said 85%+', ai_chance_pct: '90' }),
+      row('on_time', { ai_chance: 'AI said 70–84%', ai_chance_pct: '80' }),
+      row('late', { ai_chance: 'AI said 70–84%', ai_chance_pct: '70' }),
+      row('not_due', { ai_chance: 'AI said 85%+', ai_chance_pct: '95' }),
+      row('on_time', { ai_chance: 'no AI prediction' })
+   ];
+   assertEquals(aiCalibration(rows), { loans: 3, predicted: 80, actual: 67 });
+   assertStringIncludes(buildSignalReport(rows), 'the AI said 80% on average; 67% actually repaid on time');
+   assertStringIncludes(buildSignalReport([row('on_time', {})]), 'no finished loan had an AI prediction yet');
+});

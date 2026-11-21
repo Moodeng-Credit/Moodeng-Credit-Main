@@ -12,6 +12,7 @@ export type SignalRow = {
 
 /** The signals, in the order the team reads them, with their names. */
 export const SIGNAL_NAMES: Array<[key: string, name: string]> = [
+   ['ai_chance', 'AI repay prediction'],
    ['prescreen', 'AI pre-screen'],
    ['income_doc', 'AI income doc'],
    ['video_call', 'Video call'],
@@ -74,6 +75,18 @@ export const signalStats = (rows: SignalRow[]) => {
    return { overall, done: done.length, groups };
 };
 
+/**
+ * How well the AI's "chance of repaying on time" matched reality: on finished loans that had one, the
+ * average it predicted vs the share actually repaid on time. Null when no finished loan had one. Pure.
+ */
+export const aiCalibration = (rows: SignalRow[]) => {
+   const withPct = rows.filter(decided).map((r) => ({ r, pct: Number(r.signals?.ai_chance_pct) })).filter((x) => Number.isFinite(x.pct) && x.pct > 0);
+   if (!withPct.length) return null;
+   const predicted = Math.round(withPct.reduce((a, x) => a + x.pct, 0) / withPct.length);
+   const actual = pct(withPct.filter((x) => x.r.outcome === 'on_time').length, withPct.length);
+   return { loans: withPct.length, predicted, actual };
+};
+
 /** The Telegram text. Pure. */
 export const buildSignalReport = (rows: SignalRow[]): string => {
    const count = (o: string) => rows.filter((r) => r.outcome === o).length;
@@ -89,6 +102,12 @@ export const buildSignalReport = (rows: SignalRow[]): string => {
          : `✅ ${misses} missed loans, enough to start trusting the differences.`,
       `▲/▼ = a group with ${MIN_GROUP}+ finished loans that is ${MARK_GAP}+ points better/worse than ${overall}%.`
    ];
+   const cal = aiCalibration(rows);
+   lines.push(
+      cal
+         ? `🎯 AI prediction check: on ${cal.loans} finished loans the AI said ${cal.predicted}% on average; ${cal.actual}% actually repaid on time.`
+         : '🎯 AI prediction check: no finished loan had an AI prediction yet.'
+   );
    // A signal where every finished loan is in the same group can't show anything yet: one line for those.
    const comparable = groups.filter((g) => g.stats.length > 1);
    const notYet = groups.filter((g) => g.stats.length === 1);
