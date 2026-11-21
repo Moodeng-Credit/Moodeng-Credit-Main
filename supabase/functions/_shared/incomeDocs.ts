@@ -1832,8 +1832,9 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    // Payslips also get the two fixed proof questions (first, whatever the risk): asking where it came
    // from gives nothing away, and the chat's date is what catches a changed payslip.
    const country = countryOf(user?.market, doc?.currency);
-   const proofQuestions =
-      !autoApprove && doc.doc_type === 'payslip' ? payslipProofQuestions(country, { askHistory: !hasHistoryForPayday(doc, otherDocs) }) : [];
+   // Every step, even when it approved itself (George 2026-11-21: payslips at each credit step): the
+   // approval doesn't wait on the answers, they reach the team afterwards (reviewWithAnswers).
+   const proofQuestions = doc.doc_type === 'payslip' ? payslipProofQuestions(country, { askHistory: !hasHistoryForPayday(doc, otherDocs) }) : [];
    const aiQuestions =
       !autoApprove && risk !== 'red' && aiNote?.ask.length && Date.now() - startedAt < 100_000
          ? await borrowerQuestions(apiKey, aiNote.ask, {
@@ -1903,7 +1904,8 @@ export const reviewWithAnswers = async (supabase: SupabaseClient, id: string, ap
       .update({ answers_reviewed_at: new Date().toISOString() })
       .eq('id', id)
       .is('answers_reviewed_at', null)
-      .is('decision', null)
+      // Undecided, or approved by itself (a team decision closes the questions).
+      .or('decision.is.null,decided_by.like.auto*')
       .select('id, user_id, questions, answers, extracted, metrics, flags, checks, score, ai_note, requested_amount, requested_repay, created_at')
       .maybeSingle();
    if (!claimed) return { ok: true, skipped: 'already reviewed or decided' };

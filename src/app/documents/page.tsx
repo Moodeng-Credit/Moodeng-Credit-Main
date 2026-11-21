@@ -560,12 +560,23 @@ export default function DocumentsPage({
                </div>
             ) : null}
 
-            {phase === 'in_review' && currentQuestion ? (
+            {/* Approved by itself (a small step) still asks the payslip questions: approval doesn't wait on them. */}
+            {(phase === 'in_review' || phase === 'approved') && currentQuestion ? (
                <div className="flex flex-col gap-4 rounded-[20px] bg-white px-5 py-5 dark:bg-dv2-card">
                   <ConnectHero
-                     image={CONNECT_HIPPOS.waiting}
-                     title={questionTotal > 1 ? `${questionTotal} quick questions` : '1 quick question'}
-                     subtitle="About your document. Your answer helps the team decide faster."
+                     image={phase === 'approved' ? CONNECT_HIPPOS.approved : CONNECT_HIPPOS.waiting}
+                     title={
+                        phase === 'approved'
+                           ? 'You’re approved! ✅'
+                           : questionTotal > 1
+                             ? `${questionTotal} quick questions`
+                             : '1 quick question'
+                     }
+                     subtitle={
+                        phase === 'approved'
+                           ? `${questionTotal > 1 ? `${questionTotal} quick questions` : '1 quick question'} about your document, for the team.`
+                           : 'About your document. Your answer helps the team decide faster.'
+                     }
                   />
                   <div className="flex flex-col gap-2 rounded-[16px] bg-[#f8f1ff] px-4 py-3 dark:bg-[#221a31]">
                      {questionTotal > 1 ? (
@@ -702,7 +713,7 @@ export default function DocumentsPage({
                </div>
             ) : null}
 
-            {phase === 'approved' ? (
+            {phase === 'approved' && !currentQuestion ? (
                <div className="flex flex-col gap-4 rounded-[20px] bg-white px-5 py-5 dark:bg-dv2-card">
                   <ConnectHero image={CONNECT_HIPPOS.approved} title="You’re approved! ✅" subtitle="Your proof of income is verified." />
                   <ul className="flex flex-col gap-3 rounded-[16px] border-2 border-[#4aa256] bg-[#eefbf2] px-4 py-4 dark:bg-[#123222]">
@@ -751,7 +762,7 @@ export default function DocumentsPage({
                </div>
             ) : null}
 
-            {(phase === 'in_review' && !currentQuestion) || phase === 'approved' ? (
+            {(phase === 'in_review' || phase === 'approved') && !currentQuestion ? (
                <button className="text-center text-[14px] font-semibold text-[#7b6b8c] underline" onClick={startOver} type="button">
                   Send another document
                </button>

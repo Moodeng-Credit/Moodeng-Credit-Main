@@ -77,3 +77,17 @@ Deno.test('Messenger: a photo question points to /documents and the bot does not
    assertEquals(r.asks, null);
    assert(r.text.includes('screenshot'));
 });
+
+Deno.test('approved by itself: the payslip questions stay open on Messenger; a team decision closes them', async () => {
+   const { questionsOpen } = await import('./messengerIncomeDocReply.ts');
+   const [p1, p2] = payslipProofQuestions('Philippines');
+   const base = { id: 'd', status: 'done', verdict: 'looks_good', questions: [p1, p2], answers: [], messenger_asked_at: null, messenger_asked_id: null };
+   const auto = docsReply({ ...base, decision: 'approved', decided_by: 'auto ($40 step)' }, 'en');
+   assert(auto.text.startsWith('Your proof of income is approved ✅ One quick question'));
+   assertEquals(auto.asks, 'p1');
+   const team = docsReply({ ...base, decision: 'approved', decided_by: 'george' }, 'en');
+   assertEquals(team, { text: 'Your proof of income is approved ✅', asks: null });
+   assert(questionsOpen({ decision: null, decided_by: null }));
+   assert(questionsOpen({ decision: 'approved', decided_by: 'auto (AI lend x3, score 80)' }));
+   assert(!questionsOpen({ decision: 'declined', decided_by: 'auto' }));
+});
