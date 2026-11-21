@@ -504,7 +504,18 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    const [choices, setChoices] = useState<Record<string, MedicalChoice>>({});
    // v2 medical as the tap-the-hippo game; it writes the same plain answer into `typed`.
    const [medPick, setMedPick] = useState<MedicalPick>(
-      preview?.med ? { who: 'family', relation: 'Mother', parts: ['Tummy'], detail: 'She has diabetes since last year' } : EMPTY_MEDICAL
+      preview?.med
+         ? {
+              ...EMPTY_MEDICAL,
+              who: 'family',
+              relation: 'Mother',
+              parts: ['Inside the body'],
+              conditions: ['Inside the body: Diabetes / sugar'],
+              since: 'A year or more',
+              doctor: 'Sometimes',
+              medicine: 'Yes, every month'
+           }
+         : EMPTY_MEDICAL
    );
    // The job the follow-ups were made for (same job after Back = no new questions).
    const [plannedFor, setPlannedFor] = useState<string | null>(preview ? 'farmer' : null);
@@ -1098,7 +1109,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                      subtitle={
                         question.kind === 'photo'
                            ? 'Take it now, or pick a photo from the last 2 months.'
-                           : `Question ${index + 1} of ${questions.length}${question.hint && question.kind !== 'video' && question.kind ? ` · ${question.hint}` : ''}`
+                           : `Question ${index + 1} of ${questions.length}${v2 && question.kind === 'medical' ? ' · Just tap to answer' : question.hint && question.kind !== 'video' && question.kind ? ` · ${question.hint}` : ''}`
                      }
                      title={question.kind === 'photo' && useAlt[question.id] && question.alt ? question.alt : question.text}
                      trail={trail(stepOf(question))}
