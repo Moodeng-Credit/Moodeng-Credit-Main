@@ -216,6 +216,9 @@ describe('ConnectStep — call mode (request unlocks only after the call)', () =
          await Promise.resolve();
          await Promise.resolve();
       });
+      // "Before your call" checklist first: one tap on "I'll be ready" shows the times.
+      expect(container.textContent).toContain('Be inside');
+      await click(Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim().startsWith("I'll be ready")));
       const slotButton = Array.from(container.querySelectorAll('button')).find((b) => /AM|PM/.test(b.textContent ?? ''));
       expect(slotButton).toBeTruthy();
       await click(slotButton);
