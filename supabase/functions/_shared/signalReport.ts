@@ -87,6 +87,30 @@ export const aiCalibration = (rows: SignalRow[]) => {
    return { loans: withPct.length, predicted, actual };
 };
 
+export type AiCostSummary = {
+   days: number;
+   total_usd: number;
+   calls: number;
+   features: Array<{ feature: string; calls: number; usd: number }>;
+   prescreen_usd: number;
+   prescreens: number;
+   income_usd: number;
+   income_docs: number;
+};
+
+const usd = (n: number) => (n >= 1 ? `$${n.toFixed(2)}` : `$${n.toFixed(3)}`);
+
+/** The weekly AI cost lines (ai_cost_summary): total, per pre-screening, per proof of income, top features. Pure. */
+export const aiCostLines = (s: AiCostSummary | null | undefined): string[] => {
+   if (!s || !s.calls) return ['💸 AI costs: nothing logged yet this week.'];
+   const each = (spent: number, n: number) => (n ? ` ≈ ${usd(spent / n)} each` : '');
+   return [
+      `💸 AI costs, last ${s.days} days: ${usd(Number(s.total_usd))} over ${s.calls} calls.`,
+      `   Pre-screening ${usd(Number(s.prescreen_usd))} for ${s.prescreens}${each(Number(s.prescreen_usd), s.prescreens)} · proof of income ${usd(Number(s.income_usd))} for ${s.income_docs}${each(Number(s.income_usd), s.income_docs)}`,
+      `   Biggest: ${s.features.slice(0, 3).map((f) => `${f.feature} ${usd(Number(f.usd))}`).join(', ')}`
+   ];
+};
+
 /** The Telegram text. Pure. */
 export const buildSignalReport = (rows: SignalRow[]): string => {
    const count = (o: string) => rows.filter((r) => r.outcome === o).length;

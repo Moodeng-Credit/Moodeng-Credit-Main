@@ -11,6 +11,7 @@ import { fileMarkers, gcashRefIssues, type ImageInfo, imageInfo, isAiSize, rowKe
 import { sendTelegramFiles, sendTelegramMessage, type TelegramInlineKeyboard, type TelegramUpload } from './telegram.ts';
 import { idLocaleOf, idResendReason, isIdTrackUser, loadIdStatus, notifyIdNextStep, sendIdTelegram } from './idTrack.ts';
 import { withToday } from './aiToday.ts';
+import { chatTokens, logAiUsage } from './aiUsage.ts';
 
 // Proof of income sent from moodeng.app/documents (see the income_documents migration).
 //   0. ping     Telegram admin chat + Discord #kyc right away: who sent what, open it in Admin
@@ -752,7 +753,7 @@ const deepseekJson = async <T>(
    system: string,
    content: string | ChatPart[],
    maxTokens: number,
-   opts: { model?: string; thinking?: boolean; timeoutMs?: number } = {}
+   opts: { model?: string; thinking?: boolean; timeoutMs?: number; feature?: string } = {}
 ): Promise<T> => {
    for (let attempt = 0; attempt < 2; attempt++) {
       const res = await fetch(DEEPSEEK_URL, {
@@ -772,6 +773,7 @@ const deepseekJson = async <T>(
       });
       if (!res.ok) throw new Error(`DeepSeek ${res.status}: ${(await res.text()).slice(0, 200)}`);
       const body = (await res.json()) as { choices?: Array<{ message?: { content?: string }; finish_reason?: string }> };
+      logAiUsage(opts.feature ?? 'income_doc', opts.model ?? MODEL, chatTokens(body));
       const choice = body.choices?.[0];
       if (choice?.finish_reason === 'length') throw new Error(TOO_LONG);
       const text = choice?.message?.content?.trim();
@@ -951,7 +953,8 @@ const extract = async (apiKey: string, files: LoadedFile[]): Promise<Extracted> 
          apiKey,
          SYSTEM,
          [...batch.flat(), { type: 'text', text: `Read ${of} as one person's proof of income. Keep the page numbers printed above each page. Reply in json.` }],
-         16000
+         16000,
+         { feature: 'income_read' }
       ).then(normalizeExtracted);
 
    // Up to 3 pages: one read, so the model sees them together. More (a long history, many screenshots
@@ -1144,9 +1147,9 @@ const writeOpinion = async (apiKey: string, input: Record<string, unknown>): Pro
    const body = JSON.stringify(input);
    // Thinking first (it weighs things better); if that's slow, a quick answer, so the whole check stays
    // inside the edge function's time limit.
-   const out = await deepseekJson<Out>(apiKey, OPINION_SYSTEM, body, 6000, { model: OPINION_MODEL, thinking: true, timeoutMs: 45_000 }).catch((err) => {
+   const out = await deepseekJson<Out>(apiKey, OPINION_SYSTEM, body, 6000, { model: OPINION_MODEL, thinking: true, timeoutMs: 45_000, feature: 'income_opinion' }).catch((err) => {
       console.warn('income doc opinion: thinking pass failed, trying without', err instanceof Error ? err.message : err);
-      return deepseekJson<Out>(apiKey, OPINION_SYSTEM, body, 1500, { model: OPINION_MODEL, timeoutMs: 25_000 });
+      return deepseekJson<Out>(apiKey, OPINION_SYSTEM, body, 1500, { model: OPINION_MODEL, timeoutMs: 25_000, feature: 'income_opinion' });
    });
    const verdict = (['lend', 'maybe', 'decline'].includes(String(out.verdict)) ? String(out.verdict) : 'maybe') as AiOpinion['verdict'];
    const ask = Array.isArray(out.ask) ? out.ask.map(String).filter(Boolean).slice(0, 2) : [];
@@ -1435,7 +1438,7 @@ const readPayslipSource = async (supabase: SupabaseClient, apiKey: string, path:
             { type: 'image_url', image_url: { url: `data:${mime};base64,${toBase64(bytes)}`, detail: 'high' } }
          ],
          600,
-         { timeoutMs: 60_000 }
+         { timeoutMs: 60_000, feature: 'payslip_chat_check' }
       );
       return parseSourceRead(out);
    } catch (err) {
@@ -1472,7 +1475,8 @@ const borrowerQuestions = async (apiKey: string, ask: string[], ctx: Record<stri
       const out = await Promise.race([
          deepseekJson<unknown>(apiKey, QUESTIONS_SYSTEM, JSON.stringify({ team_questions: ask, ...ctx }), 1200, {
             model: OPINION_MODEL,
-            timeoutMs: QUESTIONS_BUDGET_MS
+            timeoutMs: QUESTIONS_BUDGET_MS,
+            feature: 'income_questions'
          }),
          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('questions took too long')), QUESTIONS_BUDGET_MS))
       ]);

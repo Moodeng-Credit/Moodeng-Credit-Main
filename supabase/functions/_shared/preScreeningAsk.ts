@@ -24,6 +24,7 @@ import { jobRedFlags, type MedicalRead, medicalRedFlag, permitProblem, type Phot
 import { sendPushToUser } from './pushDelivery.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
+import { geminiTokens, logAiUsage } from './aiUsage.ts';
 import { MESSENGER_CHAT_URL } from './whatsappFirst.ts';
 import { withToday } from './aiToday.ts';
 
@@ -209,6 +210,7 @@ async function geminiJson(svc: SupabaseClient, system: string, input: unknown, t
    });
    if (!res.ok) throw new Error(`gemini ${res.status}: ${(await res.text().catch(() => '')).slice(0, 200)}`);
    const json = (await res.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string; thought?: boolean }> } }> };
+   logAiUsage('prescreen_ask_more', GEMINI_MODEL, geminiTokens(json));
    const text = (json.candidates?.[0]?.content?.parts ?? [])
       .filter((p) => !p.thought && typeof p.text === 'string')
       .map((p) => p.text)

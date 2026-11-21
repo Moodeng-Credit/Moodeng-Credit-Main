@@ -38,6 +38,7 @@ import {
 } from './prescreenV2.ts';
 import { sendTelegramFiles, sendTelegramMessage, type TelegramInlineKeyboard, type TelegramUpload } from './telegram.ts';
 import { withToday } from './aiToday.ts';
+import { chatTokens, logAiUsage } from './aiUsage.ts';
 
 // The team's decision buttons (handled in telegram-webhook via preScreeningDecision.ts).
 export const preScreeningDecisionRow = (id: string): TelegramInlineKeyboard[number] => [
@@ -441,6 +442,7 @@ async function gradeOnce(apiKey: string, model: string, user: string): Promise<M
    });
    if (!res.ok) throw new Error(`grading ${res.status}: ${(await res.text().catch(() => '')).slice(0, 200)}`);
    const json = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+   logAiUsage('prescreen_grade_backup', model, chatTokens(json));
    return JSON.parse(json.choices?.[0]?.message?.content ?? '{}') as ModelRead;
 }
 

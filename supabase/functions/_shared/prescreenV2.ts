@@ -13,6 +13,7 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { withToday } from './aiToday.ts';
+import { geminiTokens, logAiUsage } from './aiUsage.ts';
 import { GEMINI_MODEL } from './geminiModel.ts';
 
 export type V2Question = {
@@ -611,7 +612,7 @@ export async function geminiSmallJson(
    input: unknown,
    timeoutMs: number,
    file?: { mime: string; data: string },
-   opts: { lowMedia?: boolean } = {}
+   opts: { lowMedia?: boolean; feature?: string } = {}
 ): Promise<unknown> {
    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
       method: 'POST',
@@ -634,6 +635,7 @@ export async function geminiSmallJson(
    });
    if (!res.ok) throw new Error(`gemini ${res.status}: ${(await res.text().catch(() => '')).slice(0, 200)}`);
    const json = (await res.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string; thought?: boolean }> } }> };
+   logAiUsage(opts.feature ?? 'prescreen_small', GEMINI_MODEL, geminiTokens(json));
    const text = (json.candidates?.[0]?.content?.parts ?? [])
       .filter((p) => !p.thought && typeof p.text === 'string')
       .map((p) => p.text)
@@ -692,7 +694,11 @@ export async function planJob(svc: SupabaseClient, userId: string, token: string
          // One retry: a few replies come back as broken JSON.
          for (let attempt = 0; attempt < 2 && !plan; attempt++) {
             try {
-               plan = cleanPlan(await geminiSmallJson(key, PLAN_SYSTEM, { job: clean, language: ['fil', 'id'].includes(locale) ? locale : 'en' }, 12_000));
+               plan = cleanPlan(
+                  await geminiSmallJson(key, PLAN_SYSTEM, { job: clean, language: ['fil', 'id'].includes(locale) ? locale : 'en' }, 12_000, undefined, {
+                     feature: 'prescreen_job_plan'
+                  })
+               );
             } catch (err) {
                console.warn('prescreen_job: gemini failed', err instanceof Error ? err.message : err);
             }
@@ -726,7 +732,9 @@ export async function coachAnswer(svc: SupabaseClient, userId: string, token: st
          key,
          coachSystem(locale),
          { question: q.text, what_a_good_answer_has: q.good ?? null, answer: answer.slice(0, 600) },
-         7_000
+         7_000,
+         undefined,
+         { feature: 'prescreen_answer_tip' }
       );
       return toCoach(raw);
    } catch (err) {
@@ -801,7 +809,8 @@ export async function coachDoc(svc: SupabaseClient, userId: string, token: strin
          withToday(isPhoto ? photoCoachSystem(locale) : docCoachSystem(locale)),
          isPhoto ? { we_asked_for: asked, what_a_good_photo_shows: q.good ?? null } : { question: q.text, what_a_good_document_is: q.good ?? null },
          7_000,
-         { mime, data: base64Of(new Uint8Array(await blob.arrayBuffer())) }
+         { mime, data: base64Of(new Uint8Array(await blob.arrayBuffer())) },
+         { feature: isPhoto ? 'prescreen_photo_tip' : 'prescreen_doc_tip' }
       );
       return toCoach(raw);
    } catch (err) {
@@ -858,7 +867,7 @@ export async function coachClip(svc: SupabaseClient, userId: string, token: stri
          { question: q.text, hint: q.hint ?? null, what_a_good_answer_has: q.good ?? null, has_video: mime.startsWith('video/') },
          CLIP_COACH_MS,
          { mime, data: base64Of(new Uint8Array(await blob.arrayBuffer())) },
-         { lowMedia: true }
+         { lowMedia: true, feature: 'prescreen_clip_tip' }
       );
       return toCoach(raw);
    } catch (err) {
