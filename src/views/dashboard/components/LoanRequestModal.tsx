@@ -2370,6 +2370,13 @@ export default function LoanRequestModal({
                setFriendInviteCode(cleanCode);
                return true;
             }
+            // Someone already invited them (one inviter per person): nothing to do, just carry on.
+            if (result === 'already_referred') {
+               setReferralCode('');
+               setReferralCodeError('');
+               setShowReferralStep(false);
+               return true;
+            }
             if (result !== 'invalid_code') {
                setReferralCodeError(FRIEND_INVITE_ERRORS[result]);
                return false;
@@ -2379,6 +2386,13 @@ export default function LoanRequestModal({
          const supabase = getSupabaseBrowserClient();
          const { data, error } = await supabase.rpc('redeem_referral_code', { code_input: cleanCode }).single();
 
+         // A friend's invite is already on the account (migration 20261121200000): carry on, no error.
+         if (error && /already/i.test(error.message)) {
+            setReferralCode('');
+            setReferralCodeError('');
+            setShowReferralStep(false);
+            return true;
+         }
          if (error) throw error;
 
          if (!data) {
