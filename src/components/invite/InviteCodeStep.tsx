@@ -157,6 +157,14 @@ export default function InviteCodeStep({
       if (!exact || busy) return;
       if (!signedIn) {
          parkInviteCode(exact.code);
+         // Put it on the address too, so "Open in Chrome" (a different browser, empty storage) carries it.
+         try {
+            const url = new URL(window.location.href);
+            url.searchParams.set('ref', exact.code);
+            window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+         } catch {
+            // Only the hand-off loses it; this browser still has it parked.
+         }
       } else {
          setBusy(true);
          const result = await applyInviteCode(exact.code);
