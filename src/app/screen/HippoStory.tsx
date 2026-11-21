@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 // with a caption each until `done`, which shows the last frame ("Looks good").
 //   photo — the hippo frames the job photo        (photo check)
 //   doc   — the hippo reads, stamps and files it   (payslips, GCash history, COE, work permit)
-export type StoryKind = 'photo' | 'doc';
+//   camera — the hippo sets up a phone, light, mirror, clapperboard (camera starting)
+//   send   — the hippo seals the video in an envelope and flies it off (video answer sending)
+export type StoryKind = 'photo' | 'doc' | 'camera' | 'send';
 
 const STORIES: Record<StoryKind, { frames: string[]; final: string; lines: string[]; doneLine: string }> = {
    photo: {
@@ -18,8 +20,26 @@ const STORIES: Record<StoryKind, { frames: string[]; final: string; lines: strin
       final: '/hippos/docstory/frame-e.webp',
       lines: ['Reading your document 🔍', 'Checking the details…', 'Stamping it ✓', 'Filing it safely 📁'],
       doneLine: 'All done! ✅'
+   },
+   camera: {
+      frames: ['a', 'b', 'c', 'd'].map((k) => `/hippos/camstory/frame-${k}.webp`),
+      final: '/hippos/camstory/frame-e.webp',
+      lines: ['Getting your camera ready 🎥', 'Turning on the light 💡', 'Looking sharp ✨', 'Ready… action! 🎬'],
+      doneLine: 'Ready! 👍'
+   },
+   send: {
+      frames: ['a', 'b', 'c', 'd'].map((k) => `/hippos/sendstory/frame-${k}.webp`),
+      final: '/hippos/sendstory/frame-e.webp',
+      lines: ['Sending your answer…', 'Sealing it up 💌', 'Off it goes! ✈️', 'The team is watching 🍿'],
+      doneLine: 'Sent! ✅'
    }
 };
+
+/** Fetch a story's frames ahead of the wait, so the first frame is there the moment it starts. */
+export function preloadHippoStory(kind: StoryKind) {
+   const story = STORIES[kind];
+   for (const src of [...story.frames, story.final]) new Image().src = src;
+}
 const STEP_MS = 1100;
 
 export default function HippoStory({
@@ -43,9 +63,7 @@ export default function HippoStory({
       return () => window.clearInterval(t);
    }, [done, story.frames.length]);
    // Load every frame up front so the story doesn't flicker on slow data.
-   useEffect(() => {
-      for (const src of [...story.frames, story.final]) new Image().src = src;
-   }, [story]);
+   useEffect(() => preloadHippoStory(kind), [kind]);
    const src = done ? story.final : story.frames[i];
    return (
       <div className="flex flex-col items-center justify-center gap-2" aria-live="polite">
