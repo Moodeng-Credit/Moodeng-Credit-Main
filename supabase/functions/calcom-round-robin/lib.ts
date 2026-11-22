@@ -62,7 +62,11 @@ export const SOON_WINDOW_HOURS = 23;
 // A host pinned for a borrower (referred borrowers → Emma) but away most of the next 2 days
 // (call_blocks) would push them days out: on 2026-11-20 every referred borrower got Tuesday while
 // Emma was off Sat–Mon and George was free. Away ≥ 24h of the next 48h → offer every host instead.
-export const pinnedHostAway = (blocks: Array<{ start: string; end: string }>, now: number, windowHours = 48, awayHours = 24): boolean => {
+// Also away ≥ 12h of the next 24h: only times in the next 23h are offered, so at 00:00 BKK on
+// 2026-11-23 (Emma back 24h later) the Emma page showed no times at all while George was free.
+export const pinnedHostAway = (blocks: Array<{ start: string; end: string }>, now: number): boolean =>
+   awayFor(blocks, now, 48) >= 24 * 3600000 || awayFor(blocks, now, 24) >= 12 * 3600000;
+const awayFor = (blocks: Array<{ start: string; end: string }>, now: number, windowHours: number): number => {
    const until = now + windowHours * 3600000;
    const ranges = blocks
       .map((b) => [Math.max(Date.parse(b.start), now), Math.min(Date.parse(b.end), until)] as const)
@@ -75,7 +79,7 @@ export const pinnedHostAway = (blocks: Array<{ start: string; end: string }>, no
       if (b > from) away += b - from;
       reach = Math.max(reach, b);
    }
-   return away >= awayHours * 3600000;
+   return away;
 };
 export const preferSoonSlots = (slots: string[], now: number, windowHours = SOON_WINDOW_HOURS, minCount = 3): string[] => {
    const upcoming = slots.filter((s) => {

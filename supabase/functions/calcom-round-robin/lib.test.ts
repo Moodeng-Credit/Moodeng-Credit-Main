@@ -307,7 +307,17 @@ Deno.test('pinnedHostAway: away most of the next 48h → unpin; a short block ke
    // Monday 20:00 BKK: only 4h of the block left → Emma pinned again (she's open Tuesday).
    assertEquals(pinnedHostAway(satToMon, Date.parse('2026-11-23T13:00:00Z')), false);
    // Overlapping blocks aren't double-counted.
-   const twice = [{ start: '2026-11-21T00:00:00Z', end: '2026-11-21T14:00:00Z' }, { start: '2026-11-21T00:00:00Z', end: '2026-11-21T14:00:00Z' }];
+   const twice = [{ start: '2026-11-21T00:00:00Z', end: '2026-11-21T10:00:00Z' }, { start: '2026-11-21T00:00:00Z', end: '2026-11-21T10:00:00Z' }];
    assertEquals(pinnedHostAway(twice, now), false);
    assertEquals(pinnedHostAway([], now), false);
+});
+
+Deno.test('pinnedHostAway: away for most of the next 24h (the times we offer) → unpin', () => {
+   const emmaOff = [{ start: '2026-11-20T17:00:00Z', end: '2026-11-23T17:00:00Z' }];
+   // 00:00 BKK Monday: back in 24h — under 24h of the next 48h, but all of the next 24h.
+   assertEquals(pinnedHostAway(emmaOff, Date.parse('2026-11-22T17:00:00Z')), true);
+   // 12:00 BKK Monday: 12h of the next 24h still away.
+   assertEquals(pinnedHostAway(emmaOff, Date.parse('2026-11-23T05:00:00Z')), true);
+   // 14:00 BKK Monday: 10h left — her Tuesday times are inside the next 23h, keep the pin.
+   assertEquals(pinnedHostAway(emmaOff, Date.parse('2026-11-23T07:00:00Z')), false);
 });
