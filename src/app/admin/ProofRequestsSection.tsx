@@ -236,7 +236,8 @@ function RequestCard({ r, onChanged }: { r: AdminProofRequest; onChanged: () => 
    );
 }
 
-export default function ProofRequestsSection() {
+/** With `userId`: every proof request to that person, any status (call sheet + account). */
+export default function ProofRequestsSection({ userId }: { userId?: string } = {}) {
    const [rows, setRows] = useState<AdminProofRequest[]>([]);
    const [loading, setLoading] = useState(true);
    const [error, setError] = useState<string | null>(null);
@@ -247,72 +248,79 @@ export default function ProofRequestsSection() {
    const load = useCallback(async () => {
       setLoading(true);
       try {
-         setRows(await listProofRequests());
+         setRows(await listProofRequests(userId));
          setError(null);
       } catch (err) {
          setError(errorMessage(err));
       } finally {
          setLoading(false);
       }
-   }, []);
+   }, [userId]);
 
    useEffect(() => {
       void load();
    }, [load]);
 
    const counts = Object.fromEntries(FILTERS.map((f) => [f.id, rows.filter((r) => r.status === f.id).length])) as Record<Filter, number>;
-   const shown = rows.filter((r) => r.status === filter);
+   const shown = userId ? rows : rows.filter((r) => r.status === filter);
 
    return (
       <section className="space-y-4">
-         <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-               <h2 className="break-words text-2xl font-black sm:text-3xl">Proof requests</h2>
-               <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
-                  After a call, ask a new applicant to back up what they said — work ID, visa abroad, business permit, a few answers. They
-                  get one link, no sign-in. You can also start one from the Call sheet.
-               </p>
-            </div>
-            <button
-               className="rounded-xl bg-[#6b55f7] px-4 py-2 text-base font-black text-white"
-               onClick={() => setPicking(true)}
-               type="button"
-            >
-               + New request
-            </button>
-         </div>
-         {picking ? (
-            <UserPicker
-               onCancel={() => setPicking(false)}
-               onPick={(u) => {
-                  setPicking(false);
-                  setComposeFor(u);
-               }}
-            />
-         ) : null}
+         {userId ? <p className="text-sm font-black uppercase text-[#a89bb8]">Proof requests · team only</p> : null}
+         {userId ? null : (
+            <>
+               <div className="flex flex-wrap items-end justify-between gap-3">
+                  <div>
+                     <h2 className="break-words text-2xl font-black sm:text-3xl">Proof requests</h2>
+                     <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                        After a call, ask a new applicant to back up what they said — work ID, visa abroad, business permit, a few answers.
+                        They get one link, no sign-in. You can also start one from the Call sheet.
+                     </p>
+                  </div>
+                  <button
+                     className="rounded-xl bg-[#6b55f7] px-4 py-2 text-base font-black text-white"
+                     onClick={() => setPicking(true)}
+                     type="button"
+                  >
+                     + New request
+                  </button>
+               </div>
+               {picking ? (
+                  <UserPicker
+                     onCancel={() => setPicking(false)}
+                     onPick={(u) => {
+                        setPicking(false);
+                        setComposeFor(u);
+                     }}
+                  />
+               ) : null}
 
-         <div className="flex flex-wrap gap-2">
-            {FILTERS.map((f) => (
-               <button
-                  className={`rounded-full px-4 py-1.5 text-sm font-black ${filter === f.id ? 'bg-white text-[#1c0a3a]' : 'bg-[#241044] text-[#a89bb8]'}`}
-                  key={f.id}
-                  onClick={() => setFilter(f.id)}
-                  type="button"
-               >
-                  {f.label} ({counts[f.id]})
-               </button>
-            ))}
-            <button
-               className="rounded-full bg-[#241044] px-4 py-1.5 text-sm font-black text-[#a89bb8]"
-               onClick={() => void load()}
-               type="button"
-            >
-               {loading ? 'Loading…' : '↻ Refresh'}
-            </button>
-         </div>
+               <div className="flex flex-wrap gap-2">
+                  {FILTERS.map((f) => (
+                     <button
+                        className={`rounded-full px-4 py-1.5 text-sm font-black ${filter === f.id ? 'bg-white text-[#1c0a3a]' : 'bg-[#241044] text-[#a89bb8]'}`}
+                        key={f.id}
+                        onClick={() => setFilter(f.id)}
+                        type="button"
+                     >
+                        {f.label} ({counts[f.id]})
+                     </button>
+                  ))}
+                  <button
+                     className="rounded-full bg-[#241044] px-4 py-1.5 text-sm font-black text-[#a89bb8]"
+                     onClick={() => void load()}
+                     type="button"
+                  >
+                     {loading ? 'Loading…' : '↻ Refresh'}
+                  </button>
+               </div>
+            </>
+         )}
 
          {error ? <p className="text-sm font-bold text-red-300">{error}</p> : null}
-         {!shown.length && !loading ? <p className="text-base font-bold text-[#6f6385]">Nothing here.</p> : null}
+         {!shown.length && !loading ? (
+            <p className="text-base font-bold text-[#6f6385]">{userId ? 'No proof requests sent to them.' : 'Nothing here.'}</p>
+         ) : null}
          <ul className="space-y-3">
             {shown.map((r) => (
                <RequestCard key={r.id} onChanged={() => void load()} r={r} />

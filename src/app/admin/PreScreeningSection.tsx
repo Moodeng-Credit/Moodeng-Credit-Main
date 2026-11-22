@@ -123,11 +123,19 @@ const bkk = (iso: string) =>
 const errorMessage = (err: unknown) => (err instanceof Error ? err.message : String((err as { message?: string })?.message ?? err));
 
 // Same reasons as the Telegram card (_shared/preScreening.ts NOT_FIT_REASONS).
-const NOT_FIT_REASONS = ['Vague answers', 'Loan for sick family', 'Paying other loans', 'Income doesn’t match', 'Fake-looking document', 'Other'];
+const NOT_FIT_REASONS = [
+   'Vague answers',
+   'Loan for sick family',
+   'Paying other loans',
+   'Income doesn’t match',
+   'Fake-looking document',
+   'Other'
+];
 
 const pill = 'rounded-full bg-[#241044] px-4 py-1.5 text-sm font-black text-[#a89bb8]';
 
-export default function PreScreeningSection() {
+/** With `userId`: only that person's pre-screening (videos, answers, proof photos, AI score) — call sheet + account. */
+export default function PreScreeningSection({ userId }: { userId?: string } = {}) {
    const [rows, setRows] = useState<PreScreening[]>([]);
    const [loading, setLoading] = useState(true);
    const [error, setError] = useState<string | null>(null);
@@ -135,23 +143,20 @@ export default function PreScreeningSection() {
    const [clips, setClips] = useState<Record<string, string>>({});
    const [busy, setBusy] = useState<string | null>(null);
    // ?screen=<id> (the Telegram / Discord card's link): that one first.
-   const focusId = useMemo(() => new URLSearchParams(window.location.search).get('screen'), []);
+   const focusId = useMemo(() => (userId ? null : new URLSearchParams(window.location.search).get('screen')), [userId]);
 
    const load = useCallback(async () => {
       setLoading(true);
-      const { data, error: loadError } = await getSupabaseBrowserClient()
-         .from('pre_screenings')
-         .select(SELECT)
-         .neq('status', 'open')
-         .order('created_at', { ascending: false })
-         .limit(100);
+      let query = getSupabaseBrowserClient().from('pre_screenings').select(SELECT).neq('status', 'open');
+      if (userId) query = query.eq('user_id', userId);
+      const { data, error: loadError } = await query.order('created_at', { ascending: false }).limit(100);
       if (loadError) setError(loadError.message);
       else {
          setRows((data ?? []) as unknown as PreScreening[]);
          setError(null);
       }
       setLoading(false);
-   }, []);
+   }, [userId]);
 
    useEffect(() => {
       void load();
@@ -210,30 +215,36 @@ export default function PreScreeningSection() {
 
    return (
       <section className="space-y-4">
-         <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-               <h2 className="break-words text-2xl font-black sm:text-3xl">
-                  Pre-screening{' '}
-                  <span className="text-base font-bold text-[#a89bb8]">
-                     ({rows.length} done · {signedUp} signed up)
-                  </span>
-               </h2>
-               <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
-                  People who did moodeng.app/screen before signing up. The AI hears each answer and scores what was said — it does not watch
-                  the video, so open the clips yourself. Optional: nothing blocks or passes anyone on this score.
-               </p>
+         {userId ? (
+            <p className="text-sm font-black uppercase text-[#a89bb8]">Pre-screening · team only</p>
+         ) : (
+            <div className="flex flex-wrap items-end justify-between gap-3">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">
+                     Pre-screening{' '}
+                     <span className="text-base font-bold text-[#a89bb8]">
+                        ({rows.length} done · {signedUp} signed up)
+                     </span>
+                  </h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     People who did moodeng.app/screen before signing up. The AI hears each answer and scores what was said — it does not
+                     watch the video, so open the clips yourself. Optional: nothing blocks or passes anyone on this score.
+                  </p>
+               </div>
+               <div className="flex gap-2">
+                  <button className={pill} onClick={() => setOnlySignedUp((v) => !v)} type="button">
+                     {onlySignedUp ? 'Show everyone' : 'Only signed up'}
+                  </button>
+                  <button className={pill} onClick={() => void load()} type="button">
+                     {loading ? 'Loading…' : 'Refresh'}
+                  </button>
+               </div>
             </div>
-            <div className="flex gap-2">
-               <button className={pill} onClick={() => setOnlySignedUp((v) => !v)} type="button">
-                  {onlySignedUp ? 'Show everyone' : 'Only signed up'}
-               </button>
-               <button className={pill} onClick={() => void load()} type="button">
-                  {loading ? 'Loading…' : 'Refresh'}
-               </button>
-            </div>
-         </div>
+         )}
          {error ? <p className="text-sm font-bold text-red-300">{error}</p> : null}
-         {!shown.length && !loading ? <p className="text-base font-bold text-[#6f6385]">Nobody yet.</p> : null}
+         {!shown.length && !loading ? (
+            <p className="text-base font-bold text-[#6f6385]">{userId ? 'No pre-screening linked to this account.' : 'Nobody yet.'}</p>
+         ) : null}
 
          <ul className="space-y-3">
             {shown.map((row) => {
@@ -269,12 +280,12 @@ export default function PreScreeningSection() {
                         {row.videos_watched === 0 && row.video_watched
                            ? null
                            : row.videos_watched != null
-                           ? row.video_watched
-                              ? `watched all ${row.videos_watched} videos`
-                              : `⚠️ watched ${row.videos_watched} video${row.videos_watched === 1 ? '' : 's'} to the end`
-                           : row.video_watched
-                             ? 'watched the video'
-                             : '⚠️ did not finish the video'}
+                             ? row.video_watched
+                                ? `watched all ${row.videos_watched} videos`
+                                : `⚠️ watched ${row.videos_watched} video${row.videos_watched === 1 ? '' : 's'} to the end`
+                             : row.video_watched
+                               ? 'watched the video'
+                               : '⚠️ did not finish the video'}
                         {row.browser ? ` · ${row.browser}` : ''}
                      </p>
                      {row.grade?.summary ? <p className="mt-2 text-base font-bold text-[#e6def5]">{row.grade.summary}</p> : null}
@@ -305,20 +316,29 @@ export default function PreScreeningSection() {
                                  <p className="text-sm font-black text-[#cfc6dd]">
                                     {i + 1}. {q.text}{' '}
                                     <span className="text-[#a89bb8]">
-                                       {q.kind === 'medical' ? '· graded apart' : graded?.score != null ? `· ${graded.score}/10` : '· no score'}
+                                       {q.kind === 'medical'
+                                          ? '· graded apart'
+                                          : graded?.score != null
+                                            ? `· ${graded.score}/10`
+                                            : '· no score'}
                                     </span>
                                  </p>
                                  <p className="mt-1 text-base text-white">
                                     {answer?.text ? (
                                        <>
-                                          <span className="mr-1 rounded bg-[#241044] px-1.5 py-0.5 text-xs font-bold text-[#a89bb8]">typed</span>“{answer.text}”
+                                          <span className="mr-1 rounded bg-[#241044] px-1.5 py-0.5 text-xs font-bold text-[#a89bb8]">
+                                             typed
+                                          </span>
+                                          “{answer.text}”
                                        </>
                                     ) : graded?.transcript ? (
                                        `“${graded.transcript}”`
                                     ) : answer?.photo ? (
                                        <span className="text-[#cfc6dd]">📸 {photoTiming(answer)}</span>
                                     ) : answer?.skip ? (
-                                       <span className="text-[#a89bb8]">{q.kind === 'photo' ? photoTiming(answer) : 'Skipped (optional).'}</span>
+                                       <span className="text-[#a89bb8]">
+                                          {q.kind === 'photo' ? photoTiming(answer) : 'Skipped (optional).'}
+                                       </span>
                                     ) : answer?.doc ? (
                                        <span className="text-[#cfc6dd]">📄 Sent</span>
                                     ) : (
@@ -336,7 +356,9 @@ export default function PreScreeningSection() {
                                     <p className="mt-1 text-sm font-bold text-[#e6def5]">
                                        🩺 {MEDICAL_BADGE[row.grade.medical.severity]}
                                        {row.grade.medical.loan_for ? ` · loan: ${row.grade.medical.loan_for}` : ''}
-                                       {row.grade.medical.note ? <span className="font-normal text-[#a89bb8]"> · {row.grade.medical.note}</span> : null}
+                                       {row.grade.medical.note ? (
+                                          <span className="font-normal text-[#a89bb8]"> · {row.grade.medical.note}</span>
+                                       ) : null}
                                     </p>
                                  ) : null}
                                  {graded?.note ? <p className="mt-1 text-sm text-[#a89bb8]">{graded.note}</p> : null}
@@ -371,7 +393,11 @@ export default function PreScreeningSection() {
                                     </button>
                                  ) : (
                                     <p className="mt-2 text-sm text-[#6f6385]">
-                                       {path ? 'Clip removed (older than 30 days, never signed up).' : answer?.text ? 'Typed answer.' : 'No clip for this answer.'}
+                                       {path
+                                          ? 'Clip removed (older than 30 days, never signed up).'
+                                          : answer?.text
+                                            ? 'Typed answer.'
+                                            : 'No clip for this answer.'}
                                     </p>
                                  )}
                               </li>
@@ -395,7 +421,13 @@ export default function PreScreeningSection() {
                               </button>
                               {askingReason === row.id ? (
                                  NOT_FIT_REASONS.map((reason) => (
-                                    <button className={pill} disabled={busy === row.id} key={reason} onClick={() => void decide(row, 'not_fit', reason)} type="button">
+                                    <button
+                                       className={pill}
+                                       disabled={busy === row.id}
+                                       key={reason}
+                                       onClick={() => void decide(row, 'not_fit', reason)}
+                                       type="button"
+                                    >
                                        ❌ {reason}
                                     </button>
                                  ))
@@ -422,7 +454,15 @@ export default function PreScreeningSection() {
 }
 
 /** The proof of income they sent: what the AI read from it, its 0-10, and the files to open. */
-function IncomeProof({ row, clips, onOpen }: { row: PreScreening; clips: Record<string, string>; onOpen: (path: string) => Promise<void> }) {
+function IncomeProof({
+   row,
+   clips,
+   onOpen
+}: {
+   row: PreScreening;
+   clips: Record<string, string>;
+   onOpen: (path: string) => Promise<void>;
+}) {
    const files = row.income_files ?? [];
    const income = row.grade?.income ?? null;
    const read = income?.read ?? null;

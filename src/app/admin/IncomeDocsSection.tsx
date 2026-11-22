@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { type AdminIncomeDocument, decideIncomeDocument, incomeDocumentUrl, listIncomeDocuments } from '@/app/admin/adminSupabase';
+import {
+   type AdminIncomeDocument,
+   decideIncomeDocument,
+   incomeDocumentUrl,
+   listIncomeDocuments,
+   listIncomeDocumentsForUser
+} from '@/app/admin/adminSupabase';
 
 const personLabel = (p: AdminIncomeDocument['user']) =>
    p ? p.display_name?.trim() || (p.username ? `@${p.username}` : 'Unknown') : 'Deleted account';
@@ -90,7 +96,11 @@ function DocPreviews({ files, onOpen }: { files: AdminIncomeDocument['files']; o
    );
 }
 
-export default function IncomeDocsSection() {
+/**
+ * With `userId`: only that borrower's sends, decided ones too (call sheet + their account in Admin → Users),
+ * so the team sees every proof and the AI's read while deciding the case. Team-only, never shown to them.
+ */
+export default function IncomeDocsSection({ userId }: { userId?: string } = {}) {
    const [docs, setDocs] = useState<AdminIncomeDocument[]>([]);
    const [loading, setLoading] = useState(true);
    const [error, setError] = useState<string | null>(null);
@@ -100,19 +110,19 @@ export default function IncomeDocsSection() {
    const [declining, setDeclining] = useState<string | null>(null);
    const [reasons, setReasons] = useState<Record<string, string>>({});
    // ?doc=<id> (the Telegram / Discord card's link): that send first, highlighted, even if decided.
-   const focusId = useMemo(() => new URLSearchParams(window.location.search).get('doc'), []);
+   const focusId = useMemo(() => (userId ? null : new URLSearchParams(window.location.search).get('doc')), [userId]);
 
    const load = useCallback(async () => {
       setLoading(true);
       try {
-         setDocs(await listIncomeDocuments());
+         setDocs(await (userId ? listIncomeDocumentsForUser(userId) : listIncomeDocuments()));
          setError(null);
       } catch (err) {
          setError(errorMessage(err));
       } finally {
          setLoading(false);
       }
-   }, []);
+   }, [userId]);
 
    useEffect(() => {
       void load();
@@ -149,7 +159,9 @@ export default function IncomeDocsSection() {
    // and approved anyway, but not counted as "to review".
    const resent = docs.filter((d) => !d.decision && d.verdict === 'resend' && d.risk !== 'red');
    const focused = docs.find((d) => d.id === focusId);
-   const shown = [...(focused ? [focused] : []), ...(showReviewed ? docs : docs.filter((d) => !d.decision)).filter((d) => d !== focused)];
+   const shown = userId
+      ? docs
+      : [...(focused ? [focused] : []), ...(showReviewed ? docs : docs.filter((d) => !d.decision)).filter((d) => d !== focused)];
 
    useEffect(() => {
       if (focused) document.getElementById(`income-doc-${focused.id}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
@@ -157,39 +169,56 @@ export default function IncomeDocsSection() {
 
    return (
       <section className="space-y-4">
-         <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-               <h2 className="break-words text-2xl font-black sm:text-3xl">
-                  Income docs{' '}
-                  <span className="text-base font-bold text-[#a89bb8]">
-                     ({toReview.length} to review{resent.length ? ` · ${resent.length} asked to resend` : ''})
-                  </span>
-               </h2>
-               <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
-                  Proof of income borrowers send from moodeng.app/documents. The AI reads the files; numbers, checks and the score are
-                  worked out in code. The score isn&apos;t a tested prediction yet — compare it with repayments once ~30 loans above $60
-                  have come due.
+         {userId ? (
+            <div className="flex items-center justify-between gap-3">
+               <p className="text-sm font-black uppercase text-[#a89bb8]">
+                  Proof of income · team only{docs.length ? ` (${docs.length} ${docs.length === 1 ? 'send' : 'sends'})` : ''}
                </p>
-            </div>
-            <div className="flex gap-2">
-               <button
-                  type="button"
-                  onClick={() => setShowReviewed((v) => !v)}
-                  className="rounded-full bg-[#241044] px-4 py-1.5 text-sm font-black text-[#a89bb8]"
-               >
-                  {showReviewed ? 'Hide decided' : 'Show decided too'}
-               </button>
                <button
                   type="button"
                   onClick={() => void load()}
-                  className="rounded-full bg-[#241044] px-4 py-1.5 text-sm font-black text-[#a89bb8]"
+                  className="rounded-full bg-[#241044] px-3 py-1 text-xs font-black text-[#a89bb8]"
                >
                   {loading ? 'Loading…' : 'Refresh'}
                </button>
             </div>
-         </div>
+         ) : (
+            <div className="flex flex-wrap items-end justify-between gap-3">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">
+                     Income docs{' '}
+                     <span className="text-base font-bold text-[#a89bb8]">
+                        ({toReview.length} to review{resent.length ? ` · ${resent.length} asked to resend` : ''})
+                     </span>
+                  </h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Proof of income borrowers send from moodeng.app/documents. The AI reads the files; numbers, checks and the score are
+                     worked out in code. The score isn&apos;t a tested prediction yet — compare it with repayments once ~30 loans above $60
+                     have come due.
+                  </p>
+               </div>
+               <div className="flex gap-2">
+                  <button
+                     type="button"
+                     onClick={() => setShowReviewed((v) => !v)}
+                     className="rounded-full bg-[#241044] px-4 py-1.5 text-sm font-black text-[#a89bb8]"
+                  >
+                     {showReviewed ? 'Hide decided' : 'Show decided too'}
+                  </button>
+                  <button
+                     type="button"
+                     onClick={() => void load()}
+                     className="rounded-full bg-[#241044] px-4 py-1.5 text-sm font-black text-[#a89bb8]"
+                  >
+                     {loading ? 'Loading…' : 'Refresh'}
+                  </button>
+               </div>
+            </div>
+         )}
          {error ? <p className="text-sm font-bold text-red-300">{error}</p> : null}
-         {!shown.length && !loading ? <p className="text-base font-bold text-[#6f6385]">Nothing to review.</p> : null}
+         {!shown.length && !loading ? (
+            <p className="text-base font-bold text-[#6f6385]">{userId ? 'No proof of income sent yet.' : 'Nothing to review.'}</p>
+         ) : null}
 
          <ul className="space-y-3">
             {shown.map((doc) => {
@@ -217,6 +246,7 @@ export default function IncomeDocsSection() {
                            </p>
                            <p className="text-sm font-medium text-[#a89bb8]">
                               {(doc.doc_type ?? 'document').replace(/_/g, ' ')} · sent {bkk(doc.created_at)}
+                              {doc.note === 'Sent on Messenger' ? ' 💬' : ''}
                               {doc.requested_amount ? ` · asking $${Number(doc.requested_amount)}` : ''}
                               {doc.tier
                                  ? ` · $${doc.tier.min} step (${doc.tier.months ? `${doc.tier.months}+ months` : 'any recent'}${doc.tier.fresh ? ', fresh' : ''}${doc.tier.maxShare != null ? `, repay ≤${Math.round(doc.tier.maxShare * 100)}%` : ''}${doc.tier.liveCall ? ', live GCash on call' : ''}${doc.tier.autoApprove ? ', approves itself if every check passes' : ''})`
@@ -345,7 +375,11 @@ export default function IncomeDocsSection() {
                                  <div key={q.id}>
                                     <p>❓ {q.en}</p>
                                     {photoPath ? (
-                                       <button className="text-left font-semibold text-[#b4a6ff] underline" onClick={() => void openFile(photoPath)} type="button">
+                                       <button
+                                          className="text-left font-semibold text-[#b4a6ff] underline"
+                                          onClick={() => void openFile(photoPath)}
+                                          type="button"
+                                       >
                                           📸 Open their screenshot
                                        </button>
                                     ) : (

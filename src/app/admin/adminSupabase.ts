@@ -3434,6 +3434,18 @@ export async function listIncomeDocuments(): Promise<AdminIncomeDocument[]> {
 }
 
 /** Approve or decline a send; the database then tells the borrower (push, Messenger, Telegram). */
+/** Every proof-of-income send from one borrower (page or Messenger), newest first: call sheet + account. */
+export async function listIncomeDocumentsForUser(userId: string): Promise<AdminIncomeDocument[]> {
+   const { data, error } = await getSupabaseBrowserClient()
+      .from('income_documents')
+      .select(INCOME_DOC_SELECT)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(50);
+   if (error) throw error;
+   return (data ?? []) as unknown as AdminIncomeDocument[];
+}
+
 export async function decideIncomeDocument(id: string, decision: 'approved' | 'declined', reason: string | null): Promise<void> {
    await requireOk(getSupabaseBrowserClient().rpc('decide_income_document', { p_id: id, p_decision: decision, p_reason: reason }));
 }

@@ -78,6 +78,7 @@ import MuleRiskSection from './MuleRiskSection';
 import OnChainSection from './OnChainSection';
 import PricingHealthSection from './PricingHealthSection';
 import IncomeDocsSection from './IncomeDocsSection';
+import ProofHistory from './ProofHistory';
 import PreScreeningSection from './PreScreeningSection';
 import UnsentLoanRequestsSection from './UnsentLoanRequestsSection';
 import ProgressSection from './ProgressSection';
@@ -1081,6 +1082,9 @@ function AdminPanel() {
                                       Ban is the one-step ban: account, Didit block, KYC blacklist, open requests deleted, and a message to the user. Flag ban review does not ban anyone. It records an admin review item only. Reset 2FA removes
                                       every authenticator/passkey factor this user has enrolled — use it when they're locked out.
                                    </p>
+                                   <div className="mt-5">
+                                      <ProofHistory userId={user.id} />
+                                   </div>
                                    <BorrowerTimeline userId={user.id} />
                                 </div>
                              ) : null}
