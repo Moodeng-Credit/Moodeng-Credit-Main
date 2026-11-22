@@ -1,12 +1,11 @@
 import { useEffect, useMemo } from 'react';
 
-import { currentDueDate, currentMilestone } from '@/lib/repaymentSchedule';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { useFriendReferrals } from '@/hooks/useFriendReferrals';
-import { useWalletLast } from '@/hooks/useWalletLast';
 import { useRecordedMilestones } from '@/hooks/useRecordedMilestones';
 import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
+import { useWalletLast } from '@/hooks/useWalletLast';
 
 import { calculateDaysBetween, parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
@@ -15,6 +14,7 @@ import { getBorrowerUsedCreditAmount } from '@/lib/borrowerCreditUsage';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getDaysUntilDueDay, getDueDayEnd, getLoanTimezone, getRewardFromAt } from '@/lib/loanDeadline';
+import { currentDueDate, currentMilestone } from '@/lib/repaymentSchedule';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { fetchUserProfiles } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -93,7 +93,8 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
       const credit = getCreditLevelProgress({
          creditLimit,
          isVerified,
-         loans: borrowerLoans
+         loans: borrowerLoans,
+         joinedAt: user.createdAt
       });
       const dues: DashboardV2Due[] = dueLoans.map(({ loan, isOverdue }) => {
          const lender = loan.lenderUser ? userProfiles[loan.lenderUser] : undefined;

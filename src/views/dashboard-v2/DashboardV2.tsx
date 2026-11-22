@@ -3,17 +3,18 @@ import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
-import ContactLinesCard from '@/components/ContactLinesCard';
-import LimitStaysCard from '@/views/dashboard-v2/components/LimitStaysCard';
 import { AddEmailCard } from '@/components/account/AddEmailCard';
 import { ConfirmEmailReminder } from '@/components/account/ConfirmEmailReminder';
+import ContactLinesCard from '@/components/ContactLinesCard';
 import GuidedTourPreview from '@/components/GuidedTourPreview';
 import VerifyYourselfModal from '@/components/verification/VerifyYourselfModal';
 
+import { useConfirmVoucherReceived } from '@/hooks/useFriendReferrals';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
+import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import type { ClaimableVoucher } from '@/lib/friendReferrals';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import { BORROWER_GUIDED_TOUR_ID, markGuidedTourCompleted, shouldShowGuidedTour } from '@/lib/guidedTourStorage';
@@ -22,6 +23,7 @@ import { needsHomeScreenForPush } from '@/lib/push/webPushClient';
 import { getVerificationUiState } from '@/lib/verificationUiState';
 import type { RootState } from '@/store/store';
 import WalletBalanceCard from '@/views/account/WalletBalanceCard';
+import CreditTrackCard from '@/views/dashboard-v2/components/CreditTrackCard';
 import {
    ConnectFacebookBanner,
    ConnectWalletBanner,
@@ -36,10 +38,10 @@ import {
    LoanSummarySection,
    MilestonesSection,
    RewardsWaitingCard,
-   VoucherFollowUpCard,
-   UpcomingDuesSection
+   UpcomingDuesSection,
+   VoucherFollowUpCard
 } from '@/views/dashboard-v2/components/DashboardV2Sections';
-import { useConfirmVoucherReceived } from '@/hooks/useFriendReferrals';
+import LimitStaysCard from '@/views/dashboard-v2/components/LimitStaysCard';
 import { getVoucherFollowUp, getVoucherState, OWN_VOUCHER } from '@/views/dashboard-v2/dashboardV2Model';
 import DashboardV2PreviewBar from '@/views/dashboard-v2/DashboardV2Preview';
 import { VoucherClaimPopup } from '@/views/dashboard-v2/DashboardV2Rewards';
@@ -141,7 +143,8 @@ export default function DashboardV2() {
    // In manual review — or declined — without a confirmed Facebook/WhatsApp line: point them to the
    // Facebook step, so the team can tell them the result (review) or talk them through it (declined).
    const verificationState = getVerificationUiState(authUser);
-   const showConnectFacebook = isReal && (verificationState === 'review' || verificationState === 'declined') && !authUser?.hasVerifiedContact;
+   const showConnectFacebook =
+      isReal && (verificationState === 'review' || verificationState === 'declined') && !authUser?.hasVerifiedContact;
    const push = usePushNotifications(isReal ? userId : null);
    // Borrowers with something to repay who haven't allowed push. Only permission is checked (not the
    // subscription, which resolves asynchronously) so the card never flashes for someone who has it on.
@@ -159,6 +162,8 @@ export default function DashboardV2() {
    const tourStepsParam = Number(searchParams.get('requestBoardTourSteps'));
    const requestBoardTourStepCount =
       Number.isInteger(tourStepsParam) && tourStepsParam > 0 ? tourStepsParam : REQUEST_BOARD_TOUR_STEP_COUNT;
+   const trackParam = searchParams.get('track');
+   const previewTrack = isPreviewHost() && (trackParam === 'A' || trackParam === 'B') ? trackParam : undefined;
    const showTour = searchParams.has('tour') && shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, userId, false);
    const ownVoucher = getVoucherState(model.rewards, OWN_VOUCHER, model.referralLoading);
    const voucherFollowUp = getVoucherFollowUp(model.rewards);
@@ -235,7 +240,13 @@ export default function DashboardV2() {
                   {isReal ? <ConfirmEmailReminder placement="dashboard" /> : null}
                   {model.showWithdraw ? <WithdrawBanner onWithdraw={() => navigate('/withdraw')} /> : null}
                   {isReal && !showConnectFacebook ? <ContactLinesCard className="mx-5" /> : null}
-                  {showConnectFacebook ? <ConnectFacebookBanner declined={verificationState === 'declined'} language={language} onConnect={() => navigate('/verify')} /> : null}
+                  {showConnectFacebook ? (
+                     <ConnectFacebookBanner
+                        declined={verificationState === 'declined'}
+                        language={language}
+                        onConnect={() => navigate('/verify')}
+                     />
+                  ) : null}
                   {waitingRewards.length ? (
                      <RewardsWaitingCard claimable={waitingRewards} onClaim={() => setClaimingVoucher(waitingRewards[0])} />
                   ) : null}
@@ -250,7 +261,19 @@ export default function DashboardV2() {
                      />
                   ) : null}
                   {/* The 48-hour rule: why their limit didn't go up, and how to talk to us about it. */}
-                  {isReal || new URLSearchParams(window.location.search).has('limit') ? <LimitStaysCard language={language} preview={!isReal} /> : null}
+                  {isReal || new URLSearchParams(window.location.search).has('limit') ? (
+                     <LimitStaysCard language={language} preview={!isReal} />
+                  ) : null}
+                  {/* Credit tracks: early members keep the old ladder; others at an old limit see the new steps. */}
+                  {isReal || previewTrack ? (
+                     <CreditTrackCard
+                        language={language}
+                        userId={userId}
+                        joinedAt={authUser?.createdAt}
+                        limit={model.isVerified ? getEffectiveCreditLimit(authUser?.cs, true) : 0}
+                        preview={isReal ? undefined : previewTrack}
+                     />
+                  ) : null}
                   {/* Anything to repay sits near the top, with the streak and what paying on time earns. */}
                   {model.dues.length ? <UpcomingDuesSection model={model} /> : null}
                   {voucherFollowUp ? (

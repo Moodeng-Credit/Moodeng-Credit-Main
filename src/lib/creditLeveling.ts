@@ -1,8 +1,8 @@
-import { CREDIT_TIERS, MAX_CREDIT_LIMIT, STARTING_CREDIT_LIMIT, getNextCreditTier } from '@/config/creditTiers';
 import { parseDateSafely } from '@/utils/dateFormatters';
-import { getLoanPastDueAt } from '@/utils/loanOverdue';
 import { toNumber } from '@/utils/decimalHelpers';
+import { getLoanPastDueAt } from '@/utils/loanOverdue';
 
+import { CREDIT_TIERS, getNextCreditTier, MAX_CREDIT_LIMIT, STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
 import type { Loan } from '@/types/loanTypes';
 
 export const MIN_CREDIT_LIMIT = STARTING_CREDIT_LIMIT;
@@ -26,8 +26,10 @@ type CreditProgressionInput = {
    /** The loan's saved zone (`loans.due_timezone`); Manila when missing. */
    dueTimezone?: string | null;
    paidAt: string;
-   /** When the loan was funded: one funded before the ladder switch keeps the old next step. */
+   /** When the loan was funded (the 48-hour rule). */
    fundedAt?: string | null;
+   /** When the borrower joined (users.created_at): before October 2026 = Track A, the old ladder. */
+   joinedAt?: string | null;
 };
 
 type CreditProgressionResult = {
@@ -66,7 +68,8 @@ export const evaluateCreditProgression = ({
    dueDate,
    dueTimezone,
    paidAt,
-   fundedAt
+   fundedAt,
+   joinedAt
 }: CreditProgressionInput): CreditProgressionResult => {
    const normalizedLimit = getEffectiveCreditLimit(currentLimit, isVerified);
    const repaid = toNumber(repaidAmount ?? 0);
@@ -79,11 +82,12 @@ export const evaluateCreditProgression = ({
    // reaches the limit or several small loans add up to it. Lateness doesn't block it: most late
    // repayments are tech trouble (wallets, exchanges), not the borrower's fault.
    const isFullLimitLoan = principal >= normalizedLimit;
-   const canLevelUp = isVerified && isFullyRepaid && isFullLimitLoan && normalizedLimit < MAX_CREDIT_LIMIT && !isFastRepay(fundedAt, paidAt);
+   const canLevelUp =
+      isVerified && isFullyRepaid && isFullLimitLoan && normalizedLimit < MAX_CREDIT_LIMIT && !isFastRepay(fundedAt, paidAt);
 
    return {
       shouldLevelUp: canLevelUp,
-      nextLimit: getNextCreditTier(normalizedLimit, fundedAt),
+      nextLimit: getNextCreditTier(normalizedLimit, joinedAt),
       isLate,
       isFullyRepaid
    };

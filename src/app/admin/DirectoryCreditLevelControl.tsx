@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react';
 
 import { type AdminDirectoryUser, shiftAdminCreditLevel } from '@/app/admin/adminSupabase';
 import { useAdminLive } from '@/app/admin/useAdminLive';
-import { MAX_CREDIT_LIMIT, STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
+import { getCreditTrack, MAX_CREDIT_LIMIT, STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
 
-// Move a borrower's credit limit one ladder step ($10) up or down from their Directory card — for
+// Track A (joined before October 2026) climbs the old ladder ($20 → $40 → $60); Track B the new one ($10 a level).
+// Move a borrower's credit limit one ladder step up or down from their Directory card — for
 // mistakes, or a level-up they got by repaying early. The server (admin-call-approvals
 // 'credit_level') does the step, so the ladder lives in one place, and posts a note to Discord.
 
-type CreditUser = Pick<AdminDirectoryUser, 'id' | 'username' | 'user_role' | 'cs'>;
+type CreditUser = Pick<AdminDirectoryUser, 'id' | 'username' | 'user_role' | 'cs' | 'created_at'>;
 
 const effective = (cs: number | null | undefined) => Math.min(Math.max(Number(cs ?? 0) || 0, STARTING_CREDIT_LIMIT), MAX_CREDIT_LIMIT);
 
@@ -25,6 +26,7 @@ export default function DirectoryCreditLevelControl({ user }: { user: CreditUser
    if (user.user_role === 'lender') return null;
 
    const limit = effective(cs);
+   const track = getCreditTrack(user.created_at);
 
    const shift = async (direction: 'up' | 'down') => {
       if (!window.confirm(`Move ${user.username}'s credit limit one level ${direction} from $${limit}?`)) return;
@@ -49,6 +51,12 @@ export default function DirectoryCreditLevelControl({ user }: { user: CreditUser
    return (
       <div className="mt-3 flex flex-wrap items-center gap-2">
          <span className="text-base font-black text-[#c9a7ff]">Credit limit ${limit}</span>
+         <span
+            className={`rounded-full px-2 py-0.5 text-sm font-black ${track === 'A' ? 'bg-[#ffce1b] text-[#4a2a00]' : 'bg-[#2a1453] text-[#c9a7ff]'}`}
+            title={track === 'A' ? 'Joined before Oct 2026: old ladder ($20 → $40 → $60 …)' : 'New ladder: +$10 a level'}
+         >
+            Track {track}
+         </span>
          <button type="button" disabled={busy || limit <= STARTING_CREDIT_LIMIT} onClick={() => shift('down')} className={base}>
             − 1 level
          </button>

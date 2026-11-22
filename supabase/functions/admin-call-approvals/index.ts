@@ -3,7 +3,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { personName, stampDecisionCards } from '../_shared/adminCards.ts';
 import { ATTENDANCE_COLUMNS, describeAttendance, zoomActiveForHost } from '../_shared/attendance.ts';
+import { checkCallForm } from '../_shared/callFormCheck.ts';
+import { getEffectiveCreditLimit, shiftCreditLevel } from '../_shared/creditAndPoints.ts';
 import { postDiscord } from '../_shared/discord.ts';
+import { fbStepsSentForCall } from '../_shared/facebookSteps.ts';
+import { sendFacebookSteps } from '../_shared/facebookStepsSend.ts';
+import { idApprovalBlock } from '../_shared/idTrack.ts';
 import {
    BORROWER_COLUMNS,
    type BorrowerRow,
@@ -14,12 +19,7 @@ import {
    REQUEST_COLUMNS,
    who
 } from '../_shared/loanAccess.ts';
-import { checkCallForm } from '../_shared/callFormCheck.ts';
-import { fbStepsSentForCall } from '../_shared/facebookSteps.ts';
-import { sendFacebookSteps } from '../_shared/facebookStepsSend.ts';
 import { recordCallOutcome } from '../_shared/videoCallOutcome.ts';
-import { idApprovalBlock } from '../_shared/idTrack.ts';
-import { getEffectiveCreditLimit, shiftCreditLevel } from '../_shared/creditAndPoints.ts';
 
 // Call approvals in the admin panel — the same decisions as the Telegram card's buttons and
 // /showed · /noshow · /approve · /reject, so the host can approve a borrower the moment the call
@@ -116,7 +116,12 @@ serve(async (req) => {
                .lt('video_call_starts_at', new Date(now + LOOKAHEAD_H * 3600000).toISOString())
                .order('video_call_starts_at', { ascending: true })
                .limit(500),
-            svc.from('loan_access_requests').select(REQUEST_COLUMNS).eq('status', 'pending').order('created_at', { ascending: true }).limit(100)
+            svc
+               .from('loan_access_requests')
+               .select(REQUEST_COLUMNS)
+               .eq('status', 'pending')
+               .order('created_at', { ascending: true })
+               .limit(100)
          ]);
          if (callsError) throw new Error(callsError.message);
          if (pendingError) throw new Error(pendingError.message);
@@ -147,7 +152,9 @@ serve(async (req) => {
                host: u.video_call_host,
                joinUrl: u.video_call_join_url,
                attendance: u.video_call_starts_at ? describeAttendance(u, zoomByHost.get(host) ?? false) : null,
-               fbStepsSentAt: fbStepsSentForCall(u.video_call_fb_steps_sent_at, u.video_call_starts_at) ? u.video_call_fb_steps_sent_at : null,
+               fbStepsSentAt: fbStepsSentForCall(u.video_call_fb_steps_sent_at, u.video_call_starts_at)
+                  ? u.video_call_fb_steps_sent_at
+                  : null,
                outcome: u.video_call_outcome,
                outcomeAt: u.video_call_outcome_at,
                request: request ? { id: request.id, kind: request.kind, reason: request.reason, createdAt: request.created_at } : null
@@ -170,15 +177,30 @@ serve(async (req) => {
       }
 
       if (body.action === 'credit_level' && typeof body.userId === 'string' && (body.direction === 'up' || body.direction === 'down')) {
-         const { data: row, error: readError } = await svc.from('users').select('id, username, display_name, email, cs').eq('id', body.userId).maybeSingle();
+         const { data: row, error: readError } = await svc
+            .from('users')
+            .select('id, username, display_name, email, cs, created_at')
+            .eq('id', body.userId)
+            .maybeSingle();
          if (readError) throw new Error(readError.message);
          if (!row) return json({ ok: false, summary: 'User not found.' });
-         const person = row as { id: string; username: string | null; display_name: string | null; email: string | null; cs: number | null };
+         const person = row as {
+            id: string;
+            username: string | null;
+            display_name: string | null;
+            email: string | null;
+            cs: number | null;
+            created_at: string | null;
+         };
          const before = person.cs;
          const shown = getEffectiveCreditLimit(before, true);
-         const next = shiftCreditLevel(before, body.direction);
+         const next = shiftCreditLevel(before, body.direction, person.created_at);
          if (next === shown) {
-            return json({ ok: false, summary: `Already at the ${body.direction === 'up' ? 'top' : 'bottom'} ($${shown}) — nothing changed.`, cs: before });
+            return json({
+               ok: false,
+               summary: `Already at the ${body.direction === 'up' ? 'top' : 'bottom'} ($${shown}) — nothing changed.`,
+               cs: before
+            });
          }
          // Compare-and-set on the value we read, so a repayment level-up landing at the same moment
          // isn't silently overwritten (same pattern as repaymentFollowUps.ts).
@@ -261,7 +283,11 @@ serve(async (req) => {
             .eq('id', body.userId)
             .maybeSingle();
          if (!target) return json({ ok: false, error: 'Borrower not found.' }, 404);
-         const sent = await sendFacebookSteps(svc, target as { id: string; messenger_psid: string | null; chat_id: string | number | null; video_call_starts_at: string | null }, { force: true });
+         const sent = await sendFacebookSteps(
+            svc,
+            target as { id: string; messenger_psid: string | null; chat_id: string | number | null; video_call_starts_at: string | null },
+            { force: true }
+         );
          if (!sent.ok) {
             const why =
                sent.reason === 'no_contact' || sent.reason === 'no_channel'

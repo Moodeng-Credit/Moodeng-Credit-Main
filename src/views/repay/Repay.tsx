@@ -1229,7 +1229,8 @@ export default function Repay() {
             setRepaymentAmount('');
             if (isFullyRepaid) {
                // Demo the level-up so the celebration is visible in preview/video runs.
-               const demoNext = getNextCreditTier(reduxStore.getState().auth.user?.cs || 15);
+               const demoUser = reduxStore.getState().auth.user;
+               const demoNext = getNextCreditTier(demoUser?.cs || 15, demoUser?.createdAt);
                setShowCompletionDetails(false);
                setCompletion({
                   reason: selectedLoan.reason || 'your loan',
@@ -1369,7 +1370,9 @@ export default function Repay() {
                   ? { toLevel: getCreditLevelNumber(serverLevelUp.toLimit), newLimit: serverLevelUp.toLimit }
                   : null,
                fastRepayLimit:
-                  !serverLevelUp && isFastRepay(selectedLoan.fundedAt ?? null, new Date().toISOString()) ? user.cs || STARTING_CREDIT_LIMIT : null
+                  !serverLevelUp && isFastRepay(selectedLoan.fundedAt ?? null, new Date().toISOString())
+                     ? user.cs || STARTING_CREDIT_LIMIT
+                     : null
             });
          } else {
             // Partial payment: the loan stays active, so acknowledge it inline instead of
@@ -1717,7 +1720,9 @@ export default function Repay() {
                </>
             ) : (
                <>
-                  <p className="text-[13px] font-extrabold leading-snug text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Send on the BASE network only</p>
+                  <p className="text-[13px] font-extrabold leading-snug text-[#b91c1c] dark:text-[#fca5a5]">
+                     ⚠️ Send on the BASE network only
+                  </p>
                   <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#b91c1c] dark:text-[#fca5a5]">
                      Choose the Base network. Any other network and your money is lost.
                   </p>
@@ -2085,9 +2090,12 @@ export default function Repay() {
                   <div className="flex w-full flex-col gap-2 text-left">
                      {completion.creditLevelUp ? <DoneRow>New limit: ${completion.creditLevelUp.newLimit}</DoneRow> : null}
                      {completion.fastRepayLimit ? (
-                        <p className="rounded-[14px] bg-[#fff6dc] px-4 py-3 text-[14px] leading-[20px] text-[#6b4a00] dark:bg-[#3a2e10] dark:text-[#ffe27a]" data-testid="repay-fast-note">
-                           <b>Your limit stays ${completion.fastRepayLimit}.</b> Loans paid back in under 2 days don’t count. Next time, keep it
-                           at least 2 days to level up.
+                        <p
+                           className="rounded-[14px] bg-[#fff6dc] px-4 py-3 text-[14px] leading-[20px] text-[#6b4a00] dark:bg-[#3a2e10] dark:text-[#ffe27a]"
+                           data-testid="repay-fast-note"
+                        >
+                           <b>Your limit stays ${completion.fastRepayLimit}.</b> Loans paid back in under 2 days don’t count. Next time,
+                           keep it at least 2 days to level up.
                         </p>
                      ) : null}
                      {completion.trustPoints > 0 ? <DoneRow>+{completion.trustPoints} Pandesal points</DoneRow> : null}
@@ -2313,17 +2321,25 @@ export default function Repay() {
          dueDate: selectedLoan.dueDate,
          dueTimezone: selectedLoan.dueTimezone,
          paidAt: new Date().toISOString(),
-         fundedAt: selectedLoan.fundedAt ?? null
+         fundedAt: selectedLoan.fundedAt ?? null,
+         joinedAt: user.createdAt ?? null
       });
       const currentLimit = user.cs || STARTING_CREDIT_LIMIT;
       const nextLimit = progression.shouldLevelUp ? progression.nextLimit : currentLimit;
       // The 48-hour rule: paying now won't level them up — say so before they pay, with when it would.
-      const fastCountsFrom = clearsLoan && isFastRepay(selectedLoan.fundedAt ?? null, new Date().toISOString()) ? countsFromAt(selectedLoan.fundedAt) : null;
+      const fastCountsFrom =
+         clearsLoan && isFastRepay(selectedLoan.fundedAt ?? null, new Date().toISOString()) ? countsFromAt(selectedLoan.fundedAt) : null;
       const fastNote = fastCountsFrom ? (
          <span className="text-[13px] font-medium leading-[17px] text-[#7a6a4f] dark:text-[#bfb29a]" data-testid="repay-fast-before-note">
             ⏳ Pay from{' '}
-            {fastCountsFrom.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: getLoanTimezone(selectedLoan) })} to
-            raise your limit — keep loans at least 2 days.
+            {fastCountsFrom.toLocaleString('en-US', {
+               month: 'short',
+               day: 'numeric',
+               hour: 'numeric',
+               minute: '2-digit',
+               timeZone: getLoanTimezone(selectedLoan)
+            })}{' '}
+            to raise your limit — keep loans at least 2 days.
          </span>
       ) : null;
       const goTo = (next: WizardStep) => {

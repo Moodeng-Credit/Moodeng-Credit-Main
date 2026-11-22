@@ -4,10 +4,10 @@ import { useDispatch, useSelector } from 'react-redux';
 
 import { formatDate } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
-import { isLoanPastDue } from '@/utils/loanOverdue';
 import { calculateLenderDiversity } from '@/utils/diversityScore';
+import { isLoanPastDue } from '@/utils/loanOverdue';
 
-import { getNextCreditTier, getPastNextCreditTier, visibleCreditTiers } from '@/config/creditTiers';
+import { getCreditTrack, getNextCreditTier, getPastNextCreditTier, visibleCreditTiers } from '@/config/creditTiers';
 import { CREDIT_TIERS, getEffectiveCreditLimit, getFullLimitLoans, MAX_CREDIT_LIMIT } from '@/lib/creditLeveling';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { fetchUser } from '@/store/slices/authSlice';
@@ -36,21 +36,23 @@ export const buildCreditLevels = ({ user, loans }: CreditLevelInput): CreditLeve
    // Tiers raised any other way (referral, admin) fall back to a generic date.
    const unlockedByTier = new Map<number, Loan>();
    getFullLimitLoans(loans).forEach((limitBefore, loan) => {
-      if (limitBefore < MAX_CREDIT_LIMIT) unlockedByTier.set(getPastNextCreditTier(limitBefore, loan.repaidAt ?? loan.updatedAt), loan);
+      if (limitBefore < MAX_CREDIT_LIMIT)
+         unlockedByTier.set(getPastNextCreditTier(limitBefore, loan.repaidAt ?? loan.updatedAt, user.createdAt), loan);
    });
 
    const fallbackDate = buildUnlockDate(user.updatedAt || user.createdAt || new Date().toISOString());
 
    // The levels they have plus the next two: the whole ladder is a long row of locked cards (and would
    // show where it ends). A limit between levels ($20, $40 from before Nov 2026) gets its own card.
-   const tiers = visibleCreditTiers(isVerified ? currentLimit : CREDIT_TIERS[0]);
-   if (isVerified && !tiers.includes(currentLimit)) tiers.splice(tiers.findIndex((t) => t > currentLimit), 0, currentLimit);
-   // An open full-limit loan funded before the Nov 2026 switch keeps the old next step ($20 → $40), so
-   // highlight (and if needed show) that one instead of the new ladder's next level.
-   const openFullLimitLoan = loans.find(
-      (loan) => loan.loanStatus === 'Lent' && loan.repaymentStatus !== 'Paid' && !loan.refundedAt && toNumber(loan.loanAmount) >= currentLimit
-   );
-   const nextTier = getNextCreditTier(currentLimit, openFullLimitLoan?.fundedAt);
+   const tiers = visibleCreditTiers(isVerified ? currentLimit : CREDIT_TIERS[0], 2, getCreditTrack(user.createdAt));
+   if (isVerified && !tiers.includes(currentLimit))
+      tiers.splice(
+         tiers.findIndex((t) => t > currentLimit),
+         0,
+         currentLimit
+      );
+   // The next step on their track (Track A, joined before October 2026, keeps the old ladder: $20 → $40).
+   const nextTier = getNextCreditTier(currentLimit, user.createdAt);
    if (isVerified && currentLimit < MAX_CREDIT_LIMIT && !tiers.includes(nextTier)) {
       const at = tiers.findIndex((t) => t > nextTier);
       tiers.splice(at < 0 ? tiers.length : at, 0, nextTier);
