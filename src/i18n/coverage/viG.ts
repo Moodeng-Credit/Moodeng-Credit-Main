@@ -543,6 +543,8 @@ export const vietnameseCoverageG: Record<string, string> = {
    "Questions? Message Moodeng Credit on Facebook or email support@moodeng.app — we usually reply within a day.": "Có câu hỏi? Nhắn Moodeng Credit trên Facebook hoặc email support@moodeng.app — chúng tôi thường trả lời trong một ngày.",
 
    // src/hooks/useWallet.ts (Instant Wallet send failures)
+   "Problem on our side": "Lỗi từ phía chúng tôi",
+   "Your money is safe in your wallet. Our payment system has a problem right now. Tap Get help to tell us and we will fix it.": "Tiền của bạn vẫn an toàn trong ví. Hệ thống thanh toán của chúng tôi đang gặp sự cố. Nhấn Get help để báo cho chúng tôi và chúng tôi sẽ khắc phục.",
    "Your Instant Wallet needs to reconnect": "Instant Wallet của bạn cần kết nối lại",
    "Nothing was sent. Sign out and sign back in, or open Moodeng in another browser like Chrome, then try again.": "Chưa có khoản nào được gửi. Hãy đăng xuất rồi đăng nhập lại, hoặc mở Moodeng bằng trình duyệt khác như Chrome, rồi thử lại.",
    "Your payment didn't go through": "Thanh toán của bạn chưa thành công",
