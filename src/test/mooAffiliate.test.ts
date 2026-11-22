@@ -55,8 +55,8 @@ describe('Moo affiliate stages', () => {
 
    it('has a personal sample whose totals add up', () => {
       const t = affiliateTotals(AFFILIATE_PERSONAL_SAMPLE.referrals);
-      expect(t.owed).toBe(5);
-      expect(t.paid).toBe(10);
+      expect(t.owed).toBe(2);
+      expect(t.paid).toBe(4);
    });
 
    it('turns database claim errors into plain words', () => {

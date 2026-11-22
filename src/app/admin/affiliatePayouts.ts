@@ -90,7 +90,7 @@ export async function listOwedAffiliates(userId?: string): Promise<OwedAffiliate
    }
    for (const p of (r.data ?? []) as unknown as Array<{
       id: string;
-      kind: 'interest' | 'cash' | null;
+      kind: 'interest' | 'cash' | 'bonus' | null;
       amount_usd: number;
       created_at: string;
       user: Person;
@@ -100,7 +100,12 @@ export async function listOwedAffiliates(userId?: string): Promise<OwedAffiliate
          source: 'refund',
          id: p.id,
          amount: Number(p.amount_usd),
-         label: p.kind === 'cash' ? `Invite link: ${nameOf(p.friend?.referred)} repaid` : 'Old interest refund',
+         label:
+            p.kind === 'bonus'
+               ? 'Shark Fighter bonus: 10 friends repaid on time'
+               : p.kind === 'cash'
+                 ? `Invite link: ${nameOf(p.friend?.referred)} repaid`
+                 : 'Old interest refund',
          created_at: p.created_at
       });
    }

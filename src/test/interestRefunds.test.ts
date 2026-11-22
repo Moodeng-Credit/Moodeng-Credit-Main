@@ -13,7 +13,14 @@ describe('parseMyInterestRefunds', () => {
          friends: [
             { joinedAt: '2026-10-30T00:00:00Z', repaid: false, refundUsd: null, refundStatus: null, sentAt: null, txHash: null },
             { joinedAt: '2026-10-29T00:00:00Z', repaid: true, refundUsd: '5.00', refundStatus: 'pending', sentAt: null, txHash: null },
-            { joinedAt: '2026-10-28T00:00:00Z', repaid: true, refundUsd: 3, refundStatus: 'sent', sentAt: '2026-10-31T00:00:00Z', txHash: '0xabc' }
+            {
+               joinedAt: '2026-10-28T00:00:00Z',
+               repaid: true,
+               refundUsd: 3,
+               refundStatus: 'sent',
+               sentAt: '2026-10-31T00:00:00Z',
+               txHash: '0xabc'
+            }
          ],
          totalRefundedUsd: '3.00'
       });
@@ -37,7 +44,10 @@ describe('parseMyInterestRefunds affiliate fields', () => {
    it('defaults affiliate fields when an older database shape is returned', () => {
       const parsed = parseMyInterestRefunds({ friends: [], totalRefundedUsd: 4 });
       expect(parsed.isAffiliate).toBe(false);
-      expect(parsed.rewardUsd).toBe(5);
+      expect(parsed.rewardUsd).toBe(2);
+      expect(parsed.stamps).toBe(0);
+      expect(parsed.bonusEvery).toBe(10);
+      expect(parsed.bonusUsd).toBe(20);
       expect(parsed.totalEarnedUsd).toBe(4);
       expect(parsed.owedUsd).toBe(0);
    });
@@ -55,5 +65,23 @@ describe('parseMyInterestRefunds affiliate fields', () => {
       expect(parsed.totalEarnedUsd).toBe(10);
       expect(parsed.owedUsd).toBe(5);
       expect(parsed.friends[0].refundUsd).toBe(5);
+   });
+});
+
+describe('parseMyInterestRefunds Shark Fighter Card', () => {
+   it('reads stamps and the bonus', () => {
+      const parsed = parseMyInterestRefunds({
+         friends: [],
+         rewardUsd: '2',
+         stamps: 11,
+         bonusEvery: 10,
+         bonusUsd: '20.00',
+         bonusesEarned: 1
+      });
+      expect([parsed.rewardUsd, parsed.stamps, parsed.bonusEvery, parsed.bonusUsd, parsed.bonusesEarned]).toEqual([2, 11, 10, 20, 1]);
+   });
+
+   it('never divides by a zero-stamp card', () => {
+      expect(parseMyInterestRefunds({ friends: [], bonusEvery: 0 }).bonusEvery).toBe(10);
    });
 });

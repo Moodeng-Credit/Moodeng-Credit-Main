@@ -1,57 +1,75 @@
+import { useState } from 'react';
+
 import { useQuery } from '@tanstack/react-query';
-import { UserPlus } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
-import { AFFILIATE_REWARD_USD, getMyInterestRefunds } from '@/lib/friendReferrals';
+import { useFriendReferrals } from '@/hooks/useFriendReferrals';
+
+import { EMPTY_INTEREST_REFUNDS, getMyInterestRefunds } from '@/lib/friendReferrals';
 import { isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 import type { RootState } from '@/store/store';
+import { buildInviteLink } from '@/views/dashboard-v2/dashboardV2Model';
+import { inviteMessage } from '@/views/referral/sharkFighter/inviteMessage';
+import ShareFightSheet from '@/views/referral/sharkFighter/ShareFightSheet';
+import { StampGrid } from '@/views/referral/sharkFighter/SharkFighterStamps';
+import { cardProgress } from '@/views/referral/sharkFighter/stampMath';
 
-/**
- * "You're paid" screen: tells the borrower they can now earn $5 per friend (affiliate program,
- * migration 20261115120000_affiliate_cash_per_friend). Shown on every repay as a reminder; the
- * title says "affiliate now" once the database counts them (first repaid loan held 24h+).
- */
+// "Spread the word" (George, 2026-11-22; Figma "Spread the word – after voucher"), on the Loan repaid screen
+// under the streak/voucher card. A preview of the Ride the Hippo share card, the Shark Fighter stamps, and one
+// "Share my fight" button: selfie + fighter Moodeng + streak, with the invite link in the caption.
+// (Kept the old export name: Repay renders it in two places.)
+
+const PRIMARY_GRADIENT = 'linear-gradient(77.66deg, #9584ff 0.5%, #6b55f7 98.16%)';
+const SAMPLE_CODE = 'MARIAC12345';
+
 export function AffiliateUnlockedCard({ isPreview = false }: { isPreview?: boolean }) {
    const navigate = useNavigate();
    const userId = useSelector((state: RootState) => state.auth.user?.id) ?? '';
-   const query = useQuery({
+   const live = !isPreview && Boolean(userId) && isSupabaseBrowserConfigured();
+   const refunds = useQuery({
       queryKey: ['friend-referrals', 'interest-refunds', userId],
       queryFn: getMyInterestRefunds,
-      enabled: !isPreview && Boolean(userId) && isSupabaseBrowserConfigured(),
+      enabled: live,
       staleTime: 0
    });
-   const reward = query.data?.rewardUsd ?? AFFILIATE_REWARD_USD;
-   const isAffiliate = isPreview || query.data?.isAffiliate === true;
+   const { inviteCode, rewards } = useFriendReferrals(live);
+   const [sharing, setSharing] = useState(false);
+
+   const data = isPreview ? { ...EMPTY_INTEREST_REFUNDS, stamps: 3, isAffiliate: true } : (refunds.data ?? EMPTY_INTEREST_REFUNDS);
+   const code = isPreview ? SAMPLE_CODE : inviteCode;
+   const streak = isPreview ? 3 : rewards.streak.current;
+   const link = code ? buildInviteLink(code) : '';
 
    return (
       <section
-         className="relative flex w-full items-center gap-3 overflow-hidden rounded-[16px] border border-[#ece4ff] bg-white px-4 py-4 text-left dark:border-[#2a2340] dark:bg-[#1b1626]"
-         aria-label="Affiliate program"
+         className="flex w-full flex-col items-center gap-3 overflow-hidden rounded-[20px] bg-gradient-to-b from-[#f3ecff] via-white via-40% to-white px-5 pb-5 pt-4 text-center shadow-[0_2px_8px_rgba(28,5,61,0.08)] dark:from-dv2-tab dark:via-dv2-card dark:to-dv2-card"
+         aria-label="Spread the word"
       >
-         <div className="relative z-10 flex min-w-0 flex-1 flex-col gap-1 pr-16">
-            <p className="text-[18px] font-black leading-6 text-[#2b2116] dark:text-[#f5efe3]">
-               {isAffiliate ? 'You’re an affiliate now 🎉' : `Earn $${reward} per friend`}
-            </p>
-            <p className="text-[14px] font-medium leading-[18px] text-[#6b5d48] dark:text-[#bfb29a]">
-               {isAffiliate ? `Earn $${reward} USDC for each friend who repays.` : 'Invite friends who borrow and repay.'}
-            </p>
-            <button
-               type="button"
-               onClick={() => navigate('/affiliate')}
-               className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-full bg-[#6b55f7] px-4 py-2 text-[15px] font-bold text-white active:scale-[0.98]"
-            >
-               <UserPlus className="h-4 w-4" aria-hidden="true" />
-               Invite friends
-            </button>
+         <p className="text-[22px] font-black italic leading-7 text-[#4c239f] dark:text-[#c4b8ff]">Spread the word! 🦈</p>
+         <img src="/shark-fighter/fighter-moodeng.webp" alt="" className="h-[150px] object-contain" draggable={false} />
+         <div className="text-[#594d65] dark:text-[#d9cfe6]">
+            <p className="text-[20px] font-bold leading-6">You&apos;re a shark fighter 🥊</p>
+            <p className="mt-1 text-[15px]">Friend repays on time = ${data.rewardUsd} for you</p>
          </div>
-         <img
-            src="/hippos/thumb-up-right.png"
-            alt=""
-            aria-hidden="true"
-            className="pointer-events-none absolute bottom-0 right-0 h-[88%] select-none object-contain"
-            draggable={false}
-         />
+         <button type="button" onClick={() => navigate('/affiliate')} className="w-full" aria-label="Open your Shark Fighter Card">
+            <StampGrid stamps={data.stamps} every={data.bonusEvery} bonusUsd={data.bonusUsd} size={46} />
+         </button>
+         <p className="text-[13px] font-semibold text-[#7a6fa3] dark:text-[#b3a9d9]">
+            {cardProgress(data.stamps, data.bonusEvery).filled} of {data.bonusEvery} · {data.bonusEvery}th stamp = +${data.bonusUsd} bonus
+         </p>
+         <button
+            type="button"
+            disabled={!code}
+            onClick={() => setSharing(true)}
+            className="flex h-[52px] w-full max-w-[346px] items-center justify-center rounded-[35px] text-[20px] font-semibold text-white transition active:scale-[0.99] disabled:opacity-60"
+            style={{ backgroundImage: PRIMARY_GRADIENT }}
+         >
+            Share my fight 🥊
+         </button>
+         {sharing && code ? (
+            <ShareFightSheet streak={streak} caption={inviteMessage(code, link)} onClose={() => setSharing(false)} />
+         ) : null}
       </section>
    );
 }
