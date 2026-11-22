@@ -301,6 +301,14 @@ begin
     if not v_cash_ok or (v_left ->> 'food50')::int <= 0 then v_w := v_w || '{"food50": 0}'::jsonb; end if;
     if (v_left ->> 'locked50')::int <= 0 then v_w := v_w || '{"locked50": 0}'::jsonb; end if;
   end if;
+  -- One "₱50 next loan" at a time: a single on-time loan would otherwise unlock a whole stack of them.
+  if exists (
+    select 1 from public.spins s
+    where s.user_id = p_user_id and s.prize = 'locked50' and s.voucher_claim_id is null
+      and s.is_test = p_is_test and s.expires_at > now()
+  ) then
+    v_w := v_w || '{"locked50": 0}'::jsonb;
+  end if;
   -- A welcome spin with every prize sold out still gets something: another spin.
   if p_source = 'welcome'
      and coalesce((v_w ->> 'grab100')::numeric, 0) + coalesce((v_w ->> 'food50')::numeric, 0) + coalesce((v_w ->> 'locked50')::numeric, 0) <= 0 then
