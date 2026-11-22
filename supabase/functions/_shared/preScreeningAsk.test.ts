@@ -20,7 +20,8 @@ import {
    toRedFlags,
    waitingOnThem,
    autoDeclineDue,
-   costsWhy
+   costsWhy,
+   gradeWarnings,
 } from './preScreeningAsk.ts';
 
 const ID = '0f8fad5b-d9cb-469f-a165-70867728950e';
@@ -151,4 +152,18 @@ Deno.test('auto-decline: high medical costs, AI-graded, answers add up, 2h after
    assertEquals(autoDeclineDue({ ...row, user_id: null }, now), false);
    assertEquals(autoDeclineDue({ ...row, status: 'failed' }, now), false);
    assertEquals(costsWhy(high), 'mother, dialysis, ≈ ₱10,000/mo still to pay, 67% of income');
+});
+
+Deno.test('warnings: auto ✅ after replies only when they cleared every ⚠️', () => {
+   const read = { read: 'ok', answered_all: true, score: 70, cleared: false };
+   assertEquals(shouldAutoGood(read, 50), true);
+   assertEquals(shouldAutoGood(read, 50, ['job photo is a selfie']), false);
+   assertEquals(shouldAutoGood({ ...read, cleared: true }, 50, ['job photo is a selfie']), true);
+   assertEquals(toAnswerRead({ read: 'x', answered_all: true, score: 60, cleared: true })?.cleared, true);
+   assertEquals(toAnswerRead({ read: 'x', answered_all: true, score: 60 })?.cleared, undefined);
+});
+
+Deno.test('gradeWarnings: strings only, trimmed, deduped', () => {
+   assertEquals(gradeWarnings({ flags: [' a ', 'a', '', 3, 'b'] }), ['a', 'b']);
+   assertEquals(gradeWarnings(null), []);
 });

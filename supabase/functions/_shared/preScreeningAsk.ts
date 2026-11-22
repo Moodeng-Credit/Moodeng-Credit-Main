@@ -174,6 +174,7 @@ const DRAFT_SYSTEM = `You help a small lender (Moodeng Credit: first loans of ab
 You get the person's answers, the AI grade (summary, flags, proof-of-income read) and maybe "team_wrote": questions the team typed.
 - If team_wrote is there: keep exactly the team's questions (same number, same meaning, same order). Only make each one short and simple and add the local version. Do not add questions of your own.
 - If not: write 2 or 3 questions about what matters most for whether they can and will repay: what doesn't add up, what is vague, or what worries the team (other loans, take-home pay, what the money is really for, how they repay). Specific to them, not generic.
+- If "flags" is not empty, those warnings come first: every warning must be covered by a question (say the numbers that don't match, e.g. "you said ₱70,000 a month but your statement shows about ₱28,000"). For a photo that didn't show what was asked, ask them to send that photo here on Messenger. For income that doesn't match, ask how they get paid and for a screenshot of their last pay.
 
 Each question: one short sentence, 8th-grade English, friendly and not accusing, open (not yes/no), answerable by typing a few lines on a phone. Never ask for passwords, codes, ID numbers or bank details. Don't ask what we already know from the document unless it doesn't add up.
 "local" = the same question in natural Taglish (Philippines) or simple Bahasa Indonesia (market "ID").
@@ -184,9 +185,10 @@ const READ_SYSTEM = `A small lender (first loans of about $15) asked someone a f
 "read": at most 2 short plain English sentences: do the replies answer the questions, and does anything make repaying more or less likely? Say plainly if they dodged a question or haven't answered it yet.
 "answered_all": true only if every question has a real answer (not a dodge, not "ok", not a question back).
 "score": 0-100, how good a fit they are to lend to now, taking the pre-screening AND these replies together (50 = borderline). Clear, specific, believable replies that explain the worries raise it; vague, copied-looking, contradicting or dodged replies don't. Never above 50 if answered_all is false.
-Reply with only json: {"read": "...", "answered_all": true | false, "score": 0-100}`;
+"cleared": true only if EVERY item in flags_before is now explained or fixed by the replies in a believable way (no flags_before = true). A promise to send something later, or a photo/document they say they sent but you can't see, does not clear it.
+Reply with only json: {"read": "...", "answered_all": true | false, "score": 0-100, "cleared": true | false}`;
 
-export type AnswerRead = { read: string | null; answered_all: boolean; score: number | null };
+export type AnswerRead = { read: string | null; answered_all: boolean; score: number | null; cleared?: boolean };
 /** Gemini's read of their replies, cleaned. Pure. */
 export const toAnswerRead = (raw: unknown): AnswerRead | null => {
    const o = (raw ?? {}) as Record<string, unknown>;
@@ -194,10 +196,20 @@ export const toAnswerRead = (raw: unknown): AnswerRead | null => {
    const n = typeof o.score === 'number' ? o.score : Number(o.score);
    const score = Number.isFinite(n) && o.score !== null && o.score !== '' ? Math.max(0, Math.min(100, Math.round(n))) : null;
    if (!read && score == null) return null;
-   return { read, answered_all: o.answered_all === true, score };
+   return { read, answered_all: o.answered_all === true, score, ...(o.cleared === true ? { cleared: true } : {}) };
 };
-/** Auto ✅: every question answered and the new score at or above the bar. Pure. */
-export const shouldAutoGood = (r: AnswerRead | null, bar: number) => !!r && r.answered_all && r.score != null && r.score >= bar;
+/**
+ * Auto ✅: every question answered, the new score at or above the bar and, when the grade had ⚠️
+ * warnings, the replies cleared every one of them. Pure.
+ */
+export const shouldAutoGood = (r: AnswerRead | null, bar: number, warnings: string[] = []) =>
+   !!r && r.answered_all && r.score != null && r.score >= bar && (warnings.length === 0 || r.cleared === true);
+
+/** The grade's ⚠️ warnings (shown on the card), deduped. Pure. */
+export const gradeWarnings = (grade: { flags?: unknown } | null | undefined): string[] => {
+   const list = Array.isArray(grade?.flags) ? (grade!.flags as unknown[]) : [];
+   return [...new Set(list.filter((f): f is string => typeof f === 'string' && !!f.trim()).map((f) => f.trim()))];
+};
 
 async function geminiJson(svc: SupabaseClient, system: string, input: unknown, timeoutMs: number): Promise<unknown> {
    const { data: key } = await svc.rpc('gemini_api_key');
@@ -519,6 +531,9 @@ export async function autoDecideOrAsk(svc: SupabaseClient, id: string, card: { c
          }).catch(() => undefined);
          return;
       }
+      // ⚠️ warnings on the card (photo doesn't show what was asked, income doesn't match…): ask them on
+      // Messenger and re-grade the replies instead of approving.
+      if (gradeWarnings(row.grade).length) return await autoAskIfWeak(svc, id, card, { warnings: true });
       await autoGood(svc, row, card, `AI (${row.score}/100, no red flags)`, `${row.score}/100 (needs ${bar}), no red flags`);
    } catch (err) {
       console.error('pre-screening auto-decide failed', err instanceof Error ? err.message : err);
@@ -531,18 +546,26 @@ export async function autoDecideOrAsk(svc: SupabaseClient, id: string, card: { c
  * when it is already decided, has no account / Messenger, or scored at or above the threshold.
  * Never throws.
  */
-export async function autoAskIfWeak(svc: SupabaseClient, id: string, card: { chat: number | string; msg: number }) {
+export async function autoAskIfWeak(
+   svc: SupabaseClient,
+   id: string,
+   card: { chat: number | string; msg: number },
+   opts: { warnings?: boolean } = {}
+) {
    try {
       const row = await loadRow(svc, id);
       if (!row || row.score == null || row.team_decision || row.followup_sent_at || !row.user_id) return;
       const { data: setting } = await svc.from('telegram_bot_settings').select('value').eq('key', 'prescreen_auto_ask_below').maybeSingle();
       const below = autoAskThreshold((setting as { value?: string | null } | null)?.value);
-      if (below == null || row.score >= below) return;
+      if (below == null) return;
+      const warned = !!opts.warnings && gradeWarnings(row.grade).length > 0;
+      if (!warned && row.score >= below) return;
+      const why = warned ? `${row.score}/100 but with ⚠️ warnings` : `Under ${below}/100`;
       const m = await messengerOf(svc, row.user_id);
       if (!m?.messenger_psid) {
          await sendTelegramMessage(
             card.chat,
-            `🤖 Under ${below}/100, but they have no Messenger connected — couldn’t ask more on their own.`,
+            `🤖 ${why}, but they have no Messenger connected — couldn’t ask more on their own.`,
             {
                replyToMessageId: card.msg
             }
@@ -551,24 +574,24 @@ export async function autoAskIfWeak(svc: SupabaseClient, id: string, card: { cha
       }
       const qs = await draftQuestions(svc, row, null);
       if (!qs.length) {
-         await sendTelegramMessage(card.chat, `🤖 Under ${below}/100 — the AI couldn’t write questions just now. Tap 💬 Ask more.`, {
+         await sendTelegramMessage(card.chat, `🤖 ${why} — the AI couldn’t write questions just now. Tap 💬 Ask more.`, {
             replyToMessageId: card.msg
          }).catch(() => undefined);
          return;
       }
-      const result = await sendFollowup(svc, row, qs, card, 'AI (auto, under ' + below + ')');
+      const result = await sendFollowup(svc, row, qs, card, warned ? 'AI (auto, ⚠️ warnings)' : 'AI (auto, under ' + below + ')');
       const list = qs.flatMap((q, i) => [`${i + 1}. ${q.en}`, ...(q.local && q.local !== q.en ? [`   ${q.local}`] : [])]);
       await sendTelegramMessage(
          card.chat,
          result.ok
             ? [
-                 `🤖 Under ${below}/100, so the AI asked them on Messenger${result.pushed ? ' (+ push)' : ''}:`,
+                 `🤖 ${why}, so the AI asked them on Messenger${result.pushed ? ' (+ push)' : ''}:`,
                  ...list,
                  '',
                  'Their replies show up here for 24 hours.'
               ].join('\n')
             : [
-                 `⚠️ Under ${below}/100 — the AI tried to ask on Messenger but it failed (${result.why}). Send it yourself:`,
+                 `⚠️ ${why} — the AI tried to ask on Messenger but it failed (${result.why}). Send it yourself:`,
                  '',
                  result.text
               ].join('\n'),
@@ -779,7 +802,7 @@ export const handlePreScreeningAnswer = async (svc: SupabaseClient, userId: stri
       // (they're told to keep going, same as a team ✅). Below stays with the team; ❌ is never automatic.
       const { data: setting } = await svc.from('telegram_bot_settings').select('value').eq('key', 'prescreen_auto_ask_below').maybeSingle();
       const bar = autoAskThreshold((setting as { value?: string | null } | null)?.value) ?? 50;
-      if (shouldAutoGood(read, bar)) {
+      if (shouldAutoGood(read, bar, gradeWarnings(row.grade))) {
          const flags = await redFlags(
             svc,
             row,
