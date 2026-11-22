@@ -41,6 +41,7 @@ export interface PaymentOutcome {
 // base by keyword, so these must keep matching the "payment or wallet problem" entry there.
 const WALLET_SUPPORT_TOPIC = 'I had a problem with a wallet transaction';
 const INSTANT_WALLET_SUPPORT_TOPIC = 'My Instant Wallet payment failed';
+const INSTANT_WALLET_GAS_SUPPORT_TOPIC = 'My Instant Wallet payment failed: problem on your side (gas)';
 
 // A USDC (ERC-20) balance shortfall. Unlike running out of ETH for gas, viem has no typed error
 // for it — the token contract's revert reason is all there is.
@@ -48,6 +49,16 @@ const TOKEN_BALANCE_SHORTFALL = /transfer amount exceeds balance/i;
 
 // Inspects the (often deeply-wrapped) wagmi/viem error to route to a toast the
 // user can act on, instead of a generic "transaction failed" they can't self-correct.
+// Instant Wallet gas is paid by our Openfort sponsorship. When its credit runs out the send fails as
+// an ETH (gas) shortfall — viem's InsufficientFundsError ("total cost (gas * gas fee + value) exceeds
+// the balance"), or Openfort's own "sponsorship balance is insufficient". A USDC shortfall is different
+// ("transfer amount exceeds balance") and stays the borrower's insufficient-funds message.
+const SPONSORSHIP_EMPTY = /exceeds the balance of the account|sponsorship balance is insufficient/i;
+const isSponsoredGasFailure = (err: unknown): boolean => {
+   if (err instanceof BaseError && err.walk((cause) => cause instanceof InsufficientFundsError)) return true;
+   return err instanceof Error && SPONSORSHIP_EMPTY.test(err.message) && !TOKEN_BALANCE_SHORTFALL.test(err.message);
+};
+
 const classifyTransferError = (err: unknown): ErrorCode => {
    // A wallet that never answered the request (dead/cross-device connection) — surface
    // the actionable "reconnect / approve on the other device" guidance, not a generic fail.
@@ -302,6 +313,20 @@ const useWallet = () => {
                   'Get help',
                   'open_support_chat',
                   { supportTopic: INSTANT_WALLET_SUPPORT_TOPIC }
+               );
+               return null;
+            }
+            // Gas is sponsored for Instant Wallets, so a gas shortfall is never the borrower's fault:
+            // it means Moodeng's Openfort gas credit ran out. Their USDC is fine — say it's on us and
+            // to tell us, instead of a scary "Insufficient Funds" that sends them hunting for a wallet problem.
+            if (isSponsoredGasFailure(err)) {
+               showToast(
+                  TOAST_TYPES.ERROR,
+                  'Problem on our side',
+                  'Your money is safe in your wallet. Our payment system has a problem right now. Tap Get help to tell us and we will fix it.',
+                  'Get help',
+                  'open_support_chat',
+                  { supportTopic: INSTANT_WALLET_GAS_SUPPORT_TOPIC }
                );
                return null;
             }
