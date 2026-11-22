@@ -404,6 +404,41 @@ export const messengerTemplatePayload = (contactId: string, t: MessengerTemplate
  * time, stopping at the first one SendPulse accepts (so the person gets at most one copy).
  * Returns every attempt with SendPulse's answer. Never throws.
  */
+/**
+ * Test only: posts each raw `message` object to messenger/contacts/send for ONE contact, in order,
+ * stopping at the first one SendPulse accepts. "{{template}}" anywhere as a string value is replaced
+ * with the template block. Returns every answer. Never throws.
+ */
+export const probeMessengerRawMessages = async (contactId: string, t: MessengerTemplate, messages: unknown[]) => {
+   const attempts: Array<{ i: number; status: number; body: unknown }> = [];
+   const token = await getToken();
+   if (!token) return { ok: false as const, reason: 'no_token', attempts };
+   const block = messengerTemplateBlock(t);
+   const fill = (v: unknown): unknown =>
+      v === '{{template}}'
+         ? block
+         : Array.isArray(v)
+           ? v.map(fill)
+           : v && typeof v === 'object'
+             ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, fill(x)]))
+             : v;
+   for (const [i, message] of messages.slice(0, 8).entries()) {
+      try {
+         const res = await fetch(`${API}/messenger/contacts/send`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contact_id: contactId, message: fill(message) })
+         });
+         const body = await res.json().catch(() => null);
+         attempts.push({ i, status: res.status, body });
+         if (res.ok && (body as { success?: unknown } | null)?.success !== false) return { ok: true as const, i, attempts };
+      } catch (err) {
+         attempts.push({ i, status: 0, body: err instanceof Error ? err.message : String(err) });
+      }
+   }
+   return { ok: false as const, reason: 'none_accepted', attempts };
+};
+
 export const probeMessengerTemplate = async (
    contactId: string,
    t: MessengerTemplate,
