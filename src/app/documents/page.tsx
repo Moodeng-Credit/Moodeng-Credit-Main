@@ -260,6 +260,28 @@ export default function DocumentsPage({
       good.map((p) => ({ isPdf: p.file.type === 'application/pdf' }))
    );
    const openPicker = () => picker.open(inputRef.current);
+
+   // Photos blocked → they send it on Messenger (PickerHelp countdown). The server files Messenger photos as
+   // their proof (messengerPhotoIntake.ts, within ~3 min), so keep checking and move on once it lands.
+   useEffect(() => {
+      if (!picker.blocked || phase !== 'pick' || preview) return;
+      const since = Date.now();
+      const poll = window.setInterval(async () => {
+         const status = await fetchIncomeDocStatus();
+         if (status && Date.parse(status.sent_at) > since - 60_000) {
+            window.clearInterval(poll);
+            picker.setBlocked(false);
+            setSentThisVisit(true);
+            showStatus(status);
+         }
+      }, 10_000);
+      const stop = window.setTimeout(() => window.clearInterval(poll), 30 * 60_000);
+      return () => {
+         window.clearInterval(poll);
+         window.clearTimeout(stop);
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- picker.setBlocked is stable
+   }, [picker.blocked, phase, preview, showStatus]);
    const sendingNames = good.length ? good.map((p) => p.file.name) : (preview?.fileNames ?? []);
 
    const send = async () => {
@@ -518,7 +540,9 @@ export default function DocumentsPage({
                      <GoldButton onClick={() => void send()}>{`Send ${good.length} ${good.length === 1 ? 'photo' : 'photos'}`}</GoldButton>
                   ) : (
                      <>
-                        <GoldButton onClick={openPicker}>Add photos</GoldButton>
+                        <GoldButton busy={picker.checking} onClick={openPicker}>
+                           {picker.checking ? 'Opening your photos…' : 'Add photos'}
+                        </GoldButton>
                         {picker.blocked ? null : (
                            <button
                               className="text-center text-[14px] font-semibold text-[#6b55f7] underline dark:text-[#b4a6ff]"

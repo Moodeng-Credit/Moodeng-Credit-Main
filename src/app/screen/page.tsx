@@ -1691,7 +1691,16 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                      </>
                   ) : (
                      <>
-                        <PrimaryButton onClick={() => proofPicker.open(docInput.current)}>Add my proof</PrimaryButton>
+                        <PrimaryButton disabled={proofPicker.checking} onClick={() => proofPicker.open(docInput.current)}>
+                           {proofPicker.checking ? (
+                              <span className="inline-flex items-center gap-2">
+                                 <Loader2 aria-hidden="true" className="size-5 animate-spin" />
+                                 Opening your photos…
+                              </span>
+                           ) : (
+                              'Add my proof'
+                           )}
+                        </PrimaryButton>
                         <p className="-mt-1 text-center text-[13px] text-[#8a7f99] dark:text-[#a89bb8]">
                            ⚡ Sending it now usually gets you a faster answer.
                         </p>
