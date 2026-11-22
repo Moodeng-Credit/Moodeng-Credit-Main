@@ -8,9 +8,8 @@
 //   always  → the Discord repay feed line
 //
 // Never throws; side-effect failures come back in `errors` (the payment is recorded either way).
-
-import { postDiscord } from './discord.ts';
 import { evaluateCreditProgression, getEffectiveCreditLimit, toNumber } from './creditAndPoints.ts';
+import { postDiscord } from './discord.ts';
 import { notifyBorrowerPartialRepayment } from './partialRepaymentNotice.ts';
 import { postPartialRepaymentToTeam } from './teamLoanFeed.ts';
 
@@ -32,7 +31,7 @@ export const applyCreditProgression = async (
 
    const { data: borrower, error: borrowerError } = await admin
       .from('users')
-      .select('id, cs, is_world_id, is_didit')
+      .select('id, cs, is_world_id, is_didit, created_at')
       .eq('id', borrowerId)
       .single();
    if (borrowerError || !borrower) {
@@ -52,7 +51,8 @@ export const applyCreditProgression = async (
       dueDate: String(loan.due_date),
       dueTimezone: (loan.due_timezone as string | null | undefined) ?? null,
       paidAt: String(loan.repaid_at ?? loan.updated_at ?? new Date().toISOString()),
-      fundedAt: (loan.funded_at as string | null | undefined) ?? null
+      fundedAt: (loan.funded_at as string | null | undefined) ?? null,
+      joinedAt: (borrower.created_at as string | null | undefined) ?? null
    });
 
    if (!evaluation.shouldLevelUp) return { errors, levelUp: null };
@@ -60,7 +60,9 @@ export const applyCreditProgression = async (
    // Compare-and-set on the limit we evaluated against: if two final repayments race, only the
    // first raises the limit, so one full-limit loan can never level a borrower up twice.
    const levelUp = admin.from('users').update({ cs: evaluation.nextLimit }).eq('id', borrower.id);
-   const { data: leveled, error: userUpdateError } = await (borrower.cs === null ? levelUp.is('cs', null) : levelUp.eq('cs', borrower.cs)).select('id');
+   const { data: leveled, error: userUpdateError } = await (
+      borrower.cs === null ? levelUp.is('cs', null) : levelUp.eq('cs', borrower.cs)
+   ).select('id');
    if (userUpdateError) {
       errors.push({ type: 'credit_progression', message: userUpdateError.message });
       return { errors, levelUp: null };
@@ -72,7 +74,9 @@ export const applyCreditProgression = async (
       const message = `level-up skipped: the limit changed from $${borrower.cs ?? '?'} to $${nowRow?.cs ?? '?'} during this repayment`;
       errors.push({ type: 'credit_progression', message });
       await postDiscord(
-         { content: `⚠️ ${loan.tracking_id}: a full-limit loan was repaid in full but the borrower was NOT levelled up (${message}). Check their limit.` },
+         {
+            content: `⚠️ ${loan.tracking_id}: a full-limit loan was repaid in full but the borrower was NOT levelled up (${message}). Check their limit.`
+         },
          { prefer: ['DISCORD_REPAY_WEBHOOK_URL'] }
       );
       return { errors, levelUp: null };
@@ -161,7 +165,11 @@ export const runRepaymentFollowUps = async (
          ]);
       }
 
-      const { data: borrowerRow } = await admin.from('users').select('username, email').eq('id', updatedLoan.borrower_user_id).maybeSingle();
+      const { data: borrowerRow } = await admin
+         .from('users')
+         .select('username, email')
+         .eq('id', updatedLoan.borrower_user_id)
+         .maybeSingle();
       await postRepayFeed({
          username: borrowerRow?.username ?? null,
          email: borrowerRow?.email ?? null,

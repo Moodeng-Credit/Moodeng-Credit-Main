@@ -7,7 +7,6 @@
 //   - src/utils/dateFormatters.ts      (parseDateSafely)
 // If any of those change, change this too. These are pure functions — no Supabase/Deno deps — so
 // they can be unit-tested in isolation.
-
 import { DEFAULT_TIMEZONE, isUsableTimezone, pastDueAt } from './loanDeadline.ts';
 
 // --- small utils (ported) ---------------------------------------------------------------------
@@ -42,27 +41,32 @@ export const CREDIT_TIERS: readonly number[] = Array.from(
    (_, i) => STARTING_CREDIT_LIMIT + i * CREDIT_STEP
 );
 
-// The ladder before 2026-11-14 10:00 Bangkok: a full-limit loan funded before the switch at an old limit ($20, $40 …)
-// was promised the old next step, so it still gets it.
+// The ladder before 2026-11-14 10:00 Bangkok. Track A (joined before 2026-10-01 Bangkok) stays on it for good
+// (George, 2026-11-22); Track B (everyone else) uses CREDIT_TIERS, so an old $20 goes to $25. Same as src/config/creditTiers.ts.
 export const OLD_CREDIT_TIERS: readonly number[] = [15, 20, 40, 60, 80, 100, 120, 140];
 export const LADDER_SWITCH_AT = Date.parse('2026-11-14T10:00:00+07:00');
+export type CreditTrack = 'A' | 'B';
+export const TRACK_A_JOINED_BEFORE = Date.parse('2026-10-01T00:00:00+07:00');
 
-export const getNextCreditTier = (currentAmount: number, fundedAt?: string | number | Date | null): number => {
-   const funded = fundedAt == null ? Number.NaN : new Date(fundedAt).getTime();
-   if (Number.isFinite(funded) && funded < LADDER_SWITCH_AT && !CREDIT_TIERS.includes(currentAmount)) {
-      const oldIndex = OLD_CREDIT_TIERS.indexOf(currentAmount);
-      if (oldIndex >= 0 && oldIndex < OLD_CREDIT_TIERS.length - 1) return Math.min(OLD_CREDIT_TIERS[oldIndex + 1], MAX_CREDIT_LIMIT);
-   }
-   return CREDIT_TIERS.find((tier) => tier > currentAmount) ?? MAX_CREDIT_LIMIT;
+export const getCreditTrack = (joinedAt?: string | number | Date | null): CreditTrack => {
+   const joined = joinedAt == null ? Number.NaN : new Date(joinedAt).getTime();
+   return Number.isFinite(joined) && joined < TRACK_A_JOINED_BEFORE ? 'A' : 'B';
 };
 
-// Admin "one level up / down" (Directory card): the next ladder step above or below the current
-// limit, clamped to $15–$135. An off-ladder limit (old $20/$40 …) snaps to the nearest step in that
-// direction. Returns the current limit when already at the end of the ladder.
-export const shiftCreditLevel = (cs: number | null | undefined, direction: 'up' | 'down'): number => {
+export const getNextCreditTier = (currentAmount: number, joinedAt?: string | number | Date | null): number => {
+   const ladder = getCreditTrack(joinedAt) === 'A' ? OLD_CREDIT_TIERS : CREDIT_TIERS;
+   const next = ladder.find((tier) => tier > currentAmount);
+   return Math.min(next ?? MAX_CREDIT_LIMIT, MAX_CREDIT_LIMIT);
+};
+
+// Admin "one level up / down" (Directory card): the next step on the borrower's track above or below the
+// current limit, clamped to $15–$135. An off-ladder limit snaps to the nearest step in that direction.
+// Returns the current limit when already at the end of the ladder.
+export const shiftCreditLevel = (cs: number | null | undefined, direction: 'up' | 'down', joinedAt?: string | null): number => {
    const current = Math.min(Math.max(Number(cs ?? 0) || 0, STARTING_CREDIT_LIMIT), MAX_CREDIT_LIMIT);
-   if (direction === 'up') return CREDIT_TIERS.find((tier) => tier > current) ?? current;
-   return [...CREDIT_TIERS].reverse().find((tier) => tier < current) ?? current;
+   const ladder = (getCreditTrack(joinedAt) === 'A' ? OLD_CREDIT_TIERS : CREDIT_TIERS).filter((tier) => tier <= MAX_CREDIT_LIMIT);
+   if (direction === 'up') return ladder.find((tier) => tier > current) ?? (current < MAX_CREDIT_LIMIT ? MAX_CREDIT_LIMIT : current);
+   return [...ladder].reverse().find((tier) => tier < current) ?? current;
 };
 
 // --- credit progression (ported from src/lib/creditLeveling.ts) --------------------------------
@@ -83,8 +87,10 @@ type CreditProgressionInput = {
    /** The loan's saved zone (`loans.due_timezone`); Manila when missing. */
    dueTimezone?: string | null;
    paidAt: string;
-   /** When the loan was funded: one funded before the ladder switch keeps the old next step. */
+   /** When the loan was funded (the 48-hour rule). */
    fundedAt?: string | null;
+   /** When the borrower joined (users.created_at): before October 2026 = Track A, the old ladder. */
+   joinedAt?: string | null;
 };
 
 type CreditProgressionResult = {
@@ -112,7 +118,8 @@ export const evaluateCreditProgression = ({
    dueDate,
    dueTimezone,
    paidAt,
-   fundedAt
+   fundedAt,
+   joinedAt
 }: CreditProgressionInput): CreditProgressionResult => {
    const normalizedLimit = getEffectiveCreditLimit(currentLimit, isVerified);
    const repaid = toNumber(repaidAmount ?? 0);
@@ -130,7 +137,7 @@ export const evaluateCreditProgression = ({
 
    return {
       shouldLevelUp: canLevelUp,
-      nextLimit: getNextCreditTier(normalizedLimit, fundedAt),
+      nextLimit: getNextCreditTier(normalizedLimit, joinedAt),
       isLate,
       isFullyRepaid
    };

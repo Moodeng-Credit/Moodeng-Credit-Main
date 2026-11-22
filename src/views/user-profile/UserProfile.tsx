@@ -25,7 +25,6 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
-import { UniqueLendersLabel } from '@/i18n/SentenceLabels';
 import GuidedTourPreview from '@/components/GuidedTourPreview';
 import Loading from '@/components/Loading';
 import { useThemeMode } from '@/components/ThemeModeProvider';
@@ -35,11 +34,12 @@ import { useFriendReferrals } from '@/hooks/useFriendReferrals';
 import { useRecordedMilestones } from '@/hooks/useRecordedMilestones';
 
 import { formatDate, parseDateSafely } from '@/utils/dateFormatters';
-import { isLoanPastDue, isPublicDefault } from '@/utils/loanOverdue';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { calculateLenderDiversity, getDiversityStatus } from '@/utils/diversityScore';
+import { isLoanPastDue, isPublicDefault } from '@/utils/loanOverdue';
 
-import { CREDIT_STEP, CREDIT_TIERS, getCreditLevelNumber } from '@/config/creditTiers';
+import { CREDIT_STEP, CREDIT_TIERS, getCreditLevelNumber, getCreditTrack } from '@/config/creditTiers';
+import { UniqueLendersLabel } from '@/i18n/SentenceLabels';
 import { getBorrowerUsedCreditAmount } from '@/lib/borrowerCreditUsage';
 import { getEffectiveCreditLimit, getFullLimitLoans } from '@/lib/creditLeveling';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
@@ -311,7 +311,7 @@ const UserProfile = () => {
    const isVerifiedBorrower = isUserVerified(resolvedUser);
    const displayedCreditLimit = getEffectiveCreditLimit(resolvedUser.cs, isVerifiedBorrower);
    const creditMax = displayedCreditLimit;
-   const creditLevel = creditMax > 0 ? getCreditLevelNumber(creditMax) : 0;
+   const creditLevel = creditMax > 0 ? getCreditLevelNumber(creditMax, getCreditTrack(resolvedUser.createdAt)) : 0;
 
    const diversityScore = lenderDiversity.score;
    const diversityStatus = getDiversityStatus(diversityScore);
@@ -355,10 +355,7 @@ const UserProfile = () => {
       const paid = borrowedLoans
          // Test loans don't count either way; newest repayment first (repaidAt, not the last edit).
          .filter((loan) => loan.repaymentStatus === 'Paid' && !loan.refundedAt && !loan.isTest)
-         .sort(
-            (a, b) =>
-               parseDateSafely(b.repaidAt ?? b.updatedAt).getTime() - parseDateSafely(a.repaidAt ?? a.updatedAt).getTime()
-         );
+         .sort((a, b) => parseDateSafely(b.repaidAt ?? b.updatedAt).getTime() - parseDateSafely(a.repaidAt ?? a.updatedAt).getTime());
       let streak = 0;
       for (const loan of paid) {
          // Same on-time rule as points, so "repaid on time" here always earned the on-time points.
@@ -1964,7 +1961,9 @@ const LenderDiversityBottomSheet = ({ isOpen, onClose, onOpenDocs }: { isOpen: b
             <div className="shrink-0 border-b border-[#f1edf8] px-6 pb-4 pt-2">
                <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                     <h3 className="text-[24px] font-bold leading-tight tracking-[-0.02em] text-[#1f2937]">How Moo-lender Diversity Works</h3>
+                     <h3 className="text-[24px] font-bold leading-tight tracking-[-0.02em] text-[#1f2937]">
+                        How Moo-lender Diversity Works
+                     </h3>
                      <p className="mt-2 text-[15px] leading-6 text-[#4b5563]">
                         This score belongs to the borrower. It measures the quality of the people who have lent to them.
                      </p>
@@ -1991,8 +1990,8 @@ const LenderDiversityBottomSheet = ({ isOpen, onClose, onOpenDocs }: { isOpen: b
                <div className="mt-4 rounded-[18px] border border-[#fee2e2] bg-[#fef2f2] p-4">
                   <p className="text-[14px] font-bold uppercase tracking-[0.02em] text-[#ef4444]">What it is trying to catch</p>
                   <p className="mt-2 text-[15px] leading-6 text-[#4b5563]">
-                     A borrower could look trustworthy by using fake moo-lender accounts to fund small loans, then ask for a larger real loan.
-                     This score looks for that kind of coordinated moo-lender history.
+                     A borrower could look trustworthy by using fake moo-lender accounts to fund small loans, then ask for a larger real
+                     loan. This score looks for that kind of coordinated moo-lender history.
                   </p>
                </div>
 
@@ -2033,8 +2032,8 @@ const LenderDiversityBottomSheet = ({ isOpen, onClose, onOpenDocs }: { isOpen: b
                <div className="mt-5 flex gap-3 rounded-[18px] border border-[#dbeafe] bg-[#eff6ff] p-4">
                   <Users className="mt-1 h-5 w-5 shrink-0 text-[#2563eb]" strokeWidth={2.5} />
                   <p className="text-[14px] leading-6 text-[#4b5563]">
-                     This does not judge the borrower directly. It tells moo-lenders whether the borrower's moo-lender network looks organic or
-                     suspicious.
+                     This does not judge the borrower directly. It tells moo-lenders whether the borrower's moo-lender network looks organic
+                     or suspicious.
                   </p>
                </div>
 
@@ -2162,8 +2161,16 @@ const LoanMixBottomSheet = ({
             </div>
             <div className="overflow-y-auto px-6 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-5">
                <div className="grid grid-cols-2 gap-3">
-                  <LoanMixStat label="Trust-building loans" value={trustBuildingCount} className="border-[#dbeafe] bg-[#eff6ff] text-[#2563eb]" />
-                  <LoanMixStat label="Credit-building loans" value={creditBuildingCount} className="border-[#dcfce7] bg-[#f0fdf4] text-[#059669]" />
+                  <LoanMixStat
+                     label="Trust-building loans"
+                     value={trustBuildingCount}
+                     className="border-[#dbeafe] bg-[#eff6ff] text-[#2563eb]"
+                  />
+                  <LoanMixStat
+                     label="Credit-building loans"
+                     value={creditBuildingCount}
+                     className="border-[#dcfce7] bg-[#f0fdf4] text-[#059669]"
+                  />
                </div>
 
                <div className="mt-5 rounded-[18px] bg-[#f9fafb] p-4">

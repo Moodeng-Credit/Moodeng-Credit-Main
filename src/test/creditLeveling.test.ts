@@ -93,7 +93,8 @@ const baseUser: User = {
    mal: 1,
    nal: 0,
    cs: 15,
-   createdAt: '2025-01-01T00:00:00.000Z',
+   // Track B (joined after October 2026); Track A tests set an earlier createdAt.
+   createdAt: '2026-11-01T00:00:00.000Z',
    updatedAt: '2025-01-02T00:00:00.000Z'
 };
 
@@ -162,8 +163,8 @@ describe('Credit leveling logic', () => {
       expect(evaluation.nextLimit).toBe(25);
    });
 
-   it('keeps the old promise for a full-limit loan funded before the switch ($20 → $40)', () => {
-      const evaluation = evaluateCreditProgression({
+   it('a full-limit loan funded before the switch: Track A gets the old step ($40), Track B the new one ($25)', () => {
+      const input = {
          currentLimit: 20,
          isVerified: true,
          repaidAmount: 25,
@@ -172,10 +173,16 @@ describe('Credit leveling logic', () => {
          dueDate: '2026-12-01T00:00:00.000Z',
          paidAt: '2026-11-30T00:00:00.000Z',
          fundedAt: '2026-11-10T00:00:00.000Z'
-      });
+      };
 
-      expect(evaluation.shouldLevelUp).toBe(true);
-      expect(evaluation.nextLimit).toBe(40);
+      expect(evaluateCreditProgression({ ...input, joinedAt: '2026-09-01T00:00:00.000Z' })).toMatchObject({
+         shouldLevelUp: true,
+         nextLimit: 40
+      });
+      expect(evaluateCreditProgression({ ...input, joinedAt: '2026-10-05T00:00:00.000Z' })).toMatchObject({
+         shouldLevelUp: true,
+         nextLimit: 25
+      });
    });
 
    it('stops at the top limit', () => {
@@ -272,7 +279,7 @@ describe('Credit leveling logic', () => {
 });
 
 describe('isRepaidOnTime', () => {
-   it('is on time until the end of the due day on the borrower\'s clock (Manila by default)', () => {
+   it("is on time until the end of the due day on the borrower's clock (Manila by default)", () => {
       expect(isRepaidOnTime('2025-02-01T00:00:00.000Z', '2025-02-01T00:00:00.000Z')).toBe(true);
       // 11:59 PM Manila on Feb 1 = 15:59Z; midnight Manila = 16:00Z.
       expect(isRepaidOnTime('2025-02-01T15:59:59.000Z', '2025-02-01T00:00:00.000Z')).toBe(true);
@@ -280,7 +287,7 @@ describe('isRepaidOnTime', () => {
       expect(isRepaidOnTime('2025-01-31T12:00:00.000Z', '2025-02-01T00:00:00.000Z')).toBe(true);
    });
 
-   it('uses the loan\'s own zone when it has one', () => {
+   it("uses the loan's own zone when it has one", () => {
       // Los Angeles: Feb 1 ends Feb 2 08:00Z (PST).
       expect(isRepaidOnTime('2025-02-02T07:59:00.000Z', '2025-02-01T00:00:00.000Z', 'America/Los_Angeles')).toBe(true);
       expect(isRepaidOnTime('2025-02-02T08:00:00.000Z', '2025-02-01T00:00:00.000Z', 'America/Los_Angeles')).toBe(false);
@@ -307,7 +314,7 @@ describe('LoanRequestModal borrowing gate', () => {
       availableCreditLimit: 0
    };
 
-   it('locks the form for a borrower who hasn\'t finished onboarding (no wallet yet)', () => {
+   it("locks the form for a borrower who hasn't finished onboarding (no wallet yet)", () => {
       const markup = renderToStaticMarkup(
          createElement(LoanRequestModal, {
             ...sharedProps,
@@ -503,14 +510,22 @@ describe('Dashboard credit level carousel', () => {
       expect(tiers[1].unlockRequirement).toBe('Borrow & repay the full $15 to unlock');
    });
 
-   it('an open $20 loan funded before the switch highlights the old next step ($40), not $25', () => {
+   it('Track A (joined before October) sees the old ladder: $20 → $40 → $60', () => {
+      const tiers = buildCreditLevels({
+         user: { ...baseUser, cs: 20, createdAt: '2026-09-19T00:00:00.000Z' },
+         loans: [createLoan({ loanAmount: 20, loanStatus: 'Lent', repaymentStatus: 'Unpaid', fundedAt: '2026-11-05T10:05:00Z' })]
+      });
+      expect(tiers.map((tier) => tier.amount)).toEqual([15, 20, 40, 60]);
+      expect(tiers.find((tier) => tier.amount === 40)?.unlockRequirement).toBe('Borrow & repay the full $20 to unlock');
+   });
+
+   it('Track B with an open $20 loan funded before the switch highlights $25', () => {
       const tiers = buildCreditLevels({
          user: { ...baseUser, cs: 20 },
          loans: [createLoan({ loanAmount: 20, loanStatus: 'Lent', repaymentStatus: 'Unpaid', fundedAt: '2026-11-05T10:05:00Z' })]
       });
-      expect(tiers.map((tier) => tier.amount)).toEqual([15, 20, 25, 35, 40]);
-      expect(tiers.find((tier) => tier.amount === 40)?.unlockRequirement).toBe('Borrow & repay the full $20 to unlock');
-      expect(tiers.find((tier) => tier.amount === 25)?.unlockRequirement).toBe('Locked');
+      expect(tiers.map((tier) => tier.amount)).toEqual([15, 20, 25, 35]);
+      expect(tiers.find((tier) => tier.amount === 25)?.unlockRequirement).toBe('Borrow & repay the full $20 to unlock');
    });
 
    it('an open $20 loan funded after the switch highlights $25', () => {
@@ -607,7 +622,10 @@ describe('Borrower progress timeline', () => {
    const eventsFor = (loans: Loan[], cs = 20) => buildBorrowerTimelineEvents({ ...baseUser, cs }, loans);
 
    it('labels a tier-amount loan below the limit as trust-building, with no level-up', () => {
-      const events = eventsFor([createLoan({ id: 'a', loanAmount: 20, creditLimitAtRepayment: 40, fundedAt: '2026-09-01T00:00:00.000Z' })], 40);
+      const events = eventsFor(
+         [createLoan({ id: 'a', loanAmount: 20, creditLimitAtRepayment: 40, fundedAt: '2026-09-01T00:00:00.000Z' })],
+         40
+      );
       expect(events.some((event) => event.type === 'trust_building_loan_funded')).toBe(true);
       expect(events.some((event) => event.type === 'credit_limit_unlocked')).toBe(false);
    });
@@ -634,14 +652,39 @@ describe('ladder copies stay in sync', () => {
       expect([...server.CREDIT_TIERS]).toEqual([...CREDIT_TIERS]);
       expect(server.MAX_CREDIT_LIMIT).toBe(MAX_CREDIT_LIMIT);
       for (const limit of [15, 20, 25, 40, 60, 100, 120, 135]) {
-         for (const fundedAt of [undefined, '2026-11-10T00:00:00Z', '2026-11-20T00:00:00Z']) {
-            expect(server.getNextCreditTier(limit, fundedAt)).toBe(getNextCreditTier(limit, fundedAt));
+         for (const joinedAt of [undefined, '2026-09-19T00:00:00Z', '2026-09-30T17:30:00Z', '2026-10-08T00:00:00Z']) {
+            expect(server.getNextCreditTier(limit, joinedAt)).toBe(getNextCreditTier(limit, joinedAt));
          }
       }
+      expect(server.getCreditTrack('2026-09-30T16:59:00Z')).toBe('A');
+      expect(server.getCreditTrack('2026-09-30T17:00:00Z')).toBe('B');
       const { readFileSync } = await import('node:fs');
       const rewards = readFileSync('supabase/functions/_shared/trustPointRewards.ts', 'utf8');
       expect(rewards).toContain(`const MAX_CREDIT_LIMIT = ${MAX_CREDIT_LIMIT};`);
       expect(rewards).toContain(`const LEVEL_THREE_LIMIT = ${CREDIT_TIERS[2]};`);
+   });
+});
+
+describe('credit tracks: joined before October 2026 = Track A (old ladder), everyone else = Track B', () => {
+   const full = {
+      isVerified: true,
+      repaidAmount: 24,
+      totalRepaymentAmount: 24,
+      loanAmount: 20,
+      currentLimit: 20,
+      dueDate: '2026-11-22T00:00:00Z',
+      dueTimezone: 'Asia/Manila',
+      fundedAt: '2026-10-23T10:43:58Z',
+      paidAt: '2026-11-22T10:00:00Z'
+   };
+   it('Track A keeps the old steps for good: $20 → $40 → $60', () => {
+      expect(evaluateCreditProgression({ ...full, joinedAt: '2026-09-19T00:00:00Z' }).nextLimit).toBe(40);
+      expect(evaluateCreditProgression({ ...full, currentLimit: 40, loanAmount: 40, joinedAt: '2026-09-19T00:00:00Z' }).nextLimit).toBe(60);
+   });
+   it('Track B goes to the new ladder, even for a loan funded before the Nov 14 switch: $20 → $25, $40 → $45', () => {
+      expect(evaluateCreditProgression({ ...full, joinedAt: '2026-10-08T00:00:00Z' }).nextLimit).toBe(25);
+      expect(evaluateCreditProgression({ ...full, currentLimit: 40, loanAmount: 40, joinedAt: '2026-10-08T00:00:00Z' }).nextLimit).toBe(45);
+      expect(evaluateCreditProgression({ ...full, currentLimit: 15, loanAmount: 15, joinedAt: '2026-11-20T00:00:00Z' }).nextLimit).toBe(25);
    });
 });
 

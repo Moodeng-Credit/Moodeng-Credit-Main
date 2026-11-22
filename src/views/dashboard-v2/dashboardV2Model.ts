@@ -1,6 +1,6 @@
 import { formatCurrency, formatNumber, toNumber } from '@/utils/decimalHelpers';
 
-import { getCreditLevelNumber, getNextCreditTier, MAX_CREDIT_LIMIT } from '@/config/creditTiers';
+import { getCreditLevelNumber, getCreditTrack, getNextCreditTier, MAX_CREDIT_LIMIT } from '@/config/creditTiers';
 import type { ClaimableVoucher, MyRewards, RepayStreak, VoucherClaimSummary, VoucherReward } from '@/lib/friendReferrals';
 import { trustPointMilestoneRuleById } from '@/shared/points';
 import type { Loan } from '@/types/loanTypes';
@@ -229,17 +229,20 @@ const findOpenFullLimitLoan = (loans: Loan[], creditLimit: number): Loan | undef
 export const getCreditLevelProgress = ({
    creditLimit,
    isVerified,
-   loans
+   loans,
+   joinedAt
 }: {
    creditLimit: number;
    isVerified: boolean;
    loans: Loan[];
+   /** users.created_at: before October 2026 = Track A (the old ladder). */
+   joinedAt?: string | null;
 }): { level: number; progress: number; hint: CreditLevelHint } => {
    if (!isVerified || creditLimit <= 0) {
       return { level: 0, progress: 0, hint: { highlight: 'Verify', rest: ' to unlock LV.1' } };
    }
 
-   const level = getCreditLevelNumber(creditLimit);
+   const level = getCreditLevelNumber(creditLimit, getCreditTrack(joinedAt));
 
    if (creditLimit >= MAX_CREDIT_LIMIT) {
       return { level, progress: 1, hint: { highlight: 'Top', rest: ' level reached' } };
@@ -247,7 +250,7 @@ export const getCreditLevelProgress = ({
 
    const openLoan = findOpenFullLimitLoan(loans, creditLimit);
    // Name the amount it unlocks ("a $25 limit"): with $10 steps the amount says more than the level.
-   const nextLimit = ` a $${formatNumber(getNextCreditTier(creditLimit, openLoan?.fundedAt))} limit`;
+   const nextLimit = ` a $${formatNumber(getNextCreditTier(creditLimit, joinedAt))} limit`;
    if (openLoan) {
       const total = toNumber(openLoan.totalRepaymentAmount);
       const repaid = toNumber(openLoan.repaidAmount);
