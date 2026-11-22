@@ -440,7 +440,7 @@ export function goalSlots(
          const limit = Number(u.credit_limit ?? 15);
          // A single loan at the full limit, repaid in full, moves them up a tier.
          const fullLimit = open.find((l) => Number(l.loan_amount) >= limit);
-         const amount = fullLimit ? getNextCreditTier(limit, u.created_at) : limit;
+         const amount = fullLimit ? getNextCreditTier(limit, u.created_at, fullLimit.funded_at) : limit;
          const slot = { userId, name: nameOf(userId), username: u.username, amount };
          if (excluded.has(userId)) leftOut.push(slot);
          else comeback.push({ ...slot, when: lastDue });

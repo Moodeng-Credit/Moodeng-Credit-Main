@@ -1,22 +1,29 @@
 import { useState } from 'react';
 
-import { CREDIT_TIERS, creditLadderFor, type CreditTrack, getCreditTrack, MAX_CREDIT_LIMIT } from '@/config/creditTiers';
+import { CREDIT_TIERS, type CreditTrack, getCreditTrack, getNextCreditTier, MAX_CREDIT_LIMIT } from '@/config/creditTiers';
 import type { DashboardV2Language } from '@/views/dashboard-v2/types';
 
 // Credit tracks (George, 2026-11-22). Track A, borrowers who joined before October 2026, keep the old
 // ladder ($20 → $40 → $60): an "early member" card says so. Track B borrowers still at an old limit
 // ($20, $40 …) move to the new ladder ($20 → $25 → $35): a card shows their next limits. One "Got it"
-// hides it until their limit changes. Preview: ?track=A or ?track=B on a preview host.
+// hides it until their limit changes. A Track B borrower whose open full-limit loan was funded before the Nov 14
+// switch still gets the old step for that loan, then +$10: their card shows $20 → $40 → $45.
+// Preview: ?track=A, ?track=B or ?track=B&promise=1 on a preview host.
 
-const COPY: Record<DashboardV2Language, Record<CreditTrack, { title: string; body: string }> & { button: string }> = {
+const COPY: Record<
+   DashboardV2Language,
+   Record<CreditTrack, { title: string; body: string }> & { promise: (next: number) => string; button: string }
+> = {
    en: {
       A: { title: 'Early member perk 🎉', body: 'You joined early, so you keep the bigger steps.' },
       B: { title: 'New levels', body: 'Each full loan you pay back adds $10.' },
+      promise: (next: number) => `Pay this loan back: $${next}. After that, +$10 each time.`,
       button: 'Got it'
    },
    fil: {
       A: { title: 'Perk ng early member 🎉', body: 'Maaga kang sumali, kaya sa iyo pa rin ang mas malalaking hakbang.' },
       B: { title: 'Bagong levels', body: 'Bawat buong loan na nabayaran mo, +$10.' },
+      promise: (next: number) => `Bayaran ang loan na ito: $${next}. Pagkatapos, +$10 bawat level.`,
       button: 'Sige'
    }
 };
@@ -40,15 +47,21 @@ export default function CreditTrackCard({
    userId,
    joinedAt,
    limit,
-   preview
+   openFundedAt,
+   preview,
+   previewPromise
 }: {
    language: DashboardV2Language;
    userId: string;
    joinedAt?: string | null;
    /** The effective limit (0 when unverified). */
    limit: number;
+   /** When their open full-limit loan was funded, if they have one (a pre-Nov-14 loan keeps the old step). */
+   openFundedAt?: string | null;
    /** Sample track for preview hosts. */
    preview?: CreditTrack;
+   /** Preview the Track B pre-switch loan ($20 → $40 → $45). */
+   previewPromise?: boolean;
 }) {
    const track = preview ?? getCreditTrack(joinedAt);
    const shownLimit = preview ? 20 : limit;
@@ -57,12 +70,14 @@ export default function CreditTrackCard({
    if (!shouldShowCreditTrackCard(track, shownLimit) || dismissed || (!preview && readSeen(key))) return null;
 
    const copy = COPY[language] ?? COPY.en;
-   const steps = [
-      shownLimit,
-      ...creditLadderFor(track)
-         .filter((tier) => tier > shownLimit && tier <= MAX_CREDIT_LIMIT)
-         .slice(0, 2)
-   ];
+   const joined = preview ? (track === 'A' ? '2026-09-01' : '2026-11-01') : joinedAt;
+   const fundedAt = preview ? (previewPromise ? '2026-11-10' : null) : openFundedAt;
+   const first = getNextCreditTier(shownLimit, joined, fundedAt);
+   const second = getNextCreditTier(first, joined);
+   const steps = [...new Set([shownLimit, first, second])].filter((amount) => amount <= MAX_CREDIT_LIMIT);
+   // Track B, but this loan keeps the old step: say what it unlocks, then the +$10 steps.
+   const isPromise = track === 'B' && first - shownLimit > 10;
+   const body = isPromise ? copy.promise(first) : copy[track].body;
    const dismiss = () => {
       setDismissed(true);
       try {
@@ -95,7 +110,7 @@ export default function CreditTrackCard({
                </span>
             ))}
          </div>
-         <p className="text-[14px] leading-[20px] text-[#6b5a2e] dark:text-[#e8d9a8]">{copy[track].body}</p>
+         <p className="text-[14px] leading-[20px] text-[#6b5a2e] dark:text-[#e8d9a8]">{body}</p>
          <button
             type="button"
             className="flex h-[42px] w-full items-center justify-center rounded-full bg-[#ffce1b] text-[15px] font-bold text-[#704518] shadow-[0_-2px_1px_rgba(255,255,255,0.3),0_2px_1px_rgba(63,89,79,0.4)]"

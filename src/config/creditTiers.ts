@@ -41,9 +41,20 @@ export function getCreditTrack(joinedAt?: string | number | Date | null): Credit
 
 export const creditLadderFor = (track: CreditTrack): readonly number[] => (track === 'A' ? OLD_CREDIT_TIERS : CREDIT_TIERS);
 
-/** The next limit after `currentAmount` on the borrower's track (pass users.created_at): B $20 → $25, A $20 → $40. */
-export function getNextCreditTier(currentAmount: number, joinedAt?: string | number | Date | null): number {
-   const next = creditLadderFor(getCreditTrack(joinedAt)).find((tier) => tier > currentAmount);
+/**
+ * The next limit after `currentAmount` on the borrower's track (pass users.created_at): B $20 → $25, A $20 → $40.
+ * Pass the loan's `fundedAt` for a level-up: a Track B full-limit loan funded before the Nov 14 switch at an old
+ * limit was promised the old step, so it still gets it once ($20 → $40); after that it's +$10 ($40 → $45).
+ */
+export function getNextCreditTier(
+   currentAmount: number,
+   joinedAt?: string | number | Date | null,
+   fundedAt?: string | number | Date | null
+): number {
+   const funded = fundedAt == null ? Number.NaN : new Date(fundedAt).getTime();
+   const promisedOldStep = Number.isFinite(funded) && funded < LADDER_SWITCH_AT && !CREDIT_TIERS.includes(currentAmount);
+   const ladder = promisedOldStep ? OLD_CREDIT_TIERS : creditLadderFor(getCreditTrack(joinedAt));
+   const next = ladder.find((tier) => tier > currentAmount);
    return Math.min(next ?? MAX_CREDIT_LIMIT, MAX_CREDIT_LIMIT);
 }
 

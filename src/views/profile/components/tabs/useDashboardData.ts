@@ -51,8 +51,13 @@ export const buildCreditLevels = ({ user, loans }: CreditLevelInput): CreditLeve
          0,
          currentLimit
       );
-   // The next step on their track (Track A, joined before October 2026, keeps the old ladder: $20 → $40).
-   const nextTier = getNextCreditTier(currentLimit, user.createdAt);
+   // The next step on their track (Track A, joined before October 2026, keeps the old ladder: $20 → $40); an
+   // open full-limit loan funded before the Nov 14 switch keeps its promised old step.
+   const openFullLimitLoan = loans.find(
+      (loan) =>
+         loan.loanStatus === 'Lent' && loan.repaymentStatus !== 'Paid' && !loan.refundedAt && toNumber(loan.loanAmount) >= currentLimit
+   );
+   const nextTier = getNextCreditTier(currentLimit, user.createdAt, openFullLimitLoan?.fundedAt);
    if (isVerified && currentLimit < MAX_CREDIT_LIMIT && !tiers.includes(nextTier)) {
       const at = tiers.findIndex((t) => t > nextTier);
       tiers.splice(at < 0 ? tiers.length : at, 0, nextTier);
