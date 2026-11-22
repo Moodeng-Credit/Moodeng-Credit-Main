@@ -18,6 +18,7 @@
 // Run:   node relay.mjs            one pass (launchd runs it every 30 min and on wake)
 //        node relay.mjs --check    log in check + who is due, sends nothing
 //        node relay.mjs --login
+//        node relay.mjs --test <contact id>   one real send to that contact (use George's own)
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -50,8 +51,15 @@ const alert = (text) => rpc('messenger_relay_alert', { p_text: text }).catch((e)
 
 // ---- SendPulse --------------------------------------------------------------------------------------
 
+// The login is saved by a normal Chrome window (--login), which encrypts cookies with Chrome's usual
+// key. Playwright would swap in a fake key (--use-mock-keychain) and could not read them, so keep Chrome's own.
 const launch = (headless) =>
-   chromium.launchPersistentContext(PROFILE, { channel: 'chrome', headless, viewport: { width: 1280, height: 860 } });
+   chromium.launchPersistentContext(PROFILE, {
+      channel: 'chrome',
+      headless,
+      viewport: { width: 1280, height: 860 },
+      ignoreDefaultArgs: ['--use-mock-keychain']
+   });
 
 /** Opens SendPulse and picks up the Bearer token the dashboard adds to its own API calls. */
 async function openSession(ctx) {
@@ -154,12 +162,16 @@ async function sendOne(page, token, p) {
 
 // ---- Modes ----------------------------------------------------------------------------------------
 
+// Google refuses to sign in inside a browser driven by automation software, so log in with a plain
+// Chrome window (no automation) on the relay's own profile; the headless runs reuse that login.
 async function login() {
-   const ctx = await launch(false);
-   const page = ctx.pages()[0] ?? (await ctx.newPage());
-   await page.goto(START_URL);
-   console.log('Log into SendPulse in the Chrome window, open Chatbots → Campaigns, then close the window.');
-   await new Promise((r) => ctx.on('close', r));
+   const { spawn } = await import('node:child_process');
+   const chrome = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+   console.log('Log into SendPulse in the Chrome window, open Chatbots → Campaigns, then quit that window (⌘Q).');
+   const child = spawn(chrome, [`--user-data-dir=${PROFILE}`, '--no-first-run', '--no-default-browser-check', START_URL], {
+      stdio: 'ignore'
+   });
+   await new Promise((r) => child.on('exit', r));
    console.log('Saved. Run: node relay.mjs --check');
 }
 
@@ -197,9 +209,30 @@ async function pass({ dryRun }) {
    }
 }
 
+// --test <SendPulse contact id>: one real send to that contact (George's own), outside the database.
+async function testSend(contactId) {
+   const ctx = await launch(true);
+   try {
+      const { page, token, why } = await openSession(ctx);
+      if (!token) return log('stop:', why);
+      const res = await sendOne(page, token, {
+         id: 0,
+         kind: 'test',
+         contact_id: contactId,
+         first_name: 'George',
+         amount_text: '$1 (TEST)',
+         due_text: 'Mon 1 Dec'
+      });
+      log(res.ok ? 'TEST sent' : 'TEST not sent', '-', res.why);
+   } finally {
+      await ctx.close();
+   }
+}
+
 const mode = process.argv[2];
 try {
    if (mode === '--login') await login();
+   else if (mode === '--test') await testSend(process.argv[3]);
    else await pass({ dryRun: mode === '--check' });
 } catch (err) {
    log('failed:', err.message);
