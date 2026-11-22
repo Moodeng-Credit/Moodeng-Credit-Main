@@ -18,6 +18,7 @@ import {
    messengerDisplayName,
    type MessengerTemplateShape,
    normalizeWhatsAppPhone,
+   probeMessengerRawMessages,
    probeMessengerTemplate,
    replyWhatsAppText,
    sendMessengerMessage,
@@ -31,7 +32,7 @@ import {
 //   { action: 'send', userId, text } → sends the admin's message to that borrower on Messenger.
 //   { action: 'sync_history', userIds? } → saves Facebook names + backfills messenger_contact_events
 //                                      from SendPulse's chat log (_shared/messengerContactLog.ts).
-//   { action: 'msg_template_probe', userId, name, language?, params, shapes? } → TEST: tries to send an
+//   { action: 'msg_template_probe', userId, name, language?, params, shapes?, messages? } → TEST: tries to send an
 //                                      approved Messenger utility template to that ONE borrower via the
 //                                      public API, stopping at the first accepted shape; returns every answer.
 // WhatsApp inbox (Admin → Support → WhatsApp), so the team can chat on the business number without the
@@ -191,7 +192,10 @@ serve(async (req) => {
       if (!user?.messenger_verified_at) return json({ ok: false, reason: 'not_verified' });
       const resolved = await resolveContact(svc, user.id, user.messenger_psid);
       if (!resolved) return json({ ok: false, reason: 'contact_not_found' });
-      const result = await probeMessengerTemplate(resolved.id, { name, language, params }, shapes);
+      const raw = Array.isArray(body.messages) ? (body.messages as unknown[]) : null;
+      const result = raw
+         ? await probeMessengerRawMessages(resolved.id, { name, language, params }, raw)
+         : await probeMessengerTemplate(resolved.id, { name, language, params }, shapes);
       console.log('[admin-messenger] msg_template_probe', JSON.stringify(result).slice(0, 2000));
       return json({ ...result, inWindow: isInsideMessagingWindow(resolved.contact) });
    }
