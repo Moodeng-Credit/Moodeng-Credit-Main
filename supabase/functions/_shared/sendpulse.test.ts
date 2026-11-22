@@ -1,6 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { buildCardPayload, isInsideMessagingWindow, messengerDisplayName, sendMessengerMessage } from './sendpulse.ts';
+import { buildCardPayload, isClearlyOutsideMessagingWindow, isInsideMessagingWindow, messengerDisplayName, sendMessengerMessage } from './sendpulse.ts';
 
 const NOW = Date.parse('2026-09-24T12:00:00Z');
 
@@ -21,6 +21,16 @@ Deno.test('Messenger window: open again for someone who unsubscribed, then resub
    const contact = { id: 'c', status: 1, unsubscribed_at: '2026-09-24T10:00:00Z', last_activity_at: '2026-09-24T10:15:00Z' };
    assertEquals(isInsideMessagingWindow(contact, NOW), true);
    assertEquals(isInsideMessagingWindow({ ...contact, unsubscribed_at: '2026-09-24T10:30:00Z' }, NOW), false);
+});
+
+Deno.test('clearly outside the window: only a readable last activity more than 25h old', () => {
+   assertEquals(isClearlyOutsideMessagingWindow({ id: 'c', status: 1, last_activity_at: '2026-09-23T10:00:00Z' }, NOW), true); // 26h
+   assertEquals(isClearlyOutsideMessagingWindow({ id: 'c', status: 1, last_activity_at: '2026-09-23T11:30:00Z' }, NOW), false); // 24.5h: SendPulse decides
+   assertEquals(isClearlyOutsideMessagingWindow({ id: 'c', status: 1, last_activity_at: '2026-09-24T11:59:00Z' }, NOW), false);
+   // No date, an unreadable one, or no contact: never skipped on our say-so.
+   assertEquals(isClearlyOutsideMessagingWindow({ id: 'c', status: 1 }, NOW), false);
+   assertEquals(isClearlyOutsideMessagingWindow({ id: 'c', last_activity_at: 'yesterday' }, NOW), false);
+   assertEquals(isClearlyOutsideMessagingWindow(null, NOW), false);
 });
 
 Deno.test('card payload is a RESPONSE generic template with one link button, clipped to Messenger limits', () => {
