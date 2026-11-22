@@ -69,8 +69,23 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
       summary: { repaymentsTotal: 1, active: 5, pending: 1.68, defaulted: 0 },
       dues: [
          // Not halfway yet: the reward line names the dates that count.
-         { id: 'sample-due-1', amount: 5, daysRemaining: 5, deadline: sampleDeadline(5), rewardFrom: sampleDeadline(1), lenderName: 'Maricar Cruz', isOverdue: false },
-         { id: 'sample-due-2', amount: 1.68, daysRemaining: 13, deadline: sampleDeadline(13), lenderName: 'Milagros Reyes', isOverdue: false }
+         {
+            id: 'sample-due-1',
+            amount: 5,
+            daysRemaining: 5,
+            deadline: sampleDeadline(5),
+            rewardFrom: sampleDeadline(1),
+            lenderName: 'Maricar Cruz',
+            isOverdue: false
+         },
+         {
+            id: 'sample-due-2',
+            amount: 1.68,
+            daysRemaining: 13,
+            deadline: sampleDeadline(13),
+            lenderName: 'Milagros Reyes',
+            isOverdue: false
+         }
       ],
       hasOverdue: false,
       // Not in the Figma: shows where the live dashboard's "Withdraw your USDC" button sits.
@@ -90,7 +105,14 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
       dues: [
          { id: 'sample-due-0', amount: 3, daysRemaining: 0, deadline: sampleDeadline(0), lenderName: 'Maricar Cruz', isOverdue: true },
          { id: 'sample-due-1', amount: 5, daysRemaining: 5, deadline: sampleDeadline(5), lenderName: 'Maricar Cruz', isOverdue: false },
-         { id: 'sample-due-2', amount: 1.68, daysRemaining: 13, deadline: sampleDeadline(13), lenderName: 'Milagros Reyes', isOverdue: false }
+         {
+            id: 'sample-due-2',
+            amount: 1.68,
+            daysRemaining: 13,
+            deadline: sampleDeadline(13),
+            lenderName: 'Milagros Reyes',
+            isOverdue: false
+         }
       ],
       hasOverdue: true
    },
@@ -145,6 +167,14 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
                }
             ]
          }
+      };
+   },
+   // The same voucher after they tapped "Didn't get it": how to message us on Messenger.
+   get voucherMissing(): DashboardV2Model {
+      const sent = SAMPLE_STATES.voucherSent;
+      return {
+         ...sent,
+         rewards: { ...sent.rewards, claims: sent.rewards.claims.map((claim) => ({ ...claim, receiptIssueAt: '2026-10-29T02:00:00Z' })) }
       };
    },
    // Not in the Figma: Emma's video demo (moodeng.app/borrower-demo) — a borrower with two active
