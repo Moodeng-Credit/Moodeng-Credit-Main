@@ -42,6 +42,7 @@ import {
    VoucherFollowUpCard
 } from '@/views/dashboard-v2/components/DashboardV2Sections';
 import LimitStaysCard from '@/views/dashboard-v2/components/LimitStaysCard';
+import RatesAnnouncement from '@/views/dashboard-v2/components/RatesAnnouncement';
 import { findOpenFullLimitLoan } from '@/views/dashboard-v2/dashboardV2Model';
 import { getVoucherFollowUp, getVoucherState, OWN_VOUCHER } from '@/views/dashboard-v2/dashboardV2Model';
 import DashboardV2PreviewBar from '@/views/dashboard-v2/DashboardV2Preview';
@@ -344,6 +345,15 @@ export default function DashboardV2() {
                   dismissStreak();
                   navigate(`/dashboard/milestones${previewSearch}`);
                }}
+            />
+         ) : null}
+         {/* Monthly "rates go down when we all repay" card: once a month, swipe or tap to close. */}
+         {isReal || searchParams.get('rates') === '1' ? (
+            <RatesAnnouncement
+               language={language}
+               userId={userId}
+               preview={!isReal || searchParams.get('rates') === '1'}
+               blocked={showTour || showStreak || Boolean(openMilestone) || isVerifyOpen || Boolean(claimingVoucher)}
             />
          ) : null}
          {claimingVoucher ? (
