@@ -32,7 +32,8 @@ const REWARD_LABEL: Record<AdminVoucherReward, string> = {
    tier_apex: 'Reached Apex',
    streak_3: '3 on time in a row',
    streak_5: '5 on time in a row',
-   affiliate_payout: 'Affiliate $5 as a voucher'
+   affiliate_payout: 'Affiliate $5 as a voucher',
+   spin_win: 'Moo-Spin prize'
 };
 
 const EMAIL_SUBJECT = 'Your Moodeng food voucher';

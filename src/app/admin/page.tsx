@@ -26,6 +26,7 @@ import DirectoryCreditLevelControl from '@/app/admin/DirectoryCreditLevelControl
 import { TAB_HINTS } from '@/app/admin/adminSearchHints';
 import type { AdminSearchResult } from '@/app/admin/adminSearchModel';
 import GrabVouchersSection from '@/app/admin/GrabVouchersSection';
+import SpinWheelSection from '@/app/admin/SpinWheelSection';
 import { BorrowerTimeline, RecentChangesFeed } from '@/app/admin/AdminHistory';
 import { deriveBorrowerStatus } from '@/app/admin/adminStatus';
 import AdminStatusBadge from '@/app/admin/AdminStatusBadge';
@@ -1806,6 +1807,7 @@ function AdminPanel() {
          {activeTab === 'affiliates' ? <AffiliatePayoutsSection /> : null}
 
          {activeTab === 'grab-vouchers' ? <GrabVouchersSection /> : null}
+         {activeTab === 'spin-wheel' ? <SpinWheelSection /> : null}
 
          {activeTab === 'income-docs' ? <IncomeDocsSection /> : null}
          {activeTab === 'pre-screening' ? <PreScreeningSection /> : null}
