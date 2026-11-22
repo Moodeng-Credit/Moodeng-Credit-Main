@@ -5,6 +5,7 @@ import clsx from 'clsx';
 import { Link, useParams } from 'react-router-dom';
 
 import { useSubmitVoucherClaim, useVouchersBlockedByOverdue } from '@/hooks/useFriendReferrals';
+import { useClaimSpinPrize } from '@/hooks/useSpinWheel';
 
 import {
    type ClaimableVoucher,
@@ -41,7 +42,8 @@ const CLAIM_HEADLINE: Record<VoucherReward, string> = {
    tier_apex: 'Moodeng reached Apex. Feast time!',
    streak_3: '3 on time in a row. Treat yourself!',
    streak_5: '5 on time in a row. Treat yourself!',
-   affiliate_payout: 'Your friend repaid. Enjoy!'
+   affiliate_payout: 'Your friend repaid. Enjoy!',
+   spin_win: 'Moo-Spin winner. Treat yourself!'
 };
 
 /** The two Moo-Menu picks, drawn as the designer's referral voucher tickets. GrabMart only comes from ₱100 (its smallest card). */
@@ -126,6 +128,8 @@ export function VoucherClaimPopup({
    const [step, setStep] = useState<MooStep>(initialStep);
    const [brand, setBrand] = useState<VoucherBrand>('food');
    const submitClaim = useSubmitVoucherClaim();
+   const claimSpin = useClaimSpinPrize();
+   const claim = voucher.spinId ? claimSpin : submitClaim;
    const isBlockedByOverdue = useVouchersBlockedByOverdue(!isPreview);
    const canGrabMart = voucher.amountPhp >= GRABMART_MIN_PHP;
    const picked = MOO_MENU.find((item) => item.brand === brand) ?? MOO_MENU[0];
@@ -137,6 +141,19 @@ export function VoucherClaimPopup({
          return;
       }
       const form = new FormData(event.currentTarget);
+      if (voucher.spinId) {
+         claimSpin.mutate(
+            {
+               spinId: voucher.spinId,
+               fullName: String(form.get('name') ?? ''),
+               mobile: String(form.get('mobile') ?? ''),
+               email: String(form.get('email') ?? ''),
+               brand
+            },
+            { onSuccess: () => setStep('sent') }
+         );
+         return;
+      }
       submitClaim.mutate(
          {
             reward: voucher.reward,
@@ -320,18 +337,18 @@ export function VoucherClaimPopup({
                         placeholder="Email (we send your voucher here)"
                         aria-label="Email"
                      />
-                     {submitClaim.error ? (
+                     {claim.error ? (
                         <p className="text-[14px] font-medium text-[#d51728] dark:text-[#ff8a96]" role="alert">
-                           {describeClaimError(submitClaim.error)}
+                           {describeClaimError(claim.error)}
                         </p>
                      ) : null}
                      <button
                         type="submit"
-                        disabled={submitClaim.isPending}
+                        disabled={claim.isPending}
                         className="mt-1 flex h-[52px] w-full items-center justify-center rounded-[35px] text-[20px] font-semibold text-white disabled:opacity-60"
                         style={{ backgroundImage: PRIMARY_GRADIENT }}
                      >
-                        {submitClaim.isPending ? 'Sending…' : 'Send My Voucher'}
+                        {claim.isPending ? 'Sending…' : 'Send My Voucher'}
                      </button>
                      <button type="button" onClick={() => setStep('pick')} className="text-[14px] font-semibold text-[#6b55f7]">
                         Back to the Moo-Menu

@@ -15,7 +15,9 @@ export type VoucherReward =
    | 'tier_apex'
    | 'streak_3'
    | 'streak_5'
-   | 'affiliate_payout';
+   | 'affiliate_payout'
+   /** A Moo-Spin prize (claimed with claim_spin_prize, see src/lib/spinWheel.ts). */
+   | 'spin_win';
 export type VoucherClaimStatus = 'pending' | 'sent' | 'rejected';
 /** Moo-Menu pick: 'food' = Xoxo link (Jollibee & co, anywhere in PH), 'grabmart' = GrabMart (₱100+, Metro Manila & Cebu). */
 export type VoucherBrand = 'food' | 'grabmart';
@@ -27,6 +29,8 @@ export interface ClaimableVoucher {
    reward: VoucherReward;
    friendReferralId: string | null;
    amountPhp: number;
+   /** Set for a Moo-Spin prize: the spin it was won on. */
+   spinId?: string;
 }
 
 export interface VoucherClaimSummary {

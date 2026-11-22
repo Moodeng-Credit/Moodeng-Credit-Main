@@ -12,6 +12,7 @@ import { handleIncomeDocMessage } from '../_shared/messengerIncomeDocReply.ts';
 import { handleProofKeyword, intakeMessengerPhotos, photoIntakeReason } from '../_shared/messengerPhotoIntake.ts';
 import { handlePreScreeningAnswer } from '../_shared/preScreeningAsk.ts';
 import { handleRewardMessage } from '../_shared/messengerRewardReply.ts';
+import { handleSpinMessage } from '../_shared/messengerSpinReply.ts';
 import { CONNECTED_BY_TIMING_TEXT } from '../_shared/messengerStatusFollowUp.ts';
 import { isSupportMessage, openMessengerTicket, relayAgentReply } from '../_shared/messengerSupport.ts';
 import { handleLoanTimingMessage } from '../_shared/messengerLoanTiming.ts';
@@ -336,6 +337,8 @@ serve(async (req) => {
          // Just a mobile number from someone with a call booked: their answer to "want a text reminder?".
          // "REWARD": their repay streak and what paying on time earns (the day-before reminder asks for it).
          if (typed && (await handleRewardMessage(svc, known!.userId, contactId, typed))) continue;
+         // "SPIN" / "SPIN CODE" (Facebook posts ask for it): a button to their Moo-Spin. Their message reopened the 24 hours.
+         if (typed && (await handleSpinMessage(svc, known!.userId, contactId, typed))) continue;
          // "1"–"4" / QR / GCrypto / PDAX / Maya: their answer to the funded message's "How will you cash out?".
          if (typed && (await handleCashOutMessage(svc, known!.userId, contactId, typed))) continue;
          // Their reply to the team's 💬 Ask more questions after pre-screening: posted under the Telegram card.

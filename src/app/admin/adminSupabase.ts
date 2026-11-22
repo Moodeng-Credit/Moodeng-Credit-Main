@@ -2226,7 +2226,8 @@ export type AdminVoucherReward =
    | 'tier_apex'
    | 'streak_3'
    | 'streak_5'
-   | 'affiliate_payout';
+   | 'affiliate_payout'
+   | 'spin_win';
 
 export interface AdminVoucherClaim {
    id: string;

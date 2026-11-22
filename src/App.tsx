@@ -93,6 +93,7 @@ import SignOutPage from '@/app/sign-out/page';
 import SignUp from '@/app/signup/page';
 import Simple from '@/app/simple/page';
 import SmsTestPage, { type SmsTestStage } from '@/app/sms-test/page';
+import SpinPage from '@/app/spin/page';
 import SupportFAQPage from '@/app/support/faq/page';
 import SupportGettingStartedPage from '@/app/support/getting-started/page';
 import SupportGuideDetailPage from '@/app/support/guides/[slug]/page';
@@ -117,6 +118,7 @@ import { clarityEvent, clarityTag, identifyClarity, isClarityEnabled, signupMeth
 import { describeBrowser, recordSignupContext, recordSignupSource } from '@/lib/attribution';
 import { trackNewAccount } from '@/lib/metaPixel';
 import { claimPreScreening, joinPrescreenPath, redeemParkedTeamCode } from '@/lib/preScreening';
+import { SPIN_PREVIEW_STATE } from '@/lib/spinWheel';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { type RootState } from '@/store/store';
 import MoneyGuide from '@/views/academy/MoneyGuide';
@@ -576,6 +578,24 @@ export default function App() {
                   </ProtectedRoute>
                }
             />
+            {/* Moo-Spin prize wheel; /spin/CODE is a Facebook post or video from Admin → Spin wheel. */}
+            <Route
+               path="/spin"
+               element={
+                  <ProtectedRoute>
+                     <SpinPage />
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/spin/:code"
+               element={
+                  <ProtectedRoute>
+                     <SpinPage />
+                  </ProtectedRoute>
+               }
+            />
+            {showPreviewRoutes ? <Route path="/spin-preview" element={<SpinPage sample={SPIN_PREVIEW_STATE} />} /> : null}
             {/* Public: the proof link the team sends a new applicant after their call (moodeng.app/proof/TOKEN). */}
             <Route path="/proof/:token" element={<ProofRequestPage />} />
             {showPreviewRoutes ? <Route path="/proof-preview" element={<ProofRequestPage preview={PROOF_PAGE_SAMPLE} />} /> : null}

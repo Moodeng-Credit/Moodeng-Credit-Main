@@ -36,6 +36,7 @@ export type AdminTab =
    | 'referrals'
    | 'affiliates'
    | 'grab-vouchers'
+   | 'spin-wheel'
    | 'borrower-contacts'
    | 'email'
    | 'campaigns'
@@ -120,6 +121,7 @@ export const navGroups: NavGroup[] = [
          { id: 'referrals', label: 'Referrals' },
          { id: 'affiliates', label: 'Affiliate payouts' },
          { id: 'grab-vouchers', label: 'Food vouchers' },
+         { id: 'spin-wheel', label: 'Spin wheel' },
          { id: 'notifications', label: 'Notifications' },
          { id: 'points', label: 'IOU points' },
          { id: 'trust-points', label: 'Pandesal points' }
@@ -187,6 +189,7 @@ export const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'referrals',
    'affiliates',
    'grab-vouchers',
+   'spin-wheel',
    'borrower-contacts',
    'email',
    'campaigns',
