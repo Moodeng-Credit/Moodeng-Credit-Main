@@ -69,3 +69,8 @@ Deno.test('lyingDown: any counted clip, not the job video', () => {
    assertEquals(lyingDown({ job_video: toClipCheck({ posture: 'lying' }) }, new Set(['job_video'])), false);
    assertEquals(lyingDown({ a: null }), false);
 });
+
+Deno.test('settingIssues: a messy room they did not bother about costs points', () => {
+   assertEquals(settingCut({ a: toClipCheck({ messy: true, place: 'indoors' }) }), { points: 4, reasons: ["messy room they didn't bother about"] });
+   assertEquals(settingIssues(toClipCheck({ messy: false, place: 'indoors' })), []);
+});
