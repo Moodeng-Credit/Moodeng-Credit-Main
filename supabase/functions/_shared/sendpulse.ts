@@ -186,6 +186,15 @@ export const isInsideMessagingWindow = (contact: SendPulseContact | null, now = 
    return now - last < WINDOW_MS;
 };
 
+// Last activity more than 25h ago: Meta will refuse anything we send. Only last_activity_at counts here
+// (checked 2026-11-22: it matches messenger_contacts.last_seen_at exactly); a missing or unreadable date
+// is never "clearly outside", so the send goes ahead and SendPulse decides.
+const CLEARLY_CLOSED_MS = 25 * 60 * 60 * 1000;
+export const isClearlyOutsideMessagingWindow = (contact: SendPulseContact | null, now = Date.now()) => {
+   const last = Date.parse(contact?.last_activity_at ?? '');
+   return !Number.isNaN(last) && now - last > CLEARLY_CLOSED_MS;
+};
+
 // imageUrl: a public JPG/PNG (≤5 MB) shown on top of the card, square so a poster isn't cropped.
 // `moreButtons`: up to two more link buttons under the first (Messenger allows three per card).
 export type MessengerCard = {
@@ -333,11 +342,17 @@ export const sendMessengerMessage = async (
       if (contact.status !== undefined && contact.status !== null && (status === 2 || status === 3)) {
          return { ok: false, reason: 'unsubscribed' };
       }
-      // Our own 24h check is advisory only. On 2026-10-01 it said "closed" for every send to a borrower
-      // who had messaged the Page 34 seconds earlier, so funded, no-show and reminder messages were all
-      // silently dropped. SendPulse and Meta enforce the window themselves and reject anything outside
-      // it (postSend logs their answer), so send, and log what the contact looked like when our check
-      // disagreed.
+      // Clearly outside Meta's 24h window: don't send. Meta rejects it anyway ("(#10) … outside the
+      // allowed window"), and every rejected try shows up as a grey ⚠ message in the SendPulse chat.
+      // Callers get the same 'send_failed' as a rejection, so their WhatsApp/Telegram fallbacks still run.
+      if (isClearlyOutsideMessagingWindow(contact)) {
+         console.log(`[sendpulse] skipped: outside the 24h window (last_activity_at=${JSON.stringify(contact.last_activity_at)})`);
+         return { ok: false, reason: 'send_failed' };
+      }
+      // Otherwise our 24h check is advisory only. On 2026-10-01 it said "closed" for every send to a
+      // borrower who had messaged the Page 34 seconds earlier, so funded, no-show and reminder messages
+      // were all silently dropped. Near the edge (or with an odd status/unsubscribe) SendPulse and Meta
+      // decide (postSend logs their answer); log what the contact looked like when our check disagreed.
       if (!isInsideMessagingWindow(contact)) {
          console.log(
             `[sendpulse] window check says closed (status=${JSON.stringify(contact.status)}, last_activity_at=${JSON.stringify(contact.last_activity_at)}, unsubscribed_at=${JSON.stringify(contact.unsubscribed_at)}); sending anyway`
@@ -495,10 +510,11 @@ export type WhatsAppTemplate = {
    name: string;
    language: { code: string };
    // A URL button's dynamic suffix goes in a 'button' component with sub_type 'url' and its index.
+   // SendPulse wants index as a NUMBER: the string '0' is rejected ("template: Invalid data").
    components?: Array<{
       type: 'header' | 'body' | 'button';
       sub_type?: 'url';
-      index?: string;
+      index?: number;
       parameters: Array<{ type: 'text'; text: string }>;
    }>;
 };

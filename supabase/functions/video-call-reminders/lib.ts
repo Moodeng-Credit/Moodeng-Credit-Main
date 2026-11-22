@@ -88,6 +88,6 @@ export const buildCallConfirmTemplate = (name: string | null | undefined, at: st
    language: { code: 'en' },
    components: [
       { type: 'body' as const, parameters: [{ type: 'text' as const, text: name?.trim() || 'there' }, { type: 'text' as const, text: at }] },
-      { type: 'button' as const, sub_type: 'url' as const, index: '0', parameters: [{ type: 'text' as const, text: confirmToken }] }
+      { type: 'button' as const, sub_type: 'url' as const, index: 0, parameters: [{ type: 'text' as const, text: confirmToken }] }
    ]
 });

@@ -50,6 +50,6 @@ Deno.test('WhatsApp confirm template: name, time and the confirm token as the bu
    const t = buildCallConfirmTemplate('Maria', 'Thu, Oct 30, 7:00 PM (Manila time)', 'abc123');
    assertEquals(t.name, 'moodeng_call_confirm');
    assertEquals(t.components[0].parameters.map((p) => p.text), ['Maria', 'Thu, Oct 30, 7:00 PM (Manila time)']);
-   assertEquals(t.components[1], { type: 'button', sub_type: 'url', index: '0', parameters: [{ type: 'text', text: 'abc123' }] });
+   assertEquals(t.components[1], { type: 'button', sub_type: 'url', index: 0, parameters: [{ type: 'text', text: 'abc123' }] });
    assertEquals(buildCallConfirmTemplate('  ', 'x', 't').components[0].parameters[0].text, 'there');
 });
