@@ -15,19 +15,27 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { linkRows } from './adminCards.ts';
+import { withToday } from './aiToday.ts';
+import { geminiTokens, logAiUsage } from './aiUsage.ts';
 import { blockRows, hasLinkedFlag } from './blockForGood.ts';
 import { GEMINI_MODEL } from './geminiPreScreen.ts';
 import { autoRejectLinked, linkedRedFlag, loadLinkedAccounts } from './linkedAccounts.ts';
 import { type Lang, langOf, teamStepIn } from './messengerIncomeDocReply.ts';
 import { preScreeningDecisionRows } from './preScreening.ts';
 import { applyPreScreeningDecision, autoDeclineForCosts } from './preScreeningDecision.ts';
-import { jobRedFlags, type MedicalRead, medicalRedFlag, permitProblem, type PhotoCheck, type PhotoMeta, photoRedFlags } from './prescreenV2.ts';
+import {
+   jobRedFlags,
+   type MedicalRead,
+   medicalRedFlag,
+   permitProblem,
+   type PhotoCheck,
+   type PhotoMeta,
+   photoRedFlags
+} from './prescreenV2.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
-import { geminiTokens, logAiUsage } from './aiUsage.ts';
 import { MESSENGER_CHAT_URL } from './whatsappFirst.ts';
-import { withToday } from './aiToday.ts';
 
 export type FollowupQuestion = { team: string; en: string; local: string | null };
 type Draft = { questions: FollowupQuestion[]; card_chat: number | string; card_msg: number; by: string };
@@ -283,7 +291,9 @@ async function postDraft(svc: SupabaseClient, row: Row, chat: number | string, c
 async function askNow(svc: SupabaseClient, row: Row, chat: number | string, cardMsg: number, by: string, typed: string[] | null) {
    const qs = await draftQuestions(svc, row, typed);
    if (!qs.length) {
-      await sendTelegramMessage(chat, '⚠️ The AI couldn’t write questions just now. Tap 💬 Ask more again in a minute.', { replyToMessageId: cardMsg });
+      await sendTelegramMessage(chat, '⚠️ The AI couldn’t write questions just now. Tap 💬 Ask more again in a minute.', {
+         replyToMessageId: cardMsg
+      });
       return;
    }
    const result = await sendFollowup(svc, row, qs, { chat, msg: cardMsg }, by);
@@ -291,8 +301,17 @@ async function askNow(svc: SupabaseClient, row: Row, chat: number | string, card
    await sendTelegramMessage(
       chat,
       result.ok
-         ? [`📤 Sent on Messenger by ${by}${typed ? '' : ' (AI questions)'}${result.pushed ? ' (+ push)' : ''}:`, ...list, '', 'Their replies show up here for 24 hours.'].join('\n')
-         : [`⚠️ Couldn’t send on Messenger (${result.why}) — usually their 24-hour window has closed. Copy this and send it yourself:`, '', result.text].join('\n'),
+         ? [
+              `📤 Sent on Messenger by ${by}${typed ? '' : ' (AI questions)'}${result.pushed ? ' (+ push)' : ''}:`,
+              ...list,
+              '',
+              'Their replies show up here for 24 hours.'
+           ].join('\n')
+         : [
+              `⚠️ Couldn’t send on Messenger (${result.why}) — usually their 24-hour window has closed. Copy this and send it yourself:`,
+              '',
+              result.text
+           ].join('\n'),
       { replyToMessageId: cardMsg, inlineKeyboard: [[{ text: '✍️ Ask something else', callback_data: `pq:type:${row.id}` }]] }
    );
 }
@@ -365,7 +384,9 @@ const FLAG_LABEL: Record<string, string> = {
 export const plainRedFlags = (grade: Row['grade'], job?: { questions?: unknown; asks?: unknown }): string[] => {
    const out: string[] = [];
    if (job) out.push(...jobRedFlags(job.questions as Parameters<typeof jobRedFlags>[0], job.asks as Parameters<typeof jobRedFlags>[1]));
-   const permit = job ? permitProblem(job.questions as Parameters<typeof permitProblem>[0], grade?.answers as Parameters<typeof permitProblem>[1]) : null;
+   const permit = job
+      ? permitProblem(job.questions as Parameters<typeof permitProblem>[0], grade?.answers as Parameters<typeof permitProblem>[1])
+      : null;
    if (permit) out.push(permit);
    if ((grade?.answers ?? []).some((a) => a.seen?.person_visible === false)) out.push('nobody on camera in an answer');
    const medical = medicalRedFlag(grade?.medical);
@@ -436,6 +457,23 @@ async function autoGood(svc: SupabaseClient, row: Row, card: { chat: number | st
    return true;
 }
 
+/**
+ * Saves the outcome of the automatic check on the row (pre_screenings.auto_check), so we can count later
+ * which red flags hold good people back. Before this, the reason lived only in the Telegram reply.
+ * Never throws.
+ */
+async function saveAutoCheck(
+   svc: SupabaseClient,
+   id: string,
+   check: { stage: 'grade' | 'answers'; score: number; bar: number; flags: string[] }
+) {
+   const { error } = await svc
+      .from('pre_screenings')
+      .update({ auto_check: { ...check, result: check.flags.length ? 'held' : 'approved', at: new Date().toISOString() } })
+      .eq('id', id);
+   if (error) console.warn('pre-screening auto check: save failed', error.message);
+}
+
 const redFlagNote = (score: number, flags: string[], after: string) =>
    `🚩 ${score}/100${after}, but not auto-approved — red flag: ${flags.join('; ')}. Your call: ✅ or ❌ on the card.`;
 
@@ -452,12 +490,20 @@ export async function autoDecideOrAsk(svc: SupabaseClient, id: string, card: { c
       if (row.user_id && (await autoRejectLinked(svc, row.user_id))?.done === 'rejected') {
          await svc
             .from('pre_screenings')
-            .update({ team_decision: 'not_fit', team_decided_by: 'auto: same person as a rejected account', team_decided_at: new Date().toISOString() })
+            .update({
+               team_decision: 'not_fit',
+               team_decided_by: 'auto: same person as a rejected account',
+               team_decided_at: new Date().toISOString()
+            })
             .eq('id', row.id)
             .is('team_decision', null);
-         await sendTelegramMessage(card.chat, '🤖 Auto-rejected — same person as an account we already turned down (details in the admin chat). Wrong? /reopen', {
-            replyToMessageId: card.msg
-         }).catch(() => undefined);
+         await sendTelegramMessage(
+            card.chat,
+            '🤖 Auto-rejected — same person as an account we already turned down (details in the admin chat). Wrong? /reopen',
+            {
+               replyToMessageId: card.msg
+            }
+         ).catch(() => undefined);
          return;
       }
       const { data: setting } = await svc.from('telegram_bot_settings').select('value').eq('key', 'prescreen_auto_ask_below').maybeSingle();
@@ -465,6 +511,7 @@ export async function autoDecideOrAsk(svc: SupabaseClient, id: string, card: { c
       if (bar == null) return;
       if (row.score < bar) return await autoAskIfWeak(svc, id, card);
       const flags = await redFlags(svc, row);
+      await saveAutoCheck(svc, row.id, { stage: 'grade', score: row.score, bar, flags });
       if (flags.length) {
          await sendTelegramMessage(card.chat, redFlagNote(row.score, flags, ''), {
             replyToMessageId: card.msg,
@@ -738,6 +785,7 @@ export const handlePreScreeningAnswer = async (svc: SupabaseClient, userId: stri
             row,
             answers.map((a) => a.text)
          );
+         await saveAutoCheck(svc, row.id, { stage: 'answers', score: read!.score!, bar, flags });
          if (flags.length) {
             await sendTelegramMessage(card.chat, redFlagNote(read!.score!, flags, ' after their answers'), {
                replyToMessageId: card.msg,
