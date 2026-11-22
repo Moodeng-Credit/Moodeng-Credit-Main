@@ -17,7 +17,7 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { postDiscord } from './discord.ts';
-import { type ClipCheck, clipWarnings, GEMINI_MODEL, type GeminiResult, gradeWithGemini } from './geminiPreScreen.ts';
+import { type ClipCheck, clipWarnings, GEMINI_MODEL, type GeminiResult, gradeWithGemini, settingCut } from './geminiPreScreen.ts';
 import { type IncomeProofRead, parseRepayChance, readIncomeProof } from './incomeDocs.ts';
 import {
    MEDICAL_PROMPT,
@@ -152,6 +152,8 @@ export type PreScreenGrade = {
    /** The AI's 0–100 chance they'd repay a first loan on time, and what moved it (checked weekly against real loans). */
    repay_chance?: number | null;
    repay_reasons?: string[];
+   /** Points taken off for how they recorded (dark, lying down, in a car, bad sound, not serious). */
+   setting_cut?: { points: number; reasons: string[] } | null;
 };
 
 type Row = {
@@ -824,14 +826,23 @@ export async function gradePreScreening(svc: SupabaseClient, id: string, apiKey:
       ...(!gemini && fileQuestions.some(sentFile) ? ['📸 Job photos / certificate not checked by the AI (backup grader) — open them'] : [])
    ];
    // Emma's rule (2026-11-21): an OFW without a valid work permit stays under 50 (no auto ✅).
-   const overall = capForPermit(built.overall, permit);
+   // George 2026-11-22: how they recorded nudges the score (at most SETTING_CUT_MAX); not the at-work clip.
+   const cut = gemini ? settingCut(gemini.seen, new Set(['job_video'])) : { points: 0, reasons: [] as string[] };
+   const afterCut = built.overall != null && cut.points ? Math.max(0, built.overall - cut.points) : built.overall;
+   const overall = capForPermit(afterCut, permit);
    const grade: PreScreenGrade = {
       ...built,
       overall,
       verdict: verdictFor(overall),
       answers,
-      flags: [...v2Flags, ...cameraFlags, ...(built.flags ?? [])].slice(0, 12),
+      flags: [
+         ...(cut.points ? [`🎥 −${cut.points} for how they recorded: ${cut.reasons.join(', ')}`] : []),
+         ...v2Flags,
+         ...cameraFlags,
+         ...(built.flags ?? [])
+      ].slice(0, 12),
       graded_by: gemini ? GEMINI_MODEL : 'deepseek',
+      ...(gemini ? { setting_cut: cut.points ? cut : null } : {}),
       ...(medQ ? { medical } : {})
    };
    const failed = grade.overall == null;

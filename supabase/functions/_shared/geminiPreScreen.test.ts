@@ -1,6 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { clipWarnings, toClipCheck, toIncomeRead } from './geminiPreScreen.ts';
+import { clipWarnings, SETTING_CUT_MAX, settingCut, settingIssues, toClipCheck, toIncomeRead } from './geminiPreScreen.ts';
 
 Deno.test('toIncomeRead: unreadable keeps the reason, drops the type', () => {
    const r = toIncomeRead({ readable: false, problem: 'Blurry photo', doc_type: 'payslip' });
@@ -32,4 +32,29 @@ Deno.test('clipWarnings: only what is clearly off', () => {
       'no face on camera',
       'reading from a script'
    ]);
+});
+
+Deno.test('toClipCheck: setting fields only take known values', () => {
+   const c = toClipCheck({ light: 'Dark', place: 'car', posture: 'lying', sound: 'poor', moving: 'yes', serious: false });
+   assertEquals([c?.light, c?.place, c?.posture, c?.sound, c?.moving, c?.serious], ['dark', null, 'lying', 'poor', null, false]);
+});
+
+Deno.test('settingIssues: a normal clip at home costs nothing', () => {
+   assertEquals(settingIssues(null), []);
+   assertEquals(settingIssues(toClipCheck({ light: 'dim', place: 'indoors', posture: 'sitting', sound: 'ok', serious: true })), []);
+});
+
+Deno.test('settingCut: each issue once across clips, riding beats parked, capped, job video skipped', () => {
+   const seen = {
+      intro: toClipCheck({ light: 'dark', posture: 'lying' }),
+      q2: toClipCheck({ light: 'dark', place: 'vehicle', moving: false }),
+      q3: toClipCheck({ place: 'vehicle', moving: true }),
+      job_video: toClipCheck({ place: 'outdoors', sound: 'poor' })
+   };
+   const cut = settingCut(seen, new Set(['job_video']));
+   assertEquals(cut.reasons, ['too dark to see them', 'lying down', 'recorded while riding']);
+   assertEquals(cut.points, 4 + 5 + 5 - 2); // 14 capped at 12
+   assertEquals(cut.points, SETTING_CUT_MAX);
+   assertEquals(settingCut({ a: toClipCheck({ place: 'outdoors' }) }), { points: 2, reasons: ['outside'] });
+   assertEquals(settingCut({}), { points: 0, reasons: [] });
 });
