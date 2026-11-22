@@ -56,9 +56,11 @@ export async function downloadCreditLineExcel(data: LenderReportData, report: Pe
    line('Advanced by lender ($)', report.advanced, USD);
    line('Principal lent to borrowers ($)', report.lent, USD);
    line('Principal repaid by borrowers ($)', report.principalRepaid, USD);
-   line('Principal deployed (outstanding) ($)', report.deployed, USD);
-   line('Available to deploy ($)', report.available, USD);
-   line('Utilisation of the commitment', report.utilization, PCT);
+   line('Original advance still out in loans ($)', report.deployed, USD);
+   line('Original advance not in loans ($)', report.available, USD);
+   line('Share of the advance still out', report.utilization, PCT);
+   line('Vault loans lent (Base vault, separate from the advance) ($)', report.vaultLent, USD);
+   line('Vault loans still out ($)', report.vaultDeployed, USD);
    section('Interest owed to the lender');
    line('Accrued this period so far ($)', report.interestAccrued, '$#,##0.00');
    line('Projected for the full period ($)', report.interestProjected, '$#,##0.00');
@@ -118,7 +120,7 @@ export async function downloadCreditLineExcel(data: LenderReportData, report: Pe
 
    // ---- Daily interest
    const d = wb.addWorksheet('Daily interest');
-   title(d, `Interest owed — ${(Number(f.annual_rate) * 100).toFixed(0)}% simple, actual/365, on principal deployed each day`);
+   title(d, `Interest owed — ${(Number(f.annual_rate) * 100).toFixed(0)}% simple, actual/365, on original-advance principal deployed each day (vault interest is paid in the vault)`);
    headerRow(d, ['Date', 'Deployed principal ($)', 'Interest for the day ($)', 'Actual / projected']);
    report.daily.forEach((day) => {
       const row = d.addRow([day.date, day.deployed, day.interest, day.projected ? 'Projected' : 'Actual']);

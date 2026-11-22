@@ -6,6 +6,7 @@ import { downloadCreditLineExcel } from '@/lib/creditLineExcel';
 import { txExplorerUrl } from '@/lib/txExplorer';
 import { buildPeriodReport, type LenderLoan, type LenderReportData, loadLenderReport, manilaToday, periodsFor } from '@/lib/creditLineReport';
 import { buildRollover, type ChainTransfer, listUsdcTransfersTo } from '@/lib/creditLineRollover';
+import { BITREPO_VAULT_URL, readVaultStatus } from '@/lib/web3/bitrepoVault';
 
 // moodeng.app/creditline — the facility lender (BitRepo) sees the live monthly report and downloads it as
 // Excel. Password-checked on the server (credit_line_lender_report); the password is kept for this tab only.
@@ -62,6 +63,9 @@ export default function CreditLineLenderPage() {
    // USDC that actually reached BitRepo's return address on Base (same numbers as /repaidcreditline).
    const [transfers, setTransfers] = useState<ChainTransfer[] | null>(null);
    const [chainFailed, setChainFailed] = useState(false);
+   // What the vault itself says is left to draw (USDC, 6 decimals), read on Base.
+   const [vaultAvailable, setVaultAvailable] = useState<number | null>(null);
+   const [vaultFailed, setVaultFailed] = useState(false);
 
    const unlock = async (pw: string) => {
       setLoading(true);
@@ -91,6 +95,9 @@ export default function CreditLineLenderPage() {
       listUsdcTransfersTo()
          .then(setTransfers)
          .catch(() => setChainFailed(true));
+      readVaultStatus()
+         .then((v) => setVaultAvailable(Number(v.availableToDraw) / 1e6))
+         .catch(() => setVaultFailed(true));
    }, [data]);
    const roll = useMemo(() => (data && transfers ? buildRollover(data, transfers, manilaToday()) : null), [data, transfers]);
 
@@ -201,9 +208,24 @@ export default function CreditLineLenderPage() {
             </header>
 
             <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
-               <Stat label="Deployed now" sub={`${pct(report.utilization)} of ${usd(Number(f.commitment_usd), 0)}`} value={usd(report.deployed)} />
-               <Stat label="Available" value={usd(report.available)} />
-               <Stat label="Interest owed to you" sub={`So far this period (15%/yr on deployed funds) · projected ${usd(report.interestProjected)}`} value={usd(report.interestAccrued)} />
+               {/* Two separate pools: the original advance (being paid back) and the vault on Base (drawn loan by loan). */}
+               <Stat
+                  label="Original advance still out"
+                  sub={`Of the ${usd(Number(f.commitment_usd), 0)} advance · ${report.advanceOpen} open loans, being paid back to you`}
+                  value={usd(report.deployed)}
+               />
+               <Stat
+                  label="Vault loans out"
+                  sub={`${report.vaultOpen} open loans · ${
+                     vaultAvailable != null
+                        ? `${usd(vaultAvailable)} left to draw in the vault`
+                        : vaultFailed
+                          ? 'couldn’t read the vault just now'
+                          : 'reading the vault on Base…'
+                  }`}
+                  value={usd(report.vaultDeployed)}
+               />
+               <Stat label="Interest owed to you" sub={`Advance loans, this period so far (15%/yr) — vault interest is paid in the vault · projected ${usd(report.interestProjected)}`} value={usd(report.interestAccrued)} />
                <Stat
                   label="Loans"
                   sub={`${report.counts.active} active · ${report.counts.repaid} repaid · ${report.counts.overdue} overdue`}
@@ -230,7 +252,11 @@ export default function CreditLineLenderPage() {
             <p className="-mt-2 text-[12px] text-[#8a7c9c]">
                Borrower fees are a one-time flat fee on each loan, paid back with the principal — not a monthly or annual rate. Medians use
                standard pricing (the 0% bridge loan is excluded; including it, the median fee is {pct(m.fee)}). Interest: {(Number(f.annual_rate) * 100).toFixed(0)}% simple,
-               actual/365, on principal deployed each day. Advanced to Moodeng: {usd(report.advanced)}.
+               actual/365, on principal deployed each day. Advanced to Moodeng: {usd(report.advanced)}. Vault loans are drawn from and repaid to{' '}
+               <a className="font-semibold text-[#6b55f7] underline" href={BITREPO_VAULT_URL} rel="noreferrer" target="_blank">
+                  your vault on Base
+               </a>{' '}
+               (its interest is paid there); they don’t use the original advance.
             </p>
 
             <section className="overflow-hidden rounded-2xl border border-[#e7e0ec] bg-white">
