@@ -139,9 +139,14 @@ export interface PeriodReport {
    atBinance: number;
    lent: number;
    principalRepaid: number;
-   deployed: number;
-   available: number;
-   utilization: number;
+   deployed: number; // original advance only: still out in loans
+   available: number; // original advance only: commitment − deployed
+   utilization: number; // original advance only
+   advanceOpen: number; // open loans lent from the original advance
+   // The originator vault (Base) is its own pool, drawn loan by loan: never counted against the advance.
+   vaultDeployed: number; // vault loans borrowers haven't repaid yet
+   vaultOpen: number;
+   vaultLent: number;
    interestAccrued: number;
    interestProjected: number;
    feesCollected: number;
@@ -156,13 +161,23 @@ export function buildPeriodReport(
 ): PeriodReport {
    const asOf = today < period.end ? today : period.end;
    const loans = data.loans.filter((l) => l.fundedDate <= period.end);
-   const daily = dailyInterest(loans, Number(data.facility.annual_rate), period.start, period.end, asOf);
+   // Interest owed here is on the original advance only: the vault charges its own interest on each draw.
+   const daily = dailyInterest(
+      loans.filter((l) => !l.vaultAddress),
+      Number(data.facility.annual_rate),
+      period.start,
+      period.end,
+      asOf
+   );
    const ledgerTo = data.ledger.filter((row) => row.occurred_at.slice(0, 10) <= period.end);
    const sumKind = (kind: string) => ledgerTo.filter((row) => row.kind === kind).reduce((t, row) => t + Number(row.amount_usd), 0);
    const advanced = sumKind('advance');
    const drawn = sumKind('draw');
    const outstandingAt = (l: LenderLoan) => (l.repaidDate && l.repaidDate <= asOf ? 0 : Number(l.loan_amount));
-   const deployed = loans.reduce((t, l) => t + outstandingAt(l), 0);
+   const advanceLoans = loans.filter((l) => !l.vaultAddress);
+   const vaultLoans = loans.filter((l) => l.vaultAddress);
+   const deployed = advanceLoans.reduce((t, l) => t + outstandingAt(l), 0);
+   const vaultDeployed = vaultLoans.reduce((t, l) => t + outstandingAt(l), 0);
    const lent = loans.reduce((t, l) => t + Number(l.loan_amount), 0);
    const standard = loans.filter((l) => !l.restructured);
    const commitment = Number(data.facility.commitment_usd);
@@ -182,6 +197,10 @@ export function buildPeriodReport(
       deployed,
       available: commitment - deployed,
       utilization: commitment > 0 ? deployed / commitment : 0,
+      advanceOpen: advanceLoans.filter((l) => outstandingAt(l) > 0).length,
+      vaultDeployed,
+      vaultOpen: vaultLoans.filter((l) => outstandingAt(l) > 0).length,
+      vaultLent: vaultLoans.reduce((t, l) => t + Number(l.loan_amount), 0),
       interestAccrued: daily.filter((d) => !d.projected).reduce((t, d) => t + d.interest, 0),
       interestProjected: daily.reduce((t, d) => t + d.interest, 0),
       feesCollected: loans.filter((l) => l.repaidDate && l.repaidDate <= asOf).reduce((t, l) => t + l.interestRepaid, 0),
