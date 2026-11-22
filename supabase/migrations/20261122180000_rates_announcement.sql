@@ -34,11 +34,20 @@ begin
     return jsonb_build_object('enabled', false);
   end if;
 
-  -- Loans due so far this month (Bangkok), and how many were fully repaid by their due time.
-  select count(*), count(*) filter (where repaid_at is not null and repaid_at <= due_date)
+  -- Loans due this month (Bangkok) whose due DAY has ended in the borrower's time zone, and how many were
+  -- paid by the end of that day (paying the evening of the due date counts as on time). A loan marked Paid
+  -- with no repaid_at (paid by hand) counts as on time. A loan due today is left out until the day is over.
+  with due as (
+    select repayment_status, repaid_at,
+           ((due_date at time zone coalesce(due_timezone, 'Asia/Manila'))::date + 1)
+             at time zone coalesce(due_timezone, 'Asia/Manila') as day_end
+      from loans
+     where loan_status = 'Lent' and due_date >= month_start
+  )
+  select count(*), count(*) filter (where repayment_status = 'Paid' and (repaid_at is null or repaid_at < day_end))
     into due_count, on_time_count
-    from loans
-   where loan_status = 'Lent' and due_date >= month_start and due_date <= now();
+    from due
+   where day_end <= now();
 
   select avg((total_repayment_amount - loan_amount) / loan_amount) * 100
     into app_avg
