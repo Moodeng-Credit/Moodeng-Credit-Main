@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { useSelector } from 'react-redux';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
@@ -42,6 +42,7 @@ import {
    VoucherFollowUpCard
 } from '@/views/dashboard-v2/components/DashboardV2Sections';
 import LimitStaysCard from '@/views/dashboard-v2/components/LimitStaysCard';
+import { findOpenFullLimitLoan } from '@/views/dashboard-v2/dashboardV2Model';
 import { getVoucherFollowUp, getVoucherState, OWN_VOUCHER } from '@/views/dashboard-v2/dashboardV2Model';
 import DashboardV2PreviewBar from '@/views/dashboard-v2/DashboardV2Preview';
 import { VoucherClaimPopup } from '@/views/dashboard-v2/DashboardV2Rewards';
@@ -140,6 +141,8 @@ export default function DashboardV2() {
    const hasRequestedLoan = useSelector((state: RootState) =>
       (state.loans.loans.gloans || []).some((loan) => loan.borrowerUser === userId)
    );
+   const allLoans = useSelector((state: RootState) => state.loans.loans.gloans);
+   const myLoans = useMemo(() => (allLoans || []).filter((loan) => loan.borrowerUser === userId), [allLoans, userId]);
    // In manual review — or declined — without a confirmed Facebook/WhatsApp line: point them to the
    // Facebook step, so the team can tell them the result (review) or talk them through it (declined).
    const verificationState = getVerificationUiState(authUser);
@@ -163,6 +166,7 @@ export default function DashboardV2() {
    const requestBoardTourStepCount =
       Number.isInteger(tourStepsParam) && tourStepsParam > 0 ? tourStepsParam : REQUEST_BOARD_TOUR_STEP_COUNT;
    const trackParam = searchParams.get('track');
+   const creditLimitNow = model.isVerified ? getEffectiveCreditLimit(authUser?.cs, true) : 0;
    const previewTrack = isPreviewHost() && (trackParam === 'A' || trackParam === 'B') ? trackParam : undefined;
    const showTour = searchParams.has('tour') && shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, userId, false);
    const ownVoucher = getVoucherState(model.rewards, OWN_VOUCHER, model.referralLoading);
@@ -270,8 +274,10 @@ export default function DashboardV2() {
                         language={language}
                         userId={userId}
                         joinedAt={authUser?.createdAt}
-                        limit={model.isVerified ? getEffectiveCreditLimit(authUser?.cs, true) : 0}
+                        limit={creditLimitNow}
+                        openFundedAt={findOpenFullLimitLoan(myLoans, creditLimitNow)?.fundedAt ?? null}
                         preview={isReal ? undefined : previewTrack}
+                        previewPromise={searchParams.has('promise')}
                      />
                   ) : null}
                   {/* Anything to repay sits near the top, with the streak and what paying on time earns. */}

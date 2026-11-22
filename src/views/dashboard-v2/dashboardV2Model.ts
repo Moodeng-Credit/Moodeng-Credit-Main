@@ -215,7 +215,7 @@ export const getMoodengMood = ({
  * The borrower's open full-limit (credit-building) loan, if any: funded and not yet fully repaid, at or
  * above the current limit. Repaying it in full is what unlocks the next level.
  */
-const findOpenFullLimitLoan = (loans: Loan[], creditLimit: number): Loan | undefined =>
+export const findOpenFullLimitLoan = (loans: Loan[], creditLimit: number): Loan | undefined =>
    loans.find(
       (loan) =>
          loan.loanStatus === 'Lent' && loan.repaymentStatus !== 'Paid' && !loan.refundedAt && toNumber(loan.loanAmount) >= creditLimit
@@ -250,7 +250,7 @@ export const getCreditLevelProgress = ({
 
    const openLoan = findOpenFullLimitLoan(loans, creditLimit);
    // Name the amount it unlocks ("a $25 limit"): with $10 steps the amount says more than the level.
-   const nextLimit = ` a $${formatNumber(getNextCreditTier(creditLimit, joinedAt))} limit`;
+   const nextLimit = ` a $${formatNumber(getNextCreditTier(creditLimit, joinedAt, openLoan?.fundedAt))} limit`;
    if (openLoan) {
       const total = toNumber(openLoan.totalRepaymentAmount);
       const repaid = toNumber(openLoan.repaidAmount);

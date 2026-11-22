@@ -163,7 +163,7 @@ describe('Credit leveling logic', () => {
       expect(evaluation.nextLimit).toBe(25);
    });
 
-   it('a full-limit loan funded before the switch: Track A gets the old step ($40), Track B the new one ($25)', () => {
+   it('a full-limit loan funded before the switch keeps the old step on both tracks ($20 → $40)', () => {
       const input = {
          currentLimit: 20,
          isVerified: true,
@@ -181,8 +181,12 @@ describe('Credit leveling logic', () => {
       });
       expect(evaluateCreditProgression({ ...input, joinedAt: '2026-10-05T00:00:00.000Z' })).toMatchObject({
          shouldLevelUp: true,
-         nextLimit: 25
+         nextLimit: 40
       });
+      // Funded after the switch, Track B: the new ladder.
+      expect(
+         evaluateCreditProgression({ ...input, fundedAt: '2026-11-15T00:00:00.000Z', joinedAt: '2026-10-05T00:00:00.000Z' })
+      ).toMatchObject({ shouldLevelUp: true, nextLimit: 25 });
    });
 
    it('stops at the top limit', () => {
@@ -519,10 +523,19 @@ describe('Dashboard credit level carousel', () => {
       expect(tiers.find((tier) => tier.amount === 40)?.unlockRequirement).toBe('Borrow & repay the full $20 to unlock');
    });
 
-   it('Track B with an open $20 loan funded before the switch highlights $25', () => {
+   it('Track B with an open $20 loan funded before the switch highlights the promised $40', () => {
       const tiers = buildCreditLevels({
          user: { ...baseUser, cs: 20 },
          loans: [createLoan({ loanAmount: 20, loanStatus: 'Lent', repaymentStatus: 'Unpaid', fundedAt: '2026-11-05T10:05:00Z' })]
+      });
+      expect(tiers.map((tier) => tier.amount)).toEqual([15, 20, 25, 35, 40]);
+      expect(tiers.find((tier) => tier.amount === 40)?.unlockRequirement).toBe('Borrow & repay the full $20 to unlock');
+   });
+
+   it('Track B with an open $20 loan funded after the switch highlights $25', () => {
+      const tiers = buildCreditLevels({
+         user: { ...baseUser, cs: 20 },
+         loans: [createLoan({ loanAmount: 20, loanStatus: 'Lent', repaymentStatus: 'Unpaid', fundedAt: '2026-11-15T10:05:00Z' })]
       });
       expect(tiers.map((tier) => tier.amount)).toEqual([15, 20, 25, 35]);
       expect(tiers.find((tier) => tier.amount === 25)?.unlockRequirement).toBe('Borrow & repay the full $20 to unlock');
@@ -653,7 +666,9 @@ describe('ladder copies stay in sync', () => {
       expect(server.MAX_CREDIT_LIMIT).toBe(MAX_CREDIT_LIMIT);
       for (const limit of [15, 20, 25, 40, 60, 100, 120, 135]) {
          for (const joinedAt of [undefined, '2026-09-19T00:00:00Z', '2026-09-30T17:30:00Z', '2026-10-08T00:00:00Z']) {
-            expect(server.getNextCreditTier(limit, joinedAt)).toBe(getNextCreditTier(limit, joinedAt));
+            for (const fundedAt of [undefined, '2026-11-10T00:00:00Z', '2026-11-20T00:00:00Z']) {
+               expect(server.getNextCreditTier(limit, joinedAt, fundedAt)).toBe(getNextCreditTier(limit, joinedAt, fundedAt));
+            }
          }
       }
       expect(server.getCreditTrack('2026-09-30T16:59:00Z')).toBe('A');
@@ -681,9 +696,11 @@ describe('credit tracks: joined before October 2026 = Track A (old ladder), ever
       expect(evaluateCreditProgression({ ...full, joinedAt: '2026-09-19T00:00:00Z' }).nextLimit).toBe(40);
       expect(evaluateCreditProgression({ ...full, currentLimit: 40, loanAmount: 40, joinedAt: '2026-09-19T00:00:00Z' }).nextLimit).toBe(60);
    });
-   it('Track B goes to the new ladder, even for a loan funded before the Nov 14 switch: $20 → $25, $40 → $45', () => {
-      expect(evaluateCreditProgression({ ...full, joinedAt: '2026-10-08T00:00:00Z' }).nextLimit).toBe(25);
-      expect(evaluateCreditProgression({ ...full, currentLimit: 40, loanAmount: 40, joinedAt: '2026-10-08T00:00:00Z' }).nextLimit).toBe(45);
+   it('Track B: a loan funded before the Nov 14 switch keeps the old step once ($20 → $40), then +$10 ($40 → $45)', () => {
+      expect(evaluateCreditProgression({ ...full, joinedAt: '2026-10-08T00:00:00Z' }).nextLimit).toBe(40);
+      const nextLoan = { ...full, currentLimit: 40, loanAmount: 40, fundedAt: '2026-11-25T00:00:00Z', paidAt: '2026-12-20T00:00:00Z' };
+      expect(evaluateCreditProgression({ ...nextLoan, joinedAt: '2026-10-08T00:00:00Z' }).nextLimit).toBe(45);
+      expect(evaluateCreditProgression({ ...full, fundedAt: '2026-11-15T00:00:00Z', joinedAt: '2026-10-08T00:00:00Z' }).nextLimit).toBe(25);
       expect(evaluateCreditProgression({ ...full, currentLimit: 15, loanAmount: 15, joinedAt: '2026-11-20T00:00:00Z' }).nextLimit).toBe(25);
    });
 });

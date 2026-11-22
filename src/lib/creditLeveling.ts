@@ -26,7 +26,7 @@ type CreditProgressionInput = {
    /** The loan's saved zone (`loans.due_timezone`); Manila when missing. */
    dueTimezone?: string | null;
    paidAt: string;
-   /** When the loan was funded (the 48-hour rule). */
+   /** When the loan was funded: the 48-hour rule, and a pre-Nov-14 loan's promised old step. */
    fundedAt?: string | null;
    /** When the borrower joined (users.created_at): before October 2026 = Track A, the old ladder. */
    joinedAt?: string | null;
@@ -87,7 +87,7 @@ export const evaluateCreditProgression = ({
 
    return {
       shouldLevelUp: canLevelUp,
-      nextLimit: getNextCreditTier(normalizedLimit, joinedAt),
+      nextLimit: getNextCreditTier(normalizedLimit, joinedAt, fundedAt),
       isLate,
       isFullyRepaid
    };

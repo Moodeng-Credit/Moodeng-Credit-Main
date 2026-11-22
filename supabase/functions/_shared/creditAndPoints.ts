@@ -53,8 +53,16 @@ export const getCreditTrack = (joinedAt?: string | number | Date | null): Credit
    return Number.isFinite(joined) && joined < TRACK_A_JOINED_BEFORE ? 'A' : 'B';
 };
 
-export const getNextCreditTier = (currentAmount: number, joinedAt?: string | number | Date | null): number => {
-   const ladder = getCreditTrack(joinedAt) === 'A' ? OLD_CREDIT_TIERS : CREDIT_TIERS;
+// A Track B full-limit loan funded before the switch at an old limit still gets the old step once ($20 → $40),
+// then +$10 ($40 → $45) (George, 2026-11-22).
+export const getNextCreditTier = (
+   currentAmount: number,
+   joinedAt?: string | number | Date | null,
+   fundedAt?: string | number | Date | null
+): number => {
+   const funded = fundedAt == null ? Number.NaN : new Date(fundedAt).getTime();
+   const promisedOldStep = Number.isFinite(funded) && funded < LADDER_SWITCH_AT && !CREDIT_TIERS.includes(currentAmount);
+   const ladder = promisedOldStep || getCreditTrack(joinedAt) === 'A' ? OLD_CREDIT_TIERS : CREDIT_TIERS;
    const next = ladder.find((tier) => tier > currentAmount);
    return Math.min(next ?? MAX_CREDIT_LIMIT, MAX_CREDIT_LIMIT);
 };
@@ -87,7 +95,7 @@ type CreditProgressionInput = {
    /** The loan's saved zone (`loans.due_timezone`); Manila when missing. */
    dueTimezone?: string | null;
    paidAt: string;
-   /** When the loan was funded (the 48-hour rule). */
+   /** When the loan was funded: the 48-hour rule, and a pre-Nov-14 loan's promised old step. */
    fundedAt?: string | null;
    /** When the borrower joined (users.created_at): before October 2026 = Track A, the old ladder. */
    joinedAt?: string | null;
@@ -137,7 +145,7 @@ export const evaluateCreditProgression = ({
 
    return {
       shouldLevelUp: canLevelUp,
-      nextLimit: getNextCreditTier(normalizedLimit, joinedAt),
+      nextLimit: getNextCreditTier(normalizedLimit, joinedAt, fundedAt),
       isLate,
       isFullyRepaid
    };
