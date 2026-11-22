@@ -3,22 +3,25 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { saveFacebookName, syncMessengerHistory } from '../_shared/messengerContactLog.ts';
 import {
+   createWhatsAppTemplate,
    findMessengerContactIdByCode,
+   FOLLOW_UP_TEMPLATE,
    getMessengerContact,
    isInsideMessagingWindow,
    isSendPulseConfigured,
-   createWhatsAppTemplate,
-   FOLLOW_UP_TEMPLATE,
    listAllWhatsAppTemplates,
    listWhatsAppChats,
    listWhatsAppMessages,
    listWhatsAppTemplates,
    markWhatsAppRead,
+   MESSENGER_TEMPLATE_SHAPES,
    messengerDisplayName,
+   type MessengerTemplateShape,
    normalizeWhatsAppPhone,
+   probeMessengerTemplate,
    replyWhatsAppText,
-   type SendPulseContact,
    sendMessengerMessage,
+   type SendPulseContact,
    sendWhatsAppTemplateTo
 } from '../_shared/sendpulse.ts';
 
@@ -28,6 +31,9 @@ import {
 //   { action: 'send', userId, text } → sends the admin's message to that borrower on Messenger.
 //   { action: 'sync_history', userIds? } → saves Facebook names + backfills messenger_contact_events
 //                                      from SendPulse's chat log (_shared/messengerContactLog.ts).
+//   { action: 'msg_template_probe', userId, name, language?, params, shapes? } → TEST: tries to send an
+//                                      approved Messenger utility template to that ONE borrower via the
+//                                      public API, stopping at the first accepted shape; returns every answer.
 // WhatsApp inbox (Admin → Support → WhatsApp), so the team can chat on the business number without the
 // WhatsApp Business app:
 //   { action: 'wa_chats' }                         → recent chats + which Moodeng user each one is.
@@ -57,7 +63,11 @@ type Svc = any;
 // users.messenger_psid should hold the SendPulse contact id, but older verifications may have stored
 // Facebook's numeric PSID (which SendPulse rejects). Fall back to looking the contact up by the
 // one-time code the borrower verified with — the flow saved it on their SendPulse contact.
-const resolveContact = async (svc: Svc, userId: string, storedId: string | null): Promise<{ id: string; contact: SendPulseContact } | null> => {
+const resolveContact = async (
+   svc: Svc,
+   userId: string,
+   storedId: string | null
+): Promise<{ id: string; contact: SendPulseContact } | null> => {
    if (storedId) {
       const contact = await getMessengerContact(storedId);
       if (contact) return { id: storedId, contact };
@@ -163,11 +173,38 @@ serve(async (req) => {
       return json({ results });
    }
 
+   if (body.action === 'msg_template_probe') {
+      const userId = typeof body.userId === 'string' ? body.userId : '';
+      const name = typeof body.name === 'string' ? body.name.trim() : '';
+      const language = typeof body.language === 'string' && body.language.trim() ? body.language.trim() : 'en';
+      const params = (Array.isArray(body.params) ? body.params : []).map((p: unknown) =>
+         String(p ?? '')
+            .trim()
+            .slice(0, 300)
+      );
+      const shapes = (Array.isArray(body.shapes) ? body.shapes : MESSENGER_TEMPLATE_SHAPES).filter(
+         (s: unknown): s is MessengerTemplateShape => (MESSENGER_TEMPLATE_SHAPES as readonly unknown[]).includes(s)
+      );
+      if (!userId || !name || !params.length || params.some((p: string) => !p) || !shapes.length)
+         return json({ ok: false, reason: 'missing_fields' }, 400);
+      const { data: user } = await svc.from('users').select('id, messenger_psid, messenger_verified_at').eq('id', userId).maybeSingle();
+      if (!user?.messenger_verified_at) return json({ ok: false, reason: 'not_verified' });
+      const resolved = await resolveContact(svc, user.id, user.messenger_psid);
+      if (!resolved) return json({ ok: false, reason: 'contact_not_found' });
+      const result = await probeMessengerTemplate(resolved.id, { name, language, params }, shapes);
+      console.log('[admin-messenger] msg_template_probe', JSON.stringify(result).slice(0, 2000));
+      return json({ ...result, inWindow: isInsideMessagingWindow(resolved.contact) });
+   }
+
    if (body.action === 'send') {
       const userId = typeof body.userId === 'string' ? body.userId : '';
       const text = typeof body.text === 'string' ? body.text.trim().slice(0, MAX_TEXT) : '';
       if (!userId || !text) return json({ ok: false, reason: 'missing_fields' }, 400);
-      const { data: user } = await svc.from('users').select('id, user_role, messenger_psid, messenger_verified_at').eq('id', userId).maybeSingle();
+      const { data: user } = await svc
+         .from('users')
+         .select('id, user_role, messenger_psid, messenger_verified_at')
+         .eq('id', userId)
+         .maybeSingle();
       if (!user?.messenger_verified_at) return json({ ok: false, reason: 'not_verified' });
       if (user.user_role === 'lender') return json({ ok: false, reason: 'not_borrower' });
       const resolved = await resolveContact(svc, user.id, user.messenger_psid);
@@ -266,7 +303,12 @@ const handleWhatsApp = async (svc: Svc, body: any) => {
          if (!res.ok) return res;
          return { ok: true, status: 'PENDING', submitted: true, template: FOLLOW_UP_TEMPLATE.name };
       }
-      return { ok: true, status: found?.status ?? 'MISSING', rejectedReason: found?.rejectedReason ?? null, template: FOLLOW_UP_TEMPLATE.name };
+      return {
+         ok: true,
+         status: found?.status ?? 'MISSING',
+         rejectedReason: found?.rejectedReason ?? null,
+         template: FOLLOW_UP_TEMPLATE.name
+      };
    }
 
    if (body.action === 'wa_templates') {
@@ -277,7 +319,11 @@ const handleWhatsApp = async (svc: Svc, body: any) => {
    if (body.action === 'wa_send_template') {
       const name = typeof body.name === 'string' ? body.name.trim() : '';
       const language = typeof body.language === 'string' && body.language.trim() ? body.language.trim() : 'en';
-      const params = (Array.isArray(body.params) ? body.params : []).map((p: unknown) => String(p ?? '').trim().slice(0, 300));
+      const params = (Array.isArray(body.params) ? body.params : []).map((p: unknown) =>
+         String(p ?? '')
+            .trim()
+            .slice(0, 300)
+      );
       if (!name) return { ok: false, reason: 'missing_template' };
       if (params.some((p: string) => !p)) return { ok: false, reason: 'missing_params' };
       if (contactId) return await sendWhatsAppTemplateTo({ contactId }, { name, language, params });
