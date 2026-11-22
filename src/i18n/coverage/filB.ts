@@ -316,6 +316,13 @@ export const filipinoCoverageB: Record<string, string> = {
    "Save the voucher in your Grab app on your phone.": "I-save ang voucher sa Grab app sa phone mo.",
    "Use it on GrabMart, GrabFood or GrabCar, all in one order.": "Gamitin sa GrabMart, GrabFood o GrabCar, lahat sa isang order.",
    "Sorry! We're on it.": "Pasensya na! Inaayos na namin.",
+   "Not here after a day? Message us": "Wala pa after isang araw? I-message kami",
+   "Didn't get it? Message us": "Hindi mo natanggap? I-message kami",
+   "Tap the button below. It copies your message.": "I-tap ang button sa ibaba. Kokopyahin nito ang message mo.",
+   "Paste it in our Messenger chat and send.": "I-paste sa Messenger chat namin at i-send.",
+   "We'll reply and send your voucher again.": "Sasagot kami at ipapadala ulit ang voucher mo.",
+   "Copy & message us on Messenger": "Kopyahin at i-message kami sa Messenger",
+   "Copied! Opening Messenger…": "Nakopya na! Binubuksan ang Messenger…",
    "GrabMart starts at ₱100. Pick Moo-fried chicken for this one.": "Nagsisimula ang GrabMart sa ₱100. Piliin ang Moo-fried chicken para dito.",
    "Pick your ₱": "Pili ka ng ₱",
 

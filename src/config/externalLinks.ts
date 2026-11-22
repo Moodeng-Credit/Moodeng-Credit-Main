@@ -34,7 +34,9 @@ export const EXTERNAL_LINKS = {
       // Repaid before the loan's halfway day, so no food voucher: they can ask the team to unlock it.
       messengerEarlyReward: 'https://m.me/61589106561061?ref=early_reward',
       // Moo-Spin (/spin) with no spin left: they message SPIN, which reopens Messenger's 24 hours.
-      messengerSpin: 'https://m.me/61589106561061?ref=spin'
+      messengerSpin: 'https://m.me/61589106561061?ref=spin',
+      // A claimed voucher that never arrived: they paste our ready message into the chat.
+      messengerVoucherHelp: 'https://m.me/61589106561061?ref=voucher_help'
    },
    fund: {
       coinbaseOnramp: 'https://pay.coinbase.com/buy/select-asset',

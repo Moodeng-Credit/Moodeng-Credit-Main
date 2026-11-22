@@ -10,7 +10,13 @@ import { EMPTY_REWARDS, isValidInviteCode, normalizeInviteCode, parseMyRewards }
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 import DashboardV2Hero from '@/views/dashboard-v2/components/DashboardV2Hero';
 import { MilestonePopup } from '@/views/dashboard-v2/components/DashboardV2Popups';
-import { LoanSummarySection, MilestonesSection, RewardsWaitingCard, UpcomingDuesSection, VoucherFollowUpCard } from '@/views/dashboard-v2/components/DashboardV2Sections';
+import {
+   LoanSummarySection,
+   MilestonesSection,
+   RewardsWaitingCard,
+   UpcomingDuesSection,
+   VoucherFollowUpCard
+} from '@/views/dashboard-v2/components/DashboardV2Sections';
 import {
    buildInviteLink,
    getCreditLevelProgress,
@@ -24,6 +30,7 @@ import {
    toDashboardV2Milestones
 } from '@/views/dashboard-v2/dashboardV2Model';
 import { SAMPLE_STATES } from '@/views/dashboard-v2/sampleStates';
+import { voucherMissingMessage } from '@/views/dashboard-v2/voucherMissingMessage';
 import type { DashboardMilestone } from '@/views/dashboard/dashboardHelpers';
 
 const buildPaidLoan = (overrides: Partial<Loan>): Loan => ({
@@ -197,16 +204,23 @@ describe('dashboard v2 sample states render', () => {
       expect(food).toContain('Open my voucher');
       expect(food).toContain('I got it ✅');
 
-      const grab = render(createElement(VoucherFollowUpCard, { claim: { ...claim, brand: 'grabmart' as const }, onAnswer: () => undefined }));
+      const grab = render(
+         createElement(VoucherFollowUpCard, { claim: { ...claim, brand: 'grabmart' as const }, onAnswer: () => undefined })
+      );
       expect(grab).toContain('Open the Grab app and go to Mart.');
       expect(grab).not.toContain('Show the code at the counter');
 
       // A Giftaway eGift (gft.ph): show-the-code steps, and Grab gets a link, not a code to copy.
-      const giftaway = render(createElement(VoucherFollowUpCard, { claim: { ...claim, links: ['https://gft.ph/abc'] }, onAnswer: () => undefined }));
+      const giftaway = render(
+         createElement(VoucherFollowUpCard, { claim: { ...claim, links: ['https://gft.ph/abc'] }, onAnswer: () => undefined })
+      );
       expect(giftaway).toContain('Burger King');
       expect(giftaway).not.toContain('Collect the voucher');
       const giftawayGrab = render(
-         createElement(VoucherFollowUpCard, { claim: { ...claim, brand: 'grabmart' as const, links: ['https://gft.ph/g'] }, onAnswer: () => undefined })
+         createElement(VoucherFollowUpCard, {
+            claim: { ...claim, brand: 'grabmart' as const, links: ['https://gft.ph/g'] },
+            onAnswer: () => undefined
+         })
       );
       expect(giftawayGrab).toContain('Save the voucher in your Grab app on your phone.');
       expect(giftawayGrab).toContain('Open my voucher');
@@ -220,14 +234,41 @@ describe('dashboard v2 sample states render', () => {
       expect(enjoyed).not.toContain('How to use it');
    });
 
+   it('tells them how to message us when a voucher did not arrive', () => {
+      const claim = SAMPLE_STATES.voucherSent.rewards.claims[0];
+      const missing = render(
+         createElement(VoucherFollowUpCard, { claim: { ...claim, receiptIssueAt: new Date().toISOString() }, onAnswer: () => undefined })
+      );
+      expect(missing).toContain('Didn&#x27;t get it? Message us');
+      expect(missing).toContain('Copy &amp; message us on Messenger');
+      expect(missing).toContain(`Voucher ID: ${claim.id.slice(0, 8).toUpperCase()}`);
+      expect(missing).not.toContain('href="/help"');
+
+      // Still being prepared: just a small link until they open it.
+      const cooking = render(
+         createElement(VoucherFollowUpCard, { claim: { ...claim, status: 'pending' as const }, onAnswer: () => undefined })
+      );
+      expect(cooking).toContain('Not here after a day? Message us');
+      expect(cooking).not.toContain('Copy &amp; message us');
+
+      expect(voucherMissingMessage({ ...claim, status: 'pending' as const })).toContain("hasn't arrived yet");
+      for (const phrase of ["Didn't get it? Message us", 'Copy & message us on Messenger', 'Not here after a day? Message us']) {
+         expect(screenCoverage[phrase]).toBeTruthy();
+      }
+   });
+
    it('shows every waiting reward with how to claim', () => {
-      const card = render(createElement(RewardsWaitingCard, { claimable: SAMPLE_STATES.rewarded.rewards.claimable, onClaim: () => undefined }));
+      const card = render(
+         createElement(RewardsWaitingCard, { claimable: SAMPLE_STATES.rewarded.rewards.claimable, onClaim: () => undefined })
+      );
       expect(card.replace(/<!-- -->/g, '')).toContain('You have ₱200 in rewards!');
       expect(card).toContain('food vouchers are waiting for you');
       expect(card).toContain('How to claim');
       expect(card).toContain('Claim my reward');
       expect(card).toContain('Claim them one at a time.');
-      const one = render(createElement(RewardsWaitingCard, { claimable: SAMPLE_STATES.rewarded.rewards.claimable.slice(0, 1), onClaim: () => undefined }));
+      const one = render(
+         createElement(RewardsWaitingCard, { claimable: SAMPLE_STATES.rewarded.rewards.claimable.slice(0, 1), onClaim: () => undefined })
+      );
       expect(one).toContain('food voucher is waiting for you');
       expect(one).not.toContain('one at a time');
    });
@@ -319,7 +360,20 @@ describe('friend referrals client', () => {
          qualifiedCount: 1,
          wasReferred: true,
          claimable: [{ reward: 'referral_inviter', friendReferralId: 'r1', amountPhp: '100' }],
-         claims: [{ id: 'c1', reward: 'first_on_time_repayment', friendReferralId: null, status: 'pending', brand: 'food' as const, amountPhp: 50, sentAt: null, receivedAt: null, receiptIssueAt: null, links: [] }]
+         claims: [
+            {
+               id: 'c1',
+               reward: 'first_on_time_repayment',
+               friendReferralId: null,
+               status: 'pending',
+               brand: 'food' as const,
+               amountPhp: 50,
+               sentAt: null,
+               receivedAt: null,
+               receiptIssueAt: null,
+               links: []
+            }
+         ]
       });
       expect(parsed.invitedCount).toBe(2);
       expect(parsed.claimable[0]).toEqual({ reward: 'referral_inviter', friendReferralId: 'r1', amountPhp: 100 });
@@ -329,7 +383,20 @@ describe('friend referrals client', () => {
    it('reports voucher state from the server data', () => {
       const rewards = parseMyRewards({
          claimable: [{ reward: 'referral_inviter', friendReferralId: 'r1', amountPhp: 100 }],
-         claims: [{ id: 'c1', reward: 'first_on_time_repayment', friendReferralId: null, status: 'sent', brand: 'food' as const, amountPhp: 50, sentAt: null, receivedAt: null, receiptIssueAt: null, links: [] }]
+         claims: [
+            {
+               id: 'c1',
+               reward: 'first_on_time_repayment',
+               friendReferralId: null,
+               status: 'sent',
+               brand: 'food' as const,
+               amountPhp: 50,
+               sentAt: null,
+               receivedAt: null,
+               receiptIssueAt: null,
+               links: []
+            }
+         ]
       });
       expect(getVoucherState(rewards, OWN_VOUCHER).state).toBe('sent');
       expect(getVoucherState(rewards, REFERRAL_VOUCHERS)).toEqual({

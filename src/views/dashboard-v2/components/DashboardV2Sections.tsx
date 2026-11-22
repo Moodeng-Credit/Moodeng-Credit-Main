@@ -7,8 +7,13 @@ import { useFloatingParticles, useReplayClass } from '@/components/motion/TapDel
 
 import { formatCurrency } from '@/utils/decimalHelpers';
 
+import { isDesktopBrowser, MESSENGER_DESKTOP_CHAT_LINK, messengerSupportLink } from '@/config/contactVerification';
+import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { type LocaleCode, useLocalization } from '@/i18n';
 import type { ClaimableVoucher, RepayStreak, VoucherClaimSummary } from '@/lib/friendReferrals';
+import { metaIosHost } from '@/lib/inAppBrowser';
+import { copyTextFromTap } from '@/lib/inAppHandoff';
+import { openSupportChat } from '@/lib/support/liveChat';
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 import { TabbedCard } from '@/views/dashboard-v2/components/DashboardV2Graphics';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
@@ -22,6 +27,7 @@ import {
    type VoucherState
 } from '@/views/dashboard-v2/dashboardV2Model';
 import type { DashboardV2Due, DashboardV2Milestone, DashboardV2Model } from '@/views/dashboard-v2/types';
+import { voucherMissingMessage } from '@/views/dashboard-v2/voucherMissingMessage';
 
 const PILL_BUTTON = 'flex h-[34px] w-[82px] shrink-0 items-center justify-center rounded-full text-[16px] font-semibold leading-6';
 const PRIMARY_GRADIENT = 'linear-gradient(85.47deg, #9584ff 0.5%, #6b55f7 98.16%)';
@@ -487,7 +493,7 @@ export function VoucherFollowUpCard({
 
    if (claim.status === 'pending') {
       return (
-         <section className={surface} style={yellow} aria-label="Your voucher">
+         <section className={clsx(surface, 'flex-wrap')} style={yellow} aria-label="Your voucher">
             <DesignImage src={DASHBOARD_V2_ASSETS.mooMenuChef} className="h-14 w-14 shrink-0 object-contain" />
             <div className="min-w-0 flex-1">
                <p className="text-[18px] font-black italic leading-6 text-[#3c8248]">Your Moo-meal is cooking!</p>
@@ -495,6 +501,7 @@ export function VoucherFollowUpCard({
                   ₱{claim.amountPhp} {brandName} voucher · we&apos;ll email it to you soon
                </p>
             </div>
+            <VoucherMissingHelp claim={claim} folded />
          </section>
       );
    }
@@ -521,14 +528,12 @@ export function VoucherFollowUpCard({
                   We&apos;ll resend your {brandName} voucher. Check spam too.
                </p>
             </div>
-            <Link to="/help" className={clsx(PILL_BUTTON, 'bg-[#4aa256] text-white')}>
-               Help
-            </Link>
             {claim.links.length ? (
                <div className="w-full">
                   <VoucherLinks claim={claim} />
                </div>
             ) : null}
+            <VoucherMissingHelp claim={claim} />
          </section>
       );
    }
@@ -566,6 +571,73 @@ export function VoucherFollowUpCard({
             </button>
          </div>
       </section>
+   );
+}
+
+/**
+ * "Didn't get it? Message us": steps, the ready message, and one button that copies it and opens our
+ * Messenger chat (web chat inside Facebook on iPhone, where Messenger can't open). `folded` = a small
+ * link first, for a claim that is still being prepared.
+ */
+export function VoucherMissingHelp({ claim, folded = false }: { claim: VoucherClaimSummary; folded?: boolean }) {
+   const [isOpen, setIsOpen] = useState(!folded);
+   const [copied, setCopied] = useState(false);
+   const message = voucherMissingMessage(claim);
+   const webChat = typeof window !== 'undefined' && metaIosHost() === 'facebook';
+   const desktop = typeof window !== 'undefined' && isDesktopBrowser();
+   const href = desktop ? MESSENGER_DESKTOP_CHAT_LINK : messengerSupportLink(EXTERNAL_LINKS.support.messengerVoucherHelp);
+
+   if (!isOpen) {
+      return (
+         <button
+            type="button"
+            onClick={() => setIsOpen(true)}
+            className="w-full pt-1 text-center text-[14px] font-bold leading-[18px] text-[#3c8248] underline underline-offset-2"
+         >
+            Not here after a day? Message us
+         </button>
+      );
+   }
+
+   return (
+      <div className="flex w-full flex-col gap-2 rounded-[10px] bg-white/70 px-3 py-2.5">
+         <p className="text-[15px] font-black leading-5 text-[#3c8248]">Didn&apos;t get it? Message us</p>
+         <ol className="flex flex-col gap-1.5">
+            {[
+               'Tap the button below. It copies your message.',
+               'Paste it in our Messenger chat and send.',
+               "We'll reply and send your voucher again."
+            ].map((step, index) => (
+               <li key={step} className="flex items-start gap-2 text-[14px] font-medium leading-[18px] text-[#594d65]">
+                  <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[#4aa256] text-[11px] font-bold text-white">
+                     {index + 1}
+                  </span>
+                  <span className="min-w-0 flex-1">{step}</span>
+               </li>
+            ))}
+         </ol>
+         <p
+            className="rounded-[8px] border border-dashed border-[#c9b98a] bg-white px-2.5 py-2 text-[13px] font-medium leading-[17px] text-[#3b2f4a]"
+            translate="no"
+         >
+            {message}
+         </p>
+         <a
+            href={href}
+            target={desktop ? '_blank' : undefined}
+            rel={desktop ? 'noopener noreferrer' : undefined}
+            onClick={(event) => {
+               void copyTextFromTap(message).then((result) => setCopied(result.ok));
+               if (webChat) {
+                  event.preventDefault();
+                  openSupportChat();
+               }
+            }}
+            className="flex h-[40px] w-full items-center justify-center rounded-full bg-gradient-to-br from-[#00b2ff] to-[#006aff] text-[15px] font-bold text-white"
+         >
+            {copied ? 'Copied! Opening Messenger…' : 'Copy & message us on Messenger'}
+         </a>
+      </div>
    );
 }
 

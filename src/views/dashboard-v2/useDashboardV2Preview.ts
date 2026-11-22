@@ -13,6 +13,7 @@ export const PREVIEW_STATES: { id: DashboardV2PreviewState; label: string }[] = 
    { id: 'defaulted', label: 'Defaulted' },
    { id: 'rewarded', label: 'Voucher earned' },
    { id: 'voucherSent', label: 'Voucher sent' },
+   { id: 'voucherMissing', label: 'Voucher missing' },
    { id: 'demo', label: 'Video demo' }
 ];
 

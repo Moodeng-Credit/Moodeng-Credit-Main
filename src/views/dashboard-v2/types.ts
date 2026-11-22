@@ -84,6 +84,14 @@ export interface DashboardV2Model {
    insightsHref: string;
 }
 
-export type DashboardV2PreviewState = 'real' | 'unverified' | 'verified' | 'defaulted' | 'rewarded' | 'voucherSent' | 'demo';
+export type DashboardV2PreviewState =
+   | 'real'
+   | 'unverified'
+   | 'verified'
+   | 'defaulted'
+   | 'rewarded'
+   | 'voucherSent'
+   | 'voucherMissing'
+   | 'demo';
 
 export type DashboardV2Language = 'en' | 'fil';
