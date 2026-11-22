@@ -17,7 +17,7 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { postDiscord } from './discord.ts';
-import { type ClipCheck, clipWarnings, GEMINI_MODEL, type GeminiResult, gradeWithGemini, settingCut } from './geminiPreScreen.ts';
+import { type ClipCheck, clipWarnings, GEMINI_MODEL, type GeminiResult, gradeWithGemini, LYING_CAP, lyingDown, settingCut } from './geminiPreScreen.ts';
 import { type IncomeProofRead, parseRepayChance, readIncomeProof } from './incomeDocs.ts';
 import {
    MEDICAL_PROMPT,
@@ -154,6 +154,8 @@ export type PreScreenGrade = {
    repay_reasons?: string[];
    /** Points taken off for how they recorded (dark, lying down, in a car, bad sound, not serious). */
    setting_cut?: { points: number; reasons: string[] } | null;
+   /** Lying down in a clip: held under the auto ✅ line and flagged as a reject for the team (never auto ❌). */
+   lying_down?: boolean;
 };
 
 type Row = {
@@ -828,21 +830,24 @@ export async function gradePreScreening(svc: SupabaseClient, id: string, apiKey:
    // Emma's rule (2026-11-21): an OFW without a valid work permit stays under 50 (no auto ✅).
    // George 2026-11-22: how they recorded nudges the score (at most SETTING_CUT_MAX); not the at-work clip.
    const cut = gemini ? settingCut(gemini.seen, new Set(['job_video'])) : { points: 0, reasons: [] as string[] };
+   const lying = gemini ? lyingDown(gemini.seen, new Set(['job_video'])) : false;
    const afterCut = built.overall != null && cut.points ? Math.max(0, built.overall - cut.points) : built.overall;
-   const overall = capForPermit(afterCut, permit);
+   const afterLying = lying && afterCut != null ? Math.min(afterCut, LYING_CAP) : afterCut;
+   const overall = capForPermit(afterLying, permit);
    const grade: PreScreenGrade = {
       ...built,
       overall,
       verdict: verdictFor(overall),
       answers,
       flags: [
+         ...(lying ? ['🛌 Lying down in the video — counts as a reject; your call (not auto-rejected)'] : []),
          ...(cut.points ? [`🎥 −${cut.points} for how they recorded: ${cut.reasons.join(', ')}`] : []),
          ...v2Flags,
          ...cameraFlags,
          ...(built.flags ?? [])
       ].slice(0, 12),
       graded_by: gemini ? GEMINI_MODEL : 'deepseek',
-      ...(gemini ? { setting_cut: cut.points ? cut : null } : {}),
+      ...(gemini ? { setting_cut: cut.points ? cut : null, lying_down: lying } : {}),
       ...(medQ ? { medical } : {})
    };
    const failed = grade.overall == null;

@@ -1,6 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { clipWarnings, SETTING_CUT_MAX, settingCut, settingIssues, toClipCheck, toIncomeRead } from './geminiPreScreen.ts';
+import { clipWarnings, lyingDown, SETTING_CUT_MAX, settingCut, settingIssues, toClipCheck, toIncomeRead } from './geminiPreScreen.ts';
 
 Deno.test('toIncomeRead: unreadable keeps the reason, drops the type', () => {
    const r = toIncomeRead({ readable: false, problem: 'Blurry photo', doc_type: 'payslip' });
@@ -44,17 +44,28 @@ Deno.test('settingIssues: a normal clip at home costs nothing', () => {
    assertEquals(settingIssues(toClipCheck({ light: 'dim', place: 'indoors', posture: 'sitting', sound: 'ok', serious: true })), []);
 });
 
-Deno.test('settingCut: each issue once across clips, riding beats parked, capped, job video skipped', () => {
+Deno.test('settingCut: each issue once across clips, riding beats parked, job video skipped, lying not in points', () => {
    const seen = {
       intro: toClipCheck({ light: 'dark', posture: 'lying' }),
       q2: toClipCheck({ light: 'dark', place: 'vehicle', moving: false }),
       q3: toClipCheck({ place: 'vehicle', moving: true }),
-      job_video: toClipCheck({ place: 'outdoors', sound: 'poor' })
+      q4: toClipCheck({ place: 'outdoors' }),
+      job_video: toClipCheck({ place: 'outdoors', sound: 'poor', posture: 'lying' })
    };
    const cut = settingCut(seen, new Set(['job_video']));
-   assertEquals(cut.reasons, ['too dark to see them', 'lying down', 'recorded while riding']);
-   assertEquals(cut.points, 4 + 5 + 5 - 2); // 14 capped at 12
-   assertEquals(cut.points, SETTING_CUT_MAX);
+   assertEquals(cut.reasons, ['too dark to see them', 'recorded while riding', 'outside']);
+   assertEquals(cut.points, 4 + 5 + 2);
    assertEquals(settingCut({ a: toClipCheck({ place: 'outdoors' }) }), { points: 2, reasons: ['outside'] });
    assertEquals(settingCut({}), { points: 0, reasons: [] });
+});
+
+Deno.test('settingCut: capped', () => {
+   const c = settingCut({ a: toClipCheck({ light: 'dark', place: 'vehicle', moving: true, sound: 'poor', serious: false }) });
+   assertEquals(c.points, SETTING_CUT_MAX);
+});
+
+Deno.test('lyingDown: any counted clip, not the job video', () => {
+   assertEquals(lyingDown({ a: toClipCheck({ posture: 'sitting' }), b: toClipCheck({ posture: 'lying' }) }), true);
+   assertEquals(lyingDown({ job_video: toClipCheck({ posture: 'lying' }) }, new Set(['job_video'])), false);
+   assertEquals(lyingDown({ a: null }), false);
 });
