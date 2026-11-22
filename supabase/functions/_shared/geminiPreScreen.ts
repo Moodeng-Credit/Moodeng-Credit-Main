@@ -181,7 +181,6 @@ export const settingIssues = (seen: ClipCheck | null): Array<{ key: string; labe
    if (!seen) return [];
    const out: Array<{ key: string; label: string; points: number }> = [];
    if (seen.light === 'dark') out.push({ key: 'dark', label: 'too dark to see them', points: 4 });
-   if (seen.posture === 'lying') out.push({ key: 'lying', label: 'lying down', points: 5 });
    if (seen.place === 'vehicle') out.push(seen.moving ? { key: 'vehicle', label: 'recorded while riding', points: 5 } : { key: 'vehicle', label: 'recorded in a vehicle', points: 3 });
    else if (seen.moving || seen.posture === 'walking') out.push({ key: 'walking', label: 'walking while recording', points: 3 });
    if (seen.place === 'outdoors') out.push({ key: 'outdoors', label: 'outside', points: 2 });
@@ -189,6 +188,15 @@ export const settingIssues = (seen: ClipCheck | null): Array<{ key: string; labe
    if (seen.serious === false) out.push({ key: 'serious', label: 'not taking it seriously', points: 4 });
    return out;
 };
+
+/**
+ * George 2026-11-22: lying down in a clip = treat as a reject, but only flag it (no auto ❌): the score
+ * is held under the auto ✅ line and the team decides. `skip` = clips that don't count (job video). Pure.
+ */
+export const lyingDown = (seen: Record<string, ClipCheck | null>, skip: Set<string> = new Set()) =>
+   Object.entries(seen).some(([q, s]) => !skip.has(q) && s?.posture === 'lying');
+/** Highest score someone lying down in a clip can get (under 50 = no auto ✅). */
+export const LYING_CAP = 49;
 
 /** Most points the setting can take off the 0-100 score: a nudge, never a reject by itself. */
 export const SETTING_CUT_MAX = 12;
