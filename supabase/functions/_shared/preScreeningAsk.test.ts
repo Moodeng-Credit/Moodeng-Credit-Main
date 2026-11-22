@@ -20,7 +20,11 @@ import {
    toRedFlags,
    waitingOnThem,
    autoDeclineDue,
-   costsWhy
+   costsWhy,
+   gradeWarnings,
+   autoGoodBar,
+   shouldAskAgain,
+   earlierRounds,
 } from './preScreeningAsk.ts';
 
 const ID = '0f8fad5b-d9cb-469f-a165-70867728950e';
@@ -151,4 +155,32 @@ Deno.test('auto-decline: high medical costs, AI-graded, answers add up, 2h after
    assertEquals(autoDeclineDue({ ...row, user_id: null }, now), false);
    assertEquals(autoDeclineDue({ ...row, status: 'failed' }, now), false);
    assertEquals(costsWhy(high), 'mother, dialysis, ≈ ₱10,000/mo still to pay, 67% of income');
+});
+
+Deno.test('warnings: auto ✅ after replies only when they cleared every ⚠️', () => {
+   const read = { read: 'ok', answered_all: true, score: 70, cleared: false };
+   assertEquals(shouldAutoGood(read, 50), true);
+   assertEquals(shouldAutoGood(read, 50, ['job photo is a selfie']), false);
+   assertEquals(shouldAutoGood({ ...read, cleared: true }, 50, ['job photo is a selfie']), true);
+   assertEquals(toAnswerRead({ read: 'x', answered_all: true, score: 60, cleared: true })?.cleared, true);
+   assertEquals(toAnswerRead({ read: 'x', answered_all: true, score: 60 })?.cleared, undefined);
+});
+
+Deno.test('gradeWarnings: strings only, trimmed, deduped', () => {
+   assertEquals(gradeWarnings({ flags: [' a ', 'a', '', 3, 'b'] }), ['a', 'b']);
+   assertEquals(gradeWarnings(null), []);
+});
+
+Deno.test('70 bar + 2nd round', () => {
+   assertEquals(autoGoodBar(null, 50), 70);
+   assertEquals(autoGoodBar('80', 50), 80);
+   assertEquals(autoGoodBar('40', 50), 50);
+   const r = { read: 'x', answered_all: true, score: 62 };
+   assertEquals(shouldAskAgain(r, 70, [], 0), true);
+   assertEquals(shouldAskAgain(r, 70, [], 1), false);
+   assertEquals(shouldAskAgain({ ...r, score: 75 }, 70, [], 0), false);
+   assertEquals(shouldAskAgain({ ...r, score: 75 }, 70, ['selfie'], 0), true);
+   assertEquals(shouldAskAgain({ ...r, answered_all: false }, 70, [], 0), false);
+   assertEquals(earlierRounds({ _followups: [{ questions: [], answers: [], read: null, score: 1, at: '' }] }).length, 1);
+   assertEquals(earlierRounds(null), []);
 });
