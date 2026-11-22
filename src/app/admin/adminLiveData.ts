@@ -156,11 +156,62 @@ async function attachNames(events: AdminHistoryEvent[]): Promise<AdminHistoryEve
    }));
 }
 
+const INCOME_VERDICT: Record<string, string> = {
+   looks_good: '✅ looks good',
+   needs_review: '⚠️ needs review',
+   resend: '↩️ asked to resend'
+};
+
+/** Proof-of-income sends (page or Messenger) and the team's decision on each, with the AI's read. Team only. */
+export function buildIncomeDocEvents(docs: Row[]): AdminHistoryEvent[] {
+   return docs.flatMap((d) => {
+      const userId = str(d.user_id);
+      const events: AdminHistoryEvent[] = [];
+      const created = str(d.created_at);
+      const viaMessenger = d.note === 'Sent on Messenger';
+      const parts = [
+         viaMessenger ? '💬 via Messenger' : str(d.note),
+         str(d.doc_type)?.replace(/_/g, ' ') ?? null,
+         str(d.verdict) ? (INCOME_VERDICT[String(d.verdict)] ?? String(d.verdict)) : null,
+         typeof d.score === 'number' ? `${d.score}/100` : null,
+         d.risk === 'red' ? '🚨 fraud signs' : null,
+         typeof d.repay_chance === 'number' ? `🎯 ${d.repay_chance}% repay` : null,
+         str(d.ai_note) ? `🤖 ${str(d.ai_note)}` : null
+      ].filter(Boolean);
+      if (created)
+         events.push({
+            key: `income:${d.id}:sent`,
+            at: created,
+            label: 'Sent proof of income',
+            status: 'in_review',
+            userId,
+            username: null,
+            actorId: null,
+            actorName: null,
+            detail: parts.join(' · ') || null
+         });
+      const decided = str(d.decided_at);
+      if (decided && (d.decision === 'approved' || d.decision === 'declined'))
+         events.push({
+            key: `income:${d.id}:decided`,
+            at: decided,
+            label: d.decision === 'approved' ? 'Proof of income approved' : 'Proof of income declined',
+            status: d.decision === 'approved' ? 'approved' : 'declined',
+            userId,
+            username: null,
+            actorId: null,
+            actorName: str(d.decided_by),
+            detail: str(d.decision_reason)
+         });
+      return events;
+   });
+}
+
 /** Everything that happened to one borrower, oldest first. */
 export async function getBorrowerHistory(userId: string): Promise<AdminHistoryEvent[]> {
    if (!isSupabaseBrowserConfigured()) return [];
    const supabase = getSupabaseBrowserClient();
-   const [user, requests, loans, adminLogs, statusLogs] = await Promise.all([
+   const [user, requests, loans, adminLogs, statusLogs, incomeDocs] = await Promise.all([
       supabase
          .from('users')
          .select(
@@ -183,10 +234,18 @@ export async function getBorrowerHistory(userId: string): Promise<AdminHistoryEv
          .select('id,actor_user_id,action,target_table,target_user_id,created_at')
          .eq('target_user_id', userId)
          .limit(100),
-      supabase.from('account_status_audit_logs').select('*').eq('target_user_id', userId).limit(50)
+      supabase.from('account_status_audit_logs').select('*').eq('target_user_id', userId).limit(50),
+      supabase
+         .from('income_documents')
+         .select(
+            'id,user_id,created_at,note,doc_type,verdict,score,risk,repay_chance,ai_note,decision,decision_reason,decided_at,decided_by'
+         )
+         .eq('user_id', userId)
+         .limit(50)
    ]);
    const events = [
       ...(user.data ? buildUserEvents(user.data as Row) : []),
+      ...buildIncomeDocEvents((incomeDocs.data ?? []) as Row[]),
       ...buildAccessRequestEvents((requests.data ?? []) as Row[]),
       ...buildLoanEvents((loans.data ?? []) as Row[]),
       ...buildAuditEvents((adminLogs.data ?? []) as Row[], (statusLogs.data ?? []) as Row[])

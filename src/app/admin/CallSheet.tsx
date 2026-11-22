@@ -27,6 +27,7 @@ import {
    saveLoanCap,
    type ScreeningAnswers
 } from '@/app/admin/callSheetData';
+import ProofHistory from '@/app/admin/ProofHistory';
 import ProofRequestComposer from '@/app/admin/ProofRequestComposer';
 
 // Admin → Call approvals → Call sheet: everything the host needs on a borrower's onboarding call in
@@ -790,6 +791,8 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                   <IndonesiaContactCard userId={row.userId} />
                   <SocialHandlesLine userId={row.userId} />
                   <BotAnswersCard records={botAnswers} />
+                  {/* Every proof they ever sent (income docs, pre-screening, proof requests) with the AI's read: team only. */}
+                  <ProofHistory userId={row.userId} />
                   <FormCheckBar answers={answers} busy={rechecking} onRecheck={() => void recheck()} transcript={transcript} />
 
                   <div className="grid gap-x-6 gap-y-3 lg:grid-cols-2">
