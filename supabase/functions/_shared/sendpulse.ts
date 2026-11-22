@@ -24,7 +24,7 @@ let cachedToken: { value: string; expiresAt: number } | null = null;
 export const isSendPulseConfigured = () =>
    Boolean(
       Deno.env.get('SENDPULSE_API_KEY')?.trim() ||
-         (Deno.env.get('SENDPULSE_API_ID')?.trim() && Deno.env.get('SENDPULSE_API_SECRET')?.trim())
+      (Deno.env.get('SENDPULSE_API_ID')?.trim() && Deno.env.get('SENDPULSE_API_SECRET')?.trim())
    );
 
 const getToken = async (): Promise<string | null> => {
@@ -206,7 +206,13 @@ export const buildTextPayload = (contactId: string, text: string, quickReplies: 
       type: 'RESPONSE',
       content_type: 'message',
       text,
-      ...(quickReplies.length ? { quick_replies: quickReplies.slice(0, 13).map((t) => ({ content_type: 'text', title: t.slice(0, 20), payload: t.slice(0, 20) })) } : {})
+      ...(quickReplies.length
+         ? {
+              quick_replies: quickReplies
+                 .slice(0, 13)
+                 .map((t) => ({ content_type: 'text', title: t.slice(0, 20), payload: t.slice(0, 20) }))
+           }
+         : {})
    }
 });
 
@@ -269,7 +275,10 @@ const lastOutgoingAt = async (service: 'messenger' | 'tiktok', contactId: string
       if (!res.ok) return null;
       const body = await res.json().catch(() => null);
       const list = (Array.isArray(body?.data) ? body.data : []) as Array<{ direction?: number; created_at?: string }>;
-      const times = list.filter((m) => m.direction === 2 && m.created_at).map((m) => Date.parse(String(m.created_at))).filter((t) => !Number.isNaN(t));
+      const times = list
+         .filter((m) => m.direction === 2 && m.created_at)
+         .map((m) => Date.parse(String(m.created_at)))
+         .filter((t) => !Number.isNaN(t));
       return times.length ? Math.max(...times) : null;
    } catch {
       return null;
@@ -300,7 +309,9 @@ export const lastPageInboxTypedAt = async (contactId: string, size = 40): Promis
 };
 
 /** The newest Page-inbox-typed (echo) outgoing message's time in a chat log, or null. */
-export const lastTypedAt = (messages: Array<{ direction?: number; created_at?: string; data?: { is_echo?: unknown } | null }>): number | null => {
+export const lastTypedAt = (
+   messages: Array<{ direction?: number; created_at?: string; data?: { is_echo?: unknown } | null }>
+): number | null => {
    const times = messages
       .filter((m) => m.direction === 2 && (m.data?.is_echo === true || m.data?.is_echo === 'true') && m.created_at)
       .map((m) => Date.parse(String(m.created_at)))
@@ -335,7 +346,8 @@ export const sendMessengerMessage = async (
 
       const token = await getToken();
       if (!token) return { ok: false, reason: 'auth_failed' };
-      if (content.text && !(await postSend(token, buildTextPayload(contactId, content.text, content.quickReplies)))) return { ok: false, reason: 'send_failed' };
+      if (content.text && !(await postSend(token, buildTextPayload(contactId, content.text, content.quickReplies))))
+         return { ok: false, reason: 'send_failed' };
       if (content.card && !(await postSend(token, buildCardPayload(contactId, content.card)))) return { ok: false, reason: 'send_failed' };
       return { ok: true };
    } catch (err) {
@@ -356,6 +368,66 @@ export const sendMessengerMessage = async (
 // A reminder days after the borrower last wrote to us is business-initiated, so it has to be a template
 // Meta approved (category Utility). Free text would only work inside 24h of their last message.
 const WHATSAPP_API = `${API}/whatsapp`;
+
+/** An approved Messenger utility template (bot → Templates in SendPulse). */
+export type MessengerTemplate = { name: string; language: string; params: string[] };
+
+// Payload shapes to try against the public API. SendPulse documents no template send for Messenger;
+// the dashboard posts {template: {name, components, language}} (Facebook's own format) to its internal
+// API, so these try that block in the places the public contacts/send could accept it.
+export const MESSENGER_TEMPLATE_SHAPES = ['update_template', 'utility_template', 'bare_template', 'data_template'] as const;
+export type MessengerTemplateShape = (typeof MESSENGER_TEMPLATE_SHAPES)[number];
+
+export const messengerTemplateBlock = (t: MessengerTemplate) => ({
+   name: t.name,
+   language: { code: t.language },
+   components: [{ type: 'body', parameters: t.params.map((text) => ({ type: 'text', text })) }]
+});
+
+/** The contacts/send body for one shape. Pure. */
+export const messengerTemplatePayload = (contactId: string, t: MessengerTemplate, shape: MessengerTemplateShape) => {
+   const template = messengerTemplateBlock(t);
+   switch (shape) {
+      case 'update_template':
+         return { contact_id: contactId, message: { type: 'UPDATE', content_type: 'template', template } };
+      case 'utility_template':
+         return { contact_id: contactId, message: { type: 'UTILITY', template } };
+      case 'bare_template':
+         return { contact_id: contactId, message: { template } };
+      case 'data_template':
+         return { contact_id: contactId, message: { type: 'UPDATE', content_type: 'template', data: { template } } };
+   }
+};
+
+/**
+ * Tries to send a Messenger utility template to ONE contact through the public API, one shape at a
+ * time, stopping at the first one SendPulse accepts (so the person gets at most one copy).
+ * Returns every attempt with SendPulse's answer. Never throws.
+ */
+export const probeMessengerTemplate = async (
+   contactId: string,
+   t: MessengerTemplate,
+   shapes: readonly MessengerTemplateShape[] = MESSENGER_TEMPLATE_SHAPES
+) => {
+   const attempts: Array<{ shape: MessengerTemplateShape; status: number; body: unknown }> = [];
+   const token = await getToken();
+   if (!token) return { ok: false as const, reason: 'no_token', attempts };
+   for (const shape of shapes) {
+      try {
+         const res = await fetch(`${API}/messenger/contacts/send`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(messengerTemplatePayload(contactId, t, shape))
+         });
+         const body = await res.json().catch(() => null);
+         attempts.push({ shape, status: res.status, body });
+         if (res.ok && (body as { success?: unknown } | null)?.success !== false) return { ok: true as const, shape, attempts };
+      } catch (err) {
+         attempts.push({ shape, status: 0, body: err instanceof Error ? err.message : String(err) });
+      }
+   }
+   return { ok: false as const, reason: 'no_shape_accepted', attempts };
+};
 
 export type SendPulseWhatsAppContact = {
    id: string;
@@ -388,7 +460,12 @@ export type WhatsAppTemplate = {
    name: string;
    language: { code: string };
    // A URL button's dynamic suffix goes in a 'button' component with sub_type 'url' and its index.
-   components?: Array<{ type: 'header' | 'body' | 'button'; sub_type?: 'url'; index?: string; parameters: Array<{ type: 'text'; text: string }> }>;
+   components?: Array<{
+      type: 'header' | 'body' | 'button';
+      sub_type?: 'url';
+      index?: string;
+      parameters: Array<{ type: 'text'; text: string }>;
+   }>;
 };
 
 /** Sends an approved template to a SendPulse WhatsApp contact. Never throws. */
@@ -607,7 +684,13 @@ export const FOLLOW_UP_TEMPLATE = {
 };
 
 /** Submits a template to Meta through SendPulse (review takes minutes to a day). */
-export const createWhatsAppTemplate = (t: { name: string; language: string; category: 'UTILITY' | 'MARKETING'; body: string; example: string[] }) =>
+export const createWhatsAppTemplate = (t: {
+   name: string;
+   language: string;
+   category: 'UTILITY' | 'MARKETING';
+   body: string;
+   example: string[];
+}) =>
    waCall('POST', '/templates', {
       bot_id: WHATSAPP_BOT_ID,
       name: t.name,
@@ -618,7 +701,9 @@ export const createWhatsAppTemplate = (t: { name: string; language: string; cate
    });
 
 /** Every template on the bot with its review status (APPROVED / PENDING / REJECTED …). */
-export const listAllWhatsAppTemplates = async (): Promise<WaCall<Array<{ name: string; language: string; status: string; rejectedReason: string | null }>>> => {
+export const listAllWhatsAppTemplates = async (): Promise<
+   WaCall<Array<{ name: string; language: string; status: string; rejectedReason: string | null }>>
+> => {
    const res = await waCall<Raw[]>('GET', `/templates?bot_id=${encodeURIComponent(WHATSAPP_BOT_ID)}`);
    if (!res.ok) return res;
    return {
@@ -713,7 +798,14 @@ export const sendTikTokText = async (contactId: string | null | undefined, text:
 
 // ---- Message stats (admin-only research): how often each kind of bot message is seen / tapped ----
 
-export type SendPulseMessage = { direction?: number; status?: number; created_at?: string; opened_at?: string | null; redirected_at?: string | null; data?: any };
+export type SendPulseMessage = {
+   direction?: number;
+   status?: number;
+   created_at?: string;
+   opened_at?: string | null;
+   redirected_at?: string | null;
+   data?: any;
+};
 
 /** Recent Messenger chats (contact ids), newest first. Never throws. */
 export const listMessengerChats = async (max = 120): Promise<string[]> => {
@@ -721,7 +813,9 @@ export const listMessengerChats = async (max = 120): Promise<string[]> => {
    if (!token) return [];
    const ids: string[] = [];
    for (let skip = 0; skip < max; skip += 50) {
-      const res = await fetch(`${API}/messenger/chats?bot_id=${encodeURIComponent(SENDPULSE_BOT_ID)}&size=50&skip=${skip}`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+      const res = await fetch(`${API}/messenger/chats?bot_id=${encodeURIComponent(SENDPULSE_BOT_ID)}&size=50&skip=${skip}`, {
+         headers: { Authorization: `Bearer ${token}` }
+      }).catch(() => null);
       const body = res?.ok ? await res.json().catch(() => null) : null;
       const list = (Array.isArray(body?.data) ? body.data : []) as Array<{ contact_id?: string; contact?: { id?: string } }>;
       for (const c of list) {
@@ -737,7 +831,9 @@ export const listMessengerChats = async (max = 120): Promise<string[]> => {
 export const listMessengerMessages = async (contactId: string, size = 200): Promise<SendPulseMessage[]> => {
    const token = await getToken();
    if (!token) return [];
-   const res = await fetch(`${API}/messenger/chats/messages?contact_id=${encodeURIComponent(contactId)}&size=${size}&order=desc`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+   const res = await fetch(`${API}/messenger/chats/messages?contact_id=${encodeURIComponent(contactId)}&size=${size}&order=desc`, {
+      headers: { Authorization: `Bearer ${token}` }
+   }).catch(() => null);
    const body = res?.ok ? await res.json().catch(() => null) : null;
    return (Array.isArray(body?.data) ? body.data : []) as SendPulseMessage[];
 };
