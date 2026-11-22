@@ -301,7 +301,7 @@ export function clearPendingInvite(): void {
 export interface InterestRefundFriend {
    joinedAt: string;
    repaid: boolean;
-   /** Set once you're an affiliate and they've repaid: $5 coming to you (old rows: interest refund). */
+   /** Set once you're an affiliate and they've repaid on time: $2 coming to you (older rows: $5 or interest refund). */
    refundUsd: number | null;
    refundStatus: 'pending' | 'sent' | null;
    sentAt: string | null;
@@ -317,11 +317,21 @@ export interface MyInterestRefunds {
    owedUsd: number;
    /** You've repaid a loan (held 24h+), so friends who repay earn you money. */
    isAffiliate: boolean;
-   /** Reward per friend who repays. */
+   /** Reward per friend who repays on time ($2 for everyday borrowers since 2026-11-22). */
    rewardUsd: number;
+   /** Shark Fighter Card: friends paid so far (one stamp each). */
+   stamps: number;
+   /** A full card = this many stamps. */
+   bonusEvery: number;
+   /** Bonus for each full card. */
+   bonusUsd: number;
+   /** Full cards already rewarded. */
+   bonusesEarned: number;
 }
 
-export const AFFILIATE_REWARD_USD = 5;
+export const AFFILIATE_REWARD_USD = 2;
+export const SHARK_BONUS_EVERY = 10;
+export const SHARK_BONUS_USD = 20;
 
 export const EMPTY_INTEREST_REFUNDS: MyInterestRefunds = {
    friends: [],
@@ -329,7 +339,11 @@ export const EMPTY_INTEREST_REFUNDS: MyInterestRefunds = {
    totalEarnedUsd: 0,
    owedUsd: 0,
    isAffiliate: false,
-   rewardUsd: AFFILIATE_REWARD_USD
+   rewardUsd: AFFILIATE_REWARD_USD,
+   stamps: 0,
+   bonusEvery: SHARK_BONUS_EVERY,
+   bonusUsd: SHARK_BONUS_USD,
+   bonusesEarned: 0
 };
 
 /**
@@ -355,7 +369,11 @@ export function parseMyInterestRefunds(raw: unknown): MyInterestRefunds {
       totalEarnedUsd: toNumber(value.totalEarnedUsd ?? value.totalRefundedUsd),
       owedUsd: toNumber(value.owedUsd),
       isAffiliate: value.isAffiliate === true,
-      rewardUsd: value.rewardUsd === undefined || value.rewardUsd === null ? AFFILIATE_REWARD_USD : toNumber(value.rewardUsd)
+      rewardUsd: value.rewardUsd === undefined || value.rewardUsd === null ? AFFILIATE_REWARD_USD : toNumber(value.rewardUsd),
+      stamps: toNumber(value.stamps),
+      bonusEvery: Math.max(1, toNumber(value.bonusEvery) || SHARK_BONUS_EVERY),
+      bonusUsd: value.bonusUsd === undefined || value.bonusUsd === null ? SHARK_BONUS_USD : toNumber(value.bonusUsd),
+      bonusesEarned: toNumber(value.bonusesEarned)
    };
 }
 

@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { ArrowUpRight, Bell, BellOff, Facebook, Share, UserPlus, Video, Wallet } from 'lucide-react';
+import { ArrowUpRight, Bell, BellOff, Facebook, Share, Video, Wallet } from 'lucide-react';
 
 import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
@@ -68,32 +68,6 @@ export function ConnectWalletBanner({ onConnect }: { onConnect: () => void }) {
                +10Pandesal
             </span>
          </span>
-      </button>
-   );
-}
-
-const INTEREST_REFERRAL_COPY: Record<DashboardV2Language, { title: string; body: string; cta: string }> = {
-   en: { title: 'Earn $5 per friend', body: 'Invite friends who borrow and repay.', cta: 'Invite' },
-   fil: { title: 'Kumita ng $5 bawat kaibigan', body: 'Mag-imbita ng kaibigang manghihiram at magbabayad.', cta: 'Mag-imbita' }
-};
-
-/** Affiliate entry point: $5 USDC for each invited friend who repays a loan (see /refer). */
-export function InterestReferralBanner({ language, onRefer }: { language: DashboardV2Language; onRefer: () => void }) {
-   const copy = INTEREST_REFERRAL_COPY[language] ?? INTEREST_REFERRAL_COPY.en;
-   return (
-      <button
-         type="button"
-         onClick={onRefer}
-         className="mx-5 flex w-[calc(100%-40px)] items-center gap-3 rounded-[8px] bg-white px-3 py-3.5 text-left shadow-[0_1px_2px_rgba(28,5,61,0.06)] active:scale-[0.99] dark:bg-dv2-card"
-      >
-         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#efeaff] dark:bg-dv2-tab">
-            <UserPlus className="h-5 w-5 text-[#6b55f7] dark:text-[#b3a6ff]" aria-hidden="true" />
-         </span>
-         <span className="min-w-0 flex-1">
-            <span className="block text-[18px] font-medium leading-6 text-[#0f172b] dark:text-[#d9cfe6]">{copy.title}</span>
-            <span className="block text-[14px] leading-[18px] text-[#45556c] dark:text-[#8f819e]">{copy.body}</span>
-         </span>
-         <span className="shrink-0 rounded-full bg-[#6b55f7] px-3 py-1.5 text-[13px] font-bold text-white">{copy.cta}</span>
       </button>
    );
 }

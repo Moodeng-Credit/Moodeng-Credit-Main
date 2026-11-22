@@ -27,7 +27,6 @@ import CreditTrackCard from '@/views/dashboard-v2/components/CreditTrackCard';
 import {
    ConnectFacebookBanner,
    ConnectWalletBanner,
-   InterestReferralBanner,
    TurnOnRemindersBanner,
    VerifyIdentityBanner,
    WithdrawBanner
@@ -49,6 +48,7 @@ import { VoucherClaimPopup } from '@/views/dashboard-v2/DashboardV2Rewards';
 import type { DashboardV2Milestone } from '@/views/dashboard-v2/types';
 import { useDashboardV2Preview } from '@/views/dashboard-v2/useDashboardV2Preview';
 import { STREAK_MIN_MILESTONES, type StreakMilestone, useWeeklyMilestoneStreak } from '@/views/dashboard-v2/useWeeklyMilestoneStreak';
+import DashboardStampStrip from '@/views/referral/sharkFighter/DashboardStampStrip';
 
 // Mirrors the live dashboard's tour (the request board hands off with ?tour=1&requestBoardTourSteps=N).
 const REQUEST_BOARD_TOUR_STEP_COUNT = 5;
@@ -213,7 +213,7 @@ export default function DashboardV2() {
             onClaim={() => setClaimingVoucher(ownVoucher.voucher)}
          />
          <div className="-mt-[5px]">
-            <InterestReferralBanner language={language} onRefer={() => navigate('/affiliate')} />
+            <DashboardStampStrip preview={!isReal} onOpen={() => navigate('/affiliate')} />
          </div>
       </div>
    );

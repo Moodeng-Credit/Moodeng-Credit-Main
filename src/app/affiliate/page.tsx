@@ -31,11 +31,15 @@ import {
    splitCodes,
    submitReferralClaim
 } from '@/lib/affiliateDashboard';
+import { EMPTY_INTEREST_REFUNDS, getMyInterestRefunds } from '@/lib/friendReferrals';
 import { txExplorerUrl } from '@/lib/txExplorer';
 import type { RootState } from '@/store/store';
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 import { buildInviteLink } from '@/views/dashboard-v2/dashboardV2Model';
 import { ShareSheet, VoucherClaimPopup } from '@/views/dashboard-v2/DashboardV2Rewards';
+import HowToInvite from '@/views/referral/sharkFighter/HowToInvite';
+import { inviteMessage } from '@/views/referral/sharkFighter/inviteMessage';
+import { SharkFighterCard } from '@/views/referral/sharkFighter/SharkFighterStamps';
 
 /*
  * /affiliate (Moo affiliate) — styled after the Figma "Milestone_9.23version" invite screen (high-five hippos,
@@ -1097,6 +1101,14 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
 
    const [sharing, setSharing] = useState(false);
    const [shareCopied, setShareCopied] = useState(false);
+   // Shark Fighter Card (everyday borrowers' personal code): stamps + bonus from get_my_interest_refunds.
+   const stampsQuery = useQuery({
+      queryKey: ['friend-referrals', 'interest-refunds', 'affiliate-page'],
+      queryFn: getMyInterestRefunds,
+      staleTime: 30_000,
+      enabled: !sample && !adminView
+   });
+   const stampData = sample ? { ...EMPTY_INTEREST_REFUNDS, stamps: 3 } : (stampsQuery.data ?? EMPTY_INTEREST_REFUNDS);
    const [paidPopup, setPaidPopup] = useState<{ amount: number; count: number; latest: string } | null>(null);
 
    useEffect(() => {
@@ -1122,9 +1134,15 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
       ? ''
       : isAffiliateOnly && !adminView
         ? `Need a small loan? Try Moodeng Credit. Join with my link (code ${main.code}):`
-        : main.personal
-          ? `I use Moodeng Credit for small loans. Join with my link (code ${main.code}):`
-          : `I use Moodeng Credit for small loans. Join with my link (code ${main.code}):`;
+        : `I use Moodeng Credit for small loans. Join with my link (code ${main.code}):`;
+   const isShark = main?.personal === true && !isAffiliateOnly;
+   const copyInviteMessage = () => {
+      if (!main) return;
+      void navigator.clipboard?.writeText(inviteMessage(main.code, shareLink)).then(() => {
+         setShareCopied(true);
+         window.setTimeout(() => setShareCopied(false), 1500);
+      });
+   };
 
    if (isLoading || error || !main) {
       return (
@@ -1176,7 +1194,27 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
             {adminView ? <AdminViewBanner viewing={data?.viewing ?? null} who={viewAs} /> : null}
             <Hero payout={main.payout_amount} />
             <CodeCard main={main} others={others} unlocked={unlocked || !main.personal} onShare={() => setSharing(true)} />
-            {adminView ? null : <HowItWorks payout={main.payout_amount} open={isAffiliateOnly || referrals.length === 0} />}
+            {isShark ? (
+               <SharkFighterCard
+                  stamps={stampData.stamps}
+                  every={stampData.bonusEvery}
+                  rewardUsd={main.payout_amount}
+                  bonusUsd={stampData.bonusUsd}
+                  bonusesEarned={stampData.bonusesEarned}
+                  unlocked={unlocked}
+               />
+            ) : null}
+            {adminView ? null : isShark ? (
+               <HowToInvite
+                  code={main.code}
+                  link={shareLink}
+                  rewardUsd={main.payout_amount}
+                  onShare={() => setSharing(true)}
+                  onCopy={copyInviteMessage}
+               />
+            ) : (
+               <HowItWorks payout={main.payout_amount} open={isAffiliateOnly || referrals.length === 0} />
+            )}
             <PosterQr code={main.code} />
             <MoneyRow owed={shownOwed} pending={totals.pending} paid={shownPaid} paused={paused} />
             {sent?.payments.length ? <PaymentsSent payments={sent.payments} aheadLeft={aheadLeft} payout={main.payout_amount} /> : null}
@@ -1211,9 +1249,11 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
          {sharing ? (
             <ShareSheet
                link={shareLink}
-               text={shareText}
+               text={
+                  isShark ? `Uy! Try mo Moodeng Credit 🦛 maliit na loan, mababa interest, walang 5-6 😤 Code ko: ${main.code}` : shareText
+               }
                title="Small loans on Moodeng Credit"
-               copyText={`${shareText} ${shareLink}`}
+               copyText={isShark ? inviteMessage(main.code, shareLink) : `${shareText} ${shareLink}`}
                onClose={() => setSharing(false)}
                onCopied={() => {
                   setShareCopied(true);

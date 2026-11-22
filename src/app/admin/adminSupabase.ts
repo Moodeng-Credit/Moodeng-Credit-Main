@@ -2109,8 +2109,8 @@ export interface AdminInterestRefund {
    status: 'pending' | 'sent' | 'voucher';
    interest_usd: number;
    amount_usd: number;
-   /** 'cash' = $5 affiliate reward per friend; 'interest' = old interest refund. */
-   kind?: 'interest' | 'cash' | null;
+   /** 'cash' = personal-code reward per friend ($2 since 2026-11-22); 'bonus' = Shark Fighter full card; 'interest' = old refund. */
+   kind?: 'interest' | 'cash' | 'bonus' | null;
    tx_hash: string | null;
    sent_at: string | null;
    sent_by: string | null;

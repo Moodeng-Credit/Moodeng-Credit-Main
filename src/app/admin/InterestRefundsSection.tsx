@@ -82,8 +82,8 @@ export default function InterestRefundsSection() {
             </button>
          </div>
          <p className="mt-1 text-sm font-medium text-[#a89bb8]">
-            $5 USDC on Base for each friend who joined with their code and repaid a loan. Older rows marked &quot;interest refund&quot;
-            are from the old &quot;Pay zero interest&quot; program.
+            $5 USDC on Base for each friend who joined with their code and repaid a loan. Older rows marked &quot;interest refund&quot; are
+            from the old &quot;Pay zero interest&quot; program.
          </p>
          {error ? <p className="mt-2 text-sm font-bold text-red-300">{error}</p> : null}
          {shown.length ? (
@@ -100,10 +100,14 @@ export default function InterestRefundsSection() {
                            {r.status === 'sent' ? <span className="text-emerald-300">sent</span> : null}
                            {r.status === 'voucher' ? <span className="text-emerald-300">took a voucher</span> : null}
                         </p>
-                        <p className="break-all font-mono text-sm font-black text-[#cfc6dd]">{r.user?.wallet_address || 'No wallet on file'}</p>
+                        <p className="break-all font-mono text-sm font-black text-[#cfc6dd]">
+                           {r.user?.wallet_address || 'No wallet on file'}
+                        </p>
                         <p className="text-sm font-medium text-[#a89bb8]">
-                           {r.kind === 'cash' ? 'affiliate reward' : 'interest refund'} · friend {personLabel(r.friend?.referred)} repaid ·{' '}
-                           {r.kind === 'cash'
+                           {r.kind === 'bonus'
+                              ? 'Shark Fighter bonus · 10 friends repaid on time · '
+                              : `${r.kind === 'cash' ? 'affiliate reward' : 'interest refund'} · friend ${personLabel(r.friend?.referred)} repaid · `}
+                           {r.kind === 'cash' || r.kind === 'bonus'
                               ? ''
                               : `their loan $${Number(r.loan?.loan_amount ?? 0).toFixed(2)} → $${Number(r.loan?.total_repayment_amount ?? 0).toFixed(2)} (interest $${Number(r.interest_usd).toFixed(2)}) · `}
                            {new Date(r.created_at).toLocaleDateString('en-US', { timeZone: 'Asia/Bangkok' })}

@@ -114,13 +114,16 @@ const handleInterestRefund = async (supabase: SupabaseClient, refundId: string, 
    if (!data) return json({ error: 'Interest refund not found' }, 404);
    const r = data as unknown as InterestRefundRow;
    const who = personLabel(r.user);
-   const isCash = r.kind === 'cash';
+   const isBonus = r.kind === 'bonus';
+   const isCash = r.kind === 'cash' || isBonus;
    const friendName = personLabel(r.friend?.referred ?? null);
 
    if (event === 'sent') {
       if (r.status !== 'sent') return json({ ok: true, stamped: 0 });
       const stamped = await stampDecisionCards(supabase, 'interest_refund', r.id, {
-         header: isCash ? `✅ SENT — ${who} got ${usd(r.amount_usd)} USDC affiliate reward` : `✅ SENT — ${who} got ${usd(r.amount_usd)} USDC back`,
+         header: isBonus
+            ? `✅ SENT — ${who} got ${usd(r.amount_usd)} USDC Shark Fighter bonus`
+            : isCash ? `✅ SENT — ${who} got ${usd(r.amount_usd)} USDC affiliate reward` : `✅ SENT — ${who} got ${usd(r.amount_usd)} USDC back`,
          detail: r.tx_hash ? `Tx: ${r.tx_hash}` : null,
          by: decidedBy ? `${decidedBy} (admin panel)` : 'the admin panel'
       });
@@ -130,13 +133,24 @@ const handleInterestRefund = async (supabase: SupabaseClient, refundId: string, 
    const chatId = await getSetting(supabase, 'kyc_alert_chat_id');
    if (!chatId) return json({ error: 'kyc_alert_chat_id is not set' }, 500);
 
-   const text = isCash
+   const text = isBonus
+      ? [
+           `🎁 Pay ${who} ${usd(r.amount_usd)} USDC now — Shark Fighter bonus (10 friends repaid on time)`,
+           '',
+           `To (USDC on Base): ${r.user?.wallet_address || 'NO WALLET ON FILE — message them first'}`,
+           `Who: ${who}${r.user?.username ? ` (@${r.user.username})` : ''}${r.user?.email ? ` · ${r.user.email}` : ''}`,
+           'Why: a full stamp card. 10 friends joined with their code and repaid on time',
+           `Owed since: ${formatDecidedAt(new Date(r.created_at))}`,
+           '',
+           'Send it, then mark ✅ Sent in Admin → Referral codes → Affiliate payouts.'
+        ].join('\n')
+      : isCash
       ? [
            `💸 Pay ${who} ${usd(r.amount_usd)} USDC now — affiliate reward (friend ${friendName} repaid)`,
            '',
            `To (USDC on Base): ${r.user?.wallet_address || 'NO WALLET ON FILE — message them first'}`,
            `Who: ${who}${r.user?.username ? ` (@${r.user.username})` : ''}${r.user?.email ? ` · ${r.user.email}` : ''}`,
-           `Why: their friend ${friendName} joined with their code and repaid a loan ($5 per friend)`,
+           `Why: their friend ${friendName} joined with their code and repaid a loan on time (${usd(r.amount_usd)} per friend)`,
            `Owed since: ${formatDecidedAt(new Date(r.created_at))}`,
            '',
            'Send it, then mark ✅ Sent in Admin → Referral codes → Affiliate payouts.'

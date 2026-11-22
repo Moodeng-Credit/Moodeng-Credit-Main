@@ -5,7 +5,8 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
  * (migrations 20261026150000_affiliate_dashboard, 20261115140000_moo_affiliate_for_everyone).
  *
  * Two kinds of code, one page:
- * - the personal invite code every borrower has: $5 USDC per friend who repays, once the borrower has
+ * - the personal invite code every borrower has: $2 USDC per friend who repays on time (Shark Fighter Card,
+ *   +$20 every 10 friends; was $5 before 2026-11-22), once the borrower has
  *   repaid a loan themself (`unlocked`); the $5 can be taken as a food/Grab voucher instead.
  * - Belle-style referral codes the team makes: the code's payout_amount, marked Paid in Admin → Referral codes.
  *
@@ -388,12 +389,12 @@ export const AFFILIATE_SAMPLE: AffiliateDashboardData = {
    ]
 };
 
-/** A regular borrower's view: their personal code, $5 per friend (the default /affiliate-preview). */
+/** A regular borrower's view: their personal code, $2 per friend who repays on time (the default /affiliate-preview). */
 export const AFFILIATE_PERSONAL_SAMPLE: AffiliateDashboardData = {
    unlocked: true,
    paused: false,
    voucher: { available: true, amountPhp: AFFILIATE_VOUCHER_PHP },
-   codes: [{ code: 'MOODEN12345', boost_amount: 0, payout_amount: 5, is_active: true, personal: true }],
+   codes: [{ code: 'MOODEN12345', boost_amount: 0, payout_amount: 2, is_active: true, personal: true }],
    claims: [{ id: 'c2', friend_name: 'Lito', status: 'pending', created_at: '2026-11-12T03:00:00Z' }],
    referrals: [
       {
@@ -407,7 +408,7 @@ export const AFFILIATE_PERSONAL_SAMPLE: AffiliateDashboardData = {
          access: 'rejected',
          borrowed: false,
          repaid: false,
-         payout_amount: 5,
+         payout_amount: 2,
          payout_status: null,
          paid_at: null
       },
@@ -422,7 +423,7 @@ export const AFFILIATE_PERSONAL_SAMPLE: AffiliateDashboardData = {
          access: 'pending',
          borrowed: false,
          repaid: false,
-         payout_amount: 5,
+         payout_amount: 2,
          payout_status: null,
          paid_at: null
       },
@@ -438,7 +439,7 @@ export const AFFILIATE_PERSONAL_SAMPLE: AffiliateDashboardData = {
          access: 'approved',
          borrowed: false,
          repaid: false,
-         payout_amount: 5,
+         payout_amount: 2,
          payout_status: null,
          paid_at: null
       },
@@ -452,7 +453,7 @@ export const AFFILIATE_PERSONAL_SAMPLE: AffiliateDashboardData = {
          repaid: false,
          repaid_not_counted: true,
          repaid_too_early: true,
-         payout_amount: 5,
+         payout_amount: 2,
          payout_status: null,
          paid_at: null
       },
@@ -465,7 +466,7 @@ export const AFFILIATE_PERSONAL_SAMPLE: AffiliateDashboardData = {
          friend_referral_id: 'fr-joy',
          borrowed: true,
          repaid: true,
-         payout_amount: 5,
+         payout_amount: 2,
          payout_status: 'unpaid',
          paid_at: null
       },
@@ -477,7 +478,7 @@ export const AFFILIATE_PERSONAL_SAMPLE: AffiliateDashboardData = {
          friend_referral_id: 'fr-rica',
          borrowed: true,
          repaid: true,
-         payout_amount: 5,
+         payout_amount: 2,
          payout_status: 'voucher',
          paid_at: null,
          voucher_status: 'sent',
@@ -491,7 +492,7 @@ export const AFFILIATE_PERSONAL_SAMPLE: AffiliateDashboardData = {
          friend_referral_id: 'fr-dan',
          borrowed: true,
          repaid: true,
-         payout_amount: 5,
+         payout_amount: 2,
          payout_status: 'paid',
          paid_at: '2026-10-30T03:00:00Z'
       }
