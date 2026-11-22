@@ -101,6 +101,8 @@ export const filipinoCoverageG: Record<string, string> = {
    'Book your 15-min call': 'I-book ang 15-min call mo',
    'Quick ID check — have it ready': 'Mabilis na ID check — ihanda ang ID mo',
    'for every friend you refer': 'sa bawat kaibigang ma-refer mo',
+   '$2 cash': '$2 na cash',
+   'for every friend who repays on time': 'sa bawat kaibigang nagbayad on time',
    "What's the loan for?": 'Para saan ang loan?',
    'e.g. Rent is due before payday on the 15th': 'hal. Due ang upa bago ang sweldo sa ika-15',
    '1 more characters': '1 character pa',
