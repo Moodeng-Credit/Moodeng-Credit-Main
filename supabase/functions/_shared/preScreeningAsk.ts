@@ -174,6 +174,8 @@ const DRAFT_SYSTEM = `You help a small lender (Moodeng Credit: first loans of ab
 You get the person's answers, the AI grade (summary, flags, proof-of-income read) and maybe "team_wrote": questions the team typed.
 - If team_wrote is there: keep exactly the team's questions (same number, same meaning, same order). Only make each one short and simple and add the local version. Do not add questions of your own.
 - If not: write 2 or 3 questions about what matters most for whether they can and will repay: what doesn't add up, what is vague, or what worries the team (other loans, take-home pay, what the money is really for, how they repay). Specific to them, not generic.
+- Income comes first when it is unclear or doesn't match: how much they really get each month, from whom, how they are paid, and a screenshot of their last pay.
+- If "earlier_rounds" is there, this is the 2nd round: ask only what their earlier replies left unclear, vague or unproven. Never repeat a question they already answered well.
 - If "flags" is not empty, those warnings come first: every warning must be covered by a question (say the numbers that don't match, e.g. "you said ₱70,000 a month but your statement shows about ₱28,000"). For a photo that didn't show what was asked, ask them to send that photo here on Messenger. For income that doesn't match, ask how they get paid and for a screenshot of their last pay.
 
 Each question: one short sentence, 8th-grade English, friendly and not accusing, open (not yes/no), answerable by typing a few lines on a phone. Never ask for passwords, codes, ID numbers or bank details. Don't ask what we already know from the document unless it doesn't add up.
@@ -181,7 +183,7 @@ Each question: one short sentence, 8th-grade English, friendly and not accusing,
 "team" = what the question checks, in a few English words, for the team.
 Reply with only json: {"questions": [{"team": "...", "en": "...", "local": "..."}]}`;
 
-const READ_SYSTEM = `A small lender (first loans of about $15) asked someone a few more questions on Messenger after their pre-screening. You get the questions, what the AI already thought of them (summary, flags, score), and their replies so far (Tagalog, Taglish, Indonesian or English; may be split over several messages or not finished yet).
+const READ_SYSTEM = `A small lender (first loans of about $15) asked someone a few more questions on Messenger after their pre-screening. You get the questions, what the AI already thought of them (summary, flags, score), any earlier rounds of questions and replies (judge them all together), and their replies so far (Tagalog, Taglish, Indonesian or English; may be split over several messages or not finished yet).
 "read": at most 2 short plain English sentences: do the replies answer the questions, and does anything make repaying more or less likely? Say plainly if they dodged a question or haven't answered it yet.
 "answered_all": true only if every question has a real answer (not a dodge, not "ok", not a question back).
 "score": 0-100, how good a fit they are to lend to now, taking the pre-screening AND these replies together (50 = borderline). Clear, specific, believable replies that explain the worries raise it; vague, copied-looking, contradicting or dodged replies don't. Never above 50 if answered_all is false.
@@ -251,7 +253,8 @@ const context = (row: Row, market: string | null) => ({
    }),
    proof_of_income: row.grade?.income ? { note: row.grade.income.note ?? null, read: row.grade.income.read ?? null } : null,
    // v2: the medical grade (prescreenV2.ts), when they were asked.
-   ...(row.grade?.medical ? { medical: row.grade.medical } : {})
+   ...(row.grade?.medical ? { medical: row.grade.medical } : {}),
+   ...(earlierRounds(row.asks).length ? { earlier_rounds: earlierRounds(row.asks) } : {})
 });
 
 async function draftQuestions(svc: SupabaseClient, row: Row, typed: string[] | null): Promise<FollowupQuestion[]> {
@@ -369,6 +372,29 @@ export const autoAskThreshold = (setting: string | null | undefined) => {
    const n = Number(v);
    return v && Number.isFinite(n) && n > 0 ? n : 50;
 };
+
+/**
+ * Auto ✅ only at or above this (telegram_bot_settings.prescreen_auto_good_at, default 70; never under
+ * the ask bar). Between the two the AI asks on Messenger first (George, 2026-11-22). Pure.
+ */
+export const autoGoodBar = (setting: string | null | undefined, askBar: number) => {
+   const n = Number((setting ?? '').trim());
+   return Math.max(Number.isFinite(n) && n > 0 && n <= 100 ? n : 70, askBar);
+};
+/** At most this many rounds of Messenger questions before it's the team's call. */
+export const MAX_ROUNDS = 2;
+type Round = { questions: string[]; answers: string[]; read: string | null; score: number | null; at: string };
+/** Earlier rounds of Messenger questions, kept in pre_screenings.asks._followups. Pure. */
+export const earlierRounds = (asks: Record<string, unknown> | null | undefined): Round[] =>
+   Array.isArray(asks?._followups) ? (asks!._followups as Round[]) : [];
+/** After their answers: ask a 2nd round? Everything answered, still short of auto ✅, rounds left. Pure. */
+export const shouldAskAgain = (r: AnswerRead | null, goodBar: number, warnings: string[], roundsDone: number) =>
+   !!r && r.answered_all && !shouldAutoGood(r, goodBar, warnings) && roundsDone + 1 < MAX_ROUNDS;
+
+async function goodBarOf(svc: SupabaseClient, askBar: number) {
+   const { data } = await svc.from('telegram_bot_settings').select('value').eq('key', 'prescreen_auto_good_at').maybeSingle();
+   return autoGoodBar((data as { value?: string | null } | null)?.value, askBar);
+}
 
 // ---- Red flags: never auto ✅ (George, 2026-11-19) ------------------------------------------
 // A good score doesn't count when one of these is there; the card waits for the team instead.
@@ -521,7 +547,8 @@ export async function autoDecideOrAsk(svc: SupabaseClient, id: string, card: { c
       const { data: setting } = await svc.from('telegram_bot_settings').select('value').eq('key', 'prescreen_auto_ask_below').maybeSingle();
       const bar = autoAskThreshold((setting as { value?: string | null } | null)?.value);
       if (bar == null) return;
-      if (row.score < bar) return await autoAskIfWeak(svc, id, card);
+      const good = await goodBarOf(svc, bar);
+      if (row.score < good) return await autoAskIfWeak(svc, id, card, { force: row.score >= bar ? `${row.score}/100 (auto ✅ needs ${good})` : undefined });
       const flags = await redFlags(svc, row);
       await saveAutoCheck(svc, row.id, { stage: 'grade', score: row.score, bar, flags });
       if (flags.length) {
@@ -533,8 +560,8 @@ export async function autoDecideOrAsk(svc: SupabaseClient, id: string, card: { c
       }
       // ⚠️ warnings on the card (photo doesn't show what was asked, income doesn't match…): ask them on
       // Messenger and re-grade the replies instead of approving.
-      if (gradeWarnings(row.grade).length) return await autoAskIfWeak(svc, id, card, { warnings: true });
-      await autoGood(svc, row, card, `AI (${row.score}/100, no red flags)`, `${row.score}/100 (needs ${bar}), no red flags`);
+      if (gradeWarnings(row.grade).length) return await autoAskIfWeak(svc, id, card, { force: `${row.score}/100 but with ⚠️ warnings` });
+      await autoGood(svc, row, card, `AI (${row.score}/100, no red flags)`, `${row.score}/100 (needs ${good}), no red flags`);
    } catch (err) {
       console.error('pre-screening auto-decide failed', err instanceof Error ? err.message : err);
    }
@@ -550,7 +577,7 @@ export async function autoAskIfWeak(
    svc: SupabaseClient,
    id: string,
    card: { chat: number | string; msg: number },
-   opts: { warnings?: boolean } = {}
+   opts: { force?: string } = {}
 ) {
    try {
       const row = await loadRow(svc, id);
@@ -558,9 +585,9 @@ export async function autoAskIfWeak(
       const { data: setting } = await svc.from('telegram_bot_settings').select('value').eq('key', 'prescreen_auto_ask_below').maybeSingle();
       const below = autoAskThreshold((setting as { value?: string | null } | null)?.value);
       if (below == null) return;
-      const warned = !!opts.warnings && gradeWarnings(row.grade).length > 0;
-      if (!warned && row.score >= below) return;
-      const why = warned ? `${row.score}/100 but with ⚠️ warnings` : `Under ${below}/100`;
+      // force = why it asks although at or above the ask bar (under the auto ✅ bar, or ⚠️ warnings).
+      if (!opts.force && row.score >= below) return;
+      const why = opts.force ?? `Under ${below}/100`;
       const m = await messengerOf(svc, row.user_id);
       if (!m?.messenger_psid) {
          await sendTelegramMessage(
@@ -579,7 +606,7 @@ export async function autoAskIfWeak(
          }).catch(() => undefined);
          return;
       }
-      const result = await sendFollowup(svc, row, qs, card, warned ? 'AI (auto, ⚠️ warnings)' : 'AI (auto, under ' + below + ')');
+      const result = await sendFollowup(svc, row, qs, card, opts.force ? 'AI (auto: ' + opts.force + ')' : 'AI (auto, under ' + below + ')');
       const list = qs.flatMap((q, i) => [`${i + 1}. ${q.en}`, ...(q.local && q.local !== q.en ? [`   ${q.local}`] : [])]);
       await sendTelegramMessage(
          card.chat,
@@ -779,6 +806,7 @@ export const handlePreScreeningAnswer = async (svc: SupabaseClient, userId: stri
                   ai_summary_before: row.grade?.summary ?? null,
                   flags_before: row.grade?.flags ?? [],
                   score_before: row.score,
+                  ...(earlierRounds(row.asks).length ? { earlier_rounds: earlierRounds(row.asks) } : {}),
                   their_replies: answers.map((a) => a.text)
                },
                20_000
@@ -801,8 +829,9 @@ export const handlePreScreeningAnswer = async (svc: SupabaseClient, userId: stri
       // Answered everything and Gemini now puts them at the threshold or above: ✅ Good fit on its own
       // (they're told to keep going, same as a team ✅). Below stays with the team; ❌ is never automatic.
       const { data: setting } = await svc.from('telegram_bot_settings').select('value').eq('key', 'prescreen_auto_ask_below').maybeSingle();
-      const bar = autoAskThreshold((setting as { value?: string | null } | null)?.value) ?? 50;
-      if (shouldAutoGood(read, bar, gradeWarnings(row.grade))) {
+      const bar = await goodBarOf(svc, autoAskThreshold((setting as { value?: string | null } | null)?.value) ?? 50);
+      const warnings = gradeWarnings(row.grade);
+      if (shouldAutoGood(read, bar, warnings)) {
          const flags = await redFlags(
             svc,
             row,
@@ -825,6 +854,9 @@ export const handlePreScreeningAnswer = async (svc: SupabaseClient, userId: stri
          ) {
             return true;
          }
+      } else if (shouldAskAgain(read, bar, warnings, earlierRounds(row.asks).length)) {
+         // Answered everything but still short: one more round, about what is still unclear.
+         if (await askAgain(svc, row, answers, read!, card, bar)) return true;
       }
 
       // Thank them once they've sent about one message per question.
@@ -838,6 +870,57 @@ export const handlePreScreeningAnswer = async (svc: SupabaseClient, userId: stri
       return false;
    }
 };
+
+/**
+ * 2nd round: keeps round 1 (questions, replies, read) in asks._followups, writes new questions with
+ * that in mind and sends them. Only one caller wins (the update is conditional on this round's
+ * followup_sent_at). True when it sent.
+ */
+async function askAgain(
+   svc: SupabaseClient,
+   row: Row,
+   answers: Array<{ text: string }>,
+   read: AnswerRead,
+   card: { chat: number | string; msg: number },
+   bar: number
+) {
+   const round: Round = {
+      questions: (row.followup_questions ?? []).map((q) => q.en),
+      answers: answers.map((a) => a.text),
+      read: read.read,
+      score: read.score,
+      at: new Date().toISOString()
+   };
+   const asks = { ...(row.asks ?? {}), _followups: [...earlierRounds(row.asks), round] };
+   const { data: claimed } = await svc
+      .from('pre_screenings')
+      .update({ asks, followup_answers: [] })
+      .eq('id', row.id)
+      .eq('followup_sent_at', row.followup_sent_at!)
+      .is('team_decision', null)
+      .select('id')
+      .maybeSingle();
+   if (!claimed) return false;
+   const next = { ...row, asks, followup_answers: [] };
+   const qs = await draftQuestions(svc, next, null);
+   const why = `${read.score ?? '?'}/100 after their answers (auto ✅ needs ${bar}${gradeWarnings(row.grade).length && !read.cleared ? ', ⚠️ not cleared' : ''})`;
+   if (!qs.length) {
+      await sendTelegramMessage(card.chat, `🤖 ${why} — the AI couldn’t write a 2nd round. Your call, or tap 💬 Ask more.`, {
+         replyToMessageId: card.msg
+      }).catch(() => undefined);
+      return true;
+   }
+   const result = await sendFollowup(svc, next, qs, card, 'AI (auto, 2nd round)');
+   const list = qs.flatMap((q, i) => [`${i + 1}. ${q.en}`, ...(q.local && q.local !== q.en ? [`   ${q.local}`] : [])]);
+   await sendTelegramMessage(
+      card.chat,
+      result.ok
+         ? [`🤖 ${why}, so the AI asked a 2nd round on Messenger:`, ...list, '', 'Last round — after this it’s your call unless they reach the bar.'].join('\n')
+         : [`⚠️ ${why} — the 2nd round failed on Messenger (${result.why}). Send it yourself:`, '', result.text].join('\n'),
+      { replyToMessageId: card.msg }
+   ).catch(() => undefined);
+   return true;
+}
 
 // ---- Sweep: nudge them, remind the team (cron prescreen-sweep, every 30 min) -------------------
 
