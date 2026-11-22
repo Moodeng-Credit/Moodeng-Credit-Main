@@ -330,6 +330,8 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Book your 15-min call': 'Đặt lịch gọi 15 phút',
    'Quick ID check — have it ready': 'Kiểm tra giấy tờ nhanh — hãy chuẩn bị sẵn',
    '$10 cash': '$10 tiền mặt',
+   '$2 cash': '$2 tiền mặt',
+   'for every friend who repays on time': 'cho mỗi người bạn trả đúng hạn',
    'for every friend you refer': 'cho mỗi người bạn bạn giới thiệu',
    Rent: 'Tiền nhà',
    Bills: 'Hóa đơn',

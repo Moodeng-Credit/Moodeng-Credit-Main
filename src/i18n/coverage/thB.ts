@@ -545,6 +545,8 @@ export const thaiCoverageB: Record<string, string> = {
    'Set up cash-out to your local currency': 'ตั้งค่าการถอนเป็นเงินสกุลท้องถิ่นของคุณ',
    'Quick ID check — have it ready': 'ตรวจสอบบัตรประชาชนแบบรวดเร็ว — เตรียมบัตรไว้ให้พร้อม',
    '$10 cash': 'เงินสด $10',
+   '$2 cash': 'เงินสด $2',
+   'for every friend who repays on time': 'ต่อเพื่อนหนึ่งคนที่จ่ายคืนตรงเวลา',
    'for every friend you refer': 'ต่อเพื่อนหนึ่งคนที่คุณแนะนำ',
    'Meet the team, ask anything': 'พบทีมงาน ถามได้ทุกเรื่อง',
    'Apply right after the call': 'ขอเงินกู้ได้ทันทีหลังวิดีโอคอล',

@@ -512,6 +512,8 @@ export const indonesianCoverageB: Record<string, string> = {
    'Set up cash-out to your local currency': 'Atur pencairan dana ke mata uang lokalmu',
    'Quick ID check — have it ready': 'Cek ID singkat — siapkan ID-mu',
    '$10 cash': 'Uang tunai $10',
+   '$2 cash': 'Uang tunai $2',
+   'for every friend who repays on time': 'untuk setiap teman yang bayar tepat waktu',
    'for every friend you refer': 'untuk setiap teman yang kamu ajak',
    'Meet the team, ask anything': 'Kenalan dengan tim, tanya apa saja',
    'Apply right after the call': 'Ajukan pinjaman tepat setelah panggilan',

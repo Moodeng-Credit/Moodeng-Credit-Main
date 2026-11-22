@@ -355,7 +355,7 @@ export default function ConnectStep({
                                     Quick ID check — have it ready
                                  </PerkRow>
                                  <PerkRow icon={<Gift aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>
-                                    <b className="text-[#6b55f7]">$10 cash</b> for every friend you refer
+                                    <b className="text-[#6b55f7]">$2 cash</b> for every friend who repays on time
                                  </PerkRow>
                               </>
                            ) : (
