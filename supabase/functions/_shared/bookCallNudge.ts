@@ -8,10 +8,12 @@
 //   2nd  ≥ 24h after the 1st
 // only 09:00–21:00 Manila, and only within 7 days of the ✅. Each goes out on Messenger (their exact
 // next step from the bot, plus "you pick the time, no invite"), as a push, and as a text (no window
-// limit; migration 20261123120000). One Telegram line per run tells the team who got one.
+// limit; migration 20261123120000), and on WhatsApp with the booking link (bookCallLink.ts). One
+// Telegram line per run tells the team who got one.
 //
 // Switch: telegram_bot_settings.book_call_nudge = 'off' stops it (anything else = on).
 
+import { sendBookCallWhatsAppTo } from './bookCallLink.ts';
 import { loadPerson, nextStepReply, withBookHere } from './botNextStep.ts';
 import { CONNECT_URL, getAdminChatId } from './loanAccess.ts';
 import { sendPushToUser } from './pushDelivery.ts';
@@ -96,7 +98,7 @@ const sendOne = async (svc: SupabaseClient, row: NudgeRow, nudge: 1 | 2, psid: s
          messenger = await sendStep(psid, nudge, person);
       }
    }
-   const [push, sms] = await Promise.all([
+   const [push, sms, whatsapp] = await Promise.all([
       sendPushToUser(svc, row.user_id, () => ({
          type: 'loan_access_decision',
          title: nudge === 1 ? 'Book your 15-min call 📅' : 'Your spot is still open 📅',
@@ -107,11 +109,13 @@ const sendOne = async (svc: SupabaseClient, row: NudgeRow, nudge: 1 | 2, psid: s
       svc.rpc('prescreen_book_sms', { p_user: row.user_id, p_nudge: nudge }).then(
          ({ data }: { data: unknown }) => (typeof data === 'string' ? data : 'failed'),
          () => 'failed'
-      )
+      ),
+      // WhatsApp too (bookCallLink.ts): the approved follow-up template reaches them after 24h, unlike Messenger.
+      sendBookCallWhatsAppTo(svc, row.user_id, 'reminder')
    ]);
    const pushed = Boolean(push && (push as { sent?: number }).sent);
    const texted = sms === 'sent' || sms === 'unconfirmed';
-   const ways = [messenger ? 'Messenger' : null, pushed ? 'push' : null, texted ? 'text' : null].filter(Boolean) as string[];
+   const ways = [messenger ? 'Messenger' : null, whatsapp ? 'WhatsApp' : null, pushed ? 'push' : null, texted ? 'text' : null].filter(Boolean) as string[];
    const note = sms === 'rejected_network' ? 'no text: Smart/TNT/Sun' : sms === 'no_number' ? 'no number to text' : sms === 'off' ? 'texts off' : '';
    return { ways, note };
 };
