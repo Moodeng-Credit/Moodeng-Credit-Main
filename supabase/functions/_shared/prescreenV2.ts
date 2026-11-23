@@ -924,6 +924,18 @@ export const MONEY_GRADE_PROMPT = `Money and willingness to repay (many applican
 - Flag "borrowing to repay another loan" when the loan is to pay off another loan or debt, and "pays other lending apps now" when the document or answers show it. These matter more than the size of their income: a $15 loan is affordable for almost anyone working; the risk is that this loan is not the one paid first.
 - Willingness: a clear back-up plan, debts they can name and afford, and a last loan paid on time raise "repay_chance"; dodging, "I don't know", paying late before, or another loan as the plan lower it.`;
 
+/**
+ * Does their story hold together (George 2026-11-23, after a borrower passed with a different name on
+ * the statement, ~40% of the income they claimed, and a selfie for the desk photo). Flags and a fairer
+ * repay chance only, never a reject on its own: George wants it to learn, not get strict.
+ */
+export const STORY_CHECK_PROMPT = `Does their story hold together:
+- "other_names" (when present) are the names on their account and Facebook. A nickname, short form, married name or a missing middle name is fine. A clearly different person's name across their account, Facebook, intro and the document is a flag: "different names: <the names>". Ask, don't accuse: there can be an honest reason.
+- When the income they SAID is about double or more what the document shows coming in, that clearly contradicts it: score the document 2-4 and flag "says <amount>, document shows about <amount>".
+- A steady salary (same employer or client, about the same amount, on about the same days) is the best proof. Money mostly from friends, family or their own other accounts, or that comes in uneven bursts with no clear employer or client, shows less: say so in the income note. It is not a reason to fail them alone.
+- A job they describe only in general words, with no client, place or real detail, and no photo or document that shows it, is unproven: say so.
+- One thing not adding up can be a mistake. Two or more (names, job, income, a photo that isn't what was asked) mean the story may not be true: bring "repay_chance" clearly below this lender's average and say so in "reasons". Honest answers matter more than a big income.`;
+
 // ---- Document coach (George 2026-11-21: "explain to them what they need to add") -------------------
 
 export const docCoachSystem = (
