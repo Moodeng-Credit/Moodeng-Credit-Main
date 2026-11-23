@@ -263,7 +263,7 @@ export async function intakeMessengerPhotos(
       if (card?.chat && card.msg) {
          await sendTelegramMessage(
             card.chat,
-            `📄 ${who} sent ${reason === 'prescreen_recent' ? 'more' : 'their'} proof of income on Messenger (${total} photo${total === 1 ? '' : 's'}). It's being checked now — the income document card follows.`,
+            `📄 ${who} sent ${reason === 'prescreen_recent' ? 'more' : 'their'} proof of income on Messenger (${total} photo${total === 1 ? '' : 's'}). It's being checked now — the result will be posted here as a reply.`,
             {
                replyToMessageId: card.msg
             }
