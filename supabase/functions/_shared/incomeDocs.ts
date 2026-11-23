@@ -121,6 +121,7 @@ const SYSTEM = `You read proof-of-income documents for a small lender in the Phi
 
 Copy what the document says. Never guess or fill in a number that is not printed.
 - transactions: every row, oldest first. amount is positive for money in, negative for money out. balance is the running balance printed on that row, or null. date as YYYY-MM-DD.
+- PDF text keeps the page layout: each number sits under its column header. When money in and money out are separate columns (Incoming / Outgoing, Credit / Debit, Deposit / Withdrawal, Money in / Money out), decide each row's sign by which column its amount is under, never by the description (a transfer with the holder's own name can go either way). If the document prints total incoming / outgoing, your rows must add up to them; if they don't, re-check the columns.
 - source_text: the exact characters printed for that row or field, so a person can find it. Include the reference number (e.g. "Ref No. 1234 567 890123") when the row shows one. page: 1-based, counting files in the order given (a screenshot is one page).
 - fields: other key facts printed (account number last 4 digits only, employer, pay period, permit number, address). Never copy a full account or ID number.
 - period_start / period_end: the statement or pay period as printed, or the first and last transaction dates, YYYY-MM-DD.
@@ -837,11 +838,54 @@ export const normalizeExtracted = (raw: Record<string, unknown>): Extracted => {
    };
 };
 
-/** PDF → its text layer, page by page. Scanned PDFs have none; those come back empty. */
+export type PdfTextItem = { str: string; x: number; y: number; width: number };
+
+/**
+ * One page's text items → lines that keep the page layout: items on the same baseline form a line,
+ * and each starts at a column proportional to where it sits on the page. Without this, statements
+ * that print money in and money out in separate columns (MariBank "Incoming / Outgoing", bank
+ * "Debit / Credit") lose which column a number was in, and the AI guessed the sign row by row
+ * (2026-11-23: the same MariBank PDF read as ₱46k in, then ₱3.7k in; it prints ₱28,120). Pure.
+ */
+export const layoutLines = (items: PdfTextItem[], ptPerChar = 4): string => {
+   const rows: Array<{ y: number; items: PdfTextItem[] }> = [];
+   for (const it of items) {
+      if (!it.str.trim()) continue;
+      const row = rows.find((r) => Math.abs(r.y - it.y) <= 2);
+      if (row) row.items.push(it);
+      else rows.push({ y: it.y, items: [it] });
+   }
+   rows.sort((a, b) => b.y - a.y); // PDF y grows upwards
+   return rows
+      .map((r) => {
+         let line = '';
+         for (const it of r.items.sort((a, b) => a.x - b.x)) {
+            const col = Math.round(it.x / ptPerChar);
+            line += (line ? ' '.repeat(Math.max(1, col - line.length)) : ' '.repeat(Math.max(0, col))) + it.str;
+         }
+         return line.trimEnd();
+      })
+      .join('\n');
+};
+
+/** PDF → its text layer, page by page, laid out like the page. Scanned PDFs have none; those come back empty. */
 const pdfText = async (bytes: Uint8Array<ArrayBuffer>) => {
    const pdf = await getDocumentProxy(new Uint8Array(bytes));
-   const { text } = await extractText(pdf, { mergePages: false });
-   return (text as string[]).map((t) => t.trim());
+   try {
+      const pages: string[] = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+         const content = await (await pdf.getPage(i)).getTextContent();
+         const items = (content.items as Array<{ str?: string; transform?: number[]; width?: number }>)
+            .filter((it) => typeof it.str === 'string' && Array.isArray(it.transform))
+            .map((it) => ({ str: it.str as string, x: (it.transform as number[])[4], y: (it.transform as number[])[5], width: it.width ?? 0 }));
+         pages.push(layoutLines(items));
+      }
+      // Leading indentation is the layout; only trim blank lines around the page.
+      return pages.map((t) => t.replace(/^\s*\n|\n\s*$/g, ''));
+   } catch {
+      const { text } = await extractText(pdf, { mergePages: false });
+      return (text as string[]).map((t) => t.trim());
+   }
 };
 
 /**

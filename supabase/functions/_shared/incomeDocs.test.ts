@@ -1,6 +1,6 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { aiAutoApproves, decisionMessage, PHOTO_NOT_PROOF_REPLY, parseAiAutoRule, buildMemo, buildSections, combineOpinions, mergeExtracted, opinionText, parseSteps, pdfJpegs, stepFor, verdictOf, computeMetrics, type Extracted, namesMatch, normalizeExtracted, parseStatedIncome, readPdfInfo, riskOf, runChecks, scoreOf } from './incomeDocs.ts';
+import { aiAutoApproves, decisionMessage, PHOTO_NOT_PROOF_REPLY, parseAiAutoRule, buildMemo, buildSections, combineOpinions, mergeExtracted, opinionText, parseSteps, pdfJpegs, stepFor, verdictOf, computeMetrics, type Extracted, layoutLines, namesMatch, normalizeExtracted, parseStatedIncome, readPdfInfo, riskOf, runChecks, scoreOf } from './incomeDocs.ts';
 
 const tx = (date: string, amount: number, balance: number | null, description = 'x') => ({ date, description, amount, balance, page: 1, source_text: `${date} ${amount}` });
 
@@ -324,4 +324,23 @@ Deno.test('proof of the work itself: earnings screens and SSS contributions are 
       transactions: [tx('2026-09-28', 5480, null, 'Week'), tx('2026-10-05', 5120, null, 'Week'), tx('2026-10-12', 5760, null, 'Week')]
    });
    assert(verdictOf(runChecks(rider, computeMetrics(rider), smallLoan), rider.doc_type).verdict !== 'resend');
+});
+
+Deno.test('layoutLines keeps money in / out columns apart', () => {
+   const it = (str: string, x: number, y: number) => ({ str, x, y, width: str.length * 4 });
+   const text = layoutLines([
+      it('Outgoing', 400, 700),
+      it('Date', 40, 700),
+      it('Incoming', 300, 700),
+      it('03 SEP', 40, 680),
+      it('Transfer', 100, 680),
+      it('240.00', 300, 680.5),
+      it('04 SEP', 40, 660),
+      it('Card Fee', 100, 660),
+      it('49.00', 400, 660)
+   ]);
+   const [head, inRow, outRow] = text.split('\n');
+   assertEquals(head.indexOf('Incoming'), inRow.indexOf('240.00'));
+   assertEquals(head.indexOf('Outgoing'), outRow.indexOf('49.00'));
+   assert(head.startsWith('          Date'));
 });
