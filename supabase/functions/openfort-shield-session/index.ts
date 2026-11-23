@@ -1,6 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { gasWalletStatus, prepareGas } from '../_shared/selfGas.ts';
+
 // Mints a one-time Openfort Shield "encryption session" for AUTOMATIC (self-custodial,
 // no-password) embedded-wallet recovery. This MUST run server-side: it holds the Shield
 // SECRET and the project encryption share, neither of which may ever reach the browser.
@@ -12,7 +14,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
-   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-admin-token',
    'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
@@ -66,11 +68,31 @@ serve(async (req) => {
       // Authenticate the caller by their Supabase session so an anonymous request can't
       // spend the project's Shield quota (defense-in-depth on top of verify_jwt=true).
       const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+
+      // The original caller (shieldSession.ts) sends no body, so a missing/unparseable body is a mint.
+      const body = (await req.json().catch(() => ({}))) as { action?: string };
+
+      // Team-only: the self-paid-gas hot wallet's address and balance (creates its key on first
+      // call). X-Admin-Token = ADMIN_API_TOKEN; any valid JWT (anon is fine) gets past verify_jwt.
+      if (body.action === 'gas_status') {
+         const adminToken = (Deno.env.get('ADMIN_API_TOKEN') ?? '').trim();
+         const presented = (req.headers.get('X-Admin-Token') ?? '').trim();
+         if (!adminToken || presented !== adminToken) return jsonResponse({ error: 'unauthorized' }, 401);
+         return jsonResponse(await gasWalletStatus(supabase));
+      }
+
       const token = (req.headers.get('Authorization') ?? '').replace('Bearer ', '').trim();
       if (!token) return jsonResponse({ error: 'Missing authorization token' }, 401);
 
       const { data: userData, error: userError } = await supabase.auth.getUser(token);
       if (userError || !userData?.user?.id) return jsonResponse({ error: 'Authentication required' }, 401);
+
+      // Before an Instant Wallet send: should it pay its own gas, and top it up if so
+      // (_shared/selfGas.ts). Not a mint, so none of the wallet gates below apply; the drip only
+      // ever goes to this caller's own stored Instant Wallet.
+      if (body.action === 'gas_prep') {
+         return jsonResponse(await prepareGas(supabase, userData.user.id));
+      }
 
       // ── The abuse gate ────────────────────────────────────────────────────────────────
       //

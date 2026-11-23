@@ -68,3 +68,33 @@ export const createShieldEncryptionSession = async (): Promise<string> => {
    }
    return sessionId;
 };
+
+/** How the next Instant Wallet send pays gas: Openfort's paymaster, or the wallet's own ETH. */
+export type InstantWalletGasMode = 'self' | 'sponsored';
+
+/**
+ * Ask the server how the next send pays gas, and let it top the wallet up with a few cents of ETH
+ * first when it self-pays (openfort-shield-session `gas_prep`, _shared/selfGas.ts). Any failure
+ * falls back to 'sponsored', which is exactly the behaviour before self-paid gas existed.
+ */
+export const prepareInstantWalletGas = async (): Promise<InstantWalletGasMode> => {
+   try {
+      if (!OPENFORT_SHIELD_SESSION_URL) return 'sponsored';
+      const {
+         data: { session }
+      } = await getSupabaseBrowserClient().auth.getSession();
+      if (!session?.access_token) return 'sponsored';
+
+      const response = await fetch(OPENFORT_SHIELD_SESSION_URL, {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+         body: JSON.stringify({ action: 'gas_prep' })
+      });
+      if (!response.ok) return 'sponsored';
+      const body = (await response.json().catch(() => null)) as { mode?: string } | null;
+      return body?.mode === 'self' ? 'self' : 'sponsored';
+   } catch (err) {
+      console.warn('[openfort] gas_prep failed; using sponsored gas', err);
+      return 'sponsored';
+   }
+};

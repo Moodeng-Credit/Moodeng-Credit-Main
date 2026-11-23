@@ -12,7 +12,7 @@ import { base, baseSepolia } from 'viem/chains';
 import { getOpenfortClient } from '@/lib/web3/openfort/client';
 import { OPENFORT_CHAIN_ID, OPENFORT_POLICY_ID, getOpenfortUsdcAddress } from '@/lib/web3/openfort/config';
 import { InstantWalletReconnectError, isLostSignerError } from '@/lib/web3/openfort/sendErrors';
-import { createShieldEncryptionSession } from '@/lib/web3/openfort/shieldSession';
+import { createShieldEncryptionSession, prepareInstantWalletGas } from '@/lib/web3/openfort/shieldSession';
 
 // The viem chain the embedded wallet transacts on, resolved from config so test mode (Base
 // Sepolia) and prod (Base mainnet) both build a correctly-chained wallet client.
@@ -131,15 +131,22 @@ const sendUsdcOnce = async ({ to, usdAmount }: { to: string; usdAmount: string }
    if (!usdc) throw new Error('USDC is not configured for the active chain.');
 
    const account = await ensureEmbeddedWalletReady();
+   // Self-paid gas (2026-11-23): when the server says so, the smart account pays its own gas in
+   // ETH (the server has just topped it up) instead of Openfort's paymaster. The SDK caches one
+   // provider and getEthereumProvider can't clear a policy, so set it on the instance every send.
+   const gasMode = await prepareInstantWalletGas();
    const provider = await getEmbeddedProvider();
+   (provider as unknown as { updateFeeSponsorship?: (id: string | undefined) => void }).updateFeeSponsorship?.(
+      gasMode === 'self' ? undefined : OPENFORT_POLICY_ID || undefined
+   );
    const walletClient = createWalletClient({
       account: account.address as `0x${string}`,
       chain: openfortChain,
       transport: custom(provider)
    });
 
-   // USDC is 6 decimals. The provider turns this eth_sendTransaction into a sponsored
-   // ERC-4337 userOp (paymaster pays gas), deploying the account on the first send.
+   // USDC is 6 decimals. The provider turns this eth_sendTransaction into an ERC-4337 userOp
+   // (paymaster-sponsored, or self-paid in ETH — see above), deploying the account on the first send.
    return walletClient.writeContract({
       address: usdc,
       abi: erc20Abi,
