@@ -1334,10 +1334,11 @@ export default function BankPayoutFlow({
    }
 
    // tracking
+   const PAYOUT_HIPPO_FRAMES = ['a', 'b', 'e', 'd', 'd'];
    const done = DONE.has(status);
    const failed = FAILED.has(status);
-   // Stableyard only says waiting / processing / succeeded, so there is no real percent to show: the cake
-   // rises on a clock while we wait (frames 1-5, holding at 5), the three steps turn green as they finish,
+   // Stableyard only says waiting / processing / succeeded, so there is no real percent to show: the hippo
+   // changes pose on a clock while we wait (frames 1-5, holding at 5), the three steps turn green as they finish,
    // and the whole card flips to the green "sent" screen the moment the payout succeeds.
    const realElapsed = Math.max(0, (clock - sentAt) / 1000);
    const elapsed = realElapsed / (isPreview ? 0.08 : 1); // the preview bakes ~12x faster
@@ -1363,18 +1364,19 @@ export default function BankPayoutFlow({
                <div className="flex flex-col items-center text-center" aria-live="polite">
                   {done ? (
                      <div className="relative">
-                        <img src="/withdraw-oven/cake.webp" alt="" aria-hidden="true" className="h-[104px] w-auto" />
+                        <img src="/hippos/sendstory/frame-c.webp" alt="" aria-hidden="true" className="h-[120px] w-auto" />
                         <span className="absolute -right-[10px] -bottom-[4px] flex h-[34px] w-[34px] items-center justify-center rounded-full border-[3px] border-[var(--surface,#fff)] bg-[#2f9e44] text-white">
                            <Check className="w-[18px] h-[18px]" strokeWidth={3.5} />
                         </span>
                      </div>
                   ) : (
-                     // All frames stacked so they're preloaded; the current one fades in.
-                     <div className="relative w-[140px] aspect-[549/560]" aria-hidden="true">
+                     // All poses stacked so they're preloaded; the current one fades in. A happy Moodeng
+                     // that changes pose as the payout moves (was a worried hippo at an oven).
+                     <div className="relative w-[150px] aspect-square" aria-hidden="true">
                         {[1, 2, 3, 4, 5].map((n) => (
                            <img
                               key={n}
-                              src={`/withdraw-oven/oven-${n}.webp`}
+                              src={`/hippos/sendstory/frame-${PAYOUT_HIPPO_FRAMES[n - 1]}.webp`}
                               alt=""
                               className="absolute inset-0 w-full h-full object-contain transition-opacity duration-700"
                               style={{ opacity: n === ovenFrame ? 1 : 0 }}
