@@ -72,7 +72,7 @@ import {
    idRepayIdrChoices,
    idUsdForIdr
 } from '@/lib/loanMarket';
-import { maximumRepayment, minimumRepayment, suggestedRepaymentRange, suggestedReturnRange } from '@/lib/loanPricing';
+import { maximumRepayment, minimumRepayment, suggestedRepaymentRange } from '@/lib/loanPricing';
 import { checkLoanReason, getCachedReasonVerdict, type ReasonAttempt, type ReasonCategory, type ReasonCheckLocale } from '@/lib/loanReasonCheck';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
@@ -1030,24 +1030,6 @@ function FieldError({ message }: { message: string }) {
       <div role="alert" className="flex items-start gap-1.5 text-md-b3 font-medium leading-[18px] text-md-red-500">
          <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
          <span>{message}</span>
-      </div>
-   );
-}
-
-// Non-blocking hint shown only when a valid repayment offers less back than loans of this size
-// usually need to get funded quickly. Silent when the offer is in (or above) range — priced right
-// means no noise. Never blocks submission.
-function ReturnHint({ lo, hi }: { lo: number; hi: number }) {
-   return (
-      <div className="flex items-start gap-1.5 rounded-md-md bg-md-yellow-100 px-md-2 py-md-1 text-md-b3 font-normal leading-[18px] text-md-yellow-700">
-         <Lightbulb className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
-         <span>
-            Loans around this size usually offer{' '}
-            <span className="font-semibold">
-               ${lo}–{hi}
-            </span>{' '}
-            back to get funded quickly. You can still submit.
-         </span>
       </div>
    );
 }
@@ -2534,7 +2516,8 @@ export default function LoanRequestModal({
    // What to put in the empty repayment field: the typical return for this size (and at least the
    // 10%-a-month minimum once a date is picked), so the first try is one lenders will fund instead
    // of "$16 back on $15", which opened the low-return popup. Shown as the placeholder only.
-   // A range, not one number ($15 for a month → "$16.50–$18"): one number read as the price to type.
+   // One number: exactly 10% a month ($13 → "$14.30"). George, 2026-11-23: the old "$14.50–$16" range
+   // led a $13 borrower to offer $15.
    const suggestedRepayment = (() => {
       const borrow = Number(loanAmount);
       if (!loanAmount || !Number.isFinite(borrow) || borrow <= 0) return null;
@@ -3647,7 +3630,7 @@ export default function LoanRequestModal({
                                  inputMode="decimal"
                                  placeholder={
                                     suggestedRepayment
-                                       ? `Suggested: $${Number.isInteger(suggestedRepayment.lo) ? suggestedRepayment.lo : suggestedRepayment.lo.toFixed(2)}–$${Number.isInteger(suggestedRepayment.hi) ? suggestedRepayment.hi : suggestedRepayment.hi.toFixed(2)}`
+                                       ? `Suggested: $${Number.isInteger(suggestedRepayment.lo) ? suggestedRepayment.lo : suggestedRepayment.lo.toFixed(2)}`
                                        : 'Must be more than the borrowed amount'
                                  }
                                  type="text"
@@ -3678,19 +3661,6 @@ export default function LoanRequestModal({
                               {(() => {
                                  const borrowNum = Number(loanAmount);
                                  const repayNum = Number(totalRepaymentAmount);
-                                 const range = suggestedReturnRange(borrowNum);
-                                 const offer = repayNum - borrowNum;
-                                 // Only when the repayment is otherwise valid (passes the $1 minimum, so
-                                 // no error is showing) but still below the typical return for this size.
-                                 const show =
-                                    !termErrors.repayment &&
-                                    Boolean(totalRepaymentAmount) &&
-                                    Number.isFinite(borrowNum) &&
-                                    borrowNum > 0 &&
-                                    Number.isFinite(repayNum) &&
-                                    offer >= 1 &&
-                                    range !== null &&
-                                    offer < range.lo;
                                  const min = minimumRepayment(borrowNum, days, undefined, { split: splitOn });
                                  if (!termErrors.repayment && Boolean(totalRepaymentAmount) && min && Number.isFinite(repayNum) && repayNum < min.amount) {
                                     return (
@@ -3703,7 +3673,7 @@ export default function LoanRequestModal({
                                        </div>
                                     );
                                  }
-                                 return show && range ? <ReturnHint lo={range.lo} hi={range.hi} /> : null;
+                                 return null;
                               })()}
                            </div>
 
