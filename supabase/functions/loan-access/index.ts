@@ -5,6 +5,7 @@ import { personName, stampDecisionCards } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { isInternalRequest } from '../_shared/internalAuth.ts';
 import { collectGateDigest, formatGateDigest } from '../_shared/gateDigest.ts';
+import { runBookCallNudges } from '../_shared/bookCallNudge.ts';
 import { cancelUpcomingCall } from '../_shared/callCancel.ts';
 import { BORROWER_COLUMNS, decideRejectFollowUp, getAdminChatId, ghostUser, notifyAdminsOfRequest, notifyBorrower, PAGE_INBOX_URL, rejectUser, REQUEST_COLUMNS, shortId, SITE_URL, unghostUser, who } from '../_shared/loanAccess.ts';
 import { needsPreKycGate } from '../_shared/preKycGate.ts';
@@ -32,6 +33,9 @@ import { getMessengerContact } from '../_shared/sendpulse.ts';
 //   action=gate_digest (daily cron) — the admin check-in: calls waiting on a ✅ / ❌, and people who
 //                                   connected Messenger but never booked. Sent at most once a day
 //                                   (claimed in telegram_bot_settings), so an extra call is harmless.
+//   action=book_nudge (hourly cron) — passed the pre-screening but no call booked: up to two
+//                                   reminders (Messenger + push + text), 09:00–21:00 Manila
+//                                   (_shared/bookCallNudge.ts). Claimed per reminder, so extra calls are harmless.
 //   action=id_step (borrower JWT, Indonesia track) — the app finished a step it saves itself; the
 //                                   bot says "✅ done — next: …" on Telegram (_shared/idTrack.ts).
 //   action=cancel_rejected_calls (server only) — cancels calls still booked by rejected people.
@@ -371,6 +375,10 @@ serve(async (req) => {
       if (body.action === 'expire') return await expire(svc);
       if (body.action === 'referral_alert') return await referralAlert(svc, body);
       if (body.action === 'gate_digest') return await gateDigest(req, svc);
+      if (body.action === 'book_nudge') {
+         if (!(await isInternalRequest(svc, req))) return json({ ok: false, error: 'unauthorized' }, 401);
+         return json(await runBookCallNudges(svc, Date.now(), { dry: body.dry === true }));
+      }
       if (body.action === 'id_step') return await idStep(req, svc, body);
       if (body.action === 'cancel_rejected_calls') return await cancelRejectedCalls(req, svc);
       if (body.action === 'reject_user') {
