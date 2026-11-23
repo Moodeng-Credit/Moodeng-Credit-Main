@@ -216,7 +216,7 @@ const firstWord = (name: string | null | undefined) => name?.trim().split(/\s+/)
 // The account linked to this Messenger contact (users.messenger_psid, or one claimed in
 // messenger_contacts), where they are, and what to call them: their name on Moodeng, else their
 // Facebook name (so people without an account are greeted too). `locale` from the flow wins.
-const loadPerson = async (svc: Svc, contactId: string, flowLocale?: string | null) => {
+export const loadPerson = async (svc: Svc, contactId: string, flowLocale?: string | null) => {
    const byPsid = await svc.from('users').select(USER_COLUMNS).eq('messenger_psid', contactId).order('created_at', { ascending: false }).limit(1).maybeSingle(); // newest if they signed up twice
    let user = byPsid.data;
    const { data: contact } = await svc

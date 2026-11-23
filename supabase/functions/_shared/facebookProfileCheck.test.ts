@@ -37,7 +37,7 @@ Deno.test('contactPhotoUrl: finds the picture field', () => {
 });
 
 Deno.test('rejectingFlags: one name alone never rejects (2026-11-23)', () => {
-   assertEquals(rejectingFlags(nameFlags('Hans', '')), []);
+   assertEquals(rejectingFlags(nameFlags('Maria', '')), []);
    assertEquals(rejectingFlags(['no_last_name']), []);
    assertEquals(rejectingFlags(['no_last_name', 'lowercase_name']), ['lowercase_name']);
    assertEquals(rejectingFlags(['no_photo', 'no_last_name']), ['no_photo']);
