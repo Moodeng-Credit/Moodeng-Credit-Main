@@ -50,7 +50,12 @@ export default function ConnectBeforeKyc() {
    const authUser = useSelector((state: RootState) => state.auth.user);
    // Dev-only /onboarding/connect-preview(?view=pending|in-call|review|rejected|about|celebrate|approved|wallet-grow): the screens without an account.
    const isPreview = import.meta.env.DEV && location.pathname.includes('preview');
-   const user = isPreview ? PREVIEW_USER : authUser;
+   // ?view=missed: the "We missed you!" screens after a no-show.
+   const user = isPreview
+      ? new URLSearchParams(location.search).get('view') === 'missed'
+         ? ({ ...PREVIEW_USER, missedLastCall: true } as User)
+         : PREVIEW_USER
+      : authUser;
    const gate = usePreKycGate();
    const { isGated, isLoading } = isPreview ? { isGated: true, isLoading: false } : gate;
    const previewPendingView = isPreview ? new URLSearchParams(location.search).get('view') : null;
@@ -130,8 +135,14 @@ export default function ConnectBeforeKyc() {
    }
    if (isTikTok && phoneState === 'checking') return null;
 
+   // Book call: one screen tall, so the time picker scrolls inside and its button stays pinned at the
+   // bottom (VideoCallStep). A page that grew pushed "I'll be ready" below the fold (2026-11-23).
+   const fitScreen = page === 'call' && !isPending && !isRejected;
+
    return (
-      <div className="connect-ui mx-auto flex min-h-screen w-full max-w-[440px] flex-col bg-white dark:bg-[#100d17]">
+      <div
+         className={`connect-ui mx-auto flex w-full max-w-[440px] flex-col bg-white dark:bg-[#100d17] ${fitScreen ? 'h-[100dvh]' : 'min-h-screen'}`}
+      >
          <OnboardingHeader
             hideBack
             soundToggle
