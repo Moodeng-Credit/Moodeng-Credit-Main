@@ -102,6 +102,7 @@ export default function ConnectStep({
    mode = 'approval',
    withEmma = false,
    needsAbout = false,
+   goalOnFile = false,
    renderAbout,
    context = 'loan',
    page: controlledPage,
@@ -119,6 +120,9 @@ export default function ConnectStep({
    withEmma?: boolean;
    // Bio not saved yet → show the "about you" page (rendered by the modal, which owns the bio state).
    needsAbout?: boolean;
+   // Passed the pre-screening: their "what is this loan for?" answer is on file, so the goal page is
+   // optional and booking never bounces them back to it (the server fills it in).
+   goalOnFile?: boolean;
    renderAbout?: (nav: { onBack: () => void; onDone: () => void }) => ReactNode;
    // 'kyc': onboarding (pre-KYC gate) — approval after the call leads to the loan form, ID check last.
    context?: 'loan' | 'kyc';
@@ -164,7 +168,7 @@ export default function ConnectStep({
 
    const handleSend = async () => {
       if (isSending) return;
-      if (trimmedReason.length < MIN_REASON) {
+      if (trimmedReason.length < MIN_REASON && !goalOnFile) {
          // e.g. a reload on the call page: never fail silently — send them back to write it.
          setError(ERROR_COPY.reason_required);
          setPage('intro');
@@ -174,7 +178,7 @@ export default function ConnectStep({
       setIsSending(true);
       try {
          const { data, error: invokeError } = await getSupabaseBrowserClient().functions.invoke('loan-access', {
-            body: { action: 'submit', reason: trimmedReason, displayName, referralCode: referralCode || undefined }
+            body: { action: 'submit', reason: trimmedReason.length >= MIN_REASON ? trimmedReason : '', displayName, referralCode: referralCode || undefined }
          });
          // functions.invoke surfaces non-2xx as an error whose context holds the JSON body.
          let payload = data as { ok?: boolean; status?: LoanAccessStatus; error?: string } | null;

@@ -156,7 +156,11 @@ const submit = async (req: Request, svc: any, body: Record<string, unknown>) => 
    const channel = borrower.messenger_verified_at ? 'messenger' : borrower.whatsapp_verified_at ? 'whatsapp' : null;
    if (!channel) return json({ ok: false, error: 'contact_not_verified' }, 400);
 
-   const reason = clip(body.reason, MAX_REASON);
+   // Passed the pre-screening: they already said what the loan is for there, so the booking link
+   // can open straight on the calendar without a "your goal" page (2026-11-23: a pre-screened
+   // borrower got stuck before booking).
+   let reason = clip(body.reason, MAX_REASON);
+   if (reason.length < 3) reason = clip(await prescreenPurpose(svc, userId), MAX_REASON);
    if (reason.length < 3) return json({ ok: false, error: 'reason_required' }, 400);
 
    const { data: request, error: insertError } = await svc
@@ -357,6 +361,21 @@ const fbProfileProbe = async (req: Request, svc: any, body: Record<string, unkno
       });
    }
    return json({ ok: true, results });
+};
+
+/** Their pre-screening answer to "What is this loan for?", or '' if they have none. */
+// deno-lint-ignore no-explicit-any
+const prescreenPurpose = async (svc: any, userId: string): Promise<string> => {
+   const { data } = await svc
+      .from('pre_screenings')
+      .select('answers')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+   const answers = ((data as { answers?: unknown } | null)?.answers ?? []) as Array<{ q?: string; text?: string }>;
+   const purpose = Array.isArray(answers) ? answers.find((a) => a?.q === 'purpose')?.text : null;
+   return typeof purpose === 'string' ? purpose.trim() : '';
 };
 
 serve(async (req) => {
