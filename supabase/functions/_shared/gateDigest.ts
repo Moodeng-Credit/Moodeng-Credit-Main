@@ -15,7 +15,7 @@ type SupabaseClient = any;
 // ref: what /showed and /noshow take — a request-id prefix, or the borrower's @username / user id
 // when they booked but their request never reached us (app closed after booking).
 export type WaitingRow = { ref: string; name: string; callAt: string; callTimezone: string | null };
-export type UnbookedRow = { name: string; connectedAt: string };
+export type UnbookedRow = { name: string; connectedAt: string; note?: string };
 
 // The call is 15 min; a request still pending this long after the start needs a tap.
 const CALL_DONE_AFTER_MS = 30 * 60 * 1000;
@@ -50,7 +50,7 @@ export const formatGateDigest = (waiting: WaitingRow[], unbooked: UnbookedRow[],
          ? [
               '',
               `📭 Connected Messenger, no call booked (${unbooked.length}):`,
-              ...list(unbooked, (r, i) => `${i + 1}. ${r.name} · connected ${daysAgo(r.connectedAt, now)}`),
+              ...list(unbooked, (r, i) => `${i + 1}. ${r.name} · connected ${daysAgo(r.connectedAt, now)}${r.note ? ` · ${r.note}` : ''}`),
               'Give them a nudge from the Page inbox.'
            ]
          : [])
@@ -60,7 +60,7 @@ export const formatGateDigest = (waiting: WaitingRow[], unbooked: UnbookedRow[],
 export const collectGateDigest = async (svc: SupabaseClient, now = Date.now()): Promise<{ waiting: WaitingRow[]; unbooked: UnbookedRow[] }> => {
    const { data: pending, error } = await svc
       .from('loan_access_requests')
-      .select('id, display_name, users!inner(id, username, email, display_name, video_call_starts_at, video_call_timezone)')
+      .select('id, display_name, created_at, users!inner(id, username, email, display_name, video_call_starts_at, video_call_timezone)')
       .eq('status', 'pending')
       .eq('kind', 'call')
       .eq('users.is_test', false)
@@ -73,6 +73,17 @@ export const collectGateDigest = async (svc: SupabaseClient, now = Date.now()): 
    }>)
       .filter((r) => r.users?.video_call_starts_at && Date.parse(r.users.video_call_starts_at) + CALL_DONE_AFTER_MS < now)
       .map((r) => ({ ref: r.id.slice(0, 8), name: nameOf(r.users, r.display_name), callAt: r.users.video_call_starts_at as string, callTimezone: r.users.video_call_timezone }));
+   // A pending call request whose booking is gone (cancelled on Cal.com, lost): they sit on "waiting"
+   // with nothing coming and can't book again, and neither list above showed them (2026-11-23: one
+   // borrower waited 4 days like this).
+   const orphaned: UnbookedRow[] = ((pending ?? []) as Array<{
+      id: string;
+      display_name: string | null;
+      created_at: string;
+      users: { username: string | null; email: string | null; display_name: string | null; video_call_starts_at: string | null };
+   }>)
+      .filter((r) => !r.users?.video_call_starts_at && Date.parse(r.created_at) + 2 * 3600_000 < now)
+      .map((r) => ({ name: nameOf(r.users, r.display_name), connectedAt: r.created_at, note: '⚠️ stuck on "waiting", their call booking is gone — message them to rebook, or ✅ in admin' }));
 
    const { data: candidates, error: candidateError } = await svc
       .from('users')
@@ -84,7 +95,7 @@ export const collectGateDigest = async (svc: SupabaseClient, now = Date.now()): 
       .gte('messenger_verified_at', new Date(now - UNBOOKED_WINDOW_DAYS * 86400000).toISOString())
       .order('messenger_verified_at', { ascending: false });
    if (candidateError) throw new Error(candidateError.message);
-   const unbooked: UnbookedRow[] = [];
+   const unbooked: UnbookedRow[] = [...orphaned];
    for (const u of (candidates ?? []) as Array<{
       id: string;
       username: string | null;
