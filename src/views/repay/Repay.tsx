@@ -86,7 +86,11 @@ const trackRepay = (event: string, props?: Record<string, unknown>) => {
    if (import.meta.env.PROD) posthog.capture(event, props);
 };
 const repayMemoryKey = (loanId: string) => `moodeng-repay:${loanId}`;
-const repayGuideMemoryKey = (loanId: string, source: string) => `moodeng-repay-guide:${loanId}:${source}`;
+// Saved as a card number, so a guide whose cards change gets a new key (PDAX went 12 → 7 cards on
+// 2026-11-23): someone mid-way starts that app's cards again instead of landing on the wrong one.
+const GUIDE_VERSION: Partial<Record<string, string>> = { pdax: ':v2' };
+const repayGuideMemoryKey = (loanId: string, source: string) =>
+   `moodeng-repay-guide:${loanId}:${source}${GUIDE_VERSION[source] ?? ''}`;
 type RepayMemory = { step: WizardStep; source: FundSourceId; amount: string };
 
 function RepayTrail({ step, onPick }: { step: WizardStep; onPick: (step: WizardStep) => void }) {

@@ -1140,5 +1140,13 @@ export const filipinoCoverageG: Record<string, string> = {
    "Trade → Buy → USDC (Base), also shown as USDCBASE.": "Trade → Buy → USDC (Base), na USDCBASE din ang tawag.",
    "Paste it, tap MAX, Send": "I-paste, i-tap ang MAX, Send",
    "Check it says USDC (Base).": "Siguraduhing USDC (Base) ang nakalagay.",
-   "I’ll pick USDC (Base) in GCrypto": "USDC (Base) ang pipiliin ko sa GCrypto"
+   "I’ll pick USDC (Base) in GCrypto": "USDC (Base) ang pipiliin ko sa GCrypto",
+   // src/views/repay/AppGuideSteps.tsx (PDAX repay, 7 cards)
+   "Your bank or GCash → InstaPay → PDAX. Type the pesos, confirm.": "Bangko mo o GCash → InstaPay → PDAX. I-type ang pesos, i-confirm.",
+   "Markets → search “usdc” → USDCBASE/PHP": "Markets → i-search ang “usdc” → USDCBASE/PHP",
+   "Markets is at the bottom. Pick the one that says Base.": "Nasa ibaba ang Markets. Piliin ang may nakasulat na Base.",
+   "Buy → type the pesos → Buy USDC": "Buy → i-type ang pesos → Buy USDC",
+   "Portfolio → Send → USDCBASE": "Portfolio → Send → USDCBASE",
+   "Send is bottom right. Search “usdc”, tap USDCBASE.": "Nasa kanang ibaba ang Send. I-search ang “usdc”, i-tap ang USDCBASE.",
+   "Paste your address, tap Max, Send": "I-paste ang address mo, i-tap ang Max, Send"
 };
