@@ -719,5 +719,7 @@ export const thaiCoverageG: Record<string, string> = {
    "Lands in a few minutes.": "ถึงภายในไม่กี่นาที",
    "To": "ถึง",
    "Paste": "วาง",
-   "You got your pesos! 🎉": "ได้รับเงินเปโซแล้ว! 🎉"
+   "You got your pesos! 🎉": "ได้รับเงินเปโซแล้ว! 🎉",
+   // src/views/repay (GCrypto repay: one buy number, USDC (Base), waiting help)
+   "Not here after 10 minutes?": "ยังไม่เข้าหลัง 10 นาที?"
 };

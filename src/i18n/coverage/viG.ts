@@ -584,5 +584,7 @@ export const vietnameseCoverageG: Record<string, string> = {
    "Lands in a few minutes.": "Sẽ đến trong vài phút.",
    "To": "Đến",
    "Paste": "Dán",
-   "You got your pesos! 🎉": "Bạn đã nhận được peso! 🎉"
+   "You got your pesos! 🎉": "Bạn đã nhận được peso! 🎉",
+   // src/views/repay (GCrypto repay: one buy number, USDC (Base), waiting help)
+   "Not here after 10 minutes?": "Sau 10 phút vẫn chưa thấy?"
 };
