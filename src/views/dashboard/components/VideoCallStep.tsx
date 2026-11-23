@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
 import { AlarmClock, CalendarPlus, CheckCircle, Globe } from 'lucide-react';
 
@@ -204,11 +204,13 @@ export default function VideoCallStep({
    // "I'll be ready" before the times show. Times keep loading underneath.
    const [ready, setReady] = useState(false);
    const showChecklist = !ready && !isScheduled && phase !== 'cooldown';
+   const timesTopRef = useRef<HTMLDivElement>(null);
 
    return (
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
          {typeof intro === 'string' ? <p className="text-[14px] font-normal leading-[20px] text-[#7b6b8c]">{intro}</p> : intro}
 
+         <div aria-hidden="true" className="-mt-4 scroll-mt-2" ref={timesTopRef} />
          {isScheduled ? (
             <div className="flex flex-col gap-3">
                <BookedCallCard host={host} bookedStartsAt={bookedStartsAt} formattedBooked={formattedBooked} />
@@ -316,15 +318,19 @@ export default function VideoCallStep({
             </div>
          )}
 
-         <div className="mt-auto flex flex-col gap-1 pt-1">
+         {/* Pinned to the bottom: the checklist is taller than a phone screen, and with the button
+             below it people saw no times and no way on ("I can't book a call", 2026-11-23). */}
+         <div className="sticky -bottom-5 z-10 -mx-5 -mb-5 mt-auto flex flex-col gap-1 bg-white px-5 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-10px_16px_-6px_rgba(89,77,101,0.12)] dark:bg-[#100d17]">
             {showChecklist ? (
                <PrimaryButton
                   onClick={() => {
                      setReady(true);
                      clarityEvent('call_ready_agreed');
+                     // The times replace the checklist: bring them into view, not the page bottom.
+                     window.requestAnimationFrame(() => timesTopRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
                   }}
                >
-                  I&apos;ll be ready ✓
+                  I&apos;ll be ready — show times
                </PrimaryButton>
             ) : (
                <PrimaryButton disabled={!isScheduled || isSubmitting} onClick={() => isScheduled && !isSubmitting && onContinue()}>

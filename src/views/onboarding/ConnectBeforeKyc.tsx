@@ -123,8 +123,14 @@ export default function ConnectBeforeKyc() {
    }
    if (isTikTok && phoneState === 'checking') return null;
 
+   // Book call: one screen tall, so the time picker scrolls inside and its button stays pinned at the
+   // bottom (VideoCallStep). A page that grew pushed "I'll be ready" below the fold (2026-11-23).
+   const fitScreen = page === 'call' && !isPending && !isRejected;
+
    return (
-      <div className="connect-ui mx-auto flex min-h-screen w-full max-w-[440px] flex-col bg-white dark:bg-[#100d17]">
+      <div
+         className={`connect-ui mx-auto flex w-full max-w-[440px] flex-col bg-white dark:bg-[#100d17] ${fitScreen ? 'h-[100dvh]' : 'min-h-screen'}`}
+      >
          <OnboardingHeader
             hideBack
             soundToggle
