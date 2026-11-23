@@ -320,6 +320,16 @@ function CoinbaseAppIcon({ className = '' }: { className?: string }) {
    );
 }
 
+// The app's own logo on the "Sent!" screen's To tile, keyed by the flow's exchange name.
+const SENT_TO_LOGOS: Record<string, (props: { className?: string }) => React.JSX.Element> = {
+   Binance: BinanceAppIcon,
+   GCrypto: GCashAppIcon,
+   PDAX: PdaxAppIcon,
+   'Coins.ph': CoinsPhAppIcon,
+   Kraken: KrakenAppIcon,
+   Coinbase: CoinbaseAppIcon
+};
+
 function AmountCard({ receive, payout }: { receive: React.ReactNode; payout: React.ReactNode }) {
    const { available: LOAN_USDC } = useWithdrawData();
    return (
@@ -1414,15 +1424,18 @@ function SendProgressOverlay({
    exchange,
    amount,
    onDone,
-   help
+   help,
+   continueLabel = 'Done'
 }: {
    phase: SendPhase;
    exchange: string;
    amount: number;
    onDone: () => void;
    help?: React.ReactNode;
+   continueLabel?: string;
 }) {
    const succeeded = phase === 'success';
+   const ToLogo = SENT_TO_LOGOS[exchange];
    const [activeStep, setActiveStep] = useState(0);
    // The oven picture (same hippo as the peso payout tracker): frames 1-3 follow the steps, then the cake
    // keeps rising on a clock while "Confirming on Base" holds, so a slow first send still shows life.
@@ -1464,9 +1477,18 @@ function SendProgressOverlay({
                   subtitle="Lands in a few minutes."
                   stats={[
                      ...(amount > 0 ? [{ label: 'Sent', value: `${amount} USDC`, tone: 'green' as const }] : []),
-                     { label: 'To', value: exchange, tone: 'purple' as const }
+                     {
+                        label: 'To',
+                        value: (
+                           <span className="flex items-center gap-2">
+                              {ToLogo ? <ToLogo className="size-8 shrink-0 !rounded-[9px]" /> : null}
+                              <span>{exchange}</span>
+                           </span>
+                        ),
+                        tone: 'purple' as const
+                     }
                   ]}
-                  continueLabel="Done"
+                  continueLabel={continueLabel}
                   onDone={onDone}
                   footer={help}
                />
@@ -1665,7 +1687,8 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
             sentAmountRef.current = amtNum;
             track('withdraw_sent', { exchange: cfg.name, amount: amtNum });
             onSent(result.hash, result.confirmed);
-            setSendPhase(null);
+            // The "Sent!" screen (with this app's logo) first; Next shows the cash-out step behind it.
+            setSendPhase('success');
             setSentBefore(amtNum);
             setWiz('cashout');
          } else {
@@ -1758,9 +1781,15 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
 
    return (
       <div className="flex flex-col gap-4 pb-6 text-[#2b2116] dark:text-[#f5efe3]">
-         {sendPhase === 'progress' && (
-            <SendProgressOverlay phase="progress" exchange={cfg.name} amount={sentAmountRef.current || amtNum} onDone={onDone} />
-         )}
+         {sendPhase ? (
+            <SendProgressOverlay
+               phase={sendPhase}
+               exchange={cfg.name}
+               amount={sentAmountRef.current || amtNum}
+               continueLabel="Next"
+               onDone={() => setSendPhase(null)}
+            />
+         ) : null}
 
          {cfg.topWarning}
 
