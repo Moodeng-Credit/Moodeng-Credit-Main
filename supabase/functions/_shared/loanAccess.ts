@@ -625,7 +625,7 @@ export const loanAccessStampHeader = (
    opts: { call?: boolean } = {}
 ) =>
    decision === 'approved'
-      ? `${opts.call ? '✅ SHOWED UP → APPROVED' : '✅ APPROVED'} — ${name} can now apply for a loan`
+      ? `${opts.call ? '✅ SHOWED UP → 🔓 CAN BORROW' : '🔓 CAN BORROW'} — ${name} is approved and can now apply for a loan`
       : decision === 'rejected'
         ? `🚫 REJECTED — ${name}'s application is closed`
         : decision === 'no_show'
@@ -913,7 +913,7 @@ export const decideRejectFollowUp = async (
          .maybeSingle();
       if (error) throw new Error(error.message);
       if (!borrower) return notRejected;
-      const stamp: CardStamp = { header: `✅ APPROVED AFTER ALL — ${personName(borrower)} can now apply for a loan`, by };
+      const stamp: CardStamp = { header: `🔓 CAN BORROW (approved after all) — ${personName(borrower)} can now apply for a loan`, by };
       await stampDecisionCards(svc, 'loan_access', userId, stamp);
       await notifyBorrower(svc, borrower, 'approved');
       const summary = `✅ Approved after all (was rejected): ${who(borrower)} — by ${by}`;

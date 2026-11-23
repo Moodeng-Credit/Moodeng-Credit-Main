@@ -46,7 +46,7 @@ Deno.test('keyboard: link to this document first, then Approve / Reject', () => 
 });
 
 Deno.test('stamp says what happened and who did it', () => {
-   assertEquals(incomeDocStamp({ state: 'decided' }, 'approved', '@sam').header.startsWith('✅ APPROVED'), true);
+   assertEquals(incomeDocStamp({ state: 'decided' }, 'approved', '@sam').header.startsWith('📄 PROOF OF INCOME OK'), true);
    assertEquals(incomeDocStamp({ state: 'decided' }, 'declined', '@sam').header.startsWith('❌ REJECTED'), true);
    const already = incomeDocStamp({ state: 'already', decision: 'declined', by: 'Emma' }, 'approved', '@sam');
    assertEquals(already.header, 'ℹ️ Already decided — rejected by Emma');

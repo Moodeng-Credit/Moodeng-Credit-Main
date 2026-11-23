@@ -144,7 +144,9 @@ async function tellGoodFit(svc: SupabaseClient, userId: string): Promise<string>
       : `⚠️ Could not reach them${smsNote} — they see it next time they open the app.`;
 }
 
-const STAMP: Record<Decision, string> = { good: '✅ GOOD FIT', not_fit: '❌ NOT A FIT' };
+// "Good fit" is only the pre-screen: it never lets them borrow, so the stamp says so (2026-11-23: a
+// Good fit was taken for an approval and the borrower waited for a loan that couldn't come).
+const STAMP: Record<Decision, string> = { good: '✅ GOOD FIT (pre-screen) · not approved to borrow yet', not_fit: '❌ NOT A FIT' };
 
 /** Telegram taps on the card. ❌ asks once more first (it can reject an account). */
 export const handlePreScreeningCallback = async (svc: SupabaseClient, query: CardQuery, adminChatIds: string[]): Promise<boolean> => {

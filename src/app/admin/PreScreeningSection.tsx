@@ -410,7 +410,7 @@ export default function PreScreeningSection({ userId }: { userId?: string } = {}
                            <span
                               className={`rounded-full px-3 py-1 text-sm font-black ${row.team_decision === 'good' ? 'bg-emerald-900/60 text-emerald-200' : 'bg-red-900/60 text-red-200'}`}
                            >
-                              {row.team_decision === 'good' ? '✅ Good fit' : '❌ Not a fit'}
+                              {row.team_decision === 'good' ? '✅ Good fit (pre-screen only)' : '❌ Not a fit'}
                               {row.team_reason ? ` — ${row.team_reason}` : ''}
                               {row.team_decided_by ? ` · ${row.team_decided_by}` : ''}
                            </span>
