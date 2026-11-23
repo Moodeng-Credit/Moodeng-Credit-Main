@@ -6,7 +6,8 @@ import { useEffect, useState } from 'react';
 //   doc   — the hippo reads, stamps and files it   (payslips, GCash history, COE, work permit)
 //   camera — the hippo sets up a phone, light, mirror, clapperboard (camera starting)
 //   send   — the hippo seals the video in an envelope and flies it off (video answer sending)
-export type StoryKind = 'photo' | 'doc' | 'camera' | 'send';
+//   grow   — the hippo plants a gold seed, waters it, it grows into a gold-coin plant (page loading, 2026-11-23)
+export type StoryKind = 'photo' | 'doc' | 'camera' | 'send' | 'grow';
 
 const STORIES: Record<StoryKind, { frames: string[]; final: string; lines: string[]; doneLine: string }> = {
    photo: {
@@ -32,6 +33,12 @@ const STORIES: Record<StoryKind, { frames: string[]; final: string; lines: strin
       final: '/hippos/sendstory/frame-e.webp',
       lines: ['Sending your answer…', 'Sealing it up 💌', 'Off it goes! ✈️', 'The team is watching 🍿'],
       doneLine: 'Sent! ✅'
+   },
+   grow: {
+      frames: ['a', 'b', 'c', 'd'].map((k) => `/hippos/loadstory/frame-${k}.webp`),
+      final: '/hippos/loadstory/frame-d.webp',
+      lines: ['Getting things ready 🌱', 'Watering it 💧', 'Growing… 🌿', 'Almost ready ✨'],
+      doneLine: 'Ready! ✅'
    }
 };
 
