@@ -1545,6 +1545,9 @@ function SendProgressOverlay({
 type AppFlowConfig = {
    name: string;
    short: string;
+   /** The coin to pick when the app lists Base USDC as its own coin (GCrypto, PDAX: "USDCBASE")
+    *  instead of asking for a network. Plain USDC / USDCPOL / USDCAVAX there are other networks. */
+   coinName?: string;
    howItWorks: string;
    payout: string;
    receiveCurrency: string;
@@ -1829,7 +1832,7 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
          key: 'paste',
          title: `Paste your ${cfg.short} address`,
          content: pasteBox,
-         danger: 'Base network only',
+         danger: cfg.coinName ? `${cfg.coinName} only` : 'Base network only',
          canContinue: addrValid,
          doneLabel: 'Next'
       }
@@ -2006,6 +2009,7 @@ const GCASH_HELP = 'https://help.gcash.com/hc/en-us/articles/10203149752601-How-
 const GCASH_FLOW: AppFlowConfig = {
    name: 'GCrypto',
    short: 'GCrypto',
+   coinName: 'USDCBASE',
    appUrl: 'https://www.gcash.com',
    receiveCurrency: 'PHP',
    payout: 'GCash balance',
@@ -2015,15 +2019,15 @@ const GCASH_FLOW: AppFlowConfig = {
       {
          icon: <Download className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
          title: 'Open GCrypto in GCash',
-         desc: 'USDC → Receive → Base.',
+         desc: 'USDCBASE → Receive.',
          guide: {
             title: 'How to open GCrypto in GCash',
             video: 'm5-cD7v4SLg',
             link: { label: 'Official GCash guide', url: GCASH_HELP },
             steps: [
                'Open the GCash app and open "GCrypto" — find it under "View All" or search for it. You\'ll need a fully-verified GCash account.',
-               'Select USDC, then tap "Receive".',
-               'Choose "Base" as the network.'
+               'Tap USDCBASE (not plain USDC), then tap "Receive".',
+               'Check it says USDCBASE.'
             ]
          }
       },
@@ -2050,7 +2054,7 @@ const GCASH_FLOW: AppFlowConfig = {
    // Pictures: real GCrypto screenshots (same as the Repay GCrypto guide), re-boxed.
    cashOutSteps: [
       {
-         title: 'Trade → Sell USDC (Base)',
+         title: 'Trade → Sell USDCBASE',
          helper: 'Sell all of it for pesos.',
          img: '/repay-guides/gcrypto/step2-trade.webp'
       },
@@ -2067,6 +2071,7 @@ const PDAX_DEPOSIT_HELP =
 const PDAX_FLOW: AppFlowConfig = {
    name: 'PDAX',
    short: 'PDAX',
+   coinName: 'USDCBASE',
    appUrl: 'https://www.pdax.ph',
    receiveCurrency: 'PHP',
    payout: 'Bank, GCash or Maya',
@@ -2076,7 +2081,7 @@ const PDAX_FLOW: AppFlowConfig = {
       {
          icon: <Download className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
          title: 'Open PDAX → Deposit',
-         desc: 'Portfolio → Deposit → USDC → Base.',
+         desc: 'Portfolio → Deposit → USDCBASE.',
          img: '/cashout-guides/pdax/step0-deposit.webp',
          guide: {
             title: 'How to find your PDAX receiving address',
@@ -2084,16 +2089,15 @@ const PDAX_FLOW: AppFlowConfig = {
             link: { label: 'Official PDAX guide', url: PDAX_DEPOSIT_HELP },
             steps: [
                'Open the PDAX app and tap the Portfolio icon.',
-               'Select USDC, then tap "Receive" (or Deposit).',
-               'Choose "Base" as the network. PDAX keeps USDC on Base separate from plain USDC — use the Base one.',
-               'Confirm it says Base before continuing.'
+               'Search "usdc" and tap USDCBASE. Not USDCPOL, USDCAVAX or USDCSOL: those are other networks.',
+               'Confirm it says USDCBASE before continuing.'
             ]
          }
       },
       {
          icon: <Copy className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
          title: 'Copy your PDAX address',
-         desc: 'Check it says Base. Tap Copy.',
+         desc: 'Check it says USDCBASE. Tap Copy.',
          guide: {
             title: 'How to copy your PDAX address',
             video: 'q8F8H1UzBEU',
@@ -2113,7 +2117,7 @@ const PDAX_FLOW: AppFlowConfig = {
    // Pictures: frames from Moodeng's own PDAX Short (youtube.com/shorts/IyObBHW3Sbg), captions removed.
    cashOutSteps: [
       {
-         title: 'Still shows USDC? Sell it',
+         title: 'Still shows USDCBASE? Sell it',
          helper: 'Markets → USDCBASE/PHP → Sell. Already pesos? Skip this.',
          img: '/cashout-guides/pdax/step1-sell.webp'
       },
