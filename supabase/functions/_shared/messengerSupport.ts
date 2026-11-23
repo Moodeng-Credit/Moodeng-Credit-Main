@@ -261,6 +261,94 @@ export const buildMessengerPing = (opts: {
    return { text, keyboard };
 };
 
+// "It's not working" in English or Filipino/Taglish: the person is stuck somewhere in the app.
+const STUCK_RE =
+   /\b(not|still not|isn'?t|doesn'?t|don'?t|won'?t|didn'?t) (work|working|load|open|go through)|\bcan'?t (book|log ?in|sign ?in|open|upload|send|submit|continue|proceed|find)|\bcannot\b|\bstuck\b|\berror\b|\bnag-?error|\b(di|hindi|ayaw) (gumagana|gumana|ma-?open|mabuksan|ma-?upload|ma-?send|tumuloy|mag-?load|pumasok)|walang nangyayari|nothing happens?/i;
+
+/** The message says something in the app isn't working. Pure. */
+export const looksStuck = (text: string | null | undefined) => Boolean(text && STUCK_RE.test(text));
+
+export type JourneyFacts = {
+   loanAccess: string | null;
+   prescreen: 'good' | 'not_fit' | 'waiting' | null;
+   callStartsAt: string | null;
+   callOutcome: string | null;
+   idStatus: string | null;
+   incomeDoc: string | null;
+};
+
+/** Where a borrower is in onboarding, one line each, for the 🆘 card. Pure. */
+export const formatJourney = (f: JourneyFacts, now: number) => {
+   const lines: string[] = [];
+   lines.push(
+      f.loanAccess === 'approved'
+         ? '🔓 Can borrow (approved)'
+         : f.loanAccess === 'rejected'
+           ? '🚫 Rejected'
+           : f.loanAccess === 'pending'
+             ? '⏳ Waiting on a team decision'
+             : '🔒 Not approved to borrow yet'
+   );
+   lines.push(
+      f.prescreen === 'good'
+         ? '✅ Good fit (pre-screen)'
+         : f.prescreen === 'not_fit'
+           ? '❌ Not a fit (pre-screen)'
+           : f.prescreen === 'waiting'
+             ? '📝 Pre-screen not finished'
+             : '— No pre-screen'
+   );
+   if (f.loanAccess !== 'approved') {
+      const starts = f.callStartsAt ? Date.parse(f.callStartsAt) : NaN;
+      lines.push(
+         f.callOutcome === 'attended'
+            ? '📞 Call done'
+            : !Number.isNaN(starts) && starts > now
+              ? `📞 Call booked ${new Date(starts).toLocaleString('en-GB', { timeZone: 'Asia/Bangkok', weekday: 'short', hour: '2-digit', minute: '2-digit' })} BKK`
+              : '📞 No call booked'
+      );
+   }
+   lines.push(f.idStatus === 'Approved' || f.idStatus === 'ACTIVE' ? '🪪 ID check done' : '🪪 ID check not done');
+   if (f.incomeDoc) lines.push(f.incomeDoc);
+   return lines.join('\n');
+};
+
+const loadJourney = async (svc: Svc, userId: string, incomeDoc: string | null): Promise<JourneyFacts> => {
+   const [{ data: u }, { data: ps }] = await Promise.all([
+      svc.from('users').select('loan_access_status, video_call_starts_at, video_call_outcome, didit_id_status, is_didit').eq('id', userId).maybeSingle(),
+      svc.from('pre_screenings').select('status, team_decision').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).maybeSingle()
+   ]);
+   const user = (u ?? {}) as Record<string, string | null>;
+   const pre = ps as { status: string | null; team_decision: string | null } | null;
+   return {
+      loanAccess: user.loan_access_status ?? null,
+      prescreen: !pre ? null : pre.team_decision === 'good' ? 'good' : pre.team_decision === 'not_fit' ? 'not_fit' : 'waiting',
+      callStartsAt: user.video_call_starts_at ?? null,
+      callOutcome: user.video_call_outcome ?? null,
+      idStatus: user.didit_id_status ?? user.is_didit ?? null,
+      incomeDoc
+   };
+};
+
+// 🆘 in the admin chat when a borrower writes that something isn't working, with where they are,
+// at most every 6 hours per conversation (2026-11-23: a borrower wrote "still not working" for hours
+// while bounced by automatic messages, and the team only saw a normal Messenger ping).
+const maybeAlertStuck = async (svc: Svc, conversationId: string, borrower: Borrower, body: string, incomeDoc: string | null, at: number) => {
+   const { data: claimed } = await svc
+      .from('widget_conversations')
+      .update({ stuck_alerted_at: new Date(at).toISOString() })
+      .eq('id', conversationId)
+      .or(`stuck_alerted_at.is.null,stuck_alerted_at.lt.${new Date(at - 6 * 3600_000).toISOString()}`)
+      .select('id');
+   if (!claimed?.length) return;
+   const who = [borrower.display_name?.trim() || 'A borrower', borrower.username ? `@${borrower.username}` : null].filter(Boolean).join(' ');
+   const journey = formatJourney(await loadJourney(svc, borrower.id, incomeDoc), at);
+   await alertTeam(svc, `🆘 ${who} says something isn't working:\n> ${body.slice(0, 300)}\n\nWhere they are:\n${journey}`, [
+      [{ text: '👤 Borrower in admin', url: adminUserUrl(borrower.id, borrower.username) }],
+      [{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }]
+   ]);
+};
+
 const RECENT_REPLY_MS = 30 * 60 * 1000;
 
 const ATTACHMENT_NOTE = '📎 Sent a photo or file on Messenger — open the Page inbox to see it.';
@@ -301,6 +389,7 @@ export const openMessengerTicket = async (
       const ping = buildMessengerPing({ facebookName: input.facebookName, borrower, body, startsConversation, incomeDoc });
       await pingTeam(svc, ping.text, ping.keyboard, 'messenger_alert_chat_id');
    }
+   if (borrower && looksStuck(input.text)) await maybeAlertStuck(svc, conversation.id, borrower, body, incomeDoc, input.at);
 
    // No "we're offline" auto-reply while someone is mid-chat with them: a team member typing in
    // SendPulse never touches our conversation row, so check what was actually sent (Oct 28: the

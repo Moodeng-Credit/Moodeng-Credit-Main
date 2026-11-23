@@ -1,6 +1,8 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
 import {
+   formatJourney,
+   looksStuck,
    bangkokHour,
    borrowCardImage,
    buildAutoReply,
@@ -97,4 +99,25 @@ Deno.test('proof-of-income status line for the team', () => {
    const ping = buildMessengerPing({ facebookName: 'Ana', borrower: null, body: 'hi', startsConversation: true, incomeDoc: line });
    assert(ping.text.includes('🚨 fraud signs'));
    assertEquals(ping.keyboard.at(-1)?.[0]?.text, '📄 Income docs');
+});
+
+Deno.test('looksStuck catches "not working" in English and Taglish, not normal chat', () => {
+   for (const yes of ['Still not working', "it doesn't work", "I can't book", 'Hindi gumagana', 'ayaw ma-upload', 'nag error po', 'stuck here']) {
+      assert(looksStuck(yes), yes);
+   }
+   for (const no of ['Ok thank you', 'I try', 'Hi there', 'working po ako as VA', 'when is payday']) assert(!looksStuck(no), no);
+});
+
+Deno.test('formatJourney says where they are', () => {
+   const now = Date.parse('2026-11-23T12:00:00Z');
+   const text = formatJourney(
+      { loanAccess: 'none', prescreen: 'good', callStartsAt: null, callOutcome: null, idStatus: null, incomeDoc: '📄 Proof of income · ↩️ asked to resend' },
+      now
+   );
+   assert(text.includes('🔒 Not approved to borrow yet'));
+   assert(text.includes('✅ Good fit (pre-screen)'));
+   assert(text.includes('📞 No call booked'));
+   assert(text.includes('🪪 ID check not done'));
+   assert(text.includes('asked to resend'));
+   assert(!formatJourney({ loanAccess: 'approved', prescreen: 'good', callStartsAt: null, callOutcome: null, idStatus: null, incomeDoc: null }, now).includes('📞'));
 });
