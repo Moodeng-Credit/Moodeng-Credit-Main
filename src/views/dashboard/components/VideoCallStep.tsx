@@ -327,7 +327,7 @@ export default function VideoCallStep({
                      setReady(true);
                      clarityEvent('call_ready_agreed');
                      // The times replace the checklist: bring them into view, not the page bottom.
-                     window.requestAnimationFrame(() => timesTopRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }));
+                     window.requestAnimationFrame(() => timesTopRef.current?.scrollIntoView?.({ block: 'start', behavior: 'smooth' }));
                   }}
                >
                   I&apos;ll be ready — show times
