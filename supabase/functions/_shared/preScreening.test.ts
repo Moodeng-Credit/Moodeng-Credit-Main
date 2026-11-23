@@ -1,6 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { buildGrade, verdictFor } from './preScreening.ts';
+import { buildGrade, otherNamesFrom, verdictFor } from './preScreening.ts';
 
 const QUESTIONS = [
    { id: 'work', text: 'Job?' },
@@ -202,4 +202,9 @@ Deno.test('❌ Other: typed reason round-trips through the prompt tag and confir
    assertEquals(parseReasonPrompt('(ref nope · card 1)'), null);
    assertEquals(reasonFromConfirm(confirmText('Ana B', 'Too many loans: ₱3.7k left')), 'Too many loans: ₱3.7k left');
    assertEquals(reasonFromConfirm('something else'), null);
+});
+
+Deno.test('otherNamesFrom: account and Facebook names that differ from the typed name', () => {
+   assertEquals(otherNamesFrom('Juan Dela Cruz', ['AJ Lee', 'AJ Lee', null]), ['AJ Lee']);
+   assertEquals(otherNamesFrom('Juan Dela Cruz', ['juan  dela cruz', '', undefined]), []);
 });
