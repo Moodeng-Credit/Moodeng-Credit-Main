@@ -2009,7 +2009,8 @@ const GCASH_HELP = 'https://help.gcash.com/hc/en-us/articles/10203149752601-How-
 const GCASH_FLOW: AppFlowConfig = {
    name: 'GCrypto',
    short: 'GCrypto',
-   coinName: 'USDCBASE',
+   // GCrypto shows the same coin as "USDC (Base)" on its send form and "USDCBASE" on its confirm screen.
+   coinName: 'USDC (Base)',
    appUrl: 'https://www.gcash.com',
    receiveCurrency: 'PHP',
    payout: 'GCash balance',
@@ -2019,15 +2020,15 @@ const GCASH_FLOW: AppFlowConfig = {
       {
          icon: <Download className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
          title: 'Open GCrypto in GCash',
-         desc: 'USDCBASE → Receive.',
+         desc: 'USDC (Base) → Receive.',
          guide: {
             title: 'How to open GCrypto in GCash',
             video: 'm5-cD7v4SLg',
             link: { label: 'Official GCash guide', url: GCASH_HELP },
             steps: [
                'Open the GCash app and open "GCrypto" — find it under "View All" or search for it. You\'ll need a fully-verified GCash account.',
-               'Tap USDCBASE (not plain USDC), then tap "Receive".',
-               'Check it says USDCBASE.'
+               'Tap USDC (Base), also shown as USDCBASE. Not plain USDC.',
+               'Tap "Receive".'
             ]
          }
       },
@@ -2054,7 +2055,7 @@ const GCASH_FLOW: AppFlowConfig = {
    // Pictures: real GCrypto screenshots (same as the Repay GCrypto guide), re-boxed.
    cashOutSteps: [
       {
-         title: 'Trade → Sell USDCBASE',
+         title: 'Trade → Sell USDC (Base)',
          helper: 'Sell all of it for pesos.',
          img: '/repay-guides/gcrypto/step2-trade.webp'
       },

@@ -1125,8 +1125,9 @@ export const filipinoCoverageG: Record<string, string> = {
    "Paste": "I-paste",
    "You got your pesos! 🎉": "Nakuha mo na ang pesos mo! 🎉",
    // src/views/withdraw/Withdraw.tsx (GCrypto / PDAX cash-out: the coin is "USDCBASE")
-   'Tap USDCBASE (not plain USDC), then tap "Receive".': 'I-tap ang USDCBASE (hindi ang USDC lang), saka i-tap ang "Receive".',
-   'Check it says USDCBASE.': 'Siguraduhing USDCBASE ang nakalagay.',
+   'Tap USDC (Base), also shown as USDCBASE. Not plain USDC.': 'I-tap ang USDC (Base), na USDCBASE din ang tawag. Hindi ang USDC lang.',
+   'Tap "Receive".': 'I-tap ang "Receive".',
+   'USDC (Base) only': 'USDC (Base) lang',
    'Search "usdc" and tap USDCBASE. Not USDCPOL, USDCAVAX or USDCSOL: those are other networks.':
       'I-search ang "usdc" at i-tap ang USDCBASE. Hindi USDCPOL, USDCAVAX o USDCSOL: ibang network ang mga iyon.',
    'Confirm it says USDCBASE before continuing.': 'Siguraduhing USDCBASE ang nakalagay bago magpatuloy.',
