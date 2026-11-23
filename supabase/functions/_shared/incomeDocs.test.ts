@@ -182,6 +182,13 @@ Deno.test('steps: $40 takes one screenshot, $60 needs 2 months', () => {
    assertEquals(verdictOf(at60, week.doc_type), { verdict: 'resend', reason: 'short_history' });
 });
 
+Deno.test('no amount asked: a short history is a note, not a resend', () => {
+   const month = base({ period_start: '2026-09-20', period_end: '2026-10-16', transactions: [tx('2026-09-21', 3000, 4000), tx('2026-10-10', -500, 3500)], opening_balance: null, closing_balance: null });
+   const flags = runChecks(month, computeMetrics(month), { ...ctx, loan: null, step: null });
+   assertEquals(flags.find((f) => f.code === 'short_history')?.severity, 'info');
+   assert(verdictOf(flags, month.doc_type).reason !== 'short_history');
+});
+
 Deno.test('steps: repayment share and balance get stricter at $100', () => {
    const doc = base();
    // $90 repay on ~$210/month = 43%: fine at the $60 step (50%), flagged at $100 (30%).

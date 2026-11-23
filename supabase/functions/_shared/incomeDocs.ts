@@ -298,7 +298,7 @@ export const stepFor = (amount: number | null, steps: IncomeDocStep[]) =>
    amount != null && Number.isFinite(amount) ? ([...steps].reverse().find((x) => amount >= x.min) ?? null) : null;
 
 export type CheckContext = {
-   /** The step for the amount they're asking (null: no amount known — the old $60 rules apply). */
+   /** The step for the amount they’re asking (null: no amount known or below the lowest step — a short history is only a note). */
    step?: IncomeDocStep | null;
    pdfs: PdfInfo[];
    /** Per file: image size and hidden tags (fileForensics.ts). */
@@ -539,14 +539,19 @@ export const runChecks = (doc: Extracted, metrics: Metrics, ctx: CheckContext): 
          });
       }
    }
+   // No step = no amount asked yet (pre-screening, Messenger photos) or below the lowest step: a first
+   // loan, so a short history is a note for the team, never a resend. 2026-11-23: a 4-week statement
+   // with 115 transactions was bounced twice as "not enough history for the amount you're asking"
+   // when the borrower hadn't asked for anything.
    const monthsNeeded = ctx.step ? ctx.step.months : 2;
    if (!tx.length && !p?.net_pay && doc.doc_type !== 'business_permit' && doc.doc_type !== 'sss_contributions') {
       flags.push({ code: 'no_income_rows', severity: 'orange', detail: 'No transactions or pay figures could be read.' });
    } else if (tx.length && monthsNeeded > 0 && metrics.months_covered < monthsNeeded - 0.25) {
+      const weeks = Math.round(metrics.months_covered * 4.3);
       flags.push({
          code: 'short_history',
-         severity: 'orange',
-         detail: `Only ~${Math.round(metrics.months_covered * 4.3)} weeks of history — this loan needs ${monthsNeeded}+ months.`
+         severity: ctx.step ? 'orange' : 'info',
+         detail: ctx.step ? `Only ~${weeks} weeks of history — this loan needs ${monthsNeeded}+ months.` : `Only ~${weeks} weeks of history — fine for now; $60+ loans need 2 months.`
       });
    }
    if (tx.length && !metrics.regular_deposits.length && !p?.net_pay) {
