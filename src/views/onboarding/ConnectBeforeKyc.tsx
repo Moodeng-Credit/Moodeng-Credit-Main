@@ -50,7 +50,12 @@ export default function ConnectBeforeKyc() {
    const authUser = useSelector((state: RootState) => state.auth.user);
    // Dev-only /onboarding/connect-preview(?view=pending|in-call|review|rejected|about|celebrate|approved|wallet-grow): the screens without an account.
    const isPreview = import.meta.env.DEV && location.pathname.includes('preview');
-   const user = isPreview ? PREVIEW_USER : authUser;
+   // ?view=missed: the "We missed you!" screens after a no-show.
+   const user = isPreview
+      ? new URLSearchParams(location.search).get('view') === 'missed'
+         ? ({ ...PREVIEW_USER, missedLastCall: true } as User)
+         : PREVIEW_USER
+      : authUser;
    const gate = usePreKycGate();
    const { isGated, isLoading } = isPreview ? { isGated: true, isLoading: false } : gate;
    const previewPendingView = isPreview ? new URLSearchParams(location.search).get('view') : null;

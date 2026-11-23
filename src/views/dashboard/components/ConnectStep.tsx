@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 
-import { CalendarPlus, Check, Gift, Hourglass, IdCard, Lock, MessagesSquare, ShieldCheck, Sparkles, Unlock, Video, Wallet, X } from 'lucide-react';
+import { CalendarPlus, CalendarX, Check, Gift, Hourglass, IdCard, Lock, MessagesSquare, ShieldCheck, Sparkles, Unlock, Video, Wallet, X } from 'lucide-react';
 
 import { clarityEvent } from '@/lib/analytics/clarity';
 import { MoreCharactersLabel } from '@/i18n/SentenceLabels';
@@ -340,11 +340,12 @@ export default function ConnectStep({
                   intro={
                      <>
                         <ConnectHero
-                           image={CONNECT_HIPPOS.call}
+                           image={missedCall ? CONNECT_HIPPOS.missed : CONNECT_HIPPOS.call}
                            subtitle="15 minutes · on Zoom · you pick the time"
-                           title={withEmma ? 'Book your call with Emma' : 'Book your 15-min call'}
+                           title={missedCall ? 'We missed you!' : withEmma ? 'Book your call with Emma' : 'Book your 15-min call'}
                            trail={trail('call')}
                         />
+                        {missedCall ? <MissedCallCard /> : null}
                         <ul className="flex flex-col gap-2.5">
                            {withEmma ? (
                               <>
@@ -821,6 +822,20 @@ function ReviewStatusPanel({
                <ReviewRow hint="Opens when you’re approved" title={applyTitle} tone="locked" />
             </ul>
          )}
+      </div>
+   );
+}
+
+// Back on Book call after a no-show (users.video_call_outcome = 'no_show'): say what happened and
+// that one more miss ends it (2 missed calls = auto-reject, callStrikes.ts).
+function MissedCallCard() {
+   return (
+      <div className="flex w-full items-start gap-2.5 rounded-[14px] border-2 border-[#f5b83d] bg-[#fff8e6] px-3 py-3 text-left">
+         <CalendarX aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-[#c27c00]" strokeWidth={2.2} />
+         <span className="flex flex-col gap-0.5">
+            <b className="text-[14px] leading-[19px] text-[#7a4b00]">You missed your last call</b>
+            <span className="text-[13px] leading-[18px] text-[#7a4b00]">That&apos;s okay. Pick a new time below. Miss 2 calls and you can&apos;t book again.</span>
+         </span>
       </div>
    );
 }
