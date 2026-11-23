@@ -71,8 +71,15 @@ export default function ConnectBeforeKyc() {
    // The sub-step lives in the URL, so the phone's back button moves between steps.
    const [searchParams] = useSearchParams();
    const stepParam = searchParams.get('step');
-   const page: ConnectPage = stepParam === 'about' || stepParam === 'intro' || stepParam === 'call' ? stepParam : 'contact';
    const prescreenAhead = !isPreview && needsPrescreen(gate.prescreen);
+   // Passed the pre-screening and Facebook is connected: everything before the call is on file
+   // (Messenger, about you from the bio, the loan's purpose from the pre-screening), so the
+   // booking link opens straight on the calendar (2026-11-23: a pre-screened borrower got stuck
+   // in the steps before it and never booked).
+   const goalOnFile = !isPreview && Boolean(gate.prescreen?.done);
+   const straightToCall = goalOnFile && Boolean(user?.hasVerifiedContact) && !!user?.incomeType;
+   const page: ConnectPage =
+      stepParam === 'about' || stepParam === 'intro' || stepParam === 'call' ? stepParam : straightToCall ? 'call' : 'contact';
    const setPage = useCallback(
       (next: ConnectPage) => {
          // Pre-screening path: right after Facebook comes the pre-screening, not "about you".
@@ -173,6 +180,7 @@ export default function ConnectBeforeKyc() {
                missedCall={Boolean(user.missedLastCall)}
                mode="call"
                needsAbout={!user.incomeType}
+               goalOnFile={goalOnFile}
                onPageChange={setPage}
                page={page}
                onBack={() => navigate('/request-board')}
