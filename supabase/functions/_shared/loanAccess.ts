@@ -34,6 +34,7 @@ import { cancelCallButton, cancelUpcomingCall } from './callCancel.ts';
 import { formatCallTimeForTeam } from './videoCall.ts';
 import { describeHeldRequests } from './loanRequestHold.ts';
 import { sendEmail } from './email.ts';
+import { isPlaceholderEmail } from './placeholderEmail.ts';
 import { FB_GROUP_URL } from './facebookSteps.ts';
 import { sendFacebookSteps } from './facebookStepsSend.ts';
 import { loadNeedsIdCheck } from './preKycGate.ts';
@@ -552,6 +553,15 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
          const sent = await sendWhatsAppTemplate(borrower.whatsapp_contact_id, buildApprovedWhatsAppTemplate(firstName));
          console.log('loanAccess: whatsapp approved for', borrower.id, sent.ok ? 'sent' : `not sent (${sent.reason})`);
       }
+   }
+   // No real email (phone / TikTok sign-up): the email above was skipped, so they also get a text —
+   // otherwise an approval outside Messenger's 24h window can reach them by push only (2026-11-23).
+   if (kind === 'approved' && isPlaceholderEmail(borrower.email)) {
+      const { data: sms } = await svc.rpc('approved_sms', { p_user: borrower.id }).then(
+         (r: { data: unknown }) => r,
+         () => ({ data: 'failed' })
+      );
+      console.log('loanAccess: approved text for', borrower.id, sms);
    }
    // Approved: add Emma + join the group, right after "You're approved" and only for approved people,
    // so nobody rejected asks to join (George, 2026-11-15). Once per call; Indonesia track skipped.
