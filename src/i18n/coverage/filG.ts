@@ -1148,5 +1148,18 @@ export const filipinoCoverageG: Record<string, string> = {
    "Buy → type the pesos → Buy USDC": "Buy → i-type ang pesos → Buy USDC",
    "Portfolio → Send → USDCBASE": "Portfolio → Send → USDCBASE",
    "Send is bottom right. Search “usdc”, tap USDCBASE.": "Nasa kanang ibaba ang Send. I-search ang “usdc”, i-tap ang USDCBASE.",
-   "Paste your address, tap Max, Send": "I-paste ang address mo, i-tap ang Max, Send"
+   "Paste your address, tap Max, Send": "I-paste ang address mo, i-tap ang Max, Send",
+   // src/views/repay/Repay.tsx: the "Buy …" step header, its subtitle and the copy card. One example
+   // per amount sentence; the phrase map reuses it for every other amount.
+   "Buy ₱6,790 of USDCBASE": "Bumili ng ₱6,790 na USDCBASE",
+   "Type ₱6,790": "I-type ang ₱6,790",
+   "Buy $102.60 USDC": "Bumili ng $102.60 na USDC",
+   "Buy a bit more than $102.60 USDC": "Bumili ng medyo higit sa $102.60 na USDC",
+   "Add USDC": "Magdagdag ng USDC",
+   "covers fees": "kasama na ang fees",
+   "You have $18.40 already · covers fees": "May $18.40 ka na · kasama na ang fees",
+   "≈ ₱5,900 · covers fees": "≈ ₱5,900 · kasama na ang fees",
+   "≈ ₱5,900 · You have $18.40 already · covers fees": "≈ ₱5,900 · May $18.40 ka na · kasama na ang fees",
+   "I’ll pick USDCBASE in PDAX": "USDCBASE ang pipiliin ko sa PDAX",
+   "⚠️ Pick USDC (Base) / USDCBASE": "⚠️ Pumili ng USDC (Base) / USDCBASE"
 };

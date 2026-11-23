@@ -1702,7 +1702,7 @@ export default function Repay() {
             {/* PDAX and GCrypto don't ask for a network: Base is its own coin there, USDCBASE. */}
             {USDCBASE_PHOTO[activeSource.id] ? (
                <>
-                  <p className="text-[13px] font-extrabold leading-snug text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Pick {baseCoinLabel(activeSource.id)}</p>
+                  <p className="text-[13px] font-extrabold leading-snug text-[#b91c1c] dark:text-[#fca5a5]">{`⚠️ Pick ${baseCoinLabel(activeSource.id)}`}</p>
                   <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#b91c1c] dark:text-[#fca5a5]">
                      Any other USDC (USDCPOL, USDCSOL…) and your money is lost.
                   </p>
@@ -2598,7 +2598,7 @@ export default function Repay() {
             </button>
             {USDCBASE_PHOTO[activeSource.id] ? (
                <div className="flex flex-col items-center gap-2">
-                  <p className="text-center text-[15px] font-extrabold text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Pick {baseCoinLabel(activeSource.id)}</p>
+                  <p className="text-center text-[15px] font-extrabold text-[#b91c1c] dark:text-[#fca5a5]">{`⚠️ Pick ${baseCoinLabel(activeSource.id)}`}</p>
                   <button
                      type="button"
                      onClick={() => setShowUsdcbasePhoto((open) => !open)}
