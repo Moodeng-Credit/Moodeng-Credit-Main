@@ -47,7 +47,7 @@ import { useUsdcRate } from '@/lib/useUsdcRate';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { CashoutGateError, startCashoutFaceCheck } from '@/lib/withdraw/cashoutFaceGate';
 import type { RootState } from '@/store/store';
-import { CONNECT_HIPPOS } from '@/views/dashboard/components/connectKit';
+import { CONNECT_HIPPOS, StepCelebration } from '@/views/dashboard/components/connectKit';
 import { DoneRow, GoldButton, Card as GoldCard, StepHead, WaitRow } from '@/views/indonesia/ui';
 import WaltCashoutFlow from '@/views/indonesia/walt/WaltCashoutFlow';
 import { WaltIcon } from '@/views/indonesia/walt/waltUi';
@@ -1449,47 +1449,58 @@ function SendProgressOverlay({
       return () => timers.forEach(clearTimeout);
    }, [succeeded]);
 
+   // Done: the same celebration as the other "you did it" moments (confetti, cheering hippo, popping
+   // check). The paper-plane hippo says "sent"; the step ticks are gone, they were progress detail.
+   if (succeeded) {
+      return (
+         <div
+            className="fixed inset-0 z-[60] overflow-y-auto bg-gradient-to-b from-[#efe6ff] via-[#faf7ff] to-white dark:from-[#241838] dark:via-[#171024] dark:to-[#100d17]"
+            style={{ fontFamily: FONT }}
+         >
+            <div className="mx-auto flex min-h-full w-full max-w-[480px] flex-col">
+               <StepCelebration
+                  image="/hippos/sendstory/frame-c.webp"
+                  title="Sent!"
+                  subtitle="Lands in a few minutes."
+                  stats={[
+                     ...(amount > 0 ? [{ label: 'Sent', value: `${amount} USDC`, tone: 'green' as const }] : []),
+                     { label: 'To', value: exchange, tone: 'purple' as const }
+                  ]}
+                  continueLabel="Done"
+                  onDone={onDone}
+                  footer={help}
+               />
+            </div>
+         </div>
+      );
+   }
+
    return (
       <div
          className="fixed inset-0 z-[60] flex items-center justify-center px-[24px] overflow-y-auto"
          style={{ backgroundColor: 'var(--app-bg)', fontFamily: FONT }}
       >
          <div className="w-full max-w-[360px] flex flex-col items-center text-center my-auto py-[24px]" aria-live="polite">
-            {succeeded ? (
-               <div className="relative">
-                  <img src="/withdraw-oven/cake.webp" alt="" aria-hidden="true" className="h-[104px] w-auto" />
-                  <span className="absolute -right-[10px] -bottom-[4px] flex h-[34px] w-[34px] items-center justify-center rounded-full border-[3px] border-[var(--app-bg)] bg-[#2f9e44] text-white">
-                     <Check className="w-[18px] h-[18px]" strokeWidth={3.5} />
-                  </span>
-               </div>
-            ) : (
-               // All frames stacked so they're preloaded; the current one fades in.
-               <div className="relative w-[140px] aspect-[549/560]" aria-hidden="true">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                     <img
-                        key={n}
-                        src={`/withdraw-oven/oven-${n}.webp`}
-                        alt=""
-                        className="absolute inset-0 w-full h-full object-contain transition-opacity duration-700"
-                        style={{ opacity: n === ovenFrame ? 1 : 0 }}
-                     />
-                  ))}
-               </div>
-            )}
-            <h2
-               className={`mt-[10px] text-[26px] font-black italic leading-[1.15] tracking-[-0.5px] ${
-                  succeeded ? 'text-[#2f9e44] dark:text-[#6fdc8c]' : 'text-[#6b55f7] dark:text-[#b3a6ff]'
-               }`}
-            >
-               {succeeded ? 'Sent!' : amount > 0 ? `Sending ${amount} USDC…` : 'Sending your USDC…'}
+            {/* All frames stacked so they're preloaded; the current one fades in. */}
+            <div className="relative w-[140px] aspect-[549/560]" aria-hidden="true">
+               {[1, 2, 3, 4, 5].map((n) => (
+                  <img
+                     key={n}
+                     src={`/withdraw-oven/oven-${n}.webp`}
+                     alt=""
+                     className="absolute inset-0 w-full h-full object-contain transition-opacity duration-700"
+                     style={{ opacity: n === ovenFrame ? 1 : 0 }}
+                  />
+               ))}
+            </div>
+            <h2 className="mt-[10px] text-[26px] font-black italic leading-[1.15] tracking-[-0.5px] text-[#6b55f7] dark:text-[#b3a6ff]">
+               {amount > 0 ? `Sending ${amount} USDC…` : 'Sending your USDC…'}
             </h2>
-            <p className="mt-[2px] text-[14px] leading-[19px] text-[var(--text-muted)]">
-               {succeeded ? `${amount} USDC is on its way to ${exchange}.` : `To ${exchange}. Keep this screen open.`}
-            </p>
+            <p className="mt-[2px] text-[14px] leading-[19px] text-[var(--text-muted)]">{`To ${exchange}. Keep this screen open.`}</p>
             <ol className="mt-[16px] w-full space-y-[10px] rounded-[12px] border-2 border-[#e8e4ff] bg-[var(--surface)] p-[16px] text-left dark:border-[var(--border-card-2)]">
                {SEND_STEPS.map((label, i) => {
-                  const done = succeeded || i < activeStep;
-                  const active = !succeeded && i === activeStep;
+                  const done = i < activeStep;
+                  const active = i === activeStep;
                   return (
                      <li key={label} className="flex items-center gap-[10px] text-[15px]">
                         <span
@@ -1512,18 +1523,7 @@ function SendProgressOverlay({
                   );
                })}
             </ol>
-            {succeeded ? (
-               <>
-                  <div className="mt-[20px] w-full">
-                     <PrimaryBtn onClick={onDone}>
-                        Done <Check className="w-4 h-4" strokeWidth={3} />
-                     </PrimaryBtn>
-                  </div>
-                  {help ? <div className="mt-[20px] w-full">{help}</div> : null}
-               </>
-            ) : (
-               <p className="mt-[14px] text-[12px] leading-[18px] text-[var(--text-faint)]">The first time can take a couple of minutes.</p>
-            )}
+            <p className="mt-[14px] text-[12px] leading-[18px] text-[var(--text-faint)]">The first time can take a couple of minutes.</p>
          </div>
       </div>
    );

@@ -1117,5 +1117,9 @@ export const filipinoCoverageG: Record<string, string> = {
    "Thanks for joining! We’ll message you on Messenger.": "Salamat sa pag-join! Magme-message kami sa Messenger.",
    "Your call is on now. Join below if you’re not in yet.": "Nagsimula na ang call mo. Mag-join sa baba kung wala ka pa.",
    "Thank you for your time.": "Salamat sa oras mo.",
-   "With Emma · Zoom": "Kasama si Emma · Zoom"
+   "With Emma · Zoom": "Kasama si Emma · Zoom",
+
+   // src/views/withdraw/Withdraw.tsx (cash-out "Sent!" screen)
+   "Lands in a few minutes.": "Darating sa loob ng ilang minuto.",
+   "To": "Papunta sa"
 };

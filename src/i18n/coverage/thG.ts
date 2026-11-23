@@ -713,5 +713,9 @@ export const thaiCoverageG: Record<string, string> = {
    "Thanks for joining! We’ll message you on Messenger.": "ขอบคุณที่เข้าร่วม! เราจะส่งข้อความหาคุณทาง Messenger",
    "Your call is on now. Join below if you’re not in yet.": "คอลของคุณเริ่มแล้ว กดเข้าร่วมด้านล่างถ้ายังไม่ได้เข้า",
    "Thank you for your time.": "ขอบคุณที่สละเวลา",
-   "With Emma · Zoom": "กับ Emma · Zoom"
+   "With Emma · Zoom": "กับ Emma · Zoom",
+
+   // src/views/withdraw/Withdraw.tsx (cash-out "Sent!" screen)
+   "Lands in a few minutes.": "ถึงภายในไม่กี่นาที",
+   "To": "ถึง"
 };
