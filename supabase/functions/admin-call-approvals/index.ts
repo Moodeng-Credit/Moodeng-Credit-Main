@@ -1,20 +1,16 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import { personName, stampDecisionCards } from '../_shared/adminCards.ts';
 import { ATTENDANCE_COLUMNS, describeAttendance, zoomActiveForHost } from '../_shared/attendance.ts';
 import { checkCallForm } from '../_shared/callFormCheck.ts';
 import { getEffectiveCreditLimit, shiftCreditLevel } from '../_shared/creditAndPoints.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { fbStepsSentForCall } from '../_shared/facebookSteps.ts';
 import { sendFacebookSteps } from '../_shared/facebookStepsSend.ts';
-import { idApprovalBlock } from '../_shared/idTrack.ts';
 import {
+   approveUser,
    BORROWER_COLUMNS,
-   type BorrowerRow,
    decideLoanAccess,
-   loanAccessStampHeader,
-   notifyBorrower,
    rejectUser,
    REQUEST_COLUMNS,
    who
@@ -214,48 +210,7 @@ serve(async (req) => {
       }
 
       if (body.action === 'approve_user' && typeof body.userId === 'string') {
-         // Indonesia track: not before Didit has approved their ID.
-         const idBlocked = await idApprovalBlock(svc, body.userId);
-         if (idBlocked) return json({ ok: false, summary: idBlocked });
-         const { data: pendingRequest } = await svc
-            .from('loan_access_requests')
-            .select('id')
-            .eq('user_id', body.userId)
-            .eq('status', 'pending')
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-         if (pendingRequest) {
-            const result = await decideLoanAccess(svc, (pendingRequest as { id: string }).id, 'approved', decidedBy);
-            return json({ ok: result.ok, summary: result.summary });
-         }
-         // No request to decide: approve directly. Conditional, so a double tap approves (and
-         // messages the borrower) only once. Approving here means the team has cleared them, so it
-         // also counts as the intro call: without video_call_outcome = 'attended' the loan form asked
-         // them to book a second call and hold_request_until_first_call hid their request from lenders.
-         const approvedAt = new Date().toISOString();
-         const { data: approved, error: approveError } = await svc
-            .from('users')
-            .update({
-               loan_access_status: 'approved',
-               loan_access_approved_at: approvedAt,
-               loan_access_seen_at: null,
-               video_call_outcome: 'attended',
-               video_call_outcome_at: approvedAt
-            })
-            .eq('id', body.userId)
-            .or('loan_access_status.is.null,loan_access_status.neq.approved')
-            .select(BORROWER_COLUMNS)
-            .maybeSingle();
-         if (approveError) throw new Error(approveError.message);
-         if (!approved) return json({ ok: false, summary: 'Already approved — nothing changed.' });
-         await stampDecisionCards(svc, 'loan_access', body.userId, loanAccessStampHeader('approved', personName(approved as BorrowerRow)), {
-            by: decidedBy
-         });
-         await notifyBorrower(svc, approved as BorrowerRow, 'approved');
-         const summary = `✅ Approved: ${who(approved as BorrowerRow)} — by ${decidedBy}`;
-         await postDiscord({ content: `🔓 Loan access ${summary}` }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
-         return json({ ok: true, summary });
+         return json(await approveUser(svc, body.userId, decidedBy));
       }
 
       if (body.action === 'reject_user' && typeof body.userId === 'string') {
