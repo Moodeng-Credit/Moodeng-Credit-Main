@@ -97,7 +97,7 @@ type CardDecision = { state: 'decided' | 'already' | 'not_found'; decision?: str
 export const incomeDocStamp = (result: CardDecision, tapped: 'approved' | 'declined', by: string, reason?: string | null): CardStamp => {
    if (result.state === 'decided') {
       return tapped === 'approved'
-         ? { header: '✅ APPROVED — they get a message that their proof of income is verified', by }
+         ? { header: '📄 PROOF OF INCOME OK — they get a message that it is verified (this alone doesn’t let them borrow)', by }
          : {
               header: '❌ REJECTED — they get a message to send a different document',
               detail: reason ? `Reason sent: “${reason}”` : 'No reason given.',

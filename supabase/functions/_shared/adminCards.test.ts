@@ -34,7 +34,7 @@ Deno.test('decided card: status header first, then the original card, then who a
    });
    assertEquals(
       text,
-      '✅ APPROVED — Irish can now apply for a loan\n\n📞 New borrower booked their intro call\nWho: Irish\n\nDecided by @george · Oct 11, 3:04 PM Bangkok'
+      '🔓 CAN BORROW — Irish is approved and can now apply for a loan\n\n📞 New borrower booked their intro call\nWho: Irish\n\nDecided by @george · Oct 11, 3:04 PM Bangkok'
    );
 });
 
@@ -139,7 +139,7 @@ Deno.test('stampDecisionCards claims every remembered card for the decision and 
 });
 
 Deno.test('every card type has a header that says what it means for the person', () => {
-   assertEquals(loanAccessStampHeader('approved', 'Irish', { call: true }), '✅ SHOWED UP → APPROVED — Irish can now apply for a loan');
+   assertEquals(loanAccessStampHeader('approved', 'Irish', { call: true }), '✅ SHOWED UP → 🔓 CAN BORROW — Irish is approved and can now apply for a loan');
    assertEquals(loanAccessStampHeader('rejected', 'Irish'), "🚫 REJECTED — Irish's application is closed");
    assertEquals(loanAccessStampHeader('no_show', 'Irish'), '❌ NO-SHOW — Irish was asked to book a new call');
    assertEquals(

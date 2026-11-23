@@ -63,7 +63,7 @@ export const stateEventStamp = (event: StateEvent): EventStamp | null => {
       case 'loan_access':
       case 'loan_access_request': {
          const access = { ...base, cardKind: 'loan_access' as const };
-         if (to === 'approved') return { ...access, header: '✅ APPROVED — can now apply for a loan', final: true };
+         if (to === 'approved') return { ...access, header: '🔓 CAN BORROW — approved, can now apply for a loan', final: true };
          if (to === 'rejected') return { ...access, header: '❌ REJECTED', final: true };
          if (to === 'no_show') return { ...access, header: '🚫 NO-SHOW', final: true };
          return null;

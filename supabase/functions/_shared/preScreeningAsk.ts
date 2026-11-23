@@ -489,7 +489,7 @@ async function autoGood(svc: SupabaseClient, row: Row, card: { chat: number | st
       .maybeSingle();
    if (!saved) return false;
    const result = await applyPreScreeningDecision(svc, row.id);
-   await sendTelegramMessage(card.chat, `✅ Auto good fit — ${line}. ${result.summary}\nTap ❌ Not a fit on the card to overrule.`, {
+   await sendTelegramMessage(card.chat, `✅ Auto good fit (pre-screen) — ${line}. ${result.summary}\nNot approved to borrow yet: that's 🔓 after their call. Tap ❌ Not a fit on the card to overrule.`, {
       replyToMessageId: card.msg
    }).catch(() => undefined);
    return true;
