@@ -733,7 +733,9 @@ export const verdictOf = (flags: Flag[], docType: Extracted['doc_type']): { verd
    const has = (code: string) => serious.some((f) => f.code === code);
    if (has('no_income_rows')) return { verdict: 'resend', reason: 'no_income' };
    if (has('old_document')) return { verdict: 'resend', reason: 'old_document' };
-   if (has('short_history')) return { verdict: 'resend', reason: 'short_history' };
+   // A short history is the team's call, never an automatic "send again" (2026-11-23: a 4-week statement
+   // was bounced twice by mistake). The card's Resend button asks them when the team agrees.
+   if (has('short_history')) return { verdict: 'needs_review', reason: null };
    return { verdict: serious.length ? 'needs_review' : 'looks_good', reason: null };
 };
 
@@ -1919,6 +1921,32 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
       const note = locked ? 'password-protected PDF' : 'file type the AI can’t open (HEIC?)';
       if (fileWarnings) return finish({ ...unreadablePatch(note), verdict: 'needs_review' }, `${VERDICT_LINE.needs_review}: ${note}\n${fileWarnings}`);
       return askResend(unreadablePatch(note), reason, note);
+   }
+
+   // The same file(s) they already sent: don't read it again (the AI can read the same PDF two ways)
+   // and never bounce them a second time. The earlier read is copied, and if they had been asked to
+   // resend, sending the same file back means they're stuck — it waits for the team.
+   const { data: sameFile } = await supabase
+      .from('income_documents')
+      .select('created_at, verdict, resend_reason, tier, row_keys, id_hashes, doc_type, extracted, metrics, flags, memo, risk, score, checks, ai_note, repay_chance, repay_reasons, model')
+      .eq('user_id', row.user_id)
+      .neq('id', id)
+      .eq('status', 'done')
+      .contains('file_hashes', hashes)
+      .gte('created_at', new Date(Date.now() - 30 * 86_400_000).toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+   if (sameFile) {
+      const prev = sameFile as Record<string, unknown> & { created_at: string; verdict: Verdict | null; resend_reason: string | null; memo: string | null };
+      const verdict: Verdict = !prev.verdict || prev.verdict === 'resend' ? 'needs_review' : prev.verdict;
+      const when = new Date(prev.created_at).toLocaleString('en-GB', { timeZone: 'Asia/Bangkok', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+      const note =
+         prev.verdict === 'resend'
+            ? `🔁 Same file they sent ${when} (BKK). They were asked to resend it (${prev.resend_reason ?? 'resend'}) and sent the same one back — probably stuck. Not read again; you decide.`
+            : `🔁 Same file they sent ${when} (BKK) — not read again, the earlier read is copied.`;
+      const { created_at: _c, verdict: _v, resend_reason: _r, ...copied } = prev;
+      return finish({ ...copied, status: 'done', file_hashes: hashes, verdict, resend_reason: null }, `${VERDICT_LINE[verdict]}: ${note}\n\n${prev.memo ?? ''}`.slice(0, 3900));
    }
 
    // 2–5. Read, work out, check, score, note.

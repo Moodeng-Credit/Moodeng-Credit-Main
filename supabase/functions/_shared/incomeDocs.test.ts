@@ -179,7 +179,8 @@ Deno.test('steps: $40 takes one screenshot, $60 needs 2 months', () => {
    assert(!at40.some((f) => f.code === 'short_history'));
    const at60 = runChecks(week, computeMetrics(week), { ...smallLoan, step: stepFor(60, STEPS) });
    assert(at60.some((f) => f.code === 'short_history'));
-   assertEquals(verdictOf(at60, week.doc_type), { verdict: 'resend', reason: 'short_history' });
+   // Short history is the team's call now, never an automatic resend.
+   assertEquals(verdictOf(at60, week.doc_type), { verdict: 'needs_review', reason: null });
 });
 
 Deno.test('no amount asked: a short history is a note, not a resend', () => {
