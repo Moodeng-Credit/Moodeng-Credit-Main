@@ -98,7 +98,17 @@ describe('email first inside Facebook/Messenger', () => {
       Object.defineProperty(window.navigator, 'userAgent', { value: originalUA, configurable: true });
    });
 
-   it('/sign-up in Facebook: the code form, nothing else (no Google, Telegram/LINE, tour or company lines)', async () => {
+   it('/sign-up in Facebook: Continue with Facebook first, the email code form under it (Facebook login is on)', async () => {
+      await render(SignUpPage, FB_ANDROID_UA);
+      const firstControl = container.querySelector('button, a, input');
+      expect(firstControl?.textContent).toContain('Continue with Facebook');
+      expect(container.querySelector('form input[type="email"]')).not.toBeNull();
+      expect(buttonWithText('Continue')).not.toBeNull();
+      expect(container.textContent).not.toContain('Sign Up with Google');
+   });
+
+   it('/sign-up in Facebook with the kill switch off: the code form, nothing else (no Google, Telegram/LINE, tour or company lines)', async () => {
+      vi.stubEnv('VITE_FACEBOOK_LOGIN_ENABLED', 'false');
       await render(SignUpPage, FB_ANDROID_UA);
       expect(container.textContent).toContain('Sign up to Moodeng');
       expect(container.querySelector('input[type="password"]')).toBeNull();
