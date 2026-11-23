@@ -11,6 +11,7 @@ import { rejectUser } from './loanAccess.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
 import { NOT_FIT_REASONS, preScreeningConfirmRows, preScreeningDecisionRows } from './preScreening.ts';
+import { BOOK_CALL_URL, goodFitMessengerText, sendBookCallWhatsApp } from './bookCallLink.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
 
 type Decision = 'good' | 'not_fit';
@@ -99,22 +100,33 @@ export async function applyPreScreeningDecision(
    return result;
 }
 
-// ✅ for someone on the pre-screening path (signed up, Facebook connected, waiting): tell them to keep
-// going. Messenger (their 24h window is usually open: they just connected) + a push. Never throws.
-const GOOD_FIT_TEXT =
-   '🎉 Good news! The Moodeng team looked at your answers. You can keep going: open moodeng.app to set up your wallet and book your 15-min call.\n\n' +
-   '🎉 Magandang balita! Pwede ka nang tumuloy: buksan ang moodeng.app para i-set up ang wallet mo at mag-book ng 15-min call.';
+// ✅ for someone on the pre-screening path (signed up, Facebook connected, waiting): tell them to book
+// their call, with the direct link (bookCallLink.ts). Messenger (their 24h window is usually
+// open: they just connected) + WhatsApp when they have it + a push + a text. Never throws.
 async function tellGoodFit(svc: SupabaseClient, userId: string): Promise<string> {
-   const { data } = await svc.from('users').select('messenger_psid, prescreen_path').eq('id', userId).maybeSingle();
-   const u = data as { messenger_psid?: string | null; prescreen_path?: boolean } | null;
+   const { data } = await svc
+      .from('users')
+      .select('messenger_psid, prescreen_path, display_name, username, whatsapp_contact_id, whatsapp_number, whatsapp_verified_at')
+      .eq('id', userId)
+      .maybeSingle();
+   const u = data as {
+      messenger_psid?: string | null;
+      prescreen_path?: boolean;
+      display_name?: string | null;
+      username?: string | null;
+      whatsapp_contact_id?: string | null;
+      whatsapp_number?: string | null;
+      whatsapp_verified_at?: string | null;
+   } | null;
    if (!u?.prescreen_path) return 'Shows on their call card.';
-   const [msg, push, sms] = await Promise.all([
-      sendMessengerMessage(u.messenger_psid, { text: GOOD_FIT_TEXT }).catch(() => ({ ok: false })),
+   const [msg, wa, push, sms] = await Promise.all([
+      sendMessengerMessage(u.messenger_psid, { text: goodFitMessengerText() }).catch(() => ({ ok: false })),
+      sendBookCallWhatsApp(u, 'good_fit'),
       sendPushToUser(svc, userId, () => ({
          type: 'loan_access_decision',
          title: 'Good news! 🎉',
-         body: 'The team looked at your answers. Set up your wallet and book your call.',
-         url: 'https://moodeng.app/onboarding/connect',
+         body: 'The team looked at your answers. Book your 15-min call.',
+         url: BOOK_CALL_URL,
          tag: 'prescreen-good'
       })).catch(() => null),
       // A text too: Messenger can't reach them after 24h; a text can (migration 20261118150000).
@@ -125,7 +137,7 @@ async function tellGoodFit(svc: SupabaseClient, userId: string): Promise<string>
    ]);
    const pushed = Boolean(push && (push as { sent?: number }).sent);
    const texted = sms === 'sent' || sms === 'unconfirmed';
-   const ways = [msg.ok ? 'Messenger' : null, pushed ? 'push' : null, texted ? 'text' : null].filter(Boolean);
+   const ways = [msg.ok ? 'Messenger' : null, wa ? 'WhatsApp' : null, pushed ? 'push' : null, texted ? 'text' : null].filter(Boolean);
    const smsNote = sms === 'rejected_network' ? ' (no text: Smart/TNT/Sun number)' : sms === 'no_number' ? ' (no number to text)' : '';
    return ways.length
       ? `They were told to keep going (${ways.join(' + ')})${smsNote}.`
