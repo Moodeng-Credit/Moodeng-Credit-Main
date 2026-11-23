@@ -578,5 +578,9 @@ export const vietnameseCoverageG: Record<string, string> = {
    "Thanks for joining! We’ll message you on Messenger.": "Cảm ơn bạn đã tham gia! Chúng tôi sẽ nhắn bạn qua Messenger.",
    "Your call is on now. Join below if you’re not in yet.": "Cuộc gọi đang diễn ra. Tham gia bên dưới nếu bạn chưa vào.",
    "Thank you for your time.": "Cảm ơn bạn đã dành thời gian.",
-   "With Emma · Zoom": "Với Emma · Zoom"
+   "With Emma · Zoom": "Với Emma · Zoom",
+
+   // src/views/withdraw/Withdraw.tsx (cash-out "Sent!" screen)
+   "Lands in a few minutes.": "Sẽ đến trong vài phút.",
+   "To": "Đến"
 };

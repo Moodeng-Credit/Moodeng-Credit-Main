@@ -674,5 +674,9 @@ export const indonesianCoverageG: Record<string, string> = {
    "Top level for now": "Level tertinggi untuk saat ini",
    "Top level": "Level tertinggi",
    "Example: borrowing the full $25 limit to unlock the $35 level.": "Contoh: meminjam limit penuh $25 untuk membuka level $35.",
-   "Credit limit reaches $35 = +50 Pandesal points": "Limit kredit mencapai $35 = +50 poin Pandesal"
+   "Credit limit reaches $35 = +50 Pandesal points": "Limit kredit mencapai $35 = +50 poin Pandesal",
+
+   // src/views/withdraw/Withdraw.tsx (cash-out "Sent!" screen)
+   "Lands in a few minutes.": "Sampai dalam beberapa menit.",
+   "To": "Ke"
 };

@@ -392,7 +392,8 @@ export function StepCelebration({
    trail,
    continueLabel = 'Continue',
    onDone,
-   children
+   children,
+   footer
 }: {
    image: string;
    title: ReactNode;
@@ -403,6 +404,8 @@ export function StepCelebration({
    onDone: () => void;
    // Extra content under the headline (e.g. the "what happens next" steps after approval).
    children?: ReactNode;
+   // Small print under the button (e.g. a "not there yet?" help link), out of the celebration's way.
+   footer?: ReactNode;
 }) {
    // A little fanfare if they turned sounds on in the bio.
    useEffect(() => {
@@ -501,6 +504,7 @@ export function StepCelebration({
          <PrimaryButton className="mt-6 min-h-[56px]" onClick={finish}>
             {continueLabel}
          </PrimaryButton>
+         {footer ? <div className="mt-4 w-full">{footer}</div> : null}
       </div>
    );
 }
