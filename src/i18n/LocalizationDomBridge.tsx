@@ -7,21 +7,27 @@ import type { LocaleCode } from '@/i18n/translations';
 const textOriginals = new WeakMap<Text, string>();
 const attributeOriginals = new WeakMap<Element, Map<string, string>>();
 const translatedTextNodes = new WeakSet<Text>();
+// What we last wrote into each text node. If the node now holds something else, React put new text
+// there (a reused node, e.g. the next guide card's title) and that new text is the original.
+const textWritten = new WeakMap<Text, string>();
 const LOCALIZED_ATTRIBUTES = ['aria-label', 'title', 'alt', 'placeholder'] as const;
 
 function localizeTextNode(node: Text, locale: LocaleCode, phraseMap: Map<string, string>) {
    const currentValue = node.nodeValue ?? '';
 
+   const stillOurs = translatedTextNodes.has(node) && textWritten.get(node) === currentValue;
+
    if (locale === 'en') {
       const originalValue = textOriginals.get(node);
-      if (translatedTextNodes.has(node) && originalValue && currentValue !== originalValue) {
+      if (stillOurs && originalValue && currentValue !== originalValue) {
          node.nodeValue = originalValue;
       }
       translatedTextNodes.delete(node);
       return;
    }
 
-   const originalValue = translatedTextNodes.has(node) ? (textOriginals.get(node) ?? currentValue) : currentValue;
+   const originalValue = stillOurs ? (textOriginals.get(node) ?? currentValue) : currentValue;
+   if (!stillOurs) translatedTextNodes.delete(node);
    const translatedValue = getTranslation(phraseMap, originalValue) ?? translateKnownPhrases(phraseMap, originalValue);
    if (!translatedValue) return;
 
@@ -32,6 +38,7 @@ function localizeTextNode(node: Text, locale: LocaleCode, phraseMap: Map<string,
    if (currentValue !== nextValue) {
       textOriginals.set(node, originalValue);
       translatedTextNodes.add(node);
+      textWritten.set(node, nextValue);
       node.nodeValue = nextValue;
    }
 }
@@ -94,7 +101,7 @@ function shouldSkipElement(element: Element) {
    return Boolean(element.closest('[data-i18n-skip], script, style, textarea, code, pre'));
 }
 
-function localizeNode(root: Node, locale: LocaleCode, phraseMap: Map<string, string>) {
+export function localizeNode(root: Node, locale: LocaleCode, phraseMap: Map<string, string>) {
    if (root.nodeType === Node.TEXT_NODE) {
       const parentElement = root.parentElement;
       if (!parentElement || shouldSkipElement(parentElement)) return;
