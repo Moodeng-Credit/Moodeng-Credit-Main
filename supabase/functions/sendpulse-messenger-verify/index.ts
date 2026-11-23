@@ -577,7 +577,7 @@ serve(async (req) => {
          await announceConnected(svc, pending.user_id, contactId, body.name ? String(body.name) : null);
          const userId = pending.user_id;
          const followUp = (async () => {
-            // Facebook profile check (grey photo / no last name / lowercase name) → auto-reject before
+            // Facebook profile check (grey photo / lowercase name; one name alone is fine) → auto-reject before
             // the call (facebookProfileCheck.ts). Rejected people get the "other lenders" message
             // instead of the next step. Runs after the reply, since it downloads their picture.
             const check = await checkFacebookProfile(svc, userId, contact);

@@ -3,6 +3,8 @@
 //    no_photo        their Facebook picture is the grey default silhouette
 //    no_last_name    no real last name (empty, one letter, dots, or the first name again)
 //    lowercase_name  the name isn't capitalised ("claire" instead of "Claire")
+// George, 2026-11-23: people with one name can come in. no_last_name is still worked out (the probe
+// shows it) but never rejects on its own — see REJECT_FLAGS.
 //
 // The grey default picture is the same image for everyone, so it's spotted by its bytes: we keep a
 // SHA-256 of each person's picture (facebook_photo_hashes), and a picture another account also has is
@@ -30,6 +32,12 @@ export const FLAG_TEXT: Record<ProfileFlag, string> = {
    no_last_name: 'no last name',
    lowercase_name: 'name not capitalised'
 };
+
+// The flags that auto-reject. no_last_name is left out (George 2026-11-23: one-name accounts come in).
+export const REJECT_FLAGS: ReadonlySet<ProfileFlag> = new Set<ProfileFlag>(['no_photo', 'lowercase_name']);
+
+/** The flags of a check that reject them. Pure. */
+export const rejectingFlags = (flags: ProfileFlag[]): ProfileFlag[] => flags.filter((f) => REJECT_FLAGS.has(f));
 
 // Seed list of default-picture hashes; the shared-hash rule finds new ones on its own.
 export const KNOWN_DEFAULT_PHOTO_HASHES = new Set<string>([]);
@@ -195,7 +203,8 @@ export const autoRejectForFacebookProfile = async (
    facebookName: string | null
 ): Promise<boolean> => {
    try {
-      if (!check.flags.length) return false;
+      const flags = rejectingFlags(check.flags);
+      if (!flags.length) return false;
       const mode = await loadRejectMode(svc);
       if (mode === 'off') return false;
 
@@ -207,7 +216,7 @@ export const autoRejectForFacebookProfile = async (
       if (!user || user.is_test || user.user_role === 'lender' || funded) return false;
       if (user.loan_access_status === 'approved' || user.loan_access_status === 'rejected') return false;
 
-      const reasons = check.flags.map((f) => FLAG_TEXT[f]).join(', ');
+      const reasons = flags.map((f) => FLAG_TEXT[f]).join(', ');
       const nameLine = `Facebook name: ${facebookName ?? ([check.first, check.last].filter(Boolean).join(' ') || '—')}`;
       const chat = (chatRow as { value?: string } | null)?.value;
 
