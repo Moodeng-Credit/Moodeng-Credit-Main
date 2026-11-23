@@ -1416,6 +1416,11 @@ function NotArrivedHelp({ exchange, address, txHash }: { exchange: string; addre
 const SEND_STEPS = ['Preparing your wallet', 'Sending your USDC', 'Confirming on Base'] as const;
 const SEND_STEP_2_AT_MS = 2500; // advance to "Sending your USDC"
 const SEND_STEP_3_AT_MS = 5500; // then to "Confirming on Base" (+3000ms)
+const SEND_SLOW_AT_MS = 20_000; // still going: the hippo settles in with popcorn
+// A happy Moodeng that changes pose at every step (was a worried hippo at an oven, same pose
+// throughout): holds the envelope → hugs it → winks → popcorn while a slow send finishes.
+// The "Sent!" screen then shows the same hippo throwing it as a paper plane.
+const SEND_HIPPOS = ['a', 'b', 'e', 'd'].map((k) => `/hippos/sendstory/frame-${k}.webp`);
 
 type SendPhase = 'progress' | 'success';
 
@@ -1437,27 +1442,19 @@ function SendProgressOverlay({
    const succeeded = phase === 'success';
    const ToLogo = SENT_TO_LOGOS[exchange];
    const [activeStep, setActiveStep] = useState(0);
-   // The oven picture (same hippo as the peso payout tracker): frames 1-3 follow the steps, then the cake
-   // keeps rising on a clock while "Confirming on Base" holds, so a slow first send still shows life.
-   const [ovenFrame, setOvenFrame] = useState(1);
+   // Past SEND_SLOW_AT_MS: popcorn hippo + "taking a bit longer", so a slow first send still shows life.
+   const [slow, setSlow] = useState(false);
 
    // Auto-advance the first two steps on a timer while the send is in flight. Reset + rearm
    // whenever we (re)enter the progress phase; the success view ignores this.
    useEffect(() => {
       if (succeeded) return;
       setActiveStep(0);
-      setOvenFrame(1);
+      setSlow(false);
       const timers = [
-         setTimeout(() => {
-            setActiveStep(1);
-            setOvenFrame(2);
-         }, SEND_STEP_2_AT_MS),
-         setTimeout(() => {
-            setActiveStep(2);
-            setOvenFrame(3);
-         }, SEND_STEP_3_AT_MS),
-         setTimeout(() => setOvenFrame(4), 20_000),
-         setTimeout(() => setOvenFrame(5), 45_000)
+         setTimeout(() => setActiveStep(1), SEND_STEP_2_AT_MS),
+         setTimeout(() => setActiveStep(2), SEND_STEP_3_AT_MS),
+         setTimeout(() => setSlow(true), SEND_SLOW_AT_MS)
       ];
       return () => timers.forEach(clearTimeout);
    }, [succeeded]);
@@ -1497,55 +1494,45 @@ function SendProgressOverlay({
       );
    }
 
+   const hippo = SEND_HIPPOS[slow ? 3 : activeStep];
    return (
       <div
-         className="fixed inset-0 z-[60] flex items-center justify-center px-[24px] overflow-y-auto"
-         style={{ backgroundColor: 'var(--app-bg)', fontFamily: FONT }}
+         className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-gradient-to-b from-[#efe6ff] via-[#faf7ff] to-white px-[24px] dark:from-[#241838] dark:via-[#171024] dark:to-[#100d17]"
+         style={{ fontFamily: FONT }}
       >
-         <div className="w-full max-w-[360px] flex flex-col items-center text-center my-auto py-[24px]" aria-live="polite">
-            {/* All frames stacked so they're preloaded; the current one fades in. */}
-            <div className="relative w-[140px] aspect-[549/560]" aria-hidden="true">
-               {[1, 2, 3, 4, 5].map((n) => (
-                  <img
-                     key={n}
-                     src={`/withdraw-oven/oven-${n}.webp`}
-                     alt=""
-                     className="absolute inset-0 w-full h-full object-contain transition-opacity duration-700"
-                     style={{ opacity: n === ovenFrame ? 1 : 0 }}
+         <div className="my-auto flex w-full max-w-[360px] flex-col items-center py-[24px] text-center" aria-live="polite">
+            {/* Preload every pose so each step swaps instantly; the shown one hops in. */}
+            {SEND_HIPPOS.map((src) => (
+               <link key={src} rel="preload" as="image" href={src} />
+            ))}
+            <span className="relative grid place-items-center" aria-hidden="true">
+               <img
+                  key={hippo}
+                  src={hippo}
+                  alt=""
+                  draggable={false}
+                  className="connect-hippo-jump relative h-[180px] w-auto select-none object-contain drop-shadow-[0_12px_18px_rgba(89,77,101,0.22)]"
+               />
+            </span>
+            <h2 className="mt-[14px] text-[28px] font-black italic leading-[1.15] tracking-[-0.5px] text-[#6b55f7] dark:text-[#b3a6ff]">
+               {amount > 0 ? `Sending ${amount} USDC…` : 'Sending your USDC…'}
+            </h2>
+            <p className="mt-[4px] text-[15px] leading-[20px] text-[#7b6b8c] dark:text-[#b9abcc]">{`To ${exchange}. Keep this screen open.`}</p>
+            {/* One bar in three parts + one line for the step we're on (was three tick rows). */}
+            <div className="mt-[22px] flex w-full max-w-[260px] gap-[6px]" aria-hidden="true">
+               {SEND_STEPS.map((label, i) => (
+                  <span
+                     key={label}
+                     className={`h-[8px] flex-1 rounded-full transition-colors duration-500 ${
+                        i < activeStep ? 'bg-[#22a35a]' : i === activeStep ? 'animate-pulse bg-[#6b55f7]' : 'bg-[#e5ddf0] dark:bg-[#3a2d4f]'
+                     }`}
                   />
                ))}
             </div>
-            <h2 className="mt-[10px] text-[26px] font-black italic leading-[1.15] tracking-[-0.5px] text-[#6b55f7] dark:text-[#b3a6ff]">
-               {amount > 0 ? `Sending ${amount} USDC…` : 'Sending your USDC…'}
-            </h2>
-            <p className="mt-[2px] text-[14px] leading-[19px] text-[var(--text-muted)]">{`To ${exchange}. Keep this screen open.`}</p>
-            <ol className="mt-[16px] w-full space-y-[10px] rounded-[12px] border-2 border-[#e8e4ff] bg-[var(--surface)] p-[16px] text-left dark:border-[var(--border-card-2)]">
-               {SEND_STEPS.map((label, i) => {
-                  const done = i < activeStep;
-                  const active = i === activeStep;
-                  return (
-                     <li key={label} className="flex items-center gap-[10px] text-[15px]">
-                        <span
-                           className={`w-[24px] h-[24px] rounded-full flex items-center justify-center shrink-0 ${
-                              done
-                                 ? 'bg-[#2f9e44] text-white'
-                                 : active
-                                   ? 'border-2 border-[#6b55f7]'
-                                   : 'border-2 border-[var(--border-input)]'
-                           }`}
-                        >
-                           {done ? (
-                              <Check className="w-[14px] h-[14px]" strokeWidth={3.5} />
-                           ) : active ? (
-                              <Loader2 className="w-[13px] h-[13px] text-[#6b55f7] animate-spin" />
-                           ) : null}
-                        </span>
-                        <span className={done || active ? 'text-[var(--ink)] font-semibold' : 'text-[var(--text-faint)]'}>{label}</span>
-                     </li>
-                  );
-               })}
-            </ol>
-            <p className="mt-[14px] text-[12px] leading-[18px] text-[var(--text-faint)]">The first time can take a couple of minutes.</p>
+            <p className="mt-[10px] inline-flex items-center gap-[6px] text-[15px] font-semibold text-[#3b2f4a] dark:text-[#f5f0ff]">
+               <Loader2 className="h-[15px] w-[15px] animate-spin text-[#6b55f7]" />
+               {slow ? 'Taking a bit longer. It’s on its way.' : SEND_STEPS[activeStep]}
+            </p>
          </div>
       </div>
    );
