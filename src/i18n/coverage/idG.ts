@@ -678,5 +678,7 @@ export const indonesianCoverageG: Record<string, string> = {
 
    // src/views/withdraw/Withdraw.tsx (cash-out "Sent!" screen)
    "Lands in a few minutes.": "Sampai dalam beberapa menit.",
-   "To": "Ke"
+   "To": "Ke",
+   "Paste": "Tempel",
+   "You got your pesos! 🎉": "Peso kamu sudah masuk! 🎉"
 };

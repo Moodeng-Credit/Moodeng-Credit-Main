@@ -100,6 +100,8 @@ type WithdrawData = {
    repayUsdc: number | null;
    dueDate: string | null;
    walletAddress: string;
+   /** The signed-in borrower ('preview' on /withdraw-preview); keys the remembered cash-out addresses. */
+   userId: string;
    isPreview: boolean;
    // True when the borrower cashes out from an Openfort instant wallet: the send is gasless and
    // backend-signed, so button copy must not tell them to "Confirm in your wallet" (no popup).
@@ -1464,7 +1466,7 @@ function SendProgressOverlay({
    if (succeeded) {
       return (
          <div
-            className="fixed inset-0 z-[60] overflow-y-auto bg-gradient-to-b from-[#efe6ff] via-[#faf7ff] to-white dark:from-[#241838] dark:via-[#171024] dark:to-[#100d17]"
+            className="fixed inset-0 z-[60] overflow-y-auto bg-gradient-to-b from-[#fff1c2] via-[#fffaf0] to-[#fffaf0] dark:from-[#2a2110] dark:via-[#16120c] dark:to-[#100d17]"
             style={{ fontFamily: FONT }}
          >
             <div className="mx-auto flex min-h-full w-full max-w-[480px] flex-col">
@@ -1482,12 +1484,13 @@ function SendProgressOverlay({
                               <span>{exchange}</span>
                            </span>
                         ),
-                        tone: 'purple' as const
+                        tone: 'amber' as const
                      }
                   ]}
                   continueLabel={continueLabel}
                   onDone={onDone}
                   footer={help}
+                  tone="gold"
                />
             </div>
          </div>
@@ -1497,7 +1500,7 @@ function SendProgressOverlay({
    const hippo = SEND_HIPPOS[slow ? 3 : activeStep];
    return (
       <div
-         className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-gradient-to-b from-[#efe6ff] via-[#faf7ff] to-white px-[24px] dark:from-[#241838] dark:via-[#171024] dark:to-[#100d17]"
+         className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto px-[24px] bg-gradient-to-b from-[#fff1c2] via-[#fffaf0] to-[#fffaf0] dark:from-[#2a2110] dark:via-[#16120c] dark:to-[#100d17]"
          style={{ fontFamily: FONT }}
       >
          <div className="my-auto flex w-full max-w-[360px] flex-col items-center py-[24px] text-center" aria-live="polite">
@@ -1514,23 +1517,23 @@ function SendProgressOverlay({
                   className="connect-hippo-jump relative h-[180px] w-auto select-none object-contain drop-shadow-[0_12px_18px_rgba(89,77,101,0.22)]"
                />
             </span>
-            <h2 className="mt-[14px] text-[28px] font-black italic leading-[1.15] tracking-[-0.5px] text-[#6b55f7] dark:text-[#b3a6ff]">
+            <h2 className="mt-[14px] text-[28px] font-extrabold leading-[1.15] tracking-[-0.02em] text-[#2b2116] dark:text-[#f5efe3]">
                {amount > 0 ? `Sending ${amount} USDC…` : 'Sending your USDC…'}
             </h2>
-            <p className="mt-[4px] text-[15px] leading-[20px] text-[#7b6b8c] dark:text-[#b9abcc]">{`To ${exchange}. Keep this screen open.`}</p>
+            <p className="mt-[4px] text-[15px] leading-[20px] text-[#7a6a4f] dark:text-[#bfb29a]">{`To ${exchange}. Keep this screen open.`}</p>
             {/* One bar in three parts + one line for the step we're on (was three tick rows). */}
             <div className="mt-[22px] flex w-full max-w-[260px] gap-[6px]" aria-hidden="true">
                {SEND_STEPS.map((label, i) => (
                   <span
                      key={label}
                      className={`h-[8px] flex-1 rounded-full transition-colors duration-500 ${
-                        i < activeStep ? 'bg-[#22a35a]' : i === activeStep ? 'animate-pulse bg-[#6b55f7]' : 'bg-[#e5ddf0] dark:bg-[#3a2d4f]'
+                        i < activeStep ? 'bg-[#22a35a]' : i === activeStep ? 'animate-pulse bg-[#ffbe1a]' : 'bg-[#efe6cc] dark:bg-[#2a2335]'
                      }`}
                   />
                ))}
             </div>
-            <p className="mt-[10px] inline-flex items-center gap-[6px] text-[15px] font-semibold text-[#3b2f4a] dark:text-[#f5f0ff]">
-               <Loader2 className="h-[15px] w-[15px] animate-spin text-[#6b55f7]" />
+            <p className="mt-[10px] inline-flex items-center gap-[6px] text-[15px] font-semibold text-[#2b2116] dark:text-[#f5efe3]">
+               <Loader2 className="h-[15px] w-[15px] animate-spin text-[#d99a00]" />
                {slow ? 'Taking a bit longer. It’s on its way.' : SEND_STEPS[activeStep]}
             </p>
          </div>
@@ -1562,6 +1565,69 @@ type CashoutStep = 'address' | 'send' | 'cashout' | 'done';
 // Where they are, kept a day so a reload (after switching to the exchange app) doesn't start over.
 type CashoutMemory = { wiz: CashoutStep; address: string; sent: number };
 const cashoutMemoryKey = (exchange: string) => `moodeng-cashout:${exchange}`;
+
+// An exchange's deposit address rarely changes, so once a cash-out to it has WORKED (they tapped
+// "I got my pesos", or the Binance send arrived) we keep it for next time: they skip finding,
+// copying and pasting it again. Only after it worked, so a wrong-network address that never
+// credited is never reused. Per account + exchange, on this phone; storage can be blocked.
+const savedAddressKey = (userId: string, exchange: string) => `moodeng-cashout-address:${userId}:${exchange}`;
+function readSavedAddress(userId: string, exchange: string): string {
+   if (!userId) return '';
+   try {
+      const saved = window.localStorage.getItem(savedAddressKey(userId, exchange)) ?? '';
+      return isValidAddress(saved) ? saved : '';
+   } catch {
+      return '';
+   }
+}
+function saveAddress(userId: string, exchange: string, address: string) {
+   if (!userId || !isValidAddress(address)) return;
+   try {
+      window.localStorage.setItem(savedAddressKey(userId, exchange), address);
+   } catch {
+      // Storage blocked: they'll paste it again next time.
+   }
+}
+
+// Most people cash out everything, so the amount starts at the full balance (once it loads).
+function usePrefillAmount(spendable: number | null, setAmount: (update: (current: string) => string) => void) {
+   const filled = useRef(false);
+   useEffect(() => {
+      if (filled.current || spendable == null || spendable <= 0) return;
+      filled.current = true;
+      setAmount((current) => (current === '' ? String(spendable) : current));
+   }, [spendable, setAmount]);
+}
+
+// One tap instead of long-press → Paste. Clipboard reads can be blocked (some in-app browsers):
+// then the button goes away and focus moves to the box so they can paste the usual way.
+function PasteButton({ exchange, onPaste, onBlocked }: { exchange: string; onPaste: (text: string) => void; onBlocked: () => void }) {
+   const [blocked, setBlocked] = useState(false);
+   if (blocked || typeof navigator === 'undefined' || !navigator.clipboard?.readText) return null;
+   const paste = async () => {
+      try {
+         const text = (await navigator.clipboard.readText()).trim();
+         track('withdraw_paste_button', { exchange, ok: Boolean(text) });
+         if (text) {
+            onPaste(text);
+            return;
+         }
+      } catch {
+         track('withdraw_paste_button', { exchange, ok: false });
+      }
+      setBlocked(true);
+      onBlocked();
+   };
+   return (
+      <button
+         type="button"
+         onClick={() => void paste()}
+         className="shrink-0 rounded-[10px] bg-[#fff1c2] px-3 py-1.5 text-[14px] font-extrabold text-[#6b4a00] dark:bg-[#3a2e10] dark:text-[#ffe27a]"
+      >
+         Paste
+      </button>
+   );
+}
 const CASHOUT_STEPS: { key: Exclude<CashoutStep, 'done'>; label: string }[] = [
    { key: 'address', label: 'Address' },
    { key: 'send', label: 'Send' },
@@ -1609,13 +1675,18 @@ function CashoutTrail({ step, onPick }: { step: Exclude<CashoutStep, 'done'>; on
 }
 
 function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed: (amount: number) => void; onDone: () => void }) {
-   const { available: LOAN_USDC, spendable, walletConnected, isPreview, isInstantWallet, send } = useWithdrawData();
+   const { available: LOAN_USDC, spendable, walletConnected, isPreview, isInstantWallet, userId, send } = useWithdrawData();
    const { showToast } = useToast();
    // Read once, on open.
    // eslint-disable-next-line react-hooks/exhaustive-deps
    const memory = useMemo(() => readStep<CashoutMemory>(cashoutMemoryKey(cfg.name)), []);
-   const [address, setAddress] = useState(memory?.address ?? '');
+   // An address that worked last time: start on "How much?" with it filled in.
+   // eslint-disable-next-line react-hooks/exhaustive-deps
+   const savedAddress = useMemo(() => readSavedAddress(userId, cfg.name), []);
+   const [address, setAddress] = useState(memory?.address || savedAddress);
+   const addressInputRef = useRef<HTMLInputElement>(null);
    const [amount, setAmount] = useState('');
+   usePrefillAmount(spendable, setAmount);
    const [sending, setSending] = useState(false);
    // True once the payment is approved and we're waiting on-chain confirmation — flips the
    // button copy so the user isn't told to "Confirm in your wallet…" after they already did.
@@ -1623,7 +1694,7 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
    // Drives the staged send-progress overlay: 'progress' while the send is in flight, 'success'
    // once it resolves, null when idle or after a failure (so the form returns and they can retry).
    const [sendPhase, setSendPhase] = useState<SendPhase | null>(null);
-   const [wiz, setWiz] = useState<CashoutStep>(memory && memory.wiz !== 'done' ? memory.wiz : 'address');
+   const [wiz, setWiz] = useState<CashoutStep>(memory && memory.wiz !== 'done' ? memory.wiz : savedAddress ? 'send' : 'address');
    // USDC already sent before a reload (the live send status is gone after one).
    const [sentBefore, setSentBefore] = useState(memory?.sent ?? 0);
    const { value: phpRate } = useUsdcRate('php');
@@ -1641,9 +1712,12 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
 
    // Remember the step + address (+ what was sent); forget it once they're done.
    useEffect(() => {
-      if (wiz === 'done') clearStep(cashoutMemoryKey(cfg.name));
-      else writeStep<CashoutMemory>(cashoutMemoryKey(cfg.name), { wiz, address, sent: sentAmountRef.current || sentBefore });
-   }, [wiz, address, sentBefore, cfg.name]);
+      if (wiz === 'done') {
+         clearStep(cashoutMemoryKey(cfg.name));
+         // They got their money, so this address works: remember it for next time.
+         saveAddress(userId, cfg.name, address.trim());
+      } else writeStep<CashoutMemory>(cashoutMemoryKey(cfg.name), { wiz, address, sent: sentAmountRef.current || sentBefore });
+   }, [wiz, address, sentBefore, cfg.name, userId]);
 
    // One event per step, so PostHog shows where people stop.
    useEffect(() => {
@@ -1723,6 +1797,7 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
             }`}
          >
             <input
+               ref={addressInputRef}
                value={address}
                onChange={(e) => setAddress(e.target.value)}
                placeholder={`Paste your ${cfg.short} address`}
@@ -1732,7 +1807,9 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
                <button type="button" onClick={() => setAddress('')} aria-label="Clear" className="p-1 text-[#8a7a5a]">
                   <X className="size-4" />
                </button>
-            ) : null}
+            ) : (
+               <PasteButton exchange={cfg.name} onPaste={setAddress} onBlocked={() => addressInputRef.current?.focus()} />
+            )}
          </div>
          {address && !addrValid ? <p className="text-[14px] font-bold text-[#c0392b]">That doesn’t look like an address.</p> : null}
       </div>
@@ -1801,7 +1878,18 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
          {wiz === 'send' ? (
             <>
                <DoneRow>
-                  {cfg.short} address{addrValid ? ` …${address.trim().slice(-4)}` : ''}
+                  <span className="flex items-center justify-between gap-2">
+                     <span>
+                        {cfg.short} address{addrValid ? ` …${address.trim().slice(-4)}` : ''}
+                     </span>
+                     <button
+                        type="button"
+                        onClick={() => setWiz('address')}
+                        className="shrink-0 text-[14px] font-bold underline underline-offset-2"
+                     >
+                        Change
+                     </button>
+                  </span>
                </DoneRow>
                <StepHead image="/hippos/hippo-wallet.png" title="How much?" />
                {sentStatus === 'failed' ? (
@@ -1898,7 +1986,7 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
             <div className="flex flex-col items-center gap-4 pt-4 text-center">
                <img src={CONNECT_HIPPOS.approved} alt="" aria-hidden="true" className="h-[170px] w-auto select-none" draggable={false} />
                <h2 className="text-[30px] font-extrabold leading-[34px] tracking-[-0.02em]">
-                  {cfg.receiveCurrency === 'PHP' ? 'Pesos on the way! 🎉' : 'All done! 🎉'}
+                  {cfg.receiveCurrency === 'PHP' ? 'You got your pesos! 🎉' : 'All done! 🎉'}
                </h2>
                {sentAmountRef.current || sentBefore ? (
                   <span className="text-[40px] font-extrabold leading-[44px]">≈ {fiat(sentAmountRef.current || sentBefore)}</span>
@@ -2248,12 +2336,15 @@ const COINBASE_FLOW: AppFlowConfig = {
 
 /* ─── Binance flow (custom — has P2P cash-out guide with video) ──── */
 function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) => void; onDone: () => void }) {
-   const { available: LOAN_USDC, spendable, walletConnected, isPreview, isInstantWallet, send } = useWithdrawData();
+   const { available: LOAN_USDC, spendable, walletConnected, isPreview, isInstantWallet, userId, send } = useWithdrawData();
    const { showToast } = useToast();
    const region = useRegion();
    const isPH = region !== 'other';
-   const [address, setAddress] = useState('');
+   // The Binance address that worked last time (see saveAddress).
+   const [address, setAddress] = useState(() => readSavedAddress(userId, 'Binance'));
+   const addressInputRef = useRef<HTMLInputElement>(null);
    const [amount, setAmount] = useState('');
+   usePrefillAmount(spendable, setAmount);
    const [sending, setSending] = useState(false);
    // True once approved and waiting on-chain confirmation — flips the button copy off
    // "Confirm in your wallet…" so we don't ask again after they already confirmed.
@@ -2270,6 +2361,12 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
    const amtValid = spendable != null && !isNaN(amtNum) && amtNum > 0 && amtNum <= spendable && /^\d*(\.\d{0,6})?$/.test(amount.trim());
    const canSend = addrValid && amtValid && !sending;
    const sentAmountRef = useRef(0);
+
+   // It arrived on Binance's address, so keep it for next time.
+   useEffect(() => {
+      if (arrived) saveAddress(userId, 'Binance', address.trim());
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [arrived]);
 
    useEffect(() => {
       if (arrived) setShowP2P(true);
@@ -2405,15 +2502,20 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
                            className={`absolute inset-0 rounded-[12px] border pointer-events-none ${address && !addrValid ? 'border-[var(--danger)]' : 'border-[var(--border-strong)]'}`}
                         />
                         <input
+                           ref={addressInputRef}
                            value={address}
                            onChange={(e) => setAddress(e.target.value)}
                            placeholder="Paste your Binance address"
                            className="flex-1 px-[16px] py-[12px] bg-transparent text-[16px] leading-[24px] tracking-[-0.32px] text-[var(--ink)] placeholder:text-[var(--text-muted)] focus:outline-none w-full"
                         />
-                        {address && (
+                        {address ? (
                            <button onClick={() => setAddress('')} className="pr-[12px] text-[var(--text-muted)] hover:text-[var(--ink)]">
                               <X className="w-4 h-4" />
                            </button>
+                        ) : (
+                           <span className="relative pr-[8px]">
+                              <PasteButton exchange="Binance" onPaste={setAddress} onBlocked={() => addressInputRef.current?.focus()} />
+                           </span>
                         )}
                      </div>
                      {address && !addrValid && (
@@ -2853,6 +2955,7 @@ export default function Withdraw() {
                 })
               : null,
          walletAddress,
+         userId: isPreview ? 'preview' : (user.id ?? ''),
          isPreview,
          isInstantWallet: activePaymentMethod === 'openfort',
          send: async (toAddress: string, amount: string, exchange: string, onSubmitted?: () => void) => {
