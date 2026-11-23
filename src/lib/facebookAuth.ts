@@ -2,22 +2,21 @@ import type { InAppBrowserInfo } from '@/lib/inAppBrowser';
 
 /**
  * Facebook login runs through Supabase Auth's built-in Facebook provider (no edge function).
- * ON for everyone since 2026-11-24: the Meta app "Moodeng Credit" (1190163573687726, U-Bridge's verified
- * portfolio) is Live and its App ID/Secret are in Supabase (Auth → Providers → Facebook).
- * Kill switch: VITE_FACEBOOK_LOGIN_ENABLED=false hides it everywhere (needs a redeploy).
- * ?facebook=0 hides it in this browser only (for checking the page without it); ?facebook=1 brings it back.
+ * It stays hidden until VITE_FACEBOOK_LOGIN_ENABLED=true, which should only be set after the
+ * Meta app is Live and its App ID/Secret are saved in Supabase (Auth → Providers → Facebook).
+ * Before that, testers can turn it on for their own browser with ?facebook=1 (off again with ?facebook=0).
  */
 export const FACEBOOK_TEST_FLAG_KEY = 'moodeng:facebook-test';
 
 export function isFacebookLoginEnabled(): boolean {
-   if (import.meta.env.VITE_FACEBOOK_LOGIN_ENABLED === 'false') return false;
+   if (import.meta.env.VITE_FACEBOOK_LOGIN_ENABLED === 'true') return true;
    try {
       const flag = new URLSearchParams(window.location.search).get('facebook');
-      if (flag === '0') localStorage.setItem(FACEBOOK_TEST_FLAG_KEY, '0');
-      if (flag === '1') localStorage.removeItem(FACEBOOK_TEST_FLAG_KEY);
-      return localStorage.getItem(FACEBOOK_TEST_FLAG_KEY) !== '0';
+      if (flag === '1') localStorage.setItem(FACEBOOK_TEST_FLAG_KEY, '1');
+      if (flag === '0') localStorage.removeItem(FACEBOOK_TEST_FLAG_KEY);
+      return localStorage.getItem(FACEBOOK_TEST_FLAG_KEY) === '1';
    } catch {
-      return true;
+      return false;
    }
 }
 
