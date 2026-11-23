@@ -1,5 +1,5 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
-import { contactPhotoUrl, nameFlags, splitFacebookName } from './facebookProfileCheck.ts';
+import { contactPhotoUrl, nameFlags, rejectingFlags, splitFacebookName } from './facebookProfileCheck.ts';
 
 Deno.test('nameFlags: a normal name passes', () => {
    assertEquals(nameFlags('Maria', 'Santos'), []);
@@ -34,4 +34,11 @@ Deno.test('contactPhotoUrl: finds the picture field', () => {
    assertEquals(contactPhotoUrl({ id: 'c', channel_data: { profile_pic: 'https://x.test/p.jpg' } as never }), 'https://x.test/p.jpg');
    assertEquals(contactPhotoUrl({ id: 'c', channel_data: { name: 'A' } }), null);
    assertEquals(contactPhotoUrl(null), null);
+});
+
+Deno.test('rejectingFlags: one name alone never rejects (2026-11-23)', () => {
+   assertEquals(rejectingFlags(nameFlags('Hans', '')), []);
+   assertEquals(rejectingFlags(['no_last_name']), []);
+   assertEquals(rejectingFlags(['no_last_name', 'lowercase_name']), ['lowercase_name']);
+   assertEquals(rejectingFlags(['no_photo', 'no_last_name']), ['no_photo']);
 });
