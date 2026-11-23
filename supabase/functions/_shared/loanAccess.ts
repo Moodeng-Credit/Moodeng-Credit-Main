@@ -947,6 +947,53 @@ export const decideRejectFollowUp = async (
 };
 
 /**
+ * Approve someone who isn't rejected (the admin panel's Directory / call-sheet approve): decides their
+ * pending request if they have one, else approves them directly. Approving means the team cleared
+ * them, so it also counts as the intro call — without video_call_outcome = 'attended' the loan form
+ * asked them to book a second call and hold_request_until_first_call hid their request from lenders.
+ * Conditional, so a double tap approves (and messages the borrower) only once.
+ */
+export const approveUser = async (svc: SupabaseClient, userId: string, by: string): Promise<{ ok: boolean; summary: string }> => {
+   // Indonesia track: not before Didit has approved their ID.
+   const idBlocked = await idApprovalBlock(svc, userId);
+   if (idBlocked) return { ok: false, summary: idBlocked };
+   const { data: pendingRequest } = await svc
+      .from('loan_access_requests')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+   if (pendingRequest) {
+      const result = await decideLoanAccess(svc, (pendingRequest as { id: string }).id, 'approved', by);
+      return { ok: result.ok, summary: result.summary };
+   }
+   const approvedAt = new Date().toISOString();
+   const { data: approved, error } = await svc
+      .from('users')
+      .update({
+         loan_access_status: 'approved',
+         loan_access_approved_at: approvedAt,
+         loan_access_seen_at: null,
+         video_call_outcome: 'attended',
+         video_call_outcome_at: approvedAt
+      })
+      .eq('id', userId)
+      .or('loan_access_status.is.null,loan_access_status.neq.approved')
+      .select(BORROWER_COLUMNS)
+      .maybeSingle();
+   if (error) throw new Error(error.message);
+   if (!approved) return { ok: false, summary: 'Already approved — nothing changed.' };
+   const borrower = approved as BorrowerRow;
+   await stampDecisionCards(svc, 'loan_access', userId, loanAccessStampHeader('approved', personName(borrower)), { by });
+   await notifyBorrower(svc, borrower, 'approved');
+   const summary = `✅ Approved: ${who(borrower)} — by ${by}`;
+   await postDiscord({ content: `🔓 Loan access ${summary}` }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
+   return { ok: true, summary };
+};
+
+/**
  * /reopen: a rejected borrower goes back to 'none', so they can book a call and reach out again.
  * Rejected is otherwise final (no booking, no new request). We don't message them — the admin does.
  */
