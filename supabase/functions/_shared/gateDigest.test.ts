@@ -25,3 +25,8 @@ Deno.test('long lists are capped', () => {
    const text = formatGateDigest([], many, NOW) as string;
    assert(text.includes('…and 5 more'));
 });
+
+Deno.test('an unbooked row can carry a note', () => {
+   const text = formatGateDigest([], [{ name: 'Sam @sam', connectedAt: new Date(NOW - 4 * 86400000).toISOString(), note: '⚠️ stuck on "waiting"' }], NOW) as string;
+   assert(text.includes('1. Sam @sam · connected 4d ago · ⚠️ stuck on "waiting"'));
+});
