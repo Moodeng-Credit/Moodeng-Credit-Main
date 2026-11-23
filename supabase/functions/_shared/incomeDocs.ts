@@ -1727,7 +1727,23 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    // that links to the same Admin page.
    // Telegram: always a link to this document + the resend link; Approve / Reject unless it already
    // approved itself (a resend ask can still be approved anyway, like on the admin page).
+   // Pre-screened in the last 14 days: the result also goes under their card in the Pre Screening group
+   // (George 2026-11-23: the team looks there). Link only; Approve / Reject stay in Approvals & Risk.
+   const { data: psRow } = await supabase
+      .from('pre_screenings')
+      .select('team_card')
+      .eq('user_id', row.user_id)
+      .gte('created_at', new Date(Date.now() - 14 * 86400_000).toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+   const psCard = psRow?.team_card as { chat?: number | string; msg?: number } | null;
    const reply = async (text: string, waiting = false, decide = waiting) => {
+      if (psCard?.chat && psCard.msg && String(psCard.chat) !== String(chat?.value)) {
+         await sendTelegramMessage(psCard.chat, `📄 Proof of income result\n\n${text}`.slice(0, 3900), { replyToMessageId: psCard.msg, inlineKeyboard: incomeDocKeyboard(id, false) }).catch((err) =>
+            console.error('income doc result under pre-screening failed', err)
+         );
+      }
       if (chat?.value) {
          await sendTelegramMessage(chat.value, text, { replyToMessageId: pingId, inlineKeyboard: [...incomeDocKeyboard(id, decide), resendRow] }).catch((err) =>
             console.error('income doc result failed', err)
