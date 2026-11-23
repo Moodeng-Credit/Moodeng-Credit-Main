@@ -5,7 +5,7 @@ import { postDiscord } from './discord.ts';
 import { sendEmail } from './email.ts';
 import { incomeDocKeyboard, incomeDocUrl, postIncomeDocDiscordCard, reachLine } from './incomeDocCards.ts';
 import { sendPushToUser } from './pushDelivery.ts';
-import { askOnMessengerIfWaiting } from './messengerIncomeDocReply.ts';
+import { askOnMessengerIfWaiting, langOf } from './messengerIncomeDocReply.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
 import { fileMarkers, gcashRefIssues, type ImageInfo, imageInfo, isAiSize, rowKeys, rowOverlap } from './fileForensics.ts';
 import { sendTelegramFiles, sendTelegramMessage, type TelegramInlineKeyboard, type TelegramUpload } from './telegram.ts';
@@ -298,7 +298,7 @@ export const stepFor = (amount: number | null, steps: IncomeDocStep[]) =>
    amount != null && Number.isFinite(amount) ? ([...steps].reverse().find((x) => amount >= x.min) ?? null) : null;
 
 export type CheckContext = {
-   /** The step for the amount they're asking (null: no amount known — the old $60 rules apply). */
+   /** The step for the amount they’re asking (null: no amount known or below the lowest step — a short history is only a note). */
    step?: IncomeDocStep | null;
    pdfs: PdfInfo[];
    /** Per file: image size and hidden tags (fileForensics.ts). */
@@ -539,14 +539,19 @@ export const runChecks = (doc: Extracted, metrics: Metrics, ctx: CheckContext): 
          });
       }
    }
+   // No step = no amount asked yet (pre-screening, Messenger photos) or below the lowest step: a first
+   // loan, so a short history is a note for the team, never a resend. 2026-11-23: a 4-week statement
+   // with 115 transactions was bounced twice as "not enough history for the amount you're asking"
+   // when the borrower hadn't asked for anything.
    const monthsNeeded = ctx.step ? ctx.step.months : 2;
    if (!tx.length && !p?.net_pay && doc.doc_type !== 'business_permit' && doc.doc_type !== 'sss_contributions') {
       flags.push({ code: 'no_income_rows', severity: 'orange', detail: 'No transactions or pay figures could be read.' });
    } else if (tx.length && monthsNeeded > 0 && metrics.months_covered < monthsNeeded - 0.25) {
+      const weeks = Math.round(metrics.months_covered * 4.3);
       flags.push({
          code: 'short_history',
-         severity: 'orange',
-         detail: `Only ~${Math.round(metrics.months_covered * 4.3)} weeks of history — this loan needs ${monthsNeeded}+ months.`
+         severity: ctx.step ? 'orange' : 'info',
+         detail: ctx.step ? `Only ~${weeks} weeks of history — this loan needs ${monthsNeeded}+ months.` : `Only ~${weeks} weeks of history — fine for now; $60+ loans need 2 months.`
       });
    }
    if (tx.length && !metrics.regular_deposits.length && !p?.net_pay) {
@@ -676,7 +681,7 @@ export const RESEND_TEXT: Record<ResendReason, string> = {
    scanned_pdf: 'We couldn’t read your PDF. Please send screenshots of your history instead.',
    unsupported_file: 'We couldn’t open that photo type. Please send a screenshot or a JPG/PNG photo instead.',
    unreadable: 'We couldn’t read it clearly. Please retake it in good light with all 4 corners showing and the numbers sharp.',
-   not_financial: 'This doesn’t look like proof of income. Please send one of the examples shown: a payslip, your earnings screen, or your GCash or Maya history.',
+   not_financial: 'This doesn’t look like proof of income. Please send a payslip, your earnings screen, or your GCash or Maya history.',
    old_document: 'This is more than 2 months old. Please send your latest one.',
    short_history: 'This doesn’t show enough history for the amount you’re asking. Please send your last 2–3 months.',
    no_income: 'We couldn’t see money coming in. Please send a history or statement that shows the money you receive.'
@@ -1625,6 +1630,21 @@ const ticketForMessengerPhoto = async (supabase: SupabaseClient, userId: string,
    }
 };
 
+export const PHOTO_NOT_PROOF_REPLY: Record<'en' | 'fil' | 'id', string> = {
+   en: 'Thanks for the photo! It doesn’t look like proof of income, so we passed it to our team. They’ll reply here soon 🦛\n\nIf you meant to send proof of income: a payslip, your earnings screen, or your GCash or Maya history works.',
+   fil: 'Salamat sa photo! Mukhang hindi ito proof of income, kaya ipinasa namin sa team. Magre-reply sila dito 🦛\n\nKung proof of income ang ipapadala mo: payslip, earnings screen, o GCash o Maya history.',
+   id: 'Terima kasih fotonya! Sepertinya ini bukan bukti penghasilan, jadi kami teruskan ke tim. Mereka akan membalas di sini 🦛\n\nKalau mau kirim bukti penghasilan: slip gaji, layar penghasilan, atau riwayat e-wallet.'
+};
+
+/** A Messenger photo that isn't proof: one friendly line in their chat. False when it couldn't be sent. */
+const replyPhotoNotProof = async (supabase: SupabaseClient, userId: string) => {
+   const { data: u } = await supabase.from('users').select('messenger_psid, preferred_locale, market').eq('id', userId).maybeSingle();
+   if (!u?.messenger_psid) return false;
+   const sent = await sendMessengerMessage(u.messenger_psid, { text: PHOTO_NOT_PROOF_REPLY[langOf(u.preferred_locale, u.market)] });
+   if (!sent.ok) console.error('messenger photo not-proof reply failed', sent.reason);
+   return sent.ok;
+};
+
 /** One send end to end: ping the team, read it, check it, save the result, reply under the ping. */
 export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string, apiKey: string | null | undefined) => {
    const startedAt = Date.now();
@@ -1751,10 +1771,17 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
          { ...patch, verdict: 'resend', resend_reason: reason, checks: patch.checks ?? buildSections([], { ok: false, note: teamNote }) },
          `${fraud.length ? '🚨 Fraud signs · ' : ''}${VERDICT_LINE.resend}: ${RESEND_TEXT[reason]}\n\n${teamNote}`.slice(0, 3900)
       );
-      await notifyIncomeDecision(supabase, id);
       // A photo picked up from their Messenger chat that isn't a financial document (a selfie, an error
-      // screenshot, a job photo) may really be a question: also open a support ticket so the team sees it.
-      if (reason === 'not_financial' && row.note === MESSENGER_PHOTO_NOTE) await ticketForMessengerPhoto(supabase, row.user_id, docUrl);
+      // screenshot, a job photo) may really be a question: open a support ticket so the team sees it, and
+      // tell them a person will answer — not the robotic "Let's try that again" (2026-11-23: a borrower
+      // sent a screenshot of the page they were stuck on and got "doesn't look like proof of income").
+      const messengerPhoto = reason === 'not_financial' && row.note === MESSENGER_PHOTO_NOTE;
+      if (messengerPhoto) await ticketForMessengerPhoto(supabase, row.user_id, docUrl);
+      if (messengerPhoto && (await replyPhotoNotProof(supabase, row.user_id))) {
+         await supabase.from('income_documents').update({ notified_at: new Date().toISOString() }).eq('id', id);
+      } else {
+         await notifyIncomeDecision(supabase, id);
+      }
       if (fraud.length) {
          const alert = `🚨 Possible fraud: ${who} sent this as proof of income\n${fraud.map((f) => `• ${f.detail}`).join('\n')}\n${loanLine}`;
          const { data: fraudChat } = await supabase.from('telegram_bot_settings').select('value').eq('key', 'fraud_alert_chat_id').maybeSingle();
@@ -2138,17 +2165,24 @@ const DOCUMENTS_URL = 'https://moodeng.app/documents';
 const APPLY_URL = 'https://moodeng.app/request-board?applyLoan=1';
 
 /** What the borrower is told: the team's decision, or an automatic "please resend". Pure. */
-export const decisionMessage = (kind: 'approved' | 'declined' | 'resend', reason: string | null, toSend = false) =>
+/** `inMessenger`: they're reading it in our Messenger chat, so "reply here", not "message us on Facebook". */
+export const decisionMessage = (kind: 'approved' | 'declined' | 'resend', reason: string | null, toSend = false, inMessenger = false) =>
    kind === 'approved'
       ? toSend
          ? { title: 'Proof of income approved ✅', body: 'One more step: your loan request is not sent yet. Tap below to send it.' }
          : { title: 'Proof of income approved ✅', body: 'Thanks! Your document is verified. It helps your loan requests get funded.' }
       : kind === 'resend'
-        ? { title: 'Let’s try that again', body: `${reason ?? 'Please send a clearer document.'} Questions? Message us on Facebook.` }
+        ? {
+             title: 'Let’s try that again',
+             body: `${reason ?? 'Please send a clearer document.'} ${inMessenger ? 'Questions? Just reply here.' : 'Questions? Message us on Facebook.'}`
+          }
         : {
              title: 'We couldn’t approve your document',
-             body: `${reason ? `${reason} ` : ''}You can send a different one any time, or message us on Facebook if you have questions.`
+             body: `${reason ? `${reason} ` : ''}You can send a different one any time${inMessenger ? '. Questions? Just reply here.' : ', or message us on Facebook if you have questions.'}`
           };
+
+// The Messenger card under the text: its own line, so it doesn't repeat the text's title as a second bubble.
+const CARD_TITLE = { resend: 'When you have it, tap below 👇', declined: 'Send a different one 👇', approved: 'Open Moodeng 👇', toSend: 'Your request is waiting 👇' };
 
 /**
  * Tell the borrower on push, Messenger, Telegram and email (whichever they have): a decision or a
@@ -2210,9 +2244,10 @@ export const notifyIncomeDecision = async (supabase: SupabaseClient, id: string,
    } catch (err) {
       console.error('income decision push failed', err);
    }
+   const inChat = decisionMessage(kind, kind === 'resend' ? (RESEND_TEXT[row.resend_reason as ResendReason] ?? null) : row.decision_reason, toSend, true);
    const messenger = await sendMessengerMessage(user?.messenger_psid, {
-      text: `${msg.title}\n${msg.body}`,
-      card: { title: msg.title, button: { title: button, url: linkUrl } }
+      text: `${inChat.title}\n${inChat.body}`,
+      card: { title: toSend ? CARD_TITLE.toSend : CARD_TITLE[kind], button: { title: button, url: linkUrl } }
    });
    if (messenger.ok) sent.push('Messenger');
    if (idSent) sent.push('Telegram');

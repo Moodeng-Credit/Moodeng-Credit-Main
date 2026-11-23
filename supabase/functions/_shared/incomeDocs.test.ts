@@ -1,6 +1,6 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { aiAutoApproves, parseAiAutoRule, buildMemo, buildSections, combineOpinions, mergeExtracted, opinionText, parseSteps, pdfJpegs, stepFor, verdictOf, computeMetrics, type Extracted, namesMatch, normalizeExtracted, parseStatedIncome, readPdfInfo, riskOf, runChecks, scoreOf } from './incomeDocs.ts';
+import { aiAutoApproves, decisionMessage, PHOTO_NOT_PROOF_REPLY, parseAiAutoRule, buildMemo, buildSections, combineOpinions, mergeExtracted, opinionText, parseSteps, pdfJpegs, stepFor, verdictOf, computeMetrics, type Extracted, namesMatch, normalizeExtracted, parseStatedIncome, readPdfInfo, riskOf, runChecks, scoreOf } from './incomeDocs.ts';
 
 const tx = (date: string, amount: number, balance: number | null, description = 'x') => ({ date, description, amount, balance, page: 1, source_text: `${date} ${amount}` });
 
@@ -180,6 +180,21 @@ Deno.test('steps: $40 takes one screenshot, $60 needs 2 months', () => {
    const at60 = runChecks(week, computeMetrics(week), { ...smallLoan, step: stepFor(60, STEPS) });
    assert(at60.some((f) => f.code === 'short_history'));
    assertEquals(verdictOf(at60, week.doc_type), { verdict: 'resend', reason: 'short_history' });
+});
+
+Deno.test('no amount asked: a short history is a note, not a resend', () => {
+   const month = base({ period_start: '2026-09-20', period_end: '2026-10-16', transactions: [tx('2026-09-21', 3000, 4000), tx('2026-10-10', -500, 3500)], opening_balance: null, closing_balance: null });
+   const flags = runChecks(month, computeMetrics(month), { ...ctx, loan: null, step: null });
+   assertEquals(flags.find((f) => f.code === 'short_history')?.severity, 'info');
+   assert(verdictOf(flags, month.doc_type).reason !== 'short_history');
+});
+
+Deno.test('decision message: in Messenger say "reply here", elsewhere "message us on Facebook"', () => {
+   const reason = 'This doesn’t look like proof of income.';
+   assert(decisionMessage('resend', reason).body.includes('Message us on Facebook'));
+   assert(decisionMessage('resend', reason, false, true).body.endsWith('Questions? Just reply here.'));
+   assert(!decisionMessage('declined', null, false, true).body.includes('Facebook'));
+   assert(!PHOTO_NOT_PROOF_REPLY.en.includes('examples shown'));
 });
 
 Deno.test('steps: repayment share and balance get stricter at $100', () => {
