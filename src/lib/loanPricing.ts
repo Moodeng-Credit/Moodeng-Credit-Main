@@ -61,7 +61,8 @@ export function classifyOffer(loanAmount: number, totalRepayment: number): Offer
 // ---- Minimum return: 10% a month ----------------------------------------------------------------
 // Lenders expect at least ~10% a month. "Borrow $15, repay $16 in 3 months" never gets funded, so the
 // loan form suggests (doesn't force) at least this much: 10% for anything up to a month, prorated by
-// day after that. Rounded up to the next $0.50 so the suggestion is a friendly number.
+// day after that. Exact to the cent ($13 -> $14.30): George, 2026-11-23 - rounding up to the next
+// $0.50 (and the old "$2-5 back" size hint) pushed a $13 borrower to offer $15.
 
 export const MIN_MONTHLY_RETURN = 0.1;
 
@@ -82,6 +83,11 @@ export interface RepaymentOptions {
    split?: boolean;
 }
 
+// Up to the next cent, ignoring float dust (13 * 1.1 = 14.300000000000001 -> 14.30, not 14.31).
+function toCentsUp(n: number): number {
+   return Math.ceil(Math.round(n * 1e6) / 1e4) / 100;
+}
+
 export function minimumRepayment(
    principal: number,
    dueDate: string | Date | null | undefined,
@@ -94,7 +100,7 @@ export function minimumRepayment(
    const days = Math.max(0, Math.ceil((due.getTime() - now.getTime()) / 86400000));
    const months = Math.max(1, days / 30);
    const factor = options.split ? SPLIT_RETURN_FACTOR : 1;
-   const amount = Math.ceil(principal * (1 + MIN_MONTHLY_RETURN * months * factor) * 2) / 2;
+   const amount = toCentsUp(principal * (1 + MIN_MONTHLY_RETURN * months * factor));
    return { amount, months };
 }
 
@@ -107,7 +113,8 @@ export function suggestedRepaymentRange(
    options: RepaymentOptions = {}
 ): ReturnRange | null {
    if (!Number.isFinite(principal) || principal <= 0) return null;
-   const lo = minimumRepayment(principal, dueDate, now, options)?.amount ?? Math.ceil(principal * (1 + MIN_MONTHLY_RETURN) * 2) / 2;
+   // Never under the form's "$1 more than you borrow" rule ($5 → $6, not $5.50).
+   const lo = Math.max(minimumRepayment(principal, dueDate, now, options)?.amount ?? toCentsUp(principal * (1 + MIN_MONTHLY_RETURN)), principal + 1);
    const max = maximumRepayment(principal, dueDate, now) ?? Infinity;
    const hi = Math.min(Math.ceil((principal + 2 * (lo - principal)) * 2) / 2, max);
    return { lo: Math.min(lo, hi), hi };
