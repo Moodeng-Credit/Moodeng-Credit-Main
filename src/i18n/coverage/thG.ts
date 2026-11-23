@@ -717,5 +717,7 @@ export const thaiCoverageG: Record<string, string> = {
 
    // src/views/withdraw/Withdraw.tsx (cash-out "Sent!" screen)
    "Lands in a few minutes.": "ถึงภายในไม่กี่นาที",
-   "To": "ถึง"
+   "To": "ถึง",
+   "Paste": "วาง",
+   "You got your pesos! 🎉": "ได้รับเงินเปโซแล้ว! 🎉"
 };

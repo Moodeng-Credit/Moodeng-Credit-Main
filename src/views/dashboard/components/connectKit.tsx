@@ -393,7 +393,8 @@ export function StepCelebration({
    continueLabel = 'Continue',
    onDone,
    children,
-   footer
+   footer,
+   tone = 'purple'
 }: {
    image: string;
    title: ReactNode;
@@ -406,7 +407,10 @@ export function StepCelebration({
    children?: ReactNode;
    // Small print under the button (e.g. a "not there yet?" help link), out of the celebration's way.
    footer?: ReactNode;
+   // 'gold': cream background + gold button, for money screens that sit in the cream cash-out flow.
+   tone?: 'purple' | 'gold';
 }) {
+   const gold = tone === 'gold';
    // A little fanfare if they turned sounds on in the bio.
    useEffect(() => {
       playSuccess();
@@ -422,7 +426,11 @@ export function StepCelebration({
    return (
       <div
          aria-live="polite"
-         className="connect-celebrate-in flex min-h-[600px] flex-1 flex-col bg-gradient-to-b from-[#efe6ff] via-[#faf7ff] to-white px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-6 dark:from-[#241838] dark:via-[#171024] dark:to-[#100d17]"
+         className={`connect-celebrate-in flex min-h-[600px] flex-1 flex-col bg-gradient-to-b px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-6 ${
+            gold
+               ? 'from-[#fff1c2] via-[#fffaf0] to-[#fffaf0] dark:from-[#2a2110] dark:via-[#16120c] dark:to-[#100d17]'
+               : 'from-[#efe6ff] via-[#faf7ff] to-white dark:from-[#241838] dark:via-[#171024] dark:to-[#100d17]'
+         }`}
          data-celebration=""
       >
          <ConfettiRain />
@@ -501,9 +509,20 @@ export function StepCelebration({
             {trail ? <div className="w-full max-w-[380px] pt-1">{trail}</div> : null}
          </div>
 
-         <PrimaryButton className="mt-6 min-h-[56px]" onClick={finish}>
-            {continueLabel}
-         </PrimaryButton>
+         {gold ? (
+            <button
+               className="mt-6 flex min-h-[56px] w-full items-center justify-center rounded-[18px] px-5 text-[18px] font-extrabold tracking-[-0.01em] text-[#4a2a00] shadow-[0_4px_0_#d99a00,0_10px_22px_rgba(255,190,26,0.35)] transition active:translate-y-[2px] active:shadow-[0_2px_0_#d99a00]"
+               onClick={finish}
+               style={{ backgroundImage: 'linear-gradient(180deg, #ffe27a 0%, #ffbe1a 100%)' }}
+               type="button"
+            >
+               {continueLabel}
+            </button>
+         ) : (
+            <PrimaryButton className="mt-6 min-h-[56px]" onClick={finish}>
+               {continueLabel}
+            </PrimaryButton>
+         )}
          {footer ? <div className="mt-4 w-full">{footer}</div> : null}
       </div>
    );

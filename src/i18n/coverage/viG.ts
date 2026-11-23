@@ -582,5 +582,7 @@ export const vietnameseCoverageG: Record<string, string> = {
 
    // src/views/withdraw/Withdraw.tsx (cash-out "Sent!" screen)
    "Lands in a few minutes.": "Sẽ đến trong vài phút.",
-   "To": "Đến"
+   "To": "Đến",
+   "Paste": "Dán",
+   "You got your pesos! 🎉": "Bạn đã nhận được peso! 🎉"
 };

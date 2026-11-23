@@ -1121,5 +1121,7 @@ export const filipinoCoverageG: Record<string, string> = {
 
    // src/views/withdraw/Withdraw.tsx (cash-out "Sent!" screen)
    "Lands in a few minutes.": "Darating sa loob ng ilang minuto.",
-   "To": "Papunta sa"
+   "To": "Papunta sa",
+   "Paste": "I-paste",
+   "You got your pesos! 🎉": "Nakuha mo na ang pesos mo! 🎉"
 };
