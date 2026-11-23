@@ -1133,5 +1133,12 @@ export const filipinoCoverageG: Record<string, string> = {
    'Confirm it says USDCBASE before continuing.': 'Siguraduhing USDCBASE ang nakalagay bago magpatuloy.',
    'Check it says USDCBASE. Tap Copy.': 'Siguraduhing USDCBASE ang nakalagay. I-tap ang Copy.',
    'Still shows USDCBASE? Sell it': 'USDCBASE pa rin ang nakikita? Ibenta ito',
-   'USDCBASE only': 'USDCBASE lang'
+   'USDCBASE only': 'USDCBASE lang',
+   // src/views/repay (GCrypto repay: one buy number, USDC (Base), waiting help)
+   "Not here after 10 minutes?": "Wala pa rin pagkatapos ng 10 minuto?",
+   "Buy USDC (Base)": "Bumili ng USDC (Base)",
+   "Trade → Buy → USDC (Base), also shown as USDCBASE.": "Trade → Buy → USDC (Base), na USDCBASE din ang tawag.",
+   "Paste it, tap MAX, Send": "I-paste, i-tap ang MAX, Send",
+   "Check it says USDC (Base).": "Siguraduhing USDC (Base) ang nakalagay.",
+   "I’ll pick USDC (Base) in GCrypto": "USDC (Base) ang pipiliin ko sa GCrypto"
 };

@@ -680,5 +680,7 @@ export const indonesianCoverageG: Record<string, string> = {
    "Lands in a few minutes.": "Sampai dalam beberapa menit.",
    "To": "Ke",
    "Paste": "Tempel",
-   "You got your pesos! 🎉": "Peso kamu sudah masuk! 🎉"
+   "You got your pesos! 🎉": "Peso kamu sudah masuk! 🎉",
+   // src/views/repay (GCrypto repay: one buy number, USDC (Base), waiting help)
+   "Not here after 10 minutes?": "Belum masuk setelah 10 menit?"
 };

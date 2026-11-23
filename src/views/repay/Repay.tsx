@@ -158,6 +158,8 @@ const quickRepaymentFractions = [
 // USDC withdrawals on Base (checked 2026-09-30); they have no deep link because their app URL
 // schemes aren't documented — the web URL hands off to the app where it's installed.
 // The photo under the "Pick USDCBASE" warning: the coin list in each app, with USDCBASE marked.
+// GCrypto shows Base USDC as "USDC (Base)" on its send form and "USDCBASE" on its confirm screen.
+const baseCoinLabel = (sourceId: string) => (sourceId === 'gcrypto' ? 'USDC (Base) / USDCBASE' : 'USDCBASE');
 const USDCBASE_PHOTO: Record<string, string> = {
    pdax: '/repay-guides/pdax/step8-coin.webp',
    gcrypto: '/repay-guides/gcrypto/step4-confirm.webp'
@@ -1696,7 +1698,7 @@ export default function Repay() {
             {/* PDAX and GCrypto don't ask for a network: Base is its own coin there, USDCBASE. */}
             {USDCBASE_PHOTO[activeSource.id] ? (
                <>
-                  <p className="text-[13px] font-extrabold leading-snug text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Pick USDCBASE</p>
+                  <p className="text-[13px] font-extrabold leading-snug text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Pick {baseCoinLabel(activeSource.id)}</p>
                   <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#b91c1c] dark:text-[#fca5a5]">
                      Any other USDC (USDCPOL, USDCSOL…) and your money is lost.
                   </p>
@@ -2356,17 +2358,30 @@ export default function Repay() {
          window.location.href = activeSource.deepLink;
          setTimeout(() => window.open(activeSource.href, '_blank', 'noopener,noreferrer'), 1500);
       };
+      // PDAX: they type the pesos. Its price runs ~2% over the market rate and sending out costs a
+      // little USDC, so round up with a buffer.
+      const pdaxPesos =
+         amountShortfall !== null && amountShortfall > 0
+            ? `₱${(Math.ceil(((amountShortfall + 0.5) * phpRate * 1.03) / 10) * 10).toLocaleString('en-PH')}`
+            : null;
       const buyTip = (() => {
          if (amountShortfall === null || amountShortfall <= 0) return null;
          if (activeSource.id === 'gcrypto') return `Buy $${formatCurrency(suggestedGcryptoBuyAmount(amountShortfall))} USDC`;
          // PDAX: they type the pesos, so show pesos. PDAX's price runs ~2% over the market rate and
          // sending out costs a little USDC, so round up with a buffer.
-         if (activeSource.id === 'pdax') {
-            return `Type ₱${(Math.ceil(((amountShortfall + 0.5) * phpRate * 1.03) / 10) * 10).toLocaleString('en-PH')}`;
-         }
+         if (activeSource.id === 'pdax') return `Type ${pdaxPesos}`;
          const breakdown = SOURCE_FEE_BREAKDOWN[activeSource.id];
          if (breakdown) return `Buy $${formatCurrency(getAmountToBuy(breakdown, amountShortfall))} USDC`;
          return `Buy a bit more than $${formatCurrency(amountShortfall)} USDC`;
+      })();
+      // Under the "Buy …" header: the pesos for a dollar figure, and why it's less than the loan.
+      const buySubtitle = (() => {
+         if (amountShortfall === null || amountShortfall <= 0) return undefined;
+         const parts: string[] = [];
+         if (showPesos && activeSource.id === 'gcrypto') parts.push(`≈ ${toPesos(suggestedGcryptoBuyAmount(amountShortfall))}`);
+         if (usdcBalance !== null && usdcBalance >= 0.01) parts.push(`You have $${formatCurrency(usdcBalance)} already`);
+         parts.push('covers fees');
+         return parts.join(' · ');
       })();
       const backLink = (to: WizardStep) => (
          <button
@@ -2579,7 +2594,7 @@ export default function Repay() {
             </button>
             {USDCBASE_PHOTO[activeSource.id] ? (
                <div className="flex flex-col items-center gap-2">
-                  <p className="text-center text-[15px] font-extrabold text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Pick USDCBASE</p>
+                  <p className="text-center text-[15px] font-extrabold text-[#b91c1c] dark:text-[#fca5a5]">⚠️ Pick {baseCoinLabel(activeSource.id)}</p>
                   <button
                      type="button"
                      onClick={() => setShowUsdcbasePhoto((open) => !open)}
@@ -2628,7 +2643,7 @@ export default function Repay() {
             </Card>
          ) : (
             <Card>
-               <StepHead image={CONNECT_HIPPOS.waiting} title="Waiting for your USDC" subtitle="Shows here by itself." />
+               <StepHead image="/hippos/sendstory/frame-d.webp" title="Waiting for your USDC" subtitle="Shows here by itself." />
                {usdcBalance >= 0.01 ? (
                   <div>
                      <div className="mb-2 flex items-center justify-between text-[15px] font-bold">
@@ -2654,6 +2669,13 @@ export default function Repay() {
                      Pay ${formatCurrency(floorToCents(usdcBalance))} now instead
                   </SoftButton>
                ) : null}
+               <button
+                  type="button"
+                  onClick={() => openSupportChat('Repay: USDC not arrived')}
+                  className="mx-auto text-[14px] font-bold text-[#8a7a5a] underline underline-offset-2 dark:text-[#c9b98f]"
+               >
+                  Not here after 10 minutes?
+               </button>
             </Card>
          );
       // App tiles: logo + name, one tap picks it and moves on. (Moneybees left out: barely tapped,
@@ -2697,8 +2719,8 @@ export default function Repay() {
                   </button>
                </header>
 
-               {/* One progress bar at a time: the app guide shows its own. */}
-               {quickPay || wizardStep === 'send' ? null : <RepayTrail step={wizardStep} onPick={goTo} />}
+               {/* The 1-2-3-4 bar stays up during the app's own steps too, so they always know where they are. */}
+               {quickPay ? null : <RepayTrail step={wizardStep} onPick={goTo} />}
 
                {/* ── Enough USDC already: pay in one tap ───────────────────── */}
                {quickPay ? (
@@ -2729,7 +2751,7 @@ export default function Repay() {
                {/* ── 2. Pick the app they'll get USDC from ──────────────── */}
                {wizardStep === 'source' ? (
                   <>
-                     <DoneRow>Paying ${formatCurrency(payAmount)}</DoneRow>
+                     <DoneRow>Paying {showPesos ? toPesos(payAmount) : `$${formatCurrency(payAmount)}`}</DoneRow>
                      <StepHead image="/hippos/thinking.png" title="Which app do you use?" />
                      {geoLoading ? (
                         <WaitRow>Loading…</WaitRow>
@@ -2758,11 +2780,12 @@ export default function Repay() {
                {/* ── 3. Follow the app's steps, one card at a time ─────────── */}
                {wizardStep === 'send' ? (
                   <>
+                     {/* One number: the header says exactly what to buy (the same figure as the Buy card), not
+                         the shortfall, so they never see $121 → $102.60 → $105.70 and wonder which is right. */}
                      <StepHead
                         image="/hippos/hippo-wallet.png"
-                        title={
-                           amountShortfall !== null && amountShortfall > 0 ? `Add $${formatCurrency(amountShortfall)} USDC` : 'Add USDC'
-                        }
+                        title={activeSource.id === 'pdax' && pdaxPesos ? `Buy ${pdaxPesos} of USDCBASE` : (buyTip ?? 'Add USDC')}
+                        subtitle={buySubtitle}
                      />
                      {amountFunded ? (
                         arrivalCheck
