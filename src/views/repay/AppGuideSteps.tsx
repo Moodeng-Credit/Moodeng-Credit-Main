@@ -91,45 +91,42 @@ const buildCards = ({
             tip: 'New to PDAX? Approval takes up to 24 hours.',
             open: true
          },
+         // Was 12 cards, one tap each; now two or three taps per card, each with the one screenshot
+         // that shows all of them (the boxed bits are what to tap).
          {
             key: 'instapay',
             title: 'Send pesos to PDAX',
-            text: 'Your bank or GCash → InstaPay → PDAX.',
+            text: 'Your bank or GCash → InstaPay → PDAX. Type the pesos, confirm.',
             img: `${PDAX_IMG}/step0b-instapay.webp`
          },
-         { key: 'instapay-confirm', title: 'Type the pesos, confirm', img: `${PDAX_IMG}/step0c-confirm.webp` },
-         { key: 'markets', title: 'Tap Markets', text: 'At the bottom of PDAX.', img: `${PDAX_IMG}/step3-markets.webp` },
          {
             key: 'find',
-            title: 'Search “usdc”, tap USDCBASE/PHP',
-            text: 'The one that says Base.',
+            title: 'Markets → search “usdc” → USDCBASE/PHP',
+            text: 'Markets is at the bottom. Pick the one that says Base.',
             img: `${PDAX_IMG}/step4-usdcbase.webp`
          },
-         { key: 'buy', title: 'Tap Buy', img: `${PDAX_IMG}/step5-buy.webp` },
          {
             key: 'amount',
-            title: 'Type the pesos, tap Buy USDC',
+            title: 'Buy → type the pesos → Buy USDC',
             text: 'Type it in pesos (₱), not USDC.',
             img: `${PDAX_IMG}/step6-amount.webp`,
             tip: buyTip,
             danger: 'Says “Insufficient PHP Balance”? Cash in more pesos first.'
          },
          copy,
-         // Sending it out of PDAX, one tap per card.
-         { key: 'send', title: 'Portfolio → Send', text: 'Bottom right, then Send.', img: `${PDAX_IMG}/step7-send.webp`, open: true },
-         { key: 'send-coin', title: 'Pick USDCBASE', text: 'Search “usdc”, tap USDCBASE.', img: `${PDAX_IMG}/step8-coin.webp` },
          {
-            key: 'send-paste',
-            title: 'Paste your address',
-            text: 'Network must say Base.',
-            img: `${PDAX_IMG}/step9-paste.webp`,
-            danger: 'Base network only'
+            key: 'send-coin',
+            title: 'Portfolio → Send → USDCBASE',
+            text: 'Send is bottom right. Search “usdc”, tap USDCBASE.',
+            img: `${PDAX_IMG}/step8-coin.webp`,
+            open: true
          },
          {
             key: 'send-max',
-            title: 'Tap Max, then Send',
+            title: 'Paste your address, tap Max, Send',
             text: 'PDAX may send a code to your email.',
             img: `${PDAX_IMG}/step10-max-send.webp`,
+            danger: 'USDCBASE only',
             tip: 'You’ll see “Your USDCBASE is on its way!”',
             doneLabel: 'I sent it'
          }
