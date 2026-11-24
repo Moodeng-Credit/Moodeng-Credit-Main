@@ -62,6 +62,9 @@ export interface AdminDirectoryUser {
    id: string;
    username: string;
    email: string | null;
+   // Real name: Facebook sign-ups have a placeholder username (user-xxxxxx), so search matches these too.
+   display_name: string | null;
+   facebook_name: string | null;
    wallet_address: string | null;
    wallet_provider: string | null;
    wallet_connector_name: string | null;
@@ -461,6 +464,8 @@ async function buildDirectoryRows(
          id: row.id,
          username: row.username ?? 'Unnamed user',
          email: row.email ?? null,
+         display_name: row.display_name ?? null,
+         facebook_name: row.facebook_name ?? null,
          wallet_address: row.wallet_address ?? null,
          wallet_provider: row.wallet_provider ?? null,
          wallet_connector_name: row.wallet_connector_name ?? null,
@@ -661,14 +666,16 @@ async function listAdminDirectoryUsersByTable(search?: string): Promise<AdminDir
    let query = supabase
       .from('users')
       .select(
-         'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,is_didit,messenger_verified_at,messenger_psid,whatsapp_verified_at,loan_access_status,video_call_starts_at,video_call_outcome,didit_id_status,didit_submitted_at,cs,mal,nal,created_at,updated_at'
+         'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,is_didit,messenger_verified_at,messenger_psid,whatsapp_verified_at,loan_access_status,video_call_starts_at,video_call_outcome,didit_id_status,didit_submitted_at,cs,mal,nal,created_at,updated_at,display_name,facebook_name'
       )
       .order('created_at', { ascending: false })
       .limit(2000);
    const trimmedSearch = search?.trim();
 
    if (trimmedSearch) {
-      query = query.or(`username.ilike.%${trimmedSearch}%,wallet_address.ilike.%${trimmedSearch}%,email.ilike.%${trimmedSearch}%`);
+      query = query.or(
+         `username.ilike.%${trimmedSearch}%,wallet_address.ilike.%${trimmedSearch}%,email.ilike.%${trimmedSearch}%,display_name.ilike.%${trimmedSearch}%,facebook_name.ilike.%${trimmedSearch}%`
+      );
    }
 
    const users = await requireOk<AnyRow[]>(query);

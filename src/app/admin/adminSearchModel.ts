@@ -13,6 +13,9 @@ export interface SearchableUser {
    id: string;
    username: string;
    email: string | null;
+   /** Real name. Facebook sign-ups have a placeholder username (user-xxxxxx), so these are how you find them. */
+   display_name?: string | null;
+   facebook_name?: string | null;
    wallet_address: string | null;
    user_role: string;
    account_status: string;
@@ -126,17 +129,28 @@ export function searchAdmin(
       detail: p.group
    }));
 
-   const users = ranked(sources.users, query, (u) => [u.username, u.email, u.wallet_address, u.id], LIMITS.user).map<AdminSearchResult>(
-      (u) => ({
+   const users = ranked(
+      sources.users,
+      query,
+      (u) => [u.username, u.display_name, u.facebook_name, u.email, u.wallet_address, u.id],
+      LIMITS.user
+   ).map<AdminSearchResult>((u) => {
+      const name = u.display_name?.trim() || u.facebook_name?.trim() || null;
+      return {
          kind: 'user',
          id: u.id,
-         title: u.username,
-         detail: [u.user_role === 'unset' ? 'no role' : u.user_role, u.email, u.wallet_address ? shortWallet(u.wallet_address) : null]
+         title: name ?? u.username,
+         detail: [
+            name ? u.username : null,
+            u.user_role === 'unset' ? 'no role' : u.user_role,
+            u.email,
+            u.wallet_address ? shortWallet(u.wallet_address) : null
+         ]
             .concat(u.account_status !== 'active' ? [u.account_status] : [])
             .filter(Boolean)
             .join(' · ')
-      })
-   );
+      };
+   });
 
    const requests = ranked(
       sources.requests,
