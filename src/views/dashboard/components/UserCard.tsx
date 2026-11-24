@@ -1079,7 +1079,7 @@ function GoodStandingBadge({ isVerified }: { isVerified: boolean }) {
          ref={ref}
          type="button"
          onClick={handleTap}
-         className="relative inline-flex items-center justify-center px-md-1 py-md-0 rounded-[30px] border border-md-green-600 bg-[rgba(0,134,36,0.05)] [perspective:300px]"
+         className="relative inline-flex items-center justify-center px-md-1 py-md-0 rounded-[30px] border border-md-green-600 bg-[rgba(0,134,36,0.05)] text-md-b4 [perspective:300px]"
       >
          <FlipFace
             flipped={flipped}
