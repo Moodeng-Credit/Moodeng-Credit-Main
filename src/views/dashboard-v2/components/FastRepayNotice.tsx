@@ -74,10 +74,11 @@ const COPY = {
    }
 };
 
-// Moodeng art made for these cards (Gemini, from the stopwatch / chef hippos).
+// Moodeng art made for these cards (Gemini, from the hello / waiting / approved hippos so it matches
+// the app's cutest ones: big shiny eyes, open smile, no teeth showing). New file names bust the cache.
 const SLIDE_ART: Record<Slide, string> = {
-   limit: '/fast-repay/keep-two-days.webp',
-   food: '/fast-repay/best-days-food.webp'
+   limit: '/fast-repay/keep-two-days-v2.webp',
+   food: '/fast-repay/best-days-food-v2.webp'
 };
 
 /** One line of the card's mini schedule: grey "too early" or green "this counts". */
