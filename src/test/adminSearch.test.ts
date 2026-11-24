@@ -47,6 +47,36 @@ describe('admin global search', () => {
       expect(searchAdmin('@jonas', { pages, users, requests })[0]).toMatchObject({ kind: 'user', id: 'u3' });
    });
 
+   it('finds Facebook sign-ups by their real name and shows it as the title', () => {
+      const fbUsers = [
+         ...users,
+         {
+            id: 'u4',
+            username: 'user-5038e6',
+            email: 'facebook_x@moodeng.app',
+            display_name: 'Ana Reyes',
+            facebook_name: 'Ana Reyes Cruz',
+            wallet_address: null,
+            user_role: 'borrower',
+            account_status: 'active'
+         },
+         {
+            id: 'u5',
+            username: 'user-77aa01',
+            email: null,
+            display_name: null,
+            facebook_name: 'Lito Gomez',
+            wallet_address: null,
+            user_role: 'borrower',
+            account_status: 'active'
+         }
+      ];
+      const ana = searchAdmin('ana reyes', { pages, users: fbUsers, requests }).filter((r) => r.kind === 'user');
+      expect(ana).toEqual([{ kind: 'user', id: 'u4', title: 'Ana Reyes', detail: 'user-5038e6 · borrower · facebook_x@moodeng.app' }]);
+      expect(searchAdmin('cruz', { pages, users: fbUsers, requests })[0]).toMatchObject({ kind: 'user', id: 'u4' });
+      expect(searchAdmin('lito', { pages, users: fbUsers, requests })[0]).toMatchObject({ kind: 'user', id: 'u5', title: 'Lito Gomez' });
+   });
+
    it('finds pages and loan requests', () => {
       expect(searchAdmin('calen', { pages, users, requests })).toEqual([
          { kind: 'page', id: 'calendar', title: 'Calendar', detail: 'Overview' }
