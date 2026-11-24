@@ -57,7 +57,7 @@ export function useReplayClass<T extends HTMLElement>() {
       const el = ref.current;
       if (!el) return;
       if (timerRef.current) window.clearTimeout(timerRef.current);
-      el.classList.remove('tap-squish', 'tap-dizzy', 'tap-wiggle');
+      el.classList.remove('tap-squish', 'tap-dizzy', 'tap-wiggle', 'connect-shake');
       void el.offsetWidth; // reflow so the same animation can run again
       el.classList.add(className);
       // A timer rather than `animationend`: that event never fires when the tab is hidden mid-animation.

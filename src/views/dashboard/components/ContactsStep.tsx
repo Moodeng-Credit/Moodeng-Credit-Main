@@ -28,6 +28,7 @@ import { buildArmedUrl, copyTextFromTap, stripFbCode } from '@/lib/inAppHandoff'
 import { getLastPushFailure, type PushFailure } from '@/lib/push/webPushClient';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { playSuccess } from '@/lib/uiSounds';
+import { useReplayClass } from '@/components/motion/TapDelight';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, LockedStepCard, OptionCard, PrimaryButton, StepLabel } from '@/views/dashboard/components/connectKit';
 import DesktopMessengerCard from '@/views/dashboard/components/DesktopMessengerCard';
 import NotificationsUnblockGuide from '@/views/dashboard/components/NotificationsUnblockGuide';
@@ -1089,6 +1090,19 @@ export default function ContactsStep({
    const onboardingPage = source === 'connect';
    const pinContinue = onboardingPage && (canContinue || continueTurnsOnPush);
 
+   // A green "done" card does nothing by itself, and people tap it to find out what's next (PostHog,
+   // Nov 2026: 13 people a week). So the tap shakes the next thing to do: Continue once it can be
+   // tapped, otherwise the reminders card still waiting below.
+   const continueNudge = useReplayClass<HTMLDivElement>();
+   const remindersNudge = useReplayClass<HTMLDivElement>();
+   const pointAtNextStep = (card: string) => {
+      const toContinue = canContinue || continueTurnsOnPush || !remindersNudge.ref.current?.childElementCount;
+      track('contact_done_card_tapped', { source, card, next: toContinue ? 'continue' : 'reminders' });
+      const target = toContinue ? continueNudge : remindersNudge;
+      target.ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      target.play('connect-shake');
+   };
+
    return (
       <div
          className={`flex flex-1 flex-col gap-4 px-5 pt-5 text-md-b2 text-md-heading ${
@@ -1134,6 +1148,7 @@ export default function ContactsStep({
          {facebookLocked ? (
             <LockedStepCard
                hint="Unlocks after step 1"
+               onTap={() => track('contact_locked_card_tapped', { source, card: 'facebook' })}
                icon={<Facebook aria-hidden="true" className="size-9 text-[#0866FF]" strokeWidth={2} />}
                title="Connect Facebook"
             />
@@ -1171,6 +1186,7 @@ export default function ContactsStep({
                      doneLabel="Verified"
                      icon={<i aria-hidden="true" className="fab fa-whatsapp text-[38px] leading-none text-[#25D366]" />}
                      onClick={() => handleVerify('whatsapp')}
+                     onDoneTap={() => pointAtNextStep('whatsapp')}
                      subtitle={startingChannel === 'whatsapp' ? 'Opening WhatsApp…' : 'Just hit send — nothing to type'}
                      title="WhatsApp"
                   />
@@ -1535,6 +1551,7 @@ export default function ContactsStep({
                      disabled={startingChannel !== null}
                      done={messengerVerified}
                      doneLabel="Verified"
+                     onDoneTap={() => pointAtNextStep('messenger')}
                      href={iosMessenger && preparedMessenger ? preparedMessenger.link : undefined}
                      icon={<Facebook aria-hidden="true" className="size-9 text-[#0866FF]" strokeWidth={2} />}
                      onClick={iosMessenger && preparedMessenger ? tapPreparedMessenger : () => void handleVerify('messenger')}
@@ -1569,6 +1586,7 @@ export default function ContactsStep({
          {hasReminderStep && !contactVerified ? (
             <LockedStepCard
                hint={indoWhatsAppFirst ? 'Unlocks after step 2' : 'Unlocks after step 1'}
+               onTap={() => track('contact_locked_card_tapped', { source, card: 'reminders' })}
                icon={
                   offerWhatsAppReminders || requireWhatsAppLine ? (
                      <i aria-hidden="true" className="fab fa-whatsapp text-[38px] leading-none text-[#25D366]" />
@@ -1579,50 +1597,53 @@ export default function ContactsStep({
                title={offerWhatsAppReminders || requireWhatsAppLine ? 'Get reminders on WhatsApp' : 'Turn on reminders'}
             />
          ) : null}
-         {showPushCard ? (
-            // Just confirmed Facebook in onboarding: this is the one tap left, so it shakes and says so.
-            <div className={nudgeReminders ? 'connect-shake' : undefined}>
-               <OptionCard
-                  badge={pushBlocked || pushUnavailable ? 'Optional' : 'Required'}
-                  disabled={push.isBusy}
-                  done={pushOn}
-                  doneLabel="On"
-                  icon={<BellRing aria-hidden="true" className="size-9 text-[#6b55f7]" strokeWidth={2} />}
-                  onClick={() => {
-                     if (pushBlocked) {
-                        track('contact_push_guide_opened', { source });
-                        setGuideStillBlocked(false);
-                        setShowUnblockGuide(true);
-                        return;
+         {/* The reminders still to do: shaken when someone taps a green done card above (pointAtNextStep). */}
+         <div className="flex flex-col gap-4 empty:hidden" ref={remindersNudge.ref}>
+            {showPushCard ? (
+               // Just confirmed Facebook in onboarding: this is the one tap left, so it shakes and says so.
+               <div className={nudgeReminders ? 'connect-shake' : undefined}>
+                  <OptionCard
+                     badge={pushBlocked || pushUnavailable ? 'Optional' : 'Required'}
+                     disabled={push.isBusy}
+                     done={pushOn}
+                     doneLabel="On"
+                     icon={<BellRing aria-hidden="true" className="size-9 text-[#6b55f7]" strokeWidth={2} />}
+                     onClick={() => {
+                        if (pushBlocked) {
+                           track('contact_push_guide_opened', { source });
+                           setGuideStillBlocked(false);
+                           setShowUnblockGuide(true);
+                           return;
+                        }
+                        void handleEnablePush();
+                     }}
+                     subtitle={
+                        push.isBusy
+                           ? 'Turning on…'
+                           : pushBlocked
+                             ? 'Blocked in your browser. Tap to see how to turn it on.'
+                             : pushUnavailable
+                             ? requireReminders
+                                ? 'Not working on this phone.'
+                                : 'Not working on this phone. You can continue — we’ll remind you on Messenger and email.'
+                             : nudgeReminders
+                             ? 'One more tap: the button below, then Allow.'
+                             : 'We remind you before your due date'
                      }
-                     void handleEnablePush();
-                  }}
-                  subtitle={
-                     push.isBusy
-                        ? 'Turning on…'
-                        : pushBlocked
-                          ? 'Blocked in your browser. Tap to see how to turn it on.'
-                          : pushUnavailable
-                          ? requireReminders
-                             ? 'Not working on this phone.'
-                             : 'Not working on this phone. You can continue — we’ll remind you on Messenger and email.'
-                          : nudgeReminders
-                          ? 'One more tap: the button below, then Allow.'
-                          : 'We remind you before your due date'
-                  }
-                  title="Turn on reminders"
+                     title="Turn on reminders"
+                  />
+               </div>
+            ) : null}
+            {showWhatsAppCard ? (
+               <WhatsAppRemindersCard
+                  onVerified={() => setWhatsappVerified(true)}
+                  required={requireWhatsAppLine || (remindersMandatory && !skippedNoWhatsApp)}
+                  source={source}
+                  userId={userId}
+                  verified={whatsappVerified}
                />
-            </div>
-         ) : null}
-         {showWhatsAppCard ? (
-            <WhatsAppRemindersCard
-               onVerified={() => setWhatsappVerified(true)}
-               required={requireWhatsAppLine || (remindersMandatory && !skippedNoWhatsApp)}
-               source={source}
-               userId={userId}
-               verified={whatsappVerified}
-            />
-         ) : null}
+            ) : null}
+         </div>
          {/* Viber first: far more used in the Philippines than Telegram. */}
          {showViberCard ? <ViberRemindersCard onVerified={() => setViberVerified(true)} source={source} verified={viberVerified} /> : null}
          {showTelegramCard ? (
@@ -1661,6 +1682,7 @@ export default function ContactsStep({
          />
 
          <div
+            ref={continueNudge.ref}
             className={`mt-auto flex flex-col gap-1 pt-2 ${
                pinContinue
                   ? 'sticky bottom-0 z-10 -mx-5 bg-white px-5 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-10px_16px_-6px_rgba(89,77,101,0.12)] dark:bg-[#100d17]'

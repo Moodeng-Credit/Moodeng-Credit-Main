@@ -275,10 +275,11 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
                <span className="bg-gradient-to-r from-[#c3bbce] to-[#a78acf] bg-clip-text text-[clamp(16px,4.6vw,20px)] font-semibold leading-9 text-transparent">
                   Credit Level
                </span>
+               {/* The icon is 14px; the ::before gives it a ~38px tap area (PostHog: rage-taps on it). */}
                <button
                   type="button"
                   onClick={() => setIsCreditTipOpen((isOpen) => !isOpen)}
-                  className="ml-0.5 h-3.5 w-3.5 self-center"
+                  className="relative ml-0.5 h-3.5 w-3.5 self-center touch-manipulation before:absolute before:-inset-3 before:content-['']"
                   aria-label="About credit level"
                   aria-expanded={isCreditTipOpen}
                >
