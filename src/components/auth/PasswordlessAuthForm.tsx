@@ -16,6 +16,7 @@ import {
    SIGNUP_RESEND_STORAGE_KEY,
    SMS_RESEND_STORAGE_KEY
 } from '@/lib/authPaths';
+import { isFacebookPrimaryHere } from '@/lib/facebookAuth';
 import { buildAndroidIntentUrl, type InAppBrowserInfo, isFacebookInApp, openInSafari, setInAppNoticeHidden } from '@/lib/inAppBrowser';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { getLastUsedAuth } from '@/lib/lastUsedAuth';
@@ -99,7 +100,9 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
    const facebookInApp = isFacebookInApp(inApp);
    const isSms = channel === 'sms';
    // Email-first sign-up (guest account, no code until after Facebook) — in-app browsers only,
-   // behind the guest_signup_enabled setting.
+   // behind the guest_signup_enabled setting. Not where "Continue with Facebook" leads (Facebook/Messenger/
+   // Instagram since 2026-11-24): 0 of 24 guests made in Nov were approved and guests can't sign in again
+   // outside Facebook, so there the email box sends a real code instead. The Facebook kill switch brings guests back.
    const [guestSignupEnabled, setGuestSignupEnabled] = useState(false);
    const [emailTaken, setEmailTaken] = useState(false);
    // UniSMS's shared sender can't text Smart, TNT or Sun numbers, so a Smart-looking prefix goes
@@ -108,7 +111,7 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
    const network = phoneCheck?.kind === 'ok' ? phNetwork(phoneCheck.e164) : null;
    const smartBlocked = network === 'smart';
    useEffect(() => {
-      if (mode !== 'signup' || !inApp.isInApp) return;
+      if (mode !== 'signup' || !inApp.isInApp || isFacebookPrimaryHere(inApp)) return;
       let cancelled = false;
       void Promise.resolve(getSupabaseBrowserClient().rpc('get_guest_signup_enabled'))
          .then(({ data }) => {

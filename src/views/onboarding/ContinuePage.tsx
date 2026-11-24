@@ -4,7 +4,7 @@ import posthog from 'posthog-js';
 import { useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
-import { PasswordlessAuthForm } from '@/components/auth';
+import { DividerWithText, FacebookAuthButton, PasswordlessAuthForm, useFacebookPrimary } from '@/components/auth';
 
 import { usePreKycGate } from '@/hooks/usePreKycGate';
 import { getSignedInReturnPath } from '@/hooks/useSignedInRedirect';
@@ -49,6 +49,8 @@ export default function ContinuePage() {
    const tracked = useRef(false);
    const formTouched = useRef(false);
    const inApp = useMemo(() => detectInAppBrowser(), []);
+   // Facebook first: one tap back in for anyone whose account has Facebook (email/phone code below for the rest).
+   const facebookPrimary = useFacebookPrimary();
 
    useEffect(() => {
       if (!settled || tracked.current) return;
@@ -87,8 +89,18 @@ export default function ContinuePage() {
             <img alt="" className="h-28 w-auto" src="/hippos/connect/approved.png" />
             <h1 className="text-[24px] font-extrabold leading-[30px] text-[#26143f]">Sign in to continue</h1>
             <p className="text-[16px] leading-[22px] text-[#594d65]">
-               Use the number or email you signed up with. We&apos;ll send you a code.
+               {facebookPrimary
+                  ? 'Signed up with Facebook? Tap it below. Otherwise use your number or email and we\u2019ll send you a code.'
+                  : 'Use the number or email you signed up with. We\u2019ll send you a code.'}
             </p>
+            {facebookPrimary ? (
+               <>
+                  <div className="flex w-full justify-center">
+                     <FacebookAuthButton isSignUp={false} variant="full" />
+                  </div>
+                  <DividerWithText text="OR" lineColor="#9285A0" textColor="#877897" />
+               </>
+            ) : null}
             <div
                className="flex w-full justify-center"
                onFocusCapture={() => {

@@ -29,6 +29,12 @@ describe('auth confirm recovery routing', () => {
       expect(getAuthConfirmDestination(false, null)).toBe('/auth-success?type=created');
    });
 
+   it('a NEW account made by Facebook login asks "used Moodeng before?" first; a returning one goes to the dashboard', () => {
+      expect(getAuthConfirmDestination(false, null, 'facebook')).toBe('/auth-success?type=created&new=1&via=facebook');
+      expect(getAuthConfirmDestination(false, null, 'google')).toBe('/auth-success?type=created');
+      expect(getAuthConfirmDestination(false, 'borrower', 'facebook')).toBe('/dashboard');
+   });
+
    it('accepts signup token hash redirects from email confirmation links', () => {
       expect(getAuthEmailOtpType(new URL('https://staging.dashboard.moodeng.app/auth/confirm?token_hash=abc&type=signup'))).toBe('signup');
    });

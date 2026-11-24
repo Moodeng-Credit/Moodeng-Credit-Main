@@ -63,6 +63,10 @@ describe('/continue', () => {
       expect(container.textContent).toContain('Sign in to continue');
       expect(container.querySelector('form input')).not.toBeNull();
       expect(container.textContent).toContain('Facebook');
+      // Facebook first: one tap back in, above the code form.
+      const facebook = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.includes('Continue with Facebook'));
+      expect(facebook).toBeTruthy();
+      expect(facebook!.compareDocumentPosition(container.querySelector('form') as HTMLFormElement) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(container.textContent).not.toContain('Go back to where you started');
       expect(takeNextPath()).toBe('/continue?via=bot');
    });

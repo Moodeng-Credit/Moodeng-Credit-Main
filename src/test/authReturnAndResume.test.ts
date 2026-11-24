@@ -134,6 +134,18 @@ describe('screens', () => {
       expect(container.querySelector('[data-testid="where"]')?.textContent).toBe('/sign-in');
    });
 
+   it('Facebook login made a new account: asked outside the Philippines too, and told to log in without Facebook', async () => {
+      h.inPh = false;
+      await render('/auth-success?type=created&new=1&via=facebook', createElement(AuthSuccessPage));
+      expect(container.textContent).toContain('Have you used Moodeng before?');
+      await act(async () => button("I've used Moodeng before")?.click());
+      expect(container.textContent).toContain('This Facebook isn\u2019t connected to your Moodeng account yet');
+      expect(container.textContent).toContain('(not Facebook)');
+      await act(async () => button('Log in to my account')?.click());
+      expect(h.logout).toHaveBeenCalled();
+      expect(container.querySelector('[data-testid="where"]')?.textContent).toBe('/sign-in');
+   });
+
    it('not asked outside the Philippines, or for a returning account', async () => {
       h.inPh = false;
       await render('/auth-success?type=created&new=1', createElement(AuthSuccessPage));

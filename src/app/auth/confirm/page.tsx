@@ -18,6 +18,9 @@ import type { AppDispatch } from '@/store/store';
 
 const VERIFY_FALLBACK = '/auth-success?type=verify';
 const CREATED_PATH = '/auth-success?type=created';
+// A NEW account made by Facebook login: usually a borrower whose Facebook isn't connected to their old
+// (phone/email/Google) account yet, so "Have you used Moodeng before?" is asked first, everywhere.
+const FACEBOOK_CREATED_PATH = '/auth-success?type=created&new=1&via=facebook';
 const RECOVERY_PATH = '/reset-password';
 
 type AuthEmailOtpType = 'signup' | 'magiclink' | 'recovery' | 'invite' | 'email_change' | 'email';
@@ -62,13 +65,14 @@ export function sessionHasRecoveryAmr(accessToken?: string | null): boolean {
    }
 }
 
-export function getAuthConfirmDestination(isRecoveryRedirect: boolean, userRole?: string | null): string {
+export function getAuthConfirmDestination(isRecoveryRedirect: boolean, userRole?: string | null, provider?: string | null): string {
    if (isRecoveryRedirect) {
       return RECOVERY_PATH;
    }
 
    // Signed in from the email link: back to the page that sent them to sign in, if any.
-   return userRole ? (takeNextPath() ?? '/dashboard') : CREATED_PATH;
+   if (userRole) return takeNextPath() ?? '/dashboard';
+   return provider === 'facebook' ? FACEBOOK_CREATED_PATH : CREATED_PATH;
 }
 
 /**
@@ -129,7 +133,7 @@ export default function AuthConfirmPage() {
          const user = await dispatch(fetchUser())
             .unwrap()
             .catch(() => null);
-         finish(getAuthConfirmDestination(isRecovery, user?.userRole), isRecovery);
+         finish(getAuthConfirmDestination(isRecovery, user?.userRole, sessionData.session.user.app_metadata?.provider), isRecovery);
          return true;
       };
 
@@ -220,8 +224,10 @@ export default function AuthConfirmPage() {
             const isRecovery = isRecoveryRedirect || sawRecoveryEvent || sessionHasRecoveryAmr(session?.access_token);
             void dispatch(fetchUser())
                .unwrap()
-               .then((user) => finish(getAuthConfirmDestination(isRecovery, user?.userRole), isRecovery))
-               .catch(() => finish(getAuthConfirmDestination(isRecovery), isRecovery));
+               .then((user) =>
+                  finish(getAuthConfirmDestination(isRecovery, user?.userRole, session.user.app_metadata?.provider), isRecovery)
+               )
+               .catch(() => finish(getAuthConfirmDestination(isRecovery, null, session.user.app_metadata?.provider), isRecovery));
          });
          unsub = () => sub.subscription.unsubscribe();
 
