@@ -195,6 +195,14 @@ export const isClearlyOutsideMessagingWindow = (contact: SendPulseContact | null
    return !Number.isNaN(last) && now - last > CLEARLY_CLOSED_MS;
 };
 
+// Meta's HUMAN_AGENT window: 7 days after the person's last message. Stop an hour short so a slow send
+// never lands just outside it.
+const HUMAN_AGENT_MS = (7 * 24 - 1) * 60 * 60 * 1000;
+export const isInsideHumanAgentWindow = (contact: SendPulseContact | null, now = Date.now()) => {
+   const last = Date.parse(contact?.last_activity_at ?? '');
+   return !Number.isNaN(last) && now - last < HUMAN_AGENT_MS;
+};
+
 // imageUrl: a public JPG/PNG (≤5 MB) shown on top of the card, square so a poster isn't cropped.
 // `moreButtons`: up to two more link buttons under the first (Messenger allows three per card).
 export type MessengerCard = {
@@ -209,10 +217,15 @@ export type MessengerCard = {
 // Messenger caps card titles and subtitles at 80 chars and button titles at 20.
 // quickReplies: Messenger quick replies under the text (≤ 13, ≤ 20 chars). SendPulse doesn't document
 // them; Messenger's own shape is passed through, and a tap comes back as a message with the title as text.
-export const buildTextPayload = (contactId: string, text: string, quickReplies: string[] = []) => ({
+// humanAgent: Meta's HUMAN_AGENT tag, which lets a person on the team reply up to 7 days after the
+// person last wrote (tested through SendPulse 2026-11-24, 26h after the last message: delivered). Only for
+// replies a human typed (Discord Reply, admin inbox), never for bots, reminders or marketing.
+const messageType = (humanAgent: boolean) => (humanAgent ? { type: 'MESSAGE_TAG', tag: 'HUMAN_AGENT' } : { type: 'RESPONSE' });
+
+export const buildTextPayload = (contactId: string, text: string, quickReplies: string[] = [], humanAgent = false) => ({
    contact_id: contactId,
    message: {
-      type: 'RESPONSE',
+      ...messageType(humanAgent),
       content_type: 'message',
       text,
       ...(quickReplies.length
@@ -225,10 +238,10 @@ export const buildTextPayload = (contactId: string, text: string, quickReplies: 
    }
 });
 
-export const buildCardPayload = (contactId: string, card: MessengerCard) => ({
+export const buildCardPayload = (contactId: string, card: MessengerCard, humanAgent = false) => ({
    contact_id: contactId,
    message: {
-      type: 'RESPONSE',
+      ...messageType(humanAgent),
       content_type: 'template',
       data: {
          attachment: {
@@ -330,7 +343,7 @@ export const lastTypedAt = (
 
 export const sendMessengerMessage = async (
    contactId: string | null | undefined,
-   content: { text?: string; card?: MessengerCard; quickReplies?: string[] }
+   content: { text?: string; card?: MessengerCard; quickReplies?: string[]; humanAgent?: boolean }
 ): Promise<SendPulseResult> => {
    if (!contactId) return { ok: false, reason: 'no_contact' };
    if (!isSendPulseConfigured()) return { ok: false, reason: 'not_configured' };
@@ -345,10 +358,16 @@ export const sendMessengerMessage = async (
       // Clearly outside Meta's 24h window: don't send. Meta rejects it anyway ("(#10) … outside the
       // allowed window"), and every rejected try shows up as a grey ⚠ message in the SendPulse chat.
       // Callers get the same 'send_failed' as a rejection, so their WhatsApp/Telegram fallbacks still run.
-      if (isClearlyOutsideMessagingWindow(contact)) {
-         console.log(`[sendpulse] skipped: outside the 24h window (last_activity_at=${JSON.stringify(contact.last_activity_at)})`);
-         return { ok: false, reason: 'send_failed' };
+      // A human reply (humanAgent) past 24h goes out with the HUMAN_AGENT tag while it's inside 7 days.
+      const outside24h = isClearlyOutsideMessagingWindow(contact);
+      const useHumanAgent = Boolean(content.humanAgent) && !isInsideMessagingWindow(contact) && isInsideHumanAgentWindow(contact);
+      if (outside24h && !useHumanAgent) {
+         console.log(
+            `[sendpulse] skipped: outside the ${content.humanAgent ? '7-day human agent' : '24h'} window (last_activity_at=${JSON.stringify(contact.last_activity_at)})`
+         );
+         return { ok: false, reason: content.humanAgent ? 'outside_7_days' : 'send_failed' };
       }
+      if (useHumanAgent) console.log(`[sendpulse] human reply past 24h: sending with HUMAN_AGENT tag`);
       // Otherwise our 24h check is advisory only. On 2026-10-01 it said "closed" for every send to a
       // borrower who had messaged the Page 34 seconds earlier, so funded, no-show and reminder messages
       // were all silently dropped. Near the edge (or with an odd status/unsubscribe) SendPulse and Meta
@@ -361,9 +380,10 @@ export const sendMessengerMessage = async (
 
       const token = await getToken();
       if (!token) return { ok: false, reason: 'auth_failed' };
-      if (content.text && !(await postSend(token, buildTextPayload(contactId, content.text, content.quickReplies))))
+      if (content.text && !(await postSend(token, buildTextPayload(contactId, content.text, content.quickReplies, useHumanAgent))))
          return { ok: false, reason: 'send_failed' };
-      if (content.card && !(await postSend(token, buildCardPayload(contactId, content.card)))) return { ok: false, reason: 'send_failed' };
+      if (content.card && !(await postSend(token, buildCardPayload(contactId, content.card, useHumanAgent))))
+         return { ok: false, reason: 'send_failed' };
       return { ok: true };
    } catch (err) {
       console.error('[sendpulse] send threw', err instanceof Error ? err.message : err);
