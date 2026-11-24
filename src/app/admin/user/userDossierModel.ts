@@ -68,8 +68,8 @@ export interface DossierUser {
    location: string | null;
    income_type: string | null;
    income_description: string | null;
-   monthly_income: number | null;
-   monthly_expenses: number | null;
+   monthly_income: number | string | null;
+   monthly_expenses: number | string | null;
    other_income: string | null;
    payday_type: string | null;
    payday_start: number | null;
