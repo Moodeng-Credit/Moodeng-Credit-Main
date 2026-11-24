@@ -110,13 +110,25 @@ async function countRecipients(page, token, contactId) {
    return typeof total === 'number' ? total : { error: `count ${r.status}: ${r.text.slice(0, 120)}` };
 }
 
+// Meta rejects a Messenger template whose parameters contain '#', '%', '$' or emojis ("Special characters
+// ... not allowed in template parameter"). SendPulse still counts it as "sent", so every reminder with
+// "$20" silently never arrived (found 2026-11-24 in the campaign report). "$20" → "20 USDC"; the rest is
+// stripped, and runs of spaces collapsed.
+const cleanTemplateParam = (value) =>
+   String(value ?? '')
+      .replace(/\$\s*(\d[\d.,]*)/g, '$1 USDC')
+      .replace(/[#%$]/g, '')
+      .replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
 const reminderText = (p) =>
    `Hi ${p.first_name}, this is a reminder that your Moodeng loan payment of ${p.amount_text} is due on ${p.due_text}. Tap the button below to see your balance and pay.`;
 
 async function sendOne(page, token, p) {
    // Never send without a well-formed contact id: an empty or odd filter must not reach SendPulse.
    if (!CONTACT_ID.test(p.contact_id ?? '')) return { ok: false, why: `bad contact id "${p.contact_id}"` };
-   const params = [p.first_name, p.amount_text, p.due_text].map((v) => String(v ?? '').trim());
+   const params = [p.first_name, p.amount_text, p.due_text].map(cleanTemplateParam);
    if (params.some((v) => !v)) return { ok: false, why: 'missing name/amount/date' };
 
    const n = await countRecipients(page, token, p.contact_id);
