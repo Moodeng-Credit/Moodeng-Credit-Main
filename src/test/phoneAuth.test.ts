@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { describeOtpError } from '@/lib/otpErrors';
 import {
    checkPhPhone,
+   facebookPlaceholderEmail,
    formatPhPhone,
    generatePhoneUsername,
    isPlaceholderEmail,
@@ -75,6 +76,12 @@ describe('phone account details', () => {
       expect(isPlaceholderEmail('line_u655@moodeng.app')).toBe(true);
       expect(isPlaceholderEmail('maria@gmail.com')).toBe(false);
       expect(isPlaceholderEmail(null)).toBe(false);
+   });
+
+   it('gives Facebook sign-ups without an email a placeholder, recognised like the others', () => {
+      const email = facebookPlaceholderEmail('5038e60e-0000-4000-8000-123456789abc');
+      expect(email).toBe('facebook_5038e60e000040008000123456789abc@moodeng.app');
+      expect(isPlaceholderEmail(email)).toBe(true);
    });
 
    it('recognises TikTok sign-ups (tiktok-login gives them a made-up tiktok_ address)', () => {
