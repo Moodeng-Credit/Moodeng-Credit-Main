@@ -134,6 +134,10 @@ export const getRewardWindow = (
  * day it names the dates that count ("Pay Dec 1 – Dec 16 → ₱50 food"). Null for an overdue loan (the
  * streak is already gone) and for someone with no streak rewards.
  */
+/** What the next on-time payment earns: "₱50 food", or the streak it grows ("🔥 streak 2"). */
+export const getRepayRewardLabel = (streak: RepayStreak): string =>
+   streak.nextStep !== null && streak.toGo === 1 && streak.nextPhp ? `₱${streak.nextPhp} food` : `🔥 streak ${streak.current + 1}`;
+
 export const getRepayRewardLine = (
    streak: RepayStreak,
    daysRemaining: number,
@@ -146,7 +150,7 @@ export const getRepayRewardLine = (
    const earnsVoucher = streak.nextStep !== null && streak.toGo === 1 && streak.nextPhp;
    if (!earnsVoucher && streak.nextStep === null && streak.current === 0) return null;
    if (window) {
-      return copy.window(window.from, window.to, earnsVoucher ? `₱${streak.nextPhp} food` : `🔥 streak ${streak.current + 1}`);
+      return copy.window(window.from, window.to, getRepayRewardLabel(streak));
    }
    if (earnsVoucher) return dueToday ? copy.payTodayFor(streak.nextPhp as number) : copy.payFor(streak.nextPhp as number);
    if (dueToday && streak.current > 0) return copy.keep(streak.current);

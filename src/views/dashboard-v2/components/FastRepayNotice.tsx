@@ -1,5 +1,6 @@
 import { type PointerEvent, useEffect, useMemo, useRef, useState } from 'react';
 
+import { Check, Hourglass, Lock } from 'lucide-react';
 import posthog from 'posthog-js';
 import { useSelector } from 'react-redux';
 
@@ -12,7 +13,6 @@ import type { RootState } from '@/store/store';
 import type { Loan } from '@/types/loanTypes';
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
-import { getRewardRuleCopy } from '@/views/dashboard-v2/dashboardV2Model';
 import { type FastRepayNotice, getFastRepayNotice, isFastRepayNoticeDue } from '@/views/dashboard-v2/fastRepayNotice';
 
 // "Before you repay" carousel (George, 2026-11-24): for a loan funded under 48 hours ago, one or two
@@ -31,9 +31,12 @@ const COPY = {
    en: {
       title: 'Before you repay',
       limitTitle: 'Keep your loan 2+ days',
-      limitWhen: (when: string) => `Pay from ${when} to raise your limit`,
-      limitNote: 'Paying sooner is fine. Your limit just stays.',
+      before: (when: string) => `Before ${when}`,
+      from: (when: string) => `From ${when}`,
+      limitStays: (amount: number) => `Stays $${amount}`,
+      limitUp: (amount: number) => `Limit $${amount}`,
       foodTitle: 'Best days to pay',
+      noReward: 'No reward',
       next: 'Next',
       gotIt: 'Got it',
       close: 'Close'
@@ -41,19 +44,55 @@ const COPY = {
    fil: {
       title: 'Bago ka magbayad',
       limitTitle: 'Hawakan muna ang loan nang 2+ araw',
-      limitWhen: (when: string) => `Magbayad simula ${when} para tumaas ang limit mo`,
-      limitNote: 'Okay lang magbayad nang mas maaga, pero hindi tataas ang limit.',
+      before: (when: string) => `Bago ${when}`,
+      from: (when: string) => `Simula ${when}`,
+      limitStays: (amount: number) => `$${amount} pa rin`,
+      limitUp: (amount: number) => `Limit $${amount}`,
       foodTitle: 'Pinakamagandang araw magbayad',
+      noReward: 'Walang reward',
       next: 'Susunod',
       gotIt: 'Sige',
       close: 'Isara'
    }
 };
 
+// Moodeng art made for these cards (Gemini, from the stopwatch / chef hippos).
 const SLIDE_ART: Record<Slide, string> = {
-   limit: '/withdraw-setup/connecting-stopwatch.webp',
-   food: DASHBOARD_V2_ASSETS.mooMenuChef
+   limit: '/fast-repay/keep-two-days.webp',
+   food: '/fast-repay/best-days-food.webp'
 };
+
+/** One line of the card's mini schedule: grey "too early" or green "this counts". */
+function TimeRow({ good, when, result }: { good: boolean; when: string; result: string }) {
+   return (
+      <li
+         className={`flex items-center gap-2.5 rounded-[16px] border-2 px-3 py-2.5 text-left ${
+            good
+               ? 'border-[#9fe3b4] bg-[#eefbf2] dark:border-[#2f6b45] dark:bg-[#123222]'
+               : 'border-transparent bg-[#f4f2f8] dark:bg-[#211a2d]'
+         }`}
+      >
+         <span
+            aria-hidden="true"
+            className={`grid size-7 shrink-0 place-items-center rounded-full ${
+               good ? 'bg-[#4aa256] text-white' : 'bg-[#e2dde9] text-[#8f86a0] dark:bg-[#33294a] dark:text-[#a99cb8]'
+            }`}
+         >
+            {good ? <Check className="size-4" strokeWidth={3} /> : <Lock className="size-3.5" strokeWidth={2.5} />}
+         </span>
+         <span
+            className={`min-w-0 flex-1 text-[14px] font-semibold leading-[18px] ${good ? 'text-[#1f5c33] dark:text-[#bfeccc]' : 'text-[#8f86a0] dark:text-[#a99cb8]'}`}
+         >
+            {when}
+         </span>
+         <span
+            className={`shrink-0 text-[15px] font-extrabold leading-[18px] ${good ? 'text-[#2f8a4a] dark:text-[#7fd693]' : 'text-[#8f86a0] dark:text-[#a99cb8]'}`}
+         >
+            {result}
+         </span>
+      </li>
+   );
+}
 
 // Preview (?fast=1): a $15 loan funded 3 hours ago, due in 30 days, first on-time payment pays ₱50.
 const PREVIEW_STREAK: RepayStreak = { current: 0, best: 0, nextStep: 1, toGo: 1, nextPhp: 50 };
@@ -219,19 +258,13 @@ export function FastRepayCarousel({
 
    return (
       <div
-         className="fixed inset-0 z-[80] flex overflow-y-auto overscroll-contain bg-black/80 px-5 py-6"
+         className="fixed inset-0 z-[80] flex overflow-y-auto overscroll-contain bg-[#140e22]/85 px-5 py-6 backdrop-blur-[3px]"
          role="dialog"
          aria-modal="true"
          aria-labelledby="fast-repay-title"
          data-testid="fast-repay-notice"
       >
          <div className="m-auto flex w-full max-w-[400px] flex-col items-center">
-            <p
-               id="fast-repay-title"
-               className="mb-2 max-w-[350px] text-center text-[26px] font-black italic leading-7 text-[#c4b8ff] underline decoration-[#7e6afa] decoration-4 underline-offset-8"
-            >
-               {copy.title}
-            </p>
             <div
                className="w-full touch-pan-y select-none overflow-hidden rounded-[26px] bg-gradient-to-b from-[#f3ecff] via-white via-40% to-white dark:from-dv2-tab dark:via-dv2-card dark:to-dv2-card"
                style={{
@@ -243,26 +276,39 @@ export function FastRepayCarousel({
                onPointerUp={onPointerEnd}
                onPointerCancel={onPointerEnd}
             >
+               {/* The title sits inside the card: floating above it, it ran into the page header behind. */}
+               <div className="flex justify-center pt-5">
+                  <span
+                     id="fast-repay-title"
+                     className="inline-flex items-center gap-1.5 rounded-full bg-[#efeaff] px-3 py-1 text-[13px] font-bold uppercase tracking-[0.06em] text-[#6b55f7] dark:bg-[#2a1f45] dark:text-[#c9bcff]"
+                  >
+                     <Hourglass aria-hidden="true" className="size-3.5" strokeWidth={2.5} />
+                     {copy.title}
+                  </span>
+               </div>
                <div key={slide} className="connect-stat-in flex flex-col items-center">
-                  <img src={SLIDE_ART[slide]} alt="" className="mt-4 h-[170px] w-auto object-contain" draggable={false} />
-                  <div className="flex w-full flex-col items-center gap-2 px-5 pb-2 pt-3 text-center text-[#594d65] dark:text-[#d9cfe6]">
+                  <img src={SLIDE_ART[slide]} alt="" className="mt-1 h-[180px] w-[180px] object-contain" draggable={false} />
+                  <div className="flex w-full flex-col items-center gap-3 px-5 pb-2 pt-1 text-center">
+                     <p className="text-[22px] font-extrabold leading-7 text-[#2b2140] dark:text-[#f5f0ff]">
+                        {slide === 'limit' ? copy.limitTitle : copy.foodTitle}
+                     </p>
                      {slide === 'limit' && notice.levelUp ? (
                         <>
-                           <p className="text-[22px] font-bold leading-7">{copy.limitTitle}</p>
-                           <p className={`text-[34px] font-black leading-10 ${GOLD_TEXT}`}>
+                           <p className={`-mt-1 text-[32px] font-black leading-9 ${GOLD_TEXT}`}>
                               ${notice.levelUp.from} → ${notice.levelUp.to}
                            </p>
-                           <p className="text-[16px] font-semibold leading-5">{copy.limitWhen(when)}</p>
-                           <p className="text-[14px] leading-[18px] text-[#8a8494] dark:text-[#a99cb8]">{copy.limitNote}</p>
+                           <ul className="flex w-full flex-col gap-2">
+                              <TimeRow good={false} result={copy.limitStays(notice.levelUp.from)} when={copy.before(when)} />
+                              <TimeRow good result={copy.limitUp(notice.levelUp.to)} when={copy.from(when)} />
+                           </ul>
                         </>
+                     ) : notice.reward ? (
+                        <ul className="flex w-full flex-col gap-2">
+                           <TimeRow good={false} result={copy.noReward} when={copy.before(notice.reward.from)} />
+                           <TimeRow good result={notice.reward.label} when={`${notice.reward.from} – ${notice.reward.to}`} />
+                        </ul>
                      ) : (
-                        <>
-                           <p className="text-[22px] font-bold leading-7">{copy.foodTitle}</p>
-                           <p className="text-[20px] font-black leading-7 text-[#2f8a4a] dark:text-[#7fd693]">{notice.rewardLine}</p>
-                           <p className="text-[14px] leading-[18px] text-[#8a8494] dark:text-[#a99cb8]">
-                              {getRewardRuleCopy(locale).earlyNote}
-                           </p>
-                        </>
+                        <p className="text-[18px] font-bold leading-6 text-[#2f8a4a] dark:text-[#7fd693]">{notice.rewardLine}</p>
                      )}
                   </div>
                </div>

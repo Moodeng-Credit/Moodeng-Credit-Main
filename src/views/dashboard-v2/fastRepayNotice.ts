@@ -5,7 +5,7 @@ import type { RepayStreak } from '@/lib/friendReferrals';
 import { getDaysUntilDueDay, getDueDayEnd, getLoanTimezone, getRewardFromAt } from '@/lib/loanDeadline';
 import { currentDueDate } from '@/lib/repaymentSchedule';
 import type { Loan } from '@/types/loanTypes';
-import { getRepayRewardLine, getRewardWindow } from '@/views/dashboard-v2/dashboardV2Model';
+import { getRepayRewardLabel, getRepayRewardLine, getRewardWindow } from '@/views/dashboard-v2/dashboardV2Model';
 
 // "Before you repay" pop-up for a loan funded under 48 hours ago (George, 2026-11-24): paying it back
 // this soon doesn't raise the limit (the 48-hour rule) and, before the loan's halfway day, earns no
@@ -26,6 +26,8 @@ export interface FastRepayNotice {
    levelUp: { from: number; to: number } | null;
    /** "Pay Dec 1 – Dec 16 → ₱50 food" (or the streak it grows); null when no reward is waiting on the dates. */
    rewardLine: string | null;
+   /** The same, in parts for the card's rows: the dates that count and what they earn. */
+   reward: { from: string; to: string; label: string } | null;
 }
 
 const isOpen = (loan: Loan) =>
@@ -88,7 +90,8 @@ export const getFastRepayNotice = ({
       window && streak ? getRepayRewardLine(streak, getDaysUntilDueDay(currentDueDate(loan), zone, now), locale, window) : null;
 
    if (!levelUp && !rewardLine) return null;
-   return { loanId: loan.id, countsFrom, zone, levelUp, rewardLine };
+   const reward = rewardLine && window && streak ? { ...window, label: getRepayRewardLabel(streak) } : null;
+   return { loanId: loan.id, countsFrom, zone, levelUp, rewardLine, reward };
 };
 
 /** Never seen, or closed over 24 hours ago (and the caller still has a notice). */
