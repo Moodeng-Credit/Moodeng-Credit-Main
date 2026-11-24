@@ -31,6 +31,16 @@ export function isFacebookFamilyApp(inApp: InAppBrowserInfo): boolean {
    return inApp.isInApp && (inApp.appName === 'Facebook' || inApp.appName === 'Messenger' || inApp.appName === 'Instagram');
 }
 
+/**
+ * Facebook first (2026-11-24, George): one person rarely has two Facebook accounts, while anyone can make
+ * a new Gmail, so "Continue with Facebook" is the main button in normal browsers and inside
+ * Facebook/Messenger/Instagram. Other apps' browsers (TikTok, LINE, Telegram…) keep it as a small tile:
+ * Facebook blocks its login inside other apps' Android web views.
+ */
+export function isFacebookPrimaryHere(inApp: InAppBrowserInfo): boolean {
+   return isFacebookLoginEnabled() && (!inApp.isInApp || isFacebookFamilyApp(inApp));
+}
+
 /** Supabase's error when Facebook gives no email (phone-only Facebook accounts, or email permission declined). */
 export function isMissingProviderEmailError(message: string | null | undefined): boolean {
    return /email.*external provider/i.test(message ?? '');

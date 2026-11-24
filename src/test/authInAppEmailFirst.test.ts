@@ -135,18 +135,25 @@ describe('email first inside Facebook/Messenger', () => {
       expect(analytics.capture).toHaveBeenCalledWith('signup_inapp_email_submitted', { app: 'Messenger', os: 'ios' });
    });
 
-   it('/sign-up in Chrome is unchanged: Google first, no in-app events', async () => {
+   const googleTile = (label: string) => container.querySelector(`button[aria-label="${label}"]`);
+
+   it('/sign-up in Chrome: Facebook first, Google a small tile under it, then email; no in-app events', async () => {
       await render(SignUpPage, CHROME_ANDROID_UA);
-      const google = buttonWithText('Sign Up with Google');
+      const facebook = buttonWithText('Continue with Facebook');
+      const google = googleTile('Sign Up with Google');
       const email = buttonWithText('Sign Up with Email');
-      expect(google && email && isBefore(google, email)).toBe(true);
+      expect(container.querySelector('button, a, input')).toBe(facebook);
+      expect(facebook && google && email && isBefore(facebook, google) && isBefore(google, email)).toBe(true);
       expect(container.textContent).not.toContain('8-digit code');
       expect(events()).toEqual([]);
    });
 
-   it('/sign-in in Facebook: just the code form (no Google line, password link, tour or company lines)', async () => {
+   it('/sign-in in Facebook: Continue with Facebook, then the code form (no Google line, password link, tour or company lines)', async () => {
       await render(SignInPage, FB_ANDROID_UA);
       expect(container.querySelector('form')).not.toBeNull();
+      const facebook = buttonWithText('Continue with Facebook') as HTMLButtonElement;
+      expect(container.querySelector('button, a, input')).toBe(facebook);
+      expect(isBefore(facebook, container.querySelector('form') as HTMLFormElement)).toBe(true);
       expect(container.textContent).not.toContain('Google sign-in works in');
       expect(container.textContent).not.toContain('Sign In with Google');
       expect(container.textContent).not.toContain('Take a tour first');
@@ -160,15 +167,18 @@ describe('email first inside Facebook/Messenger', () => {
       expect(analytics.capture).toHaveBeenCalledWith('signin_inapp_email_submitted', { app: 'Facebook', os: 'android' });
    });
 
-   it('/sign-in in Chrome: Google button above the email + password form, which offers a code instead', async () => {
+   it('/sign-in in Chrome: Facebook first, Google tile, then the email + password form, which offers a code instead', async () => {
       await render(SignInPage, CHROME_ANDROID_UA);
-      const google = buttonWithText('Sign In with Google') as HTMLButtonElement;
+      const facebook = buttonWithText('Continue with Facebook') as HTMLButtonElement;
+      const google = googleTile('Sign In with Google') as HTMLButtonElement;
+      expect(container.querySelector('button, a, input')).toBe(facebook);
+      expect(isBefore(facebook, google)).toBe(true);
       expect(isBefore(google, container.querySelector('form') as HTMLFormElement)).toBe(true);
       expect(container.querySelector('input[type="password"]')).not.toBeNull();
       expect(buttonWithText('Email me a code')).not.toBeNull();
       expect(events()).toEqual([]);
    });
-   it('/sign-in in Chrome, in the Philippines: the +63 number box comes first, Google under it (GCash-style)', async () => {
+   it('/sign-in in Chrome, in the Philippines: Facebook, then the +63 number box, Google tile under it', async () => {
       where.inPh = true;
       await render(SignInPage, CHROME_ANDROID_UA);
       const phone = container.querySelector('#otp-input') as HTMLInputElement;
@@ -176,7 +186,11 @@ describe('email first inside Facebook/Messenger', () => {
       expect(container.textContent).toContain('+63');
       expect(buttonWithText('Text me a code')).not.toBeNull();
       expect(container.querySelector('input[type="password"]')).toBeNull();
-      const google = buttonWithText('Sign In with Google') as HTMLButtonElement;
+      const facebook = buttonWithText('Continue with Facebook') as HTMLButtonElement;
+      expect(container.querySelector('button, a, input')).toBe(facebook);
+      expect(isBefore(facebook, phone)).toBe(true);
+      expect(container.querySelectorAll('button[aria-label="Continue with Facebook"]')).toHaveLength(0);
+      const google = googleTile('Sign In with Google') as HTMLButtonElement;
       expect(isBefore(phone, google)).toBe(true);
       // Password sign-in is one step away, on the email screen.
       expect(buttonWithText('password')).toBeNull();
