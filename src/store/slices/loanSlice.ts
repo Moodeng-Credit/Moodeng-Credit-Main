@@ -52,6 +52,7 @@ const mapSupabaseLoanToLoan = (row: LoanRow): Loan => ({
    trackingId: row.tracking_id,
    borrowerWallet: row.borrower_wallet ?? undefined,
    lenderWallet: row.lender_wallet ?? undefined,
+   vaultAddress: (row as { vault_address?: string | null }).vault_address ?? undefined,
    borrowerUser: row.borrower_user_id ?? undefined,
    lenderUser: row.lender_user_id ?? undefined,
    loanAmount: row.loan_amount,

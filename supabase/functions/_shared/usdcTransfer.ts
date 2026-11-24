@@ -146,6 +146,45 @@ const findUserOpViaRecipient = async (hash: string, recipient: string): Promise<
    return null;
 };
 
+// A repayment paid straight into a BitRepo vault (vault.repay(loanId, …), e.g. from an Instant Wallet).
+// Finds the vault's Repaid event for THIS loan id in the tx, so a vault payment can only ever count for
+// the loan it named. Null when the tx isn't mined yet or holds no such event (the caller then falls back
+// to the plain USDC-transfer check). `to` is the vault, `micros` what the vault actually took.
+// `ignorePayers`: our own pass-ons (Pay vault / Pay all from the lending wallet) never count as a borrower's payment.
+export const findVaultRepay = async (
+   hash: string,
+   vault: string,
+   loanId: string,
+   ignorePayers: ReadonlyArray<string | null | undefined> = []
+): Promise<VerifiedTransfer | null> => {
+   const ignore = new Set(ignorePayers.filter((a): a is string => !!a).map((a) => a.toLowerCase()));
+   const receipt = await rpcCall(RPC_URL, 'eth_getTransactionReceipt', [hash]);
+   if (!receipt || receipt.status !== '0x1') return null;
+   const { decodeEventLog, parseAbi } = await import('npm:viem@2');
+   const abi = parseAbi(['event Repaid(string loanId, address indexed payer, uint256 amount, uint256 toInterest, uint256 toPrincipal, uint256 toCover, bytes data)']);
+   const vaultLc = vault.toLowerCase();
+   for (const log of (receipt.logs ?? []) as RawLog[]) {
+      if ((log.address ?? '').toLowerCase() !== vaultLc) continue;
+      try {
+         const ev = decodeEventLog({ abi, data: log.data as `0x${string}`, topics: log.topics as [`0x${string}`, ...`0x${string}`[]] });
+         if (ev.eventName !== 'Repaid' || ev.args.loanId !== loanId) continue;
+         const payer = ev.args.payer.toLowerCase();
+         if (ignore.has(payer)) continue;
+         return {
+            from: payer,
+            to: vaultLc,
+            micros: ev.args.amount,
+            blockNumber: receipt.blockNumber,
+            txHash: receipt.transactionHash ?? hash,
+            spendHashes: [...new Set([hash.toLowerCase(), ...decodeUserOpHashes(receipt.logs, payer)])]
+         };
+      } catch {
+         // another vault event
+      }
+   }
+   return null;
+};
+
 // Confirms `hash` on-chain and returns the USDC transfer it produced. Throws
 // PaymentNotConfirmedError if it's simply not landed yet (caller should retry), or a plain
 // Error for anything short of "money definitely moved to someone" (failed tx, wrong token, no

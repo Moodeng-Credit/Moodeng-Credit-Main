@@ -8,6 +8,8 @@ export interface Loan {
    trackingId: string;
    borrowerWallet?: string;
    lenderWallet?: string;
+   /** Set when the loan was drawn from BitRepo's vault: repayments belong in the vault. */
+   vaultAddress?: string;
    borrowerUser?: string; // Supabase auth user ID (UUID)
    lenderUser?: string; // Supabase auth user ID (UUID)
    loanAmount: number; // Original amount borrowed (principal)

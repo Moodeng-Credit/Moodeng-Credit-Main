@@ -6,7 +6,7 @@
 // wagmi/RainbowKit, so the Base rail is untouched.
 
 import { AccountTypeEnum, ChainTypeEnum, type EmbeddedAccount, EmbeddedState, type Provider, RecoveryMethod } from '@openfort/openfort-js';
-import { type Chain, createWalletClient, custom, erc20Abi, parseUnits } from 'viem';
+import { type Chain, createPublicClient, createWalletClient, custom, erc20Abi, http, parseAbi, parseUnits } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
 
 import { getOpenfortClient } from '@/lib/web3/openfort/client';
@@ -153,6 +153,117 @@ const sendUsdcOnce = async ({ to, usdAmount }: { to: string; usdAmount: string }
       functionName: 'transfer',
       args: [to as `0x${string}`, parseUnits(usdAmount, 6)]
    });
+};
+
+const VAULT_REPAY_ABI = parseAbi([
+   'function repay(string loanId, uint256 amount, bytes data)',
+   'function getLoan(string loanId) view returns (uint256 loanPrincipal, uint256 interest, uint256 dueDate, bool pastDue, uint256 totalDueLeft)'
+]);
+
+const vaultReader = () => createPublicClient({ chain: openfortChain, transport: http(openfortChains?.[openfortChain.id]) });
+
+/**
+ * Whether the vault still owes at least `usdAmount` on this loan. The vault reverts a repay on a loan it
+ * already counts as settled and only takes what it's owed, so when it owes less (someone already paid it
+ * in from the lending wallet) the repay goes to the lending wallet as before. A failed read says no.
+ */
+export const vaultOwesAtLeast = async ({
+   vault,
+   loanId,
+   usdAmount
+}: {
+   vault: string;
+   loanId: string;
+   usdAmount: string;
+}): Promise<boolean> => {
+   try {
+      const [, , , , totalDueLeft] = await vaultReader().readContract({
+         address: vault as `0x${string}`,
+         abi: VAULT_REPAY_ABI,
+         functionName: 'getLoan',
+         args: [loanId]
+      });
+      return totalDueLeft >= parseUnits(usdAmount, 6);
+   } catch {
+      return false;
+   }
+};
+
+/** A wallet client for the next send, gas set up the same way as sendUsdcOnce (paymaster or own ETH). */
+const sendingWalletClient = async (address: `0x${string}`) => {
+   const gasMode = await prepareInstantWalletGas();
+   const provider = await getEmbeddedProvider();
+   (provider as unknown as { updateFeeSponsorship?: (id: string | undefined) => void }).updateFeeSponsorship?.(
+      gasMode === 'self' ? undefined : OPENFORT_POLICY_ID || undefined
+   );
+   return createWalletClient({ account: address, chain: openfortChain, transport: custom(provider) });
+};
+
+// Repays a BitRepo vault loan straight into the vault: approve exactly the amount (skipped when the
+// allowance already covers it, e.g. a retry after the approve landed), then vault.repay(loanId). Two
+// sends, each with its own gas prep. Returns the repay tx hash; confirm-loan-payment finds the vault's
+// Repaid event for this loan in it.
+/**
+ * The vault repay failed before the repay itself was sent (only the approval at most), so no USDC
+ * moved: the caller can safely pay the lending wallet instead. Lost-signer errors pass through as-is.
+ */
+export class VaultRepayNotSentError extends Error {
+   constructor(readonly reason: unknown) {
+      super('The vault repayment was not sent.');
+   }
+}
+
+const repayVaultOnce = async ({
+   vault,
+   loanId,
+   usdAmount
+}: {
+   vault: string;
+   loanId: string;
+   usdAmount: string;
+}): Promise<`0x${string}`> => {
+   const usdc = getOpenfortUsdcAddress();
+   if (!usdc) throw new Error('USDC is not configured for the active chain.');
+   const account = await ensureEmbeddedWalletReady();
+   const owner = account.address as `0x${string}`;
+   const spender = vault as `0x${string}`;
+   const amount = parseUnits(usdAmount, 6);
+   let payer: Awaited<ReturnType<typeof sendingWalletClient>>;
+   try {
+      const reader = vaultReader();
+      const allowance = await reader.readContract({ address: usdc, abi: erc20Abi, functionName: 'allowance', args: [owner, spender] });
+      if (allowance < amount) {
+         const approver = await sendingWalletClient(owner);
+         const approveHash = await approver.writeContract({
+            address: usdc,
+            abi: erc20Abi,
+            functionName: 'approve',
+            args: [spender, amount]
+         });
+         const approved = await reader.waitForTransactionReceipt({ hash: approveHash });
+         if (approved.status !== 'success') throw new Error('The approval failed on-chain.');
+      }
+      payer = await sendingWalletClient(owner);
+   } catch (err) {
+      throw isLostSignerError(err) ? err : new VaultRepayNotSentError(err);
+   }
+   return payer.writeContract({ address: spender, abi: VAULT_REPAY_ABI, functionName: 'repay', args: [loanId, amount, '0x'] });
+};
+
+/** Like sendUsdcFromEmbeddedWallet (incl. the one lost-signer reset), but pays a vault loan into the vault. */
+export const repayVaultFromEmbeddedWallet = async (args: { vault: string; loanId: string; usdAmount: string }): Promise<`0x${string}`> => {
+   try {
+      return await repayVaultOnce(args);
+   } catch (err) {
+      if (!isLostSignerError(err)) throw err;
+      console.warn('[openfort] signer lost before the vault repay; resetting the wallet session and retrying once', err);
+   }
+   await resetEmbeddedSigner();
+   try {
+      return await repayVaultOnce(args);
+   } catch (err) {
+      throw isLostSignerError(err) ? new InstantWalletReconnectError(err) : err;
+   }
 };
 
 /**
