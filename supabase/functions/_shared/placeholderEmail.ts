@@ -3,7 +3,7 @@
 // phone_<id>@…, guest_<id>@… (phone/guest sign-ups), tiktok_<id>@…. Mail sent there is lost (or bounces and hurts our sender reputation), so the shared
 // email sender refuses it. Same pattern as isPlaceholderEmail in borrowerNotificationDelivery.ts.
 export const isPlaceholderEmail = (email: string | null | undefined): boolean =>
-   /^(telegram|line|phone|guest|tiktok)_[^@]+@moodeng\.(app|credit)$/i.test((email ?? '').trim());
+   /^(telegram|line|phone|guest|tiktok|facebook)_[^@]+@moodeng\.(app|credit)$/i.test((email ?? '').trim());
 
 // Cal.com needs an email for every attendee, and its Google Calendar invite goes to it. For people with
 // a placeholder that bounced (Nov 2026: "Delivery Status Notification" for phone_…@moodeng.app). They

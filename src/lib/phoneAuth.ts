@@ -172,9 +172,18 @@ export function isGuestEmail(email?: string | null): boolean {
    return /^guest_[^@]+@moodeng\.app$/i.test((email ?? '').trim());
 }
 
-/** Placeholder addresses for accounts that signed up without an email (Telegram, LINE, TikTok, phone, guests). */
+/**
+ * Facebook sign-ups whose Facebook has no email (phone-registered Facebook, or they didn't share it):
+ * public.users.email is NOT NULL, so they get this placeholder. Without it the profile row was never
+ * made and the role page failed (a real borrower, 2026-11-24). Built from the account id.
+ */
+export function facebookPlaceholderEmail(userId: string): string {
+   return `facebook_${userId.replace(/-/g, '')}@moodeng.app`;
+}
+
+/** Placeholder addresses for accounts that signed up without an email (Telegram, LINE, TikTok, phone, guests, Facebook). */
 export function isPlaceholderEmail(email?: string | null): boolean {
-   return /^(telegram|line|tiktok|phone|guest)_[^@]+@moodeng\.(app|credit)$/i.test((email ?? '').trim());
+   return /^(telegram|line|tiktok|phone|guest|facebook)_[^@]+@moodeng\.(app|credit)$/i.test((email ?? '').trim());
 }
 
 /** TikTok sign-ups: the tiktok-login edge fn gives them tiktok_<hash>@moodeng.app (TikTok shares no email). */

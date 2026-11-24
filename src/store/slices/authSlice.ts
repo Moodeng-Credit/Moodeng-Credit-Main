@@ -2,18 +2,18 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import type { User as SupabaseAuthUser } from '@supabase/supabase-js';
 
 import { clarityEvent } from '@/lib/analytics/clarity';
-import { getAuthRedirectUrl } from '@/lib/authRedirect';
-import { detachPushSubscriptionForSignOut } from '@/lib/push/webPushClient';
-import { clearClientAuthState } from '@/lib/authSessionCleanup';
-import { setLastUsedAuth } from '@/lib/lastUsedAuth';
 import { FIRST_TOUCH_STORAGE_KEY } from '@/lib/attribution';
 import { AUTH_NEXT_STORAGE_KEY } from '@/lib/authNext';
+import { getAuthRedirectUrl } from '@/lib/authRedirect';
+import { clearClientAuthState } from '@/lib/authSessionCleanup';
 import { PENDING_INVITE_STORAGE_KEY } from '@/lib/friendReferrals';
 import { CODE_STEP_KEY } from '@/lib/inviteCodeStep';
-import { TEAM_CODE_STORAGE_KEY } from '@/lib/preScreening';
+import { clearLandingSessionCookie } from '@/lib/landingSessionCookie';
+import { setLastUsedAuth } from '@/lib/lastUsedAuth';
 import { LAST_USED_AUTH_STORAGE_KEY } from '@/lib/lastUsedAuth';
 import { PENDING_SHARED_REQUEST_KEY } from '@/lib/pendingSharedRequest';
 import {
+   facebookPlaceholderEmail,
    generatePhoneUsername,
    guestPlaceholderEmail,
    hasGeneratedUsername,
@@ -21,10 +21,11 @@ import {
    SMS_TEST_FLAG_KEY,
    usernameCandidatesFromName
 } from '@/lib/phoneAuth';
+import { TEAM_CODE_STORAGE_KEY } from '@/lib/preScreening';
+import { detachPushSubscriptionForSignOut } from '@/lib/push/webPushClient';
 import { recordSessionIp } from '@/lib/recordSessionIp';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
-import { clearLandingSessionCookie } from '@/lib/landingSessionCookie';
 import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
 import {
    type AccountStatus,
@@ -99,7 +100,6 @@ const getTelegramProfileUpdates = (authData?: TelegramAuthData): Database['publi
    return updates;
 };
 
-
 const normalizeProfileText = (value: unknown): string | undefined => {
    if (typeof value !== 'string') return undefined;
    const trimmed = value.trim();
@@ -168,10 +168,18 @@ const ensureUserProfileRow = async (
    // Phone-only and guest accounts have no (confirmed) email; public.users.email is NOT NULL, so
    // they get a placeholder. A guest's typed email stays pending in Supabase Auth until confirmed.
    // Guest first: a phone guest has a (still unconfirmed) phone but is a guest all the same.
+   // Facebook can sign someone in without an email (phone-registered Facebook): placeholder too.
+   const providers = (authUser.app_metadata?.providers as string[] | undefined) ?? [authUser.app_metadata?.provider as string | undefined];
    const email =
       overrides?.email ??
       (authUser.email ||
-         (authUser.is_anonymous ? guestPlaceholderEmail(authUser.id) : authUser.phone ? phonePlaceholderEmail(authUser.id) : undefined));
+         (authUser.is_anonymous
+            ? guestPlaceholderEmail(authUser.id)
+            : authUser.phone
+              ? phonePlaceholderEmail(authUser.id)
+              : providers.includes('facebook')
+                ? facebookPlaceholderEmail(authUser.id)
+                : undefined));
 
    if (!email) {
       throw new Error('Email is required to seed user profile');
@@ -245,8 +253,7 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    isWorldId: row.is_world_id,
    nullifierHash: row.nullifier_hash ?? undefined,
    isWorldIdPassport: (row as UserRow & { is_world_id_passport?: WorldIdStatus | null }).is_world_id_passport ?? undefined,
-   passportNullifierHash:
-      (row as UserRow & { nullifier_hash_passport?: string | null }).nullifier_hash_passport ?? undefined,
+   passportNullifierHash: (row as UserRow & { nullifier_hash_passport?: string | null }).nullifier_hash_passport ?? undefined,
    isDidit: (row as UserRow & { is_didit?: WorldIdStatus | null }).is_didit ?? undefined,
    diditSubmittedAt: (row as UserRow & { didit_submitted_at?: string | null }).didit_submitted_at ?? undefined,
    diditIdStatus: (row as UserRow & { didit_id_status?: string | null }).didit_id_status ?? undefined,
@@ -255,8 +262,7 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    livenessStatus: (row as UserRow & { liveness_status?: LivenessStatus | null }).liveness_status ?? undefined,
    livenessSessionId: (row as UserRow & { liveness_session_id?: string | null }).liveness_session_id ?? undefined,
    walletFaceStatus: (row as UserRow & { wallet_face_status?: WalletFaceStatus | null }).wallet_face_status ?? undefined,
-   walletFaceSessionId:
-      (row as UserRow & { wallet_face_session_id?: string | null }).wallet_face_session_id ?? undefined,
+   walletFaceSessionId: (row as UserRow & { wallet_face_session_id?: string | null }).wallet_face_session_id ?? undefined,
    telegramUsername: row.telegram_username ?? undefined,
    telegramId: toOptionalString(row.telegram_id),
    chatId: toOptionalString(row.chat_id),
@@ -273,13 +279,13 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    hasReferral: Boolean(row.redeemed_referral_code_id),
    hasVerifiedContact: Boolean(
       (row as UserRow & { messenger_verified_at?: string | null }).messenger_verified_at ||
-         (row as UserRow & { whatsapp_verified_at?: string | null }).whatsapp_verified_at
+      (row as UserRow & { whatsapp_verified_at?: string | null }).whatsapp_verified_at
    ),
    // Both lines a loan request needs (2026-11-15): Messenger with its ID (they sent the code — a hand
    // /confirm stamp has no ID, so we can't message them) and a confirmed WhatsApp.
    hasMessengerLink: Boolean(
       (row as UserRow & { messenger_verified_at?: string | null }).messenger_verified_at &&
-         (row as UserRow & { messenger_psid?: string | null }).messenger_psid
+      (row as UserRow & { messenger_psid?: string | null }).messenger_psid
    ),
    whatsappVerified: Boolean((row as UserRow & { whatsapp_verified_at?: string | null }).whatsapp_verified_at),
    incomeType: (row as UserRow & { income_type?: string | null }).income_type ?? undefined,
@@ -287,10 +293,10 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    paydayStart: (row as UserRow & { payday_start?: number | null }).payday_start ?? undefined,
    paydayEnd: (row as UserRow & { payday_end?: number | null }).payday_end ?? undefined,
    gapReasons: (row as UserRow & { gap_reasons?: string[] | null }).gap_reasons ?? undefined,
-   monthlyIncome:   (row as any).monthly_income   ?? undefined,
+   monthlyIncome: (row as any).monthly_income ?? undefined,
    monthlyExpenses: (row as any).monthly_expenses ?? undefined,
-   otherIncome:     (row as any).other_income     ?? undefined,
-   profession:      (row as any).profession       ?? undefined,
+   otherIncome: (row as any).other_income ?? undefined,
+   profession: (row as any).profession ?? undefined,
    incomeDescription: (row as any).income_description ?? undefined,
    notifAccountActivity: (row as UserRow & { notif_account_activity?: boolean | null }).notif_account_activity ?? true,
    notifTransactionActivity: (row as UserRow & { notif_transaction_activity?: boolean | null }).notif_transaction_activity ?? true,
@@ -374,11 +380,7 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
 const fetchUserProfileByUsername = async (username: string): Promise<User> => {
    const supabase = supabaseClient();
    // Cross-user read → safe-columns view (username/display_name/role/verification only; PII is NULL).
-   const { data: profile, error } = await supabase
-      .from('public_user_profiles')
-      .select('*')
-      .eq('username', username)
-      .maybeSingle();
+   const { data: profile, error } = await supabase.from('public_user_profiles').select('*').eq('username', username).maybeSingle();
 
    if (error || !profile) {
       throw error ?? new Error('User profile not found');
@@ -647,7 +649,16 @@ export type OtpMode = 'signin' | 'signup';
 
 // What a stale-session cleanup before a code sign-in must NOT wipe: an invite code or shared
 // request they arrived with, attribution, where to go after signing in, testing flags.
-const KEEP_THROUGH_OTP_LOCAL = [PENDING_INVITE_STORAGE_KEY, TEAM_CODE_STORAGE_KEY, CODE_STEP_KEY, FIRST_TOUCH_STORAGE_KEY, AUTH_NEXT_STORAGE_KEY, LAST_USED_AUTH_STORAGE_KEY, SMS_TEST_FLAG_KEY, 'force_ph'];
+const KEEP_THROUGH_OTP_LOCAL = [
+   PENDING_INVITE_STORAGE_KEY,
+   TEAM_CODE_STORAGE_KEY,
+   CODE_STEP_KEY,
+   FIRST_TOUCH_STORAGE_KEY,
+   AUTH_NEXT_STORAGE_KEY,
+   LAST_USED_AUTH_STORAGE_KEY,
+   SMS_TEST_FLAG_KEY,
+   'force_ph'
+];
 // The email whose code was sent for a waiting guest account (checked as an email-change code).
 // sessionStorage so a reload of the code page in this tab still checks it the right way.
 const GUEST_CODE_EMAIL_KEY = 'moodeng.guestCodeEmail';
@@ -828,7 +839,10 @@ export const convertedGuestNeedsPassword = async (): Promise<boolean> => {
  */
 export const resendGuestEmail = async (email: string): Promise<void> => {
    await releaseUnfinishedSignup(email);
-   const { error } = await supabaseClient().auth.updateUser({ email, data: { guest_email: email } }, { emailRedirectTo: getAuthRedirectUrl() });
+   const { error } = await supabaseClient().auth.updateUser(
+      { email, data: { guest_email: email } },
+      { emailRedirectTo: getAuthRedirectUrl() }
+   );
    if (error) {
       if (error.code === 'email_exists' || /already been registered|already exists/i.test(error.message)) {
          throw new GuestEmailTakenError();
@@ -1078,37 +1092,34 @@ export interface BorrowerContextPayload {
 }
 
 /** Save borrower context (income/payday/gap info) to the user's profile. Done once after first loan request. */
-export const updateBorrowerContext = createAsyncThunk(
-   'auth/updateBorrowerContext',
-   async (payload: BorrowerContextPayload) => {
-      const supabase = supabaseClient();
-      const { user, error: sessionError } = await getAuthUser(supabase);
+export const updateBorrowerContext = createAsyncThunk('auth/updateBorrowerContext', async (payload: BorrowerContextPayload) => {
+   const supabase = supabaseClient();
+   const { user, error: sessionError } = await getAuthUser(supabase);
 
-      if (sessionError || !user) throw sessionError ?? new Error('Not authenticated');
+   if (sessionError || !user) throw sessionError ?? new Error('Not authenticated');
 
-      const { data: updatedRow, error } = await supabase
-         .from('users')
-         .update({
-            income_type:      payload.incomeType,
-            payday_type:      payload.paydayType,
-            payday_start:     payload.paydayStart ?? null,
-            payday_end:       payload.paydayEnd ?? null,
-            gap_reasons:      payload.gapReasons ?? [],
-            monthly_income:   payload.monthlyIncome   ?? null,
-            monthly_expenses: payload.monthlyExpenses ?? null,
-            other_income:     payload.otherIncome     ?? null,
-            profession:       payload.profession      ?? null,
-            income_description: payload.incomeDescription ?? null
-         } as Record<string, unknown>)
-         .eq('id', user.id)
-         .select('*')
-         .single();
+   const { data: updatedRow, error } = await supabase
+      .from('users')
+      .update({
+         income_type: payload.incomeType,
+         payday_type: payload.paydayType,
+         payday_start: payload.paydayStart ?? null,
+         payday_end: payload.paydayEnd ?? null,
+         gap_reasons: payload.gapReasons ?? [],
+         monthly_income: payload.monthlyIncome ?? null,
+         monthly_expenses: payload.monthlyExpenses ?? null,
+         other_income: payload.otherIncome ?? null,
+         profession: payload.profession ?? null,
+         income_description: payload.incomeDescription ?? null
+      } as Record<string, unknown>)
+      .eq('id', user.id)
+      .select('*')
+      .single();
 
-      if (error || !updatedRow) throw error ?? new Error('Failed to save borrower context');
+   if (error || !updatedRow) throw error ?? new Error('Failed to save borrower context');
 
-      return mapSupabaseRowToUser(updatedRow);
-   }
-);
+   return mapSupabaseRowToUser(updatedRow);
+});
 
 /** Save just their job (the loan request asks for it when the profile has none). */
 export const updateProfession = createAsyncThunk('auth/updateProfession', async (profession: string) => {
