@@ -11,6 +11,8 @@ export {
    exportEmbeddedPrivateKey,
    repayVaultFromEmbeddedWallet,
    sendUsdcFromEmbeddedWallet,
+   vaultOwesAtLeast,
+   VaultRepayNotSentError,
    type WalletSetupPhase
 } from '@/lib/web3/openfort/embeddedWallet';
 export { useCreateInstantWallet, type InstantWalletReturnTo } from '@/lib/web3/openfort/useCreateInstantWallet';

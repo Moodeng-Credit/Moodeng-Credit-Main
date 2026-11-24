@@ -10,7 +10,14 @@ import { errorText, trackPaymentStep } from '@/lib/analytics/paymentSteps';
 import { BasePaymentError, startBasePayment, waitForBasePayment } from '@/lib/basePay';
 import { isStaleChunkError, reloadOnceForStaleChunk } from '@/lib/staleChunkReload';
 import { WALLET_RESPONSE_TIMEOUT_MS, WalletTimeoutError, withTimeout } from '@/lib/withTimeout';
-import { OPENFORT_WALLET_PROVIDER, repayVaultFromEmbeddedWallet, sendUsdcFromEmbeddedWallet, WalletGateError } from '@/lib/web3/openfort';
+import {
+   OPENFORT_WALLET_PROVIDER,
+   repayVaultFromEmbeddedWallet,
+   sendUsdcFromEmbeddedWallet,
+   vaultOwesAtLeast,
+   VaultRepayNotSentError,
+   WalletGateError
+} from '@/lib/web3/openfort';
 import { reportInstantWalletFailure } from '@/lib/web3/openfort/reportFailure';
 import { InstantWalletReconnectError } from '@/lib/web3/openfort/sendErrors';
 import type { RootState } from '@/store/store';
@@ -293,9 +300,20 @@ const useWallet = () => {
          // Sponsored, gasless send from the embedded smart account. The wallet self-provisions
          // (recovers) on demand, so this works even on a fresh page load with no prior tap.
          try {
-            const hash = vault
-               ? await repayVaultFromEmbeddedWallet({ vault, loanId, usdAmount })
-               : await sendUsdcFromEmbeddedWallet({ to, usdAmount });
+            // A vault loan goes straight into BitRepo's vault when it still owes this much. If that fails
+            // before the repay is sent (no USDC moved), pay the lending wallet instead, as before.
+            const intoVault = vault ? await vaultOwesAtLeast({ vault, loanId, usdAmount }) : false;
+            let hash: `0x${string}`;
+            try {
+               hash =
+                  intoVault && vault
+                     ? await repayVaultFromEmbeddedWallet({ vault, loanId, usdAmount })
+                     : await sendUsdcFromEmbeddedWallet({ to, usdAmount });
+            } catch (vaultErr) {
+               if (!(vaultErr instanceof VaultRepayNotSentError)) throw vaultErr;
+               console.warn('[payUsdc:openfort] vault repay not sent; paying the lending wallet instead', vaultErr.reason);
+               hash = await sendUsdcFromEmbeddedWallet({ to, usdAmount });
+            }
             return { hash };
          } catch (err) {
             // The embedded-wallet send code is lazily imported; a stale cached build can 404 that

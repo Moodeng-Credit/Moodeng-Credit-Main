@@ -34,6 +34,7 @@ import { useGeoCheck } from '@/hooks/useGeoCheck';
 import { useIdOnboarding } from '@/hooks/useIdOnboarding';
 import { useLoanData } from '@/hooks/useLoanData';
 import { useVerificationJourney } from '@/hooks/useVerificationJourney';
+import { useVaultDirectRepay } from '@/hooks/useVaultDirectRepay';
 import useWallet, { type PaymentMethod, toSettlementMethod, useActivePaymentMethod } from '@/hooks/useWallet';
 
 import { parseDateSafely } from '@/utils/dateFormatters';
@@ -544,6 +545,7 @@ export default function Repay() {
    const dispatch = useDispatch<AppDispatch>();
    const { showToast, showToastByConfig } = useToast();
    const { payUsdc } = useWallet();
+   const vaultDirectRepay = useVaultDirectRepay();
    const account = useAccount();
    // Openfort-locked borrowers send via their embedded wallet; everyone else keeps wallet/Base.
    const activePaymentMethod = useActivePaymentMethod();
@@ -1275,7 +1277,7 @@ export default function Repay() {
             loanId: selectedLoan.id,
             coin: transferCoin,
             // Vault loans repaid from the Instant Wallet go straight into BitRepo's vault (no Pay vault step).
-            vault: selectedLoan.vaultAddress,
+            vault: vaultDirectRepay ? selectedLoan.vaultAddress : undefined,
             // On Base Pay approval (before confirmation): flip the overlay to "Confirming" and arm
             // reconciliation so an approved-but-unconfirmed repayment still records later.
             onSubmitted: (id) => {

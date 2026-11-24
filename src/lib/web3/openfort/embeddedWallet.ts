@@ -155,7 +155,39 @@ const sendUsdcOnce = async ({ to, usdAmount }: { to: string; usdAmount: string }
    });
 };
 
-const VAULT_REPAY_ABI = parseAbi(['function repay(string loanId, uint256 amount, bytes data)']);
+const VAULT_REPAY_ABI = parseAbi([
+   'function repay(string loanId, uint256 amount, bytes data)',
+   'function getLoan(string loanId) view returns (uint256 loanPrincipal, uint256 interest, uint256 dueDate, bool pastDue, uint256 totalDueLeft)'
+]);
+
+const vaultReader = () => createPublicClient({ chain: openfortChain, transport: http(openfortChains?.[openfortChain.id]) });
+
+/**
+ * Whether the vault still owes at least `usdAmount` on this loan. The vault reverts a repay on a loan it
+ * already counts as settled and only takes what it's owed, so when it owes less (someone already paid it
+ * in from the lending wallet) the repay goes to the lending wallet as before. A failed read says no.
+ */
+export const vaultOwesAtLeast = async ({
+   vault,
+   loanId,
+   usdAmount
+}: {
+   vault: string;
+   loanId: string;
+   usdAmount: string;
+}): Promise<boolean> => {
+   try {
+      const [, , , , totalDueLeft] = await vaultReader().readContract({
+         address: vault as `0x${string}`,
+         abi: VAULT_REPAY_ABI,
+         functionName: 'getLoan',
+         args: [loanId]
+      });
+      return totalDueLeft >= parseUnits(usdAmount, 6);
+   } catch {
+      return false;
+   }
+};
 
 /** A wallet client for the next send, gas set up the same way as sendUsdcOnce (paymaster or own ETH). */
 const sendingWalletClient = async (address: `0x${string}`) => {
@@ -171,6 +203,16 @@ const sendingWalletClient = async (address: `0x${string}`) => {
 // allowance already covers it, e.g. a retry after the approve landed), then vault.repay(loanId). Two
 // sends, each with its own gas prep. Returns the repay tx hash; confirm-loan-payment finds the vault's
 // Repaid event for this loan in it.
+/**
+ * The vault repay failed before the repay itself was sent (only the approval at most), so no USDC
+ * moved: the caller can safely pay the lending wallet instead. Lost-signer errors pass through as-is.
+ */
+export class VaultRepayNotSentError extends Error {
+   constructor(readonly reason: unknown) {
+      super('The vault repayment was not sent.');
+   }
+}
+
 const repayVaultOnce = async ({
    vault,
    loanId,
@@ -186,15 +228,25 @@ const repayVaultOnce = async ({
    const owner = account.address as `0x${string}`;
    const spender = vault as `0x${string}`;
    const amount = parseUnits(usdAmount, 6);
-   const reader = createPublicClient({ chain: openfortChain, transport: http(openfortChains?.[openfortChain.id]) });
-   const allowance = await reader.readContract({ address: usdc, abi: erc20Abi, functionName: 'allowance', args: [owner, spender] });
-   if (allowance < amount) {
-      const approver = await sendingWalletClient(owner);
-      const approveHash = await approver.writeContract({ address: usdc, abi: erc20Abi, functionName: 'approve', args: [spender, amount] });
-      const approved = await reader.waitForTransactionReceipt({ hash: approveHash });
-      if (approved.status !== 'success') throw new Error('The approval failed on-chain. Nothing was sent.');
+   let payer: Awaited<ReturnType<typeof sendingWalletClient>>;
+   try {
+      const reader = vaultReader();
+      const allowance = await reader.readContract({ address: usdc, abi: erc20Abi, functionName: 'allowance', args: [owner, spender] });
+      if (allowance < amount) {
+         const approver = await sendingWalletClient(owner);
+         const approveHash = await approver.writeContract({
+            address: usdc,
+            abi: erc20Abi,
+            functionName: 'approve',
+            args: [spender, amount]
+         });
+         const approved = await reader.waitForTransactionReceipt({ hash: approveHash });
+         if (approved.status !== 'success') throw new Error('The approval failed on-chain.');
+      }
+      payer = await sendingWalletClient(owner);
+   } catch (err) {
+      throw isLostSignerError(err) ? err : new VaultRepayNotSentError(err);
    }
-   const payer = await sendingWalletClient(owner);
    return payer.writeContract({ address: spender, abi: VAULT_REPAY_ABI, functionName: 'repay', args: [loanId, amount, '0x'] });
 };
 

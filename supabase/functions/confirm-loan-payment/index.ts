@@ -7,6 +7,7 @@ import { computeYearOneIouPointsDelta, getYearOneIouBorrowerBonusPoints, LOAN_FU
 import { DEFAULT_TIMEZONE, loanTimezone, pastDueAt } from '../_shared/loanDeadline.ts';
 import { type CreditLevelUp, runRepaymentFollowUps, type SideEffectError } from '../_shared/repaymentFollowUps.ts';
 import { findVaultRepay, PaymentNotConfirmedError, RPC_URL, rpcCall, type VerifiedTransfer, verifyPayment } from '../_shared/usdcTransfer.ts';
+import { VAULT_OPERATOR } from '../_shared/vaultWatch.ts';
 
 // Server-side proof-of-payment gate for loan funding/repayment.
 //
@@ -348,7 +349,7 @@ serve(async (req) => {
    try {
       const vaultRepay =
          action === 'repay' && loan.vault_address && method === 'wallet'
-            ? await findVaultRepay(hash, loan.vault_address, loan.id).catch(() => {
+            ? await findVaultRepay(hash, loan.vault_address, loan.id, [loan.lender_wallet, VAULT_OPERATOR]).catch(() => {
                  throw new PaymentNotConfirmedError();
               })
             : null;
