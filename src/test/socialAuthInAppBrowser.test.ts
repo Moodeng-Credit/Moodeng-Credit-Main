@@ -129,7 +129,8 @@ describe('Continue with Facebook', () => {
       Object.defineProperty(window.navigator, 'userAgent', { value: originalUA, configurable: true });
    });
 
-   it('is not shown at all while the flag is off (no grayed "coming soon" tile)', async () => {
+   it('is hidden everywhere with the VITE_FACEBOOK_LOGIN_ENABLED=false kill switch (no grayed "coming soon" tile)', async () => {
+      vi.stubEnv('VITE_FACEBOOK_LOGIN_ENABLED', 'false');
       await renderWith(FB_ANDROID_UA);
       expect(facebookButtons()).toHaveLength(0);
       expect(container.textContent).not.toContain('Continue with Facebook');
@@ -137,7 +138,6 @@ describe('Continue with Facebook', () => {
    });
 
    it("inside Facebook's browser it is the main button, first on the page, and starts Supabase's Facebook OAuth", async () => {
-      vi.stubEnv('VITE_FACEBOOK_LOGIN_ENABLED', 'true');
       await renderWith(FB_IOS_UA, false);
       const buttons = facebookButtons();
       expect(buttons).toHaveLength(1);
@@ -153,8 +153,7 @@ describe('Continue with Facebook', () => {
       expect(localStorage.getItem('moodeng:last-auth-method')).toBe('facebook');
    });
 
-   it('in a normal browser it is a live tile next to the others, under Google', async () => {
-      vi.stubEnv('VITE_FACEBOOK_LOGIN_ENABLED', 'true');
+   it('in a normal browser it is a live tile next to the others, under Google (on by default, no env flag)', async () => {
       await renderWith(CHROME_ANDROID_UA);
       const [tile] = facebookButtons();
       expect(tile.getAttribute('aria-label')).toBe('Continue with Facebook');
@@ -164,14 +163,16 @@ describe('Continue with Facebook', () => {
       expect(signInWithOAuth).toHaveBeenCalledWith(expect.objectContaining({ provider: 'facebook' }));
    });
 
-   it('testers can switch it on with ?facebook=1 before the env flag is set', async () => {
-      window.history.replaceState(null, '', '/sign-up?facebook=1');
-      await renderWith(CHROME_ANDROID_UA);
-      expect(facebookButtons()[0].getAttribute('aria-label')).toBe('Continue with Facebook');
-      window.history.replaceState(null, '', '/sign-up?facebook=0');
+   it('?facebook=0 hides it in this browser only, ?facebook=1 brings it back', async () => {
       const { isFacebookLoginEnabled } = await import('@/lib/facebookAuth');
+      window.history.replaceState(null, '', '/sign-in?facebook=0');
       expect(isFacebookLoginEnabled()).toBe(false);
+      window.history.replaceState(null, '', '/sign-in');
+      expect(isFacebookLoginEnabled()).toBe(false);
+      window.history.replaceState(null, '', '/sign-in?facebook=1');
+      expect(isFacebookLoginEnabled()).toBe(true);
       window.history.replaceState(null, '', '/');
+      expect(isFacebookLoginEnabled()).toBe(true);
    });
 });
 
