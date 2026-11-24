@@ -144,11 +144,14 @@ export function FacebookAuthButton({ isSignUp, variant }: { isSignUp: boolean; v
             type="button"
             onClick={handleClick}
             disabled={isLoading}
-            className={`${btnBase} bg-[#1877F2] font-semibold shadow-[0px_2px_4px_rgba(27,28,29,0.04)] ${isLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
+            className={`${btnBase} border border-[#B5ACBE] bg-[#FDFCFD] font-semibold shadow-[0px_2px_4px_rgba(27,28,29,0.04)] dark:border-[#40354F] dark:bg-[#17121F] ${
+               isLoading ? 'opacity-60 cursor-not-allowed' : ''
+            }`}
          >
-            <FacebookLogo size={24} color="#FFFFFF" />
+            {/* White with the blue "f" (George, 2026-11-24): a full blue button fought the purple Sign In button below */}
+            <FacebookLogo size={24} />
             <span
-               className="min-w-0 truncate text-base font-semibold tracking-[-0.02em] text-white"
+               className="min-w-0 truncate text-base font-semibold tracking-[-0.02em] text-[#141218] dark:text-[#F8F4FF]"
                style={{ fontFamily: 'SF Pro Display, sans-serif' }}
             >
                {isLoading ? 'Opening Facebook...' : label}
