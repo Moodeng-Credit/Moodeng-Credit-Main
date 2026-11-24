@@ -60,6 +60,7 @@ import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
+import { FastRepayCarousel, useFastRepayNotice } from '@/views/dashboard-v2/components/FastRepayNotice';
 import { RepayStreakCelebration } from '@/views/dashboard-v2/components/RepayStreak';
 import { getRewardRuleCopy, getRewardWindow } from '@/views/dashboard-v2/dashboardV2Model';
 import { CONNECT_HIPPOS } from '@/views/dashboard/components/connectKit';
@@ -616,6 +617,9 @@ export default function Repay() {
             .sort((a, b) => parseDateSafely(a.dueDate).getTime() - parseDateSafely(b.dueDate).getTime()),
       [repayLoans, usePreviewLoans, user.id]
    );
+   // "Before you repay" carousel: a loan funded under 48 hours ago (dashboard has the same one).
+   // Preview: /repay-preview?early=1 (a loan funded yesterday).
+   const fastRepay = useFastRepayNotice({ loans: activeLoans, isPreview: usePreviewLoans });
 
    const [selectedLoanId, setSelectedLoanId] = useState<string | null>(null);
    const [repaymentAmount, setRepaymentAmount] = useState('');
@@ -2699,6 +2703,10 @@ export default function Repay() {
 
       return (
          <main className="repay-page min-h-screen bg-[#fffaf0] px-4 pb-32 pt-4 text-[#2b2116] dark:bg-[#100d17] dark:text-[#f5efe3]">
+            {/* Only on the first step: never mid-payment or after they come back from buying USDC. */}
+            {wizardStep === 'amount' && fastRepay.isOpen && fastRepay.notice ? (
+               <FastRepayCarousel locale={fastRepay.locale} notice={fastRepay.notice} onClose={fastRepay.close} where="repay" />
+            ) : null}
             <style>{repayPageCss}</style>
             <div className="mx-auto flex w-full max-w-[440px] flex-col gap-4">
                <header className="flex items-center justify-between gap-3">
