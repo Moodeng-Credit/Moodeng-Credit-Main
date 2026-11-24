@@ -32,6 +32,7 @@ import {
    WithdrawBanner
 } from '@/views/dashboard-v2/components/DashboardV2Banners';
 import DashboardV2Hero from '@/views/dashboard-v2/components/DashboardV2Hero';
+import { buildFastRepayPreviewLoan, FastRepayCarousel, useFastRepayNotice } from '@/views/dashboard-v2/components/FastRepayNotice';
 import { MilestonePopup, MilestoneStreakPopup } from '@/views/dashboard-v2/components/DashboardV2Popups';
 import {
    LoanSummarySection,
@@ -170,6 +171,11 @@ export default function DashboardV2() {
    const creditLimitNow = model.isVerified ? getEffectiveCreditLimit(authUser?.cs, true) : 0;
    const previewTrack = isPreviewHost() && (trackParam === 'A' || trackParam === 'B') ? trackParam : undefined;
    const showTour = searchParams.has('tour') && shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, userId, false);
+   // "Before you repay" carousel for a loan funded under 48 hours ago. Preview: ?fast=1.
+   const isFastPreview = !isReal && searchParams.get('fast') === '1';
+   const fastRepayLoans = useMemo(() => (isFastPreview ? [buildFastRepayPreviewLoan()] : isReal ? myLoans : []), [isFastPreview, isReal, myLoans]);
+   const fastRepay = useFastRepayNotice({ loans: fastRepayLoans, isPreview: isFastPreview });
+   const showFastRepay = fastRepay.isOpen && Boolean(fastRepay.notice) && !showTour && !openMilestone && !isVerifyOpen && !claimingVoucher;
    const ownVoucher = getVoucherState(model.rewards, OWN_VOUCHER, model.referralLoading);
    const voucherFollowUp = getVoucherFollowUp(model.rewards);
    const confirmVoucher = useConfirmVoucherReceived();
@@ -190,7 +196,8 @@ export default function DashboardV2() {
       !showTour &&
       !openMilestone &&
       !isVerifyOpen &&
-      !claimingVoucher;
+      !claimingVoucher &&
+      !showFastRepay;
    const dismissStreak = () => {
       setDismissedStreak(streakSignature);
       try {
@@ -361,8 +368,11 @@ export default function DashboardV2() {
                language={language}
                userId={userId}
                preview={!isReal || searchParams.get('rates') === '1'}
-               blocked={showTour || showStreak || Boolean(openMilestone) || isVerifyOpen || Boolean(claimingVoucher)}
+               blocked={showTour || showStreak || showFastRepay || Boolean(openMilestone) || isVerifyOpen || Boolean(claimingVoucher)}
             />
+         ) : null}
+         {showFastRepay && fastRepay.notice ? (
+            <FastRepayCarousel locale={fastRepay.locale} notice={fastRepay.notice} onClose={fastRepay.close} where="dashboard" />
          ) : null}
          {claimingVoucher ? (
             <VoucherClaimPopup voucher={claimingVoucher} isPreview={!isReal} onClose={() => setClaimingVoucher(null)} />
