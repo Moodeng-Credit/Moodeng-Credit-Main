@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { type AdminCallApprovalRow, recheckAdminCallForm, rejectAdminUser, sendAdminCallFacebookSteps } from '@/app/admin/adminSupabase';
 import IndonesiaContactCard from '@/app/admin/IndonesiaContactCard';
@@ -731,7 +732,18 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                <div className="h-1 bg-[#6b55f7] transition-all" style={{ width: `${Math.round(progress * 100)}%` }} />
             </div>
             <div className="mx-auto flex max-w-[1100px] flex-wrap items-center gap-x-3 gap-y-1 px-5 py-2">
-               <h1 className="min-w-0 truncate text-[18px] font-bold">{name}</h1>
+               <h1 className="min-w-0 truncate text-[18px] font-bold">
+                  {/* New tab: leaving the sheet mid-call would lose unsaved notes. */}
+                  <Link
+                     to={`/admin/user/${row.userId}`}
+                     target="_blank"
+                     rel="noopener"
+                     title="Open everything about this person (new tab)"
+                     className="underline decoration-[#8336f0] decoration-2 underline-offset-4"
+                  >
+                     {name}
+                  </Link>
+               </h1>
                {aliases ? <span className="min-w-0 truncate text-[14px] font-semibold text-[#37352f]">{aliases}</span> : null}
                <span className="text-[13px] text-[#7a7a7a]">
                   {row.callStartsAt
