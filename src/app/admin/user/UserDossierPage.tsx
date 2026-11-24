@@ -113,6 +113,13 @@ const age = (dob: string | null) => {
    return Number.isFinite(ms) ? Math.floor(ms / (365.25 * 86_400_000)) : null;
 };
 
+// Saved as a number or as a range like "10000-20000" depending on the form version.
+const peso = (v: unknown): string | null => {
+   if (v == null || v === '') return null;
+   const n = Number(v);
+   return Number.isFinite(n) ? `₱${n.toLocaleString()}` : `₱${String(v)}`;
+};
+
 const riskTone = (band: string | null): 'good' | 'warn' | 'bad' | 'default' => {
    const b = (band ?? '').toLowerCase();
    return b === 'low' ? 'good' : b === 'medium' ? 'warn' : b === 'high' || b === 'critical' ? 'bad' : 'default';
@@ -141,7 +148,7 @@ function Header({ d, selfie }: { d: Dossier; selfie: string | null }) {
    const realName = kyc?.full_name ?? (typeof sheetName === 'string' ? sheetName : null);
    const verified = u.is_didit === 'ACTIVE' || u.is_world_id;
    const contacts: Array<{ label: string; href?: string; ok?: boolean }> = [
-      u.email && !u.email.endsWith('.invalid') ? { label: u.email, href: `mailto:${u.email}` } : null,
+      u.email && !u.email.endsWith('.invalid') && !u.email.endsWith('@moodeng.app') ? { label: u.email, href: `mailto:${u.email}` } : null,
       u.facebook_name || u.facebook_profile_url
          ? {
               label: `Facebook: ${u.facebook_name ?? 'profile'}`,
@@ -386,7 +393,9 @@ function Identity({ d, media, mediaError }: { d: Dossier; media: DiditSessionMed
    const u = d.user;
    const kyc = d.kyc[0];
    const latest = media?.find((m) => !m.error) ?? null;
-   const photos = media?.flatMap((m) => m.photos) ?? [];
+   // One of each kind (ID front, back, selfie…) from the newest check; repeat checks would show the same shots again.
+   const photos = (media?.flatMap((m) => m.photos) ?? []).filter((p, i, all) => all.findIndex((q) => q.label === p.label) === i);
+   const checks = media?.filter((m) => !m.error).length ?? 0;
    const warnings = Array.isArray(kyc?.warnings)
       ? (kyc.warnings as unknown[]).map((w) => (typeof w === 'string' ? w : JSON.stringify(w)))
       : [];
@@ -445,6 +454,7 @@ function Identity({ d, media, mediaError }: { d: Dossier; media: DiditSessionMed
             </div>
          ) : null}
          {media == null ? <p className="mt-3 text-sm text-[#a89bb8]">Loading Didit photos…</p> : null}
+         {checks > 1 ? <p className="mt-3 text-xs text-[#a89bb8]">{checks} Didit checks · photos from the newest</p> : null}
          {photos.length ? (
             <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
                {photos.map((p) => (
@@ -469,11 +479,11 @@ function Income({ d }: { d: Dossier }) {
       <Card title="💼 Work & income">
          {empty ? <Empty>Nothing filled in yet.</Empty> : null}
          <Row label="Job">
-            {[u.profession, d.call_screenings[0]?.answers?.role as string | undefined].filter(Boolean).join(' · ') || null}
+            {[...new Set([u.profession, d.call_screenings[0]?.answers?.role as string | undefined].filter(Boolean))].join(' · ') || null}
          </Row>
          <Row label="Income type">{u.income_type}</Row>
-         <Row label="Monthly income">{u.monthly_income != null ? `₱${Number(u.monthly_income).toLocaleString()}` : null}</Row>
-         <Row label="Monthly costs">{u.monthly_expenses != null ? `₱${Number(u.monthly_expenses).toLocaleString()}` : null}</Row>
+         <Row label="Monthly income">{peso(u.monthly_income)}</Row>
+         <Row label="Monthly costs">{peso(u.monthly_expenses)}</Row>
          <Row label="Other income">{u.other_income}</Row>
          <Row label="Payday">{payday}</Row>
          <Row label="About them">{u.income_description}</Row>
