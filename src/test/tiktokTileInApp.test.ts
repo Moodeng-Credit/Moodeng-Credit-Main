@@ -65,10 +65,10 @@ describe("TikTok tile inside TikTok's browser", () => {
       expect(tikTokTile()?.closest('.hidden')).not.toBeNull();
    });
 
-   it('normal browser: TikTok stays a small tile', async () => {
+   it('normal browser: TikTok stays a small tile (LINE is sign-in only since 2026-11-24)', async () => {
       await renderWith(CHROME_ANDROID_UA);
       expect(fullTikTok()).toBeNull();
       expect(tikTokTile()?.closest('.hidden')).toBeNull();
-      expect(container.querySelector('[data-line]')).not.toBeNull();
+      expect(container.querySelector('[data-line]')).toBeNull();
    });
 });

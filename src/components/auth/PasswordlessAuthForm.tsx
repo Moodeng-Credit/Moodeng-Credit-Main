@@ -37,6 +37,8 @@ type Props = {
    initialPhone?: string;
    /** Sign-in only: show "Use password instead" for people who set a password. */
    onUsePassword?: () => void;
+   /** Outlined (not solid purple) submit: a bold Facebook button above is the main choice. */
+   quietSubmit?: boolean;
 };
 
 // Same screen a brand-new account lands on after verifying a code.
@@ -72,7 +74,15 @@ export function pickInitialChannel(options: {
  * it; typing a letter or "@" switches to email, digits to phone. Sign-up creates the account;
  * sign-in never does. The code screen is /auth/verify-code.
  */
-export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialChannel, initialPhone = '', onUsePassword }: Props) {
+export function PasswordlessAuthForm({
+   mode,
+   inApp,
+   initialEmail = '',
+   initialChannel,
+   initialPhone = '',
+   onUsePassword,
+   quietSubmit = false
+}: Props) {
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
    const [searchParams] = useSearchParams();
@@ -418,8 +428,11 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
                key="submit"
                type="submit"
                disabled={isSending}
-               className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition-opacity hover:opacity-95 disabled:opacity-70"
-               style={{ backgroundColor: '#6010D2' }}
+               className={`flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-semibold tracking-[-0.02em] transition-opacity hover:opacity-95 disabled:opacity-70 ${
+                  quietSubmit
+                     ? 'border-2 border-[#6010D2] bg-transparent text-[#6010D2] dark:border-[#C084FC] dark:text-[#C084FC]'
+                     : 'bg-[#6010D2] text-[#FDFCFD]'
+               }`}
             >
                {isSending ? <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden /> : null}
                {isSending ? 'Sending…' : mode === 'signup' ? 'Continue' : isSms ? 'Text me a code' : 'Email me a code'}

@@ -1,4 +1,5 @@
 import type { InAppBrowserInfo } from '@/lib/inAppBrowser';
+import type { AuthMethod } from '@/lib/lastUsedAuth';
 
 /**
  * Facebook login runs through Supabase Auth's built-in Facebook provider (no edge function).
@@ -39,6 +40,16 @@ export function isFacebookFamilyApp(inApp: InAppBrowserInfo): boolean {
  */
 export function isFacebookPrimaryHere(inApp: InAppBrowserInfo): boolean {
    return isFacebookLoginEnabled() && (!inApp.isInApp || isFacebookFamilyApp(inApp));
+}
+
+/**
+ * On the code layouts (Philippines +63 page, Facebook/Messenger/Instagram) Facebook is the bold, solid-blue
+ * button and the phone/email form steps back (2026-11-24, George: "okay improve"). Except on a phone that last
+ * logged in with a phone or email code: there their usual way stays the bold one, so returning phone users
+ * never hunt for the number box.
+ */
+export function facebookLeadsCodeLayout(facebookPrimary: boolean, lastUsed: AuthMethod | null): boolean {
+   return facebookPrimary && lastUsed !== 'phone' && lastUsed !== 'email';
 }
 
 /** Supabase's error when Facebook gives no email (phone-only Facebook accounts, or email permission declined). */

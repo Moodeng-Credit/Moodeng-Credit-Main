@@ -17,7 +17,9 @@ import Loading from '@/components/Loading';
 import TikTokLoginButton from '@/components/TikTokLoginButton';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
+import { facebookLeadsCodeLayout } from '@/lib/facebookAuth';
 import { detectInAppBrowser, isFacebookInApp } from '@/lib/inAppBrowser';
+import { getLastUsedAuth } from '@/lib/lastUsedAuth';
 import { type OtpChannel, registerWithGoogle, registerWithTelegram } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import '@/views/signup/styles/signup.css';
@@ -42,7 +44,10 @@ function getErrorMessage(err: unknown, fallback: string): string {
  * one later). Shown inside Facebook/Messenger's browser, where Google sign-in can't work; see
  * showPasswordlessSignup in lib/phoneAuth for the switch to show it everywhere.
  */
-export default function PasswordlessSignUpScreen({ initialChannel, phoneFirst = false }: { initialChannel?: OtpChannel; phoneFirst?: boolean } = {}) {
+export default function PasswordlessSignUpScreen({
+   initialChannel,
+   phoneFirst = false
+}: { initialChannel?: OtpChannel; phoneFirst?: boolean } = {}) {
    const navigate = useNavigate();
    const [searchParams] = useSearchParams();
    const dispatch = useDispatch<AppDispatch>();
@@ -58,6 +63,14 @@ export default function PasswordlessSignUpScreen({ initialChannel, phoneFirst = 
    // Inside TikTok's browser the person is already signed in to TikTok: sign-up is TikTok only (no email/phone form).
    const tiktokPrimary = useTikTokPrimary();
    const [isLoading, setIsLoading] = useState(false);
+   // Philippines +63 page and Facebook/Messenger: one bold blue Facebook button, and the phone/email form
+   // waits behind "Use phone number" — unless this phone last used a code (then the form shows as before).
+   const facebookLeads = useMemo(
+      () => !tiktokPrimary && (inAppBrowser || phoneFirst) && facebookLeadsCodeLayout(facebookPrimary, getLastUsedAuth()),
+      [tiktokPrimary, inAppBrowser, phoneFirst, facebookPrimary]
+   );
+   const [showCodeForm, setShowCodeForm] = useState(() => !facebookLeads);
+   const useCodeLabel = phoneFirst || initialChannel === 'sms' ? 'Use phone number' : 'Use phone or email';
 
    useEffect(() => {
       if (import.meta.env.PROD && facebookInApp) posthog.capture('signup_inapp_email_shown', { app: inApp.appName, os: inApp.os });
@@ -130,7 +143,7 @@ export default function PasswordlessSignUpScreen({ initialChannel, phoneFirst = 
                   Sign up to Moodeng
                </h1>
                <p className="text-base font-medium leading-6 tracking-[-0.02em] text-[#6D6D6D] text-center mb-5 max-w-[400px]">
-                  No password needed.
+                  {facebookLeads ? 'One tap with Facebook.' : 'No password needed.'}
                </p>
 
                {tiktokPrimary ? (
@@ -141,11 +154,29 @@ export default function PasswordlessSignUpScreen({ initialChannel, phoneFirst = 
                   <>
                      {facebookPrimary ? (
                         <>
-                           <FacebookAuthButton isSignUp variant="full" />
+                           <FacebookAuthButton isSignUp variant="full" bold={facebookLeads} />
                            {orDivider}
                         </>
                      ) : null}
-                     {codeForm}
+                     {showCodeForm ? (
+                        codeForm
+                     ) : (
+                        <button
+                           type="button"
+                           onClick={() => {
+                              if (import.meta.env.PROD)
+                                 posthog.capture('signup_use_code_tapped', {
+                                    app: inApp.appName ?? 'browser',
+                                    os: inApp.os,
+                                    phone_first: phoneFirst
+                                 });
+                              setShowCodeForm(true);
+                           }}
+                           className="flex h-14 w-full max-w-[400px] items-center justify-center rounded-2xl border-2 border-[#6010D2] text-base font-semibold tracking-[-0.02em] text-[#6010D2] transition-opacity hover:opacity-95 dark:border-[#C084FC] dark:text-[#C084FC]"
+                        >
+                           {useCodeLabel}
+                        </button>
+                     )}
                      {/* Google and Telegram can't sign in inside Facebook/Messenger: left out there. */}
                      {facebookInApp ? null : (
                         <>
@@ -153,6 +184,7 @@ export default function PasswordlessSignUpScreen({ initialChannel, phoneFirst = 
                            <SocialAuthButtons
                               isSignUp
                               hideFacebook
+                              philippines={phoneFirst}
                               onGoogleSuccess={handleGoogleAuth}
                               onGoogleError={handleOAuthError}
                               onTelegramAuth={handleTelegramAuth}

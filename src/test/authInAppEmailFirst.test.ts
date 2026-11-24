@@ -98,13 +98,27 @@ describe('email first inside Facebook/Messenger', () => {
       Object.defineProperty(window.navigator, 'userAgent', { value: originalUA, configurable: true });
    });
 
-   it('/sign-up in Facebook: Continue with Facebook first, the email code form under it (Facebook login is on)', async () => {
+   it('/sign-up in Facebook: one bold Continue with Facebook, the email code form behind "Use phone or email"', async () => {
       await render(SignUpPage, FB_ANDROID_UA);
       const firstControl = container.querySelector('button, a, input');
       expect(firstControl?.textContent).toContain('Continue with Facebook');
+      expect(firstControl?.className).toContain('bg-[#1877F2]');
+      expect(container.textContent).toContain('One tap with Facebook.');
+      expect(container.textContent).toContain('We never post or message your friends.');
+      expect(container.querySelector('form')).toBeNull();
+      await act(async () => buttonWithText('Use phone or email')?.click());
       expect(container.querySelector('form input[type="email"]')).not.toBeNull();
       expect(buttonWithText('Continue')).not.toBeNull();
       expect(container.textContent).not.toContain('Sign Up with Google');
+   });
+
+   it('/sign-up in Facebook on a phone that last used a code: the form shows straight away, Facebook not bold', async () => {
+      window.localStorage.setItem('moodeng:last-auth-method', 'phone');
+      await render(SignUpPage, FB_ANDROID_UA);
+      expect(container.querySelector('form')).not.toBeNull();
+      expect(buttonWithText('Continue with Facebook')?.className).not.toContain('bg-[#1877F2]');
+      expect(container.textContent).toContain('No password needed.');
+      window.localStorage.removeItem('moodeng:last-auth-method');
    });
 
    it('/sign-up in Facebook with the kill switch off: the code form, nothing else (no Google, Telegram/LINE, tour or company lines)', async () => {
@@ -130,6 +144,7 @@ describe('email first inside Facebook/Messenger', () => {
 
    it('/sign-up in Messenger: submitting the email form is tracked', async () => {
       await render(SignUpPage, MESSENGER_IOS_UA);
+      await act(async () => buttonWithText('Use phone or email')?.click());
       await type(container.querySelector('input[type="email"]') as HTMLInputElement, 'new.user@example.com');
       await submit();
       expect(analytics.capture).toHaveBeenCalledWith('signup_inapp_email_submitted', { app: 'Messenger', os: 'ios' });
@@ -184,9 +199,13 @@ describe('email first inside Facebook/Messenger', () => {
       const phone = container.querySelector('#otp-input') as HTMLInputElement;
       expect(phone.type).toBe('tel');
       expect(container.textContent).toContain('+63');
-      expect(buttonWithText('Text me a code')).not.toBeNull();
+      // Facebook is the bold blue button; "Text me a code" is outlined under it.
+      expect(buttonWithText('Text me a code')?.className).toContain('border-2');
       expect(container.querySelector('input[type="password"]')).toBeNull();
       const facebook = buttonWithText('Continue with Facebook') as HTMLButtonElement;
+      expect(facebook.className).toContain('bg-[#1877F2]');
+      // Philippines: no LINE or TikTok tiles (Telegram stays on sign-in for the few who used it).
+      expect(container.querySelector('[data-line]')).toBeNull();
       expect(container.querySelector('button, a, input')).toBe(facebook);
       expect(isBefore(facebook, phone)).toBe(true);
       expect(container.querySelectorAll('button[aria-label="Continue with Facebook"]')).toHaveLength(0);
@@ -196,5 +215,28 @@ describe('email first inside Facebook/Messenger', () => {
       expect(buttonWithText('password')).toBeNull();
       await act(async () => (buttonWithText('email') as HTMLButtonElement).click());
       expect(buttonWithText('password')).not.toBeNull();
+   });
+
+   it('/sign-in in the Philippines on a phone that last used its number: "Text me a code" stays the bold button', async () => {
+      where.inPh = true;
+      window.localStorage.setItem('moodeng:last-auth-method', 'phone');
+      await render(SignInPage, CHROME_ANDROID_UA);
+      expect(buttonWithText('Text me a code')?.className).not.toContain('border-2');
+      expect(buttonWithText('Continue with Facebook')?.className).not.toContain('bg-[#1877F2]');
+      window.localStorage.removeItem('moodeng:last-auth-method');
+   });
+
+   it('/sign-up in the Philippines: bold Facebook, "Use phone number" opens the +63 box, Google the only tile', async () => {
+      where.inPh = true;
+      await render(SignUpPage, CHROME_ANDROID_UA);
+      const facebook = buttonWithText('Continue with Facebook') as HTMLButtonElement;
+      expect(container.querySelector('button, a, input')).toBe(facebook);
+      expect(facebook.className).toContain('bg-[#1877F2]');
+      expect(container.querySelector('#otp-input')).toBeNull();
+      expect(googleTile('Sign Up with Google')).not.toBeNull();
+      expect(container.querySelector('[data-line]')).toBeNull();
+      await act(async () => buttonWithText('Use phone number')?.click());
+      expect((container.querySelector('#otp-input') as HTMLInputElement).type).toBe('tel');
+      expect(buttonWithText('Continue')).not.toBeNull();
    });
 });

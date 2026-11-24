@@ -79,6 +79,9 @@ describe('sign-up inside TikTok', () => {
 
    it('Facebook keeps the email/phone code form and no big TikTok button', async () => {
       await render(FB_ANDROID_UA);
+      // Facebook leads there: the code form waits behind "Use phone or email".
+      const useCode = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Use phone or email');
+      await act(async () => useCode?.click());
       expect(container.querySelector('form')).not.toBeNull();
       expect(container.querySelector('[data-tiktok="full"]')).toBeNull();
    });
