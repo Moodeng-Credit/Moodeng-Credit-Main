@@ -588,6 +588,7 @@ export const thaiCoverageG: Record<string, string> = {
       'ยังติดปัญหาอยู่ใช่ไหม เราจะส่งอีเมลถึงคุณ และทีมงานของเราจะช่วยให้คุณทำสำเร็จ',
    // Added 2026-10-01: English that changed after the translation pass (full-limit rule, Coins.ph pause).
    "Repay a full-limit loan to unlock the next level.": "ชำระคืนเงินกู้เต็มวงเงินเพื่อปลดล็อกเลเวลถัดไป",
+   "Get verified to unlock LV.1.": "ยืนยันตัวตนเพื่อปลดล็อก LV.1",
    "left to repay for LV.2": "ที่เหลือต้องชำระเพื่อไป LV.2",
    "full-limit loan unlocks LV.2": "เงินกู้เต็มวงเงินจะปลดล็อก LV.2",
    "left to repay for LV.3": "ที่เหลือต้องชำระเพื่อไป LV.3",

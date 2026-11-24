@@ -228,6 +228,14 @@ export default function DashboardV2() {
                key={`${previewState}-${model.tier}-${model.isVerified}-${model.creditLevel}`}
                model={model}
                showRealAvatar={isReal}
+               // Sample states have no account to send anywhere, so they open the verify chooser instead.
+               onVerify={
+                  isReal
+                     ? () => {
+                          if (!verifyJourney.isLoading) verifyJourney.go();
+                       }
+                     : () => setIsVerifyOpen(true)
+               }
             />
 
             {isLoading ? (

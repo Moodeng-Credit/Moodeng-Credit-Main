@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 import IouPointHistoryModal from '@/components/IouPointHistoryModal';
 import UserAvatar from '@/components/UserAvatar';
+import GoVerifyButton from '@/components/verification/GoVerifyButton';
 
 import { type LocaleCode, useLocalization } from '@/i18n';
 import { isUserVerified } from '@/lib/isUserVerified';
@@ -360,10 +361,18 @@ export default function Account() {
                      ) : (
                         // Soft amber pill on one line: the old red box wrapped "Not / Verified" onto two
                         // lines next to the header buttons and read like an error.
-                        <span className="inline-flex w-fit items-center gap-1.5 whitespace-nowrap rounded-full bg-[#fff4e0] px-2.5 py-0.5">
+                        // Tappable: it takes them to their next verification step (people tapped it).
+                        <GoVerifyButton
+                           ariaLabel={copy.notVerified}
+                           className="inline-flex w-fit items-center gap-1.5 whitespace-nowrap rounded-full bg-[#fff4e0] px-2.5 py-0.5 active:scale-95"
+                           where="account"
+                        >
                            <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-[#e08a00]" />
                            <span className="text-[13px] font-semibold text-[#9a5b00]">{copy.notVerified}</span>
-                        </span>
+                           <span aria-hidden="true" className="text-[13px] font-bold leading-none text-[#9a5b00]">
+                              ›
+                           </span>
+                        </GoVerifyButton>
                      )}
                   </div>
                </div>
