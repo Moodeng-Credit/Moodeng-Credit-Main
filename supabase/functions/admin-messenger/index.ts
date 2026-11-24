@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { loadDiditMedia } from '../_shared/diditMedia.ts';
 import { saveFacebookName, syncMessengerHistory } from '../_shared/messengerContactLog.ts';
 import {
    createWhatsAppTemplate,
@@ -32,6 +33,8 @@ import {
 //   { action: 'send', userId, text } → sends the admin's message to that borrower on Messenger.
 //   { action: 'sync_history', userIds? } → saves Facebook names + backfills messenger_contact_events
 //                                      from SendPulse's chat log (_shared/messengerContactLog.ts).
+//   { action: 'didit_media', userId } → their Didit sessions: method, document, scores + fresh photo links
+//                                      (_shared/diditMedia.ts; rides here because of the edge function cap).
 //   { action: 'msg_template_probe', userId, name, language?, params, shapes?, messages? } → TEST: tries to send an
 //                                      approved Messenger utility template to that ONE borrower via the
 //                                      public API, stopping at the first accepted shape; returns every answer.
@@ -119,9 +122,15 @@ serve(async (req) => {
       if (!adminRow) return json({ error: 'Forbidden: admin account required' }, 403);
    }
 
-   if (!isSendPulseConfigured()) return json({ error: 'sendpulse_not_configured' }, 503);
-
    const body = await req.json().catch(() => ({}));
+
+   // Admin → Users → one person's page: Didit photos + what they verified with (not SendPulse).
+   if (body.action === 'didit_media') {
+      if (typeof body.userId !== 'string' || !/^[0-9a-f-]{36}$/i.test(body.userId)) return json({ error: 'bad userId' }, 400);
+      return json(await loadDiditMedia(svc, body.userId));
+   }
+
+   if (!isSendPulseConfigured()) return json({ error: 'sendpulse_not_configured' }, 503);
 
    if (body.action === 'profiles') {
       const ids = (Array.isArray(body.userIds) ? body.userIds : []).filter((id: unknown) => typeof id === 'string').slice(0, MAX_PROFILES);
