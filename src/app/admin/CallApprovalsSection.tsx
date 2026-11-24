@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { useAdminLiveReload } from '@/app/admin/useAdminLive';
 
@@ -254,7 +255,13 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
          <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
                <p className="flex flex-wrap items-center gap-2 break-words text-lg font-black text-white">
-                  {row.name}
+                  <Link
+                     to={`/admin/user/${row.userId}`}
+                     title="Open everything about this person"
+                     className="text-white underline decoration-[#8336f0] decoration-2 underline-offset-4 hover:text-[#c9a7ff]"
+                  >
+                     {row.name}
+                  </Link>
                   {indo.has(row.userId) ? <IndonesiaBadge /> : null}
                </p>
                {row.username || row.facebookName ? (
