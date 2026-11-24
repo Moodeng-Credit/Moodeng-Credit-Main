@@ -454,7 +454,8 @@ export const handleVaultCommand = async (svc: Svc, message: { chat: { id: number
    };
    // /idvault owed — what the vault is still owed for repaid loans, and how to pay it (also sent Mondays).
    if ((m[1] ?? '').toLowerCase() === 'owed') {
-      const card = await vaultPaybackCard(svc);
+      const [card, other] = await Promise.all([vaultPaybackCard(svc), vaultOwedCard(svc)]);
+      if (other && other.owed > 0) await say(other.text);
       return await done(card?.text ?? '⚠️ Can’t read the vault on Base right now. Try again in a minute.');
    }
    const wallet = await getPayoutWallet(svc);
@@ -584,6 +585,82 @@ export const runVaultPaybackDigest = async (svc: Svc, now = Date.now()): Promise
    const card = await vaultPaybackCard(svc);
    if (!card) return false; // couldn't read the vault: try again on the next run
    await svc.from('telegram_bot_settings').upsert({ key: 'id_vault_payback_day', value: day, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+   if (!(card.owed > 0)) return false;
+   await tellTeam(svc, card.text);
+   return true;
+};
+
+// ── daily: every other vault loan (not Indonesia) a borrower repaid that the vault is still owed ─────
+const vaultLoanState = async (loanId: string): Promise<{ left: bigint; pastDue: boolean }> => {
+   const { encodeFunctionData, decodeFunctionResult, parseAbi } = await import('npm:viem@2');
+   const abi = parseAbi(['function getLoan(string loanId) view returns (uint256, uint256, uint256, bool, uint256)']);
+   const data = encodeFunctionData({ abi, functionName: 'getLoan', args: [loanId] });
+   const out = await rpcCall(RPC_URL, 'eth_call', [{ to: VAULT_ADDRESS, data }, 'latest']);
+   const res = decodeFunctionResult({ abi, functionName: 'getLoan', data: out }) as readonly [bigint, bigint, bigint, boolean, bigint];
+   return { left: res[4], pastDue: res[3] };
+};
+
+/** USDC (6 dec) the lending wallet holds on Base. Null when the read fails. */
+const lendingWalletUsdc = async (): Promise<bigint | null> => {
+   const data = `0x70a08231${VAULT_OPERATOR.slice(2).toLowerCase().padStart(64, '0')}`;
+   try {
+      const out = await rpcCall(RPC_URL, 'eth_call', [{ to: BASE_USDC, data }, 'latest']);
+      return BigInt(out);
+   } catch {
+      return null;
+   }
+};
+
+/**
+ * The card for vault loans outside Indonesia: repaid by the borrower into the lending wallet, still open
+ * in the vault (so BitRepo sees them unpaid, then overdue, and interest keeps running). Null = can't read.
+ */
+export const vaultOwedCard = async (svc: Svc): Promise<{ text: string; owed: number } | null> => {
+   const { data: loans } = await svc
+      .from('loans')
+      .select('id, tracking_id, market')
+      .eq('repayment_status', 'Paid')
+      .not('vault_address', 'is', null)
+      .limit(300);
+   const rows = ((loans ?? []) as Array<{ id: string; tracking_id: string | null; market: string | null }>).filter((l) => l.market !== 'ID');
+   const lines: string[] = [];
+   let owedUnits = 0n;
+   let overdue = 0;
+   try {
+      for (const loan of rows) {
+         const { left, pastDue } = await vaultLoanState(loan.id);
+         if (left <= 0n) continue;
+         owedUnits += left;
+         if (pastDue) overdue += 1;
+         lines.push(`• ${loan.tracking_id ?? loan.id.slice(0, 8)} · ${baseUnitsText(left)} USDC${pastDue ? ' · ⚠️ overdue on BitRepo' : ''}`);
+      }
+   } catch (err) {
+      console.error('idVaultBridge: vault owed read failed', errMsg(err));
+      return null;
+   }
+   if (!lines.length) return { text: 'Nothing to pay back: every repaid vault loan is already paid into the vault.', owed: 0 };
+   const have = await lendingWalletUsdc();
+   const gap = have != null && have < owedUnits ? owedUnits - have : 0n;
+   const text = [
+      '🏦 Pay the vault',
+      `Borrowers repaid these to the lending wallet, the vault is still owed ${baseUnitsText(owedUnits)} USDC (${lines.length} loan${lines.length === 1 ? '' : 's'}${overdue ? `, ${overdue} overdue` : ''}):`,
+      ...lines,
+      '',
+      `Lending wallet ${VAULT_OPERATOR.slice(0, 6)}…${VAULT_OPERATOR.slice(-4)}: ${have == null ? 'balance unknown' : `${baseUnitsText(have)} USDC`}.${gap > 0n ? ` ⚠️ ${baseUnitsText(gap)} short — top it up first.` : ''}`,
+      'Admin → Finance → Credit line → “Pay all” (one signature). Until then BitRepo sees them unpaid and its interest keeps running.'
+   ].join('\n');
+   return { text, owed: Number(owedUnits) / 1e6 };
+};
+
+/** Every day from 09:00 Bangkok, once: the card above, only when something is owed. */
+export const runVaultOwedDigest = async (svc: Svc, now = Date.now()): Promise<boolean> => {
+   const bkk = new Date(now + 7 * 3_600_000);
+   if (bkk.getUTCHours() < 9) return false;
+   const day = bkk.toISOString().slice(0, 10);
+   if ((await getSetting(svc, 'vault_owed_day')) === day) return false;
+   const card = await vaultOwedCard(svc);
+   if (!card) return false; // couldn't read the vault: try again on the next run
+   await svc.from('telegram_bot_settings').upsert({ key: 'vault_owed_day', value: day, updated_at: new Date().toISOString() }, { onConflict: 'key' });
    if (!(card.owed > 0)) return false;
    await tellTeam(svc, card.text);
    return true;

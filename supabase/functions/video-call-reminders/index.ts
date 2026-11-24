@@ -27,7 +27,7 @@ import { nudgeStalledChats } from '../_shared/messengerBookingBot.ts';
 import { type IdEvent, type IdEventData, isIdTrackUser, runIdOnboardingNudges, sendIdTelegram } from '../_shared/idTrack.ts';
 import { runAutoPayouts, runWaltPayoutScan } from '../_shared/idManualFunding.ts';
 import { runWaltWatch } from '../_shared/waltWatch.ts';
-import { runVaultBridges, runVaultPaybackDigest } from '../_shared/idVaultBridge.ts';
+import { runVaultBridges, runVaultOwedDigest, runVaultPaybackDigest } from '../_shared/idVaultBridge.ts';
 import { runIdrRepricing } from '../_shared/fxRates.ts';
 import { runIdRepayNudges, runIdRepayments, runWaltArrivedDigest } from '../_shared/idRepayments.ts';
 import { runIdWaBridgeNudges } from '../_shared/idWaBridge.ts';
@@ -419,6 +419,12 @@ serve(async (req) => {
       tally.vault_payback_card = (await runVaultPaybackDigest(svc, now)) ? 1 : 0;
    } catch (err) {
       console.error('video-call-reminders: vault payback card failed', err);
+   }
+   // Daily 09:00 Bangkok: other vault loans borrowers repaid that still need paying into the vault.
+   try {
+      tally.vault_owed_card = (await runVaultOwedDigest(svc, now)) ? 1 : 0;
+   } catch (err) {
+      console.error('video-call-reminders: vault owed card failed', err);
    }
    // Walt Transfer mode (the default): one "send X USDT to @user" card per open request for the team.
    try {

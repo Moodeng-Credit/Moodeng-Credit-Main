@@ -8,7 +8,14 @@ import { useAccount } from 'wagmi';
 import { useAdminLiveReload } from '@/app/admin/useAdminLive';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { txExplorerUrl } from '@/lib/txExplorer';
-import { BITREPO_VAULT_URL, readVaultLoan, readVaultStatus, repayVaultLoan, type VaultLoan } from '@/lib/web3/bitrepoVault';
+import {
+   BITREPO_VAULT_URL,
+   readVaultLoan,
+   readVaultStatus,
+   repayVaultLoan,
+   repayVaultLoans,
+   type VaultLoan
+} from '@/lib/web3/bitrepoVault';
 
 // Admin → Finance → Credit line: loans drawn from the BitRepo vault. Borrowers repay our lending wallet as with
 // any loan; "Pay vault" then sends what they paid on to the vault (its interest and principal first, the rest
@@ -26,6 +33,15 @@ interface VaultLoanRow {
 }
 
 const usdc = (base: bigint) => (Number(base) / 1e6).toFixed(2);
+
+/** What's still to pass on to the vault: what the borrower paid us, less what the vault already took, capped at the payoff. */
+const toPayFor = (row: VaultLoanRow, v: VaultLoan | undefined): bigint => {
+   if (!v) return 0n;
+   const paidUsBase = BigInt(Math.round(Number(row.repaid_amount ?? 0) * 1e6));
+   const passedOn = BigInt(Math.round(Number(row.total_repayment_amount) * 1e6)) - v.totalDueLeft;
+   const left = paidUsBase - (passedOn > 0n ? passedOn : 0n);
+   return left < v.payoff ? left : v.payoff;
+};
 const short = (a?: string | null) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '—');
 
 export default function VaultLoansCard() {
@@ -80,6 +96,35 @@ export default function VaultLoansCard() {
       }
    };
 
+   // Every repaid loan this wallet can pay into the vault, for "Pay all" (one signature on Base Account).
+   const payable = rows
+      .map((row) => ({ row, amount: toPayFor(row, onchain[row.id]) }))
+      .filter(
+         ({ row, amount }) =>
+            amount > 0n &&
+            !paidTx[row.id] &&
+            Boolean(address && row.lender_wallet && address.toLowerCase() === row.lender_wallet.toLowerCase())
+      );
+   const payableTotal = payable.reduce((sum, p) => sum + p.amount, 0n);
+
+   const payAll = async () => {
+      if (!address || !payable.length) return;
+      setPayingId('all');
+      setError(null);
+      try {
+         const paid = await repayVaultLoans(
+            address,
+            payable.map(({ row, amount }) => ({ loanId: row.id, amount }))
+         );
+         setPaidTx((prev) => ({ ...prev, ...paid }));
+         await load();
+      } catch (err) {
+         setError((err as Error).message || 'The vault payments didn’t go through. Nothing was sent.');
+      } finally {
+         setPayingId(null);
+      }
+   };
+
    const out = rows.reduce((sum, r) => sum + (onchain[r.id]?.principal ?? 0n), 0n);
 
    return (
@@ -103,6 +148,23 @@ export default function VaultLoansCard() {
             )}
          </p>
 
+         {payable.length ? (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#6d3cff]/50 bg-[#6d3cff]/10 px-3 py-2">
+               <p className="text-sm text-white">
+                  Borrowers repaid {payable.length} loan{payable.length === 1 ? '' : 's'} the vault is still owed for.{' '}
+                  <span className="text-[#a89bb8]">Until it’s paid, BitRepo sees them unpaid and its interest keeps running.</span>
+               </p>
+               <button
+                  className="rounded-lg bg-[#6d3cff] px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+                  disabled={payingId !== null}
+                  onClick={() => void payAll()}
+                  type="button"
+               >
+                  {payingId === 'all' ? 'Paying…' : `Pay all ${usdc(payableTotal)} USDC`}
+               </button>
+            </div>
+         ) : null}
+
          {error ? <p className="mt-2 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p> : null}
 
          {rows.length === 0 ? (
@@ -123,10 +185,7 @@ export default function VaultLoansCard() {
                      {rows.map((row) => {
                         const v = onchain[row.id];
                         const paidUs = Number(row.repaid_amount ?? 0);
-                        const paidUsBase = BigInt(Math.round(paidUs * 1e6));
-                        // What's still to pass on: what the borrower paid, less what the vault already took for this loan.
-                        const passedOn = v ? BigInt(Math.round(Number(row.total_repayment_amount) * 1e6)) - v.totalDueLeft : 0n;
-                        const toPay = v ? [paidUsBase - (passedOn > 0n ? passedOn : 0n), v.payoff].reduce((a, b) => (a < b ? a : b)) : 0n;
+                        const toPay = toPayFor(row, v);
                         const settled = v ? v.principal === 0n && v.totalDueLeft === 0n : false;
                         const wrongWallet = Boolean(
                            address && row.lender_wallet && address.toLowerCase() !== row.lender_wallet.toLowerCase()
