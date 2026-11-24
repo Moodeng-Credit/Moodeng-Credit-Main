@@ -45,6 +45,8 @@ describe('fast-repay notice: who sees it', () => {
       expect(result?.countsFrom.toISOString()).toBe(new Date(NOW - 3 * HOUR + 48 * HOUR).toISOString());
       expect(result?.levelUp).toEqual({ from: 15, to: 25 });
       expect(result?.rewardLine).toMatch(/^Pay .+ – .+ → ₱50 food$/);
+      expect(result?.reward?.label).toBe('₱50 food');
+      expect(result?.reward?.from).toMatch(/^[A-Z][a-z]{2} \d{1,2}$/);
    });
 
    it('nothing once the 48 hours are over', () => {
