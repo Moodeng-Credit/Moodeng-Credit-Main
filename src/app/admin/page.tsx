@@ -29,6 +29,7 @@ import GrabVouchersSection from '@/app/admin/GrabVouchersSection';
 import SpinWheelSection from '@/app/admin/SpinWheelSection';
 import { BorrowerTimeline, RecentChangesFeed } from '@/app/admin/AdminHistory';
 import { deriveBorrowerStatus } from '@/app/admin/adminStatus';
+import { directoryName, LOAN_FILTERS, type LoanFilter, matchesLoanFilter } from '@/app/admin/directoryLoanFilter';
 import AdminStatusBadge from '@/app/admin/AdminStatusBadge';
 import { AdminLiveProvider, AdminLiveRow, useAdminLiveReload } from '@/app/admin/useAdminLive';
 import { formatPointsMajor, iouPointsAwardRules, loanFundingPointsPerUsdc, pointsAwardRules, trustPointsAwardRules } from '@/shared/points';
@@ -360,6 +361,7 @@ function AdminPanel() {
    const [verificationFilter, setVerificationFilter] = useState<VerificationFilter>('all');
    const [countryFilter, setCountryFilter] = useState('all');
    const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+   const [loanFilter, setLoanFilter] = useState<LoanFilter>('all');
    const [selectedUserId, setSelectedUserId] = useState('');
    const [selectedDefaultCaseId, setSelectedDefaultCaseId] = useState('');
    const [selectedRecoveryPath, setSelectedRecoveryPath] = useState<RecoveryPath>('repay_now');
@@ -389,13 +391,19 @@ function AdminPanel() {
       return [...counts.entries()].sort((first, second) => second[1] - first[1]);
    }, [users]);
    const directoryFiltersActive =
-      roleFilter !== 'all' || joinedFilter !== 'any' || verificationFilter !== 'all' || countryFilter !== 'all' || statusFilter !== 'all';
+      roleFilter !== 'all' ||
+      joinedFilter !== 'any' ||
+      verificationFilter !== 'all' ||
+      countryFilter !== 'all' ||
+      statusFilter !== 'all' ||
+      loanFilter !== 'all';
    const clearDirectoryFilters = () => {
       setRoleFilter('all');
       setJoinedFilter('any');
       setVerificationFilter('all');
       setCountryFilter('all');
       setStatusFilter('all');
+      setLoanFilter('all');
    };
    // Global search bar: pages, users and loan requests, jumping straight to the match.
    const searchPages = useMemo(
@@ -428,6 +436,7 @@ function AdminPanel() {
       if (verificationFilter === 'world_id' && user.is_world_id !== 'ACTIVE') return false;
       if (countryFilter !== 'all' && (user.countryIso ?? 'unknown') !== countryFilter) return false;
       if (statusFilter !== 'all' && user.account_status !== statusFilter) return false;
+      if (!matchesLoanFilter(user, loanFilter)) return false;
       return true;
    });
    const selectedUser = users.find((user) => user.id === selectedUserId) ?? null;
@@ -799,7 +808,7 @@ function AdminPanel() {
                         </button>
                      ))}
                   </div>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                      <DirectoryFilter label="Joined" value={joinedFilter} onChange={(value) => setJoinedFilter(value as JoinedFilter)}>
                         <option value="any">Any time</option>
                         <option value="24h">Last 24 hours</option>
@@ -830,6 +839,15 @@ function AdminPanel() {
                         <option value="active">Active</option>
                         <option value="blocked">Blocked</option>
                         <option value="banned">Banned</option>
+                     </DirectoryFilter>
+                     <DirectoryFilter label="Loans" value={loanFilter} onChange={(value) => setLoanFilter(value as LoanFilter)}>
+                        {LOAN_FILTERS.map((option) => (
+                           <option key={option.value} value={option.value}>
+                              {option.value === 'all'
+                                 ? option.label
+                                 : `${option.label} (${users.filter((user) => matchesLoanFilter(user, option.value)).length})`}
+                           </option>
+                        ))}
                      </DirectoryFilter>
                   </div>
                   <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-lg text-[#a89bb8]">
@@ -870,7 +888,7 @@ function AdminPanel() {
                                          title="Open full account"
                                          className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#8336f0] text-2xl font-black text-white no-underline"
                                       >
-                                         {user.username.charAt(0).toUpperCase()}
+                                         {directoryName(user).charAt(0).toUpperCase()}
                                       </Link>
                                       <div className="min-w-0">
                                          <Link
@@ -878,8 +896,11 @@ function AdminPanel() {
                                             title="Open full account"
                                             className="text-left text-3xl font-black text-white underline decoration-2 underline-offset-4"
                                          >
-                                            {user.username}
+                                            {directoryName(user)}
                                          </Link>
+                                         {directoryName(user) !== user.username ? (
+                                            <span className="ml-3 text-lg text-[#a89bb8]">@{user.username}</span>
+                                         ) : null}
                                          <div className="mt-3 flex flex-wrap gap-3">
                                             <Badge tone={user.user_role}>{roleLabel(user.user_role)}</Badge>
                                             <Badge tone={user.account_status}>{user.account_status}</Badge>
