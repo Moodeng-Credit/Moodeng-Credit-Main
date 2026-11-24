@@ -12,6 +12,7 @@ import { useAuthProvider } from '@/hooks/useAuthProvider';
 import { partnerPath, readParkedAffiliateInvite } from '@/lib/affiliateInvite';
 import { buildEmailConfirmationPath } from '@/lib/authPaths';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { logoutUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
@@ -116,6 +117,11 @@ function ReturningUserQuestion({ onNew, viaFacebook = false }: { onNew: () => vo
    const [returning, setReturning] = useState(false);
 
    const logIn = async () => {
+      // Give this Facebook back from the empty account it just made, so it can be connected to their real
+      // account from the dashboard (release_new_facebook_signup only acts on a brand-new, Facebook-only, unused account).
+      if (viaFacebook) {
+         await Promise.resolve(getSupabaseBrowserClient().rpc('release_new_facebook_signup')).catch(() => undefined);
+      }
       await dispatch(logoutUser()).catch(() => undefined);
       navigate('/sign-in', { replace: true });
    };
@@ -136,7 +142,7 @@ function ReturningUserQuestion({ onNew, viaFacebook = false }: { onNew: () => vo
                      </h1>
                      <p className="text-base font-medium leading-6 text-[#6D6D6D] dark:text-[#c8b8e8]">
                         {viaFacebook
-                           ? 'This Facebook isn\u2019t connected to your Moodeng account yet, so it made a new, empty one. Log in with the phone, email or Google you used before (not Facebook). Your loans and points are there.'
+                           ? 'This Facebook isn\u2019t connected to your Moodeng account yet, so it made a new, empty one. Log in with the phone, email or Google you used before (not Facebook). Your loans and points are there, and you can connect Facebook to it.'
                            : 'Log in with the phone, email or Google you used before. Your loans and points are there.'}
                      </p>
                      <button type="button" onClick={() => void logIn()} className={`${choice} bg-[#6010D2] text-white`}>

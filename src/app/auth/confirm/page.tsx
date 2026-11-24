@@ -10,6 +10,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { takeNextPath } from '@/lib/authNext';
 import { buildEmailConfirmationPath, PENDING_VERIFICATION_EMAIL_KEY } from '@/lib/authPaths';
 import { isMissingProviderEmailError } from '@/lib/facebookAuth';
+import { rememberFacebookConnectError } from '@/lib/facebookConnect';
 import { markPasswordRecoveryReady } from '@/lib/passwordRecovery';
 import { clearPendingCode } from '@/lib/pendingCode';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
@@ -158,6 +159,9 @@ export default function AuthConfirmPage() {
                return false;
             }
 
+            // A dashboard "Connect Facebook" that failed comes back here still signed in: keep the reason
+            // for the card, since finishing below lands on the dashboard without showing it.
+            rememberFacebookConnectError(linkError);
             if (await finishFromCurrentSession(false)) return true;
             setError(linkError);
             return false;

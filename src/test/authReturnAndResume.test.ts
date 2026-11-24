@@ -9,7 +9,8 @@ type ReactActGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 
 // After logging in: back to where they were; a killed Facebook page can resume the code; a new
 // account in the Philippines is asked once whether they used Moodeng before.
-const h = vi.hoisted(() => ({ inPh: true, signedIn: false, logout: vi.fn(() => ({ type: 'logout' })) }));
+const h = vi.hoisted(() => ({ inPh: true, signedIn: false, logout: vi.fn(() => ({ type: 'logout' })), rpc: vi.fn(async () => ({ data: 'released', error: null })) }));
+vi.mock('@/lib/supabase/client', () => ({ getSupabaseBrowserClient: () => ({ rpc: h.rpc }) }));
 vi.mock('@/lib/isLikelyPhilippines', () => ({ isLikelyPhilippines: () => h.inPh }));
 vi.mock('@/store/slices/authSlice', () => ({ logoutUser: h.logout }));
 vi.mock('react-redux', () => ({
@@ -129,8 +130,11 @@ describe('screens', () => {
       await act(async () => button("I've used Moodeng before")?.click());
       expect(container.textContent).toContain('Log in with the phone, email or Google you used before.');
       expect(button('Log in with my email')).toBeFalsy();
+      h.rpc.mockClear();
       await act(async () => button('Log in to my account')?.click());
       expect(h.logout).toHaveBeenCalled();
+      // Not a Facebook account: nothing to give back.
+      expect(h.rpc).not.toHaveBeenCalled();
       expect(container.querySelector('[data-testid="where"]')?.textContent).toBe('/sign-in');
    });
 
@@ -141,7 +145,11 @@ describe('screens', () => {
       await act(async () => button("I've used Moodeng before")?.click());
       expect(container.textContent).toContain('This Facebook isn\u2019t connected to your Moodeng account yet');
       expect(container.textContent).toContain('(not Facebook)');
+      expect(container.textContent).toContain('you can connect Facebook to it');
+      h.rpc.mockClear();
       await act(async () => button('Log in to my account')?.click());
+      // The empty account gives its Facebook back first, so it can be connected to the real account.
+      expect(h.rpc).toHaveBeenCalledWith('release_new_facebook_signup');
       expect(h.logout).toHaveBeenCalled();
       expect(container.querySelector('[data-testid="where"]')?.textContent).toBe('/sign-in');
    });
