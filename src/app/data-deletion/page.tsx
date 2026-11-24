@@ -24,8 +24,8 @@ const sections = [
          <>
             <p className="text-base leading-6 tracking-[-0.02em] text-[#4D4359]">
                Email{' '}
-               <a href="mailto:privacy@moodeng.credit" className="text-[#6010D2] hover:underline">
-                  privacy@moodeng.credit
+               <a href="mailto:privacy@moodeng.app" className="text-[#6010D2] hover:underline">
+                  privacy@moodeng.app
                </a>{' '}
                from the email address on your account, with the subject line{' '}
                <span className="font-semibold text-[#040033]">"Data deletion request"</span>. To help us locate
@@ -47,6 +47,25 @@ const sections = [
             </ul>
             <p className="text-base leading-6 tracking-[-0.02em] text-[#4D4359]">
                We will confirm receipt and verify your identity before processing the request.
+            </p>
+         </>
+      )
+   },
+   {
+      title: 'Signed in with Facebook?',
+      content: (
+         <>
+            <p className="text-base leading-6 tracking-[-0.02em] text-[#4D4359]">
+               You can stop Facebook sharing your information with Moodeng at any time: in Facebook, go to{' '}
+               <span className="font-semibold text-[#040033]">
+                  Settings &amp; privacy → Settings → Apps and websites → Moodeng Credit → Remove
+               </span>
+               .
+            </p>
+            <p className="text-base leading-6 tracking-[-0.02em] text-[#4D4359]">
+               Removing the app stops new data. To also delete the Facebook information we already hold (your
+               Facebook user ID, name, profile photo, and email), send the deletion request above. We delete it
+               within 30 days.
             </p>
          </>
       )
@@ -84,14 +103,16 @@ const sections = [
       content: (
          <p className="text-base leading-6 tracking-[-0.02em] text-[#4D4359]">
             Data deletion and privacy requests:{' '}
-            <a href="mailto:privacy@moodeng.credit" className="text-[#6010D2] hover:underline">
-               privacy@moodeng.credit
+            <a href="mailto:privacy@moodeng.app" className="text-[#6010D2] hover:underline">
+               privacy@moodeng.app
             </a>
             <br />
             General support:{' '}
-            <a href="mailto:support@moodeng.credit" className="text-[#6010D2] hover:underline">
-               support@moodeng.credit
+            <a href="mailto:support@moodeng.app" className="text-[#6010D2] hover:underline">
+               support@moodeng.app
             </a>
+            <br />
+            Moodeng Credit is operated by Building Credit Asia LLC.
          </p>
       )
    }
@@ -123,13 +144,13 @@ export default function DataDeletionPage() {
                   </h1>
                   <p className="max-w-2xl text-base leading-6 tracking-[-0.02em] text-[#4D4359]">
                      The short version: email{' '}
-                     <a href="mailto:privacy@moodeng.credit" className="text-[#6010D2] hover:underline">
-                        privacy@moodeng.credit
+                     <a href="mailto:privacy@moodeng.app" className="text-[#6010D2] hover:underline">
+                        privacy@moodeng.app
                      </a>{' '}
                      and we'll delete the personal data tied to your account, subject to legal retention
                      requirements.
                   </p>
-                  <p className="text-sm leading-5 tracking-[-0.02em] text-[#70617F]">Last updated: June 2026</p>
+                  <p className="text-sm leading-5 tracking-[-0.02em] text-[#70617F]">Last updated: November 2026</p>
                </div>
             </div>
 
