@@ -2,6 +2,8 @@ import { type ButtonHTMLAttributes, type CSSProperties, type MouseEvent, type Re
 
 import { Check, Lock } from 'lucide-react';
 
+import { useReplayClass } from '@/components/motion/TapDelight';
+
 import { playSuccess } from '@/lib/uiSounds';
 
 // Visual kit for the Connect → Approve → Apply screens, taken from the Milestone_9.23 Figma
@@ -150,7 +152,8 @@ export function OptionCard({
    href,
    disabled,
    done,
-   doneLabel = 'Confirmed'
+   doneLabel = 'Confirmed',
+   onDoneTap
 }: {
    icon: ReactNode;
    title: string;
@@ -163,20 +166,55 @@ export function OptionCard({
    disabled?: boolean;
    done?: boolean;
    doneLabel?: string;
+   // A tap on the green "done" card: the screen points at what to do next (see ContactsStep).
+   onDoneTap?: () => void;
 }) {
    if (done) {
-      return (
-         <div className="flex min-h-[88px] w-full items-center gap-3 rounded-[18px] border-2 border-b-[5px] border-[#4aa256] border-b-[#3a8a45] bg-[#eefbf2] px-4 py-3 dark:bg-[#123222]">
-            <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#4aa256] text-white">
-               <Check aria-hidden="true" className="size-6" strokeWidth={3} />
-            </span>
-            <div className="flex min-w-0 flex-col text-left">
-               <span className="text-[18px] font-bold leading-[22px] text-[#2f7a3a] dark:text-[#7ee2a0]">{title}</span>
-               <span className="text-[14px] leading-[18px] text-[#3c8248] dark:text-[#9fd8b2]">{doneLabel}</span>
-            </div>
-         </div>
-      );
+      return <DoneOptionCard doneLabel={doneLabel} onTap={onDoneTap} title={title} />;
    }
+   return <OpenOptionCard badge={badge} disabled={disabled} href={href} icon={icon} onClick={onClick} subtitle={subtitle} title={title} />;
+}
+
+// Green "done" card. PostHog (Nov 2026): 13 people a week tapped it and nothing happened, so the
+// tick pops and the screen points at the next step.
+function DoneOptionCard({ title, doneLabel, onTap }: { title: string; doneLabel: string; onTap?: () => void }) {
+   const tick = useReplayClass<HTMLSpanElement>();
+   return (
+      <div
+         className="flex min-h-[88px] w-full touch-manipulation select-none items-center gap-3 rounded-[18px] border-2 border-b-[5px] border-[#4aa256] border-b-[#3a8a45] bg-[#eefbf2] px-4 py-3 dark:bg-[#123222]"
+         onClick={() => {
+            tick.play('tap-squish');
+            onTap?.();
+         }}
+      >
+         <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#4aa256] text-white" ref={tick.ref}>
+            <Check aria-hidden="true" className="size-6" strokeWidth={3} />
+         </span>
+         <div className="flex min-w-0 flex-col text-left">
+            <span className="text-[18px] font-bold leading-[22px] text-[#2f7a3a] dark:text-[#7ee2a0]">{title}</span>
+            <span className="text-[14px] leading-[18px] text-[#3c8248] dark:text-[#9fd8b2]">{doneLabel}</span>
+         </div>
+      </div>
+   );
+}
+
+function OpenOptionCard({
+   icon,
+   title,
+   badge,
+   subtitle,
+   onClick,
+   href,
+   disabled
+}: {
+   icon: ReactNode;
+   title: string;
+   badge?: string;
+   subtitle?: ReactNode;
+   onClick?: (event: MouseEvent<HTMLElement>) => void;
+   href?: string;
+   disabled?: boolean;
+}) {
    const cardClass =
       'flex min-h-[88px] w-full items-center gap-3 rounded-[18px] border-2 border-b-[5px] px-4 py-3 text-left transition duration-100 ease-out hover:brightness-[0.98] active:translate-y-[3px] active:border-b-2 disabled:cursor-not-allowed disabled:opacity-60 border-[#7661f9] border-b-[#4a35c9] bg-[#f8f1ff] dark:bg-[#221a31]';
    const cardStyle = undefined;
@@ -223,17 +261,40 @@ export function StepLabel({ n, text, done = false }: { n: number; text: string; 
    );
 }
 
-// A step that can't be started yet: greyed out with a lock and what unlocks it, so nobody taps it first.
-export function LockedStepCard({ icon, title, hint }: { icon: ReactNode; title: string; hint: string }) {
+// A step that can't be started yet: greyed out with a lock and what unlocks it. People still tap it
+// (PostHog, Nov 2026: 7 people a week, nothing happened), so a tap shakes it "no" and the unlock
+// line lights up in purple for a moment.
+export function LockedStepCard({ icon, title, hint, onTap }: { icon: ReactNode; title: string; hint: string; onTap?: () => void }) {
+   const shake = useReplayClass<HTMLDivElement>();
+   const [isHintLit, setIsHintLit] = useState(false);
+   const litTimer = useRef<number | null>(null);
+   useEffect(
+      () => () => {
+         if (litTimer.current) window.clearTimeout(litTimer.current);
+      },
+      []
+   );
    return (
       <div
          aria-disabled="true"
-         className="flex min-h-[88px] w-full items-center gap-3 rounded-[18px] border-2 border-dashed border-[#d6d0e3] bg-[#f6f5f9] px-4 py-3 text-left dark:border-[#40354f] dark:bg-[#1b1526]"
+         className="flex min-h-[88px] w-full touch-manipulation select-none items-center gap-3 rounded-[18px] border-2 border-dashed border-[#d6d0e3] bg-[#f6f5f9] px-4 py-3 text-left dark:border-[#40354f] dark:bg-[#1b1526]"
+         onClick={() => {
+            shake.play('connect-shake');
+            setIsHintLit(true);
+            if (litTimer.current) window.clearTimeout(litTimer.current);
+            litTimer.current = window.setTimeout(() => setIsHintLit(false), 1600);
+            onTap?.();
+         }}
+         ref={shake.ref}
       >
          <span className="grid size-11 shrink-0 place-items-center opacity-40">{icon}</span>
          <span className="flex min-w-0 flex-col gap-0.5">
             <span className="text-[20px] font-bold leading-[24px] text-[#a49cb5]">{title}</span>
-            <span className="flex items-center gap-1 text-[14px] leading-[18px] text-[#a49cb5]">
+            <span
+               className={`flex items-center gap-1 text-[14px] leading-[18px] transition-colors duration-200 ${
+                  isHintLit ? 'font-bold text-[#6b55f7] dark:text-[#b4a6ff]' : 'text-[#a49cb5]'
+               }`}
+            >
                <Lock aria-hidden="true" className="size-3.5" strokeWidth={2.5} />
                {hint}
             </span>
