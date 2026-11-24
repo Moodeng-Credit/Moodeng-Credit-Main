@@ -9,7 +9,7 @@ import LastUsedBadge from './LastUsedBadge';
 import TelegramLoginTile from './TelegramLoginTile';
 
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
-import { isFacebookFamilyApp, isFacebookLoginEnabled } from '@/lib/facebookAuth';
+import { isFacebookLoginEnabled, isFacebookPrimaryHere } from '@/lib/facebookAuth';
 import { buildAndroidIntentUrl, detectInAppBrowser, isFacebookInApp, openInSafari, watchForFailedHandOff } from '@/lib/inAppBrowser';
 import { getLastUsedAuth, setLastUsedAuth } from '@/lib/lastUsedAuth';
 import { isTikTokButtonVisible } from '@/lib/tiktokAuth';
@@ -62,15 +62,15 @@ export function useTikTokPrimary(): boolean {
    return useMemo(() => detectInAppBrowser().appName === 'TikTok' && isTikTokButtonVisible(), []);
 }
 
-/** True when "Continue with Facebook" should be the main button on this page (Facebook/Messenger/Instagram's browser). */
+/** True when "Continue with Facebook" is the main button on this page (normal browsers + Facebook/Messenger/Instagram). */
 export function useFacebookPrimary(): boolean {
-   return useMemo(() => isFacebookLoginEnabled() && isFacebookFamilyApp(detectInAppBrowser()), []);
+   return useMemo(() => isFacebookPrimaryHere(detectInAppBrowser()), []);
 }
 
 /**
  * Facebook login through Supabase Auth's Facebook provider (OAuth redirect, returns via /auth/confirm).
- * 'full' is the main button inside Facebook's own browser, where the person is already signed in to
- * Facebook; 'tile' is the small square next to Telegram/LINE everywhere else.
+ * 'full' is the main button (normal browsers + Facebook/Messenger/Instagram, see isFacebookPrimaryHere);
+ * 'tile' is the small square next to Telegram/LINE inside other apps' browsers.
  */
 export function FacebookAuthButton({ isSignUp, variant }: { isSignUp: boolean; variant: 'full' | 'tile' }) {
    const [isLoading, setIsLoading] = useState(false);
@@ -177,7 +177,9 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
    const googleAsLine = googleInApp && isFacebookInApp(inApp);
    const handOffBrowser = inApp.os === 'ios' ? 'Safari' : 'Chrome';
    const facebookEnabled = useMemo(() => isFacebookLoginEnabled(), []);
-   const facebookPrimary = facebookEnabled && isFacebookFamilyApp(inApp);
+   const facebookPrimary = useMemo(() => isFacebookPrimaryHere(inApp), [inApp]);
+   // Facebook first: where Facebook leads, Google is a small tile under it instead of a full-width button.
+   const googleAsTile = facebookPrimary && !googleInApp;
    // TikTok's own browser: the person is already signed in to TikTok, so its tile stays (Telegram/LINE don't).
    const tiktokInApp = useTikTokPrimary();
 
@@ -248,7 +250,7 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
 
    return (
       <div className="flex w-full max-w-[400px] min-w-0 flex-col gap-4">
-         {/* Facebook's own browser: the person is already signed in to Facebook, so it leads */}
+         {/* Facebook first: one person rarely has two Facebook accounts (anyone can make a new Gmail) */}
          {facebookPrimary && !hideFacebook ? <FacebookAuthButton isSignUp={isSignUp} variant="full" /> : null}
 
          {/* Google inside an app's browser: hand off to Chrome/Safari, where Google sign-in works */}
@@ -290,7 +292,7 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
          ) : null}
 
          {/* Google: uses Supabase OAuth redirect flow */}
-         {clientId && !googleInApp && (
+         {clientId && !googleInApp && !googleAsTile && (
             <div className="relative w-full">
                <button
                   type="button"
@@ -318,6 +320,25 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
              form says "Signed up with Telegram or LINE? Open in Chrome" (George, 2026-10-15).
              Exception: inside TikTok's browser the TikTok tile still shows, on its own. */}
          <div className={inApp.isInApp && !tiktokInApp ? 'hidden' : 'flex w-full min-w-0 items-center justify-start gap-3'}>
+            {/* Google as a small tile when Facebook leads */}
+            {clientId && googleAsTile ? (
+               <div className="relative">
+                  <button
+                     type="button"
+                     onClick={handleGoogleClick}
+                     disabled={isGoogleLoading}
+                     aria-label={googleLabel}
+                     title={googleLabel}
+                     className={`flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#B5ACBE] bg-[#FDFCFD] shadow-[0px_2px_4px_rgba(27,28,29,0.04)] transition-opacity hover:opacity-95 dark:border-[#40354F] dark:bg-[#17121F] ${
+                        isGoogleLoading ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                     }`}
+                  >
+                     <GoogleLogo />
+                  </button>
+                  {lastUsed === 'google' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
+               </div>
+            ) : null}
+
             {inApp.isInApp ? null : (
                <>
                   {/* Telegram: plain icon tile that redirects to Telegram OAuth (no embedded widget) */}
@@ -340,7 +361,7 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
                {lastUsed === 'tiktok' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
             </div>
 
-            {/* Facebook: a live tile once enabled (the big button above when inside Facebook); hidden until then */}
+            {/* Facebook: a small tile only inside other apps' browsers (the big button above everywhere else) */}
             {facebookEnabled && !facebookPrimary ? <FacebookAuthButton isSignUp={isSignUp} variant="tile" /> : null}
          </div>
 

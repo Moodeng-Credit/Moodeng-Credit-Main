@@ -4,7 +4,16 @@ import posthog from 'posthog-js';
 import { useDispatch } from 'react-redux';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
-import { AuthErrorAlert, AuthFooter, AuthInputField, DividerWithText, PasswordlessAuthForm, SocialAuthButtons } from '@/components/auth';
+import {
+   AuthErrorAlert,
+   AuthFooter,
+   AuthInputField,
+   DividerWithText,
+   FacebookAuthButton,
+   PasswordlessAuthForm,
+   SocialAuthButtons,
+   useFacebookPrimary
+} from '@/components/auth';
 import Loading from '@/components/Loading';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
@@ -56,6 +65,8 @@ export default function SignInPage() {
    // Facebook/Messenger's browser: Google can't sign in there, so the email form comes first.
    const inApp = useMemo(() => detectInAppBrowser(), []);
    const facebookInApp = isFacebookInApp(inApp);
+   // Facebook first: "Continue with Facebook" tops the page, also in Messenger and above the +63 box.
+   const facebookPrimary = useFacebookPrimary();
    // Where sign-up is passwordless (any in-app browser), sign-in opens on the code form too.
    // Everywhere else the password form stays first, with "Email me a code" / "Text me a code".
    // In the Philippines the +63 number box comes first (GCash-style), with Google/Telegram under it.
@@ -230,6 +241,7 @@ export default function SignInPage() {
    const socialAuth = (
       <SocialAuthButtons
          isSignUp={false}
+         hideFacebook={facebookPrimary && (inApp.isInApp || phoneFirst)}
          onGoogleSuccess={handleGoogleAuth}
          onGoogleError={() => setShowAccount(true)}
          onTelegramAuth={handleTelegramAuth}
@@ -262,6 +274,15 @@ export default function SignInPage() {
                <div className="w-full flex flex-col gap-4">
                   {inApp.isInApp || phoneFirst ? null : socialAuth}
                   {inApp.isInApp || phoneFirst ? null : orDivider}
+                  {/* Inside Facebook/Messenger and on the phone-first page the rest sits lower, but Facebook still leads */}
+                  {facebookPrimary && (inApp.isInApp || phoneFirst) ? (
+                     <>
+                        <div className="flex justify-center">
+                           <FacebookAuthButton isSignUp={false} variant="full" />
+                        </div>
+                        {orDivider}
+                     </>
+                  ) : null}
 
                   {usePassword ? null : (
                      <div className="flex justify-center">

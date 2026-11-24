@@ -82,10 +82,10 @@ describe('Google sign-in inside an app browser', () => {
    it.each([
       ['Chrome on Android', CHROME_ANDROID_UA],
       ['Safari on iPhone', SAFARI_IOS_UA]
-   ])('%s keeps the normal Google button', async (_name, ua) => {
+   ])('%s keeps a normal Google button (a small tile under Facebook)', async (_name, ua) => {
       await renderWith(ua);
       expect(hasGoogleButton()).toBe(true);
-      expect(container.textContent).toContain('Sign Up with Google');
+      expect(container.querySelector('button[aria-label="Sign Up with Google"]')).not.toBeNull();
       expect(container.textContent).not.toContain('open in Chrome');
       expect(container.textContent).not.toContain('Google sign-in works in');
    });
@@ -153,14 +153,28 @@ describe('Continue with Facebook', () => {
       expect(localStorage.getItem('moodeng:last-auth-method')).toBe('facebook');
    });
 
-   it('in a normal browser it is a live tile next to the others, under Google (on by default, no env flag)', async () => {
+   it('in a normal browser it is the main button, with Google as a small tile under it (on by default, no env flag)', async () => {
       await renderWith(CHROME_ANDROID_UA);
-      const [tile] = facebookButtons();
-      expect(tile.getAttribute('aria-label')).toBe('Continue with Facebook');
-      expect(tile.hasAttribute('aria-disabled')).toBe(false);
-      expect(container.textContent).toContain('Sign Up with Google');
-      await act(async () => tile.click());
+      const buttons = facebookButtons();
+      expect(buttons).toHaveLength(1);
+      expect(buttons[0].textContent).toContain('Continue with Facebook');
+      expect(container.querySelector('button, a')).toBe(buttons[0]);
+      const googleTile = container.querySelector('button[aria-label="Sign Up with Google"]') as HTMLButtonElement;
+      expect(googleTile.textContent).toBe('');
+      expect(buttons[0].compareDocumentPosition(googleTile) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      await act(async () => buttons[0].click());
       expect(signInWithOAuth).toHaveBeenCalledWith(expect.objectContaining({ provider: 'facebook' }));
+      await act(async () => googleTile.click());
+      expect(signInWithOAuth).toHaveBeenCalledWith(expect.objectContaining({ provider: 'google' }));
+   });
+
+   it("other apps' browsers (LINE) keep Facebook as a small tile: Facebook blocks its login in their web views", async () => {
+      await renderWith(
+         'Mozilla/5.0 (Linux; Android 13; SM-A145F; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/125.0.0.0 Mobile Safari/537.36 Line/14.10.0'
+      );
+      const { detectInAppBrowser } = await import('@/lib/inAppBrowser');
+      expect(detectInAppBrowser().appName).toBe('LINE');
+      expect(container.textContent).not.toContain('Continue with Facebook');
    });
 
    it('?facebook=0 hides it in this browser only, ?facebook=1 brings it back', async () => {
