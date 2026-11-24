@@ -112,6 +112,11 @@ const age = (dob: string | null) => {
    return Number.isFinite(ms) ? Math.floor(ms / (365.25 * 86_400_000)) : null;
 };
 
+const riskTone = (band: string | null): 'good' | 'warn' | 'bad' | 'default' => {
+   const b = (band ?? '').toLowerCase();
+   return b === 'low' ? 'good' : b === 'medium' ? 'warn' : b === 'high' || b === 'critical' ? 'bad' : 'default';
+};
+
 const accessTone = (s: string | null) => (s === 'approved' ? 'good' : s === 'rejected' ? 'bad' : s === 'pending' ? 'warn' : 'default');
 
 function Photo({ label, url }: { label: string; url: string }) {
@@ -131,7 +136,8 @@ function Photo({ label, url }: { label: string; url: string }) {
 function Header({ d, selfie }: { d: Dossier; selfie: string | null }) {
    const u = d.user;
    const kyc = d.kyc[0];
-   const realName = kyc?.full_name ?? d.call_screenings[0]?.answers?.fullName;
+   const sheetName = d.call_screenings[0]?.answers?.fullName;
+   const realName = kyc?.full_name ?? (typeof sheetName === 'string' ? sheetName : null);
    const verified = u.is_didit === 'ACTIVE' || u.is_world_id;
    const contacts: Array<{ label: string; href?: string; ok?: boolean }> = [
       u.email && !u.email.endsWith('.invalid') ? { label: u.email, href: `mailto:${u.email}` } : null,
@@ -184,12 +190,12 @@ function Header({ d, selfie }: { d: Dossier; selfie: string | null }) {
                           ? 'Not approved yet'
                           : (u.loan_access_status ?? 'no access')}
                   </Pill>
-                  <Pill tone={u.account_status === 'ACTIVE' ? 'good' : 'bad'}>{u.account_status ?? 'unknown'}</Pill>
+                  <Pill tone={u.account_status === 'active' ? 'good' : 'bad'}>{u.account_status ?? 'unknown'}</Pill>
                   <Pill tone={verified ? 'good' : 'warn'}>
                      {verified ? (u.is_world_id ? 'World ID verified' : 'Didit verified') : 'ID not verified'}
                   </Pill>
                   {u.current_risk_band ? (
-                     <Pill tone={u.current_risk_band === 'low' ? 'good' : u.current_risk_band === 'high' ? 'bad' : 'warn'}>
+                     <Pill tone={riskTone(u.current_risk_band) === 'default' ? 'warn' : riskTone(u.current_risk_band)}>
                         {u.current_risk_band} risk
                      </Pill>
                   ) : null}
@@ -485,6 +491,7 @@ function Income({ d }: { d: Dossier }) {
                   <span className="ml-auto text-xs text-[#a89bb8]">{bkkDate(doc.created_at)}</span>
                </div>
                {doc.ai_note ? <p className="mt-2 text-sm text-[#d9c9f5]">{doc.ai_note}</p> : null}
+               {doc.memo ? <p className="mt-1 whitespace-pre-wrap text-xs text-[#a89bb8]">{doc.memo}</p> : null}
                <List items={doc.repay_reasons} />
                {doc.decision_reason ? <p className="mt-1 text-xs text-[#a89bb8]">Team: {doc.decision_reason}</p> : null}
             </div>
@@ -567,7 +574,7 @@ function TeamSummaries({ d }: { d: Dossier }) {
    return (
       <Card title="📝 What the team was told">
          <p className="mb-3 text-xs text-[#6f6385]">
-            AI reads and alerts saved for this person (the same ones posted to the team Telegram).
+            AI reads, call summaries and alerts saved for this person. Exact past Telegram posts aren't stored.
          </p>
          {!items.length ? <Empty>No summaries yet.</Empty> : null}
          <div className="space-y-3">
@@ -624,7 +631,11 @@ function Call({ d }: { d: Dossier }) {
          <Row label="No-shows">
             {d.no_shows.length ? d.no_shows.map((n) => `${bkkDate(n.recorded_at)}${n.active ? '' : ' (cleared)'}`).join(' · ') : null}
          </Row>
-         <Row label="Reschedules">{d.call_events.filter((e) => /resched/i.test(e.kind)).length || null}</Row>
+         <Row label="Moved">
+            {d.call_events.some((e) => e.kind === 'moved' || e.kind === 'team_moved')
+               ? `${d.call_events.filter((e) => e.kind === 'moved').length} by them · ${d.call_events.filter((e) => e.kind === 'team_moved').length} by team`
+               : null}
+         </Row>
          {d.call_screenings.map((s, i) => (
             <div key={i} className="mt-3 rounded-2xl border border-[#2a1453] bg-[#14062b] p-3">
                <div className="mb-1 flex items-center justify-between gap-2">
@@ -870,7 +881,7 @@ function DossierBody({ userId }: { userId: string }) {
             <Kpi
                label="Risk score"
                value={u.current_risk_score ?? '—'}
-               tone={u.current_risk_band === 'low' ? 'good' : u.current_risk_band === 'high' ? 'bad' : 'default'}
+               tone={riskTone(u.current_risk_band)}
                note={u.current_risk_band ?? undefined}
             />
          </div>
@@ -908,7 +919,7 @@ export default function UserDossierPage() {
                <Link to="/admin" className="mb-4 inline-block text-sm font-black text-[#c9a7ff] no-underline">
                   ← All users
                </Link>
-               <DossierBody userId={userId} />
+               <DossierBody key={userId} userId={userId} />
             </div>
          </main>
       </AdminLiveProvider>

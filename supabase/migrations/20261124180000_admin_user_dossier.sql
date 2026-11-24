@@ -64,6 +64,7 @@ begin
         'id', l.id, 'amount', l.loan_amount, 'total', l.total_repayment_amount, 'repaid', l.repaid_amount,
         'loan_status', l.loan_status, 'repayment_status', l.repayment_status, 'reason', l.reason,
         'created_at', l.created_at, 'funded_at', l.funded_at, 'due_date', l.due_date, 'repaid_at', l.repaid_at,
+        'due_timezone', l.due_timezone, 'repayment_schedule_late_at', l.repayment_schedule_late_at,
         'refunded_at', l.refunded_at, 'market', l.market, 'funding_method', l.funding_method,
         'two_part', l.repayment_schedule is not null, 'on_hold_reason', l.on_hold_reason,
         'offplatform_settled_at', l.offplatform_settled_at, 'is_test', l.is_test

@@ -1,3 +1,5 @@
+import { getLoanPastDueAt } from '@/utils/loanOverdue';
+
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 // One person's whole account for Admin → Users → click a name (UserDossierPage). The data comes from
@@ -16,6 +18,8 @@ export interface DossierLoan {
    created_at: string;
    funded_at: string | null;
    due_date: string | null;
+   due_timezone: string | null;
+   repayment_schedule_late_at: string | null;
    repaid_at: string | null;
    refunded_at: string | null;
    market: string | null;
@@ -273,20 +277,27 @@ const DAY = 86_400_000;
 
 export type LoanOutcome = 'on_time' | 'late' | 'open' | 'overdue' | 'refunded' | 'requested';
 
-/** How one loan went. Repaid on or before the due time = on time. */
+/** The loan's deadline: end of its due day on the borrower's clock (the app's ONE deadline rule). */
+const deadline = (loan: DossierLoan): number | null =>
+   loan.due_date ? getLoanPastDueAt(loan.due_date, loan.due_timezone).getTime() : null;
+
+/** How one loan went. Repaid before the end of the due day = on time. */
 export function loanOutcome(loan: DossierLoan, now = Date.now()): LoanOutcome {
    if (loan.refunded_at) return 'refunded';
    if (loan.loan_status === 'Requested') return 'requested';
-   const due = loan.due_date ? new Date(loan.due_date).getTime() : null;
+   const due = deadline(loan);
    const settled = loan.repaid_at ?? (loan.repayment_status === 'Paid' ? loan.offplatform_settled_at : null);
-   if (settled) return due != null && new Date(settled).getTime() > due ? 'late' : 'on_time';
-   return due != null && now > due ? 'overdue' : 'open';
+   if (settled) return due != null && new Date(settled).getTime() >= due ? 'late' : 'on_time';
+   if (loan.repayment_status === 'Paid') return 'on_time';
+   return loan.repayment_schedule_late_at || (due != null && now >= due) ? 'overdue' : 'open';
 }
 
-/** Whole days repaid before (+) or after (−) the due time; null if not repaid. */
+/** Whole days repaid before (+) or after (−) the end of the due day; null if not repaid. */
 export function daysEarly(loan: DossierLoan): number | null {
-   if (!loan.repaid_at || !loan.due_date) return null;
-   return Math.round((new Date(loan.due_date).getTime() - new Date(loan.repaid_at).getTime()) / DAY);
+   const due = deadline(loan);
+   if (!loan.repaid_at || due == null) return null;
+   const diff = (due - new Date(loan.repaid_at).getTime()) / DAY;
+   return diff >= 0 ? Math.floor(diff) : -Math.ceil(-diff);
 }
 
 export interface LoanStats {
@@ -321,7 +332,10 @@ export function loanStats(loans: DossierLoan[], now = Date.now()): LoanStats {
    return {
       count: real.length,
       borrowed: real.reduce((s, l) => s + Number(l.amount ?? 0), 0),
-      repaid: real.reduce((s, l) => s + Number(l.repaid ?? 0), 0),
+      repaid: real.reduce(
+         (s, l) => s + (l.repayment_status === 'Paid' ? Math.max(Number(l.repaid ?? 0), Number(l.total ?? 0)) : Number(l.repaid ?? 0)),
+         0
+      ),
       outstanding: unpaid.reduce((s, l) => s + Math.max(0, Number(l.total ?? 0) - Number(l.repaid ?? 0)), 0),
       onTime,
       late,
