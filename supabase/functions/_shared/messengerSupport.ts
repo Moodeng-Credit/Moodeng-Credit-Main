@@ -447,7 +447,7 @@ export const relayAgentReply = async (svc: Svc, messageId: string): Promise<{ ok
    if (!contactId) return { ok: false, reason: 'not_messenger' };
    const onTikTok = (conv as { channel?: string | null }).channel === 'tiktok';
 
-   const sent = onTikTok ? await sendTikTokText(contactId, message.body) : await sendMessengerMessage(contactId, { text: message.body });
+   const sent = onTikTok ? await sendTikTokText(contactId, message.body) : await sendMessengerMessage(contactId, { text: message.body, humanAgent: true });
    if (sent.ok) return { ok: true };
 
    await svc.from('widget_messages').update({ channel_delivered_at: null, channel_error: sent.reason }).eq('id', message.id);
@@ -465,9 +465,11 @@ export const relayAgentReply = async (svc: Svc, messageId: string): Promise<{ ok
       return { ok: false, reason: sent.reason };
    }
    const why =
-      sent.reason === 'send_failed'
-         ? "Messenger refused it — most likely it's been more than 24 hours since they last wrote (Meta's rule)."
-         : `SendPulse said: ${sent.reason}.`;
+      sent.reason === 'outside_7_days'
+         ? "It's been more than 7 days since they last wrote, and Discord replies only reach people up to 7 days after their last message."
+         : sent.reason === 'send_failed'
+           ? 'Messenger refused it.'
+           : `SendPulse said: ${sent.reason}.`;
    await alertTeam(
       svc,
       `⚠️ A Discord reply to ${who} was NOT delivered on Messenger. ${why}\nReply from the Page inbox instead.\n> ${message.body.slice(0, 300)}`,

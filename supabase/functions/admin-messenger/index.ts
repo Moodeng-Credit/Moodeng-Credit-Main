@@ -213,7 +213,7 @@ serve(async (req) => {
       if (user.user_role === 'lender') return json({ ok: false, reason: 'not_borrower' });
       const resolved = await resolveContact(svc, user.id, user.messenger_psid);
       if (!resolved) return json({ ok: false, reason: 'contact_not_found' });
-      const result = await sendMessengerMessage(resolved.id, { text });
+      const result = await sendMessengerMessage(resolved.id, { text, humanAgent: true });
       return json(result);
    }
 
