@@ -232,12 +232,56 @@ export interface Dossier {
       invited_by: { id: string; username: string; code: string | null; at: string } | null;
       invited: Array<{ id: string; username: string; at: string; repaid: boolean }>;
    };
+   /** AI guess of age + gender from one photo (user_demographic_estimates). Growth analytics only. */
+   photo_estimate?: PhotoEstimate | null;
+}
+
+export interface PhotoEstimate {
+   face_visible: boolean;
+   est_gender: string | null;
+   est_age_low: number | null;
+   est_age_high: number | null;
+   confidence: number | null;
+   source_photo: string;
+   created_at: string;
+}
+
+const PHOTO_SOURCE: Record<string, string> = {
+   prescreen_intro_video: 'pre-screen video',
+   avatar: 'profile photo',
+   didit_selfie: 'Didit selfie',
+   income_doc: 'income doc'
+};
+
+/** "Female · about 24–31 (from pre-screen video)" — null when there's nothing to show. */
+export function photoEstimateText(e: PhotoEstimate | null | undefined): string | null {
+   if (!e) return null;
+   const from = PHOTO_SOURCE[e.source_photo] ?? e.source_photo;
+   if (!e.face_visible) return `No face in the ${from}`;
+   const gender = e.est_gender && e.est_gender !== 'unclear' ? e.est_gender[0].toUpperCase() + e.est_gender.slice(1) : null;
+   const ages = e.est_age_low != null && e.est_age_high != null ? `about ${e.est_age_low}–${e.est_age_high}` : null;
+   const body = [gender, ages].filter(Boolean).join(' · ');
+   return body ? `${body} (AI guess from ${from})` : null;
 }
 
 export async function loadDossier(userId: string): Promise<Dossier | null> {
-   const { data, error } = await getSupabaseBrowserClient().rpc('admin_user_dossier' as never, { p_user_id: userId } as never);
+   const supabase = getSupabaseBrowserClient();
+   const [{ data, error }, estimate] = await Promise.all([
+      supabase.rpc('admin_user_dossier' as never, { p_user_id: userId } as never),
+      // Admin-only table (RLS); a failure here never blocks the page.
+      supabase
+         .from('user_demographic_estimates' as never)
+         .select('face_visible,est_gender,est_age_low,est_age_high,confidence,source_photo,created_at')
+         .eq('user_id' as never, userId as never)
+         .maybeSingle()
+         .then(
+            (r) => (r.error ? null : ((r.data as PhotoEstimate | null) ?? null)),
+            () => null
+         )
+   ]);
    if (error) throw new Error(error.message);
-   return (data as Dossier | null) ?? null;
+   const dossier = (data as Dossier | null) ?? null;
+   return dossier ? { ...dossier, photo_estimate: estimate } : null;
 }
 
 export interface DiditSessionMedia {

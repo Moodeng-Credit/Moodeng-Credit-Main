@@ -22,6 +22,7 @@ import {
    type LoanOutcome,
    loanOutcome,
    loanStats,
+   photoEstimateText,
    usd
 } from '@/app/admin/user/userDossierModel';
 
@@ -418,6 +419,7 @@ function Identity({ d, media, mediaError }: { d: Dossier; media: DiditSessionMed
          <Row label="Name on ID">{kyc?.full_name}</Row>
          <Row label="Born">{kyc?.date_of_birth ? `${bkkDate(kyc.date_of_birth)} (${age(kyc.date_of_birth)})` : null}</Row>
          <Row label="Gender">{kyc?.gender}</Row>
+         <Row label="Looks like">{photoEstimateText(d.photo_estimate)}</Row>
          <Row label="Address on ID">{kyc?.formatted_address}</Row>
          <Row label="Face match">{latest?.faceMatchScore != null ? `${Math.round(latest.faceMatchScore)}%` : null}</Row>
          <Row label="Liveness">{latest?.livenessScore != null ? `${Math.round(latest.livenessScore)}%` : u.liveness_status}</Row>
