@@ -10,7 +10,7 @@ import { errorText, trackPaymentStep } from '@/lib/analytics/paymentSteps';
 import { BasePaymentError, startBasePayment, waitForBasePayment } from '@/lib/basePay';
 import { isStaleChunkError, reloadOnceForStaleChunk } from '@/lib/staleChunkReload';
 import { WALLET_RESPONSE_TIMEOUT_MS, WalletTimeoutError, withTimeout } from '@/lib/withTimeout';
-import { OPENFORT_WALLET_PROVIDER, sendUsdcFromEmbeddedWallet, WalletGateError } from '@/lib/web3/openfort';
+import { OPENFORT_WALLET_PROVIDER, repayVaultFromEmbeddedWallet, sendUsdcFromEmbeddedWallet, WalletGateError } from '@/lib/web3/openfort';
 import { reportInstantWalletFailure } from '@/lib/web3/openfort/reportFailure';
 import { InstantWalletReconnectError } from '@/lib/web3/openfort/sendErrors';
 import type { RootState } from '@/store/store';
@@ -232,6 +232,7 @@ const useWallet = () => {
       loanId,
       coin = 'USDC',
       dataSuffix,
+      vault,
       onSubmitted,
       onLateWalletHash
    }: {
@@ -241,6 +242,8 @@ const useWallet = () => {
       loanId: string;
       coin?: string;
       dataSuffix?: `0x${string}`;
+      /** A BitRepo vault loan: the Instant Wallet repays it straight into the vault instead of sending to `to`. */
+      vault?: string | null;
       onSubmitted?: (id: string) => void;
       /** Wallet path only: the wallet answered after the 60s timeout. Register it so it still records. */
       onLateWalletHash?: (hash: string) => void;
@@ -290,7 +293,9 @@ const useWallet = () => {
          // Sponsored, gasless send from the embedded smart account. The wallet self-provisions
          // (recovers) on demand, so this works even on a fresh page load with no prior tap.
          try {
-            const hash = await sendUsdcFromEmbeddedWallet({ to, usdAmount });
+            const hash = vault
+               ? await repayVaultFromEmbeddedWallet({ vault, loanId, usdAmount })
+               : await sendUsdcFromEmbeddedWallet({ to, usdAmount });
             return { hash };
          } catch (err) {
             // The embedded-wallet send code is lazily imported; a stale cached build can 404 that

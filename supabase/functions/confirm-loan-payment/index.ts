@@ -6,7 +6,7 @@ import { postDiscord } from '../_shared/discord.ts';
 import { computeYearOneIouPointsDelta, getYearOneIouBorrowerBonusPoints, LOAN_FUNDING_POINTS_PER_USDC } from '../_shared/creditAndPoints.ts';
 import { DEFAULT_TIMEZONE, loanTimezone, pastDueAt } from '../_shared/loanDeadline.ts';
 import { type CreditLevelUp, runRepaymentFollowUps, type SideEffectError } from '../_shared/repaymentFollowUps.ts';
-import { PaymentNotConfirmedError, RPC_URL, rpcCall, type VerifiedTransfer, verifyPayment } from '../_shared/usdcTransfer.ts';
+import { findVaultRepay, PaymentNotConfirmedError, RPC_URL, rpcCall, type VerifiedTransfer, verifyPayment } from '../_shared/usdcTransfer.ts';
 
 // Server-side proof-of-payment gate for loan funding/repayment.
 //
@@ -341,9 +341,19 @@ serve(async (req) => {
       return jsonResponse({ error: 'Loan is missing a destination wallet' }, 409);
    }
 
+   // A vault loan repaid straight into BitRepo's vault (Instant Wallet → vault.repay): the vault's
+   // Repaid event for this loan id is the proof, and the vault is the recipient instead of lender_wallet.
+   // An RPC failure reading it is "not confirmed yet" (retry), never a rejection of a real payment.
    let transfer: VerifiedTransfer;
    try {
-      transfer = await verifyPayment(method, hash, expectedRecipient);
+      const vaultRepay =
+         action === 'repay' && loan.vault_address && method === 'wallet'
+            ? await findVaultRepay(hash, loan.vault_address, loan.id).catch(() => {
+                 throw new PaymentNotConfirmedError();
+              })
+            : null;
+      if (vaultRepay) expectedRecipient = String(loan.vault_address);
+      transfer = vaultRepay ?? (await verifyPayment(method, hash, expectedRecipient));
    } catch (err) {
       if (err instanceof PaymentNotConfirmedError) {
          return jsonResponse({ error: err.message, retry: true }, 202);

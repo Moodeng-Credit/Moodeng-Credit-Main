@@ -1274,6 +1274,8 @@ export default function Repay() {
             usdAmount: effectiveRepayment.toString(),
             loanId: selectedLoan.id,
             coin: transferCoin,
+            // Vault loans repaid from the Instant Wallet go straight into BitRepo's vault (no Pay vault step).
+            vault: selectedLoan.vaultAddress,
             // On Base Pay approval (before confirmation): flip the overlay to "Confirming" and arm
             // reconciliation so an approved-but-unconfirmed repayment still records later.
             onSubmitted: (id) => {
