@@ -10,7 +10,7 @@ export type LegalSection = {
 };
 
 export const SUPPORT_EMAIL = 'support@moodeng.app';
-export const LEGAL_LAST_UPDATED = 'October 21, 2026';
+export const LEGAL_LAST_UPDATED = 'November 24, 2026';
 
 export const termsSections: LegalSection[] = [
    {
@@ -206,11 +206,26 @@ export const privacySections: LegalSection[] = [
       ],
       bullets: [
          'Google: your name, email address, and profile photo.',
-         'Facebook: your name, email address, profile photo, and an app-specific user ID.',
+         'Facebook: see "Signing in with Facebook" below.',
          'LINE: your LINE user ID, display name, profile photo, and email address if you share it.',
          'Telegram: your Telegram user ID, username, name, and profile photo.',
          'TikTok: see the next section.',
          'World ID: a proof that you are a unique person. We do not receive any biometric data from World ID.'
+      ]
+   },
+   {
+      title: 'Signing in with Facebook',
+      paragraphs: [
+         'If you choose "Continue with Facebook", we use Facebook Login and ask only for the public_profile and email permissions. With your approval on Facebook\'s screen, Facebook shares only:'
+      ],
+      bullets: [
+         'an app-scoped user ID (an ID Facebook creates for your account in our app only),',
+         'your name and profile photo, and',
+         'your email address, if your Facebook account has one and you allow it.'
+      ],
+      after: [
+         'We use the user ID only to recognise you, so you always sign in to the same Moodeng account. We use your name and photo on your Moodeng profile, and your email address to identify your account and send you account, loan, and repayment messages. We do not post to Facebook, we do not read your friends, posts, photos, or messages, and we do not sell Facebook data or use it for advertising.',
+         'We keep this Facebook information while your Moodeng account is active. You can remove Moodeng\'s access at any time in Facebook (Settings & privacy > Settings > Apps and websites > Moodeng Credit > Remove). To delete the Facebook information we hold, follow the steps at moodeng.app/data-deletion, delete your Moodeng account, or email privacy@moodeng.app; we delete it within 30 days.'
       ]
    },
    {
@@ -296,7 +311,7 @@ export const privacySections: LegalSection[] = [
       bullets: [
          'Account and profile information: while your account is open.',
          'Loan, payment, and identity verification records: up to 5 years after your account closes, or longer if the law requires, for legal, tax, anti-money-laundering, and dispute purposes.',
-         'Sign-in provider information (including TikTok): deleted within 30 days after you delete your account.',
+         'Sign-in provider information (including Facebook and TikTok): deleted within 30 days after you delete your account.',
          'Analytics and logs: usually up to 2 years.'
       ]
    },
