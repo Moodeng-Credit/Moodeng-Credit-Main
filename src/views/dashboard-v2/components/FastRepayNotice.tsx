@@ -20,7 +20,9 @@ import { type FastRepayNotice, getFastRepayNotice, isFastRepayNoticeDue } from '
 // that earn the food reward. Each line comes from the real rules (fastRepayNotice.ts), with their own
 // dates. Shown on the dashboard and on Repay; closing it hides it for 24 hours (it can come back once
 // while the 48 hours last). They swipe or tap Next through the cards; ✕ and "Got it" are on the last
-// one. Same look as the dashboard's other popups (RatesAnnouncement). Previews: ?fast=1.
+// one. Card 1 has an optional "Why?" link that flips it to the reason (worded around showing you can
+// hold a loan, never "people gamed it"). Same look as the dashboard's other popups (RatesAnnouncement).
+// Previews: ?fast=1.
 
 const PRIMARY_GRADIENT = 'linear-gradient(77.66deg, #9584ff 0.5%, #6b55f7 98.16%)';
 const GOLD_TEXT = 'text-[#b07800] dark:text-[#ffe27a]';
@@ -37,6 +39,14 @@ const COPY = {
       limitUp: (amount: number) => `Limit $${amount}`,
       foodTitle: 'Best days to pay',
       noReward: 'No reward',
+      why: 'Why?',
+      whyTitle: 'Why 2+ days?',
+      whyLines: [
+         'Your limit grows when you show you can hold a loan and pay on time.',
+         'Paying back in 1–2 days doesn’t show that yet.',
+         'Keep it 2+ days, pay on time → limit goes up.'
+      ],
+      back: 'Back',
       next: 'Next',
       gotIt: 'Got it',
       close: 'Close'
@@ -50,6 +60,14 @@ const COPY = {
       limitUp: (amount: number) => `Limit $${amount}`,
       foodTitle: 'Pinakamagandang araw magbayad',
       noReward: 'Walang reward',
+      why: 'Bakit?',
+      whyTitle: 'Bakit 2+ araw?',
+      whyLines: [
+         'Tumataas ang limit kapag kaya mong hawakan ang loan at magbayad sa oras.',
+         'Hindi pa iyon makikita kung babayaran mo agad sa 1–2 araw.',
+         'Hawakan nang 2+ araw, magbayad sa oras → tataas ang limit.'
+      ],
+      back: 'Bumalik',
       next: 'Susunod',
       gotIt: 'Sige',
       close: 'Isara'
@@ -194,6 +212,8 @@ export function FastRepayCarousel({
       [notice.levelUp, notice.rewardLine]
    );
    const [index, setIndex] = useState(0);
+   // Card 1's optional "Why?": the card flips to the reason, "Back" flips it again. Not a required step.
+   const [showWhy, setShowWhy] = useState(false);
    const [dragX, setDragX] = useState(0);
    const dragStart = useRef<number | null>(null);
    const slide = slides[Math.min(index, slides.length - 1)];
@@ -226,6 +246,11 @@ export function FastRepayCarousel({
       const clamped = Math.max(0, Math.min(slides.length - 1, next));
       if (clamped !== index) track('fast_repay_notice_slide', { where, slide: clamped + 1 });
       setIndex(clamped);
+      setShowWhy(false);
+   };
+   const openWhy = () => {
+      track('fast_repay_notice_why', { where });
+      setShowWhy(true);
    };
 
    useEffect(() => {
@@ -286,13 +311,39 @@ export function FastRepayCarousel({
                      {copy.title}
                   </span>
                </div>
-               <div key={slide} className="connect-stat-in flex flex-col items-center">
+               <div key={`${slide}-${showWhy ? 'why' : 'main'}`} className="connect-stat-in flex flex-col items-center">
                   <img src={SLIDE_ART[slide]} alt="" className="mt-1 h-[180px] w-[180px] object-contain" draggable={false} />
                   <div className="flex w-full flex-col items-center gap-3 px-5 pb-2 pt-1 text-center">
                      <p className="text-[22px] font-extrabold leading-7 text-[#2b2140] dark:text-[#f5f0ff]">
-                        {slide === 'limit' ? copy.limitTitle : copy.foodTitle}
+                        {slide === 'limit' ? (showWhy ? copy.whyTitle : copy.limitTitle) : copy.foodTitle}
                      </p>
-                     {slide === 'limit' && notice.levelUp ? (
+                     {slide === 'limit' && notice.levelUp && showWhy ? (
+                        <>
+                           <ol className="flex w-full flex-col gap-2 rounded-[16px] bg-[#f6f3fd] px-4 py-3 text-left dark:bg-[#211a2d]">
+                              {copy.whyLines.map((line, n) => (
+                                 <li
+                                    key={line}
+                                    className="flex items-start gap-2.5 text-[15px] font-semibold leading-5 text-[#3b2f4a] dark:text-[#e6def2]"
+                                 >
+                                    <span
+                                       aria-hidden="true"
+                                       className="mt-px grid size-5 shrink-0 place-items-center rounded-full bg-[#6b55f7] text-[12px] font-bold text-white"
+                                    >
+                                       {n + 1}
+                                    </span>
+                                    {line}
+                                 </li>
+                              ))}
+                           </ol>
+                           <button
+                              type="button"
+                              onClick={() => setShowWhy(false)}
+                              className="text-[15px] font-bold text-[#6b55f7] dark:text-[#b4a6ff]"
+                           >
+                              ‹ {copy.back}
+                           </button>
+                        </>
+                     ) : slide === 'limit' && notice.levelUp ? (
                         <>
                            <p className={`-mt-1 text-[32px] font-black leading-9 ${GOLD_TEXT}`}>
                               ${notice.levelUp.from} → ${notice.levelUp.to}
@@ -301,6 +352,10 @@ export function FastRepayCarousel({
                               <TimeRow good={false} result={copy.limitStays(notice.levelUp.from)} when={copy.before(when)} />
                               <TimeRow good result={copy.limitUp(notice.levelUp.to)} when={copy.from(when)} />
                            </ul>
+                           {/* A small text link, not a second button: the reason is there for whoever wants it. */}
+                           <button type="button" onClick={openWhy} className="text-[15px] font-bold text-[#6b55f7] dark:text-[#b4a6ff]">
+                              {copy.why} ›
+                           </button>
                         </>
                      ) : notice.reward ? (
                         <ul className="flex w-full flex-col gap-2">
