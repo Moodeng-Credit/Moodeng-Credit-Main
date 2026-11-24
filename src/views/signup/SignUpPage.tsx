@@ -5,6 +5,7 @@ import posthog from 'posthog-js';
 import { useDispatch } from 'react-redux';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
+import AboutYouStep from '@/components/aboutYou/AboutYouStep';
 import {
    AuthFooter,
    AuthInputField,
@@ -22,6 +23,7 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { useSignedInRedirect } from '@/hooks/useSignedInRedirect';
 
+import { aboutYouDoneHere } from '@/lib/aboutYou';
 import { buildEmailConfirmationPath } from '@/lib/authPaths';
 import { detectInAppBrowser, isFacebookInApp } from '@/lib/inAppBrowser';
 import { cleanInviteInput, parkInviteCode, shouldAskInviteCodeSignedOut } from '@/lib/inviteCodeStep';
@@ -81,11 +83,14 @@ export default function SignUpPage() {
       }
       return !hasIdTrackIntent() && shouldAskInviteCodeSignedOut();
    });
+   // Then one "About you" card: gender, age, kids (src/lib/aboutYou.ts), saved after sign-up.
+   const [askAbout, setAskAbout] = useState(() => !aboutYouDoneHere());
    // Already signed in (often a guest whose Facebook page reloaded): straight to their next step.
    const redirectingSignedIn = useSignedInRedirect();
    if (redirectingSignedIn) return <Loading />;
    // Signed-in people never reach it: useSignedInRedirect sends them on first.
    if (askCode) return <InviteCodeStep onDone={() => setAskCode(false)} signedIn={false} source="signup" />;
+   if (askAbout) return <AboutYouStep onDone={() => setAskAbout(false)} signedIn={false} source="signup" />;
    return (
       <>
          {/* From Indonesia: the Telegram sign-up at /id (other methods stay below). */}

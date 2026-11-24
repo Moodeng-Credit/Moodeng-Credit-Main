@@ -114,6 +114,7 @@ import DiditVerification from '@/app/verify-didit/page';
 import WorldIdVerification from '@/app/verify-world-id/page';
 import VerifyFlow from '@/app/verify/page';
 import WhyLend from '@/app/whylend/page';
+import { saveParkedAboutYou } from '@/lib/aboutYou';
 import { clarityEvent, clarityTag, identifyClarity, isClarityEnabled, signupMethodLabel } from '@/lib/analytics/clarity';
 import { describeBrowser, recordSignupContext, recordSignupSource } from '@/lib/attribution';
 import { trackNewAccount } from '@/lib/metaPixel';
@@ -265,6 +266,8 @@ export default function App() {
          claimPreScreening(user.id);
          // Came from a team-code pre-screening link (moodeng.app/screen/MAHJID): attach that code.
          void redeemParkedTeamCode(user.createdAt);
+         // Answered "About you" before the account existed: save it now.
+         void saveParkedAboutYou();
          // Came from an affiliate's pre-screening link: Facebook → pre-screening → team ✅ → wallet.
          void joinPrescreenPath().then((joined) => {
             if (joined) void queryClient.invalidateQueries({ queryKey: ['prescreen-path'] });

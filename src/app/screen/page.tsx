@@ -5,6 +5,7 @@ import { Loader2 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 
+import AboutYouStep from '@/components/aboutYou/AboutYouStep';
 import BrandedVideo from '@/components/BrandedVideo';
 import InviteCodeStep from '@/components/invite/InviteCodeStep';
 
@@ -16,6 +17,7 @@ import MedicalBodyMap from '@/app/screen/MedicalBodyMap';
 import { expectMessengerPhotos, PickerHelp, usePickerWatch } from '@/app/screen/PickerHelp';
 import RecordReadyCard from '@/app/screen/RecordReadyCard';
 import { useLocalization } from '@/i18n/LocalizationProvider';
+import { aboutYouDoneHere, aboutYouDoneOnAccount } from '@/lib/aboutYou';
 import { trackPrescreenStep } from '@/lib/analytics/prescreenSteps';
 import { describeBrowser } from '@/lib/attribution';
 import { markCodeStepDone, shouldAskInviteCodeSignedIn, shouldAskInviteCodeSignedOut } from '@/lib/inviteCodeStep';
@@ -752,6 +754,21 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       isAuthChecked &&
       !codeAnswered &&
       (signedIn ? shouldAskInviteCodeSignedIn(authUser) : shouldAskInviteCodeSignedOut());
+   // Then one "About you" card (gender, age, kids — src/lib/aboutYou.ts), once per person.
+   const [aboutAnswered, setAboutAnswered] = useState(false);
+   const [aboutOnAccount, setAboutOnAccount] = useState<boolean | null>(null);
+   useEffect(() => {
+      if (preview || !signedIn) return;
+      if (aboutYouDoneHere()) return setAboutOnAccount(true);
+      let live = true;
+      void aboutYouDoneOnAccount().then((done) => {
+         if (live) setAboutOnAccount(done);
+      });
+      return () => {
+         live = false;
+      };
+   }, [preview, signedIn]);
+   const askAbout = !preview && isAuthChecked && !askCode && !aboutAnswered && (signedIn ? aboutOnAccount === false : !aboutYouDoneHere());
    // The job they already gave at loan request (users.profession) fills in "What is your job?" once.
    // Only a starting value: empty or wrong, they just type, nothing waits on it.
    const jobPrefilled = useRef(false);
@@ -1195,6 +1212,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    };
 
    if (askCode) return <InviteCodeStep onDone={() => setCodeAnswered(true)} signedIn={signedIn} source="screen" />;
+   if (askAbout) return <AboutYouStep onDone={() => setAboutAnswered(true)} signedIn={signedIn} source="screen" />;
 
    return (
       <div className="min-h-screen bg-dv2-page">
