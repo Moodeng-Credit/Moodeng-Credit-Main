@@ -38,6 +38,7 @@ import { useRecordDeviceTimezone } from '@/hooks/useRecordDeviceTimezone';
 import AccountRestrictedPage from '@/app/account-restricted/page';
 import AdminPanel from '@/app/admin/page';
 import PricingHealthPreview from '@/app/admin/PricingHealthPreview';
+import UserDossierPage from '@/app/admin/user/UserDossierPage';
 import AffiliateDashboardPage from '@/app/affiliate/page';
 import AuthSuccess from '@/app/auth-success/page';
 import AuthConfirm from '@/app/auth/confirm/page';
@@ -823,6 +824,15 @@ export default function App() {
                }
             />
 
+            {/* Admin → Users → click a name: one person's whole account */}
+            <Route
+               path="/admin/user/:userId"
+               element={
+                  <AdminGuard>
+                     <UserDossierPage />
+                  </AdminGuard>
+               }
+            />
             {/* Admin — :tab? makes every panel tab linkable (/admin/relay, /admin/points, …) */}
             <Route
                path="/admin/:tab?"

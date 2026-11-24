@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 
 import { useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { useIsFundingAdmin } from '@/hooks/useIsFundingAdmin';
 
@@ -865,21 +865,21 @@ function AdminPanel() {
                              <AdminLiveRow ids={[user.id]} className="grid gap-5 p-6">
                                 <div className="flex flex-wrap items-start justify-between gap-4">
                                    <div className="flex min-w-0 gap-4">
-                                      <button
-                                         type="button"
-                                         onClick={() => setSelectedUserId(user.id)}
-                                         className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#8336f0] text-2xl font-black text-white"
+                                      <Link
+                                         to={`/admin/user/${user.id}`}
+                                         title="Open full account"
+                                         className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#8336f0] text-2xl font-black text-white no-underline"
                                       >
                                          {user.username.charAt(0).toUpperCase()}
-                                      </button>
+                                      </Link>
                                       <div className="min-w-0">
-                                         <button
-                                            type="button"
-                                            onClick={() => setSelectedUserId(user.id)}
-                                            className="text-left text-3xl font-black underline decoration-2 underline-offset-4"
+                                         <Link
+                                            to={`/admin/user/${user.id}`}
+                                            title="Open full account"
+                                            className="text-left text-3xl font-black text-white underline decoration-2 underline-offset-4"
                                          >
                                             {user.username}
-                                         </button>
+                                         </Link>
                                          <div className="mt-3 flex flex-wrap gap-3">
                                             <Badge tone={user.user_role}>{roleLabel(user.user_role)}</Badge>
                                             <Badge tone={user.account_status}>{user.account_status}</Badge>
