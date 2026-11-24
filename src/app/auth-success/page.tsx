@@ -104,12 +104,13 @@ function OptionalPasswordCard(): JSX.Element | null {
 }
 
 /**
- * Asked once, right after a code made a NEW account in a browser that looks Filipino: people who
+ * Asked once, right after a code made a NEW account in a browser that looks Filipino (or Facebook login
+ * made one, anywhere: ?via=facebook, see auth/confirm): people who
  * borrowed before with another phone/email/Google often make a second, empty account by mistake.
  * "I've used Moodeng before" signs this new one out and sends them to the sign-in page, which takes
  * the phone, email or Google they used before (one button, not one per way: George, 2026-10-20).
  */
-function ReturningUserQuestion({ onNew }: { onNew: () => void }): JSX.Element {
+function ReturningUserQuestion({ onNew, viaFacebook = false }: { onNew: () => void; viaFacebook?: boolean }): JSX.Element {
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
    const [returning, setReturning] = useState(false);
@@ -134,7 +135,9 @@ function ReturningUserQuestion({ onNew }: { onNew: () => void }): JSX.Element {
                         Log in the way you did before
                      </h1>
                      <p className="text-base font-medium leading-6 text-[#6D6D6D] dark:text-[#c8b8e8]">
-                        Log in with the phone, email or Google you used before. Your loans and points are there.
+                        {viaFacebook
+                           ? 'This Facebook isn\u2019t connected to your Moodeng account yet, so it made a new, empty one. Log in with the phone, email or Google you used before (not Facebook). Your loans and points are there.'
+                           : 'Log in with the phone, email or Google you used before. Your loans and points are there.'}
                      </p>
                      <button type="button" onClick={() => void logIn()} className={`${choice} bg-[#6010D2] text-white`}>
                         Log in to my account
@@ -173,7 +176,10 @@ function ReturningUserQuestion({ onNew }: { onNew: () => void }): JSX.Element {
 function AccountCreatedView(): JSX.Element {
    const navigate = useNavigate();
    const [searchParams] = useSearchParams();
-   const [askReturning, setAskReturning] = useState(() => searchParams.get('new') === '1' && isLikelyPhilippines());
+   // Facebook login that made a NEW account: asked everywhere (most are borrowers whose Facebook isn't
+   // connected to their old account yet). Codes: Filipino-looking browsers only, as before.
+   const viaFacebook = searchParams.get('via') === 'facebook';
+   const [askReturning, setAskReturning] = useState(() => searchParams.get('new') === '1' && (viaFacebook || isLikelyPhilippines()));
 
    const handleProceed = () => {
       navigate('/onboarding/role', { replace: true });
@@ -182,7 +188,7 @@ function AccountCreatedView(): JSX.Element {
    // Signed up from an affiliate /partner link: straight back there to finish (they aren't a borrower).
    const parkedInvite = readParkedAffiliateInvite();
    if (parkedInvite) return <Navigate to={partnerPath(parkedInvite)} replace />;
-   if (askReturning) return <ReturningUserQuestion onNew={() => setAskReturning(false)} />;
+   if (askReturning) return <ReturningUserQuestion viaFacebook={viaFacebook} onNew={() => setAskReturning(false)} />;
 
    return (
       <div className="flex min-h-screen flex-col bg-gradient-to-b from-[#FBFAFD] to-white dark:from-[#100d17] dark:to-[#100d17] max-w-[440px] mx-auto w-full">

@@ -289,7 +289,19 @@ describe('PasswordlessAuthForm', () => {
          Promise.resolve(name === 'get_guest_signup_enabled' ? { data: on, error: null } : { data: false, error: null })
       );
 
-   it('guest sign-up on, in Facebook: Continue creates the guest account (no code) and opens onboarding', async () => {
+   it('Facebook login on (default): no guest accounts in Facebook, the email box sends a real code', async () => {
+      guestSwitch(true);
+      h.unwrap.mockResolvedValue({ channel: 'email' });
+      await render({ mode: 'signup', ua: FB_UA, initialChannel: 'email' });
+      expect(container.textContent).not.toContain('No code needed now.');
+      await type('new.person@example.com');
+      await submit();
+      expect(h.startGuestSignup).not.toHaveBeenCalled();
+      expect(h.requestOtpCode).toHaveBeenCalledWith({ channel: 'email', email: 'new.person@example.com', mode: 'signup' });
+   });
+
+   it('guest sign-up on, Facebook login switched off, in Facebook: Continue creates the guest account (no code) and opens onboarding', async () => {
+      vi.stubEnv('VITE_FACEBOOK_LOGIN_ENABLED', 'false');
       guestSwitch(true);
       h.unwrap.mockResolvedValue({ user: {}, username: 'new' });
       await render({ mode: 'signup', ua: FB_UA, initialChannel: 'email' });
@@ -302,6 +314,7 @@ describe('PasswordlessAuthForm', () => {
    });
 
    it('guest sign-up: an email that already has an account offers a sign-in code', async () => {
+      vi.stubEnv('VITE_FACEBOOK_LOGIN_ENABLED', 'false');
       guestSwitch(true);
       h.unwrap.mockRejectedValueOnce({ name: 'GuestEmailTakenError', message: 'taken' });
       await render({ mode: 'signup', ua: FB_UA, initialChannel: 'email' });
