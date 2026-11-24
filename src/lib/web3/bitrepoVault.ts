@@ -1,5 +1,5 @@
-import { readContract, waitForTransactionReceipt, writeContract } from '@wagmi/core';
-import { type Hex, keccak256, parseAbi, stringToHex } from 'viem';
+import { readContract, sendCalls, waitForCallsStatus, waitForTransactionReceipt, writeContract } from '@wagmi/core';
+import { encodeFunctionData, type Hex, keccak256, parseAbi, stringToHex } from 'viem';
 
 import { USDC_ADDRESS } from '@/config/loanFundingConfig';
 import { ALLOWED_CHAIN_ID, config } from '@/config/wagmiConfig';
@@ -124,14 +124,17 @@ export async function drawFromVault(params: {
  * Pays `amount` (USDC base units) from the connected wallet toward a vault loan: approves the vault
  * for exactly that amount if needed, then repays. The vault never takes more than the loan owes.
  */
-export async function repayVaultLoan(owner: string, loanId: string, amount: bigint): Promise<`0x${string}`> {
-   const allowance = (await readContract(config, {
+const vaultAllowance = async (owner: string): Promise<bigint> =>
+   (await readContract(config, {
       address: USDC_ADDRESS as `0x${string}`,
       abi: ERC20_ABI,
       functionName: 'allowance',
       args: [owner as `0x${string}`, BITREPO_VAULT_ADDRESS],
       chainId: ALLOWED_CHAIN_ID
    })) as bigint;
+
+export async function repayVaultLoan(owner: string, loanId: string, amount: bigint): Promise<`0x${string}`> {
+   const allowance = await vaultAllowance(owner);
    if (allowance < amount) {
       const approveHash = await writeContract(config, {
          address: USDC_ADDRESS as `0x${string}`,
@@ -152,4 +155,60 @@ export async function repayVaultLoan(owner: string, loanId: string, amount: bigi
    const receipt = await waitForTransactionReceipt(config, { hash, chainId: ALLOWED_CHAIN_ID });
    if (receipt.status !== 'success') throw new Error('The vault repayment failed on-chain.');
    return hash;
+}
+
+/** The wallet can't send a batch (no EIP-5792 / no atomic batch), as opposed to the user saying no. */
+const batchUnsupported = (err: unknown): boolean => {
+   const e = err as { name?: string; code?: number; cause?: { code?: number } };
+   const code = e?.code ?? e?.cause?.code;
+   return /NotSupported|Unsupported|Atomic/i.test(e?.name ?? '') || code === 4200 || code === 5700 || code === 5710 || code === -32601;
+};
+
+/**
+ * Pays several vault loans at once from the connected wallet. Wallets that batch (Base Account) sign ONCE:
+ * approve the total + one repay per loan, all or nothing. Others fall back to one approve, then a repay each.
+ * Returns a tx hash per loan id.
+ */
+export async function repayVaultLoans(
+   owner: string,
+   items: ReadonlyArray<{ loanId: string; amount: bigint }>
+): Promise<Record<string, `0x${string}`>> {
+   const total = items.reduce((sum, item) => sum + item.amount, 0n);
+   const allowance = await vaultAllowance(owner);
+   const approve =
+      allowance < total
+         ? [
+              {
+                 to: USDC_ADDRESS as `0x${string}`,
+                 data: encodeFunctionData({ abi: ERC20_ABI, functionName: 'approve', args: [BITREPO_VAULT_ADDRESS, total] })
+              }
+           ]
+         : [];
+   const repays = items.map((item) => ({
+      to: BITREPO_VAULT_ADDRESS,
+      data: encodeFunctionData({ abi: BITREPO_VAULT_ABI, functionName: 'repay', args: [item.loanId, item.amount, '0x'] })
+   }));
+   try {
+      const { id } = await sendCalls(config, { calls: [...approve, ...repays], chainId: ALLOWED_CHAIN_ID, forceAtomic: true });
+      const result = await waitForCallsStatus(config, { id, timeout: 180_000 });
+      if (result.status !== 'success') throw new Error('The vault payments failed on-chain. Nothing was sent.');
+      const hash = result.receipts?.[result.receipts.length - 1]?.transactionHash ?? (id as `0x${string}`);
+      return Object.fromEntries(items.map((item) => [item.loanId, hash]));
+   } catch (err) {
+      if (!batchUnsupported(err)) throw err;
+   }
+   // No batching: approve the total once, then one repay per loan (one signature each).
+   if (approve.length) {
+      const approveHash = await writeContract(config, {
+         address: USDC_ADDRESS as `0x${string}`,
+         abi: ERC20_ABI,
+         functionName: 'approve',
+         args: [BITREPO_VAULT_ADDRESS, total],
+         chainId: ALLOWED_CHAIN_ID
+      });
+      await waitForTransactionReceipt(config, { hash: approveHash, chainId: ALLOWED_CHAIN_ID });
+   }
+   const paid: Record<string, `0x${string}`> = {};
+   for (const item of items) paid[item.loanId] = await repayVaultLoan(owner, item.loanId, item.amount);
+   return paid;
 }
