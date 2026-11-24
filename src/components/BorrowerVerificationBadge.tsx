@@ -1,5 +1,7 @@
 import { useSelector } from 'react-redux';
 
+import GoVerifyButton from '@/components/verification/GoVerifyButton';
+
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 
 import { useLocalization } from '@/i18n';
@@ -63,12 +65,20 @@ export default function BorrowerVerificationBadge() {
       );
    }
 
+   // Not verified yet: a tap takes them to their next verification step (people tapped it).
    return (
-      <span className="self-start inline-flex items-center gap-1 bg-md-red-100 rounded-md-sm px-md-1 py-md-0">
+      <GoVerifyButton
+         ariaLabel={copy.notVerified}
+         className="self-start inline-flex items-center gap-1 bg-md-red-100 rounded-md-sm px-md-1 py-md-0 active:scale-95"
+         where="badge"
+      >
          <span className="w-3 h-3 rounded-full bg-md-red-800 flex items-center justify-center">
             <span className="text-white text-[8px] font-bold">!</span>
          </span>
          <span className="text-md-b3 font-semibold text-md-red-800">{copy.notVerified}</span>
-      </span>
+         <span aria-hidden="true" className="text-md-b3 font-bold leading-none text-md-red-800">
+            ›
+         </span>
+      </GoVerifyButton>
    );
 }

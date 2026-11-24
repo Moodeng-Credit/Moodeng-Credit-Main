@@ -453,6 +453,7 @@ export const vietnameseCoverageG: Record<string, string> = {
       'Vẫn chưa được? Chúng tôi sẽ gửi email cho bạn, và đội ngũ của chúng tôi sẽ giúp bạn hoàn tất.',
    // Added 2026-10-01: English that changed after the translation pass (full-limit rule, Coins.ph pause).
    "Repay a full-limit loan to unlock the next level.": "Trả hết khoản vay toàn hạn mức để mở khóa cấp tiếp theo.",
+   "Get verified to unlock LV.1.": "Xác minh để mở khóa LV.1.",
    "left to repay for LV.2": "còn phải trả để lên LV.2",
    "full-limit loan unlocks LV.2": "khoản vay toàn hạn mức sẽ mở khóa LV.2",
    "left to repay for LV.3": "còn phải trả để lên LV.3",

@@ -558,6 +558,7 @@ export const indonesianCoverageG: Record<string, string> = {
       'Masih belum bisa? Kami akan mengirim email, dan tim kami akan membantumu menyelesaikannya.',
    // Added 2026-10-01: English that changed after the translation pass (full-limit rule, Coins.ph pause).
    "Repay a full-limit loan to unlock the next level.": "Lunasi pinjaman senilai limit penuh untuk membuka level berikutnya.",
+   "Get verified to unlock LV.1.": "Verifikasi akunmu untuk membuka LV.1.",
    "left to repay for LV.2": "lagi yang harus dibayar untuk LV.2",
    "full-limit loan unlocks LV.2": "pinjaman limit penuh membuka LV.2",
    "left to repay for LV.3": "lagi yang harus dibayar untuk LV.3",

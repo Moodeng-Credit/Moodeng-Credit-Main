@@ -16,6 +16,9 @@ interface DashboardV2HeroProps {
    model: DashboardV2Model;
    /** Sample states have no signed-in user, so they fall back to the design's placeholder avatar. */
    showRealAvatar: boolean;
+   /** Unverified: tapping the avatar + "Unverified" badge or "Verify to unlock" goes to their next
+    *  verification step (PostHog, Nov 2026: people tapped them and nothing happened). */
+   onVerify?: () => void;
 }
 
 // The hero is one illustrated scene, so it keeps the Figma frame's vertical positions (minus the
@@ -111,7 +114,21 @@ function PettableMoodeng({ src, alt, mood, isLocked }: { src: string; alt: strin
 
 const formatUsd = (value: number) => `$${Number.isInteger(value) ? value : value.toFixed(2)}`;
 
-export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2HeroProps) {
+export default function DashboardV2Hero({ model, showRealAvatar, onVerify }: DashboardV2HeroProps) {
+   const verifyTap = !model.isVerified ? onVerify : undefined;
+   const avatarColumn = (
+      <>
+         {showRealAvatar ? (
+            <UserAvatar size={63} alt={model.firstName} clickable={false} className="-mb-3.5" />
+         ) : (
+            <DesignImage src={DASHBOARD_V2_ASSETS.sampleAvatar} className="-mb-3.5 h-[63px] w-[63px] rounded-full object-cover" />
+         )}
+         <span className="relative flex h-5 w-full items-center justify-center gap-0.5 rounded-full border-[0.675px] border-[#c0b9c8] bg-[#efedf1] text-[14px] font-medium leading-none tracking-[-0.84px] text-[#7b6b8c]">
+            {model.isVerified ? <DesignImage src={DASHBOARD_V2_ASSETS.verified} className="h-3.5 w-3.5" /> : null}
+            {model.isVerified ? 'Verified' : 'Unverified'}
+         </span>
+      </>
+   );
    const currentTierIndex = Math.max(
       MOODENG_TIERS.findIndex((tier) => tier.id === model.tier),
       0
@@ -141,17 +158,18 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
          {/* Greeting */}
          {/* right-[125px] keeps the greeting clear of Help + Home on narrow phones. */}
          <div className="absolute left-5 right-[125px] top-5 flex min-w-0 items-center gap-2.5">
-            <div className="flex w-[73px] shrink-0 flex-col items-center">
-               {showRealAvatar ? (
-                  <UserAvatar size={63} alt={model.firstName} clickable={false} className="-mb-3.5" />
-               ) : (
-                  <DesignImage src={DASHBOARD_V2_ASSETS.sampleAvatar} className="-mb-3.5 h-[63px] w-[63px] rounded-full object-cover" />
-               )}
-               <span className="relative flex h-5 w-full items-center justify-center gap-0.5 rounded-full border-[0.675px] border-[#c0b9c8] bg-[#efedf1] text-[14px] font-medium leading-none tracking-[-0.84px] text-[#7b6b8c]">
-                  {model.isVerified ? <DesignImage src={DASHBOARD_V2_ASSETS.verified} className="h-3.5 w-3.5" /> : null}
-                  {model.isVerified ? 'Verified' : 'Unverified'}
-               </span>
-            </div>
+            {verifyTap ? (
+               <button
+                  type="button"
+                  onClick={verifyTap}
+                  aria-label="Get verified"
+                  className="flex w-[73px] shrink-0 flex-col items-center transition-transform duration-150 active:scale-95"
+               >
+                  {avatarColumn}
+               </button>
+            ) : (
+               <div className="flex w-[73px] shrink-0 flex-col items-center">{avatarColumn}</div>
+            )}
             <div className="flex min-w-0 flex-col">
                <p className="truncate text-[clamp(18px,5.4vw,22px)] font-semibold leading-[1.2] text-dv2-scene">Hi {model.firstName}!</p>
                <p className="whitespace-nowrap text-[clamp(13px,4vw,16px)] leading-[18px] text-[#594d65]">
@@ -294,6 +312,13 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
                      <span className="text-[#4f36ef] dark:text-[#b3a6ff]">{formatUsd(creditAvailable)}</span>
                      <span className="text-[#c0b9c8] dark:text-[#8f819e]"> of {formatUsd(model.creditLimit)} left</span>
                   </>
+               ) : verifyTap ? (
+                  <button type="button" onClick={verifyTap} className="active:opacity-70">
+                     <span className="text-[#4f36ef] underline decoration-[#4f36ef]/40 underline-offset-4 dark:text-[#b3a6ff]">
+                        {model.creditHint.highlight}
+                     </span>
+                     <span className="text-[#c0b9c8] dark:text-[#8f819e]">{model.creditHint.rest}</span>
+                  </button>
                ) : (
                   <>
                      <span className="text-[#4f36ef] dark:text-[#b3a6ff]">{model.creditHint.highlight}</span>
@@ -321,7 +346,8 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
             <div className="absolute left-[calc(50%-43px)] top-[384px] z-10 w-[167px]" role="tooltip">
                <span className="absolute left-[17px] top-0 h-0 w-0 border-x-[7px] border-b-[8px] border-x-transparent border-b-[#34268e]/80" />
                <p className="mt-1.5 rounded-[10px] bg-[#34268e]/80 px-[7px] py-[6px] text-[14px] font-medium leading-[14px] text-white">
-                  Repay a full-limit loan to unlock the next level.
+                  {/* Unverified people can't borrow yet, so "repay a loan" was the wrong next step for them. */}
+                  {model.isVerified ? 'Repay a full-limit loan to unlock the next level.' : 'Get verified to unlock LV.1.'}
                </p>
             </div>
          ) : null}

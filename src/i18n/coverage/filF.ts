@@ -792,6 +792,7 @@ export const filipinoCoverageF: Record<string, string> = {
    'Become a trusted borrower': 'Maging trusted na borrower',
    // Added 2026-10-01: English that changed after the translation pass (full-limit rule, Coins.ph pause).
    "Repay a full-limit loan to unlock the next level.": "Bayaran nang buo ang full-limit loan para ma-unlock ang susunod na level.",
+   "Get verified to unlock LV.1.": "Magpa-verify para ma-unlock ang LV.1.",
    "left to repay for LV.2": "na lang ang babayaran para sa LV.2",
    "full-limit loan unlocks LV.2": "na full-limit loan ang magbubukas ng LV.2",
    "left to repay for LV.3": "na lang ang babayaran para sa LV.3",
