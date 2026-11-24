@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { AddEmailCard } from '@/components/account/AddEmailCard';
+import { ConnectFacebookLoginCard } from '@/components/account/ConnectFacebookLoginCard';
 import { ConfirmEmailReminder } from '@/components/account/ConfirmEmailReminder';
 import ContactLinesCard from '@/components/ContactLinesCard';
 import GuidedTourPreview from '@/components/GuidedTourPreview';
@@ -260,6 +261,8 @@ export default function DashboardV2() {
                   {isReal ? <ConfirmEmailReminder placement="dashboard" /> : null}
                   {model.showWithdraw ? <WithdrawBanner onWithdraw={() => navigate('/withdraw')} /> : null}
                   {isReal && !showConnectFacebook ? <ContactLinesCard className="mx-5" /> : null}
+                  {/* Existing accounts: attach Facebook so "Continue with Facebook" opens this account next time. */}
+                  {isReal ? <ConnectFacebookLoginCard language={language} /> : null}
                   {showConnectFacebook ? (
                      <ConnectFacebookBanner
                         declined={verificationState === 'declined'}
