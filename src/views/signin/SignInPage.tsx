@@ -20,11 +20,13 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { useSignedInRedirect } from '@/hooks/useSignedInRedirect';
 
 import { rememberNextPath } from '@/lib/authNext';
+import { facebookLeadsCodeLayout } from '@/lib/facebookAuth';
 import { detectInAppBrowser, isFacebookInApp } from '@/lib/inAppBrowser';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
-import { getPostSignInPath } from '@/lib/postSignInPath';
+import { getLastUsedAuth } from '@/lib/lastUsedAuth';
 import { BANNED_MESSAGE } from '@/lib/otpErrors';
 import { isSmsLoginEnabled, showPasswordlessSignup, showPhoneFirst } from '@/lib/phoneAuth';
+import { getPostSignInPath } from '@/lib/postSignInPath';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { loginUser, loginWithGoogle, loginWithTelegram, type OtpChannel } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
@@ -42,7 +44,6 @@ const isBannedError = (err: unknown) => {
 
 // Someone typing a Philippine mobile number into the email box: 09…, +63… or 63…
 const startsLikePhMobile = (value: string) => /^(\+63|63|09)/.test(value.replace(/[\s\-().]/g, ''));
-
 
 export default function SignInPage() {
    const navigate = useNavigate();
@@ -71,6 +72,12 @@ export default function SignInPage() {
    // Everywhere else the password form stays first, with "Email me a code" / "Text me a code".
    // In the Philippines the +63 number box comes first (GCash-style), with Google/Telegram under it.
    const phoneFirst = useMemo(() => showPhoneFirst(inApp.isInApp), [inApp.isInApp]);
+   // Facebook is the bold blue button and the code form's button is outlined — unless this phone last logged
+   // in with a phone/email code (then their usual way stays bold).
+   const facebookLeads = useMemo(
+      () => (inApp.isInApp || phoneFirst) && facebookLeadsCodeLayout(facebookPrimary, getLastUsedAuth()),
+      [inApp.isInApp, phoneFirst, facebookPrimary]
+   );
    const [usePassword, setUsePassword] = useState(() => !phoneFirst && !showPasswordlessSignup(inApp.isInApp));
    const [codeChannel, setCodeChannel] = useState<OtpChannel | undefined>(phoneFirst ? 'sms' : undefined);
    const [codePhone, setCodePhone] = useState('');
@@ -242,6 +249,7 @@ export default function SignInPage() {
       <SocialAuthButtons
          isSignUp={false}
          hideFacebook={facebookPrimary && (inApp.isInApp || phoneFirst)}
+         philippines={phoneFirst}
          onGoogleSuccess={handleGoogleAuth}
          onGoogleError={() => setShowAccount(true)}
          onTelegramAuth={handleTelegramAuth}
@@ -267,7 +275,11 @@ export default function SignInPage() {
                   Welcome back to Moodeng
                </h1>
                <p className="text-base font-medium leading-6 tracking-[-0.02em] text-[#6D6D6D] text-center mb-5">
-                  {usePassword ? 'Sign in to access your account.' : "We'll send you a code. No password needed."}
+                  {usePassword
+                     ? 'Sign in to access your account.'
+                     : facebookLeads
+                       ? 'One tap with Facebook.'
+                       : "We'll send you a code. No password needed."}
                </p>
 
                {/* Social auth (below the email form inside Facebook/Messenger) */}
@@ -278,7 +290,7 @@ export default function SignInPage() {
                   {facebookPrimary && (inApp.isInApp || phoneFirst) ? (
                      <>
                         <div className="flex justify-center">
-                           <FacebookAuthButton isSignUp={false} variant="full" />
+                           <FacebookAuthButton isSignUp={false} variant="full" bold={facebookLeads} />
                         </div>
                         {orDivider}
                      </>
@@ -292,6 +304,7 @@ export default function SignInPage() {
                            inApp={inApp}
                            initialChannel={codeChannel}
                            initialPhone={codePhone}
+                           quietSubmit={facebookLeads}
                            // Facebook/Messenger: kept short; anyone with a password can still use a code.
                            onUsePassword={facebookInApp ? undefined : () => setUsePassword(true)}
                         />

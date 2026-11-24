@@ -5,15 +5,15 @@ import posthog from 'posthog-js';
 import LineLoginButton from '@/components/LineLoginButton';
 import TikTokLoginButton from '@/components/TikTokLoginButton';
 
-import LastUsedBadge from './LastUsedBadge';
-import TelegramLoginTile from './TelegramLoginTile';
-
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { isFacebookLoginEnabled, isFacebookPrimaryHere } from '@/lib/facebookAuth';
 import { buildAndroidIntentUrl, detectInAppBrowser, isFacebookInApp, openInSafari, watchForFailedHandOff } from '@/lib/inAppBrowser';
 import { getLastUsedAuth, setLastUsedAuth } from '@/lib/lastUsedAuth';
-import { isTikTokButtonVisible } from '@/lib/tiktokAuth';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
+import { isTikTokButtonVisible } from '@/lib/tiktokAuth';
+
+import LastUsedBadge from './LastUsedBadge';
+import TelegramLoginTile from './TelegramLoginTile';
 
 interface SocialAuthButtonsProps {
    isSignUp: boolean;
@@ -22,6 +22,11 @@ interface SocialAuthButtonsProps {
    onTelegramAuth: (authData: Record<string, string>) => void;
    /** The page already shows the big Facebook button elsewhere (sign-up puts it above email). */
    hideFacebook?: boolean;
+   /**
+    * Philippines (+63 page): Google is the only extra tile on sign-up (Telegram stays on sign-in for the few
+    * who signed up with it; LINE and TikTok go — 2 and 1 accounts ever, 2026-11-24).
+    */
+   philippines?: boolean;
 }
 
 const btnBase =
@@ -72,7 +77,7 @@ export function useFacebookPrimary(): boolean {
  * 'full' is the main button (normal browsers + Facebook/Messenger/Instagram, see isFacebookPrimaryHere);
  * 'tile' is the small square next to Telegram/LINE inside other apps' browsers.
  */
-export function FacebookAuthButton({ isSignUp, variant }: { isSignUp: boolean; variant: 'full' | 'tile' }) {
+export function FacebookAuthButton({ isSignUp, variant, bold = false }: { isSignUp: boolean; variant: 'full' | 'tile'; bold?: boolean }) {
    const [isLoading, setIsLoading] = useState(false);
    const [error, setError] = useState('');
    const lastUsed = useMemo(() => getLastUsedAuth(), []);
@@ -144,26 +149,32 @@ export function FacebookAuthButton({ isSignUp, variant }: { isSignUp: boolean; v
             type="button"
             onClick={handleClick}
             disabled={isLoading}
-            className={`${btnBase} border border-[#B5ACBE] bg-[#FDFCFD] font-semibold shadow-[0px_2px_4px_rgba(27,28,29,0.04)] dark:border-[#40354F] dark:bg-[#17121F] ${
-               isLoading ? 'opacity-60 cursor-not-allowed' : ''
-            }`}
+            className={`${btnBase} font-semibold shadow-[0px_2px_4px_rgba(27,28,29,0.04)] ${
+               bold
+                  ? 'border border-[#1877F2] bg-[#1877F2]'
+                  : 'border border-[#B5ACBE] bg-[#FDFCFD] dark:border-[#40354F] dark:bg-[#17121F]'
+            } ${isLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
          >
-            {/* White with the blue "f" (George, 2026-11-24): a full blue button fought the purple Sign In button below */}
-            <FacebookLogo size={24} />
+            {/* White with the blue "f" where a purple Sign In button sits below (George, 2026-11-24: a full blue
+                button fought it). Solid Facebook blue (bold) where the form under it is quiet, so Facebook is
+                the one obvious choice: Philippines +63 page and Facebook/Messenger (facebookLeadsCodeLayout). */}
+            <FacebookLogo size={24} color={bold ? '#FFFFFF' : '#1877F2'} />
             <span
-               className="min-w-0 truncate text-base font-semibold tracking-[-0.02em] text-[#141218] dark:text-[#F8F4FF]"
+               className={`min-w-0 truncate text-base font-semibold tracking-[-0.02em] ${bold ? 'text-white' : 'text-[#141218] dark:text-[#F8F4FF]'}`}
                style={{ fontFamily: 'SF Pro Display, sans-serif' }}
             >
                {isLoading ? 'Opening Facebook...' : label}
             </span>
          </button>
          {lastUsed === 'facebook' && <LastUsedBadge className="-top-2 right-3" />}
+         {/* Filipino borrowers fear lending apps that shame them to their contacts: answer it before the tap. */}
+         <p className="mt-2 text-center text-[13px] leading-5 text-[#70617F] dark:text-[#A89BB8]">We never post or message your friends.</p>
          {errorLine}
       </div>
    );
 }
 
-export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuthButtonsProps) {
+export function SocialAuthButtons({ isSignUp, hideFacebook = false, philippines = false }: SocialAuthButtonsProps) {
    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
    const [googleError, setGoogleError] = useState('');
@@ -193,9 +204,12 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
         : 'Sign In with Google';
    // Facebook stays hidden until it is switched on (VITE_FACEBOOK_LOGIN_ENABLED): no grayed "Soon" tile.
 
-   useEffect(() => () => {
-      stopWatchingRef.current?.();
-   }, []);
+   useEffect(
+      () => () => {
+         stopWatchingRef.current?.();
+      },
+      []
+   );
 
    const trackInAppGoogle = (event: string) => {
       if (!import.meta.env.PROD) return;
@@ -287,7 +301,11 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
                   ) : (
                      <>
                         Google sign-in doesn&apos;t work inside {inApp.appName ?? 'this app'}.{' '}
-                        {facebookPrimary ? 'Facebook and email work here.' : tiktokInApp ? 'TikTok and email work here.' : 'Email works here.'}
+                        {facebookPrimary
+                           ? 'Facebook and email work here.'
+                           : tiktokInApp
+                             ? 'TikTok and email work here.'
+                             : 'Email works here.'}
                      </>
                   )}
                </p>
@@ -344,25 +362,34 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
 
             {inApp.isInApp ? null : (
                <>
-                  {/* Telegram: plain icon tile that redirects to Telegram OAuth (no embedded widget) */}
-                  <div className="relative">
-                     <TelegramLoginTile />
-                     {lastUsed === 'telegram' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
-                  </div>
+                  {/* Telegram: plain icon tile that redirects to Telegram OAuth (no embedded widget). Not on the
+                      Philippines sign-up (Indonesia signs up with Telegram at /id). */}
+                  {philippines && isSignUp ? null : (
+                     <div className="relative">
+                        <TelegramLoginTile />
+                        {lastUsed === 'telegram' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
+                     </div>
+                  )}
 
-                  {/* LINE: redirects to LINE Login OAuth, handled by the line-login edge fn */}
-                  <div className="relative">
-                     <LineLoginButton isSignUp={isSignUp} iconOnly />
-                     {lastUsed === 'line' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
-                  </div>
+                  {/* LINE: sign-in only, for the 2 accounts made with it (none since Oct 2026); not in the Philippines.
+                      Redirects to LINE Login OAuth, handled by the line-login edge fn. */}
+                  {isSignUp || philippines ? null : (
+                     <div className="relative">
+                        <LineLoginButton isSignUp={isSignUp} iconOnly />
+                        {lastUsed === 'line' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
+                     </div>
+                  )}
                </>
             )}
 
-            {/* TikTok: redirects to TikTok Login Kit, handled by the tiktok-login edge fn (hidden until the app is approved / ?tiktok=1) */}
-            <div className="relative">
-               <TikTokLoginButton isSignUp={isSignUp} iconOnly />
-               {lastUsed === 'tiktok' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
-            </div>
+            {/* TikTok: redirects to TikTok Login Kit, handled by the tiktok-login edge fn (hidden until the app is approved / ?tiktok=1).
+                Philippines page: only inside TikTok's own browser. */}
+            {philippines && !tiktokInApp ? null : (
+               <div className="relative">
+                  <TikTokLoginButton isSignUp={isSignUp} iconOnly />
+                  {lastUsed === 'tiktok' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
+               </div>
+            )}
 
             {/* Facebook: a small tile only inside other apps' browsers (the big button above everywhere else) */}
             {facebookEnabled && !facebookPrimary ? <FacebookAuthButton isSignUp={isSignUp} variant="tile" /> : null}
