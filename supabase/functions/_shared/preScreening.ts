@@ -472,11 +472,35 @@ export const otherNamesFrom = (typed: string, names: Array<string | null | undef
    return out;
 };
 
-const accountNames = async (svc: SupabaseClient, userId: string | null, typed: string): Promise<string[]> => {
-   if (!userId) return [];
-   const { data } = await svc.from('users').select('display_name, facebook_name').eq('id', userId).maybeSingle();
-   const u = data as { display_name?: string | null; facebook_name?: string | null } | null;
-   return otherNamesFrom(typed, [u?.display_name, u?.facebook_name]);
+/** What they tapped on the "About you" card at sign-up (for the story check). Null when they didn't answer. Pure. */
+export type AboutYouFacts = { gender: string; age: number; kids: string };
+export const aboutYouFrom = (
+   u: { about_gender?: string | null; about_age?: number | null; about_kids?: number | null } | null | undefined
+): AboutYouFacts | null => {
+   if (!u || u.about_age == null || u.about_kids == null || !u.about_gender) return null;
+   const kids = Number(u.about_kids);
+   return { gender: u.about_gender === 'female' ? 'woman' : 'man', age: Number(u.about_age), kids: kids >= 5 ? '5 or more' : String(kids) };
+};
+
+const accountFacts = async (
+   svc: SupabaseClient,
+   userId: string | null,
+   typed: string
+): Promise<{ otherNames: string[]; aboutYou: AboutYouFacts | null }> => {
+   if (!userId) return { otherNames: [], aboutYou: null };
+   const { data } = await svc
+      .from('users')
+      .select('display_name, facebook_name, about_gender, about_age, about_kids')
+      .eq('id', userId)
+      .maybeSingle();
+   const u = data as {
+      display_name?: string | null;
+      facebook_name?: string | null;
+      about_gender?: string | null;
+      about_age?: number | null;
+      about_kids?: number | null;
+   } | null;
+   return { otherNames: otherNamesFrom(typed, [u?.display_name, u?.facebook_name]), aboutYou: aboutYouFrom(u) };
 };
 
 async function gradeWithModel(
@@ -486,11 +510,13 @@ async function gradeWithModel(
    transcripts: Record<string, string | null>,
    income: IncomeProofRead | null,
    examples: TeamExample[] = [],
-   otherNames: string[] = []
+   otherNames: string[] = [],
+   aboutYou: AboutYouFacts | null = null
 ) {
    const user = JSON.stringify({
       name,
       ...(otherNames.length ? { other_names: otherNames } : {}),
+      ...(aboutYou ? { about_you: aboutYou } : {}),
       questions: questions.map((q) => ({
          q: q.id,
          question: q.text,
@@ -681,7 +707,7 @@ export async function gradePreScreening(svc: SupabaseClient, id: string, apiKey:
    const incomeFiles = Array.isArray(row.income_files) ? row.income_files : [];
    let incomeRead: IncomeProofRead | null = null;
    let modelOut: { summary?: unknown; answers?: unknown; income?: unknown; flags?: unknown; repay_chance?: unknown; reasons?: unknown } | null = null;
-   const otherNames = await accountNames(svc, row.user_id, row.name).catch(() => [] as string[]);
+   const { otherNames, aboutYou } = await accountFacts(svc, row.user_id, row.name).catch(() => ({ otherNames: [] as string[], aboutYou: null }));
    let gemini: GeminiResult | null = null;
    const geminiKey = await svc.rpc('gemini_api_key').then(
       (r) => (typeof r.data === 'string' && r.data.trim() ? r.data.trim() : null),
@@ -726,7 +752,7 @@ export async function gradePreScreening(svc: SupabaseClient, id: string, apiKey:
             ),
             loadTeamExamples(svc, row.id).catch(() => [] as TeamExample[])
          ]);
-         gemini = await gradeWithGemini(geminiKey, { name: row.name, otherNames, questions: row.questions, answers, incomeFiles: files, examples });
+         gemini = await gradeWithGemini(geminiKey, { name: row.name, otherNames, aboutYou, questions: row.questions, answers, incomeFiles: files, examples });
          Object.assign(transcripts, gemini.transcripts);
          incomeRead = gemini.income;
          if (incomeRead && !incomeRead.readable && incomeRead.problem) problems.push(`income proof: ${incomeRead.problem}`);
@@ -787,7 +813,7 @@ export async function gradePreScreening(svc: SupabaseClient, id: string, apiKey:
       if (Object.values(transcripts).some(Boolean)) {
          try {
             const examples = await loadTeamExamples(svc, row.id).catch(() => [] as TeamExample[]);
-            modelOut = await gradeWithModel(apiKey, row.name, row.questions, transcripts, incomeRead, examples, otherNames);
+            modelOut = await gradeWithModel(apiKey, row.name, row.questions, transcripts, incomeRead, examples, otherNames, aboutYou);
          } catch (err) {
             problems.push(err instanceof Error ? err.message : String(err));
          }

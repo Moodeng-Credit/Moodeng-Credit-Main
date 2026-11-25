@@ -169,6 +169,8 @@ Deno.test('warnings: auto ✅ after replies only when they cleared every ⚠️'
 Deno.test('gradeWarnings: strings only, trimmed, deduped', () => {
    assertEquals(gradeWarnings({ flags: [' a ', 'a', '', 3, 'b'] }), ['a', 'b']);
    assertEquals(gradeWarnings(null), []);
+   // 👪 sign-up card notes are team-only: never hold an auto ✅ or get asked about.
+   assertEquals(gradeWarnings({ flags: ['👪 said 0 kids at sign-up, 3 kids later', 'b'] }), ['b']);
 });
 
 Deno.test('70 bar + 2nd round', () => {

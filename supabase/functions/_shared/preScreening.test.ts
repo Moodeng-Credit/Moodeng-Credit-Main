@@ -1,6 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { buildGrade, otherNamesFrom, verdictFor } from './preScreening.ts';
+import { aboutYouFrom, buildGrade, otherNamesFrom, verdictFor } from './preScreening.ts';
 
 const QUESTIONS = [
    { id: 'work', text: 'Job?' },
@@ -207,4 +207,12 @@ Deno.test('❌ Other: typed reason round-trips through the prompt tag and confir
 Deno.test('otherNamesFrom: account and Facebook names that differ from the typed name', () => {
    assertEquals(otherNamesFrom('Juan Dela Cruz', ['AJ Lee', 'AJ Lee', null]), ['AJ Lee']);
    assertEquals(otherNamesFrom('Juan Dela Cruz', ['juan  dela cruz', '', undefined]), []);
+});
+
+Deno.test('aboutYouFrom: the sign-up card answers for the story check', () => {
+   assertEquals(aboutYouFrom({ about_gender: 'female', about_age: 27, about_kids: 2 }), { gender: 'woman', age: 27, kids: '2' });
+   assertEquals(aboutYouFrom({ about_gender: 'male', about_age: 40, about_kids: 5 })?.kids, '5 or more');
+   assertEquals(aboutYouFrom({ about_gender: 'female', about_age: 27, about_kids: 0 })?.kids, '0');
+   assertEquals(aboutYouFrom({ about_gender: null, about_age: 27, about_kids: 1 }), null);
+   assertEquals(aboutYouFrom(null), null);
 });

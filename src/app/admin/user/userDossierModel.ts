@@ -238,6 +238,52 @@ export interface Dossier {
    photo_estimate?: PhotoEstimate | null;
 }
 
+/**
+ * The "About you" card (what they tapped at sign-up) next to what Didit read off their ID. Team-only:
+ * a gender that differs, or an age more than 5 years off, can mean someone else signed up for them.
+ * A year or two off is normal (birthdays, rounding), so it isn't flagged. Never used to grade anyone.
+ */
+export interface AboutVsId {
+   said: string;
+   mismatches: string[];
+   /** Didit had a gender or birth date to compare with. */
+   checked: boolean;
+}
+
+export const AGE_GAP_FLAG = 5;
+
+const yearsSince = (dob: string, now: number) => {
+   const ms = now - new Date(dob).getTime();
+   return Number.isFinite(ms) ? Math.floor(ms / (365.25 * 86_400_000)) : null;
+};
+
+export function aboutVsId(d: Pick<Dossier, 'user' | 'kyc'>, now = Date.now()): AboutVsId | null {
+   const { about_gender, about_age, about_kids } = d.user;
+   if (!about_gender && about_age == null && about_kids == null) return null;
+   const saidAge = about_age == null || about_age === '' ? null : Number(about_age);
+   const kids = about_kids == null || about_kids === '' ? null : Number(about_kids);
+   const said = [
+      about_gender === 'female' ? 'Woman' : about_gender === 'male' ? 'Man' : null,
+      saidAge != null ? String(saidAge) : null,
+      kids != null ? `${kids >= 5 ? '5+' : kids} kid${kids === 1 ? '' : 's'}` : null
+   ]
+      .filter(Boolean)
+      .join(' · ');
+   // Newest check that read a gender or birth date (a later declined check can be blank).
+   const id = d.kyc.find((k) => k.gender || k.date_of_birth);
+   const mismatches: string[] = [];
+   const idGender = id?.gender?.trim().toUpperCase()[0];
+   const saidGender = about_gender === 'female' ? 'F' : about_gender === 'male' ? 'M' : undefined;
+   if (idGender && saidGender && (idGender === 'F' || idGender === 'M') && idGender !== saidGender) {
+      mismatches.push(`ID says ${idGender === 'F' ? 'woman' : 'man'}`);
+   }
+   const idAge = id?.date_of_birth ? yearsSince(id.date_of_birth, now) : null;
+   if (idAge != null && saidAge != null && Math.abs(idAge - saidAge) > AGE_GAP_FLAG) {
+      mismatches.push(`ID says ${idAge}`);
+   }
+   return { said, mismatches, checked: Boolean(id) };
+}
+
 export interface PhotoEstimate {
    face_visible: boolean;
    est_gender: string | null;
