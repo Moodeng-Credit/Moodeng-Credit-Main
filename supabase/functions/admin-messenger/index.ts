@@ -99,6 +99,22 @@ const resolveContact = async (
    return { id: contactId, contact };
 };
 
+// Facebook's Page-scoped id for a SendPulse contact: the latest sender_id in our event log (same rule
+// as private.messenger_meta_psid). Null when we never logged a message from them.
+const metaPsidForContact = async (svc: Svc, contactId: string): Promise<string | null> => {
+   const { data } = await svc
+      .from('messenger_contact_events')
+      .select('payload')
+      .eq('contact_id', contactId)
+      .order('created_at', { ascending: false })
+      .limit(50);
+   for (const row of (data ?? []) as Array<{ payload: { info?: { message?: { channel_data?: { sender_id?: unknown } } } } | null }>) {
+      const id = String(row.payload?.info?.message?.channel_data?.sender_id ?? '');
+      if (/^\d{5,25}$/.test(id) && id !== '1148756028310286') return id;
+   }
+   return null;
+};
+
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
@@ -289,7 +305,20 @@ serve(async (req) => {
          if (!resolved) messenger = 'contact not found';
          else {
             const sent = await sendMessengerMessage(resolved.id, { text: limitUpMessengerText(name, from, to, lang) });
-            messenger = sent.ok ? 'sent' : `not sent (${sent.reason === 'send_failed' ? 'outside 24h' : sent.reason})`;
+            if (sent.ok) messenger = 'sent';
+            else {
+               // Outside 24h (or rejected): the approved utility template moodeng_limit_up, straight through
+               // Meta ("Hi {{1}}, your Moodeng credit limit has been updated from {{2}} to {{3}}." + Open Moodeng).
+               const psid =
+                  (await metaPsidForContact(svc, resolved.id)) ??
+                  (user.facebook_name ? await findPsidByName(svc, user.facebook_name) : null);
+               const viaMeta = psid
+                  ? await sendUtilityTemplate(svc, psid, { name: 'moodeng_limit_up', params: [name, `$${from}`, `$${to}`] })
+                  : null;
+               messenger = viaMeta?.ok
+                  ? 'sent (template)'
+                  : `not sent (${sent.reason === 'send_failed' ? 'outside 24h' : sent.reason}; template: ${viaMeta ? viaMeta.reason : 'no Messenger id'})`;
+            }
          }
       }
 
