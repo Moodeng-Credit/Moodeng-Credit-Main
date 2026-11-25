@@ -129,6 +129,7 @@ Copy what the document says. Never guess or fill in a number that is not printed
 - Before you call a total wrong, do the math the way payroll does. Rows like Late, Tardiness, Undertime, Absence, Cash advance or Loan are SUBTRACTED from pay even when the template lists them under Earnings without a minus sign (e.g. Basic 6,600 + Overtime 546.56 − Late 426.65 + COLA 500 = 7,219.91, printed as 7,220). Totals rounded to the whole peso are fine. Only report a total that is off by more than 1 after trying that.
 - A payslip from a small branch often shows a franchise brand's logo (Generika, Mercury Drug, 7-Eleven, Jollibee…) next to the owner's own company name (e.g. "ALIOA DRUGSTORE OPC"): that is one employer, not a mismatch. Put the company name in employer and mention the brand in institution.
 - If you cannot read it (blank, not a financial document, password-protected, too blurry), set readable false, say why in unreadable_reason, and leave the lists empty.
+- Not proof of income: set readable false, doc_type other, and start unreadable_reason with what it is (e.g. "GCrypto home screen, ₱0 balance, no history"). This covers: an app's home or wallet screen that shows only a balance, buttons or ads and no list of money received (GCash/Maya home, GCrypto, GSave, a crypto or stock app); a loan app or lending screen; a receipt or bill for something they paid or bought; a single "Sent" transfer; an ID, selfie, job photo or chat screenshot; an error page or a Moodeng screen. A GCash or Maya transaction list counts as history even if most rows are money out.
 - doc_type is one of: gcash_history, maya_history, bank_statement, payslip, remittance, business_permit, gig_earnings (rider/driver app earnings), seller_payout (online shop income), freelance_earnings (freelance platform or PayPal/Wise/Payoneer payouts), sss_contributions, other. Use other only when it is none of these.
 - gig_earnings, seller_payout, freelance_earnings: each day, week or payout shown is one transaction with a positive amount (what they earned or were paid), dated at the end of that day or week; balance is null. institution is the app.
 - sss_contributions: put the employer and each month's contribution in fields, leave transactions empty (a contribution is not money in), and set period_start / period_end to the first and last month shown.
@@ -1963,7 +1964,8 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
    const idHashes = await idKeys(doc.id_numbers ?? []);
    doc = { ...doc, id_numbers: [] };
    if (!doc.readable) {
-      const note = `unreadable: ${doc.unreadable_reason ?? 'no reason given'}`;
+      // "not income" (wrong kind of screen) vs "unreadable" (right kind, can't read it) — the team line says which.
+      const note = `${doc.doc_type === 'other' ? 'not income' : 'unreadable'}: ${doc.unreadable_reason ?? 'no reason given'}`;
       const patch = unreadablePatch(note, { doc_type: doc.doc_type, extracted: doc, model: MODEL });
       // Not a financial document: ask for a real one (AI tags are still listed for the team).
       if (doc.doc_type === 'other') return askResend(patch, 'not_financial', fileWarnings ? `${note}\n${fileWarnings}` : note);
