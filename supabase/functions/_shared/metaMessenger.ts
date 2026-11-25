@@ -110,6 +110,32 @@ export const sendUtilityTemplate = async (
    return sent.ok ? { ok: true, messageId: sent.json?.message_id ?? null, steps } : { ok: false, reason: errText(sent), steps };
 };
 
+/**
+ * PSID by Facebook name from the Page's Messenger conversations, for people our event log never saw
+ * (borrowers from before Oct 2026). Only an exact, unique name match counts: two people with the
+ * same name → null, never a guess. Reads up to `maxPages` pages of 100 conversations. Never throws.
+ */
+export const findPsidByName = async (svc: Svc, name: string, maxPages = 8): Promise<string | null> => {
+   const want = name.trim().toLowerCase().replace(/\s+/g, ' ');
+   if (!want) return null;
+   const token = await readMetaSecret(svc, 'META_PAGE_MESSAGING_TOKEN');
+   if (!token) return null;
+   const found = new Set<string>();
+   let path: string | null = `${META_PAGE_ID}/conversations?platform=messenger&fields=participants&limit=100`;
+   for (let i = 0; i < maxPages && path; i++) {
+      const r = await graph(token, 'GET', path);
+      if (!r.ok) break;
+      for (const conv of (r.json?.data ?? []) as Array<{ participants?: { data?: Array<{ id?: string; name?: string }> } }>) {
+         for (const p of conv.participants?.data ?? []) {
+            if (p.id && p.id !== META_PAGE_ID && (p.name ?? '').trim().toLowerCase().replace(/\s+/g, ' ') === want) found.add(p.id);
+         }
+      }
+      const next: string | undefined = r.json?.paging?.next;
+      path = next ? next.replace(/^https:\/\/graph\.facebook\.com\/v[\d.]+\//, '').replace(/[?&]access_token=[^&]*/, '') : null;
+   }
+   return found.size === 1 ? [...found][0] : null;
+};
+
 /** Meta's webhook check (GET hub.mode=subscribe&hub.verify_token=…&hub.challenge=…). Null = not ours. */
 export const metaWebhookChallenge = async (svc: Svc, url: URL): Promise<string | null> => {
    if (url.searchParams.get('hub.mode') !== 'subscribe') return null;
